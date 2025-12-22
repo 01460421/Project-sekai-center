@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Project SEKAI 資源中心 - 卡池列表、官方資源、社群連結整理">
+    
+    <title>Project SEKAI 資源中心</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    
+    <style>
+        /* ===== 跨平台字體設定 ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Serif+JP:wght@400;600;700&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --text: #2c2c2c;
+            --text-light: #555;
+            --border: #d0d0d0;
+            --bg: #fafafa;
+            --link: #0066cc;
+            --link-hover: #004499;
+            
+            /* 響應式變數 */
+            --container-padding: clamp(16px, 4vw, 40px);
+            --font-base: clamp(14px, 2.5vw, 16px);
+            --font-h1: clamp(20px, 5vw, 28px);
+            --font-h2: clamp(16px, 4vw, 20px);
+            --nav-height: 48px;
+        }
+        
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        body {
+            /* 跨平台宋體字體堆疊 */
+            font-family: 
+                'Noto Serif TC',
+                'Noto Serif SC', 
+                'Noto Serif JP',
+                'Songti SC',           /* macOS 簡體宋體 */
+                'Songti TC',           /* macOS 繁體宋體 */
+                'STSong',              /* macOS/iOS 宋體 */
+                'SimSun',              /* Windows 宋體 */
+                'NSimSun',             /* Windows 新宋體 */
+                'FangSong',            /* Windows 仿宋 */
+                'MS Mincho',           /* Windows 日文明朝 */
+                'Yu Mincho',           /* Windows/macOS 日文明朝 */
+                'Hiragino Mincho ProN', /* macOS 日文明朝 */
+                'Times New Roman', 
+                'Times', 
+                serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            font-size: var(--font-base);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* ===== 容器 ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--container-padding);
+            padding-top: calc(var(--nav-height) + var(--container-padding));
+        }
+        
+        /* ===== Header ===== */
+        header {
+            text-align: center;
+            padding-bottom: clamp(20px, 4vw, 32px);
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: clamp(24px, 5vw, 40px);
+        }
+        
+        h1 {
+            font-size: var(--font-h1);
+            font-weight: 700;
+            letter-spacing: clamp(2px, 0.5vw, 4px);
+            margin-bottom: 12px;
+            color: var(--primary);
+            word-break: keep-all;
+        }
+        
+        .subtitle {
+            font-size: clamp(12px, 2vw, 14px);
+            color: var(--text-light);
+            letter-spacing: 1px;
+            word-break: keep-all;
+        }
+        
+        .last-updated {
+            font-size: clamp(11px, 1.8vw, 12px);
+            color: var(--text-light);
+            margin-top: 12px;
+            font-style: italic;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        /* ===== 固定導覽列 ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary);
+            padding: 0;
+            height: var(--nav-height);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: clamp(4px, 1vw, 8px) clamp(12px, 3vw, 24px);
+            padding: 8px 16px;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-size: clamp(12px, 2vw, 14px);
+            padding: 6px 10px;
+            transition: opacity 0.2s, background 0.2s;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        
+        nav a:hover, nav a:active {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        /* ===== Section ===== */
+        section {
+            margin-bottom: clamp(32px, 6vw, 48px);
+        }
+        
+        h2 {
+            font-size: var(--font-h2);
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: clamp(16px, 3vw, 20px);
+            letter-spacing: 1px;
+        }
+        
+        h2 .en {
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: normal;
+            font-size: clamp(12px, 2vw, 14px);
+            color: var(--text-light);
+            margin-left: 8px;
+            display: inline-block;
+        }
+        
+        /* ===== 目錄 ===== */
+        .toc {
+            background: #f9f9f9;
+            padding: clamp(16px, 3vw, 20px) clamp(16px, 3vw, 24px);
+            margin-bottom: clamp(24px, 5vw, 40px);
+            border: 1px solid var(--border);
+        }
+        
+        .toc h3 {
+            font-size: clamp(13px, 2vw, 14px);
+            margin-bottom: 12px;
+            color: var(--primary);
+            letter-spacing: 1px;
+        }
+        
+        .toc ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px 24px;
+        }
+        
+        .toc li {
+            font-size: clamp(13px, 2vw, 14px);
+            padding: 4px 0;
+        }
+        
+        .toc a {
+            color: var(--text);
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            color: var(--link);
+        }
+        
+        /* ===== 搜尋框 ===== */
+        .search-box {
+            margin-bottom: clamp(20px, 4vw, 32px);
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 16px);
+            font-size: clamp(14px, 2.5vw, 15px);
+            font-family: inherit;
+            border: 1px solid var(--border);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            border-radius: 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(15, 52, 96, 0.1);
+        }
+        
+        /* ===== 表格 ===== */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 calc(-1 * var(--container-padding));
+            padding: 0 var(--container-padding);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: clamp(13px, 2vw, 15px);
+            min-width: 100%;
+        }
+        
+        th, td {
+            padding: clamp(8px, 2vw, 12px) clamp(10px, 2vw, 16px);
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: clamp(11px, 1.8vw, 13px);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            position: sticky;
+            top: var(--nav-height);
+            z-index: 10;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        /* ===== 連結 ===== */
+        a {
+            color: var(--link);
+            text-decoration: none;
+            transition: color 0.2s;
+            word-break: break-word;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        .external::after {
+            content: ' ↗';
+            font-size: 0.8em;
+            opacity: 0.5;
+        }
+        
+        .description {
+            color: var(--text-light);
+            font-size: clamp(12px, 1.8vw, 13px);
+        }
+        
+        .tag {
+            display: inline-block;
+            font-size: clamp(10px, 1.5vw, 11px);
+            padding: 2px 6px;
+            background: #e8e8e8;
+            border-radius: 2px;
+            color: var(--text-light);
+            margin-left: 6px;
+            white-space: nowrap;
+        }
+        
+        /* ===== 說明區塊 ===== */
+        .note {
+            background: #f5f5f5;
+            padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
+            border-left: 3px solid var(--accent);
+            margin: 16px 0;
+            font-size: clamp(13px, 2vw, 14px);
+        }
+        
+        /* ===== 卡池區域 ===== */
+        .gacha-container {
+            background: #fff;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+        
+        .gacha-header {
+            background: var(--primary);
+            color: #fff;
+            padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .gacha-header h3 {
+            font-size: clamp(14px, 2.5vw, 16px);
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .gacha-header .source {
+            font-size: clamp(11px, 1.8vw, 12px);
+            opacity: 0.8;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .gacha-frame {
+            width: 100%;
+            height: clamp(400px, 60vh, 700px);
+            border: none;
+            display: block;
+        }
+        
+        .gacha-actions {
+            padding: clamp(12px, 2vw, 16px);
+            background: #f9f9f9;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .gacha-actions a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: #fff;
+            text-decoration: none;
+            font-size: clamp(12px, 2vw, 14px);
+            transition: background 0.2s;
+        }
+        
+        .gacha-actions a:hover {
+            background: var(--secondary);
+            text-decoration: none;
+        }
+        
+        /* ===== Footer ===== */
+        footer {
+            text-align: center;
+            padding-top: clamp(24px, 4vw, 32px);
+            border-top: 1px solid var(--border);
+            color: var(--text-light);
+            font-size: clamp(12px, 2vw, 13px);
+        }
+        
+        footer p {
+            margin: 4px 0;
+        }
+        
+        .omega {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+        
+        /* ===== 響應式斷點 ===== */
+        
+        /* 大螢幕桌面 */
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 1100px;
+            }
+        }
+        
+        /* 一般桌面 */
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .container {
+                max-width: 960px;
+            }
+        }
+        
+        /* 平板橫向 */
+        @media (min-width: 768px) and (max-width: 991px) {
+            .container {
+                max-width: 720px;
+            }
+            
+            .toc ul {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* 平板直向 & 大手機 */
+        @media (min-width: 576px) and (max-width: 767px) {
+            :root {
+                --nav-height: 44px;
+            }
+            
+            nav ul {
+                gap: 4px 12px;
+            }
+            
+            .toc ul {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            table {
+                font-size: 13px;
+            }
+            
+            th, td {
+                padding: 10px 12px;
+            }
+        }
+        
+        /* 手機 */
+        @media (max-width: 575px) {
+            :root {
+                --nav-height: 42px;
+                --container-padding: 16px;
+            }
+            
+            nav ul {
+                gap: 2px 8px;
+                padding: 6px 12px;
+            }
+            
+            nav a {
+                font-size: 12px;
+                padding: 4px 6px;
+            }
+            
+            h1 {
+                letter-spacing: 1px;
+            }
+            
+            .toc ul {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-wrapper {
+                margin: 0 -16px;
+                padding: 0 16px;
+            }
+            
+            table {
+                font-size: 13px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+            
+            .tag {
+                display: none;
+            }
+            
+            .gacha-frame {
+                height: 50vh;
+                min-height: 350px;
+            }
+            
+            .gacha-actions {
+                flex-direction: column;
+            }
+            
+            .gacha-actions a {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        /* 小手機 */
+        @media (max-width: 375px) {
+            :root {
+                --container-padding: 12px;
+            }
+            
+            nav a {
+                font-size: 11px;
+                padding: 4px 5px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+        
+        /* 橫向模式優化 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            :root {
+                --nav-height: 36px;
+            }
+            
+            nav a {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+            
+            .gacha-frame {
+                height: 60vh;
+            }
+        }
+        
+        /* 高 DPI 螢幕 */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            body {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+        }
+        
+        /* 深色模式支援 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1a1a;
+                --text: #e0e0e0;
+                --text-light: #a0a0a0;
+                --border: #404040;
+                --primary: #2a2a4e;
+                --link: #6699ff;
+                --link-hover: #99bbff;
+            }
+            
+            th {
+                background: #252525;
+            }
+            
+            tr:hover {
+                background: #252525;
+            }
+            
+            .toc, .note, .gacha-actions {
+                background: #222;
+            }
+            
+            .tag {
+                background: #333;
+                color: #aaa;
+            }
+            
+            .search-box input {
+                background: #222;
+                color: #e0e0e0;
+            }
+            
+            .gacha-container {
+                background: #1a1a1a;
+            }
+        }
+        
+        /* 減少動態效果 */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+            
+            *, *::before, *::after {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+        
+        /* 列印樣式 */
+        @media print {
+            nav {
+                display: none;
+            }
+            
+            .container {
+                padding-top: 20px;
+            }
+            
+            .gacha-container {
+                display: none;
+            }
+            
+            a::after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+                color: #666;
+            }
+        }
+        
+        /* 隱藏元素 */
+        .hidden {
+            display: none !important;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: clamp(30px, 6vw, 40px);
+            color: var(--text-light);
+            font-style: italic;
+        }
+        
+        /* 觸控優化 */
+        @media (hover: none) and (pointer: coarse) {
+            nav a {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+            
+            .gacha-actions a {
+                min-height: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="#official">官方</a></li>
+            <li><a href="#info">資訊</a></li>
+            <li><a href="#gacha">卡池</a></li>
+            <li><a href="#community">社群</a></li>
+            <li><a href="#wiki">Wiki</a></li>
+            <li><a href="#tools">工具</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>PROJECT SEKAI 資源中心</h1>
+            <p class="subtitle">プロジェクトセカイ カラフルステージ！ feat. 初音ミク</p>
+            <p class="last-updated">Resource Center — Last Updated: December 2025</p>
+        </header>
+
+        <div class="toc">
+            <h3>目錄 Table of Contents</h3>
+            <ul>
+                <li><a href="#official">一、官方資源 Official</a></li>
+                <li><a href="#info">二、資訊站 Information</a></li>
+                <li><a href="#gacha">三、卡池列表 Gacha List</a></li>
+                <li><a href="#community">四、討論社群 Community</a></li>
+                <li><a href="#wiki">五、Wiki 百科</a></li>
+                <li><a href="#tools">六、實用工具 Tools</a></li>
+            </ul>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜尋資源 Search resources..." aria-label="搜尋資源">
+        </div>
+
+        <main id="mainContent">
+            <section id="official">
+                <h2>一、官方資源 <span class="en">Official Resources</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名稱</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody class="searchable">
+                            <tr>
+                                <td><a href="https://www.tw-pjsekai.com" target="_blank" rel="noopener" class="external">官方網站</a></td>
+                                <td class="description">Project SEKAI 台灣官方網站</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://x.com/pj_sekai" target="_blank" rel="noopener" class="external">官方 X (Twitter)</a></td>
+                                <td class="description">日本官方社群帳號，發布最新情報</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://www.youtube.com/channel/UCdMGYXL38w6htx6Yf9YJa-w" target="_blank" rel="noopener" class="external">官方 YouTube</a></td>
+                                <td class="description">官方影片頻道，MV、生放送等</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://karent.jp/artist/pp000899" target="_blank" rel="noopener" class="external">專輯數位串流</a></td>
+                                <td class="description">KarenT 音樂串流平台</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="info">
+                <h2>二、資訊站 <span class="en">Information Resources</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名稱</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody class="searchable">
+                            <tr>
+                                <td><a href="https://sekai.best/" target="_blank" rel="noopener" class="external">Sekai Viewer</a></td>
+                                <td class="description">最完整的資料庫，包含抽卡模擬器、活動排名線、卡牌資料等</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://sdvx.in/prsk.html" target="_blank" rel="noopener" class="external">プロセカ譜面保管所</a><span class="tag">日文</span></td>
+                                <td class="description">譜面資料庫，可查詢所有歌曲譜面</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://pjsek.ai/" target="_blank" rel="noopener" class="external">pjsek.ai</a></td>
+                                <td class="description">遊戲解包檔案資源</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://space.bilibili.com/1685555774" target="_blank" rel="noopener" class="external">Project_SEKAI 資訊站</a><span class="tag">B站</span></td>
+                                <td class="description">Bilibili 影片翻譯與情報整理</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://www.facebook.com/Project-Sekai情報分享站-101585801722034/" target="_blank" rel="noopener" class="external">情報分享站</a><span class="tag">FB</span></td>
+                                <td class="description">Facebook 情報粉絲專頁</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://pjsekai-gallery.vercel.app/" target="_blank" rel="noopener" class="external">プロセカギャラリー</a></td>
+                                <td class="description">角色卡面列表與圖鑑</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://forum.gamer.com.tw/C.php?bsn=36276&snA=661" target="_blank" rel="noopener" class="external">譜面攻略串</a><span class="tag">巴哈</span></td>
+                                <td class="description">巴哈姆特譜面攻略心得，附手元影片與解說</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="gacha">
+                <h2>三、卡池列表 <span class="en">Gacha List</span></h2>
+                <div class="note">
+                    完整卡池歷史記錄，資料持續更新中。可在下方直接瀏覽或開啟 Google Sheets 查看完整版。
+                </div>
+                
+                <div class="gacha-container">
+                    <div class="gacha-header">
+                        <h3>卡池列表</h3>
+                        <span class="source">Data Source: Google Sheets</span>
+                    </div>
+                    <iframe 
+                        class="gacha-frame"
+                        src="https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/preview?rm=minimal"
+                        title="卡池列表"
+                        loading="lazy"
+                        allowfullscreen>
+                    </iframe>
+                    <div class="gacha-actions">
+                        <a href="https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/edit?usp=sharing" target="_blank" rel="noopener">
+                            📊 在 Google Sheets 開啟
+                        </a>
+                        <a href="https://sekai.best/gacha" target="_blank" rel="noopener">
+                            🎰 抽卡模擬器
+                        </a>
+                        <a href="https://sekai.best/card" target="_blank" rel="noopener">
+                            🃏 卡牌資料庫
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="community">
+                <h2>四、討論社群 <span class="en">Community</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>平台</th>
+                                <th>名稱</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody class="searchable">
+                            <tr>
+                                <td>PTT</td>
+                                <td><a href="https://www.ptt.cc/bbs/ProjectSekai/index.html" target="_blank" rel="noopener" class="external">ProjectSekai 專板</a></td>
+                                <td class="description">批踢踢實業坊專板</td>
+                            </tr>
+                            <tr>
+                                <td>巴哈姆特</td>
+                                <td><a href="https://forum.gamer.com.tw/B.php?bsn=36276" target="_blank" rel="noopener" class="external">專板</a></td>
+                                <td class="description">巴哈姆特哈啦板</td>
+                            </tr>
+                            <tr>
+                                <td>巴哈姆特</td>
+                                <td><a href="https://forum.gamer.com.tw/C.php?bsn=60076&snA=7438058" target="_blank" rel="noopener" class="external">場外討論串</a></td>
+                                <td class="description">場外休憩區討論串</td>
+                            </tr>
+                            <tr>
+                                <td>Reddit</td>
+                                <td><a href="https://www.reddit.com/r/ProjectSekai/" target="_blank" rel="noopener" class="external">r/ProjectSekai</a><span class="tag">英文</span></td>
+                                <td class="description">國際 Reddit 社群</td>
+                            </tr>
+                            <tr>
+                                <td>Discord</td>
+                                <td><a href="https://discord.gg/zvbRnw5v9c" target="_blank" rel="noopener" class="external">世界計畫 Discord</a></td>
+                                <td class="description">中文 Discord 伺服器</td>
+                            </tr>
+                            <tr>
+                                <td>Facebook</td>
+                                <td><a href="https://www.facebook.com/share/g/1BoixQQivN/" target="_blank" rel="noopener" class="external">粉絲社團</a></td>
+                                <td class="description">Facebook 粉絲討論社團</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="wiki">
+                <h2>五、Wiki 百科 <span class="en">Wikis</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名稱</th>
+                                <th>語言</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody class="searchable">
+                            <tr>
+                                <td><a href="https://pjsekai.com/" target="_blank" rel="noopener" class="external">プロセカ攻略 wiki</a></td>
+                                <td>日文</td>
+                                <td class="description">日本最大攻略 Wiki</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://gamerch.com/pjsekai/" target="_blank" rel="noopener" class="external">Gamerch Wiki</a></td>
+                                <td>日文</td>
+                                <td class="description">Gamerch 平台攻略</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://wikiwiki.jp/pjsekai/" target="_blank" rel="noopener" class="external">攻略まとめ Wiki</a></td>
+                                <td>日文</td>
+                                <td class="description">日文攻略統整 Wiki</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://projectsekai.fandom.com/" target="_blank" rel="noopener" class="external">Fandom Wiki</a></td>
+                                <td>英文</td>
+                                <td class="description">Fandom 英文百科</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://www.sekaipedia.org/" target="_blank" rel="noopener" class="external">Sekaipedia</a></td>
+                                <td>英文</td>
+                                <td class="description">英文專業百科</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="tools">
+                <h2>六、實用工具 <span class="en">Tools</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>工具</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody class="searchable">
+                            <tr>
+                                <td><a href="https://sekai.best/gacha" target="_blank" rel="noopener" class="external">抽卡模擬器</a></td>
+                                <td class="description">模擬抽卡體驗，測試運氣</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://sekai.best/eventcalc" target="_blank" rel="noopener" class="external">活動計算器</a></td>
+                                <td class="description">活動 PT 計算，預估排名所需場次</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://sekai.best/music" target="_blank" rel="noopener" class="external">譜面預覽</a></td>
+                                <td class="description">歌曲與譜面資訊瀏覽</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://sekai.best/card" target="_blank" rel="noopener" class="external">卡牌資料庫</a></td>
+                                <td class="description">所有卡牌詳細資訊與立繪</td>
+                            </tr>
+                            <tr>
+                                <td><a href="https://sekai-world.github.io/sekai-master-db-diff/" target="_blank" rel="noopener" class="external">資料庫差異對照</a></td>
+                                <td class="description">遊戲資料更新對照工具</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <div id="noResults" class="no-results hidden">
+            未找到符合的資源 No matching resources found.
+        </div>
+
+        <footer>
+            <p>Project SEKAI 資源中心</p>
+            <p>本站僅為資源整理，不隸屬於 SEGA 或 Colorful Palette</p>
+            <p style="margin-top: 16px; font-size: 14px;">
+                <span class="omega">made from Ω</span>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // 搜尋功能
+        const searchInput = document.getElementById('searchInput');
+        const mainContent = document.getElementById('mainContent');
+        const noResults = document.getElementById('noResults');
+        
+        searchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase().trim();
+            const sections = mainContent.getElementsByTagName('section');
+            let hasResults = false;
+            
+            for (let section of sections) {
+                if (section.id === 'gacha') {
+                    // 卡池區塊始終顯示
+                    section.classList.remove('hidden');
+                    hasResults = true;
+                    continue;
+                }
+                
+                const rows = section.querySelectorAll('tbody.searchable tr');
+                let sectionHasMatch = false;
+                
+                for (let row of rows) {
+                    const text = row.textContent.toLowerCase();
+                    const match = !filter || text.includes(filter);
+                    row.classList.toggle('hidden', !match);
+                    if (match) {
+                        sectionHasMatch = true;
+                        hasResults = true;
+                    }
+                }
+                
+                section.classList.toggle('hidden', !sectionHasMatch && filter);
+            }
+            
+            noResults.classList.toggle('hidden', hasResults || !filter);
+        });
+        
+        // 平滑滾動
+        document.querySelectorAll('nav a[href^="#"], .toc a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const navHeight = document.querySelector('nav').offsetHeight;
+                    const targetPosition = target.offsetTop - navHeight - 16;
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // 檢測系統主題變化
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                // 主題切換時可執行的操作
+            });
+        }
+        
+        // 優化 iframe 載入
+        const gachaFrame = document.querySelector('.gacha-frame');
+        if (gachaFrame) {
+            gachaFrame.addEventListener('load', function() {
+                this.style.opacity = '1';
+            });
+        }
+    </script>
+</body>
+</html>
