@@ -41,45 +41,6 @@
             --mix-color: #ff6699;
         }
         
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #121212; --text: #e0e0e0; --text-light: #a0a0a0;
-                --border: #3a3a3a; --primary: #2d2d5a; --link: #7db8ff;
-                --fes-bg: #3e2723; --fes-text: #ffcc80;
-                --limited-bg: #4a1a1a; --limited-text: #ef9a9a;
-                --paid-bg: #3e2f00; --paid-text: #ffd54f;
-                --birthday-bg: #4a1a5e; --birthday-text: #ce93d8;
-                --rerun-bg: #5d1a1a; --rerun-text: #ef5350;
-                --wl-bg: #0d3354; --wl-text: #64b5f6;
-                --normal-bg: #1b4332; --normal-text: #81c784;
-                --other-bg: #263238; --other-text: #90a4ae;
-            }
-            body { background: var(--bg); color: var(--text); }
-            h1, h2, .toc h3, .calc-section h4 { color: #c0c0ff; }
-            th { background: #2a2a4a !important; color: #e0e0e0 !important; }
-            .toc, .note { background: #1e1e1e; }
-            .tag { background: #3a3a3a; color: #b0b0b0; }
-            .calculator { background: #1a1a1a; }
-            .calc-row input, .calc-row select, .member-item input, .song-filters input, .song-filters select { background: #2a2a2a; color: #e0e0e0; border-color: #4a4a4a; }
-            .gacha-table th { background: var(--primary) !important; }
-            tr:hover { background: rgba(255,255,255,0.05) !important; }
-            .gacha-table tr:hover { filter: brightness(1.15); }
-            nav { background: #1a1a3a; }
-            header { border-bottom-color: #4a4a6a; }
-            footer { border-top-color: #3a3a3a; }
-            .calendar { background: #1a1a1a; }
-            .calendar-day { background: #252525; border-color: #3a3a3a; }
-            .calendar-day:hover { background: #333; }
-            .calendar-day.other-month { background: #1a1a1a; }
-            .calendar-header button { background: #2a2a4a; color: #e0e0e0; }
-            .calendar-header button:hover { background: #3a3a6a; }
-            .event-popup { background: #2a2a2a; border-color: #4a4a4a; }
-            .song-tag { background: #3a3a5a; }
-            .song-cat { filter: brightness(0.8) saturate(1.2); }
-            .unit-btn { background: #2a2a2a; border-color: #4a4a4a; }
-            .unit-btn:hover { background: #3a3a3a; }
-            .song-stats { background: #1a1a1a; border-color: #3a3a3a; }
-        }
         
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
@@ -106,13 +67,11 @@
         h2 { font-size: clamp(16px, 4vw, 20px); font-weight: 600; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: clamp(16px, 3vw, 20px); }
         h2 .en { font-family: 'Times New Roman', serif; font-weight: normal; font-size: clamp(12px, 2vw, 14px); color: var(--text-light); margin-left: 8px; }
         
-        .toc { background: #f9f9f9; padding: clamp(16px, 3vw, 20px); margin-bottom: clamp(24px, 5vw, 40px); border: 1px solid var(--border); }
-        .toc h3 { font-size: clamp(13px, 2vw, 14px); margin-bottom: 12px; color: var(--primary); }
-        .toc ul { list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 24px; }
-        .toc li { font-size: clamp(12px, 2vw, 14px); padding: 3px 0; }
-        .toc a { color: var(--text); text-decoration: none; }
-        .toc a:hover { color: var(--link); }
-        @media (max-width: 480px) { .toc ul { grid-template-columns: 1fr; } }
+        .toc { background: #f9f9f9; padding: clamp(12px, 2vw, 16px); margin-bottom: clamp(24px, 5vw, 40px); border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .toc label { font-size: clamp(13px, 2vw, 14px); font-weight: 600; color: var(--primary); }
+        .toc select { flex: 1; max-width: 300px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text); cursor: pointer; }
+        .toc select:hover { border-color: var(--primary); }
+        .toc select:focus { outline: none; border-color: var(--link); }
         
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
         table { width: 100%; border-collapse: collapse; font-size: clamp(12px, 2vw, 14px); }
@@ -284,17 +243,18 @@
             <p class="last-updated">Last Updated: 2025.01</p>
         </header>
         
-        <nav class="toc">
-            <h3>目錄</h3>
-            <ul>
-                <li><a href="#calendar">一、活動日曆</a></li>
-                <li><a href="#official">二、官方資源</a></li>
-                <li><a href="#info">三、資訊站</a></li>
-                <li><a href="#gacha">四、卡池列表</a></li>
-                <li><a href="#songs">五、歌曲清單</a></li>
-                <li><a href="#calculator">六、推隊倍率計算器</a></li>
-            </ul>
-        </nav>
+        <div class="toc">
+            <label for="tocSelect">目錄</label>
+            <select id="tocSelect" onchange="if(this.value) location.href=this.value;">
+                <option value="">— 快速跳轉 —</option>
+                <option value="#calendar">一、活動日曆</option>
+                <option value="#official">二、官方資源</option>
+                <option value="#info">三、資訊站</option>
+                <option value="#gacha">四、卡池列表</option>
+                <option value="#songs">五、歌曲清單</option>
+                <option value="#calculator">六、推隊倍率計算器</option>
+            </select>
+        </div>
 
         <section id="calendar">
             <h2>一、活動日曆 <span class="en">Event Calendar</span></h2>
