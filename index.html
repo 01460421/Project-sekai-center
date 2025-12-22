@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Project SEKAI 資源中心</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Serif+JP:wght@400;600;700&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --text: #2c2c2c;
+            --text-light: #555;
+            --border: #d0d0d0;
+            --bg: #fafafa;
+            --link: #0066cc;
+            --nav-height: 48px;
+            
+            --fes-bg: #fff3cd; --fes-text: #664d03;
+            --limited-bg: #d1e7dd; --limited-text: #0a3622;
+            --paid-bg: #e0cffc; --paid-text: #3d2a6b;
+            --birthday-bg: #f8d7da; --birthday-text: #842029;
+            --rerun-bg: #e2e3e5; --rerun-text: #41464b;
+            --wl-bg: #cfe2ff; --wl-text: #084298;
+            --normal-bg: #f8f9fa; --normal-text: #212529;
+            --other-bg: #d3d3d4; --other-text: #333;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121212; --text: #e0e0e0; --text-light: #a0a0a0;
+                --border: #3a3a3a; --primary: #2d2d5a; --link: #7db8ff;
+                --fes-bg: #4a3f00; --fes-text: #ffd54f;
+                --limited-bg: #1b4332; --limited-text: #95d5b2;
+                --paid-bg: #3c2a5e; --paid-text: #d4b8ff;
+                --birthday-bg: #5c2a35; --birthday-text: #ffb3c1;
+                --rerun-bg: #2d2d2d; --rerun-text: #b0b0b0;
+                --wl-bg: #1a3a5c; --wl-text: #90caf9;
+                --normal-bg: #1e1e1e; --normal-text: #d0d0d0;
+                --other-bg: #2a2a2a; --other-text: #c0c0c0;
+            }
+            body { background: var(--bg); color: var(--text); }
+            h1, h2, .toc h3, .calc-section h4 { color: #c0c0ff; }
+            th { background: #2a2a4a !important; color: #e0e0e0 !important; }
+            .toc, .note { background: #1e1e1e; }
+            .tag { background: #3a3a3a; color: #b0b0b0; }
+            .calculator { background: #1a1a1a; }
+            .calc-row input, .calc-row select, .member-item input, .song-filters input, .song-filters select { background: #2a2a2a; color: #e0e0e0; border-color: #4a4a4a; }
+            .gacha-table th { background: var(--primary) !important; }
+            tr:hover { background: rgba(255,255,255,0.05) !important; }
+            .gacha-table tr:hover { filter: brightness(1.1); }
+            nav { background: #1a1a3a; }
+            header { border-bottom-color: #4a4a6a; }
+            footer { border-top-color: #3a3a3a; }
+            .calendar { background: #1a1a1a; }
+            .calendar-day { background: #252525; border-color: #3a3a3a; }
+            .calendar-day:hover { background: #333; }
+            .calendar-day.other-month { background: #1a1a1a; }
+            .calendar-header button { background: #2a2a4a; color: #e0e0e0; }
+            .calendar-header button:hover { background: #3a3a6a; }
+            .event-popup { background: #2a2a2a; border-color: #4a4a4a; }
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: 'Noto Serif TC', 'Noto Serif JP', 'Songti SC', 'SimSun', 'Times New Roman', serif;
+            background: var(--bg); color: var(--text); line-height: 1.8;
+            font-size: clamp(14px, 2.5vw, 16px);
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: clamp(16px, 4vw, 40px); padding-top: calc(var(--nav-height) + clamp(16px, 4vw, 40px)); }
+        
+        header { text-align: center; padding-bottom: clamp(20px, 4vw, 32px); border-bottom: 2px solid var(--primary); margin-bottom: clamp(24px, 5vw, 40px); }
+        h1 { font-size: clamp(20px, 5vw, 28px); font-weight: 700; letter-spacing: clamp(2px, 0.5vw, 4px); color: var(--primary); }
+        .subtitle { font-size: clamp(12px, 2vw, 14px); color: var(--text-light); letter-spacing: 1px; margin-top: 8px; }
+        .last-updated { font-size: clamp(11px, 1.8vw, 12px); color: var(--text-light); margin-top: 12px; font-style: italic; font-family: 'Times New Roman', serif; }
+        
+        nav { position: fixed; top: 0; left: 0; right: 0; background: var(--primary); height: var(--nav-height); z-index: 1000; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        nav ul { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(4px, 1vw, 8px) clamp(8px, 2vw, 20px); padding: 8px 12px; }
+        nav a { color: #fff; text-decoration: none; font-size: clamp(11px, 1.8vw, 14px); padding: 6px 8px; border-radius: 4px; transition: background 0.2s; white-space: nowrap; }
+        nav a:hover { background: rgba(255,255,255,0.15); }
+        
+        section { margin-bottom: clamp(32px, 6vw, 48px); }
+        h2 { font-size: clamp(16px, 4vw, 20px); font-weight: 600; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: clamp(16px, 3vw, 20px); }
+        h2 .en { font-family: 'Times New Roman', serif; font-weight: normal; font-size: clamp(12px, 2vw, 14px); color: var(--text-light); margin-left: 8px; }
+        
+        .toc { background: #f9f9f9; padding: clamp(16px, 3vw, 20px); margin-bottom: clamp(24px, 5vw, 40px); border: 1px solid var(--border); }
+        .toc h3 { font-size: clamp(13px, 2vw, 14px); margin-bottom: 12px; color: var(--primary); }
+        .toc ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px 20px; }
+        .toc li { font-size: clamp(12px, 2vw, 14px); padding: 3px 0; }
+        .toc a { color: var(--text); text-decoration: none; }
+        .toc a:hover { color: var(--link); }
+        
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: clamp(12px, 2vw, 14px); }
+        th, td { padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2vw, 12px); text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background: #f5f5f5; font-weight: 600; color: var(--primary); font-size: clamp(11px, 1.8vw, 13px); white-space: nowrap; }
+        
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .external::after { content: ' ↗'; font-size: 0.8em; opacity: 0.5; }
+        .description { color: var(--text-light); font-size: clamp(11px, 1.8vw, 13px); }
+        .note { background: #f5f5f5; padding: clamp(12px, 2vw, 16px); border-left: 3px solid var(--accent); margin: 16px 0; font-size: clamp(12px, 2vw, 14px); }
+        
+        footer { text-align: center; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-light); font-size: 13px; }
+        footer p { margin: 4px 0; }
+        .omega { font-family: 'Times New Roman', serif; font-style: italic; }
+        
+        /* 卡池表格 */
+        .gacha-table { min-width: 900px; }
+        .gacha-table th { background: var(--primary); color: #fff; position: sticky; top: var(--nav-height); z-index: 10; }
+        .type-fes { background: var(--fes-bg) !important; } .type-fes td { color: var(--fes-text) !important; }
+        .type-limited { background: var(--limited-bg) !important; } .type-limited td { color: var(--limited-text) !important; }
+        .type-paid { background: var(--paid-bg) !important; } .type-paid td { color: var(--paid-text) !important; }
+        .type-birthday { background: var(--birthday-bg) !important; } .type-birthday td { color: var(--birthday-text) !important; }
+        .type-rerun { background: var(--rerun-bg) !important; } .type-rerun td { color: var(--rerun-text) !important; }
+        .type-wl { background: var(--wl-bg) !important; } .type-wl td { color: var(--wl-text) !important; }
+        .type-normal { background: var(--normal-bg) !important; } .type-normal td { color: var(--normal-text) !important; }
+        .type-other { background: var(--other-bg) !important; } .type-other td { color: var(--other-text) !important; }
+        
+        .color-legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+        .color-legend span { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        
+        /* 行事曆 */
+        .calendar { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .calendar-header h3 { font-size: 20px; color: var(--primary); }
+        .calendar-header button { padding: 8px 16px; border: none; background: var(--primary); color: #fff; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .calendar-header button:hover { opacity: 0.9; }
+        .calendar-nav { display: flex; gap: 8px; }
+        
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+        .calendar-weekdays span { text-align: center; font-weight: 600; font-size: 12px; color: var(--text-light); padding: 8px 0; }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { min-height: 100px; border: 1px solid var(--border); border-radius: 4px; padding: 4px; background: #fff; position: relative; cursor: pointer; transition: background 0.2s; }
+        .calendar-day:hover { background: #f5f5f5; }
+        .calendar-day.other-month { background: #f9f9f9; opacity: 0.5; }
+        .calendar-day.today { border: 2px solid var(--primary); }
+        .calendar-day .day-number { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .calendar-day.sunday .day-number { color: #dc3545; }
+        .calendar-day.saturday .day-number { color: #0d6efd; }
+        
+        .calendar-event { font-size: 10px; padding: 2px 4px; margin: 1px 0; border-radius: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .calendar-event.start { border-left: 3px solid currentColor; }
+        .calendar-event.end { border-right: 3px solid currentColor; }
+        .calendar-event.fes { background: var(--fes-bg); color: var(--fes-text); }
+        .calendar-event.limited { background: var(--limited-bg); color: var(--limited-text); }
+        .calendar-event.paid { background: var(--paid-bg); color: var(--paid-text); }
+        .calendar-event.birthday { background: var(--birthday-bg); color: var(--birthday-text); }
+        .calendar-event.rerun { background: var(--rerun-bg); color: var(--rerun-text); }
+        .calendar-event.wl { background: var(--wl-bg); color: var(--wl-text); }
+        .calendar-event.normal { background: var(--normal-bg); color: var(--normal-text); border: 1px solid var(--border); }
+        .calendar-event.other { background: var(--other-bg); color: var(--other-text); }
+        
+        .event-popup { position: fixed; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 2000; max-width: 350px; display: none; }
+        .event-popup.show { display: block; }
+        .event-popup h4 { font-size: 14px; margin-bottom: 8px; color: var(--primary); }
+        .event-popup p { font-size: 12px; margin: 4px 0; color: var(--text); }
+        .event-popup .close-btn { position: absolute; top: 8px; right: 12px; cursor: pointer; font-size: 18px; color: var(--text-light); }
+        
+        .more-events { font-size: 10px; color: var(--link); cursor: pointer; margin-top: 2px; }
+        
+        /* 計算器 */
+        .calculator { background: #fff; border: 1px solid var(--border); padding: clamp(16px, 3vw, 24px); margin: 20px 0; }
+        .calc-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .calc-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .calc-section h4 { font-size: clamp(14px, 2.5vw, 16px); color: var(--primary); margin-bottom: 12px; }
+        .calc-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+        .calc-row label { min-width: 80px; font-size: clamp(13px, 2vw, 14px); }
+        .calc-row input { padding: 8px 12px; font-size: 14px; font-family: inherit; border: 1px solid var(--border); background: #fff; min-width: 100px; flex: 1; max-width: 150px; }
+        .member-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 12px; }
+        .member-item { text-align: center; }
+        .member-item label { display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+        .member-item input { width: 100%; padding: 8px; text-align: center; font-size: 14px; border: 1px solid var(--border); }
+        .calc-result { background: var(--primary); color: #fff; padding: 20px; text-align: center; margin-top: 20px; border-radius: 4px; }
+        .calc-result .value { font-size: clamp(28px, 6vw, 36px); font-weight: 700; font-family: 'Times New Roman', serif; }
+        .calc-result .label { font-size: 14px; opacity: 0.8; margin-bottom: 8px; }
+        .calc-result .formula { font-size: 12px; opacity: 0.7; margin-top: 12px; font-family: monospace; }
+        
+        /* 歌曲 */
+        .song-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .song-filters input, .song-filters select { padding: 8px 12px; font-size: 14px; border: 1px solid var(--border); min-width: 150px; flex: 1; max-width: 300px; }
+        .video-link { color: #ff0000; font-weight: 500; }
+        .video-link:hover { color: #cc0000; }
+        
+        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; font-size: 14px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--text); }
+        .tab-btn:hover { background: rgba(0,0,0,0.05); }
+        .tab-btn.active { border-bottom-color: var(--primary); color: var(--primary); font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+        .pagination button { padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; }
+        .pagination button:hover { background: rgba(0,0,0,0.05); }
+        .pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        @media (max-width: 768px) {
+            nav ul { gap: 2px 6px; }
+            nav a { font-size: 11px; padding: 4px 6px; }
+            .member-grid { grid-template-columns: repeat(2, 1fr); }
+            .calendar-day { min-height: 60px; }
+            .calendar-event { font-size: 8px; }
+            .calendar-weekdays span { font-size: 10px; }
+        }
+        
+        @media (max-width: 480px) {
+            :root { --nav-height: 42px; }
+            .calendar-day { min-height: 50px; padding: 2px; }
+            .calendar-day .day-number { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="#calendar">行事曆</a></li>
+            <li><a href="#official">官方</a></li>
+            <li><a href="#info">資訊</a></li>
+            <li><a href="#gacha">卡池</a></li>
+            <li><a href="#songs">歌曲</a></li>
+            <li><a href="#calculator">倍率</a></li>
+            <li><a href="#community">社群</a></li>
+            <li><a href="#wiki">Wiki</a></li>
+            <li><a href="#tools">工具</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>PROJECT SEKAI 資源中心</h1>
+            <p class="subtitle">プロジェクトセカイ カラフルステージ！ feat. 初音ミク</p>
+            <p class="last-updated">Resource Center — Last Updated: December 2025</p>
+        </header>
+
+        <div class="toc">
+            <h3>目錄 Table of Contents</h3>
+            <ul>
+                <li><a href="#calendar">一、卡池行事曆</a></li>
+                <li><a href="#official">二、官方資源</a></li>
+                <li><a href="#info">三、資訊站</a></li>
+                <li><a href="#gacha">四、卡池列表</a></li>
+                <li><a href="#songs">五、歌曲清單</a></li>
+                <li><a href="#calculator">六、推隊倍率計算器</a></li>
+                <li><a href="#community">七、討論社群</a></li>
+                <li><a href="#wiki">八、Wiki 百科</a></li>
+                <li><a href="#tools">九、實用工具</a></li>
+            </ul>
+        </div>
+
+        <main>
+            <section id="calendar">
+                <h2>一、卡池行事曆 <span class="en">Gacha Calendar</span></h2>
+                <div class="color-legend">
+                    <span style="background:var(--fes-bg);color:var(--fes-text);">FES池</span>
+                    <span style="background:var(--limited-bg);color:var(--limited-text);">普限池</span>
+                    <span style="background:var(--normal-bg);color:var(--normal-text);border:1px solid var(--border);">常駐池</span>
+                    <span style="background:var(--paid-bg);color:var(--paid-text);">有償池</span>
+                    <span style="background:var(--birthday-bg);color:var(--birthday-text);">生日池</span>
+                    <span style="background:var(--wl-bg);color:var(--wl-text);">WL池</span>
+                    <span style="background:var(--rerun-bg);color:var(--rerun-text);">復刻池</span>
+                </div>
+                
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button onclick="changeMonth(-1)">◀ 上月</button>
+                            <button onclick="goToToday()">今天</button>
+                            <button onclick="changeMonth(1)">下月 ▶</button>
+                        </div>
+                        <h3 id="calendarTitle">2026年1月</h3>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+                
+                <div class="event-popup" id="eventPopup">
+                    <span class="close-btn" onclick="closePopup()">×</span>
+                    <div id="popupContent"></div>
+                </div>
+            </section>
+
+            <section id="official">
+                <h2>二、官方資源 <span class="en">Official</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>名稱</th><th>說明</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="https://www.tw-pjsekai.com" target="_blank" class="external">官方網站</a></td><td class="description">台灣官方網站</td></tr>
+                            <tr><td><a href="https://x.com/pj_sekai" target="_blank" class="external">官方 X</a></td><td class="description">日本官方社群帳號</td></tr>
+                            <tr><td><a href="https://www.youtube.com/channel/UCdMGYXL38w6htx6Yf9YJa-w" target="_blank" class="external">官方 YouTube</a></td><td class="description">MV、生放送</td></tr>
+                            <tr><td><a href="https://karent.jp/artist/pp000899" target="_blank" class="external">KarenT</a></td><td class="description">專輯數位串流</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="info">
+                <h2>三、資訊站 <span class="en">Information</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>名稱</th><th>說明</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="https://sekai.best/" target="_blank" class="external">Sekai Viewer</a></td><td class="description">最完整資料庫</td></tr>
+                            <tr><td><a href="https://sdvx.in/prsk.html" target="_blank" class="external">譜面保管所</a></td><td class="description">譜面資料庫（日文）</td></tr>
+                            <tr><td><a href="https://pjsek.ai/" target="_blank" class="external">pjsek.ai</a></td><td class="description">解包檔案資源</td></tr>
+                            <tr><td><a href="https://space.bilibili.com/1685555774" target="_blank" class="external">B站資訊站</a></td><td class="description">影片翻譯與情報</td></tr>
+                            <tr><td><a href="https://pjsekai-gallery.vercel.app/" target="_blank" class="external">プロセカギャラリー</a></td><td class="description">角色卡面圖鑑</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="gacha">
+                <h2>四、卡池列表 <span class="en">Gacha List</span></h2>
+                <div class="song-filters">
+                    <input type="text" id="gachaSearch" placeholder="搜尋卡池名稱、角色..." oninput="filterGacha()">
+                    <select id="gachaType" onchange="filterGacha()">
+                        <option value="">全部類型</option>
+                        <option value="FES">FES池</option>
+                        <option value="普通限定">普通限定池</option>
+                        <option value="常駐">常駐池</option>
+                        <option value="有償">有償池</option>
+                        <option value="生日">生日池</option>
+                        <option value="復刻">復刻池</option>
+                        <option value="World Link">World Link</option>
+                    </select>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table class="gacha-table">
+                        <thead>
+                            <tr><th>開始</th><th>結束</th><th>編號</th><th>卡池名稱</th><th>類型</th><th>PU角色</th><th>備註</th></tr>
+                        </thead>
+                        <tbody id="gachaBody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="gachaPagination"></div>
+            </section>
+
+            <section id="songs">
+                <h2>五、歌曲清單 <span class="en">Song List</span></h2>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('producers')">V+ P主列表</button>
+                    <button class="tab-btn" onclick="switchTab('pjsekai')">世界計畫收錄曲</button>
+                </div>
+                
+                <div id="producers" class="tab-content active">
+                    <div class="song-filters">
+                        <input type="text" id="producerSearch" placeholder="搜尋 P主名稱..." oninput="filterProducers()">
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>P主名稱</th><th>代表作</th><th>收錄</th><th>影片</th></tr></thead>
+                            <tbody id="producerBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="pjsekai" class="tab-content">
+                    <div class="song-filters">
+                        <input type="text" id="songSearch" placeholder="搜尋歌曲名稱..." oninput="filterSongs()">
+                        <select id="songUnit" onchange="filterSongs()">
+                            <option value="">全部團體</option>
+                            <option value="VS">VIRTUAL SINGER</option>
+                            <option value="LN">Leo/need</option>
+                            <option value="MMJ">MORE MORE JUMP!</option>
+                            <option value="VBS">Vivid BAD SQUAD</option>
+                            <option value="WS">Wonderlands×Showtime</option>
+                            <option value="25">25時、ナイトコードで。</option>
+                        </select>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>歌曲名稱</th><th>作曲/P主</th><th>團體</th><th>影片</th></tr></thead>
+                            <tbody id="songBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="calculator">
+                <h2>六、推隊倍率計算器 <span class="en">Team Multiplier</span></h2>
+                <div class="note">公式：<code>[隊長% + 100% + (隊員%總和 ÷ 5)] ÷ 100%</code></div>
+                
+                <div class="calculator">
+                    <div class="calc-section">
+                        <h4>隊長技能</h4>
+                        <div class="calc-row">
+                            <label>隊長 %：</label>
+                            <input type="number" id="leaderPercent" value="115" min="0" max="200" oninput="calculateMultiplier()">
+                        </div>
+                    </div>
+                    <div class="calc-section">
+                        <h4>隊員技能</h4>
+                        <div class="member-grid">
+                            <div class="member-item"><label>隊員 1</label><input type="number" id="member1" value="110" oninput="calculateMultiplier()"></div>
+                            <div class="member-item"><label>隊員 2</label><input type="number" id="member2" value="110" oninput="calculateMultiplier()"></div>
+                            <div class="member-item"><label>隊員 3</label><input type="number" id="member3" value="110" oninput="calculateMultiplier()"></div>
+                            <div class="member-item"><label>隊員 4</label><input type="number" id="member4" value="110" oninput="calculateMultiplier()"></div>
+                        </div>
+                    </div>
+                    <div class="calc-result">
+                        <div class="label">推隊倍率</div>
+                        <div class="value" id="resultValue">×3.03</div>
+                        <div class="formula" id="resultFormula">[115+100+(110+110+110+110)÷5]÷100=3.03</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="community">
+                <h2>七、討論社群 <span class="en">Community</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>平台</th><th>名稱</th><th>說明</th></tr></thead>
+                        <tbody>
+                            <tr><td>PTT</td><td><a href="https://www.ptt.cc/bbs/ProjectSekai/index.html" target="_blank" class="external">ProjectSekai</a></td><td class="description">批踢踢專板</td></tr>
+                            <tr><td>巴哈姆特</td><td><a href="https://forum.gamer.com.tw/B.php?bsn=36276" target="_blank" class="external">專板</a></td><td class="description">哈啦板</td></tr>
+                            <tr><td>Reddit</td><td><a href="https://www.reddit.com/r/ProjectSekai/" target="_blank" class="external">r/ProjectSekai</a></td><td class="description">國際社群</td></tr>
+                            <tr><td>Discord</td><td><a href="https://discord.gg/pjsekai" target="_blank" class="external">世界計畫</a></td><td class="description">中文伺服器</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="wiki">
+                <h2>八、Wiki 百科 <span class="en">Wikis</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>名稱</th><th>語言</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="https://pjsekai.com/" target="_blank" class="external">プロセカ攻略 wiki</a></td><td>日文</td></tr>
+                            <tr><td><a href="https://gamerch.com/pjsekai/" target="_blank" class="external">Gamerch Wiki</a></td><td>日文</td></tr>
+                            <tr><td><a href="https://projectsekai.fandom.com/" target="_blank" class="external">Fandom Wiki</a></td><td>英文</td></tr>
+                            <tr><td><a href="https://www.sekaipedia.org/" target="_blank" class="external">Sekaipedia</a></td><td>英文</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="tools">
+                <h2>九、實用工具 <span class="en">Tools</span></h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>工具</th><th>說明</th></tr></thead>
+                        <tbody>
+                            <tr><td><a href="https://sekai.best/gacha" target="_blank" class="external">抽卡模擬器</a></td><td class="description">模擬抽卡</td></tr>
+                            <tr><td><a href="https://sekai.best/eventcalc" target="_blank" class="external">活動計算器</a></td><td class="description">PT計算</td></tr>
+                            <tr><td><a href="https://sekai.best/music" target="_blank" class="external">譜面預覽</a></td><td class="description">歌曲譜面</td></tr>
+                            <tr><td><a href="https://sekai.best/card" target="_blank" class="external">卡牌資料庫</a></td><td class="description">卡牌資訊</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Project SEKAI 資源中心</p>
+            <p>本站僅為資源整理，不隸屬於 SEGA 或 Colorful Palette</p>
+            <p style="margin-top: 16px;"><span class="omega">made from Ω</span></p>
+        </footer>
+    </div>
+
+    <script>
+        const gachaData = [
+            {start:"2025/12/31",end:"2026/1/4",id:"643",name:"[2026新春]絢爛慶典招募",type:"FES池",chars:"遙, 杏, 彰人, 愛莉, KAITO",note:"4.25 BFES"},
+            {start:"2025/12/31",end:"2026/1/11",id:"644",name:"[2026新春]高級禮物招募",type:"有償池",chars:"",note:"3000有償"},
+            {start:"2025/12/31",end:"2026/1/31",id:"647",name:"[2026新春]新年免費招募",type:"其他",chars:"",note:"免費10抽x7天"},
+            {start:"2026/1/4",end:"2026/1/11",id:"648",name:"透亮閃耀的回憶",type:"普通限定池",chars:"彰人, 愛莉, KAITO",note:""},
+            {start:"2026/1/7",end:"2026/1/14",id:"650",name:"[日野森志步]生日池2026",type:"生日池",chars:"志步",note:""},
+            {start:"2026/1/11",end:"2026/1/21",id:"654",name:"Unknown tone",type:"常駐池",chars:"冬彌, 心羽, 連",note:""},
+            {start:"2026/1/14",end:"2026/1/23",id:"655",name:"[復刻]新春・盛開的迷人花朵",type:"復刻限定池",chars:"瑞希, 志步, MEIKO",note:""},
+            {start:"2026/1/14",end:"2026/1/23",id:"656",name:"[復刻]妖怪蔓延至京城",type:"復刻限定池",chars:"類, 雫, 司",note:""},
+            {start:"2026/1/21",end:"2026/1/31",id:"662",name:"Doll dream",type:"常駐池",chars:"奏, 咲希, 鈴",note:""},
+            {start:"2026/1/27",end:"2026/2/2",id:"664",name:"[朝比奈真冬]生日池2026",type:"生日池",chars:"真冬",note:""},
+            {start:"2026/1/30",end:"2026/2/5",id:"668",name:"[巡音流歌]生日池2026",type:"生日池",chars:"流歌",note:""},
+            {start:"2026/1/31",end:"2026/2/10",id:"672",name:"Night sweet meal",type:"普通限定池",chars:"雫, 真冬, 連",note:""},
+            {start:"2026/2/10",end:"2026/2/16",id:"674",name:"[宵崎奏]生日池2026",type:"生日池",chars:"奏",note:""},
+            {start:"2026/2/10",end:"2026/2/20",id:"678",name:"Stay determined",type:"常駐池",chars:"遙, 實乃里, 流歌",note:""},
+            {start:"2026/2/12",end:"2026/2/21",id:"679",name:"[復刻]超上鏡♡情人節",type:"復刻限定池",chars:"心羽, 遙, 繪名",note:""},
+            {start:"2026/2/17",end:"2026/2/23",id:"681",name:"[KAITO]生日池2026",type:"生日池",chars:"KAITO",note:""},
+            {start:"2026/2/20",end:"2026/2/28",id:"687",name:"魔女編織的童話",type:"常駐池",chars:"穗波, 寧寧, MEIKO",note:""},
+            {start:"2026/2/28",end:"2026/3/10",id:"689",name:"無盡的守護之戰",type:"普通限定池",chars:"咲希, 笑夢, 鈴",note:""},
+            {start:"2026/3/2",end:"2026/3/8",id:"690",name:"[小豆澤心羽]生日池2026",type:"生日池",chars:"心羽",note:""},
+            {start:"2026/3/10",end:"2026/3/20",id:"696",name:"Let's play with cats",type:"常駐池",chars:"司, 愛莉, 瑞希",note:""},
+            {start:"2026/3/12",end:"2026/3/21",id:"697",name:"[復刻]在戰爭結束後等待著的是",type:"復刻限定池",chars:"奏, 一歌, 真冬",note:""},
+            {start:"2026/3/19",end:"2026/3/25",id:"699",name:"[桃井愛莉]生日池2026",type:"生日池",chars:"愛莉",note:""},
+            {start:"2026/3/20",end:"2026/3/30",id:"703",name:"Obscurity Parade",type:"常駐池",chars:"奏, 真冬, 繪名",note:""},
+            {start:"2026/3/30",end:"2026/4/4",id:"704",name:"[4.5週年]絢爛慶典招募",type:"FES池",chars:"穗波, 流歌, 志步, 一歌, 初音",note:"4.5 BFES"},
+            {start:"2026/4/4",end:"2026/4/8",id:"711",name:"Living With Music",type:"普通限定池",chars:"志步, 一歌, 初音",note:""},
+            {start:"2026/4/1",end:"2026/4/22",id:"712",name:"[VBS]World Link支援招募",type:"World Link支援池",chars:"心羽, 杏, 彰人, 冬彌",note:"WL1"},
+            {start:"2026/4/8",end:"2026/4/22",id:"713",name:"Glance at Same World",type:"World Link池",chars:"心羽, 杏, 彰人, 冬彌",note:""},
+            {start:"2026/4/14",end:"2026/4/20",id:"716",name:"[花里實乃理]生日池2026",type:"生日池",chars:"實乃理",note:""},
+            {start:"2026/4/22",end:"2026/4/30",id:"720",name:"Blooming Light",type:"常駐池",chars:"笑夢, 寧寧, KAITO",note:""},
+            {start:"2026/4/30",end:"2026/5/6",id:"721",name:"[東雲繪名]生日池2026",type:"生日池",chars:"繪名",note:""},
+            {start:"2026/4/30",end:"2026/5/9",id:"725",name:"Papilio Vinculatus",type:"普通限定池",chars:"真冬, 奏, 連",note:""},
+            {start:"2026/5/2",end:"2026/5/23",id:"726",name:"[WS]World Link支援招募",type:"World Link支援池",chars:"司, 笑夢, 寧寧, 類",note:"WL1"},
+            {start:"2026/5/8",end:"2026/5/15",id:"728",name:"[天馬咲希]生日池2026",type:"生日池",chars:"咲希",note:""},
+            {start:"2026/5/9",end:"2026/5/23",id:"733",name:"Dream a Wonder Dream",type:"World Link池",chars:"司, 笑夢, 寧寧, 類",note:""},
+            {start:"2026/5/16",end:"2026/5/23",id:"736",name:"[天馬司]生日池2026",type:"生日池",chars:"司",note:""},
+            {start:"2026/5/23",end:"2026/5/31",id:"740",name:"Starry-eyed Princess",type:"常駐池",chars:"愛莉, 實乃里, MEIKO",note:""},
+            {start:"2026/5/24",end:"2026/5/31",id:"741",name:"[青柳冬彌]生日池2026",type:"生日池",chars:"冬彌",note:""},
+            {start:"2026/5/31",end:"2026/6/9",id:"746",name:"光芒差す黎明",type:"普通限定池",chars:"心羽, 冬彌, 初音",note:""},
+            {start:"2026/6/2",end:"2026/6/23",id:"747",name:"[25時]World Link支援招募",type:"World Link支援池",chars:"奏, 真冬, 繪名, 瑞希",note:"WL1"},
+            {start:"2026/6/9",end:"2026/6/23",id:"749",name:"Night's Treasure",type:"World Link池",chars:"奏, 真冬, 繪名, 瑞希",note:""},
+            {start:"2026/6/16",end:"2026/7/7",id:"752",name:"[LN]World Link支援招募",type:"World Link支援池",chars:"一歌, 咲希, 穗波, 志步",note:"WL1"},
+            {start:"2026/6/23",end:"2026/6/30",id:"753",name:"[神代類]生日池2026",type:"生日池",chars:"類",note:""},
+            {start:"2026/6/23",end:"2026/7/7",id:"757",name:"Another sparkle Stars",type:"World Link池",chars:"一歌, 咲希, 穗波, 志步",note:""},
+            {start:"2026/7/7",end:"2026/7/11",id:"762",name:"絢爛慶典招募",type:"FES池",chars:"繪名, KAITO, 類, 司, 寧寧",note:"4.75 BFES"},
+            {start:"2026/7/11",end:"2026/7/15",id:"763",name:"Strange Workshop",type:"普通限定池",chars:"類, 司, 寧寧",note:""},
+            {start:"2026/7/15",end:"2026/7/23",id:"766",name:"Seeking my way",type:"常駐池",chars:"穗波, 一歌, 鈴",note:""},
+            {start:"2026/7/19",end:"2026/7/26",id:"767",name:"[草薙寧寧]生日池2026",type:"生日池",chars:"寧寧",note:""},
+            {start:"2026/7/23",end:"2026/7/31",id:"771",name:"Open up my feelings!",type:"常駐池",chars:"實乃理, 遙, 雫",note:""},
+            {start:"2026/7/25",end:"2026/8/1",id:"772",name:"[白石杏]生日2026",type:"生日池",chars:"杏",note:""},
+            {start:"2026/7/31",end:"2026/8/8",id:"778",name:"Those who dare",type:"普通限定池",chars:"杏, 冬彌, 流歌",note:""},
+            {start:"2026/8/1",end:"2026/8/22",id:"779",name:"[MMJ]World Link支援招募",type:"World Link支援池",chars:"實乃理, 遙, 愛莉, 雫",note:"WL1"},
+            {start:"2026/8/8",end:"2026/8/22",id:"782",name:"Empty Teatime",type:"World Link池",chars:"實乃理, 遙, 愛莉, 雫",note:""},
+        ];
+        
+        const producerData = [
+            {name:"DECO*27",works:"ゴーストルール、ヴァンパイア",inPjsk:"✓",video:"https://www.youtube.com/watch?v=eBvWLrgT02s"},
+            {name:"Ayase",works:"夜に駆ける、群青",inPjsk:"✓",video:"https://www.youtube.com/watch?v=x8VYWazR5mE"},
+            {name:"Kanaria",works:"KING、酔いどれ知らず",inPjsk:"✓",video:"https://www.youtube.com/watch?v=CZ7TgRE0HGY"},
+            {name:"wowaka",works:"ローリンガール、ワールズエンド・ダンスホール",inPjsk:"✓",video:"https://www.youtube.com/watch?v=vnw8zURAxkU"},
+            {name:"ryo (supercell)",works:"メルト、ワールドイズマイン",inPjsk:"✓",video:"https://www.youtube.com/watch?v=rgSh1k8Fg8A"},
+            {name:"kemu",works:"六兆年と一夜物語",inPjsk:"✓",video:"https://www.youtube.com/watch?v=GALMKfVz3qQ"},
+            {name:"cosMo@暴走P",works:"初音ミクの消失",inPjsk:"✓",video:"https://www.youtube.com/watch?v=8IEuMvRwh1Q"},
+            {name:"黒うさP",works:"千本桜",inPjsk:"✓",video:"https://www.youtube.com/watch?v=K_xTet06SUo"},
+            {name:"Neru",works:"ロストワンの号哭",inPjsk:"✓",video:"https://www.youtube.com/watch?v=DLwFdjT1NJU"},
+            {name:"ピノキオピー",works:"すろぉもぉしょん、神っぽいな",inPjsk:"✓",video:"https://www.youtube.com/watch?v=8F7Gqk9S0Z0"},
+            {name:"Orangestar",works:"アスノヨゾラ哨戒班、快晴",inPjsk:"✓",video:"https://www.youtube.com/watch?v=mhF4b-YYojE"},
+            {name:"みきとP",works:"ロキ",inPjsk:"✓",video:"https://www.youtube.com/watch?v=-TA_mp8oNEk"},
+            {name:"Giga",works:"劣等上等",inPjsk:"✓",video:"https://www.youtube.com/watch?v=y_-5FQZL5F8"},
+            {name:"すりぃ",works:"テレキャスタービーボーイ",inPjsk:"✓",video:"https://www.youtube.com/watch?v=VOpIKSN6kgU"},
+            {name:"ツミキ",works:"フォニイ",inPjsk:"✓",video:"https://www.youtube.com/watch?v=jM4Wv5f2j7Q"},
+            {name:"ナユタン星人",works:"エイリアンエイリアン",inPjsk:"✓",video:"https://www.youtube.com/watch?v=gN2ZPsJLv-Y"},
+            {name:"バルーン",works:"シャルル",inPjsk:"✓",video:"https://www.youtube.com/watch?v=TA5OFS_xX0c"},
+        ];
+        
+        const songData = [
+            {name:"Tell Your World",composer:"kz (livetune)",unit:"VS",video:"https://www.youtube.com/watch?v=PqJNc9KVIZE"},
+            {name:"千本桜",composer:"黒うさP",unit:"VS",video:"https://www.youtube.com/watch?v=K_xTet06SUo"},
+            {name:"六兆年と一夜物語",composer:"kemu",unit:"25",video:"https://www.youtube.com/watch?v=L1VE1hmvGiY"},
+            {name:"ロストワンの号哭",composer:"Neru",unit:"LN",video:"https://www.youtube.com/watch?v=DLwFdjT1NJU"},
+            {name:"メルト",composer:"ryo",unit:"LN",video:"https://www.youtube.com/watch?v=rgSh1k8Fg8A"},
+            {name:"ゴーストルール",composer:"DECO*27",unit:"25",video:"https://www.youtube.com/watch?v=eBvWLrgT02s"},
+            {name:"ヴァンパイア",composer:"DECO*27",unit:"VBS",video:"https://www.youtube.com/watch?v=5XHc8aSEjEg"},
+            {name:"KING",composer:"Kanaria",unit:"WS",video:"https://www.youtube.com/watch?v=CZ7TgRE0HGY"},
+            {name:"フォニイ",composer:"ツミキ",unit:"25",video:"https://www.youtube.com/watch?v=jM4Wv5f2j7Q"},
+            {name:"ロキ",composer:"みきとP",unit:"VBS",video:"https://www.youtube.com/watch?v=-TA_mp8oNEk"},
+            {name:"劣等上等",composer:"Giga",unit:"VBS",video:"https://www.youtube.com/watch?v=y_-5FQZL5F8"},
+            {name:"エイリアンエイリアン",composer:"ナユタン星人",unit:"MMJ",video:"https://www.youtube.com/watch?v=gN2ZPsJLv-Y"},
+            {name:"初音ミクの消失",composer:"cosMo@暴走P",unit:"VS",video:"https://www.youtube.com/watch?v=8IEuMvRwh1Q"},
+            {name:"神っぽいな",composer:"ピノキオピー",unit:"WS",video:"https://www.youtube.com/watch?v=EHBFKhLUVig"},
+            {name:"シャルル",composer:"バルーン",unit:"25",video:"https://www.youtube.com/watch?v=TA5OFS_xX0c"},
+            {name:"ワールドイズマイン",composer:"ryo",unit:"VS",video:"https://www.youtube.com/watch?v=DTXO7KGHtjI"},
+        ];
+
+        let currentYear = 2026, currentMonth = 0;
+        
+        function parseDate(str) { const [y,m,d] = str.split('/').map(Number); return new Date(y,m-1,d); }
+        function getEventClass(type) {
+            if(type.includes('FES')) return 'fes';
+            if(type.includes('普通限定')) return 'limited';
+            if(type.includes('常駐')) return 'normal';
+            if(type.includes('有償')) return 'paid';
+            if(type.includes('生日')) return 'birthday';
+            if(type.includes('復刻')) return 'rerun';
+            if(type.includes('World Link')) return 'wl';
+            return 'other';
+        }
+        
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            document.getElementById('calendarTitle').textContent = `${currentYear}年${currentMonth+1}月`;
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth+1, 0);
+            const startDay = firstDay.getDay(), daysInMonth = lastDay.getDate();
+            const today = new Date(); today.setHours(0,0,0,0);
+            let html = '';
+            
+            const prevMonth = new Date(currentYear, currentMonth, 0);
+            for(let i = startDay-1; i >= 0; i--) html += `<div class="calendar-day other-month"><div class="day-number">${prevMonth.getDate()-i}</div></div>`;
+            
+            for(let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const dow = date.getDay(), isToday = date.getTime() === today.getTime();
+                let cls = 'calendar-day' + (isToday?' today':'') + (dow===0?' sunday':'') + (dow===6?' saturday':'');
+                
+                const events = gachaData.filter(g => { const s=parseDate(g.start),e=parseDate(g.end); return date>=s && date<=e; });
+                let evHtml = '';
+                events.slice(0,3).forEach(e => {
+                    const s=parseDate(e.start), ed=parseDate(e.end);
+                    let c = getEventClass(e.type) + (date.getTime()===s.getTime()?' start':'') + (date.getTime()===ed.getTime()?' end':'');
+                    evHtml += `<div class="calendar-event ${c}" onclick="showPopup(event,${gachaData.indexOf(e)})" title="${e.name}">${e.name.length>10?e.name.slice(0,10)+'...':e.name}</div>`;
+                });
+                if(events.length > 3) evHtml += `<div class="more-events" onclick="showDayPopup(event,${currentYear},${currentMonth},${day})">+${events.length-3} 更多</div>`;
+                
+                html += `<div class="${cls}"><div class="day-number">${day}</div>${evHtml}</div>`;
+            }
+            
+            const totalCells = Math.ceil((startDay + daysInMonth)/7)*7;
+            for(let i = 1; i <= totalCells - startDay - daysInMonth; i++) html += `<div class="calendar-day other-month"><div class="day-number">${i}</div></div>`;
+            grid.innerHTML = html;
+        }
+        
+        function changeMonth(d) { currentMonth += d; if(currentMonth<0){currentMonth=11;currentYear--;} if(currentMonth>11){currentMonth=0;currentYear++;} renderCalendar(); }
+        function goToToday() { const t=new Date(); currentYear=t.getFullYear(); currentMonth=t.getMonth(); renderCalendar(); }
+        
+        function showPopup(e, i) {
+            e.stopPropagation();
+            const g = gachaData[i], popup = document.getElementById('eventPopup');
+            document.getElementById('popupContent').innerHTML = `<h4>${g.name}</h4><p><b>類型：</b>${g.type}</p><p><b>期間：</b>${g.start} ~ ${g.end}</p>${g.chars?`<p><b>PU：</b>${g.chars}</p>`:''}${g.note?`<p><b>備註：</b>${g.note}</p>`:''}`;
+            popup.style.left = Math.min(e.pageX, innerWidth-370)+'px';
+            popup.style.top = (e.pageY+10)+'px';
+            popup.classList.add('show');
+        }
+        
+        function showDayPopup(e, y, m, d) {
+            e.stopPropagation();
+            const date = new Date(y,m,d), events = gachaData.filter(g => { const s=parseDate(g.start),ed=parseDate(g.end); return date>=s && date<=ed; });
+            const popup = document.getElementById('eventPopup');
+            let html = `<h4>${y}/${m+1}/${d} 的卡池</h4>`;
+            events.forEach(g => html += `<p style="margin:6px 0;padding:4px;background:var(--${getEventClass(g.type)}-bg);border-radius:4px;"><b>${g.name}</b><br><small>${g.start}~${g.end}</small></p>`);
+            document.getElementById('popupContent').innerHTML = html;
+            popup.style.left = Math.min(e.pageX, innerWidth-370)+'px';
+            popup.style.top = (e.pageY+10)+'px';
+            popup.classList.add('show');
+        }
+        
+        function closePopup() { document.getElementById('eventPopup').classList.remove('show'); }
+        document.addEventListener('click', e => { if(!e.target.closest('.event-popup,.calendar-event,.more-events')) closePopup(); });
+
+        let gachaPage = 1; const gachaPerPage = 15; let filteredGacha = [...gachaData];
+        function getTypeClass(t) { if(t.includes('FES'))return'type-fes'; if(t.includes('普通限定'))return'type-limited'; if(t.includes('常駐'))return'type-normal'; if(t.includes('有償'))return'type-paid'; if(t.includes('生日'))return'type-birthday'; if(t.includes('復刻'))return'type-rerun'; if(t.includes('World Link'))return'type-wl'; return'type-other'; }
+        function filterGacha() { const s=document.getElementById('gachaSearch').value.toLowerCase(), t=document.getElementById('gachaType').value; filteredGacha=gachaData.filter(g=>(!s||g.name.toLowerCase().includes(s)||g.chars.toLowerCase().includes(s))&&(!t||g.type.includes(t))); gachaPage=1; renderGacha(); }
+        function renderGacha() { const st=(gachaPage-1)*gachaPerPage, pg=filteredGacha.slice(st,st+gachaPerPage); document.getElementById('gachaBody').innerHTML=pg.map(g=>`<tr class="${getTypeClass(g.type)}"><td>${g.start}</td><td>${g.end}</td><td>${g.id}</td><td><b>${g.name}</b></td><td>${g.type}</td><td>${g.chars}</td><td>${g.note}</td></tr>`).join(''); renderPagination(); }
+        function renderPagination() { const tp=Math.ceil(filteredGacha.length/gachaPerPage), pg=document.getElementById('gachaPagination'); if(tp<=1){pg.innerHTML='';return;} let h=`<button onclick="gachaPage=1;renderGacha()" ${gachaPage===1?'disabled':''}>«</button><button onclick="gachaPage--;renderGacha()" ${gachaPage===1?'disabled':''}>‹</button>`; for(let i=1;i<=tp;i++)if(i===1||i===tp||(i>=gachaPage-2&&i<=gachaPage+2))h+=`<button onclick="gachaPage=${i};renderGacha()" class="${i===gachaPage?'active':''}">${i}</button>`; else if(i===gachaPage-3||i===gachaPage+3)h+=`<button disabled>...</button>`; h+=`<button onclick="gachaPage++;renderGacha()" ${gachaPage===tp?'disabled':''}>›</button><button onclick="gachaPage=${tp};renderGacha()" ${gachaPage===tp?'disabled':''}>»</button>`; pg.innerHTML=h; }
+
+        function filterProducers() { const s=document.getElementById('producerSearch').value.toLowerCase(); document.getElementById('producerBody').innerHTML=producerData.filter(p=>p.name.toLowerCase().includes(s)||p.works.toLowerCase().includes(s)).map(p=>`<tr><td><b>${p.name}</b></td><td>${p.works}</td><td style="text-align:center;color:#2ecc71;font-weight:bold;">${p.inPjsk}</td><td><a href="${p.video}" target="_blank" class="video-link">▶ YouTube</a></td></tr>`).join(''); }
+        function filterSongs() { const s=document.getElementById('songSearch').value.toLowerCase(), u=document.getElementById('songUnit').value; document.getElementById('songBody').innerHTML=songData.filter(x=>(!s||x.name.toLowerCase().includes(s)||x.composer.toLowerCase().includes(s))&&(!u||x.unit===u)).map(x=>`<tr><td><b>${x.name}</b></td><td>${x.composer}</td><td>${x.unit}</td><td><a href="${x.video}" target="_blank" class="video-link">▶ YouTube</a></td></tr>`).join(''); }
+        function switchTab(id) { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); event.target.classList.add('active'); document.getElementById(id).classList.add('active'); }
+        function calculateMultiplier() { const l=parseFloat(document.getElementById('leaderPercent').value)||0, m1=parseFloat(document.getElementById('member1').value)||0, m2=parseFloat(document.getElementById('member2').value)||0, m3=parseFloat(document.getElementById('member3').value)||0, m4=parseFloat(document.getElementById('member4').value)||0, r=(l+100+(m1+m2+m3+m4)/5)/100; document.getElementById('resultValue').textContent='×'+r.toFixed(2); document.getElementById('resultFormula').textContent=`[${l}+100+(${m1}+${m2}+${m3}+${m4})÷5]÷100=${r.toFixed(2)}`; }
+
+        document.querySelectorAll('nav a[href^="#"]').forEach(a=>a.addEventListener('click', e=>{e.preventDefault();const t=document.querySelector(a.getAttribute('href'));if(t)window.scrollTo({top:t.offsetTop-60,behavior:'smooth'});}));
+        document.addEventListener('DOMContentLoaded', ()=>{ renderCalendar(); renderGacha(); filterProducers(); filterSongs(); calculateMultiplier(); });
+    </script>
+</body>
+</html>
