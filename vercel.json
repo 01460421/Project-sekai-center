@@ -4,6 +4,8 @@
     { "src": "*.html", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/ep-calculator.html", "dest": "/ep-calculator.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
+
