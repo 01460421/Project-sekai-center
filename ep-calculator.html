@@ -17,7 +17,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:‘Noto Serif TC’,‘Noto Serif JP’,‘Songti SC’,‘SimSun’,‘Times New Roman’,serif;background:var(–bg);color:var(–text);line-height:1.8;font-size:15px;}
+body{font-family:‘Songti TC’,‘Songti SC’,‘STSongti-TC-Regular’,‘PMingLiU’,‘新細明體’,‘SimSun’,‘Noto Serif TC’,‘Noto Serif JP’,‘Times New Roman’,serif;background:var(–bg);color:var(–text);line-height:1.8;font-size:15px;}
 .container{max-width:1100px;margin:0 auto;padding:28px 20px 60px;}
 
 header{text-align:center;padding-bottom:24px;margin-bottom:28px;border-bottom:2px solid var(–primary);}
@@ -176,7 +176,7 @@ footer a:hover{text-decoration:underline;}
       <div class="dc-row" id="dr"></div>
     </div>
 
-```
+
 <div class="stitle">演出設定</div>
 <div class="card">
   <div class="fg2">
@@ -238,32 +238,14 @@ footer a:hover{text-decoration:underline;}
     </tr></thead><tbody></tbody></table></div>
   </div>
 </div>
-```
 
-  </div>
-</div>
 
-<div style="margin-top:20px;">
-  <div class="stitle">附錄、計算公式</div>
-  <div class="card fc">
-    <p><strong>EP 公式（v3.0.0+）：</strong><code>EP = ⌊ baseEP × (1 + bonus/100) × energyMult ⌋</code></p>
-    <p><strong>baseEP：</strong>個人 ≈ <code>⌊score×0.00035+50⌋</code>　協力/嘉年華 ≈ <code>⌊score×0.00035+55⌋</code></p>
-    <p><strong>體力倍率：</strong>0×→1, 1×→5, 2×→10, 3×→15, 5×→25, 10×→50</p>
-    <p style="margin-top:6px;font-size:.88em;color:var(--text-muted);">
-      ※ 社群估算工具，與遊戲實際數值可能有偏差。資料來源：
-      <a href="https://github.com/Sekai-World/sekai-master-db-diff" target="_blank">Sekai World DB</a>、
-      <a href="https://github.com/xfl03/sekai-calculator" target="_blank">xfl03/sekai-calculator</a>
-    </p>
   </div>
 </div>
 
   </div>
 
   <footer>
-    Project SEKAI 資源中心 · 活動分數計算器<br>
-    <a href="https://github.com/Sekai-World/sekai-master-db-diff" target="_blank">Sekai World DB</a> ·
-    <a href="https://github.com/xfl03/sekai-calculator" target="_blank">sekai-calculator</a> ·
-    <a href="https://sekai.best/event_calc" target="_blank">Sekai Viewer</a><br>
     非官方社群工具，與 SEGA / Colorful Palette 無關
   </footer>
 </div>
@@ -328,8 +310,8 @@ function render(){
   for(const s of L){
     const isSel=sel&&sel.id===s.id;
     const ds=s._d.slice().sort((a,b)=>DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty));
-    const pills=ds.map(x=>`<span class="dp dp-${x.musicDifficulty}">${(DN[x.musicDifficulty]||'?')} ${x.playLevel}</span>`).join('');
-    h.push(`<tr data-id="${s.id}" class="${isSel?'sel':''}"><td>${s.id}</td><td>${esc(s.title)}</td><td>${esc(s.composer||'')}</td><td>${pills}</td></tr>`);
+    const pills=ds.map(x=>`<span class="dp dp-">${(DN[x.musicDifficulty]||'?')} </span>`).join('');
+    h.push(`<tr data-id="" class="''"><td></td><td></td><td></td><td></td></tr>`);
   }
   tb.innerHTML=h.join('');
 }
@@ -351,7 +333,7 @@ function pickSong(id){
   $('si').textContent=m.join(' · ');
   const ds=sel._d.slice().sort((a,b)=>DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty));
   $('dr').innerHTML=ds.map(x=>
-    `<div class="dc dc-${x.musicDifficulty}" data-f="${x.musicDifficulty}" data-n="${x.noteCount}" data-l="${x.playLevel}" onclick="pickD(this)">${(DN[x.musicDifficulty]||'?').toUpperCase()} Lv.${x.playLevel} (${x.noteCount})</div>`
+    `<div class="dc dc-" data-f="" data-n="" data-l="" onclick="pickD(this)">${(DN[x.musicDifficulty]||'?').toUpperCase()} Lv. ()</div>`
   ).join('');
   $('sc').classList.add('show');
   selD=null;
@@ -405,16 +387,16 @@ function calc(){
   const tn=pl*en;
 
   $('rg').innerHTML=`
-    <div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">${ep.toLocaleString()}</div><div class="ru">Event Points</div></div>
-    <div class="ri"><div class="rl">需打次數</div><div class="rv">${isFinite(pl)?pl.toLocaleString():'∞'}</div><div class="ru">剩餘 ${rm.toLocaleString()} EP</div></div>
-    <div class="ri"><div class="rl">預估時間</div><div class="rv">${fT(tm)}</div><div class="ru">~${dur}秒/輪</div></div>
-    <div class="ri"><div class="rl">消耗體力</div><div class="rv">${isFinite(tn)?tn.toLocaleString():'∞'}</div><div class="ru">≈ ${isFinite(tn)?Math.ceil(tn/10):'∞'} 罐</div></div>`;
+    <div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv"></div><div class="ru">Event Points</div></div>
+    <div class="ri"><div class="rl">需打次數</div><div class="rv">'∞'</div><div class="ru">剩餘  EP</div></div>
+    <div class="ri"><div class="rl">預估時間</div><div class="rv"></div><div class="ru">~秒/輪</div></div>
+    <div class="ri"><div class="rl">消耗體力</div><div class="rv">'∞'</div><div class="ru">≈ '∞' 罐</div></div>`;
 
   const el=[0,1,2,3,5,10];
   document.querySelector('#et tbody').innerHTML=el.map(e=>{
     const ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';
     const p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;
-    return`<tr class="${e===en?'hr':''}"><td>${e}×</td><td>${EM[e]}×</td><td>${ep2.toLocaleString()}</td><td>${ppe}</td><td>${isFinite(p)?p.toLocaleString():'∞'}</td><td>${fT(t)}</td></tr>`;
+    return`<tr class="''"><td>×</td><td>×</td><td></td><td></td><td>'∞'</td><td></td></tr>`;
   }).join('');
 
   // Song rank
@@ -424,7 +406,7 @@ function calc(){
     return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60))};
   }).filter(Boolean).sort((a,b)=>b.epm-a.epm).slice(0,15);
   document.querySelector('#rt tbody').innerHTML=rk.map((r,i)=>
-    `<tr><td>${i+1}</td><td>${esc(r.t)} <span style="color:var(--text-muted);font-size:.85em">Lv.${r.l}</span></td><td>${r.s}s</td><td>${r.ep.toLocaleString()}</td><td style="font-weight:600">${r.epm.toLocaleString()}</td></tr>`
+    `<tr><td></td><td> <span style="color:var(--text-muted);font-size:.85em">Lv.</span></td><td>s</td><td></td><td style="font-weight:600"></td></tr>`
   ).join('');
   $('rc').style.display='block';
 
