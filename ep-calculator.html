@@ -3,12 +3,12 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EP計算器 — Project SEKAI 資源中心</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
 :root{
   --navy:#1a1a2e;--navy2:#16213e;--accent:#0f3460;
   --text:#2c2c2c;--text-light:#555;--text-muted:#999;
@@ -20,100 +20,242 @@ html{scroll-behavior:smooth;}
   --red:#c62828;--red-bg:#fce4ec;
   --purple:#7b1fa2;--purple-bg:#f3e5f5;
   --gold:#ffcc00;--gold-bg:#2c2c2c;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','SimSun','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:15px;}
-.topnav{background:var(--navy);color:#fff;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:4px 18px;padding:10px 16px;font-size:.82em;letter-spacing:.03em;position:sticky;top:0;z-index:100;}
-.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:2px 0;transition:color .15s;}
+body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','SimSun','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:15px;-webkit-tap-highlight-color:transparent;}
+
+/* ── Top Nav ── */
+.topnav{background:var(–navy);color:#fff;display:flex;align-items:center;gap:4px 16px;padding:10px 16px;font-size:.82em;letter-spacing:.03em;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap;}
+.topnav::-webkit-scrollbar{display:none;}
+.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:6px 4px;transition:color .15s;flex-shrink:0;}
 .topnav a:hover{color:#fff;}
-.topnav a.cur{color:#fff;font-weight:700;border-bottom:2px solid #fff;padding-bottom:0;}
-.hero{text-align:center;padding:36px 20px 28px;border-bottom:2px solid var(--navy);}
-.hero h1{font-size:1.6em;font-weight:700;color:var(--navy);letter-spacing:.12em;}
-.hero .sub{font-size:.85em;color:var(--text-light);letter-spacing:.06em;margin-top:2px;}
-.hero .upd{font-size:.78em;color:var(--text-muted);font-style:italic;margin-top:6px;}
-.container{max-width:1100px;margin:0 auto;padding:24px 20px 50px;}
-.sec-title{font-size:1.15em;font-weight:700;color:var(--navy);margin:28px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.sec-title small{font-weight:400;font-size:.72em;color:var(--text-muted);margin-left:8px;}
-.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
-@media(max-width:860px){.main-layout{grid-template-columns:1fr;}}
-.lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
-.lib-label{font-size:.95em;font-weight:700;color:var(--navy);}
-.lib-stat{font-size:.76em;color:var(--text-muted);}
-.lib-stat b{color:var(--text-light);}
-.lib-search{width:100%;font-family:inherit;font-size:.88em;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text);outline:none;margin-bottom:8px;transition:border-color .15s;}
-.lib-search:focus{border-color:var(--accent);}
-.sort-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
-.sb{padding:4px 12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.74em;transition:all .15s;user-select:none;white-space:nowrap;color:var(--text-light);}
-.sb:hover{border-color:var(--accent);color:var(--accent);}
-.sb.on{background:var(--navy);color:#fff;border-color:var(--navy);}
-.tw{max-height:520px;overflow-y:auto;border:1px solid var(--border-light);border-radius:6px;}
-.tw::-webkit-scrollbar{width:4px;}
+.topnav a.cur{color:#fff;font-weight:700;border-bottom:2px solid #fff;padding-bottom:4px;}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:28px 16px 22px;border-bottom:2px solid var(–navy);}
+.hero h1{font-size:1.5em;font-weight:700;color:var(–navy);letter-spacing:.1em;}
+.hero .sub{font-size:.82em;color:var(–text-light);letter-spacing:.04em;margin-top:2px;}
+.hero .upd{font-size:.75em;color:var(–text-muted);font-style:italic;margin-top:5px;}
+
+.container{max-width:1100px;margin:0 auto;padding:20px 16px 50px;padding-bottom:calc(20px + var(–safe-bottom));}
+
+.sec-title{font-size:1.1em;font-weight:700;color:var(–navy);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid var(–border);}
+.sec-title small{font-weight:400;font-size:.72em;color:var(–text-muted);margin-left:6px;}
+
+/* ── Main Layout ── */
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+
+/* ── Library Header ── */
+.lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.lib-label{font-size:.92em;font-weight:700;color:var(–navy);}
+.lib-stat{font-size:.74em;color:var(–text-muted);}
+.lib-stat b{color:var(–text-light);}
+
+.lib-search{width:100%;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(–border);border-radius:8px;background:var(–bg-input);color:var(–text);outline:none;margin-bottom:8px;transition:border-color .15s;-webkit-appearance:none;appearance:none;}
+.lib-search:focus{border-color:var(–accent);}
+
+/* ── Sort Bar ── */
+.sort-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;-webkit-overflow-scrolling:touch;}
+.sb{padding:6px 12px;border:1px solid var(–border);border-radius:16px;background:var(–bg);cursor:pointer;font-family:inherit;font-size:.74em;transition:all .15s;user-select:none;white-space:nowrap;color:var(–text-light);-webkit-tap-highlight-color:transparent;}
+.sb:hover{border-color:var(–accent);color:var(–accent);}
+.sb.on{background:var(–navy);color:#fff;border-color:var(–navy);}
+
+/* ── Table Wrapper ── */
+.tw{max-height:520px;overflow-y:auto;overflow-x:auto;border:1px solid var(–border-light);border-radius:6px;-webkit-overflow-scrolling:touch;}
+.tw::-webkit-scrollbar{width:4px;height:4px;}
 .tw::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
+
 .st-tbl{width:100%;border-collapse:collapse;font-size:.82em;}
 .st-tbl thead{position:sticky;top:0;z-index:2;}
-.st-tbl th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78em;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none;}
-.st-tbl th:hover{background:var(--navy2);}
-.st-tbl td{padding:6px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap;}
+.st-tbl th{background:var(–navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78em;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none;}
+.st-tbl th:hover{background:var(–navy2);}
+.st-tbl td{padding:8px 10px;border-bottom:1px solid var(–border-light);white-space:nowrap;}
 .st-tbl tr{cursor:pointer;transition:background .12s;}
 .st-tbl tbody tr:hover td{background:#f0f4ff;}
+.st-tbl tbody tr:active td{background:#e4eaff;}
 .st-tbl tbody tr.sel td{background:#edf0f8;font-weight:600;}
-.dp{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.7em;font-weight:600;line-height:1.4;margin-right:2px;}
-.dp-easy{background:var(--green-bg);color:var(--green);}
-.dp-normal{background:var(--blue-bg);color:var(--blue);}
-.dp-hard{background:var(--orange-bg);color:var(--orange);}
-.dp-expert{background:var(--red-bg);color:var(--red);}
-.dp-master{background:var(--purple-bg);color:var(--purple);}
-.dp-append{background:var(--gold-bg);color:var(--gold);}
-.sel-card{background:linear-gradient(135deg,#f8f9fd,#edf0f8);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:none;}
+
+.dp{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.7em;font-weight:600;line-height:1.4;margin-right:2px;}
+.dp-easy{background:var(–green-bg);color:var(–green);}
+.dp-normal{background:var(–blue-bg);color:var(–blue);}
+.dp-hard{background:var(–orange-bg);color:var(–orange);}
+.dp-expert{background:var(–red-bg);color:var(–red);}
+.dp-master{background:var(–purple-bg);color:var(–purple);}
+.dp-append{background:var(–gold-bg);color:var(–gold);}
+
+/* ── Selected Card ── */
+.sel-card{background:linear-gradient(135deg,#f8f9fd,#edf0f8);border:1px solid var(–accent);border-radius:8px;padding:14px 16px;margin-bottom:14px;display:none;}
 .sel-card.show{display:block;}
-.sel-card .sn{font-weight:700;font-size:1.05em;color:var(--navy);}
-.sel-card .sm{font-size:.8em;color:var(--text-light);margin-top:2px;}
+.sel-card .sn{font-weight:700;font-size:1.02em;color:var(–navy);word-break:break-word;}
+.sel-card .sm{font-size:.78em;color:var(–text-light);margin-top:2px;word-break:break-word;}
+
 .dc-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
-.dc{padding:4px 12px;border-radius:16px;font-size:.76em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none;}
-.dc.on{border-color:var(--navy);transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-.dc-easy{background:var(--green-bg);color:var(--green);}
-.dc-normal{background:var(--blue-bg);color:var(--blue);}
-.dc-hard{background:var(--orange-bg);color:var(--orange);}
-.dc-expert{background:var(--red-bg);color:var(--red);}
-.dc-master{background:var(--purple-bg);color:var(--purple);}
-.dc-append{background:var(--gold-bg);color:var(--gold);}
-.card{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:18px 20px;margin-bottom:16px;}
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-@media(max-width:500px){.fg2{grid-template-columns:1fr;}}
+.dc{padding:6px 14px;border-radius:16px;font-size:.76em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent;}
+.dc.on{border-color:var(–navy);transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.dc-easy{background:var(–green-bg);color:var(–green);}
+.dc-normal{background:var(–blue-bg);color:var(–blue);}
+.dc-hard{background:var(–orange-bg);color:var(–orange);}
+.dc-expert{background:var(–red-bg);color:var(–red);}
+.dc-master{background:var(–purple-bg);color:var(–purple);}
+.dc-append{background:var(–gold-bg);color:var(–gold);}
+
+/* ── Card & Form ── */
+.card{background:var(–bg);border:1px solid var(–border-light);border-radius:8px;padding:16px;margin-bottom:14px;}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .fg{display:flex;flex-direction:column;}
 .fg.full{grid-column:1/-1;}
-.fg label{font-size:.8em;font-weight:700;color:var(--text-light);margin-bottom:4px;}
-.fg input{font-family:inherit;font-size:.9em;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text);outline:none;transition:border-color .15s;}
-.fg input:focus{border-color:var(--accent);}
-.fg .h{font-size:.7em;color:var(--text-muted);margin-top:3px;}
+.fg label{font-size:.8em;font-weight:700;color:var(–text-light);margin-bottom:4px;}
+.fg input{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(–border);border-radius:8px;background:var(–bg-input);color:var(–text);outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;}
+.fg input:focus{border-color:var(–accent);}
+.fg .h{font-size:.68em;color:var(–text-muted);margin-top:3px;}
+
 .tr{display:flex;gap:6px;flex-wrap:wrap;}
-.tg{padding:5px 14px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;transition:all .15s;user-select:none;color:var(--text-light);}
-.tg:hover{border-color:var(--accent);color:var(--accent);}
-.tg.on{background:var(--accent);color:#fff;border-color:var(--accent);}
-.tg.dk.on{background:var(--navy);color:#fff;border-color:var(--navy);}
-.cbtn{display:block;width:100%;padding:12px;margin-top:16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95em;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .2s;}
-.cbtn:hover{background:var(--accent);}
-.tip{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:var(--border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative;}
-.tip:hover::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:6px 10px;border-radius:6px;white-space:normal;z-index:99;max-width:260px;line-height:1.4;}
+.tg{padding:8px 14px;border:1px solid var(–border);border-radius:16px;background:var(–bg);cursor:pointer;font-family:inherit;font-size:.8em;transition:all .15s;user-select:none;color:var(–text-light);-webkit-tap-highlight-color:transparent;}
+.tg:hover{border-color:var(–accent);color:var(–accent);}
+.tg.on{background:var(–accent);color:#fff;border-color:var(–accent);}
+.tg.dk.on{background:var(–navy);color:#fff;border-color:var(–navy);}
+
+.cbtn{display:block;width:100%;padding:14px;margin-top:14px;background:var(–navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95em;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.cbtn:hover{background:var(–accent);}
+.cbtn:active{background:#0a2440;transform:scale(.98);}
+
+.tip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(–border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative;}
+.tip:hover::after,.tip:active::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:8px 12px;border-radius:6px;white-space:normal;z-index:99;max-width:260px;min-width:180px;line-height:1.4;pointer-events:none;}
+
+/* ── Results ── */
 .res{display:none;}.res.show{display:block;}
-.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;}
-.ri{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;text-align:center;}
-.ri .rl{font-size:.7em;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
-.ri .rv{font-size:1.45em;font-weight:700;color:var(--navy);}
-.ri .ru{font-size:.7em;color:var(--text-light);margin-top:2px;}
-.ri-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff);}
-.ew{overflow-x:auto;margin-top:8px;}
-table.et{width:100%;border-collapse:collapse;font-size:.8em;}
-.et th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.8em;white-space:nowrap;}
-.et td{padding:7px 10px;border-bottom:1px solid var(--border-light);}
+.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.ri{background:var(–bg);border:1px solid var(–border-light);border-radius:8px;padding:12px 14px;text-align:center;}
+.ri .rl{font-size:.68em;color:var(–text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.ri .rv{font-size:1.35em;font-weight:700;color:var(–navy);}
+.ri .ru{font-size:.68em;color:var(–text-light);margin-top:2px;}
+.ri-hl{border-left:3px solid var(–accent);background:linear-gradient(135deg,#f8f9fd,#fff);}
+
+.ew{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch;}
+table.et{width:100%;border-collapse:collapse;font-size:.78em;min-width:420px;}
+.et th{background:var(–navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.8em;white-space:nowrap;}
+.et td{padding:8px 10px;border-bottom:1px solid var(–border-light);white-space:nowrap;}
 .et tr:hover td{background:#f5f8ff;}
 .et .hr td{background:#edf0f8;font-weight:600;}
-.loading{text-align:center;padding:50px;color:var(--text-muted);font-size:.9em;}
-.spin{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle;}
+
+/* ── Loading ── */
+.loading{text-align:center;padding:50px 20px;color:var(–text-muted);font-size:.9em;}
+.spin{display:inline-block;width:20px;height:20px;border:2px solid var(–border);border-top-color:var(–accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle;}
 @keyframes sp{to{transform:rotate(360deg);}}
-footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);text-align:center;font-size:.74em;color:var(--text-muted);line-height:1.6;}
+
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(–border);text-align:center;font-size:.72em;color:var(–text-muted);line-height:1.6;}
+
+/* ========================================
+MOBILE RESPONSIVE
+======================================== */
+
+/* Tablet */
+@media(max-width:860px){
+.main-layout{grid-template-columns:1fr;}
+.hero h1{font-size:1.35em;}
+}
+
+/* Mobile */
+@media(max-width:600px){
+body{font-size:14px;}
+
+.topnav{padding:8px 12px;gap:2px 10px;font-size:.78em;}
+.topnav a{padding:8px 6px;}
+
+.hero{padding:20px 14px 16px;}
+.hero h1{font-size:1.2em;letter-spacing:.06em;}
+.hero .sub{font-size:.76em;letter-spacing:.02em;}
+
+.container{padding:14px 12px 40px;}
+
+.sec-title{font-size:1em;margin:18px 0 12px;}
+.sec-title small{display:block;margin-left:0;margin-top:2px;}
+
+/* Song library */
+.lib-search{padding:10px;font-size:16px;border-radius:8px;}
+
+.sort-bar{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px;margin-bottom:8px;}
+.sort-bar::-webkit-scrollbar{display:none;}
+.sb{padding:6px 10px;font-size:.72em;flex-shrink:0;}
+
+.tw{max-height:380px;border-radius:6px;}
+.st-tbl{font-size:.76em;min-width:480px;}
+.st-tbl th{padding:8px 8px;font-size:.74em;}
+.st-tbl td{padding:7px 8px;}
+
+/* Selected song card */
+.sel-card{padding:12px 14px;margin-bottom:12px;}
+.sel-card .sn{font-size:.95em;}
+.sel-card .sm{font-size:.74em;}
+.dc-row{gap:5px;margin-top:8px;}
+.dc{padding:6px 10px;font-size:.72em;}
+
+/* Form card */
+.card{padding:14px;margin-bottom:12px;}
+.fg2{grid-template-columns:1fr 1fr;gap:10px;}
+.fg label{font-size:.76em;margin-bottom:3px;}
+.fg input{padding:10px;font-size:16px;border-radius:6px;}
+.fg .h{font-size:.64em;}
+
+.tr{gap:5px;}
+.tg{padding:7px 11px;font-size:.76em;}
+
+.cbtn{padding:14px;font-size:.9em;border-radius:8px;}
+
+.tip{width:16px;height:16px;font-size:8px;}
+.tip:hover::after,.tip:active::after{max-width:200px;min-width:140px;font-size:10px;padding:6px 8px;}
+
+/* Results */
+.rg{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.ri{padding:10px 12px;border-radius:6px;}
+.ri .rl{font-size:.64em;}
+.ri .rv{font-size:1.2em;}
+.ri .ru{font-size:.64em;}
+
+table.et{font-size:.74em;min-width:400px;}
+.et th{padding:7px 8px;}
+.et td{padding:7px 8px;}
+}
+
+/* Small phone */
+@media(max-width:380px){
+.hero h1{font-size:1.05em;}
+.fg2{grid-template-columns:1fr;gap:8px;}
+.rg{grid-template-columns:1fr 1fr;gap:6px;}
+.ri .rv{font-size:1.1em;}
+.tg{padding:6px 9px;font-size:.72em;}
+.dc{padding:5px 8px;font-size:.68em;}
+}
+
+/* Landscape phone */
+@media(max-height:500px) and (orientation:landscape){
+.hero{padding:12px 14px 10px;}
+.hero h1{font-size:1.1em;}
+.hero .sub,.hero .upd{font-size:.7em;}
+.tw{max-height:260px;}
+.topnav{padding:6px 12px;}
+}
+
+/* Dark mode support */
+@media(prefers-color-scheme:dark){
+:root{
+–bg:#121212;–bg-input:#1e1e1e;
+–text:#e0e0e0;–text-light:#aaa;–text-muted:#666;
+–border:#333;–border-light:#2a2a2a;
+–navy:#1a1a2e;–navy2:#16213e;–accent:#3a6ea5;
+}
+.st-tbl tbody tr:hover td{background:#1e2438;}
+.st-tbl tbody tr.sel td{background:#1a2030;}
+.sel-card{background:linear-gradient(135deg,#1a1e2e,#1e2438);}
+.ri-hl{background:linear-gradient(135deg,#1a1e2e,#1e1e1e);}
+.et tr:hover td{background:#1a2030;}
+.et .hr td{background:#1a2030;}
+}
 </style>
+
 </head>
 <body>
+
 <nav class="topnav">
   <a href="https://project-sekai-center.vercel.app/">日曆</a>
   <a href="https://project-sekai-center.vercel.app/">活動</a>
@@ -126,92 +268,107 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);text-
   <a href="https://project-sekai-center.vercel.app/">Wiki</a>
   <a href="https://project-sekai-center.vercel.app/">工具</a>
 </nav>
+
 <div class="hero">
   <h1>Project SEKAI 資源中心</h1>
   <div class="sub">世界計畫 彩色舞台 feat. 初音未來</div>
   <div class="upd">Last Updated: 2025.01</div>
 </div>
+
 <div class="container">
   <div id="ld" class="loading"><span class="spin"></span>正在載入歌曲資料庫⋯</div>
+
   <div id="app" style="display:none;">
     <div class="sec-title">活動分數計算器 <small>Event Point Calculator</small></div>
-    <div class="main-layout">
-      <div>
-        <div class="lib-head">
-          <div class="lib-label">曲庫一覽</div>
-          <div class="lib-stat">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div>
+
+
+<div class="main-layout">
+  <!-- Left: Song Library -->
+  <div>
+    <div class="lib-head">
+      <div class="lib-label">曲庫一覽</div>
+      <div class="lib-stat">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div>
+    </div>
+    <input type="text" class="lib-search" id="q" placeholder="搜尋歌名、作曲者、ID⋯" autocomplete="off">
+    <div class="sort-bar" id="sbar">
+      <div class="sb on" data-k="id" data-d="asc">ID ▲</div>
+      <div class="sb" data-k="title" data-d="asc">曲名</div>
+      <div class="sb" data-k="composer" data-d="asc">作曲</div>
+      <div class="sb" data-k="master" data-d="desc">MA 等級</div>
+      <div class="sb" data-k="notes" data-d="desc">音符數</div>
+      <div class="sb" data-k="date" data-d="desc">發佈日</div>
+    </div>
+    <div class="tw" id="tw">
+      <table class="st-tbl">
+        <thead><tr><th style="width:42px">ID</th><th>曲名</th><th>作曲</th><th style="cursor:default">難度</th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right: Settings & Results -->
+  <div>
+    <div class="sel-card" id="sc">
+      <div class="sn" id="sn"></div>
+      <div class="sm" id="si"></div>
+      <div class="dc-row" id="dr"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:.92em;font-weight:700;color:var(--navy);margin-bottom:12px;">演出設定</div>
+      <div class="fg2">
+        <div class="fg full"><label>演出類型</label>
+          <div class="tr" id="tt">
+            <div class="tg dk on" data-v="multi">協力演出</div>
+            <div class="tg dk" data-v="solo">個人演出</div>
+            <div class="tg dk" data-v="cheerful">嘉年華</div>
+            <div class="tg dk" data-v="challenge">挑戰演出</div>
+          </div>
         </div>
-        <input type="text" class="lib-search" id="q" placeholder="搜尋歌名、作曲者、ID⋯" autocomplete="off">
-        <div class="sort-bar" id="sbar">
-          <div class="sb on" data-k="id" data-d="asc">ID ▲</div>
-          <div class="sb" data-k="title" data-d="asc">曲名</div>
-          <div class="sb" data-k="composer" data-d="asc">作曲</div>
-          <div class="sb" data-k="master" data-d="desc">MA 等級</div>
-          <div class="sb" data-k="notes" data-d="desc">音符數</div>
-          <div class="sb" data-k="date" data-d="desc">發佈日</div>
+        <div class="fg full"><label>消耗體力 <span class="tip" data-t="0×=1倍 1×=5倍 2×=10倍 3×=15倍 5×=25倍 10×=50倍">?</span></label>
+          <div class="tr" id="eb">
+            <div class="tg" data-v="0">0×</div>
+            <div class="tg" data-v="1">1×</div>
+            <div class="tg" data-v="2">2×</div>
+            <div class="tg on" data-v="3">3×</div>
+            <div class="tg" data-v="5">5×</div>
+            <div class="tg" data-v="10">10×</div>
+          </div>
         </div>
-        <div class="tw" id="tw">
-          <table class="st-tbl">
-            <thead><tr><th style="width:42px">ID</th><th>曲名</th><th>作曲</th><th style="cursor:default">難度</th></tr></thead>
-            <tbody id="tb"></tbody>
-          </table>
-        </div>
+        <div class="fg"><label>預估分數</label><input type="number" id="si2" value="1500000" min="0" step="10000" inputmode="numeric"><div class="h">協力120–350萬 / 個人80–200萬</div></div>
+        <div class="fg"><label>活動加成 % <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label><input type="number" id="bi" value="200" min="0" max="400" step="5" inputmode="numeric"></div>
+        <div class="fg"><label>目標 EP</label><input type="number" id="te" value="1000000" min="0" step="10000" inputmode="numeric"><div class="h">故事全開15萬 / T1000約100–300萬</div></div>
+        <div class="fg"><label>目前已有 EP</label><input type="number" id="ce" value="0" min="0" step="1000" inputmode="numeric"></div>
       </div>
-      <div>
-        <div class="sel-card" id="sc">
-          <div class="sn" id="sn"></div>
-          <div class="sm" id="si"></div>
-          <div class="dc-row" id="dr"></div>
-        </div>
-        <div class="card">
-          <div style="font-size:.95em;font-weight:700;color:var(--navy);margin-bottom:12px;">演出設定</div>
-          <div class="fg2">
-            <div class="fg full"><label>演出類型</label>
-              <div class="tr" id="tt">
-                <div class="tg dk on" data-v="multi">協力演出</div>
-                <div class="tg dk" data-v="solo">個人演出</div>
-                <div class="tg dk" data-v="cheerful">嘉年華</div>
-                <div class="tg dk" data-v="challenge">挑戰演出</div>
-              </div>
-            </div>
-            <div class="fg full"><label>消耗體力 <span class="tip" data-t="0×=1倍 1×=5倍 2×=10倍 3×=15倍 5×=25倍 10×=50倍">?</span></label>
-              <div class="tr" id="eb">
-                <div class="tg" data-v="0">0×</div>
-                <div class="tg" data-v="1">1×</div>
-                <div class="tg" data-v="2">2×</div>
-                <div class="tg on" data-v="3">3×</div>
-                <div class="tg" data-v="5">5×</div>
-                <div class="tg" data-v="10">10×</div>
-              </div>
-            </div>
-            <div class="fg"><label>預估分數</label><input type="number" id="si2" value="1500000" min="0" step="10000"><div class="h">協力120–350萬 / 個人80–200萬</div></div>
-            <div class="fg"><label>活動加成 % <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label><input type="number" id="bi" value="200" min="0" max="400" step="5"></div>
-            <div class="fg"><label>目標 EP</label><input type="number" id="te" value="1000000" min="0" step="10000"><div class="h">故事全開15萬 / T1000約100–300萬</div></div>
-            <div class="fg"><label>目前已有 EP</label><input type="number" id="ce" value="0" min="0" step="1000"></div>
-          </div>
-          <button class="cbtn" onclick="calc()">計　算</button>
-        </div>
-        <div class="res" id="res">
-          <div class="rg" id="rg"></div>
-          <div class="card" style="padding:14px 16px;">
-            <div style="font-size:.88em;font-weight:700;color:var(--navy);margin-bottom:8px;">各體力效率比較</div>
-            <div class="ew"><table class="et" id="et"><thead><tr><th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th></tr></thead><tbody></tbody></table></div>
-          </div>
-          <div class="card" id="rc" style="padding:14px 16px;display:none;">
-            <div style="font-size:.88em;font-weight:700;color:var(--navy);margin-bottom:8px;">時間效率 TOP 15（EP/分鐘）</div>
-            <div class="ew"><table class="et" id="rt"><thead><tr><th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th></tr></thead><tbody></tbody></table></div>
-          </div>
-        </div>
+      <button class="cbtn" onclick="calc()">計　算</button>
+    </div>
+
+    <div class="res" id="res">
+      <div class="rg" id="rg"></div>
+      <div class="card" style="padding:14px 16px;">
+        <div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px;">各體力效率比較</div>
+        <div class="ew"><table class="et" id="et"><thead><tr><th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card" id="rc" style="padding:14px 16px;display:none;">
+        <div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px;">時間效率 TOP 15（EP/分鐘）</div>
+        <div class="ew"><table class="et" id="rt"><thead><tr><th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
   </div>
+</div>
+
+
+  </div>
+
   <footer>非官方社群工具，與 SEGA / Colorful Palette 無關</footer>
 </div>
+
 <script>
 var S=[],D=[],sel=null,selD=null,sK='id',sD='asc';
 var EM={0:1,1:5,2:10,3:15,5:25,10:50},OH=15;
 var DN={easy:'E',normal:'N',hard:'H',expert:'EX',master:'MA',append:'AP'};
 var DO=['easy','normal','hard','expert','master','append'];
+
 async function init(){
   try{
     var r=await Promise.all([
@@ -225,6 +382,7 @@ async function init(){
     $('tc').textContent=S.length;$('ld').style.display='none';$('app').style.display='block';render();
   }catch(e){$('ld').innerHTML='載入失敗：'+e.message;}
 }
+
 function render(){
   var q=$('q').value.trim().toLowerCase(),L=S;
   if(q)L=L.filter(function(s){return s.title.toLowerCase().indexOf(q)>=0||(s.pronunciation||'').toLowerCase().indexOf(q)>=0||(s.composer||'').toLowerCase().indexOf(q)>=0||(s.lyricist||'').toLowerCase().indexOf(q)>=0||String(s.id).indexOf(q)>=0;});
@@ -235,7 +393,9 @@ function render(){
   for(var i=0;i<L.length;i++){var s=L[i],isSel=sel&&sel.id===s.id;var ds=s._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty);});var pills=ds.map(function(x){return '<span class="dp dp-'+x.musicDifficulty+'">'+(DN[x.musicDifficulty]||'?')+' '+x.playLevel+'</span>';}).join('');h.push('<tr data-id="'+s.id+'" class="'+(isSel?'sel':'')+'"><td>'+s.id+'</td><td>'+esc(s.title)+'</td><td>'+esc(s.composer||'')+'</td><td>'+pills+'</td></tr>');}
   tb.innerHTML=h.join('');
 }
+
 $('tb').parentElement.parentElement.addEventListener('click',function(e){var tr=e.target.closest('tr[data-id]');if(!tr)return;pickSong(parseInt(tr.dataset.id));});
+
 function pickSong(id){
   sel=S.find(function(s){return s.id===id;});if(!sel)return;
   document.querySelectorAll('#tb tr').forEach(function(r){r.classList.toggle('sel',parseInt(r.dataset.id)===id);});
@@ -247,33 +407,65 @@ function pickSong(id){
   $('sc').classList.add('show');selD=null;
   var mc=document.querySelector('.dc[data-f="master"]'),ec=document.querySelector('.dc[data-f="expert"]');
   if(mc)pickD(mc);else if(ec)pickD(ec);
+
+  // On mobile, scroll to the selection card
+  if(window.innerWidth<=860){
+    setTimeout(function(){$('sc').scrollIntoView({behavior:'smooth',block:'nearest'});},100);
+  }
 }
+
 function pickD(el){document.querySelectorAll('.dc').forEach(function(c){c.classList.remove('on');});el.classList.add('on');selD={d:el.dataset.f,n:parseInt(el.dataset.n),l:parseInt(el.dataset.l)};}
+
 $('sbar').addEventListener('click',function(e){var b=e.target.closest('.sb');if(!b)return;var k=b.dataset.k;if(sK===k){sD=sD==='asc'?'desc':'asc';}else{sK=k;sD=b.dataset.d||'asc';}this.querySelectorAll('.sb').forEach(function(x){x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'');});b.classList.add('on');b.textContent=b.textContent+' '+(sD==='asc'?'▲':'▼');render();});
 $('q').addEventListener('input',render);
+
 function tgl(id){$(id).addEventListener('click',function(e){var t=e.target.closest('.tg');if(!t)return;this.querySelectorAll('.tg').forEach(function(x){x.classList.remove('on');});t.classList.add('on');});}
 tgl('tt');tgl('eb');
+
 function gv(id){var el=$(id).querySelector('.tg.on');return el?el.dataset.v:null;}
 function cBase(sc,ty){return Math.floor(sc*0.000350+(ty==='solo'||ty==='challenge'?50:55));}
 function cEP(sc,bn,en,ty){var b=cBase(sc,ty),m=EM[en]||1,bm=ty==='challenge'?1:(1+bn/100);return Math.floor(b*bm*m);}
 function eDur(n){return n>0?Math.max(55,Math.round(n/6.5)):105;}
 function fT(m){if(!isFinite(m))return'∞';return m<60?Math.round(m)+'分':Math.floor(m/60)+'時'+Math.round(m%60)+'分';}
+
 function calc(){
   var sc=parseInt($('si2').value)||0,bn=parseInt($('bi').value)||0,en=parseInt(gv('eb'))||0,ty=gv('tt')||'multi';
   var tg=parseInt($('te').value)||0,cu=parseInt($('ce').value)||0,rm=Math.max(0,tg-cu);
   var ep=cEP(sc,bn,en,ty),nt=selD?selD.n:700,dur=eDur(nt)+OH;
   var pl=ep>0?Math.ceil(rm/ep):Infinity,tm=pl*dur/60,tn=pl*en;
-  $('rg').innerHTML='<div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">'+ep.toLocaleString()+'</div><div class="ru">Event Points</div></div>'+'<div class="ri"><div class="rl">需打次數</div><div class="rv">'+(isFinite(pl)?pl.toLocaleString():'∞')+'</div><div class="ru">剩餘 '+rm.toLocaleString()+' EP</div></div>'+'<div class="ri"><div class="rl">預估時間</div><div class="rv">'+fT(tm)+'</div><div class="ru">~'+dur+'秒/輪</div></div>'+'<div class="ri"><div class="rl">消耗體力</div><div class="rv">'+(isFinite(tn)?tn.toLocaleString():'∞')+'</div><div class="ru">≈ '+(isFinite(tn)?Math.ceil(tn/10):'∞')+' 罐</div></div>';
+
+  $('rg').innerHTML=
+    '<div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">'+ep.toLocaleString()+'</div><div class="ru">Event Points</div></div>'+
+    '<div class="ri"><div class="rl">需打次數</div><div class="rv">'+(isFinite(pl)?pl.toLocaleString():'∞')+'</div><div class="ru">剩餘 '+rm.toLocaleString()+' EP</div></div>'+
+    '<div class="ri"><div class="rl">預估時間</div><div class="rv">'+fT(tm)+'</div><div class="ru">~'+dur+'秒/輪</div></div>'+
+    '<div class="ri"><div class="rl">消耗體力</div><div class="rv">'+(isFinite(tn)?tn.toLocaleString():'∞')+'</div><div class="ru">≈ '+(isFinite(tn)?Math.ceil(tn/10):'∞')+' 罐</div></div>';
+
   var el=[0,1,2,3,5,10];
-  document.querySelector('#et tbody').innerHTML=el.map(function(e){var ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';var p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;return '<tr class="'+(e===en?'hr':'')+'"><td>'+e+'×</td><td>'+EM[e]+'×</td><td>'+ep2.toLocaleString()+'</td><td>'+ppe+'</td><td>'+(isFinite(p)?p.toLocaleString():'∞')+'</td><td>'+fT(t)+'</td></tr>';}).join('');
-  var rk=S.map(function(s){var n=s._n;if(n<=0)return null;var d=eDur(n)+OH,e=cEP(sc,bn,en,ty);return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60))};}).filter(Boolean).sort(function(a,b){return b.epm-a.epm;}).slice(0,15);
-  document.querySelector('#rt tbody').innerHTML=rk.map(function(r,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(r.t)+' <span style="color:var(--text-muted);font-size:.85em">Lv.'+r.l+'</span></td><td>'+r.s+'s</td><td>'+r.ep.toLocaleString()+'</td><td style="font-weight:600">'+r.epm.toLocaleString()+'</td></tr>';}).join('');
+  document.querySelector('#et tbody').innerHTML=el.map(function(e){
+    var ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';
+    var p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;
+    return '<tr class="'+(e===en?'hr':'')+'"><td>'+e+'×</td><td>'+EM[e]+'×</td><td>'+ep2.toLocaleString()+'</td><td>'+ppe+'</td><td>'+(isFinite(p)?p.toLocaleString():'∞')+'</td><td>'+fT(t)+'</td></tr>';
+  }).join('');
+
+  var rk=S.map(function(s){
+    var n=s._n;if(n<=0)return null;
+    var d=eDur(n)+OH,e=cEP(sc,bn,en,ty);
+    return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60))};
+  }).filter(Boolean).sort(function(a,b){return b.epm-a.epm;}).slice(0,15);
+
+  document.querySelector('#rt tbody').innerHTML=rk.map(function(r,i){
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(r.t)+' <span style="color:var(--text-muted);font-size:.85em">Lv.'+r.l+'</span></td><td>'+r.s+'s</td><td>'+r.ep.toLocaleString()+'</td><td style="font-weight:600">'+r.epm.toLocaleString()+'</td></tr>';
+  }).join('');
+
   $('rc').style.display='block';
   var res=$('res');res.classList.add('show');res.scrollIntoView({behavior:'smooth',block:'start'});
 }
+
 function $(id){return document.getElementById(id);}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
 init();
 </script>
+
 </body>
 </html>
