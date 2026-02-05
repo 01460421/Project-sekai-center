@@ -138,8 +138,8 @@ footer a:hover{text-decoration:underline;}
   <div id="app" style="display:none;">
     <div class="main-layout">
 
-
   <!-- LEFT: LIBRARY -->
+
   <div>
     <div class="lib-head">
       <div class="stitle" style="margin-bottom:0;">曲庫一覽</div>
@@ -168,6 +168,7 @@ footer a:hover{text-decoration:underline;}
   </div>
 
   <!-- RIGHT: CALCULATOR -->
+
   <div>
     <div class="sel-card" id="sc">
       <div class="st" id="sn"></div>
@@ -175,67 +176,70 @@ footer a:hover{text-decoration:underline;}
       <div class="dc-row" id="dr"></div>
     </div>
 
-    <div class="stitle">演出設定</div>
-    <div class="card">
-      <div class="fg2">
-        <div class="fg full">
-          <label>演出類型</label>
-          <div class="tr" id="tt">
-            <div class="tg dk on" data-v="multi">協力演出</div>
-            <div class="tg dk" data-v="solo">個人演出</div>
-            <div class="tg dk" data-v="cheerful">嘉年華</div>
-            <div class="tg dk" data-v="challenge">挑戰演出</div>
-          </div>
-        </div>
-        <div class="fg full">
-          <label>消耗體力 <span class="tip" data-t="0×=1倍 1×=5倍 2×=10倍 3×=15倍 5×=25倍 10×=50倍">?</span></label>
-          <div class="tr" id="eb">
-            <div class="tg" data-v="0">0×</div>
-            <div class="tg" data-v="1">1×</div>
-            <div class="tg" data-v="2">2×</div>
-            <div class="tg on" data-v="3">3×</div>
-            <div class="tg" data-v="5">5×</div>
-            <div class="tg" data-v="10">10×</div>
-          </div>
-        </div>
-        <div class="fg">
-          <label>預估分數</label>
-          <input type="number" id="si2" value="1500000" min="0" step="10000">
-          <div class="h">協力120–350萬 / 個人80–200萬</div>
-        </div>
-        <div class="fg">
-          <label>活動加成 % <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label>
-          <input type="number" id="bi" value="200" min="0" max="400" step="5">
-        </div>
-        <div class="fg">
-          <label>目標 EP</label>
-          <input type="number" id="te" value="1000000" min="0" step="10000">
-          <div class="h">故事全開15萬 / T1000約100–300萬</div>
-        </div>
-        <div class="fg">
-          <label>目前已有 EP</label>
-          <input type="number" id="ce" value="0" min="0" step="1000">
-        </div>
+```
+<div class="stitle">演出設定</div>
+<div class="card">
+  <div class="fg2">
+    <div class="fg full">
+      <label>演出類型</label>
+      <div class="tr" id="tt">
+        <div class="tg dk on" data-v="multi">協力演出</div>
+        <div class="tg dk" data-v="solo">個人演出</div>
+        <div class="tg dk" data-v="cheerful">嘉年華</div>
+        <div class="tg dk" data-v="challenge">挑戰演出</div>
       </div>
-      <button class="cbtn" onclick="calc()">計　算</button>
     </div>
+    <div class="fg full">
+      <label>消耗體力 <span class="tip" data-t="0×=1倍 1×=5倍 2×=10倍 3×=15倍 5×=25倍 10×=50倍">?</span></label>
+      <div class="tr" id="eb">
+        <div class="tg" data-v="0">0×</div>
+        <div class="tg" data-v="1">1×</div>
+        <div class="tg" data-v="2">2×</div>
+        <div class="tg on" data-v="3">3×</div>
+        <div class="tg" data-v="5">5×</div>
+        <div class="tg" data-v="10">10×</div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>預估分數</label>
+      <input type="number" id="si2" value="1500000" min="0" step="10000">
+      <div class="h">協力120–350萬 / 個人80–200萬</div>
+    </div>
+    <div class="fg">
+      <label>活動加成 % <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label>
+      <input type="number" id="bi" value="200" min="0" max="400" step="5">
+    </div>
+    <div class="fg">
+      <label>目標 EP</label>
+      <input type="number" id="te" value="1000000" min="0" step="10000">
+      <div class="h">故事全開15萬 / T1000約100–300萬</div>
+    </div>
+    <div class="fg">
+      <label>目前已有 EP</label>
+      <input type="number" id="ce" value="0" min="0" step="1000">
+    </div>
+  </div>
+  <button class="cbtn" onclick="calc()">計　算</button>
+</div>
 
-    <div class="res" id="res">
-      <div class="stitle">計算結果</div>
-      <div class="rg" id="rg"></div>
-      <div class="card" style="padding:12px 14px;">
-        <div style="font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:6px;">各體力效率比較</div>
-        <div class="ew"><table class="et" id="et"><thead><tr>
-          <th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th>
-        </tr></thead><tbody></tbody></table></div>
-      </div>
-      <div class="card" id="rc" style="padding:12px 14px;display:none;">
-        <div style="font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:6px;">時間效率 TOP 15（EP/分鐘，依當前設定）</div>
-        <div class="ew"><table class="et" id="rt"><thead><tr>
-          <th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th>
-        </tr></thead><tbody></tbody></table></div>
-      </div>
-    </div>
+<div class="res" id="res">
+  <div class="stitle">計算結果</div>
+  <div class="rg" id="rg"></div>
+  <div class="card" style="padding:12px 14px;">
+    <div style="font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:6px;">各體力效率比較</div>
+    <div class="ew"><table class="et" id="et"><thead><tr>
+      <th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="card" id="rc" style="padding:12px 14px;display:none;">
+    <div style="font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:6px;">時間效率 TOP 15（EP/分鐘，依當前設定）</div>
+    <div class="ew"><table class="et" id="rt"><thead><tr>
+      <th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+```
+
   </div>
 </div>
 
@@ -252,7 +256,6 @@ footer a:hover{text-decoration:underline;}
     </p>
   </div>
 </div>
-
 
   </div>
 
@@ -325,8 +328,8 @@ function render(){
   for(const s of L){
     const isSel=sel&&sel.id===s.id;
     const ds=s._d.slice().sort((a,b)=>DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty));
-    const pills=ds.map(x=>`<span class="dp dp-"></span>`).join('');
-    h.push(`<tr data-id="" class="''"><td></td><td></td><td></td><td></td></tr>`);
+    const pills=ds.map(x=>`<span class="dp dp-${x.musicDifficulty}">${(DN[x.musicDifficulty]||'?')} ${x.playLevel}</span>`).join('');
+    h.push(`<tr data-id="${s.id}" class="${isSel?'sel':''}"><td>${s.id}</td><td>${esc(s.title)}</td><td>${esc(s.composer||'')}</td><td>${pills}</td></tr>`);
   }
   tb.innerHTML=h.join('');
 }
@@ -348,7 +351,7 @@ function pickSong(id){
   $('si').textContent=m.join(' · ');
   const ds=sel._d.slice().sort((a,b)=>DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty));
   $('dr').innerHTML=ds.map(x=>
-    `<div class="dc dc-" data-f="" data-n="" data-l="" onclick="pickD(this)">${(DN[x.musicDifficulty]||'?').toUpperCase()} Lv. ()</div>`
+    `<div class="dc dc-${x.musicDifficulty}" data-f="${x.musicDifficulty}" data-n="${x.noteCount}" data-l="${x.playLevel}" onclick="pickD(this)">${(DN[x.musicDifficulty]||'?').toUpperCase()} Lv.${x.playLevel} (${x.noteCount})</div>`
   ).join('');
   $('sc').classList.add('show');
   selD=null;
@@ -402,16 +405,16 @@ function calc(){
   const tn=pl*en;
 
   $('rg').innerHTML=`
-    <div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv"></div><div class="ru">Event Points</div></div>
-    <div class="ri"><div class="rl">需打次數</div><div class="rv">'∞'</div><div class="ru">剩餘  EP</div></div>
-    <div class="ri"><div class="rl">預估時間</div><div class="rv"></div><div class="ru">~秒/輪</div></div>
-    <div class="ri"><div class="rl">消耗體力</div><div class="rv">'∞'</div><div class="ru">≈ '∞' 罐</div></div>`;
+    <div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">${ep.toLocaleString()}</div><div class="ru">Event Points</div></div>
+    <div class="ri"><div class="rl">需打次數</div><div class="rv">${isFinite(pl)?pl.toLocaleString():'∞'}</div><div class="ru">剩餘 ${rm.toLocaleString()} EP</div></div>
+    <div class="ri"><div class="rl">預估時間</div><div class="rv">${fT(tm)}</div><div class="ru">~${dur}秒/輪</div></div>
+    <div class="ri"><div class="rl">消耗體力</div><div class="rv">${isFinite(tn)?tn.toLocaleString():'∞'}</div><div class="ru">≈ ${isFinite(tn)?Math.ceil(tn/10):'∞'} 罐</div></div>`;
 
   const el=[0,1,2,3,5,10];
   document.querySelector('#et tbody').innerHTML=el.map(e=>{
     const ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';
     const p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;
-    return`<tr class="''"><td>×</td><td>×</td><td></td><td></td><td>'∞'</td><td></td></tr>`;
+    return`<tr class="${e===en?'hr':''}"><td>${e}×</td><td>${EM[e]}×</td><td>${ep2.toLocaleString()}</td><td>${ppe}</td><td>${isFinite(p)?p.toLocaleString():'∞'}</td><td>${fT(t)}</td></tr>`;
   }).join('');
 
   // Song rank
@@ -421,7 +424,7 @@ function calc(){
     return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60))};
   }).filter(Boolean).sort((a,b)=>b.epm-a.epm).slice(0,15);
   document.querySelector('#rt tbody').innerHTML=rk.map((r,i)=>
-    `<tr><td></td><td> <span style="color:var(--text-muted);font-size:.85em">Lv.</span></td><td>s</td><td></td><td style="font-weight:600"></td></tr>`
+    `<tr><td>${i+1}</td><td>${esc(r.t)} <span style="color:var(--text-muted);font-size:.85em">Lv.${r.l}</span></td><td>${r.s}s</td><td>${r.ep.toLocaleString()}</td><td style="font-weight:600">${r.epm.toLocaleString()}</td></tr>`
   ).join('');
   $('rc').style.display='block';
 
