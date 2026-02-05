@@ -7,174 +7,762 @@
 <title>EP計算器 — Project SEKAI 資源中心</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}:root{--navy:#1a1a2e;--navy2:#16213e;--accent:#0f3460;--text:#2c2c2c;--text-light:#555;--text-muted:#999;--border:#ddd;--border-light:#eee;--bg:#fff;--bg-input:#f7f7f7;--green:#2e7d32;--green-bg:#e8f5e9;--blue:#1565c0;--blue-bg:#e3f2fd;--orange:#e65100;--orange-bg:#fff3e0;--red:#c62828;--red-bg:#fce4ec;--purple:#7b1fa2;--purple-bg:#f3e5f5;--gold:#ffcc00;--gold-bg:#2c2c2c;--safe-bottom:env(safe-area-inset-bottom,0px)}body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','SimSun','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:15px;-webkit-tap-highlight-color:transparent}.topnav{background:var(--navy);color:#fff;display:flex;align-items:center;gap:4px 16px;padding:10px 16px;font-size:.82em;letter-spacing:.03em;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap}.topnav::-webkit-scrollbar{display:none}.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:6px 4px;transition:color .15s;flex-shrink:0}.topnav a:hover{color:#fff}.topnav a.cur{color:#fff;font-weight:700;border-bottom:2px solid #fff;padding-bottom:4px}.hero{text-align:center;padding:28px 16px 22px;border-bottom:2px solid var(--navy)}.hero h1{font-size:1.5em;font-weight:700;color:var(--navy);letter-spacing:.1em}.hero .sub{font-size:.82em;color:var(--text-light);letter-spacing:.04em;margin-top:2px}.hero .upd{font-size:.75em;color:var(--text-muted);font-style:italic;margin-top:5px}.container{max-width:1100px;margin:0 auto;padding:20px 16px 50px;padding-bottom:calc(20px + var(--safe-bottom))}.sec-title{font-size:1.1em;font-weight:700;color:var(--navy);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}.sec-title small{font-weight:400;font-size:.72em;color:var(--text-muted);margin-left:6px}.main-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--navy);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.main-tabs::-webkit-scrollbar{display:none}.mtab{padding:12px 20px;font-family:inherit;font-size:.88em;font-weight:600;color:var(--text-light);background:none;border:none;cursor:pointer;position:relative;white-space:nowrap;transition:color .15s;letter-spacing:.04em}.mtab:hover{color:var(--navy)}.mtab.on{color:var(--navy)}.mtab.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--navy);border-radius:2px 2px 0 0}.tab-panel{display:none}.tab-panel.show{display:block}.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.single-col{max-width:600px}.lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px}.lib-label{font-size:.92em;font-weight:700;color:var(--navy)}.lib-stat{font-size:.74em;color:var(--text-muted)}.lib-stat b{color:var(--text-light)}.lib-search{width:100%;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;margin-bottom:8px;transition:border-color .15s;-webkit-appearance:none}.lib-search:focus{border-color:var(--accent)}.sort-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}.sb{padding:6px 12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.74em;transition:all .15s;user-select:none;white-space:nowrap;color:var(--text-light)}.sb:hover{border-color:var(--accent);color:var(--accent)}.sb.on{background:var(--navy);color:#fff;border-color:var(--navy)}.tw{max-height:520px;overflow-y:auto;overflow-x:auto;border:1px solid var(--border-light);border-radius:6px;-webkit-overflow-scrolling:touch}.tw::-webkit-scrollbar{width:4px;height:4px}.tw::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}.st-tbl{width:100%;border-collapse:collapse;font-size:.82em}.st-tbl thead{position:sticky;top:0;z-index:2}.st-tbl th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78em;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none}.st-tbl th:hover{background:var(--navy2)}.st-tbl td{padding:8px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap}.st-tbl tr{cursor:pointer;transition:background .12s}.st-tbl tbody tr:hover td{background:#f0f4ff}.st-tbl tbody tr.sel td{background:#edf0f8;font-weight:600}.dp{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.7em;font-weight:600;line-height:1.4;margin-right:2px}.dp-easy{background:var(--green-bg);color:var(--green)}.dp-normal{background:var(--blue-bg);color:var(--blue)}.dp-hard{background:var(--orange-bg);color:var(--orange)}.dp-expert{background:var(--red-bg);color:var(--red)}.dp-master{background:var(--purple-bg);color:var(--purple)}.dp-append{background:var(--gold-bg);color:var(--gold)}.sel-card{background:linear-gradient(135deg,#f8f9fd,#edf0f8);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:14px;display:none}.sel-card.show{display:block}.sel-card .sn{font-weight:700;font-size:1.02em;color:var(--navy);word-break:break-word}.sel-card .sm{font-size:.78em;color:var(--text-light);margin-top:2px;word-break:break-word}.dc-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}.dc{padding:6px 14px;border-radius:16px;font-size:.76em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}.dc.on{border-color:var(--navy);transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,.1)}.dc-easy{background:var(--green-bg);color:var(--green)}.dc-normal{background:var(--blue-bg);color:var(--blue)}.dc-hard{background:var(--orange-bg);color:var(--orange)}.dc-expert{background:var(--red-bg);color:var(--red)}.dc-master{background:var(--purple-bg);color:var(--purple)}.dc-append{background:var(--gold-bg);color:var(--gold)}.card{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;margin-bottom:14px}.card-title{font-size:.92em;font-weight:700;color:var(--navy);margin-bottom:12px}.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fg{display:flex;flex-direction:column}.fg.full{grid-column:1/-1}.fg label{font-size:.8em;font-weight:700;color:var(--text-light);margin-bottom:4px}.fg input,.fg select{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none}.fg input:focus,.fg select:focus{border-color:var(--accent)}.fg .h{font-size:.68em;color:var(--text-muted);margin-top:3px}.irow{display:flex;align-items:center;gap:6px}.irow .unit{font-size:.8em;color:var(--text-muted);flex-shrink:0}.tr{display:flex;gap:6px;flex-wrap:wrap}.tg{padding:8px 14px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;transition:all .15s;user-select:none;color:var(--text-light)}.tg:hover{border-color:var(--accent);color:var(--accent)}.tg.on{background:var(--accent);color:#fff;border-color:var(--accent)}.tg.dk.on{background:var(--navy);color:#fff;border-color:var(--navy)}.tg.sm{padding:6px 10px;font-size:.74em}.cbtn{display:block;width:100%;padding:14px;margin-top:14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95em;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .2s;touch-action:manipulation}.cbtn:hover{background:var(--accent)}.cbtn:active{background:#0a2440;transform:scale(.98)}.tip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative}.tip:hover::after,.tip:active::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:8px 12px;border-radius:6px;white-space:normal;z-index:99;max-width:280px;min-width:180px;line-height:1.4;pointer-events:none}.chk-row{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;user-select:none}.chk-row input[type="checkbox"]{width:18px;height:18px;accent-color:var(--navy);cursor:pointer}.chk-row span{font-size:.82em;color:var(--text-light)}.res{display:none}.res.show{display:block}.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}.ri{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;text-align:center}.ri .rl{font-size:.68em;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}.ri .rv{font-size:1.35em;font-weight:700;color:var(--navy)}.ri .ru{font-size:.68em;color:var(--text-light);margin-top:2px}.ri-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff)}.ew{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}table.et{width:100%;border-collapse:collapse;font-size:.78em;min-width:420px}.et th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.8em;white-space:nowrap}.et td{padding:8px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap}.et tr:hover td{background:#f5f8ff}.et .hr td{background:#edf0f8;font-weight:600}.deck-tabs{display:flex;gap:6px;margin-bottom:14px}.deck-tab{padding:8px 20px;border:1px solid var(--border);border-radius:20px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.82em;font-weight:600;transition:all .15s;color:var(--text-light)}.deck-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}.mrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light)}.mrow:last-child{border-bottom:none}.mrow-lb{font-size:.85em;font-weight:700;color:var(--text);min-width:90px}.mrow-in{flex:1;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;text-align:center;-webkit-appearance:none;max-width:120px}.mrow-in:focus{border-color:var(--accent)}.mrow-u{font-size:.8em;color:var(--text-muted)}.ibar{display:flex;justify-content:space-between;padding:10px 14px;background:linear-gradient(135deg,#f8f9fd,#edf0f8);border-radius:8px;margin-top:12px;font-size:.82em;flex-wrap:wrap;gap:4px}.ibar .il{color:var(--text-muted)}.ibar .iv{font-weight:700;color:var(--navy)}.dk-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-light)}.dk-row:last-child{border-bottom:none}.dk-name{font-weight:700;font-size:.9em}.dk-tag{font-size:.66em;padding:2px 6px;border-radius:8px;font-weight:600;margin-left:4px;display:inline-block}.dk-mid{font-size:.78em;color:var(--text-muted)}.dk-ep{font-weight:700;font-size:1.1em;color:var(--accent);min-width:70px;text-align:right}.er-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px}.er-row .er-l{font-size:.85em;color:var(--text-light);font-weight:600}.er-row .er-v{font-size:1.25em;font-weight:700;color:var(--accent)}.er-row .er-s{font-size:.72em;color:var(--text-muted);margin-left:6px}.er-row.er-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff)}.sa-row{background:var(--bg-input);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;margin-bottom:8px;transition:all .15s}.sa-row:hover{border-color:var(--accent)}.sa-row.best{border-color:var(--accent);border-width:2px;background:linear-gradient(135deg,#f8f9fd,#edf0f8)}.sa-flex{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}.sa-l{font-size:.78em;color:var(--text-muted)}.sa-v{font-weight:700;color:var(--navy)}.sa-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.66em;font-weight:600;background:var(--green-bg);color:var(--green);margin-left:6px}.sa-note{font-size:.72em;color:var(--text-muted);margin-top:4px}.coll-btn{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:.85em;font-weight:600;color:var(--accent);border:none;background:none;font-family:inherit}.coll-btn .arr{transition:transform .2s;font-size:.7em}.coll-btn.open .arr{transform:rotate(90deg)}.coll-body{display:none;padding-bottom:10px}.coll-body.open{display:block}.sl-bar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}.sl-btn{padding:8px 18px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;font-weight:600;color:var(--text-light);transition:all .15s}.sl-btn:hover{border-color:var(--accent);color:var(--accent)}.sl-btn.pri{background:var(--accent);color:#fff;border-color:var(--accent)}.sl-btn.pri:hover{background:var(--navy)}.sl-chk{display:flex;align-items:center;gap:5px;font-size:.76em;color:var(--text-muted)}.sl-chk input{accent-color:var(--navy)}.ms-st{font-size:.78em;padding:6px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;margin-bottom:10px}.ms-ok{background:var(--green-bg);color:var(--green)}.ms-err{background:var(--red-bg);color:var(--red)}.ms-load{background:var(--blue-bg);color:var(--blue)}.ms-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}.loading{text-align:center;padding:50px 20px;color:var(--text-muted);font-size:.9em}.spin{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle}@keyframes sp{to{transform:rotate(360deg)}}footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:.72em;color:var(--text-muted);line-height:1.6}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+:root{--navy:#1a1a2e;--navy2:#16213e;--accent:#0f3460;--text:#2c2c2c;--text-light:#555;--text-muted:#999;--border:#ddd;--border-light:#eee;--bg:#fff;--bg-input:#f7f7f7;--green:#2e7d32;--green-bg:#e8f5e9;--blue:#1565c0;--blue-bg:#e3f2fd;--orange:#e65100;--orange-bg:#fff3e0;--red:#c62828;--red-bg:#fce4ec;--purple:#7b1fa2;--purple-bg:#f3e5f5;--gold:#ffcc00;--gold-bg:#2c2c2c;--safe-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','SimSun','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:15px;-webkit-tap-highlight-color:transparent}
+.topnav{background:var(--navy);color:#fff;display:flex;align-items:center;gap:4px 16px;padding:10px 16px;font-size:.82em;letter-spacing:.03em;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap}
+.topnav::-webkit-scrollbar{display:none}
+.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:6px 4px;transition:color .15s;flex-shrink:0}
+.topnav a:hover{color:#fff}
+.topnav a.cur{color:#fff;font-weight:700;border-bottom:2px solid #fff;padding-bottom:4px}
+.hero{text-align:center;padding:28px 16px 22px;border-bottom:2px solid var(--navy)}
+.hero h1{font-size:1.5em;font-weight:700;color:var(--navy);letter-spacing:.1em}
+.hero .sub{font-size:.82em;color:var(--text-light);letter-spacing:.04em;margin-top:2px}
+.hero .upd{font-size:.75em;color:var(--text-muted);font-style:italic;margin-top:5px}
+.container{max-width:1100px;margin:0 auto;padding:20px 16px 50px;padding-bottom:calc(20px + var(--safe-bottom))}
+.sec-title{font-size:1.1em;font-weight:700;color:var(--navy);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.sec-title small{font-weight:400;font-size:.72em;color:var(--text-muted);margin-left:6px}
+.main-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--navy);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.main-tabs::-webkit-scrollbar{display:none}
+.mtab{padding:12px 20px;font-family:inherit;font-size:.88em;font-weight:600;color:var(--text-light);background:none;border:none;cursor:pointer;position:relative;white-space:nowrap;transition:color .15s;letter-spacing:.04em}
+.mtab:hover{color:var(--navy)}
+.mtab.on{color:var(--navy)}
+.mtab.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--navy);border-radius:2px 2px 0 0}
+.tab-panel{display:none}.tab-panel.show{display:block}
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.single-col{max-width:600px}
+.lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.lib-label{font-size:.92em;font-weight:700;color:var(--navy)}
+.lib-stat{font-size:.74em;color:var(--text-muted)}.lib-stat b{color:var(--text-light)}
+.lib-search{width:100%;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;margin-bottom:8px;transition:border-color .15s;-webkit-appearance:none}
+.lib-search:focus{border-color:var(--accent)}
+.sort-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.sb{padding:6px 12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.74em;transition:all .15s;user-select:none;white-space:nowrap;color:var(--text-light)}
+.sb:hover{border-color:var(--accent);color:var(--accent)}
+.sb.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tw{max-height:520px;overflow-y:auto;overflow-x:auto;border:1px solid var(--border-light);border-radius:6px;-webkit-overflow-scrolling:touch}
+.tw::-webkit-scrollbar{width:4px;height:4px}.tw::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}
+.st-tbl{width:100%;border-collapse:collapse;font-size:.82em}
+.st-tbl thead{position:sticky;top:0;z-index:2}
+.st-tbl th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78em;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none}
+.st-tbl th:hover{background:var(--navy2)}
+.st-tbl td{padding:8px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap}
+.st-tbl tr{cursor:pointer;transition:background .12s}
+.st-tbl tbody tr:hover td{background:#f0f4ff}
+.st-tbl tbody tr.sel td{background:#edf0f8;font-weight:600}
+.dp{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.7em;font-weight:600;line-height:1.4;margin-right:2px}
+.dp-easy{background:var(--green-bg);color:var(--green)}.dp-normal{background:var(--blue-bg);color:var(--blue)}.dp-hard{background:var(--orange-bg);color:var(--orange)}.dp-expert{background:var(--red-bg);color:var(--red)}.dp-master{background:var(--purple-bg);color:var(--purple)}.dp-append{background:var(--gold-bg);color:var(--gold)}
+.sel-card{background:linear-gradient(135deg,#f8f9fd,#edf0f8);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:14px;display:none}
+.sel-card.show{display:block}
+.sel-card .sn{font-weight:700;font-size:1.02em;color:var(--navy);word-break:break-word}
+.sel-card .sm{font-size:.78em;color:var(--text-light);margin-top:2px;word-break:break-word}
+.dc-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.dc{padding:6px 14px;border-radius:16px;font-size:.76em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}
+.dc.on{border-color:var(--navy);transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.dc-easy{background:var(--green-bg);color:var(--green)}.dc-normal{background:var(--blue-bg);color:var(--blue)}.dc-hard{background:var(--orange-bg);color:var(--orange)}.dc-expert{background:var(--red-bg);color:var(--red)}.dc-master{background:var(--purple-bg);color:var(--purple)}.dc-append{background:var(--gold-bg);color:var(--gold)}
+.card{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;margin-bottom:14px}
+.card-title{font-size:.92em;font-weight:700;color:var(--navy);margin-bottom:12px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column}.fg.full{grid-column:1/-1}
+.fg label{font-size:.8em;font-weight:700;color:var(--text-light);margin-bottom:4px}
+.fg input{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none}
+.fg input:focus{border-color:var(--accent)}
+.fg .h{font-size:.68em;color:var(--text-muted);margin-top:3px}
+.tr{display:flex;gap:6px;flex-wrap:wrap}
+.tg{padding:8px 14px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;transition:all .15s;user-select:none;color:var(--text-light)}
+.tg:hover{border-color:var(--accent);color:var(--accent)}
+.tg.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tg.dk.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.cbtn{display:block;width:100%;padding:14px;margin-top:14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95em;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .2s;touch-action:manipulation}
+.cbtn:hover{background:var(--accent)}.cbtn:active{background:#0a2440;transform:scale(.98)}
+.tip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative}
+.tip:hover::after,.tip:active::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:8px 12px;border-radius:6px;white-space:normal;z-index:99;max-width:260px;min-width:180px;line-height:1.4;pointer-events:none}
+.chk-row{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;user-select:none}
+.chk-row input[type="checkbox"]{width:18px;height:18px;accent-color:var(--navy);cursor:pointer}
+.chk-row span{font-size:.82em;color:var(--text-light)}
+.res{display:none}.res.show{display:block}
+.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.ri{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;text-align:center}
+.ri .rl{font-size:.68em;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.ri .rv{font-size:1.35em;font-weight:700;color:var(--navy)}
+.ri .ru{font-size:.68em;color:var(--text-light);margin-top:2px}
+.ri-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff)}
+.ew{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}
+table.et{width:100%;border-collapse:collapse;font-size:.78em;min-width:420px}
+.et th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.8em;white-space:nowrap}
+.et td{padding:8px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap}
+.et tr:hover td{background:#f5f8ff}.et .hr td{background:#edf0f8;font-weight:600}
+.deck-tabs{display:flex;gap:6px;margin-bottom:14px}
+.deck-tab{padding:8px 20px;border:1px solid var(--border);border-radius:20px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.82em;font-weight:600;transition:all .15s;color:var(--text-light)}
+.deck-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.member-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.member-row:last-child{border-bottom:none}
+.member-label{font-size:.85em;font-weight:700;color:var(--text);min-width:90px}
+.member-input{flex:1;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;text-align:center;-webkit-appearance:none;max-width:120px}
+.member-input:focus{border-color:var(--accent)}
+.member-unit{font-size:.8em;color:var(--text-muted)}
+.internal-bar{display:flex;justify-content:space-between;padding:10px 14px;background:linear-gradient(135deg,#f8f9fd,#edf0f8);border-radius:8px;margin-top:12px;font-size:.82em}
+.internal-bar .ib-label{color:var(--text-muted)}.internal-bar .ib-val{font-weight:700;color:var(--navy)}
+.er-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px}
+.er-item .er-label{font-size:.85em;color:var(--text-light);font-weight:600}
+.er-item .er-val{font-size:1.25em;font-weight:700;color:var(--accent)}
+.er-item .er-sub{font-size:.72em;color:var(--text-muted);margin-left:6px}
+.er-item.er-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff)}
+.sa-combo{background:var(--bg-input);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.sa-combo.best{border-color:var(--accent);border-width:2px;background:linear-gradient(135deg,#f8f9fd,#edf0f8)}
+.sa-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
+.sa-label{font-size:.78em;color:var(--text-muted)}.sa-val{font-weight:700;color:var(--navy)}
+.sa-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68em;font-weight:600;background:var(--green-bg);color:var(--green);margin-left:6px}
+.sa-note{font-size:.72em;color:var(--text-muted);margin-top:4px}
+.collapse-btn{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:.85em;font-weight:600;color:var(--accent);border:none;background:none;font-family:inherit}
+.collapse-btn .arr{transition:transform .2s;font-size:.7em}
+.collapse-btn.open .arr{transform:rotate(90deg)}
+.collapse-body{display:none;padding-bottom:10px}.collapse-body.open{display:block}
+.sl-bar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.sl-btn{padding:8px 18px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;font-weight:600;color:var(--text-light);transition:all .15s}
+.sl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sl-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sl-chk{display:flex;align-items:center;gap:5px;font-size:.76em;color:var(--text-muted)}
+.sl-chk input{accent-color:var(--navy)}
+.loading{text-align:center;padding:50px 20px;color:var(--text-muted);font-size:.9em}
+.spin{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:.72em;color:var(--text-muted);line-height:1.6}
 @media(max-width:860px){.main-layout{grid-template-columns:1fr}}
-@media(max-width:600px){body{font-size:14px}.topnav{padding:8px 12px;gap:2px 10px;font-size:.78em}.hero{padding:20px 14px 16px}.hero h1{font-size:1.2em}.container{padding:14px 12px 40px}.sec-title{font-size:1em;margin:18px 0 12px}.mtab{padding:10px 14px;font-size:.8em}.lib-search{padding:10px;font-size:16px}.sort-bar{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.sort-bar::-webkit-scrollbar{display:none}.sb{padding:6px 10px;font-size:.72em;flex-shrink:0}.tw{max-height:380px}.st-tbl{font-size:.76em;min-width:480px}.sel-card{padding:12px 14px}.card{padding:14px}.fg2{gap:10px}.tg{padding:7px 11px;font-size:.76em}.tg.sm{padding:5px 8px;font-size:.7em}.cbtn{padding:14px;font-size:.9em}.rg{grid-template-columns:1fr 1fr;gap:8px}.ri{padding:10px 12px}.ri .rv{font-size:1.2em}table.et{font-size:.74em;min-width:400px}.mrow-lb{min-width:75px;font-size:.8em}.single-col{max-width:100%}}
+@media(max-width:600px){
+body{font-size:14px}.topnav{padding:8px 12px;gap:2px 10px;font-size:.78em}.hero{padding:20px 14px 16px}.hero h1{font-size:1.2em}.container{padding:14px 12px 40px}.sec-title{font-size:1em;margin:18px 0 12px}.mtab{padding:10px 14px;font-size:.8em}.lib-search{padding:10px;font-size:16px}.sort-bar{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.sort-bar::-webkit-scrollbar{display:none}.sb{padding:6px 10px;font-size:.72em;flex-shrink:0}.tw{max-height:380px}.st-tbl{font-size:.76em}.card{padding:14px}.fg2{gap:10px}.tg{padding:7px 11px;font-size:.76em}.cbtn{padding:14px;font-size:.9em}.rg{grid-template-columns:1fr 1fr;gap:8px}.ri{padding:10px 12px}.ri .rv{font-size:1.2em}table.et{font-size:.74em;min-width:400px}.member-label{min-width:75px;font-size:.8em}.single-col{max-width:100%}
+}
 @media(max-width:380px){.fg2{grid-template-columns:1fr;gap:8px}.rg{grid-template-columns:1fr 1fr;gap:6px}.mtab{padding:8px 10px;font-size:.74em}}
-@media(prefers-color-scheme:dark){:root{--bg:#121212;--bg-input:#1e1e1e;--text:#e0e0e0;--text-light:#aaa;--text-muted:#666;--border:#333;--border-light:#2a2a2a;--navy:#1a1a2e;--navy2:#16213e;--accent:#3a6ea5}.st-tbl tbody tr:hover td{background:#1e2438}.sel-card,.ibar,.sa-row.best,.er-row.er-hl,.ri-hl{background:linear-gradient(135deg,#1a1e2e,#1e2438)}}
+@media(prefers-color-scheme:dark){
+:root{--bg:#121212;--bg-input:#1e1e1e;--text:#e0e0e0;--text-light:#aaa;--text-muted:#666;--border:#333;--border-light:#2a2a2a;--navy:#1a1a2e;--navy2:#16213e;--accent:#3a6ea5}
+.st-tbl tbody tr:hover td{background:#1e2438}.sel-card,.internal-bar,.sa-combo.best,.er-item.er-hl,.ri-hl{background:linear-gradient(135deg,#1a1e2e,#1e2438)}.er-item,.sa-combo{background:#1e1e1e}
+}
 </style>
 </head>
 <body>
-<nav class="topnav"><a href="https://project-sekai-center.vercel.app/">日曆</a><a href="https://project-sekai-center.vercel.app/">活動</a><a href="https://project-sekai-center.vercel.app/">官方</a><a href="https://project-sekai-center.vercel.app/">資訊站</a><a href="https://project-sekai-center.vercel.app/">卡池</a><a href="https://project-sekai-center.vercel.app/">歌曲</a><a class="cur" href="#">EP計算器</a><a href="https://project-sekai-center.vercel.app/">社群</a><a href="https://project-sekai-center.vercel.app/">Wiki</a><a href="https://project-sekai-center.vercel.app/">工具</a></nav>
-<div class="hero"><h1>Project SEKAI 資源中心</h1><div class="sub">世界計畫 繽紛舞台！ feat. 初音未來</div><div class="upd">最後更新：2025.02</div></div>
+<nav class="topnav">
+<a href="https://project-sekai-center.vercel.app/">日曆</a>
+<a href="https://project-sekai-center.vercel.app/">活動</a>
+<a href="https://project-sekai-center.vercel.app/">官方</a>
+<a href="https://project-sekai-center.vercel.app/">資訊站</a>
+<a href="https://project-sekai-center.vercel.app/">卡池</a>
+<a href="https://project-sekai-center.vercel.app/">歌曲</a>
+<a class="cur" href="#">EP計算器</a>
+<a href="https://project-sekai-center.vercel.app/">社群</a>
+<a href="https://project-sekai-center.vercel.app/">Wiki</a>
+<a href="https://project-sekai-center.vercel.app/">工具</a>
+</nav>
+<div class="hero">
+<h1>Project SEKAI 資源中心</h1>
+<div class="sub">世界計畫 彩色舞台 feat. 初音未來</div>
+<div class="upd">Last Updated: 2025.02</div>
+</div>
 <div class="container">
 <div id="ld" class="loading"><span class="spin"></span>正在載入歌曲資料庫⋯</div>
 <div id="app" style="display:none">
 <div class="sec-title">活動分數計算器 <small>Event Point Calculator</small></div>
-<div class="main-tabs" id="mainTabs"><button class="mtab on" data-tab="tabDeck">隊伍</button><button class="mtab" data-tab="tabEP">EP 計算</button><button class="mtab" data-tab="tabRun">活動進度</button><button class="mtab" data-tab="tabArt">分數調整</button><button class="mtab" data-tab="tabMS">資料表</button></div>
+<div class="main-tabs" id="mainTabs">
+<button class="mtab on" data-tab="tabDeck">Deck</button>
+<button class="mtab" data-tab="tabEP">EP 計算</button>
+<button class="mtab" data-tab="tabRun">Event Run</button>
+<button class="mtab" data-tab="tabArt">Score Art</button>
+</div>
 
-<!-- 隊伍 --><div class="tab-panel show" id="tabDeck"><div class="main-layout"><div><div class="card"><div class="card-title">隊伍設定</div><div class="deck-tabs" id="deckTabs"><div class="deck-tab on" data-dk="0">隊伍 1</div><div class="deck-tab" data-dk="1">隊伍 2</div><div class="deck-tab" data-dk="2">隊伍 3</div></div><div class="fg" style="margin-bottom:14px"><label>綜合力</label><input type="number" id="dkPow" value="293231" min="0" step="1000" inputmode="numeric"></div><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">成員技能</div><div class="mrow"><div class="mrow-lb">隊長</div><input type="number" class="mrow-in" id="ms0" value="120" min="0" max="300" inputmode="numeric"><div class="mrow-u">%</div></div><div class="mrow"><div class="mrow-lb">成員 2</div><input type="number" class="mrow-in" id="ms1" value="100" min="0" max="300" inputmode="numeric"><div class="mrow-u">%</div></div><div class="mrow"><div class="mrow-lb">成員 3</div><input type="number" class="mrow-in" id="ms2" value="100" min="0" max="300" inputmode="numeric"><div class="mrow-u">%</div></div><div class="mrow"><div class="mrow-lb">成員 4</div><input type="number" class="mrow-in" id="ms3" value="100" min="0" max="300" inputmode="numeric"><div class="mrow-u">%</div></div><div class="mrow"><div class="mrow-lb">成員 5</div><input type="number" class="mrow-in" id="ms4" value="100" min="0" max="300" inputmode="numeric"><div class="mrow-u">%</div></div><div class="fg" style="margin-top:14px"><label>活動加成 <span class="tip" data-t="隊伍卡片活動加成總和。滿加成約 250%">?</span></label><input type="number" id="dkBon" value="250" min="0" max="400" step="5" inputmode="numeric"><div class="h">%</div></div><div class="fg" style="margin-top:12px"><label>房間條件 <span class="tip" data-t="協力房間的平均加成倍率。假設全員相同內部值。請輸入房間條件而非個人。">?</span></label><input type="number" id="dkRoom" value="200" min="0" max="400" step="10" inputmode="numeric"><div class="h">%</div></div><div class="chk-row"><input type="checkbox" id="dkBloom"><span>使用 Bloom Fes（特訓前）</span></div><div class="ibar"><div><span class="il">內部值：</span><span class="iv" id="dkIV">200%</span></div><div><span class="il">內部合計：</span><span class="iv" id="dkIS">120/520</span></div></div><button class="cbtn" onclick="calcDeck()">計算 EP 效率</button></div></div><div><div class="card" id="dkResCard" style="display:none"><div class="card-title" id="dkResH">EP 效率表</div><div style="font-size:.76em;color:var(--text-muted);margin-bottom:10px" id="dkResSub"></div><div id="dkSongList"></div><div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light)"><div style="font-size:.82em;font-weight:700;color:var(--navy);margin-bottom:8px">每萬綜合力等效倍率</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="ri"><div class="rl">協力</div><div class="rv" id="dkME" style="color:var(--green)">—</div></div><div class="ri"><div class="rl">個人</div><div class="rv" id="dkSE" style="color:var(--blue)">—</div></div><div class="ri"><div class="rl">自動</div><div class="rv" id="dkAE" style="color:var(--orange)">—</div></div></div></div><div style="font-size:.72em;color:var(--text-muted);margin-top:8px">基於 Lost and Found 分數的效率</div><div class="sl-bar"><button class="sl-btn pri" onclick="saveDeckLS()">儲存</button><button class="sl-btn" onclick="loadDeckLS()">載入</button><label class="sl-chk"><input type="checkbox" id="dkAL" checked> 自動載入</label></div></div></div></div></div>
+<!-- ======== DECK ======== -->
 
-<!-- EP 計算 --><div class="tab-panel" id="tabEP"><div class="main-layout"><div><div class="lib-head"><div class="lib-label">曲庫一覽</div><div class="lib-stat">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div></div><input type="text" class="lib-search" id="q" placeholder="搜尋歌名、作曲者、ID⋯" autocomplete="off"><div class="sort-bar" id="sbar"><div class="sb on" data-k="id" data-d="asc">ID ▲</div><div class="sb" data-k="title" data-d="asc">曲名</div><div class="sb" data-k="composer" data-d="asc">作曲</div><div class="sb" data-k="master" data-d="desc">MA 等級</div><div class="sb" data-k="notes" data-d="desc">音符數</div><div class="sb" data-k="date" data-d="desc">發佈日</div></div><div class="tw" id="tw"><table class="st-tbl"><thead><tr><th style="width:42px">ID</th><th>曲名</th><th>作曲</th><th style="cursor:default">難度</th></tr></thead><tbody id="tb"></tbody></table></div></div><div><div class="sel-card" id="sc"><div class="sn" id="sn"></div><div class="sm" id="si"></div><div class="dc-row" id="dr"></div></div><div class="card"><div class="card-title">演出設定</div><div class="fg2"><div class="fg full"><label>演出類型</label><div class="tr" id="tt"><div class="tg dk on" data-v="multi">協力演出</div><div class="tg dk" data-v="solo">個人演出</div><div class="tg dk" data-v="cheerful">嘉年華</div><div class="tg dk" data-v="challenge">挑戰演出</div></div></div><div class="fg full"><label>消耗體力 <span class="tip" data-t="1→5倍 2→10倍 3→15倍 4→20倍 5→25倍 6→27倍 7→29倍 8→31倍 9→33倍 10→35倍">?</span></label><div class="tr" id="eb"><div class="tg sm" data-v="0">0</div><div class="tg sm" data-v="1">1</div><div class="tg sm" data-v="2">2</div><div class="tg sm on" data-v="3">3</div><div class="tg sm" data-v="4">4</div><div class="tg sm" data-v="5">5</div><div class="tg sm" data-v="6">6</div><div class="tg sm" data-v="7">7</div><div class="tg sm" data-v="8">8</div><div class="tg sm" data-v="9">9</div><div class="tg sm" data-v="10">10</div></div></div><div class="fg"><label>預估分數</label><input type="number" id="si2" value="1500000" min="0" step="10000" inputmode="numeric"><div class="h">協力 120–350 萬 / 個人 80–200 萬</div></div><div class="fg"><label>活動加成 %</label><input type="number" id="bi" value="200" min="0" max="400" step="5" inputmode="numeric"></div><div class="fg"><label>目標 EP</label><input type="number" id="te" value="1000000" min="0" step="10000" inputmode="numeric"><div class="h">故事全開 15 萬 / T1000 約 100–300 萬</div></div><div class="fg"><label>目前已有 EP</label><input type="number" id="ce" value="0" min="0" step="1000" inputmode="numeric"></div></div><button class="cbtn" onclick="calc()">計　算</button></div><div class="res" id="res"><div class="rg" id="rg"></div><div class="card" style="padding:14px 16px"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">各體力效率比較</div><div class="ew"><table class="et" id="etTbl"><thead><tr><th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th></tr></thead><tbody></tbody></table></div></div><div class="card" id="rc" style="padding:14px 16px;display:none"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">時間效率前 15 名（EP/分鐘）</div><div class="ew"><table class="et" id="rt"><thead><tr><th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th></tr></thead><tbody></tbody></table></div></div></div></div></div></div>
+<div class="tab-panel show" id="tabDeck">
+<div class="main-layout">
+<div>
+<div class="card">
+<div class="card-title">隊伍設定</div>
+<div class="deck-tabs" id="deckTabs">
+<div class="deck-tab on" data-dk="0">Deck 1</div>
+<div class="deck-tab" data-dk="1">Deck 2</div>
+<div class="deck-tab" data-dk="2">Deck 3</div>
+</div>
+<div class="fg" style="margin-bottom:14px"><label>綜合力 Total Power</label><input type="number" id="dkPower" value="293231" min="0" step="1000" inputmode="numeric"></div>
+<div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">成員技能 Member Skills</div>
+<div class="member-row"><div class="member-label">Leader</div><input type="number" class="member-input" id="msk0" value="120" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
+<div class="member-row"><div class="member-label">Member 2</div><input type="number" class="member-input" id="msk1" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
+<div class="member-row"><div class="member-label">Member 3</div><input type="number" class="member-input" id="msk2" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
+<div class="member-row"><div class="member-label">Member 4</div><input type="number" class="member-input" id="msk3" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
+<div class="member-row"><div class="member-label">Member 5</div><input type="number" class="member-input" id="msk4" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
+<div class="fg" style="margin-top:14px"><label>活動加成 Event Bonus <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label><input type="number" id="dkBonus" value="250" min="0" max="400" step="5" inputmode="numeric"><div class="h">%</div></div>
+<div class="fg" style="margin-top:12px"><label>房間條件 Room Condition <span class="tip" data-t="協力房間的平均加成。假設全員相同 internal value。輸入房間條件而非個人。">?</span></label><input type="number" id="dkRoom" value="200" min="0" max="400" step="10" inputmode="numeric"><div class="h">%</div></div>
+<div class="chk-row"><input type="checkbox" id="dkBloom"><span>Use Bloom Fes (Pre-training)</span></div>
+<div class="internal-bar"><div><span class="ib-label">Internal Value:</span> <span class="ib-val" id="dkIV">200%</span></div><div><span class="ib-label">Internal Sum:</span> <span class="ib-val" id="dkIS">120/520</span></div></div>
+<button class="cbtn" onclick="calcDeck()">計算 EP 效率</button>
+</div>
+</div>
+<div>
+<div class="card" id="dkResultCard" style="display:none">
+<div class="card-title" id="dkResTitle">EP 效率表</div>
+<div style="font-size:.78em;color:var(--text-muted);margin-bottom:10px" id="dkResSub"></div>
+<div class="ew"><table class="et" id="dkTbl"><thead><tr><th>歌曲</th><th>體力</th><th style="text-align:right">EP</th></tr></thead><tbody id="dkTblBody"></tbody></table></div>
+<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light)">
+<div style="font-size:.82em;font-weight:700;color:var(--navy);margin-bottom:8px">Multiplier equivalent to 10k Power</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+<div class="ri"><div class="rl">Multi</div><div class="rv" id="dkMulEq" style="color:var(--green)">—</div></div>
+<div class="ri"><div class="rl">Solo</div><div class="rv" id="dkSolEq" style="color:var(--blue)">—</div></div>
+<div class="ri"><div class="rl">Auto</div><div class="rv" id="dkAutEq" style="color:var(--orange)">—</div></div>
+</div></div>
+<div class="sl-bar"><button class="sl-btn primary" onclick="saveDeckLS()">Save</button><button class="sl-btn" onclick="loadDeckLS()">Load</button><label class="sl-chk"><input type="checkbox" id="dkAutoLoad" checked> Auto Load</label></div>
+</div>
+</div>
+</div>
+</div>
 
-<!-- 活動進度 --><div class="tab-panel" id="tabRun"><div class="single-col"><div class="card"><div class="card-title">活動進度規劃</div><div class="fg2"><div class="fg"><label>目前分數</label><div class="irow"><input type="number" id="erCur" value="217" min="0" inputmode="numeric" style="flex:1"><span class="unit">0k</span></div></div><div class="fg"><label>目標分數</label><div class="irow"><input type="number" id="erTgt" value="3000" min="0" inputmode="numeric" style="flex:1"><span class="unit">0k</span></div></div><div class="fg"><label>每場分數 <span class="tip" data-t="每場獲得的 EP，可從「隊伍」頁面計算">?</span></label><div class="irow"><input type="number" id="erSPG" value="2.8" min="0" step="0.1" inputmode="decimal" style="flex:1"><span class="unit">0k</span></div></div><div class="fg"><label>每輪場數 <span class="tip" data-t="每次回復體力後連續打的場次數">?</span></label><input type="number" id="erRnd" value="28" min="1" inputmode="numeric"><div class="h">場</div></div><div class="fg"><label>目前體力</label><input type="number" id="erEng" value="5" min="0" inputmode="numeric"></div><div class="fg"><label>變更體力</label><div class="tr" id="erChg"><div class="tg dk on" data-v="no">不變</div><div class="tg dk" data-v="1">1</div><div class="tg dk" data-v="2">2</div><div class="tg dk" data-v="3">3</div><div class="tg dk" data-v="5">5</div></div></div></div><button class="coll-btn" id="erRecBtn" onclick="toggleColl('erRec','erRecBtn')"><span class="arr">▶</span> ⚡ 可回復體力</button><div class="coll-body" id="erRec"><div class="fg2" style="margin-top:8px"><div class="fg"><label>自然回復（小時）</label><input type="number" id="erNat" value="0" min="0" inputmode="numeric"><div class="h">1 體力 = 30 分鐘</div></div><div class="fg"><label>大罐數量</label><input type="number" id="erLC" value="0" min="0" inputmode="numeric"><div class="h">每罐 = 10 體力</div></div><div class="fg"><label>小罐數量</label><input type="number" id="erSC" value="0" min="0" inputmode="numeric"><div class="h">每罐 = 5 體力</div></div><div class="fg"><label>水晶換體次數</label><input type="number" id="erCr" value="0" min="0" inputmode="numeric"><div class="h">每次 = 10 體力</div></div></div></div><button class="cbtn" onclick="calcRun()">計　算</button></div><div class="res" id="erRes"><div id="erSum"></div></div></div></div>
+<!-- ======== EP 計算 ======== -->
 
-<!-- 分數調整 --><div class="tab-panel" id="tabArt"><div class="single-col"><div class="card"><div class="card-title">分數調整器</div><div class="fg2"><div class="fg"><label>目前 EP</label><input type="number" id="saCur" value="171923316" min="0" inputmode="numeric"><div class="h">pt</div></div><div class="fg"><label>目標 EP</label><input type="number" id="saTgt" value="172000414" min="0" inputmode="numeric"><div class="h">pt</div></div><div class="fg"><label>最大倍率</label><div class="irow"><input type="number" id="saMulti" value="300" min="100" max="400" step="5" inputmode="numeric" style="flex:1"><span class="unit">%</span></div></div><div class="fg"><label>最大綜合力</label><div class="irow"><input type="number" id="saPow" value="25.5" min="0" step="0.5" inputmode="decimal" style="flex:1"><span class="unit">0k</span></div></div><div class="fg full"><label>最大 Envy 簡單分數 <span class="tip" data-t="Envy 簡單模式的最大分數。較低的值更容易精準調整。">?</span></label><div class="irow"><input type="number" id="saEnvy" value="80" min="0" step="5" inputmode="numeric" style="max-width:200px"><span class="unit">0k</span></div><div class="h">較低的 Envy 分數更容易調整</div></div></div><div class="chk-row"><input type="checkbox" id="saE0"><span>Envy 0 分限定（不點擊）— 僅獲得基礎 EP（5 的倍數）</span></div><div class="chk-row"><input type="checkbox" id="saM5"><span>允許非 5 的倍數結果</span></div><div style="margin-top:14px;padding:10px 14px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-light)"><div style="font-size:.78em;font-weight:600;color:var(--navy);margin-bottom:4px">▪ 倍率調整</div><div style="font-size:.72em;color:var(--text-muted);line-height:1.5">▸ 避免小數（WL Support / 1,3 MR）<br>▪ <b>My Sekai</b><br>▸ 以 1E 確認分數（僅限自己的）<br>▸ 基於 Pass / 補充體力<br><span style="color:var(--red)">不允許使用藍色體力</span></div></div><button class="cbtn" onclick="calcArt()">搜尋組合</button></div><div class="res" id="saRes"><div class="card" style="padding:14px 16px"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:4px">Envy 分數表</div><div style="font-size:.72em;color:var(--text-muted);margin-bottom:10px" id="saInfo"></div><div id="saResults"></div><div id="saNo" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:.85em">找不到精確組合。嘗試調高最大 Envy 簡單分數或勾選「允許非 5 的倍數結果」。</div></div></div></div></div>
+<div class="tab-panel" id="tabEP">
+<div class="main-layout">
+<div>
+<div class="lib-head"><div class="lib-label">曲庫一覽</div><div class="lib-stat">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div></div>
+<input type="text" class="lib-search" id="q" placeholder="搜尋歌名、ID⋯" autocomplete="off">
+<div class="sort-bar" id="sbar">
+<div class="sb on" data-k="id" data-d="asc">ID ▲</div>
+<div class="sb" data-k="title" data-d="asc">曲名</div>
+<div class="sb" data-k="dur" data-d="asc">時長</div>
+<div class="sb" data-k="master" data-d="desc">MA 等級</div>
+</div>
+<div class="tw" id="tw">
+<table class="st-tbl"><thead><tr><th style="width:42px">ID</th><th>曲名</th><th>時長</th></tr></thead><tbody id="tb"></tbody></table>
+</div>
+</div>
+<div>
+<div class="sel-card" id="sc">
+<div class="sn" id="snTitle"></div>
+<div class="sm" id="snInfo"></div>
+<div class="dc-row" id="dr"></div>
+</div>
+<div class="card">
+<div class="card-title">演出設定</div>
+<div class="fg2">
+<div class="fg full"><label>演出類型</label><div class="tr" id="tt"><div class="tg dk on" data-v="multi">協力演出</div><div class="tg dk" data-v="solo">個人演出</div><div class="tg dk" data-v="cheerful">嘉年華</div><div class="tg dk" data-v="challenge">挑戰演出</div></div></div>
+<div class="fg full"><label>消耗體力 <span class="tip" data-t="0=1× 1=5× 2=10× 3=15× 5=25× 10=50×">?</span></label><div class="tr" id="eb"><div class="tg" data-v="0">0×</div><div class="tg" data-v="1">1×</div><div class="tg" data-v="2">2×</div><div class="tg on" data-v="3">3×</div><div class="tg" data-v="5">5×</div><div class="tg" data-v="10">10×</div></div></div>
+<div class="fg"><label>預估分數</label><input type="number" id="si2" value="1500000" min="0" step="10000" inputmode="numeric"><div class="h">協力120–350萬 / 個人80–200萬</div></div>
+<div class="fg"><label>活動加成 %</label><input type="number" id="bi" value="200" min="0" max="400" step="5" inputmode="numeric"></div>
+<div class="fg"><label>目標 EP</label><input type="number" id="te" value="1000000" min="0" step="10000" inputmode="numeric"><div class="h">故事全開15萬 / T1000約100–300萬</div></div>
+<div class="fg"><label>目前已有 EP</label><input type="number" id="ce" value="0" min="0" step="1000" inputmode="numeric"></div>
+</div>
+<button class="cbtn" onclick="calc()">計　算</button>
+</div>
+<div class="res" id="res">
+<div class="rg" id="rg"></div>
+<div class="card" style="padding:14px 16px"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">各體力效率比較</div><div class="ew"><table class="et" id="et"><thead><tr><th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th></tr></thead><tbody></tbody></table></div></div>
+<div class="card" id="rc" style="padding:14px 16px;display:none"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">時間效率 TOP 15（EP/分鐘）</div><div class="ew"><table class="et" id="rt"><thead><tr><th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th></tr></thead><tbody></tbody></table></div></div>
+</div>
+</div>
+</div>
+</div>
 
-<!-- 資料表 --><div class="tab-panel" id="tabMS"><div class="card"><div class="card-title">Sekai Mastersheet 連接</div><div style="font-size:.82em;color:var(--text-light);margin-bottom:12px">連接 Google Sheets 取得卡片技能、活動加成等資訊。需設為「知道連結的人皆可檢視」。</div><div class="fg" style="margin-bottom:12px"><label>試算表 ID</label><input type="text" id="msId" value="1YXidERD1mm3LPxvqU7ZLfXZz4AyFzsJ0Id9kcWMXsGg"><div class="h">從 Google Sheets 網址 /d/&lt;ID&gt;/ 取得</div></div><div class="fg" style="margin-bottom:12px"><label>分頁名稱</label><div class="tr" id="msSh"><div class="tg on" data-v="Card Skills">卡片技能</div><div class="tg" data-v="Focus Events">焦點活動</div><div class="tg" data-v="Rotations">輪換</div><div class="tg" data-v="4 Star and Birthday Cards">4★ 卡片</div></div></div><div class="fg" style="margin-bottom:8px"><label>或自訂分頁名稱</label><input type="text" id="msCust" placeholder="例如：CC Info"></div><button class="cbtn" onclick="loadMS()">載入資料表</button><div id="msStat" style="margin-top:10px"></div></div><div class="card" id="msData" style="display:none"><div class="card-title" id="msDT"></div><div style="font-size:.76em;color:var(--text-muted);margin-bottom:8px" id="msDSub"></div><div class="ew"><table class="et" id="msTbl"><thead id="msTH"></thead><tbody id="msTB"></tbody></table></div></div></div>
+<!-- ======== EVENT RUN ======== -->
+
+<div class="tab-panel" id="tabRun">
+<div class="single-col">
+<div class="card">
+<div class="card-title">活動進度規劃 <small style="font-weight:400;font-size:.72em;color:var(--text-muted)">Event Run</small></div>
+<div class="fg2">
+<div class="fg"><label>目前分數 Current Score</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="erCur" value="217" min="0" step="1" inputmode="numeric" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
+<div class="fg"><label>目標分數 Target Score</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="erTgt" value="3000" min="0" step="10" inputmode="numeric" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
+<div class="fg"><label>每場分數 Score Per Game <span class="tip" data-t="可從 Deck 頁面計算獲取，或手動輸入">?</span></label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="erSPG" value="2.8" min="0" step="0.1" inputmode="decimal" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
+<div class="fg"><label>每輪場數 Rounds/Interval <span class="tip" data-t="每次回復體力後可連打的場數">?</span></label><input type="number" id="erRnd" value="28" min="1" step="1" inputmode="numeric"><div class="h">Rounds</div></div>
+<div class="fg"><label>目前體力 Current Energy</label><input type="number" id="erEng" value="5" min="0" step="1" inputmode="numeric"></div>
+<div class="fg"><label>Change Energy</label><div class="tr" id="erChg"><div class="tg dk on" data-v="0">No Change</div><div class="tg dk" data-v="1">1×</div><div class="tg dk" data-v="2">2×</div><div class="tg dk" data-v="3">3×</div><div class="tg dk" data-v="5">5×</div></div></div>
+</div>
+<button class="collapse-btn" id="erRecBtn" onclick="toggleCollapse('erRec','erRecBtn')"><span class="arr">▶</span> ⚡ Recoverable Energy</button>
+<div class="collapse-body" id="erRec">
+<div class="fg2" style="margin-top:8px">
+<div class="fg"><label>自然回復（小時）</label><input type="number" id="erNatHr" value="0" min="0" inputmode="numeric"><div class="h">1 體力 = 30 分鐘</div></div>
+<div class="fg"><label>大罐 L.Cans</label><input type="number" id="erLCan" value="0" min="0" inputmode="numeric"><div class="h">每罐 = 10 體力</div></div>
+<div class="fg"><label>小罐 S.Cans</label><input type="number" id="erSCan" value="0" min="0" inputmode="numeric"><div class="h">每罐 = 5 體力</div></div>
+<div class="fg"><label>水晶換體</label><input type="number" id="erCrys" value="0" min="0" inputmode="numeric"><div class="h">每次 = 10 體力</div></div>
+</div></div>
+<button class="cbtn" onclick="calcRun()">計　算</button>
+</div>
+<div class="res" id="erRes"><div id="erSummary"></div></div>
+</div>
+</div>
+
+<!-- ======== SCORE ART ======== -->
+
+<div class="tab-panel" id="tabArt">
+<div class="single-col">
+<div class="card">
+<div class="card-title">分數調整器 <small style="font-weight:400;font-size:.72em;color:var(--text-muted)">Score Art</small></div>
+<div class="fg2">
+<div class="fg"><label>目前 EP</label><input type="number" id="saCur" value="171923316" min="0" inputmode="numeric"><div class="h">pt</div></div>
+<div class="fg"><label>目標 EP</label><input type="number" id="saTgt" value="172000414" min="0" inputmode="numeric"><div class="h">pt</div></div>
+<div class="fg"><label>最大倍率 Max Multiplier</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="saMulti" value="300" min="100" max="400" step="5" inputmode="numeric" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">%</span></div></div>
+<div class="fg"><label>最大綜合力 Max Power</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="saPow" value="25.5" min="0" step="0.5" inputmode="decimal" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
+<div class="fg full"><label>Max Envy Easy Score <span class="tip" data-t="Envy Easy 的最大分數。較低的值更易調整。">?</span></label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="saEnvy" value="80" min="0" step="5" inputmode="numeric" style="max-width:200px"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div><div class="h">Lower Envy score is easier to adjust</div></div>
+</div>
+<div class="chk-row"><input type="checkbox" id="saEnvy0"><span>Envy 0 Score Only (Don't tap) — Only gain base EP (multiple of 5)</span></div>
+<div class="chk-row"><input type="checkbox" id="saMod5"><span>Allow non-mod-5 results</span></div>
+<div style="margin-top:14px;padding:10px 14px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-light)">
+<div style="font-size:.78em;font-weight:600;color:var(--navy);margin-bottom:4px">▪ Multiplier Adjustment</div>
+<div style="font-size:.72em;color:var(--text-muted);line-height:1.5">▸ Avoid decimals (WL Support / 1,3 MR)<br>▪ <b>My Sekai</b><br>▸ Check score with 1E (mine Only)<br>▸ Based on Pass/Refill Energy<br><span style="color:var(--red)">No Blue Energy allowed</span></div>
+</div>
+<button class="cbtn" onclick="calcArt()">搜尋組合</button>
+</div>
+<div class="res" id="saRes">
+<div class="card" style="padding:14px 16px">
+<div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:4px">Envy Score Table</div>
+<div id="saResults"></div>
+<div id="saNoResult" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:.85em">找不到精確組合。嘗試調高 Max Envy Easy Score 或勾選 Allow non-mod-5。</div>
+</div>
+</div>
+</div>
+</div>
 
 </div>
 <footer>非官方社群工具，與 SEGA / Colorful Palette 無關</footer>
 </div>
 
 <script>
-var Songs=[],Diffs=[],sel=null,selD=null,sK='id',sDir='asc';
-// ★ 體力倍率表：0→1, 1→5, 2→10, 3→15, 4→20, 5→25, 6→27, 7→29, 8→31, 9→33, 10→35
-var EM={0:1,1:5,2:10,3:15,4:20,5:25,6:27,7:29,8:31,9:33,10:35};
-var ALL_EN=[0,1,2,3,4,5,6,7,8,9,10];
-var OH=15;
+/* =========================================================
+   GLOBALS
+   ========================================================= */
+var S=[],DiffMap=new Map(),sel=null,selD=null,sK='id',sD='asc';
+var EM={0:1,1:5,2:10,3:15,5:25,10:50},OH=15;
 var DN={easy:'E',normal:'N',hard:'H',expert:'EX',master:'MA',append:'AP'};
 var DO=['easy','normal','hard','expert','master','append'];
-var decks=[{pow:293231,sk:[120,100,100,100,100],bon:250,room:200},{pow:250000,sk:[100,100,100,100,100],bon:200,room:200},{pow:220000,sk:[100,100,100,100,100],bon:150,room:200}];
-var curDK=0;
+var decks=[
+  {power:293231,skills:[120,100,100,100,100],bonus:250,room:200},
+  {power:250000,skills:[100,100,100,100,100],bonus:200,room:200},
+  {power:220000,skills:[100,100,100,100,100],bonus:150,room:200}
+];
+var curDeck=0;
+
 function $(id){return document.getElementById(id)}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function nf(n){return isFinite(n)?n.toLocaleString():'∞'}
-function fT(m){if(!isFinite(m)||m<0)return'∞';if(m<60)return Math.round(m)+' 分鐘';return Math.floor(m/60)+' 小時 '+Math.round(m%60)+' 分鐘'}
-function fH(h){if(!isFinite(h)||h<0)return'∞';return h.toFixed(1)+' 小時'}
+function fT(m){if(!isFinite(m))return'∞';return m<60?Math.round(m)+'分':Math.floor(m/60)+'時'+Math.round(m%60)+'分'}
 function gv(id){var el=$(id).querySelector('.tg.on');return el?el.dataset.v:null}
-function tgl(id){$(id).addEventListener('click',function(e){var t=e.target.closest('.tg');if(!t)return;this.querySelectorAll('.tg').forEach(function(x){x.classList.remove('on')});t.classList.add('on')})}
-function toggleColl(b,btn){$(b).classList.toggle('open');$(btn).classList.toggle('open')}
-function eDur(n){return n>0?Math.max(55,Math.round(n/6.5)):105}
-function calcEP(score,bonus,engCost,isSolo){var base=score*0.000350+(isSolo?50:55);var bm=1+bonus/100;var em=EM[engCost]||1;return Math.floor(base*bm)*em}
-function calcBaseEP(score,isSolo){return score*0.000350+(isSolo?50:55)}
-function estScore(pow,sk,room,mode){var avg=sk.reduce(function(a,b){return a+b},0)/5;var sf=1+(avg-100)/200;var rf=mode==='multi'?(1+(room-100)/300):1;var mk=mode==='multi'?2.625:mode==='solo'?2.0:0.72;return Math.round(pow*mk*sf*rf)}
 
+/* estimated song duration from note count (seconds) */
+function eDur(nc){return nc>0?Math.max(55,Math.round(nc/6.5)):105}
+/* format seconds as M:SS */
+function fDur(sec){return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')}
+
+/* =========================================================
+   INIT — fetch real API data
+   ========================================================= */
 async function init(){
   try{
-    var r=await Promise.all([fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musics.json'),fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musicDifficulties.json')]);
-    Songs=await r[0].json();Diffs=await r[1].json();
-    var dm=new Map();for(var i=0;i<Diffs.length;i++){var d=Diffs[i];if(!dm.has(d.musicId))dm.set(d.musicId,[]);dm.get(d.musicId).push(d)}
-    for(var j=0;j<Songs.length;j++){var s=Songs[j];s._d=dm.get(s.id)||[];s._ma=s._d.find(function(x){return x.musicDifficulty==='master'});s._ex=s._d.find(function(x){return x.musicDifficulty==='expert'});s._ml=s._ma?s._ma.playLevel:(s._ex?s._ex.playLevel:0);s._n=s._ma?s._ma.noteCount:(s._ex?s._ex.noteCount:0)}
-    $('tc').textContent=Songs.length;$('ld').style.display='none';$('app').style.display='block';render();updateDI();
-    try{var sv=localStorage.getItem('sekai_decks');if(sv&&$('dkAL').checked){decks=JSON.parse(sv);loadDU()}}catch(e){}
-  }catch(e){$('ld').innerHTML='載入失敗：'+e.message}
+    var r=await Promise.all([
+      fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musics.json'),
+      fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musicDifficulties.json')
+    ]);
+    var musics=await r[0].json();
+    var diffs=await r[1].json();
+    /* build difficulty map: musicId → [difficulty objects] */
+    for(var i=0;i<diffs.length;i++){
+      var d=diffs[i];
+      if(!DiffMap.has(d.musicId)) DiffMap.set(d.musicId,[]);
+      DiffMap.get(d.musicId).push(d);
+    }
+    /* enrich song objects */
+    for(var j=0;j<musics.length;j++){
+      var s=musics[j];
+      s._d=DiffMap.get(s.id)||[];
+      s._ma=s._d.find(function(x){return x.musicDifficulty==='master'});
+      s._ex=s._d.find(function(x){return x.musicDifficulty==='expert'});
+      s._hd=s._d.find(function(x){return x.musicDifficulty==='hard'});
+      s._ml=s._ma?s._ma.playLevel:(s._ex?s._ex.playLevel:0);
+      s._n=s._ma?s._ma.noteCount:(s._ex?s._ex.noteCount:0);
+      /* estimated duration: use master note count / 6.5 */
+      s._dur=eDur(s._n);
+    }
+    S=musics;
+    $('tc').textContent=S.length;
+    $('ld').style.display='none';
+    $('app').style.display='block';
+    render();
+    updateDeckUI();
+    /* auto-load saved deck */
+    try{var sv=localStorage.getItem('sekai_deck');if(sv&&$('dkAutoLoad').checked){decks=JSON.parse(sv);loadDeck()}}catch(e){}
+  }catch(e){
+    $('ld').innerHTML='載入失敗：'+e.message+'<br><br><button onclick="init()" style="padding:8px 20px">重試</button>';
+  }
 }
 
-$('mainTabs').addEventListener('click',function(e){var b=e.target.closest('.mtab');if(!b)return;this.querySelectorAll('.mtab').forEach(function(x){x.classList.remove('on')});b.classList.add('on');document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('show')});$(b.dataset.tab).classList.add('show')});
-tgl('tt');tgl('eb');tgl('erChg');tgl('msSh');
+/* =========================================================
+   TAB SWITCHING
+   ========================================================= */
+$('mainTabs').addEventListener('click',function(e){
+  var b=e.target.closest('.mtab');if(!b)return;
+  this.querySelectorAll('.mtab').forEach(function(x){x.classList.remove('on')});
+  b.classList.add('on');
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('show')});
+  $(b.dataset.tab).classList.add('show');
+});
 
-// 歌曲庫
+/* toggle groups */
+function tgl(id){
+  $(id).addEventListener('click',function(e){
+    var t=e.target.closest('.tg');if(!t)return;
+    this.querySelectorAll('.tg').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+  });
+}
+tgl('tt');tgl('eb');tgl('erChg');
+
+function toggleCollapse(bodyId,btnId){
+  $(bodyId).classList.toggle('open');
+  $(btnId).classList.toggle('open');
+}
+
+/* =========================================================
+   SONG LIBRARY (EP tab)
+   ========================================================= */
 function render(){
-  var qv=$('q').value.trim().toLowerCase(),L=Songs;
-  if(qv)L=L.filter(function(s){return s.title.toLowerCase().indexOf(qv)>=0||(s.pronunciation||'').toLowerCase().indexOf(qv)>=0||(s.composer||'').toLowerCase().indexOf(qv)>=0||String(s.id).indexOf(qv)>=0});
-  var dir=sDir==='asc'?1:-1;
-  L=[].concat(L).sort(function(a,b){switch(sK){case'id':return(a.id-b.id)*dir;case'title':return a.title.localeCompare(b.title,'ja')*dir;case'composer':return(a.composer||'').localeCompare(b.composer||'','ja')*dir;case'master':return(a._ml-b._ml)*dir;case'notes':return(a._n-b._n)*dir;case'date':return((a.publishedAt||0)-(b.publishedAt||0))*dir;default:return(a.id-b.id)*dir}});
-  $('fc2').textContent=L.length;var tb=$('tb'),h=[];
-  for(var i=0;i<L.length;i++){var s=L[i],is=sel&&sel.id===s.id;var ds=s._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty)});var p=ds.map(function(x){return'<span class="dp dp-'+x.musicDifficulty+'">'+(DN[x.musicDifficulty]||'?')+' '+x.playLevel+'</span>'}).join('');h.push('<tr data-id="'+s.id+'" class="'+(is?'sel':'')+'"><td>'+s.id+'</td><td>'+esc(s.title)+'</td><td>'+esc(s.composer||'')+'</td><td>'+p+'</td></tr>')}
+  var q=$('q').value.trim().toLowerCase();
+  var L=S;
+  if(q) L=L.filter(function(s){
+    return s.title.toLowerCase().indexOf(q)>=0||
+    (s.pronunciation||'').toLowerCase().indexOf(q)>=0||
+    String(s.id).indexOf(q)>=0;
+  });
+  var dir=sD==='asc'?1:-1;
+  L=[].concat(L).sort(function(a,b){
+    switch(sK){
+      case'id':return(a.id-b.id)*dir;
+      case'title':return a.title.localeCompare(b.title,'ja')*dir;
+      case'dur':return(a._dur-b._dur)*dir;
+      case'master':return(a._ml-b._ml)*dir;
+      default:return(a.id-b.id)*dir;
+    }
+  });
+  $('fc2').textContent=L.length;
+  var tb=$('tb'),h=[];
+  for(var i=0;i<L.length;i++){
+    var s=L[i],isSel=sel&&sel.id===s.id;
+    h.push('<tr data-id="'+s.id+'" class="'+(isSel?'sel':'')+'"><td>'+s.id+'</td><td>'+esc(s.title)+'</td><td>'+fDur(s._dur)+'</td></tr>');
+  }
   tb.innerHTML=h.join('');
 }
-$('tb').parentElement.parentElement.addEventListener('click',function(e){var tr=e.target.closest('tr[data-id]');if(!tr)return;pickSong(parseInt(tr.dataset.id))});
-function pickSong(id){sel=Songs.find(function(s){return s.id===id});if(!sel)return;document.querySelectorAll('#tb tr').forEach(function(r){r.classList.toggle('sel',parseInt(r.dataset.id)===id)});$('sn').textContent=sel.title;var m=[];if(sel.composer)m.push('作曲：'+sel.composer);if(sel.lyricist&&sel.lyricist!==sel.composer)m.push('作詞：'+sel.lyricist);$('si').textContent=m.join(' · ');var ds=sel._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty)});$('dr').innerHTML=ds.map(function(x){return'<div class="dc dc-'+x.musicDifficulty+'" data-f="'+x.musicDifficulty+'" data-n="'+x.noteCount+'" data-l="'+x.playLevel+'" onclick="pickDiff(this)">'+(DN[x.musicDifficulty]||'?').toUpperCase()+' Lv.'+x.playLevel+' ('+x.noteCount+')</div>'}).join('');$('sc').classList.add('show');selD=null;var mc=document.querySelector('.dc[data-f="master"]'),ec=document.querySelector('.dc[data-f="expert"]');if(mc)pickDiff(mc);else if(ec)pickDiff(ec);if(window.innerWidth<=860)setTimeout(function(){$('sc').scrollIntoView({behavior:'smooth',block:'nearest'})},100)}
-function pickDiff(el){document.querySelectorAll('.dc').forEach(function(c){c.classList.remove('on')});el.classList.add('on');selD={d:el.dataset.f,n:parseInt(el.dataset.n),l:parseInt(el.dataset.l)}}
-$('sbar').addEventListener('click',function(e){var b=e.target.closest('.sb');if(!b)return;var k=b.dataset.k;if(sK===k){sDir=sDir==='asc'?'desc':'asc'}else{sK=k;sDir=b.dataset.d||'asc'}this.querySelectorAll('.sb').forEach(function(x){x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'')});b.classList.add('on');b.textContent=b.textContent+' '+(sDir==='asc'?'▲':'▼');render()});
+
+$('tb').parentElement.parentElement.addEventListener('click',function(e){
+  var tr=e.target.closest('tr[data-id]');if(!tr)return;
+  pickSong(parseInt(tr.dataset.id));
+});
+
+function pickSong(id){
+  sel=S.find(function(s){return s.id===id});if(!sel)return;
+  document.querySelectorAll('#tb tr').forEach(function(r){r.classList.toggle('sel',parseInt(r.dataset.id)===id)});
+  $('snTitle').textContent=sel.title;
+  var m=[];
+  if(sel.composer)m.push('作曲：'+sel.composer);
+  if(sel.lyricist&&sel.lyricist!==sel.composer)m.push('作詞：'+sel.lyricist);
+  m.push('時長：~'+fDur(sel._dur));
+  $('snInfo').textContent=m.join(' · ');
+  /* difficulty pills */
+  var ds=sel._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty)});
+  $('dr').innerHTML=ds.map(function(x){
+    return '<div class="dc dc-'+x.musicDifficulty+'" data-f="'+x.musicDifficulty+'" data-n="'+x.noteCount+'" data-l="'+x.playLevel+'" onclick="pickD(this)">'+(DN[x.musicDifficulty]||'?').toUpperCase()+' Lv.'+x.playLevel+' ('+x.noteCount+')</div>';
+  }).join('');
+  $('sc').classList.add('show');selD=null;
+  var mc=document.querySelector('.dc[data-f="master"]'),ec=document.querySelector('.dc[data-f="expert"]');
+  if(mc)pickD(mc);else if(ec)pickD(ec);
+  if(window.innerWidth<=860)setTimeout(function(){$('sc').scrollIntoView({behavior:'smooth',block:'nearest'})},100);
+}
+
+function pickD(el){
+  document.querySelectorAll('.dc').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+  selD={d:el.dataset.f,n:parseInt(el.dataset.n),l:parseInt(el.dataset.l)};
+}
+
+/* sort bar */
+$('sbar').addEventListener('click',function(e){
+  var b=e.target.closest('.sb');if(!b)return;
+  var k=b.dataset.k;
+  if(sK===k){sD=sD==='asc'?'desc':'asc'}else{sK=k;sD=b.dataset.d||'asc'}
+  this.querySelectorAll('.sb').forEach(function(x){x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'')});
+  b.classList.add('on');b.textContent=b.textContent+' '+(sD==='asc'?'▲':'▼');
+  render();
+});
 $('q').addEventListener('input',render);
 
-// EP 計算
+/* =========================================================
+   EP CALCULATOR
+   ========================================================= */
+function cBase(sc,ty){return Math.floor(sc*0.000350+(ty==='solo'||ty==='challenge'?50:55))}
+function cEP(sc,bn,en,ty){var b=cBase(sc,ty),m=EM[en]||1,bm=ty==='challenge'?1:(1+bn/100);return Math.floor(b*bm*m)}
+
 function calc(){
-  var sc=parseInt($('si2').value)||0,bn=parseInt($('bi').value)||0,en=parseInt(gv('eb'))||0,ty=gv('tt')||'multi';
-  var tg=parseInt($('te').value)||0,cu=parseInt($('ce').value)||0,rm=Math.max(0,tg-cu);
-  var solo=(ty==='solo'||ty==='challenge'),ep=calcEP(sc,bn,en,solo);
-  var nt=selD?selD.n:700,dur=eDur(nt)+OH;
-  var pl=ep>0?Math.ceil(rm/ep):Infinity,tm=pl*dur/60,tn=pl*en;
-  $('rg').innerHTML='<div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">'+nf(ep)+'</div><div class="ru">活動分數</div></div><div class="ri"><div class="rl">需打次數</div><div class="rv">'+nf(pl)+'</div><div class="ru">剩餘 '+nf(rm)+' EP</div></div><div class="ri"><div class="rl">預估時間</div><div class="rv">'+fT(tm)+'</div><div class="ru">約 '+dur+' 秒/場</div></div><div class="ri"><div class="rl">消耗體力</div><div class="rv">'+nf(tn)+'</div><div class="ru">≈ '+nf(isFinite(tn)?Math.ceil(tn/10):Infinity)+' 大罐</div></div>';
-  document.querySelector('#etTbl tbody').innerHTML=ALL_EN.map(function(e){var ep2=calcEP(sc,bn,e,solo),ppe=e>0?(ep2/e).toFixed(1):'∞',p2=ep2>0?Math.ceil(rm/ep2):Infinity,t2=p2*dur/60;return'<tr class="'+(e===en?'hr':'')+'"><td>'+e+'</td><td>'+EM[e]+'×</td><td>'+nf(ep2)+'</td><td>'+ppe+'</td><td>'+nf(p2)+'</td><td>'+fT(t2)+'</td></tr>'}).join('');
-  var rk=Songs.map(function(s){var n=s._n;if(n<=0)return null;var d=eDur(n)+OH,e3=calcEP(sc,bn,en,solo);return{t:s.title,l:s._ml,s:eDur(n),ep:e3,epm:Math.round(e3/(d/60))}}).filter(Boolean).sort(function(a,b){return b.epm-a.epm}).slice(0,15);
-  document.querySelector('#rt tbody').innerHTML=rk.map(function(r,i){return'<tr><td>'+(i+1)+'</td><td>'+esc(r.t)+' <span style="color:var(--text-muted);font-size:.85em">Lv.'+r.l+'</span></td><td>'+r.s+'s</td><td>'+nf(r.ep)+'</td><td style="font-weight:600">'+nf(r.epm)+'</td></tr>'}).join('');
-  $('rc').style.display='block';$('res').classList.add('show');$('res').scrollIntoView({behavior:'smooth',block:'start'});
+  var sc=parseInt($('si2').value)||0;
+  var bn=parseInt($('bi').value)||0;
+  var en=parseInt(gv('eb'))||0;
+  var ty=gv('tt')||'multi';
+  var tg=parseInt($('te').value)||0;
+  var cu=parseInt($('ce').value)||0;
+  var rm=Math.max(0,tg-cu);
+  var ep=cEP(sc,bn,en,ty);
+  var nt=selD?selD.n:700;
+  var dur=eDur(nt)+OH;
+  var pl=ep>0?Math.ceil(rm/ep):Infinity;
+  var tm=pl*dur/60;
+  var tn=pl*en;
+  $('rg').innerHTML=
+    '<div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">'+nf(ep)+'</div><div class="ru">Event Points</div></div>'+
+    '<div class="ri"><div class="rl">需打次數</div><div class="rv">'+nf(pl)+'</div><div class="ru">剩餘 '+nf(rm)+' EP</div></div>'+
+    '<div class="ri"><div class="rl">預估時間</div><div class="rv">'+fT(tm)+'</div><div class="ru">~'+dur+'秒/輪</div></div>'+
+    '<div class="ri"><div class="rl">消耗體力</div><div class="rv">'+nf(tn)+'</div><div class="ru">≈ '+nf(isFinite(tn)?Math.ceil(tn/10):Infinity)+' 罐</div></div>';
+  /* energy comparison */
+  var el=[0,1,2,3,5,10];
+  document.querySelector('#et tbody').innerHTML=el.map(function(e){
+    var ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';
+    var p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;
+    return '<tr class="'+(e===en?'hr':'')+'"><td>'+e+'×</td><td>'+EM[e]+'×</td><td>'+nf(ep2)+'</td><td>'+ppe+'</td><td>'+nf(p)+'</td><td>'+fT(t)+'</td></tr>';
+  }).join('');
+  /* time efficiency TOP 15 */
+  var rk=S.map(function(s){
+    var n=s._n;if(n<=0)return null;
+    var d=eDur(n)+OH,e=cEP(sc,bn,en,ty);
+    return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60)),dur:d};
+  }).filter(Boolean).sort(function(a,b){return b.epm-a.epm}).slice(0,15);
+  document.querySelector('#rt tbody').innerHTML=rk.map(function(r,i){
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(r.t)+' <span style="color:var(--text-muted);font-size:.85em">Lv.'+r.l+'</span></td><td>'+r.s+'s</td><td>'+nf(r.ep)+'</td><td style="font-weight:600">'+nf(r.epm)+'</td></tr>';
+  }).join('');
+  $('rc').style.display='block';
+  var res=$('res');res.classList.add('show');res.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// 隊伍
-$('deckTabs').addEventListener('click',function(e){var b=e.target.closest('.deck-tab');if(!b)return;saveDV();curDK=parseInt(b.dataset.dk);this.querySelectorAll('.deck-tab').forEach(function(x){x.classList.remove('on')});b.classList.add('on');loadDU()});
-function saveDV(){var dk=decks[curDK];dk.pow=parseInt($('dkPow').value)||0;for(var i=0;i<5;i++)dk.sk[i]=parseInt($('ms'+i).value)||0;dk.bon=parseInt($('dkBon').value)||0;dk.room=parseInt($('dkRoom').value)||0}
-function loadDU(){var dk=decks[curDK];$('dkPow').value=dk.pow;for(var i=0;i<5;i++)$('ms'+i).value=dk.sk[i];$('dkBon').value=dk.bon;$('dkRoom').value=dk.room;updateDI()}
-function updateDI(){var sk=[];for(var i=0;i<5;i++)sk.push(parseInt($('ms'+i).value)||0);var sum=sk.reduce(function(a,b){return a+b},0);$('dkIV').textContent=Math.round(sum/5)+'%';$('dkIS').textContent=sk[0]+'/'+sum}
-['dkPow','ms0','ms1','ms2','ms3','ms4','dkBon','dkRoom'].forEach(function(id){$(id).addEventListener('input',updateDI)});
-function saveDeckLS(){saveDV();try{localStorage.setItem('sekai_decks',JSON.stringify(decks))}catch(e){}alert('隊伍設定已儲存！')}
-function loadDeckLS(){try{var sv=localStorage.getItem('sekai_decks');if(sv){decks=JSON.parse(sv);loadDU();alert('已載入！')}else{alert('尚無儲存資料')}}catch(e){alert('載入失敗')}}
+/* =========================================================
+   DECK TAB
+   ========================================================= */
+$('deckTabs').addEventListener('click',function(e){
+  var b=e.target.closest('.deck-tab');if(!b)return;
+  saveDeckVals();curDeck=parseInt(b.dataset.dk);
+  this.querySelectorAll('.deck-tab').forEach(function(x){x.classList.remove('on')});b.classList.add('on');
+  loadDeck();
+});
+function saveDeckVals(){
+  var dk=decks[curDeck];
+  dk.power=parseInt($('dkPower').value)||0;
+  for(var i=0;i<5;i++)dk.skills[i]=parseInt($('msk'+i).value)||0;
+  dk.bonus=parseInt($('dkBonus').value)||0;
+  dk.room=parseInt($('dkRoom').value)||0;
+}
+function loadDeck(){
+  var dk=decks[curDeck];
+  $('dkPower').value=dk.power;
+  for(var i=0;i<5;i++)$('msk'+i).value=dk.skills[i];
+  $('dkBonus').value=dk.bonus;$('dkRoom').value=dk.room;
+  updateDeckUI();
+}
+function updateDeckUI(){
+  var skills=[];for(var i=0;i<5;i++)skills.push(parseInt($('msk'+i).value)||0);
+  var sum=skills.reduce(function(a,b){return a+b},0);
+  var avg=Math.round(sum/5);
+  $('dkIV').textContent=avg+'%';
+  $('dkIS').textContent=skills[0]+'/'+sum;
+}
+['dkPower','msk0','msk1','msk2','msk3','msk4','dkBonus','dkRoom'].forEach(function(id){$(id).addEventListener('input',updateDeckUI)});
+function saveDeckLS(){saveDeckVals();try{localStorage.setItem('sekai_deck',JSON.stringify(decks))}catch(e){}alert('Deck 設定已儲存！')}
+function loadDeckLS(){try{var sv=localStorage.getItem('sekai_deck');if(sv){decks=JSON.parse(sv);loadDeck();alert('已載入！')}else{alert('無儲存資料')}}catch(e){alert('載入失敗')}}
+
 function calcDeck(){
-  saveDV();var dk=decks[curDK],pow=dk.pow,bon=dk.bon,room=dk.room,sk=dk.sk;
-  var scM=estScore(pow,sk,room,'multi');
-  var entries=[{name:'Lost and Found',tag:'HARD',cls:'dp-hard',e:5,sf:1.0},{name:'隨機歌曲',tag:'',cls:'',e:5,sf:0.91},{name:'Envy',tag:'EX',cls:'dp-expert',e:5,sf:0.845},{name:'Creation Myth',tag:'',cls:'',e:1,sf:0.92},{name:'MySekai',tag:'',cls:'',e:1,sf:0.65}];
-  $('dkResSub').textContent=(pow/1000).toFixed(2)+'K / '+bon+'% · 房間條件：'+room+'%';
-  var h='';entries.forEach(function(se){var sc=Math.round(scM*se.sf),ep=calcEP(sc,bon,se.e,false);var tH=se.tag?'<span class="dk-tag '+se.cls+'">'+se.tag+'</span>':'';var note='';if(se.name==='MySekai'){note='<div style="font-size:.68em;color:var(--text-muted);margin-top:2px">3,000EP：'+Math.round(ep*1.08/275)+'/275 或 '+(ep*1.26/253).toFixed(1)+'/253</div>'}h+='<div class="dk-row"><div><span class="dk-name">'+se.name+'</span>'+tH+'<div class="dk-mid">體力：'+se.e+'</div>'+note+'</div><div class="dk-ep">'+nf(ep)+'</div></div>'});
-  $('dkSongList').innerHTML=h;
-  function meq(mode){var s1=estScore(pow,sk,room,mode),s2=estScore(pow+10000,sk,room,mode),e1=calcBaseEP(s1,mode==='solo'),e2=calcBaseEP(s2,mode==='solo');if(e1<=0)return'—';return((e2/e1-1)*100).toFixed(2)+'%'}
-  $('dkME').textContent=meq('multi');$('dkSE').textContent=meq('solo');$('dkAE').textContent=meq('auto');
-  $('dkResCard').style.display='block';if(window.innerWidth<=860)setTimeout(function(){$('dkResCard').scrollIntoView({behavior:'smooth',block:'start'})},100);
+  saveDeckVals();
+  var dk=decks[curDeck];
+  var power=dk.power,bonus=dk.bonus,room=dk.room;
+  var skills=dk.skills.slice();
+  var sum=skills.reduce(function(a,b){return a+b},0);
+  var avgSk=sum/5;
+  /* estimate scores for play types */
+  var multiSc=Math.round(power*(room/100)*(avgSk/100)*1.28);
+  var soloSc=Math.round(power*(avgSk/100)*1.85);
+  var autoSc=Math.round(power*(avgSk/100)*0.67);
+  /* EP per play for different songs & energies */
+  /* Pick real songs from database sorted by EP/min efficiency */
+  var songRows=[];
+  /* calculate for all songs at energy 5 (multi), sorted by EP/min */
+  var multiBase=Math.floor(multiSc*0.000350+55);
+  var multiEP5=Math.floor(multiBase*(1+bonus/100)*EM[5]);
+  for(var i=0;i<S.length;i++){
+    var s=S[i];if(s._n<=0)continue;
+    var dur=s._dur+OH;
+    songRows.push({
+      id:s.id,title:s.title,dur:s._dur,ml:s._ml,
+      ep5:multiEP5,ep3:Math.floor(multiBase*(1+bonus/100)*EM[3]),
+      ep1:Math.floor(multiBase*(1+bonus/100)*EM[1]),
+      ep0:Math.floor(multiBase*(1+bonus/100)*EM[0]),
+      epm:Math.round(multiEP5/(dur/60))
+    });
+  }
+  songRows.sort(function(a,b){return b.epm-a.epm});
+  /* header */
+  $('dkResSub').textContent=(multiEP5/1000).toFixed(2)+'K/'+bonus+'% · ROOM CONDITION:'+room+'%';
+  /* show top 20 songs */
+  var top=songRows.slice(0,20);
+  var html='';
+  for(var j=0;j<top.length;j++){
+    var r=top[j];
+    html+='<tr><td><b>'+esc(r.title)+'</b> <span style="color:var(--text-muted);font-size:.85em">'+fDur(r.dur)+' Lv.'+r.ml+'</span></td><td>5</td><td style="text-align:right;font-weight:700;color:var(--accent)">'+nf(r.ep5)+'</td></tr>';
+  }
+  /* also add entries for energy 1 and 0 (top 3 each) */
+  var top1=songRows.slice(0,3);
+  for(var k=0;k<top1.length;k++){
+    var r1=top1[k];
+    html+='<tr style="color:var(--text-light)"><td>'+esc(r1.title)+' <span style="font-size:.85em">'+fDur(r1.dur)+'</span></td><td>1</td><td style="text-align:right;font-weight:600">'+nf(r1.ep1)+'</td></tr>';
+  }
+  $('dkTblBody').innerHTML=html;
+  /* multiplier equivalent to 10k power */
+  var ref10k=10000;
+  var multiRef=Math.floor(Math.floor(ref10k*(room/100)*(avgSk/100)*1.28*0.000350+55)*(1+bonus/100));
+  var solRef=Math.floor(Math.floor(ref10k*(avgSk/100)*1.85*0.000350+50)*(1+bonus/100));
+  var autoRef=Math.floor(Math.floor(ref10k*(avgSk/100)*0.67*0.000350+50)*(1+bonus/100));
+  var curMulti=Math.floor(multiBase*(1+bonus/100));
+  var curSol=Math.floor(Math.floor(soloSc*0.000350+50)*(1+bonus/100));
+  var curAut=Math.floor(Math.floor(autoSc*0.000350+50)*(1+bonus/100));
+  $('dkMulEq').textContent=multiRef>0?((curMulti/multiRef*100-100).toFixed(2)+'%'):'—';
+  $('dkSolEq').textContent=solRef>0?((curSol/solRef*100-100).toFixed(2)+'%'):'—';
+  $('dkAutEq').textContent=autoRef>0?((curAut/autoRef*100-100).toFixed(2)+'%'):'—';
+  $('dkResultCard').style.display='block';
+  $('dkResultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// 活動進度
+/* =========================================================
+   EVENT RUN
+   ========================================================= */
 function calcRun(){
-  var cur=parseFloat($('erCur').value)||0,tgt=parseFloat($('erTgt').value)||0,spg=parseFloat($('erSPG').value)||0;
-  var rpi=parseInt($('erRnd').value)||1,curE=parseInt($('erEng').value)||0,chg=gv('erChg'),epp=chg==='no'?3:parseInt(chg)||3;
-  var nat=parseFloat($('erNat').value)||0,lc=parseInt($('erLC').value)||0,sc2=parseInt($('erSC').value)||0,cr=parseInt($('erCr').value)||0;
-  var rec=Math.floor(nat*2)+lc*10+sc2*5+cr*10;
-  var rem=(tgt-cur)*10000,pg=spg*10000;
-  if(pg<=0||rem<=0){$('erSum').innerHTML='<div class="er-row er-hl"><div class="er-l">已達成目標！</div><div class="er-v">✓</div></div>';$('erRes').classList.add('show');return}
-  var rnds=Math.ceil(rem/pg),totE=rnds*epp,lcN=Math.ceil(totE/10),hrs=rnds*128/3600,avE=curE+rec,short=Math.max(0,totE-avE);
-  var h='<div class="er-row er-hl"><div class="er-l">需要場次</div><div class="er-v">'+nf(rnds)+'<span class="er-s">場</span></div></div><div class="er-row er-hl"><div class="er-l">需要體力</div><div class="er-v">'+nf(totE)+'<span class="er-s">體力 ('+lcN+' 大罐)</span></div></div><div class="er-row er-hl"><div class="er-l">需要時間</div><div class="er-v">'+fH(hrs)+'</div></div>';
-  if(rec>0){h+='<div style="margin-top:12px;font-size:.82em;font-weight:700;color:var(--navy);margin-bottom:6px">可用體力資源</div><div class="er-row"><div class="er-l">可用體力</div><div class="er-v">'+nf(avE)+'</div></div>';if(short>0)h+='<div class="er-row" style="border-left:3px solid var(--red)"><div class="er-l">缺口</div><div class="er-v" style="color:var(--red)">'+nf(short)+'<span class="er-s">('+Math.ceil(short/10)+' 大罐)</span></div></div>';else h+='<div class="er-row" style="border-left:3px solid var(--green)"><div class="er-l">狀態</div><div class="er-v" style="color:var(--green)">✓ 體力充足</div></div>'}
-  $('erSum').innerHTML=h;$('erRes').classList.add('show');$('erRes').scrollIntoView({behavior:'smooth',block:'start'});
+  var cur=parseFloat($('erCur').value)||0;
+  var tgt=parseFloat($('erTgt').value)||0;
+  var spg=parseFloat($('erSPG').value)||0;
+  var rnd=parseInt($('erRnd').value)||1;
+  var eng=parseInt($('erEng').value)||0;
+  var chgV=gv('erChg');
+  var enPerPlay=chgV==='0'?eng:(parseInt(chgV)||eng);
+  /* delta in 0k units */
+  var delta=tgt-cur;
+  if(delta<=0||spg<=0){alert('目標分數須大於目前分數，且每場分數須>0');return}
+  var needRounds=Math.ceil(delta/spg);
+  /* energy: rounds × energy per play */
+  var totalEng=needRounds*enPerPlay;
+  var needLCans=Math.ceil(totalEng/10);
+  /* time: ~128 sec per play (avg song + overhead) */
+  var secPerPlay=128;
+  var totalHours=needRounds*secPerPlay/3600;
+  /* recoverable energy */
+  var natEng=(parseInt($('erNatHr').value)||0)*2;
+  var lCanEng=(parseInt($('erLCan').value)||0)*10;
+  var sCanEng=(parseInt($('erSCan').value)||0)*5;
+  var crysEng=(parseInt($('erCrys').value)||0)*10;
+  var recov=natEng+lCanEng+sCanEng+crysEng+eng;
+  var netEng=Math.max(0,totalEng-recov);
+  var netCans=Math.ceil(netEng/10);
+  /* display */
+  var html='';
+  html+='<div class="er-item er-hl"><div class="er-label">Needed Rounds</div><div><span class="er-val">'+nf(needRounds)+'</span><span class="er-sub">Rounds</span></div></div>';
+  html+='<div class="er-item"><div class="er-label">Needed Energy</div><div><span class="er-val">'+nf(totalEng)+'</span><span class="er-sub">Energy ('+needLCans+' L.Cans)</span></div></div>';
+  html+='<div class="er-item"><div class="er-label">Needed Time</div><div><span class="er-val">'+totalHours.toFixed(1)+'</span><span class="er-sub">Hours</span></div></div>';
+  if(recov>0){
+    html+='<div class="er-item" style="margin-top:4px;border-top:2px solid var(--border)"><div class="er-label">可回復體力 Total</div><div><span class="er-val">'+nf(recov)+'</span><span class="er-sub">Energy</span></div></div>';
+    html+='<div class="er-item"><div class="er-label">還需補充</div><div><span class="er-val">'+nf(netCans)+'</span><span class="er-sub">L.Cans ('+(netEng)+' Energy)</span></div></div>';
+  }
+  $('erSummary').innerHTML=html;
+  $('erRes').classList.add('show');
+  $('erRes').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// 分數調整
+/* =========================================================
+   SCORE ART
+   ========================================================= */
 function calcArt(){
-  var curEP=parseInt($('saCur').value)||0,tgtEP=parseInt($('saTgt').value)||0,maxM=parseInt($('saMulti').value)||300;
-  var maxEnv=parseInt($('saEnvy').value)||80,e0=$('saE0').checked,m5=$('saM5').checked;
-  var diff=tgtEP-curEP;$('saInfo').textContent='需要 EP：'+nf(diff)+' ('+nf(tgtEP)+' − '+nf(curEP)+')';
-  if(diff<=0){$('saResults').innerHTML='<div style="text-align:center;padding:20px;color:var(--green);font-weight:700">已達成目標 EP！</div>';$('saNo').style.display='none';$('saRes').classList.add('show');return}
-  var maxSc=maxEnv*10000,res=[];
-  for(var ei=0;ei<ALL_EN.length&&res.length<80;ei++){var eng=ALL_EN[ei],em=EM[eng];if(diff%em!==0)continue;var target=diff/em;
-    for(var mult=100;mult<=maxM&&res.length<80;mult++){var bm=mult/100;
-      for(var off=50;off<=55;off+=5){var bL=target/bm,bH=(target+1)/bm,sL=Math.max(0,(bL-off)/0.000350),sH=(bH-off)/0.000350;
-        if(sH<0||sL>maxSc)continue;sL=Math.ceil(sL);sH=Math.min(maxSc,Math.floor(sH));if(sL>sH)continue;if(e0&&sL>0)continue;
-        var ts=e0?0:sL;if(ts>maxSc)continue;var te=Math.floor((ts*0.000350+off)*bm)*em;if(te!==diff)continue;if(!m5&&te%5!==0)continue;
-        var dup=res.find(function(r){return r.en===eng&&r.mu===mult&&r.sc===ts});
-        if(!dup)res.push({en:eng,em:em,mu:mult,sc:ts,sk:(ts/10000).toFixed(1),ep:te,md:off===55?'協力':'個人'})}}}
-  res.sort(function(a,b){return a.en-b.en||a.sc-b.sc||a.mu-b.mu});
-  var seen=new Set();res=res.filter(function(r){var k=r.en+'_'+r.mu+'_'+r.sc+'_'+r.md;if(seen.has(k))return false;seen.add(k);return true});
-  if(!res.length){$('saResults').innerHTML='';$('saNo').style.display='block'}
-  else{$('saNo').style.display='none';var h='';res.slice(0,30).forEach(function(r,i){var c=i===0?'sa-row best':'sa-row',tg=i===0?'<span class="sa-tag">推薦</span>':'';h+='<div class="'+c+'"><div class="sa-flex"><div><span class="sa-v">'+r.en+' 體力 × '+r.mu+'%</span>'+tg+'</div><div style="text-align:right"><div class="sa-v">'+nf(r.sc)+'</div><div class="sa-l">('+r.sk+'0k)</div></div></div><div class="sa-note">EP：'+nf(r.ep)+' · 倍率：'+r.em+'× · '+r.md+'</div></div>'});$('saResults').innerHTML=h}
-  $('saRes').classList.add('show');$('saRes').scrollIntoView({behavior:'smooth',block:'start'});
+  var curEP=parseInt($('saCur').value)||0;
+  var tgtEP=parseInt($('saTgt').value)||0;
+  var delta=tgtEP-curEP;
+  if(delta<=0){alert('目標 EP 須大於目前 EP');return}
+  var maxBn=parseInt($('saMulti').value)||300;
+  var maxPow=parseFloat($('saPow').value)*10000||255000;
+  var maxEnvySc=parseInt($('saEnvy').value)*10000||800000;
+  var envy0=$('saEnvy0').checked;
+  var nonMod5=$('saMod5').checked;
+  var results=[];
+  var energies=[0,1,2,3,5,10];
+  /* iterate: energy × bonus × score → EP, check if delta divisible */
+  for(var ei=0;ei<energies.length;ei++){
+    var en=energies[ei];
+    var eMult=EM[en];
+    var bnStep=5;
+    for(var bn=100;bn<=maxBn;bn+=bnStep){
+      var bnF=bn/100;
+      if(envy0){
+        /* score=0, base=50 (solo playing Envy and not tapping) */
+        var ep=Math.floor(50*bnF*eMult);
+        if(ep>0&&ep<=delta&&delta%ep===0){
+          var plays=delta/ep;
+          if(plays<=9999)results.push({en:en,bn:bn,sc:0,ep:ep,plays:plays});
+        }
+      }else{
+        var scStep=nonMod5?5000:50000;
+        for(var sc=0;sc<=maxEnvySc;sc+=scStep){
+          var base=Math.floor(sc*0.000350+50);
+          var ep=Math.floor(base*bnF*eMult);
+          if(ep<=0)continue;
+          if(ep>delta)break;
+          if(delta%ep===0){
+            var plays=delta/ep;
+            if(plays<=9999)results.push({en:en,bn:bn,sc:sc,ep:ep,plays:plays});
+          }
+        }
+        /* also try finer score steps near boundaries for more results */
+        if(!nonMod5){
+          for(var sc2=0;sc2<=maxEnvySc;sc2+=10000){
+            var base2=Math.floor(sc2*0.000350+50);
+            var ep2=Math.floor(base2*bnF*eMult);
+            if(ep2<=0)continue;if(ep2>delta)break;
+            if(delta%ep2===0){
+              var plays2=delta/ep2;
+              if(plays2<=9999){
+                var exists=results.some(function(r){return r.ep===ep2&&r.en===en&&r.bn===bn});
+                if(!exists)results.push({en:en,bn:bn,sc:sc2,ep:ep2,plays:plays2});
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  /* deduplicate by EP value, keep best (fewest plays) */
+  var seen={};
+  var unique=[];
+  results.sort(function(a,b){return a.plays-b.plays||a.en-b.en});
+  for(var r=0;r<results.length;r++){
+    var key=results[r].ep+'_'+results[r].en;
+    if(!seen[key]){seen[key]=1;unique.push(results[r])}
+  }
+  unique=unique.slice(0,30);
+  /* display */
+  var html='';
+  if(unique.length===0){
+    $('saNoResult').style.display='block';
+    $('saResults').innerHTML='';
+  }else{
+    $('saNoResult').style.display='none';
+    for(var u=0;u<unique.length;u++){
+      var c=unique[u];
+      var isBest=u===0;
+      html+='<div class="sa-combo'+(isBest?' best':'')+'">'+
+        '<div class="sa-row">'+
+          '<span class="sa-val">'+c.plays+'回 × '+nf(c.ep)+' EP</span>'+
+          (isBest?'<span class="sa-tag">BEST</span>':'')+
+        '</div>'+
+        '<div class="sa-note">Energy: '+c.en+'× ('+EM[c.en]+'×) | Bonus: '+c.bn+'% | Score: '+(c.sc>=10000?(c.sc/10000).toFixed(1)+'萬':nf(c.sc))+' | Total: '+nf(c.plays*c.ep)+' EP</div>'+
+      '</div>';
+    }
+    $('saResults').innerHTML=html;
+  }
+  $('saRes').classList.add('show');
+  $('saRes').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// 資料表
-async function loadMS(){
-  var id=$('msId').value.trim(),sh=$('msCust').value.trim()||gv('msSh')||'Card Skills';
-  if(!id){$('msStat').innerHTML='<div class="ms-st ms-err"><span class="ms-dot"></span>請輸入試算表 ID</div>';return}
-  $('msStat').innerHTML='<div class="ms-st ms-load"><span class="ms-dot"></span>載入中⋯</div>';
-  try{var resp=await fetch('https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(sh));if(!resp.ok)throw new Error('HTTP '+resp.status);var text=await resp.text();if(!text.trim()||text.indexOf('<!DOCTYPE')>=0)throw new Error('無法讀取。請確認試算表已設為公開。');var rows=parseCSV(text);if(!rows.length)throw new Error('分頁為空');
-    $('msStat').innerHTML='<div class="ms-st ms-ok"><span class="ms-dot"></span>成功載入「'+esc(sh)+'」· '+rows.length+' 行</div>';
-    var hd=rows[0]||[];$('msDT').textContent='「'+sh+'」資料預覽';$('msDSub').textContent=rows.length+' 行 × '+hd.length+' 欄';
-    $('msTH').innerHTML='<tr>'+hd.map(function(h){return'<th>'+esc(h)+'</th>'}).join('')+'</tr>';
-    var mx=Math.min(rows.length,100),bh='';for(var i=1;i<mx;i++)bh+='<tr>'+rows[i].map(function(c){return'<td>'+esc(c)+'</td>'}).join('')+'</tr>';
-    if(rows.length>100)bh+='<tr><td colspan="'+hd.length+'" style="text-align:center;color:var(--text-muted);font-style:italic">⋯ 顯示前 100 行，共 '+(rows.length-1)+' 行資料</td></tr>';
-    $('msTB').innerHTML=bh;$('msData').style.display='block';$('msData').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(e){$('msStat').innerHTML='<div class="ms-st ms-err"><span class="ms-dot"></span>載入失敗：'+esc(e.message)+'</div>';$('msData').style.display='none'}
-}
-function parseCSV(t){var rows=[],row=[],cell='',inQ=false;for(var i=0;i<t.length;i++){var c=t[i],nc=t[i+1]||'';if(inQ){if(c==='"'&&nc==='"'){cell+='"';i++}else if(c==='"')inQ=false;else cell+=c}else{if(c==='"')inQ=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'||(c==='\r'&&nc==='\n')){row.push(cell);cell='';rows.push(row);row=[];if(c==='\r')i++}else if(c==='\r'){row.push(cell);cell='';rows.push(row);row=[]}else cell+=c}}if(cell||row.length>0){row.push(cell);rows.push(row)}return rows.filter(function(r){return r.some(function(c){return c.trim()!==''})})}
-
+/* =========================================================
+   START
+   ========================================================= */
 init();
 </script>
 
