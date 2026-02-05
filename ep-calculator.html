@@ -4,420 +4,276 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>活動分數計算器 — Project SEKAI 資源中心</title>
+<title>EP計算器 — Project SEKAI 資源中心</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap');
-
-:root {
-–primary:#1a1a2e; –text:#2c2c2c; –text-light:#555; –text-muted:#888;
-–border:#d0d0d0; –border-light:#e8e8e8; –bg:#fafafa; –bg-card:#fff;
-–bg-input:#f5f5f5; –link:#0066cc; –accent:#0f3460;
-–sel-bg:#edf0f8; –sel-border:#0f3460;
-}
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:‘Songti TC’,‘Songti SC’,‘STSongti-TC-Regular’,‘PMingLiU’,‘新細明體’,‘SimSun’,‘Noto Serif TC’,‘Noto Serif JP’,‘Times New Roman’,serif;background:var(–bg);color:var(–text);line-height:1.8;font-size:15px;}
-.container{max-width:1100px;margin:0 auto;padding:28px 20px 60px;}
-
-header{text-align:center;padding-bottom:24px;margin-bottom:28px;border-bottom:2px solid var(–primary);}
-header h1{font-size:1.55em;font-weight:700;color:var(–primary);letter-spacing:.08em;margin-bottom:2px;}
-header .sub{font-size:.83em;color:var(–text-light);letter-spacing:.04em;}
-header .back{display:inline-block;margin-top:6px;font-size:.82em;color:var(–link);text-decoration:none;}
-header .back:hover{text-decoration:underline;}
-
-.stitle{font-size:1.05em;font-weight:600;color:var(–primary);border-left:3px solid var(–accent);padding-left:10px;margin-bottom:12px;}
-.card{background:var(–bg-card);border:1px solid var(–border-light);border-radius:4px;padding:16px 18px;margin-bottom:14px;}
-
-.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+:root{
+  --navy:#1a1a2e;--navy2:#16213e;--accent:#0f3460;
+  --text:#2c2c2c;--text-light:#555;--text-muted:#999;
+  --border:#ddd;--border-light:#eee;
+  --bg:#fff;--bg-input:#f7f7f7;
+  --green:#2e7d32;--green-bg:#e8f5e9;
+  --blue:#1565c0;--blue-bg:#e3f2fd;
+  --orange:#e65100;--orange-bg:#fff3e0;
+  --red:#c62828;--red-bg:#fce4ec;
+  --purple:#7b1fa2;--purple-bg:#f3e5f5;
+  --gold:#ffcc00;--gold-bg:#2c2c2c;
+}
+body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','SimSun','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:15px;}
+.topnav{background:var(--navy);color:#fff;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:4px 18px;padding:10px 16px;font-size:.82em;letter-spacing:.03em;position:sticky;top:0;z-index:100;}
+.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:2px 0;transition:color .15s;}
+.topnav a:hover{color:#fff;}
+.topnav a.cur{color:#fff;font-weight:700;border-bottom:2px solid #fff;padding-bottom:0;}
+.hero{text-align:center;padding:36px 20px 28px;border-bottom:2px solid var(--navy);}
+.hero h1{font-size:1.6em;font-weight:700;color:var(--navy);letter-spacing:.12em;}
+.hero .sub{font-size:.85em;color:var(--text-light);letter-spacing:.06em;margin-top:2px;}
+.hero .upd{font-size:.78em;color:var(--text-muted);font-style:italic;margin-top:6px;}
+.container{max-width:1100px;margin:0 auto;padding:24px 20px 50px;}
+.sec-title{font-size:1.15em;font-weight:700;color:var(--navy);margin:28px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.sec-title small{font-weight:400;font-size:.72em;color:var(--text-muted);margin-left:8px;}
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
 @media(max-width:860px){.main-layout{grid-template-columns:1fr;}}
-
-/* === SONG LIBRARY === */
 .lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
-.lib-head .st{font-size:.78em;color:var(–text-muted);}
-.lib-head .st b{color:var(–text-light);}
-
-.lib-search{width:100%;font-family:inherit;font-size:.88em;padding:7px 10px;border:1px solid var(–border);border-radius:3px;background:var(–bg-input);color:var(–text);outline:none;margin-bottom:8px;}
-.lib-search:focus{border-color:var(–accent);}
-
-.sort-bar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;}
-.sb{padding:3px 10px;border:1px solid var(–border);border-radius:3px;background:var(–bg-input);cursor:pointer;font-family:inherit;font-size:.76em;transition:all .12s;user-select:none;white-space:nowrap;}
-.sb:hover{border-color:var(–accent);}
-.sb.on{background:var(–accent);color:#fff;border-color:var(–accent);}
-
-.tw{max-height:540px;overflow-y:auto;border:1px solid var(–border-light);border-radius:3px;}
-.tw::-webkit-scrollbar{width:5px;}
-.tw::-webkit-scrollbar-thumb{background:#c0c0c0;border-radius:3px;}
-.st-tbl{width:100%;border-collapse:collapse;font-size:.84em;}
+.lib-label{font-size:.95em;font-weight:700;color:var(--navy);}
+.lib-stat{font-size:.76em;color:var(--text-muted);}
+.lib-stat b{color:var(--text-light);}
+.lib-search{width:100%;font-family:inherit;font-size:.88em;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text);outline:none;margin-bottom:8px;transition:border-color .15s;}
+.lib-search:focus{border-color:var(--accent);}
+.sort-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.sb{padding:4px 12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.74em;transition:all .15s;user-select:none;white-space:nowrap;color:var(--text-light);}
+.sb:hover{border-color:var(--accent);color:var(--accent);}
+.sb.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.tw{max-height:520px;overflow-y:auto;border:1px solid var(--border-light);border-radius:6px;}
+.tw::-webkit-scrollbar{width:4px;}
+.tw::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
+.st-tbl{width:100%;border-collapse:collapse;font-size:.82em;}
 .st-tbl thead{position:sticky;top:0;z-index:2;}
-.st-tbl th{background:var(–primary);color:#fff;padding:7px 8px;text-align:left;font-weight:600;font-size:.8em;letter-spacing:.02em;white-space:nowrap;cursor:pointer;user-select:none;}
-.st-tbl th:hover{background:#252545;}
-.st-tbl td{padding:5px 8px;border-bottom:1px solid var(–border-light);white-space:nowrap;}
-.st-tbl tr{cursor:pointer;transition:background .1s;}
+.st-tbl th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78em;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none;}
+.st-tbl th:hover{background:var(--navy2);}
+.st-tbl td{padding:6px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap;}
+.st-tbl tr{cursor:pointer;transition:background .12s;}
 .st-tbl tbody tr:hover td{background:#f0f4ff;}
-.st-tbl tbody tr.sel td{background:var(–sel-bg);font-weight:600;}
-
-.dp{display:inline-block;padding:1px 5px;border-radius:2px;font-size:.72em;font-weight:600;line-height:1.3;margin-right:2px;}
-.dp-easy{background:#e8f5e9;color:#2e7d32;}.dp-normal{background:#e3f2fd;color:#1565c0;}
-.dp-hard{background:#fff3e0;color:#e65100;}.dp-expert{background:#fce4ec;color:#c62828;}
-.dp-master{background:#f3e5f5;color:#7b1fa2;}.dp-append{background:#2c2c2c;color:#ffcc00;}
-
-/* === SELECTED === */
-.sel-card{background:#f8f9fd;border:1px solid var(–accent);border-radius:4px;padding:12px 14px;margin-bottom:14px;display:none;}
+.st-tbl tbody tr.sel td{background:#edf0f8;font-weight:600;}
+.dp{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.7em;font-weight:600;line-height:1.4;margin-right:2px;}
+.dp-easy{background:var(--green-bg);color:var(--green);}
+.dp-normal{background:var(--blue-bg);color:var(--blue);}
+.dp-hard{background:var(--orange-bg);color:var(--orange);}
+.dp-expert{background:var(--red-bg);color:var(--red);}
+.dp-master{background:var(--purple-bg);color:var(--purple);}
+.dp-append{background:var(--gold-bg);color:var(--gold);}
+.sel-card{background:linear-gradient(135deg,#f8f9fd,#edf0f8);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:none;}
 .sel-card.show{display:block;}
-.sel-card .st{font-weight:700;font-size:1.05em;color:var(–primary);}
-.sel-card .sm{font-size:.82em;color:var(–text-light);margin-top:2px;}
-.dc-row{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
-.dc{padding:3px 9px;border-radius:3px;font-size:.78em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .12s;user-select:none;}
-.dc.on{border-color:var(–primary);transform:scale(1.04);}
-.dc-easy{background:#e8f5e9;color:#2e7d32;}.dc-normal{background:#e3f2fd;color:#1565c0;}
-.dc-hard{background:#fff3e0;color:#e65100;}.dc-expert{background:#fce4ec;color:#c62828;}
-.dc-master{background:#f3e5f5;color:#7b1fa2;}.dc-append{background:#2c2c2c;color:#ffcc00;}
-
-/* === CALC FORM === */
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sel-card .sn{font-weight:700;font-size:1.05em;color:var(--navy);}
+.sel-card .sm{font-size:.8em;color:var(--text-light);margin-top:2px;}
+.dc-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.dc{padding:4px 12px;border-radius:16px;font-size:.76em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none;}
+.dc.on{border-color:var(--navy);transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.dc-easy{background:var(--green-bg);color:var(--green);}
+.dc-normal{background:var(--blue-bg);color:var(--blue);}
+.dc-hard{background:var(--orange-bg);color:var(--orange);}
+.dc-expert{background:var(--red-bg);color:var(--red);}
+.dc-master{background:var(--purple-bg);color:var(--purple);}
+.dc-append{background:var(--gold-bg);color:var(--gold);}
+.card{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:18px 20px;margin-bottom:16px;}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 @media(max-width:500px){.fg2{grid-template-columns:1fr;}}
 .fg{display:flex;flex-direction:column;}
 .fg.full{grid-column:1/-1;}
-.fg label{font-size:.8em;font-weight:600;color:var(–text-light);margin-bottom:3px;}
-.fg input{font-family:inherit;font-size:.9em;padding:7px 9px;border:1px solid var(–border);border-radius:3px;background:var(–bg-input);color:var(–text);outline:none;}
-.fg input:focus{border-color:var(–accent);}
-.fg .h{font-size:.72em;color:var(–text-muted);margin-top:2px;}
-
-.tr{display:flex;gap:5px;flex-wrap:wrap;}
-.tg{padding:5px 12px;border:1px solid var(–border);border-radius:3px;background:var(–bg-input);cursor:pointer;font-family:inherit;font-size:.82em;transition:all .12s;user-select:none;}
-.tg:hover{border-color:var(–accent);}
-.tg.on{background:var(–accent);color:#fff;border-color:var(–accent);}
-.tg.dk.on{background:var(–primary);color:#fff;border-color:var(–primary);}
-
-.cbtn{display:block;width:100%;padding:11px;margin-top:14px;background:var(–primary);color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:.95em;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:opacity .2s;}
-.cbtn:hover{opacity:.88;}
-
-/* === RESULTS === */
+.fg label{font-size:.8em;font-weight:700;color:var(--text-light);margin-bottom:4px;}
+.fg input{font-family:inherit;font-size:.9em;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text);outline:none;transition:border-color .15s;}
+.fg input:focus{border-color:var(--accent);}
+.fg .h{font-size:.7em;color:var(--text-muted);margin-top:3px;}
+.tr{display:flex;gap:6px;flex-wrap:wrap;}
+.tg{padding:5px 14px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;transition:all .15s;user-select:none;color:var(--text-light);}
+.tg:hover{border-color:var(--accent);color:var(--accent);}
+.tg.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.tg.dk.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.cbtn{display:block;width:100%;padding:12px;margin-top:16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95em;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .2s;}
+.cbtn:hover{background:var(--accent);}
+.tip{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:var(--border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative;}
+.tip:hover::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:6px 10px;border-radius:6px;white-space:normal;z-index:99;max-width:260px;line-height:1.4;}
 .res{display:none;}.res.show{display:block;}
-.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;}
-.ri{background:var(–bg-card);border:1px solid var(–border-light);border-radius:4px;padding:12px 14px;text-align:center;}
-.ri .rl{font-size:.72em;color:var(–text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
-.ri .rv{font-size:1.4em;font-weight:700;color:var(–primary);}
-.ri .ru{font-size:.72em;color:var(–text-light);}
-.ri-hl{border-left:3px solid var(–accent);}
-
-.ew{overflow-x:auto;margin-top:10px;}
-table.et{width:100%;border-collapse:collapse;font-size:.82em;}
-.et th{background:var(–primary);color:#fff;padding:7px 8px;text-align:left;font-weight:600;font-size:.82em;white-space:nowrap;}
-.et td{padding:6px 8px;border-bottom:1px solid var(–border-light);}
+.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;}
+.ri{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;text-align:center;}
+.ri .rl{font-size:.7em;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.ri .rv{font-size:1.45em;font-weight:700;color:var(--navy);}
+.ri .ru{font-size:.7em;color:var(--text-light);margin-top:2px;}
+.ri-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff);}
+.ew{overflow-x:auto;margin-top:8px;}
+table.et{width:100%;border-collapse:collapse;font-size:.8em;}
+.et th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.8em;white-space:nowrap;}
+.et td{padding:7px 10px;border-bottom:1px solid var(--border-light);}
 .et tr:hover td{background:#f5f8ff;}
-.et .hr td{background:#f0f4ff;font-weight:600;}
-
-.tip{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:50%;background:var(–border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative;}
-.tip:hover::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:5px 9px;border-radius:4px;white-space:normal;z-index:99;max-width:260px;line-height:1.4;}
-
-.loading{text-align:center;padding:40px;color:var(–text-muted);font-size:.88em;}
-.spin{display:inline-block;width:18px;height:18px;border:2px solid var(–border);border-top-color:var(–accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:6px;vertical-align:middle;}
+.et .hr td{background:#edf0f8;font-weight:600;}
+.loading{text-align:center;padding:50px;color:var(--text-muted);font-size:.9em;}
+.spin{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle;}
 @keyframes sp{to{transform:rotate(360deg);}}
-
-footer{margin-top:36px;padding-top:18px;border-top:1px solid var(–border);text-align:center;font-size:.76em;color:var(–text-muted);line-height:1.6;}
-footer a{color:var(–link);text-decoration:none;}
-footer a:hover{text-decoration:underline;}
-
-.fc{font-size:.85em;color:var(–text-light);line-height:1.9;}
-.fc code{font-family:‘Courier New’,monospace;font-size:.92em;background:#f0f0f0;padding:1px 5px;border-radius:2px;}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);text-align:center;font-size:.74em;color:var(--text-muted);line-height:1.6;}
 </style>
-
 </head>
 <body>
+<nav class="topnav">
+  <a href="https://project-sekai-center.vercel.app/">日曆</a>
+  <a href="https://project-sekai-center.vercel.app/">活動</a>
+  <a href="https://project-sekai-center.vercel.app/">官方</a>
+  <a href="https://project-sekai-center.vercel.app/">資訊站</a>
+  <a href="https://project-sekai-center.vercel.app/">卡池</a>
+  <a href="https://project-sekai-center.vercel.app/">歌曲</a>
+  <a class="cur" href="#">EP計算器</a>
+  <a href="https://project-sekai-center.vercel.app/">社群</a>
+  <a href="https://project-sekai-center.vercel.app/">Wiki</a>
+  <a href="https://project-sekai-center.vercel.app/">工具</a>
+</nav>
+<div class="hero">
+  <h1>Project SEKAI 資源中心</h1>
+  <div class="sub">世界計畫 彩色舞台 feat. 初音未來</div>
+  <div class="upd">Last Updated: 2025.01</div>
+</div>
 <div class="container">
-  <header>
-    <h1>活動分數計算器</h1>
-    <div class="sub">Event Point Calculator — Project SEKAI</div>
-    <a class="back" href="https://project-sekai-center.vercel.app/">← 返回資源中心</a>
-  </header>
-
   <div id="ld" class="loading"><span class="spin"></span>正在載入歌曲資料庫⋯</div>
-
   <div id="app" style="display:none;">
+    <div class="sec-title">活動分數計算器 <small>Event Point Calculator</small></div>
     <div class="main-layout">
-
-  <!-- LEFT: LIBRARY -->
-
-  <div>
-    <div class="lib-head">
-      <div class="stitle" style="margin-bottom:0;">曲庫一覽</div>
-      <div class="st">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div>
-    </div>
-    <input type="text" class="lib-search" id="q" placeholder="搜尋歌名、作曲者、ID⋯" autocomplete="off">
-    <div class="sort-bar" id="sbar">
-      <div class="sb on" data-k="id" data-d="asc">ID ▲</div>
-      <div class="sb" data-k="title" data-d="asc">曲名</div>
-      <div class="sb" data-k="composer" data-d="asc">作曲</div>
-      <div class="sb" data-k="master" data-d="desc">MA 等級</div>
-      <div class="sb" data-k="notes" data-d="desc">音符數</div>
-      <div class="sb" data-k="date" data-d="desc">發佈日</div>
-    </div>
-    <div class="tw" id="tw">
-      <table class="st-tbl">
-        <thead><tr>
-          <th style="width:40px">ID</th>
-          <th>曲名</th>
-          <th>作曲</th>
-          <th style="cursor:default">難度</th>
-        </tr></thead>
-        <tbody id="tb"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- RIGHT: CALCULATOR -->
-
-  <div>
-    <div class="sel-card" id="sc">
-      <div class="st" id="sn"></div>
-      <div class="sm" id="si"></div>
-      <div class="dc-row" id="dr"></div>
-    </div>
-
-
-<div class="stitle">演出設定</div>
-<div class="card">
-  <div class="fg2">
-    <div class="fg full">
-      <label>演出類型</label>
-      <div class="tr" id="tt">
-        <div class="tg dk on" data-v="multi">協力演出</div>
-        <div class="tg dk" data-v="solo">個人演出</div>
-        <div class="tg dk" data-v="cheerful">嘉年華</div>
-        <div class="tg dk" data-v="challenge">挑戰演出</div>
+      <div>
+        <div class="lib-head">
+          <div class="lib-label">曲庫一覽</div>
+          <div class="lib-stat">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div>
+        </div>
+        <input type="text" class="lib-search" id="q" placeholder="搜尋歌名、作曲者、ID⋯" autocomplete="off">
+        <div class="sort-bar" id="sbar">
+          <div class="sb on" data-k="id" data-d="asc">ID ▲</div>
+          <div class="sb" data-k="title" data-d="asc">曲名</div>
+          <div class="sb" data-k="composer" data-d="asc">作曲</div>
+          <div class="sb" data-k="master" data-d="desc">MA 等級</div>
+          <div class="sb" data-k="notes" data-d="desc">音符數</div>
+          <div class="sb" data-k="date" data-d="desc">發佈日</div>
+        </div>
+        <div class="tw" id="tw">
+          <table class="st-tbl">
+            <thead><tr><th style="width:42px">ID</th><th>曲名</th><th>作曲</th><th style="cursor:default">難度</th></tr></thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="sel-card" id="sc">
+          <div class="sn" id="sn"></div>
+          <div class="sm" id="si"></div>
+          <div class="dc-row" id="dr"></div>
+        </div>
+        <div class="card">
+          <div style="font-size:.95em;font-weight:700;color:var(--navy);margin-bottom:12px;">演出設定</div>
+          <div class="fg2">
+            <div class="fg full"><label>演出類型</label>
+              <div class="tr" id="tt">
+                <div class="tg dk on" data-v="multi">協力演出</div>
+                <div class="tg dk" data-v="solo">個人演出</div>
+                <div class="tg dk" data-v="cheerful">嘉年華</div>
+                <div class="tg dk" data-v="challenge">挑戰演出</div>
+              </div>
+            </div>
+            <div class="fg full"><label>消耗體力 <span class="tip" data-t="0×=1倍 1×=5倍 2×=10倍 3×=15倍 5×=25倍 10×=50倍">?</span></label>
+              <div class="tr" id="eb">
+                <div class="tg" data-v="0">0×</div>
+                <div class="tg" data-v="1">1×</div>
+                <div class="tg" data-v="2">2×</div>
+                <div class="tg on" data-v="3">3×</div>
+                <div class="tg" data-v="5">5×</div>
+                <div class="tg" data-v="10">10×</div>
+              </div>
+            </div>
+            <div class="fg"><label>預估分數</label><input type="number" id="si2" value="1500000" min="0" step="10000"><div class="h">協力120–350萬 / 個人80–200萬</div></div>
+            <div class="fg"><label>活動加成 % <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label><input type="number" id="bi" value="200" min="0" max="400" step="5"></div>
+            <div class="fg"><label>目標 EP</label><input type="number" id="te" value="1000000" min="0" step="10000"><div class="h">故事全開15萬 / T1000約100–300萬</div></div>
+            <div class="fg"><label>目前已有 EP</label><input type="number" id="ce" value="0" min="0" step="1000"></div>
+          </div>
+          <button class="cbtn" onclick="calc()">計　算</button>
+        </div>
+        <div class="res" id="res">
+          <div class="rg" id="rg"></div>
+          <div class="card" style="padding:14px 16px;">
+            <div style="font-size:.88em;font-weight:700;color:var(--navy);margin-bottom:8px;">各體力效率比較</div>
+            <div class="ew"><table class="et" id="et"><thead><tr><th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th></tr></thead><tbody></tbody></table></div>
+          </div>
+          <div class="card" id="rc" style="padding:14px 16px;display:none;">
+            <div style="font-size:.88em;font-weight:700;color:var(--navy);margin-bottom:8px;">時間效率 TOP 15（EP/分鐘）</div>
+            <div class="ew"><table class="et" id="rt"><thead><tr><th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="fg full">
-      <label>消耗體力 <span class="tip" data-t="0×=1倍 1×=5倍 2×=10倍 3×=15倍 5×=25倍 10×=50倍">?</span></label>
-      <div class="tr" id="eb">
-        <div class="tg" data-v="0">0×</div>
-        <div class="tg" data-v="1">1×</div>
-        <div class="tg" data-v="2">2×</div>
-        <div class="tg on" data-v="3">3×</div>
-        <div class="tg" data-v="5">5×</div>
-        <div class="tg" data-v="10">10×</div>
-      </div>
-    </div>
-    <div class="fg">
-      <label>預估分數</label>
-      <input type="number" id="si2" value="1500000" min="0" step="10000">
-      <div class="h">協力120–350萬 / 個人80–200萬</div>
-    </div>
-    <div class="fg">
-      <label>活動加成 % <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label>
-      <input type="number" id="bi" value="200" min="0" max="400" step="5">
-    </div>
-    <div class="fg">
-      <label>目標 EP</label>
-      <input type="number" id="te" value="1000000" min="0" step="10000">
-      <div class="h">故事全開15萬 / T1000約100–300萬</div>
-    </div>
-    <div class="fg">
-      <label>目前已有 EP</label>
-      <input type="number" id="ce" value="0" min="0" step="1000">
-    </div>
   </div>
-  <button class="cbtn" onclick="calc()">計　算</button>
+  <footer>非官方社群工具，與 SEGA / Colorful Palette 無關</footer>
 </div>
-
-<div class="res" id="res">
-  <div class="stitle">計算結果</div>
-  <div class="rg" id="rg"></div>
-  <div class="card" style="padding:12px 14px;">
-    <div style="font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:6px;">各體力效率比較</div>
-    <div class="ew"><table class="et" id="et"><thead><tr>
-      <th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th>
-    </tr></thead><tbody></tbody></table></div>
-  </div>
-  <div class="card" id="rc" style="padding:12px 14px;display:none;">
-    <div style="font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:6px;">時間效率 TOP 15（EP/分鐘，依當前設定）</div>
-    <div class="ew"><table class="et" id="rt"><thead><tr>
-      <th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th>
-    </tr></thead><tbody></tbody></table></div>
-  </div>
-</div>
-
-
-  </div>
-</div>
-
-  </div>
-
-  <footer>
-    非官方社群工具，與 SEGA / Colorful Palette 無關
-  </footer>
-</div>
-
 <script>
-let S=[],D=[];
-let sel=null,selD=null;
-let sK='id',sD='asc';
-const EM={0:1,1:5,2:10,3:15,5:25,10:50};
-const OH=15;
-const DN={easy:'E',normal:'N',hard:'H',expert:'EX',master:'MA',append:'AP'};
-const DO=['easy','normal','hard','expert','master','append'];
-
+var S=[],D=[],sel=null,selD=null,sK='id',sD='asc';
+var EM={0:1,1:5,2:10,3:15,5:25,10:50},OH=15;
+var DN={easy:'E',normal:'N',hard:'H',expert:'EX',master:'MA',append:'AP'};
+var DO=['easy','normal','hard','expert','master','append'];
 async function init(){
   try{
-    const[a,b]=await Promise.all([
+    var r=await Promise.all([
       fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musics.json'),
       fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musicDifficulties.json')
     ]);
-    S=await a.json(); D=await b.json();
-    const dm=new Map();
-    for(const d of D){if(!dm.has(d.musicId))dm.set(d.musicId,[]);dm.get(d.musicId).push(d);}
-    for(const s of S){
-      s._d=dm.get(s.id)||[];
-      s._ma=s._d.find(x=>x.musicDifficulty==='master');
-      s._ex=s._d.find(x=>x.musicDifficulty==='expert');
-      s._ml=s._ma?s._ma.playLevel:(s._ex?s._ex.playLevel:0);
-      s._n=s._ma?s._ma.noteCount:(s._ex?s._ex.noteCount:0);
-    }
-    $('tc').textContent=S.length;
-    $('ld').style.display='none';
-    $('app').style.display='block';
-    render();
-  }catch(e){$('ld').innerHTML='❌ 載入失敗：'+e.message;}
+    S=await r[0].json();D=await r[1].json();
+    var dm=new Map();
+    for(var i=0;i<D.length;i++){var d=D[i];if(!dm.has(d.musicId))dm.set(d.musicId,[]);dm.get(d.musicId).push(d);}
+    for(var j=0;j<S.length;j++){var s=S[j];s._d=dm.get(s.id)||[];s._ma=s._d.find(function(x){return x.musicDifficulty==='master';});s._ex=s._d.find(function(x){return x.musicDifficulty==='expert';});s._ml=s._ma?s._ma.playLevel:(s._ex?s._ex.playLevel:0);s._n=s._ma?s._ma.noteCount:(s._ex?s._ex.noteCount:0);}
+    $('tc').textContent=S.length;$('ld').style.display='none';$('app').style.display='block';render();
+  }catch(e){$('ld').innerHTML='載入失敗：'+e.message;}
 }
-
 function render(){
-  const q=$('q').value.trim().toLowerCase();
-  let L=S;
-  if(q) L=L.filter(s=>
-    s.title.toLowerCase().includes(q)||
-    (s.pronunciation||'').toLowerCase().includes(q)||
-    (s.composer||'').toLowerCase().includes(q)||
-    (s.lyricist||'').toLowerCase().includes(q)||
-    String(s.id).includes(q)
-  );
-  const d=sD==='asc'?1:-1;
-  L=[...L].sort((a,b)=>{
-    switch(sK){
-      case'id':return(a.id-b.id)*d;
-      case'title':return a.title.localeCompare(b.title,'ja')*d;
-      case'composer':return(a.composer||'').localeCompare(b.composer||'','ja')*d;
-      case'master':return(a._ml-b._ml)*d;
-      case'notes':return(a._n-b._n)*d;
-      case'date':return((a.publishedAt||0)-(b.publishedAt||0))*d;
-      default:return(a.id-b.id)*d;
-    }
-  });
+  var q=$('q').value.trim().toLowerCase(),L=S;
+  if(q)L=L.filter(function(s){return s.title.toLowerCase().indexOf(q)>=0||(s.pronunciation||'').toLowerCase().indexOf(q)>=0||(s.composer||'').toLowerCase().indexOf(q)>=0||(s.lyricist||'').toLowerCase().indexOf(q)>=0||String(s.id).indexOf(q)>=0;});
+  var dir=sD==='asc'?1:-1;
+  L=[].concat(L).sort(function(a,b){switch(sK){case'id':return(a.id-b.id)*dir;case'title':return a.title.localeCompare(b.title,'ja')*dir;case'composer':return(a.composer||'').localeCompare(b.composer||'','ja')*dir;case'master':return(a._ml-b._ml)*dir;case'notes':return(a._n-b._n)*dir;case'date':return((a.publishedAt||0)-(b.publishedAt||0))*dir;default:return(a.id-b.id)*dir;}});
   $('fc2').textContent=L.length;
-  const tb=$('tb');
-  const h=[];
-  for(const s of L){
-    const isSel=sel&&sel.id===s.id;
-    const ds=s._d.slice().sort((a,b)=>DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty));
-    const pills=ds.map(x=>`<span class="dp dp-">${(DN[x.musicDifficulty]||'?')} </span>`).join('');
-    h.push(`<tr data-id="" class="''"><td></td><td></td><td></td><td></td></tr>`);
-  }
+  var tb=$('tb'),h=[];
+  for(var i=0;i<L.length;i++){var s=L[i],isSel=sel&&sel.id===s.id;var ds=s._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty);});var pills=ds.map(function(x){return '<span class="dp dp-'+x.musicDifficulty+'">'+(DN[x.musicDifficulty]||'?')+' '+x.playLevel+'</span>';}).join('');h.push('<tr data-id="'+s.id+'" class="'+(isSel?'sel':'')+'"><td>'+s.id+'</td><td>'+esc(s.title)+'</td><td>'+esc(s.composer||'')+'</td><td>'+pills+'</td></tr>');}
   tb.innerHTML=h.join('');
 }
-
-$('tb').parentElement.parentElement.addEventListener('click',function(e){
-  const tr=e.target.closest('tr[data-id]');
-  if(!tr)return;
-  pickSong(parseInt(tr.dataset.id));
-});
-
+$('tb').parentElement.parentElement.addEventListener('click',function(e){var tr=e.target.closest('tr[data-id]');if(!tr)return;pickSong(parseInt(tr.dataset.id));});
 function pickSong(id){
-  sel=S.find(s=>s.id===id);if(!sel)return;
-  document.querySelectorAll('#tb tr').forEach(r=>r.classList.toggle('sel',parseInt(r.dataset.id)===id));
+  sel=S.find(function(s){return s.id===id;});if(!sel)return;
+  document.querySelectorAll('#tb tr').forEach(function(r){r.classList.toggle('sel',parseInt(r.dataset.id)===id);});
   $('sn').textContent=sel.title;
-  const m=[];
-  if(sel.composer)m.push('作曲：'+sel.composer);
-  if(sel.lyricist&&sel.lyricist!==sel.composer)m.push('作詞：'+sel.lyricist);
-  if(sel.arranger&&sel.arranger!=='-'&&sel.arranger!==sel.composer)m.push('編曲：'+sel.arranger);
+  var m=[];if(sel.composer)m.push('作曲：'+sel.composer);if(sel.lyricist&&sel.lyricist!==sel.composer)m.push('作詞：'+sel.lyricist);if(sel.arranger&&sel.arranger!=='-'&&sel.arranger!==sel.composer)m.push('編曲：'+sel.arranger);
   $('si').textContent=m.join(' · ');
-  const ds=sel._d.slice().sort((a,b)=>DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty));
-  $('dr').innerHTML=ds.map(x=>
-    `<div class="dc dc-" data-f="" data-n="" data-l="" onclick="pickD(this)">${(DN[x.musicDifficulty]||'?').toUpperCase()} Lv. ()</div>`
-  ).join('');
-  $('sc').classList.add('show');
-  selD=null;
-  const mc=document.querySelector('.dc[data-f="master"]'),ec=document.querySelector('.dc[data-f="expert"]');
+  var ds=sel._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty);});
+  $('dr').innerHTML=ds.map(function(x){return '<div class="dc dc-'+x.musicDifficulty+'" data-f="'+x.musicDifficulty+'" data-n="'+x.noteCount+'" data-l="'+x.playLevel+'" onclick="pickD(this)">'+(DN[x.musicDifficulty]||'?').toUpperCase()+' Lv.'+x.playLevel+' ('+x.noteCount+')</div>';}).join('');
+  $('sc').classList.add('show');selD=null;
+  var mc=document.querySelector('.dc[data-f="master"]'),ec=document.querySelector('.dc[data-f="expert"]');
   if(mc)pickD(mc);else if(ec)pickD(ec);
 }
-
-function pickD(el){
-  document.querySelectorAll('.dc').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  selD={d:el.dataset.f,n:parseInt(el.dataset.n),l:parseInt(el.dataset.l)};
-}
-
-// Sort bar
-$('sbar').addEventListener('click',function(e){
-  const b=e.target.closest('.sb');if(!b)return;
-  const k=b.dataset.k;
-  if(sK===k){sD=sD==='asc'?'desc':'asc';}else{sK=k;sD=b.dataset.d||'asc';}
-  this.querySelectorAll('.sb').forEach(x=>{x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'');});
-  b.classList.add('on');
-  b.textContent=b.textContent+' '+(sD==='asc'?'▲':'▼');
-  render();
-});
-
+function pickD(el){document.querySelectorAll('.dc').forEach(function(c){c.classList.remove('on');});el.classList.add('on');selD={d:el.dataset.f,n:parseInt(el.dataset.n),l:parseInt(el.dataset.l)};}
+$('sbar').addEventListener('click',function(e){var b=e.target.closest('.sb');if(!b)return;var k=b.dataset.k;if(sK===k){sD=sD==='asc'?'desc':'asc';}else{sK=k;sD=b.dataset.d||'asc';}this.querySelectorAll('.sb').forEach(function(x){x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'');});b.classList.add('on');b.textContent=b.textContent+' '+(sD==='asc'?'▲':'▼');render();});
 $('q').addEventListener('input',render);
-
-// Toggle groups
-function tgl(id){$(id).addEventListener('click',function(e){const t=e.target.closest('.tg');if(!t)return;this.querySelectorAll('.tg').forEach(x=>x.classList.remove('on'));t.classList.add('on');});}
+function tgl(id){$(id).addEventListener('click',function(e){var t=e.target.closest('.tg');if(!t)return;this.querySelectorAll('.tg').forEach(function(x){x.classList.remove('on');});t.classList.add('on');});}
 tgl('tt');tgl('eb');
-
-// Calc
-function gv(id){return $(id).querySelector('.tg.on')?.dataset.v;}
+function gv(id){var el=$(id).querySelector('.tg.on');return el?el.dataset.v:null;}
 function cBase(sc,ty){return Math.floor(sc*0.000350+(ty==='solo'||ty==='challenge'?50:55));}
-function cEP(sc,bn,en,ty){const b=cBase(sc,ty),m=EM[en]||1,bm=ty==='challenge'?1:(1+bn/100);return Math.floor(b*bm*m);}
+function cEP(sc,bn,en,ty){var b=cBase(sc,ty),m=EM[en]||1,bm=ty==='challenge'?1:(1+bn/100);return Math.floor(b*bm*m);}
 function eDur(n){return n>0?Math.max(55,Math.round(n/6.5)):105;}
 function fT(m){if(!isFinite(m))return'∞';return m<60?Math.round(m)+'分':Math.floor(m/60)+'時'+Math.round(m%60)+'分';}
-
 function calc(){
-  const sc=parseInt($('si2').value)||0;
-  const bn=parseInt($('bi').value)||0;
-  const en=parseInt(gv('eb'))||0;
-  const ty=gv('tt')||'multi';
-  const tg=parseInt($('te').value)||0;
-  const cu=parseInt($('ce').value)||0;
-  const rm=Math.max(0,tg-cu);
-  const ep=cEP(sc,bn,en,ty);
-  const nt=selD?selD.n:700;
-  const dur=eDur(nt)+OH;
-  const pl=ep>0?Math.ceil(rm/ep):Infinity;
-  const tm=pl*dur/60;
-  const tn=pl*en;
-
-  $('rg').innerHTML=`
-    <div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv"></div><div class="ru">Event Points</div></div>
-    <div class="ri"><div class="rl">需打次數</div><div class="rv">'∞'</div><div class="ru">剩餘  EP</div></div>
-    <div class="ri"><div class="rl">預估時間</div><div class="rv"></div><div class="ru">~秒/輪</div></div>
-    <div class="ri"><div class="rl">消耗體力</div><div class="rv">'∞'</div><div class="ru">≈ '∞' 罐</div></div>`;
-
-  const el=[0,1,2,3,5,10];
-  document.querySelector('#et tbody').innerHTML=el.map(e=>{
-    const ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';
-    const p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;
-    return`<tr class="''"><td>×</td><td>×</td><td></td><td></td><td>'∞'</td><td></td></tr>`;
-  }).join('');
-
-  // Song rank
-  const rk=S.map(s=>{
-    const n=s._n;if(n<=0)return null;
-    const d=eDur(n)+OH,e=cEP(sc,bn,en,ty);
-    return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60))};
-  }).filter(Boolean).sort((a,b)=>b.epm-a.epm).slice(0,15);
-  document.querySelector('#rt tbody').innerHTML=rk.map((r,i)=>
-    `<tr><td></td><td> <span style="color:var(--text-muted);font-size:.85em">Lv.</span></td><td>s</td><td></td><td style="font-weight:600"></td></tr>`
-  ).join('');
+  var sc=parseInt($('si2').value)||0,bn=parseInt($('bi').value)||0,en=parseInt(gv('eb'))||0,ty=gv('tt')||'multi';
+  var tg=parseInt($('te').value)||0,cu=parseInt($('ce').value)||0,rm=Math.max(0,tg-cu);
+  var ep=cEP(sc,bn,en,ty),nt=selD?selD.n:700,dur=eDur(nt)+OH;
+  var pl=ep>0?Math.ceil(rm/ep):Infinity,tm=pl*dur/60,tn=pl*en;
+  $('rg').innerHTML='<div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">'+ep.toLocaleString()+'</div><div class="ru">Event Points</div></div>'+'<div class="ri"><div class="rl">需打次數</div><div class="rv">'+(isFinite(pl)?pl.toLocaleString():'∞')+'</div><div class="ru">剩餘 '+rm.toLocaleString()+' EP</div></div>'+'<div class="ri"><div class="rl">預估時間</div><div class="rv">'+fT(tm)+'</div><div class="ru">~'+dur+'秒/輪</div></div>'+'<div class="ri"><div class="rl">消耗體力</div><div class="rv">'+(isFinite(tn)?tn.toLocaleString():'∞')+'</div><div class="ru">≈ '+(isFinite(tn)?Math.ceil(tn/10):'∞')+' 罐</div></div>';
+  var el=[0,1,2,3,5,10];
+  document.querySelector('#et tbody').innerHTML=el.map(function(e){var ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';var p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;return '<tr class="'+(e===en?'hr':'')+'"><td>'+e+'×</td><td>'+EM[e]+'×</td><td>'+ep2.toLocaleString()+'</td><td>'+ppe+'</td><td>'+(isFinite(p)?p.toLocaleString():'∞')+'</td><td>'+fT(t)+'</td></tr>';}).join('');
+  var rk=S.map(function(s){var n=s._n;if(n<=0)return null;var d=eDur(n)+OH,e=cEP(sc,bn,en,ty);return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60))};}).filter(Boolean).sort(function(a,b){return b.epm-a.epm;}).slice(0,15);
+  document.querySelector('#rt tbody').innerHTML=rk.map(function(r,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(r.t)+' <span style="color:var(--text-muted);font-size:.85em">Lv.'+r.l+'</span></td><td>'+r.s+'s</td><td>'+r.ep.toLocaleString()+'</td><td style="font-weight:600">'+r.epm.toLocaleString()+'</td></tr>';}).join('');
   $('rc').style.display='block';
-
-  const r=$('res');r.classList.add('show');
-  r.scrollIntoView({behavior:'smooth',block:'start'});
+  var res=$('res');res.classList.add('show');res.scrollIntoView({behavior:'smooth',block:'start'});
 }
-
 function $(id){return document.getElementById(id);}
-function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 init();
 </script>
-
 </body>
 </html>
