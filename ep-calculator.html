@@ -170,6 +170,12 @@ tr:hover td{background:rgba(88,166,255,.04)}
 <div class="fg"><label>分數 Score</label><input type="number" id="epScore" value="1500000" min="0" step="10000"></div>
 <div class="fg"><label>活動加成 (%)</label><input type="number" id="epBonus" value="250" min="0" max="500" step="5"></div>
 </div>
+<div class="fg2" id="fgMulti" style="display:none">
+<div class="fg"><label>他人總分</label><input type="number" id="epOther" value="6000000" min="0" step="100000">
+<div class="ht">其他 4 人分數總和</div></div>
+<div class="fg" id="fgLife" style="display:none"><label>殘餘 Life</label><input type="number" id="epLife" value="800" min="0" max="2000" step="10">
+<div class="ht">對戰結束時的生命值</div></div>
+</div>
 <div class="fg"><label>消費體力 (ライブボーナス)</label>
 <div class="tg-row" id="ltEnergy">
 <div class="tg" data-v="0">0</div>
@@ -929,7 +935,8 @@ var SD=[[1,"Tell Your World",123.2,114,{"E":[5, 220],"N":[10, 492],"H":[16, 719]
 [700,"魔法少女とチョコレゐト",119.6,113,{"E":[7, 277],"N":[13, 349],"H":[18, 608],"X":[25, 797],"M":[30, 930]}],
 [704,"黒塗り世界宛て書簡",130.1,115,{"E":[8, 221],"N":[12, 358],"H":[19, 708],"X":[26, 930],"M":[31, 1201]}],
 [716,"透過する温度",111.6,110,{"E":[5, 155],"N":[13, 260],"H":[17, 365],"X":[24, 608],"M":[29, 754]}],
-[719,"SHIAWASE FOR YOU!",103.7,108,{"E":[8, 195],"N":[13, 385],"H":[19, 577],"X":[25, 789],"M":[30, 961]}]];
+[719,"SHIAWASE FOR YOU!",103.7,108,{"E":[8, 195],"N":[13, 385],"H":[19, 577],"X":[25, 789],"M":[30, 961]}]
+];
 </script>
 
 <script>
@@ -991,6 +998,11 @@ document.querySelectorAll('.tg-row').forEach(function(row){
     var tg=e.target.closest('.tg');if(!tg)return;
     row.querySelectorAll('.tg').forEach(function(t){t.classList.remove('on')});
     tg.classList.add('on');
+    if(row.id==='ltType'){
+      var v=tg.dataset.v;
+      $('fgMulti').style.display=(v==='multi'||v==='cheer')?'':'none';
+      $('fgLife').style.display=(v==='cheer')?'':'none';
+    }
   });
 });
 function gv(id){var el=$(id).querySelector('.tg.on');return el?el.dataset.v:null}
@@ -1102,13 +1114,15 @@ function calcEP(){
   var bonus=parseInt($('epBonus').value)||0;
   var energy=parseInt(gv('ltEnergy'))||0;
   var boostRate=EM[energy]||1;
+  var otherScore=parseInt($('epOther').value)||0;
+  var life=parseInt($('epLife').value)||0;
 
   var s=songs.find(function(x){return x.id===selSongId});
   var eventRate=s?s.rate:100;
   var songTime=s?s.time:100;
   var songName=s?s.title:'(未選擇)';
 
-  var ep=calcEPValue(liveType,score,eventRate,bonus,boostRate);
+  var ep=calcEPValue(liveType,score,eventRate,bonus,boostRate,otherScore,life);
 
   /* Summary */
   $('epSummary').innerHTML=
@@ -1121,7 +1135,7 @@ function calcEP(){
   var html='';
   [0,1,2,3,4,5,6,7,8,9,10].forEach(function(e){
     var m=EM[e];
-    var ep2=calcEPValue(liveType,score,eventRate,bonus,m);
+    var ep2=calcEPValue(liveType,score,eventRate,bonus,m,otherScore,life);
     var ppe=e>0?(ep2/e).toFixed(1):'∞';
     var cls=e===energy?'hl':'';
     html+='<tr class="'+cls+'"><td>'+e+'</td><td>'+m+'×</td><td style="font-family:\'JetBrains Mono\',monospace">'+nf(ep2)+'</td><td>'+ppe+'</td><td>'+e+'</td></tr>';
@@ -1130,7 +1144,7 @@ function calcEP(){
 
   /* Top 15 songs by EP/min */
   var topSongs=songs.filter(function(x){return x.time>0}).map(function(x){
-    var ep2=calcEPValue(liveType,score,x.rate,bonus,boostRate);
+    var ep2=calcEPValue(liveType,score,x.rate,bonus,boostRate,otherScore,life);
     var totalSec=x.time+OH;
     return{title:x.title,time:x.time,rate:x.rate,ep:ep2,epm:Math.round(ep2/(totalSec/60))};
   }).sort(function(a,b){return b.epm-a.epm}).slice(0,15);
