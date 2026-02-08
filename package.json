@@ -1,8 +1,0 @@
-{
-  "name": "pjsk-resource-center",
-  "version": "2.0.0",
-  "description": "Project SEKAI 資源中心 - 卡池列表、歌曲清單、推隊倍率計算器",
-  "scripts": {
-    "start": "npx serve ."
-  }
-}
