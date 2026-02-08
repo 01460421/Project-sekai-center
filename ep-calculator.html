@@ -3,766 +3,955 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>EP計算器 — Project SEKAI 資源中心</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEKAI EP 計算器</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-:root{--navy:#1a1a2e;--navy2:#16213e;--accent:#0f3460;--text:#2c2c2c;--text-light:#555;--text-muted:#999;--border:#ddd;--border-light:#eee;--bg:#fff;--bg-input:#f7f7f7;--green:#2e7d32;--green-bg:#e8f5e9;--blue:#1565c0;--blue-bg:#e3f2fd;--orange:#e65100;--orange-bg:#fff3e0;--red:#c62828;--red-bg:#fce4ec;--purple:#7b1fa2;--purple-bg:#f3e5f5;--gold:#ffcc00;--gold-bg:#2c2c2c;--safe-bottom:env(safe-area-inset-bottom,0px)}
-body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','SimSun','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:15px;-webkit-tap-highlight-color:transparent}
-.topnav{background:var(--navy);color:#fff;display:flex;align-items:center;gap:4px 16px;padding:10px 16px;font-size:.82em;letter-spacing:.03em;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap}
-.topnav::-webkit-scrollbar{display:none}
-.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:6px 4px;transition:color .15s;flex-shrink:0}
-.topnav a:hover{color:#fff}
-.topnav a.cur{color:#fff;font-weight:700;border-bottom:2px solid #fff;padding-bottom:4px}
-.hero{text-align:center;padding:28px 16px 22px;border-bottom:2px solid var(--navy)}
-.hero h1{font-size:1.5em;font-weight:700;color:var(--navy);letter-spacing:.1em}
-.hero .sub{font-size:.82em;color:var(--text-light);letter-spacing:.04em;margin-top:2px}
-.hero .upd{font-size:.75em;color:var(--text-muted);font-style:italic;margin-top:5px}
-.container{max-width:1100px;margin:0 auto;padding:20px 16px 50px;padding-bottom:calc(20px + var(--safe-bottom))}
-.sec-title{font-size:1.1em;font-weight:700;color:var(--navy);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.sec-title small{font-weight:400;font-size:.72em;color:var(--text-muted);margin-left:6px}
-.main-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--navy);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.main-tabs::-webkit-scrollbar{display:none}
-.mtab{padding:12px 20px;font-family:inherit;font-size:.88em;font-weight:600;color:var(--text-light);background:none;border:none;cursor:pointer;position:relative;white-space:nowrap;transition:color .15s;letter-spacing:.04em}
-.mtab:hover{color:var(--navy)}
-.mtab.on{color:var(--navy)}
-.mtab.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--navy);border-radius:2px 2px 0 0}
-.tab-panel{display:none}.tab-panel.show{display:block}
-.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
-.single-col{max-width:600px}
-.lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.lib-label{font-size:.92em;font-weight:700;color:var(--navy)}
-.lib-stat{font-size:.74em;color:var(--text-muted)}.lib-stat b{color:var(--text-light)}
-.lib-search{width:100%;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;margin-bottom:8px;transition:border-color .15s;-webkit-appearance:none}
-.lib-search:focus{border-color:var(--accent)}
-.sort-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
-.sb{padding:6px 12px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.74em;transition:all .15s;user-select:none;white-space:nowrap;color:var(--text-light)}
-.sb:hover{border-color:var(--accent);color:var(--accent)}
-.sb.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-.tw{max-height:520px;overflow-y:auto;overflow-x:auto;border:1px solid var(--border-light);border-radius:6px;-webkit-overflow-scrolling:touch}
-.tw::-webkit-scrollbar{width:4px;height:4px}.tw::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}
-.st-tbl{width:100%;border-collapse:collapse;font-size:.82em}
-.st-tbl thead{position:sticky;top:0;z-index:2}
-.st-tbl th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78em;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none}
-.st-tbl th:hover{background:var(--navy2)}
-.st-tbl td{padding:8px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap}
-.st-tbl tr{cursor:pointer;transition:background .12s}
-.st-tbl tbody tr:hover td{background:#f0f4ff}
-.st-tbl tbody tr.sel td{background:#edf0f8;font-weight:600}
-.dp{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.7em;font-weight:600;line-height:1.4;margin-right:2px}
-.dp-easy{background:var(--green-bg);color:var(--green)}.dp-normal{background:var(--blue-bg);color:var(--blue)}.dp-hard{background:var(--orange-bg);color:var(--orange)}.dp-expert{background:var(--red-bg);color:var(--red)}.dp-master{background:var(--purple-bg);color:var(--purple)}.dp-append{background:var(--gold-bg);color:var(--gold)}
-.sel-card{background:linear-gradient(135deg,#f8f9fd,#edf0f8);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:14px;display:none}
-.sel-card.show{display:block}
-.sel-card .sn{font-weight:700;font-size:1.02em;color:var(--navy);word-break:break-word}
-.sel-card .sm{font-size:.78em;color:var(--text-light);margin-top:2px;word-break:break-word}
-.dc-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.dc{padding:6px 14px;border-radius:16px;font-size:.76em;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}
-.dc.on{border-color:var(--navy);transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,.1)}
-.dc-easy{background:var(--green-bg);color:var(--green)}.dc-normal{background:var(--blue-bg);color:var(--blue)}.dc-hard{background:var(--orange-bg);color:var(--orange)}.dc-expert{background:var(--red-bg);color:var(--red)}.dc-master{background:var(--purple-bg);color:var(--purple)}.dc-append{background:var(--gold-bg);color:var(--gold)}
-.card{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;margin-bottom:14px}
-.card-title{font-size:.92em;font-weight:700;color:var(--navy);margin-bottom:12px}
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fg{display:flex;flex-direction:column}.fg.full{grid-column:1/-1}
-.fg label{font-size:.8em;font-weight:700;color:var(--text-light);margin-bottom:4px}
-.fg input{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none}
-.fg input:focus{border-color:var(--accent)}
-.fg .h{font-size:.68em;color:var(--text-muted);margin-top:3px}
-.tr{display:flex;gap:6px;flex-wrap:wrap}
-.tg{padding:8px 14px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;transition:all .15s;user-select:none;color:var(--text-light)}
-.tg:hover{border-color:var(--accent);color:var(--accent)}
-.tg.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.tg.dk.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-.cbtn{display:block;width:100%;padding:14px;margin-top:14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95em;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .2s;touch-action:manipulation}
-.cbtn:hover{background:var(--accent)}.cbtn:active{background:#0a2440;transform:scale(.98)}
-.tip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--border);color:#fff;font-size:9px;font-weight:700;cursor:help;margin-left:3px;position:relative}
-.tip:hover::after,.tip:active::after{content:attr(data-t);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;font-weight:400;padding:8px 12px;border-radius:6px;white-space:normal;z-index:99;max-width:260px;min-width:180px;line-height:1.4;pointer-events:none}
-.chk-row{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;user-select:none}
-.chk-row input[type="checkbox"]{width:18px;height:18px;accent-color:var(--navy);cursor:pointer}
-.chk-row span{font-size:.82em;color:var(--text-light)}
-.res{display:none}.res.show{display:block}
-.rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-.ri{background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;text-align:center}
-.ri .rl{font-size:.68em;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
-.ri .rv{font-size:1.35em;font-weight:700;color:var(--navy)}
-.ri .ru{font-size:.68em;color:var(--text-light);margin-top:2px}
-.ri-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff)}
-.ew{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}
-table.et{width:100%;border-collapse:collapse;font-size:.78em;min-width:420px}
-.et th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.8em;white-space:nowrap}
-.et td{padding:8px 10px;border-bottom:1px solid var(--border-light);white-space:nowrap}
-.et tr:hover td{background:#f5f8ff}.et .hr td{background:#edf0f8;font-weight:600}
-.deck-tabs{display:flex;gap:6px;margin-bottom:14px}
-.deck-tab{padding:8px 20px;border:1px solid var(--border);border-radius:20px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.82em;font-weight:600;transition:all .15s;color:var(--text-light)}
-.deck-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.member-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light)}
-.member-row:last-child{border-bottom:none}
-.member-label{font-size:.85em;font-weight:700;color:var(--text);min-width:90px}
-.member-input{flex:1;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);color:var(--text);outline:none;text-align:center;-webkit-appearance:none;max-width:120px}
-.member-input:focus{border-color:var(--accent)}
-.member-unit{font-size:.8em;color:var(--text-muted)}
-.internal-bar{display:flex;justify-content:space-between;padding:10px 14px;background:linear-gradient(135deg,#f8f9fd,#edf0f8);border-radius:8px;margin-top:12px;font-size:.82em}
-.internal-bar .ib-label{color:var(--text-muted)}.internal-bar .ib-val{font-weight:700;color:var(--navy)}
-.er-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px}
-.er-item .er-label{font-size:.85em;color:var(--text-light);font-weight:600}
-.er-item .er-val{font-size:1.25em;font-weight:700;color:var(--accent)}
-.er-item .er-sub{font-size:.72em;color:var(--text-muted);margin-left:6px}
-.er-item.er-hl{border-left:3px solid var(--accent);background:linear-gradient(135deg,#f8f9fd,#fff)}
-.sa-combo{background:var(--bg-input);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;margin-bottom:8px}
-.sa-combo.best{border-color:var(--accent);border-width:2px;background:linear-gradient(135deg,#f8f9fd,#edf0f8)}
-.sa-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
-.sa-label{font-size:.78em;color:var(--text-muted)}.sa-val{font-weight:700;color:var(--navy)}
-.sa-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68em;font-weight:600;background:var(--green-bg);color:var(--green);margin-left:6px}
-.sa-note{font-size:.72em;color:var(--text-muted);margin-top:4px}
-.collapse-btn{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:.85em;font-weight:600;color:var(--accent);border:none;background:none;font-family:inherit}
-.collapse-btn .arr{transition:transform .2s;font-size:.7em}
-.collapse-btn.open .arr{transform:rotate(90deg)}
-.collapse-body{display:none;padding-bottom:10px}.collapse-body.open{display:block}
-.sl-bar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
-.sl-btn{padding:8px 18px;border:1px solid var(--border);border-radius:16px;background:var(--bg);cursor:pointer;font-family:inherit;font-size:.8em;font-weight:600;color:var(--text-light);transition:all .15s}
-.sl-btn:hover{border-color:var(--accent);color:var(--accent)}
-.sl-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.sl-chk{display:flex;align-items:center;gap:5px;font-size:.76em;color:var(--text-muted)}
-.sl-chk input{accent-color:var(--navy)}
-.loading{text-align:center;padding:50px 20px;color:var(--text-muted);font-size:.9em}
-.spin{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle}
+:root{
+  --navy:#1a1a2e;--navy2:#16213e;--accent:#0f3460;
+  --text:#2c2c2c;--text-l:#555;--text-m:#999;
+  --bd:#ddd;--bd-l:#eee;
+  --bg:#fff;--bg2:#f7f7f7;
+  --grn:#2e7d32;--grn-bg:#e8f5e9;
+  --blu:#1565c0;--blu-bg:#e3f2fd;
+  --org:#e65100;--org-bg:#fff3e0;
+  --red:#c62828;--red-bg:#fce4ec;
+  --pur:#7b1fa2;--pur-bg:#f3e5f5;
+  --gold:#d4a800;
+  --radius:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Songti TC','Songti SC','STSongti','PMingLiU','Noto Serif TC','Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:14px}
+
+/* NAV */
+.nav{background:var(–navy);color:#fff;display:flex;justify-content:center;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.nav button{background:none;border:none;color:rgba(255,255,255,.7);font:inherit;font-size:.82em;padding:10px 18px;cursor:pointer;letter-spacing:.04em;transition:all .15s;border-bottom:2px solid transparent;position:relative}
+.nav button:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav button.on{color:#fff;font-weight:700;border-bottom-color:#fff}
+
+/* HERO */
+.hero{text-align:center;padding:28px 20px 22px;border-bottom:2px solid var(–navy)}
+.hero h1{font-size:1.5em;font-weight:700;color:var(–navy);letter-spacing:.1em}
+.hero .sub{font-size:.82em;color:var(–text-l);letter-spacing:.04em;margin-top:2px}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.tab{display:none}.tab.on{display:block}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:800px){.cols{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(–bd);border-radius:var(–radius);padding:16px;margin-bottom:14px}
+.card-t{font-size:.9em;font-weight:700;color:var(–navy);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-t small{font-weight:400;font-size:.78em;color:var(–text-m)}
+
+/* FORM */
+.fg{margin-bottom:10px}
+.fg label{display:block;font-size:.8em;font-weight:600;color:var(–text-l);margin-bottom:3px}
+.fg input,.fg select{width:100%;padding:7px 10px;border:1px solid var(–bd);border-radius:6px;font:inherit;font-size:.88em;background:var(–bg2);transition:border .15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(–accent)}
+.fg .h{font-size:.72em;color:var(–text-m);margin-top:2px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.fg2{grid-template-columns:1fr}}
+.fg.full{grid-column:1/-1}
+
+/* TOGGLE ROW */
+.tr{display:flex;gap:4px;flex-wrap:wrap}
+.tg{padding:5px 12px;border:1px solid var(–bd);border-radius:5px;font-size:.78em;cursor:pointer;transition:all .12s;background:var(–bg2);user-select:none}
+.tg:hover{border-color:var(–accent)}
+.tg.on{background:var(–navy);color:#fff;border-color:var(–navy);font-weight:700}
+
+/* BUTTON */
+.btn{display:block;width:100%;padding:10px;background:var(–navy);color:#fff;border:none;border-radius:6px;font:inherit;font-size:.85em;font-weight:700;cursor:pointer;letter-spacing:.06em;transition:background .15s;margin-top:14px}
+.btn:hover{background:var(–accent)}
+.btn-s{padding:6px 14px;font-size:.78em;width:auto;display:inline-block;margin:0 4px 4px 0;border-radius:5px}
+.btn-s.sec{background:var(–bg2);color:var(–text);border:1px solid var(–bd)}
+.btn-s.sec:hover{background:var(–bd-l)}
+
+/* TABLE */
+.tw{overflow-x:auto;max-height:520px;overflow-y:auto;border:1px solid var(–bd-l);border-radius:6px}
+.tw::-webkit-scrollbar{width:5px;height:5px}
+.tw::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+table{width:100%;border-collapse:collapse;font-size:.78em}
+th{position:sticky;top:0;background:var(–navy);color:#fff;text-align:left;padding:7px 8px;font-weight:600;white-space:nowrap;z-index:2;cursor:pointer}
+th:hover{background:var(–accent)}
+td{padding:6px 8px;border-bottom:1px solid var(–bd-l);white-space:nowrap}
+tr:hover td{background:var(–bg2)}
+tr.hl td{background:var(–grn-bg)!important;font-weight:600}
+.r{text-align:right}
+
+/* SEARCH */
+.search{width:100%;padding:8px 12px;border:1px solid var(–bd);border-radius:6px;font:inherit;font-size:.85em;background:var(–bg2);margin-bottom:8px}
+.search:focus{outline:none;border-color:var(–accent)}
+
+/* SORT BAR */
+.sbar{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.sb{padding:4px 10px;border:1px solid var(–bd);border-radius:4px;font-size:.72em;cursor:pointer;background:var(–bg2);user-select:none;transition:all .12s}
+.sb:hover{border-color:var(–accent)}
+.sb.on{background:var(–navy);color:#fff;border-color:var(–navy)}
+
+/* INTERNAL BAR */
+.ib{background:var(–bg2);border:1px solid var(–bd-l);border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;font-size:.78em;margin:10px 0}
+.ib-l{color:var(–text-l)}.ib-v{font-weight:700;color:var(–navy)}
+
+/* DECK TABS */
+.dk-tabs{display:flex;gap:4px;margin-bottom:12px}
+.dk-tab{flex:1;padding:6px;text-align:center;border:1px solid var(–bd);border-radius:5px;font-size:.78em;cursor:pointer;background:var(–bg2);transition:all .12s}
+.dk-tab.on{background:var(–navy);color:#fff;border-color:var(–navy);font-weight:700}
+
+/* COLLAPSE */
+.coll-btn{width:100%;text-align:left;background:var(–bg2);border:1px solid var(–bd);border-radius:6px;padding:8px 12px;font:inherit;font-size:.82em;cursor:pointer;color:var(–text);transition:all .12s;margin:10px 0 4px}
+.coll-btn:hover{background:var(–bd-l)}
+.coll-btn .arr{display:inline-block;transition:transform .2s;font-size:.7em}
+.coll-btn.open .arr{transform:rotate(90deg)}
+.coll-body{display:none;padding:10px 0}.coll-body.open{display:block}
+
+/* RESULT CARD */
+.res-card{background:var(–bg2);border:1px solid var(–bd-l);border-radius:var(–radius);padding:14px;margin-top:12px}
+.ri{display:flex;justify-content:space-between;padding:5px 0;font-size:.82em;border-bottom:1px solid var(–bd-l)}
+.ri:last-child{border:none}
+.ri .rl{color:var(–text-l)}.ri .rv{font-weight:700}
+
+/* CHECK */
+.chk{display:flex;align-items:center;gap:6px;font-size:.8em;margin:6px 0;cursor:pointer}
+.chk input{accent-color:var(–navy)}
+
+/* SA RESULTS */
+.sa-item{background:#fff;border:1px solid var(–bd-l);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.sa-item .sa-top{display:flex;justify-content:space-between;font-size:.82em;font-weight:700;color:var(–navy)}
+.sa-item .sa-det{font-size:.72em;color:var(–text-l);margin-top:4px}
+
+/* FOOTER */
+footer{text-align:center;padding:20px;font-size:.72em;color:var(–text-m);border-top:1px solid var(–bd-l)}
+footer a{color:var(–accent)}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(–text-m);font-size:.88em}
+.spin{display:inline-block;width:20px;height:20px;border:2px solid var(–bd);border-top-color:var(–navy);border-radius:50%;animation:sp .6s linear infinite;margin-right:8px}
 @keyframes sp{to{transform:rotate(360deg)}}
-footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:.72em;color:var(--text-muted);line-height:1.6}
-@media(max-width:860px){.main-layout{grid-template-columns:1fr}}
-@media(max-width:600px){
-body{font-size:14px}.topnav{padding:8px 12px;gap:2px 10px;font-size:.78em}.hero{padding:20px 14px 16px}.hero h1{font-size:1.2em}.container{padding:14px 12px 40px}.sec-title{font-size:1em;margin:18px 0 12px}.mtab{padding:10px 14px;font-size:.8em}.lib-search{padding:10px;font-size:16px}.sort-bar{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.sort-bar::-webkit-scrollbar{display:none}.sb{padding:6px 10px;font-size:.72em;flex-shrink:0}.tw{max-height:380px}.st-tbl{font-size:.76em}.card{padding:14px}.fg2{gap:10px}.tg{padding:7px 11px;font-size:.76em}.cbtn{padding:14px;font-size:.9em}.rg{grid-template-columns:1fr 1fr;gap:8px}.ri{padding:10px 12px}.ri .rv{font-size:1.2em}table.et{font-size:.74em;min-width:400px}.member-label{min-width:75px;font-size:.8em}.single-col{max-width:100%}
-}
-@media(max-width:380px){.fg2{grid-template-columns:1fr;gap:8px}.rg{grid-template-columns:1fr 1fr;gap:6px}.mtab{padding:8px 10px;font-size:.74em}}
-@media(prefers-color-scheme:dark){
-:root{--bg:#121212;--bg-input:#1e1e1e;--text:#e0e0e0;--text-light:#aaa;--text-muted:#666;--border:#333;--border-light:#2a2a2a;--navy:#1a1a2e;--navy2:#16213e;--accent:#3a6ea5}
-.st-tbl tbody tr:hover td{background:#1e2438}.sel-card,.internal-bar,.sa-combo.best,.er-item.er-hl,.ri-hl{background:linear-gradient(135deg,#1a1e2e,#1e2438)}.er-item,.sa-combo{background:#1e1e1e}
-}
+
+/* STATUS */
+.status{font-size:.72em;color:var(–text-m);text-align:center;padding:4px}
+.status.ok{color:var(–grn)}.status.err{color:var(–red)}
 </style>
+
 </head>
 <body>
-<nav class="topnav">
-<a href="https://project-sekai-center.vercel.app/">日曆</a>
-<a href="https://project-sekai-center.vercel.app/">活動</a>
-<a href="https://project-sekai-center.vercel.app/">官方</a>
-<a href="https://project-sekai-center.vercel.app/">資訊站</a>
-<a href="https://project-sekai-center.vercel.app/">卡池</a>
-<a href="https://project-sekai-center.vercel.app/">歌曲</a>
-<a class="cur" href="#">EP計算器</a>
-<a href="https://project-sekai-center.vercel.app/">社群</a>
-<a href="https://project-sekai-center.vercel.app/">Wiki</a>
-<a href="https://project-sekai-center.vercel.app/">工具</a>
-</nav>
+
+<div class="nav" id="nav">
+  <button class="on" data-tab="tabDeck">Deck</button>
+  <button data-tab="tabEP">EP 計算</button>
+  <button data-tab="tabRun">Event Run</button>
+  <button data-tab="tabArt">Score Art</button>
+</div>
+
 <div class="hero">
-<h1>Project SEKAI 資源中心</h1>
-<div class="sub">世界計畫 彩色舞台 feat. 初音未來</div>
-<div class="upd">Last Updated: 2025.02</div>
-</div>
-<div class="container">
-<div id="ld" class="loading"><span class="spin"></span>正在載入歌曲資料庫⋯</div>
-<div id="app" style="display:none">
-<div class="sec-title">活動分數計算器 <small>Event Point Calculator</small></div>
-<div class="main-tabs" id="mainTabs">
-<button class="mtab on" data-tab="tabDeck">Deck</button>
-<button class="mtab" data-tab="tabEP">EP 計算</button>
-<button class="mtab" data-tab="tabRun">Event Run</button>
-<button class="mtab" data-tab="tabArt">Score Art</button>
+  <h1>SEKAI EP 計算器</h1>
+  <div class="sub">Deck · EP · Event Run · Score Art</div>
+  <div class="status" id="apiStatus"><span class="spin"></span>載入歌曲資料⋯</div>
 </div>
 
-<!-- ======== DECK ======== -->
+<div class="wrap">
 
-<div class="tab-panel show" id="tabDeck">
-<div class="main-layout">
+<!-- =============== TAB 1: DECK =============== -->
+
+<div class="tab on" id="tabDeck">
+<div class="cols">
 <div>
-<div class="card">
-<div class="card-title">隊伍設定</div>
-<div class="deck-tabs" id="deckTabs">
-<div class="deck-tab on" data-dk="0">Deck 1</div>
-<div class="deck-tab" data-dk="1">Deck 2</div>
-<div class="deck-tab" data-dk="2">Deck 3</div>
-</div>
-<div class="fg" style="margin-bottom:14px"><label>綜合力 Total Power</label><input type="number" id="dkPower" value="293231" min="0" step="1000" inputmode="numeric"></div>
-<div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">成員技能 Member Skills</div>
-<div class="member-row"><div class="member-label">Leader</div><input type="number" class="member-input" id="msk0" value="120" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
-<div class="member-row"><div class="member-label">Member 2</div><input type="number" class="member-input" id="msk1" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
-<div class="member-row"><div class="member-label">Member 3</div><input type="number" class="member-input" id="msk2" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
-<div class="member-row"><div class="member-label">Member 4</div><input type="number" class="member-input" id="msk3" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
-<div class="member-row"><div class="member-label">Member 5</div><input type="number" class="member-input" id="msk4" value="100" min="0" max="300" inputmode="numeric"><div class="member-unit">%</div></div>
-<div class="fg" style="margin-top:14px"><label>活動加成 Event Bonus <span class="tip" data-t="隊伍卡片加成總和。滿加成≈250%">?</span></label><input type="number" id="dkBonus" value="250" min="0" max="400" step="5" inputmode="numeric"><div class="h">%</div></div>
-<div class="fg" style="margin-top:12px"><label>房間條件 Room Condition <span class="tip" data-t="協力房間的平均加成。假設全員相同 internal value。輸入房間條件而非個人。">?</span></label><input type="number" id="dkRoom" value="200" min="0" max="400" step="10" inputmode="numeric"><div class="h">%</div></div>
-<div class="chk-row"><input type="checkbox" id="dkBloom"><span>Use Bloom Fes (Pre-training)</span></div>
-<div class="internal-bar"><div><span class="ib-label">Internal Value:</span> <span class="ib-val" id="dkIV">200%</span></div><div><span class="ib-label">Internal Sum:</span> <span class="ib-val" id="dkIS">120/520</span></div></div>
-<button class="cbtn" onclick="calcDeck()">計算 EP 效率</button>
-</div>
-</div>
-<div>
-<div class="card" id="dkResultCard" style="display:none">
-<div class="card-title" id="dkResTitle">EP 效率表</div>
-<div style="font-size:.78em;color:var(--text-muted);margin-bottom:10px" id="dkResSub"></div>
-<div class="ew"><table class="et" id="dkTbl"><thead><tr><th>歌曲</th><th>體力</th><th style="text-align:right">EP</th></tr></thead><tbody id="dkTblBody"></tbody></table></div>
-<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light)">
-<div style="font-size:.82em;font-weight:700;color:var(--navy);margin-bottom:8px">Multiplier equivalent to 10k Power</div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-<div class="ri"><div class="rl">Multi</div><div class="rv" id="dkMulEq" style="color:var(--green)">—</div></div>
-<div class="ri"><div class="rl">Solo</div><div class="rv" id="dkSolEq" style="color:var(--blue)">—</div></div>
-<div class="ri"><div class="rl">Auto</div><div class="rv" id="dkAutEq" style="color:var(--orange)">—</div></div>
-</div></div>
-<div class="sl-bar"><button class="sl-btn primary" onclick="saveDeckLS()">Save</button><button class="sl-btn" onclick="loadDeckLS()">Load</button><label class="sl-chk"><input type="checkbox" id="dkAutoLoad" checked> Auto Load</label></div>
-</div>
-</div>
-</div>
-</div>
-
-<!-- ======== EP 計算 ======== -->
-
-<div class="tab-panel" id="tabEP">
-<div class="main-layout">
-<div>
-<div class="lib-head"><div class="lib-label">曲庫一覽</div><div class="lib-stat">共 <b id="tc">0</b> 首 · 顯示 <b id="fc2">0</b> 首</div></div>
-<input type="text" class="lib-search" id="q" placeholder="搜尋歌名、ID⋯" autocomplete="off">
-<div class="sort-bar" id="sbar">
-<div class="sb on" data-k="id" data-d="asc">ID ▲</div>
-<div class="sb" data-k="title" data-d="asc">曲名</div>
-<div class="sb" data-k="dur" data-d="asc">時長</div>
-<div class="sb" data-k="master" data-d="desc">MA 等級</div>
-</div>
-<div class="tw" id="tw">
-<table class="st-tbl"><thead><tr><th style="width:42px">ID</th><th>曲名</th><th>時長</th></tr></thead><tbody id="tb"></tbody></table>
-</div>
+  <div class="card">
+    <div class="card-t">🎴 隊伍設定 <small>Deck Configuration</small></div>
+    <div class="dk-tabs" id="dkTabs">
+      <div class="dk-tab on" data-dk="0">Deck 1</div>
+      <div class="dk-tab" data-dk="1">Deck 2</div>
+      <div class="dk-tab" data-dk="2">Deck 3</div>
+    </div>
+    <div class="fg">
+      <label>綜合力 Total Power</label>
+      <input type="number" id="dkPower" value="293000" min="0" step="1000">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="display:block;font-size:.8em;font-weight:600;color:var(--text-l);margin-bottom:4px">技能加成 Skills (%)</label>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+        <input type="number" id="sk0" value="120" min="0" max="400" style="padding:6px;text-align:center;font-size:.82em;border:1px solid var(--bd);border-radius:4px;background:var(--bg2)">
+        <input type="number" id="sk1" value="100" min="0" max="400" style="padding:6px;text-align:center;font-size:.82em;border:1px solid var(--bd);border-radius:4px;background:var(--bg2)">
+        <input type="number" id="sk2" value="100" min="0" max="400" style="padding:6px;text-align:center;font-size:.82em;border:1px solid var(--bd);border-radius:4px;background:var(--bg2)">
+        <input type="number" id="sk3" value="100" min="0" max="400" style="padding:6px;text-align:center;font-size:.82em;border:1px solid var(--bd);border-radius:4px;background:var(--bg2)">
+        <input type="number" id="sk4" value="100" min="0" max="400" style="padding:6px;text-align:center;font-size:.82em;border:1px solid var(--bd);border-radius:4px;background:var(--bg2)">
+      </div>
+    </div>
+    <div class="fg">
+      <label>活動加成 Event Bonus (%)</label>
+      <input type="number" id="dkBonus" value="250" min="0" max="400" step="5">
+    </div>
+    <div class="fg">
+      <label>房間條件 Room Condition (%)</label>
+      <input type="number" id="dkRoom" value="200" min="0" max="400" step="10">
+      <div class="h">協力房間的平均加成</div>
+    </div>
+    <div class="ib">
+      <div><span class="ib-l">Internal Value: </span><span class="ib-v" id="dkIV">104%</span></div>
+      <div><span class="ib-l">Sum: </span><span class="ib-v" id="dkIS">120/520</span></div>
+    </div>
+    <button class="btn" onclick="calcDeck()">計算 EP 效率</button>
+    <div style="margin-top:10px;display:flex;gap:6px;justify-content:center">
+      <button class="btn btn-s" onclick="saveDeckLS()">💾 Save</button>
+      <button class="btn btn-s sec" onclick="loadDeckLS()">📂 Load</button>
+    </div>
+  </div>
 </div>
 <div>
-<div class="sel-card" id="sc">
-<div class="sn" id="snTitle"></div>
-<div class="sm" id="snInfo"></div>
-<div class="dc-row" id="dr"></div>
-</div>
-<div class="card">
-<div class="card-title">演出設定</div>
-<div class="fg2">
-<div class="fg full"><label>演出類型</label><div class="tr" id="tt"><div class="tg dk on" data-v="multi">協力演出</div><div class="tg dk" data-v="solo">個人演出</div><div class="tg dk" data-v="cheerful">嘉年華</div><div class="tg dk" data-v="challenge">挑戰演出</div></div></div>
-<div class="fg full"><label>消耗體力 <span class="tip" data-t="0=1× 1=5× 2=10× 3=15× 5=25× 10=50×">?</span></label><div class="tr" id="eb"><div class="tg" data-v="0">0×</div><div class="tg" data-v="1">1×</div><div class="tg" data-v="2">2×</div><div class="tg on" data-v="3">3×</div><div class="tg" data-v="5">5×</div><div class="tg" data-v="10">10×</div></div></div>
-<div class="fg"><label>預估分數</label><input type="number" id="si2" value="1500000" min="0" step="10000" inputmode="numeric"><div class="h">協力120–350萬 / 個人80–200萬</div></div>
-<div class="fg"><label>活動加成 %</label><input type="number" id="bi" value="200" min="0" max="400" step="5" inputmode="numeric"></div>
-<div class="fg"><label>目標 EP</label><input type="number" id="te" value="1000000" min="0" step="10000" inputmode="numeric"><div class="h">故事全開15萬 / T1000約100–300萬</div></div>
-<div class="fg"><label>目前已有 EP</label><input type="number" id="ce" value="0" min="0" step="1000" inputmode="numeric"></div>
-</div>
-<button class="cbtn" onclick="calc()">計　算</button>
-</div>
-<div class="res" id="res">
-<div class="rg" id="rg"></div>
-<div class="card" style="padding:14px 16px"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">各體力效率比較</div><div class="ew"><table class="et" id="et"><thead><tr><th>體力</th><th>倍率</th><th>EP/次</th><th>EP/體力</th><th>次數</th><th>時間</th></tr></thead><tbody></tbody></table></div></div>
-<div class="card" id="rc" style="padding:14px 16px;display:none"><div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:8px">時間效率 TOP 15（EP/分鐘）</div><div class="ew"><table class="et" id="rt"><thead><tr><th>#</th><th>歌曲</th><th>秒數</th><th>EP/次</th><th>EP/分</th></tr></thead><tbody></tbody></table></div></div>
-</div>
+  <div class="card" id="dkResCard" style="display:none">
+    <div class="card-t">📊 EP 效率表 <small>TOP 20 · EP/分鐘排序</small></div>
+    <div style="font-size:.72em;color:var(--text-m);margin-bottom:8px" id="dkResSub"></div>
+    <div class="tw" style="max-height:400px">
+      <table><thead><tr><th>#</th><th>歌曲</th><th class="r">秒數</th><th class="r">EP</th><th class="r">EP/分</th></tr></thead><tbody id="dkBody"></tbody></table>
+    </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd-l)">
+      <div style="font-size:.8em;font-weight:700;color:var(--navy);margin-bottom:6px">Multiplier equivalent to 10k Power</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="res-card" style="text-align:center;padding:8px"><div style="font-size:.72em;color:var(--text-l)">Multi</div><div style="font-weight:700;color:var(--grn)" id="dkMulEq">—</div></div>
+        <div class="res-card" style="text-align:center;padding:8px"><div style="font-size:.72em;color:var(--text-l)">Solo</div><div style="font-weight:700;color:var(--blu)" id="dkSolEq">—</div></div>
+        <div class="res-card" style="text-align:center;padding:8px"><div style="font-size:.72em;color:var(--text-l)">Auto</div><div style="font-weight:700;color:var(--org)" id="dkAutEq">—</div></div>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 </div>
 
-<!-- ======== EVENT RUN ======== -->
+<!-- =============== TAB 2: EP CALC =============== -->
 
-<div class="tab-panel" id="tabRun">
-<div class="single-col">
-<div class="card">
-<div class="card-title">活動進度規劃 <small style="font-weight:400;font-size:.72em;color:var(--text-muted)">Event Run</small></div>
-<div class="fg2">
-<div class="fg"><label>目前分數 Current Score</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="erCur" value="217" min="0" step="1" inputmode="numeric" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
-<div class="fg"><label>目標分數 Target Score</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="erTgt" value="3000" min="0" step="10" inputmode="numeric" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
-<div class="fg"><label>每場分數 Score Per Game <span class="tip" data-t="可從 Deck 頁面計算獲取，或手動輸入">?</span></label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="erSPG" value="2.8" min="0" step="0.1" inputmode="decimal" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
-<div class="fg"><label>每輪場數 Rounds/Interval <span class="tip" data-t="每次回復體力後可連打的場數">?</span></label><input type="number" id="erRnd" value="28" min="1" step="1" inputmode="numeric"><div class="h">Rounds</div></div>
-<div class="fg"><label>目前體力 Current Energy</label><input type="number" id="erEng" value="5" min="0" step="1" inputmode="numeric"></div>
-<div class="fg"><label>Change Energy</label><div class="tr" id="erChg"><div class="tg dk on" data-v="0">No Change</div><div class="tg dk" data-v="1">1×</div><div class="tg dk" data-v="2">2×</div><div class="tg dk" data-v="3">3×</div><div class="tg dk" data-v="5">5×</div></div></div>
+<div class="tab" id="tabEP">
+<div class="cols">
+<div>
+  <div class="card">
+    <div class="card-t">🎵 曲庫一覽 <small>共 <b id="tc">0</b> 首 · 顯示 <b id="fc">0</b></small></div>
+    <input type="text" class="search" id="q" placeholder="搜尋歌名、ID⋯" autocomplete="off">
+    <div class="sbar" id="sbar">
+      <div class="sb on" data-k="id" data-d="asc">ID ▲</div>
+      <div class="sb" data-k="title" data-d="asc">曲名</div>
+      <div class="sb" data-k="dur" data-d="asc">時長</div>
+    </div>
+    <div class="tw" id="songWrap" style="max-height:520px">
+      <table><thead><tr>
+        <th style="width:50px" data-k="id">ID</th>
+        <th data-k="title">曲名</th>
+        <th style="width:60px" class="r" data-k="dur">時長</th>
+        <th style="width:60px" class="r">PT</th>
+      </tr></thead><tbody id="songBody"></tbody></table>
+    </div>
+  </div>
 </div>
-<button class="collapse-btn" id="erRecBtn" onclick="toggleCollapse('erRec','erRecBtn')"><span class="arr">▶</span> ⚡ Recoverable Energy</button>
-<div class="collapse-body" id="erRec">
-<div class="fg2" style="margin-top:8px">
-<div class="fg"><label>自然回復（小時）</label><input type="number" id="erNatHr" value="0" min="0" inputmode="numeric"><div class="h">1 體力 = 30 分鐘</div></div>
-<div class="fg"><label>大罐 L.Cans</label><input type="number" id="erLCan" value="0" min="0" inputmode="numeric"><div class="h">每罐 = 10 體力</div></div>
-<div class="fg"><label>小罐 S.Cans</label><input type="number" id="erSCan" value="0" min="0" inputmode="numeric"><div class="h">每罐 = 5 體力</div></div>
-<div class="fg"><label>水晶換體</label><input type="number" id="erCrys" value="0" min="0" inputmode="numeric"><div class="h">每次 = 10 體力</div></div>
-</div></div>
-<button class="cbtn" onclick="calcRun()">計　算</button>
+<div>
+  <div class="card">
+    <div class="card-t">⚙️ EP 計算設定</div>
+    <div id="selSong" style="font-size:.82em;color:var(--text-m);margin-bottom:10px;padding:6px 8px;background:var(--bg2);border-radius:5px">點擊左側歌曲以選取</div>
+    <div class="fg">
+      <label>難度 Difficulty</label>
+      <div class="tr" id="diffTr">
+        <div class="tg" data-v="easy">E</div>
+        <div class="tg" data-v="normal">N</div>
+        <div class="tg" data-v="hard">H</div>
+        <div class="tg on" data-v="expert">EX</div>
+        <div class="tg" data-v="master">MA</div>
+        <div class="tg" data-v="append">AP</div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>演出類型 Performance Type</label>
+      <div class="tr" id="typeTr">
+        <div class="tg on" data-v="multi">協力</div>
+        <div class="tg" data-v="solo">個人</div>
+        <div class="tg" data-v="auto">自動</div>
+        <div class="tg" data-v="cheer">嘉年華</div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>消耗體力 Energy</label>
+      <div class="tr" id="enTr">
+        <div class="tg" data-v="0">0</div>
+        <div class="tg" data-v="1">1</div>
+        <div class="tg" data-v="2">2</div>
+        <div class="tg on" data-v="3">3</div>
+        <div class="tg" data-v="5">5</div>
+        <div class="tg" data-v="10">10</div>
+      </div>
+    </div>
+    <div class="fg2">
+      <div class="fg">
+        <label>分數 Score</label>
+        <input type="number" id="epScore" value="1800000" min="0" step="10000">
+      </div>
+      <div class="fg">
+        <label>活動加成 Bonus (%)</label>
+        <input type="number" id="epBonus" value="250" min="0" max="400" step="5">
+      </div>
+    </div>
+    <div class="fg">
+      <label>目標 EP Target EP</label>
+      <input type="number" id="epTarget" value="1000000" min="0" step="10000">
+    </div>
+    <button class="btn" onclick="calcEP()">計　算</button>
+  </div>
+
+  <div class="card" id="epResCard" style="display:none">
+    <div class="card-t">📋 計算結果</div>
+    <div id="epResSummary"></div>
+    <div style="margin-top:10px">
+      <div style="font-size:.8em;font-weight:600;color:var(--navy);margin-bottom:6px">各體力效率比較</div>
+      <div class="tw" style="max-height:260px">
+        <table><thead><tr><th>體力</th><th>倍率</th><th class="r">EP/次</th><th class="r">EP/體力</th><th class="r">次數</th><th class="r">時間</th></tr></thead><tbody id="epEffBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="epTopCard" style="display:none">
+    <div class="card-t">🏆 時間效率 TOP 15 <small>EP/分鐘</small></div>
+    <div class="tw" style="max-height:380px">
+      <table><thead><tr><th>#</th><th>歌曲</th><th class="r">秒數</th><th class="r">EP/次</th><th class="r">EP/分</th></tr></thead><tbody id="epTopBody"></tbody></table>
+    </div>
+  </div>
 </div>
-<div class="res" id="erRes"><div id="erSummary"></div></div>
 </div>
 </div>
 
-<!-- ======== SCORE ART ======== -->
+<!-- =============== TAB 3: EVENT RUN =============== -->
 
-<div class="tab-panel" id="tabArt">
-<div class="single-col">
-<div class="card">
-<div class="card-title">分數調整器 <small style="font-weight:400;font-size:.72em;color:var(--text-muted)">Score Art</small></div>
-<div class="fg2">
-<div class="fg"><label>目前 EP</label><input type="number" id="saCur" value="171923316" min="0" inputmode="numeric"><div class="h">pt</div></div>
-<div class="fg"><label>目標 EP</label><input type="number" id="saTgt" value="172000414" min="0" inputmode="numeric"><div class="h">pt</div></div>
-<div class="fg"><label>最大倍率 Max Multiplier</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="saMulti" value="300" min="100" max="400" step="5" inputmode="numeric" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">%</span></div></div>
-<div class="fg"><label>最大綜合力 Max Power</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="saPow" value="25.5" min="0" step="0.5" inputmode="decimal" style="flex:1"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div></div>
-<div class="fg full"><label>Max Envy Easy Score <span class="tip" data-t="Envy Easy 的最大分數。較低的值更易調整。">?</span></label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="saEnvy" value="80" min="0" step="5" inputmode="numeric" style="max-width:200px"><span style="font-size:.8em;color:var(--text-muted)">0k</span></div><div class="h">Lower Envy score is easier to adjust</div></div>
+<div class="tab" id="tabRun">
+<div style="max-width:560px;margin:0 auto">
+  <div class="card">
+    <div class="card-t">🏃 活動規劃 <small>Event Run Calculator</small></div>
+    <div class="fg2">
+      <div class="fg"><label>目標 EP</label><input type="number" id="erTgt" value="1000000" min="0" step="10000"></div>
+      <div class="fg"><label>目前 EP</label><input type="number" id="erCur" value="0" min="0" step="1000"></div>
+      <div class="fg"><label>每場 EP</label><input type="number" id="erEPG" value="2800" min="0" step="100"><div class="h">可從 EP 計算頁面取得</div></div>
+      <div class="fg"><label>歌曲秒數</label><input type="number" id="erDur" value="105" min="30" step="1"><div class="h">含 overhead 約 +15s</div></div>
+    </div>
+    <div class="fg">
+      <label>每輪場數 Rounds</label>
+      <input type="number" id="erRnd" value="28" min="1" step="1">
+    </div>
+    <div class="fg2">
+      <div class="fg"><label>目前體力</label><input type="number" id="erEng" value="5" min="0" step="1"></div>
+      <div class="fg">
+        <label>消耗體力</label>
+        <div class="tr" id="erEB">
+          <div class="tg" data-v="1">1</div>
+          <div class="tg" data-v="2">2</div>
+          <div class="tg on" data-v="3">3</div>
+          <div class="tg" data-v="5">5</div>
+          <div class="tg" data-v="10">10</div>
+        </div>
+      </div>
+    </div>
+
+
+<button class="coll-btn" id="erRecBtn" onclick="toggleColl('erRec','erRecBtn')">
+  <span class="arr">▶</span> ⚡ 可回復體力 Recoverable Energy
+</button>
+<div class="coll-body" id="erRec">
+  <div class="fg2">
+    <div class="fg"><label>自然回復（小時）</label><input type="number" id="erNatHr" value="0" min="0" step="1"><div class="h">1 體力 = 30 分鐘</div></div>
+    <div class="fg"><label>大罐數量</label><input type="number" id="erLCan" value="0" min="0" step="1"><div class="h">每罐 = 10 體力</div></div>
+    <div class="fg"><label>小罐數量</label><input type="number" id="erSCan" value="0" min="0" step="1"><div class="h">每罐 = 5 體力</div></div>
+    <div class="fg"><label>水晶換體 次數</label><input type="number" id="erCrys" value="0" min="0" step="1"><div class="h">每次 = 10 體力</div></div>
+  </div>
 </div>
-<div class="chk-row"><input type="checkbox" id="saEnvy0"><span>Envy 0 Score Only (Don't tap) — Only gain base EP (multiple of 5)</span></div>
-<div class="chk-row"><input type="checkbox" id="saMod5"><span>Allow non-mod-5 results</span></div>
-<div style="margin-top:14px;padding:10px 14px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-light)">
-<div style="font-size:.78em;font-weight:600;color:var(--navy);margin-bottom:4px">▪ Multiplier Adjustment</div>
-<div style="font-size:.72em;color:var(--text-muted);line-height:1.5">▸ Avoid decimals (WL Support / 1,3 MR)<br>▪ <b>My Sekai</b><br>▸ Check score with 1E (mine Only)<br>▸ Based on Pass/Refill Energy<br><span style="color:var(--red)">No Blue Energy allowed</span></div>
-</div>
-<button class="cbtn" onclick="calcArt()">搜尋組合</button>
-</div>
-<div class="res" id="saRes">
-<div class="card" style="padding:14px 16px">
-<div style="font-size:.85em;font-weight:700;color:var(--navy);margin-bottom:4px">Envy Score Table</div>
-<div id="saResults"></div>
-<div id="saNoResult" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:.85em">找不到精確組合。嘗試調高 Max Envy Easy Score 或勾選 Allow non-mod-5。</div>
+
+<button class="btn" onclick="calcRun()">計　算</button>
+
+
+
+  </div>
+  <div id="erRes"></div>
 </div>
 </div>
+
+<!-- =============== TAB 4: SCORE ART =============== -->
+
+<div class="tab" id="tabArt">
+<div style="max-width:560px;margin:0 auto">
+  <div class="card">
+    <div class="card-t">🎨 分數調整器 <small>Score Art</small></div>
+    <div class="fg2">
+      <div class="fg"><label>目前 EP</label><input type="number" id="saCur" value="0" min="0"></div>
+      <div class="fg"><label>目標 EP</label><input type="number" id="saTgt" value="0" min="0"></div>
+      <div class="fg"><label>最大倍率 Max Multiplier (%)</label><input type="number" id="saMulti" value="300" min="100" max="400" step="5"></div>
+      <div class="fg"><label>最大綜合力 Max Power (萬)</label><input type="number" id="saPow" value="25.5" min="0" step="0.5"></div>
+      <div class="fg full"><label>Max Envy Easy Score (萬)</label><input type="number" id="saEnvy" value="80" min="0" step="5"><div class="h">較低的 Envy 分數更容易調整</div></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="saEnvy0"> Envy 0 Score Only (Don't tap) — 僅獲得基礎 EP（5 的倍數）</label>
+    <label class="chk"><input type="checkbox" id="saMod5"> Allow non-mod-5 results</label>
+    <div style="margin-top:10px;padding:8px 10px;background:var(--bg2);border-radius:6px;font-size:.72em;color:var(--text-l);line-height:1.6">
+      <b>▪ Multiplier Adjustment</b><br>
+      ▸ Avoid decimals (WL Support / 1,3 MR)<br>
+      <b>▪ My Sekai</b> — Check score with 1E (mine Only)<br>
+      ▸ Based on Pass/Refill Energy<br>
+      <span style="color:var(--red)">No Blue Energy allowed</span>
+    </div>
+    <button class="btn" onclick="calcArt()">搜尋組合</button>
+  </div>
+
+  <div class="card" id="saEnvyCard">
+    <div class="card-t">📋 Envy Score Table</div>
+    <div class="tw" style="max-height:200px">
+      <table><thead><tr><th>Score</th><th class="r">Base EP</th><th>Score</th><th class="r">Base EP</th></tr></thead>
+      <tbody id="saEnvyBody"></tbody></table>
+    </div>
+  </div>
+
+  <div id="saRes"></div>
 </div>
 </div>
 
 </div>
-<footer>非官方社群工具，與 SEGA / Colorful Palette 無關</footer>
-</div>
+
+<footer>
+  非官方社群工具，與 SEGA / Colorful Palette 無關<br>
+  資料來源：<a href="https://github.com/Sekai-World/sekai-master-db-diff" target="_blank">Sekai World DB</a>
+</footer>
 
 <script>
-/* =========================================================
-   GLOBALS
-   ========================================================= */
-var S=[],DiffMap=new Map(),sel=null,selD=null,sK='id',sD='asc';
-var EM={0:1,1:5,2:10,3:15,5:25,10:50},OH=15;
-var DN={easy:'E',normal:'N',hard:'H',expert:'EX',master:'MA',append:'AP'};
-var DO=['easy','normal','hard','expert','master','append'];
-var decks=[
-  {power:293231,skills:[120,100,100,100,100],bonus:250,room:200},
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+var EM = {0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35};
+var OH = 15; // overhead seconds per play
+var SONGS = [], DIFF_MAP = {};
+var curDeck = 0;
+var decks = [
+  {power:293000,skills:[120,100,100,100,100],bonus:250,room:200},
   {power:250000,skills:[100,100,100,100,100],bonus:200,room:200},
   {power:220000,skills:[100,100,100,100,100],bonus:150,room:200}
 ];
-var curDeck=0;
+var sortKey = 'id', sortDir = 'asc';
+var selSong = null;
 
-function $(id){return document.getElementById(id)}
-function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
-function nf(n){return isFinite(n)?n.toLocaleString():'∞'}
-function fT(m){if(!isFinite(m))return'∞';return m<60?Math.round(m)+'分':Math.floor(m/60)+'時'+Math.round(m%60)+'分'}
-function gv(id){var el=$(id).querySelector('.tg.on');return el?el.dataset.v:null}
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function $(id){ return document.getElementById(id) }
+function esc(s){ var d=document.createElement('div');d.textContent=s;return d.innerHTML }
+function nf(n){ return isFinite(n)?n.toLocaleString():'∞' }
+function fT(m){ if(!isFinite(m))return'∞';if(m<60)return Math.round(m)+'分';return Math.floor(m/60)+'時'+Math.round(m%60)+'分' }
+function fDur(sec){ return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0') }
+function gv(id){ var el=document.querySelector('#'+id+' .tg.on');return el?el.dataset.v:null }
 
-/* estimated song duration from note count (seconds) */
-function eDur(nc){return nc>0?Math.max(55,Math.round(nc/6.5)):105}
-/* format seconds as M:SS */
-function fDur(sec){return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')}
-
-/* =========================================================
-   INIT — fetch real API data
-   ========================================================= */
-async function init(){
-  try{
-    var r=await Promise.all([
-      fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musics.json'),
-      fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/musicDifficulties.json')
-    ]);
-    var musics=await r[0].json();
-    var diffs=await r[1].json();
-    /* build difficulty map: musicId → [difficulty objects] */
-    for(var i=0;i<diffs.length;i++){
-      var d=diffs[i];
-      if(!DiffMap.has(d.musicId)) DiffMap.set(d.musicId,[]);
-      DiffMap.get(d.musicId).push(d);
-    }
-    /* enrich song objects */
-    for(var j=0;j<musics.length;j++){
-      var s=musics[j];
-      s._d=DiffMap.get(s.id)||[];
-      s._ma=s._d.find(function(x){return x.musicDifficulty==='master'});
-      s._ex=s._d.find(function(x){return x.musicDifficulty==='expert'});
-      s._hd=s._d.find(function(x){return x.musicDifficulty==='hard'});
-      s._ml=s._ma?s._ma.playLevel:(s._ex?s._ex.playLevel:0);
-      s._n=s._ma?s._ma.noteCount:(s._ex?s._ex.noteCount:0);
-      /* estimated duration: use master note count / 6.5 */
-      s._dur=eDur(s._n);
-    }
-    S=musics;
-    $('tc').textContent=S.length;
-    $('ld').style.display='none';
-    $('app').style.display='block';
-    render();
-    updateDeckUI();
-    /* auto-load saved deck */
-    try{var sv=localStorage.getItem('sekai_deck');if(sv&&$('dkAutoLoad').checked){decks=JSON.parse(sv);loadDeck()}}catch(e){}
-  }catch(e){
-    $('ld').innerHTML='載入失敗：'+e.message+'<br><br><button onclick="init()" style="padding:8px 20px">重試</button>';
-  }
-}
-
-/* =========================================================
-   TAB SWITCHING
-   ========================================================= */
-$('mainTabs').addEventListener('click',function(e){
-  var b=e.target.closest('.mtab');if(!b)return;
-  this.querySelectorAll('.mtab').forEach(function(x){x.classList.remove('on')});
-  b.classList.add('on');
-  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('show')});
-  $(b.dataset.tab).classList.add('show');
-});
-
-/* toggle groups */
-function tgl(id){
-  $(id).addEventListener('click',function(e){
-    var t=e.target.closest('.tg');if(!t)return;
-    this.querySelectorAll('.tg').forEach(function(x){x.classList.remove('on')});
+/* Toggle groups */
+document.addEventListener('click',function(e){
+  var t=e.target;
+  if(t.classList.contains('tg')){
+    var p=t.parentElement;
+    p.querySelectorAll('.tg').forEach(function(x){x.classList.remove('on')});
     t.classList.add('on');
-  });
-}
-tgl('tt');tgl('eb');tgl('erChg');
-
-function toggleCollapse(bodyId,btnId){
-  $(bodyId).classList.toggle('open');
-  $(btnId).classList.toggle('open');
-}
-
-/* =========================================================
-   SONG LIBRARY (EP tab)
-   ========================================================= */
-function render(){
-  var q=$('q').value.trim().toLowerCase();
-  var L=S;
-  if(q) L=L.filter(function(s){
-    return s.title.toLowerCase().indexOf(q)>=0||
-    (s.pronunciation||'').toLowerCase().indexOf(q)>=0||
-    String(s.id).indexOf(q)>=0;
-  });
-  var dir=sD==='asc'?1:-1;
-  L=[].concat(L).sort(function(a,b){
-    switch(sK){
-      case'id':return(a.id-b.id)*dir;
-      case'title':return a.title.localeCompare(b.title,'ja')*dir;
-      case'dur':return(a._dur-b._dur)*dir;
-      case'master':return(a._ml-b._ml)*dir;
-      default:return(a.id-b.id)*dir;
-    }
-  });
-  $('fc2').textContent=L.length;
-  var tb=$('tb'),h=[];
-  for(var i=0;i<L.length;i++){
-    var s=L[i],isSel=sel&&sel.id===s.id;
-    h.push('<tr data-id="'+s.id+'" class="'+(isSel?'sel':'')+'"><td>'+s.id+'</td><td>'+esc(s.title)+'</td><td>'+fDur(s._dur)+'</td></tr>');
   }
-  tb.innerHTML=h.join('');
-}
-
-$('tb').parentElement.parentElement.addEventListener('click',function(e){
-  var tr=e.target.closest('tr[data-id]');if(!tr)return;
-  pickSong(parseInt(tr.dataset.id));
 });
 
-function pickSong(id){
-  sel=S.find(function(s){return s.id===id});if(!sel)return;
-  document.querySelectorAll('#tb tr').forEach(function(r){r.classList.toggle('sel',parseInt(r.dataset.id)===id)});
-  $('snTitle').textContent=sel.title;
-  var m=[];
-  if(sel.composer)m.push('作曲：'+sel.composer);
-  if(sel.lyricist&&sel.lyricist!==sel.composer)m.push('作詞：'+sel.lyricist);
-  m.push('時長：~'+fDur(sel._dur));
-  $('snInfo').textContent=m.join(' · ');
-  /* difficulty pills */
-  var ds=sel._d.slice().sort(function(a,b){return DO.indexOf(a.musicDifficulty)-DO.indexOf(b.musicDifficulty)});
-  $('dr').innerHTML=ds.map(function(x){
-    return '<div class="dc dc-'+x.musicDifficulty+'" data-f="'+x.musicDifficulty+'" data-n="'+x.noteCount+'" data-l="'+x.playLevel+'" onclick="pickD(this)">'+(DN[x.musicDifficulty]||'?').toUpperCase()+' Lv.'+x.playLevel+' ('+x.noteCount+')</div>';
-  }).join('');
-  $('sc').classList.add('show');selD=null;
-  var mc=document.querySelector('.dc[data-f="master"]'),ec=document.querySelector('.dc[data-f="expert"]');
-  if(mc)pickD(mc);else if(ec)pickD(ec);
-  if(window.innerWidth<=860)setTimeout(function(){$('sc').scrollIntoView({behavior:'smooth',block:'nearest'})},100);
-}
-
-function pickD(el){
-  document.querySelectorAll('.dc').forEach(function(c){c.classList.remove('on')});
-  el.classList.add('on');
-  selD={d:el.dataset.f,n:parseInt(el.dataset.n),l:parseInt(el.dataset.l)};
-}
-
-/* sort bar */
-$('sbar').addEventListener('click',function(e){
-  var b=e.target.closest('.sb');if(!b)return;
-  var k=b.dataset.k;
-  if(sK===k){sD=sD==='asc'?'desc':'asc'}else{sK=k;sD=b.dataset.d||'asc'}
-  this.querySelectorAll('.sb').forEach(function(x){x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'')});
-  b.classList.add('on');b.textContent=b.textContent+' '+(sD==='asc'?'▲':'▼');
-  render();
+/* ============================================================
+   NAV TABS
+   ============================================================ */
+document.querySelector('.nav').addEventListener('click',function(e){
+  var b=e.target;if(b.tagName!=='BUTTON')return;
+  this.querySelectorAll('button').forEach(function(x){x.classList.remove('on')});
+  b.classList.add('on');
+  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+  $(b.dataset.tab).classList.add('on');
 });
-$('q').addEventListener('input',render);
 
-/* =========================================================
-   EP CALCULATOR
-   ========================================================= */
-function cBase(sc,ty){return Math.floor(sc*0.000350+(ty==='solo'||ty==='challenge'?50:55))}
-function cEP(sc,bn,en,ty){var b=cBase(sc,ty),m=EM[en]||1,bm=ty==='challenge'?1:(1+bn/100);return Math.floor(b*bm*m)}
-
-function calc(){
-  var sc=parseInt($('si2').value)||0;
-  var bn=parseInt($('bi').value)||0;
-  var en=parseInt(gv('eb'))||0;
-  var ty=gv('tt')||'multi';
-  var tg=parseInt($('te').value)||0;
-  var cu=parseInt($('ce').value)||0;
-  var rm=Math.max(0,tg-cu);
-  var ep=cEP(sc,bn,en,ty);
-  var nt=selD?selD.n:700;
-  var dur=eDur(nt)+OH;
-  var pl=ep>0?Math.ceil(rm/ep):Infinity;
-  var tm=pl*dur/60;
-  var tn=pl*en;
-  $('rg').innerHTML=
-    '<div class="ri ri-hl"><div class="rl">每次 EP</div><div class="rv">'+nf(ep)+'</div><div class="ru">Event Points</div></div>'+
-    '<div class="ri"><div class="rl">需打次數</div><div class="rv">'+nf(pl)+'</div><div class="ru">剩餘 '+nf(rm)+' EP</div></div>'+
-    '<div class="ri"><div class="rl">預估時間</div><div class="rv">'+fT(tm)+'</div><div class="ru">~'+dur+'秒/輪</div></div>'+
-    '<div class="ri"><div class="rl">消耗體力</div><div class="rv">'+nf(tn)+'</div><div class="ru">≈ '+nf(isFinite(tn)?Math.ceil(tn/10):Infinity)+' 罐</div></div>';
-  /* energy comparison */
-  var el=[0,1,2,3,5,10];
-  document.querySelector('#et tbody').innerHTML=el.map(function(e){
-    var ep2=cEP(sc,bn,e,ty),ppe=e>0?(ep2/e).toFixed(1):'∞';
-    var p=ep2>0?Math.ceil(rm/ep2):Infinity,t=p*dur/60;
-    return '<tr class="'+(e===en?'hr':'')+'"><td>'+e+'×</td><td>'+EM[e]+'×</td><td>'+nf(ep2)+'</td><td>'+ppe+'</td><td>'+nf(p)+'</td><td>'+fT(t)+'</td></tr>';
-  }).join('');
-  /* time efficiency TOP 15 */
-  var rk=S.map(function(s){
-    var n=s._n;if(n<=0)return null;
-    var d=eDur(n)+OH,e=cEP(sc,bn,en,ty);
-    return{t:s.title,l:s._ml,s:eDur(n),ep:e,epm:Math.round(e/(d/60)),dur:d};
-  }).filter(Boolean).sort(function(a,b){return b.epm-a.epm}).slice(0,15);
-  document.querySelector('#rt tbody').innerHTML=rk.map(function(r,i){
-    return '<tr><td>'+(i+1)+'</td><td>'+esc(r.t)+' <span style="color:var(--text-muted);font-size:.85em">Lv.'+r.l+'</span></td><td>'+r.s+'s</td><td>'+nf(r.ep)+'</td><td style="font-weight:600">'+nf(r.epm)+'</td></tr>';
-  }).join('');
-  $('rc').style.display='block';
-  var res=$('res');res.classList.add('show');res.scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-/* =========================================================
-   DECK TAB
-   ========================================================= */
-$('deckTabs').addEventListener('click',function(e){
-  var b=e.target.closest('.deck-tab');if(!b)return;
-  saveDeckVals();curDeck=parseInt(b.dataset.dk);
-  this.querySelectorAll('.deck-tab').forEach(function(x){x.classList.remove('on')});b.classList.add('on');
-  loadDeck();
+/* ============================================================
+   DECK TABS
+   ============================================================ */
+$('dkTabs').addEventListener('click',function(e){
+  var b=e.target;if(!b.classList.contains('dk-tab'))return;
+  saveDeckVals();
+  curDeck=parseInt(b.dataset.dk);
+  this.querySelectorAll('.dk-tab').forEach(function(x){x.classList.remove('on')});
+  b.classList.add('on');
+  loadDeckUI();
 });
+
 function saveDeckVals(){
   var dk=decks[curDeck];
   dk.power=parseInt($('dkPower').value)||0;
-  for(var i=0;i<5;i++)dk.skills[i]=parseInt($('msk'+i).value)||0;
+  for(var i=0;i<5;i++) dk.skills[i]=parseInt($('sk'+i).value)||0;
   dk.bonus=parseInt($('dkBonus').value)||0;
   dk.room=parseInt($('dkRoom').value)||0;
 }
-function loadDeck(){
+
+function loadDeckUI(){
   var dk=decks[curDeck];
   $('dkPower').value=dk.power;
-  for(var i=0;i<5;i++)$('msk'+i).value=dk.skills[i];
-  $('dkBonus').value=dk.bonus;$('dkRoom').value=dk.room;
-  updateDeckUI();
+  for(var i=0;i<5;i++) $('sk'+i).value=dk.skills[i];
+  $('dkBonus').value=dk.bonus;
+  $('dkRoom').value=dk.room;
+  updateIV();
 }
-function updateDeckUI(){
-  var skills=[];for(var i=0;i<5;i++)skills.push(parseInt($('msk'+i).value)||0);
+
+function updateIV(){
+  var skills=[];
+  for(var i=0;i<5;i++) skills.push(parseInt($('sk'+i).value)||0);
   var sum=skills.reduce(function(a,b){return a+b},0);
-  var avg=Math.round(sum/5);
-  $('dkIV').textContent=avg+'%';
+  var iv=Math.round(sum/5);
+  $('dkIV').textContent=iv+'%';
   $('dkIS').textContent=skills[0]+'/'+sum;
 }
-['dkPower','msk0','msk1','msk2','msk3','msk4','dkBonus','dkRoom'].forEach(function(id){$(id).addEventListener('input',updateDeckUI)});
-function saveDeckLS(){saveDeckVals();try{localStorage.setItem('sekai_deck',JSON.stringify(decks))}catch(e){}alert('Deck 設定已儲存！')}
-function loadDeckLS(){try{var sv=localStorage.getItem('sekai_deck');if(sv){decks=JSON.parse(sv);loadDeck();alert('已載入！')}else{alert('無儲存資料')}}catch(e){alert('載入失敗')}}
 
+['dkPower','sk0','sk1','sk2','sk3','sk4','dkBonus','dkRoom'].forEach(function(id){
+  $(id).addEventListener('input',updateIV);
+});
+
+function saveDeckLS(){
+  saveDeckVals();
+  try{localStorage.setItem('sekai_decks',JSON.stringify(decks));alert('已儲存！')}catch(e){alert('儲存失敗')}
+}
+function loadDeckLS(){
+  try{var s=localStorage.getItem('sekai_decks');if(s){decks=JSON.parse(s);loadDeckUI();alert('已載入！')}else{alert('無儲存資料')}}catch(e){alert('載入失敗')}
+}
+
+/* ============================================================
+   EP FORMULA
+   ============================================================ */
+function calcBaseEP(score, isSolo){
+  var offset = isSolo ? 50 : 55;
+  return Math.floor(score * 0.000350 + offset);
+}
+function calcEPValue(score, bonus, energyCost, isSolo){
+  var base = calcBaseEP(score, isSolo);
+  var mult = EM[energyCost] || 1;
+  return Math.floor(base * (1 + bonus/100) * mult);
+}
+
+/* ============================================================
+   SONG DURATION: use playMusicTimeMsec from API, fallback to fillerSec estimation
+   ============================================================ */
+function getSongDur(s){
+  if(s.playMusicTimeMsec && s.playMusicTimeMsec > 0) return Math.round(s.playMusicTimeMsec / 1000);
+  if(s.fillerSec > 0) return s.fillerSec;
+  // fallback: estimate from note count of master difficulty
+  var ma = (DIFF_MAP[s.id]||[]).find(function(d){return d.musicDifficulty==='master'});
+  if(ma && ma.totalNoteCount > 0) return Math.max(55, Math.round(ma.totalNoteCount / 6.5));
+  return 105;
+}
+
+/* ============================================================
+   API INIT
+   ============================================================ */
+async function init(){
+  try{
+    var [mRes, dRes] = await Promise.all([
+      fetch('https://sekai-world.github.io/sekai-master-db-diff/musics.json'),
+      fetch('https://sekai-world.github.io/sekai-master-db-diff/musicDifficulties.json')
+    ]);
+    if(!mRes.ok || !dRes.ok) throw new Error('API error');
+    var musics = await mRes.json();
+    var diffs = await dRes.json();
+
+    // Build difficulty map
+    for(var i=0;i<diffs.length;i++){
+      var d=diffs[i];
+      if(!DIFF_MAP[d.musicId]) DIFF_MAP[d.musicId]=[];
+      DIFF_MAP[d.musicId].push(d);
+    }
+
+    // Enrich songs
+    for(var j=0;j<musics.length;j++){
+      var s=musics[j];
+      s._diffs = DIFF_MAP[s.id]||[];
+      s._dur = getSongDur(s);
+      SONGS.push(s);
+    }
+
+    SONGS.sort(function(a,b){return a.id-b.id});
+    $('apiStatus').className='status ok';
+    $('apiStatus').textContent='✓ 已載入 '+SONGS.length+' 首歌曲';
+    $('tc').textContent=SONGS.length;
+    renderSongs();
+    buildEnvyTable();
+
+    // Auto load deck
+    try{var sv=localStorage.getItem('sekai_decks');if(sv){decks=JSON.parse(sv);loadDeckUI()}}catch(e){}
+
+  }catch(err){
+    $('apiStatus').className='status err';
+    $('apiStatus').textContent='✗ 載入失敗：'+err.message;
+  }
+}
+
+/* ============================================================
+   SONG TABLE (Tab 2)
+   ============================================================ */
+function renderSongs(){
+  var q=($('q').value||'').toLowerCase().trim();
+  var filtered=SONGS.filter(function(s){
+    if(!q) return true;
+    return (s.title||'').toLowerCase().indexOf(q)>=0 || String(s.id).indexOf(q)>=0;
+  });
+
+  // Sort
+  filtered.sort(function(a,b){
+    var va,vb;
+    if(sortKey==='id'){va=a.id;vb=b.id}
+    else if(sortKey==='title'){va=(a.title||'');vb=(b.title||'');return sortDir==='asc'?va.localeCompare(vb,'ja'):vb.localeCompare(va,'ja')}
+    else if(sortKey==='dur'){va=a._dur;vb=b._dur}
+    else{va=a.id;vb=b.id}
+    return sortDir==='asc'?(va-vb):(vb-va);
+  });
+
+  $('fc').textContent=filtered.length;
+
+  var html='';
+  for(var i=0;i<filtered.length;i++){
+    var s=filtered[i];
+    // "正確pt" — base EP at default settings (score=1800000, bonus=250%, energy=3, multi)
+    var pt=calcEPValue(1800000,250,3,false);
+    var cls=selSong&&selSong.id===s.id?'hl':'';
+    html+='<tr class="'+cls+'" data-sid="'+s.id+'" style="cursor:pointer"><td>'+s.id+'</td><td>'+esc(s.title)+'</td><td class="r">'+fDur(s._dur)+'</td><td class="r">'+nf(pt)+'</td></tr>';
+  }
+  $('songBody').innerHTML=html;
+}
+
+$('q').addEventListener('input',renderSongs);
+
+// Sort bar
+$('sbar').addEventListener('click',function(e){
+  var b=e.target;if(!b.classList.contains('sb'))return;
+  var k=b.dataset.k,d=b.dataset.d;
+  if(sortKey===k) d=(d==='asc'?'desc':'asc');
+  sortKey=k;sortDir=d;b.dataset.d=d;
+  this.querySelectorAll('.sb').forEach(function(x){x.classList.remove('on');x.textContent=x.textContent.replace(/ [▲▼]/,'')});
+  b.classList.add('on');
+  b.textContent=b.textContent+' '+(d==='asc'?'▲':'▼');
+  renderSongs();
+});
+
+// Song click
+document.addEventListener('click',function(e){
+  var tr=e.target.closest('tr[data-sid]');
+  if(!tr)return;
+  var sid=parseInt(tr.dataset.sid);
+  selSong=SONGS.find(function(s){return s.id===sid})||null;
+  if(selSong){
+    $('selSong').innerHTML='<b>'+esc(selSong.title)+'</b> (ID:'+selSong.id+') — '+fDur(selSong._dur);
+    $('erDur').value=selSong._dur;
+  }
+  renderSongs();
+});
+
+/* ============================================================
+   TAB 1: DECK CALC
+   ============================================================ */
 function calcDeck(){
   saveDeckVals();
   var dk=decks[curDeck];
-  var power=dk.power,bonus=dk.bonus,room=dk.room;
-  var skills=dk.skills.slice();
-  var sum=skills.reduce(function(a,b){return a+b},0);
-  var avgSk=sum/5;
-  /* estimate scores for play types */
-  var multiSc=Math.round(power*(room/100)*(avgSk/100)*1.28);
-  var soloSc=Math.round(power*(avgSk/100)*1.85);
-  var autoSc=Math.round(power*(avgSk/100)*0.67);
-  /* EP per play for different songs & energies */
-  /* Pick real songs from database sorted by EP/min efficiency */
-  var songRows=[];
-  /* calculate for all songs at energy 5 (multi), sorted by EP/min */
-  var multiBase=Math.floor(multiSc*0.000350+55);
-  var multiEP5=Math.floor(multiBase*(1+bonus/100)*EM[5]);
-  for(var i=0;i<S.length;i++){
-    var s=S[i];if(s._n<=0)continue;
-    var dur=s._dur+OH;
-    songRows.push({
-      id:s.id,title:s.title,dur:s._dur,ml:s._ml,
-      ep5:multiEP5,ep3:Math.floor(multiBase*(1+bonus/100)*EM[3]),
-      ep1:Math.floor(multiBase*(1+bonus/100)*EM[1]),
-      ep0:Math.floor(multiBase*(1+bonus/100)*EM[0]),
-      epm:Math.round(multiEP5/(dur/60))
-    });
+  var power=dk.power, bonus=dk.bonus, room=dk.room;
+  var skills=dk.skills.slice(), sum=skills.reduce(function(a,b){return a+b},0);
+  var skillF=sum/500;
+
+  // Estimate score for multi
+  var estScore=Math.round(power*(1+room/400)*skillF*0.6);
+
+  // EP at energy 3 (15x) for multi
+  var epE3=calcEPValue(estScore,bonus,3,false);
+  $('dkResSub').textContent='綜合力:'+nf(power)+' · 預估分數:'+nf(estScore)+' · 3×體力 EP:'+nf(epE3);
+
+  // Rank all songs by EP/min at energy 3 multi
+  var ranked=[];
+  for(var i=0;i<SONGS.length;i++){
+    var s=SONGS[i];
+    var dur=s._dur;
+    if(dur<=0) continue;
+    var totalTime=(dur+OH)/60; // minutes
+    var ep=calcEPValue(estScore,bonus,3,false);
+    ranked.push({title:s.title,id:s.id,dur:dur,ep:ep,epm:Math.round(ep/totalTime)});
   }
-  songRows.sort(function(a,b){return b.epm-a.epm});
-  /* header */
-  $('dkResSub').textContent=(multiEP5/1000).toFixed(2)+'K/'+bonus+'% · ROOM CONDITION:'+room+'%';
-  /* show top 20 songs */
-  var top=songRows.slice(0,20);
+  ranked.sort(function(a,b){return b.epm-a.epm});
+
+  var top20=ranked.slice(0,20);
   var html='';
-  for(var j=0;j<top.length;j++){
-    var r=top[j];
-    html+='<tr><td><b>'+esc(r.title)+'</b> <span style="color:var(--text-muted);font-size:.85em">'+fDur(r.dur)+' Lv.'+r.ml+'</span></td><td>5</td><td style="text-align:right;font-weight:700;color:var(--accent)">'+nf(r.ep5)+'</td></tr>';
+  for(var j=0;j<top20.length;j++){
+    var r=top20[j];
+    html+='<tr><td>'+(j+1)+'</td><td>'+esc(r.title)+' <span style="color:var(--text-m);font-size:.85em">#'+r.id+'</span></td><td class="r">'+fDur(r.dur)+'</td><td class="r">'+nf(r.ep)+'</td><td class="r">'+nf(r.epm)+'</td></tr>';
   }
-  /* also add entries for energy 1 and 0 (top 3 each) */
-  var top1=songRows.slice(0,3);
-  for(var k=0;k<top1.length;k++){
-    var r1=top1[k];
-    html+='<tr style="color:var(--text-light)"><td>'+esc(r1.title)+' <span style="font-size:.85em">'+fDur(r1.dur)+'</span></td><td>1</td><td style="text-align:right;font-weight:600">'+nf(r1.ep1)+'</td></tr>';
-  }
-  $('dkTblBody').innerHTML=html;
-  /* multiplier equivalent to 10k power */
-  var ref10k=10000;
-  var multiRef=Math.floor(Math.floor(ref10k*(room/100)*(avgSk/100)*1.28*0.000350+55)*(1+bonus/100));
-  var solRef=Math.floor(Math.floor(ref10k*(avgSk/100)*1.85*0.000350+50)*(1+bonus/100));
-  var autoRef=Math.floor(Math.floor(ref10k*(avgSk/100)*0.67*0.000350+50)*(1+bonus/100));
-  var curMulti=Math.floor(multiBase*(1+bonus/100));
-  var curSol=Math.floor(Math.floor(soloSc*0.000350+50)*(1+bonus/100));
-  var curAut=Math.floor(Math.floor(autoSc*0.000350+50)*(1+bonus/100));
-  $('dkMulEq').textContent=multiRef>0?((curMulti/multiRef*100-100).toFixed(2)+'%'):'—';
-  $('dkSolEq').textContent=solRef>0?((curSol/solRef*100-100).toFixed(2)+'%'):'—';
-  $('dkAutEq').textContent=autoRef>0?((curAut/autoRef*100-100).toFixed(2)+'%'):'—';
-  $('dkResultCard').style.display='block';
-  $('dkResultCard').scrollIntoView({behavior:'smooth',block:'start'});
+  $('dkBody').innerHTML=html;
+
+  // Multiplier equivalent to 10k power
+  // How much EP change per 10k power?
+  var p10k=power+10000;
+  var scoreP10k=Math.round(p10k*(1+room/400)*skillF*0.6);
+  var epP10k=calcEPValue(scoreP10k,bonus,3,false);
+  var diff=epP10k-epE3;
+  $('dkMulEq').textContent='+'+nf(diff)+' EP';
+
+  // Solo
+  var estSolo=Math.round(power*skillF*0.45);
+  var epSolo=calcEPValue(estSolo,bonus,3,true);
+  var scoreSolo10k=Math.round(p10k*skillF*0.45);
+  var epSolo10k=calcEPValue(scoreSolo10k,bonus,3,true);
+  $('dkSolEq').textContent='+'+nf(epSolo10k-epSolo)+' EP';
+
+  // Auto (lower score)
+  var estAuto=Math.round(power*skillF*0.25);
+  var epAuto=calcEPValue(estAuto,bonus,3,true);
+  var scoreAuto10k=Math.round(p10k*skillF*0.25);
+  var epAuto10k=calcEPValue(scoreAuto10k,bonus,3,true);
+  $('dkAutEq').textContent='+'+nf(epAuto10k-epAuto)+' EP';
+
+  $('dkResCard').style.display='';
 }
 
-/* =========================================================
-   EVENT RUN
-   ========================================================= */
+/* ============================================================
+   TAB 2: EP CALC
+   ============================================================ */
+function calcEP(){
+  var sc=parseInt($('epScore').value)||0;
+  var bn=parseInt($('epBonus').value)||0;
+  var en=parseInt(gv('enTr'))||3;
+  var ty=gv('typeTr')||'multi';
+  var tgt=parseInt($('epTarget').value)||0;
+  var isSolo=(ty==='solo'||ty==='auto');
+
+  var ep=calcEPValue(sc,bn,en,isSolo);
+  var dur=selSong?selSong._dur:105;
+  var totalSec=dur+OH;
+  var epm=ep/(totalSec/60);
+
+  // Summary
+  var rm=tgt>0?tgt:1000000;
+  var plays=ep>0?Math.ceil(rm/ep):Infinity;
+  var totalMin=plays*totalSec/60;
+  var totalEng=plays*en;
+
+  var html='';
+  html+='<div class="ri"><div class="rl">單場 EP</div><div class="rv" style="color:var(--grn)">'+nf(ep)+'</div></div>';
+  html+='<div class="ri"><div class="rl">EP/分鐘</div><div class="rv">'+Math.round(epm)+'</div></div>';
+  html+='<div class="ri"><div class="rl">達到 '+nf(rm)+' EP</div><div class="rv">'+nf(plays)+' 場 · '+fT(totalMin)+' · '+nf(totalEng)+' 體力</div></div>';
+  $('epResSummary').innerHTML=html;
+
+  // Efficiency comparison table
+  var energies=[0,1,2,3,5,10];
+  var ehtml='';
+  for(var i=0;i<energies.length;i++){
+    var e=energies[i];
+    var ep2=calcEPValue(sc,bn,e,isSolo);
+    var ppe=e>0?(ep2/e).toFixed(1):'∞';
+    var p=ep2>0?Math.ceil(rm/ep2):Infinity;
+    var t=p*totalSec/60;
+    var cls=e===en?'hl':'';
+    ehtml+='<tr class="'+cls+'"><td>'+e+'×</td><td>'+EM[e]+'×</td><td class="r">'+nf(ep2)+'</td><td class="r">'+ppe+'</td><td class="r">'+(isFinite(p)?nf(p):'∞')+'</td><td class="r">'+fT(t)+'</td></tr>';
+  }
+  $('epEffBody').innerHTML=ehtml;
+  $('epResCard').style.display='';
+
+  // Time efficiency TOP 15
+  var ranked=[];
+  for(var j=0;j<SONGS.length;j++){
+    var s=SONGS[j];
+    if(s._dur<=0) continue;
+    var d=s._dur+OH;
+    var e2=calcEPValue(sc,bn,en,isSolo);
+    ranked.push({title:s.title,id:s.id,dur:s._dur,ep:e2,epm:Math.round(e2/(d/60))});
+  }
+  ranked.sort(function(a,b){return b.epm-a.epm});
+  var top15=ranked.slice(0,15);
+  var thtml='';
+  for(var k=0;k<top15.length;k++){
+    var r=top15[k];
+    var isSel=selSong&&selSong.id===r.id;
+    thtml+='<tr class="'+(isSel?'hl':'')+'"><td>'+(k+1)+'</td><td>'+esc(r.title)+'</td><td class="r">'+fDur(r.dur)+'</td><td class="r">'+nf(r.ep)+'</td><td class="r">'+nf(r.epm)+'</td></tr>';
+  }
+  $('epTopBody').innerHTML=thtml;
+  $('epTopCard').style.display='';
+}
+
+/* ============================================================
+   TAB 3: EVENT RUN
+   ============================================================ */
+function toggleColl(bodyId, btnId){
+  var body=$(bodyId), btn=$(btnId);
+  body.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
 function calcRun(){
-  var cur=parseFloat($('erCur').value)||0;
-  var tgt=parseFloat($('erTgt').value)||0;
-  var spg=parseFloat($('erSPG').value)||0;
+  var tgt=parseInt($('erTgt').value)||0;
+  var cur=parseInt($('erCur').value)||0;
+  var epg=parseInt($('erEPG').value)||0;
+  var dur=parseInt($('erDur').value)||105;
   var rnd=parseInt($('erRnd').value)||1;
   var eng=parseInt($('erEng').value)||0;
-  var chgV=gv('erChg');
-  var enPerPlay=chgV==='0'?eng:(parseInt(chgV)||eng);
-  /* delta in 0k units */
-  var delta=tgt-cur;
-  if(delta<=0||spg<=0){alert('目標分數須大於目前分數，且每場分數須>0');return}
-  var needRounds=Math.ceil(delta/spg);
-  /* energy: rounds × energy per play */
-  var totalEng=needRounds*enPerPlay;
-  var needLCans=Math.ceil(totalEng/10);
-  /* time: ~128 sec per play (avg song + overhead) */
-  var secPerPlay=128;
-  var totalHours=needRounds*secPerPlay/3600;
-  /* recoverable energy */
-  var natEng=(parseInt($('erNatHr').value)||0)*2;
-  var lCanEng=(parseInt($('erLCan').value)||0)*10;
-  var sCanEng=(parseInt($('erSCan').value)||0)*5;
-  var crysEng=(parseInt($('erCrys').value)||0)*10;
-  var recov=natEng+lCanEng+sCanEng+crysEng+eng;
-  var netEng=Math.max(0,totalEng-recov);
-  var netCans=Math.ceil(netEng/10);
-  /* display */
-  var html='';
-  html+='<div class="er-item er-hl"><div class="er-label">Needed Rounds</div><div><span class="er-val">'+nf(needRounds)+'</span><span class="er-sub">Rounds</span></div></div>';
-  html+='<div class="er-item"><div class="er-label">Needed Energy</div><div><span class="er-val">'+nf(totalEng)+'</span><span class="er-sub">Energy ('+needLCans+' L.Cans)</span></div></div>';
-  html+='<div class="er-item"><div class="er-label">Needed Time</div><div><span class="er-val">'+totalHours.toFixed(1)+'</span><span class="er-sub">Hours</span></div></div>';
-  if(recov>0){
-    html+='<div class="er-item" style="margin-top:4px;border-top:2px solid var(--border)"><div class="er-label">可回復體力 Total</div><div><span class="er-val">'+nf(recov)+'</span><span class="er-sub">Energy</span></div></div>';
-    html+='<div class="er-item"><div class="er-label">還需補充</div><div><span class="er-val">'+nf(netCans)+'</span><span class="er-sub">L.Cans ('+(netEng)+' Energy)</span></div></div>';
+  var enCost=parseInt(gv('erEB'))||3;
+
+  // Recoverable energy
+  var natHr=parseInt($('erNatHr').value)||0;
+  var lCan=parseInt($('erLCan').value)||0;
+  var sCan=parseInt($('erSCan').value)||0;
+  var crys=parseInt($('erCrys').value)||0;
+  var natEng=Math.floor(natHr*2); // 1 energy per 30 min
+  var totalRecov=natEng+(lCan*10)+(sCan*5)+(crys*10);
+  var totalAvail=eng+totalRecov;
+
+  var need=tgt-cur;
+  if(need<=0){
+    $('erRes').innerHTML='<div class="res-card" style="text-align:center;color:var(--grn);font-weight:700;padding:20px">✓ 已達成目標！</div>';
+    return;
   }
-  $('erSummary').innerHTML=html;
-  $('erRes').classList.add('show');
-  $('erRes').scrollIntoView({behavior:'smooth',block:'start'});
+  if(epg<=0){
+    $('erRes').innerHTML='<div class="res-card" style="text-align:center;color:var(--red)">請輸入每場 EP</div>';
+    return;
+  }
+
+  var plays=Math.ceil(need/epg);
+  var totalEng=plays*enCost;
+  var totalSec=plays*(dur+OH);
+  var totalMin=totalSec/60;
+  var rounds=Math.ceil(plays/rnd);
+
+  // Can we do it with available energy?
+  var engShort=Math.max(0,totalEng-totalAvail);
+  var extraCrys=Math.ceil(engShort/10);
+
+  var html='<div class="card" style="margin-top:12px"><div class="card-t">📋 計算結果</div>';
+  html+='<div class="ri"><div class="rl">需要 EP</div><div class="rv">'+nf(need)+'</div></div>';
+  html+='<div class="ri"><div class="rl">場次</div><div class="rv" style="color:var(--grn)">'+nf(plays)+' 場</div></div>';
+  html+='<div class="ri"><div class="rl">輪次</div><div class="rv">'+nf(rounds)+' 輪 (每輪 '+rnd+' 場)</div></div>';
+  html+='<div class="ri"><div class="rl">需要體力</div><div class="rv">'+nf(totalEng)+'</div></div>';
+  html+='<div class="ri"><div class="rl">預估時間</div><div class="rv" style="color:var(--blu)">'+fT(totalMin)+'</div></div>';
+
+  if(totalRecov>0||eng>0){
+    html+='<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd-l)">';
+    html+='<div class="ri"><div class="rl">可用體力</div><div class="rv">'+nf(totalAvail)+' (現有:'+eng+' + 回復:'+totalRecov+')</div></div>';
+    if(totalRecov>0){
+      html+='<div style="font-size:.72em;color:var(--text-m);padding:2px 0">　自然:'+natEng+' · 大罐:'+(lCan*10)+' · 小罐:'+(sCan*5)+' · 水晶:'+(crys*10)+'</div>';
+    }
+    if(engShort>0){
+      html+='<div class="ri"><div class="rl" style="color:var(--red)">不足體力</div><div class="rv" style="color:var(--red)">'+nf(engShort)+' (≈ '+extraCrys+' 次水晶換體)</div></div>';
+    } else {
+      html+='<div class="ri"><div class="rl" style="color:var(--grn)">體力充足</div><div class="rv" style="color:var(--grn)">✓ 剩餘 '+nf(totalAvail-totalEng)+'</div></div>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  $('erRes').innerHTML=html;
 }
 
-/* =========================================================
-   SCORE ART
-   ========================================================= */
+/* ============================================================
+   TAB 4: SCORE ART
+   ============================================================ */
+function buildEnvyTable(){
+  // Envy Easy score → base EP mapping
+  // Score ranges for Envy Easy: 0, 10000, 20000, ... up to max
+  var rows=[];
+  for(var sc=0;sc<=800000;sc+=50000){
+    var base=calcBaseEP(sc, true);
+    rows.push({score:sc,base:base});
+  }
+  var half=Math.ceil(rows.length/2);
+  var html='';
+  for(var i=0;i<half;i++){
+    var r1=rows[i];
+    var r2=rows[i+half]||null;
+    html+='<tr><td>'+nf(r1.score)+'</td><td class="r">'+r1.base+'</td>';
+    if(r2) html+='<td>'+nf(r2.score)+'</td><td class="r">'+r2.base+'</td>';
+    else html+='<td></td><td></td>';
+    html+='</tr>';
+  }
+  $('saEnvyBody').innerHTML=html;
+}
+
 function calcArt(){
-  var curEP=parseInt($('saCur').value)||0;
-  var tgtEP=parseInt($('saTgt').value)||0;
-  var delta=tgtEP-curEP;
-  if(delta<=0){alert('目標 EP 須大於目前 EP');return}
-  var maxBn=parseInt($('saMulti').value)||300;
-  var maxPow=parseFloat($('saPow').value)*10000||255000;
-  var maxEnvySc=parseInt($('saEnvy').value)*10000||800000;
+  var cur=parseInt($('saCur').value)||0;
+  var tgt=parseInt($('saTgt').value)||0;
+  var maxMulti=parseInt($('saMulti').value)||300;
+  var maxPow=(parseFloat($('saPow').value)||25.5)*10000;
+  var maxEnvy=(parseInt($('saEnvy').value)||80)*10000;
   var envy0=$('saEnvy0').checked;
-  var nonMod5=$('saMod5').checked;
-  var results=[];
-  var energies=[0,1,2,3,5,10];
-  /* iterate: energy × bonus × score → EP, check if delta divisible */
-  for(var ei=0;ei<energies.length;ei++){
-    var en=energies[ei];
-    var eMult=EM[en];
-    var bnStep=5;
-    for(var bn=100;bn<=maxBn;bn+=bnStep){
-      var bnF=bn/100;
+  var allowNonMod5=$('saMod5').checked;
+
+  var need=tgt-cur;
+  if(need<=0){
+    $('saRes').innerHTML='<div class="res-card" style="text-align:center;color:var(--grn)">✓ 已達成目標！</div>';
+    return;
+  }
+
+  // Generate all possible EP values from Envy Easy
+  // For each bonus% (0-maxMulti, step 1) and each score (0-maxEnvy, step varies) and each energy (0,1)
+  // EP = floor( floor(score*0.00035 + 50) * (1+bonus/100) * energyMult )
+  var results = [];
+  var energies = envy0 ? [0] : [0, 1];
+  var scoreStep = envy0 ? 1 : 10000; // Envy 0 means score=0 only
+  var maxScoreSearch = envy0 ? 0 : maxEnvy;
+
+  for(var en=0; en<energies.length; en++){
+    var eCost = energies[en];
+    var eMult = EM[eCost];
+
+    for(var bonus=0; bonus<=maxMulti; bonus+=1){
       if(envy0){
-        /* score=0, base=50 (solo playing Envy and not tapping) */
-        var ep=Math.floor(50*bnF*eMult);
-        if(ep>0&&ep<=delta&&delta%ep===0){
-          var plays=delta/ep;
-          if(plays<=9999)results.push({en:en,bn:bn,sc:0,ep:ep,plays:plays});
-        }
-      }else{
-        var scStep=nonMod5?5000:50000;
-        for(var sc=0;sc<=maxEnvySc;sc+=scStep){
-          var base=Math.floor(sc*0.000350+50);
-          var ep=Math.floor(base*bnF*eMult);
-          if(ep<=0)continue;
-          if(ep>delta)break;
-          if(delta%ep===0){
-            var plays=delta/ep;
-            if(plays<=9999)results.push({en:en,bn:bn,sc:sc,ep:ep,plays:plays});
+        // Score = 0 only
+        var base = calcBaseEP(0, true);
+        var ep = Math.floor(base * (1 + bonus/100) * eMult);
+        if(!allowNonMod5 && ep%5 !== 0) continue;
+        // Check if need is divisible by ep, or find combination
+        if(ep > 0 && need % ep === 0){
+          var plays = need / ep;
+          if(plays >= 1 && plays <= 500){
+            results.push({ep:ep, plays:plays, total:ep*plays, bonus:bonus, score:0, energy:eCost, mult:eMult});
           }
         }
-        /* also try finer score steps near boundaries for more results */
-        if(!nonMod5){
-          for(var sc2=0;sc2<=maxEnvySc;sc2+=10000){
-            var base2=Math.floor(sc2*0.000350+50);
-            var ep2=Math.floor(base2*bnF*eMult);
-            if(ep2<=0)continue;if(ep2>delta)break;
-            if(delta%ep2===0){
-              var plays2=delta/ep2;
-              if(plays2<=9999){
-                var exists=results.some(function(r){return r.ep===ep2&&r.en===en&&r.bn===bn});
-                if(!exists)results.push({en:en,bn:bn,sc:sc2,ep:ep2,plays:plays2});
-              }
+      } else {
+        // Try various scores
+        for(var sc=0; sc<=maxScoreSearch; sc+=10000){
+          var base2 = calcBaseEP(sc, true);
+          var ep2 = Math.floor(base2 * (1 + bonus/100) * eMult);
+          if(!allowNonMod5 && ep2%5 !== 0) continue;
+          if(ep2 > 0 && need % ep2 === 0){
+            var plays2 = need / ep2;
+            if(plays2 >= 1 && plays2 <= 500){
+              results.push({ep:ep2, plays:plays2, total:ep2*plays2, bonus:bonus, score:sc, energy:eCost, mult:eMult});
             }
           }
         }
       }
     }
   }
-  /* deduplicate by EP value, keep best (fewest plays) */
+
+  // Also try combinations of 2 different EP values
+  // This is computationally expensive, so limit to reasonable ranges
+  // Skip for now if single results found
+
+  // Deduplicate
   var seen={};
-  var unique=[];
-  results.sort(function(a,b){return a.plays-b.plays||a.en-b.en});
-  for(var r=0;r<results.length;r++){
-    var key=results[r].ep+'_'+results[r].en;
-    if(!seen[key]){seen[key]=1;unique.push(results[r])}
+  results = results.filter(function(r){
+    var k=r.ep+'-'+r.plays+'-'+r.bonus+'-'+r.score+'-'+r.energy;
+    if(seen[k]) return false;
+    seen[k]=true;
+    return true;
+  });
+
+  // Sort by plays (fewer is better)
+  results.sort(function(a,b){return a.plays-b.plays || a.bonus-b.bonus});
+
+  // Limit display
+  var display = results.slice(0, 50);
+
+  if(display.length===0){
+    $('saRes').innerHTML='<div class="res-card" style="text-align:center;color:var(--text-m);padding:20px">找不到精確組合。嘗試調高 Max Envy Easy Score 或勾選 Allow non-mod-5。</div>';
+    return;
   }
-  unique=unique.slice(0,30);
-  /* display */
-  var html='';
-  if(unique.length===0){
-    $('saNoResult').style.display='block';
-    $('saResults').innerHTML='';
-  }else{
-    $('saNoResult').style.display='none';
-    for(var u=0;u<unique.length;u++){
-      var c=unique[u];
-      var isBest=u===0;
-      html+='<div class="sa-combo'+(isBest?' best':'')+'">'+
-        '<div class="sa-row">'+
-          '<span class="sa-val">'+c.plays+'回 × '+nf(c.ep)+' EP</span>'+
-          (isBest?'<span class="sa-tag">BEST</span>':'')+
-        '</div>'+
-        '<div class="sa-note">Energy: '+c.en+'× ('+EM[c.en]+'×) | Bonus: '+c.bn+'% | Score: '+(c.sc>=10000?(c.sc/10000).toFixed(1)+'萬':nf(c.sc))+' | Total: '+nf(c.plays*c.ep)+' EP</div>'+
-      '</div>';
-    }
-    $('saResults').innerHTML=html;
+
+  var html='<div class="card" style="margin-top:12px"><div class="card-t">🎯 搜尋結果 <small>共 '+results.length+' 組 · 顯示 '+display.length+'</small></div>';
+  html+='<div style="font-size:.72em;color:var(--text-m);margin-bottom:8px">需要 EP: '+nf(need)+'</div>';
+  for(var i=0;i<display.length;i++){
+    var r=display[i];
+    html+='<div class="sa-item"><div class="sa-top"><span>'+nf(r.plays)+' 場 × '+nf(r.ep)+' EP</span><span style="color:var(--grn)">= '+nf(r.total)+'</span></div>';
+    html+='<div class="sa-det">加成:'+r.bonus+'% · 分數:'+nf(r.score)+' · 體力:'+r.energy+'('+r.mult+'×)</div></div>';
   }
-  $('saRes').classList.add('show');
-  $('saRes').scrollIntoView({behavior:'smooth',block:'start'});
+  html+='</div>';
+  $('saRes').innerHTML=html;
 }
 
-/* =========================================================
-   START
-   ========================================================= */
+/* ============================================================
+   BOOT
+   ============================================================ */
 init();
 </script>
 
