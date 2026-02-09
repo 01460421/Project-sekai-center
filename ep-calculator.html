@@ -170,10 +170,34 @@ tr:hover td{background:rgba(0,102,204,.03)}
 <div class="fg"><label>選擇歌曲</label>
 <div id="selSong" style="padding:7px 10px;background:var(--bg-hover);border:1px solid var(--border);border-radius:6px;font-size:13px;min-height:34px;cursor:pointer;color:var(--text-light);transition:.2s" onclick="tab(0)">← 從曲庫點選</div>
 </div>
-<div class="fg2">
+<div class="fg"><label>分數輸入方式</label>
+<div class="tg-row" id="epScoreMode">
+<div class="tg on" data-v="direct">直接輸入</div>
+<div class="tg" data-v="calc">由綜合力推算</div>
+</div></div>
+<div id="epDirectMode">
 <div class="fg"><label>分數 Score</label><input type="number" id="epScore" value="1500000" min="0" step="10000"></div>
-<div class="fg"><label>活動加成 (%)</label><input type="number" id="epBonus" value="250" min="0" max="500" step="5"></div>
 </div>
+<div id="epCalcMode" style="display:none">
+<div class="fg2">
+<div class="fg"><label>綜合力</label><input type="number" id="epPower" value="250000" min="0" step="1000"></div>
+<div class="fg"><label>平均實效技能 (%)</label><input type="number" id="epSkill" value="150" min="0" max="400" step="5">
+<div class="ht">隊伍平均技能加成%</div></div>
+</div>
+<div class="fg"><label>難度</label>
+<div class="tg-row" id="epDiff">
+<div class="tg" data-v="E">EASY</div>
+<div class="tg" data-v="N">NORMAL</div>
+<div class="tg" data-v="H">HARD</div>
+<div class="tg" data-v="X">EXPERT</div>
+<div class="tg on" data-v="M">MASTER</div>
+<div class="tg" data-v="A">APPEND</div>
+</div></div>
+<div class="fg"><label>推算分數</label>
+<div id="epScorePreview" style="padding:8px 12px;background:#f5f5f5;border:1px solid var(--border);border-radius:var(--radius);font-size:15px;font-weight:700;color:var(--primary);font-family:'JetBrains Mono',monospace">— 請先選擇歌曲</div>
+</div>
+</div>
+<div class="fg"><label>活動加成 (%)</label><input type="number" id="epBonus" value="250" min="0" max="500" step="5"></div>
 <div class="fg2" id="fgMulti" style="display:none">
 <div class="fg"><label>他人總分</label><input type="number" id="epOther" value="6000000" min="0" step="100000">
 <div class="ht">其他 4 人分數總和</div></div>
@@ -212,6 +236,7 @@ tr:hover td{background:rgba(0,102,204,.03)}
 <b>協力:</b> <code>EP = ⌊(110 + ⌊score/17000⌋ + min(13,⌊otherScore/340000⌋)) × eventRate/100 × (1+bonus/100)⌋ × boost</code><br>
 <b>排位對戰:</b> 協力 + <code>× lifeRate</code><br>
 <b>體力倍率:</b> 0→1, 1→5, 2→10, 3→15, 4→20, 5→25, 6→27, 7→29, 8→31, 9→33, 10→35
+<br><b>分數推算:</b> <code>Score = ⌊(baseScore + skillUp% × skillScoreSum / 100) × power × 4⌋</code>
 <br><span style="color:var(--org)">≈</span> <span style="color:var(--text-muted)">= 推定値（基於音符數回歸推算，誤差約±10秒）</span>
 </div>
 </div>
@@ -268,7 +293,7 @@ tr:hover td{background:rgba(0,102,204,.03)}
 <!-- ==================== TAB 3: 控分 (Score Art) ==================== -->
 
 <div class="tp" id="t3">
-<div style="max-width:620px;margin:0 auto">
+<div style="max-width:660px;margin:0 auto">
 <div class="cd">
 <div class="ct">分數調整器 <span class="en">Score Art</span></div>
 <div class="fg2">
@@ -276,12 +301,20 @@ tr:hover td{background:rgba(0,102,204,.03)}
 <div class="fg"><label>目標 EP</label><input type="number" id="saTgt" value="0" min="0" step="1"></div>
 </div>
 <div class="fg2">
-<div class="fg"><label>最大加成 (%)</label><input type="number" id="saBonus" value="300" min="25" max="500" step="5"></div>
-<div class="fg"><label>最大總合力 (萬)</label><input type="number" id="saPow" value="25.5" min="0" step="0.5">
-<div class="ht">例: 25.5 = 255,000</div></div>
+<div class="fg"><label>綜合力</label><input type="number" id="saPower" value="250000" min="0" step="1000">
+<div class="ht">用於推算 Envy Easy 最大分數</div></div>
+<div class="fg"><label>平均實效技能 (%)</label><input type="number" id="saSkill" value="150" min="0" max="400" step="5"></div>
 </div>
-<div class="fg"><label>最大 Envy Easy 分數 (萬)</label><input type="number" id="saEnvy" value="80" min="0" step="5">
-<div class="ht">較低的分數更易調整</div></div>
+<div class="fg2">
+<div class="fg"><label>最大加成 (%)</label><input type="number" id="saBonus" value="300" min="25" max="500" step="5">
+<div class="ht">搜尋 25% ~ 此值的所有加成</div></div>
+<div class="fg"><label>最大總合力 (萬)</label><input type="number" id="saPow" value="25.5" min="0" step="0.5">
+<div class="ht">MySekai EP 查表用</div></div>
+</div>
+<div class="fg"><label>推算最大 Envy Easy 分數</label>
+<div id="saScorePreview" style="padding:6px 12px;background:#f5f5f5;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--primary);font-family:'JetBrains Mono',monospace">—</div>
+<div class="ht">= calcSongScore(Envy Easy, solo, 綜合力, 技能%) · 分數級距 20,000</div>
+</div>
 <div class="chk"><input type="checkbox" id="saEnvy0"><span>Envy 0分 Only (不打) — 僅獲得基礎EP</span></div>
 <div class="chk"><input type="checkbox" id="saMod5"><span>允許非5倍數加成</span></div>
 <button class="btn" onclick="calcArt()">搜尋組合</button>
@@ -306,8 +339,8 @@ tr:hover td{background:rgba(0,102,204,.03)}
 </div>
 <div class="fg2">
 <div class="fg"><label>綜合力</label><input type="number" id="rkPower" value="250000" min="0" step="1000"></div>
-<div class="fg"><label>技能倍率</label><input type="number" id="rkMul" value="2.5" min="1.0" max="5.0" step="0.01">
-<div class="ht">技能觸發時的分數倍率 (常見 2.0~3.88)</div></div>
+<div class="fg"><label>平均實效技能 (%)</label><input type="number" id="rkSkill" value="150" min="0" max="400" step="5">
+<div class="ht">隊伍平均技能加成% (常見 100~288)</div></div>
 </div>
 <div class="fg2">
 <div class="fg"><label>活動加成 (%)</label><input type="number" id="rkBonus" value="250" min="0" max="500" step="5"></div>
@@ -1059,12 +1092,20 @@ document.querySelectorAll('.tg-row').forEach(function(row){
       var v=tg.dataset.v;
       $('fgMulti').style.display=(v==='multi'||v==='cheer')?'':'none';
       $('fgLife').style.display=(v==='cheer')?'':'none';
+      updateEpScorePreview();
     }
     if(row.id==='rkType'){
       var v=tg.dataset.v;
       $('rkMultiFields').style.display=(v==='multi'||v==='cheer')?'':'none';
       $('rkLifeWrap').style.display=(v==='cheer')?'':'none';
     }
+    if(row.id==='epScoreMode'){
+      var v=tg.dataset.v;
+      $('epDirectMode').style.display=(v==='direct')?'':'none';
+      $('epCalcMode').style.display=(v==='calc')?'':'none';
+      if(v==='calc')updateEpScorePreview();
+    }
+    if(row.id==='epDiff'){updateEpScorePreview();}
   });
 });
 function gv(id){var el=$(id).querySelector('.tg.on');return el?el.dataset.v:null}
@@ -1144,8 +1185,26 @@ function selectSong(id){
     $('erDuration').value=Math.round(s.time)||100;
   }
   renderSongs();
+  updateEpScorePreview();
   tab(1);
 }
+
+function updateEpScorePreview(){
+  var s=songs.find(function(x){return x.id===selSongId});
+  if(!s){$('epScorePreview').textContent='— 請先選擇歌曲';return;}
+  var liveType=gv('ltType')||'solo';
+  var power=parseFloat($('epPower').value)||0;
+  var skillUp=parseFloat($('epSkill').value)||0;
+  var diff=gv('epDiff')||'M';
+  if(!s.diffs[diff]||s.diffs[diff].length<8){
+    $('epScorePreview').textContent='該難度不存在';return;
+  }
+  var sc=calcSongScore(s.diffs[diff],liveType,power,skillUp);
+  $('epScorePreview').textContent=nf(sc);
+}
+['epPower','epSkill'].forEach(function(id){
+  $(id).addEventListener('input',updateEpScorePreview);
+});
 
 /* ================================================================
    EP CALCULATION — sekai-calculator exact formula
@@ -1172,7 +1231,7 @@ function calcEPValue(liveType,score,eventRate,bonus,boostRate,otherScore,life){
 
 function calcEP(){
   var liveType=gv('ltType');
-  var score=parseInt($('epScore').value)||0;
+  var scoreMode=gv('epScoreMode')||'direct';
   var bonus=parseInt($('epBonus').value)||0;
   var energy=parseInt(gv('ltEnergy'))||0;
   var boostRate=EM[energy]||1;
@@ -1184,12 +1243,33 @@ function calcEP(){
   var songTime=s?s.time:100;
   var songName=s?s.title:'(未選擇)';
 
+  var score;
+  var diffLabel='';
+  if(scoreMode==='calc'){
+    var power=parseFloat($('epPower').value)||0;
+    var skillUp=parseFloat($('epSkill').value)||0;
+    var diff=gv('epDiff')||'M';
+    if(!s||!s.diffs[diff]||s.diffs[diff].length<8){
+      $('epResult').style.display='';
+      $('epSummary').innerHTML='<div class="s-item" style="grid-column:1/-1"><div class="s-val" style="font-size:14px;color:var(--red)">請先選擇歌曲'+(s&&!s.diffs[diff]?'（該難度不存在）':'')+'</div></div>';
+      return;
+    }
+    score=calcSongScore(s.diffs[diff],liveType,power,skillUp);
+    if(liveType==='multi'||liveType==='cheer'){
+      otherScore=parseInt($('epOther').value)||Math.round(score*4);
+    }
+    diffLabel=' ('+diff+')';
+  }else{
+    score=parseInt($('epScore').value)||0;
+  }
+
   var ep=calcEPValue(liveType,score,eventRate,bonus,boostRate,otherScore,life);
 
   /* Summary */
   $('epSummary').innerHTML=
     '<div class="s-item"><div class="s-label">獲得 EP</div><div class="s-val" style="color:var(--grn)">'+nf(ep)+'</div></div>'+
-    '<div class="s-item"><div class="s-label">歌曲</div><div class="s-val" style="font-size:13px;font-family:inherit">'+esc(songName)+'</div><div class="s-unit">Rate '+eventRate+'</div></div>'+
+    '<div class="s-item"><div class="s-label">分數</div><div class="s-val" style="font-size:16px">'+nf(score)+'</div></div>'+
+    '<div class="s-item"><div class="s-label">歌曲</div><div class="s-val" style="font-size:13px;font-family:inherit">'+esc(songName)+diffLabel+'</div><div class="s-unit">Rate '+eventRate+'</div></div>'+
     '<div class="s-item"><div class="s-label">消費</div><div class="s-val">'+energy+'<span style="font-size:12px;color:var(--text-muted)"> ×'+boostRate+'</span></div></div>'+
     '<div class="s-item"><div class="s-label">EP/分鐘</div><div class="s-val" style="color:var(--org)">'+(songTime>0?Math.round(ep/((songTime+OH)/60)):'—')+'</div></div>';
 
@@ -1277,13 +1357,35 @@ function calcRun(){
 
 /* ================================================================
    SCORE ART (TAB 3) — Envy + MySekai EP combination solver
+   Uses calcSongScore to determine max achievable score,
+   then calcEPValue for proper EP calculation.
    ================================================================ */
+function getEnvyEasyData(){
+  var envy=songs.find(function(s){return s.id===74}); /* 独りんぼエンヴィー */
+  if(!envy||!envy.diffs.E)return null;
+  return {rate:envy.rate, diff:envy.diffs.E, time:envy.time};
+}
+
+function updateSaPreview(){
+  var ed=getEnvyEasyData();
+  if(!ed){$('saScorePreview').textContent='Envy Easy 資料不存在';return;}
+  var power=parseFloat($('saPower').value)||0;
+  var skill=parseFloat($('saSkill').value)||0;
+  var maxScore=calcSongScore(ed.diff,'solo',power,skill);
+  var brackets=Math.floor(maxScore/20000);
+  $('saScorePreview').textContent=nf(maxScore)+' ('+brackets+' 級距)';
+}
+['saPower','saSkill'].forEach(function(id){
+  $(id).addEventListener('input',updateSaPreview);
+});
+
 function calcArt(){
   var curEP=parseInt($('saCur').value)||0;
   var tgtEP=parseInt($('saTgt').value)||0;
   var maxBonus=parseInt($('saBonus').value)||300;
   var maxPow=parseFloat($('saPow').value)||25.5;
-  var maxEnvyScore=parseInt($('saEnvy').value)||80;
+  var power=parseFloat($('saPower').value)||250000;
+  var skill=parseFloat($('saSkill').value)||150;
   var envy0Only=$('saEnvy0').checked;
   var allowNonMod5=$('saMod5').checked;
 
@@ -1293,24 +1395,38 @@ function calcArt(){
     return;
   }
 
-  /* Envy (ID:74) has event_rate=100 */
-  /* Solo energy=0: EP = floor((100 + floor(score/20000)) * 1.0 * (1+bonus/100)) * 1 */
+  /* Get Envy Easy data from song database */
+  var ed=getEnvyEasyData();
+  if(!ed){
+    $('saResult').innerHTML='<div class="cd" style="text-align:center;color:var(--red);padding:20px">找不到 Envy Easy 歌曲資料</div>';
+    return;
+  }
+  var envyRate=ed.rate; /* should be 100 */
+  var maxScore=calcSongScore(ed.diff,'solo',power,skill);
+
+  /* Generate all reachable Envy EP values */
+  /* Solo energy=0: EP = calcEPValue('solo', score, envyRate, bonus, 1, 0, 0) */
+  /* Score is controlled by intentionally missing notes — brackets of 20,000 */
   var envyEpSet=new Set();
   var envyEpDetails={};
-  var envyScoreLimit=maxEnvyScore*10000;
+  var maxBracket=Math.floor(maxScore/20000);
   var bonusStep=allowNonMod5?1:5;
 
   for(var bonus=25;bonus<=maxBonus;bonus+=bonusStep){
     if(!allowNonMod5&&bonus%5!==0)continue;
-    /* Score brackets: 0-19999, 20000-39999, ... */
-    var maxBracket=Math.floor(envyScoreLimit/20000);
     for(var bracket=0;bracket<=maxBracket;bracket++){
       if(envy0Only&&bracket>0)continue;
-      var base=100+bracket;
-      var ep=Math.floor(base*(1+bonus/100));
+      /* Representative score for this bracket */
+      var repScore=bracket*20000;
+      var ep=Math.floor(calcEPValue('solo',repScore,envyRate,bonus,1,0,0));
+      if(ep<=0)continue;
       if(!envyEpSet.has(ep)){
         envyEpSet.add(ep);
-        envyEpDetails[ep]={base:base,bonus:bonus,scoreRange:bracket===0?'0~19,999':(bracket*20000).toLocaleString()+'~'+((bracket+1)*20000-1).toLocaleString()};
+        envyEpDetails[ep]={
+          bonus:bonus,
+          bracket:bracket,
+          scoreRange:bracket===0?'0~19,999':(bracket*20000).toLocaleString()+'~'+((bracket+1)*20000-1).toLocaleString()
+        };
       }
     }
   }
@@ -1373,7 +1489,7 @@ function calcArt(){
 
   /* Render */
   if(solutions.length===0){
-    $('saResult').innerHTML='<div class="cd" style="text-align:center;padding:20px"><div style="color:var(--red);font-weight:700;margin-bottom:8px">找不到精確組合</div><div style="font-size:12px;color:var(--text-muted)">嘗試調高 Max Envy Score、勾選 Allow non-mod-5、或調整目標EP</div></div>';
+    $('saResult').innerHTML='<div class="cd" style="text-align:center;padding:20px"><div style="color:var(--red);font-weight:700;margin-bottom:8px">找不到精確組合</div><div style="font-size:12px;color:var(--text-muted)">嘗試調高加成上限、勾選允許非5倍數、提高綜合力/技能%</div></div>';
     return;
   }
 
@@ -1385,7 +1501,8 @@ function calcArt(){
   });
 
   var html='<div class="cd"><div class="ct">找到 '+solutions.length+' 種組合</div>';
-  html+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">差額: '+nf(gap)+' EP'+(mySekaiEP>0?' · MySekai: '+nf(mySekaiEP)+' EP':'')+'</div>';
+  html+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">差額: '+nf(gap)+' EP · Envy Easy Rate: '+envyRate+' · 最大分數: '+nf(maxScore)+' ('+maxBracket+' 級距)'+(mySekaiEP>0?' · MySekai: '+nf(mySekaiEP)+' EP':'')+'</div>';
+  html+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">可用 Envy EP 值: '+envyEps.length+' 種 ('+nf(envyEps[envyEps.length-1])+'~'+nf(envyEps[0])+')</div>';
 
   solutions.slice(0,30).forEach(function(sol,idx){
     var total=sol.ms+sol.envyList.length;
@@ -1444,13 +1561,13 @@ var rkSort='ep'; /* ep | epm | time */
 
 /* Compute score for a song+difficulty using sekai-calculator formula
    diff array: [lv, notes, base, baseAuto, ssSolo, ssMulti, ssAuto, fever]
-   skillMul: e.g. 2.5 means 250% score up -> skillUp=250 */
-function calcSongScore(diffArr, liveType, power, skillMul){
+   skillUp: e.g. 150 means 150% score bonus */
+function calcSongScore(diffArr, liveType, power, skillUp){
   if(!diffArr||diffArr.length<8)return 0;
   var base=diffArr[2], baseAuto=diffArr[3];
   var ssSolo=diffArr[4], ssMulti=diffArr[5], ssAuto=diffArr[6];
   var fever=diffArr[7];
-  var skillUp=skillMul*100; /* 2.5 -> 250 */
+  /* skillUp is the percentage value, e.g. 150 for 150% bonus */
   var rate;
   if(liveType==='solo'){
     rate=base+(skillUp*ssSolo/100);
@@ -1466,7 +1583,7 @@ function calcSongScore(diffArr, liveType, power, skillMul){
 function genRanking(){
   var liveType=gv('rkType');
   var power=parseFloat($('rkPower').value)||250000;
-  var skillMul=parseFloat($('rkMul').value)||2.5;
+  var skillUp=parseFloat($('rkSkill').value)||150;
   var bonus=parseInt($('rkBonus').value)||0;
   var energy=parseInt(gv('rkEnergy'))||0;
   var boostRate=EM[energy]||1;
@@ -1484,7 +1601,7 @@ function genRanking(){
     for(var i=0;i<diffKeys.length;i++){
       var dk=diffKeys[i];
       if(!ds[dk]||ds[dk].length<8)continue;
-      var sc=calcSongScore(ds[dk],liveType,power,skillMul);
+      var sc=calcSongScore(ds[dk],liveType,power,skillUp);
       if(sc>bestScore||!bestDk){bestDk=dk;bestScore=sc;bestDiffArr=ds[dk];}
       if(diff!=='all')break; /* specific diff: only that one */
     }
@@ -1545,6 +1662,7 @@ function sortAndRenderRanking(){
    ================================================================ */
 buildSortBar();
 renderSongs();
+updateSaPreview();
 </script>
 
 </body>
