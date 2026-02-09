@@ -33,7 +33,7 @@ body{font-family:'Noto Serif TC','Noto Serif JP','Songti SC','SimSun','Times New
 .nav a{color:#fff;text-decoration:none;font-size:clamp(11px,1.8vw,14px);padding:6px 10px;border-radius:4px;cursor:pointer;transition:background .2s;white-space:nowrap}
 .nav a:hover{background:rgba(255,255,255,.15)}
 .nav a.on{background:rgba(255,255,255,.2);font-weight:700}
-.nav .home{opacity:.7;font-size:clamp(10px,1.6vw,12px)}
+.nav .home{opacity:.7;font-size:clamp(10px,1.6vw,12px);margin-right:clamp(4px,1vw,12px)}
 
 .wrap{max-width:1200px;margin:0 auto;padding:clamp(12px,3vw,24px);padding-top:calc(var(–nav-height) + clamp(12px,3vw,24px))}
 .tp{display:none}.tp.on{display:block}
@@ -66,7 +66,7 @@ body{font-family:'Noto Serif TC','Noto Serif JP','Songti SC','SimSun','Times New
 table{width:100%;border-collapse:collapse;font-size:clamp(11px,2vw,13px)}
 th{background:#f5f5f5;color:var(–primary);padding:clamp(5px,1vw,8px) clamp(6px,1.5vw,10px);text-align:center;font-weight:600;font-size:clamp(10px,1.8vw,12px);white-space:nowrap;border-bottom:2px solid var(–border);position:sticky;top:0;z-index:1}
 td{padding:clamp(4px,.8vw,6px) clamp(6px,1.5vw,10px);border-bottom:1px solid var(–border-light);text-align:center;vertical-align:middle}
-tr:hover td{background:rgba(0,102,204,.03)}
+tr:hover td{background:rgba(0,102,204,.04)}
 .hl td{background:rgba(0,102,204,.08)!important}
 
 .srch{width:100%;padding:8px 14px;border:1px solid var(–border);border-radius:var(–radius);font-size:14px;background:var(–bg-input);color:var(–text);font-family:inherit}
@@ -125,11 +125,11 @@ tr:hover td{background:rgba(0,102,204,.03)}
 
 <nav class="nav" id="nav">
 <a class="home" href="/">◂ 資源中心</a>
-<a class="on" onclick="tab(0)">曲庫</a>
-<a onclick="tab(1)">EP計算</a>
-<a onclick="tab(2)">活動試算</a>
-<a onclick="tab(3)">控分</a>
-<a onclick="tab(4)">EP排行</a>
+<a class="tab on" onclick="tab(0)">曲庫</a>
+<a class="tab" onclick="tab(1)">EP計算</a>
+<a class="tab" onclick="tab(2)">活動試算</a>
+<a class="tab" onclick="tab(3)">控分</a>
+<a class="tab" onclick="tab(4)">EP排行</a>
 </nav>
 <div class="wrap">
 
@@ -158,7 +158,7 @@ tr:hover td{background:rgba(0,102,204,.03)}
 <!-- ==================== TAB 1: EP計算 ==================== -->
 
 <div class="tp" id="t1">
-<div class="lay2" style="display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start">
+<div class="lay2">
 <div>
 <div class="cd">
 <div class="ct">EP計算機 <span class="en">Calculator</span></div>
@@ -1079,7 +1079,7 @@ var songs=(typeof SD!=='undefined'?SD:[]).map(function(s){
    ================================================================ */
 function tab(i){
   document.querySelectorAll('.tp').forEach(function(el,j){el.classList.toggle('on',j===i)});
-  document.querySelectorAll('.nav a').forEach(function(el,j){el.classList.toggle('on',j===i)});
+  document.querySelectorAll('.nav a.tab').forEach(function(el,j){el.classList.toggle('on',j===i)});
 }
 
 /* ================================================================
@@ -1643,7 +1643,7 @@ function sortAndRenderRanking(){
   var showLimit=500;
   var shown=sorted.slice(0,showLimit);
   shown.forEach(function(r,i){
-    var cls=i%2===0?'':'style="background:rgba(255,255,255,.02)"';
+    var cls=''
     html+='<tr '+cls+'>';
     html+='<td style="color:var(--text-muted)">'+(i+1)+'</td>';
     html+='<td style="text-align:left;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.title)+(r.est?'<span style="color:var(--org)" title="推定値"> ≈</span>':'')+'</td>';
