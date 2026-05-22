@@ -293,7 +293,29 @@
         .resource-step h4 { font-size:12px; font-weight:600; color:var(--primary); margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px; }
         /* 月卡 */
         .doll-month-badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:600; }
-        @media(max-width:900px){
+        /* 行動版日曆 - 色點 */
+        .cal-dots { display:flex; flex-wrap:wrap; gap:2px; margin-top:3px; min-height:8px; }
+        .cal-dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+        .cal-dot-more { font-size:8px; color:var(--text-light); line-height:7px; }
+        /* 底部彈層（行動版 popup） */
+        .popup-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000; }
+        .popup-overlay.show { display:block; }
+        .event-popup-sheet {
+            display:none; position:fixed; bottom:0; left:0; right:0; z-index:1001;
+            background:var(--bg); border-radius:16px 16px 0 0;
+            padding:0 0 env(safe-area-inset-bottom,16px);
+            max-height:70vh; overflow-y:auto;
+            box-shadow:0 -4px 32px rgba(0,0,0,.18);
+            transform:translateY(100%); transition:transform .28s cubic-bezier(.4,0,.2,1);
+        }
+        .event-popup-sheet.show { display:block; transform:translateY(0); }
+        .sheet-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 0; }
+        .sheet-date { font-size:13px; font-weight:600; color:var(--primary); padding:12px 16px 8px; border-bottom:1px solid var(--border); }
+        .sheet-event { padding:10px 16px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:flex-start; }
+        .sheet-event:last-child { border-bottom:none; }
+        .sheet-event-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+        .sheet-event-name { font-size:13px; font-weight:600; color:var(--text); line-height:1.5; }
+        .sheet-event-meta { font-size:11px; color:var(--text-light); margin-top:2px; line-height:1.4; }
             .container { padding:20px 16px; padding-top:calc(var(--nav-height) + 20px); }
             .bonus-card-grid { grid-template-columns:repeat(2,1fr); }
             .resource-steps { grid-template-columns:1fr; }
@@ -306,28 +328,42 @@
             .unit-filters{gap:5px;} .unit-btn{padding:4px 9px;font-size:11px;}
             .diff-badges{gap:2px;} .diff-badge{min-width:18px;padding:1px 3px;font-size:9px;}
             .gacha-table th{position:static;}
-            .calendar{padding:6px;margin:0 -8px;border-radius:0;}
-            .calendar-header{flex-direction:column;align-items:flex-start;gap:5px;}
-            .calendar-header h3{font-size:13px;} .calendar-header button{padding:4px 8px;font-size:11px;}
-            .calendar-weekdays{font-size:9px;} .calendar-grid{gap:2px;}
-            .calendar-day{min-height:44px;padding:2px;}
-            .calendar-day .day-number{font-size:9px;margin-bottom:1px;}
-            .calendar-event{font-size:7px;padding:1px 2px;margin:0;line-height:1.2;}
-            .more-events{font-size:7px;}
-            .event-popup{max-width:calc(100vw - 24px);left:12px!important;right:12px!important;}
+            /* 行動版日曆全面重排 */
+            .calendar{padding:8px;margin:10px -16px 0;border-radius:0;border-left:none;border-right:none;}
+            .calendar-header{flex-direction:row;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:6px;}
+            .calendar-header h3{font-size:15px;}
+            .calendar-nav{gap:6px;}
+            .calendar-nav button{padding:6px 12px;font-size:12px;}
+            .calendar-weekdays{font-size:10px;margin-bottom:4px;}
+            .calendar-grid{gap:2px;}
+            .calendar-day{min-height:0;padding:4px 3px;aspect-ratio:7/8;cursor:pointer;}
+            .calendar-day .day-number{font-size:11px;margin-bottom:0;}
+            .calendar-event{display:none;}
+            .more-events{display:none;}
+            .event-popup{display:none!important;}
             .bonus-card-grid{grid-template-columns:1fr;}
             .event-stat-cards{grid-template-columns:repeat(2,1fr);}
             .event-info-card{padding:14px;}
             .nav-label{display:none;}
         }
         @media(max-width:480px){
-            .calendar-day{min-height:32px;}
-            .calendar-day .day-number{font-size:8px;}
-            .calendar-event{font-size:6px;padding:0 1px;}
-            .calendar-weekdays{font-size:8px;} .more-events{font-size:6px;}
+            .calendar-day{aspect-ratio:1;padding:3px 2px;}
+            .calendar-day .day-number{font-size:10px;}
+            .calendar-weekdays{font-size:9px;}
+            .cal-dot{width:5px;height:5px;}
             .countdown-cards{grid-template-columns:1fr;}
             nav a{font-size:11px;padding:3px 6px;}
         }
+        /* 可折疊排名列 */
+        .rank-expand-row td { text-align:center; padding:3px 12px; cursor:pointer;
+            color:var(--text-light); font-size:11px; border-bottom:1px dashed var(--border);
+            background:var(--bg); transition:background .15s; }
+        .rank-expand-row td:hover { background:#f0f0f0; color:var(--primary); }
+        :root.dark .rank-expand-row td:hover { background:#2a2a2a; }
+        .rank-expand-cell { padding:0!important; }
+        .rank-expand-cell table { margin:0; }
+        .rank-expand-cell td { background:#fafafa; }
+        :root.dark .rank-expand-cell td { background:#151515; }
     </style>
 </head>
 <body>
@@ -435,6 +471,14 @@
             <div class="event-popup" id="eventPopup">
                 <span class="close-btn" onclick="closePopup()">×</span>
                 <div id="popupContent"></div>
+            </div>
+
+            <!-- 行動版底部彈層 -->
+            <div class="popup-overlay" id="popupOverlay" onclick="closeSheet()"></div>
+            <div class="event-popup-sheet" id="eventSheet">
+                <div class="sheet-handle"></div>
+                <div class="sheet-date" id="sheetDate"></div>
+                <div id="sheetContent"></div>
             </div>
         </section>
 
@@ -719,13 +763,12 @@
             <div id="char-analysis" class="tab-content">
                 <div class="analysis-input">
                     <select id="charSelect" style="padding:8px 12px;border:1px solid var(--border);border-radius:4px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);">
-                        <option>一歌</option><option>咲希</option><option>穗波</option><option>志步</option>
-                        <option>實乃理</option><option>遙</option><option>愛莉</option><option>雫</option>
-                        <option>彰人</option><option>冬彌</option><option>杏</option><option>流歌</option>
-                        <option>司</option><option>笑夢</option><option>寧寧</option><option>類</option>
-                        <option>奏</option><option>真冬</option><option>瑞希</option><option>繪名</option>
-                        <option>初音</option><option>鈴</option><option>連</option><option>流歌</option>
-                        <option>MEIKO</option><option>KAITO</option>
+                        <optgroup label="Leo/need"><option>一歌</option><option>咲希</option><option>穗波</option><option>志步</option></optgroup>
+                        <optgroup label="MORE MORE JUMP"><option>實乃理</option><option>遙</option><option>愛莉</option><option>雫</option></optgroup>
+                        <optgroup label="Vivid BAD SQUAD"><option>彰人</option><option>冬彌</option><option>杏</option><option>心羽</option></optgroup>
+                        <optgroup label="Wonderlands×Showtime"><option>司</option><option>笑夢</option><option>寧寧</option><option>類</option></optgroup>
+                        <optgroup label="25時，Nightcord"><option>奏</option><option>真冬</option><option>瑞希</option><option>繪名</option></optgroup>
+                        <optgroup label="VIRTUAL SINGER"><option>初音</option><option>鈴</option><option>連</option><option>流歌</option><option>MEIKO</option><option>KAITO</option></optgroup>
                     </select>
                     <select id="charRankSelect" style="padding:8px 12px;border:1px solid var(--border);border-radius:4px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);">
                         <option value="10">T10</option>
@@ -1366,6 +1409,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         function goToToday() { calendarDate = new Date(); renderCalendar(); }
 
         function renderCalendar() {
+            const isMobile = window.innerWidth < 769;
             const now = new Date();
             const year = calendarDate.getFullYear(), month = calendarDate.getMonth();
             document.getElementById('calendarTitle').textContent = `${year}年${month+1}月`;
@@ -1373,7 +1417,6 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             const days = new Date(year, month+1, 0).getDate();
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
-            // 前補空格
             for (let i=0;i<first;i++) {
                 const prev = new Date(year, month, -first+i+1);
                 const el = document.createElement('div');
@@ -1384,23 +1427,56 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             for (let d=1;d<=days;d++) {
                 const date = new Date(year, month, d);
                 const el = document.createElement('div');
-                el.className = 'calendar-day' + (d===now.getDate()&&month===now.getMonth()&&year===now.getFullYear()?' today':'');
+                const isToday = d===now.getDate()&&month===now.getMonth()&&year===now.getFullYear();
+                el.className = 'calendar-day'+(isToday?' today':'');
                 const events = getEventsForDate(date);
                 let html = `<div class="day-number">${d}</div>`;
-                const show = events.slice(0,3);
-                const more = events.length - show.length;
-                show.forEach(e => {
-                    const bg = getEventBg(e.t);
-                    const txtColor = getEventText(e.t);
-                    html += `<div class="calendar-event" style="background:${bg};color:${txtColor};" onclick="showPopup(event, ${JSON.stringify(JSON.stringify({name:e.n,type:e.t,chars:e.ch,start:e.s,end:e.e,note:e.note,eid:e.eid})).slice(1,-1)})">${e.n}</div>`;
-                });
-                if (more>0) html += `<div class="more-events" onclick="showAllPopup(event,'${year}/${month+1}/${d}')">+${more} 更多</div>`;
-                el.innerHTML = html;
-                if (events.length) el.style.cursor = 'pointer';
+                if (isMobile) {
+                    if (events.length) {
+                        const dots = dedupeByType(events).slice(0,6);
+                        html += `<div class="cal-dots">`;
+                        dots.forEach(e => { html += `<span class="cal-dot" style="background:${getEventColor(e.t)};"></span>`; });
+                        if (events.length>6) html += `<span class="cal-dot-more">+</span>`;
+                        html += `</div>`;
+                    }
+                    el.innerHTML = html;
+                    if (events.length) el.onclick = () => showSheet(year, month+1, d, events);
+                } else {
+                    const show = events.slice(0,3); const more = events.length-show.length;
+                    show.forEach(e => {
+                        const bg=getEventBg(e.t), tc=getEventText(e.t);
+                        html += `<div class="calendar-event" style="background:${bg};color:${tc};" onclick="showPopup(event,${JSON.stringify(JSON.stringify({name:e.n,type:e.t,chars:e.ch,start:e.s,end:e.e,note:e.note,eid:e.eid})).slice(1,-1)})">${e.n}</div>`;
+                    });
+                    if (more>0) html += `<div class="more-events" onclick="showAllPopup(event,'${year}/${month+1}/${d}')">+${more} 更多</div>`;
+                    el.innerHTML = html;
+                    if (events.length) el.style.cursor = 'pointer';
+                }
                 grid.appendChild(el);
             }
             renderCountdown();
         }
+
+        function dedupeByType(events) {
+            const seen = new Set();
+            return events.filter(e => {
+                const k = e.t.includes('FES')?'fes':e.t.includes('普通限定')?'lim':e.t.includes('有償')?'paid':
+                          e.t.includes('生日')?'bday':e.t.includes('復刻')?'rerun':
+                          e.t.includes('World Link')?'wl':e.t.includes('常駐')?'normal':'other';
+                if (seen.has(k)) return false; seen.add(k); return true;
+            });
+        }
+
+        function getEventColor(t) {
+            if (t.includes('FES')) return '#e65100';
+            if (t.includes('普通限定')) return '#c62828';
+            if (t.includes('有償')) return '#f57f17';
+            if (t.includes('生日')) return '#7b1fa2';
+            if (t.includes('復刻')) return '#b71c1c';
+            if (t.includes('World Link')) return '#1565c0';
+            if (t.includes('常駐')) return '#2e7d32';
+            return '#546e7a';
+        }
+
 
         function getEventsForDate(date) {
             return GACHAS.filter(g => {
@@ -1465,6 +1541,32 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
         function closePopup() { document.getElementById('eventPopup')?.classList.remove('show'); }
 
+        function showSheet(year, month, day, events) {
+            const sheetDate = document.getElementById('sheetDate');
+            const sheetContent = document.getElementById('sheetContent');
+            const weekdays = ['日','一','二','三','四','五','六'];
+            const d = new Date(year, month-1, day);
+            sheetDate.textContent = `${year}/${month}/${day}（${weekdays[d.getDay()]}）　共 ${events.length} 個卡池`;
+            sheetContent.innerHTML = events.map(e => {
+                const color = getEventColor(e.t);
+                return `<div class="sheet-event">
+                    <span class="sheet-event-dot" style="background:${color};"></span>
+                    <div>
+                        <div class="sheet-event-name">${e.n}</div>
+                        <div class="sheet-event-meta">${e.t}${e.ch ? '　' + e.ch : ''}${e.eid ? '　第'+e.eid+'期' : ''}</div>
+                        ${e.note ? `<div class="sheet-event-meta" style="color:var(--text-light)">${e.note}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('popupOverlay').classList.add('show');
+            document.getElementById('eventSheet').classList.add('show');
+        }
+
+        function closeSheet() {
+            document.getElementById('popupOverlay').classList.remove('show');
+            document.getElementById('eventSheet').classList.remove('show');
+        }
+
         function renderCountdown() {
             const now = new Date();
             const upcoming = GACHAS.filter(g => {
@@ -1498,6 +1600,63 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         document.addEventListener('click', e => {
             if (!e.target.closest('.event-popup')) closePopup();
         });
+
+
+        // ========== 可折疊 Top100 工具 ==========
+        let _rgSeq = 0;
+        function makeTop100Html(rankings, rowFn, ncols) {
+            const pfx = 'rg' + (_rgSeq++);
+            const byRank = {};
+            rankings.slice(0,100).forEach((r,i) => { byRank[r.rank ?? (i+1)] = r; });
+            const top10 = [1,2,3,4,5,6,7,8,9,10];
+            const decades = [
+                {hidden:[11,12,13,14,15,16,17,18,19], key:20},
+                {hidden:[21,22,23,24,25,26,27,28,29], key:30},
+                {hidden:[31,32,33,34,35,36,37,38,39], key:40},
+                {hidden:[41,42,43,44,45,46,47,48,49], key:50},
+                {hidden:[51,52,53,54,55,56,57,58,59], key:60},
+                {hidden:[61,62,63,64,65,66,67,68,69], key:70},
+                {hidden:[71,72,73,74,75,76,77,78,79], key:80},
+                {hidden:[81,82,83,84,85,86,87,88,89], key:90},
+                {hidden:[91,92,93,94,95,96,97,98,99], key:100},
+            ];
+            let html = top10.filter(r=>byRank[r]).map(r=>rowFn(byRank[r],r)).join('');
+            decades.forEach(({hidden, key}, gi) => {
+                const avail = hidden.filter(r=>byRank[r]);
+                if (avail.length) {
+                    const gid = `${pfx}_${gi}`;
+                    html += `<tr class="rank-expand-row">
+                        <td colspan="${ncols}" id="${gid}_hdr" onclick="toggleRankGrp('${gid}')">
+                            ▸ T${hidden[0]}–T${hidden[hidden.length-1]}（${avail.length} 名）
+                        </td>
+                    </tr>
+                    <tr id="${gid}" style="display:none">
+                        <td colspan="${ncols}" class="rank-expand-cell">
+                            <table class="ranking-table"><tbody>
+                                ${avail.map(r=>rowFn(byRank[r],r)).join('')}
+                            </tbody></table>
+                        </td>
+                    </tr>`;
+                }
+                if (byRank[key]) html += rowFn(byRank[key], key);
+            });
+            return html;
+        }
+
+        function toggleRankGrp(gid) {
+            const body = document.getElementById(gid);
+            const hdr  = document.getElementById(gid+'_hdr');
+            if (!body) return;
+            const show = body.style.display === 'none';
+            body.style.display = show ? 'table-row' : 'none';
+            if (hdr) {
+                const m = hdr.textContent.match(/T\d+–T\d+/);
+                const range = m ? m[0] : '';
+                hdr.innerHTML = show
+                    ? `▾ ${range}（點擊收合）`
+                    : `▸ ${range}（${body.querySelectorAll('tbody tr').length} 名）`;
+            }
+        }
 
         // ========== 活動排名模組 ==========
         const EventModule = {
@@ -1543,6 +1702,17 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 return data[key] || [];
             },
 
+            // 判斷 WL 個榜是否真有資料（無則隱藏）
+            hasWLData(chapters) {
+                if (!Array.isArray(chapters) || !chapters.length) return false;
+                // 章節分組結構：任一章節含非空 rankings/borders
+                if (chapters.some(c => Array.isArray(c.rankings) && c.rankings.length)) return true;
+                if (chapters.some(c => Array.isArray(c.borders) && c.borders.length)) return true;
+                // 扁平列表結構：含 rank 欄位即視為有資料
+                if (chapters.some(c => c && c.rank !== undefined)) return true;
+                return false;
+            },
+
             renderLive(top, brd) {
                 const info = this.extractEventInfo(top);
                 const name = info.name || info.event_name || '進行中的活動';
@@ -1564,20 +1734,24 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (endTime) this.startCountdown(endTime.getTime(), 'liveCountdown');
 
                 const rankings = this.extractRankings(top);
-                document.getElementById('rankingBody').innerHTML = rankings.slice(0,100).map((r,i) => {
-                    const rank = r.rank||i+1;
-                    const rankClass = rank<=3?`rank-${rank}`:'';
-                    return `<tr class="${rankClass}">
+                const liveRowFn = (r, rank) => {
+                    const cls = rank<=3?`rank-${rank}`:'';
+                    return `<tr class="${cls}">
                         <td><strong>T${fmtNum(rank)}</strong></td>
                         <td class="player-name">${r.user_name||r.name||'-'}</td>
                         <td class="score">${fmtScore(r.score||r.event_point)}</td>
                         <td class="score">${fmtScore(r.score_per_hour||r.hourly_score||'')}</td>
                         <td style="font-size:12px;color:var(--text-light)">${r.updated_at?new Date(r.updated_at).toLocaleTimeString():'-'}</td>
                     </tr>`;
-                }).join('') || '<tr><td colspan="5" class="event-loading">無排名資料</td></tr>';
+                };
+                document.getElementById('rankingBody').innerHTML =
+                    rankings.length ? makeTop100Html(rankings, liveRowFn, 5)
+                    : '<tr><td colspan="5" class="event-loading">無排名資料</td></tr>';
 
                 const wlRank = this.extractWLChapters(top, false);
-                if (wlRank.length) this.renderWLChapterTabs(wlRank,'wl-chapter-tabs-live',false);
+                const liveWlEl = document.getElementById('wl-chapter-tabs-live');
+                if (liveWlEl) liveWlEl.innerHTML = '';
+                if (this.hasWLData(wlRank)) this.renderWLChapterTabs(wlRank,'wl-chapter-tabs-live',false);
 
                 const stats = document.getElementById('eventStats');
                 const keyRanks = [1,10,100,500,1000];
@@ -1624,31 +1798,59 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 </tr>`).join('') || '<tr><td colspan="4" class="event-loading">無分段資料</td></tr>';
 
                 const wlBorder = this.extractWLChapters(brd, true);
-                if (wlBorder.length) this.renderWLChapterTabs(wlBorder,'wl-chapter-tabs-border',true);
+                const borderWlEl = document.getElementById('wl-chapter-tabs-border');
+                if (borderWlEl) borderWlEl.innerHTML = '';
+                if (this.hasWLData(wlBorder)) this.renderWLChapterTabs(wlBorder,'wl-chapter-tabs-border',true);
             },
 
             renderWLChapterTabs(chapters, containerId, isBorder) {
                 const el = document.getElementById(containerId);
                 if (!el) return;
-                const tabs = [...new Set(chapters.map(c => c.character_id||c.chapter_id||c.id))];
-                if (!tabs.length) return;
-                let html = `<div style="margin-top:16px;"><div class="tabs" style="margin-bottom:8px;">`;
-                tabs.forEach((id,i) => {
-                    const name = chapters.find(c=>c.character_id===id||c.id===id)?.character_name||`章節${id}`;
+                // 嘗試多種資料結構
+                let chapList = [];
+                if (Array.isArray(chapters)) {
+                    if (chapters[0]?.rankings || chapters[0]?.borders) {
+                        // [{character_id, character_name, rankings:[...]}, ...]
+                        chapList = chapters;
+                    } else if (chapters[0]?.rank !== undefined) {
+                        // 扁平列表，無章節分組
+                        chapList = [{character_name:'全員個榜', rankings:chapters}];
+                    } else {
+                        chapList = chapters;
+                    }
+                }
+                if (!chapList.length) { el.innerHTML = ''; return; }
+
+                // 過濾掉沒有任何排名資料的章節
+                chapList = chapList.filter(ch => {
+                    const rows = ch.rankings || ch.borders || ch.ranking || (ch.rank !== undefined ? [ch] : []);
+                    return Array.isArray(rows) && rows.length > 0;
+                });
+                if (!chapList.length) { el.innerHTML = ''; return; }
+
+                const rowFn = (r, rank) => `<tr class="${rank<=3?'rank-'+rank:''}">
+                    <td><strong>T${fmtNum(rank)}</strong></td>
+                    <td class="player-name">${r.user_name||r.name||r.nickname||'-'}</td>
+                    <td class="score">${fmtScore(r.score||r.event_point||r.point)}</td>
+                </tr>`;
+
+                let html = `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:8px;">WL 個別角色榜</div>
+                    <div class="tabs" style="margin-bottom:10px;">`;
+                chapList.forEach((ch, i) => {
+                    const name = ch.character_name || ch.name || `角色 ${ch.character_id||i+1}`;
                     html += `<button class="tab-btn ${i===0?'active':''}" onclick="EventModule.switchWLChapter(this,'wl-ch-${containerId}-${i}')">${name}</button>`;
                 });
                 html += '</div>';
-                tabs.forEach((id,i) => {
-                    const chRankings = chapters.filter(c => c.character_id===id||c.id===id);
-                    const rows = (chRankings[0]?.rankings||chRankings[0]?.borders||chRankings||[]);
+                chapList.forEach((ch, i) => {
+                    const rows = ch.rankings || ch.borders || ch.ranking || [];
+                    const rowHtml = rows.length
+                        ? makeTop100Html(rows, rowFn, 3)
+                        : '<tr><td colspan="3" class="event-loading">無資料</td></tr>';
                     html += `<div id="wl-ch-${containerId}-${i}" class="tab-content ${i===0?'active':''}">
                         <div class="table-wrapper"><table class="ranking-table">
-                            <thead><tr><th>${isBorder?'榜線':'排名'}</th><th>玩家</th><th>分數</th></tr></thead>
-                            <tbody>${(Array.isArray(rows)?rows:[]).slice(0,20).map(r=>`<tr>
-                                <td><strong>T${fmtNum(r.rank)}</strong></td>
-                                <td class="player-name">${r.user_name||r.name||'-'}</td>
-                                <td class="score">${fmtScore(r.score||r.event_point)}</td>
-                            </tr>`).join('')||'<tr><td colspan="3">無資料</td></tr>'}</tbody>
+                            <thead><tr><th>${isBorder?'榜線':'排名'}</th><th>玩家名稱</th><th>分數</th></tr></thead>
+                            <tbody>${rowHtml}</tbody>
                         </table></div>
                     </div>`;
                 });
@@ -1681,6 +1883,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const borders = this.extractBorders(brd);
                     const wlRank = this.extractWLChapters(top,false);
                     const wlBorder = this.extractWLChapters(brd,true);
+                    const hasWL = this.hasWLData(wlRank) || this.hasWLData(wlBorder);
 
                     content.innerHTML = `
                         <div class="modal-header">
@@ -1691,16 +1894,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div class="tabs" id="d-tabs">
                                 <button class="tab-btn active" onclick="EventModule.switchDetailTab('d-top')">Top 100</button>
                                 <button class="tab-btn" onclick="EventModule.switchDetailTab('d-border')">分段榜線</button>
-                                ${wlRank.length||wlBorder.length?`<button class="tab-btn" onclick="EventModule.switchDetailTab('d-wl')">WL 章節</button>`:''}
+                                ${hasWL?`<button class="tab-btn" onclick="EventModule.switchDetailTab('d-wl')">WL 個別角色榜</button>`:''}
                             </div>
                             <div id="d-top" class="tab-content active">
                                 <div class="table-wrapper"><table class="ranking-table">
                                     <thead><tr><th>排名</th><th>玩家</th><th>最終分數</th></tr></thead>
-                                    <tbody>${rankings.slice(0,100).map((r,i)=>`<tr class="${r.rank<=3?'rank-'+r.rank:''}">
-                                        <td><strong>T${fmtNum(r.rank||i+1)}</strong></td>
-                                        <td class="player-name">${r.user_name||r.name||'-'}</td>
-                                        <td class="score">${fmtScore(r.score||r.event_point)}</td>
-                                    </tr>`).join('')||'<tr><td colspan="3" class="event-loading">無資料</td></tr>'}</tbody>
+                                    <tbody id="d-top-body"></tbody>
                                 </table></div>
                             </div>
                             <div id="d-border" class="tab-content">
@@ -1713,11 +1912,23 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                     </tr>`).join('')||'<tr><td colspan="3" class="event-loading">無資料</td></tr>'}</tbody>
                                 </table></div>
                             </div>
-                            ${wlRank.length||wlBorder.length?`<div id="d-wl" class="tab-content"><div id="d-wl-inner"></div></div>`:''}
+                            ${hasWL?`<div id="d-wl" class="tab-content"><div id="d-wl-inner"></div></div>`:''}
                         </div>`;
 
-                    if (wlRank.length) this.renderWLChapterTabs(wlRank,'d-wl-inner',false);
-                    else if (wlBorder.length) this.renderWLChapterTabs(wlBorder,'d-wl-inner',true);
+                    const detailRowFn = (r, rank) => {
+                        const cls = rank<=3?'rank-'+rank:'';
+                        return `<tr class="${cls}">
+                            <td><strong>T${fmtNum(rank)}</strong></td>
+                            <td class="player-name">${r.user_name||r.name||'-'}</td>
+                            <td class="score">${fmtScore(r.score||r.event_point)}</td>
+                        </tr>`;
+                    };
+                    const topBody = document.getElementById('d-top-body');
+                    if (topBody) topBody.innerHTML = rankings.length
+                        ? makeTop100Html(rankings, detailRowFn, 3)
+                        : '<tr><td colspan="3" class="event-loading">無資料</td></tr>';
+                    if (this.hasWLData(wlRank)) this.renderWLChapterTabs(wlRank,'d-wl-inner',false);
+                    else if (this.hasWLData(wlBorder)) this.renderWLChapterTabs(wlBorder,'d-wl-inner',true);
                 } catch(e) {
                     content.innerHTML = `<div class="modal-header"><h3>載入失敗</h3></div><div class="modal-body"><div class="event-error">API 回傳錯誤。<button class="refresh-btn" onclick="EventModule.viewEventDetail(${eventId})">重試</button></div></div>`;
                 }
@@ -1797,7 +2008,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
                 document.getElementById('trendProgress').style.display='none';
                 document.getElementById('trendChart').style.display='block';
-                ChartUtil.drawLine('trendCanvas',[{values:scores,color:'#1a1a2e'}],labels);
+                requestAnimationFrame(() => {
+                    const c = document.getElementById('trendCanvas');
+                    if (c && c.parentElement) c.width = Math.max(c.parentElement.clientWidth - 32, 400);
+                    ChartUtil.drawLine('trendCanvas',[{values:scores,color:'#1a1a2e'}],labels);
+                });
 
                 const valid = ids.map((id,i)=>({id,score:scores[i]})).filter(x=>x.score!=null);
                 if (valid.length) {
@@ -1870,28 +2085,45 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             async _renderAnalysis(eventIds, rank, title, resultId, canvasId) {
                 const el = document.getElementById(resultId);
                 el.innerHTML = `<div class="event-loading">正在載入 ${eventIds.length} 期資料...</div>`;
-                const scores=[]; const labels=[];
+                const scores=[]; const labels=[]; const eventInfos=[];
                 for (const id of eventIds) {
                     try {
                         const data = await apiFetch(`/event/${id}/border`);
+                        const info = EventModule.extractEventInfo(data);
                         const borders = EventModule.extractBorders(data);
                         const entry = borders.find(b=>b.rank===rank);
                         scores.push(entry?.score||entry?.event_point||null);
-                    } catch { scores.push(null); }
+                        eventInfos.push({id, name:info?.name||info?.event_name||`第${id}期`, type:info?.event_type||''});
+                    } catch { scores.push(null); eventInfos.push({id,name:`第${id}期`,type:''}); }
                     labels.push(`#${id}`);
                     await sleep(150);
                 }
                 const valid = scores.filter(s=>s!=null);
+                const statsHtml = valid.length ? `
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin:10px 0;padding:10px 14px;background:#f5f5f5;border-radius:5px;">
+                        <span>平均：<strong>${fmtScore(valid.reduce((a,b)=>a+b,0)/valid.length)}</strong></span>
+                        <span>最高：<strong>${fmtScore(Math.max(...valid))}</strong>（#${eventInfos[scores.indexOf(Math.max(...valid))]?.id}）</span>
+                        <span>最低：<strong>${fmtScore(Math.min(...valid))}</strong>（#${eventInfos[scores.indexOf(Math.min(...valid))]?.id}）</span>
+                        <span>有效期數：<strong>${valid.length}/${eventIds.length}</strong></span>
+                    </div>` : '<div class="note" style="margin-top:8px">無有效資料（可能為 API 限制或非箱活）</div>';
+                const tableHtml = `<div class="table-wrapper" style="margin-top:12px">
+                    <table><thead><tr><th>期數</th><th>活動名稱</th><th>T${fmtNum(rank)} 分數</th></tr></thead>
+                    <tbody>${eventInfos.map((ev,i)=>`<tr>
+                        <td style="white-space:nowrap"><a href="#" onclick="EventModule.viewEventDetail(${ev.id});return false;">#${ev.id}</a></td>
+                        <td style="font-size:12px">${ev.name}</td>
+                        <td class="score">${fmtScore(scores[i])}</td>
+                    </tr>`).join('')}</tbody></table></div>`;
                 el.innerHTML = `
                     <div style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:8px;">${title}</div>
-                    <div class="chart-container"><canvas id="${canvasId}" width="900" height="260"></canvas></div>
-                    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-top:8px;">
-                        ${valid.length?`<span>平均：<strong>${fmtScore(valid.reduce((a,b)=>a+b,0)/valid.length)}</strong></span>
-                        <span>最高：<strong>${fmtScore(Math.max(...valid))}</strong></span>
-                        <span>最低：<strong>${fmtScore(Math.min(...valid))}</strong></span>`:''}
-                        <span>活動期數：<strong>${eventIds.join(', ')}</strong></span>
-                    </div>`;
-                ChartUtil.drawLine(canvasId,[{values:scores}],labels);
+                    <div class="chart-container" id="${canvasId}_wrap"><canvas id="${canvasId}" width="900" height="240"></canvas></div>
+                    ${statsHtml}${tableHtml}`;
+                requestAnimationFrame(() => {
+                    const c = document.getElementById(canvasId);
+                    if (c && c.parentElement) {
+                        c.width = Math.max(c.parentElement.clientWidth - 32, 300);
+                    }
+                    ChartUtil.drawLine(canvasId,[{values:scores}],labels);
+                });
             }
         };
 
@@ -2366,6 +2598,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             loadSongs();
             calculateMultiplier();
             setInterval(()=>EventModule.loadLive(), 60000);
+            window.addEventListener('resize', () => {
+                clearTimeout(window._calResizeTimer);
+                window._calResizeTimer = setTimeout(renderCalendar, 200);
+            });
         });
     </script>
 </body>
