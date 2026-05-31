@@ -353,7 +353,39 @@
             .countdown-cards{grid-template-columns:1fr;}
             nav a{font-size:11px;padding:3px 6px;}
         }
-        /* 可折疊排名列 */
+        /* 全域搜尋 */
+        .search-fab { position:fixed; right:18px; bottom:18px; z-index:1500;
+            width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
+            background:var(--primary); color:#fff; font-size:22px; box-shadow:0 4px 16px rgba(0,0,0,.25);
+            display:flex; align-items:center; justify-content:center; transition:transform .2s; }
+        .search-fab:hover { transform:scale(1.08); }
+        .gsearch-overlay { display:none; position:fixed; inset:0; z-index:2500;
+            background:rgba(0,0,0,.45); backdrop-filter:blur(2px); padding:60px 16px 16px; }
+        .gsearch-overlay.show { display:block; }
+        .gsearch-box { max-width:680px; margin:0 auto; background:var(--bg);
+            border-radius:12px; box-shadow:0 12px 48px rgba(0,0,0,.3); overflow:hidden;
+            max-height:calc(100vh - 80px); display:flex; flex-direction:column; }
+        .gsearch-head { display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid var(--border); }
+        .gsearch-head input { flex:1; border:none; outline:none; background:transparent;
+            font-size:16px; font-family:inherit; color:var(--text); }
+        .gsearch-head .gs-close { cursor:pointer; color:var(--text-light); font-size:22px; line-height:1; border:none; background:none; }
+        .gsearch-hint { font-size:11px; color:var(--text-light); padding:8px 18px; border-bottom:1px solid var(--border); background:#f9f9f9; }
+        :root.dark .gsearch-hint { background:#1a1a1a; }
+        .gsearch-results { overflow-y:auto; padding:6px 0; }
+        .gs-group-title { font-size:11px; font-weight:600; color:var(--text-light); padding:10px 18px 4px; letter-spacing:.5px; text-transform:uppercase; }
+        .gs-item { padding:9px 18px; cursor:pointer; display:flex; align-items:center; gap:10px; transition:background .12s; }
+        .gs-item:hover, .gs-item.active { background:#f0f0f0; }
+        :root.dark .gs-item:hover, :root.dark .gs-item.active { background:#252525; }
+        .gs-item .gs-tag { font-size:10px; padding:2px 7px; border-radius:3px; color:#fff; flex-shrink:0; }
+        .gs-item .gs-main { font-size:14px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .gs-item .gs-sub { font-size:11px; color:var(--text-light); flex-shrink:0; }
+        .gs-item mark { background:rgba(255,213,79,.5); color:inherit; padding:0 1px; border-radius:2px; }
+        :root.dark .gs-item mark { background:rgba(255,213,79,.25); }
+        .gs-empty { padding:30px 18px; text-align:center; color:var(--text-light); font-size:13px; }
+        @media(max-width:768px){
+            .search-fab { width:46px; height:46px; right:14px; bottom:14px; font-size:19px; }
+            .gsearch-overlay { padding:40px 10px 10px; }
+        }
         .rank-expand-row td { text-align:center; padding:3px 12px; cursor:pointer;
             color:var(--text-light); font-size:11px; border-bottom:1px dashed var(--border);
             background:var(--bg); transition:background .15s; }
@@ -397,6 +429,23 @@
             <button class="dark-toggle" id="darkToggle" onclick="DarkMode.toggle()">深色</button>
         </div>
     </nav>
+
+    <!-- 全域搜尋 -->
+    <button class="search-fab" onclick="GlobalSearch.open()" title="全域搜尋" aria-label="搜尋">🔍</button>
+    <div class="gsearch-overlay" id="gsearchOverlay" onclick="if(event.target===this)GlobalSearch.close()">
+        <div class="gsearch-box">
+            <div class="gsearch-head">
+                <span style="color:var(--text-light);">🔍</span>
+                <input type="text" id="gsearchInput" placeholder="搜尋卡池、歌曲、角色、玩偶、功能…" autocomplete="off"
+                       oninput="GlobalSearch.run(this.value)" onkeydown="GlobalSearch.onKey(event)">
+                <button class="gs-close" onclick="GlobalSearch.close()" aria-label="關閉">×</button>
+            </div>
+            <div class="gsearch-hint">輸入角色名（如「初音」「miku」「ニーゴ」）、卡池、歌曲或作曲者；Enter 前往第一個結果，Esc 關閉</div>
+            <div class="gsearch-results" id="gsearchResults">
+                <div class="gs-empty">開始輸入以搜尋全站內容</div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <header>
@@ -495,9 +544,10 @@
                     <div class="event-loading">載入活動資訊中...</div>
                 </div>
                 <div class="event-stat-cards" id="eventStats"></div>
+                <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">點擊任一玩家可查看周回／場均細節（1h／3h／24h）</div>
                 <div class="table-wrapper">
                     <table class="ranking-table">
-                        <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th>時速</th><th>最後更新</th></tr></thead>
+                        <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th>時速</th><th>最後紀錄</th></tr></thead>
                         <tbody id="rankingBody"><tr><td colspan="5" class="event-loading">載入排名資料中...</td></tr></tbody>
                     </table>
                 </div>
@@ -1133,6 +1183,23 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             return n >= 10000 ? (n/10000).toFixed(2)+'W' : n.toLocaleString();
         }
         function fmtNum(n) { return (n||0).toLocaleString(); }
+        // 時速：萬位 + /h；數值大時自動換行避免擠壓
+        function fmtSpeed(n) {
+            if (n === null || n === undefined || n === '') return '-';
+            n = Number(n);
+            if (!n) return '-';
+            return n >= 10000 ? (n/10000).toFixed(2)+'W/h' : n.toLocaleString()+'/h';
+        }
+        // 相對時間（最後一次紀錄）
+        function fmtAgo(d) {
+            if (!d) return '-';
+            const diff = (Date.now() - d.getTime())/1000;
+            if (diff < 60) return '剛剛';
+            if (diff < 3600) return `${Math.floor(diff/60)} 分前`;
+            if (diff < 86400) return `${Math.floor(diff/3600)} 小時前`;
+            if (diff < 86400*7) return `${Math.floor(diff/86400)} 天前`;
+            return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
         function fmtDate(d) {
             if (!d) return '';
             return `${d.getMonth()+1}/${d.getDate()}`;
@@ -1735,6 +1802,52 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 return false;
             },
 
+            // 點擊排名列：顯示周回／場均細節（1h / 3h / 24h）
+            showPlayerStats(idx) {
+                const r = (window._liveRankings || [])[idx];
+                if (!r) return;
+                const sheetDate = document.getElementById('sheetDate');
+                const sheetContent = document.getElementById('sheetContent');
+                const rows = [
+                    ['過去 1 小時', r.last_1h_stats],
+                    ['過去 3 小時', r.last_3h_stats],
+                    ['過去 24 小時', r.last_24h_stats],
+                ];
+                const lastPlayed = r.last_played_at ? new Date(r.last_played_at) : null;
+                sheetDate.textContent = `T${fmtNum(r.rank)}　${r.user_name||'-'}`;
+                sheetContent.innerHTML = `
+                    <div class="sheet-event" style="display:block">
+                        <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-bottom:4px;">
+                            <span>總分：<strong>${fmtScore(r.score)}</strong></span>
+                            <span>當前時速：<strong style="color:var(--accent)">${fmtSpeed(r.speed1h)}</strong></span>
+                            <span>最後紀錄：<strong>${lastPlayed?fmtAgo(lastPlayed):'-'}</strong></span>
+                        </div>
+                    </div>
+                    <div style="padding:4px 16px 12px;">
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <thead><tr>
+                                <th style="text-align:left;padding:6px 4px;color:var(--text-light);font-size:11px;">時段</th>
+                                <th style="text-align:right;padding:6px 4px;color:var(--text-light);font-size:11px;">周回</th>
+                                <th style="text-align:right;padding:6px 4px;color:var(--text-light);font-size:11px;">時段得分</th>
+                                <th style="text-align:right;padding:6px 4px;color:var(--text-light);font-size:11px;">場均</th>
+                                <th style="text-align:right;padding:6px 4px;color:var(--text-light);font-size:11px;">時速</th>
+                            </tr></thead>
+                            <tbody>${rows.map(([label, s]) => {
+                                if (!s) return `<tr><td style="padding:7px 4px;">${label}</td><td colspan="4" style="text-align:right;color:var(--text-light);padding:7px 4px;">無資料</td></tr>`;
+                                return `<tr style="border-top:1px solid var(--border);">
+                                    <td style="padding:7px 4px;">${label}</td>
+                                    <td style="text-align:right;padding:7px 4px;">${s.count!=null?s.count+' 回':'-'}</td>
+                                    <td style="text-align:right;padding:7px 4px;" class="score">${fmtScore(s.score)}</td>
+                                    <td style="text-align:right;padding:7px 4px;" class="score">${fmtScore(s.average)}</td>
+                                    <td style="text-align:right;padding:7px 4px;" class="score">${fmtSpeed(s.speed)}</td>
+                                </tr>`;
+                            }).join('')}</tbody>
+                        </table>
+                    </div>`;
+                document.getElementById('popupOverlay').classList.add('show');
+                document.getElementById('eventSheet').classList.add('show');
+            },
+
             renderLive(top, brd) {
                 const info = this.extractEventInfo(top);
                 const name = info.name || info.event_name || '進行中的活動';
@@ -1756,18 +1869,20 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (endTime) this.startCountdown(endTime.getTime(), 'liveCountdown');
 
                 const rankings = this.extractRankings(top);
-                const liveRowFn = (r, rank) => {
-                    const cls = rank<=3?`rank-${rank}`:'';
-                    return `<tr class="${cls}">
-                        <td><strong>T${fmtNum(rank)}</strong></td>
-                        <td class="player-name">${r.user_name||r.name||'-'}</td>
-                        <td class="score">${fmtScore(r.score||r.event_point)}</td>
-                        <td class="score">${r.speed1h!=null?fmtScore(r.speed1h)+'/h':'-'}</td>
-                        <td style="font-size:12px;color:var(--text-light)">${r.updated_at?new Date(r.updated_at).toLocaleTimeString():'-'}</td>
-                    </tr>`;
-                };
-                document.getElementById('rankingBody').innerHTML =
-                    rankings.length ? makeTop100Html(rankings, liveRowFn, 5)
+                window._liveRankings = rankings;   // 供細節彈層查用
+                document.getElementById('rankingBody').innerHTML = rankings.length
+                    ? rankings.slice(0,100).map((r,i) => {
+                        const rank = r.rank ?? i+1;
+                        const cls = rank<=3?`rank-${rank}`:'';
+                        const lastPlayed = r.last_played_at ? new Date(r.last_played_at) : null;
+                        return `<tr class="${cls}" style="cursor:pointer;" onclick="EventModule.showPlayerStats(${i})" title="點擊查看周回／場均細節">
+                            <td><strong>T${fmtNum(rank)}</strong></td>
+                            <td class="player-name">${r.user_name||'-'}</td>
+                            <td class="score">${fmtScore(r.score)}</td>
+                            <td class="score" style="color:var(--accent);">${fmtSpeed(r.speed1h)}</td>
+                            <td style="font-size:12px;color:var(--text-light);white-space:nowrap;">${lastPlayed?fmtAgo(lastPlayed):'-'}</td>
+                        </tr>`;
+                    }).join('')
                     : '<tr><td colspan="5" class="event-loading">無排名資料</td></tr>';
 
                 const wlRank = this.extractWLChapters(top, false);
@@ -2631,6 +2746,180 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         }
 
         // ========== 初始化 ==========
+        // ========== 全域搜尋（智能・人性化）==========
+        const GlobalSearch = {
+            // 角色別名：輸入任一別名都能對應到資料中的中文名
+            charAlias: {
+                '一歌':['ichika','一歌','イチカ','星乃一歌'], '咲希':['saki','咲希','サキ','天馬咲希'],
+                '穗波':['honami','穂波','穗波','ホナミ','望月穂波'], '志步':['shiho','志歩','志步','シホ','日野森志歩'],
+                '實乃理':['minori','實乃理','実乃理','ミノリ','花里みのり'], '遙':['haruka','遙','遥','ハルカ','桐谷遥'],
+                '愛莉':['airi','愛莉','エアリ','桃井愛莉'], '雫':['shizuku','雫','シズク','日野森雫'],
+                '彰人':['akito','彰人','アキト','青柳冬弥'], '冬彌':['toya','冬彌','冬弥','トウヤ'],
+                '杏':['an','杏','アン','白石杏'], '心羽':['kohane','心羽','コハネ','宵崎奏'],
+                '司':['tsukasa','司','ツカサ','天馬司'], '笑夢':['emu','笑夢','エム','鳳えむ'],
+                '寧寧':['nene','寧寧','ネネ','草薙寧々'], '類':['rui','類','ルイ','神代類'],
+                '奏':['kanade','奏','カナデ','宵崎奏'], '真冬':['mafuyu','真冬','マフユ','朝比奈まふゆ'],
+                '瑞希':['mizuki','瑞希','ミズキ','暁山瑞希'], '繪名':['ena','繪名','絵名','エナ','東雲絵名'],
+                '初音':['miku','初音','ミク','hatsune','初音未來','初音ミク'], '鈴':['rin','鈴','リン','鏡音鈴'],
+                '連':['len','連','レン','鏡音連'], '流歌':['luka','流歌','ルカ','巡音流歌'],
+                'MEIKO':['meiko','メイコ'], 'KAITO':['kaito','カイト']
+            },
+            unitAlias: {
+                'Leo/need':['leoneed','ln','レオニ','leo/need','leorene'], 'MMJ':['mmj','morejump','モモジャン','more more jump'],
+                'VBS':['vbs','vivid','ビビバス','vivid bad squad'], 'WS':['ws','wxs','wonderlands','ワンダショ','wonderlands×showtime'],
+                '25時':['n25','niigo','ニーゴ','nightcord','25時','25時、ナイトコードで'], 'VS':['vs','vsinger','virtual singer','バチャシン']
+            },
+            sections: [
+                ['#calendar','活動日曆'],['#event-tracking','活動排名追蹤'],['#gacha','卡池列表'],
+                ['#dolls','月卡玩偶列表'],['#bonus-cards','加分卡參考'],['#analysis','榜線分析'],
+                ['#player-lookup','玩家查詢'],['#distribution','活動分布甘特圖'],['#songs','歌曲清單'],
+                ['#calculator','推隊倍率計算器'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
+                ['#info','資訊站'],['#community','討論社群'],['#wiki','Wiki 百科'],['#tools','實用工具'],['#ep-calc','EP 計算器']
+            ],
+            _items: [], _active: -1,
+
+            open() {
+                document.getElementById('gsearchOverlay').classList.add('show');
+                const inp = document.getElementById('gsearchInput');
+                inp.value=''; setTimeout(()=>inp.focus(), 50);
+                this.run('');
+            },
+            close() { document.getElementById('gsearchOverlay').classList.remove('show'); },
+
+            // 別名展開：把使用者輸入正規化成可比對的關鍵字集合
+            _expand(q) {
+                const lower = q.toLowerCase().trim();
+                const terms = new Set([lower]);
+                for (const [canon, aliases] of Object.entries(this.charAlias))
+                    if (aliases.some(a=>a.toLowerCase().includes(lower)) || canon.includes(q))
+                        { terms.add(canon.toLowerCase()); terms.add(canon); }
+                for (const [canon, aliases] of Object.entries(this.unitAlias))
+                    if (aliases.some(a=>a.toLowerCase().includes(lower)) || canon.toLowerCase().includes(lower))
+                        terms.add(canon.toLowerCase());
+                return [...terms].filter(Boolean);
+            },
+            _hit(text, terms) {
+                if (!text) return false;
+                const t = String(text).toLowerCase();
+                return terms.some(term => term && t.includes(term));
+            },
+            _hl(text, terms) {
+                if (!text) return '';
+                let s = String(text);
+                const longest = terms.filter(Boolean).sort((a,b)=>b.length-a.length)[0];
+                if (longest) {
+                    const i = s.toLowerCase().indexOf(longest);
+                    if (i>=0) s = s.slice(0,i)+'<mark>'+s.slice(i,i+longest.length)+'</mark>'+s.slice(i+longest.length);
+                }
+                return s;
+            },
+
+            run(q) {
+                const box = document.getElementById('gsearchResults');
+                this._items = []; this._active = -1;
+                if (!q || !q.trim()) {
+                    box.innerHTML = '<div class="gs-empty">開始輸入以搜尋全站內容</div>';
+                    return;
+                }
+                const terms = this._expand(q);
+                const groups = [];
+
+                // 卡池
+                const gachaHits = (typeof GACHAS!=='undefined'?GACHAS:[]).filter(g =>
+                    this._hit(g.n, terms) || this._hit(g.ch, terms) || this._hit(g.t, terms)).slice(0,12);
+                if (gachaHits.length) groups.push({title:`卡池（${gachaHits.length}）`, color:'#0f3460',
+                    items: gachaHits.map(g=>({tag:'卡池', main:this._hl(g.n,terms),
+                        sub:[g.t,g.ch].filter(Boolean).join(' · ').slice(0,28),
+                        action:()=>this._goGacha(g.n)}))});
+
+                // 歌曲
+                const songHits = (typeof allSongs!=='undefined'?allSongs:[]).filter(s =>
+                    this._hit(s.title, terms) || this._hit(s.composer, terms) || this._hit(s.lyricist, terms)).slice(0,12);
+                if (songHits.length) groups.push({title:`歌曲（${songHits.length}）`, color:'#7b1fa2',
+                    items: songHits.map(s=>({tag:'歌曲', main:this._hl(s.title,terms),
+                        sub:(s.composer||'').slice(0,24), action:()=>this._goSong(s.title)}))});
+
+                // 玩偶
+                const dollHits = (typeof DOLLS!=='undefined'?DOLLS:[]).filter(d =>
+                    this._hit(d.chars, terms) || this._hit(d.type, terms) || this._hit(d.jp, terms) || this._hit(d.tw, terms)).slice(0,8);
+                if (dollHits.length) groups.push({title:`月卡玩偶（${dollHits.length}）`, color:'#e65100',
+                    items: dollHits.map(d=>({tag:'玩偶', main:this._hl(d.chars||d.jp||d.tw,terms),
+                        sub:[d.type,d.tw||d.jp].filter(Boolean).join(' · ').slice(0,24), action:()=>this._scroll('#dolls')}))});
+
+                // 角色（提供「查看該角色卡池」捷徑）
+                const charHits = Object.keys(this.charAlias).filter(c =>
+                    c.includes(q) || this.charAlias[c].some(a=>a.toLowerCase().includes(q.toLowerCase()))).slice(0,6);
+                if (charHits.length) groups.push({title:`角色（${charHits.length}）`, color:'#1565c0',
+                    items: charHits.map(c=>({tag:'角色', main:c, sub:'查看相關卡池', action:()=>this._goGacha(c)}))});
+
+                // 功能區
+                const secHits = this.sections.filter(([,label]) => this._hit(label, terms)).slice(0,6);
+                if (secHits.length) groups.push({title:`功能（${secHits.length}）`, color:'#546e7a',
+                    items: secHits.map(([id,label])=>({tag:'前往', main:this._hl(label,terms), sub:'', action:()=>this._scroll(id)}))});
+
+                if (!groups.length) {
+                    box.innerHTML = `<div class="gs-empty">找不到與「${q}」相關的內容</div>`;
+                    return;
+                }
+                let html=''; let idx=0;
+                groups.forEach(g=>{
+                    html += `<div class="gs-group-title">${g.title}</div>`;
+                    g.items.forEach(it=>{
+                        this._items.push(it);
+                        html += `<div class="gs-item" data-idx="${idx}" onclick="GlobalSearch.activate(${idx})">
+                            <span class="gs-tag" style="background:${g.color}">${it.tag}</span>
+                            <span class="gs-main">${it.main}</span>
+                            ${it.sub?`<span class="gs-sub">${it.sub}</span>`:''}
+                        </div>`;
+                        idx++;
+                    });
+                });
+                box.innerHTML = html;
+            },
+
+            activate(i) {
+                const it = this._items[i];
+                if (it && it.action) { it.action(); this.close(); }
+            },
+            onKey(e) {
+                if (e.key === 'Escape') { this.close(); return; }
+                if (e.key === 'Enter') { e.preventDefault(); this.activate(this._active>=0?this._active:0); return; }
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (!this._items.length) return;
+                    this._active += (e.key==='ArrowDown'?1:-1);
+                    if (this._active<0) this._active=this._items.length-1;
+                    if (this._active>=this._items.length) this._active=0;
+                    document.querySelectorAll('.gs-item').forEach((el,j)=>{
+                        el.classList.toggle('active', j===this._active);
+                        if (j===this._active) el.scrollIntoView({block:'nearest'});
+                    });
+                }
+            },
+
+            _scroll(id) {
+                const el = document.querySelector(id);
+                if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+            },
+            _goGacha(term) {
+                const inp = document.getElementById('gachaSearch');
+                if (inp) { inp.value = term; if (typeof GachaModule!=='undefined') GachaModule.render(); }
+                this._scroll('#gacha');
+            },
+            _goSong(term) {
+                const inp = document.getElementById('songSearch');
+                if (inp) { inp.value = term; if (typeof filterSongs==='function') filterSongs(); }
+                this._scroll('#songs');
+            }
+        };
+        // 快捷鍵：/ 或 Ctrl/Cmd+K 開啟搜尋
+        document.addEventListener('keydown', (e) => {
+            if ((e.key==='/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) ||
+                ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k')) {
+                e.preventDefault(); GlobalSearch.open();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             DarkMode.init();
             NavMemory.init();
