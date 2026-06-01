@@ -5,7 +5,7 @@
   ],
   "routes": [
     { "src": "/ep-calculator.html", "dest": "/ep-calculator.html" },
+    { "src": "/tutorial.html", "dest": "/tutorial.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
-
