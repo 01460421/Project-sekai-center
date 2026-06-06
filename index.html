@@ -353,6 +353,66 @@
             .countdown-cards{grid-template-columns:1fr;}
             nav a{font-size:11px;padding:3px 6px;}
         }
+        /* 卡庫 */
+        .card-controls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center; }
+        .card-controls input, .card-controls select {
+            padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px;
+            font-family:inherit; background:var(--card); color:var(--text); }
+        .card-controls input { flex:1; min-width:160px; }
+        .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:12px; margin-bottom:16px; }
+        .card-cell { cursor:pointer; transition:transform .15s; }
+        .card-cell:hover { transform:translateY(-3px); }
+        .cc-thumb { position:relative; width:100%; aspect-ratio:1; border-radius:8px; overflow:hidden;
+            border:3px solid var(--border); background:var(--bg); }
+        .cc-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .cc-rare { position:absolute; top:2px; left:3px; font-size:10px; font-weight:700; color:#fff;
+            background:rgba(0,0,0,.6); padding:1px 5px; border-radius:3px; }
+        .cc-attr { position:absolute; bottom:2px; right:3px; font-size:10px; color:#fff; padding:1px 5px; border-radius:3px; }
+        .cc-name { font-size:12px; font-weight:600; margin-top:5px; line-height:1.35;
+            display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .cc-sub { font-size:11px; color:var(--text-light); }
+        .cc-tag { display:inline-block; font-size:10px; color:#fff; padding:1px 7px; border-radius:3px; margin-top:3px; }
+        #cardPager { display:flex; justify-content:center; align-items:center; gap:14px; margin:8px 0 4px; }
+        #cardPager button { padding:6px 16px; border:1px solid var(--border); border-radius:6px; background:var(--card);
+            color:var(--text); font-family:inherit; font-size:13px; cursor:pointer; }
+        #cardPager button:disabled { opacity:.4; cursor:default; }
+        #cardPager span { font-size:13px; color:var(--text-light); }
+        /* 卡片詳細 modal */
+        .card-modal { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.55);
+            padding:40px 16px; overflow-y:auto; }
+        .card-modal.show { display:block; }
+        .cm-box { max-width:620px; margin:0 auto; background:var(--card); border-radius:12px;
+            box-shadow:0 12px 48px rgba(0,0,0,.35); overflow:hidden; }
+        .cm-topbar { display:flex; justify-content:flex-end; padding:8px 12px; border-bottom:1px solid var(--border); }
+        .cm-topbar button { border:none; background:none; font-size:22px; line-height:1; color:var(--text-light); cursor:pointer; }
+        #cardModalBody { padding:16px 18px 20px; }
+        .cm-head { display:flex; gap:16px; flex-wrap:wrap; }
+        .cm-art { position:relative; width:230px; flex-shrink:0; }
+        .cm-art img { width:100%; border-radius:8px; display:block; background:var(--bg); }
+        .cm-arttoggle { display:flex; gap:6px; margin-top:6px; }
+        .cm-arttoggle button { flex:1; padding:5px; border:1px solid var(--border); border-radius:5px;
+            background:var(--card); color:var(--text-light); font-family:inherit; font-size:12px; cursor:pointer; }
+        .cm-arttoggle button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        :root.dark .cm-arttoggle button.active { color:var(--bg); }
+        .cm-info { flex:1; min-width:200px; }
+        .cm-prefix { font-size:18px; font-weight:700; color:var(--primary); line-height:1.4; }
+        .cm-char { font-size:14px; margin:3px 0 8px; }
+        .cm-unit { font-size:11px; color:var(--text-light); margin-left:8px; }
+        .cm-badges { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+        .cm-badge { font-size:11px; color:#fff; padding:2px 9px; border-radius:4px; }
+        .cm-stat { width:100%; border-collapse:collapse; font-size:13px; }
+        .cm-stat td { padding:4px 2px; vertical-align:top; }
+        .cm-stat td:first-child { color:var(--text-light); white-space:nowrap; width:80px; }
+        .cm-skill { margin-top:16px; }
+        .cm-skill-title { font-size:13px; font-weight:600; margin-bottom:6px; color:var(--accent); }
+        .cm-skilltbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+        .cm-skilltbl td { border:1px solid var(--border); padding:6px 8px; }
+        .cm-skilltbl td:first-child { white-space:nowrap; font-weight:600; width:48px; text-align:center; }
+        @media(max-width:600px){
+            .card-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:9px; }
+            .cm-art { width:100%; }
+        }
+
         /* 全域搜尋 */
         .search-fab { position:fixed; right:18px; bottom:18px; z-index:1500;
             width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
@@ -404,6 +464,7 @@
             <a href="#calendar">日曆</a>
             <a href="#event-tracking">活動排名</a>
             <a href="#gacha">卡池</a>
+            <a href="#cardlib">卡庫</a>
             <a href="#dolls">月卡玩偶</a>
             <a href="#bonus-cards">加分卡</a>
             <div class="nav-sep"></div>
@@ -477,6 +538,7 @@
                 <option value="#tools">十六、實用工具</option>
                 <option value="#ep-calc">十七、EP 計算器</option>
                 <option value="#tutorial">十八、教學大全</option>
+                <option value="#cardlib">十九、卡片技能查詢（卡庫）</option>
             </select>
         </div>
 
@@ -1161,6 +1223,67 @@
                 <a href="https://docs.google.com/document/d/1LWN-V9qC58GQsp7-itFBUwuR2rMnTc-jlk_ywYM6-mQ/edit?usp=drivesdk" target="_blank" class="external">📄 Google 文檔 ↗</a>
             </p>
         </section>
+
+        <!-- 十九、卡片技能查詢（卡庫） -->
+        <section id="cardlib">
+            <h2>十九、卡片技能查詢（卡庫）<span class="en">Card Library</span></h2>
+            <p style="margin-bottom:12px">全卡片資料庫，可依角色、稀有度、屬性、技能類型篩選與搜尋。點擊卡片可查看詳細卡面（特訓前／後）、完整技能效果（Lv.1–4 數值）、最大綜合力與實裝資訊。資料即時取自 Sekai-World 台服主資料庫，隨遊戲更新。</p>
+            <div class="card-controls">
+                <input type="text" id="cardSearch" placeholder="搜尋卡名、角色、技能、招募語…" oninput="CardModule.filter()">
+                <select id="cardRarity" onchange="CardModule.filter()">
+                    <option value="all">全稀有度</option>
+                    <option value="rarity_4">★4</option>
+                    <option value="rarity_3">★3</option>
+                    <option value="rarity_2">★2</option>
+                    <option value="rarity_1">★1</option>
+                    <option value="rarity_birthday">生日</option>
+                </select>
+                <select id="cardAttr" onchange="CardModule.filter()">
+                    <option value="all">全屬性</option>
+                    <option value="cute">可愛</option>
+                    <option value="mysterious">神秘</option>
+                    <option value="cool">帥氣</option>
+                    <option value="happy">開心</option>
+                    <option value="pure">純真</option>
+                </select>
+                <select id="cardSkill" onchange="CardModule.filter()">
+                    <option value="all">全技能類型</option>
+                    <option value="score">分數提升</option>
+                    <option value="judge">判定強化</option>
+                    <option value="heal">體力回復</option>
+                    <option value="perfect">P分（完美）</option>
+                    <option value="cfes_life">七彩血分</option>
+                    <option value="good">七彩good以上</option>
+                    <option value="birthday">生日</option>
+                    <option value="unit">團分</option>
+                    <option value="bfes_char">絢爛・角色</option>
+                    <option value="bfes_ref">絢爛・隨機</option>
+                    <option value="bfes_vs">絢爛・虛擬</option>
+                </select>
+                <select id="cardChar" onchange="CardModule.filter()">
+                    <option value="all">全角色</option>
+                </select>
+                <select id="cardSort" onchange="CardModule.filter()">
+                    <option value="new">新→舊</option>
+                    <option value="old">舊→新</option>
+                    <option value="power">綜合力高→低</option>
+                    <option value="char">依角色</option>
+                </select>
+            </div>
+            <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;" id="cardCount"></div>
+            <div class="card-grid" id="cardGrid">
+                <div class="event-loading" style="padding:30px;text-align:center;">卡庫將於捲動到此處時載入…</div>
+            </div>
+            <div id="cardPager"></div>
+        </section>
+
+        <!-- 卡片詳細 modal -->
+        <div class="card-modal" id="cardModal" onclick="if(event.target===this)CardModule.closeDetail()">
+            <div class="cm-box">
+                <div class="cm-topbar"><button onclick="CardModule.closeDetail()" aria-label="關閉">×</button></div>
+                <div id="cardModalBody"></div>
+            </div>
+        </div>
 
         <footer>
             <p>Made with dedication for Project SEKAI players</p>
@@ -2821,6 +2944,240 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         }
 
         // ========== 初始化 ==========
+        // ========== 卡庫（卡片技能查詢，資料來自 Sekai-World TW 主資料庫）==========
+        const CardModule = {
+            DB: 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main',
+            ASSET: 'https://storage.sekai.best/sekai-jp-assets',
+            loaded: false, loading: false,
+            cards: [], filtered: [], page: 1, perPage: 48,
+            skills: {}, charMap: {},
+            // 屬性
+            ATTR: { cute:['可愛','#f06292'], cool:['帥氣','#4a90d9'], pure:['純真','#66bb6a'], happy:['開心','#ffa726'], mysterious:['神秘','#ab47bc'] },
+            // 稀有度
+            RARE: { rarity_1:['★1',1], rarity_2:['★2',2], rarity_3:['★3',3], rarity_4:['★4',4], rarity_birthday:['生日',5] },
+            // 團體（角色 unit / supportUnit）
+            UNIT: { light_sound:'Leo/need', idol:'MORE MORE JUMP!', street:'Vivid BAD SQUAD',
+                    theme_park:'Wonderlands×Showtime', school_refusal:'25時、ナイトコードで', piapro:'VIRTUAL SINGER' },
+            // skillId → {分類群組, 顯示標籤}（已對照官方技能表分頁驗證）
+            SKILL_CAT: {
+                1:['score','分數提升 1★'], 2:['score','分數提升 2★'], 3:['score','分數提升 3★'], 4:['score','分數提升 4★'],
+                5:['judge','判定強化 2★'], 6:['judge','判定強化 3★'], 7:['judge','判定強化 4★'],
+                8:['heal','體力回復 2★'], 9:['heal','體力回復 3★'], 10:['heal','體力回復 4★'],
+                11:['perfect','P分（完美）'], 12:['cfes_life','血分（七彩）'], 13:['good','good以上（七彩）'],
+                14:['birthday','生日'],
+                15:['unit','團分'], 16:['unit','團分'], 17:['unit','團分'], 18:['unit','團分'], 19:['unit','團分'],
+                20:['bfes_char','角色等級（絢爛）'], 21:['bfes_char','角色等級（絢爛）'], 22:['bfes_char','角色等級（絢爛）'],
+                23:['bfes_ref','編組隨機（絢爛・角色）'], 24:['bfes_vs','非自身團體（絢爛・虛擬）']
+            },
+            GROUP: { score:['分數提升','#0f3460'], judge:['判定強化','#1565c0'], heal:['體力回復','#00897b'],
+                     perfect:['P分','#2e7d32'], cfes_life:['七彩血分','#6a1b9a'], good:['七彩good以上','#8e24aa'],
+                     birthday:['生日','#d81b60'], unit:['團分','#00838f'],
+                     bfes_char:['絢爛・角色','#c62828'], bfes_ref:['絢爛・隨機','#ad1457'], bfes_vs:['絢爛・虛擬','#e65100'] },
+
+            catOf(sid) { return this.SKILL_CAT[sid] || ['score','其他']; },
+            groupInfo(g) { return this.GROUP[g] || [g,'#666']; },
+            thumb(ab, t) { return `${this.ASSET}/thumbnail/chara/${ab}_${t?'after_training':'normal'}.webp`; },
+            art(ab, t) { return `${this.ASSET}/character/member/${ab}_rip/card_${t?'after_training':'normal'}.webp`; },
+            charName(id) { const c=this.charMap[id]; return c ? (c.firstName||'')+(c.givenName||'') : '#'+id; },
+            trainable(r) { return r==='rarity_3' || r==='rarity_4'; },
+
+            // 解析技能描述：把 {{效果id;v|d}} 換成指定等級的數值/秒數（預設 Lv.4）
+            resolveDesc(skill, level) {
+                if (!skill || !skill.description) return '';
+                level = level || 4;
+                let d = skill.description.replace(/\{\{(\d+);([vd])\}\}/g, (m, eid, type) => {
+                    const eff = (skill.skillEffects||[]).find(e => String(e.id)===eid);
+                    if (!eff) return m;
+                    const dets = eff.skillEffectDetails||[];
+                    const det = dets.find(x => x.level===level) || dets[dets.length-1];
+                    if (!det) return m;
+                    return type==='v' ? det.activateEffectValue : det.activateEffectDuration;
+                });
+                // 移除含彙總佔位（;o/;u/;m 或多 ID）的補充括號，再清掉殘留符號
+                d = d.replace(/（[^（）]*\{\{[^}]*\}\}[^（）]*）/g, '')
+                     .replace(/\([^()]*\{\{[^}]*\}\}[^()]*\)/g, '')
+                     .replace(/\{\{[^}]*\}\}/g, '');
+                return d.replace(/\n/g, '<br>').trim();
+            },
+            maxPower(c) {
+                const p = c.cardParameters||{};
+                const last = a => Array.isArray(a)&&a.length ? a[a.length-1] : 0;
+                let sum = last(p.param1)+last(p.param2)+last(p.param3);
+                if (this.trainable(c.cardRarityType))
+                    sum += (c.specialTrainingPower1BonusFixed||0)+(c.specialTrainingPower2BonusFixed||0)+(c.specialTrainingPower3BonusFixed||0);
+                return sum;
+            },
+
+            async load() {
+                if (this.loaded || this.loading) return;
+                this.loading = true;
+                const grid = document.getElementById('cardGrid');
+                grid.innerHTML = '<div class="event-loading" style="padding:30px;text-align:center;">載入卡片資料中…（首次載入約需數秒）</div>';
+                try {
+                    const [cards, skills, chars] = await Promise.all([
+                        fetch(`${this.DB}/cards.json`).then(r=>r.json()).catch(()=>[]),
+                        fetch(`${this.DB}/skills.json`).then(r=>r.json()).catch(()=>[]),
+                        fetch(`${this.DB}/gameCharacters.json`).then(r=>r.json()).catch(()=>[])
+                    ]);
+                    if (!cards.length) { grid.innerHTML='<div class="event-loading" style="padding:30px;">卡片資料來源無回應，請稍後重試。</div>'; this.loading=false; return; }
+                    skills.forEach(s => this.skills[s.id]=s);
+                    chars.forEach(c => this.charMap[c.id]=c);
+                    this.cards = cards.map(c => {
+                        const [grp,label] = this.catOf(c.skillId);
+                        return { id:c.id, characterId:c.characterId, rarity:c.cardRarityType,
+                            attr:c.attr, supportUnit:c.supportUnit, skillId:c.skillId,
+                            skillName:c.cardSkillName||'', prefix:c.prefix||'', ab:c.assetbundleName,
+                            gachaPhrase:c.gachaPhrase||'', releaseAt:c.releaseAt||0,
+                            unit:(this.charMap[c.characterId]||{}).unit||'',
+                            grp, catLabel:label, power:this.maxPower(c) };
+                    }).sort((a,b)=> b.releaseAt - a.releaseAt);   // 預設新→舊
+                    this.loaded = true; this.loading = false;
+                    this.buildFilters();
+                    this.filter();
+                } catch(e) {
+                    grid.innerHTML = `<div class="event-loading" style="padding:30px;">卡片載入失敗（${e.message||'網路錯誤'}）。資料來源：Sekai-World master DB。</div>`;
+                    this.loading = false;
+                }
+            },
+
+            buildFilters() {
+                // 角色下拉（依團體分組）
+                const sel = document.getElementById('cardChar');
+                if (sel && sel.options.length<=1) {
+                    const order = ['light_sound','idol','street','theme_park','school_refusal','piapro'];
+                    order.forEach(u => {
+                        const ids = Object.values(this.charMap).filter(c=>c.unit===u).sort((a,b)=>a.id-b.id);
+                        if (!ids.length) return;
+                        const og = document.createElement('optgroup'); og.label = this.UNIT[u]||u;
+                        ids.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=this.charName(c.id); og.appendChild(o); });
+                        sel.appendChild(og);
+                    });
+                }
+            },
+
+            filter() {
+                const q = (document.getElementById('cardSearch').value||'').trim().toLowerCase();
+                const rar = document.getElementById('cardRarity').value;
+                const att = document.getElementById('cardAttr').value;
+                const grp = document.getElementById('cardSkill').value;
+                const chr = document.getElementById('cardChar').value;
+                const sort = document.getElementById('cardSort').value;
+                this.filtered = this.cards.filter(c => {
+                    if (rar!=='all' && c.rarity!==rar) return false;
+                    if (att!=='all' && c.attr!==att) return false;
+                    if (grp!=='all' && c.grp!==grp) return false;
+                    if (chr!=='all' && String(c.characterId)!==chr) return false;
+                    if (q) {
+                        const hay = (c.prefix+' '+c.skillName+' '+this.charName(c.characterId)+' '+c.gachaPhrase).toLowerCase();
+                        if (!hay.includes(q)) return false;
+                    }
+                    return true;
+                });
+                if (sort==='old') this.filtered.sort((a,b)=>a.releaseAt-b.releaseAt);
+                else if (sort==='power') this.filtered.sort((a,b)=>b.power-a.power);
+                else if (sort==='char') this.filtered.sort((a,b)=>a.characterId-b.characterId || b.releaseAt-a.releaseAt);
+                else this.filtered.sort((a,b)=>b.releaseAt-a.releaseAt);
+                this.page = 1;
+                document.getElementById('cardCount').textContent = `共 ${this.filtered.length} 張`;
+                this.render();
+            },
+
+            render() {
+                const grid = document.getElementById('cardGrid');
+                if (!this.filtered.length) { grid.innerHTML='<div class="event-loading" style="padding:30px;">沒有符合條件的卡片。</div>'; document.getElementById('cardPager').innerHTML=''; return; }
+                const total = Math.ceil(this.filtered.length/this.perPage);
+                if (this.page>total) this.page=total;
+                const start = (this.page-1)*this.perPage;
+                const slice = this.filtered.slice(start, start+this.perPage);
+                grid.innerHTML = slice.map(c => {
+                    const [aLabel,aColor] = this.ATTR[c.attr]||['',''];
+                    const [rLabel] = this.RARE[c.rarity]||[''];
+                    const [gLabel,gColor] = this.groupInfo(c.grp);
+                    const t = this.trainable(c.rarity);   // 縮圖優先顯示特訓後
+                    return `<div class="card-cell" onclick="CardModule.openDetail(${c.id})" title="${c.prefix}">
+                        <div class="cc-thumb" style="border-color:${aColor}">
+                            <img loading="lazy" src="${this.thumb(c.ab,t)}" alt="${c.prefix}"
+                                 onerror="this.onerror=null;this.src='${this.thumb(c.ab,false)}'">
+                            <span class="cc-rare">${rLabel}</span>
+                            <span class="cc-attr" style="background:${aColor}">${aLabel}</span>
+                        </div>
+                        <div class="cc-name">${c.prefix}</div>
+                        <div class="cc-sub">${this.charName(c.characterId)}</div>
+                        <div class="cc-tag" style="background:${gColor}">${gLabel}</div>
+                    </div>`;
+                }).join('');
+                // 分頁
+                let pg = '';
+                if (total>1) {
+                    pg = `<button ${this.page<=1?'disabled':''} onclick="CardModule.go(${this.page-1})">‹ 上一頁</button>
+                          <span>第 ${this.page} / ${total} 頁</span>
+                          <button ${this.page>=total?'disabled':''} onclick="CardModule.go(${this.page+1})">下一頁 ›</button>`;
+                }
+                document.getElementById('cardPager').innerHTML = pg;
+            },
+            go(p) { this.page=p; this.render(); document.getElementById('cardlib').scrollIntoView({behavior:'smooth',block:'start'}); },
+
+            openDetail(id) {
+                const c = this.cards.find(x=>x.id===id); if (!c) return;
+                const sk = this.skills[c.skillId];
+                const [aLabel,aColor] = this.ATTR[c.attr]||['',''];
+                const [rLabel] = this.RARE[c.rarity]||[''];
+                const [gLabel,gColor] = this.groupInfo(c.grp);
+                const t = this.trainable(c.rarity);
+                const sup = c.supportUnit && c.supportUnit!=='none' ? (this.UNIT[c.supportUnit]||c.supportUnit) : '';
+                const unitName = this.UNIT[c.unit]||'';
+                const relDate = c.releaseAt ? new Date(c.releaseAt) : null;
+                // 技能各等級數值
+                let lvRows = '';
+                if (sk) {
+                    lvRows = [1,2,3,4].map(lv => `<tr><td>Lv.${lv}</td><td>${this.resolveDesc(sk,lv)}</td></tr>`).join('');
+                }
+                document.getElementById('cardModalBody').innerHTML = `
+                    <div class="cm-head">
+                        <div class="cm-art" id="cmArt">
+                            <img src="${this.art(c.ab,t)}" alt="${c.prefix}"
+                                 onerror="this.onerror=null;this.src='${this.thumb(c.ab,t)}'">
+                            ${t?`<div class="cm-arttoggle">
+                                <button class="active" onclick="CardModule.swapArt(this,'${c.ab}',true)">特訓後</button>
+                                <button onclick="CardModule.swapArt(this,'${c.ab}',false)">特訓前</button>
+                            </div>`:''}
+                        </div>
+                        <div class="cm-info">
+                            <div class="cm-prefix">${c.prefix}</div>
+                            <div class="cm-char">${this.charName(c.characterId)}${unitName?`<span class="cm-unit">${unitName}</span>`:''}</div>
+                            <div class="cm-badges">
+                                <span class="cm-badge" style="background:${aColor}">${aLabel}</span>
+                                <span class="cm-badge" style="background:#555">${rLabel}</span>
+                                <span class="cm-badge" style="background:${gColor}">${gLabel}</span>
+                                ${sup?`<span class="cm-badge" style="background:#37474f">支援：${sup}</span>`:''}
+                            </div>
+                            <table class="cm-stat">
+                                <tr><td>最大綜合力</td><td><strong>${fmtNum(c.power)}</strong></td></tr>
+                                <tr><td>技能</td><td>${c.skillName} <span style="color:var(--text-light)">（${c.catLabel}）</span></td></tr>
+                                ${relDate?`<tr><td>實裝日期</td><td>${relDate.getFullYear()}/${relDate.getMonth()+1}/${relDate.getDate()}</td></tr>`:''}
+                                ${c.gachaPhrase?`<tr><td>招募語</td><td style="color:var(--text-light)">${c.gachaPhrase}</td></tr>`:''}
+                            </table>
+                        </div>
+                    </div>
+                    <div class="cm-skill">
+                        <div class="cm-skill-title">技能效果（Lv.1 → Lv.4）</div>
+                        <table class="cm-skilltbl"><tbody>${lvRows||'<tr><td colspan="2">無技能資料</td></tr>'}</tbody></table>
+                    </div>
+                    <div style="text-align:center;margin-top:14px;">
+                        <a href="https://sekai.best/card/${c.id}" target="_blank" class="external" style="font-size:13px;">在 Sekai Viewer 查看高解析卡面 ↗</a>
+                    </div>`;
+                document.getElementById('cardModal').classList.add('show');
+            },
+            swapArt(btn, ab, trained) {
+                document.querySelectorAll('#cmArt .cm-arttoggle button').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                const img = document.querySelector('#cmArt img');
+                img.onerror = function(){ this.onerror=null; this.src=CardModule.thumb(ab,trained); };
+                img.src = this.art(ab, trained);
+            },
+            closeDetail() { document.getElementById('cardModal').classList.remove('show'); }
+        };
+
         // ========== 全域搜尋（智能・人性化）==========
         const GlobalSearch = {
             // 角色別名：輸入任一別名都能對應到資料中的中文名
@@ -3006,6 +3363,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             loadSongs();
             calculateMultiplier();
             setInterval(()=>EventModule.loadLive(), 60000);
+            // 卡庫：捲動到區段時才載入（資料較大，避免拖慢首屏）
+            const cardSec = document.getElementById('cardlib');
+            if (cardSec) {
+                if ('IntersectionObserver' in window) {
+                    const io = new IntersectionObserver((entries, obs) => {
+                        entries.forEach(e => { if (e.isIntersecting) { CardModule.load(); obs.disconnect(); } });
+                    }, { rootMargin: '200px' });
+                    io.observe(cardSec);
+                } else {
+                    CardModule.load();
+                }
+            }
             window.addEventListener('resize', () => {
                 clearTimeout(window._calResizeTimer);
                 window._calResizeTimer = setTimeout(renderCalendar, 200);
