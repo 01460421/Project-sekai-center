@@ -1256,9 +1256,8 @@
                     <option value="good">七彩good以上</option>
                     <option value="birthday">生日</option>
                     <option value="unit">團分</option>
-                    <option value="bfes_char">絢爛・角色</option>
-                    <option value="bfes_ref">絢爛・隨機</option>
-                    <option value="bfes_vs">絢爛・虛擬</option>
+                    <option value="bfes_char">絢爛角色</option>
+                    <option value="bfes_vs">絢爛虛擬</option>
                 </select>
                 <select id="cardChar" onchange="CardModule.filter()">
                     <option value="all">全角色</option>
@@ -2966,13 +2965,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 11:['perfect','P分（完美）'], 12:['cfes_life','血分（七彩）'], 13:['good','good以上（七彩）'],
                 14:['birthday','生日'],
                 15:['unit','團分'], 16:['unit','團分'], 17:['unit','團分'], 18:['unit','團分'], 19:['unit','團分'],
-                20:['bfes_char','角色等級（絢爛）'], 21:['bfes_char','角色等級（絢爛）'], 22:['bfes_char','角色等級（絢爛）'],
-                23:['bfes_ref','編組隨機（絢爛・角色）'], 24:['bfes_vs','非自身團體（絢爛・虛擬）']
+                20:['bfes_char','絢爛角色'], 21:['bfes_char','絢爛角色'], 22:['bfes_char','絢爛角色'],
+                23:['bfes_char','絢爛角色'], 24:['bfes_vs','絢爛虛擬']
             },
             GROUP: { score:['分數提升','#0f3460'], judge:['判定強化','#1565c0'], heal:['體力回復','#00897b'],
                      perfect:['P分','#2e7d32'], cfes_life:['七彩血分','#6a1b9a'], good:['七彩good以上','#8e24aa'],
                      birthday:['生日','#d81b60'], unit:['團分','#00838f'],
-                     bfes_char:['絢爛・角色','#c62828'], bfes_ref:['絢爛・隨機','#ad1457'], bfes_vs:['絢爛・虛擬','#e65100'] },
+                     bfes_char:['絢爛角色','#c62828'], bfes_vs:['絢爛虛擬','#e65100'] },
 
             catOf(sid) { return this.SKILL_CAT[sid] || ['score','其他']; },
             groupInfo(g) { return this.GROUP[g] || [g,'#666']; },
