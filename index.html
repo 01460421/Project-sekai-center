@@ -3096,7 +3096,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const t = this.trainable(c.rarity);   // 縮圖優先顯示特訓後
                     return `<div class="card-cell" onclick="CardModule.openDetail(${c.id})" title="${c.prefix}">
                         <div class="cc-thumb" style="border-color:${aColor}">
-                            <img loading="lazy" src="${this.thumb(c.ab,t)}" alt="${c.prefix}"
+                            <img loading="lazy" referrerpolicy="no-referrer" src="${this.thumb(c.ab,t)}" alt="${c.prefix}"
                                  onerror="this.onerror=null;this.src='${this.thumb(c.ab,false)}'">
                             <span class="cc-rare">${rLabel}</span>
                             <span class="cc-attr" style="background:${aColor}">${aLabel}</span>
@@ -3135,7 +3135,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 document.getElementById('cardModalBody').innerHTML = `
                     <div class="cm-head">
                         <div class="cm-art" id="cmArt">
-                            <img src="${this.art(c.ab,t)}" alt="${c.prefix}"
+                            <img referrerpolicy="no-referrer" src="${this.art(c.ab,t)}" alt="${c.prefix}"
                                  onerror="this.onerror=null;this.src='${this.thumb(c.ab,t)}'">
                             ${t?`<div class="cm-arttoggle">
                                 <button class="active" onclick="CardModule.swapArt(this,'${c.ab}',true)">特訓後</button>
@@ -3172,6 +3172,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 document.querySelectorAll('#cmArt .cm-arttoggle button').forEach(b=>b.classList.remove('active'));
                 btn.classList.add('active');
                 const img = document.querySelector('#cmArt img');
+                img.referrerPolicy = 'no-referrer';
                 img.onerror = function(){ this.onerror=null; this.src=CardModule.thumb(ab,trained); };
                 img.src = this.art(ab, trained);
             },
