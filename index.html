@@ -546,10 +546,10 @@
                     <div class="event-loading">載入活動資訊中...</div>
                 </div>
                 <div class="event-stat-cards" id="eventStats"></div>
-                <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">「瞬時」為每次刷新（約 60 秒）的分數差換算，需一次刷新後才會顯示；「1h均速」為過去一小時平均。點擊任一玩家可查看周回／場均細節（1h／3h／24h）。</div>
+                <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">「瞬時」為近數次刷新累積（最長約 5 分鐘）的衝速，比 1h 均速更即時、又比單次取樣穩定，需一次刷新後開始顯示；「1h均速」為過去一小時平均。點擊任一玩家可查看周回／場均細節（1h／3h／24h）。</div>
                 <div class="table-wrapper">
                     <table class="ranking-table">
-                        <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th title="本次與上次刷新（約60秒）的分數差換算，反映當下衝刺速度">瞬時</th><th title="過去1小時平均時速">1h均速</th><th>最後紀錄</th></tr></thead>
+                        <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th title="近數次刷新累積（最長約5分鐘）的分數差換算，比單次取樣穩定">瞬時</th><th title="過去1小時平均時速">1h均速</th><th>最後紀錄</th></tr></thead>
                         <tbody id="rankingBody"><tr><td colspan="6" class="event-loading">載入排名資料中...</td></tr></tbody>
                     </table>
                 </div>
@@ -1885,31 +1885,34 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 document.getElementById('eventSheet').classList.add('show');
             },
 
-            // 計算瞬時時速：比對上一次刷新（約 60 秒）的分數差，反映「現在這分鐘」的衝刺速度
+            // 計算瞬時時速：累積（疊加）最近數次刷新的樣本，以滑動視窗求速率，比單一 60 秒區間穩定
             _applyInstantSpeed(rankings) {
                 const nowMs = Date.now();
-                const snap = this._snap || (this._snap = {});   // {id:{score,t}} 上次基準點
-                const inst = this._inst || (this._inst = {});   // {id:瞬時時速} 最近一次計算值
+                const WINDOW = 5 * 60 * 1000;   // 累積視窗：最長 5 分鐘
+                const MIN_GAP = 15000;          // 取樣最小間隔 15 秒（避免重繪灌入重複點）
+                const hist = this._hist || (this._hist = {});   // {id: [{score,t}, ...]} 樣本序列
                 rankings.forEach(r => {
                     const id = String(r.user_id ?? r.user_name ?? '');
                     if (!id || r.score == null) { r.speedInst = null; return; }
-                    const prev = snap[id];
-                    if (prev) {
-                        const dt = (nowMs - prev.t) / 1000;      // 經過秒數
-                        const ds = r.score - prev.score;         // 分數差
-                        if (dt >= 15 && dt <= 3600) {            // 合理刷新間隔才更新（避免重繪雜訊）
-                            if (ds >= 0) inst[id] = Math.round(ds / dt * 3600);
-                            snap[id] = { score: r.score, t: nowMs };  // 推進基準點
-                        }
-                        // dt < 15（同一批資料重繪）：保留基準與上次瞬時值
+                    const arr = hist[id] || (hist[id] = []);
+                    const last = arr[arr.length - 1];
+                    // 僅在距上次取樣 ≥15 秒時疊加新樣本；15 秒內的重繪不重複記錄
+                    if (!last || nowMs - last.t >= MIN_GAP) arr.push({ score: r.score, t: nowMs });
+                    // 修剪超出視窗的舊樣本，但至少保留 2 點供計算
+                    while (arr.length > 2 && nowMs - arr[0].t > WINDOW) arr.shift();
+                    // 以視窗內最舊→最新累積的分數差換算速率
+                    if (arr.length >= 2) {
+                        const a = arr[0], b = arr[arr.length - 1];
+                        const dt = (b.t - a.t) / 1000;
+                        const ds = b.score - a.score;
+                        r.speedInst = (dt > 0 && ds >= 0) ? Math.round(ds / dt * 3600) : null;
                     } else {
-                        snap[id] = { score: r.score, t: nowMs };  // 首次見到，建立基準（本次顯示「—」）
+                        r.speedInst = null;   // 首次見到僅 1 點，本次顯示「—」
                     }
-                    r.speedInst = (id in inst) ? inst[id] : null;
                 });
-                // 清除已離開榜單的玩家快照，避免長時間累積
+                // 清除已離開榜單的玩家樣本，避免長時間累積
                 const live = new Set(rankings.map(r => String(r.user_id ?? r.user_name ?? '')));
-                Object.keys(snap).forEach(k => { if (!live.has(k)) { delete snap[k]; delete inst[k]; } });
+                Object.keys(hist).forEach(k => { if (!live.has(k)) delete hist[k]; });
             },
 
             renderLive(top, brd) {
