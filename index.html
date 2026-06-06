@@ -13,7 +13,7 @@
         :root {
             --primary:#1a1a2e; --secondary:#16213e; --accent:#0f3460;
             --text:#2c2c2c; --text-light:#555; --border:#d0d0d0;
-            --bg:#fafafa; --link:#0066cc; --nav-height:76px;
+            --bg:#fafafa; --card:#ffffff; --link:#0066cc; --nav-height:76px;
             --fes-bg:#fff8e1; --fes-text:#e65100;
             --limited-bg:#ffebee; --limited-text:#c62828;
             --paid-bg:#fffde7; --paid-text:#f57f17;
@@ -28,7 +28,7 @@
         :root.dark {
             --primary:#c8c8e0; --secondary:#b0b0cc; --accent:#8888bb;
             --text:#e0e0e0; --text-light:#aaa; --border:#333;
-            --bg:#111; --link:#6699dd;
+            --bg:#111; --card:#1c1c1c; --link:#6699dd;
             --fes-bg:#2a2000; --limited-bg:#2a0000; --paid-bg:#2a2400;
             --birthday-bg:#1e0028; --rerun-bg:#1a0000;
             --wl-bg:#001428; --normal-bg:#001800; --other-bg:#181c1e;
@@ -378,7 +378,7 @@
         #cardPager button:disabled { opacity:.4; cursor:default; }
         #cardPager span { font-size:13px; color:var(--text-light); }
         /* 卡片詳細 modal */
-        .card-modal { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.55);
+        .card-modal { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.7);
             padding:40px 16px; overflow-y:auto; }
         .card-modal.show { display:block; }
         .cm-box { max-width:620px; margin:0 auto; background:var(--card); border-radius:12px;
