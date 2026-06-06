@@ -67,7 +67,7 @@
         .subtitle { font-size:13px; color:var(--text-light); letter-spacing:1px; margin-top:6px; }
         .last-updated { font-size:12px; color:var(--text-light); margin-top:8px; font-style:italic; font-family:'Times New Roman',serif; }
         nav { position:fixed; top:0; left:0; right:0; background:var(--primary);
-              height:var(--nav-height); z-index:1000;
+              min-height:var(--nav-height); z-index:1000;
               box-shadow:0 2px 8px rgba(0,0,0,.2); display:flex; flex-direction:column; justify-content:center; }
         .nav-row { display:flex; align-items:center; justify-content:center;
                    gap:2px; padding:0 16px; white-space:nowrap; flex-wrap:nowrap; overflow-x:auto; }
@@ -83,7 +83,7 @@
                        padding:3px 10px; border-radius:3px; cursor:pointer; font-size:11px;
                        font-family:inherit; margin-left:6px; transition:all .2s; white-space:nowrap; }
         .dark-toggle:hover { background:rgba(255,255,255,.15); }
-        section { margin-bottom:40px; }
+        section { margin-bottom:40px; scroll-margin-top:calc(var(--nav-height) + 12px); }
         h2 { font-size:17px; font-weight:600; color:var(--primary);
              border-bottom:1px solid var(--border); padding-bottom:7px; margin-bottom:18px; }
         h2 .en { font-family:'Times New Roman',serif; font-weight:normal;
@@ -3353,6 +3353,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            // 導覽列實際高度寫回 --nav-height，讓留白與錨點捲動偏移永遠吻合（不受換行/縮放/字體影響）
+            const syncNavHeight = () => {
+                const nav = document.querySelector('nav');
+                if (nav) document.documentElement.style.setProperty('--nav-height', nav.offsetHeight + 'px');
+            };
+            syncNavHeight();
+            window.addEventListener('resize', () => { clearTimeout(window._navHTimer); window._navHTimer = setTimeout(syncNavHeight, 150); });
+            window.addEventListener('load', syncNavHeight);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncNavHeight);
             DarkMode.init();
             NavMemory.init();
             GachaModule.init();
