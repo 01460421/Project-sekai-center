@@ -54,7 +54,7 @@
         :root.dark .tab-btn:hover { background:rgba(255,255,255,0.05); }
         :root.dark .tab-btn.active { background:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        html { scroll-behavior:smooth; }
+        html { scroll-behavior:smooth; scroll-padding-top:calc(var(--nav-height) + 12px); }
         body { font-family:'Noto Serif TC','Noto Serif JP','Songti SC','SimSun','Times New Roman',serif;
                background:var(--bg); color:var(--text); line-height:1.8;
                font-size:clamp(14px,2.2vw,15px); transition:background .3s,color .3s;
