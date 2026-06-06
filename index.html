@@ -546,11 +546,11 @@
                     <div class="event-loading">載入活動資訊中...</div>
                 </div>
                 <div class="event-stat-cards" id="eventStats"></div>
-                <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">點擊任一玩家可查看周回／場均細節（1h／3h／24h）</div>
+                <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">「瞬時」為每次刷新（約 60 秒）的分數差換算，需一次刷新後才會顯示；「1h均速」為過去一小時平均。點擊任一玩家可查看周回／場均細節（1h／3h／24h）。</div>
                 <div class="table-wrapper">
                     <table class="ranking-table">
-                        <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th>時速</th><th>最後紀錄</th></tr></thead>
-                        <tbody id="rankingBody"><tr><td colspan="5" class="event-loading">載入排名資料中...</td></tr></tbody>
+                        <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th title="本次與上次刷新（約60秒）的分數差換算，反映當下衝刺速度">瞬時</th><th title="過去1小時平均時速">1h均速</th><th>最後紀錄</th></tr></thead>
+                        <tbody id="rankingBody"><tr><td colspan="6" class="event-loading">載入排名資料中...</td></tr></tbody>
                     </table>
                 </div>
                 <div id="wl-chapter-tabs-live"></div>
@@ -1218,6 +1218,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             if (!n) return '-';
             return n >= 10000 ? (n/10000).toFixed(2)+'W/h' : n.toLocaleString()+'/h';
         }
+        // 瞬時時速格式化：null=尚未計算、0=本區間無進度、>0=活躍
+        function fmtInst(n) {
+            if (n === null || n === undefined) return null;
+            n = Number(n);
+            if (n <= 0) return '0/h';
+            return n >= 10000 ? (n/10000).toFixed(2)+'W/h' : n.toLocaleString()+'/h';
+        }
         // 相對時間（最後一次紀錄）
         function fmtAgo(d) {
             if (!d) return '-';
@@ -1842,12 +1849,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ['過去 24 小時', r.last_24h_stats],
                 ];
                 const lastPlayed = r.last_played_at ? new Date(r.last_played_at) : null;
+                const instStr = fmtInst(r.speedInst);
                 sheetDate.textContent = `T${fmtNum(r.rank)}　${r.user_name||'-'}`;
                 sheetContent.innerHTML = `
                     <div class="sheet-event" style="display:block">
                         <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-bottom:4px;">
                             <span>總分：<strong>${fmtScore(r.score)}</strong></span>
-                            <span>當前時速：<strong style="color:var(--accent)">${fmtSpeed(r.speed1h)}</strong></span>
+                            <span>瞬時時速：<strong style="color:var(--accent)">${instStr==null?'—':instStr}</strong></span>
+                            <span>1h 均速：<strong>${fmtSpeed(r.speed1h)}</strong></span>
                             <span>最後紀錄：<strong>${lastPlayed?fmtAgo(lastPlayed):'-'}</strong></span>
                         </div>
                     </div>
@@ -1876,6 +1885,33 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 document.getElementById('eventSheet').classList.add('show');
             },
 
+            // 計算瞬時時速：比對上一次刷新（約 60 秒）的分數差，反映「現在這分鐘」的衝刺速度
+            _applyInstantSpeed(rankings) {
+                const nowMs = Date.now();
+                const snap = this._snap || (this._snap = {});   // {id:{score,t}} 上次基準點
+                const inst = this._inst || (this._inst = {});   // {id:瞬時時速} 最近一次計算值
+                rankings.forEach(r => {
+                    const id = String(r.user_id ?? r.user_name ?? '');
+                    if (!id || r.score == null) { r.speedInst = null; return; }
+                    const prev = snap[id];
+                    if (prev) {
+                        const dt = (nowMs - prev.t) / 1000;      // 經過秒數
+                        const ds = r.score - prev.score;         // 分數差
+                        if (dt >= 15 && dt <= 3600) {            // 合理刷新間隔才更新（避免重繪雜訊）
+                            if (ds >= 0) inst[id] = Math.round(ds / dt * 3600);
+                            snap[id] = { score: r.score, t: nowMs };  // 推進基準點
+                        }
+                        // dt < 15（同一批資料重繪）：保留基準與上次瞬時值
+                    } else {
+                        snap[id] = { score: r.score, t: nowMs };  // 首次見到，建立基準（本次顯示「—」）
+                    }
+                    r.speedInst = (id in inst) ? inst[id] : null;
+                });
+                // 清除已離開榜單的玩家快照，避免長時間累積
+                const live = new Set(rankings.map(r => String(r.user_id ?? r.user_name ?? '')));
+                Object.keys(snap).forEach(k => { if (!live.has(k)) { delete snap[k]; delete inst[k]; } });
+            },
+
             renderLive(top, brd) {
                 const info = this.extractEventInfo(top);
                 const name = info.name || info.event_name || '進行中的活動';
@@ -1897,21 +1933,29 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (endTime) this.startCountdown(endTime.getTime(), 'liveCountdown');
 
                 const rankings = this.extractRankings(top);
+                this._applyInstantSpeed(rankings);   // 計算瞬時時速
                 window._liveRankings = rankings;   // 供細節彈層查用
                 document.getElementById('rankingBody').innerHTML = rankings.length
                     ? rankings.slice(0,100).map((r,i) => {
                         const rank = r.rank ?? i+1;
                         const cls = rank<=3?`rank-${rank}`:'';
                         const lastPlayed = r.last_played_at ? new Date(r.last_played_at) : null;
+                        const instStr = fmtInst(r.speedInst);
+                        const instCell = instStr == null
+                            ? '<span style="color:var(--text-light)">—</span>'
+                            : (r.speedInst > 0
+                                ? `<span style="color:var(--accent);font-weight:600">${instStr}</span>`
+                                : `<span style="color:var(--text-light)">${instStr}</span>`);
                         return `<tr class="${cls}" style="cursor:pointer;" onclick="EventModule.showPlayerStats(${i})" title="點擊查看周回／場均細節">
                             <td><strong>T${fmtNum(rank)}</strong></td>
                             <td class="player-name">${r.user_name||'-'}</td>
                             <td class="score">${fmtScore(r.score)}</td>
-                            <td class="score" style="color:var(--accent);">${fmtSpeed(r.speed1h)}</td>
+                            <td class="score">${instCell}</td>
+                            <td class="score" style="color:var(--text-light);">${fmtSpeed(r.speed1h)}</td>
                             <td style="font-size:12px;color:var(--text-light);white-space:nowrap;">${lastPlayed?fmtAgo(lastPlayed):'-'}</td>
                         </tr>`;
                     }).join('')
-                    : '<tr><td colspan="5" class="event-loading">無排名資料</td></tr>';
+                    : '<tr><td colspan="6" class="event-loading">無排名資料</td></tr>';
 
                 const wlRank = this.extractWLChapters(top, false);
                 const liveWlEl = document.getElementById('wl-chapter-tabs-live');
