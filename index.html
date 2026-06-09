@@ -219,6 +219,7 @@
         /* 活動追蹤 */
         .event-info-card { background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%); color:#fff; padding:18px 22px; border-radius:8px; margin-bottom:16px; }
         .event-info-card h3 { font-size:17px; margin-bottom:8px; font-weight:700; }
+        .event-type-badge { display:inline-block; font-size:12px; font-weight:700; padding:2px 10px; border-radius:5px; margin-left:8px; vertical-align:middle; letter-spacing:.5px; }
         .event-info-card .event-meta { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; opacity:.9; }
         .event-countdown { font-size:22px; font-weight:700; margin-top:10px; font-family:'Times New Roman',monospace; }
         .event-countdown.ended { color:#ff6b6b; }
@@ -1886,7 +1887,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try {
                     const [top, brd] = await Promise.all([
                         apiFetch('/event/live/top100'),
-                        apiFetch('/event/live/border')
+                        apiFetch('/event/live/border'),
+                        this.loadEventTypes()
                     ]);
                     this.liveData = top;
                     this.borderData = brd;
@@ -1898,6 +1900,42 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
             extractEventInfo(data) {
                 return data?.event || data?.event_data || data || {};
+            },
+
+            // 活動類型自動辨識（World Link / 嘉年華 / 馬拉松）
+            EVENT_TYPE_LABEL: {
+                world_bloom:   ['World Link', '#1565c0', '#e3f2fd'],
+                cheerful_carnival: ['嘉年華', '#e65100', '#fff3e0'],
+                marathon:      ['馬拉松', '#558b2f', '#f1f8e9']
+            },
+            eventTypeMap: null,
+            async loadEventTypes() {
+                if (this.eventTypeMap) return;
+                try {
+                    const ev = await fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main/events.json').then(r=>r.json());
+                    this.eventTypeMap = {};
+                    ev.forEach(e => { if (e && e.id != null) this.eventTypeMap[e.id] = e.eventType; });
+                } catch(e) { this.eventTypeMap = {}; }
+            },
+            // 判斷活動類型：優先用官方 events.json 以期數比對，後備用回傳結構推斷
+            detectType(info, raw) {
+                const id = info?.id ?? info?.event_id;
+                let t = (this.eventTypeMap && id != null) ? this.eventTypeMap[id] : null;
+                if (!t && info?.event_type) t = info.event_type;   // API 若有提供
+                if (!t && raw) {
+                    // 後備：有章節 / WL 排名結構即視為 World Link
+                    if ((Array.isArray(raw.chapters) && raw.chapters.length) ||
+                        Array.isArray(raw.world_link_top_100_rankings) ||
+                        Array.isArray(raw.world_link_border_rankings) ||
+                        Array.isArray(raw.world_bloom_aggregated_rankings)) t = 'world_bloom';
+                }
+                return t;
+            },
+            isWorldLink(info, raw) { return this.detectType(info, raw) === 'world_bloom'; },
+            typeBadge(info, raw) {
+                const t = this.detectType(info, raw);
+                const m = this.EVENT_TYPE_LABEL[t];
+                return m ? `<span class="event-type-badge" style="background:${m[2]};color:${m[1]}">${m[0]}</span>` : '';
             },
 
             extractRankings(data) {
@@ -2047,7 +2085,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
                 document.getElementById('currentEventId').textContent = eventId || '(無法取得)';
                 document.getElementById('currentEventInfo').innerHTML = `
-                    <h3>${name}</h3>
+                    <h3>${name} ${this.typeBadge(info, top)}</h3>
                     <div class="event-meta">
                         ${eventId?`<span>第 ${eventId} 期</span>`:''}
                         ${endTime?`<span>結束：${fmtDT(endTime)}</span>`:''}
@@ -2082,10 +2120,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     }).join('')
                     : '<tr><td colspan="6" class="event-loading">無排名資料</td></tr>';
 
+                const isWL = this.isWorldLink(info, top);
                 const wlRank = this.extractWLChapters(top, false);
                 const liveWlEl = document.getElementById('wl-chapter-tabs-live');
-                if (liveWlEl) liveWlEl.innerHTML = '';
-                if (this.hasWLData(wlRank)) this.renderWLChapterTabs(wlRank,'wl-chapter-tabs-live',false);
+                if (liveWlEl) {
+                    liveWlEl.innerHTML = '';
+                    if (this.hasWLData(wlRank)) this.renderWLChapterTabs(wlRank,'wl-chapter-tabs-live',false);
+                    else if (isWL) liveWlEl.innerHTML = '<div style="font-size:13px;color:var(--text-light);padding:10px 0;">World Link 活動・個別角色章節榜尚未開放或暫無資料</div>';
+                }
 
                 const stats = document.getElementById('eventStats');
                 const keyRanks = [1,10,100,500,1000];
@@ -2117,7 +2159,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const endAt = info.aggregate_at || info.closed_at || info.aggregated_at || info.end_at;
                 const endTime = endAt ? new Date(endAt) : null;
                 document.getElementById('borderEventInfo').innerHTML = `
-                    <h3>${name}</h3>
+                    <h3>${name} ${this.typeBadge(info, brd)}</h3>
                     <div class="event-meta">${endTime?`<span>結束：${fmtDT(endTime)}</span>`:''}</div>
                     <div class="event-countdown" id="borderCountdown"></div>
                 `;
@@ -2131,10 +2173,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <td class="score" style="color:var(--text-light)">${(r.score!=null&&r.speed24h)?fmtScore(Math.round(r.score+r.speed24h*24)):'-'}</td>
                 </tr>`).join('') || '<tr><td colspan="4" class="event-loading">無分段資料</td></tr>';
 
+                const isWL = this.isWorldLink(info, brd);
                 const wlBorder = this.extractWLChapters(brd, true);
                 const borderWlEl = document.getElementById('wl-chapter-tabs-border');
-                if (borderWlEl) borderWlEl.innerHTML = '';
-                if (this.hasWLData(wlBorder)) this.renderWLChapterTabs(wlBorder,'wl-chapter-tabs-border',true);
+                if (borderWlEl) {
+                    borderWlEl.innerHTML = '';
+                    if (this.hasWLData(wlBorder)) this.renderWLChapterTabs(wlBorder,'wl-chapter-tabs-border',true);
+                    else if (isWL) borderWlEl.innerHTML = '<div style="font-size:13px;color:var(--text-light);padding:10px 0;">World Link 活動・個別角色章節榜線尚未開放或暫無資料</div>';
+                }
             },
 
             // PJSK 角色 ID 對照
@@ -2216,7 +2262,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try {
                     const [top, brd] = await Promise.all([
                         apiFetch(`/event/${eventId}/top100`).catch(()=>null),
-                        apiFetch(`/event/${eventId}/border`).catch(()=>null)
+                        apiFetch(`/event/${eventId}/border`).catch(()=>null),
+                        this.loadEventTypes()
                     ]);
                     const info = this.extractEventInfo(top||brd);
                     const name = info.name||info.event_name||`第 ${eventId} 期活動`;
@@ -2228,7 +2275,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
                     content.innerHTML = `
                         <div class="modal-header">
-                            <h3>${name}</h3>
+                            <h3>${name} ${this.typeBadge(info, top||brd)}</h3>
                             <div style="font-size:13px;opacity:.8;">第 ${eventId} 期 · 台服</div>
                         </div>
                         <div class="modal-body">
