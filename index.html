@@ -2130,12 +2130,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
 
                 const stats = document.getElementById('eventStats');
+                const statBorders = this.extractBorders(brd);   // 榜線資料含 T500/T1000 等百名以外分數
                 const keyRanks = [1,10,100,500,1000];
                 stats.innerHTML = keyRanks.map(r => {
-                    const entry = rankings.find(x => x.rank===r || x.ranking===r);
+                    let entry = rankings.find(x => Number(x.rank)===r || Number(x.ranking)===r);
+                    if (!entry || entry.score==null) entry = statBorders.find(x => Number(x.rank)===r);  // 百名以外改從榜線取
+                    const sc = entry?.score ?? entry?.event_point;
                     return `<div class="stat-card ${r===1?'highlight':''}">
                         <div class="stat-label">T${r}</div>
-                        <div class="stat-value">${fmtScore(entry?.score||entry?.event_point||'')}</div>
+                        <div class="stat-value">${sc!=null ? fmtScore(sc) : '—'}</div>
                     </div>`;
                 }).join('');
             },
