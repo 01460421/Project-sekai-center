@@ -1894,7 +1894,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         apiFetch('/event/live/top100'),
                         apiFetch('/event/live/border'),
                         this.loadEventTypes(),
-                        this.loadCharNames()
+                        this.loadCharNames(),
+                        this.loadWorldBlooms()
                     ]);
                     this.liveData = top;
                     this.borderData = brd;
@@ -2182,7 +2183,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (this.hasWLData(wlChapters)) {
                     wlChapters.forEach((ch, ci) => {
                         const cid = ch.character_id ?? ch.game_character_id ?? (ci+1);
-                        const cname = ch.character_name || this.charName(cid) || `角色 ${cid}`;
+                        const cname = this.wlNameFromCid(cid, ch);
                         this._applyInstantSpeed(ch.rankings, 'char_'+cid);   // 各角色獨立計算瞬時
                         views.push({ key:'char_'+cid, label:cname, rankings: ch.rankings });
                     });
@@ -2267,6 +2268,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
 
             // PJSK 角色 ID 對照
+            wbChapterMap: null,
+            async loadWorldBlooms() {
+                if (this.wbChapterMap) return;
+                try {
+                    const wb = await fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main/worldBlooms.json').then(r=>r.json());
+                    this.wbChapterMap = {};
+                    wb.forEach(e => { if (e && e.id != null) this.wbChapterMap[e.id] = (e.gameCharacterId != null ? e.gameCharacterId : null); });
+                } catch(e) { this.wbChapterMap = {}; }
+            },
             charFullMap: null,
             async loadCharNames() {
                 if (this.charFullMap) return;
@@ -2286,6 +2296,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     17:'宵崎奏',18:'朝比奈真冬',19:'東雲繪名',20:'曉山瑞希',
                     21:'初音未來',22:'鏡音鈴',23:'鏡音連',24:'巡音流歌',25:'MEIKO',26:'KAITO'};
                 return MAP[id] || null;
+            },
+            // WL 章節分組鍵（可能是 worldBloomChapterId 如 17001）→ 角色名
+            wlNameFromCid(cid, ch) {
+                if (ch && (ch.character_name || ch.characterName)) return ch.character_name || ch.characterName;
+                if (this.wbChapterMap && cid != null && (cid in this.wbChapterMap)) {
+                    const gc = this.wbChapterMap[cid];           // 章節id → 角色id（終章為 null）
+                    return gc != null ? (this.charName(gc) || `角色 ${gc}`) : '終章';
+                }
+                return this.charName(cid) || `角色 ${cid ?? '?'}`;
             },
 
             renderWLChapterTabs(chapters, containerId, isBorder) {
@@ -2321,8 +2340,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:8px;">WL 個別角色榜</div>
                     <div class="tabs" style="margin-bottom:10px;">`;
                 chapList.forEach((ch, i) => {
-                    const cid = ch.character_id ?? ch.game_character_id ?? ch.gameCharacterId ?? ch.chapter_id;
-                    const name = ch.character_name || ch.characterName || ch.name || this.charName(cid) || `角色 ${cid ?? i+1}`;
+                    const cid = ch.character_id ?? ch.game_character_id ?? ch.gameCharacterId ?? ch.chapter_id ?? (i+1);
+                    const name = this.wlNameFromCid(cid, ch);
                     html += `<button class="tab-btn ${i===0?'active':''}" onclick="EventModule.switchWLChapter(this,'wl-ch-${containerId}-${i}')">${name}</button>`;
                 });
                 html += '</div>';
@@ -2361,7 +2380,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         apiFetch(`/event/${eventId}/top100`).catch(()=>null),
                         apiFetch(`/event/${eventId}/border`).catch(()=>null),
                         this.loadEventTypes(),
-                        this.loadCharNames()
+                        this.loadCharNames(),
+                        this.loadWorldBlooms()
                     ]);
                     const info = this.extractEventInfo(top||brd);
                     const name = info.name||info.event_name||`第 ${eventId} 期活動`;
