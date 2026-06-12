@@ -610,6 +610,11 @@
                 </div>
                 <div class="event-stat-cards" id="eventStats"></div>
                 <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">「瞬時」為近數次刷新累積（最長約 5 分鐘）的衝速，比 1h 均速更即時、又比單次取樣穩定，需一次刷新後開始顯示；「1h均速」為過去一小時平均。點擊任一玩家可查看周回／場均細節（1h／3h／24h）。</div>
+                <div id="liveRankSelectWrap" style="display:none;margin-bottom:10px;">
+                    <select id="liveRankSelect" onchange="EventModule.renderRankView(this.value)"
+                        style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:var(--card);color:var(--text);font-weight:600;"></select>
+                    <span id="liveRankViewLabel" style="margin-left:10px;font-size:12px;color:var(--text-light);"></span>
+                </div>
                 <div class="table-wrapper">
                     <table class="ranking-table">
                         <thead><tr><th>排名</th><th>玩家名稱</th><th>總分</th><th title="近數次刷新累積（最長約5分鐘）的分數差換算，比單次取樣穩定">瞬時</th><th title="過去1小時平均時速">1h均速</th><th>最後紀錄</th></tr></thead>
@@ -1888,7 +1893,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const [top, brd] = await Promise.all([
                         apiFetch('/event/live/top100'),
                         apiFetch('/event/live/border'),
-                        this.loadEventTypes()
+                        this.loadEventTypes(),
+                        this.loadCharNames()
                     ]);
                     this.liveData = top;
                     this.borderData = brd;
@@ -2081,11 +2087,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
 
             // 計算瞬時時速：累積（疊加）最近數次刷新的樣本，以滑動視窗求速率，比單一 60 秒區間穩定
-            _applyInstantSpeed(rankings) {
+            _applyInstantSpeed(rankings, ns) {
+                ns = ns || 'total';
                 const nowMs = Date.now();
                 const WINDOW = 5 * 60 * 1000;   // 累積視窗：最長 5 分鐘
-                const MIN_GAP = 15000;          // 取樣最小間隔 15 秒（避免重繪灌入重複點）
-                const hist = this._hist || (this._hist = {});   // {id: [{score,t}, ...]} 樣本序列
+                const MIN_GAP = 15000;          // 取樣最小間隔 15 秒
+                const allHist = this._hist || (this._hist = {});
+                const hist = allHist[ns] || (allHist[ns] = {});   // 各檢視獨立樣本序列
                 rankings.forEach(r => {
                     const id = String(r.user_id ?? r.user_name ?? '');
                     if (!id || r.score == null) { r.speedInst = null; return; }
@@ -2110,6 +2118,40 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 Object.keys(hist).forEach(k => { if (!live.has(k)) delete hist[k]; });
             },
 
+            // 排名列 HTML（總榜與各角色個榜共用同一格式）
+            _rankRowsHtml(rankings) {
+                if (!rankings || !rankings.length) return '<tr><td colspan="6" class="event-loading">無排名資料</td></tr>';
+                return rankings.slice(0,100).map((r,i) => {
+                    const rank = r.rank ?? i+1;
+                    const cls = rank<=3?`rank-${rank}`:'';
+                    const lastPlayed = r.last_played_at ? new Date(r.last_played_at) : null;
+                    const instStr = fmtInst(r.speedInst);
+                    const instCell = instStr == null
+                        ? '<span style="color:var(--text-light)">—</span>'
+                        : (r.speedInst > 0
+                            ? `<span style="color:var(--accent);font-weight:600">${instStr}</span>`
+                            : `<span style="color:var(--text-light)">${instStr}</span>`);
+                    return `<tr class="${cls}" style="cursor:pointer;" onclick="EventModule.showPlayerStats(${i})" title="點擊查看周回／場均細節">
+                        <td><strong>T${fmtNum(rank)}</strong></td>
+                        <td class="player-name">${r.user_name||'-'}</td>
+                        <td class="score">${fmtScore(r.score)}</td>
+                        <td class="score">${instCell}</td>
+                        <td class="score" style="color:var(--text-light);">${fmtSpeed(r.speed1h)}</td>
+                        <td style="font-size:12px;color:var(--text-light);white-space:nowrap;">${lastPlayed?fmtAgo(lastPlayed):'-'}</td>
+                    </tr>`;
+                }).join('');
+            },
+            // 切換檢視（總榜／某角色個榜），以相同格式渲染
+            renderRankView(viewKey) {
+                const v = this._rankViews && this._rankViews[viewKey];
+                if (!v) return;
+                this._curRankView = viewKey;
+                window._liveRankings = v.rankings;   // 供玩家細節彈層查用
+                document.getElementById('rankingBody').innerHTML = this._rankRowsHtml(v.rankings);
+                const lbl = document.getElementById('liveRankViewLabel');
+                if (lbl) lbl.textContent = viewKey==='total' ? '活動總合排名' : `${v.label}・個別角色榜`;
+            },
+
             renderLive(top, brd) {
                 const info = this.extractEventInfo(top);
                 const name = info.name || info.event_name || '進行中的活動';
@@ -2131,38 +2173,41 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (endTime) this.startCountdown(endTime.getTime(), 'liveCountdown');
 
                 const rankings = this.extractRankings(top);
-                this._applyInstantSpeed(rankings);   // 計算瞬時時速
-                window._liveRankings = rankings;   // 供細節彈層查用
-                document.getElementById('rankingBody').innerHTML = rankings.length
-                    ? rankings.slice(0,100).map((r,i) => {
-                        const rank = r.rank ?? i+1;
-                        const cls = rank<=3?`rank-${rank}`:'';
-                        const lastPlayed = r.last_played_at ? new Date(r.last_played_at) : null;
-                        const instStr = fmtInst(r.speedInst);
-                        const instCell = instStr == null
-                            ? '<span style="color:var(--text-light)">—</span>'
-                            : (r.speedInst > 0
-                                ? `<span style="color:var(--accent);font-weight:600">${instStr}</span>`
-                                : `<span style="color:var(--text-light)">${instStr}</span>`);
-                        return `<tr class="${cls}" style="cursor:pointer;" onclick="EventModule.showPlayerStats(${i})" title="點擊查看周回／場均細節">
-                            <td><strong>T${fmtNum(rank)}</strong></td>
-                            <td class="player-name">${r.user_name||'-'}</td>
-                            <td class="score">${fmtScore(r.score)}</td>
-                            <td class="score">${instCell}</td>
-                            <td class="score" style="color:var(--text-light);">${fmtSpeed(r.speed1h)}</td>
-                            <td style="font-size:12px;color:var(--text-light);white-space:nowrap;">${lastPlayed?fmtAgo(lastPlayed):'-'}</td>
-                        </tr>`;
-                    }).join('')
-                    : '<tr><td colspan="6" class="event-loading">無排名資料</td></tr>';
+                this._applyInstantSpeed(rankings, 'total');   // 計算瞬時時速（總榜）
 
+                // 建立檢視清單：總榜 + 各角色個榜（WL）
                 const isWL = this.isWorldLink(info, top);
-                const wlRank = this.extractWLChapters(top, false);
-                const liveWlEl = document.getElementById('wl-chapter-tabs-live');
-                if (liveWlEl) {
-                    liveWlEl.innerHTML = '';
-                    if (this.hasWLData(wlRank)) this.renderWLChapterTabs(wlRank,'wl-chapter-tabs-live',false);
-                    else if (isWL) liveWlEl.innerHTML = '<div style="font-size:13px;color:var(--text-light);padding:10px 0;">World Link 活動・個別角色章節榜尚未開放或暫無資料</div>';
+                const wlChapters = this.extractWLChapters(top, false);
+                const views = [{ key:'total', label:'總榜', rankings }];
+                if (this.hasWLData(wlChapters)) {
+                    wlChapters.forEach((ch, ci) => {
+                        const cid = ch.character_id ?? ch.game_character_id ?? (ci+1);
+                        const cname = ch.character_name || this.charName(cid) || `角色 ${cid}`;
+                        this._applyInstantSpeed(ch.rankings, 'char_'+cid);   // 各角色獨立計算瞬時
+                        views.push({ key:'char_'+cid, label:cname, rankings: ch.rankings });
+                    });
                 }
+                this._rankViews = {};
+                views.forEach(v => this._rankViews[v.key] = v);
+
+                // 最上排下拉：總榜 ╱ 各角色（僅 WL 有多檢視時顯示）
+                const selWrap = document.getElementById('liveRankSelectWrap');
+                const sel = document.getElementById('liveRankSelect');
+                if (views.length > 1) {
+                    const cur = (this._curRankView && this._rankViews[this._curRankView]) ? this._curRankView : 'total';
+                    sel.innerHTML = views.map(v => `<option value="${v.key}" ${v.key===cur?'selected':''}>${v.label}</option>`).join('');
+                    selWrap.style.display = '';
+                    this._curRankView = cur;
+                } else {
+                    selWrap.style.display = 'none';
+                    this._curRankView = 'total';
+                }
+                this.renderRankView(this._curRankView);
+
+                // 改用下拉後，舊容器僅在「是 WL 但個榜尚未開放」時顯示提示
+                const liveWlEl = document.getElementById('wl-chapter-tabs-live');
+                if (liveWlEl) liveWlEl.innerHTML = (isWL && !this.hasWLData(wlChapters))
+                    ? '<div style="font-size:13px;color:var(--text-light);padding:10px 0;">World Link 活動・個別角色榜尚未開放或暫無資料</div>' : '';
 
                 const stats = document.getElementById('eventStats');
                 const statBorders = this.extractBorders(brd);   // 榜線資料含 T500/T1000 等百名以外分數
@@ -2222,10 +2267,24 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
 
             // PJSK 角色 ID 對照
+            charFullMap: null,
+            async loadCharNames() {
+                if (this.charFullMap) return;
+                try {
+                    const ch = await fetch('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main/gameCharacters.json').then(r=>r.json());
+                    this.charFullMap = {};
+                    ch.forEach(c => { if (c && c.id != null) this.charFullMap[c.id] = ((c.firstName||'') + (c.givenName||'')) || null; });
+                } catch(e) { this.charFullMap = {}; }
+            },
             charName(id) {
-                const MAP = {1:'一歌',2:'咲希',3:'穗波',4:'志步',5:'實乃理',6:'遙',7:'愛莉',8:'雫',
-                    9:'彰人',10:'冬彌',11:'杏',12:'心羽',13:'司',14:'笑夢',15:'寧寧',16:'類',
-                    17:'奏',18:'真冬',19:'瑞希',20:'繪名',21:'初音',22:'鈴',23:'連',24:'流歌',25:'MEIKO',26:'KAITO'};
+                if (this.charFullMap && this.charFullMap[id]) return this.charFullMap[id];
+                // 後備：完整角色名（id 對應已依官方 gameCharacters 校正）
+                const MAP = {1:'星乃一歌',2:'天馬咲希',3:'望月穗波',4:'日野森志步',
+                    5:'花里實乃理',6:'桐谷遙',7:'桃井愛莉',8:'日野森雫',
+                    9:'小豆澤心羽',10:'白石杏',11:'東雲彰人',12:'青柳冬彌',
+                    13:'天馬司',14:'鳳笑夢',15:'草薙寧寧',16:'神代類',
+                    17:'宵崎奏',18:'朝比奈真冬',19:'東雲繪名',20:'曉山瑞希',
+                    21:'初音未來',22:'鏡音鈴',23:'鏡音連',24:'巡音流歌',25:'MEIKO',26:'KAITO'};
                 return MAP[id] || null;
             },
 
@@ -2301,7 +2360,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const [top, brd] = await Promise.all([
                         apiFetch(`/event/${eventId}/top100`).catch(()=>null),
                         apiFetch(`/event/${eventId}/border`).catch(()=>null),
-                        this.loadEventTypes()
+                        this.loadEventTypes(),
+                        this.loadCharNames()
                     ]);
                     const info = this.extractEventInfo(top||brd);
                     const name = info.name||info.event_name||`第 ${eventId} 期活動`;
