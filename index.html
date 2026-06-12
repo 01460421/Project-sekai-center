@@ -1972,18 +1972,53 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
             extractWLChapters(data, isBorder) {
                 if (!data) return [];
+                const norm = x => this._normRank(x);
+                // 取章節物件內的巢狀排名陣列（容多種命名）
+                const innerRows = ch => ch.rankings || ch.player_rankings || ch.player_top_100_rankings
+                    || ch.top_100_player_rankings || ch.borders || ch.player_borders
+                    || ch.player_border_rankings || ch.border_player_rankings || [];
+                // 偵測扁平列中代表「角色／章節」的 id 欄位
+                const findCid = rows => {
+                    const cand = ['game_character_id','gameCharacterId','character_id','characterId',
+                        'world_bloom_character_id','worldBloomCharacterId','world_bloom_chapter_id',
+                        'chapter_id','chapterId','game_chara_id','chara_id','charaId'];
+                    for (const f of cand) if (rows.some(r => r && r[f] != null)) return f;
+                    // 後備：掃描欄位名含 character/chara/chapter 且值為數字者
+                    const keys = rows[0] && typeof rows[0]==='object' ? Object.keys(rows[0]) : [];
+                    for (const k of keys) if (/(character|chara|chapter)/i.test(k) && rows.some(r => typeof r[k]==='number')) return k;
+                    return null;
+                };
+
                 const key = isBorder ? 'world_link_border_rankings' : 'world_link_top_100_rankings';
                 let arr = data[key];
-                // 備用：event.chapters[].player_rankings / player_borders
-                if (!arr && Array.isArray(data.chapters)) {
-                    arr = data.chapters.map(ch => ({
-                        character_id: ch.game_character_id ?? ch.character_id ?? ch.id,
-                        character_name: ch.character_name,
-                        rankings: ch.player_rankings || ch.rankings,
-                        borders: ch.player_borders || ch.borders
-                    }));
+                // A. 後備：event.chapters[]
+                if ((!arr || !arr.length) && Array.isArray(data.chapters)) arr = data.chapters;
+                if (!Array.isArray(arr) || !arr.length) return [];
+
+                // B. 元素是章節物件（含巢狀排名陣列）→ 直接成各章節
+                const nestedKeys = ['rankings','player_rankings','player_top_100_rankings','top_100_player_rankings',
+                                    'borders','player_borders','player_border_rankings','border_player_rankings'];
+                if (arr[0] && typeof arr[0]==='object' && nestedKeys.some(k => Array.isArray(arr[0][k]))) {
+                    return arr.map(ch => ({
+                        character_id: ch.character_id ?? ch.game_character_id ?? ch.gameCharacterId
+                            ?? ch.world_bloom_character_id ?? ch.chapter_id ?? ch.id,
+                        character_name: ch.character_name ?? ch.characterName ?? ch.name,
+                        rankings: innerRows(ch).map(norm)
+                    })).filter(ch => ch.rankings.length);
                 }
-                return arr || [];
+
+                // C. 扁平玩家列表、每列帶角色 id → 依角色分組
+                const cidField = findCid(arr);
+                if (cidField) {
+                    const groups = {};
+                    arr.forEach(r => { const cid = r[cidField]; (groups[cid] || (groups[cid] = [])).push(norm(r)); });
+                    return Object.keys(groups)
+                        .map(cid => ({ character_id: Number(cid) || cid, rankings: groups[cid] }))
+                        .sort((a,b) => (a.character_id||0) - (b.character_id||0));
+                }
+
+                // D. 純扁平、無角色欄位 → 單一列表
+                return [{ character_name: '全員個榜', rankings: arr.map(norm) }];
             },
 
             // 判斷 WL 個榜是否真有資料（無則隱藏）
