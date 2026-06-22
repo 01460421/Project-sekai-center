@@ -909,7 +909,7 @@
                     <input type="number" id="playerScanEnd" placeholder="結束" min="1" value="165">
                     <button class="calc-btn" onclick="PlayerModule.scanActive()">開始掃描</button>
                 </div>
-                <div class="note" style="margin-top:0;">掃描大量期數可能耗時較長。每期請求 1 次 API，建議範圍不超過 30 期。</div>
+                <div class="note" style="margin-top:0;">掃描大量期數可能耗時較長。每期請求 1 次 API，建議範圍不超過 50 期。</div>
                 <div id="activePlayerProgress" style="display:none;">
                     <div style="font-size:13px;color:var(--text-light);margin-bottom:6px;" id="activeProgressText">掃描中...</div>
                     <div class="progress-bar-wrap"><div class="progress-bar" id="activeProgressBar" style="width:0%"></div></div>
@@ -2650,7 +2650,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const start = +document.getElementById('playerScanStart').value;
                 const end = +document.getElementById('playerScanEnd').value;
                 if (!start||!end||end<start) { alert('請輸入有效期數範圍'); return; }
-                if (end-start>30) { alert('建議範圍不超過 30 期'); return; }
+                if (end-start>50) { alert('建議範圍不超過 50 期'); return; }
                 document.getElementById('activePlayerProgress').style.display='block';
                 const freq = {};
                 for (let id=start; id<=end; id++) {
