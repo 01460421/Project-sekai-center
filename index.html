@@ -476,6 +476,8 @@
             <div class="nav-sep"></div>
             <span class="nav-label">工具</span>
             <a href="#calculator">倍率計算</a>
+            <a href="#event-calc">加成/活動P</a>
+            <a href="#gacha-calc">抽卡天井</a>
             <a href="#mysekai">MySekai</a>
         </div>
         <div class="nav-row">
@@ -642,6 +644,10 @@
                     輸入活動期數查詢歷史排名：
                     <input type="number" id="historyEventId" placeholder="例如 163" min="1"
                         style="width:120px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);">
+                    <select id="historyEventSelect" onchange="if(this.value){document.getElementById('historyEventId').value=this.value;EventModule.viewEventDetail(+this.value);}"
+                        style="max-width:280px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);">
+                        <option value="">— 或從清單選擇活動 —</option>
+                    </select>
                     <button class="refresh-btn" onclick="EventModule.viewEventDetail(+document.getElementById('historyEventId').value||0)">查詢</button>
                 </div>
                 <div style="margin-top:12px;font-size:13px;color:var(--text-light);">目前活動期數：<strong id="currentEventId">載入中...</strong></div>
@@ -908,8 +914,9 @@
                     <input type="number" id="playerScanStart" placeholder="起始" min="1" value="150">
                     <input type="number" id="playerScanEnd" placeholder="結束" min="1" value="165">
                     <button class="calc-btn" onclick="PlayerModule.scanActive()">開始掃描</button>
+                    <button class="calc-btn" id="activeAbortBtn" style="display:none;" onclick="EventScan.abort()">中止</button>
                 </div>
-                <div class="note" style="margin-top:0;">掃描大量期數可能耗時較長。每期請求 1 次 API，建議範圍不超過 50 期。</div>
+                <div class="note" style="margin-top:0;">並行掃描；已結束活動的資料會快取在瀏覽器，重複掃描幾乎即時。</div>
                 <div id="activePlayerProgress" style="display:none;">
                     <div style="font-size:13px;color:var(--text-light);margin-bottom:6px;" id="activeProgressText">掃描中...</div>
                     <div class="progress-bar-wrap"><div class="progress-bar" id="activeProgressBar" style="width:0%"></div></div>
@@ -929,6 +936,22 @@
                 <button class="calc-btn" onclick="PlayerModule.lookup()">查詢</button>
             </div>
             <div id="playerResult"></div>
+            <div id="playerXref" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+                <div style="font-size:15px;font-weight:600;color:var(--primary);margin-bottom:6px;">交叉比對以往名次</div>
+                <div class="note" style="margin-top:0;">掃描指定期數的前 100 名，找出此玩家的歷史名次。僅能比對曾進入前 100 名的活動；並行掃描且已結束活動會快取，重複比對幾乎即時。</div>
+                <div class="analysis-input">
+                    <label style="font-size:14px;">期數範圍</label>
+                    <input type="number" id="xrefStart" placeholder="起始" min="1" value="150" style="width:90px;">
+                    <input type="number" id="xrefEnd" placeholder="結束" min="1" value="170" style="width:90px;">
+                    <button class="calc-btn" onclick="PlayerModule.crossRef()">開始比對</button>
+                    <button class="calc-btn" id="xrefAbortBtn" style="display:none;" onclick="EventScan.abort()">中止</button>
+                </div>
+                <div id="xrefProgress" style="display:none;">
+                    <div style="font-size:13px;color:var(--text-light);margin-bottom:6px;" id="xrefText">掃描中...</div>
+                    <div class="progress-bar-wrap"><div class="progress-bar" id="xrefBar" style="width:0%"></div></div>
+                </div>
+                <div id="xrefResult"></div>
+            </div>
         </section>
 
         <!-- 八、活動分布甘特圖 -->
@@ -968,6 +991,7 @@
                 <button class="tab-btn active" onclick="switchTab('pjsekai')">樂曲資料庫</button>
                 <button class="tab-btn" onclick="switchTab('song-stats-tab')">統計圖表</button>
                 <button class="tab-btn" onclick="switchTab('producers')">V+ P主列表</button>
+                <button class="tab-btn" onclick="switchTab('song-eff');SongEff.ensure()">刷歌效率</button>
             </div>
 
             <div id="pjsekai" class="tab-content active">
@@ -1046,6 +1070,26 @@
                         <tbody id="producerBody"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <div id="song-eff" class="tab-content">
+                <div class="note" style="margin-top:0;">刷活動 P 效率排行。每局 EP 依所選模式/分數/加成/火計算,再除以歌長估「每分鐘 EP」;資料來源 <a href="https://sekai.best/" target="_blank" class="external">sekai.best music_metas</a>(歌曲係數 event_rate、譜面秒數)。</div>
+                <div class="song-filters" style="align-items:center;">
+                    <select id="seMode" onchange="SongEff.render()">
+                        <option value="solo">單人 Live</option>
+                        <option value="multi">協力(馬拉松)</option>
+                        <option value="auto">自動 Live</option>
+                    </select>
+                    <label style="font-size:13px;">分數<input type="number" id="seScore" value="1200000" min="0" style="width:110px;margin-left:4px;" oninput="SongEff.render()"></label>
+                    <label style="font-size:13px;">加成%<input type="number" id="seBonus" value="250" min="0" style="width:70px;margin-left:4px;" oninput="SongEff.render()"></label>
+                    <label style="font-size:13px;">火<select id="seBoost" onchange="SongEff.render()"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
+                    <select id="seSort" onchange="SongEff.render()">
+                        <option value="perMin">依每分鐘 EP</option>
+                        <option value="perPlay">依每局 EP</option>
+                        <option value="perBoost">依每火 EP(省體力)</option>
+                    </select>
+                </div>
+                <div id="seResult"><div class="event-loading" style="padding:20px;">切到此分頁時載入…</div></div>
             </div>
         </section>
 
@@ -1290,6 +1334,105 @@
             </div>
         </div>
 
+        <!-- 二十、活動加成 & 活動P 計算器 -->
+        <section id="event-calc">
+            <h2>二十、活動加成 · 活動P 計算器 <span class="en">Event Bonus &amp; Point</span></h2>
+            <div class="note">依台服 master data 即時計算隊伍活動加成與各模式活動 P。公式經多方社群來源(Sekaipedia／xfl03 sekai-calculator／日文攻略站)交叉驗證。</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="EventCalc.tab('ec-bonus')">隊伍加成</button>
+                <button class="tab-btn" onclick="EventCalc.tab('ec-point')">活動P效率</button>
+            </div>
+
+            <div id="ec-bonus" class="tab-content active">
+                <div class="analysis-input" style="margin-bottom:12px;">
+                    <label style="font-size:14px;">活動</label>
+                    <select id="ecEventSelect" onchange="EventCalc.onEvent()" style="max-width:280px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);">
+                        <option value="">載入中…</option>
+                    </select>
+                </div>
+                <div id="ecEventInfo" class="note" style="margin-top:0;"></div>
+                <div class="table-wrapper" style="margin-top:10px;">
+                    <table id="ecTeamTable">
+                        <thead><tr><th>卡</th><th>角色</th><th>屬性</th><th>稀有度</th><th>MR</th><th>特效</th><th>加成</th></tr></thead>
+                        <tbody id="ecTeamBody"></tbody>
+                    </table>
+                </div>
+                <div class="calc-result" style="margin-top:14px;">
+                    <div class="label">隊伍總活動加成</div>
+                    <div class="value" id="ecTotal">＋0%</div>
+                    <div class="formula" id="ecBreakdown"></div>
+                </div>
+                <button class="calc-btn" style="margin-top:10px;" onclick="EventCalc.toPoint()">帶入活動P計算 →</button>
+            </div>
+
+            <div id="ec-point" class="tab-content">
+                <div class="calculator">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                        <div class="calc-section">
+                            <h4>輸入參數</h4>
+                            <div class="calc-row"><label>模式</label>
+                                <select id="epMode" onchange="EventCalc.calcPoint()">
+                                    <option value="solo">單人 Live</option>
+                                    <option value="multi">協力(馬拉松)</option>
+                                    <option value="cheer">歡樂嘉年華</option>
+                                    <option value="challenge">挑戰 Live</option>
+                                    <option value="auto">自動 Live</option>
+                                </select>
+                            </div>
+                            <div class="calc-row"><label>自己分數</label><input type="number" id="epScore" value="1200000" min="0" oninput="EventCalc.calcPoint()"></div>
+                            <div class="calc-row" id="epBonusRow"><label>活動加成 %</label><input type="number" id="epBonus" value="250" min="0" oninput="EventCalc.calcPoint()"></div>
+                            <div class="calc-row" id="epRateRow"><label>歌曲係數 R</label><input type="number" id="epRate" value="115" min="100" max="130" oninput="EventCalc.calcPoint()"></div>
+                            <div class="calc-row" id="epBoostRow"><label>消耗火(0–10)</label>
+                                <select id="epBoost" onchange="EventCalc.calcPoint()">
+                                    <option value="0">0(不消耗)</option><option value="1">1</option><option value="2">2</option>
+                                    <option value="3">3</option><option value="4">4</option><option value="5" selected>5</option>
+                                    <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                                    <option value="9">9</option><option value="10">10</option>
+                                </select>
+                            </div>
+                            <div class="calc-row" id="epOthersRow" style="display:none;"><label>他人合計分數</label><input type="number" id="epOthers" placeholder="留空＝4×自己分數" min="0" oninput="EventCalc.calcPoint()"></div>
+                            <div class="calc-row" id="epLifeRow" style="display:none;"><label>結束剩餘血量</label><input type="number" id="epLife" value="2000" min="0" max="2000" oninput="EventCalc.calcPoint()"></div>
+                        </div>
+                        <div class="calc-section">
+                            <h4>估算結果</h4>
+                            <div id="epResult" style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:120px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="note">火倍率:0→1×、1→5、2→10、3→15、4→19、5→23、6→26、7→29、8→31、9→33、10→35。1~3 火每火 5 倍最省石;10 火時間效率最高。挑戰 Live 固定 ×120、不吃係數/加成/火。</div>
+            </div>
+        </section>
+
+        <!-- 二十一、抽卡期望 · 天井計算器 -->
+        <section id="gacha-calc">
+            <h2>二十一、抽卡期望 · 天井計算器 <span class="en">Gacha Simulator</span></h2>
+            <div class="note">機率與天井依台服(＝日服)現行值:4★ 3%、Fes 6%、指定 PU 每張 0.4%;單抽 300 水晶、300 貼紙天井(可用交換券最低 200 抽)。</div>
+            <div class="calculator">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                    <div class="calc-section">
+                        <h4>輸入參數</h4>
+                        <div class="calc-row"><label>目標</label>
+                            <select id="gcTarget" onchange="GachaCalc.calc()">
+                                <option value="0.004">指定 PU 4★(0.4%)</option>
+                                <option value="0.03">任一 4★・一般池(3%)</option>
+                                <option value="0.06">任一 4★・Fes 池(6%)</option>
+                                <option value="0.03b">生日限定卡(3%)</option>
+                            </select>
+                        </div>
+                        <div class="calc-row"><label>持有水晶</label><input type="number" id="gcCrystal" value="30000" min="0" oninput="GachaCalc.calc()"></div>
+                        <div class="calc-row"><label>已抽次數</label><input type="number" id="gcPulled" value="0" min="0" oninput="GachaCalc.calc()"></div>
+                        <div class="calc-row"><label>持有交換券</label><input type="number" id="gcVoucher" value="0" min="0" oninput="GachaCalc.calc()"></div>
+                    </div>
+                    <div class="calc-section">
+                        <h4>估算結果</h4>
+                        <div id="gcResult" style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:150px;"></div>
+                    </div>
+                </div>
+                <div class="chart-container" style="margin-top:14px;"><canvas id="gcChart" width="900" height="220"></canvas></div>
+                <div class="note">曲線:抽數(0→天井)對「至少中 1 張目標卡」的機率 P(N)=1−(1−p)^N;垂直線為天井。可見指定 PU 即使抽到 300 仍約 30% 摃龜,需靠天井保底。</div>
+            </div>
+        </section>
+
         <footer>
             <p>Made with dedication for Project SEKAI players</p>
             <p class="omega">Ω</p>
@@ -1389,7 +1532,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     if (!r.ok) { lastErr = new Error(`HTTP ${r.status}`); continue; }
                     const text = await r.text();
                     if (!text) { lastErr = new Error('空回應'); continue; }
-                    return JSON.parse(text);
+                    // 玩家 userId 為 19 位大整數，超過 JS 安全整數上限；先把「key: 16位以上整數值」轉成字串再 parse，避免失精導致交叉比對比不中
+                    return JSON.parse(text.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
                 } catch (e) { lastErr = e; }
             }
             throw lastErr || new Error('無法連線至 API');
@@ -1967,14 +2111,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!r || typeof r !== 'object') return r;
                 const rank = r.rank ?? r.ranking ?? r.position;
                 const score = r.score ?? r.event_point ?? r.point;
-                const prof = r.last_player_info?.profile || {};
+                // 現行 API：即時榜用 last_player_info.profile.id；歷史榜（/event/{id}/top100）改用 userId / userProfile.userId
+                const prof = r.last_player_info?.profile || r.userProfile || {};
                 return { ...r,
                     rank: rank != null ? Number(rank) : undefined,
                     score: score != null ? Number(score) : undefined,
                     speed1h: r.last_1h_stats?.speed ?? null,
                     speed24h: r.last_24h_stats?.speed ?? null,
                     user_name: r.name || r.user_name || r.nickname || prof.name,
-                    user_id: r.user_id || prof.id || r.id };
+                    user_id: r.user_id ?? r.userId ?? prof.id ?? prof.userId ?? r.id };
             },
 
             extractWLChapters(data, isBorder) {
@@ -2249,13 +2394,22 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 `;
                 if (endTime) this.startCountdown(endTime.getTime(), 'borderCountdown');
 
-                const borders = this.extractBorders(brd);
-                document.getElementById('borderBody').innerHTML = borders.map(r => `<tr>
+                // 剩餘時數(用活動實際結束時間),供榜線線性外推
+                const hoursLeft = endTime ? Math.max(0, (endTime.getTime() - Date.now()) / 3600000) : null;
+                const predict = r => {
+                    if (r.score == null || !r.speed24h || hoursLeft == null) return null;
+                    return Math.round(r.score + r.speed24h * hoursLeft);
+                };
+                document.getElementById('borderBody').innerHTML = borders.map(r => {
+                    const est = predict(r);
+                    return `<tr>
                     <td><strong>T${fmtNum(r.rank)}</strong></td>
                     <td class="player-name">${r.user_name||r.name||'-'}</td>
                     <td class="score">${fmtScore(r.score||r.event_point)}</td>
-                    <td class="score" style="color:var(--text-light)">${(r.score!=null&&r.speed24h)?fmtScore(Math.round(r.score+r.speed24h*24)):'-'}</td>
-                </tr>`).join('') || '<tr><td colspan="4" class="event-loading">無分段資料</td></tr>';
+                    <td class="score" style="color:var(--text-light)" title="現分 + 近24h時速 × 剩餘 ${hoursLeft!=null?hoursLeft.toFixed(1):'?'}h(線性估計,未計末日衝刺)">${est!=null?fmtScore(est):'-'}</td>
+                </tr>`;}).join('') || '<tr><td colspan="4" class="event-loading">無分段資料</td></tr>';
+                const bInfo = document.getElementById('borderEventInfo');
+                if (bInfo && hoursLeft != null && hoursLeft > 0) bInfo.insertAdjacentHTML('beforeend', `<div class="note" style="margin:6px 0 0;">預估終分＝現分＋近24h時速×剩餘 ${hoursLeft.toFixed(1)} 小時的線性推估,實際末日常有衝刺,僅供參考。</div>`);
 
                 const isWL = this.isWorldLink(info, brd);
                 const wlBorder = this.extractWLChapters(brd, true);
@@ -2644,48 +2798,148 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 掃描共用:活動清單+並行掃描+快取 ==========
+        // HiSekai /event/list 回傳全部活動(含未來檔期)的 id/name/start_at/closed_at
+        // 已結束活動的 top100 不會再變動,瘦身後存 localStorage,重複掃描零請求
+        const EventScan = {
+            _list: null,
+            async loadList() {
+                if (this._list) return this._list;
+                try {
+                    const c = JSON.parse(localStorage.getItem('hs_evlist') || 'null');
+                    if (c && Date.now() - c.t < 12 * 3600 * 1000 && Array.isArray(c.d)) return this._list = c.d;
+                } catch {}
+                try {
+                    const d = await apiFetch('/event/list');
+                    if (Array.isArray(d) && d.length) {
+                        this._list = d;
+                        try { localStorage.setItem('hs_evlist', JSON.stringify({ t: Date.now(), d })); } catch {}
+                        return d;
+                    }
+                } catch {}
+                return this._list || [];
+            },
+            evInfo(id) { return (this._list || []).find(e => e.id === +id) || null; },
+            evName(id) { const e = this.evInfo(id); return e ? e.name : ''; },
+            maxEventId() { return (this._list || []).reduce((m, e) => Math.max(m, e.id), 0); },
+            // 已結束(含結算緩衝 1 小時)的活動資料不可變,可永久快取
+            _ended(id) { const e = this.evInfo(id); return !!e && new Date(e.closed_at).getTime() < Date.now() - 3600 * 1000; },
+            // 單期 top100(瘦身:只留 rank/score/user_id/name)
+            async top100(id) {
+                const key = 'hs_t100_v1_' + id;
+                try { const c = localStorage.getItem(key); if (c) return JSON.parse(c); } catch {}
+                const data = await apiFetch(`/event/${id}/top100`);
+                const slim = EventModule.extractRankings(data).map(r => ({
+                    rank: r.rank, score: r.score,
+                    user_id: r.user_id != null ? String(r.user_id) : undefined,
+                    name: r.user_name }));
+                if (slim.length && this._ended(id)) {
+                    try { localStorage.setItem(key, JSON.stringify(slim)); }
+                    catch { this._prune(); try { localStorage.setItem(key, JSON.stringify(slim)); } catch {} }
+                }
+                return slim;
+            },
+            _prune() {   // 快取滿時清掉一半
+                const ks = [];
+                for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('hs_t100_')) ks.push(k); }
+                ks.slice(0, Math.ceil(ks.length / 2)).forEach(k => localStorage.removeItem(k));
+            },
+            _abort: false,
+            abort() { this._abort = true; },
+            // 並行掃描 [start..end],5 路併發;onProgress(done,total,evId)
+            async scanRange(start, end, onProgress) {
+                this._abort = false;
+                await this.loadList();
+                const ids = []; for (let i = start; i <= end; i++) ids.push(i);
+                const results = {}; let done = 0, idx = 0;
+                const worker = async () => {
+                    while (idx < ids.length && !this._abort) {
+                        const id = ids[idx++];
+                        try { results[id] = await this.top100(id); }
+                        catch { results[id] = null; }
+                        done++;
+                        if (onProgress) onProgress(done, ids.length, id);
+                    }
+                };
+                await Promise.all(Array.from({ length: Math.min(5, ids.length) }, worker));
+                return { results, aborted: this._abort };
+            },
+            exportCsv(filename, rows) {
+                const csv = rows.map(r => r.map(c => {
+                    const s = String(c ?? '');
+                    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+                }).join(',')).join('\n');
+                const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });   // BOM 讓 Excel 正確認 UTF-8
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+            }
+        };
+
         // ========== 活躍玩家 ==========
         const PlayerModule = {
+            _lastActive: null,
             async scanActive() {
                 const start = +document.getElementById('playerScanStart').value;
                 const end = +document.getElementById('playerScanEnd').value;
                 if (!start||!end||end<start) { alert('請輸入有效期數範圍'); return; }
-                if (end-start>50) { alert('建議範圍不超過 50 期'); return; }
-                document.getElementById('activePlayerProgress').style.display='block';
-                const freq = {};
-                for (let id=start; id<=end; id++) {
-                    const pct = ((id-start)/(end-start+1)*100).toFixed(0);
+                if (end-start+1>200) { alert('範圍過大(上限 200 期)'); return; }
+                if (end-start+1>50 && !confirm(`將掃描 ${end-start+1} 期,未快取的部分需要較久,確定繼續?`)) return;
+                const prog=document.getElementById('activePlayerProgress');
+                const abortBtn=document.getElementById('activeAbortBtn');
+                prog.style.display='block'; if(abortBtn) abortBtn.style.display='';
+                document.getElementById('activePlayerResult').innerHTML='';
+                const { results, aborted } = await EventScan.scanRange(start, end, (done,total)=>{
+                    const pct=(done/total*100).toFixed(0);
                     document.getElementById('activeProgressBar').style.width=pct+'%';
-                    document.getElementById('activeProgressText').textContent=`掃描第 ${id} 期... (${pct}%)`;
-                    try {
-                        const data = await apiFetch(`/event/${id}/top100`);
-                        const rankings = EventModule.extractRankings(data);
-                        rankings.forEach(r => {
-                            const uid = r.user_id||r.id||r.userId;
-                            const name = r.user_name||r.name;
-                            if (!uid) return;
-                            if (!freq[uid]) freq[uid]={name,count:0,ranks:[]};
-                            freq[uid].count++;
-                            freq[uid].ranks.push({event:id,rank:r.rank||0});
-                        });
-                    } catch {}
-                    await sleep(150);
-                }
-                document.getElementById('activePlayerProgress').style.display='none';
+                    document.getElementById('activeProgressText').textContent=`已完成 ${done}/${total} 期... (${pct}%)`;
+                });
+                prog.style.display='none'; if(abortBtn) abortBtn.style.display='none';
+                const freq = {};
+                Object.entries(results).forEach(([evId, rows]) => (rows||[]).forEach(r => {
+                    const uid = r.user_id;
+                    if (!uid) return;
+                    if (!freq[uid]) freq[uid]={name:r.name,count:0,ranks:[]};
+                    freq[uid].count++; if (r.name) freq[uid].name = r.name;
+                    freq[uid].ranks.push({event:+evId,rank:r.rank||0});
+                }));
+                Object.values(freq).forEach(d=>d.ranks.sort((a,b)=>a.event-b.event));
                 const sorted = Object.entries(freq).sort((a,b)=>b[1].count-a[1].count).slice(0,30);
+                const scanned = Object.values(results).filter(v=>v&&v.length).length;
                 const total = end-start+1;
+                this._lastActive = { sorted, total };
                 document.getElementById('activePlayerResult').innerHTML = sorted.length?`
+                    ${aborted?'<div class="note" style="margin-top:8px;">已中止,以下為部分結果。</div>':''}
+                    <div class="note" style="margin-top:8px;">有效期數 ${scanned}/${total}。點玩家名稱可帶入玩家查詢。</div>
                     <div class="table-wrapper"><table>
                         <thead><tr><th>排名</th><th>玩家名稱</th><th>上榜次數</th><th>霸榜率</th><th>主要名次</th></tr></thead>
                         <tbody>${sorted.map(([uid,d],i)=>`<tr>
                             <td>${i+1}</td>
-                            <td>${d.name}</td>
+                            <td><a href="#" onclick="PlayerModule.fillLookup('${uid}');return false;">${d.name||uid}</a></td>
                             <td>${d.count}/${total}</td>
                             <td>${(d.count/total*100).toFixed(1)}%</td>
-                            <td style="font-size:12px;color:var(--text-light)">${d.ranks.slice(0,3).map(r=>`#${r.event}→T${r.rank}`).join('，')}</td>
+                            <td style="font-size:12px;color:var(--text-light)">${d.ranks.slice(0,3).map(r=>`<span title="${EventScan.evName(r.event)}">#${r.event}→T${r.rank}</span>`).join('，')}</td>
                         </tr>`).join('')}</tbody>
-                    </table></div>`
+                    </table></div>
+                    <button class="calc-btn" style="margin-top:10px;" onclick="PlayerModule.exportActive()">匯出 CSV</button>`
                     :'<div class="note">無資料</div>';
+            },
+            fillLookup(uid) {
+                const inp = document.getElementById('playerIdInput');
+                if (!inp) return;
+                inp.value = uid;
+                document.getElementById('player-lookup').scrollIntoView({behavior:'smooth'});
+                this.lookup();
+            },
+            exportActive() {
+                if (!this._lastActive) return;
+                const rows = [['名次','玩家ID','玩家名稱','上榜次數','總期數','霸榜率%','各期名次']];
+                this._lastActive.sorted.forEach(([uid,d],i)=>rows.push([
+                    i+1, uid, d.name||'', d.count, this._lastActive.total,
+                    (d.count/this._lastActive.total*100).toFixed(1),
+                    d.ranks.map(r=>`#${r.event}:T${r.rank}`).join(' ')
+                ]));
+                EventScan.exportCsv('active_players.csv', rows);
             },
 
             async lookup() {
@@ -2759,9 +3013,91 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         </div>`:'<div class="note" style="margin-top:0">此玩家未公開詳細統計資料。</div>'}
                         ${charHtml}
                     </div>`;
+                    document.getElementById('playerXref').style.display = 'block';
+                    document.getElementById('xrefResult').innerHTML = '';
                 } catch(e) {
                     el.innerHTML = `<div class="event-error">查詢失敗。可能原因：ID 不存在、玩家未公開個人檔案，或 API 暫時無法連線（CORS／網路）。<br><span style="font-size:12px;opacity:.7;">${e.message||''}</span></div>`;
                 }
+            },
+
+            _lastXref: null,
+            async crossRef() {
+                const id = document.getElementById('playerIdInput').value.trim();
+                if (!/^\d+$/.test(id)) { alert('請先輸入有效玩家 ID'); return; }
+                const start = +document.getElementById('xrefStart').value;
+                const end = +document.getElementById('xrefEnd').value;
+                if (!start||!end||end<start) { alert('請輸入有效期數範圍'); return; }
+                if (end-start+1>200) { alert('範圍過大(上限 200 期)'); return; }
+                if (end-start+1>50 && !confirm(`將掃描 ${end-start+1} 期,未快取的部分需要較久,確定繼續?`)) return;
+                const prog=document.getElementById('xrefProgress');
+                const bar=document.getElementById('xrefBar');
+                const txt=document.getElementById('xrefText');
+                const out=document.getElementById('xrefResult');
+                const abortBtn=document.getElementById('xrefAbortBtn');
+                prog.style.display='block'; if(abortBtn) abortBtn.style.display=''; out.innerHTML='';
+                const target=String(id);
+                const { results, aborted } = await EventScan.scanRange(start, end, (done,total)=>{
+                    const pct=(done/total*100).toFixed(0);
+                    bar.style.width=pct+'%'; txt.textContent=`已完成 ${done}/${total} 期... (${pct}%)`;
+                });
+                prog.style.display='none'; if(abortBtn) abortBtn.style.display='none';
+                const hits=[];
+                Object.entries(results).forEach(([evId, rows]) => {
+                    const me=(rows||[]).find(r=>String(r.user_id)===target);
+                    if (me) hits.push({event:+evId, rank:me.rank, score:me.score, name:EventScan.evName(+evId)});
+                });
+                hits.sort((a,b)=>a.event-b.event);
+                this._lastXref = { id: target, hits };
+                const scanned = Object.values(results).filter(v=>v&&v.length).length;
+                if (!hits.length) { out.innerHTML=`<div class="note" style="margin-top:12px;">${aborted?'已中止。':''}此範圍(有效 ${scanned} 期)內未在前 100 名找到該玩家。僅能比對曾進入前 100 名的活動。</div>`; return; }
+                const ranked=hits.filter(h=>h.rank!=null);
+                const best=ranked.length?Math.min(...ranked.map(h=>h.rank)):null;
+                const bestEv=best!=null?ranked.find(h=>h.rank===best).event:null;
+                const avg=ranked.length?(ranked.reduce((s,h)=>s+h.rank,0)/ranked.length):null;
+                out.innerHTML=`
+                    ${aborted?'<div class="note" style="margin-top:8px;">已中止,以下為部分結果。</div>':''}
+                    <div class="player-power-grid" style="margin-top:14px;">
+                        <div class="power-item"><div class="power-label">上榜次數</div><div class="power-value">${hits.length}<span style="font-size:11px;color:var(--text-light)"> /${scanned}期</span></div></div>
+                        ${best!=null?`<div class="power-item"><div class="power-label">最佳名次</div><div class="power-value">T${best}<span style="font-size:11px;color:var(--text-light)"> (第${bestEv}期)</span></div></div>`:''}
+                        ${avg!=null?`<div class="power-item"><div class="power-label">平均名次</div><div class="power-value">T${avg.toFixed(1)}</div></div>`:''}
+                    </div>
+                    ${this._xrefChart(ranked)}
+                    <div class="table-wrapper" style="margin-top:12px;"><table>
+                        <thead><tr><th>期數</th><th>活動名稱</th><th>名次</th><th>分數</th></tr></thead>
+                        <tbody>${hits.slice().reverse().map(h=>`<tr>
+                            <td style="white-space:nowrap"><a href="#" onclick="EventModule.viewEventDetail(${h.event});return false;">第 ${h.event} 期</a></td>
+                            <td style="font-size:12px">${h.name||'—'}</td>
+                            <td>${h.rank!=null?'T'+h.rank:'—'}</td>
+                            <td>${h.score!=null?fmtNum(h.score):'—'}</td>
+                        </tr>`).join('')}</tbody>
+                    </table></div>
+                    <button class="calc-btn" style="margin-top:10px;" onclick="PlayerModule.exportXref()">匯出 CSV</button>`;
+            },
+            // 名次趨勢圖(SVG,y 軸反轉:名次越小越上面)
+            _xrefChart(pts) {
+                if (!pts || pts.length < 2) return '';
+                const W=720, H=170, padL=44, padR=16, padT=16, padB=26;
+                const evs=pts.map(h=>h.event);
+                const minE=Math.min(...evs), maxE=Math.max(...evs);
+                const maxR=Math.max(...pts.map(h=>h.rank), 10);
+                const x=e=>padL+(maxE===minE?0.5:(e-minE)/(maxE-minE))*(W-padL-padR);
+                const y=r=>padT+(r-1)/(maxR-1||1)*(H-padT-padB);
+                const gridRanks=[1, Math.round(maxR/2), maxR].filter((v,i,a)=>a.indexOf(v)===i);
+                const poly=pts.map(h=>`${x(h.event).toFixed(1)},${y(h.rank).toFixed(1)}`).join(' ');
+                return `<div class="table-wrapper" style="margin-top:12px;"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:420px;height:auto;display:block;" role="img" aria-label="名次趨勢圖">
+                    ${gridRanks.map(r=>`<line x1="${padL}" y1="${y(r).toFixed(1)}" x2="${W-padR}" y2="${y(r).toFixed(1)}" stroke="var(--border)" stroke-width="1"/>
+                    <text x="${padL-6}" y="${(y(r)+4).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--text-light)">T${r}</text>`).join('')}
+                    <polyline points="${poly}" fill="none" stroke="var(--primary)" stroke-width="2"/>
+                    ${pts.map(h=>`<circle cx="${x(h.event).toFixed(1)}" cy="${y(h.rank).toFixed(1)}" r="3.5" fill="var(--primary)"><title>第 ${h.event} 期 ${h.name||''}:T${h.rank}</title></circle>`).join('')}
+                    <text x="${padL}" y="${H-8}" font-size="10" fill="var(--text-light)">#${minE}</text>
+                    <text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10" fill="var(--text-light)">#${maxE}</text>
+                </svg></div>`;
+            },
+            exportXref() {
+                if (!this._lastXref) return;
+                const rows = [['玩家ID','期數','活動名稱','名次','分數']];
+                this._lastXref.hits.forEach(h=>rows.push([this._lastXref.id, h.event, h.name||'', h.rank??'', h.score??'']));
+                EventScan.exportCsv(`player_${this._lastXref.id}_history.csv`, rows);
             }
         };
 
@@ -3344,6 +3680,280 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         };
 
         // ========== 全域搜尋（智能・人性化）==========
+        // 通用 JSON 抓取:直連失敗自動走代理(比照 apiFetch)
+        async function fetchJSONproxied(url) {
+            const attempts = [url, 'https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+            let lastErr;
+            for (const u of attempts) {
+                try {
+                    const ctrl = new AbortController();
+                    const timer = setTimeout(() => ctrl.abort(), 15000);
+                    const r = await fetch(u, { signal: ctrl.signal });
+                    clearTimeout(timer);
+                    if (!r.ok) { lastErr = new Error('HTTP ' + r.status); continue; }
+                    return await r.json();
+                } catch (e) { lastErr = e; }
+            }
+            throw lastErr || new Error('fetch failed');
+        }
+
+        // ========== 台服 master data 共用載入器(快取 Promise,去重併發) ==========
+        const MasterDB = {
+            _c: {}, base: 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main',
+            get(file) {
+                if (this._c[file]) return this._c[file];
+                const p = fetch(`${this.base}/${file}`).then(r => r.json());
+                this._c[file] = p;
+                p.catch(() => { delete this._c[file]; });
+                return p;
+            }
+        };
+
+        // 角色(gameCharacterId 1–26)分團;火倍率;屬性;稀有度
+        const EC_CHARS = [
+            { u: 'Leo/need', list: [[1, '一歌'], [2, '咲希'], [3, '穗波'], [4, '志步']] },
+            { u: 'MORE MORE JUMP!', list: [[5, '實乃理'], [6, '遙'], [7, '愛莉'], [8, '雫']] },
+            { u: 'Vivid BAD SQUAD', list: [[9, '心羽'], [10, '杏'], [11, '彰人'], [12, '冬彌']] },
+            { u: 'ワンダーランズ×ショウタイム', list: [[13, '司'], [14, '笑夢'], [15, '寧寧'], [16, '類']] },
+            { u: '25時、ナイトコードで。', list: [[17, '奏'], [18, '真冬'], [19, '繪名'], [20, '瑞希']] },
+            { u: 'VIRTUAL SINGER', list: [[21, '初音'], [22, '鈴'], [23, '連'], [24, '流歌'], [25, 'MEIKO'], [26, 'KAITO']] }
+        ];
+        const EC_ATTRS = [['cool', '帥氣'], ['cute', '可愛'], ['pure', '純真'], ['happy', '快樂'], ['mysterious', '神秘']];
+        const EC_RARITY = [['rarity_4', '★4'], ['rarity_birthday', '生日'], ['rarity_3', '★3'], ['rarity_2', '★2'], ['rarity_1', '★1']];
+        const EC_BOOST = { 0: 1, 1: 5, 2: 10, 3: 15, 4: 19, 5: 23, 6: 26, 7: 29, 8: 31, 9: 33, 10: 35 };
+        const EC_cidName = id => { for (const g of EC_CHARS) { const f = g.list.find(x => x[0] === id); if (f) return f[1]; } return '#' + id; };
+        const EC_attrName = a => { const f = EC_ATTRS.find(x => x[0] === a); return f ? f[1] : a; };
+
+        // ========== 二十:活動加成 & 活動P ==========
+        const EventCalc = {
+            _ready: false, _gcu: {}, _mr: {}, _deck: [], _types: {}, _evId: null, _total: 0, _init: false,
+            tab(id) { switchTab(id); if (id === 'ec-point') this.calcPoint(); },
+            async ensure() {
+                if (this._ready) return true;
+                try {
+                    const [gcu, rar, deck, evs] = await Promise.all([
+                        MasterDB.get('gameCharacterUnits.json'), MasterDB.get('eventRarityBonusRates.json'),
+                        MasterDB.get('eventDeckBonuses.json'), MasterDB.get('events.json')
+                    ]);
+                    gcu.forEach(g => this._gcu[g.id] = { cid: g.gameCharacterId, unit: g.unit });
+                    rar.forEach(r => { (this._mr[r.cardRarityType] = this._mr[r.cardRarityType] || {})[r.masterRank] = Math.round(r.bonusRate * 10) / 10; });
+                    this._deck = deck;
+                    evs.forEach(e => this._types[e.id] = e.eventType);
+                    this._ready = true; return true;
+                } catch (e) { return false; }
+            },
+            async init() {
+                if (this._init) return; this._init = true;
+                const ok = await this.ensure();
+                if (!ok) { const inf = document.getElementById('ecEventInfo'); if (inf) inf.textContent = '台服 master data 載入失敗,稍後重整再試。'; return; }
+                const list = await EventScan.loadList();
+                const sel = document.getElementById('ecEventSelect');
+                if (sel) {
+                    const now = Date.now();
+                    const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
+                    if (started.length) {
+                        sel.innerHTML = started.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('');
+                        this._evId = started[0].id; sel.value = this._evId;
+                    }
+                }
+                this.buildRows();
+                this.onEvent();
+            },
+            buildRows() {
+                const body = document.getElementById('ecTeamBody'); if (!body) return;
+                const charOpts = EC_CHARS.map(g => `<optgroup label="${g.u}">` + g.list.map(([id, n]) => `<option value="${id}">${n}</option>`).join('') + `</optgroup>`).join('');
+                const attrOpts = EC_ATTRS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+                const rarOpts = EC_RARITY.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+                const mrOpts = [0, 1, 2, 3, 4, 5].map(m => `<option value="${m}">${m}</option>`).join('');
+                const spOpts = `<option value="0">無</option><option value="20">特效卡+20%</option><option value="70">BloomFes+70%</option>`;
+                const sty = 'padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-family:inherit;font-size:12px;';
+                let html = '';
+                for (let i = 0; i < 5; i++) {
+                    const def4 = i === 0 ? ' data-def' : '';
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><select style="${sty}" data-ec="char" onchange="EventCalc.calc()">${charOpts}</select></td>
+                        <td><select style="${sty}" data-ec="attr" onchange="EventCalc.calc()">${attrOpts}</select></td>
+                        <td><select style="${sty}" data-ec="rar" onchange="EventCalc.calc()">${rarOpts}</select></td>
+                        <td><select style="${sty}" data-ec="mr" onchange="EventCalc.calc()">${mrOpts}</select></td>
+                        <td><select style="${sty}" data-ec="sp" onchange="EventCalc.calc()">${spOpts}</select></td>
+                        <td class="score" data-ec-out="${i}">—</td>
+                    </tr>`;
+                }
+                body.innerHTML = html;
+            },
+            onEvent() {
+                const sel = document.getElementById('ecEventSelect');
+                if (sel && sel.value) this._evId = +sel.value;
+                const info = document.getElementById('ecEventInfo');
+                const type = this._types[this._evId];
+                const typeName = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' }[type] || '—';
+                const entries = this._deck.filter(e => e.eventId === this._evId);
+                const chars = [...new Set(entries.filter(e => e.gameCharacterUnitId != null).map(e => this._gcu[e.gameCharacterUnitId] && this._gcu[e.gameCharacterUnitId].cid))].filter(Boolean);
+                const attrs = [...new Set(entries.filter(e => e.cardAttr).map(e => e.cardAttr))];
+                if (info) info.innerHTML = `類型:<strong>${typeName}</strong>　加成角色:${chars.map(EC_cidName).join('、') || '—'}　加成屬性:${attrs.map(EC_attrName).join('、') || (type === 'world_bloom' ? '(WL:改為隊內異色數加成)' : '—')}`;
+                this.calc();
+            },
+            _deckBonus(card) {
+                let mx = 0;
+                for (const e of this._deck) {
+                    if (e.eventId !== this._evId) continue;
+                    if (e.cardAttr && e.cardAttr !== card.attr) continue;
+                    if (e.gameCharacterUnitId != null) { const g = this._gcu[e.gameCharacterUnitId]; if (!g || g.cid !== card.char) continue; }
+                    if (e.bonusRate > mx) mx = e.bonusRate;
+                }
+                return mx;
+            },
+            calc() {
+                if (!this._ready) return;
+                const cards = [];
+                document.querySelectorAll('#ecTeamBody tr').forEach(tr => {
+                    const g = k => tr.querySelector(`[data-ec="${k}"]`);
+                    if (!g('char')) return;
+                    cards.push({ char: +g('char').value, attr: g('attr').value, rar: g('rar').value, mr: +g('mr').value, sp: +g('sp').value });
+                });
+                let sum = 0; const attrsUsed = new Set();
+                cards.forEach((c, i) => {
+                    const mr = (this._mr[c.rar] && this._mr[c.rar][c.mr]) || 0;
+                    const per = Math.round(((c.sp === 70 ? 70 : this._deckBonus(c) + c.sp) + mr) * 10) / 10;
+                    sum += per; attrsUsed.add(c.attr);
+                    const out = document.querySelector(`[data-ec-out="${i}"]`); if (out) out.textContent = '＋' + per + '%';
+                });
+                let wl = 0;
+                if (this._types[this._evId] === 'world_bloom') wl = { 3: 75, 4: 100, 5: 125 }[attrsUsed.size] || 0;
+                const total = Math.round((sum + wl) * 10) / 10;
+                this._total = total;
+                const t = document.getElementById('ecTotal'); if (t) t.textContent = '＋' + total + '%';
+                const b = document.getElementById('ecBreakdown');
+                if (b) b.textContent = `5 張卡合計 ${Math.round(sum * 10) / 10}%` + (wl ? ` ＋ WL 異色(${attrsUsed.size}色)${wl}%` : '') + (this._types[this._evId] === 'world_bloom' ? '(未含支援隊伍加成)' : '');
+            },
+            toPoint() {
+                const e = document.getElementById('epBonus'); if (e) e.value = Math.round(this._total || 0);
+                this.tab('ec-point');
+            },
+            calcPoint() {
+                const el = document.getElementById('epResult'); if (!el) return;
+                const mode = document.getElementById('epMode').value;
+                const S = +document.getElementById('epScore').value || 0;
+                const B = +document.getElementById('epBonus').value || 0;
+                const R = +document.getElementById('epRate').value || 100;
+                const boostN = +document.getElementById('epBoost').value || 0;
+                const F = EC_BOOST[boostN] || 1;
+                document.getElementById('epOthersRow').style.display = (mode === 'multi' || mode === 'cheer') ? '' : 'none';
+                document.getElementById('epLifeRow').style.display = mode === 'cheer' ? '' : 'none';
+                document.getElementById('epRateRow').style.opacity = mode === 'challenge' ? 0.4 : 1;
+                document.getElementById('epBoostRow').style.opacity = mode === 'challenge' ? 0.4 : 1;
+                let ep = 0, detail = '';
+                if (mode === 'challenge') {
+                    ep = (100 + Math.floor(S / 20000)) * 120;
+                    detail = `(100 + ⌊${S.toLocaleString()}/20000⌋) × 120`;
+                } else if (mode === 'solo' || mode === 'auto') {
+                    ep = Math.floor((100 + Math.floor(S / 20000)) * R / 100 * (1 + B / 100)) * F;
+                    detail = `⌊(100+⌊S/20000⌋) × ${R}/100 × ${(1 + B / 100).toFixed(2)}⌋ × ${F}`;
+                } else {
+                    const O = +document.getElementById('epOthers').value || 4 * S;
+                    const base = 110 + Math.floor(S / 17000) + Math.min(13, Math.floor(O / 340000));
+                    const core = Math.floor(base * R / 100 * (1 + B / 100));
+                    if (mode === 'cheer') {
+                        const L = +document.getElementById('epLife').value || 0;
+                        const lifeRate = 1.15 + Math.min(0.20, Math.max(0.10, L / 5000));
+                        ep = Math.floor(core * lifeRate) * F;
+                        detail = `⌊${core.toLocaleString()} × 生存${lifeRate.toFixed(3)}⌋ × ${F}`;
+                    } else {
+                        ep = core * F;
+                        detail = `⌊(110+⌊S/17000⌋+min(13,⌊O/34萬⌋)) × ${R}/100 × ${(1 + B / 100).toFixed(2)}⌋ × ${F}`;
+                    }
+                }
+                const perBoost = boostN > 0 ? Math.round(ep / boostN) : ep;
+                el.innerHTML = `<div style="font-size:26px;font-weight:700;color:var(--primary);">${ep.toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--text-light);">EP / 局</span></div>
+                    ${mode !== 'challenge' ? `<div style="margin-top:8px;font-size:13px;">每火 EP:<strong>${perBoost.toLocaleString()}</strong>(火數 ${boostN})</div>` : ''}
+                    <div style="margin-top:10px;font-size:11px;color:var(--text-light);word-break:break-all;">${detail}</div>`;
+            }
+        };
+
+        // ========== 二十一:抽卡期望・天井 ==========
+        const GachaCalc = {
+            calc() {
+                const tv = document.getElementById('gcTarget').value;
+                const birthday = tv === '0.03b';
+                const p = birthday ? 0.03 : parseFloat(tv);
+                const ceil = birthday ? 100 : 300;
+                const crystal = +document.getElementById('gcCrystal').value || 0;
+                const pulled = +document.getElementById('gcPulled').value || 0;
+                const voucher = +document.getElementById('gcVoucher').value || 0;
+                const affordable = Math.floor(crystal / 300);
+                const pAfford = 1 - Math.pow(1 - p, affordable);
+                const eNo = 1 / p;
+                const eCeil = (1 - Math.pow(1 - p, ceil)) / p;
+                let toCeil, ceilNote;
+                if (birthday) { toCeil = Math.max(0, ceil - pulled) * 300; ceilNote = '生日池天井 100 抽,不可使用交換券'; }
+                else { const usable = Math.min(voucher, 10); const need = Math.max(0, 300 - pulled - usable * 10); toCeil = need * 300; ceilNote = `用 ${usable} 張券(抵 ${usable * 10} 貼紙)後尚需 ${need} 抽`; }
+                const el = document.getElementById('gcResult');
+                if (el) el.innerHTML = `<div style="font-size:13px;line-height:1.95;">
+                    可抽次數(現有水晶):<strong>${affordable}</strong> 抽<br>
+                    預算內至少中 1 張:<strong style="color:var(--primary);font-size:16px;">${(pAfford * 100).toFixed(1)}%</strong><br>
+                    期望抽數(無天井):<strong>${eNo.toFixed(0)}</strong> 抽 ≈ ${Math.round(eNo * 300).toLocaleString()} 水晶<br>
+                    期望抽數(抽到即停・天井${ceil}):<strong>${eCeil.toFixed(1)}</strong> 抽<br>
+                    目前貼紙:<strong>${pulled}</strong> 張(可換 ${Math.floor(pulled / 10)} 券)<br>
+                    距天井保底:<strong style="color:var(--primary);">${toCeil.toLocaleString()}</strong> 水晶<br>
+                    <span style="font-size:11px;color:var(--text-light);">${ceilNote}</span></div>`;
+                const step = Math.max(1, Math.round(ceil / 60));
+                const vals = [], labels = [];
+                for (let n = 0; n <= ceil; n += step) { vals.push((1 - Math.pow(1 - p, n)) * 100); labels.push(String(n)); }
+                if (typeof ChartUtil !== 'undefined') ChartUtil.drawLine('gcChart', [{ values: vals, color: '#aa66cc' }], labels);
+            }
+        };
+
+        // ========== 歌曲刷 P 效率(music_metas) ==========
+        const SongEff = {
+            _metas: null, _loaded: false, _loading: false,
+            async ensure() {
+                if (this._loaded) { this.render(); return; }
+                if (this._loading) return;
+                this._loading = true;
+                const el = document.getElementById('seResult');
+                if (el) el.innerHTML = '<div class="event-loading" style="padding:20px;">載入 music_metas…</div>';
+                try {
+                    const m = await fetchJSONproxied('https://storage.sekai.best/sekai-best-assets/music_metas.json');
+                    const byId = {};
+                    m.forEach(r => { (byId[r.music_id] = byId[r.music_id] || {})[r.difficulty] = r; });
+                    this._metas = byId; this._loaded = true; this.render();
+                } catch (e) { if (el) el.innerHTML = '<div class="note">music_metas 載入失敗,稍後重試。</div>'; }
+                finally { this._loading = false; }
+            },
+            render() {
+                if (!this._loaded) return;
+                const el = document.getElementById('seResult'); if (!el) return;
+                const mode = document.getElementById('seMode').value;
+                const S = +document.getElementById('seScore').value || 0;
+                const B = +document.getElementById('seBonus').value || 0;
+                const boostN = +document.getElementById('seBoost').value || 0;
+                const F = EC_BOOST[boostN] || 1;
+                const titleById = {};
+                (typeof allSongs !== 'undefined' ? allSongs : []).forEach(s => titleById[s.id] = s.title);
+                const rows = [];
+                Object.entries(this._metas).forEach(([mid, diffs]) => {
+                    const meta = diffs.master || diffs.expert || diffs.append || Object.values(diffs)[0];
+                    if (!meta) return;
+                    const R = meta.event_rate || 100, time = meta.music_time || 120;
+                    let base;
+                    if (mode === 'multi') { const O = 4 * S; base = 110 + Math.floor(S / 17000) + Math.min(13, Math.floor(O / 340000)); }
+                    else base = 100 + Math.floor(S / 20000);
+                    const ep = Math.floor(base * R / 100 * (1 + B / 100)) * F;
+                    const T = time + 30;
+                    rows.push({ mid: +mid, title: titleById[+mid] || ('#' + mid), R, time, ep, perMin: ep * 60 / T, perBoost: boostN > 0 ? ep / boostN : ep });
+                });
+                const sort = document.getElementById('seSort').value;
+                rows.sort((a, b) => sort === 'perPlay' ? b.ep - a.ep : sort === 'perBoost' ? b.perBoost - a.perBoost : b.perMin - a.perMin);
+                const top = rows.slice(0, 60);
+                el.innerHTML = `<div class="note" style="margin-top:0;">共 ${rows.length} 首,顯示前 60。以固定分數 ${S.toLocaleString()}／加成 ${B}%／火 ${boostN} 估每局 EP;「每分 EP」以歌長＋30 秒估。</div>
+                    <div class="table-wrapper"><table>
+                    <thead><tr><th>#</th><th>歌曲</th><th title="event_rate">係數R</th><th>時長</th><th>每局EP</th><th>每分EP</th><th title="每火 EP,省體力指標">每火EP</th></tr></thead>
+                    <tbody>${top.map((r, i) => `<tr><td>${i + 1}</td><td style="font-size:13px;">${r.title}</td><td>${r.R}</td><td>${r.time.toFixed(0)}s</td><td>${r.ep.toLocaleString()}</td><td>${Math.round(r.perMin).toLocaleString()}</td><td>${Math.round(r.perBoost).toLocaleString()}</td></tr>`).join('')}</tbody>
+                    </table></div>`;
+            }
+        };
+
         const GlobalSearch = {
             // 角色別名：輸入任一別名都能對應到資料中的中文名
             charAlias: {
@@ -3370,7 +3980,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ['#calendar','活動日曆'],['#event-tracking','活動排名追蹤'],['#gacha','卡池列表'],
                 ['#dolls','月卡玩偶列表'],['#bonus-cards','加分卡參考'],['#analysis','榜線分析'],
                 ['#player-lookup','玩家查詢'],['#distribution','活動分布甘特圖'],['#songs','歌曲清單'],
-                ['#calculator','推隊倍率計算器'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
+                ['#calculator','推隊倍率計算器'],['#event-calc','活動加成 活動P 計算器'],['#gacha-calc','抽卡期望 天井計算器'],
+                ['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
                 ['#info','資訊站'],['#community','討論社群'],['#wiki','Wiki 百科'],['#tools','實用工具'],['#ep-calc','EP 計算器']
             ],
             _items: [], _active: -1,
@@ -3537,6 +4148,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             loadSongs();
             calculateMultiplier();
             setInterval(()=>EventModule.loadLive(), 60000);
+            // 活動清單(/event/list):填歷史活動下拉選單(只列已開始的活動)
+            EventScan.loadList().then(list => {
+                const sel = document.getElementById('historyEventSelect');
+                if (!sel || !list.length) return;
+                const now = Date.now();
+                list.slice().sort((a,b)=>b.id-a.id).forEach(e => {
+                    if (new Date(e.start_at).getTime() > now) return;
+                    const o = document.createElement('option');
+                    o.value = e.id; o.textContent = `#${e.id} ${e.name}`;
+                    sel.appendChild(o);
+                });
+            }).catch(()=>{});
             // 卡庫：捲動到區段時才載入（資料較大，避免拖慢首屏）
             const cardSec = document.getElementById('cardlib');
             if (cardSec) {
@@ -3549,6 +4172,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     CardModule.load();
                 }
             }
+            // 新計算器:捲到才初始化(避免首屏多打 master data)
+            const lazyInit = (id, fn) => {
+                const sec = document.getElementById(id); if (!sec) return;
+                if ('IntersectionObserver' in window) {
+                    const io = new IntersectionObserver((es, obs) => es.forEach(e => { if (e.isIntersecting) { fn(); obs.disconnect(); } }), { rootMargin: '200px' });
+                    io.observe(sec);
+                } else fn();
+            };
+            lazyInit('event-calc', () => EventCalc.init());
+            lazyInit('gacha-calc', () => GachaCalc.calc());
             window.addEventListener('resize', () => {
                 clearTimeout(window._calResizeTimer);
                 window._calResizeTimer = setTimeout(renderCalendar, 200);
