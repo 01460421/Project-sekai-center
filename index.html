@@ -604,6 +604,7 @@
                 <button class="tab-btn active" onclick="switchEventTab('event-live')">即時排名</button>
                 <button class="tab-btn" onclick="switchEventTab('event-border')">分段排名</button>
                 <button class="tab-btn" onclick="switchEventTab('event-history')">歷史活動</button>
+                <button class="tab-btn" onclick="switchEventTab('event-future')">未來預告</button>
             </div>
 
             <div id="event-live" class="tab-content active">
@@ -651,6 +652,16 @@
                     <button class="refresh-btn" onclick="EventModule.viewEventDetail(+document.getElementById('historyEventId').value||0)">查詢</button>
                 </div>
                 <div style="margin-top:12px;font-size:13px;color:var(--text-light);">目前活動期數：<strong id="currentEventId">載入中...</strong></div>
+            </div>
+
+            <div id="event-future" class="tab-content">
+                <div class="note" style="margin-top:0;">台服進度落後日服約 1 年。以下用<strong>日服 master data</strong> 平移 +365 天推估台服未來檔期(名稱為日服原名,台服上線時會在地化;日期為估算,實際以官方公告為準)。</div>
+                <div class="table-wrapper" style="margin-top:10px;">
+                    <table>
+                        <thead><tr><th>期</th><th>估台服開始</th><th>活動名稱(日服)</th><th>類型</th><th>加成角色</th></tr></thead>
+                        <tbody id="futureBody"><tr><td colspan="5" class="event-loading">切到此分頁時載入…</td></tr></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="event-detail-modal" id="eventDetailModal">
@@ -1341,6 +1352,8 @@
             <div class="tabs">
                 <button class="tab-btn active" onclick="EventCalc.tab('ec-bonus')">隊伍加成</button>
                 <button class="tab-btn" onclick="EventCalc.tab('ec-point')">活動P效率</button>
+                <button class="tab-btn" onclick="EventCalc.tab('ec-score')">分數估算</button>
+                <button class="tab-btn" onclick="EventCalc.tabWL()">WL支援隊伍</button>
             </div>
 
             <div id="ec-bonus" class="tab-content active">
@@ -1400,6 +1413,50 @@
                     </div>
                 </div>
                 <div class="note">火倍率:0→1×、1→5、2→10、3→15、4→19、5→23、6→26、7→29、8→31、9→33、10→35。1~3 火每火 5 倍最省石;10 火時間效率最高。挑戰 Live 固定 ×120、不吃係數/加成/火。</div>
+            </div>
+
+            <div id="ec-score" class="tab-content">
+                <div class="calculator">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                        <div class="calc-section">
+                            <h4>輸入參數</h4>
+                            <div class="calc-row"><label>模式</label>
+                                <select id="scMode" onchange="EventCalc.calcScore()">
+                                    <option value="solo">單人 Live</option>
+                                    <option value="multi">協力 Live</option>
+                                </select>
+                            </div>
+                            <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="scPower" value="280000" min="0" oninput="EventCalc.calcScore()"></div>
+                            <div class="calc-row"><label>平均技能加分 %</label><input type="number" id="scSkill" value="130" min="0" oninput="EventCalc.calcScore()"></div>
+                            <div class="calc-row"><label>選歌</label>
+                                <select id="scSong" onchange="EventCalc.calcScore()" style="max-width:220px;"><option value="">載入中…</option></select>
+                            </div>
+                            <div class="calc-row"><label>難度</label>
+                                <select id="scDiff" onchange="EventCalc.calcScore()">
+                                    <option value="master">MASTER</option><option value="expert">EXPERT</option>
+                                    <option value="append">APPEND</option><option value="hard">HARD</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="calc-section">
+                            <h4>估算結果</h4>
+                            <div id="scResult" style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:120px;"></div>
+                            <button class="calc-btn" style="margin-top:10px;" onclick="EventCalc.scoreToPoint()">帶入活動P計算 →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="note">分數 ≈ ⌊(base_score ＋ Σ技能窗權重×技能%／100〔協力另計 FEVER〕) × 綜合力 × 4⌋。此為估算,假設各技能窗加分相同、未計協力活躍加分與房間綜合力;數值來自 music_metas 譜面模擬。</div>
+            </div>
+
+            <div id="ec-wl" class="tab-content">
+                <div id="ecWLInfo" class="note" style="margin-top:0;">World Link 支援隊伍最佳化:列出當期團體所有可放入支援隊伍的卡,依支援加成排序。</div>
+                <div class="analysis-input" style="margin:8px 0;">
+                    <label style="font-size:13px;">假設 MR</label>
+                    <select id="wlMR" onchange="EventCalc.calcWL()"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select>
+                    <label style="font-size:13px;">技能等級</label>
+                    <select id="wlSL" onchange="EventCalc.calcWL()"><option>1</option><option>2</option><option>3</option><option selected>4</option></select>
+                </div>
+                <div id="ecWLResult"><div class="event-loading" style="padding:16px;">切到此分頁時載入…</div></div>
             </div>
         </section>
 
@@ -2630,6 +2687,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             document.querySelector(`#event-tracking [onclick="switchEventTab('${tabId}')"]`)?.classList.add('active');
             document.getElementById(tabId)?.classList.add('active');
             if (tabId === 'event-border') EventModule.loadBorderData();
+            if (tabId === 'event-future') ForecastModule.ensure();
         }
 
         function closeEventModal() { document.getElementById('eventDetailModal')?.classList.remove('show'); }
@@ -3727,7 +3785,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // ========== 二十:活動加成 & 活動P ==========
         const EventCalc = {
             _ready: false, _gcu: {}, _mr: {}, _deck: [], _types: {}, _evId: null, _total: 0, _init: false,
-            tab(id) { switchTab(id); if (id === 'ec-point') this.calcPoint(); },
+            tab(id) { switchTab(id); if (id === 'ec-point') this.calcPoint(); if (id === 'ec-score') this.ensureScore(); },
+            tabWL() { switchTab('ec-wl'); this.ensureWL(); },
             async ensure() {
                 if (this._ready) return true;
                 try {
@@ -3868,6 +3927,168 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 el.innerHTML = `<div style="font-size:26px;font-weight:700;color:var(--primary);">${ep.toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--text-light);">EP / 局</span></div>
                     ${mode !== 'challenge' ? `<div style="margin-top:8px;font-size:13px;">每火 EP:<strong>${perBoost.toLocaleString()}</strong>(火數 ${boostN})</div>` : ''}
                     <div style="margin-top:10px;font-size:11px;color:var(--text-light);word-break:break-all;">${detail}</div>`;
+            },
+
+            // ---- 分數估算 ----
+            _scoreReady: false, _lastScore: 0,
+            async ensureScore() {
+                if (this._scoreReady) { this.calcScore(); return; }
+                await SongEff.ensure();                       // 借用 music_metas 快取
+                const sel = document.getElementById('scSong');
+                if (sel && typeof allSongs !== 'undefined' && allSongs.length) {
+                    const withMeta = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
+                    sel.innerHTML = withMeta.map(s => `<option value="${s.id}">${s.title}</option>`).join('') || '<option value="">(無資料)</option>';
+                }
+                this._scoreReady = true;
+                this.calcScore();
+            },
+            calcScore() {
+                const el = document.getElementById('scResult'); if (!el) return;
+                if (!SongEff._metas) { el.innerHTML = '<div class="note">music_metas 尚未載入。</div>'; return; }
+                const mode = document.getElementById('scMode').value;
+                const P = +document.getElementById('scPower').value || 0;
+                const U = +document.getElementById('scSkill').value || 0;
+                const mid = +document.getElementById('scSong').value || 0;
+                const diff = document.getElementById('scDiff').value;
+                const diffs = SongEff._metas[mid];
+                const meta = diffs && (diffs[diff] || diffs.master || diffs.expert || Object.values(diffs)[0]);
+                if (!meta) { el.innerHTML = '<div class="note">此歌無譜面資料。</div>'; return; }
+                const arr = mode === 'multi' ? (meta.skill_score_multi || []) : (meta.skill_score_solo || []);
+                const sumSkill = arr.reduce((s, v) => s + v, 0);
+                const fever = mode === 'multi' ? (meta.fever_score || 0) * 0.5 : 0;
+                const mult = meta.base_score + fever + sumSkill * U / 100;
+                const score = Math.floor(mult * P * 4);
+                this._lastScore = score;
+                el.innerHTML = `<div style="font-size:26px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--text-light);">分 / 局</span></div>
+                    <div style="margin-top:8px;font-size:12px;color:var(--text-light);">分數倍率 ${mult.toFixed(3)}（base ${meta.base_score.toFixed(2)}${fever ? ` ＋FEVER ${fever.toFixed(2)}` : ''} ＋技能 ${(sumSkill * U / 100).toFixed(2)}）× 綜合力 ${P.toLocaleString()} × 4</div>
+                    <div style="margin-top:6px;font-size:12px;">難度 ${diff.toUpperCase()}・${mode === 'multi' ? '協力' : '單人'}・R=${meta.event_rate}</div>`;
+            },
+            scoreToPoint() {
+                const e = document.getElementById('epScore'); if (e) e.value = this._lastScore || 0;
+                const m = document.getElementById('scMode').value;
+                const em = document.getElementById('epMode'); if (em) em.value = (m === 'multi' ? 'multi' : 'solo');
+                // 帶入歌曲係數
+                const mid = +document.getElementById('scSong').value || 0;
+                const diff = document.getElementById('scDiff').value;
+                const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid][diff] || SongEff._metas[mid].master);
+                if (meta) { const r = document.getElementById('epRate'); if (r) r.value = meta.event_rate; }
+                this.tab('ec-point');
+            },
+
+            // ---- WL 支援隊伍最佳化 ----
+            _wlReady: false, _wlEventId: null,
+            async ensureWL() {
+                await this.ensure();
+                const info = document.getElementById('ecWLInfo');
+                const type = this._types[this._evId];
+                if (type !== 'world_bloom') {
+                    if (info) info.innerHTML = `當期活動(#${this._evId || '?'})不是 World Link,支援隊伍最佳化僅適用 WL 活動。可到上方「隊伍加成」分頁選一個 WL 活動。`;
+                    document.getElementById('ecWLResult').innerHTML = '';
+                    return;
+                }
+                if (!this._wlReady || this._wlEventId !== this._evId) {
+                    document.getElementById('ecWLResult').innerHTML = '<div class="event-loading" style="padding:16px;">載入卡片與支援加成表…</div>';
+                    try {
+                        [this._cards, this._wlSup, this._wlLim] = await Promise.all([
+                            MasterDB.get('cards.json'), MasterDB.get('worldBloomSupportDeckBonuses.json'),
+                            MasterDB.get('worldBloomSupportDeckUnitEventLimitedBonuses.json')
+                        ]);
+                        this._wlReady = true; this._wlEventId = this._evId;
+                    } catch (e) { document.getElementById('ecWLResult').innerHTML = '<div class="note">載入失敗。</div>'; return; }
+                }
+                this.calcWL();
+            },
+            calcWL() {
+                if (!this._wlReady) return;
+                const el = document.getElementById('ecWLResult'); if (!el) return;
+                const eid = this._evId;
+                const MR = +document.getElementById('wlMR').value || 0;
+                const SL = +document.getElementById('wlSL').value || 1;
+                // 當期加成角色(章節主角) + 團體
+                const featured = new Set(this._deck.filter(e => e.eventId === eid && e.gameCharacterUnitId != null)
+                    .map(e => this._gcu[e.gameCharacterUnitId] && this._gcu[e.gameCharacterUnitId].cid).filter(Boolean));
+                if (!featured.size) { el.innerHTML = '<div class="note">查無當期加成角色。</div>'; return; }
+                // 團體 unit key(取第一個主角的 base unit)
+                const firstCid = [...featured][0];
+                const bandUnit = (this._gcu[firstCid] || {}).unit;   // e.g. light_sound
+                const bandMembers = new Set(Object.values(this._gcu).filter(g => g.unit === bandUnit && g.cid <= 20).map(g => g.cid));
+                // 前期 WL 限定卡 +20(本期)
+                const limSet = new Set(this._wlLim.filter(x => x.eventId === eid).map(x => x.cardId));
+                // 支援加成表 by rarity
+                const supByRar = {};
+                this._wlSup.forEach(r => { supByRar[r.cardRarityType] = r; });
+                const roundf = v => Math.round(v * 10) / 10;
+                const supBonus = (rar, isMain, cid, cardId) => {
+                    const t = supByRar[rar]; if (!t) return null;
+                    const ch = (t.worldBloomSupportDeckCharacterBonuses.find(x => x.worldBloomSupportDeckCharacterType === (isMain ? 'specific' : 'others')) || {}).bonusRate || 0;
+                    const mr = (t.worldBloomSupportDeckMasterRankBonuses.find(x => x.masterRank === MR) || {}).bonusRate || 0;
+                    const sl = (t.worldBloomSupportDeckSkillLevelBonuses.find(x => x.skillLevel === SL) || {}).bonusRate || 0;
+                    const lim = limSet.has(cardId) ? 20 : 0;
+                    return roundf(ch + mr + sl + lim);
+                };
+                // 可放入支援隊伍的卡:團體成員卡 + V家(supportUnit==bandUnit)
+                const rows = [];
+                this._cards.forEach(c => {
+                    const inBand = bandMembers.has(c.characterId);
+                    const vsSupport = c.characterId >= 21 && c.supportUnit === bandUnit;
+                    if (!inBand && !vsSupport) return;
+                    const isMain = featured.has(c.characterId);   // 章節主角才吃 specific
+                    const b = supBonus(c.cardRarityType, isMain, c.characterId, c.id);
+                    if (b == null) return;
+                    rows.push({ id: c.id, cid: c.characterId, name: EC_cidName(c.characterId), prefix: c.prefix || '', rar: c.cardRarityType, bonus: b, lim: limSet.has(c.id), vs: vsSupport });
+                });
+                rows.sort((a, b) => b.bonus - a.bonus);
+                const top = rows.slice(0, 20);
+                const total = roundf(top.reduce((s, r) => s + r.bonus, 0));
+                const rarName = { rarity_4: '★4', rarity_birthday: '生日', rarity_3: '★3', rarity_2: '★2', rarity_1: '★1' };
+                const info = document.getElementById('ecWLInfo');
+                if (info) info.innerHTML = `當期 WL 團體:<strong>${[...featured].map(EC_cidName).join('、')}</strong>(章節主角吃 specific 加成)。假設全部 MR${MR}/SL${SL};支援隊伍上限 20 張(WL1 為 12)。每張卡加成獨立,故排序取前 20 即最優。`;
+                el.innerHTML = `<div class="calc-result" style="margin:8px 0;"><div class="label">前 20 張支援卡加成合計(此假設下)</div><div class="value">＋${total}%</div></div>
+                    <div class="table-wrapper"><table>
+                    <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>稀有</th><th>支援加成</th></tr></thead>
+                    <tbody>${top.map((r, i) => `<tr><td>${i + 1}</td><td>${r.name}${r.vs ? '(V)' : ''}</td><td style="font-size:12px;">${r.prefix}${r.lim ? ' <span style="color:var(--primary);">[前期限定]</span>' : ''}</td><td>${rarName[r.rar] || r.rar}</td><td class="score">＋${r.bonus}%</td></tr>`).join('')}</tbody>
+                    </table></div>
+                    <div class="note">卡名依 master data 的 prefix;實際需擁有該卡。V=以應援團體加入的 VIRTUAL SINGER 卡。</div>`;
+            }
+        };
+
+        // ========== 台服未來卡池/活動預告(日服 master 平移一年) ==========
+        const ForecastModule = {
+            _loaded: false, _loading: false, JP: 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main',
+            async ensure() {
+                if (this._loaded || this._loading) return;
+                this._loading = true;
+                const body = document.getElementById('futureBody');
+                try {
+                    // 台服 events(對齊用) + 日服 events + 日服 deckBonuses(加成角色)
+                    const [twEv, jpEv, jpDeck, gcu] = await Promise.all([
+                        MasterDB.get('events.json'),
+                        fetchJSONproxied(this.JP + '/events.json'),
+                        fetchJSONproxied(this.JP + '/eventDeckBonuses.json'),
+                        MasterDB.get('gameCharacterUnits.json')
+                    ]);
+                    const gcuMap = {}; gcu.forEach(g => gcuMap[g.id] = g.gameCharacterId);
+                    const twMax = twEv.reduce((m, e) => Math.max(m, e.id), 0);
+                    const twById = {}; twEv.forEach(e => twById[e.id] = e);
+                    const jpById = {}; jpEv.forEach(e => jpById[e.id] = e);
+                    // offset:用兩服都有的最大共同 id 對齊 startAt
+                    let offset = 365 * 86400000, anchor = null;
+                    for (let i = twMax; i >= 1; i--) { if (twById[i] && jpById[i]) { anchor = i; break; } }
+                    if (anchor) offset = twById[anchor].startAt - jpById[anchor].startAt;
+                    const typeName = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' };
+                    const future = jpEv.filter(e => e.id > twMax).sort((a, b) => a.id - b.id).slice(0, 30);
+                    const fmt = ms => { const d = new Date(ms); return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`; };
+                    body.innerHTML = future.map(e => {
+                        const cids = [...new Set(jpDeck.filter(d => d.eventId === e.id && d.gameCharacterUnitId != null).map(d => gcuMap[d.gameCharacterUnitId]))].filter(Boolean);
+                        const main = cids.filter(c => c <= 20).map(EC_cidName);
+                        const hasVS = cids.some(c => c >= 21);
+                        const charStr = (main.join('、') || '—') + (hasVS && main.length ? '＋VS' : (hasVS ? 'VS' : ''));
+                        return `<tr><td>${e.id}</td><td style="white-space:nowrap;">${fmt(e.startAt + offset)}</td><td style="font-size:13px;">${e.name}</td><td>${typeName[e.eventType] || e.eventType || '—'}</td><td style="font-size:12px;">${charStr}</td></tr>`;
+                    }).join('') || '<tr><td colspan="5" class="note">目前日服無領先台服的活動資料。</td></tr>';
+                    this._loaded = true;
+                } catch (e) {
+                    if (body) body.innerHTML = '<tr><td colspan="5" class="note">日服 master data 載入失敗(可能被 CORS/網路擋),稍後重試。</td></tr>';
+                } finally { this._loading = false; }
             }
         };
 
