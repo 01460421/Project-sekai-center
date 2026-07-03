@@ -478,6 +478,7 @@
             <a href="#calculator">倍率計算</a>
             <a href="#event-calc">加成/活動P</a>
             <a href="#gacha-calc">抽卡天井</a>
+            <a href="#rank-match">排位賽</a>
             <a href="#mysekai">MySekai</a>
         </div>
         <div class="nav-row">
@@ -1141,17 +1142,18 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
                     <div class="calc-section">
                         <h4>輸入參數</h4>
-                        <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="mysekaiPower" placeholder="如 250000" oninput="MySekaiCalc.calc()"></div>
-                        <div class="calc-row"><label>活動加成 %</label><input type="number" id="mysekaiBonus" placeholder="如 50" oninput="MySekaiCalc.calc()"></div>
-                        <div class="calc-row"><label>採集次數</label><input type="number" id="mysekaiTimes" placeholder="如 10" oninput="MySekaiCalc.calc()"></div>
+                        <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="mysekaiPower" value="280000" oninput="MySekaiCalc.calc()"></div>
+                        <div class="calc-row"><label>活動加成 %</label><input type="number" id="mysekaiBonus" value="250" oninput="MySekaiCalc.calc()"></div>
+                        <div class="calc-row"><label>炎倍率</label><input type="number" id="mysekaiFever" value="1" min="1" step="0.5" oninput="MySekaiCalc.calc()"></div>
+                        <div class="calc-row"><label>消費體力總量</label><input type="number" id="mysekaiTimes" value="10" min="0" oninput="MySekaiCalc.calc()"></div>
                     </div>
                     <div class="calc-section">
                         <h4>估算收益</h4>
-                        <div id="mysekaiResult" style="padding:16px;background:#f5f5f5;border-radius:8px;min-height:100px;">
+                        <div id="mysekaiResult" style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:100px;">
                             <div style="color:var(--text-light);font-size:13px;">輸入參數後自動計算</div>
                         </div>
                         <div style="margin-top:12px;font-size:12px;color:var(--text-light);">
-                            基礎分：綜合力≤120k→45；120k~160k→55；160k~200k→65；200k~250k→80；≥250k→100
+                            公式(已驗證):a=⌊綜合力/45萬,2位⌋;b=⌊(a+1)×(加成+100)/100⌋;每點體力 P=b×100×炎。體力消耗:木/石/音色=1、光/樽=0.5、植物/寶箱=0.2。
                         </div>
                     </div>
                 </div>
@@ -1353,6 +1355,7 @@
                 <button class="tab-btn active" onclick="EventCalc.tab('ec-bonus')">隊伍加成</button>
                 <button class="tab-btn" onclick="EventCalc.tab('ec-point')">活動P效率</button>
                 <button class="tab-btn" onclick="EventCalc.tab('ec-score')">分數估算</button>
+                <button class="tab-btn" onclick="EventCalc.tabPower()">綜合力</button>
                 <button class="tab-btn" onclick="EventCalc.tabWL()">WL支援隊伍</button>
             </div>
 
@@ -1448,6 +1451,24 @@
                 <div class="note">分數 ≈ ⌊(base_score ＋ Σ技能窗權重×技能%／100〔協力另計 FEVER〕) × 綜合力 × 4⌋。此為估算,假設各技能窗加分相同、未計協力活躍加分與房間綜合力;數值來自 music_metas 譜面模擬。</div>
             </div>
 
+            <div id="ec-power" class="tab-content">
+                <div class="note" style="margin-top:0;">選 5 張卡估隊伍綜合力(基礎三維來自 cards.json,含特訓)。角色等級與 area item／稱號加成以係數估;可帶入分數估算。</div>
+                <div class="analysis-input" style="margin:8px 0;flex-wrap:wrap;">
+                    <label style="font-size:13px;">平均角色等級<input type="number" id="pwCharRank" value="50" min="1" max="60" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
+                    <label style="font-size:13px;">area item＋稱號加成%<input type="number" id="pwExtra" value="55" min="0" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
+                </div>
+                <div class="table-wrapper" style="margin-top:8px;">
+                    <table><thead><tr><th>卡</th><th>角色</th><th>卡片</th><th>等級</th><th>特訓</th><th>基礎力</th></tr></thead>
+                    <tbody id="pwBody"></tbody></table>
+                </div>
+                <div class="calc-result" style="margin-top:12px;">
+                    <div class="label">估計隊伍綜合力</div>
+                    <div class="value" id="pwTotal">—</div>
+                    <div class="formula" id="pwBreak"></div>
+                </div>
+                <button class="calc-btn" style="margin-top:10px;" onclick="EventCalc.powerToScore()">帶入分數估算 →</button>
+            </div>
+
             <div id="ec-wl" class="tab-content">
                 <div id="ecWLInfo" class="note" style="margin-top:0;">World Link 支援隊伍最佳化:列出當期團體所有可放入支援隊伍的卡,依支援加成排序。</div>
                 <div class="analysis-input" style="margin:8px 0;">
@@ -1487,6 +1508,54 @@
                 </div>
                 <div class="chart-container" style="margin-top:14px;"><canvas id="gcChart" width="900" height="220"></canvas></div>
                 <div class="note">曲線:抽數(0→天井)對「至少中 1 張目標卡」的機率 P(N)=1−(1−p)^N;垂直線為天井。可見指定 PU 即使抽到 300 仍約 30% 摃龜,需靠天井保底。</div>
+            </div>
+        </section>
+
+        <!-- 二十二、排位賽計算 -->
+        <section id="rank-match">
+            <h2>二十二、排位賽計算 <span class="en">Rank Match</span></h2>
+            <div class="note">段位:Beginner→Bronze→Silver→Gold→Platinum→Diamond→Master(前六段各分 Class 4→1)。勝負看判定分:PERFECT+3、GREAT+2、GOOD+1、BAD/MISS±0,高者勝。同分依 PERFECT 數→最大連段→剩餘 Life。</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('rm-score')">判定分對戰</button>
+                <button class="tab-btn" onclick="switchTab('rm-promo')">升段場數</button>
+            </div>
+            <div id="rm-score" class="tab-content active">
+                <div class="calculator">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                        <div class="calc-section">
+                            <h4>我方判定數</h4>
+                            <div class="calc-row"><label>PERFECT</label><input type="number" id="rmA_p" value="1000" min="0" oninput="RankCalc.calc()"></div>
+                            <div class="calc-row"><label>GREAT</label><input type="number" id="rmA_gr" value="20" min="0" oninput="RankCalc.calc()"></div>
+                            <div class="calc-row"><label>GOOD</label><input type="number" id="rmA_gd" value="3" min="0" oninput="RankCalc.calc()"></div>
+                            <div class="calc-row"><label>BAD＋MISS</label><input type="number" id="rmA_b" value="2" min="0" oninput="RankCalc.calc()"></div>
+                        </div>
+                        <div class="calc-section">
+                            <h4>對手判定數</h4>
+                            <div class="calc-row"><label>PERFECT</label><input type="number" id="rmB_p" value="990" min="0" oninput="RankCalc.calc()"></div>
+                            <div class="calc-row"><label>GREAT</label><input type="number" id="rmB_gr" value="28" min="0" oninput="RankCalc.calc()"></div>
+                            <div class="calc-row"><label>GOOD</label><input type="number" id="rmB_gd" value="5" min="0" oninput="RankCalc.calc()"></div>
+                            <div class="calc-row"><label>BAD＋MISS</label><input type="number" id="rmB_b" value="2" min="0" oninput="RankCalc.calc()"></div>
+                        </div>
+                    </div>
+                    <div id="rmResult" class="calc-result" style="margin-top:12px;"></div>
+                </div>
+            </div>
+            <div id="rm-promo" class="tab-content">
+                <div class="calculator">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                        <div class="calc-section">
+                            <h4>輸入</h4>
+                            <div class="calc-row"><label>預估勝率 %</label><input type="number" id="rmWin" value="55" min="1" max="99" oninput="RankCalc.promo()"></div>
+                            <div class="calc-row"><label>目前 RP(0–5)</label><input type="number" id="rmRP" value="0" min="0" max="5" oninput="RankCalc.promo()"></div>
+                            <div class="calc-row"><label>目標升幾個 Class</label><input type="number" id="rmClasses" value="1" min="1" oninput="RankCalc.promo()"></div>
+                        </div>
+                        <div class="calc-section">
+                            <h4>估算</h4>
+                            <div id="rmPromoResult" style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:100px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="note">升級:每段/Class 需集滿 5 RP 並於該狀態勝利;勝 +1、敗 −1。另有 bonus(ALL PERFECT +20、Full Combo +10、贏上位 Class +10、Life 歸零敗 −30),滿 100 換 +1 RP(此處未計 bonus,為純勝敗估計)。2024/09 起不再降段位,只降 Class。</div>
             </div>
         </section>
 
@@ -2439,6 +2508,26 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
             },
 
+            // 日型加權時間進度(0~1):平日1.0、週末1.3、末日×1.8暴衝、首日×0.9;當日以線性內插
+            _borderProgress(startMs, endMs, nowMs) {
+                if (!(endMs > startMs)) return null;
+                const clampNow = Math.min(Math.max(nowMs, startMs), endMs);
+                const DAY = 86400000;
+                const nDays = Math.max(1, Math.ceil((endMs - startMs) / DAY));
+                let total = 0, done = 0;
+                for (let i = 0; i < nDays; i++) {
+                    const ds = startMs + i * DAY, de = Math.min(ds + DAY, endMs);
+                    if (de <= ds) continue;
+                    const dow = new Date(ds).getDay();
+                    let w = (dow === 0 || dow === 6) ? 1.3 : 1.0;
+                    if (i === nDays - 1) w *= 1.8; else if (i === 0) w *= 0.9;
+                    total += w;
+                    if (clampNow >= de) done += w;
+                    else if (clampNow > ds) done += w * (clampNow - ds) / (de - ds);
+                }
+                return total > 0 ? done / total : null;
+            },
+
             renderBorder(brd) {
                 const info = this.extractEventInfo(brd);
                 const name = info.name || info.event_name || '分段排名';
@@ -2451,11 +2540,19 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 `;
                 if (endTime) this.startCountdown(endTime.getTime(), 'borderCountdown');
 
-                // 剩餘時數(用活動實際結束時間),供榜線線性外推
-                const hoursLeft = endTime ? Math.max(0, (endTime.getTime() - Date.now()) / 3600000) : null;
+                const borders = this.extractBorders(brd);
+                // 榜線預測:日型加權時間進度(SekaiBorderPrediction 方法簡化版)
+                const startAt = info.start_at || info.started_at || info.startAt;
+                const startMs = startAt ? new Date(startAt).getTime() : null;
+                const endMs = endTime ? endTime.getTime() : null;
+                const hoursLeft = endMs ? Math.max(0, (endMs - Date.now()) / 3600000) : null;
+                const progress = (startMs && endMs) ? this._borderProgress(startMs, endMs, Date.now()) : null;
                 const predict = r => {
-                    if (r.score == null || !r.speed24h || hoursLeft == null) return null;
-                    return Math.round(r.score + r.speed24h * hoursLeft);
+                    const sc = r.score != null ? r.score : r.event_point;
+                    if (sc == null) return null;
+                    if (progress && progress > 0.02) return Math.round(sc / progress);   // 時間進度法
+                    if (r.speed24h && hoursLeft != null) return Math.round(sc + r.speed24h * hoursLeft);  // 太早期退回速度法
+                    return null;
                 };
                 document.getElementById('borderBody').innerHTML = borders.map(r => {
                     const est = predict(r);
@@ -2463,10 +2560,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <td><strong>T${fmtNum(r.rank)}</strong></td>
                     <td class="player-name">${r.user_name||r.name||'-'}</td>
                     <td class="score">${fmtScore(r.score||r.event_point)}</td>
-                    <td class="score" style="color:var(--text-light)" title="現分 + 近24h時速 × 剩餘 ${hoursLeft!=null?hoursLeft.toFixed(1):'?'}h(線性估計,未計末日衝刺)">${est!=null?fmtScore(est):'-'}</td>
+                    <td class="score" style="color:var(--text-light)" title="現分 ÷ 日型加權時間進度${progress?' '+(progress*100).toFixed(0)+'%':''};安全圈(×1.2)≈${est!=null?fmtScore(Math.round(est*1.2)):'-'}">${est!=null?fmtScore(est):'-'}</td>
                 </tr>`;}).join('') || '<tr><td colspan="4" class="event-loading">無分段資料</td></tr>';
                 const bInfo = document.getElementById('borderEventInfo');
-                if (bInfo && hoursLeft != null && hoursLeft > 0) bInfo.insertAdjacentHTML('beforeend', `<div class="note" style="margin:6px 0 0;">預估終分＝現分＋近24h時速×剩餘 ${hoursLeft.toFixed(1)} 小時的線性推估,實際末日常有衝刺,僅供參考。</div>`);
+                if (bInfo && hoursLeft != null && hoursLeft > 0)
+                    bInfo.insertAdjacentHTML('beforeend', `<div class="note" style="margin:6px 0 0;">預估終分＝現分 ÷ 日型加權時間進度${progress?`(目前 ${(progress*100).toFixed(0)}%)`:''}(平日/週末/末日暴衝加權,SekaiBorderPrediction 法);建議對準<strong>安全圈</strong>(預估×1.2,滑鼠移到數字可見)。高名次(T100~T1萬)末日追分兇,早期會低估;T5萬以下較準。</div>`);
 
                 const isWL = this.isWorldLink(info, brd);
                 const wlBorder = this.extractWLChapters(brd, true);
@@ -3240,25 +3338,28 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
         // ========== MySekai 採集計算機 ==========
         const MySekaiCalc = {
+            // 已驗證公式(SYLVIA 實測 + note.com/tomo3021 + rmc-8 計算工具):
+            // a=⌊綜合力/45萬,2位⌋;b=⌊(a+1)×(加成+100)/100⌋;每點體力 P=b×100×炎
             calc() {
                 const power = +document.getElementById('mysekaiPower').value||0;
                 const bonus = +document.getElementById('mysekaiBonus').value||0;
-                const times = +document.getElementById('mysekaiTimes').value||1;
-                let base = 45;
-                if (power>=250000) base=100;
-                else if (power>=200000) base=80;
-                else if (power>=160000) base=65;
-                else if (power>=120000) base=55;
-                const tierPt = Math.floor(base*(1+bonus/100));
-                const totalPt = tierPt * times;
+                const fever = +document.getElementById('mysekaiFever').value||1;
+                const stamina = +document.getElementById('mysekaiTimes').value||0;
+                const a = Math.floor(power/450000*100)/100;
+                const b = Math.floor((a+1)*(bonus+100)/100);
+                const perStamina = b*100*fever;
+                const total = Math.round(perStamina*stamina);
                 document.getElementById('mysekaiResult').innerHTML = `
-                    <div style="font-size:13px;margin-bottom:8px;color:var(--text-light);">基礎分：${base} | 加成後：${tierPt}/次</div>
+                    <div style="font-size:12px;margin-bottom:8px;color:var(--text-light);">a=⌊${power.toLocaleString()}/45萬⌋=${a} → b=⌊(a+1)×(${bonus}+100)/100⌋=<strong>${b}</strong></div>
                     <div class="calc-result" style="border-radius:6px;padding:12px;">
-                        <div class="label">每次採集 PT</div>
-                        <div class="value" style="font-size:28px">${fmtNum(tierPt)}</div>
+                        <div class="label">每點體力 P(×炎 ${fever})</div>
+                        <div class="value" style="font-size:28px">${fmtNum(perStamina)}</div>
                     </div>
-                    <div style="margin-top:8px;font-size:13px;">
-                        <strong>${times} 次採集合計：${fmtNum(totalPt)} PT</strong>
+                    <div style="margin-top:10px;font-size:13px;line-height:1.9;">
+                        木/石/音色(1體力):<strong>${fmtNum(perStamina)}</strong> P/個<br>
+                        光/樽(0.5):<strong>${fmtNum(Math.round(perStamina*0.5))}</strong> P/個　植物/寶箱(0.2):<strong>${fmtNum(Math.round(perStamina*0.2))}</strong> P/個<br>
+                        雙葉每本:<strong>${fmtNum(b*100-1)}</strong> P<br>
+                        消費 ${stamina} 體力合計:<strong>${fmtNum(total)}</strong> P
                     </div>`;
             }
         };
@@ -4049,6 +4150,87 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <tbody>${top.map((r, i) => `<tr><td>${i + 1}</td><td>${r.name}${r.vs ? '(V)' : ''}</td><td style="font-size:12px;">${r.prefix}${r.lim ? ' <span style="color:var(--primary);">[前期限定]</span>' : ''}</td><td>${rarName[r.rar] || r.rar}</td><td class="score">＋${r.bonus}%</td></tr>`).join('')}</tbody>
                     </table></div>
                     <div class="note">卡名依 master data 的 prefix;實際需擁有該卡。V=以應援團體加入的 VIRTUAL SINGER 卡。</div>`;
+            },
+
+            // ---- 綜合力計算 ----
+            _pwReady: false, _cardsByChar: {}, _cardById: {}, _charRateByRank: {},
+            async tabPower() { switchTab('ec-power'); await this.ensurePower(); },
+            async ensurePower() {
+                if (this._pwReady) { this.calcPower(); return; }
+                const body = document.getElementById('pwBody');
+                if (body) body.innerHTML = '<tr><td colspan="6" class="event-loading">載入卡片資料…</td></tr>';
+                try {
+                    const [cards, ranks] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('characterRanks.json')]);
+                    cards.forEach(c => {
+                        this._cardById[c.id] = c;
+                        (this._cardsByChar[c.characterId] = this._cardsByChar[c.characterId] || []).push(c);
+                    });
+                    ranks.filter(r => r.characterId === 1).forEach(r => { this._charRateByRank[r.characterRank] = Math.round((r.power1BonusRate || 0) * 10) / 10; });
+                    this._pwReady = true;
+                    this.buildPowerRows();
+                    this.calcPower();
+                } catch (e) { if (body) body.innerHTML = '<tr><td colspan="6" class="note">載入失敗。</td></tr>'; }
+            },
+            buildPowerRows() {
+                const body = document.getElementById('pwBody'); if (!body) return;
+                const charOpts = EC_CHARS.map(g => `<optgroup label="${g.u}">` + g.list.map(([id, n]) => `<option value="${id}">${n}</option>`).join('') + `</optgroup>`).join('');
+                const sty = 'padding:3px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-family:inherit;font-size:12px;';
+                let html = '';
+                for (let i = 0; i < 5; i++) {
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><select style="${sty}" data-pw="char" onchange="EventCalc.onPowerChar(this)">${charOpts}</select></td>
+                        <td><select style="${sty};max-width:160px;" data-pw="card" onchange="EventCalc.calcPower()"></select></td>
+                        <td><input style="${sty};width:52px;" type="number" data-pw="lv" value="60" min="1" oninput="EventCalc.calcPower()"></td>
+                        <td><input type="checkbox" data-pw="tr" checked onchange="EventCalc.calcPower()"></td>
+                        <td class="score" data-pw-out="${i}">—</td>
+                    </tr>`;
+                }
+                body.innerHTML = html;
+                body.querySelectorAll('tr').forEach(tr => this.fillCardSelect(tr.querySelector('[data-pw="char"]')));
+            },
+            fillCardSelect(charSel) {
+                const tr = charSel.closest('tr'); const cardSel = tr.querySelector('[data-pw="card"]');
+                const cid = +charSel.value;
+                const list = (this._cardsByChar[cid] || []).slice().sort((a, b) => b.id - a.id);
+                const rar = { rarity_4: '★4', rarity_birthday: '生日', rarity_3: '★3', rarity_2: '★2', rarity_1: '★1' };
+                cardSel.innerHTML = list.map(c => `<option value="${c.id}">${rar[c.cardRarityType] || ''} ${c.prefix || ('#' + c.id)}</option>`).join('');
+            },
+            onPowerChar(sel) { this.fillCardSelect(sel); this.calcPower(); },
+            _cardBase(card, level, trained) {
+                if (!card || !card.cardParameters) return 0;
+                const p = card.cardParameters;
+                const idx = Math.max(0, Math.min((level | 0) - 1, (p.param1 ? p.param1.length : 1) - 1));
+                let base = (p.param1[idx] || 0) + (p.param2[idx] || 0) + (p.param3[idx] || 0);
+                if (trained) base += (card.specialTrainingPower1BonusFixed || 0) + (card.specialTrainingPower2BonusFixed || 0) + (card.specialTrainingPower3BonusFixed || 0);
+                return base;
+            },
+            calcPower() {
+                if (!this._pwReady) return;
+                const rank = +document.getElementById('pwCharRank').value || 1;
+                const extra = +document.getElementById('pwExtra').value || 0;
+                const charRate = this._charRateByRank[rank] != null ? this._charRateByRank[rank]
+                    : (this._charRateByRank[Math.min(rank, Math.max(...Object.keys(this._charRateByRank).map(Number)))] || 0);
+                let base = 0;
+                document.querySelectorAll('#pwBody tr').forEach((tr, i) => {
+                    const cardSel = tr.querySelector('[data-pw="card"]'); if (!cardSel) return;
+                    const card = this._cardById[+cardSel.value];
+                    const lv = +tr.querySelector('[data-pw="lv"]').value || 1;
+                    const trained = tr.querySelector('[data-pw="tr"]').checked;
+                    const b = this._cardBase(card, lv, trained);
+                    base += b;
+                    const out = tr.querySelector(`[data-pw-out="${i}"]`); if (out) out.textContent = b ? b.toLocaleString() : '—';
+                });
+                const mult = 1 + (charRate + extra) / 100;
+                const total = Math.round(base * mult);
+                this._lastPower = total;
+                const t = document.getElementById('pwTotal'); if (t) t.textContent = total.toLocaleString();
+                const b = document.getElementById('pwBreak');
+                if (b) b.textContent = `基礎 ${base.toLocaleString()} × (1 ＋ 角色等級 ${charRate}% ＋ 其他 ${extra}%) = ${total.toLocaleString()}`;
+            },
+            powerToScore() {
+                const e = document.getElementById('scPower'); if (e) e.value = this._lastPower || 0;
+                this.tab('ec-score');
             }
         };
 
@@ -4122,6 +4304,45 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const vals = [], labels = [];
                 for (let n = 0; n <= ceil; n += step) { vals.push((1 - Math.pow(1 - p, n)) * 100); labels.push(String(n)); }
                 if (typeof ChartUtil !== 'undefined') ChartUtil.drawLine('gcChart', [{ values: vals, color: '#aa66cc' }], labels);
+            }
+        };
+
+        // ========== 二十二:排位賽 ==========
+        const RankCalc = {
+            calc() {
+                const g = id => +document.getElementById(id).value || 0;
+                const sa = g('rmA_p') * 3 + g('rmA_gr') * 2 + g('rmA_gd');
+                const sb = g('rmB_p') * 3 + g('rmB_gr') * 2 + g('rmB_gd');
+                const el = document.getElementById('rmResult'); if (!el) return;
+                let verdict, color;
+                if (sa > sb) { verdict = '我方勝'; color = 'var(--primary)'; }
+                else if (sb > sa) { verdict = '對手勝'; color = 'var(--text-light)'; }
+                else {
+                    const pa = g('rmA_p'), pb = g('rmB_p');
+                    if (pa > pb) verdict = '同分 → 我方 PERFECT 較多,我方勝';
+                    else if (pb > pa) verdict = '同分 → 對手 PERFECT 較多,對手勝';
+                    else verdict = '同分且 PERFECT 相同 → 再比最大連段→剩餘 Life';
+                    color = 'var(--text)';
+                }
+                el.innerHTML = `<div class="label">判定分</div>
+                    <div class="value" style="color:${color};">${sa.toLocaleString()} : ${sb.toLocaleString()}</div>
+                    <div class="formula">${verdict}(P×3＋GR×2＋GD×1)</div>`;
+            },
+            promo() {
+                const p = (+document.getElementById('rmWin').value || 0) / 100;
+                const rp = Math.min(5, +document.getElementById('rmRP').value || 0);
+                const classes = Math.max(1, +document.getElementById('rmClasses').value || 1);
+                const el = document.getElementById('rmPromoResult'); if (!el) return;
+                const needRP = 5 * classes - rp;
+                const drift = 2 * p - 1;
+                let games;
+                if (drift <= 0) games = null;
+                else games = needRP / drift;
+                el.innerHTML = `<div style="font-size:13px;line-height:1.9;">
+                    需淨得 <strong>${needRP}</strong> RP<br>
+                    每場淨期望 <strong>${drift.toFixed(2)}</strong> RP(勝率 ${(p * 100).toFixed(0)}%)<br>
+                    ${games != null ? `預估約 <strong style="color:var(--primary);font-size:18px;">${Math.ceil(games)}</strong> 場(期望值,實際因隨機波動而異)` : '<strong style="color:var(--text-light);">勝率 ≤ 50%,長期無法穩定升段(RP 隨機遊走不上升)。</strong>'}
+                    </div>`;
             }
         };
 
@@ -4201,8 +4422,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ['#calendar','活動日曆'],['#event-tracking','活動排名追蹤'],['#gacha','卡池列表'],
                 ['#dolls','月卡玩偶列表'],['#bonus-cards','加分卡參考'],['#analysis','榜線分析'],
                 ['#player-lookup','玩家查詢'],['#distribution','活動分布甘特圖'],['#songs','歌曲清單'],
-                ['#calculator','推隊倍率計算器'],['#event-calc','活動加成 活動P 計算器'],['#gacha-calc','抽卡期望 天井計算器'],
-                ['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
+                ['#calculator','推隊倍率計算器'],['#event-calc','活動加成 活動P 分數 綜合力 WL支援計算器'],['#gacha-calc','抽卡期望 天井計算器'],
+                ['#rank-match','排位賽 判定分 升段'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
                 ['#info','資訊站'],['#community','討論社群'],['#wiki','Wiki 百科'],['#tools','實用工具'],['#ep-calc','EP 計算器']
             ],
             _items: [], _active: -1,
@@ -4403,6 +4624,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             };
             lazyInit('event-calc', () => EventCalc.init());
             lazyInit('gacha-calc', () => GachaCalc.calc());
+            lazyInit('rank-match', () => { RankCalc.calc(); RankCalc.promo(); });
             window.addEventListener('resize', () => {
                 clearTimeout(window._calResizeTimer);
                 window._calResizeTimer = setTimeout(renderCalendar, 200);
