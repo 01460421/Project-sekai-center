@@ -468,28 +468,28 @@
             <a href="#cardlib">卡庫</a>
             <a href="#dolls">月卡玩偶</a>
             <a href="#bonus-cards">加分卡</a>
+            <a href="#songs">歌曲</a>
             <div class="nav-sep"></div>
             <span class="nav-label">分析</span>
             <a href="#analysis">榜線分析</a>
             <a href="#player-lookup">玩家查詢</a>
             <a href="#distribution">活動分布</a>
-            <div class="nav-sep"></div>
-            <span class="nav-label">工具</span>
-            <a href="#calculator">倍率計算</a>
+        </div>
+        <div class="nav-row">
+            <span class="nav-label">計算</span>
+            <a href="#calculator">推隊倍率</a>
             <a href="#event-calc">加成/活動P</a>
             <a href="#gacha-calc">抽卡天井</a>
             <a href="#rank-match">排位賽</a>
             <a href="#mysekai">MySekai</a>
-        </div>
-        <div class="nav-row">
+            <a href="#ep-calc">EP計算器</a>
+            <div class="nav-sep"></div>
             <span class="nav-label">資源</span>
-            <a href="#songs">歌曲清單</a>
             <a href="#official">官方</a>
             <a href="#info">資訊站</a>
             <a href="#community">社群</a>
             <a href="#wiki">Wiki</a>
             <a href="#tools">工具</a>
-            <a href="#ep-calc">EP計算器</a>
             <a href="#tutorial">教學大全</a>
             <div class="nav-sep"></div>
             <button class="dark-toggle" id="darkToggle" onclick="DarkMode.toggle()">深色</button>
@@ -524,25 +524,36 @@
             <label for="tocSelect">目錄</label>
             <select id="tocSelect" onchange="if(this.value){location.href=this.value;this.value='';}">
                 <option value="">— 快速跳轉 —</option>
-                <option value="#calendar">一、活動日曆</option>
-                <option value="#event-tracking">二、活動排名追蹤</option>
-                <option value="#gacha">三、卡池列表</option>
-                <option value="#dolls">四、月卡玩偶列表</option>
-                <option value="#bonus-cards">五、加分卡參考</option>
-                <option value="#analysis">六、榜線分析</option>
-                <option value="#player-lookup">七、玩家查詢</option>
-                <option value="#distribution">八、活動分布甘特圖</option>
-                <option value="#songs">九、歌曲清單</option>
-                <option value="#calculator">十、推隊倍率計算器</option>
-                <option value="#mysekai">十一、MySekai 採集計算機</option>
-                <option value="#official">十二、官方資源</option>
-                <option value="#info">十三、資訊站</option>
-                <option value="#community">十四、討論社群</option>
-                <option value="#wiki">十五、Wiki 百科</option>
-                <option value="#tools">十六、實用工具</option>
-                <option value="#ep-calc">十七、EP 計算器</option>
-                <option value="#tutorial">十八、教學大全</option>
-                <option value="#cardlib">十九、卡片技能查詢（卡庫）</option>
+                <optgroup label="資料">
+                    <option value="#calendar">活動日曆</option>
+                    <option value="#event-tracking">活動排名追蹤</option>
+                    <option value="#gacha">卡池列表</option>
+                    <option value="#cardlib">卡片技能查詢（卡庫）</option>
+                    <option value="#dolls">月卡玩偶列表</option>
+                    <option value="#bonus-cards">加分卡參考</option>
+                    <option value="#songs">歌曲清單</option>
+                </optgroup>
+                <optgroup label="分析">
+                    <option value="#analysis">榜線分析</option>
+                    <option value="#player-lookup">玩家查詢</option>
+                    <option value="#distribution">活動分布甘特圖</option>
+                </optgroup>
+                <optgroup label="計算工具">
+                    <option value="#calculator">推隊倍率計算器</option>
+                    <option value="#event-calc">活動加成 · 活動P · 綜合力 · WL支援</option>
+                    <option value="#gacha-calc">抽卡期望 · 天井計算器</option>
+                    <option value="#rank-match">排位賽計算</option>
+                    <option value="#mysekai">MySekai 採集計算機</option>
+                    <option value="#ep-calc">EP 計算器</option>
+                </optgroup>
+                <optgroup label="資源 · 教學">
+                    <option value="#official">官方資源</option>
+                    <option value="#info">資訊站</option>
+                    <option value="#community">討論社群</option>
+                    <option value="#wiki">Wiki 百科</option>
+                    <option value="#tools">實用工具</option>
+                    <option value="#tutorial">教學大全</option>
+                </optgroup>
             </select>
         </div>
 
