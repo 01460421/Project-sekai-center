@@ -1466,21 +1466,23 @@
             </div>
 
             <div id="ec-power" class="tab-content">
-                <div class="note" style="margin-top:0;">選 5 張卡估隊伍綜合力(基礎三維來自 cards.json,含特訓)。角色等級與 area item／稱號加成以係數估;可帶入分數估算。</div>
-                <div class="analysis-input" style="margin:8px 0;flex-wrap:wrap;">
-                    <label style="font-size:13px;">平均角色等級<input type="number" id="pwCharRank" value="50" min="1" max="60" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
-                    <label style="font-size:13px;">area item＋稱號加成%<input type="number" id="pwExtra" value="55" min="0" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
+                <div class="note" style="margin-top:0;">完整綜合力(忠實移植 xfl03 算法):基礎三維(等級+特訓+前後篇+突破)＋角色等級加成(逐維)＋area item(逐道具、全隊同團/同色 allMatch 翻倍)。可帶入分數估算。</div>
+                <div class="analysis-input" style="margin:8px 0;flex-wrap:wrap;gap:10px;">
+                    <label style="font-size:13px;">角色等級<input type="number" id="pwCharRank" value="50" min="1" max="200" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
+                    <label style="font-size:13px;">area item 等級<select id="pwAreaLv" onchange="EventCalc.calcPower()"></select></label>
+                    <label style="font-size:13px;">前後篇已讀<input type="checkbox" id="pwEpi" checked onchange="EventCalc.calcPower()"></label>
                 </div>
                 <div class="table-wrapper" style="margin-top:8px;">
-                    <table><thead><tr><th>卡</th><th>角色</th><th>卡片</th><th>等級</th><th>特訓</th><th>基礎力</th></tr></thead>
+                    <table><thead><tr><th>卡</th><th>角色</th><th>卡片</th><th>等級</th><th>特訓</th><th>MR</th><th>綜合力</th></tr></thead>
                     <tbody id="pwBody"></tbody></table>
                 </div>
                 <div class="calc-result" style="margin-top:12px;">
-                    <div class="label">估計隊伍綜合力</div>
+                    <div class="label">隊伍總綜合力</div>
                     <div class="value" id="pwTotal">—</div>
                     <div class="formula" id="pwBreak"></div>
                 </div>
                 <button class="calc-btn" style="margin-top:10px;" onclick="EventCalc.powerToScore()">帶入分數估算 →</button>
+                <div class="note" id="pwNote"></div>
             </div>
 
             <div id="ec-wl" class="tab-content">
@@ -3921,6 +3923,90 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 綜合力引擎(忠實移植 re_sekai-calculator / CardPowerCalculator) ==========
+        // 基礎三維(等級+特訓+前後篇+突破) + 角色等級加成(逐維floor) + area item(逐道具,allMatch看全隊同團/同色)
+        const PowerEngine = {
+            _ready: false, _loading: null, cards: null, cardById: {}, cardsByChar: {},
+            ranks: {}, epi: {}, ml: {}, areaLv: {}, areaMaxLv: 15, gcu: {}, charBands: {},
+            ensure() {
+                if (this._ready) return Promise.resolve(true);
+                if (this._loading) return this._loading;
+                this._loading = Promise.all([
+                    MasterDB.get('cards.json'), MasterDB.get('characterRanks.json'), MasterDB.get('cardEpisodes.json'),
+                    MasterDB.get('masterLessons.json'), MasterDB.get('areaItemLevels.json'), MasterDB.get('gameCharacterUnits.json')
+                ]).then(([cards, ranks, epi, ml, areaLv, gcu]) => {
+                    this.cards = cards;
+                    cards.forEach(c => { this.cardById[c.id] = c; (this.cardsByChar[c.characterId] = this.cardsByChar[c.characterId] || []).push(c); });
+                    ranks.forEach(r => { (this.ranks[r.characterId] = this.ranks[r.characterId] || {})[r.characterRank] = [r.power1BonusRate, r.power2BonusRate, r.power3BonusRate]; });
+                    epi.forEach(e => { const a = this.epi[e.cardId] = this.epi[e.cardId] || [0, 0, 0]; a[0] += e.power1BonusFixed || 0; a[1] += e.power2BonusFixed || 0; a[2] += e.power3BonusFixed || 0; });
+                    const byRar = {}; ml.forEach(m => { (byRar[m.cardRarityType] = byRar[m.cardRarityType] || []).push(m); });
+                    Object.entries(byRar).forEach(([rar, arr]) => {
+                        arr.sort((a, b) => a.masterRank - b.masterRank);
+                        const cum = { 0: [0, 0, 0] }; let s = [0, 0, 0];
+                        arr.forEach(m => { s = [s[0] + (m.power1BonusFixed || 0), s[1] + (m.power2BonusFixed || 0), s[2] + (m.power3BonusFixed || 0)]; cum[m.masterRank] = s.slice(); });
+                        this.ml[rar] = cum;
+                    });
+                    let maxLv = 0;
+                    areaLv.forEach(a => { (this.areaLv[a.areaItemId] = this.areaLv[a.areaItemId] || {})[a.level] = a; if (a.level > maxLv) maxLv = a.level; });
+                    this.areaMaxLv = maxLv || 15;
+                    gcu.forEach(g => { this.gcu[g.id] = { cid: g.gameCharacterId, unit: g.unit }; if (g.id <= 26) this.charBands[g.gameCharacterId] = g.unit; });
+                    this._ready = true; return true;
+                }).catch(() => { this._loading = null; return false; });
+                return this._loading;
+            },
+            cardUnits(card) {
+                if (card.characterId <= 20) return [this.charBands[card.characterId]];
+                const u = ['piapro']; if (card.supportUnit && card.supportUnit !== 'none') u.push(card.supportUnit); return u;
+            },
+            cardMaxLevel(card) { return (card.cardParameters && card.cardParameters.param1) ? card.cardParameters.param1.length : 60; },
+            basePower(card, level, trained, epiRead, mr) {
+                const p = card.cardParameters; if (!p || !p.param1) return [0, 0, 0];
+                const idx = Math.max(0, Math.min((level | 0) - 1, p.param1.length - 1));
+                const b = [p.param1[idx] || 0, p.param2[idx] || 0, p.param3[idx] || 0];
+                if (trained) { b[0] += card.specialTrainingPower1BonusFixed || 0; b[1] += card.specialTrainingPower2BonusFixed || 0; b[2] += card.specialTrainingPower3BonusFixed || 0; }
+                if (epiRead) { const e = this.epi[card.id]; if (e) { b[0] += e[0]; b[1] += e[1]; b[2] += e[2]; } }
+                const cum = this.ml[card.cardRarityType]; if (cum) { const key = cum[mr] ? mr : Math.max(...Object.keys(cum).map(Number)); const m = cum[Math.min(mr, key)] || cum[key] || [0, 0, 0]; b[0] += m[0]; b[1] += m[1]; b[2] += m[2]; }
+                return b;
+            },
+            charBonus(base, characterId, rank) {
+                const rr = this.ranks[characterId]; if (!rr) return 0;
+                const r = rr[rank] || rr[Math.min(rank, Math.max(...Object.keys(rr).map(Number)))] || rr[Math.max(...Object.keys(rr).map(Number))];
+                if (!r) return 0;
+                return r.reduce((v, rate, i) => v + Math.floor((rate || 0) * 0.01 * base[i]), 0);
+            },
+            areaBonus(base, card, sameUnitFn, sameAttrFn, areaLevel) {
+                const units = this.cardUnits(card); const acc = [0, 0, 0];
+                for (const levels of Object.values(this.areaLv)) {
+                    const it = levels[Math.min(areaLevel, this.areaMaxLv)] || levels[Math.max(...Object.keys(levels).map(Number))];
+                    if (!it) continue;
+                    const unitMatch = it.targetUnit === 'any' || units.includes(it.targetUnit);
+                    const attrMatch = it.targetCardAttr === 'any' || it.targetCardAttr === card.attr;
+                    const charMatch = it.targetGameCharacterId == null || it.targetGameCharacterId === card.characterId;
+                    if (!(unitMatch && attrMatch && charMatch)) continue;
+                    const allMatch = (it.targetUnit !== 'any' && sameUnitFn(it.targetUnit)) || (it.targetCardAttr !== 'any' && sameAttrFn(it.targetCardAttr));
+                    const rates = [allMatch ? it.power1AllMatchBonusRate : it.power1BonusRate, allMatch ? it.power2AllMatchBonusRate : it.power2BonusRate, allMatch ? it.power3AllMatchBonusRate : it.power3BonusRate];
+                    rates.forEach((rate, i) => { acc[i] += (rate || 0) * 0.01 * base[i]; });
+                }
+                return acc.reduce((v, x) => v + Math.floor(x), 0);
+            },
+            // members: [{card, level, trained, epiRead, mr, rank}]
+            teamPower(members, areaLevel) {
+                const unitSets = members.map(m => this.cardUnits(m.card));
+                const attrs = members.map(m => m.card.attr);
+                const sameUnitFn = U => unitSets.every(s => s.includes(U));
+                const sameAttrFn = A => attrs.every(a => a === A);
+                let total = 0; const per = [];
+                members.forEach(m => {
+                    const base = this.basePower(m.card, m.level, m.trained, m.epiRead, m.mr);
+                    const bsum = base[0] + base[1] + base[2];
+                    const cb = this.charBonus(base, m.card.characterId, m.rank);
+                    const ab = this.areaBonus(base, m.card, sameUnitFn, sameAttrFn, areaLevel);
+                    const t = bsum + cb + ab; per.push({ base: bsum, charBonus: cb, areaBonus: ab, total: t }); total += t;
+                });
+                return { total, per };
+            }
+        };
+
         // 角色(gameCharacterId 1–26)分團;火倍率;屬性;稀有度
         const EC_CHARS = [
             { u: 'Leo/need', list: [[1, '一歌'], [2, '咲希'], [3, '穗波'], [4, '志步']] },
@@ -4205,37 +4291,36 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div class="note">卡名依 master data 的 prefix;實際需擁有該卡。V=以應援團體加入的 VIRTUAL SINGER 卡。</div>`;
             },
 
-            // ---- 綜合力計算 ----
-            _pwReady: false, _cardsByChar: {}, _cardById: {}, _charRateByRank: {},
+            // ---- 完整綜合力(PowerEngine)----
+            _pwReady: false,
             async tabPower() { switchTab('ec-power'); await this.ensurePower(); },
             async ensurePower() {
                 if (this._pwReady) { this.calcPower(); return; }
                 const body = document.getElementById('pwBody');
-                if (body) body.innerHTML = '<tr><td colspan="6" class="event-loading">載入卡片資料…</td></tr>';
-                try {
-                    const [cards, ranks] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('characterRanks.json')]);
-                    cards.forEach(c => {
-                        this._cardById[c.id] = c;
-                        (this._cardsByChar[c.characterId] = this._cardsByChar[c.characterId] || []).push(c);
-                    });
-                    ranks.filter(r => r.characterId === 1).forEach(r => { this._charRateByRank[r.characterRank] = Math.round((r.power1BonusRate || 0) * 10) / 10; });
-                    this._pwReady = true;
-                    this.buildPowerRows();
-                    this.calcPower();
-                } catch (e) { if (body) body.innerHTML = '<tr><td colspan="6" class="note">載入失敗。</td></tr>'; }
+                if (body) body.innerHTML = '<tr><td colspan="7" class="event-loading">載入卡片/道具資料…</td></tr>';
+                const ok = await PowerEngine.ensure();
+                if (!ok) { if (body) body.innerHTML = '<tr><td colspan="7" class="note">載入失敗。</td></tr>'; return; }
+                // area item 等級選單(台服目前最高 = PowerEngine.areaMaxLv)
+                const alv = document.getElementById('pwAreaLv');
+                if (alv) { alv.innerHTML = ''; for (let l = PowerEngine.areaMaxLv; l >= 1; l--) alv.innerHTML += `<option value="${l}"${l === PowerEngine.areaMaxLv ? ' selected' : ''}>Lv${l}</option>`; }
+                this._pwReady = true;
+                this.buildPowerRows();
+                this.calcPower();
             },
             buildPowerRows() {
                 const body = document.getElementById('pwBody'); if (!body) return;
                 const charOpts = EC_CHARS.map(g => `<optgroup label="${g.u}">` + g.list.map(([id, n]) => `<option value="${id}">${n}</option>`).join('') + `</optgroup>`).join('');
+                const mrOpts = [0, 1, 2, 3, 4, 5].map(m => `<option value="${m}"${m === 5 ? ' selected' : ''}>${m}</option>`).join('');
                 const sty = 'padding:3px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-family:inherit;font-size:12px;';
                 let html = '';
                 for (let i = 0; i < 5; i++) {
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><select style="${sty}" data-pw="char" onchange="EventCalc.onPowerChar(this)">${charOpts}</select></td>
-                        <td><select style="${sty};max-width:160px;" data-pw="card" onchange="EventCalc.calcPower()"></select></td>
-                        <td><input style="${sty};width:52px;" type="number" data-pw="lv" value="60" min="1" oninput="EventCalc.calcPower()"></td>
+                        <td><select style="${sty};max-width:150px;" data-pw="card" onchange="EventCalc.calcPower()"></select></td>
+                        <td><input style="${sty};width:48px;" type="number" data-pw="lv" value="60" min="1" oninput="EventCalc.calcPower()"></td>
                         <td><input type="checkbox" data-pw="tr" checked onchange="EventCalc.calcPower()"></td>
+                        <td><select style="${sty}" data-pw="mr" onchange="EventCalc.calcPower()">${mrOpts}</select></td>
                         <td class="score" data-pw-out="${i}">—</td>
                     </tr>`;
                 }
@@ -4245,41 +4330,38 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             fillCardSelect(charSel) {
                 const tr = charSel.closest('tr'); const cardSel = tr.querySelector('[data-pw="card"]');
                 const cid = +charSel.value;
-                const list = (this._cardsByChar[cid] || []).slice().sort((a, b) => b.id - a.id);
+                const list = (PowerEngine.cardsByChar[cid] || []).slice().sort((a, b) => b.id - a.id);
                 const rar = { rarity_4: '★4', rarity_birthday: '生日', rarity_3: '★3', rarity_2: '★2', rarity_1: '★1' };
                 cardSel.innerHTML = list.map(c => `<option value="${c.id}">${rar[c.cardRarityType] || ''} ${c.prefix || ('#' + c.id)}</option>`).join('');
+                const lv = tr.querySelector('[data-pw="lv"]'); const first = list[0];
+                if (lv && first) lv.value = PowerEngine.cardMaxLevel(first);
             },
             onPowerChar(sel) { this.fillCardSelect(sel); this.calcPower(); },
-            _cardBase(card, level, trained) {
-                if (!card || !card.cardParameters) return 0;
-                const p = card.cardParameters;
-                const idx = Math.max(0, Math.min((level | 0) - 1, (p.param1 ? p.param1.length : 1) - 1));
-                let base = (p.param1[idx] || 0) + (p.param2[idx] || 0) + (p.param3[idx] || 0);
-                if (trained) base += (card.specialTrainingPower1BonusFixed || 0) + (card.specialTrainingPower2BonusFixed || 0) + (card.specialTrainingPower3BonusFixed || 0);
-                return base;
-            },
             calcPower() {
                 if (!this._pwReady) return;
                 const rank = +document.getElementById('pwCharRank').value || 1;
-                const extra = +document.getElementById('pwExtra').value || 0;
-                const charRate = this._charRateByRank[rank] != null ? this._charRateByRank[rank]
-                    : (this._charRateByRank[Math.min(rank, Math.max(...Object.keys(this._charRateByRank).map(Number)))] || 0);
-                let base = 0;
-                document.querySelectorAll('#pwBody tr').forEach((tr, i) => {
+                const areaLv = +document.getElementById('pwAreaLv').value || PowerEngine.areaMaxLv;
+                const epiRead = document.getElementById('pwEpi').checked;
+                const members = [];
+                document.querySelectorAll('#pwBody tr').forEach(tr => {
                     const cardSel = tr.querySelector('[data-pw="card"]'); if (!cardSel) return;
-                    const card = this._cardById[+cardSel.value];
-                    const lv = +tr.querySelector('[data-pw="lv"]').value || 1;
-                    const trained = tr.querySelector('[data-pw="tr"]').checked;
-                    const b = this._cardBase(card, lv, trained);
-                    base += b;
-                    const out = tr.querySelector(`[data-pw-out="${i}"]`); if (out) out.textContent = b ? b.toLocaleString() : '—';
+                    const card = PowerEngine.cardById[+cardSel.value]; if (!card) return;
+                    members.push({
+                        card, level: +tr.querySelector('[data-pw="lv"]').value || 1,
+                        trained: tr.querySelector('[data-pw="tr"]').checked,
+                        mr: +tr.querySelector('[data-pw="mr"]').value || 0, epiRead, rank
+                    });
                 });
-                const mult = 1 + (charRate + extra) / 100;
-                const total = Math.round(base * mult);
+                if (members.length < 5) return;
+                const { total, per } = PowerEngine.teamPower(members, areaLv);
+                per.forEach((p, i) => { const out = document.querySelector(`[data-pw-out="${i}"]`); if (out) out.textContent = p.total.toLocaleString(); });
                 this._lastPower = total;
                 const t = document.getElementById('pwTotal'); if (t) t.textContent = total.toLocaleString();
+                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0);
                 const b = document.getElementById('pwBreak');
-                if (b) b.textContent = `基礎 ${base.toLocaleString()} × (1 ＋ 角色等級 ${charRate}% ＋ 其他 ${extra}%) = ${total.toLocaleString()}`;
+                if (b) b.textContent = `基礎 ${sumBase.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()}`;
+                const note = document.getElementById('pwNote');
+                if (note) note.textContent = `area item 台服目前最高 Lv${PowerEngine.areaMaxLv}(5週年後升 Lv20);全隊同團或同色時對應道具 allMatch 翻倍。與遊戲可能有 ±個位數浮點差。`;
             },
             powerToScore() {
                 const e = document.getElementById('scPower'); if (e) e.value = this._lastPower || 0;
