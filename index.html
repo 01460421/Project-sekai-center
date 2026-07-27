@@ -1444,7 +1444,17 @@
                                 </select>
                             </div>
                             <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="scPower" value="280000" min="0" oninput="EventCalc.calcScore()"></div>
-                            <div class="calc-row"><label>平均技能加分 %</label><input type="number" id="scSkill" value="130" min="0" oninput="EventCalc.calcScore()"></div>
+                            <div class="calc-row" style="align-items:flex-start;"><label>6 技能窗<br>加分%</label>
+                                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
+                                    <input type="number" id="scS1" value="130" min="0" title="窗1" oninput="EventCalc.calcScore()">
+                                    <input type="number" id="scS2" value="130" min="0" title="窗2" oninput="EventCalc.calcScore()">
+                                    <input type="number" id="scS3" value="130" min="0" title="窗3" oninput="EventCalc.calcScore()">
+                                    <input type="number" id="scS4" value="130" min="0" title="窗4" oninput="EventCalc.calcScore()">
+                                    <input type="number" id="scS5" value="130" min="0" title="窗5" oninput="EventCalc.calcScore()">
+                                    <input type="number" id="scS6" value="130" min="0" title="窗6=encore(隊長)" oninput="EventCalc.calcScore()">
+                                </div>
+                            </div>
+                            <div class="calc-row"><label> </label><button class="calc-btn" style="padding:4px 10px;font-size:12px;" onclick="EventCalc.scFillSkills()">全部同值(用窗1)</button></div>
                             <div class="calc-row"><label>選歌</label>
                                 <select id="scSong" onchange="EventCalc.calcScore()" style="max-width:220px;"><option value="">載入中…</option></select>
                             </div>
@@ -1462,7 +1472,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="note">分數 ≈ ⌊(base_score ＋ Σ技能窗權重×技能%／100〔協力另計 FEVER〕) × 綜合力 × 4⌋。此為估算,假設各技能窗加分相同、未計協力活躍加分與房間綜合力;數值來自 music_metas 譜面模擬。</div>
+                <div class="note">分數 = ⌊(base_score ＋ Σ_i skill_score[i]×窗i技能%／100〔協力另計 FEVER×0.5〕) × 綜合力 × 4⌋。共 6 個技能窗(第 6 窗=encore/隊長);單人第 1~5 窗依站位、協力依發動順序。未計協力活躍加分(需房間總綜合力)。數值來自 music_metas 譜面模擬。</div>
             </div>
 
             <div id="ec-power" class="tab-content">
@@ -4187,22 +4197,24 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!SongEff._metas) { el.innerHTML = '<div class="note">music_metas 尚未載入。</div>'; return; }
                 const mode = document.getElementById('scMode').value;
                 const P = +document.getElementById('scPower').value || 0;
-                const U = +document.getElementById('scSkill').value || 0;
+                const s = [1, 2, 3, 4, 5, 6].map(i => +document.getElementById('scS' + i).value || 0);
                 const mid = +document.getElementById('scSong').value || 0;
                 const diff = document.getElementById('scDiff').value;
                 const diffs = SongEff._metas[mid];
                 const meta = diffs && (diffs[diff] || diffs.master || diffs.expert || Object.values(diffs)[0]);
                 if (!meta) { el.innerHTML = '<div class="note">此歌無譜面資料。</div>'; return; }
                 const arr = mode === 'multi' ? (meta.skill_score_multi || []) : (meta.skill_score_solo || []);
-                const sumSkill = arr.reduce((s, v) => s + v, 0);
+                // 逐窗:skill_score[i] × s[i]/100(第6窗=encore/隊長)
+                const skillPart = arr.reduce((sum, w, i) => sum + w * (s[i] || 0) / 100, 0);
                 const fever = mode === 'multi' ? (meta.fever_score || 0) * 0.5 : 0;
-                const mult = meta.base_score + fever + sumSkill * U / 100;
+                const mult = meta.base_score + fever + skillPart;
                 const score = Math.floor(mult * P * 4);
                 this._lastScore = score;
                 el.innerHTML = `<div style="font-size:26px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--text-light);">分 / 局</span></div>
-                    <div style="margin-top:8px;font-size:12px;color:var(--text-light);">分數倍率 ${mult.toFixed(3)}（base ${meta.base_score.toFixed(2)}${fever ? ` ＋FEVER ${fever.toFixed(2)}` : ''} ＋技能 ${(sumSkill * U / 100).toFixed(2)}）× 綜合力 ${P.toLocaleString()} × 4</div>
-                    <div style="margin-top:6px;font-size:12px;">難度 ${diff.toUpperCase()}・${mode === 'multi' ? '協力' : '單人'}・R=${meta.event_rate}</div>`;
+                    <div style="margin-top:8px;font-size:12px;color:var(--text-light);">分數倍率 ${mult.toFixed(3)}（base ${meta.base_score.toFixed(2)}${fever ? ` ＋FEVER ${fever.toFixed(2)}` : ''} ＋技能 ${skillPart.toFixed(2)}）× 綜合力 ${P.toLocaleString()} × 4</div>
+                    <div style="margin-top:6px;font-size:12px;">難度 ${diff.toUpperCase()}・${mode === 'multi' ? '協力' : '單人'}・R=${meta.event_rate}・6窗權重 [${arr.map(w => w.toFixed(3)).join(', ')}]</div>`;
             },
+            scFillSkills() { const v = document.getElementById('scS1').value; for (let i = 2; i <= 6; i++) document.getElementById('scS' + i).value = v; this.calcScore(); },
             scoreToPoint() {
                 const e = document.getElementById('epScore'); if (e) e.value = this._lastScore || 0;
                 const m = document.getElementById('scMode').value;
