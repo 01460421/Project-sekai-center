@@ -679,10 +679,46 @@
             border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; color:var(--text);
             white-space:nowrap; background:var(--card); transition:transform .2s; }
         body.embed-calc .embed-tabbar a:active{ transform:scale(.94); }
+        /* ===== 內嵌小窗模式（?embed=ministudio）：首頁「當期跑榜」卡 ===== */
+        #mini-studio{ display:none; }
+        body.embed-ministudio{ padding:0 !important; margin:0 !important; background:transparent; }
+        body.embed-ministudio #siteNav,
+        body.embed-ministudio .m-dock,
+        body.embed-ministudio header#top,
+        body.embed-ministudio .toc,
+        body.embed-ministudio footer,
+        body.embed-ministudio .embed-tabbar{ display:none !important; }
+        body.embed-ministudio .container{ max-width:100%; margin:0; padding:0; }
+        body.embed-ministudio .container > section{ display:none !important; }
+        body.embed-ministudio .container > section#mini-studio{ display:block !important; }
+        .ms-card{ font-size:13px; color:var(--text); }
+        .ms-msg{ padding:24px 6px; text-align:center; color:var(--text-light); font-size:13px; }
+        .ms-top{ margin-bottom:12px; }
+        .ms-ev{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:800; color:var(--text); }
+        .ms-type{ flex:none; padding:2px 9px; border-radius:999px; background:var(--primary); color:#fff; font-size:11px; font-weight:700; }
+        .ms-evname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ms-sub{ margin-top:5px; font-size:11px; color:var(--text-light); line-height:1.55; }
+        .ms-thumbs{ display:flex; gap:6px; flex-wrap:nowrap; margin-bottom:12px; }
+        .ms-th{ flex:1 1 0; min-width:0; text-align:center; }
+        .ms-th img{ width:100%; max-width:76px; aspect-ratio:1; object-fit:cover; border-radius:9px; border:1px solid var(--border); display:block; margin:0 auto; }
+        .ms-th span{ display:block; font-size:10px; color:var(--text); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ms-th i{ display:block; font-style:normal; font-size:9.5px; color:var(--primary); font-weight:700; }
+        .ms-kvs{ display:flex; gap:8px; margin-bottom:10px; }
+        .ms-kv{ flex:1; border:1px solid var(--border); border-radius:12px; padding:9px 12px; background:var(--card); }
+        .ms-kv span{ display:block; font-size:10.5px; color:var(--text-light); }
+        .ms-kv b{ font-size:17px; font-weight:800; color:var(--text); }
+        .ms-ep{ border:1px solid var(--border); border-radius:12px; padding:11px 12px; background:var(--card); }
+        .ms-ep-title{ font-size:11.5px; font-weight:700; color:var(--text); margin-bottom:8px; }
+        .ms-ep-title span{ font-weight:400; color:var(--text-light); }
+        .ms-ep-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center; }
+        .ms-ep-grid > div{ background:var(--bg); border-radius:9px; padding:8px 4px; }
+        .ms-ep-grid span{ display:block; font-size:10.5px; color:var(--text-light); }
+        .ms-ep-grid b{ font-size:15px; font-weight:800; color:var(--primary); }
+        .ms-more{ display:block; margin-top:11px; text-align:center; padding:9px; border:1px solid var(--border); border-radius:999px; font-size:12.5px; font-weight:700; text-decoration:none; color:var(--text); background:var(--card); }
     </style>
 </head>
 <body>
-    <script>try{if(new URLSearchParams(location.search).get('embed')==='calc')document.body.classList.add('embed-calc');}catch(e){}</script>
+    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
@@ -1702,7 +1738,7 @@
                     <label style="font-size:13px;">角色等級<input type="number" id="pwCharRank" value="50" min="1" max="200" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
                     <label style="font-size:13px;">area item 等級<select id="pwAreaLv" onchange="EventCalc.calcPower()"></select></label>
                     <label style="font-size:13px;">前後篇已讀<input type="checkbox" id="pwEpi" checked onchange="EventCalc.calcPower()"></label>
-                    <label style="font-size:13px;">豆森門+娃加成%<input type="number" id="pwMysekai" value="5" min="0" max="10" step="0.5" style="width:56px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
+                    <label style="font-size:13px;">豆森 MySekai%（門4＋數套娃）<input type="number" id="pwMysekai" value="7" min="0" max="12" step="0.5" style="width:56px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
                 </div>
                 <div class="table-wrapper" style="margin-top:8px;">
                     <table><thead><tr><th>卡</th><th>角色</th><th>卡片</th><th>等級</th><th>特訓</th><th>MR</th><th>綜合力</th></tr></thead>
@@ -1857,6 +1893,10 @@
                 </div>
             </div>
             <div class="note">協力場均分數 ≈ ⌊(base ＋ FEVER×0.5 ＋ Σ技能窗×U/100) × 綜合力 × 4⌋,U=自己＋隊友4人÷5。<strong>隊友欄留空則以「自己」值估算</strong>;按「最佳化」會把最佳隊的隊長技能填入「自己」、隊友清空。活動P用協力式(自分÷17000＋隊友項)×(加成+100)/100×火倍率。均為估算。</div>
+        </section>
+
+        <section id="mini-studio">
+            <div id="msCard" class="ms-card"><div class="ms-msg">載入當期跑榜…</div></div>
         </section>
 
         <footer>
@@ -5004,24 +5044,17 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             optimize() { this.onEvent(); },   // radio 已切 opt,交給 onEvent 分支
             // 最佳化理論隊伍:對符合加成的候選卡做 bounded DFS,目標 max 綜合力×(1+加成/100)(活動P proxy)
-            async _renderOpt(src, type) {
-                const teamEl = document.getElementById('rsTeam');
-                teamEl.innerHTML = '<div class="event-loading" style="padding:12px;">最佳化計算中…</div>';
-                await new Promise(r => setTimeout(r, 20));
+            // 純計算(不碰 DOM):去重每角色最佳 + bounded DFS,回傳最佳隊。_renderOpt 與 miniRun 共用。
+            async _computeBest(src, type, opts) {
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
-                const areaEl = document.getElementById('rsAreaLv');
-                const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
-                const maxLv = c => PowerEngine.cardMaxLevel(c);
-                // 目標歌曲(有 metas 才用真實活動P,否則退回 綜合力×加成)
-                const mid = +document.getElementById('rsSong').value || 0;
-                const boostN = +document.getElementById('rsBoost').value || 0;
+                const areaLv = opts.areaLv, charRank = opts.charRank || 50, mid = opts.songId || 0, boostN = opts.boostN || 0;
                 const F = EC_BOOST[boostN] || 1;
+                const maxLv = c => PowerEngine.cardMaxLevel(c);
                 const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid].master || SongEff._metas[mid].expert || Object.values(SongEff._metas[mid])[0]);
                 const wSorted = meta ? (meta.skill_score_multi || []).slice().sort((a, b) => b - a) : null;
                 const R = meta ? (meta.event_rate || 100) : 100;
                 const feverHalf = meta ? (meta.fever_score || 0) * 0.5 : 0;
                 const useEP = !!(meta && wSorted && wSorted.length >= 6);
-                const charRank = +document.getElementById('rsCharRank').value || 50;
                 const cand = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')
                     .map(c => {
                         const b = this._cardBonus(c, this._evId, src);
@@ -5034,9 +5067,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const bestByChar = {};
                 cand.forEach(x => { const cid = x.c.characterId; if (!bestByChar[cid]) bestByChar[cid] = x; });
                 const pool = Object.values(bestByChar).slice(0, 20);
-                if (pool.length < 5) { teamEl.innerHTML = '<div class="note">符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。</div>'; return; }
+                if (pool.length < 5) return { ok: false, reason: '符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。' };
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 50 });
-                // 給定 power/bonus/skills 算目標(協力活動P 或退回代理)
                 const evalDeck = (power, bonus, skills) => {
                     if (!useEP) return power * (1 + bonus / 100);
                     const leader = Math.max(...skills);
@@ -5051,14 +5083,24 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 for (let a = 0; a < n - 4; a++) for (let b = a + 1; b < n - 3; b++) for (let c = b + 1; c < n - 2; c++)
                     for (let d = c + 1; d < n - 1; d++) for (let e = d + 1; e < n; e++) {
                         const idx = [a, b, c, d, e];
-                        const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 5);
+                        const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 7);   // 豆森 MySekai：門4 + 1+1+1 = 7%
                         const bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
                         const skills = idx.map(i => pool[i].skill);
                         const obj = evalDeck(pw.total, bonus, skills);
                         if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
                     }
                 const chosen = best.idx.map(i => pool[i]);
-                const totalBonus = Math.round(best.bonus * 10) / 10;
+                return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)) };
+            },
+            async _renderOpt(src, type) {
+                const teamEl = document.getElementById('rsTeam');
+                teamEl.innerHTML = '<div class="event-loading" style="padding:12px;">最佳化計算中…</div>';
+                await new Promise(r => setTimeout(r, 20));
+                const areaEl = document.getElementById('rsAreaLv');
+                const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
+                const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 50, songId: +document.getElementById('rsSong').value || 0, boostN: +document.getElementById('rsBoost').value || 0 });
+                if (!r.ok) { teamEl.innerHTML = `<div class="note">${r.reason}</div>`; return; }
+                const { chosen, best, totalBonus, obj: bestObj, useEP } = r;
                 const bi = document.getElementById('rsBonus'); if (bi) bi.value = Math.round(totalBonus);
                 const pp = document.getElementById('rsPower'); if (pp) pp.value = best.pw.total;
                 // 我的個人編組倍率 → 填「自己」欄(取最佳隊技能最高=隊長 encore),隊友四欄留空
@@ -5116,6 +5158,79 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div style="font-size:22px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:12px;font-weight:400;color:var(--text-light);">場均分數</span></div>
                     <div style="margin-top:8px;font-size:14px;">場均活動P:<strong>${epPerGame.toLocaleString()}</strong>(火 ${boostN}、加成 ${B}%、R${R})</div>
                     <div style="margin-top:6px;font-size:12px;color:var(--text-light);">每局約 ${perGameSec}s → 每小時約 ${gamesPerHour} 局 ≈ <strong>${epPerHour.toLocaleString()}</strong> P/時</div>`;
+            },
+            // ===== 首頁精簡跑榜小窗（?embed=ministudio）：當期活動自動最佳化活動P =====
+            _miniSong() {
+                const m = SongEff._metas; if (!m) return 0;
+                let best = 0, bestR = 0;
+                for (const id in m) {
+                    const mm = m[id] && (m[id].master || m[id].expert || Object.values(m[id])[0]);
+                    const r = (mm && mm.event_rate) || 0;
+                    if (r > bestR) { bestR = r; best = +id; }
+                }
+                return best;
+            },
+            async miniRun() {
+                const card = document.getElementById('msCard');
+                if (!card || this._miniDone) return;
+                this._miniDone = true;
+                try {
+                    await EventCalc.ensure();
+                    await SongEff.ensure();
+                    RerunModule.ensure();
+                    [this._cards, this._evCards] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('eventCards.json')]);
+                    const musics = await MasterDB.get('musics.json');
+                    const hasMetas = SongEff._metas && Object.keys(SongEff._metas).length;
+                    this._songList = (musics || []).filter(s => !hasMetas || SongEff._metas[s.id]).map(s => ({ id: s.id, title: s.title || ('#' + s.id) })).sort((a, b) => a.id - b.id);
+                    const list = await EventScan.loadList();
+                    this._twMax = list.reduce((m, e) => Math.max(m, e.id), 0);
+                    const now = Date.now();
+                    const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
+                    this._evId = started.length ? started[0].id : (list[0] && list[0].id);
+                    this._ready = true;
+                } catch (e) {
+                    card.innerHTML = '<div class="ms-msg">當期跑榜資料載入失敗，稍後再試。</div>';
+                    this._miniDone = false;
+                    return;
+                }
+                card.innerHTML = '<div class="ms-msg">計算當期最佳跑榜中…</div>';
+                let src, r;
+                try {
+                    src = await this._src(this._evId);   // 當期為台服，不觸發日服 master
+                    r = await this._computeBest(src, src.type, { areaLv: 15, charRank: 50, songId: this._miniSong(), boostN: 0 });
+                } catch (e) { card.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; return; }
+                this._renderMiniCard(card, src, r, this._miniSong());
+            },
+            _renderMiniCard(card, src, r, songId) {
+                if (!r || !r.ok) { card.innerHTML = `<div class="ms-msg">${(r && r.reason) || '當期查無足夠加成卡。'}</div>`; return; }
+                const { chosen, best, totalBonus, obj, useEP } = r;
+                const evName = (src.ev && src.ev.name) || ('#' + this._evId);
+                const typeName = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' }[src.type] || '活動';
+                const song = (this._songList || []).find(s => s.id === songId);
+                const songName = song ? song.title : '—';
+                const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+                const thumb = c => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${(c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
+                const base = useEP ? Math.round(obj) : 0;   // obj @ 火0（F=1）＝每局基準活動P
+                const ep = f => (base * f).toLocaleString();
+                card.innerHTML = `
+                    <div class="ms-top">
+                        <div class="ms-ev"><span class="ms-type">${typeName}</span><span class="ms-evname">${evName}</span></div>
+                        <div class="ms-sub">最佳化活動P・區域道具 Lv15・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級（混團/混色 area 不翻倍）</div>
+                    </div>
+                    <div class="ms-thumbs">${chosen.map(x => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" onerror="this.style.opacity=.15"><span>${EC_cidName(x.c.characterId)}</span><i>＋${x.bonus}%</i></div>`).join('')}</div>
+                    <div class="ms-kvs">
+                        <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
+                        <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
+                    </div>
+                    ${useEP ? `<div class="ms-ep">
+                        <div class="ms-ep-title">場均活動P　<span>歌：${songName}</span></div>
+                        <div class="ms-ep-grid">
+                            <div><span>火 0</span><b>${ep(EC_BOOST[0])}</b></div>
+                            <div><span>火 1</span><b>${ep(EC_BOOST[1])}</b></div>
+                            <div><span>火 10</span><b>${ep(EC_BOOST[10])}</b></div>
+                        </div>
+                    </div>` : `<div class="ms-ep"><div class="ms-ep-title">綜合力目標（曲庫/music_metas 未載入，暫無法算活動P）</div></div>`}
+                    <a class="ms-more" href="./index.html#run-studio" target="_blank" rel="noopener">開完整跑榜工作室（可換活動/歌/自訂）→</a>`;
             }
         };
 
@@ -5411,20 +5526,26 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
         try{
-            var q = new URLSearchParams(location.search);
-            if(q.get('embed') !== 'calc') return;
-            document.body.classList.add('embed-calc');
-            var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
-            var bar = document.createElement('div');
-            bar.className = 'embed-tabbar';
-            tabs.forEach(function(t){
-                var a = document.createElement('a');
-                a.href = '#' + t[0];
-                a.textContent = t[1];
-                bar.appendChild(a);
-            });
-            var c = document.querySelector('.container');
-            if(c) c.insertBefore(bar, c.firstChild);
+            var mode = new URLSearchParams(location.search).get('embed');
+            if(mode !== 'calc' && mode !== 'ministudio') return;
+            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : 'embed-calc');
+            if(mode === 'calc'){
+                var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
+                var bar = document.createElement('div');
+                bar.className = 'embed-tabbar';
+                tabs.forEach(function(t){
+                    var a = document.createElement('a');
+                    a.href = '#' + t[0];
+                    a.textContent = t[1];
+                    bar.appendChild(a);
+                });
+                var c = document.querySelector('.container');
+                if(c) c.insertBefore(bar, c.firstChild);
+            }
+            if(mode === 'ministudio'){
+                var run = function(){ try{ if(typeof RunStudio !== 'undefined' && RunStudio.miniRun) RunStudio.miniRun(); }catch(e){} };
+                if(document.readyState === 'complete') run(); else window.addEventListener('load', run);
+            }
             var last = 0;
             function postH(){
                 try{

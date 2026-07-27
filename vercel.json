@@ -4,16 +4,21 @@
     { "src": "*.html", "use": "@vercel/static" },
     { "src": "support.js", "use": "@vercel/static" },
     { "src": "data/**", "use": "@vercel/static" },
+    { "src": "vendor/**", "use": "@vercel/static" },
     { "src": "favicon.ico", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/ep-calculator.html", "dest": "/ep-calculator.html" },
     { "src": "/tutorial.html", "dest": "/tutorial.html" },
+    { "src": "/classic", "dest": "/index.html" },
+    { "src": "/index.html", "dest": "/index.html" },
     { "src": "/app", "dest": "/app.html" },
     { "src": "/app.html", "dest": "/app.html" },
     { "src": "/support.js", "dest": "/support.js" },
     { "src": "/data/(.*)", "dest": "/data/$1" },
+    { "src": "/vendor/(.*)", "dest": "/vendor/$1" },
     { "src": "/favicon.ico", "dest": "/favicon.ico" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/", "dest": "/app.html" },
+    { "src": "/(.*)", "dest": "/app.html" }
   ]
 }

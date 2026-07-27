@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
+window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js"};</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -190,31 +192,11 @@ input::placeholder{color:var(--text-3)}
       </div>
 
       <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
-          <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
-          <span style="font-size:15px;font-weight:800;color:var(--ink)">目標進度</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">當期跑榜 · 最佳化活動P</span></div>
+          <button type="button" onClick="{{ onGo }}" data-p="deckpro" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">進階</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">目標 EP</span>
-            <input type="number" value="{{ goal }}" onInput="{{ onField }}" data-k="goal" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c'" style-focus="border-color:var(--accent)"></label>
-          <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">目前 EP</span>
-            <input type="number" value="{{ cur }}" onInput="{{ onField }}" data-k="cur" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c'" style-focus="border-color:var(--accent)"></label>
-        </div>
-        <div style="margin-top:14px;height:10px;border-radius:999px;background:var(--card-2);overflow:hidden">
-          <div style="height:100%;border-radius:999px;background:var(--cta);transition:width .6s cubic-bezier(.32,.72,.24,1);width:{{ goalPct }}"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:6px">
-          <span>{{ goalPctLabel }}</span><span>還差 {{ goalLeft }} EP</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px">
-          <sc-for list="{{ goalStats }}" as="st" hint-placeholder-count="3">
-            <div style="background:var(--card-2);border-radius:13px;padding:11px 12px;text-align:center">
-              <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div>
-              <div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div>
-            </div>
-          </sc-for>
-        </div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:9px;line-height:1.6">依「計算中心」目前設定：每局 {{ epPerPlay }} EP（{{ modeLabel }}・火 {{ boost }}）</div>
+        <iframe id="miniStudioFrame" src="./index.html?embed=ministudio" title="當期跑榜最佳化" scrolling="no" style="width:100%;height:480px;border:none;background:transparent;display:block"></iframe>
       </div>
     </div>
 
@@ -869,10 +851,11 @@ class Component extends DCLogic {
     document.addEventListener('keydown', this._key);
     this._frameMsg = e => {
       const d = e && e.data;
-      if (d && typeof d.sekaiCalcHeight === 'number') {
-        const f = document.getElementById('deckProFrame');
-        if (f) f.style.height = Math.max(560, d.sekaiCalcHeight + 8) + 'px';
-      }
+      if (!d || typeof d.sekaiCalcHeight !== 'number') return;
+      ['deckProFrame', 'miniStudioFrame'].forEach(id => {
+        const f = document.getElementById(id);
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'miniStudioFrame' ? 260 : 560, d.sekaiCalcHeight + 8) + 'px';
+      });
     };
     window.addEventListener('message', this._frameMsg);
   }
