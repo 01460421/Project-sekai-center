@@ -1677,6 +1677,7 @@
                     <label style="font-size:13px;">角色等級<input type="number" id="pwCharRank" value="50" min="1" max="200" style="width:64px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
                     <label style="font-size:13px;">area item 等級<select id="pwAreaLv" onchange="EventCalc.calcPower()"></select></label>
                     <label style="font-size:13px;">前後篇已讀<input type="checkbox" id="pwEpi" checked onchange="EventCalc.calcPower()"></label>
+                    <label style="font-size:13px;">豆森門+娃加成%<input type="number" id="pwMysekai" value="5" min="0" max="10" step="0.5" style="width:56px;margin-left:4px;" oninput="EventCalc.calcPower()"></label>
                 </div>
                 <div class="table-wrapper" style="margin-top:8px;">
                     <table><thead><tr><th>卡</th><th>角色</th><th>卡片</th><th>等級</th><th>特訓</th><th>MR</th><th>綜合力</th></tr></thead>
@@ -4187,8 +4188,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (this._loading) return this._loading;
                 this._loading = Promise.all([
                     MasterDB.get('cards.json'), MasterDB.get('characterRanks.json'), MasterDB.get('cardEpisodes.json'),
-                    MasterDB.get('masterLessons.json'), MasterDB.get('areaItemLevels.json'), MasterDB.get('gameCharacterUnits.json')
-                ]).then(([cards, ranks, epi, ml, areaLv, gcu]) => {
+                    MasterDB.get('masterLessons.json'), MasterDB.get('areaItemLevels.json'), MasterDB.get('gameCharacterUnits.json'),
+                    fetchJSONproxied('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/areaItemLevels.json').catch(() => null)
+                ]).then(([cards, ranks, epi, ml, areaLvTW, gcu, areaLvJP]) => {
+                    // 台服 area Lv1-15;日服補 Lv16-20(5週年)。合併,areaMaxLv=20
+                    const areaLv = (areaLvJP && areaLvJP.length) ? areaLvTW.concat(areaLvJP.filter(a => a.level > 15)) : areaLvTW;
                     this.cards = cards;
                     cards.forEach(c => { this.cardById[c.id] = c; (this.cardsByChar[c.characterId] = this.cardsByChar[c.characterId] || []).push(c); });
                     ranks.forEach(r => { (this.ranks[r.characterId] = this.ranks[r.characterId] || {})[r.characterRank] = [r.power1BonusRate, r.power2BonusRate, r.power3BonusRate]; });
@@ -4250,7 +4254,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 return acc.reduce((v, x) => v + Math.floor(x), 0);
             },
             // members: [{card, level, trained, epiRead, mr, rank}]
-            teamPower(members, areaLevel) {
+            // mysekaiPct = 豆森大門+玩偶加成%(滿級門4%+一套娃1%=5%),對每卡基礎力加算
+            teamPower(members, areaLevel, mysekaiPct) {
+                mysekaiPct = mysekaiPct || 0;
                 const possibles = members.map(m => this.cardUnits(m.card));
                 const attrs = members.map(m => m.card.attr);
                 // 全隊共同團體(VS 可算成支援團體);優先非 piapro 的實體團
@@ -4266,7 +4272,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const bsum = base[0] + base[1] + base[2];
                     const cb = this.charBonus(base, m.card.characterId, m.rank);
                     const ab = this.areaBonus(base, m.card, effUnit, sameUnit, sameAttr, areaLevel);
-                    const t = bsum + cb + ab; per.push({ base: bsum, charBonus: cb, areaBonus: ab, total: t }); total += t;
+                    const mb = Math.floor(bsum * mysekaiPct / 100);   // 豆森門+娃
+                    const t = bsum + cb + ab + mb; per.push({ base: bsum, charBonus: cb, areaBonus: ab, mysekai: mb, total: t }); total += t;
                 });
                 return { total, per };
             }
@@ -4685,6 +4692,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const rank = +document.getElementById('pwCharRank').value || 1;
                 const areaLv = +document.getElementById('pwAreaLv').value || PowerEngine.areaMaxLv;
                 const epiRead = document.getElementById('pwEpi').checked;
+                const mysekaiPct = +document.getElementById('pwMysekai').value || 0;
                 const members = [];
                 document.querySelectorAll('#pwBody tr').forEach(tr => {
                     const cardSel = tr.querySelector('[data-pw="card"]'); if (!cardSel) return;
@@ -4696,15 +4704,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     });
                 });
                 if (members.length < 5) return;
-                const { total, per } = PowerEngine.teamPower(members, areaLv);
+                const { total, per } = PowerEngine.teamPower(members, areaLv, mysekaiPct);
                 per.forEach((p, i) => { const out = document.querySelector(`[data-pw-out="${i}"]`); if (out) out.textContent = p.total.toLocaleString(); });
                 this._lastPower = total;
                 const t = document.getElementById('pwTotal'); if (t) t.textContent = total.toLocaleString();
-                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0);
+                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0), sumMy = per.reduce((s, p) => s + (p.mysekai || 0), 0);
                 const b = document.getElementById('pwBreak');
-                if (b) b.textContent = `基礎 ${sumBase.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()}`;
+                if (b) b.textContent = `基礎 ${sumBase.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()}`;
                 const note = document.getElementById('pwNote');
-                if (note) note.textContent = `area item 台服目前最高 Lv${PowerEngine.areaMaxLv}(5週年後升 Lv20);全隊同團或同色時對應道具 allMatch 翻倍。與遊戲可能有 ±個位數浮點差。`;
+                if (note) note.textContent = `area item 可選到 Lv20(5週年;台服目前 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
             },
             powerToScore() {
                 const e = document.getElementById('scPower'); if (e) e.value = this._lastPower || 0;
@@ -4895,7 +4903,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 return (typeof DOLLS !== 'undefined') ? DOLLS.find(x => x.tw === key) : null;
             },
             _cardBonus(card, evId, src) {
-                let deck = 0;
+                let deck = 0, charMatch = false;
                 for (const e of src.deck) {
                     if (e.eventId !== evId) continue;
                     if (e.cardAttr && e.cardAttr !== card.attr) continue;
@@ -4903,6 +4911,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const g = EventCalc._gcu[e.gameCharacterUnitId]; if (!g || g.cid !== card.characterId) continue;
                         // VS 卡:副團體須與加成條目的團體一致(純V supportUnit='none' 不限)
                         if (card.characterId >= 21 && card.supportUnit && card.supportUnit !== 'none' && g.unit !== card.supportUnit) continue;
+                        charMatch = true;   // 符合到「角色」條目(非純屬性湊數)
                     }
                     if (e.bonusRate > deck) deck = e.bonusRate;
                 }
@@ -4910,7 +4919,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const special = ec ? (ec.bonusRate || 0) : 0;
                 const mr = (EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][5]) || 0;
                 const per = special === 70 ? 70 + mr : deck + special + mr;
-                return { per: Math.round(per * 10) / 10, deck, special };
+                return { per: Math.round(per * 10) / 10, deck, special, charMatch };
             },
             async onEvent() {
                 if (!this._ready) return;
@@ -4935,7 +4944,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 // 理論隊伍(加成優先);一隊每角色最多一張(プロセカ規則)→ 每角色留最佳,再取前 5
                 const cards4 = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
                 const bestPerChar = {};
-                cards4.map(c => ({ c, ...this._cardBonus(c, this._evId, src) })).filter(x => x.deck > 0 || x.special > 0)
+                cards4.map(c => ({ c, ...this._cardBonus(c, this._evId, src) })).filter(x => x.charMatch || x.special > 0)
                     .forEach(x => { const cid = x.c.characterId; if (!bestPerChar[cid] || x.per > bestPerChar[cid].per) bestPerChar[cid] = x; });
                 const ranked = Object.values(bestPerChar).sort((a, b) => b.per - a.per).slice(0, 5);
                 const total = Math.round(ranked.reduce((s, x) => s + x.per, 0) * 10) / 10
@@ -4979,8 +4988,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const b = this._cardBonus(c, this._evId, src);
                         const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
                         const skill = SkillEngine.effSkill(c, true, 4, charRank, 5);   // 同團5、角色等級(輸入)、SL4
-                        return { c, bonus: b.per, deck: b.deck, special: b.special, baseSum: base[0] + base[1] + base[2], skill };
-                    }).filter(x => x.deck > 0 || x.special > 0);
+                        return { c, bonus: b.per, deck: b.deck, special: b.special, charMatch: b.charMatch, baseSum: base[0] + base[1] + base[2], skill };
+                    }).filter(x => x.charMatch || x.special > 0);
                 cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
                 // 一隊每角色最多一張(プロセカ規則):去重取每角色最佳(cand 已按價值排序,首張=最佳)
                 const bestByChar = {};
@@ -5003,7 +5012,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 for (let a = 0; a < n - 4; a++) for (let b = a + 1; b < n - 3; b++) for (let c = b + 1; c < n - 2; c++)
                     for (let d = c + 1; d < n - 1; d++) for (let e = d + 1; e < n; e++) {
                         const idx = [a, b, c, d, e];
-                        const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv);
+                        const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 5);
                         const bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
                         const skills = idx.map(i => pool[i].skill);
                         const obj = evalDeck(pw.total, bonus, skills);
