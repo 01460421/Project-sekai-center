@@ -354,6 +354,17 @@
             .countdown-cards{grid-template-columns:1fr;}
             nav a{font-size:11px;padding:3px 6px;}
         }
+        /* 手機:導覽列橫向滑動(不切字);說明文字斷行;表格內部捲動;避免區段撐破 */
+        @media(max-width:600px){
+            nav .nav-row{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+            nav .nav-row::-webkit-scrollbar{display:none;}
+            nav a,nav .nav-label,nav .dark-toggle{white-space:nowrap;flex:0 0 auto;}
+            .note{word-break:break-word;overflow-wrap:anywhere;}
+            section{overflow-x:hidden;}
+            .table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+            .calc-row{flex-wrap:wrap;}
+            input[type=number],select{max-width:100%;}
+        }
         /* 卡庫 */
         .card-controls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center; }
         .card-controls input, .card-controls select {
@@ -1073,7 +1084,7 @@
             </div>
 
             <div id="song-stats-tab" class="tab-content">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap;" class="chart-container" style="padding:0;border:none;background:none;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;" class="chart-container" style="padding:0;border:none;background:none;">
                     <div class="chart-container" style="margin:0;">
                         <div style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:8px;">難度分布（Master）</div>
                         <canvas id="diffCanvas" width="400" height="240"></canvas>
@@ -1152,7 +1163,7 @@
             <h2>十一、MySekai 採集計算機 <span class="en">MySekai Mining</span></h2>
             <div class="note">計算 MySekai 採集的 Event PT 收益。公式依照官方階層表。</div>
             <div class="calculator">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                     <div class="calc-section">
                         <h4>輸入參數</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="mysekaiPower" value="280000" oninput="MySekaiCalc.calc()"></div>
@@ -1397,7 +1408,7 @@
 
             <div id="ec-point" class="tab-content">
                 <div class="calculator">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                         <div class="calc-section">
                             <h4>輸入參數</h4>
                             <div class="calc-row"><label>模式</label>
@@ -1434,7 +1445,7 @@
 
             <div id="ec-score" class="tab-content">
                 <div class="calculator">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                         <div class="calc-section">
                             <h4>輸入參數</h4>
                             <div class="calc-row"><label>模式</label>
@@ -1512,7 +1523,7 @@
             <h2>二十一、抽卡期望 · 天井計算器 <span class="en">Gacha Simulator</span></h2>
             <div class="note">機率與天井依台服(＝日服)現行值:4★ 3%、Fes 6%、指定 PU 每張 0.4%;單抽 300 水晶、300 貼紙天井(可用交換券最低 200 抽)。</div>
             <div class="calculator">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                     <div class="calc-section">
                         <h4>輸入參數</h4>
                         <div class="calc-row"><label>目標</label>
@@ -1547,7 +1558,7 @@
             </div>
             <div id="rm-score" class="tab-content active">
                 <div class="calculator">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                         <div class="calc-section">
                             <h4>我方判定數</h4>
                             <div class="calc-row"><label>PERFECT</label><input type="number" id="rmA_p" value="1000" min="0" oninput="RankCalc.calc()"></div>
@@ -1568,7 +1579,7 @@
             </div>
             <div id="rm-promo" class="tab-content">
                 <div class="calculator">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                         <div class="calc-section">
                             <h4>輸入</h4>
                             <div class="calc-row"><label>預估勝率 %</label><input type="number" id="rmWin" value="55" min="1" max="99" oninput="RankCalc.promo()"></div>
@@ -1604,7 +1615,7 @@
             <div id="rsTeam"><div class="event-loading" style="padding:12px;">選活動後載入…</div></div>
 
             <div class="calculator" style="margin-top:14px;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;">
                     <div class="calc-section">
                         <h4>場均參數(協力)</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="rsPower" value="280000" min="0" oninput="RunStudio.calc()"></div>
@@ -4787,12 +4798,20 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const F = EC_BOOST[boostN] || 1;
                 const self0 = +document.getElementById('rsP0').value || 0;
                 const g = i => { const el = document.getElementById('rsP' + i); return (el.value === '' && i > 0) ? self0 : (+el.value || 0); };  // 隊友留空=同我
-                const U = g(0) + (g(1) + g(2) + g(3) + g(4)) / 5;
                 const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid][diff] || SongEff._metas[mid].master || Object.values(SongEff._metas[mid])[0]);
                 if (!meta) { el.innerHTML = '<div class="note">請選一首有資料的歌。</div>'; return; }
-                const sumSkill = (meta.skill_score_multi || []).reduce((s, v) => s + v, 0);
+                // 協力 6 次技能發動:5 人各一次 + 第 6 次 encore(從 5 人挑最高技能者)。
+                // 每次發動,全員得(發動者 + 其他4人÷5)加分;把 6 個發動配到 6 個技能窗(高技能配高權重窗)
+                const players = [g(0), g(1), g(2), g(3), g(4)];
+                const totalP = players.reduce((a, b) => a + b, 0);
+                const boost = X => 0.8 * X + totalP / 5;           // = X + (其他4人)/5
+                const encore = Math.max(...players);
+                const boosts = players.map(boost).concat(boost(encore)).sort((a, b) => b - a);
+                const wMulti = (meta.skill_score_multi || []).slice().sort((a, b) => b - a);
+                let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += (wMulti[i] || 0) * (boosts[i] || 0) / 100;
                 const fever = (meta.fever_score || 0) * 0.5;
-                const score = Math.floor((meta.base_score + fever + sumSkill * U / 100) * P * 4);
+                const avgU = boosts.reduce((a, b) => a + b, 0) / 6;
+                const score = Math.floor((meta.base_score + fever + skillPart) * P * 4);
                 // 協力活動P:自分 score + 隊友(取 O=4×score)
                 const O = 4 * score;
                 const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
@@ -4803,7 +4822,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const gamesPerHour = Math.floor(3600 / perGameSec);
                 const epPerHour = epPerGame * gamesPerHour;
                 el.innerHTML = `
-                    <div style="font-size:13px;color:var(--text-light);margin-bottom:6px;">U(有效技能)=自己 ${g(0)} ＋隊友均 ${((g(1)+g(2)+g(3)+g(4))/5).toFixed(0)} = <strong>${U.toFixed(0)}%</strong></div>
+                    <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">6 次發動(5人＋encore取最高 ${encore})、每次全員得(發動者＋其他4人÷5);平均有效 <strong>${avgU.toFixed(0)}%</strong></div>
                     <div style="font-size:22px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:12px;font-weight:400;color:var(--text-light);">場均分數</span></div>
                     <div style="margin-top:8px;font-size:14px;">場均活動P:<strong>${epPerGame.toLocaleString()}</strong>(火 ${boostN}、加成 ${B}%、R${R})</div>
                     <div style="margin-top:6px;font-size:12px;color:var(--text-light);">每局約 ${perGameSec}s → 每小時約 ${gamesPerHour} 局 ≈ <strong>${epPerHour.toLocaleString()}</strong> P/時</div>`;
