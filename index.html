@@ -1831,6 +1831,7 @@
                         <h4>場均參數(協力)</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="rsPower" value="280000" min="0" oninput="RunStudio.calc()"></div>
                         <div class="calc-row"><label>活動加成 %</label><input type="number" id="rsBonus" value="0" min="0" oninput="RunStudio.calc()"></div>
+                        <div class="calc-row"><label>區域道具等級 <span style="font-weight:400;font-size:11px;color:var(--text-light);">最佳化用・台服現 Lv15、5週年 Lv20</span></label><input type="number" id="rsAreaLv" value="15" min="1" max="20" oninput="RunStudio.onEvent()"></div>
                         <div class="calc-row" style="align-items:flex-start;"><label>選歌(曲庫)</label>
                             <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
                                 <input id="rsSongSearch" placeholder="搜尋歌名/作曲…" oninput="RunStudio.filterSongs()" style="padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;max-width:100%;">
@@ -4889,10 +4890,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     this._evId = started.length ? started[0].id : (list[0] && list[0].id);
                     sel.value = this._evId;
                 }
-                if (typeof allSongs !== 'undefined') {
-                    this._songList = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
-                    this.filterSongs();
-                }
+                // 曲庫:自載 musics.json（不依賴頁面其他區塊的 allSongs；embed/直接進工作室、手機都能用）
+                try {
+                    const musics = await MasterDB.get('musics.json');
+                    const hasMetas = SongEff._metas && Object.keys(SongEff._metas).length;
+                    this._songList = (musics || [])
+                        .filter(s => !hasMetas || SongEff._metas[s.id])
+                        .map(s => ({ id: s.id, title: s.title || ('#' + s.id), composer: s.composer || '' }))
+                        .sort((a, b) => a.id - b.id);
+                } catch (e) { this._songList = []; }
+                this.filterSongs();
                 this._ready = true;
                 await this.onEvent();
             },
@@ -4961,8 +4968,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const doll = src.isJP ? null : this._monthOf(this._evId);
                     this._days = days;
                     const fmt = d => `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}`;
-                    info.innerHTML = `類型:<strong>${typeName}</strong>　${src.isJP ? '<strong style="color:var(--primary);">日服</strong> 期程' : '期程'}:${fmt(s)} ～ ${fmt(en)}(約 ${days} 天)　`
-                        + (src.isJP ? '(台服約 1 年後;數據取自日服 master)' : (doll ? `當期月卡玩偶(娃):第 ${doll.round} 輪 ${doll.type}${doll.chars ? '・' + doll.chars : ''}` : '無對應月卡資料'));
+                    const shift = d => new Date(d.getTime() + 365 * 86400000);   // 日服 → 台服預測 offset（實測 +365 天）
+                    if (src.isJP) {
+                        info.innerHTML = `類型:<strong>${typeName}</strong>　<strong style="color:var(--primary);">日服</strong>期程:${fmt(s)} ～ ${fmt(en)}（約 ${days} 天）`
+                            + `<br>台服預估上線:<strong style="color:var(--primary);">${fmt(shift(s))} ～ ${fmt(shift(en))}</strong>（日服 +365 天推估；數據取自日服 master）`;
+                    } else {
+                        info.innerHTML = `類型:<strong>${typeName}</strong>　期程:${fmt(s)} ～ ${fmt(en)}（約 ${days} 天）　`
+                            + (doll ? `當期月卡玩偶(娃):第 ${doll.round} 輪 ${doll.type}${doll.chars ? '・' + doll.chars : ''}` : '無對應月卡資料');
+                    }
                 }
                 const mode = (document.querySelector('input[name=rsMode]:checked') || {}).value || 'bonus';
                 if (mode === 'opt') { await this._renderOpt(src, type); this.calc(); return; }
@@ -4996,7 +5009,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 teamEl.innerHTML = '<div class="event-loading" style="padding:12px;">最佳化計算中…</div>';
                 await new Promise(r => setTimeout(r, 20));
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
-                const areaLv = PowerEngine.areaMaxLv;
+                const areaEl = document.getElementById('rsAreaLv');
+                const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
                 const maxLv = c => PowerEngine.cardMaxLevel(c);
                 // 目標歌曲(有 metas 才用真實活動P,否則退回 綜合力×加成)
                 const mid = +document.getElementById('rsSong').value || 0;
