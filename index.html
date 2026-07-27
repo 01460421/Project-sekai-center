@@ -715,6 +715,7 @@
         .ms-ep-grid > div{ background:var(--bg); border-radius:9px; padding:8px 4px; }
         .ms-ep-grid span{ display:block; font-size:10.5px; color:var(--text-light); }
         .ms-ep-grid b{ font-size:15px; font-weight:800; color:var(--primary); }
+        .ms-break{ font-size:10.5px; color:var(--text-light); margin:9px 0 2px; line-height:1.6; }
         .ms-more{ display:block; margin-top:11px; text-align:center; padding:9px; border:1px solid var(--border); border-radius:999px; font-size:12.5px; font-weight:700; text-decoration:none; color:var(--text); background:var(--card); }
     </style>
 </head>
@@ -4234,11 +4235,45 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         }
 
         // ========== 台服 master data 共用載入器(快取 Promise,去重併發) ==========
+        // ========== IndexedDB 快取（抓下來的 JSON 存瀏覽器；iframe 重載/重開不再重抓，曲庫/場均即時可用）==========
+        const IDBCache = {
+            _db: undefined,
+            _open() {
+                if (this._db !== undefined) return Promise.resolve(this._db);
+                return new Promise(res => {
+                    try {
+                        const req = indexedDB.open('sekai-cache', 1);
+                        req.onupgradeneeded = () => { try { req.result.createObjectStore('kv'); } catch (e) {} };
+                        req.onsuccess = () => { this._db = req.result; res(this._db); };
+                        req.onerror = () => { this._db = null; res(null); };
+                    } catch (e) { this._db = null; res(null); }
+                });
+            },
+            _get(key, ttl) {
+                return this._open().then(db => !db ? null : new Promise(res => {
+                    try {
+                        const r = db.transaction('kv').objectStore('kv').get(key);
+                        r.onsuccess = () => { const o = r.result; res(o && (Date.now() - o.t) < ttl ? o.d : null); };
+                        r.onerror = () => res(null);
+                    } catch (e) { res(null); }
+                }));
+            },
+            _set(key, d) {
+                this._open().then(db => { if (!db) return; try { db.transaction('kv', 'readwrite').objectStore('kv').put({ t: Date.now(), d }, key); } catch (e) {} });
+            },
+            async wrap(url, ttl) {
+                try { const c = await this._get('u:' + url, ttl); if (c) return c; } catch (e) {}
+                const d = await fetchJSONproxied(url);
+                try { this._set('u:' + url, d); } catch (e) {}
+                return d;
+            }
+        };
         const MasterDB = {
             _c: {}, base: 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main',
+            TTL: 43200000,   // 12 小時
             get(file) {
                 if (this._c[file]) return this._c[file];
-                const p = fetch(`${this.base}/${file}`).then(r => r.json());
+                const p = IDBCache.wrap(`${this.base}/${file}`, this.TTL);
                 this._c[file] = p;
                 p.catch(() => { delete this._c[file]; });
                 return p;
@@ -5223,16 +5258,23 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const thumb = c => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${(c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
                 const base = useEP ? Math.round(obj) : 0;   // obj @ 火0（F=1）＝每局基準活動P
                 const ep = f => (base * f).toLocaleString();
+                const per = best.pw.per || [];
+                const sB = per.reduce((s, p) => s + (p.base || 0), 0);
+                const sC = per.reduce((s, p) => s + (p.charBonus || 0), 0);
+                const sA = per.reduce((s, p) => s + (p.areaBonus || 0), 0);
+                const sM = per.reduce((s, p) => s + (p.mysekai || 0), 0);
+                const pct = x => sB ? (x / sB * 100).toFixed(1) : '0';
                 card.innerHTML = `
                     <div class="ms-top">
                         <div class="ms-ev"><span class="ms-type">${typeName}</span><span class="ms-evname">${evName}</span></div>
-                        <div class="ms-sub">最佳化活動P・區域道具 Lv15・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級（混團/混色 area 不翻倍）</div>
+                        <div class="ms-sub">最佳化活動P・區域道具 Lv15・角色等級滿(+5%)・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級（混團/混色 area 不翻倍）</div>
                     </div>
                     <div class="ms-thumbs">${chosen.map(x => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" onerror="this.style.opacity=.15"><span>${EC_cidName(x.c.characterId)}</span><i>＋${x.bonus}%</i></div>`).join('')}</div>
                     <div class="ms-kvs">
                         <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
                         <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
                     </div>
+                    <div class="ms-break">綜合力＝基礎 ${sB.toLocaleString()}　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%</div>
                     ${useEP ? `<div class="ms-ep">
                         <div class="ms-ep-title">場均活動P　<span>歌：${songName}</span></div>
                         <div class="ms-ep-grid">
@@ -5248,19 +5290,20 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // ========== 歌曲刷 P 效率(music_metas) ==========
         const SongEff = {
             _metas: null, _loaded: false, _loading: false,
-            async ensure() {
-                if (this._loaded) { this.render(); return; }
-                if (this._loading) return;
-                this._loading = true;
+            ensure() {
+                if (this._loaded) { this.render(); return Promise.resolve(); }
+                if (this._loadPromise) return this._loadPromise;   // 併發呼叫共用同一次載入（修競態：miniRun 一定拿到 metas）
                 const el = document.getElementById('seResult');
                 if (el) el.innerHTML = '<div class="event-loading" style="padding:20px;">載入 music_metas…</div>';
-                try {
-                    const m = await fetchJSONproxied('https://storage.sekai.best/sekai-best-assets/music_metas.json');
-                    const byId = {};
-                    m.forEach(r => { (byId[r.music_id] = byId[r.music_id] || {})[r.difficulty] = r; });
-                    this._metas = byId; this._loaded = true; this.render();
-                } catch (e) { if (el) el.innerHTML = '<div class="note">music_metas 載入失敗,稍後重試。</div>'; }
-                finally { this._loading = false; }
+                this._loadPromise = (async () => {
+                    try {
+                        const m = await IDBCache.wrap('https://storage.sekai.best/sekai-best-assets/music_metas.json', 43200000);
+                        const byId = {};
+                        m.forEach(r => { (byId[r.music_id] = byId[r.music_id] || {})[r.difficulty] = r; });
+                        this._metas = byId; this._loaded = true; this.render();
+                    } catch (e) { this._loadPromise = null; if (el) el.innerHTML = '<div class="note">music_metas 載入失敗,稍後重試。</div>'; }
+                })();
+                return this._loadPromise;
             },
             render() {
                 if (!this._loaded) return;
