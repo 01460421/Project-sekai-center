@@ -1805,7 +1805,12 @@
                         <h4>場均參數(協力)</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="rsPower" value="280000" min="0" oninput="RunStudio.calc()"></div>
                         <div class="calc-row"><label>活動加成 %</label><input type="number" id="rsBonus" value="0" min="0" oninput="RunStudio.calc()"></div>
-                        <div class="calc-row"><label>選歌</label><select id="rsSong" onchange="RunStudio.calc()" style="max-width:200px;"><option value="">—</option></select></div>
+                        <div class="calc-row" style="align-items:flex-start;"><label>選歌(曲庫)</label>
+                            <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
+                                <input id="rsSongSearch" placeholder="搜尋歌名/作曲…" oninput="RunStudio.filterSongs()" style="padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;max-width:100%;">
+                                <select id="rsSong" onchange="RunStudio.calc()" style="max-width:100%;"><option value="">—</option></select>
+                            </div>
+                        </div>
                         <div class="calc-row"><label>難度</label><select id="rsDiff" onchange="RunStudio.calc()"><option value="master">MASTER</option><option value="expert">EXPERT</option><option value="append">APPEND</option></select></div>
                         <div class="calc-row"><label>火(飲料)</label><select id="rsBoost" onchange="RunStudio.calc()"><option value="0">0</option><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div>
                     </div>
@@ -1818,6 +1823,7 @@
                             <div class="member-item"><label>隊友2</label><input type="number" id="rsP2" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
                             <div class="member-item"><label>隊友3</label><input type="number" id="rsP3" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
                             <div class="member-item"><label>隊友4</label><input type="number" id="rsP4" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
+                            <div class="member-item"><label>第6次 encore</label><input type="number" id="rsP5" placeholder="留空=5人最高" oninput="RunStudio.calc()"></div>
                         </div>
                         <div id="rsResult" style="margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:120px;"></div>
                     </div>
@@ -4850,10 +4856,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     this._evId = started.length ? started[0].id : (list[0] && list[0].id);
                     sel.value = this._evId;
                 }
-                const ssel = document.getElementById('rsSong');
-                if (ssel && typeof allSongs !== 'undefined') {
-                    const withMeta = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
-                    ssel.innerHTML = withMeta.map(s => `<option value="${s.id}">${s.title}</option>`).join('') || '<option value="">(無)</option>';
+                if (typeof allSongs !== 'undefined') {
+                    this._songList = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
+                    this.filterSongs();
                 }
                 this._ready = true;
                 await this.onEvent();
@@ -4872,6 +4877,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!this._isJP(evId)) return { deck: EventCalc._deck, cards: this._cards, evCards: this._evCards, type: EventCalc._types[evId], ev: EventScan.evInfo(evId), isJP: false };
                 const jp = await this._loadJP();
                 return { deck: (jp && jp.deck) || [], cards: (jp && jp.cards) || this._cards, evCards: (jp && jp.evCards) || [], type: this._jpTypes[evId], ev: this._jpEv[evId], isJP: true };
+            },
+            _songList: [],
+            filterSongs() {
+                const ssel = document.getElementById('rsSong'); if (!ssel) return;
+                const kw = ((document.getElementById('rsSongSearch') || {}).value || '').trim().toLowerCase();
+                const cur = ssel.value;
+                const list = kw ? this._songList.filter(s => (s.title || '').toLowerCase().includes(kw) || (s.composer || '').toLowerCase().includes(kw)) : this._songList;
+                ssel.innerHTML = list.length ? list.map(s => `<option value="${s.id}">${s.title}</option>`).join('') : '<option value="">(無符合)</option>';
+                if (list.some(s => String(s.id) === cur)) ssel.value = cur;
+                this.calc();
             },
             _monthOf(id) {
                 const e = EventScan.evInfo(id); if (!e) return null;
@@ -4917,10 +4932,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 const mode = (document.querySelector('input[name=rsMode]:checked') || {}).value || 'bonus';
                 if (mode === 'opt') { await this._renderOpt(src, type); this.calc(); return; }
-                // 理論隊伍(加成優先)
+                // 理論隊伍(加成優先);一隊每角色最多一張(プロセカ規則)→ 每角色留最佳,再取前 5
                 const cards4 = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
-                const ranked = cards4.map(c => ({ c, ...this._cardBonus(c, this._evId, src) }))
-                    .filter(x => x.per > 0).sort((a, b) => b.per - a.per).slice(0, 5);
+                const bestPerChar = {};
+                cards4.map(c => ({ c, ...this._cardBonus(c, this._evId, src) })).filter(x => x.deck > 0 || x.special > 0)
+                    .forEach(x => { const cid = x.c.characterId; if (!bestPerChar[cid] || x.per > bestPerChar[cid].per) bestPerChar[cid] = x; });
+                const ranked = Object.values(bestPerChar).sort((a, b) => b.per - a.per).slice(0, 5);
                 const total = Math.round(ranked.reduce((s, x) => s + x.per, 0) * 10) / 10
                     + (type === 'world_bloom' ? 0 : 0);
                 const bonusInput = document.getElementById('rsBonus');
@@ -4963,10 +4980,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
                         const skill = SkillEngine.effSkill(c, true, 4, charRank, 5);   // 同團5、角色等級(輸入)、SL4
                         return { c, bonus: b.per, deck: b.deck, special: b.special, baseSum: base[0] + base[1] + base[2], skill };
-                    }).filter(x => x.bonus > 0);
-                if (cand.length < 5) { teamEl.innerHTML = '<div class="note">符合加成的候選卡不足 5 張。</div>'; return; }
+                    }).filter(x => x.deck > 0 || x.special > 0);
                 cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
-                const pool = cand.slice(0, 20);
+                // 一隊每角色最多一張(プロセカ規則):去重取每角色最佳(cand 已按價值排序,首張=最佳)
+                const bestByChar = {};
+                cand.forEach(x => { const cid = x.c.characterId; if (!bestByChar[cid]) bestByChar[cid] = x; });
+                const pool = Object.values(bestByChar).slice(0, 20);
+                if (pool.length < 5) { teamEl.innerHTML = '<div class="note">符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。</div>'; return; }
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 50 });
                 // 給定 power/bonus/skills 算目標(協力活動P 或退回代理)
                 const evalDeck = (power, bonus, skills) => {
@@ -5026,7 +5046,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const players = [g(0), g(1), g(2), g(3), g(4)];
                 const totalP = players.reduce((a, b) => a + b, 0);
                 const boost = X => 0.8 * X + totalP / 5;           // = X + (其他4人)/5
-                const encore = Math.max(...players);
+                const p5el = document.getElementById('rsP5');
+                const encore = (p5el && p5el.value !== '') ? (+p5el.value || 0) : Math.max(...players);   // 第6次:手動輸入,留空=5人最高
                 const boosts = players.map(boost).concat(boost(encore)).sort((a, b) => b - a);
                 const wMulti = (meta.skill_score_multi || []).slice().sort((a, b) => b - a);
                 let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += (wMulti[i] || 0) * (boosts[i] || 0) / 100;
@@ -5043,7 +5064,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const gamesPerHour = Math.floor(3600 / perGameSec);
                 const epPerHour = epPerGame * gamesPerHour;
                 el.innerHTML = `
-                    <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">6 次發動(5人＋encore取最高 ${encore})、每次全員得(發動者＋其他4人÷5);平均有效 <strong>${avgU.toFixed(0)}%</strong></div>
+                    <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">6 次發動(5人＋第6次 encore=${encore})、每次全員得(發動者＋其他4人÷5);平均有效 <strong>${avgU.toFixed(0)}%</strong></div>
                     <div style="font-size:22px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:12px;font-weight:400;color:var(--text-light);">場均分數</span></div>
                     <div style="margin-top:8px;font-size:14px;">場均活動P:<strong>${epPerGame.toLocaleString()}</strong>(火 ${boostN}、加成 ${B}%、R${R})</div>
                     <div style="margin-top:6px;font-size:12px;color:var(--text-light);">每局約 ${perGameSec}s → 每小時約 ${gamesPerHour} 局 ≈ <strong>${epPerHour.toLocaleString()}</strong> P/時</div>`;
