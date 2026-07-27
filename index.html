@@ -1620,7 +1620,12 @@
                         <h4>場均參數(協力)</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="rsPower" value="280000" min="0" oninput="RunStudio.calc()"></div>
                         <div class="calc-row"><label>活動加成 %</label><input type="number" id="rsBonus" value="0" min="0" oninput="RunStudio.calc()"></div>
-                        <div class="calc-row"><label>選歌</label><select id="rsSong" onchange="RunStudio.calc()" style="max-width:200px;"><option value="">—</option></select></div>
+                        <div class="calc-row" style="align-items:flex-start;"><label>選歌(曲庫)</label>
+                            <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
+                                <input id="rsSongSearch" placeholder="搜尋歌名/作曲…" oninput="RunStudio.filterSongs()" style="padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;max-width:100%;">
+                                <select id="rsSong" onchange="RunStudio.calc()" style="max-width:100%;"><option value="">—</option></select>
+                            </div>
+                        </div>
                         <div class="calc-row"><label>難度</label><select id="rsDiff" onchange="RunStudio.calc()"><option value="master">MASTER</option><option value="expert">EXPERT</option><option value="append">APPEND</option></select></div>
                         <div class="calc-row"><label>火(飲料)</label><select id="rsBoost" onchange="RunStudio.calc()"><option value="0">0</option><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div>
                     </div>
@@ -1633,6 +1638,7 @@
                             <div class="member-item"><label>隊友2</label><input type="number" id="rsP2" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
                             <div class="member-item"><label>隊友3</label><input type="number" id="rsP3" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
                             <div class="member-item"><label>隊友4</label><input type="number" id="rsP4" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
+                            <div class="member-item"><label>第6次 encore</label><input type="number" id="rsP5" placeholder="留空=5人最高" oninput="RunStudio.calc()"></div>
                         </div>
                         <div id="rsResult" style="margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:120px;"></div>
                     </div>
@@ -4629,10 +4635,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     this._evId = started.length ? started[0].id : (list[0] && list[0].id);
                     sel.value = this._evId;
                 }
-                const ssel = document.getElementById('rsSong');
-                if (ssel && typeof allSongs !== 'undefined') {
-                    const withMeta = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
-                    ssel.innerHTML = withMeta.map(s => `<option value="${s.id}">${s.title}</option>`).join('') || '<option value="">(無)</option>';
+                if (typeof allSongs !== 'undefined') {
+                    this._songList = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
+                    this.filterSongs();
                 }
                 this._ready = true;
                 await this.onEvent();
@@ -4657,6 +4662,17 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const d = new Date(e.start_at);
                 const key = `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
                 return (typeof DOLLS !== 'undefined') ? DOLLS.find(x => x.tw === key) : null;
+            },
+            _songList: [],
+            filterSongs() {
+                const ssel = document.getElementById('rsSong'); if (!ssel) return;
+                const q = (document.getElementById('rsSongSearch') || {}).value || '';
+                const kw = q.trim().toLowerCase();
+                const cur = ssel.value;
+                const list = kw ? this._songList.filter(s => (s.title || '').toLowerCase().includes(kw) || (s.composer || '').toLowerCase().includes(kw)) : this._songList;
+                ssel.innerHTML = list.length ? list.map(s => `<option value="${s.id}">${s.title}</option>`).join('') : '<option value="">(無符合)</option>';
+                if (list.some(s => String(s.id) === cur)) ssel.value = cur;   // 保留原選擇
+                this.calc();
             },
             _cardBonus(card, evId, src) {
                 let deck = 0;
@@ -4805,7 +4821,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const players = [g(0), g(1), g(2), g(3), g(4)];
                 const totalP = players.reduce((a, b) => a + b, 0);
                 const boost = X => 0.8 * X + totalP / 5;           // = X + (其他4人)/5
-                const encore = Math.max(...players);
+                const p5el = document.getElementById('rsP5');
+                const encore = (p5el && p5el.value !== '') ? (+p5el.value || 0) : Math.max(...players);   // 第6次:手動輸入,留空=5人最高
                 const boosts = players.map(boost).concat(boost(encore)).sort((a, b) => b - a);
                 const wMulti = (meta.skill_score_multi || []).slice().sort((a, b) => b - a);
                 let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += (wMulti[i] || 0) * (boosts[i] || 0) / 100;
@@ -4822,7 +4839,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const gamesPerHour = Math.floor(3600 / perGameSec);
                 const epPerHour = epPerGame * gamesPerHour;
                 el.innerHTML = `
-                    <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">6 次發動(5人＋encore取最高 ${encore})、每次全員得(發動者＋其他4人÷5);平均有效 <strong>${avgU.toFixed(0)}%</strong></div>
+                    <div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">6 次發動(5人＋第6次 encore=${encore})、每次全員得(發動者＋其他4人÷5);平均有效 <strong>${avgU.toFixed(0)}%</strong></div>
                     <div style="font-size:22px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:12px;font-weight:400;color:var(--text-light);">場均分數</span></div>
                     <div style="margin-top:8px;font-size:14px;">場均活動P:<strong>${epPerGame.toLocaleString()}</strong>(火 ${boostN}、加成 ${B}%、R${R})</div>
                     <div style="margin-top:6px;font-size:12px;color:var(--text-light);">每局約 ${perGameSec}s → 每小時約 ${gamesPerHour} 局 ≈ <strong>${epPerHour.toLocaleString()}</strong> P/時</div>`;
