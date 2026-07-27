@@ -4027,6 +4027,39 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 技能引擎(卡片有效 score-up %,移植 CardSkillCalculator 主幹) ==========
+        const SkillEngine = {
+            _ready: false, _loading: null, skills: {},
+            ensure() {
+                if (this._ready) return Promise.resolve(true);
+                if (this._loading) return this._loading;
+                this._loading = MasterDB.get('skills.json').then(sk => { sk.forEach(s => { this.skills[s.id] = s; }); this._ready = true; return true; }).catch(() => { this._loading = null; return false; });
+                return this._loading;
+            },
+            // 有效 score-up %:basic ＋ 角色等級加成 ＋(同團隊伍時)V家同團加成 ＋ BloomFES吸技能上限
+            // sameUnitN=同團成員數(此優化器假設同團=5);sl=技能等級(通常4);charRank=角色等級
+            effSkill(card, trained, sl, charRank, sameUnitN) {
+                const sid = (trained && card.specialTrainingSkillId) ? card.specialTrainingSkillId : card.skillId;
+                const sk = this.skills[sid]; if (!sk) return 0;
+                let basic = 0, cr = 0, refMax = 0, sameUnit = 0;
+                for (const e of (sk.skillEffects || [])) {
+                    const t = e.skillEffectType;
+                    const dets = e.skillEffectDetails || [];
+                    const det = dets.find(x => x.level === sl) || dets[dets.length - 1];
+                    const v = det ? (det.activateEffectValue || 0) : 0;
+                    if (t === 'score_up' || t === 'score_up_condition_life' || t === 'score_up_keep') {
+                        basic = Math.max(basic, v);
+                        if (e.skillEnhance) { const per = e.skillEnhance.activateEffectValue || 0; sameUnit = Math.max(sameUnit, per * (sameUnitN >= 5 ? 5 : Math.max(0, sameUnitN - 1))); }
+                    } else if (t === 'score_up_character_rank') {
+                        if (e.activateCharacterRank != null && e.activateCharacterRank <= charRank) cr = Math.max(cr, v);
+                    } else if (t === 'other_member_score_up_reference_rate') {
+                        refMax = Math.max(refMax, det ? (det.activateEffectValue2 || 0) : 0);
+                    }
+                }
+                return basic + cr + sameUnit + refMax;
+            }
+        };
+
         // 角色(gameCharacterId 1–26)分團;火倍率;屬性;稀有度
         const EC_CHARS = [
             { u: 'Leo/need', list: [[1, '一歌'], [2, '咲希'], [3, '穗波'], [4, '志步']] },
@@ -4624,25 +4657,49 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const teamEl = document.getElementById('rsTeam');
                 teamEl.innerHTML = '<div class="event-loading" style="padding:12px;">最佳化計算中…</div>';
                 await new Promise(r => setTimeout(r, 20));
-                await PowerEngine.ensure();
+                await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
                 const areaLv = PowerEngine.areaMaxLv;
                 const maxLv = c => PowerEngine.cardMaxLevel(c);
+                // 目標歌曲(有 metas 才用真實活動P,否則退回 綜合力×加成)
+                const mid = +document.getElementById('rsSong').value || 0;
+                const boostN = +document.getElementById('rsBoost').value || 0;
+                const F = EC_BOOST[boostN] || 1;
+                const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid].master || SongEff._metas[mid].expert || Object.values(SongEff._metas[mid])[0]);
+                const wSorted = meta ? (meta.skill_score_multi || []).slice().sort((a, b) => b - a) : null;
+                const R = meta ? (meta.event_rate || 100) : 100;
+                const feverHalf = meta ? (meta.fever_score || 0) * 0.5 : 0;
+                const useEP = !!(meta && wSorted && wSorted.length >= 6);
                 const cand = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')
-                    .map(c => { const b = this._cardBonus(c, this._evId, src); const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5); return { c, bonus: b.per, deck: b.deck, special: b.special, baseSum: base[0] + base[1] + base[2] }; })
-                    .filter(x => x.bonus > 0);
+                    .map(c => {
+                        const b = this._cardBonus(c, this._evId, src);
+                        const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
+                        const skill = SkillEngine.effSkill(c, true, 4, 50, 5);   // 假設同團5、角色等級50、SL4
+                        return { c, bonus: b.per, deck: b.deck, special: b.special, baseSum: base[0] + base[1] + base[2], skill };
+                    }).filter(x => x.bonus > 0);
                 if (cand.length < 5) { teamEl.innerHTML = '<div class="note">符合加成的候選卡不足 5 張。</div>'; return; }
-                cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) - a.baseSum * (1 + a.bonus / 100));
-                const pool = cand.slice(0, 20);   // 取前 20 候選做窮舉 C(20,5)=15504
+                cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
+                const pool = cand.slice(0, 20);
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 50 });
+                // 給定 power/bonus/skills 算目標(協力活動P 或退回代理)
+                const evalDeck = (power, bonus, skills) => {
+                    if (!useEP) return power * (1 + bonus / 100);
+                    const leader = Math.max(...skills);
+                    const s6 = skills.concat(leader).sort((a, b) => b - a);       // 6 值(5員+encore)配 6 窗權重
+                    let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += wSorted[i] * s6[i] / 100;
+                    const score = Math.floor((meta.base_score + feverHalf + skillPart) * power * 4);
+                    const O = 4 * score;
+                    const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
+                    return Math.floor(base * R / 100 * (1 + bonus / 100)) * F;   // = 每局活動P
+                };
                 const n = pool.length; let best = null, bestObj = -1;
                 for (let a = 0; a < n - 4; a++) for (let b = a + 1; b < n - 3; b++) for (let c = b + 1; c < n - 2; c++)
                     for (let d = c + 1; d < n - 1; d++) for (let e = d + 1; e < n; e++) {
                         const idx = [a, b, c, d, e];
-                        const members = idx.map(i => mk(pool[i]));
-                        const pw = PowerEngine.teamPower(members, areaLv);
+                        const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv);
                         const bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
-                        const obj = pw.total * (1 + bonus / 100);
-                        if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus }; }
+                        const skills = idx.map(i => pool[i].skill);
+                        const obj = evalDeck(pw.total, bonus, skills);
+                        if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
                     }
                 const chosen = best.idx.map(i => pool[i]);
                 const totalBonus = Math.round(best.bonus * 10) / 10;
@@ -4653,11 +4710,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 teamEl.innerHTML = `
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">${chosen.map((x, i) => `<div style="text-align:center;width:76px;"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" alt="${x.c.prefix}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onerror="this.style.opacity=0.2"><div style="font-size:10px;color:var(--text-light);margin-top:2px;">${EC_cidName(x.c.characterId)}<br>${best.pw.per[i].total.toLocaleString()}</div></div>`).join('')}</div>
                     <div class="table-wrapper"><table>
-                    <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>加成</th><th>綜合力</th></tr></thead>
-                    <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
+                    <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>加成</th><th>技能%</th><th>綜合力</th></tr></thead>
+                    <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${x.skill}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
                     </table></div>
-                    <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉)</div><div class="value" style="font-size:20px;">綜合力 ${best.pw.total.toLocaleString()} ・ 加成 ＋${totalBonus}%</div><div class="formula">目標=綜合力×(1+加成)≈活動P;已帶入下方綜合力與加成</div></div>
-                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}。以「綜合力×(1+加成)」為活動P近似目標(技能差異未逐卡最佳化,為與完整 deck-recommend 的簡化)。</div>`;
+                    <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div></div>
+                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}、SL4、角色等級50、同團編成。${useEP ? '技能以有效 score-up%(basic＋角色等級＋同團V)逐卡計入,窗位以重排最佳化;混團技能(score_up_unit_count)/BloomFES吸技能為近似。選不同歌會影響最佳解。' : '未選歌:退回 綜合力×加成 目標。'}</div>`;
             },
             calc() {
                 if (!this._ready) return;
