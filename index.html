@@ -4355,8 +4355,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 return acc.reduce((v, x) => v + Math.floor(x), 0);
             },
+            canvasBonus(card) { return ({ rarity_4: 1500, rarity_birthday: 1500 }[card.cardRarityType] || 0); },   // MySekai 畫布：4★/生日每張 +1500（平面加成）
             // members: [{card, level, trained, epiRead, mr, rank}]
-            // mysekaiPct = 豆森大門+玩偶加成%(滿級門4%+一套娃1%=5%),對每卡基礎力加算
+            // mysekaiPct = 豆森大門+玩偶加成%(滿級門4%+數套娃),對每卡基礎力加算；另加畫布平面加成
             teamPower(members, areaLevel, mysekaiPct) {
                 mysekaiPct = mysekaiPct || 0;
                 const possibles = members.map(m => this.cardUnits(m.card));
@@ -4375,7 +4376,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const cb = this.charBonus(base, m.card.characterId, m.rank);
                     const ab = this.areaBonus(base, m.card, effUnit, sameUnit, sameAttr, areaLevel);
                     const mb = Math.floor(bsum * mysekaiPct / 100);   // 豆森門+娃
-                    const t = bsum + cb + ab + mb; per.push({ base: bsum, charBonus: cb, areaBonus: ab, mysekai: mb, total: t }); total += t;
+                    const cv = this.canvasBonus(m.card);              // MySekai 畫布（4★每張+1500）
+                    const t = bsum + cb + ab + mb + cv; per.push({ base: bsum, charBonus: cb, areaBonus: ab, mysekai: mb, canvas: cv, total: t }); total += t;
                 });
                 return { total, per };
             }
@@ -4810,9 +4812,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 per.forEach((p, i) => { const out = document.querySelector(`[data-pw-out="${i}"]`); if (out) out.textContent = p.total.toLocaleString(); });
                 this._lastPower = total;
                 const t = document.getElementById('pwTotal'); if (t) t.textContent = total.toLocaleString();
-                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0), sumMy = per.reduce((s, p) => s + (p.mysekai || 0), 0);
+                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0), sumMy = per.reduce((s, p) => s + (p.mysekai || 0), 0), sumCanvas = per.reduce((s, p) => s + (p.canvas || 0), 0);
                 const b = document.getElementById('pwBreak');
-                if (b) b.textContent = `基礎 ${sumBase.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()}`;
+                if (b) b.textContent = `基礎 ${sumBase.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()} ＋ 畫布 ${sumCanvas.toLocaleString()}`;
                 const note = document.getElementById('pwNote');
                 if (note) note.textContent = `area item 可選到 Lv20(5週年;台服目前 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
             },
@@ -5263,6 +5265,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const sC = per.reduce((s, p) => s + (p.charBonus || 0), 0);
                 const sA = per.reduce((s, p) => s + (p.areaBonus || 0), 0);
                 const sM = per.reduce((s, p) => s + (p.mysekai || 0), 0);
+                const sCv = per.reduce((s, p) => s + (p.canvas || 0), 0);
                 const pct = x => sB ? (x / sB * 100).toFixed(1) : '0';
                 card.innerHTML = `
                     <div class="ms-top">
@@ -5274,7 +5277,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
                         <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
                     </div>
-                    <div class="ms-break">綜合力＝基礎 ${sB.toLocaleString()}　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%</div>
+                    <div class="ms-break">綜合力＝基礎 ${sB.toLocaleString()}　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%　＋畫布 ${sCv.toLocaleString()}</div>
                     ${useEP ? `<div class="ms-ep">
                         <div class="ms-ep-title">場均活動P　<span>歌：${songName}</span></div>
                         <div class="ms-ep-grid">
