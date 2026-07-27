@@ -4496,82 +4496,108 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // ========== 二十三:跑榜工作室 ==========
         const RunStudio = {
             _ready: false, _init: false, _cards: null, _evCards: null, _evId: null,
+            _twMax: 0, _jpEv: {}, _jpTypes: {}, _jp: null, _jpLoading: null, JP: 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main',
             async ensure() {
                 if (this._init) return;
                 this._init = true;
-                const okEC = await EventCalc.ensure();   // 載入 _deck/_gcu/_mr/_types
-                await SongEff.ensure();                   // music_metas
+                await EventCalc.ensure();   // 載入 _deck/_gcu/_mr/_types(台服)
+                await SongEff.ensure();     // music_metas
                 try { [this._cards, this._evCards] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('eventCards.json')]); }
                 catch (e) { document.getElementById('rsTeam').innerHTML = '<div class="note">卡片資料載入失敗。</div>'; return; }
-                // 活動選單(含未來,新→舊)
                 const list = await EventScan.loadList();
+                this._twMax = list.reduce((m, e) => Math.max(m, e.id), 0);
+                // 日服活動(補到日服目前,超出台服的部分)
+                let jpFuture = [];
+                try {
+                    const jpEv = await fetchJSONproxied(this.JP + '/events.json');
+                    jpEv.forEach(e => { this._jpEv[e.id] = e; this._jpTypes[e.id] = e.eventType; });
+                    jpFuture = jpEv.filter(e => e.id > this._twMax).sort((a, b) => a.id - b.id);
+                } catch (e) {}
                 const sel = document.getElementById('rsEvent');
                 if (sel && list.length) {
                     const now = Date.now();
                     const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
-                    const future = list.filter(e => new Date(e.start_at).getTime() > now).sort((a, b) => a.id - b.id);
+                    const twFuture = list.filter(e => new Date(e.start_at).getTime() > now).sort((a, b) => a.id - b.id);
                     sel.innerHTML = started.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('')
-                        + (future.length ? '<optgroup label="未來檔期">' + future.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '');
+                        + (twFuture.length ? '<optgroup label="台服未來檔期">' + twFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '')
+                        + (jpFuture.length ? '<optgroup label="日服(台服約1年後)">' + jpFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '');
                     this._evId = started.length ? started[0].id : (list[0] && list[0].id);
                     sel.value = this._evId;
                 }
-                // 歌曲選單(有 metas 的)
                 const ssel = document.getElementById('rsSong');
                 if (ssel && typeof allSongs !== 'undefined') {
                     const withMeta = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
                     ssel.innerHTML = withMeta.map(s => `<option value="${s.id}">${s.title}</option>`).join('') || '<option value="">(無)</option>';
                 }
                 this._ready = true;
-                this.onEvent();
+                await this.onEvent();
             },
-            _monthOf(id) {   // 活動 id → 台服月份 → 對應月卡玩偶(娃)
+            _isJP(id) { return id > this._twMax; },
+            async _loadJP() {
+                if (this._jp) return this._jp;
+                if (this._jpLoading) return this._jpLoading;
+                this._jpLoading = Promise.all([
+                    fetchJSONproxied(this.JP + '/cards.json'), fetchJSONproxied(this.JP + '/eventDeckBonuses.json'), fetchJSONproxied(this.JP + '/eventCards.json')
+                ]).then(([cards, deck, evCards]) => { this._jp = { cards, deck, evCards }; return this._jp; }).catch(() => { this._jpLoading = null; return null; });
+                return this._jpLoading;
+            },
+            // 回傳該活動的資料源(台服 or 日服)
+            async _src(evId) {
+                if (!this._isJP(evId)) return { deck: EventCalc._deck, cards: this._cards, evCards: this._evCards, type: EventCalc._types[evId], ev: EventScan.evInfo(evId), isJP: false };
+                const jp = await this._loadJP();
+                return { deck: (jp && jp.deck) || [], cards: (jp && jp.cards) || this._cards, evCards: (jp && jp.evCards) || [], type: this._jpTypes[evId], ev: this._jpEv[evId], isJP: true };
+            },
+            _monthOf(id) {
                 const e = EventScan.evInfo(id); if (!e) return null;
                 const d = new Date(e.start_at);
                 const key = `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
                 return (typeof DOLLS !== 'undefined') ? DOLLS.find(x => x.tw === key) : null;
             },
-            // 某活動的單卡加成(deck 取 max + 特效卡 + 假設 MR5)
-            _cardBonus(card, evId) {
+            _cardBonus(card, evId, src) {
                 let deck = 0;
-                for (const e of EventCalc._deck) {
+                for (const e of src.deck) {
                     if (e.eventId !== evId) continue;
                     if (e.cardAttr && e.cardAttr !== card.attr) continue;
                     if (e.gameCharacterUnitId != null) { const g = EventCalc._gcu[e.gameCharacterUnitId]; if (!g || g.cid !== card.characterId) continue; }
                     if (e.bonusRate > deck) deck = e.bonusRate;
                 }
-                const ec = this._evCards.find(x => x.eventId === evId && x.cardId === card.id);
+                const ec = src.evCards.find(x => x.eventId === evId && x.cardId === card.id);
                 const special = ec ? (ec.bonusRate || 0) : 0;
                 const mr = (EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][5]) || 0;
                 const per = special === 70 ? 70 + mr : deck + special + mr;
                 return { per: Math.round(per * 10) / 10, deck, special };
             },
-            onEvent() {
+            async onEvent() {
                 if (!this._ready) return;
                 const sel = document.getElementById('rsEvent');
                 if (sel && sel.value) this._evId = +sel.value;
-                const e = EventScan.evInfo(this._evId);
-                const type = EventCalc._types[this._evId];
+                const src = await this._src(this._evId);
+                const e = src.ev;
+                const type = src.type;
                 const typeName = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' }[type] || '—';
                 const info = document.getElementById('rsEventInfo');
                 if (e && info) {
-                    const s = new Date(e.start_at), en = new Date(e.aggregate_at || e.closed_at);
+                    const s = new Date(e.start_at || e.startAt), en = new Date(e.aggregate_at || e.aggregateAt || e.closed_at || e.closedAt);
                     const days = Math.max(1, Math.round((en - s) / 86400000));
-                    const doll = this._monthOf(this._evId);
+                    const doll = src.isJP ? null : this._monthOf(this._evId);
                     this._days = days;
                     const fmt = d => `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}`;
-                    info.innerHTML = `類型:<strong>${typeName}</strong>　期程:${fmt(s)} ～ ${fmt(en)}(約 ${days} 天)　`
-                        + (doll ? `當期月卡玩偶(娃):第 ${doll.round} 輪 ${doll.type}${doll.chars ? '・' + doll.chars : ''}` : '無對應月卡資料');
+                    info.innerHTML = `類型:<strong>${typeName}</strong>　${src.isJP ? '<strong style="color:var(--primary);">日服</strong> 期程' : '期程'}:${fmt(s)} ～ ${fmt(en)}(約 ${days} 天)　`
+                        + (src.isJP ? '(台服約 1 年後;數據取自日服 master)' : (doll ? `當期月卡玩偶(娃):第 ${doll.round} 輪 ${doll.type}${doll.chars ? '・' + doll.chars : ''}` : '無對應月卡資料'));
                 }
                 // 理論隊伍(加成優先)
-                const cards4 = this._cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
-                const ranked = cards4.map(c => ({ c, ...this._cardBonus(c, this._evId) }))
+                const cards4 = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
+                const ranked = cards4.map(c => ({ c, ...this._cardBonus(c, this._evId, src) }))
                     .filter(x => x.per > 0).sort((a, b) => b.per - a.per).slice(0, 5);
                 const total = Math.round(ranked.reduce((s, x) => s + x.per, 0) * 10) / 10
                     + (type === 'world_bloom' ? 0 : 0);
                 const bonusInput = document.getElementById('rsBonus');
                 if (bonusInput) bonusInput.value = Math.round(total);
                 const teamEl = document.getElementById('rsTeam');
+                const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+                const thumb = c => { const t = (c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3'); return `${ASSET}/thumbnail/chara/${c.assetbundleName}_${t ? 'after_training' : 'normal'}.webp`; };
                 if (teamEl) teamEl.innerHTML = ranked.length ? `
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">${ranked.map(x => `<div style="text-align:center;width:76px;"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" alt="${x.c.prefix}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onerror="this.style.opacity=0.2"><div style="font-size:10px;color:var(--text-light);margin-top:2px;">${EC_cidName(x.c.characterId)} ＋${x.per}%</div></div>`).join('')}</div>
                     <div class="table-wrapper"><table>
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>加成明細</th><th>加成</th></tr></thead>
                     <tbody>${ranked.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:11px;color:var(--text-light);">符合${x.deck}%${x.special ? ' ＋特效' + x.special + '%' : ''} ＋MR5</td><td class="score">＋${x.per}%</td></tr>`).join('')}</tbody>
