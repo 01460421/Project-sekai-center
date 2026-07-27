@@ -350,8 +350,9 @@
         .calc-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
         .calc-row label { min-width:90px; font-size:13px; }
         .calc-row input { width:110px; }
-        .member-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-        .member-item { display:flex; flex-direction:column; gap:4px; }
+        .member-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(108px,1fr)); gap:10px; }
+        .member-item { display:flex; flex-direction:column; gap:4px; min-width:0; }
+        .member-item input { width:100%; box-sizing:border-box; }
         .member-item label { font-size:11px; color:var(--text-light); font-weight:600; }
         .calc-result { text-align:center; padding:20px; background:var(--grad-cta); color:#fff; border-radius:var(--r-md);
             position:relative; overflow:hidden; box-shadow:0 10px 26px rgba(47,124,220,.25); }
@@ -4912,36 +4913,46 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 catch (e) { document.getElementById('rsTeam').innerHTML = '<div class="note">卡片資料載入失敗。</div>'; return; }
                 const list = await EventScan.loadList();
                 this._twMax = list.reduce((m, e) => Math.max(m, e.id), 0);
-                // 日服活動(補到日服目前,超出台服的部分)
-                let jpFuture = [];
-                try {
-                    const jpEv = await fetchJSONproxied(this.JP + '/events.json');
-                    jpEv.forEach(e => { this._jpEv[e.id] = e; this._jpTypes[e.id] = e.eventType; });
-                    jpFuture = jpEv.filter(e => e.id > this._twMax).sort((a, b) => a.id - b.id);
-                } catch (e) {}
+                // 曲庫:自載 musics.json（先建；不被日服 events.json 2.7MB 拖住 → 選歌/跑圖立即可用、不會一直卡載入）
+                if (!this._songList || !this._songList.length) {
+                    try {
+                        const musics = await MasterDB.get('musics.json');
+                        const hasMetas = SongEff._metas && Object.keys(SongEff._metas).length;
+                        this._songList = (musics || [])
+                            .filter(s => !hasMetas || SongEff._metas[s.id])
+                            .map(s => ({ id: s.id, title: s.title || ('#' + s.id), composer: s.composer || '' }))
+                            .sort((a, b) => a.id - b.id);
+                    } catch (e) { this._songList = []; }
+                }
+                // 活動下拉:先放台服（已開始＋未來）；日服在背景載入完成後才補上，不阻塞
+                const now = Date.now();
+                const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
+                const twFuture = list.filter(e => new Date(e.start_at).getTime() > now).sort((a, b) => a.id - b.id);
                 const sel = document.getElementById('rsEvent');
                 if (sel && list.length) {
-                    const now = Date.now();
-                    const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
-                    const twFuture = list.filter(e => new Date(e.start_at).getTime() > now).sort((a, b) => a.id - b.id);
                     sel.innerHTML = started.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('')
-                        + (twFuture.length ? '<optgroup label="台服未來檔期">' + twFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '')
-                        + (jpFuture.length ? '<optgroup label="日服(台服約1年後)">' + jpFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '');
+                        + (twFuture.length ? '<optgroup label="台服未來檔期">' + twFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '');
                     this._evId = started.length ? started[0].id : (list[0] && list[0].id);
                     sel.value = this._evId;
                 }
-                // 曲庫:自載 musics.json（不依賴頁面其他區塊的 allSongs；embed/直接進工作室、手機都能用）
-                try {
-                    const musics = await MasterDB.get('musics.json');
-                    const hasMetas = SongEff._metas && Object.keys(SongEff._metas).length;
-                    this._songList = (musics || [])
-                        .filter(s => !hasMetas || SongEff._metas[s.id])
-                        .map(s => ({ id: s.id, title: s.title || ('#' + s.id), composer: s.composer || '' }))
-                        .sort((a, b) => a.id - b.id);
-                } catch (e) { this._songList = []; }
                 this.filterSongs();
                 this._ready = true;
                 await this.onEvent();
+                this._loadJPEvents();   // 日服活動：背景載入，完成後補進下拉
+            },
+            async _loadJPEvents() {
+                if (this._jpEvLoaded || this._jpEvLoading) return;
+                this._jpEvLoading = true;
+                try {
+                    const jpEv = await fetchJSONproxied(this.JP + '/events.json');
+                    jpEv.forEach(e => { this._jpEv[e.id] = e; this._jpTypes[e.id] = e.eventType; });
+                    const jpFuture = jpEv.filter(e => e.id > this._twMax).sort((a, b) => a.id - b.id);
+                    this._jpEvLoaded = true;
+                    const sel = document.getElementById('rsEvent');
+                    if (sel && jpFuture.length && !sel.querySelector('optgroup[label^="日服"]')) {
+                        sel.insertAdjacentHTML('beforeend', '<optgroup label="日服(台服約1年後)">' + jpFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>');
+                    }
+                } catch (e) {} finally { this._jpEvLoading = false; }
             },
             _isJP(id) { return id > this._twMax; },
             async _loadJP() {
@@ -5068,7 +5079,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 cand.forEach(x => { const cid = x.c.characterId; if (!bestByChar[cid]) bestByChar[cid] = x; });
                 const pool = Object.values(bestByChar).slice(0, 20);
                 if (pool.length < 5) return { ok: false, reason: '符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。' };
-                const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 50 });
+                const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
                 const evalDeck = (power, bonus, skills) => {
                     if (!useEP) return power * (1 + bonus / 100);
                     const leader = Math.max(...skills);
