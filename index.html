@@ -4261,10 +4261,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             _set(key, d) {
                 this._open().then(db => { if (!db) return; try { db.transaction('kv', 'readwrite').objectStore('kv').put({ t: Date.now(), d }, key); } catch (e) {} });
             },
-            async wrap(url, ttl) {
-                try { const c = await this._get('u:' + url, ttl); if (c) return c; } catch (e) {}
+            async wrap(url, ttl, validate) {
+                const key = 'u2:' + url;   // 版本化 key：捨棄舊版可能被 proxy 截斷的壞快取
+                try { const c = await this._get(key, ttl); if (c && (!validate || validate(c))) return c; } catch (e) {}
                 const d = await fetchJSONproxied(url);
-                try { this._set('u:' + url, d); } catch (e) {}
+                if (!validate || validate(d)) { try { this._set(key, d); } catch (e) {} }   // 只快取通過驗證(非截斷)的資料
                 return d;
             }
         };
@@ -5300,7 +5301,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (el) el.innerHTML = '<div class="event-loading" style="padding:20px;">載入 music_metas…</div>';
                 this._loadPromise = (async () => {
                     try {
-                        const m = await IDBCache.wrap('https://storage.sekai.best/sekai-best-assets/music_metas.json', 43200000);
+                        const m = await IDBCache.wrap('https://storage.sekai.best/sekai-best-assets/music_metas.json', 43200000, d => Array.isArray(d) && d.length > 1000);
+                        if (!Array.isArray(m) || m.length <= 1000) throw new Error('metas truncated');
                         const byId = {};
                         m.forEach(r => { (byId[r.music_id] = byId[r.music_id] || {})[r.difficulty] = r; });
                         this._metas = byId; this._loaded = true; this.render();
