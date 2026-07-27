@@ -1595,7 +1595,12 @@
             </div>
             <div id="rsEventInfo" class="note" style="margin-top:8px;"></div>
 
-            <div style="font-size:14px;font-weight:600;color:var(--primary);margin:14px 0 6px;">理論隊伍(加成優先)</div>
+            <div style="font-size:14px;font-weight:600;color:var(--primary);margin:14px 0 6px;">理論隊伍
+                <span style="font-weight:400;font-size:12px;">
+                    <label><input type="radio" name="rsMode" value="bonus" checked onchange="RunStudio.onEvent()"> 加成優先</label>
+                    <label style="margin-left:8px;"><input type="radio" name="rsMode" value="opt" onchange="RunStudio.onEvent()"> 最佳化活動P(考慮綜合力)</label>
+                </span>
+            </div>
             <div id="rsTeam"><div class="event-loading" style="padding:12px;">選活動後載入…</div></div>
 
             <div class="calculator" style="margin-top:14px;">
@@ -3969,6 +3974,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const u = ['piapro']; if (card.supportUnit && card.supportUnit !== 'none') u.push(card.supportUnit); return u;
             },
             cardMaxLevel(card) { return (card.cardParameters && card.cardParameters.param1) ? card.cardParameters.param1.length : 60; },
+            _bpCache: {},
+            basePowerCached(card, level, trained, epiRead, mr) {
+                const k = card.id + ':' + level + ':' + (trained ? 1 : 0) + ':' + (epiRead ? 1 : 0) + ':' + mr;
+                return this._bpCache[k] || (this._bpCache[k] = this.basePower(card, level, trained, epiRead, mr));
+            },
             basePower(card, level, trained, epiRead, mr) {
                 const p = card.cardParameters; if (!p || !p.param1) return [0, 0, 0];
                 const idx = Math.max(0, Math.min((level | 0) - 1, p.param1.length - 1));
@@ -4007,7 +4017,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const sameAttrFn = A => attrs.every(a => a === A);
                 let total = 0; const per = [];
                 members.forEach(m => {
-                    const base = this.basePower(m.card, m.level, m.trained, m.epiRead, m.mr);
+                    const base = this.basePowerCached(m.card, m.level, m.trained, m.epiRead, m.mr);
                     const bsum = base[0] + base[1] + base[2];
                     const cb = this.charBonus(base, m.card.characterId, m.rank);
                     const ab = this.areaBonus(base, m.card, sameUnitFn, sameAttrFn, areaLevel);
@@ -4585,6 +4595,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     info.innerHTML = `類型:<strong>${typeName}</strong>　${src.isJP ? '<strong style="color:var(--primary);">日服</strong> 期程' : '期程'}:${fmt(s)} ～ ${fmt(en)}(約 ${days} 天)　`
                         + (src.isJP ? '(台服約 1 年後;數據取自日服 master)' : (doll ? `當期月卡玩偶(娃):第 ${doll.round} 輪 ${doll.type}${doll.chars ? '・' + doll.chars : ''}` : '無對應月卡資料'));
                 }
+                const mode = (document.querySelector('input[name=rsMode]:checked') || {}).value || 'bonus';
+                if (mode === 'opt') { await this._renderOpt(src, type); this.calc(); return; }
                 // 理論隊伍(加成優先)
                 const cards4 = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
                 const ranked = cards4.map(c => ({ c, ...this._cardBonus(c, this._evId, src) }))
@@ -4605,6 +4617,47 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」)。${type === 'world_bloom' ? 'WL 另有異色/支援隊伍加成未計。' : ''}</div>`
                     : '<div class="note">此活動查無加成卡資料。</div>';
                 this.calc();
+            },
+            optimize() { this.onEvent(); },   // radio 已切 opt,交給 onEvent 分支
+            // 最佳化理論隊伍:對符合加成的候選卡做 bounded DFS,目標 max 綜合力×(1+加成/100)(活動P proxy)
+            async _renderOpt(src, type) {
+                const teamEl = document.getElementById('rsTeam');
+                teamEl.innerHTML = '<div class="event-loading" style="padding:12px;">最佳化計算中…</div>';
+                await new Promise(r => setTimeout(r, 20));
+                await PowerEngine.ensure();
+                const areaLv = PowerEngine.areaMaxLv;
+                const maxLv = c => PowerEngine.cardMaxLevel(c);
+                const cand = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')
+                    .map(c => { const b = this._cardBonus(c, this._evId, src); const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5); return { c, bonus: b.per, deck: b.deck, special: b.special, baseSum: base[0] + base[1] + base[2] }; })
+                    .filter(x => x.bonus > 0);
+                if (cand.length < 5) { teamEl.innerHTML = '<div class="note">符合加成的候選卡不足 5 張。</div>'; return; }
+                cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) - a.baseSum * (1 + a.bonus / 100));
+                const pool = cand.slice(0, 20);   // 取前 20 候選做窮舉 C(20,5)=15504
+                const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 50 });
+                const n = pool.length; let best = null, bestObj = -1;
+                for (let a = 0; a < n - 4; a++) for (let b = a + 1; b < n - 3; b++) for (let c = b + 1; c < n - 2; c++)
+                    for (let d = c + 1; d < n - 1; d++) for (let e = d + 1; e < n; e++) {
+                        const idx = [a, b, c, d, e];
+                        const members = idx.map(i => mk(pool[i]));
+                        const pw = PowerEngine.teamPower(members, areaLv);
+                        const bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
+                        const obj = pw.total * (1 + bonus / 100);
+                        if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus }; }
+                    }
+                const chosen = best.idx.map(i => pool[i]);
+                const totalBonus = Math.round(best.bonus * 10) / 10;
+                const bi = document.getElementById('rsBonus'); if (bi) bi.value = Math.round(totalBonus);
+                const pp = document.getElementById('rsPower'); if (pp) pp.value = best.pw.total;
+                const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+                const thumb = c => { const t = (c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3'); return `${ASSET}/thumbnail/chara/${c.assetbundleName}_${t ? 'after_training' : 'normal'}.webp`; };
+                teamEl.innerHTML = `
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">${chosen.map((x, i) => `<div style="text-align:center;width:76px;"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" alt="${x.c.prefix}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onerror="this.style.opacity=0.2"><div style="font-size:10px;color:var(--text-light);margin-top:2px;">${EC_cidName(x.c.characterId)}<br>${best.pw.per[i].total.toLocaleString()}</div></div>`).join('')}</div>
+                    <div class="table-wrapper"><table>
+                    <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>加成</th><th>綜合力</th></tr></thead>
+                    <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
+                    </table></div>
+                    <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉)</div><div class="value" style="font-size:20px;">綜合力 ${best.pw.total.toLocaleString()} ・ 加成 ＋${totalBonus}%</div><div class="formula">目標=綜合力×(1+加成)≈活動P;已帶入下方綜合力與加成</div></div>
+                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}。以「綜合力×(1+加成)」為活動P近似目標(技能差異未逐卡最佳化,為與完整 deck-recommend 的簡化)。</div>`;
             },
             calc() {
                 if (!this._ready) return;
