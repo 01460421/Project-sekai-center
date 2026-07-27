@@ -4981,7 +4981,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (this._jpEvLoaded || this._jpEvLoading) return;
                 this._jpEvLoading = true;
                 try {
-                    const jpEv = await fetchJSONproxied(this.JP + '/events.json');
+                    const jpEv = await IDBCache.wrap(this.JP + '/events.json', 43200000);   // 日服活動預測期數：存瀏覽器快取，不再每次重抓 2.7MB
                     jpEv.forEach(e => { this._jpEv[e.id] = e; this._jpTypes[e.id] = e.eventType; });
                     const jpFuture = jpEv.filter(e => e.id > this._twMax).sort((a, b) => a.id - b.id);
                     this._jpEvLoaded = true;
@@ -4996,7 +4996,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (this._jp) return this._jp;
                 if (this._jpLoading) return this._jpLoading;
                 this._jpLoading = Promise.all([
-                    fetchJSONproxied(this.JP + '/cards.json'), fetchJSONproxied(this.JP + '/eventDeckBonuses.json'), fetchJSONproxied(this.JP + '/eventCards.json')
+                    IDBCache.wrap(this.JP + '/cards.json', 43200000), IDBCache.wrap(this.JP + '/eventDeckBonuses.json', 43200000), IDBCache.wrap(this.JP + '/eventCards.json', 43200000)
                 ]).then(([cards, deck, evCards]) => { this._jp = { cards, deck, evCards }; return this._jp; }).catch(() => { this._jpLoading = null; return null; });
                 return this._jpLoading;
             },
