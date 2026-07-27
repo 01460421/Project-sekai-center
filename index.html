@@ -481,6 +481,7 @@
             <a href="#event-calc">加成/活動P</a>
             <a href="#gacha-calc">抽卡天井</a>
             <a href="#rank-match">排位賽</a>
+            <a href="#run-studio">跑榜工作室</a>
             <a href="#mysekai">MySekai</a>
             <a href="#ep-calc">EP計算器</a>
             <div class="nav-sep"></div>
@@ -543,6 +544,7 @@
                     <option value="#event-calc">活動加成 · 活動P · 綜合力 · WL支援</option>
                     <option value="#gacha-calc">抽卡期望 · 天井計算器</option>
                     <option value="#rank-match">排位賽計算</option>
+                    <option value="#run-studio">跑榜工作室(理論隊伍+協力場均)</option>
                     <option value="#mysekai">MySekai 採集計算機</option>
                     <option value="#ep-calc">EP 計算器</option>
                 </optgroup>
@@ -1194,8 +1196,9 @@
                 <table>
                     <thead><tr><th>名稱</th><th>說明</th></tr></thead>
                     <tbody>
-                        <tr><td><a href="https://sekai.best/" target="_blank" class="external">Sekai.best</a></td><td class="description">英文綜合資料庫（卡牌、活動、歌曲）</td></tr>
-                        <tr><td><a href="https://sekai.viewer.dev/" target="_blank" class="external">Sekai Viewer</a></td><td class="description">卡池預測、卡牌資料</td></tr>
+                        <tr><td><a href="https://sekai.best/" target="_blank" class="external">Sekai.best (Sekai Viewer)</a></td><td class="description">英文綜合資料庫（卡牌、活動、歌曲、榜線時序 API）</td></tr>
+                        <tr><td><a href="https://pjsk.moe/zh-tw/" target="_blank" class="external">pjsk.moe</a></td><td class="description">繁中全功能站（圖鑑、玩家 profile、樂曲、劇情）</td></tr>
+                        <tr><td><a href="https://haruki.seiunx.com/friend-links" target="_blank" class="external">Haruki 友情連結</a></td><td class="description">台服工具/社群友站集合</td></tr>
                         <tr><td><a href="https://hisekai.org/tw" target="_blank" class="external">HiSekai (台服)</a></td><td class="description">台服即時排名、歷史數據</td></tr>
                         <tr><td><a href="https://project-sekai-center.vercel.app/" target="_blank" class="external">SEKAI 資源中心</a></td><td class="description">本站</td></tr>
                     </tbody>
@@ -1568,6 +1571,45 @@
                 </div>
                 <div class="note">升級:每段/Class 需集滿 5 RP 並於該狀態勝利;勝 +1、敗 −1。另有 bonus(ALL PERFECT +20、Full Combo +10、贏上位 Class +10、Life 歸零敗 −30),滿 100 換 +1 RP(此處未計 bonus,為純勝敗估計)。2024/09 起不再降段位,只降 Class。</div>
             </div>
+        </section>
+
+        <!-- 二十三、跑榜工作室 -->
+        <section id="run-studio">
+            <h2>二十三、跑榜工作室 <span class="en">Grind Studio</span></h2>
+            <div class="note">選一個活動期,自動帶出期程、加成優先的理論隊伍、當期月卡玩偶(卡片排程),再算協力(多人)的場均分數與場均活動P。<strong>v1 為估算工具</strong>,理論隊伍以「活動加成最高」排序(未含個人卡池/技能最佳化)。</div>
+            <div class="analysis-input" style="flex-wrap:wrap;gap:10px;">
+                <label style="font-size:14px;">活動期</label>
+                <select id="rsEvent" onchange="RunStudio.onEvent()" style="max-width:280px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);"><option value="">載入中…</option></select>
+            </div>
+            <div id="rsEventInfo" class="note" style="margin-top:8px;"></div>
+
+            <div style="font-size:14px;font-weight:600;color:var(--primary);margin:14px 0 6px;">理論隊伍(加成優先)</div>
+            <div id="rsTeam"><div class="event-loading" style="padding:12px;">選活動後載入…</div></div>
+
+            <div class="calculator" style="margin-top:14px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                    <div class="calc-section">
+                        <h4>場均參數(協力)</h4>
+                        <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="rsPower" value="280000" min="0" oninput="RunStudio.calc()"></div>
+                        <div class="calc-row"><label>活動加成 %</label><input type="number" id="rsBonus" value="0" min="0" oninput="RunStudio.calc()"></div>
+                        <div class="calc-row"><label>選歌</label><select id="rsSong" onchange="RunStudio.calc()" style="max-width:200px;"><option value="">—</option></select></div>
+                        <div class="calc-row"><label>難度</label><select id="rsDiff" onchange="RunStudio.calc()"><option value="master">MASTER</option><option value="expert">EXPERT</option><option value="append">APPEND</option></select></div>
+                        <div class="calc-row"><label>火(飲料)</label><select id="rsBoost" onchange="RunStudio.calc()"><option value="0">0</option><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div>
+                    </div>
+                    <div class="calc-section">
+                        <h4>5 人技能加分 %(自己＋隊友4人)</h4>
+                        <div class="member-grid">
+                            <div class="member-item"><label>自己(隊長)</label><input type="number" id="rsP0" value="130" oninput="RunStudio.calc()"></div>
+                            <div class="member-item"><label>隊友1</label><input type="number" id="rsP1" value="120" oninput="RunStudio.calc()"></div>
+                            <div class="member-item"><label>隊友2</label><input type="number" id="rsP2" value="120" oninput="RunStudio.calc()"></div>
+                            <div class="member-item"><label>隊友3</label><input type="number" id="rsP3" value="120" oninput="RunStudio.calc()"></div>
+                            <div class="member-item"><label>隊友4</label><input type="number" id="rsP4" value="120" oninput="RunStudio.calc()"></div>
+                        </div>
+                        <div id="rsResult" style="margin-top:12px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:120px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="note">協力場均分數 ≈ ⌊(base ＋ FEVER×0.5 ＋ Σ技能窗×U/100) × 綜合力 × 4⌋,U=自己＋隊友4人÷5。活動P用協力式(自分÷17000＋隊友項)×(加成+100)/100×火倍率。全期預估假設每局歌長＋40 秒、扣除等人。均為估算。</div>
         </section>
 
         <footer>
@@ -4357,6 +4399,126 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 二十三:跑榜工作室 ==========
+        const RunStudio = {
+            _ready: false, _init: false, _cards: null, _evCards: null, _evId: null,
+            async ensure() {
+                if (this._init) return;
+                this._init = true;
+                const okEC = await EventCalc.ensure();   // 載入 _deck/_gcu/_mr/_types
+                await SongEff.ensure();                   // music_metas
+                try { [this._cards, this._evCards] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('eventCards.json')]); }
+                catch (e) { document.getElementById('rsTeam').innerHTML = '<div class="note">卡片資料載入失敗。</div>'; return; }
+                // 活動選單(含未來,新→舊)
+                const list = await EventScan.loadList();
+                const sel = document.getElementById('rsEvent');
+                if (sel && list.length) {
+                    const now = Date.now();
+                    const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
+                    const future = list.filter(e => new Date(e.start_at).getTime() > now).sort((a, b) => a.id - b.id);
+                    sel.innerHTML = started.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('')
+                        + (future.length ? '<optgroup label="未來檔期">' + future.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '');
+                    this._evId = started.length ? started[0].id : (list[0] && list[0].id);
+                    sel.value = this._evId;
+                }
+                // 歌曲選單(有 metas 的)
+                const ssel = document.getElementById('rsSong');
+                if (ssel && typeof allSongs !== 'undefined') {
+                    const withMeta = allSongs.filter(s => SongEff._metas && SongEff._metas[s.id]).sort((a, b) => a.id - b.id);
+                    ssel.innerHTML = withMeta.map(s => `<option value="${s.id}">${s.title}</option>`).join('') || '<option value="">(無)</option>';
+                }
+                this._ready = true;
+                this.onEvent();
+            },
+            _monthOf(id) {   // 活動 id → 台服月份 → 對應月卡玩偶(娃)
+                const e = EventScan.evInfo(id); if (!e) return null;
+                const d = new Date(e.start_at);
+                const key = `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+                return (typeof DOLLS !== 'undefined') ? DOLLS.find(x => x.tw === key) : null;
+            },
+            // 某活動的單卡加成(deck 取 max + 特效卡 + 假設 MR5)
+            _cardBonus(card, evId) {
+                let deck = 0;
+                for (const e of EventCalc._deck) {
+                    if (e.eventId !== evId) continue;
+                    if (e.cardAttr && e.cardAttr !== card.attr) continue;
+                    if (e.gameCharacterUnitId != null) { const g = EventCalc._gcu[e.gameCharacterUnitId]; if (!g || g.cid !== card.characterId) continue; }
+                    if (e.bonusRate > deck) deck = e.bonusRate;
+                }
+                const ec = this._evCards.find(x => x.eventId === evId && x.cardId === card.id);
+                const special = ec ? (ec.bonusRate || 0) : 0;
+                const mr = (EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][5]) || 0;
+                const per = special === 70 ? 70 + mr : deck + special + mr;
+                return { per: Math.round(per * 10) / 10, deck, special };
+            },
+            onEvent() {
+                if (!this._ready) return;
+                const sel = document.getElementById('rsEvent');
+                if (sel && sel.value) this._evId = +sel.value;
+                const e = EventScan.evInfo(this._evId);
+                const type = EventCalc._types[this._evId];
+                const typeName = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' }[type] || '—';
+                const info = document.getElementById('rsEventInfo');
+                if (e && info) {
+                    const s = new Date(e.start_at), en = new Date(e.aggregate_at || e.closed_at);
+                    const days = Math.max(1, Math.round((en - s) / 86400000));
+                    const doll = this._monthOf(this._evId);
+                    this._days = days;
+                    const fmt = d => `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}`;
+                    info.innerHTML = `類型:<strong>${typeName}</strong>　期程:${fmt(s)} ～ ${fmt(en)}(約 ${days} 天)　`
+                        + (doll ? `當期月卡玩偶(娃):第 ${doll.round} 輪 ${doll.type}${doll.chars ? '・' + doll.chars : ''}` : '無對應月卡資料');
+                }
+                // 理論隊伍(加成優先)
+                const cards4 = this._cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
+                const ranked = cards4.map(c => ({ c, ...this._cardBonus(c, this._evId) }))
+                    .filter(x => x.per > 0).sort((a, b) => b.per - a.per).slice(0, 5);
+                const total = Math.round(ranked.reduce((s, x) => s + x.per, 0) * 10) / 10
+                    + (type === 'world_bloom' ? 0 : 0);
+                const bonusInput = document.getElementById('rsBonus');
+                if (bonusInput) bonusInput.value = Math.round(total);
+                const teamEl = document.getElementById('rsTeam');
+                if (teamEl) teamEl.innerHTML = ranked.length ? `
+                    <div class="table-wrapper"><table>
+                    <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>加成明細</th><th>加成</th></tr></thead>
+                    <tbody>${ranked.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:11px;color:var(--text-light);">符合${x.deck}%${x.special ? ' ＋特效' + x.special + '%' : ''} ＋MR5</td><td class="score">＋${x.per}%</td></tr>`).join('')}</tbody>
+                    </table></div>
+                    <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」)。${type === 'world_bloom' ? 'WL 另有異色/支援隊伍加成未計。' : ''}</div>`
+                    : '<div class="note">此活動查無加成卡資料。</div>';
+                this.calc();
+            },
+            calc() {
+                if (!this._ready) return;
+                const el = document.getElementById('rsResult'); if (!el) return;
+                const P = +document.getElementById('rsPower').value || 0;
+                const B = +document.getElementById('rsBonus').value || 0;
+                const mid = +document.getElementById('rsSong').value || 0;
+                const diff = document.getElementById('rsDiff').value;
+                const boostN = +document.getElementById('rsBoost').value || 0;
+                const F = EC_BOOST[boostN] || 1;
+                const g = i => +document.getElementById('rsP' + i).value || 0;
+                const U = g(0) + (g(1) + g(2) + g(3) + g(4)) / 5;
+                const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid][diff] || SongEff._metas[mid].master || Object.values(SongEff._metas[mid])[0]);
+                if (!meta) { el.innerHTML = '<div class="note">請選一首有資料的歌。</div>'; return; }
+                const sumSkill = (meta.skill_score_multi || []).reduce((s, v) => s + v, 0);
+                const fever = (meta.fever_score || 0) * 0.5;
+                const score = Math.floor((meta.base_score + fever + sumSkill * U / 100) * P * 4);
+                // 協力活動P:自分 score + 隊友(取 O=4×score)
+                const O = 4 * score;
+                const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
+                const R = meta.event_rate || 100;
+                const epPerGame = Math.floor(base * R / 100 * (1 + B / 100)) * F;
+                // 全期預估:每局 = 歌長+40 秒;假設每天有效跑 X 小時由使用者自算,這裡給每小時與滿體力估
+                const perGameSec = (meta.music_time || 120) + 40;
+                const gamesPerHour = Math.floor(3600 / perGameSec);
+                const epPerHour = epPerGame * gamesPerHour;
+                el.innerHTML = `
+                    <div style="font-size:13px;color:var(--text-light);margin-bottom:6px;">U(有效技能)=自己 ${g(0)} ＋隊友均 ${((g(1)+g(2)+g(3)+g(4))/5).toFixed(0)} = <strong>${U.toFixed(0)}%</strong></div>
+                    <div style="font-size:22px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:12px;font-weight:400;color:var(--text-light);">場均分數</span></div>
+                    <div style="margin-top:8px;font-size:14px;">場均活動P:<strong>${epPerGame.toLocaleString()}</strong>(火 ${boostN}、加成 ${B}%、R${R})</div>
+                    <div style="margin-top:6px;font-size:12px;color:var(--text-light);">每局約 ${perGameSec}s → 每小時約 ${gamesPerHour} 局 ≈ <strong>${epPerHour.toLocaleString()}</strong> P/時</div>`;
+            }
+        };
+
         // ========== 歌曲刷 P 效率(music_metas) ==========
         const SongEff = {
             _metas: null, _loaded: false, _loading: false,
@@ -4636,6 +4798,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             lazyInit('event-calc', () => EventCalc.init());
             lazyInit('gacha-calc', () => GachaCalc.calc());
             lazyInit('rank-match', () => { RankCalc.calc(); RankCalc.promo(); });
+            lazyInit('run-studio', () => RunStudio.ensure());
             window.addEventListener('resize', () => {
                 clearTimeout(window._calResizeTimer);
                 window._calResizeTimer = setTimeout(renderCalendar, 200);
