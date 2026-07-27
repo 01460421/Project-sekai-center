@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SEKAI 資源中心 — App</title>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#eef1f9;--bg-soft:#f6f8fd;--card:#fff;--card-2:#f1f4fb;
+--text:#3c455f;--text-2:#6d7691;--text-3:#8b93ac;--ink:#252e4d;
+--accent:#0eb3c5;--accent-deep:#0891a2;
+--border:rgba(72,86,133,.13);--border-2:rgba(72,86,133,.26);
+--cta:linear-gradient(135deg,#22c3d6 0%,#3f8cf3 100%);
+--ink-grad:linear-gradient(135deg,#273052 0%,#3b4878 100%);
+--rainbow:linear-gradient(90deg,#4ad1e8,#3ee0a8,#b8e561,#ffd94d,#ff9db4,#c39df2,#7fb4f7);
+--sh-xs:0 1px 2px rgba(31,42,80,.05);
+--sh-sm:0 1px 2px rgba(31,42,80,.04),0 4px 14px rgba(31,42,80,.06);
+--sh-md:0 2px 6px rgba(31,42,80,.06),0 12px 32px rgba(31,42,80,.11);
+--sh-lg:0 8px 20px rgba(31,42,80,.10),0 28px 70px rgba(31,42,80,.2);
+--fes-bg:#fff3d4;--fes-fg:#b07500;--lim-bg:#ffe4ec;--lim-fg:#d6336c;
+--paid-bg:#fdf7d8;--paid-fg:#9c8300;--bd-bg:#f3e8ff;--bd-fg:#9c53d6;
+--rr-bg:#ffe3de;--rr-fg:#d64533;--wl-bg:#def0ff;--wl-fg:#2277cc;
+--nm-bg:#def5e6;--nm-fg:#2f9e57;--ot-bg:#edf0f7;--ot-fg:#5d6884;
+--anim:.5s;
+}
+@media (prefers-color-scheme:dark){:root{
+--bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
+--text:#c6cde4;--text-2:#9aa3c2;--text-3:#7e87a6;--ink:#e9ecfa;
+--accent:#33cfe0;--accent-deep:#5fd0e6;
+--border:rgba(148,163,215,.14);--border-2:rgba(148,163,215,.28);
+--ink-grad:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
+--sh-xs:0 1px 2px rgba(0,0,0,.25);--sh-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
+--sh-md:0 2px 6px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35);--sh-lg:0 8px 20px rgba(0,0,0,.35),0 28px 70px rgba(0,0,0,.5);
+--fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;
+--paid-bg:#332d08;--paid-fg:#ffe066;--bd-bg:#2a1440;--bd-fg:#d0a5ff;
+--rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
+--nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+font-family:'Huninn','M PLUS Rounded 1c','PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+background:radial-gradient(900px 520px at 88% -140px,rgba(84,190,255,.1),transparent 60%),radial-gradient(820px 480px at -8% 4%,rgba(57,197,187,.09),transparent 60%),radial-gradient(700px 520px at 60% 112%,rgba(255,151,190,.07),transparent 60%)}
+a{color:var(--accent-deep);text-decoration:none}
+a:hover{color:var(--accent);text-decoration:underline}
+input,select,button,textarea{font-family:inherit}
+input::placeholder{color:var(--text-3)}
+::selection{background:rgba(34,195,214,.28)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px;border:2.5px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:3px solid rgba(14,179,197,.45);outline-offset:2px;border-radius:10px}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes riseIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes rainbowPan{to{background-position:220% 0}}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes popIn{from{opacity:0;transform:scale(.95) translateY(12px)}to{opacity:1;transform:none}}
+@keyframes sheetUp{from{transform:translateY(103%)}to{transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+
+<div style="position:relative;z-index:1;min-height:100dvh;display:flex;align-items:stretch;font:400 14.5px/1.7 'Huninn','M PLUS Rounded 1c','PingFang TC','Microsoft JhengHei',sans-serif;color:var(--text)">
+
+<sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<aside style="flex:0 0 238px;width:238px;position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:20px 14px;border-right:1px solid var(--border);background:color-mix(in oklab,var(--card) 62%,transparent);backdrop-filter:blur(20px)">
+  <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 16px">
+    <span style="width:30px;height:30px;border-radius:10px;flex:none;position:relative;background:conic-gradient(from 210deg,#4ad1e8,#3ee0a8,#ffd94d,#ff9db4,#c39df2,#4ad1e8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 2px 8px rgba(47,124,220,.3)"></span>
+    <span style="font-size:15px;font-weight:800;color:var(--ink);letter-spacing:.3px"><em style="font-style:normal;font-family:'M PLUS Rounded 1c';background:var(--rainbow);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbowPan 9s linear infinite">SEKAI</em> 中心</span>
+  </div>
+
+  <button type="button" onClick="{{ onCmdOpen }}" style="display:flex;align-items:center;gap:9px;width:100%;margin-bottom:12px;padding:10px 13px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-3);font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-xs);transition:border-color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-hover="border-color:var(--border-2);color:var(--text)" style-active="transform:scale(.97)">
+    <svg viewBox="0 0 20 20" fill="none" style="width:15px;height:15px;flex:none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+    <span style="flex:1;text-align:left">搜尋 · 指令</span>
+    <span style="font-family:'M PLUS Rounded 1c';font-size:10.5px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:1px 6px;background:var(--card-2)">⌘K</span>
+  </button>
+
+  <sc-for list="{{ navGroups }}" as="grp" hint-placeholder-count="4">
+    <div style="margin-top:6px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:2.4px;color:var(--text-3);padding:8px 10px 6px">{{ grp.label }}</div>
+      <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="3">
+        <button type="button" onClick="{{ onGo }}" data-p="{{ it.id }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;margin-bottom:2px;border:none;border-radius:12px;background:{{ it.bg }};color:{{ it.fg }};font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;transition:background .2s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.97)">
+          <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ it.dot }}"></span>{{ it.name }}
+        </button>
+      </sc-for>
+    </div>
+  </sc-for>
+
+  <div style="margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);line-height:1.7">
+    <a href="index.html">經典長頁版 ↗</a><br>
+    <a href="ep-calculator.html">EP 計算器 ↗</a> · <a href="tutorial.html">教學大全 ↗</a>
+  </div>
+</aside>
+</sc-if>
+
+<main style="flex:1;min-width:0;display:flex;flex-direction:column">
+  <div style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:11px clamp(14px,3vw,32px);border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--bg) 78%,transparent);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 -3px 0 -0.5px transparent">
+    <span style="position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--rainbow);background-size:300% 100%;opacity:.75;animation:rainbowPan 14s linear infinite"></span>
+    <sc-if value="{{ isMobile }}">
+      <span style="width:26px;height:26px;border-radius:9px;flex:none;background:conic-gradient(from 210deg,#4ad1e8,#3ee0a8,#ffd94d,#ff9db4,#c39df2,#4ad1e8)"></span>
+    </sc-if>
+    <div style="min-width:0;flex:1">
+      <div style="font-size:16.5px;font-weight:800;color:var(--ink);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pageTitle }}</div>
+      <div style="font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pageSub }}</div>
+    </div>
+    <sc-if value="{{ hasPlayer }}">
+      <button type="button" onClick="{{ onGo }}" data-p="home" style="display:flex;align-items:center;gap:8px;padding:6px 13px 6px 8px;border:1px solid var(--border);border-radius:999px;background:var(--card);cursor:pointer;box-shadow:var(--sh-xs);color:var(--text)">
+        <span style="width:24px;height:24px;border-radius:50%;flex:none;background:var(--cta);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:800;font-family:'M PLUS Rounded 1c'">{{ playerInitial }}</span>
+        <span style="font-size:12.5px;font-weight:700;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerName }}</span>
+      </button>
+    </sc-if>
+    <sc-if value="{{ isMobile }}">
+      <button type="button" onClick="{{ onCmdOpen }}" aria-label="搜尋" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--sh-xs)">
+        <svg viewBox="0 0 20 20" fill="none" style="width:16px;height:16px"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+      </button>
+    </sc-if>
+  </div>
+
+  <div style="flex:1;padding:22px clamp(14px,3vw,32px) 110px;max-width:1160px;width:100%;margin:0 auto">
+
+  <!-- ========== 首頁 ========== -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
+
+    <div style="position:relative;overflow:hidden;border-radius:24px;padding:26px 26px 22px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md)">
+      <span style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
+      <span style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px 200px at 88% -50%,rgba(120,180,255,.28),transparent 70%)"></span>
+      <div style="position:relative;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between">
+        <div style="min-width:240px;flex:1">
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:2.2px;opacity:.85">
+            <i style="width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulseDot 2s infinite"></i>{{ liveState }}
+          </div>
+          <div style="font-size:clamp(21px,3.2vw,29px);font-weight:800;line-height:1.25;margin-top:9px">{{ liveName }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
+            <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
+            <span style="font-size:11.5px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-family:'M PLUS Rounded 1c'">{{ liveRange }}</span>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:150px">
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">剩餘時間</div>
+          <div style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px">{{ liveCountdown }}</div>
+          <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
+        </div>
+      </div>
+      <div style="position:relative;margin-top:16px;height:8px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden">
+        <div style="height:100%;border-radius:999px;background:var(--rainbow);transition:width .8s cubic-bezier(.32,.72,.24,1);width:{{ liveProgress }}"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
+          <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
+          <span style="font-size:15px;font-weight:800;color:var(--ink)">我的排名</span>
+        </div>
+        <sc-if value="{{ hasPlayer }}">
+          <div style="font-size:18px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
+          <div style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-bottom:12px">ID {{ playerId }} · {{ playerRankLabel }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+            <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
+              <div style="background:var(--card-2);border-radius:13px;padding:11px 13px">
+                <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div>
+                <div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" onClick="{{ onUnbind }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">解除綁定</button>
+            <button type="button" onClick="{{ onGo }}" data-p="rank" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">看完整榜</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noPlayer }}">
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;line-height:1.7">綁定遊戲內 Player ID，首頁就會顯示你的排名與進度（只存在這台裝置）。</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" style="flex:1;min-width:150px;padding:10px 14px;border:1.5px solid var(--border);border-radius:13px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)">
+            <button type="button" onClick="{{ onBind }}" style="padding:10px 22px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;box-shadow:0 5px 16px rgba(37,125,220,.28);transition:transform .28s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.96)">綁定</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--lim-fg);margin-top:8px;min-height:16px">{{ playerErr }}</div>
+        </sc-if>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
+          <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
+          <span style="font-size:15px;font-weight:800;color:var(--ink)">目標進度</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">目標 EP</span>
+            <input type="number" value="{{ goal }}" onInput="{{ onField }}" data-k="goal" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c'" style-focus="border-color:var(--accent)"></label>
+          <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">目前 EP</span>
+            <input type="number" value="{{ cur }}" onInput="{{ onField }}" data-k="cur" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c'" style-focus="border-color:var(--accent)"></label>
+        </div>
+        <div style="margin-top:14px;height:10px;border-radius:999px;background:var(--card-2);overflow:hidden">
+          <div style="height:100%;border-radius:999px;background:var(--cta);transition:width .6s cubic-bezier(.32,.72,.24,1);width:{{ goalPct }}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:6px">
+          <span>{{ goalPctLabel }}</span><span>還差 {{ goalLeft }} EP</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px">
+          <sc-for list="{{ goalStats }}" as="st" hint-placeholder-count="3">
+            <div style="background:var(--card-2);border-radius:13px;padding:11px 12px;text-align:center">
+              <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div>
+              <div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:9px;line-height:1.6">依「計算中心」目前設定：每局 {{ epPerPlay }} EP（{{ modeLabel }}・火 {{ boost }}）</div>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 11px">
+        <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">近期卡池</span></div>
+        <button type="button" onClick="{{ onGo }}" data-p="calendar" style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">看日曆</button>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ threeCol }};gap:12px">
+        <sc-for list="{{ upcoming }}" as="g" hint-placeholder-count="3">
+          <div style="border:1px solid var(--border);border-radius:18px;padding:15px 16px;background:var(--card);box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.32,.72,.24,1),box-shadow .3s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
+            <span style="display:inline-block;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span>
+            <div style="font-size:13.5px;font-weight:700;color:var(--ink);margin-top:8px;line-height:1.45">{{ g.n }}</div>
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">{{ g.ch }}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';margin-top:7px">{{ g.when }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">團體</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px">
+        <sc-for list="{{ unitTiles }}" as="u" hint-placeholder-count="6">
+          <button type="button" onClick="{{ onUnitGo }}" data-u="{{ u.v }}" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.34,1.45,.44,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)" style-active="transform:scale(.97)">
+            <span style="position:absolute;left:0;top:0;bottom:0;width:5px;background:{{ u.c }}"></span>
+            <span style="position:absolute;right:-24px;top:-24px;width:74px;height:74px;border-radius:50%;background:{{ u.c }};opacity:.13"></span>
+            <span style="position:relative;font-size:10px;font-weight:800;letter-spacing:1.6px;color:{{ u.c }};font-family:'M PLUS Rounded 1c'">{{ u.jp }}</span>
+            <span style="position:relative;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.35">{{ u.n }}</span>
+            <span style="position:relative;font-size:11px;color:var(--text-3)">{{ u.count }} 個卡池</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">快速前往</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px">
+        <sc-for list="{{ quickLinks }}" as="q" hint-placeholder-count="6">
+          <button type="button" onClick="{{ onGo }}" data-p="{{ q.id }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.34,1.45,.44,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm);border-color:var(--border-2)" style-active="transform:scale(.97)">
+            <span style="width:9px;height:9px;border-radius:50%;background:{{ q.dot }};margin-bottom:5px"></span>
+            <span style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ q.name }}</span>
+            <span style="font-size:11px;color:var(--text-3);line-height:1.5">{{ q.sub }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ========== 日曆 ========== -->
+  <sc-if value="{{ isCalendar }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div style="font-family:'M PLUS Rounded 1c';font-size:20px;font-weight:800;color:var(--ink);letter-spacing:.5px">{{ calTitle }}</div>
+      <div style="display:flex;gap:7px">
+        <button type="button" onClick="{{ onMonth }}" data-d="-1" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">◀ 上月</button>
+        <button type="button" onClick="{{ onMonth }}" data-d="0" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">今天</button>
+        <button type="button" onClick="{{ onMonth }}" data-d="1" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">下月 ▶</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <sc-for list="{{ typeLegend }}" as="t" hint-placeholder-count="7">
+        <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</span>
+      </sc-for>
+    </div>
+
+    <div style="border:1px solid var(--border);border-radius:20px;padding:16px;background:var(--card);box-shadow:var(--sh-sm)">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:1px;margin-bottom:8px">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">
+        <sc-for list="{{ calDays }}" as="d" hint-placeholder-count="35">
+          <button type="button" onClick="{{ onDay }}" data-k="{{ d.key }}" style="display:flex;flex-direction:column;gap:3px;min-height:{{ dayH }};padding:6px;border:1px solid {{ d.border }};border-radius:12px;background:{{ d.bg }};opacity:{{ d.op }};cursor:pointer;text-align:left;overflow:hidden;transition:transform .28s cubic-bezier(.32,.72,.24,1),box-shadow .28s,border-color .2s" style-hover="transform:translateY(-2px);box-shadow:var(--sh-sm)">
+            <span style="font-family:'M PLUS Rounded 1c';font-size:12px;font-weight:700;color:{{ d.numColor }}">{{ d.num }}</span>
+            <sc-if value="{{ isDesktop }}">
+              <sc-for list="{{ d.events }}" as="e" hint-placeholder-count="0">
+                <span style="font-size:9.5px;font-weight:700;padding:2px 5px;border-radius:6px;background:{{ e.bg }};color:{{ e.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ e.n }}</span>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ isMobile }}">
+              <span style="display:flex;flex-wrap:wrap;gap:2px;margin-top:auto">
+                <sc-for list="{{ d.dots }}" as="dot" hint-placeholder-count="0">
+                  <i style="width:6px;height:6px;border-radius:50%;background:{{ dot.fg }}"></i>
+                </sc-for>
+              </span>
+            </sc-if>
+            <sc-if value="{{ d.more }}">
+              <span style="font-size:9.5px;font-weight:700;color:var(--accent-deep)">+{{ d.moreN }}</span>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ hasDaySel }}">
+      <div style="margin-top:14px;border:1px solid var(--border);border-radius:20px;padding:18px;background:var(--card);box-shadow:var(--sh-sm);animation:riseIn .4s cubic-bezier(.32,.72,.24,1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+          <div style="font-size:14.5px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ daySelLabel }}</div>
+          <button type="button" onClick="{{ onDayClose }}" aria-label="關閉" style="width:30px;height:30px;display:grid;place-items:center;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:16px;cursor:pointer">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <sc-for list="{{ dayEvents }}" as="e" hint-placeholder-count="2">
+            <div style="display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft)">
+              <span style="width:9px;height:9px;border-radius:50%;flex:none;margin-top:7px;background:{{ e.fg }}"></span>
+              <div style="min-width:0">
+                <div style="font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.5">{{ e.n }}</div>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;font-family:'M PLUS Rounded 1c'">{{ e.range }} · {{ e.t }}</div>
+                <div style="font-size:12px;color:var(--text-2);margin-top:3px">{{ e.ch }}</div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:3px">{{ e.note }}</div>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ dayEmpty }}">
+            <div style="text-align:center;padding:20px;color:var(--text-3);font-size:13px">這天沒有卡池開放</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ========== 卡池 ========== -->
+  <sc-if value="{{ isGacha }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
+      <input type="text" placeholder="搜尋卡池名稱、角色、備註…" value="{{ gq }}" onInput="{{ onField }}" data-k="gq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <select value="{{ gt }}" onChange="{{ onField }}" data-k="gt" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
+        <sc-for list="{{ gachaTypes }}" as="t" hint-placeholder-count="5"><option value="{{ t.v }}">{{ t.n }}</option></sc-for>
+      </select>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      <sc-for list="{{ unitChips }}" as="u" hint-placeholder-count="7">
+        <button type="button" onClick="{{ onSet }}" data-k="gu" data-v="{{ u.v }}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1px solid {{ u.bd }};border-radius:999px;background:{{ u.bg }};color:{{ u.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ u.dot }}"></span>{{ u.n }}
+        </button>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ gachaCount }}</div>
+
+    <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <sc-if value="{{ isDesktop }}">
+        <div style="display:grid;grid-template-columns:{{ gachaCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
+          <span>期間</span><span>卡池名稱</span><span>類型</span><span>PU 角色</span><span>活動</span>
+        </div>
+      </sc-if>
+      <sc-for list="{{ gachaRows }}" as="g" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:{{ gachaCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);transition:background .18s" style-hover="background:var(--bg-soft)">
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ g.range }}</span>
+          <span style="font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.45">{{ g.n }}</span>
+          <span><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2.5px 10px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span></span>
+          <span style="font-size:12.5px;color:var(--text-2)">{{ g.ch }}</span>
+          <span style="font-size:11.5px;color:var(--text-3)">{{ g.ev }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ gachaEmpty }}">
+        <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px;border-top:1px solid var(--border)">沒有符合條件的卡池，試著清空搜尋或改選團體／類型</div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px">
+      <button type="button" onClick="{{ onPage }}" data-k="gp" data-d="-1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">← 上頁</button>
+      <span style="font-size:13px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ gachaPageLabel }}</span>
+      <button type="button" onClick="{{ onPage }}" data-k="gp" data-d="1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">下頁 →</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ========== 歌曲 ========== -->
+  <sc-if value="{{ isSongs }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
+      <input type="text" placeholder="搜尋曲名、作曲者…" value="{{ sq }}" onInput="{{ onField }}" data-k="sq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <select value="{{ ssort }}" onChange="{{ onField }}" data-k="ssort" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
+        <option value="id">ID 由小到大</option><option value="new">最新加入</option><option value="master">MASTER 難度高→低</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      <sc-for list="{{ songUnitChips }}" as="u" hint-placeholder-count="7">
+        <button type="button" onClick="{{ onSet }}" data-k="su" data-v="{{ u.v }}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1px solid {{ u.bd }};border-radius:999px;background:{{ u.bg }};color:{{ u.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ u.dot }}"></span>{{ u.n }}
+        </button>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ songCount }}</div>
+
+    <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <sc-if value="{{ isDesktop }}">
+        <div style="display:grid;grid-template-columns:{{ songCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
+          <span>ID</span><span>曲名</span><span>團體</span><span>難度</span>
+        </div>
+      </sc-if>
+      <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s" style-hover="background:var(--bg-soft)">
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">#{{ s.id }}</span>
+          <span style="min-width:0"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span></span>
+          <span style="display:flex;flex-wrap:wrap;gap:4px">
+            <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span>
+            </sc-for>
+          </span>
+          <span style="display:flex;flex-wrap:wrap;gap:3px">
+            <sc-for list="{{ s.diffs }}" as="d" hint-placeholder-count="3">
+              <span style="min-width:24px;text-align:center;font-size:10px;font-weight:800;padding:2px 5px;border-radius:6px;color:#fff;font-family:'M PLUS Rounded 1c';background:{{ d.c }}">{{ d.v }}</span>
+            </sc-for>
+          </span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ songEmpty }}">
+        <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px;border-top:1px solid var(--border)">沒有符合條件的歌曲，試著清空搜尋或改選團體</div>
+      </sc-if>
+      <sc-if value="{{ songBusy }}">
+        <div style="padding:36px;text-align:center;color:var(--text-3);font-size:13px">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>{{ songStatus }}
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px">
+      <button type="button" onClick="{{ onPage }}" data-k="sp" data-d="-1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">← 上頁</button>
+      <span style="font-size:13px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ songPageLabel }}</span>
+      <button type="button" onClick="{{ onPage }}" data-k="sp" data-d="1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">下頁 →</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ========== 排名 ========== -->
+  <sc-if value="{{ isRank }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2)">
+        <sc-for list="{{ rankTabs }}" as="t" hint-placeholder-count="2">
+          <button type="button" onClick="{{ onSet }}" data-k="rankTab" data-v="{{ t.v }}" style="padding:8px 17px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
+        </sc-for>
+      </div>
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3)"><i style="width:8px;height:8px;border-radius:50%;background:#34c77b;animation:pulseDot 2s infinite"></i>每 60 秒自動更新</span>
+      <button type="button" onClick="{{ onRefresh }}" style="margin-left:auto;padding:8px 17px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">重新載入</button>
+    </div>
+
+    <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <div style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
+        <span>#</span><span>玩家</span><span style="text-align:right">{{ rankScoreLabel }}</span><span style="text-align:right">{{ rankExtraLabel }}</span>
+      </div>
+      <sc-for list="{{ rankRows }}" as="r" hint-placeholder-count="10">
+        <div style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s" style-hover="background:var(--bg-soft)">
+          <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+          <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:var(--ink)">{{ r.score }}</span>
+          <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:12px;color:var(--text-3)">{{ r.extra }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ rankBusy }}">
+        <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>{{ rankStatus }}
+        </div>
+      </sc-if>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">資料來源：HiSekai API（台服）。連線被瀏覽器阻擋時會自動改走公開代理重試。</div>
+  </div>
+  </sc-if>
+
+  <!-- ========== 計算中心 ========== -->
+  <sc-if value="{{ isCalc }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+
+    <div style="border:1px solid var(--border);border-radius:20px;padding:18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:13px">
+        <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">共用設定</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          <sc-for list="{{ presets }}" as="p" hint-placeholder-count="3">
+            <button type="button" onClick="{{ onPreset }}" data-v="{{ p.v }}" style="padding:7px 15px;border:1px solid {{ p.bd }};border-radius:999px;background:{{ p.bg }};color:{{ p.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">{{ p.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ songPickCols }};gap:10px;margin-bottom:12px">
+        <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">找歌（640 首曲庫）</span>
+          <input type="text" placeholder="曲名關鍵字…" value="{{ epq }}" onInput="{{ onField }}" data-k="epq" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)"></label>
+        <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">選曲 · 係數 R{{ songRate }} · {{ songTime }}s</span>
+          <select value="{{ songKey }}" onChange="{{ onField }}" data-k="songKey" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:42px;cursor:pointer;outline:none">
+            <sc-for list="{{ songOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+          </select></label>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px">
+        <sc-for list="{{ diffChips }}" as="d" hint-placeholder-count="6">
+          <button type="button" onClick="{{ onSet }}" data-k="diff" data-v="{{ d.v }}" disabled="{{ d.dis }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid {{ d.bd }};border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:11.5px;font-weight:800;letter-spacing:.6px;cursor:{{ d.cur }};opacity:{{ d.op }};box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">
+            <span style="width:8px;height:8px;border-radius:3px;background:{{ d.c }}"></span>{{ d.n }}<span style="font-family:'M PLUS Rounded 1c';opacity:.75">{{ d.lv }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px">
+        <sc-for list="{{ sharedFields }}" as="f" hint-placeholder-count="4">
+          <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</span>
+            <input type="number" value="{{ f.value }}" onInput="{{ onField }}" data-k="{{ f.k }}" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c';font-weight:700" style-focus="border-color:var(--accent)"></label>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;margin-top:13px">
+        <div>
+          <span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:6px">消耗體力（ライブボーナス）</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ boostChips }}" as="b" hint-placeholder-count="7">
+              <button type="button" onClick="{{ onSet }}" data-k="energy" data-v="{{ b.v }}" data-num="1" style="display:inline-flex;align-items:center;gap:5px;min-width:52px;padding:8px 13px;border:1px solid {{ b.bd }};border-radius:999px;background:{{ b.bg }};color:{{ b.fg }};font-size:12.5px;font-weight:800;font-family:'M PLUS Rounded 1c';cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">{{ b.n }}<span style="font-size:10px;opacity:.7">{{ b.mult }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:6px">分數來源</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ scoreModeChips }}" as="m" hint-placeholder-count="2">
+              <button type="button" onClick="{{ onSet }}" data-k="scoreMode" data-v="{{ m.v }}" style="padding:8px 15px;border:1px solid {{ m.bd }};border-radius:999px;background:{{ m.bg }};color:{{ m.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">{{ m.n }}</button>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:7px;line-height:1.6">{{ scoreHint }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);overflow-x:auto;margin-bottom:14px">
+      <sc-for list="{{ calcTabs }}" as="t" hint-placeholder-count="5">
+        <button type="button" onClick="{{ onSet }}" data-k="ctab" data-v="{{ t.v }}" style="flex:none;padding:8px 16px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:{{ calcCols }};gap:14px;align-items:start">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:13px">{{ calcInputTitle }}</div>
+        <sc-for list="{{ calcFields }}" as="f" hint-placeholder-count="4">
+          <label style="display:block;margin-bottom:11px"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</span>
+            <input type="number" value="{{ f.value }}" onInput="{{ onField }}" data-k="{{ f.k }}" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c';font-weight:700" style-focus="border-color:var(--accent)"></label>
+        </sc-for>
+        <sc-if value="{{ showModeChips }}">
+          <span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin:4px 0 6px">演出模式</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ modeChips }}" as="m" hint-placeholder-count="5">
+              <button type="button" onClick="{{ onSet }}" data-k="mode" data-v="{{ m.v }}" style="padding:8px 14px;border:1px solid {{ m.bd }};border-radius:999px;background:{{ m.bg }};color:{{ m.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">{{ m.n }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showGcTarget }}">
+          <span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin:14px 0 6px">目標</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ gcTargets }}" as="t" hint-placeholder-count="4">
+              <button type="button" onClick="{{ onSet }}" data-k="gcT" data-v="{{ t.v }}" style="padding:9px 15px;border:1px solid {{ t.bd }};border-radius:13px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:700;cursor:pointer;text-align:left">{{ t.n }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="position:relative;overflow:hidden;border-radius:20px;padding:22px;background:var(--cta);color:#fff;box-shadow:0 10px 26px rgba(47,124,220,.25)">
+          <span style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(340px 160px at 84% -30%,rgba(255,255,255,.28),transparent 70%)"></span>
+          <div style="position:relative;font-size:11px;font-weight:800;letter-spacing:2.2px;opacity:.9">{{ resultLabel }}</div>
+          <div style="position:relative;font-family:'M PLUS Rounded 1c';font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.15;letter-spacing:.5px">{{ resultValue }}</div>
+          <div style="position:relative;font-size:12.5px;opacity:.9;margin-top:4px">{{ resultSub }}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+          <sc-for list="{{ resultStats }}" as="s" hint-placeholder-count="3">
+            <div style="border:1px solid var(--border);border-radius:16px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs)">
+              <div style="font-size:10.5px;font-weight:700;color:var(--text-3)">{{ s.l }}</div>
+              <div style="font-size:19px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ s.v }}</div>
+              <div style="font-size:10.5px;color:var(--text-3)">{{ s.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ hasBoostTable }}">
+          <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+            <div style="padding:11px 16px;background:var(--card-2);font-size:11.5px;font-weight:800;color:var(--text-3);letter-spacing:.7px">各火數效率比較</div>
+            <sc-for list="{{ boostTable }}" as="b" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:60px 1fr 1fr;gap:10px;padding:9px 16px;border-top:1px solid var(--border);align-items:center;background:{{ b.rowBg }}">
+                <span style="font-family:'M PLUS Rounded 1c';font-size:12.5px;font-weight:800;color:var(--ink)">火 {{ b.n }}</span>
+                <span style="font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:700;color:var(--ink)">{{ b.ep }} EP</span>
+                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:12px;color:var(--text-3)">每火 {{ b.per }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasEffTable }}">
+          <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px;background:var(--card-2)">
+              <span style="font-size:11.5px;font-weight:800;color:var(--text-3);letter-spacing:.7px">時間效率 TOP 15</span>
+              <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ effNote }}</span>
+            </div>
+            <sc-for list="{{ effRows }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:{{ effCols }};gap:10px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s" style-hover="background:var(--bg-soft)">
+                <span style="font-family:'M PLUS Rounded 1c';font-size:12px;font-weight:800;color:{{ r.numColor }}">{{ r.i }}</span>
+                <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span><span style="display:block;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.meta }}</span></span>
+                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--ink)">{{ r.eph }}</span>
+                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:11.5px;color:var(--text-3)">{{ r.ep }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasPlanCards }}">
+          <div style="border:1px solid var(--border);border-radius:18px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-xs)">
+            <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:11px">體力來源（差引計算）</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+              <sc-for list="{{ planFields }}" as="f" hint-placeholder-count="4">
+                <label style="display:block"><span style="display:block;font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</span>
+                  <input type="number" value="{{ f.value }}" onInput="{{ onField }}" data-k="{{ f.k }}" data-num="1" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card);color:var(--text);font-size:13.5px;min-height:40px;outline:none;font-family:'M PLUS Rounded 1c';font-weight:700" style-focus="border-color:var(--accent)"></label>
+              </sc-for>
+            </div>
+            <div style="font-size:12px;color:var(--text-2);margin-top:11px;line-height:1.8">{{ planSummary }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showFormula }}">
+          <div style="border:1px solid var(--border);border-radius:16px;padding:15px 17px;background:var(--bg-soft);font-size:12px;line-height:1.9;color:var(--text-2)">
+            <div style="font-weight:800;color:var(--ink);margin-bottom:4px">計算式</div>
+            <div style="font-family:'M PLUS Rounded 1c';word-break:break-all">{{ formulaText }}</div>
+            <div style="margin-top:6px;font-size:11px;color:var(--text-3)">{{ formulaNote }}</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ========== 進階計算（綜合力·組卡·跑榜，iframe 內嵌完整引擎） ========== -->
+  <sc-if value="{{ isDeckPro }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:15px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="width:8px;height:24px;border-radius:5px;background:var(--rainbow);background-size:400% 100%;flex:none"></span>
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:15px;font-weight:800;color:var(--ink)">綜合力 · 組卡優化 · 分數估算 · 跑榜工作室</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">即時抓台服／日服主資料庫，逐道具計算 area item（5週年 Lv20）、角色等級、豆森門＋娃加成；組卡優化器已考慮團分且角色不重複。</div>
+      </div>
+      <a href="./index.html?embed=calc" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+    </div>
+    <iframe id="deckProFrame" src="./index.html?embed=calc" title="進階計算器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+  </div>
+  </sc-if>
+
+  <!-- ========== 教學大全 ========== -->
+  <sc-if value="{{ isTut }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <input type="text" placeholder="搜尋教學（例：S6、蝦、控分、火、烤森…）" value="{{ tq }}" onInput="{{ onField }}" data-k="tq" style="width:100%;padding:12px 18px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14.5px;min-height:46px;outline:none;box-shadow:var(--sh-xs);margin-bottom:12px" style-focus="border-color:var(--accent)">
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      <sc-for list="{{ tutCats }}" as="c" hint-placeholder-count="7">
+        <button type="button" onClick="{{ onSet }}" data-k="tcat" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ c.dot }}"></span>{{ c.n }}<span style="font-family:'M PLUS Rounded 1c';font-size:10.5px;opacity:.7">{{ c.count }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;font-family:'M PLUS Rounded 1c'">{{ tutCount }}</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <sc-for list="{{ tutRows }}" as="t" hint-placeholder-count="8">
+        <div style="border:1px solid {{ t.border }};border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;transition:border-color .2s,box-shadow .3s" style-hover="box-shadow:var(--sh-sm)">
+          <button type="button" onClick="{{ onTut }}" data-i="{{ t.key }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:14px 17px;border:none;background:transparent;cursor:pointer;text-align:left">
+            <span style="flex:none;font-size:10px;font-weight:800;padding:3px 10px;border-radius:999px;background:{{ t.catBg }};color:{{ t.catFg }}">{{ t.cat }}</span>
+            <span style="flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--ink);line-height:1.5">{{ t.q }}</span>
+            <span style="flex:none;font-family:'M PLUS Rounded 1c';font-size:15px;color:var(--text-3);transform:{{ t.arrow }};transition:transform .3s cubic-bezier(.32,.72,.24,1)">▾</span>
+          </button>
+          <sc-if value="{{ t.open }}">
+            <div style="padding:0 17px 16px;font-size:13.5px;line-height:1.9;color:var(--text-2);border-top:1px solid var(--border);padding-top:13px">{{ t.body }}</div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <sc-if value="{{ tutEmpty }}">
+        <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:16px;background:var(--card)">找不到符合的教學條目</div>
+      </sc-if>
+    </div>
+    <div style="margin-top:14px;font-size:11.5px;color:var(--text-3);line-height:1.8">由台啤開瓶器編輯團隊整理，共 106 則問答。含圖片的項目請前往 <a href="{{ tutDoc }}" target="_blank">教學文檔</a> 查看原圖。</div>
+  </div>
+  </sc-if>
+
+  <!-- ========== 資源 ========== -->
+  <sc-if value="{{ isRes }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:18px">
+    <sc-for list="{{ resGroups }}" as="grp" hint-placeholder-count="5">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">{{ grp.label }}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:11px">
+          <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+            <a href="{{ it.url }}" target="_blank" style="display:block;padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);text-decoration:none;color:var(--text);transition:transform .3s cubic-bezier(.32,.72,.24,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm);border-color:var(--border-2);text-decoration:none">
+              <div style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ it.name }} ↗</div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">{{ it.sub }}</div>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  </div>
+</main>
+
+<!-- ========== 行動版 dock ========== -->
+<sc-if value="{{ isMobile }}">
+<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--border);box-shadow:var(--sh-md)">
+  <sc-for list="{{ dockItems }}" as="d" hint-placeholder-count="5">
+    <button type="button" onClick="{{ onDock }}" data-p="{{ d.id }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:62px;height:50px;border:none;border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:10px;font-weight:800;letter-spacing:.6px;cursor:pointer;transition:background .25s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.9)">
+      <span style="width:8px;height:8px;border-radius:50%;background:{{ d.dot }}"></span>{{ d.name }}
+    </button>
+  </sc-for>
+</div>
+</sc-if>
+
+<!-- ========== 更多（行動版彈層） ========== -->
+<sc-if value="{{ sheetOpen }}">
+<div onClick="{{ onSheetClose }}" style="position:fixed;inset:0;z-index:70;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div style="position:fixed;left:10px;right:10px;bottom:10px;z-index:71;padding:12px 16px calc(18px + env(safe-area-inset-bottom,0px));border:1px solid var(--border);border-radius:26px;background:color-mix(in oklab,var(--card) 95%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);max-height:76vh;overflow-y:auto;animation:sheetUp .5s cubic-bezier(.34,1.45,.44,1)">
+  <div style="width:38px;height:5px;border-radius:3px;background:var(--border-2);margin:2px auto 8px"></div>
+  <sc-for list="{{ navGroups }}" as="grp" hint-placeholder-count="4">
+    <div style="font-size:10.5px;font-weight:800;letter-spacing:2.4px;color:var(--text-3);margin:14px 4px 8px">{{ grp.label }}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="3">
+        <button type="button" onClick="{{ onGo }}" data-p="{{ it.id }}" style="display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 15px;border:1px solid var(--border);border-radius:15px;background:{{ it.bg }};color:{{ it.fg }};font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .2s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.96)">
+          <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ it.dot }}"></span>{{ it.name }}
+        </button>
+      </sc-for>
+    </div>
+  </sc-for>
+  <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3);line-height:1.9">
+    <a href="index.html">經典長頁版 ↗</a> · <a href="ep-calculator.html">EP 計算器 ↗</a> · <a href="tutorial.html">教學大全 ↗</a>
+  </div>
+</div>
+</sc-if>
+
+<!-- ========== ⌘K 指令面板 ========== -->
+<sc-if value="{{ cmdkOpen }}">
+<div onClick="{{ onCmdClose }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,14,28,.45);backdrop-filter:blur(10px) saturate(1.2);animation:fadeIn .25s ease"></div>
+<div style="position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:91;width:min(640px,calc(100vw - 24px));max-height:78vh;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:22px;background:var(--bg-soft);box-shadow:var(--sh-lg);overflow:hidden;animation:popIn .4s cubic-bezier(.34,1.45,.44,1)">
+  <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)">
+    <svg viewBox="0 0 20 20" fill="none" style="width:17px;height:17px;color:var(--text-3);flex:none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+    <input type="text" placeholder="搜尋卡池、歌曲、功能，或輸入指令（例：ep 1500000）" value="{{ cmdq }}" onInput="{{ onCmdInput }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" style="flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:15.5px;padding:4px 2px">
+    <button type="button" onClick="{{ onCmdClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:16px;cursor:pointer">×</button>
+  </div>
+  <div style="padding:7px 18px;border-bottom:1px solid var(--border);background:var(--card-2);font-size:11px;color:var(--text-3)">↑↓ 選擇 · Enter 執行 · Esc 關閉　指令：<b>ep 分數</b>、<b>加成 250</b>、<b>綜合力 280000</b>、<b>火 10</b></div>
+  <div style="overflow-y:auto;padding:6px 0">
+    <sc-for list="{{ cmdResults }}" as="r" hint-placeholder-count="6">
+      <button type="button" onClick="{{ onCmdPick }}" data-i="{{ r.i }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:11px 18px;border:none;background:{{ r.bg }};cursor:pointer;text-align:left;transition:background .14s">
+        <span style="flex:none;font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fff;background:{{ r.tagBg }}">{{ r.tag }}</span>
+        <span style="flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.main }}</span>
+        <span style="flex:none;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.sub }}</span>
+      </button>
+    </sc-for>
+    <sc-if value="{{ cmdEmpty }}">
+      <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px">找不到符合的結果</div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}">
+class Component extends DCLogic {
+  BOOST = { 0:1, 1:5, 2:10, 3:15, 4:19, 5:23, 6:26, 7:29, 8:31, 9:33, 10:35 };
+  API = 'https://api.hisekai.org/tw';
+  TDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+  UNITS = {
+    ln:  { n:'Leo/need', c:'#4455dd', t:'#fff', keys:['LN'] },
+    mmj: { n:'MMJ', c:'#88cc44', t:'#1d2610', keys:['MMJ'] },
+    vbs: { n:'VBS', c:'#ee6644', t:'#fff', keys:['VBS'] },
+    wxs: { n:'ワンダショ', c:'#ffbb33', t:'#2b2208', keys:['WS'] },
+    n25: { n:'ニーゴ', c:'#aa66cc', t:'#fff', keys:['25時'] },
+    vs:  { n:'VIRTUAL SINGER', c:'#44cccc', t:'#0c2b29', keys:['VS', '無副團'] }
+  };
+  TONES = [
+    ['FES池', 'fes', 'FES 池'],
+    ['普通限定池', 'lim', '限定池'],
+    ['常駐池', 'nm', '常駐池'],
+    ['有償池', 'paid', '有償池'],
+    ['生日池', 'bd', '生日池'],
+    ['World Link池', 'wl', 'WL 池'],
+    ['World Link支援池', 'wl', 'WL 支援'],
+    ['復刻限定池', 'rr', '復刻池'],
+    ['其他', 'ot', '其他']
+  ];
+  PAGES = {
+    home:     ['首頁', '當期活動、我的進度與近期卡池'],
+    calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
+    gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
+    songs:    ['歌曲清單', '完整樂曲資料庫（Sekai-World 台服主資料庫）'],
+    rank:     ['活動排名', '即時排名與分段榜線（HiSekai API）'],
+    calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
+    deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
+    tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
+    res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具']
+  };
+  EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
+  OH = 15;
+  DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
+  PRESETS = {
+    t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:3,   s6:2.9, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
+    farm:  { n:'周回效率', power:250000, bonus:250, energy:3,  skill:2.5, s6:2.5, mode:'multi', song:74, diff:'M', goal:1000000, scoreMode:'calc' },
+    casual:{ n:'輕鬆玩',   power:150000, bonus:120, energy:1,  skill:2,   s6:2,   mode:'solo',  song:1,  diff:'X', goal:300000,  scoreMode:'calc' }
+  };
+
+  state = {
+    page: 'home', mobile: false, sheet: false, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    gachas: [], dolls: [],
+    calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
+    gq: '', gu: 'all', gt: '', gp: 1,
+    songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id',
+    live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
+    pid: '', pidInput: '', pdata: null, pErr: '',
+    ctab: 'ep', preset: '',
+    epSongs: [], tutQA: [], tutCats: [], tutDoc: '',
+    songKey: 74, diff: 'M', epq: '', skill: 2.5, s6: 2.5, scoreMode: 'calc', energy: 3, interval: 50,
+    natHr: 0, lCan: 0, sCan: 0, crys: 0,
+    power: 250000, bonus: 250, rate: 115, score: 1200000, mode: 'multi', life: 800,
+    tq: '', tcat: 'all', tOpen: {},
+    leader: 115, m1: 110, m2: 110, m3: 110, m4: 110,
+    gcT: '0.004', gcC: 30000, gcP: 0, gcV: 0,
+    msFever: 1, msStam: 10,
+    rmAp: 1000, rmAg: 20, rmAd: 3, rmBp: 990, rmBg: 28, rmBd: 5, rmWin: 55, rmRP: 0, rmCls: 1,
+    goal: 1000000, cur: 0
+  };
+
+  componentDidMount() {
+    this.applyProps();
+    const sp = this.props.startPage;
+    if (sp && this.PAGES[sp]) this.setState({ page: sp });
+    this.mq = window.matchMedia('(max-width: 900px)');
+    const onMq = e => this.setState({ mobile: e.matches });
+    this.setState({ mobile: this.mq.matches });
+    this.mq.addEventListener ? this.mq.addEventListener('change', onMq) : this.mq.addListener(onMq);
+
+    import('./data/sekai-data.js')
+      .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
+      .catch(() => {});
+    import('./data/ep-songs.js')
+      .then(m => this.setState({ epSongs: m.EP_SONGS || [] }))
+      .catch(() => {});
+    import('./data/tutorial-data.js')
+      .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
+      .catch(() => {});
+
+    try {
+      const pid = localStorage.getItem('sekai-app-pid') || '';
+      const goal = +localStorage.getItem('sekai-app-goal') || 1000000;
+      const cur = +localStorage.getItem('sekai-app-cur') || 0;
+      this.setState({ pid, goal, cur });
+      if (pid) this.loadPlayer(pid);
+    } catch (e) {}
+
+    this.loadLive();
+    this._live = setInterval(() => this.loadLive(), 60000);
+    this._tick = setInterval(() => { if (this.state.page === 'home') this.setState(s => ({ tick: s.tick + 1 })); }, 1000);
+    this._key = e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
+      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false });
+      if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
+    };
+    document.addEventListener('keydown', this._key);
+    this._frameMsg = e => {
+      const d = e && e.data;
+      if (d && typeof d.sekaiCalcHeight === 'number') {
+        const f = document.getElementById('deckProFrame');
+        if (f) f.style.height = Math.max(560, d.sekaiCalcHeight + 8) + 'px';
+      }
+    };
+    window.addEventListener('message', this._frameMsg);
+  }
+  componentDidUpdate() { this.applyProps(); }
+  componentWillUnmount() {
+    clearInterval(this._live); clearInterval(this._tick);
+    document.removeEventListener('keydown', this._key);
+    window.removeEventListener('message', this._frameMsg);
+  }
+  applyProps() {
+    const r = document.documentElement;
+    if (this.props.accent) r.style.setProperty('--accent', this.props.accent);
+    r.style.setProperty('--anim', this.props.motion === 'subtle' ? '.01s' : '.5s');
+  }
+
+  /* ---------- 工具 ---------- */
+  n(v) { return (+v || 0).toLocaleString('en-US'); }
+  short(v) { v = +v || 0; return v >= 10000 ? (v / 10000).toFixed(v >= 1000000 ? 0 : 2) + 'W' : v.toLocaleString('en-US'); }
+  pd(s) { if (!s) return null; const p = String(s).split('/'); return p.length < 3 ? null : new Date(+p[0], +p[1] - 1, +p[2]); }
+  md(d) { return d ? (d.getMonth() + 1) + '/' + d.getDate() : ''; }
+  dur(ms) {
+    if (ms == null) return '—';
+    if (ms <= 0) return '已結束';
+    const d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000),
+          m = Math.floor(ms % 3600000 / 60000), s = Math.floor(ms % 60000 / 1000);
+    return d > 0 ? d + '天 ' + h + ':' + String(m).padStart(2, '0') : h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+  tone(t) {
+    const f = this.TONES.find(x => x[0] === t) || ['', 'ot', t || '其他'];
+    return { bg: 'var(--' + f[1] + '-bg)', fg: 'var(--' + f[1] + '-fg)', label: f[2] };
+  }
+  unitOf(u) {
+    if (!u) return null;
+    for (const k in this.UNITS) if (this.UNITS[k].keys.some(x => u.includes(x))) return k;
+    return null;
+  }
+
+  async apiFetch(path) {
+    const url = this.API + path;
+    const tries = [url, 'https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+    let err;
+    for (const u of tries) {
+      try {
+        const r = await fetch(u, { headers: { Accept: 'application/json' } });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return await r.json();
+      } catch (e) { err = e; }
+    }
+    throw err || new Error('fetch failed');
+  }
+
+  async loadLive() {
+    try {
+      const [top, brd] = await Promise.all([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
+      this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '' });
+      if (this.state.pid) this.matchMyRank(top);
+    } catch (e) {
+      this.setState({ liveLoad: false, liveErr: '排名資料暫時無法載入' });
+    }
+  }
+  normRank(r) {
+    if (!r || typeof r !== 'object') return {};
+    const prof = (r.last_player_info && r.last_player_info.profile) || r.userProfile || {};
+    return {
+      rank: Number(r.rank != null ? r.rank : r.ranking != null ? r.ranking : r.position),
+      score: Number(r.score != null ? r.score : r.event_point != null ? r.event_point : r.point),
+      speed1h: (r.last_1h_stats && r.last_1h_stats.speed) != null ? r.last_1h_stats.speed : null,
+      name: r.name || r.user_name || r.nickname || prof.name || '—',
+      uid: String(r.user_id != null ? r.user_id : r.userId != null ? r.userId : prof.id != null ? prof.id : r.id || '')
+    };
+  }
+  ranksOf(d) {
+    if (!d) return [];
+    const a = d.player_top_100_rankings || d.top_100_player_rankings || d.player_rankings || d.rankings || d.ranking || [];
+    return Array.isArray(a) ? a.map(x => this.normRank(x)).filter(x => x.rank) : [];
+  }
+  bordersOf(d) {
+    if (!d) return [];
+    const a = d.player_border_rankings || d.player_borders || d.border_rankings || d.borders || [];
+    return Array.isArray(a) ? a.map(x => this.normRank(x)).filter(x => x.rank) : [];
+  }
+  eventOf(d) { return (d && (d.event || d.event_data)) || d || {}; }
+
+  matchMyRank(top) {
+    const me = this.ranksOf(top).find(r => r.uid && r.uid === String(this.state.pid));
+    if (me) this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { myRank: me.rank, myScore: me.score }) }));
+  }
+  async loadPlayer(id) {
+    try {
+      const d = await this.apiFetch('/user/' + id + '/profile');
+      const u = d.user || d.userProfile || d.profile || d || {};
+      const gd = d.userGamedata || d.user_gamedata || u.gamedata || u;
+      const power = u.total_power || u.totalPower || u.deck_total_power || u.power || null;
+      this.setState(s => ({
+        pdata: Object.assign({}, s.pdata || {}, {
+          name: gd.name || u.name || ('玩家 ' + id),
+          rank: gd.rank || u.rank || null, power
+        }), pErr: ''
+      }));
+      if (this.state.live) this.matchMyRank(this.state.live);
+    } catch (e) {
+      this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { name: '玩家 ' + id }) }));
+    }
+  }
+
+  async loadSongs() {
+    if (this.state.songLoad || this.state.songs.length) return;
+    this.setState({ songLoad: true });
+    try {
+      const [ms, md, mv] = await Promise.all([
+        fetch(this.TDB + '/musics.json').then(r => r.json()).catch(() => []),
+        fetch(this.TDB + '/musicDifficulties.json').then(r => r.json()).catch(() => []),
+        fetch(this.TDB + '/musicVocals.json').then(r => r.json()).catch(() => [])
+      ]);
+      const lv = {};
+      md.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; });
+      const cu = c => c <= 4 ? 'ln' : c <= 8 ? 'mmj' : c <= 12 ? 'vbs' : c <= 16 ? 'wxs' : c <= 20 ? 'n25' : 'vs';
+      const um = {};
+      mv.forEach(v => {
+        (um[v.musicId] = um[v.musicId] || new Set());
+        (v.characters || []).forEach(c => { if (c.characterId) um[v.musicId].add(cu(c.characterId)); });
+      });
+      const songs = ms.map(s => ({
+        id: s.id, title: s.title || '', composer: s.composer || s.arranger || '',
+        published: s.publishedAt || 0, units: Array.from(um[s.id] || []),
+        lv: lv[s.id] || {}
+      }));
+      this.setState({ songs, songLoad: false, songErr: songs.length ? '' : '歌曲資料來源無回應' });
+    } catch (e) {
+      this.setState({ songLoad: false, songErr: '歌曲資料載入失敗' });
+    }
+  }
+
+  /* ---------- 導航 ---------- */
+  go(p) {
+    if (p === 'songs') this.loadSongs();
+    this.setState({ page: p, sheet: false, cmdk: false });
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  }
+  openCmd() {
+    this.setState({ cmdk: true, cmdq: '', cmdi: 0 });
+    setTimeout(() => { if (this._cmdEl) this._cmdEl.focus(); }, 60);
+  }
+
+  /* ---------- 計算 ---------- */
+  /* sekai-calculator v0.17（scoot method）— 由 ep-calculator.html 移植 */
+  calcEPValue(liveType, score, eventRate, bonus, boostRate, power, life) {
+    const musicRate0 = (eventRate || 100) / 100, deckRate = (bonus || 0) / 100 + 1;
+    life = life || 1000; power = power || 0;
+    if (liveType === 'solo' || liveType === 'auto') {
+      return Math.floor((100 + Math.floor(score / 20000)) * musicRate0 * deckRate) * boostRate;
+    }
+    if (liveType === 'multi') {
+      const sp = Math.floor((score + 0.075 * power * 5) / 17000);
+      return Math.floor((sp + 123) * musicRate0 * deckRate) * boostRate;
+    }
+    if (liveType === 'cheer') {
+      const sp = Math.floor((score + 0.075 * power * 5) / 17000);
+      const lifeRate = 1.15 + Math.min(Math.max(life / 5000, 0.1), 0.2);
+      return Math.floor(Math.floor((sp + 123) * musicRate0 * deckRate) * lifeRate) * boostRate;
+    }
+    return 0;
+  }
+  calcSongScore(d, liveType, power, skill, s6) {
+    if (!d || d.length < 11) return 0;
+    const base = d[2], baseAuto = d[3], fever = d[10];
+    let rate;
+    if (liveType === 'solo') rate = base + d[4] * skill + d[5] * s6;
+    else if (liveType === 'auto') rate = baseAuto + d[8] * skill + d[9] * s6;
+    else rate = base + fever * 0.5 + d[6] * skill + d[7] * s6;
+    return Math.floor(rate * power * 4);
+  }
+  songById(id) { return (this.state.epSongs || []).find(x => x.id === +id) || null; }
+  scoreNow(song) {
+    const s = this.state;
+    if (s.scoreMode === 'direct') return +s.score || 0;
+    if (!song || !song.d) return 0;
+    const order = [s.diff, 'M', 'X', 'H', 'N', 'E', 'A'];
+    const key = order.find(k => song.d[k]);
+    return key ? this.calcSongScore(song.d[key], s.mode, +s.power || 0, +s.skill || 0, +s.s6 || 0) : 0;
+  }
+  epResult() {
+    const s = this.state, song = this.songById(s.songKey);
+    const rate = song ? song.rate : (+s.rate || 100), time = song ? song.time : 100;
+    const score = this.scoreNow(song), F = this.EM[s.energy] || 1;
+    const ep = this.calcEPValue(s.mode, score, rate, +s.bonus || 0, F, +s.power || 0, +s.life || 0);
+    const cycle = time + this.OH;
+    const modeName = { solo: 'Solo/Auto', auto: 'Solo/Auto', multi: 'Multi', cheer: 'Cheer' }[s.mode];
+    const detail = (s.mode === 'solo' || s.mode === 'auto')
+      ? '⌊(100 + ⌊' + this.n(score) + '/20000⌋) × ' + rate + '/100 × ' + ((+s.bonus || 0) / 100 + 1).toFixed(2) + '⌋ × ' + F
+      : '⌊(⌊(' + this.n(score) + ' + 0.075×綜合力×5)/17000⌋ + 123) × ' + rate + '/100 × ' + ((+s.bonus || 0) / 100 + 1).toFixed(2) + '⌋' + (s.mode === 'cheer' ? ' × 生存率' : '') + ' × ' + F;
+    return {
+      ep, F, score, rate, time, cycle, detail, modeName,
+      perEnergy: s.energy > 0 ? Math.round(ep / s.energy) : ep,
+      perMin: cycle > 0 ? Math.round(ep / (cycle / 60)) : 0,
+      perHour: cycle > 0 ? Math.round(ep * 3600 / cycle) : 0
+    };
+  }
+  epFor(energyN) {
+    const s = this.state, song = this.songById(s.songKey);
+    return this.calcEPValue(s.mode, this.scoreNow(song), song ? song.rate : (+s.rate || 100), +s.bonus || 0, this.EM[energyN] || 1, +s.power || 0, +s.life || 0);
+  }
+  effRanking() {
+    const s = this.state, F = this.EM[s.energy] || 1, iv = +s.interval || 50;
+    const rows = [];
+    (s.epSongs || []).forEach(song => {
+      if (!song.time || song.time <= 0) return;
+      const d = song.d && song.d[s.diff];
+      if (!d) return;
+      const score = s.scoreMode === 'direct' ? (+s.score || 0) : this.calcSongScore(d, s.mode, +s.power || 0, +s.skill || 0, +s.s6 || 0);
+      const ep = this.calcEPValue(s.mode, score, song.rate, +s.bonus || 0, F, +s.power || 0, +s.life || 0);
+      const cycle = song.time + iv;
+      rows.push({ id: song.id, title: song.t, time: song.time, rate: song.rate, ep, eph: Math.round(ep * 3600 / cycle), lv: d[0] });
+    });
+    return rows.sort((a, b) => b.eph - a.eph).slice(0, 15);
+  }
+  plan() {
+    const s = this.state, r = this.epResult();
+    const left = Math.max(0, (+s.goal || 0) - (+s.cur || 0));
+    const plays = r.ep > 0 ? Math.ceil(left / r.ep) : 0;
+    const totalMin = plays * r.cycle / 60;
+    const totalEnergy = plays * (+s.energy || 0);
+    const recoverable = (+s.natHr || 0) * 2 + (+s.lCan || 0) * 10 + (+s.sCan || 0) * 5 + (+s.crys || 0) * 10;
+    const net = Math.max(0, totalEnergy - recoverable);
+    return { left, plays, totalMin, totalEnergy, recoverable, net, crystal: Math.ceil(net / 10) * 100, ep: r.ep };
+  }
+  mult() {
+    const s = this.state;
+    return ((+s.leader || 0) + 100 + ((+s.m1 || 0) + (+s.m2 || 0) + (+s.m3 || 0) + (+s.m4 || 0)) / 5) / 100;
+  }
+  gacha() {
+    const s = this.state, bd = s.gcT === '0.03b', p = bd ? 0.03 : parseFloat(s.gcT), ceil = bd ? 100 : 300;
+    const afford = Math.floor((+s.gcC || 0) / 300);
+    const pAfford = 1 - Math.pow(1 - p, afford);
+    const eNo = 1 / p, eCeil = (1 - Math.pow(1 - p, ceil)) / p;
+    let toCeil, note;
+    if (bd) { toCeil = Math.max(0, ceil - (+s.gcP || 0)) * 300; note = '生日池天井 100 抽，不可用交換券'; }
+    else {
+      const usable = Math.min(+s.gcV || 0, 10), need = Math.max(0, 300 - (+s.gcP || 0) - usable * 10);
+      toCeil = need * 300; note = '用 ' + usable + ' 張券（抵 ' + usable * 10 + ' 貼紙）後尚需 ' + need + ' 抽';
+    }
+    return { p, ceil, afford, pAfford, eNo, eCeil, toCeil, note };
+  }
+  mysekai() {
+    const s = this.state, a = Math.floor((+s.power || 0) / 450000 * 100) / 100;
+    const b = Math.floor((a + 1) * ((+s.bonus || 0) + 100) / 100);
+    const per = b * 100 * (+s.msFever || 1);
+    return { a, b, per, total: Math.round(per * (+s.msStam || 0)) };
+  }
+  rankMatch() {
+    const s = this.state;
+    const sa = (+s.rmAp || 0) * 3 + (+s.rmAg || 0) * 2 + (+s.rmAd || 0);
+    const sb = (+s.rmBp || 0) * 3 + (+s.rmBg || 0) * 2 + (+s.rmBd || 0);
+    let verdict = sa > sb ? '我方勝' : sb > sa ? '對手勝'
+      : (+s.rmAp > +s.rmBp ? '同分 → 我方 PERFECT 較多，我方勝' : +s.rmBp > +s.rmAp ? '同分 → 對手 PERFECT 較多，對手勝' : '同分且 PERFECT 相同 → 比最大連段 → 剩餘 Life');
+    const p = (+s.rmWin || 0) / 100, needRP = 5 * Math.max(1, +s.rmCls || 1) - Math.min(5, +s.rmRP || 0);
+    const drift = 2 * p - 1;
+    const games = drift > 0 ? Math.ceil(needRP / drift) : null;
+    return { sa, sb, verdict, needRP, games };
+  }
+
+  /* ---------- 日曆 ---------- */
+  calendarDays() {
+    const s = this.state, first = new Date(s.calY, s.calM, 1);
+    const start = new Date(first); start.setDate(1 - first.getDay());
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const out = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const dim = d.getMonth() !== s.calM;
+      const evs = this.eventsOn(d);
+      const isToday = d.getTime() === today.getTime();
+      const key = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+      out.push({
+        key, num: d.getDate(), dim,
+        op: dim ? '.4' : '1',
+        bg: isToday ? 'color-mix(in oklab,var(--accent) 9%,var(--card))' : (s.daySel === key ? 'var(--bg-soft)' : 'var(--card)'),
+        border: isToday ? 'var(--accent)' : (s.daySel === key ? 'var(--border-2)' : 'var(--border)'),
+        numColor: isToday ? 'var(--accent-deep)' : 'var(--text)',
+        events: evs.slice(0, 3).map(e => ({ n: e.n, bg: e.bg, fg: e.fg })),
+        dots: evs.slice(0, 6).map(e => ({ fg: e.fg })),
+        more: evs.length > 3, moreN: Math.max(0, evs.length - 3)
+      });
+    }
+    return out;
+  }
+  eventsOn(d) {
+    const t = d.getTime();
+    return (this.state.gachas || []).filter(g => {
+      const a = this.pd(g.s), b = this.pd(g.e);
+      return a && b && t >= a.getTime() && t <= b.getTime() + 86399000;
+    }).map(g => {
+      const tn = this.tone(g.t);
+      return { n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—', note: g.note || '', range: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)) };
+    });
+  }
+
+  /* ---------- 列表 ---------- */
+  filteredGachas() {
+    const s = this.state, q = s.gq.trim().toLowerCase();
+    return (s.gachas || []).filter(g => {
+      if (s.gt && g.t !== s.gt) return false;
+      if (s.gu !== 'all' && this.unitOf(g.u) !== s.gu) return false;
+      if (!q) return true;
+      return ((g.n || '') + (g.ch || '') + (g.note || '') + (g.t || '')).toLowerCase().includes(q);
+    });
+  }
+  filteredSongs() {
+    const s = this.state, q = s.sq.trim().toLowerCase();
+    let list = (s.songs || []).filter(x => {
+      if (s.su !== 'all' && !x.units.includes(s.su)) return false;
+      if (!q) return true;
+      return (x.title + ' ' + x.composer).toLowerCase().includes(q);
+    });
+    if (s.ssort === 'new') list = list.slice().sort((a, b) => b.published - a.published);
+    else if (s.ssort === 'master') list = list.slice().sort((a, b) => (b.lv[4] || 0) - (a.lv[4] || 0));
+    else list = list.slice().sort((a, b) => a.id - b.id);
+    return list;
+  }
+
+  /* ---------- 指令面板 ---------- */
+  buildCmd() {
+    const s = this.state, q = s.cmdq.trim(), lq = q.toLowerCase(), out = [];
+    const m = q.match(/^(ep|score|分數|加成|bonus|綜合力|power|體力|火|boost|技能|skill)\s*([\d,\.]+)$/i);
+    if (m) {
+      const v = +m[2].replace(/,/g, '');
+      const map = { ep: 'score', score: 'score', '分數': 'score', '加成': 'bonus', bonus: 'bonus', '綜合力': 'power', power: 'power', '體力': 'energy', '火': 'energy', boost: 'energy', '技能': 'skill', skill: 'skill' };
+      const k = map[m[1].toLowerCase()] || 'score';
+      const label = { score: '分數', bonus: '活動加成 %', power: '綜合力', energy: '消耗體力', skill: '技能倍率' }[k];
+      const patch = { [k]: v, page: 'calc', ctab: 'ep', cmdk: false };
+      if (k === 'score') patch.scoreMode = 'direct';
+      out.push({ tag: '指令', tagBg: '#f0619e', main: '設定' + label + ' = ' + v.toLocaleString('en-US'), sub: '前往 EP 精算', run: () => this.setState(patch) });
+    }
+    Object.keys(this.PAGES).forEach(p => {
+      const [n, sub] = this.PAGES[p];
+      if (!q || n.toLowerCase().includes(lq) || p.includes(lq)) out.push({ tag: '前往', tagBg: '#3f8cf3', main: n, sub, run: () => this.go(p) });
+    });
+    this.PRESETS && Object.keys(this.PRESETS).forEach(k => {
+      const p = this.PRESETS[k];
+      if (q && !p.n.toLowerCase().includes(lq)) return;
+      out.push({ tag: '預設', tagBg: '#22c3d6', main: '套用情境：' + p.n, sub: '加成 ' + p.bonus + '% · 體力 ' + p.energy, run: () => { this.applyPreset(k); this.setState({ page: 'calc', cmdk: false }); } });
+    });
+    if (q) {
+      (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
+        out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
+      });
+      (this.state.epSongs || []).filter(x => x.t.toLowerCase().includes(lq)).slice(0, 6).forEach(x => {
+        out.push({ tag: '選曲', tagBg: '#9a63d8', main: x.t, sub: x.time + 's · R' + x.rate, run: () => this.setState({ page: 'calc', ctab: 'ep', songKey: x.id, epq: '', cmdk: false }) });
+      });
+      (this.state.tutQA || []).filter(x => ((x.q || '') + (x.kw || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(x => {
+        out.push({ tag: '教學', tagBg: '#b8e561', main: x.q, sub: '教學大全', run: () => this.setState({ page: 'tut', tq: x.q, tcat: 'all', tOpen: { [x.cat + '::' + x.q]: 1 }, cmdk: false }) });
+      });
+    }
+    return out.slice(0, 24);
+  }
+  applyPreset(k) {
+    const p = this.PRESETS[k]; if (!p) return;
+    this.setState({
+      preset: k, power: p.power, bonus: p.bonus, energy: p.energy, skill: p.skill, s6: p.s6,
+      mode: p.mode, songKey: p.song, diff: p.diff, goal: p.goal, scoreMode: p.scoreMode
+    });
+    try { localStorage.setItem('sekai-app-goal', String(p.goal)); } catch (e) {}
+  }
+
+  renderVals() {
+    const s = this.state, P = this.PAGES[s.page] || this.PAGES.home;
+    const isDesktop = !s.mobile;
+    const chip = (on, c) => on
+      ? { bg: c || 'var(--ink-grad)', fg: '#fff', bd: 'transparent', sh: 'var(--sh-sm)' }
+      : { bg: 'var(--card)', fg: 'var(--text)', bd: 'var(--border)', sh: 'none' };
+    const seg = on => on ? { bg: 'var(--card)', fg: 'var(--ink)', sh: 'var(--sh-sm)' } : { bg: 'transparent', fg: 'var(--text-3)', sh: 'none' };
+
+    /* 導覽 */
+    const navSpec = [
+      ['主頁', [['home', '首頁', '#4ad1e8']]],
+      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
+      ['追蹤', [['rank', '活動排名', '#ff9db4']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e']]],
+      ['學習', [['tut', '教學大全', '#b8e561']]],
+      ['更多', [['res', '資源連結', '#ffd94d']]]
+    ];
+    const navGroups = navSpec.map(([label, items]) => ({
+      label,
+      items: items.map(([id, name, dot]) => ({
+        id, name, dot,
+        bg: s.page === id ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
+        fg: s.page === id ? 'var(--accent-deep)' : 'var(--text)'
+      }))
+    }));
+    const dockSpec = [['home', '首頁', '#4ad1e8'], ['calendar', '日曆', '#3ee0a8'], ['calc', '計算', '#7fb4f7'], ['rank', '排名', '#ff9db4'], ['more', '更多', '#ffd94d']];
+    const dockItems = dockSpec.map(([id, name, dot]) => ({
+      id, name, dot,
+      bg: s.page === id ? 'color-mix(in oklab,var(--accent) 15%,transparent)' : 'transparent',
+      fg: s.page === id ? 'var(--accent-deep)' : 'var(--text-2)'
+    }));
+
+    /* 首頁：活動 */
+    const ev = this.eventOf(s.live);
+    const endAt = ev.aggregate_at || ev.closed_at || ev.aggregated_at || ev.end_at;
+    const startAt = ev.start_at || ev.started_at || ev.startAt;
+    const endMs = endAt ? new Date(endAt).getTime() : null;
+    const startMs = startAt ? new Date(startAt).getTime() : null;
+    const now = Date.now();
+    let prog = 0;
+    if (startMs && endMs && endMs > startMs) prog = Math.max(0, Math.min(1, (now - startMs) / (endMs - startMs)));
+    const myRanks = this.ranksOf(s.live);
+    const myBorders = this.bordersOf(s.borders);
+    const pd = s.pdata || {};
+
+    const upcoming = (s.gachas || []).map(g => {
+      const a = this.pd(g.s), b = this.pd(g.e);
+      return { g, a, b };
+    }).filter(x => x.b && x.b.getTime() + 86399000 >= now)
+      .sort((x, y) => x.a - y.a).slice(0, 3)
+      .map(({ g, a, b }) => {
+        const tn = this.tone(g.t), started = a.getTime() <= now;
+        return {
+          n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—',
+          when: started ? '進行中 · 至 ' + this.md(b) : this.md(a) + ' 開始（' + Math.max(1, Math.ceil((a.getTime() - now) / 86400000)) + ' 天後）'
+        };
+      });
+
+    /* 計算結果 */
+    const epR = this.epResult(), pl = this.plan(), goal = +s.goal || 0, cur = +s.cur || 0;
+    const left = pl.left, plays = pl.plays, hours = pl.totalMin / 60;
+    const song = this.songById(s.songKey);
+    const modeLabels = { solo: '個人', auto: '自動', multi: '協力', cheer: '排位對戰' };
+
+    let resultLabel = '', resultValue = '', resultSub = '', resultStats = [], calcFields = [], formulaText = '', formulaNote = '', calcInputTitle = '';
+    if (s.ctab === 'ep') {
+      calcInputTitle = 'EP 精算參數';
+      calcFields = [
+        { k: 'skill', label: '平均技能倍率（實效）', value: s.skill },
+        { k: 's6', label: 'S6 倍率（第 6 技能欄）', value: s.s6 },
+        { k: 'score', label: '分數（直接輸入時使用）', value: s.score },
+        { k: 'life', label: '結束剩餘 Life（排位對戰）', value: s.life }
+      ];
+      resultLabel = '每局活動 P';
+      resultValue = this.n(epR.ep);
+      resultSub = modeLabels[s.mode] + ' · 加成 ' + s.bonus + '% · R' + epR.rate + ' · 體力 ' + s.energy + '（×' + epR.F + '）';
+      resultStats = [
+        { l: 'EP / 分鐘', v: this.n(epR.perMin), sub: '含載入 +15s' },
+        { l: 'EP / 小時', v: this.short(epR.perHour), sub: '不間斷周回' },
+        { l: '每體力 EP', v: this.n(epR.perEnergy), sub: '省體力指標' },
+        { l: '推算分數', v: this.short(epR.score), sub: s.scoreMode === 'direct' ? '直接輸入' : '由綜合力推算' }
+      ];
+      formulaText = epR.detail;
+      formulaNote = 'sekai-calculator v0.17（scoot method）：Solo/Auto 用 ⌊score/20000⌋；Multi/Cheer 用 ⌊(score + 0.075×綜合力×5)/17000⌋ + 123。體力倍率 0→1、1→5、2→10、3→15、4→20、5→25、6→27、7→29、8→31、9→33、10→35。';
+    } else if (s.ctab === 'eff') {
+      calcInputTitle = '效率排行參數';
+      calcFields = [
+        { k: 'skill', label: '平均技能倍率', value: s.skill },
+        { k: 's6', label: 'S6 倍率', value: s.s6 },
+        { k: 'interval', label: '每場間隔（秒）', value: s.interval }
+      ];
+      resultLabel = '目前選曲效率';
+      resultValue = this.short(epR.perHour) + ' EP/h';
+      resultSub = (song ? song.t : '未選曲') + ' · ' + epR.time + 's · R' + epR.rate;
+      resultStats = [
+        { l: '每局 EP', v: this.n(epR.ep), sub: modeLabels[s.mode] },
+        { l: '每分 EP', v: this.n(epR.perMin), sub: '含間隔' },
+        { l: '每小時場次', v: (3600 / (epR.time + (+s.interval || 50))).toFixed(1), sub: '間隔 ' + s.interval + 's' },
+        { l: '每小時體力', v: this.n(Math.round((+s.energy || 0) * 3600 / (epR.time + (+s.interval || 50)))), sub: '體力 ' + s.energy + '/場' }
+      ];
+      formulaText = 'EP/h = 每局 EP × 3600 ÷ (歌長 + 間隔)';
+      formulaNote = '排行依所選難度與模式重算全 640 首；間隔含結算與選歌時間，車隊常用 45–60 秒。';
+    } else if (s.ctab === 'plan') {
+      calcInputTitle = '活動試算';
+      calcFields = [
+        { k: 'goal', label: '目標 EP', value: s.goal },
+        { k: 'cur', label: '目前 EP', value: s.cur },
+        { k: 'skill', label: '平均技能倍率', value: s.skill },
+        { k: 's6', label: 'S6 倍率', value: s.s6 }
+      ];
+      resultLabel = '需要場次';
+      resultValue = plays ? this.n(plays) : '—';
+      resultSub = '距目標 ' + this.short(left) + ' EP · 每局 ' + this.n(epR.ep) + ' EP';
+      resultStats = [
+        { l: '所需時間', v: hours >= 1 ? hours.toFixed(1) + ' h' : Math.round(pl.totalMin) + ' 分', sub: '每局 ' + Math.round(epR.cycle) + 's' },
+        { l: '需要體力', v: this.n(pl.totalEnergy), sub: '每場 ' + s.energy + ' 體力' },
+        { l: '差引體力', v: this.n(pl.net), sub: '已扣可回復 ' + this.n(pl.recoverable) },
+        { l: '石換體約', v: this.n(pl.crystal), sub: '每 10 體 100 石' }
+      ];
+      formulaText = '場次 = ⌈(目標 − 目前) ÷ 每局 EP⌉；時間 = 場次 × (歌長 + 15s)';
+      formulaNote = '可回復體力 = 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10。';
+    } else if (s.ctab === 'mult') {
+      calcInputTitle = '推隊倍率';
+      calcFields = [
+        { k: 'leader', label: '隊長 %', value: s.leader },
+        { k: 'm1', label: '隊員 1 %', value: s.m1 },
+        { k: 'm2', label: '隊員 2 %', value: s.m2 },
+        { k: 'm3', label: '隊員 3 %', value: s.m3 },
+        { k: 'm4', label: '隊員 4 %', value: s.m4 }
+      ];
+      const mu = this.mult();
+      resultLabel = '推隊倍率';
+      resultValue = '×' + mu.toFixed(2);
+      resultSub = '隊長 ' + s.leader + '% ＋ 隊員平均';
+      resultStats = [{ l: '隊員總和', v: this.n((+s.m1 || 0) + (+s.m2 || 0) + (+s.m3 || 0) + (+s.m4 || 0)) + '%', sub: '÷ 5 計入' }];
+      formulaText = '[' + s.leader + ' + 100 + (隊員總和 ÷ 5)] ÷ 100 = ' + mu.toFixed(4);
+      formulaNote = '隊長技能全額計入，隊員技能總和除以 5。';
+    } else if (s.ctab === 'gacha') {
+      calcInputTitle = '抽卡天井';
+      calcFields = [
+        { k: 'gcC', label: '持有水晶', value: s.gcC },
+        { k: 'gcP', label: '已抽次數（貼紙）', value: s.gcP },
+        { k: 'gcV', label: '持有交換券', value: s.gcV }
+      ];
+      const g = this.gacha();
+      resultLabel = '預算內至少中 1 張';
+      resultValue = (g.pAfford * 100).toFixed(1) + '%';
+      resultSub = '現有水晶可抽 ' + g.afford + ' 次 · 天井 ' + g.ceil + ' 抽';
+      resultStats = [
+        { l: '期望抽數', v: g.eNo.toFixed(0), sub: '無天井 ≈ ' + this.short(g.eNo * 300) + ' 水晶' },
+        { l: '抽到即停', v: g.eCeil.toFixed(1), sub: '含天井保底' },
+        { l: '距天井', v: this.short(g.toCeil), sub: '水晶' }
+      ];
+      formulaText = 'P(N) = 1 − (1 − ' + g.p + ')^N';
+      formulaNote = g.note + '。4★ 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶。';
+    } else if (s.ctab === 'mysekai') {
+      calcInputTitle = 'MySekai 採集';
+      calcFields = [
+        { k: 'msFever', label: '炎倍率', value: s.msFever },
+        { k: 'msStam', label: '消費體力總量', value: s.msStam }
+      ];
+      const m = this.mysekai();
+      resultLabel = '每點體力 P';
+      resultValue = this.n(m.per);
+      resultSub = 'a = ' + m.a + ' → b = ' + m.b + ' · 炎 ×' + s.msFever;
+      resultStats = [
+        { l: '木/石/音色', v: this.n(m.per), sub: '1 體力 / 個' },
+        { l: '光/樽', v: this.n(Math.round(m.per * 0.5)), sub: '0.5 體力' },
+        { l: '植物/寶箱', v: this.n(Math.round(m.per * 0.2)), sub: '0.2 體力' },
+        { l: '合計', v: this.short(m.total), sub: '消費 ' + s.msStam + ' 體力' }
+      ];
+      formulaText = 'a = ⌊綜合力 / 45萬⌋（2 位）；b = ⌊(a+1) × (加成+100)/100⌋；每點體力 P = b × 100 × 炎';
+      formulaNote = '共用設定的綜合力與活動加成會直接套用。';
+    } else {
+      calcInputTitle = '排位賽';
+      calcFields = [
+        { k: 'rmAp', label: '我方 PERFECT', value: s.rmAp },
+        { k: 'rmAg', label: '我方 GREAT', value: s.rmAg },
+        { k: 'rmAd', label: '我方 GOOD', value: s.rmAd },
+        { k: 'rmBp', label: '對手 PERFECT', value: s.rmBp },
+        { k: 'rmBg', label: '對手 GREAT', value: s.rmBg },
+        { k: 'rmBd', label: '對手 GOOD', value: s.rmBd },
+        { k: 'rmWin', label: '預估勝率 %', value: s.rmWin },
+        { k: 'rmRP', label: '目前 RP（0–5）', value: s.rmRP },
+        { k: 'rmCls', label: '目標升 Class 數', value: s.rmCls }
+      ];
+      const r = this.rankMatch();
+      resultLabel = '判定分';
+      resultValue = this.n(r.sa) + ' : ' + this.n(r.sb);
+      resultSub = r.verdict;
+      resultStats = [
+        { l: '所需 RP', v: r.needRP, sub: '每 Class 5 RP' },
+        { l: '預估場數', v: r.games != null ? this.n(r.games) : '勝率不足', sub: '勝 +1 / 敗 −1' }
+      ];
+      formulaText = 'PERFECT×3 ＋ GREAT×2 ＋ GOOD×1，高者勝；同分比 PERFECT 數 → 最大連段 → 剩餘 Life';
+      formulaNote = '2024/09 起不再降段位，只降 Class。';
+    }
+
+    const boostTable = [0, 1, 2, 3, 5, 7, 10].map(b => {
+      const ep = this.epFor(b);
+      return { n: b + ' ×' + (this.EM[b] || 1), ep: this.n(ep), per: b > 0 ? this.n(Math.round(ep / b)) : '—', rowBg: b === s.energy ? 'color-mix(in oklab,var(--accent) 8%,transparent)' : 'transparent' };
+    });
+    const effRows = (s.ctab === 'eff' ? this.effRanking() : []).map((r, i) => ({
+      i: i + 1, title: r.title, meta: 'Lv.' + r.lv + ' · ' + r.time + 's · R' + r.rate,
+      eph: this.short(r.eph) + '/h', ep: this.n(r.ep) + ' EP',
+      numColor: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#e28743' : 'var(--text-3)',
+      rowBg: r.id === +s.songKey ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent'
+    }));
+
+    /* 教學 */
+    const tq = s.tq.trim().toLowerCase();
+    const tutAll = (s.tutQA || []).filter(x => {
+      if (s.tcat !== 'all' && x.cat !== s.tcat) return false;
+      if (!tq) return true;
+      return ((x.q || '') + (x.kw || '') + (x.a || '')).toLowerCase().includes(tq);
+    });
+    const catMeta = id => (s.tutCats || []).find(c => c.id === id) || { name: id, c: '#8b93ac' };
+    const tutRows = tutAll.slice(0, 60).map((x, i) => {
+      const key = x.cat + '::' + x.q, open = !!s.tOpen[key], cm = catMeta(x.cat);
+      return {
+        key, q: x.q, cat: cm.name, open,
+        catBg: cm.c, catFg: '#15203a',
+        border: open ? 'var(--border-2)' : 'var(--border)',
+        arrow: open ? 'rotate(180deg)' : 'none',
+        body: open ? React.createElement('div', { dangerouslySetInnerHTML: { __html: x.a || '' } }) : null
+      };
+    });
+
+    /* 卡池 / 歌曲 */
+    const gAll = this.filteredGachas(), gPer = 25;
+    const gPages = Math.max(1, Math.ceil(gAll.length / gPer));
+    const gp = Math.min(s.gp, gPages);
+    const gachaRows = gAll.slice((gp - 1) * gPer, gp * gPer).map(g => {
+      const tn = this.tone(g.t);
+      return {
+        range: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)),
+        n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—',
+        ev: g.eid ? ('#' + g.eid + ' ' + (g.et || '') + (g.ech ? ' · ' + g.ech : '')) : (g.note || '—')
+      };
+    });
+
+    const sAll = this.filteredSongs(), sPer = 30;
+    const sPages = Math.max(1, Math.ceil(sAll.length / sPer));
+    const sp = Math.min(s.sp, sPages);
+    const dColor = { 3: '#e0576a', 4: '#9a63d8', 5: '#f0619e' };
+    const songRows = sAll.slice((sp - 1) * sPer, sp * sPer).map(x => ({
+      id: x.id, title: x.title, composer: x.composer || '—',
+      units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
+      diffs: [3, 4, 5].filter(d => x.lv[d]).map(d => ({ v: x.lv[d], c: dColor[d] }))
+    }));
+
+    /* 排名 */
+    const rankList = s.rankTab === 'live' ? myRanks : myBorders;
+    const rankRows = rankList.slice(0, 100).map(r => ({
+      rank: s.rankTab === 'live' ? '#' + r.rank : 'T' + this.n(r.rank),
+      name: r.name, score: this.n(r.score),
+      extra: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
+      rankColor: r.rank === 1 ? '#eab308' : r.rank === 2 ? '#94a3b8' : r.rank === 3 ? '#e28743' : 'var(--ink)',
+      rowBg: String(r.uid) === String(s.pid) && s.pid ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent'
+    }));
+
+    const unitChips = [{ v: 'all', n: '全部', dot: 'var(--rainbow)' }].concat(Object.keys(this.UNITS).map(k => ({ v: k, n: this.UNITS[k].n, dot: this.UNITS[k].c })))
+      .map(u => {
+        const on = s.gu === u.v, c = u.v === 'all' ? null : this.UNITS[u.v].c;
+        const st = chip(on, c);
+        return Object.assign({}, u, st, { dot: on ? 'rgba(255,255,255,.85)' : u.dot, fg: on ? (u.v !== 'all' && this.UNITS[u.v] ? this.UNITS[u.v].t : '#fff') : 'var(--text)' });
+      });
+    const songUnitChips = [{ v: 'all', n: '全部', dot: 'var(--rainbow)' }].concat(Object.keys(this.UNITS).map(k => ({ v: k, n: this.UNITS[k].n, dot: this.UNITS[k].c })))
+      .map(u => {
+        const on = s.su === u.v, c = u.v === 'all' ? null : this.UNITS[u.v].c;
+        const st = chip(on, c);
+        return Object.assign({}, u, st, { dot: on ? 'rgba(255,255,255,.85)' : u.dot, fg: on ? (u.v !== 'all' && this.UNITS[u.v] ? this.UNITS[u.v].t : '#fff') : 'var(--text)' });
+      });
+
+    const cmdResults = this.buildCmd();
+    this._cmd = cmdResults;
+
+    const daySel = s.daySel;
+    const dayEvents = daySel ? (() => {
+      const p = daySel.split('-');
+      return this.eventsOn(new Date(+p[0], +p[1] - 1, +p[2]));
+    })() : [];
+
+    return {
+      isDesktop, isMobile: s.mobile,
+      isHome: s.page === 'home', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
+      isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
+      isDeckPro: s.page === 'deckpro',
+      isTut: s.page === 'tut', isRes: s.page === 'res',
+      pageTitle: P[0], pageSub: P[1],
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk,
+      twoCol: s.mobile ? '1fr' : '1fr 1fr',
+      threeCol: s.mobile ? '1fr' : 'repeat(3,1fr)',
+      calcCols: s.mobile ? '1fr' : '320px 1fr',
+      gachaCols: s.mobile ? '1fr' : '108px minmax(0,1.5fr) 92px minmax(0,1fr) minmax(0,.9fr)',
+      songCols: s.mobile ? '1fr' : '58px minmax(0,1.6fr) minmax(0,1fr) 150px',
+      rankCols: s.mobile ? '46px minmax(0,1fr) 88px 66px' : '60px minmax(0,1fr) 130px 110px',
+      rowGap: s.mobile ? '4px' : '12px',
+      rowPad: s.mobile ? '13px 15px' : '11px 16px',
+      dayH: s.mobile ? '54px' : '92px',
+
+      /* 首頁 */
+      liveState: s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : '進行中的活動'),
+      liveName: s.liveLoad ? '載入活動資訊…' : (ev.name || ev.event_name || (s.liveErr || '目前沒有進行中的活動')),
+      liveType: ev.id != null ? '第 ' + ev.id + ' 期' : '—',
+      liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
+      liveCountdown: endMs ? this.dur(endMs - now) : '—',
+      liveProgress: (prog * 100).toFixed(1) + '%',
+      liveProgressLabel: startMs && endMs ? '已過 ' + Math.round(prog * 100) + '%' : '',
+      hasPlayer: !!s.pid, noPlayer: !s.pid, pidInput: s.pidInput, playerErr: s.pErr,
+      playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
+      playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
+      playerStats: [
+        { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '—' },
+        { l: '本期活動 P', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
+        { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
+      ],
+      goal: s.goal, cur: s.cur,
+      goalPct: (goal > 0 ? Math.min(100, cur / goal * 100) : 0).toFixed(1) + '%',
+      goalPctLabel: (goal > 0 ? Math.min(100, cur / goal * 100).toFixed(1) : '0') + '%',
+      goalLeft: this.short(left),
+      goalStats: [
+        { l: '還需場次', v: plays ? this.n(plays) : '—' },
+        { l: '預估時間', v: plays ? hours.toFixed(1) + 'h' : '—' },
+        { l: '需要體力', v: this.n(pl.totalEnergy) }
+      ],
+      epPerPlay: this.n(epR.ep), modeLabel: modeLabels[s.mode], boost: s.energy,
+      upcoming,
+      unitTiles: [
+        ['vs', 'VIRTUAL SINGER', 'バーチャル・シンガー'],
+        ['ln', 'Leo/need', 'レオニード'],
+        ['mmj', 'MORE MORE JUMP!', 'モアモアジャンプ'],
+        ['vbs', 'Vivid BAD SQUAD', 'ビビッドバッドスクワッド'],
+        ['wxs', 'ワンダーランズ×ショウタイム', 'ワンダショ'],
+        ['n25', '25時、ナイトコードで。', 'ニーゴ']
+      ].map(([v, n, jp]) => ({
+        v, n, jp, c: this.UNITS[v] ? this.UNITS[v].c : 'var(--accent)',
+        count: (s.gachas || []).filter(g => this.unitOf(g.u) === v).length
+      })),
+      quickLinks: [
+        { id: 'calc', name: '活動 P 試算', sub: '一套設定通吃所有計算', dot: '#7fb4f7' },
+        { id: 'rank', name: '即時排名', sub: 'T100 與分段榜線', dot: '#ff9db4' },
+        { id: 'gacha', name: '卡池列表', sub: '235 筆台服預測', dot: '#ffd94d' },
+        { id: 'songs', name: '歌曲清單', sub: '難度與團體篩選', dot: '#c39df2' },
+        { id: 'calendar', name: '活動日曆', sub: '本月卡池一目瞭然', dot: '#3ee0a8' },
+        { id: 'res', name: '資源連結', sub: '官方・社群・工具', dot: '#b8e561' }
+      ],
+
+      /* 日曆 */
+      calTitle: s.calY + ' 年 ' + (s.calM + 1) + ' 月',
+      calDays: this.calendarDays(),
+      typeLegend: this.TONES.filter(t => t[0] !== 'World Link支援池').map(t => this.tone(t[0])),
+      hasDaySel: !!daySel, dayEvents, dayEmpty: !!daySel && dayEvents.length === 0,
+      daySelLabel: daySel ? daySel.replace(/-/g, '/') : '',
+
+      /* 卡池 */
+      gq: s.gq, gt: s.gt, unitChips,
+      gachaTypes: [{ v: '', n: '全部類型' }].concat(this.TONES.map(t => ({ v: t[0], n: t[2] }))),
+      gachaRows, gachaEmpty: gAll.length === 0,
+      gachaCount: '符合 ' + gAll.length + ' 筆 · 第 ' + gp + '／' + gPages + ' 頁',
+      gachaPageLabel: gp + ' / ' + gPages,
+
+      /* 歌曲 */
+      sq: s.sq, ssort: s.ssort, songUnitChips, songRows,
+      songCount: s.songs.length ? '共 ' + sAll.length + ' 首（全庫 ' + s.songs.length + '）' : '',
+      songPageLabel: sp + ' / ' + sPages,
+      songEmpty: !!s.songs.length && sAll.length === 0,
+      songBusy: s.songLoad || (!s.songs.length && !s.songErr) || !!s.songErr,
+      songStatus: s.songErr || '載入歌曲資料庫…',
+
+      /* 排名 */
+      rankTabs: [{ v: 'live', n: '即時排名' }, { v: 'border', n: '分段榜線' }].map(t => Object.assign({}, t, seg(s.rankTab === t.v))),
+      rankRows, rankBusy: s.liveLoad || (!rankRows.length && !s.liveLoad),
+      rankStatus: s.liveErr || (s.liveLoad ? '載入排名資料…' : '目前沒有排名資料'),
+      rankScoreLabel: s.rankTab === 'live' ? '活動 P' : '分數',
+      rankExtraLabel: s.rankTab === 'live' ? '1h 均速' : '—',
+
+      /* 計算中心 */
+      presets: Object.keys(this.PRESETS).map(k => Object.assign({ v: k, n: this.PRESETS[k].n }, chip(s.preset === k, 'var(--cta)'))),
+      sharedFields: [
+        { k: 'power', label: '隊伍綜合力', value: s.power },
+        { k: 'bonus', label: '活動加成 %', value: s.bonus },
+        { k: 'skill', label: '平均技能倍率', value: s.skill },
+        { k: 's6', label: 'S6 倍率', value: s.s6 }
+      ],
+      songPickCols: s.mobile ? '1fr' : '1fr 1.4fr',
+      epq: s.epq, songKey: s.songKey,
+      songRate: song ? song.rate : 100, songTime: song ? song.time : 0,
+      songOptions: (() => {
+        const q = s.epq.trim().toLowerCase();
+        let list = (s.epSongs || []);
+        if (q) list = list.filter(x => x.t.toLowerCase().includes(q));
+        list = list.slice(0, 240);
+        if (song && !list.some(x => x.id === song.id)) list = [song].concat(list);
+        return list.map(x => ({ v: x.id, n: '#' + x.id + ' ' + x.t + '（' + x.time + 's・R' + x.rate + '）' }));
+      })(),
+      diffChips: this.DIFFS.map(([k, n, c]) => {
+        const has = !!(song && song.d && song.d[k]), on = s.diff === k;
+        const st = chip(on, c);
+        return Object.assign({ v: k, n, c: on ? 'rgba(255,255,255,.85)' : c, lv: has ? song.d[k][0] : '—', op: has ? '1' : '.4', dis: !has, cur: has ? 'pointer' : 'not-allowed' }, st, { fg: on ? '#fff' : 'var(--text)' });
+      }),
+      boostChips: [0, 1, 2, 3, 5, 7, 10].map(b => Object.assign({ v: b, n: b, mult: '×' + (this.EM[b] || 1) }, chip(s.energy === b, 'var(--cta)'))),
+      scoreModeChips: [{ v: 'calc', n: '由綜合力推算' }, { v: 'direct', n: '直接輸入分數' }]
+        .map(m => Object.assign({}, m, chip(s.scoreMode === m.v, 'var(--ink-grad)'))),
+      scoreHint: s.scoreMode === 'calc'
+        ? '用譜面係數 × 綜合力 × 技能倍率推算分數：' + this.n(epR.score) + ' 分'
+        : '直接使用你輸入的分數：' + this.n(+s.score || 0) + ' 分',
+      hasEffTable: s.ctab === 'eff', effRows, effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
+      effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
+      hasPlanCards: s.ctab === 'plan',
+      planFields: [
+        { k: 'natHr', label: '自然回復（小時）', value: s.natHr },
+        { k: 'lCan', label: '大罐（×10）', value: s.lCan },
+        { k: 'sCan', label: '小罐（×5）', value: s.sCan },
+        { k: 'crys', label: '石換體（×10）', value: s.crys }
+      ],
+      planSummary: '需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
+      calcTabs: [
+        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
+        { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
+        { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }
+      ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),
+      tq: s.tq, tutDoc: s.tutDoc, tutRows, tutEmpty: tutAll.length === 0,
+      tutCount: (s.tutQA || []).length ? '符合 ' + tutAll.length + ' 則（全部 ' + s.tutQA.length + ' 則）' + (tutAll.length > 60 ? '，顯示前 60 則' : '') : '載入教學資料…',
+      tutCats: [{ v: 'all', n: '全部', dot: 'var(--rainbow)', count: (s.tutQA || []).length }]
+        .concat((s.tutCats || []).map(c => ({ v: c.id, n: c.name, dot: c.c, count: (s.tutQA || []).filter(x => x.cat === c.id).length })))
+        .map(c => {
+          const on = s.tcat === c.v, st = chip(on, c.v === 'all' ? null : c.dot);
+          return Object.assign({}, c, st, { dot: on ? 'rgba(255,255,255,.85)' : c.dot, fg: on ? '#fff' : 'var(--text)' });
+        }),
+      calcInputTitle, calcFields,
+      showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'plan',
+      modeChips: [
+        { v: 'solo', n: '個人' }, { v: 'auto', n: '自動' }, { v: 'multi', n: '協力' }, { v: 'cheer', n: '排位對戰' }
+      ].map(m => Object.assign({}, m, chip(s.mode === m.v, 'var(--ink-grad)'))),
+      showGcTarget: s.ctab === 'gacha',
+      gcTargets: [
+        { v: '0.004', n: '指定 PU 4★（0.4%）' }, { v: '0.03', n: '任一 4★・一般池（3%）' },
+        { v: '0.06', n: '任一 4★・Fes 池（6%）' }, { v: '0.03b', n: '生日限定卡（3%）' }
+      ].map(t => Object.assign({}, t, chip(s.gcT === t.v, 'var(--ink-grad)'))),
+      resultLabel, resultValue, resultSub, resultStats,
+      hasBoostTable: s.ctab === 'ep', boostTable,
+      showFormula: this.props.showFormulas !== false, formulaText, formulaNote,
+
+      /* 資源 */
+      resGroups: [
+        { label: '官方資源', items: [
+          { name: 'Project SEKAI 台服官網', url: 'https://project-sekai.com/tw/', sub: '台灣官方網站' },
+          { name: '@pjsekai_tw', url: 'https://twitter.com/pjsekai_tw', sub: '官方 Twitter/X' },
+          { name: 'Facebook 粉絲頁', url: 'https://www.facebook.com/pjsekaitw', sub: '官方 Facebook' },
+          { name: '日服官網', url: 'https://pjsekai.sega.jp/', sub: '日本官方（先行資訊）' }
+        ]},
+        { label: '資訊站', items: [
+          { name: 'Sekai.best', url: 'https://sekai.best/', sub: '英文綜合資料庫（卡牌、活動、歌曲）' },
+          { name: 'pjsk.moe', url: 'https://pjsk.moe/zh-tw/', sub: '繁中全功能站（圖鑑、profile、劇情）' },
+          { name: 'HiSekai（台服）', url: 'https://hisekai.org/tw', sub: '台服即時排名、歷史數據' },
+          { name: 'Haruki 友情連結', url: 'https://haruki.seiunx.com/friend-links', sub: '台服工具／社群友站集合' }
+        ]},
+        { label: '討論社群', items: [
+          { name: 'PTT ProjectSekai', url: 'https://www.ptt.cc/bbs/ProjectSekai/index.html', sub: '批踢踢專板' },
+          { name: '巴哈姆特哈啦板', url: 'https://forum.gamer.com.tw/B.php?bsn=36276', sub: '台灣討論板' },
+          { name: 'r/ProjectSekai', url: 'https://www.reddit.com/r/ProjectSekai/', sub: '國際社群' },
+          { name: 'Discord 世界計畫', url: 'https://discord.gg/pjsekai', sub: '中文伺服器' }
+        ]},
+        { label: 'Wiki 百科', items: [
+          { name: 'プロセカ攻略 wiki', url: 'https://pjsekai.com/', sub: '日文' },
+          { name: 'Gamerch Wiki', url: 'https://gamerch.com/pjsekai/', sub: '日文' },
+          { name: 'Fandom Wiki', url: 'https://projectsekai.fandom.com/', sub: '英文' },
+          { name: 'Sekaipedia', url: 'https://www.sekaipedia.org/', sub: '英文' }
+        ]},
+        { label: '本站工具', items: [
+          { name: 'EP 計算器', url: 'ep-calculator.html', sub: '640 首曲庫・EP／控分／排行' },
+          { name: '教學大全', url: 'tutorial.html', sub: '106 則問答・養成到衝榜' },
+          { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
+          { name: '抽卡模擬器', url: 'https://sekai.best/gacha', sub: 'Sekai.best' }
+        ]}
+      ],
+
+      /* 指令面板 */
+      cmdq: s.cmdq,
+      cmdResults: cmdResults.map((r, i) => ({
+        i, tag: r.tag, tagBg: r.tagBg, main: r.main, sub: r.sub,
+        bg: i === s.cmdi ? 'color-mix(in oklab,var(--accent) 8%,transparent)' : 'transparent'
+      })),
+      cmdEmpty: cmdResults.length === 0,
+      cmdRef: el => { if (el) this._cmdEl = el; },
+
+      /* 事件 */
+      onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      onDock: e => {
+        const p = e.currentTarget.dataset.p;
+        if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));
+        else this.go(p);
+      },
+      onSheetClose: () => this.setState({ sheet: false }),
+      onUnitGo: e => { this.setState({ page: 'gacha', gu: e.currentTarget.dataset.u, gp: 1, gq: '', gt: '' }); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {} },
+      onCmdOpen: () => this.openCmd(),
+      onCmdClose: () => this.setState({ cmdk: false }),
+      onCmdInput: e => this.setState({ cmdq: e.target.value, cmdi: 0 }),
+      onCmdKey: e => {
+        const n = (this._cmd || []).length;
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.setState(st => ({ cmdi: n ? (st.cmdi + 1) % n : 0 })); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState(st => ({ cmdi: n ? (st.cmdi - 1 + n) % n : 0 })); }
+        else if (e.key === 'Enter') { e.preventDefault(); const r = (this._cmd || [])[this.state.cmdi]; if (r) r.run(); }
+        else if (e.key === 'Escape') this.setState({ cmdk: false });
+      },
+      onCmdPick: e => { const r = (this._cmd || [])[+e.currentTarget.dataset.i]; if (r) r.run(); },
+      onField: e => {
+        const d = e.currentTarget.dataset, v = d.num ? (e.target.value === '' ? 0 : +e.target.value) : e.target.value;
+        const patch = { [d.k]: v };
+        if (d.k === 'gq' || d.k === 'gt') patch.gp = 1;
+        if (d.k === 'sq' || d.k === 'ssort') patch.sp = 1;
+        if (d.k === 'songKey') {
+          const sg = this.songById(v);
+          if (sg && sg.d && !sg.d[this.state.diff]) {
+            patch.diff = ['M', 'X', 'H', 'N', 'E', 'A'].find(k => sg.d[k]) || this.state.diff;
+          }
+        }
+        this.setState(patch);
+        if (d.k === 'goal' || d.k === 'cur') { try { localStorage.setItem('sekai-app-' + (d.k === 'goal' ? 'goal' : 'cur'), String(v)); } catch (er) {} }
+      },
+      onSet: e => {
+        const d = e.currentTarget.dataset, v = d.num ? +d.v : d.v;
+        const patch = { [d.k]: v };
+        if (d.k === 'gu') patch.gp = 1;
+        if (d.k === 'su') patch.sp = 1;
+        this.setState(patch);
+      },
+      onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
+      onTut: e => {
+        const k = e.currentTarget.dataset.i;
+        this.setState(st => {
+          const m = Object.assign({}, st.tOpen);
+          if (m[k]) delete m[k]; else m[k] = 1;
+          return { tOpen: m };
+        });
+      },
+      onPage: e => {
+        const d = e.currentTarget.dataset, k = d.k, dir = +d.d;
+        const max = k === 'gp' ? gPages : sPages;
+        this.setState(st => ({ [k]: Math.min(max, Math.max(1, (k === 'gp' ? gp : sp) + dir)) }));
+        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
+      },
+      onMonth: e => {
+        const d = +e.currentTarget.dataset.d;
+        if (d === 0) { const n = new Date(); this.setState({ calY: n.getFullYear(), calM: n.getMonth() }); return; }
+        this.setState(st => {
+          const m = st.calM + d;
+          return { calY: st.calY + Math.floor(m / 12), calM: (m + 12) % 12 };
+        });
+      },
+      onDay: e => { const k = e.currentTarget.dataset.k; this.setState(st => ({ daySel: st.daySel === k ? null : k })); },
+      onDayClose: () => this.setState({ daySel: null }),
+      onRefresh: () => { this.setState({ liveLoad: true }); this.loadLive(); },
+      onBind: () => {
+        const id = String(this.state.pidInput || '').trim();
+        if (!/^\d+$/.test(id)) { this.setState({ pErr: 'Player ID 應為純數字' }); return; }
+        this.setState({ pid: id, pErr: '', pidInput: '' });
+        try { localStorage.setItem('sekai-app-pid', id); } catch (er) {}
+        this.loadPlayer(id);
+      },
+      onUnbind: () => {
+        this.setState({ pid: '', pdata: null });
+        try { localStorage.removeItem('sekai-app-pid'); } catch (er) {}
+      }
+    };
+  }
+}
+
+</script>
+</body>
+</html>

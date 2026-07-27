@@ -655,9 +655,34 @@
             input[type=number],select{max-width:100%;}
             @media(max-width:600px){ .card-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:9px; } .cm-art { width:100%; } }
         }
+        /* ===== 內嵌模式（?embed=calc）：只顯示計算器，供 SEKAI App 以 iframe 載入 ===== */
+        .embed-tabbar{ display:none; }
+        body.embed-calc{ padding:0 !important; margin:0 !important; }
+        body.embed-calc #siteNav,
+        body.embed-calc .m-dock,
+        body.embed-calc header#top,
+        body.embed-calc .toc,
+        body.embed-calc footer{ display:none !important; }
+        body.embed-calc .container{ max-width:980px; margin:0 auto; padding:0 14px 44px; }
+        body.embed-calc .container > section{ display:none !important; }
+        body.embed-calc .container > section#calculator,
+        body.embed-calc .container > section#mysekai,
+        body.embed-calc .container > section#event-calc,
+        body.embed-calc .container > section#gacha-calc,
+        body.embed-calc .container > section#rank-match,
+        body.embed-calc .container > section#run-studio{ display:block !important; scroll-margin-top:64px; }
+        body.embed-calc .embed-tabbar{ display:flex; position:sticky; top:0; z-index:50; gap:6px;
+            padding:10px 2px; margin-bottom:8px; overflow-x:auto; background:var(--bg);
+            border-bottom:1px solid var(--border); -webkit-overflow-scrolling:touch; }
+        body.embed-calc .embed-tabbar::-webkit-scrollbar{ height:0; }
+        body.embed-calc .embed-tabbar a{ flex:none; padding:7px 14px; border:1px solid var(--border);
+            border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; color:var(--text);
+            white-space:nowrap; background:var(--card); transition:transform .2s; }
+        body.embed-calc .embed-tabbar a:active{ transform:scale(.94); }
     </style>
 </head>
 <body>
+    <script>try{if(new URLSearchParams(location.search).get('embed')==='calc')document.body.classList.add('embed-calc');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
@@ -5367,6 +5392,38 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 window._calResizeTimer = setTimeout(renderCalendar, 200);
             });
         });
+    </script>
+    <script>
+    /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
+    (function(){
+        try{
+            var q = new URLSearchParams(location.search);
+            if(q.get('embed') !== 'calc') return;
+            document.body.classList.add('embed-calc');
+            var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
+            var bar = document.createElement('div');
+            bar.className = 'embed-tabbar';
+            tabs.forEach(function(t){
+                var a = document.createElement('a');
+                a.href = '#' + t[0];
+                a.textContent = t[1];
+                bar.appendChild(a);
+            });
+            var c = document.querySelector('.container');
+            if(c) c.insertBefore(bar, c.firstChild);
+            var last = 0;
+            function postH(){
+                try{
+                    var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+                    if(Math.abs(h - last) > 8){ last = h; parent.postMessage({ sekaiCalcHeight: h }, '*'); }
+                }catch(e){}
+            }
+            window.addEventListener('load', postH);
+            window.addEventListener('resize', postH);
+            if(window.ResizeObserver){ try{ new ResizeObserver(postH).observe(document.body); }catch(e){} }
+            setInterval(postH, 1200);
+        }catch(e){}
+    })();
     </script>
 </body>
 </html>
