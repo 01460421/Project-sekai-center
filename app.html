@@ -950,11 +950,16 @@ class Component extends DCLogic {
       const d = await this.apiFetch('/user/' + id + '/profile');
       const u = d.user || d.userProfile || d.profile || d || {};
       const gd = d.userGamedata || d.user_gamedata || u.gamedata || u;
-      const power = u.total_power || u.totalPower || u.deck_total_power || u.power || null;
+      const tp = d.totalPower || {};
+      const power = tp.totalPower || tp.total_power || u.total_power || u.totalPower || u.deck_total_power || u.power || null;
+      const chHigh = (d.userChallengeLiveSoloResult && d.userChallengeLiveSoloResult.highScore) || null;
+      const deckName = (d.userDeck && d.userDeck.name) || null;
       this.setState(s => ({
         pdata: Object.assign({}, s.pdata || {}, {
           name: gd.name || u.name || ('玩家 ' + id),
-          rank: gd.rank || u.rank || null, power
+          rank: gd.rank || u.rank || null, power,
+          basePower: tp.basicCardTotalPower || null, charRankBonus: tp.characterRankBonus || null,
+          chHigh, deckName
         }), pErr: ''
       }));
       if (this.state.live) this.matchMyRank(this.state.live);
