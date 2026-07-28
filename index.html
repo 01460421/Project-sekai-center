@@ -5281,6 +5281,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const sCv = per.reduce((s, p) => s + (p.canvas || 0), 0);
                 const sEpi = per.reduce((s, p) => s + (p.epi || 0), 0);
                 const pct = x => sB ? (x / sB * 100).toFixed(1) : '0';
+                const skills = best.skills || [];   // 最高推隊倍率＝同倍率計算器算法 [隊長+100+隊友總和/5]/100
+                const leaderSk = skills.length ? Math.max(...skills) : 0;
+                const teamMult = skills.length ? ((leaderSk + 100 + (skills.reduce((a, b) => a + b, 0) - leaderSk) / 5) / 100) : 0;
                 card.innerHTML = `
                     <div class="ms-top">
                         <div class="ms-ev"><span class="ms-type">${typeName}</span><span class="ms-evname">${evName}</span></div>
@@ -5290,6 +5293,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div class="ms-kvs">
                         <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
                         <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
+                        <div class="ms-kv"><span>最高推隊倍率</span><b>×${teamMult.toFixed(2)}</b></div>
                     </div>
                     <div class="ms-break">綜合力＝基礎表現力 ${sB.toLocaleString()}（每張≈${Math.round(sB / (per.length || 5)).toLocaleString()}，含前後篇 ${sEpi.toLocaleString()}＋畫布 ${sCv.toLocaleString()}）　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%</div>
                     ${useEP ? `<div class="ms-ep">

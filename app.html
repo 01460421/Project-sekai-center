@@ -377,6 +377,7 @@ input::placeholder{color:var(--text-3)}
       <select value="{{ ssort }}" onChange="{{ onField }}" data-k="ssort" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
         <option value="id">ID 由小到大</option><option value="new">最新加入</option><option value="master">MASTER 難度高→低</option>
       </select>
+      <button type="button" onClick="{{ onShuffleAll }}" title="隨機連續播放全曲庫" style="padding:11px 17px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sh-xs);white-space:nowrap">🔀 隨機連播</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
       <sc-for list="{{ songUnitChips }}" as="u" hint-placeholder-count="7">
@@ -475,7 +476,7 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-3);margin-bottom:11px;line-height:1.6">技能倍率：單人單卡 <b>下限 20%</b> ～ <b>上限 160%</b>；整隊倍率上限約 <b>288%</b>。</div>
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:11px;line-height:1.6">此處「技能倍率」＝一首歌<b>全隊平均技能總倍率</b>（常見填 2.0～3.0，如 2.5 / 2.9 / 3.0，可自由填不設上限）。參考：單張卡單次技能 20%～160%、單次最高推隊倍率約 ×2.88。</div>
       <div style="display:grid;grid-template-columns:{{ songPickCols }};gap:10px;margin-bottom:12px">
         <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">找歌（640 首曲庫）</span>
           <input type="text" placeholder="曲名關鍵字…" value="{{ epq }}" onInput="{{ onField }}" data-k="epq" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)"></label>
@@ -692,6 +693,18 @@ input::placeholder{color:var(--text-3)}
   </div>
 </main>
 
+<!-- ========== 全局音樂播放器（隨機連播） ========== -->
+<sc-if value="{{ playerOn }}">
+<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:58;display:flex;align-items:center;gap:7px;max-width:calc(100vw - 20px);padding:7px 9px 7px 14px;border-radius:999px;background:color-mix(in oklab,var(--card) 92%,transparent);backdrop-filter:blur(22px) saturate(1.6);border:1px solid var(--border);box-shadow:var(--sh-md)">
+  <span style="font-size:15px;color:var(--accent)">♪</span>
+  <span style="font-size:12.5px;font-weight:700;color:var(--ink);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerCur }}</span>
+  <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:30px;height:30px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:12px;cursor:pointer">⏮</button>
+  <button type="button" onClick="{{ onPlayerToggle }}" title="播放/暫停" style="width:34px;height:34px;flex:none;border:none;border-radius:50%;background:var(--cta);color:#fff;font-size:13px;cursor:pointer">{{ playerIcon }}</button>
+  <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:30px;height:30px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:12px;cursor:pointer">⏭</button>
+  <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:30px;height:30px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);font-size:12px;cursor:pointer">✕</button>
+</div>
+</sc-if>
+
 <!-- ========== 行動版 dock ========== -->
 <sc-if value="{{ isMobile }}">
 <div style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--border);box-shadow:var(--sh-md)">
@@ -877,7 +890,7 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
@@ -1628,6 +1641,7 @@ class Component extends DCLogic {
       isTut: s.page === 'tut', isRes: s.page === 'res',
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
+      playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       songOpen: !!s.songId,
       songDetailData: (() => {
         if (!s.songId) return null;
@@ -1860,17 +1874,45 @@ class Component extends DCLogic {
         if (e && e.stopPropagation) e.stopPropagation();   // 別觸發整列的詳情
         const abn = e.currentTarget.dataset.abn;
         if (!abn) return;
-        try {
-          if (this._audio && this.state.playAbn === abn) { this._audio.pause(); this.setState({ playAbn: '' }); return; }   // 再點同一首＝暫停
-          if (this._audio) this._audio.pause();
-          this._audio = new Audio();
-          this._audio.referrerPolicy = 'no-referrer';   // storage.sekai.best 防盜連，帶 Referer 會 403
-          this._audio.src = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
-          this._audio.onended = () => this.setState({ playAbn: '' });
-          this._audio.play().catch(() => this.setState({ playAbn: '' }));
-          this.setState({ playAbn: abn });
-        } catch (er) {}
+        if (this.state.playAbn === abn && this._audio) { this._audio.pause(); this.setState({ playAbn: '', playerOn: false }); return; }   // 再點同一首＝暫停
+        this._queue = null;   // 單首試聽：離開連播佇列
+        this._playAbnDirect(abn, '');
       },
+      _playAbnDirect(abn, title) {
+        if (!abn) return;
+        if (this._audio) this._audio.pause();
+        if (this._audioUrl) { try { URL.revokeObjectURL(this._audioUrl); } catch (er) {} this._audioUrl = ''; }
+        this.setState({ playAbn: abn, playerCur: title || this.state.playerCur });
+        const url = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
+        // storage.sekai.best 防盜連：<audio src> 直連會被 403 → 用 fetch(no-referrer) 取 blob 再播
+        fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.ok ? r.blob() : Promise.reject()).then(blob => {
+          if (this.state.playAbn !== abn) return;
+          this._audioUrl = URL.createObjectURL(blob);
+          this._audio = new Audio(this._audioUrl);
+          this._audio.onended = () => this._onEnded();
+          this._audio.play().catch(() => this.setState({ playAbn: '' }));
+        }).catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });   // 連播時該首失敗→跳下一首
+      },
+      _onEnded() {
+        if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); }
+        else this.setState({ playAbn: '' });
+      },
+      onShuffleAll: () => {   // 隨機連續播放（依目前篩選/搜尋的播放範圍）
+        const list = ((this.filteredSongs ? this.filteredSongs() : this.state.songs) || []).filter(x => x.abn);
+        if (!list.length) { this.loadSongs(); return; }
+        for (let i = list.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = list[i]; list[i] = list[j]; list[j] = t; }
+        this._queue = list.map(x => ({ abn: x.abn, title: x.title })); this._qIdx = 0;
+        this.setState({ playerOn: true });
+        this._playAbnDirect(this._queue[0].abn, this._queue[0].title);
+      },
+      onPlayerNext: () => { if (this._queue) this._onEnded(); },
+      onPlayerPrev: () => { if (this._queue) { this._qIdx = (this._qIdx - 1 + this._queue.length) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); } },
+      onPlayerToggle: () => {
+        if (!this._audio) return;
+        if (this.state.playAbn) { this._audio.pause(); this.setState({ playAbn: '' }); }
+        else { this._audio.play().catch(() => {}); this.setState({ playAbn: this._queue && this._queue[this._qIdx] ? this._queue[this._qIdx].abn : this.state.playAbn }); }
+      },
+      onPlayerStop: () => { if (this._audio) this._audio.pause(); this._queue = null; this.setState({ playerOn: false, playAbn: '', playerCur: '' }); },
       onDock: e => {
         const p = e.currentTarget.dataset.p;
         if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));
