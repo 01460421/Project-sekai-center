@@ -681,17 +681,14 @@
             white-space:nowrap; background:var(--card); transition:transform .2s; }
         body.embed-calc .embed-tabbar a:active{ transform:scale(.94); }
         /* ===== 內嵌小窗模式（?embed=ministudio）：首頁「當期跑榜」卡 ===== */
-        #mini-studio{ display:none; }
-        body.embed-ministudio{ padding:0 !important; margin:0 !important; background:transparent; }
-        body.embed-ministudio #siteNav,
-        body.embed-ministudio .m-dock,
-        body.embed-ministudio header#top,
-        body.embed-ministudio .toc,
-        body.embed-ministudio footer,
-        body.embed-ministudio .embed-tabbar{ display:none !important; }
-        body.embed-ministudio .container{ max-width:100%; margin:0; padding:0; }
-        body.embed-ministudio .container > section{ display:none !important; }
+        #mini-studio, #deck-detail{ display:none; }
+        body.embed-ministudio, body.embed-deck{ padding:0 !important; margin:0 !important; background:transparent; }
+        body.embed-ministudio #siteNav, body.embed-ministudio .m-dock, body.embed-ministudio header#top, body.embed-ministudio .toc, body.embed-ministudio footer, body.embed-ministudio .embed-tabbar,
+        body.embed-deck #siteNav, body.embed-deck .m-dock, body.embed-deck header#top, body.embed-deck .toc, body.embed-deck footer, body.embed-deck .embed-tabbar{ display:none !important; }
+        body.embed-ministudio .container, body.embed-deck .container{ max-width:100%; margin:0; padding:0; }
+        body.embed-ministudio .container > section, body.embed-deck .container > section{ display:none !important; }
         body.embed-ministudio .container > section#mini-studio{ display:block !important; }
+        body.embed-deck .container > section#deck-detail{ display:block !important; }
         .ms-card{ font-size:13px; color:var(--text); }
         .ms-msg{ padding:24px 6px; text-align:center; color:var(--text-light); font-size:13px; }
         .ms-top{ margin-bottom:12px; }
@@ -720,7 +717,7 @@
     </style>
 </head>
 <body>
-    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');}catch(e){}</script>
+    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
@@ -1900,6 +1897,10 @@
 
         <section id="mini-studio">
             <div id="msCard" class="ms-card"><div class="ms-msg">載入當期跑榜…</div></div>
+        </section>
+
+        <section id="deck-detail">
+            <div id="deckDetailCard" class="ms-card"><div class="ms-msg">載入我的編組…</div></div>
         </section>
 
         <footer>
@@ -5293,6 +5294,55 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         };
 
         // ========== 歌曲刷 P 效率(music_metas) ==========
+        // ===== 玩家編組詳情（?embed=deck&pid=）：真實隊伍 + 精確加成/綜合力（重用 RunStudio._cardBonus + PowerEngine）=====
+        const DeckDetail = {
+            async run() {
+                const el = document.getElementById('deckDetailCard'); if (!el) return;
+                const pid = new URLSearchParams(location.search).get('pid');
+                if (!pid) { el.innerHTML = '<div class="ms-msg">未指定玩家 ID。</div>'; return; }
+                el.innerHTML = '<div class="ms-msg">載入我的編組…</div>';
+                let profile;
+                try { profile = await apiFetch('/user/' + pid + '/profile'); }
+                catch (e) { el.innerHTML = '<div class="ms-msg">玩家資料載入失敗。</div>'; return; }
+                try {
+                    await EventCalc.ensure();
+                    await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
+                    const [cards, evCards] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('eventCards.json')]);
+                    const cardById = {}; cards.forEach(c => cardById[c.id] = c);
+                    const ud = profile.userDeck || {};
+                    const ucById = {}; (profile.userCards || []).forEach(u => ucById[u.cardId] = u);
+                    const memberIds = [ud.member1, ud.member2, ud.member3, ud.member4, ud.member5].filter(Boolean);
+                    const list = await EventScan.loadList();
+                    const now = Date.now();
+                    const started = list.filter(e => new Date(e.start_at).getTime() <= now).sort((a, b) => b.id - a.id);
+                    const evId = started.length ? started[0].id : (list[0] && list[0].id);
+                    RunStudio._evId = evId;   // _cardBonus 用
+                    RunStudio._twMax = list.reduce((m, e) => Math.max(m, e.id), 0);
+                    const src = { deck: EventCalc._deck, cards, evCards, type: EventCalc._types[evId], ev: EventScan.evInfo(evId), isJP: false };
+                    const members = memberIds.map(id => {
+                        const c = cardById[id]; if (!c) return null;
+                        const uc = ucById[id] || {};
+                        const trained = uc.specialTrainingStatus === 'done' || uc.defaultImage === 'special_training' || uc.defaultImage === 'special';
+                        return { c, uc, trained, bonus: RunStudio._cardBonus(c, evId, src) };
+                    }).filter(Boolean);
+                    if (!members.length) { el.innerHTML = '<div class="ms-msg">查無編組卡片（此玩家可能未公開）。</div>'; return; }
+                    const totalBonus = Math.round(members.reduce((s, m) => s + m.bonus.per, 0) * 10) / 10;
+                    const pwMembers = members.map(m => ({ card: m.c, level: m.uc.level || PowerEngine.cardMaxLevel(m.c), trained: m.trained, epiRead: true, mr: m.uc.masterRank || 0, rank: 200 }));
+                    const pw = PowerEngine.teamPower(pwMembers, 15, 7);
+                    const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+                    const thumb = (c, tr) => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${tr && (c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
+                    const evName = (src.ev && src.ev.name) || ('#' + evId);
+                    el.innerHTML = `
+                        <div class="ms-top"><div class="ms-ev"><span class="ms-type">我的編組</span><span class="ms-evname">${ud.name || '隊伍'}</span></div>
+                        <div class="ms-sub">當期活動：${evName}　・依你的實際等級/突破/專精精算</div></div>
+                        <div class="ms-thumbs">${members.map(m => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(m.c, m.trained)}" onerror="this.style.opacity=.15"><span>${EC_cidName(m.c.characterId)}</span><i>＋${m.bonus.per}%</i></div>`).join('')}</div>
+                        <div class="ms-kvs"><div class="ms-kv"><span>綜合力</span><b>${pw.total.toLocaleString()}</b></div><div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div></div>
+                        <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>突破</th><th>加成</th><th>綜合力</th></tr></thead>
+                        <tbody>${members.map((m, i) => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·專精' : ''}</td><td class="score">＋${m.bonus.per}%</td><td class="score">${pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>
+                        <div class="ms-break">加成＝符合當期活動的卡（deck＋特效＋MR）；綜合力用你的實際等級/MR/專精＋區域道具Lv15＋角色滿5%＋豆森7%＋畫布。純V家/非當期加成的卡顯示＋0%。</div>`;
+                } catch (e) { el.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; }
+            }
+        };
         const SongEff = {
             _metas: null, _loaded: false, _loading: false,
             ensure() {
@@ -5597,8 +5647,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
     (function(){
         try{
             var mode = new URLSearchParams(location.search).get('embed');
-            if(mode !== 'calc' && mode !== 'ministudio') return;
-            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : 'embed-calc');
+            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck') return;
+            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : 'embed-calc');
             if(mode === 'calc'){
                 var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
                 var bar = document.createElement('div');
@@ -5615,6 +5665,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             if(mode === 'ministudio'){
                 var run = function(){ try{ if(typeof RunStudio !== 'undefined' && RunStudio.miniRun) RunStudio.miniRun(); }catch(e){} };
                 if(document.readyState === 'complete') run(); else window.addEventListener('load', run);
+            }
+            if(mode === 'deck'){
+                var runD = function(){ try{ if(typeof DeckDetail !== 'undefined') DeckDetail.run(); }catch(e){} };
+                if(document.readyState === 'complete') runD(); else window.addEventListener('load', runD);
             }
             var last = 0;
             function postH(){
