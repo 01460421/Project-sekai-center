@@ -475,6 +475,7 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
       </div>
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:11px;line-height:1.6">技能倍率：單人單卡 <b>下限 20%</b> ～ <b>上限 160%</b>；整隊倍率上限約 <b>288%</b>。</div>
       <div style="display:grid;grid-template-columns:{{ songPickCols }};gap:10px;margin-bottom:12px">
         <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">找歌（640 首曲庫）</span>
           <input type="text" placeholder="曲名關鍵字…" value="{{ epq }}" onInput="{{ onField }}" data-k="epq" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)"></label>
@@ -1729,7 +1730,7 @@ class Component extends DCLogic {
       ],
       planSummary: '需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
       calcTabs: [
-        { v: 'ep', n: 'EP 精算' }, { v: 'plan', n: '活動試算' },
+        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
         { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }
       ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),

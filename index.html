@@ -1379,7 +1379,7 @@
         <!-- 十、推隊倍率計算器 -->
         <section id="calculator">
             <h2>十、推隊倍率計算器 <span class="en">Team Multiplier</span></h2>
-            <div class="note">公式：<code>[隊長% + 100% + (隊員%總和÷5)] ÷ 100%</code>　單卡技能倍率範圍：<strong>最低下限 18%</strong> ～ <strong>最高上限 288%</strong>（Fes 吸滿隊友技能）。</div>
+            <div class="note">公式：<code>[隊長% + 100% + (隊員%總和÷5)] ÷ 100%</code>　單人單卡技能：<strong>下限 20%</strong> ～ <strong>上限 160%</strong>；整隊倍率上限約 <strong>288%</strong>。</div>
             <div class="calculator">
                 <div class="calc-section">
                     <h4>隊長技能</h4>
@@ -1880,7 +1880,7 @@
                         <button type="button" onclick="RunStudio.calc()" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">確認計算場均 ▶</button>
                     </div>
                     <div class="calc-section">
-                        <h4>5 人技能加分 %(協力房)<span style="font-weight:400;font-size:11px;color:var(--text-light);">　單卡倍率 18%（最低）～ 288%（最高）</span></h4>
+                        <h4>5 人技能加分 %(協力房)<span style="font-weight:400;font-size:11px;color:var(--text-light);">　單卡 20%～160%・整隊上限約 288%</span></h4>
                         <div class="calc-row" style="margin-bottom:6px;"><label>角色等級(BloomFES用)</label><input type="number" id="rsCharRank" value="50" min="1" max="200" oninput="RunStudio.onEvent()"></div>
                         <div class="member-grid">
                             <div class="member-item"><label>自己(我的編組)</label><input type="number" id="rsP0" value="130" oninput="RunStudio.calc()"></div>
