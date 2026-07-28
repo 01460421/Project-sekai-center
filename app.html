@@ -178,7 +178,7 @@ input::placeholder{color:var(--text-3)}
           </div>
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" onClick="{{ onUnbind }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">解除綁定</button>
-            <button type="button" onClick="{{ onGo }}" data-p="rank" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">看完整榜</button>
+            <button type="button" onClick="{{ onGo }}" data-p="rank" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">查看排名細節</button>
           </div>
         </sc-if>
         <sc-if value="{{ noPlayer }}">
@@ -901,7 +901,9 @@ class Component extends DCLogic {
       try {
         const r = await fetch(u, { headers: { Accept: 'application/json' } });
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        return await r.json();
+        const text = await r.text();
+        // 19 位大整數 userId > Number.MAX_SAFE_INTEGER，直接 JSON.parse 會失精 → 名次比對比不中；先把「字串key: 16位以上整數」轉字串
+        return JSON.parse(text.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
       } catch (e) { err = e; }
     }
     throw err || new Error('fetch failed');
@@ -941,7 +943,7 @@ class Component extends DCLogic {
 
   matchMyRank(top) {
     const me = this.ranksOf(top).find(r => r.uid && r.uid === String(this.state.pid));
-    if (me) this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { myRank: me.rank, myScore: me.score }) }));
+    if (me) this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { myRank: me.rank, myScore: me.score, mySpeed: me.speed1h }) }));
   }
   async loadPlayer(id) {
     try {
@@ -1533,8 +1535,9 @@ class Component extends DCLogic {
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
       playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
       playerStats: [
-        { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '—' },
+        { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '未進前100' },
         { l: '本期活動 P', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
+        { l: '本期時速', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
         { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
       ],
       goal: s.goal, cur: s.cur,
