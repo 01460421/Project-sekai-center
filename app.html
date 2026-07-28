@@ -69,6 +69,7 @@ input::placeholder{color:var(--text-3)}
 @keyframes sheetUp{from{transform:translateY(103%)}to{transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@media (max-width:900px){main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 </style>
 </helmet>
 
@@ -178,7 +179,7 @@ input::placeholder{color:var(--text-3)}
           </div>
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" onClick="{{ onUnbind }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">解除綁定</button>
-            <button type="button" onClick="{{ onGo }}" data-p="rank" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">查看排名細節</button>
+            <button type="button" onClick="{{ onMyDetail }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">查看排名細節</button>
           </div>
         </sc-if>
         <sc-if value="{{ noPlayer }}">
@@ -442,7 +443,7 @@ input::placeholder{color:var(--text-3)}
         <span>#</span><span>玩家</span><span style="text-align:right">{{ rankScoreLabel }}</span><span style="text-align:right">{{ rankExtraLabel }}</span>
       </div>
       <sc-for list="{{ rankRows }}" as="r" hint-placeholder-count="10">
-        <div style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s" style-hover="background:var(--bg-soft)">
+        <div onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
           <span style="font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
           <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:var(--ink)">{{ r.score }}</span>
@@ -720,6 +721,37 @@ input::placeholder{color:var(--text-3)}
 </div>
 </sc-if>
 
+<!-- ========== 排名詳情（點排名列） ========== -->
+<sc-if value="{{ detailOpen }}">
+<div onClick="{{ onDetailClose }}" style="position:fixed;inset:0;z-index:74;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:75;width:min(560px,calc(100vw - 24px));max-height:82vh;overflow-y:auto;padding:20px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:sheetUp .45s cubic-bezier(.34,1.45,.44,1)">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+    <span style="font-size:16px;font-weight:800;color:var(--ink)">{{ detailData.title }}</span>
+    <button type="button" onClick="{{ onDetailClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2);margin-bottom:14px">
+    <span>總分 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.score }}</b></span>
+    <span>1h均速 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.speed1h }}</b></span>
+    <span>最後 <b style="color:var(--ink)">{{ detailData.lastPlayed }}</b></span>
+  </div>
+  <div style="overflow-x:auto"><div style="min-width:400px">
+    <div style="display:grid;grid-template-columns:1.1fr .9fr 1fr 1fr .9fr;gap:2px;font-size:11px;color:var(--text-3);font-weight:700;padding:0 4px 6px">
+      <span>時段</span><span style="text-align:right">周回</span><span style="text-align:right">時段得分</span><span style="text-align:right">場均</span><span style="text-align:right">時速</span>
+    </div>
+    <sc-for list="{{ detailData.rows }}" as="pr" hint-placeholder-count="3">
+      <div style="display:grid;grid-template-columns:1.1fr .9fr 1fr 1fr .9fr;gap:2px;padding:9px 4px;border-top:1px solid var(--border);font-size:13px;font-family:'M PLUS Rounded 1c'">
+        <span style="color:var(--text-2);font-family:'Huninn'">{{ pr.label }}</span>
+        <span style="text-align:right">{{ pr.count }}</span>
+        <span style="text-align:right">{{ pr.score }}</span>
+        <span style="text-align:right;color:var(--accent-deep)">{{ pr.avg }}</span>
+        <span style="text-align:right">{{ pr.speed }}</span>
+      </div>
+    </sc-for>
+  </div></div>
+  <div style="font-size:11px;color:var(--text-3);margin-top:11px;line-height:1.6">周回＝該時段遊玩局數；時段得分＝該時段累積活動P；場均＝每局平均得分；時速＝每小時活動P。資料 HiSekai，僅前 100 名有逐時段細節。</div>
+</div>
+</sc-if>
+
 <!-- ========== ⌘K 指令面板 ========== -->
 <sc-if value="{{ cmdkOpen }}">
 <div onClick="{{ onCmdClose }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,14,28,.45);backdrop-filter:blur(10px) saturate(1.2);animation:fadeIn .25s ease"></div>
@@ -793,7 +825,7 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
@@ -876,6 +908,15 @@ class Component extends DCLogic {
   short(v) { v = +v || 0; return v >= 10000 ? (v / 10000).toFixed(v >= 1000000 ? 0 : 2) + 'W' : v.toLocaleString('en-US'); }
   pd(s) { if (!s) return null; const p = String(s).split('/'); return p.length < 3 ? null : new Date(+p[0], +p[1] - 1, +p[2]); }
   md(d) { return d ? (d.getMonth() + 1) + '/' + d.getDate() : ''; }
+  ago(ts) {
+    if (!ts) return '—';
+    const t = new Date(ts).getTime(); if (!t) return '—';
+    const s = Math.max(0, (Date.now() - t) / 1000);
+    if (s < 60) return Math.floor(s) + ' 秒前';
+    if (s < 3600) return Math.floor(s / 60) + ' 分前';
+    if (s < 86400) return Math.floor(s / 3600) + ' 時前';
+    return Math.floor(s / 86400) + ' 天前';
+  }
   dur(ms) {
     if (ms == null) return '—';
     if (ms <= 0) return '已結束';
@@ -926,7 +967,9 @@ class Component extends DCLogic {
       score: Number(r.score != null ? r.score : r.event_point != null ? r.event_point : r.point),
       speed1h: (r.last_1h_stats && r.last_1h_stats.speed) != null ? r.last_1h_stats.speed : null,
       name: r.name || r.user_name || r.nickname || prof.name || '—',
-      uid: String(r.user_id != null ? r.user_id : r.userId != null ? r.userId : prof.id != null ? prof.id : r.id || '')
+      uid: String(r.user_id != null ? r.user_id : r.userId != null ? r.userId : prof.id != null ? prof.id : r.id || ''),
+      stats: { h1: r.last_1h_stats || null, h3: r.last_3h_stats || null, h24: r.last_24h_stats || null },
+      lastPlayed: r.last_played_at || null
     };
   }
   ranksOf(d) {
@@ -1480,13 +1523,25 @@ class Component extends DCLogic {
 
     /* 排名 */
     const rankList = s.rankTab === 'live' ? myRanks : myBorders;
-    const rankRows = rankList.slice(0, 100).map(r => ({
+    this._rankList = rankList;   // 快取供 onRankClick 依 index 取詳情
+    const rankRows = rankList.slice(0, 100).map((r, idx) => ({
+      i: idx,
       rank: s.rankTab === 'live' ? '#' + r.rank : 'T' + this.n(r.rank),
       name: r.name, score: this.n(r.score),
       extra: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
       rankColor: r.rank === 1 ? '#eab308' : r.rank === 2 ? '#94a3b8' : r.rank === 3 ? '#e28743' : 'var(--ink)',
-      rowBg: String(r.uid) === String(s.pid) && s.pid ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent'
+      rowBg: String(r.uid) === String(s.pid) && s.pid ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent',
+      canDetail: s.rankTab === 'live' && !!(r.stats && (r.stats.h1 || r.stats.h3 || r.stats.h24))
     }));
+    /* 排名詳情 sheet：周回/時段得分/場均/時速（1h/3h/24h），同資源中心 */
+    const dt = s.detail;
+    const perRow = (label, x) => ({ label, count: x && x.count != null ? this.n(x.count) + ' 回' : '—', score: x && x.score != null ? this.n(x.score) : '—', avg: x && x.average != null ? this.n(x.average) : '—', speed: x && x.speed != null ? this.short(x.speed) + '/h' : '—' });
+    const detailData = dt ? {
+      title: (dt.rank != null ? '#' + dt.rank + '　' : '') + (dt.name || '—'),
+      score: this.n(dt.score), speed1h: dt.speed1h != null ? this.short(dt.speed1h) + '/h' : '—',
+      lastPlayed: dt.lastPlayed ? this.ago(dt.lastPlayed) : '—',
+      rows: [perRow('近 1 小時', dt.stats && dt.stats.h1), perRow('近 3 小時', dt.stats && dt.stats.h3), perRow('近 24 小時', dt.stats && dt.stats.h24)]
+    } : null;
 
     const unitChips = [{ v: 'all', n: '全部', dot: 'var(--rainbow)' }].concat(Object.keys(this.UNITS).map(k => ({ v: k, n: this.UNITS[k].n, dot: this.UNITS[k].c })))
       .map(u => {
@@ -1517,7 +1572,7 @@ class Component extends DCLogic {
       isDeckPro: s.page === 'deckpro',
       isTut: s.page === 'tut', isRes: s.page === 'res',
       pageTitle: P[0], pageSub: P[1],
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk,
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData,
       twoCol: s.mobile ? '1fr' : '1fr 1fr',
       threeCol: s.mobile ? '1fr' : 'repeat(3,1fr)',
       calcCols: s.mobile ? '1fr' : '320px 1fr',
@@ -1541,8 +1596,8 @@ class Component extends DCLogic {
       playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
       playerStats: [
         { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '未進前100' },
-        { l: '本期活動 P', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
-        { l: '本期時速', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
+        { l: '活動P·上局', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
+        { l: '時速·近1h', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
         { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
       ],
       goal: s.goal, cur: s.cur,
@@ -1717,6 +1772,16 @@ class Component extends DCLogic {
 
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      onRankClick: e => {
+        const r = (this._rankList || [])[+e.currentTarget.dataset.i];
+        if (r && r.stats && (r.stats.h1 || r.stats.h3 || r.stats.h24)) this.setState({ detail: r });
+      },
+      onDetailClose: () => this.setState({ detail: null }),
+      onMyDetail: () => {
+        const me = (this.ranksOf(this.state.live) || []).find(r => r.uid && r.uid === String(this.state.pid));
+        if (me && me.stats && (me.stats.h1 || me.stats.h3 || me.stats.h24)) this.setState({ detail: me });
+        else this.go('rank');   // 沒進前百 → 導去完整榜
+      },
       onDock: e => {
         const p = e.currentTarget.dataset.p;
         if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));
