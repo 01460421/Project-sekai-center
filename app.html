@@ -376,9 +376,13 @@ input::placeholder{color:var(--text-3)}
     <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
       <input type="text" placeholder="搜尋曲名、作曲者…" value="{{ sq }}" onInput="{{ onField }}" data-k="sq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
       <select value="{{ ssort }}" onChange="{{ onField }}" data-k="ssort" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
-        <option value="id">ID 由小到大</option><option value="new">最新加入</option><option value="master">MASTER 難度高→低</option>
+        <option value="id">ID 由小到大</option><option value="new">最新加入</option><option value="master">難度 高→低</option><option value="masterAsc">難度 低→高</option>
       </select>
-      <button type="button" onClick="{{ onShuffleAll }}" title="隨機連續播放全曲庫" style="padding:11px 17px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sh-xs);white-space:nowrap">🔀 隨機連播</button>
+      <button type="button" onClick="{{ onShuffleAll }}" title="隨機連續播放全曲庫" style="padding:11px 17px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sh-xs);white-space:nowrap">隨機連播</button>
+      <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2)">
+        <button type="button" onClick="{{ onSet }}" data-k="songView" data-v="list" title="列表檢視" style="padding:7px 13px;border:none;border-radius:999px;background:{{ listBtnBg }};color:{{ listBtnFg }};font-size:12px;font-weight:700;cursor:pointer">☰</button>
+        <button type="button" onClick="{{ onSet }}" data-k="songView" data-v="grid" title="方格檢視" style="padding:7px 13px;border:none;border-radius:999px;background:{{ gridBtnBg }};color:{{ gridBtnFg }};font-size:12px;font-weight:700;cursor:pointer">▦</button>
+      </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
       <sc-for list="{{ songUnitChips }}" as="u" hint-placeholder-count="7">
@@ -389,6 +393,7 @@ input::placeholder{color:var(--text-3)}
     </div>
     <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ songCount }}</div>
 
+    <sc-if value="{{ songList }}">
     <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
       <sc-if value="{{ isDesktop }}">
         <div style="display:grid;grid-template-columns:{{ songCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
@@ -420,6 +425,36 @@ input::placeholder{color:var(--text-3)}
         </div>
       </sc-if>
     </div>
+    </sc-if>
+
+    <sc-if value="{{ songGrid }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:13px">
+      <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="10">
+        <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
+          <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
+            <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block">
+            <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32)">{{ s.playIcon }}</button>
+          </div>
+          <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" style="padding:8px 10px 10px;cursor:pointer">
+            <div style="font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ s.title }}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">
+              <sc-for list="{{ s.diffsMain }}" as="d" hint-placeholder-count="1">
+                <span style="min-width:20px;text-align:center;font-size:9px;font-weight:800;padding:1px 4px;border-radius:5px;color:#fff;font-family:'M PLUS Rounded 1c';background:{{ d.c }}">{{ d.v }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ songEmpty }}">
+        <div style="grid-column:1/-1;padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px">沒有符合條件的歌曲，試著清空搜尋或改選團體</div>
+      </sc-if>
+      <sc-if value="{{ songBusy }}">
+        <div style="grid-column:1/-1;padding:36px;text-align:center;color:var(--text-3);font-size:13px">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>{{ songStatus }}
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px">
       <button type="button" onClick="{{ onPage }}" data-k="sp" data-d="-1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">← 上頁</button>
@@ -691,18 +726,80 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 功能更新 ========== -->
+  <sc-if value="{{ isWhatsNew }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:13px">
+    <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 12%,var(--card)),var(--card));box-shadow:var(--sh-xs)">
+      <div style="font-size:15px;font-weight:800;color:var(--ink)">近期更新了什麼</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">以下為本站 App 版近期新增與調整的功能，點卡片按鈕可直接前往體驗。</div>
+    </div>
+    <sc-for list="{{ changelog }}" as="c" hint-placeholder-count="6">
+      <div style="padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-2px);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:10px;font-weight:800;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 14%,transparent);padding:3px 9px;border-radius:999px;font-family:'M PLUS Rounded 1c'">{{ c.date }}</span>
+          <span style="font-size:14px;font-weight:800;color:var(--ink)">{{ c.title }}</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-2);margin-top:8px;line-height:1.7">{{ c.desc }}</div>
+        <button type="button" onClick="{{ onGo }}" data-p="{{ c.to }}" style="margin-top:11px;padding:8px 16px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(37,125,220,.24)">{{ c.cta }} →</button>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
   </div>
 </main>
 
-<!-- ========== 全局音樂播放器（隨機連播） ========== -->
+<!-- ========== 全局音樂播放器（收合式浮動） ========== -->
 <sc-if value="{{ playerOn }}">
-<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:58;display:flex;align-items:center;gap:7px;max-width:calc(100vw - 20px);padding:7px 9px 7px 14px;border-radius:999px;background:color-mix(in oklab,var(--card) 92%,transparent);backdrop-filter:blur(22px) saturate(1.6);border:1px solid var(--border);box-shadow:var(--sh-md)">
-  <span style="font-size:15px;color:var(--accent)">♪</span>
-  <span style="font-size:12.5px;font-weight:700;color:var(--ink);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerCur }}</span>
-  <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:30px;height:30px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:12px;cursor:pointer">⏮</button>
-  <button type="button" onClick="{{ onPlayerToggle }}" title="播放/暫停" style="width:34px;height:34px;flex:none;border:none;border-radius:50%;background:var(--cta);color:#fff;font-size:13px;cursor:pointer">{{ playerIcon }}</button>
-  <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:30px;height:30px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:12px;cursor:pointer">⏭</button>
-  <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:30px;height:30px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);font-size:12px;cursor:pointer">✕</button>
+<div style="position:fixed;right:12px;bottom:{{ playerBottom }};z-index:59">
+
+  <!-- 收合：浮動唱片圓鈕 -->
+  <sc-if value="{{ playerMin }}">
+    <button type="button" onClick="{{ onPlayerMin }}" title="展開播放器" style="position:relative;width:60px;height:60px;border:none;border-radius:50%;padding:0;cursor:pointer;background:var(--cta);box-shadow:0 8px 26px rgba(37,125,220,.42);overflow:hidden">
+      <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="this.style.display='none'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;animation:{{ playerSpin }}">
+      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:rgba(10,14,28,.5)"></span>
+      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.55)">{{ playerIcon }}</span>
+    </button>
+  </sc-if>
+
+  <!-- 展開：播放器卡片 -->
+  <sc-if value="{{ playerExpanded }}">
+  <div style="width:min(324px,calc(100vw - 24px));padding:12px;border-radius:22px;background:color-mix(in oklab,var(--card) 94%,transparent);backdrop-filter:blur(22px) saturate(1.6);border:1px solid var(--border);box-shadow:var(--sh-lg);animation:popIn .3s cubic-bezier(.34,1.45,.44,1)">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:46px;height:46px;flex:none;border-radius:12px;overflow:hidden;background:var(--card-2);box-shadow:var(--sh-xs)">
+        <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      <div style="min-width:0;flex:1">
+        <div style="font-size:13px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerCur }}</div>
+        <div style="font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">{{ playerSub }}</div>
+      </div>
+      <button type="button" onClick="{{ onPlayerMin }}" title="收合" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:15px;line-height:1;cursor:pointer">⌄</button>
+      <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);font-size:12px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:15px;margin-top:12px">
+      <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:13px;cursor:pointer">⏮</button>
+      <button type="button" onClick="{{ onPlayerToggle }}" title="播放／暫停" style="width:46px;height:46px;border:none;border-radius:50%;background:var(--cta);color:#fff;font-size:17px;cursor:pointer;box-shadow:0 4px 15px rgba(37,125,220,.36)">{{ playerIcon }}</button>
+      <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:13px;cursor:pointer">⏭</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)">
+      <span style="font-size:10px;font-weight:800;color:var(--text-3);letter-spacing:.5px;flex:none">音源</span>
+      <div style="display:inline-flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);flex:none">
+        <button type="button" onClick="{{ onVocalPref }}" data-v="virtual" title="虛擬歌手 ver." style="padding:5px 12px;border:none;border-radius:999px;background:{{ vpVBg }};color:{{ vpVFg }};font-size:11px;font-weight:800;cursor:pointer">虛擬</button>
+        <button type="button" onClick="{{ onVocalPref }}" data-v="sekai" title="世界 ver.（如有）" style="padding:5px 12px;border:none;border-radius:999px;background:{{ vpSBg }};color:{{ vpSFg }};font-size:11px;font-weight:800;cursor:pointer">世界</button>
+      </div>
+      <span style="font-size:10px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ vocalNote }}</span>
+    </div>
+    <div style="margin-top:11px">
+      <div style="font-size:10px;font-weight:800;color:var(--text-3);letter-spacing:.5px;margin-bottom:7px">選團連播</div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:3px">
+        <sc-for list="{{ playerUnitChips }}" as="u" hint-placeholder-count="7">
+          <button type="button" onClick="{{ onPlayerUnit }}" data-u="{{ u.u }}" style="flex:none;padding:6px 12px;border:1px solid {{ u.bd }};border-radius:999px;background:{{ u.bg }};color:{{ u.fg }};font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">{{ u.n }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
 </div>
 </sc-if>
 
@@ -880,8 +977,17 @@ class Component extends DCLogic {
     calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
     tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
-    res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具']
+    res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
+    whatsnew: ['功能更新', '本站近期新增功能與變更紀錄']
   };
+  CHANGELOG = [
+    { date: '2027/07', title: '收合式浮動音樂播放器', desc: '全站漂浮播放器可一鍵收合成唱片圓鈕；播放遊戲全曲版，每首自第 10 秒起播 1 分鐘、淡入淡出各 3 秒。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '2027/07', title: '音源版本切換（虛擬／世界 ver）', desc: '播放器可切換虛擬歌手 ver 或世界 ver（如該曲有提供），切換後立即以新版本重播。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '2027/07', title: '歌曲方格檢視 ＋ 難度排序', desc: '歌曲清單新增封面方格檢視，並修正難度（EX／MAS／APD）排序與難度標籤顯示。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '2027/07', title: '選團連播', desc: '於播放器直接挑選團體即可隨機連播該團全部曲目。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '2027/07', title: '我的排名 ＋ 排名詳情', desc: '綁定 Player ID 後顯示個人編組綜合力（直接帶讀取值）與周回／場均／時速等細節，點任一排名列即可展開。', to: 'rank', cta: '前往活動排名' },
+    { date: '2027/07', title: '卡池詳情', desc: '點卡池列表項目顯示該期 PU 卡面、完整技能與詳細資訊。', to: 'gacha', cta: '前往卡池列表' }
+  ];
   EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
   OH = 15;
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
@@ -891,11 +997,11 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
-    songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id',
+    songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
@@ -984,20 +1090,61 @@ class Component extends DCLogic {
     if (s < 86400) return Math.floor(s / 3600) + ' 時前';
     return Math.floor(s / 86400) + ' 天前';
   }
-  _playAbnDirect(abn, title) {
+  /* 音量漸變（淡入／淡出）；done 於到位後回呼 */
+  _fadeTo(a, target, dur, done) {
+    if (this._fadeTimer) { clearInterval(this._fadeTimer); this._fadeTimer = null; }
+    const start = (typeof a.volume === 'number') ? a.volume : 1;
+    const steps = Math.max(1, Math.round(dur * 20)); let i = 0;
+    this._fadeTimer = setInterval(() => {
+      i++; let v = start + (target - start) * (i / steps); v = v < 0 ? 0 : v > 1 ? 1 : v;
+      try { a.volume = v; } catch (e) {}
+      if (i >= steps) { clearInterval(this._fadeTimer); this._fadeTimer = null; if (done) done(); }
+    }, 50);
+  }
+  _killAudio() {
+    if (this._fadeTimer) { clearInterval(this._fadeTimer); this._fadeTimer = null; }
+    if (this._audio) { try { this._audio.pause(); } catch (e) {} this._audio.ontimeupdate = this._audio.onended = this._audio.onerror = this._audio.onplaying = null; }
+  }
+  songAbn(x) {   // 依偏好挑選音源版本：虛擬歌手 ver／世界 ver（如無則回退）
+    if (!x) return '';
+    const p = this._pref || this.state.vocalPref || 'virtual';
+    if (p === 'sekai') return x.abnS || x.abnV || x.abn || '';
+    return x.abnV || x.abnS || x.abn || '';
+  }
+  _playSong(song) { if (!song) return; this._cur = song; this._playAbnDirect(this.songAbn(song), song.title, song.jkt || ''); }
+  _playAbnDirect(abn, title, jkt) {
     if (!abn) return;
-    if (this._audio) this._audio.pause();
-    this.setState({ playAbn: abn, playerCur: title || this.state.playerCur });
-    const url = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
-    // 頁面已設 <meta referrer=no-referrer> → 請求不帶 Referer，繞過防盜連；同步 play() 保留使用者手勢
-    this._audio = new Audio(url);
-    this._audio.onended = () => this._onEnded();
-    this._audio.onerror = () => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); };
-    this._audio.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
+    this._killAudio();
+    this.setState({ playAbn: abn, playerCur: title || this.state.playerCur, playerJkt: jkt != null ? jkt : this.state.playerJkt });
+    // 遊戲全曲版（long）；頁面已設 <meta referrer=no-referrer> → 不帶 Referer 繞過防盜連；同步 play() 保留使用者手勢
+    const url = 'https://storage.sekai.best/sekai-jp-assets/music/long/' + abn + '/' + abn + '.mp3';
+    const START = 10, CLIP = 60, FIN = 3, FOUT = 3, VOL = 0.88;   // 從第 10 秒起播 1 分鐘，淡入／淡出各 3 秒
+    const a = this._audio = new Audio(url);
+    a.preload = 'auto'; try { a.volume = 0; } catch (e) {}
+    a._fo = false; a._fi = false; a._st = 0;
+    a.onloadedmetadata = () => { const st = (a.duration && a.duration > START + FIN + FOUT + 2) ? START : 0; a._st = st; if (st) { try { a.currentTime = st; } catch (e) {} } };
+    a.onplaying = () => { if (!a._fi) { a._fi = true; this._fadeTo(a, VOL, FIN); } };
+    a.ontimeupdate = () => {
+      const end = Math.min(a._st + CLIP, a.duration || (a._st + CLIP));
+      if (!a._fo && a.currentTime >= end - FOUT) {
+        a._fo = true;
+        this._fadeTo(a, 0, FOUT, () => { if (this._queue) this._onEnded(); else { try { a.pause(); } catch (e) {} this.setState({ playAbn: '' }); } });
+      }
+    };
+    a.onended = () => this._onEnded();
+    a.onerror = () => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); };
+    a.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
   }
   _onEnded() {
-    if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); }
+    if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; this._playSong(this._queue[this._qIdx]); }
     else this.setState({ playAbn: '' });
+  }
+  _shuffleList(list) {   // 洗牌 → 建立連播佇列（存歌曲物件，音源版本於播放時解析）並播放
+    if (!list || !list.length) return;
+    for (let i = list.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = list[i]; list[i] = list[j]; list[j] = t; }
+    this._queue = list.slice(); this._qIdx = 0;
+    this.setState({ playerOn: true, playerMin: false });
+    this._playSong(this._queue[0]);
   }
   dur(ms) {
     if (ms == null) return '—';
@@ -1105,17 +1252,25 @@ class Component extends DCLogic {
       const lv = {}, nt = {};
       md.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; (nt[d.musicId] = nt[d.musicId] || {})[d.musicDifficulty] = d.totalNoteCount; });
       const cu = c => c <= 4 ? 'ln' : c <= 8 ? 'mmj' : c <= 12 ? 'vbs' : c <= 16 ? 'wxs' : c <= 20 ? 'n25' : 'vs';
-      const um = {}, vAbn = {};
+      const um = {}, vV = {}, vS = {}, vAny = {};   // 音源版本：虛擬歌手 ver／世界 ver／任一
       mv.forEach(v => {
         (um[v.musicId] = um[v.musicId] || new Set());
         (v.characters || []).forEach(c => { if (c.characterId) um[v.musicId].add(cu(c.characterId)); });
-        if (!vAbn[v.musicId] && v.assetbundleName) vAbn[v.musicId] = v.assetbundleName;   // 音檔用
+        const abn = v.assetbundleName; if (!abn) return;
+        if (!vAny[v.musicId]) vAny[v.musicId] = abn;
+        const t = v.musicVocalType;
+        if (t === 'virtual_singer' && !vV[v.musicId]) vV[v.musicId] = abn;
+        else if (t === 'original_song' && !vV[v.musicId]) vV[v.musicId] = abn;   // VS 原曲＝虛擬歌手 ver
+        if (t === 'sekai' && !vS[v.musicId]) vS[v.musicId] = abn;
       });
-      const songs = ms.map(s => ({
-        id: s.id, title: s.title || '', composer: s.composer || s.arranger || '',
-        published: s.publishedAt || 0, units: Array.from(um[s.id] || []),
-        lv: lv[s.id] || {}, nt: nt[s.id] || {}, abn: vAbn[s.id] || '', jkt: s.assetbundleName || ''
-      }));
+      const songs = ms.map(s => {
+        const abnV = vV[s.id] || '', abnS = vS[s.id] || '', abn0 = abnV || abnS || vAny[s.id] || '';
+        return {
+          id: s.id, title: s.title || '', composer: s.composer || s.arranger || '',
+          published: s.publishedAt || 0, units: Array.from(um[s.id] || []),
+          lv: lv[s.id] || {}, nt: nt[s.id] || {}, abn: abn0, abnV, abnS, jkt: s.assetbundleName || ''
+        };
+      });
       this.setState({ songs, songLoad: false, songErr: songs.length ? '' : '歌曲資料來源無回應' });
     } catch (e) {
       this.setState({ songLoad: false, songErr: '歌曲資料載入失敗' });
@@ -1303,8 +1458,10 @@ class Component extends DCLogic {
       if (!q) return true;
       return (x.title + ' ' + x.composer).toLowerCase().includes(q);
     });
-    if (s.ssort === 'new') list = list.slice().sort((a, b) => b.published - a.published);
-    else if (s.ssort === 'master') list = list.slice().sort((a, b) => (b.lv[4] || 0) - (a.lv[4] || 0));
+    const hi = x => (x.lv.append || 0) || (x.lv.master || 0) || (x.lv.expert || 0) || 0;
+    if (s.ssort === 'new') list = list.slice().sort((a, b) => (b.published - a.published) || (b.id - a.id));
+    else if (s.ssort === 'master') list = list.slice().sort((a, b) => (hi(b) - hi(a)) || (a.id - b.id));
+    else if (s.ssort === 'masterAsc') list = list.slice().sort((a, b) => (hi(a) - hi(b)) || (a.id - b.id));
     else list = list.slice().sort((a, b) => a.id - b.id);
     return list;
   }
@@ -1368,7 +1525,7 @@ class Component extends DCLogic {
       ['追蹤', [['rank', '活動排名', '#ff9db4']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['res', '資源連結', '#ffd94d']]]
+      ['更多', [['res', '資源連結', '#ffd94d'], ['whatsnew', '功能更新', '#8be0d0']]]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -1598,12 +1755,20 @@ class Component extends DCLogic {
     const sAll = this.filteredSongs(), sPer = 30;
     const sPages = Math.max(1, Math.ceil(sAll.length / sPer));
     const sp = Math.min(s.sp, sPages);
-    const dColor = { 3: '#e0576a', 4: '#9a63d8', 5: '#f0619e' };
-    const songRows = sAll.slice((sp - 1) * sPer, sp * sPer).map(x => ({
-      id: x.id, title: x.title, composer: x.composer || '—', abn: x.abn || '', playIcon: (s.playAbn === x.abn && x.abn) ? '⏸' : '▶',
-      units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
-      diffs: [3, 4, 5].filter(d => x.lv[d]).map(d => ({ v: x.lv[d], c: dColor[d] }))
-    }));
+    const dColor = { easy: '#3fbf57', normal: '#4599e8', hard: '#f0a020', expert: '#f45c9a', master: '#a24df0', append: '#ee4499' };
+    const dOrder = ['easy', 'normal', 'hard', 'expert', 'master', 'append'];
+    const songRows = sAll.slice((sp - 1) * sPer, sp * sPer).map(x => {
+      const ab = this.songAbn(x);
+      const on = !!(s.playAbn === ab && ab);
+      return {
+        id: x.id, title: x.title, composer: x.composer || '—', abn: ab, playIcon: on ? '⏸' : '▶',
+        jacket: x.jkt ? ('https://storage.sekai.best/sekai-jp-assets/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '', playing: on,
+        cardBd: on ? 'var(--accent)' : 'var(--border)', gBtnBg: on ? 'var(--cta)' : 'rgba(15,20,40,.58)',
+        units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
+        diffs: dOrder.filter(d => x.lv[d]).map(d => ({ v: x.lv[d], c: dColor[d] })),
+        diffsMain: ['expert', 'master', 'append'].filter(d => x.lv[d]).map(d => ({ v: x.lv[d], c: dColor[d] }))
+      };
+    });
 
     /* 排名 */
     const rankList = s.rankTab === 'live' ? myRanks : myBorders;
@@ -1654,10 +1819,20 @@ class Component extends DCLogic {
       isHome: s.page === 'home', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
-      isTut: s.page === 'tut', isRes: s.page === 'res',
+      isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG,
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
+      playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,
+      playerBottom: s.mobile ? 'calc(72px + env(safe-area-inset-bottom,0px))' : '22px',
+      playerSpin: s.playAbn ? 'spin 10s linear infinite' : 'none',
+      vpVBg: s.vocalPref === 'virtual' ? 'var(--cta)' : 'transparent', vpVFg: s.vocalPref === 'virtual' ? '#fff' : 'var(--text-2)',
+      vpSBg: s.vocalPref === 'sekai' ? 'var(--cta)' : 'transparent', vpSFg: s.vocalPref === 'sekai' ? '#fff' : 'var(--text-2)',
+      vocalNote: this._cur ? (s.vocalPref === 'sekai' && !this._cur.abnS ? '此曲無世界 ver' : (s.vocalPref === 'virtual' && !this._cur.abnV && this._cur.abnS ? '此曲僅世界 ver' : '')) : '',
+      playerJktUrl: s.playerJkt ? ('https://storage.sekai.best/sekai-jp-assets/music/jacket/' + s.playerJkt + '/' + s.playerJkt + '.webp') : '',
+      playerHasQueue: !!(this._queue && this._queue.length),
+      playerSub: (this._queue && this._queue.length) ? ('連播 ' + ((this._qIdx || 0) + 1) + '／' + this._queue.length + ' · 全曲版') : '單曲試聽 · 全曲版',
+      playerUnitChips: [{ u: 'all', n: '全曲', c: 'var(--accent)', t: '#fff' }].concat(Object.keys(this.UNITS).map(k => ({ u: k, n: this.UNITS[k].n, c: this.UNITS[k].c, t: this.UNITS[k].t }))).map(o => ({ u: o.u, n: o.n, bg: s.su === o.u ? o.c : 'var(--card-2)', fg: s.su === o.u ? (o.t || '#fff') : 'var(--text-2)', bd: s.su === o.u ? o.c : 'var(--border)' })),
       songOpen: !!s.songId,
       songDetailData: (() => {
         if (!s.songId) return null;
@@ -1665,7 +1840,7 @@ class Component extends DCLogic {
         const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
         const DF = [['easy', 'EASY', '#43c93f'], ['normal', 'NORMAL', '#4599e8'], ['hard', 'HARD', '#f0a020'], ['expert', 'EXPERT', '#f45c9a'], ['master', 'MASTER', '#a24df0'], ['append', 'APPEND', '#ee4499']];
         return {
-          id: x.id, title: x.title, composer: x.composer || '—', abn: x.abn || '',
+          id: x.id, title: x.title, composer: x.composer || '—', abn: this.songAbn(x),
           jacket: x.jkt ? (ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '',
           units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
           diffs: DF.filter(([k]) => x.lv[k]).map(([k, n, c]) => ({ n, c, lv: x.lv[k], notes: (x.nt && x.nt[k]) ? this.n(x.nt[k]) + ' notes' : '' }))
@@ -1744,7 +1919,7 @@ class Component extends DCLogic {
       gachaPageLabel: gp + ' / ' + gPages,
 
       /* 歌曲 */
-      sq: s.sq, ssort: s.ssort, songUnitChips, songRows,
+      sq: s.sq, ssort: s.ssort, songUnitChips, songRows, songGrid: s.songView === 'grid', songList: s.songView !== 'grid', gridBtnBg: s.songView === 'grid' ? 'var(--cta)' : 'var(--card)', gridBtnFg: s.songView === 'grid' ? '#fff' : 'var(--text-2)', listBtnBg: s.songView !== 'grid' ? 'var(--cta)' : 'var(--card)', listBtnFg: s.songView !== 'grid' ? '#fff' : 'var(--text-2)',
       songCount: s.songs.length ? '共 ' + sAll.length + ' 首（全庫 ' + s.songs.length + '）' : '',
       songPageLabel: sp + ' / ' + sPages,
       songEmpty: !!s.songs.length && sAll.length === 0,
@@ -1890,26 +2065,39 @@ class Component extends DCLogic {
         if (e && e.stopPropagation) e.stopPropagation();   // 別觸發整列的詳情
         const abn = e.currentTarget.dataset.abn;
         if (!abn) return;
-        if (this.state.playAbn === abn && this._audio) { this._audio.pause(); this.setState({ playAbn: '', playerOn: false }); return; }   // 再點同一首＝暫停
+        const song = (this.state.songs || []).find(y => this.songAbn(y) === abn || y.abnV === abn || y.abnS === abn || y.abn === abn);
+        const cur = song ? this.songAbn(song) : abn;
+        if (this._audio && this.state.playAbn && (this.state.playAbn === abn || this.state.playAbn === cur)) { this._killAudio(); this.setState({ playAbn: '', playerOn: !!this._queue }); return; }   // 再點同一首＝停止
         this._queue = null;   // 單首試聽：離開連播佇列
-        this._playAbnDirect(abn, '');
+        this.setState({ playerOn: true, playerMin: false });
+        if (song) this._playSong(song); else this._playAbnDirect(abn, '', '');
       },
       onShuffleAll: () => {   // 隨機連續播放（依目前篩選/搜尋的播放範圍）
-        const list = ((this.filteredSongs ? this.filteredSongs() : this.state.songs) || []).filter(x => x.abn);
+        const list = ((this.filteredSongs ? this.filteredSongs() : this.state.songs) || []).filter(x => this.songAbn(x));
         if (!list.length) { this.loadSongs(); return; }
-        for (let i = list.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = list[i]; list[i] = list[j]; list[j] = t; }
-        this._queue = list.map(x => ({ abn: x.abn, title: x.title })); this._qIdx = 0;
-        this.setState({ playerOn: true });
-        this._playAbnDirect(this._queue[0].abn, this._queue[0].title);
+        this._shuffleList(list);
+      },
+      onPlayerUnit: e => {   // 從播放器直接篩選某團連播
+        const u = e.currentTarget.dataset.u;
+        const src = (this.state.songs || []).filter(x => this.songAbn(x) && (u === 'all' || (x.units || []).includes(u)));
+        if (!src.length) { if (!this.state.songs.length) this.loadSongs(); return; }
+        this.setState({ su: u, sp: 1 });
+        this._shuffleList(src.slice());
+      },
+      onVocalPref: e => {   // 切換音源版本（虛擬／世界）；播放中則立即以新版本重播當前曲
+        const p = e.currentTarget.dataset.v; if (!p) return;
+        this._pref = p; this.setState({ vocalPref: p });
+        if (this._cur && this.state.playAbn) this._playSong(this._cur);
       },
       onPlayerNext: () => { if (this._queue) this._onEnded(); },
-      onPlayerPrev: () => { if (this._queue) { this._qIdx = (this._qIdx - 1 + this._queue.length) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); } },
+      onPlayerPrev: () => { if (this._queue) { this._qIdx = (this._qIdx - 1 + this._queue.length) % this._queue.length; this._playSong(this._queue[this._qIdx]); } },
       onPlayerToggle: () => {
         if (!this._audio) return;
         if (this.state.playAbn) { this._audio.pause(); this.setState({ playAbn: '' }); }
-        else { this._audio.play().catch(() => {}); this.setState({ playAbn: this._queue && this._queue[this._qIdx] ? this._queue[this._qIdx].abn : this.state.playAbn }); }
+        else { this._audio.play().catch(() => {}); this.setState({ playAbn: this._queue && this._queue[this._qIdx] ? this.songAbn(this._queue[this._qIdx]) : this.state.playAbn }); }
       },
-      onPlayerStop: () => { if (this._audio) this._audio.pause(); this._queue = null; this.setState({ playerOn: false, playAbn: '', playerCur: '' }); },
+      onPlayerMin: () => this.setState(st => ({ playerMin: !st.playerMin })),
+      onPlayerStop: () => { this._killAudio(); this._queue = null; this.setState({ playerOn: false, playAbn: '', playerCur: '', playerJkt: '', playerMin: false }); },
       onDock: e => {
         const p = e.currentTarget.dataset.p;
         if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));
