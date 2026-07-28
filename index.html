@@ -5117,7 +5117,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const key = `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
                 return (typeof DOLLS !== 'undefined') ? DOLLS.find(x => x.tw === key) : null;
             },
-            _cardBonus(card, evId, src) {
+            _cardBonus(card, evId, src, mrLv) {   // mrLv=專精等級(省略=理論值5;我的編組傳實際值,專精會影響加成)
                 let deck = 0, charMatch = false;
                 for (const e of src.deck) {
                     if (e.eventId !== evId) continue;
@@ -5132,9 +5132,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 const ec = src.evCards.find(x => x.eventId === evId && x.cardId === card.id);
                 const special = ec ? (ec.bonusRate || 0) : 0;
-                const mr = (EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][5]) || 0;
+                const mrKey = (mrLv == null) ? 5 : Math.max(0, Math.min(5, mrLv | 0));
+                // 專精(MR)加成只適用「加成角色」的卡(含當期特效卡);純屬性湊數不吃 MR
+                const mr = (charMatch || special > 0) ? ((EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][mrKey]) || 0) : 0;
                 const per = special === 70 ? 70 + mr : deck + special + mr;
-                return { per: Math.round(per * 10) / 10, deck, special, charMatch };
+                return { per: Math.round(per * 10) / 10, deck, special, charMatch, mr };
             },
             async onEvent() {
                 if (!this._ready) return;
@@ -5435,7 +5437,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const c = cardById[id]; if (!c) return null;
                         const uc = ucById[id] || {};
                         const trained = uc.specialTrainingStatus === 'done' || uc.defaultImage === 'special_training' || uc.defaultImage === 'special';
-                        return { c, uc, trained, bonus: RunStudio._cardBonus(c, evId, src) };
+                        return { c, uc, trained, bonus: RunStudio._cardBonus(c, evId, src, uc.masterRank || 0) };   // 帶實際專精等級(專精會影響加成)
                     }).filter(Boolean);
                     if (!members.length) { el.innerHTML = '<div class="ms-msg">查無編組卡片（此玩家可能未公開）。</div>'; return; }
                     const totalBonus = Math.round(members.reduce((s, m) => s + m.bonus.per, 0) * 10) / 10;
@@ -5447,9 +5449,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-sub">當期活動：${evName}　・依你的實際等級/突破/專精精算</div></div>
                         <div class="ms-thumbs">${members.map(m => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(m.c, m.trained)}" onerror="this.style.opacity=.15"><span>${EC_cidName(m.c.characterId)}</span><i>＋${m.bonus.per}%</i></div>`).join('')}</div>
                         <div class="ms-kvs"><div class="ms-kv"><span>綜合力（讀取）</span><b>${readPower != null ? readPower.toLocaleString() : '—'}</b></div><div class="ms-kv"><span>當期活動加成</span><b>＋${totalBonus}%</b></div></div>
-                        <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>突破</th><th>當期加成</th></tr></thead>
-                        <tbody>${members.map(m => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·專精' : ''}</td><td class="score">＋${m.bonus.per}%</td></tr>`).join('')}</tbody></table></div>
-                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含你的區域道具/角色等級/豆森/畫布）。加成＝逐卡符合當期活動（deck＋特效＋MR），純V家/非當期卡＋0%。</div>`;
+                        <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>專精/特訓</th><th>當期加成</th></tr></thead>
+                        <tbody>${members.map(m => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·已特訓' : ''}</td><td class="score">＋${m.bonus.per}%${m.bonus.mr ? `<span style="font-size:10px;color:var(--text-light);">（含專精+${m.bonus.mr}%）</span>` : ''}</td></tr>`).join('')}</tbody></table></div>
+                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含你的區域道具/角色等級/豆森/畫布）。加成＝逐卡符合當期活動（角色/屬性＋特效＋專精），專精加成依你每張卡的實際 MR 計算、只適用加成角色的卡；純V家/非當期卡＋0%。</div>`;
                 } catch (e) { el.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; }
             }
         };
