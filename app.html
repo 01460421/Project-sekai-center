@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js"};</script>
@@ -1881,17 +1882,13 @@ class Component extends DCLogic {
       _playAbnDirect(abn, title) {
         if (!abn) return;
         if (this._audio) this._audio.pause();
-        if (this._audioUrl) { try { URL.revokeObjectURL(this._audioUrl); } catch (er) {} this._audioUrl = ''; }
         this.setState({ playAbn: abn, playerCur: title || this.state.playerCur });
         const url = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
-        // storage.sekai.best 防盜連：<audio src> 直連會被 403 → 用 fetch(no-referrer) 取 blob 再播
-        fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.ok ? r.blob() : Promise.reject()).then(blob => {
-          if (this.state.playAbn !== abn) return;
-          this._audioUrl = URL.createObjectURL(blob);
-          this._audio = new Audio(this._audioUrl);
-          this._audio.onended = () => this._onEnded();
-          this._audio.play().catch(() => this.setState({ playAbn: '' }));
-        }).catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });   // 連播時該首失敗→跳下一首
+        // 頁面已設 <meta referrer=no-referrer> → 請求不帶 Referer，繞過防盜連；同步 play() 保留使用者手勢
+        this._audio = new Audio(url);
+        this._audio.onended = () => this._onEnded();
+        this._audio.onerror = () => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); };
+        this._audio.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
       },
       _onEnded() {
         if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); }
