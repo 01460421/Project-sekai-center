@@ -1379,7 +1379,7 @@
         <!-- 十、推隊倍率計算器 -->
         <section id="calculator">
             <h2>十、推隊倍率計算器 <span class="en">Team Multiplier</span></h2>
-            <div class="note">公式：<code>[隊長% + 100% + (隊員%總和÷5)] ÷ 100%</code></div>
+            <div class="note">公式：<code>[隊長% + 100% + (隊員%總和÷5)] ÷ 100%</code>　單卡技能倍率範圍：<strong>最低下限 18%</strong> ～ <strong>最高上限 288%</strong>（Fes 吸滿隊友技能）。</div>
             <div class="calculator">
                 <div class="calc-section">
                     <h4>隊長技能</h4>
@@ -1880,7 +1880,7 @@
                         <button type="button" onclick="RunStudio.calc()" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">確認計算場均 ▶</button>
                     </div>
                     <div class="calc-section">
-                        <h4>5 人技能加分 %(協力房)</h4>
+                        <h4>5 人技能加分 %(協力房)<span style="font-weight:400;font-size:11px;color:var(--text-light);">　單卡倍率 18%（最低）～ 288%（最高）</span></h4>
                         <div class="calc-row" style="margin-bottom:6px;"><label>角色等級(BloomFES用)</label><input type="number" id="rsCharRank" value="50" min="1" max="200" oninput="RunStudio.onEvent()"></div>
                         <div class="member-grid">
                             <div class="member-item"><label>自己(我的編組)</label><input type="number" id="rsP0" value="130" oninput="RunStudio.calc()"></div>
@@ -5370,25 +5370,29 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             _skill(skillId, sById) {
                 const sk = sById[skillId]; if (!sk) return '—';
-                // 依實際 skillEffects 判定（descriptionSpriteName 只是圖示，生日卡=life_recovery 會誤導）
-                let scoreUp = 0, life = false, cond = false, ref = false, unit = false, rank = false, keep = false;
+                // 依實際 skillEffects 完整標示（descriptionSpriteName 只是圖示；生日=回血+分數，Fes=分數+吸隊友，體回=分數+回血）
+                let scoreUp = 0, keep = 0, cond = 0, ref = 0, unit = 0, rank = 0, life = 0;
                 (sk.skillEffects || []).forEach(e => {
                     const t = String(e.skillEffectType || '');
                     const last = (e.skillEffectDetails || []).slice().sort((a, b) => (a.level || 0) - (b.level || 0)).slice(-1)[0] || {};
                     const v = last.activateEffectValue || 0;
-                    if (t === 'life_recovery') { life = true; return; }
-                    if (t.indexOf('score_up') === 0) {
-                        if ((last.activateEffectValueType === 'rate' || !last.activateEffectValueType) && v > scoreUp) scoreUp = v;
-                        if (t.indexOf('condition_life') >= 0) cond = true;
-                        if (t.indexOf('reference') >= 0) ref = true;
-                        if (t.indexOf('unit_count') >= 0) unit = true;
-                        if (t.indexOf('character_rank') >= 0) rank = true;
-                        if (t.indexOf('keep') >= 0) keep = true;
-                    }
+                    if (t === 'life_recovery') life = Math.max(life, v);
+                    else if (t.indexOf('reference') >= 0) ref = Math.max(ref, v);
+                    else if (t.indexOf('condition_life') >= 0) cond = Math.max(cond, v);
+                    else if (t.indexOf('unit_count') >= 0) unit = Math.max(unit, v);
+                    else if (t.indexOf('character_rank') >= 0) rank = Math.max(rank, v);
+                    else if (t.indexOf('keep') >= 0) keep = Math.max(keep, v);
+                    else if (t.indexOf('score_up') === 0) scoreUp = Math.max(scoreUp, v);
                 });
-                if (!scoreUp) return life ? '體力回復' : '技能';
-                const label = ref ? 'Fes吸技能' : unit ? '同團加分' : rank ? '角色等級分' : cond ? '滿血續分' : keep ? '持續分數' : '分數';
-                return label + ' +' + scoreUp + '%' + (life ? '＋回血' : '');
+                const parts = [];
+                if (scoreUp) parts.push('分數+' + scoreUp + '%');
+                if (keep) parts.push('持續+' + keep + '%');
+                if (cond) parts.push('滿血+' + cond + '%');
+                if (ref) parts.push('吸隊友最高技能 ' + ref + '%');
+                if (unit) parts.push('同團每人+' + unit + '%');
+                if (rank) parts.push('角色等級+' + rank + '%');
+                if (life) parts.push('回血' + life);
+                return parts.join('・') || '技能';
             },
             async run() {
                 const el = document.getElementById('gachaDetailCard'); if (!el) return;
