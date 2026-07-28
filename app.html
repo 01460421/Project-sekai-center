@@ -394,8 +394,8 @@ input::placeholder{color:var(--text-3)}
         </div>
       </sc-if>
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
-        <div onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="點擊試聽" style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
-          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700"><span style="color:var(--accent);margin-right:4px">{{ s.playIcon }}</span>#{{ s.id }}</span>
+        <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="點擊看詳情" style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700"><span onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="color:var(--accent);margin-right:4px;cursor:pointer;font-size:13px">{{ s.playIcon }}</span>#{{ s.id }}</span>
           <span style="min-width:0"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
             <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
@@ -779,6 +779,32 @@ input::placeholder{color:var(--text-3)}
 </div>
 </sc-if>
 
+<!-- ========== 歌曲詳情（封面＋各難度） ========== -->
+<sc-if value="{{ songOpen }}">
+<div onClick="{{ onSongClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(500px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:popCenter .3s cubic-bezier(.34,1.4,.44,1)">
+  <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+    <img src="{{ songDetailData.jacket }}" referrerpolicy="no-referrer" onerror="this.style.opacity=.15" style="width:88px;height:88px;flex:none;border-radius:14px;object-fit:cover;border:1px solid var(--border)">
+    <div style="min-width:0;flex:1">
+      <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.35">{{ songDetailData.title }}</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ songDetailData.composer }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><sc-for list="{{ songDetailData.units }}" as="u" hint-placeholder-count="1"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span></sc-for></div>
+    </div>
+    <button type="button" onClick="{{ onSongClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;margin-bottom:13px">
+    <sc-for list="{{ songDetailData.diffs }}" as="d" hint-placeholder-count="5">
+      <div style="border:1px solid var(--border);border-radius:12px;padding:9px 6px;text-align:center;background:var(--card-2)">
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:.4px;color:{{ d.c }}">{{ d.n }}</div>
+        <div style="font-size:19px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">Lv{{ d.lv }}</div>
+        <div style="font-size:9.5px;color:var(--text-3)">{{ d.notes }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ songDetailData.abn }}" style="width:100%;padding:11px;border:none;border-radius:12px;background:var(--cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer">▶ 試聽</button>
+</div>
+</sc-if>
+
 <!-- ========== ⌘K 指令面板 ========== -->
 <sc-if value="{{ cmdkOpen }}">
 <div onClick="{{ onCmdClose }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,14,28,.45);backdrop-filter:blur(10px) saturate(1.2);animation:fadeIn .25s ease"></div>
@@ -851,7 +877,7 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, playAbn: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
@@ -1047,8 +1073,8 @@ class Component extends DCLogic {
         fetch(this.TDB + '/musicDifficulties.json').then(r => r.json()).catch(() => []),
         fetch(this.TDB + '/musicVocals.json').then(r => r.json()).catch(() => [])
       ]);
-      const lv = {};
-      md.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; });
+      const lv = {}, nt = {};
+      md.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; (nt[d.musicId] = nt[d.musicId] || {})[d.musicDifficulty] = d.totalNoteCount; });
       const cu = c => c <= 4 ? 'ln' : c <= 8 ? 'mmj' : c <= 12 ? 'vbs' : c <= 16 ? 'wxs' : c <= 20 ? 'n25' : 'vs';
       const um = {}, vAbn = {};
       mv.forEach(v => {
@@ -1059,7 +1085,7 @@ class Component extends DCLogic {
       const songs = ms.map(s => ({
         id: s.id, title: s.title || '', composer: s.composer || s.arranger || '',
         published: s.publishedAt || 0, units: Array.from(um[s.id] || []),
-        lv: lv[s.id] || {}, abn: vAbn[s.id] || ''
+        lv: lv[s.id] || {}, nt: nt[s.id] || {}, abn: vAbn[s.id] || '', jkt: s.assetbundleName || ''
       }));
       this.setState({ songs, songLoad: false, songErr: songs.length ? '' : '歌曲資料來源無回應' });
     } catch (e) {
@@ -1602,6 +1628,19 @@ class Component extends DCLogic {
       isTut: s.page === 'tut', isRes: s.page === 'res',
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
+      songOpen: !!s.songId,
+      songDetailData: (() => {
+        if (!s.songId) return null;
+        const x = (s.songs || []).find(y => y.id === s.songId); if (!x) return null;
+        const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+        const DF = [['easy', 'EASY', '#43c93f'], ['normal', 'NORMAL', '#4599e8'], ['hard', 'HARD', '#f0a020'], ['expert', 'EXPERT', '#f45c9a'], ['master', 'MASTER', '#a24df0'], ['append', 'APPEND', '#ee4499']];
+        return {
+          id: x.id, title: x.title, composer: x.composer || '—', abn: x.abn || '',
+          jacket: x.jkt ? (ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '',
+          units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
+          diffs: DF.filter(([k]) => x.lv[k]).map(([k, n, c]) => ({ n, c, lv: x.lv[k], notes: (x.nt && x.nt[k]) ? this.n(x.nt[k]) + ' notes' : '' }))
+        };
+      })(),
       twoCol: s.mobile ? '1fr' : '1fr 1fr',
       threeCol: s.mobile ? '1fr' : 'repeat(3,1fr)',
       calcCols: s.mobile ? '1fr' : '320px 1fr',
@@ -1815,7 +1854,10 @@ class Component extends DCLogic {
       onDeckClose: () => this.setState({ deckPid: null }),
       onGachaClick: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
       onGachaClose: () => this.setState({ gachaGid: null }),
+      onSongDetail: e => { const id = +e.currentTarget.dataset.id; if (id) this.setState({ songId: id }); },
+      onSongClose: () => this.setState({ songId: null }),
       onPlaySong: e => {
+        if (e && e.stopPropagation) e.stopPropagation();   // 別觸發整列的詳情
         const abn = e.currentTarget.dataset.abn;
         if (!abn) return;
         try {
