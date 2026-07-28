@@ -394,8 +394,8 @@ input::placeholder{color:var(--text-3)}
         </div>
       </sc-if>
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
-        <div style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s" style-hover="background:var(--bg-soft)">
-          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">#{{ s.id }}</span>
+        <div onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="點擊試聽" style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700"><span style="color:var(--accent);margin-right:4px">{{ s.playIcon }}</span>#{{ s.id }}</span>
           <span style="min-width:0"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
             <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
@@ -846,12 +846,11 @@ class Component extends DCLogic {
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
   PRESETS = {
     t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:3,   s6:2.9, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
-    farm:  { n:'周回效率', power:250000, bonus:250, energy:3,  skill:2.5, s6:2.5, mode:'multi', song:74, diff:'M', goal:1000000, scoreMode:'calc' },
     casual:{ n:'輕鬆玩',   power:150000, bonus:120, energy:1,  skill:2,   s6:2,   mode:'solo',  song:1,  diff:'X', goal:300000,  scoreMode:'calc' }
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, playAbn: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
@@ -1050,15 +1049,16 @@ class Component extends DCLogic {
       const lv = {};
       md.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; });
       const cu = c => c <= 4 ? 'ln' : c <= 8 ? 'mmj' : c <= 12 ? 'vbs' : c <= 16 ? 'wxs' : c <= 20 ? 'n25' : 'vs';
-      const um = {};
+      const um = {}, vAbn = {};
       mv.forEach(v => {
         (um[v.musicId] = um[v.musicId] || new Set());
         (v.characters || []).forEach(c => { if (c.characterId) um[v.musicId].add(cu(c.characterId)); });
+        if (!vAbn[v.musicId] && v.assetbundleName) vAbn[v.musicId] = v.assetbundleName;   // 音檔用
       });
       const songs = ms.map(s => ({
         id: s.id, title: s.title || '', composer: s.composer || s.arranger || '',
         published: s.publishedAt || 0, units: Array.from(um[s.id] || []),
-        lv: lv[s.id] || {}
+        lv: lv[s.id] || {}, abn: vAbn[s.id] || ''
       }));
       this.setState({ songs, songLoad: false, songErr: songs.length ? '' : '歌曲資料來源無回應' });
     } catch (e) {
@@ -1544,7 +1544,7 @@ class Component extends DCLogic {
     const sp = Math.min(s.sp, sPages);
     const dColor = { 3: '#e0576a', 4: '#9a63d8', 5: '#f0619e' };
     const songRows = sAll.slice((sp - 1) * sPer, sp * sPer).map(x => ({
-      id: x.id, title: x.title, composer: x.composer || '—',
+      id: x.id, title: x.title, composer: x.composer || '—', abn: x.abn || '', playIcon: (s.playAbn === x.abn && x.abn) ? '⏸' : '▶',
       units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
       diffs: [3, 4, 5].filter(d => x.lv[d]).map(d => ({ v: x.lv[d], c: dColor[d] }))
     }));
@@ -1729,7 +1729,7 @@ class Component extends DCLogic {
       ],
       planSummary: '需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
       calcTabs: [
-        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
+        { v: 'ep', n: 'EP 精算' }, { v: 'plan', n: '活動試算' },
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
         { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }
       ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),
@@ -1814,6 +1814,20 @@ class Component extends DCLogic {
       onDeckClose: () => this.setState({ deckPid: null }),
       onGachaClick: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
       onGachaClose: () => this.setState({ gachaGid: null }),
+      onPlaySong: e => {
+        const abn = e.currentTarget.dataset.abn;
+        if (!abn) return;
+        try {
+          if (this._audio && this.state.playAbn === abn) { this._audio.pause(); this.setState({ playAbn: '' }); return; }   // 再點同一首＝暫停
+          if (this._audio) this._audio.pause();
+          this._audio = new Audio();
+          this._audio.referrerPolicy = 'no-referrer';   // storage.sekai.best 防盜連，帶 Referer 會 403
+          this._audio.src = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
+          this._audio.onended = () => this.setState({ playAbn: '' });
+          this._audio.play().catch(() => this.setState({ playAbn: '' }));
+          this.setState({ playAbn: abn });
+        } catch (er) {}
+      },
       onDock: e => {
         const p = e.currentTarget.dataset.p;
         if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));
