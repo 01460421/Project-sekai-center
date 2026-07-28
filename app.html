@@ -347,7 +347,7 @@ input::placeholder{color:var(--text-3)}
         </div>
       </sc-if>
       <sc-for list="{{ gachaRows }}" as="g" hint-placeholder-count="8">
-        <div style="display:grid;grid-template-columns:{{ gachaCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);transition:background .18s" style-hover="background:var(--bg-soft)">
+        <div onClick="{{ onGachaClick }}" data-gid="{{ g.gid }}" style="display:grid;grid-template-columns:{{ gachaCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ g.range }}</span>
           <span style="font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.45">{{ g.n }}</span>
           <span><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2.5px 10px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span></span>
@@ -765,6 +765,18 @@ input::placeholder{color:var(--text-3)}
 </div>
 </sc-if>
 
+<!-- ========== 卡池詳情（PU 卡面/技能） ========== -->
+<sc-if value="{{ gachaOpen }}">
+<div onClick="{{ onGachaClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(620px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;padding:16px 18px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:sheetUp .45s cubic-bezier(.34,1.45,.44,1)">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+    <span style="font-size:15px;font-weight:800;color:var(--ink)">卡池 · PU 卡面/技能</span>
+    <button type="button" onClick="{{ onGachaClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
+  </div>
+  <iframe id="gachaInfoFrame" src="{{ gachaSrc }}" title="卡池詳情" scrolling="no" style="width:100%;height:400px;border:none;background:transparent;display:block"></iframe>
+</div>
+</sc-if>
+
 <!-- ========== ⌘K 指令面板 ========== -->
 <sc-if value="{{ cmdkOpen }}">
 <div onClick="{{ onCmdClose }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,14,28,.45);backdrop-filter:blur(10px) saturate(1.2);animation:fadeIn .25s ease"></div>
@@ -838,7 +850,7 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
@@ -897,7 +909,7 @@ class Component extends DCLogic {
     this._frameMsg = e => {
       const d = e && e.data;
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame'].forEach(id => {
         const f = document.getElementById(id);
         if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' ? 560 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
@@ -1518,6 +1530,7 @@ class Component extends DCLogic {
     const gachaRows = gAll.slice((gp - 1) * gPer, gp * gPer).map(g => {
       const tn = this.tone(g.t);
       return {
+        gid: g.id || '',
         range: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)),
         n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—',
         ev: g.eid ? ('#' + g.eid + ' ' + (g.et || '') + (g.ech ? ' · ' + g.ech : '')) : (g.note || '—')
@@ -1585,7 +1598,7 @@ class Component extends DCLogic {
       isDeckPro: s.page === 'deckpro',
       isTut: s.page === 'tut', isRes: s.page === 'res',
       pageTitle: P[0], pageSub: P[1],
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '',
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       twoCol: s.mobile ? '1fr' : '1fr 1fr',
       threeCol: s.mobile ? '1fr' : 'repeat(3,1fr)',
       calcCols: s.mobile ? '1fr' : '320px 1fr',
@@ -1797,6 +1810,8 @@ class Component extends DCLogic {
       },
       onDeckDetail: () => { if (this.state.pid) this.setState({ deckPid: this.state.pid }); },
       onDeckClose: () => this.setState({ deckPid: null }),
+      onGachaClick: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
+      onGachaClose: () => this.setState({ gachaGid: null }),
       onDock: e => {
         const p = e.currentTarget.dataset.p;
         if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));

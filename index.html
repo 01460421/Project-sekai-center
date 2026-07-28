@@ -681,14 +681,16 @@
             white-space:nowrap; background:var(--card); transition:transform .2s; }
         body.embed-calc .embed-tabbar a:active{ transform:scale(.94); }
         /* ===== 內嵌小窗模式（?embed=ministudio）：首頁「當期跑榜」卡 ===== */
-        #mini-studio, #deck-detail{ display:none; }
-        body.embed-ministudio, body.embed-deck{ padding:0 !important; margin:0 !important; background:transparent; }
+        #mini-studio, #deck-detail, #gacha-detail{ display:none; }
+        body.embed-ministudio, body.embed-deck, body.embed-gacha{ padding:0 !important; margin:0 !important; background:transparent; }
         body.embed-ministudio #siteNav, body.embed-ministudio .m-dock, body.embed-ministudio header#top, body.embed-ministudio .toc, body.embed-ministudio footer, body.embed-ministudio .embed-tabbar,
-        body.embed-deck #siteNav, body.embed-deck .m-dock, body.embed-deck header#top, body.embed-deck .toc, body.embed-deck footer, body.embed-deck .embed-tabbar{ display:none !important; }
-        body.embed-ministudio .container, body.embed-deck .container{ max-width:100%; margin:0; padding:0; }
-        body.embed-ministudio .container > section, body.embed-deck .container > section{ display:none !important; }
+        body.embed-deck #siteNav, body.embed-deck .m-dock, body.embed-deck header#top, body.embed-deck .toc, body.embed-deck footer, body.embed-deck .embed-tabbar,
+        body.embed-gacha #siteNav, body.embed-gacha .m-dock, body.embed-gacha header#top, body.embed-gacha .toc, body.embed-gacha footer, body.embed-gacha .embed-tabbar{ display:none !important; }
+        body.embed-ministudio .container, body.embed-deck .container, body.embed-gacha .container{ max-width:100%; margin:0; padding:0; }
+        body.embed-ministudio .container > section, body.embed-deck .container > section, body.embed-gacha .container > section{ display:none !important; }
         body.embed-ministudio .container > section#mini-studio{ display:block !important; }
         body.embed-deck .container > section#deck-detail{ display:block !important; }
+        body.embed-gacha .container > section#gacha-detail{ display:block !important; }
         .ms-card{ font-size:13px; color:var(--text); }
         .ms-msg{ padding:24px 6px; text-align:center; color:var(--text-light); font-size:13px; }
         .ms-top{ margin-bottom:12px; }
@@ -717,7 +719,7 @@
     </style>
 </head>
 <body>
-    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');}catch(e){}</script>
+    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
@@ -1901,6 +1903,10 @@
 
         <section id="deck-detail">
             <div id="deckDetailCard" class="ms-card"><div class="ms-msg">載入我的編組…</div></div>
+        </section>
+
+        <section id="gacha-detail">
+            <div id="gachaDetailCard" class="ms-card"><div class="ms-msg">載入卡池…</div></div>
         </section>
 
         <footer>
@@ -5343,6 +5349,60 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 } catch (e) { el.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; }
             }
         };
+        // ===== 卡池詳情（?embed=gacha&gid=）：該期 PU 卡面 + 技能（台服+日服 master 合併，未來卡池也能看）=====
+        const GachaDetail = {
+            _d: null, JP: 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main',
+            async _load() {
+                if (this._d) return this._d;
+                const [twG, jpG, twC, jpC, twS, jpS] = await Promise.all([
+                    MasterDB.get('gachas.json'), IDBCache.wrap(this.JP + '/gachas.json', 43200000),
+                    MasterDB.get('cards.json'), IDBCache.wrap(this.JP + '/cards.json', 43200000),
+                    MasterDB.get('skills.json'), IDBCache.wrap(this.JP + '/skills.json', 43200000)
+                ]);
+                const gById = {}, cById = {}, sById = {};
+                (jpG || []).forEach(g => gById[g.id] = g); (twG || []).forEach(g => gById[g.id] = g);
+                (jpC || []).forEach(c => cById[c.id] = c); (twC || []).forEach(c => cById[c.id] = c);
+                (jpS || []).forEach(s => sById[s.id] = s); (twS || []).forEach(s => sById[s.id] = s);
+                return this._d = { gById, cById, sById };
+            },
+            _skill(skillId, sById) {
+                const sk = sById[skillId]; if (!sk) return '—';
+                const CAT = { score_up: '分數', score_up_keep: '持續分數', score_up_condition_life: '體力續分', life_score_up: '體力續分', life_recovery: '體力回復', score_up_character_rank: '角色等級分', score_up_unit_count: '同團加分', score_up_reference_rate: 'Fes吸技能', score_up_reference: 'Fes吸技能' };
+                const cat = CAT[sk.descriptionSpriteName] || '技能';
+                let mx = 0; (sk.skillEffects || []).forEach(e => (e.skillEffectDetails || []).forEach(d => { if ((d.activateEffectValueType === 'rate' || !d.activateEffectValueType) && (d.activateEffectValue || 0) > mx) mx = d.activateEffectValue; }));
+                return cat + (mx ? ` +${mx}%` : '');
+            },
+            async run() {
+                const el = document.getElementById('gachaDetailCard'); if (!el) return;
+                const gid = +new URLSearchParams(location.search).get('gid') || 0;
+                if (!gid) { el.innerHTML = '<div class="ms-msg">未指定卡池。</div>'; return; }
+                el.innerHTML = '<div class="ms-msg">載入卡池…</div>';
+                try {
+                    const { gById, cById, sById } = await this._load();
+                    const g = gById[gid];
+                    if (!g) { el.innerHTML = '<div class="ms-msg">查無此卡池的 master 資料（可能太新）。</div>'; return; }
+                    let pickups = (g.gachaPickups || []).map(p => cById[p.cardId]).filter(Boolean);
+                    if (!pickups.length) pickups = (g.gachaDetails || []).map(p => cById[p.cardId]).filter(c => c && (c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')).slice(0, 8);
+                    const RAR = { rarity_1: '★', rarity_2: '★★', rarity_3: '★★★', rarity_4: '★★★★', rarity_birthday: '生日' };
+                    const ATTR = { cool: '<span style="color:#4599e8">藍</span>', cute: '<span style="color:#f45c9a">粉</span>', pure: '<span style="color:#43c93f">綠</span>', happy: '<span style="color:#f0a020">橙</span>', mysterious: '<span style="color:#a24df0">紫</span>' };
+                    const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+                    const thumb = c => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${(c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
+                    el.innerHTML = `
+                        <div class="ms-top"><div class="ms-ev"><span class="ms-type">卡池</span><span class="ms-evname">${g.name || ('#' + gid)}</span></div>
+                        <div class="ms-sub">PU ${pickups.length} 張・卡面/星級/屬性/技能</div></div>
+                        <div class="table-wrapper"><table><thead><tr><th>卡面</th><th>角色</th><th>卡名</th><th>星</th><th>屬</th><th>技能</th></tr></thead>
+                        <tbody>${pickups.map(c => `<tr>
+                            <td><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(c)}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block;" onerror="this.style.opacity=.15"></td>
+                            <td style="font-size:12px;">${EC_cidName(c.characterId)}</td>
+                            <td style="font-size:11px;color:var(--text-light);">${c.prefix || ('#' + c.id)}</td>
+                            <td style="font-size:11px;">${RAR[c.cardRarityType] || ''}</td>
+                            <td>${ATTR[c.attr] || c.attr || ''}</td>
+                            <td style="font-size:11px;">${this._skill(c.skillId, sById)}</td>
+                        </tr>`).join('')}</tbody></table></div>
+                        <div class="ms-break">PU＝當期 rate-up 卡。技能為該卡滿等 score-up 概要（Fes 卡另有「吸取隊友技能」機制）。資料：Sekai-World master（台服無則取日服）。</div>`;
+                } catch (e) { el.innerHTML = '<div class="ms-msg">卡池資料載入失敗，稍後再試。</div>'; }
+            }
+        };
         const SongEff = {
             _metas: null, _loaded: false, _loading: false,
             ensure() {
@@ -5647,8 +5707,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
     (function(){
         try{
             var mode = new URLSearchParams(location.search).get('embed');
-            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck') return;
-            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : 'embed-calc');
+            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha') return;
+            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : 'embed-calc');
             if(mode === 'calc'){
                 var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
                 var bar = document.createElement('div');
@@ -5669,6 +5729,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             if(mode === 'deck'){
                 var runD = function(){ try{ if(typeof DeckDetail !== 'undefined') DeckDetail.run(); }catch(e){} };
                 if(document.readyState === 'complete') runD(); else window.addEventListener('load', runD);
+            }
+            if(mode === 'gacha'){
+                var runG = function(){ try{ if(typeof GachaDetail !== 'undefined') GachaDetail.run(); }catch(e){} };
+                if(document.readyState === 'complete') runG(); else window.addEventListener('load', runG);
             }
             var last = 0;
             function postH(){
