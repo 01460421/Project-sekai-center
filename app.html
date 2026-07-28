@@ -477,7 +477,7 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-3);margin-bottom:11px;line-height:1.6">此處「技能倍率」＝一首歌<b>全隊平均技能總倍率</b>（常見填 2.0～3.0，如 2.5 / 2.9 / 3.0，可自由填不設上限）。參考：單張卡單次技能 20%～160%、單次最高推隊倍率約 ×2.88。</div>
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:11px;line-height:1.6">此處「技能倍率」＝<b>時效值</b>（單次全隊技能總倍率，<b>不得大於 2.88</b>）。單張卡單次技能 20%～160%，滿隊整隊上限 ×2.88。</div>
       <div style="display:grid;grid-template-columns:{{ songPickCols }};gap:10px;margin-bottom:12px">
         <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">找歌（640 首曲庫）</span>
           <input type="text" placeholder="曲名關鍵字…" value="{{ epq }}" onInput="{{ onField }}" data-k="epq" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)"></label>
@@ -886,7 +886,7 @@ class Component extends DCLogic {
   OH = 15;
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
   PRESETS = {
-    t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:3,   s6:2.9, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
+    t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:2.88, s6:2.88, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
     casual:{ n:'輕鬆玩',   power:150000, bonus:120, energy:1,  skill:2,   s6:2,   mode:'solo',  song:1,  diff:'X', goal:300000,  scoreMode:'calc' }
   };
 
@@ -983,6 +983,21 @@ class Component extends DCLogic {
     if (s < 3600) return Math.floor(s / 60) + ' 分前';
     if (s < 86400) return Math.floor(s / 3600) + ' 時前';
     return Math.floor(s / 86400) + ' 天前';
+  }
+  _playAbnDirect(abn, title) {
+    if (!abn) return;
+    if (this._audio) this._audio.pause();
+    this.setState({ playAbn: abn, playerCur: title || this.state.playerCur });
+    const url = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
+    // 頁面已設 <meta referrer=no-referrer> → 請求不帶 Referer，繞過防盜連；同步 play() 保留使用者手勢
+    this._audio = new Audio(url);
+    this._audio.onended = () => this._onEnded();
+    this._audio.onerror = () => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); };
+    this._audio.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
+  }
+  _onEnded() {
+    if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); }
+    else this.setState({ playAbn: '' });
   }
   dur(ms) {
     if (ms == null) return '—';
@@ -1879,21 +1894,6 @@ class Component extends DCLogic {
         this._queue = null;   // 單首試聽：離開連播佇列
         this._playAbnDirect(abn, '');
       },
-      _playAbnDirect(abn, title) {
-        if (!abn) return;
-        if (this._audio) this._audio.pause();
-        this.setState({ playAbn: abn, playerCur: title || this.state.playerCur });
-        const url = 'https://storage.sekai.best/sekai-jp-assets/music/short/' + abn + '/' + abn + '_short.mp3';
-        // 頁面已設 <meta referrer=no-referrer> → 請求不帶 Referer，繞過防盜連；同步 play() 保留使用者手勢
-        this._audio = new Audio(url);
-        this._audio.onended = () => this._onEnded();
-        this._audio.onerror = () => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); };
-        this._audio.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
-      },
-      _onEnded() {
-        if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; const n = this._queue[this._qIdx]; this._playAbnDirect(n.abn, n.title); }
-        else this.setState({ playAbn: '' });
-      },
       onShuffleAll: () => {   // 隨機連續播放（依目前篩選/搜尋的播放範圍）
         const list = ((this.filteredSongs ? this.filteredSongs() : this.state.songs) || []).filter(x => x.abn);
         if (!list.length) { this.loadSongs(); return; }
@@ -1931,6 +1931,7 @@ class Component extends DCLogic {
       onField: e => {
         const d = e.currentTarget.dataset, v = d.num ? (e.target.value === '' ? 0 : +e.target.value) : e.target.value;
         const patch = { [d.k]: v };
+        if ((d.k === 'skill' || d.k === 's6') && v > 2.88) patch[d.k] = 2.88;   // 技能倍率＝時效值，上限 2.88
         if (d.k === 'gq' || d.k === 'gt') patch.gp = 1;
         if (d.k === 'sq' || d.k === 'ssort') patch.sp = 1;
         if (d.k === 'songKey') {
