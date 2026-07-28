@@ -39,9 +39,9 @@
         }
         :root.dark {
             --bg:#0c0f1d; --bg-soft:#101529; --card:#161b31; --card-2:#1d2340;
-            --text:#c6cde4; --text-light:#7e87a6; --primary:#e9ecfa; --secondary:#aab3d4;
-            --accent:#33cfe0; --accent-deep:#5cdaе8; --link:#5fd0e6;
-            --border:rgba(148,163,215,.14); --border-strong:rgba(148,163,215,.28);
+            --text:#ccd3e8; --text-light:#8a93b2; --primary:#eef1fc; --secondary:#b2bbd9;
+            --accent:#33cfe0; --accent-deep:#5cdae8; --link:#5fd0e6;
+            --border:rgba(148,163,215,.17); --border-strong:rgba(148,163,215,.32);
             --grad-ink:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
             --shadow-xs:0 1px 2px rgba(0,0,0,.25);
             --shadow-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
@@ -3226,7 +3226,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const max = Math.max(...valid.map(x=>x.score));
                     const min = Math.min(...valid.map(x=>x.score));
                     document.getElementById('trendTable').innerHTML=`
-                        <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin:10px 0;padding:10px 14px;background:#f5f5f5;border-radius:5px;">
+                        <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin:10px 0;padding:10px 14px;background:var(--card-2);border:1px solid var(--border);border-radius:5px;">
                             <span>平均：<strong>${fmtScore(avg)}</strong></span>
                             <span>最高：<strong>${fmtScore(max)}</strong>（#${valid.find(x=>x.score===max)?.id}）</span>
                             <span>最低：<strong>${fmtScore(min)}</strong>（#${valid.find(x=>x.score===min)?.id}）</span>
@@ -3316,7 +3316,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 const valid = scores.filter(s=>s!=null);
                 const statsHtml = valid.length ? `
-                    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin:10px 0;padding:10px 14px;background:#f5f5f5;border-radius:5px;">
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin:10px 0;padding:10px 14px;background:var(--card-2);border:1px solid var(--border);border-radius:5px;">
                         <span>平均：<strong>${fmtScore(valid.reduce((a,b)=>a+b,0)/valid.length)}</strong></span>
                         <span>最高：<strong>${fmtScore(Math.max(...valid))}</strong>（#${eventInfos[scores.indexOf(Math.max(...valid))]?.id}）</span>
                         <span>最低：<strong>${fmtScore(Math.min(...valid))}</strong>（#${eventInfos[scores.indexOf(Math.min(...valid))]?.id}）</span>
@@ -4408,12 +4408,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this._loading = MasterDB.get('skills.json').then(sk => { sk.forEach(s => { this.skills[s.id] = s; }); this._ready = true; return true; }).catch(() => { this._loading = null; return false; });
                 return this._loading;
             },
-            // 有效 score-up %:basic ＋ 角色等級加成 ＋(同團隊伍時)V家同團加成 ＋ BloomFES吸技能上限
-            // sameUnitN=同團成員數(此優化器假設同團=5);sl=技能等級(通常4);charRank=角色等級
-            effSkill(card, trained, sl, charRank, sameUnitN) {
+            // 有效 score-up %:basic ＋ 角色等級加成 ＋(同團隊伍時)V家同團加成 ＋ BloomFES吸技能上限 ＋ 混團(異團數)加成
+            // sameUnitN=同團成員數(同團隊假設=5,混團=1);sl=技能等級(通常4);charRank=角色等級;distinctOthers=隊上「非自己團」的團體數(混團技能用,同團隊=0)
+            effSkill(card, trained, sl, charRank, sameUnitN, distinctOthers) {
                 const sid = (trained && card.specialTrainingSkillId) ? card.specialTrainingSkillId : card.skillId;
                 const sk = this.skills[sid]; if (!sk) return 0;
-                let basic = 0, cr = 0, refMax = 0, sameUnit = 0;
+                distinctOthers = distinctOthers || 0;
+                let basic = 0, cr = 0, refMax = 0, sameUnit = 0, unitCnt = 0;
                 for (const e of (sk.skillEffects || [])) {
                     const t = e.skillEffectType;
                     const dets = e.skillEffectDetails || [];
@@ -4426,9 +4427,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         if (e.activateCharacterRank != null && e.activateCharacterRank <= charRank) cr = Math.max(cr, v);
                     } else if (t === 'other_member_score_up_reference_rate') {
                         refMax = Math.max(refMax, det ? (det.activateEffectValue2 || 0) : 0);
+                    } else if (t === 'score_up_unit_count') {
+                        // 混活限定技能:編組每有 1 種非自己所屬團體,分數再提升 v%(activateUnitCount=需要的異團數)
+                        if ((e.activateUnitCount || 0) <= distinctOthers) unitCnt = Math.max(unitCnt, v);
                     }
                 }
-                return basic + cr + sameUnit + refMax;
+                return basic + cr + sameUnit + refMax + unitCnt;
             }
         };
 
@@ -5064,9 +5068,32 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (this._jp) return this._jp;
                 if (this._jpLoading) return this._jpLoading;
                 this._jpLoading = Promise.all([
-                    IDBCache.wrap(this.JP + '/cards.json', 43200000), IDBCache.wrap(this.JP + '/eventDeckBonuses.json', 43200000), IDBCache.wrap(this.JP + '/eventCards.json', 43200000)
-                ]).then(([cards, deck, evCards]) => { this._jp = { cards, deck, evCards }; return this._jp; }).catch(() => { this._jpLoading = null; return null; });
+                    IDBCache.wrap(this.JP + '/cards.json', 43200000), IDBCache.wrap(this.JP + '/eventDeckBonuses.json', 43200000), IDBCache.wrap(this.JP + '/eventCards.json', 43200000),
+                    IDBCache.wrap(this.JP + '/cardEpisodes.json', 43200000).catch(() => null)
+                ]).then(([cards, deck, evCards, epi]) => {
+                    // 日服 cards.json 的 cardParameters 是舊版扁平陣列 → 正規化成 {param1:[],param2:[],param3:[]}
+                    // (PowerEngine.basePower 讀 p.param1[level-1];不正規化 → 日服限定卡綜合力算成 0)
+                    (cards || []).forEach(c => {
+                        const p = c.cardParameters;
+                        if (Array.isArray(p)) {
+                            const o = { param1: [], param2: [], param3: [] };
+                            p.forEach(x => { const a = o[x.cardParameterType]; if (a) a[(x.cardLevel | 0) - 1] = x.power || 0; });
+                            c.cardParameters = o;
+                        }
+                    });
+                    // 日服限定卡的前後篇加成(台服 cardEpisodes 沒這些 cardId)→ 先各自加總,待 PowerEngine 就緒後補進
+                    const epiSums = {};
+                    (epi || []).forEach(e => { const a = epiSums[e.cardId] = epiSums[e.cardId] || [0, 0, 0]; a[0] += e.power1BonusFixed || 0; a[1] += e.power2BonusFixed || 0; a[2] += e.power3BonusFixed || 0; });
+                    this._jp = { cards, deck, evCards, epiSums };
+                    return this._jp;
+                }).catch(() => { this._jpLoading = null; return null; });
                 return this._jpLoading;
+            },
+            // 把日服前後篇補進 PowerEngine.epi(只補台服缺的 cardId,避免共通卡重複加)
+            _mergeJPEpi() {
+                if (this._jpEpiMerged || !this._jp || !this._jp.epiSums) return;
+                Object.keys(this._jp.epiSums).forEach(id => { if (!PowerEngine.epi[id]) PowerEngine.epi[id] = this._jp.epiSums[id]; });
+                this._jpEpiMerged = true;
             },
             // 回傳該活動的資料源(台服 or 日服)
             async _src(evId) {
@@ -5163,6 +5190,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             // 純計算(不碰 DOM):去重每角色最佳 + bounded DFS,回傳最佳隊。_renderOpt 與 miniRun 共用。
             async _computeBest(src, type, opts) {
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
+                if (src.isJP) this._mergeJPEpi();   // 日服限定卡的前後篇補進 epi 表
                 const areaLv = opts.areaLv, charRank = opts.charRank || 50, mid = opts.songId || 0, boostN = opts.boostN || 0;
                 const F = EC_BOOST[boostN] || 1;
                 const maxLv = c => PowerEngine.cardMaxLevel(c);
@@ -5171,13 +5199,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const R = meta ? (meta.event_rate || 100) : 100;
                 const feverHalf = meta ? (meta.fever_score || 0) * 0.5 : 0;
                 const useEP = !!(meta && wSorted && wSorted.length >= 6);
-                const cand = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')
+                const pre = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')
                     .map(c => {
                         const b = this._cardBonus(c, this._evId, src);
                         const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
-                        const skill = SkillEngine.effSkill(c, true, 4, charRank, 5);   // 同團5、角色等級(輸入)、SL4
-                        return { c, bonus: b.per, deck: b.deck, special: b.special, charMatch: b.charMatch, baseSum: base[0] + base[1] + base[2], skill };
+                        return { c, bonus: b.per, deck: b.deck, special: b.special, charMatch: b.charMatch, baseSum: base[0] + base[1] + base[2] };
                     }).filter(x => x.charMatch || x.special > 0);
+                // 混團偵測:候選卡跨多個團(混活)→ 技能改用「異團 2 種」假設(unit_count 技能吃滿)、不吃 V家同團強化
+                const bands = new Set(pre.map(x => x.c.characterId <= 20 ? PowerEngine.charBands[x.c.characterId] : 'piapro'));
+                const mixed = bands.size > 1;
+                const cand = pre.map(x => Object.assign(x, { skill: SkillEngine.effSkill(x.c, true, 4, charRank, mixed ? 1 : 5, mixed ? 2 : 0) }));
                 cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
                 // 一隊每角色最多一張(プロセカ規則):去重取每角色最佳(cand 已按價值排序,首張=最佳)
                 const bestByChar = {};
