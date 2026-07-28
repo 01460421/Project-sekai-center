@@ -4825,7 +4825,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const t = document.getElementById('pwTotal'); if (t) t.textContent = total.toLocaleString();
                 const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0), sumMy = per.reduce((s, p) => s + (p.mysekai || 0), 0), sumCanvas = per.reduce((s, p) => s + (p.canvas || 0), 0), sumEpi = per.reduce((s, p) => s + (p.epi || 0), 0);
                 const b = document.getElementById('pwBreak');
-                if (b) b.textContent = `基礎 ${(sumBase - sumEpi).toLocaleString()} ＋ 前後篇 ${sumEpi.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()} ＋ 畫布 ${sumCanvas.toLocaleString()}`;
+                if (b) b.textContent = `基礎表現力 ${(sumBase + sumCanvas).toLocaleString()}（每張≈${Math.round((sumBase + sumCanvas) / (per.length || 5)).toLocaleString()}，含前後篇 ${sumEpi.toLocaleString()}、畫布 ${sumCanvas.toLocaleString()}） ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()}`;
                 const note = document.getElementById('pwNote');
                 if (note) note.textContent = `area item 可選到 Lv20(5週年;台服目前 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
             },
@@ -5289,7 +5289,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
                         <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
                     </div>
-                    <div class="ms-break">綜合力＝基礎 ${(sB - sEpi).toLocaleString()}　＋前後篇 ${sEpi.toLocaleString()}　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%　＋畫布 ${sCv.toLocaleString()}</div>
+                    <div class="ms-break">綜合力＝基礎表現力 ${(sB + sCv).toLocaleString()}（每張≈${Math.round((sB + sCv) / (per.length || 5)).toLocaleString()}，含前後篇 ${sEpi.toLocaleString()}＋畫布 ${sCv.toLocaleString()}）　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%</div>
                     ${useEP ? `<div class="ms-ep">
                         <div class="ms-ep-title">場均活動P　<span>歌：${songName}</span></div>
                         <div class="ms-ep-grid">
@@ -5368,10 +5368,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             _skill(skillId, sById) {
                 const sk = sById[skillId]; if (!sk) return '—';
-                const CAT = { score_up: '分數', score_up_keep: '持續分數', score_up_condition_life: '體力續分', life_score_up: '體力續分', life_recovery: '體力回復', score_up_character_rank: '角色等級分', score_up_unit_count: '同團加分', score_up_reference_rate: 'Fes吸技能', score_up_reference: 'Fes吸技能' };
-                const cat = CAT[sk.descriptionSpriteName] || '技能';
-                let mx = 0; (sk.skillEffects || []).forEach(e => (e.skillEffectDetails || []).forEach(d => { if ((d.activateEffectValueType === 'rate' || !d.activateEffectValueType) && (d.activateEffectValue || 0) > mx) mx = d.activateEffectValue; }));
-                return cat + (mx ? ` +${mx}%` : '');
+                // 依實際 skillEffects 判定（descriptionSpriteName 只是圖示，生日卡=life_recovery 會誤導）
+                let scoreUp = 0, life = false, cond = false, ref = false, unit = false, rank = false, keep = false;
+                (sk.skillEffects || []).forEach(e => {
+                    const t = String(e.skillEffectType || '');
+                    const last = (e.skillEffectDetails || []).slice().sort((a, b) => (a.level || 0) - (b.level || 0)).slice(-1)[0] || {};
+                    const v = last.activateEffectValue || 0;
+                    if (t === 'life_recovery') { life = true; return; }
+                    if (t.indexOf('score_up') === 0) {
+                        if ((last.activateEffectValueType === 'rate' || !last.activateEffectValueType) && v > scoreUp) scoreUp = v;
+                        if (t.indexOf('condition_life') >= 0) cond = true;
+                        if (t.indexOf('reference') >= 0) ref = true;
+                        if (t.indexOf('unit_count') >= 0) unit = true;
+                        if (t.indexOf('character_rank') >= 0) rank = true;
+                        if (t.indexOf('keep') >= 0) keep = true;
+                    }
+                });
+                if (!scoreUp) return life ? '體力回復' : '技能';
+                const label = ref ? 'Fes吸技能' : unit ? '同團加分' : rank ? '角色等級分' : cond ? '滿血續分' : keep ? '持續分數' : '分數';
+                return label + ' +' + scoreUp + '%' + (life ? '＋回血' : '');
             },
             async run() {
                 const el = document.getElementById('gachaDetailCard'); if (!el) return;
