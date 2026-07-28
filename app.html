@@ -520,6 +520,9 @@ input::placeholder{color:var(--text-3)}
           <select value="{{ songKey }}" onChange="{{ onField }}" data-k="songKey" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:42px;cursor:pointer;outline:none">
             <sc-for list="{{ songOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
           </select></label>
+        <sc-if value="{{ epEmpty }}">
+          <button type="button" onClick="{{ onReloadEp }}" style="margin-top:8px;width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent);font-size:12.5px;font-weight:700;cursor:pointer">{{ epMsg }}</button>
+        </sc-if>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px">
         <sc-for list="{{ diffChips }}" as="d" hint-placeholder-count="6">
@@ -748,10 +751,11 @@ input::placeholder{color:var(--text-3)}
 
   </div>
 </main>
+</div><!-- /shell：固定浮層移出 flex 容器，避免行動版網址列/視窗變動時底部欄位移 -->
 
 <!-- ========== 全局音樂播放器（收合式浮動） ========== -->
 <sc-if value="{{ playerOn }}">
-<div style="position:fixed;right:12px;bottom:{{ playerBottom }};z-index:59">
+<div style="position:fixed;right:12px;bottom:{{ playerBottom }};z-index:59;transform:translateZ(0);will-change:transform">
 
   <!-- 收合：浮動唱片圓鈕 -->
   <sc-if value="{{ playerMin }}">
@@ -805,7 +809,7 @@ input::placeholder{color:var(--text-3)}
 
 <!-- ========== 行動版 dock ========== -->
 <sc-if value="{{ isMobile }}">
-<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--border);box-shadow:var(--sh-md)">
+<div style="position:fixed;left:50%;transform:translateX(-50%) translateZ(0);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--border);box-shadow:var(--sh-md);will-change:transform">
   <sc-for list="{{ dockItems }}" as="d" hint-placeholder-count="5">
     <button type="button" onClick="{{ onDock }}" data-p="{{ d.id }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:62px;height:50px;border:none;border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:10px;font-weight:800;letter-spacing:.6px;cursor:pointer;transition:background .25s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.9)">
       <span style="width:8px;height:8px;border-radius:50%;background:{{ d.dot }}"></span>{{ d.name }}
@@ -923,7 +927,7 @@ input::placeholder{color:var(--text-3)}
   <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)">
     <svg viewBox="0 0 20 20" fill="none" style="width:17px;height:17px;color:var(--text-3);flex:none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
     <input type="text" placeholder="搜尋卡池、歌曲、功能，或輸入指令（例：ep 1500000）" value="{{ cmdq }}" onInput="{{ onCmdInput }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" style="flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:15.5px;padding:4px 2px">
-    <button type="button" onClick="{{ onCmdClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:16px;cursor:pointer">×</button>
+    <button type="button" onClick="{{ onCmdClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:16px;cursor:pointer">✕</button>
   </div>
   <div style="padding:7px 18px;border-bottom:1px solid var(--border);background:var(--card-2);font-size:11px;color:var(--text-3)">↑↓ 選擇 · Enter 執行 · Esc 關閉　指令：<b>ep 分數</b>、<b>加成 250</b>、<b>綜合力 280000</b>、<b>火 10</b></div>
   <div style="overflow-y:auto;padding:6px 0">
@@ -940,8 +944,6 @@ input::placeholder{color:var(--text-3)}
   </div>
 </div>
 </sc-if>
-
-</div>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}">
@@ -1012,7 +1014,7 @@ class Component extends DCLogic {
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
-    epSongs: [], tutQA: [], tutCats: [], tutDoc: '',
+    epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
     songKey: 74, diff: 'M', epq: '', skill: 2.5, s6: 2.5, scoreMode: 'calc', energy: 3, interval: 50,
     natHr: 0, lCan: 0, sCan: 0, crys: 0,
     power: 250000, bonus: 250, rate: 115, score: 1200000, mode: 'multi', life: 800,
@@ -1036,9 +1038,7 @@ class Component extends DCLogic {
     import('./data/sekai-data.js')
       .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
       .catch(() => {});
-    import('./data/ep-songs.js')
-      .then(m => this.setState({ epSongs: m.EP_SONGS || [] }))
-      .catch(() => {});
+    this.loadEpSongs();
     import('./data/tutorial-data.js')
       .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
       .catch(() => {});
@@ -1098,19 +1098,28 @@ class Component extends DCLogic {
     return Math.floor(s / 86400) + ' 天前';
   }
   /* 音量漸變（淡入／淡出）；done 於到位後回呼 */
-  _fadeTo(a, target, dur, done) {
-    if (this._fadeTimer) { clearInterval(this._fadeTimer); this._fadeTimer = null; }
+  _AC = { start: 10, clip: 60, fin: 3, fout: 3, vol: 0.88 };   // 起播秒／片段長／淡入／淡出／音量
+  _fadeTo(a, target, dur, done) {   // 音量漸變（計時器存在該 audio 上，可同時跑兩軌交叉）
+    if (!a) return;
+    if (a._ft) { clearInterval(a._ft); a._ft = null; }
     const start = (typeof a.volume === 'number') ? a.volume : 1;
     const steps = Math.max(1, Math.round(dur * 20)); let i = 0;
-    this._fadeTimer = setInterval(() => {
+    a._ft = setInterval(() => {
       i++; let v = start + (target - start) * (i / steps); v = v < 0 ? 0 : v > 1 ? 1 : v;
       try { a.volume = v; } catch (e) {}
-      if (i >= steps) { clearInterval(this._fadeTimer); this._fadeTimer = null; if (done) done(); }
+      if (i >= steps) { clearInterval(a._ft); a._ft = null; if (done) done(); }
     }, 50);
   }
+  _disposeAudio(a) {
+    if (!a) return;
+    if (a._ft) { clearInterval(a._ft); a._ft = null; }
+    a.ontimeupdate = a.onended = a.onerror = a.onplaying = a.onloadedmetadata = null;
+    try { a.pause(); } catch (e) {}
+    try { a.removeAttribute('src'); a.load(); } catch (e) {}
+  }
   _killAudio() {
-    if (this._fadeTimer) { clearInterval(this._fadeTimer); this._fadeTimer = null; }
-    if (this._audio) { try { this._audio.pause(); } catch (e) {} this._audio.ontimeupdate = this._audio.onended = this._audio.onerror = this._audio.onplaying = null; }
+    this._disposeAudio(this._audio); this._audio = null;
+    this._disposeAudio(this._nextA); this._nextA = null;
   }
   songAbn(x) {   // 依偏好挑選音源版本：虛擬歌手 ver／世界 ver（如無則回退）
     if (!x) return '';
@@ -1118,31 +1127,63 @@ class Component extends DCLogic {
     if (p === 'sekai') return x.abnS || x.abnV || x.abn || '';
     return x.abnV || x.abnS || x.abn || '';
   }
+  _newAudio(abn) {   // 建 audio，載入 metadata 後定位到起播秒（全曲版、no-referrer 繞防盜連）
+    const c = this._AC;
+    const a = new Audio('https://storage.sekai.best/sekai-jp-assets/music/long/' + abn + '/' + abn + '.mp3');
+    a.preload = 'auto'; try { a.volume = 0; } catch (e) {}
+    a._st = 0; a._fi = false; a._fo = false;
+    a.onloadedmetadata = () => { const st = (a.duration && a.duration > c.start + c.fin + c.fout + 2) ? c.start : 0; a._st = st; if (st) { try { a.currentTime = st; } catch (e) {} } };
+    return a;
+  }
+  _wire(a) {   // 綁定「目前曲」事件：淡入、到點淡出／交叉、結束／錯誤前進
+    const c = this._AC;
+    a.onplaying = () => { if (!a._fi) { a._fi = true; this._fadeTo(a, c.vol, c.fin); } };
+    a.ontimeupdate = () => {
+      if (a !== this._audio) return;
+      const end = Math.min(a._st + c.clip, a.duration || (a._st + c.clip));
+      if (!a._fo && a.currentTime >= end - c.fout) {
+        a._fo = true;
+        if (this._queue && this._queue.length > 1) this._crossfade(a);
+        else this._fadeTo(a, 0, c.fout, () => { if (this._queue) this._onEnded(); else { try { a.pause(); } catch (e) {} this.setState({ playAbn: '' }); } });
+      }
+    };
+    a.onended = () => { if (a === this._audio && !a._fo) this._onEnded(); };
+    a.onerror = () => { if (a === this._audio) { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); } };
+  }
+  _preloadNext() {   // 佇列模式：預先載入下一首，消除切歌空檔
+    this._disposeAudio(this._nextA); this._nextA = null;
+    const q = this._queue; if (!q || q.length < 2) return;
+    const nx = q[(this._qIdx + 1) % q.length], abn = this.songAbn(nx);
+    if (!abn) return;
+    const n = this._nextA = this._newAudio(abn); n._song = nx;
+    try { n.load(); } catch (e) {}
+  }
+  _crossfade(cur) {   // 淡出目前曲、同時淡入已預載的下一首（重疊 → 連續不間斷）
+    const c = this._AC;
+    this._fadeTo(cur, 0, c.fout, () => this._disposeAudio(cur));
+    this._qIdx = (this._qIdx + 1) % this._queue.length;
+    const nx = this._queue[this._qIdx];
+    let n = this._nextA; this._nextA = null;
+    if (!n) { n = this._newAudio(this.songAbn(nx)); n._song = nx; }
+    this._audio = n; this._cur = nx;
+    n._fi = true; n._fo = false;   // 手動淡入，避免 onplaying 重複淡入
+    this._wire(n);
+    try { if (n.currentTime < n._st) n.currentTime = n._st; } catch (e) {}
+    n.play().then(() => this._fadeTo(n, c.vol, c.fout)).catch(() => this._fadeTo(n, c.vol, c.fout));
+    this.setState({ playAbn: this.songAbn(nx), playerCur: nx.title, playerJkt: nx.jkt || '' });
+    this._preloadNext();
+  }
   _playSong(song) { if (!song) return; this._cur = song; this._playAbnDirect(this.songAbn(song), song.title, song.jkt || ''); }
   _playAbnDirect(abn, title, jkt) {
     if (!abn) return;
     this._killAudio();
     this.setState({ playAbn: abn, playerCur: title || this.state.playerCur, playerJkt: jkt != null ? jkt : this.state.playerJkt });
-    // 遊戲全曲版（long）；頁面已設 <meta referrer=no-referrer> → 不帶 Referer 繞過防盜連；同步 play() 保留使用者手勢
-    const url = 'https://storage.sekai.best/sekai-jp-assets/music/long/' + abn + '/' + abn + '.mp3';
-    const START = 10, CLIP = 60, FIN = 3, FOUT = 3, VOL = 0.88;   // 從第 10 秒起播 1 分鐘，淡入／淡出各 3 秒
-    const a = this._audio = new Audio(url);
-    a.preload = 'auto'; try { a.volume = 0; } catch (e) {}
-    a._fo = false; a._fi = false; a._st = 0;
-    a.onloadedmetadata = () => { const st = (a.duration && a.duration > START + FIN + FOUT + 2) ? START : 0; a._st = st; if (st) { try { a.currentTime = st; } catch (e) {} } };
-    a.onplaying = () => { if (!a._fi) { a._fi = true; this._fadeTo(a, VOL, FIN); } };
-    a.ontimeupdate = () => {
-      const end = Math.min(a._st + CLIP, a.duration || (a._st + CLIP));
-      if (!a._fo && a.currentTime >= end - FOUT) {
-        a._fo = true;
-        this._fadeTo(a, 0, FOUT, () => { if (this._queue) this._onEnded(); else { try { a.pause(); } catch (e) {} this.setState({ playAbn: '' }); } });
-      }
-    };
-    a.onended = () => this._onEnded();
-    a.onerror = () => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); };
+    const a = this._audio = this._newAudio(abn);
+    this._wire(a);
     a.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
+    this._preloadNext();   // 佇列模式先備好下一首
   }
-  _onEnded() {
+  _onEnded() {   // 手動下一首／自然結束／錯誤時的硬切前進
     if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; this._playSong(this._queue[this._qIdx]); }
     else this.setState({ playAbn: '' });
   }
@@ -1284,9 +1325,28 @@ class Component extends DCLogic {
     }
   }
 
+  /* 計算中心共用設定曲庫（EP 係數）：進頁時載入、可重試、含 fetch 後備，避免單次失敗後永遠空白 */
+  loadEpSongs(force) {
+    if (this._epLoading) return;
+    if (!force && this.state.epSongs && this.state.epSongs.length) return;
+    this._epLoading = true;
+    this.setState({ epErr: '' });
+    const done = arr => { this._epLoading = false; this.setState({ epSongs: arr || [], epErr: (arr && arr.length) ? '' : '曲庫載入失敗，點此重試' }); };
+    import('./data/ep-songs.js')
+      .then(m => done(m.EP_SONGS || []))
+      .catch(() => {
+        // 後備：直接抓檔文字，抽出 EP_SONGS 陣列（動態 import 被擋時仍能載入）
+        fetch('./data/ep-songs.js', { cache: 'reload' }).then(r => r.text()).then(t => {
+          const k = t.indexOf('EP_SONGS'), i = t.indexOf('[', k), j = t.lastIndexOf(']');
+          done((k >= 0 && i > k && j > i) ? JSON.parse(t.slice(i, j + 1)) : []);
+        }).catch(() => { this._epLoading = false; this.setState({ epErr: '曲庫載入失敗，點此重試' }); });
+      });
+  }
+
   /* ---------- 導航 ---------- */
   go(p) {
     if (p === 'songs') this.loadSongs();
+    if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -1951,6 +2011,7 @@ class Component extends DCLogic {
       ],
       songPickCols: s.mobile ? '1fr' : '1fr 1.4fr',
       epq: s.epq, songKey: s.songKey,
+      epEmpty: !(s.epSongs && s.epSongs.length), epMsg: s.epErr ? s.epErr : '曲庫載入中…（點此重新載入）', epCount: (s.epSongs || []).length,
       songRate: song ? song.rate : 100, songTime: song ? song.time : 0,
       songOptions: (() => {
         const q = s.epq.trim().toLowerCase();
@@ -2147,6 +2208,7 @@ class Component extends DCLogic {
         this.setState(patch);
       },
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
+      onReloadEp: () => this.loadEpSongs(true),
       onTut: e => {
         const k = e.currentTarget.dataset.i;
         this.setState(st => {

@@ -1850,8 +1850,11 @@
             <div class="note">選一個活動期,自動帶出期程、加成優先的理論隊伍、當期月卡玩偶(卡片排程),再算協力(多人)的場均分數與場均活動P。<strong>v1 為估算工具</strong>,理論隊伍以「活動加成最高」排序(未含個人卡池/技能最佳化)。</div>
             <div class="analysis-input" style="flex-wrap:wrap;gap:10px;">
                 <label style="font-size:14px;">活動期</label>
+                <input id="rsEventSearch" type="text" inputmode="text" placeholder="輸入期數或角色名（例：153 或 志步）" oninput="RunStudio.onEventSearch(this.value)" onkeydown="if(event.key==='Enter')RunStudio.onEventSearch(this.value,true)" list="rsEventList" style="flex:1;min-width:180px;max-width:240px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);">
+                <datalist id="rsEventList"></datalist>
                 <select id="rsEvent" onchange="RunStudio.onEvent()" style="max-width:280px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);"><option value="">載入中…</option></select>
             </div>
+            <div id="rsEventSearchHint" class="note" style="margin-top:4px;font-size:12px;color:var(--text-light);">可直接輸入期數或角色名快速跳轉，或用右側下拉選單。</div>
             <div id="rsEventInfo" class="note" style="margin-top:8px;"></div>
 
             <div style="font-size:14px;font-weight:600;color:var(--primary);margin:14px 0 6px;">理論隊伍
@@ -4984,6 +4987,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         + (twFuture.length ? '<optgroup label="台服未來檔期">' + twFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>' : '');
                     this._evId = started.length ? started[0].id : (list[0] && list[0].id);
                     sel.value = this._evId;
+                    this._fillEventList();
                 }
                 this.filterSongs();
                 this._ready = true;
@@ -5001,10 +5005,61 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const sel = document.getElementById('rsEvent');
                     if (sel && jpFuture.length && !sel.querySelector('optgroup[label^="日服"]')) {
                         sel.insertAdjacentHTML('beforeend', '<optgroup label="日服(台服約1年後)">' + jpFuture.map(e => `<option value="${e.id}">#${e.id} ${e.name}</option>`).join('') + '</optgroup>');
+                        this._fillEventList();
                     }
                 } catch (e) {} finally { this._jpEvLoading = false; }
             },
             _isJP(id) { return id > this._twMax; },
+            // 用選單目前選項填 datalist（供輸入框自動完成）
+            _fillEventList() {
+                const sel = document.getElementById('rsEvent'), dl = document.getElementById('rsEventList');
+                if (!sel || !dl) return;
+                dl.innerHTML = [...sel.options].filter(o => o.value).map(o => `<option value="${o.value}">${o.textContent.replace(/"/g, '')}</option>`).join('');
+            },
+            // 由卡池資料（GACHAS 的 eid/ech/ch）建立「角色名 → 活動 id」對照
+            _charMap() {
+                if (this.__charMap) return this.__charMap;
+                const m = {};
+                try {
+                    (typeof GACHAS !== 'undefined' ? GACHAS : []).forEach(g => {
+                        if (!g.eid) return;
+                        ((g.ch || '') + ',' + (g.ech || '')).split(/[,，、\/\s]+/).map(s => s.trim()).filter(Boolean).forEach(c => {
+                            (m[c] = m[c] || new Set()).add(String(g.eid));
+                        });
+                    });
+                } catch (e) {}
+                this.__charMap = m;
+                return m;
+            },
+            _charEventIds(name) {
+                name = (name || '').trim(); if (!name) return [];
+                const m = this._charMap(), out = new Set();
+                Object.keys(m).forEach(c => { if (c.includes(name) || name.includes(c)) m[c].forEach(id => out.add(id)); });
+                return [...out];
+            },
+            // 輸入框：輸入期數或角色/關鍵字 → 找到並選取對應活動
+            onEventSearch(q, enter) {
+                q = (q || '').trim(); if (!q) return;
+                const sel = document.getElementById('rsEvent'); if (!sel) return;
+                const opts = [...sel.options].filter(o => o.value);
+                const lc = q.toLowerCase();
+                let hit = null;
+                if (/^\d+$/.test(q)) {   // 純數字 → 期數 id
+                    hit = opts.find(o => o.value === q) || opts.find(o => o.value.startsWith(q)) || opts.find(o => ('#' + o.value + ' ' + o.textContent).toLowerCase().includes(lc));
+                }
+                if (!hit) {   // 角色名 → 由卡池對照活動
+                    const ids = this._charEventIds(q);
+                    if (ids.length) hit = opts.find(o => ids.includes(o.value));
+                }
+                if (!hit) hit = opts.find(o => o.textContent.toLowerCase().includes(lc));   // 活動名關鍵字
+                const hintEl = document.getElementById('rsEventSearchHint');
+                if (hit) {
+                    if (hit.value !== sel.value) { sel.value = hit.value; this.onEvent(); }
+                    if (hintEl) hintEl.textContent = '已跳至 ' + hit.textContent.trim();
+                } else if (enter && hintEl) {
+                    hintEl.textContent = '找不到符合「' + q + '」的活動（可試期數或角色名）';
+                }
+            },
             async _loadJP() {
                 if (this._jp) return this._jp;
                 if (this._jpLoading) return this._jpLoading;
