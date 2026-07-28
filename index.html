@@ -5308,7 +5308,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         if (!Array.isArray(m) || m.length <= 1000) {
                             // metas 只「直連」storage.sekai.best（CORS 會 reflect origin，正式站可用）；corsproxy/allorigins 會把 2.3MB 截成 159KB 故不用；給 45s（大檔）
                             const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 45000);
-                            const r = await fetch(url, { signal: ctrl.signal }); clearTimeout(timer);
+                            // storage.sekai.best 有防盜連（帶 Referer 會 403）→ 必須 no-referrer，瀏覽器才拿得到（curl 無 referer 才會成功誤導）
+                            const r = await fetch(url, { signal: ctrl.signal, referrerPolicy: 'no-referrer' }); clearTimeout(timer);
                             m = await r.json();
                             if (Array.isArray(m) && m.length > 1000) { try { IDBCache._set('u2:' + url, m); } catch (e) {} }
                         }
