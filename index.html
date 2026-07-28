@@ -1884,7 +1884,7 @@
                     </div>
                     <div class="calc-section">
                         <h4>5 人技能加分 %(協力房)<span style="font-weight:400;font-size:11px;color:var(--text-light);">　單卡 20%～160%・整隊上限約 288%</span></h4>
-                        <div class="calc-row" style="margin-bottom:6px;"><label>角色等級(BloomFES用)</label><input type="number" id="rsCharRank" value="50" min="1" max="200" oninput="RunStudio.onEvent()"></div>
+                        <div class="calc-row" style="margin-bottom:6px;"><label>角色等級(BloomFES用)</label><input type="number" id="rsCharRank" value="100" min="1" max="200" oninput="RunStudio.onEvent()"></div>
                         <div class="member-grid">
                             <div class="member-item"><label>自己(我的編組)</label><input type="number" id="rsP0" value="130" oninput="RunStudio.calc()"></div>
                             <div class="member-item"><label>隊友1</label><input type="number" id="rsP1" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
@@ -5191,7 +5191,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             async _computeBest(src, type, opts) {
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
                 if (src.isJP) this._mergeJPEpi();   // 日服限定卡的前後篇補進 epi 表
-                const areaLv = opts.areaLv, charRank = opts.charRank || 50, mid = opts.songId || 0, boostN = opts.boostN || 0;
+                const areaLv = opts.areaLv, charRank = opts.charRank || 100, mid = opts.songId || 0, boostN = opts.boostN || 0;
                 const F = EC_BOOST[boostN] || 1;
                 const maxLv = c => PowerEngine.cardMaxLevel(c);
                 const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid].master || SongEff._metas[mid].expert || Object.values(SongEff._metas[mid])[0]);
@@ -5205,16 +5205,23 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
                         return { c, bonus: b.per, deck: b.deck, special: b.special, charMatch: b.charMatch, baseSum: base[0] + base[1] + base[2] };
                     }).filter(x => x.charMatch || x.special > 0);
-                // 混團偵測:候選卡跨多個團(混活)→ 技能改用「異團 2 種」假設(unit_count 技能吃滿)、不吃 V家同團強化
-                const bands = new Set(pre.map(x => x.c.characterId <= 20 ? PowerEngine.charBands[x.c.characterId] : 'piapro'));
-                const mixed = bands.size > 1;
+                // 箱活/混活判定:看加成「角色」條目(排除 V 家)是否跨多個團。箱活=單一團 → 技能按同團5計;
+                // 混活 → 技能改用「異團 2 種」假設(unit_count 技能吃滿)、不吃 V家同團強化
+                const bonusBands = new Set();
+                for (const e of src.deck) {
+                    if (e.eventId !== this._evId || e.gameCharacterUnitId == null) continue;
+                    const g = EventCalc._gcu[e.gameCharacterUnitId];
+                    if (g && g.cid <= 20) bonusBands.add(PowerEngine.charBands[g.cid]);
+                }
+                const mixed = bonusBands.size > 1;
                 const cand = pre.map(x => Object.assign(x, { skill: SkillEngine.effSkill(x.c, true, 4, charRank, mixed ? 1 : 5, mixed ? 2 : 0) }));
                 cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
-                // 一隊每角色最多一張(プロセカ規則):去重取每角色最佳(cand 已按價值排序,首張=最佳)
-                const bestByChar = {};
-                cand.forEach(x => { const cid = x.c.characterId; if (!bestByChar[cid]) bestByChar[cid] = x; });
-                const pool = Object.values(bestByChar).slice(0, 20);
-                if (pool.length < 5) return { ok: false, reason: '符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。' };
+                // 一隊每角色最多一張(プロセカ規則);V 家卡按「純V/各支援團」分開保留變體——
+                // 箱活的同團隊需要 V@當期團 變體,不能被加成/數值略高的純V卡在去重時擠掉(否則 DFS 根本看不到同團解、丟失 area 翻倍)
+                const bestByKey = {};
+                cand.forEach(x => { const k = x.c.characterId + (x.c.characterId >= 21 ? ':' + (x.c.supportUnit || 'none') : ''); if (!bestByKey[k]) bestByKey[k] = x; });
+                const pool = Object.values(bestByKey).slice(0, 26);
+                if (new Set(pool.map(x => x.c.characterId)).size < 5) return { ok: false, reason: '符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。' };
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
                 const evalDeck = (power, bonus, skills) => {
                     if (!useEP) return power * (1 + bonus / 100);
@@ -5227,15 +5234,19 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     return Math.floor(base * R / 100 * (1 + bonus / 100)) * F;   // = 每局活動P
                 };
                 const n = pool.length; let best = null, bestObj = -1;
-                for (let a = 0; a < n - 4; a++) for (let b = a + 1; b < n - 3; b++) for (let c = b + 1; c < n - 2; c++)
-                    for (let d = c + 1; d < n - 1; d++) for (let e = d + 1; e < n; e++) {
+                const cbit = pool.map(x => 1 << x.c.characterId);   // 角色位元遮罩:同角色兩變體(純V/支援V)不可同隊
+                for (let a = 0; a < n - 4; a++) { const m1 = cbit[a];
+                for (let b = a + 1; b < n - 3; b++) { if (m1 & cbit[b]) continue; const m2 = m1 | cbit[b];
+                for (let c = b + 1; c < n - 2; c++) { if (m2 & cbit[c]) continue; const m3 = m2 | cbit[c];
+                    for (let d = c + 1; d < n - 1; d++) { if (m3 & cbit[d]) continue; const m4 = m3 | cbit[d];
+                    for (let e = d + 1; e < n; e++) { if (m4 & cbit[e]) continue;
                         const idx = [a, b, c, d, e];
                         const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 7);   // 豆森 MySekai：門4 + 1+1+1 = 7%
                         const bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
                         const skills = idx.map(i => pool[i].skill);
                         const obj = evalDeck(pw.total, bonus, skills);
                         if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
-                    }
+                    } } } } }
                 const chosen = best.idx.map(i => pool[i]);
                 return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)) };
             },
@@ -5245,7 +5256,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 await new Promise(r => setTimeout(r, 20));
                 const areaEl = document.getElementById('rsAreaLv');
                 const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
-                const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 50, songId: +document.getElementById('rsSong').value || 0, boostN: +document.getElementById('rsBoost').value || 0 });
+                const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 100, songId: +document.getElementById('rsSong').value || 0, boostN: +document.getElementById('rsBoost').value || 0 });
                 if (!r.ok) { teamEl.innerHTML = `<div class="note">${r.reason}</div>`; return; }
                 const { chosen, best, totalBonus, obj: bestObj, useEP } = r;
                 const bi = document.getElementById('rsBonus'); if (bi) bi.value = Math.round(totalBonus);
@@ -5263,7 +5274,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${x.skill}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
                     </table></div>
                     <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div></div>
-                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}、SL4、角色等級50、同團編成。${useEP ? '技能以有效 score-up%(basic＋角色等級＋同團V)逐卡計入,窗位以重排最佳化;混團技能(score_up_unit_count)/BloomFES吸技能為近似。選不同歌會影響最佳解。' : '未選歌:退回 綜合力×加成 目標。'}</div>`;
+                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}、SL4、角色等級100(BloomFES 理論倍率)。箱活會納入 V 家「當期團支援」變體湊同團(area 翻倍、V家同團技能);混活按異團編成計(area 不翻倍)。${useEP ? '技能以有效 score-up%(basic＋角色等級＋同團V＋異團數)逐卡計入,窗位以重排最佳化;BloomFES吸技能為近似。選不同歌會影響最佳解。' : '未選歌:退回 綜合力×加成 目標。'}</div>`;
             },
             calc() {
                 if (!this._ready) return;
@@ -5344,7 +5355,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 let src, r;
                 try {
                     src = await this._src(this._evId);   // 當期為台服，不觸發日服 master
-                    r = await this._computeBest(src, src.type, { areaLv: 15, charRank: 50, songId: this._miniSong(), boostN: 0 });
+                    r = await this._computeBest(src, src.type, { areaLv: 15, charRank: 100, songId: this._miniSong(), boostN: 0 });
                 } catch (e) { card.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; return; }
                 this._renderMiniCard(card, src, r, this._miniSong());
             },
