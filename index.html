@@ -4386,7 +4386,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const ab = this.areaBonus(base, m.card, effUnit, sameUnit, sameAttr, areaLevel);
                     const mb = Math.floor(bsum * mysekaiPct / 100);   // 豆森門+娃
                     const cv = this.canvasBonus(m.card);              // MySekai 畫布（4★每張+1500）
-                    const t = bsum + cb + ab + mb + cv; per.push({ base: bsum, charBonus: cb, areaBonus: ab, mysekai: mb, canvas: cv, total: t }); total += t;
+                    const epiArr = (m.epiRead && this.epi[m.card.id]) || [0, 0, 0];
+                    const epi = (epiArr[0] || 0) + (epiArr[1] || 0) + (epiArr[2] || 0);   // 前後篇劇情（已含在 bsum，另存供顯示）
+                    const t = bsum + cb + ab + mb + cv; per.push({ base: bsum, epi, charBonus: cb, areaBonus: ab, mysekai: mb, canvas: cv, total: t }); total += t;
                 });
                 return { total, per };
             }
@@ -4821,9 +4823,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 per.forEach((p, i) => { const out = document.querySelector(`[data-pw-out="${i}"]`); if (out) out.textContent = p.total.toLocaleString(); });
                 this._lastPower = total;
                 const t = document.getElementById('pwTotal'); if (t) t.textContent = total.toLocaleString();
-                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0), sumMy = per.reduce((s, p) => s + (p.mysekai || 0), 0), sumCanvas = per.reduce((s, p) => s + (p.canvas || 0), 0);
+                const sumBase = per.reduce((s, p) => s + p.base, 0), sumChar = per.reduce((s, p) => s + p.charBonus, 0), sumArea = per.reduce((s, p) => s + p.areaBonus, 0), sumMy = per.reduce((s, p) => s + (p.mysekai || 0), 0), sumCanvas = per.reduce((s, p) => s + (p.canvas || 0), 0), sumEpi = per.reduce((s, p) => s + (p.epi || 0), 0);
                 const b = document.getElementById('pwBreak');
-                if (b) b.textContent = `基礎 ${sumBase.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()} ＋ 畫布 ${sumCanvas.toLocaleString()}`;
+                if (b) b.textContent = `基礎 ${(sumBase - sumEpi).toLocaleString()} ＋ 前後篇 ${sumEpi.toLocaleString()} ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()} ＋ 畫布 ${sumCanvas.toLocaleString()}`;
                 const note = document.getElementById('pwNote');
                 if (note) note.textContent = `area item 可選到 Lv20(5週年;台服目前 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
             },
@@ -5275,6 +5277,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const sA = per.reduce((s, p) => s + (p.areaBonus || 0), 0);
                 const sM = per.reduce((s, p) => s + (p.mysekai || 0), 0);
                 const sCv = per.reduce((s, p) => s + (p.canvas || 0), 0);
+                const sEpi = per.reduce((s, p) => s + (p.epi || 0), 0);
                 const pct = x => sB ? (x / sB * 100).toFixed(1) : '0';
                 card.innerHTML = `
                     <div class="ms-top">
@@ -5286,7 +5289,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
                         <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
                     </div>
-                    <div class="ms-break">綜合力＝基礎 ${sB.toLocaleString()}　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%　＋畫布 ${sCv.toLocaleString()}</div>
+                    <div class="ms-break">綜合力＝基礎 ${(sB - sEpi).toLocaleString()}　＋前後篇 ${sEpi.toLocaleString()}　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%　＋畫布 ${sCv.toLocaleString()}</div>
                     ${useEP ? `<div class="ms-ep">
                         <div class="ms-ep-title">場均活動P　<span>歌：${songName}</span></div>
                         <div class="ms-ep-grid">
@@ -5295,7 +5298,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div><span>火 10</span><b>${ep(EC_BOOST[10])}</b></div>
                         </div>
                     </div>` : `<div class="ms-ep"><div class="ms-ep-title">綜合力目標（曲庫/music_metas 未載入，暫無法算活動P）</div></div>`}
-                    <a class="ms-more" href="./index.html#run-studio" target="_blank" rel="noopener">開完整跑榜工作室（可換活動/歌/自訂）→</a>`;
+                    <a class="ms-more" href="#" onclick="try{parent.postMessage({sekaiGoto:'deckpro'},'*')}catch(e){}return false;">開完整跑榜工作室（可換活動/歌/自訂）→</a>`;
             }
         };
 
@@ -5312,8 +5315,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 catch (e) { el.innerHTML = '<div class="ms-msg">玩家資料載入失敗。</div>'; return; }
                 try {
                     await EventCalc.ensure();
-                    await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
                     const [cards, evCards] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('eventCards.json')]);
+                    const readPower = (profile.totalPower && (profile.totalPower.totalPower || profile.totalPower.total_power)) || null;   // 直接帶遊戲讀取的實際綜合力
                     const cardById = {}; cards.forEach(c => cardById[c.id] = c);
                     const ud = profile.userDeck || {};
                     const ucById = {}; (profile.userCards || []).forEach(u => ucById[u.cardId] = u);
@@ -5333,8 +5336,6 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     }).filter(Boolean);
                     if (!members.length) { el.innerHTML = '<div class="ms-msg">查無編組卡片（此玩家可能未公開）。</div>'; return; }
                     const totalBonus = Math.round(members.reduce((s, m) => s + m.bonus.per, 0) * 10) / 10;
-                    const pwMembers = members.map(m => ({ card: m.c, level: m.uc.level || PowerEngine.cardMaxLevel(m.c), trained: m.trained, epiRead: true, mr: m.uc.masterRank || 0, rank: 200 }));
-                    const pw = PowerEngine.teamPower(pwMembers, 15, 7);
                     const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
                     const thumb = (c, tr) => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${tr && (c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
                     const evName = (src.ev && src.ev.name) || ('#' + evId);
@@ -5342,10 +5343,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-top"><div class="ms-ev"><span class="ms-type">我的編組</span><span class="ms-evname">${ud.name || '隊伍'}</span></div>
                         <div class="ms-sub">當期活動：${evName}　・依你的實際等級/突破/專精精算</div></div>
                         <div class="ms-thumbs">${members.map(m => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(m.c, m.trained)}" onerror="this.style.opacity=.15"><span>${EC_cidName(m.c.characterId)}</span><i>＋${m.bonus.per}%</i></div>`).join('')}</div>
-                        <div class="ms-kvs"><div class="ms-kv"><span>綜合力</span><b>${pw.total.toLocaleString()}</b></div><div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div></div>
-                        <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>突破</th><th>加成</th><th>綜合力</th></tr></thead>
-                        <tbody>${members.map((m, i) => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·專精' : ''}</td><td class="score">＋${m.bonus.per}%</td><td class="score">${pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>
-                        <div class="ms-break">加成＝符合當期活動的卡（deck＋特效＋MR）；綜合力用你的實際等級/MR/專精＋區域道具Lv15＋角色滿5%＋豆森7%＋畫布。純V家/非當期加成的卡顯示＋0%。</div>`;
+                        <div class="ms-kvs"><div class="ms-kv"><span>綜合力（讀取）</span><b>${readPower != null ? readPower.toLocaleString() : '—'}</b></div><div class="ms-kv"><span>當期活動加成</span><b>＋${totalBonus}%</b></div></div>
+                        <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>突破</th><th>當期加成</th></tr></thead>
+                        <tbody>${members.map(m => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·專精' : ''}</td><td class="score">＋${m.bonus.per}%</td></tr>`).join('')}</tbody></table></div>
+                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含你的區域道具/角色等級/豆森/畫布）。加成＝逐卡符合當期活動（deck＋特效＋MR），純V家/非當期卡＋0%。</div>`;
                 } catch (e) { el.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; }
             }
         };

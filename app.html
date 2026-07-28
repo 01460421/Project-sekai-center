@@ -908,6 +908,7 @@ class Component extends DCLogic {
     document.addEventListener('keydown', this._key);
     this._frameMsg = e => {
       const d = e && e.data;
+      if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame'].forEach(id => {
         const f = document.getElementById(id);
