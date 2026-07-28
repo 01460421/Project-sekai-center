@@ -402,7 +402,7 @@ input::placeholder{color:var(--text-3)}
       </sc-if>
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
         <div style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s" style-hover="background:var(--bg-soft)">
-          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);font-size:12px;cursor:pointer">{{ s.playIcon }}</button>#{{ s.id }}</span>
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:block"><path d="{{ s.playPath }}"></path></svg></button>#{{ s.id }}</span>
           <span onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情（難度/封面）" style="min-width:0;cursor:pointer"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
             <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
@@ -433,7 +433,7 @@ input::placeholder{color:var(--text-3)}
         <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
           <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
             <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block">
-            <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32)">{{ s.playIcon }}</button>
+            <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" style="display:block"><path d="{{ s.playPath }}"></path></svg></button>
           </div>
           <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" style="padding:8px 10px 10px;cursor:pointer">
             <div style="font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ s.title }}</div>
@@ -730,8 +730,8 @@ input::placeholder{color:var(--text-3)}
   <sc-if value="{{ isWhatsNew }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:13px">
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 12%,var(--card)),var(--card));box-shadow:var(--sh-xs)">
-      <div style="font-size:15px;font-weight:800;color:var(--ink)">近期更新了什麼</div>
-      <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">以下為本站 App 版近期新增與調整的功能，點卡片按鈕可直接前往體驗。</div>
+      <div style="font-size:15px;font-weight:800;color:var(--ink)">所有功能一覽</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">本站 App 版的完整功能列表，點各卡片按鈕可直接前往該功能。</div>
     </div>
     <sc-for list="{{ changelog }}" as="c" hint-placeholder-count="6">
       <div style="padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-2px);box-shadow:var(--sh-sm)">
@@ -757,8 +757,8 @@ input::placeholder{color:var(--text-3)}
   <sc-if value="{{ playerMin }}">
     <button type="button" onClick="{{ onPlayerMin }}" title="展開播放器" style="position:relative;width:60px;height:60px;border:none;border-radius:50%;padding:0;cursor:pointer;background:var(--cta);box-shadow:0 8px 26px rgba(37,125,220,.42);overflow:hidden">
       <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="this.style.display='none'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;animation:{{ playerSpin }}">
-      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:rgba(10,14,28,.5)"></span>
-      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.55)">{{ playerIcon }}</span>
+      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:rgba(10,14,28,.5)"></span>
+      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex"><svg viewBox="0 0 24 24" width="13" height="13" fill="#fff" style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))"><path d="{{ playIconPath }}"></path></svg></span>
     </button>
   </sc-if>
 
@@ -773,13 +773,13 @@ input::placeholder{color:var(--text-3)}
         <div style="font-size:13px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerCur }}</div>
         <div style="font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">{{ playerSub }}</div>
       </div>
-      <button type="button" onClick="{{ onPlayerMin }}" title="收合" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:15px;line-height:1;cursor:pointer">⌄</button>
-      <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);font-size:12px;cursor:pointer">✕</button>
+      <button type="button" onClick="{{ onPlayerMin }}" title="收合" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 9.5l6 6 6-6"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display:block"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:15px;margin-top:12px">
-      <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:13px;cursor:pointer">⏮</button>
-      <button type="button" onClick="{{ onPlayerToggle }}" title="播放／暫停" style="width:46px;height:46px;border:none;border-radius:50%;background:var(--cta);color:#fff;font-size:17px;cursor:pointer;box-shadow:0 4px 15px rgba(37,125,220,.36)">{{ playerIcon }}</button>
-      <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);font-size:13px;cursor:pointer">⏭</button>
+      <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:block"><path d="M7 5h2.3v14H7z"></path><path d="M20 5v14L9.6 12z"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerToggle }}" title="播放／暫停" style="width:46px;height:46px;border:none;border-radius:50%;background:var(--cta);color:#fff;cursor:pointer;box-shadow:0 4px 15px rgba(37,125,220,.36);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="#fff" style="display:block"><path d="{{ playIconPath }}"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:block"><path d="M14.7 5H17v14h-2.3z"></path><path d="M4 5v14l10.4-7z"></path></svg></button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)">
       <span style="font-size:10px;font-weight:800;color:var(--text-3);letter-spacing:.5px;flex:none">音源</span>
@@ -912,7 +912,7 @@ input::placeholder{color:var(--text-3)}
       </div>
     </sc-for>
   </div>
-  <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ songDetailData.abn }}" style="width:100%;padding:11px;border:none;border-radius:12px;background:var(--cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer">▶ 試聽</button>
+  <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ songDetailData.abn }}" style="width:100%;padding:11px;border:none;border-radius:12px;background:var(--cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px"><svg viewBox="0 0 24 24" width="15" height="15" fill="#fff" style="display:block"><path d="M8 5v14l11-7z"></path></svg>試聽（全曲版）</button>
 </div>
 </sc-if>
 
@@ -978,15 +978,22 @@ class Component extends DCLogic {
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
     tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
-    whatsnew: ['功能更新', '本站近期新增功能與變更紀錄']
+    whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
   };
   CHANGELOG = [
-    { date: '2027/07', title: '收合式浮動音樂播放器', desc: '全站漂浮播放器可一鍵收合成唱片圓鈕；播放遊戲全曲版，每首自第 10 秒起播 1 分鐘、淡入淡出各 3 秒。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '2027/07', title: '音源版本切換（虛擬／世界 ver）', desc: '播放器可切換虛擬歌手 ver 或世界 ver（如該曲有提供），切換後立即以新版本重播。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '2027/07', title: '歌曲方格檢視 ＋ 難度排序', desc: '歌曲清單新增封面方格檢視，並修正難度（EX／MAS／APD）排序與難度標籤顯示。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '2027/07', title: '選團連播', desc: '於播放器直接挑選團體即可隨機連播該團全部曲目。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '2027/07', title: '我的排名 ＋ 排名詳情', desc: '綁定 Player ID 後顯示個人編組綜合力（直接帶讀取值）與周回／場均／時速等細節，點任一排名列即可展開。', to: 'rank', cta: '前往活動排名' },
-    { date: '2027/07', title: '卡池詳情', desc: '點卡池列表項目顯示該期 PU 卡面、完整技能與詳細資訊。', to: 'gacha', cta: '前往卡池列表' }
+    { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
+    { date: '日曆', title: '活動日曆', desc: '卡池與活動開放期間（台服預測時間），點日期可看當日活動。', to: 'calendar', cta: '前往活動日曆' },
+    { date: '卡池', title: '卡池列表', desc: '台服預測卡池；點任一項目顯示該期 PU 卡面、完整技能與詳細資訊。', to: 'gacha', cta: '前往卡池列表' },
+    { date: '歌曲', title: '歌曲清單（列表／方格）', desc: '完整樂曲資料庫，可切列表或封面方格檢視；支援搜尋、依團體篩選、依難度或加入時間排序，難度標籤 EASY→APPEND 完整顯示。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '歌曲', title: '歌曲詳情', desc: '點曲目查看封面、各難度等級與 note 數。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '播放器', title: '收合式浮動音樂播放器', desc: '播放遊戲全曲版，每首自第 10 秒起播 1 分鐘、淡入淡出各 3 秒；可收合成唱片圓鈕、跨頁持續播放。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '播放器', title: '虛擬／世界 ver 切換 ＋ 選團連播', desc: '一鍵切換虛擬歌手 ver 或世界 ver（如有）；於播放器直接挑團即可隨機連播該團全部曲目。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '排名', title: '活動排名', desc: 'HiSekai API 即時排名與分段榜線，每 60 秒更新；點任一排名列查看周回／場均／時速（近 1／3／24 小時）。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '我的排名', desc: '綁定 Player ID 後顯示個人編組綜合力（直接帶遊戲讀取值）與即時名次、詳細數據。', to: 'rank', cta: '前往活動排名' },
+    { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位一站式工具。', to: 'calc', cta: '前往計算中心' },
+    { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
+    { date: '學習', title: '教學大全', desc: '106 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
+    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
   OH = 15;
@@ -1525,7 +1532,7 @@ class Component extends DCLogic {
       ['追蹤', [['rank', '活動排名', '#ff9db4']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['res', '資源連結', '#ffd94d'], ['whatsnew', '功能更新', '#8be0d0']]]
+      ['更多', [['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -1761,7 +1768,7 @@ class Component extends DCLogic {
       const ab = this.songAbn(x);
       const on = !!(s.playAbn === ab && ab);
       return {
-        id: x.id, title: x.title, composer: x.composer || '—', abn: ab, playIcon: on ? '⏸' : '▶',
+        id: x.id, title: x.title, composer: x.composer || '—', abn: ab, playIcon: on ? '⏸' : '▶', playPath: on ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
         jacket: x.jkt ? ('https://storage.sekai.best/sekai-jp-assets/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '', playing: on,
         cardBd: on ? 'var(--accent)' : 'var(--border)', gBtnBg: on ? 'var(--cta)' : 'rgba(15,20,40,.58)',
         units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
@@ -1823,6 +1830,7 @@ class Component extends DCLogic {
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
+      playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
       playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,
       playerBottom: s.mobile ? 'calc(72px + env(safe-area-inset-bottom,0px))' : '22px',
       playerSpin: s.playAbn ? 'spin 10s linear infinite' : 'none',
