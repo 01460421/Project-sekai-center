@@ -172,6 +172,9 @@ input::placeholder{color:var(--text-3)}
           <div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:2.2px;opacity:.85">
             <i style="width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulseDot 2s infinite"></i>{{ liveState }}
           </div>
+          <sc-if value="{{ hasLiveArt }}">
+            <img src="{{ liveLogo }}" referrerpolicy="no-referrer" decoding="async" alt="{{ liveName }}" style="display:block;width:min(290px,74%);max-height:74px;object-fit:contain;object-position:left;margin:10px 0 2px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))">
+          </sc-if>
           <div style="font-size:clamp(21px,3.2vw,29px);font-weight:800;line-height:1.25;margin-top:9px">{{ liveName }}</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
             <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
@@ -1026,6 +1029,10 @@ class Component extends DCLogic {
   ];
   EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
   // 每局額外耗時(秒):協力/排位要配對＋等待全員＋結算,遠比個人長
+  ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+  // 官方角色代表色（gameCharacterUnits.json colorCode）
+  CHARA_COLOR = { 1:'#33aaee',2:'#ffdd44',3:'#ee6666',4:'#bbdd22',5:'#ffccaa',6:'#99ccff',7:'#ffaacc',8:'#99eedd',9:'#ff6699',10:'#00bbdd',11:'#ff7722',12:'#0077dd',13:'#ffbb00',14:'#ff66bb',15:'#33dd99',16:'#bb88ee',17:'#bb6688',18:'#8888cc',19:'#ccaa88',20:'#ddaacc',21:'#33ccbb',22:'#ffcc11',23:'#ffee11',24:'#ffbbcc',25:'#dd4444',26:'#3366cc' };
+  charaSd(id) { return this.ASSET + '/character/character_sd_l/chr_sp_' + id + '.webp'; }   // SD 頭像，每張約 8KB
   OH = { solo: 15, auto: 15, multi: 45, cheer: 45 };
   ohOf(mode) { const v = this.OH[mode]; return v == null ? 15 : v; }
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
@@ -1041,6 +1048,7 @@ class Component extends DCLogic {
     gq: '', gu: 'all', gt: '', gp: 1,
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     theme: 'auto',   // auto=跟隨系統 / light / dark
+    evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
@@ -1078,6 +1086,7 @@ class Component extends DCLogic {
       .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
       .catch(() => {});
     this.loadEpSongs();
+    this.loadEventArt();
     import('./data/tutorial-data.js')
       .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
       .catch(() => {});
@@ -1385,6 +1394,17 @@ class Component extends DCLogic {
     } catch (e) {
       this.setState({ songLoad: false, songErr: '歌曲資料載入失敗' });
     }
+  }
+
+  /* 活動美術：由主資料庫取 assetbundleName（HiSekai 只給 id/名稱），用於首頁 hero 的 logo／角色圖 */
+  loadEventArt() {
+    if (this._evArtLoading || Object.keys(this.state.evArt || {}).length) return;
+    this._evArtLoading = true;
+    fetch(this.TDB + '/events.json').then(r => r.json()).then(list => {
+      const m = {};
+      (list || []).forEach(e => { if (e.id != null && e.assetbundleName) m[e.id] = e.assetbundleName; });
+      this.setState({ evArt: m });
+    }).catch(() => { this._evArtLoading = false; });
   }
 
   /* 計算中心共用設定曲庫（EP 係數）：進頁時載入、可重試、含 fetch 後備，避免單次失敗後永遠空白 */
@@ -1891,7 +1911,7 @@ class Component extends DCLogic {
       const on = !!(s.playAbn === ab && ab);
       return {
         id: x.id, title: x.title, composer: x.composer || '—', abn: ab, playIcon: on ? '⏸' : '▶', playPath: on ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
-        jacket: x.jkt ? ('https://storage.sekai.best/sekai-jp-assets/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '', playing: on,
+        jacket: x.jkt ? (this.ASSET + '/thumbnail/music_jacket/' + x.jkt + '.webp') : '', playing: on,   // 縮圖版(約10–27KB),清單一次30張才不會爆流量
         cardBd: on ? 'var(--accent)' : 'var(--border)', gBtnBg: on ? 'var(--cta)' : 'rgba(15,20,40,.58)',
         units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
         diffs: dOrder.filter(d => x.lv[d]).map(d => ({ v: x.lv[d], c: dColor[d] })),
@@ -1997,6 +2017,8 @@ class Component extends DCLogic {
       liveCountdown: endMs ? this.dur(endMs - now) : '—',
       liveProgress: (prog * 100).toFixed(1) + '%',
       liveProgressLabel: startMs && endMs ? '已過 ' + Math.round(prog * 100) + '%' : '',
+      liveLogo: (ev.id != null && s.evArt[ev.id]) ? (this.ASSET + '/event/' + s.evArt[ev.id] + '/logo/logo.webp') : '',
+      hasLiveArt: !!(ev.id != null && s.evArt[ev.id]),
       hasPlayer: !!s.pid, noPlayer: !s.pid, pidInput: s.pidInput, playerErr: s.pErr,
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
       playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
