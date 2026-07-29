@@ -998,7 +998,9 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
-  OH = 15;
+  // 每局額外耗時(秒):協力/排位要配對＋等待全員＋結算,遠比個人長
+  OH = { solo: 15, auto: 15, multi: 45, cheer: 45 };
+  ohOf(mode) { const v = this.OH[mode]; return v == null ? 15 : v; }
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
   PRESETS = {
     t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:2.88, s6:2.88, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
@@ -1397,7 +1399,7 @@ class Component extends DCLogic {
     const rate = song ? song.rate : (+s.rate || 100), time = song ? song.time : 100;
     const score = this.scoreNow(song), F = this.EM[s.energy] || 1;
     const ep = this.calcEPValue(s.mode, score, rate, +s.bonus || 0, F, +s.power || 0, +s.life || 0);
-    const cycle = time + this.OH;
+    const cycle = time + this.ohOf(s.mode);
     const modeName = { solo: 'Solo/Auto', auto: 'Solo/Auto', multi: 'Multi', cheer: 'Cheer' }[s.mode];
     const detail = (s.mode === 'solo' || s.mode === 'auto')
       ? '⌊(100 + ⌊' + this.n(score) + '/20000⌋) × ' + rate + '/100 × ' + ((+s.bonus || 0) / 100 + 1).toFixed(2) + '⌋ × ' + F
@@ -1696,7 +1698,7 @@ class Component extends DCLogic {
         { l: '差引體力', v: this.n(pl.net), sub: '已扣可回復 ' + this.n(pl.recoverable) },
         { l: '石換體約', v: this.n(pl.crystal), sub: '每 10 體 100 石' }
       ];
-      formulaText = '場次 = ⌈(目標 − 目前) ÷ 每局 EP⌉；時間 = 場次 × (歌長 + 15s)';
+      formulaText = '場次 = ⌈(目標 − 目前) ÷ 每局 EP⌉；時間 = 場次 × (歌長 + ' + this.ohOf(s.mode) + 's)';
       formulaNote = '可回復體力 = 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10。';
     } else if (s.ctab === 'mult') {
       calcInputTitle = '推隊倍率';

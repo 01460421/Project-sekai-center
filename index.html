@@ -5309,8 +5309,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
                 const R = meta.event_rate || 100;
                 const epPerGame = Math.floor(base * R / 100 * (1 + B / 100)) * F;
-                // 全期預估:每局 = 歌長+40 秒;假設每天有效跑 X 小時由使用者自算,這裡給每小時與滿體力估
-                const perGameSec = (meta.music_time || 120) + 40;
+                // 全期預估:協力每局 = 歌長+45 秒(配對＋等待全員＋結算);每天有效時數由使用者自算,這裡給每小時估
+                const perGameSec = (meta.music_time || 120) + 45;
                 const gamesPerHour = Math.floor(3600 / perGameSec);
                 const epPerHour = epPerGame * gamesPerHour;
                 el.innerHTML = `
@@ -5575,13 +5575,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     if (mode === 'multi') { const O = 4 * S; base = 110 + Math.floor(S / 17000) + Math.min(13, Math.floor(O / 340000)); }
                     else base = 100 + Math.floor(S / 20000);
                     const ep = Math.floor(base * R / 100 * (1 + B / 100)) * F;
-                    const T = time + 30;
+                    const T = time + (mode === 'multi' ? 45 : 15);   // 協力要配對＋等全員＋結算(+45);個人只有結算(+15)
                     rows.push({ mid: +mid, title: titleById[+mid] || ('#' + mid), R, time, ep, perMin: ep * 60 / T, perBoost: boostN > 0 ? ep / boostN : ep });
                 });
                 const sort = document.getElementById('seSort').value;
                 rows.sort((a, b) => sort === 'perPlay' ? b.ep - a.ep : sort === 'perBoost' ? b.perBoost - a.perBoost : b.perMin - a.perMin);
                 const top = rows.slice(0, 60);
-                el.innerHTML = `<div class="note" style="margin-top:0;">共 ${rows.length} 首,顯示前 60。以固定分數 ${S.toLocaleString()}／加成 ${B}%／火 ${boostN} 估每局 EP;「每分 EP」以歌長＋30 秒估。</div>
+                el.innerHTML = `<div class="note" style="margin-top:0;">共 ${rows.length} 首,顯示前 60。以固定分數 ${S.toLocaleString()}／加成 ${B}%／火 ${boostN} 估每局 EP;「每分 EP」以歌長＋${mode === 'multi' ? '45' : '15'} 秒估(${mode === 'multi' ? '協力含配對／等待／結算' : '個人含結算'})。</div>
                     <div class="table-wrapper"><table>
                     <thead><tr><th>#</th><th>歌曲</th><th title="event_rate">係數R</th><th>時長</th><th>每局EP</th><th>每分EP</th><th title="每火 EP,省體力指標">每火EP</th></tr></thead>
                     <tbody>${top.map((r, i) => `<tr><td>${i + 1}</td><td style="font-size:13px;">${r.title}</td><td>${r.R}</td><td>${r.time.toFixed(0)}s</td><td>${r.ep.toLocaleString()}</td><td>${Math.round(r.perMin).toLocaleString()}</td><td>${Math.round(r.perBoost).toLocaleString()}</td></tr>`).join('')}</tbody>
