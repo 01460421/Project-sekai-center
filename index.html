@@ -119,7 +119,8 @@
         .gs-ceil{height:8px;border-radius:999px;background:var(--card-2);overflow:hidden;border:1px solid var(--border);}
         .gs-ceil i{display:block;height:100%;background:var(--grad-cta);transition:width .5s var(--ease);}
         /* 十連結果網格 */
-        .gs-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;max-width:640px;}
+        .gs-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;max-width:960px;}
+        @media (max-width:900px){.gs-grid{gap:9px;}}
         @media (max-width:520px){.gs-grid{gap:5px;}.gs-nm{display:none;}}
         .gs-slot{text-align:center;min-width:0;}
         .gs-card{position:relative;border-radius:11px;overflow:hidden;cursor:zoom-in;
@@ -130,10 +131,10 @@
         .gs-hi::after{content:'';position:absolute;inset:0;pointer-events:none;
             background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.8) 50%,transparent 65%);
             animation:gsShine 1s ease-out .35s both;}
-        .gs-pu{position:absolute;left:0;right:0;bottom:0;font-size:9px;font-weight:800;letter-spacing:.5px;
+        .gs-pu{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;font-weight:800;letter-spacing:.5px;
             padding:2px 0;background:#f0619e;color:#fff;}
-        .gs-rar{font-size:10px;font-weight:800;margin-top:4px;}
-        .gs-nm{font-size:9.5px;color:var(--text-light);line-height:1.3;margin-top:1px;
+        .gs-rar{font-size:11px;font-weight:800;margin-top:5px;}
+        .gs-nm{font-size:10.5px;color:var(--text-light);line-height:1.35;margin-top:2px;
             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
         /* 機率統計 */
         .gs-stat{padding:13px 15px;border-radius:var(--r-md);background:var(--card-2);border:1px solid var(--border);}
@@ -5878,7 +5879,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ${pk.length ? `<div>
                       <div style="font-size:11.5px;font-weight:800;color:var(--text-light);margin-bottom:6px;">本期 PICK UP</div>
                       <div style="display:flex;gap:7px;flex-wrap:wrap;">${pk.map(c => `
-                        <div class="gs-card" style="--gs-c:#f0619e;width:64px;flex:none;" onclick="GachaSim.openCard(${c.id})" title="${this._esc(c.prefix || '')}">
+                        <div class="gs-card" style="--gs-c:#f0619e;width:76px;flex:none;" onclick="GachaSim.openCard(${c.id})" title="${this._esc(c.prefix || '')}">
                           <img referrerpolicy="no-referrer" src="${this.thumb(c)}" alt="" onerror="this.style.opacity=.15"></div>`).join('')}</div>
                     </div>` : ''}
 
