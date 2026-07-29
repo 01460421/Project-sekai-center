@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍 */
+try{var _t=localStorage.getItem('sekai-app-theme');if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js"};</script>
 <script src="./support.js"></script>
@@ -33,7 +35,8 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --nm-bg:#def5e6;--nm-fg:#2f9e57;--ot-bg:#edf0f7;--ot-fg:#5d6884;
 --anim:.5s;
 }
-@media (prefers-color-scheme:dark){:root{
+/* 深色變數:跟隨系統(未手動指定淺色時)＋手動指定深色,兩者共用同一組值 */
+@media (prefers-color-scheme:dark){:root:not(.theme-light){
 --bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
 --text:#ccd3e8;--text-2:#a2abc9;--text-3:#8a93b2;--ink:#eef1fc;
 --accent:#33cfe0;--accent-deep:#5fd0e6;
@@ -46,6 +49,19 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
 }}
+:root.theme-dark{
+--bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
+--text:#ccd3e8;--text-2:#a2abc9;--text-3:#8a93b2;--ink:#eef1fc;
+--accent:#33cfe0;--accent-deep:#5fd0e6;
+--border:rgba(148,163,215,.17);--border-2:rgba(148,163,215,.32);
+--ink-grad:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
+--sh-xs:0 1px 2px rgba(0,0,0,.25);--sh-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
+--sh-md:0 2px 6px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35);--sh-lg:0 8px 20px rgba(0,0,0,.35),0 28px 70px rgba(0,0,0,.5);
+--fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;
+--paid-bg:#332d08;--paid-fg:#ffe066;--bd-bg:#2a1440;--bd-fg:#d0a5ff;
+--rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
+--nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
+}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
@@ -124,6 +140,17 @@ input::placeholder{color:var(--text-3)}
         <span style="font-size:12.5px;font-weight:700;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerName }}</span>
       </button>
     </sc-if>
+    <button type="button" onClick="{{ onTheme }}" title="{{ themeTitle }}" aria-label="{{ themeTitle }}" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);cursor:pointer;box-shadow:var(--sh-xs);transition:color .2s,border-color .2s" style-hover="color:var(--accent);border-color:var(--border-2)">
+      <sc-if value="{{ themeIsLight }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:17px;height:17px"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.6v2.2M12 19.2v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"></path></svg>
+      </sc-if>
+      <sc-if value="{{ themeIsDark }}">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:17px;height:17px"><path d="M20.7 14.6A8.6 8.6 0 0 1 9.4 3.3a8.8 8.8 0 1 0 11.3 11.3z"></path></svg>
+      </sc-if>
+      <sc-if value="{{ themeIsAuto }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><circle cx="12" cy="12" r="8.4"></circle><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"></path></svg>
+      </sc-if>
+    </button>
     <sc-if value="{{ isMobile }}">
       <button type="button" onClick="{{ onCmdOpen }}" aria-label="搜尋" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--sh-xs)">
         <svg viewBox="0 0 20 20" fill="none" style="width:16px;height:16px"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
@@ -1013,6 +1040,7 @@ class Component extends DCLogic {
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1,
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
+    theme: 'auto',   // auto=跟隨系統 / light / dark
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
@@ -1036,6 +1064,15 @@ class Component extends DCLogic {
     const onMq = e => this.setState({ mobile: e.matches });
     this.setState({ mobile: this.mq.matches });
     this.mq.addEventListener ? this.mq.addEventListener('change', onMq) : this.mq.addListener(onMq);
+
+    // 主題:讀取已存偏好(無=跟隨系統);系統色變更時,auto 模式要跟著更新 theme-color
+    this.mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+    let savedTheme = 'auto';
+    try { savedTheme = localStorage.getItem('sekai-app-theme') || 'auto'; } catch (e) {}
+    this.setState({ theme: savedTheme });
+    this.applyTheme(savedTheme);
+    const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
+    this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
     import('./data/sekai-data.js')
       .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
@@ -1189,6 +1226,21 @@ class Component extends DCLogic {
     if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; this._playSong(this._queue[this._qIdx]); }
     else this.setState({ playAbn: '' });
   }
+  /* ---------- 主題（淺色／深色／跟隨系統） ---------- */
+  applyTheme(t) {
+    const c = document.documentElement.classList;
+    c.remove('theme-dark', 'theme-light');
+    if (t === 'dark') c.add('theme-dark'); else if (t === 'light') c.add('theme-light');
+    const dark = t === 'dark' || (t === 'auto' && this.mqDark && this.mqDark.matches);
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = dark ? '#0c0f1d' : '#eef1f9';
+    try { if (t === 'auto') localStorage.removeItem('sekai-app-theme'); else localStorage.setItem('sekai-app-theme', t); } catch (e) {}
+  }
+  cycleTheme() {   // 淺色 → 深色 → 跟隨系統 → 淺色…
+    const next = { light: 'dark', dark: 'auto', auto: 'light' }[this.state.theme] || 'light';
+    this.setState({ theme: next });
+    this.applyTheme(next);
+  }
   _shuffleList(list) {   // 洗牌 → 建立連播佇列（存歌曲物件，音源版本於播放時解析）並播放
     if (!list || !list.length) return;
     for (let i = list.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = list[i]; list[i] = list[j]; list[j] = t; }
@@ -1265,7 +1317,15 @@ class Component extends DCLogic {
 
   matchMyRank(top) {
     const me = this.ranksOf(top).find(r => r.uid && r.uid === String(this.state.pid));
-    if (me) this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { myRank: me.rank, myScore: me.score, mySpeed: me.speed1h }) }));
+    if (!me) return;
+    const st = me.stats || {};
+    const cnt = k => (st[k] && st[k].count != null) ? st[k].count : null;   // 周回數(近1/3/24小時)
+    this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, {
+      myRank: me.rank, myScore: me.score, mySpeed: me.speed1h,
+      myRounds1h: cnt('h1'), myRounds3h: cnt('h3'), myRounds24h: cnt('h24'),
+      myAvg1h: (st.h1 && st.h1.average != null) ? st.h1.average : null,
+      myLastPlayed: me.lastPlayed || null
+    }) }));
   }
   async loadPlayer(id) {
     try {
@@ -1889,6 +1949,9 @@ class Component extends DCLogic {
       isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG,
+      themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
+      themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
+      themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
@@ -1941,6 +2004,9 @@ class Component extends DCLogic {
         { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '未進前100' },
         { l: '活動P·上局', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
         { l: '時速·近1h', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
+        { l: '周回·近1h', v: pd.myRounds1h != null ? pd.myRounds1h + ' 回' : '—' },
+        { l: '周回·近24h', v: pd.myRounds24h != null ? this.n(pd.myRounds24h) + ' 回' : '—' },
+        { l: '場均·近1h', v: pd.myAvg1h != null ? this.short(pd.myAvg1h) : '—' },
         { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
       ],
       goal: s.goal, cur: s.cur,
@@ -2211,6 +2277,7 @@ class Component extends DCLogic {
       },
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
       onReloadEp: () => this.loadEpSongs(true),
+      onTheme: () => this.cycleTheme(),
       onTut: e => {
         const k = e.currentTarget.dataset.i;
         this.setState(st => {

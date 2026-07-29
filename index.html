@@ -7,6 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#eef1f9">
     <title>Project SEKAI 資源中心</title>
+    <script>/* 主題:在樣式套用前決定深/淺色,避免載入時閃爍 */
+    try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap');
@@ -130,6 +132,7 @@
         .nav-icon-btn:hover { background:color-mix(in oklab,var(--accent) 10%,transparent); }
         .nav-icon-btn:active { transform:scale(.93); }
         .nav-icon-btn svg { width:17px; height:17px; }
+        #themeIcon { display:flex; align-items:center; }
         .nav-kbd { font-family:var(--font-num); font-size:10.5px; font-weight:700; color:var(--text-light);
             border:1px solid var(--border); border-radius:6px; padding:1px 6px; background:var(--card-2); }
         /* 行動版選單面板 */
@@ -730,6 +733,7 @@
                 <div class="nav-group"><button type="button">資源<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="nav-drop"><a href="#official">官方資源</a><a href="#info">資訊站</a><a href="#community">討論社群</a><a href="#wiki">Wiki 百科</a><a href="#tools">實用工具</a><a href="#tutorial">教學大全</a></div></div>
             </div>
             <div class="nav-actions">
+                <button type="button" class="nav-icon-btn" id="themeBtn" onclick="DarkMode.cycle()" aria-label="切換主題" title="主題：跟隨系統（點擊切換）"><span id="themeIcon" aria-hidden="true"></span></button>
                 <button type="button" class="nav-icon-btn" onclick="GlobalSearch.open()" aria-label="全站搜尋" title="搜尋"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="nav-kbd">⌘K</span></button>
             </div>
         </div>
@@ -1925,10 +1929,28 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // ========== 深色模式（跟隨系統） ==========
         const DarkMode = {
             mq: window.matchMedia('(prefers-color-scheme: dark)'),
+            mode: 'auto',   // auto=跟隨系統 / light / dark
+            ICONS: {
+                light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg>',
+                dark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.7 14.6A8.6 8.6 0 0 1 9.4 3.3a8.8 8.8 0 1 0 11.3 11.3z"/></svg>',
+                auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/></svg>'
+            },
             init() {
-                this.apply(this.mq.matches);
-                const h = (e) => this.apply(e.matches);
+                try { this.mode = localStorage.getItem('sekai-theme') || 'auto'; } catch (e) { this.mode = 'auto'; }
+                this.render();
+                const h = () => { if (this.mode === 'auto') this.render(); };   // 系統色變更時,auto 模式跟著走
                 if (this.mq.addEventListener) this.mq.addEventListener('change', h); else this.mq.addListener(h);
+            },
+            cycle() {   // 淺色 → 深色 → 跟隨系統 → 淺色…
+                this.mode = { light: 'dark', dark: 'auto', auto: 'light' }[this.mode] || 'light';
+                try { if (this.mode === 'auto') localStorage.removeItem('sekai-theme'); else localStorage.setItem('sekai-theme', this.mode); } catch (e) {}
+                this.render();
+            },
+            render() {
+                this.apply(this.mode === 'dark' || (this.mode === 'auto' && this.mq.matches));
+                const ic = document.getElementById('themeIcon'), btn = document.getElementById('themeBtn');
+                if (ic) ic.innerHTML = this.ICONS[this.mode] || this.ICONS.auto;
+                if (btn) btn.title = '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[this.mode]) + '（點擊切換）';
             },
             apply(dark) {
                 document.documentElement.classList.toggle('dark', dark);
