@@ -5510,13 +5510,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const thumb = (c, tr) => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${tr && (c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
                     const evName = (src.ev && src.ev.name) || ('#' + evId);
                     el.innerHTML = `
-                        <div class="ms-top"><div class="ms-ev"><span class="ms-type">我的編組</span><span class="ms-evname">${ud.name || '隊伍'}</span></div>
-                        <div class="ms-sub">當期活動：${evName}　・依你的實際等級/突破/專精精算</div></div>
+                        <div class="ms-top"><div class="ms-ev"><span class="ms-type">${((profile.user||{}).name)||'玩家編組'}</span><span class="ms-evname">${ud.name || '隊伍'}</span></div>
+                        <div class="ms-sub">當期活動：${evName}　・依實際等級／突破／專精精算</div></div>
                         <div class="ms-thumbs">${members.map(m => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(m.c, m.trained)}" onerror="this.style.opacity=.15"><span>${EC_cidName(m.c.characterId)}</span><i>＋${m.bonus.per}%</i></div>`).join('')}</div>
                         <div class="ms-kvs"><div class="ms-kv"><span>綜合力（讀取）</span><b>${readPower != null ? readPower.toLocaleString() : '—'}</b></div><div class="ms-kv"><span>當期活動加成</span><b>＋${totalBonus}%</b></div></div>
                         <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>專精/特訓</th><th>當期加成</th></tr></thead>
                         <tbody>${members.map(m => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·已特訓' : ''}</td><td class="score">＋${m.bonus.per}%${m.bonus.mr ? `<span style="font-size:10px;color:var(--text-light);">（含專精+${m.bonus.mr}%）</span>` : ''}</td></tr>`).join('')}</tbody></table></div>
-                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含你的區域道具/角色等級/豆森/畫布）。加成＝四星 ＋10%（生日 +5%）＋專精 2.5/5/7.5/10/15% ＋同屬性 25% ＋同團（原V或同副團）25% ＋當期特效卡；稀有度與專精不看是否符合活動，屬性／團體才需符合。專精依你每張卡的實際 MR 計算。</div>`;
+                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含該玩家的區域道具/角色等級/豆森/畫布）。加成＝四星 ＋10%（生日 +5%）＋專精 2.5/5/7.5/10/15% ＋同屬性 25% ＋同團（原V或同副團）25% ＋當期特效卡；稀有度與專精不看是否符合活動，屬性／團體才需符合。專精依每張卡的實際 MR 計算。</div>`;
                 } catch (e) { el.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; }
             }
         };
