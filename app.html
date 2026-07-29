@@ -124,7 +124,7 @@ input::placeholder{color:var(--text-3)}
 <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
 <aside style="flex:0 0 238px;width:238px;position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:20px 14px;border-right:1px solid var(--border);background:color-mix(in oklab,var(--card) 62%,transparent);backdrop-filter:blur(20px)">
   <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 16px">
-    <span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:color-mix(in oklab,var(--accent) 12%,transparent)"><img src="https://storage.sekai.best/sekai-jp-assets/thumbnail/material/material16.webp" referrerpolicy="no-referrer" decoding="async" alt="" width="128" height="128" style="width:27px;height:27px;object-fit:contain;display:block;filter:drop-shadow(0 1px 3px rgba(47,124,220,.35))"></span>
+    <span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:color-mix(in oklab,var(--accent) 12%,transparent)"><img src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;object-fit:contain;display:block;filter:drop-shadow(0 1px 3px rgba(47,124,220,.35))"></span>
     <span style="font-size:15px;font-weight:800;color:var(--ink);letter-spacing:.3px"><em style="font-style:normal;font-family:'M PLUS Rounded 1c';background:var(--rainbow);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbowPan 9s linear infinite">SEKAI</em> 中心</span>
   </div>
 
@@ -156,7 +156,7 @@ input::placeholder{color:var(--text-3)}
   <div style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:11px clamp(14px,3vw,32px);border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--bg) 78%,transparent);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 -3px 0 -0.5px transparent">
     <span style="position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--rainbow);background-size:300% 100%;opacity:.75;animation:rainbowPan 14s linear infinite"></span>
     <sc-if value="{{ isMobile }}">
-      <img src="https://storage.sekai.best/sekai-jp-assets/thumbnail/material/material16.webp" referrerpolicy="no-referrer" decoding="async" alt="" width="128" height="128" style="width:27px;height:27px;flex:none;object-fit:contain;display:block">
+      <img src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;flex:none;object-fit:contain;display:block">
     </sc-if>
     <div style="min-width:0;flex:1">
       <div style="font-size:16.5px;font-weight:800;color:var(--ink);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pageTitle }}</div>
@@ -887,6 +887,16 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 抽卡模擬 ========== -->
+  <sc-if value="{{ isGachaSim }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="gachaSimFrame" src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">機率、卡池內容與保底規則全部取自官方 master 資料（gachaCardRarityRates／gachaDetails／gachaBehaviors），不是估算值。模擬結果僅供參考，不代表實際抽卡。</div>
+  </div>
+  </sc-if>
+
   <!-- ========== 收集室（貼圖／稱號圖鑑） ========== -->
   <sc-if value="{{ isCollect }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -963,6 +973,19 @@ input::placeholder{color:var(--text-3)}
           </button>
         </sc-for>
       </div>
+    </div>
+    <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
+      <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px">系統更新</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">近期的功能新增與修正紀錄。</div>
+      <sc-for list="{{ syslog }}" as="u" hint-placeholder-count="6">
+        <div style="display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--border)">
+          <span style="flex:none;font-size:10.5px;font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';padding-top:2px;min-width:74px">{{ u.d }}</span>
+          <span style="min-width:0">
+            <span style="display:block;font-size:12.5px;font-weight:800;color:var(--ink)">{{ u.t }}</span>
+            <span style="display:block;font-size:11.5px;color:var(--text-2);line-height:1.65;margin-top:2px">{{ u.s }}</span>
+          </span>
+        </div>
+      </sc-for>
     </div>
     <sc-for list="{{ changelog }}" as="c" hint-placeholder-count="6">
       <div style="padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-2px);box-shadow:var(--sh-sm)">
@@ -1236,6 +1259,7 @@ class Component extends DCLogic {
     calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
     tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
+    gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
     collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
@@ -1255,13 +1279,27 @@ class Component extends DCLogic {
     { date: '排名', title: '榜線趨勢比較', desc: '把最近 12 期的 T100～T10 萬榜線並排比較，並標示最新一期相對前期的增減，用來抓這期該衝多少。', to: 'rank', cta: '前往活動排名' },
     { date: '收集', title: '收集室', desc: '貼圖 1,073 張與稱號 1,883 種圖鑑，可搜尋、看取得條件與稀有度。', to: 'collect', cta: '前往收集室' },
     { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位一站式工具。', to: 'calc', cta: '前往計算中心' },
+    { date: '計算', title: '抽卡模擬', desc: '依官方 master 資料的機率模型模擬抽卡：可搜尋任一期卡池，顯示各稀有度機率與 PU 卡，支援單抽／十連（含保底★3↑），並統計已抽數、消耗石、★4 與 PU 入手、距天井。', to: 'gachasim', cta: '前往抽卡模擬' },
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
     { date: '學習', title: '教學大全', desc: '106 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
+  SYSLOG = [
+    { d: '2027/07/29', t: '抽卡模擬系統', s: '新增抽卡模擬頁：機率、卡池與保底全部取自官方 master 資料。經 20 萬次抽樣驗證：★4 3.01%（官方 3%）、PU 每張 0.40%（官方 0.4%）、十連保底 2 萬次零落空。' },
+    { d: '2027/07/29', t: '六種配色風格', s: '極光／櫻緋／青碧／藤紫／琥珀／墨藍，深淺色各自校色；修正深色模式強調色仍用淺色值的錯位。' },
+    { d: '2027/07/29', t: '修正深色模式白框', s: '統一 App 與經典版的主題儲存鍵並加上 iframe 主題同步，內嵌面板不再在深色頁面中顯示為白色。' },
+    { d: '2027/07/29', t: '排名 Q 版頭像', s: '排名列表顯示各玩家代表卡角色的 Q 版頭像與上線狀態點。' },
+    { d: '2027/07/29', t: '歷代活動改搜尋', s: '183 期改為輸入期數或名稱搜尋，並可上下期切換；修正清單載入的競態問題。' },
+    { d: '2027/07/28', t: '歷代活動與榜線趨勢', s: '新增任一期的最終前百與各段榜線，以及最近 12 期榜線並排比較。' },
+    { d: '2027/07/28', t: '收集室', s: '貼圖 1,073 張與稱號 1,883 種圖鑑，含搜尋與取得條件。' },
+    { d: '2027/07/27', t: '加成與技能公式修正', s: '修正稀有度/專精加成被誤加條件、團分技能未依實際隊伍計算；以真實前百編組驗證 435%。' }
+  ];
   EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
   // 每局額外耗時(秒):協力/排位要配對＋等待全員＋結算,遠比個人長
   ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+  // 站徽輪換用：52 種常駐素材（皆已實測有圖），每次載入隨機起點、之後依序輪換
+  MATS = [{"id":1,"n":"可愛碎片"},{"id":2,"n":"帥氣碎片"},{"id":3,"n":"純真碎片"},{"id":4,"n":"快樂碎片"},{"id":5,"n":"神秘碎片"},{"id":6,"n":"可愛寶石"},{"id":7,"n":"帥氣寶石"},{"id":8,"n":"純真寶石"},{"id":9,"n":"快樂寶石"},{"id":10,"n":"神秘寶石"},{"id":11,"n":"魔法布"},{"id":12,"n":"魔法線"},{"id":13,"n":"音樂卡"},{"id":14,"n":"奇蹟寶石"},{"id":15,"n":"心願碎片"},{"id":16,"n":"心願純結晶"},{"id":17,"n":"不可思議的種子"},{"id":57,"n":"祈願水滴"},{"id":89,"n":"白色花瓣"},{"id":90,"n":"藍色花瓣"},{"id":91,"n":"綠色花瓣"},{"id":92,"n":"紅色花瓣"},{"id":93,"n":"橘色花瓣"},{"id":94,"n":"紫色花瓣"},{"id":95,"n":"白色幸運之花"},{"id":96,"n":"藍色幸運之花"},{"id":97,"n":"綠色幸運之花"},{"id":98,"n":"紅色幸運之花"},{"id":99,"n":"橘色幸運之花"},{"id":100,"n":"紫色幸運之花"},{"id":127,"n":"Leo/need的心願碎片"},{"id":128,"n":"MORE MORE JUMP！的心願碎片"},{"id":129,"n":"Vivid BAD SQUAD的心願碎片"},{"id":130,"n":"Wonderlands×Showtime的心願碎片"},{"id":131,"n":"25點，Nightcord見。的心願碎片"},{"id":132,"n":"虛擬歌手的心願碎片"},{"id":159,"n":"Leo/need的心願純結晶"},{"id":160,"n":"MORE MORE JUMP！的心願純結晶"},{"id":161,"n":"Vivid BAD SQUAD的心願純結晶"},{"id":162,"n":"Wonderlands×Showtime的心願純結晶"},{"id":163,"n":"25點，Nightcord見。的心願純結晶"},{"id":164,"n":"虛擬歌手的心願純結晶"},{"id":166,"n":"百變幸運之花"},{"id":168,"n":"七彩記憶"},{"id":170,"n":"世界碎片"},{"id":173,"n":"電子雞碎片"},{"id":200,"n":"紅色旋律水滴"},{"id":201,"n":"藍色旋律水滴"},{"id":202,"n":"紫色旋律水滴"},{"id":203,"n":"彩虹旋律水滴"},{"id":204,"n":"彩虹旋律"},{"id":211,"n":"金牌"}];
+
   // 官方角色代表色（gameCharacterUnits.json colorCode）
   CHARA_COLOR = { 1:'#33aaee',2:'#ffdd44',3:'#ee6666',4:'#bbdd22',5:'#ffccaa',6:'#99ccff',7:'#ffaacc',8:'#99eedd',9:'#ff6699',10:'#00bbdd',11:'#ff7722',12:'#0077dd',13:'#ffbb00',14:'#ff66bb',15:'#33dd99',16:'#bb88ee',17:'#bb6688',18:'#8888cc',19:'#ccaa88',20:'#ddaacc',21:'#33ccbb',22:'#ffcc11',23:'#ffee11',24:'#ffbbcc',25:'#dd4444',26:'#3366cc' };
   charaSd(id) { return this.ASSET + '/character/character_sd_l/chr_sp_' + id + '.webp'; }   // SD 頭像，每張約 8KB
@@ -1293,7 +1331,8 @@ class Component extends DCLogic {
     gq: '', gu: 'all', gt: '', gp: 1,
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     theme: 'auto',   // auto=跟隨系統 / light / dark
-    tone: 'aurora',  // 配色風格：aurora/sakura/jade/wisteria/amber/ink/plum
+    tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
+    matIdx: 0,       // 站徽輪換到第幾個常駐素材
     cardChara: null, // cardId → characterId（排名頭像用）
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
@@ -1334,6 +1373,9 @@ class Component extends DCLogic {
     this.setState({ tone: savedTone });
     this.applyTone(savedTone);
     import('./data/card-chara.js').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
+    // 站徽每 8 秒換一種常駐素材（隨機起點，避免每次都從碎片開始）
+    this.setState({ matIdx: Math.floor(Math.random() * this.MATS.length) });
+    this._matTimer = setInterval(() => this.setState(st => ({ matIdx: (st.matIdx + 1) % this.MATS.length })), 8000);
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
@@ -1507,13 +1549,13 @@ class Component extends DCLogic {
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
     const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora' };
-    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame'].forEach(id => {
+    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
     });
   }
   TONES = [
-    { v: 'aurora', n: '極光', c: '#0eb3c5' }, { v: 'sakura', n: '櫻緋', c: '#e06a92' },
+    { v: 'aurora', n: '全彩', c: '#0eb3c5' }, { v: 'sakura', n: '櫻緋', c: '#e06a92' },
     { v: 'jade', n: '青碧', c: '#2fa98d' }, { v: 'wisteria', n: '藤紫', c: '#8a72c8' },
     { v: 'amber', n: '琥珀', c: '#c98a2e' }, { v: 'ink', n: '墨藍', c: '#4a6da8' }
   ];
@@ -2059,7 +2101,7 @@ class Component extends DCLogic {
       ['主頁', [['home', '首頁', '#4ad1e8']]],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4']]],
-      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
     ];
@@ -2364,8 +2406,8 @@ class Component extends DCLogic {
       isHome: s.page === 'home', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
-      isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG,
-      isCollect: s.page === 'collect',
+      isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG, syslog: this.SYSLOG,
+      isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
       colTabs: [{ v: 'stamp', n: '貼圖' }, { v: 'honor', n: '稱號' }].map(t => Object.assign({}, t,
         chip(s.colTab === t.v, 'var(--cta)'), { fg: s.colTab === t.v ? '#fff' : 'var(--text)' })),
       colIsStamp: s.colTab === 'stamp', colIsHonor: s.colTab === 'honor',
@@ -2391,6 +2433,8 @@ class Component extends DCLogic {
                                         : (this.ASSET + '/honor/' + s.colPick.abn + '/degree_main.webp'),
         rarityLabel: { low: '普通', middle: '罕見', high: '稀有', highest: '最高' }[s.colPick.rarity] || (s.colPick.rarity || '—')
       }) : null,
+      logoMat: this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
+      logoMatName: (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
