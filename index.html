@@ -8,7 +8,8 @@
     <meta name="theme-color" content="#eef1f9">
     <title>Project SEKAI 資源中心</title>
     <script>/* 主題:在樣式套用前決定深/淺色,避免載入時閃爍 */
-    try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');}catch(e){}</script>
+    try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
+    var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap');
@@ -60,6 +61,23 @@
             --ln-color:#7788ff; --mmj-color:#a5e05e; --vbs-color:#ff8577;
             --wxs-color:#ffcc55; --n25-color:#c58aeb; --vs-color:#55dddd; --mix-color:#ff85ad;
         }
+
+        /* ===== 六種配色風格（與 App 版同步；深色時強調色提亮） ===== */
+        :root.tone-sakura { --accent:#e06a92; --accent-deep:#c24b76; --link:#c24b76;
+            --grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%); }
+        :root.dark.tone-sakura { --accent:#f2a0bb; --accent-deep:#f8c2d3; --link:#f8c2d3; }
+        :root.tone-jade { --accent:#2fa98d; --accent-deep:#1f8770; --link:#1f8770;
+            --grad-cta:linear-gradient(135deg,#4cbfa2 0%,#268f86 100%); }
+        :root.dark.tone-jade { --accent:#4fd0b0; --accent-deep:#7fe0c8; --link:#7fe0c8; }
+        :root.tone-wisteria { --accent:#8a72c8; --accent-deep:#6f56ad; --link:#6f56ad;
+            --grad-cta:linear-gradient(135deg,#a48ada 0%,#7659b8 100%); }
+        :root.dark.tone-wisteria { --accent:#b09ae6; --accent-deep:#cbbcf2; --link:#cbbcf2; }
+        :root.tone-amber { --accent:#c98a2e; --accent-deep:#a86f1c; --link:#a86f1c;
+            --grad-cta:linear-gradient(135deg,#e0a44a 0%,#b87a26 100%); }
+        :root.dark.tone-amber { --accent:#e8b866; --accent-deep:#f2d09a; --link:#f2d09a; }
+        :root.tone-ink { --accent:#4a6da8; --accent-deep:#35548a; --link:#35548a;
+            --grad-cta:linear-gradient(135deg,#6485bb 0%,#3c5c95 100%); }
+        :root.dark.tone-ink { --accent:#86a8de; --accent-deep:#aec7ec; --link:#aec7ec; }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html { scroll-behavior:smooth; scroll-padding-top:calc(var(--nav-height) + 14px); }
         body { font-family:'Huninn','M PLUS Rounded 1c','PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif;
@@ -1938,6 +1956,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             init() {
                 try { this.mode = localStorage.getItem('sekai-theme') || 'auto'; } catch (e) { this.mode = 'auto'; }
                 this.render();
+                this.initEmbedSync();
                 const h = () => { if (this.mode === 'auto') this.render(); };   // 系統色變更時,auto 模式跟著走
                 if (this.mq.addEventListener) this.mq.addEventListener('change', h); else this.mq.addListener(h);
             },
@@ -1956,6 +1975,24 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 document.documentElement.classList.toggle('dark', dark);
                 const m = document.querySelector('meta[name="theme-color"]');
                 if (m) m.content = dark ? '#0c0f1d' : '#eef1f9';
+            },
+            TONE_KEYS: ['sakura', 'jade', 'wisteria', 'amber', 'ink'],
+            applyTone(t) {
+                const c = document.documentElement.classList;
+                this.TONE_KEYS.forEach(k => c.remove('tone-' + k));
+                if (t && t !== 'aurora') c.add('tone-' + t);
+            },
+            // 被 App 以 iframe 內嵌時，主題/色調由母頁指定，否則深色 App 裡會出現白色面板
+            initEmbedSync() {
+                try { this.applyTone(localStorage.getItem('sekai-tone') || 'aurora'); } catch (e) {}
+                window.addEventListener('message', e => {
+                    const d = e && e.data; if (!d || typeof d !== 'object') return;
+                    if (d.sekaiTheme) {
+                        this.mode = d.sekaiTheme;
+                        this.apply(d.sekaiTheme === 'dark' || (d.sekaiTheme === 'auto' && this.mq.matches));
+                    }
+                    if (d.sekaiTone) this.applyTone(d.sekaiTone);
+                });
             }
         };
 

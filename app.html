@@ -5,7 +5,8 @@
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍 */
-try{var _t=localStorage.getItem('sekai-app-theme');if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');}catch(e){}</script>
+try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme'));if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');
+var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js"};</script>
 <script src="./support.js"></script>
@@ -62,6 +63,33 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
 }
+/* ===== 六種配色風格（藝術典雅）：只覆蓋強調色系，底色與對比交給深/淺色主題 ===== */
+:root.tone-sakura{--accent:#e06a92;--accent-deep:#c24b76;
+  --cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
+  --rainbow:linear-gradient(90deg,#f3b6c8,#e8879f,#d97b96,#c98aa8,#e3aec0,#f0cbd6,#f3b6c8);}
+:root.tone-jade{--accent:#2fa98d;--accent-deep:#1f8770;
+  --cta:linear-gradient(135deg,#4cbfa2 0%,#268f86 100%);
+  --rainbow:linear-gradient(90deg,#a8dcc9,#6fc7ae,#43ab97,#54b9a6,#8fd0bd,#c2e5d7,#a8dcc9);}
+:root.tone-wisteria{--accent:#8a72c8;--accent-deep:#6f56ad;
+  --cta:linear-gradient(135deg,#a48ada 0%,#7659b8 100%);
+  --rainbow:linear-gradient(90deg,#cfc2ea,#ab95dc,#8f77cc,#a086d4,#c0aee4,#ded3f0,#cfc2ea);}
+:root.tone-amber{--accent:#c98a2e;--accent-deep:#a86f1c;
+  --cta:linear-gradient(135deg,#e0a44a 0%,#b87a26 100%);
+  --rainbow:linear-gradient(90deg,#f0d5a8,#e0b56f,#cf9a45,#d9a955,#ebc98f,#f5e3c2,#f0d5a8);}
+:root.tone-ink{--accent:#4a6da8;--accent-deep:#35548a;
+  --cta:linear-gradient(135deg,#6485bb 0%,#3c5c95 100%);
+  --rainbow:linear-gradient(90deg,#b6c6de,#8aa3c8,#5f7fb0,#7391bd,#a3b8d5,#cdd8e8,#b6c6de);}
+/* 深色模式下強調色要提亮，accent-deep 需比 accent 更亮才有對比 */
+:root.theme-dark.tone-sakura{--accent:#f2a0bb;--accent-deep:#f8c2d3;}
+@media (prefers-color-scheme:dark){:root:not(.theme-light).tone-sakura{--accent:#f2a0bb;--accent-deep:#f8c2d3;}}
+:root.theme-dark.tone-jade{--accent:#4fd0b0;--accent-deep:#7fe0c8;}
+@media (prefers-color-scheme:dark){:root:not(.theme-light).tone-jade{--accent:#4fd0b0;--accent-deep:#7fe0c8;}}
+:root.theme-dark.tone-wisteria{--accent:#b09ae6;--accent-deep:#cbbcf2;}
+@media (prefers-color-scheme:dark){:root:not(.theme-light).tone-wisteria{--accent:#b09ae6;--accent-deep:#cbbcf2;}}
+:root.theme-dark.tone-amber{--accent:#e8b866;--accent-deep:#f2d09a;}
+@media (prefers-color-scheme:dark){:root:not(.theme-light).tone-amber{--accent:#e8b866;--accent-deep:#f2d09a;}}
+:root.theme-dark.tone-ink{--accent:#86a8de;--accent-deep:#aec7ec;}
+@media (prefers-color-scheme:dark){:root:not(.theme-light).tone-ink{--accent:#86a8de;--accent-deep:#aec7ec;}}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
@@ -522,9 +550,15 @@ input::placeholder{color:var(--text-3)}
       <sc-for list="{{ rankRows }}" as="r" hint-placeholder-count="10">
         <div onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
-          <span style="min-width:0">
-            <span style="display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
-            <sc-if value="{{ isMobile }}"><span style="display:block;font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.subLine }}</span></sc-if>
+          <span style="min-width:0;display:flex;align-items:center;gap:9px">
+            <span style="position:relative;width:34px;height:34px;flex:none;border-radius:50%;background:{{ r.avatarBg }};display:grid;place-items:center;overflow:hidden">
+              <img src="{{ r.avatar }}" referrerpolicy="no-referrer" decoding="async" alt="" width="250" height="200" style="width:32px;height:32px;object-fit:contain;object-position:center 22%;display:block">
+              <sc-if value="{{ r.active }}"><i style="position:absolute;right:0;bottom:1px;width:9px;height:9px;border-radius:50%;background:#34c77b;box-shadow:0 0 0 2px var(--card)"></i></sc-if>
+            </span>
+            <span style="min-width:0;flex:1">
+              <span style="display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+              <sc-if value="{{ isMobile }}"><span style="display:block;font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.subLine }}</span></sc-if>
+            </span>
           </span>
           <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:var(--ink)">{{ r.score }}</span>
           <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:12px;color:var(--text-3)">{{ r.extra }}</span>
@@ -544,12 +578,17 @@ input::placeholder{color:var(--text-3)}
 
     <!-- 歷代活動：任一期的最終前百＋各段榜線 -->
     <sc-if value="{{ isPastTab }}">
-      <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:12px">
-        <select value="{{ pastEv }}" onChange="{{ onPastEv }}" style="flex:1;min-width:220px;max-width:420px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
-          <sc-for list="{{ evOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-        </select>
-        <span style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ pastRange }}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
+        <button type="button" onClick="{{ onPastStep }}" data-d="-1" title="上一期" style="width:44px;height:44px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--sh-xs)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"></path></svg>
+        </button>
+        <input type="text" inputmode="numeric" placeholder="輸入期數（例：150）或活動名稱" value="{{ pastQuery }}" onInput="{{ onPastSearch }}" onKeyDown="{{ onPastKey }}" list="pastEvList" style="flex:1;min-width:200px;max-width:400px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+        <datalist id="pastEvList"><sc-for list="{{ evOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
+        <button type="button" onClick="{{ onPastStep }}" data-d="1" title="下一期" style="width:44px;height:44px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--sh-xs)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"></path></svg>
+        </button>
       </div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px"><b style="color:var(--ink)">{{ pastTitle }}</b><span style="color:var(--text-3);font-family:'M PLUS Rounded 1c'">　{{ pastRange }}</span></div>
       <sc-if value="{{ pastHasErr }}">
         <button type="button" onClick="{{ onPastRetry }}" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ pastErrMsg }}</button>
       </sc-if>
@@ -914,6 +953,17 @@ input::placeholder{color:var(--text-3)}
       <div style="font-size:15px;font-weight:800;color:var(--ink)">所有功能一覽</div>
       <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">本站 App 版的完整功能列表，點各卡片按鈕可直接前往該功能。</div>
     </div>
+    <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
+      <div style="font-size:14px;font-weight:800;color:var(--ink)">配色風格</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">六種色調，深色與淺色模式都適用；選擇會記在這台裝置。</div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px">
+        <sc-for list="{{ toneChips }}" as="t" hint-placeholder-count="6">
+          <button type="button" onClick="{{ onTone }}" data-v="{{ t.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ t.bd }};border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ t.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+            <span style="width:15px;height:15px;border-radius:50%;flex:none;background:{{ t.c }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)"></span>{{ t.n }}
+          </button>
+        </sc-for>
+      </div>
+    </div>
     <sc-for list="{{ changelog }}" as="c" hint-placeholder-count="6">
       <div style="padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-2px);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1243,10 +1293,12 @@ class Component extends DCLogic {
     gq: '', gu: 'all', gt: '', gp: 1,
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     theme: 'auto',   // auto=跟隨系統 / light / dark
+    tone: 'aurora',  // 配色風格：aurora/sakura/jade/wisteria/amber/ink/plum
+    cardChara: null, // cardId → characterId（排名頭像用）
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
-    evList: [], pastEv: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
+    evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12,
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
@@ -1274,9 +1326,14 @@ class Component extends DCLogic {
     // 主題:讀取已存偏好(無=跟隨系統);系統色變更時,auto 模式要跟著更新 theme-color
     this.mqDark = window.matchMedia('(prefers-color-scheme: dark)');
     let savedTheme = 'auto';
-    try { savedTheme = localStorage.getItem('sekai-app-theme') || 'auto'; } catch (e) {}
+    try { savedTheme = (localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme')) || 'auto'; } catch (e) {}
     this.setState({ theme: savedTheme });
     this.applyTheme(savedTheme);
+    let savedTone = 'aurora';
+    try { savedTone = localStorage.getItem('sekai-tone') || 'aurora'; } catch (e) {}
+    this.setState({ tone: savedTone });
+    this.applyTone(savedTone);
+    import('./data/card-chara.js').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
@@ -1325,7 +1382,9 @@ class Component extends DCLogic {
   }
   applyProps() {
     const r = document.documentElement;
-    if (this.props.accent) r.style.setProperty('--accent', this.props.accent);
+    // 不要用 inline 設 --accent：inline 優先權高於樣式表，會同時蓋掉
+    // 深色模式的提亮值與 :root.tone-* 的配色（曾造成深色下強調色仍是淺色值）
+    r.style.removeProperty('--accent');
     r.style.setProperty('--anim', this.props.motion === 'subtle' ? '.01s' : '.5s');
   }
 
@@ -1441,7 +1500,29 @@ class Component extends DCLogic {
     const dark = t === 'dark' || (t === 'auto' && this.mqDark && this.mqDark.matches);
     const m = document.querySelector('meta[name="theme-color"]');
     if (m) m.content = dark ? '#0c0f1d' : '#eef1f9';
-    try { if (t === 'auto') localStorage.removeItem('sekai-app-theme'); else localStorage.setItem('sekai-app-theme', t); } catch (e) {}
+    try { if (t === 'auto') localStorage.removeItem('sekai-theme'); else localStorage.setItem('sekai-theme', t); } catch (e) {}
+    this.syncFrames();
+  }
+  // 內嵌的經典版 iframe（跑榜小窗／編組／卡池／進階）不會自己知道 App 換了主題，
+  // 不同步就會在深色 App 裡出現白色面板
+  syncFrames() {
+    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora' };
+    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame'].forEach(id => {
+      const f = document.getElementById(id);
+      if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
+    });
+  }
+  TONES = [
+    { v: 'aurora', n: '極光', c: '#0eb3c5' }, { v: 'sakura', n: '櫻緋', c: '#e06a92' },
+    { v: 'jade', n: '青碧', c: '#2fa98d' }, { v: 'wisteria', n: '藤紫', c: '#8a72c8' },
+    { v: 'amber', n: '琥珀', c: '#c98a2e' }, { v: 'ink', n: '墨藍', c: '#4a6da8' }
+  ];
+  applyTone(t) {
+    const c = document.documentElement.classList;
+    this.TONES.forEach(x => c.remove('tone-' + x.v));
+    if (t && t !== 'aurora') c.add('tone-' + t);
+    try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
+    this.syncFrames();
   }
   cycleTheme() {   // 淺色 → 深色 → 跟隨系統 → 淺色…
     const next = { light: 'dark', dark: 'auto', auto: 'light' }[this.state.theme] || 'light';
@@ -1564,7 +1645,9 @@ class Component extends DCLogic {
       name: r.name || r.user_name || r.nickname || prof.name || '—',
       uid: String(r.user_id != null ? r.user_id : r.userId != null ? r.userId : prof.id != null ? prof.id : r.id || ''),
       stats: { h1: r.last_1h_stats || null, h3: r.last_3h_stats || null, h24: r.last_24h_stats || null },
-      lastPlayed: r.last_played_at || null
+      lastPlayed: r.last_played_at || null,
+      cardId: (r.last_player_info && r.last_player_info.card && r.last_player_info.card.id)
+              || (Array.isArray(r.userCard) ? r.userCard[0] : null) || null
     };
   }
   ranksOf(d) {
@@ -1903,6 +1986,15 @@ class Component extends DCLogic {
     return list;
   }
 
+  // 輸入期數（純數字）或活動名稱關鍵字 → 對應的活動
+  findEv(q) {
+    q = String(q || '').trim(); if (!q) return null;
+    const list = this.state.evList || []; if (!list.length) return null;
+    if (/^\d+$/.test(q)) return list.find(x => String(x.id) === q) || null;
+    const lc = q.toLowerCase();
+    return list.find(x => (x.name || '').toLowerCase().includes(lc)) || null;
+  }
+
   colFiltered() {
     const s = this.state, q = (s.cq || '').trim().toLowerCase();
     const list = s.colTab === 'stamp' ? (s.stamps || []) : (s.honors || []);
@@ -2222,6 +2314,9 @@ class Component extends DCLogic {
       rank: s.rankTab === 'live' ? '#' + r.rank : 'T' + this.n(r.rank),
       name: r.name, score: this.n(r.score),
       extra: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
+      avatar: (() => { const cc = s.cardChara; const cid = cc && r.cardId ? cc[r.cardId] : 0; return cid ? this.charaSd(cid) : ''; })(),
+      avatarBg: (() => { const cc = s.cardChara; const cid = cc && r.cardId ? cc[r.cardId] : 0; return cid ? 'color-mix(in oklab,' + (this.CHARA_COLOR[cid] || '#888') + ' 22%,transparent)' : 'var(--card-2)'; })(),
+      active: !!(r.lastPlayed && (Date.now() - new Date(r.lastPlayed).getTime()) < 15 * 60000),
       rounds: (r.stats && r.stats.h1 && r.stats.h1.count != null) ? r.stats.h1.count + ' 回' : '—',
       seen: r.lastPlayed ? this.ago(r.lastPlayed) : '—',
       // 手機版欄位放不下，改成名字下方的小字
@@ -2299,6 +2394,11 @@ class Component extends DCLogic {
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
+      toneChips: this.TONES.map(x => ({ v: x.v, n: x.n, c: x.c,
+        bd: s.tone === x.v ? x.c : 'var(--border)',
+        bg: s.tone === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
+        fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
+        ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
@@ -2418,7 +2518,7 @@ class Component extends DCLogic {
       isPastTab: s.rankTab === 'past', isTrendTab: s.rankTab === 'trend',
       /* 歷代活動 */
       evOptions: (s.evList || []).map(e => ({ v: String(e.id), n: '#' + e.id + ' ' + (e.name || '') })),
-      pastEv: s.pastEv, pastBusy: s.pastLoad, pastErrMsg: s.pastErr, pastHasErr: !!s.pastErr,
+      pastEv: s.pastEv, pastQuery: s.pastQuery, pastBusy: s.pastLoad, pastErrMsg: s.pastErr, pastHasErr: !!s.pastErr,
       pastTitle: (() => { const e = (s.evList || []).find(x => String(x.id) === String(s.pastEv)); return e ? ('#' + e.id + ' ' + e.name) : '—'; })(),
       pastRange: (() => {
         const e = (s.evList || []).find(x => String(x.id) === String(s.pastEv)); if (!e) return '';
@@ -2683,6 +2783,24 @@ class Component extends DCLogic {
         else if (v === 'trend') this.loadTrend();
       },
       onPastEv: e => { const v = e.target.value; this.setState({ pastEv: v }); this.loadPast(v); },
+      // 直接輸入期數或活動名稱；純數字且該期存在就立刻載入
+      onPastSearch: e => {
+        const q = e.target.value; this.setState({ pastQuery: q });
+        const hit = this.findEv(q);
+        if (hit) { this.setState({ pastEv: String(hit.id) }); this.loadPast(hit.id); }
+      },
+      onPastKey: e => {
+        if (e.key !== 'Enter') return;
+        const hit = this.findEv(e.target.value);
+        if (hit) { this.setState({ pastEv: String(hit.id), pastQuery: '' }); this.loadPast(hit.id); }
+        else this.setState({ pastErr: '找不到符合的活動，試著輸入期數（例：150）' });
+      },
+      onPastStep: e => {
+        const d = +e.currentTarget.dataset.d, list = this.state.evList || [];
+        const i = list.findIndex(x => String(x.id) === String(this.state.pastEv));
+        const nx = list[(i < 0 ? 0 : i) + d];   // list 由新到舊：+1 = 更舊一期
+        if (nx) { this.setState({ pastEv: String(nx.id), pastQuery: '' }); this.loadPast(nx.id); }
+      },
       onPastRetry: () => {
         this._evListPromise = null; this._pastKey = null;
         this.setState({ pastErr: '' });
@@ -2699,6 +2817,7 @@ class Component extends DCLogic {
       },
       onColClose: () => this.setState({ colPick: null }),
       onTheme: () => this.cycleTheme(),
+      onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;
         this.setState(st => {
