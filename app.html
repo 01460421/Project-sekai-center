@@ -506,13 +506,14 @@ input::placeholder{color:var(--text-3)}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
       <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2)">
         <sc-for list="{{ rankTabs }}" as="t" hint-placeholder-count="2">
-          <button type="button" onClick="{{ onSet }}" data-k="rankTab" data-v="{{ t.v }}" style="padding:8px 17px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
+          <button type="button" onClick="{{ onRankTab }}" data-v="{{ t.v }}" style="padding:8px 17px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
         </sc-for>
       </div>
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3)"><i style="width:8px;height:8px;border-radius:50%;background:#34c77b;animation:pulseDot 2s infinite"></i>每 60 秒自動更新</span>
       <button type="button" onClick="{{ onRefresh }}" style="margin-left:auto;padding:8px 17px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">重新載入</button>
     </div>
 
+    <sc-if value="{{ isLiveTab }}">
     <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
       <div style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
         <span>#</span><span>玩家</span><span style="text-align:right">{{ rankScoreLabel }}</span><span style="text-align:right">{{ rankExtraLabel }}</span>
@@ -539,6 +540,80 @@ input::placeholder{color:var(--text-3)}
         </div>
       </sc-if>
     </div>
+    </sc-if>
+
+    <!-- 歷代活動：任一期的最終前百＋各段榜線 -->
+    <sc-if value="{{ isPastTab }}">
+      <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:12px">
+        <select value="{{ pastEv }}" onChange="{{ onPastEv }}" style="flex:1;min-width:220px;max-width:420px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
+          <sc-for list="{{ evOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+        </select>
+        <span style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ pastRange }}</span>
+      </div>
+      <sc-if value="{{ pastHasErr }}">
+        <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-3);font-size:13px;margin-bottom:12px">{{ pastErrMsg }}</div>
+      </sc-if>
+      <sc-if value="{{ pastBusy }}">
+        <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入 {{ pastTitle }} …
+        </div>
+      </sc-if>
+      <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+          <div style="padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">最終前 100 名</div>
+          <sc-for list="{{ pastTopRows }}" as="r" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:58px minmax(0,1fr) 120px;gap:10px;padding:9px 16px;border-top:1px solid var(--border);align-items:center">
+              <span style="font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
+              <span style="font-size:12.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--ink)">{{ r.score }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+          <div style="padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">最終各段榜線</div>
+          <sc-for list="{{ pastBrdRows }}" as="r" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:84px minmax(0,1fr) 120px;gap:10px;padding:9px 16px;border-top:1px solid var(--border);align-items:center">
+              <span style="font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--accent-deep)">{{ r.rank }}</span>
+              <span style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--ink)">{{ r.score }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ pastEmpty }}">
+        <div style="padding:38px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">這一期沒有可查的排名資料。</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- 榜線趨勢：各名次階級在最近數期的分數線 -->
+    <sc-if value="{{ isTrendTab }}">
+      <sc-if value="{{ trendHasErr }}">
+        <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-3);font-size:13px;margin-bottom:12px">{{ trendErrMsg }}</div>
+      </sc-if>
+      <sc-if value="{{ trendBusy }}">
+        <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入最近數期榜線…
+        </div>
+      </sc-if>
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow-x:auto">
+        <div style="min-width:640px">
+          <div style="display:grid;grid-template-columns:{{ trendCols }};gap:8px;padding:11px 14px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.5px">
+            <span>名次</span>
+            <sc-for list="{{ trendHead }}" as="h" hint-placeholder-count="6"><span style="text-align:right">{{ h.n }}</span></sc-for>
+            <span style="text-align:right">與上期</span>
+          </div>
+          <sc-for list="{{ trendRows }}" as="r" hint-placeholder-count="9">
+            <div style="display:grid;grid-template-columns:{{ trendCols }};gap:8px;padding:10px 14px;border-top:1px solid var(--border);align-items:center">
+              <span style="font-family:'M PLUS Rounded 1c';font-size:12.5px;font-weight:800;color:var(--accent-deep)">{{ r.tier }}</span>
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="6"><span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:12.5px;color:var(--ink)">{{ c.v }}</span></sc-for>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:11.5px;font-weight:700;color:{{ r.diffColor }}">{{ r.diff }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">每欄為一期活動（左為最新）。數值＝該期最終衝到該名次所需的活動 P；「與上期」為最新一期相對前一期的增減。</div>
+    </sc-if>
+
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">資料來源：HiSekai API（台服）。連線被瀏覽器阻擋時會自動改走公開代理重試。</div>
   </div>
   </sc-if>
@@ -1122,6 +1197,9 @@ class Component extends DCLogic {
     { date: '播放器', title: '虛擬／世界 ver 切換 ＋ 選團連播', desc: '一鍵切換虛擬歌手 ver 或世界 ver（如有）；於播放器直接挑團即可隨機連播該團全部曲目。', to: 'songs', cta: '前往歌曲清單' },
     { date: '排名', title: '活動排名', desc: 'HiSekai API 即時排名與分段榜線，每 60 秒更新；點任一排名列查看周回／場均／時速（近 1／3／24 小時）。', to: 'rank', cta: '前往活動排名' },
     { date: '排名', title: '我的排名', desc: '綁定 Player ID 後顯示個人編組綜合力（直接帶遊戲讀取值）與即時名次、詳細數據。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '歷代活動查榜', desc: '任選一期（含已結束的 180+ 期），查該期最終前 100 名與各段榜線分數。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '榜線趨勢比較', desc: '把最近 12 期的 T100～T10 萬榜線並排比較，並標示最新一期相對前期的增減，用來抓這期該衝多少。', to: 'rank', cta: '前往活動排名' },
+    { date: '收集', title: '收集室', desc: '貼圖 1,073 張與稱號 1,883 種圖鑑，可搜尋、看取得條件與稀有度。', to: 'collect', cta: '前往收集室' },
     { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位一站式工具。', to: 'calc', cta: '前往計算中心' },
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
     { date: '學習', title: '教學大全', desc: '106 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
@@ -1151,6 +1229,8 @@ class Component extends DCLogic {
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
+    evList: [], pastEv: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
+    trend: null, trendLoad: false, trendErr: '', trendN: 12,
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
@@ -1400,6 +1480,53 @@ class Component extends DCLogic {
       this.setState({ liveLoad: false, liveErr: '排名資料暫時無法載入' });
     }
   }
+  /* 歷代活動：/event/list 取全部期數；/event/{id}/top100 與 /border 對任一期都可查（含已結束） */
+  async loadEvList() {
+    if (this._evListLoading || (this.state.evList || []).length) return;
+    this._evListLoading = true;
+    try {
+      const l = await this.apiFetch('/event/list');
+      const list = (Array.isArray(l) ? l : []).slice().sort((a, b) => b.id - a.id);
+      const cur = list.find(e => new Date(e.start_at).getTime() <= Date.now());
+      this.setState(st => ({ evList: list, pastEv: st.pastEv || String((cur || list[0] || {}).id || '') }));
+    } catch (e) { this._evListLoading = false; }
+  }
+  async loadPast(id) {
+    id = String(id || this.state.pastEv || '');
+    if (!id) return;
+    if (this._pastKey === id) return;
+    this._pastKey = id;
+    this.setState({ pastLoad: true, pastErr: '', pastTop: null, pastBrd: null });
+    try {
+      const [t, b] = await Promise.all([
+        this.apiFetch('/event/' + id + '/top100').catch(() => null),
+        this.apiFetch('/event/' + id + '/border').catch(() => null)
+      ]);
+      if (this._pastKey !== id) return;   // 期間又切了別期
+      this.setState({ pastTop: t, pastBrd: b, pastLoad: false, pastErr: (t || b) ? '' : '這一期查不到資料' });
+    } catch (e) {
+      if (this._pastKey === id) this.setState({ pastLoad: false, pastErr: '歷代資料載入失敗' });
+    }
+  }
+  /* 榜線趨勢：抓最近 N 期的榜線，比較各名次階級的分數線 */
+  async loadTrend() {
+    if (this.state.trendLoad || this.state.trend) return;
+    await this.loadEvList();
+    const now = Date.now();
+    const done = (this.state.evList || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= now);
+    const pick = done.slice(0, Math.max(2, +this.state.trendN || 12));
+    if (!pick.length) return;
+    this.setState({ trendLoad: true, trendErr: '' });
+    try {
+      const res = await Promise.all(pick.map(e =>
+        this.apiFetch('/event/' + e.id + '/border').then(b => ({ e, rows: this.bordersOf(b) })).catch(() => ({ e, rows: [] }))
+      ));
+      const ok = res.filter(x => x.rows.length);
+      this.setState({ trend: ok.length ? ok : null, trendLoad: false, trendErr: ok.length ? '' : '榜線趨勢載入失敗' });
+    } catch (e) {
+      this.setState({ trendLoad: false, trendErr: '榜線趨勢載入失敗' });
+    }
+  }
   normRank(r) {
     if (!r || typeof r !== 'object') return {};
     const prof = (r.last_player_info && r.last_player_info.profile) || r.userProfile || {};
@@ -1420,7 +1547,8 @@ class Component extends DCLogic {
   }
   bordersOf(d) {
     if (!d) return [];
-    const a = d.player_border_rankings || d.player_borders || d.border_rankings || d.borders || [];
+    // 現時榜線用 player_border_rankings；歷代活動的 /event/{id}/border 用 borderRankings
+    const a = d.player_border_rankings || d.borderRankings || d.player_borders || d.border_rankings || d.borders || [];
     return Array.isArray(a) ? a.map(x => this.normRank(x)).filter(x => x.rank) : [];
   }
   eventOf(d) { return (d && (d.event || d.event_data)) || d || {}; }
@@ -2257,7 +2385,48 @@ class Component extends DCLogic {
       songStatus: s.songErr || '載入歌曲資料庫…',
 
       /* 排名 */
-      rankTabs: [{ v: 'live', n: '即時排名' }, { v: 'border', n: '分段榜線' }].map(t => Object.assign({}, t, seg(s.rankTab === t.v))),
+      rankTabs: [{ v: 'live', n: '即時排名' }, { v: 'border', n: '分段榜線' }, { v: 'past', n: '歷代活動' }, { v: 'trend', n: '榜線趨勢' }].map(t => Object.assign({}, t, seg(s.rankTab === t.v))),
+      isLiveTab: s.rankTab === 'live' || s.rankTab === 'border',
+      isPastTab: s.rankTab === 'past', isTrendTab: s.rankTab === 'trend',
+      /* 歷代活動 */
+      evOptions: (s.evList || []).map(e => ({ v: String(e.id), n: '#' + e.id + ' ' + (e.name || '') })),
+      pastEv: s.pastEv, pastBusy: s.pastLoad, pastErrMsg: s.pastErr, pastHasErr: !!s.pastErr,
+      pastTitle: (() => { const e = (s.evList || []).find(x => String(x.id) === String(s.pastEv)); return e ? ('#' + e.id + ' ' + e.name) : '—'; })(),
+      pastRange: (() => {
+        const e = (s.evList || []).find(x => String(x.id) === String(s.pastEv)); if (!e) return '';
+        const a = e.start_at ? this.md(new Date(e.start_at)) : '', b = (e.aggregate_at || e.closed_at) ? this.md(new Date(e.aggregate_at || e.closed_at)) : '';
+        return a && b ? (a + ' – ' + b) : '';
+      })(),
+      pastTopRows: (() => {
+        const rows = this.ranksOf(s.pastTop).slice(0, 100);
+        return rows.map((r, i) => ({ i, rank: '#' + r.rank, name: r.name, score: this.n(r.score),
+          rankColor: r.rank === 1 ? '#eab308' : r.rank === 2 ? '#94a3b8' : r.rank === 3 ? '#e28743' : 'var(--ink)' }));
+      })(),
+      pastBrdRows: this.bordersOf(s.pastBrd).slice().sort((a, b) => a.rank - b.rank)
+        .map(r => ({ rank: 'T' + this.n(r.rank), score: this.n(r.score), name: r.name || '—' })),
+      pastEmpty: !s.pastLoad && !this.ranksOf(s.pastTop).length && !this.bordersOf(s.pastBrd).length,
+      /* 榜線趨勢：名次階級 × 最近數期 */
+      trendBusy: s.trendLoad, trendErrMsg: s.trendErr, trendHasErr: !!s.trendErr,
+      trendHead: (s.trend || []).map(x => ({ n: '#' + x.e.id })),
+      trendRows: (() => {
+        const t = s.trend || []; if (!t.length) return [];
+        const TIERS = [100, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+        return TIERS.map(tier => {
+          const cells = t.map(x => {
+            const hit = x.rows.find(r => r.rank === tier);
+            return hit ? hit.score : null;
+          });
+          const latest = cells[0], prev = cells[1];
+          const diff = (latest != null && prev != null) ? latest - prev : null;
+          return {
+            tier: 'T' + this.n(tier),
+            cells: cells.map(v => ({ v: v != null ? this.short(v) : '—' })),
+            diff: diff == null ? '' : (diff >= 0 ? '▲ ' : '▼ ') + this.short(Math.abs(diff)),
+            diffColor: diff == null ? 'var(--text-3)' : diff >= 0 ? '#2f9e57' : '#d6336c'
+          };
+        });
+      })(),
+      trendCols: (() => { const n = (s.trend || []).length; return '78px repeat(' + Math.max(1, n) + ',minmax(58px,1fr)) 78px'; })(),
       rankRows, rankBusy: s.liveLoad || (!rankRows.length && !s.liveLoad),
       rankStatus: s.liveErr || (s.liveLoad ? '載入排名資料…' : '目前沒有排名資料'),
       rankScoreLabel: s.rankTab === 'live' ? '活動 P' : '分數',
@@ -2473,6 +2642,13 @@ class Component extends DCLogic {
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
       onReloadEp: () => this.loadEpSongs(true),
       onColTab: e => this.setState({ colTab: e.currentTarget.dataset.v, cp: 1, cq: '' }),
+      onRankTab: e => {
+        const v = e.currentTarget.dataset.v;
+        this.setState({ rankTab: v });
+        if (v === 'past') { this.loadEvList().then(() => this.loadPast(this.state.pastEv)); }
+        else if (v === 'trend') this.loadTrend();
+      },
+      onPastEv: e => { const v = e.target.value; this.setState({ pastEv: v }); this.loadPast(v); },
       onColReload: () => { this.setState({ stamps: [], honors: [], colErr: '' }); this.loadCollect(); },
       onColPick: e => {
         const id = +e.currentTarget.dataset.id, kind = this.state.colTab;
