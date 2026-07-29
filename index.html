@@ -4430,12 +4430,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this._loading = MasterDB.get('skills.json').then(sk => { sk.forEach(s => { this.skills[s.id] = s; }); this._ready = true; return true; }).catch(() => { this._loading = null; return false; });
                 return this._loading;
             },
-            // 有效 score-up %:basic ＋ 角色等級加成 ＋(同團隊伍時)V家同團加成 ＋ BloomFES吸技能上限 ＋ 混團(異團數)加成
-            // sameUnitN=同團成員數(同團隊假設=5,混團=1);sl=技能等級(通常4);charRank=角色等級;distinctOthers=隊上「非自己團」的團體數(混團技能用,同團隊=0)
-            effSkill(card, trained, sl, charRank, sameUnitN, distinctOthers) {
+            // 卡片在隊伍中的所屬團體(VS 卡同時算 piapro 與其支援團)
+            _units(card) {
+                if (card.characterId <= 20) return [PowerEngine.charBands[card.characterId]];
+                const u = ['piapro'];
+                if (card.supportUnit && card.supportUnit !== 'none') u.push(card.supportUnit);
+                return u;
+            },
+            // 有效 score-up %:basic ＋角色等級 ＋團分(同團人數) ＋BloomFES吸技能 ＋混團(異團數)
+            // team=實際 5 張卡(可省略,省略時以單卡保守估)。團分技能規則:
+            //   「除自己外每 1 位同團成員 +e%，全員一致再 +e%」→ 滿隊同團 = base + 5e
+            effSkillTeam(card, trained, sl, charRank, team) {
                 const sid = (trained && card.specialTrainingSkillId) ? card.specialTrainingSkillId : card.skillId;
                 const sk = this.skills[sid]; if (!sk) return 0;
-                distinctOthers = distinctOthers || 0;
+                const mates = (team && team.length) ? team : [card];
+                const unitsOf = mates.map(c => this._units(c));
+                const own = this._units(card);
+                const ownPrimary = card.characterId <= 20 ? own[0] : 'piapro';
+                // 隊上「非自己團」的團體種類數(混團技能用)
+                const distinctOthers = new Set(unitsOf.flat().filter(u => u && u !== ownPrimary)).size;
                 let basic = 0, cr = 0, refMax = 0, sameUnit = 0, unitCnt = 0;
                 for (const e of (sk.skillEffects || [])) {
                     const t = e.skillEffectType;
@@ -4444,17 +4457,51 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const v = det ? (det.activateEffectValue || 0) : 0;
                     if (t === 'score_up' || t === 'score_up_condition_life' || t === 'score_up_keep') {
                         basic = Math.max(basic, v);
-                        if (e.skillEnhance) { const per = e.skillEnhance.activateEffectValue || 0; sameUnit = Math.max(sameUnit, per * (sameUnitN >= 5 ? 5 : Math.max(0, sameUnitN - 1))); }
+                        if (e.skillEnhance) {
+                            const per = e.skillEnhance.activateEffectValue || 0;
+                            const cond = (e.skillEnhance.skillEnhanceCondition || {}).unit;
+                            if (cond) {
+                                let others = 0, all = true;
+                                mates.forEach((c, i) => {
+                                    const has = unitsOf[i].includes(cond);
+                                    if (!has) all = false;
+                                    else if (c !== card) others++;
+                                });
+                                if (mates.length < 5) all = false;   // 資料不足時不給全員一致獎勵
+                                sameUnit = Math.max(sameUnit, per * others + (all ? per : 0));
+                            }
+                        }
                     } else if (t === 'score_up_character_rank') {
                         if (e.activateCharacterRank != null && e.activateCharacterRank <= charRank) cr = Math.max(cr, v);
                     } else if (t === 'other_member_score_up_reference_rate') {
                         refMax = Math.max(refMax, det ? (det.activateEffectValue2 || 0) : 0);
                     } else if (t === 'score_up_unit_count') {
-                        // 混活限定技能:編組每有 1 種非自己所屬團體,分數再提升 v%(activateUnitCount=需要的異團數)
+                        // 混活限定:編組每有 1 種非自己所屬團體再 +v%(activateUnitCount=需要的異團數)
                         if ((e.activateUnitCount || 0) <= distinctOthers) unitCnt = Math.max(unitCnt, v);
                     }
                 }
                 return basic + cr + sameUnit + refMax + unitCnt;
+            },
+            // 單卡上限估算(不知道隊伍時用):假設滿隊同團 → 團分技能吃滿 base + 5e
+            effSkillMax(card, trained, sl, charRank) {
+                const sid = (trained && card.specialTrainingSkillId) ? card.specialTrainingSkillId : card.skillId;
+                const sk = this.skills[sid]; if (!sk) return 0;
+                let basic = 0, cr = 0, refMax = 0, sameUnit = 0;
+                for (const e of (sk.skillEffects || [])) {
+                    const dets = e.skillEffectDetails || [];
+                    const det = dets.find(x => x.level === sl) || dets[dets.length - 1];
+                    const v = det ? (det.activateEffectValue || 0) : 0;
+                    const t = e.skillEffectType;
+                    if (t === 'score_up' || t === 'score_up_condition_life' || t === 'score_up_keep') {
+                        basic = Math.max(basic, v);
+                        if (e.skillEnhance) sameUnit = Math.max(sameUnit, (e.skillEnhance.activateEffectValue || 0) * 5);
+                    } else if (t === 'score_up_character_rank') {
+                        if (e.activateCharacterRank != null && e.activateCharacterRank <= charRank) cr = Math.max(cr, v);
+                    } else if (t === 'other_member_score_up_reference_rate') {
+                        refMax = Math.max(refMax, det ? (det.activateEffectValue2 || 0) : 0);
+                    }
+                }
+                return basic + cr + sameUnit + refMax;
             }
         };
 
@@ -5155,8 +5202,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const ec = src.evCards.find(x => x.eventId === evId && x.cardId === card.id);
                 const special = ec ? (ec.bonusRate || 0) : 0;
                 const mrKey = (mrLv == null) ? 5 : Math.max(0, Math.min(5, mrLv | 0));
-                // 專精(MR)加成只適用「加成角色」的卡(含當期特效卡);純屬性湊數不吃 MR
-                const mr = (charMatch || special > 0) ? ((EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][mrKey]) || 0) : 0;
+                // 稀有度＋專精加成:eventRarityBonusRates 只以(稀有度, 專精)為鍵、不看是否符合活動,
+                // 故每張卡都吃(4★=10+專精2.5/5/7.5/10/15;生日=5起)。屬性/團體加成才需要符合。
+                const mr = (EventCalc._mr[card.cardRarityType] && EventCalc._mr[card.cardRarityType][mrKey]) || 0;
                 const per = special === 70 ? 70 + mr : deck + special + mr;
                 return { per: Math.round(per * 10) / 10, deck, special, charMatch, mr };
             },
@@ -5203,7 +5251,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">${ranked.map(x => `<div style="text-align:center;width:76px;"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" alt="${x.c.prefix}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onerror="this.style.opacity=0.2"><div style="font-size:10px;color:var(--text-light);margin-top:2px;">${EC_cidName(x.c.characterId)} ＋${x.per}%</div></div>`).join('')}</div>
                     <div class="table-wrapper"><table>
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>取得/復刻</th><th>加成明細</th><th>加成</th></tr></thead>
-                    <tbody>${ranked.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td style="font-size:11px;color:var(--text-light);">符合${x.deck}%${x.special ? ' ＋特效' + x.special + '%' : ''} ＋MR5</td><td class="score">＋${x.per}%</td></tr>`).join('')}</tbody>
+                    <tbody>${ranked.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td style="font-size:11px;color:var(--text-light);">屬性/團 ${x.deck}%${x.special ? ' ＋特效' + x.special + '%' : ''} ＋稀有度/專精 ${x.mr}%</td><td class="score">＋${x.per}%</td></tr>`).join('')}</tbody>
                     </table></div>
                     <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」)。${type === 'world_bloom' ? 'WL 另有異色/支援隊伍加成未計。' : ''}</div>`
                     : '<div class="note">此活動查無加成卡資料。</div>';
@@ -5229,16 +5277,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
                         return { c, bonus: b.per, deck: b.deck, special: b.special, charMatch: b.charMatch, baseSum: base[0] + base[1] + base[2] };
                     }).filter(x => x.charMatch || x.special > 0);
-                // 箱活/混活判定:看加成「角色」條目(排除 V 家)是否跨多個團。箱活=單一團 → 技能按同團5計;
-                // 混活 → 技能改用「異團 2 種」假設(unit_count 技能吃滿)、不吃 V家同團強化
-                const bonusBands = new Set();
-                for (const e of src.deck) {
-                    if (e.eventId !== this._evId || e.gameCharacterUnitId == null) continue;
-                    const g = EventCalc._gcu[e.gameCharacterUnitId];
-                    if (g && g.cid <= 20) bonusBands.add(PowerEngine.charBands[g.cid]);
-                }
-                const mixed = bonusBands.size > 1;
-                const cand = pre.map(x => Object.assign(x, { skill: SkillEngine.effSkill(x.c, true, 4, charRank, mixed ? 1 : 5, mixed ? 2 : 0) }));
+                // 排序用的技能上限估值(假設滿隊同團);真正計分時會用「實際隊伍組成」重算,
+                // 團分技能(除自己外每位同團 +e%、全員一致再 +e%)才不會被算成只有 base
+                const cand = pre.map(x => Object.assign(x, { skill: SkillEngine.effSkillMax(x.c, true, 4, charRank) }));
                 cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
                 // 一隊每角色最多一張(プロセカ規則);V 家卡按「純V/各支援團」分開保留變體——
                 // 箱活的同團隊需要 V@當期團 變體,不能被加成/數值略高的純V卡在去重時擠掉(否則 DFS 根本看不到同團解、丟失 area 翻倍)
@@ -5267,7 +5308,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         const idx = [a, b, c, d, e];
                         const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 7);   // 豆森 MySekai：門4 + 1+1+1 = 7%
                         const bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
-                        const skills = idx.map(i => pool[i].skill);
+                        const teamCards = idx.map(i => pool[i].c);
+                        // 技能依「實際隊伍組成」計算：團分卡的同團人數、混團卡的異團種類數都取決於這一隊
+                        const skills = teamCards.map(tc => SkillEngine.effSkillTeam(tc, true, 4, charRank, teamCards));
                         const obj = evalDeck(pw.total, bonus, skills);
                         if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
                     } } } } }
@@ -5295,7 +5338,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">${chosen.map((x, i) => `<div style="text-align:center;width:76px;"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" alt="${x.c.prefix}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onerror="this.style.opacity=0.2"><div style="font-size:10px;color:var(--text-light);margin-top:2px;">${EC_cidName(x.c.characterId)}<br>${best.pw.per[i].total.toLocaleString()}</div></div>`).join('')}</div>
                     <div class="table-wrapper"><table>
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>取得/復刻</th><th>加成</th><th>技能%</th><th>綜合力</th></tr></thead>
-                    <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${x.skill}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
+                    <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${best.skills[i]}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
                     </table></div>
                     <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div></div>
                     <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}、SL4、角色等級100(BloomFES 理論倍率)。箱活會納入 V 家「當期團支援」變體湊同團(area 翻倍、V家同團技能);混活按異團編成計(area 不翻倍)。${useEP ? '技能以有效 score-up%(basic＋角色等級＋同團V＋異團數)逐卡計入,窗位以重排最佳化;BloomFES吸技能為近似。選不同歌會影響最佳解。' : '未選歌:退回 綜合力×加成 目標。'}</div>`;
@@ -5473,7 +5516,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-kvs"><div class="ms-kv"><span>綜合力（讀取）</span><b>${readPower != null ? readPower.toLocaleString() : '—'}</b></div><div class="ms-kv"><span>當期活動加成</span><b>＋${totalBonus}%</b></div></div>
                         <div class="table-wrapper" style="margin-top:8px;"><table><thead><tr><th>角色</th><th>卡</th><th>等級</th><th>專精/特訓</th><th>當期加成</th></tr></thead>
                         <tbody>${members.map(m => `<tr><td>${EC_cidName(m.c.characterId)}</td><td style="font-size:11px;">${m.c.prefix || ('#' + m.c.id)}</td><td>Lv${m.uc.level || '?'}</td><td>MR${m.uc.masterRank || 0}${m.trained ? '·已特訓' : ''}</td><td class="score">＋${m.bonus.per}%${m.bonus.mr ? `<span style="font-size:10px;color:var(--text-light);">（含專精+${m.bonus.mr}%）</span>` : ''}</td></tr>`).join('')}</tbody></table></div>
-                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含你的區域道具/角色等級/豆森/畫布）。加成＝逐卡符合當期活動（角色/屬性＋特效＋專精），專精加成依你每張卡的實際 MR 計算、只適用加成角色的卡；純V家/非當期卡＋0%。</div>`;
+                        <div class="ms-break">綜合力＝遊戲讀取的實際總合力（已含你的區域道具/角色等級/豆森/畫布）。加成＝四星 ＋10%（生日 +5%）＋專精 2.5/5/7.5/10/15% ＋同屬性 25% ＋同團（原V或同副團）25% ＋當期特效卡；稀有度與專精不看是否符合活動，屬性／團體才需符合。專精依你每張卡的實際 MR 計算。</div>`;
                 } catch (e) { el.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; }
             }
         };
