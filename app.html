@@ -516,13 +516,21 @@ input::placeholder{color:var(--text-3)}
     <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
       <div style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
         <span>#</span><span>玩家</span><span style="text-align:right">{{ rankScoreLabel }}</span><span style="text-align:right">{{ rankExtraLabel }}</span>
+        <sc-if value="{{ isDesktop }}"><span style="text-align:right">近1h周回</span><span style="text-align:right">最後更新</span></sc-if>
       </div>
       <sc-for list="{{ rankRows }}" as="r" hint-placeholder-count="10">
         <div onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
-          <span style="font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+          <span style="min-width:0">
+            <span style="display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+            <sc-if value="{{ isMobile }}"><span style="display:block;font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.subLine }}</span></sc-if>
+          </span>
           <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:var(--ink)">{{ r.score }}</span>
           <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:12px;color:var(--text-3)">{{ r.extra }}</span>
+          <sc-if value="{{ isDesktop }}">
+            <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:12px;color:var(--text-3)">{{ r.rounds }}</span>
+            <span style="text-align:right;font-size:11.5px;color:var(--text-3)">{{ r.seen }}</span>
+          </sc-if>
         </div>
       </sc-for>
       <sc-if value="{{ rankBusy }}">
@@ -2059,6 +2067,11 @@ class Component extends DCLogic {
       rank: s.rankTab === 'live' ? '#' + r.rank : 'T' + this.n(r.rank),
       name: r.name, score: this.n(r.score),
       extra: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
+      rounds: (r.stats && r.stats.h1 && r.stats.h1.count != null) ? r.stats.h1.count + ' 回' : '—',
+      seen: r.lastPlayed ? this.ago(r.lastPlayed) : '—',
+      // 手機版欄位放不下，改成名字下方的小字
+      subLine: ((r.stats && r.stats.h1 && r.stats.h1.count != null) ? ('近1h ' + r.stats.h1.count + ' 回') : '')
+             + (r.lastPlayed ? ((r.stats && r.stats.h1 && r.stats.h1.count != null ? ' · ' : '') + this.ago(r.lastPlayed)) : ''),
       rankColor: r.rank === 1 ? '#eab308' : r.rank === 2 ? '#94a3b8' : r.rank === 3 ? '#e28743' : 'var(--ink)',
       rowBg: String(r.uid) === String(s.pid) && s.pid ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent',
       canDetail: s.rankTab === 'live' && !!(r.stats && (r.stats.h1 || r.stats.h3 || r.stats.h24))
@@ -2162,7 +2175,7 @@ class Component extends DCLogic {
       calcCols: s.mobile ? '1fr' : '320px 1fr',
       gachaCols: s.mobile ? '1fr' : '108px minmax(0,1.5fr) 92px minmax(0,1fr) minmax(0,.9fr)',
       songCols: s.mobile ? '1fr' : '58px minmax(0,1.6fr) minmax(0,1fr) 150px',
-      rankCols: s.mobile ? '46px minmax(0,1fr) 88px 66px' : '60px minmax(0,1fr) 130px 110px',
+      rankCols: s.mobile ? '46px minmax(0,1fr) 88px 66px' : '58px minmax(0,1fr) 122px 96px 92px 104px',
       rowGap: s.mobile ? '4px' : '12px',
       rowPad: s.mobile ? '13px 15px' : '11px 16px',
       dayH: s.mobile ? '54px' : '92px',
