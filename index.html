@@ -5674,15 +5674,33 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             onPick(v) {
                 const g = this._d.gById[v]; if (!g) return;
-                this._g = g; this._reset(); this._render();
+                this._g = g; this._q = ''; this._reset(); this._render();
             },
-            onSearch(q) {
-                q = String(q || '').trim(); if (!q) return;
-                const d = this._d; if (!d) return;
-                let hit = null;
-                if (/^\d+$/.test(q)) hit = d.gById[q];
-                if (!hit) { const lc = q.toLowerCase(); hit = d.list.find(g => (g.name || '').toLowerCase().includes(lc)); }
-                if (hit) { this._g = hit; this._reset(); this._render(); }
+            _esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); },
+            // 依關鍵字找卡池：純數字＝完全比對編號，否則比對名稱
+            _find(q) {
+                q = String(q || '').trim(); if (!q) return null;
+                const d = this._d; if (!d) return null;
+                if (/^\d+$/.test(q)) return d.gById[q] || null;
+                const lc = q.toLowerCase();
+                return d.list.find(g => (g.name || '').toLowerCase().includes(lc)) || null;
+            },
+            // 打字時「只」更新暫存與提示，不整塊重繪——重繪會把 input 重建，
+            // 造成看不到自己打的字，而且打第一個數字就會跳走
+            onType(v) {
+                this._q = v;
+                const hint = document.getElementById('gsHint'); if (!hint) return;
+                const q = String(v || '').trim();
+                if (!q) { hint.textContent = ''; return; }
+                const hit = this._find(q);
+                hint.textContent = hit ? ('↵ 前往 #' + hit.id + ' ' + (hit.name || '')) : '找不到符合的卡池';
+                hint.style.color = hit ? 'var(--accent-deep)' : 'var(--text-light)';
+            },
+            // 只有按 Enter 或點「前往」才真的切換
+            onEnter() {
+                const hit = this._find(this._q);
+                if (!hit) { const hint = document.getElementById('gsHint'); if (hint) { hint.textContent = '找不到符合的卡池'; hint.style.color = 'var(--text-light)'; } return; }
+                this._g = hit; this._q = ''; this._reset(); this._refocus = true; this._render();
             },
             doSpin(n, guard, cost) {
                 const res = this.spin(n, guard ? 3 : 0);
@@ -5771,9 +5789,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                   <div class="ms-top"><div class="ms-ev"><span class="ms-type">抽卡模擬</span><span class="ms-evname">${g.name || ('#' + g.id)}</span></div>
                   <div class="ms-sub">機率、卡池與保底全部取自官方 master 資料，非估算</div></div>
                   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;">
-                    <input type="text" placeholder="輸入卡池編號或名稱…" oninput="GachaSim.onSearch(this.value)" style="flex:1;min-width:170px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;">
+                    <div style="flex:1;min-width:190px;display:flex;gap:6px;">
+                      <input id="gsSearch" type="text" value="${this._esc(this._q || '')}" placeholder="輸入卡池編號或名稱，按 Enter 前往"
+                        oninput="GachaSim.onType(this.value)"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();GachaSim.onEnter();}"
+                        style="flex:1;min-width:0;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;">
+                      <button type="button" onclick="GachaSim.onEnter()" style="flex:none;padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">前往</button>
+                    </div>
                     <select onchange="GachaSim.onPick(this.value)" style="flex:1;min-width:190px;max-width:330px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;">${opts}</select>
                   </div>
+                  <div id="gsHint" style="font-size:11.5px;color:var(--accent-deep);min-height:16px;margin:-4px 0 8px;"></div>
                   <div class="note" style="margin:0 0 10px;">機率：${rates}　·　PU ${pk.length} 張（每張約 ${(P.byRar.rarity_4 && P.pick.size ? (100 * 400000 / P.byRar.rarity_4.total * (P.rates.find(r => r.cardRarityType === 'rarity_4') || { rate: 0 }).rate / 100).toFixed(2) : '—')}%）</div>
                   ${pk.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${pk.map(c => `<img referrerpolicy="no-referrer" src="${this.thumb(c)}" title="${c.prefix || ''}" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:2px solid #f0619e;" onerror="this.style.opacity=.15">`).join('')}</div>` : ''}
                   <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">${btns.join('')}
@@ -5798,6 +5823,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     </div>
                   </div>` : ''}
                   <div class="ms-break">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；十連的「保底★3↑」照 gachaBehaviors 的 over_rarity_3_once 實作。天井以 300 抽計。</div>`;
+                if (this._refocus) {
+                    this._refocus = false;
+                    const s = document.getElementById('gsSearch');
+                    if (s) { try { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } catch (e) {} }
+                }
             }
         });
 
