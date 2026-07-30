@@ -786,7 +786,9 @@
         body.embed-deck .container > section#deck-detail{ display:block !important; }
         body.embed-gacha .container > section#gacha-detail{ display:block !important; }
         body.embed-gachasim .container > section#gacha-sim{ display:block !important; }
-        .ms-card{ font-size:13px; color:var(--text); }
+        /* 內嵌面板（跑榜小窗／編組／卡池／抽卡模擬）需要內距，否則內容會貼到母頁卡片邊線 */
+        .ms-card{ font-size:13px; color:var(--text); padding:16px 18px; }
+        @media (max-width:600px){ .ms-card{ padding:13px 14px; } }
         .ms-msg{ padding:24px 6px; text-align:center; color:var(--text-light); font-size:13px; }
         .ms-top{ margin-bottom:12px; }
         .ms-ev{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:800; color:var(--text); }

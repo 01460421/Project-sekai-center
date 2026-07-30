@@ -264,7 +264,7 @@ input::placeholder{color:var(--text-3)}
           <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">當期跑榜 · 最佳化活動P</span></div>
           <button type="button" onClick="{{ onGo }}" data-p="deckpro" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">進階</button>
         </div>
-        <iframe id="miniStudioFrame" src="./index.html?embed=ministudio" title="當期跑榜最佳化" scrolling="no" style="width:100%;height:480px;border:none;background:transparent;display:block"></iframe>
+        <iframe id="miniStudioFrame" src="./index.html?embed=ministudio&v=20270729d" title="當期跑榜最佳化" scrolling="no" style="width:100%;height:480px;border:none;background:transparent;display:block"></iframe>
       </div>
     </div>
 
@@ -831,7 +831,7 @@ input::placeholder{color:var(--text-3)}
       </div>
       <a href="./index.html?embed=calc" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
     </div>
-    <iframe id="deckProFrame" src="./index.html?embed=calc" title="進階計算器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+    <iframe id="deckProFrame" src="./index.html?embed=calc&v=20270729d" title="進階計算器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
   </sc-if>
 
@@ -891,7 +891,7 @@ input::placeholder{color:var(--text-3)}
   <sc-if value="{{ isGachaSim }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="gachaSimFrame" src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
+      <iframe id="gachaSimFrame" src="./index.html?embed=gachasim&v=20270729d" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
     </div>
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">機率、卡池內容與保底規則全部取自官方 master 資料（gachaCardRarityRates／gachaDetails／gachaBehaviors），不是估算值。模擬結果僅供參考，不代表實際抽卡。</div>
   </div>
@@ -1555,14 +1555,15 @@ class Component extends DCLogic {
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
     });
   }
-  TONES = [
+  // 配色風格（注意：不可叫 TONES，會蓋掉上面卡池類型的 TONES 色表）
+  SKINS = [
     { v: 'aurora', n: '全彩', c: '#0eb3c5' }, { v: 'sakura', n: '櫻緋', c: '#e06a92' },
     { v: 'jade', n: '青碧', c: '#2fa98d' }, { v: 'wisteria', n: '藤紫', c: '#8a72c8' },
     { v: 'amber', n: '琥珀', c: '#c98a2e' }, { v: 'ink', n: '墨藍', c: '#4a6da8' }
   ];
   applyTone(t) {
     const c = document.documentElement.classList;
-    this.TONES.forEach(x => c.remove('tone-' + x.v));
+    this.SKINS.forEach(x => c.remove('tone-' + x.v));
     if (t && t !== 'aurora') c.add('tone-' + t);
     try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
     this.syncFrames();
@@ -2439,13 +2440,13 @@ class Component extends DCLogic {
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
-      toneChips: this.TONES.map(x => ({ v: x.v, n: x.n, c: x.c,
+      toneChips: this.SKINS.map(x => ({ v: x.v, n: x.n, c: x.c,
         bd: s.tone === x.v ? x.c : 'var(--border)',
         bg: s.tone === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
         fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&v=20270729d&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&v=20270729d&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
       playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,
