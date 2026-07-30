@@ -8,8 +8,8 @@
 try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme'));if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');
 var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
-window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js"};</script>
-<script src="./support.js"></script>
+window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
+<script src="./support.js?v=8fe7df7440"></script>
 </head>
 <body>
 <x-dc>
@@ -217,7 +217,7 @@ input::placeholder{color:var(--text-3)}
         </div>
         <div style="text-align:right;min-width:150px">
           <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">剩餘時間</div>
-          <div style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px">{{ liveCountdown }}</div>
+          <div id="liveCd" style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px">{{ liveCountdown }}</div>
           <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
         </div>
       </div>
@@ -264,7 +264,7 @@ input::placeholder{color:var(--text-3)}
           <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">當期跑榜 · 最佳化活動P</span></div>
           <button type="button" onClick="{{ onGo }}" data-p="deckpro" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">進階</button>
         </div>
-        <iframe id="miniStudioFrame" src="./index.html?embed=ministudio&v=20270729d" title="當期跑榜最佳化" scrolling="no" style="width:100%;height:480px;border:none;background:transparent;display:block"></iframe>
+        <iframe id="miniStudioFrame" src="./index.html?embed=ministudio" title="當期跑榜最佳化" scrolling="no" style="width:100%;height:480px;border:none;background:transparent;display:block"></iframe>
       </div>
     </div>
 
@@ -831,7 +831,7 @@ input::placeholder{color:var(--text-3)}
       </div>
       <a href="./index.html?embed=calc" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
     </div>
-    <iframe id="deckProFrame" src="./index.html?embed=calc&v=20270729d" title="進階計算器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+    <iframe id="deckProFrame" src="./index.html?embed=calc" title="進階計算器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
   </sc-if>
 
@@ -891,7 +891,7 @@ input::placeholder{color:var(--text-3)}
   <sc-if value="{{ isGachaSim }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="gachaSimFrame" src="./index.html?embed=gachasim&v=20270729d" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
+      <iframe id="gachaSimFrame" src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
     </div>
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">機率、卡池內容與保底規則全部取自官方 master 資料（gachaCardRarityRates／gachaDetails／gachaBehaviors），不是估算值。模擬結果僅供參考，不代表實際抽卡。</div>
   </div>
@@ -1285,7 +1285,9 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2027/07/29', t: '抽卡模擬系統', s: '新增抽卡模擬頁：機率、卡池與保底全部取自官方 master 資料。經 20 萬次抽樣驗證：★4 3.01%（官方 3%）、PU 每張 0.40%（官方 0.4%）、十連保底 2 萬次零落空。' },
+    { d: '2027/07/30', t: '載入速度大幅優化', s: '經典版拆出共用的 core.js／core.css，五個內嵌面板改為共享同一份快取檔，首次載入由 2.29 MB 降到 0.86 MB、回訪僅 472 KB。靜態資源改用內容雜湊版本戳＋一年期 immutable 快取，回訪不再逐檔重新驗證。' },
+    { d: '2027/07/30', t: '首頁不再每秒重算', s: '活動倒數改為直接更新該欄位，省去每秒觸發整頁重新計算；手機端閒置時的耗電明顯下降。' },
+    { d: '2027/07/29', t: '抽卡模擬系統', s:'新增抽卡模擬頁：機率、卡池與保底全部取自官方 master 資料。經 20 萬次抽樣驗證：★4 3.01%（官方 3%）、PU 每張 0.40%（官方 0.4%）、十連保底 2 萬次零落空。' },
     { d: '2027/07/29', t: '六種配色風格', s: '極光／櫻緋／青碧／藤紫／琥珀／墨藍，深淺色各自校色；修正深色模式強調色仍用淺色值的錯位。' },
     { d: '2027/07/29', t: '修正深色模式白框', s: '統一 App 與經典版的主題儲存鍵並加上 iframe 主題同步，內嵌面板不再在深色頁面中顯示為白色。' },
     { d: '2027/07/29', t: '排名 Q 版頭像', s: '排名列表顯示各玩家代表卡角色的 Q 版頭像與上線狀態點。' },
@@ -1372,19 +1374,19 @@ class Component extends DCLogic {
     try { savedTone = localStorage.getItem('sekai-tone') || 'aurora'; } catch (e) {}
     this.setState({ tone: savedTone });
     this.applyTone(savedTone);
-    import('./data/card-chara.js').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
+    import('./data/card-chara.js?v=279ffc7580').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
     // 站徽每 8 秒換一種常駐素材（隨機起點，避免每次都從碎片開始）
     this.setState({ matIdx: Math.floor(Math.random() * this.MATS.length) });
     this._matTimer = setInterval(() => this.setState(st => ({ matIdx: (st.matIdx + 1) % this.MATS.length })), 8000);
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
-    import('./data/sekai-data.js')
+    import('./data/sekai-data.js?v=42f32cccd4')
       .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
       .catch(() => {});
     this.loadEpSongs();
     this.loadEventArt();
-    import('./data/tutorial-data.js')
+    import('./data/tutorial-data.js?v=f39254863a')
       .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
       .catch(() => {});
 
@@ -1398,7 +1400,14 @@ class Component extends DCLogic {
 
     this.loadLive();
     this._live = setInterval(() => this.loadLive(), 60000);
-    this._tick = setInterval(() => { if (this.state.page === 'home') this.setState(s => ({ tick: s.tick + 1 })); }, 1000);
+    // 倒數計時直接寫 DOM：每秒 setState 會讓 800 行 renderVals 全量重算，純浪費
+    this._tick = setInterval(() => {
+      if (this.state.page !== 'home' || !this._endMs) return;
+      const el = document.getElementById('liveCd');
+      if (!el) return;
+      const t = this.dur(this._endMs - Date.now());
+      if (el.textContent !== t) el.textContent = t;
+    }, 1000);
     this._key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
       if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false });
@@ -1785,7 +1794,7 @@ class Component extends DCLogic {
     this.setState({ colLoad: true, colErr: '' });
     try {
       const [ok, st, ho, hg] = await Promise.all([
-        import('./data/collection-assets.js'),
+        import('./data/collection-assets.js?v=73b9d40b67'),
         fetch(this.TDB + '/stamps.json').then(r => r.json()),
         fetch(this.TDB + '/honors.json').then(r => r.json()),
         fetch(this.TDB + '/honorGroups.json').then(r => r.json()).catch(() => [])
@@ -1828,11 +1837,11 @@ class Component extends DCLogic {
     this._epLoading = true;
     this.setState({ epErr: '' });
     const done = arr => { this._epLoading = false; this.setState({ epSongs: arr || [], epErr: (arr && arr.length) ? '' : '曲庫載入失敗，點此重試' }); };
-    import('./data/ep-songs.js')
+    import('./data/ep-songs.js?v=5107c1e41f')
       .then(m => done(m.EP_SONGS || []))
       .catch(() => {
         // 後備：直接抓檔文字，抽出 EP_SONGS 陣列（動態 import 被擋時仍能載入）
-        fetch('./data/ep-songs.js', { cache: 'reload' }).then(r => r.text()).then(t => {
+        fetch('./data/ep-songs.js?v=5107c1e41f').then(r => r.text()).then(t => {
           const k = t.indexOf('EP_SONGS'), i = t.indexOf('[', k), j = t.lastIndexOf(']');
           done((k >= 0 && i > k && j > i) ? JSON.parse(t.slice(i, j + 1)) : []);
         }).catch(() => { this._epLoading = false; this.setState({ epErr: '曲庫載入失敗，點此重試' }); });
@@ -2129,6 +2138,7 @@ class Component extends DCLogic {
     const endMs = endAt ? new Date(endAt).getTime() : null;
     const startMs = startAt ? new Date(startAt).getTime() : null;
     const now = Date.now();
+    this._endMs = endMs;   // 給每秒倒數直接寫 DOM 用，免整頁重算
     let prog = 0;
     if (startMs && endMs && endMs > startMs) prog = Math.max(0, Math.min(1, (now - startMs) / (endMs - startMs)));
     const myRanks = this.ranksOf(s.live);
@@ -2446,7 +2456,7 @@ class Component extends DCLogic {
         fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&v=20270729d&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&v=20270729d&gid=' + s.gachaGid : '',
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
       playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,

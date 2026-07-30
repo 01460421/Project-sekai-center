@@ -3,22 +3,28 @@
   "builds": [
     { "src": "*.html", "use": "@vercel/static" },
     { "src": "support.js", "use": "@vercel/static" },
+    { "src": "js/**", "use": "@vercel/static" },
+    { "src": "css/**", "use": "@vercel/static" },
     { "src": "data/**", "use": "@vercel/static" },
     { "src": "vendor/**", "use": "@vercel/static" },
     { "src": "favicon.ico", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/ep-calculator.html", "dest": "/ep-calculator.html" },
-    { "src": "/tutorial.html", "dest": "/tutorial.html" },
-    { "src": "/classic", "dest": "/index.html" },
-    { "src": "/index.html", "dest": "/index.html" },
-    { "src": "/app", "dest": "/app.html" },
-    { "src": "/app.html", "dest": "/app.html" },
-    { "src": "/support.js", "dest": "/support.js" },
-    { "src": "/data/(.*)", "dest": "/data/$1" },
-    { "src": "/vendor/(.*)", "dest": "/vendor/$1" },
-    { "src": "/favicon.ico", "dest": "/favicon.ico" },
-    { "src": "/", "dest": "/app.html" },
-    { "src": "/(.*)", "dest": "/app.html" }
+    { "src": "/ep-calculator.html", "dest": "/ep-calculator.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+    { "src": "/tutorial.html", "dest": "/tutorial.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+    { "src": "/classic", "dest": "/index.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+    { "src": "/index.html", "dest": "/index.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+    { "src": "/app", "dest": "/app.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+    { "src": "/app.html", "dest": "/app.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+
+    { "src": "/js/(.*)", "dest": "/js/$1", "headers": { "cache-control": "public, max-age=31536000, immutable" } },
+    { "src": "/css/(.*)", "dest": "/css/$1", "headers": { "cache-control": "public, max-age=31536000, immutable" } },
+    { "src": "/data/(.*)", "dest": "/data/$1", "headers": { "cache-control": "public, max-age=31536000, immutable" } },
+    { "src": "/vendor/(.*)", "dest": "/vendor/$1", "headers": { "cache-control": "public, max-age=31536000, immutable" } },
+    { "src": "/support.js", "dest": "/support.js", "headers": { "cache-control": "public, max-age=31536000, immutable" } },
+    { "src": "/favicon.ico", "dest": "/favicon.ico", "headers": { "cache-control": "public, max-age=604800" } },
+
+    { "src": "/", "dest": "/app.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
+    { "src": "/(.*)", "dest": "/app.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } }
   ]
 }
