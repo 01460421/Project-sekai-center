@@ -24,6 +24,8 @@
     { "src": "/support.js", "dest": "/support.js", "headers": { "cache-control": "public, max-age=31536000, immutable" } },
     { "src": "/favicon.ico", "dest": "/favicon.ico", "headers": { "cache-control": "public, max-age=604800" } },
 
+    { "src": "/(?:%7[Bb]|\\{).*", "status": 404, "headers": { "cache-control": "public, max-age=86400" } },
+
     { "src": "/", "dest": "/app.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } },
     { "src": "/(.*)", "dest": "/app.html", "headers": { "cache-control": "public, max-age=0, must-revalidate" } }
   ]
