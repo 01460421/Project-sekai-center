@@ -959,9 +959,9 @@ input::placeholder{color:var(--text-3)}
   <!-- ========== 分析中心 ========== -->
   <sc-if value="{{ isAnalysis }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
-    <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);margin-bottom:13px;flex-wrap:wrap">
+    <div style="display:{{ anaTabDisp }};grid-template-columns:{{ anaTabCols }};gap:3px;padding:4px;border:1px solid var(--border);border-radius:{{ anaTabRad }};background:var(--card-2);margin-bottom:13px">
       <sc-for list="{{ anaTabs }}" as="t" hint-placeholder-count="4">
-        <button type="button" onClick="{{ onAnaTab }}" data-v="{{ t.v }}" style="padding:8px 18px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
+        <button type="button" onClick="{{ onAnaTab }}" data-v="{{ t.v }}" style="padding:9px 10px;border:none;border-radius:{{ anaTabBtnRad }};background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s;white-space:nowrap">{{ t.n }}</button>
       </sc-for>
     </div>
 
@@ -1145,12 +1145,14 @@ input::placeholder{color:var(--text-3)}
           <button type="button" onClick="{{ onHisGo }}" style="padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">查詢</button>
           <button type="button" onClick="{{ onHisMe }}" style="padding:10px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">查我自己</button>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px">
-          <span style="font-size:11.5px;color:var(--text-3);font-weight:700">掃描範圍</span>
-          <sc-for list="{{ hisSpanChips }}" as="c" hint-placeholder-count="3">
-            <button type="button" onClick="{{ onHisSpan }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
-          </sc-for>
-          <input type="text" placeholder="或只查某一期，例：160" value="{{ hisOnly }}" onInput="{{ onField }}" data-k="hisOnly" style="width:172px;padding:8px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:12px;outline:none" style-focus="border-color:var(--accent)">
+        <div style="margin-top:11px">
+          <div style="font-size:11.5px;color:var(--text-3);font-weight:700;margin-bottom:6px">掃描範圍</div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+            <sc-for list="{{ hisSpanChips }}" as="c" hint-placeholder-count="3">
+              <button type="button" onClick="{{ onHisSpan }}" data-v="{{ c.v }}" style="padding:8px 6px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};white-space:nowrap">{{ c.n }}</button>
+            </sc-for>
+          </div>
+          <input type="text" placeholder="或只查某一期，例：160" value="{{ hisOnly }}" onInput="{{ onField }}" data-k="hisOnly" style="width:100%;margin-top:6px;padding:9px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;box-sizing:border-box" style-focus="border-color:var(--accent)">
         </div>
         <div style="font-size:11px;color:var(--text-3);margin-top:7px">{{ hisSpanNote }}</div>
         <div style="font-size:11.5px;color:var(--text-3);margin-top:9px">{{ hisMsg }}</div>
@@ -1718,7 +1720,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2027/08/01', t: '分析中心', s: '新增分析中心四個分頁。榜線分析:17 段的實測時速、預測終線、與你的差距與所需時數,附可切換段位的時間軸折線圖;有足夠快照跨距用實測、否則退回線性外推,表上明確標示是哪一種。玩家分析:1h/3h/24h 的周回、場均、時速剖析,加上動能(加速/穩定/降速)、推估每日休息時數、預測終分與預測名次、場均百分位。活躍分析:此刻在線、實際在推、休息中的人數,以及此刻最快、衝刺中、降速中。生涯紀錄:逐期掃描過去前百名單,列出歷次名次分數與增減,可選最近 20/50 期、全部期數或指定單一期數。' },
+    { d: '2027/08/01', t: '分析中心', s: '新增分析中心四個分頁。榜線分析:17 段的實測時速、預測終線、與你的差距與所需時數,附可切換段位的時間軸折線圖;有足夠快照跨距用實測、否則退回線性外推,表上明確標示是哪一種。玩家分析:1h/3h/24h 的周回、場均、時速剖析,加上動能(加速/穩定/降速)、推估每日休息時數、預測終分與預測名次、場均百分位。活躍分析:此刻在線、實際在跑、休息中的人數,以及此刻最快、衝刺中、降速中。生涯紀錄:逐期掃描過去前百名單,列出歷次名次分數與增減,可選最近 20/50 期、全部期數或指定單一期數。' },
     { d: '2027/08/01', t: '全時間軸榜線追蹤', s: '台服沒有任何現成的榜線時序來源(HiSekai 的 /history、/graph 全是 404;api.sekai.best 只追日服,台服回空),所以改由伺服器每 30 分鐘自動記錄一次,累積 17 段榜線與前 100 名各自的分數曲線。所有人共用同一份完整紀錄,不必自己開著頁面累積。前百以外又不在那 17 段上的名次(例如第 137 名)API 沒有公開,無法記錄。' },
     { d: '2027/08/01', t: '排名詳情內建名次走勢', s: '點任一排名列開詳情,走勢圖直接顯示在數據下方,不用再開一個視窗。' },
     { d: '2027/08/01', t: '修正玩家 ID 比對失效', s: '玩家 ID 是 19 位大整數,超過 JavaScript 安全整數上限,解析後尾數會被四捨五入(...167489 → ...168000),原本用字串直接比對會比不中。已改為兩邊正規化後比對。' },
@@ -3245,6 +3247,12 @@ class Component extends DCLogic {
       isAnalysis: s.page === 'analysis',
       anaTabs: [{ v: 'border', n: '榜線分析' }, { v: 'player', n: '玩家分析' }, { v: 'active', n: '活躍分析' }, { v: 'history', n: '生涯紀錄' }].map(t => Object.assign({}, t, seg(s.anaTab === t.v))),
       anaWide: !s.mobile, anaMinW: s.mobile ? '0' : '660px',
+      // 手機四個分頁排 2×2 網格；桌機一橫排。膠囊圓角只在單排時用，
+      // 換行時 999px 會讓第二排凸出去對不齊。
+      anaTabDisp: s.mobile ? 'grid' : 'inline-flex',
+      anaTabCols: s.mobile ? 'repeat(2,minmax(0,1fr))' : 'none',
+      anaTabRad: s.mobile ? '17px' : '999px',
+      anaTabBtnRad: s.mobile ? '13px' : '999px',
       anaSpdCols: s.mobile ? '72px repeat(3,minmax(0,1fr))' : '96px repeat(4,minmax(0,1fr))',
       anaFastCols: s.mobile ? '44px minmax(0,1fr) 78px' : '56px minmax(0,1fr) 98px 72px 84px',
       hisCols: s.mobile ? '52px minmax(0,1fr) 60px 72px' : '64px minmax(0,1fr) 74px 108px 78px',
@@ -3353,7 +3361,7 @@ class Component extends DCLogic {
           anaActiveOk: true,
           anaActRows: [
             { l: '此刻在線', v: V.online.length + ' / 100', sub: '15 分鐘內有成績' },
-            { l: '近 1 小時有周回', v: V.grinding.length + ' / 100', sub: '實際在推的人數' },
+            { l: '近 1 小時有周回', v: V.grinding.length + ' / 100', sub: '實際在跑的人數' },
             { l: '休息中', v: V.idle.length + ' / 100', sub: '逾 1 小時沒動' },
             { l: '前百近 1 小時總周回', v: this.n(V.rounds1h) + ' 回', sub: '整體熱度' }
           ],
