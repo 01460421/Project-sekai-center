@@ -969,6 +969,35 @@ input::placeholder{color:var(--text-3)}
     <sc-if value="{{ anaIsBorder }}">
       <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ anaMeta }}</div>
       <div style="padding:10px 14px;border-radius:13px;background:var(--card-2);color:var(--text-2);font-size:11.5px;line-height:1.6;margin-bottom:12px">{{ anaMethod }}</div>
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <span style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ anaChartTitle }}</span>
+          <span style="font-size:11px;color:var(--text-3)">{{ anaChartN }}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:11px">
+          <sc-for list="{{ anaTierChips }}" as="c" hint-placeholder-count="17">
+            <button type="button" onClick="{{ onAnaTier }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ anaChartOk }}">
+          <svg viewBox="0 0 {{ anaChartW }} {{ anaChartH }}" style="width:100%;height:auto;display:block;overflow:visible">
+            <defs><linearGradient id="bdFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+            </linearGradient></defs>
+            <path d="{{ anaChartArea }}" fill="url(#bdFill)"></path>
+            <path d="{{ anaChartLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+            <sc-for list="{{ anaChartTicks }}" as="t" hint-placeholder-count="3">
+              <text x="{{ t.x }}" y="{{ anaChartH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ t.l }}</text>
+            </sc-for>
+          </svg>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-top:8px">
+            <span>起 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaChartFirst }}</b></span>
+            <span>迄 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaChartLast }}</b></span>
+            <span>期間增加 <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ anaChartGain }}</b></span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ anaChartNo }}"><div style="font-size:12px;color:var(--text-3);padding:14px 0;line-height:1.6">{{ anaChartMsg }}</div></sc-if>
+      </div>
       <sc-if value="{{ anaHasMe }}">
         <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-bottom:11px">
           <span>我的活動P <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaMyScore }}</b></span>
@@ -1718,7 +1747,7 @@ class Component extends DCLogic {
     rOwnV: 0,        // 持有清單版本號；清單存在 this._own(Set)，靠這個觸發重繪
     rCode: '', rMsg: '',
     /* 分析中心 */
-    anaTab: 'border', anaUid: '', anaQ: '',
+    anaTab: 'border', anaUid: '', anaQ: '', hist: null, anaTier: 100,
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
@@ -1826,7 +1855,7 @@ class Component extends DCLogic {
 
   /* ---------- 工具 ---------- */
   n(v) { return (+v || 0).toLocaleString('en-US'); }
-  short(v) { v = +v || 0; return v >= 10000 ? (v / 10000).toFixed(v >= 1000000 ? 0 : 2) + 'W' : v.toLocaleString('en-US'); }
+  short(v) { v = Math.round(+v || 0); return v >= 10000 ? (v / 10000).toFixed(v >= 1000000 ? 0 : 2) + 'W' : v.toLocaleString('en-US'); }
   pd(s) { if (!s) return null; const p = String(s).split('/'); return p.length < 3 ? null : new Date(+p[0], +p[1] - 1, +p[2]); }
   md(d) { return d ? (d.getMonth() + 1) + '/' + d.getDate() : ''; }
   ago(ts) {
@@ -2059,6 +2088,24 @@ class Component extends DCLogic {
      API 只給前百的 1h/3h/24h 速度，各段榜線沒有任何速度欄位，
      也沒有任何歷史/時序端點。所以自己在每次輪詢時記快照，
      累積成真的時間序列；不足時退回線性推估並標示清楚。 */
+  // 由 GitHub Actions 每 30 分鐘記一筆的公用榜線時序（見 tools/record-border.py）
+  HIST = 'https://raw.githubusercontent.com/01460421/Project-sekai-center/main/data/history';
+  async loadBorderHistory() {
+    const ev = this.eventOf(this.state.live);
+    if (ev.id == null || this._histFor === ev.id) return;
+    this._histFor = ev.id;
+    try {
+      const d = await fetch(this.HIST + '/' + ev.id + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+      if (d && Array.isArray(d.samples)) { this._snapCache = null; this.setState({ hist: d }); }
+    } catch (e) {}
+  }
+  /* 公用時序 + 本機快照合併成同一條時間軸；公用的通常涵蓋整期，本機的補最近幾筆 */
+  histSamples(evId) {
+    const h = this.state.hist;
+    if (!h || h.eventId !== evId || !Array.isArray(h.samples)) return [];
+    const tiers = h.tiers || [];
+    return h.samples.map(s => [s[0] * 1000, tiers.map((r, i) => [r, s[i + 1]]), null]);
+  }
   snapKey(evId) { return 'sekai-snap-' + evId; }
   snapPush(top, brd) {
     try {
@@ -2066,23 +2113,35 @@ class Component extends DCLogic {
       if (ev.id == null) return;
       const tiers = this.bordersOf(brd);
       if (!tiers.length) return;
-      const list = this.snapList(ev.id);
+      const list = this.snapLocal(ev.id);
       const now = Date.now();
       const last = list[list.length - 1];
       if (last && now - last[0] < 5 * 60000) return;     // 最密 5 分鐘一筆
       const me = this.state.pid ? this.ranksOf(top).find(r => this.sameUid(r.uid, this.state.pid)) : null;
       list.push([now, tiers.map(t => [t.rank, t.score]), me ? me.score : null]);
-      while (list.length > 300) list.shift();
+      while (list.length > 200) list.shift();
       localStorage.setItem(this.snapKey(ev.id), JSON.stringify(list));
       this._snapCache = null;
     } catch (e) {}
   }
   snapList(evId) {
     if (this._snapCache && this._snapCache.id === evId) return this._snapCache.v;
-    let v = [];
-    try { v = JSON.parse(localStorage.getItem(this.snapKey(evId)) || '[]') || []; } catch (e) { v = []; }
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem(this.snapKey(evId)) || '[]') || []; } catch (e) { local = []; }
+    const pub = this.histSamples(evId);
+    // 兩邊合併去重（同一分鐘視為同一筆），公用資料優先
+    const seen = new Set(), v = [];
+    pub.concat(local).sort((a, b) => a[0] - b[0]).forEach(x => {
+      const k = Math.round(x[0] / 60000);
+      if (seen.has(k)) return;
+      seen.add(k); v.push(x);
+    });
     this._snapCache = { id: evId, v };
     return v;
+  }
+  // 只留本機的那份存回 localStorage，公用資料不重複佔空間
+  snapLocal(evId) {
+    try { return JSON.parse(localStorage.getItem(this.snapKey(evId)) || '[]') || []; } catch (e) { return []; }
   }
   /* 由快照量某一段的實測時速；跨距太短不算，回 null 讓呼叫端改用線性推估 */
   snapSpeed(evId, rank) {
@@ -2099,6 +2158,34 @@ class Component extends DCLogic {
       return { speed: (aScore - s0) / h, hours: h, points: l.length };
     }
     return null;
+  }
+
+  /* 榜線時間軸折線圖：回傳 SVG path 與座標軸標記 */
+  histChart(evId, rank) {
+    const list = this.snapList(evId).map(s => {
+      const f = (s[1] || []).find(x => x[0] === rank);
+      return f ? [s[0], f[1]] : null;
+    }).filter(Boolean);
+    if (list.length < 2) return null;
+    const W = 640, H = 190, PL = 8, PR = 8, PT = 10, PB = 22;
+    const t0 = list[0][0], t1 = list[list.length - 1][0];
+    const vs = list.map(x => x[1]);
+    const v0 = 0, v1 = Math.max(...vs) || 1;
+    const X = t => PL + (t1 > t0 ? (t - t0) / (t1 - t0) : 0) * (W - PL - PR);
+    const Y = v => PT + (1 - (v - v0) / (v1 - v0 || 1)) * (H - PT - PB);
+    const pts = list.map(x => [X(x[0]), Y(x[1])]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    const area = line + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - PB) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - PB) + ' Z';
+    const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    const ticks = [0, 0.5, 1].map(f => ({ x: PL + f * (W - PL - PR), l: md(t0 + (t1 - t0) * f) }));
+    const spanH = (t1 - t0) / 3600000;
+    return {
+      W, H, line, area, ticks,
+      first: this.n(list[0][1]), last: this.n(list[list.length - 1][1]),
+      top: this.short(v1), n: list.length,
+      spanLabel: spanH >= 24 ? (spanH / 24).toFixed(1) + ' 天' : spanH.toFixed(1) + ' 小時',
+      gain: this.short(list[list.length - 1][1] - list[0][1])
+    };
   }
 
   /* ---------- 榜線分析 ---------- */
@@ -2524,7 +2611,7 @@ class Component extends DCLogic {
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'rate') this.loadCards();
-    if (p === 'analysis') { this.loadLive(); this.loadEvList(); }
+    if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -3111,6 +3198,24 @@ class Component extends DCLogic {
           anaMethod: B.rows.some(r => r.measured)
             ? ('已累積 ' + B.snapN + ' 筆本機快照，有實測速度的段位用實測推估')
             : ('本機快照 ' + B.snapN + ' 筆，尚不足以量出速度（需間隔 30 分鐘以上），先用線性推估'),
+          ...(() => {
+            const rk = +s.anaTier || 100;
+            const c = this.histChart(ck.id, rk);
+            const chips = B.rows.map(r => { const on = r.rank === rk; const st = chip(on, 'var(--cta)');
+              return Object.assign({ v: String(r.rank), n: 'T' + this.n(r.rank) }, st, { fg: on ? '#fff' : 'var(--text)' }); });
+            if (!c) return { anaChartOk: false, anaChartNo: true, anaTierChips: chips,
+              anaChartTitle: 'T' + this.n(rk) + ' 榜線走勢', anaChartN: '尚無資料',
+              anaChartW: 640, anaChartH: 190, anaChartLine: '', anaChartArea: '', anaChartTicks: [],
+              anaChartFirst: '—', anaChartLast: '—', anaChartGain: '—',
+              anaChartMsg: '這一段還沒有足夠的時間軸資料（至少要 2 筆快照）。公用紀錄由伺服器每 30 分鐘寫一次，開著頁面也會自己累積。' };
+            return {
+              anaChartOk: true, anaChartNo: false, anaChartMsg: '', anaTierChips: chips,
+              anaChartW: c.W, anaChartH: c.H, anaChartLine: c.line, anaChartArea: c.area,
+              anaChartTicks: c.ticks, anaChartN: c.n + ' 筆 · 橫跨 ' + c.spanLabel,
+              anaChartFirst: c.first, anaChartLast: c.last, anaChartGain: '+' + c.gain,
+              anaChartTitle: 'T' + this.n(rk) + ' 榜線走勢'
+            };
+          })(),
           anaHasMe: B.myScore != null,
           anaMyScore: B.myScore != null ? this.n(B.myScore) : '—',
           anaMySpeed: B.mySpeed != null ? this.short(B.mySpeed) + '/h' : '—',
@@ -3720,6 +3825,7 @@ class Component extends DCLogic {
 
       /* ---------- 分析中心 ---------- */
       onAnaTab: e => this.setState({ anaTab: e.currentTarget.dataset.v }),
+      onAnaTier: e => this.setState({ anaTier: +e.currentTarget.dataset.v }),
       onAnaPick: e => this.setState({ anaUid: e.currentTarget.dataset.uid, anaQ: '' }),
       onAnaMe: () => this.setState({ anaUid: this.state.pid || '' }),
       onHisPick: e => {

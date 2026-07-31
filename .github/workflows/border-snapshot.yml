@@ -1,0 +1,41 @@
+name: 榜線快照
+
+# 台服沒有現成的榜線時序來源，只能自己定時記。
+# 每 30 分鐘抓一次當期榜線，append 進 data/history/{eventId}.json。
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:        # 也可以手動觸發補一筆
+
+permissions:
+  contents: write
+
+concurrency:
+  group: border-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 抓取並記錄
+        run: python3 tools/record-border.py
+
+      - name: 提交變更
+        run: |
+          if [ -z "$(git status --porcelain data/history)" ]; then
+            echo "沒有新資料，不提交"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history
+          git commit -m "榜線快照 $(date -u '+%Y-%m-%d %H:%M') UTC [skip ci]"
+          # 併發或落後時先 rebase 再推，避免整條排程卡住
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
