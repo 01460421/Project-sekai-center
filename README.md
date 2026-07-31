@@ -19,6 +19,23 @@
 | `data/*.js` | 曲庫、貼圖稱號、卡片對照等靜態資料 | 一年 immutable |
 | `vendor/*.js` | React | 一年 immutable |
 
+## ⚠️ data/history/ 只能增加，不能刪改
+
+`data/history/{期數}.json` 是由 GitHub Actions 每 30 分鐘累積的榜線時序，
+記錄了 17 段榜線與前 100 名各自的分數曲線。
+
+**這種資料時間過了就永遠補不回來** —— 台服沒有任何現成的時序來源
+（HiSekai API 的 `/history`、`/graph` 全是 404；`api.sekai.best` 只追日服，
+`region=tw` 回空），刪掉就是真的沒了。
+
+所以：
+
+- **不要 `rm`、不要重新產生、不要改既有的時間戳或數值**
+- 要重跑腳本測試，請複製到別的目錄，不要對 `data/history/` 動手
+- 腳本與 workflow 都有防線：既有檔案讀不出來會中止而非覆蓋、
+  段位組成改變會中止而非重排、樣本數沒增加會中止、
+  提交前比對 HEAD 確認沒有任何檔案樣本變少或消失
+
 ## 部署
 
 靜態網站，push 到 main 由 Vercel 自動部署。

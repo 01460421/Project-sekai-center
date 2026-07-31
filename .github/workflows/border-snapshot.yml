@@ -23,6 +23,39 @@ jobs:
       - name: 抓取並記錄
         run: python3 tools/record-border.py
 
+      # 紀錄只增不減。提交前比對每個檔案與 HEAD 的樣本數，
+      # 少了或不見了就讓整個 job 失敗，絕不把缺損推上去。
+      - name: 確認沒有任何紀錄減少
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, sys, pathlib
+          bad = []
+          for p in sorted(pathlib.Path('data/history').glob('*.json')):
+              if p.name == 'index.json':
+                  continue
+              try:
+                  new = len(json.loads(p.read_text())['samples'])
+              except Exception as e:
+                  bad.append(f'{p}: 新檔無法解析 {e}'); continue
+              r = subprocess.run(['git', 'show', f'HEAD:{p}'], capture_output=True, text=True)
+              if r.returncode:
+                  print(f'{p}: 新檔案，{new} 筆'); continue
+              old = len(json.loads(r.stdout)['samples'])
+              if new < old:
+                  bad.append(f'{p}: 樣本從 {old} 掉到 {new}')
+              else:
+                  print(f'{p}: {old} → {new} 筆')
+          # HEAD 有、工作區沒有 = 檔案被刪掉了
+          head = subprocess.run(['git','ls-tree','--name-only','HEAD','data/history/'],
+                                capture_output=True, text=True).stdout.split()
+          for name in head:
+              if not pathlib.Path(name).is_file():
+                  bad.append(f'{name}: 檔案消失')
+          if bad:
+              print('偵測到紀錄缺損，中止：', *bad, sep='\n  ', file=sys.stderr)
+              sys.exit(1)
+          PY
+
       - name: 提交變更
         run: |
           if [ -z "$(git status --porcelain data/history)" ]; then

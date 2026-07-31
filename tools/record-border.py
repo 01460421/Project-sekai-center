@@ -20,6 +20,7 @@
 }
 """
 import json
+import os
 import pathlib
 import sys
 import urllib.request
@@ -27,6 +28,14 @@ import urllib.request
 API = 'https://api.hisekai.org/tw'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'history'
+
+
+def write_atomic(path, text):
+    """先寫暫存檔再 rename。直接覆寫的話,程式中途被砍或磁碟寫到一半,
+    就會留下一個截斷的檔案,整期歷史一次報銷。"""
+    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp.write_text(text, encoding='utf-8')
+    os.replace(tmp, path)
 
 
 def get(path):
@@ -82,7 +91,16 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     f = OUT / f'{ev_id}.json'
     if f.is_file():
-        data = json.loads(f.read_text(encoding='utf-8'))
+        # 紀錄是只增不減的:讀不出來就中止,絕不用新檔覆蓋既有檔案,
+        # 否則一次解析失敗就會把整期歷史洗掉(時間過了永遠補不回來)。
+        try:
+            data = json.loads(f.read_text(encoding='utf-8'))
+        except Exception as e:
+            print(f'既有紀錄無法解析,中止以免覆蓋:{e}', file=sys.stderr)
+            return 1
+        if not isinstance(data, dict) or not isinstance(data.get('samples'), list):
+            print('既有紀錄結構異常,中止以免覆蓋', file=sys.stderr)
+            return 1
     else:
         data = {
             'eventId': ev_id,
@@ -95,11 +113,13 @@ def main():
             'ranks': [],
         }
     data.setdefault('ranks', [])
+    before_n = len(data['samples'])
 
-    # 段位組成理論上不會變,萬一變了就重設欄位順序以免錯位
-    if data.get('tiers') != tiers:
-        print(f'段位組成有變:{data.get("tiers")} → {tiers}', file=sys.stderr)
-        data['tiers'] = tiers
+    # 段位組成理論上不會變。萬一變了,改欄位順序會讓所有舊資料錯位,
+    # 所以寧可中止讓人來處理,也不動既有的任何一列。
+    if data.get('tiers') and data['tiers'] != tiers:
+        print(f'段位組成有變,中止以免既有資料錯位:{data["tiers"]} → {tiers}', file=sys.stderr)
+        return 1
 
     last = data['samples'][-1] if data['samples'] else None
     if last and now - last[0] < 10 * 60:
@@ -112,11 +132,16 @@ def main():
     if rank_scores:
         data['ranks'].append([now] + rank_scores)
 
-    f.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+    # 寫入前最後一道防線:樣本只能變多
+    if len(data['samples']) <= before_n:
+        print(f'樣本數沒有增加({before_n} → {len(data["samples"])}),中止', file=sys.stderr)
+        return 1
+
+    write_atomic(f, json.dumps(data, ensure_ascii=False, separators=(',', ':')) + '\n')
 
     idx = OUT / 'index.json'
     ids = sorted({int(p.stem) for p in OUT.glob('*.json') if p.stem.isdigit()})
-    idx.write_text(json.dumps(ids, separators=(',', ':')) + '\n', encoding='utf-8')
+    write_atomic(idx, json.dumps(ids, separators=(',', ':')) + '\n')
 
     print(f'第 {ev_id} 期:第 {len(data["samples"])} 筆快照,'
           f'榜線 {len(scores)} 段 + 前百 {len(rank_scores)} 名,T100={scores[0]:,}')
