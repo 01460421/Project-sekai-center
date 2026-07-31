@@ -956,6 +956,159 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 收集率 ========== -->
+  <sc-if value="{{ isRate }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+
+    <!-- 總覽 -->
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:18px 20px;margin-bottom:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <div style="font-family:'M PLUS Rounded 1c';font-size:clamp(30px,5vw,44px);font-weight:800;color:var(--accent-deep);line-height:1">{{ rateTotalPct }}</div>
+        <div style="font-size:13px;color:var(--text-2);font-weight:700">{{ rateTotalLabel }}</div>
+      </div>
+      <div style="height:10px;border-radius:999px;background:var(--card-2);overflow:hidden;margin-top:12px">
+        <div style="height:100%;width:{{ rateTotalBar }};background:var(--grad-cta);border-radius:999px;transition:width .45s cubic-bezier(.32,.72,.24,1)"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-top:16px">
+        <sc-for list="{{ rateUnitRows }}" as="u" hint-placeholder-count="6">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">
+              <span style="color:{{ u.c }}">{{ u.n }}</span><span>{{ u.label }}</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--card-2);overflow:hidden">
+              <div style="height:100%;width:{{ u.bar }};background:{{ u.c }};border-radius:999px;transition:width .45s"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:11px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <sc-for list="{{ rateRarRows }}" as="r" hint-placeholder-count="5">
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ r.n }}</div>
+            <div style="font-family:'M PLUS Rounded 1c';font-size:16px;font-weight:800;color:var(--ink);margin-top:2px">{{ r.pct }}</div>
+            <div style="font-size:10.5px;color:var(--text-3)">{{ r.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- 工具列 -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:11px">
+      <input type="text" placeholder="搜尋卡名、角色、卡片 ID…" value="{{ rq }}" onInput="{{ onField }}" data-k="rq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <button type="button" onClick="{{ onRateMiss }}" style="padding:10px 18px;border:none;border-radius:999px;background:{{ rMissChip.bg }};color:{{ rMissChip.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:{{ rMissChip.sh }};min-height:44px">只看未持有</button>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px">
+      <sc-for list="{{ rateUnitChips }}" as="c" hint-placeholder-count="7">
+        <button type="button" onClick="{{ onRateUnit }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px">
+      <sc-for list="{{ rateRarChips }}" as="c" hint-placeholder-count="6">
+        <button type="button" onClick="{{ onRateRar }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px">
+      <sc-for list="{{ rateSupChips }}" as="c" hint-placeholder-count="8">
+        <button type="button" onClick="{{ onRateSup }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:11px">
+      <div style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';flex:1;min-width:130px">{{ rateCount }}</div>
+      <button type="button" onClick="{{ onRateAll }}" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">全選目前篩選</button>
+      <button type="button" onClick="{{ onRateNone }}" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">取消目前篩選</button>
+      <sc-if value="{{ rateHasPlayer }}">
+        <button type="button" onClick="{{ onRateSync }}" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer">從我的資料帶入</button>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ rHasMsg }}">
+      <div style="padding:10px 14px;border-radius:13px;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent-deep);font-size:12.5px;font-weight:700;margin-bottom:11px">{{ rMsg }}</div>
+    </sc-if>
+    <sc-if value="{{ rateHasErr }}">
+      <button type="button" onClick="{{ onRateReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ rateErrMsg }}</button>
+    </sc-if>
+    <sc-if value="{{ rateBusy }}">
+      <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+        <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入卡片圖鑑…
+      </div>
+    </sc-if>
+
+    <!-- 卡片格 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px">
+      <sc-for list="{{ rateRows }}" as="c" hint-placeholder-count="12">
+        <div onClick="{{ onRateToggle }}" data-id="{{ c.id }}" title="{{ c.chara }}｜{{ c.name }}｜{{ c.sup }}" style="position:relative;border:2px solid {{ c.bd }};border-radius:14px;background:{{ c.bg }};box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,border-color .2s,background .2s" style-hover="transform:translateY(-3px)">
+          <div style="aspect-ratio:1;background:var(--card-2);opacity:{{ c.op }};transition:opacity .2s">
+            <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="" width="156" height="156" style="width:100%;height:100%;object-fit:cover;display:block">
+          </div>
+          <div style="position:absolute;top:5px;right:5px;width:21px;height:21px;border-radius:50%;background:{{ c.markBg }};color:{{ c.markFg }};font-size:12px;font-weight:800;display:grid;place-items:center;box-shadow:var(--sh-xs)">{{ c.mark }}</div>
+          <div style="position:absolute;top:5px;left:5px;padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:800">{{ c.rar }}</div>
+          <div style="padding:6px 7px 8px;font-size:10px;font-weight:700;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ c.name }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ rateEmpty }}">
+      <div style="padding:38px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">沒有符合的卡片，試著放寬篩選條件。</div>
+    </sc-if>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px">
+      <button type="button" onClick="{{ onPage }}" data-k="rp" data-d="-1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">← 上頁</button>
+      <span style="font-size:13px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ ratePageLabel }}</span>
+      <button type="button" onClick="{{ onPage }}" data-k="rp" data-d="1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">下頁 →</button>
+    </div>
+
+    <!-- 自動統計（需綁定玩家 ID） -->
+    <sc-if value="{{ rateHasMusic }}">
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:16px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">樂曲達成（自動取自你的公開資料）</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px">通關／FULL COMBO／ALL PERFECT 曲數</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:11px">
+          <sc-for list="{{ rateMusicRows }}" as="m" hint-placeholder-count="6">
+            <div style="border:1px solid var(--border);border-left:3px solid {{ m.c }};border-radius:13px;padding:10px 12px;background:var(--card-2)">
+              <div style="font-size:11px;font-weight:800;color:{{ m.c }};margin-bottom:5px">{{ m.n }}</div>
+              <div style="font-size:11.5px;color:var(--text-2);line-height:1.7">
+                <div>通關 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ m.clear }}</b></div>
+                <div>FC <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ m.fc }}</b></div>
+                <div>AP <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ m.ap }}</b></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ rateHasChar }}">
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:12px">角色等級（自動）</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">
+          <sc-for list="{{ rateCharRows }}" as="c" hint-placeholder-count="12">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:7px 11px;border:1px solid var(--border);border-radius:11px;background:var(--card-2);font-size:11.5px">
+              <span style="color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.n }}</span>
+              <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ c.v }}</b>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 備份 -->
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:13px">
+      <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">備份與還原</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:11px">紀錄存在這台裝置的瀏覽器。換裝置或清快取前，先複製備份碼。</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center">
+        <button type="button" onClick="{{ onRateCopy }}" style="padding:9px 16px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">複製備份碼</button>
+        <input type="text" placeholder="貼上備份碼還原…" value="{{ rCode }}" onInput="{{ onField }}" data-k="rCode" style="flex:1;min-width:170px;padding:9px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none" style-focus="border-color:var(--accent)">
+        <button type="button" onClick="{{ onRateLoadCode }}" style="padding:9px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">還原</button>
+        <button type="button" onClick="{{ onRateWipe }}" style="padding:9px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:#e0576a;font-size:12.5px;font-weight:700;cursor:pointer">清空</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
   <!-- ========== 功能更新 ========== -->
   <sc-if value="{{ isWhatsNew }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:13px">
@@ -1100,6 +1253,7 @@ input::placeholder{color:var(--text-3)}
   </div>
   <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2);margin-bottom:14px">
     <span>總分 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.score }}</b></span>
+    <span>上局 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.lastScore }}</b></span>
     <span>1h均速 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.speed1h }}</b></span>
     <span>最後 <b style="color:var(--ink)">{{ detailData.lastPlayed }}</b></span>
   </div>
@@ -1231,6 +1385,13 @@ class Component extends DCLogic {
   BOOST = { 0:1, 1:5, 2:10, 3:15, 4:19, 5:23, 6:26, 7:29, 8:31, 9:33, 10:35 };
   API = 'https://api.hisekai.org/tw';
   TDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+  /* ---------- 收集率 ---------- */
+  CARD_KEY = 'sekai-cards-own';
+  // cards-index.js 的 UNITS 順序 → 站內 UNITS 的鍵
+  UNIT_OF = ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'];
+  RARITY = [[4, '★4'], [9, '生日'], [3, '★3'], [2, '★2'], [1, '★1']];
+  SUPPLYN = ['常駐', '生日限定', '期間限定', '彩FES限定', 'BLOOMFES限定', '團體活動限定', '聯動限定'];
+
   UNITS = {
     ln:  { n:'Leo/need', c:'#4455dd', t:'#fff', keys:['LN'] },
     mmj: { n:'MMJ', c:'#88cc44', t:'#1d2610', keys:['MMJ'] },
@@ -1261,6 +1422,7 @@ class Component extends DCLogic {
     tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
     gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
     collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
+    rate:     ['收集率', '卡片圖鑑勾選，即時算出各團與各稀有度的收集進度'],
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
   };
@@ -1278,6 +1440,7 @@ class Component extends DCLogic {
     { date: '排名', title: '查看任一玩家編組', desc: '點排名列開詳情，再點「查看這位玩家的編組與加成」，顯示對方的實際 5 張卡、綜合力與逐卡活動加成。', to: 'rank', cta: '前往活動排名' },
     { date: '排名', title: '榜線趨勢比較', desc: '把最近 12 期的 T100～T10 萬榜線並排比較，並標示最新一期相對前期的增減，用來抓這期該衝多少。', to: 'rank', cta: '前往活動排名' },
     { date: '收集', title: '收集室', desc: '貼圖 1,073 張與稱號 1,883 種圖鑑，可搜尋、看取得條件與稀有度。', to: 'collect', cta: '前往收集室' },
+    { date: '收集', title: '收集率', desc: '全 1,249 張卡片圖鑑勾選持有，即時算出總收集率與各團體、各稀有度進度；可依團體／稀有度／取得類別篩選，支援備份碼跨裝置搬移。綁定玩家 ID 後另外顯示樂曲通關／FC／AP 與角色等級。', to: 'rate', cta: '前往收集率' },
     { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位一站式工具。', to: 'calc', cta: '前往計算中心' },
     { date: '計算', title: '抽卡模擬', desc: '依官方 master 資料的機率模型模擬抽卡：可搜尋任一期卡池，顯示各稀有度機率與 PU 卡，支援單抽／十連（含保底★3↑），並統計已抽數、消耗石、★4 與 PU 入手、距天井。', to: 'gachasim', cta: '前往抽卡模擬' },
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
@@ -1285,6 +1448,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2027/08/01', t: '收集率', s: '新增收集率頁：全 1,249 張卡片可勾選持有，即時計算總收集率與六團、各稀有度進度。支援團體／稀有度／取得類別篩選與「只看未持有」，紀錄存本機並可用備份碼搬到其他裝置。已綁定玩家 ID 者可一鍵帶入公開的隊伍與展示卡，並顯示樂曲通關／FC／AP 與角色等級。' },
+    { d: '2027/08/01', t: '修正活動P「上局」顯示累計值', s: '該欄位原本取 API 的 score（整期累計），已改為 last_score（上一局實得）。排名詳情也一併加上「上局」。' },
     { d: '2027/07/30', t: '載入速度大幅優化', s: '經典版拆出共用的 core.js／core.css，五個內嵌面板改為共享同一份快取檔，首次載入由 2.29 MB 降到 0.86 MB、回訪僅 472 KB。靜態資源改用內容雜湊版本戳＋一年期 immutable 快取，回訪不再逐檔重新驗證。' },
     { d: '2027/07/30', t: '首頁不再每秒重算', s: '活動倒數改為直接更新該欄位，省去每秒觸發整頁重新計算；手機端閒置時的耗電明顯下降。' },
     { d: '2027/07/29', t: '抽卡模擬系統', s:'新增抽卡模擬頁：機率、卡池與保底全部取自官方 master 資料。經 20 萬次抽樣驗證：★4 3.01%（官方 3%）、PU 每張 0.40%（官方 0.4%）、十連保底 2 萬次零落空。' },
@@ -1336,6 +1501,11 @@ class Component extends DCLogic {
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     cardChara: null, // cardId → characterId（排名頭像用）
+    /* 收集率 */
+    rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
+    rq: '', ru: 'all', rr: 'all', rs: 'all', rMiss: false, rp: 1,
+    rOwnV: 0,        // 持有清單版本號；清單存在 this._own(Set)，靠這個觸發重繪
+    rCode: '', rMsg: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
@@ -1694,6 +1864,7 @@ class Component extends DCLogic {
     return {
       rank: Number(r.rank != null ? r.rank : r.ranking != null ? r.ranking : r.position),
       score: Number(r.score != null ? r.score : r.event_point != null ? r.event_point : r.point),
+      lastScore: r.last_score != null ? Number(r.last_score) : null,   // 上一局實得,非累計
       speed1h: (r.last_1h_stats && r.last_1h_stats.speed) != null ? r.last_1h_stats.speed : null,
       name: r.name || r.user_name || r.nickname || prof.name || '—',
       uid: String(r.user_id != null ? r.user_id : r.userId != null ? r.userId : prof.id != null ? prof.id : r.id || ''),
@@ -1722,7 +1893,7 @@ class Component extends DCLogic {
     const st = me.stats || {};
     const cnt = k => (st[k] && st[k].count != null) ? st[k].count : null;   // 周回數(近1/3/24小時)
     this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, {
-      myRank: me.rank, myScore: me.score, mySpeed: me.speed1h,
+      myRank: me.rank, myScore: me.score, myLastScore: me.lastScore, mySpeed: me.speed1h,
       myRounds1h: cnt('h1'), myRounds3h: cnt('h3'), myRounds24h: cnt('h24'),
       myAvg1h: (st.h1 && st.h1.average != null) ? st.h1.average : null,
       myLastPlayed: me.lastPlayed || null
@@ -1737,12 +1908,16 @@ class Component extends DCLogic {
       const power = tp.totalPower || tp.total_power || u.total_power || u.totalPower || u.deck_total_power || u.power || null;
       const chHigh = (d.userChallengeLiveSoloResult && d.userChallengeLiveSoloResult.highScore) || null;
       const deckName = (d.userDeck && d.userDeck.name) || null;
+      // 收集率用：profile 只公開隊伍與展示卡，可當勾選的起點
+      const seenCards = Array.from(new Set((d.userCards || []).map(c => c.cardId).filter(Boolean)));
+      const musicClear = d.userMusicDifficultyClearCount || [];
+      const charRanks = d.userCharacters || [];
       this.setState(s => ({
         pdata: Object.assign({}, s.pdata || {}, {
           name: gd.name || u.name || ('玩家 ' + id),
           rank: gd.rank || u.rank || null, power,
           basePower: tp.basicCardTotalPower || null, charRankBonus: tp.characterRankBonus || null,
-          chHigh, deckName
+          chHigh, deckName, seenCards, musicClear, charRanks
         }), pErr: ''
       }));
       if (this.state.live) this.matchMyRank(this.state.live);
@@ -1787,6 +1962,94 @@ class Component extends DCLogic {
       this.setState({ songLoad: false, songErr: '歌曲資料載入失敗' });
     }
   }
+
+  /* ---------- 收集率：卡片圖鑑勾選 ----------
+     API 的 /user/{id}/profile 只回隊伍與展示卡(共 14 張)，拿不到完整持有清單，
+     所以跟參考站一樣採手動勾選，存在 localStorage。 */
+  async loadCards() {
+    if (this.state.rateLoad || this.state.rateCards.length) return;
+    this.setState({ rateLoad: true, rateErr: '' });
+    try {
+      const m = await import('./data/cards-index.js?v=573daeb787');
+      this.ownLoad();
+      this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
+    } catch (e) {
+      this.setState({ rateLoad: false, rateErr: '卡片資料載入失敗，點此重試' });
+    }
+  }
+
+  /* 持有清單存成 bitmap→base64，1249 張只要約 210 字元，方便當分享碼 */
+  ownSet() { if (!this._own) this._own = new Set(); return this._own; }
+  ownLoad() {
+    try { this.ownFromCode(localStorage.getItem(this.CARD_KEY) || ''); } catch (e) { this._own = new Set(); }
+  }
+  ownSave() {
+    try { localStorage.setItem(this.CARD_KEY, this.ownCode()); } catch (e) {}
+    this.setState(s => ({ rOwnV: s.rOwnV + 1 }));
+  }
+  ownCode() {
+    const o = this.ownSet();
+    let max = 0; o.forEach(id => { if (id > max) max = id; });
+    if (!max) return '';
+    const b = new Uint8Array((max >> 3) + 1);
+    o.forEach(id => { b[id >> 3] |= (1 << (id & 7)); });
+    let s = ''; b.forEach(x => { s += String.fromCharCode(x); });
+    return btoa(s);
+  }
+  ownFromCode(code) {
+    const o = new Set();
+    if (code) {
+      try {
+        const s = atob(code);
+        for (let i = 0; i < s.length; i++) {
+          const v = s.charCodeAt(i);
+          for (let k = 0; k < 8; k++) if (v & (1 << k)) o.add((i << 3) + k);
+        }
+      } catch (e) {}
+    }
+    this._own = o;
+    return o;
+  }
+  // 只有 ★3/★4 有花後圖，★1/★2/生日 一律 normal（實測 after_training 為 404）
+  cardImg(abn, rarity) {
+    return this.ASSET + '/thumbnail/chara/' + abn + '_' + (rarity === 3 || rarity === 4 ? 'after_training' : 'normal') + '.webp';
+  }
+  /* 依目前篩選條件取卡片；c = [id,角色,稀有度,屬性,取得,支援團,卡池,卡名,素材] */
+  rateFiltered() {
+    const s = this.state, o = this.ownSet();
+    const q = (s.rq || '').trim().toLowerCase();
+    const uOf = {}; (s.rateChars || []).forEach(c => { uOf[c[0]] = this.UNIT_OF[c[2]] || 'vs'; });
+    const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+    return (s.rateCards || []).filter(c => {
+      if (s.ru !== 'all') {
+        const u = c[5] >= 0 ? this.UNIT_OF[c[5]] : uOf[c[1]];
+        if (u !== s.ru) return false;
+      }
+      if (s.rr !== 'all' && String(c[2]) !== s.rr) return false;
+      if (s.rs !== 'all' && String(c[4]) !== s.rs) return false;
+      if (s.rMiss && o.has(c[0])) return false;
+      if (q && !((c[7] || '').toLowerCase().includes(q) || (nOf[c[1]] || '').toLowerCase().includes(q) || String(c[0]) === q)) return false;
+      return true;
+    });
+  }
+  /* 總覽統計：整體 + 依團體 + 依稀有度 */
+  rateStat() {
+    const s = this.state, o = this.ownSet(), cards = s.rateCards || [];
+    const uOf = {}; (s.rateChars || []).forEach(c => { uOf[c[0]] = this.UNIT_OF[c[2]] || 'vs'; });
+    const mk = () => ({ n: 0, have: 0 });
+    const all = mk(), byU = {}, byR = {};
+    this.UNIT_OF.forEach(u => { byU[u] = mk(); });
+    this.RARITY.forEach(r => { byR[r[0]] = mk(); });
+    cards.forEach(c => {
+      const has = o.has(c[0]);
+      all.n++; if (has) all.have++;
+      const u = c[5] >= 0 ? this.UNIT_OF[c[5]] : uOf[c[1]];
+      if (byU[u]) { byU[u].n++; if (has) byU[u].have++; }
+      if (byR[c[2]]) { byR[c[2]].n++; if (has) byR[c[2]].have++; }
+    });
+    return { all, byU, byR };
+  }
+  pct(have, n) { return n > 0 ? (have / n * 100) : 0; }
 
   /* 收集室：貼圖 + 稱號圖鑑。素材清單為實際列舉 CDN 產生，只留真的有圖的，避免破圖 */
   async loadCollect() {
@@ -1853,6 +2116,7 @@ class Component extends DCLogic {
     if (p === 'songs') this.loadSongs();
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
+    if (p === 'rate') this.loadCards();
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -2114,7 +2378,7 @@ class Component extends DCLogic {
       ['追蹤', [['rank', '活動排名', '#ff9db4']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
+      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -2386,6 +2650,7 @@ class Component extends DCLogic {
     const detailData = dt ? {
       title: (dt.rank != null ? '#' + dt.rank + '　' : '') + (dt.name || '—'),
       score: this.n(dt.score), speed1h: dt.speed1h != null ? this.short(dt.speed1h) + '/h' : '—',
+      lastScore: dt.lastScore != null ? this.n(dt.lastScore) : '—',
       lastPlayed: dt.lastPlayed ? this.ago(dt.lastPlayed) : '—',
       uid: dt.uid || '', hasUid: !!dt.uid,
       rows: [perRow('近 1 小時', dt.stats && dt.stats.h1), perRow('近 3 小時', dt.stats && dt.stats.h3), perRow('近 24 小時', dt.stats && dt.stats.h24)]
@@ -2420,6 +2685,80 @@ class Component extends DCLogic {
       isDeckPro: s.page === 'deckpro',
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG, syslog: this.SYSLOG,
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
+
+      /* ---------- 收集率 ---------- */
+      isRate: s.page === 'rate',
+      rateBusy: s.rateLoad, rateHasErr: !!s.rateErr, rateErrMsg: s.rateErr,
+      rq: s.rq, rCode: s.rCode, rMsg: s.rMsg, rHasMsg: !!s.rMsg,
+      rMissOn: s.rMiss,
+      rMissChip: (() => { const st = chip(s.rMiss, 'var(--cta)'); return Object.assign({}, st, { fg: s.rMiss ? '#fff' : 'var(--text)' }); })(),
+      ...(() => {
+        const stat = this.rateStat(), all = stat.all;
+        const p = this.pct(all.have, all.n);
+        const rows = this.rateFiltered();
+        const per = 60, tot = Math.max(1, Math.ceil(rows.length / per));
+        const pg = Math.min(Math.max(1, s.rp), tot);
+        const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+        const own = this.ownSet();
+        return {
+          rateTotalPct: p.toFixed(1) + '%',
+          rateTotalBar: p.toFixed(1) + '%',
+          rateTotalLabel: this.n(all.have) + ' / ' + this.n(all.n) + ' 張',
+          rateUnitRows: this.UNIT_OF.map(u => {
+            const g = stat.byU[u] || { n: 0, have: 0 }, q = this.pct(g.have, g.n);
+            return { k: u, n: (this.UNITS[u] || {}).n || u, c: (this.UNITS[u] || {}).c || 'var(--accent)',
+                     pct: q.toFixed(1) + '%', bar: q.toFixed(1) + '%', label: g.have + '/' + g.n };
+          }),
+          rateRarRows: this.RARITY.map(([code, label]) => {
+            const g = stat.byR[code] || { n: 0, have: 0 }, q = this.pct(g.have, g.n);
+            return { k: String(code), n: label, pct: q.toFixed(1) + '%', bar: q.toFixed(1) + '%', label: g.have + '/' + g.n };
+          }),
+          rateUnitChips: [{ v: 'all', n: '全部', c: null }].concat(this.UNIT_OF.map(u => ({ v: u, n: (this.UNITS[u] || {}).n || u, c: (this.UNITS[u] || {}).c })))
+            .map(x => { const on = s.ru === x.v, st = chip(on, x.c); return Object.assign({}, x, st, { fg: on ? (x.c ? (this.UNITS[x.v] || {}).t || '#fff' : '#fff') : 'var(--text)' }); }),
+          rateRarChips: [{ v: 'all', n: '全部' }].concat(this.RARITY.map(([code, label]) => ({ v: String(code), n: label })))
+            .map(x => { const on = s.rr === x.v, st = chip(on, 'var(--cta)'); return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
+          rateSupChips: [{ v: 'all', n: '全部' }].concat(this.SUPPLYN.map((nm, i) => ({ v: String(i), n: nm })))
+            .map(x => { const on = s.rs === x.v, st = chip(on, 'var(--cta)'); return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
+          rateCount: rows.length ? ('符合 ' + this.n(rows.length) + ' 張（已持有 ' + rows.filter(c => own.has(c[0])).length + '）')
+                                 : (s.rateLoad ? '載入中…' : '沒有符合的卡片'),
+          rateEmpty: !s.rateLoad && !s.rateErr && !rows.length,
+          ratePageLabel: pg + ' / ' + tot,
+          rateRows: rows.slice((pg - 1) * per, pg * per).map(c => {
+            const has = own.has(c[0]);
+            return {
+              id: c[0], name: c[7], chara: nOf[c[1]] || '',
+              img: this.cardImg(c[8], c[2]),
+              rar: (this.RARITY.find(r => r[0] === c[2]) || [0, '?'])[1],
+              sup: this.SUPPLYN[c[4]] || '',
+              own: has,
+              bg: has ? 'var(--card)' : 'var(--card-2)',
+              op: has ? '1' : '.42',
+              bd: has ? 'var(--accent)' : 'var(--border)',
+              mark: has ? '✓' : '',
+              markBg: has ? 'var(--accent)' : 'transparent',
+              markFg: has ? '#fff' : 'transparent'
+            };
+          })
+        };
+      })(),
+      // 已綁定玩家時可自動帶入的資料（樂曲達成、角色等級）
+      rateHasPlayer: !!s.pid,
+      rateSeenCount: (pd.seenCards || []).length,
+      rateMusicRows: (() => {
+        const DF = { easy: 'EASY', normal: 'NORMAL', hard: 'HARD', expert: 'EXPERT', master: 'MASTER', append: 'APPEND' };
+        const CL = { easy: '#43c93f', normal: '#4599e8', hard: '#f0a020', expert: '#f45c9a', master: '#a24df0', append: '#ee4499' };
+        return (pd.musicClear || []).map(m => ({
+          n: DF[m.musicDifficultyType] || m.musicDifficultyType, c: CL[m.musicDifficultyType] || 'var(--accent)',
+          clear: this.n(m.liveClear || 0), fc: this.n(m.fullCombo || 0), ap: this.n(m.allPerfect || 0)
+        }));
+      })(),
+      rateCharRows: (() => {
+        const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+        return (pd.charRanks || []).map(c => ({ n: nOf[c.characterId] || ('#' + c.characterId), v: c.characterRank }))
+          .sort((a, b) => b.v - a.v);
+      })(),
+      rateHasMusic: !!(pd.musicClear || []).length,
+      rateHasChar: !!(pd.charRanks || []).length,
       colTabs: [{ v: 'stamp', n: '貼圖' }, { v: 'honor', n: '稱號' }].map(t => Object.assign({}, t,
         chip(s.colTab === t.v, 'var(--cta)'), { fg: s.colTab === t.v ? '#fff' : 'var(--text)' })),
       colIsStamp: s.colTab === 'stamp', colIsHonor: s.colTab === 'honor',
@@ -2508,7 +2847,8 @@ class Component extends DCLogic {
       playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
       playerStats: [
         { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '未進前100' },
-        { l: '活動P·上局', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
+        { l: '活動P·累計', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
+        { l: '活動P·上局', v: pd.myLastScore != null ? this.n(pd.myLastScore) : '—' },
         { l: '時速·近1h', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
         { l: '周回·近1h', v: pd.myRounds1h != null ? pd.myRounds1h + ' 回' : '—' },
         { l: '周回·近24h', v: pd.myRounds24h != null ? this.n(pd.myRounds24h) + ' 回' : '—' },
@@ -2828,6 +3168,52 @@ class Component extends DCLogic {
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
       onReloadEp: () => this.loadEpSongs(true),
       onColTab: e => this.setState({ colTab: e.currentTarget.dataset.v, cp: 1, cq: '' }),
+
+      /* ---------- 收集率 ---------- */
+      onRateReload: () => { this.setState({ rateCards: [], rateErr: '' }); this.loadCards(); },
+      onRateToggle: e => {
+        const id = +e.currentTarget.dataset.id;
+        if (!id) return;
+        const o = this.ownSet();
+        if (o.has(id)) o.delete(id); else o.add(id);
+        this.ownSave();
+      },
+      onRateUnit: e => this.setState({ ru: e.currentTarget.dataset.v, rp: 1 }),
+      onRateRar: e => this.setState({ rr: e.currentTarget.dataset.v, rp: 1 }),
+      onRateSup: e => this.setState({ rs: e.currentTarget.dataset.v, rp: 1 }),
+      onRateMiss: () => this.setState(s => ({ rMiss: !s.rMiss, rp: 1 })),
+      // 只影響目前篩選出來的卡，不會誤傷其他分類
+      onRateAll: () => { const o = this.ownSet(); this.rateFiltered().forEach(c => o.add(c[0])); this.ownSave(); },
+      onRateNone: () => { const o = this.ownSet(); this.rateFiltered().forEach(c => o.delete(c[0])); this.ownSave(); },
+      onRateWipe: () => {
+        if (!confirm('確定要清空全部持有紀錄嗎？此動作無法復原。')) return;
+        this._own = new Set(); this.ownSave(); this.setState({ rMsg: '已清空全部紀錄' });
+      },
+      // 從已綁定玩家的公開資料帶入隊伍與展示卡（API 只公開這 14 張）
+      onRateSync: () => {
+        const ids = ((this.state.pdata || {}).seenCards) || [];
+        if (!ids.length) { this.setState({ rMsg: '沒有可帶入的卡片，請先在首頁綁定玩家 ID' }); return; }
+        const o = this.ownSet(); let add = 0;
+        ids.forEach(id => { if (!o.has(id)) { o.add(id); add++; } });
+        this.ownSave();
+        this.setState({ rMsg: '已帶入 ' + add + ' 張（公開資料僅含隊伍與展示卡共 ' + ids.length + ' 張）' });
+      },
+      onRateCopy: () => {
+        const code = this.ownCode();
+        if (!code) { this.setState({ rMsg: '目前沒有勾選任何卡片' }); return; }
+        try { navigator.clipboard.writeText(code); this.setState({ rMsg: '備份碼已複製到剪貼簿（' + code.length + ' 字元）' }); }
+        catch (e) { this.setState({ rCode: code, rMsg: '請手動複製下方欄位的備份碼' }); }
+      },
+      onRateLoadCode: () => {
+        const code = (this.state.rCode || '').trim();
+        if (!code) { this.setState({ rMsg: '請先貼上備份碼' }); return; }
+        const prev = new Set(this.ownSet());          // 先留底，解析失敗才能真的還原
+        this.ownFromCode(code);
+        const after = this.ownSet().size;
+        if (!after && prev.size) { this._own = prev; this.setState({ rMsg: '備份碼無法解析，已保留原本紀錄' }); return; }
+        this.ownSave();
+        this.setState({ rMsg: '已還原 ' + after + ' 張持有紀錄' });
+      },
       onRankTab: e => {
         const v = e.currentTarget.dataset.v;
         this.setState({ rankTab: v });
@@ -2885,8 +3271,10 @@ class Component extends DCLogic {
       onPage: e => {
         const d = e.currentTarget.dataset, k = d.k, dir = +d.d;
         const colPages = Math.max(1, Math.ceil(this.colFiltered().length / 60));
-        const max = k === 'gp' ? gPages : k === 'cp' ? colPages : sPages;
-        const cur = k === 'gp' ? gp : k === 'cp' ? Math.min(this.state.cp, colPages) : sp;
+        const ratePages = Math.max(1, Math.ceil(this.rateFiltered().length / 60));
+        const max = k === 'gp' ? gPages : k === 'cp' ? colPages : k === 'rp' ? ratePages : sPages;
+        const cur = k === 'gp' ? gp : k === 'cp' ? Math.min(this.state.cp, colPages)
+                  : k === 'rp' ? Math.min(this.state.rp, ratePages) : sp;
         this.setState({ [k]: Math.min(max, Math.max(1, cur + dir)) });
         try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
       },
