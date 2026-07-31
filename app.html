@@ -956,6 +956,216 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 分析中心 ========== -->
+  <sc-if value="{{ isAnalysis }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);margin-bottom:13px;flex-wrap:wrap">
+      <sc-for list="{{ anaTabs }}" as="t" hint-placeholder-count="4">
+        <button type="button" onClick="{{ onAnaTab }}" data-v="{{ t.v }}" style="padding:8px 18px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
+      </sc-for>
+    </div>
+
+    <!-- 榜線分析 -->
+    <sc-if value="{{ anaIsBorder }}">
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ anaMeta }}</div>
+      <div style="padding:10px 14px;border-radius:13px;background:var(--card-2);color:var(--text-2);font-size:11.5px;line-height:1.6;margin-bottom:12px">{{ anaMethod }}</div>
+      <sc-if value="{{ anaHasMe }}">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-bottom:11px">
+          <span>我的活動P <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaMyScore }}</b></span>
+          <span>我的時速 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaMySpeed }}</b></span>
+        </div>
+      </sc-if>
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow-x:auto">
+        <div style="min-width:660px">
+          <div style="display:grid;grid-template-columns:86px minmax(0,1fr) 100px 92px 106px 96px 78px;gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text-3)">
+            <span>段位</span><span>目前分數</span><span style="text-align:right">實測時速</span><span style="text-align:center">依據</span><span style="text-align:right">預測終線</span><span style="text-align:right">與我差距</span><span style="text-align:right">我需時</span>
+          </div>
+          <sc-for list="{{ anaBorderRows }}" as="b" hint-placeholder-count="17">
+            <div style="display:grid;grid-template-columns:86px minmax(0,1fr) 100px 92px 106px 96px 78px;gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center">
+              <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ b.rank }}</span>
+              <span style="font-family:'M PLUS Rounded 1c';font-weight:700;color:var(--ink)">{{ b.score }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ b.speed }}</span>
+              <span style="text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:{{ b.srcBg }};color:{{ b.srcFg }};font-size:10.5px;font-weight:700">{{ b.src }}</span></span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ b.proj }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:{{ b.gapFg }}">{{ b.gap }}</span>
+              <span style="text-align:right;font-size:11.5px;color:var(--text-3)">{{ b.need }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">預測終線＝目前分數＋剩餘時數×該段速度。標「實測」者速度來自本機累積的快照，標「線性」者只是把目前分數按已過時間等比外推，活動末段通常會被低估。</div>
+    </sc-if>
+
+    <!-- 玩家分析 -->
+    <sc-if value="{{ anaIsPlayer }}">
+      <sc-if value="{{ anaPlayerOk }}">
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
+          <div style="display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin-bottom:13px">
+            <span style="font-family:'M PLUS Rounded 1c';font-size:20px;font-weight:800;color:var(--accent-deep)">{{ anaPRank }}</span>
+            <span style="font-size:15px;font-weight:800;color:var(--ink)">{{ anaPName }}</span>
+            <span style="font-size:12.5px;color:var(--text-2)">累計 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaPScore }}</b></span>
+            <span style="font-size:12.5px;color:var(--text-2)">上局 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaPLast }}</b></span>
+          </div>
+          <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text-3)">
+            <span>時段</span><span style="text-align:right">周回</span><span style="text-align:right">得分</span><span style="text-align:right">場均</span><span style="text-align:right">時速</span>
+          </div>
+          <sc-for list="{{ anaSpeedRows }}" as="r" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+              <span style="color:var(--text-2);font-weight:700">{{ r.l }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c'">{{ r.cnt }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c'">{{ r.score }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c'">{{ r.avg }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ r.speed }}</span>
+            </div>
+          </sc-for>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-top:14px">
+            <sc-for list="{{ anaInsights }}" as="i" hint-placeholder-count="5">
+              <div style="border:1px solid var(--border);border-radius:13px;background:var(--card-2);padding:10px 13px">
+                <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ i.l }}</div>
+                <div style="font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800;color:{{ i.fg }};margin-top:3px">{{ i.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
+          <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:11px">與各段榜線的距離</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px">
+            <sc-for list="{{ anaBorderGap }}" as="g" hint-placeholder-count="17">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--card-2);padding:9px 12px;font-size:11.5px">
+                <div style="display:flex;justify-content:space-between"><b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ g.rank }}</b><span style="color:var(--text-3)">{{ g.score }}</span></div>
+                <div style="display:flex;justify-content:space-between;margin-top:4px"><span style="color:{{ g.fg }};font-family:'M PLUS Rounded 1c';font-weight:700">{{ g.gap }}</span><span style="color:var(--text-3)">{{ g.need }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:11px">
+          <div style="font-size:13.5px;font-weight:800;color:var(--ink);flex:1;min-width:120px">挑一位前百玩家</div>
+          <button type="button" onClick="{{ onAnaMe }}" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer">分析我自己</button>
+        </div>
+        <input type="text" placeholder="搜尋名稱或名次…" value="{{ anaQ }}" onInput="{{ onField }}" data-k="anaQ" style="width:100%;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;margin-bottom:10px" style-focus="border-color:var(--accent)">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:7px;max-height:290px;overflow-y:auto">
+          <sc-for list="{{ anaPickRows }}" as="p" hint-placeholder-count="12">
+            <button type="button" onClick="{{ onAnaPick }}" data-uid="{{ p.uid }}" style="text-align:left;padding:9px 12px;border:1px solid var(--border);border-radius:11px;background:{{ p.bg }};color:{{ p.fg }};font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.n }}</button>
+          </sc-for>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:9px">{{ anaPlayerMsg }}</div>
+      </div>
+    </sc-if>
+
+    <!-- 活躍分析 -->
+    <sc-if value="{{ anaIsActive }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:11px;margin-bottom:14px">
+        <sc-for list="{{ anaActRows }}" as="a" hint-placeholder-count="4">
+          <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px">
+            <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ a.l }}</div>
+            <div style="font-family:'M PLUS Rounded 1c';font-size:23px;font-weight:800;color:var(--accent-deep);margin-top:3px">{{ a.v }}</div>
+            <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">{{ a.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">此刻最快</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-bottom:11px">依近 1 小時時速排序</div>
+        <sc-for list="{{ anaFast }}" as="f" hint-placeholder-count="10">
+          <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 98px 72px 84px;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center">
+            <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ f.rank }}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">{{ f.name }}</span>
+            <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800">{{ f.s1 }}</span>
+            <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ f.cnt }}</span>
+            <span style="text-align:right;font-size:11px;color:var(--text-3)">{{ f.seen }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px">
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
+          <div style="font-size:13.5px;font-weight:800;color:#3ea76a;margin-bottom:3px">衝刺中</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">近 1 小時比自己的日均快 1.2 倍以上</div>
+          <sc-for list="{{ anaSurge }}" as="x" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
+              <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ x.rank }}</span>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.name }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:#3ea76a">{{ x.ratio }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ anaSurgeEmpty }}"><div style="font-size:12px;color:var(--text-3);padding:10px 0">目前沒有明顯衝刺的玩家。</div></sc-if>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
+          <div style="font-size:13.5px;font-weight:800;color:#e0576a;margin-bottom:3px">降速中</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">近 1 小時掉到日均的一半以下</div>
+          <sc-for list="{{ anaCool }}" as="x" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
+              <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ x.rank }}</span>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.name }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:#e0576a">{{ x.ratio }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ anaCoolEmpty }}"><div style="font-size:12px;color:var(--text-3);padding:10px 0">目前沒有明顯降速的玩家。</div></sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 生涯紀錄 -->
+    <sc-if value="{{ anaIsHistory }}">
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
+        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+          <input type="text" placeholder="輸入玩家 ID…" value="{{ hisInput }}" onInput="{{ onField }}" data-k="hisInput" style="flex:1;min-width:180px;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13px;outline:none" style-focus="border-color:var(--accent)">
+          <button type="button" onClick="{{ onHisGo }}" style="padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">查詢</button>
+          <button type="button" onClick="{{ onHisMe }}" style="padding:10px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">查我自己</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px">
+          <span style="font-size:11.5px;color:var(--text-3);font-weight:700">掃描範圍</span>
+          <sc-for list="{{ hisSpanChips }}" as="c" hint-placeholder-count="3">
+            <button type="button" onClick="{{ onHisSpan }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+          <input type="text" placeholder="或只查某一期，例：160" value="{{ hisOnly }}" onInput="{{ onField }}" data-k="hisOnly" style="width:172px;padding:8px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:12px;outline:none" style-focus="border-color:var(--accent)">
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:7px">{{ hisSpanNote }}</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:9px">{{ hisMsg }}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:7px;margin-top:11px;max-height:200px;overflow-y:auto">
+          <sc-for list="{{ hisPickRows }}" as="p" hint-placeholder-count="10">
+            <button type="button" onClick="{{ onHisPick }}" data-uid="{{ p.uid }}" style="text-align:left;padding:8px 11px;border:1px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:11.5px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{ hisOk }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-bottom:13px">
+          <sc-for list="{{ hisStats }}" as="h" hint-placeholder-count="4">
+            <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px">
+              <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ h.l }}</div>
+              <div style="font-family:'M PLUS Rounded 1c';font-size:21px;font-weight:800;color:var(--accent-deep);margin-top:3px">{{ h.v }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);overflow-x:auto">
+          <div style="min-width:520px">
+            <div style="display:grid;grid-template-columns:64px minmax(0,1fr) 74px 108px 78px;gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text-3)">
+              <span>期數</span><span>活動</span><span style="text-align:right">名次</span><span style="text-align:right">分數</span><span style="text-align:right">較前次</span>
+            </div>
+            <sc-for list="{{ hisRowList }}" as="r" hint-placeholder-count="10">
+              <div style="border-bottom:1px solid var(--border)">
+                <div style="display:grid;grid-template-columns:64px minmax(0,1fr) 74px 108px 78px;gap:8px;padding:10px 16px 6px;font-size:12.5px;align-items:center">
+                  <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ r.ev }}</span>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">{{ r.name }}</span>
+                  <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800">{{ r.rank }}</span>
+                  <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ r.score }}</span>
+                  <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:700;color:{{ r.dFg }}">{{ r.delta }}</span>
+                </div>
+                <div style="padding:0 16px 9px"><div style="height:4px;border-radius:999px;background:var(--card-2);overflow:hidden"><div style="height:100%;width:{{ r.bar }};background:var(--grad-cta);border-radius:999px"></div></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">只涵蓋各期前 100 名的公開名單，沒進前百的期數查不到。長條代表名次高低（越長越前面）。</div>
+      </sc-if>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 收集率 ========== -->
   <sc-if value="{{ isRate }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -1423,6 +1633,7 @@ class Component extends DCLogic {
     gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
     collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
     rate:     ['收集率', '卡片圖鑑勾選，即時算出各團與各稀有度的收集進度'],
+    analysis: ['分析中心', '榜線終線預測與玩家節奏剖析'],
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
   };
@@ -1506,6 +1717,9 @@ class Component extends DCLogic {
     rq: '', ru: 'all', rr: 'all', rs: 'all', rMiss: false, rp: 1,
     rOwnV: 0,        // 持有清單版本號；清單存在 this._own(Set)，靠這個觸發重繪
     rCode: '', rMsg: '',
+    /* 分析中心 */
+    anaTab: 'border', anaUid: '', anaQ: '',
+    hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
@@ -1797,6 +2011,7 @@ class Component extends DCLogic {
       const [top, brd] = await Promise.all([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '' });
       if (this.state.pid) this.matchMyRank(top);
+      this.snapPush(top, brd);
     } catch (e) {
       this.setState({ liveLoad: false, liveErr: '排名資料暫時無法載入' });
     }
@@ -1840,6 +2055,188 @@ class Component extends DCLogic {
     }
   }
   /* 榜線趨勢：抓最近 N 期的榜線，比較各名次階級的分數線 */
+  /* ---------- 榜線快照 ----------
+     API 只給前百的 1h/3h/24h 速度，各段榜線沒有任何速度欄位，
+     也沒有任何歷史/時序端點。所以自己在每次輪詢時記快照，
+     累積成真的時間序列；不足時退回線性推估並標示清楚。 */
+  snapKey(evId) { return 'sekai-snap-' + evId; }
+  snapPush(top, brd) {
+    try {
+      const ev = this.eventOf(top);
+      if (ev.id == null) return;
+      const tiers = this.bordersOf(brd);
+      if (!tiers.length) return;
+      const list = this.snapList(ev.id);
+      const now = Date.now();
+      const last = list[list.length - 1];
+      if (last && now - last[0] < 5 * 60000) return;     // 最密 5 分鐘一筆
+      const me = this.state.pid ? this.ranksOf(top).find(r => this.sameUid(r.uid, this.state.pid)) : null;
+      list.push([now, tiers.map(t => [t.rank, t.score]), me ? me.score : null]);
+      while (list.length > 300) list.shift();
+      localStorage.setItem(this.snapKey(ev.id), JSON.stringify(list));
+      this._snapCache = null;
+    } catch (e) {}
+  }
+  snapList(evId) {
+    if (this._snapCache && this._snapCache.id === evId) return this._snapCache.v;
+    let v = [];
+    try { v = JSON.parse(localStorage.getItem(this.snapKey(evId)) || '[]') || []; } catch (e) { v = []; }
+    this._snapCache = { id: evId, v };
+    return v;
+  }
+  /* 由快照量某一段的實測時速；跨距太短不算，回 null 讓呼叫端改用線性推估 */
+  snapSpeed(evId, rank) {
+    const l = this.snapList(evId);
+    if (l.length < 2) return null;
+    const at = s => { const f = (s[1] || []).find(x => x[0] === rank); return f ? f[1] : null; };
+    const b = l[l.length - 1], aScore = at(b);
+    if (aScore == null) return null;
+    for (let i = 0; i < l.length - 1; i++) {          // 取夠久遠的那一筆當基準
+      const h = (b[0] - l[i][0]) / 3600000;
+      if (h < 0.5) break;
+      const s0 = at(l[i]);
+      if (s0 == null) continue;
+      return { speed: (aScore - s0) / h, hours: h, points: l.length };
+    }
+    return null;
+  }
+
+  /* ---------- 榜線分析 ---------- */
+  eventClock() {
+    const ev = this.eventOf(this.state.live);
+    const st = new Date(ev.start_at || ev.started_at || 0).getTime();
+    const en = new Date(ev.aggregate_at || ev.closed_at || 0).getTime();
+    const now = Date.now();
+    if (!st || !en || en <= st) return null;
+    const totalH = (en - st) / 3600000;
+    const elapsedH = Math.max(0.01, Math.min(totalH, (now - st) / 3600000));
+    return { id: ev.id, st, en, now, totalH, elapsedH, leftH: Math.max(0, (en - now) / 3600000), frac: elapsedH / totalH };
+  }
+  borderAnalysis() {
+    const ck = this.eventClock();
+    const tiers = this.bordersOf(this.state.borders);
+    if (!ck || !tiers.length) return null;
+    const pd = this.state.pdata || {};
+    const myScore = pd.myScore != null ? pd.myScore : null;
+    const mySpeed = pd.mySpeed != null ? pd.mySpeed : null;
+    const rows = tiers.map(t => {
+      const m = this.snapSpeed(ck.id, t.rank);
+      const proj = m ? (t.score + m.speed * ck.leftH) : (t.score / ck.frac);
+      const gap = myScore != null ? (t.score - myScore) : null;
+      const projGap = myScore != null ? (proj - myScore - (mySpeed || 0) * ck.leftH) : null;
+      return {
+        rank: t.rank, score: t.score,
+        measured: !!m, speed: m ? m.speed : null, spanH: m ? m.hours : null,
+        proj, gap,
+        needH: (gap != null && gap > 0 && mySpeed > 0) ? gap / mySpeed : null,
+        reach: projGap != null ? projGap <= 0 : null
+      };
+    });
+    return { clock: ck, rows, myScore, mySpeed, snapN: this.snapList(ck.id).length };
+  }
+
+  /* ---------- 玩家分析 ---------- */
+  playerAnalysis(uid) {
+    const list = this.ranksOf(this.state.live);
+    if (!list.length) return null;
+    const me = uid ? list.find(r => this.sameUid(r.uid, uid)) : null;
+    if (!me) return null;
+    const ck = this.eventClock();
+    const st = me.stats || {};
+    const g = k => st[k] || {};
+    const h1 = g('h1'), h3 = g('h3'), h24 = g('h24');
+    const sp = k => (g(k).speed != null ? g(k).speed : null);
+    const s1 = sp('h1'), s3 = sp('h3'), s24 = sp('h24');
+    // 動能：近 1 小時相對 24 小時的節奏
+    const mom = (s1 != null && s24) ? s1 / s24 : null;
+    // 作息：24h 實際周回 vs 用近 3h 節奏推估的滿載周回
+    const full = h3.count != null ? h3.count / 3 * 24 : null;
+    const restH = (full && h24.count != null && full > 0) ? Math.max(0, (1 - h24.count / full) * 24) : null;
+    const proj = (ck && s24 != null) ? me.score + s24 * ck.leftH : null;
+    // 預測名次：把前百都用各自的 24h 時速投影後重排
+    let projRank = null;
+    if (ck) {
+      const all = list.map(r => {
+        const v = (r.stats && r.stats.h24 && r.stats.h24.speed) || 0;
+        return { uid: r.uid, p: r.score + v * ck.leftH };
+      }).sort((a, b) => b.p - a.p);
+      const i = all.findIndex(x => this.sameUid(x.uid, me.uid));
+      if (i >= 0) projRank = i + 1;
+    }
+    // 場均在前百中的百分位
+    const avgs = list.map(r => (r.stats && r.stats.h24 && r.stats.h24.average) || 0).filter(x => x > 0).sort((a, b) => a - b);
+    const myAvg = h24.average || 0;
+    const pctile = (avgs.length && myAvg) ? Math.round(avgs.filter(x => x <= myAvg).length / avgs.length * 100) : null;
+    return {
+      me, clock: ck, h1, h3, h24, s1, s3, s24, mom, restH, proj, projRank, pctile,
+      borders: this.bordersOf(this.state.borders)
+    };
+  }
+
+  /* ---------- 活躍分析：整個前百此刻的動態 ---------- */
+  activeAnalysis() {
+    const list = this.ranksOf(this.state.live);
+    if (!list.length) return null;
+    const now = Date.now();
+    const mins = r => r.lastPlayed ? (now - new Date(r.lastPlayed).getTime()) / 60000 : null;
+    const cnt1 = r => (r.stats && r.stats.h1 && r.stats.h1.count) || 0;
+    const sp = (r, k) => (r.stats && r.stats[k] && r.stats[k].speed) || 0;
+    const online = list.filter(r => { const m = mins(r); return m != null && m <= 15; });
+    const grinding = list.filter(r => cnt1(r) > 0);
+    const idle = list.filter(r => { const m = mins(r); return m == null || m > 60; });
+    const rounds1h = list.reduce((a, r) => a + cnt1(r), 0);
+    // 衝刺中：近 1h 時速明顯高於自己的 24h 均速
+    const surging = list.map(r => ({ r, s1: sp(r, 'h1'), s24: sp(r, 'h24') }))
+      .filter(x => x.s24 > 0 && x.s1 / x.s24 >= 1.2)
+      .sort((a, b) => (b.s1 / b.s24) - (a.s1 / a.s24));
+    const cooling = list.map(r => ({ r, s1: sp(r, 'h1'), s24: sp(r, 'h24') }))
+      .filter(x => x.s24 > 0 && x.s1 / x.s24 <= 0.5)
+      .sort((a, b) => (a.s1 / a.s24) - (b.s1 / b.s24));
+    const fastest = list.slice().sort((a, b) => sp(b, 'h1') - sp(a, 'h1')).filter(r => sp(r, 'h1') > 0);
+    return { list, online, grinding, idle, rounds1h, surging, cooling, fastest, mins, sp, cnt1 };
+  }
+
+  /* ---------- 生涯紀錄：掃過去各期 top100 找同一位玩家 ---------- */
+  async loadHistory(uid, span) {
+    const id = String(uid || '').trim();
+    if (!id) { this.setState({ hisErr: '請先輸入或選擇玩家 ID' }); return; }
+    if (this.state.hisLoad) return;
+    this.setState({ hisLoad: true, hisErr: '', hisRows: null, hisProg: '' });
+    try {
+      const all = await this.loadEvList();
+      const now = Date.now();
+      const done = (all || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= now);
+      const only = String(this.state.hisOnly || '').trim();
+      let pick;
+      if (only) {                                  // 只查指定期數
+        pick = done.filter(e => String(e.id) === only);
+        if (!pick.length) { this.setState({ hisLoad: false, hisErr: '找不到第 ' + only + ' 期，或該期尚未結算' }); return; }
+      } else if (span === 'all') {                 // 全期掃描
+        pick = done;
+      } else {
+        pick = done.slice(0, Math.max(3, +span || 20));
+      }
+      const rows = [];
+      let n = 0;
+      // 逐批查，避免一次打太多請求；每期 top100 約 75 KB
+      const batch = 6;
+      for (let i = 0; i < pick.length; i += batch) {
+        const part = pick.slice(i, i + batch);
+        const res = await Promise.all(part.map(e =>
+          this.apiFetch('/event/' + e.id + '/top100')
+            .then(d => ({ e, hit: this.ranksOf(d).find(r => this.sameUid(r.uid, id)) || null }))
+            .catch(() => ({ e, hit: null }))
+        ));
+        res.forEach(x => { n++; if (x.hit) rows.push({ ev: x.e, rank: x.hit.rank, score: x.hit.score, name: x.hit.name }); });
+        this.setState({ hisProg: '已查 ' + n + ' / ' + pick.length + ' 期，找到 ' + rows.length + ' 次入榜' });
+      }
+      rows.sort((a, b) => b.ev.id - a.ev.id);
+      this.setState({ hisRows: rows, hisScanned: pick.length, hisUid: id, hisLoad: false, hisProg: '' });
+    } catch (e) {
+      this.setState({ hisLoad: false, hisErr: '生涯紀錄載入失敗，請稍後再試', hisProg: '' });
+    }
+  }
+
   async loadTrend() {
     if (this.state.trendLoad || this.state.trend) return;
     await this.loadEvList();
@@ -1858,6 +2255,16 @@ class Component extends DCLogic {
       this.setState({ trendLoad: false, trendErr: '榜線趨勢載入失敗' });
     }
   }
+  /* 玩家 ID 是 19 位大整數,超過 Number.MAX_SAFE_INTEGER,
+     JSON.parse 之後尾數會被四捨五入(...167489 → ...168000)。
+     兩邊都走一次 Number 正規化才能穩定比對。 */
+  sameUid(a, b) {
+    if (a == null || b == null || a === '' || b === '') return false;
+    if (String(a) === String(b)) return true;
+    const na = Number(a), nb = Number(b);
+    return Number.isFinite(na) && Number.isFinite(nb) && String(na) === String(nb);
+  }
+
   normRank(r) {
     if (!r || typeof r !== 'object') return {};
     const prof = (r.last_player_info && r.last_player_info.profile) || r.userProfile || {};
@@ -1888,7 +2295,7 @@ class Component extends DCLogic {
   eventOf(d) { return (d && (d.event || d.event_data)) || d || {}; }
 
   matchMyRank(top) {
-    const me = this.ranksOf(top).find(r => r.uid && r.uid === String(this.state.pid));
+    const me = this.ranksOf(top).find(r => this.sameUid(r.uid, this.state.pid));
     if (!me) return;
     const st = me.stats || {};
     const cnt = k => (st[k] && st[k].count != null) ? st[k].count : null;   // 周回數(近1/3/24小時)
@@ -2117,6 +2524,7 @@ class Component extends DCLogic {
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'rate') this.loadCards();
+    if (p === 'analysis') { this.loadLive(); this.loadEvList(); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -2375,7 +2783,7 @@ class Component extends DCLogic {
     const navSpec = [
       ['主頁', [['home', '首頁', '#4ad1e8']]],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
-      ['追蹤', [['rank', '活動排名', '#ff9db4']]],
+      ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
@@ -2685,6 +3093,147 @@ class Component extends DCLogic {
       isDeckPro: s.page === 'deckpro',
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG, syslog: this.SYSLOG,
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
+
+      /* ---------- 分析中心 ---------- */
+      isAnalysis: s.page === 'analysis',
+      anaTabs: [{ v: 'border', n: '榜線分析' }, { v: 'player', n: '玩家分析' }, { v: 'active', n: '活躍分析' }, { v: 'history', n: '生涯紀錄' }].map(t => Object.assign({}, t, seg(s.anaTab === t.v))),
+      anaIsBorder: s.anaTab === 'border', anaIsPlayer: s.anaTab === 'player', anaIsActive: s.anaTab === 'active', anaIsHistory: s.anaTab === 'history',
+      anaQ: s.anaQ,
+      ...(() => {
+        const B = this.borderAnalysis();
+        if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaHasMe: false, anaLeft: '—', anaFrac: '—' };
+        const ck = B.clock;
+        const hm = h => h >= 24 ? (Math.floor(h / 24) + '天' + Math.round(h % 24) + '時') : (h >= 1 ? h.toFixed(1) + '時' : Math.round(h * 60) + '分');
+        return {
+          anaReady: true,
+          anaLeft: hm(ck.leftH), anaFrac: (ck.frac * 100).toFixed(1) + '%',
+          anaMeta: '第 ' + ck.id + ' 期 · 已過 ' + (ck.frac * 100).toFixed(1) + '% · 剩 ' + hm(ck.leftH),
+          anaMethod: B.rows.some(r => r.measured)
+            ? ('已累積 ' + B.snapN + ' 筆本機快照，有實測速度的段位用實測推估')
+            : ('本機快照 ' + B.snapN + ' 筆，尚不足以量出速度（需間隔 30 分鐘以上），先用線性推估'),
+          anaHasMe: B.myScore != null,
+          anaMyScore: B.myScore != null ? this.n(B.myScore) : '—',
+          anaMySpeed: B.mySpeed != null ? this.short(B.mySpeed) + '/h' : '—',
+          anaBorderRows: B.rows.map(r => ({
+            rank: 'T' + this.n(r.rank),
+            score: this.n(r.score),
+            speed: r.measured ? (this.short(r.speed) + '/h') : '—',
+            src: r.measured ? ('實測 ' + r.spanH.toFixed(1) + 'h') : '線性',
+            srcBg: r.measured ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card-2)',
+            srcFg: r.measured ? 'var(--accent-deep)' : 'var(--text-3)',
+            proj: this.short(r.proj),
+            gap: r.gap == null ? '—' : (r.gap <= 0 ? '已達標' : this.short(r.gap)),
+            gapFg: r.gap == null ? 'var(--text-3)' : (r.gap <= 0 ? '#3ea76a' : 'var(--text)'),
+            need: r.needH == null ? '—' : hm(r.needH),
+            mark: r.reach === true ? '可達' : r.reach === false ? '差距中' : '—',
+            markFg: r.reach === true ? '#3ea76a' : r.reach === false ? '#e0576a' : 'var(--text-3)'
+          }))
+        };
+      })(),
+      ...(() => {
+        const uid = s.anaUid || s.pid || '';
+        const A = this.playerAnalysis(uid);
+        const list = this.ranksOf(s.live);
+        const q = (s.anaQ || '').trim().toLowerCase();
+        const opts = list.filter(r => !q || (r.name || '').toLowerCase().includes(q) || String(r.rank) === q || this.sameUid(r.uid, q))
+          .slice(0, 40).map(r => ({ uid: r.uid, n: '#' + r.rank + '　' + r.name,
+            bg: this.sameUid(r.uid, uid) ? 'color-mix(in oklab,var(--accent) 15%,transparent)' : 'var(--card)',
+            fg: this.sameUid(r.uid, uid) ? 'var(--accent-deep)' : 'var(--text)' }));
+        if (!A) return { anaPlayerOk: false, anaPlayerMsg: uid ? '這位玩家不在本期前 100 名內，暫時沒有可分析的節奏資料。' : '請在下方挑一位前百玩家，或在首頁綁定你的玩家 ID。', anaPickRows: opts, anaSpeedRows: [], anaInsights: [], anaBorderGap: [] };
+        const hm = h => h >= 24 ? (Math.floor(h / 24) + '天' + Math.round(h % 24) + '時') : (h >= 1 ? h.toFixed(1) + '時' : Math.round(h * 60) + '分');
+        const row = (l, st, sp) => ({ l, cnt: st.count != null ? this.n(st.count) + ' 回' : '—',
+          score: st.score != null ? this.short(st.score) : '—',
+          avg: st.average != null ? this.n(Math.round(st.average)) : '—',
+          speed: sp != null ? this.short(sp) + '/h' : '—' });
+        const momTxt = A.mom == null ? '—' : A.mom >= 1.15 ? '加速中' : A.mom <= 0.85 ? '降速中' : '穩定';
+        const momFg = A.mom == null ? 'var(--text-3)' : A.mom >= 1.15 ? '#3ea76a' : A.mom <= 0.85 ? '#e0576a' : 'var(--text-2)';
+        return {
+          anaPlayerOk: true, anaPlayerMsg: '',
+          anaPickRows: opts,
+          anaPName: A.me.name, anaPRank: '#' + A.me.rank, anaPScore: this.n(A.me.score),
+          anaPLast: A.me.lastScore != null ? this.n(A.me.lastScore) : '—',
+          anaSpeedRows: [row('近 1 小時', A.h1, A.s1), row('近 3 小時', A.h3, A.s3), row('近 24 小時', A.h24, A.s24)],
+          anaInsights: [
+            { l: '動能（1h ÷ 24h）', v: A.mom == null ? '—' : (A.mom.toFixed(2) + '×　' + momTxt), fg: momFg },
+            { l: '預估休息', v: A.restH == null ? '—' : (hm(A.restH) + ' / 天'), fg: 'var(--text)' },
+            { l: '預測終分', v: A.proj == null ? '—' : this.short(A.proj), fg: 'var(--ink)' },
+            { l: '預測名次', v: A.projRank == null ? '—' : ('#' + A.projRank + (A.projRank < A.me.rank ? '　↑' + (A.me.rank - A.projRank) : A.projRank > A.me.rank ? '　↓' + (A.projRank - A.me.rank) : '　持平')),
+              fg: A.projRank == null ? 'var(--text-3)' : A.projRank < A.me.rank ? '#3ea76a' : A.projRank > A.me.rank ? '#e0576a' : 'var(--text)' },
+            { l: '場均在前百', v: A.pctile == null ? '—' : ('第 ' + A.pctile + ' 百分位'), fg: 'var(--text)' }
+          ],
+          anaBorderGap: (A.borders || []).map(t => {
+            const gap = t.score - A.me.score;
+            return { rank: 'T' + this.n(t.rank), score: this.short(t.score),
+              gap: gap <= 0 ? '已超過' : this.short(gap),
+              fg: gap <= 0 ? '#3ea76a' : 'var(--text-2)',
+              need: (gap > 0 && A.s24) ? hm(gap / A.s24) : (gap <= 0 ? '—' : '—') };
+          })
+        };
+      })(),
+
+      ...(() => {
+        const V = this.activeAnalysis();
+        if (!V) return { anaActiveOk: false, anaActRows: [], anaSurge: [], anaCool: [], anaFast: [] };
+        const ago = r => r.lastPlayed ? this.ago(r.lastPlayed) : '—';
+        const line = x => ({ rank: '#' + x.r.rank, name: x.r.name,
+          s1: this.short(x.s1) + '/h', s24: this.short(x.s24) + '/h',
+          ratio: (x.s1 / x.s24).toFixed(2) + '×', seen: ago(x.r) });
+        return {
+          anaActiveOk: true,
+          anaActRows: [
+            { l: '此刻在線', v: V.online.length + ' / 100', sub: '15 分鐘內有成績' },
+            { l: '近 1 小時有周回', v: V.grinding.length + ' / 100', sub: '實際在推的人數' },
+            { l: '休息中', v: V.idle.length + ' / 100', sub: '逾 1 小時沒動' },
+            { l: '前百近 1 小時總周回', v: this.n(V.rounds1h) + ' 回', sub: '整體熱度' }
+          ],
+          anaSurge: V.surging.slice(0, 8).map(line),
+          anaCool: V.cooling.slice(0, 8).map(line),
+          anaFast: V.fastest.slice(0, 10).map(r => ({ rank: '#' + r.rank, name: r.name,
+            s1: this.short(V.sp(r, 'h1')) + '/h', cnt: V.cnt1(r) + ' 回', seen: ago(r) })),
+          anaSurgeEmpty: !V.surging.length, anaCoolEmpty: !V.cooling.length
+        };
+      })(),
+      ...(() => {
+        const rows = s.hisRows;
+        const opts = this.ranksOf(s.live).slice(0, 30).map(r => ({ uid: r.uid, n: '#' + r.rank + '　' + r.name }));
+        const doneN = ((s.evList || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= Date.now())).length;
+        const spanChips = [{ v: '20', n: '最近 20 期' }, { v: '50', n: '最近 50 期' }, { v: 'all', n: '全部期數' }]
+          .map(c => { const on = String(s.hisSpan) === c.v && !s.hisOnly; const st = chip(on, 'var(--cta)'); return Object.assign({}, c, st, { fg: on ? '#fff' : 'var(--text)' }); });
+        const spanNote = s.hisOnly ? ('只查第 ' + s.hisOnly + ' 期')
+          : (s.hisSpan === 'all' ? ('全部 ' + (doneN || '—') + ' 期已結算活動，需要多花一點時間')
+                                 : ('最近 ' + s.hisSpan + ' 期已結算活動'));
+        if (!rows) return { hisOk: false, hisPickRows: opts, hisRowList: [], hisStats: [],
+          hisSpanChips: spanChips, hisSpanNote: spanNote, hisOnly: s.hisOnly,
+          hisMsg: s.hisLoad ? (s.hisProg || '查詢中…') : (s.hisErr || '輸入玩家 ID 或從前百挑一位，會逐期掃描過去的前百名單。'),
+          hisBusy: s.hisLoad, hisInput: s.hisInput, hisErrOn: !!s.hisErr, hisEmpty: false };
+        const best = rows.length ? Math.min(...rows.map(r => r.rank)) : null;
+        const avg = rows.length ? Math.round(rows.reduce((a, r) => a + r.rank, 0) / rows.length) : null;
+        const bestS = rows.length ? Math.max(...rows.map(r => r.score)) : null;
+        return {
+          hisOk: true, hisPickRows: opts, hisBusy: false, hisInput: s.hisInput, hisErrOn: false,
+          hisSpanChips: spanChips, hisSpanNote: spanNote, hisOnly: s.hisOnly,
+          hisEmpty: !rows.length,
+          hisMsg: rows.length ? ('掃描最近 ' + s.hisScanned + ' 期，入榜 ' + rows.length + ' 次')
+                              : ('掃描最近 ' + s.hisScanned + ' 期，這位玩家都沒有進過前 100 名'),
+          hisStats: rows.length ? [
+            { l: '入榜次數', v: rows.length + ' / ' + s.hisScanned },
+            { l: '最佳名次', v: '#' + best },
+            { l: '平均名次', v: '#' + avg },
+            { l: '最高分', v: this.short(bestS) }
+          ] : [],
+          hisRowList: rows.map((r, i) => {
+            const prev = rows[i + 1];
+            const d = prev ? (prev.rank - r.rank) : null;   // 名次變小＝進步
+            return {
+              ev: '#' + r.ev.id, name: r.ev.name || '',
+              rank: '#' + r.rank, score: this.n(r.score),
+              delta: d == null ? '—' : d > 0 ? ('↑' + d) : d < 0 ? ('↓' + (-d)) : '持平',
+              dFg: d == null ? 'var(--text-3)' : d > 0 ? '#3ea76a' : d < 0 ? '#e0576a' : 'var(--text-2)',
+              bar: (Math.max(0, 101 - r.rank)) + '%'
+            };
+          })
+        };
+      })(),
 
       /* ---------- 收集率 ---------- */
       isRate: s.page === 'rate',
@@ -3077,7 +3626,7 @@ class Component extends DCLogic {
       // 從排名詳情開啟該玩家的編組（重用 ?embed=deck 的完整引擎：真實隊伍＋綜合力＋逐卡加成）
       onRankDeck: e => { const uid = e.currentTarget.dataset.uid; if (uid) this.setState({ deckPid: uid, detail: null }); },
       onMyDetail: () => {
-        const me = (this.ranksOf(this.state.live) || []).find(r => r.uid && r.uid === String(this.state.pid));
+        const me = (this.ranksOf(this.state.live) || []).find(r => this.sameUid(r.uid, this.state.pid));
         if (me && me.stats && (me.stats.h1 || me.stats.h3 || me.stats.h24)) this.setState({ detail: me });
         else this.go('rank');   // 沒進前百 → 導去完整榜
       },
@@ -3168,6 +3717,27 @@ class Component extends DCLogic {
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
       onReloadEp: () => this.loadEpSongs(true),
       onColTab: e => this.setState({ colTab: e.currentTarget.dataset.v, cp: 1, cq: '' }),
+
+      /* ---------- 分析中心 ---------- */
+      onAnaTab: e => this.setState({ anaTab: e.currentTarget.dataset.v }),
+      onAnaPick: e => this.setState({ anaUid: e.currentTarget.dataset.uid, anaQ: '' }),
+      onAnaMe: () => this.setState({ anaUid: this.state.pid || '' }),
+      onHisPick: e => {
+        const uid = e.currentTarget.dataset.uid;
+        this.setState({ hisInput: uid });
+        this.loadHistory(uid, this.state.hisSpan);
+      },
+      onHisGo: () => this.loadHistory(this.state.hisInput, this.state.hisSpan),
+      onHisSpan: e => {
+        const v = e.currentTarget.dataset.v;
+        this.setState({ hisSpan: v === 'all' ? 'all' : +v, hisOnly: '' });
+      },
+      onHisMe: () => {
+        const id = this.state.pid || '';
+        if (!id) { this.setState({ hisErr: '請先在首頁綁定你的玩家 ID' }); return; }
+        this.setState({ hisInput: id });
+        this.loadHistory(id, this.state.hisSpan);
+      },
 
       /* ---------- 收集率 ---------- */
       onRateReload: () => { this.setState({ rateCards: [], rateErr: '' }); this.loadCards(); },
