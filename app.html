@@ -984,6 +984,8 @@ input::placeholder{color:var(--text-3)}
             <defs><linearGradient id="bdFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
             </linearGradient></defs>
+            <line x1="{{ anaChartGX1 }}" y1="{{ anaChartGHi }}" x2="{{ anaChartGX2 }}" y2="{{ anaChartGHi }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+            <line x1="{{ anaChartGX1 }}" y1="{{ anaChartGLo }}" x2="{{ anaChartGX2 }}" y2="{{ anaChartGLo }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
             <path d="{{ anaChartArea }}" fill="url(#bdFill)"></path>
             <path d="{{ anaChartLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
             <sc-for list="{{ anaChartTicks }}" as="t" hint-placeholder-count="3">
@@ -994,6 +996,7 @@ input::placeholder{color:var(--text-3)}
             <span>起 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaChartFirst }}</b></span>
             <span>迄 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaChartLast }}</b></span>
             <span>期間增加 <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ anaChartGain }}</b></span>
+            <span style="color:var(--text-3)">{{ anaChartAxis }}</span>
           </div>
         </sc-if>
         <sc-if value="{{ anaChartNo }}"><div style="font-size:12px;color:var(--text-3);padding:14px 0;line-height:1.6">{{ anaChartMsg }}</div></sc-if>
@@ -1527,6 +1530,8 @@ input::placeholder{color:var(--text-3)}
         <defs><linearGradient id="rkFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
         </linearGradient></defs>
+        <line x1="{{ detailData.chartGX1 }}" y1="{{ detailData.chartGHi }}" x2="{{ detailData.chartGX2 }}" y2="{{ detailData.chartGHi }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+        <line x1="{{ detailData.chartGX1 }}" y1="{{ detailData.chartGLo }}" x2="{{ detailData.chartGX2 }}" y2="{{ detailData.chartGLo }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
         <path d="{{ detailData.chartArea }}" fill="url(#rkFill)"></path>
         <path d="{{ detailData.chartLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
         <sc-for list="{{ detailData.chartTicks }}" as="tk" hint-placeholder-count="3">
@@ -1537,6 +1542,7 @@ input::placeholder{color:var(--text-3)}
         <span>起 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.chartFirst }}</b></span>
         <span>迄 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ detailData.chartLast }}</b></span>
         <span>期間增加 <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ detailData.chartGain }}</b></span>
+        <span style="color:var(--text-3)">{{ detailData.chartAxis }}</span>
       </div>
     </sc-if>
     <sc-if value="{{ detailData.chartNo }}">
@@ -2221,9 +2227,15 @@ class Component extends DCLogic {
   mkChart(list) {
     const W = 640, H = 170, PL = 8, PR = 8, PT = 10, PB = 22;
     const t0 = list[0][0], t1 = list[list.length - 1][0];
-    const v1 = Math.max(...list.map(x => x[1])) || 1;
+    // Y 軸貼著資料的實際範圍，不從 0 起 —— 榜線動輒上千萬，
+    // 從 0 畫的話一整期的變化只有幾像素，等於看不出東西。
+    // 代價是視覺差距被放大，所以下面一定要把軸的起訖值標出來。
+    const vs = list.map(x => x[1]);
+    const lo = Math.min(...vs), hi = Math.max(...vs);
+    const pad = (hi - lo) * 0.12 || Math.max(1, hi * 0.02);
+    const v0 = lo - pad, v1 = hi + pad;
     const X = t => PL + (t1 > t0 ? (t - t0) / (t1 - t0) : 0) * (W - PL - PR);
-    const Y = v => PT + (1 - v / v1) * (H - PT - PB);
+    const Y = v => PT + (1 - (v - v0) / (v1 - v0 || 1)) * (H - PT - PB);
     const pts = list.map(x => [X(x[0]), Y(x[1])]);
     const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
     const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
@@ -2234,6 +2246,10 @@ class Component extends DCLogic {
       ticks: [0, 0.5, 1].map(f => ({ x: PL + f * (W - PL - PR), l: md(t0 + (t1 - t0) * f) })),
       first: this.n(list[0][1]), last: this.n(list[list.length - 1][1]),
       gain: this.short(list[list.length - 1][1] - list[0][1]),
+      // 縱軸不是從 0 起，把實際範圍標出來，並畫上下兩條參考線
+      axisNote: '縱軸 ' + this.short(lo) + ' ～ ' + this.short(hi) + '（非零起點）',
+      gHi: Y(hi).toFixed(1), gLo: Y(lo).toFixed(1),
+      gX2: W - PR, gX1: PL,
       n: list.length,
       spanLabel: spanH >= 24 ? (spanH / 24).toFixed(1) + ' 天' : spanH.toFixed(1) + ' 小時'
     };
@@ -3209,7 +3225,8 @@ class Component extends DCLogic {
         return { hasChart: true, chartNo: false, chartMsg: '',
           chartW: c.W, chartH: c.H, chartLine: c.line, chartArea: c.area, chartTicks: c.ticks,
           chartMeta: '第 ' + dt.rank + ' 名 · ' + c.n + ' 筆 · 橫跨 ' + c.spanLabel,
-          chartFirst: c.first, chartLast: c.last, chartGain: '+' + c.gain };
+          chartFirst: c.first, chartLast: c.last, chartGain: '+' + c.gain,
+          chartAxis: c.axisNote, chartGHi: c.gHi, chartGLo: c.gLo, chartGX1: c.gX1, chartGX2: c.gX2 };
       })()
     } : null;
 
@@ -3281,12 +3298,14 @@ class Component extends DCLogic {
               anaChartTitle: 'T' + this.n(rk) + ' 榜線走勢', anaChartN: '尚無資料',
               anaChartW: 640, anaChartH: 190, anaChartLine: '', anaChartArea: '', anaChartTicks: [],
               anaChartFirst: '—', anaChartLast: '—', anaChartGain: '—',
+              anaChartAxis: '', anaChartGHi: 0, anaChartGLo: 0, anaChartGX1: 0, anaChartGX2: 0,
               anaChartMsg: '這一段還沒有足夠的時間軸資料（至少要 2 筆快照）。公用紀錄由伺服器每 30 分鐘寫一次，開著頁面也會自己累積。' };
             return {
               anaChartOk: true, anaChartNo: false, anaChartMsg: '', anaTierChips: chips,
               anaChartW: c.W, anaChartH: c.H, anaChartLine: c.line, anaChartArea: c.area,
               anaChartTicks: c.ticks, anaChartN: c.n + ' 筆 · 橫跨 ' + c.spanLabel,
               anaChartFirst: c.first, anaChartLast: c.last, anaChartGain: '+' + c.gain,
+              anaChartAxis: c.axisNote, anaChartGHi: c.gHi, anaChartGLo: c.gLo, anaChartGX1: c.gX1, anaChartGX2: c.gX2,
               anaChartTitle: 'T' + this.n(rk) + ' 榜線走勢'
             };
           })(),
