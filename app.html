@@ -1059,6 +1059,53 @@ input::placeholder{color:var(--text-3)}
             </sc-for>
           </div>
         </div>
+        <!-- 這位玩家的名次與分數走勢 -->
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:11px">
+            <span style="font-size:13.5px;font-weight:800;color:var(--ink)">名次走勢</span>
+            <span style="font-size:11px;color:var(--text-3)">{{ anaPSeriesMeta }}</span>
+            <span style="font-size:11.5px;font-weight:700;color:{{ anaPRankFg }}">{{ anaPRankDelta }}</span>
+          </div>
+          <sc-if value="{{ anaPSeries }}">
+            <svg viewBox="0 0 {{ anaPRkW }} {{ anaPRkH }}" style="width:100%;height:auto;display:block;overflow:visible">
+              <defs><linearGradient id="pkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+              </linearGradient></defs>
+              <line x1="{{ anaPRkGX1 }}" y1="{{ anaPRkGHi }}" x2="{{ anaPRkGX2 }}" y2="{{ anaPRkGHi }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+              <line x1="{{ anaPRkGX1 }}" y1="{{ anaPRkGLo }}" x2="{{ anaPRkGX2 }}" y2="{{ anaPRkGLo }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+              <path d="{{ anaPRkLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+              <sc-for list="{{ anaPRkTicks }}" as="tk" hint-placeholder-count="3">
+                <text x="{{ tk.x }}" y="{{ anaPRkH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ tk.l }}</text>
+              </sc-for>
+            </svg>
+            <div style="display:flex;gap:15px;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-top:7px">
+              <span>起 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaPRkFirst }}</b></span>
+              <span>迄 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaPRkLast }}</b></span>
+              <span style="color:var(--text-3)">{{ anaPRkAxis }}（上方為前段）</span>
+            </div>
+
+            <sc-if value="{{ anaPHasScore }}">
+              <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin:16px 0 9px;padding-top:13px;border-top:1px solid var(--border)">活動P 走勢</div>
+              <svg viewBox="0 0 {{ anaPScW }} {{ anaPScH }}" style="width:100%;height:auto;display:block;overflow:visible">
+                <line x1="{{ anaPScGX1 }}" y1="{{ anaPScGHi }}" x2="{{ anaPScGX2 }}" y2="{{ anaPScGHi }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+                <line x1="{{ anaPScGX1 }}" y1="{{ anaPScGLo }}" x2="{{ anaPScGX2 }}" y2="{{ anaPScGLo }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+                <path d="{{ anaPScArea }}" fill="url(#pkFill)"></path>
+                <path d="{{ anaPScLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+                <sc-for list="{{ anaPScTicks }}" as="tk" hint-placeholder-count="3">
+                  <text x="{{ tk.x }}" y="{{ anaPScH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ tk.l }}</text>
+                </sc-for>
+              </svg>
+              <div style="display:flex;gap:15px;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-top:7px">
+                <span>起 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaPScFirst }}</b></span>
+                <span>迄 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ anaPScLast }}</b></span>
+                <span>期間增加 <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ anaPScoreGain }}</b></span>
+                <span style="color:var(--text-3)">{{ anaPScAxis }}</span>
+              </div>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{ anaPNoSeries }}"><div style="font-size:12px;color:var(--text-3);line-height:1.6;padding:6px 0">{{ anaPSeriesMsg }}</div></sc-if>
+        </div>
+
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
           <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:11px">與各段榜線的距離</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px">
@@ -1726,6 +1773,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2027/08/01', t: '特定玩家名次與分數走勢', s: '玩家分析新增該玩家的名次走勢與活動P走勢兩張圖。快照除了各名次的分數,另外記下每個名次當下是誰,所以能回推特定玩家在每個時間點的名次與分數。名次圖上下反轉(越上面名次越前),只涵蓋他在前百的時段。' },
+    { d: '2027/08/01', t: '折線圖改用相對範圍', s: '原本縱軸從 0 起,榜線動輒上千萬,整期變化只有幾十像素看不出來。改為貼著資料實際範圍縮放,同一組資料振幅由 46px 變成 111px;並在最高最低值畫參考線、標出縱軸範圍,避免非零基線造成誤讀。' },
     { d: '2027/08/01', t: '分析中心', s: '新增分析中心四個分頁。榜線分析:17 段的實測時速、預測終線、與你的差距與所需時數,附可切換段位的時間軸折線圖;有足夠快照跨距用實測、否則退回線性外推,表上明確標示是哪一種。玩家分析:1h/3h/24h 的周回、場均、時速剖析,加上動能(加速/穩定/降速)、推估每日休息時數、預測終分與預測名次、場均百分位。活躍分析:此刻在線、實際在跑、休息中的人數,以及此刻最快、衝刺中、降速中。生涯紀錄:逐期掃描過去前百名單,列出歷次名次分數與增減,可選最近 20/50 期、全部期數或指定單一期數。' },
     { d: '2027/08/01', t: '全時間軸榜線追蹤', s: '台服沒有任何現成的榜線時序來源(HiSekai 的 /history、/graph 全是 404;api.sekai.best 只追日服,台服回空),所以改由伺服器每 30 分鐘自動記錄一次,累積 17 段榜線與前 100 名各自的分數曲線。所有人共用同一份完整紀錄,不必自己開著頁面累積。前百以外又不在那 17 段上的名次(例如第 137 名)API 沒有公開,無法記錄。' },
     { d: '2027/08/01', t: '排名詳情內建名次走勢', s: '點任一排名列開詳情,走勢圖直接顯示在數據下方,不用再開一個視窗。' },
@@ -2224,7 +2273,8 @@ class Component extends DCLogic {
     return this.mkChart(list);
   }
   /* 由 [[毫秒, 值], ...] 產生折線圖所需的 path 與座標標記 */
-  mkChart(list) {
+  mkChart(list, opt) {
+    const inv = !!(opt && opt.invert), fmt = (opt && opt.fmt) || (v => this.n(v));
     const W = 640, H = 170, PL = 8, PR = 8, PT = 10, PB = 22;
     const t0 = list[0][0], t1 = list[list.length - 1][0];
     // Y 軸貼著資料的實際範圍，不從 0 起 —— 榜線動輒上千萬，
@@ -2235,7 +2285,7 @@ class Component extends DCLogic {
     const pad = (hi - lo) * 0.12 || Math.max(1, hi * 0.02);
     const v0 = lo - pad, v1 = hi + pad;
     const X = t => PL + (t1 > t0 ? (t - t0) / (t1 - t0) : 0) * (W - PL - PR);
-    const Y = v => PT + (1 - (v - v0) / (v1 - v0 || 1)) * (H - PT - PB);
+    const Y = v => { const f = (v - v0) / (v1 - v0 || 1); return PT + (inv ? f : 1 - f) * (H - PT - PB); };
     const pts = list.map(x => [X(x[0]), Y(x[1])]);
     const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
     const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
@@ -2244,14 +2294,46 @@ class Component extends DCLogic {
       W, H, line,
       area: line + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - PB) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - PB) + ' Z',
       ticks: [0, 0.5, 1].map(f => ({ x: PL + f * (W - PL - PR), l: md(t0 + (t1 - t0) * f) })),
-      first: this.n(list[0][1]), last: this.n(list[list.length - 1][1]),
+      first: fmt(list[0][1]), last: fmt(list[list.length - 1][1]),
       gain: this.short(list[list.length - 1][1] - list[0][1]),
+      delta: list[list.length - 1][1] - list[0][1],
       // 縱軸不是從 0 起，把實際範圍標出來，並畫上下兩條參考線
-      axisNote: '縱軸 ' + this.short(lo) + ' ～ ' + this.short(hi) + '（非零起點）',
+      axisNote: '縱軸 ' + fmt(lo) + ' ～ ' + fmt(hi) + (inv ? '' : '（非零起點）'),
       gHi: Y(hi).toFixed(1), gLo: Y(lo).toFixed(1),
       gX2: W - PR, gX1: PL,
       n: list.length,
       spanLabel: spanH >= 24 ? (spanH / 24).toFixed(1) + ' 天' : spanH.toFixed(1) + ' 小時'
+    };
+  }
+
+  /* 特定玩家的名次與分數走勢。
+     roster 記了每筆快照當下第 1～100 名各是誰(users 索引),
+     所以可以回推某位玩家在每個時間點的名次與分數。
+     只涵蓋他在前百的時段;掉出前百的時間點就沒有資料。 */
+  playerSeries(uid) {
+    const hst = this.state.hist;
+    const ev = this.eventOf(this.state.live);
+    if (!hst || hst.eventId !== ev.id || !Array.isArray(hst.roster) || !hst.roster.length || !uid) return null;
+    const ui = (hst.users || []).findIndex(u => this.sameUid(u, uid));
+    if (ui < 0) return null;
+    const scoreAt = {};
+    (hst.ranks || []).forEach(r => { scoreAt[r[0]] = r; });
+    const rank = [], score = [];
+    hst.roster.forEach(row => {
+      const pos = row.indexOf(ui, 1);
+      if (pos < 1) return;                       // 這個時間點不在前百
+      const ms = row[0] * 1000;
+      rank.push([ms, pos]);
+      const sr = scoreAt[row[0]];
+      if (sr && sr[pos] != null) score.push([ms, sr[pos]]);
+    });
+    if (rank.length < 2) return null;
+    return {
+      rank: this.mkChart(rank, { invert: true, fmt: v => '#' + v }),
+      score: score.length >= 2 ? this.mkChart(score) : null,
+      best: Math.min(...rank.map(x => x[1])),
+      worst: Math.max(...rank.map(x => x[1])),
+      n: rank.length
     };
   }
 
@@ -3337,7 +3419,7 @@ class Component extends DCLogic {
           .slice(0, 40).map(r => ({ uid: r.uid, n: '#' + r.rank + '　' + r.name,
             bg: this.sameUid(r.uid, uid) ? 'color-mix(in oklab,var(--accent) 15%,transparent)' : 'var(--card)',
             fg: this.sameUid(r.uid, uid) ? 'var(--accent-deep)' : 'var(--text)' }));
-        if (!A) return { anaPlayerOk: false, anaPlayerMsg: uid ? '這位玩家不在本期前 100 名內，暫時沒有可分析的節奏資料。' : '請在下方挑一位前百玩家，或在首頁綁定你的玩家 ID。', anaPickRows: opts, anaSpeedRows: [], anaInsights: [], anaBorderGap: [] };
+        if (!A) return { anaPlayerOk: false, anaPSeries: false, anaPNoSeries: false, anaPSeriesMsg: '', anaPlayerMsg: uid ? '這位玩家不在本期前 100 名內，暫時沒有可分析的節奏資料。' : '請在下方挑一位前百玩家，或在首頁綁定你的玩家 ID。', anaPickRows: opts, anaSpeedRows: [], anaInsights: [], anaBorderGap: [] };
         const hm = h => h >= 24 ? (Math.floor(h / 24) + '天' + Math.round(h % 24) + '時') : (h >= 1 ? h.toFixed(1) + '時' : Math.round(h * 60) + '分');
         const row = (l, st, sp) => ({ l, cnt: st.count != null ? this.n(st.count) + ' 回' : '—',
           score: st.score != null ? this.short(st.score) : '—',
@@ -3348,6 +3430,25 @@ class Component extends DCLogic {
         return {
           anaPlayerOk: true, anaPlayerMsg: '',
           anaPickRows: opts,
+          ...(() => {
+            const S = this.playerSeries(uid);
+            if (!S) return { anaPSeries: false, anaPNoSeries: true, anaPSeriesMeta: '', anaPRankDelta: '', anaPRankFg: 'var(--text-3)', anaPHasScore: false, anaPSeriesMsg: '這位玩家還沒有累積到足夠的走勢資料（伺服器每 30 分鐘記一筆，需要至少 2 筆）。' };
+            const g = (c, pre) => c ? {
+              [pre + 'W']: c.W, [pre + 'H']: c.H, [pre + 'Line']: c.line, [pre + 'Area']: c.area,
+              [pre + 'Ticks']: c.ticks, [pre + 'First']: c.first, [pre + 'Last']: c.last,
+              [pre + 'Axis']: c.axisNote, [pre + 'GHi']: c.gHi, [pre + 'GLo']: c.gLo,
+              [pre + 'GX1']: c.gX1, [pre + 'GX2']: c.gX2
+            } : {};
+            return {
+              anaPSeries: true, anaPNoSeries: false, anaPSeriesMsg: '',
+              anaPSeriesMeta: S.n + ' 筆 · 最佳 #' + S.best + ' · 最低 #' + S.worst,
+              anaPRankDelta: (() => { const d = S.rank.delta; return d < 0 ? ('↑ 進步 ' + (-d) + ' 名') : d > 0 ? ('↓ 退步 ' + d + ' 名') : '名次持平'; })(),
+              anaPRankFg: S.rank.delta < 0 ? '#3ea76a' : S.rank.delta > 0 ? '#e0576a' : 'var(--text-2)',
+              anaPHasScore: !!S.score,
+              anaPScoreGain: S.score ? ('+' + S.score.gain) : '—',
+              ...g(S.rank, 'anaPRk'), ...g(S.score, 'anaPSc')
+            };
+          })(),
           anaPName: A.me.name, anaPRank: '#' + A.me.rank, anaPScore: this.n(A.me.score),
           anaPLast: A.me.lastScore != null ? this.n(A.me.lastScore) : '—',
           anaSpeedRows: [row('近 1 小時', A.h1, A.s1), row('近 3 小時', A.h3, A.s3), row('近 24 小時', A.h24, A.s24)],

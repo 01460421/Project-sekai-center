@@ -16,7 +16,9 @@
   "tiers": [100, 200, ..., 50000],          # 欄位順序
   "samples": [[unix秒, 分數1, 分數2, ...], ...],
   "top1": [[unix秒, 分數], ...],
-  "ranks": [[unix秒, 第1名分數, 第2名分數, ..., 第100名分數], ...]
+  "ranks": [[unix秒, 第1名分數, 第2名分數, ..., 第100名分數], ...],
+  "users": ["7013511661659167489", ...],   # 出現過的玩家(字串,避免大整數失精)
+  "roster": [[unix秒, 第1名的users索引, ..., 第100名], ...]  # 追特定玩家用
 }
 """
 import json
@@ -86,6 +88,10 @@ def main():
     tops = top.get('player_top_100_rankings') or []
     tops = sorted([t for t in tops if t.get('rank')], key=lambda t: t['rank'])
     rank_scores = [t.get('score') for t in tops]
+    # 每個名次當下是誰。用字串存 —— userId 是 19 位數,
+    # 存成 JSON 數字的話瀏覽器 JSON.parse 會把尾數四捨五入。
+    rank_uids = [str((t.get('last_player_info') or {}).get('profile', {}).get('id')
+                     or t.get('userId') or t.get('user_id') or '') for t in tops]
     top1 = rank_scores[0] if rank_scores else None
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -111,8 +117,12 @@ def main():
             'samples': [],
             'top1': [],
             'ranks': [],
+            'users': [],      # 出現過的 userId(字串),roster 存的是這裡的索引
+            'roster': [],     # 每筆 = [unix秒, 第1名的users索引, ..., 第100名]
         }
     data.setdefault('ranks', [])
+    data.setdefault('users', [])
+    data.setdefault('roster', [])
     before_n = len(data['samples'])
 
     # 段位組成理論上不會變。萬一變了,改欄位順序會讓所有舊資料錯位,
@@ -131,6 +141,15 @@ def main():
         data['top1'].append([now, top1])
     if rank_scores:
         data['ranks'].append([now] + rank_scores)
+    if any(rank_uids):
+        idx = {u: i for i, u in enumerate(data['users'])}
+        row = []
+        for u in rank_uids:
+            if u not in idx:
+                idx[u] = len(data['users'])
+                data['users'].append(u)
+            row.append(idx[u])
+        data['roster'].append([now] + row)
 
     # 寫入前最後一道防線:樣本只能變多
     if len(data['samples']) <= before_n:
