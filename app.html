@@ -1450,7 +1450,8 @@ input::placeholder{color:var(--text-3)}
 
 <!-- ========== 全局音樂播放器（收合式浮動） ========== -->
 <sc-if value="{{ playerOn }}">
-<div style="position:fixed;right:12px;bottom:{{ playerBottom }};z-index:59;transform:translateZ(0);will-change:transform">
+<!-- 同上：fixed 元素本身不加 transform / will-change，避免 iOS 捲動時脫鉤 -->
+<div style="position:fixed;right:12px;bottom:{{ playerBottom }};z-index:59">
 
   <!-- 收合：浮動唱片圓鈕 -->
   <sc-if value="{{ playerMin }}">
@@ -1504,12 +1505,17 @@ input::placeholder{color:var(--text-3)}
 
 <!-- ========== 行動版 dock ========== -->
 <sc-if value="{{ isMobile }}">
-<div style="position:fixed;left:50%;transform:translateX(-50%) translateZ(0);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--border);box-shadow:var(--sh-md);will-change:transform">
-  <sc-for list="{{ dockItems }}" as="d" hint-placeholder-count="5">
-    <button type="button" onClick="{{ onDock }}" data-p="{{ d.id }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:62px;height:50px;border:none;border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:10px;font-weight:800;letter-spacing:.6px;cursor:pointer;transition:background .25s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.9)">
-      <span style="width:8px;height:8px;border-radius:50%;background:{{ d.dot }}"></span>{{ d.name }}
-    </button>
-  </sc-for>
+<!-- 外層只負責定位：不能有 transform / filter / will-change，
+     這三個在 iOS Safari 上會把 fixed 元素變成合成層，動量捲動或
+     網址列收合時就會脫鉤亂飄。視覺效果全部下放到內層。 -->
+<div style="position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;justify-content:center;pointer-events:none">
+  <div style="display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--border);box-shadow:var(--sh-md);pointer-events:auto">
+    <sc-for list="{{ dockItems }}" as="d" hint-placeholder-count="5">
+      <button type="button" onClick="{{ onDock }}" data-p="{{ d.id }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:62px;height:50px;border:none;border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:10px;font-weight:800;letter-spacing:.6px;cursor:pointer;transition:background .25s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.9)">
+        <span style="width:8px;height:8px;border-radius:50%;background:{{ d.dot }}"></span>{{ d.name }}
+      </button>
+    </sc-for>
+  </div>
 </div>
 </sc-if>
 
@@ -1773,6 +1779,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2027/08/01', t: '修正手機底部列與播放器浮動鈕會飄走', s: '兩者都是 position:fixed 又同時帶了 transform 與 will-change,在 iOS Safari 上會變成獨立合成層,動量捲動或網址列收合時就脫鉤亂飄。改成外層只負責定位、視覺效果(毛玻璃、圓角、陰影)全部下放內層,置中改用 left:0/right:0 而非 transform。' },
+    { d: '2027/08/01', t: '個人走勢圖接上即時排名', s: '原本要累積兩筆排程快照(最多等一小時)才畫得出來。改為把當下的即時排名接成最後一點,有一筆紀錄就能畫,圖也永遠含最新數值而不是落後最多 30 分鐘。' },
     { d: '2027/08/01', t: '特定玩家名次與分數走勢', s: '玩家分析新增該玩家的名次走勢與活動P走勢兩張圖。快照除了各名次的分數,另外記下每個名次當下是誰,所以能回推特定玩家在每個時間點的名次與分數。名次圖上下反轉(越上面名次越前),只涵蓋他在前百的時段。' },
     { d: '2027/08/01', t: '折線圖改用相對範圍', s: '原本縱軸從 0 起,榜線動輒上千萬,整期變化只有幾十像素看不出來。改為貼著資料實際範圍縮放,同一組資料振幅由 46px 變成 111px;並在最高最低值畫參考線、標出縱軸範圍,避免非零基線造成誤讀。' },
     { d: '2027/08/01', t: '分析中心', s: '新增分析中心四個分頁。榜線分析:17 段的實測時速、預測終線、與你的差距與所需時數,附可切換段位的時間軸折線圖;有足夠快照跨距用實測、否則退回線性外推,表上明確標示是哪一種。玩家分析:1h/3h/24h 的周回、場均、時速剖析,加上動能(加速/穩定/降速)、推估每日休息時數、預測終分與預測名次、場均百分位。活躍分析:此刻在線、實際在跑、休息中的人數,以及此刻最快、衝刺中、降速中。生涯紀錄:逐期掃描過去前百名單,列出歷次名次分數與增減,可選最近 20/50 期、全部期數或指定單一期數。' },
@@ -2327,6 +2335,17 @@ class Component extends DCLogic {
       const sr = scoreAt[row[0]];
       if (sr && sr[pos] != null) score.push([ms, sr[pos]]);
     });
+    // 補上當下的即時排名當最後一點：只有一筆紀錄時也畫得出來，
+    // 而且圖永遠含最新數值，不會落後排程最多 30 分鐘。
+    const live = this.ranksOf(this.state.live).find(r => this.sameUid(r.uid, uid));
+    if (live && live.rank) {
+      const now = Date.now();
+      const lastT = rank.length ? rank[rank.length - 1][0] : 0;
+      if (now - lastT > 60000) {                 // 與最後一筆至少差一分鐘才補
+        rank.push([now, live.rank]);
+        if (live.score != null) score.push([now, live.score]);
+      }
+    }
     if (rank.length < 2) return null;
     return {
       rank: this.mkChart(rank, { invert: true, fmt: v => '#' + v }),
