@@ -1,10 +1,10 @@
 name: 榜線快照
 
 # 台服沒有現成的榜線時序來源，只能自己定時記。
-# 每 30 分鐘抓一次當期榜線，append 進 data/history/{eventId}.json。
+# 每 10 分鐘抓一次當期榜線，append 進 data/history/{eventId}.json。
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:        # 也可以手動觸發補一筆
 
 permissions:

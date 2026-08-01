@@ -5,7 +5,7 @@
   - HiSekai API 只給當下數值,/history、/graph、/trend 全是 404
   - api.sekai.best 有完整時序,但 region=tw 回空(它只追日服)
 所以只能自己定時記。這支由 .github/workflows/border-snapshot.yml
-每 30 分鐘跑一次,把結果 append 進 data/history/{eventId}.json,
+每 10 分鐘跑一次,把結果 append 進 data/history/{eventId}.json,
 網站再從 raw.githubusercontent.com 讀,所有訪客都看得到同一份完整曲線。
 
 檔案格式(刻意壓扁,一天 48 筆、一期約 340 筆也才幾十 KB):
@@ -132,8 +132,8 @@ def main():
         return 1
 
     last = data['samples'][-1] if data['samples'] else None
-    if last and now - last[0] < 10 * 60:
-        print('距上一筆不足 10 分鐘,跳過')
+    if last and now - last[0] < 4 * 60:
+        print('距上一筆不足 4 分鐘,跳過')
         return 0
 
     data['samples'].append([now] + scores)
