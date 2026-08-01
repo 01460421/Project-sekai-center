@@ -1,10 +1,12 @@
 name: 榜線快照
 
 # 台服沒有現成的榜線時序來源，只能自己定時記。
-# 每 10 分鐘抓一次當期榜線，append 進 data/history/{eventId}.json。
+# GitHub 的排程觸發極不準時（實測 */30 實際間隔 1.5～3.5 小時），
+# 所以不靠排程密度，改成一次觸發後在同一個 job 內自己連續取樣 55 分鐘，
+# 每 5 分鐘記一筆，最後一次提交。這樣不管排程延遲多久，資料密度都固定。
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:        # 也可以手動觸發補一筆
 
 permissions:
@@ -17,11 +19,16 @@ concurrency:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
-      - name: 抓取並記錄
-        run: python3 tools/record-border.py
+      - name: 連續取樣 55 分鐘（每 5 分鐘一筆）
+        run: |
+          for i in $(seq 1 12); do
+            python3 tools/record-border.py || echo "第 $i 次失敗，繼續"
+            [ "$i" -lt 12 ] && sleep 300
+          done
 
       # 紀錄只增不減。提交前比對每個檔案與 HEAD 的樣本數，
       # 少了或不見了就讓整個 job 失敗，絕不把缺損推上去。
