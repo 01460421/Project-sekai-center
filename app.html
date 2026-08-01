@@ -116,6 +116,10 @@ input::placeholder{color:var(--text-3)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 @media (max-width:900px){main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+
+/* 圖表容器整塊關閉選取與長按選單：長按跳出的複製／查詢選單
+   來自圖表周圍的文字（起迄、縱軸說明），不只 SVG 本身。 */
+*:has(> svg[data-chart]),*:has(> svg[data-chart]) *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 </style>
 </helmet>
 
