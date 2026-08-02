@@ -25,10 +25,21 @@ jobs:
 
       - name: 連續取樣 55 分鐘（每 5 分鐘一筆）
         run: |
+          # 注意：GitHub 用 bash -e 跑，步驟最後一個指令的結束碼就是步驟結果。
+          # 原本寫 [ "$i" -lt 12 ] && sleep 300，最後一圈條件為假就回 1，
+          # 明明資料寫成功卻整步失敗。改用 if，並在最後明確 exit 0。
+          ok=0
           for i in $(seq 1 12); do
-            python3 tools/record-border.py || echo "第 $i 次失敗，繼續"
-            [ "$i" -lt 12 ] && sleep 300
+            if python3 tools/record-border.py; then
+              ok=$((ok+1))
+            else
+              echo "第 $i 次取樣失敗，繼續下一次"
+            fi
+            if [ "$i" -lt 12 ]; then sleep 300; fi
           done
+          echo "本輪成功 $ok / 12 次"
+          # 取樣失敗不該讓 job 失敗；真正該擋的是下一步的資料缺損檢查
+          exit 0
 
       # 紀錄只增不減。提交前比對每個檔案與 HEAD 的樣本數，
       # 少了或不見了就讓整個 job 失敗，絕不把缺損推上去。
