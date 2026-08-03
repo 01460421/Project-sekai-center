@@ -125,11 +125,24 @@ def main():
     data.setdefault('roster', [])
     before_n = len(data['samples'])
 
-    # 段位組成理論上不會變。萬一變了,改欄位順序會讓所有舊資料錯位,
-    # 所以寧可中止讓人來處理,也不動既有的任何一列。
-    if data.get('tiers') and data['tiers'] != tiers:
-        print(f'段位組成有變,中止以免既有資料錯位:{data["tiers"]} → {tiers}', file=sys.stderr)
-        return 1
+    # 段位組成會變 —— 實測官方在活動中途加開了 T100000(17 → 18 段)。
+    # 不能重排欄位順序,那會讓所有既有列錯位;但也不該直接中止,
+    # 否則整期就再也記不到任何東西(這次就是這樣卡了兩天)。
+    # 做法:既有順序原封不動,新段位往後追加。舊列因此比新列短,
+    # 讀取端本來就是依 rank 查找、查不到就略過,不會出錯。
+    if not data.get('tiers'):
+        data['tiers'] = tiers
+    known = list(data['tiers'])
+    added = [r for r in tiers if r not in known]
+    if added:
+        print(f'新增段位 {added},往後追加')
+        known = known + added
+        data['tiers'] = known
+    by_rank = {r['rank']: r.get('score') for r in rows}
+    scores = [by_rank.get(r) for r in known]        # 一律照既有欄位順序輸出
+    absent = [r for r in known if r not in by_rank]
+    if absent:
+        print(f'這次沒回傳的段位 {absent},該欄位留空')
 
     last = data['samples'][-1] if data['samples'] else None
     if last and now - last[0] < 4 * 60:
