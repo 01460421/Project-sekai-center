@@ -846,6 +846,21 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 儲值分析（商城 CP 值·智慧推薦，iframe 內嵌完整引擎） ========== -->
+  <sc-if value="{{ isShop }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:15px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="width:8px;height:24px;border-radius:5px;background:var(--rainbow);background-size:400% 100%;flex:none"></span>
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:15px;font-weight:800;color:var(--ink)">商品總覽 · CP 值排行 · 智慧推薦 · 月卡通行證</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">台服商城 930+ 項商品的內容物與台幣定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div>
+      </div>
+      <a href="./index.html?embed=shop" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+    </div>
+    <iframe id="shopFrame" src="./index.html?embed=shop" title="儲值分析" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+  </div>
+  </sc-if>
+
   <!-- ========== 教學大全 ========== -->
   <sc-if value="{{ isTut }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -1771,6 +1786,7 @@ class Component extends DCLogic {
     rank:     ['活動排名', '即時排名與分段榜線（HiSekai API）'],
     calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
+    shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
     tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
     gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
     collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
@@ -1798,6 +1814,7 @@ class Component extends DCLogic {
     { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位一站式工具。', to: 'calc', cta: '前往計算中心' },
     { date: '計算', title: '抽卡模擬', desc: '依官方 master 資料的機率模型模擬抽卡：可搜尋任一期卡池，顯示各稀有度機率與 PU 卡，支援單抽／十連（含保底★3↑），並統計已抽數、消耗石、★4 與 PU 入手、距天井。', to: 'gachasim', cta: '前往抽卡模擬' },
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
+    { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品（水晶包／優惠組合／通行證／裝扮）內容物與台幣定價，CP 值排行、月卡攤提；智慧推薦依預算或目標抽數在限購規則內算最省錢購買組合。', to: 'shop', cta: '前往儲值分析' },
     { date: '學習', title: '教學大全', desc: '106 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
@@ -1957,9 +1974,9 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'shopFrame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
@@ -2097,7 +2114,7 @@ class Component extends DCLogic {
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
     const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora' };
-    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame'].forEach(id => {
+    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
     });
@@ -3147,7 +3164,7 @@ class Component extends DCLogic {
       ['主頁', [['home', '首頁', '#4ad1e8']]],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0']]],
-      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
     ];
@@ -3465,6 +3482,7 @@ class Component extends DCLogic {
       isHome: s.page === 'home', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
+      isShop: s.page === 'shop',
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG, syslog: this.SYSLOG,
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
 

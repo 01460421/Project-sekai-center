@@ -4035,6 +4035,455 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 二十四:儲值商品分析(智慧篩選+CP排行+深度推薦+通行證) ==========
+        // 資料:data/billing.js(tools/build-billing.py 從台服主資料庫 join 好的 930+ 項商品)
+        // 注意:部分商品(月卡V2/新手包等)master 只有 9999 佔位價,priceKnown=false,讓玩家自填實售價
+        const ShopAnalyzer = {
+            _loaded: false, _loading: false,
+            view: 'ov',
+            F: { cat: 'all', avail: 'now', pay: 'all', q: '', sort: 'cp' },
+            shown: 60,
+            incTicket: true, incLimited: true, horizon30: false,
+            priceOv: {}, owned: {},
+            PULL: 300,   // 單抽 300 水晶
+
+            ensure() {
+                if (this._loaded || this._loading) return;
+                this._loading = true;
+                try { this.priceOv = JSON.parse(localStorage.getItem('sekai-shop-price-ov') || '{}') || {}; } catch (e) { this.priceOv = {}; }
+                try { this.owned = JSON.parse(localStorage.getItem('sekai-shop-owned') || '{}') || {}; } catch (e) { this.owned = {}; }
+                const s = document.createElement('script');
+                s.src = 'data/billing.js?v=' + Math.floor(Date.now() / 43200000);   // 12h bucket,配每日資料刷新
+                s.onload = () => { this._loaded = true; this._loading = false; this.render(); };
+                s.onerror = () => { this._loading = false; const el = document.getElementById('shopBody'); if (el) el.innerHTML = '<div class="note">儲值商品資料載入失敗,請重新整理再試。</div>'; };
+                document.head.appendChild(s);
+            },
+            D() { return (typeof BILLING_DATA !== 'undefined') ? BILLING_DATA : null; },
+
+            // ---- 商品基礎屬性 ----
+            price(r) { const ov = +this.priceOv[r.id]; if (!r.pk && ov > 0) return ov; return r.pk ? r.price : null; },
+            isOv(r) { return !r.pk && +this.priceOv[r.id] > 0; },
+            onSale(r) { const now = Date.now(); return (!r.s || r.s <= now) && (!r.e || r.e >= now); },
+            soon(r) { return r.s && r.s > Date.now(); },
+            ended(r) { return r.e && r.e < Date.now(); },
+            isLimited(r) { return !!(r.e && (r.e - Date.now()) < 200 * 86400000) || !!r.lab; },
+            // 通行證的「陸續入帳」無償石(每日領):v1 每日50×14天、v2 BASIC 50×30/PRECIOUS 100×30
+            passJ(r) {
+                const D = this.D(); if (!D) return 0;
+                let sum = 0;
+                (r.c || []).forEach(c => {
+                    if (c[0] === 'colorful_pass' && c[3] != null) sum += (D.passes.v1Daily[c[3]] || 0) * ((D.passes.v1[0] || {}).expireDays || 14);
+                    if (c[0] === 'colorful_pass_v2' && c[3] != null) {
+                        const t = (D.passes.v2 || []).find(p => p.id === c[3]) || {};
+                        sum += (D.passes.v2Daily[c[3]] || 0) * (t.expireDays || 30);
+                    }
+                });
+                return sum;
+            },
+            totalJ(r) { return r.paid + r.free + this.passJ(r) + (this.incTicket ? r.pulls * this.PULL : 0); },
+            // 基準:常駐不限購水晶包的最佳石/元(通常是最大包)
+            base() {
+                const D = this.D(); if (!D) return 3.9;
+                let b = 0;
+                D.items.forEach(r => { if (r.t === 'jewel' && r.lim.t === 'unlimited' && r.pk && this.onSale(r)) b = Math.max(b, (r.paid + r.free) / r.price); });
+                return b || 3.9;
+            },
+            limTxt(r) {
+                const L = r.lim;
+                if (L.t === 'unlimited' || L.v == null || L.v < 0) return '不限購';
+                const n = L.v + ' 次';
+                if (L.r === 'day') return '每日 ' + n;
+                if (L.r === 'weekly') return '每週 ' + n;
+                if (L.r === 'monthly') return '每月 ' + n;
+                if (L.t === 'user_rank') return '新手限定 ' + n;
+                return '限購 ' + n;
+            },
+            onceOnly(r) { const L = r.lim; return L.t === 'count' && L.v > 0 && (!L.r || L.r === 'none'); },
+            catOf(r) { return r.t === 'jewel' ? 'jewel' : r.t === 'value_set' ? 'set' : r.t === 'costume_3d' ? 'costume' : 'pass'; },
+            CAT_NAME: { jewel: '水晶包', set: '優惠組合', pass: '通行證', costume: '裝扮' },
+            _fd(ms) { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); },
+            periodTxt(r) {
+                if (this.soon(r)) return '<span style="color:var(--primary);">' + this._fd(r.s) + ' 開賣</span>';
+                if (this.ended(r)) return '已結束(' + this._fd(r.e) + ')';
+                if (!r.e || r.e - Date.now() > 3650 * 86400000) return '長期販售';
+                const d = Math.ceil((r.e - Date.now()) / 86400000);
+                return '至 ' + this._fd(r.e) + (d <= 3 ? ' <strong style="color:#e05667;">(剩 ' + d + ' 天)</strong>' : ' (剩 ' + d + ' 天)');
+            },
+            contentTxt(r, full) {
+                const parts = [];
+                if (r.paid) parts.push('有償水晶 ' + fmtNum(r.paid));
+                if (r.free) parts.push('無償水晶 ' + fmtNum(r.free));
+                const pj = this.passJ(r);
+                if (pj) parts.push('每日領無償共 ' + fmtNum(pj));
+                if (r.pulls) parts.push('票券 ' + r.pulls + ' 抽');
+                const others = (r.c || []).concat(r.bc || []).filter(c => c[0] !== 'ticket' && c[0] !== 'colorful_pass' && c[0] !== 'colorful_pass_v2');
+                if (full) others.forEach(c => parts.push(c[2] + (c[1] > 1 ? '×' + fmtNum(c[1]) : '')));
+                else if (others.length) parts.push('道具 ' + others.length + ' 項');
+                return parts.join(' ＋ ') || '—';
+            },
+
+            go(v) {
+                this.view = v;
+                document.querySelectorAll('#shopTabs button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+                this.render();
+            },
+            render() {
+                const el = document.getElementById('shopBody');
+                if (!el) return;
+                if (!this.D()) { el.innerHTML = '<div class="note">載入商品資料…</div>'; return; }
+                if (this.view === 'ov') { el.innerHTML = '<div id="shopChips"></div><div id="shopList"></div>'; this.renderChips(); this.renderList(); }
+                else if (this.view === 'cp') this.renderCP(el);
+                else if (this.view === 'reco') this.renderReco(el);
+                else this.renderPass(el);
+            },
+
+            // ---- 一:商品總覽(智慧篩選) ----
+            setF(k, v) { this.F[k] = v; this.shown = 60; this.renderChips(); this.renderList(); },
+            setQ(v) { this.F.q = v.trim(); this.shown = 60; this.renderList(); },
+            renderChips() {
+                const el = document.getElementById('shopChips'); if (!el) return;
+                const F = this.F;
+                const chip = (k, v, txt) => `<button type="button" class="sa-chip${F[k] === v ? ' on' : ''}" onclick="ShopAnalyzer.setF('${k}','${v}')">${txt}</button>`;
+                el.innerHTML = `
+                    <div class="sa-chiprow">${chip('cat', 'all', '全部')}${chip('cat', 'jewel', '水晶包')}${chip('cat', 'set', '優惠組合')}${chip('cat', 'pass', '通行證')}${chip('cat', 'costume', '裝扮')}</div>
+                    <div class="sa-chiprow">${chip('avail', 'now', '販售中')}${chip('avail', 'soon', '即將開賣')}${chip('avail', 'ended', '已結束')}${chip('avail', 'all', '全部期間')}
+                        <span class="sa-sep"></span>${chip('pay', 'all', '不限付款')}${chip('pay', 'money', '台幣')}${chip('pay', 'exch', '有償水晶兌換')}</div>
+                    <div class="sa-chiprow">
+                        <input type="text" class="sa-q" placeholder="搜尋商品名…" value="${F.q.replace(/"/g, '&quot;')}" oninput="ShopAnalyzer.setQ(this.value)">
+                        <select class="sa-sort" onchange="ShopAnalyzer.setF('sort',this.value)">
+                            <option value="cp"${F.sort === 'cp' ? ' selected' : ''}>CP 值高→低</option>
+                            <option value="priceAsc"${F.sort === 'priceAsc' ? ' selected' : ''}>價格低→高</option>
+                            <option value="priceDesc"${F.sort === 'priceDesc' ? ' selected' : ''}>價格高→低</option>
+                            <option value="end"${F.sort === 'end' ? ' selected' : ''}>結束時間近→遠</option>
+                            <option value="new"${F.sort === 'new' ? ' selected' : ''}>上架新→舊</option>
+                        </select>
+                        <label class="sa-tgl"><input type="checkbox"${this.incTicket ? ' checked' : ''} onchange="ShopAnalyzer.incTicket=this.checked;ShopAnalyzer.renderList()">票券以 300 石/抽折算</label>
+                    </div>`;
+            },
+            filtered() {
+                const F = this.F, q = F.q.toLowerCase();
+                return this.D().items.filter(r => {
+                    if (F.cat !== 'all' && this.catOf(r) !== F.cat) return false;
+                    if (F.avail === 'now' && !this.onSale(r)) return false;
+                    if (F.avail === 'soon' && !this.soon(r)) return false;
+                    if (F.avail === 'ended' && !this.ended(r)) return false;
+                    if (F.pay === 'money' && r.exch) return false;
+                    if (F.pay === 'exch' && !r.exch) return false;
+                    if (q && !(r.n + ' ' + r.d + ' ' + r.tab + ' ' + r.lab).toLowerCase().includes(q)) return false;
+                    return true;
+                });
+            },
+            renderList() {
+                const el = document.getElementById('shopList'); if (!el) return;
+                const base = this.base();
+                let rows = this.filtered();
+                const F = this.F;
+                const key = r => {
+                    const p = this.price(r), j = this.totalJ(r);
+                    if (F.sort === 'cp') return -(p && j ? j / p : r.exch ? -1e8 : -1e9);
+                    if (F.sort === 'priceAsc') return p != null ? p : (r.exch ? r.exch / base : 9e9);
+                    if (F.sort === 'priceDesc') return -(p != null ? p : (r.exch ? r.exch / base : -1));
+                    if (F.sort === 'end') return r.e || 9e15;
+                    return -(r.s || 0);
+                };
+                rows = rows.slice().sort((a, b) => key(a) - key(b));
+                const total = rows.length;
+                rows = rows.slice(0, this.shown);
+                el.innerHTML = `<div class="note" style="margin:10px 0;">符合條件 <strong>${total}</strong> 項(全部 ${this.D().items.length} 項)・CP 基準:常駐最佳 <strong>${base.toFixed(2)} 石/元</strong></div>
+                    <div class="sa-grid">${rows.map(r => this.itemCard(r, base)).join('')}</div>
+                    ${total > this.shown ? `<button type="button" class="sa-more" onclick="ShopAnalyzer.shown+=60;ShopAnalyzer.renderList()">顯示更多(還有 ${total - this.shown} 項)</button>` : ''}`;
+            },
+            itemCard(r, base) {
+                const p = this.price(r), j = this.totalJ(r);
+                let priceHtml, rateHtml = '';
+                if (r.exch) {
+                    priceHtml = `<strong>${fmtNum(r.exch)}</strong> 有償水晶 <em>≈NT$${fmtNum(Math.round(r.exch / base))}</em>`;
+                } else if (p != null) {
+                    priceHtml = `NT$ <strong>${fmtNum(p)}</strong>${this.isOv(r) ? ' <em class="sa-ov" title="master 僅佔位價,此為自填">自填</em>' : ''}`;
+                    if (j > 0) {
+                        const rate = j / p, pct = Math.round((rate / base - 1) * 100);
+                        rateHtml = `<span class="sa-rate${rate >= base * 1.35 ? ' hot' : rate >= base ? ' good' : ''}">${rate.toFixed(2)} 石/元${pct ? `・${pct > 0 ? '+' : ''}${pct}%` : ''}</span>`;
+                    }
+                } else {
+                    priceHtml = `<span style="color:var(--text-light);">價格未公布</span> <button type="button" class="sa-fill" onclick="ShopAnalyzer.fillPrice(${r.id})">自填售價</button>`;
+                }
+                const onceChk = this.onceOnly(r) && !r.exch ? `<label class="sa-owned"><input type="checkbox"${this.owned[r.id] ? ' checked' : ''} onchange="ShopAnalyzer.toggleOwned(${r.id},this.checked)">已買過</label>` : '';
+                return `<div class="sa-item${this.ended(r) ? ' dim' : ''}">
+                    <div class="sa-head"><span class="sa-name">${r.n}</span>${r.lab ? `<span class="sa-tag">${r.lab}</span>` : ''}<span class="sa-tag alt">${r.tab || this.CAT_NAME[this.catOf(r)]}</span></div>
+                    <div class="sa-price">${priceHtml}${rateHtml}</div>
+                    <div class="sa-cont" title="${this.contentTxt(r, true).replace(/"/g, '&quot;')}">${this.contentTxt(r, false)}</div>
+                    <div class="sa-meta">${this.limTxt(r)}・${this.periodTxt(r)}${onceChk}</div>
+                </div>`;
+            },
+            fillPrice(id) {
+                const r = this.D().items.find(x => x.id === id); if (!r) return;
+                const v = prompt(`「${r.n}」master 資料庫僅有佔位價。\n請輸入商店顯示的實際售價(新台幣,整數;留空=清除自填):`, this.priceOv[id] || '');
+                if (v === null) return;
+                const n = parseInt(v, 10);
+                if (!v.trim() || !(n > 0)) delete this.priceOv[id]; else this.priceOv[id] = n;
+                try { localStorage.setItem('sekai-shop-price-ov', JSON.stringify(this.priceOv)); } catch (e) {}
+                this.render();
+            },
+            toggleOwned(id, on) {
+                if (on) this.owned[id] = 1; else delete this.owned[id];
+                try { localStorage.setItem('sekai-shop-owned', JSON.stringify(this.owned)); } catch (e) {}
+            },
+
+            // ---- 二:CP 值排行 ----
+            renderCP(el) {
+                const base = this.base();
+                const rows = this.D().items
+                    .filter(r => this.onSale(r) && !r.exch && this.price(r) && this.totalJ(r) > 0)
+                    .map(r => ({ r, p: this.price(r), j: this.totalJ(r), rate: this.totalJ(r) / this.price(r) }))
+                    .sort((a, b) => b.rate - a.rate).slice(0, 40);
+                const mx = rows.length ? rows[0].rate : 1;
+                const cheap = this.D().items.filter(r => this.onSale(r) && r.exch && this.catOf(r) === 'costume')
+                    .sort((a, b) => a.exch - b.exch).slice(0, 5);
+                el.innerHTML = `<div class="note">目前販售中、已知台幣價的商品依「每 1 元台幣可得水晶數」排序(票券${this.incTicket ? '已' : '未'}以 300 石/抽折算、月卡含每日領取)。<strong>基準線:常駐最佳 ${base.toFixed(2)} 石/元</strong>——高於基準的都比單純買常駐大包划算。</div>
+                    <div class="sa-bars">${rows.map((x, i) => `
+                        <div class="sa-barrow">
+                            <div class="sa-barlabel">${i + 1}. ${x.r.n}${this.isOv(x.r) ? ' <em class="sa-ov">自填</em>' : ''}</div>
+                            <div class="sa-bartrack"><div class="sa-barfill${x.rate >= base ? '' : ' below'}" style="width:${(x.rate / mx * 100).toFixed(1)}%"></div><span class="sa-basemark" style="left:${Math.min(100, base / mx * 100).toFixed(1)}%"></span></div>
+                            <div class="sa-barval"><strong>${x.rate.toFixed(2)}</strong> 石/元・NT$${fmtNum(x.p)}・${fmtNum(x.j)} 石・${this.limTxt(x.r)}</div>
+                        </div>`).join('')}</div>
+                    <h4 style="margin:18px 0 8px;">裝扮兌換換算(有償水晶計價)</h4>
+                    <div class="note" style="margin-top:0;">裝扮用有償水晶兌換;以基準 ${base.toFixed(2)} 石/元換算,3,000 石整套 ≈ NT$${fmtNum(Math.round(3000 / base))}、單色 1,000 石 ≈ NT$${fmtNum(Math.round(1000 / base))}。要買裝扮時,水晶請在特賣/加量檔期補——同一套衣服實際花費可差 15% 以上。</div>
+                    ${cheap.map(r => `<div class="sa-minirow"><span>${r.n}</span><span>${fmtNum(r.exch)} 石 ≈ NT$${fmtNum(Math.round(r.exch / base))}</span></div>`).join('')}`;
+            },
+
+            // ---- 三:智慧推薦(深度分析) ----
+            renderReco(el) {
+                el.innerHTML = `
+                    <div class="calculator"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:16px;">
+                        <div class="calc-section"><h4>你的目標</h4>
+                            <div class="calc-row"><label>模式</label><select id="saMode" onchange="ShopAnalyzer.recoCalc()">
+                                <option value="pulls">目標抽數(最省錢)</option>
+                                <option value="jewel">目標水晶數(最省錢)</option>
+                                <option value="budget">預算上限(水晶最大化)</option>
+                            </select></div>
+                            <div class="calc-row"><label id="saValLabel">目標抽數</label><input type="number" id="saVal" value="100" min="1" oninput="ShopAnalyzer.recoCalc()"></div>
+                            <div class="calc-row"><label>已持有水晶</label><input type="number" id="saHeld" value="0" min="0" oninput="ShopAnalyzer.recoCalc()"></div>
+                            <div class="sa-chiprow" style="margin-top:8px;">
+                                <button type="button" class="sa-chip" onclick="ShopAnalyzer.preset(100)">100 抽</button>
+                                <button type="button" class="sa-chip" onclick="ShopAnalyzer.preset(200)">200 抽</button>
+                                <button type="button" class="sa-chip" onclick="ShopAnalyzer.preset(300)">天井 300 抽</button>
+                                <button type="button" class="sa-chip" onclick="ShopAnalyzer.fromGacha()">帶入天井計算器缺口</button>
+                            </div>
+                        </div>
+                        <div class="calc-section"><h4>納入範圍</h4>
+                            <div class="calc-row"><label>期間限定商品</label><select id="saLim" onchange="ShopAnalyzer.recoCalc()"><option value="1">納入(推薦)</option><option value="0">只買常駐</option></select></div>
+                            <div class="calc-row"><label>票券折算 300 石/抽</label><select id="saTk" onchange="ShopAnalyzer.recoCalc()"><option value="1">納入</option><option value="0">不納入</option></select></div>
+                            <div class="calc-row"><label>計算視角</label><select id="saHz" onchange="ShopAnalyzer.recoCalc()"><option value="0">現在立刻能買的</option><option value="1">30 天視角(含每日/每週重置)</option></select></div>
+                            <div class="note" style="margin:8px 0 0;font-size:11px;">「已買過」的一次性商品(在總覽勾選)會自動排除;價格未公布的商品要先在總覽自填售價才會納入。</div>
+                        </div>
+                    </div>
+                    <div id="saRecoOut" style="margin-top:14px;"></div></div>`;
+                this.recoCalc();
+            },
+            preset(pulls) {
+                const m = document.getElementById('saMode'), v = document.getElementById('saVal');
+                if (m) m.value = 'pulls'; if (v) v.value = pulls;
+                this.recoCalc();
+            },
+            fromGacha() {
+                // 讀抽卡天井計算器目前輸入:缺口 = 天井剩餘抽數×300 − 持有水晶
+                const g = id => +((document.getElementById(id) || {}).value) || 0;
+                const crystal = g('gcCrystal'), pulled = g('gcPulled'), voucher = g('gcVoucher');
+                const usable = Math.min(voucher, 10);
+                const need = Math.max(0, 300 - pulled - usable * 10) * this.PULL;
+                const m = document.getElementById('saMode'), v = document.getElementById('saVal'), h = document.getElementById('saHeld');
+                if (m) m.value = 'jewel'; if (v) v.value = need; if (h) h.value = crystal;
+                this.recoCalc();
+            },
+            _cands() {
+                const out = [];
+                this.D().items.forEach(r => {
+                    if (!this.onSale(r) || r.exch) return;
+                    if (this.owned[r.id]) return;
+                    if (!this.incLimited && this.isLimited(r)) return;
+                    const p = this.price(r); if (!(p > 0)) return;
+                    const j = this.totalJ(r); if (j <= 0) return;
+                    const L = r.lim;
+                    let max = Infinity;
+                    if (!(L.t === 'unlimited' || L.v == null || L.v < 0)) {
+                        max = L.v;
+                        if (this.horizon30) { if (L.r === 'day') max *= 30; else if (L.r === 'weekly') max *= 4; }
+                    }
+                    out.push({ r, p, j, max, rate: j / p });
+                });
+                return out;
+            },
+            // 有限背包(最少花費達到 ≥ 目標石):二進位拆包+分層回溯,granularity 自適應
+            _dpMin(cands, targetJ) {
+                const G = targetJ > 120000 ? 50 : 10, N = Math.max(1, Math.ceil(targetJ / G)), S = N + 1;
+                const L = [];
+                cands.forEach((c, ci) => {
+                    let k = Math.min(c.max, Math.ceil(targetJ / c.j) + 1);
+                    let m = 1;
+                    while (k > 0) {
+                        const t = Math.min(m, k);
+                        const ju = Math.floor(c.j * t / G);
+                        if (ju > 0) L.push({ ci, cnt: t, cost: c.p * t, ju: Math.min(N, ju) });
+                        k -= t; m *= 2;
+                    }
+                });
+                let dp = new Float64Array(S).fill(Infinity); dp[0] = 0;
+                const layers = [];
+                for (let bi = 0; bi < L.length; bi++) {
+                    const b = L[bi], par = new Int32Array(S).fill(-1);
+                    for (let s = S - 1; s >= 0; s--) {
+                        if (dp[s] === Infinity) continue;
+                        const ns = Math.min(N, s + b.ju), nc = dp[s] + b.cost;
+                        if (nc < dp[ns] - 1e-7) { dp[ns] = nc; par[ns] = s; }
+                    }
+                    layers.push({ par, val: dp.slice() });
+                }
+                // 目標可能因限購達不到:退而求其次取可達最高
+                let goal = N;
+                if (dp[N] === Infinity) { goal = -1; for (let s = N; s >= 0; s--) if (dp[s] < Infinity) { goal = s; break; } }
+                if (goal <= 0) return { ok: false, cost: 0, counts: {}, gotJ: 0, reached: false };
+                // 分層回溯:此層值比上一層小=有選這包
+                const counts = {};
+                let s = goal;
+                for (let bi = L.length - 1; bi >= 0; bi--) {
+                    const prev = bi > 0 ? layers[bi - 1].val : null;
+                    const pv = prev ? prev[s] : (s === 0 ? 0 : Infinity);
+                    if (layers[bi].val[s] < pv - 1e-7) {
+                        const b = L[bi];
+                        counts[b.ci] = (counts[b.ci] || 0) + b.cnt;
+                        s = layers[bi].par[s];
+                        if (s < 0) break;
+                    }
+                }
+                let cost = 0, gotJ = 0;
+                Object.keys(counts).forEach(ci => { const c = cands[ci]; cost += c.p * counts[ci]; gotJ += c.j * counts[ci]; });
+                return { ok: true, cost, counts, gotJ, reached: goal === N && dp[N] < Infinity };
+            },
+            recoCalc() {
+                const out = document.getElementById('saRecoOut'); if (!out) return;
+                if (!this.D()) return;
+                const gv = id => (document.getElementById(id) || {}).value;
+                const mode = gv('saMode') || 'pulls';
+                const val = Math.max(1, +gv('saVal') || 0);
+                const held = Math.max(0, +gv('saHeld') || 0);
+                this.incLimited = gv('saLim') !== '0';
+                this.incTicket = gv('saTk') !== '0';
+                this.horizon30 = gv('saHz') === '1';
+                const lbl = document.getElementById('saValLabel');
+                if (lbl) lbl.textContent = mode === 'pulls' ? '目標抽數' : mode === 'jewel' ? '目標水晶數' : '預算(新台幣)';
+                const cands = this._cands();
+                if (!cands.length) { out.innerHTML = '<div class="note">目前沒有可計算的商品(可能都被排除了)。</div>'; return; }
+                let res, targetJ = 0, budget = 0;
+                if (mode === 'budget') {
+                    budget = Math.min(val, 500000);
+                    const bestRate = Math.max(...cands.map(c => c.rate));
+                    let lo = 0, hi = Math.ceil(budget * bestRate * 1.05) + 3000, best = null;
+                    for (let it = 0; it < 18 && lo <= hi; it++) {
+                        const mid = Math.floor((lo + hi) / 2 / 10) * 10;
+                        if (mid <= 0) break;
+                        const r = this._dpMin(cands, mid);
+                        if (r.ok && r.reached && r.cost <= budget) { best = r; lo = mid + 10; } else hi = mid - 10;
+                    }
+                    res = best || { ok: false, cost: 0, counts: {}, gotJ: 0, reached: false };
+                } else {
+                    targetJ = mode === 'pulls' ? val * this.PULL : val;
+                    targetJ = Math.max(0, Math.min(targetJ - held, 600000));
+                    if (targetJ <= 0) { out.innerHTML = '<div class="note">持有水晶已達目標,不需要儲值 🎉</div>'; return; }
+                    res = this._dpMin(cands, targetJ);
+                }
+                this.renderPlan(out, res, cands, { mode, val, held, targetJ, budget });
+            },
+            renderPlan(out, res, cands, ctx) {
+                if (!res.ok || !Object.keys(res.counts).length) {
+                    out.innerHTML = '<div class="note">在目前的限購/篩選條件下湊不出方案。試試改用「30 天視角」、納入期間限定,或到總覽自填月卡等未公布價商品的售價。</div>';
+                    return;
+                }
+                const base = this.base();
+                const rows = Object.keys(res.counts).map(ci => { const c = cands[ci]; return { c, n: res.counts[ci] }; })
+                    .sort((a, b) => b.c.rate - a.c.rate);
+                let paid = 0, free = 0, tk = 0;
+                rows.forEach(x => { paid += x.c.r.paid * x.n; free += (x.c.r.free + this.passJ(x.c.r)) * x.n; tk += x.c.r.pulls * x.n; });
+                const gotJ = res.gotJ, cost = res.cost;
+                const baseCost = Math.round(gotJ / base);
+                const save = baseCost - cost, savePct = baseCost ? Math.round(save / baseCost * 100) : 0;
+                const pulls = Math.floor(gotJ / this.PULL);
+                const table = `<div class="table-wrapper"><table>
+                    <thead><tr><th>商品</th><th>單價</th><th>數量</th><th>石/元</th><th>內容</th><th>小計</th></tr></thead>
+                    <tbody>${rows.map(x => `<tr>
+                        <td style="font-size:13px;">${x.c.r.n}${this.isOv(x.c.r) ? ' <em class="sa-ov">自填</em>' : ''}</td>
+                        <td>NT$${fmtNum(x.c.p)}</td><td>×${x.n}</td>
+                        <td>${x.c.rate.toFixed(2)}</td>
+                        <td style="font-size:12px;">${this.contentTxt(x.c.r, false)}</td>
+                        <td><strong>NT$${fmtNum(x.c.p * x.n)}</strong></td></tr>`).join('')}</tbody>
+                    <tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;">合計</td><td><strong style="color:var(--primary);">NT$${fmtNum(cost)}</strong></td></tr></tfoot>
+                    </table></div>`;
+                const stats = `<div class="sa-stats">
+                    <div><em>共獲得</em><strong>${fmtNum(gotJ)}</strong> 石</div>
+                    <div><em>約可抽</em><strong>${fmtNum(pulls)}</strong> 抽</div>
+                    <div><em>平均成本</em><strong>${(gotJ / cost).toFixed(2)}</strong> 石/元</div>
+                    <div><em>比全買常駐大包省</em><strong>${save > 0 ? 'NT$' + fmtNum(save) + '(' + savePct + '%)' : '—'}</strong></div>
+                </div>`;
+                out.innerHTML = `${ctx.mode === 'budget'
+                    ? `<div class="note">預算 NT$${fmtNum(ctx.budget)} 內的最大水晶方案(花 NT$${fmtNum(cost)},剩 NT$${fmtNum(ctx.budget - cost)})。</div>`
+                    : `<div class="note">目標 ${fmtNum(ctx.targetJ)} 石${ctx.held ? `(已扣除持有 ${fmtNum(ctx.held)})` : ''}${res.reached ? '' : ' — <strong style="color:#e05667;">限購上限內湊不滿,以下是可達的最大方案</strong>'}。</div>`}
+                    ${stats}${table}${this.analysis(rows, { paid, free, tk, gotJ, cost, base, save, savePct }, ctx)}`;
+            },
+            analysis(rows, m, ctx) {
+                const b = [];
+                const hot = rows.filter(x => x.c.rate >= m.base * 1.2);
+                if (hot.length) b.push(`<strong>先買加量/特惠:</strong>${hot.map(x => `${x.c.r.n}(${x.c.rate.toFixed(2)} 石/元)`).join('、')} 的單位成本比常駐大包低 ${Math.round((hot[0].c.rate / m.base - 1) * 100)}%${hot.length > 1 ? ' 起' : ''},是這份方案省錢的主力;限購買滿後才輪到常駐包補量。`);
+                const passRows = rows.filter(x => this.catOf(x.c.r) === 'pass');
+                if (passRows.length) b.push(`<strong>通行證攤提:</strong>${passRows.map(x => x.c.r.n).join('、')} 的水晶會分 14~30 天入帳(每日領取),適合平常有登入習慣的玩家;急著今天抽完的話請把它的每日部分視為之後的存量。`);
+                const weekly = rows.filter(x => x.c.r.lim.r === 'weekly' || x.c.r.lim.r === 'day' || x.c.r.lim.r === 'monthly');
+                if (weekly.length && !this.horizon30) b.push(`<strong>會刷新的限購:</strong>${weekly.map(x => `${x.c.r.n}(${this.limTxt(x.c.r)})`).join('、')} 之後還會重置——切到「30 天視角」可以看整個月能吃到多少優惠。`);
+                const urgent = rows.filter(x => x.c.r.e && x.c.r.e - Date.now() < 7 * 86400000);
+                if (urgent.length) b.push(`<strong>要過期了:</strong>${urgent.map(x => `${x.c.r.n}(${this.periodTxt(x.c.r)})`).join('、')},請優先購買。`);
+                if (m.tk) b.push(`<strong>票券折算:</strong>方案含票券 ${m.tk} 抽(以 ${this.PULL} 石/抽折算)。票券抽卡通常<strong>不累積天井貼紙</strong>,如果你正在集 300 抽天井,票券抽數不能算進去。`);
+                if (m.paid && m.free) b.push(`<strong>有償/無償占比:</strong>有償 ${fmtNum(m.paid)} 石(${Math.round(m.paid / (m.paid + m.free) * 100)}%)、無償 ${fmtNum(m.free)} 石。部分商品(有償限定池、裝扮兌換、通行證加購)只吃有償水晶,想留彈性就讓有償比例高一點。`);
+                // 未納入但高潛力:價格未公布的月卡/禮包
+                const missing = this.D().items.filter(r => this.onSale(r) && !r.exch && !r.pk && !(+this.priceOv[r.id] > 0) && (this.totalJ(r) > 0));
+                if (missing.length) b.push(`<strong>還沒納入的隱藏高 CP:</strong>${missing.slice(0, 5).map(r => r.n).join('、')} 在資料庫只有佔位價;這類月卡/月度禮包通常是全商店 CP 最高的,到「商品總覽」自填實際售價後,重算會自動把它們排進方案。`);
+                if (this.owned && Object.keys(this.owned).length) b.push(`<strong>已排除:</strong>你標記買過的 ${Object.keys(this.owned).length} 項一次性商品未列入。`);
+                b.push(`<strong>基準對照:</strong>同樣 ${fmtNum(m.gotJ)} 石若全用常駐最佳包(${m.base.toFixed(2)} 石/元)要 NT$${fmtNum(Math.round(m.gotJ / m.base))}${m.save > 0 ? `,此方案省 NT$${fmtNum(m.save)}(${m.savePct}%)` : ',此方案已貼近基準'}。`);
+                return `<h4 style="margin:16px 0 8px;">深度分析</h4><ul class="sa-analysis">${b.map(x => `<li>${x}</li>`).join('')}</ul>`;
+            },
+
+            // ---- 四:月卡·通行證 ----
+            renderPass(el) {
+                const D = this.D(), base = this.base();
+                const ids = D.items.filter(r => this.catOf(r) === 'pass' && this.onSale(r) && (this.totalJ(r) > 0 || this.price(r)));
+                const v2meta = {};
+                (D.passes.v2 || []).forEach(p => v2meta[p.id] = p);
+                const card = r => {
+                    const p = this.price(r), j = this.totalJ(r), pj = this.passJ(r);
+                    const rate = p && j ? j / p : null;
+                    const verdict = !p ? ['自填售價後評估', ''] : rate >= base * 1.5 ? ['大賺', ' hot'] : rate >= base ? ['划算', ' good'] : ['看需求', ''];
+                    let perks = [];
+                    (r.c || []).forEach(c => {
+                        if (c[0] === 'colorful_pass_v2' && v2meta[c[3]]) {
+                            const t = v2meta[c[3]];
+                            perks = [`挑戰 LIVE P 獲得 ×${t.challengeLivePointRate}`, `LIVE P 獲得 ×${t.livePointRate}`,
+                                t.dailyFreeGachaSpinLimit ? `每日免費招募 ${t.dailyFreeGachaSpinLimit} 次` : '', `每日限定有償招募 ${t.dailyPaidGachaSpinLimit} 次`,
+                                `LIVE BONUS 上限 ${t.maxLiveBonusCount}`, `自動 LIVE 次數 ${t.maxAutoPlayCount}`].filter(Boolean);
+                        }
+                        if (c[0] === 'mysekai_colorful_pass') perks = ['家具製作時間 −50%', '住宅預設槽位 365 天'];
+                    });
+                    if (r.t.indexOf('live_mission_pass') === 0) perks.push('解鎖通行證任務獎勵軌(進度水晶/服裝/素材另計,通常遠超票面)');
+                    return `<div class="sa-pass">
+                        <div class="sa-head"><span class="sa-name">${r.n}</span><span class="sa-verdict${verdict[1]}">${verdict[0]}</span></div>
+                        <div class="sa-price">${p ? `NT$ <strong>${fmtNum(p)}</strong>${this.isOv(r) ? ' <em class="sa-ov">自填</em>' : ''}` : `<span style="color:var(--text-light);">價格未公布</span> <button type="button" class="sa-fill" onclick="ShopAnalyzer.fillPrice(${r.id})">自填售價</button>`}
+                        ${rate ? `<span class="sa-rate${verdict[1]}">${rate.toFixed(2)} 石/元・${Math.round((rate / base - 1) * 100) > 0 ? '+' : ''}${Math.round((rate / base - 1) * 100)}% vs 基準</span>` : ''}</div>
+                        <div class="sa-cont">立即入手:${r.paid ? `有償 ${fmtNum(r.paid)} 石` : ''}${r.free ? ` 無償 ${fmtNum(r.free)} 石` : ''}${pj ? `<br>每日領取:共 ${fmtNum(pj)} 無償石(分天入帳)` : ''}${(r.c || []).concat(r.bc || []).filter(c => ['ticket'].indexOf(c[0]) < 0 && c[0].indexOf('pass') < 0 && c[0] !== 'colorful_pass' && c[0] !== 'colorful_pass_v2').map(c => `<br>附:${c[2]}×${fmtNum(c[1])}`).join('')}</div>
+                        ${perks.length ? `<div class="sa-perks">${perks.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+                        ${r.d ? `<div class="sa-desc">官方說明:${r.d.replace(/\n/g, ' / ')}</div>` : ''}
+                        <div class="sa-meta">${this.limTxt(r)}・${this.periodTxt(r)}</div>
+                    </div>`;
+                };
+                el.innerHTML = `<div class="note">月卡與通行證的「每日領取」已攤提合計;<strong>石/元高於基準(${base.toFixed(2)})就比買水晶包划算</strong>。任務通行證的任務獎勵軌(升級水晶/限定服裝)不在票面內,實際價值更高。月卡類 master 常只有佔位價,請自填商店實售價。</div>
+                    <div class="sa-grid pass">${ids.map(card).join('')}</div>`;
+            }
+        };
+
         const GlobalSearch = {
             // 角色別名：輸入任一別名都能對應到資料中的中文名
             charAlias: {
@@ -4062,7 +4511,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ['#dolls','月卡玩偶列表'],['#bonus-cards','加分卡參考'],['#analysis','榜線分析'],
                 ['#player-lookup','玩家查詢'],['#distribution','活動分布甘特圖'],['#songs','歌曲清單'],
                 ['#calculator','推隊倍率計算器'],['#event-calc','活動加成 活動P 分數 綜合力 WL支援計算器'],['#gacha-calc','抽卡期望 天井計算器'],
-                ['#rank-match','排位賽 判定分 升段'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
+                ['#rank-match','排位賽 判定分 升段'],['#shop-analyzer','儲值商品分析 水晶包 月卡 CP值 智慧推薦'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
                 ['#info','資訊站'],['#community','討論社群'],['#wiki','Wiki 百科'],['#tools','實用工具'],['#ep-calc','EP 計算器']
             ],
             _items: [], _active: -1,
@@ -4267,6 +4716,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             lazyInit('gacha-calc', () => GachaCalc.calc());
             lazyInit('rank-match', () => { RankCalc.calc(); RankCalc.promo(); });
             lazyInit('run-studio', () => RunStudio.ensure());
+            lazyInit('shop-analyzer', () => ShopAnalyzer.ensure());
             window.addEventListener('resize', () => {
                 clearTimeout(window._calResizeTimer);
                 window._calResizeTimer = setTimeout(renderCalendar, 200);

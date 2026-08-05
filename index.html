@@ -14,16 +14,16 @@
     try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
     var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
-    <link rel="stylesheet" href="css/core.css?v=3f921f3ec9">
+    <link rel="stylesheet" href="css/core.css?v=a6527dabd4">
 </head>
 <body>
-    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');}catch(e){}</script>
+    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='shop')document.body.classList.add('embed-shop');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
             <div class="nav-groups">
                 <div class="nav-group"><button type="button">資料<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="nav-drop"><a href="#calendar">活動日曆</a><a href="#event-tracking">活動排名</a><a href="#gacha">卡池列表</a><a href="#cardlib">卡庫</a><a href="#dolls">月卡玩偶</a><a href="#bonus-cards">加分卡</a><a href="#songs">歌曲清單</a></div></div>
-                <div class="nav-group"><button type="button">分析<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="nav-drop"><a href="#analysis">榜線分析</a><a href="#player-lookup">玩家查詢</a><a href="#distribution">活動分布</a></div></div>
+                <div class="nav-group"><button type="button">分析<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="nav-drop"><a href="#analysis">榜線分析</a><a href="#player-lookup">玩家查詢</a><a href="#distribution">活動分布</a><a href="#shop-analyzer">儲值分析</a></div></div>
                 <div class="nav-group"><button type="button">計算<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="nav-drop"><a href="#calculator">推隊倍率</a><a href="#event-calc">加成／活動P</a><a href="#gacha-calc">抽卡天井</a><a href="#rank-match">排位賽</a><a href="#run-studio">跑榜工作室</a><a href="#mysekai">MySekai</a><a href="#ep-calc">EP 計算器</a></div></div>
                 <div class="nav-group"><button type="button">資源<svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="nav-drop"><a href="#official">官方資源</a><a href="#info">資訊站</a><a href="#community">討論社群</a><a href="#wiki">Wiki 百科</a><a href="#tools">實用工具</a><a href="#tutorial">教學大全</a></div></div>
             </div>
@@ -36,7 +36,7 @@
         <div class="nav-sheet" id="navSheet" role="dialog" aria-modal="true" aria-label="全站選單">
             <div class="sheet-grab"></div>
             <div class="ns-label">資料</div><div class="ns-links"><a href="#calendar">活動日曆</a><a href="#event-tracking">活動排名</a><a href="#gacha">卡池列表</a><a href="#cardlib">卡庫</a><a href="#dolls">月卡玩偶</a><a href="#bonus-cards">加分卡</a><a href="#songs">歌曲清單</a></div>
-            <div class="ns-label">分析</div><div class="ns-links"><a href="#analysis">榜線分析</a><a href="#player-lookup">玩家查詢</a><a href="#distribution">活動分布</a></div>
+            <div class="ns-label">分析</div><div class="ns-links"><a href="#analysis">榜線分析</a><a href="#player-lookup">玩家查詢</a><a href="#distribution">活動分布</a><a href="#shop-analyzer">儲值分析</a></div>
             <div class="ns-label">計算</div><div class="ns-links"><a href="#calculator">推隊倍率</a><a href="#event-calc">加成／活動P</a><a href="#gacha-calc">抽卡天井</a><a href="#rank-match">排位賽</a><a href="#run-studio">跑榜工作室</a><a href="#mysekai">MySekai</a><a href="#ep-calc">EP 計算器</a></div>
             <div class="ns-label">資源</div><div class="ns-links"><a href="#official">官方資源</a><a href="#info">資訊站</a><a href="#community">討論社群</a><a href="#wiki">Wiki 百科</a><a href="#tools">實用工具</a><a href="#tutorial">教學大全</a></div>
         </div>
@@ -95,6 +95,7 @@
                     <option value="#analysis">榜線分析</option>
                     <option value="#player-lookup">玩家查詢</option>
                     <option value="#distribution">活動分布甘特圖</option>
+                    <option value="#shop-analyzer">儲值商品分析</option>
                 </optgroup>
                 <optgroup label="計算工具">
                     <option value="#calculator">推隊倍率計算器</option>
@@ -1199,6 +1200,19 @@
             <div class="note">協力場均分數 ≈ ⌊(base ＋ FEVER×0.5 ＋ Σ技能窗×U/100) × 綜合力 × 4⌋,U=自己＋隊友4人÷5。<strong>隊友欄留空則以「自己」值估算</strong>;按「最佳化」會把最佳隊的隊長技能填入「自己」、隊友清空。活動P用協力式(自分÷17000＋隊友項)×(加成+100)/100×火倍率。均為估算。</div>
         </section>
 
+        <!-- 二十四、儲值商品分析 -->
+        <section id="shop-analyzer">
+            <h2>二十四、儲值商品分析 <span class="en">Shop Analyzer</span></h2>
+            <div class="note">台服商城全商品(水晶包、優惠組合、通行證、裝扮兌換)的內容物、台幣定價與 CP 值一次看;「智慧推薦」依你的預算或目標抽數,在限購規則內算出<strong>最省錢的購買組合</strong>。資料取自台服主資料庫,每日自動更新;部分商品(七彩通行證等)資料庫僅有佔位價,可點「自填售價」讓分析納入。</div>
+            <div class="shop-tabbar" id="shopTabs">
+                <button type="button" class="active" data-v="ov" onclick="ShopAnalyzer.go('ov')">商品總覽</button>
+                <button type="button" data-v="cp" onclick="ShopAnalyzer.go('cp')">CP 值排行</button>
+                <button type="button" data-v="reco" onclick="ShopAnalyzer.go('reco')">智慧推薦</button>
+                <button type="button" data-v="pass" onclick="ShopAnalyzer.go('pass')">月卡·通行證</button>
+            </div>
+            <div id="shopBody"><div class="note">捲動到此區塊會自動載入商品資料…</div></div>
+        </section>
+
         <section id="mini-studio">
             <div id="msCard" class="ms-card"><div class="ms-msg">載入當期跑榜…</div></div>
         </section>
@@ -1220,14 +1234,14 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=2cfbdfcd42"></script>
+    <script src="js/core.js?v=9183de3611"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
         try{
             var mode = new URLSearchParams(location.search).get('embed');
-            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha' && mode !== 'gachasim') return;
-            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : mode === 'gachasim' ? 'embed-gachasim' : 'embed-calc');
+            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha' && mode !== 'gachasim' && mode !== 'shop') return;
+            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : mode === 'gachasim' ? 'embed-gachasim' : mode === 'shop' ? 'embed-shop' : 'embed-calc');
             if(mode === 'calc'){
                 var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
                 var bar = document.createElement('div');
@@ -1256,6 +1270,10 @@
             if(mode === 'gachasim'){
                 var runS = function(){ try{ if(typeof GachaSim !== 'undefined') GachaSim.run(); }catch(e){} };
                 if(document.readyState === 'complete') runS(); else window.addEventListener('load', runS);
+            }
+            if(mode === 'shop'){
+                var runShop = function(){ try{ if(typeof ShopAnalyzer !== 'undefined') ShopAnalyzer.ensure(); }catch(e){} };
+                if(document.readyState === 'complete') runShop(); else window.addEventListener('load', runShop);
             }
             var last = 0;
             function postH(){

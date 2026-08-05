@@ -1,0 +1,42 @@
+name: 儲值商品資料更新
+
+# 商城商品(水晶包/禮包/通行證)隨活動檔期上下架,每天重建一次 data/billing.js。
+# build 腳本內容沒變就不寫檔,所以多數日子這裡是空跑、不會產生提交。
+on:
+  schedule:
+    - cron: '17 19 * * *'   # 每日 19:17 UTC ≈ 台北 03:17
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: billing-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 重建 data/billing.js
+        run: python3 tools/build-billing.py
+
+      - name: 提交變更
+        run: |
+          if [ -z "$(git status --porcelain data/billing.js)" ]; then
+            echo "沒有新資料，不提交"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/billing.js
+          git commit -m "儲值商品資料 $(date -u '+%Y-%m-%d') [skip ci]"
+          # 與榜線快照同款:落後就先 rebase 再推
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
