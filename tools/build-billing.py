@@ -25,14 +25,94 @@ import time
 import urllib.request
 
 DB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
+# 台服官方網頁商店(GamePay/Ariel,MyCard·信用卡通路)的公開商品 API,無需登入
+WEB_API = 'https://gamepay.ariel.com.tw/web/payment/app/5245/country/TW/all_goods_detail'
+WEB_SHOP_URL = 'https://gamepay.ariel.com.tw/topup/5245'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'billing.js'
+
+# 官網通行證「兌換券」→ 對應遊戲內商品 id(內容照抄再加上券附贈的水晶)
+VOUCHER_MAP = {
+    'mk.mycard.card': 67,      # 七彩通行證～BASIC～
+    'mk.mycard.card2': 69,     # 七彩通行證～PRECIOUS～
+    'mk.mycard.sekai': 400000,  # 世界通行證
+    'mk.mycard.bpset1': 24,    # 高階任務通行證
+    'mk.mycard.bpset0': 400004,  # 通行證組合包
+    'mk.mycard.bpset2': 1060,  # 高階任務通行證(進階版)
+}
+# GamePay limit_dimension → 重置週期(實測頁面文案:0=總量、1/4=每月、2=每週)
+WEB_DIM = {0: 'none', 1: 'monthly', 2: 'weekly', 4: 'monthly'}
 
 
 def get(name):
     req = urllib.request.Request(f'{DB}/{name}', headers={'Accept-Encoding': 'identity'})
     with urllib.request.urlopen(req) as r:
         return json.load(r)
+
+
+def fetch_web(rows_by_id):
+    """抓官網商店目錄,轉成與 master 商品同構的 rows(src='web')。"""
+    req = urllib.request.Request(
+        WEB_API, data=b'{}', method='POST',
+        headers={'content-type': 'application/json', 'user-agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        j = json.load(r)
+    if j.get('code') != 0:
+        raise RuntimeError(f'gamepay code={j.get("code")}')
+    out = []
+    goods = (j['data'].get('activity') or []) + (j['data'].get('normal') or [])
+    for g in goods:
+        pid = g['product_id']
+        price = round(g['price'] / 100)   # API 價格單位是「分」
+        desc = re.sub(r'<[^>]+>', '\n', g.get('goods_desc') or '')
+        lines = [l.strip().strip('*').strip() for l in desc.split('\n')]
+        lines = [l for l in lines if l]
+        paid = free = pulls = 0
+        contents = []
+        for l in lines:
+            m = re.search(r'(付費水晶|水晶\(付費\)|免費水晶|水晶\(免費\)|\[僅限官網\]免費水晶|\[僅限官網\]附贈免費水晶)\s*[x×]?\s*([\d,]+)', l)
+            if m:
+                q = int(m.group(2).replace(',', ''))
+                if '免費' in m.group(1):
+                    free += q
+                else:
+                    paid += q
+                continue
+            m2 = re.search(r'^(.+?)\s*[x×]\s*([\d,]+)', l)
+            if m2:
+                name, q = m2.group(1).strip(), int(m2.group(2).replace(',', ''))
+                if '票券' in name and '10連' in name:
+                    pulls += q * 10
+                    contents.append(['ticket', q, name])
+                elif '兌換券' in name or '交換券' in name:
+                    contents.append(['web_voucher', q, name])
+                else:
+                    contents.append(['web_item', q, name])
+            elif l and '獲得後' not in l and '可在遊戲' not in l:
+                contents.append(['web_item', 1, l])
+        t = 'jewel' if 'crystal' in pid else 'value_set'
+        ref = VOUCHER_MAP.get(pid)
+        if ref and rows_by_id.get(ref):
+            base = rows_by_id[ref]
+            t = base['t']
+            paid += base['paid']
+            free += base['free']
+            pulls += base['pulls']
+            contents = base['c'] + base['bc'] + [c for c in contents if c[0] == 'web_voucher']
+        lim_v = g.get('purchase_limit') or 0
+        lim = ({'t': 'count', 'v': lim_v, 'r': WEB_DIM.get(g.get('limit_dimension'), 'none'), 'rv': None}
+               if lim_v > 0 else {'t': 'unlimited', 'v': None, 'r': 'none', 'rv': None})
+        end = g.get('end_time') or 0
+        e = end * 1000 if 0 < end < 4000000000 else None
+        out.append({
+            'id': pid, 'seq': 90000, 't': t, 'n': g['product_name'],
+            'd': ' / '.join(lines), 'lab': '', 'tab': '官網商店', 'tabP': '官網商店',
+            'price': price, 'pk': True, 'exch': None,
+            'paid': paid, 'free': free, 'pulls': pulls,
+            'c': contents, 'bc': [], 'lim': lim, 's': None, 'e': e,
+            'src': 'web', 'ref': ref,
+        })
+    return out
 
 
 def main():
@@ -162,6 +242,23 @@ def main():
             's': i.get('startAt'), 'e': i.get('endAt'),
         }
         rows.append(row)
+
+    # 官網商店(GamePay):抓失敗就沿用上一版的官網資料,別讓整包資料開天窗
+    rows_by_id = {r['id']: r for r in rows}
+    web_rows = None
+    try:
+        web_rows = fetch_web(rows_by_id)
+        print(f'官網商店:{len(web_rows)} 項')
+    except Exception as ex:
+        print(f'官網商店抓取失敗({ex}),沿用舊資料')
+        if OUT.exists():
+            m = re.search(r'window\.BILLING_DATA\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
+            if m:
+                try:
+                    web_rows = [r for r in json.loads(m.group(1))['items'] if r.get('src') == 'web']
+                except Exception:
+                    web_rows = None
+    rows.extend(web_rows or [])
 
     # 七彩通行證:每日無償水晶在 colorful_pass(_v2) resource box(id=tier/pass id)
     daily = {}

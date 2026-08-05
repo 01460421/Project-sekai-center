@@ -14,7 +14,7 @@
     try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
     var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
-    <link rel="stylesheet" href="css/core.css?v=a6527dabd4">
+    <link rel="stylesheet" href="css/core.css?v=12a65f0603">
 </head>
 <body>
     <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='shop')document.body.classList.add('embed-shop');}catch(e){}</script>
@@ -1203,7 +1203,7 @@
         <!-- 二十四、儲值商品分析 -->
         <section id="shop-analyzer">
             <h2>二十四、儲值商品分析 <span class="en">Shop Analyzer</span></h2>
-            <div class="note">台服商城全商品(水晶包、優惠組合、通行證、裝扮兌換)的內容物、台幣定價與 CP 值一次看;「智慧推薦」依你的預算或目標抽數,在限購規則內算出<strong>最省錢的購買組合</strong>。資料取自台服主資料庫,每日自動更新;部分商品(七彩通行證等)資料庫僅有佔位價,可點「自填售價」讓分析納入。</div>
+            <div class="note">台服商城全商品(水晶包、優惠組合、通行證、裝扮兌換)+<strong>官方網頁商店(GamePay)</strong>的內容物、台幣定價與 CP 值一次看,可依素材(心願碎片、招募票券…)、通路、付款方式智慧篩選;「智慧推薦」依你的預算或目標抽數,在限購規則內算出<strong>最省錢的購買組合</strong>,並附官網 vs App 比價。資料每日自動更新;少數 App 商品資料庫僅有佔位價,可點「自填售價」讓分析納入。</div>
             <div class="shop-tabbar" id="shopTabs">
                 <button type="button" class="active" data-v="ov" onclick="ShopAnalyzer.go('ov')">商品總覽</button>
                 <button type="button" data-v="cp" onclick="ShopAnalyzer.go('cp')">CP 值排行</button>
@@ -1234,7 +1234,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=9183de3611"></script>
+    <script src="js/core.js?v=333e0c7884"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
