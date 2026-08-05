@@ -120,13 +120,20 @@ input::placeholder{color:var(--text-3)}
 /* 圖表容器整塊關閉選取與長按選單：長按跳出的複製／查詢選單
    來自圖表周圍的文字（起迄、縱軸說明），不只 SVG 本身。 */
 *:has(> svg[data-chart]),*:has(> svg[data-chart]) *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
+/* 側欄項目變多後會超出畫面，給它自己的捲軸；細一點免得太搶眼 */
+.side-nav{scrollbar-width:thin;scrollbar-color:var(--border-2) transparent}
+.side-nav::-webkit-scrollbar{width:8px}
+.side-nav::-webkit-scrollbar-track{background:transparent}
+.side-nav::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:999px;border:2px solid transparent;background-clip:content-box}
+.side-nav::-webkit-scrollbar-thumb:hover{background:var(--text-3);border:2px solid transparent;background-clip:content-box}
 </style>
 </helmet>
 
 <div style="position:relative;z-index:1;min-height:100dvh;display:flex;align-items:stretch;font:400 14.5px/1.7 'Huninn','M PLUS Rounded 1c','PingFang TC','Microsoft JhengHei',sans-serif;color:var(--text)">
 
 <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
-<aside style="flex:0 0 238px;width:238px;position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:20px 14px;border-right:1px solid var(--border);background:color-mix(in oklab,var(--card) 62%,transparent);backdrop-filter:blur(20px)">
+<aside class="side-nav" style="flex:0 0 238px;width:238px;position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:20px 14px;overflow-y:auto;overscroll-behavior:contain;border-right:1px solid var(--border);background:color-mix(in oklab,var(--card) 62%,transparent);backdrop-filter:blur(20px)">
   <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 16px">
     <span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:color-mix(in oklab,var(--accent) 12%,transparent)"><img src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;object-fit:contain;display:block;filter:drop-shadow(0 1px 3px rgba(47,124,220,.35))"></span>
     <span style="font-size:15px;font-weight:800;color:var(--ink);letter-spacing:.3px"><em style="font-style:normal;font-family:'M PLUS Rounded 1c';background:var(--rainbow);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbowPan 9s linear infinite">SEKAI</em> 中心</span>
