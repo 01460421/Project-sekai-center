@@ -41,6 +41,11 @@ jobs:
           # 取樣失敗不該讓 job 失敗；真正該擋的是下一步的資料缺損檢查
           exit 0
 
+      # 順帶重建儲值商品資料(活動限時商品才能近即時上架;前端從 raw 直接吃這份)。
+      # 失敗不影響榜線快照。
+      - name: 更新儲值商品資料
+        run: python3 tools/build-billing.py || echo "儲值資料更新失敗,本輪略過"
+
       # 紀錄只增不減。提交前比對每個檔案與 HEAD 的樣本數，
       # 少了或不見了就讓整個 job 失敗，絕不把缺損推上去。
       - name: 確認沒有任何紀錄減少
@@ -76,13 +81,13 @@ jobs:
 
       - name: 提交變更
         run: |
-          if [ -z "$(git status --porcelain data/history)" ]; then
+          if [ -z "$(git status --porcelain data/history data/billing.js)" ]; then
             echo "沒有新資料，不提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/history
+          git add data/history data/billing.js
           git commit -m "榜線快照 $(date -u '+%Y-%m-%d %H:%M') UTC [skip ci]"
           # 併發或落後時先 rebase 再推，避免整條排程卡住
           for i in 1 2 3; do

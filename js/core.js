@@ -4041,23 +4041,61 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         const ShopAnalyzer = {
             _loaded: false, _loading: false,
             view: 'ov',
-            F: { cat: 'all', avail: 'now', pay: 'all', src: 'all', mat: '', q: '', sort: 'cp' },
+            F: { cat: 'all', avail: 'now', pay: 'all', src: 'all', mats: [], q: '', sort: 'cp' },
             shown: 60,
+            cart: {}, roleId: '',   // 官網選購清單:商品id→數量;遊戲ID(官網 ?role_id= 可預填)
             incTicket: true, incLimited: true, horizon30: false,
             priceOv: {}, owned: {},
             PULL: 300,   // 單抽 300 水晶
             WEB_SHOP: 'https://gamepay.ariel.com.tw/topup/5245',   // 台服官方網頁商店(MyCard/信用卡)
+            // 活動限定商品要即時:CI 每 30~90 分鐘重建 billing.js 推上 repo(未必觸發部署),
+            // 前端比照榜線 history 直接吃 raw.githubusercontent 最新版,蓋過部署內建的靜態檔
+            DATA_RAW: 'https://raw.githubusercontent.com/01460421/Project-sekai-center/main/data/billing.js',
 
             ensure() {
                 if (this._loaded || this._loading) return;
                 this._loading = true;
                 try { this.priceOv = JSON.parse(localStorage.getItem('sekai-shop-price-ov') || '{}') || {}; } catch (e) { this.priceOv = {}; }
                 try { this.owned = JSON.parse(localStorage.getItem('sekai-shop-owned') || '{}') || {}; } catch (e) { this.owned = {}; }
+                try { this.cart = JSON.parse(localStorage.getItem('sekai-shop-webcart') || '{}') || {}; } catch (e) { this.cart = {}; }
+                try { this.roleId = localStorage.getItem('sekai-shop-roleid') || localStorage.getItem('sekai-app-pid') || ''; } catch (e) { this.roleId = ''; }
                 const s = document.createElement('script');
                 s.src = 'data/billing.js?v=' + Math.floor(Date.now() / 43200000);   // 12h bucket,配每日資料刷新
-                s.onload = () => { this._loaded = true; this._loading = false; this.render(); };
+                s.onload = () => {
+                    this._loaded = true; this._loading = false; this.render();
+                    this.refresh(false);   // 背景撈 repo 最新版(活動限定商品即時上架)
+                    if (!this._tick) this._tick = setInterval(() => this.refresh(false), 1800000);
+                };
                 s.onerror = () => { this._loading = false; const el = document.getElementById('shopBody'); if (el) el.innerHTML = '<div class="note">儲值商品資料載入失敗,請重新整理再試。</div>'; };
                 document.head.appendChild(s);
+            },
+            // 從 repo raw 撈最新 billing.js(30 分鐘 IDB 快取;手動更新則直接打)。
+            // CI 快照工作流每 30~90 分鐘重建一次,活動/限時商品不用等每日部署。
+            async refresh(manual) {
+                try {
+                    const key = 'u2:billing-live';
+                    let txt = manual ? null : await IDBCache._get(key, 1800000).catch(() => null);
+                    if (!txt) {
+                        const res = await fetch(this.DATA_RAW + '?t=' + Math.floor(Date.now() / 300000), { cache: 'no-store' });
+                        if (!res.ok) throw new Error('http ' + res.status);
+                        txt = await res.text();
+                        if (txt && txt.length > 100000) { try { IDBCache._set(key, txt); } catch (e) {} }
+                    }
+                    const m = String(txt).match(/window\.BILLING_DATA=(\{[\s\S]*\});/);
+                    if (!m) return;
+                    const d = JSON.parse(m[1]);
+                    if (!d || !Array.isArray(d.items) || d.items.length < 500) return;   // 防截斷壞資料
+                    const cur = this.D();
+                    if (cur && (cur.builtAt || 0) >= (d.builtAt || 0)) { if (manual) this._note('資料已是最新'); return; }
+                    window.BILLING_DATA = d;
+                    this._mats = null;   // 素材選單快取跟著換
+                    this.render();
+                    if (manual) this._note('已更新至最新資料');
+                } catch (e) { if (manual) this._note('更新失敗,稍後再試'); }
+            },
+            _note(msg) {
+                const el = document.getElementById('saDataMsg');
+                if (el) { el.textContent = msg; setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 4000); }
             },
             D() { return (typeof BILLING_DATA !== 'undefined') ? BILLING_DATA : null; },
 
@@ -4141,15 +4179,64 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const el = document.getElementById('shopBody');
                 if (!el) return;
                 if (!this.D()) { el.innerHTML = '<div class="note">載入商品資料…</div>'; return; }
-                if (this.view === 'ov') { el.innerHTML = '<div id="shopChips"></div><div id="shopList"></div>'; this.renderChips(); this.renderList(); }
-                else if (this.view === 'cp') this.renderCP(el);
-                else if (this.view === 'reco') this.renderReco(el);
-                else this.renderPass(el);
+                const bt = this.D().builtAt;
+                const bd = bt ? new Date(bt) : null;
+                const bar = `<div class="sa-databar">資料時間:${bd ? `${bd.getMonth() + 1}/${bd.getDate()} ${String(bd.getHours()).padStart(2, '0')}:${String(bd.getMinutes()).padStart(2, '0')}` : '—'}(限時/活動商品約每小時自動更新)<button type="button" class="sa-fill" onclick="ShopAnalyzer.refresh(true)">↻ 立即更新</button><span id="saDataMsg"></span></div><div id="saCart"></div>`;
+                if (this.view === 'ov') { el.innerHTML = bar + '<div id="shopChips"></div><div id="shopList"></div>'; this.renderChips(); this.renderList(); }
+                else {
+                    const box = document.createElement('div');
+                    if (this.view === 'cp') this.renderCP(box);
+                    else if (this.view === 'reco') { el.innerHTML = bar; this.renderCart(); const b2 = document.createElement('div'); el.appendChild(b2); this.renderReco(b2); return; }
+                    else this.renderPass(box);
+                    el.innerHTML = bar; el.appendChild(box);
+                }
+                this.renderCart();
+            },
+            // ---- 官網選購清單:選好品項+遊戲ID,直開官網結帳頁(role_id 會自動代入官網的遊戲ID欄) ----
+            cartAdd(id, qty) {
+                const r = this.D().items.find(x => String(x.id) === String(id)); if (!r) return;
+                const cap = (r.lim && r.lim.t === 'count' && r.lim.v > 0) ? r.lim.v : 99;
+                this.cart[id] = Math.min((this.cart[id] || 0) + (qty || 1), cap);
+                this._saveCart(); this.renderCart(); this._note('已加入官網清單');
+            },
+            cartDel(id) { delete this.cart[id]; this._saveCart(); this.renderCart(); },
+            cartClear() { this.cart = {}; this._saveCart(); this.renderCart(); },
+            _saveCart() { try { localStorage.setItem('sekai-shop-webcart', JSON.stringify(this.cart)); } catch (e) {} },
+            setRole(v) {
+                this.roleId = String(v || '').trim();
+                try { localStorage.setItem('sekai-shop-roleid', this.roleId); } catch (e) {}
+                const a = document.getElementById('saCartGo'); if (a) a.href = this.checkoutUrl();
+            },
+            checkoutUrl() { return this.WEB_SHOP + (this.roleId ? '?role_id=' + encodeURIComponent(this.roleId) : ''); },
+            copyRole() {
+                if (!this.roleId) { this._note('請先輸入遊戲 ID'); return; }
+                try { navigator.clipboard.writeText(this.roleId).then(() => this._note('已複製遊戲 ID')); } catch (e) { this._note('複製失敗'); }
+            },
+            cartAddPlan() {
+                (this._planWeb || []).forEach(x => this.cartAdd(x[0], x[1]));
+            },
+            renderCart() {
+                const el = document.getElementById('saCart'); if (!el) return;
+                const ids = Object.keys(this.cart);
+                const rows = ids.map(id => ({ r: this.D().items.find(x => String(x.id) === String(id)), n: this.cart[id] })).filter(x => x.r);
+                let cost = 0, jew = 0;
+                rows.forEach(x => { cost += (x.r.price || 0) * x.n; jew += this.totalJ(x.r) * x.n; });
+                el.innerHTML = `<div class="sa-cartbar${rows.length ? ' has' : ''}">
+                    <span class="sa-cart-title">🛒 官網選購清單${rows.length ? `(${rows.length} 項)` : ''}</span>
+                    ${rows.map(x => `<span class="sa-cartitem">${x.r.n}${x.n > 1 ? '×' + x.n : ''}<button type="button" onclick="ShopAnalyzer.cartDel('${x.r.id}')" aria-label="移除">✕</button></span>`).join('')}
+                    ${rows.length ? `<span class="sa-cart-sum">合計 NT$${fmtNum(cost)}・${fmtNum(jew)} 石</span><button type="button" class="sa-fill" onclick="ShopAnalyzer.cartClear()">清空</button>` : '<span style="font-size:11px;color:var(--text-light);">在官網商品卡點「＋清單」,選好後帶遊戲 ID 直達官網結帳</span>'}
+                    <span class="sa-cart-role">遊戲ID <input type="text" inputmode="numeric" placeholder="輸入遊戲 ID" value="${this.roleId.replace(/"/g, '&quot;')}" oninput="ShopAnalyzer.setRole(this.value)">
+                    <button type="button" class="sa-fill" onclick="ShopAnalyzer.copyRole()">複製</button></span>
+                    <a id="saCartGo" class="sa-cart-go" href="${this.checkoutUrl()}" target="_blank" rel="noopener">前往官網結帳${this.roleId ? '(已代入ID)' : ''} ↗</a>
+                    <span class="sa-cart-note">官網目前不支援帶入商品,到站後請照清單勾選;付款全程於官方網站完成,本站不經手任何金流。</span>
+                </div>`;
             },
 
             // ---- 一:商品總覽(智慧篩選) ----
             setF(k, v) { this.F[k] = v; this.shown = 60; this.renderChips(); this.renderList(); },
             setQ(v) { this.F.q = v.trim(); this.shown = 60; this.renderList(); },
+            addMat(v) { if (this.F.mats.indexOf(v) < 0) this.F.mats.push(v); this.shown = 60; this.renderChips(); this.renderList(); },
+            delMat(v) { this.F.mats = this.F.mats.filter(x => x !== v); this.shown = 60; this.renderChips(); this.renderList(); },
             // 素材下拉選單:掃全部商品的內容物名稱,依出現次數排序(玩家想找「含心願碎片的商品」用)
             matOptions() {
                 if (this._mats) return this._mats;
@@ -4166,8 +4253,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const F = this.F;
                 const hasWeb = this.D().items.some(r => r.src === 'web');
                 const chip = (k, v, txt) => `<button type="button" class="sa-chip${F[k] === v ? ' on' : ''}" onclick="ShopAnalyzer.setF('${k}','${v}')">${txt}</button>`;
+                const matName = v => v === '_paid' ? '有償水晶' : v === '_free' ? '無償水晶' : v === '_ticket' ? '招募票券' : v;
                 const matOpts = [['_paid', '有償水晶'], ['_free', '無償水晶'], ['_ticket', '招募票券']].concat(this.matOptions())
-                    .map(m => `<option value="${String(m[0]).replace(/"/g, '&quot;')}"${F.mat === m[0] ? ' selected' : ''}>${m[0][0] === '_' ? m[1] : m[0] + '(' + m[1] + ')'}</option>`).join('');
+                    .filter(m => F.mats.indexOf(m[0]) < 0)
+                    .map(m => `<option value="${String(m[0]).replace(/"/g, '&quot;')}">${m[0][0] === '_' ? m[1] : m[0] + '(' + m[1] + ')'}</option>`).join('');
+                const matChips = F.mats.map(v => `<button type="button" class="sa-chip on" onclick="ShopAnalyzer.delMat(this.dataset.m)" data-m="${String(v).replace(/"/g, '&quot;')}" title="點擊移除">${matName(v)} ✕</button>`).join('');
                 el.innerHTML = `
                     <div class="sa-chiprow">${chip('cat', 'all', '全部')}${chip('cat', 'jewel', '水晶包')}${chip('cat', 'set', '優惠組合')}${chip('cat', 'pass', '通行證')}${chip('cat', 'costume', '裝扮')}
                         ${hasWeb ? `<span class="sa-sep"></span>${chip('src', 'all', '全部通路')}${chip('src', 'app', 'App 商店')}${chip('src', 'web', '官網商店')}` : ''}</div>
@@ -4175,9 +4265,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <span class="sa-sep"></span>${chip('pay', 'all', '不限付款')}${chip('pay', 'money', '台幣')}${chip('pay', 'exch', '有償水晶兌換')}</div>
                     <div class="sa-chiprow">
                         <input type="text" class="sa-q" placeholder="搜尋商品名或內容物(如:心願碎片)…" value="${F.q.replace(/"/g, '&quot;')}" oninput="ShopAnalyzer.setQ(this.value)">
-                        <select class="sa-sort" onchange="ShopAnalyzer.setF('mat',this.value)" title="只看含有指定素材的商品">
-                            <option value="">含有素材：不限</option>${matOpts}
+                        <select class="sa-sort" onchange="if(this.value)ShopAnalyzer.addMat(this.value)" title="可多選:挑出含這些素材的商品(符合任一即列出)">
+                            <option value="">＋含有素材(可多選)…</option>${matOpts}
                         </select>
+                        ${matChips}
                         <select class="sa-sort" onchange="ShopAnalyzer.setF('sort',this.value)">
                             <option value="cp"${F.sort === 'cp' ? ' selected' : ''}>CP 值高→低</option>
                             <option value="priceAsc"${F.sort === 'priceAsc' ? ' selected' : ''}>價格低→高</option>
@@ -4199,11 +4290,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     if (F.avail === 'ended' && !this.ended(r)) return false;
                     if (F.pay === 'money' && r.exch) return false;
                     if (F.pay === 'exch' && !r.exch) return false;
-                    if (F.mat) {
-                        if (F.mat === '_paid') { if (!r.paid) return false; }
-                        else if (F.mat === '_free') { if (!(r.free || this.passJ(r))) return false; }
-                        else if (F.mat === '_ticket') { if (!r.pulls) return false; }
-                        else if (!(r.c || []).concat(r.bc || []).some(c => c[2] === F.mat)) return false;
+                    if (F.mats.length) {
+                        const hit = F.mats.some(m => {
+                            if (m === '_paid') return r.paid > 0;
+                            if (m === '_free') return (r.free || this.passJ(r)) > 0;
+                            if (m === '_ticket') return r.pulls > 0;
+                            return (r.c || []).concat(r.bc || []).some(c => c[2] === m);
+                        });
+                        if (!hit) return false;
                     }
                     if (q && !this.blob(r).includes(q)) return false;
                     return true;
@@ -4244,7 +4338,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     priceHtml = `<span style="color:var(--text-light);">價格未公布</span> <button type="button" class="sa-fill" onclick="ShopAnalyzer.fillPrice('${r.id}')">自填售價</button>`;
                 }
                 const onceChk = this.onceOnly(r) && !r.exch ? `<label class="sa-owned"><input type="checkbox"${this.owned[r.id] ? ' checked' : ''} onchange="ShopAnalyzer.toggleOwned('${r.id}',this.checked)">已買過</label>` : '';
-                const webLink = r.src === 'web' ? `<a class="sa-weblink" href="${this.WEB_SHOP}" target="_blank" rel="noopener">官網儲值 ↗</a>` : '';
+                const webLink = r.src === 'web' ? `<button type="button" class="sa-fill" onclick="ShopAnalyzer.cartAdd('${r.id}')">＋清單</button><a class="sa-weblink" href="${this.WEB_SHOP}" target="_blank" rel="noopener">官網 ↗</a>` : '';
                 // 水晶/票券一行 + 附贈素材逐項列出(玩家要能一眼看到有哪些道具)
                 const crys = [];
                 if (r.paid) crys.push('有償水晶 ' + fmtNum(r.paid));
@@ -4514,10 +4608,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div><em>平均成本</em><strong>${(gotJ / cost).toFixed(2)}</strong> 石/元</div>
                     <div><em>比全買常駐大包省</em><strong>${save > 0 ? 'NT$' + fmtNum(save) + '(' + savePct + '%)' : '—'}</strong></div>
                 </div>`;
+                this._planWeb = rows.filter(x => x.c.r.src === 'web').map(x => [x.c.r.id, x.n]);
+                const webBtn = this._planWeb.length ? `<button type="button" class="sa-more" style="margin-top:8px;" onclick="ShopAnalyzer.cartAddPlan()">🛒 把方案中的 ${this._planWeb.length} 項官網商品加入選購清單</button>` : '';
                 out.innerHTML = `${ctx.mode === 'budget'
                     ? `<div class="note">預算 NT$${fmtNum(ctx.budget)} 內的最大水晶方案(花 NT$${fmtNum(cost)},剩 NT$${fmtNum(ctx.budget - cost)})。</div>`
                     : `<div class="note">目標 ${fmtNum(ctx.targetJ)} 石${ctx.held ? `(已扣除持有 ${fmtNum(ctx.held)})` : ''}${res.reached ? '' : ' — <strong style="color:#e05667;">限購上限內湊不滿,以下是可達的最大方案</strong>'}。</div>`}
-                    ${stats}${table}${this.analysis(rows, { paid, free, tk, gotJ, cost, base, save, savePct }, ctx)}`;
+                    ${stats}${table}${webBtn}${this.analysis(rows, { paid, free, tk, gotJ, cost, base, save, savePct }, ctx)}`;
             },
             analysis(rows, m, ctx) {
                 const b = [];
