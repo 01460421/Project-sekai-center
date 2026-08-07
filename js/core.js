@@ -4692,10 +4692,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             // 排序永遠保持在真正下一帶譜面「後面」,如 34.9++ 顯示 35.00 但排在 35.0 之後)
             fmt: 'plus',
             PLUS_ADD: [0, 0.05, 0.09999999],
-            cval(c) { return this.fmt === 'num' ? c.c + this.PLUS_ADD[c.p || 0] : c.c; },
+            // 「+」一律計入運算(單一真相),兩種模式只差在「怎麼寫」——符號模式沿用 34.9+ 寫法,
+            // 且 FC 減值後仍保留符號(34.9+ 的 FC = 33.9+),不會把 + 吃掉
+            cval(c) { return c.c + this.PLUS_ADD[c.p || 0]; },
             cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(2) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
-            vTxt(v) { return this.fmt === 'num' ? v.toFixed(2) : v.toFixed(1); },
-            bTxt(v) { return this.fmt === 'num' ? v.toFixed(3) : v.toFixed(2); },
+            vTxt(v, c) {
+                if (this.fmt === 'num') return v.toFixed(2);
+                const p = (c && c.p) || 0;
+                return (v - this.PLUS_ADD[p]).toFixed(1) + '+'.repeat(p);
+            },
+            bTxt(v) { return v.toFixed(3); },
             setFmt(v) {
                 this.fmt = v === 'num' ? 'num' : 'plus';
                 try { localStorage.setItem('sekai-b30-fmt', this.fmt); } catch (e) {}
@@ -4769,6 +4775,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                 <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
                                 <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
                             </select></div>
+                            <div class="sa-chiprow" style="margin-top:8px;">
+                                <button type="button" class="sa-chip" onclick="B30Maker.exportJson()">匯出成績 JSON</button>
+                                <button type="button" class="sa-chip" onclick="document.getElementById('b30File').dataset.mode='merge';document.getElementById('b30File').click()">匯入(合併)</button>
+                                <button type="button" class="sa-chip" onclick="document.getElementById('b30File').dataset.mode='replace';document.getElementById('b30File').click()">匯入(覆蓋)</button>
+                                <input type="file" id="b30File" accept="application/json,.json" style="display:none" onchange="B30Maker.importJson(this.files[0], this.dataset.mode);this.value=''">
+                            </div>
                             <button type="button" onclick="B30Maker.generate()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:var(--grad-cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">產生 B30 圖片 ▶</button>
                             <div id="b30GenMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;"></div>
                         </div>
@@ -4820,7 +4832,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             rowHtml(c) {
                 const k = this.key(c), m = this.marks[k] | 0;
                 return `<button type="button" class="b30-row st${m}" id="b30r_${k}" onclick="B30Maker.cycle('${k}')">
-                    <span class="b30-const">${this.cTxt(c)}</span>
+                    <span class="b30-const${c.e ? ' est' : ''}"${c.e ? ' title="難易度表未收錄(日服未實裝),以遊戲內等級+0.5 推估"' : ''}>${this.cTxt(c)}${c.e ? '<i>推估</i>' : ''}</span>
                     <span class="b30-diff ${c.d}">${c.d === 'master' ? 'MAS' : 'APD'} ${c.lv}</span>
                     <span class="b30-title" title="${(c.tc ? c.tc + ' / ' : '') + c.t}">${this.name(c)}</span>
                     <span class="b30-st">${m === 2 ? 'AP' : m === 1 ? 'FC' : '—'}</span>
@@ -4841,6 +4853,58 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this.save(); this.renderList(); this.renderStats();
             },
             save() { try { localStorage.setItem('sekai-b30-marks', JSON.stringify(this.marks)); } catch (e) {} },
+
+            // ---- 換裝置:成績匯出成 JSON 檔 / 從檔案匯入 ----
+            // marks 的 key 是「難度首字母+musicId」(m131/a388),與曲名譯名無關,跨版本都對得上
+            exportJson() {
+                const data = {
+                    app: 'sekai-b30', ver: 1, exportedAt: new Date().toISOString(),
+                    pid: this.pid, name: this.custName, fmt: this.fmt, zh: this.zh,
+                    counts: { ap: Object.values(this.marks).filter(v => v === 2).length, fc: Object.values(this.marks).filter(v => v === 1).length },
+                    marks: this.marks,
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `b30_成績_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+                this._b30note(`已匯出 ${Object.keys(this.marks).length} 筆成績`);
+            },
+            importJson(file, mode) {
+                if (!file) return;
+                const fr = new FileReader();
+                fr.onload = () => {
+                    try {
+                        const d = JSON.parse(fr.result);
+                        const mk = d && d.marks;
+                        if (!mk || typeof mk !== 'object') throw new Error('格式不符');
+                        const clean = {};
+                        Object.keys(mk).forEach(k => { const v = mk[k] | 0; if (/^[ma]\d+$/.test(k) && (v === 1 || v === 2)) clean[k] = v; });
+                        const n = Object.keys(clean).length;
+                        if (!n) throw new Error('沒有可用的成績');
+                        if (mode === 'merge') {
+                            // 合併時保留較好的成績(AP > FC)
+                            Object.keys(clean).forEach(k => { if ((this.marks[k] | 0) < clean[k]) this.marks[k] = clean[k]; });
+                        } else {
+                            if (Object.keys(this.marks).length && !confirm(`覆蓋現有 ${Object.keys(this.marks).length} 筆成績,改用檔案中的 ${n} 筆?`)) return;
+                            this.marks = clean;
+                        }
+                        if (d.pid) { this.pid = String(d.pid); const el = document.getElementById('b30Pid'); if (el) el.value = this.pid; }
+                        if (d.name) { this.custName = String(d.name); const el = document.getElementById('b30Name'); if (el) el.value = this.custName; try { localStorage.setItem('sekai-b30-name', this.custName); } catch (e) {} }
+                        if (d.fmt) this.fmt = d.fmt === 'num' ? 'num' : 'plus';
+                        this.save(); this.renderStats(); this.renderList();
+                        this._b30note(`已${mode === 'merge' ? '合併' : '匯入'} ${n} 筆成績`);
+                    } catch (e) {
+                        this._b30note('匯入失敗:' + (e && e.message || e));
+                    }
+                };
+                fr.readAsText(file);
+            },
+            _b30note(msg) {
+                const el = document.getElementById('b30GenMsg');
+                if (el) { el.textContent = msg; setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 5000); }
+            },
             renderStats() {
                 const el = document.getElementById('b30Stats'); if (!el) return;
                 const t = this.top30();
@@ -5087,13 +5151,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ctx.fillStyle = '#fff'; ctx.font = '800 16px ' + FB; ctx.textAlign = 'center';
                     ctx.fillText(String(c.lv), x0 + 17.5, y0 + 18.5);
                     // 定數膠囊(16..38,中心 27) → 実効值;寬 64 容納「34.9++」「34.99」
-                    const ct = this.cTxt(c);
+                    const ct = this.cTxt(c) + (c.e ? '*' : '');   // *=難易度表未收錄的推估值
                     ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 64, 22, 11); ctx.fill();
                     ctx.fillStyle = '#fff'; ctx.font = '800 ' + (ct.length >= 6 ? 14.5 : 16.5) + 'px ' + FB;
                     ctx.fillText(ct, x0 + 153, y0 + 28);
                     ctx.textAlign = 'left';
                     ctx.fillStyle = '#252e4d'; ctx.font = '800 17px ' + FB;
-                    ctx.fillText('→ ' + this.vTxt(it.v), x0 + 192, y0 + 28);
+                    ctx.fillText('→ ' + this.vTxt(it.v, c), x0 + 192, y0 + 28);
                     // 曲名(裁切,中心線 y0+58)
                     ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
                     const full = this.name(c);

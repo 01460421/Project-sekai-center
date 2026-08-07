@@ -121,9 +121,11 @@ def main():
     except Exception as ex:
         print(f'譯名抓取失敗({ex}),曲名保留日文')
 
+    # 同名曲要保留全部候選:「初音ミクの激唱」JP 有 id 131(MAS)與 388(APD)兩筆,
+    # 只留第一筆會讓 APPEND 那張永遠對不到,譜面就此消失
     by_norm = {}
     for mu in jp_musics:
-        by_norm.setdefault(norm(mu['title']), mu)
+        by_norm.setdefault(norm(mu['title']), []).append(mu)
     tc_ids = {mu['id'] for mu in tc_musics}
     lv = {}
     for d in tc_diffs:
@@ -133,11 +135,13 @@ def main():
     unmatched, jp_only = [], 0
     for dkey in ('master', 'append'):
         for title, const, plus in sheet[dkey]:
-            mu = by_norm.get(norm(title))
-            if not mu:
+            cands = by_norm.get(norm(title))
+            if not cands:
                 unmatched.append(title)
                 continue
-            if mu['id'] not in tc_ids or (mu['id'], dkey) not in lv:
+            # 同名多筆時挑「台服真的有這個難度」的那一筆
+            mu = next((m for m in cands if m['id'] in tc_ids and (m['id'], dkey) in lv), None)
+            if not mu:
                 jp_only += 1
                 continue
             row = {
@@ -150,8 +154,34 @@ def main():
             if tr and tr.strip() and tr.strip() != mu['title']:
                 row['tc'] = tr.strip()   # 社群中文譯名(顯示用;搜尋中日皆可)
             charts.append(row)
-    charts.sort(key=lambda x: (-x['c'], -x.get('p', 0)))
+
+    # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,腐食表自然不會收)
+    # → 用遊戲內等級 +0.5 當中位推估,標 e=1 讓前端顯示「推估」並可排除
+    have = {(c['id'], c['d']) for c in charts}
+    tc_by_id = {mu['id']: mu for mu in tc_musics}
+    est = []
+    for d in tc_diffs:
+        key = (d['musicId'], d['musicDifficulty'])
+        if d['musicDifficulty'] not in ('master', 'append') or key in have:
+            continue
+        mu = tc_by_id.get(d['musicId'])
+        if not mu:
+            continue
+        row = {
+            'id': mu['id'], 'd': d['musicDifficulty'], 'lv': d['playLevel'],
+            'c': round(d['playLevel'] + 0.5, 1), 'jkt': mu['assetbundleName'],
+            't': mu['title'], 'e': 1,
+        }
+        tr = zh.get(mu['id'])
+        if tr and tr.strip() and tr.strip() != mu['title']:
+            row['tc'] = tr.strip()
+        charts.append(row)
+        est.append(f"{mu['title']}({d['musicDifficulty'][:3].upper()} Lv{d['playLevel']})")
+
+    PLUS_ADD = [0, 0.05, 0.09999999]
+    charts.sort(key=lambda x: (-(x['c'] + PLUS_ADD[x.get('p', 0)]), x.get('e', 0)))
     print(f'共 {len(charts)} 譜面(台服可玩)、日服限定略過 {jp_only}、曲名比對失敗 {len(unmatched)}')
+    print(f'難易度表未收錄、以等級+0.5 推估: {len(est)} 譜面 {est}')
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
 
