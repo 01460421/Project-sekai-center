@@ -4688,9 +4688,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             ASSET: 'https://storage.sekai.best/sekai-jp-assets',
             COLOR: { master: '#BB33EE', append: '#000000' },
             // 定數「+」記號的兩種用法(使用者指定):plus=保留符號、num=數值化計算
-            // 腐食表:+ = +0.05;++ = 差 0.01 到下一帶的標注(即 +0.09,如 34.9++ → 34.99)
+            // + = +0.05;++ = +0.09999999(緊貼下一帶但嚴格小於——顯示四捨五入成下一帶值,
+            // 排序永遠保持在真正下一帶譜面「後面」,如 34.9++ 顯示 35.00 但排在 35.0 之後)
             fmt: 'plus',
-            PLUS_ADD: [0, 0.05, 0.09],
+            PLUS_ADD: [0, 0.05, 0.09999999],
             cval(c) { return this.fmt === 'num' ? c.c + this.PLUS_ADD[c.p || 0] : c.c; },
             cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(2) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
             vTxt(v) { return this.fmt === 'num' ? v.toFixed(2) : v.toFixed(1); },
@@ -4750,7 +4751,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="calc-section"><h4>B30 統計</h4><div id="b30Stats"></div>
                             <div class="calc-row" style="margin-top:8px;"><label>定數「+」格式</label><select id="b30Fmt" onchange="B30Maker.setFmt(this.value)">
                                 <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
-                                <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++=+0.09)</option>
+                                <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
                             </select></div>
                             <button type="button" onclick="B30Maker.generate()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:var(--grad-cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">產生 B30 圖片 ▶</button>
                             <div id="b30GenMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;"></div>
@@ -5032,7 +5033,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
                 ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.bTxt(this.theory())}`, CX, 210);
-                ctx.fillText(this.fmt === 'num' ? '定數+=+0.05、++=+0.09;FC=定數−1' : '実効值=AP:定數/FC:定數−1', CX, 234);
+                ctx.fillText(this.fmt === 'num' ? '定數+=+0.05、++≈+0.1(排序居次);FC=定數−1' : '実効值=AP:定數/FC:定數−1', CX, 234);
                 ctx.textAlign = 'left';
 
                 // ---- 30 張卡(遊戲配色:MAS 紫/APD 粉紫藍漸層,白圈難度標,排名角標) ----
