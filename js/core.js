@@ -2654,7 +2654,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         ];
         const EC_ATTRS = [['cool', '帥氣'], ['cute', '可愛'], ['pure', '純真'], ['happy', '快樂'], ['mysterious', '神秘']];
         const EC_RARITY = [['rarity_4', '★4'], ['rarity_birthday', '生日'], ['rarity_3', '★3'], ['rarity_2', '★2'], ['rarity_1', '★1']];
-        const EC_BOOST = { 0: 1, 1: 5, 2: 10, 3: 15, 4: 19, 5: 23, 6: 26, 7: 29, 8: 31, 9: 33, 10: 35 };
+        // 火倍率:台服 master boosts.json 的 eventPointRate(注意不是 expRate/rewardRate,
+        // 那兩個在火6~10 是 26/27/28/29/30,只有活動點數才跳到 27/29/31/33/35)
+        const EC_BOOST = { 0: 1, 1: 5, 2: 10, 3: 15, 4: 20, 5: 25, 6: 27, 7: 29, 8: 31, 9: 33, 10: 35 };
         const EC_cidName = id => { for (const g of EC_CHARS) { const f = g.list.find(x => x[0] === id); if (f) return f[1]; } return '#' + id; };
         const EC_attrName = a => { const f = EC_ATTRS.find(x => x[0] === a); return f ? f[1] : a; };
 
@@ -3469,6 +3471,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
                 const R = meta.event_rate || 100;
                 const epPerGame = Math.floor(base * R / 100 * (1 + B / 100)) * F;
+                // 給儲值分析「衝榜換算」用:火0 基準單局活動P(F 是火倍率,除掉才是基準)
+                this._lastBaseEP = Math.round(epPerGame / F);
+                try { localStorage.setItem('sekai-base-ep', String(this._lastBaseEP)); } catch (e) {}
                 // 全期預估:協力每局 = 歌長+45 秒(配對＋等待全員＋結算);每天有效時數由使用者自算,這裡給每小時估
                 const perGameSec = (meta.music_time || 120) + 45;
                 const gamesPerHour = Math.floor(3600 / perGameSec);
@@ -4187,6 +4192,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const box = document.createElement('div');
                     if (this.view === 'cp') this.renderCP(box);
                     else if (this.view === 'reco') { el.innerHTML = bar; this.renderCart(); const b2 = document.createElement('div'); el.appendChild(b2); this.renderReco(b2); return; }
+                    else if (this.view === 'grind') { el.innerHTML = bar; this.renderCart(); const b3 = document.createElement('div'); el.appendChild(b3); this.renderGrind(b3); return; }
                     else this.renderPass(box);
                     el.innerHTML = bar; el.appendChild(box);
                 }
@@ -4776,7 +4782,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                 <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
                             </select></div>
                             <div class="sa-chiprow" style="margin-top:8px;">
-                                <button type="button" class="sa-chip" onclick="B30Maker.exportJson()">匯出成績 JSON</button>
+                                <span style="font-size:11px;color:var(--text-light);">換裝置備份(含收集率/儲值設定):</span>
+                                <button type="button" class="sa-chip" onclick="B30Maker.exportJson()">匯出全站 JSON</button>
                                 <button type="button" class="sa-chip" onclick="document.getElementById('b30File').dataset.mode='merge';document.getElementById('b30File').click()">匯入(合併)</button>
                                 <button type="button" class="sa-chip" onclick="document.getElementById('b30File').dataset.mode='replace';document.getElementById('b30File').click()">匯入(覆蓋)</button>
                                 <input type="file" id="b30File" accept="application/json,.json" style="display:none" onchange="B30Maker.importJson(this.files[0], this.dataset.mode);this.value=''">
@@ -4854,22 +4861,53 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             save() { try { localStorage.setItem('sekai-b30-marks', JSON.stringify(this.marks)); } catch (e) {} },
 
-            // ---- 換裝置:成績匯出成 JSON 檔 / 從檔案匯入 ----
-            // marks 的 key 是「難度首字母+musicId」(m131/a388),與曲名譯名無關,跨版本都對得上
+            // ---- 換裝置:全站資料備份 ----
+            // 經典版與 App 同網域,localStorage 共用,所以這裡一次涵蓋 B30 成績、收集率持有卡、
+            // 儲值自填價/已買過/選購清單、玩家 ID 與目標。榜線快照(sekai-snap-)是本機暫存故排除。
+            BK_SKIP: [/^sekai-snap-/],
+            BK_MERGEABLE: { 'sekai-b30-marks': 'max', 'sekai-shop-owned': 'keep', 'sekai-shop-price-ov': 'keep', 'sekai-shop-webcart': 'keep' },
+            BK_LABEL: {
+                'sekai-b30-marks': 'B30 成績', 'sekai-cards-own': '收集率持有卡', 'sekai-shop-owned': '儲值已買過',
+                'sekai-shop-price-ov': '儲值自填售價', 'sekai-shop-webcart': '官網選購清單', 'sekai-app-pid': '玩家 ID',
+                'sekai-app-goal': '目標活動P', 'sekai-app-cur': '目前活動P', 'sekai-b30-name': 'B30 顯示名稱',
+            },
+            _bkCollect() {
+                const out = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (!k || k.indexOf('sekai-') !== 0) continue;
+                    if (this.BK_SKIP.some(re => re.test(k))) continue;
+                    out[k] = localStorage.getItem(k);
+                }
+                return out;
+            },
+            _bkSummary(store) {
+                const parts = [];
+                Object.keys(this.BK_LABEL).forEach(k => {
+                    const v = store[k];
+                    if (v == null || v === '') return;
+                    let n = null;
+                    if (this.BK_MERGEABLE[k] || k === 'sekai-b30-marks') { try { n = Object.keys(JSON.parse(v)).length; } catch (e) {} }
+                    parts.push(this.BK_LABEL[k] + (n != null ? ` ${n} 筆` : ''));
+                });
+                return parts.join('、') || '無資料';
+            },
             exportJson() {
+                const store = this._bkCollect();
+                const n = Object.keys(store).length;
+                if (!n) { this._b30note('目前沒有可備份的資料'); return; }
                 const data = {
-                    app: 'sekai-b30', ver: 1, exportedAt: new Date().toISOString(),
-                    pid: this.pid, name: this.custName, fmt: this.fmt, zh: this.zh,
-                    counts: { ap: Object.values(this.marks).filter(v => v === 2).length, fc: Object.values(this.marks).filter(v => v === 1).length },
-                    marks: this.marks,
+                    app: 'sekai-center', kind: 'full-backup', ver: 2,
+                    exportedAt: new Date().toISOString(),
+                    summary: this._bkSummary(store), store,
                 };
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = `b30_成績_${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = `sekai中心_備份_${new Date().toISOString().slice(0, 10)}.json`;
                 document.body.appendChild(a); a.click();
                 setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-                this._b30note(`已匯出 ${Object.keys(this.marks).length} 筆成績`);
+                this._b30note(`已匯出全站資料(${data.summary})`);
             },
             importJson(file, mode) {
                 if (!file) return;
@@ -4877,24 +4915,54 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 fr.onload = () => {
                     try {
                         const d = JSON.parse(fr.result);
-                        const mk = d && d.marks;
-                        if (!mk || typeof mk !== 'object') throw new Error('格式不符');
-                        const clean = {};
-                        Object.keys(mk).forEach(k => { const v = mk[k] | 0; if (/^[ma]\d+$/.test(k) && (v === 1 || v === 2)) clean[k] = v; });
-                        const n = Object.keys(clean).length;
-                        if (!n) throw new Error('沒有可用的成績');
-                        if (mode === 'merge') {
-                            // 合併時保留較好的成績(AP > FC)
-                            Object.keys(clean).forEach(k => { if ((this.marks[k] | 0) < clean[k]) this.marks[k] = clean[k]; });
-                        } else {
-                            if (Object.keys(this.marks).length && !confirm(`覆蓋現有 ${Object.keys(this.marks).length} 筆成績,改用檔案中的 ${n} 筆?`)) return;
-                            this.marks = clean;
+                        // v2=全站備份;v1=舊版只有 B30 成績,仍要能讀
+                        let store = d && d.store;
+                        if (!store && d && d.marks) {
+                            store = { 'sekai-b30-marks': JSON.stringify(d.marks) };
+                            if (d.pid) store['sekai-app-pid'] = String(d.pid);
+                            if (d.name) store['sekai-b30-name'] = String(d.name);
+                            if (d.fmt) store['sekai-b30-fmt'] = String(d.fmt);
                         }
-                        if (d.pid) { this.pid = String(d.pid); const el = document.getElementById('b30Pid'); if (el) el.value = this.pid; }
-                        if (d.name) { this.custName = String(d.name); const el = document.getElementById('b30Name'); if (el) el.value = this.custName; try { localStorage.setItem('sekai-b30-name', this.custName); } catch (e) {} }
-                        if (d.fmt) this.fmt = d.fmt === 'num' ? 'num' : 'plus';
-                        this.save(); this.renderStats(); this.renderList();
-                        this._b30note(`已${mode === 'merge' ? '合併' : '匯入'} ${n} 筆成績`);
+                        if (!store || typeof store !== 'object') throw new Error('不是本站的備份檔');
+                        const keys = Object.keys(store).filter(k => k.indexOf('sekai-') === 0 && !this.BK_SKIP.some(re => re.test(k)));
+                        if (!keys.length) throw new Error('備份檔沒有可用的資料');
+                        if (mode !== 'merge') {
+                            const cur = Object.keys(this._bkCollect()).length;
+                            if (cur && !confirm(`覆蓋這台裝置現有的 ${cur} 項資料,改用備份檔的 ${keys.length} 項?\n\n備份檔內容:${d.summary || this._bkSummary(store)}`)) return;
+                        }
+                        let done = 0;
+                        keys.forEach(k => {
+                            const inc = store[k];
+                            if (typeof inc !== 'string') return;
+                            if (mode === 'merge') {
+                                const rule = this.BK_MERGEABLE[k];
+                                const local = localStorage.getItem(k);
+                                if (rule && local) {
+                                    // 物件型:逐項合併(B30 成績取較好的 AP>FC)
+                                    try {
+                                        const a = JSON.parse(local) || {}, b = JSON.parse(inc) || {};
+                                        Object.keys(b).forEach(kk => {
+                                            if (rule === 'max') { if ((a[kk] | 0) < (b[kk] | 0)) a[kk] = b[kk]; }
+                                            else if (a[kk] == null) a[kk] = b[kk];
+                                        });
+                                        localStorage.setItem(k, JSON.stringify(a)); done++; return;
+                                    } catch (e) {}
+                                }
+                                // 其餘型別:合併模式下不覆蓋本機既有值
+                                if (local != null && local !== '') return;
+                            }
+                            localStorage.setItem(k, inc); done++;
+                        });
+                        // 重新讀取本模組狀態(其他區塊/App 端資料需重新整理頁面才會生效)
+                        try { this.marks = JSON.parse(localStorage.getItem('sekai-b30-marks') || '{}') || {}; } catch (e) {}
+                        try { this.priceOv = JSON.parse(localStorage.getItem('sekai-shop-price-ov') || '{}') || {}; } catch (e) {}
+                        this.pid = localStorage.getItem('sekai-app-pid') || this.pid;
+                        this.custName = localStorage.getItem('sekai-b30-name') || this.custName;
+                        this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus';
+                        const pe = document.getElementById('b30Pid'); if (pe) pe.value = this.pid;
+                        const ne = document.getElementById('b30Name'); if (ne) ne.value = this.custName;
+                        this.renderStats(); this.renderList();
+                        this._b30note(`已${mode === 'merge' ? '合併' : '匯入'} ${done} 項資料(${d.summary || this._bkSummary(store)});收集率等其他頁面請重新整理後生效`);
                     } catch (e) {
                         this._b30note('匯入失敗:' + (e && e.message || e));
                     }
