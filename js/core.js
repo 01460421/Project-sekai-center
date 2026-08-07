@@ -4060,7 +4060,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.cart = JSON.parse(localStorage.getItem('sekai-shop-webcart') || '{}') || {}; } catch (e) { this.cart = {}; }
                 try { this.roleId = localStorage.getItem('sekai-shop-roleid') || localStorage.getItem('sekai-app-pid') || ''; } catch (e) { this.roleId = ''; }
                 const s = document.createElement('script');
-                s.src = 'data/billing.js?v=' + Math.floor(Date.now() / 43200000);   // 12h bucket,配每日資料刷新
+                s.src = 'data/billing.js';   // must-revalidate(見 vercel.json),不用自帶版本參數
                 s.onload = () => {
                     this._loaded = true; this._loading = false; this.render();
                     this.refresh(false);   // 背景撈 repo 最新版(活動限定商品即時上架)
@@ -4713,8 +4713,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
                 try { this.zh = localStorage.getItem('sekai-b30-zh') !== '0'; } catch (e) {}
                 const s = document.createElement('script');
-                // 每小時快取桶('b'前綴=跳離舊 12h 桶的既有快取):定數資料改版最慢 1 小時內全員更新
-                s.src = 'data/b30-consts.js?v=b' + Math.floor(Date.now() / 3600000);
+                // 這支已在 vercel.json 設 must-revalidate(見該檔 /data/(billing|b30-consts) 規則),
+                // 舊版時間桶會讓瀏覽器黏著改版前的檔案,改用固定 URL 交給 HTTP 驗證
+                s.src = 'data/b30-consts.js';
                 s.onload = () => { this._loaded = true; this._loading = false; this.render(); };
                 s.onerror = () => { this._loading = false; const el = document.getElementById('b30Body'); if (el) el.innerHTML = '<div class="note">定數資料載入失敗,請重新整理再試。</div>'; };
                 document.head.appendChild(s);
