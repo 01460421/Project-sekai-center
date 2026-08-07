@@ -4711,6 +4711,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.pid = localStorage.getItem('sekai-app-pid') || ''; } catch (e) {}
                 try { this.custName = localStorage.getItem('sekai-b30-name') || ''; } catch (e) {}
                 try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
+                try { this.zh = localStorage.getItem('sekai-b30-zh') !== '0'; } catch (e) {}
                 const s = document.createElement('script');
                 // 每小時快取桶('b'前綴=跳離舊 12h 桶的既有快取):定數資料改版最慢 1 小時內全員更新
                 s.src = 'data/b30-consts.js?v=b' + Math.floor(Date.now() / 3600000);
@@ -4720,6 +4721,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             D() { return (typeof B30_CONSTS !== 'undefined') ? B30_CONSTS : null; },
             key(c) { return c.d[0] + c.id; },
+            // 曲名:有社群中文譯名就用,否則日文原名(台服 master 曲名本身就是日文)
+            name(c) { return (this.zh && c.tc) ? c.tc : c.t; },
+            zh: true,
+            setZh(on) {
+                this.zh = !!on;
+                try { localStorage.setItem('sekai-b30-zh', this.zh ? '1' : '0'); } catch (e) {}
+                this.renderList();
+                const msg = document.getElementById('b30GenMsg');
+                if (msg) msg.textContent = '曲名語言已切換,重按「產生」即可套用到圖片。';
+            },
             eff(c, m) { const b = this.cval(c); return m === 2 ? b : m === 1 ? b - 1 : 0; },
             top30() {
                 const out = [];
@@ -4742,14 +4753,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div class="calculator">
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;">
                         <div class="calc-section"><h4>名片資料(選填)</h4>
-                            <div class="calc-row"><label>玩家 ID</label><input type="text" id="b30Pid" inputmode="numeric" placeholder="讀取名字/頭像/AP·FC 總數" value="${this.pid.replace(/"/g, '&quot;')}"></div>
+                            <div class="calc-row"><label>玩家 ID</label><input type="text" id="b30Pid" inputmode="numeric" placeholder="讀取名字/頭像/AP·FC 總數" style="flex:1;width:auto;min-width:0;font-size:13.5px;letter-spacing:.3px;" value="${this.pid.replace(/"/g, '&quot;')}"></div>
                             <div class="calc-row"><label>&nbsp;</label><button type="button" class="sa-fill" style="width:100%;padding:8px;" onclick="B30Maker.loadProfile()">讀取玩家名片</button></div>
-                            <div class="calc-row"><label>顯示名稱</label><input type="text" id="b30Name" placeholder="留空=讀取的名字" value="${this.custName.replace(/"/g, '&quot;')}" oninput="B30Maker.custName=this.value;try{localStorage.setItem('sekai-b30-name',this.value)}catch(e){}"></div>
+                            <div class="calc-row"><label>顯示名稱</label><input type="text" id="b30Name" placeholder="留空=讀取的名字" style="flex:1;width:auto;min-width:0;font-size:13.5px;" value="${this.custName.replace(/"/g, '&quot;')}" oninput="B30Maker.custName=this.value;try{localStorage.setItem('sekai-b30-name',this.value)}catch(e){}"></div>
                             <div class="calc-row"><label>隱藏 ID</label><select id="b30Hide"><option value="0">顯示</option><option value="1">打碼(保密)</option></select></div>
                             <div id="b30ProfMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;line-height:1.7;">未讀取。名片非必要,直接勾譜面也能出圖。</div>
                         </div>
                         <div class="calc-section"><h4>B30 統計</h4><div id="b30Stats"></div>
-                            <div class="calc-row" style="margin-top:8px;"><label>定數「+」格式</label><select id="b30Fmt" onchange="B30Maker.setFmt(this.value)">
+                            <div class="calc-row" style="margin-top:8px;"><label>曲名語言</label><select id="b30Zh" onchange="B30Maker.setZh(this.value==='1')">
+                                <option value="1"${this.zh ? ' selected' : ''}>中文譯名(無譯名用原名)</option>
+                                <option value="0"${!this.zh ? ' selected' : ''}>日文原名</option>
+                            </select></div>
+                            <div class="calc-row"><label>定數「+」格式</label><select id="b30Fmt" onchange="B30Maker.setFmt(this.value)">
                                 <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
                                 <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
                             </select></div>
@@ -4789,7 +4804,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         if (F.band === '低') { if (b > 28) return false; }
                         else if (b !== +F.band) return false;
                     }
-                    if (q && c.t.toLowerCase().indexOf(q) < 0) return false;
+                    if (q && (c.t + ' ' + (c.tc || '')).toLowerCase().indexOf(q) < 0) return false;   // 中日文都能搜
                     return true;
                 });
             },
@@ -4806,7 +4821,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 return `<button type="button" class="b30-row st${m}" id="b30r_${k}" onclick="B30Maker.cycle('${k}')">
                     <span class="b30-const">${this.cTxt(c)}</span>
                     <span class="b30-diff ${c.d}">${c.d === 'master' ? 'MAS' : 'APD'} ${c.lv}</span>
-                    <span class="b30-title">${c.t}</span>
+                    <span class="b30-title" title="${(c.tc ? c.tc + ' / ' : '') + c.t}">${this.name(c)}</span>
                     <span class="b30-st">${m === 2 ? 'AP' : m === 1 ? 'FC' : '—'}</span>
                 </button>`;
             },
@@ -5080,9 +5095,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ctx.fillText('→ ' + this.vTxt(it.v), x0 + 192, y0 + 28);
                     // 曲名(裁切,中心線 y0+58)
                     ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
-                    let t = c.t;
+                    const full = this.name(c);
+                    let t = full;
                     while (t.length > 1 && ctx.measureText(t).width > 172) t = t.slice(0, -1);
-                    ctx.fillText(t + (t.length < c.t.length ? '…' : ''), x0 + 121, y0 + 58);
+                    ctx.fillText(t + (t.length < full.length ? '…' : ''), x0 + 121, y0 + 58);
                     // AP/FC 徽章
                     const bd = it.m === 2 ? apBadge : fcBadge;
                     if (bd) ctx.drawImage(bd, x0 + 121, y0 + 78, bd.width / 2, bd.height / 2);

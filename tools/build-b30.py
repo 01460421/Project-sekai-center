@@ -27,6 +27,8 @@ import io
 SHEET = 'https://docs.google.com/spreadsheets/d/18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU/export?format=xlsx'
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
+# 台服官方不翻譯曲名(master title=日文原名);中文譯名採 Sekai Viewer 社群翻譯(非官方)
+I18N = 'https://raw.githubusercontent.com/Sekai-World/sekai-i18n/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'b30-consts.js'
 
@@ -109,6 +111,15 @@ def main():
     jp_musics = get(f'{JP}/musics.json')
     tc_musics = get(f'{TC}/musics.json')
     tc_diffs = get(f'{TC}/musicDifficulties.json')
+    # 中文譯名:繁中優先、簡中補缺(皆為社群翻譯);抓不到就全部保留日文
+    zh = {}
+    try:
+        cn = get(f'{I18N}/zh-CN/music_titles.json')
+        tw = get(f'{I18N}/zh-TW/music_titles.json')
+        zh = {int(k): v for k, v in cn.items() if v}
+        zh.update({int(k): v for k, v in tw.items() if v})
+    except Exception as ex:
+        print(f'譯名抓取失敗({ex}),曲名保留日文')
 
     by_norm = {}
     for mu in jp_musics:
@@ -135,6 +146,9 @@ def main():
             }
             if plus:
                 row['p'] = plus   # 「+」數(1 或 2):三位小數模式換算 +p/30
+            tr = zh.get(mu['id'])
+            if tr and tr.strip() and tr.strip() != mu['title']:
+                row['tc'] = tr.strip()   # 社群中文譯名(顯示用;搜尋中日皆可)
             charts.append(row)
     charts.sort(key=lambda x: (-x['c'], -x.get('p', 0)))
     print(f'共 {len(charts)} 譜面(台服可玩)、日服限定略過 {jp_only}、曲名比對失敗 {len(unmatched)}')
