@@ -4728,7 +4728,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div id="b30ProfMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;line-height:1.7;">未讀取。名片非必要,直接勾譜面也能出圖。</div>
                         </div>
                         <div class="calc-section"><h4>B30 統計</h4><div id="b30Stats"></div>
-                            <button type="button" onclick="B30Maker.generate()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">產生 B30 圖片 ▶</button>
+                            <button type="button" onclick="B30Maker.generate()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:var(--grad-cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">產生 B30 圖片 ▶</button>
                             <div id="b30GenMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;"></div>
                         </div>
                     </div>

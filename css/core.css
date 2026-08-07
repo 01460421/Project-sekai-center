@@ -787,7 +787,7 @@
         .ms-msg{ padding:24px 6px; text-align:center; color:var(--text-light); font-size:13px; }
         .ms-top{ margin-bottom:12px; }
         .ms-ev{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:800; color:var(--text); }
-        .ms-type{ flex:none; padding:2px 9px; border-radius:999px; background:var(--primary); color:#fff; font-size:11px; font-weight:700; }
+        .ms-type{ flex:none; padding:2px 9px; border-radius:999px; background:var(--grad-ink); color:#fff; font-size:11px; font-weight:700; }
         .ms-evname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ms-sub{ margin-top:5px; font-size:11px; color:var(--text-light); line-height:1.55; }
         .ms-thumbs{ display:flex; gap:6px; flex-wrap:nowrap; margin-bottom:12px; }
