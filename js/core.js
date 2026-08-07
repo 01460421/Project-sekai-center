@@ -4677,7 +4677,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
         // ========== 二十五:B30 產生器(Unibot 版面高還原+PNG 匯出) ==========
         // 定數:腐食氏「プロセカ難易度表」(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
-        // 実効值:AP=定數;FC=定數−1.5(Lv≤32)/−1(Lv33+) — 與 Unibot 同規則,非官方
+        // 実効值:AP=定數;FC=定數−1(站長指定,取代 Unibot 的 −1.5/−1 分段) — 非官方
         // 台服公開 API 沒有逐曲成績(只有各難度 AP/FC 總數),所以譜面成績採手動勾選
         const B30Maker = {
             _loaded: false, _loading: false, _built: false,
@@ -4711,14 +4711,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.custName = localStorage.getItem('sekai-b30-name') || ''; } catch (e) {}
                 try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
                 const s = document.createElement('script');
-                s.src = 'data/b30-consts.js?v=' + Math.floor(Date.now() / 43200000);
+                // 每小時快取桶('b'前綴=跳離舊 12h 桶的既有快取):定數資料改版最慢 1 小時內全員更新
+                s.src = 'data/b30-consts.js?v=b' + Math.floor(Date.now() / 3600000);
                 s.onload = () => { this._loaded = true; this._loading = false; this.render(); };
                 s.onerror = () => { this._loading = false; const el = document.getElementById('b30Body'); if (el) el.innerHTML = '<div class="note">定數資料載入失敗,請重新整理再試。</div>'; };
                 document.head.appendChild(s);
             },
             D() { return (typeof B30_CONSTS !== 'undefined') ? B30_CONSTS : null; },
             key(c) { return c.d[0] + c.id; },
-            eff(c, m) { const b = this.cval(c); return m === 2 ? b : m === 1 ? b - (c.lv <= 32 ? 1.5 : 1) : 0; },
+            eff(c, m) { const b = this.cval(c); return m === 2 ? b : m === 1 ? b - 1 : 0; },
             top30() {
                 const out = [];
                 this.D().charts.forEach(c => { const m = this.marks[this.key(c)] | 0; if (m > 0) out.push({ c, m, v: this.eff(c, m) }); });
@@ -5031,7 +5032,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
                 ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.bTxt(this.theory())}`, CX, 210);
-                ctx.fillText(this.fmt === 'num' ? '定數+=+0.05、++=+0.09;FC=定數−1.5(Lv≤32)/−1' : '実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', CX, 234);
+                ctx.fillText(this.fmt === 'num' ? '定數+=+0.05、++=+0.09;FC=定數−1' : '実効值=AP:定數/FC:定數−1', CX, 234);
                 ctx.textAlign = 'left';
 
                 // ---- 30 張卡(遊戲配色:MAS 紫/APD 粉紫藍漸層,白圈難度標,排名角標) ----
