@@ -775,6 +775,12 @@
         body.embed-shop .container{ max-width:980px; margin:0 auto; padding:0 14px 44px; }
         body.embed-shop .container > section{ display:none !important; }
         body.embed-shop .container > section#shop-analyzer{ display:block !important; }
+        /* ===== 內嵌 B30 產生器（?embed=b30） ===== */
+        body.embed-b30{ padding:0 !important; margin:0 !important; }
+        body.embed-b30 #siteNav, body.embed-b30 .m-dock, body.embed-b30 header#top, body.embed-b30 .toc, body.embed-b30 footer, body.embed-b30 .embed-tabbar{ display:none !important; }
+        body.embed-b30 .container{ max-width:980px; margin:0 auto; padding:0 14px 44px; }
+        body.embed-b30 .container > section{ display:none !important; }
+        body.embed-b30 .container > section#b30-maker{ display:block !important; }
         /* 內嵌面板（跑榜小窗／編組／卡池／抽卡模擬）需要內距，否則內容會貼到母頁卡片邊線 */
         .ms-card{ font-size:13px; color:var(--text); padding:16px 18px; }
         @media (max-width:600px){ .ms-card{ padding:13px 14px; } }
@@ -870,3 +876,17 @@
         .sa-cart-role input{ width:160px; padding:5px 10px; border:1px solid var(--border); border-radius:999px; background:var(--card); color:var(--text); font-size:12px; }
         .sa-cart-go{ padding:6px 14px; border-radius:999px; background:var(--grad-cta); color:#fff; font-size:12px; font-weight:800; text-decoration:none; white-space:nowrap; }
         .sa-cart-note{ flex-basis:100%; font-size:10.5px; color:var(--text-light); }
+
+        /* ===== 二十五、B30 產生器 ===== */
+        .b30-rows{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:6px; }
+        .b30-row{ display:flex; align-items:center; gap:8px; width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); cursor:pointer; text-align:left; font-size:12.5px; color:var(--text); transition:transform .12s; }
+        .b30-row:active{ transform:scale(.98); }
+        .b30-row.st1{ background:color-mix(in oklab, #ff7ab0 14%, var(--card)); border-color:#ff7ab0; }
+        .b30-row.st2{ background:color-mix(in oklab, #37d1c0 16%, var(--card)); border-color:#22b7a8; }
+        .b30-const{ flex:none; width:40px; font-weight:800; font-family:var(--font-num); color:var(--primary); }
+        .b30-diff{ flex:none; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:800; color:#fff; background:#BB33EE; }
+        .b30-diff.append{ background:#222; }
+        .b30-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .b30-st{ flex:none; width:26px; text-align:right; font-weight:800; font-size:12px; color:var(--text-light); }
+        .b30-row.st1 .b30-st{ color:#d6336c; }
+        .b30-row.st2 .b30-st{ color:#0b8d80; }

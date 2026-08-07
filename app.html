@@ -861,6 +861,21 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== B30 產生器（iframe 內嵌完整引擎） ========== -->
+  <sc-if value="{{ isB30 }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:15px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="width:8px;height:24px;border-radius:5px;background:var(--rainbow);background-size:400% 100%;flex:none"></span>
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:15px;font-weight:800;color:var(--ink)">Best 30 実効值圖卡 · PNG 匯出</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">勾選你的 FC/AP 譜面，依非官方難易度表定數計算 B30，以 Unibot 風格版面產生高解析圖卡。</div>
+      </div>
+      <a href="./index.html?embed=b30" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+    </div>
+    <iframe id="b30Frame" src="./index.html?embed=b30" title="B30 產生器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+  </div>
+  </sc-if>
+
   <!-- ========== 教學大全 ========== -->
   <sc-if value="{{ isTut }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -1787,6 +1802,7 @@ class Component extends DCLogic {
     calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
     shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
+    b30:      ['B30 產生器', 'Best 30 実効值圖卡(Unibot 風格版面),可下載 PNG'],
     tut:      ['教學大全', '106 則問答：養成、車隊、衝榜與音遊練習'],
     gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
     collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
@@ -1815,11 +1831,13 @@ class Component extends DCLogic {
     { date: '計算', title: '抽卡模擬', desc: '依官方 master 資料的機率模型模擬抽卡：可搜尋任一期卡池，顯示各稀有度機率與 PU 卡，支援單抽／十連（含保底★3↑），並統計已抽數、消耗石、★4 與 PU 入手、距天井。', to: 'gachasim', cta: '前往抽卡模擬' },
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
     { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品內容物與台幣定價、素材篩選、CP 值排行、月卡攤提，官網商店比價（同價多送 11~45%）；智慧推薦依預算或目標抽數算最省錢組合；限時商品約每小時自動更新。', to: 'shop', cta: '前往儲值分析' },
+    { date: '計算', title: 'B30 產生器', desc: '勾選 FC/AP 譜面，依非官方難易度表定數（腐食氏）計算 Best 30 実効值，Unibot 風格版面高還原，一鍵輸出 2192×3600 PNG；可綁玩家 ID 帶入名片與 AP/FC 總數核對。', to: 'b30', cta: '前往 B30 產生器' },
     { date: '學習', title: '教學大全', desc: '106 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2026/08/06', t: '儲值商品分析上線', s: '新頁「儲值分析」:台服商城 930+ 項商品(水晶包/優惠組合/通行證/裝扮兌換)連同內容物與台幣定價全部列出,可依素材(心願碎片、招募票券、寶石…)、類別、通路、付款方式、販售狀態篩選,每張卡片逐項列出附贈道具。CP 值排行以「App 常駐最佳石/元」當基準線;月卡與通行證把每日領取攤提合計。智慧推薦依目標抽數/水晶或預算,用有限背包演算法在限購規則內算出最省錢購買組合,並生成深度分析(先買誰、限購重置、期限警示、有償占比、天井換算);天井 300 抽實測比純買常駐大包省約 19%。' },
+    { d: '2026/08/08', t: 'B30 產生器上線', s: '勾選你的 FC/AP 譜面(702 張台服譜面,MASTER+APPEND),依非官方難易度表定數(腐食氏,AP 基準)計算 Best 30 実効值:AP=定數、FC=定數−1.5(Lv≤32)/−1(Lv33+)。版面 1:1 還原 Unibot(MIT)的 B30 圖卡:三欄十列卡格、難度色圓+定數膠囊+実効值、FULL COMBO/ALL PERFECT 徽章、粉彩三角背景,以 2192×3600 高解析 Canvas 繪製,一鍵下載 PNG。可輸入玩家 ID 帶入名片(名字/Rank/隊長頭像)與各難度 AP/FC 總數核對;台服公開 API 無逐曲成績,故成績採手動勾選(存在瀏覽器)。定數表每日自動同步試算表。', },
+    { d: '2026/08/06', t: '儲值商品分析上線', s:'新頁「儲值分析」:台服商城 930+ 項商品(水晶包/優惠組合/通行證/裝扮兌換)連同內容物與台幣定價全部列出,可依素材(心願碎片、招募票券、寶石…)、類別、通路、付款方式、販售狀態篩選,每張卡片逐項列出附贈道具。CP 值排行以「App 常駐最佳石/元」當基準線;月卡與通行證把每日領取攤提合計。智慧推薦依目標抽數/水晶或預算,用有限背包演算法在限購規則內算出最省錢購買組合,並生成深度分析(先買誰、限購重置、期限警示、有償占比、天井換算);天井 300 抽實測比純買常駐大包省約 19%。' },
     { d: '2026/08/06', t: '官網商店比價、選購清單與即時更新', s: '接上台服官方網頁商店(GamePay,MyCard/信用卡)的公開商品目錄:官網專屬水晶同價多送 11~45% 免費水晶,K/P 官網限定大包附心願碎片;通行證兌換券(BASIC NT$150、PRECIOUS NT$750 等)自動對照遊戲內直購價,連 App 商店沒公布價格的月卡都有了參考價。官網品項可「＋清單」加入選購清單(智慧推薦的方案能一鍵整批加入),輸入遊戲 ID 後「前往官網結帳」會用 role_id 參數把 ID 直接代入官網欄位,到站勾選商品即可付款——付款全程在官方網站,本站不經手金流,功能頁附免責聲明。素材篩選支援多選(符合任一即列出)。資料由伺服器每 30~90 分鐘自動重建,前端直接吃 repo 最新版,活動限時商品不用等每日部署就會出現;分頁頂端顯示資料時間並可手動立即更新。' },
     { d: '2027/08/01', t: '修正手機底部列與播放器浮動鈕會飄走', s: '兩者都是 position:fixed 又同時帶了 transform 與 will-change,在 iOS Safari 上會變成獨立合成層,動量捲動或網址列收合時就脫鉤亂飄。改成外層只負責定位、視覺效果(毛玻璃、圓角、陰影)全部下放內層,置中改用 left:0/right:0 而非 transform。' },
     { d: '2027/08/01', t: '個人走勢圖接上即時排名', s: '原本要累積兩筆排程快照(最多等一小時)才畫得出來。改為把當下的即時排名接成最後一點,有一筆紀錄就能畫,圖也永遠含最新數值而不是落後最多 30 分鐘。' },
@@ -1976,9 +1994,9 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'shopFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
@@ -2116,7 +2134,7 @@ class Component extends DCLogic {
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
     const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora' };
-    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame'].forEach(id => {
+    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
     });
@@ -3166,7 +3184,7 @@ class Component extends DCLogic {
       ['主頁', [['home', '首頁', '#4ad1e8']]],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0']]],
-      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
     ];
@@ -3485,6 +3503,7 @@ class Component extends DCLogic {
       isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
       isShop: s.page === 'shop',
+      isB30: s.page === 'b30',
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG, syslog: this.SYSLOG,
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
 

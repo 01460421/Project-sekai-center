@@ -4675,6 +4675,409 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 二十五:B30 產生器(Unibot 版面高還原+PNG 匯出) ==========
+        // 定數:腐食氏「プロセカ難易度表」(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
+        // 実効值:AP=定數;FC=定數−1.5(Lv≤32)/−1(Lv33+) — 與 Unibot 同規則,非官方
+        // 台服公開 API 沒有逐曲成績(只有各難度 AP/FC 總數),所以譜面成績採手動勾選
+        const B30Maker = {
+            _loaded: false, _loading: false, _built: false,
+            marks: {}, pid: '', custName: '', hideId: false,
+            prof: null,   // {name, rank, leaderAb, leaderTrained, apM, fcM, apA, fcA}
+            F: { q: '', d: 'all', band: 'all' },
+            shown: 80,
+            ASSET: 'https://storage.sekai.best/sekai-jp-assets',
+            COLOR: { master: '#BB33EE', append: '#000000' },
+
+            ensure() {
+                if (this._loaded || this._loading) return;
+                this._loading = true;
+                try { this.marks = JSON.parse(localStorage.getItem('sekai-b30-marks') || '{}') || {}; } catch (e) { this.marks = {}; }
+                try { this.pid = localStorage.getItem('sekai-app-pid') || ''; } catch (e) {}
+                try { this.custName = localStorage.getItem('sekai-b30-name') || ''; } catch (e) {}
+                const s = document.createElement('script');
+                s.src = 'data/b30-consts.js?v=' + Math.floor(Date.now() / 43200000);
+                s.onload = () => { this._loaded = true; this._loading = false; this.render(); };
+                s.onerror = () => { this._loading = false; const el = document.getElementById('b30Body'); if (el) el.innerHTML = '<div class="note">定數資料載入失敗,請重新整理再試。</div>'; };
+                document.head.appendChild(s);
+            },
+            D() { return (typeof B30_CONSTS !== 'undefined') ? B30_CONSTS : null; },
+            key(c) { return c.d[0] + c.id; },
+            eff(c, m) { return m === 2 ? c.c : m === 1 ? c.c - (c.lv <= 32 ? 1.5 : 1) : 0; },
+            top30() {
+                const out = [];
+                this.D().charts.forEach(c => { const m = this.marks[this.key(c)] | 0; if (m > 0) out.push({ c, m, v: this.eff(c, m) }); });
+                out.sort((a, b) => b.v - a.v);
+                return out.slice(0, 30);
+            },
+            b30val() { const t = this.top30(); if (!t.length) return 0; return Math.round(t.reduce((s, x) => s + x.v, 0) / 30 * 100) / 100; },
+            theory() { const cs = this.D().charts.slice(0, 30); return Math.round(cs.reduce((s, c) => s + c.c, 0) / 30 * 100) / 100; },
+
+            render() {
+                const el = document.getElementById('b30Body');
+                if (!el || !this.D()) return;
+                if (!this._built) {
+                    this._built = true;
+                    el.innerHTML = `
+                    <div class="calculator">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;">
+                        <div class="calc-section"><h4>名片資料(選填)</h4>
+                            <div class="calc-row"><label>玩家 ID</label><input type="text" id="b30Pid" inputmode="numeric" placeholder="讀取名字/頭像/AP·FC 總數" value="${this.pid.replace(/"/g, '&quot;')}"></div>
+                            <div class="calc-row"><label>&nbsp;</label><button type="button" class="sa-fill" style="width:100%;padding:8px;" onclick="B30Maker.loadProfile()">讀取玩家名片</button></div>
+                            <div class="calc-row"><label>顯示名稱</label><input type="text" id="b30Name" placeholder="留空=讀取的名字" value="${this.custName.replace(/"/g, '&quot;')}" oninput="B30Maker.custName=this.value;try{localStorage.setItem('sekai-b30-name',this.value)}catch(e){}"></div>
+                            <div class="calc-row"><label>隱藏 ID</label><select id="b30Hide"><option value="0">顯示</option><option value="1">打碼(保密)</option></select></div>
+                            <div id="b30ProfMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;line-height:1.7;">未讀取。名片非必要,直接勾譜面也能出圖。</div>
+                        </div>
+                        <div class="calc-section"><h4>B30 統計</h4><div id="b30Stats"></div>
+                            <button type="button" onclick="B30Maker.generate()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">產生 B30 圖片 ▶</button>
+                            <div id="b30GenMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;"></div>
+                        </div>
+                    </div>
+                    <div class="calc-section" style="margin-top:14px;"><h4>勾選你的成績<span style="font-weight:400;font-size:11px;color:var(--text-light);">　點譜面循環:無 → FC → AP;定數由高到低</span></h4>
+                        <div class="sa-chiprow" id="b30Filters"></div>
+                        <div id="b30List"></div>
+                    </div>
+                    <div id="b30Out" style="margin-top:14px;"></div>
+                    </div>`;
+                }
+                this.renderFilters(); this.renderStats(); this.renderList();
+            },
+            renderFilters() {
+                const el = document.getElementById('b30Filters'); if (!el) return;
+                const F = this.F;
+                const chip = (k, v, txt) => `<button type="button" class="sa-chip${F[k] === v ? ' on' : ''}" onclick="B30Maker.setF('${k}','${v}')">${txt}</button>`;
+                const bands = ['all', '37', '36', '35', '34', '33', '32', '31', '30', '29', '低'];
+                el.innerHTML = `${chip('d', 'all', '全部難度')}${chip('d', 'master', 'MASTER')}${chip('d', 'append', 'APPEND')}
+                    <span class="sa-sep"></span>${bands.map(b => chip('band', b, b === 'all' ? '全定數' : b === '低' ? '≤28' : b)).join('')}
+                    <input type="text" class="sa-q" placeholder="搜尋曲名…" value="${F.q.replace(/"/g, '&quot;')}" oninput="B30Maker.F.q=this.value.trim();B30Maker.shown=80;B30Maker.renderList()">
+                    <span class="sa-sep"></span>
+                    <button type="button" class="sa-chip" onclick="B30Maker.batch(2)">目前範圍全標 AP</button>
+                    <button type="button" class="sa-chip" onclick="B30Maker.batch(1)">全標 FC</button>
+                    <button type="button" class="sa-chip" onclick="B30Maker.batch(0)">清除範圍</button>`;
+            },
+            setF(k, v) { this.F[k] = v; this.shown = 80; this.renderFilters(); this.renderList(); },
+            filtered() {
+                const F = this.F, q = F.q.toLowerCase();
+                return this.D().charts.filter(c => {
+                    if (F.d !== 'all' && c.d !== F.d) return false;
+                    if (F.band !== 'all') {
+                        const b = Math.floor(c.c);
+                        if (F.band === '低') { if (b > 28) return false; }
+                        else if (b !== +F.band) return false;
+                    }
+                    if (q && c.t.toLowerCase().indexOf(q) < 0) return false;
+                    return true;
+                });
+            },
+            renderList() {
+                const el = document.getElementById('b30List'); if (!el) return;
+                const rows = this.filtered();
+                const show = rows.slice(0, this.shown);
+                el.innerHTML = `<div class="note" style="margin:8px 0;">符合 ${rows.length} 譜面(MASTER ${this.D().charts.filter(c => c.d === 'master').length}+APPEND ${this.D().charts.filter(c => c.d === 'append').length})</div>
+                    <div class="b30-rows">${show.map(c => this.rowHtml(c)).join('')}</div>
+                    ${rows.length > this.shown ? `<button type="button" class="sa-more" onclick="B30Maker.shown+=120;B30Maker.renderList()">顯示更多(還有 ${rows.length - this.shown})</button>` : ''}`;
+            },
+            rowHtml(c) {
+                const k = this.key(c), m = this.marks[k] | 0;
+                return `<button type="button" class="b30-row st${m}" id="b30r_${k}" onclick="B30Maker.cycle('${k}')">
+                    <span class="b30-const">${c.c.toFixed(1)}</span>
+                    <span class="b30-diff ${c.d}">${c.d === 'master' ? 'MAS' : 'APD'} ${c.lv}</span>
+                    <span class="b30-title">${c.t}</span>
+                    <span class="b30-st">${m === 2 ? 'AP' : m === 1 ? 'FC' : '—'}</span>
+                </button>`;
+            },
+            cycle(k) {
+                this.marks[k] = ((this.marks[k] | 0) + 1) % 3;
+                if (!this.marks[k]) delete this.marks[k];
+                this.save();
+                const c = this.D().charts.find(x => this.key(x) === k);
+                const el = document.getElementById('b30r_' + k);
+                if (el && c) el.outerHTML = this.rowHtml(c);
+                this.renderStats();
+            },
+            batch(m) {
+                if (m === 0 && !confirm('清除目前篩選範圍內的所有標記?')) return;
+                this.filtered().forEach(c => { const k = this.key(c); if (m === 0) delete this.marks[k]; else this.marks[k] = m; });
+                this.save(); this.renderList(); this.renderStats();
+            },
+            save() { try { localStorage.setItem('sekai-b30-marks', JSON.stringify(this.marks)); } catch (e) {} },
+            renderStats() {
+                const el = document.getElementById('b30Stats'); if (!el) return;
+                const t = this.top30();
+                let ap = 0, fc = 0;
+                Object.keys(this.marks).forEach(k => { if (this.marks[k] === 2) ap++; else if (this.marks[k] === 1) fc++; });
+                const p = this.prof;
+                const check = p ? `<div style="font-size:11px;color:var(--text-light);margin-top:6px;">核對:你的 MASTER AP ${p.apM ?? '?'}/FC ${p.fcM ?? '?'}・APPEND AP ${p.apA ?? '?'}/FC ${p.fcA ?? '?'}(遊戲內總數,含定數表未收錄曲)</div>` : '';
+                el.innerHTML = `<div class="sa-stats" style="margin-bottom:0;">
+                    <div><em>B30 実効值</em><strong>${t.length ? this.b30val().toFixed(2) : '—'}</strong></div>
+                    <div><em>已計入</em><strong>${t.length}</strong> / 30</div>
+                    <div><em>已標 AP / FC</em><strong>${ap} / ${fc}</strong></div>
+                    <div><em>台服理論值</em><strong>${this.theory().toFixed(2)}</strong></div>
+                </div>${check}`;
+            },
+
+            async loadProfile() {
+                const pid = (document.getElementById('b30Pid') || {}).value || '';
+                this.pid = String(pid).trim();
+                const msg = document.getElementById('b30ProfMsg');
+                if (!this.pid) { if (msg) msg.textContent = '請先輸入玩家 ID。'; return; }
+                if (msg) msg.textContent = '讀取中…';
+                try {
+                    const d = await apiFetch(`/user/${this.pid}/profile`);
+                    const u = d.user || {}, gd = u.userGamedata || u;
+                    const clear = {};
+                    (d.userMusicDifficultyClearCount || []).forEach(x => clear[x.musicDifficultyType] = x);
+                    let leaderAb = '', leaderTrained = false;
+                    try {
+                        const deck = d.userDeck || {};
+                        const leaderId = deck.leader || deck.member1;
+                        const uc = (d.userCards || []).find(c => c.cardId === leaderId) || {};
+                        leaderTrained = uc.defaultImage === 'special_training';
+                        // 注意:classic script 內的 import() 以 js/core.js 為基準,必須用 document 基準組絕對路徑
+                        const mod = await import(new URL('data/cards-index.js', document.baseURI).href + '?v=' + Math.floor(Date.now() / 43200000));
+                        const row = (mod.CARDS || []).find(r => r[0] === leaderId);
+                        if (row) leaderAb = row[8];
+                    } catch (e) {}
+                    this.prof = {
+                        name: gd.name || u.name || ('玩家 ' + this.pid), rank: gd.rank || u.rank || null,
+                        leaderAb, leaderTrained,
+                        apM: (clear.master || {}).allPerfect, fcM: (clear.master || {}).fullCombo,
+                        apA: (clear.append || {}).allPerfect, fcA: (clear.append || {}).fullCombo,
+                    };
+                    if (msg) msg.innerHTML = `讀到:<strong>${this.prof.name}</strong>(Rank ${this.prof.rank ?? '?'})。名片將使用此資料;AP/FC 總數已列於統計供核對。`;
+                    this.renderStats();
+                } catch (e) {
+                    this.prof = null;
+                    if (msg) msg.textContent = '讀取失敗:' + (e && e.message || e) + '(仍可手動填顯示名稱出圖)';
+                }
+            },
+
+            // ---- 圖像生成(Unibot pjskb30 版面 1:1 還原,2x 解析度) ----
+            _img(src, cors) {
+                return new Promise(res => {
+                    const im = new Image();
+                    if (cors) im.crossOrigin = 'anonymous';
+                    im.referrerPolicy = 'no-referrer';
+                    const to = setTimeout(() => res(null), 15000);
+                    im.onload = () => { clearTimeout(to); res(im); };
+                    im.onerror = () => { clearTimeout(to); res(null); };
+                    im.src = src;
+                });
+            },
+            _rr(ctx, x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            },
+            _seed(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; },
+            // プロセカ視覺語彙:白底+極淡粉彩三角+柔光斜帶+四芒星光,頂部彩虹細帶
+            RAINBOW: ['#4ad1e8', '#3ee0a8', '#b8e561', '#ffd94d', '#ff9db4', '#c39df2', '#7fb4f7'],
+            _diffPaint(ctx, d, x0, y0, x1, y1) {
+                if (d === 'append') {
+                    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+                    g.addColorStop(0, '#ff9ee8'); g.addColorStop(.5, '#b18cff'); g.addColorStop(1, '#7fc4ff');
+                    return g;
+                }
+                return this.COLOR[d] || '#888';
+            },
+            _star(ctx, x, y, r, color, alpha) {
+                ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color;
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const rr = i % 2 ? r * 0.28 : r, an = i * Math.PI / 4 - Math.PI / 2;
+                    const px = x + Math.cos(an) * rr, py = y + Math.sin(an) * rr;
+                    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+                }
+                ctx.closePath(); ctx.fill(); ctx.restore();
+            },
+            _bg(ctx, W, H) {
+                const g = ctx.createLinearGradient(0, 0, W, H);
+                g.addColorStop(0, '#ffffff'); g.addColorStop(.45, '#f6fbff'); g.addColorStop(1, '#fbf8ff');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+                const rnd = this._seed(39);
+                const cols = ['255,140,190', '110,200,255', '255,220,110', '185,150,255', '120,230,195'];
+                for (let i = 0; i < 110; i++) {
+                    const x = rnd() * W, y = rnd() * H, s = 18 + rnd() * 110, a = rnd() * Math.PI * 2;
+                    ctx.fillStyle = `rgba(${cols[(rnd() * cols.length) | 0]},${(0.04 + rnd() * 0.10).toFixed(2)})`;
+                    ctx.beginPath();
+                    for (let v = 0; v < 3; v++) { const an = a + v * 2.09; const px = x + Math.cos(an) * s, py = y + Math.sin(an) * s; v ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+                    ctx.closePath(); ctx.fill();
+                }
+                for (let i = 0; i < 4; i++) {
+                    const x0 = -150 + rnd() * (W + 250);
+                    ctx.fillStyle = `rgba(160,210,255,${(0.07 + rnd() * 0.08).toFixed(2)})`;
+                    ctx.beginPath();
+                    ctx.moveTo(x0, -50); ctx.lineTo(x0 + 60, -50); ctx.lineTo(x0 + 60 - H * 0.45, H + 50); ctx.lineTo(x0 - H * 0.45, H + 50);
+                    ctx.closePath(); ctx.fill();
+                }
+                // 星光:白色與粉彩四芒星,像遊戲讀取畫面
+                for (let i = 0; i < 46; i++) {
+                    const x = rnd() * W, y = rnd() * H, r = 3 + rnd() * 9;
+                    this._star(ctx, x, y, r, rnd() < .5 ? '#ffffff' : ['#ffd1e6', '#cfeaff', '#fff3c4', '#e3d6ff'][(rnd() * 4) | 0], .35 + rnd() * .4);
+                }
+                // 頂部彩虹細帶(全站識別,也呼應遊戲七彩)
+                const bw = W / this.RAINBOW.length;
+                this.RAINBOW.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(i * bw, 0, bw + 1, 7); });
+            },
+            async generate() {
+                const msg = document.getElementById('b30GenMsg');
+                const t30 = this.top30();
+                if (!t30.length) { if (msg) msg.textContent = '請先勾選至少一首 FC/AP 譜面。'; return; }
+                if (msg) msg.textContent = '載入封面與素材…';
+                const hide = ((document.getElementById('b30Hide') || {}).value === '1');
+                const name = (this.custName || (this.prof && this.prof.name) || '').trim() || 'SEKAI Player';
+                const idTxt = hide ? '保密' : (this.pid || '—');
+                const [apBadge, fcBadge] = await Promise.all([
+                    this._img('vendor/b30/AllPerfect.png'), this._img('vendor/b30/FullCombo.png')]);
+                const jackets = await Promise.all(t30.map(x => this._img(`${this.ASSET}/thumbnail/music_jacket/${x.c.jkt}.webp`, true)));
+                let avatar = null;
+                if (this.prof && this.prof.leaderAb) avatar = await this._img(`${this.ASSET}/thumbnail/chara/${this.prof.leaderAb}_${this.prof.leaderTrained ? 'after_training' : 'normal'}.webp`, true);
+                if (msg) msg.textContent = '繪製中…';
+
+                const W = 1096, H = 1800, S = 2;
+                const cv = document.createElement('canvas');
+                cv.width = W * S; cv.height = H * S;
+                const ctx = cv.getContext('2d');
+                ctx.scale(S, S);
+                const FB = '"M PLUS Rounded 1c","Huninn","Noto Sans TC",sans-serif';
+                this._bg(ctx, W, H);
+
+                // ---- 頁首:遊戲風名片卡(白底圓角+柔影) ----
+                ctx.save();
+                ctx.shadowColor = 'rgba(70,90,150,.18)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
+                ctx.fillStyle = 'rgba(255,255,255,.94)'; this._rr(ctx, 46, 52, 500, 214, 18); ctx.fill();
+                ctx.restore();
+                ctx.strokeStyle = 'rgba(105,125,180,.16)'; ctx.lineWidth = 1.5; this._rr(ctx, 46, 52, 500, 214, 18); ctx.stroke();
+                if (avatar) {
+                    ctx.save(); this._rr(ctx, 68, 74, 116, 116, 12); ctx.clip(); ctx.drawImage(avatar, 68, 74, 116, 116); ctx.restore();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; this._rr(ctx, 68, 74, 116, 116, 12); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(105,125,180,.35)'; ctx.lineWidth = 1.5; this._rr(ctx, 66, 72, 120, 120, 13); ctx.stroke();
+                } else { ctx.fillStyle = 'rgba(125,140,185,.15)'; this._rr(ctx, 68, 74, 116, 116, 12); ctx.fill(); }
+                ctx.fillStyle = '#252e4d'; ctx.textBaseline = 'top';
+                ctx.font = '800 34px ' + FB; ctx.fillText(name, 212, 78, 316);
+                ctx.font = '600 14px ' + FB; ctx.fillStyle = '#8b93ac'; ctx.fillText('ID:' + idTxt, 214, 126);
+                // ランク膠囊(遊戲深藍+音符)
+                const rg = ctx.createLinearGradient(212, 152, 212, 196);
+                rg.addColorStop(0, '#46507a'); rg.addColorStop(1, '#252e4d');
+                ctx.fillStyle = rg; this._rr(ctx, 212, 152, 190, 44, 22); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; this._rr(ctx, 214, 154, 186, 40, 20); ctx.stroke();
+                ctx.fillStyle = '#ffd94d'; ctx.font = '800 19px ' + FB; ctx.fillText('♪', 232, 163);
+                ctx.fillStyle = '#dfe5f5'; ctx.font = '700 16px ' + FB; ctx.fillText('ランク', 254, 165);
+                ctx.fillStyle = '#fff'; ctx.font = '800 27px ' + FB; ctx.fillText(String((this.prof && this.prof.rank) || '—'), 318, 158);
+                // 已標數量小字
+                let apN = 0, fcN = 0;
+                Object.keys(this.marks).forEach(k => { if (this.marks[k] === 2) apN++; else if (this.marks[k] === 1) fcN++; });
+                ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
+                ctx.fillText(`AP ${apN}・FC ${fcN}`, 214, 214);
+                ctx.fillText(new Date().toISOString().slice(0, 10), 214, 236);
+
+                // ---- B30 徽章卡(彩虹頂帶+漸層數字) ----
+                ctx.save();
+                ctx.shadowColor = 'rgba(70,90,150,.18)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
+                ctx.fillStyle = 'rgba(255,255,255,.94)'; this._rr(ctx, 578, 52, 300, 214, 18); ctx.fill();
+                ctx.restore();
+                ctx.strokeStyle = 'rgba(105,125,180,.16)'; ctx.lineWidth = 1.5; this._rr(ctx, 578, 52, 300, 214, 18); ctx.stroke();
+                ctx.save(); this._rr(ctx, 578, 52, 300, 214, 18); ctx.clip();
+                const bw2 = 300 / this.RAINBOW.length;
+                this.RAINBOW.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(578 + i * bw2, 52, bw2 + 1, 9); });
+                ctx.restore();
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#8b93ac'; ctx.font = '800 22px ' + FB; ctx.fillText('BEST 30', 728, 82);
+                const bv = this.b30val().toFixed(2);
+                const ng = ctx.createLinearGradient(628, 110, 828, 190);
+                ng.addColorStop(0, '#22c3d6'); ng.addColorStop(.5, '#3f8cf3'); ng.addColorStop(1, '#c39df2');
+                ctx.save();
+                ctx.shadowColor = 'rgba(63,140,243,.35)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
+                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, 728, 104);
+                ctx.restore();
+                ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
+                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.theory().toFixed(2)}`, 728, 200);
+                ctx.fillText('実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', 728, 226);
+                ctx.textAlign = 'left';
+                // 直排提醒(還原 Unibot 位置,配站內湖水綠)
+                ctx.fillStyle = '#0eb3c5'; ctx.font = '800 28px ' + FB;
+                '僅供參考娛樂'.split('').forEach((ch, i) => ctx.fillText(ch, 1010, 62 + i * 33));
+                '請勿當真'.split('').forEach((ch, i) => ctx.fillText(ch, 962, 62 + i * 33));
+
+                // ---- 30 張卡(遊戲配色:MAS 紫/APD 粉紫藍漸層,白圈難度標,排名角標) ----
+                for (let i = 0; i < 30; i++) {
+                    const x0 = 53 + (i % 3) * 342, y0 = 309 + Math.floor(i / 3) * 142;
+                    const it = t30[i];
+                    ctx.save();
+                    ctx.shadowColor = 'rgba(70,90,150,.16)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+                    ctx.fillStyle = it ? '#fff' : 'rgba(255,255,255,.45)';
+                    this._rr(ctx, x0, y0, 310, 120, 10); ctx.fill();
+                    ctx.restore();
+                    if (!it) {
+                        ctx.strokeStyle = 'rgba(105,125,180,.22)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 1.5;
+                        this._rr(ctx, x0, y0, 310, 120, 10); ctx.stroke(); ctx.setLineDash([]);
+                        ctx.fillStyle = 'rgba(139,147,172,.6)'; ctx.font = '700 15px ' + FB; ctx.textAlign = 'center';
+                        ctx.fillText('#' + (i + 1), x0 + 155, y0 + 52); ctx.textAlign = 'left';
+                        continue;
+                    }
+                    ctx.strokeStyle = 'rgba(105,125,180,.14)'; ctx.lineWidth = 1; this._rr(ctx, x0, y0, 310, 120, 10); ctx.stroke();
+                    const c = it.c;
+                    const col = this._diffPaint(ctx, c.d, x0 + 121, y0 + 16, x0 + 178, y0 + 38);
+                    const jk = jackets[i];
+                    if (jk) { ctx.save(); this._rr(ctx, x0 + 16, y0 + 14, 93, 93, 8); ctx.clip(); ctx.drawImage(jk, x0 + 16, y0 + 14, 93, 93); ctx.restore(); }
+                    else { ctx.fillStyle = '#e8eaf2'; this._rr(ctx, x0 + 16, y0 + 14, 93, 93, 8); ctx.fill(); }
+                    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2; this._rr(ctx, x0 + 16, y0 + 14, 93, 93, 8); ctx.stroke();
+                    // 排名角標
+                    ctx.fillStyle = 'rgba(139,147,172,.85)'; ctx.font = '800 13px ' + FB; ctx.textAlign = 'right';
+                    ctx.fillText('#' + (i + 1), x0 + 296, y0 + 8); ctx.textAlign = 'left';
+                    // 難度圓(白圈,遊戲配色)
+                    const colCirc = this._diffPaint(ctx, c.d, x0 + 2, y0 + 2, x0 + 33, y0 + 33);
+                    ctx.save();
+                    ctx.fillStyle = colCirc; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(x0 + 17.5, y0 + 17.5, 16, 0, 7); ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                    ctx.fillStyle = '#fff'; ctx.font = '800 16px ' + FB; ctx.textAlign = 'center';
+                    ctx.fillText(String(c.lv), x0 + 17.5, y0 + 9.5);
+                    // 定數膠囊 → 実効值
+                    ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 57, 22, 11); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.font = '800 16.5px ' + FB;
+                    ctx.fillText(c.c.toFixed(1), x0 + 149.5, y0 + 19.5);
+                    ctx.textAlign = 'left';
+                    ctx.fillStyle = '#252e4d'; ctx.font = '800 17px ' + FB;
+                    ctx.fillText('→ ' + it.v.toFixed(1), x0 + 186, y0 + 19);
+                    // 曲名(裁切)
+                    ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
+                    let t = c.t;
+                    while (t.length > 1 && ctx.measureText(t).width > 172) t = t.slice(0, -1);
+                    ctx.fillText(t + (t.length < c.t.length ? '…' : ''), x0 + 121, y0 + 48);
+                    // AP/FC 徽章
+                    const bd = it.m === 2 ? apBadge : fcBadge;
+                    if (bd) ctx.drawImage(bd, x0 + 121, y0 + 78, bd.width / 2, bd.height / 2);
+                    else { ctx.fillStyle = it.m === 2 ? '#8ee' : '#f7a'; ctx.font = '800 18px ' + FB; ctx.fillText(it.m === 2 ? 'ALL PERFECT!!' : 'FULL COMBO!', x0 + 121, y0 + 80); }
+                }
+
+                // ---- 頁尾 ----
+                ctx.fillStyle = '#0eb3c5'; ctx.font = '600 15px ' + FB;
+                ctx.fillText('非官方算法,僅供參考娛樂。定數:腐食氏「プロセカ難易度表」(可能變動)', 50, 1714);
+                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 50, 1742);
+                ctx.textAlign = 'right';
+                ctx.font = '700 15px ' + FB;
+                ctx.fillText('Generated by SEKAI 資源中心', 1046, 1714);
+                ctx.fillText('project-sekai-center.vercel.app', 1046, 1742);
+                ctx.textAlign = 'left';
+
+                // ---- 輸出 ----
+                const out = document.getElementById('b30Out');
+                cv.toBlob(blob => {
+                    if (!blob || !out) { if (msg) msg.textContent = '輸出失敗(封面跨域?),請重試。'; return; }
+                    const url = URL.createObjectURL(blob);
+                    const fn = `b30_${(hide ? 'player' : (this.pid || 'player'))}_${new Date().toISOString().slice(0, 10)}.png`;
+                    out.innerHTML = `<div class="sa-chiprow" style="margin-bottom:8px;">
+                        <a class="sa-cart-go" href="${url}" download="${fn}">下載 PNG(${(blob.size / 1048576).toFixed(1)} MB)</a>
+                        <span style="font-size:11px;color:var(--text-light);">手機也可長按圖片存檔;圖為 2192×3600</span></div>
+                        <img src="${url}" alt="B30" style="width:100%;max-width:760px;border:1px solid var(--border);border-radius:14px;display:block;">`;
+                    if (msg) msg.textContent = '完成!';
+                    out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 'image/png');
+            }
+        };
+
         const GlobalSearch = {
             // 角色別名：輸入任一別名都能對應到資料中的中文名
             charAlias: {
@@ -4702,7 +5105,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ['#dolls','月卡玩偶列表'],['#bonus-cards','加分卡參考'],['#analysis','榜線分析'],
                 ['#player-lookup','玩家查詢'],['#distribution','活動分布甘特圖'],['#songs','歌曲清單'],
                 ['#calculator','推隊倍率計算器'],['#event-calc','活動加成 活動P 分數 綜合力 WL支援計算器'],['#gacha-calc','抽卡期望 天井計算器'],
-                ['#rank-match','排位賽 判定分 升段'],['#shop-analyzer','儲值商品分析 水晶包 月卡 CP值 智慧推薦'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
+                ['#rank-match','排位賽 判定分 升段'],['#shop-analyzer','儲值商品分析 水晶包 月卡 CP值 智慧推薦'],['#b30-maker','B30 產生器 実効值 定數 best30'],['#mysekai','MySekai 採集計算機'],['#official','官方資源'],
                 ['#info','資訊站'],['#community','討論社群'],['#wiki','Wiki 百科'],['#tools','實用工具'],['#ep-calc','EP 計算器']
             ],
             _items: [], _active: -1,
@@ -4908,6 +5311,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             lazyInit('rank-match', () => { RankCalc.calc(); RankCalc.promo(); });
             lazyInit('run-studio', () => RunStudio.ensure());
             lazyInit('shop-analyzer', () => ShopAnalyzer.ensure());
+            lazyInit('b30-maker', () => B30Maker.ensure());
             window.addEventListener('resize', () => {
                 clearTimeout(window._calResizeTimer);
                 window._calResizeTimer = setTimeout(renderCalendar, 200);
