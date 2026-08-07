@@ -4943,62 +4943,61 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const FB = '"M PLUS Rounded 1c","Huninn","Noto Sans TC",sans-serif';
                 this._bg(ctx, W, H);
 
-                // ---- 頁首:遊戲風名片卡(白底圓角+柔影) ----
+                // ---- 頁首:與卡格同寬對齊(左 53/右 1047),名片卡+B30 徽章卡 ----
+                const HX = 53, HW1 = 560, HX2 = 645, HW2 = 402, HY = 52, HH = 214;
                 ctx.save();
                 ctx.shadowColor = 'rgba(70,90,150,.18)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
-                ctx.fillStyle = 'rgba(255,255,255,.94)'; this._rr(ctx, 46, 52, 500, 214, 18); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,.94)'; this._rr(ctx, HX, HY, HW1, HH, 18); ctx.fill();
                 ctx.restore();
-                ctx.strokeStyle = 'rgba(105,125,180,.16)'; ctx.lineWidth = 1.5; this._rr(ctx, 46, 52, 500, 214, 18); ctx.stroke();
+                ctx.strokeStyle = 'rgba(105,125,180,.16)'; ctx.lineWidth = 1.5; this._rr(ctx, HX, HY, HW1, HH, 18); ctx.stroke();
                 if (avatar) {
-                    ctx.save(); this._rr(ctx, 68, 74, 116, 116, 12); ctx.clip(); ctx.drawImage(avatar, 68, 74, 116, 116); ctx.restore();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; this._rr(ctx, 68, 74, 116, 116, 12); ctx.stroke();
-                    ctx.strokeStyle = 'rgba(105,125,180,.35)'; ctx.lineWidth = 1.5; this._rr(ctx, 66, 72, 120, 120, 13); ctx.stroke();
-                } else { ctx.fillStyle = 'rgba(125,140,185,.15)'; this._rr(ctx, 68, 74, 116, 116, 12); ctx.fill(); }
+                    ctx.save(); this._rr(ctx, 77, 74, 116, 116, 12); ctx.clip(); ctx.drawImage(avatar, 77, 74, 116, 116); ctx.restore();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; this._rr(ctx, 77, 74, 116, 116, 12); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(105,125,180,.35)'; ctx.lineWidth = 1.5; this._rr(ctx, 75, 72, 120, 120, 13); ctx.stroke();
+                } else { ctx.fillStyle = 'rgba(125,140,185,.15)'; this._rr(ctx, 77, 74, 116, 116, 12); ctx.fill(); }
+                const TX = 221;   // 名片文字統一左緣
                 ctx.fillStyle = '#252e4d'; ctx.textBaseline = 'top';
-                ctx.font = '800 34px ' + FB; ctx.fillText(name, 212, 78, 316);
-                ctx.font = '600 14px ' + FB; ctx.fillStyle = '#8b93ac'; ctx.fillText('ID:' + idTxt, 214, 126);
+                ctx.font = '800 34px ' + FB; ctx.fillText(name, TX, 78, HX + HW1 - TX - 24);
+                ctx.font = '600 14px ' + FB; ctx.fillStyle = '#8b93ac'; ctx.fillText('ID:' + idTxt, TX, 128);
                 // ランク膠囊(遊戲深藍+音符)
-                const rg = ctx.createLinearGradient(212, 152, 212, 196);
+                const rg = ctx.createLinearGradient(TX, 156, TX, 200);
                 rg.addColorStop(0, '#46507a'); rg.addColorStop(1, '#252e4d');
-                ctx.fillStyle = rg; this._rr(ctx, 212, 152, 190, 44, 22); ctx.fill();
-                ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; this._rr(ctx, 214, 154, 186, 40, 20); ctx.stroke();
-                ctx.fillStyle = '#ffd94d'; ctx.font = '800 19px ' + FB; ctx.fillText('♪', 232, 163);
-                ctx.fillStyle = '#dfe5f5'; ctx.font = '700 16px ' + FB; ctx.fillText('ランク', 254, 165);
-                ctx.fillStyle = '#fff'; ctx.font = '800 27px ' + FB; ctx.fillText(String((this.prof && this.prof.rank) || '—'), 318, 158);
-                // 已標數量小字
+                ctx.fillStyle = rg; this._rr(ctx, TX, 156, 190, 44, 22); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; this._rr(ctx, TX + 2, 158, 186, 40, 20); ctx.stroke();
+                ctx.fillStyle = '#ffd94d'; ctx.font = '800 19px ' + FB; ctx.fillText('♪', TX + 20, 167);
+                ctx.fillStyle = '#dfe5f5'; ctx.font = '700 16px ' + FB; ctx.fillText('ランク', TX + 42, 169);
+                ctx.fillStyle = '#fff'; ctx.font = '800 27px ' + FB; ctx.fillText(String((this.prof && this.prof.rank) || '—'), TX + 106, 162);
+                // 已標數量+日期(與膠囊同基線靠右排)
                 let apN = 0, fcN = 0;
                 Object.keys(this.marks).forEach(k => { if (this.marks[k] === 2) apN++; else if (this.marks[k] === 1) fcN++; });
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
-                ctx.fillText(`AP ${apN}・FC ${fcN}`, 214, 214);
-                ctx.fillText(new Date().toISOString().slice(0, 10), 214, 236);
+                ctx.fillText(`AP ${apN}・FC ${fcN}`, TX + 210, 162);
+                ctx.fillText(new Date().toISOString().slice(0, 10), TX + 210, 184);
 
-                // ---- B30 徽章卡(彩虹頂帶+漸層數字) ----
+                // ---- B30 徽章卡(彩虹頂帶+漸層數字,右緣對齊卡格 1047) ----
                 ctx.save();
                 ctx.shadowColor = 'rgba(70,90,150,.18)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
-                ctx.fillStyle = 'rgba(255,255,255,.94)'; this._rr(ctx, 578, 52, 300, 214, 18); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,.94)'; this._rr(ctx, HX2, HY, HW2, HH, 18); ctx.fill();
                 ctx.restore();
-                ctx.strokeStyle = 'rgba(105,125,180,.16)'; ctx.lineWidth = 1.5; this._rr(ctx, 578, 52, 300, 214, 18); ctx.stroke();
-                ctx.save(); this._rr(ctx, 578, 52, 300, 214, 18); ctx.clip();
-                const bw2 = 300 / this.RAINBOW.length;
-                this.RAINBOW.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(578 + i * bw2, 52, bw2 + 1, 9); });
+                ctx.strokeStyle = 'rgba(105,125,180,.16)'; ctx.lineWidth = 1.5; this._rr(ctx, HX2, HY, HW2, HH, 18); ctx.stroke();
+                ctx.save(); this._rr(ctx, HX2, HY, HW2, HH, 18); ctx.clip();
+                const bw2 = HW2 / this.RAINBOW.length;
+                this.RAINBOW.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(HX2 + i * bw2, HY, bw2 + 1, 9); });
                 ctx.restore();
+                const CX = HX2 + HW2 / 2;
                 ctx.textAlign = 'center';
-                ctx.fillStyle = '#8b93ac'; ctx.font = '800 22px ' + FB; ctx.fillText('BEST 30', 728, 82);
+                ctx.fillStyle = '#8b93ac'; ctx.font = '800 22px ' + FB; ctx.fillText('BEST 30', CX, 82);
                 const bv = this.b30val().toFixed(2);
-                const ng = ctx.createLinearGradient(628, 110, 828, 190);
+                const ng = ctx.createLinearGradient(CX - 100, 110, CX + 100, 190);
                 ng.addColorStop(0, '#22c3d6'); ng.addColorStop(.5, '#3f8cf3'); ng.addColorStop(1, '#c39df2');
                 ctx.save();
                 ctx.shadowColor = 'rgba(63,140,243,.35)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, 728, 104);
+                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, CX, 106);
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
-                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.theory().toFixed(2)}`, 728, 200);
-                ctx.fillText('実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', 728, 226);
+                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.theory().toFixed(2)}`, CX, 202);
+                ctx.fillText('実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', CX, 226);
                 ctx.textAlign = 'left';
-                // 直排提醒(還原 Unibot 位置,配站內湖水綠)
-                ctx.fillStyle = '#0eb3c5'; ctx.font = '800 28px ' + FB;
-                '僅供參考娛樂'.split('').forEach((ch, i) => ctx.fillText(ch, 1010, 62 + i * 33));
-                '請勿當真'.split('').forEach((ch, i) => ctx.fillText(ch, 962, 62 + i * 33));
 
                 // ---- 30 張卡(遊戲配色:MAS 紫/APD 粉紫藍漸層,白圈難度標,排名角標) ----
                 for (let i = 0; i < 30; i++) {
@@ -5054,12 +5053,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
                 // ---- 頁尾 ----
                 ctx.fillStyle = '#0eb3c5'; ctx.font = '600 15px ' + FB;
-                ctx.fillText('非官方算法,僅供參考娛樂。定數:腐食氏「プロセカ難易度表」(可能變動)', 50, 1714);
-                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 50, 1742);
+                ctx.fillText('非官方算法,僅供參考娛樂。定數:腐食氏「プロセカ難易度表」(可能變動)', 53, 1714);
+                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 53, 1742);
                 ctx.textAlign = 'right';
                 ctx.font = '700 15px ' + FB;
-                ctx.fillText('Generated by SEKAI 資源中心', 1046, 1714);
-                ctx.fillText('project-sekai-center.vercel.app', 1046, 1742);
+                ctx.fillText('Generated by SEKAI 資源中心', 1047, 1714);
+                ctx.fillText('project-sekai-center.vercel.app', 1047, 1742);
                 ctx.textAlign = 'left';
 
                 // ---- 輸出 ----
