@@ -4934,6 +4934,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 let avatar = null;
                 if (this.prof && this.prof.leaderAb) avatar = await this._img(`${this.ASSET}/thumbnail/chara/${this.prof.leaderAb}_${this.prof.leaderTrained ? 'after_training' : 'normal'}.webp`, true);
                 if (msg) msg.textContent = '繪製中…';
+                // 等網頁字型就緒:M PLUS Rounded 的 ascent 很高,字型未載或事後載入都會讓
+                // 定位偏移(「框裡的數字跑掉」),繪製前先確保載齊
+                try {
+                    await Promise.all([
+                        document.fonts.load('800 76px "M PLUS Rounded 1c"'),
+                        document.fonts.load('800 17px "M PLUS Rounded 1c"'),
+                        document.fonts.load('700 19px "M PLUS Rounded 1c"'),
+                        document.fonts.ready,
+                    ]);
+                } catch (e) {}
 
                 const W = 1096, H = 1800, S = 2;
                 const cv = document.createElement('canvas');
@@ -4956,23 +4966,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ctx.strokeStyle = 'rgba(105,125,180,.35)'; ctx.lineWidth = 1.5; this._rr(ctx, 75, 72, 120, 120, 13); ctx.stroke();
                 } else { ctx.fillStyle = 'rgba(125,140,185,.15)'; this._rr(ctx, 77, 74, 116, 116, 12); ctx.fill(); }
                 const TX = 221;   // 名片文字統一左緣
-                ctx.fillStyle = '#252e4d'; ctx.textBaseline = 'top';
-                ctx.font = '800 34px ' + FB; ctx.fillText(name, TX, 78, HX + HW1 - TX - 24);
-                ctx.font = '600 14px ' + FB; ctx.fillStyle = '#8b93ac'; ctx.fillText('ID:' + idTxt, TX, 128);
-                // ランク膠囊(遊戲深藍+音符)
+                // 一律用 middle 基線+幾何中心定位:不受字型 ascent 影響,數字才會乖乖置中
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#252e4d';
+                ctx.font = '800 34px ' + FB; ctx.fillText(name, TX, 97, HX + HW1 - TX - 24);
+                ctx.font = '600 14px ' + FB; ctx.fillStyle = '#8b93ac'; ctx.fillText('ID:' + idTxt, TX, 136);
+                // ランク膠囊(遊戲深藍+音符),中心線 y=178
                 const rg = ctx.createLinearGradient(TX, 156, TX, 200);
                 rg.addColorStop(0, '#46507a'); rg.addColorStop(1, '#252e4d');
                 ctx.fillStyle = rg; this._rr(ctx, TX, 156, 190, 44, 22); ctx.fill();
                 ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; this._rr(ctx, TX + 2, 158, 186, 40, 20); ctx.stroke();
-                ctx.fillStyle = '#ffd94d'; ctx.font = '800 19px ' + FB; ctx.fillText('♪', TX + 20, 167);
-                ctx.fillStyle = '#dfe5f5'; ctx.font = '700 16px ' + FB; ctx.fillText('ランク', TX + 42, 169);
-                ctx.fillStyle = '#fff'; ctx.font = '800 27px ' + FB; ctx.fillText(String((this.prof && this.prof.rank) || '—'), TX + 106, 162);
-                // 已標數量+日期(與膠囊同基線靠右排)
+                ctx.fillStyle = '#ffd94d'; ctx.font = '800 19px ' + FB; ctx.fillText('♪', TX + 20, 179);
+                ctx.fillStyle = '#dfe5f5'; ctx.font = '700 16px ' + FB; ctx.fillText('ランク', TX + 42, 179);
+                ctx.fillStyle = '#fff'; ctx.font = '800 27px ' + FB; ctx.fillText(String((this.prof && this.prof.rank) || '—'), TX + 106, 178);
+                // 已標數量+日期(膠囊右側兩行,置中對齊膠囊)
                 let apN = 0, fcN = 0;
                 Object.keys(this.marks).forEach(k => { if (this.marks[k] === 2) apN++; else if (this.marks[k] === 1) fcN++; });
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
-                ctx.fillText(`AP ${apN}・FC ${fcN}`, TX + 210, 162);
-                ctx.fillText(new Date().toISOString().slice(0, 10), TX + 210, 184);
+                ctx.fillText(`AP ${apN}・FC ${fcN}`, TX + 210, 169);
+                ctx.fillText(new Date().toISOString().slice(0, 10), TX + 210, 191);
 
                 // ---- B30 徽章卡(彩虹頂帶+漸層數字,右緣對齊卡格 1047) ----
                 ctx.save();
@@ -4986,17 +4998,17 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ctx.restore();
                 const CX = HX2 + HW2 / 2;
                 ctx.textAlign = 'center';
-                ctx.fillStyle = '#8b93ac'; ctx.font = '800 22px ' + FB; ctx.fillText('BEST 30', CX, 82);
+                ctx.fillStyle = '#8b93ac'; ctx.font = '800 22px ' + FB; ctx.fillText('BEST 30', CX, 94);
                 const bv = this.b30val().toFixed(2);
                 const ng = ctx.createLinearGradient(CX - 100, 110, CX + 100, 190);
                 ng.addColorStop(0, '#22c3d6'); ng.addColorStop(.5, '#3f8cf3'); ng.addColorStop(1, '#c39df2');
                 ctx.save();
                 ctx.shadowColor = 'rgba(63,140,243,.35)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, CX, 106);
+                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, CX, 148);
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
-                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.theory().toFixed(2)}`, CX, 202);
-                ctx.fillText('実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', CX, 226);
+                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.theory().toFixed(2)}`, CX, 210);
+                ctx.fillText('実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', CX, 234);
                 ctx.textAlign = 'left';
 
                 // ---- 30 張卡(遊戲配色:MAS 紫/APD 粉紫藍漸層,白圈難度標,排名角標) ----
@@ -5012,7 +5024,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         ctx.strokeStyle = 'rgba(105,125,180,.22)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 1.5;
                         this._rr(ctx, x0, y0, 310, 120, 10); ctx.stroke(); ctx.setLineDash([]);
                         ctx.fillStyle = 'rgba(139,147,172,.6)'; ctx.font = '700 15px ' + FB; ctx.textAlign = 'center';
-                        ctx.fillText('#' + (i + 1), x0 + 155, y0 + 52); ctx.textAlign = 'left';
+                        ctx.fillText('#' + (i + 1), x0 + 155, y0 + 60); ctx.textAlign = 'left';
                         continue;
                     }
                     ctx.strokeStyle = 'rgba(105,125,180,.14)'; ctx.lineWidth = 1; this._rr(ctx, x0, y0, 310, 120, 10); ctx.stroke();
@@ -5022,43 +5034,43 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     if (jk) { ctx.save(); this._rr(ctx, x0 + 16, y0 + 14, 93, 93, 8); ctx.clip(); ctx.drawImage(jk, x0 + 16, y0 + 14, 93, 93); ctx.restore(); }
                     else { ctx.fillStyle = '#e8eaf2'; this._rr(ctx, x0 + 16, y0 + 14, 93, 93, 8); ctx.fill(); }
                     ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2; this._rr(ctx, x0 + 16, y0 + 14, 93, 93, 8); ctx.stroke();
-                    // 排名角標
+                    // 排名角標(中心線 y0+15)
                     ctx.fillStyle = 'rgba(139,147,172,.85)'; ctx.font = '800 13px ' + FB; ctx.textAlign = 'right';
-                    ctx.fillText('#' + (i + 1), x0 + 296, y0 + 8); ctx.textAlign = 'left';
-                    // 難度圓(白圈,遊戲配色)
+                    ctx.fillText('#' + (i + 1), x0 + 296, y0 + 15); ctx.textAlign = 'left';
+                    // 難度圓(白圈,遊戲配色);數字以圓心 middle 置中
                     const colCirc = this._diffPaint(ctx, c.d, x0 + 2, y0 + 2, x0 + 33, y0 + 33);
                     ctx.save();
                     ctx.fillStyle = colCirc; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
                     ctx.beginPath(); ctx.arc(x0 + 17.5, y0 + 17.5, 16, 0, 7); ctx.fill(); ctx.stroke();
                     ctx.restore();
                     ctx.fillStyle = '#fff'; ctx.font = '800 16px ' + FB; ctx.textAlign = 'center';
-                    ctx.fillText(String(c.lv), x0 + 17.5, y0 + 9.5);
-                    // 定數膠囊 → 実効值
+                    ctx.fillText(String(c.lv), x0 + 17.5, y0 + 18.5);
+                    // 定數膠囊(16..38,中心 27) → 実効值
                     ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 57, 22, 11); ctx.fill();
                     ctx.fillStyle = '#fff'; ctx.font = '800 16.5px ' + FB;
-                    ctx.fillText(c.c.toFixed(1), x0 + 149.5, y0 + 19.5);
+                    ctx.fillText(c.c.toFixed(1), x0 + 149.5, y0 + 28);
                     ctx.textAlign = 'left';
                     ctx.fillStyle = '#252e4d'; ctx.font = '800 17px ' + FB;
-                    ctx.fillText('→ ' + it.v.toFixed(1), x0 + 186, y0 + 19);
-                    // 曲名(裁切)
+                    ctx.fillText('→ ' + it.v.toFixed(1), x0 + 186, y0 + 28);
+                    // 曲名(裁切,中心線 y0+58)
                     ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
                     let t = c.t;
                     while (t.length > 1 && ctx.measureText(t).width > 172) t = t.slice(0, -1);
-                    ctx.fillText(t + (t.length < c.t.length ? '…' : ''), x0 + 121, y0 + 48);
+                    ctx.fillText(t + (t.length < c.t.length ? '…' : ''), x0 + 121, y0 + 58);
                     // AP/FC 徽章
                     const bd = it.m === 2 ? apBadge : fcBadge;
                     if (bd) ctx.drawImage(bd, x0 + 121, y0 + 78, bd.width / 2, bd.height / 2);
-                    else { ctx.fillStyle = it.m === 2 ? '#8ee' : '#f7a'; ctx.font = '800 18px ' + FB; ctx.fillText(it.m === 2 ? 'ALL PERFECT!!' : 'FULL COMBO!', x0 + 121, y0 + 80); }
+                    else { ctx.fillStyle = it.m === 2 ? '#8ee' : '#f7a'; ctx.font = '800 18px ' + FB; ctx.fillText(it.m === 2 ? 'ALL PERFECT!!' : 'FULL COMBO!', x0 + 121, y0 + 92); }
                 }
 
                 // ---- 頁尾 ----
                 ctx.fillStyle = '#0eb3c5'; ctx.font = '600 15px ' + FB;
-                ctx.fillText('非官方算法,僅供參考娛樂。定數:腐食氏「プロセカ難易度表」(可能變動)', 53, 1714);
-                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 53, 1742);
+                ctx.fillText('非官方算法,僅供參考娛樂。定數:腐食氏「プロセカ難易度表」(可能變動)', 53, 1722);
+                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 53, 1750);
                 ctx.textAlign = 'right';
                 ctx.font = '700 15px ' + FB;
-                ctx.fillText('Generated by SEKAI 資源中心', 1047, 1714);
-                ctx.fillText('project-sekai-center.vercel.app', 1047, 1742);
+                ctx.fillText('Generated by SEKAI 資源中心', 1047, 1722);
+                ctx.fillText('project-sekai-center.vercel.app', 1047, 1750);
                 ctx.textAlign = 'left';
 
                 // ---- 輸出 ----
