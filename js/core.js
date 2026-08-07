@@ -4687,6 +4687,21 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             shown: 80,
             ASSET: 'https://storage.sekai.best/sekai-jp-assets',
             COLOR: { master: '#BB33EE', append: '#000000' },
+            // 定數「+」記號的兩種用法(使用者指定):plus=保留符號、num=數值化計算
+            // 腐食表:+ = +0.05;++ = 差 0.01 到下一帶的標注(即 +0.09,如 34.9++ → 34.99)
+            fmt: 'plus',
+            PLUS_ADD: [0, 0.05, 0.09],
+            cval(c) { return this.fmt === 'num' ? c.c + this.PLUS_ADD[c.p || 0] : c.c; },
+            cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(2) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
+            vTxt(v) { return this.fmt === 'num' ? v.toFixed(2) : v.toFixed(1); },
+            bTxt(v) { return this.fmt === 'num' ? v.toFixed(3) : v.toFixed(2); },
+            setFmt(v) {
+                this.fmt = v === 'num' ? 'num' : 'plus';
+                try { localStorage.setItem('sekai-b30-fmt', this.fmt); } catch (e) {}
+                this.renderStats(); this.renderList();
+                const msg = document.getElementById('b30GenMsg');
+                if (msg) msg.textContent = '定數格式已切換,重按「產生」即可套用到圖片。';
+            },
 
             ensure() {
                 if (this._loaded || this._loading) return;
@@ -4694,6 +4709,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.marks = JSON.parse(localStorage.getItem('sekai-b30-marks') || '{}') || {}; } catch (e) { this.marks = {}; }
                 try { this.pid = localStorage.getItem('sekai-app-pid') || ''; } catch (e) {}
                 try { this.custName = localStorage.getItem('sekai-b30-name') || ''; } catch (e) {}
+                try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
                 const s = document.createElement('script');
                 s.src = 'data/b30-consts.js?v=' + Math.floor(Date.now() / 43200000);
                 s.onload = () => { this._loaded = true; this._loading = false; this.render(); };
@@ -4702,15 +4718,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             D() { return (typeof B30_CONSTS !== 'undefined') ? B30_CONSTS : null; },
             key(c) { return c.d[0] + c.id; },
-            eff(c, m) { return m === 2 ? c.c : m === 1 ? c.c - (c.lv <= 32 ? 1.5 : 1) : 0; },
+            eff(c, m) { const b = this.cval(c); return m === 2 ? b : m === 1 ? b - (c.lv <= 32 ? 1.5 : 1) : 0; },
             top30() {
                 const out = [];
                 this.D().charts.forEach(c => { const m = this.marks[this.key(c)] | 0; if (m > 0) out.push({ c, m, v: this.eff(c, m) }); });
                 out.sort((a, b) => b.v - a.v);
                 return out.slice(0, 30);
             },
-            b30val() { const t = this.top30(); if (!t.length) return 0; return Math.round(t.reduce((s, x) => s + x.v, 0) / 30 * 100) / 100; },
-            theory() { const cs = this.D().charts.slice(0, 30); return Math.round(cs.reduce((s, c) => s + c.c, 0) / 30 * 100) / 100; },
+            b30val() { const t = this.top30(); if (!t.length) return 0; return t.reduce((s, x) => s + x.v, 0) / 30; },
+            theory() {
+                const vs = this.D().charts.map(c => this.cval(c)).sort((a, b) => b - a).slice(0, 30);
+                return vs.reduce((s, v) => s + v, 0) / 30;
+            },
 
             render() {
                 const el = document.getElementById('b30Body');
@@ -4728,6 +4747,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div id="b30ProfMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;line-height:1.7;">未讀取。名片非必要,直接勾譜面也能出圖。</div>
                         </div>
                         <div class="calc-section"><h4>B30 統計</h4><div id="b30Stats"></div>
+                            <div class="calc-row" style="margin-top:8px;"><label>定數「+」格式</label><select id="b30Fmt" onchange="B30Maker.setFmt(this.value)">
+                                <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
+                                <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++=+0.09)</option>
+                            </select></div>
                             <button type="button" onclick="B30Maker.generate()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:var(--grad-cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">產生 B30 圖片 ▶</button>
                             <div id="b30GenMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;"></div>
                         </div>
@@ -4779,7 +4802,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             rowHtml(c) {
                 const k = this.key(c), m = this.marks[k] | 0;
                 return `<button type="button" class="b30-row st${m}" id="b30r_${k}" onclick="B30Maker.cycle('${k}')">
-                    <span class="b30-const">${c.c.toFixed(1)}</span>
+                    <span class="b30-const">${this.cTxt(c)}</span>
                     <span class="b30-diff ${c.d}">${c.d === 'master' ? 'MAS' : 'APD'} ${c.lv}</span>
                     <span class="b30-title">${c.t}</span>
                     <span class="b30-st">${m === 2 ? 'AP' : m === 1 ? 'FC' : '—'}</span>
@@ -4808,10 +4831,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const p = this.prof;
                 const check = p ? `<div style="font-size:11px;color:var(--text-light);margin-top:6px;">核對:你的 MASTER AP ${p.apM ?? '?'}/FC ${p.fcM ?? '?'}・APPEND AP ${p.apA ?? '?'}/FC ${p.fcA ?? '?'}(遊戲內總數,含定數表未收錄曲)</div>` : '';
                 el.innerHTML = `<div class="sa-stats" style="margin-bottom:0;">
-                    <div><em>B30 実効值</em><strong>${t.length ? this.b30val().toFixed(2) : '—'}</strong></div>
+                    <div><em>B30 実効值</em><strong>${t.length ? this.bTxt(this.b30val()) : '—'}</strong></div>
                     <div><em>已計入</em><strong>${t.length}</strong> / 30</div>
                     <div><em>已標 AP / FC</em><strong>${ap} / ${fc}</strong></div>
-                    <div><em>台服理論值</em><strong>${this.theory().toFixed(2)}</strong></div>
+                    <div><em>台服理論值</em><strong>${this.bTxt(this.theory())}</strong></div>
                 </div>${check}`;
             },
 
@@ -4999,7 +5022,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const CX = HX2 + HW2 / 2;
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#8b93ac'; ctx.font = '800 22px ' + FB; ctx.fillText('BEST 30', CX, 94);
-                const bv = this.b30val().toFixed(2);
+                const bv = this.bTxt(this.b30val());
                 const ng = ctx.createLinearGradient(CX - 100, 110, CX + 100, 190);
                 ng.addColorStop(0, '#22c3d6'); ng.addColorStop(.5, '#3f8cf3'); ng.addColorStop(1, '#c39df2');
                 ctx.save();
@@ -5007,8 +5030,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, CX, 148);
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
-                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.theory().toFixed(2)}`, CX, 210);
-                ctx.fillText('実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', CX, 234);
+                ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.bTxt(this.theory())}`, CX, 210);
+                ctx.fillText(this.fmt === 'num' ? '定數+=+0.05、++=+0.09;FC=定數−1.5(Lv≤32)/−1' : '実効值=AP:定數/FC:定數−1.5(Lv≤32)/−1', CX, 234);
                 ctx.textAlign = 'left';
 
                 // ---- 30 張卡(遊戲配色:MAS 紫/APD 粉紫藍漸層,白圈難度標,排名角標) ----
@@ -5045,13 +5068,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ctx.restore();
                     ctx.fillStyle = '#fff'; ctx.font = '800 16px ' + FB; ctx.textAlign = 'center';
                     ctx.fillText(String(c.lv), x0 + 17.5, y0 + 18.5);
-                    // 定數膠囊(16..38,中心 27) → 実効值
-                    ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 57, 22, 11); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.font = '800 16.5px ' + FB;
-                    ctx.fillText(c.c.toFixed(1), x0 + 149.5, y0 + 28);
+                    // 定數膠囊(16..38,中心 27) → 実効值;寬 64 容納「34.9++」「34.99」
+                    const ct = this.cTxt(c);
+                    ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 64, 22, 11); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.font = '800 ' + (ct.length >= 6 ? 14.5 : 16.5) + 'px ' + FB;
+                    ctx.fillText(ct, x0 + 153, y0 + 28);
                     ctx.textAlign = 'left';
                     ctx.fillStyle = '#252e4d'; ctx.font = '800 17px ' + FB;
-                    ctx.fillText('→ ' + it.v.toFixed(1), x0 + 186, y0 + 28);
+                    ctx.fillText('→ ' + this.vTxt(it.v), x0 + 192, y0 + 28);
                     // 曲名(裁切,中心線 y0+58)
                     ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
                     let t = c.t;

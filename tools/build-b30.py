@@ -88,7 +88,8 @@ def parse_sheet(xlsx_bytes):
         for r in rows_of(sheet_name):
             title = (r.get('C') or '').strip()
             raw = str(r.get('H') or '')
-            m = re.match(r'^(\d+(?:\.\d+)?)', raw)
+            # 定數欄是文字:可能帶「+」「++」(同 0.1 帶內的三階細分)與「(↑)」等註記
+            m = re.match(r'^(\d+(?:\.\d+)?)\s*(\++)?', raw)
             if not title or not m or title == '曲名':
                 continue
             # 數字曲名被 xlsx 存成浮點:「39」→39.0、「0.0000034」→3.4E-6,還原成原字串
@@ -97,7 +98,7 @@ def parse_sheet(xlsx_bytes):
             elif re.match(r'^[\d.]+E-?\d+$', title, re.I):
                 from decimal import Decimal
                 title = format(Decimal(title), 'f')
-            lst.append((title, float(m.group(1))))
+            lst.append((title, float(m.group(1)), len(m.group(2) or '')))
         res[key] = lst
         print(f'{sheet_name}:{len(lst)} 譜面')
     return res
@@ -120,7 +121,7 @@ def main():
     charts = []
     unmatched, jp_only = [], 0
     for dkey in ('master', 'append'):
-        for title, const in sheet[dkey]:
+        for title, const, plus in sheet[dkey]:
             mu = by_norm.get(norm(title))
             if not mu:
                 unmatched.append(title)
@@ -128,11 +129,14 @@ def main():
             if mu['id'] not in tc_ids or (mu['id'], dkey) not in lv:
                 jp_only += 1
                 continue
-            charts.append({
+            row = {
                 'id': mu['id'], 'd': dkey, 'lv': lv[(mu['id'], dkey)], 'c': const,
                 'jkt': mu['assetbundleName'], 't': mu['title'],
-            })
-    charts.sort(key=lambda x: -x['c'])
+            }
+            if plus:
+                row['p'] = plus   # 「+」數(1 或 2):三位小數模式換算 +p/30
+            charts.append(row)
+    charts.sort(key=lambda x: (-x['c'], -x.get('p', 0)))
     print(f'共 {len(charts)} 譜面(台服可玩)、日服限定略過 {jp_only}、曲名比對失敗 {len(unmatched)}')
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])

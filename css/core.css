@@ -883,7 +883,7 @@
         .b30-row:active{ transform:scale(.98); }
         .b30-row.st1{ background:color-mix(in oklab, #ff7ab0 14%, var(--card)); border-color:#ff7ab0; }
         .b30-row.st2{ background:color-mix(in oklab, #37d1c0 16%, var(--card)); border-color:#22b7a8; }
-        .b30-const{ flex:none; width:40px; font-weight:800; font-family:var(--font-num); color:var(--primary); }
+        .b30-const{ flex:none; width:54px; font-weight:800; font-family:var(--font-num); color:var(--primary); }
         .b30-diff{ flex:none; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:800; color:#fff; background:#BB33EE; }
         .b30-diff.append{ background:#222; }
         .b30-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
