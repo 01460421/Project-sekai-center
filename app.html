@@ -1911,6 +1911,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/08', t: '活動試算加上台幣換算', s: '把「NT$ → 水晶 → 體力 → 活動P」整條鏈接起來:達標所需的石換體會直接換算成台幣,並顯示「每 NT$1 ≈ 多少活動P」。水晶 CP(石/元)可自行填,預設 7.0(可重複購買的雙倍水晶檔位約 7.0～7.8,實際數字可在儲值分析查)。配合分析中心的預測終線,就能回答「我要進 T100 還差多少錢」。' },
     { d: '2026/08/08', t: 'MySekai 用詞改白話', s: '「炎倍率」原本是自由填的數字,實際上只有兩種:橘體每點產出是藍體的 5 倍,改成「橘體（×5）／藍體（×1）」二選一,結果列也會標明用的是哪種體力。採集項目的「光/樽」改為「發光草叢/木桶」——光指的是會發光的草叢,樽是日文的桶。' },
     { d: '2026/08/08', t: '組卡可只用自己持有的卡', s: '跑榜工作室新增「只用我持有的卡」開關,勾選後候選池改用收集率頁勾選的持有清單,算出來就不是理論最強隊,而是你實際組得出來的最強隊,並顯示候選 N/M 張。兩頁同源共用 localStorage,不必重新輸入。' },
     { d: '2026/08/08', t: '全站資料備份與轉移', s: '資源連結頁新增備份區,可把收集率、B30 成績、儲值分析、玩家綁定與外觀設定一次匯出成 JSON,換裝置或清快取前先留一份。匯入採白名單,只認本站自己的 15 個欄位,其餘一律略過;榜線快照屬可重建快取,不含在內。' },
@@ -1989,6 +1990,7 @@ class Component extends DCLogic {
     /* 分析中心 */
     anaTab: 'border', anaUid: '', anaQ: '', hist: null, anaTier: 100,
     bkMsg: '',
+    jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
@@ -3093,7 +3095,12 @@ class Component extends DCLogic {
     const totalEnergy = plays * (+s.energy || 0);
     const recoverable = (+s.natHr || 0) * 2 + (+s.lCan || 0) * 10 + (+s.sCan || 0) * 5 + (+s.crys || 0) * 10;
     const net = Math.max(0, totalEnergy - recoverable);
-    return { left, plays, totalMin, totalEnergy, recoverable, net, crystal: Math.ceil(net / 10) * 100, ep: r.ep };
+    const crystal = Math.ceil(net / 10) * 100;
+    // NT$ → 水晶 → 體力 → 活動P:每 10 體力 100 石,每場 energy 體力產出 r.ep
+    const rate = Math.max(0.1, +s.jRate || 7);
+    const twd = crystal / rate;
+    const epPerTwd = (+s.energy > 0) ? (r.ep / ((+s.energy) * 10) * rate) : 0;
+    return { left, plays, totalMin, totalEnergy, recoverable, net, crystal, twd, epPerTwd, ep: r.ep };
   }
   mult() {
     const s = this.state;
@@ -3369,7 +3376,9 @@ class Component extends DCLogic {
         { l: '所需時間', v: hours >= 1 ? hours.toFixed(1) + ' h' : Math.round(pl.totalMin) + ' 分', sub: '每局 ' + Math.round(epR.cycle) + 's' },
         { l: '需要體力', v: this.n(pl.totalEnergy), sub: '每場 ' + s.energy + ' 體力' },
         { l: '差引體力', v: this.n(pl.net), sub: '已扣可回復 ' + this.n(pl.recoverable) },
-        { l: '石換體約', v: this.n(pl.crystal), sub: '每 10 體 100 石' }
+        { l: '石換體約', v: this.n(pl.crystal), sub: '每 10 體 100 石' },
+        { l: '約合台幣', v: 'NT$' + this.n(pl.twd), sub: s.jRate + ' 石/元' },
+        { l: '每 NT$1', v: this.n(pl.epPerTwd), sub: '活動P' }
       ];
       formulaText = '場次 = ⌈(目標 − 目前) ÷ 每局 EP⌉；時間 = 場次 × (歌長 + ' + this.ohOf(s.mode) + 's)';
       formulaNote = '可回復體力 = 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10。';
@@ -4094,9 +4103,10 @@ class Component extends DCLogic {
         { k: 'natHr', label: '自然回復（小時）', value: s.natHr },
         { k: 'lCan', label: '大罐（×10）', value: s.lCan },
         { k: 'sCan', label: '小罐（×5）', value: s.sCan },
-        { k: 'crys', label: '石換體（×10）', value: s.crys }
+        { k: 'crys', label: '石換體（×10）', value: s.crys },
+        { k: 'jRate', label: '水晶 CP（石/元）', value: s.jRate }
       ],
-      planSummary: '需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
+      planSummary: '約合 NT$' + this.n(pl.twd) + '（每 NT$1 ≈ ' + this.n(pl.epPerTwd) + ' 活動P）｜需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
       calcTabs: [
         { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
