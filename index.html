@@ -716,7 +716,7 @@
                         <h4>輸入參數</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="mysekaiPower" value="280000" oninput="MySekaiCalc.calc()"></div>
                         <div class="calc-row"><label>活動加成 %</label><input type="number" id="mysekaiBonus" value="250" oninput="MySekaiCalc.calc()"></div>
-                        <div class="calc-row"><label>炎倍率</label><input type="number" id="mysekaiFever" value="1" min="1" step="0.5" oninput="MySekaiCalc.calc()"></div>
+                        <div class="calc-row"><label>體力類型 <span style="font-weight:400;font-size:11px;color:var(--text-light);">橘體每點產出是藍體的 5 倍</span></label><select id="mysekaiFever" onchange="MySekaiCalc.calc()"><option value="1">藍體（×1）</option><option value="5">橘體（×5）</option></select></div>
                         <div class="calc-row"><label>消費體力總量</label><input type="number" id="mysekaiTimes" value="10" min="0" oninput="MySekaiCalc.calc()"></div>
                     </div>
                     <div class="calc-section">
@@ -725,7 +725,7 @@
                             <div style="color:var(--text-light);font-size:13px;">輸入參數後自動計算</div>
                         </div>
                         <div style="margin-top:12px;font-size:12px;color:var(--text-light);">
-                            公式(已驗證):a=⌊綜合力/45萬,2位⌋;b=⌊(a+1)×(加成+100)/100⌋;每點體力 P=b×100×炎。體力消耗:木/石/音色=1、光/樽=0.5、植物/寶箱=0.2。
+                            公式(已驗證):a=⌊綜合力/45萬,2位⌋;b=⌊(a+1)×(加成+100)/100⌋;每點體力 P=b×100×體力倍率(橘體5/藍體1)。體力消耗:木/石/音色=1、發光草叢/木桶=0.5、植物/寶箱=0.2。
                         </div>
                     </div>
                 </div>
@@ -1251,7 +1251,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=6171f04d2a"></script>
+    <script src="js/core.js?v=5a7819756a"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){

@@ -1911,6 +1911,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/08', t: 'MySekai 用詞改白話', s: '「炎倍率」原本是自由填的數字,實際上只有兩種:橘體每點產出是藍體的 5 倍,改成「橘體（×5）／藍體（×1）」二選一,結果列也會標明用的是哪種體力。採集項目的「光/樽」改為「發光草叢/木桶」——光指的是會發光的草叢,樽是日文的桶。' },
     { d: '2026/08/08', t: '組卡可只用自己持有的卡', s: '跑榜工作室新增「只用我持有的卡」開關,勾選後候選池改用收集率頁勾選的持有清單,算出來就不是理論最強隊,而是你實際組得出來的最強隊,並顯示候選 N/M 張。兩頁同源共用 localStorage,不必重新輸入。' },
     { d: '2026/08/08', t: '全站資料備份與轉移', s: '資源連結頁新增備份區,可把收集率、B30 成績、儲值分析、玩家綁定與外觀設定一次匯出成 JSON,換裝置或清快取前先留一份。匯入採白名單,只認本站自己的 15 個欄位,其餘一律略過;榜線快照屬可重建快取,不含在內。' },
     { d: '2026/08/08', t: '修抽卡模擬的抽法標示', s: '免費抽在官方資料裡沒有花費欄位,原本直接串字串會顯示成「undefined 券」,已依行為類型改為「通行證每日免費」「通行證每週免費」。另外只吃付費水晶的檔位(100石單抽、1500石十連)加上「付費」二字,免得誤以為無償水晶也能抽。' },
@@ -3409,20 +3410,20 @@ class Component extends DCLogic {
     } else if (s.ctab === 'mysekai') {
       calcInputTitle = 'MySekai 採集';
       calcFields = [
-        { k: 'msFever', label: '炎倍率', value: s.msFever },
+        { k: 'msFever', label: '體力倍率（橘體 5／藍體 1）', value: s.msFever },
         { k: 'msStam', label: '消費體力總量', value: s.msStam }
       ];
       const m = this.mysekai();
       resultLabel = '每點體力 P';
       resultValue = this.n(m.per);
-      resultSub = 'a = ' + m.a + ' → b = ' + m.b + ' · 炎 ×' + s.msFever;
+      resultSub = 'a = ' + m.a + ' → b = ' + m.b + ' · ' + (+s.msFever >= 5 ? '橘體' : '藍體') + ' ×' + s.msFever;
       resultStats = [
         { l: '木/石/音色', v: this.n(m.per), sub: '1 體力 / 個' },
-        { l: '光/木桶', v: this.n(Math.round(m.per * 0.5)), sub: '0.5 體力' },
+        { l: '發光草叢/木桶', v: this.n(Math.round(m.per * 0.5)), sub: '0.5 體力' },
         { l: '植物/寶箱', v: this.n(Math.round(m.per * 0.2)), sub: '0.2 體力' },
         { l: '合計', v: this.short(m.total), sub: '消費 ' + s.msStam + ' 體力' }
       ];
-      formulaText = 'a = ⌊綜合力 / 45萬⌋（2 位）；b = ⌊(a+1) × (加成+100)/100⌋；每點體力 P = b × 100 × 炎';
+      formulaText = 'a = ⌊綜合力 / 45萬⌋（2 位）；b = ⌊(a+1) × (加成+100)/100⌋；每點體力 P = b × 100 × 體力倍率（橘體 5／藍體 1）';
       formulaNote = '共用設定的綜合力與活動加成會直接套用。';
     } else {
       calcInputTitle = '排位賽';

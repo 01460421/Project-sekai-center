@@ -1845,7 +1845,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // ========== MySekai 採集計算機 ==========
         const MySekaiCalc = {
             // 已驗證公式(SYLVIA 實測 + note.com/tomo3021 + rmc-8 計算工具):
-            // a=⌊綜合力/45萬,2位⌋;b=⌊(a+1)×(加成+100)/100⌋;每點體力 P=b×100×炎
+            // a=⌊綜合力/45萬,2位⌋;b=⌊(a+1)×(加成+100)/100⌋;每點體力 P=b×100×體力倍率(橘5/藍1)
             calc() {
                 const power = +document.getElementById('mysekaiPower').value||0;
                 const bonus = +document.getElementById('mysekaiBonus').value||0;
@@ -1858,12 +1858,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 document.getElementById('mysekaiResult').innerHTML = `
                     <div style="font-size:12px;margin-bottom:8px;color:var(--text-light);">a=⌊${power.toLocaleString()}/45萬⌋=${a} → b=⌊(a+1)×(${bonus}+100)/100⌋=<strong>${b}</strong></div>
                     <div class="calc-result" style="border-radius:6px;padding:12px;">
-                        <div class="label">每點體力 P(×炎 ${fever})</div>
+                        <div class="label">每點體力 P（${fever >= 5 ? '橘體' : '藍體'} ×${fever}）</div>
                         <div class="value" style="font-size:28px">${fmtNum(perStamina)}</div>
                     </div>
                     <div style="margin-top:10px;font-size:13px;line-height:1.9;">
                         木/石/音色(1體力):<strong>${fmtNum(perStamina)}</strong> P/個<br>
-                        光/木桶(0.5):<strong>${fmtNum(Math.round(perStamina*0.5))}</strong> P/個　植物/寶箱(0.2):<strong>${fmtNum(Math.round(perStamina*0.2))}</strong> P/個<br>
+                        發光草叢/木桶(0.5):<strong>${fmtNum(Math.round(perStamina*0.5))}</strong> P/個　植物/寶箱(0.2):<strong>${fmtNum(Math.round(perStamina*0.2))}</strong> P/個<br>
                         雙葉每本:<strong>${fmtNum(b*100-1)}</strong> P<br>
                         消費 ${stamina} 體力合計:<strong>${fmtNum(total)}</strong> P
                     </div>`;
