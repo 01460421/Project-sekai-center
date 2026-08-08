@@ -912,6 +912,34 @@ input::placeholder{color:var(--text-3)}
   <!-- ========== 資源 ========== -->
   <sc-if value="{{ isRes }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:18px">
+
+    <!-- 全站資料備份 -->
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
+      <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:4px">
+        <span style="font-size:14px;font-weight:800;color:var(--ink)">資料備份與轉移</span>
+        <span style="font-size:11px;color:var(--text-3)">{{ bkCount }}</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:12px">所有紀錄都只存在這台裝置的瀏覽器。匯出成一個 JSON 檔就能搬到別台裝置，或在清快取前先留一份。涵蓋收集率、B30、儲值分析、玩家綁定與外觀設定。</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:6px;margin-bottom:13px">
+        <sc-for list="{{ bkRows }}" as="b" hint-placeholder-count="15">
+          <div style="display:flex;justify-content:space-between;gap:8px;padding:7px 11px;border:1px solid var(--border);border-radius:11px;background:var(--card-2);font-size:11.5px">
+            <span style="color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.n }}</span>
+            <b style="color:{{ b.fg }}">{{ b.mark }}</b>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button type="button" onClick="{{ onBkExport }}" style="padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">匯出備份檔</button>
+        <label style="padding:10px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">
+          匯入備份檔<input type="file" accept="application/json,.json" onChange="{{ onBkPick }}" style="display:none">
+        </label>
+      </div>
+      <sc-if value="{{ bkHasMsg }}">
+        <div style="margin-top:11px;padding:10px 14px;border-radius:13px;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent-deep);font-size:12.5px;font-weight:700">{{ bkMsg }}</div>
+      </sc-if>
+      <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">匯入會覆蓋同名項目，其餘保留；只認得本站自己的欄位，其他一律略過。榜線快照屬於可重建的快取，不含在備份內。</div>
+    </div>
+
     <sc-for list="{{ resGroups }}" as="grp" hint-placeholder-count="5">
       <div>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">{{ grp.label }}</span></div>
@@ -1768,6 +1796,53 @@ class Component extends DCLogic {
   API = 'https://api.hisekai.org/tw';
   TDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
   /* ---------- 收集率 ---------- */
+  /* ---------- 全站資料備份 ----------
+     app.html 與 index.html(經典版/B30/儲值分析)同源,共用同一份 localStorage,
+     所以在這裡備份就涵蓋全站。只收使用者資料,不收可重建的快取。 */
+  BK_KEYS = [
+    ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-app-cur', '活動P 目前'],
+    ['sekai-cards-own', '收集率:持有卡片'],
+    ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
+    ['sekai-b30-zh', 'B30:曲名語言'], ['sekai-b30-fmt', 'B30:定數格式'],
+    ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
+    ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
+    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格']
+  ];
+  bkCollect() {
+    const d = {};
+    this.BK_KEYS.forEach(([k]) => { try { const v = localStorage.getItem(k); if (v != null) d[k] = v; } catch (e) {} });
+    return d;
+  }
+  bkExport() {
+    const data = this.bkCollect(), n = Object.keys(data).length;
+    if (!n) { this.setState({ bkMsg: '目前沒有任何可備份的資料' }); return; }
+    const blob = new Blob([JSON.stringify({ app: 'project-sekai-center', v: 1, at: new Date().toISOString(), data }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'sekai-center-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    this.setState({ bkMsg: '已匯出 ' + n + ' 項資料' });
+  }
+  bkImport(file) {
+    if (!file) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      let j; try { j = JSON.parse(fr.result); } catch (e) { this.setState({ bkMsg: '檔案不是有效的 JSON' }); return; }
+      const d = j && j.data;
+      if (!d || typeof d !== 'object') { this.setState({ bkMsg: '這不是本站的備份檔' }); return; }
+      const allow = new Set(this.BK_KEYS.map(x => x[0]));
+      let n = 0, skip = 0;
+      Object.keys(d).forEach(k => {
+        if (!allow.has(k)) { skip++; return; }
+        try { localStorage.setItem(k, String(d[k])); n++; } catch (e) {}
+      });
+      this.setState({ bkMsg: '已還原 ' + n + ' 項' + (skip ? '（略過 ' + skip + ' 項不認得的）' : '') + '，即將重新載入…' });
+      setTimeout(() => location.reload(), 900);
+    };
+    fr.readAsText(file);
+  }
+
   CARD_KEY = 'sekai-cards-own';
   // cards-index.js 的 UNITS 順序 → 站內 UNITS 的鍵
   UNIT_OF = ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'];
@@ -1836,9 +1911,11 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2026/08/08', t: 'B30 產生器上線', s: '勾選你的 FC/AP 譜面(702 張台服譜面,MASTER+APPEND),依非官方難易度表定數(腐食氏,AP 基準)計算 Best 30 実効值:AP=定數、FC=定數−1。版面 1:1 還原 Unibot(MIT)的 B30 圖卡:三欄十列卡格、難度色圓+定數膠囊+実効值、FULL COMBO/ALL PERFECT 徽章、粉彩三角背景,以 2192×3600 高解析 Canvas 繪製,一鍵下載 PNG。可輸入玩家 ID 帶入名片(名字/Rank/隊長頭像)與各難度 AP/FC 總數核對;台服公開 API 無逐曲成績,故成績採手動勾選(存在瀏覽器)。定數表每日自動同步試算表。曲名顯示社群中文譯名(台服官方不翻曲名,可切回日文原名;搜尋中日文皆可)。定數的「+/++」記號支援兩種模式:符號表示(34.9+、34.9++)或數值計算(+=+0.05;++≈+0.1,顯示四捨五入成下一帶值但排序仍在真正下一帶之後),數值模式下 B30 以三位小數呈現。', },
-    { d: '2026/08/06', t: '儲值商品分析上線', s:'新頁「儲值分析」:台服商城 930+ 項商品(水晶包/優惠組合/通行證/裝扮兌換)連同內容物與台幣定價全部列出,可依素材(心願碎片、招募票券、寶石…)、類別、通路、付款方式、販售狀態篩選,每張卡片逐項列出附贈道具。CP 值排行以「App 常駐最佳石/元」當基準線;月卡與通行證把每日領取攤提合計。智慧推薦依目標抽數/水晶或預算,用有限背包演算法在限購規則內算出最省錢購買組合,並生成深度分析(先買誰、限購重置、期限警示、有償占比、天井換算);天井 300 抽實測比純買常駐大包省約 19%。' },
-    { d: '2026/08/06', t: '官網商店比價、選購清單與即時更新', s: '接上台服官方網頁商店(GamePay,MyCard/信用卡)的公開商品目錄:官網專屬水晶同價多送 11~45% 免費水晶,K/P 官網限定大包附心願碎片;通行證兌換券(BASIC NT$150、PRECIOUS NT$750 等)自動對照遊戲內直購價,連 App 商店沒公布價格的月卡都有了參考價。官網品項可「＋清單」加入選購清單(智慧推薦的方案能一鍵整批加入),輸入遊戲 ID 後「前往官網結帳」會用 role_id 參數把 ID 直接代入官網欄位,到站勾選商品即可付款——付款全程在官方網站,本站不經手金流,功能頁附免責聲明。素材篩選支援多選(符合任一即列出)。資料由伺服器每 30~90 分鐘自動重建,前端直接吃 repo 最新版,活動限時商品不用等每日部署就會出現;分頁頂端顯示資料時間並可手動立即更新。' },
+    { d: '2027/08/08', t: '全站資料備份與轉移', s: '資源連結頁新增備份區,可把收集率、B30 成績、儲值分析、玩家綁定與外觀設定一次匯出成 JSON,換裝置或清快取前先留一份。匯入採白名單,只認本站自己的 15 個欄位,其餘一律略過;榜線快照屬可重建快取,不含在內。' },
+    { d: '2027/08/08', t: '修抽卡模擬的抽法標示', s: '免費抽在官方資料裡沒有花費欄位,原本直接串字串會顯示成「undefined 券」,已依行為類型改為「通行證每日免費」「通行證每週免費」。另外只吃付費水晶的檔位(100石單抽、1500石十連)加上「付費」二字,免得誤以為無償水晶也能抽。' },
+    { d: '2027/08/08', t: 'B30 產生器上線', s: '勾選你的 FC/AP 譜面(702 張台服譜面,MASTER+APPEND),依非官方難易度表定數(腐食氏,AP 基準)計算 Best 30 実効值:AP=定數、FC=定數−1。版面 1:1 還原 Unibot(MIT)的 B30 圖卡:三欄十列卡格、難度色圓+定數膠囊+実効值、FULL COMBO/ALL PERFECT 徽章、粉彩三角背景,以 2192×3600 高解析 Canvas 繪製,一鍵下載 PNG。可輸入玩家 ID 帶入名片(名字/Rank/隊長頭像)與各難度 AP/FC 總數核對;台服公開 API 無逐曲成績,故成績採手動勾選(存在瀏覽器)。定數表每日自動同步試算表。曲名顯示社群中文譯名(台服官方不翻曲名,可切回日文原名;搜尋中日文皆可)。定數的「+/++」記號支援兩種模式:符號表示(34.9+、34.9++)或數值計算(+=+0.05;++≈+0.1,顯示四捨五入成下一帶值但排序仍在真正下一帶之後),數值模式下 B30 以三位小數呈現。', },
+    { d: '2027/08/06', t: '儲值商品分析上線', s:'新頁「儲值分析」:台服商城 930+ 項商品(水晶包/優惠組合/通行證/裝扮兌換)連同內容物與台幣定價全部列出,可依素材(心願碎片、招募票券、寶石…)、類別、通路、付款方式、販售狀態篩選,每張卡片逐項列出附贈道具。CP 值排行以「App 常駐最佳石/元」當基準線;月卡與通行證把每日領取攤提合計。智慧推薦依目標抽數/水晶或預算,用有限背包演算法在限購規則內算出最省錢購買組合,並生成深度分析(先買誰、限購重置、期限警示、有償占比、天井換算);天井 300 抽實測比純買常駐大包省約 19%。' },
+    { d: '2027/08/06', t: '官網商店比價、選購清單與即時更新', s: '接上台服官方網頁商店(GamePay,MyCard/信用卡)的公開商品目錄:官網專屬水晶同價多送 11~45% 免費水晶,K/P 官網限定大包附心願碎片;通行證兌換券(BASIC NT$150、PRECIOUS NT$750 等)自動對照遊戲內直購價,連 App 商店沒公布價格的月卡都有了參考價。官網品項可「＋清單」加入選購清單(智慧推薦的方案能一鍵整批加入),輸入遊戲 ID 後「前往官網結帳」會用 role_id 參數把 ID 直接代入官網欄位,到站勾選商品即可付款——付款全程在官方網站,本站不經手金流,功能頁附免責聲明。素材篩選支援多選(符合任一即列出)。資料由伺服器每 30~90 分鐘自動重建,前端直接吃 repo 最新版,活動限時商品不用等每日部署就會出現;分頁頂端顯示資料時間並可手動立即更新。' },
     { d: '2027/08/01', t: '修正手機底部列與播放器浮動鈕會飄走', s: '兩者都是 position:fixed 又同時帶了 transform 與 will-change,在 iOS Safari 上會變成獨立合成層,動量捲動或網址列收合時就脫鉤亂飄。改成外層只負責定位、視覺效果(毛玻璃、圓角、陰影)全部下放內層,置中改用 left:0/right:0 而非 transform。' },
     { d: '2027/08/01', t: '個人走勢圖接上即時排名', s: '原本要累積兩筆排程快照(最多等一小時)才畫得出來。改為把當下的即時排名接成最後一點,有一筆紀錄就能畫,圖也永遠含最新數值而不是落後最多 30 分鐘。' },
     { d: '2027/08/01', t: '特定玩家名次與分數走勢', s: '玩家分析新增該玩家的名次走勢與活動P走勢兩張圖。快照除了各名次的分數,另外記下每個名次當下是誰,所以能回推特定玩家在每個時間點的名次與分數。名次圖上下反轉(越上面名次越前),只涵蓋他在前百的時段。' },
@@ -1909,6 +1986,7 @@ class Component extends DCLogic {
     rCode: '', rMsg: '',
     /* 分析中心 */
     anaTab: 'border', anaUid: '', anaQ: '', hist: null, anaTier: 100,
+    bkMsg: '',
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
@@ -3339,7 +3417,7 @@ class Component extends DCLogic {
       resultSub = 'a = ' + m.a + ' → b = ' + m.b + ' · 炎 ×' + s.msFever;
       resultStats = [
         { l: '木/石/音色', v: this.n(m.per), sub: '1 體力 / 個' },
-        { l: '光/樽', v: this.n(Math.round(m.per * 0.5)), sub: '0.5 體力' },
+        { l: '光/木桶', v: this.n(Math.round(m.per * 0.5)), sub: '0.5 體力' },
         { l: '植物/寶箱', v: this.n(Math.round(m.per * 0.2)), sub: '0.2 體力' },
         { l: '合計', v: this.short(m.total), sub: '消費 ' + s.msStam + ' 體力' }
       ];
@@ -3504,8 +3582,15 @@ class Component extends DCLogic {
       isDeckPro: s.page === 'deckpro',
       isShop: s.page === 'shop',
       isB30: s.page === 'b30',
+      bkMsg: s.bkMsg, bkHasMsg: !!s.bkMsg,
+      bkRows: this.BK_KEYS.map(([k, n]) => { let has = false; try { has = localStorage.getItem(k) != null; } catch (e) {}
+        return { n, has, mark: has ? '✓' : '—', fg: has ? 'var(--accent-deep)' : 'var(--text-3)' }; }),
+      bkCount: (() => { const c = Object.keys(this.bkCollect()).length; return c + ' / ' + this.BK_KEYS.length + ' 項有資料'; })(),
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG, syslog: this.SYSLOG,
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
+
+      onBkExport: () => this.bkExport(),
+      onBkPick: e => { const f = e.target.files && e.target.files[0]; this.bkImport(f); e.target.value = ''; },
 
       /* ---------- 分析中心 ---------- */
       isAnalysis: s.page === 'analysis',

@@ -1863,7 +1863,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     </div>
                     <div style="margin-top:10px;font-size:13px;line-height:1.9;">
                         木/石/音色(1體力):<strong>${fmtNum(perStamina)}</strong> P/個<br>
-                        光/樽(0.5):<strong>${fmtNum(Math.round(perStamina*0.5))}</strong> P/個　植物/寶箱(0.2):<strong>${fmtNum(Math.round(perStamina*0.2))}</strong> P/個<br>
+                        光/木桶(0.5):<strong>${fmtNum(Math.round(perStamina*0.5))}</strong> P/個　植物/寶箱(0.2):<strong>${fmtNum(Math.round(perStamina*0.2))}</strong> P/個<br>
                         雙葉每本:<strong>${fmtNum(b*100-1)}</strong> P<br>
                         消費 ${stamina} 體力合計:<strong>${fmtNum(total)}</strong> P
                     </div>`;
@@ -3799,11 +3799,20 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const key = b.spinCount + ':' + b.costResourceType + ':' + b.costResourceQuantity + ':' + b.gachaBehaviorType;
                     if (seen.has(key)) return; seen.add(key);
                     const guard = /over_rarity_3/.test(b.gachaBehaviorType || '');
-                    const isJewel = /jewel/.test(b.costResourceType || '');
+                    const ct = b.costResourceType || '', qty = b.costResourceQuantity, bt = b.gachaBehaviorType || '';
+                    const isJewel = /jewel/.test(ct);
                     const main = (b.spinCount === 1 ? '單抽' : b.spinCount + ' 連');
-                    const cost = isJewel ? (b.costResourceQuantity + ' 石') : (b.costResourceQuantity + ' 券');
+                    // 免費抽沒有 costResourceType/Quantity(官方就是 null),
+                    // 原本直接串字串會印出「undefined 券」。依行為類型給正確名稱。
+                    // paid_jewel 只吃付費水晶,要標出來,免得誤以為無償石也能抽。
+                    const cost = (!ct || qty == null)
+                        ? (/once_a_week/.test(bt) ? '通行證每週免費'
+                          : /once_a_day/.test(bt) ? '通行證每日免費' : '免費')
+                        : /paid_jewel/.test(ct) ? ('付費 ' + qty + ' 石')
+                        : isJewel ? (qty + ' 石')
+                        : (qty + ' 券');
                     btns.push(`<button type="button" class="gs-btn${b.spinCount === 1 ? ' gs-ghost' : ''}"
-                        onclick="GachaSim.doSpin(${b.spinCount},${guard},${isJewel ? b.costResourceQuantity : 0})">
+                        onclick="GachaSim.doSpin(${b.spinCount},${guard},${isJewel && qty != null ? qty : 0})">
                         ${main}${guard ? ' <span class="gs-cost">保底★3↑</span>' : ''}<span class="gs-cost">${cost}</span></button>`);
                 });
 
