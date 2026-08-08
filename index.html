@@ -1186,6 +1186,14 @@
                     <div class="calc-section">
                         <h4>5 人技能加分 %(協力房)<span style="font-weight:400;font-size:11px;color:var(--text-light);">　單卡 20%～160%・整隊上限約 288%</span></h4>
                         <div class="calc-row" style="margin-bottom:6px;"><label>角色等級(BloomFES用)</label><input type="number" id="rsCharRank" value="100" min="1" max="200" oninput="RunStudio.onEvent()"></div>
+                        <div class="calc-row" style="margin-bottom:6px;"><label>卡片範圍</label>
+                          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-weight:400;cursor:pointer;">
+                              <input type="checkbox" id="rsOwnedOnly" onchange="RunStudio.onEvent()" style="width:auto;margin:0;"> 只用我持有的卡
+                            </label>
+                            <span id="rsOwnedNote" style="font-size:11px;color:var(--text-light);"></span>
+                          </div>
+                        </div>
                         <div class="member-grid">
                             <div class="member-item"><label>自己(我的編組)</label><input type="number" id="rsP0" value="130" oninput="RunStudio.calc()"></div>
                             <div class="member-item"><label>隊友1</label><input type="number" id="rsP1" placeholder="留空=同我" oninput="RunStudio.calc()"></div>
@@ -1243,7 +1251,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=1d4fa84bc3"></script>
+    <script src="js/core.js?v=6171f04d2a"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){

@@ -3363,6 +3363,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             optimize() { this.onEvent(); },   // radio 已切 opt,交給 onEvent 分支
             // 最佳化理論隊伍:對符合加成的候選卡做 bounded DFS,目標 max 綜合力×(1+加成/100)(活動P proxy)
             // 純計算(不碰 DOM):去重每角色最佳 + bounded DFS,回傳最佳隊。_renderOpt 與 miniRun 共用。
+
+            // 讀收集率頁勾選的持有卡片(同源共用 localStorage;bitmap→base64)
+            _ownedSet() {
+                if (this._ownCache && this._ownCache.raw === this._ownRaw()) return this._ownCache.set;
+                const raw = this._ownRaw(), o = new Set();
+                if (raw) {
+                    try {
+                        const s = atob(raw);
+                        for (let i = 0; i < s.length; i++) {
+                            const v = s.charCodeAt(i);
+                            for (let k = 0; k < 8; k++) if (v & (1 << k)) o.add((i << 3) + k);
+                        }
+                    } catch (e) {}
+                }
+                this._ownCache = { raw, set: o };
+                return o;
+            },
+            _ownRaw() { try { return localStorage.getItem('sekai-cards-own') || ''; } catch (e) { return ''; } },
+            _ownedOn() { const el = document.getElementById('rsOwnedOnly'); return !!(el && el.checked); },
             async _computeBest(src, type, opts) {
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
                 if (src.isJP) this._mergeJPEpi();   // 日服限定卡的前後篇補進 epi 表
@@ -3375,7 +3394,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const R = meta ? (meta.event_rate || 100) : 100;
                 const feverHalf = meta ? (meta.fever_score || 0) * 0.5 : 0;
                 const useEP = !!(meta && wSorted && wSorted.length >= 6);
-                const pre = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday')
+                // 「只用我持有的卡」:用收集率頁勾選的清單縮小候選池,
+                // 算出來就不是理論最強隊,而是你實際組得出來的最強隊。
+                const own = this._ownedOn() ? this._ownedSet() : null;
+                const ownPoolAll = src.cards.filter(c => c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_birthday');
+                const ownPool = own ? ownPoolAll.filter(c => own.has(c.id)) : ownPoolAll;
+                this._poolNote = own ? (ownPool.length + ' / ' + ownPoolAll.length + ' 張可用') : '';
+                const pre = ownPool
                     .map(c => {
                         const b = this._cardBonus(c, this._evId, src);
                         const base = PowerEngine.basePowerCached(c, maxLv(c), true, true, 5);
@@ -3431,7 +3456,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 await new Promise(r => setTimeout(r, 20));
                 const areaEl = document.getElementById('rsAreaLv');
                 const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
+                const noteEl = document.getElementById('rsOwnedNote');
                 const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 100, songId: +document.getElementById('rsSong').value || 0, diff: (document.getElementById('rsDiff') || {}).value || 'master', boostN: +document.getElementById('rsBoost').value || 0 });
+                if (noteEl) noteEl.textContent = this._poolNote
+                    ? ('候選 ' + this._poolNote + '（來源:收集率頁的勾選）')
+                    : '未勾選時用全部★4計算(理論最強)';
                 if (!r.ok) { teamEl.innerHTML = `<div class="note">${r.reason}</div>`; return; }
                 const { chosen, best, totalBonus, obj: bestObj, useEP } = r;
                 const bi = document.getElementById('rsBonus'); if (bi) bi.value = Math.round(totalBonus);
