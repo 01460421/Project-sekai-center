@@ -2131,13 +2131,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 11:['perfect','P分（完美）'], 12:['cfes_life','血分（七彩）'], 13:['good','good以上（七彩）'],
                 14:['birthday','生日'],
                 15:['unit','團分'], 16:['unit','團分'], 17:['unit','團分'], 18:['unit','團分'], 19:['unit','團分'],
-                20:['bfes_char','絢爛角色'], 21:['bfes_char','絢爛角色'], 22:['bfes_char','絢爛角色'],
-                23:['bfes_char','絢爛角色'], 24:['bfes_vs','絢爛虛擬']
+                // skills.json 只到 24(無 20/21)。22=角色等級型、23=吸取隊友技能、24=異團數
+                22:['bfes_char','絢爛角色'],
+                23:['bfes_ref','絢爛吸技'], 24:['bfes_vs','絢爛虛擬']
             },
             GROUP: { score:['分數提升','#0f3460'], judge:['判定強化','#1565c0'], heal:['體力回復','#00897b'],
                      perfect:['P分','#2e7d32'], cfes_life:['七彩血分','#6a1b9a'], good:['七彩good以上','#8e24aa'],
                      birthday:['生日','#d81b60'], unit:['團分','#00838f'],
-                     bfes_char:['絢爛角色','#c62828'], bfes_vs:['絢爛虛擬','#e65100'] },
+                     bfes_char:['絢爛角色','#c62828'], bfes_ref:['絢爛吸技','#ad1457'], bfes_vs:['絢爛虛擬','#e65100'] },
 
             catOf(sid) { return this.SKILL_CAT[sid] || ['score','其他']; },
             groupInfo(g) { return this.GROUP[g] || [g,'#666']; },
@@ -2484,7 +2485,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 return acc.reduce((v, x) => v + Math.floor(x), 0);
             },
-            canvasBonus(card) { return ({ rarity_4: 1500, rarity_birthday: 1500 }[card.cardRarityType] || 0); },   // MySekai 畫布：4★/生日每張 +1500（平面加成）
+            // MySekai 畫布平面加成:台服 cardMysekaiCanvasBonuses.json 是「每稀有度三維各一個固定值」,
+            // 合計 = powerNBonusFixed×3。★4 500×3、生日 400×3、★3 300×3、★2 200×3、★1 100×3
+            CANVAS: { rarity_4: 1500, rarity_birthday: 1200, rarity_3: 900, rarity_2: 600, rarity_1: 300 },
+            canvasBonus(card) { return this.CANVAS[card.cardRarityType] || 0; },
             // members: [{card, level, trained, epiRead, mr, rank}]
             // mysekaiPct = 豆森大門+玩偶加成%(滿級門4%+數套娃),對每卡基礎力加算；另加畫布平面加成
             teamPower(members, areaLevel, mysekaiPct) {
@@ -2702,7 +2706,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const attrOpts = EC_ATTRS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
                 const rarOpts = EC_RARITY.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
                 const mrOpts = [0, 1, 2, 3, 4, 5].map(m => `<option value="${m}">${m}</option>`).join('');
-                const spOpts = `<option value="0">無</option><option value="20">特效卡+20%</option><option value="70">BloomFes+70%</option>`;
+                // eventCards.json 的 bonusRate 實際出現值:0/20/25/45/70(25% 那批另有隊長 +20)
+                const spOpts = `<option value="0">無</option><option value="20">特效卡+20%</option><option value="25">特效卡+25%</option><option value="45">特效卡+45%</option><option value="70">BloomFes+70%</option>`;
                 const sty = 'padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-family:inherit;font-size:12px;';
                 let html = '';
                 for (let i = 0; i < 5; i++) {
@@ -2788,11 +2793,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ep = Math.floor((100 + Math.floor(S / 20000)) * R / 100 * (1 + B / 100)) * F;
                     detail = `⌊(100+⌊S/20000⌋) × ${R}/100 × ${(1 + B / 100).toFixed(2)}⌋ × ${F}`;
                 } else {
-                    const O = +document.getElementById('epOthers').value || 4 * S;
+                    const oRaw = (document.getElementById('epOthers').value || '').trim();
+                    const O = oRaw === '' ? 4 * S : (+oRaw || 0);   // 留空才用 4×S;明確填 0 就是 0
                     const base = 110 + Math.floor(S / 17000) + Math.min(13, Math.floor(O / 340000));
                     const core = Math.floor(base * R / 100 * (1 + B / 100));
                     if (mode === 'cheer') {
-                        const L = +document.getElementById('epLife').value || 0;
+                        const L = +document.getElementById('epLife').value || 1000;   // 空欄比照參考實作取 1000
                         const lifeRate = 1.15 + Math.min(0.20, Math.max(0.10, L / 5000));
                         ep = Math.floor(core * lifeRate) * F;
                         detail = `⌊${core.toLocaleString()} × 生存${lifeRate.toFixed(3)}⌋ × ${F}`;
@@ -3361,9 +3367,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
                 if (src.isJP) this._mergeJPEpi();   // 日服限定卡的前後篇補進 epi 表
                 const areaLv = opts.areaLv, charRank = opts.charRank || 100, mid = opts.songId || 0, boostN = opts.boostN || 0;
+                const diff = opts.diff || 'master';   // 沒帶難度時才退回 master
                 const F = EC_BOOST[boostN] || 1;
                 const maxLv = c => PowerEngine.cardMaxLevel(c);
-                const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid].master || SongEff._metas[mid].expert || Object.values(SongEff._metas[mid])[0]);
+                const meta = SongEff._metas && SongEff._metas[mid] && (SongEff._metas[mid][diff] || SongEff._metas[mid].master || SongEff._metas[mid].expert || Object.values(SongEff._metas[mid])[0]);
                 const wSorted = meta ? (meta.skill_score_multi || []).slice().sort((a, b) => b - a) : null;
                 const R = meta ? (meta.event_rate || 100) : 100;
                 const feverHalf = meta ? (meta.fever_score || 0) * 0.5 : 0;
@@ -3387,9 +3394,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
                 const evalDeck = (power, bonus, skills) => {
                     if (!useEP) return power * (1 + bonus / 100);
+                    // 協力場:每位玩家只有「隊長」的技能會為全隊發動,自己另外 4 張卡的技能不會進窗
+                    // (原本誤用單人模型把 5 張卡塞進 6 窗)。6 次發動 = 5 名玩家 + encore;
+                    // 每次全員得「發動者 + 其他4人÷5」,隊友假設同我(與 calc 的「留空=同我」一致)
+                    // → 全 6 窗皆為 1.8×隊長技能,與 RunStudio.calc 的 boost() 完全對齊
                     const leader = Math.max(...skills);
-                    const s6 = skills.concat(leader).sort((a, b) => b - a);       // 6 值(5員+encore)配 6 窗權重
-                    let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += wSorted[i] * s6[i] / 100;
+                    const coop = 1.8 * leader;
+                    let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += wSorted[i] * coop / 100;
                     const score = Math.floor((meta.base_score + feverHalf + skillPart) * power * 4);
                     const O = 4 * score;
                     const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
@@ -3420,7 +3431,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 await new Promise(r => setTimeout(r, 20));
                 const areaEl = document.getElementById('rsAreaLv');
                 const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
-                const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 100, songId: +document.getElementById('rsSong').value || 0, boostN: +document.getElementById('rsBoost').value || 0 });
+                const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 100, songId: +document.getElementById('rsSong').value || 0, diff: (document.getElementById('rsDiff') || {}).value || 'master', boostN: +document.getElementById('rsBoost').value || 0 });
                 if (!r.ok) { teamEl.innerHTML = `<div class="note">${r.reason}</div>`; return; }
                 const { chosen, best, totalBonus, obj: bestObj, useEP } = r;
                 const bi = document.getElementById('rsBonus'); if (bi) bi.value = Math.round(totalBonus);
@@ -4116,7 +4127,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const D = this.D(); if (!D) return 0;
                 let sum = 0;
                 (r.c || []).forEach(c => {
-                    if (c[0] === 'colorful_pass' && c[3] != null) sum += (D.passes.v1Daily[c[3]] || 0) * ((D.passes.v1[0] || {}).expireDays || 14);
+                    if (c[0] === 'colorful_pass' && c[3] != null) sum += (D.passes.v1Daily[c[3]] || 0) * ((D.passes.v1[0] || {}).expireDays || 30);   // colorfulPasses.json expireDays=30
                     if (c[0] === 'colorful_pass_v2' && c[3] != null) {
                         const t = (D.passes.v2 || []).find(p => p.id === c[3]) || {};
                         sum += (D.passes.v2Daily[c[3]] || 0) * (t.expireDays || 30);
