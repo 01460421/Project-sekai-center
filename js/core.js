@@ -4098,9 +4098,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             F: { cat: 'all', avail: 'now', pay: 'all', src: 'all', mats: [], q: '', sort: 'cp' },
             shown: 60,
             cart: {}, roleId: '',   // 官網選購清單:商品id→數量;遊戲ID(官網 ?role_id= 可預填)
-            incTicket: true, incLimited: true, horizon30: false,
+            incTicket: true, incShard: true, incLimited: true, horizon30: false,
             priceOv: {}, owned: {},
             PULL: 300,   // 單抽 300 水晶
+            // 心願碎片折算價。全商店唯一一次把碎片單獨標價:id30160「心願碎片組合包」400 有償水晶→100 個。
+            // 那是 2025-11 的限時包(限購 5 份),不是常駐價,所以只當「商店賣價」用,不代表碎片的實用價值——
+            // 交換所「100 碎片→300 虛擬硬幣」對照 id30164(400 石→1500 枚)只值 80 石,拿去換硬幣是 5 倍虧。
+            SHARD: 4,
+            SHARD_NAME: '心願碎片',
             WEB_SHOP: 'https://gamepay.ariel.com.tw/topup/5245',   // 台服官方網頁商店(MyCard/信用卡)
             // 活動限定商品要即時:CI 每 30~90 分鐘重建 billing.js 推上 repo(未必觸發部署),
             // 前端比照榜線 history 直接吃 raw.githubusercontent 最新版,蓋過部署內建的靜態檔
@@ -4173,7 +4178,20 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 });
                 return sum;
             },
-            totalJ(r) { return r.paid + r.free + this.passJ(r) + (this.incTicket ? r.pulls * this.PULL : 0); },
+            // 商品內含的心願碎片總數(主箱+附贈箱)。注意要比對完整字串:可愛/帥氣/純真/快樂/神秘碎片是別的素材。
+            shards(r) {
+                if (r._sh == null) r._sh = (r.c || []).concat(r.bc || [])
+                    .reduce((s, c) => s + (c[2] === this.SHARD_NAME ? (c[1] || 0) : 0), 0);
+                return r._sh;
+            },
+            // 兩種口徑,別混用:
+            //   pullJ  = 真的能拿去抽卡的石(水晶+票券折算)。目標抽數/背包 DP/「約可抽」一律用這個,
+            //            碎片是技能升級素材、不能抽卡,算進去會讓方案宣稱湊到 300 抽卻抽不了。
+            //   totalJ = 商品的總價值(pullJ + 碎片折算)。回答「每 1 元拿到多少價值」用這個,
+            //            所以總覽 CP、CP 排行、月卡攤提吃 totalJ。
+            pullJ(r) { return r.paid + r.free + this.passJ(r) + (this.incTicket ? r.pulls * this.PULL : 0); },
+            shardJ(r) { return this.incShard ? this.shards(r) * this.SHARD : 0; },
+            totalJ(r) { return this.pullJ(r) + this.shardJ(r); },
             // 基準:App 商店常駐不限購水晶包的最佳石/元(官網包另計,才能顯出官網多送多少)
             base() {
                 const D = this.D(); if (!D) return 3.9;
@@ -4332,6 +4350,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <option value="new"${F.sort === 'new' ? ' selected' : ''}>上架新→舊</option>
                         </select>
                         <label class="sa-tgl"><input type="checkbox"${this.incTicket ? ' checked' : ''} onchange="ShopAnalyzer.incTicket=this.checked;ShopAnalyzer.renderList()">票券以 300 石/抽折算</label>
+                        <label class="sa-tgl" title="全商店唯一的純碎片商品(400 有償水晶→100 個)換算;那是限時包價,只反映商店賣價"><input type="checkbox"${this.incShard ? ' checked' : ''} onchange="ShopAnalyzer.incShard=this.checked;ShopAnalyzer.renderList()">心願碎片以 4 石/個折算</label>
                     </div>`;
             },
             filtered() {
@@ -4467,7 +4486,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <td style="font-size:12px;">${w.free ? '免費水晶×' + fmtNum(w.free) : ''}${w.paid && m && w.paid > m.paid ? (w.free ? '＋' : '') + '有償水晶×' + fmtNum(w.paid - m.paid) : ''}</td>
                         <td>${mp ? (w.price < mp ? `<span class="sa-rate hot">省 NT$${fmtNum(mp - w.price)}</span>` : w.price === mp ? '<span class="sa-rate good">同價多送</span>' : `<span class="sa-rate">貴 NT$${fmtNum(w.price - mp)}</span>`) : '<span class="sa-rate good">官網已知價</span>'}</td></tr>`;
                 }).join('');
-                el.innerHTML = `<div class="note">目前販售中、已知台幣價的商品依「每 1 元台幣可得水晶數」排序(票券${this.incTicket ? '已' : '未'}以 300 石/抽折算、月卡含每日領取)。<strong>基準線:App 常駐最佳 ${base.toFixed(2)} 石/元</strong>——高於基準的都比單純買常駐大包划算。</div>
+                el.innerHTML = `<div class="note">目前販售中、已知台幣價的商品依「每 1 元台幣可得水晶數」排序(票券${this.incTicket ? '已' : '未'}以 300 石/抽折算、心願碎片${this.incShard ? '已' : '未'}以 4 石/個折算、月卡含每日領取)。<strong>基準線:App 常駐最佳 ${base.toFixed(2)} 石/元</strong>——高於基準的都比單純買常駐大包划算。</div>
                     <div class="sa-bars">${rows.map((x, i) => `
                         <div class="sa-barrow">
                             <div class="sa-barlabel">${i + 1}. ${x.r.n}${x.r.src === 'web' ? ' <span class="sa-tag web">官網</span>' : ''}${this.isOv(x.r) ? ' <em class="sa-ov">自填</em>' : ''}</div>
@@ -4512,7 +4531,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div class="calc-row"><label>期間限定商品</label><select id="saLim" onchange="ShopAnalyzer.recoCalc()"><option value="1">納入(推薦)</option><option value="0">只買常駐</option></select></div>
                             <div class="calc-row"><label>票券折算 300 石/抽</label><select id="saTk" onchange="ShopAnalyzer.recoCalc()"><option value="1">納入</option><option value="0">不納入</option></select></div>
                             <div class="calc-row"><label>計算視角</label><select id="saHz" onchange="ShopAnalyzer.recoCalc()"><option value="0">現在立刻能買的</option><option value="1">30 天視角(含每日/每週重置)</option></select></div>
-                            <div class="note" style="margin:8px 0 0;font-size:11px;">「已買過」的一次性商品(在總覽勾選)會自動排除;價格未公布的商品要先在總覽自填售價才會納入。</div>
+                            <div class="note" style="margin:8px 0 0;font-size:11px;">「已買過」的一次性商品(在總覽勾選)會自動排除;價格未公布的商品要先在總覽自填售價才會納入。<strong>心願碎片不計入目標</strong>——它是技能升級素材、不能抽卡,只會列為方案的附帶收穫(總覽與 CP 排行才會把它折算成石)。</div>
                         </div>
                     </div>
                     <div id="saRecoOut" style="margin-top:14px;"></div></div>`;
@@ -4540,7 +4559,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     if (this.owned[r.id]) return;
                     if (!this.incLimited && this.isLimited(r)) return;
                     const p = this.price(r); if (!(p > 0)) return;
-                    const j = this.totalJ(r); if (j <= 0) return;
+                    const j = this.pullJ(r); if (j <= 0) return;   // DP 的計價貨幣=可抽卡的石,碎片另計為附帶收穫
                     const L = r.lim;
                     let max = Infinity;
                     if (!(L.t === 'unlimited' || L.v == null || L.v < 0)) {
@@ -4641,8 +4660,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const base = this.base();
                 const rows = Object.keys(res.counts).map(ci => { const c = cands[ci]; return { c, n: res.counts[ci] }; })
                     .sort((a, b) => b.c.rate - a.c.rate);
-                let paid = 0, free = 0, tk = 0;
-                rows.forEach(x => { paid += x.c.r.paid * x.n; free += (x.c.r.free + this.passJ(x.c.r)) * x.n; tk += x.c.r.pulls * x.n; });
+                let paid = 0, free = 0, tk = 0, sh = 0;
+                rows.forEach(x => { paid += x.c.r.paid * x.n; free += (x.c.r.free + this.passJ(x.c.r)) * x.n; tk += x.c.r.pulls * x.n; sh += this.shards(x.c.r) * x.n; });
                 const gotJ = res.gotJ, cost = res.cost;
                 const baseCost = Math.round(gotJ / base);
                 const save = baseCost - cost, savePct = baseCost ? Math.round(save / baseCost * 100) : 0;
@@ -4662,13 +4681,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div><em>約可抽</em><strong>${fmtNum(pulls)}</strong> 抽</div>
                     <div><em>平均成本</em><strong>${(gotJ / cost).toFixed(2)}</strong> 石/元</div>
                     <div><em>比全買常駐大包省</em><strong>${save > 0 ? 'NT$' + fmtNum(save) + '(' + savePct + '%)' : '—'}</strong></div>
+                    ${sh ? `<div><em>另附帶心願碎片</em><strong>${fmtNum(sh)}</strong> 個</div>` : ''}
                 </div>`;
                 this._planWeb = rows.filter(x => x.c.r.src === 'web').map(x => [x.c.r.id, x.n]);
                 const webBtn = this._planWeb.length ? `<button type="button" class="sa-more" style="margin-top:8px;" onclick="ShopAnalyzer.cartAddPlan()">🛒 把方案中的 ${this._planWeb.length} 項官網商品加入選購清單</button>` : '';
                 out.innerHTML = `${ctx.mode === 'budget'
                     ? `<div class="note">預算 NT$${fmtNum(ctx.budget)} 內的最大水晶方案(花 NT$${fmtNum(cost)},剩 NT$${fmtNum(ctx.budget - cost)})。</div>`
                     : `<div class="note">目標 ${fmtNum(ctx.targetJ)} 石${ctx.held ? `(已扣除持有 ${fmtNum(ctx.held)})` : ''}${res.reached ? '' : ' — <strong style="color:#e05667;">限購上限內湊不滿,以下是可達的最大方案</strong>'}。</div>`}
-                    ${stats}${table}${webBtn}${this.analysis(rows, { paid, free, tk, gotJ, cost, base, save, savePct }, ctx)}`;
+                    ${stats}${table}${webBtn}${this.analysis(rows, { paid, free, tk, sh, gotJ, cost, base, save, savePct }, ctx)}`;
             },
             analysis(rows, m, ctx) {
                 const b = [];
@@ -4681,6 +4701,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const urgent = rows.filter(x => x.c.r.e && x.c.r.e - Date.now() < 7 * 86400000);
                 if (urgent.length) b.push(`<strong>要過期了:</strong>${urgent.map(x => `${x.c.r.n}(${this.periodTxt(x.c.r)})`).join('、')},請優先購買。`);
                 if (m.tk) b.push(`<strong>票券折算:</strong>方案含票券 ${m.tk} 抽(以 ${this.PULL} 石/抽折算)。票券抽卡通常<strong>不累積天井貼紙</strong>,如果你正在集 300 抽天井,票券抽數不能算進去。`);
+                if (m.sh) b.push(`<strong>附帶心願碎片:</strong>這份方案還會拿到 ${fmtNum(m.sh)} 個心願碎片(商店價 ${this.SHARD} 石/個,約值 ${fmtNum(m.sh * this.SHARD)} 石)。<strong>上面的石數與抽數不含它</strong>——碎片不能抽卡,是技能升級(MR)素材,所以只當附加價值看。想比較「每元總價值」請看 CP 排行,那裡有把碎片折算進去。`);
                 if (m.paid && m.free) b.push(`<strong>有償/無償占比:</strong>有償 ${fmtNum(m.paid)} 石(${Math.round(m.paid / (m.paid + m.free) * 100)}%)、無償 ${fmtNum(m.free)} 石。部分商品(有償限定池、裝扮兌換、通行證加購)只吃有償水晶,想留彈性就讓有償比例高一點。`);
                 const webRows = rows.filter(x => x.c.r.src === 'web');
                 if (webRows.length) b.push(`<strong>官網通路:</strong>${webRows.map(x => x.c.r.n).join('、')} 要到<a href="${this.WEB_SHOP}" target="_blank" rel="noopener">官方網頁商店</a>購買(MyCard/信用卡),水晶與道具直接進遊戲帳號;官網同檔位比 App 多送免費水晶,建議大額儲值一律走官網。`);
