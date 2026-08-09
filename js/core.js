@@ -4098,14 +4098,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             F: { cat: 'all', avail: 'now', pay: 'all', src: 'all', mats: [], q: '', sort: 'cp' },
             shown: 60,
             cart: {}, roleId: '',   // 官網選購清單:商品id→數量;遊戲ID(官網 ?role_id= 可預填)
-            incTicket: true, incShard: true, incLimited: true, horizon30: false,
+            incTicket: true, incMat: true, incLimited: true, horizon30: false,
             priceOv: {}, owned: {},
             PULL: 300,   // 單抽 300 水晶
-            // 心願碎片折算價。全商店唯一一次把碎片單獨標價:id30160「心願碎片組合包」400 有償水晶→100 個。
-            // 那是 2025-11 的限時包(限購 5 份),不是常駐價,所以只當「商店賣價」用,不代表碎片的實用價值——
-            // 交換所「100 碎片→300 虛擬硬幣」對照 id30164(400 石→1500 枚)只值 80 石,拿去換硬幣是 5 倍虧。
-            SHARD: 4,
             SHARD_NAME: '心願碎片',
+            // 道具折算不寫死單價,一律從資料反推(matIndex):遊戲自己開過「只裝一種道具」的
+            // 有償水晶包,那個價就是它對該道具的標價,新開檔位站上會自動跟著更新。
+            // 這些純道具包多半是限時特惠,所以折算出來的是「商店賣價」,不是道具的實用價值——
+            // 例:心願碎片 4 石/個(id30160),但交換所「100 碎片→300 虛擬硬幣」按虛擬硬幣
+            // 自己的標價(id30164,0.2667 石/枚)只值 80 石,拿去換硬幣是 5 倍虧。折算可關。
+            MAT_SKIP: {
+                ticket: 1,              // 招募票券已由 incTicket 以 300 石/抽折算,再算一次會雙算
+                colorful_pass: 1, colorful_pass_v2: 1, mysekai_colorful_pass: 1,   // 由 passJ 攤提
+                costume: 1,             // 服裝部件單價要整套買才有意義,混進組合包會灌水
+            },
+            // 單價要有代表性:小包單價含便利溢價,線性外推到大量會嚴重灌水。
+            // 實例:技能練習卷軸只有「2 個裝 350 石」這一檔(=175 石/個),拿去估
+            // 「60級免費組合包」的 100 個卷軸會算出 17,500 石(≈NT$4,500)的免費包。
+            // 只採計量 ≥10 的檔位,剛好濾掉卷軸(2)、卡片劇情票券(3)、頭像裝扮(1)三個小包。
+            MAT_MINQ: 10,
             WEB_SHOP: 'https://gamepay.ariel.com.tw/topup/5245',   // 台服官方網頁商店(MyCard/信用卡)
             // 活動限定商品要即時:CI 每 30~90 分鐘重建 billing.js 推上 repo(未必觸發部署),
             // 前端比照榜線 history 直接吃 raw.githubusercontent 最新版,蓋過部署內建的靜態檔
@@ -4147,7 +4158,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const cur = this.D();
                     if (cur && (cur.builtAt || 0) >= (d.builtAt || 0)) { if (manual) this._note('資料已是最新'); return; }
                     window.BILLING_DATA = d;
-                    this._mats = null;   // 素材選單快取跟著換
+                    this._mats = null; this._mi = null;   // 素材選單與道具單價表快取跟著換(逐項的 _mb 隨舊物件一起丟掉)
                     this.render();
                     if (manual) this._note('已更新至最新資料');
                 } catch (e) { if (manual) this._note('更新失敗,稍後再試'); }
@@ -4178,20 +4189,59 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 });
                 return sum;
             },
-            // 商品內含的心願碎片總數(主箱+附贈箱)。注意要比對完整字串:可愛/帥氣/純真/快樂/神秘碎片是別的素材。
-            shards(r) {
-                if (r._sh == null) r._sh = (r.c || []).concat(r.bc || [])
-                    .reduce((s, c) => s + (c[2] === this.SHARD_NAME ? (c[1] || 0) : 0), 0);
-                return r._sh;
+            cKey(c) { return c[0] + ' ' + c[2]; },
+            // 道具→有償水晶單價表,從商品資料自己反推,不寫死。
+            // 只認「單一內容物 + 有償水晶兌換價 + 不含水晶」的純道具包 —— 那是遊戲對該道具的自報價。
+            // 同一道具有多個檔位時取最低價:估值取「最便宜的替代取得成本」才不會灌水。
+            matIndex() {
+                if (this._mi) return this._mi;
+                const idx = {}, dropped = {};
+                this.D().items.forEach(r => {
+                    const cs = (r.c || []).concat(r.bc || []);
+                    if (!r.exch || r.paid || r.free || cs.length !== 1) return;
+                    const c = cs[0], q = c[1];
+                    if (!(q > 0)) return;
+                    const per = r.exch / q;
+                    if (!(per > 0)) return;
+                    // MAT_SKIP 的品項是「另有算法」(票券走 incTicket、通行證走 passJ、裝扮整套計),
+                    // 不是被當 0,不列進未折算名單;只有小包單價不可信而真的計 0 的才列。
+                    if (this.MAT_SKIP[c[0]]) return;
+                    if (q < this.MAT_MINQ) { dropped[c[2]] = '只有 ' + q + ' 個裝的檔位'; return; }
+                    const k = this.cKey(c);
+                    if (idx[k] == null || per < idx[k].per) idx[k] = { per, n: c[2], t: c[0], src: r.id, srcN: r.n };
+                });
+                this._miDrop = Object.keys(dropped).filter(n => !this.matRatesFrom(idx).some(x => x.n === n)).map(n => n + '(' + dropped[n] + ')');
+                return (this._mi = idx);
+            },
+            matRatesFrom(i) { return Object.keys(i).map(k => i[k]).sort((a, b) => a.per - b.per); },
+            // 商品內含、且查得到單價的道具明細(主箱+附贈箱合併同項)。
+            // 注意心願碎片要比對完整字串:可愛/帥氣/純真/快樂/神秘碎片是別的素材,用子字串會多抓 19 項。
+            matBag(r) {
+                if (r._mb) return r._mb;
+                const idx = this.matIndex(), acc = {};
+                (r.c || []).concat(r.bc || []).forEach(c => {
+                    const k = this.cKey(c), hit = idx[k];
+                    if (!hit || !(c[1] > 0)) return;
+                    (acc[k] || (acc[k] = { n: c[2], per: hit.per, q: 0 })).q += c[1];
+                });
+                return (r._mb = Object.keys(acc).map(k => acc[k])
+                    .map(x => (x.j = x.q * x.per, x)).sort((a, b) => b.j - a.j));
+            },
+            shards(r) { const x = this.matBag(r).find(v => v.n === this.SHARD_NAME); return x ? x.q : 0; },
+            matRates() { return this.matRatesFrom(this.matIndex()); },
+            matDropped() { this.matIndex(); return this._miDrop || []; },
+            matIndexTxt() {
+                return this.matRates().map(x => `${x.n} ${(+x.per.toFixed(3))} 石/個`).join('、')
+                    + '(取自只裝單一道具的有償水晶包,同道具多檔取最低價)';
             },
             // 兩種口徑,別混用:
             //   pullJ  = 真的能拿去抽卡的石(水晶+票券折算)。目標抽數/背包 DP/「約可抽」一律用這個,
-            //            碎片是技能升級素材、不能抽卡,算進去會讓方案宣稱湊到 300 抽卻抽不了。
-            //   totalJ = 商品的總價值(pullJ + 碎片折算)。回答「每 1 元拿到多少價值」用這個,
+            //            道具不能抽卡,算進去會讓方案宣稱湊到 300 抽卻抽不了。
+            //   totalJ = 商品的總價值(pullJ + 道具折算)。回答「每 1 元拿到多少價值」用這個,
             //            所以總覽 CP、CP 排行、月卡攤提吃 totalJ。
             pullJ(r) { return r.paid + r.free + this.passJ(r) + (this.incTicket ? r.pulls * this.PULL : 0); },
-            shardJ(r) { return this.incShard ? this.shards(r) * this.SHARD : 0; },
-            totalJ(r) { return this.pullJ(r) + this.shardJ(r); },
+            matJ(r) { return this.incMat ? this.matBag(r).reduce((s, x) => s + x.j, 0) : 0; },
+            totalJ(r) { return this.pullJ(r) + this.matJ(r); },
             // 基準:App 商店常駐不限購水晶包的最佳石/元(官網包另計,才能顯出官網多送多少)
             base() {
                 const D = this.D(); if (!D) return 3.9;
@@ -4350,7 +4400,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <option value="new"${F.sort === 'new' ? ' selected' : ''}>上架新→舊</option>
                         </select>
                         <label class="sa-tgl"><input type="checkbox"${this.incTicket ? ' checked' : ''} onchange="ShopAnalyzer.incTicket=this.checked;ShopAnalyzer.renderList()">票券以 300 石/抽折算</label>
-                        <label class="sa-tgl" title="全商店唯一的純碎片商品(400 有償水晶→100 個)換算;那是限時包價,只反映商店賣價"><input type="checkbox"${this.incShard ? ' checked' : ''} onchange="ShopAnalyzer.incShard=this.checked;ShopAnalyzer.renderList()">心願碎片以 4 石/個折算</label>
+                        <label class="sa-tgl" title="${this.matIndexTxt()}"><input type="checkbox"${this.incMat ? ' checked' : ''} onchange="ShopAnalyzer.incMat=this.checked;ShopAnalyzer.renderList()">道具以商店價折算</label>
                     </div>`;
             },
             filtered() {
@@ -4420,6 +4470,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const pjv = this.passJ(r);
                 if (pjv) crys.push('每日領無償共 ' + fmtNum(pjv));
                 if (r.pulls) crys.push('票券 ' + r.pulls + ' 抽');
+                // 石/元 若含道具折算就標出來,否則玩家會看不懂數字為何比水晶多
+                const mj = this.matJ(r);
+                if (mj) crys.push(`道具折算 ${fmtNum(Math.round(mj))} 石`);
                 const chips = this.itemsOf(r).map(c => `<span>${c[2]}${c[1] > 1 ? '×' + fmtNum(c[1]) : ''}</span>`).join('');
                 return `<div class="sa-item${this.ended(r) ? ' dim' : ''}">
                     <div class="sa-head"><span class="sa-name">${r.n}</span>${r.src === 'web' ? '<span class="sa-tag web">官網</span>' : ''}${r.lab ? `<span class="sa-tag">${r.lab}</span>` : ''}<span class="sa-tag alt">${r.tab || this.CAT_NAME[this.catOf(r)]}</span></div>
@@ -4486,7 +4539,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <td style="font-size:12px;">${w.free ? '免費水晶×' + fmtNum(w.free) : ''}${w.paid && m && w.paid > m.paid ? (w.free ? '＋' : '') + '有償水晶×' + fmtNum(w.paid - m.paid) : ''}</td>
                         <td>${mp ? (w.price < mp ? `<span class="sa-rate hot">省 NT$${fmtNum(mp - w.price)}</span>` : w.price === mp ? '<span class="sa-rate good">同價多送</span>' : `<span class="sa-rate">貴 NT$${fmtNum(w.price - mp)}</span>`) : '<span class="sa-rate good">官網已知價</span>'}</td></tr>`;
                 }).join('');
-                el.innerHTML = `<div class="note">目前販售中、已知台幣價的商品依「每 1 元台幣可得水晶數」排序(票券${this.incTicket ? '已' : '未'}以 300 石/抽折算、心願碎片${this.incShard ? '已' : '未'}以 4 石/個折算、月卡含每日領取)。<strong>基準線:App 常駐最佳 ${base.toFixed(2)} 石/元</strong>——高於基準的都比單純買常駐大包划算。</div>
+                el.innerHTML = `<div class="note">目前販售中、已知台幣價的商品依「每 1 元台幣可得水晶數」排序(票券${this.incTicket ? '已' : '未'}以 300 石/抽折算、道具${this.incMat ? '已' : '未'}以商店價折算、月卡含每日領取)。<strong>基準線:App 常駐最佳 ${base.toFixed(2)} 石/元</strong>——高於基準的都比單純買常駐大包划算。</div>
+                    ${this.incMat ? `<details class="note" style="margin-top:-4px;"><summary style="cursor:pointer;font-weight:700;">道具怎麼折算成石?(${this.matRates().length} 種)</summary><div style="margin-top:7px;line-height:1.8;">單價不是我們訂的,是從商品資料反推:遊戲開過「只裝一種道具」的有償水晶包,那個價就是它對該道具的標價;同一道具有多個檔位取最低價。這些包多半是限時特惠,所以折算出來的是<strong>商店賣價,不等於道具的實用價值</strong>——例如心願碎片 4 石/個,但拿去交換所換虛擬硬幣只值 0.8 石/個。想看純水晶的排名,把上方「道具以商店價折算」取消勾選。<div style="margin-top:6px;">${this.matRates().map(x => `<div>・${x.n} <strong>${(+x.per.toFixed(3))}</strong> 石/個 <span style="color:var(--text-light);">← ${x.srcN}</span></div>`).join('')}</div>${this.matDropped().length ? `<div style="margin-top:6px;color:var(--text-light);">未折算(當 0 石):${this.matDropped().join('、')}——小包單價含便利溢價,外推到大量會嚴重高估,例如技能練習卷軸只有 2 個裝的檔位,照算會讓一個免費組合包「值」NT$4,500。其餘沒有純道具包可參照的內容物同樣不計價,所以這裡的石數是<strong>低估</strong>。</div>` : ''}</div></details>` : ''}
                     <div class="sa-bars">${rows.map((x, i) => `
                         <div class="sa-barrow">
                             <div class="sa-barlabel">${i + 1}. ${x.r.n}${x.r.src === 'web' ? ' <span class="sa-tag web">官網</span>' : ''}${this.isOv(x.r) ? ' <em class="sa-ov">自填</em>' : ''}</div>
@@ -4518,8 +4572,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                 <option value="jewel">目標水晶數(最省錢)</option>
                                 <option value="budget">預算上限(水晶最大化)</option>
                             </select></div>
-                            <div class="calc-row"><label id="saValLabel">目標抽數</label><input type="number" id="saVal" value="100" min="1" oninput="ShopAnalyzer.recoCalc()"></div>
-                            <div class="calc-row"><label>已持有水晶</label><input type="number" id="saHeld" value="0" min="0" oninput="ShopAnalyzer.recoCalc()"></div>
+                            <div class="calc-row"><label id="saValLabel">目標抽數</label><input type="number" id="saVal" value="100" min="1" oninput="ShopAnalyzer.recoCalcSoon()"></div>
+                            <div class="calc-row"><label>已持有水晶</label><input type="number" id="saHeld" value="0" min="0" oninput="ShopAnalyzer.recoCalcSoon()"></div>
                             <div class="sa-chiprow" style="margin-top:8px;">
                                 <button type="button" class="sa-chip" onclick="ShopAnalyzer.preset(100)">100 抽</button>
                                 <button type="button" class="sa-chip" onclick="ShopAnalyzer.preset(200)">200 抽</button>
@@ -4531,7 +4585,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div class="calc-row"><label>期間限定商品</label><select id="saLim" onchange="ShopAnalyzer.recoCalc()"><option value="1">納入(推薦)</option><option value="0">只買常駐</option></select></div>
                             <div class="calc-row"><label>票券折算 300 石/抽</label><select id="saTk" onchange="ShopAnalyzer.recoCalc()"><option value="1">納入</option><option value="0">不納入</option></select></div>
                             <div class="calc-row"><label>計算視角</label><select id="saHz" onchange="ShopAnalyzer.recoCalc()"><option value="0">現在立刻能買的</option><option value="1">30 天視角(含每日/每週重置)</option></select></div>
-                            <div class="note" style="margin:8px 0 0;font-size:11px;">「已買過」的一次性商品(在總覽勾選)會自動排除;價格未公布的商品要先在總覽自填售價才會納入。<strong>心願碎片不計入目標</strong>——它是技能升級素材、不能抽卡,只會列為方案的附帶收穫(總覽與 CP 排行才會把它折算成石)。</div>
+                            <div class="note" style="margin:8px 0 0;font-size:11px;">「已買過」的一次性商品(在總覽勾選)會自動排除;價格未公布的商品要先在總覽自填售價才會納入。<strong>道具不計入目標</strong>——心願碎片、技能練習卷軸這些不能拿去抽卡,只會列為方案的附帶收穫(總覽與 CP 排行才會把它們折算成石)。</div>
                         </div>
                     </div>
                     <div id="saRecoOut" style="margin-top:14px;"></div></div>`;
@@ -4618,7 +4672,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 Object.keys(counts).forEach(ci => { const c = cands[ci]; cost += c.p * counts[ci]; gotJ += c.j * counts[ci]; });
                 return { ok: true, cost, counts, gotJ, reached: goal === N && dp[N] < Infinity };
             },
+            // 打字用的節流版:預算模式一次要跑 18 輪二分搜尋 × 背包 DP(實測約 120ms),
+            // 綁 oninput 的話輸入「10000」會連算 5 次、每次都重繪整塊結果,手機上會卡。
+            // 下拉選單維持直接呼叫 recoCalc(),那是單次事件不需要節流。
+            recoCalcSoon() {
+                clearTimeout(this._recoT);
+                this._recoT = setTimeout(() => this.recoCalc(), 200);
+            },
             recoCalc() {
+                clearTimeout(this._recoT);
                 const out = document.getElementById('saRecoOut'); if (!out) return;
                 if (!this.D()) return;
                 const gv = id => (document.getElementById(id) || {}).value;
@@ -4661,7 +4723,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const rows = Object.keys(res.counts).map(ci => { const c = cands[ci]; return { c, n: res.counts[ci] }; })
                     .sort((a, b) => b.c.rate - a.c.rate);
                 let paid = 0, free = 0, tk = 0, sh = 0;
-                rows.forEach(x => { paid += x.c.r.paid * x.n; free += (x.c.r.free + this.passJ(x.c.r)) * x.n; tk += x.c.r.pulls * x.n; sh += this.shards(x.c.r) * x.n; });
+                const bag = {};
+                rows.forEach(x => {
+                    paid += x.c.r.paid * x.n; free += (x.c.r.free + this.passJ(x.c.r)) * x.n; tk += x.c.r.pulls * x.n;
+                    this.matBag(x.c.r).forEach(b => { (bag[b.n] || (bag[b.n] = { n: b.n, per: b.per, q: 0 })).q += b.q * x.n; });
+                });
+                const perks = Object.keys(bag).map(k => bag[k]).map(b => (b.j = b.q * b.per, b)).sort((a, b) => b.j - a.j);
+                sh = perks.reduce((s, b) => s + b.j, 0);
                 const gotJ = res.gotJ, cost = res.cost;
                 const baseCost = Math.round(gotJ / base);
                 const save = baseCost - cost, savePct = baseCost ? Math.round(save / baseCost * 100) : 0;
@@ -4681,14 +4749,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div><em>約可抽</em><strong>${fmtNum(pulls)}</strong> 抽</div>
                     <div><em>平均成本</em><strong>${(gotJ / cost).toFixed(2)}</strong> 石/元</div>
                     <div><em>比全買常駐大包省</em><strong>${save > 0 ? 'NT$' + fmtNum(save) + '(' + savePct + '%)' : '—'}</strong></div>
-                    ${sh ? `<div><em>另附帶心願碎片</em><strong>${fmtNum(sh)}</strong> 個</div>` : ''}
+                    ${sh ? `<div><em>另附帶道具約值</em><strong>${fmtNum(Math.round(sh))}</strong> 石</div>` : ''}
                 </div>`;
                 this._planWeb = rows.filter(x => x.c.r.src === 'web').map(x => [x.c.r.id, x.n]);
                 const webBtn = this._planWeb.length ? `<button type="button" class="sa-more" style="margin-top:8px;" onclick="ShopAnalyzer.cartAddPlan()">🛒 把方案中的 ${this._planWeb.length} 項官網商品加入選購清單</button>` : '';
                 out.innerHTML = `${ctx.mode === 'budget'
                     ? `<div class="note">預算 NT$${fmtNum(ctx.budget)} 內的最大水晶方案(花 NT$${fmtNum(cost)},剩 NT$${fmtNum(ctx.budget - cost)})。</div>`
                     : `<div class="note">目標 ${fmtNum(ctx.targetJ)} 石${ctx.held ? `(已扣除持有 ${fmtNum(ctx.held)})` : ''}${res.reached ? '' : ' — <strong style="color:#e05667;">限購上限內湊不滿,以下是可達的最大方案</strong>'}。</div>`}
-                    ${stats}${table}${webBtn}${this.analysis(rows, { paid, free, tk, sh, gotJ, cost, base, save, savePct }, ctx)}`;
+                    ${stats}${table}${webBtn}${this.analysis(rows, { paid, free, tk, sh, perks, gotJ, cost, base, save, savePct }, ctx)}`;
             },
             analysis(rows, m, ctx) {
                 const b = [];
@@ -4701,7 +4769,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const urgent = rows.filter(x => x.c.r.e && x.c.r.e - Date.now() < 7 * 86400000);
                 if (urgent.length) b.push(`<strong>要過期了:</strong>${urgent.map(x => `${x.c.r.n}(${this.periodTxt(x.c.r)})`).join('、')},請優先購買。`);
                 if (m.tk) b.push(`<strong>票券折算:</strong>方案含票券 ${m.tk} 抽(以 ${this.PULL} 石/抽折算)。票券抽卡通常<strong>不累積天井貼紙</strong>,如果你正在集 300 抽天井,票券抽數不能算進去。`);
-                if (m.sh) b.push(`<strong>附帶心願碎片:</strong>這份方案還會拿到 ${fmtNum(m.sh)} 個心願碎片(商店價 ${this.SHARD} 石/個,約值 ${fmtNum(m.sh * this.SHARD)} 石)。<strong>上面的石數與抽數不含它</strong>——碎片不能抽卡,是技能升級(MR)素材,所以只當附加價值看。想比較「每元總價值」請看 CP 排行,那裡有把碎片折算進去。`);
+                if (m.sh) b.push(`<strong>附帶道具:</strong>這份方案還會拿到 ${m.perks.slice(0, 4).map(x => `${x.n}×${fmtNum(x.q)}`).join('、')}${m.perks.length > 4 ? ` 等 ${m.perks.length} 種` : ''},按商店價約值 ${fmtNum(Math.round(m.sh))} 石(相當於方案花費的 ${Math.round(m.sh / m.cost * 100) / 100} 石/元)。<strong>上面的石數與抽數不含它們</strong>——這些道具不能抽卡,只當附加價值看;想比較「每元總價值」請看 CP 排行。`);
                 if (m.paid && m.free) b.push(`<strong>有償/無償占比:</strong>有償 ${fmtNum(m.paid)} 石(${Math.round(m.paid / (m.paid + m.free) * 100)}%)、無償 ${fmtNum(m.free)} 石。部分商品(有償限定池、裝扮兌換、通行證加購)只吃有償水晶,想留彈性就讓有償比例高一點。`);
                 const webRows = rows.filter(x => x.c.r.src === 'web');
                 if (webRows.length) b.push(`<strong>官網通路:</strong>${webRows.map(x => x.c.r.n).join('、')} 要到<a href="${this.WEB_SHOP}" target="_blank" rel="noopener">官方網頁商店</a>購買(MyCard/信用卡),水晶與道具直接進遊戲帳號;官網同檔位比 App 多送免費水晶,建議大額儲值一律走官網。`);
