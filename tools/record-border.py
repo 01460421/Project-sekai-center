@@ -18,7 +18,8 @@
   "top1": [[unix秒, 分數], ...],
   "ranks": [[unix秒, 第1名分數, 第2名分數, ..., 第100名分數], ...],
   "users": ["7013511661659167489", ...],   # 出現過的玩家(字串,避免大整數失精)
-  "roster": [[unix秒, 第1名的users索引, ..., 第100名], ...]  # 追特定玩家用
+  "roster": [[unix秒, 第1名的users索引, ..., 第100名], ...],  # 追特定玩家用
+  "wl": {"1": {"chapter":1,"character":5,"tiers":[...],"samples":[[unix秒, 各段分數...]]}}  # World Link 各章獨立榜線
 }
 """
 import json
@@ -149,6 +150,30 @@ def main():
         print('距上一筆不足 4 分鐘,跳過')
         return 0
 
+    # World Link:每章有獨立角色與榜線,分開存成 wl[章節]
+    # 章節結構(角色、期程)不會變,榜線段位可能隨開章才出現,
+    # 一樣採「既有順序不動、新段位往後追加」。
+    wl = brd.get('world_link_border_rankings') or []
+    if wl:
+        data.setdefault('wl', {})
+        for c in wl:
+            pb = c.get('player_borders') or []
+            if not pb:
+                continue                      # 未開章的章節官方回空,跳過
+            key = str(c.get('chapter'))
+            slot = data['wl'].setdefault(key, {
+                'chapter': c.get('chapter'), 'character': c.get('character'),
+                'startAt': c.get('start_at') or '', 'aggregateAt': c.get('aggregate_at') or '',
+                'tiers': [], 'samples': []
+            })
+            known = list(slot['tiers'])
+            for r in pb:
+                if r['rank'] not in known:
+                    known.append(r['rank'])
+            slot['tiers'] = known
+            by = {r['rank']: r.get('score') for r in pb}
+            slot['samples'].append([now] + [by.get(r) for r in known])
+
     data['samples'].append([now] + scores)
     if top1 is not None:
         data['top1'].append([now, top1])
@@ -175,8 +200,11 @@ def main():
     ids = sorted({int(p.stem) for p in OUT.glob('*.json') if p.stem.isdigit()})
     write_atomic(idx, json.dumps(ids, separators=(',', ':')) + '\n')
 
+    wln = sum(len(v['samples']) for v in (data.get('wl') or {}).values())
     print(f'第 {ev_id} 期:第 {len(data["samples"])} 筆快照,'
-          f'榜線 {len(scores)} 段 + 前百 {len(rank_scores)} 名,T100={scores[0]:,}')
+          f'榜線 {len(scores)} 段 + 前百 {len(rank_scores)} 名'
+          + (f' + WL {len(data.get("wl") or {})} 章(累計 {wln} 筆)' if data.get('wl') else '')
+          + f',T100={scores[0]:,}')
     return 0
 
 
