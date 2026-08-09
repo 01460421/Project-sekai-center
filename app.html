@@ -208,7 +208,7 @@ input::placeholder{color:var(--text-3)}
       <span style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px 200px at 88% -50%,rgba(120,180,255,.28),transparent 70%)"></span>
       <sc-if value="{{ hasLiveArt }}">
         <div style="position:absolute;right:0;top:0;bottom:0;width:min(50%,430px);pointer-events:none;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 38%);mask-image:linear-gradient(90deg,transparent,#000 38%)">
-          <img src="{{ liveChar }}" referrerpolicy="no-referrer" decoding="async" alt="" width="667" height="1115" style="width:100%;height:100%;object-fit:cover;object-position:center 12%;display:block;opacity:.92">
+          <img src="{{ liveChar }}" referrerpolicy="no-referrer" decoding="async" alt="" width="667" height="1115" style="width:100%;height:100%;object-fit:{{ liveCharFit }};object-position:center 12%;display:block;opacity:.92">
           <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,21,42,.12),rgba(16,21,42,.5) 62%,rgba(16,21,42,.72))"></span>
         </div>
       </sc-if>
@@ -563,6 +563,29 @@ input::placeholder{color:var(--text-3)}
       </div>
       <div style="font-size:14px;font-weight:800;color:var(--ink)">{{ wlTitle }}</div>
       <div style="font-size:11.5px;color:var(--text-3);margin:3px 0 12px">{{ wlSub }}</div>
+
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
+        <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">本章配隊規則</div>
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">取自教學大全「World Link 怎麼配隊伍」</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px">
+          <sc-for list="{{ wlRules }}" as="r" hint-placeholder-count="4">
+            <div style="border:1px solid var(--border);border-radius:13px;background:var(--card-2);padding:10px 12px">
+              <div style="font-size:12px;font-weight:800;color:var(--accent-deep);margin-bottom:4px">{{ r.n }}</div>
+              <sc-for list="{{ r.pts }}" as="pt" hint-placeholder-count="2">
+                <div style="display:flex;gap:5px;font-size:11.5px;color:var(--text-2);line-height:1.55"><span style="flex:none;color:var(--accent)">・</span><span>{{ pt }}</span></div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-2);margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">{{ wlCkMsg }}</div>
+        <sc-if value="{{ wlCkOn }}">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+            <sc-for list="{{ wlCkRows }}" as="a" hint-placeholder-count="5">
+              <span style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);font-size:11.5px;font-weight:700;color:{{ a.fg }}">{{ a.n }} {{ a.v }}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
 
       <sc-if value="{{ wlHasBorders }}">
         <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
@@ -1987,6 +2010,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/09', t: 'WL 活動圖不再破圖', s: 'World Link 活動沒有去背角色圖(官方 screen/character 回 404),首頁 hero 改用該期的團體宣傳圖 screen/bg,並改成完整顯示不裁切。一般活動維持原本的去背圖。' },
+    { d: '2026/08/09', t: 'WL 配隊規則與五色檢查', s: 'WL 個榜分頁新增本章配隊規則,四種情境(原創角色/虛擬歌手/終章兩種)逐點列出,內容取自教學大全「World Link 怎麼配隊伍」。若已在收集率頁勾選持有卡片,會直接檢查你能不能為本章湊出「四位同團＋五色屬性」,並列出每色各有幾張、缺哪幾色。' },
     { d: '2026/08/09', t: '歷代 WL 榜線可查', s: '歷代活動查任一 World Link 期數時,額外顯示該期四章的獨立榜線,可切換章節。資料取自 /event/{id}/border 的 userWorldBloomChapterRankingBorders。' },
     { d: '2026/08/09', t: 'World Link 個榜', s: '活動排名新增「WL 個榜」分頁,只在 World Link 活動出現。四個章節各自一顆按鈕,標出角色、期程與進行中/已結束/未開始。可看該章的獨立榜線(13 段)與前百排名,含上局分數與 1h 均速。未開章的章節官方尚未提供資料,會等開章後才有。' },
     { d: '2026/08/09', t: 'WL 榜線納入歷史紀錄', s: '排程快照除了主榜,現在也記錄 World Link 每一章的獨立榜線,存成 wl[章節];段位一樣採既有順序不動、新段位往後追加。之後就能看 WL 個榜的時間軸走勢。' },
@@ -2065,6 +2090,7 @@ class Component extends DCLogic {
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
+    evType: {},
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
@@ -2854,6 +2880,40 @@ class Component extends DCLogic {
      /event/live/border → world_link_border_rankings
      兩者都是 4 章,欄位與主榜相同(含 1h/3h/24h 統計),所以
      ranksOf/bordersOf 直接套用即可。 */
+
+  /* WL 配隊規則(取自教學大全「World Link 怎麼配隊伍」,台啤開瓶器編輯團隊整理)
+     這裡只做「規則檢查與建議」,不動組卡最佳化引擎 —— WL 加成公式
+     我沒有可靠來源,硬算會給出錯的隊伍。 */
+  WL_RULES = [
+    ['原創角色章節', ['當期章節角色 4 位（同團）＋ 團分卡 1 張', '五張需湊滿五色屬性']],
+    ['虛擬歌手章節', ['V 家 5 位', '當期初音／MEIKO 擇一＋其餘四位當期', '五張需湊滿五色屬性']],
+    ['終章・原創角色', ['比照原創角色章節', '隊長位放你要衝的角色']],
+    ['終章・虛擬歌手', ['只吃四位當期', '第五位可選高倍率卡', '仍需五色屬性']]
+  ];
+  ATTR_ZH = { cool: '帥氣', happy: '快樂', mysterious: '神秘', cute: '可愛', pure: '純真' };
+  /* 檢查目前收集率清單能否為某章角色湊出「四同團＋五色」 */
+  wlCheck(charId) {
+    const cards = this.state.rateCards || [];
+    if (!cards.length) return null;
+    const own = this.ownSet();
+    const uOf = {}; (this.state.rateChars || []).forEach(c => { uOf[c[0]] = c[2]; });
+    const unit = uOf[charId];
+    if (unit == null) return null;
+    // c = [id, 角色, 稀有度, 屬性, 取得, 支援團, 卡池, 卡名, 素材]
+    const mine = cards.filter(c => own.has(c[0]) && (c[2] === 4 || c[2] === 9));
+    const sameUnit = mine.filter(c => uOf[c[1]] === unit || c[5] === unit);
+    const attrs = {};
+    sameUnit.forEach(c => { (attrs[c[3]] = attrs[c[3]] || []).push(c); });
+    const have = Object.keys(attrs).length;
+    const A = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+    return {
+      total: mine.length, unitCards: sameUnit.length,
+      attrHave: have,
+      missing: A.filter(a => !attrs[A.indexOf(a)] && !attrs[String(A.indexOf(a))]).map(a => this.ATTR_ZH[a]),
+      byAttr: A.map((a, i) => ({ n: this.ATTR_ZH[a], c: (attrs[i] || []).length }))
+    };
+  }
+
   chNameOf(id) {
     if (!this._chName) { this._chName = {}; Object.keys(this.CHARA_ID).forEach(n => { this._chName[this.CHARA_ID[n]] = n; }); }
     return this._chName[id] || ('#' + id);
@@ -3093,8 +3153,13 @@ class Component extends DCLogic {
     this._evArtLoading = true;
     fetch(this.TDB + '/events.json').then(r => r.json()).then(list => {
       const m = {};
-      (list || []).forEach(e => { if (e.id != null && e.assetbundleName) m[e.id] = e.assetbundleName; });
-      this.setState({ evArt: m });
+      const ty = {};
+      (list || []).forEach(e => {
+        if (e.id == null) return;
+        if (e.assetbundleName) m[e.id] = e.assetbundleName;
+        if (e.eventType) ty[e.id] = e.eventType;
+      });
+      this.setState({ evArt: m, evType: ty });
     }).catch(() => { this._evArtLoading = false; });
   }
 
@@ -4071,7 +4136,12 @@ class Component extends DCLogic {
       liveProgress: (prog * 100).toFixed(1) + '%',
       liveProgressLabel: startMs && endMs ? '已過 ' + Math.round(prog * 100) + '%' : '',
       liveLogo: (ev.id != null && s.evArt[ev.id]) ? (this.ASSET + '/event/' + s.evArt[ev.id] + '/logo/logo.webp') : '',
-      liveChar: (ev.id != null && s.evArt[ev.id]) ? (this.ASSET + '/event/' + s.evArt[ev.id] + '/screen/character.webp') : '',
+      // World Link 活動沒有去背角色圖(官方 screen/character 不存在,會破圖),
+      // 改用該期的團體宣傳圖 screen/bg。
+      liveChar: (ev.id != null && s.evArt[ev.id])
+        ? (this.ASSET + '/event/' + s.evArt[ev.id] + ((s.evType || {})[ev.id] === 'world_bloom' ? '/screen/bg.webp' : '/screen/character.webp'))
+        : '',
+      liveCharFit: ((s.evType || {})[ev.id] === 'world_bloom') ? 'contain' : 'cover',
       hasLiveArt: !!(ev.id != null && s.evArt[ev.id]),
       hasPlayer: !!s.pid, noPlayer: !s.pid, pidInput: s.pidInput, playerErr: s.pErr,
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
@@ -4147,7 +4217,7 @@ class Component extends DCLogic {
       isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl',
       ...(() => {
         const chs = this.wlChapters();
-        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false };
+        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [] };
         const pick = chs.find(c => c.chapter === +s.wlCh) || chs.find(c => c.live) || chs[0];
         const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
         return {
@@ -4171,7 +4241,18 @@ class Component extends DCLogic {
             seen: r.lastPlayed ? this.ago(r.lastPlayed) : '—',
             uid: r.uid
           })),
-          wlBorders: pick.borders.map(b => ({ rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name }))
+          wlBorders: pick.borders.map(b => ({ rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name })),
+          wlRules: this.WL_RULES.map(([n, pts]) => ({ n, pts })),
+          ...(() => {
+            const ck = this.wlCheck(pick.character);
+            if (!ck) return { wlCkOn: false, wlCkMsg: '到收集率頁勾選持有卡片後，這裡會檢查你能不能為本章湊出「四位同團＋五色屬性」。', wlCkRows: [] };
+            return {
+              wlCkOn: true,
+              wlCkMsg: '你持有的 ★4／生日卡共 ' + ck.total + ' 張，其中本章同團 ' + ck.unitCards + ' 張，'
+                + (ck.attrHave >= 5 ? '五色屬性齊全 ✓' : ('目前 ' + ck.attrHave + ' 色，缺 ' + ck.missing.join('、'))),
+              wlCkRows: ck.byAttr.map(a => ({ n: a.n, v: a.c + ' 張', fg: a.c ? 'var(--accent-deep)' : '#e0576a' }))
+            };
+          })()
         };
       })(),
       isPastTab: s.rankTab === 'past',
