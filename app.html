@@ -219,7 +219,7 @@ input::placeholder{color:var(--text-3)}
       <span style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px 200px at 88% -50%,rgba(120,180,255,.28),transparent 70%)"></span>
       <sc-if value="{{ hasLiveArt }}">
         <div style="position:absolute;right:0;top:0;bottom:0;width:min(50%,430px);pointer-events:none;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 38%);mask-image:linear-gradient(90deg,transparent,#000 38%)">
-          <img src="{{ liveChar }}" referrerpolicy="no-referrer" decoding="async" alt="" width="667" height="1115" style="width:100%;height:100%;object-fit:{{ liveCharFit }};object-position:center 12%;display:block;opacity:.92">
+          <img src="{{ liveChar }}" referrerpolicy="no-referrer" decoding="async" alt="" width="667" height="1115" style="width:100%;height:100%;object-fit:{{ liveCharFit }};object-position:{{ liveCharPos }};display:block;opacity:.92">
           <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,21,42,.12),rgba(16,21,42,.5) 62%,rgba(16,21,42,.72))"></span>
         </div>
       </sc-if>
@@ -576,7 +576,11 @@ input::placeholder{color:var(--text-3)}
       <div style="font-size:11.5px;color:var(--text-3);margin:3px 0 12px">{{ wlSub }}</div>
 
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
-        <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">本章配隊規則</div>
+        <div onClick="{{ onWlRule }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">本章配隊規則</div>
+          <sc-if value="{{ wlRuleFold }}"><span style="font-size:11px;color:var(--accent-deep);font-weight:700">展開 ▾</span></sc-if>
+        </div>
+        <sc-if value="{{ wlRuleShow }}">
         <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">取自教學大全「World Link 怎麼配隊伍」</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px">
           <sc-for list="{{ wlRules }}" as="r" hint-placeholder-count="4">
@@ -597,19 +601,30 @@ input::placeholder{color:var(--text-3)}
             </sc-for>
           </div>
         </sc-if>
+        </sc-if>
       </div>
 
       <sc-if value="{{ wlHasBorders }}">
         <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
-          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px">本章分段榜線</div>
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">本章分段榜線與預測終線</div>
+          <div style="font-size:10.5px;color:var(--text-3);margin-bottom:10px">{{ wlProjNote }}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px">
             <sc-for list="{{ wlBorders }}" as="b" hint-placeholder-count="13">
-              <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);font-size:12px">
-                <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ b.rank }}</b>
-                <span style="font-family:'M PLUS Rounded 1c';color:var(--ink)">{{ b.score }}</span>
+              <div style="padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);font-size:12px">
+                <div style="display:flex;justify-content:space-between;gap:8px">
+                  <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ b.rank }}</b>
+                  <span style="font-family:'M PLUS Rounded 1c';color:var(--ink)">{{ b.score }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-top:3px;font-size:10.5px;color:var(--text-3)">
+                  <span>{{ b.projSub }}</span>
+                  <span style="font-family:'M PLUS Rounded 1c';font-weight:700;color:var(--accent-deep)">預測 {{ b.proj }}</span>
+                </div>
               </div>
             </sc-for>
           </div>
+          <sc-if value="{{ wlBMore }}">
+            <button type="button" onClick="{{ onWlMoreB }}" style="width:100%;margin-top:9px;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">顯示全部段位 ▾</button>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -620,7 +635,8 @@ input::placeholder{color:var(--text-3)}
               <span>#</span><span>玩家</span><span style="text-align:right">章節分數</span><sc-if value="{{ anaWide }}"><span style="text-align:right">上局</span><span style="text-align:right">1h 均速</span><span style="text-align:right">最後</span></sc-if>
             </div>
             <sc-for list="{{ wlRows }}" as="r" hint-placeholder-count="20">
-              <div style="display:grid;grid-template-columns:{{ wlCols }};gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center">
+              <div>
+              <div onClick="{{ onWlRow }}" data-r="{{ r.rankN }}" style="display:grid;grid-template-columns:{{ wlCols }};gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center;cursor:pointer">
                 <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ r.rank }}</span>
                 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">{{ r.name }}</span>
                 <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800">{{ r.score }}</span>
@@ -630,9 +646,16 @@ input::placeholder{color:var(--text-3)}
                   <span style="text-align:right;font-size:11px;color:var(--text-3)">{{ r.seen }}</span>
                 </sc-if>
               </div>
+              <sc-if value="{{ r.open }}">
+                <div style="padding:8px 16px 11px;border-bottom:1px solid var(--border);background:var(--card-2);font-size:11.5px;color:var(--text-2);font-family:'M PLUS Rounded 1c'">{{ r.detail }}</div>
+              </sc-if>
+              </div>
             </sc-for>
           </div>
         </div>
+        <sc-if value="{{ wlRMore }}">
+          <button type="button" onClick="{{ onWlMoreR }}" style="width:100%;margin-top:9px;padding:10px;border:1px solid var(--border);border-radius:13px;background:var(--card);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">顯示完整前百 ▾</button>
+        </sc-if>
       </sc-if>
       <sc-if value="{{ wlEmpty }}">
         <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">本期不是 World Link 活動，或章節資料尚未開放。</div>
@@ -705,6 +728,18 @@ input::placeholder{color:var(--text-3)}
             </div>
           </sc-for>
         </div>
+        <sc-if value="{{ pastWlHasTop }}">
+          <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin:13px 0 8px">本章最終前百</div>
+          <div style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:13px">
+            <sc-for list="{{ pastWlTop }}" as="r" hint-placeholder-count="10">
+              <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 110px;gap:8px;padding:8px 13px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
+                <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ r.rank }}</span>
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)">{{ r.name }}</span>
+                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:700">{{ r.score }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
       <sc-if value="{{ pastHasErr }}">
@@ -2022,6 +2057,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/10', t: 'WL 個榜四項優化', s: '各段榜線加上預測終線(線性外推,附推估方式與剩餘時間)。歷代 WL 補上各章最終前百名單。手機版大改:配隊規則預設收合、榜線先顯示 6 段、排名先顯示 20 列,都可一鍵展開;點任一排名列可展開上局/均速/最後遊玩。' },
+    { d: '2026/08/10', t: 'WL 活動圖改滿版', s: '團體宣傳圖由完整顯示(會留大片空白)改為滿版裁切,焦點置中。' },
     { d: '2026/08/09', t: '教學格式校驗與表格樣式', s: '逐則檢查 Doc→HTML 移植:115 則標籤全平衡、表格結構完整(碎段警告經查全在表格內,為誤報)。清掉 Google 註解錨點並修復 6 處孤兒連結標籤。教學內文補上表格與清單樣式,專精等級表等數值表以完整格線呈現,窄螢幕可橫向捲動。' },
     { d: '2026/08/09', t: '教學大全全面升級', s: '改用教學原檔重新生成:106 → 115 則。31 則內文升級為完整版(含活動加成數值表、專精等級表、挑戰點數公式等原本被縮成一句話的內容),新增 9 則。27 張教學圖片直接內嵌顯示(壓成 WebP,13MB → 1.6MB),不用再跳去 Google 文檔。' },
     { d: '2026/08/09', t: 'WL 配隊補上加成計算來源', s: '規則卡附上社群的 WL 輔助隊伍加成計算工具連結(rilaksekai.com/support)。本站不內建該數值,因為官方未公開完整表格,自行推估會給出錯的隊伍。' },
@@ -2114,7 +2151,8 @@ class Component extends DCLogic {
     rCode: '', rMsg: '',
     /* 分析中心 */
     anaTab: 'border', anaUid: '', anaQ: '', hist: null, anaTier: 100,
-    wlCh: 0, pastWlCh: 0,
+    wlCh: 0, pastWlCh: 0, wlOpen: 0,
+    wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
@@ -4156,7 +4194,9 @@ class Component extends DCLogic {
       liveChar: (ev.id != null && s.evArt[ev.id])
         ? (this.ASSET + '/event/' + s.evArt[ev.id] + ((s.evType || {})[ev.id] === 'world_bloom' ? '/screen/bg.webp' : '/screen/character.webp'))
         : '',
-      liveCharFit: ((s.evType || {})[ev.id] === 'world_bloom') ? 'contain' : 'cover',
+      // cover 滿版裁切;WL 的 bg 是橫式主視覺,焦點在中央
+      liveCharFit: 'cover',
+      liveCharPos: ((s.evType || {})[ev.id] === 'world_bloom') ? 'center 30%' : 'center 12%',
       hasLiveArt: !!(ev.id != null && s.evArt[ev.id]),
       hasPlayer: !!s.pid, noPlayer: !s.pid, pidInput: s.pidInput, playerErr: s.pErr,
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
@@ -4232,7 +4272,7 @@ class Component extends DCLogic {
       isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl',
       ...(() => {
         const chs = this.wlChapters();
-        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [] };
+        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [], wlProjNote: '' };
         const pick = chs.find(c => c.chapter === +s.wlCh) || chs.find(c => c.live) || chs[0];
         const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
         return {
@@ -4249,14 +4289,37 @@ class Component extends DCLogic {
           wlSub: md(pick.start) + ' – ' + md(pick.end) + '　' + (pick.live ? '進行中' : pick.done ? '已結束' : '尚未開始')
                  + '　排名 ' + pick.ranks.length + ' 筆・榜線 ' + pick.borders.length + ' 段',
           wlHasRows: !!pick.ranks.length, wlHasBorders: !!pick.borders.length,
-          wlRows: pick.ranks.slice(0, 100).map(r => ({
-            rank: '#' + r.rank, name: r.name, score: this.n(r.score),
+          wlRows: pick.ranks.slice(0, (s.mobile && !s.wlMoreR) ? 20 : 100).map(r => ({
+            rank: '#' + r.rank, rankN: r.rank, name: r.name, score: this.n(r.score),
             last: r.lastScore != null ? this.n(r.lastScore) : '—',
             speed: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
             seen: r.lastPlayed ? this.ago(r.lastPlayed) : '—',
-            uid: r.uid
+            uid: r.uid,
+            // 手機:點列展開顯示桌機才有的欄位
+            open: s.mobile && s.wlOpen === r.rank,
+            detail: '上局 ' + (r.lastScore != null ? this.n(r.lastScore) : '—')
+                  + '　1h均速 ' + (r.speed1h != null ? this.short(r.speed1h) + '/h' : '—')
+                  + '　最後 ' + (r.lastPlayed ? this.ago(r.lastPlayed) : '—')
           })),
-          wlBorders: pick.borders.map(b => ({ rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name })),
+          wlBorders: (() => {
+            // 章節版預測終線:用本章已過時間線性外推(WL 章只有 3 天,線性誤差可接受;
+            // 章節榜線沒有歷史快照可用實測速度,誠實標示推估方式)
+            const now = Date.now();
+            const frac = Math.max(0.02, Math.min(1, (now - pick.start) / (pick.end - pick.start || 1)));
+            const leftH = Math.max(0, (pick.end - now) / 3600000);
+            const bs = (s.mobile && !s.wlMoreB) ? pick.borders.slice(0, 6) : pick.borders;
+            return bs.map(b => ({
+              rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name,
+              proj: pick.done ? '—' : this.short(b.score / frac),
+              projSub: pick.done ? '已結算' : ('剩 ' + (leftH >= 24 ? Math.floor(leftH / 24) + '天' + Math.round(leftH % 24) + '時' : leftH.toFixed(1) + '時'))
+            }));
+          })(),
+          wlProjNote: pick.done ? '' : '預測＝目前分數 ÷ 已過進度（線性外推）。章節僅 3 天，末段衝刺通常會高於此估。',
+          // 手機:預設只給前幾筆,點「顯示全部」再展開,避免一進頁就是一大坨
+          wlBMore: s.mobile && !s.wlMoreB && pick.borders.length > 6,
+          wlRMore: s.mobile && !s.wlMoreR && pick.ranks.length > 20,
+          wlRuleFold: s.mobile && !s.wlRuleOpen,
+          wlRuleShow: !s.mobile || s.wlRuleOpen,
           wlRules: this.WL_RULES.map(([n, pts]) => ({ n, pts })),
           ...(() => {
             const ck = this.wlCheck(pick.character);
@@ -4276,7 +4339,7 @@ class Component extends DCLogic {
         //         /event/{id}/top100 的 userWorldBloomChapterRankings
         const wb = (s.pastBrd && s.pastBrd.userWorldBloomChapterRankingBorders) || [];
         const wt = (s.pastTop && s.pastTop.userWorldBloomChapterRankings) || [];
-        if (!wb.length && !wt.length) return { pastWl: false, pastWlChips: [], pastWlRows: [], pastWlTitle: '' };
+        if (!wb.length && !wt.length) return { pastWl: false, pastWlChips: [], pastWlRows: [], pastWlTitle: '', pastWlTop: [], pastWlHasTop: false };
         const chs = [];
         const push = (cid, brd, top) => {
           let e = chs.find(x => x.cid === cid);
@@ -4294,7 +4357,9 @@ class Component extends DCLogic {
               bg: on ? (this.CHARA_COLOR[c.cid] || 'var(--cta)') : 'var(--card-2)',
               fg: on ? '#111' : 'var(--text-2)' }; }),
           pastWlTitle: this.chNameOf(pick.cid) + ' 章　榜線 ' + pick.brd.length + ' 段' + (pick.top.length ? '・前百 ' + pick.top.length + ' 筆' : ''),
-          pastWlRows: pick.brd.map(b => ({ rank: 'T' + this.n(b.rank), score: this.n(b.score) }))
+          pastWlRows: pick.brd.map(b => ({ rank: 'T' + this.n(b.rank), score: this.n(b.score) })),
+          pastWlTop: pick.top.slice(0, 100).map(r => ({ rank: '#' + r.rank, name: r.name, score: this.n(r.score) })),
+          pastWlHasTop: !!pick.top.length
         };
       })(), isTrendTab: s.rankTab === 'trend',
       /* 歷代活動 */
@@ -4557,7 +4622,11 @@ class Component extends DCLogic {
       onColTab: e => this.setState({ colTab: e.currentTarget.dataset.v, cp: 1, cq: '' }),
 
       /* ---------- 分析中心 ---------- */
-      onWlCh: e => this.setState({ wlCh: +e.currentTarget.dataset.v }),
+      onWlCh: e => this.setState({ wlCh: +e.currentTarget.dataset.v, wlOpen: 0, wlMoreB: false, wlMoreR: false }),
+      onWlRow: e => { const r = +e.currentTarget.dataset.r; this.setState(s2 => ({ wlOpen: s2.wlOpen === r ? 0 : r })); },
+      onWlRule: () => this.setState(s2 => ({ wlRuleOpen: !s2.wlRuleOpen })),
+      onWlMoreB: () => this.setState({ wlMoreB: true }),
+      onWlMoreR: () => this.setState({ wlMoreR: true }),
       onPastWlCh: e => this.setState({ pastWlCh: +e.currentTarget.dataset.v }),
       onAnaTab: e => this.setState({ anaTab: e.currentTarget.dataset.v }),
       onAnaTier: e => this.setState({ anaTier: +e.currentTarget.dataset.v }),
