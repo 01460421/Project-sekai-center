@@ -127,6 +127,17 @@ input::placeholder{color:var(--text-3)}
 .side-nav::-webkit-scrollbar-track{background:transparent}
 .side-nav::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:999px;border:2px solid transparent;background-clip:content-box}
 .side-nav::-webkit-scrollbar-thumb:hover{background:var(--text-3);border:2px solid transparent;background-clip:content-box}
+
+/* 教學內文:原檔的表格與清單需要基本樣式,不然數值表會擠成一團 */
+.tut-a table{border-collapse:collapse;margin:10px 0;font-size:12.5px;display:block;overflow-x:auto;max-width:100%}
+.tut-a td,.tut-a th{border:1px solid var(--border);padding:6px 11px;text-align:center;color:var(--text);white-space:nowrap}
+.tut-a tr:first-child td,.tut-a th{background:var(--card-2);font-weight:800;color:var(--ink)}
+.tut-a td p{margin:0}
+.tut-a ul,.tut-a ol{margin:8px 0 8px 20px;padding:0}
+.tut-a li{margin:3px 0}
+.tut-a p{margin:7px 0}
+.tut-a a{color:var(--accent-deep);font-weight:700}
+.tut-a img{max-width:100%;height:auto;border-radius:10px;display:block;margin:8px 0}
 </style>
 </helmet>
 
@@ -993,7 +1004,7 @@ input::placeholder{color:var(--text-3)}
             <span style="flex:none;font-family:'M PLUS Rounded 1c';font-size:15px;color:var(--text-3);transform:{{ t.arrow }};transition:transform .3s cubic-bezier(.32,.72,.24,1)">▾</span>
           </button>
           <sc-if value="{{ t.open }}">
-            <div style="padding:0 17px 16px;font-size:13.5px;line-height:1.9;color:var(--text-2);border-top:1px solid var(--border);padding-top:13px">{{ t.body }}</div>
+            <div class="tut-a" style="padding:0 17px 16px;font-size:13.5px;line-height:1.9;color:var(--text-2);border-top:1px solid var(--border);padding-top:13px">{{ t.body }}</div>
           </sc-if>
         </div>
       </sc-for>
@@ -1001,7 +1012,7 @@ input::placeholder{color:var(--text-3)}
         <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:16px;background:var(--card)">找不到符合的教學條目</div>
       </sc-if>
     </div>
-    <div style="margin-top:14px;font-size:11.5px;color:var(--text-3);line-height:1.8">由台啤開瓶器編輯團隊整理，共 115 則問答。含圖片的項目請前往 <a href="{{ tutDoc }}" target="_blank">教學文檔</a> 查看原圖。</div>
+    <div style="margin-top:14px;font-size:11.5px;color:var(--text-3);line-height:1.8">由台啤開瓶器編輯團隊整理，共 115 則問答，教學圖片直接內嵌顯示。完整原始文檔（含最新增補）：<a href="{{ tutDoc }}" target="_blank">教學文檔 ↗</a></div>
   </div>
   </sc-if>
 
@@ -2011,6 +2022,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/09', t: '教學格式校驗與表格樣式', s: '逐則檢查 Doc→HTML 移植:115 則標籤全平衡、表格結構完整(碎段警告經查全在表格內,為誤報)。清掉 Google 註解錨點並修復 6 處孤兒連結標籤。教學內文補上表格與清單樣式,專精等級表等數值表以完整格線呈現,窄螢幕可橫向捲動。' },
     { d: '2026/08/09', t: '教學大全全面升級', s: '改用教學原檔重新生成:106 → 115 則。31 則內文升級為完整版(含活動加成數值表、專精等級表、挑戰點數公式等原本被縮成一句話的內容),新增 9 則。27 張教學圖片直接內嵌顯示(壓成 WebP,13MB → 1.6MB),不用再跳去 Google 文檔。' },
     { d: '2026/08/09', t: 'WL 配隊補上加成計算來源', s: '規則卡附上社群的 WL 輔助隊伍加成計算工具連結(rilaksekai.com/support)。本站不內建該數值,因為官方未公開完整表格,自行推估會給出錯的隊伍。' },
     { d: '2026/08/09', t: 'WL 活動圖不再破圖', s: 'World Link 活動沒有去背角色圖(官方 screen/character 回 404),首頁 hero 改用該期的團體宣傳圖 screen/bg,並改成完整顯示不裁切。一般活動維持原本的去背圖。' },
