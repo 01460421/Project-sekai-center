@@ -578,6 +578,7 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
         <div style="font-size:11.5px;color:var(--text-2);margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">{{ wlCkMsg }}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">WL 輔助隊伍的加成數值本站尚未內建（官方未公開完整表格）。需要精算請用社群工具 <a href="https://rilaksekai.com/support" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">rilaksekai.com/support ↗</a>。</div>
         <sc-if value="{{ wlCkOn }}">
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
             <sc-for list="{{ wlCkRows }}" as="a" hint-placeholder-count="5">
@@ -2010,6 +2011,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/09', t: 'WL 配隊補上加成計算來源', s: '規則卡附上社群的 WL 輔助隊伍加成計算工具連結(rilaksekai.com/support)。本站不內建該數值,因為官方未公開完整表格,自行推估會給出錯的隊伍。' },
     { d: '2026/08/09', t: 'WL 活動圖不再破圖', s: 'World Link 活動沒有去背角色圖(官方 screen/character 回 404),首頁 hero 改用該期的團體宣傳圖 screen/bg,並改成完整顯示不裁切。一般活動維持原本的去背圖。' },
     { d: '2026/08/09', t: 'WL 配隊規則與五色檢查', s: 'WL 個榜分頁新增本章配隊規則,四種情境(原創角色/虛擬歌手/終章兩種)逐點列出,內容取自教學大全「World Link 怎麼配隊伍」。若已在收集率頁勾選持有卡片,會直接檢查你能不能為本章湊出「四位同團＋五色屬性」,並列出每色各有幾張、缺哪幾色。' },
     { d: '2026/08/09', t: '歷代 WL 榜線可查', s: '歷代活動查任一 World Link 期數時,額外顯示該期四章的獨立榜線,可切換章節。資料取自 /event/{id}/border 的 userWorldBloomChapterRankingBorders。' },
