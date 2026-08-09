@@ -242,6 +242,21 @@
         .m-dock svg { width:19px; height:19px; }
         .m-dock button:active, .m-dock a:active { transform:scale(.9); }
         .m-dock button:hover, .m-dock a:hover { color:var(--accent-deep); }
+        /* 返頂鍵。外層只負責定位(不放 transform / will-change / backdrop-filter),視覺全部下放內層 span——
+           position:fixed 疊上自己的合成屬性,在 iOS Safari 動量捲動或網址列收合時會脫鉤亂飄(2026-08-01 修過同樣的坑)。 */
+        .to-top { display:none; position:fixed; right:16px; bottom:calc(20px + env(safe-area-inset-bottom,0px));
+            z-index:1290; padding:0; border:none; background:none; cursor:pointer;
+            opacity:0; visibility:hidden; transition:opacity .28s ease, visibility .28s ease; }
+        .to-top.on { opacity:1; visibility:visible; }
+        .to-top > span { display:flex; align-items:center; justify-content:center; width:44px; height:44px;
+            border-radius:999px; background:var(--grad-cta); color:#fff; box-shadow:var(--shadow-md);
+            border:1px solid color-mix(in oklab,var(--border) 60%,transparent);
+            transition:transform .25s var(--spring); }
+        .to-top:active > span { transform:scale(.9); }
+        .to-top svg { width:20px; height:20px; }
+        /* 只在桌面出現:手機的 .m-dock 本來就有「頂部」鍵,再放一顆會重複又容易疊到 dock */
+        @media(min-width:901px){ .to-top { display:block; } }
+        @media(prefers-reduced-motion:reduce){ .to-top, .to-top > span { transition:none; } }
         /* ===== 頁首 Hero ===== */
         header { position:relative; text-align:center; padding:42px 12px 34px; margin-bottom:14px; border:none; }
         .hero-fx { position:absolute; inset:-30px -40px 0; pointer-events:none; z-index:-1; }
@@ -737,6 +752,7 @@
         body.embed-calc{ padding:0 !important; margin:0 !important; }
         body.embed-calc #siteNav,
         body.embed-calc .m-dock,
+        body.embed-calc .to-top,
         body.embed-calc header#top,
         body.embed-calc .toc,
         body.embed-calc footer{ display:none !important; }
@@ -759,10 +775,10 @@
         /* ===== 內嵌小窗模式（?embed=ministudio）：首頁「當期跑榜」卡 ===== */
         #mini-studio, #deck-detail, #gacha-detail{ display:none; }
         body.embed-ministudio, body.embed-deck, body.embed-gacha, body.embed-gachasim{ padding:0 !important; margin:0 !important; background:transparent; }
-        body.embed-ministudio #siteNav, body.embed-ministudio .m-dock, body.embed-ministudio header#top, body.embed-ministudio .toc, body.embed-ministudio footer, body.embed-ministudio .embed-tabbar,
-        body.embed-deck #siteNav, body.embed-deck .m-dock, body.embed-deck header#top, body.embed-deck .toc, body.embed-deck footer, body.embed-deck .embed-tabbar,
-        body.embed-gacha #siteNav, body.embed-gacha .m-dock, body.embed-gacha header#top, body.embed-gacha .toc, body.embed-gacha footer, body.embed-gacha .embed-tabbar,
-        body.embed-gachasim #siteNav, body.embed-gachasim .m-dock, body.embed-gachasim header#top, body.embed-gachasim .toc, body.embed-gachasim footer, body.embed-gachasim .embed-tabbar{ display:none !important; }
+        body.embed-ministudio #siteNav, body.embed-ministudio .m-dock, body.embed-ministudio .to-top, body.embed-ministudio header#top, body.embed-ministudio .toc, body.embed-ministudio footer, body.embed-ministudio .embed-tabbar,
+        body.embed-deck #siteNav, body.embed-deck .m-dock, body.embed-deck .to-top, body.embed-deck header#top, body.embed-deck .toc, body.embed-deck footer, body.embed-deck .embed-tabbar,
+        body.embed-gacha #siteNav, body.embed-gacha .m-dock, body.embed-gacha .to-top, body.embed-gacha header#top, body.embed-gacha .toc, body.embed-gacha footer, body.embed-gacha .embed-tabbar,
+        body.embed-gachasim #siteNav, body.embed-gachasim .m-dock, body.embed-gachasim .to-top, body.embed-gachasim header#top, body.embed-gachasim .toc, body.embed-gachasim footer, body.embed-gachasim .embed-tabbar{ display:none !important; }
         body.embed-ministudio .container, body.embed-deck .container, body.embed-gacha .container, body.embed-gachasim .container{ max-width:100%; margin:0; padding:0; }
         body.embed-ministudio .container > section, body.embed-deck .container > section, body.embed-gacha .container > section, body.embed-gachasim .container > section{ display:none !important; }
         body.embed-ministudio .container > section#mini-studio{ display:block !important; }
@@ -771,13 +787,13 @@
         body.embed-gachasim .container > section#gacha-sim{ display:block !important; }
         /* ===== 內嵌儲值分析（?embed=shop）：app「儲值分析」頁 ===== */
         body.embed-shop{ padding:0 !important; margin:0 !important; }
-        body.embed-shop #siteNav, body.embed-shop .m-dock, body.embed-shop header#top, body.embed-shop .toc, body.embed-shop footer, body.embed-shop .embed-tabbar{ display:none !important; }
+        body.embed-shop #siteNav, body.embed-shop .m-dock, body.embed-shop .to-top, body.embed-shop header#top, body.embed-shop .toc, body.embed-shop footer, body.embed-shop .embed-tabbar{ display:none !important; }
         body.embed-shop .container{ max-width:980px; margin:0 auto; padding:0 14px 44px; }
         body.embed-shop .container > section{ display:none !important; }
         body.embed-shop .container > section#shop-analyzer{ display:block !important; }
         /* ===== 內嵌 B30 產生器（?embed=b30） ===== */
         body.embed-b30{ padding:0 !important; margin:0 !important; }
-        body.embed-b30 #siteNav, body.embed-b30 .m-dock, body.embed-b30 header#top, body.embed-b30 .toc, body.embed-b30 footer, body.embed-b30 .embed-tabbar{ display:none !important; }
+        body.embed-b30 #siteNav, body.embed-b30 .m-dock, body.embed-b30 .to-top, body.embed-b30 header#top, body.embed-b30 .toc, body.embed-b30 footer, body.embed-b30 .embed-tabbar{ display:none !important; }
         body.embed-b30 .container{ max-width:980px; margin:0 auto; padding:0 14px 44px; }
         body.embed-b30 .container > section{ display:none !important; }
         body.embed-b30 .container > section#b30-maker{ display:block !important; }

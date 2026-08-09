@@ -58,9 +58,26 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         const NavUI = {
             init() {
                 const nav = document.getElementById('siteNav');
-                const onScroll = () => { if (nav) nav.classList.toggle('scrolled', window.scrollY > 6); };
-                onScroll();
+                const top = document.getElementById('toTop');
+                // 只掛一個 scroll listener,兩件事一起做,並用 rAF 收斂成每幀最多一次
+                let queued = false;
+                const apply = () => {
+                    queued = false;
+                    const y = window.scrollY;
+                    if (nav) nav.classList.toggle('scrolled', y > 6);
+                    if (top) top.classList.toggle('on', y > 700);   // 約一個螢幕高才浮出來,免得一開始就擋內容
+                };
+                const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(apply); } };
+                apply();
                 window.addEventListener('scroll', onScroll, { passive: true });
+                if (top) top.addEventListener('click', () => {
+                    // 動畫偏好由 CSS html{scroll-behavior} 決定(prefers-reduced-motion 時會是 auto),這裡跟著走
+                    const smooth = getComputedStyle(document.documentElement).scrollBehavior === 'smooth';
+                    window.scrollTo(smooth ? { top: 0, behavior: 'smooth' } : { top: 0 });
+                    // 回到頂端後把焦點交還給頁首,鍵盤/讀屏使用者不會還卡在頁尾
+                    const h = document.getElementById('top');
+                    if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+                });
                 document.querySelectorAll('#navSheet a').forEach(a => a.addEventListener('click', () => this.closeSheet()));
                 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.closeSheet(); });
             },
@@ -2661,6 +2678,17 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // 火倍率:台服 master boosts.json 的 eventPointRate(注意不是 expRate/rewardRate,
         // 那兩個在火6~10 是 26/27/28/29/30,只有活動點數才跳到 27/29/31/33/35)
         const EC_BOOST = { 0: 1, 1: 5, 2: 10, 3: 15, 4: 20, 5: 25, 6: 27, 7: 29, 8: 31, 9: 33, 10: 35 };
+        // 活動P 的 base 值。全站唯一來源,四個地方(活動P計算器/組卡優化器/跑榜工作室/歌曲效率)共用。
+        // 採 sekai-calculator v0.17 的 scoot method,與 ep-calculator.html、app.html 一致:
+        //   solo / auto / challenge：100 + ⌊score/20000⌋
+        //   multi / cheer         ：⌊(score + 0.075×綜合力×5)/17000⌋ + 123
+        // 2026-08-09 前 core.js 另用 110+⌊S/17000⌋+min(13,⌊O/34萬⌋)(O=隊友合計分數),
+        // 與 ep-calculator 互相矛盾且系統性低估 4~9%,站長裁定以 ep-calculator 為準,已淘汰。
+        // 差異在隊友貢獻:舊式要你估隊友分數再換算(上限 +13),新式固定給滿 +13(123−110),
+        // 改由「0.075×綜合力×5」把自己的綜合力折進分數項——所以協力場要餵綜合力,不是隊友分數。
+        const epBase = (mode, score, power) => (mode === 'multi' || mode === 'cheer')
+            ? Math.floor((score + 0.075 * (+power || 0) * 5) / 17000) + 123
+            : 100 + Math.floor(score / 20000);
         const EC_cidName = id => { for (const g of EC_CHARS) { const f = g.list.find(x => x[0] === id); if (f) return f[1]; } return '#' + id; };
         const EC_attrName = a => { const f = EC_ATTRS.find(x => x[0] === a); return f ? f[1] : a; };
 
@@ -2781,7 +2809,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const R = +document.getElementById('epRate').value || 100;
                 const boostN = +document.getElementById('epBoost').value || 0;
                 const F = EC_BOOST[boostN] || 1;
-                document.getElementById('epOthersRow').style.display = (mode === 'multi' || mode === 'cheer') ? '' : 'none';
+                document.getElementById('epPowerRow').style.display = (mode === 'multi' || mode === 'cheer') ? '' : 'none';
                 document.getElementById('epLifeRow').style.display = mode === 'cheer' ? '' : 'none';
                 document.getElementById('epRateRow').style.opacity = mode === 'challenge' ? 0.4 : 1;
                 document.getElementById('epBoostRow').style.opacity = mode === 'challenge' ? 0.4 : 1;
@@ -2793,9 +2821,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ep = Math.floor((100 + Math.floor(S / 20000)) * R / 100 * (1 + B / 100)) * F;
                     detail = `⌊(100+⌊S/20000⌋) × ${R}/100 × ${(1 + B / 100).toFixed(2)}⌋ × ${F}`;
                 } else {
-                    const oRaw = (document.getElementById('epOthers').value || '').trim();
-                    const O = oRaw === '' ? 4 * S : (+oRaw || 0);   // 留空才用 4×S;明確填 0 就是 0
-                    const base = 110 + Math.floor(S / 17000) + Math.min(13, Math.floor(O / 340000));
+                    const P = +document.getElementById('epPower').value || 0;
+                    const base = epBase(mode, S, P);
                     const core = Math.floor(base * R / 100 * (1 + B / 100));
                     if (mode === 'cheer') {
                         const L = +document.getElementById('epLife').value || 1000;   // 空欄比照參考實作取 1000
@@ -2804,7 +2831,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         detail = `⌊${core.toLocaleString()} × 生存${lifeRate.toFixed(3)}⌋ × ${F}`;
                     } else {
                         ep = core * F;
-                        detail = `⌊(110+⌊S/17000⌋+min(13,⌊O/34萬⌋)) × ${R}/100 × ${(1 + B / 100).toFixed(2)}⌋ × ${F}`;
+                        detail = `⌊(⌊(S+0.075×綜合力×5)/17000⌋+123) × ${R}/100 × ${(1 + B / 100).toFixed(2)}⌋ × ${F}`;
                     }
                 }
                 const perBoost = boostN > 0 ? Math.round(ep / boostN) : ep;
@@ -3427,9 +3454,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const coop = 1.8 * leader;
                     let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += wSorted[i] * coop / 100;
                     const score = Math.floor((meta.base_score + feverHalf + skillPart) * power * 4);
-                    const O = 4 * score;
-                    const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
-                    return Math.floor(base * R / 100 * (1 + bonus / 100)) * F;   // = 每局活動P
+                    return Math.floor(epBase('multi', score, power) * R / 100 * (1 + bonus / 100)) * F;   // = 每局活動P
                 };
                 const n = pool.length; let best = null, bestObj = -1;
                 const cbit = pool.map(x => 1 << x.c.characterId);   // 角色位元遮罩:同角色兩變體(純V/支援V)不可同隊
@@ -3506,9 +3531,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const fever = (meta.fever_score || 0) * 0.5;
                 const avgU = boosts.reduce((a, b) => a + b, 0) / 6;
                 const score = Math.floor((meta.base_score + fever + skillPart) * P * 4);
-                // 協力活動P:自分 score + 隊友(取 O=4×score)
-                const O = 4 * score;
-                const base = 110 + Math.floor(score / 17000) + Math.min(13, Math.floor(O / 340000));
+                const base = epBase('multi', score, P);
                 const R = meta.event_rate || 100;
                 const epPerGame = Math.floor(base * R / 100 * (1 + B / 100)) * F;
                 // 給儲值分析「衝榜換算」用:火0 基準單局活動P(F 是火倍率,除掉才是基準)
@@ -4062,6 +4085,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const mode = document.getElementById('seMode').value;
                 const S = +document.getElementById('seScore').value || 0;
                 const B = +document.getElementById('seBonus').value || 0;
+                const P = +document.getElementById('sePower').value || 0;   // 協力 base 要綜合力(scoot method)
                 const boostN = +document.getElementById('seBoost').value || 0;
                 const F = EC_BOOST[boostN] || 1;
                 const titleById = {};
@@ -4071,10 +4095,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const meta = diffs.master || diffs.expert || diffs.append || Object.values(diffs)[0];
                     if (!meta) return;
                     const R = meta.event_rate || 100, time = meta.music_time || 120;
-                    let base;
-                    if (mode === 'multi') { const O = 4 * S; base = 110 + Math.floor(S / 17000) + Math.min(13, Math.floor(O / 340000)); }
-                    else base = 100 + Math.floor(S / 20000);
-                    const ep = Math.floor(base * R / 100 * (1 + B / 100)) * F;
+                    const ep = Math.floor(epBase(mode, S, P) * R / 100 * (1 + B / 100)) * F;
                     const T = time + (mode === 'multi' ? 45 : 15);   // 協力要配對＋等全員＋結算(+45);個人只有結算(+15)
                     rows.push({ mid: +mid, title: titleById[+mid] || ('#' + mid), R, time, ep, perMin: ep * 60 / T, perBoost: boostN > 0 ? ep / boostN : ep });
                 });

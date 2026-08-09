@@ -14,7 +14,7 @@
     try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
     var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
-    <link rel="stylesheet" href="css/core.css?v=96d304a62b">
+    <link rel="stylesheet" href="css/core.css?v=4966c29ab7">
 </head>
 <body>
     <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='shop')document.body.classList.add('embed-shop');else if(_e==='b30')document.body.classList.add('embed-b30');}catch(e){}</script>
@@ -46,6 +46,9 @@
             <a href="#top" aria-label="回到頂端"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 12.5L10 7l5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>頂部</a>
         </div>
     </nav>
+
+    <!-- 返頂鍵（桌面版；手機用 .m-dock 的「頂部」） -->
+    <button type="button" class="to-top" id="toTop" aria-label="回到頁面頂端" title="回到頂端"><span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 12.5L10 7l5 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
 
     <!-- 全域搜尋 -->
     <div class="gsearch-overlay" id="gsearchOverlay" onclick="if(event.target===this)GlobalSearch.close()">
@@ -666,6 +669,7 @@
                     </select>
                     <label style="font-size:13px;">分數<input type="number" id="seScore" value="1200000" min="0" style="width:110px;margin-left:4px;" oninput="SongEff.render()"></label>
                     <label style="font-size:13px;">加成%<input type="number" id="seBonus" value="250" min="0" style="width:70px;margin-left:4px;" oninput="SongEff.render()"></label>
+                    <label style="font-size:13px;" title="協力場的 base 值要用綜合力推算隊友貢獻(scoot method);單人/自動用不到">綜合力<input type="number" id="sePower" value="300000" min="0" style="width:100px;margin-left:4px;" oninput="SongEff.render()"></label>
                     <label style="font-size:13px;">火<select id="seBoost" onchange="SongEff.render()"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
                     <select id="seSort" onchange="SongEff.render()">
                         <option value="perMin">依每分鐘 EP</option>
@@ -979,7 +983,7 @@
                                     <option value="9">9</option><option value="10">10</option>
                                 </select>
                             </div>
-                            <div class="calc-row" id="epOthersRow" style="display:none;"><label>他人合計分數</label><input type="number" id="epOthers" placeholder="留空＝4×自己分數" min="0" oninput="EventCalc.calcPoint()"></div>
+                            <div class="calc-row" id="epPowerRow" style="display:none;"><label>綜合力</label><input type="number" id="epPower" value="300000" min="0" placeholder="協力場的隊友貢獻由綜合力推算" oninput="EventCalc.calcPoint()"></div>
                             <div class="calc-row" id="epLifeRow" style="display:none;"><label>結束剩餘血量</label><input type="number" id="epLife" value="2000" min="0" max="2000" oninput="EventCalc.calcPoint()"></div>
                         </div>
                         <div class="calc-section">
@@ -1251,7 +1255,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=a858db0246"></script>
+    <script src="js/core.js?v=840b266f84"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
