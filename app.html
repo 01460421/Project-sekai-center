@@ -1043,6 +1043,9 @@ input::placeholder{color:var(--text-3)}
           </sc-if>
         </div>
       </sc-for>
+      <sc-if value="{{ tutMoreBtn }}">
+        <button type="button" onClick="{{ onTutMore }}" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">顯示其餘 {{ tutMoreN }} 則 ▾</button>
+      </sc-if>
       <sc-if value="{{ tutEmpty }}">
         <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:16px;background:var(--card)">找不到符合的教學條目</div>
       </sc-if>
@@ -1189,6 +1192,9 @@ input::placeholder{color:var(--text-3)}
           <sc-for list="{{ anaTierChips }}" as="c" hint-placeholder-count="17">
             <button type="button" onClick="{{ onAnaTier }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
           </sc-for>
+          <sc-if value="{{ anaBMore }}">
+            <button type="button" onClick="{{ onAnaMoreB }}" style="padding:5px 11px;border:1px dashed var(--border-2);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11px;font-weight:700;cursor:pointer">更多 ▾</button>
+          </sc-if>
         </div>
         <sc-if value="{{ anaChartOk }}">
           <svg data-chart="border" viewBox="0 0 {{ anaChartW }} {{ anaChartH }}" style="width:100%;height:auto;display:block;overflow:visible;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none">
@@ -1239,6 +1245,9 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
       </div>
+      <sc-if value="{{ anaBMore }}">
+        <button type="button" onClick="{{ onAnaMoreB }}" style="width:100%;margin-top:9px;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">顯示全部段位（T1萬～T10萬）▾</button>
+      </sc-if>
       <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">預測終線＝目前分數＋剩餘時數×該段速度。標「實測」者速度來自本機累積的快照，標「線性」者只是把目前分數按已過時間等比外推，活動末段通常會被低估。</div>
     </sc-if>
 
@@ -1481,6 +1490,7 @@ input::placeholder{color:var(--text-3)}
         <div style="height:100%;width:{{ rateTotalBar }};background:var(--grad-cta);border-radius:999px;transition:width .45s cubic-bezier(.32,.72,.24,1)"></div>
       </div>
 
+      <sc-if value="{{ rateStatShow }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-top:16px">
         <sc-for list="{{ rateUnitRows }}" as="u" hint-placeholder-count="6">
           <div>
@@ -1503,14 +1513,22 @@ input::placeholder{color:var(--text-3)}
           </div>
         </sc-for>
       </div>
+      </sc-if>
+      <sc-if value="{{ rateStatBtn }}">
+        <button type="button" onClick="{{ onRateStat }}" style="width:100%;margin-top:12px;padding:8px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:700;cursor:pointer">{{ rateStatLabel }}</button>
+      </sc-if>
     </div>
 
     <!-- 工具列 -->
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:11px">
       <input type="text" placeholder="搜尋卡名、角色、卡片 ID…" value="{{ rq }}" onInput="{{ onField }}" data-k="rq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
       <button type="button" onClick="{{ onRateMiss }}" style="padding:10px 18px;border:none;border-radius:999px;background:{{ rMissChip.bg }};color:{{ rMissChip.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:{{ rMissChip.sh }};min-height:44px">只看未持有</button>
+      <sc-if value="{{ rateFilBtn }}">
+        <button type="button" onClick="{{ onRateFil }}" style="padding:10px 18px;border:none;border-radius:999px;background:{{ rFilChip.bg }};color:{{ rFilChip.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:{{ rFilChip.sh }};min-height:44px">{{ rFilLabel }}</button>
+      </sc-if>
     </div>
 
+    <sc-if value="{{ rateFilShow }}">
     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px">
       <sc-for list="{{ rateUnitChips }}" as="c" hint-placeholder-count="7">
         <button type="button" onClick="{{ onRateUnit }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
@@ -1526,6 +1544,7 @@ input::placeholder{color:var(--text-3)}
         <button type="button" onClick="{{ onRateSup }}" data-v="{{ c.v }}" style="padding:7px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
       </sc-for>
     </div>
+    </sc-if>
 
     <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:11px">
       <div style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';flex:1;min-width:130px">{{ rateCount }}</div>
@@ -1654,6 +1673,9 @@ input::placeholder{color:var(--text-3)}
           </span>
         </div>
       </sc-for>
+      <sc-if value="{{ sysMoreBtn }}">
+        <button type="button" onClick="{{ onSysMore }}" style="width:100%;margin-top:9px;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">顯示更早的 {{ sysMoreN }} 筆 ▾</button>
+      </sc-if>
     </div>
     <sc-for list="{{ changelog }}" as="c" hint-placeholder-count="6">
       <div style="padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-2px);box-shadow:var(--sh-sm)">
@@ -2057,6 +2079,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/10', t: '手機版減量第二批', s: '榜線分析預設只列 T100～T5000,T1 萬以上收進「顯示全部段位」。收集率的各團/稀有度明細與三排篩選在手機上收合,篩選鈕會顯示套用中的條件數,卡格改每頁 30 張。教學大全先顯示 20 則再展開。功能介紹的系統更新先顯示 10 筆。桌面版全部不變。' },
     { d: '2026/08/10', t: 'WL 個榜四項優化', s: '各段榜線加上預測終線(線性外推,附推估方式與剩餘時間)。歷代 WL 補上各章最終前百名單。手機版大改:配隊規則預設收合、榜線先顯示 6 段、排名先顯示 20 列,都可一鍵展開;點任一排名列可展開上局/均速/最後遊玩。' },
     { d: '2026/08/10', t: 'WL 活動圖改滿版', s: '團體宣傳圖由完整顯示(會留大片空白)改為滿版裁切,焦點置中。' },
     { d: '2026/08/09', t: '教學格式校驗與表格樣式', s: '逐則檢查 Doc→HTML 移植:115 則標籤全平衡、表格結構完整(碎段警告經查全在表格內,為誤報)。清掉 Google 註解錨點並修復 6 處孤兒連結標籤。教學內文補上表格與清單樣式,專精等級表等數值表以完整格線呈現,窄螢幕可橫向捲動。' },
@@ -2147,10 +2170,12 @@ class Component extends DCLogic {
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
     rq: '', ru: 'all', rr: 'all', rs: 'all', rMiss: false, rp: 1,
+    rateFilOpen: false, rateStatOpen: false,   // 手機:篩選列/統計明細收合
     rOwnV: 0,        // 持有清單版本號；清單存在 this._own(Set)，靠這個觸發重繪
     rCode: '', rMsg: '',
     /* 分析中心 */
     anaTab: 'border', anaUid: '', anaQ: '', hist: null, anaTier: 100,
+    anaMoreB: false, sysMore: false,   // 手機:榜線段位/系統更新漸進展開
     wlCh: 0, pastWlCh: 0, wlOpen: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
@@ -2167,7 +2192,7 @@ class Component extends DCLogic {
     songKey: 74, diff: 'M', epq: '', skill: 2.5, s6: 2.5, scoreMode: 'calc', energy: 3, interval: 50,
     natHr: 0, lCan: 0, sCan: 0, crys: 0,
     power: 250000, bonus: 250, rate: 115, score: 1200000, mode: 'multi', life: 800,
-    tq: '', tcat: 'all', tOpen: {},
+    tq: '', tcat: 'all', tOpen: {}, tutMore: false,
     leader: 115, m1: 110, m2: 110, m3: 110, m4: 110,
     gcT: '0.004', gcC: 30000, gcP: 0, gcV: 0,
     msFever: 1, msStam: 10,
@@ -3713,7 +3738,12 @@ class Component extends DCLogic {
       return ((x.q || '') + (x.kw || '') + (x.a || '')).toLowerCase().includes(tq);
     });
     const catMeta = id => (s.tutCats || []).find(c => c.id === id) || { name: id, c: '#8b93ac' };
-    const tutRows = tutAll.slice(0, 60).map((x, i) => {
+    // 手機先給 20 則再展開;桌機維持原本的 60 上限
+    const tutFold = s.mobile && !s.tutMore;
+    const tutCap = tutFold ? 20 : 60;
+    const tutMoreBtn = tutFold && tutAll.length > 20;
+    const tutMoreN = Math.max(0, Math.min(tutAll.length, 60) - 20);
+    const tutRows = tutAll.slice(0, tutCap).map((x, i) => {
       const key = x.cat + '::' + x.q, open = !!s.tOpen[key], cm = catMeta(x.cat);
       return {
         key, q: x.q, cat: cm.name, open,
@@ -3833,10 +3863,13 @@ class Component extends DCLogic {
         return { n, has, mark: has ? '✓' : '—', fg: has ? 'var(--accent-deep)' : 'var(--text-3)' }; }),
       bkCount: (() => { const c = Object.keys(this.bkCollect()).length; return c + ' / ' + this.BK_KEYS.length + ' 項有資料'; })(),
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG,
-      syslog: this.SYSLOG.map(u => Object.assign({}, u, {
+      // 手機先列 10 筆更新紀錄,更早的收進展開鈕(目前 40+ 筆全列會撐爆頁面)
+      syslog: this.SYSLOG.slice(0, (s.mobile && !s.sysMore) ? 10 : this.SYSLOG.length).map(u => Object.assign({}, u, {
         // 敘述改條列:依句號切開,去掉空句,保留原句的分號細節
         pts: String(u.s || '').split(/。\s*/).map(x => x.trim()).filter(Boolean)
       })),
+      sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
+      sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
 
       onBkExport: () => this.bkExport(),
@@ -3862,7 +3895,9 @@ class Component extends DCLogic {
       anaQ: s.anaQ,
       ...(() => {
         const B = this.borderAnalysis();
-        if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaHasMe: false, anaLeft: '—', anaFrac: '—' };
+        if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaHasMe: false, anaLeft: '—', anaFrac: '—', anaBMore: false };
+        // 手機預設只列 T100~T5000(一般玩家關心的區間),T1萬以上收進「顯示全部段位」
+        const anaFold = s.mobile && !s.anaMoreB;
         const ck = B.clock;
         const hm = h => h >= 24 ? (Math.floor(h / 24) + '天' + Math.round(h % 24) + '時') : (h >= 1 ? h.toFixed(1) + '時' : Math.round(h * 60) + '分');
         return {
@@ -3875,7 +3910,9 @@ class Component extends DCLogic {
           ...(() => {
             const rk = +s.anaTier || 100;
             const c = this.histChart(ck.id, rk);
-            const chips = B.rows.map(r => { const on = r.rank === rk; const st = chip(on, 'var(--cta)');
+            // 收合時 chips 同步縮,但已選中的段位即使在 T1萬以上也要留著,不然選取狀態會憑空消失
+            const chips = B.rows.filter(r => !anaFold || r.rank <= 5000 || r.rank === rk)
+              .map(r => { const on = r.rank === rk; const st = chip(on, 'var(--cta)');
               return Object.assign({ v: String(r.rank), n: 'T' + this.n(r.rank) }, st, { fg: on ? '#fff' : 'var(--text)' }); });
             if (!c) return { anaChartOk: false, anaChartNo: true, anaTierChips: chips,
               anaChartTitle: 'T' + this.n(rk) + ' 榜線走勢', anaChartN: '尚無資料',
@@ -3895,7 +3932,8 @@ class Component extends DCLogic {
           anaHasMe: B.myScore != null,
           anaMyScore: B.myScore != null ? this.n(B.myScore) : '—',
           anaMySpeed: B.mySpeed != null ? this.short(B.mySpeed) + '/h' : '—',
-          anaBorderRows: B.rows.map(r => ({
+          anaBMore: anaFold && B.rows.some(r => r.rank > 5000),
+          anaBorderRows: B.rows.filter(r => !anaFold || r.rank <= 5000).map(r => ({
             rank: 'T' + this.n(r.rank),
             score: this.n(r.score),
             speed: r.measured ? (this.short(r.speed) + '/h') : '—',
@@ -4041,11 +4079,22 @@ class Component extends DCLogic {
       rq: s.rq, rCode: s.rCode, rMsg: s.rMsg, rHasMsg: !!s.rMsg,
       rMissOn: s.rMiss,
       rMissChip: (() => { const st = chip(s.rMiss, 'var(--cta)'); return Object.assign({}, st, { fg: s.rMiss ? '#fff' : 'var(--text)' }); })(),
+      // 手機:三排篩選 chips 收進「篩選」鈕(有套用中的條件時鈕會亮並顯示數量),統計明細也收合
+      rateFilBtn: s.mobile, rateFilShow: !s.mobile || s.rateFilOpen,
+      ...(() => {
+        const n = (s.ru !== 'all' ? 1 : 0) + (s.rr !== 'all' ? 1 : 0) + (s.rs !== 'all' ? 1 : 0);
+        const on = s.rateFilOpen || n > 0;
+        const st = chip(on, 'var(--cta)');
+        return { rFilChip: Object.assign({}, st, { fg: on ? '#fff' : 'var(--text)' }),
+                 rFilLabel: '篩選' + (n ? '·' + n : '') + (s.rateFilOpen ? ' ▴' : ' ▾') };
+      })(),
+      rateStatBtn: s.mobile, rateStatShow: !s.mobile || s.rateStatOpen,
+      rateStatLabel: s.rateStatOpen ? '收合明細 ▴' : '各團與稀有度明細 ▾',
       ...(() => {
         const stat = this.rateStat(), all = stat.all;
         const p = this.pct(all.have, all.n);
         const rows = this.rateFiltered();
-        const per = 60, tot = Math.max(1, Math.ceil(rows.length / per));
+        const per = s.mobile ? 30 : 60, tot = Math.max(1, Math.ceil(rows.length / per));
         const pg = Math.min(Math.max(1, s.rp), tot);
         const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
         const own = this.ownSet();
@@ -4453,7 +4502,7 @@ class Component extends DCLogic {
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
         { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }
       ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),
-      tq: s.tq, tutDoc: s.tutDoc, tutRows, tutEmpty: tutAll.length === 0,
+      tq: s.tq, tutDoc: s.tutDoc, tutRows, tutEmpty: tutAll.length === 0, tutMoreBtn, tutMoreN,
       tutCount: (s.tutQA || []).length ? '符合 ' + tutAll.length + ' 則（全部 ' + s.tutQA.length + ' 則）' + (tutAll.length > 60 ? '，顯示前 60 則' : '') : '載入教學資料…',
       tutCats: [{ v: 'all', n: '全部', dot: 'var(--rainbow)', count: (s.tutQA || []).length }]
         .concat((s.tutCats || []).map(c => ({ v: c.id, n: c.name, dot: c.c, count: (s.tutQA || []).filter(x => x.cat === c.id).length })))
@@ -4601,6 +4650,7 @@ class Component extends DCLogic {
         if (d.k === 'gq' || d.k === 'gt') patch.gp = 1;
         if (d.k === 'sq' || d.k === 'ssort') patch.sp = 1;
         if (d.k === 'cq') patch.cp = 1;
+        if (d.k === 'tq') patch.tutMore = false;   // 換搜尋詞就回到收合,不然展開狀態會黏著
         if (d.k === 'songKey') {
           const sg = this.songById(v);
           if (sg && sg.d && !sg.d[this.state.diff]) {
@@ -4615,6 +4665,7 @@ class Component extends DCLogic {
         const patch = { [d.k]: v };
         if (d.k === 'gu') patch.gp = 1;
         if (d.k === 'su') patch.sp = 1;
+        if (d.k === 'tcat') patch.tutMore = false;
         this.setState(patch);
       },
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
@@ -4630,6 +4681,8 @@ class Component extends DCLogic {
       onPastWlCh: e => this.setState({ pastWlCh: +e.currentTarget.dataset.v }),
       onAnaTab: e => this.setState({ anaTab: e.currentTarget.dataset.v }),
       onAnaTier: e => this.setState({ anaTier: +e.currentTarget.dataset.v }),
+      onAnaMoreB: () => this.setState({ anaMoreB: true }),
+      onSysMore: () => this.setState({ sysMore: true }),
       onAnaPick: e => this.setState({ anaUid: e.currentTarget.dataset.uid, anaQ: '' }),
       onAnaMe: () => this.setState({ anaUid: this.state.pid || '' }),
       onHisPick: e => {
@@ -4662,6 +4715,8 @@ class Component extends DCLogic {
       onRateRar: e => this.setState({ rr: e.currentTarget.dataset.v, rp: 1 }),
       onRateSup: e => this.setState({ rs: e.currentTarget.dataset.v, rp: 1 }),
       onRateMiss: () => this.setState(s => ({ rMiss: !s.rMiss, rp: 1 })),
+      onRateFil: () => this.setState(s2 => ({ rateFilOpen: !s2.rateFilOpen })),
+      onRateStat: () => this.setState(s2 => ({ rateStatOpen: !s2.rateStatOpen })),
       // 只影響目前篩選出來的卡，不會誤傷其他分類
       onRateAll: () => { const o = this.ownSet(); this.rateFiltered().forEach(c => o.add(c[0])); this.ownSave(); },
       onRateNone: () => { const o = this.ownSet(); this.rateFiltered().forEach(c => o.delete(c[0])); this.ownSave(); },
@@ -4748,6 +4803,7 @@ class Component extends DCLogic {
           return { tOpen: m };
         });
       },
+      onTutMore: () => this.setState({ tutMore: true }),
       onPage: e => {
         const d = e.currentTarget.dataset, k = d.k, dir = +d.d;
         const colPages = Math.max(1, Math.ceil(this.colFiltered().length / 60));
