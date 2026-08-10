@@ -3826,8 +3826,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div style="margin-top:6px;font-size:12px;color:var(--text-light);">每局約 ${perGameSec}s → 每小時約 ${gamesPerHour} 局 ≈ <strong>${epPerHour.toLocaleString()}</strong> P/時</div>`;
             },
             // ===== 首頁精簡跑榜小窗（?embed=ministudio）：當期活動自動最佳化活動P =====
+            // 小窗固定用跑榜常打的 Sage EXPERT 當基準曲(有 metas 才用;沒有就退回 event_rate 最高的歌)
+            MINI_SONG: 448, MINI_DIFF: 'expert',
             _miniSong() {
                 const m = SongEff._metas; if (!m) return 0;
+                if (m[this.MINI_SONG] && m[this.MINI_SONG][this.MINI_DIFF]) return this.MINI_SONG;
                 let best = 0, bestR = 0;
                 for (const id in m) {
                     const mm = m[id] && (m[id].master || m[id].expert || Object.values(m[id])[0]);
@@ -3836,6 +3839,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 return best;
             },
+            // 實際採用的難度:基準曲用 EXPERT,退回其他歌時用 master
+            _miniDiff() { return this._miniSong() === this.MINI_SONG ? this.MINI_DIFF : 'master'; },
             async miniRun() {
                 const card = document.getElementById('msCard');
                 if (!card || this._miniDone) return;
@@ -3863,7 +3868,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 let src, r;
                 try {
                     src = await this._src(this._evId);   // 當期為台服，不觸發日服 master
-                    r = await this._computeBest(src, src.type, { areaLv: 15, charRank: 100, songId: this._miniSong(), boostN: 0 });
+                    r = await this._computeBest(src, src.type, { areaLv: 15, charRank: 100, songId: this._miniSong(), diff: this._miniDiff(), boostN: 0 });
                 } catch (e) { card.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; return; }
                 this._renderMiniCard(card, src, r, this._miniSong());
             },
@@ -3873,7 +3878,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const evName = (src.ev && src.ev.name) || ('#' + this._evId);
                 const typeName = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' }[src.type] || '活動';
                 const song = (this._songList || []).find(s => s.id === songId);
-                const songName = song ? song.title : '—';
+                const songName = (song ? song.title : '—') + ' ' + this._miniDiff().toUpperCase();
                 const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
                 const thumb = c => `${ASSET}/thumbnail/chara/${c.assetbundleName}_${(c.cardRarityType === 'rarity_4' || c.cardRarityType === 'rarity_3') ? 'after_training' : 'normal'}.webp`;
                 const base = useEP ? Math.round(obj) : 0;   // obj @ 火0（F=1）＝每局基準活動P
@@ -3886,7 +3891,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const sCv = per.reduce((s, p) => s + (p.canvas || 0), 0);
                 const sEpi = per.reduce((s, p) => s + (p.epi || 0), 0);
                 const pct = x => sB ? (x / sB * 100).toFixed(1) : '0';
-                const skills = best.skills || [];   // 最高推隊倍率＝同倍率計算器算法 [隊長+100+隊友總和/5]/100
+                const skills = best.skills || [];   // 跑隊倍率＝同倍率計算器算法 [隊長+100+隊友總和/5]/100
                 const leaderSk = skills.length ? Math.max(...skills) : 0;
                 const teamMult = skills.length ? ((leaderSk + 100 + (skills.reduce((a, b) => a + b, 0) - leaderSk) / 5) / 100) : 0;
                 card.innerHTML = `
@@ -3898,7 +3903,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div class="ms-kvs">
                         <div class="ms-kv"><span>綜合力</span><b>${best.pw.total.toLocaleString()}</b></div>
                         <div class="ms-kv"><span>活動加成</span><b>＋${totalBonus}%</b></div>
-                        <div class="ms-kv"><span>最高推隊倍率</span><b>×${teamMult.toFixed(2)}</b></div>
+                        <div class="ms-kv"><span>跑隊倍率</span><b>×${teamMult.toFixed(2)}</b></div>
                     </div>
                     <div class="ms-break">綜合力＝基礎表現力 ${sB.toLocaleString()}（每張≈${Math.round(sB / (per.length || 5)).toLocaleString()}，含前後篇 ${sEpi.toLocaleString()}＋畫布 ${sCv.toLocaleString()}）　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%</div>
                     ${r.wl ? `<div class="ms-break">World Link：異色(${r.wl.colors}色)＋${r.wl.attrBonus}%${r.wl.hasSup ? `・支援隊伍(理論滿配,${r.wl.label})＋${r.wl.support}%` : '・支援隊伍未估(未含在下方數字內)'}，已含在活動加成內</div>` : ''}
