@@ -1,0 +1,24 @@
+name = "pjsk-games"
+main = "src/index.js"
+
+# 2024-04-29 之後 brotli_content_encoding 預設開啟，向來源要 br 才拿得到 14KB
+# （不設的話 Workers 會覆寫外送的 Accept-Encoding，退回 gzip 26KB）。
+compatibility_date = "2026-06-01"
+
+# Durable Object：整個抓取迴圈住在這裡（單例）
+[[durable_objects.bindings]]
+name = "TRACKER"
+class_name = "GameTracker"
+
+# 免費方案只支援 SQLite backend；付費也用同一套，遷移標籤要用 new_sqlite_classes
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameTracker"]
+
+# 看門狗：alarm 失敗只會重試 6 次，鏈斷了就永遠不再跑。
+# 每分鐘來敲一次，沒排程就把它重新排起來。
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true
