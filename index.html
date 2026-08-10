@@ -1062,6 +1062,8 @@
             <div id="ec-wl" class="tab-content">
                 <div id="ecWLInfo" class="note" style="margin-top:0;">World Link 支援隊伍最佳化:列出當期團體所有可放入支援隊伍的卡,依支援加成排序。</div>
                 <div class="analysis-input" style="margin:8px 0;">
+                    <label style="font-size:13px;">章節</label>
+                    <select id="wlChapter" onchange="EventCalc.calcWL()"></select>
                     <label style="font-size:13px;">假設 MR</label>
                     <select id="wlMR" onchange="EventCalc.calcWL()"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select>
                     <label style="font-size:13px;">技能等級</label>

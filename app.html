@@ -601,6 +601,19 @@ input::placeholder{color:var(--text-3)}
             </sc-for>
           </div>
         </sc-if>
+        <sc-if value="{{ wlSugOn }}">
+          <div style="font-size:12px;font-weight:800;color:var(--ink);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">建議編組（用你勾選的持有卡湊）</div>
+          <div style="display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:4px">
+            <sc-for list="{{ wlSugCards }}" as="c" hint-placeholder-count="5">
+              <div style="flex:none;width:74px;text-align:center" title="{{ c.name }}">
+                <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="{{ c.name }}" width="148" height="148" style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:2px solid {{ c.color }};display:block;background:var(--card-2)">
+                <div style="font-size:10px;font-weight:700;color:var(--ink);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.chara }}</div>
+                <div style="font-size:9.5px;color:var(--text-3)">{{ c.attrN }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.6">{{ wlSugNote }}</div>
+        </sc-if>
         </sc-if>
       </div>
 
@@ -2079,6 +2092,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/10', t: 'WL 編組全面計入屬性與支援', s: '跑榜工作室的理論隊伍與最佳化在 World Link 活動改為「實際搭配」:按異色加成(3/4/5色→75/100/125%)湊色、單團 WL 自動補湊數卡當第 5 位,並把支援隊伍(理論滿配、以當前章節主角計)一併算進活動加成與場均活動P;首頁跑榜小窗同步生效。我的編組(排名頁編組詳情)補上隊伍異色加成並標明色數;WL 支援隊伍計算器改為只有本章主角吃 specific 檔、前期 WL 卡 +20 只在其章節生效,並可切換章節。WL 個榜分頁新增「建議編組」:用你收集率勾選的持有卡直接湊出四同團＋五色的實際 5 張。' },
+    { d: '2026/08/10', t: 'B30 納入日服曲目', s: 'B30 產生器曲庫從台服 710 譜面擴充到 850,新增 140 張日服限定譜面(藍色「日服」標示),可用「台+日服/僅台服/僅日服限定」切換;台服理論值維持只算台服曲池,日服曲標了成績一樣計入你的 B30,圖片上會蓋 JP 角標。' },
     { d: '2026/08/10', t: '手機版減量第二批', s: '榜線分析預設只列 T100～T5000,T1 萬以上收進「顯示全部段位」。收集率的各團/稀有度明細與三排篩選在手機上收合,篩選鈕會顯示套用中的條件數,卡格改每頁 30 張。教學大全先顯示 20 則再展開。功能介紹的系統更新先顯示 10 筆。桌面版全部不變。' },
     { d: '2026/08/10', t: 'WL 個榜四項優化', s: '各段榜線加上預測終線(線性外推,附推估方式與剩餘時間)。歷代 WL 補上各章最終前百名單。手機版大改:配隊規則預設收合、榜線先顯示 6 段、排名先顯示 20 列,都可一鍵展開;點任一排名列可展開上局/均速/最後遊玩。' },
     { d: '2026/08/10', t: 'WL 活動圖改滿版', s: '團體宣傳圖由完整顯示(會留大片空白)改為滿版裁切,焦點置中。' },
@@ -2991,6 +3006,65 @@ class Component extends DCLogic {
       byAttr: A.map((a, i) => ({ n: this.ATTR_ZH[a], c: (attrs[i] || []).length }))
     };
   }
+  /* 建議編組:從持有卡挑「四位同團＋五色」的實際 5 張(規則檢查,非倍率最佳化)。
+     每角色×每屬性留一張最好的,小型窮舉:同團原生角色數最優先(規則要 4 位),
+     其次異色數(WL 加成 3/4/5 色→75/100/125),最後看卡的檔次。結果快取,持有清單變更才重算。 */
+  wlSuggest(charId) {
+    const cards = this.state.rateCards || [];
+    if (!cards.length) return null;
+    const key = charId + ':' + this.state.rOwnV;
+    if (this._wlSug && this._wlSug.key === key) return this._wlSug.val;
+    const own = this.ownSet();
+    const uOf = {}; (this.state.rateChars || []).forEach(c => { uOf[c[0]] = c[2]; });
+    const unit = uOf[charId];
+    let val = null;
+    if (unit != null) {
+      // c = [id, 角色, 稀有度, 屬性, 取得, 支援團, 卡池, 卡名, 素材];屬性/團體都是數字索引
+      const mine = cards.filter(c => own.has(c[0]) && (c[2] === 4 || c[2] === 9));
+      const sameUnit = mine.filter(c => uOf[c[1]] === unit || c[5] === unit);
+      const score = c => (c[1] === charId ? 40 : 0) + ((c[4] === 3 || c[4] === 4) ? 5 : 0) + (c[2] === 4 ? 3 : 0);
+      const byChar = {};
+      sameUnit.forEach(c => {
+        const m = byChar[c[1]] = byChar[c[1]] || {};
+        if (!m[c[3]] || score(c) > score(m[c[3]])) m[c[3]] = c;
+      });
+      // 每角色保留幾個屬性變體:窮舉規模是 C(角色數,5)×cap^5,依角色數收斂到百萬次以內。
+      // 但 score 不看顏色,直接截斷會丟掉「全場唯一能補那個色的卡」→ 明明湊得出五色卻說湊不滿。
+      // 所以稀缺色(只有 1~2 個角色能提供)一律補回。
+      const chars = Object.keys(byChar);
+      const provCnt = {};
+      chars.forEach(cid => Object.keys(byChar[cid]).forEach(a => { provCnt[a] = (provCnt[a] || 0) + 1; }));
+      const nCh = chars.length;
+      const cap = nCh <= 10 ? 5 : nCh <= 12 ? 4 : nCh <= 14 ? 3 : nCh <= 18 ? 2 : 1;
+      const charList = chars.map(cid => {
+        const all = Object.values(byChar[cid]).sort((a, b) => score(b) - score(a));
+        const vars = all.slice(0, cap);
+        all.forEach(c => { if (vars.indexOf(c) < 0 && provCnt[c[3]] <= 2) vars.push(c); });
+        return { cid: +cid, native: uOf[+cid] === unit, vars };
+      });
+      const WLB = { 3: 75, 4: 100, 5: 125 };
+      const k = Math.min(5, charList.length);
+      let best = null, bestV = -1;
+      const picked = [];
+      const rec = (i, left) => {
+        if (!left) {
+          let mask = 0, sc = 0, nat = 0;
+          for (const p of picked) { mask |= 1 << p.card[3]; sc += score(p.card); if (p.native) nat++; }
+          const colors = [1, 2, 4, 8, 16].filter(b => mask & b).length;
+          const v = nat * 100000 + (WLB[colors] || 0) * 100 + colors * 10 + sc;
+          if (v > bestV) { bestV = v; best = { team: picked.map(p => p.card), colors, natives: nat }; }
+          return;
+        }
+        if (i >= charList.length || charList.length - i < left) return;
+        for (const c of charList[i].vars) { picked.push({ card: c, native: charList[i].native }); rec(i + 1, left - 1); picked.pop(); }
+        rec(i + 1, left);
+      };
+      if (k >= 1) rec(0, k);
+      val = best ? { team: best.team, colors: best.colors, natives: best.natives } : null;
+    }
+    this._wlSug = { key, val };
+    return val;
+  }
 
   chNameOf(id) {
     if (!this._chName) { this._chName = {}; Object.keys(this.CHARA_ID).forEach(n => { this._chName[this.CHARA_ID[n]] = n; }); }
@@ -3261,7 +3335,7 @@ class Component extends DCLogic {
 
   /* ---------- 導航 ---------- */
   go(p) {
-    if (p === 'rank') this.loadBorderHistory();
+    if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
     if (p === 'songs') this.loadSongs();
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
@@ -4321,7 +4395,7 @@ class Component extends DCLogic {
       isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl',
       ...(() => {
         const chs = this.wlChapters();
-        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [], wlProjNote: '' };
+        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [], wlProjNote: '', wlSugOn: false, wlSugCards: [], wlSugNote: '' };
         const pick = chs.find(c => c.chapter === +s.wlCh) || chs.find(c => c.live) || chs[0];
         const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
         return {
@@ -4372,12 +4446,28 @@ class Component extends DCLogic {
           wlRules: this.WL_RULES.map(([n, pts]) => ({ n, pts })),
           ...(() => {
             const ck = this.wlCheck(pick.character);
-            if (!ck) return { wlCkOn: false, wlCkMsg: '到收集率頁勾選持有卡片後，這裡會檢查你能不能為本章湊出「四位同團＋五色屬性」。', wlCkRows: [] };
+            if (!ck) return { wlCkOn: false, wlCkMsg: '到收集率頁勾選持有卡片後，這裡會檢查你能不能為本章湊出「四位同團＋五色屬性」。', wlCkRows: [], wlSugOn: false, wlSugCards: [], wlSugNote: '' };
+            const sug = this.wlSuggest(pick.character);
+            // cards-index ATTRS 順序:cool,happy,mysterious,cute,pure(屬性欄是索引不是字串)
+            const ATTR_N = ['帥氣', '快樂', '神秘', '可愛', '純真'];
+            const nOf = {}; (s.rateChars || []).forEach(x => { nOf[x[0]] = x[1]; });
             return {
               wlCkOn: true,
               wlCkMsg: '你持有的 ★4／生日卡共 ' + ck.total + ' 張，其中本章同團 ' + ck.unitCards + ' 張，'
                 + (ck.attrHave >= 5 ? '五色屬性齊全 ✓' : ('目前 ' + ck.attrHave + ' 色，缺 ' + ck.missing.join('、'))),
-              wlCkRows: ck.byAttr.map(a => ({ n: a.n, v: a.c + ' 張', fg: a.c ? 'var(--accent-deep)' : '#e0576a' }))
+              wlCkRows: ck.byAttr.map(a => ({ n: a.n, v: a.c + ' 張', fg: a.c ? 'var(--accent-deep)' : '#e0576a' })),
+              wlSugOn: !!(sug && sug.team.length),
+              wlSugCards: sug ? sug.team.map(c => ({
+                id: c[0], img: this.cardImg(c[8], c[2]), name: c[7],
+                chara: nOf[c[1]] || ('#' + c[1]),
+                attrN: ATTR_N[c[3]] || '',
+                color: this.CHARA_COLOR[c[1]] || 'var(--accent)'
+              })) : [],
+              wlSugNote: sug ? ('同團 ' + sug.natives + ' 位・' + sug.colors + ' 色'
+                + (sug.colors >= 5 ? '，五色齊 ✓'
+                  : (sug.team.length < 5 ? '，持有卡湊不滿 5 個相異角色'
+                    : '。上方檢查算的是「你的同團卡涵蓋幾色」，這裡是「實際排得出幾色」——一個角色只能上一張，某些顏色都集中在同一人身上時就湊不滿'))
+                + '。僅按「四同團＋五色」規則挑選，非倍率最佳化。') : ''
             };
           })()
         };

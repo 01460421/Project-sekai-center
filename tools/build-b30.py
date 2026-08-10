@@ -109,6 +109,7 @@ def parse_sheet(xlsx_bytes):
 def main():
     sheet = parse_sheet(get(SHEET, binary=True))
     jp_musics = get(f'{JP}/musics.json')
+    jp_diffs = get(f'{JP}/musicDifficulties.json')
     tc_musics = get(f'{TC}/musics.json')
     tc_diffs = get(f'{TC}/musicDifficulties.json')
     # 中文譯名:繁中優先、簡中補缺(皆為社群翻譯);抓不到就全部保留日文
@@ -126,10 +127,19 @@ def main():
     by_norm = {}
     for mu in jp_musics:
         by_norm.setdefault(norm(mu['title']), []).append(mu)
+    # 台服先行實裝曲在台服 master 是另一組獨立 id(11xxx),與日服 id 對不起來,
+    # 只靠 id 比對會把它誤判成「日服限定」,而且 est 路徑又會把台服那筆補進來 → 同譜面兩列。
+    # 所以 fallback 前先用曲名查台服曲池。
+    tc_by_norm = {}
+    for mu in tc_musics:
+        tc_by_norm.setdefault(norm(mu['title']), []).append(mu)
     tc_ids = {mu['id'] for mu in tc_musics}
     lv = {}
     for d in tc_diffs:
         lv[(d['musicId'], d['musicDifficulty'])] = d['playLevel']
+    jp_lv = {}
+    for d in jp_diffs:
+        jp_lv[(d['musicId'], d['musicDifficulty'])] = d['playLevel']
 
     charts = []
     unmatched, jp_only = [], 0
@@ -139,15 +149,27 @@ def main():
             if not cands:
                 unmatched.append(title)
                 continue
-            # 同名多筆時挑「台服真的有這個難度」的那一筆
+            # 同名多筆時挑「台服真的有這個難度」的那一筆;台服沒有 → 收成日服限定(jp=1)
             mu = next((m for m in cands if m['id'] in tc_ids and (m['id'], dkey) in lv), None)
+            jp_mark = 0
             if not mu:
+                # 台服先行曲:id 對不到,但曲名在台服曲池且有這個難度 → 台服玩得到,用台服那筆
+                mu = next((m for m in tc_by_norm.get(norm(title), []) if (m['id'], dkey) in lv), None)
+            if not mu:
+                mu = next((m for m in cands if (m['id'], dkey) in jp_lv), None)
+                if not mu:
+                    unmatched.append(title)
+                    continue
+                jp_mark = 1
                 jp_only += 1
-                continue
             row = {
-                'id': mu['id'], 'd': dkey, 'lv': lv[(mu['id'], dkey)], 'c': const,
+                'id': mu['id'], 'd': dkey,
+                'lv': lv[(mu['id'], dkey)] if not jp_mark else jp_lv[(mu['id'], dkey)],
+                'c': const,
                 'jkt': mu['assetbundleName'], 't': mu['title'],
             }
+            if jp_mark:
+                row['jp'] = 1   # 日服限定(台服未實裝):前端標示,可切換顯示
             if plus:
                 row['p'] = plus   # 「+」數(1 或 2):三位小數模式換算 +p/30
             tr = zh.get(mu['id'])
@@ -180,7 +202,7 @@ def main():
 
     PLUS_ADD = [0, 0.05, 0.09999999]
     charts.sort(key=lambda x: (-(x['c'] + PLUS_ADD[x.get('p', 0)]), x.get('e', 0)))
-    print(f'共 {len(charts)} 譜面(台服可玩)、日服限定略過 {jp_only}、曲名比對失敗 {len(unmatched)}')
+    print(f'共 {len(charts)} 譜面(含日服限定 {jp_only})、曲名比對失敗 {len(unmatched)}')
     print(f'難易度表未收錄、以等級+0.5 推估: {len(est)} 譜面 {est}')
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
