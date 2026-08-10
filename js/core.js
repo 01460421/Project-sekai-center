@@ -3419,25 +3419,46 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     return res;
                 } catch (e) { return null; }
             },
-            // WL 純加成小窮舉:在(每角色×屬性去重後的)池中挑 5 張相異角色,最大化 Σ逐卡加成＋異色
+            /* WL 純加成小窮舉:在(每角色×屬性去重後的)池中挑 5 張相異角色。
+               排序分四層——① 總加成(逐卡＋異色) ② 全隊同團(area item allMatch 翻倍)
+               ③ 隊伍最高技能倍率 ④ 基礎綜合力。
+               第②層:加成一樣時要選「本團 V 團分」而不是純 V 卡或他團卡,因為團分卡讓全隊
+               effUnit 一致 → area 道具翻倍,整隊五張的綜合力都跟著漲,不只那一張自己數值高。
+               第③層:協力場只有隊長技能會為全隊發動(encore 也取最高),所以隊伍的技能代表值是
+               五張裡的最大值;同團已在第②層確保,故可用 effSkillMax(假設滿隊同團)的預估值。 */
             _wlBonusTeam(pool) {
                 const ABIT = { cool: 1, cute: 2, pure: 4, happy: 8, mysterious: 16 };
+                const UBIT = { light_sound: 1, idol: 2, street: 4, theme_park: 8, school_refusal: 16, piapro: 32 };
                 const n = pool.length;
                 const pop = m => (m & 1 ? 1 : 0) + (m & 2 ? 1 : 0) + (m & 4 ? 1 : 0) + (m & 8 ? 1 : 0) + (m & 16 ? 1 : 0);
                 if (n <= 5) { const t = pool.slice(0, 5); const cnt = wlAttrCnt(t.map(x => x.c)); return { team: t, colors: cnt, attrBonus: WL_ATTR_BONUS[cnt] || 0 }; }
                 const cb = pool.map(x => 1 << x.c.characterId), ab = pool.map(x => ABIT[x.c.attr] || 0);
-                let best = null, bestV = -1, bestM = 0;
+                // 卡的可用團體(VS 卡=piapro＋支援團);全隊 AND 不為 0 就是同團,與 PowerEngine.teamPower 的判定一致
+                const ub = pool.map(x => (PowerEngine.cardUnits(x.c) || []).reduce((m, u) => m | (UBIT[u] || 0), 0));
+                const bp = pool.map(x => x.baseSum || 0);
+                const sk = pool.map(x => x.skill || 0);
+                const mx5 = (a, b, c, d, e) => { let m = a; if (b > m) m = b; if (c > m) m = c; if (d > m) m = d; if (e > m) m = e; return m; };
+                let best = null, bestB = -1, bestSU = -1, bestSK = -1, bestP = -1, bestM = 0;
                 for (let a = 0; a < n - 4; a++) { const m1 = cb[a];
                 for (let b = a + 1; b < n - 3; b++) { if (m1 & cb[b]) continue; const m2 = m1 | cb[b];
                 for (let c = b + 1; c < n - 2; c++) { if (m2 & cb[c]) continue; const m3 = m2 | cb[c];
                 for (let d = c + 1; d < n - 1; d++) { if (m3 & cb[d]) continue; const m4 = m3 | cb[d];
                 for (let e = d + 1; e < n; e++) { if (m4 & cb[e]) continue;
                     const am = ab[a] | ab[b] | ab[c] | ab[d] | ab[e];
-                    const v = pool[a].per + pool[b].per + pool[c].per + pool[d].per + pool[e].per + (WL_ATTR_BONUS[pop(am)] || 0);
-                    if (v > bestV) { bestV = v; best = [a, b, c, d, e]; bestM = am; }
+                    // 加成整數化(一位小數)再比,避免浮點加總的相等判斷失準
+                    const bi = Math.round((pool[a].per + pool[b].per + pool[c].per + pool[d].per + pool[e].per + (WL_ATTR_BONUS[pop(am)] || 0)) * 10);
+                    if (bi < bestB) continue;
+                    const tie = bi === bestB;
+                    const su = (ub[a] & ub[b] & ub[c] & ub[d] & ub[e]) ? 1 : 0;
+                    if (tie && su < bestSU) continue;
+                    const sm = mx5(sk[a], sk[b], sk[c], sk[d], sk[e]);
+                    if (tie && su === bestSU && sm < bestSK) continue;
+                    const ps = bp[a] + bp[b] + bp[c] + bp[d] + bp[e];
+                    if (tie && su === bestSU && sm === bestSK && ps <= bestP) continue;
+                    bestB = bi; bestSU = su; bestSK = sm; bestP = ps; best = [a, b, c, d, e]; bestM = am;
                 } } } } }
                 const team = best.map(i => pool[i]);
-                return { team, colors: pop(bestM), attrBonus: WL_ATTR_BONUS[pop(bestM)] || 0 };
+                return { team, colors: pop(bestM), attrBonus: WL_ATTR_BONUS[pop(bestM)] || 0, sameUnit: bestSU === 1, skill: bestSK };
             },
             async onEvent() {
                 if (!this._ready) return;
@@ -3477,6 +3498,21 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (isWL) {
                     // WL:屬性加成看「隊伍相異屬性數」→ 每角色×每屬性留最佳,
                     // 小型窮舉挑「逐卡加成＋異色」最高的實際 5 張(單團 WL 第 5 位用湊數卡補)
+                    // tie-break 素材先備好:湊數卡彼此加成都一樣(只吃稀有度/專精),
+                    // 光按加成排會讓技能高的卡連候選池都進不去,必須在挑選階段就看技能與綜合力
+                    let hasPS = false;
+                    try {
+                        await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
+                        if (gen !== this._evGen) return;
+                        hasPS = true;
+                    } catch (e) { /* 算不出來就只比加成,不影響主結果 */ }
+                    const stat = x => {
+                        if (!hasPS || x._ps) return;
+                        const b = PowerEngine.basePowerCached(x.c, PowerEngine.cardMaxLevel(x.c), true, true, 5);
+                        x.baseSum = b[0] + b[1] + b[2];
+                        x.skill = SkillEngine.effSkillMax(x.c, true, 4, 100);   // SL4、角色等級100 的上限估值
+                        x._ps = 1;
+                    };
                     const byCA = {};
                     scored.filter(x => x.charMatch || x.special > 0)
                         .forEach(x => { const k = x.c.characterId + ':' + x.c.attr; if (!byCA[k] || x.per > byCA[k].per) byCA[k] = x; });
@@ -3484,16 +3520,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const haveChars = new Set(pool.map(x => x.c.characterId));
                     if (haveChars.size < 5) {
                         // 湊數卡優先用「該團的 V 團分」(supportUnit=本團的 V 家卡,補剩下那個顏色):
-                        // 吃 area 同團翻倍與同團技能,正是教學規則的「四位同團＋團分卡 1 張」;
-                        // 該色沒有 V 團分才退而求其次用其他卡
+                        // 吃 area 同團翻倍與同團技能,正是教學規則的「四位同團＋團分卡 1 張」。
+                        // 同色可能有數張團分卡(加成完全一樣),要按技能→綜合力挑,別讓 id 順序決定。
                         const evUnit = wlNativeUnit([...haveChars][0]);
+                        const isTeamV = x => (x.c.supportUnit === evUnit ? 1 : 0);
+                        // 每個「角色×屬性」只留一張,但**團分卡優先於加成**——湊數卡的加成一律是
+                        // 稀有度/專精那 25%,同分時原本保留 id 最小的,結果每位 V 家的團分卡幾乎都被
+                        // 更早的普通卡擠掉(實測 happy 色 4 張團分卡只活下來 1 張,還是技能最差的)
                         const fillBy = {};
-                        scored.filter(x => !haveChars.has(x.c.characterId))
-                            .forEach(x => { const k = x.c.characterId + ':' + x.c.attr; if (!fillBy[k] || x.per > fillBy[k].per) fillBy[k] = x; });
-                        const fillAll = Object.values(fillBy).sort((a, b) => b.per - a.per);
-                        const vSeen = {};
-                        fillAll.forEach(x => { if (x.c.supportUnit === evUnit && (vSeen[x.c.attr] = (vSeen[x.c.attr] || 0) + 1) <= 2) pool.push(x); });
-                        fillAll.forEach(x => { if (x.c.supportUnit !== evUnit && !vSeen[x.c.attr]) { vSeen[x.c.attr] = 1; pool.push(x); } });
+                        scored.filter(x => !haveChars.has(x.c.characterId)).forEach(x => {
+                            const k = x.c.characterId + ':' + x.c.attr, o = fillBy[k];
+                            if (!o || isTeamV(x) > isTeamV(o) || (isTeamV(x) === isTeamV(o) && x.per > o.per)) fillBy[k] = x;
+                        });
+                        const fillAll = Object.values(fillBy);
+                        fillAll.forEach(stat);
+                        // 同色可能有多張團分卡(加成完全一樣),按技能→綜合力挑,別讓 id 順序決定
+                        fillAll.sort((a, b) => (isTeamV(b) - isTeamV(a))
+                            || (b.per - a.per) || ((b.skill || 0) - (a.skill || 0)) || ((b.baseSum || 0) - (a.baseSum || 0)));
+                        const seen = {};
+                        fillAll.forEach(x => { if ((seen[x.c.attr] = (seen[x.c.attr] || 0) + 1) <= 3) pool.push(x); });
                     }
                     pool.sort((a, b) => b.per - a.per);
                     const orderedB = pool;
@@ -3517,12 +3562,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         if (!add) break;
                         pool.push(add);
                     }
+                    pool.forEach(stat);   // 保底階段補進來的卡也要有 tie-break 素材
                     const pick = this._wlBonusTeam(pool);
                     ranked = pick.team;
                     const supB = await this._wlSupport(src, this._evId, null);
                     if (gen !== this._evGen) return;
                     const support = supB ? supB.forDeck(ranked.map(x => x.c.id)) : 0;
-                    wlInfo = { colors: pick.colors, attrBonus: pick.attrBonus, support, hasSup: !!supB, label: supB ? supB.label : '' };
+                    wlInfo = { colors: pick.colors, attrBonus: pick.attrBonus, support, hasSup: !!supB, label: supB ? supB.label : '',
+                               sameUnit: !!pick.sameUnit, skill: pick.skill > 0 ? Math.round(pick.skill * 10) / 10 : 0 };
                 } else {
                     const bestPerChar = {};
                     scored.filter(x => x.charMatch || x.special > 0)
@@ -3542,7 +3589,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>取得/復刻</th><th>加成明細</th><th>加成</th></tr></thead>
                     <tbody>${ranked.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td style="font-size:11px;color:var(--text-light);">屬性/團 ${x.deck}%${x.special ? ' ＋特效' + x.special + '%' : ''} ＋稀有度/專精 ${x.mr}%</td><td class="score">＋${x.per}%</td></tr>`).join('')}</tbody>
                     </table></div>
-                    <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>${wlInfo ? `＝逐卡 ${cardSum}% ＋ WL 異色(${wlInfo.colors}色)${wlInfo.attrBonus}%${wlInfo.hasSup ? ` ＋ 支援隊伍(理論滿配,以${wlInfo.label}為主)${wlInfo.support}%` : '(支援隊伍未估,未含在內)'}` : ''}(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」${wlInfo ? (wlInfo.hasSup ? ',已含支援,別再手動加' : ',支援請自行加上') : ''})。${wlInfo ? '第 5 位用「本團 V 團分」(支援團=本團的 V 家卡)補剩下的顏色:無角色加成、只吃稀有度/專精,但吃 area 同團翻倍與同團技能;該色沒有 V 團分才用其他卡。' : ''}</div>`
+                    <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>${wlInfo ? `＝逐卡 ${cardSum}% ＋ WL 異色(${wlInfo.colors}色)${wlInfo.attrBonus}%${wlInfo.hasSup ? ` ＋ 支援隊伍(理論滿配,以${wlInfo.label}為主)${wlInfo.support}%` : '(支援隊伍未估,未含在內)'}` : ''}(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」${wlInfo ? (wlInfo.hasSup ? ',已含支援,別再手動加' : ',支援請自行加上') : ''})。${wlInfo ? `加成相同時的取捨順序:<strong>全隊同團</strong>(area 道具翻倍,整隊綜合力都漲)→<strong>技能倍率</strong>(協力場只有隊長技能會發動,取隊內最高)→基礎綜合力。所以第 5 位優先用「本團 V 團分」(支援團=本團的 V 家卡):沒有角色加成、只吃稀有度/專精,但能讓全隊同團。本隊${wlInfo.sameUnit ? '<strong style="color:var(--primary);">全隊同團 ✓</strong>(area 翻倍)' : '<strong>未能全隊同團</strong>(area 不翻倍,持有/卡池湊不出同團的第 5 色)'}${wlInfo.skill ? '、隊長技能 ' + wlInfo.skill + '%' : ''}。` : ''}</div>`
                     : '<div class="note">此活動查無加成卡資料。</div>';
                 this.calc();
             },
