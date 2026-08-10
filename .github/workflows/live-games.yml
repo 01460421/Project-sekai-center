@@ -1,0 +1,89 @@
+name: 逐局活動P紀錄
+
+# 前 50 名的每一局加了多少活動P。API 你請求就回應、沒有快取，
+# 所以資料密度完全取決於我們自己掃多密；一局協力最短約 150 秒，
+# 用 15 秒間隔就絕不會把兩局併成一筆。
+#
+# 排程一樣不可靠（實測 */30 實際間隔 1.5～3.5 小時），做法比照榜線快照：
+# 一次觸發後就在同一個 job 內連續跑 5.5 小時，中途每 30 分鐘自己提交一次。
+# 因為 concurrency 不取消、新觸發會排隊等待，只要這 5.5 小時內有任何一次
+# 排程成功，下一棒就已經在門口等著接手，接力幾乎無縫——不必等排程準時。
+#
+# 非活動期間腳本會自己判斷並立刻收工，不佔 runner、也不打人家的 API。
+#
+# ⚠️ 自動排程「刻意停用」，目前只能手動觸發（workflow_dispatch）。兩個理由：
+#
+# 1. 違反 GitHub 附加產品條款。原文禁止「對伺服器造成與使用者獲益不成比例的負擔
+#    （例如不要把 Actions 當 CDN 或當作 serverless 應用的一部分）」，以及使用
+#    GitHub-hosted runner 時禁止「與該 repo 所屬軟體專案的生產、測試、部署或發布
+#    無關的活動」。24 小時常駐約 28,800 runner-分鐘/月，正是這條的典型情境。
+#    濫用偵測是自動的、停權無預警，而 repo／網站原始碼／Vercel 部署都綁同一個帳號。
+# 2. 就算不談條款，功能上也是壞的：排程官方最短 5 分鐘、尖峰會延遲，社群實測
+#    15~29 分鐘甚至漂移數小時。一天 4 次交接 × 每次 5~35 分鐘空窗 ≈ 每天最多
+#    2 小時沒有資料。對「一個點＝一場遊戲」的時間軸，空窗是整局消失，
+#    使用者看到的會是錯誤資料而不是稀疏資料。
+#
+# 正式跑法請改用 Cloudflare Durable Object alarm（setAlarm(Date.now()+15000)，
+# 官方唯一支援的 sub-minute 排程，免費額度綽綽有餘）。這個檔案保留下來，
+# 是為了「手動補跑某一段」以及本機驗證用。
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '*/10 * * * *'   # 見上方說明，確認要承擔風險再打開
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-games
+  cancel-in-progress: false   # 關鍵：不取消進行中的，新的排隊等它跑完再接手
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350      # 腳本跑 330 分鐘，留 20 分鐘餘裕（GitHub 單 job 上限 6 小時）
+    steps:
+      - uses: actions/checkout@v4
+
+      # 腳本自己負責寫檔與提交（每 30 分鐘一次），job 中途被砍最多只丟那段。
+      - name: 連續記錄 5.5 小時（每 15 秒一掃）
+        run: python3 tools/record-games.py 330
+
+      # 紀錄只增不減：比對每個 jsonl 與 HEAD 的行數，少了就讓 job 失敗，
+      # 絕不把缺損推上去（同榜線快照的保護）。
+      - name: 確認沒有任何紀錄減少
+        run: |
+          python3 - <<'PY'
+          import subprocess, sys, pathlib
+          bad = []
+          for p in sorted(pathlib.Path('data/games').glob('*.jsonl')):
+              new = sum(1 for _ in p.open())
+              r = subprocess.run(['git', 'show', f'HEAD:{p}'], capture_output=True, text=True)
+              if r.returncode:
+                  print(f'{p}: 新檔案，{new} 局'); continue
+              old = len(r.stdout.splitlines())
+              if new < old:
+                  bad.append(f'{p}: 從 {old} 局掉到 {new} 局')
+              else:
+                  print(f'{p}: {old} → {new} 局')
+          if bad:
+              print('偵測到紀錄缺損，中止：', *bad, sep='\n  ', file=sys.stderr)
+              sys.exit(1)
+          PY
+
+      # 腳本每 30 分鐘就提交過了，這裡只收尾最後那一段。
+      - name: 提交剩餘變更
+        run: |
+          if [ -z "$(git status --porcelain data/games)" ]; then
+            echo "沒有未提交的資料"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/games
+          git commit -m "逐局紀錄 $(date -u '+%Y-%m-%d %H:%M') UTC [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
