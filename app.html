@@ -1898,17 +1898,28 @@ input::placeholder{color:var(--text-3)}
         </sc-for>
       </div>
 
-      <!-- 點多的時候不聚合、改成橫向捲動，每一場都保留得到 -->
-      <div style="overflow-x:auto;overflow-y:hidden;padding:10px 2px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);-webkit-overflow-scrolling:touch">
-        <div style="display:flex;align-items:center;gap:4px;min-height:22px">
-          <sc-for list="{{ detailData.gamesDots }}" as="g" hint-placeholder-count="40">
-            <button type="button" onClick="{{ onGamesPick }}" data-i="{{ g.i }}" title="{{ g.title }}" style="flex:none;width:{{ g.size }};height:{{ g.size }};padding:0;border:none;border-radius:50%;background:{{ g.bg }};cursor:pointer;transition:width .15s,height .15s"></button>
-          </sc-for>
+      <!-- 點多的時候不聚合、改成橫向捲動，每一場都保留得到。
+           左右箭頭逐場切換，比用手指點小圓點準得多（尤其手機）。 -->
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" onClick="{{ onGamesPrev }}" title="上一場" style="flex:none;width:34px;height:34px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--accent-deep);font-size:15px;font-weight:800;cursor:pointer;line-height:1">‹</button>
+        <div id="gamesTrack" style="flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;padding:6px 2px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);-webkit-overflow-scrolling:touch">
+          <div style="display:flex;align-items:center;min-height:30px">
+            <sc-for list="{{ detailData.gamesDots }}" as="g" hint-placeholder-count="40">
+              <!-- 外層是觸控區（夠大好按），內層才是視覺上的小圓點 -->
+              <button type="button" onClick="{{ onGamesPick }}" data-i="{{ g.i }}" data-gdot="{{ g.i }}" title="{{ g.title }}" style="flex:none;width:18px;height:30px;padding:0;border:none;background:transparent;cursor:pointer;display:grid;place-items:center">
+                <span style="display:block;width:{{ g.size }};height:{{ g.size }};border-radius:50%;background:{{ g.bg }};box-shadow:{{ g.ring }};transition:width .15s,height .15s"></span>
+              </button>
+            </sc-for>
+          </div>
         </div>
+        <button type="button" onClick="{{ onGamesNext }}" title="下一場" style="flex:none;width:34px;height:34px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--accent-deep);font-size:15px;font-weight:800;cursor:pointer;line-height:1">›</button>
       </div>
 
       <sc-if value="{{ detailData.gamesHasPick }}">
-        <div style="margin-top:9px;padding:9px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent-deep);font-size:12.5px;font-weight:700;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickInfo }}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;padding:9px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 12%,transparent)">
+          <span style="color:var(--accent-deep);font-size:12.5px;font-weight:700;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickInfo }}</span>
+          <span style="flex:none;color:var(--text-3);font-size:11px;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickNo }}</span>
+        </div>
       </sc-if>
       <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ detailData.gamesNote }}</div>
     </sc-if>
@@ -3104,6 +3115,21 @@ class Component extends DCLogic {
     }
   }
 
+  /* 逐場切換:沒選過就從最後一場(最新)開始;到頭到尾就停住不繞回去,
+     免得使用者以為還有下一場。切完把該點捲到視野中央。 */
+  gamesStep(dir) {
+    const n = this._gamesShown || 0;
+    if (!n) return;
+    const cur = this.state.gamesPick;
+    let next = cur < 0 ? (dir > 0 ? 0 : n - 1) : cur + dir;
+    next = Math.max(0, Math.min(n - 1, next));
+    this.setState({ gamesPick: next });
+    setTimeout(() => {
+      const el = document.querySelector('[data-gdot="' + next + '"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, 50);
+  }
+
   /* ---------- World Link 個榜 ----------
      WL 每個章節有自己的角色、期程與獨立榜線/排名。
      /event/live/top100 → world_link_top_100_rankings
@@ -4073,6 +4099,7 @@ class Component extends DCLogic {
           return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         };
         const pick = s.gamesPick >= 0 && s.gamesPick < rows.length ? rows[s.gamesPick] : null;
+        this._gamesShown = rows.length;   // 給左右箭頭知道可走的範圍(篩選後會變)
         return mk({
           gamesOn: true,
           gamesDots: rows.map((g, i) => {
@@ -4082,7 +4109,9 @@ class Component extends DCLogic {
             return {
               i, on,
               bg: on ? 'var(--accent-deep)' : `color-mix(in oklab, var(--accent) ${Math.round(24 + q * 66)}%, transparent)`,
-              size: on ? '13px' : '9px',
+              size: on ? '14px' : '9px',
+              // 選中的點加一圈外光暈，在一整排小點裡才找得到自己在哪
+              ring: on ? '0 0 0 3px color-mix(in oklab,var(--accent) 30%,transparent)' : 'none',
               title: hhmm(g.t) + '　+' + this.n(g.delta) + ' P',
             };
           }),
@@ -4094,6 +4123,7 @@ class Component extends DCLogic {
           ],
           gamesHasPick: !!pick,
           gamesPickInfo: pick ? (hhmm(pick.t) + '　+' + this.n(pick.delta) + ' P　（當下第 ' + pick.rank + ' 名）') : '',
+          gamesPickNo: pick ? (s.gamesPick + 1) + ' / ' + rows.length : '',
           gamesNote: '每 15 秒取樣一次，一場協力最短約 150 秒，所以每個點就是一場。'
             + (s.gamesGaps && s.gamesGaps.length ? '　本期有 ' + s.gamesGaps.length + ' 段紀錄中斷，該區間的點可能是多場合併。' : ''),
         });
@@ -4867,6 +4897,9 @@ class Component extends DCLogic {
       onDetailClose: () => this.setState({ detail: null }),
       onGamesRange: e => this.setState({ gamesRange: e.currentTarget.dataset.v, gamesPick: -1 }),
       onGamesPick: e => { const i = +e.currentTarget.dataset.i; this.setState(s2 => ({ gamesPick: s2.gamesPick === i ? -1 : i })); },
+      // 左右箭頭逐場切換:比點小圓點準,而且會自動把選中的點捲到視野中央
+      onGamesPrev: () => this.gamesStep(-1),
+      onGamesNext: () => this.gamesStep(1),
       // 從排名詳情開啟該玩家的編組（重用 ?embed=deck 的完整引擎：真實隊伍＋綜合力＋逐卡加成）
       onRankDeck: e => { const uid = e.currentTarget.dataset.uid; if (uid) this.setState({ deckPid: uid, detail: null }); },
       onMyDetail: () => {
