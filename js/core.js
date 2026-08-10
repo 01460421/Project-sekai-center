@@ -4660,7 +4660,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 let cost = 0, jew = 0;
                 rows.forEach(x => { cost += (x.r.price || 0) * x.n; jew += this.totalJ(x.r) * x.n; });
                 el.innerHTML = `<div class="sa-cartbar${rows.length ? ' has' : ''}">
-                    <span class="sa-cart-title">🛒 官網選購清單${rows.length ? `(${rows.length} 項)` : ''}</span>
+                    <span class="sa-cart-title">官網選購清單${rows.length ? `(${rows.length} 項)` : ''}</span>
                     ${rows.map(x => `<span class="sa-cartitem">${x.r.n}${x.n > 1 ? '×' + x.n : ''}<button type="button" onclick="ShopAnalyzer.cartDel('${x.r.id}')" aria-label="移除">✕</button></span>`).join('')}
                     ${rows.length ? `<span class="sa-cart-sum">合計 NT$${fmtNum(cost)}・${fmtNum(jew)} 石</span><button type="button" class="sa-fill" onclick="ShopAnalyzer.cartClear()">清空</button>` : '<span style="font-size:11px;color:var(--text-light);">在官網商品卡點「＋清單」,選好後帶遊戲 ID 直達官網結帳</span>'}
                     <span class="sa-cart-role">遊戲ID <input type="text" inputmode="numeric" placeholder="輸入遊戲 ID" value="${this.roleId.replace(/"/g, '&quot;')}" oninput="ShopAnalyzer.setRole(this.value)">
@@ -5024,7 +5024,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 } else {
                     targetJ = mode === 'pulls' ? val * this.PULL : val;
                     targetJ = Math.max(0, Math.min(targetJ - held, 600000));
-                    if (targetJ <= 0) { out.innerHTML = '<div class="note">持有水晶已達目標,不需要儲值 🎉</div>'; return; }
+                    if (targetJ <= 0) { out.innerHTML = '<div class="note">持有水晶已達目標,不需要儲值</div>'; return; }
                     res = this._dpMin(cands, targetJ);
                 }
                 this.renderPlan(out, res, cands, { mode, val, held, targetJ, budget });
@@ -5067,7 +5067,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ${sh ? `<div><em>另附帶道具約值</em><strong>${fmtNum(Math.round(sh))}</strong> 石</div>` : ''}
                 </div>`;
                 this._planWeb = rows.filter(x => x.c.r.src === 'web').map(x => [x.c.r.id, x.n]);
-                const webBtn = this._planWeb.length ? `<button type="button" class="sa-more" style="margin-top:8px;" onclick="ShopAnalyzer.cartAddPlan()">🛒 把方案中的 ${this._planWeb.length} 項官網商品加入選購清單</button>` : '';
+                const webBtn = this._planWeb.length ? `<button type="button" class="sa-more" style="margin-top:8px;" onclick="ShopAnalyzer.cartAddPlan()">把方案中的 ${this._planWeb.length} 項官網商品加入選購清單</button>` : '';
                 out.innerHTML = `${ctx.mode === 'budget'
                     ? `<div class="note">預算 NT$${fmtNum(ctx.budget)} 內的最大水晶方案(花 NT$${fmtNum(cost)},剩 NT$${fmtNum(ctx.budget - cost)})。</div>`
                     : `<div class="note">目標 ${fmtNum(ctx.targetJ)} 石${ctx.held ? `(已扣除持有 ${fmtNum(ctx.held)})` : ''}${res.reached ? '' : ' — <strong style="color:#e05667;">限購上限內湊不滿,以下是可達的最大方案</strong>'}。</div>`}
