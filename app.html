@@ -2215,8 +2215,48 @@ class Component extends DCLogic {
     goal: 1000000, cur: 0
   };
 
+  /* 返頂鍵:經典版有,App 版原本沒有——App 的底部功能列是五個換頁鍵,沒有「頂部」,
+     所以桌機、手機都要放。用原生 DOM 掛在 body(不進模板,不受每次 renderVals 重繪影響);
+     手機要讓開底部功能列,位置隨視窗寬度調整。 */
+  _initToTop() {
+    if (this._toTopEl) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', '回到頁面頂端');
+    b.title = '回到頂端';
+    b.innerHTML = '<span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 12.5L10 7l5 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+    b.style.cssText = 'position:fixed;right:16px;z-index:70;padding:0;border:none;background:none;cursor:pointer;opacity:0;visibility:hidden;transition:opacity .28s ease,visibility .28s ease';
+    b.firstChild.style.cssText = 'display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background:var(--grad-cta);color:#fff;box-shadow:var(--sh-md);border:1px solid color-mix(in oklab,var(--border) 60%,transparent);transition:transform .25s cubic-bezier(.34,1.45,.44,1)';
+    b.querySelector('svg').style.cssText = 'width:20px;height:20px;display:block';
+    const place = () => { b.style.bottom = window.innerWidth <= 900 ? 'calc(80px + env(safe-area-inset-bottom,0px))' : 'calc(20px + env(safe-area-inset-bottom,0px))'; };
+    place();
+    document.body.appendChild(b);
+    this._toTopEl = b;
+    let queued = false;
+    const apply = () => {
+      queued = false;
+      const on = window.scrollY > 700;   // 約一個螢幕高才浮出來,免得一開始就擋內容
+      b.style.opacity = on ? '1' : '0';
+      b.style.visibility = on ? 'visible' : 'hidden';
+    };
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(apply); } };
+    apply();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', place);
+    b.addEventListener('click', () => {
+      const smooth = getComputedStyle(document.documentElement).scrollBehavior === 'smooth';
+      window.scrollTo(smooth ? { top: 0, behavior: 'smooth' } : { top: 0 });
+      // 焦點交還頁首,鍵盤/讀屏使用者不會還卡在頁尾
+      const m = document.querySelector('main');
+      if (m) { m.setAttribute('tabindex', '-1'); m.focus({ preventScroll: true }); }
+    });
+    b.addEventListener('pointerdown', () => { b.firstChild.style.transform = 'scale(.9)'; });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { b.firstChild.style.transform = ''; }));
+  }
+
   componentDidMount() {
     this.applyProps();
+    this._initToTop();
     const sp = this.props.startPage;
     if (sp && this.PAGES[sp]) this.setState({ page: sp });
     this.mq = window.matchMedia('(max-width: 900px)');
