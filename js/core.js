@@ -3657,7 +3657,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 // WL 去重鍵要含屬性:異色加成看全隊相異屬性數,每角色只留一張(通常同色)會讓 4/5 色解永遠進不了池
                 cand.forEach(x => { const k = x.c.characterId + (x.c.characterId >= 21 ? ':' + (x.c.supportUnit || 'none') : '') + (isWL ? ':' + x.c.attr : ''); if (!bestByKey[k]) bestByKey[k] = x; });
                 const ordered = Object.values(bestByKey);
-                const pool = ordered.slice(0, isWL ? 28 : 26);
+                const pool = ordered.slice(0, isWL ? 24 : 26);   // WL 保底會再補幾張,基數先留餘裕(DFS 成本 ~C(n,5))
                 if (isWL) {
                     // 截斷保底:①五色都要在池裡 ②每色都要有「湊數卡(非加成角色)」——
                     // 單團 WL 第 5 位只能用非團員,顏色自由度全靠湊數卡;團員自己五色齊全
@@ -3671,6 +3671,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         if (!pool.some(x => !x.charMatch && !x.special && x.c.attr === a)) {
                             const add = ordered.find(x => !inPool.has(x) && !x.charMatch && !x.special && x.c.attr === a && x.c.supportUnit === wlEvUnit)
                                 || ordered.find(x => !inPool.has(x) && !x.charMatch && !x.special && x.c.attr === a);
+                            if (add) { pool.push(add); inPool.add(add); }
+                        }
+                        // ③每色還要有「本團 V 團分」那一張。上面只保證「該色有湊數卡」,
+                        // 該色若已被純V/他團卡佔位就不再補 → DFS 永遠看不到「第 5 位用團分卡
+                        // 讓全隊同團、area 道具 allMatch 翻倍」的方案(實測 happy 色就被
+                        // BloomFES 純V卡佔住,團分卡進不了池)。兩種方案都要在池裡,才輪得到目標函數挑。
+                        if (wlEvUnit && !pool.some(x => !x.charMatch && !x.special && x.c.attr === a && x.c.supportUnit === wlEvUnit)) {
+                            const add = ordered.find(x => !inPool.has(x) && !x.charMatch && !x.special && x.c.attr === a && x.c.supportUnit === wlEvUnit);
                             if (add) { pool.push(add); inPool.add(add); }
                         }
                     }
