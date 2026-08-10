@@ -2225,8 +2225,17 @@ class Component extends DCLogic {
     b.setAttribute('aria-label', '回到頁面頂端');
     b.title = '回到頂端';
     b.innerHTML = '<span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 12.5L10 7l5 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
-    b.style.cssText = 'position:fixed;right:16px;z-index:70;padding:0;border:none;background:none;cursor:pointer;opacity:0;visibility:hidden;transition:opacity .28s ease,visibility .28s ease';
-    b.firstChild.style.cssText = 'display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background:var(--grad-cta);color:#fff;box-shadow:var(--sh-md);border:1px solid color-mix(in oklab,var(--border) 60%,transparent);transition:transform .25s cubic-bezier(.34,1.45,.44,1)';
+    // 動畫:淡入時從下方滑上來(帶一點彈),hover 再上浮一點,按下縮一下,點擊後箭頭往上彈
+    if (!document.getElementById('toTopKF')) {
+      const st = document.createElement('style');
+      st.id = 'toTopKF';
+      st.textContent = '@keyframes toTopPop{0%{transform:translateY(0)}35%{transform:translateY(-6px)}100%{transform:translateY(0)}}'
+        + '@media(prefers-reduced-motion:reduce){#appToTop,#appToTop>span,#appToTop svg{transition:none!important;animation:none!important}}';
+      document.head.appendChild(st);
+    }
+    b.id = 'appToTop';
+    b.style.cssText = 'position:fixed;right:16px;z-index:70;padding:0;border:none;background:none;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(14px) scale(.85);transition:opacity .3s ease,visibility .3s ease,transform .42s cubic-bezier(.34,1.45,.44,1)';
+    b.firstChild.style.cssText = 'display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background:var(--grad-cta);color:#fff;box-shadow:var(--sh-md);border:1px solid color-mix(in oklab,var(--border) 60%,transparent);transition:transform .25s cubic-bezier(.34,1.45,.44,1),box-shadow .25s ease';
     b.querySelector('svg').style.cssText = 'width:20px;height:20px;display:block';
     const place = () => { b.style.bottom = window.innerWidth <= 900 ? 'calc(80px + env(safe-area-inset-bottom,0px))' : 'calc(20px + env(safe-area-inset-bottom,0px))'; };
     place();
@@ -2238,27 +2247,33 @@ class Component extends DCLogic {
       const on = window.scrollY > 700;   // 約一個螢幕高才浮出來,免得一開始就擋內容
       b.style.opacity = on ? '1' : '0';
       b.style.visibility = on ? 'visible' : 'hidden';
+      b.style.transform = on ? 'translateY(0) scale(1)' : 'translateY(14px) scale(.85)';
     };
     const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(apply); } };
     apply();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', place);
     b.addEventListener('click', () => {
+      const svg = b.querySelector('svg');
+      svg.style.animation = 'none'; void svg.offsetWidth; svg.style.animation = 'toTopPop .45s cubic-bezier(.34,1.45,.44,1)';
       const smooth = getComputedStyle(document.documentElement).scrollBehavior === 'smooth';
       window.scrollTo(smooth ? { top: 0, behavior: 'smooth' } : { top: 0 });
       // 焦點交還頁首,鍵盤/讀屏使用者不會還卡在頁尾
       const m = document.querySelector('main');
       if (m) { m.setAttribute('tabindex', '-1'); m.focus({ preventScroll: true }); }
     });
+    b.addEventListener('pointerenter', () => { b.firstChild.style.transform = 'translateY(-3px)'; b.firstChild.style.boxShadow = 'var(--sh-lg,var(--sh-md))'; });
     b.addEventListener('pointerdown', () => { b.firstChild.style.transform = 'scale(.9)'; });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { b.firstChild.style.transform = ''; }));
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { b.firstChild.style.transform = ''; b.firstChild.style.boxShadow = ''; }));
   }
 
   componentDidMount() {
     this.applyProps();
     this._initToTop();
-    const sp = this.props.startPage;
-    if (sp && this.PAGES[sp]) this.setState({ page: sp });
+    // 起始頁:?page= 深連結優先(可直接分享某個分頁),其次元件 props
+    let sp = this.props.startPage;
+    try { const q = new URLSearchParams(location.search).get('page'); if (q && this.PAGES[q]) sp = q; } catch (e) {}
+    if (sp && this.PAGES[sp]) { this.setState({ page: sp }); this.go(sp); }
     this.mq = window.matchMedia('(max-width: 900px)');
     const onMq = e => this.setState({ mobile: e.matches });
     this.setState({ mobile: this.mq.matches });
