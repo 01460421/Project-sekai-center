@@ -20,5 +20,11 @@ new_sqlite_classes = ["GameTracker"]
 [triggers]
 crons = ["* * * * *"]
 
+# 自訂網域：只吃 games 子網域，主網域留給網站本體（之後要把主站從 Vercel 搬過來也不受影響）。
+# custom_domain = true 會自動在該 zone 建立 DNS 記錄並簽發憑證。
+[[routes]]
+pattern = "games.project-sekai-center.com"
+custom_domain = true
+
 [observability]
 enabled = true

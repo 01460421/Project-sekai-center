@@ -111,7 +111,13 @@ export class GameTracker {
     if (p === '/games') {
       const ev = Number(url.searchParams.get('ev') || (this.get('event') || {}).id || 0);
       const since = Number(url.searchParams.get('since') || 0);
-      const uidx = url.searchParams.get('uidx');
+      // 前端手上只有 uid（19 位字串），讓它直接用 uid 查，不必先抓一次對照表
+      let uidx = url.searchParams.get('uidx');
+      const uid = url.searchParams.get('uid');
+      if (uidx === null && uid) {
+        const hit = [...this.sql.exec('SELECT uidx FROM users WHERE ev = ? AND uid = ?', ev, uid)];
+        uidx = hit.length ? String(hit[0].uidx) : '-1';   // 查無此人 → 回空集合而不是全部
+      }
       const rows = uidx === null
         ? [...this.sql.exec('SELECT uidx,t,delta,rank FROM games WHERE ev = ? AND t >= ? ORDER BY t', ev, since)]
         : [...this.sql.exec('SELECT uidx,t,delta,rank FROM games WHERE ev = ? AND uidx = ? AND t >= ? ORDER BY t', ev, Number(uidx), since)];
