@@ -17,7 +17,7 @@
  */
 
 const API = 'https://api.hisekai.org/tw/event/live/top100';
-const TOP_N = 50;
+const TOP_N = 100;   // API 就是回前 100 名,全收
 const TICK_MS = 15_000;
 const UA = 'project-sekai-center/1.0 (+https://project-sekai-center.vercel.app) per-game-tracker';
 const GAP_FACTOR = 3;          // 超過 3 個週期沒成功 → 記一段缺口

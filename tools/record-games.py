@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""逐局活動P 採集器：每 15 秒掃一次前 50 名，只記「有變動」的那一筆。
+"""逐局活動P 採集器：每 15 秒掃一次前 100 名，只記「有變動」的那一筆。
 
 一局協力最短約 150 秒（曲長＋結算＋房間），所以 15 秒間隔絕不會把兩局併成一筆，
 時間戳誤差 ±15 秒。API 支援 brotli/gzip，帶 Accept-Encoding 後回應從 120KB 降到 14~26KB。
@@ -10,7 +10,7 @@
   data/games/index.json             有哪幾期、各幾筆
 
 設計取捨：
-  * 只做前 50 名 —— API 只有前 100 名有本期活動分數，非前百查不到（不是偷懶）。
+  * 只做前 100 名 —— API 就只給到前 100 名的本期活動分數，非前百查不到。
   * 玩家用索引不存 uid —— uid 是 19 位大整數，直接寫進 JSON 會被 JS 讀成失精的浮點數。
   * 時間存「相對活動開始的秒數」—— 比絕對時間短很多，整筆才 17 bytes。
   * 每 FLUSH_MIN 分鐘寫檔＋提交一次 —— job 中途被砍最多只丟這段。
@@ -31,7 +31,7 @@ import urllib.request
 
 API = 'https://api.hisekai.org/tw/event/live/top100'
 EVENT_LIST = 'https://api.hisekai.org/tw/event/list'
-TOP_N = 50
+TOP_N = 100
 INTERVAL = 15          # 秒。< 150 就不會漏局
 FLUSH_MIN = 30         # 每 30 分鐘寫檔＋提交
 BACKOFF_MAX = 300      # 失敗退避上限（秒）
