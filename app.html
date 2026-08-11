@@ -795,9 +795,15 @@ input::placeholder{color:var(--text-3)}
       <sc-if value="{{ trendHasErr }}">
         <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-3);font-size:13px;margin-bottom:12px">{{ trendErrMsg }}</div>
       </sc-if>
+      <!-- 期數:選越多要打越多次 API(一期一次),所以「全部」會分批載入並顯示進度 -->
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px">
+        <sc-for list="{{ trendNChips }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ onTrendN }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+        </sc-for>
+      </div>
       <sc-if value="{{ trendBusy }}">
         <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
-          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入最近數期榜線…
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入榜線…{{ trendProg }}
         </div>
       </sc-if>
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow-x:auto">
@@ -2296,7 +2302,7 @@ class Component extends DCLogic {
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
     live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
-    trend: null, trendLoad: false, trendErr: '', trendN: 12,
+    trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
@@ -3073,22 +3079,33 @@ class Component extends DCLogic {
     }
   }
 
-  async loadTrend() {
-    if (this.state.trendLoad || this.state.trend) return;
+  /* 榜線趨勢:每一期都要打一次 /event/{id}/border,選「全部」就是一百多個請求。
+     所以分批送(一次 8 個)並顯示進度,不要一口氣全轟過去。 */
+  async loadTrend(force) {
+    if (this.state.trendLoad) return;
+    if (this.state.trend && !force) return;
     await this.loadEvList();
     const now = Date.now();
     const done = (this.state.evList || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= now);
-    const pick = done.slice(0, Math.max(2, +this.state.trendN || 12));
+    const want = this.state.trendN === 'all' ? done.length : Math.max(2, +this.state.trendN || 12);
+    const pick = done.slice(0, want);
     if (!pick.length) return;
-    this.setState({ trendLoad: true, trendErr: '' });
+    this.setState({ trendLoad: true, trendErr: '', trendProg: pick.length > 20 ? '0 / ' + pick.length : '' });
     try {
-      const res = await Promise.all(pick.map(e =>
-        this.apiFetch('/event/' + e.id + '/border').then(b => ({ e, rows: this.bordersOf(b) })).catch(() => ({ e, rows: [] }))
-      ));
-      const ok = res.filter(x => x.rows.length);
-      this.setState({ trend: ok.length ? ok : null, trendLoad: false, trendErr: ok.length ? '' : '榜線趨勢載入失敗' });
+      const out = [];
+      const BATCH = 8;
+      for (let i = 0; i < pick.length; i += BATCH) {
+        const part = await Promise.all(pick.slice(i, i + BATCH).map(e =>
+          this.apiFetch('/event/' + e.id + '/border').then(b => ({ e, rows: this.bordersOf(b) })).catch(() => ({ e, rows: [] }))
+        ));
+        out.push(...part);
+        if (pick.length > 20) this.setState({ trendProg: Math.min(i + BATCH, pick.length) + ' / ' + pick.length });
+      }
+      const ok = out.filter(x => x.rows.length);
+      this.setState({ trend: ok.length ? ok : null, trendLoad: false, trendProg: '',
+        trendErr: ok.length ? '' : '榜線趨勢載入失敗' });
     } catch (e) {
-      this.setState({ trendLoad: false, trendErr: '榜線趨勢載入失敗' });
+      this.setState({ trendLoad: false, trendProg: '', trendErr: '榜線趨勢載入失敗' });
     }
   }
   /* 玩家 ID 是 19 位大整數,超過 Number.MAX_SAFE_INTEGER,
@@ -4805,6 +4822,10 @@ class Component extends DCLogic {
       pastEmpty: !s.pastLoad && !this.ranksOf(s.pastTop).length && !this.bordersOf(s.pastBrd).length,
       /* 榜線趨勢：名次階級 × 最近數期 */
       trendBusy: s.trendLoad, trendErrMsg: s.trendErr, trendHasErr: !!s.trendErr,
+      trendProg: s.trendProg,
+      trendNChips: [['12', '最近 12 期'], ['30', '最近 30 期'], ['60', '最近 60 期'], ['all', '第 1 期至今']]
+        .map(([v, n]) => Object.assign({ v, n }, chip(String(s.trendN) === v, 'var(--cta)'),
+          { fg: String(s.trendN) === v ? '#fff' : 'var(--text)' })),
       trendHead: (s.trend || []).map(x => ({ n: '#' + x.e.id })),
       trendRows: (() => {
         const t = s.trend || []; if (!t.length) return [];
@@ -5132,6 +5153,8 @@ class Component extends DCLogic {
         this.ownSave();
         this.setState({ rMsg: '已還原 ' + after + ' 張持有紀錄' });
       },
+      // 換期數要重新抓(force),不然會被「已載入過就不重抓」擋下來
+      onTrendN: e => { const v = e.currentTarget.dataset.v; this.setState({ trendN: v, trend: null }, () => this.loadTrend(true)); },
       onRankTab: e => {
         const v = e.currentTarget.dataset.v;
         this.setState({ rankTab: v });
