@@ -1883,11 +1883,20 @@ input::placeholder{color:var(--text-3)}
     </div>
 
     <sc-if value="{{ detailData.gamesOn }}">
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
         <sc-for list="{{ detailData.gamesRangeChips }}" as="c" hint-placeholder-count="6">
           <button type="button" onClick="{{ onGamesRange }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
         </sc-for>
       </div>
+      <!-- 日期：跨天時只看時:分分不出是哪天，括號內是那天的場數 -->
+      <sc-if value="{{ detailData.gamesHasDays }}">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+          <sc-for list="{{ detailData.gamesDayChips }}" as="c" hint-placeholder-count="4">
+            <button type="button" onClick="{{ onGamesRange }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};font-family:'M PLUS Rounded 1c'">{{ c.n }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:10px;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesSpan }}</div>
 
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:11px">
         <sc-for list="{{ detailData.gamesStats }}" as="st" hint-placeholder-count="4">
@@ -1916,9 +1925,12 @@ input::placeholder{color:var(--text-3)}
       </div>
 
       <sc-if value="{{ detailData.gamesHasPick }}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;padding:9px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 12%,transparent)">
-          <span style="color:var(--accent-deep);font-size:12.5px;font-weight:700;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickInfo }}</span>
-          <span style="flex:none;color:var(--text-3);font-size:11px;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickNo }}</span>
+        <div style="margin-top:9px;padding:10px 13px;border-radius:12px;background:color-mix(in oklab,var(--accent) 12%,transparent)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            <span style="color:var(--accent-deep);font-size:13.5px;font-weight:800;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickInfo }}</span>
+            <span style="flex:none;color:var(--text-3);font-size:11px;font-family:'M PLUS Rounded 1c'">{{ detailData.gamesPickNo }}</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-2);margin-top:3px">{{ detailData.gamesPickSub }}</div>
         </div>
       </sc-if>
       <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ detailData.gamesNote }}</div>
@@ -4073,6 +4085,7 @@ class Component extends DCLogic {
           gamesMsg: '', gamesDots: [], gamesStats: [], gamesPickInfo: '', gamesHasPick: false,
           gamesRangeChips: RANGES.map(([v, n]) => Object.assign({ v, n }, chip(s.gamesRange === v, 'var(--cta)'),
             { fg: s.gamesRange === v ? '#fff' : 'var(--text)' })),
+          gamesDayChips: [], gamesHasDays: false,
           gamesNote: '',
         }, extra);
         if (s.gamesLoad) return mk({ gamesMsg: '載入逐局紀錄…' });
@@ -4087,9 +4100,27 @@ class Component extends DCLogic {
         const ev = s.gamesEv || {};
         const startMs = ev.startAt || 0;
         const nowRel = startMs ? Math.floor((Date.now() - startMs) / 1000) : (all[all.length - 1].t);
-        const cut = s.gamesRange === 'all' ? -1 : nowRel - (+s.gamesRange) * 3600;
-        const rows = cut < 0 ? all : all.filter(g => g.t >= cut);
-        if (!rows.length) return mk({ gamesOn: true, gamesMsg: '這個時段內沒有紀錄。' });
+        // 日期分組：跨天時只看 HH:MM 會分不出是哪一天，所以另外給一排日期可選
+        const dayKey = t => {
+          if (!startMs) return '';
+          const d = new Date(startMs + t * 1000);
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        };
+        const dayCount = {};
+        if (startMs) all.forEach(g => { const k = dayKey(g.t); dayCount[k] = (dayCount[k] || 0) + 1; });
+        const dayList = Object.keys(dayCount).sort();
+        const isDay = String(s.gamesRange).startsWith('day:');
+        const pickedDay = isDay ? String(s.gamesRange).slice(4) : '';
+        const cut = (s.gamesRange === 'all' || isDay) ? -1 : nowRel - (+s.gamesRange) * 3600;
+        const rows = isDay ? all.filter(g => dayKey(g.t) === pickedDay)
+                   : (cut < 0 ? all : all.filter(g => g.t >= cut));
+        const dayChips = dayList.map(k => {
+          const [, m, d] = k.split('-');
+          const on = pickedDay === k;
+          return Object.assign({ v: 'day:' + k, n: +m + '/' + (+d) + '（' + dayCount[k] + '）' },
+            chip(on, 'var(--cta)'), { fg: on ? '#fff' : 'var(--text)' });
+        });
+        if (!rows.length) return mk({ gamesOn: true, gamesDayChips: dayChips, gamesHasDays: dayChips.length > 1, gamesMsg: '這個範圍內沒有紀錄。' });
         const deltas = rows.map(g => g.delta);
         const sum = deltas.reduce((a, b) => a + b, 0);
         const max = Math.max(...deltas), min = Math.min(...deltas);
@@ -4098,10 +4129,20 @@ class Component extends DCLogic {
           const d = new Date(startMs + t * 1000);
           return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         };
+        const md = t => { if (!startMs) return ''; const d = new Date(startMs + t * 1000); return (d.getMonth() + 1) + '/' + d.getDate(); };
+        // 與上一場的間隔：看得出是連打還是中間休息了
+        const gapTxt = i => {
+          if (i <= 0) return '';
+          const s2 = rows[i].t - rows[i - 1].t;
+          if (s2 < 60) return '間隔 ' + s2 + ' 秒';
+          if (s2 < 3600) return '間隔 ' + Math.floor(s2 / 60) + ' 分';
+          return '間隔 ' + Math.floor(s2 / 3600) + ' 時 ' + Math.round((s2 % 3600) / 60) + ' 分';
+        };
         const pick = s.gamesPick >= 0 && s.gamesPick < rows.length ? rows[s.gamesPick] : null;
         this._gamesShown = rows.length;   // 給左右箭頭知道可走的範圍(篩選後會變)
         return mk({
           gamesOn: true,
+          gamesDayChips: dayChips, gamesHasDays: dayChips.length > 1,
           gamesDots: rows.map((g, i) => {
             // 深淺反映該局得分在這段區間裡的相對高低，一眼看得出哪幾場特別高
             const q = max > min ? (g.delta - min) / (max - min) : 1;
@@ -4112,7 +4153,7 @@ class Component extends DCLogic {
               size: on ? '14px' : '9px',
               // 選中的點加一圈外光暈，在一整排小點裡才找得到自己在哪
               ring: on ? '0 0 0 3px color-mix(in oklab,var(--accent) 30%,transparent)' : 'none',
-              title: hhmm(g.t) + '　+' + this.n(g.delta) + ' P',
+              title: md(g.t) + ' ' + hhmm(g.t) + '　+' + this.n(g.delta) + ' P',
             };
           }),
           gamesStats: [
@@ -4122,8 +4163,11 @@ class Component extends DCLogic {
             { l: '最高', v: this.n(max) },
           ],
           gamesHasPick: !!pick,
-          gamesPickInfo: pick ? (hhmm(pick.t) + '　+' + this.n(pick.delta) + ' P　（當下第 ' + pick.rank + ' 名）') : '',
+          gamesPickInfo: pick ? (md(pick.t) + ' ' + hhmm(pick.t) + '　+' + this.n(pick.delta) + ' P') : '',
+          gamesPickSub: pick ? ('當下第 ' + pick.rank + ' 名' + (gapTxt(s.gamesPick) ? '　·　' + gapTxt(s.gamesPick) : '')) : '',
           gamesPickNo: pick ? (s.gamesPick + 1) + ' / ' + rows.length : '',
+          // 這個範圍涵蓋的實際時間,讓人知道現在看的是哪一段
+          gamesSpan: rows.length ? (md(rows[0].t) + ' ' + hhmm(rows[0].t) + ' ～ ' + md(rows[rows.length - 1].t) + ' ' + hhmm(rows[rows.length - 1].t)) : '',
           gamesNote: '每 15 秒取樣一次，一場協力最短約 150 秒，所以每個點就是一場。'
             + (s.gamesGaps && s.gamesGaps.length ? '　本期有 ' + s.gamesGaps.length + ' 段紀錄中斷，該區間的點可能是多場合併。' : ''),
         });
