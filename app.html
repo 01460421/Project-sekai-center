@@ -128,10 +128,21 @@ input::placeholder{color:var(--text-3)}
 .side-nav::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:999px;border:2px solid transparent;background-clip:content-box}
 .side-nav::-webkit-scrollbar-thumb:hover{background:var(--text-3);border:2px solid transparent;background-clip:content-box}
 
-/* 教學內文:原檔的表格與清單需要基本樣式,不然數值表會擠成一團 */
-.tut-a table{border-collapse:collapse;margin:10px 0;font-size:12.5px;display:block;overflow-x:auto;max-width:100%}
+/* 教學內文:原檔的表格與清單需要基本樣式,不然數值表會擠成一團。
+   表格的捲動要由 table 這層當捲動容器(display:block),但那樣 table 就不再是
+   table 佈局、各列的欄寬會各自為政 —— 這是手機上「格式跑掉」的真正原因。
+   解法:外層 block 只負責捲動,內層 tbody 改回 display:table 保住欄寬對齊。 */
+.tut-a table{border-collapse:collapse;margin:10px 0;font-size:12.5px;display:block;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+.tut-a table>tbody,.tut-a table>thead{display:table;min-width:100%}
 .tut-a td,.tut-a th{border:1px solid var(--border);padding:6px 11px;text-align:center;color:var(--text);white-space:nowrap}
 .tut-a tr:first-child td,.tut-a th{background:var(--card-2);font-weight:800;color:var(--ink)}
+@media(max-width:900px){
+  /* 手機:字與內距縮一點,多擠一兩欄進畫面;第一欄釘住,橫捲時才知道每列是什麼 */
+  .tut-a table{font-size:11.5px}
+  .tut-a td,.tut-a th{padding:5px 8px}
+  .tut-a td:first-child,.tut-a th:first-child{position:sticky;left:0;z-index:1;background:var(--card)}
+  .tut-a tr:first-child td:first-child,.tut-a th:first-child{background:var(--card-2)}
+}
 .tut-a td p{margin:0}
 .tut-a ul,.tut-a ol{margin:8px 0 8px 20px;padding:0}
 .tut-a li{margin:3px 0}
@@ -453,6 +464,38 @@ input::placeholder{color:var(--text-3)}
       <span style="font-size:13px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ gachaPageLabel }}</span>
       <button type="button" onClick="{{ onPage }}" data-k="gp" data-d="1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">下頁 →</button>
     </div>
+
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:12px;line-height:1.7">卡池資料整理：<strong style="color:var(--text-2)">瑞憶春希</strong>　<a href="https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/edit?usp=sharing" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">原始表格 ↗</a></div>
+
+    <!-- 豆森娃月列表：MySekai 月卡玩偶的排程。日服先行、台服約晚 9 個月，
+         所以看日服那欄就知道台服接下來會輪到誰。 -->
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:16px">
+      <div onClick="{{ onDollFold }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer">
+        <div>
+          <span style="font-size:14px;font-weight:800;color:var(--ink)">豆森娃月列表</span>
+          <span style="font-size:11.5px;color:var(--text-3);margin-left:8px">{{ dollSub }}</span>
+        </div>
+        <span style="flex:none;font-size:11px;color:var(--accent-deep);font-weight:700">{{ dollToggle }}</span>
+      </div>
+      <sc-if value="{{ dollShow }}">
+        <div style="font-size:11.5px;color:var(--text-3);margin:8px 0 11px;line-height:1.6">MySekai 每月月卡玩偶（豆森娃）的角色排程。資料整理：<strong style="color:var(--text-2)">瑞憶春希</strong>。台服欄為對應的實裝月份。</div>
+        <div style="overflow-x:auto">
+          <div style="min-width:{{ dollMinW }}">
+            <div style="display:grid;grid-template-columns:{{ dollCols }};gap:8px;padding:0 4px 7px;font-size:11px;font-weight:800;color:var(--text-3)">
+              <span>台服</span><span>日服</span><span>類型</span><span>角色</span>
+            </div>
+            <sc-for list="{{ dollRows }}" as="d" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:{{ dollCols }};gap:8px;padding:9px 4px;border-top:1px solid var(--border);font-size:12.5px;align-items:center;background:{{ d.bg }}">
+                <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ d.twFg }}">{{ d.tw }}</span>
+                <span style="font-family:'M PLUS Rounded 1c';color:var(--text-3)">{{ d.jp }}</span>
+                <span><span style="display:inline-block;padding:2px 9px;border-radius:999px;background:{{ d.tBg }};color:{{ d.tFg }};font-size:10.5px;font-weight:700">{{ d.type }}</span></span>
+                <span style="color:var(--text-2);line-height:1.6">{{ d.chars }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
   </div>
   </sc-if>
 
@@ -593,7 +636,7 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
         <div style="font-size:11.5px;color:var(--text-2);margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">{{ wlCkMsg }}</div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">WL 輔助隊伍的加成數值本站尚未內建（官方未公開完整表格）。需要精算請用社群工具 <a href="https://rilaksekai.com/support" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">rilaksekai.com/support ↗</a>。</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">WL 輔助隊伍的加成數值本站尚未內建（官方未公開完整表格）。需要精算請用社群工具 <a href="https://rilaksekai.com/support" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">rilaksekai.com/support ↗</a>。歷屆 WL 各章榜線與排行可查 <a href="https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">台服 WL 榜線紀錄 ↗</a>（good果汁製作，附角色配色、可篩選）。交換所的資源規劃可參考 <a href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">WL 交換所規劃表 ↗</a>。</div>
         <sc-if value="{{ wlCkOn }}">
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
             <sc-for list="{{ wlCkRows }}" as="a" hint-placeholder-count="5">
@@ -823,6 +866,12 @@ input::placeholder{color:var(--text-3)}
         </div>
       </div>
       <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">每欄為一期活動（左為最新）。數值＝該期最終衝到該名次所需的活動 P；「與上期」為最新一期相對前一期的增減。</div>
+      <!-- 這裡只做「各期 × 各段位」的對照表；想按活動長度、團體、類型交叉篩選的話，
+           good果汁那份表做得比這裡完整，直接指過去比自己重做一個半吊子的好。 -->
+      <a href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener" style="display:block;margin-top:11px;padding:12px 15px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);text-decoration:none">
+        <div style="font-size:13px;font-weight:800;color:var(--accent-deep)">想做更細的交叉篩選？台服全榜線紀錄 ↗</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">good果汁製作。含活動一覽與各期排行，可依活動長度／團體／類型自行篩選與客製化（例如「時長 8.25、9.25 天的 wxs 箱活 T1000 排行」）。目前僅電腦版可用。</div>
+      </a>
     </sc-if>
 
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">資料來源：HiSekai API（台服）。連線被瀏覽器阻擋時會自動改走公開代理重試。</div>
@@ -1118,14 +1167,72 @@ input::placeholder{color:var(--text-3)}
       </div>
     </sc-for>
 
+  </div>
+  </sc-if>
+
+  <!-- ========== 製作與致謝 ========== -->
+  <sc-if value="{{ isCredits }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
+
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:18px 20px">
+      <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:5px">由衷感謝對本遊戲有熱忱的資料整理者們</div>
+      <div style="font-size:12.5px;color:var(--text-2);line-height:1.85">本站內容有許多重要資源整理有借鑑他人心血：教學問答由<strong style="color:var(--ink)">世界計畫開瓶器編輯群</strong>無償撰寫。若沒有大佬們的熱心鼎力相助、各位友列的測試及協助，也沒有這樣完善、使用體驗佳的網站。<span style="color:var(--text-3)">（持續更新中）</span></div>
+    </div>
+
+    <!-- 問答編輯群 -->
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:18px 20px">
+      <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:3px">世界計畫開瓶器編輯群</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">教學大全 115 則問答的撰寫者。順序僅為加入順序，無先後之分。</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
+        <sc-for list="{{ creditEditors }}" as="e" hint-placeholder-count="14">
+          <span style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);font-size:13px;font-weight:700;color:var(--ink)">{{ e }}</span>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- 資料表作者：附原始連結 -->
+    <sc-for list="{{ creditWorks }}" as="w" hint-placeholder-count="2">
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:18px 20px">
+        <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:11px">
+          <span style="font-size:14px;font-weight:800;color:var(--ink)">{{ w.who }}</span>
+          <span style="font-size:11.5px;color:var(--text-3)">{{ w.sub }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:9px">
+          <sc-for list="{{ w.items }}" as="it" hint-placeholder-count="4">
+            <a href="{{ it.u }}" target="{{ it.target }}" rel="noopener" style="display:block;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);text-decoration:none;transition:transform .2s,border-color .2s" style-hover="transform:translateY(-2px);border-color:var(--accent)">
+              <div style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ it.n }}{{ it.arrow }}</div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">{{ it.d }}</div>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+
+    <!-- 建議並實際採納 -->
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:18px 20px">
+      <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:3px">提供建議並實際採納</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">站上不少功能與修正，是這些人指出來才有的。</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
+        <sc-for list="{{ creditAdvisors }}" as="a" hint-placeholder-count="6">
+          <span style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);font-size:13px;font-weight:700;color:var(--ink)">{{ a }}</span>
+        </sc-for>
+      </div>
+    </div>
+
     <!-- 聯絡：資料有誤、想加功能、或想回報 bug 都走這裡 -->
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:14px">
-      <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:3px">聯絡站長</div>
-      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">資料有誤、想加功能、或發現問題，都歡迎直接說。</div>
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:18px 20px">
+      <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:3px">聯絡 Omega</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">資料有誤、想加功能、或發現問題，都歡迎直接私訊建議。</div>
       <div style="display:inline-flex;align-items:center;gap:10px;padding:10px 15px;border:1px solid var(--border);border-radius:14px;background:var(--card-2)">
         <svg viewBox="0 0 127 96" style="width:22px;height:auto;flex:none" aria-label="Discord"><path fill="#5865F2" d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0a105.89 105.89 0 0 0-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.11 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.1 105.25 105.25 0 0 0 32.19-16.14c2.64-27.38-4.51-51.11-18.9-72.15ZM42.45 65.69C36.18 65.69 31 60 31 53s5-12.74 11.43-12.74S54 46 53.89 53s-5.05 12.69-11.44 12.69Zm42.24 0C78.41 65.69 73.25 60 73.25 53s5-12.74 11.44-12.74S96.23 46 96.12 53s-5.04 12.69-11.43 12.69Z"/></svg>
         <span style="font-family:'M PLUS Rounded 1c';font-size:14.5px;font-weight:800;color:var(--ink);user-select:all">euler_formula_best</span>
       </div>
+    </div>
+
+    <!-- 著作權 -->
+    <div style="border:1px solid var(--border-2);border-radius:20px;background:var(--card-2);padding:16px 19px">
+      <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px">著作權聲明</div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.85">歡迎轉載，但請註明作者出處。本站整合的各份資料表、教學問答，著作權均屬原作者所有；上方每一項都附了原始連結，引用時請一併標註來源。</div>
     </div>
   </div>
   </sc-if>
@@ -2150,6 +2257,7 @@ class Component extends DCLogic {
     rate:     ['收集率', '卡片圖鑑勾選，即時算出各團與各稀有度的收集進度'],
     analysis: ['分析中心', '榜線終線預測與玩家節奏剖析'],
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
+    credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
   };
   CHANGELOG = [
@@ -2177,6 +2285,10 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/12', t: '製作與致謝分頁', s: '新增「製作與致謝」分頁,列出世界計畫開瓶器編輯群 14 位問答撰寫者(順序僅為加入順序)、各份資料表的作者與原始連結、以及提供建議並實際採納的名單。聯絡方式一併移到這裡。教學問答由編輯群無償撰寫,資料表出自其他作者之手,每一項都附原始連結,請直接看原版那裡永遠最新。著作權聲明:歡迎轉載但請註明作者出處。' },
+    { d: '2026/08/12', t: '社群資料表整合', s: '資源連結頁新增「社群資料表」分類,收錄 good果汁 製作的台服全榜線紀錄、台服 WL 榜線紀錄、控分表、WL 交換所規劃表。榜線趨勢頁下方直接指向全榜線紀錄 —— 那份表可依活動長度/團體/類型交叉篩選(例如「時長 8.25、9.25 天的 wxs 箱活 T1000 排行」),比站上這張對照表完整;WL 個榜也接上 WL 榜線紀錄與交換所規劃表。' },
+    { d: '2026/08/12', t: '豆森娃月列表', s: '卡池列表頁新增豆森娃月列表:MySekai 每月月卡玩偶的角色排程,台日服月份對照,當月那列會標色。日服先行約 9 個月,看日服欄就知道台服接下來輪到誰。資料整理:瑞憶春希,卡池列表亦附原始表格連結。手機版預設收合。' },
+    { d: '2026/08/12', t: '手機版教學表格修正', s: '教學內文的數值表在手機上格式會跑掉 —— 原因是捲動容器直接設在 table 上,table 因此失去表格佈局、各列欄寬各自為政。改成外層只負責捲動、內層 tbody 保留表格佈局,欄位就對齊了。手機另外縮小字級與內距,並把第一欄釘住,橫向捲動時仍看得到每一列是什麼。' },
     { d: '2026/08/11', t: '逐局紀錄（Beta）', s: '排名頁點任一玩家,詳情下方新增「逐局紀錄」:一個小點就是一場,顯示那一場加了多少活動P、當下第幾名、以及與上一場的間隔(看得出是連打還是休息過)。可用左右箭頭逐場切換,會自動捲到定位;也能按時段(24/12/6/3/1 小時)或日期篩選,日期上會標那天打了幾場。資料由本站自建的伺服器每 15 秒取樣一次 —— 一場協力最短約 150 秒,所以每一場都抓得到、不會把兩場併成一筆。因為遊戲的公開資料只提供前 100 名的活動分數,這項功能涵蓋前 100 名(也就是公開資料的全部),而且從開始追蹤那一刻起算、不會回溯先前的紀錄;若伺服器曾中斷,該區間的點可能是多場合併,說明文字會標示出來。' },
     { d: '2026/08/11', t: '介面整理與聯絡方式', s: '資源連結頁新增聯絡站長的 Discord(euler_formula_best)。另外把全站的裝飾性 emoji 清掉,改用文字或既有的符號表達;教學表格裡代表生日卡的圖示也換成「生日」兩字,比圖示好認。星級、勾選、關閉鈕這類有功能的符號保留不動。' },
     { d: '2026/08/10', t: 'WL 編組全面計入屬性與支援', s: '跑榜工作室的理論隊伍與最佳化在 World Link 活動改為「實際搭配」:按異色加成(3/4/5色→75/100/125%)湊色、單團 WL 自動補湊數卡當第 5 位,並把支援隊伍(理論滿配、以當前章節主角計)一併算進活動加成與場均活動P;首頁跑榜小窗同步生效。我的編組(排名頁編組詳情)補上隊伍異色加成並標明色數;WL 支援隊伍計算器改為只有本章主角吃 specific 檔、前期 WL 卡 +20 只在其章節生效,並可切換章節。WL 個榜分頁新增「建議編組」:用你收集率勾選的持有卡直接湊出四同團＋五色的實際 5 張。' },
@@ -2293,6 +2405,7 @@ class Component extends DCLogic {
     /* 逐局紀錄(Cloudflare Worker 每 15 秒採樣,只有前 100 名有) */
     gamesUid: '', gamesRows: null, gamesLoad: false, gamesErr: '',
     gamesEv: null, gamesGaps: [], gamesRange: 'all', gamesPick: -1,
+    dollOpen: false,   // 手機:豆森娃月列表預設收合
     wlCh: 0, pastWlCh: 0, wlOpen: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
@@ -3190,6 +3303,24 @@ class Component extends DCLogic {
     ['終章・虛擬歌手', ['只吃四位當期', '第五位可選高倍率卡', '仍需五色屬性']]
   ];
   ATTR_ZH = { cool: '帥氣', happy: '快樂', mysterious: '神秘', cute: '可愛', pure: '純真' };
+
+  /* ---------- 製作與致謝 ----------
+     這站上的內容有相當比例不是我做的:教學問答由社群無償撰寫,好幾份資料表
+     出自其他作者之手。名字、順序與出處都照提供者給的原樣列,不自行增刪或重排。 */
+  CREDIT_EDITORS = ['Omega', 'La.', '狼', '春希', '邊緣兔', '萌忻', '雞米花', '有紀', '馬晞口', '夢', '星星', 'EF', '猜猜貓', 'Darling'];
+  CREDIT_WORKS = [
+    { who: '瑞憶春希', items: [
+      { n: '卡池列表', d: '各期卡池與 PU 角色整理', u: 'https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/edit?usp=sharing' },
+      { n: '豆森娃月列表', d: 'MySekai 月卡玩偶的台日服排程對照', u: '' },
+    ]},
+    { who: 'good果汁', items: [
+      { n: '控分表', d: '各曲控分基準', u: 'https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link' },
+      { n: 'WL 交換所規劃表', d: 'World Link 交換所的資源規劃', u: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link' },
+      { n: '台服全榜線紀錄', d: '歷期榜線、活動一覽與各期排行，可自行篩選與客製化', u: 'https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing' },
+      { n: '台服 WL 榜線紀錄', d: 'World Link 各章榜線，附角色配色與排行篩選', u: 'https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing' },
+    ]},
+  ];
+  CREDIT_ADVISORS = ['初音飯', '花咲', '狼', 'astra', '萌忻', '春希'];
   /* 檢查目前收集率清單能否為某章角色湊出「四同團＋五色」 */
   wlCheck(charId) {
     const cards = this.state.rateCards || [];
@@ -3813,7 +3944,7 @@ class Component extends DCLogic {
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0']]]
+      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -4239,6 +4370,41 @@ class Component extends DCLogic {
         return { n, has, mark: has ? '✓' : '—', fg: has ? 'var(--accent-deep)' : 'var(--text-3)' }; }),
       bkCount: (() => { const c = Object.keys(this.bkCollect()).length; return c + ' / ' + this.BK_KEYS.length + ' 項有資料'; })(),
       isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG,
+      /* 豆森娃月列表（資料整理：瑞憶春希）。當月那列標色，一眼看到現在輪到誰。 */
+      ...(() => {
+        const now = new Date();
+        const cur = now.getFullYear() + '/' + String(now.getMonth() + 1).padStart(2, '0');
+        const rows = (s.dolls || []).filter(d => d.tw);
+        const TYPE = { 'CFES': ['color-mix(in oklab,#c39df2 22%,transparent)', '#7a4fb5'],
+                       '普限': ['var(--card-2)', 'var(--text-2)'],
+                       '初始衣裝': ['color-mix(in oklab,#4ad1e8 20%,transparent)', '#0e7f92'] };
+        return {
+          dollShow: !s.mobile || s.dollOpen,
+          dollToggle: (!s.mobile || s.dollOpen) ? '' : '展開 ▾',
+          dollSub: rows.length + ' 個月份・資料整理：瑞憶春希',
+          dollCols: s.mobile ? '62px 62px 62px minmax(0,1fr)' : '78px 78px 84px minmax(0,1fr)',
+          dollMinW: s.mobile ? '340px' : '0',
+          dollRows: rows.map(d => {
+            const on = d.tw === cur;
+            const t = TYPE[d.type] || ['var(--card-2)', 'var(--text-2)'];
+            return { tw: d.tw, jp: d.jp, type: d.type, chars: d.chars || '未公布',
+                     bg: on ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent',
+                     twFg: on ? 'var(--accent-deep)' : 'var(--ink)',
+                     tBg: t[0], tFg: t[1] };
+          }),
+        };
+      })(),
+      /* 製作與致謝 */
+      isCredits: s.page === 'credits',
+      creditEditors: this.CREDIT_EDITORS,
+      creditAdvisors: this.CREDIT_ADVISORS,
+      creditWorks: this.CREDIT_WORKS.map(w => ({
+        who: w.who,
+        sub: w.items.length + ' 份資料',
+        items: w.items.map(it => Object.assign({}, it,
+          // 沒有原始連結的(例如整理後直接內建在站上的),就不要做成假的可點連結
+          { target: it.u ? '_blank' : '', arrow: it.u ? ' ↗' : '', u: it.u || 'javascript:void 0' })),
+      })),
       // 手機先列 10 筆更新紀錄,更早的收進展開鈕(目前 40+ 筆全列會撐爆頁面)
       syslog: this.SYSLOG.slice(0, (s.mobile && !s.sysMore) ? 10 : this.SYSLOG.length).map(u => Object.assign({}, u, {
         // 敘述改條列:依句號切開,去掉空句,保留原句的分號細節
@@ -4946,6 +5112,12 @@ class Component extends DCLogic {
           { name: 'Fandom Wiki', url: 'https://projectsekai.fandom.com/', sub: '英文' },
           { name: 'Sekaipedia', url: 'https://www.sekaipedia.org/', sub: '英文' }
         ]},
+        { label: '社群資料表', items: [
+          { name: '台服全榜線紀錄', url: 'https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing', sub: 'good果汁・歷期榜線＋活動一覽＋各期排行，可篩選（電腦版）' },
+          { name: '台服 WL 榜線紀錄', url: 'https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing', sub: 'good果汁・WL 各章榜線，附角色配色與排行' },
+          { name: '控分表', url: 'https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link', sub: 'good果汁・各曲控分基準' },
+          { name: 'WL 交換所規劃表', url: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link', sub: 'good果汁・World Link 交換所資源規劃' }
+        ]},
         { label: '本站工具', items: [
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '640 首曲庫・EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
@@ -4974,6 +5146,7 @@ class Component extends DCLogic {
         }
       },
       onDetailClose: () => this.setState({ detail: null }),
+      onDollFold: () => this.setState(s2 => ({ dollOpen: !s2.dollOpen })),
       onGamesRange: e => this.setState({ gamesRange: e.currentTarget.dataset.v, gamesPick: -1 }),
       onGamesPick: e => { const i = +e.currentTarget.dataset.i; this.setState(s2 => ({ gamesPick: s2.gamesPick === i ? -1 : i })); },
       // 左右箭頭逐場切換:比點小圓點準,而且會自動把選中的點捲到視野中央
