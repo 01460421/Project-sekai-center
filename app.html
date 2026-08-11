@@ -2424,6 +2424,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/12', t: '控分速查', s: '計算中心新增「控分速查」分頁。活動P 是無條件捨去的,所以分數落在同一個 2 萬級距內、活動P 完全一樣 —— 控分就是別把分數浪費在級距中間。輸入目前分數與加成,會算出單局活動P、目前所在級距、再多拿 1 點需要幾分、以及這一局已經浪費了多少分。概念與計算源自 good果汁 改良的控分表(原作 SYLVIA0x0)。' },
     { d: '2026/08/12', t: '榜線資料庫', s: '新增「榜線資料庫」分頁(追蹤群組):174 期 × 22 個段位的完整榜線,可依活動型態、團體、活動長度、屬性交叉篩選,並切換「依期數」或「依分數排行」。例如想查「時長 8.25 天的 WXS 箱活 T1000 排行」,選三個條件就出來了。World Link 另有 43 個章節 × 21 段位,切換即可。統計會即時算出符合期數的平均、最高與最低。資料來源:good果汁的台服全榜線紀錄與 WL 榜線紀錄,由本站每日同步,原始表格連結附在頁尾。' },
     { d: '2026/08/12', t: 'WL 交換所規劃', s: '榜線資料庫頁下方新增 WL 交換所規劃:綜合交換所與各章節交換所的道具、徽章需求與可換上限,並自動算出「全部換滿需要多少徽章」(WL3 為 1,169,000)。可切換 WL2／WL3。規劃表製作:good果汁(原作 Narwhal／國際服)。' },
     { d: '2026/08/12', t: '社群資料自動同步', s: '好幾份社群整理的資料原本是靜態寫死在站上,上游更新了站上不會跟著變。現在改由每日排程自動同步:good果汁的榜線與交換所表格、瑞憶春希的豆森娃月列表。內容沒變就不寫檔,所以多數日子不會產生無意義的更新。豆森娃月列表這次同步後從 21 筆補到 25 筆(排到 2027/10)。' },
@@ -4270,6 +4271,36 @@ class Component extends DCLogic {
       ];
       formulaText = 'a = ⌊綜合力 / 45萬⌋（2 位）；b = ⌊(a+1) × (加成+100)/100⌋；每點體力 P = b × 100 × 體力倍率（橘體 5／藍體 1）';
       formulaNote = '共用設定的綜合力與活動加成會直接套用。';
+    } else if (s.ctab === 'ctrl') {
+      /* 控分速查：活動P 是無條件捨去的，所以分數在同一個 20,000 級距內活動P 一樣。
+         想多拿 1 點就得跨過下一階 —— 「還差多少分」正是控分要知道的事。
+         概念與計算源自 good果汁 改良的控分表（原作 SYLVIA0x0）。 */
+      calcInputTitle = '控分速查';
+      calcFields = [
+        { k: 'score', label: '目前分數', value: s.score },
+        { k: 'bonus', label: '活動加成 %', value: s.bonus }
+      ];
+      const sc = Math.max(0, +s.score || 0), bo = +s.bonus || 0;
+      const step = 20000;                       // solo 場每 20,000 分 +1 base
+      const baseAt = v => 100 + Math.floor(v / step);
+      const epAt = v => Math.floor(baseAt(v) * (1 + bo / 100));
+      const cur = epAt(sc);
+      // 往上找下一個「活動P 真的會變多」的分數（加成低時可能要跨好幾階才加得到 1 點）
+      let nextScore = (Math.floor(sc / step) + 1) * step;
+      for (let i = 0; i < 400 && epAt(nextScore) <= cur; i++) nextScore += step;
+      resultLabel = '單局活動 P';
+      resultValue = this.n(cur);
+      resultSub = '分數 ' + this.n(sc) + ' · 加成 ' + bo + '% · 目前級距 '
+        + this.n(Math.floor(sc / step) * step) + ' ～ ' + this.n((Math.floor(sc / step) + 1) * step - 1);
+      resultStats = [
+        { l: '再多 1 P 需要', v: this.n(nextScore - sc), sub: '打到 ' + this.n(nextScore) + ' 分' },
+        { l: '下一階活動P', v: this.n(epAt(nextScore)), sub: '＋' + this.n(epAt(nextScore) - cur) },
+        { l: '本級距浪費', v: this.n(sc - Math.floor(sc / step) * step), sub: '超出的分數不算 P' },
+        { l: '每階 P', v: this.n(Math.floor((baseAt(step) - baseAt(0)) * (1 + bo / 100)) || 1), sub: '每 2 萬分' }
+      ];
+      formulaText = '單局活動P ＝ ⌊(100 ＋ ⌊分數 / 20,000⌋) × (1 ＋ 加成/100)⌋（單人場）';
+      formulaNote = '概念與計算源自 good果汁 改良的控分表（原作 SYLVIA0x0）。因為是無條件捨去，'
+        + '同一個 20,000 級距內分數再高活動P 也一樣 —— 控分就是別把分數浪費在級距中間。';
     } else {
       calcInputTitle = '排位賽';
       calcFields = [
@@ -5328,7 +5359,7 @@ class Component extends DCLogic {
       calcTabs: [
         { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
-        { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }
+        { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }, { v: 'ctrl', n: '控分速查' }
       ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),
       tq: s.tq, tutDoc: s.tutDoc, tutRows, tutEmpty: tutAll.length === 0, tutMoreBtn, tutMoreN,
       tutCount: (s.tutQA || []).length ? '符合 ' + tutAll.length + ' 則（全部 ' + s.tutQA.length + ' 則）' + (tutAll.length > 60 ? '，顯示前 60 則' : '') : '載入教學資料…',
