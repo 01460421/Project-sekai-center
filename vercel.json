@@ -92,7 +92,7 @@
       }
     },
     {
-      "src": "/data/(billing|b30-consts)\\.js",
+      "src": "/data/(billing|b30-consts|borders-db)\\.js",
       "dest": "/data/$1.js",
       "headers": {
         "cache-control": "public, max-age=0, must-revalidate"

@@ -27,15 +27,23 @@ jobs:
       - name: 重建 data/b30-consts.js(定數表)
         run: python3 tools/build-b30.py || echo "定數表更新失敗,本輪略過"
 
+      # good果汁的榜線/交換所表格、瑞憶春希的豆森娃月列表:上游更新後這裡跟著同步。
+      # 兩支都是「內容沒變就不寫檔」,所以多數日子不會產生提交。
+      - name: 同步社群資料表(good果汁)
+        run: python3 tools/build-goodjuice.py || echo "社群榜線資料同步失敗,本輪略過"
+
+      - name: 同步豆森娃月列表(瑞憶春希)
+        run: python3 tools/sync-dolls.py || echo "豆森娃月同步失敗,本輪略過"
+
       - name: 提交變更
         run: |
-          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js)" ]; then
+          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js)" ]; then
             echo "沒有新資料，不提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/billing.js data/b30-consts.js
+          git add data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js
           git commit -m "商城/定數資料 $(date -u '+%Y-%m-%d') [skip ci]"
           # 與榜線快照同款:落後就先 rebase 再推
           for i in 1 2 3; do

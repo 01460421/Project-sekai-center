@@ -1170,6 +1170,144 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 榜線資料庫 ========== -->
+  <sc-if value="{{ isBorderDB }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ bdbBusy }}">
+      <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+        <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入榜線資料庫…
+      </div>
+    </sc-if>
+    <sc-if value="{{ bdbErrMsg }}">
+      <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-3);font-size:13px">{{ bdbErrMsg }}</div>
+    </sc-if>
+
+    <sc-if value="{{ bdbOn }}">
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
+          <sc-for list="{{ bdbWLChips }}" as="c" hint-placeholder-count="2">
+            <button type="button" onClick="{{ onBdbWL }}" data-v="{{ c.v }}" style="padding:6px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">段位</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+          <sc-for list="{{ bdbTierChips }}" as="c" hint-placeholder-count="22">
+            <button type="button" onClick="{{ onBdbTier }}" data-v="{{ c.v }}" style="padding:4px 10px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};font-family:'M PLUS Rounded 1c'">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">活動型態</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">
+          <sc-for list="{{ bdbTypeChips }}" as="c" hint-placeholder-count="4">
+            <button type="button" onClick="{{ onBdbFilter }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:4px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">團體</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">
+          <sc-for list="{{ bdbUnitChips }}" as="c" hint-placeholder-count="7">
+            <button type="button" onClick="{{ onBdbFilter }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:4px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">活動長度</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">
+          <sc-for list="{{ bdbDayChips }}" as="c" hint-placeholder-count="6">
+            <button type="button" onClick="{{ onBdbFilter }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:4px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};font-family:'M PLUS Rounded 1c'">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ bdbAttrChips }}">
+          <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">屬性</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">
+            <sc-for list="{{ bdbAttrChips }}" as="c" hint-placeholder-count="6">
+              <button type="button" onClick="{{ onBdbFilter }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:4px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-wrap:wrap;gap:5px;padding-top:9px;border-top:1px solid var(--border)">
+          <sc-for list="{{ bdbSortChips }}" as="c" hint-placeholder-count="2">
+            <button type="button" onClick="{{ onBdbSort }}" data-v="{{ c.v }}" style="padding:6px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px">
+        <sc-for list="{{ bdbStats }}" as="st" hint-placeholder-count="4">
+          <div style="border:1px solid var(--border);border-radius:13px;background:var(--card-2);padding:9px 11px">
+            <div style="font-size:10px;color:var(--text-3);font-weight:700">{{ st.l }}</div>
+            <div style="font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800;color:var(--ink);margin-top:2px">{{ st.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:8px;font-family:'M PLUS Rounded 1c'">{{ bdbCount }}</div>
+
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow-x:auto">
+        <div style="min-width:{{ bdbMinW }}">
+          <div style="display:grid;grid-template-columns:{{ bdbCols }};gap:8px;padding:11px 15px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text-3)">
+            <span>期數</span><span>活動</span>
+            <sc-if value="{{ bdbWide }}"><span>角色</span><span>團體</span></sc-if>
+            <sc-if value="{{ bdbWide }}"><span style="text-align:center">長度</span></sc-if>
+            <span style="text-align:right">榜線</span>
+          </div>
+          <sc-for list="{{ bdbRows }}" as="r" hint-placeholder-count="20">
+            <div style="display:grid;grid-template-columns:{{ bdbCols }};gap:8px;padding:10px 15px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center;background:{{ r.bg }}">
+              <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--accent-deep)">{{ r.rk }}</span>
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">{{ r.name }}</span>
+              <sc-if value="{{ bdbWide }}">
+                <span style="color:var(--text-2)">{{ r.chara }}</span>
+                <span style="color:var(--text-2)">{{ r.unit }}</span>
+              </sc-if>
+              <sc-if value="{{ bdbWide }}"><span style="text-align:center;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.days }}</span></sc-if>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ r.score }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{ bdbMoreBtn }}">
+        <button type="button" onClick="{{ onBdbMore }}" style="width:100%;margin-top:10px;padding:11px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">再顯示 {{ bdbMoreN }} 筆 ▾</button>
+      </sc-if>
+
+      <!-- WL 交換所規劃：徽章有限，先看總需求再決定換什麼 -->
+      <sc-if value="{{ exOn }}">
+        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:16px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <span style="font-size:14px;font-weight:800;color:var(--ink)">WL 交換所規劃</span>
+            <span style="font-size:11.5px;color:var(--accent-deep);font-weight:700;font-family:'M PLUS Rounded 1c'">{{ exTotal }}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px">
+            <sc-for list="{{ exTurnChips }}" as="c" hint-placeholder-count="2">
+              <button type="button" onClick="{{ onExTurn }}" data-v="{{ c.v }}" style="padding:5px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,268px),1fr));gap:10px">
+            <sc-for list="{{ exSecs }}" as="sec" hint-placeholder-count="7">
+              <div style="border:1px solid var(--border);border-radius:14px;background:var(--card-2);padding:12px 14px">
+                <div style="font-size:12.5px;font-weight:800;color:var(--accent-deep)">{{ sec.title }}</div>
+                <div style="font-size:10.5px;color:var(--text-3);margin-bottom:8px;font-family:'M PLUS Rounded 1c'">{{ sec.sub }}</div>
+                <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="5">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 62px 46px;gap:6px;padding:5px 0;border-top:1px solid var(--border);font-size:11.5px;align-items:center">
+                    <span style="color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.n }}</span>
+                    <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--ink)">{{ it.cost }}</span>
+                    <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-3)">{{ it.max }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。規劃表製作：good果汁（原作 Narwhal／國際服）　<a href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">原始表格 ↗</a></div>
+        </div>
+      </sc-if>
+
+      <div style="font-size:11px;color:var(--text-3);margin-top:11px;line-height:1.7">{{ bdbSrcNote }}原始表格：<a href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">台服全榜線紀錄 ↗</a>　<a href="https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">台服 WL 榜線紀錄 ↗</a></div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 製作與致謝 ========== -->
   <sc-if value="{{ isCredits }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
@@ -2257,6 +2395,7 @@ class Component extends DCLogic {
     rate:     ['收集率', '卡片圖鑑勾選，即時算出各團與各稀有度的收集進度'],
     analysis: ['分析中心', '榜線終線預測與玩家節奏剖析'],
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
+    borderdb: ['榜線資料庫', '歷期榜線交叉篩選與各段位排行'],
     credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
   };
@@ -2285,6 +2424,9 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/12', t: '榜線資料庫', s: '新增「榜線資料庫」分頁(追蹤群組):174 期 × 22 個段位的完整榜線,可依活動型態、團體、活動長度、屬性交叉篩選,並切換「依期數」或「依分數排行」。例如想查「時長 8.25 天的 WXS 箱活 T1000 排行」,選三個條件就出來了。World Link 另有 43 個章節 × 21 段位,切換即可。統計會即時算出符合期數的平均、最高與最低。資料來源:good果汁的台服全榜線紀錄與 WL 榜線紀錄,由本站每日同步,原始表格連結附在頁尾。' },
+    { d: '2026/08/12', t: 'WL 交換所規劃', s: '榜線資料庫頁下方新增 WL 交換所規劃:綜合交換所與各章節交換所的道具、徽章需求與可換上限,並自動算出「全部換滿需要多少徽章」(WL3 為 1,169,000)。可切換 WL2／WL3。規劃表製作:good果汁(原作 Narwhal／國際服)。' },
+    { d: '2026/08/12', t: '社群資料自動同步', s: '好幾份社群整理的資料原本是靜態寫死在站上,上游更新了站上不會跟著變。現在改由每日排程自動同步:good果汁的榜線與交換所表格、瑞憶春希的豆森娃月列表。內容沒變就不寫檔,所以多數日子不會產生無意義的更新。豆森娃月列表這次同步後從 21 筆補到 25 筆(排到 2027/10)。' },
     { d: '2026/08/12', t: '製作與致謝分頁', s: '新增「製作與致謝」分頁,列出世界計畫開瓶器編輯群 14 位問答撰寫者(順序僅為加入順序)、各份資料表的作者與原始連結、以及提供建議並實際採納的名單。聯絡方式一併移到這裡。教學問答由編輯群無償撰寫,資料表出自其他作者之手,每一項都附原始連結,請直接看原版那裡永遠最新。著作權聲明:歡迎轉載但請註明作者出處。' },
     { d: '2026/08/12', t: '社群資料表整合', s: '資源連結頁新增「社群資料表」分類,收錄 good果汁 製作的台服全榜線紀錄、台服 WL 榜線紀錄、控分表、WL 交換所規劃表。榜線趨勢頁下方直接指向全榜線紀錄 —— 那份表可依活動長度/團體/類型交叉篩選(例如「時長 8.25、9.25 天的 wxs 箱活 T1000 排行」),比站上這張對照表完整;WL 個榜也接上 WL 榜線紀錄與交換所規劃表。' },
     { d: '2026/08/12', t: '豆森娃月列表', s: '卡池列表頁新增豆森娃月列表:MySekai 每月月卡玩偶的角色排程,台日服月份對照,當月那列會標色。日服先行約 9 個月,看日服欄就知道台服接下來輪到誰。資料整理:瑞憶春希,卡池列表亦附原始表格連結。手機版預設收合。' },
@@ -2406,6 +2548,10 @@ class Component extends DCLogic {
     gamesUid: '', gamesRows: null, gamesLoad: false, gamesErr: '',
     gamesEv: null, gamesGaps: [], gamesRange: 'all', gamesPick: -1,
     dollOpen: false,   // 手機:豆森娃月列表預設收合
+    /* 榜線資料庫(good果汁的表格轉成的靜態資料) */
+    bdbReady: false, bdbErr: '', bdbTier: 100, bdbType: 'all', bdbUnit: 'all',
+    bdbDays: 'all', bdbAttr: 'all', bdbSort: 'id', bdbWL: false, bdbN: 40,
+    exTurn: 'WL3',   // 交換所預設看最新一屆
     wlCh: 0, pastWlCh: 0, wlOpen: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
@@ -2511,7 +2657,7 @@ class Component extends DCLogic {
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
-    import('./data/sekai-data.js?v=42f32cccd4')
+    import('./data/sekai-data.js?v=3c2dfa1a5a')
       .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
       .catch(() => {});
     this.loadEpSongs();
@@ -3248,6 +3394,24 @@ class Component extends DCLogic {
     };
   }
 
+  /* ---------- 榜線資料庫 ----------
+     資料是 good果汁 的公開表格轉成的靜態檔(tools/build-goodjuice.py)。
+     為什麼不直接打 HiSekai API:那要一期一個請求(174 期就 174 次),而且沒有
+     活動日數/型態/團體/屬性這些 metadata —— 交叉篩選正是靠它們。 */
+  async loadBorderDB() {
+    if (this.state.bdbReady || this._bdbLoading) return;
+    this._bdbLoading = true;
+    if (typeof BORDERS_DB !== 'undefined') { this.setState({ bdbReady: true }); return; }
+    await new Promise(res => {
+      const s = document.createElement('script');
+      // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
+      s.src = 'data/borders-db.js?v=39b7a96875';
+      s.onload = () => { this.setState({ bdbReady: true }); res(); };
+      s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
+      document.head.appendChild(s);
+    });
+  }
+
   /* ---------- 逐局紀錄 ----------
      資料來自自架的 Cloudflare Worker(games.project-sekai-center.com):
      Durable Object alarm 每 15 秒掃一次即時排名,只記有變動的那筆 = 一局。
@@ -3672,7 +3836,8 @@ class Component extends DCLogic {
 
   /* ---------- 導航 ---------- */
   go(p) {
-    if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
+    if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
+    if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
     if (p === 'songs') this.loadSongs();
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
@@ -3941,7 +4106,7 @@ class Component extends DCLogic {
     const navSpec = [
       ['主頁', [['home', '首頁', '#4ad1e8']]],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
-      ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0']]],
+      ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]]
@@ -4392,6 +4557,107 @@ class Component extends DCLogic {
                      twFg: on ? 'var(--accent-deep)' : 'var(--ink)',
                      tBg: t[0], tFg: t[1] };
           }),
+        };
+      })(),
+      /* WL 交換所規劃（good果汁）：徽章要花在哪，先看總需求再決定 */
+      ...(() => {
+        const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        const ex = DB && DB.exchange ? DB.exchange : null;
+        if (!ex) return { exOn: false, exSecs: [], exTurnChips: [], exTotal: '' };
+        const turns = Object.keys(ex).sort();
+        const cur = ex[s.exTurn] ? s.exTurn : turns[turns.length - 1];
+        const secs = ex[cur] || [];
+        let total = 0;
+        secs.forEach(sec => sec.items.forEach(it => { total += (it.cost || 0) * (it.max || 0); }));
+        return {
+          exOn: true,
+          exTurnChips: turns.map(v => Object.assign({ v, n: v },
+            chip(v === cur, 'var(--cta)'), { fg: v === cur ? '#fff' : 'var(--text)' })),
+          exTotal: '全部換滿需 ' + this.n(total) + ' 徽章',
+          exSecs: secs.map(sec => ({
+            title: sec.title,
+            sub: sec.items.length + ' 項・' + this.n(sec.items.reduce((a, it) => a + (it.cost || 0) * (it.max || 0), 0)) + ' 徽章',
+            items: sec.items.map(it => ({
+              n: it.n,
+              cost: it.cost != null ? this.n(it.cost) : '—',
+              max: it.max != null ? ('×' + it.max) : '',
+              sum: (it.cost && it.max) ? this.n(it.cost * it.max) : '—',
+            })),
+          })),
+        };
+      })(),
+      /* 榜線資料庫：歷期榜線 × 各段位，可依型態／團體／日數／屬性交叉篩選 */
+      isBorderDB: s.page === 'borderdb',
+      ...(() => {
+        const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        const base = { bdbBusy: !s.bdbReady && !s.bdbErr, bdbErrMsg: s.bdbErr, bdbOn: false,
+                       bdbRows: [], bdbTierChips: [], bdbTypeChips: [], bdbUnitChips: [],
+                       bdbDayChips: [], bdbAttrChips: [], bdbSortChips: [], bdbStats: [],
+                       bdbCount: '', bdbMoreBtn: false, bdbMoreN: 0, bdbCols: '', bdbMinW: '',
+                       bdbWLChips: [], bdbSrcNote: '' };
+        if (!DB) return base;
+        const isWL = !!s.bdbWL;
+        const all = isWL ? (DB.wl || []) : (DB.borders || []);
+        const tiers = isWL ? (DB.wlTiers || []) : (DB.tiers || []);
+        // 活動一覽補上屬性（榜線總表沒有這欄，靠期數對回去）
+        const attrOf = {};
+        (DB.events || []).forEach(e => { attrOf[e.id] = e.attr; });
+        const uniq = (arr, k) => [...new Set(arr.map(x => (x[k] || '').trim()).filter(Boolean))];
+        const rows0 = all.map(r => Object.assign({}, r, { attr: attrOf[r.id] || '' }));
+        const pass = r =>
+          (s.bdbType === 'all' || r.type === s.bdbType) &&
+          (s.bdbUnit === 'all' || r.unit === s.bdbUnit) &&
+          (s.bdbDays === 'all' || String(r.days) === s.bdbDays) &&
+          (s.bdbAttr === 'all' || r.attr === s.bdbAttr);
+        const hit = rows0.filter(pass);
+        const ti = Math.max(0, tiers.indexOf(+s.bdbTier));
+        const val = r => (r.t || [])[ti];
+        // 排行＝依該段位分數排序；預設按期數新到舊
+        const sorted = hit.slice().sort((a, b) =>
+          s.bdbSort === 'score' ? ((val(b) || 0) - (val(a) || 0))
+            : (parseFloat(b.id) - parseFloat(a.id)));
+        const shown = sorted.slice(0, s.bdbN);
+        const scores = hit.map(val).filter(v => v);
+        const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        const mkChips = (list, cur, key, fmt) =>
+          [{ v: 'all', n: '全部' }].concat(list.map(x => ({ v: String(x), n: fmt ? fmt(x) : String(x) })))
+            .map(x => Object.assign({}, x, chip(String(cur) === x.v, 'var(--cta)'),
+              { fg: String(cur) === x.v ? '#fff' : 'var(--text)', k: key }));
+        return {
+          bdbBusy: false, bdbErrMsg: s.bdbErr, bdbOn: true,
+          bdbWLChips: [{ v: '0', n: '一般活動' }, { v: '1', n: 'World Link' }]
+            .map(x => Object.assign({}, x, chip((s.bdbWL ? '1' : '0') === x.v, 'var(--cta)'),
+              { fg: (s.bdbWL ? '1' : '0') === x.v ? '#fff' : 'var(--text)' })),
+          bdbTierChips: tiers.map(t => Object.assign({ v: String(t), n: 'T' + this.n(t) },
+            chip(+s.bdbTier === t, 'var(--cta)'), { fg: +s.bdbTier === t ? '#fff' : 'var(--text)' })),
+          bdbTypeChips: mkChips(uniq(rows0, 'type'), s.bdbType, 'bdbType'),
+          bdbUnitChips: mkChips(uniq(rows0, 'unit'), s.bdbUnit, 'bdbUnit'),
+          bdbDayChips: mkChips([...new Set(rows0.map(r => r.days).filter(d => d))].sort((a, b) => a - b),
+            s.bdbDays, 'bdbDays', d => d + ' 天'),
+          bdbAttrChips: isWL ? [] : mkChips(uniq(rows0, 'attr'), s.bdbAttr, 'bdbAttr'),
+          bdbSortChips: [{ v: 'id', n: '依期數' }, { v: 'score', n: '依分數排行' }]
+            .map(x => Object.assign({}, x, chip(s.bdbSort === x.v, 'var(--cta)'),
+              { fg: s.bdbSort === x.v ? '#fff' : 'var(--text)' })),
+          bdbStats: [
+            { l: '符合期數', v: this.n(hit.length) },
+            { l: 'T' + this.n(+s.bdbTier) + ' 平均', v: this.short(avg) },
+            { l: '最高', v: scores.length ? this.short(Math.max(...scores)) : '—' },
+            { l: '最低', v: scores.length ? this.short(Math.min(...scores)) : '—' },
+          ],
+          bdbCols: s.mobile ? '52px minmax(0,1fr) 86px' : '58px minmax(0,1fr) 108px 76px 92px 68px',
+          bdbMinW: s.mobile ? '0' : '620px',
+          bdbWide: !s.mobile,
+          bdbRows: shown.map((r, i) => ({
+            rk: s.bdbSort === 'score' ? '#' + (i + 1) : ('#' + r.id),
+            name: r.name, chara: r.chara || '—', unit: r.unit || '—',
+            days: r.days ? r.days + ' 天' : '—', type: r.type || '—',
+            score: val(r) ? this.n(val(r)) : '—',
+            bg: i % 2 ? 'transparent' : 'color-mix(in oklab,var(--accent) 3%,transparent)',
+          })),
+          bdbCount: '符合 ' + hit.length + ' 期，顯示 ' + shown.length + ' 筆',
+          bdbMoreBtn: sorted.length > s.bdbN,
+          bdbMoreN: Math.max(0, sorted.length - s.bdbN),
+          bdbSrcNote: '資料來源：good果汁的公開表格，由本站定期同步。',
         };
       })(),
       /* 製作與致謝 */
@@ -5146,6 +5412,16 @@ class Component extends DCLogic {
         }
       },
       onDetailClose: () => this.setState({ detail: null }),
+      /* 榜線資料庫 */
+      // 切換一般/WL 要把篩選全部重置 —— 兩邊的團體、活動長度值域完全不同,
+      // 留著舊條件會篩出 0 筆,看起來像壞掉
+      onBdbWL: e => this.setState({ bdbWL: e.currentTarget.dataset.v === '1', bdbTier: 100,
+        bdbType: 'all', bdbUnit: 'all', bdbDays: 'all', bdbAttr: 'all', bdbSort: 'id', bdbN: 40 }),
+      onBdbTier: e => this.setState({ bdbTier: +e.currentTarget.dataset.v }),
+      onBdbFilter: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: d.v, bdbN: 40 }); },
+      onBdbSort: e => this.setState({ bdbSort: e.currentTarget.dataset.v, bdbN: 40 }),
+      onBdbMore: () => this.setState(s2 => ({ bdbN: s2.bdbN + 60 })),
+      onExTurn: e => this.setState({ exTurn: e.currentTarget.dataset.v }),
       onDollFold: () => this.setState(s2 => ({ dollOpen: !s2.dollOpen })),
       onGamesRange: e => this.setState({ gamesRange: e.currentTarget.dataset.v, gamesPick: -1 }),
       onGamesPick: e => { const i = +e.currentTarget.dataset.i; this.setState(s2 => ({ gamesPick: s2.gamesPick === i ? -1 : i })); },
