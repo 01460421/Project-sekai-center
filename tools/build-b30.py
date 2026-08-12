@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""從「プロセカ難易度表」(腐食氏) 產生 data/b30-consts.js(B30 產生器用定數表)。
+"""從「プロセカ難易度表」(pentatonic V31) 產生 data/b30-consts.js(B30 產生器用定數表)。
 
 資料源:
   - 難易度表試算表(公開 Google Sheet,xlsx 匯出):難易度表(MAS)/難易度表(APD) 兩分頁
@@ -177,8 +177,8 @@ def main():
                 row['tc'] = tr.strip()   # 社群中文譯名(顯示用;搜尋中日皆可)
             charts.append(row)
 
-    # EXPERT 高難度(Lv28~32):腐食氏的難易度表只收 MASTER/APPEND,沒有 EXPERT 定數。
-    # 站長指定「定數用 .0」—— 直接拿遊戲內等級當定數(Lv29 → 29.0),不做任何推估,
+    # EXPERT 高難度(Lv28~32):pentatonic 的難易度表只收 MASTER/APPEND,沒有 EXPERT 定數。
+    # 本站規則「定數用 .0」—— 直接拿遊戲內等級當定數(Lv29 → 29.0),不做任何推估,
     # 所以不標 e=1(那是「推估」的意思,這裡是明確規則)。
     tc_by_id = {mu['id']: mu for mu in tc_musics}
     EXP_MIN, EXP_MAX = 28, 32
@@ -202,7 +202,7 @@ def main():
         charts.append(row)
         exp_n += 1
 
-    # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,腐食表自然不會收)
+    # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,pentatonic 表自然不會收)
     # → 用遊戲內等級 +0.5 當中位推估,標 e=1 讓前端顯示「推估」並可排除
     have = {(c['id'], c['d']) for c in charts}
     est = []
@@ -231,7 +231,7 @@ def main():
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
 
-    data = {'source': '腐食氏 プロセカ難易度表', 'charts': charts}
+    data = {'source': 'pentatonic V31 プロセカ難易度表', 'charts': charts}
     if OUT.exists():
         m = re.search(r'window\.B30_CONSTS\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
         if m:
@@ -245,7 +245,7 @@ def main():
                 pass
     data['builtAt'] = int(time.time() * 1000)
     body = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-    OUT.write_text('// 由 tools/build-b30.py 產生,勿手改。定數:腐食氏 プロセカ難易度表(AP 基準,非官方)\n'
+    OUT.write_text('// 由 tools/build-b30.py 產生,勿手改。定數:pentatonic V31 プロセカ難易度表(AP 基準,非官方)\n'
                    f'window.B30_CONSTS={body};\n')
     print(f'寫入 {OUT.name}:{OUT.stat().st_size // 1024} KB')
 

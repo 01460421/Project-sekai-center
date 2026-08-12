@@ -1301,7 +1301,7 @@ input::placeholder{color:var(--text-3)}
         <div style="min-width:{{ bdbMinW }}">
           <div style="display:grid;grid-template-columns:{{ bdbCols }};gap:8px;padding:11px 15px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text-3)">
             <span>期數</span><span>活動</span>
-            <sc-if value="{{ bdbWide }}"><span>角色</span><span>團體</span></sc-if>
+            <sc-if value="{{ bdbWide }}"><sc-if value="{{ bdbNotWL }}"><span>角色</span></sc-if><span>團體</span></sc-if>
             <sc-if value="{{ bdbWide }}"><span style="text-align:center">長度</span></sc-if>
             <span style="text-align:right">榜線</span>
           </div>
@@ -1310,7 +1310,7 @@ input::placeholder{color:var(--text-3)}
               <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--accent-deep)"><sc-if value="{{ r.hasNo }}"><span style="display:inline-block;min-width:22px;color:var(--text-3);font-size:11px">{{ r.no }}.</span></sc-if>{{ r.rk }}</span>
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">{{ r.name }}</span>
               <sc-if value="{{ bdbWide }}">
-                <span style="color:var(--text-2)">{{ r.chara }}</span>
+                <sc-if value="{{ bdbNotWL }}"><span style="color:var(--text-2)">{{ r.chara }}</span></sc-if>
                 <span style="color:var(--text-2)">{{ r.unit }}</span>
               </sc-if>
               <sc-if value="{{ bdbWide }}"><span style="text-align:center;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.days }}</span></sc-if>
@@ -1355,7 +1355,7 @@ input::placeholder{color:var(--text-3)}
               </div>
             </sc-for>
           </div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。表上固定列 6 個章節交換所，但實際章節數依活動而定 —— 一般 WL 是 4 章、終章才 6 章，可用上方切換；超出的章節會標灰且不計入總需求。規劃表製作：good果汁（原作 Narwhal／國際服）　<a href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">原始表格 ↗</a></div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。表上固定列 6 個章節交換所，但實際章節數各場不同 —— WL2 是 OC 團 4 章、V 家 6 章；WL3 是 5 章、其中 3.2 為 6 章；終章只有一個交換所、不需要規劃。用上方切換，超出的章節會標灰且不計入總需求。規劃表製作：good果汁（原作 Narwhal／國際服）　<a href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">原始表格 ↗</a></div>
         </div>
       </sc-if>
 
@@ -2475,13 +2475,14 @@ class Component extends DCLogic {
     { date: '計算', title: '抽卡模擬', desc: '依官方 master 資料的機率模型模擬抽卡：可搜尋任一期卡池，顯示各稀有度機率與 PU 卡，支援單抽／十連（含保底★3↑），並統計已抽數、消耗石、★4 與 PU 入手、距天井。', to: 'gachasim', cta: '前往抽卡模擬' },
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
     { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品內容物與台幣定價、素材篩選、CP 值排行、月卡攤提，官網商店比價（同價多送 11~45%）；智慧推薦依預算或目標抽數算最省錢組合；限時商品約每小時自動更新。', to: 'shop', cta: '前往儲值分析' },
-    { date: '計算', title: 'B30 產生器', desc: '勾選 FC/AP 譜面，依非官方難易度表定數（腐食氏）計算 Best 30 実効值，Unibot 風格版面高還原，一鍵輸出 2192×3600 PNG；可綁玩家 ID 帶入名片與 AP/FC 總數核對。', to: 'b30', cta: '前往 B30 產生器' },
+    { date: '計算', title: 'B30 產生器', desc: '勾選 FC/AP 譜面，依非官方難易度表定數（pentatonic V31）計算 Best 30 実効值，Unibot 風格版面高還原，一鍵輸出 2192×3600 PNG；可綁玩家 ID 帶入名片與 AP/FC 總數核對。', to: 'b30', cta: '前往 B30 產生器' },
     { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/12', t: '交換所章節數與定數表署名修正', s: 'WL 交換所的章節數原本只分「一般 4 章／終章 6 章」,實際上各場不同:WL2 是 OC 團 4 章、V 家 6 章;WL3 是 5 章、其中 3.2 為 6 章;終章只有一個交換所、根本不需要規劃,所以不列進選項。切換屆別時章節選項也跟著換,總需求會重算(WL2 OC 團 914,000、V 家 1,169,000、WL3 1,041,500)。另外榜線資料庫在 World Link 模式下移除「角色」欄 —— 活動欄已經寫成「WL2 實乃理」,再開一欄重複。B30 的定數表署名統一改為 pentatonic V31。' },
     { d: '2026/08/12', t: '控分改為反推達成方案', s: '原本的控分只是「輸入分數看活動P」的查詢,方向反了。改成真正的控分:輸入目前活動P 與目標活動P,反推出所有能「剛好命中」差額的打法。**可以分段** —— 不同火倍率混搭往往比單一配置更容易湊到剛好(例如差額 1,234 用單一配置無解,分兩段就有 13 種解法)。每個方案列出各段要不要用火、打幾局、每局幾 P、歌曲分數落在哪個區間,以及總耗體力,依省體力排序。分數給的是區間而非單一數字,因為活動P 無條件捨去,同一個 2 萬級距內都算同一個值。若目前加成湊不出剛好的數字(活動P 是整數,乘上火倍率後未必整除),會列出「最相近且能精準命中的加成」,方便用換卡微調去對。差額上限一萬 —— 超過那個量直接照平常打就好,控分是為了最後精準收尾;方案也會排除打不出來的分數(單人場上限約 260 萬)。' },
-    { d: '2026/08/12', t: 'B30 納入 EXPERT 28-32', s: 'B30 曲庫加入 EXPERT 難度 Lv28~32 的譜面(台服現有 36 張:Lv28 十五張、29 五張、30 六張、31 十張)。腐食氏的難易度表只收 MASTER 與 APPEND,沒有 EXPERT 定數,所以直接以遊戲內等級當定數(Lv31 → 31.0),不做推估、也不標「推估」記號。難度標籤為紅色 EXP,篩選列可單獨切出 EXPERT。曲庫總數 849 → 885。' },
+    { d: '2026/08/12', t: 'B30 納入 EXPERT 28-32', s: 'B30 曲庫加入 EXPERT 難度 Lv28~32 的譜面(台服現有 36 張:Lv28 十五張、29 五張、30 六張、31 十張)。pentatonic V31 的難易度表只收 MASTER 與 APPEND,沒有 EXPERT 定數,所以直接以遊戲內等級當定數(Lv31 → 31.0),不做推估、也不標「推估」記號。難度標籤為紅色 EXP,篩選列可單獨切出 EXPERT。曲庫總數 849 → 885。' },
     { d: '2026/08/12', t: '榜線資料庫調整', s: '篩選改為複選 —— 活動型態、團體、長度、屬性都能同時選多個,同欄任一符合即算,並新增 Banner 角色篩選。依分數排行時改成顯示實際期數(原本是 1~N 流水號,看不出對應哪場活動)。World Link 的列補上屆數,現在看得出是 WL1 還 WL2。交換所的總需求原本固定按 6 個章節算,但一般 WL 只有 4 章、終章才 6 章,已改成可切換,超出的章節會標灰且不計入。控分速查移除四格衍生數字(反而混淆),改成一句話講清楚「再打幾分會多 1 點」,並附上原表連結;輸入欄位改稱「歌曲分數」。原表的說明也修正:那份表的篩選器需要電腦版操作、手機仍可檢視,而站上的榜線資料庫手機也能篩;控分表則只收錄独りんぼエンヴィー(蝦)單人 0 體,不是各曲。' },
     { d: '2026/08/12', t: '控分速查', s: '計算中心新增「控分速查」分頁。活動P 是無條件捨去的,所以分數落在同一個 2 萬級距內、活動P 完全一樣 —— 控分就是別把分數浪費在級距中間。輸入目前分數與加成,會算出單局活動P、目前所在級距、再多拿 1 點需要幾分、以及這一局已經浪費了多少分。概念與計算源自 good果汁 改良的控分表(原作 SYLVIA0x0)。' },
     { d: '2026/08/12', t: '榜線資料庫', s: '新增「榜線資料庫」分頁(追蹤群組):174 期 × 22 個段位的完整榜線,可依活動型態、團體、活動長度、屬性交叉篩選,並切換「依期數」或「依分數排行」。例如想查「時長 8.25 天的 WXS 箱活 T1000 排行」,選三個條件就出來了。World Link 另有 43 個章節 × 21 段位,切換即可。統計會即時算出符合期數的平均、最高與最低。資料來源:good果汁的台服全榜線紀錄與 WL 榜線紀錄,由本站每日同步,原始表格連結附在頁尾。' },
@@ -2516,7 +2517,7 @@ class Component extends DCLogic {
     { d: '2026/08/08', t: '組卡可只用自己持有的卡', s: '跑榜工作室新增「只用我持有的卡」開關,勾選後候選池改用收集率頁勾選的持有清單,算出來就不是理論最強隊,而是你實際組得出來的最強隊,並顯示候選 N/M 張。兩頁同源共用 localStorage,不必重新輸入。' },
     { d: '2026/08/08', t: '全站資料備份與轉移', s: '資源連結頁新增備份區,可把收集率、B30 成績、儲值分析、玩家綁定與外觀設定一次匯出成 JSON,換裝置或清快取前先留一份。匯入採白名單,只認本站自己的 15 個欄位,其餘一律略過;榜線快照屬可重建快取,不含在內。' },
     { d: '2026/08/08', t: '修抽卡模擬的抽法標示', s: '免費抽在官方資料裡沒有花費欄位,原本直接串字串會顯示成「undefined 券」,已依行為類型改為「通行證每日免費」「通行證每週免費」。另外只吃付費水晶的檔位(100石單抽、1500石十連)加上「付費」二字,免得誤以為無償水晶也能抽。' },
-    { d: '2026/08/08', t: 'B30 產生器上線', s: '勾選你的 FC/AP 譜面(702 張台服譜面,MASTER+APPEND),依非官方難易度表定數(腐食氏,AP 基準)計算 Best 30 実効值:AP=定數、FC=定數−1。版面 1:1 還原 Unibot(MIT)的 B30 圖卡:三欄十列卡格、難度色圓+定數膠囊+実効值、FULL COMBO/ALL PERFECT 徽章、粉彩三角背景,以 2192×3600 高解析 Canvas 繪製,一鍵下載 PNG。可輸入玩家 ID 帶入名片(名字/Rank/隊長頭像)與各難度 AP/FC 總數核對;台服公開 API 無逐曲成績,故成績採手動勾選(存在瀏覽器)。定數表每日自動同步試算表。曲名顯示社群中文譯名(台服官方不翻曲名,可切回日文原名;搜尋中日文皆可)。定數的「+/++」記號支援兩種模式:符號表示(34.9+、34.9++)或數值計算(+=+0.05;++≈+0.1,顯示四捨五入成下一帶值但排序仍在真正下一帶之後),數值模式下 B30 以三位小數呈現。', },
+    { d: '2026/08/08', t: 'B30 產生器上線', s: '勾選你的 FC/AP 譜面(702 張台服譜面,MASTER+APPEND),依非官方難易度表定數(pentatonic V31,AP 基準)計算 Best 30 実効值:AP=定數、FC=定數−1。版面 1:1 還原 Unibot(MIT)的 B30 圖卡:三欄十列卡格、難度色圓+定數膠囊+実効值、FULL COMBO/ALL PERFECT 徽章、粉彩三角背景,以 2192×3600 高解析 Canvas 繪製,一鍵下載 PNG。可輸入玩家 ID 帶入名片(名字/Rank/隊長頭像)與各難度 AP/FC 總數核對;台服公開 API 無逐曲成績,故成績採手動勾選(存在瀏覽器)。定數表每日自動同步試算表。曲名顯示社群中文譯名(台服官方不翻曲名,可切回日文原名;搜尋中日文皆可)。定數的「+/++」記號支援兩種模式:符號表示(34.9+、34.9++)或數值計算(+=+0.05;++≈+0.1,顯示四捨五入成下一帶值但排序仍在真正下一帶之後),數值模式下 B30 以三位小數呈現。', },
     { d: '2026/08/06', t: '儲值商品分析上線', s:'新頁「儲值分析」:台服商城 930+ 項商品(水晶包/優惠組合/通行證/裝扮兌換)連同內容物與台幣定價全部列出,可依素材(心願碎片、招募票券、寶石…)、類別、通路、付款方式、販售狀態篩選,每張卡片逐項列出附贈道具。CP 值排行以「App 常駐最佳石/元」當基準線;月卡與通行證把每日領取攤提合計。智慧推薦依目標抽數/水晶或預算,用有限背包演算法在限購規則內算出最省錢購買組合,並生成深度分析(先買誰、限購重置、期限警示、有償占比、天井換算);天井 300 抽實測比純買常駐大包省約 19%。' },
     { d: '2026/08/06', t: '官網商店比價、選購清單與即時更新', s: '接上台服官方網頁商店(GamePay,MyCard/信用卡)的公開商品目錄:官網專屬水晶同價多送 11~45% 免費水晶,K/P 官網限定大包附心願碎片;通行證兌換券(BASIC NT$150、PRECIOUS NT$750 等)自動對照遊戲內直購價,連 App 商店沒公布價格的月卡都有了參考價。官網品項可「＋清單」加入選購清單(智慧推薦的方案能一鍵整批加入),輸入遊戲 ID 後「前往官網結帳」會用 role_id 參數把 ID 直接代入官網欄位,到站勾選商品即可付款——付款全程在官方網站,本站不經手金流,功能頁附免責聲明。素材篩選支援多選(符合任一即列出)。資料由伺服器每 30~90 分鐘自動重建,前端直接吃 repo 最新版,活動限時商品不用等每日部署就會出現;分頁頂端顯示資料時間並可手動立即更新。' },
     { d: '2026/08/01', t: '修正手機底部列與播放器浮動鈕會飄走', s: '兩者都是 position:fixed 又同時帶了 transform 與 will-change,在 iOS Safari 上會變成獨立合成層,動量捲動或網址列收合時就脫鉤亂飄。改成外層只負責定位、視覺效果(毛玻璃、圓角、陰影)全部下放內層,置中改用 left:0/right:0 而非 transform。' },
@@ -4742,10 +4743,17 @@ class Component extends DCLogic {
         const turns = Object.keys(ex).sort();
         const cur = ex[s.exTurn] ? s.exTurn : turns[turns.length - 1];
         const secs = ex[cur] || [];
-        // 表上每屆都列滿 6 個章節交換所，但實際章節數依活動而定：
-        // 一般 WL 是 4 章，終章才 6 章（實際資料：WL1 的 112~137 都是 4 章、140 終章 6 章）。
-        // 與其自動猜，不如讓使用者選，總需求才不會誤導。
-        const chapters = Math.max(1, Math.min(6, +s.exCh || 4));
+        // 表上每屆都列滿 6 個章節交換所，但實際章節數各場不同：
+        //   WL2 —— OC 團 4 章、V 家 6 章
+        //   WL3 —— 5 章，其中 3.2 是 6 章
+        //   終章 —— 只有一個交換所，不需要規劃，所以不列在選項裡
+        // 這種差異沒辦法從表本身推出來，讓使用者選才不會給出誤導的總需求。
+        const CH_OPTS = {
+          WL2: [[4, 'OC 團 4 章'], [6, 'V 家 6 章']],
+          WL3: [[5, '5 章'], [6, '3.2 版 6 章']],
+        };
+        const opts = CH_OPTS[cur] || [[4, '4 章'], [6, '6 章']];
+        const chapters = opts.some(o => o[0] === +s.exCh) ? +s.exCh : opts[0][0];
         let total = 0, chSeen = 0;
         secs.forEach(sec => {
           const isCh = /章節/.test(sec.title);
@@ -4757,7 +4765,7 @@ class Component extends DCLogic {
           exTurnChips: turns.map(v => Object.assign({ v, n: v },
             chip(v === cur, 'var(--cta)'), { fg: v === cur ? '#fff' : 'var(--text)' })),
           exTotal: '全部換滿需 ' + this.n(total) + ' 徽章（綜合 ＋ ' + chapters + ' 章）',
-          exChChips: [[4, '一般 4 章'], [6, '終章 6 章']].map(([v, n]) =>
+          exChChips: opts.map(([v, n]) =>
             Object.assign({ v: String(v), n }, chip(chapters === v, 'var(--cta)'),
               { fg: chapters === v ? '#fff' : 'var(--text)' })),
           exSecs: secs.map((sec, si) => ({
@@ -4852,9 +4860,12 @@ class Component extends DCLogic {
             { l: '最高', v: scores.length ? this.short(Math.max(...scores)) : '—' },
             { l: '最低', v: scores.length ? this.short(Math.min(...scores)) : '—' },
           ],
+          bdbNotWL: !isWL,   // WL 時活動欄已寫「WL1 角色」,再開一欄角色是重複的
           bdbCols: s.bdbSort === 'score'
-            ? (s.mobile ? '78px minmax(0,1fr) 86px' : '86px minmax(0,1fr) 108px 76px 92px 68px')
-            : (s.mobile ? '52px minmax(0,1fr) 86px' : '58px minmax(0,1fr) 108px 76px 92px 68px'),
+            ? (s.mobile ? '78px minmax(0,1fr) 86px'
+               : (isWL ? '86px minmax(0,1fr) 76px 92px 68px' : '86px minmax(0,1fr) 108px 76px 92px 68px'))
+            : (s.mobile ? '52px minmax(0,1fr) 86px'
+               : (isWL ? '58px minmax(0,1fr) 76px 92px 68px' : '58px minmax(0,1fr) 108px 76px 92px 68px')),
           bdbMinW: s.mobile ? '0' : '620px',
           bdbWide: !s.mobile,
           bdbRows: shown.map((r, i) => ({

@@ -5135,7 +5135,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         };
 
         // ========== 二十五:B30 產生器(Unibot 版面高還原+PNG 匯出) ==========
-        // 定數:腐食氏「プロセカ難易度表」(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
+        // 定數:pentatonic V31 難易度表(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
         // 実効值:AP=定數;FC=定數−1(本站採用,取代 Unibot 的 −1.5/−1 分段) — 非官方
         // 台服公開 API 沒有逐曲成績(只有各難度 AP/FC 總數),所以譜面成績採手動勾選
         const B30Maker = {
@@ -5709,7 +5709,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
                 // ---- 頁尾 ----
                 ctx.fillStyle = '#0eb3c5'; ctx.font = '600 15px ' + FB;
-                ctx.fillText('非官方算法,僅供參考娛樂。定數:腐食氏「プロセカ難易度表」(可能變動)', 53, 1722);
+                ctx.fillText('非官方算法,僅供參考娛樂。定數:pentatonic V31(可能變動)', 53, 1722);
                 ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 53, 1750);
                 ctx.textAlign = 'right';
                 ctx.font = '700 15px ' + FB;
