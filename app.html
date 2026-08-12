@@ -870,7 +870,7 @@ input::placeholder{color:var(--text-3)}
            good果汁那份表做得比這裡完整，直接指過去比自己重做一個半吊子的好。 -->
       <a href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener" style="display:block;margin-top:11px;padding:12px 15px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);text-decoration:none">
         <div style="font-size:13px;font-weight:800;color:var(--accent-deep)">想做更細的交叉篩選？台服全榜線紀錄 ↗</div>
-        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">good果汁製作。含活動一覽與各期排行，可依活動長度／團體／類型自行篩選與客製化（例如「時長 8.25、9.25 天的 wxs 箱活 T1000 排行」）。目前僅電腦版可用。</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">good果汁製作。含活動一覽與各期排行，可依活動長度／團體／類型自行篩選與客製化（例如「時長 8.25、9.25 天的 wxs 箱活 T1000 排行」）。原表的篩選器需要電腦版才能操作，手機仍可檢視；站上的「榜線資料庫」則是手機也能篩。</div>
       </a>
     </sc-if>
 
@@ -1034,6 +1034,9 @@ input::placeholder{color:var(--text-3)}
             <div style="font-weight:800;color:var(--ink);margin-bottom:4px">計算式</div>
             <div style="font-family:'M PLUS Rounded 1c';word-break:break-all">{{ formulaText }}</div>
             <div style="margin-top:6px;font-size:11px;color:var(--text-3)">{{ formulaNote }}</div>
+            <sc-if value="{{ isCtrlTab }}">
+              <a href="https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-size:11.5px;font-weight:700;text-decoration:none">開啟 good果汁的控分表 ↗</a>
+            </sc-if>
           </div>
         </sc-if>
       </div>
@@ -1197,6 +1200,8 @@ input::placeholder{color:var(--text-3)}
           </sc-for>
         </div>
 
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:7px">{{ bdbFilterHint }}</div>
+
         <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">活動型態</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">
           <sc-for list="{{ bdbTypeChips }}" as="c" hint-placeholder-count="4">
@@ -1215,6 +1220,13 @@ input::placeholder{color:var(--text-3)}
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px">
           <sc-for list="{{ bdbDayChips }}" as="c" hint-placeholder-count="6">
             <button type="button" onClick="{{ onBdbFilter }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:4px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};font-family:'M PLUS Rounded 1c'">{{ c.n }}</button>
+          </sc-for>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-3);font-weight:800;margin-bottom:5px">Banner 角色</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px;max-height:96px;overflow-y:auto">
+          <sc-for list="{{ bdbCharaChips }}" as="c" hint-placeholder-count="27">
+            <button type="button" onClick="{{ onBdbFilter }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:4px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
           </sc-for>
         </div>
 
@@ -1255,7 +1267,7 @@ input::placeholder{color:var(--text-3)}
           </div>
           <sc-for list="{{ bdbRows }}" as="r" hint-placeholder-count="20">
             <div style="display:grid;grid-template-columns:{{ bdbCols }};gap:8px;padding:10px 15px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center;background:{{ r.bg }}">
-              <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--accent-deep)">{{ r.rk }}</span>
+              <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--accent-deep)"><sc-if value="{{ r.hasNo }}"><span style="display:inline-block;min-width:22px;color:var(--text-3);font-size:11px">{{ r.no }}.</span></sc-if>{{ r.rk }}</span>
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">{{ r.name }}</span>
               <sc-if value="{{ bdbWide }}">
                 <span style="color:var(--text-2)">{{ r.chara }}</span>
@@ -1283,10 +1295,14 @@ input::placeholder{color:var(--text-3)}
             <sc-for list="{{ exTurnChips }}" as="c" hint-placeholder-count="2">
               <button type="button" onClick="{{ onExTurn }}" data-v="{{ c.v }}" style="padding:5px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
             </sc-for>
+            <span style="width:1px;background:var(--border);margin:0 3px"></span>
+            <sc-for list="{{ exChChips }}" as="c" hint-placeholder-count="2">
+              <button type="button" onClick="{{ onExCh }}" data-v="{{ c.v }}" style="padding:5px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+            </sc-for>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,268px),1fr));gap:10px">
             <sc-for list="{{ exSecs }}" as="sec" hint-placeholder-count="7">
-              <div style="border:1px solid var(--border);border-radius:14px;background:var(--card-2);padding:12px 14px">
+              <div style="border:1px solid var(--border);border-radius:14px;background:var(--card-2);padding:12px 14px;opacity:{{ sec.op }}">
                 <div style="font-size:12.5px;font-weight:800;color:var(--accent-deep)">{{ sec.title }}</div>
                 <div style="font-size:10.5px;color:var(--text-3);margin-bottom:8px;font-family:'M PLUS Rounded 1c'">{{ sec.sub }}</div>
                 <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="5">
@@ -1299,7 +1315,7 @@ input::placeholder{color:var(--text-3)}
               </div>
             </sc-for>
           </div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。規劃表製作：good果汁（原作 Narwhal／國際服）　<a href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">原始表格 ↗</a></div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。表上固定列 6 個章節交換所，但實際章節數依活動而定 —— 一般 WL 是 4 章、終章才 6 章，可用上方切換；超出的章節會標灰且不計入總需求。規劃表製作：good果汁（原作 Narwhal／國際服）　<a href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener" style="color:var(--accent-deep);font-weight:700">原始表格 ↗</a></div>
         </div>
       </sc-if>
 
@@ -2424,6 +2440,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/12', t: '榜線資料庫調整(依站長回饋)', s: '篩選改為複選 —— 活動型態、團體、長度、屬性都能同時選多個,同欄任一符合即算,並新增 Banner 角色篩選。依分數排行時改成顯示實際期數(原本是 1~N 流水號,看不出對應哪場活動)。World Link 的列補上屆數,現在看得出是 WL1 還 WL2。交換所的總需求原本固定按 6 個章節算,但一般 WL 只有 4 章、終章才 6 章,已改成可切換,超出的章節會標灰且不計入。控分速查移除四格衍生數字(反而混淆),改成一句話講清楚「再打幾分會多 1 點」,並附上原表連結;輸入欄位改稱「歌曲分數」。原表的說明也修正:那份表的篩選器需要電腦版操作、手機仍可檢視,而站上的榜線資料庫手機也能篩;控分表則只收錄独りんぼエンヴィー(蝦)單人 0 體,不是各曲。' },
     { d: '2026/08/12', t: '控分速查', s: '計算中心新增「控分速查」分頁。活動P 是無條件捨去的,所以分數落在同一個 2 萬級距內、活動P 完全一樣 —— 控分就是別把分數浪費在級距中間。輸入目前分數與加成,會算出單局活動P、目前所在級距、再多拿 1 點需要幾分、以及這一局已經浪費了多少分。概念與計算源自 good果汁 改良的控分表(原作 SYLVIA0x0)。' },
     { d: '2026/08/12', t: '榜線資料庫', s: '新增「榜線資料庫」分頁(追蹤群組):174 期 × 22 個段位的完整榜線,可依活動型態、團體、活動長度、屬性交叉篩選,並切換「依期數」或「依分數排行」。例如想查「時長 8.25 天的 WXS 箱活 T1000 排行」,選三個條件就出來了。World Link 另有 43 個章節 × 21 段位,切換即可。統計會即時算出符合期數的平均、最高與最低。資料來源:good果汁的台服全榜線紀錄與 WL 榜線紀錄,由本站每日同步,原始表格連結附在頁尾。' },
     { d: '2026/08/12', t: 'WL 交換所規劃', s: '榜線資料庫頁下方新增 WL 交換所規劃:綜合交換所與各章節交換所的道具、徽章需求與可換上限,並自動算出「全部換滿需要多少徽章」(WL3 為 1,169,000)。可切換 WL2／WL3。規劃表製作:good果汁(原作 Narwhal／國際服)。' },
@@ -2550,9 +2567,11 @@ class Component extends DCLogic {
     gamesEv: null, gamesGaps: [], gamesRange: 'all', gamesPick: -1,
     dollOpen: false,   // 手機:豆森娃月列表預設收合
     /* 榜線資料庫(good果汁的表格轉成的靜態資料) */
-    bdbReady: false, bdbErr: '', bdbTier: 100, bdbType: 'all', bdbUnit: 'all',
-    bdbDays: 'all', bdbAttr: 'all', bdbSort: 'id', bdbWL: false, bdbN: 40,
-    exTurn: 'WL3',   // 交換所預設看最新一屆
+    bdbReady: false, bdbErr: '', bdbTier: 100,
+    /* 篩選改複選：各維度存已選值的陣列，空陣列＝全部 */
+    bdbDays: [], bdbAttr: [], bdbType: [], bdbUnit: [], bdbChara: [],
+    bdbSort: 'id', bdbWL: false, bdbN: 40,
+    exTurn: 'WL3', exCh: 4,   // 交換所預設最新一屆、一般 4 章
     wlCh: 0, pastWlCh: 0, wlOpen: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
@@ -3479,7 +3498,7 @@ class Component extends DCLogic {
       { n: '豆森娃月列表', d: 'MySekai 月卡玩偶的台日服排程對照', u: '' },
     ]},
     { who: 'good果汁', items: [
-      { n: '控分表', d: '各曲控分基準', u: 'https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link' },
+      { n: '控分表', d: '独りんぼエンヴィー（蝦）單人 0 體控分', u: 'https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link' },
       { n: 'WL 交換所規劃表', d: 'World Link 交換所的資源規劃', u: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link' },
       { n: '台服全榜線紀錄', d: '歷期榜線、活動一覽與各期排行，可自行篩選與客製化', u: 'https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing' },
       { n: '台服 WL 榜線紀錄', d: 'World Link 各章榜線，附角色配色與排行篩選', u: 'https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing' },
@@ -4277,7 +4296,7 @@ class Component extends DCLogic {
          概念與計算源自 good果汁 改良的控分表（原作 SYLVIA0x0）。 */
       calcInputTitle = '控分速查';
       calcFields = [
-        { k: 'score', label: '目前分數', value: s.score },
+        { k: 'score', label: '歌曲分數', value: s.score },
         { k: 'bonus', label: '活動加成 %', value: s.bonus }
       ];
       const sc = Math.max(0, +s.score || 0), bo = +s.bonus || 0;
@@ -4292,15 +4311,13 @@ class Component extends DCLogic {
       resultValue = this.n(cur);
       resultSub = '分數 ' + this.n(sc) + ' · 加成 ' + bo + '% · 目前級距 '
         + this.n(Math.floor(sc / step) * step) + ' ～ ' + this.n((Math.floor(sc / step) + 1) * step - 1);
-      resultStats = [
-        { l: '再多 1 P 需要', v: this.n(nextScore - sc), sub: '打到 ' + this.n(nextScore) + ' 分' },
-        { l: '下一階活動P', v: this.n(epAt(nextScore)), sub: '＋' + this.n(epAt(nextScore) - cur) },
-        { l: '本級距浪費', v: this.n(sc - Math.floor(sc / step) * step), sub: '超出的分數不算 P' },
-        { l: '每階 P', v: this.n(Math.floor((baseAt(step) - baseAt(0)) * (1 + bo / 100)) || 1), sub: '每 2 萬分' }
-      ];
+      // 原本這裡放了四格衍生數字（再多 1P 要幾分／下一階／浪費／每階 P），
+      // 站長回饋說反而混淆 —— 真正要知道的就一句：再多幾分會多 1 點。
+      resultStats = [];
       formulaText = '單局活動P ＝ ⌊(100 ＋ ⌊分數 / 20,000⌋) × (1 ＋ 加成/100)⌋（單人場）';
-      formulaNote = '概念與計算源自 good果汁 改良的控分表（原作 SYLVIA0x0）。因為是無條件捨去，'
-        + '同一個 20,000 級距內分數再高活動P 也一樣 —— 控分就是別把分數浪費在級距中間。';
+      formulaNote = '再打 ' + this.n(nextScore - sc) + ' 分（到 ' + this.n(nextScore) + '）活動P 會變成 '
+        + this.n(epAt(nextScore)) + '。因為是無條件捨去，同一個 20,000 級距內分數再高活動P 都一樣。'
+        + '　完整控分表（独りんぼエンヴィー／蝦・單人 0 體）：good果汁 改良、原作 SYLVIA0x0。';
     } else {
       calcInputTitle = '排位賽';
       calcFields = [
@@ -4594,20 +4611,36 @@ class Component extends DCLogic {
       ...(() => {
         const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
         const ex = DB && DB.exchange ? DB.exchange : null;
-        if (!ex) return { exOn: false, exSecs: [], exTurnChips: [], exTotal: '' };
+        if (!ex) return { exOn: false, exSecs: [], exTurnChips: [], exTotal: '', exChChips: [] };
         const turns = Object.keys(ex).sort();
         const cur = ex[s.exTurn] ? s.exTurn : turns[turns.length - 1];
         const secs = ex[cur] || [];
-        let total = 0;
-        secs.forEach(sec => sec.items.forEach(it => { total += (it.cost || 0) * (it.max || 0); }));
+        // 表上每屆都列滿 6 個章節交換所，但實際章節數依活動而定：
+        // 一般 WL 是 4 章，終章才 6 章（實際資料：WL1 的 112~137 都是 4 章、140 終章 6 章）。
+        // 與其自動猜，不如讓使用者選，總需求才不會誤導。
+        const chapters = Math.max(1, Math.min(6, +s.exCh || 4));
+        let total = 0, chSeen = 0;
+        secs.forEach(sec => {
+          const isCh = /章節/.test(sec.title);
+          if (isCh) { chSeen++; if (chapters && chSeen > chapters) return; }   // 超出實際章節數的不計
+          sec.items.forEach(it => { total += (it.cost || 0) * (it.max || 0); });
+        });
         return {
           exOn: true,
           exTurnChips: turns.map(v => Object.assign({ v, n: v },
             chip(v === cur, 'var(--cta)'), { fg: v === cur ? '#fff' : 'var(--text)' })),
-          exTotal: '全部換滿需 ' + this.n(total) + ' 徽章',
-          exSecs: secs.map(sec => ({
+          exTotal: '全部換滿需 ' + this.n(total) + ' 徽章（綜合 ＋ ' + chapters + ' 章）',
+          exChChips: [[4, '一般 4 章'], [6, '終章 6 章']].map(([v, n]) =>
+            Object.assign({ v: String(v), n }, chip(chapters === v, 'var(--cta)'),
+              { fg: chapters === v ? '#fff' : 'var(--text)' })),
+          exSecs: secs.map((sec, si) => ({
             title: sec.title,
+            // 這屆沒有的章節仍列出來（原表就有），但標灰並註明不計入總需求
+            dim: /章節/.test(sec.title) && chapters
+              && secs.slice(0, si + 1).filter(x => /章節/.test(x.title)).length > chapters,
             sub: sec.items.length + ' 項・' + this.n(sec.items.reduce((a, it) => a + (it.cost || 0) * (it.max || 0), 0)) + ' 徽章',
+            op: (/章節/.test(sec.title) && chapters
+              && secs.slice(0, secs.indexOf(sec) + 1).filter(x => /章節/.test(x.title)).length > chapters) ? '.42' : '1',
             items: sec.items.map(it => ({
               n: it.n,
               cost: it.cost != null ? this.n(it.cost) : '—',
@@ -4634,12 +4667,20 @@ class Component extends DCLogic {
         const attrOf = {};
         (DB.events || []).forEach(e => { attrOf[e.id] = e.attr; });
         const uniq = (arr, k) => [...new Set(arr.map(x => (x[k] || '').trim()).filter(Boolean))];
-        const rows0 = all.map(r => Object.assign({}, r, { attr: attrOf[r.id] || '' }));
-        const pass = r =>
-          (s.bdbType === 'all' || r.type === s.bdbType) &&
-          (s.bdbUnit === 'all' || r.unit === s.bdbUnit) &&
-          (s.bdbDays === 'all' || String(r.days) === s.bdbDays) &&
-          (s.bdbAttr === 'all' || r.attr === s.bdbAttr);
+        // 活動一覽有 banner 角（活動角色）；WL 總表的角色在 name 欄
+        const charaOf = {};
+        (DB.events || []).forEach(e => { charaOf[e.id] = e.chara; });
+        const rows0 = all.map(r => Object.assign({}, r, {
+          attr: attrOf[r.id] || '',
+          chara: isWL ? (r.name || r.chara || '') : (r.chara || charaOf[r.id] || ''),
+        }));
+        // 複選：空陣列＝不限；有選就是「任一符合」
+        const sel = v => (Array.isArray(v) ? v : (v && v !== 'all' ? [v] : []));
+        const anyOf = (list, val) => !list.length || list.indexOf(String(val)) >= 0;
+        const fType = sel(s.bdbType), fUnit = sel(s.bdbUnit), fDays = sel(s.bdbDays),
+              fAttr = sel(s.bdbAttr), fChara = sel(s.bdbChara);
+        const pass = r => anyOf(fType, r.type) && anyOf(fUnit, r.unit)
+          && anyOf(fDays, r.days) && anyOf(fAttr, r.attr) && anyOf(fChara, r.chara);
         const hit = rows0.filter(pass);
         const ti = Math.max(0, tiers.indexOf(+s.bdbTier));
         const val = r => (r.t || [])[ti];
@@ -4650,10 +4691,16 @@ class Component extends DCLogic {
         const shown = sorted.slice(0, s.bdbN);
         const scores = hit.map(val).filter(v => v);
         const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-        const mkChips = (list, cur, key, fmt) =>
-          [{ v: 'all', n: '全部' }].concat(list.map(x => ({ v: String(x), n: fmt ? fmt(x) : String(x) })))
-            .map(x => Object.assign({}, x, chip(String(cur) === x.v, 'var(--cta)'),
-              { fg: String(cur) === x.v ? '#fff' : 'var(--text)', k: key }));
+        // 複選 chips：「全部」＝清空該維度；其餘各自可切換，選中的用實心底
+        const mkChips = (list, curArr, key, fmt) => {
+          const cur = sel(curArr);
+          return [{ v: '', n: '全部' }].concat(list.map(x => ({ v: String(x), n: fmt ? fmt(x) : String(x) })))
+            .map(x => {
+              const on = x.v === '' ? !cur.length : cur.indexOf(x.v) >= 0;
+              return Object.assign({}, x, chip(on, 'var(--cta)'),
+                { fg: on ? '#fff' : 'var(--text)', k: key });
+            });
+        };
         return {
           bdbBusy: false, bdbErrMsg: s.bdbErr, bdbOn: true,
           bdbWLChips: [{ v: '0', n: '一般活動' }, { v: '1', n: 'World Link' }]
@@ -4666,6 +4713,9 @@ class Component extends DCLogic {
           bdbDayChips: mkChips([...new Set(rows0.map(r => r.days).filter(d => d))].sort((a, b) => a - b),
             s.bdbDays, 'bdbDays', d => d + ' 天'),
           bdbAttrChips: isWL ? [] : mkChips(uniq(rows0, 'attr'), s.bdbAttr, 'bdbAttr'),
+          bdbCharaChips: mkChips(uniq(rows0, 'chara').sort(), s.bdbChara, 'bdbChara'),
+          bdbFilterHint: (fType.length + fUnit.length + fDays.length + fAttr.length + fChara.length)
+            ? '各欄可複選，同欄任一符合即算；「全部」清除該欄' : '各欄可複選（點多個條件）',
           bdbSortChips: [{ v: 'id', n: '依期數' }, { v: 'score', n: '依分數排行' }]
             .map(x => Object.assign({}, x, chip(s.bdbSort === x.v, 'var(--cta)'),
               { fg: s.bdbSort === x.v ? '#fff' : 'var(--text)' })),
@@ -4675,12 +4725,20 @@ class Component extends DCLogic {
             { l: '最高', v: scores.length ? this.short(Math.max(...scores)) : '—' },
             { l: '最低', v: scores.length ? this.short(Math.min(...scores)) : '—' },
           ],
-          bdbCols: s.mobile ? '52px minmax(0,1fr) 86px' : '58px minmax(0,1fr) 108px 76px 92px 68px',
+          bdbCols: s.bdbSort === 'score'
+            ? (s.mobile ? '78px minmax(0,1fr) 86px' : '86px minmax(0,1fr) 108px 76px 92px 68px')
+            : (s.mobile ? '52px minmax(0,1fr) 86px' : '58px minmax(0,1fr) 108px 76px 92px 68px'),
           bdbMinW: s.mobile ? '0' : '620px',
           bdbWide: !s.mobile,
           bdbRows: shown.map((r, i) => ({
-            rk: s.bdbSort === 'score' ? '#' + (i + 1) : ('#' + r.id),
-            name: r.name, chara: r.chara || '—', unit: r.unit || '—',
+            // 排行時也要看得出是哪一期（原本是 1~N 流水號，看不出對應哪場活動）
+            rk: '#' + r.id,
+            no: s.bdbSort === 'score' ? (i + 1) : 0,
+            hasNo: s.bdbSort === 'score',
+            // WL 的「活動名稱」欄放的是章節角色，且要標出是第幾屆，否則 176.1 看不出 WL1 還 WL2
+            name: isWL ? ((r.round ? r.round + '　' : '') + (r.name || r.chara || '—')) : r.name,
+            chara: isWL ? (r.round || '—') : (r.chara || '—'),
+            unit: r.unit || '—',
             days: r.days ? r.days + ' 天' : '—', type: r.type || '—',
             score: val(r) ? this.n(val(r)) : '—',
             bg: i % 2 ? 'transparent' : 'color-mix(in oklab,var(--accent) 3%,transparent)',
@@ -5345,6 +5403,7 @@ class Component extends DCLogic {
       scoreHint: s.scoreMode === 'calc'
         ? '用譜面係數 × 綜合力 × 技能倍率推算分數：' + this.n(epR.score) + ' 分'
         : '直接使用你輸入的分數：' + this.n(+s.score || 0) + ' 分',
+      isCtrlTab: s.ctab === 'ctrl',
       hasEffTable: s.ctab === 'eff', effRows, effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
       effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
       hasPlanCards: s.ctab === 'plan',
@@ -5410,7 +5469,7 @@ class Component extends DCLogic {
           { name: 'Sekaipedia', url: 'https://www.sekaipedia.org/', sub: '英文' }
         ]},
         { label: '社群資料表', items: [
-          { name: '台服全榜線紀錄', url: 'https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing', sub: 'good果汁・歷期榜線＋活動一覽＋各期排行，可篩選（電腦版）' },
+          { name: '台服全榜線紀錄', url: 'https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing', sub: 'good果汁・歷期榜線＋活動一覽＋各期排行（原表篩選器需電腦版）' },
           { name: '台服 WL 榜線紀錄', url: 'https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing', sub: 'good果汁・WL 各章榜線，附角色配色與排行' },
           { name: '控分表', url: 'https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link', sub: 'good果汁・各曲控分基準' },
           { name: 'WL 交換所規劃表', url: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link', sub: 'good果汁・World Link 交換所資源規劃' }
@@ -5447,12 +5506,22 @@ class Component extends DCLogic {
       // 切換一般/WL 要把篩選全部重置 —— 兩邊的團體、活動長度值域完全不同,
       // 留著舊條件會篩出 0 筆,看起來像壞掉
       onBdbWL: e => this.setState({ bdbWL: e.currentTarget.dataset.v === '1', bdbTier: 100,
-        bdbType: 'all', bdbUnit: 'all', bdbDays: 'all', bdbAttr: 'all', bdbSort: 'id', bdbN: 40 }),
+        bdbType: [], bdbUnit: [], bdbDays: [], bdbAttr: [], bdbChara: [], bdbSort: 'id', bdbN: 40 }),
       onBdbTier: e => this.setState({ bdbTier: +e.currentTarget.dataset.v }),
-      onBdbFilter: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: d.v, bdbN: 40 }); },
+      // 複選：空 value＝清空該維度；否則在陣列裡切換
+      onBdbFilter: e => {
+        const d = e.currentTarget.dataset;
+        this.setState(s2 => {
+          const cur = Array.isArray(s2[d.k]) ? s2[d.k] : [];
+          if (!d.v) return { [d.k]: [], bdbN: 40 };
+          const i = cur.indexOf(d.v);
+          return { [d.k]: i >= 0 ? cur.filter(x => x !== d.v) : cur.concat(d.v), bdbN: 40 };
+        });
+      },
       onBdbSort: e => this.setState({ bdbSort: e.currentTarget.dataset.v, bdbN: 40 }),
       onBdbMore: () => this.setState(s2 => ({ bdbN: s2.bdbN + 60 })),
       onExTurn: e => this.setState({ exTurn: e.currentTarget.dataset.v }),
+      onExCh: e => this.setState({ exCh: +e.currentTarget.dataset.v }),
       onDollFold: () => this.setState(s2 => ({ dollOpen: !s2.dollOpen })),
       onGamesRange: e => this.setState({ gamesRange: e.currentTarget.dataset.v, gamesPick: -1 }),
       onGamesPick: e => { const i = +e.currentTarget.dataset.i; this.setState(s2 => ({ gamesPick: s2.gamesPick === i ? -1 : i })); },
