@@ -2683,7 +2683,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         //   solo / auto / challenge：100 + ⌊score/20000⌋
         //   multi / cheer         ：⌊(score + 0.075×綜合力×5)/17000⌋ + 123
         // 2026-08-09 前 core.js 另用 110+⌊S/17000⌋+min(13,⌊O/34萬⌋)(O=隊友合計分數),
-        // 與 ep-calculator 互相矛盾且系統性低估 4~9%,站長裁定以 ep-calculator 為準,已淘汰。
+        // 與 ep-calculator 互相矛盾且系統性低估 4~9%,改以 ep-calculator 為準,已淘汰。
         // 差異在隊友貢獻:舊式要你估隊友分數再換算(上限 +13),新式固定給滿 +13(123−110),
         // 改由「0.075×綜合力×5」把自己的綜合力折進分數項——所以協力場要餵綜合力,不是隊友分數。
         const epBase = (mode, score, power) => (mode === 'multi' || mode === 'cheer')
@@ -5136,7 +5136,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
         // ========== 二十五:B30 產生器(Unibot 版面高還原+PNG 匯出) ==========
         // 定數:腐食氏「プロセカ難易度表」(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
-        // 実効值:AP=定數;FC=定數−1(站長指定,取代 Unibot 的 −1.5/−1 分段) — 非官方
+        // 実効值:AP=定數;FC=定數−1(本站採用,取代 Unibot 的 −1.5/−1 分段) — 非官方
         // 台服公開 API 沒有逐曲成績(只有各難度 AP/FC 總數),所以譜面成績採手動勾選
         const B30Maker = {
             _loaded: false, _loading: false, _built: false,
