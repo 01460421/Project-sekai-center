@@ -902,6 +902,7 @@
         .b30-const{ flex:none; width:54px; font-weight:800; font-family:var(--font-num); color:var(--primary); }
         .b30-diff{ flex:none; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:800; color:#fff; background:#BB33EE; }
         .b30-diff.append{ background:#222; }
+        .b30-diff.expert{ background:#EE4466; }
         .b30-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .b30-st{ flex:none; width:26px; text-align:right; font-weight:800; font-size:12px; color:var(--text-light); }
         .b30-row.st1 .b30-st{ color:#d6336c; }

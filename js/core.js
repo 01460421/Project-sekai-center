@@ -5145,7 +5145,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             F: { q: '', d: 'all', band: 'all', sv: 'all' },   // sv:曲庫範圍 all/tw/jp(日服限定曲 jp=1)
             shown: 80,
             ASSET: 'https://storage.sekai.best/sekai-jp-assets',
-            COLOR: { master: '#BB33EE', append: '#000000' },
+            COLOR: { master: '#BB33EE', append: '#000000', expert: '#EE4466' },
             // 定數「+」記號的兩種用法(使用者指定):plus=保留符號、num=數值化計算
             // + = +0.05;++ = +0.09999999(緊貼下一帶但嚴格小於——顯示四捨五入成下一帶值,
             // 排序永遠保持在真正下一帶譜面「後面」,如 34.9++ 顯示 35.00 但排在 35.0 之後)
@@ -5260,7 +5260,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const F = this.F;
                 const chip = (k, v, txt) => `<button type="button" class="sa-chip${F[k] === v ? ' on' : ''}" onclick="B30Maker.setF('${k}','${v}')">${txt}</button>`;
                 const bands = ['all', '37', '36', '35', '34', '33', '32', '31', '30', '29', '低'];
-                el.innerHTML = `${chip('d', 'all', '全部難度')}${chip('d', 'master', 'MASTER')}${chip('d', 'append', 'APPEND')}
+                el.innerHTML = `${chip('d', 'all', '全部難度')}${chip('d', 'master', 'MASTER')}${chip('d', 'append', 'APPEND')}${chip('d', 'expert', 'EXPERT')}
                     <span class="sa-sep"></span>${chip('sv', 'all', '台+日服')}${chip('sv', 'tw', '僅台服')}${chip('sv', 'jp', '僅日服限定')}
                     <span class="sa-sep"></span>${bands.map(b => chip('band', b, b === 'all' ? '全定數' : b === '低' ? '≤28' : b)).join('')}
                     <input type="text" class="sa-q" placeholder="搜尋曲名…" value="${F.q.replace(/"/g, '&quot;')}" oninput="B30Maker.F.q=this.value.trim();B30Maker.shown=80;B30Maker.renderList()">
@@ -5289,7 +5289,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const el = document.getElementById('b30List'); if (!el) return;
                 const rows = this.filtered();
                 const show = rows.slice(0, this.shown);
-                el.innerHTML = `<div class="note" style="margin:8px 0;">符合 ${rows.length} 譜面(MASTER ${this.D().charts.filter(c => c.d === 'master').length}+APPEND ${this.D().charts.filter(c => c.d === 'append').length},含日服限定 ${this.D().charts.filter(c => c.jp).length})</div>
+                el.innerHTML = `<div class="note" style="margin:8px 0;">符合 ${rows.length} 譜面(MASTER ${this.D().charts.filter(c => c.d === 'master').length}+APPEND ${this.D().charts.filter(c => c.d === 'append').length}+EXPERT ${this.D().charts.filter(c => c.d === 'expert').length},含日服限定 ${this.D().charts.filter(c => c.jp).length})</div>
                     <div class="b30-rows">${show.map(c => this.rowHtml(c)).join('')}</div>
                     ${rows.length > this.shown ? `<button type="button" class="sa-more" onclick="B30Maker.shown+=120;B30Maker.renderList()">顯示更多(還有 ${rows.length - this.shown})</button>` : ''}`;
             },
@@ -5297,7 +5297,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const k = this.key(c), m = this.marks[k] | 0;
                 return `<button type="button" class="b30-row st${m}" id="b30r_${k}" onclick="B30Maker.cycle('${k}')">
                     <span class="b30-const${c.e ? ' est' : ''}"${c.e ? ' title="難易度表未收錄(日服未實裝),以遊戲內等級+0.5 推估"' : ''}>${this.cTxt(c)}${c.e ? '<i>推估</i>' : ''}</span>
-                    <span class="b30-diff ${c.d}">${c.d === 'master' ? 'MAS' : 'APD'} ${c.lv}</span>
+                    <span class="b30-diff ${c.d}">${{ master: 'MAS', append: 'APD', expert: 'EXP' }[c.d] || c.d} ${c.lv}</span>
                     ${c.jp ? '<span class="b30-jp" title="日服限定,台服未實裝">日服</span>' : ''}
                     <span class="b30-title" title="${(c.tc ? c.tc + ' / ' : '') + c.t}">${this.name(c)}</span>
                     <span class="b30-st">${m === 2 ? 'AP' : m === 1 ? 'FC' : '—'}</span>

@@ -177,10 +177,34 @@ def main():
                 row['tc'] = tr.strip()   # 社群中文譯名(顯示用;搜尋中日皆可)
             charts.append(row)
 
+    # EXPERT 高難度(Lv28~32):腐食氏的難易度表只收 MASTER/APPEND,沒有 EXPERT 定數。
+    # 站長指定「定數用 .0」—— 直接拿遊戲內等級當定數(Lv29 → 29.0),不做任何推估,
+    # 所以不標 e=1(那是「推估」的意思,這裡是明確規則)。
+    tc_by_id = {mu['id']: mu for mu in tc_musics}
+    EXP_MIN, EXP_MAX = 28, 32
+    exp_n = 0
+    for d in tc_diffs:
+        if d['musicDifficulty'] != 'expert':
+            continue
+        if not (EXP_MIN <= d['playLevel'] <= EXP_MAX):
+            continue
+        mu = tc_by_id.get(d['musicId'])
+        if not mu:
+            continue
+        row = {
+            'id': mu['id'], 'd': 'expert', 'lv': d['playLevel'],
+            'c': float(d['playLevel']),           # 定數＝等級，整數 .0
+            'jkt': mu['assetbundleName'], 't': mu['title'],
+        }
+        tr = zh.get(mu['id'])
+        if tr and tr.strip() and tr.strip() != mu['title']:
+            row['tc'] = tr.strip()
+        charts.append(row)
+        exp_n += 1
+
     # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,腐食表自然不會收)
     # → 用遊戲內等級 +0.5 當中位推估,標 e=1 讓前端顯示「推估」並可排除
     have = {(c['id'], c['d']) for c in charts}
-    tc_by_id = {mu['id']: mu for mu in tc_musics}
     est = []
     for d in tc_diffs:
         key = (d['musicId'], d['musicDifficulty'])
@@ -202,7 +226,7 @@ def main():
 
     PLUS_ADD = [0, 0.05, 0.09999999]
     charts.sort(key=lambda x: (-(x['c'] + PLUS_ADD[x.get('p', 0)]), x.get('e', 0)))
-    print(f'共 {len(charts)} 譜面(含日服限定 {jp_only})、曲名比對失敗 {len(unmatched)}')
+    print(f'共 {len(charts)} 譜面(含日服限定 {jp_only}、EXPERT{EXP_MIN}-{EXP_MAX} {exp_n})、曲名比對失敗 {len(unmatched)}')
     print(f'難易度表未收錄、以等級+0.5 推估: {len(est)} 譜面 {est}')
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
