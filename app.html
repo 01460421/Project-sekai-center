@@ -1035,7 +1035,41 @@ input::placeholder{color:var(--text-3)}
             <div style="font-family:'M PLUS Rounded 1c';word-break:break-all">{{ formulaText }}</div>
             <div style="margin-top:6px;font-size:11px;color:var(--text-3)">{{ formulaNote }}</div>
             <sc-if value="{{ isCtrlTab }}">
-              <a href="https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-size:11.5px;font-weight:700;text-decoration:none">開啟 good果汁的控分表 ↗</a>
+              <!-- 達成方案：同一組配置打 N 局，分數落在區間內就會剛好命中 -->
+              <sc-if value="{{ ctrlHasPlans }}">
+                <div style="margin-top:12px;border:1px solid var(--border);border-radius:14px;background:var(--card);overflow-x:auto">
+                  <div style="min-width:420px">
+                    <div style="display:grid;grid-template-columns:96px 58px 76px minmax(0,1fr) 52px;gap:8px;padding:9px 13px;border-bottom:1px solid var(--border);font-size:10.5px;font-weight:800;color:var(--text-3)">
+                      <span>體力</span><span>局數</span><span style="text-align:right">每局 P</span><span style="text-align:right">歌曲分數</span><span style="text-align:right">總耗</span>
+                    </div>
+                    <sc-for list="{{ ctrlPlans }}" as="p" hint-placeholder-count="6">
+                      <div style="display:grid;grid-template-columns:96px 58px 76px minmax(0,1fr) 52px;gap:8px;padding:9px 13px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
+                        <span style="color:var(--accent-deep);font-weight:700">{{ p.energy }}</span>
+                        <span style="font-family:'M PLUS Rounded 1c'">{{ p.games }}</span>
+                        <span style="text-align:right;font-family:'M PLUS Rounded 1c'">{{ p.per }}</span>
+                        <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--ink);font-weight:700">{{ p.score }}</span>
+                        <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-3)">{{ p.cost }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="font-size:10.5px;color:var(--text-3);margin-top:6px">依省體力排序；同一列的分數區間內任何分數都會得到同樣的活動P。</div>
+              </sc-if>
+
+              <!-- 目前加成湊不出來時：最接近且能精準命中的加成 -->
+              <sc-if value="{{ ctrlHasAlts }}">
+                <div style="margin-top:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);padding:11px 14px">
+                  <div style="font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:7px">最相近且能精準命中的加成</div>
+                  <sc-for list="{{ ctrlAlts }}" as="a" hint-placeholder-count="4">
+                    <div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid var(--border);font-size:11.5px">
+                      <span style="color:var(--accent-deep);font-weight:700;font-family:'M PLUS Rounded 1c'">{{ a.bonus }}</span>
+                      <span style="color:var(--text-2);text-align:right">{{ a.detail }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <a href="https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-size:11.5px;font-weight:700;text-decoration:none">開啟 good果汁的控分表 ↗</a>
             </sc-if>
           </div>
         </sc-if>
@@ -2440,6 +2474,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/12', t: '控分改為反推達成方案', s: '原本的控分只是「輸入分數看活動P」的查詢,方向反了。改成真正的控分:輸入目前活動P 與目標活動P,反推出所有能「剛好命中」差額的配置 —— 每個方案列出要不要用火(火倍率)、打幾局、每局幾 P、歌曲分數要落在哪個區間、總共耗多少體力,依省體力排序。分數給的是區間而不是單一數字,因為活動P 無條件捨去,同一個 2 萬級距內的分數都會得到同樣的 P。若目前加成湊不出剛好的數字(活動P 是整數,乘上火倍率後未必整除),會另外列出「最相近且能精準命中的加成」,方便用換卡微調加成去對。方案會排除打不出來的分數(單人場上限約 260 萬)。' },
     { d: '2026/08/12', t: 'B30 納入 EXPERT 28-32', s: 'B30 曲庫加入 EXPERT 難度 Lv28~32 的譜面(台服現有 36 張:Lv28 十五張、29 五張、30 六張、31 十張)。腐食氏的難易度表只收 MASTER 與 APPEND,沒有 EXPERT 定數,所以直接以遊戲內等級當定數(Lv31 → 31.0),不做推估、也不標「推估」記號。難度標籤為紅色 EXP,篩選列可單獨切出 EXPERT。曲庫總數 849 → 885。' },
     { d: '2026/08/12', t: '榜線資料庫調整', s: '篩選改為複選 —— 活動型態、團體、長度、屬性都能同時選多個,同欄任一符合即算,並新增 Banner 角色篩選。依分數排行時改成顯示實際期數(原本是 1~N 流水號,看不出對應哪場活動)。World Link 的列補上屆數,現在看得出是 WL1 還 WL2。交換所的總需求原本固定按 6 個章節算,但一般 WL 只有 4 章、終章才 6 章,已改成可切換,超出的章節會標灰且不計入。控分速查移除四格衍生數字(反而混淆),改成一句話講清楚「再打幾分會多 1 點」,並附上原表連結;輸入欄位改稱「歌曲分數」。原表的說明也修正:那份表的篩選器需要電腦版操作、手機仍可檢視,而站上的榜線資料庫手機也能篩;控分表則只收錄独りんぼエンヴィー(蝦)單人 0 體,不是各曲。' },
     { d: '2026/08/12', t: '控分速查', s: '計算中心新增「控分速查」分頁。活動P 是無條件捨去的,所以分數落在同一個 2 萬級距內、活動P 完全一樣 —— 控分就是別把分數浪費在級距中間。輸入目前分數與加成,會算出單局活動P、目前所在級距、再多拿 1 點需要幾分、以及這一局已經浪費了多少分。概念與計算源自 good果汁 改良的控分表(原作 SYLVIA0x0)。' },
@@ -2573,6 +2608,7 @@ class Component extends DCLogic {
     bdbDays: [], bdbAttr: [], bdbType: [], bdbUnit: [], bdbChara: [],
     bdbSort: 'id', bdbWL: false, bdbN: 40,
     exTurn: 'WL3', exCh: 4,   // 交換所預設最新一屆、一般 4 章
+    ctrlNow: 0, ctrlGoal: 3000,   // 控分:目前/目標活動P(用途是最後微調,差額通常幾百~幾千)
     wlCh: 0, pastWlCh: 0, wlOpen: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
@@ -4295,30 +4331,75 @@ class Component extends DCLogic {
       /* 控分速查：活動P 是無條件捨去的，所以分數在同一個 20,000 級距內活動P 一樣。
          想多拿 1 點就得跨過下一階 —— 「還差多少分」正是控分要知道的事。
          概念與計算源自 good果汁 改良的控分表（原作 SYLVIA0x0）。 */
-      calcInputTitle = '控分速查';
+      calcInputTitle = '控分（反推達成方案）';
       calcFields = [
-        { k: 'score', label: '歌曲分數', value: s.score },
-        { k: 'bonus', label: '活動加成 %', value: s.bonus }
+        { k: 'ctrlNow', label: '目前活動P', value: s.ctrlNow },
+        { k: 'ctrlGoal', label: '目標活動P', value: s.ctrlGoal },
+        { k: 'bonus', label: '活動加成 %（留原值＝就用這個加成）', value: s.bonus }
       ];
-      const sc = Math.max(0, +s.score || 0), bo = +s.bonus || 0;
-      const step = 20000;                       // solo 場每 20,000 分 +1 base
-      const baseAt = v => 100 + Math.floor(v / step);
-      const epAt = v => Math.floor(baseAt(v) * (1 + bo / 100));
-      const cur = epAt(sc);
-      // 往上找下一個「活動P 真的會變多」的分數（加成低時可能要跨好幾階才加得到 1 點）
-      let nextScore = (Math.floor(sc / step) + 1) * step;
-      for (let i = 0; i < 400 && epAt(nextScore) <= cur; i++) nextScore += step;
-      resultLabel = '單局活動 P';
-      resultValue = this.n(cur);
-      resultSub = '分數 ' + this.n(sc) + ' · 加成 ' + bo + '% · 目前級距 '
-        + this.n(Math.floor(sc / step) * step) + ' ～ ' + this.n((Math.floor(sc / step) + 1) * step - 1);
-      // 原本這裡放了四格衍生數字（再多 1P 要幾分／下一階／浪費／每階 P），
-      // 實際使用回饋:這四格反而混淆 —— 真正要知道的就一句:再多幾分會多 1 點。
+      const now = Math.max(0, +s.ctrlNow || 0), goal = Math.max(0, +s.ctrlGoal || 0);
+      const bo = +s.bonus || 0;
+      const D = goal - now;                      // 還差多少活動P
+      const step = 20000;                        // 單人場每 20,000 分 base +1
+      // 單局活動P ＝ ⌊base × (1+加成)⌋ × 火倍率；base ＝ 100 + ⌊歌曲分數/20000⌋。
+      // 反推：先決定「每局要幾 P」，回推需要的 base，再換算成歌曲分數區間。
+      // 分數打得出來才算數：單人場滿分實務上約 260 萬，超過的方案沒有意義
+      const MAX_SCORE = 2600000;
+      const MAX_BASE = 100 + Math.floor(MAX_SCORE / step);
+      const rangeFor = (unit, bonus) => {
+        const k = 1 + bonus / 100;
+        const b1 = Math.ceil(unit / k);            // 最小的整數 base 使 ⌊base×k⌋ ≥ unit
+        if (Math.floor(b1 * k) !== unit) return null;   // 這個 P 值做不出來
+        if (b1 < 100 || b1 > MAX_BASE) return null;     // base 下限 100（0 分也有 100）、上限＝打得出來的分數
+        return { base: b1, s1: (b1 - 100) * step, s2: (b1 - 100 + 1) * step - 1 };
+      };
+      const ENERGY = [0, 1, 2, 3, 5, 7, 10];
+      const plans = [];
+      if (D > 0) {
+        for (const f of ENERGY) {
+          const m = this.EM[f] || 1;
+          for (let n = 1; n <= 8; n++) {
+            if (D % (n * m)) continue;             // 除不盡 → 這個組合湊不出剛好
+            const r = rangeFor(D / (n * m), bo);
+            if (!r) continue;
+            plans.push(Object.assign({ f, m, n, unit: D / (n * m), energy: f * n }, r));
+          }
+        }
+        plans.sort((a, b2) => (a.energy - b2.energy) || (a.n - b2.n));   // 省體力優先，其次局數少
+      }
+      // 目前加成湊不出來時，掃鄰近加成找最接近又能精準命中的（加成可用換卡微調）
+      const alts = [];
+      if (D > 0 && !plans.length) {
+        for (let db = 1; db <= 80 && alts.length < 6; db++) {
+          for (const cand of [bo - db * 0.5, bo + db * 0.5]) {
+            if (cand < 0 || alts.some(x => x.bonus === cand)) continue;
+            for (const f of ENERGY) {
+              const m = this.EM[f] || 1;
+              for (let n = 1; n <= 4; n++) {
+                if (D % (n * m)) continue;
+                const r = rangeFor(D / (n * m), cand);
+                if (!r) continue;
+                alts.push(Object.assign({ bonus: cand, f, n, energy: f * n }, r));
+                break;
+              }
+              if (alts.some(x => x.bonus === cand)) break;
+            }
+          }
+        }
+      }
+      this._ctrlPlans = plans; this._ctrlAlts = alts;
+      resultLabel = '還差活動 P';
+      resultValue = D > 0 ? this.n(D) : (D === 0 ? '已達標' : '已超過');
+      resultSub = D > 0
+        ? ('目前 ' + this.n(now) + ' → 目標 ' + this.n(goal) + ' · 加成 ' + bo + '% · ' + plans.length + ' 種精準組合')
+        : (D === 0 ? '剛好等於目標' : ('超過目標 ' + this.n(-D) + ' P'));
       resultStats = [];
-      formulaText = '單局活動P ＝ ⌊(100 ＋ ⌊分數 / 20,000⌋) × (1 ＋ 加成/100)⌋（單人場）';
-      formulaNote = '再打 ' + this.n(nextScore - sc) + ' 分（到 ' + this.n(nextScore) + '）活動P 會變成 '
-        + this.n(epAt(nextScore)) + '。因為是無條件捨去，同一個 20,000 級距內分數再高活動P 都一樣。'
-        + '　完整控分表（独りんぼエンヴィー／蝦・單人 0 體）：good果汁 改良、原作 SYLVIA0x0。';
+      formulaText = '單局活動P ＝ ⌊(100 ＋ ⌊歌曲分數 / 20,000⌋) × (1 ＋ 加成/100)⌋ × 火倍率';
+      formulaNote = (D <= 0 ? '把目標活動P 設得比目前高，就會列出達成方案。'
+        : (plans.length
+          ? '每個方案都是「同一組配置打 N 局」；分數只要落在該區間內，總活動P 就會剛好命中差額 —— 因為活動P 無條件捨去，同一個 20,000 級距內算同一個值。'
+          : '這個差額用目前加成湊不出剛好的數字 —— 可能是差額太大（控分是給最後微調用的，幾百到幾千 P），也可能是活動P 乘上火倍率後除不盡。下方列出最接近、且能精準命中的加成。'))
+        + '　控分表原始資料（独りんぼエンヴィー／蝦・單人 0 體）：good果汁 改良、原作 SYLVIA0x0。';
     } else {
       calcInputTitle = '排位賽';
       calcFields = [
@@ -5405,6 +5486,21 @@ class Component extends DCLogic {
         ? '用譜面係數 × 綜合力 × 技能倍率推算分數：' + this.n(epR.score) + ' 分'
         : '直接使用你輸入的分數：' + this.n(+s.score || 0) + ' 分',
       isCtrlTab: s.ctab === 'ctrl',
+      ctrlPlans: (this._ctrlPlans || []).slice(0, 12).map(x => ({
+        energy: x.f === 0 ? '不用火' : ('火 ' + x.f + '（×' + x.m + '）'),
+        games: x.n + ' 局',
+        per: this.n(x.unit * x.m) + ' P',
+        score: this.n(x.s1) + ' ～ ' + this.n(x.s2),
+        cost: x.energy === 0 ? '0 體' : (x.energy + ' 體'),
+      })),
+      ctrlHasPlans: !!(this._ctrlPlans || []).length,
+      ctrlPlanMore: Math.max(0, (this._ctrlPlans || []).length - 12),
+      ctrlAlts: (this._ctrlAlts || []).slice(0, 6).map(x => ({
+        bonus: '加成 ' + x.bonus + '%',
+        detail: (x.f === 0 ? '不用火' : '火 ' + x.f) + ' × ' + x.n + ' 局・分數 '
+          + this.n(x.s1) + ' ～ ' + this.n(x.s2),
+      })),
+      ctrlHasAlts: !!(this._ctrlAlts || []).length,
       hasEffTable: s.ctab === 'eff', effRows, effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
       effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
       hasPlanCards: s.ctab === 'plan',
