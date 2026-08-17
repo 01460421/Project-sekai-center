@@ -1438,6 +1438,12 @@ input::placeholder{color:var(--text-3)}
       <iframe id="gachaSimFrame" src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
     </div>
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">機率、卡池內容與保底規則全部取自官方 master 資料（gachaCardRarityRates／gachaDetails／gachaBehaviors），不是估算值。模擬結果僅供參考，不代表實際抽卡。</div>
+
+    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">抽卡期望 · 天井 · 招募點數保底</span></div>
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="gachaCalcFrame" src="./index.html?embed=gachacalc" title="抽卡期望與保底計算" scrolling="no" style="width:100%;height:1180px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">招募點數與 300 抽天井是兩套獨立的保底：天井靠貼紙換卡，招募點數則是抽卡累積點數到門檻直接發卡。付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點。</div>
   </div>
   </sc-if>
 
@@ -2480,6 +2486,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/17', t: '招募點數保底計算器', s: '抽卡除了 300 抽天井,還有另一套獨立的「招募點數」保底:抽卡累積點數,到門檻直接保底發卡。點數換算取自官方 master data(gachaBonusPoints)——**付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點**,也就是免費抽要兩倍抽數才追平付費抽。新的計算器可輸入目前點數與手上的付費水晶／免費水晶／招募券,算出抽完後累計幾點、每個門檻還差多少,以及補足差額各需幾抽、多少水晶。常駐池是 50 點保底未持有的常駐 ★4、100 點保底該池 PU,**沒有自選檔**;四檔版本(150 自選常駐 ★4、200 自選 ★4)目前只見於 Recollection Festival 這類特殊池,已做成可切換的兩種模式。順帶把原本只有電腦長版頁才有的「抽卡期望・天井計算器」一併補進 App 的抽卡模擬頁。' },
     { d: '2026/08/12', t: '交換所章節數與定數表署名修正', s: 'WL 交換所的章節數原本只分「一般 4 章／終章 6 章」,實際上各場不同:WL2 是 OC 團 4 章、V 家 6 章;WL3 是 5 章、其中 3.2 為 6 章;終章只有一個交換所、根本不需要規劃,所以不列進選項。切換屆別時章節選項也跟著換,總需求會重算(WL2 OC 團 914,000、V 家 1,169,000、WL3 1,041,500)。另外榜線資料庫在 World Link 模式下移除「角色」欄 —— 活動欄已經寫成「WL2 實乃理」,再開一欄重複。B30 的定數表署名統一改為 pentatonic V31。' },
     { d: '2026/08/12', t: '控分改為反推達成方案', s: '原本的控分只是「輸入分數看活動P」的查詢,方向反了。改成真正的控分:輸入目前活動P 與目標活動P,反推出所有能「剛好命中」差額的打法。**可以分段** —— 不同火倍率混搭往往比單一配置更容易湊到剛好(例如差額 1,234 用單一配置無解,分兩段就有 13 種解法)。每個方案列出各段要不要用火、打幾局、每局幾 P、歌曲分數落在哪個區間,以及總耗體力,依省體力排序。分數給的是區間而非單一數字,因為活動P 無條件捨去,同一個 2 萬級距內都算同一個值。若目前加成湊不出剛好的數字(活動P 是整數,乘上火倍率後未必整除),會列出「最相近且能精準命中的加成」,方便用換卡微調去對。差額上限一萬 —— 超過那個量直接照平常打就好,控分是為了最後精準收尾;方案也會排除打不出來的分數(單人場上限約 260 萬)。' },
     { d: '2026/08/12', t: 'B30 納入 EXPERT 28-32', s: 'B30 曲庫加入 EXPERT 難度 Lv28~32 的譜面(台服現有 36 張:Lv28 十五張、29 五張、30 六張、31 十張)。pentatonic V31 的難易度表只收 MASTER 與 APPEND,沒有 EXPERT 定數,所以直接以遊戲內等級當定數(Lv31 → 31.0),不做推估、也不標「推估」記號。難度標籤為紅色 EXP,篩選列可單獨切出 EXPERT。曲庫總數 849 → 885。' },
@@ -2760,9 +2767,9 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : id === 'gachaCalcFrame' ? 600 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);

@@ -14,10 +14,10 @@
     try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
     var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
-    <link rel="stylesheet" href="css/core.css?v=9e67b91be6">
+    <link rel="stylesheet" href="css/core.css?v=992b5346df">
 </head>
 <body>
-    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='shop')document.body.classList.add('embed-shop');else if(_e==='b30')document.body.classList.add('embed-b30');}catch(e){}</script>
+    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='gachacalc')document.body.classList.add('embed-gachacalc');else if(_e==='shop')document.body.classList.add('embed-shop');else if(_e==='b30')document.body.classList.add('embed-b30');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
@@ -1101,6 +1101,31 @@
                 <div class="chart-container" style="margin-top:14px;"><canvas id="gcChart" width="900" height="220"></canvas></div>
                 <div class="note">曲線:抽數(0→天井)對「至少中 1 張目標卡」的機率 P(N)=1−(1−p)^N;垂直線為天井。可見指定 PU 即使抽到 300 仍約 30% 摃龜,需靠天井保底。</div>
             </div>
+
+            <h3 style="margin-top:26px;">招募點數保底 <span class="en">Gacha Bonus Point</span></h3>
+            <div class="note">抽卡累積「招募點數」,到門檻直接保底發卡,與 300 抽天井各自獨立計算。點數換算依官方資料:<b>付費水晶一抽 1 點</b>、<b>免費水晶／招募券一抽 0.5 點</b>,亦即免費抽要兩倍抽數才追平付費抽。</div>
+            <div class="calculator">
+                <div class="gb-grid">
+                    <div class="calc-section">
+                        <h4>輸入參數</h4>
+                        <div class="calc-row"><label>卡池類型</label>
+                            <select id="gbMode" onchange="GachaBonus.calc()">
+                                <option value="normal">常駐池(50／100 兩檔)</option>
+                                <option value="rf">Recollection Festival 型(四檔含自選)</option>
+                            </select>
+                        </div>
+                        <div class="calc-row"><label>目前點數</label><input type="number" id="gbHave" value="0" min="0" step="0.5" oninput="GachaBonus.calc()"></div>
+                        <div class="calc-row"><label>持有付費水晶</label><input type="number" id="gbPaid" value="0" min="0" oninput="GachaBonus.calc()"></div>
+                        <div class="calc-row"><label>持有免費水晶</label><input type="number" id="gbFree" value="30000" min="0" oninput="GachaBonus.calc()"></div>
+                        <div class="calc-row"><label>持有招募券</label><input type="number" id="gbTicket" value="0" min="0" oninput="GachaBonus.calc()"></div>
+                    </div>
+                    <div class="calc-section">
+                        <h4>保底進度</h4>
+                        <div id="gbResult" style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:150px;"></div>
+                    </div>
+                </div>
+                <div class="note">常駐池為 50 點保底未持有的常駐 ★4、100 點保底該池 PU,<b>沒有自選檔</b>。四檔(150 自選常駐 ★4、200 自選 ★4)目前僅見於 Recollection Festival 這類特殊池。部分小型卡池的 50／100 只給道具而非卡片,以遊戲內卡池頁顯示為準。</div>
+            </div>
         </section>
 
         <!-- 二十二、排位賽計算 -->
@@ -1257,14 +1282,14 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=9c4083f378"></script>
+    <script src="js/core.js?v=b3e8b58c24"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
         try{
             var mode = new URLSearchParams(location.search).get('embed');
-            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha' && mode !== 'gachasim' && mode !== 'shop' && mode !== 'b30') return;
-            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : mode === 'gachasim' ? 'embed-gachasim' : mode === 'shop' ? 'embed-shop' : mode === 'b30' ? 'embed-b30' : 'embed-calc');
+            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha' && mode !== 'gachasim' && mode !== 'gachacalc' && mode !== 'shop' && mode !== 'b30') return;
+            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : mode === 'gachasim' ? 'embed-gachasim' : mode === 'gachacalc' ? 'embed-gachacalc' : mode === 'shop' ? 'embed-shop' : mode === 'b30' ? 'embed-b30' : 'embed-calc');
             if(mode === 'calc'){
                 var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
                 var bar = document.createElement('div');

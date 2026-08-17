@@ -785,6 +785,23 @@
         body.embed-deck .container > section#deck-detail{ display:block !important; }
         body.embed-gacha .container > section#gacha-detail{ display:block !important; }
         body.embed-gachasim .container > section#gacha-sim{ display:block !important; }
+        /* 招募點數保底：輸入欄窄、保底進度表寬，四欄表格才不會擠成一團 */
+        .gb-grid{ display:grid; grid-template-columns:minmax(200px,.8fr) minmax(320px,2fr); gap:16px; }
+        /* grid item 預設 min-width:auto,表格會把欄位撐爆版面,必須歸零才會交給 overflow-x 捲動 */
+        .gb-grid > *{ min-width:0; }
+        .gb-grid table th{ font-size:12px; color:var(--text-light); font-weight:700; padding:6px 8px; border-bottom:1px solid var(--border); white-space:nowrap; }
+        .gb-grid table td{ padding:9px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+        .gb-grid table tr:last-child td{ border-bottom:none; }
+        @media (max-width:720px){ .gb-grid{ grid-template-columns:1fr; }
+            /* 手機：四欄壓在 270px 會擠成一團,改成整表橫向捲動 */
+            .gb-grid table{ min-width:430px; } }
+        /* ===== 內嵌抽卡期望·天井·招募點數（?embed=gachacalc）：app「抽卡模擬」頁下半 ===== */
+        body.embed-gachacalc{ padding:0 !important; margin:0 !important; }
+        body.embed-gachacalc #siteNav, body.embed-gachacalc .m-dock, body.embed-gachacalc .to-top, body.embed-gachacalc header#top, body.embed-gachacalc .toc, body.embed-gachacalc footer, body.embed-gachacalc .embed-tabbar{ display:none !important; }
+        body.embed-gachacalc .container{ max-width:980px; margin:0 auto; padding:0 14px 30px; }
+        body.embed-gachacalc .container > section{ display:none !important; }
+        body.embed-gachacalc .container > section#gacha-calc{ display:block !important; }
+        body.embed-gachacalc .container > section#gacha-calc > h2{ display:none !important; }
         /* ===== 內嵌儲值分析（?embed=shop）：app「儲值分析」頁 ===== */
         body.embed-shop{ padding:0 !important; margin:0 !important; }
         body.embed-shop #siteNav, body.embed-shop .m-dock, body.embed-shop .to-top, body.embed-shop header#top, body.embed-shop .toc, body.embed-shop footer, body.embed-shop .embed-tabbar{ display:none !important; }

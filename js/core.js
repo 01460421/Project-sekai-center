@@ -3145,6 +3145,51 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        // ========== 二十一之二:招募點數保底 ==========
+        // 點數換算取自 master data gachaBonusPoints:付費水晶 1 點/抽、免費水晶 0.5、招募券 0.5。
+        // 門檻:常駐池為官方公告的 50/100 兩檔;四檔(含自選)目前只見於 Recollection Festival
+        // 這類特殊池(gachaBonusItemReceivableRewards group 1),常駐池沒有自選檔。
+        const GachaBonus = {
+            PT: { paid: 1, free: 0.5, ticket: 0.5 },
+            COST: 300,
+            MODES: {
+                normal: [[50, '未持有的常駐 ★4(隨機)'], [100, '該池 PU ★4']],
+                rf: [[50, '未持有的常駐 ★4(隨機)'], [100, '未持有的 ★4(含期間限定／彩 FES)'], [150, '自選常駐 ★4'], [200, '自選 ★4(含期間限定／彩 FES)']],
+            },
+            calc() {
+                const v = id => +(document.getElementById(id) || {}).value || 0;
+                const mode = (document.getElementById('gbMode') || {}).value || 'normal';
+                const have = v('gbHave'), paid = v('gbPaid'), free = v('gbFree'), tk = v('gbTicket');
+                const paidPulls = Math.floor(paid / this.COST), freePulls = Math.floor(free / this.COST);
+                const gain = paidPulls * this.PT.paid + freePulls * this.PT.free + tk * this.PT.ticket;
+                const total = have + gain;
+                const fmt = n => (Math.round(n * 10) / 10).toLocaleString();
+                const rows = (this.MODES[mode] || this.MODES.normal).map(([need, rew]) => {
+                    const doneNow = have >= need, doneAfter = total >= need;
+                    // 差額以「現有點數」為基準,換算還要再抽幾次
+                    const d = Math.max(0, need - have);
+                    const nPaid = Math.ceil(d / this.PT.paid), nFree = Math.ceil(d / this.PT.free);
+                    const state = doneNow
+                        ? '<span style="color:var(--primary);font-weight:700;">已達成</span>'
+                        : doneAfter
+                            ? `<span style="color:var(--primary);">資源足夠</span><br><span style="font-size:11px;color:var(--text-light);">尚差 ${fmt(d)} 點</span>`
+                            : `尚差 <strong>${fmt(d)}</strong> 點<br><span style="font-size:11px;color:var(--text-light);">資源不足 ${fmt(need - total)} 點</span>`;
+                    const way = doneNow ? '—' :
+                        `付費 <strong>${nPaid}</strong> 抽(${(nPaid * this.COST).toLocaleString()} 付費水晶)<br>免費 <strong>${nFree}</strong> 抽(${(nFree * this.COST).toLocaleString()} 水晶)或 ${nFree} 張券`;
+                    return `<tr><td style="text-align:center;font-weight:700;">${need}</td><td>${rew}</td><td>${state}</td><td style="font-size:12px;line-height:1.7;">${way}</td></tr>`;
+                }).join('');
+                const el = document.getElementById('gbResult');
+                if (el) el.innerHTML = `<div style="font-size:13px;line-height:1.95;margin-bottom:10px;">
+                        目前點數:<strong>${fmt(have)}</strong> 點<br>
+                        現有資源可再得:<strong>${fmt(gain)}</strong> 點
+                        <span style="font-size:11px;color:var(--text-light);">(付費 ${paidPulls} 抽＋免費 ${freePulls} 抽＋券 ${tk} 張)</span><br>
+                        抽完後累計:<strong style="color:var(--primary);font-size:16px;">${fmt(total)}</strong> 點</div>
+                    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead><tr><th style="text-align:center;">點數</th><th>保底獎勵</th><th>狀態</th><th>還需抽數</th></tr></thead>
+                        <tbody>${rows}</tbody></table></div>`;
+            }
+        };
+
         // ========== 二十二:排位賽 ==========
         const RankCalc = {
             calc() {
@@ -5962,7 +6007,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 } else fn();
             };
             lazyInit('event-calc', () => EventCalc.init());
-            lazyInit('gacha-calc', () => GachaCalc.calc());
+            // 抽卡天井＋招募點數:內嵌模式(?embed=gachacalc)整頁就只有這區,直接算,不必等捲動
+            const gcInit = () => { GachaCalc.calc(); GachaBonus.calc(); };
+            if (document.body.classList.contains('embed-gachacalc')) gcInit();
+            else lazyInit('gacha-calc', gcInit);
             lazyInit('rank-match', () => { RankCalc.calc(); RankCalc.promo(); });
             lazyInit('run-studio', () => RunStudio.ensure());
             lazyInit('shop-analyzer', () => ShopAnalyzer.ensure());
