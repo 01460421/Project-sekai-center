@@ -1557,7 +1557,8 @@ input::placeholder{color:var(--text-3)}
     <!-- 榜線分析 -->
     <sc-if value="{{ anaIsBorder }}">
       <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ anaMeta }}</div>
-      <div style="padding:10px 14px;border-radius:13px;background:var(--card-2);color:var(--text-2);font-size:11.5px;line-height:1.6;margin-bottom:12px">{{ anaMethod }}</div>
+      <div style="padding:10px 14px;border-radius:13px;background:var(--card-2);color:var(--text-2);font-size:11.5px;line-height:1.6;margin-bottom:8px">{{ anaMethod }}</div>
+      <div style="padding:9px 14px;border-radius:13px;background:color-mix(in oklab,#e0576a 8%,transparent);color:var(--text-2);font-size:11px;line-height:1.6;margin-bottom:12px">{{ anaBias }}</div>
       <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
         <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
           <span style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ anaChartTitle }}</span>
@@ -1613,7 +1614,7 @@ input::placeholder{color:var(--text-3)}
               <span style="font-family:'M PLUS Rounded 1c';font-weight:700;color:var(--ink)">{{ b.score }}</span>
               <sc-if value="{{ anaWide }}"><span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ b.speed }}</span></sc-if>
               <sc-if value="{{ anaWide }}"><span style="text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:{{ b.srcBg }};color:{{ b.srcFg }};font-size:10.5px;font-weight:700">{{ b.src }}</span></span></sc-if>
-              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ b.proj }}</span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ b.proj }}<br><span title="{{ b.refTip }}" style="font-size:10px;font-weight:600;color:{{ b.refFg }};cursor:help">{{ b.ref }}</span></span>
               <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:{{ b.gapFg }}">{{ b.gap }}</span>
               <sc-if value="{{ anaWide }}"><span style="text-align:right;font-size:11.5px;color:var(--text-3)">{{ b.need }}</span></sc-if>
             </div>
@@ -3074,7 +3075,8 @@ class Component extends DCLogic {
     this._histFor = ev.id;
     try {
       const d = await fetch(this.HIST + '/' + ev.id + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
-      if (d && Array.isArray(d.samples)) { this._snapCache = null; this.setState({ hist: d }); }
+      // 換了資料就把單調修復的快取一起清掉,否則會沿用舊快照修出來的結果
+      if (d && Array.isArray(d.samples)) { this._snapCache = null; this._histFixId = null; this._wlFixKey = null; this.setState({ hist: d }); }
     } catch (e) {}
   }
   /* 公用時序 + 本機快照合併成同一條時間軸；公用的通常涵蓋整期，本機的補最近幾筆 */
@@ -3082,7 +3084,13 @@ class Component extends DCLogic {
     const h = this.state.hist;
     if (!h || h.eventId !== evId || !Array.isArray(h.samples)) return [];
     const tiers = h.tiers || [];
-    return h.samples.map(s => [s[0] * 1000, tiers.map((r, i) => [r, s[i + 1]]), null]);
+    // 主榜同樣會被 WL 期間的 API 串值污染(#176 有 71 次下降),先修單調再用。
+    // snapList 會把這份跟本機快照合併,所以圖表與實測速度都吃得到修好的資料。
+    if (this._histFixId !== evId) {
+      this._histFixId = evId;
+      this._histFix = this.fixMono(h.samples, tiers.length);
+    }
+    return this._histFix.map(s => [s[0] * 1000, tiers.map((r, i) => [r, s[i + 1]]), null]);
   }
   snapKey(evId) { return 'sekai-snap-' + evId; }
   snapPush(top, brd) {
@@ -3148,14 +3156,47 @@ class Component extends DCLogic {
     return this.mkChart(list, { key: 'border' });
   }
 
+  /* 榜線是累積活動點數,物理上只能遞增。但 World Link 活動期間 API 會回傳
+     串到別處的值 —— #176 的主榜有 71 次下降、WL ch1 有 25 次、ch3 有 58 次,
+     而且 ch1 的異常值與主榜逐位相同(T2000 在 08-09 19:27 都是
+     1,275,330 → 1,067,467),ch3 甚至出現 T3000 高於 T1000 這種不可能的排序。
+     非 WL 的 #175 與 WL ch2 則完全乾淨,所以污染跟著 WL 走。
+
+     修法是「由後往前取 running-min」:分數只增不減,所以任何一點都不該高於
+     它之後的值。污染是塞進來的高值,會被壓回合理範圍;而正常遞增的序列完全
+     不受影響 —— 拿乾淨的 ch2 驗證過,改動 0.0%,最新一筆也原封不動。
+     用 running-max 反而會把污染的高值鎖死成假平台。 */
+  fixMono(rows, n) {
+    const out = rows.map(r => r.slice());
+    for (let i = 1; i <= n; i++) {
+      let nxt = null;
+      for (let j = out.length - 1; j >= 0; j--) {
+        const x = out[j][i];
+        if (x == null) continue;
+        if (nxt != null && x > nxt) out[j][i] = nxt; else nxt = x;
+      }
+    }
+    return out;
+  }
+
   /* WL 章節的公用快照。存放格式與主榜不同:主榜是 [ts,[[rank,score]…]],
      WL 是 [ts, v1, v2, …] 依 tiers 順序對齊。key 是字串,但章節號是數字,
-     所以比對 chapter 欄位而不是直接查 key。 */
+     所以比對 chapter 欄位而不是直接查 key。
+     修過的結果做快取 —— 每個段位的圖與速度都會叫一次,1300 筆 ×13 段重算太貴。 */
   wlSnap(chapter) {
-    const w = (this.state.hist || {}).wl;
+    const h = this.state.hist || {};
+    const w = h.wl;
     if (!w) return null;
     const k = Object.keys(w).find(x => +(w[x] || {}).chapter === +chapter);
-    return k ? w[k] : null;
+    if (!k) return null;
+    const ck = (h.eventId || 0) + ':' + k;
+    if (this._wlFixKey === ck) return this._wlFix;
+    const src = w[k];
+    this._wlFixKey = ck;
+    this._wlFix = Object.assign({}, src, {
+      samples: this.fixMono(src.samples || [], (src.tiers || []).length)
+    });
+    return this._wlFix;
   }
   /* 把 WL 某段位的時序轉成 mkChart 吃的 [[ms,值]],直接重用主榜那套繪圖 */
   wlChart(chapter, rank) {
@@ -3365,6 +3406,28 @@ class Component extends DCLogic {
     const elapsedH = Math.max(0.01, Math.min(totalH, (now - st) / 3600000));
     return { id: ev.id, st, en, now, totalH, elapsedH, leftH: Math.max(0, (en - now) / 3600000), frac: elapsedH / totalH };
   }
+  /* 歷史同型態參考:從 BORDERS_DB 撈出型態與日數都相同的過去活動,給各段位的
+     歷史區間。這是資料呈現、不是預測 —— 拿 #175 回測過,單用歷史中位數當預測
+     誤差達 T100 -42%／T1000 -22%／T5000 -13%,遠比站上現行的外推差,所以只當
+     對照用,不參與預測計算。只取最近 8 期是為了避開通膨(T100 兩年來漲了約 2.8 倍)。 */
+  bdbRef(evId) {
+    const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+    if (!DB || !DB.borders) return null;
+    const me = (DB.events || []).find(e => +e.id === +evId);
+    if (!me) return null;
+    const same = DB.borders.filter(b => +b.id !== +evId && b.type === me.type && b.days === me.days)
+      .sort((a, b) => b.id - a.id).slice(0, 8);
+    if (same.length < 3) return null;                 // 樣本太少,給了也沒參考價值
+    const T = DB.tiers || [];
+    const by = {};
+    T.forEach((rk, i) => {
+      const v = same.map(b => b.t[i]).filter(x => x != null).sort((a, b) => a - b);
+      if (v.length < 3) return;
+      by[rk] = { med: v[v.length >> 1], lo: v[0], hi: v[v.length - 1], n: v.length };
+    });
+    return { type: me.type, days: me.days, n: same.length, ids: same.map(b => b.id), by };
+  }
+
   borderAnalysis() {
     const ck = this.eventClock();
     const tiers = this.bordersOf(this.state.borders);
@@ -3372,20 +3435,26 @@ class Component extends DCLogic {
     const pd = this.state.pdata || {};
     const myScore = pd.myScore != null ? pd.myScore : null;
     const mySpeed = pd.mySpeed != null ? pd.mySpeed : null;
+    const ref = this.bdbRef(ck.id);
     const rows = tiers.map(t => {
       const m = this.snapSpeed(ck.id, t.rank);
       const proj = m ? (t.score + m.speed * ck.leftH) : (t.score / ck.frac);
       const gap = myScore != null ? (t.score - myScore) : null;
       const projGap = myScore != null ? (proj - myScore - (mySpeed || 0) * ck.leftH) : null;
+      const r = ref && ref.by[t.rank];
       return {
         rank: t.rank, score: t.score,
         measured: !!m, speed: m ? m.speed : null, spanH: m ? m.hours : null,
         proj, gap,
+        // 歷史同型態的區間,單純給對照(預測仍只用當期資料算)
+        refMed: r ? r.med : null, refLo: r ? r.lo : null, refHi: r ? r.hi : null,
+        // 預測落在歷史區間的哪裡:低於歷史最低或高於最高都值得留意
+        refPos: r ? (proj < r.lo ? 'low' : proj > r.hi ? 'high' : 'in') : null,
         needH: (gap != null && gap > 0 && mySpeed > 0) ? gap / mySpeed : null,
         reach: projGap != null ? projGap <= 0 : null
       };
     });
-    return { clock: ck, rows, myScore, mySpeed, snapN: this.snapList(ck.id).length };
+    return { clock: ck, rows, myScore, mySpeed, snapN: this.snapList(ck.id).length, ref };
   }
 
   /* ---------- 玩家分析 ---------- */
@@ -3994,7 +4063,7 @@ class Component extends DCLogic {
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'rate') this.loadCards();
-    if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); }
+    if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -5018,7 +5087,7 @@ class Component extends DCLogic {
       anaQ: s.anaQ,
       ...(() => {
         const B = this.borderAnalysis();
-        if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaHasMe: false, anaLeft: '—', anaFrac: '—', anaBMore: false };
+        if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaBias: '', anaHasMe: false, anaLeft: '—', anaFrac: '—', anaBMore: false };
         // 手機預設只列 T100~T5000(一般玩家關心的區間),T1萬以上收進「顯示全部段位」
         const anaFold = s.mobile && !s.anaMoreB;
         const ck = B.clock;
@@ -5027,9 +5096,14 @@ class Component extends DCLogic {
           anaReady: true,
           anaLeft: hm(ck.leftH), anaFrac: (ck.frac * 100).toFixed(1) + '%',
           anaMeta: '第 ' + ck.id + ' 期 · 已過 ' + (ck.frac * 100).toFixed(1) + '% · 剩 ' + hm(ck.leftH),
-          anaMethod: B.rows.some(r => r.measured)
+          anaMethod: (B.rows.some(r => r.measured)
             ? ('已累積 ' + B.snapN + ' 筆本機快照，有實測速度的段位用實測推估')
-            : ('本機快照 ' + B.snapN + ' 筆，尚不足以量出速度（需間隔 30 分鐘以上），先用線性推估'),
+            : ('本機快照 ' + B.snapN + ' 筆，尚不足以量出速度（需間隔 30 分鐘以上），先用線性推估'))
+            + (B.ref ? ('。「史」為最近 ' + B.ref.n + ' 期同型態活動（' + B.ref.type + '・' + B.ref.days + ' 天）的中位數，只作對照不參與計算；'
+                + '預測低於歷史區間會標紅、高於標綠') : ''),
+          // 拿 #175 回測過:兩種外推法都會低估終線,段位越前面低估越多。誠實寫出來,
+          // 免得有人把預測值當成保證線。
+          anaBias: '外推法在末段普遍低估。以 #175 回測，活動走到六成之後，線性外推對 T5000 約低估 2～6%、T1000 約 10～13%、T100 約 14～22%，實測外推也差不多（略差一點）。要卡線的話把預測值當下限看。',
           ...(() => {
             const rk = +s.anaTier || 100;
             const c = this.histChart(ck.id, rk);
@@ -5064,6 +5138,14 @@ class Component extends DCLogic {
             srcBg: r.measured ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card-2)',
             srcFg: r.measured ? 'var(--accent-deep)' : 'var(--text-3)',
             proj: this.short(r.proj),
+            // 歷史同型態中位數,純對照。預測明顯落在歷史區間外時把顏色點出來,
+            // 提醒使用者這期偏冷/偏熱(或是預測本身有問題),但不去動預測值。
+            ref: r.refMed == null ? '' : ('史 ' + this.short(r.refMed)),
+            refFg: r.refPos === 'low' ? '#e0576a' : r.refPos === 'high' ? '#3ea76a' : 'var(--text-3)',
+            // 中位數單看很容易被當成「應該會落在這」,但同型態之間離散度其實很大
+            // (WL 的 T100 歷史值域從 3,649 萬到 1.11 億),所以把區間一起帶在提示裡
+            refTip: r.refMed == null ? '' : ('最近 ' + (B.ref ? B.ref.n : '') + ' 期同型態：'
+              + this.short(r.refLo) + ' ～ ' + this.short(r.refHi) + '（中位 ' + this.short(r.refMed) + '）'),
             gap: r.gap == null ? '—' : (r.gap <= 0 ? '已達標' : this.short(r.gap)),
             gapFg: r.gap == null ? 'var(--text-3)' : (r.gap <= 0 ? '#3ea76a' : 'var(--text)'),
             need: r.needH == null ? '—' : hm(r.needH),
