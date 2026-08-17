@@ -673,7 +673,7 @@ input::placeholder{color:var(--text-3)}
                 </div>
                 <div style="display:flex;justify-content:space-between;gap:8px;margin-top:3px;font-size:10.5px;color:var(--text-3)">
                   <span>{{ b.projSub }}</span>
-                  <span style="font-family:'M PLUS Rounded 1c';font-weight:700;color:var(--accent-deep)">預測 {{ b.proj }}</span>
+                  <span style="font-family:'M PLUS Rounded 1c';font-weight:700;color:var(--accent-deep)"><span style="font-family:inherit;color:{{ b.projTagFg }};font-weight:700">{{ b.projTag }}</span> {{ b.proj }}</span>
                 </div>
               </div>
             </sc-for>
@@ -681,6 +681,45 @@ input::placeholder{color:var(--text-3)}
           <sc-if value="{{ wlBMore }}">
             <button type="button" onClick="{{ onWlMoreB }}" style="width:100%;margin-top:9px;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">顯示全部段位 ▾</button>
           </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ wlChartHas }}">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:800;color:var(--ink)">{{ wlChartTitle }}</span>
+            <span style="font-size:11px;color:var(--text-3)">{{ wlChartN }}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:11px">
+            <sc-for list="{{ wlTierChips }}" as="c" hint-placeholder-count="13">
+              <button type="button" onClick="{{ onWlTier }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ wlChartOk }}">
+            <svg data-chart="wl" viewBox="0 0 {{ wlChartW }} {{ wlChartH }}" style="width:100%;height:auto;display:block;overflow:visible;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none">
+              <defs><linearGradient id="wlFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+              </linearGradient></defs>
+              <line x1="{{ wlChartGX1 }}" y1="{{ wlChartGHi }}" x2="{{ wlChartGX2 }}" y2="{{ wlChartGHi }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+              <line x1="{{ wlChartGX1 }}" y1="{{ wlChartGLo }}" x2="{{ wlChartGX2 }}" y2="{{ wlChartGLo }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+              <path d="{{ wlChartArea }}" fill="url(#wlFill)"></path>
+              <path d="{{ wlChartLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+              <line class="cx-line" x1="0" y1="0" x2="0" y2="0" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="2 3" style="opacity:0;transition:opacity .12s"></line>
+              <circle class="cx-dot" cx="0" cy="0" r="4" fill="var(--card)" stroke="var(--accent)" stroke-width="2.4" style="opacity:0;transition:opacity .12s"></circle>
+              <sc-for list="{{ wlChartTicks }}" as="t" hint-placeholder-count="3">
+                <text x="{{ t.x }}" y="{{ wlChartH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ t.l }}</text>
+              </sc-for>
+            </svg>
+            <div data-readout="wl" style="min-height:17px;user-select:none;-webkit-user-select:none;font-size:12px;font-weight:700;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';opacity:0;transition:opacity .12s;margin-top:6px">—</div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-top:8px">
+              <span>起 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ wlChartFirst }}</b></span>
+              <span>迄 <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ wlChartLast }}</b></span>
+              <span>期間增加 <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ wlChartGain }}</b></span>
+              <span style="color:var(--text-3)">{{ wlChartAxis }}</span>
+              <span style="color:var(--accent-deep);font-weight:800">{{ wlChartPct }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ wlChartNo }}"><div style="font-size:12px;color:var(--text-3);padding:14px 0;line-height:1.6">{{ wlChartMsg }}</div></sc-if>
         </div>
       </sc-if>
 
@@ -2623,7 +2662,7 @@ class Component extends DCLogic {
     bdbSort: 'id', bdbWL: false, bdbN: 40,
     exTurn: 'WL3', exCh: 4,   // 交換所預設最新一屆、一般 4 章
     ctrlNow: 0, ctrlGoal: 3000,   // 控分:目前/目標活動P(用途是最後微調,差額通常幾百~幾千)
-    wlCh: 0, pastWlCh: 0, wlOpen: 0,
+    wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -2976,6 +3015,10 @@ class Component extends DCLogic {
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '' });
       if (this.state.pid) this.matchMyRank(top);
       this.snapPush(top, brd);
+      // 公用快照要等 live 出來才知道期數。切頁時 live 常常還沒回,那次的
+      // loadBorderHistory 會因為拿不到 ev.id 直接放棄,所以這裡補一次;
+      // 它自己有 _histFor 去重,重複呼叫不會多打。
+      this.loadBorderHistory();
     } catch (e) {
       this.setState({ liveLoad: false, liveErr: '排名資料暫時無法載入' });
     }
@@ -3103,6 +3146,44 @@ class Component extends DCLogic {
     }).filter(Boolean);
     if (list.length < 2) return null;
     return this.mkChart(list, { key: 'border' });
+  }
+
+  /* WL 章節的公用快照。存放格式與主榜不同:主榜是 [ts,[[rank,score]…]],
+     WL 是 [ts, v1, v2, …] 依 tiers 順序對齊。key 是字串,但章節號是數字,
+     所以比對 chapter 欄位而不是直接查 key。 */
+  wlSnap(chapter) {
+    const w = (this.state.hist || {}).wl;
+    if (!w) return null;
+    const k = Object.keys(w).find(x => +(w[x] || {}).chapter === +chapter);
+    return k ? w[k] : null;
+  }
+  /* 把 WL 某段位的時序轉成 mkChart 吃的 [[ms,值]],直接重用主榜那套繪圖 */
+  wlChart(chapter, rank) {
+    const w = this.wlSnap(chapter);
+    if (!w || !Array.isArray(w.samples)) return null;
+    const i = (w.tiers || []).indexOf(+rank);
+    if (i < 0) return null;
+    const list = w.samples.map(s => [s[0] * 1000, s[i + 1]]).filter(x => x[1] != null);
+    if (list.length < 2) return null;
+    return this.mkChart(list, { key: 'wl' });
+  }
+  /* WL 某段位的實測時速。原本 WL 預測只能線性外推(當時還沒存 WL 快照),
+     現在公用快照已含 wl 欄位,能量到真速度就用真的。
+     用最近 winH 小時的窗口而不是整段平均 —— 章節只有 3 天,末段衝刺很兇,
+     拿整段平均去推剩下的時間會明顯低估。窗口內跨距不足才退回整段。 */
+  wlSpeed(chapter, rank, winH) {
+    const w = this.wlSnap(chapter);
+    if (!w || !Array.isArray(w.samples) || w.samples.length < 2) return null;
+    const i = (w.tiers || []).indexOf(+rank);
+    if (i < 0) return null;
+    const pts = w.samples.map(s => [s[0] * 1000, s[i + 1]]).filter(x => x[1] != null);
+    if (pts.length < 2) return null;
+    const b = pts[pts.length - 1], win = (winH || 6) * 3600000;
+    let a = pts.find(p => b[0] - p[0] <= win);
+    if (!a || (b[0] - a[0]) / 3600000 < 0.5) a = pts[0];   // 窗口太窄就退回整段
+    const h = (b[0] - a[0]) / 3600000;
+    if (h < 0.5) return null;                              // 跨距太短,量到的是雜訊
+    return { rate: (b[1] - a[1]) / h, spanH: h, n: pts.length };
   }
 
   /* 折線圖拖曳讀值:在圖上按住或滑過,顯示十字準星與該點的時間與數值。
@@ -5363,7 +5444,7 @@ class Component extends DCLogic {
       isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl',
       ...(() => {
         const chs = this.wlChapters();
-        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [], wlProjNote: '', wlSugOn: false, wlSugCards: [], wlSugNote: '' };
+        if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [], wlProjNote: '', wlSugOn: false, wlSugCards: [], wlSugNote: '', wlChartHas: false, wlChartOk: false, wlChartNo: false, wlTierChips: [] };
         const pick = chs.find(c => c.chapter === +s.wlCh) || chs.find(c => c.live) || chs[0];
         const md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
         return {
@@ -5393,19 +5474,50 @@ class Component extends DCLogic {
                   + '　最後 ' + (r.lastPlayed ? this.ago(r.lastPlayed) : '—')
           })),
           wlBorders: (() => {
-            // 章節版預測終線:用本章已過時間線性外推(WL 章只有 3 天,線性誤差可接受;
-            // 章節榜線沒有歷史快照可用實測速度,誠實標示推估方式)
+            // 章節版預測終線:公用快照現在也存 WL 各章時序,量得到實測時速就用實測
+            // (目前分數＋剩餘時數×實測速度),量不到才退回線性外推,兩種在卡片上分開標示。
             const now = Date.now();
             const frac = Math.max(0.02, Math.min(1, (now - pick.start) / (pick.end - pick.start || 1)));
             const leftH = Math.max(0, (pick.end - now) / 3600000);
             const bs = (s.mobile && !s.wlMoreB) ? pick.borders.slice(0, 6) : pick.borders;
-            return bs.map(b => ({
-              rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name,
-              proj: pick.done ? '—' : this.short(b.score / frac),
-              projSub: pick.done ? '已結算' : ('剩 ' + (leftH >= 24 ? Math.floor(leftH / 24) + '天' + Math.round(leftH % 24) + '時' : leftH.toFixed(1) + '時'))
-            }));
+            return bs.map(b => {
+              const sp = this.wlSpeed(pick.chapter, b.rank);
+              const projV = sp ? b.score + sp.rate * leftH : b.score / frac;
+              return {
+                rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name,
+                proj: pick.done ? '—' : this.short(projV),
+                projTag: pick.done ? '' : (sp ? '實測' : '線性'),
+                projTagFg: sp ? 'var(--accent-deep)' : 'var(--text-3)',
+                projSub: pick.done ? '已結算' : ('剩 ' + (leftH >= 24 ? Math.floor(leftH / 24) + '天' + Math.round(leftH % 24) + '時' : leftH.toFixed(1) + '時'))
+              };
+            });
           })(),
-          wlProjNote: pick.done ? '' : '預測＝目前分數 ÷ 已過進度（線性外推）。章節僅 3 天，末段衝刺通常會高於此估。',
+          wlProjNote: pick.done ? '' : (this.wlSpeed(pick.chapter, (pick.borders[0] || {}).rank)
+            ? '標「實測」者＝目前分數＋剩餘時數×最近 6 小時的實際速度；標「線性」者是按已過進度等比外推，末段衝刺通常會被低估。'
+            : '預測＝目前分數 ÷ 已過進度（線性外推）。章節僅 3 天，末段衝刺通常會高於此估。'),
+          ...(() => {
+            // WL 走勢圖:段位選擇沿用榜線分析那套 chips,圖本身重用 mkChart
+            const rk = +s.wlTier || 100;
+            const tiers = (this.wlSnap(pick.chapter) || {}).tiers || [];
+            const c = tiers.length ? this.wlChart(pick.chapter, rk) : null;
+            const chips = tiers.map(t => {
+              const on = t === rk, st = chip(on, 'var(--cta)');
+              return Object.assign({ v: String(t), n: 'T' + this.n(t) }, st, { fg: on ? '#fff' : 'var(--text)' });
+            });
+            if (!c) return { wlChartOk: false, wlChartNo: true, wlChartHas: !!tiers.length, wlTierChips: chips,
+              wlChartTitle: 'T' + this.n(rk) + ' 章節走勢', wlChartN: '尚無資料',
+              wlChartW: 640, wlChartH: 190, wlChartLine: '', wlChartArea: '', wlChartTicks: [],
+              wlChartFirst: '—', wlChartLast: '—', wlChartGain: '—', wlChartPct: '', wlChartAxis: '',
+              wlChartGHi: 0, wlChartGLo: 0, wlChartGX1: 0, wlChartGX2: 0,
+              wlChartMsg: tiers.length ? '這一段還沒有足夠的時間軸資料（至少要 2 筆快照）。' : '本章尚未累積公用快照，開跑後就會有走勢圖。' };
+            return { wlChartOk: true, wlChartNo: false, wlChartHas: true, wlTierChips: chips,
+              wlChartW: c.W, wlChartH: c.H, wlChartLine: c.line, wlChartArea: c.area,
+              wlChartTicks: c.ticks, wlChartN: c.n + ' 筆 · 橫跨 ' + c.spanLabel,
+              wlChartFirst: c.first, wlChartLast: c.last, wlChartGain: '+' + c.gain,
+              wlChartPct: c.pct, wlChartAxis: c.axisNote, wlChartMsg: '',
+              wlChartGHi: c.gHi, wlChartGLo: c.gLo, wlChartGX1: c.gX1, wlChartGX2: c.gX2,
+              wlChartTitle: 'T' + this.n(rk) + ' 章節走勢' };
+          })(),
           // 手機:預設只給前幾筆,點「顯示全部」再展開,避免一進頁就是一大坨
           wlBMore: s.mobile && !s.wlMoreB && pick.borders.length > 6,
           wlRMore: s.mobile && !s.wlMoreR && pick.ranks.length > 20,
@@ -5793,6 +5905,7 @@ class Component extends DCLogic {
 
       /* ---------- 分析中心 ---------- */
       onWlCh: e => this.setState({ wlCh: +e.currentTarget.dataset.v, wlOpen: 0, wlMoreB: false, wlMoreR: false }),
+      onWlTier: e => this.setState({ wlTier: +e.currentTarget.dataset.v }),
       onWlRow: e => { const r = +e.currentTarget.dataset.r; this.setState(s2 => ({ wlOpen: s2.wlOpen === r ? 0 : r })); },
       onWlRule: () => this.setState(s2 => ({ wlRuleOpen: !s2.wlRuleOpen })),
       onWlMoreB: () => this.setState({ wlMoreB: true }),
