@@ -3419,15 +3419,23 @@ class Component extends DCLogic {
     if (!DB || !DB.borders) return null;
     const me = (DB.events || []).find(e => +e.id === +evId);
     if (!me) return null;
-    const same = DB.borders.filter(b => +b.id !== +evId && b.type === me.type && b.days === me.days)
-      .sort((a, b) => b.id - a.id).slice(0, 8);
+    // 只取同型態同日數、且在本期之前的活動
+    const same = DB.borders.filter(b => +b.id < +evId && b.type === me.type && b.days === me.days)
+      .sort((a, b) => b.id - a.id);
     if (same.length < 3) return null;                 // 樣本太少,給了也沒參考價值
     const T = DB.tiers || [];
     const by = {};
     T.forEach((rk, i) => {
-      const v = same.map(b => b.t[i]).filter(x => x != null).sort((a, b) => a - b);
+      const v = same.map(b => ({ id: b.id, v: b.t[i] })).filter(x => x.v != null);
       if (v.length < 3) return;
-      by[rk] = { med: v[v.length >> 1], lo: v[0], hi: v[v.length - 1], n: v.length };
+      // 半衰期 6 期的對數加權平均。回測 #150~#176 逐期比過四種算法:
+      // 最近 8 期中位數雖然離散度小,卻系統性低估 7～23%(通膨吃不掉);
+      // 這個寫法把偏誤壓到 2% 以內,而且 T2000 的絕對誤差 9.8%→5.7%、
+      // T5000 12.0%→4.8%。權重自然衰減,不必再設期數上限。
+      let num = 0, den = 0;
+      v.forEach(x => { const w = Math.pow(0.5, (evId - x.id) / 6); num += w * Math.log(x.v); den += w; });
+      const recent = v.slice(0, 8).map(x => x.v).sort((a, b) => a - b);
+      by[rk] = { med: Math.exp(num / den), lo: recent[0], hi: recent[recent.length - 1], n: v.length };
     });
     return { type: me.type, days: me.days, n: same.length, ids: same.map(b => b.id), by };
   }
@@ -5103,8 +5111,8 @@ class Component extends DCLogic {
           anaMethod: (B.rows.some(r => r.measured)
             ? ('已累積 ' + B.snapN + ' 筆本機快照，有實測速度的段位用實測推估')
             : ('本機快照 ' + B.snapN + ' 筆，尚不足以量出速度（需間隔 30 分鐘以上），先用線性推估'))
-            + (B.ref ? ('。「史」為最近 ' + B.ref.n + ' 期同型態活動（' + B.ref.type + '・' + B.ref.days + ' 天）的中位數，只作對照不參與計算；'
-                + '預測低於歷史區間會標紅、高於標綠') : ''),
+            + (B.ref ? ('。「史」為同型態活動（' + B.ref.type + '・' + B.ref.days + ' 天・' + B.ref.n + ' 期）的加權估計，'
+                + '越近期權重越高（半衰期 6 期），只作對照不參與計算；預測低於近 8 期區間會標紅、高於標綠') : ''),
           // 拿 #175 回測過:兩種外推法都會低估終線,段位越前面低估越多。誠實寫出來,
           // 免得有人把預測值當成保證線。
           anaBias: '外推法在末段普遍低估。以 #175 回測，活動走到六成之後，線性外推對 T5000 約低估 2～6%、T1000 約 10～13%、T100 約 14～22%，實測外推也差不多（略差一點）。要卡線的話把預測值當下限看。',
@@ -5148,8 +5156,8 @@ class Component extends DCLogic {
             refFg: r.refPos === 'low' ? '#e0576a' : r.refPos === 'high' ? '#3ea76a' : 'var(--text-3)',
             // 中位數單看很容易被當成「應該會落在這」,但同型態之間離散度其實很大
             // (WL 的 T100 歷史值域從 3,649 萬到 1.11 億),所以把區間一起帶在提示裡
-            refTip: r.refMed == null ? '' : ('最近 ' + (B.ref ? B.ref.n : '') + ' 期同型態：'
-              + this.short(r.refLo) + ' ～ ' + this.short(r.refHi) + '（中位 ' + this.short(r.refMed) + '）'),
+            refTip: r.refMed == null ? '' : ('同型態近 8 期落在 ' + this.short(r.refLo) + ' ～ ' + this.short(r.refHi)
+              + '；加權估計 ' + this.short(r.refMed) + '（' + (B.ref ? B.ref.n : '') + ' 期樣本，越近期權重越高）'),
             gap: r.gap == null ? '—' : (r.gap <= 0 ? '已達標' : this.short(r.gap)),
             gapFg: r.gap == null ? 'var(--text-3)' : (r.gap <= 0 ? '#3ea76a' : 'var(--text)'),
             need: r.needH == null ? '—' : hm(r.needH),
