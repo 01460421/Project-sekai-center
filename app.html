@@ -3557,7 +3557,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=39b7a96875';
+      s.src = 'data/borders-db.js?v=695f872dfa';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);

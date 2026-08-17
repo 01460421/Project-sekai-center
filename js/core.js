@@ -4042,7 +4042,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 (jpC || []).forEach(c => cById[c.id] = c); (twC || []).forEach(c => cById[c.id] = c);
                 const list = Object.values(gById).filter(g => (g.gachaDetails || []).length && (g.gachaCardRarityRates || []).length)
                     .sort((a, b) => (b.startAt || 0) - (a.startAt || 0));
-                return this._d = { gById, cById, list };
+                // 招募點數的常駐保底要從「全常駐 ★4」裡發,不是只從本池發,
+                // 所以另外備一份台服已實裝的常駐 ★4 清單(cardSupplyId 1 = normal)。
+                // cById 被日服資料覆蓋過,直接濾會混進台服還沒有的卡。
+                const twIds = new Set((twC || []).map(c => c.id));
+                const stdPool = (twC || []).filter(c => c.cardSupplyId === 1 && c.cardRarityType === 'rarity_4');
+                return this._d = { gById, cById, list, twIds, stdPool };
             },
             // 依稀有度分組，累積權重供加權抽樣
             _buildPool(g, cById) {
@@ -4114,6 +4119,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this._pool = this._buildPool(this._g, this._d.cById);
                 this._hist = []; this._spent = 0; this._pulls = 0; this._got = {};
                 this._tally = {}; this._pkHits = 0; this._sinceLast4 = 0; this._gapsTo4 = [];
+                this._bpt = 0; this._bptGot = [];      // 招募點數與已領到的保底
             },
             onPick(v) {
                 const g = this._d.gById[v]; if (!g) return;
@@ -4145,7 +4151,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!hit) { const hint = document.getElementById('gsHint'); if (hint) { hint.textContent = '找不到符合的卡池'; hint.style.color = 'var(--text-light)'; } return; }
                 this._g = hit; this._q = ''; this._reset(); this._refocus = true; this._render();
             },
-            doSpin(n, guard, cost) {
+            /* 招募點數:依 master data gachaBonusPoints,付費水晶一抽 1 點、
+               免費水晶與招募券 0.5 點;通行證那種完全免費的抽不在表內,算 0 點。
+               門檻用常駐池的 50／100 兩檔(常駐沒有自選檔)。 */
+            BPT_TIERS: [[50, '未持有的常駐 ★4'], [100, '該池 PU ★4']],
+            _bptPer(ct) { return /paid_jewel/.test(ct) ? 1 : /jewel|gacha_ticket/.test(ct) ? 0.5 : 0; },
+            /* 到門檻時發卡。實際遊戲看的是「帳號未持有」,模擬器不知道玩家倉庫,
+               所以退而求其次用「本次模擬還沒抽到的」,全抽過了才從整池隨機。 */
+            _bptAward(tier) {
+                const d = this._d; if (!d) return null;
+                const pool = tier >= 100
+                    ? [...(this._pool.pick || [])].map(id => d.cById[id])
+                        .filter(c => c && d.twIds.has(c.id) && this._rank(c.cardRarityType) >= 4)
+                    : (d.stdPool || []);
+                if (!pool.length) return null;
+                const fresh = pool.filter(c => !this._got[c.id]);
+                const src = fresh.length ? fresh : pool;
+                return src[Math.floor(Math.random() * src.length)];
+            },
+            doSpin(n, guard, cost, ct) {
                 const res = this.spin(n, guard ? 3 : 0);
                 this._pulls += n; this._spent += cost || 0;
                 res.forEach(r => {
@@ -4155,6 +4179,23 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     this._sinceLast4++;
                     if (this._rank(r.rarity) >= 4) { this._gapsTo4.push(this._sinceLast4); this._sinceLast4 = 0; }
                 });
+                // 點數累積:跨過門檻就發保底(同一次十連可能一次跨兩檔,所以逐檔檢查)
+                const per = this._bptPer(ct || '');
+                if (per > 0) {
+                    const before = this._bpt;
+                    this._bpt = Math.round((this._bpt + per * n) * 10) / 10;
+                    this.BPT_TIERS.forEach(([need, label]) => {
+                        if (before < need && this._bpt >= need) {
+                            const c = this._bptAward(need);
+                            if (!c) return;
+                            this._got[c.id] = (this._got[c.id] || 0) + 1;
+                            // 只進持有、不進 _tally:保底不是隨機抽出來的,算進去會讓
+                            // 下面那張「實際出現率 vs 官方機率」的統計表虛高。
+                            this._bptGot.push({ need, label, cardId: c.id });
+                            res.push({ cardId: c.id, rarity: c.cardRarityType, isPickup: (this._pool.pick || new Set()).has(c.id), bonus: need });
+                        }
+                    });
+                }
                 this._hist = res;
                 this._render(true);
             },
@@ -4203,7 +4244,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         : isJewel ? (qty + ' 石')
                         : (qty + ' 券');
                     btns.push(`<button type="button" class="gs-btn${b.spinCount === 1 ? ' gs-ghost' : ''}"
-                        onclick="GachaSim.doSpin(${b.spinCount},${guard},${isJewel && qty != null ? qty : 0})">
+                        onclick="GachaSim.doSpin(${b.spinCount},${guard},${isJewel && qty != null ? qty : 0},'${ct}')">
                         ${main}${guard ? ' <span class="gs-cost">保底★3↑</span>' : ''}<span class="gs-cost">${cost}</span></button>`);
                 });
 
@@ -4222,7 +4263,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                           <img referrerpolicy="no-referrer" src="${this.thumb(c)}" alt="" onerror="this.style.opacity=.15">
                           ${r.isPickup ? '<span class="gs-pu">PICK UP</span>' : ''}
                         </div>
-                        <div class="gs-rar" style="color:${col}">${ri.n}</div>
+                        <div class="gs-rar" style="color:${col}">${ri.n}${r.bonus ? ' · ' + r.bonus + '點保底' : ''}</div>
                         <div class="gs-nm">${this._esc(c.prefix || '')}</div>
                     </div>`;
                 };
@@ -4289,8 +4330,21 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                       <div class="gs-kpi"><span>★4 種類</span><b>${got4}</b></div>
                       <div class="gs-kpi"><span>PU 入手</span><b>${gotPk}/${pk.length}</b></div>
                       <div class="gs-kpi"><span>距天井</span><b>${ceilLeft}</b></div>
+                      <div class="gs-kpi"><span>招募點數</span><b>${this._bpt}</b></div>
                     </div>
                     <div class="gs-ceil"><i style="width:${ceilPct.toFixed(1)}%"></i></div>
+                    ${(() => {
+                        // 招募點數:離下一檔還差多少,以及已經領到的保底
+                        const nx = this.BPT_TIERS.find(t => this._bpt < t[0]);
+                        const got = this._bptGot.map(b => {
+                            const c = d.cById[b.cardId];
+                            return `${b.need} 點 → ${c ? this._esc(c.prefix) : '★4'}`;
+                        }).join('　');
+                        const line = nx
+                            ? `招募點數 <b style="color:var(--primary);">${this._bpt}</b>，距 ${nx[0]} 點（${nx[1]}）還差 <b style="color:var(--primary);">${Math.round((nx[0] - this._bpt) * 10) / 10}</b> 點：付費 ${Math.ceil(nx[0] - this._bpt)} 抽或免費 ${Math.ceil((nx[0] - this._bpt) / 0.5)} 抽`
+                            : `招募點數 <b style="color:var(--primary);">${this._bpt}</b>，兩檔保底都已達成`;
+                        return `<div class="note" style="margin:8px 0 0;">${line}${got ? `<br>已領保底：${got}` : ''}</div>`;
+                    })()}
 
                     ${this._hist.length ? `<div class="gs-grid">${this._hist.map((r, i) => cell(r, i)).join('')}</div>`
                       : '<div class="note" style="margin:0;">選好卡池後按上面的按鈕開抽。每次都是即時亂數，與遊戲同一套機率模型。</div>'}
