@@ -437,6 +437,11 @@ input::placeholder{color:var(--text-3)}
         </button>
       </sc-for>
     </div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      <sc-for list="{{ gLiveChips }}" as="c" hint-placeholder-count="3">
+        <button type="button" onClick="{{ onSet }}" data-k="gLive" data-v="{{ c.v }}" style="padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+      </sc-for>
+    </div>
     <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ gachaCount }}</div>
 
     <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
@@ -2526,6 +2531,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/17', t: '卡池加「開放中／本期活動」篩選', s: '卡池列表原本只能照類型與團體篩,現在多兩個快捷:「開放中」只留現在還開著的池,「本期活動」只留伴生活動就是當期的池——跑活動想知道該抽哪個池時直接切這個就好。235 個卡池裡有 72 個填了伴生活動,生日池與有償池本來就沒有伴生活動,扣掉之後覆蓋率約七成。' },
+    { d: '2026/08/17', t: '歷史對照改用半衰期加權', s: '前一版的「最近 8 期同型態中位數」有系統性低估的問題。回測 #150～#176 逐期驗證,中位數會把近期的高值整個丟掉——以 #176(WL 12 天)的 T100 為例,樣本裡 #170 是 11132W、#163 是 10440W,取中位數卻得到 6541W,等於當它們不存在,整體低估 7～23%。比過四種算法後改用「半衰期 6 期的對數加權平均＋限定同日數」:偏誤全部壓進 2% 以內,而且 T2000 的絕對誤差從 9.8% 降到 5.7%、T5000 從 12.0% 降到 4.8%。權重會自然衰減,所以不再設期數上限(#176 的權重分布是前四期佔 97.8%)。顯示的區間仍用最近 8 期的實際值域,因為區間是要讓人看到離散度,用真的發生過的數字比較有意義。' },
     { d: '2026/08/17', t: '榜線快照污染修復', s: '對快照做「分數只能遞增」的稽核,發現 World Link 活動期間 API 會把主榜與章節榜的值互相串在一起:#176 主榜出現 71 次分數下降、WL 第一章 25 次、第三章 58 次(T1000 最嚴重掉 40%)。決定性證據是第一章的異常值與主榜逐位相同——T2000 在 08-09 19:27 兩邊都是 1,275,330 → 1,067,467;第三章甚至出現 T3000 比 T1000 還高這種不可能的排序。非 WL 的 #175 與乾淨的第二章則零下降,所以污染是跟著 WL 走的。修法是**由後往前取 running-min**:分數只增不減,任何一點都不該高於它之後的值,塞進來的高值會被壓回合理範圍,而正常序列完全不受影響(拿乾淨的第二章驗證,改動 0.0%,最新一筆原封不動)。走勢圖、榜線分析、實測時速全部吃到修好的資料。' },
     { d: '2026/08/17', t: '榜線分析加歷史同型態對照', s: '預測終線下方多一行「史 ○○」,是最近 8 期同型態(同活動型態、同日數)活動的終線中位數,滑上去可看完整區間。**它不參與預測計算**——拿 #175 回測過,單用歷史中位數當預測,誤差是 T100 −42%、T1000 −22%、T5000 −13%,比站上現行的外推差得多,所以只當對照。只取最近 8 期是為了避開通膨(T100 兩年來漲了約 2.8 倍)。中位數單看容易誤導,所以提示裡一併給區間:WL 的 T100 歷史值域是 3,650 萬到 1.11 億,足足 3 倍。同一份回測也量出外推法的系統性低估:活動過六成後,線性外推對 T5000 約低估 2～6%、T1000 10～13%、T100 14～22%,實測外推還略差一點。這個數字直接寫在頁面上,提醒把預測當下限而不是保證線。' },
     { d: '2026/08/17', t: 'WL 個榜走勢圖與實測預測', s: 'WL 各章的時序其實一直有在收,只是前端沒用上。現在接起來了:每章 13 段榜線都可切換看走勢圖,跟主榜一樣可以拖曳讀值。預測終線也從線性外推改成實測速度——原本程式裡註明「章節榜線沒有歷史快照可用實測速度」,那個假設在開始存 WL 快照之後就過時了。實測用**最近 6 小時**的窗口而不是整段平均,差距很大:#176 第三章 T100 整段平均是 41.4 萬/h,最近 6 小時卻是 91.9 萬/h,足足 2.2 倍,用整段平均推末段會嚴重低估。量得到速度標「實測」,量不到才退回「線性」。順帶修掉一個時序問題:公用快照要等即時資料回來才知道期數,但切頁時常常還沒到,那次載入會直接放棄且之後不會再試,結果直接開排名頁的人永遠看不到公用快照。' },
@@ -2640,7 +2647,7 @@ class Component extends DCLogic {
     page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
-    gq: '', gu: 'all', gt: '', gp: 1,
+    gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
@@ -4245,9 +4252,21 @@ class Component extends DCLogic {
   /* ---------- 列表 ---------- */
   filteredGachas() {
     const s = this.state, q = s.gq.trim().toLowerCase();
+    // 「本期」= 卡池的伴生活動就是現在這期。235 個卡池裡有 72 個填了 eid,
+    // 生日池與有償池本來就沒有伴生活動,扣掉之後覆蓋率約七成。
+    const ck = s.gLive === 'ev' ? this.eventClock() : null;
+    const now = Date.now();
     return (s.gachas || []).filter(g => {
       if (s.gt && g.t !== s.gt) return false;
       if (s.gu !== 'all' && this.unitOf(g.u) !== s.gu) return false;
+      if (s.gLive === 'now') {
+        const a = this.pd(g.s), b = this.pd(g.e);
+        // 結束日當天整天都還算開著,所以加一天
+        if (!a || !b || a.getTime() > now || b.getTime() + 86400000 < now) return false;
+      }
+      if (s.gLive === 'ev') {
+        if (!ck || !g.eid || +g.eid !== +ck.id) return false;
+      }
       if (!q) return true;
       return ((g.n || '') + (g.ch || '') + (g.note || '') + (g.t || '')).toLowerCase().includes(q);
     });
@@ -5518,6 +5537,11 @@ class Component extends DCLogic {
       /* 卡池 */
       gq: s.gq, gt: s.gt, unitChips,
       gachaTypes: [{ v: '', n: '全部類型' }].concat(this.TONES.map(t => ({ v: t[0], n: t[2] }))),
+      // 卡池的快捷篩選:開放中 / 本期活動相關
+      gLiveChips: [['all', '全部'], ['now', '開放中'], ['ev', '本期活動']].map(([v, n]) => {
+        const on = (s.gLive || 'all') === v, st = chip(on, 'var(--cta)');
+        return Object.assign({ v, n }, st);
+      }),
       gachaRows, gachaEmpty: gAll.length === 0,
       gachaCount: '符合 ' + gAll.length + ' 筆 · 第 ' + gp + '／' + gPages + ' 頁',
       gachaPageLabel: gp + ' / ' + gPages,
@@ -5988,7 +6012,7 @@ class Component extends DCLogic {
       onSet: e => {
         const d = e.currentTarget.dataset, v = d.num ? +d.v : d.v;
         const patch = { [d.k]: v };
-        if (d.k === 'gu') patch.gp = 1;
+        if (d.k === 'gu' || d.k === 'gLive') patch.gp = 1;   // 換篩選要回第一頁,否則會停在空白頁
         if (d.k === 'su') patch.sp = 1;
         if (d.k === 'tcat') patch.tutMore = false;
         this.setState(patch);
