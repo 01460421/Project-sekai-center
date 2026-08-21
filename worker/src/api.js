@@ -9,6 +9,7 @@
 
 import { allowOrigin, corsHeaders, preflight } from './cors.js';
 import { chatClaude, validateChat } from './admin.js';
+import { WATCH_KINDS } from './watch.js';
 import {
   applyNote, getUser, unlinkDiscord,
   getPrefs, setPrefs,
@@ -123,6 +124,13 @@ export async function handleApi(req, env, url, user) {
     if (p === '/api/me') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       return out({ user: shapeUser(user) });
+    }
+
+    /* 偵測規格。前端靠它動態產生表單 —— 規格寫在後端,新增偵測種類時
+       前端不必跟著改。不需要核准就能看,讓人先知道能訂什麼再決定要不要申請。 */
+    if (p === '/api/watch-kinds') {
+      if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
+      return out({ kinds: WATCH_KINDS });
     }
 
     // 以下都要登入

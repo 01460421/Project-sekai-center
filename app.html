@@ -1498,6 +1498,92 @@ input::placeholder{color:var(--text-3)}
         </div>
       </div>
 
+      <!-- 偵測訂閱 -->
+      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:13.5px;font-weight:800;color:var(--ink)">偵測訂閱</span>
+          <sc-if value="{{ wOpen }}">
+            <button type="button" onClick="{{ onWCancel }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">取消</button>
+          </sc-if>
+          <sc-if value="{{ wNotOpen }}">
+            <button type="button" onClick="{{ onWNew }}" style="padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">新增訂閱</button>
+          </sc-if>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">條件成立時寄信通知你。每人最多 20 條。</div>
+
+        <sc-if value="{{ wOpen }}">
+          <div style="border:1px dashed var(--border-2);border-radius:15px;padding:14px;background:var(--card-2);margin-bottom:12px">
+            <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:6px">要偵測什麼</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px">
+              <sc-for list="{{ wKindChips }}" as="c" hint-placeholder-count="4">
+                <button type="button" onClick="{{ onWKind }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px">
+              <sc-for list="{{ wModeChips }}" as="c" hint-placeholder-count="3">
+                <button type="button" onClick="{{ onWMode }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ wUnavail }}">
+              <div style="padding:10px 13px;border-radius:12px;background:color-mix(in oklab,#ffb86b 14%,transparent);color:var(--text-2);font-size:11.5px;line-height:1.7;margin-bottom:10px">這一類目前還沒有可用的資料來源，建立了也不會觸發。</div>
+            </sc-if>
+
+            <sc-for list="{{ wFields }}" as="f" hint-placeholder-count="3">
+              <div style="margin-bottom:9px">
+                <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</div>
+                <sc-if value="{{ f.isSelect }}">
+                  <select value="{{ f.val }}" onChange="{{ onWField }}" data-k="{{ f.key }}" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none">
+                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ f.isNumber }}">
+                  <input type="number" value="{{ f.val }}" onInput="{{ onWField }}" data-k="{{ f.key }}" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none">
+                </sc-if>
+                <sc-if value="{{ f.isText }}">
+                  <input type="text" value="{{ f.val }}" onInput="{{ onWField }}" data-k="{{ f.key }}" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none">
+                </sc-if>
+                <div style="font-size:10.5px;color:var(--text-3);margin-top:3px;line-height:1.6">{{ f.hint }}</div>
+              </div>
+            </sc-for>
+
+            <div style="margin-bottom:9px">
+              <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">名稱（選填）</div>
+              <input type="text" value="{{ wName }}" onInput="{{ onWName }}" placeholder="自己看得懂就好" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none">
+            </div>
+            <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-bottom:10px">{{ wNote }}</div>
+            <button type="button" onClick="{{ onWCreate }}" style="padding:10px 22px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">建立訂閱</button>
+            <div style="font-size:11.5px;color:var(--accent-deep);margin-top:8px">{{ acMsg }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ wEmpty }}"><div style="font-size:12.5px;color:var(--text-3);padding:6px 0">還沒有任何訂閱。</div></sc-if>
+        <sc-for list="{{ wRows }}" as="w" hint-placeholder-count="3">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)">
+            <div style="flex:1;min-width:160px">
+              <div style="font-size:13px;font-weight:800;color:var(--ink)">{{ w.name }}<span style="font-size:10.5px;font-weight:700;color:var(--text-3);margin-left:7px">{{ w.kind }}</span></div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:2px;font-family:'M PLUS Rounded 1c'">{{ w.params }}</div>
+              <div style="font-size:10.5px;color:var(--text-3);margin-top:2px">上次觸發：{{ w.fired }}</div>
+            </div>
+            <button type="button" onClick="{{ onWToggle }}" data-id="{{ w.id }}" data-on="{{ w.onFlag }}" style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">{{ w.toggleTxt }}</button>
+            <button type="button" onClick="{{ onWDelete }}" data-id="{{ w.id }}" style="padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:transparent;color:#e0576a;font-size:11.5px;font-weight:700;cursor:pointer">刪除</button>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- 通知紀錄 -->
+      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:9px">最近的通知</div>
+        <sc-if value="{{ wNoEvents }}"><div style="font-size:12.5px;color:var(--text-3)">還沒有觸發過任何通知。</div></sc-if>
+        <sc-for list="{{ wEventRows }}" as="e" hint-placeholder-count="3">
+          <div style="display:flex;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--border)">
+            <span style="flex:1;font-size:12.5px;color:var(--text)">{{ e.title }}</span>
+            <span style="font-size:11px;color:var(--text-3)">{{ e.when }}</span>
+            <span style="font-size:11px;font-weight:700;color:{{ e.mailedFg }}">{{ e.mailed }}</span>
+          </div>
+        </sc-for>
+      </div>
+
     </sc-if>
 
     <sc-if value="{{ acLoading }}">
@@ -2729,6 +2815,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/08/22', t: '帳號系統、偵測訂閱與站內助手上線', s: '網站現在可以用 Google 帳號登入。登入後遊戲 uid、持卡勾選、編組與偏好可以存到雲端跨裝置同步(載入時只補本機沒有的項目,不會蓋掉你當下正在改的東西);也可以綁 Discord,供之後的車隊房間偵測辨識身分。**新帳號需要管理員核准**才能使用訂閱與助手。<br>**偵測訂閱**:條件成立時寄信通知。目前支援榜線(某段位分數到達門檻、我掉出/擠進某段位)、玩家動態(名次變化、開跑停跑)、活動與卡池排程(活動開始結束、卡池開放結束、WL 章節切換,可設提前幾小時)。車隊房間那一類的接點留好了,但目前沒有可用資料源,介面上明確標成未啟用,不會假裝它會動。<br>**站內助手**:用問的就好,它會自己去查站上的資料再回答 —— 當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全都查得到,也能一次做多步驟的規劃(例如「設好我的 id、算接下來兩期怎麼跑、該抽哪些池、還要跑多久」)。它只能呼叫站上寫死的那份工具清單,不會執行任何程式碼,每次呼叫都有稽核紀錄,每日用量也有上限。' },
     { d: '2026/08/17', t: '卡池加「開放中／本期活動」篩選', s: '卡池列表原本只能照類型與團體篩,現在多兩個快捷:「開放中」只留現在還開著的池,「本期活動」只留伴生活動就是當期的池——跑活動想知道該抽哪個池時直接切這個就好。235 個卡池裡有 72 個填了伴生活動,生日池與有償池本來就沒有伴生活動,扣掉之後覆蓋率約七成。' },
     { d: '2026/08/17', t: '歷史對照改用半衰期加權', s: '前一版的「最近 8 期同型態中位數」有系統性低估的問題。回測 #150～#176 逐期驗證,中位數會把近期的高值整個丟掉——以 #176(WL 12 天)的 T100 為例,樣本裡 #170 是 11132W、#163 是 10440W,取中位數卻得到 6541W,等於當它們不存在,整體低估 7～23%。比過四種算法後改用「半衰期 6 期的對數加權平均＋限定同日數」:偏誤全部壓進 2% 以內,而且 T2000 的絕對誤差從 9.8% 降到 5.7%、T5000 從 12.0% 降到 4.8%。權重會自然衰減,所以不再設期數上限(#176 的權重分布是前四期佔 97.8%)。顯示的區間仍用最近 8 期的實際值域,因為區間是要讓人看到離散度,用真的發生過的數字比較有意義。' },
     { d: '2026/08/17', t: '榜線快照污染修復', s: '對快照做「分數只能遞增」的稽核,發現 World Link 活動期間 API 會把主榜與章節榜的值互相串在一起:#176 主榜出現 71 次分數下降、WL 第一章 25 次、第三章 58 次(T1000 最嚴重掉 40%)。決定性證據是第一章的異常值與主榜逐位相同——T2000 在 08-09 19:27 兩邊都是 1,275,330 → 1,067,467;第三章甚至出現 T3000 比 T1000 還高這種不可能的排序。非 WL 的 #175 與乾淨的第二章則零下降,所以污染是跟著 WL 走的。修法是**由後往前取 running-min**:分數只增不減,任何一點都不該高於它之後的值,塞進來的高值會被壓回合理範圍,而正常序列完全不受影響(拿乾淨的第二章驗證,改動 0.0%,最新一筆原封不動)。走勢圖、榜線分析、實測時速全部吃到修好的資料。' },
@@ -2876,7 +2963,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
-    aiMsgs: [], aiErr: '',
+    aiMsgs: [], aiErr: '', watchKinds: null, acSyncMsg: '',
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -4128,11 +4215,55 @@ class Component extends DCLogic {
     return Object.keys(obj).length;
   }
 
+  async loadWatchKinds() {
+    if (this.state.watchKinds || this._wkLoading) return;
+    this._wkLoading = true;
+    try { const d = await this.api('/api/watch-kinds'); this.setState({ watchKinds: (d && d.kinds) || {} }); }
+    catch (e) { this.setState({ watchKinds: {} }); }
+  }
+
   async loadWatches() {
     try {
       const [w, e] = await Promise.all([this.api('/api/watches'), this.api('/api/events?limit=30')]);
       this.setState({ watches: (w && w.watches) || [], wEvents: (e && e.events) || [] });
     } catch (er) { this.setState({ wBusy: er.message || '載入失敗' }); }
+  }
+
+  /* 建立訂閱。欄位規格來自後端,這裡只負責把使用者填的值收成 params。
+     後端會再驗一次,前端擋掉必填只是為了少一次來回。 */
+  async createWatch() {
+    const f = this.state.wForm || {};
+    const K = this.state.watchKinds || {};
+    const kind = K[f.kind]; if (!kind) return;
+    const mode = (kind.modes || {})[f.mode];
+    const fields = [].concat(kind.common_fields || [], (mode && mode.fields) || []);
+    const params = {};
+    if (kind.mode_key && f.mode) params[kind.mode_key] = f.mode;
+    for (const fd of fields) {
+      let v = (f.vals || {})[fd.key];
+      if (v == null || v === '') v = fd.default;
+      if (v == null || v === '') {
+        if (fd.required) { this.setState({ wBusy: '「' + fd.label + '」是必填' }); return; }
+        continue;
+      }
+      params[fd.key] = fd.type === 'number' ? Number(v) : v;
+    }
+    this.setState({ wBusy: '建立中…' });
+    try {
+      await this.api('/api/watches', { method: 'POST', body: {
+        kind: f.kind, name: f.name || ((kind.label || '') + '・' + ((mode && mode.label) || '')),
+        params, cooldown_s: kind.default_cooldown_s || 3600 } });
+      this.setState({ wBusy: '已建立', wForm: null });
+      this.loadWatches();
+    } catch (e) { this.setState({ wBusy: '建立失敗：' + (e.message || '') }); }
+  }
+  async toggleWatch(id, on) {
+    try { await this.api('/api/watches?id=' + encodeURIComponent(id), { method: 'PATCH', body: { enabled: on } }); this.loadWatches(); }
+    catch (e) { this.setState({ wBusy: e.message || '' }); }
+  }
+  async deleteWatch(id) {
+    try { await this.api('/api/watches?id=' + encodeURIComponent(id), { method: 'DELETE' }); this.loadWatches(); }
+    catch (e) { this.setState({ wBusy: e.message || '' }); }
   }
 
   async loadAdmin() {
@@ -4567,6 +4698,7 @@ class Component extends DCLogic {
     if (p === 'rate') this.loadCards();
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
+    if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
     if (p === 'admin') this.loadAdmin();
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -4842,15 +4974,16 @@ class Component extends DCLogic {
     /* 導覽 */
     const navSpec = [
       ['主頁', [['home', '首頁', '#4ad1e8']]],
+      /* 帳號擺在最前面：手機版「更多」面板照這個順序排,掛在最後要捲很久才看得到。
+         管理後台只掛給管理員,一般使用者連入口都不會出現(後端另有權限檢查)。 */
+      ['帳號', [['account', s.me ? '我的帳號' : '登入', '#8be0d0']]
+        .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
+        .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
-      // 管理後台只掛給管理員,一般使用者連入口都看不到(後端另有權限檢查,這裡只是不礙眼)
-      ['帳號', [['account', '我的帳號', '#8be0d0']]
-        .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
-        .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -5663,6 +5796,55 @@ class Component extends DCLogic {
           acDiscordBtn: (me && me.discord) ? '重新綁定' : '綁定 Discord',
           acDiscord: (me && me.discord) ? ('已綁定：' + (me.discord.name || me.discord.id)) : '尚未綁定',
           acMsg: s.wBusy || '',
+          ...(() => {
+            /* 訂閱表單。欄位規格全部來自後端的 /api/watch-kinds,
+               這裡只負責把它攤成可以用 sc-for 渲染的扁平陣列。 */
+            const K = s.watchKinds || {};
+            const f = s.wForm || null;
+            const kindKeys = Object.keys(K);
+            const cur = f && K[f.kind] ? K[f.kind] : null;
+            const modeKeys = cur ? Object.keys(cur.modes || {}) : [];
+            const curMode = cur && f ? (cur.modes || {})[f.mode] : null;
+            const fields = cur ? [].concat(cur.common_fields || [], (curMode && curMode.fields) || []) : [];
+            const vals = (f && f.vals) || {};
+            return {
+              wOpen: !!f, wNotOpen: !f,
+              wKindChips: kindKeys.map(k => {
+                const on = f && f.kind === k, st = chip(on, 'var(--cta)');
+                return Object.assign({ v: k, n: K[k].label + (K[k].available === false ? '（未啟用）' : '') }, st);
+              }),
+              wModeChips: modeKeys.map(k => {
+                const on = f && f.mode === k, st = chip(on, 'var(--cta)');
+                return Object.assign({ v: k, n: (cur.modes[k].label || k) }, st);
+              }),
+              wFields: fields.map(fd => ({
+                key: fd.key, label: fd.label + (fd.required ? ' *' : ''),
+                isSelect: fd.type === 'select', isNumber: fd.type === 'number', isText: fd.type !== 'select' && fd.type !== 'number',
+                val: vals[fd.key] != null ? String(vals[fd.key]) : (fd.default != null ? String(fd.default) : ''),
+                hint: fd.hint || '',
+                options: (fd.options || []).map(o => ({ v: String(o.value), n: o.label })),
+              })),
+              wNote: (curMode && curMode.note) || (cur && cur.desc) || '',
+              wUnavail: !!(cur && cur.available === false),
+              wName: (f && f.name) || '',
+              wRows: (s.watches || []).map(w => ({
+                id: w.id, name: w.name || w.kind,
+                kind: (K[w.kind] && K[w.kind].label) || w.kind,
+                on: !!w.enabled, onFlag: w.enabled ? '1' : '0',
+                toggleTxt: w.enabled ? '停用' : '啟用',
+                params: (() => { try { const o = typeof w.params === 'string' ? JSON.parse(w.params) : (w.params || {});
+                  return Object.keys(o).map(k => k + '=' + o[k]).join('　'); } catch (e) { return ''; } })(),
+                fired: w.last_fired ? this.ago(w.last_fired * 1000) : '尚未觸發',
+              })),
+              wEmpty: !(s.watches || []).length,
+              wEventRows: (s.wEvents || []).slice(0, 10).map(e => ({
+                title: e.title || '', when: e.created_at ? this.ago(e.created_at * 1000) : '',
+                mailed: e.mailed_at ? '已寄出' : (e.mail_error ? '寄信失敗' : '待寄出'),
+                mailedFg: e.mailed_at ? '#3ea76a' : (e.mail_error ? '#e0576a' : 'var(--text-3)'),
+              })),
+              wNoEvents: !(s.wEvents || []).length,
+            };
+          })(),
           acErr: s.meErr || '',
           acSyncMsg: s.acSyncMsg || '',
           applyNote: s.applyNote || '',
@@ -6591,6 +6773,19 @@ class Component extends DCLogic {
         if (d.k === 'tcat') patch.tutMore = false;
         this.setState(patch);
       },
+      onWNew: () => this.setState({ wForm: { kind: 'border', mode: 'tier_score', vals: {}, name: '' }, wBusy: '' }),
+      onWCancel: () => this.setState({ wForm: null, wBusy: '' }),
+      onWKind: e => { const k = e.currentTarget.dataset.v; const K = this.state.watchKinds || {};
+        const first = Object.keys((K[k] || {}).modes || {})[0] || '';
+        this.setState(st => ({ wForm: Object.assign({}, st.wForm, { kind: k, mode: first, vals: {} }) })); },
+      onWMode: e => { const v = e.currentTarget.dataset.v;
+        this.setState(st => ({ wForm: Object.assign({}, st.wForm, { mode: v, vals: {} }) })); },
+      onWField: e => { const k = e.currentTarget.dataset.k, v = e.currentTarget.value;
+        this.setState(st => ({ wForm: Object.assign({}, st.wForm, { vals: Object.assign({}, st.wForm.vals, { [k]: v }) }) })); },
+      onWName: e => { const v = e.currentTarget.value; this.setState(st => ({ wForm: Object.assign({}, st.wForm, { name: v }) })); },
+      onWCreate: () => this.createWatch(),
+      onWToggle: e => this.toggleWatch(e.currentTarget.dataset.id, e.currentTarget.dataset.on !== '1'),
+      onWDelete: e => this.deleteWatch(e.currentTarget.dataset.id),
       onApprove: async e => {
         const id = e.currentTarget.dataset.id;
         try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'approved' } }); this.loadAdmin(); }
