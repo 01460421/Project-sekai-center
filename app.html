@@ -25,6 +25,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --border:rgba(72,86,133,.13);--border-2:rgba(72,86,133,.26);
 --cta:linear-gradient(135deg,#22c3d6 0%,#3f8cf3 100%);
 --ink-grad:linear-gradient(135deg,#273052 0%,#3b4878 100%);
+--grad-cta:linear-gradient(135deg,#22c3d6 0%,#3f8cf3 100%);
 --rainbow:linear-gradient(90deg,#4ad1e8,#3ee0a8,#b8e561,#ffd94d,#ff9db4,#c39df2,#7fb4f7);
 --sh-xs:0 1px 2px rgba(31,42,80,.05);
 --sh-sm:0 1px 2px rgba(31,42,80,.04),0 4px 14px rgba(31,42,80,.06);
@@ -43,6 +44,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --accent:#33cfe0;--accent-deep:#5fd0e6;
 --border:rgba(148,163,215,.17);--border-2:rgba(148,163,215,.32);
 --ink-grad:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
+--grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
 --sh-xs:0 1px 2px rgba(0,0,0,.25);--sh-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
 --sh-md:0 2px 6px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35);--sh-lg:0 8px 20px rgba(0,0,0,.35),0 28px 70px rgba(0,0,0,.5);
 --fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;
@@ -56,6 +58,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --accent:#33cfe0;--accent-deep:#5fd0e6;
 --border:rgba(148,163,215,.17);--border-2:rgba(148,163,215,.32);
 --ink-grad:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
+--grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
 --sh-xs:0 1px 2px rgba(0,0,0,.25);--sh-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
 --sh-md:0 2px 6px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35);--sh-lg:0 8px 20px rgba(0,0,0,.35),0 28px 70px rgba(0,0,0,.5);
 --fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;
@@ -1421,7 +1424,7 @@ input::placeholder{color:var(--text-3)}
           登入之後會存到雲端，跨裝置共用。<br>
           登入也才能使用偵測訂閱 —— 榜線到達你設定的門檻、或追蹤的玩家有動靜時，寄信通知你。
         </div>
-        <a href="{{ acLoginUrl }}" style="display:inline-block;padding:12px 26px;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-shadow:var(--sh-sm)">使用 Google 帳號登入</a>
+        <a href="{{ acLoginUrl }}" style="display:inline-block;padding:12px 26px;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-shadow:var(--sh-sm)">使用 Google 帳號登入</a>
         <div style="font-size:11px;color:var(--text-3);margin-top:14px;line-height:1.7">
           本站只會取得你的 Google 名稱、頭像與信箱（信箱用來寄通知）。不會讀取你的信件或其他資料。<br>
           新帳號需要管理員核准後才能使用訂閱功能。
@@ -1443,7 +1446,7 @@ input::placeholder{color:var(--text-3)}
         </div>
         <textarea placeholder="例如：我是 XX 車隊的，想用來追 T100 榜線" value="{{ applyNote }}" onInput="{{ onField }}" data-k="applyNote" style="width:100%;min-height:74px;padding:11px 14px;border:1.5px solid var(--border);border-radius:13px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
         <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
-          <button type="button" onClick="{{ onApply }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出申請</button>
+          <button type="button" onClick="{{ onApply }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出申請</button>
           <a href="{{ acLogoutUrl }}" style="padding:10px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:13px;font-weight:700;text-decoration:none">登出</a>
         </div>
         <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ acMsg }}</div>
@@ -1470,7 +1473,7 @@ input::placeholder{color:var(--text-3)}
           會同步遊戲 uid、持卡勾選、編組與偏好設定。載入時只會補上本機沒有的項目，不會蓋掉你當下正在改的東西。
         </div>
         <div style="display:flex;gap:9px;flex-wrap:wrap">
-          <button type="button" onClick="{{ onPush }}" style="padding:9px 18px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">上傳這台裝置的設定</button>
+          <button type="button" onClick="{{ onPush }}" style="padding:9px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">上傳這台裝置的設定</button>
           <button type="button" onClick="{{ onPull }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">從雲端載入</button>
         </div>
         <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ acSyncMsg }}</div>
@@ -1488,6 +1491,30 @@ input::placeholder{color:var(--text-3)}
         </div>
       </div>
 
+    </sc-if>
+
+    <sc-if value="{{ acLoading }}">
+      <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px">載入中…</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ========== 站內助手 ========== -->
+  <sc-if value="{{ isAssistant }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ acLoggedOut }}">
+      <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13.5px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+        站內助手需要登入才能使用。<br>
+        <a href="{{ acLoginUrl }}" style="color:var(--accent-deep);font-weight:700">使用 Google 帳號登入</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ acPending }}">
+      <div style="padding:26px;text-align:center;color:var(--text-2);font-size:13px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+        你的帳號還在等待管理員核准，核准後就能使用站內助手。<br>
+        <a href="?page=account" style="color:var(--accent-deep);font-weight:700">前往我的帳號送出申請</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ acReady }}">
       <!-- 站內助手 -->
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
@@ -1505,10 +1532,6 @@ input::placeholder{color:var(--text-3)}
               「這期是什麼型態？跟同型態的歷史比算高還低」
             </div>
       
-    </sc-if>
-
-    <sc-if value="{{ acLoading }}">
-      <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px">載入中…</div>
     </sc-if>
   </div>
   </sc-if>
@@ -1545,7 +1568,7 @@ input::placeholder{color:var(--text-3)}
               <div style="font-size:11px;color:var(--text-3)">{{ u.email }}　{{ u.when }}</div>
               <div style="font-size:11.5px;color:var(--text-2);margin-top:3px">{{ u.note }}</div>
             </div>
-            <button type="button" onClick="{{ onApprove }}" data-id="{{ u.id }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:12px;font-weight:800;cursor:pointer">核准</button>
+            <button type="button" onClick="{{ onApprove }}" data-id="{{ u.id }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">核准</button>
             <button type="button" onClick="{{ onReject }}" data-id="{{ u.id }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">拒絕</button>
           </div>
         </sc-for>
@@ -1564,7 +1587,7 @@ input::placeholder{color:var(--text-3)}
 
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input type="text" placeholder="問它任何關於這個站的資料或規劃…" value="{{ admAsk }}" onInput="{{ onField }}" data-k="admAsk" onKeyDown="{{ onAiKey }}" style="flex:1;min-width:200px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13.5px;outline:none">
-          <button type="button" onClick="{{ onAiSend }}" style="padding:11px 22px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出</button>
+          <button type="button" onClick="{{ onAiSend }}" style="padding:11px 22px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出</button>
           <button type="button" onClick="{{ onAiClear }}" style="padding:11px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">清除</button>
         </div>
         <div style="font-size:11.5px;color:#e0576a;margin-top:8px">{{ aiErr }}</div>
@@ -2671,7 +2694,8 @@ class Component extends DCLogic {
     credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
-    admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手']
+    admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
+    assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料']
   };
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
@@ -4533,7 +4557,7 @@ class Component extends DCLogic {
     if (p === 'collect') this.loadCollect();
     if (p === 'rate') this.loadCards();
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
-    if (p === 'account' || p === 'admin') { if (this.state.me === undefined) this.loadMe(); }
+    if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'admin') this.loadAdmin();
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -4815,7 +4839,9 @@ class Component extends DCLogic {
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
       // 管理後台只掛給管理員,一般使用者連入口都看不到(後端另有權限檢查,這裡只是不礙眼)
-      ['帳號', [['account', '我的帳號', '#8be0d0']].concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])]
+      ['帳號', [['account', '我的帳號', '#8be0d0']]
+        .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
+        .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -5548,7 +5574,7 @@ class Component extends DCLogic {
       sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
-      isAccount: s.page === 'account', isAdminPage: s.page === 'admin',
+      isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant',
       ...(() => {
         const me = s.me, isAdm = !!(me && me.is_admin);
         const st = s.admStats || {};
@@ -5565,7 +5591,7 @@ class Component extends DCLogic {
         (s.aiMsgs || []).forEach(m => {
           if (m.role === 'user') {
             if (typeof m.content === 'string') {
-              bubbles.push({ text: m.content, align: 'flex-end', bg: 'var(--grad-ink)', fg: '#fff', bd: 'transparent' });
+              bubbles.push({ text: m.content, align: 'flex-end', bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' });
             }
             return;   // tool_result 不顯示
           }
@@ -5582,8 +5608,19 @@ class Component extends DCLogic {
         return {
           admDenied: me !== undefined && !isAdm,
           admOk: isAdm,
-          admStatCards: Object.keys(st).filter(k => typeof st[k] === 'number')
-            .slice(0, 6).map(k => ({ k, v: this.n(st[k]) })),
+          /* siteStats 回的是巢狀結構(users/watches/events/ai 各一包),
+             所以要挑出來攤平成卡片,不能只撿「值是數字」的頂層鍵 —— 那樣會全被濾掉。 */
+          admStatCards: (() => {
+            const u = st.users || {}, w = st.watches || {}, e = st.events || {}, ai = st.ai || st.admin_log || {};
+            const cards = [
+              ['使用者', u.total], ['待審核', u.pending], ['已核准', u.approved],
+              ['綁 Discord', u.discord_linked], ['訂閱數', w.total], ['啟用中', w.enabled],
+              ['通知事件', e.total], ['未寄出', e.unmailed], ['寄信失敗', e.mail_failed],
+              ['AI 次數', ai.total], ['AI 近七日', ai.last_7d],
+            ];
+            return cards.filter(c => typeof c[1] === 'number').map(c => ({ k: c[0], v: this.n(c[1]) }));
+          })(),
+          admStatErr: st && st.error ? ('統計載入失敗：' + st.error) : '',
           admPendingN: pend.length,
           admNoPending: pend.length === 0,
           admUserRows: pend.map(u => ({
@@ -5613,9 +5650,9 @@ class Component extends DCLogic {
           acRole: me && me.is_admin ? '管理員' : '',
           acLoginUrl: ret('google'),
           acLogoutUrl: api + '/auth/logout',
-          acDiscordUrl: me && me.discord_id ? 'javascript:void(0)' : ret('discord'),
-          acDiscordBtn: me && me.discord_id ? '重新綁定' : '綁定 Discord',
-          acDiscord: me && me.discord_id ? ('已綁定：' + (me.discord_name || me.discord_id)) : '尚未綁定',
+          acDiscordUrl: ret('discord'),
+          acDiscordBtn: (me && me.discord) ? '重新綁定' : '綁定 Discord',
+          acDiscord: (me && me.discord) ? ('已綁定：' + (me.discord.name || me.discord.id)) : '尚未綁定',
           acMsg: s.wBusy || '',
           acSyncMsg: s.acSyncMsg || '',
           applyNote: s.applyNote || '',
