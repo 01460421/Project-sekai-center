@@ -176,3 +176,11 @@ export const logTool = (db, userId, tool, args, ok, result) =>
     String(result == null ? '' : (typeof result === 'string' ? result : JSON.stringify(result))).slice(0, 2000), now());
 export const listToolLog = (db, limit) =>
   all(db, 'SELECT * FROM tool_log ORDER BY created_at DESC LIMIT ?', Math.min(200, limit || 50));
+
+/* 今日已用的 AI 次數。開放給一般使用者之後,沒有上限的話 API 費用會失控,
+   而且一個人跑迴圈就能把額度吃光。用 admin_log 當計數來源,不另外開表。 */
+export async function aiUsedToday(db, userId) {
+  const since = now() - 86400;
+  const r = await one(db, 'SELECT count(*) AS c FROM admin_log WHERE user_id=? AND created_at>=?', userId, since);
+  return (r && r.c) || 0;
+}

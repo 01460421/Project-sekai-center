@@ -9,7 +9,7 @@
    個資最小化：送進 Claude 的快照只有聚合數字與活動榜線，沒有 email、Google sub、
    Discord id，也沒有玩家 uid —— 這些欄位對「回答統計問題」毫無幫助，帶出去只是風險。 */
 
-import { corsHeaders, preflight } from './api.js';
+import { corsHeaders, preflight } from './cors.js';
 import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   logTool,
   listToolLog,
@@ -260,7 +260,7 @@ async function askClaude(env, snapshot, prompt, withFallback = true) {
 const MAX_TOOLS = 40;
 const MAX_MSGS = 60;
 
-async function chatClaude(env, { messages, tools, system }) {
+export async function chatClaude(env, { messages, tools, system }) {
   const headers = {
     'content-type': 'application/json',
     'x-api-key': env.ANTHROPIC_API_KEY,
@@ -294,7 +294,7 @@ async function chatClaude(env, { messages, tools, system }) {
 }
 
 /* 前端送來的東西一律當成不可信輸入檢查過再轉發 */
-function validateChat(body) {
+export function validateChat(body) {
   const messages = Array.isArray(body.messages) ? body.messages : null;
   if (!messages || !messages.length) return { error: '缺少 messages' };
   if (messages.length > MAX_MSGS) return { error: '對話過長，請開新對話' };

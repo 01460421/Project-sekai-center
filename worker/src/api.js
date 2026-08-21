@@ -7,12 +7,17 @@
    而 session 是 cookie，所以每個回應都得帶「具體」的 Allow-Origin —— 帶 credentials 時
    瀏覽器會直接拒絕 `*`。統一由 json() 補齊，不要逐路由重抄一遍。 */
 
+import { allowOrigin, corsHeaders, preflight } from './cors.js';
+import { chatClaude, validateChat } from './admin.js';
 import {
   applyNote, getUser, unlinkDiscord,
   getPrefs, setPrefs,
   listWatches, createWatch, updateWatch, deleteWatch,
   listEvents,
-} from './db.js';
+  logAdmin,
+  logTool,
+  aiUsedToday,
+  createTask} from './db.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
 const MAX_WATCHES = 20;            // 每人上限,免得有人開一百個把掃描迴圈拖垮
@@ -20,44 +25,6 @@ const MAX_BODY = 32 * 1024;        // 一般請求
 const MAX_PREFS = 256 * 1024;      // 設定整包上限,避免有人拿 D1 當雲端硬碟
 const MAX_PARAMS = 8 * 1024;       // 單一 watch 的 params
 const MAX_PREF_KEYS = 200;
-
-/* ---------- CORS ---------- */
-
-/* 回傳可以放進 Allow-Origin 的具體來源,不允許就回 null（連標頭都不發,瀏覽器自己會擋）。 */
-export function allowOrigin(req, env) {
-  const o = req.headers.get('Origin');
-  if (!o) return null;                      // 同源或非瀏覽器請求,不需要 CORS 標頭
-  const site = String(env.SITE_BASE || 'https://project-sekai-center.com').replace(/\/+$/, '');
-  const ok = [site];
-  // 使用者網址列多打或少打 www 都還是同一個站,不該因為三個字被擋在門外
-  try {
-    const u = new URL(site);
-    const alt = u.hostname.startsWith('www.') ? u.hostname.slice(4) : 'www.' + u.hostname;
-    ok.push(u.protocol + '//' + u.host.replace(u.hostname, alt));
-  } catch (e) { /* SITE_BASE 設壞了就只比對字串 */ }
-  if (ok.indexOf(o) >= 0) return o;
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o)) return o;   // 本機開發
-  return null;
-}
-
-export function corsHeaders(req, env) {
-  // Allow-Origin 會隨請求變動,沒有 Vary 的話 CDN 可能把 A 站的標頭快取給 B 站
-  const h = { 'vary': 'Origin' };
-  const o = allowOrigin(req, env);
-  if (o) {
-    h['access-control-allow-origin'] = o;
-    h['access-control-allow-credentials'] = 'true';
-  }
-  return h;
-}
-
-export function preflight(req, env) {
-  const h = corsHeaders(req, env);
-  h['access-control-allow-methods'] = 'GET, POST, PATCH, DELETE, OPTIONS';
-  h['access-control-allow-headers'] = req.headers.get('Access-Control-Request-Headers') || 'Content-Type';
-  h['access-control-max-age'] = '86400';
-  return new Response(null, { status: 204, headers: h });
-}
 
 /* 全站唯一的回應出口：JSON ＋ CORS ＋ no-store（帶 session 的東西不能被中間層快取）。 */
 function json(obj, status, req, env) {
@@ -259,6 +226,38 @@ export async function handleApi(req, env, url, user) {
     }
 
     /* ---------- 觸發紀錄 ---------- */
+    /* 站內助手。開放給「已核准」的一般使用者 —— 核准本身就是管理員的許可。
+       工具在瀏覽器執行,Worker 只代理 Claude API 並記帳。
+       每日上限:一般使用者 40 次、管理員 200 次。一次對話會來回好幾輪,
+       所以這裡算的是「請求數」不是「問題數」。 */
+    if (p === '/api/chat' && req.method === 'POST') {
+      if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
+      const cap = user.is_admin ? 200 : 40;
+      const used = await aiUsedToday(env.DB, user.id);
+      if (used >= cap) {
+        return json({ error: 'quota', message: '今日 AI 用量已達上限（' + cap + ' 次），請明天再試。' }, 429, req, env);
+      }
+      const v = validateChat(body);
+      if (v.error) return json({ error: 'bad_request', message: v.error }, 400, req, env);
+      let out;
+      try {
+        out = await chatClaude(env, v);
+      } catch (e) {
+        const msg = (e && e.message) || String(e);
+        await logAdmin(env.DB, user.id, '[chat]', '[失敗] ' + msg, 0, 0);
+        return json({ error: 'claude_failed', message: msg }, 502, req, env);
+      }
+      const calls = (out.content || []).filter(c => c.type === 'tool_use');
+      for (const c of calls) await logTool(env.DB, user.id, c.name, c.input, true, 'requested');
+      const text = (out.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+      await logAdmin(env.DB, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
+                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), out.tokens_in, out.tokens_out);
+      return json({
+        content: out.content, stop_reason: out.stop_reason, model: out.model,
+        quota: { used: used + 1, cap },
+      }, 200, req, env);
+    }
+
     if (p === '/api/events') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       const n = parseInt(url.searchParams.get('limit'), 10);

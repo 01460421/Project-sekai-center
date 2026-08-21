@@ -1487,6 +1487,24 @@ input::placeholder{color:var(--text-3)}
           <a href="{{ acDiscordUrl }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none">{{ acDiscordBtn }}</a>
         </div>
       </div>
+
+      <!-- 站內助手 -->
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
+          可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
+          它讀得到的就是站上這些資料，回答前會實際去查。每日用量有上限。
+        </div>
+
+        <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
+          <sc-if value="{{ aiEmpty }}">
+            <div style="font-size:12.5px;color:var(--text-3);line-height:1.9;padding:6px 0">
+              試試看這樣問：<br>
+              「我的 id 是 123456789，幫我算接下來兩期該怎麼跑，還有近幾個月該抽哪些池」<br>
+              「現在 T1000 要跑到幾分？我時速多少、還要打多久追得上」<br>
+              「這期是什麼型態？跟同型態的歷史比算高還低」
+            </div>
+      
     </sc-if>
 
     <sc-if value="{{ acLoading }}">
@@ -1533,23 +1551,7 @@ input::placeholder{color:var(--text-3)}
         </sc-for>
       </div>
 
-      <!-- AI 助手 -->
-      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
-        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
-        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
-          可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
-          它讀得到的就是站上這些資料，回答前會實際去查。
-        </div>
-
-        <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
-          <sc-if value="{{ aiEmpty }}">
-            <div style="font-size:12.5px;color:var(--text-3);line-height:1.9;padding:6px 0">
-              試試看這樣問：<br>
-              「我的 id 是 123456789，幫我算接下來兩期該怎麼跑，還有近幾個月該抽哪些池」<br>
-              「現在 T1000 要跑到幾分？我時速多少、還要打多久追得上」<br>
-              「這期是什麼型態？跟同型態的歷史比算高還低」
-            </div>
-          </sc-if>
+    </sc-if>
           <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
             <div style="margin-bottom:10px;display:flex;justify-content:{{ m.align }}">
               <div style="max-width:88%;padding:10px 14px;border-radius:15px;background:{{ m.bg }};color:{{ m.fg }};font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid {{ m.bd }}">{{ m.text }}</div>
@@ -4017,7 +4019,7 @@ class Component extends DCLogic {
     this.setState({ aiMsgs: cur, admBusy: true, admAsk: '', aiErr: '' });
     try {
       for (let guard = 0; guard < 12; guard++) {
-        const r = await this.api('/admin/chat', { method: 'POST', body: {
+        const r = await this.api('/api/chat', { method: 'POST', body: {
           messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
         const content = (r && r.content) || [];
         cur = cur.concat([{ role: 'assistant', content }]);
