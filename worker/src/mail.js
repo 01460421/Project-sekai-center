@@ -163,7 +163,7 @@ export async function sendMail(env, opts) {
     html: o.html,
     text: o.text,
   };
-  if (o.replyTo) payload.replyTo = o.replyTo;
+  if (o.replyTo) payload.reply_to = o.replyTo;
   if (o.headers) payload.headers = o.headers;
 
   const headers = {

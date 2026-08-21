@@ -9,6 +9,7 @@
    個資最小化：送進 Claude 的快照只有聚合數字與活動榜線，沒有 email、Google sub、
    Discord id，也沒有玩家 uid —— 這些欄位對「回答統計問題」毫無幫助，帶出去只是風險。 */
 
+import { corsHeaders, preflight } from './api.js';
 import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   logTool,
   listToolLog,
@@ -29,9 +30,18 @@ const HISEKAI = 'https://api.hisekai.org/tw';
 const UA = 'project-sekai-center/1.0 (+https://project-sekai-center.vercel.app) admin-console';
 
 /* 後台回應一律 no-store：這裡面是使用者名單與稽核紀錄，不該被任何中間層留下來 */
+/* 後台跟主站不同來源（主站 project-sekai-center.com，這裡是 games 子網域），
+   而 session 在 cookie，所以每個回應都得帶具名的 Allow-Origin 與 Allow-Credentials。
+   少了它，瀏覽器連讀都讀不到，POST 的 preflight 更是直接失敗 —— 整個後台會叫不動。
+   規則跟 api.js 完全一樣，所以直接共用那份實作，不要另寫一套走鐘。 */
+let _req = null, _env = null;
 const json = (o, status) => new Response(JSON.stringify(o), {
   status: status || 200,
-  headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  headers: {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    ...(_req ? corsHeaders(_req, _env) : {}),
+  },
 });
 
 const n = v => Number(v || 0);
@@ -306,6 +316,11 @@ export async function handleAdmin(req, env, url, user) {
   const p = url.pathname;
   if (p !== '/admin' && !p.startsWith('/admin/')) return null;
 
+  // json() 要拿得到 req/env 才能組 CORS 標頭
+  _req = req; _env = env;
+  // preflight 不帶 cookie，若照一般流程會被下面的 403 擋掉而讓整個 POST 失敗
+  if (req.method === 'OPTIONS') return preflight(req, env);
+
   /* 未登入與非管理員都回 403：對外不去區分「這條路存在但你不夠格」和「你還沒登入」，
      真正的差別放在 body 讓前端決定要跳登入還是顯示無權限。 */
   if (!user) return json({ error: 'not_signed_in', message: '請先登入' }, 403);
@@ -426,6 +441,12 @@ export async function handleAdmin(req, env, url, user) {
       return json({ tasks: await listTasks(db, null, 50) });
     }
     if (p === '/admin/tasks' && req.method === 'POST') {
+      // action 必須是 index.js runDueTasks 實作過的白名單,否則會建檔成功、
+      // 到期才失敗,管理員得翻資料表才知道打錯字
+      const TASK_ACTIONS = ['notify'];
+      if (TASK_ACTIONS.indexOf(String(body.action || '')) < 0) {
+        return json({ error: 'bad_request', message: 'action 只能是：' + TASK_ACTIONS.join('、') }, 400);
+      }
       const t = await createTask(db, user.id, {
         title: body.title, action: String(body.action || ''),
         params: body.params || {}, run_at: +body.run_at || 0, repeat_s: +body.repeat_s || 0,

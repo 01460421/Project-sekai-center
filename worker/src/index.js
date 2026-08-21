@@ -247,6 +247,18 @@ export default {
       if (r) return r;
     }
 
+    /* /stop 會直接刪掉 alarm,等於把逐局追蹤整個停掉;/ensure 則會把它重新排起來。
+       這兩個是維護用的控制面,不該對外開放 —— cron 是透過 DO stub 直接呼叫,
+       不經過這裡,所以擋掉外部 HTTP 不影響看門狗。 */
+    if (p === '/stop' || p === '/ensure') {
+      const user = await currentUser(req, env);
+      if (!user || !user.is_admin) {
+        return new Response(JSON.stringify({ error: 'not_admin' }), {
+          status: 403, headers: { 'content-type': 'application/json; charset=utf-8' },
+        });
+      }
+    }
+
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     // 單例：整個追蹤器只有一個 DO 實例
     const stub = env.TRACKER.get(env.TRACKER.idFromName('main'));

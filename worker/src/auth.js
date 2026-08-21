@@ -128,14 +128,32 @@ export async function discordExchange(env, code) {
 
 const html = (body, status) => new Response(body, { status: status || 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 
+/* 這一頁是在 Worker 自己的網域上跑的,而那個網域同時服務 /api/* 與 /admin/*。
+   任何插進這裡的 HTML 都會在該來源執行,SameSite=Lax 又會讓它發出的同源請求
+   自動帶上 session cookie —— 也就是說這裡的字串一旦沒跳脫,就等於把帳號送人
+   (HttpOnly 擋不住,攻擊腳本不需要讀 cookie,只要用它打 API 就好)。
+   所以:所有插值一律跳脫,跳轉目標一律只接受同源相對路徑。 */
+const esc = v => String(v == null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+/* 只允許「單一斜線開頭」的相對路徑。擋掉 //evil.com（協定相對網址,會跳到外站）
+   與任何帶協定的絕對網址;不合格就退回帳號頁。 */
+function safePath(r) {
+  const v = String(r || '');
+  if (!/^\/[^/\\]/.test(v)) return '/app.html?page=account';
+  if (v.length > 200) return '/app.html?page=account';
+  return v;
+}
+
 /* 登入完成後跳回站上。用 HTML 而不是 302，是為了在同一個回應裡種 cookie
-   並讓使用者看到結果（OAuth 失敗時直接把原因寫在畫面上比較好查）。 */
+   並讓使用者看到結果。to 必須是呼叫端自己組出來的可信網址。 */
 const bounce = (to, msg) => html(
   `<!doctype html><meta charset="utf-8"><title>登入中…</title>
    <body style="font-family:system-ui;padding:40px;text-align:center;color:#333">
-   <p>${msg || '登入成功，正在返回…'}</p>
-   <script>location.replace(${JSON.stringify(to)})</script>
-   <p><a href="${to}">如果沒有自動跳轉，點這裡</a></p></body>`);
+   <p>${esc(msg || '登入成功，正在返回…')}</p>
+   <script>location.replace(${JSON.stringify(String(to))})</script>
+   <p><a href="${esc(to)}">如果沒有自動跳轉，點這裡</a></p></body>`);
 
 export async function handleAuth(req, env, url) {
   const p = url.pathname;
@@ -149,7 +167,7 @@ export async function handleAuth(req, env, url) {
     if (!isG && !(await currentUser(req, env))) return bounce(site + '/app.html?page=account', '請先用 Google 登入再綁定 Discord');
     const state = await signToken(env.SESSION_SECRET, {
       n: crypto.randomUUID(), e: Math.floor(Date.now() / 1000) + 600,
-      r: url.searchParams.get('r') || '/app.html?page=account',
+      r: safePath(url.searchParams.get('r')),
     });
     return Response.redirect(isG ? googleAuthUrl(env, state) : discordAuthUrl(env, state), 302);
   }
@@ -157,7 +175,9 @@ export async function handleAuth(req, env, url) {
   if (p === '/auth/google/callback' || p === '/auth/discord/callback') {
     const isG = p === '/auth/google/callback';
     const err = url.searchParams.get('error');
-    if (err) return bounce(site + '/app.html?page=account', '登入取消或失敗：' + err);
+    // 供應商回傳的 error 是外部輸入,只用代碼比對後顯示我們自己的文案,不回顯原文
+    if (err) return bounce(site + '/app.html?page=account',
+      err === 'access_denied' ? '你取消了授權，沒有完成登入。' : '登入沒有完成（供應商回報錯誤）。請再試一次。');
     const st = await verifyToken(env.SESSION_SECRET, url.searchParams.get('state') || '');
     if (!st) return html('state 驗證失敗（可能是逾時或被竄改），請重新登入。', 400);
     const code = url.searchParams.get('code');
@@ -168,7 +188,7 @@ export async function handleAuth(req, env, url) {
         if (!prof.emailVerified) return html('這個 Google 帳號的信箱尚未驗證，無法用來接收通知。', 400);
         const user = await upsertGoogleUser(env.DB, prof, env.ADMIN_EMAIL);
         const tok = await signToken(env.SESSION_SECRET, { u: user.id, e: Math.floor(Date.now() / 1000) + SESSION_DAYS * 86400 });
-        const res = bounce(site + (st.r || '/app.html?page=account'));
+        const res = bounce(site + safePath(st.r));
         res.headers.append('Set-Cookie', sessionCookie(tok, env.COOKIE_DOMAIN));
         return res;
       }
@@ -176,9 +196,11 @@ export async function handleAuth(req, env, url) {
       if (!me) return bounce(site + '/app.html?page=account', 'session 已過期，請重新登入。');
       const d = await discordExchange(env, code);
       await linkDiscord(env.DB, me.id, d);
-      return bounce(site + (st.r || '/app.html?page=account'), 'Discord 已綁定，正在返回…');
+      return bounce(site + safePath(st.r), 'Discord 已綁定，正在返回…');
     } catch (e) {
-      return html('OAuth 交換失敗：' + (e && e.message ? e.message : e), 502);
+      // 例外訊息裡可能帶有供應商回應的原文,只記到 log,不吐回瀏覽器
+      console.error('oauth exchange failed', e && e.message);
+      return html('登入流程失敗，請重新登入。若持續發生請聯絡管理員。', 502);
     }
   }
 

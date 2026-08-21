@@ -621,18 +621,30 @@ async function detectSchedule(w, p, st, snap, t) {
   if (what === 'event_end' && p.end_kind === 'closed') label = '活動關閉';
   if (what === 'wl_chapter' && p.edge === 'end') label = '世界連結章節結算';
 
-  const beforeS = Math.max(0.1, Number(p.before_h) || 24) * SEC_H;
+  /* before_h 也要有上限。設成一年的話,未來所有卡池都會同時落進視窗
+     (光是 GACHAS 就有 140+ 筆未來排程),一輪吐幾十封信,共用的寄信額度撐不住。
+     30 天已經遠超過「提前提醒」的實際需求。 */
+  const beforeS = Math.min(720, Math.max(0.1, Number(p.before_h) || 24)) * SEC_H;
   const targets = await scheduleTargets(what, p, snap, t);
   const future = targets.filter((x) => x.at > t).sort((a, b) => a.at - b.at);
-  const notified = Array.isArray(st?.notified) ? st.notified : [];
+
+  /* 已通知清單存 {k, at},淘汰依據是「這個目標的時間過了沒」而不是筆數。
+     原本用 slice(-40) 只留最後 40 筆,一旦視窗內的目標超過 40 個,較早的 key
+     會被擠出清單,下一輪就當成沒通知過而再次觸發 —— 永遠收斂不了,
+     單一訂閱就能把全站共用的寄信額度燒光。 */
+  const notifiedMap = new Map();
+  (Array.isArray(st?.notified) ? st.notified : []).forEach((x) => {
+    if (typeof x === 'string') notifiedMap.set(x, t + beforeS);   // 舊格式:給一個保守的到期時間
+    else if (x && x.k) notifiedMap.set(x.k, Number(x.at) || 0);
+  });
 
   const fires = [];
   const hit = [];
   for (const x of future) {
     if (x.at - t > beforeS) break;               // 已排序，後面的只會更遠
-    if (notified.includes(x.key)) continue;
+    if (notifiedMap.has(x.key)) continue;
     if (fires.length >= MAX_SCHEDULE_FIRES) break;
-    hit.push(x.key);
+    hit.push(x);
     fires.push({
       title: `${label}：${x.name}（還有 ${fmtDur(x.at - t)}）`,
       body: `${label}：${x.name}\n時間：${fmtTW(x.at)}（台灣時間）\n距離現在：${fmtDur(x.at - t)}\n` +
@@ -641,10 +653,16 @@ async function detectSchedule(w, p, st, snap, t) {
     });
   }
 
+  hit.forEach((x) => notifiedMap.set(x.key, x.at));
   const next = future[0] || null;
+  /* 目標時間過了三天才清掉：留一點餘裕,免得剛過期就被清、又被同一輪的其他判斷
+     重新撿回來。上限 500 純粹是防呆,正常情況下遠遠用不到。 */
+  const keep = [...notifiedMap.entries()]
+    .filter(([, at]) => at > t - 3 * 86400)
+    .map(([k, at]) => ({ k, at }))
+    .slice(-500);
   const state = {
-    // 只留最近 40 筆已通知的目標，不然這個欄位會無限長大
-    notified: notified.concat(hit).slice(-40),
+    notified: keep,
     next: next ? { key: next.key, at: next.at, name: next.name } : null,
   };
   return { fires, state };

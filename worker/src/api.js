@@ -24,7 +24,7 @@ const MAX_PREF_KEYS = 200;
 /* ---------- CORS ---------- */
 
 /* 回傳可以放進 Allow-Origin 的具體來源,不允許就回 null（連標頭都不發,瀏覽器自己會擋）。 */
-function allowOrigin(req, env) {
+export function allowOrigin(req, env) {
   const o = req.headers.get('Origin');
   if (!o) return null;                      // 同源或非瀏覽器請求,不需要 CORS 標頭
   const site = String(env.SITE_BASE || 'https://project-sekai-center.com').replace(/\/+$/, '');
@@ -40,7 +40,7 @@ function allowOrigin(req, env) {
   return null;
 }
 
-function corsHeaders(req, env) {
+export function corsHeaders(req, env) {
   // Allow-Origin 會隨請求變動,沒有 Vary 的話 CDN 可能把 A 站的標頭快取給 B 站
   const h = { 'vary': 'Origin' };
   const o = allowOrigin(req, env);
@@ -51,7 +51,7 @@ function corsHeaders(req, env) {
   return h;
 }
 
-function preflight(req, env) {
+export function preflight(req, env) {
   const h = corsHeaders(req, env);
   h['access-control-allow-methods'] = 'GET, POST, PATCH, DELETE, OPTIONS';
   h['access-control-allow-headers'] = req.headers.get('Access-Control-Request-Headers') || 'Content-Type';
