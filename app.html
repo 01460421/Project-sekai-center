@@ -1408,6 +1408,169 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 我的帳號 ========== -->
+  <sc-if value="{{ isAccount }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+
+    <!-- 未登入 -->
+    <sc-if value="{{ acLoggedOut }}">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:26px 22px;background:var(--card);box-shadow:var(--sh-sm);text-align:center">
+        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:8px">登入以同步你的資料</div>
+        <div style="font-size:13px;color:var(--text-2);line-height:1.8;margin-bottom:18px;max-width:520px;margin-left:auto;margin-right:auto">
+          目前你的遊戲 uid、持卡勾選、編組設定都只存在這台裝置的瀏覽器裡，換手機或清快取就沒了。
+          登入之後會存到雲端，跨裝置共用。<br>
+          登入也才能使用偵測訂閱 —— 榜線到達你設定的門檻、或追蹤的玩家有動靜時，寄信通知你。
+        </div>
+        <a href="{{ acLoginUrl }}" style="display:inline-block;padding:12px 26px;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-shadow:var(--sh-sm)">使用 Google 帳號登入</a>
+        <div style="font-size:11px;color:var(--text-3);margin-top:14px;line-height:1.7">
+          本站只會取得你的 Google 名稱、頭像與信箱（信箱用來寄通知）。不會讀取你的信件或其他資料。<br>
+          新帳號需要管理員核准後才能使用訂閱功能。
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 等待審核 -->
+    <sc-if value="{{ acPending }}">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <img src="{{ acPic }}" referrerpolicy="no-referrer" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border)" onerror="this.style.visibility='hidden'">
+          <div><div style="font-size:15px;font-weight:800;color:var(--ink)">{{ acName }}</div>
+            <div style="font-size:11.5px;color:var(--text-3)">{{ acEmail }}</div></div>
+        </div>
+        <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#ffb86b 14%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.75;margin-bottom:12px">
+          你的帳號正在等待管理員核准。核准之前可以先登入，但還不能建立偵測訂閱。<br>
+          可以留一句話告訴管理員你是誰、想用來做什麼，會加快審核。
+        </div>
+        <textarea placeholder="例如：我是 XX 車隊的，想用來追 T100 榜線" value="{{ applyNote }}" onInput="{{ onField }}" data-k="applyNote" style="width:100%;min-height:74px;padding:11px 14px;border:1.5px solid var(--border);border-radius:13px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+        <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
+          <button type="button" onClick="{{ onApply }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出申請</button>
+          <a href="{{ acLogoutUrl }}" style="padding:10px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:13px;font-weight:700;text-decoration:none">登出</a>
+        </div>
+        <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ acMsg }}</div>
+      </div>
+    </sc-if>
+
+    <!-- 已核准 -->
+    <sc-if value="{{ acReady }}">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <img src="{{ acPic }}" referrerpolicy="no-referrer" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border)" onerror="this.style.visibility='hidden'">
+          <div style="flex:1;min-width:150px">
+            <div style="font-size:15.5px;font-weight:800;color:var(--ink)">{{ acName }}<span style="font-size:11px;font-weight:700;color:var(--accent-deep);margin-left:8px">{{ acRole }}</span></div>
+            <div style="font-size:11.5px;color:var(--text-3)">{{ acEmail }}</div>
+          </div>
+          <a href="{{ acLogoutUrl }}" style="padding:8px 17px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;text-decoration:none">登出</a>
+        </div>
+      </div>
+
+      <!-- 雲端同步 -->
+      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">雲端同步</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">
+          會同步遊戲 uid、持卡勾選、編組與偏好設定。載入時只會補上本機沒有的項目，不會蓋掉你當下正在改的東西。
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button type="button" onClick="{{ onPush }}" style="padding:9px 18px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">上傳這台裝置的設定</button>
+          <button type="button" onClick="{{ onPull }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">從雲端載入</button>
+        </div>
+        <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ acSyncMsg }}</div>
+      </div>
+
+      <!-- Discord 綁定 -->
+      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">Discord 綁定</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">
+          車隊房間相關的偵測需要辨識你的 Discord 身分。綁定只會取得你的帳號名稱與所在伺服器清單，不會讀取訊息內容。
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:12.5px;color:var(--text-2);font-weight:700">{{ acDiscord }}</span>
+          <a href="{{ acDiscordUrl }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none">{{ acDiscordBtn }}</a>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ acLoading }}">
+      <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px">載入中…</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ========== 管理後台 ========== -->
+  <sc-if value="{{ isAdminPage }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ admDenied }}">
+      <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13.5px;border:1px solid var(--border);border-radius:20px;background:var(--card)">
+        這個頁面只有管理員能用。<a href="{{ acLoginUrl }}" style="color:var(--accent-deep)">登入</a>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ admOk }}">
+      <!-- 站台統計 -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:13px">
+        <sc-for list="{{ admStatCards }}" as="c" hint-placeholder-count="4">
+          <div style="border:1px solid var(--border);border-radius:15px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs)">
+            <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
+            <div style="font-size:20px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ c.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- 待審使用者 -->
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:9px">待審核申請（{{ admPendingN }}）</div>
+        <sc-if value="{{ admNoPending }}"><div style="font-size:12.5px;color:var(--text-3);padding:8px 0">目前沒有待審核的申請。</div></sc-if>
+        <sc-for list="{{ admUserRows }}" as="u" hint-placeholder-count="3">
+          <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)">
+            <img src="{{ u.pic }}" referrerpolicy="no-referrer" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border)" onerror="this.style.visibility='hidden'">
+            <div style="flex:1;min-width:150px">
+              <div style="font-size:13px;font-weight:800;color:var(--ink)">{{ u.name }}</div>
+              <div style="font-size:11px;color:var(--text-3)">{{ u.email }}　{{ u.when }}</div>
+              <div style="font-size:11.5px;color:var(--text-2);margin-top:3px">{{ u.note }}</div>
+            </div>
+            <button type="button" onClick="{{ onApprove }}" data-id="{{ u.id }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:12px;font-weight:800;cursor:pointer">核准</button>
+            <button type="button" onClick="{{ onReject }}" data-id="{{ u.id }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">拒絕</button>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- AI 助手 -->
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
+          可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
+          它讀得到的就是站上這些資料，回答前會實際去查。
+        </div>
+
+        <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
+          <sc-if value="{{ aiEmpty }}">
+            <div style="font-size:12.5px;color:var(--text-3);line-height:1.9;padding:6px 0">
+              試試看這樣問：<br>
+              「我的 id 是 123456789，幫我算接下來兩期該怎麼跑，還有近幾個月該抽哪些池」<br>
+              「現在 T1000 要跑到幾分？我時速多少、還要打多久追得上」<br>
+              「這期是什麼型態？跟同型態的歷史比算高還低」
+            </div>
+          </sc-if>
+          <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
+            <div style="margin-bottom:10px;display:flex;justify-content:{{ m.align }}">
+              <div style="max-width:88%;padding:10px 14px;border-radius:15px;background:{{ m.bg }};color:{{ m.fg }};font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid {{ m.bd }}">{{ m.text }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ admBusy }}">
+            <div style="font-size:12px;color:var(--text-3);padding:6px 2px">助手思考中…</div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" placeholder="問它任何關於這個站的資料或規劃…" value="{{ admAsk }}" onInput="{{ onField }}" data-k="admAsk" onKeyDown="{{ onAiKey }}" style="flex:1;min-width:200px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13.5px;outline:none">
+          <button type="button" onClick="{{ onAiSend }}" style="padding:11px 22px;border:none;border-radius:999px;background:var(--grad-ink);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出</button>
+          <button type="button" onClick="{{ onAiClear }}" style="padding:11px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">清除</button>
+        </div>
+        <div style="font-size:11.5px;color:#e0576a;margin-top:8px">{{ aiErr }}</div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 製作與致謝 ========== -->
   <sc-if value="{{ isCredits }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
@@ -2504,7 +2667,9 @@ class Component extends DCLogic {
     res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
     borderdb: ['榜線資料庫', '歷期榜線交叉篩選與各段位排行'],
     credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
-    whatsnew: ['功能介紹', '本站所有功能一覽與快速前往']
+    whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
+    account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
+    admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手']
   };
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
@@ -2675,6 +2840,10 @@ class Component extends DCLogic {
     exTurn: 'WL3', exCh: 4,   // 交換所預設最新一屆、一般 4 章
     ctrlNow: 0, ctrlGoal: 3000,   // 控分:目前/目標活動P(用途是最後微調,差額通常幾百~幾千)
     wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
+    // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
+    me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
+    wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
+    aiMsgs: [], aiErr: '',
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -2757,6 +2926,8 @@ class Component extends DCLogic {
     let sp = this.props.startPage;
     try { const q = new URLSearchParams(location.search).get('page'); if (q && this.PAGES[q]) sp = q; } catch (e) {}
     if (sp && this.PAGES[sp]) { this.setState({ page: sp }); this.go(sp); }
+    // 開站就問一次「我是誰」——導覽列要知道是不是管理員才決定顯不顯示後台入口
+    this.loadMe();
     this.mq = window.matchMedia('(max-width: 900px)');
     const onMq = e => this.setState({ mobile: e.matches });
     this.setState({ mobile: this.mq.matches });
@@ -3658,6 +3829,283 @@ class Component extends DCLogic {
      一場協力最短約 150 秒,15 秒間隔不會把兩局併成一筆(時間戳誤差 ±15 秒)。
      只有前 100 名有 —— API 對非前百不提供本期活動分數。 */
   GAMES_API = 'https://games.project-sekai-center.com';
+
+  /* ---------- AI 助手：工具集 ----------
+     工具在瀏覽器執行,因為站上的計算引擎、卡片資料、榜線快照、教學大全都在前端,
+     Worker 沒有那些東西。Worker 只代理 Claude API(保護金鑰)與稽核。
+     模型只能呼叫下面這份寫死的清單,參數由它決定但執行邏輯是我們的。 */
+  AI_TOOLS = [
+    { name: 'set_my_uid', description: '設定使用者的遊戲 ID(uid)並載入其公開資料。使用者說「我的 id 是 xxx」時用這個。',
+      input_schema: { type: 'object', properties: { uid: { type: 'string', description: '遊戲內的 ID,純數字' } }, required: ['uid'] } },
+    { name: 'get_my_status', description: '取得目前設定的 uid 在當期活動的狀態:分數、名次、實測時速、預測終分,以及距離各段位還差多少、需要多少時數。',
+      input_schema: { type: 'object', properties: {} } },
+    { name: 'get_current_event', description: '當期活動的名稱、型態(馬拉松/嘉年華/World Link)、開始與結算時間、已過進度、剩餘時數。',
+      input_schema: { type: 'object', properties: {} } },
+    { name: 'get_upcoming_events', description: '接下來幾期活動的排程與型態。要規劃「接下來兩期怎麼跑」時用。',
+      input_schema: { type: 'object', properties: { n: { type: 'integer', description: '要幾期,預設 3' } } } },
+    { name: 'get_borders', description: '當期各段位榜線:目前分數、預測終線(實測或線性)、同型態歷史加權估計與區間。',
+      input_schema: { type: 'object', properties: { tiers: { type: 'array', items: { type: 'integer' }, description: '想看的段位,例如 [100,1000,5000];不給就回全部' } } } },
+    { name: 'get_gacha_schedule', description: '卡池排程:期間、類型、PU 角色、伴生活動。規劃「該抽哪些池」時用。',
+      input_schema: { type: 'object', properties: {
+        from: { type: 'string', description: '起始日期 YYYY/MM/DD,不給就從今天' },
+        to: { type: 'string', description: '結束日期 YYYY/MM/DD' },
+        type: { type: 'string', description: '只看某類型,例如「FES池」「普通限定池」「常駐池」' } } } },
+    { name: 'get_history_borders', description: '歷史榜線資料庫(174 期):可依活動型態、日數、團體、屬性篩選,看各段位的終線。用來判斷某個目標線合不合理。',
+      input_schema: { type: 'object', properties: {
+        type: { type: 'string', description: '馬拉松 / 歡樂嘉年華 / World Link' },
+        days: { type: 'number' }, unit: { type: 'string' }, limit: { type: 'integer' } } } },
+    { name: 'search_tutorial', description: '搜尋站上的教學大全(115 則問答:養成、車隊、衝榜、音遊練習)。使用者問玩法、規則、名詞時先查這個,引用站上既有的說法。',
+      input_schema: { type: 'object', properties: { q: { type: 'string', description: '關鍵字' } }, required: ['q'] } },
+    { name: 'get_my_cards', description: '目前 uid 的持有卡片與編組(來自公開 API),含各卡稀有度、屬性、角色、專精等級。用來算加成或建議該抽什麼。',
+      input_schema: { type: 'object', properties: {} } },
+    { name: 'schedule_task', description: '排一個之後要執行的提醒或動作(存到伺服器,由排程執行)。例如「活動剩 12 小時時提醒我」。',
+      input_schema: { type: 'object', properties: {
+        title: { type: 'string' }, action: { type: 'string', description: 'notify(寄信通知)' },
+        run_at_iso: { type: 'string', description: 'ISO 8601 時間' },
+        repeat_hours: { type: 'number', description: '重複週期(小時),不給就只跑一次' },
+        message: { type: 'string' } }, required: ['title', 'run_at_iso'] } },
+  ];
+
+  /* 工具執行。回傳值會原樣送回模型,所以盡量給結構化又精簡的東西 ——
+     整包 JSON 塞太多會吃掉 context 又讓它抓不到重點。 */
+  async aiRun(name, a) {
+    a = a || {};
+    const n = v => (v == null ? null : this.n(v));
+    switch (name) {
+      case 'set_my_uid': {
+        const uid = String(a.uid || '').replace(/\D/g, '');
+        if (!uid) return { error: 'uid 必須是數字' };
+        this.setState({ pid: uid });
+        try { localStorage.setItem('sekai-pid', uid); } catch (e) {}
+        if (this.state.me && this.state.me.status === 'approved') { try { await this.pushCloud(); } catch (e) {} }
+        const r = this.ranksOf(this.state.live).find(x => this.sameUid(x.uid, uid));
+        return { ok: true, uid, found_in_top100: !!r, current: r ? { rank: r.rank, score: r.score, name: r.name } : null };
+      }
+      case 'get_my_status': {
+        const uid = this.state.pid;
+        if (!uid) return { error: '還沒設定 uid,請先用 set_my_uid' };
+        const B = this.borderAnalysis();
+        const me = this.ranksOf(this.state.live).find(x => this.sameUid(x.uid, uid));
+        const pd = this.state.pdata || {};
+        return {
+          uid, in_top100: !!me,
+          my_score: pd.myScore != null ? pd.myScore : (me ? me.score : null),
+          my_speed_per_hour: pd.mySpeed != null ? Math.round(pd.mySpeed) : null,
+          clock: B ? { progress_pct: +(B.clock.frac * 100).toFixed(1), hours_left: +B.clock.leftH.toFixed(1) } : null,
+          tiers: B ? B.rows.map(r => ({
+            tier: r.rank, current: r.score, projected_final: Math.round(r.proj),
+            method: r.measured ? 'measured' : 'linear',
+            gap_from_me: r.gap, hours_i_need: r.needH != null ? +r.needH.toFixed(1) : null,
+            reachable: r.reach,
+          })) : null,
+        };
+      }
+      case 'get_current_event': {
+        const ck = this.eventClock();
+        if (!ck) return { error: '當期活動資料尚未載入' };
+        const ev = this.eventOf(this.state.live);
+        const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        const meta = DB ? (DB.events || []).find(e => +e.id === +ck.id) : null;
+        return { id: ck.id, name: ev.name || '', type: meta ? meta.type : null, days: meta ? meta.days : null,
+                 unit: meta ? meta.unit : null, chara: meta ? meta.chara : null,
+                 progress_pct: +(ck.frac * 100).toFixed(1), hours_left: +ck.leftH.toFixed(1),
+                 is_world_link: this.isWL() };
+      }
+      case 'get_upcoming_events': {
+        const list = await this.loadEvList();
+        const now = Date.now();
+        return { events: (list || []).filter(e => new Date(e.start_at).getTime() > now - 86400000)
+          .sort((x, y) => x.id - y.id).slice(0, Math.min(8, +a.n || 3))
+          .map(e => ({ id: e.id, name: e.name, start: e.start_at, end: e.aggregate_at || e.closed_at })) };
+      }
+      case 'get_borders': {
+        const B = this.borderAnalysis();
+        if (!B) return { error: '榜線資料尚未載入' };
+        const want = Array.isArray(a.tiers) && a.tiers.length ? a.tiers.map(Number) : null;
+        return { tiers: B.rows.filter(r => !want || want.indexOf(r.rank) >= 0).map(r => ({
+          tier: r.rank, current: r.score, projected_final: Math.round(r.proj),
+          method: r.measured ? 'measured' : 'linear',
+          history_weighted: r.refMed != null ? Math.round(r.refMed) : null,
+          history_range: r.refLo != null ? [r.refLo, r.refHi] : null,
+        })) };
+      }
+      case 'get_gacha_schedule': {
+        const pdt = x => { const d = this.pd(x); return d ? d.getTime() : null; };
+        const from = a.from ? pdt(a.from) : Date.now() - 86400000;
+        const to = a.to ? pdt(a.to) : from + 90 * 86400000;
+        const list = (this.state.gachas || []).filter(g => {
+          const st = pdt(g.s); if (st == null) return false;
+          if (st < from || st > to) return false;
+          if (a.type && g.t !== a.type) return false;
+          return true;
+        }).slice(0, 60);
+        return { count: list.length, gachas: list.map(g => ({
+          name: g.n, type: g.t, start: g.s, end: g.e, pickup: g.ch || null,
+          unit: g.u || null, event_id: g.eid || null, event_type: g.et || null, note: g.note || null })) };
+      }
+      case 'get_history_borders': {
+        const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        if (!DB) { await this.loadBorderDB(); }
+        const D = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        if (!D) return { error: '歷史資料庫載入失敗' };
+        let rows = D.borders.slice();
+        if (a.type) rows = rows.filter(b => b.type === a.type);
+        if (a.days) rows = rows.filter(b => b.days === +a.days);
+        if (a.unit) rows = rows.filter(b => b.unit === a.unit);
+        rows = rows.sort((x, y) => y.id - x.id).slice(0, Math.min(30, +a.limit || 12));
+        return { tiers: D.tiers, events: rows.map(b => ({
+          id: b.id, name: b.name, type: b.type, days: b.days, unit: b.unit, chara: b.chara, borders: b.t })) };
+      }
+      case 'search_tutorial': {
+        const q = String(a.q || '').toLowerCase();
+        if (!q) return { error: '缺少關鍵字' };
+        const src = (this.state.tutQs || (typeof TUTORIAL_DATA !== 'undefined' ? TUTORIAL_DATA.qs : null) || []);
+        const hit = src.filter(x => ((x.q || '') + (x.a || '')).toLowerCase().includes(q)).slice(0, 6);
+        return { count: hit.length, items: hit.map(x => ({ category: x.cat, question: x.q,
+          answer: String(x.a || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 900) })) };
+      }
+      case 'get_my_cards': {
+        const uid = this.state.pid;
+        if (!uid) return { error: '還沒設定 uid' };
+        try {
+          const d = await fetch(this.API + '/user/' + encodeURIComponent(uid) + '/profile').then(r => r.ok ? r.json() : null);
+          if (!d) return { error: '查不到這個 uid 的公開資料' };
+          const cards = (d.userCards || []).slice(0, 400);
+          return { uid, card_count: (d.userCards || []).length,
+            deck: (d.userDeck || null),
+            cards: cards.map(c => ({ id: c.cardId, level: c.level, master_rank: c.masterRank,
+              trained: c.specialTrainingStatus === 'done' })).slice(0, 200) };
+        } catch (e) { return { error: '取得失敗:' + (e.message || '') }; }
+      }
+      case 'schedule_task': {
+        if (!(this.state.me && this.state.me.is_admin)) return { error: '排程需要管理員權限' };
+        const at = Date.parse(a.run_at_iso || '');
+        if (!at) return { error: 'run_at_iso 不是合法時間' };
+        try {
+          const r = await this.api('/admin/tasks', { method: 'POST', body: {
+            title: a.title, action: a.action || 'notify',
+            params: { message: a.message || a.title },
+            run_at: Math.floor(at / 1000), repeat_s: a.repeat_hours ? Math.round(a.repeat_hours * 3600) : 0 } });
+          return { ok: true, task_id: r && r.task && r.task.id, run_at: a.run_at_iso };
+        } catch (e) { return { error: e.message || '排程失敗' }; }
+      }
+      default: return { error: '未知的工具:' + name };
+    }
+  }
+
+  AI_SYSTEM = `你是 Project SEKAI 台服資源站的站內助手,服務對象是這個站的管理員與進階玩家。
+
+你可以呼叫工具讀取站上所有資料:當期與歷史榜線、活動與卡池排程、使用者自己的遊戲資料與持卡、
+教學大全、以及站上算好的預測與時速。**回答任何具體數字之前先呼叫工具查證,不要憑印象講。**
+
+工作方式:
+- 遇到複雜請求(例如「設好我的 id、算接下來兩期怎麼跑、我該抽哪些池、還要跑多久」),
+  拆成多個工具呼叫依序完成,不要只回答其中一部分,也不要反問使用者你自己查得到的東西。
+- 講玩法、規則、名詞時先 search_tutorial,引用站上既有的說法,保持一致。
+- 數字要講清楚單位與依據(是實測時速還是線性外推、是歷史加權估計還是當期實際)。
+- 榜線預測在末段普遍低估(T5000 約 2～6%、T1000 約 10～13%、T100 約 14～22%),
+  給目標線時要提醒這件事,把預測值當下限。
+- 用繁體中文,結論先講,再用條列或表格展開。不要用 emoji。
+- 查不到就說查不到,不要編造卡片、活動或數字。`;
+
+  /* 對話迴圈:模型要工具就在瀏覽器執行,把結果送回,直到它給出文字結論。
+     上限 12 輪是防呆 —— 正常的複雜任務大約 3～6 輪,跑到 12 通常代表它卡住了。 */
+  async aiSend(text) {
+    const q = String(text || '').trim();
+    if (!q || this.state.admBusy) return;
+    let cur = (this.state.aiMsgs || []).concat([{ role: 'user', content: q }]);
+    this.setState({ aiMsgs: cur, admBusy: true, admAsk: '', aiErr: '' });
+    try {
+      for (let guard = 0; guard < 12; guard++) {
+        const r = await this.api('/admin/chat', { method: 'POST', body: {
+          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
+        const content = (r && r.content) || [];
+        cur = cur.concat([{ role: 'assistant', content }]);
+        this.setState({ aiMsgs: cur });
+        const calls = content.filter(c => c.type === 'tool_use');
+        if (!calls.length) break;
+        const results = [];
+        for (const c of calls) {
+          let out;
+          try { out = await this.aiRun(c.name, c.input); }
+          catch (e) { out = { error: (e && e.message) || String(e) }; }
+          results.push({ type: 'tool_result', tool_use_id: c.id,
+                         content: JSON.stringify(out).slice(0, 24000) });
+        }
+        cur = cur.concat([{ role: 'user', content: results }]);
+        this.setState({ aiMsgs: cur });
+      }
+    } catch (e) {
+      this.setState({ aiErr: (e && e.message) || '呼叫失敗' });
+    } finally {
+      this.setState({ admBusy: false });
+    }
+  }
+
+  /* ---------- 帳號 ----------
+     後端是同一個 Worker（games 子網域），跟主站不同來源，所以每個請求都要
+     credentials:'include' 才會帶上 session cookie，後端也對應開了具名的 CORS。 */
+  async api(path, opts) {
+    const o = Object.assign({ credentials: 'include', headers: {} }, opts || {});
+    if (o.body && typeof o.body !== 'string') { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(o.body); }
+    const r = await fetch(this.GAMES_API + path, o);
+    let d = null; try { d = await r.json(); } catch (e) {}
+    if (!r.ok) throw Object.assign(new Error((d && d.error) || ('HTTP ' + r.status)), { status: r.status, data: d });
+    return d;
+  }
+
+  /* 開站就問一次「我是誰」。失敗不擋任何既有功能 —— 整站在沒登入時本來就能用。 */
+  async loadMe() {
+    if (this._meLoading) return;
+    this._meLoading = true;
+    try {
+      const d = await this.api('/api/me');
+      this.setState({ me: d && d.user ? d.user : null, meErr: '' });
+      if (d && d.user && d.user.status === 'approved') this.pullCloud();
+    } catch (e) {
+      this.setState({ me: null, meErr: '' });   // 後端還沒部署好也不要嚇到人
+    } finally { this._meLoading = false; }
+  }
+
+  /* 雲端設定 → 本機。只補「本機沒有」的鍵，不覆蓋使用者當下的操作,
+     否則在 A 裝置改到一半會被 B 裝置的舊值蓋掉。 */
+  async pullCloud() {
+    try {
+      const d = await this.api('/api/prefs');
+      const p = (d && d.prefs) || {};
+      Object.keys(p).forEach(k => {
+        try { if (localStorage.getItem(k) == null) localStorage.setItem(k, JSON.stringify(p[k])); } catch (e) {}
+      });
+      this._cloudAt = Date.now();
+    } catch (e) {}
+  }
+
+  /* 本機 → 雲端。只送站上自己的鍵，不要把整個 localStorage 倒上去。 */
+  CLOUD_KEYS = ['sekai-pid', 'sekai-owned', 'sekai-deck', 'sekai-fav', 'sekai-ep', 'sekai-b30', 'sekai-rate'];
+  async pushCloud() {
+    const obj = {};
+    this.CLOUD_KEYS.forEach(k => {
+      try { const v = localStorage.getItem(k); if (v != null) obj[k] = JSON.parse(v); } catch (e) {}
+    });
+    // 遊戲 uid 是最常用的一個，單獨帶上（它不一定存在上面那些鍵裡）
+    if (this.state.pid) obj['sekai-pid'] = this.state.pid;
+    await this.api('/api/prefs', { method: 'POST', body: obj });
+    return Object.keys(obj).length;
+  }
+
+  async loadWatches() {
+    try {
+      const [w, e] = await Promise.all([this.api('/api/watches'), this.api('/api/events?limit=30')]);
+      this.setState({ watches: (w && w.watches) || [], wEvents: (e && e.events) || [] });
+    } catch (er) { this.setState({ wBusy: er.message || '載入失敗' }); }
+  }
+
+  async loadAdmin() {
+    try {
+      const [u, st] = await Promise.all([this.api('/admin/users?status=pending'), this.api('/admin/stats')]);
+      this.setState({ admUsers: (u && u.users) || [], admStats: (st && st.stats) || st || null });
+    } catch (e) { this.setState({ admStats: { error: e.message } }); }
+  }
   async loadGames(uid) {
     if (!uid || this.state.gamesUid === uid) return;
     this.setState({ gamesUid: uid, gamesLoad: true, gamesErr: '', gamesRows: null, gamesPick: -1 });
@@ -4083,6 +4531,8 @@ class Component extends DCLogic {
     if (p === 'collect') this.loadCollect();
     if (p === 'rate') this.loadCards();
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
+    if (p === 'account' || p === 'admin') { if (this.state.me === undefined) this.loadMe(); }
+    if (p === 'admin') this.loadAdmin();
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -4361,7 +4811,9 @@ class Component extends DCLogic {
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]]
+      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
+      // 管理後台只掛給管理員,一般使用者連入口都看不到(後端另有權限檢查,這裡只是不礙眼)
+      ['帳號', [['account', '我的帳號', '#8be0d0']].concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])]
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -5094,6 +5546,79 @@ class Component extends DCLogic {
       sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
+      isAccount: s.page === 'account', isAdminPage: s.page === 'admin',
+      ...(() => {
+        const me = s.me, isAdm = !!(me && me.is_admin);
+        const st = s.admStats || {};
+        const pend = s.admUsers || [];
+        const TOOL_LABEL = {
+          set_my_uid: '設定 uid', get_my_status: '查我的狀態', get_current_event: '查當期活動',
+          get_upcoming_events: '查未來活動', get_borders: '查榜線', get_gacha_schedule: '查卡池排程',
+          get_history_borders: '查歷史榜線', search_tutorial: '查教學大全', get_my_cards: '查我的卡片',
+          schedule_task: '建立排程',
+        };
+        /* 把對話轉成泡泡。工具往返不直接倒給使用者看,只顯示「查了什麼」——
+           原始 JSON 又長又雜,看了只會干擾。 */
+        const bubbles = [];
+        (s.aiMsgs || []).forEach(m => {
+          if (m.role === 'user') {
+            if (typeof m.content === 'string') {
+              bubbles.push({ text: m.content, align: 'flex-end', bg: 'var(--grad-ink)', fg: '#fff', bd: 'transparent' });
+            }
+            return;   // tool_result 不顯示
+          }
+          const arr = Array.isArray(m.content) ? m.content : [];
+          arr.forEach(c => {
+            if (c.type === 'text' && c.text && c.text.trim()) {
+              bubbles.push({ text: c.text.trim(), align: 'flex-start', bg: 'var(--card-2)', fg: 'var(--text)', bd: 'var(--border)' });
+            } else if (c.type === 'tool_use') {
+              bubbles.push({ text: '· ' + (TOOL_LABEL[c.name] || c.name), align: 'flex-start',
+                             bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)' });
+            }
+          });
+        });
+        return {
+          admDenied: me !== undefined && !isAdm,
+          admOk: isAdm,
+          admStatCards: Object.keys(st).filter(k => typeof st[k] === 'number')
+            .slice(0, 6).map(k => ({ k, v: this.n(st[k]) })),
+          admPendingN: pend.length,
+          admNoPending: pend.length === 0,
+          admUserRows: pend.map(u => ({
+            id: u.id, name: u.name || '(未命名)', email: u.email || '', pic: u.picture || '',
+            note: u.apply_note || '（沒有留言）',
+            when: u.created_at ? new Date(u.created_at * 1000).toLocaleDateString() : '',
+          })),
+          aiBubbles: bubbles,
+          aiEmpty: bubbles.length === 0,
+          admBusy: !!s.admBusy,
+          aiErr: s.aiErr || '',
+          admAsk: s.admAsk || '',
+        };
+      })(),
+      ...(() => {
+        // me: undefined=還沒問過後端, null=未登入, 物件=已登入
+        const me = s.me, api = this.GAMES_API;
+        const ret = (r) => api + '/auth/' + r + '?r=' + encodeURIComponent('/app.html?page=account');
+        return {
+          acLoading: me === undefined,
+          acLoggedOut: me === null,
+          acPending: !!(me && me.status !== 'approved'),
+          acReady: !!(me && me.status === 'approved'),
+          acPic: (me && me.picture) || '',
+          acName: (me && me.name) || '',
+          acEmail: (me && me.email) || '',
+          acRole: me && me.is_admin ? '管理員' : '',
+          acLoginUrl: ret('google'),
+          acLogoutUrl: api + '/auth/logout',
+          acDiscordUrl: me && me.discord_id ? 'javascript:void(0)' : ret('discord'),
+          acDiscordBtn: me && me.discord_id ? '重新綁定' : '綁定 Discord',
+          acDiscord: me && me.discord_id ? ('已綁定：' + (me.discord_name || me.discord_id)) : '尚未綁定',
+          acMsg: s.wBusy || '',
+          acSyncMsg: s.acSyncMsg || '',
+          applyNote: s.applyNote || '',
+        };
+      })(),
 
       onBkExport: () => this.bkExport(),
       onBkPick: e => { const f = e.target.files && e.target.files[0]; this.bkImport(f); e.target.value = ''; },
@@ -6016,6 +6541,34 @@ class Component extends DCLogic {
         if (d.k === 'su') patch.sp = 1;
         if (d.k === 'tcat') patch.tutMore = false;
         this.setState(patch);
+      },
+      onApprove: async e => {
+        const id = e.currentTarget.dataset.id;
+        try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'approved' } }); this.loadAdmin(); }
+        catch (er) { this.setState({ aiErr: er.message || '核准失敗' }); }
+      },
+      onReject: async e => {
+        const id = e.currentTarget.dataset.id;
+        try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'rejected' } }); this.loadAdmin(); }
+        catch (er) { this.setState({ aiErr: er.message || '拒絕失敗' }); }
+      },
+      onAiSend: () => this.aiSend(this.state.admAsk),
+      onAiKey: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.aiSend(this.state.admAsk); } },
+      onAiClear: () => this.setState({ aiMsgs: [], aiErr: '' }),
+      onApply: async () => {
+        try { await this.api('/api/apply', { method: 'POST', body: { note: this.state.applyNote || '' } });
+              this.setState({ wBusy: '已送出，等待管理員審核。' }); }
+        catch (e) { this.setState({ wBusy: '送出失敗：' + (e.message || '') }); }
+      },
+      onPush: async () => {
+        this.setState({ acSyncMsg: '上傳中…' });
+        try { const n = await this.pushCloud(); this.setState({ acSyncMsg: '已上傳 ' + n + ' 項設定。' }); }
+        catch (e) { this.setState({ acSyncMsg: '上傳失敗：' + (e.message || '') }); }
+      },
+      onPull: async () => {
+        this.setState({ acSyncMsg: '載入中…' });
+        try { await this.pullCloud(); this.setState({ acSyncMsg: '已從雲端載入（只補上本機沒有的項目）。重新整理後生效。' }); }
+        catch (e) { this.setState({ acSyncMsg: '載入失敗：' + (e.message || '') }); }
       },
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
       onReloadEp: () => this.loadEpSongs(true),

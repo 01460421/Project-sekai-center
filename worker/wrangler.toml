@@ -26,5 +26,20 @@ crons = ["* * * * *"]
 pattern = "games.project-sekai-center.com"
 custom_domain = true
 
+# D1：使用者、設定、偵測訂閱、事件、管理員稽核
+[[d1_databases]]
+binding = "DB"
+database_name = "pjsk-users"
+database_id = "63ad1759-8919-4ed5-aa88-0b4c31e347ae"
+
+# 非機密設定。機密（GOOGLE_CLIENT_SECRET / DISCORD_CLIENT_SECRET /
+# RESEND_API_KEY / ANTHROPIC_API_KEY / SESSION_SECRET）一律用
+# `wrangler secret put <NAME>`，不要寫進這個檔案（它會進 git）。
+[vars]
+SITE_BASE = "https://project-sekai-center.com"
+OAUTH_BASE = "https://games.project-sekai-center.com"
+COOKIE_DOMAIN = ".project-sekai-center.com"
+MAIL_FROM = "SEKAI 資源中心 <noreply@project-sekai-center.com>"
+
 [observability]
 enabled = true

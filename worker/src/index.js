@@ -16,6 +16,13 @@
  *   所以另外掛一個每分鐘的 Cron Trigger，只做「沒排程就補排」這一件事。
  */
 
+import { handleAuth, currentUser } from './auth.js';
+import { handleApi } from './api.js';
+import { handleAdmin } from './admin.js';
+import { runWatches } from './watch.js';
+import { flushMail } from './mail.js';
+import { dueTasks, finishTask, addEvent } from './db.js';
+
 const API = 'https://api.hisekai.org/tw/event/live/top100';
 const TOP_N = 100;   // API 就是回前 100 名,全收
 const TICK_MS = 15_000;
@@ -220,15 +227,66 @@ export class GameTracker {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
+    const p = url.pathname;
+
+    /* 帳號與 API 走 D1，跟逐局追蹤的 DO 無關，所以要在轉給 DO 之前先攔下來。
+       這些路由自己處理 CORS（要帶 cookie，Allow-Origin 不能用萬用字元），
+       所以不要套用下面那組給 /games 用的寬鬆 CORS。 */
+    if (p.startsWith('/auth/')) {
+      const r = await handleAuth(req, env, url);
+      if (r) return r;
+    }
+    if (p.startsWith('/api/') || p === '/api') {
+      const user = await currentUser(req, env);
+      const r = await handleApi(req, env, url, user);
+      if (r) return r;
+    }
+    if (p.startsWith('/admin')) {
+      const user = await currentUser(req, env);
+      const r = await handleAdmin(req, env, url, user);
+      if (r) return r;
+    }
+
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     // 單例：整個追蹤器只有一個 DO 實例
     const stub = env.TRACKER.get(env.TRACKER.idFromName('main'));
     return stub.fetch(new Request(new URL(url.pathname + url.search, 'https://do'), req));
   },
 
-  /** 看門狗：每分鐘確認 alarm 還活著；活動期外 alarm 會被停掉，這裡負責重新喚醒。 */
+  /** 每分鐘一次。原本只有看門狗，現在順便帶動偵測、寄信與排程 ——
+      這三件事都是分鐘等級的需求，共用同一個 cron 不必另外開。
+      各自包 try/catch：偵測掛掉不能連帶讓 alarm 看門狗失效，那是整個追蹤器的命脈。 */
   async scheduled(_evt, env, ctx) {
     const stub = env.TRACKER.get(env.TRACKER.idFromName('main'));
     ctx.waitUntil(stub.fetch(new Request('https://do/ensure')));
+
+    if (!env.DB) return;                 // D1 還沒綁上就只做看門狗
+    ctx.waitUntil((async () => {
+      try { await runWatches(env); } catch (e) { console.error('runWatches', e && e.message); }
+      try { await runDueTasks(env); } catch (e) { console.error('runDueTasks', e && e.message); }
+      try { await flushMail(env); } catch (e) { console.error('flushMail', e && e.message); }
+    })());
   },
 };
+
+/* 到期的排程任務。action 是白名單，不執行任何字串化的程式碼。 */
+async function runDueTasks(env) {
+  const tasks = await dueTasks(env.DB, 10);
+  for (const t of tasks) {
+    try {
+      const params = JSON.parse(t.params || '{}');
+      if (t.action === 'notify') {
+        await addEvent(env.DB, {
+          watch_id: 'task:' + t.id, user_id: t.user_id,
+          title: t.title || '排程提醒', body: params.message || t.title || '',
+        });
+        await finishTask(env.DB, t, true, 'queued');
+      } else {
+        await finishTask(env.DB, t, false, '未知的 action：' + t.action);
+      }
+    } catch (e) {
+      await finishTask(env.DB, t, false, (e && e.message) || String(e));
+    }
+  }
+  return tasks.length;
+}
