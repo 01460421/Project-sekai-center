@@ -130,7 +130,13 @@ export async function handleApi(req, env, url, user) {
        前端不必跟著改。不需要核准就能看,讓人先知道能訂什麼再決定要不要申請。 */
     if (p === '/api/watch-kinds') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
-      return out({ kinds: WATCH_KINDS });
+      /* 一併回報站方的能力狀態：沒設定 Resend 就寄不出信,訂閱會建立成功但
+         沒有人收得到通知。與其讓使用者等一封永遠不來的信,不如在介面上講明。 */
+      return out({ kinds: WATCH_KINDS, capabilities: {
+        mail: !!env.RESEND_API_KEY,
+        ai: !!env.ANTHROPIC_API_KEY,
+        discord: !!env.DISCORD_CLIENT_ID,
+      } });
     }
 
     // 以下都要登入

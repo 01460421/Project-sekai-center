@@ -1510,6 +1510,11 @@ input::placeholder{color:var(--text-3)}
           </sc-if>
         </div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">條件成立時寄信通知你。每人最多 20 條。</div>
+        <sc-if value="{{ wMailOff }}">
+          <div style="padding:10px 13px;border-radius:12px;background:color-mix(in oklab,#ffb86b 14%,transparent);color:var(--text-2);font-size:11.5px;line-height:1.75;margin-bottom:11px">
+            站方尚未設定寄信服務，訂閱可以先建立、條件也會照常判定並記錄在下方的「最近的通知」，但<b>目前不會真的寄出 Email</b>。
+          </div>
+        </sc-if>
 
         <sc-if value="{{ wOpen }}">
           <div style="border:1px dashed var(--border-2);border-radius:15px;padding:14px;background:var(--card-2);margin-bottom:12px">
@@ -2963,7 +2968,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
-    aiMsgs: [], aiErr: '', watchKinds: null, acSyncMsg: '',
+    aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -4218,7 +4223,7 @@ class Component extends DCLogic {
   async loadWatchKinds() {
     if (this.state.watchKinds || this._wkLoading) return;
     this._wkLoading = true;
-    try { const d = await this.api('/api/watch-kinds'); this.setState({ watchKinds: (d && d.kinds) || {} }); }
+    try { const d = await this.api('/api/watch-kinds'); this.setState({ watchKinds: (d && d.kinds) || {}, caps: (d && d.capabilities) || {} }); }
     catch (e) { this.setState({ watchKinds: {} }); }
   }
 
@@ -5809,6 +5814,8 @@ class Component extends DCLogic {
             const vals = (f && f.vals) || {};
             return {
               wOpen: !!f, wNotOpen: !f,
+              // 站方沒設定寄信服務時要明講,否則訂閱建了卻永遠收不到信
+              wMailOff: (s.caps && s.caps.mail === false),
               wKindChips: kindKeys.map(k => {
                 const on = f && f.kind === k, st = chip(on, 'var(--cta)');
                 return Object.assign({ v: k, n: K[k].label + (K[k].available === false ? '（未啟用）' : '') }, st);
