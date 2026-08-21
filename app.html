@@ -1429,6 +1429,13 @@ input::placeholder{color:var(--text-3)}
           本站只會取得你的 Google 名稱、頭像與信箱（信箱用來寄通知）。不會讀取你的信件或其他資料。<br>
           新帳號需要管理員核准後才能使用訂閱功能。
         </div>
+        <sc-if value="{{ acErr }}">
+          <div style="margin-top:14px;padding:11px 14px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:11.5px;line-height:1.75;text-align:left">
+            <b>連線後端時發生問題</b>（這代表登入狀態讀不到，不一定是你沒登入）：<br>
+            <code style="font-size:11px;word-break:break-all">{{ acErr }}</code><br>
+            <span style="color:var(--text-3)">把這行字回報給站方即可。</span>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -4089,7 +4096,9 @@ class Component extends DCLogic {
       this.setState({ me: d && d.user ? d.user : null, meErr: '' });
       if (d && d.user && d.user.status === 'approved') this.pullCloud();
     } catch (e) {
-      this.setState({ me: null, meErr: '' });   // 後端還沒部署好也不要嚇到人
+      /* 這裡本來把錯誤吞掉只顯示「未登入」,結果 CORS、cookie、500 全都長一樣,
+         連我自己都查不出是哪一種。改成把實際原因留下來顯示在畫面上。 */
+      this.setState({ me: null, meErr: (e && e.message) || String(e) });
     } finally { this._meLoading = false; }
   }
 
@@ -5654,6 +5663,7 @@ class Component extends DCLogic {
           acDiscordBtn: (me && me.discord) ? '重新綁定' : '綁定 Discord',
           acDiscord: (me && me.discord) ? ('已綁定：' + (me.discord.name || me.discord.id)) : '尚未綁定',
           acMsg: s.wBusy || '',
+          acErr: s.meErr || '',
           acSyncMsg: s.acSyncMsg || '',
           applyNote: s.applyNote || '',
         };
