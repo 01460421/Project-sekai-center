@@ -4158,20 +4158,42 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             _bptPer(ct) { return /paid_jewel/.test(ct) ? 1 : /jewel|gacha_ticket/.test(ct) ? 0.5 : 0; },
             /* 到門檻時發卡。實際遊戲看的是「帳號未持有」,模擬器不知道玩家倉庫,
                所以退而求其次用「本次模擬還沒抽到的」,全抽過了才從整池隨機。 */
-            _bptAward(tier) {
+            _bptAward(tier, exclude) {
                 const d = this._d; if (!d) return null;
                 const pool = tier >= 100
                     ? [...(this._pool.pick || [])].map(id => d.cById[id])
                         .filter(c => c && d.twIds.has(c.id) && this._rank(c.cardRarityType) >= 4)
                     : (d.stdPool || []);
                 if (!pool.length) return null;
-                const fresh = pool.filter(c => !this._got[c.id]);
+                const fresh = pool.filter(c => !this._got[c.id] && !(exclude && exclude.has(c.id)));
                 const src = fresh.length ? fresh : pool;
                 return src[Math.floor(Math.random() * src.length)];
             },
             doSpin(n, guard, cost, ct) {
                 const res = this.spin(n, guard ? 3 : 0);
                 this._pulls += n; this._spent += cost || 0;
+                /* 招募點數:保底是「包含在這 n 抽裡面」的,不是額外多送一張 ——
+                   所以跨過門檻時直接取代這次抽出的最後幾張,十連永遠是 10 張。
+                   跟十連的 ★3 保底同一個道理(那個也是佔掉第 10 抽,不是第 11 抽)。
+                   一次十連有可能同時跨兩檔,所以往前多取代一格。 */
+                const per = this._bptPer(ct || '');
+                if (per > 0) {
+                    const before = this._bpt;
+                    this._bpt = Math.round((this._bpt + per * n) * 10) / 10;
+                    const drawn = new Set(res.map(r => r.cardId));   // 本次已抽到的也算持有
+                    let slot = res.length - 1;
+                    this.BPT_TIERS.forEach(([need, label]) => {
+                        if (before >= need || this._bpt < need || slot < 0) return;
+                        const c = this._bptAward(need, drawn);
+                        if (!c) return;
+                        res[slot] = { cardId: c.id, rarity: c.cardRarityType, bonus: need,
+                            isPickup: (this._pool.pick || new Set()).has(c.id) };
+                        drawn.add(c.id);
+                        this._bptGot.push({ need, label, cardId: c.id });
+                        slot--;
+                    });
+                }
+                // 統計要在取代之後才做,被取代掉的那張沒有真的入手
                 res.forEach(r => {
                     this._got[r.cardId] = (this._got[r.cardId] || 0) + 1;
                     this._tally[r.rarity] = (this._tally[r.rarity] || 0) + 1;
@@ -4179,23 +4201,6 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     this._sinceLast4++;
                     if (this._rank(r.rarity) >= 4) { this._gapsTo4.push(this._sinceLast4); this._sinceLast4 = 0; }
                 });
-                // 點數累積:跨過門檻就發保底(同一次十連可能一次跨兩檔,所以逐檔檢查)
-                const per = this._bptPer(ct || '');
-                if (per > 0) {
-                    const before = this._bpt;
-                    this._bpt = Math.round((this._bpt + per * n) * 10) / 10;
-                    this.BPT_TIERS.forEach(([need, label]) => {
-                        if (before < need && this._bpt >= need) {
-                            const c = this._bptAward(need);
-                            if (!c) return;
-                            this._got[c.id] = (this._got[c.id] || 0) + 1;
-                            // 只進持有、不進 _tally:保底不是隨機抽出來的,算進去會讓
-                            // 下面那張「實際出現率 vs 官方機率」的統計表虛高。
-                            this._bptGot.push({ need, label, cardId: c.id });
-                            res.push({ cardId: c.id, rarity: c.cardRarityType, isPickup: (this._pool.pick || new Set()).has(c.id), bonus: need });
-                        }
-                    });
-                }
                 this._hist = res;
                 this._render(true);
             },
