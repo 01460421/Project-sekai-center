@@ -1613,14 +1613,12 @@ input::placeholder{color:var(--text-3)}
       </div>
     </sc-if>
     <sc-if value="{{ acReady }}">
-      <!-- 站內助手 -->
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
           可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
           它讀得到的就是站上這些資料，回答前會實際去查。每日用量有上限。
         </div>
-
         <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
           <sc-if value="{{ aiEmpty }}">
             <div style="font-size:12.5px;color:var(--text-3);line-height:1.9;padding:6px 0">
@@ -1629,7 +1627,23 @@ input::placeholder{color:var(--text-3)}
               「現在 T1000 要跑到幾分？我時速多少、還要打多久追得上」<br>
               「這期是什麼型態？跟同型態的歷史比算高還低」
             </div>
-      
+          </sc-if>
+          <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
+            <div style="margin-bottom:10px;display:flex;justify-content:{{ m.align }}">
+              <div style="max-width:88%;padding:10px 14px;border-radius:15px;background:{{ m.bg }};color:{{ m.fg }};font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid {{ m.bd }}">{{ m.text }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ admBusy }}">
+            <div style="font-size:12px;color:var(--text-3);padding:6px 2px">助手思考中…</div>
+          </sc-if>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" placeholder="問它任何關於這個站的資料或規劃…" value="{{ admAsk }}" onInput="{{ onField }}" data-k="admAsk" onKeyDown="{{ onAiKey }}" style="flex:1;min-width:200px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13.5px;outline:none">
+          <button type="button" onClick="{{ onAiSend }}" style="padding:11px 22px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出</button>
+          <button type="button" onClick="{{ onAiClear }}" style="padding:11px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">清除</button>
+        </div>
+        <div style="font-size:11.5px;color:#e0576a;margin-top:8px">{{ aiErr }}</div>
+      </div>
     </sc-if>
   </div>
   </sc-if>
@@ -1642,9 +1656,10 @@ input::placeholder{color:var(--text-3)}
         這個頁面只有管理員能用。<a href="{{ acLoginUrl }}" style="color:var(--accent-deep)">登入</a>
       </div>
     </sc-if>
-
     <sc-if value="{{ admOk }}">
-      <!-- 站台統計 -->
+      <sc-if value="{{ admStatErr }}">
+        <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.7;margin-bottom:12px">{{ admStatErr }}</div>
+      </sc-if>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:13px">
         <sc-for list="{{ admStatCards }}" as="c" hint-placeholder-count="4">
           <div style="border:1px solid var(--border);border-radius:15px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs)">
@@ -1654,7 +1669,6 @@ input::placeholder{color:var(--text-3)}
         </sc-for>
       </div>
 
-      <!-- 待審使用者 -->
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:9px">待審核申請（{{ admPendingN }}）</div>
         <sc-if value="{{ admNoPending }}"><div style="font-size:12.5px;color:var(--text-3);padding:8px 0">目前沒有待審核的申請。</div></sc-if>
@@ -1672,23 +1686,12 @@ input::placeholder{color:var(--text-3)}
         </sc-for>
       </div>
 
-    </sc-if>
-          <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
-            <div style="margin-bottom:10px;display:flex;justify-content:{{ m.align }}">
-              <div style="max-width:88%;padding:10px 14px;border-radius:15px;background:{{ m.bg }};color:{{ m.fg }};font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid {{ m.bd }}">{{ m.text }}</div>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admBusy }}">
-            <div style="font-size:12px;color:var(--text-3);padding:6px 2px">助手思考中…</div>
-          </sc-if>
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">助手在哪裡</div>
+        <div style="font-size:12px;color:var(--text-3);line-height:1.8">
+          站內助手已經移到左側的「站內助手」獨立頁面，一般已核准的使用者也能用（每日有用量上限）。
+          這一頁專門放使用者審核與站台統計。
         </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" placeholder="問它任何關於這個站的資料或規劃…" value="{{ admAsk }}" onInput="{{ onField }}" data-k="admAsk" onKeyDown="{{ onAiKey }}" style="flex:1;min-width:200px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13.5px;outline:none">
-          <button type="button" onClick="{{ onAiSend }}" style="padding:11px 22px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出</button>
-          <button type="button" onClick="{{ onAiClear }}" style="padding:11px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">清除</button>
-        </div>
-        <div style="font-size:11.5px;color:#e0576a;margin-top:8px">{{ aiErr }}</div>
       </div>
     </sc-if>
   </div>
