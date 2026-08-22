@@ -4087,9 +4087,20 @@ class Component extends DCLogic {
       case 'search_tutorial': {
         const q = String(a.q || '').toLowerCase();
         if (!q) return { error: '缺少關鍵字' };
-        const src = (this.state.tutQs || (typeof TUTORIAL_DATA !== 'undefined' ? TUTORIAL_DATA.qs : null) || []);
+        /* 教學資料是動態 import 進來的,使用者沒進過教學頁時 state 還是空的,
+           所以這裡自己補載一次 —— 否則助手查教學永遠回空。 */
+        let src = this.state.tutQA || [];
+        if (!src.length) {
+          try {
+            const m = await import('./data/tutorial-data.js');
+            src = m.TUT_QA || [];
+            this.setState({ tutQA: src, tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' });
+          } catch (e) { return { error: '教學資料載入失敗' }; }
+        }
+        const cats = {}; (this.state.tutCats || []).forEach(c => { cats[c.id] = c.name; });
         const hit = src.filter(x => ((x.q || '') + (x.a || '')).toLowerCase().includes(q)).slice(0, 6);
-        return { count: hit.length, items: hit.map(x => ({ category: x.cat, question: x.q,
+        return { count: hit.length, total: src.length, items: hit.map(x => ({
+          category: cats[x.cat] || x.cat, question: x.q,
           answer: String(x.a || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 900) })) };
       }
       case 'get_my_cards': {
@@ -4134,7 +4145,10 @@ class Component extends DCLogic {
 - 榜線預測在末段普遍低估(T5000 約 2～6%、T1000 約 10～13%、T100 約 14～22%),
   給目標線時要提醒這件事,把預測值當下限。
 - 用繁體中文,結論先講,再用條列或表格展開。不要用 emoji。
-- 查不到就說查不到,不要編造卡片、活動或數字。`;
+- 查不到就說查不到,不要編造卡片、活動或數字。
+- 站上的活動、榜線、卡池資料都是從官方 API 抓的,站方不能編輯 —— 看到奇怪的值不要叫使用者
+  去後台修改,那種頁面不存在;直接說明數字看起來異常即可。
+- 你只能呼叫上面列出的工具。沒有工具能做到的事(例如實際幫使用者抽卡、改遊戲內設定)就直說做不到。`;
 
   /* 對話迴圈:模型要工具就在瀏覽器執行,把結果送回,直到它給出文字結論。
      上限 12 輪是防呆 —— 正常的複雜任務大約 3～6 輪,跑到 12 通常代表它卡住了。 */

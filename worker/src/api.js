@@ -251,7 +251,10 @@ export async function handleApi(req, env, url, user) {
       if (used >= cap) {
         return json({ error: 'quota', message: '今日 AI 用量已達上限（' + cap + ' 次），請明天再試。' }, 429, req, env);
       }
-      const v = validateChat(body);
+      const rb = await readJson(req, 512 * 1024);   // 對話帶著工具結果,body 會比其他端點大
+      if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413, req, env);
+      if (rb.bad) return out({ error: 'bad_json', message: 'JSON 格式錯誤' }, 400, req, env);
+      const v = validateChat(rb.value || {});
       if (v.error) return json({ error: 'bad_request', message: v.error }, 400, req, env);
       let out;
       try {
