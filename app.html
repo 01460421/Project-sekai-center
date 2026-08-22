@@ -4178,7 +4178,13 @@ class Component extends DCLogic {
     if (o.body && typeof o.body !== 'string') { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(o.body); }
     const r = await fetch(this.GAMES_API + path, o);
     let d = null; try { d = await r.json(); } catch (e) {}
-    if (!r.ok) throw Object.assign(new Error((d && d.error) || ('HTTP ' + r.status)), { status: r.status, data: d });
+    // 後端的 error 是機器可讀的代碼(server_error…),message 才是人看的原因。
+    // 原本只取 error,結果畫面只顯示「server_error」,等於什麼都沒說。
+    if (!r.ok) {
+      const code = (d && d.error) || ('HTTP ' + r.status);
+      const why = d && d.message ? (' — ' + d.message) : '';
+      throw Object.assign(new Error(code + why), { status: r.status, code, data: d });
+    }
     return d;
   }
 

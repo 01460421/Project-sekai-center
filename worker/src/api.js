@@ -289,6 +289,7 @@ export async function handleApi(req, env, url, user) {
 
     return out({ error: 'not_found' }, 404);
   } catch (e) {
+      console.error('api error', e && e.stack || e);
     // 例外訊息只留一小段：夠查問題,又不至於把 SQL 或內部路徑整包吐出去
     return out({ error: 'server_error', detail: String((e && e.message) || e).slice(0, 200) }, 500);
   }
