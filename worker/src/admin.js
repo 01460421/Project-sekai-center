@@ -282,6 +282,12 @@ export async function chatClaude(env, { messages, tools, system }) {
     max_tokens: MAX_TOKENS,
     system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
     messages,
+    /* Opus 4.8 省略 thinking 就是「完全不思考」（Opus 5 才是預設 adaptive）。
+       這個助手被要求要查證、要交叉比對、要給專業判定,沒有思考會明顯變笨,
+       所以明確開 adaptive。effort 用 medium：這裡多數任務是查表與換算,
+       不需要 high 的深度,但要有足夠的規劃能力把多個工具串起來。 */
+    thinking: { type: 'adaptive' },
+    output_config: { effort: 'medium' },
   };
   if (tools && tools.length) {
     // 只在最後一個工具下斷點:斷點會快取「到此為止的所有內容」,
