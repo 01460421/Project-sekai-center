@@ -1621,11 +1621,24 @@ input::placeholder{color:var(--text-3)}
         </div>
         <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
           <sc-if value="{{ aiEmpty }}">
-            <div style="font-size:12.5px;color:var(--text-3);line-height:1.9;padding:6px 0">
-              試試看這樣問：<br>
-              「我的 id 是 123456789，幫我算接下來兩期該怎麼跑，還有近幾個月該抽哪些池」<br>
-              「現在 T1000 要跑到幾分？我時速多少、還要打多久追得上」<br>
-              「這期是什麼型態？跟同型態的歷史比算高還低」
+            <div style="font-size:12px;color:var(--text-3);line-height:1.8;padding:2px 0 12px">
+              它會自己去查站上的資料再回答。不知道從何問起的話，先點下面的分類看看。
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px">
+              <sc-for list="{{ aiModules }}" as="m" hint-placeholder-count="6">
+                <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:{{ m.bg }};transition:background .2s">
+                  <div onClick="{{ onAiMod }}" data-v="{{ m.id }}" style="padding:11px 13px;cursor:pointer">
+                    <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+                      <span style="width:7px;height:7px;border-radius:50%;background:{{ m.c }};flex:none"></span>
+                      <span style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ m.n }}</span>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-3);line-height:1.6">{{ m.d }}</div>
+                  </div>
+                  <sc-for list="{{ m.qs }}" as="q" hint-placeholder-count="3">
+                    <div onClick="{{ onAiPick }}" data-q="{{ q.q }}" style="padding:9px 13px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.65;cursor:pointer" style-hover="background:var(--bg-soft)">{{ q.q }}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
             </div>
           </sc-if>
           <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
@@ -1637,10 +1650,23 @@ input::placeholder{color:var(--text-3)}
             <div style="font-size:12px;color:var(--text-3);padding:6px 2px">助手思考中…</div>
           </sc-if>
         </div>
+        <sc-if value="{{ chatHas }}">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--text-3);font-weight:700;align-self:center;margin-right:2px">歷史對話</span>
+            <sc-for list="{{ chatRows }}" as="c" hint-placeholder-count="4">
+              <span onClick="{{ onChatOpen }}" data-id="{{ c.id }}" style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:{{ c.bg }};cursor:pointer;max-width:230px">
+                <span style="font-size:11.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</span>
+                <span style="font-size:10px;color:var(--text-3);flex:none">{{ c.when }}</span>
+                <span onClick="{{ onChatDel }}" data-id="{{ c.id }}" style="font-size:11px;color:var(--text-3);flex:none;padding:0 2px">×</span>
+              </span>
+            </sc-for>
+          </div>
+        </sc-if>
+
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input type="text" placeholder="問它任何關於這個站的資料或規劃…" value="{{ admAsk }}" onInput="{{ onField }}" data-k="admAsk" onKeyDown="{{ onAiKey }}" style="flex:1;min-width:200px;padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13.5px;outline:none">
           <button type="button" onClick="{{ onAiSend }}" style="padding:11px 22px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出</button>
-          <button type="button" onClick="{{ onAiClear }}" style="padding:11px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">清除</button>
+          <button type="button" onClick="{{ onAiClear }}" style="padding:11px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">新對話</button>
         </div>
         <div style="font-size:11.5px;color:#e0576a;margin-top:8px">{{ aiErr }}</div>
       </div>
@@ -3115,6 +3141,7 @@ class Component extends DCLogic {
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
     dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
+    chatList: [], chatId: null, aiMod: '',
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -5265,6 +5292,42 @@ class Component extends DCLogic {
     }
   }
 
+  /* 能力模塊。27 個工具藏在對話裡等於不存在 —— 使用者不會知道可以問什麼。
+     依「想解決什麼問題」分組（不是依工具分），每組給幾個真的會問的句子,
+     點了直接填進輸入框。 */
+  AI_MODULES = [
+    { id: 'run', n: '跑榜規劃', c: '#4ad1e8',
+      d: '算出你該跑多少、還來不來得及、要花多少體力與錢',
+      q: ['我的 id 是 　，幫我算這期還要跑多久才追得上 T1000',
+          '我現在時速多少？照這個速度最後會落在第幾名',
+          '我想進 T500，從現在開始每天要打幾場、要花多少體力'] },
+    { id: 'border', n: '榜線判讀', c: '#ff9db4',
+      d: '這期算高還低、預測終線可不可信、跟歷史比如何',
+      q: ['這期是什麼型態？跟同型態的歷史比算高還是低',
+          'T100 到 T5000 現在各是多少，預測終線分別多少',
+          '幫我看最近幾期同型態活動的終線範圍'] },
+    { id: 'gacha', n: '抽卡決策', c: '#c39df2',
+      d: '該不該抽、抽到天井要多少、招募點數還差多少',
+      q: ['接下來三個月有哪些池？以我的持卡該抽哪些',
+          '我想抽到指定 PU，期望要多少石？天井呢',
+          '招募點數的保底怎麼算，我還差多少'] },
+    { id: 'deck', n: '編組與加成', c: '#b8e561',
+      d: '加成怎麼疊、WL 五色怎麼湊、缺什麼卡',
+      q: ['這期我能湊到多少加成？缺什麼',
+          'World Link 這章我該怎麼配隊，五色齊了嗎',
+          '我的收集率如何？哪個團最缺'] },
+    { id: 'calc', n: '效率試算', c: '#ffd94d',
+      d: '打哪首最划算、單場多少 P、烤森與排位',
+      q: ['哪些歌 CP 值最高？我該打哪首',
+          '這樣的加成跑一場多少活動 P，每體力效率多少',
+          '烤森採集怎麼配最有效率'] },
+    { id: 'watch', n: '通知與排程', c: '#8be0d0',
+      d: '幫你盯著，條件到了寄信通知',
+      q: ['幫我訂閱：T1000 榜線超過 300 萬時通知我',
+          '我訂了哪些通知？最近有觸發嗎',
+          '活動結算前 12 小時提醒我'] },
+  ];
+
   AI_SYSTEM = `你是 Project SEKAI 台服資源站的站內助手,服務對象是這個站的管理員與進階玩家。
 
 你可以呼叫工具讀取站上所有資料:當期與歷史榜線、活動與卡池排程、使用者自己的遊戲資料與持卡、
@@ -5282,6 +5345,50 @@ class Component extends DCLogic {
 - 站上的活動、榜線、卡池資料都是從官方 API 抓的,站方不能編輯 —— 看到奇怪的值不要叫使用者
   去後台修改,那種頁面不存在;直接說明數字看起來異常即可。
 - 你只能呼叫上面列出的工具。沒有工具能做到的事(例如實際幫使用者抽卡、改遊戲內設定)就直說做不到。`;
+
+  /* 對話存檔。原本對話只活在 state 裡,重新整理就沒了。
+     存檔時只送「還沒存過的」那幾則 —— 一輪對話會產生 assistant／tool_result
+     好幾則訊息,每次整串重送會讓 D1 塞進大量重複內容。 */
+  async loadChats() {
+    try { const d = await this.api('/api/chats'); this.setState({ chatList: (d && d.chats) || [] }); }
+    catch (e) { this.setState({ chatList: [] }); }
+  }
+  async saveChat() {
+    const msgs = this.state.aiMsgs || [];
+    const saved = this._savedN || 0;
+    const fresh = msgs.slice(saved);
+    if (!fresh.length) return;
+    const pack = fresh.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }));
+    try {
+      if (!this.state.chatId) {
+        const d = await this.api('/api/chats', { method: 'POST', body: { messages: pack } });
+        if (d && d.chat) { this.setState({ chatId: d.chat.id }); this._savedN = msgs.length; this.loadChats(); }
+      } else {
+        await this.api('/api/chats/' + encodeURIComponent(this.state.chatId) + '/messages', { method: 'POST', body: { messages: pack } });
+        this._savedN = msgs.length;
+        this.loadChats();
+      }
+    } catch (e) { /* 存檔失敗不該打斷對話,下一輪會再試 */ }
+  }
+  async openChat(id) {
+    try {
+      const d = await this.api('/api/chats/' + encodeURIComponent(id));
+      const ms = ((d && d.chat && d.chat.messages) || []).map(m => {
+        let c = m.content;
+        // content 存的是 JSON 字串(助手訊息含 tool_use 區塊),能解就解回陣列
+        if (typeof c === 'string' && (c.startsWith('[') || c.startsWith('{'))) { try { c = JSON.parse(c); } catch (e) {} }
+        return { role: m.role, content: c };
+      });
+      this._savedN = ms.length;
+      this.setState({ aiMsgs: ms, chatId: id, aiErr: '' });
+    } catch (e) { this.setState({ aiErr: '載入對話失敗' }); }
+  }
+  async deleteChat(id) {
+    try { await this.api('/api/chats/' + encodeURIComponent(id), { method: 'DELETE' });
+          if (this.state.chatId === id) { this._savedN = 0; this.setState({ aiMsgs: [], chatId: null }); }
+          this.loadChats(); } catch (e) {}
+  }
+  newChat() { this._savedN = 0; this.setState({ aiMsgs: [], chatId: null, aiErr: '' }); }
 
   /* 對話迴圈:模型要工具就在瀏覽器執行,把結果送回,直到它給出文字結論。
      上限 12 輪是防呆 —— 正常的複雜任務大約 3～6 輪,跑到 12 通常代表它卡住了。 */
@@ -5314,6 +5421,7 @@ class Component extends DCLogic {
       this.setState({ aiErr: (e && e.message) || '呼叫失敗' });
     } finally {
       this.setState({ admBusy: false });
+      if (this.state.me && this.state.me.status === 'approved') this.saveChat();
     }
   }
 
@@ -5881,6 +5989,7 @@ class Component extends DCLogic {
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
+    if (p === 'assistant') this.loadChats();
     if (p === 'admin') { this.loadAdmin(); this.loadDash('overview'); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -7030,6 +7139,21 @@ class Component extends DCLogic {
             when: u.created_at ? new Date(u.created_at * 1000).toLocaleDateString() : '',
           })),
           aiBubbles: bubbles,
+          aiModules: this.AI_MODULES.map(m => ({
+            id: m.id, n: m.n, d: m.d, c: m.c,
+            open: s.aiMod === m.id,
+            bg: s.aiMod === m.id ? 'color-mix(in oklab,' + m.c + ' 16%,transparent)' : 'var(--card-2)',
+            qs: s.aiMod === m.id ? m.q.map(q => ({ q })) : [],
+          })),
+          chatRows: (s.chatList || []).slice(0, 12).map(c => ({
+            id: c.id, title: c.title || '（未命名對話）',
+            when: c.updated_at ? this.ago(c.updated_at * 1000) : '',
+            n: (c.msg_count || 0) + ' 則',
+            cur: s.chatId === c.id,
+            bg: s.chatId === c.id ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
+          })),
+          chatNone: !(s.chatList || []).length,
+          chatHas: !!(s.chatList || []).length,
           aiEmpty: bubbles.length === 0,
           admBusy: !!s.admBusy,
           aiErr: s.aiErr || '',
@@ -8062,7 +8186,13 @@ class Component extends DCLogic {
       onTutHint: () => this.setState(st => ({ tutHint: !st.tutHint })),
       onAiSend: () => this.aiSend(this.state.admAsk),
       onAiKey: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.aiSend(this.state.admAsk); } },
-      onAiClear: () => this.setState({ aiMsgs: [], aiErr: '' }),
+      onAiMod: e => { const v = e.currentTarget.dataset.v; this.setState(st => ({ aiMod: st.aiMod === v ? '' : v })); },
+      onAiPick: e => { const q = e.currentTarget.dataset.q || ''; this.setState({ admAsk: q, aiMod: '' });
+        try { const el = document.querySelector('input[data-k="admAsk"]'); if (el) { el.focus(); el.setSelectionRange(q.length, q.length); } } catch (er) {} },
+      onAiNew: () => this.newChat(),
+      onChatOpen: e => this.openChat(e.currentTarget.dataset.id),
+      onChatDel: e => { e.stopPropagation(); this.deleteChat(e.currentTarget.dataset.id); },
+      onAiClear: () => this.newChat(),
       onApply: async () => {
         try { await this.api('/api/apply', { method: 'POST', body: { note: this.state.applyNote || '' } });
               this.setState({ wBusy: '已送出，等待管理員審核。' }); }
