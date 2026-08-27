@@ -72,7 +72,7 @@ async function siteStats(db) {
       FROM users`, d7),
     firstRow(db, `SELECT COUNT(*) AS total,
         SUM(created_at >= ?)         AS last_7d,
-        SUM(mailed_at IS NULL)       AS unmailed,
+        SUM(mailed_at IS NULL AND no_mail = 0) AS unmailed,
         SUM(mail_error IS NOT NULL)  AS mail_failed
       FROM events`, d7),
     firstRow(db, `SELECT COUNT(*) AS total, SUM(created_at >= ?) AS last_7d,
@@ -107,8 +107,12 @@ async function siteStats(db) {
 }
 
 /* 只取標題，body 可能長且沒有分析價值；user_id 一律不帶出去 */
+/* 申請審核的通知要整段排除。這些標題會原封不動進入後台助手的唯讀快照,
+   而申請是外人送進來的 —— 一旦讓申請者的文字流進 title,他就能對「管理員正在
+   使用的那個 AI」下指令。title 本身已經改成程式碼樣板產生（不含任何外來字串），
+   這裡是第二道:就算樣板哪天被改壞,也不會變成注入通道。 */
 const recentEventTitles = db =>
-  rows(db, 'SELECT title, created_at FROM events ORDER BY created_at DESC LIMIT 30')
+  rows(db, "SELECT title, created_at FROM events WHERE watch_id NOT LIKE 'apply:%' ORDER BY created_at DESC LIMIT 30")
     .then(r => r.map(x => [x.created_at, String(x.title || '').slice(0, 120)]));
 
 /* ---------- 當期榜線（HiSekai） ---------- */
@@ -597,7 +601,7 @@ export async function handleAdmin(req, env, url, user) {
     if (p === '/admin/tasks' && req.method === 'POST') {
       // action 必須是 index.js runDueTasks 實作過的白名單,否則會建檔成功、
       // 到期才失敗,管理員得翻資料表才知道打錯字
-      const TASK_ACTIONS = ['notify'];
+      const TASK_ACTIONS = ['notify', 'review_apply'];
       if (TASK_ACTIONS.indexOf(String(body.action || '')) < 0) {
         return json({ error: 'bad_request', message: 'action 只能是：' + TASK_ACTIONS.join('、') }, 400);
       }

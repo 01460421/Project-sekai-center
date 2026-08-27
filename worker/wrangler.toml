@@ -49,5 +49,17 @@ AI_CAP_ADMIN = "2000"
 AI_CAP_SITE = "1500"
 MAIL_FROM = "SEKAI 資源中心 <noreply@project-sekai-center.com>"
 
+# 申請自動審核。
+# AI_REVIEW_MODEL 跟站內助手分開:這裡只是判斷一句話是不是廣告或亂填,
+# 不需要助手那種要查表、要交叉比對的能力,而它是每個申請者都會觸發一次的。
+# AUTO_APPROVE 預設關閉。開啟後也只有「通過遊戲內驗證碼、證明帳號真的是自己的」
+# 申請才可能自動核准 —— 沒有那道驗證,所有檢查都能靠抄一個公開榜單上的 id 通過。
+# AI_CAP_AUTO 是自動核准帳號的試用額度:自動審核再嚴謹也可能誤放行,
+# 而以 AI_CAP_USER=400 計,誤放行一個帳號當天最多能燒掉 $55;壓在 20 次就是 $3,
+# 等管理員事後覆核(在後台按核准，reviewed_by 就會變成他)才升到正常額度。
+AI_REVIEW_MODEL = "claude-haiku-4-5-20251001"
+AUTO_APPROVE = "0"
+AI_CAP_AUTO = "20"
+
 [observability]
 enabled = true

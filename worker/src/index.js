@@ -21,7 +21,8 @@ import { handleApi } from './api.js';
 import { handleAdmin } from './admin.js';
 import { runWatches } from './watch.js';
 import { flushMail } from './mail.js';
-import { dueTasks, finishTask, addEvent } from './db.js';
+import { dueTasks, finishTask, addEvent, claimTask, reclaimStaleTasks } from './db.js';
+import { runApplyReview } from './review.js';
 
 const API = 'https://api.hisekai.org/tw/event/live/top100';
 const TOP_N = 100;   // API 就是回前 100 名,全收
@@ -285,10 +286,19 @@ export default {
   },
 };
 
-/* 到期的排程任務。action 是白名單，不執行任何字串化的程式碼。 */
+/* 到期的排程任務。action 是白名單，不執行任何字串化的程式碼。
+   每筆都要先搶到租約才執行：cron 每分鐘觸發一次，而申請審核會打 AI，
+   一輪跑超過六十秒是常態 —— 沒有租約，下一輪就會撈到同一批仍是 pending 的列，
+   同一筆審核打兩次 AI、發兩次通知。 */
 async function runDueTasks(env) {
+  // 租約過期的（isolate 被回收、部署中斷、未捕捉的例外）先放回 pending
+  try { await reclaimStaleTasks(env.DB); } catch (e) { console.error('reclaimStale', e && e.message); }
+
   const tasks = await dueTasks(env.DB, 10);
+  let ran = 0;
   for (const t of tasks) {
+    if (!(await claimTask(env.DB, t.id, 300))) continue;   // 別人搶走了
+    ran++;
     try {
       const params = JSON.parse(t.params || '{}');
       if (t.action === 'notify') {
@@ -297,6 +307,9 @@ async function runDueTasks(env) {
           title: t.title || '排程提醒', body: params.message || t.title || '',
         });
         await finishTask(env.DB, t, true, 'queued');
+      } else if (t.action === 'review_apply') {
+        const r = await runApplyReview(env, params.user_id || t.user_id);
+        await finishTask(env.DB, t, true, r);
       } else {
         await finishTask(env.DB, t, false, '未知的 action：' + t.action);
       }
@@ -304,5 +317,5 @@ async function runDueTasks(env) {
       await finishTask(env.DB, t, false, (e && e.message) || String(e));
     }
   }
-  return tasks.length;
+  return ran;
 }

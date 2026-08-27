@@ -44,9 +44,6 @@ export async function linkDiscord(db, userId, d) {
 export const unlinkDiscord = (db, userId) =>
   run(db, 'UPDATE users SET discord_id=NULL, discord_name=NULL, updated_at=? WHERE id=?', now(), userId);
 
-export const applyNote = (db, userId, note) =>
-  run(db, 'UPDATE users SET apply_note=?, updated_at=? WHERE id=? AND status=\'pending\'', String(note || '').slice(0, 500), now(), userId);
-
 export const listUsers = (db, status) => status
   ? all(db, 'SELECT * FROM users WHERE status=? ORDER BY created_at DESC LIMIT 200', status)
   : all(db, 'SELECT * FROM users ORDER BY created_at DESC LIMIT 200');
@@ -119,13 +116,16 @@ export const markState = (db, id, state) =>
 
 export async function addEvent(db, ev) {
   const id = newId();
-  await run(db, 'INSERT INTO events (id,watch_id,user_id,title,body,created_at) VALUES (?,?,?,?,?,?)',
-    id, ev.watch_id, ev.user_id, String(ev.title || '').slice(0, 200), String(ev.body || '').slice(0, 4000), now());
+  /* no_mail:純站內通知,不進寄信佇列。管理員的審核通知屬於這一類 ——
+     量大、只需要在站上看到,不該吃掉 Resend 給偵測訂閱用的每日額度。 */
+  await run(db, 'INSERT INTO events (id,watch_id,user_id,title,body,created_at,no_mail) VALUES (?,?,?,?,?,?,?)',
+    id, ev.watch_id, ev.user_id, String(ev.title || '').slice(0, 200), String(ev.body || '').slice(0, 4000),
+    now(), ev.no_mail ? 1 : 0);
   return id;
 }
 export const pendingEvents = (db, limit) =>
   all(db, `SELECT e.*, u.email, u.name AS user_name FROM events e JOIN users u ON u.id = e.user_id
-           WHERE e.mailed_at IS NULL ORDER BY e.created_at LIMIT ?`, Math.min(50, limit || 20));
+           WHERE e.mailed_at IS NULL AND e.no_mail = 0 ORDER BY e.created_at LIMIT ?`, Math.min(50, limit || 20));
 export const markMailed = (db, id, err) =>
   run(db, 'UPDATE events SET mailed_at=?, mail_error=? WHERE id=?', now(), err || null, id);
 export const listEvents = (db, userId, limit) =>
@@ -151,6 +151,27 @@ export async function createTask(db, userId, t) {
 }
 export const dueTasks = (db, limit) =>
   all(db, `SELECT * FROM tasks WHERE status='pending' AND run_at <= ? ORDER BY run_at LIMIT ?`, now(), Math.min(20, limit || 10));
+
+/* 搶佔一筆到期任務。cron 每分鐘觸發,而任務可能跑超過一分鐘（AI 呼叫動輒十幾秒）,
+   下一輪就會撈到同一批仍是 pending 的列 —— 於是同一筆審核打兩次 AI、發兩次通知。
+   這裡用條件式 UPDATE 當鎖:只有把 status 從 pending 改成 running 的那個實例算搶到。
+   回傳 true 才可以執行。 */
+export async function claimTask(db, id, leaseS) {
+  const t = now();
+  const r = await run(db,
+    "UPDATE tasks SET status='running', lease_until=?, updated_at=? WHERE id=? AND status='pending'",
+    t + (leaseS || 180), t, id);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 租約過期的任務還原成 pending。會發生在 isolate 被回收、部署中斷、
+   或執行到一半拋出未捕捉的例外 —— 沒有這一支,那些任務會永遠卡在 running。 */
+export async function reclaimStaleTasks(db) {
+  const r = await run(db,
+    "UPDATE tasks SET status='pending', lease_until=NULL, attempts=attempts+1, updated_at=? " +
+    "WHERE status='running' AND lease_until IS NOT NULL AND lease_until < ?", now(), now());
+  return (r && r.meta && r.meta.changes) || 0;
+}
 export const listTasks = (db, userId, limit) => userId
   ? all(db, 'SELECT * FROM tasks WHERE user_id=? ORDER BY created_at DESC LIMIT ?', userId, Math.min(100, limit || 50))
   : all(db, 'SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?', Math.min(100, limit || 50));
@@ -158,11 +179,14 @@ export const listTasks = (db, userId, limit) => userId
 export async function finishTask(db, t, ok, result) {
   const ts = now();
   if (ok && t.repeat_s) {
-    await run(db, 'UPDATE tasks SET run_at=?, attempts=attempts+1, result=?, last_error=NULL, updated_at=? WHERE id=?',
+    /* 週期任務要把 status 放回 pending 並清掉租約,否則加了租約機制之後
+       它會永遠停在 running,dueTasks 再也撈不到 —— 排程等於默默死掉。 */
+    await run(db, "UPDATE tasks SET status='pending', lease_until=NULL, run_at=?, attempts=attempts+1, " +
+      'result=?, last_error=NULL, updated_at=? WHERE id=?',
       ts + t.repeat_s, String(result || '').slice(0, 2000), ts, t.id);
     return;
   }
-  await run(db, 'UPDATE tasks SET status=?, attempts=attempts+1, result=?, last_error=?, updated_at=? WHERE id=?',
+  await run(db, 'UPDATE tasks SET status=?, lease_until=NULL, attempts=attempts+1, result=?, last_error=?, updated_at=? WHERE id=?',
     ok ? 'done' : 'failed', ok ? String(result || '').slice(0, 2000) : null,
     ok ? null : String(result || '').slice(0, 500), ts, t.id);
 }
@@ -203,4 +227,91 @@ export async function aiUsedTodaySite(db) {
   const since = now() - 86400;
   const r = await one(db, 'SELECT count(*) AS c FROM admin_log WHERE created_at>=?', since);
   return (r && r.c) || 0;
+}
+
+/* ---------- 申請審核 ---------- */
+
+/* 管理員清單（收審核通知用）。原本沒有這支 —— is_admin 全站只被拿來統計人數。
+   只找已核准的管理員:被停權的管理員不該繼續收通知。 */
+export const listAdmins = (db) =>
+  all(db, "SELECT id, name, email FROM users WHERE is_admin=1 AND status='approved'");
+
+/* 送出申請。冷卻與次數上限直接寫進 WHERE,用 changes 判斷有沒有真的收下 ——
+   先 SELECT 再 UPDATE 會有競態,而這支端點會觸發外部抓取與 AI 呼叫,
+   是實打實的費用放大器,擋不住就等於把帳單交給任何一個登入中的人。 */
+export async function saveApplication(db, userId, a, cooldownS, maxCount) {
+  const t = now();
+  const r = await run(db,
+    `UPDATE users SET apply_uid=?, apply_level=?, apply_note=?, apply_note_dropped=?,
+            last_apply_at=?, apply_count=apply_count+1, updated_at=?
+      WHERE id=? AND status='pending'
+        AND (last_apply_at IS NULL OR last_apply_at <= ?)
+        AND apply_count < ?`,
+    a.uid || null, a.level == null ? null : +a.level, String(a.note || '').slice(0, 200),
+    Math.max(0, +a.dropped || 0),
+    t, t, userId, t - (cooldownS || 600), maxCount || 10);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 發驗證碼。用「距離上次發碼不足 60 秒就不發」當節流:每張碼都允許幾次重試,
+   若能無限換新碼,重試次數的上限就形同虛設(換一張就歸零)。
+   條件寫進 WHERE,用 changes 判斷有沒有真的發出去。 */
+export async function issueNonce(db, userId, nonce, ttlS) {
+  const t = now();
+  const r = await run(db,
+    `UPDATE users SET verify_nonce=?, verify_expire=?, verify_tries=0, updated_at=?
+      WHERE id=? AND (verify_expire IS NULL OR verify_expire < ?)`,
+    nonce, t + ttlS, t, userId, t + ttlS - 60);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 累加驗證嘗試次數。每次比對都要打一次外部 API(164KB),不設上限就是個放大器。
+   同樣用條件式 UPDATE,回 false 代表已達上限。 */
+export async function bumpVerifyTry(db, userId, maxTries, maxTotal) {
+  /* 兩道上限:每張碼 maxTries 次,以及不會被換碼歸零的累計 maxTotal 次。
+     只有前者的話,換一張新碼就把次數清掉了,上限形同虛設 —— 而每一次比對
+     都是一次 164KB 的外部抓取。 */
+  const r = await run(db,
+    `UPDATE users SET verify_tries=verify_tries+1, verify_total=verify_total+1, updated_at=?
+      WHERE id=? AND verify_tries < ? AND verify_total < ?`,
+    now(), userId, maxTries || 5, maxTotal || 40);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 綁定「已證明擁有」的遊戲 id。唯一性交給 partial unique index 擋,
+   不先 SELECT 再寫 —— D1 沒有跨 await 的交易,先查後寫必然有競態。
+   撞到約束就代表這個遊戲帳號已經被別的網站帳號綁走了。 */
+export async function bindGameUid(db, userId, uid) {
+  try {
+    const r = await run(db,
+      'UPDATE users SET game_uid=?, verify_nonce=NULL, verify_expire=NULL, updated_at=? WHERE id=?',
+      uid, now(), userId);
+    return { ok: !!(r && r.meta && r.meta.changes) };
+  } catch (e) {
+    const m = String((e && e.message) || e);
+    if (/UNIQUE|constraint/i.test(m)) return { ok: false, taken: true };
+    throw e;
+  }
+}
+
+/* 同一個宣稱 uid 有沒有別人也在用。這只是給管理員看的訊號,不是拒絕的理由 ——
+   在還沒證明所有權之前,先送出的人不一定就是真正的擁有者（反而可能是搶註的）。 */
+export const uidClaimedBy = (db, uid, exceptUserId) =>
+  all(db, `SELECT id, name, status, created_at, (game_uid = ?) AS proven FROM users
+            WHERE (apply_uid=? OR game_uid=?) AND id<>? ORDER BY created_at LIMIT 5`,
+      uid, uid, uid, exceptUserId || '');
+
+export const saveReview = (db, userId, reviewJson) =>
+  run(db, 'UPDATE users SET review_json=?, updated_at=? WHERE id=?',
+      String(reviewJson || '').slice(0, 8000), now(), userId);
+
+/* 自動核准。一定要帶 status='pending' 前提:背景審核跑完時,管理員可能已經
+   手動拒絕了這個人。沒有前提就會把「已拒絕」復活成「已核准」,而且沒有人會發現。
+   changes=0 代表期間狀態被改過,呼叫端只該寫通知、不該改狀態。 */
+export async function autoApprove(db, userId) {
+  const t = now();
+  const r = await run(db,
+    `UPDATE users SET status='approved', reviewed_at=?, reviewed_by='system:auto', updated_at=?
+      WHERE id=? AND status='pending'`, t, t, userId);
+  return !!(r && r.meta && r.meta.changes);
 }

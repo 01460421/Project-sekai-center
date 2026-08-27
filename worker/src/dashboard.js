@@ -441,8 +441,8 @@ async function health(db, env) {
         (SELECT COUNT(*) FROM tool_log) AS tool_log`), null),
 
     firstRow(db, `SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest,
-        SUM(mailed_at IS NULL) AS unmailed,
-        MIN(CASE WHEN mailed_at IS NULL THEN created_at END) AS oldest_unmailed,
+        SUM(mailed_at IS NULL AND no_mail = 0) AS unmailed,
+        MIN(CASE WHEN mailed_at IS NULL AND no_mail = 0 THEN created_at END) AS oldest_unmailed,
         SUM(mail_error IS NOT NULL AND mail_error <> '') AS mail_failed
       FROM events`),
 

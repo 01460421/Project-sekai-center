@@ -1479,14 +1479,63 @@ select option, select optgroup{
         </div>
         <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#ffb86b 14%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.75;margin-bottom:12px">
           你的帳號正在等待管理員核准。核准之前可以先登入，但還不能建立偵測訂閱。<br>
-          可以留一句話告訴管理員你是誰、想用來做什麼，會加快審核。
+          填好下面三項送出，系統會自動初審並通知管理員，通常比純人工快很多。
         </div>
-        <textarea placeholder="例如：我是 XX 車隊的，想用來追 T100 榜線" value="{{ applyNote }}" onInput="{{ onField }}" data-k="applyNote" style="width:100%;min-height:74px;padding:11px 14px;border:1.5px solid var(--border);border-radius:13px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">玩家 id</div>
+          <input type="text" inputmode="numeric" value="{{ applyUid }}" onInput="{{ onField }}" data-k="applyUid" placeholder="15～20 位數字" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit">
+          <div style="font-size:11px;color:var(--text-3);margin-top:4px;line-height:1.7">遊戲左上角頭像 → 個人檔案可以看到。</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">玩家等級</div>
+          <input type="number" value="{{ applyLv }}" onInput="{{ onField }}" data-k="applyLv" data-num="1" placeholder="例如 180" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit">
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">想說的一句話（選填）</div>
+          <textarea maxlength="100" placeholder="例如：想用來算隊伍倍率" value="{{ applyNote }}" onInput="{{ onField }}" data-k="applyNote" style="width:100%;min-height:62px;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+          <div style="font-size:11px;color:var(--text-3);margin-top:4px;line-height:1.7">這句話會送交 AI 服務（Anthropic，美國）做自動初審，請不要填真實姓名、電話或其他個人資料。留空是完全正當的選擇，不會因此影響審核。（{{ applyNoteCount }}）</div>
+        </div>
         <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
-          <button type="button" onClick="{{ onApply }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">送出申請</button>
+          <button type="button" onClick="{{ onApply }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">{{ acApplyBtn }}</button>
           <a href="{{ acLogoutUrl }}" style="padding:10px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:13px;font-weight:700;text-decoration:none">登出</a>
         </div>
         <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ acMsg }}</div>
+
+        <sc-if value="{{ acCheckShow }}">
+          <div style="margin-top:11px;padding:11px 14px;border-radius:12px;background:var(--card-2);border:1px solid var(--border)">
+            <div style="font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:4px">系統檢查</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.75">{{ acCheckText }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ acVerifyShow }}">
+          <div style="margin-top:11px;padding:12px 15px;border-radius:13px;background:color-mix(in oklab,var(--accent) 9%,transparent);border:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">證明這個帳號是你的（選填，但會大幅加快審核）</div>
+            <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;margin-bottom:8px">
+              填寫 id 只能證明那個帳號存在 —— 站上的排行榜就公開列著別人的 id，任何人都抄得到。<br>
+              要證明它是你的，只要把驗證碼貼進遊戲內的自我介紹，我們讀得到就算數。
+            </div>
+            <sc-if value="{{ acVerified }}">
+              <div style="font-size:12px;font-weight:800;color:var(--accent-deep)">已完成驗證，這個遊戲帳號已確認屬於你。</div>
+            </sc-if>
+            <sc-if value="{{ acNotVerified }}">
+              <sc-if value="{{ acNonceShow }}">
+                <div style="padding:10px 14px;border-radius:11px;background:var(--card);border:1px dashed var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:19px;font-weight:800;letter-spacing:2px;color:var(--ink);text-align:center;margin-bottom:7px">{{ acNonce }}</div>
+                <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;margin-bottom:8px">
+                  貼進遊戲內「個人檔案 → 自我介紹」並存檔，再回來按下面的按鈕。<br>
+                  原本的自我介紹可以保留，驗證碼放在任何位置都可以；驗證完就能改回去。
+                </div>
+              </sc-if>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-if value="{{ acNonceShow }}">
+                  <button type="button" onClick="{{ onVerifyCheck }}" style="padding:8px 17px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">{{ acCheckBtn }}</button>
+                </sc-if>
+                <button type="button" onClick="{{ onVerifyStart }}" style="padding:8px 17px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">{{ acNonceBtn }}</button>
+              </div>
+            </sc-if>
+            <div style="font-size:11.5px;color:var(--accent-deep);margin-top:8px">{{ acVerifyMsg }}</div>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -1941,9 +1990,45 @@ select option, select optgroup{
             </div>
             <button type="button" onClick="{{ onApprove }}" data-id="{{ u.id }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">核准</button>
             <button type="button" onClick="{{ onReject }}" data-id="{{ u.id }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">拒絕</button>
+            <sc-if value="{{ u.hasReview }}">
+              <div style="flex-basis:100%;margin-top:7px">
+                <div style="padding:10px 13px;border-radius:11px;background:var(--card-2);border:1px solid var(--border)">
+                  <div style="font-size:11.5px;font-weight:800;color:{{ u.verdictColor }};margin-bottom:4px">自動審核：{{ u.verdict }}</div>
+                  <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;white-space:pre-line">{{ u.checkText }}</div>
+                </div>
+                <sc-if value="{{ u.hasAi }}">
+                  <div style="margin-top:6px;padding:10px 13px;border-radius:11px;background:color-mix(in oklab,#ffb86b 11%,transparent);border:1px dashed var(--border)">
+                    <div style="font-size:11px;font-weight:800;color:var(--text-3);margin-bottom:3px">AI 對自由文字的意見（判斷對象是申請者填的字，可能被操弄，不可作為核准依據）</div>
+                    <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;white-space:pre-line">{{ u.aiText }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
           </div>
         </sc-for>
+        <div style="font-size:11.5px;color:var(--accent-deep);margin-top:8px">{{ admMsg }}</div>
       </div>
+
+      <sc-if value="{{ admHasAuto }}">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+          <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">自動核准，待你覆核（{{ admAutoN }}）</div>
+          <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
+            這些帳號通過了自動審核，但還沒有人真的看過。在你按下確認之前，它們的 AI 用量被壓在試用額度，
+            所以就算自動審核誤放行了誰，損失也有上限。確認後才恢復正常額度。
+          </div>
+          <sc-for list="{{ admAutoRows }}" as="u" hint-placeholder-count="2">
+            <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)">
+              <img src="{{ u.pic }}" referrerpolicy="no-referrer" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border)" onerror="this.style.visibility='hidden'">
+              <div style="flex:1;min-width:150px">
+                <div style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ u.name }}</div>
+                <div style="font-size:11px;color:var(--text-3)">{{ u.email }}　自動核准於 {{ u.when }}</div>
+              </div>
+              <button type="button" onClick="{{ onApprove }}" data-id="{{ u.id }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">確認（解除試用）</button>
+              <button type="button" onClick="{{ onReject }}" data-id="{{ u.id }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">撤銷</button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
 
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">助手在哪裡</div>
@@ -3260,7 +3345,9 @@ class Component extends DCLogic {
     wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
-    wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
+    applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
+    acApplyBusy: false, acVerifyBusy: false, admAuto: [],
+    wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false, admMsg: '',
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
     effSort: 'eph', dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
     chatList: [], chatId: null, aiMod: '', unread: 0,
@@ -5439,10 +5526,14 @@ class Component extends DCLogic {
             id: w.id, kind: w.kind, name: w.name, params: w.params,
             enabled: w.enabled, cooldown_s: w.cooldown_s,
             last_fired: w.last_fired || null, created_at: w.created_at })),
-          recent_events: evs ? evs.slice(0, 8).map(e => ({
-            watch_id: e.watch_id, title: e.title,
-            body: String(e.body || '').replace(/\s+/g, ' ').slice(0, 300),
-            created_at: e.created_at })) : null,
+          /* 申請審核的通知要整段排除:它的 body 含有申請者自己打的字,
+             而這裡的回傳值會直接變成模型的 tool_result —— 等於讓外人
+             對管理員正在用的助手下指令。watch_id 的 apply: 前綴就是給這個用的。 */
+          recent_events: evs ? evs.filter(e => String(e.watch_id || '').indexOf('apply:') !== 0)
+            .slice(0, 8).map(e => ({
+              watch_id: e.watch_id, title: e.title,
+              body: String(e.body || '').replace(/\s+/g, ' ').slice(0, 300),
+              created_at: e.created_at })) : null,
           note: 'last_fired 是最後一次觸發的時間戳（秒），null 代表還沒觸發過。',
         };
       }
@@ -5919,6 +6010,23 @@ class Component extends DCLogic {
     try {
       const d = await this.api('/api/me');
       this.setState({ me: d && d.user ? d.user : null, meErr: '' });
+      /* 把後端存著的申請內容帶回表單,並在完全沒填過時用本機綁定的 Player ID 補上 ——
+         多數人早就在其他頁綁過了,不該叫他再打一次十九位數字。
+         只在欄位還是空的時候補,否則使用者清空欄位會被一直塞回去。 */
+      const mu = (d && d.user) || null;
+      if (mu && mu.status === 'pending') {
+        this.setState(st => {
+          const patch = {};
+          if (!st.applyUid) {
+            let local = '';
+            try { local = localStorage.getItem('sekai-app-pid') || ''; } catch (er) {}
+            patch.applyUid = mu.apply_uid || local || '';
+          }
+          if (!st.applyLv && mu.apply_level) patch.applyLv = +mu.apply_level;
+          if (!st.applyNote && mu.apply_note) patch.applyNote = mu.apply_note;
+          return patch;
+        });
+      }
       if (d && d.user && d.user.status === 'approved') { this.pullCloud(); this.loadNotices(); }
     } catch (e) {
       /* 這裡本來把錯誤吞掉只顯示「未登入」,結果 CORS、cookie、500 全都長一樣,
@@ -6044,8 +6152,16 @@ class Component extends DCLogic {
 
   async loadAdmin() {
     try {
-      const [u, st] = await Promise.all([this.api('/admin/users?status=pending'), this.api('/admin/stats')]);
-      this.setState({ admUsers: (u && u.users) || [], admStats: (st && st.stats) || st || null });
+      /* 自動核准的帳號也要撈:它們的 status 已經是 approved,不會出現在待審核清單裡,
+         但仍在試用額度下、也還沒有人真的看過。不撈的話管理員在產品裡永遠找不到它們。 */
+      const [u, ap, st] = await Promise.all([
+        this.api('/admin/users?status=pending'),
+        this.api('/admin/users?status=approved'),
+        this.api('/admin/stats'),
+      ]);
+      const auto = ((ap && ap.users) || []).filter(x => String(x.reviewed_by || '') === 'system:auto');
+      this.setState({ admUsers: (u && u.users) || [], admAuto: auto,
+        admStats: (st && st.stats) || st || null });
     } catch (e) { this.setState({ admStats: { error: e.message } }); }
   }
   async loadGames(uid) {
@@ -7655,10 +7771,65 @@ class Component extends DCLogic {
           admStatErr: st && st.error ? ('統計載入失敗：' + st.error) : '',
           admPendingN: pend.length,
           admNoPending: pend.length === 0,
-          admUserRows: pend.map(u => ({
+          admUserRows: pend.map(u => {
+            /* 自動審核的結果。分兩塊呈現且順序不能反:上面是程式碼列印的事實,
+               下面才是 AI 對自由文字的意見 —— 管理員的判斷會被他讀到的第一段話
+               帶著走,而 AI 那段的內容源頭是申請者本人,可以被操弄成謊報檢查結果。 */
+            let rv = null;
+            try { rv = u.review_json ? JSON.parse(u.review_json) : null; } catch (e) {}
+            const V = { auto_approved: '已自動核准', needs_review: '待人工判斷',
+                        hard_fail: '檢查未通過', unknown: '外部資料無法確認' };
+            const C = { auto_approved: 'var(--accent-deep)', needs_review: 'var(--text-2)',
+                        hard_fail: '#d9534f', unknown: 'var(--text-3)' };
+            const L = [];
+            if (rv) {
+              L.push('遊戲 id ' + (rv.uid || '未填') + '：' + (
+                rv.exists === 'yes' ? '帳號存在'
+                : rv.exists === 'no' ? '查無此帳號'
+                : '無法確認（' + (rv.exists_reason || '') + '）'));
+              L.push('所有權驗證：' + (rv.owned ? '已通過' : '未驗證（僅憑填寫，任何人都能抄一個公開 id）'));
+              if (rv.exists === 'yes') {
+                L.push('等級：API 回報 ' + (rv.api_rank == null ? '—' : rv.api_rank)
+                  + '，申請填寫 ' + (rv.claimed_level == null ? '—' : rv.claimed_level)
+                  + (rv.level_ok === false ? '（不一致）' : ''));
+              }
+              if (rv.dup && rv.dup.length) {
+                L.push('這個 id 也出現在另外 ' + rv.dup.length + ' 個帳號（尚未驗證所有權時，先送出的不一定是擁有者）');
+              }
+              if (rv.note_suspicious) L.push('填寫的文字含不可見字元，已清除');
+              if (rv.note_auto) L.push(rv.note_auto);
+            }
+            let ai = '';
+            if (rv && rv.ai) {
+              const f = rv.ai.flags, on = [];
+              if (f.spam) on.push('廣告');
+              if (f.abusive) on.push('辱罵');
+              if (f.nonsense) on.push('亂填');
+              if (f.injection) on.push('試圖操弄 AI');
+              ai = '標記：' + (on.length ? on.join('、') : '無') + '（信心 ' + f.confidence + '）\n' + (rv.ai.summary || '');
+            } else if (rv && rv.ai_error) {
+              ai = rv.ai_error;
+            }
+            return {
+              id: u.id, name: u.name || '(未命名)', email: u.email || '', pic: u.picture || '',
+              note: u.apply_note || '（沒有留言）',
+              when: u.created_at ? new Date(u.created_at * 1000).toLocaleDateString() : '',
+              hasReview: !!rv,
+              verdict: rv ? (V[rv.verdict] || rv.verdict) : '',
+              verdictColor: rv ? (C[rv.verdict] || 'var(--text-2)') : 'var(--text-2)',
+              checkText: L.join('\n'),
+              hasAi: !!ai,
+              aiText: ai,
+            };
+          }),
+          admMsg: s.admMsg || '',
+          /* 自動核准、還沒有人覆核過的帳號。它們在試用額度下(AI 次數被壓到很低),
+             管理員按一次「確認」就會把 reviewed_by 從 system:auto 換成他自己,額度隨之恢復。 */
+          admAutoN: (s.admAuto || []).length,
+          admHasAuto: (s.admAuto || []).length > 0,
+          admAutoRows: (s.admAuto || []).map(u => ({
             id: u.id, name: u.name || '(未命名)', email: u.email || '', pic: u.picture || '',
-            note: u.apply_note || '（沒有留言）',
-            when: u.created_at ? new Date(u.created_at * 1000).toLocaleDateString() : '',
+            when: u.reviewed_at ? new Date(u.reviewed_at * 1000).toLocaleString() : '',
           })),
           aiBubbles: bubbles,
           aiModules: this.AI_MODULES.map(m => ({
@@ -7755,6 +7926,46 @@ class Component extends DCLogic {
           acErr: s.meErr || '',
           acSyncMsg: s.acSyncMsg || '',
           applyNote: s.applyNote || '',
+          applyNoteCount: (s.applyNote || '').length + ' / 100 字',
+          applyUid: s.applyUid || '',
+          // data-num 會把空字串轉成 0,所以 0 要顯示成空的,不然欄位裡會杵著一個 0
+          applyLv: s.applyLv ? String(s.applyLv) : '',
+          acApplyBtn: s.acApplyBusy ? '送出中…' : '送出申請',
+          ...(() => {
+            /* 送出後的系統檢查結果。模板不能寫三元或 ||,所以文案在這裡就組好。
+               外部 API 失敗時的措辭要明確講「不是你的問題」—— 否則使用者會
+               一直重送,而每次重送都是一次外部抓取。 */
+            const ck = s.acCheck;
+            let t = '';
+            if (ck) {
+              if (ck.exists === 'yes') {
+                t = '已找到這個遊戲帳號';
+                if (ck.api_level != null) t += '（遊戲內等級 ' + ck.api_level + '）';
+                t += ck.level_match === false
+                  ? '，但和你填的等級對不上，管理員會人工確認。'
+                  : '，等級也對得上。';
+              } else if (ck.exists === 'no') {
+                t = '查無此遊戲帳號（' + (ck.reason || '') + '）。申請還是收下了，但需要管理員人工確認 —— 如果是打錯了，改好再送一次會快很多。';
+              } else {
+                t = '目前無法確認（' + (ck.reason || '') + '）。這是外部資料來源的問題，不是你填錯，系統稍後會自動重試。';
+              }
+              if (ck.note_cleaned) t += '　（你填的文字含有不可見字元，已清除。）';
+            }
+            const meU = me || {};
+            const nonce = s.acNonce || meU.verify_nonce || '';
+            return {
+              acCheckShow: !!ck,
+              acCheckText: t,
+              acVerifyShow: !!meU.apply_uid,
+              acVerified: !!meU.uid_verified,
+              acNotVerified: !!meU.apply_uid && !meU.uid_verified,
+              acNonce: nonce,
+              acNonceShow: !!nonce,
+              acNonceBtn: s.acVerifyBusy ? '處理中…' : (nonce ? '換一組驗證碼' : '取得驗證碼'),
+              acCheckBtn: s.acVerifyBusy ? '比對中…' : '我已經貼好了',
+              acVerifyMsg: s.acVerifyMsg || '',
+            };
+          })(),
         };
       })(),
 
@@ -8694,15 +8905,21 @@ class Component extends DCLogic {
       onWCreate: () => this.createWatch(),
       onWToggle: e => this.toggleWatch(e.currentTarget.dataset.id, e.currentTarget.dataset.on !== '1'),
       onWDelete: e => this.deleteWatch(e.currentTarget.dataset.id),
+      /* 訊息寫進 admMsg 而不是 aiErr —— aiErr 只渲染在站內助手頁,
+         管理後台是另一段模板,按失敗會完全沒有反應。 */
       onApprove: async e => {
         const id = e.currentTarget.dataset.id;
-        try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'approved' } }); this.loadAdmin(); }
-        catch (er) { this.setState({ aiErr: er.message || '核准失敗' }); }
+        this.setState({ admMsg: '處理中…' });
+        try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'approved' } });
+              this.setState({ admMsg: '已核准。' }); this.loadAdmin(); }
+        catch (er) { this.setState({ admMsg: '核准失敗：' + (er.message || '') }); }
       },
       onReject: async e => {
         const id = e.currentTarget.dataset.id;
-        try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'rejected' } }); this.loadAdmin(); }
-        catch (er) { this.setState({ aiErr: er.message || '拒絕失敗' }); }
+        this.setState({ admMsg: '處理中…' });
+        try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'rejected' } });
+              this.setState({ admMsg: '已拒絕。' }); this.loadAdmin(); }
+        catch (er) { this.setState({ admMsg: '拒絕失敗：' + (er.message || '') }); }
       },
       onDashTab: e => { const v = e.currentTarget.dataset.v; this.setState({ dashTab: v }); this.loadDash(v); },
       onDashReload: () => this.loadDash(this.state.dashTab),
@@ -8720,9 +8937,47 @@ class Component extends DCLogic {
       onChatDel: e => { e.stopPropagation(); this.deleteChat(e.currentTarget.dataset.id); },
       onAiClear: () => this.newChat(),
       onApply: async () => {
-        try { await this.api('/api/apply', { method: 'POST', body: { note: this.state.applyNote || '' } });
-              this.setState({ wBusy: '已送出，等待管理員審核。' }); }
-        catch (e) { this.setState({ wBusy: '送出失敗：' + (e.message || '') }); }
+        if (this.state.acApplyBusy) return;              // 後端有冷卻,連點只會換來 429
+        /* 先把上一輪的檢查結果拿掉。它就顯示在錯誤訊息正下方,不清的話
+           使用者會看到「送出失敗」配上一則「已找到這個遊戲帳號」——
+           而那是他上次填錯的那組 id 的結果。 */
+        this.setState({ acCheck: null });
+        const uid = String(this.state.applyUid || '').replace(/\D/g, '');
+        const lv = +this.state.applyLv || 0;
+        /* 前端先擋一次,純粹是為了不浪費使用者的冷卻額度 ——
+           真正的驗證在後端,這裡擋不住的東西那邊照樣會擋。 */
+        if (!/^\d{15,20}$/.test(uid)) { this.setState({ wBusy: '玩家 id 應為 15～20 位數字。' }); return; }
+        if (!(lv >= 1 && lv <= 999)) { this.setState({ wBusy: '玩家等級應為 1～999 的整數。' }); return; }
+        this.setState({ acApplyBusy: true, wBusy: '送出中…' });
+        try {
+          const r = await this.api('/api/apply', { method: 'POST',
+            body: { uid, level: lv, note: this.state.applyNote || '' } });
+          this.setState({ acCheck: (r && r.check) || null,
+            wBusy: '已送出。系統正在初審，結果會一併通知管理員。' });
+          await this.loadMe();
+        } catch (e) { this.setState({ wBusy: '送出失敗：' + (e.message || '') }); }
+        this.setState({ acApplyBusy: false });
+      },
+      /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
+         而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      onVerifyStart: async () => {
+        if (this.state.acVerifyBusy) return;
+        this.setState({ acVerifyBusy: true, acVerifyMsg: '取得驗證碼…' });
+        try {
+          const r = await this.api('/api/apply/verify-start', { method: 'POST', body: {} });
+          this.setState({ acNonce: (r && r.nonce) || '', acVerifyMsg: '' });
+        } catch (e) { this.setState({ acVerifyMsg: e.message || '取得失敗' }); }
+        this.setState({ acVerifyBusy: false });
+      },
+      onVerifyCheck: async () => {
+        if (this.state.acVerifyBusy) return;
+        this.setState({ acVerifyBusy: true, acVerifyMsg: '比對中…' });
+        try {
+          const r = await this.api('/api/apply/verify-check', { method: 'POST', body: {} });
+          this.setState({ acVerifyMsg: (r && r.message) || '' });
+          if (r && r.matched) await this.loadMe();
+        } catch (e) { this.setState({ acVerifyMsg: e.message || '比對失敗' }); }
+        this.setState({ acVerifyBusy: false });
       },
       onPush: async () => {
         this.setState({ acSyncMsg: '上傳中…' });

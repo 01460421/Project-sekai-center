@@ -12,7 +12,8 @@ import { chatClaude, validateChat } from './admin.js';
 import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
 import {
-  applyNote, getUser, unlinkDiscord,
+  getUser, unlinkDiscord,
+  saveApplication, issueNonce, bumpVerifyTry, bindGameUid,
   getPrefs, setPrefs,
   listWatches, createWatch, updateWatch, deleteWatch,
   listEvents,
@@ -23,6 +24,7 @@ import {
   unreadCount,
   markRead,
   aiUsedTodaySite} from './db.js';
+import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
 const MAX_WATCHES = 20;            // 每人上限,免得有人開一百個把掃描迴圈拖垮
@@ -30,6 +32,11 @@ const MAX_BODY = 32 * 1024;        // 一般請求
 const MAX_PREFS = 256 * 1024;      // 設定整包上限,避免有人拿 D1 當雲端硬碟
 const MAX_PARAMS = 8 * 1024;       // 單一 watch 的 params
 const MAX_PREF_KEYS = 200;
+const APPLY_COOLDOWN = 60;         // 兩次送出之間至少隔這麼久（秒）
+const APPLY_MAX = 10;              // 每個帳號累計送出上限
+const NONCE_TTL = 15 * 60;         // 驗證碼有效期
+const VERIFY_TRIES = 5;            // 每張驗證碼可比對幾次（每次都要打外部 API）
+const VERIFY_TOTAL = 40;           // 累計比對上限,換新碼不會歸零
 
 /* 全站唯一的回應出口：JSON ＋ CORS ＋ no-store（帶 session 的東西不能被中間層快取）。 */
 function json(obj, status, req, env) {
@@ -65,6 +72,18 @@ async function readJson(req, max) {
   }
 }
 
+/* 申請者自己看得到的審核狀態。只回一個粗略字串,不回細節。 */
+function reviewState(j) {
+  if (!j) return '';
+  try {
+    const v = JSON.parse(j).verdict;
+    if (v === 'auto_approved') return 'passed';
+    if (v === 'hard_fail') return 'failed';
+    if (v === 'unknown') return 'retry';
+    return 'manual';
+  } catch (e) { return ''; }
+}
+
 /* 回給前端的使用者資料。google_sub 是內部識別鍵,不外流。 */
 function shapeUser(u) {
   if (!u) return null;
@@ -76,6 +95,16 @@ function shapeUser(u) {
     status: u.status || 'pending',
     is_admin: !!u.is_admin,
     apply_note: u.apply_note || '',
+    apply_uid: u.apply_uid || '',
+    apply_level: u.apply_level == null ? null : +u.apply_level,
+    /* 驗證碼要給本人看（他得貼進遊戲內自我介紹）。過期的就不送了,
+       免得前端顯示一組已經沒用的碼讓人白忙。 */
+    verify_nonce: (u.verify_nonce && u.verify_expire > Math.floor(Date.now() / 1000)) ? u.verify_nonce : '',
+    verify_expire: u.verify_expire || null,
+    uid_verified: !!(u.game_uid && u.apply_uid && u.game_uid === u.apply_uid),
+    /* 只給粗略狀態。AI 的個別標記不外送 —— 讓申請者知道是哪一條標記絆住他,
+       等於教他怎麼改寫才能通過。 */
+    review_state: reviewState(u.review_json),
     discord: u.discord_id ? { id: u.discord_id, name: u.discord_name || '' } : null,
     created_at: u.created_at,
   };
@@ -154,15 +183,114 @@ export async function handleApi(req, env, url, user) {
       if (r) return r;
     }
 
+    /* 送出申請。三個欄位:玩家等級、玩家 id、想說的一句話(選填)。
+       這支端點會觸發一次外部抓取,而稍後的背景審核還會再打一次 AI ——
+       所以冷卻與次數上限不是防呆,是防帳單:沒有它,任何一個登入中的
+       pending 帳號寫個迴圈就能一直燒站方的錢。 */
     if (p === '/api/apply') {
       if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
       if (user.status === 'rejected') return out({ error: 'rejected' }, 403);
+      if (user.status === 'approved') return out({ ok: true, status: 'approved' });
       const b = await readJson(req);
       if (b.tooBig) return out({ error: 'payload_too_large' }, 413);
       if (b.bad) return out({ error: 'bad_json' }, 400);
-      // 已核准的人再送一次就當沒事發生（db 層本來就只改 pending 的列）
-      await applyNote(env.DB, user.id, str(b.value.note, 500).trim());
-      return out({ ok: true, status: user.status });
+      const v = isObj(b.value) ? b.value : {};
+
+      const uid = String(v.uid == null ? '' : v.uid).replace(/\D/g, '');
+      if (!/^\d{15,20}$/.test(uid)) {
+        return out({ error: 'bad_uid', message: '玩家 id 應為 15～20 位數字，可在遊戲內個人檔案查到' }, 400);
+      }
+      const lv = Math.floor(Number(v.level));
+      if (!(lv >= 1 && lv <= 999)) {
+        return out({ error: 'bad_level', message: '玩家等級應為 1～999 的整數' }, 400);
+      }
+      const note = sanitizeNote(v.note);
+
+      /* 驗證通過才扣冷卻與次數 —— 打錯字不該消耗使用者的重試機會。 */
+      const saved = await saveApplication(env.DB, user.id,
+        { uid, level: lv, note: note.text, dropped: note.dropped }, APPLY_COOLDOWN, APPLY_MAX);
+      if (!saved) {
+        return out({ error: 'too_frequent',
+          message: '送出太頻繁，或已達送出次數上限（' + APPLY_MAX + ' 次）。請稍候再試，或聯絡管理員。' }, 429);
+      }
+
+      /* 硬性檢查同步做:實測這支外部 API 約 0.2 秒,使用者當場就知道 id 是不是打錯了,
+         可以立刻改。真正花時間的 AI 判斷才丟到背景。外部 API 出問題時回 unknown,
+         照樣收下申請 —— 別人的服務壞掉不該變成使用者眼中的失敗。 */
+      const pf = await fetchProfile(uid);
+
+      await createTask(env.DB, user.id, {
+        title: '申請自動審核', action: 'review_apply',
+        params: { user_id: user.id }, run_at: 0, repeat_s: 0,
+      });
+
+      return out({ ok: true, status: 'pending',
+        check: {
+          exists: pf.exists,
+          reason: pf.reason || '',
+          api_level: pf.rank == null ? null : pf.rank,
+          level_match: (pf.exists === 'yes' && pf.rank != null)
+            ? (lv <= pf.rank || Math.abs(lv - pf.rank) <= 5) : null,
+          note_cleaned: note.suspicious,
+        } });
+    }
+
+    /* 所有權驗證。前面的檢查全都只證明「這個遊戲帳號存在」,而站上的 T100 榜單
+       就公開展示著高分玩家的 id —— 抄一個填進來,所有檢查都會過。
+       唯一能證明帳號是他的,是他能改動那個帳號的內容:我們發一組碼,
+       他寫進遊戲內自我介紹,我們從公開 API 讀回來比對。 */
+    if (p === '/api/apply/verify-start' || p === '/api/apply/verify-check') {
+      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
+      if (user.status === 'rejected') return out({ error: 'rejected' }, 403);
+      const u = await getUser(env.DB, user.id);
+      const uid = String((u && u.apply_uid) || '');
+      if (!/^\d{15,20}$/.test(uid)) {
+        return out({ error: 'no_application', message: '請先送出申請（填寫玩家 id）再進行驗證' }, 400);
+      }
+
+      if (p === '/api/apply/verify-start') {
+        const nonce = makeNonce();
+        const okN = await issueNonce(env.DB, user.id, nonce, NONCE_TTL);
+        if (!okN) {
+          return out({ error: 'too_frequent',
+            message: '剛剛才發過驗證碼，請先使用目前這一組（或稍等一分鐘再取得新的）' }, 429);
+        }
+        return out({ ok: true, nonce, expire_in: NONCE_TTL });
+      }
+
+      // verify-check
+      if (!u.verify_nonce || !(u.verify_expire > Math.floor(Date.now() / 1000))) {
+        return out({ error: 'nonce_expired', message: '驗證碼已過期，請重新取得一組' }, 400);
+      }
+      if (!(await bumpVerifyTry(env.DB, user.id, VERIFY_TRIES, VERIFY_TOTAL))) {
+        return out({ error: 'too_many_tries',
+          message: '比對次數已達上限（每組驗證碼 ' + VERIFY_TRIES + ' 次，累計 ' + VERIFY_TOTAL
+            + ' 次）。請換一組驗證碼再試；若已達累計上限，請聯絡管理員。' }, 429);
+      }
+      const pf = await fetchProfile(uid);
+      if (pf.exists === 'unknown') {
+        return out({ error: 'upstream', message: '暫時無法讀取遊戲資料（' + pf.reason + '），請稍後再試' }, 503);
+      }
+      if (pf.exists !== 'yes') {
+        return out({ error: 'not_found', message: pf.reason || '查無此遊戲帳號' }, 404);
+      }
+      if (!wordHasNonce(pf.word || '', u.verify_nonce)) {
+        return out({ ok: false, matched: false,
+          message: '還沒在你的遊戲內自我介紹看到驗證碼。改好之後請稍等幾分鐘讓資料同步，再按一次。' });
+      }
+      const bound = await bindGameUid(env.DB, user.id, uid);
+      if (!bound.ok) {
+        return out({ error: 'uid_taken',
+          message: bound.taken
+            ? '這個遊戲帳號已經被另一個網站帳號綁定了。若那不是你，請聯絡管理員處理。'
+            : '綁定失敗，請稍後再試。' }, 409);
+      }
+      // 驗證狀態變了，重新跑一次審核讓判定與通知反映最新結果
+      await createTask(env.DB, user.id, {
+        title: '申請自動審核（驗證後）', action: 'review_apply',
+        params: { user_id: user.id }, run_at: 0, repeat_s: 0,
+      });
+      return out({ ok: true, matched: true, message: '驗證成功，已確認這個遊戲帳號屬於你。' });
     }
 
     /* 除了上面兩支,其餘功能都要管理員核准過。回 403 ＋ 固定錯誤碼,
@@ -262,7 +390,14 @@ export async function handleApi(req, env, url, user) {
          單一使用者,擋不住十個人同時用滿,而帳戶餘額是全站共用的。
          實測每次呼叫約 $0.14(in 約 2 萬 tokens、out 約 1.4 千),設定時請對著
          這個數字換算:2000 次 ≈ $277／人／日。 */
-      const cap = user.is_admin ? (+env.AI_CAP_ADMIN || 5000) : (+env.AI_CAP_USER || 2000);
+      /* 自動核准的帳號先給試用額度。自動審核再嚴謹也可能誤放行一個人,
+         而誤放行的代價是真金白銀 —— 以 AI_CAP_USER=400、每次約 $0.14 計,
+         一個誤放行的帳號當天最多能燒掉 $55。壓在 20 次就是 $3,
+         等管理員事後覆核(把 reviewed_by 改成自己)才升到正常額度。 */
+      const onProbation = !user.is_admin && String(user.reviewed_by || '') === 'system:auto';
+      const cap = user.is_admin ? (+env.AI_CAP_ADMIN || 5000)
+        : onProbation ? (+env.AI_CAP_AUTO || 20)
+        : (+env.AI_CAP_USER || 2000);
       const siteCap = +env.AI_CAP_SITE || 6000;
       const [used, siteUsed] = await Promise.all([
         aiUsedToday(env.DB, user.id),
