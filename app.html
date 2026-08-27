@@ -36,9 +36,16 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --rr-bg:#ffe3de;--rr-fg:#d64533;--wl-bg:#def0ff;--wl-fg:#2277cc;
 --nm-bg:#def5e6;--nm-fg:#2f9e57;--ot-bg:#edf0f7;--ot-fg:#5d6884;
 --anim:.5s;
+/* 告訴瀏覽器原生控制項(select 的下拉、option 文字、日期選擇器…)該用哪一種配色。
+   prefers-color-scheme 只是「偵測」系統偏好,color-scheme 才是「宣告」。
+   沒有它的話,深色主題下 Safari 會用淺色畫 select 的選項文字,
+   跟我們的深色背景撞在一起,整個下拉看起來就是空白的。 */
+color-scheme:light;
 }
+:root.theme-light{color-scheme:light;}
 /* 深色變數:跟隨系統(未手動指定淺色時)＋手動指定深色,兩者共用同一組值 */
 @media (prefers-color-scheme:dark){:root:not(.theme-light){
+color-scheme:dark;
 --bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
 --text:#ccd3e8;--text-2:#a2abc9;--text-3:#8a93b2;--ink:#eef1fc;
 --accent:#33cfe0;--accent-deep:#5fd0e6;
@@ -53,6 +60,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
 }}
 :root.theme-dark{
+color-scheme:dark;
 --bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
 --text:#ccd3e8;--text-2:#a2abc9;--text-3:#8a93b2;--ink:#eef1fc;
 --accent:#33cfe0;--accent-deep:#5fd0e6;
@@ -1512,7 +1520,7 @@ input::placeholder{color:var(--text-3)}
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">條件成立時寄信通知你。每人最多 20 條。</div>
         <sc-if value="{{ wMailOff }}">
           <div style="padding:10px 13px;border-radius:12px;background:color-mix(in oklab,#ffb86b 14%,transparent);color:var(--text-2);font-size:11.5px;line-height:1.75;margin-bottom:11px">
-            站方尚未設定寄信服務，訂閱可以先建立、條件也會照常判定並記錄在下方的「最近的通知」，但<b>目前不會真的寄出 Email</b>。
+            通知會直接出現在左側的「通知」頁（未讀會顯示數字），不需要另外設定。站方目前沒有接寄信服務，所以<b>不會另外寄 Email</b>——訂閱與判定都照常運作。
           </div>
         </sc-if>
 
