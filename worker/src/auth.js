@@ -12,9 +12,14 @@ import { upsertGoogleUser, linkDiscord, getUser } from './db.js';
 const enc = new TextEncoder();
 const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64uStr = s => b64u(enc.encode(s));
+/* atob 回傳的是 latin1 binary string —— 中文名字在 id_token 裡是 UTF-8,
+   直接拿 atob 的結果當字串,每個位元組會被當成一個字元,顯示出來就是亂碼。
+   要先還原成位元組再用 TextDecoder 解 UTF-8。 */
 const unb64u = s => {
   s = s.replace(/-/g, '+').replace(/_/g, '/');
-  return atob(s + '='.repeat((4 - s.length % 4) % 4));
+  const bin = atob(s + '='.repeat((4 - s.length % 4) % 4));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 };
 
 async function hmac(secret, msg) {

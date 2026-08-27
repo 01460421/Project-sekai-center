@@ -4785,7 +4785,11 @@ class Component extends DCLogic {
         const energy = a.energy != null ? Math.max(0, Math.min(10, Math.round(+a.energy || 0))) : (+s.energy || 0);
         const iv = a.interval != null ? Math.max(0, +a.interval || 0) : (+s.interval || 50);
         const F = this.EM[energy] || 1;
-        const lim = Math.max(1, Math.min(20, +a.limit || 12));
+        /* 排行本來就是拿全曲庫算的（下面 songs.forEach 掃完 602 首），
+           截斷成 20 只是回傳時砍掉 —— 這會逼模型改用「撈前 20 名再人工拼湊」
+           的取樣窮舉，既慢又不完整。放寬到 100 並支援 offset 翻頁。 */
+        const lim = Math.max(1, Math.min(100, +a.limit || 20));
+        const off = Math.max(0, +a.offset || 0);
         // 與 effRanking() 同一套算法，差別只在參數可覆寫、筆數可指定
         const rows = [];
         songs.forEach(song => {
@@ -4940,7 +4944,8 @@ class Component extends DCLogic {
         else if (sort === 'newest') list.sort((x, y) => (y.published || 0) - (x.published || 0));
         else if (sort === 'shortest') list.sort((x, y) => ((ep(x.id) || {}).time || 9999) - ((ep(y.id) || {}).time || 9999));
         else list.sort((x, y) => x.id - y.id);
-        const lim = Math.max(1, Math.min(20, +a.limit || 10));
+        const lim = Math.max(1, Math.min(100, +a.limit || 20));
+        const off = Math.max(0, +a.offset || 0);
         return {
           total, sorted_by: sort, level_difficulty: dk,
           songs: list.slice(0, lim).map(x => {

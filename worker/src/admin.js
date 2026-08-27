@@ -21,7 +21,10 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
    Opus 5 預設就跑 adaptive thinking，不必（也不能）再給 budget_tokens；
    effort 用 medium 是後台同步請求的折衷：這種「把數字講成人話」的活不需要 xhigh，
    但管理員在等回應，延遲比多想幾秒更值錢。 */
-const MODEL = 'claude-opus-5';
+/* 模型可由 env 覆蓋,不必改程式碼就能換。
+   sonnet-5 是 $2/$10 per MTok,opus-5 是 $5/$10 → $5/$25,
+   以實測的 in 20,772 / out 1,386 換算,每次從 $0.139 降到 $0.055（省六成）。 */
+const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 8000;
 const EFFORT = 'medium';
 /* 安全拒答時由伺服器端接手改用別的模型；這個 beta 只配得上 fallbacks: "default" 純量寫法 */
@@ -195,7 +198,7 @@ async function askClaude(env, snapshot, prompt, withFallback = true) {
     'anthropic-version': '2023-06-01',
   };
   const body = {
-    model: MODEL,
+    model: env.AI_MODEL || MODEL,
     max_tokens: MAX_TOKENS,
     system: SYSTEM,
     output_config: { effort: EFFORT },
@@ -275,7 +278,7 @@ export async function chatClaude(env, { messages, tools, system }) {
      大約從 $0.15 降到 $0.02。最小可快取前綴約 1024 tokens,我們遠超過。 */
   const sys = system || SYSTEM;
   const body = {
-    model: MODEL,
+    model: env.AI_MODEL || MODEL,
     max_tokens: MAX_TOKENS,
     system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
     messages,
@@ -471,6 +474,92 @@ export async function handleAdmin(req, env, url, user) {
         content: out.content, stop_reason: out.stop_reason, model: out.model,
         tokens: { in: out.tokens_in, out: out.tokens_out },
       });
+    }
+
+    /* Anthropic 連線診斷。403 forbidden / Request not allowed 是已知會發生在
+       Cloudflare Workers 打 Anthropic 的情形（多個 SDK issue 與 Cloudflare
+       社群回報同樣症狀），而它跟餘額無關 —— 所以要先確認到底是誰擋的：
+       回應帶不帶 cf-ray 就能區分是 Anthropic 應用層拒絕、還是前面的 WAF。
+       同時比對有無 User-Agent，因為 Workers 的預設 UA 是常見的被擋原因。 */
+    if (p === '/admin/diag/anthropic' && req.method === 'GET') {
+      if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key' }, 503);
+      const base = { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY,
+                     'anthropic-version': '2023-06-01' };
+      const body = JSON.stringify({ model: env.AI_MODEL || MODEL, max_tokens: 16,
+                                    messages: [{ role: 'user', content: 'hi' }] });
+      /* 第一輪已證實最小請求會成功,所以問題出在實際對話多出來的部分。
+         這裡逐步加回去做二分法:system → 少量工具 → 大量工具 → cache_control,
+         哪一步開始 403 就是那一項的問題。 */
+      const bigTool = (i) => ({
+        name: 'diag_tool_' + i,
+        description: '診斷用的假工具，長度刻意接近真實工具定義。'.repeat(6),
+        input_schema: { type: 'object', properties: {
+          a: { type: 'string', description: '參數說明'.repeat(10) },
+          b: { type: 'number', description: '參數說明'.repeat(10) } } },
+      });
+      const mkBody = (opt) => {
+        const b = { model: env.AI_MODEL || MODEL, max_tokens: 16, messages: [{ role: 'user', content: 'hi' }] };
+        if (opt.sys === 'plain') b.system = SYSTEM;
+        if (opt.sys === 'cached') b.system = [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }];
+        if (opt.tools) {
+          b.tools = Array.from({ length: opt.tools }, (_, i) => bigTool(i));
+          if (opt.toolCache) b.tools[b.tools.length - 1].cache_control = { type: 'ephemeral' };
+        }
+        return JSON.stringify(b);
+      };
+      const cases = [
+        ['最小請求', {}],
+        ['＋system（純字串）', { sys: 'plain' }],
+        ['＋system（cache_control）', { sys: 'cached' }],
+        ['＋system＋1 工具', { sys: 'plain', tools: 1 }],
+        ['＋system＋27 工具', { sys: 'plain', tools: 27 }],
+        ['＋全部＋cache_control', { sys: 'cached', tools: 27, toolCache: true }],
+      ];
+      const hdr = { ...base };
+      const out2 = [];
+      for (const [label, opt] of cases) {
+        const bd = mkBody(opt);
+        try {
+          const r = await fetch('https://api.anthropic.com/v1/messages',
+            { method: 'POST', headers: hdr, body: bd, signal: AbortSignal.timeout(30000) });
+          const raw = await r.text();
+          let pj = null; try { pj = JSON.parse(raw); } catch (e) {}
+          out2.push({ case: label, bytes: bd.length, status: r.status,
+            error_type: pj && pj.error && pj.error.type,
+            error_message: pj && pj.error && pj.error.message });
+        } catch (e) { out2.push({ case: label, bytes: bd.length, threw: (e && e.message) || String(e) }); }
+      }
+      if (url.searchParams.get('step')) {
+        const k0 = String(env.ANTHROPIC_API_KEY);
+        return json({ model: env.AI_MODEL || MODEL, key_shape: k0.slice(0, 8) + '…' + k0.slice(-4), steps: out2 });
+      }
+
+      const trials = [
+        { name: '預設（無 UA）', headers: base },
+        { name: '帶 User-Agent', headers: { ...base, 'user-agent': 'pjsk-center/1.0' } },
+        { name: '帶 UA + accept', headers: { ...base, 'user-agent': 'pjsk-center/1.0', accept: 'application/json' } },
+      ];
+      const out = [];
+      for (const t of trials) {
+        try {
+          const r = await fetch('https://api.anthropic.com/v1/messages',
+            { method: 'POST', headers: t.headers, body, signal: AbortSignal.timeout(30000) });
+          const raw = await r.text();
+          let parsed = null; try { parsed = JSON.parse(raw); } catch (e) {}
+          out.push({
+            trial: t.name, status: r.status, ok: r.ok,
+            error_type: parsed && parsed.error && parsed.error.type,
+            error_message: parsed && parsed.error && parsed.error.message,
+            // cf-ray 代表回應經過 Cloudflare;server 欄位也看得出是誰回的
+            cf_ray: r.headers.get('cf-ray'), server: r.headers.get('server'),
+            body_head: raw.slice(0, 160),
+          });
+        } catch (e) { out.push({ trial: t.name, threw: (e && e.message) || String(e) }); }
+      }
+      // 金鑰只回前後幾碼,足以確認「有沒有設對」但不外洩
+      const k = String(env.ANTHROPIC_API_KEY);
+      return json({ model: env.AI_MODEL || MODEL, key_shape: k.slice(0, 8) + '…' + k.slice(-4) + '（長度 ' + k.length + '）',
+                    trials: out });
     }
 
     if (p === '/admin/tasks' && req.method === 'GET') {
