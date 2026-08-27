@@ -1630,7 +1630,7 @@ input::placeholder{color:var(--text-3)}
           </sc-if>
           <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
             <div style="margin-bottom:10px;display:flex;justify-content:{{ m.align }}">
-              <div style="max-width:88%;padding:10px 14px;border-radius:15px;background:{{ m.bg }};color:{{ m.fg }};font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid {{ m.bd }}">{{ m.text }}</div>
+              <div style="max-width:88%;padding:10px 14px;border-radius:15px;background:{{ m.bg }};color:{{ m.fg }};font-size:13px;line-height:1.8;white-space:{{ m.wrap }};border:1px solid {{ m.bd }};overflow-wrap:break-word">{{ m.text }}{{ m.html }}</div>
             </div>
           </sc-for>
           <sc-if value="{{ admBusy }}">
@@ -2360,6 +2360,31 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- 脈絡教學：依當前頁面帶出相關的教學條目 -->
+  <sc-if value="{{ tutHintOn }}">
+    <div style="margin-top:18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 17px;cursor:pointer" onClick="{{ onTutHint }}">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0">
+          <span style="width:7px;height:18px;border-radius:4px;background:var(--rainbow);background-size:400% 100%;flex:none"></span>
+          <span style="font-size:12.5px;font-weight:800;color:var(--ink);white-space:nowrap">關於這一頁</span>
+          <span style="font-size:11.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ tutHintPeek }}</span>
+        </div>
+        <span style="font-size:11px;color:var(--text-3);flex:none;transform:{{ tutHintArrow }};transition:transform .25s">▾</span>
+      </div>
+      <sc-if value="{{ tutHintOpen }}">
+        <div style="padding:0 17px 15px">
+          <sc-for list="{{ tutHintRows }}" as="t" hint-placeholder-count="3">
+            <div style="padding:11px 0;border-top:1px solid var(--border)">
+              <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:5px">{{ t.q }}</div>
+              <div style="font-size:12px;color:var(--text-2);line-height:1.8">{{ t.body }}</div>
+            </div>
+          </sc-for>
+          <button type="button" onClick="{{ onGo }}" data-p="tut" style="margin-top:11px;padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">教學大全還有 {{ tutHintMore }} 則 →</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
   </div>
 </main>
 </div><!-- /shell：固定浮層移出 flex 容器，避免行動版網址列/視窗變動時底部欄位移 -->
@@ -2972,6 +2997,7 @@ class Component extends DCLogic {
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
+    dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -3958,6 +3984,126 @@ class Component extends DCLogic {
      只有前 100 名有 —— API 對非前百不提供本期活動分數。 */
   GAMES_API = 'https://games.project-sekai-center.com';
 
+  /* 脈絡教學：每個功能頁自動帶出該頁相關的教學條目。
+     教學大全有 115 則、243 個關鍵字,但攤在獨立頁面上等於要使用者自己去翻;
+     真正需要解釋的時機是「他正在用那個功能、正對著那些數字」的時候。
+     用關鍵字比對而不是全文掃描 —— 全文掃會把不相干的條目一起撈進來。 */
+  PAGE_TUT = {
+    home:     ['活動', '跑榜', '報跑'],
+    rank:     ['跑榜', '榜線', '推車', '報跑', '車隊'],
+    analysis: ['時速', '效率', '活動P', '加成', '跑榜'],
+    borderdb: ['榜線', '跑榜', '車隊'],
+    calc:     ['加成', '綜合力', '活動P', '效率', '火', '體力'],
+    deckpro:  ['綜合力', '技能', '加成', '站位'],
+    gacha:    ['卡池', '抽卡', '天井', '綠券'],
+    gachasim: ['天井', '抽卡', '綠券', '卡面'],
+    shop:     ['體力', '效益'],
+    b30:      ['定數', '綜合力'],
+    songs:    ['定數', 'live'],
+    rate:     ['卡面', '成員'],
+    collect:  ['卡面'],
+    calendar: ['活動', '卡池'],
+  };
+  /* 挑出與本頁相關、且分數最高的幾則。分數 = 關鍵字命中數,
+     標題命中比內文命中重要(標題就是問題本身)。 */
+  pageTutorials(page, limit) {
+    const kws = this.PAGE_TUT[page];
+    const src = this.state.tutQA || [];
+    if (!kws || !src.length) return [];
+    const scored = src.map(x => {
+      const q = String(x.q || ''), a = String(x.a || ''), k = String(x.kw || '');
+      let sc = 0;
+      kws.forEach(w => {
+        if (q.includes(w)) sc += 3;
+        if (k.includes(w)) sc += 2;
+        if (a.includes(w)) sc += 1;
+      });
+      return { x, sc };
+    }).filter(r => r.sc >= 3).sort((m, n) => n.sc - m.sc);
+    return scored.slice(0, limit || 3).map(r => r.x);
+  }
+
+  /* 儀表板用的多系列折線圖。既有的 mkChart 是單系列、且為「榜線」這種
+     大數值設計(Y 軸不從 0 起);儀表板要比較「幾個人／幾次」這種小數值,
+     從 0 起才不會把 1 和 2 的差距畫成天壤之別。 */
+  dashChart(days, series, colors) {
+    const keys = Object.keys(series || {});
+    if (!keys.length || !days || days.length < 2) return null;
+    const W = 640, H = 170, PL = 30, PR = 10, PT = 12, PB = 24;
+    let hi = 0;
+    keys.forEach(k => (series[k] || []).forEach(v => { if (+v > hi) hi = +v; }));
+    hi = Math.max(1, hi);
+    const nice = Math.pow(10, Math.floor(Math.log10(hi)));
+    const top = Math.ceil(hi / nice) * nice;                    // 讓 Y 軸頂端是整數刻度
+    const X = i => PL + (i / (days.length - 1)) * (W - PL - PR);
+    const Y = v => PT + (1 - (+v || 0) / top) * (H - PT - PB);
+    const paths = keys.map((k, ki) => ({
+      key: k, color: (colors && colors[k]) || ['#4ad1e8', '#ff9db4', '#b8e561', '#ffd94d'][ki % 4],
+      d: (series[k] || []).map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' '),
+      last: (series[k] || [])[(series[k] || []).length - 1] || 0,
+      total: (series[k] || []).reduce((a, b) => a + (+b || 0), 0),
+    }));
+    const ticks = [0, 0.5, 1].map(f => ({ v: Math.round(top * (1 - f)), y: (PT + f * (H - PT - PB)).toFixed(1) }));
+    const xlab = [0, days.length >> 1, days.length - 1].map(i => ({ x: X(i).toFixed(1), l: days[i] }));
+    return { W, H, paths, ticks, xlab, top, gx1: PL, gx2: W - PR };
+  }
+
+  /* 助手回覆是 Markdown（它會用表格與粗體整理數字），純文字顯示會爛掉。
+     這裡做一個夠用的子集：標題、表格、清單、粗體、行內程式碼、分隔線。
+     內容雖然來自我們自己的模型，仍一律先 HTML 跳脫再組標籤 —— 工具結果裡
+     可能夾帶玩家暱稱之類的外部字串，不能假設它安全。 */
+  mdLite(src) {
+    const esc = t => String(t == null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const inline = t => esc(t)
+      .replace(/`([^`]+)`/g, '<code style="background:var(--card);padding:1px 5px;border-radius:5px;font-size:.92em">$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<b style="color:var(--ink)">$1</b>')
+      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<i>$1</i>');
+    const lines = String(src || '').split('\n');
+    const out = [];
+    let i = 0, list = null;
+    const closeList = () => { if (list) { out.push('</' + list + '>'); list = null; } };
+    while (i < lines.length) {
+      const ln = lines[i];
+      // 表格：| a | b | 後面接 |---|---|
+      if (/^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+        closeList();
+        const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(x => x.trim());
+        const head = cells(ln);
+        i += 2;
+        const body = [];
+        while (i < lines.length && /^\s*\|/.test(lines[i])) { body.push(cells(lines[i])); i++; }
+        out.push('<div style="overflow-x:auto;margin:8px 0"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'
+          + '<thead><tr>' + head.map(h => '<th style="text-align:left;padding:6px 9px;border-bottom:1px solid var(--border);color:var(--text-3);font-weight:700;white-space:nowrap">' + inline(h) + '</th>').join('') + '</tr></thead><tbody>'
+          + body.map(r => '<tr>' + r.map(c => '<td style="padding:6px 9px;border-bottom:1px solid var(--border);vertical-align:top">' + inline(c) + '</td>').join('') + '</tr>').join('')
+          + '</tbody></table></div>');
+        continue;
+      }
+      let m;
+      if ((m = ln.match(/^\s*(#{1,4})\s+(.*)$/))) {
+        closeList();
+        const sz = [15, 14, 13.5, 13][m[1].length - 1];
+        out.push('<div style="font-size:' + sz + 'px;font-weight:800;color:var(--ink);margin:10px 0 5px">' + inline(m[2]) + '</div>');
+      } else if ((m = ln.match(/^\s*[-*]\s+(.*)$/))) {
+        if (list !== 'ul') { closeList(); out.push('<ul style="margin:5px 0 5px 18px;padding:0">'); list = 'ul'; }
+        out.push('<li style="margin:3px 0">' + inline(m[1]) + '</li>');
+      } else if ((m = ln.match(/^\s*(\d+)\.\s+(.*)$/))) {
+        if (list !== 'ol') { closeList(); out.push('<ol style="margin:5px 0 5px 20px;padding:0">'); list = 'ol'; }
+        out.push('<li style="margin:3px 0">' + inline(m[2]) + '</li>');
+      } else if (/^\s*---+\s*$/.test(ln)) {
+        closeList(); out.push('<div style="height:1px;background:var(--border);margin:9px 0"></div>');
+      } else if (!ln.trim()) {
+        closeList();
+      } else {
+        closeList(); out.push('<div style="margin:3px 0">' + inline(ln) + '</div>');
+      }
+      i++;
+    }
+    closeList();
+    return out.join('');
+  }
+
   /* ---------- AI 助手：工具集 ----------
      工具在瀏覽器執行,因為站上的計算引擎、卡片資料、榜線快照、教學大全都在前端,
      Worker 沒有那些東西。Worker 只代理 Claude API(保護金鑰)與稽核。
@@ -4292,6 +4438,27 @@ class Component extends DCLogic {
   async deleteWatch(id) {
     try { await this.api('/api/watches?id=' + encodeURIComponent(id), { method: 'DELETE' }); this.loadWatches(); }
     catch (e) { this.setState({ wBusy: e.message || '' }); }
+  }
+
+  /* 儀表板。各分頁分開載,切到哪頁才打哪支 API —— 一次全撈的話光是
+     使用者清單與稽核紀錄就會拖慢首屏,而多數時候只會看總覽。 */
+  DASH_EP = { overview: '/admin/dash/overview', users: '/admin/dash/users',
+              watches: '/admin/dash/watches', ai: '/admin/dash/ai', health: '/admin/dash/health' };
+  async loadDash(tab) {
+    const t = tab || this.state.dashTab || 'overview';
+    const ep = this.DASH_EP[t]; if (!ep) return;
+    this.setState({ dashBusy: true, dashErr: '' });
+    try {
+      const jobs = [this.api(ep + (t === 'users' ? '?limit=100' : t === 'ai' ? '?limit=50' : ''))];
+      if (t === 'overview') jobs.push(this.api('/admin/dash/series?days=14').catch(() => null));
+      const [main, series] = await Promise.all(jobs);
+      this.setState(st => ({
+        dashData: Object.assign({}, st.dashData, { [t]: main }, series ? { series } : {}),
+        dashBusy: false,
+      }));
+    } catch (e) {
+      this.setState({ dashBusy: false, dashErr: (e && e.message) || '載入失敗' });
+    }
   }
 
   async loadAdmin() {
@@ -4727,7 +4894,7 @@ class Component extends DCLogic {
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
-    if (p === 'admin') this.loadAdmin();
+    if (p === 'admin') { this.loadAdmin(); this.loadDash('overview'); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
@@ -5746,6 +5913,21 @@ class Component extends DCLogic {
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant',
       ...(() => {
+        const rows = this.pageTutorials(s.page, 3);
+        const open = !!s.tutHint;
+        return {
+          tutHintOn: rows.length > 0,
+          tutHintOpen: open,
+          tutHintArrow: open ? 'rotate(180deg)' : 'none',
+          tutHintPeek: open ? '' : rows.map(r => r.q).slice(0, 2).join('　·　'),
+          tutHintMore: Math.max(0, (s.tutQA || []).length - rows.length),
+          tutHintRows: rows.map(r => ({
+            q: r.q,
+            body: React.createElement('div', { dangerouslySetInnerHTML: { __html: r.a || '' } }),
+          })),
+        };
+      })(),
+      ...(() => {
         const me = s.me, isAdm = !!(me && me.is_admin);
         const st = s.admStats || {};
         const pend = s.admUsers || [];
@@ -5761,17 +5943,20 @@ class Component extends DCLogic {
         (s.aiMsgs || []).forEach(m => {
           if (m.role === 'user') {
             if (typeof m.content === 'string') {
-              bubbles.push({ text: m.content, align: 'flex-end', bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' });
+              bubbles.push({ text: m.content, html: null, wrap: 'pre-wrap', align: 'flex-end', bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' });
             }
             return;   // tool_result 不顯示
           }
           const arr = Array.isArray(m.content) ? m.content : [];
           arr.forEach(c => {
             if (c.type === 'text' && c.text && c.text.trim()) {
-              bubbles.push({ text: c.text.trim(), align: 'flex-start', bg: 'var(--card-2)', fg: 'var(--text)', bd: 'var(--border)' });
+              // 助手回覆是 Markdown,交給 mdLite 轉成元素;使用者訊息維持純文字
+              bubbles.push({ text: '', html: React.createElement('div', {
+                  dangerouslySetInnerHTML: { __html: this.mdLite(c.text.trim()) } }),
+                wrap: 'normal', align: 'flex-start', bg: 'var(--card-2)', fg: 'var(--text)', bd: 'var(--border)' });
             } else if (c.type === 'tool_use') {
-              bubbles.push({ text: '· ' + (TOOL_LABEL[c.name] || c.name), align: 'flex-start',
-                             bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)' });
+              bubbles.push({ text: '· ' + (TOOL_LABEL[c.name] || c.name), html: null, wrap: 'pre-wrap',
+                             align: 'flex-start', bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)' });
             }
           });
         });
@@ -6826,6 +7011,7 @@ class Component extends DCLogic {
         try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'rejected' } }); this.loadAdmin(); }
         catch (er) { this.setState({ aiErr: er.message || '拒絕失敗' }); }
       },
+      onTutHint: () => this.setState(st => ({ tutHint: !st.tutHint })),
       onAiSend: () => this.aiSend(this.state.admAsk),
       onAiKey: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.aiSend(this.state.admAsk); } },
       onAiClear: () => this.setState({ aiMsgs: [], aiErr: '' }),
