@@ -802,6 +802,39 @@
         body.embed-gachacalc .container > section{ display:none !important; }
         body.embed-gachacalc .container > section#gacha-calc{ display:block !important; }
         body.embed-gachacalc .container > section#gacha-calc > h2{ display:none !important; }
+
+/* ===== 把 classic 頁剩下的功能內嵌進 app（卡庫／玩偶／加分卡／玩家查詢／甘特圖）=====
+   都是既有區段,直接沿用同一套引擎,不重寫一份。 */
+body.embed-cardlib{ padding:0 !important; margin:0 !important; }
+body.embed-cardlib #siteNav, body.embed-cardlib .m-dock, body.embed-cardlib .to-top, body.embed-cardlib header#top, body.embed-cardlib .toc, body.embed-cardlib footer, body.embed-cardlib .embed-tabbar{ display:none !important; }
+body.embed-cardlib .container{ max-width:100%; margin:0 auto; padding:0 14px 30px; }
+body.embed-cardlib .container > section{ display:none !important; }
+body.embed-cardlib .container > section#cardlib{ display:block !important; }
+body.embed-cardlib .container > section#cardlib > h2{ display:none !important; }
+body.embed-dolls{ padding:0 !important; margin:0 !important; }
+body.embed-dolls #siteNav, body.embed-dolls .m-dock, body.embed-dolls .to-top, body.embed-dolls header#top, body.embed-dolls .toc, body.embed-dolls footer, body.embed-dolls .embed-tabbar{ display:none !important; }
+body.embed-dolls .container{ max-width:100%; margin:0 auto; padding:0 14px 30px; }
+body.embed-dolls .container > section{ display:none !important; }
+body.embed-dolls .container > section#dolls{ display:block !important; }
+body.embed-dolls .container > section#dolls > h2{ display:none !important; }
+body.embed-bonuscards{ padding:0 !important; margin:0 !important; }
+body.embed-bonuscards #siteNav, body.embed-bonuscards .m-dock, body.embed-bonuscards .to-top, body.embed-bonuscards header#top, body.embed-bonuscards .toc, body.embed-bonuscards footer, body.embed-bonuscards .embed-tabbar{ display:none !important; }
+body.embed-bonuscards .container{ max-width:100%; margin:0 auto; padding:0 14px 30px; }
+body.embed-bonuscards .container > section{ display:none !important; }
+body.embed-bonuscards .container > section#bonus-cards{ display:block !important; }
+body.embed-bonuscards .container > section#bonus-cards > h2{ display:none !important; }
+body.embed-lookup{ padding:0 !important; margin:0 !important; }
+body.embed-lookup #siteNav, body.embed-lookup .m-dock, body.embed-lookup .to-top, body.embed-lookup header#top, body.embed-lookup .toc, body.embed-lookup footer, body.embed-lookup .embed-tabbar{ display:none !important; }
+body.embed-lookup .container{ max-width:100%; margin:0 auto; padding:0 14px 30px; }
+body.embed-lookup .container > section{ display:none !important; }
+body.embed-lookup .container > section#player-lookup{ display:block !important; }
+body.embed-lookup .container > section#player-lookup > h2{ display:none !important; }
+body.embed-distribution{ padding:0 !important; margin:0 !important; }
+body.embed-distribution #siteNav, body.embed-distribution .m-dock, body.embed-distribution .to-top, body.embed-distribution header#top, body.embed-distribution .toc, body.embed-distribution footer, body.embed-distribution .embed-tabbar{ display:none !important; }
+body.embed-distribution .container{ max-width:100%; margin:0 auto; padding:0 14px 30px; }
+body.embed-distribution .container > section{ display:none !important; }
+body.embed-distribution .container > section#distribution{ display:block !important; }
+body.embed-distribution .container > section#distribution > h2{ display:none !important; }
         /* ===== 內嵌儲值分析（?embed=shop）：app「儲值分析」頁 ===== */
         body.embed-shop{ padding:0 !important; margin:0 !important; }
         body.embed-shop #siteNav, body.embed-shop .m-dock, body.embed-shop .to-top, body.embed-shop header#top, body.embed-shop .toc, body.embed-shop footer, body.embed-shop .embed-tabbar{ display:none !important; }

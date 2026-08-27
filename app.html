@@ -1597,6 +1597,51 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <sc-if value="{{ isCardlib }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="cardlibFrame" src="./index.html?embed=cardlib" title="卡片技能庫" scrolling="no" style="width:100%;height:1400px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">逐張卡的技能敘述與各等級數值，資料取自官方 master（skills.json）。助手查技能時用的也是同一份。</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDolls }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="dollsFrame" src="./index.html?embed=dolls" title="月卡玩偶" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">豆森娃的月列表與輪替時程。</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isBonusCards }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="bonuscardsFrame" src="./index.html?embed=bonuscards" title="加分卡參考" scrolling="no" style="width:100%;height:1100px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">各活動的加成卡一覽。</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isLookup }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="lookupFrame" src="./index.html?embed=lookup" title="玩家查詢" scrolling="no" style="width:100%;height:1000px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">輸入遊戲 ID 查任一玩家的公開資料與編組。</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDistrib }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
+      <iframe id="distribFrame" src="./index.html?embed=distrib" title="活動分布" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">歷屆活動的時間分布甘特圖。</div>
+  </div>
+  </sc-if>
+
   <!-- ========== 通知 ========== -->
   <sc-if value="{{ isNotices }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -3006,7 +3051,12 @@ class Component extends DCLogic {
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
     assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
-    notices:  ['通知', '偵測訂閱觸發時的站內通知']
+    notices:  ['通知', '偵測訂閱觸發時的站內通知'],
+    cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
+    dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
+    bonuscards:['加分卡參考', '各活動的加成卡一覽'],
+    lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
+    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖']
   };
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
@@ -3290,7 +3340,7 @@ class Component extends DCLogic {
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
-    import('./data/sekai-data.js?v=3c2dfa1a5a')
+    import('./data/sekai-data.js?v=8d2812dda5')
       .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
       .catch(() => {});
     this.loadEpSongs();
@@ -3329,7 +3379,7 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame', 'cardlibFrame', 'dollsFrame', 'bonuscardsFrame', 'lookupFrame', 'distributionFrame'].forEach(id => {
         const f = document.getElementById(id);
         if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : id === 'gachaCalcFrame' ? 600 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
@@ -4156,7 +4206,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=695f872dfa';
+      s.src = 'data/borders-db.js?v=ee2b6bb001';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -4492,6 +4542,17 @@ class Component extends DCLogic {
         name: { type: 'string', description: '這條訂閱的名稱（給人看的），不給就自動命名' },
         cooldown_s: { type: 'number', description: '兩次通知之間至少間隔幾秒，不給就用該類型的預設值' } }, required: ['kind', 'mode'] } },
 
+    { name: 'get_card_skills',
+      description: '查卡片的技能類型與各等級的實際數值（分數提升 %、持續秒數等），資料取自官方 master 的 skills.json。'
+        + '使用者問「這張卡技能幾 %」「我該抽哪張」「我手上哪張技能最高」時用。'
+        + '可依卡片 id、角色、稀有度篩選，或用 mine:true 直接查使用者持有的卡。',
+      input_schema: { type: 'object', properties: {
+        ids: { type: 'array', items: { type: 'integer' }, description: '指定卡片 id' },
+        chara: { type: 'integer', description: '角色 id（1-26）' },
+        rarity: { type: 'string', description: 'rarity_4 / rarity_birthday 等' },
+        mine: { type: 'boolean', description: '只看目前 uid 持有的卡（需先設定 uid）' },
+        top: { type: 'integer', description: '依技能數值由高到低回前幾張，預設 15' } } } },
+
     { name: 'list_my_watches',
       description: '列出使用者目前的偵測訂閱，以及最近幾則已觸發的通知。使用者問「我訂了什麼」「有沒有通知」時用。需要已登入。',
       input_schema: { type: 'object', properties: {
@@ -4596,7 +4657,7 @@ class Component extends DCLogic {
         let src = this.state.tutQA || [];
         if (!src.length) {
           try {
-            const m = await import('./data/tutorial-data.js');
+            const m = await import('./data/tutorial-data.js?v=4befc9b27b');
             src = m.TUT_QA || [];
             this.setState({ tutQA: src, tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' });
           } catch (e) { return { error: '教學資料載入失敗' }; }
@@ -5330,6 +5391,68 @@ class Component extends DCLogic {
           note: 'last_fired 是最後一次觸發的時間戳（秒），null 代表還沒觸發過。',
         };
       }
+      case 'get_card_skills': {
+        /* 站上的卡庫（classic 的 cardlib）本來就在讀官方 skills.json,
+           但那份解析在 core.js、不在這裡,所以工具自己抓一次並快取。
+           技能 % 就是 skillEffectDetails 裡對應等級的 activateEffectValue。 */
+        const DB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+        if (!this._cardSkillCache) {
+          try {
+            const [cards, skills] = await Promise.all([
+              fetch(DB + '/cards.json').then(r => r.json()),
+              fetch(DB + '/skills.json').then(r => r.json()),
+            ]);
+            const byId = {}; skills.forEach(k => { byId[k.id] = k; });
+            this._cardSkillCache = { cards, skills: byId };
+          } catch (e) { return { error: '技能資料載入失敗：' + (e.message || '') }; }
+        }
+        const { cards, skills } = this._cardSkillCache;
+        const nOf = {}; (this.state.rateChars || []).forEach(x => { nOf[x[0]] = x[1]; });
+
+        let pool = cards;
+        if (Array.isArray(a.ids) && a.ids.length) { const set = new Set(a.ids.map(Number)); pool = pool.filter(c => set.has(c.id)); }
+        if (a.chara) pool = pool.filter(c => +c.characterId === +a.chara);
+        if (a.rarity) pool = pool.filter(c => c.cardRarityType === a.rarity);
+        if (a.mine) {
+          const uid = this.state.pid;
+          if (!uid) return { error: '還沒設定 uid,請先用 set_my_uid' };
+          try {
+            const d = await fetch(this.API + '/user/' + encodeURIComponent(uid) + '/profile').then(r => r.ok ? r.json() : null);
+            const own = new Set(((d && d.userCards) || []).map(x => x.cardId));
+            pool = pool.filter(c => own.has(c.id));
+          } catch (e) { return { error: '取得持卡失敗' }; }
+        }
+        if (!pool.length) return { count: 0, cards: [], note: '沒有符合條件的卡' };
+
+        /* 取每張卡的「主要效果值」：優先 score_up 類,那才是常說的技能 %。
+           分母不同的效果(life_recovery 等)不混在一起比。 */
+        const val = c => {
+          const sk = skills[c.skillId];
+          if (!sk) return null;
+          const effs = sk.skillEffects || [];
+          const sc = effs.find(e => /score_up/.test(e.skillEffectType || '')) || effs[0];
+          if (!sc) return null;
+          const dets = sc.skillEffectDetails || [];
+          const lv = dets.find(x => x.level === 4) || dets[dets.length - 1];
+          return lv ? { type: sc.skillEffectType, max: lv.activateEffectValue,
+                        by_level: dets.map(x => [x.level, x.activateEffectValue]),
+                        duration: lv.activateEffectDuration } : null;
+        };
+        const rows = pool.map(c => ({ c, v: val(c) })).filter(x => x.v)
+          .sort((x, y) => (y.v.max || 0) - (x.v.max || 0))
+          .slice(0, Math.min(30, +a.top || 15));
+        return {
+          count: rows.length, total_matched: pool.length,
+          note: '數值為 Lv.4（滿級）的技能效果值；score_up 類即一般說的「技能 %」',
+          cards: rows.map(x => ({
+            id: x.c.id, name: x.c.prefix, chara: nOf[x.c.characterId] || x.c.characterId,
+            rarity: x.c.cardRarityType, attr: x.c.attr, supply: x.c.cardSupplyId,
+            skill_type: x.v.type, skill_max_percent: x.v.max,
+            duration_s: x.v.duration, by_level: x.v.by_level,
+          })),
+        };
+      }
+
       default: return { error: '未知的工具:' + name };
     }
   }
@@ -6331,11 +6454,11 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
-      ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b']]],
+      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
+      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -7069,6 +7192,8 @@ class Component extends DCLogic {
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices',
+      isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
+      isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
       ...(() => {
         const evs = s.wEvents || [];
         return {

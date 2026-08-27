@@ -14,10 +14,10 @@
     try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
     var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
-    <link rel="stylesheet" href="css/core.css?v=992b5346df">
+    <link rel="stylesheet" href="css/core.css?v=642e11c52a">
 </head>
 <body>
-    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='gachacalc')document.body.classList.add('embed-gachacalc');else if(_e==='shop')document.body.classList.add('embed-shop');else if(_e==='b30')document.body.classList.add('embed-b30');}catch(e){}</script>
+    <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='gachacalc')document.body.classList.add('embed-gachacalc');else if(_e==='cardlib')document.body.classList.add('embed-cardlib');else if(_e==='dolls')document.body.classList.add('embed-dolls');else if(_e==='bonuscards')document.body.classList.add('embed-bonuscards');else if(_e==='lookup')document.body.classList.add('embed-lookup');else if(_e==='distribution')document.body.classList.add('embed-distribution');else if(_e==='shop')document.body.classList.add('embed-shop');else if(_e==='b30')document.body.classList.add('embed-b30');}catch(e){}</script>
     <nav id="siteNav" aria-label="全站導覽">
         <div class="nav-capsule">
             <a class="nav-brand" href="#top" aria-label="回到頂端"><span class="nav-logo" aria-hidden="true"></span><span class="nav-title"><em>SEKAI</em>資源中心</span></a>
@@ -1288,8 +1288,8 @@
     (function(){
         try{
             var mode = new URLSearchParams(location.search).get('embed');
-            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha' && mode !== 'gachasim' && mode !== 'gachacalc' && mode !== 'shop' && mode !== 'b30') return;
-            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : mode === 'gachasim' ? 'embed-gachasim' : mode === 'gachacalc' ? 'embed-gachacalc' : mode === 'shop' ? 'embed-shop' : mode === 'b30' ? 'embed-b30' : 'embed-calc');
+            if(mode !== 'calc' && mode !== 'ministudio' && mode !== 'deck' && mode !== 'gacha' && mode !== 'gachasim' && mode !== 'gachacalc' && mode !== 'cardlib' && mode !== 'dolls' && mode !== 'bonuscards' && mode !== 'lookup' && mode !== 'distribution' && mode !== 'shop' && mode !== 'b30') return;
+            document.body.classList.add(mode === 'ministudio' ? 'embed-ministudio' : mode === 'deck' ? 'embed-deck' : mode === 'gacha' ? 'embed-gacha' : mode === 'gachasim' ? 'embed-gachasim' : mode === 'gachacalc' ? 'embed-gachacalc' : mode === 'cardlib' ? 'embed-cardlib' : mode === 'dolls' ? 'embed-dolls' : mode === 'bonuscards' ? 'embed-bonuscards' : mode === 'lookup' ? 'embed-lookup' : mode === 'distribution' ? 'embed-distribution' : mode === 'shop' ? 'embed-shop' : mode === 'b30' ? 'embed-b30' : 'embed-calc');
             if(mode === 'calc'){
                 var tabs = [['calculator','推隊倍率'],['event-calc','加成·活動P·綜合力·組卡'],['gacha-calc','抽卡天井'],['rank-match','排位賽'],['run-studio','跑榜工作室'],['mysekai','MySekai 採集']];
                 var bar = document.createElement('div');
