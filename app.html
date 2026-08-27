@@ -5460,50 +5460,57 @@ class Component extends DCLogic {
           const sk = skills[c.skillId];
           if (!sk) return null;
           const effs = sk.skillEffects || [];
-          const lv4 = e => {
-            const d = e.skillEffectDetails || [];
-            return d.find(x => x.level === 4) || d[d.length - 1] || null;
-          };
-          const pick = t => effs.filter(e => (e.skillEffectType || '') === t)
-            .map(e => { const l = lv4(e); return l ? +l.activateEffectValue : 0; });
-
-          /* 同團型（id 15-19）的加成不在 skillEffectType,而在 skillEnhance：
-             「除了自己以外每 1 位同團成員 +10%,全員一致再 +10%」——
-             隊伍五人扣掉自己是 4 位,加上全員一致的獎勵,等於 base + 10×5。
-             不處理的話這類卡會被低估成 100%（實際上限 150%）。 */
+          const lvls = e => (e.skillEffectDetails || []).map(x => [x.level, +x.activateEffectValue]);
+          const at = (e, lv) => { const d = e.skillEffectDetails || [];
+            const f = d.find(x => x.level === lv) || d[d.length - 1]; return f ? +f.activateEffectValue : 0; };
+          const of = t => effs.filter(e => (e.skillEffectType || '') === t);
           const enh = effs.map(e => e.skillEnhance).find(Boolean);
 
-          const plain = pick('score_up');
-          const life = pick('score_up_condition_life');
-          const keep = pick('score_up_keep');
-          const rank = pick('score_up_character_rank');
-          const unit = pick('score_up_unit_count');
-          const ref = pick('other_member_score_up_reference_rate');
+          const life = of('score_up_condition_life'), keep = of('score_up_keep');
+          const plain = of('score_up'), rank = of('score_up_character_rank');
+          const unit = of('score_up_unit_count'), ref = of('other_member_score_up_reference_rate');
 
-          let base = 0, max = 0, kind = '', note = '';
-          if (life.length) { kind = 'condition_life'; base = Math.min(...life); max = Math.max(...life);
-            note = '體力越高越接近上限'; }
-          else if (keep.length) { kind = 'keep'; base = Math.min(...keep); max = Math.max(...keep);
-            note = '判定保持 GOOD 以上才是上限值'; }
-          else if (plain.length) {
-            base = Math.max(...plain); max = base; kind = 'score_up';
+          /* base 與 max 各自都有分級,不必推估：
+             體力型／keep 型是「同一種 effectType 排成一串」,第一條是條件拉滿值、
+             最後一條是保底值,兩條都帶 Lv1-4;
+             其餘型態則是 score_up 那條帶分級,加成部分(同團 +10、角色等級 +50、
+             外團 +60)是固定值不隨技能等級變。 */
+          let kind = '', baseEff = null, maxEff = null, addFixed = 0, note = '', dur = null;
+          if (life.length || keep.length) {
+            const arr = life.length ? life : keep;
+            kind = life.length ? 'condition_life' : 'keep';
+            maxEff = arr[0]; baseEff = arr[arr.length - 1];
+            note = life.length ? '體力越高越接近上限（協力滿血可視為上限）'
+                               : '判定保持 GOOD 以上才是上限值';
+          } else if (plain.length) {
+            baseEff = plain[0]; maxEff = plain[0];
             if (enh && /sub_unit_score_up/.test(enh.skillEnhanceType || '')) {
               const per = +enh.activateEffectValue || 0;
-              kind = 'same_unit'; max = base + per * 5;
-              note = '除了自己以外每 1 位同團成員 +' + per + '%（最多 4 位），全員同團再 +' + per + '%';
-            }
-            else if (rank.length) { kind = 'character_rank'; max = base + Math.max(...rank);
-              note = '角色等級每 2 級 +1%,滿級時達上限'; }
-            else if (unit.length) { kind = 'unit_count'; max = base + Math.max(...unit);
-              note = '編組內每有 1 種外團 +30%,最多 2 種'; }
-            else if (ref.length) { kind = 'reference'; max = base;
-              note = '另外會取隊上隨機 1 人技能上限的 ' + Math.max(...ref) + '%,實際值看隊伍'; }
+              kind = 'same_unit'; addFixed = per * 5;
+              note = '除自己外每 1 位同團成員 +' + per + '%（最多 4 位），全員同團再 +' + per + '%';
+            } else if (rank.length) {
+              kind = 'character_rank'; addFixed = Math.max(...rank.map(e => at(e, 4)));
+              note = '角色等級每 2 級 +1%，滿級達上限';
+            } else if (unit.length) {
+              kind = 'unit_count'; addFixed = Math.max(...unit.map(e => at(e, 4)));
+              note = '編組內每有 1 種外團 +30%，最多 2 種';
+            } else if (ref.length) {
+              kind = 'reference';
+              note = '另外取隊上隨機 1 人技能上限的 ' + Math.max(...ref.map(e => at(e, 4))) + '%，實際值看隊伍';
+            } else kind = 'score_up';
           } else return null;
 
-          const first = effs.find(e => /score_up/.test(e.skillEffectType || '')) || effs[0];
-          const fl = first ? lv4(first) : null;
-          return { kind, base, max, duration: fl ? fl.activateEffectDuration : null, note,
-                   by_level: (first && (first.skillEffectDetails || []).map(x => [x.level, x.activateEffectValue])) || [] };
+          dur = baseEff ? (baseEff.skillEffectDetails || []).slice(-1)[0] : null;
+          const baseLv = lvls(baseEff), maxLv = lvls(maxEff);
+          const mk = lv => ({ base: at(baseEff, lv), max: at(maxEff, lv) + addFixed });
+          return {
+            kind, note, add_fixed: addFixed,
+            base: at(baseEff, 4), max: at(maxEff, 4) + addFixed,
+            duration: dur ? dur.activateEffectDuration : null,
+            base_by_level: baseLv,
+            max_by_level: maxLv.map(([l, v]) => [l, v + addFixed]),
+            at_level: mk,
+          };
         };
 
         const rows = pool.map(c => ({ c, v: val(c) })).filter(x => x.v)
@@ -5517,7 +5524,8 @@ class Component extends DCLogic {
             id: x.c.id, name: x.c.prefix, chara: nOf[x.c.characterId] || x.c.characterId,
             rarity: x.c.cardRarityType, attr: x.c.attr, supply: x.c.cardSupplyId,
             skill_kind: x.v.kind, skill_base_percent: x.v.base, skill_max_percent: x.v.max,
-            duration_s: x.v.duration, note: x.v.note || undefined, by_level: x.v.by_level,
+            duration_s: x.v.duration, note: x.v.note || undefined,
+            base_by_level: x.v.base_by_level, max_by_level: x.v.max_by_level,
           })),
         };
       }

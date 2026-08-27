@@ -282,8 +282,21 @@ export async function chatClaude(env, { messages, tools, system }) {
   const raw = await r.text();
   let d = null; try { d = JSON.parse(raw); } catch (e) {}
   if (!r.ok) {
+    /* 403 有兩種完全不同的成因,而且都長一樣:billing_error(餘額用完)與
+       permission_error(金鑰沒有該模型的權限／組織限制)。只印 message 的話
+       兩者都是「Request not allowed」,站方根本不知道該去儲值還是去改權限。
+       這裡把 error.type 一起帶出來,並翻成能直接行動的中文。 */
+    const et = (d && d.error && d.error.type) || '';
     const msg = (d && d.error && d.error.message) || raw.slice(0, 300);
-    throw new Error('Claude API ' + r.status + '：' + msg);
+    const hint = r.status === 403
+      ? (et === 'billing_error'
+          ? '（帳戶餘額不足或未設定付款方式，請到 console.anthropic.com 的 Billing 儲值）'
+          : et === 'permission_error'
+            ? '（這把 API 金鑰沒有存取該模型的權限，請確認金鑰的 workspace 與模型權限）'
+            : '（403 通常是餘額用完或金鑰權限不足，請檢查 console.anthropic.com 的 Billing 與 API keys）')
+      : r.status === 429 ? '（超過速率上限或當期額度，稍後再試）'
+      : r.status === 401 ? '（API 金鑰無效或已被撤銷）' : '';
+    throw new Error('Claude API ' + r.status + (et ? ' ' + et : '') + '：' + msg + hint);
   }
   const usage = (d && d.usage) || {};
   return {
