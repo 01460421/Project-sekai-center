@@ -4481,18 +4481,20 @@ class Component extends DCLogic {
     /* ---------- 歌曲與玩家 ---------- */
     { name: 'get_songs',
       description: '查歌曲資料庫：曲名、作曲、所屬團體、各難度定數與音符數、曲長與活動倍率。' +
-        '使用者問某首歌幾級、多長、哪個團的歌時用；也可用來把曲名換成 song_id 再丟給 calc_event_points。',
+        '使用者問某首歌幾級、多長、哪個團的歌時用；也可用來把曲名換成 song_id 再丟給 calc_event_points。'
+        + '遇到聽起來像曲名的陌生詞（玩家常用簡稱），先用 q 搜一次再說，不要直接回答不知道。',
       input_schema: { type: 'object', properties: {
         limit: { type: 'integer', description: '要回幾筆，最多 100，預設 20。'
           + '這是完整排行的前 N 名（全曲庫 602 首都算過），不是取樣——不要用多次小批次去拼湊。' },
         offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的排名' },
 
-        q: { type: 'string', description: '曲名或作曲者關鍵字（中日英皆可，模糊比對）' },
+        q: { type: 'string', description: '曲名或作曲者關鍵字，模糊比對。'
+          + '**曲庫存的是日文原名**（例如「余花にみとれて」「ロキ」），玩家講的常是簡稱'
+          + '（「余花」「蝦」），所以拿使用者講的詞直接丟進來搜就對了，不要因為看起來不像全名就跳過。' },
         id: { type: 'integer', description: '直接指定歌曲 id' },
         unit: { type: 'string', enum: ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'], description: '所屬團體：ln=Leo/need、mmj=MMJ、vbs=VBS、wxs=ワンダショ、n25=ニーゴ、vs=虛擬歌手' },
         difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '搭配 sort 使用的難度，預設 M（MASTER）' },
-        sort: { type: 'string', enum: ['id', 'level', 'notes', 'newest', 'shortest'], description: 'id＝依編號、level＝定數由高到低、notes＝音符數由多到少、newest＝最新實裝、shortest＝曲長最短' },
-        limit: { type: 'integer', description: '要回幾首，預設 10，最多 20' } } } },
+        sort: { type: 'string', enum: ['id', 'level', 'notes', 'newest', 'shortest'], description: 'id＝依編號、level＝定數由高到低、notes＝音符數由多到少、newest＝最新實裝、shortest＝曲長最短' } } } },
 
     { name: 'analyze_player',
       description: '某位玩家的節奏剖析：分數、名次、1／3／24 小時實測時速、周回數、動能（近 1 小時相對 24 小時）、推估休息時數、預測終分與預測名次、場均在前百的百分位。' +
@@ -4579,6 +4581,16 @@ class Component extends DCLogic {
           'player 要 {uid:"…"}；schedule 要 {before_h:24}。沒填的欄位會自動補預設值，缺必填欄位會回錯誤並列出欄位規格' },
         name: { type: 'string', description: '這條訂閱的名稱（給人看的），不給就自動命名' },
         cooldown_s: { type: 'number', description: '兩次通知之間至少間隔幾秒，不給就用該類型的預設值' } }, required: ['kind', 'mode'] } },
+
+    { name: 'search_anything',
+      description: '**遇到任何不認識的名詞就先用這個。** 一次搜遍曲庫、活動、卡片、卡池與教學大全，'
+        + '回報那個詞可能是什麼。玩家講的多半是簡稱或圈內叫法（「余花」是曲名 余花にみとれて、'
+        + '「蝦」是 独りんぼエンヴィー、「開闢天地」是 初音天地開闢神話），直接把使用者的原話丟進來即可。'
+        + '完全找不到時會回最接近的幾個候選，不要自己猜或直接說不知道。',
+      input_schema: { type: 'object', properties: {
+        q: { type: 'string', description: '使用者講的那個詞，原樣丟進來' },
+        kinds: { type: 'array', items: { type: 'string', enum: ['song', 'event', 'card', 'gacha', 'tutorial'] },
+          description: '限定只搜某幾類，不給就全部都搜' } }, required: ['q'] } },
 
     { name: 'get_card_skills',
       description: '查卡片的技能類型與各等級的實際數值（分數提升 %、持續秒數等），資料取自官方 master 的 skills.json。'
@@ -5434,6 +5446,81 @@ class Component extends DCLogic {
           note: 'last_fired 是最後一次觸發的時間戳（秒），null 代表還沒觸發過。',
         };
       }
+      case 'search_anything': {
+        /* 使用者不會知道一個詞屬於哪一類,所以一次搜完再讓模型判斷。
+           比對前先正規化：全形轉半形、大小寫統一、去掉空白與常見標點 ——
+           玩家打字不會照著官方全名打。找不到精確結果時退一步用「任一字元命中」
+           給候選,總比回一句「查不到」有用。 */
+        const raw = String(a.q || '').trim();
+        if (!raw) return { error: '缺少關鍵字' };
+        const norm = t => String(t == null ? '' : t)
+          .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+          .replace(/[\s・･·．.,，、!！?？~〜ー\-_'"「」『』（）()\[\]]/g, '')
+          .toLowerCase();
+        const q = norm(raw);
+        const want = Array.isArray(a.kinds) && a.kinds.length ? a.kinds : ['song', 'event', 'card', 'gacha', 'tutorial'];
+        const hit = (t) => { const n2 = norm(t); return n2 && (n2.includes(q) || q.includes(n2)); };
+        const loose = (t) => { const n2 = norm(t); return n2 && [...q].some(ch => n2.includes(ch)); };
+        const out = {}; const near = {};
+
+        if (want.indexOf('song') >= 0) {
+          await this.loadSongs();
+          const songs = this.state.songs || [];
+          const ex = songs.filter(x => hit(x.title) || hit(x.composer));
+          out.songs = ex.slice(0, 8).map(x => ({ id: x.id, title: x.title, composer: x.composer,
+            units: x.units, master_lv: (x.lv || {}).master }));
+          if (!ex.length) near.songs = songs.filter(x => loose(x.title)).slice(0, 5).map(x => x.title);
+        }
+        if (want.indexOf('event') >= 0) {
+          const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+          const evs = (DB && DB.events) || [];
+          const ex = evs.filter(x => hit(x.name) || hit(x.chara) || hit(x.unit));
+          out.events = ex.slice(0, 8).map(x => ({ id: x.id, name: x.name, type: x.type,
+            days: x.days, unit: x.unit, chara: x.chara, start: x.start }));
+          if (!ex.length && evs.length) near.events = evs.filter(x => loose(x.name)).slice(0, 5).map(x => x.name);
+        }
+        if (want.indexOf('gacha') >= 0) {
+          const gs = this.state.gachas || [];
+          const ex = gs.filter(x => hit(x.n) || hit(x.ch));
+          out.gachas = ex.slice(0, 8).map(x => ({ name: x.n, type: x.t, start: x.s, end: x.e, pickup: x.ch }));
+        }
+        if (want.indexOf('card') >= 0) {
+          try {
+            const DBU = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+            if (!this._cardSkillCache) {
+              const [cards, skills] = await Promise.all([
+                fetch(DBU + '/cards.json').then(r => r.json()),
+                fetch(DBU + '/skills.json').then(r => r.json()),
+              ]);
+              const byId = {}; skills.forEach(k => { byId[k.id] = k; });
+              this._cardSkillCache = { cards, skills: byId };
+            }
+            const ex = this._cardSkillCache.cards.filter(c => hit(c.prefix));
+            out.cards = ex.slice(0, 8).map(c => ({ id: c.id, name: c.prefix,
+              rarity: c.cardRarityType, chara_id: c.characterId }));
+          } catch (e) { out.cards_error = '卡片資料載入失敗'; }
+        }
+        if (want.indexOf('tutorial') >= 0) {
+          let src = this.state.tutQA || [];
+          if (!src.length) {
+            try { const m = await import('./data/tutorial-data.js'); src = m.TUT_QA || [];
+                  this.setState({ tutQA: src }); } catch (e) {}
+          }
+          const ex = src.filter(x => hit(x.q) || hit(x.kw) || String(x.a || '').includes(raw));
+          out.tutorial = ex.slice(0, 5).map(x => ({ question: x.q,
+            answer: String(x.a || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400) }));
+        }
+
+        const found = Object.keys(out).reduce((n2, k) => n2 + (Array.isArray(out[k]) ? out[k].length : 0), 0);
+        return {
+          query: raw, found, ...out,
+          near_misses: found ? undefined : near,
+          note: found
+            ? '這些是名稱或關鍵字命中的結果，請判斷使用者指的是哪一個；不確定就直接問。'
+            : '完全沒有命中。near_misses 是字元層級的近似候選，僅供參考，不要當成答案；請問使用者那是指什麼。',
+        };
+      }
+
       case 'get_card_skills': {
         /* 站上的卡庫（classic 的 cardlib）本來就在讀官方 skills.json,
            但那份解析在 core.js、不在這裡,所以工具自己抓一次並快取。
@@ -5658,8 +5745,19 @@ class Component extends DCLogic {
 - AP＝全 PERFECT，FC＝Full Combo。L1／P1 是站位代號。
 
 不確定使用者指的是哪一個時就直接問，不要猜著回答。
-遇到這裡沒列到的黑話，先 search_tutorial 查，教學大全收了 115 則、
-關鍵字涵蓋大部分圈內說法。
+
+**遇到沒見過的專有名詞，一律先 search_anything(q=那個詞)，不要直接回「不知道那是什麼」。**
+它會一次搜曲庫、活動、卡片、卡池與教學大全並告訴你那可能是什麼。
+
+為什麼一定要查：玩家講的幾乎都是簡稱或圈內叫法，而站上存的是正式名稱。
+「余花」＝余花にみとれて、「蝦」＝独りんぼエンヴィー、「開闢天地」＝初音天地開闢神話。
+你沒見過那個詞，不代表站上沒有——多半只是名字不一樣。
+
+查完之後：
+- 命中一個 → 直接用，順帶告訴使用者你理解成哪一個。
+- 命中多個 → 列出來問使用者指的是哪個，不要自己挑。
+- 完全沒命中 → 才說查不到，並問那是什麼。回傳的 near_misses 只是字元層級的
+  近似候選，不可以當成答案講出去。
 
 ## 其他
 
