@@ -5457,9 +5457,17 @@ class Component extends DCLogic {
           .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
           .replace(/[\s・･·．.,，、!！?？~〜ー\-_'"「」『』（）()\[\]]/g, '')
           .toLowerCase();
-        const q = norm(raw);
+        /* 玩家常整句丟過來(「余花那期」「絢爛那次」),而曲名/活動名裡沒有「那期」,
+           直接比對會整個落空。所以額外準備剝掉尾綴量詞的變體一起比。
+           只剝尾綴,不剝開頭 —— 開頭剝離會把「本気」這種曲名砍成「気」,一個字很容易亂命中。
+           剝完少於兩字也不採用,同樣是為了避免過度比對。 */
+        const strip = t => t.replace(/(那|這|該|上|下|前|本)?(一)?(期|次|回|張|首|個|池|團|活動|卡池|的)+$/, '');
+        const base = norm(raw), alt = strip(base);
+        const qs = [...new Set([base].concat(alt !== base && alt.length >= 2 ? [alt] : []))];
+        const q = qs[0];
         const want = Array.isArray(a.kinds) && a.kinds.length ? a.kinds : ['song', 'event', 'card', 'gacha', 'tutorial'];
-        const hit = (t) => { const n2 = norm(t); return n2 && (n2.includes(q) || q.includes(n2)); };
+        const hit = (t) => { const n2 = norm(t);
+          return !!n2 && qs.some(v => n2.includes(v) || v.includes(n2)); };
         const loose = (t) => { const n2 = norm(t); return n2 && [...q].some(ch => n2.includes(ch)); };
         const out = {}; const near = {};
 
@@ -5467,11 +5475,31 @@ class Component extends DCLogic {
           await this.loadSongs();
           const songs = this.state.songs || [];
           const ex = songs.filter(x => hit(x.title) || hit(x.composer));
-          out.songs = ex.slice(0, 8).map(x => ({ id: x.id, title: x.title, composer: x.composer,
-            units: x.units, master_lv: (x.lv || {}).master }));
+          /* 玩家說「余花那期」時,指的是那首歌所屬的活動,不是歌本身。
+             eventMusics 有這層關聯（余花にみとれて → 第 150 期）,查到就一併帶出來,
+             否則助手只會回一首歌,答非所問。 */
+          if (ex.length && !this._evMusic) {
+            this._evMusic = await fetch(this.TDB + '/eventMusics.json')
+              .then(r => r.json()).catch(() => []);
+          }
+          const evl = ex.length ? await this.loadEvList().catch(() => []) : [];
+          const evOf = id => (evl || []).find(x => +x.id === +id) || null;
+          out.songs = ex.slice(0, 8).map(x => {
+            const link = (this._evMusic || []).find(l => +l.musicId === +x.id);
+            const ev = link ? evOf(link.eventId) : null;
+            return { id: x.id, title: x.title, composer: x.composer,
+              units: x.units, master_lv: (x.lv || {}).master,
+              event: link ? { id: link.eventId, name: ev ? ev.name : undefined,
+                              start: ev ? ev.start_at : undefined } : null,
+              hint: link ? ('這首是第 ' + link.eventId + ' 期的活動曲；使用者說「' + raw + '那期」多半是指那一期')
+                         : undefined };
+          });
           if (!ex.length) near.songs = songs.filter(x => loose(x.title)).slice(0, 5).map(x => x.title);
         }
         if (want.indexOf('event') >= 0) {
+          /* 榜線資料庫是懶載入的,使用者沒開過榜線頁時 BORDERS_DB 還不存在,
+             不先載就會誤判成「查無此活動」。 */
+          await this.loadBorderDB().catch(() => {});
           const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
           const evs = (DB && DB.events) || [];
           const ex = evs.filter(x => hit(x.name) || hit(x.chara) || hit(x.unit));
@@ -5481,8 +5509,21 @@ class Component extends DCLogic {
         }
         if (want.indexOf('gacha') >= 0) {
           const gs = this.state.gachas || [];
-          const ex = gs.filter(x => hit(x.n) || hit(x.ch));
-          out.gachas = ex.slice(0, 8).map(x => ({ name: x.n, type: x.t, start: x.s, end: x.e, pickup: x.ch }));
+          /* 「bfes 那期」「cfes 那期」指的是那種池伴生的活動。note 欄位就寫著
+             「4.25 BFES/153期伴生」,所以類型關鍵字也要一起比對,並把 eid 帶出來。 */
+          const ex = gs.filter(x => hit(x.n) || hit(x.ch) || hit(x.t) || hit(x.note));
+          const evl2 = ex.length ? await this.loadEvList().catch(() => []) : [];
+          const evOf2 = id => (evl2 || []).find(x => +x.id === +id) || null;
+          out.gachas = ex.slice(0, 10).map(x => {
+            const ev = x.eid ? evOf2(x.eid) : null;
+            return { name: x.n, type: x.t, start: x.s, end: x.e, pickup: x.ch, note: x.note || undefined,
+              event: x.eid ? { id: +x.eid, name: ev ? ev.name : undefined,
+                               start: ev ? ev.start_at : undefined } : null };
+          });
+          if (ex.length && /fes|フェス|慶典/i.test(raw)) {
+            out.gacha_note = '這類講法（bfes／cfes／絢爛／七彩）通常是在指那個池伴生的活動期數，'
+              + '每筆的 event 欄位就是；有多期時要問使用者是哪一次。';
+          }
         }
         if (want.indexOf('card') >= 0) {
           try {
@@ -5748,6 +5789,13 @@ class Component extends DCLogic {
 
 **遇到沒見過的專有名詞，一律先 search_anything(q=那個詞)，不要直接回「不知道那是什麼」。**
 它會一次搜曲庫、活動、卡片、卡池與教學大全並告訴你那可能是什麼。
+
+**特別注意「某某那期」這種講法**——玩家常拿一個東西去指它所屬的活動期數：
+- 講曲名時多半指那首的活動期。search_anything 回傳的 songs[].event 就是答案
+  （「余花」→ 余花にみとれて → 第 150 期）。
+- 講 bfes／cfes／絢爛慶典 時,指的是那種池伴生的活動期,回傳的 gachas[].event 就是。
+  這類池有很多期,不要自己挑一期,要把命中的期數列出來問使用者是哪一次。
+所以看到 event 欄位就直接拿它回答,不要只回一首歌或一個池就交差。
 
 為什麼一定要查：玩家講的幾乎都是簡稱或圈內叫法，而站上存的是正式名稱。
 「余花」＝余花にみとれて、「蝦」＝独りんぼエンヴィー、「開闢天地」＝初音天地開闢神話。
