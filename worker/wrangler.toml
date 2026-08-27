@@ -43,7 +43,7 @@ COOKIE_DOMAIN = ".project-sekai-center.com"
 # 調整前請先換算：400 次 ≈ $55／人／日（快取後約 $42）。AI_CAP_SITE 是全站保護網,
 # 因為帳戶餘額是共用的,個人上限擋不住多人同時用滿。
 # 換模型不必改程式碼。sonnet-5 $2/$10、opus-4.8 與 opus-5 都是 $5/$25 per MTok。
-AI_MODEL = "claude-opus-4-8"
+AI_MODEL = "claude-opus-5"
 AI_CAP_USER = "400"
 AI_CAP_ADMIN = "2000"
 AI_CAP_SITE = "1500"
