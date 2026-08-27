@@ -507,6 +507,29 @@ export async function handleAdmin(req, env, url, user) {
         }
         return JSON.stringify(b);
       };
+      /* 六步全過之後,剩下的變因只有 messages 本身。真實對話帶著工具結果,
+         實測 in 是 20,772 tokens(約 80KB),而上面的測試只有 10KB —— 差了八倍。
+         這裡直接測不同大小的 payload,看臨界點在哪。 */
+      if (url.searchParams.get('size')) {
+        const sizes = [10, 40, 80, 160, 320];   // KB
+        const outS = [];
+        for (const kb of sizes) {
+          const filler = '這是模擬工具回傳結果的內容。'.repeat(Math.ceil(kb * 1024 / 42));
+          const bd = JSON.stringify({ model: env.AI_MODEL || MODEL, max_tokens: 16,
+            messages: [{ role: 'user', content: '請只回一個字：好。以下是資料：' + filler }] });
+          try {
+            const r = await fetch('https://api.anthropic.com/v1/messages',
+              { method: 'POST', headers: base, body: bd, signal: AbortSignal.timeout(60000) });
+            const raw = await r.text();
+            let pj = null; try { pj = JSON.parse(raw); } catch (e) {}
+            outS.push({ approx_kb: kb, bytes: bd.length, status: r.status,
+              error_type: pj && pj.error && pj.error.type,
+              error_message: (pj && pj.error && pj.error.message || '').slice(0, 120) });
+          } catch (e) { outS.push({ approx_kb: kb, bytes: bd.length, threw: (e && e.message) || String(e) }); }
+        }
+        return json({ model: env.AI_MODEL || MODEL, sizes: outS });
+      }
+
       const cases = [
         ['最小請求', {}],
         ['＋system（純字串）', { sys: 'plain' }],
