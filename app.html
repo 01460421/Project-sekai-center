@@ -1070,16 +1070,24 @@ select option, select optgroup{
 
         <sc-if value="{{ hasEffTable }}">
           <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px;background:var(--card-2)">
-              <span style="font-size:11.5px;font-weight:800;color:var(--text-3);letter-spacing:.7px">時間效率 TOP 15</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px;background:var(--card-2);flex-wrap:wrap">
+              <span style="font-size:11.5px;font-weight:800;color:var(--text-3);letter-spacing:.7px">{{ effTitle }}</span>
               <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ effNote }}</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--border)">
+              <sc-for list="{{ effSortChips }}" as="c" hint-placeholder-count="3">
+                <button type="button" onClick="{{ onSet }}" data-k="effSort" data-v="{{ c.v }}" style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 13px;border:1px solid {{ c.bd }};border-radius:12px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">
+                  <span>{{ c.n }}</span>
+                  <span style="font-size:9.5px;font-weight:600;opacity:.75">{{ c.hint }}</span>
+                </button>
+              </sc-for>
             </div>
             <sc-for list="{{ effRows }}" as="r" hint-placeholder-count="8">
               <div style="display:grid;grid-template-columns:{{ effCols }};gap:10px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s" style-hover="background:var(--bg-soft)">
                 <span style="font-family:'M PLUS Rounded 1c';font-size:12px;font-weight:800;color:{{ r.numColor }}">{{ r.i }}</span>
                 <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span><span style="display:block;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.meta }}</span></span>
-                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--ink)">{{ r.eph }}</span>
-                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:11.5px;color:var(--text-3)">{{ r.ep }}</span>
+                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--ink)">{{ r.main }}</span>
+                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-size:11.5px;color:var(--text-3)">{{ r.sub }}</span>
               </div>
             </sc-for>
           </div>
@@ -3254,7 +3262,7 @@ class Component extends DCLogic {
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
-    dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
+    effSort: 'eph', dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
     chatList: [], chatId: null, aiMod: '', unread: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
@@ -6351,8 +6359,14 @@ class Component extends DCLogic {
     const s = this.state, song = this.songById(s.songKey);
     return this.calcEPValue(s.mode, this.scoreNow(song), song ? song.rate : (+s.rate || 100), +s.bonus || 0, this.EM[energyN] || 1, +s.power || 0, +s.life || 0);
   }
-  effRanking() {
+  /* 三種排序回答三個不同的問題：
+       eph（每小時活動 P）→ 時間有限時該打哪首
+       ep （單局活動 P）  → 體力有限時該打哪首
+       score（單局分數）  → 想衝分數／B30 時該打哪首
+     分數本來就算出來了,以前只是沒回傳。 */
+  effRanking(sortBy, limit) {
     const s = this.state, F = this.EM[s.energy] || 1, iv = +s.interval || 50;
+    const key = sortBy || s.effSort || 'eph';
     const rows = [];
     (s.epSongs || []).forEach(song => {
       if (!song.time || song.time <= 0) return;
@@ -6361,9 +6375,10 @@ class Component extends DCLogic {
       const score = s.scoreMode === 'direct' ? (+s.score || 0) : this.calcSongScore(d, s.mode, +s.power || 0, +s.skill || 0, +s.s6 || 0);
       const ep = this.calcEPValue(s.mode, score, song.rate, +s.bonus || 0, F, +s.power || 0, +s.life || 0);
       const cycle = song.time + iv;
-      rows.push({ id: song.id, title: song.t, time: song.time, rate: song.rate, ep, eph: Math.round(ep * 3600 / cycle), lv: d[0] });
+      rows.push({ id: song.id, title: song.t, time: song.time, rate: song.rate, score,
+                  ep, eph: Math.round(ep * 3600 / cycle), lv: d[0] });
     });
-    return rows.sort((a, b) => b.eph - a.eph).slice(0, 15);
+    return rows.sort((a, b) => (b[key] || 0) - (a[key] || 0)).slice(0, Math.max(1, +limit || 15));
   }
   plan() {
     const s = this.state, r = this.epResult();
@@ -6871,9 +6886,18 @@ class Component extends DCLogic {
       const ep = this.epFor(b);
       return { n: b + ' ×' + (this.EM[b] || 1), ep: this.n(ep), per: b > 0 ? this.n(Math.round(ep / b)) : '—', rowBg: b === s.energy ? 'color-mix(in oklab,var(--accent) 8%,transparent)' : 'transparent' };
     });
-    const effRows = (s.ctab === 'eff' ? this.effRanking() : []).map((r, i) => ({
+    const effSort = s.effSort || 'eph';
+    const EFF_SORTS = [['eph', '每小時 P', '時間有限'], ['ep', '單局 P', '體力有限'], ['score', '單局分數', '衝分數']];
+    const effSortChips = EFF_SORTS.map(([v, n2, hint]) => {
+      const on = effSort === v, st = chip(on, 'var(--cta)');
+      return Object.assign({ v, n: n2, hint }, st);
+    });
+    const effRows = (s.ctab === 'eff' ? this.effRanking(effSort) : []).map((r, i) => ({
       i: i + 1, title: r.title, meta: 'Lv.' + r.lv + ' · ' + r.time + 's · R' + r.rate,
-      eph: this.short(r.eph) + '/h', ep: this.n(r.ep) + ' EP',
+      // 主欄跟著排序走,次欄固定給另外兩個數字,一眼看得到取捨
+      main: effSort === 'score' ? this.short(r.score) : effSort === 'ep' ? this.n(r.ep) : this.short(r.eph) + '/h',
+      sub: effSort === 'score' ? (this.short(r.eph) + '/h') : effSort === 'ep' ? (this.short(r.eph) + '/h') : (this.n(r.ep) + ' EP'),
+      eph: this.short(r.eph) + '/h', ep: this.n(r.ep) + ' EP', score: this.short(r.score),
       numColor: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#e28743' : 'var(--text-3)',
       rowBg: r.id === +s.songKey ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent'
     }));
@@ -8254,7 +8278,8 @@ class Component extends DCLogic {
           + this.n(x.s1) + ' ～ ' + this.n(x.s2),
       })),
       ctrlHasAlts: !!(this._ctrlAlts || []).length,
-      hasEffTable: s.ctab === 'eff', effRows, effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
+      hasEffTable: s.ctab === 'eff', effRows, effSortChips,
+      effTitle: (s.effSort === 'score' ? '單首分數' : s.effSort === 'ep' ? '單局活動 P' : '時間效率') + ' TOP 15', effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
       effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
       hasPlanCards: s.ctab === 'plan',
       planFields: [
