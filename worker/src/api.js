@@ -9,6 +9,7 @@
 
 import { allowOrigin, corsHeaders, preflight } from './cors.js';
 import { chatClaude, validateChat } from './admin.js';
+import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
 import {
   applyNote, getUser, unlinkDiscord,
@@ -141,6 +142,13 @@ export async function handleApi(req, env, url, user) {
 
     // 以下都要登入
     if (!user) return out({ error: 'unauthorized' }, 401);
+
+    /* 對話存檔自成一個模組。放在登入檢查之後、核准檢查之前,
+       由 chats.js 自己決定要不要求核准。 */
+    if (p === '/api/chats' || p.startsWith('/api/chats/')) {
+      const r = await handleChats(req, env, url, user);
+      if (r) return r;
+    }
 
     if (p === '/api/apply') {
       if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);

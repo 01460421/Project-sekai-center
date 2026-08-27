@@ -1657,6 +1657,123 @@ input::placeholder{color:var(--text-3)}
       </div>
     </sc-if>
     <sc-if value="{{ admOk }}">
+      <!-- 儀表板分頁 -->
+      <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:13px">
+        <sc-for list="{{ dashTabs }}" as="t" hint-placeholder-count="5">
+          <button type="button" onClick="{{ onDashTab }}" data-v="{{ t.v }}" style="padding:7px 16px;border:1px solid {{ t.bd }};border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }}">{{ t.n }}</button>
+        </sc-for>
+        <button type="button" onClick="{{ onDashReload }}" style="padding:7px 14px;border:1px dashed var(--border-2);border-radius:999px;background:transparent;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">重新整理</button>
+        <span style="font-size:11.5px;color:#e0576a">{{ dashErr }}</span>
+      </div>
+
+      <!-- 總覽 -->
+      <sc-if value="{{ dashIsOverview }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:13px">
+          <sc-for list="{{ dashCards }}" as="c" hint-placeholder-count="10">
+            <div style="border:1px solid var(--border);border-radius:15px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs)">
+              <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
+              <div style="font-size:21px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c';line-height:1.25">{{ c.v }}</div>
+              <div style="font-size:10.5px;color:var(--text-3)">{{ c.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ dashChartOk }}">
+          <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+            <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px">最近 14 天</div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:9px">
+              <sc-for list="{{ dashPaths }}" as="p" hint-placeholder-count="3">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-2)">
+                  <span style="width:9px;height:3px;border-radius:2px;background:{{ p.color }}"></span>{{ p.label }}
+                </span>
+              </sc-for>
+            </div>
+            <svg viewBox="0 0 {{ dashChartW }} {{ dashChartH }}" style="width:100%;height:auto;display:block;overflow:visible">
+              <sc-for list="{{ dashTicks }}" as="t" hint-placeholder-count="3">
+                <line x1="{{ t.x1 }}" y1="{{ t.y }}" x2="{{ t.x2 }}" y2="{{ t.y }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+                <text x="2" y="{{ t.y }}" fill="var(--text-3)" font-size="9" dominant-baseline="middle">{{ t.v }}</text>
+              </sc-for>
+              <sc-for list="{{ dashPaths }}" as="p" hint-placeholder-count="3">
+                <path d="{{ p.d }}" fill="none" stroke="{{ p.color }}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+              </sc-for>
+              <sc-for list="{{ dashXlab }}" as="x" hint-placeholder-count="3">
+                <text x="{{ x.x }}" y="{{ dashChartH }}" fill="var(--text-3)" font-size="9" text-anchor="middle">{{ x.l }}</text>
+              </sc-for>
+            </svg>
+          </div>
+        </sc-if>
+
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px">AI 用量前幾名</div>
+          <sc-if value="{{ dashNoTop }}"><div style="font-size:12.5px;color:var(--text-3)">還沒有人用過。</div></sc-if>
+          <sc-for list="{{ dashAiTop }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--border)">
+              <span style="flex:1;font-size:12.5px;color:var(--text)">{{ r.name }}</span>
+              <span style="font-size:12px;color:var(--text-2);font-family:'M PLUS Rounded 1c'">{{ r.calls }} 次</span>
+              <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.tok }} token</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- 使用者 -->
+      <sc-if value="{{ dashIsUsers }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <sc-for list="{{ dashUserRows }}" as="u" hint-placeholder-count="6">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border)">
+              <span style="flex:1;min-width:120px;font-size:12.5px;font-weight:700;color:var(--ink)">{{ u.name }}<span style="font-size:10.5px;font-weight:700;color:var(--accent-deep);margin-left:6px">{{ u.admin }}</span></span>
+              <span style="font-size:11px;color:var(--text-3)">{{ u.email }}</span>
+              <span style="font-size:11.5px;font-weight:700;color:{{ u.statusFg }}">{{ u.status }}</span>
+              <span style="font-size:11px;color:var(--text-3)">{{ u.when }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- 訂閱 -->
+      <sc-if value="{{ dashIsWatches }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <sc-for list="{{ dashWatchRows }}" as="w" hint-placeholder-count="6">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border)">
+              <span style="flex:1;min-width:130px;font-size:12.5px;color:var(--ink)">{{ w.name }}</span>
+              <span style="font-size:11px;color:var(--text-3)">{{ w.who }}</span>
+              <span style="font-size:11px;color:var(--text-2)">{{ w.kind }}</span>
+              <span style="font-size:11.5px;font-weight:700;color:{{ w.onFg }}">{{ w.on }}</span>
+              <span style="font-size:11px;color:var(--text-3)">{{ w.fired }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- AI 稽核 -->
+      <sc-if value="{{ dashIsAi }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <sc-for list="{{ dashAiRows }}" as="r" hint-placeholder-count="8">
+            <div style="padding:8px 0;border-top:1px solid var(--border)">
+              <div style="display:flex;gap:9px;align-items:baseline;flex-wrap:wrap">
+                <span style="font-size:12px;font-weight:700;color:var(--ink)">{{ r.who }}</span>
+                <span style="font-size:11px;color:var(--text-3)">{{ r.when }}</span>
+                <span style="font-size:11px;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ r.tool }}</span>
+                <span style="font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.tokens }}</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-2);margin-top:3px;line-height:1.6">{{ r.what }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- 系統健康 -->
+      <sc-if value="{{ dashIsHealth }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <sc-for list="{{ dashHealth }}" as="h" hint-placeholder-count="8">
+            <div style="display:flex;gap:10px;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border)">
+              <span style="font-size:12px;color:var(--text-2);font-family:'M PLUS Rounded 1c'">{{ h.k }}</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:700;font-family:'M PLUS Rounded 1c'">{{ h.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ admStatErr }}">
         <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.7;margin-bottom:12px">{{ admStatErr }}</div>
       </sc-if>
@@ -5913,6 +6030,65 @@ class Component extends DCLogic {
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant',
       ...(() => {
+        const D = s.dashData || {}, tab = s.dashTab || 'overview';
+        const ov = D.overview || {};
+        const num = v => (typeof v === 'number' ? this.n(v) : '—');
+        const card = (k, v, sub) => ({ k, v: num(v), sub: sub || '' });
+        const cards = tab !== 'overview' ? [] : [
+          card('使用者', ov.users && ov.users.total, (ov.users ? ('今日 +' + (ov.users.today || 0)) : '')),
+          card('待審核', ov.users && ov.users.pending, '需要處理'),
+          card('已核准', ov.users && ov.users.approved, ''),
+          card('綁 Discord', ov.users && ov.users.discord_linked, ''),
+          card('訂閱', ov.watches && ov.watches.total, (ov.watches ? ('啟用 ' + (ov.watches.enabled || 0)) : '')),
+          card('通知事件', ov.events && ov.events.total, (ov.events ? ('今日 ' + (ov.events.today || 0)) : '')),
+          card('未寄出', ov.events && ov.events.unmailed, (ov.events && ov.events.failed ? ('失敗 ' + ov.events.failed) : '')),
+          card('AI 今日', ov.ai && ov.ai.today, (ov.ai ? ('七日 ' + (ov.ai.last_7d || 0)) : '')),
+          card('AI token', ov.ai && (ov.ai.tokens_in_today + ov.ai.tokens_out_today), '今日進出合計'),
+          card('排程待跑', ov.tasks && ov.tasks.pending, (ov.tasks && ov.tasks.failed ? ('失敗 ' + ov.tasks.failed) : '')),
+        ];
+        // 趨勢圖
+        const se = D.series || null;
+        const ch = se && se.days ? this.dashChart(se.days, se.series || {}, { users: '#4ad1e8', ai: '#c39df2', events: '#ff9db4' }) : null;
+        const LBL = { users: '新使用者', ai: 'AI 呼叫', events: '通知事件' };
+        return {
+          dashTabs: [['overview', '總覽'], ['users', '使用者'], ['watches', '訂閱'], ['ai', 'AI 稽核'], ['health', '系統健康']]
+            .map(([v, n2]) => { const on = tab === v, st = chip(on, 'var(--cta)'); return Object.assign({ v, n: n2 }, st); }),
+          dashIsOverview: tab === 'overview', dashIsUsers: tab === 'users', dashIsWatches: tab === 'watches',
+          dashIsAi: tab === 'ai', dashIsHealth: tab === 'health',
+          dashCards: cards,
+          dashBusy: !!s.dashBusy, dashErr: s.dashErr || '',
+          dashChartOk: !!ch,
+          dashChartW: ch ? ch.W : 640, dashChartH: ch ? ch.H : 170,
+          dashPaths: ch ? ch.paths.map(p2 => ({ d: p2.d, color: p2.color, label: (LBL[p2.key] || p2.key) + ' 共 ' + this.n(p2.total) })) : [],
+          dashTicks: ch ? ch.ticks.map(t2 => ({ y: t2.y, v: this.n(t2.v), x1: ch.gx1, x2: ch.gx2 })) : [],
+          dashXlab: ch ? ch.xlab : [],
+          dashAiTop: (ov.ai && ov.ai.top || []).map(r => ({ name: r.name, calls: this.n(r.calls),
+            tok: this.n((r.tokens_in || 0) + (r.tokens_out || 0)) })),
+          dashNoTop: !(ov.ai && ov.ai.top && ov.ai.top.length),
+          dashUserRows: ((D.users && D.users.users) || []).map(u => ({
+            name: u.name || '(未命名)', email: u.email || '', status: u.status,
+            statusFg: u.status === 'approved' ? '#3ea76a' : u.status === 'pending' ? '#ffb86b' : '#e0576a',
+            admin: u.is_admin ? '管理員' : '', when: u.created_at ? this.ago(u.created_at * 1000) : '',
+          })),
+          dashWatchRows: ((D.watches && D.watches.watches) || []).map(w => ({
+            who: w.user_name || w.name || '', kind: w.kind, name: w.name || '',
+            on: w.enabled ? '啟用' : '停用', onFg: w.enabled ? '#3ea76a' : 'var(--text-3)',
+            fired: w.last_fired ? this.ago(w.last_fired * 1000) : '未觸發',
+          })),
+          dashAiRows: ((D.ai && (D.ai.log || D.ai.items || D.ai.rows)) || []).map(r => ({
+            who: r.user_name || r.name || '', when: r.created_at ? this.ago(r.created_at * 1000) : '',
+            what: String(r.prompt || r.tool || '').slice(0, 90),
+            tool: r.tool || '', tokens: r.tokens_in != null ? this.n((r.tokens_in || 0) + (r.tokens_out || 0)) : '',
+          })),
+          dashHealth: (() => { const h = D.health || {}; const out = [];
+            Object.keys(h).forEach(k => { const v = h[k];
+              if (v && typeof v === 'object' && !Array.isArray(v)) {
+                Object.keys(v).forEach(k2 => out.push({ k: k + '.' + k2, v: String(v[k2]) }));
+              } else out.push({ k, v: String(v) }); });
+            return out.slice(0, 40); })(),
+        };
+      })(),
+      ...(() => {
         const rows = this.pageTutorials(s.page, 3);
         const open = !!s.tutHint;
         return {
@@ -7011,6 +7187,8 @@ class Component extends DCLogic {
         try { await this.api('/admin/users/review', { method: 'POST', body: { id, status: 'rejected' } }); this.loadAdmin(); }
         catch (er) { this.setState({ aiErr: er.message || '拒絕失敗' }); }
       },
+      onDashTab: e => { const v = e.currentTarget.dataset.v; this.setState({ dashTab: v }); this.loadDash(v); },
+      onDashReload: () => this.loadDash(this.state.dashTab),
       onTutHint: () => this.setState(st => ({ tutHint: !st.tutHint })),
       onAiSend: () => this.aiSend(this.state.admAsk),
       onAiKey: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.aiSend(this.state.admAsk); } },

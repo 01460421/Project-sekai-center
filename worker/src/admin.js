@@ -10,6 +10,7 @@
    Discord id，也沒有玩家 uid —— 這些欄位對「回答統計問題」毫無幫助，帶出去只是風險。 */
 
 import { corsHeaders, preflight } from './cors.js';
+import { handleDashboard } from './dashboard.js';
 import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   logTool,
   listToolLog,
@@ -325,6 +326,13 @@ export async function handleAdmin(req, env, url, user) {
      真正的差別放在 body 讓前端決定要跳登入還是顯示無權限。 */
   if (!user) return json({ error: 'not_signed_in', message: '請先登入' }, 403);
   if (!user.is_admin) return json({ error: 'not_admin', message: '沒有管理員權限' }, 403);
+
+  /* 儀表板自成一個模組(只讀、查詢多),在這裡先分流出去,
+     免得 handleAdmin 被一堆統計 SQL 撐爆。 */
+  if (p === '/admin/dash' || p.startsWith('/admin/dash/')) {
+    const r = await handleDashboard(req, env, url, user);
+    if (r) return r;
+  }
 
   const db = env.DB;
   const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
