@@ -5424,31 +5424,78 @@ class Component extends DCLogic {
         }
         if (!pool.length) return { count: 0, cards: [], note: '沒有符合條件的卡' };
 
-        /* 取每張卡的「主要效果值」：優先 score_up 類,那才是常說的技能 %。
-           分母不同的效果(life_recovery 等)不混在一起比。 */
+        /* 技能值不能只看第一個效果 —— 有幾種是「基礎＋條件加成」的組合,
+           只取基礎會低估：
+             score_up + score_up_character_rank  基礎 110％,角色等級每 2 級 +1％,
+                                                 100 級時 +50％ → 最大 160％
+             score_up + score_up_unit_count      基礎 90％,每有 1 種外團 +30％,
+                                                 最多 2 種 → 最大 150％
+             score_up_condition_life / _keep     那一串本身就是完整值,取最大即可
+             other_member_score_up_reference_rate 取隊友技能上限的 %,依隊伍而定,
+                                                 沒辦法單看一張卡算死,另外標註
+           回傳同時給 base 與 max,讓模型講得清楚「保底多少、拉滿多少」。 */
         const val = c => {
           const sk = skills[c.skillId];
           if (!sk) return null;
           const effs = sk.skillEffects || [];
-          const sc = effs.find(e => /score_up/.test(e.skillEffectType || '')) || effs[0];
-          if (!sc) return null;
-          const dets = sc.skillEffectDetails || [];
-          const lv = dets.find(x => x.level === 4) || dets[dets.length - 1];
-          return lv ? { type: sc.skillEffectType, max: lv.activateEffectValue,
-                        by_level: dets.map(x => [x.level, x.activateEffectValue]),
-                        duration: lv.activateEffectDuration } : null;
+          const lv4 = e => {
+            const d = e.skillEffectDetails || [];
+            return d.find(x => x.level === 4) || d[d.length - 1] || null;
+          };
+          const pick = t => effs.filter(e => (e.skillEffectType || '') === t)
+            .map(e => { const l = lv4(e); return l ? +l.activateEffectValue : 0; });
+
+          /* 同團型（id 15-19）的加成不在 skillEffectType,而在 skillEnhance：
+             「除了自己以外每 1 位同團成員 +10%,全員一致再 +10%」——
+             隊伍五人扣掉自己是 4 位,加上全員一致的獎勵,等於 base + 10×5。
+             不處理的話這類卡會被低估成 100%（實際上限 150%）。 */
+          const enh = effs.map(e => e.skillEnhance).find(Boolean);
+
+          const plain = pick('score_up');
+          const life = pick('score_up_condition_life');
+          const keep = pick('score_up_keep');
+          const rank = pick('score_up_character_rank');
+          const unit = pick('score_up_unit_count');
+          const ref = pick('other_member_score_up_reference_rate');
+
+          let base = 0, max = 0, kind = '', note = '';
+          if (life.length) { kind = 'condition_life'; base = Math.min(...life); max = Math.max(...life);
+            note = '體力越高越接近上限'; }
+          else if (keep.length) { kind = 'keep'; base = Math.min(...keep); max = Math.max(...keep);
+            note = '判定保持 GOOD 以上才是上限值'; }
+          else if (plain.length) {
+            base = Math.max(...plain); max = base; kind = 'score_up';
+            if (enh && /sub_unit_score_up/.test(enh.skillEnhanceType || '')) {
+              const per = +enh.activateEffectValue || 0;
+              kind = 'same_unit'; max = base + per * 5;
+              note = '除了自己以外每 1 位同團成員 +' + per + '%（最多 4 位），全員同團再 +' + per + '%';
+            }
+            else if (rank.length) { kind = 'character_rank'; max = base + Math.max(...rank);
+              note = '角色等級每 2 級 +1%,滿級時達上限'; }
+            else if (unit.length) { kind = 'unit_count'; max = base + Math.max(...unit);
+              note = '編組內每有 1 種外團 +30%,最多 2 種'; }
+            else if (ref.length) { kind = 'reference'; max = base;
+              note = '另外會取隊上隨機 1 人技能上限的 ' + Math.max(...ref) + '%,實際值看隊伍'; }
+          } else return null;
+
+          const first = effs.find(e => /score_up/.test(e.skillEffectType || '')) || effs[0];
+          const fl = first ? lv4(first) : null;
+          return { kind, base, max, duration: fl ? fl.activateEffectDuration : null, note,
+                   by_level: (first && (first.skillEffectDetails || []).map(x => [x.level, x.activateEffectValue])) || [] };
         };
+
         const rows = pool.map(c => ({ c, v: val(c) })).filter(x => x.v)
           .sort((x, y) => (y.v.max || 0) - (x.v.max || 0))
           .slice(0, Math.min(30, +a.top || 15));
         return {
           count: rows.length, total_matched: pool.length,
-          note: '數值為 Lv.4（滿級）的技能效果值；score_up 類即一般說的「技能 %」',
+          note: 'skill_base_percent 是保底值,skill_max_percent 是條件拉滿的上限（角色等級型滿級、'
+              + '外團型湊滿 2 種、體力型滿血）。數值皆為技能 Lv.4。',
           cards: rows.map(x => ({
             id: x.c.id, name: x.c.prefix, chara: nOf[x.c.characterId] || x.c.characterId,
             rarity: x.c.cardRarityType, attr: x.c.attr, supply: x.c.cardSupplyId,
-            skill_type: x.v.type, skill_max_percent: x.v.max,
-            duration_s: x.v.duration, by_level: x.v.by_level,
+            skill_kind: x.v.kind, skill_base_percent: x.v.base, skill_max_percent: x.v.max,
+            duration_s: x.v.duration, note: x.v.note || undefined, by_level: x.v.by_level,
           })),
         };
       }
