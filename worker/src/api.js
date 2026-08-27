@@ -260,25 +260,28 @@ export async function handleApi(req, env, url, user) {
         return json({ error: 'quota', message: '今日 AI 用量已達上限（' + cap + ' 次），請明天再試。' }, 429, req, env);
       }
       const rb = await readJson(req, 512 * 1024);   // 對話帶著工具結果,body 會比其他端點大
-      if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413, req, env);
-      if (rb.bad) return out({ error: 'bad_json', message: 'JSON 格式錯誤' }, 400, req, env);
+      if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413);
+      if (rb.bad) return out({ error: 'bad_json', message: 'JSON 格式錯誤' }, 400);
       const v = validateChat(rb.value || {});
-      if (v.error) return json({ error: 'bad_request', message: v.error }, 400, req, env);
-      let out;
+      if (v.error) return out({ error: 'bad_request', message: v.error }, 400);
+      /* 這個變數原本叫 out,把上面那個回應 helper 遮蔽掉了 —— let 的 TDZ 涵蓋整個
+         區塊,所以上面兩行的 out(...) 會拋 ReferenceError 而不是回 413/400,
+         被外層 catch 吞成一個看不出原因的 500。 */
+      let reply;
       try {
-        out = await chatClaude(env, v);
+        reply = await chatClaude(env, v);
       } catch (e) {
         const msg = (e && e.message) || String(e);
         await logAdmin(env.DB, user.id, '[chat]', '[失敗] ' + msg, 0, 0);
         return json({ error: 'claude_failed', message: msg }, 502, req, env);
       }
-      const calls = (out.content || []).filter(c => c.type === 'tool_use');
+      const calls = (reply.content || []).filter(c => c.type === 'tool_use');
       for (const c of calls) await logTool(env.DB, user.id, c.name, c.input, true, 'requested');
-      const text = (out.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+      const text = (reply.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
       await logAdmin(env.DB, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
-                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), out.tokens_in, out.tokens_out);
+                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out);
       return json({
-        content: out.content, stop_reason: out.stop_reason, model: out.model,
+        content: reply.content, stop_reason: reply.stop_reason, model: reply.model,
         quota: { used: used + 1, cap },
       }, 200, req, env);
     }

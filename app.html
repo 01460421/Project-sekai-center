@@ -4255,6 +4255,178 @@ class Component extends DCLogic {
         run_at_iso: { type: 'string', description: 'ISO 8601 時間' },
         repeat_hours: { type: 'number', description: '重複週期(小時),不給就只跑一次' },
         message: { type: 'string' } }, required: ['title', 'run_at_iso'] } },
+    { name: 'calc_event_points',
+      description: '算單場 Live 能拿多少活動 P，以及每體力／每小時的效率。使用者問「這樣跑一場多少 P」「加成 xxx% 值不值得」「哪種模式比較快」時用。' +
+        '所有參數都可省略，省略就沿用使用者在計算中心的共用設定；要比較不同情境時才明確帶入。',
+      input_schema: { type: 'object', properties: {
+        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '場次類型：solo=單人、auto=自動、multi=協力、cheer=應援（Cheerful Carnival）' },
+        song_id: { type: 'integer', description: '歌曲 id（可用 get_songs 或 song_efficiency 查）。不給就用畫面上選的那首' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度：E/N/H/X/M/A＝EASY/NORMAL/HARD/EXPERT/MASTER/APPEND' },
+        power: { type: 'number', description: '隊伍綜合力（總合力，例如 250000）' },
+        bonus: { type: 'number', description: '活動加成，單位 %（例如 250 代表 +250%）' },
+        skill: { type: 'number', description: '平均技能倍率（實效值，例如 2.5）。可先用 calc_skill_multiplier 從各卡技能%算出來' },
+        s6: { type: 'number', description: '第 6 技能欄（S6）倍率' },
+        energy: { type: 'integer', description: '本場消耗體力／火數 0～10（0=不吃火）。火倍率 1/5/10/15/20/25/27/29/31/33/35' },
+        life: { type: 'number', description: '結束時剩餘 Life，只有 cheer 模式會用到（影響 1.15～1.35 的存活加成）' },
+        score: { type: 'number', description: '直接指定歌曲分數。給了就不用歌曲係數推算' },
+        event_rate: { type: 'number', description: '歌曲活動倍率 %（沒指定 song_id 時才會用到，預設 100）' } } } },
+
+    { name: 'song_efficiency',
+      description: '效率排行：在指定的模式／難度／隊伍條件下，哪些歌的活動 P 每小時最高（曲子短＋活動倍率高的通常贏）。' +
+        '使用者問「跑哪首歌最快」「哪首 CP 值最高」時用。參數省略就沿用計算中心的共用設定。',
+      input_schema: { type: 'object', properties: {
+        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '場次類型' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度' },
+        power: { type: 'number', description: '隊伍綜合力' },
+        bonus: { type: 'number', description: '活動加成 %' },
+        skill: { type: 'number', description: '平均技能倍率' },
+        s6: { type: 'number', description: 'S6 倍率' },
+        energy: { type: 'integer', description: '每場吃幾火 0～10' },
+        interval: { type: 'number', description: '每場之間的間隔秒數（選曲／配對／結算，預設沿用畫面設定的 50 秒）' },
+        limit: { type: 'integer', description: '要回幾首，預設 12，最多 20' } } } },
+
+    { name: 'calc_skill_multiplier',
+      description: '由隊長與 4 位隊員的技能加成 %，算出「平均技能倍率」。這個值就是 calc_event_points／song_efficiency 的 skill 參數。' +
+        '規則：隊長技能全額計入，隊員技能總和除以 5。',
+      input_schema: { type: 'object', properties: {
+        leader: { type: 'number', description: '隊長技能加成 %（例如 115 代表分數 +115%）' },
+        members: { type: 'array', items: { type: 'number' }, description: '4 位隊員的技能加成 %，例如 [110,110,110,110]' } } } },
+
+    { name: 'gacha_odds',
+      description: '抽卡機率與天井試算：預算內至少中一張的機率、期望抽數、距離天井還要多少水晶。' +
+        '使用者問「我這些石抽得到嗎」「還差幾抽天井」時用。單抽 300 水晶，一般池天井 300 抽、生日池 100 抽。',
+      input_schema: { type: 'object', properties: {
+        rate: { type: 'number', description: '單抽命中機率（小數）。指定 PU 單張約 0.004、任一 ★4 為 0.03、FES 為 0.06' },
+        crystals: { type: 'number', description: '目前持有水晶數' },
+        pulls_done: { type: 'number', description: '這個池已經抽了幾次（＝已累積的貼紙數）' },
+        tickets: { type: 'number', description: '持有的交換券張數，一張抵 10 張貼紙，最多用 10 張（生日池不能用）' },
+        birthday: { type: 'boolean', description: '是不是生日池（天井 100 抽、不可用交換券）' } } } },
+
+    { name: 'mysekai_calc',
+      description: 'MySekai（烤森）採集的活動 P 試算：每點體力能換多少 P、指定體力總量共可拿多少。' +
+        '使用者問「烤森採集划不划算」「橘體要不要留給烤森」時用。參數省略就沿用計算中心的綜合力與加成。',
+      input_schema: { type: 'object', properties: {
+        power: { type: 'number', description: '隊伍綜合力' },
+        bonus: { type: 'number', description: '活動加成 %' },
+        fever: { type: 'number', description: '體力倍率：橘體 5、藍體 1' },
+        stamina: { type: 'number', description: '打算消費的體力總量' } } } },
+
+    { name: 'rank_match',
+      description: '排位賽（Rank Match）判定與晉級試算：兩邊的 PERFECT/GREAT/GOOD 誰贏、升到目標 Class 大概要打幾場。' +
+        '判定式為 PERFECT×3＋GREAT×2＋GOOD×1，同分比 PERFECT 數 → 最大連段 → 剩餘 Life。',
+      input_schema: { type: 'object', properties: {
+        my_perfect: { type: 'number', description: '我方 PERFECT 數' },
+        my_great: { type: 'number', description: '我方 GREAT 數' },
+        my_good: { type: 'number', description: '我方 GOOD 數' },
+        opp_perfect: { type: 'number', description: '對手 PERFECT 數' },
+        opp_great: { type: 'number', description: '對手 GREAT 數' },
+        opp_good: { type: 'number', description: '對手 GOOD 數' },
+        win_rate: { type: 'number', description: '預估勝率，單位 %（例如 55）' },
+        current_rp: { type: 'number', description: '目前 RP（0～5）' },
+        target_classes: { type: 'number', description: '想升幾個 Class，每個 Class 需要 5 RP' } } } },
+
+    /* ---------- 歌曲與玩家 ---------- */
+    { name: 'get_songs',
+      description: '查歌曲資料庫：曲名、作曲、所屬團體、各難度定數與音符數、曲長與活動倍率。' +
+        '使用者問某首歌幾級、多長、哪個團的歌時用；也可用來把曲名換成 song_id 再丟給 calc_event_points。',
+      input_schema: { type: 'object', properties: {
+        q: { type: 'string', description: '曲名或作曲者關鍵字（中日英皆可，模糊比對）' },
+        id: { type: 'integer', description: '直接指定歌曲 id' },
+        unit: { type: 'string', enum: ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'], description: '所屬團體：ln=Leo/need、mmj=MMJ、vbs=VBS、wxs=ワンダショ、n25=ニーゴ、vs=虛擬歌手' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '搭配 sort 使用的難度，預設 M（MASTER）' },
+        sort: { type: 'string', enum: ['id', 'level', 'notes', 'newest', 'shortest'], description: 'id＝依編號、level＝定數由高到低、notes＝音符數由多到少、newest＝最新實裝、shortest＝曲長最短' },
+        limit: { type: 'integer', description: '要回幾首，預設 10，最多 20' } } } },
+
+    { name: 'analyze_player',
+      description: '某位玩家的節奏剖析：分數、名次、1／3／24 小時實測時速、周回數、動能（近 1 小時相對 24 小時）、推估休息時數、預測終分與預測名次、場均在前百的百分位。' +
+        '使用者問「我現在跑得算快嗎」「某某人跑多快」「我最後大概第幾名」時用。限制：公開資料只有當期前 100 名，不在前百就查不到。',
+      input_schema: { type: 'object', properties: {
+        uid: { type: 'string', description: '要分析的玩家 uid，純數字。不給就用目前設定的 uid' } } } },
+
+    { name: 'get_player_games',
+      description: '某位玩家的逐局紀錄：每一場實際加了多少活動 P、當下第幾名、場間隔。可看出對方是連打還是在休息、場均多少 P。' +
+        '資料由本站的 Worker 每 15 秒取樣，只涵蓋當期前 100 名，且從開始追蹤後才有、不會回溯。',
+      input_schema: { type: 'object', properties: {
+        uid: { type: 'string', description: '玩家 uid，純數字。不給就用目前設定的 uid' },
+        limit: { type: 'integer', description: '要回最近幾場的明細，預設 15，最多 20（統計值一律用全部場次算）' },
+        hours: { type: 'number', description: '只看最近幾小時的紀錄，不給就是整期' } } } },
+
+    { name: 'get_player_profile',
+      description: '某位玩家的公開檔案：暱稱、玩家等級、隊伍綜合力（含基礎力與角色等級加成）、目前隊伍的卡片、各角色的角色等級、挑戰 Live 最高分。' +
+        '用來精確推算對方的加成或看對方練度，比看截圖準。',
+      input_schema: { type: 'object', properties: {
+        uid: { type: 'string', description: '玩家 uid，純數字。不給就用目前設定的 uid' } } } },
+
+    { name: 'get_top100',
+      description: '當期即時前 100 名榜單與整體動態：誰在跑、誰在衝刺、誰停了、近 1 小時全榜共打了幾場。' +
+        '使用者問「現在前面誰在跑」「T100 有多兇」「有沒有人在衝」時用。',
+      input_schema: { type: 'object', properties: {
+        limit: { type: 'integer', description: '要回幾筆名次，預設 10，最多 20' },
+        board: { type: 'string', enum: ['event', 'world_link'], description: '看哪個榜：event＝活動主榜（預設）、world_link＝World Link 章節榜' },
+        chapter: { type: 'integer', description: 'board=world_link 時要看第幾章，不給就用目前進行中的章節' },
+        sort: { type: 'string', enum: ['rank', 'speed_1h', 'speed_24h'], description: '排序方式，預設 rank（名次）' } } } },
+
+    /* ---------- World Link ---------- */
+    { name: 'wl_team_advice',
+      description: 'World Link 配隊建議：針對某一章的角色，從使用者勾選的持有卡裡挑出「四位同團＋湊滿五色屬性」的實際 5 張，並檢查五色缺哪一色。' +
+        '使用者問「這章要怎麼配隊」「我湊得出五色嗎」時用。注意：這是規則檢查不是倍率最佳化，持有清單來自站上收集率頁的手動勾選。',
+      input_schema: { type: 'object', properties: {
+        character: { type: 'string', description: '角色名（繁中，例如「奏」「一歌」）或角色 id。不給就用目前進行中的章節角色' },
+        chapter: { type: 'integer', description: '章節號（1～4）。給了就用該章的角色，會覆蓋 character' } } } },
+
+    { name: 'get_wl_status',
+      description: 'World Link 各章節狀態：章節角色、起訖時間、進行中／已結束、該章的前幾名與分段榜線，以及各段位的實測時速。' +
+        '使用者問「WL 這章榜線多少」「哪一章比較好衝」時用。當期不是 World Link 活動時會回錯誤。',
+      input_schema: { type: 'object', properties: {
+        chapter: { type: 'integer', description: '只看某一章（1～4），不給就回全部章節' },
+        tier: { type: 'integer', description: '要量實測時速的段位，預設 100' } } } },
+
+    /* ---------- 收集率 ---------- */
+    { name: 'get_collection_rate',
+      description: '使用者的卡片收集率：整體、各團體、各稀有度分別有幾張／缺幾張。' +
+        '使用者問「我收集率多少」「哪個團最缺」時用。資料來自站上收集率頁的手動勾選（存在瀏覽器），沒勾過就會是 0。',
+      input_schema: { type: 'object', properties: {} } },
+
+    /* ---------- 規劃 ---------- */
+    { name: 'plan_target',
+      description: '衝榜規劃：給一個目標段位（或目標分數），回推還差多少 P、需要多少時速、還要跑幾場幾小時、要吃多少體力、換算成水晶與台幣大約多少。' +
+        '使用者問「我想進 T1000 要花多少」「還來得及嗎」時用。段位的目標分數會取站上的預測終線（末段普遍低估，要當下限講）。',
+      input_schema: { type: 'object', properties: {
+        tier: { type: 'integer', description: '目標段位，例如 100 / 1000 / 5000。與 target_score 二擇一' },
+        target_score: { type: 'number', description: '直接指定目標活動 P。給了就不看段位預測' },
+        current_score: { type: 'number', description: '目前活動 P。不給就用站上抓到的我的分數' },
+        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '打算用哪種場次跑' },
+        song_id: { type: 'integer', description: '打算跑哪首歌（影響曲長與活動倍率）' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度' },
+        power: { type: 'number', description: '隊伍綜合力' },
+        bonus: { type: 'number', description: '活動加成 %' },
+        skill: { type: 'number', description: '平均技能倍率' },
+        s6: { type: 'number', description: 'S6 倍率' },
+        energy: { type: 'integer', description: '每場吃幾火 0～10' },
+        natural_hours: { type: 'number', description: '剩下時間裡自然回復的小時數（每小時 2 體）' },
+        large_cans: { type: 'number', description: '大體力罐數（每罐 10 體）' },
+        small_cans: { type: 'number', description: '小體力罐數（每罐 5 體）' },
+        crystals: { type: 'number', description: '願意拿來換體力的水晶數（每 100 石換 10 體）' },
+        crystal_rate: { type: 'number', description: '水晶 CP：每 1 元台幣可得幾顆水晶，預設沿用畫面設定（約 7）' } } } },
+
+    /* ---------- 偵測訂閱 ---------- */
+    { name: 'create_watch',
+      description: '幫使用者建立一條偵測訂閱（達成條件時由伺服器寄信通知）。使用者說「幫我盯著」「到 xxx 分時通知我」「活動快結束時提醒我」時用。' +
+        '需要已登入且帳號通過審核。建立前如果不確定某個 kind 有哪些 mode／欄位，可以先用不完整的參數呼叫一次，錯誤訊息會列出可用選項。' +
+        '常用組合：kind=border + mode=tier_score（榜線到達分數）、kind=border + mode=my_rank_out（我掉出段位）、' +
+        'kind=player + mode=rank_change/started/stopped/passed_me（盯人）、kind=schedule + mode=event_start/event_end/gacha_start/gacha_end/wl_chapter（排程提醒）。',
+      input_schema: { type: 'object', properties: {
+        kind: { type: 'string', enum: ['border', 'player', 'schedule'], description: '偵測類型：border=榜線、player=玩家動態、schedule=活動與卡池排程' },
+        mode: { type: 'string', description: '該類型底下的模式，例如 tier_score / my_rank_out / rank_change / started / stopped / passed_me / event_start / event_end / gacha_start / gacha_end / wl_chapter' },
+        params: { type: 'object', description: '該模式需要的欄位。例如 border+tier_score 要 {board:"event", tier:1000, op:"gte", value:3000000}；' +
+          'player 要 {uid:"…"}；schedule 要 {before_h:24}。沒填的欄位會自動補預設值，缺必填欄位會回錯誤並列出欄位規格' },
+        name: { type: 'string', description: '這條訂閱的名稱（給人看的），不給就自動命名' },
+        cooldown_s: { type: 'number', description: '兩次通知之間至少間隔幾秒，不給就用該類型的預設值' } }, required: ['kind', 'mode'] } },
+
+    { name: 'list_my_watches',
+      description: '列出使用者目前的偵測訂閱，以及最近幾則已觸發的通知。使用者問「我訂了什麼」「有沒有通知」時用。需要已登入。',
+      input_schema: { type: 'object', properties: {
+        include_events: { type: 'boolean', description: '要不要一起回最近觸發的通知，預設 true' } } } },
   ];
 
   /* 工具執行。回傳值會原樣送回模型,所以盡量給結構化又精簡的東西 ——
@@ -4390,6 +4562,704 @@ class Component extends DCLogic {
             run_at: Math.floor(at / 1000), repeat_s: a.repeat_hours ? Math.round(a.repeat_hours * 3600) : 0 } });
           return { ok: true, task_id: r && r.task && r.task.id, run_at: a.run_at_iso };
         } catch (e) { return { error: e.message || '排程失敗' }; }
+      }
+      case 'calc_event_points': {
+        /* 曲庫是進「計算中心」才載的模組，使用者可能沒去過那頁 → 自己補載。
+           loadEpSongs 不是 async（內部走 import().then），沒有 promise 可 await，
+           只能輪詢它寫回 state。4 秒等不到就當失敗。 */
+        if (!(this.state.epSongs || []).length) {
+          this.loadEpSongs();
+          for (let i = 0; i < 40 && !(this.state.epSongs || []).length; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        // setState 會換掉整個 state 物件，所以一定要等載完才取，不能在 await 之前先抓著舊的
+        const s = this.state;
+        const DK = { E: 'E', N: 'N', H: 'H', X: 'X', M: 'M', A: 'A', EASY: 'E', NORMAL: 'N', HARD: 'H', EXPERT: 'X', MASTER: 'M', APPEND: 'A' };
+        const mode = ['solo', 'auto', 'multi', 'cheer'].indexOf(a.mode) >= 0 ? a.mode : (s.mode || 'multi');
+        const diff = DK[String(a.difficulty || '').toUpperCase()] || s.diff || 'M';
+        const power = a.power != null ? +a.power || 0 : +s.power || 0;
+        const bonus = a.bonus != null ? +a.bonus || 0 : +s.bonus || 0;
+        const skill = a.skill != null ? +a.skill || 0 : +s.skill || 0;
+        const s6 = a.s6 != null ? +a.s6 || 0 : +s.s6 || 0;
+        const life = a.life != null ? +a.life || 0 : +s.life || 0;
+        const energy = a.energy != null ? Math.max(0, Math.min(10, Math.round(+a.energy || 0))) : (+s.energy || 0);
+        const F = this.EM[energy] || 1;
+        const song = this.songById(a.song_id != null ? a.song_id : s.songKey);
+        if (a.song_id != null && !song) return { error: '找不到 song_id=' + a.song_id + ' 這首歌，可先用 get_songs 查編號' };
+        const rate = song ? song.rate : (a.event_rate != null ? +a.event_rate || 100 : +s.rate || 100);
+        const time = song ? song.time : 100;
+        let score, usedDiff = null, scoreFrom;
+        if (a.score != null) { score = +a.score || 0; scoreFrom = '呼叫時直接指定的分數'; }
+        else if (song && song.d) {
+          // 與 scoreNow() 同一套後備順序：指定難度沒係數就往下找有的
+          const k = [diff, 'M', 'X', 'H', 'N', 'E', 'A'].find(x => song.d[x]);
+          usedDiff = k || null;
+          score = k ? this.calcSongScore(song.d[k], mode, power, skill, s6) : 0;
+          scoreFrom = '由歌曲係數與綜合力/技能推算';
+        } else { score = +s.score || 0; scoreFrom = '共用設定裡直接填的分數（沒有歌曲資料）'; }
+        const ep = this.calcEPValue(mode, score, rate, bonus, F, power, life);
+        const cycle = time + this.ohOf(mode);
+        return {
+          mode, boost_energy: energy, boost_multiplier: F,
+          song: song ? { id: song.id, title: song.t, difficulty: usedDiff || diff,
+            level: (song.d && song.d[usedDiff || diff]) ? song.d[usedDiff || diff][0] : null,
+            length_s: song.time, event_rate_pct: song.rate } : null,
+          inputs: { power, bonus_pct: bonus, skill, s6, life },
+          song_score: Math.round(score), score_from: scoreFrom,
+          event_points: ep,
+          ep_per_energy: energy > 0 ? Math.round(ep / energy) : ep,
+          ep_per_hour: cycle > 0 ? Math.round(ep * 3600 / cycle) : 0,
+          cycle_s: cycle, overhead_s: this.ohOf(mode),
+          note: '單局活動P ＝ ⌊base × 歌曲倍率 × (1＋加成/100)⌋ × 火倍率；base 單人場為 100＋⌊分數/20000⌋，協力/應援為 123＋⌊(分數＋0.075×綜合力×5)/17000⌋。' +
+                (energy === 0 ? '　目前是 0 火（火倍率 1）。' : ''),
+        };
+      }
+
+      case 'song_efficiency': {
+        if (!(this.state.epSongs || []).length) {
+          this.loadEpSongs();
+          for (let i = 0; i < 40 && !(this.state.epSongs || []).length; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        const s = this.state;                       // 同上：等載完才取 state
+        const songs = this.state.epSongs || [];
+        if (!songs.length) return { error: 'EP 曲庫尚未載入，請先開啟「計算中心」頁再問一次' };
+        const DK = { E: 'E', N: 'N', H: 'H', X: 'X', M: 'M', A: 'A', EASY: 'E', NORMAL: 'N', HARD: 'H', EXPERT: 'X', MASTER: 'M', APPEND: 'A' };
+        const mode = ['solo', 'auto', 'multi', 'cheer'].indexOf(a.mode) >= 0 ? a.mode : (s.mode || 'multi');
+        const diff = DK[String(a.difficulty || '').toUpperCase()] || s.diff || 'M';
+        const power = a.power != null ? +a.power || 0 : +s.power || 0;
+        const bonus = a.bonus != null ? +a.bonus || 0 : +s.bonus || 0;
+        const skill = a.skill != null ? +a.skill || 0 : +s.skill || 0;
+        const s6 = a.s6 != null ? +a.s6 || 0 : +s.s6 || 0;
+        const life = +s.life || 0;
+        const energy = a.energy != null ? Math.max(0, Math.min(10, Math.round(+a.energy || 0))) : (+s.energy || 0);
+        const iv = a.interval != null ? Math.max(0, +a.interval || 0) : (+s.interval || 50);
+        const F = this.EM[energy] || 1;
+        const lim = Math.max(1, Math.min(20, +a.limit || 12));
+        // 與 effRanking() 同一套算法，差別只在參數可覆寫、筆數可指定
+        const rows = [];
+        songs.forEach(song => {
+          if (!song.time || song.time <= 0) return;
+          const d = song.d && song.d[diff];
+          if (!d) return;                                    // 這首沒有這個難度
+          const score = this.calcSongScore(d, mode, power, skill, s6);
+          const ep = this.calcEPValue(mode, score, song.rate, bonus, F, power, life);
+          const cycle = song.time + iv;
+          rows.push({ id: song.id, title: song.t, level: d[0], notes: d[1],
+            length_s: song.time, event_rate_pct: song.rate, cycle_s: Math.round(cycle),
+            event_points: ep, ep_per_hour: Math.round(ep * 3600 / cycle) });
+        });
+        if (!rows.length) return { error: '曲庫裡沒有難度 ' + diff + ' 的資料，換一個難度試試' };
+        rows.sort((x, y) => y.ep_per_hour - x.ep_per_hour);
+        return {
+          mode, difficulty: diff, boost_energy: energy, boost_multiplier: F, interval_s: iv,
+          inputs: { power, bonus_pct: bonus, skill, s6 },
+          total: rows.length, songs: rows.slice(0, lim),
+          note: '排序依「每小時活動P」＝ 單局EP × 3600 ÷ (曲長＋間隔)。間隔含選曲、配對與結算；協力/應援另有 ' + this.ohOf(mode) + ' 秒固定開銷未計入此處（calc_event_points 才會加）。',
+        };
+      }
+
+      case 'calc_skill_multiplier': {
+        const s = this.state;
+        const leader = a.leader != null ? +a.leader || 0 : +s.leader || 0;
+        const src = Array.isArray(a.members) ? a.members : null;
+        const m = src ? src.slice(0, 4).map(x => +x || 0) : [+s.m1 || 0, +s.m2 || 0, +s.m3 || 0, +s.m4 || 0];
+        while (m.length < 4) m.push(0);
+        const sum = m.reduce((x, y) => x + y, 0);
+        // 與 mult() 同式：隊長全額、隊員總和 ÷ 5
+        const mu = (leader + 100 + sum / 5) / 100;
+        return {
+          leader_pct: leader, member_pcts: m, member_sum_pct: sum,
+          skill_multiplier: +mu.toFixed(4),
+          note: '公式：[隊長% ＋ 100 ＋ (隊員總和% ÷ 5)] ÷ 100。這個值就是 calc_event_points／song_efficiency 的 skill 參數。',
+        };
+      }
+
+      case 'gacha_odds': {
+        const s = this.state;
+        const bd = !!a.birthday;
+        let p = a.rate != null ? +a.rate : 0.004;
+        if (!(p > 0 && p < 1)) p = 0.004;
+        const ceil = bd ? 100 : 300;
+        const crystals = a.crystals != null ? Math.max(0, +a.crystals || 0) : (+s.gcC || 0);
+        const done = a.pulls_done != null ? Math.max(0, +a.pulls_done || 0) : (+s.gcP || 0);
+        const tickets = a.tickets != null ? Math.max(0, +a.tickets || 0) : (+s.gcV || 0);
+        // 與 gacha() 同式
+        const afford = Math.floor(crystals / 300);
+        const pAfford = 1 - Math.pow(1 - p, afford);
+        const eNo = 1 / p;
+        const eCeil = (1 - Math.pow(1 - p, ceil)) / p;
+        let toCeilPulls, note;
+        if (bd) { toCeilPulls = Math.max(0, ceil - done); note = '生日池天井 100 抽，不可使用交換券'; }
+        else {
+          const usable = Math.min(tickets, 10);
+          toCeilPulls = Math.max(0, 300 - done - usable * 10);
+          note = '用 ' + usable + ' 張交換券（抵 ' + usable * 10 + ' 張貼紙）後尚需 ' + toCeilPulls + ' 抽到天井';
+        }
+        return {
+          rate_per_pull: p, ceiling_pulls: ceil, is_birthday: bd,
+          crystals, pulls_done: done, tickets,
+          affordable_pulls: afford,
+          prob_at_least_one_pct: +(pAfford * 100).toFixed(2),
+          expected_pulls_no_ceiling: +eNo.toFixed(1),
+          expected_pulls_with_ceiling: +eCeil.toFixed(1),
+          pulls_to_ceiling: toCeilPulls, crystals_to_ceiling: toCeilPulls * 300,
+          note: note + '。單抽 300 水晶；機率參考：任一 ★4 3%、FES 6%、指定 PU 單張約 0.4%。P(N)=1−(1−p)^N。',
+        };
+      }
+
+      case 'mysekai_calc': {
+        const s = this.state;
+        const power = a.power != null ? +a.power || 0 : +s.power || 0;
+        const bonus = a.bonus != null ? +a.bonus || 0 : +s.bonus || 0;
+        const fever = a.fever != null ? (+a.fever || 1) : (+s.msFever || 1);
+        const stam = a.stamina != null ? Math.max(0, +a.stamina || 0) : (+s.msStam || 0);
+        // 與 mysekai() 同式
+        const av = Math.floor(power / 450000 * 100) / 100;
+        const b = Math.floor((av + 1) * (bonus + 100) / 100);
+        const per = b * 100 * fever;
+        return {
+          inputs: { power, bonus_pct: bonus, fever_multiplier: fever, stamina: stam },
+          a: av, b,
+          ep_per_stamina: per,
+          by_gather: {
+            '木/石/音色（1 體力）': per,
+            '發光草叢/木桶（0.5 體力）': Math.round(per * 0.5),
+            '植物/寶箱（0.2 體力）': Math.round(per * 0.2),
+          },
+          total_event_points: Math.round(per * stam),
+          note: 'a ＝ ⌊綜合力 / 450000⌋ 取兩位小數；b ＝ ⌊(a+1) × (加成+100)/100⌋；每點體力 P ＝ b × 100 × 體力倍率（橘體 5／藍體 1）。',
+        };
+      }
+
+      case 'rank_match': {
+        const s = this.state;
+        const g = (k, sk) => (a[k] != null ? +a[k] || 0 : +s[sk] || 0);
+        const ap = g('my_perfect', 'rmAp'), ag = g('my_great', 'rmAg'), ad = g('my_good', 'rmAd');
+        const bp = g('opp_perfect', 'rmBp'), bg = g('opp_great', 'rmBg'), bdd = g('opp_good', 'rmBd');
+        // 與 rankMatch() 同式
+        const sa = ap * 3 + ag * 2 + ad, sb = bp * 3 + bg * 2 + bdd;
+        const verdict = sa > sb ? '我方勝' : sb > sa ? '對手勝'
+          : (ap > bp ? '同分 → 我方 PERFECT 較多，我方勝'
+            : bp > ap ? '同分 → 對手 PERFECT 較多，對手勝'
+            : '同分且 PERFECT 相同 → 再比最大連段 → 剩餘 Life');
+        const winPct = a.win_rate != null ? +a.win_rate || 0 : +s.rmWin || 0;
+        const rp = a.current_rp != null ? +a.current_rp || 0 : +s.rmRP || 0;
+        const cls = a.target_classes != null ? +a.target_classes || 0 : +s.rmCls || 0;
+        const p = winPct / 100;
+        const needRP = 5 * Math.max(1, cls || 1) - Math.min(5, rp);
+        const drift = 2 * p - 1;
+        const games = drift > 0 ? Math.ceil(needRP / drift) : null;
+        return {
+          my_score: sa, opp_score: sb, verdict,
+          win_rate_pct: winPct, current_rp: rp, target_classes: Math.max(1, cls || 1),
+          need_rp: needRP,
+          estimated_games: games,
+          note: '判定：PERFECT×3＋GREAT×2＋GOOD×1，高者勝；同分比 PERFECT 數 → 最大連段 → 剩餘 Life。' +
+                '每個 Class 需 5 RP，勝 +1 敗 −1，所以每場期望 RP ＝ 2×勝率−1；' +
+                (games == null ? '勝率不到 50% 時期望不會前進，估不出場數。' : '') +
+                ' 2024/09 起不再降段位，只降 Class。',
+        };
+      }
+
+      /* ---------- 歌曲與玩家 ---------- */
+      case 'get_songs': {
+        await this.loadSongs();
+        const songs = this.state.songs || [];
+        if (!songs.length) return { error: '歌曲資料庫尚未載入（' + (this.state.songErr || '請稍後再試') + '）' };
+        // 曲長與活動倍率只有 EP 曲庫有，缺了就只回定數，不擋整個查詢
+        if (!(this.state.epSongs || []).length) {
+          this.loadEpSongs();
+          for (let i = 0; i < 25 && !(this.state.epSongs || []).length; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        const DK = { E: 'easy', N: 'normal', H: 'hard', X: 'expert', M: 'master', A: 'append' };
+        const SH = { E: 'E', N: 'N', H: 'H', X: 'X', M: 'M', A: 'A', EASY: 'E', NORMAL: 'N', HARD: 'H', EXPERT: 'X', MASTER: 'M', APPEND: 'A' };
+        const dk = SH[String(a.difficulty || '').toUpperCase()] || 'M';
+        const full = DK[dk];
+        const q = String(a.q || '').trim().toLowerCase();
+        let list = songs.slice();
+        if (a.id != null) list = list.filter(x => +x.id === +a.id);
+        if (a.unit) list = list.filter(x => (x.units || []).indexOf(a.unit) >= 0);
+        if (q) list = list.filter(x => (x.title || '').toLowerCase().includes(q) || (x.composer || '').toLowerCase().includes(q));
+        const total = list.length;
+        if (!total) return { total: 0, songs: [], note: '沒有符合條件的歌曲；關鍵字可試試日文原曲名或作曲者。' };
+        const ep = id => this.songById(id);
+        const sort = a.sort || 'id';
+        if (sort === 'level') list.sort((x, y) => ((y.lv || {})[full] || 0) - ((x.lv || {})[full] || 0));
+        else if (sort === 'notes') list.sort((x, y) => ((y.nt || {})[full] || 0) - ((x.nt || {})[full] || 0));
+        else if (sort === 'newest') list.sort((x, y) => (y.published || 0) - (x.published || 0));
+        else if (sort === 'shortest') list.sort((x, y) => ((ep(x.id) || {}).time || 9999) - ((ep(y.id) || {}).time || 9999));
+        else list.sort((x, y) => x.id - y.id);
+        const lim = Math.max(1, Math.min(20, +a.limit || 10));
+        return {
+          total, sorted_by: sort, level_difficulty: dk,
+          songs: list.slice(0, lim).map(x => {
+            const e = ep(x.id);
+            return {
+              id: x.id, title: x.title, composer: x.composer,
+              units: x.units || [],
+              levels: { E: (x.lv || {}).easy || null, N: (x.lv || {}).normal || null, H: (x.lv || {}).hard || null,
+                        X: (x.lv || {}).expert || null, M: (x.lv || {}).master || null, A: (x.lv || {}).append || null },
+              notes_at_difficulty: (x.nt || {})[full] || null,
+              length_s: e ? e.time : null,
+              event_rate_pct: e ? e.rate : null,
+              published: x.published ? new Date(x.published).toISOString().slice(0, 10) : null,
+            };
+          }),
+          note: 'levels 是各難度定數（E/N/H/X/M/A ＝ EASY/NORMAL/HARD/EXPERT/MASTER/APPEND）。length_s 與 event_rate_pct 來自 EP 曲庫，較舊或未收錄的曲子可能是 null。',
+        };
+      }
+
+      case 'analyze_player': {
+        if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+        const uid = String(a.uid || this.state.pid || '').replace(/\D/g, '');
+        if (!uid) return { error: '沒有指定 uid，也還沒設定使用者自己的 uid（可先用 set_my_uid）' };
+        const list = this.ranksOf(this.state.live);
+        if (!list.length) return { error: '即時排名尚未載入，' + (this.state.liveErr || '請稍後再試') };
+        const A = this.playerAnalysis(uid);
+        if (!A) return { error: 'uid ' + uid + ' 不在當期前 100 名。公開 API 對第 101 名之後不提供本期活動分數，查不到就是查不到，不要猜。' };
+        const me = A.me || {};
+        const num = v => (v == null ? null : Math.round(v));
+        const st = k => { const o = A[k] || {}; return { speed_per_hour: num(o.speed), rounds: o.count != null ? o.count : null, avg_per_round: num(o.average) }; };
+        const S = this.playerSeries(uid);
+        return {
+          uid, name: me.name || null, rank: me.rank, score: me.score,
+          last_round_gain: me.lastScore != null ? me.lastScore : null,
+          last_played: me.lastPlayed || null,
+          stats: { last_1h: st('h1'), last_3h: st('h3'), last_24h: st('h24') },
+          momentum: A.mom != null ? +A.mom.toFixed(2) : null,
+          rest_hours_est_24h: A.restH != null ? +A.restH.toFixed(1) : null,
+          projected_final_score: A.proj != null ? Math.round(A.proj) : null,
+          projected_rank: A.projRank,
+          avg_per_round_percentile: A.pctile,
+          clock: A.clock ? { progress_pct: +(A.clock.frac * 100).toFixed(1), hours_left: +A.clock.leftH.toFixed(1) } : null,
+          rank_series: S ? { best_rank: S.best, worst_rank: S.worst, samples: S.n } : null,
+          borders: (A.borders || []).slice(0, 8).map(b => ({ tier: b.rank, score: b.score,
+            gap_from_player: me.score != null ? b.score - me.score : null })),
+          note: 'momentum ＝ 近 1 小時時速 ÷ 近 24 小時時速（>1 是在加速，<1 是在降溫）。' +
+                'rest_hours_est_24h 是用近 3 小時的節奏推估滿載周回、再與實際 24 小時周回相減，只是估計值。' +
+                'projected_rank 是把前百各自用自己的 24 小時時速投影後重排的結果，末段衝刺會讓它偏樂觀。',
+        };
+      }
+
+      case 'get_player_games': {
+        const uid = String(a.uid || this.state.pid || '').replace(/\D/g, '');
+        if (!uid) return { error: '沒有指定 uid，也還沒設定使用者自己的 uid' };
+        /* loadGames 對同一個 uid 會直接 return（避免重複打），所以不能只 await 它——
+           上一次呼叫可能還在飛。await 之後再輪詢 gamesLoad 才保險。 */
+        await this.loadGames(uid);
+        for (let i = 0; i < 40 && this.state.gamesLoad; i++) await new Promise(r => setTimeout(r, 150));
+        if (this.state.gamesErr) return { error: this.state.gamesErr };
+        const all = this.state.gamesRows;
+        if (!all) return { error: '逐局紀錄尚未載入完成，請稍後再問一次' };
+        if (!all.length) return { uid, total: 0, games: [],
+          note: '這位玩家沒有逐局紀錄。逐局紀錄只涵蓋當期前 100 名（公開資料對第 101 名之後不給本期分數），且從開始追蹤後才累積，不會回溯。' };
+        const ev = this.state.gamesEv || {};
+        const startMs = ev.startAt || 0;
+        const abs = t => (startMs ? new Date(startMs + t * 1000).toISOString() : null);
+        let rows = all;
+        if (a.hours != null && +a.hours > 0) {
+          const nowRel = startMs ? Math.floor((Date.now() - startMs) / 1000) : all[all.length - 1].t;
+          const cut = nowRel - (+a.hours) * 3600;
+          rows = all.filter(g => g.t >= cut);
+        }
+        if (!rows.length) return { uid, total: all.length, in_range: 0, games: [], note: '這個時間範圍內沒有紀錄。' };
+        const ds = rows.map(g => g.delta).slice().sort((x, y) => x - y);
+        const sum = ds.reduce((x, y) => x + y, 0);
+        const mid = ds.length % 2 ? ds[(ds.length - 1) / 2] : Math.round((ds[ds.length / 2 - 1] + ds[ds.length / 2]) / 2);
+        const spanH = rows.length > 1 ? (rows[rows.length - 1].t - rows[0].t) / 3600 : 0;
+        const lim = Math.max(1, Math.min(20, +a.limit || 15));
+        const tail = rows.slice(-lim);
+        return {
+          uid, total: all.length, in_range: rows.length,
+          range_hours: +spanH.toFixed(1),
+          first_at: abs(rows[0].t), last_at: abs(rows[rows.length - 1].t),
+          sum_event_points: sum,
+          avg_per_game: Math.round(sum / rows.length),
+          median_per_game: mid, max_per_game: ds[ds.length - 1], min_per_game: ds[0],
+          games_per_hour: spanH > 0 ? +(rows.length / spanH).toFixed(1) : null,
+          points_per_hour: spanH > 0 ? Math.round(sum / spanH) : null,
+          recent_games: tail.map((g, i) => ({
+            at: abs(g.t), event_points: g.delta, rank_at_that_time: g.rank,
+            gap_from_prev_s: i > 0 ? tail[i].t - tail[i - 1].t : null })),
+          record_gaps: (this.state.gamesGaps || []).length,
+          note: '每 15 秒取樣一次，一場協力最短約 150 秒，所以一筆就是一場。record_gaps 是本期紀錄中斷的段數，' +
+                '中斷區間內的點可能是多場合併，場均會被高估。',
+        };
+      }
+
+      case 'get_player_profile': {
+        const uid = String(a.uid || this.state.pid || '').replace(/\D/g, '');
+        if (!uid) return { error: '沒有指定 uid，也還沒設定使用者自己的 uid' };
+        let d;
+        try { d = await this.apiFetch('/user/' + encodeURIComponent(uid) + '/profile'); }
+        catch (e) { return { error: '查不到這個 uid 的公開資料（' + ((e && e.message) || '請求失敗') + '）' }; }
+        if (!d) return { error: '查不到這個 uid 的公開資料' };
+        const u = d.user || d.userProfile || d.profile || d || {};
+        const gd = d.userGamedata || d.user_gamedata || u.gamedata || u;
+        const tp = d.totalPower || {};
+        const deck = d.userDeck || {};
+        const deckCards = Object.keys(deck).filter(k => /member/i.test(k))
+          .map(k => deck[k]).filter(v => v != null && String(v).match(/^\d+$/)).map(Number);
+        const chars = (d.userCharacters || []).slice()
+          .sort((x, y) => (y.characterRank || 0) - (x.characterRank || 0));
+        return {
+          uid, name: gd.name || u.name || null, player_rank: gd.rank || u.rank || null,
+          total_power: tp.totalPower || tp.total_power || u.total_power || null,
+          base_card_power: tp.basicCardTotalPower != null ? tp.basicCardTotalPower : null,
+          character_rank_bonus: tp.characterRankBonus != null ? tp.characterRankBonus : null,
+          area_item_bonus: tp.areaItemBonus != null ? tp.areaItemBonus : null,
+          deck_name: deck.name || null, deck_card_ids: deckCards,
+          owned_cards_visible: (d.userCards || []).length,
+          character_ranks: chars.slice(0, 10).map(c => ({ character: this.chNameOf(c.characterId), rank: c.characterRank })),
+          character_rank_total: chars.reduce((x, c) => x + (c.characterRank || 0), 0),
+          challenge_high_score: (d.userChallengeLiveSoloResult && d.userChallengeLiveSoloResult.highScore) || null,
+          music_clear: (d.userMusicDifficultyClearCount || []).map(m => ({
+            difficulty: m.musicDifficultyType, clear: m.liveClear, full_combo: m.fullCombo, all_perfect: m.allPerfect })),
+          note: '這些都是遊戲的公開資料。userCards 只公開隊伍與展示卡（約 14 張），不是完整持有清單，' +
+                '不要拿 owned_cards_visible 當收集率。',
+        };
+      }
+
+      case 'get_top100': {
+        if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+        let list, label = '活動主榜', ch = null;
+        if (a.board === 'world_link') {
+          const chs = this.wlChapters();
+          if (!chs.length) return { error: '當期不是 World Link 活動，沒有章節榜' };
+          const pick = a.chapter != null ? chs.find(c => +c.chapter === +a.chapter)
+            : (chs.find(c => c.live) || chs[chs.length - 1]);
+          if (!pick) return { error: '找不到第 ' + a.chapter + ' 章', available: chs.map(c => c.chapter) };
+          list = pick.ranks || []; ch = pick.chapter; label = 'World Link 第 ' + pick.chapter + ' 章（' + pick.name + '）';
+        } else {
+          list = this.ranksOf(this.state.live);
+        }
+        if (!list.length) return { error: '即時排名尚未載入，' + (this.state.liveErr || '請稍後再試') };
+        const sp = (r, k) => (r.stats && r.stats[k] && r.stats[k].speed) || null;
+        const cnt = (r, k) => (r.stats && r.stats[k] && r.stats[k].count != null) ? r.stats[k].count : null;
+        const now = Date.now();
+        let rows = list.slice();
+        if (a.sort === 'speed_1h') rows.sort((x, y) => (sp(y, 'h1') || 0) - (sp(x, 'h1') || 0));
+        else if (a.sort === 'speed_24h') rows.sort((x, y) => (sp(y, 'h24') || 0) - (sp(x, 'h24') || 0));
+        else rows.sort((x, y) => x.rank - y.rank);
+        const lim = Math.max(1, Math.min(20, +a.limit || 10));
+        // 整體動態只有主榜算得出來（activeAnalysis 讀的是 state.live）
+        const AA = (a.board === 'world_link') ? null : this.activeAnalysis();
+        return {
+          board: label, chapter: ch, total: list.length, sorted_by: a.sort || 'rank',
+          players: rows.slice(0, lim).map(r => ({
+            rank: r.rank, name: r.name, uid: r.uid, score: r.score,
+            last_round_gain: r.lastScore != null ? r.lastScore : null,
+            speed_1h_per_hour: sp(r, 'h1') != null ? Math.round(sp(r, 'h1')) : null,
+            speed_24h_per_hour: sp(r, 'h24') != null ? Math.round(sp(r, 'h24')) : null,
+            rounds_1h: cnt(r, 'h1'),
+            minutes_since_last_play: r.lastPlayed ? Math.round((now - new Date(r.lastPlayed).getTime()) / 60000) : null,
+          })),
+          activity: AA ? {
+            online_within_15min: AA.online.length,
+            grinding_last_1h: AA.grinding.length,
+            idle_over_60min: AA.idle.length,
+            total_rounds_last_1h: AA.rounds1h,
+            surging: AA.surging.slice(0, 5).map(x => ({ rank: x.r.rank, name: x.r.name,
+              ratio_1h_vs_24h: +(x.s1 / x.s24).toFixed(2) })),
+            cooling: AA.cooling.slice(0, 5).map(x => ({ rank: x.r.rank, name: x.r.name,
+              ratio_1h_vs_24h: +(x.s1 / x.s24).toFixed(2) })),
+          } : null,
+          note: '時速單位是活動P／小時。surging＝近 1 小時時速是自己 24 小時均速的 1.2 倍以上；cooling＝掉到 0.5 倍以下。',
+        };
+      }
+
+      /* ---------- World Link ---------- */
+      case 'wl_team_advice': {
+        await this.loadCards();
+        const cards = this.state.rateCards || [];
+        if (!cards.length) return { error: '卡片索引尚未載入（' + (this.state.rateErr || '請先開啟「收集率」頁') + '）' };
+        let charId = null, from = '';
+        if (a.chapter != null) {
+          const chs = this.wlChapters();
+          const c = chs.find(x => +x.chapter === +a.chapter);
+          if (!c) return { error: '當期查不到第 ' + a.chapter + ' 章', available: chs.map(x => x.chapter) };
+          charId = c.character; from = 'chapter ' + c.chapter;
+        } else if (a.character != null && String(a.character).trim() !== '') {
+          const t = String(a.character).trim();
+          charId = /^\d+$/.test(t) ? +t : this.CHARA_ID[t];
+          if (!charId) return { error: '不認得角色「' + t + '」', hint: '請用繁中角色名，例如 一歌／咲希／穗波／志步／實乃理／遙／愛莉／雫／心羽／杏／彰人／冬彌／司／笑夢／寧寧／類／奏／真冬／繪名／瑞希／未來／鈴／連／流歌／MEIKO／KAITO' };
+          from = 'character';
+        } else {
+          const chs = this.wlChapters();
+          const c = chs.find(x => x.live) || chs[chs.length - 1];
+          if (!c) return { error: '當期不是 World Link 活動，也沒指定 character' };
+          charId = c.character; from = '目前進行中的章節';
+        }
+        const chk = this.wlCheck(charId);
+        const sug = this.wlSuggest(charId);
+        const ATTR = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+        const WLB = { 3: 75, 4: 100, 5: 125 };
+        const info = c => ({
+          card_id: c[0], card_name: c[7] || '', character: this.chNameOf(c[1]),
+          rarity: (this.RARITY.find(r => r[0] === c[2]) || [null, '?'])[1],
+          attribute: this.ATTR_ZH[ATTR[c[3]]] || String(c[3]),
+          supply: this.SUPPLYN[c[4]] || '',
+          support_unit: c[5] >= 0 ? ((this.UNITS[this.UNIT_OF[c[5]]] || {}).n || null) : null,
+        });
+        return {
+          character: this.chNameOf(charId), character_id: charId, resolved_from: from,
+          rules: this.WL_RULES.map(r => ({ scenario: r[0], points: r[1] })),
+          owned_check: chk ? {
+            owned_high_rarity_total: chk.total,
+            owned_same_unit: chk.unitCards,
+            attributes_covered: chk.attrHave,
+            missing_attributes: chk.missing,
+            by_attribute: chk.byAttr.map(x => ({ attribute: x.n, owned: x.c })),
+          } : null,
+          suggestion: sug ? {
+            colors: sug.colors,
+            world_link_attr_bonus_pct: WLB[sug.colors] || 0,
+            same_unit_natives: sug.natives,
+            team: sug.team.map(info),
+          } : null,
+          note: '這是規則檢查（四位同團＋五色屬性），不是倍率最佳化——WL 的加成公式沒有可靠來源，硬算會給錯的隊伍。' +
+                '持有清單來自站上「收集率」頁的手動勾選（存在瀏覽器），沒勾就等於沒有；suggestion 為 null 代表勾選的 ★4／生日卡不足以組出隊伍。' +
+                (sug && sug.colors < 5 ? '　目前只湊得出 ' + sug.colors + ' 色，五色加成 125% 拿不到。' : ''),
+        };
+      }
+
+      case 'get_wl_status': {
+        if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+        const chs = this.wlChapters();
+        if (!chs.length) return { error: '當期不是 World Link 活動（沒有章節榜）' };
+        // wlSpeed 讀的是公用快照（state.hist），沒載就量不到實測時速
+        if (!this.state.hist) { try { await this.loadBorderHistory(); } catch (e) {} }
+        const tier = +a.tier || 100;
+        const pick = a.chapter != null ? chs.filter(c => +c.chapter === +a.chapter) : chs;
+        if (!pick.length) return { error: '找不到第 ' + a.chapter + ' 章', available: chs.map(c => c.chapter) };
+        return {
+          total_chapters: chs.length, speed_tier: tier,
+          chapters: pick.map(c => {
+            const sp = this.wlSpeed(c.chapter, tier, 6);
+            const ranks = c.ranks || [];
+            return {
+              chapter: c.chapter, character: c.name,
+              start: c.start ? new Date(c.start).toISOString() : null,
+              end: c.end ? new Date(c.end).toISOString() : null,
+              status: c.live ? 'live' : c.done ? 'ended' : 'upcoming',
+              hours_left: c.live && c.end ? +((c.end - Date.now()) / 3600000).toFixed(1) : null,
+              top1_score: ranks.length ? ranks[0].score : null,
+              top100_score: ranks.length >= 100 ? ranks[99].score : null,
+              borders: (c.borders || []).map(b => ({ tier: b.rank, score: b.score })),
+              measured_speed_per_hour: sp ? Math.round(sp.rate) : null,
+              measured_span_h: sp ? +sp.spanH.toFixed(1) : null,
+              measured_samples: sp ? sp.n : null,
+            };
+          }),
+          note: '實測時速取最近 6 小時的窗口（跨距不足才退回整段），單位是活動P／小時。' +
+                'WL 期間 API 偶爾會回串到別處的值，站上已用 running-min 修過單調性。' +
+                '章節只有 3 天，末段衝刺很兇，拿整段平均推剩餘時間會明顯低估。',
+        };
+      }
+
+      /* ---------- 收集率 ---------- */
+      case 'get_collection_rate': {
+        await this.loadCards();
+        if (!(this.state.rateCards || []).length) return { error: '卡片索引尚未載入（' + (this.state.rateErr || '請先開啟「收集率」頁') + '）' };
+        const st = this.rateStat();
+        if (!st || !st.all || !st.all.n) return { error: '收集率統計算不出來，卡片資料可能不完整' };
+        const p = (h, n) => +this.pct(h, n).toFixed(1);
+        return {
+          overall: { owned: st.all.have, total: st.all.n, missing: st.all.n - st.all.have, pct: p(st.all.have, st.all.n) },
+          by_unit: Object.keys(st.byU).filter(k => st.byU[k].n > 0).map(k => ({
+            unit: k, name: (this.UNITS[k] || {}).n || k,
+            owned: st.byU[k].have, total: st.byU[k].n,
+            missing: st.byU[k].n - st.byU[k].have, pct: p(st.byU[k].have, st.byU[k].n) })),
+          by_rarity: this.RARITY.filter(r => st.byR[r[0]] && st.byR[r[0]].n > 0).map(r => ({
+            rarity: r[1],
+            owned: st.byR[r[0]].have, total: st.byR[r[0]].n,
+            missing: st.byR[r[0]].n - st.byR[r[0]].have, pct: p(st.byR[r[0]].have, st.byR[r[0]].n) })),
+          note: st.all.have === 0
+            ? '目前一張都沒勾選。收集率是站上「收集率」頁手動勾選的（存在這台瀏覽器），不是從遊戲抓的——公開 API 只給隊伍與展示卡，拿不到完整持有清單。'
+            : '資料來自站上「收集率」頁的手動勾選（存在這台瀏覽器）。unit 的分類會優先看卡片的支援團。',
+        };
+      }
+
+      /* ---------- 規劃 ---------- */
+      case 'plan_target': {
+        if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+        if (!(this.state.epSongs || []).length) {
+          this.loadEpSongs();
+          for (let i = 0; i < 40 && !(this.state.epSongs || []).length; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        /* 一定要等 loadLive 之後才取 state：matchMyRank 會在那時才把 pdata.myScore
+           寫進去，先抓的話拿到的是還沒有我的分數的舊物件。 */
+        const s = this.state;
+        const B = this.borderAnalysis();
+        // 目標分數：優先用明確指定的，否則取該段位的預測終線
+        let goal = null, tierRow = null;
+        if (a.target_score != null) goal = Math.max(0, +a.target_score || 0);
+        else if (a.tier != null) {
+          if (!B) return { error: '榜線資料尚未載入，無法取得段位預測；可以改用 target_score 直接指定目標分數' };
+          tierRow = B.rows.find(r => +r.rank === +a.tier);
+          if (!tierRow) return { error: '當期沒有 T' + a.tier + ' 這一段榜線', available_tiers: B.rows.map(r => r.rank) };
+          goal = Math.round(tierRow.proj);
+        } else return { error: '要給 tier（目標段位）或 target_score（目標分數）其中一個' };
+
+        const cur = a.current_score != null ? Math.max(0, +a.current_score || 0)
+          : ((s.pdata && s.pdata.myScore != null) ? s.pdata.myScore : 0);
+        const left = Math.max(0, goal - cur);
+        const ck = (B && B.clock) || this.eventClock();
+        const leftH = ck ? ck.leftH : null;
+
+        // 單場產出：與 calc_event_points 同一套（epResult() 的參數化版本）
+        const DK = { E: 'E', N: 'N', H: 'H', X: 'X', M: 'M', A: 'A', EASY: 'E', NORMAL: 'N', HARD: 'H', EXPERT: 'X', MASTER: 'M', APPEND: 'A' };
+        const mode = ['solo', 'auto', 'multi', 'cheer'].indexOf(a.mode) >= 0 ? a.mode : (s.mode || 'multi');
+        const diff = DK[String(a.difficulty || '').toUpperCase()] || s.diff || 'M';
+        const power = a.power != null ? +a.power || 0 : +s.power || 0;
+        const bonus = a.bonus != null ? +a.bonus || 0 : +s.bonus || 0;
+        const skill = a.skill != null ? +a.skill || 0 : +s.skill || 0;
+        const s6 = a.s6 != null ? +a.s6 || 0 : +s.s6 || 0;
+        const energy = a.energy != null ? Math.max(0, Math.min(10, Math.round(+a.energy || 0))) : (+s.energy || 0);
+        const F = this.EM[energy] || 1;
+        const song = this.songById(a.song_id != null ? a.song_id : s.songKey);
+        const rate = song ? song.rate : (+s.rate || 100);
+        const time = song ? song.time : 100;
+        let score = 0;
+        if (song && song.d) {
+          const k = [diff, 'M', 'X', 'H', 'N', 'E', 'A'].find(x => song.d[x]);
+          score = k ? this.calcSongScore(song.d[k], mode, power, skill, s6) : 0;
+        } else score = +s.score || 0;
+        const ep = this.calcEPValue(mode, score, rate, bonus, F, power, +s.life || 0);
+        const cycle = time + this.ohOf(mode);
+        if (!(ep > 0)) return { error: '算出來單場 0 P，請檢查綜合力／加成／歌曲設定' };
+
+        // 與 plan() 同式的體力與花費換算
+        const plays = Math.ceil(left / ep);
+        const totalMin = plays * cycle / 60;
+        const totalEnergy = plays * energy;
+        const natHr = a.natural_hours != null ? +a.natural_hours || 0 : +s.natHr || 0;
+        const lCan = a.large_cans != null ? +a.large_cans || 0 : +s.lCan || 0;
+        const sCan = a.small_cans != null ? +a.small_cans || 0 : +s.sCan || 0;
+        const crys = a.crystals != null ? +a.crystals || 0 : +s.crys || 0;
+        const recoverable = natHr * 2 + lCan * 10 + sCan * 5 + crys * 10;
+        const net = Math.max(0, totalEnergy - recoverable);
+        const crystal = Math.ceil(net / 10) * 100;
+        const jRate = Math.max(0.1, a.crystal_rate != null ? +a.crystal_rate || 7 : +s.jRate || 7);
+        const needSpeed = (leftH && leftH > 0) ? left / leftH : null;
+        const epPerHour = Math.round(ep * 3600 / cycle);
+        return {
+          target: { tier: a.tier != null ? +a.tier : null, target_score: goal,
+            target_from: a.target_score != null ? '呼叫時指定' : (tierRow ? (tierRow.measured ? '該段位的實測時速外推' : '該段位的線性外推') : null),
+            history_weighted: tierRow && tierRow.refMed != null ? Math.round(tierRow.refMed) : null,
+            history_range: tierRow && tierRow.refLo != null ? [tierRow.refLo, tierRow.refHi] : null },
+          current_score: cur, gap: left,
+          clock: ck ? { progress_pct: +(ck.frac * 100).toFixed(1), hours_left: +ck.leftH.toFixed(1) } : null,
+          per_play: { mode, song: song ? { id: song.id, title: song.t } : null,
+            difficulty: diff, boost_energy: energy, boost_multiplier: F,
+            event_points: ep, cycle_s: cycle, ep_per_hour: epPerHour },
+          required: {
+            speed_per_hour: needSpeed != null ? Math.round(needSpeed) : null,
+            plays, hours_of_play: +(totalMin / 60).toFixed(1),
+            energy: totalEnergy,
+            recoverable_energy: recoverable, energy_to_buy: net,
+            crystals: crystal, twd: Math.round(crystal / jRate),
+            ep_per_twd: energy > 0 ? Math.round(ep / (energy * 10) * jRate) : null,
+          },
+          feasible: (needSpeed != null && leftH != null) ? {
+            enough_time: totalMin / 60 <= leftH,
+            required_vs_achievable_pct: epPerHour > 0 ? +(needSpeed / epPerHour * 100).toFixed(0) : null,
+          } : null,
+          note: '段位目標取站上的預測終線；末段普遍低估（T5000 約 2～6%、T1000 約 10～13%、T100 約 14～22%），要當下限看，安全起見再往上抓一成。' +
+                '體力換算：可回復 ＝ 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10；不足的部分每 10 體 100 石，水晶 CP 用 ' + jRate + ' 石/元。' +
+                'required.speed_per_hour 是「剩餘時間內平均要跑多快」，per_play.ep_per_hour 是「照這個配置滿載能跑多快」，兩者相比就知道還有沒有餘裕。',
+        };
+      }
+
+      /* ---------- 偵測訂閱 ---------- */
+      case 'create_watch': {
+        /* loadMe 有 _meLoading 去重，開站時那次可能還在飛 → await 完再輪詢一下，
+           否則會誤判成「尚未登入」。 */
+        if (this.state.me === undefined) {
+          try { await this.loadMe(); } catch (e) {}
+          for (let i = 0; i < 30 && this.state.me === undefined; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        const me = this.state.me;
+        if (!me) return { error: '尚未登入，無法建立訂閱。請使用者先到「帳號」頁用 Google 或 Discord 登入。' };
+        if (me.status !== 'approved') return { error: '帳號目前狀態是「' + (me.status || '未知') + '」，通過審核後才能建立訂閱。' };
+        /* loadWatchKinds 已經在跑就會直接 return，所以要輪詢它寫回 state */
+        if (!this.state.watchKinds) {
+          this.loadWatchKinds();
+          for (let i = 0; i < 40 && !this.state.watchKinds; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        const K = this.state.watchKinds || {};
+        if (!Object.keys(K).length) return { error: '偵測規格尚未載入，請稍後再試' };
+        const kind = K[a.kind];
+        if (!kind) return { error: '沒有「' + a.kind + '」這種偵測類型', allowed: Object.keys(K) };
+        if (kind.available === false) return { error: '「' + (kind.label || a.kind) + '」目前不可用', reason: kind.unavailable_reason || '' };
+        const modes = kind.modes || {};
+        const mode = String(a.mode || '');
+        if (!modes[mode]) return { error: '「' + (kind.label || a.kind) + '」沒有 mode=' + mode,
+          allowed: Object.keys(modes).map(k => ({ mode: k, label: modes[k].label, example: modes[k].example || null })) };
+        const fields = [].concat(kind.common_fields || [], modes[mode].fields || []);
+        const spec = fields.map(f => ({ key: f.key, label: f.label, type: f.type,
+          required: !!f.required, default: f.default != null ? f.default : null,
+          options: f.options ? f.options.map(o => o.value) : null, hint: f.hint || null }));
+        const src = (a.params && typeof a.params === 'object') ? a.params : {};
+        const params = {};
+        if (kind.mode_key) params[kind.mode_key] = mode;
+        const missing = [];
+        for (const fd of fields) {
+          let v = src[fd.key];
+          if (v == null || v === '') v = fd.default;
+          if (v == null || v === '') { if (fd.required) missing.push(fd.key); continue; }
+          // 與 createWatch() 一致：只有 number 型別轉數字，其餘原樣送（uid 是 19 位大整數，轉數字會失精）
+          params[fd.key] = fd.type === 'number' ? Number(v) : v;
+        }
+        if (missing.length) return { error: '缺少必填參數：' + missing.join('、'), fields: spec,
+          example: modes[mode].example || null };
+        let r;
+        try {
+          r = await this.api('/api/watches', { method: 'POST', body: {
+            kind: a.kind,
+            name: a.name || ((kind.label || '') + '・' + (modes[mode].label || mode)),
+            params, cooldown_s: a.cooldown_s != null ? Number(a.cooldown_s) : (kind.default_cooldown_s || 3600) } });
+        } catch (e) { return { error: (e && e.message) || '建立失敗', fields: spec }; }
+        this.loadWatches();   // 讓「帳號」頁的清單跟著更新；失敗不影響這次回覆
+        const w = (r && r.watch) || {};
+        const caps = this.state.caps || {};
+        return { ok: true,
+          watch: { id: w.id, kind: w.kind, name: w.name, params: w.params, enabled: w.enabled, cooldown_s: w.cooldown_s },
+          mode_note: modes[mode].note || null,
+          kind_limits: kind.limits || null,
+          delivery: caps.mail === false ? '注意：站方目前沒有設定寄信服務，訂閱會建立成功但通知寄不出去。' : '通知會寄到帳號綁定的信箱。',
+        };
+      }
+
+      case 'list_my_watches': {
+        if (this.state.me === undefined) {
+          try { await this.loadMe(); } catch (e) {}
+          for (let i = 0; i < 30 && this.state.me === undefined; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        const me = this.state.me;
+        if (!me) return { error: '尚未登入，看不到訂閱清單' };
+        if (me.status !== 'approved') return { error: '帳號目前狀態是「' + (me.status || '未知') + '」，通過審核後才會有訂閱' };
+        let d;
+        try { d = await this.api('/api/watches'); }
+        catch (e) { return { error: (e && e.message) || '讀取訂閱失敗' }; }
+        const ws = (d && d.watches) || [];
+        let evs = null;
+        if (a.include_events !== false) {
+          try { const e = await this.api('/api/events?limit=10'); evs = (e && e.events) || []; } catch (er) { evs = null; }
+        }
+        // 順便讓「帳號」頁同步；沒查通知就別把既有的 wEvents 清掉
+        this.setState(evs ? { watches: ws, wEvents: evs } : { watches: ws });
+        return {
+          total: ws.length, max: d && d.max != null ? d.max : null,
+          watches: ws.slice(0, 20).map(w => ({
+            id: w.id, kind: w.kind, name: w.name, params: w.params,
+            enabled: w.enabled, cooldown_s: w.cooldown_s,
+            last_fired: w.last_fired || null, created_at: w.created_at })),
+          recent_events: evs ? evs.slice(0, 8).map(e => ({
+            watch_id: e.watch_id, title: e.title,
+            body: String(e.body || '').replace(/\s+/g, ' ').slice(0, 300),
+            created_at: e.created_at })) : null,
+          note: 'last_fired 是最後一次觸發的時間戳（秒），null 代表還沒觸發過。',
+        };
       }
       default: return { error: '未知的工具:' + name };
     }

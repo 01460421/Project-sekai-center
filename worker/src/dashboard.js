@@ -567,6 +567,8 @@ export async function handleDashboard(req, env, url, user) {
 
     return json({ error: 'not_found', message: '沒有這個儀表板端點' }, 404, req, env);
   } catch (e) {
-    return json({ error: 'server_error', message: (e && e.message) || String(e) }, 500, req, env);
+    // 原始訊息會帶出 SQL 片段與欄位名,只寫進 log 不回給前端
+    console.error('dashboard', e && e.stack || e);
+    return json({ error: 'server_error', message: '伺服器錯誤' }, 500, req, env);
   }
 }

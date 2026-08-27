@@ -139,34 +139,49 @@ function shapeMessage(r) {
    快取一旦漂移,拿它當上限就會變成「明明滿了還讓你寫」或反過來。
    一次查詢同時拿到三件事：現有筆數、下一個 seq、已用字元數。 */
 async function appendMessages(db, chat, list) {
-  const s = await one(db,
-    `SELECT COUNT(*) AS n, COALESCE(MAX(seq), -1) AS mx, COALESCE(SUM(LENGTH(content)), 0) AS chars
-     FROM chat_messages WHERE chat_id = ? AND user_id = ?`, chat.id, chat.user_id);
-  const have = (s && s.n) || 0;
-  const used = (s && s.chars) || 0;
-  let seq = ((s && s.mx) != null ? s.mx : -1) + 1;
-
-  if (have + list.length > MAX_MSGS_PER_CHAT) {
-    return { error: 'message_limit', limit: MAX_MSGS_PER_CHAT, have };
-  }
   const add = list.reduce((n, m) => n + m.chars, 0);
-  if (used + add > MAX_CHAT_CHARS) {
-    return { error: 'chat_too_large', limit: MAX_CHAT_CHARS, used };
+  const t = now();
+
+  /* 額度檢查必須和寫入在同一個原子動作裡。原本的寫法是「先 SELECT 現況、
+     判斷、再寫入」—— 並發時每個請求都讀到爆發前的數字,於是全部通過檢查、
+     全部寫進去,上限等於形同虛設。D1 是全站共用的,被灌爆之後連登入建檔、
+     寫 events 都會失敗,不是重啟能救的。
+
+     改成把條件放進 UPDATE 的 WHERE：資料庫自己保證同一列的更新是序列化的,
+     只有真的還在額度內的那一次會成功（changes === 1）,其餘自然落空。
+     計數用 msg_count/chars 這兩個快取欄位遞增,不再每次回頭掃 chat_messages。 */
+  const gate = await db.prepare(
+    `UPDATE chats SET msg_count = msg_count + ?, chars = chars + ?, updated_at = ?,
+            title = CASE WHEN title = '' THEN ? ELSE title END
+     WHERE id = ? AND user_id = ?
+       AND msg_count + ? <= ? AND chars + ? <= ?`)
+    .bind(list.length, add, t, titleFrom(list), chat.id, chat.user_id,
+          list.length, MAX_MSGS_PER_CHAT, add, MAX_CHAT_CHARS)
+    .run();
+
+  const okRows = (gate && gate.meta && gate.meta.changes) || 0;
+  if (!okRows) {
+    // 沒更新到：不是超過訊息數上限就是超過字元上限,回頭讀一次現況給出正確的錯誤
+    const cur = await one(db, 'SELECT msg_count, chars FROM chats WHERE id = ? AND user_id = ?', chat.id, chat.user_id);
+    if (!cur) return { error: 'not_found' };
+    if ((cur.msg_count || 0) + list.length > MAX_MSGS_PER_CHAT) {
+      return { error: 'message_limit', limit: MAX_MSGS_PER_CHAT, have: cur.msg_count || 0 };
+    }
+    return { error: 'chat_too_large', limit: MAX_CHAT_CHARS, used: cur.chars || 0 };
   }
 
-  const t = now();
-  const title = chat.title || titleFrom(list);   // 只有還沒有標題時才自動取
+  /* 額度拿到了才寫訊息。seq 直接用更新後的 msg_count 回推,不再用 MAX(seq)+1 ——
+     那個做法在並發下會算出相同的 seq,讓對話順序錯亂。 */
+  const after = await one(db, 'SELECT msg_count, chars, title FROM chats WHERE id = ? AND user_id = ?', chat.id, chat.user_id);
+  const endSeq = (after && after.msg_count) || list.length;
+  let seq = endSeq - list.length;
+
   const ins = db.prepare(
     'INSERT INTO chat_messages (id,chat_id,user_id,seq,role,content,created_at) VALUES (?,?,?,?,?,?,?)');
+  await db.batch(list.map(m => ins.bind(newId(), chat.id, chat.user_id, seq++, m.role, m.content, t)));
 
-  /* 一個 batch 送出：D1 的 batch 是單一交易,所以「訊息進去了但 chats 的計數沒更新」
-     這種半套狀態不會發生。 */
-  const stmts = list.map(m => ins.bind(newId(), chat.id, chat.user_id, seq++, m.role, m.content, t));
-  stmts.push(db.prepare('UPDATE chats SET title=?, msg_count=?, chars=?, updated_at=? WHERE id=? AND user_id=?')
-    .bind(title, have + list.length, used + add, t, chat.id, chat.user_id));
-  await db.batch(stmts);
-
-  return { added: list.length, msg_count: have + list.length, chars: used + add, updated_at: t, title };
+  return { added: list.length, msg_count: endSeq, chars: (after && after.chars) || 0,
+           updated_at: t, title: (after && after.title) || '' };
 }
 
 /* ---------- 主路由 ---------- */
@@ -184,6 +199,8 @@ export async function handleChats(req, env, url, user) {
   if (!user) return out({ error: 'unauthorized' }, 401);
   if (user.status !== 'approved') return out({ error: 'pending_approval', status: user.status }, 403);
 
+  // D1 binding 沒掛好時要直接講明,不要偽裝成通用 500(照 dashboard.js 的作法)
+  if (!env.DB) return json({ error: 'no_db', message: '資料庫尚未設定' }, 503, req, env);
   const db = env.DB;
   const m = req.method;
 
