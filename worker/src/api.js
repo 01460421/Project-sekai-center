@@ -21,7 +21,8 @@ import {
   aiUsedToday,
   createTask,
   unreadCount,
-  markRead} from './db.js';
+  markRead,
+  aiUsedTodaySite} from './db.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
 const MAX_WATCHES = 20;            // 每人上限,免得有人開一百個把掃描迴圈拖垮
@@ -257,10 +258,21 @@ export async function handleApi(req, env, url, user) {
        所以這裡算的是「請求數」不是「問題數」。 */
     if (p === '/api/chat' && req.method === 'POST') {
       if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
-      const cap = user.is_admin ? 200 : 40;
-      const used = await aiUsedToday(env.DB, user.id);
+      /* 兩層額度。個人上限可由 env 調整;站台總量是保護網 —— 個人上限擋得住
+         單一使用者,擋不住十個人同時用滿,而帳戶餘額是全站共用的。
+         實測每次呼叫約 $0.14(in 約 2 萬 tokens、out 約 1.4 千),設定時請對著
+         這個數字換算:2000 次 ≈ $277／人／日。 */
+      const cap = user.is_admin ? (+env.AI_CAP_ADMIN || 5000) : (+env.AI_CAP_USER || 2000);
+      const siteCap = +env.AI_CAP_SITE || 6000;
+      const [used, siteUsed] = await Promise.all([
+        aiUsedToday(env.DB, user.id),
+        aiUsedTodaySite(env.DB),
+      ]);
+      if (siteUsed >= siteCap) {
+        return json({ error: 'site_quota', message: '站台今日的 AI 總用量已達上限，請明天再試。' }, 429, req, env);
+      }
       if (used >= cap) {
-        return json({ error: 'quota', message: '今日 AI 用量已達上限（' + cap + ' 次），請明天再試。' }, 429, req, env);
+        return json({ error: 'quota', message: '你今日的 AI 用量已達上限（' + cap + ' 次），請明天再試。' }, 429, req, env);
       }
       const rb = await readJson(req, 512 * 1024);   // 對話帶著工具結果,body 會比其他端點大
       if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413);
@@ -285,7 +297,8 @@ export async function handleApi(req, env, url, user) {
                      text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out);
       return json({
         content: reply.content, stop_reason: reply.stop_reason, model: reply.model,
-        quota: { used: used + 1, cap },
+        quota: { used: used + 1, cap, site_used: siteUsed + 1, site_cap: siteCap },
+        cache: { read: reply.cache_read || 0, write: reply.cache_write || 0 },
       }, 200, req, env);
     }
 

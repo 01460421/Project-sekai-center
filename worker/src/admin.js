@@ -267,13 +267,25 @@ export async function chatClaude(env, { messages, tools, system }) {
     'x-api-key': env.ANTHROPIC_API_KEY,
     'anthropic-version': '2023-06-01',
   };
+  /* Prompt caching：工具定義（約 7,700 tokens）與 system 每次請求都要重送,
+     那是整個請求裡最大也最穩定的一塊。快取的比對是「前綴相符」,渲染順序是
+     tools → system → messages,所以把斷點下在 tools 的最後一個與 system 上,
+     後面變動的 messages 不會讓前綴失效。
+     cache read 的計費約為 input 的十分之一 —— 以目前的工具量,一輪對話
+     大約從 $0.15 降到 $0.02。最小可快取前綴約 1024 tokens,我們遠超過。 */
+  const sys = system || SYSTEM;
   const body = {
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    system: system || SYSTEM,
+    system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
     messages,
   };
-  if (tools && tools.length) body.tools = tools;
+  if (tools && tools.length) {
+    // 只在最後一個工具下斷點:斷點會快取「到此為止的所有內容」,
+    // 每個工具都下反而會用掉 4 個斷點上限又沒有多的好處。
+    body.tools = tools.map((t, i) =>
+      i === tools.length - 1 ? Object.assign({}, t, { cache_control: { type: 'ephemeral' } }) : t);
+  }
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST', headers, body: JSON.stringify(body),
@@ -304,6 +316,9 @@ export async function chatClaude(env, { messages, tools, system }) {
     stop_reason: d && d.stop_reason,
     model: d && d.model,
     tokens_in: n(usage.input_tokens), tokens_out: n(usage.output_tokens),
+    // 快取沒生效的話這兩個會一直是 0 —— 那通常代表前綴被某個變動的東西弄髒了
+    cache_write: n(usage.cache_creation_input_tokens),
+    cache_read: n(usage.cache_read_input_tokens),
   };
 }
 

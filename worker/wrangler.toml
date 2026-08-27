@@ -39,6 +39,12 @@ database_id = "63ad1759-8919-4ed5-aa88-0b4c31e347ae"
 SITE_BASE = "https://project-sekai-center.com"
 OAUTH_BASE = "https://games.project-sekai-center.com"
 COOKIE_DOMAIN = ".project-sekai-center.com"
+# AI 每日呼叫上限。實測每次約 $0.14（in 約 2 萬 tokens、out 約 1.4 千）,
+# 調整前請先換算：2000 次 ≈ $277／人／日。AI_CAP_SITE 是全站保護網,
+# 因為帳戶餘額是共用的,個人上限擋不住多人同時用滿。
+AI_CAP_USER = "2000"
+AI_CAP_ADMIN = "5000"
+AI_CAP_SITE = "6000"
 MAIL_FROM = "SEKAI 資源中心 <noreply@project-sekai-center.com>"
 
 [observability]

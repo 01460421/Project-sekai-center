@@ -196,3 +196,11 @@ export const unreadCount = async (db, userId) => {
 export const markRead = (db, userId, id) => id
   ? run(db, 'UPDATE events SET read_at=? WHERE id=? AND user_id=? AND read_at IS NULL', now(), id, userId)
   : run(db, 'UPDATE events SET read_at=? WHERE user_id=? AND read_at IS NULL', now(), userId);
+
+/* 今日全站的 AI 呼叫數。個人上限擋得住單一使用者,擋不住「十個人同時用滿」——
+   帳戶餘額是全站共用的,所以需要一道總量保護。 */
+export async function aiUsedTodaySite(db) {
+  const since = now() - 86400;
+  const r = await one(db, 'SELECT count(*) AS c FROM admin_log WHERE created_at>=?', since);
+  return (r && r.c) || 0;
+}
