@@ -1597,6 +1597,47 @@ input::placeholder{color:var(--text-3)}
   </div>
   </sc-if>
 
+  <!-- ========== 通知 ========== -->
+  <sc-if value="{{ isNotices }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ acLoggedOut }}">
+      <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13.5px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+        通知需要登入才能使用。<br>
+        <a href="{{ acLoginUrl }}" style="color:var(--accent-deep);font-weight:700">使用 Google 帳號登入</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ acReady }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="font-size:12.5px;color:var(--text-3)">偵測訂閱的條件成立時，通知會出現在這裡。未讀 <b style="color:var(--accent-deep)">{{ noticeUnread }}</b> 則。</div>
+        <div style="display:flex;gap:8px">
+          <sc-if value="{{ noticeHasUnread }}">
+            <button type="button" onClick="{{ onNoticeReadAll }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">全部標為已讀</button>
+          </sc-if>
+          <button type="button" onClick="{{ onNoticeReload }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">重新整理</button>
+        </div>
+      </div>
+
+      <sc-if value="{{ noticeNone }}">
+        <div style="padding:30px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+          還沒有任何通知。<br>
+          到<a href="?page=account" style="color:var(--accent-deep);font-weight:700">我的帳號</a>建立偵測訂閱，條件成立時就會通知你。
+        </div>
+      </sc-if>
+
+      <sc-for list="{{ noticeRows }}" as="e" hint-placeholder-count="5">
+        <div onClick="{{ onNoticeRead }}" data-id="{{ e.id }}" style="border:1px solid var(--border);border-radius:16px;padding:14px 16px;background:{{ e.bg }};box-shadow:var(--sh-xs);margin-bottom:9px;cursor:pointer">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span style="width:7px;height:7px;border-radius:50%;background:{{ e.dot }};flex:none"></span>
+            <span style="flex:1;font-size:13px;font-weight:800;color:var(--ink)">{{ e.title }}</span>
+            <span style="font-size:11px;color:var(--text-3);flex:none">{{ e.when }}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-2);line-height:1.75;white-space:pre-wrap">{{ e.body }}</div>
+        </div>
+      </sc-for>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 站內助手 ========== -->
   <sc-if value="{{ isAssistant }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -2964,7 +3005,8 @@ class Component extends DCLogic {
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
-    assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料']
+    assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
+    notices:  ['通知', '偵測訂閱觸發時的站內通知']
   };
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
@@ -3141,7 +3183,7 @@ class Component extends DCLogic {
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false,
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
     dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
-    chatList: [], chatId: null, aiMod: '',
+    chatList: [], chatId: null, aiMod: '', unread: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
     bkMsg: '',
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
@@ -5450,7 +5492,7 @@ class Component extends DCLogic {
     try {
       const d = await this.api('/api/me');
       this.setState({ me: d && d.user ? d.user : null, meErr: '' });
-      if (d && d.user && d.user.status === 'approved') this.pullCloud();
+      if (d && d.user && d.user.status === 'approved') { this.pullCloud(); this.loadNotices(); }
     } catch (e) {
       /* 這裡本來把錯誤吞掉只顯示「未登入」,結果 CORS、cookie、500 全都長一樣,
          連我自己都查不出是哪一種。改成把實際原因留下來顯示在畫面上。 */
@@ -5489,6 +5531,23 @@ class Component extends DCLogic {
     this._wkLoading = true;
     try { const d = await this.api('/api/watch-kinds'); this.setState({ watchKinds: (d && d.kinds) || {}, caps: (d && d.capabilities) || {} }); }
     catch (e) { this.setState({ watchKinds: {} }); }
+  }
+
+  /* 站內通知。未讀數順著 /api/events 一起回來,不另外開一支輪詢。 */
+  async loadNotices() {
+    try {
+      const d = await this.api('/api/events?limit=50');
+      this.setState({ wEvents: (d && d.events) || [], unread: (d && d.unread) || 0 });
+    } catch (e) {}
+  }
+  async readNotice(id) {
+    try {
+      const d = await this.api('/api/events/read', { method: 'POST', body: id ? { id } : {} });
+      this.setState(st => ({
+        unread: (d && d.unread) || 0,
+        wEvents: (st.wEvents || []).map(e => (!id || e.id === id) ? Object.assign({}, e, { read_at: 1 }) : e),
+      }));
+    } catch (e) {}
   }
 
   async loadWatches() {
@@ -5990,6 +6049,7 @@ class Component extends DCLogic {
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
     if (p === 'assistant') this.loadChats();
+    if (p === 'notices') this.loadNotices();
     if (p === 'admin') { this.loadAdmin(); this.loadDash('overview'); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -6268,6 +6328,7 @@ class Component extends DCLogic {
       /* 帳號擺在最前面：手機版「更多」面板照這個順序排,掛在最後要捲很久才看得到。
          管理後台只掛給管理員,一般使用者連入口都不會出現(後端另有權限檢查)。 */
       ['帳號', [['account', s.me ? '我的帳號' : '登入', '#8be0d0']]
+        .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2']]],
@@ -7007,7 +7068,23 @@ class Component extends DCLogic {
       sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
-      isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant',
+      isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices',
+      ...(() => {
+        const evs = s.wEvents || [];
+        return {
+          noticeRows: evs.map(e => ({
+            id: e.id, title: e.title || '（無標題）',
+            body: e.body || '',
+            when: e.created_at ? this.ago(e.created_at * 1000) : '',
+            unread: !e.read_at,
+            bg: e.read_at ? 'var(--card)' : 'color-mix(in oklab,var(--accent) 8%,transparent)',
+            dot: e.read_at ? 'transparent' : 'var(--cta)',
+          })),
+          noticeNone: !evs.length,
+          noticeUnread: s.unread || 0,
+          noticeHasUnread: (s.unread || 0) > 0,
+        };
+      })(),
       ...(() => {
         const D = s.dashData || {}, tab = s.dashTab || 'overview';
         const ov = D.overview || {};
@@ -8189,6 +8266,9 @@ class Component extends DCLogic {
       onAiMod: e => { const v = e.currentTarget.dataset.v; this.setState(st => ({ aiMod: st.aiMod === v ? '' : v })); },
       onAiPick: e => { const q = e.currentTarget.dataset.q || ''; this.setState({ admAsk: q, aiMod: '' });
         try { const el = document.querySelector('input[data-k="admAsk"]'); if (el) { el.focus(); el.setSelectionRange(q.length, q.length); } } catch (er) {} },
+      onNoticeRead: e => this.readNotice(e.currentTarget.dataset.id),
+      onNoticeReadAll: () => this.readNotice(null),
+      onNoticeReload: () => this.loadNotices(),
       onAiNew: () => this.newChat(),
       onChatOpen: e => this.openChat(e.currentTarget.dataset.id),
       onChatDel: e => { e.stopPropagation(); this.deleteChat(e.currentTarget.dataset.id); },

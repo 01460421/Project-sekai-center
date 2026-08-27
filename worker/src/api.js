@@ -19,7 +19,9 @@ import {
   logAdmin,
   logTool,
   aiUsedToday,
-  createTask} from './db.js';
+  createTask,
+  unreadCount,
+  markRead} from './db.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
 const MAX_WATCHES = 20;            // 每人上限,免得有人開一百個把掃描迴圈拖垮
@@ -102,6 +104,7 @@ const shapeEvent = e => ({
   created_at: e.created_at,
   mailed_at: e.mailed_at || null,
   mail_error: e.mail_error || null,
+  read_at: e.read_at || null,
 });
 
 const clampCooldown = v => {
@@ -286,12 +289,22 @@ export async function handleApi(req, env, url, user) {
       }, 200, req, env);
     }
 
+    /* 站內通知的已讀標記。id 不給就是「全部標為已讀」。 */
+    if (p === '/api/events/read' && m === 'POST') {
+      const b = await readJson(req);
+      if (b.bad) return out({ error: 'bad_json' }, 400);
+      const id = str((b.value || {}).id, 64);
+      await markRead(env.DB, user.id, id || null);
+      return out({ ok: true, unread: await unreadCount(env.DB, user.id) });
+    }
+
     if (p === '/api/events') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       const n = parseInt(url.searchParams.get('limit'), 10);
       const limit = Math.min(100, Math.max(1, Number.isFinite(n) ? n : 30));
       const rows = await listEvents(env.DB, user.id, limit);
-      return out({ events: rows.map(shapeEvent) });
+      // 一併回未讀數,前端才不用為了那個紅點再打一次
+      return out({ events: rows.map(shapeEvent), unread: await unreadCount(env.DB, user.id) });
     }
 
     /* ---------- Discord 解綁 ---------- */

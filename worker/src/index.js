@@ -276,7 +276,11 @@ export default {
     ctx.waitUntil((async () => {
       try { await runWatches(env); } catch (e) { console.error('runWatches', e && e.message); }
       try { await runDueTasks(env); } catch (e) { console.error('runDueTasks', e && e.message); }
-      try { await flushMail(env); } catch (e) { console.error('flushMail', e && e.message); }
+      /* 通知改成站內為主:沒設定 Resend 就不必每分鐘撈一次待寄清單。
+         事件寫進 events 的當下使用者在網站上就看得到了,寄信是額外的。 */
+      if (env.RESEND_API_KEY) {
+        try { await flushMail(env); } catch (e) { console.error('flushMail', e && e.message); }
+      }
     })());
   },
 };

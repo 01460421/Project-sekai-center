@@ -88,3 +88,7 @@ CREATE TABLE IF NOT EXISTS tool_log (
   args TEXT, ok INTEGER NOT NULL DEFAULT 1, result TEXT, created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_tool_log ON tool_log(created_at DESC);
+
+-- 站內通知的已讀狀態（見 006_read.sql）
+-- events.read_at INTEGER
+CREATE INDEX IF NOT EXISTS idx_events_unread ON events(user_id, read_at, created_at DESC);

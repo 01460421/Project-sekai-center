@@ -184,3 +184,15 @@ export async function aiUsedToday(db, userId) {
   const r = await one(db, 'SELECT count(*) AS c FROM admin_log WHERE user_id=? AND created_at>=?', userId, since);
   return (r && r.c) || 0;
 }
+
+/* ---------- 站內通知 ---------- */
+/* 改成站內通知之後,「送達」不再需要確認 —— 寫進 events 使用者就看得到。
+   要追蹤的是看過沒有。 */
+
+export const unreadCount = async (db, userId) => {
+  const r = await one(db, 'SELECT COUNT(*) AS c FROM events WHERE user_id=? AND read_at IS NULL', userId);
+  return (r && r.c) || 0;
+};
+export const markRead = (db, userId, id) => id
+  ? run(db, 'UPDATE events SET read_at=? WHERE id=? AND user_id=? AND read_at IS NULL', now(), id, userId)
+  : run(db, 'UPDATE events SET read_at=? WHERE user_id=? AND read_at IS NULL', now(), userId);
