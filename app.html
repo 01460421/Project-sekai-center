@@ -160,6 +160,20 @@ input::placeholder{color:var(--text-3)}
 .tut-a p{margin:7px 0}
 .tut-a a{color:var(--accent-deep);font-weight:700}
 .tut-a img{max-width:100%;height:auto;border-radius:10px;display:block;margin:8px 0}
+
+/* 原生 select 在 Safari 深色下的老問題：即使宣告了 color-scheme,
+   只要在 select 上蓋自訂的 background/color,下拉展開時的選項清單仍可能
+   沿用系統配色而看不見文字。與其賭各家瀏覽器的實作,不如把 option 的顏色
+   直接寫死 —— 這是少數需要明確指定、不能只靠繼承的地方。
+   select 本身保留自訂外觀(要跟其他輸入框一致),展開後的清單交給這兩行保底。 */
+select{ color:var(--text); background-color:var(--card); }
+select option, select optgroup{
+  color:var(--text);
+  background-color:var(--card);
+}
+/* 手動深色時 option 也要跟著,否則系統是淺色、站上是深色的組合會反過來看不見 */
+:root.theme-dark select option{ color:#ccd3e8; background-color:#161b31; }
+:root.theme-light select option{ color:#2b3350; background-color:#ffffff; }
 </style>
 </helmet>
 

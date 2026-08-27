@@ -963,3 +963,9 @@ body.embed-distribution .container > section#distribution > h2{ display:none !im
         .b30-const.est{ color:var(--text-light); }
         .b30-const.est i{ display:block; font-style:normal; font-size:8.5px; font-weight:700; color:var(--paid-text); line-height:1.1; }
         .b30-jp{ flex:none; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:800; color:#fff; background:#3f7fd6; }
+
+
+/* 原生 select 展開後的選項清單:顏色不能只靠繼承,Safari 深色下會沿用系統配色
+   而看不見文字。這裡寫死,與 app.html 的處理一致。 */
+select{ color:var(--text); background-color:var(--card); }
+select option, select optgroup{ color:var(--text); background-color:var(--card); }
