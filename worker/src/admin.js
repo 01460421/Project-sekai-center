@@ -266,7 +266,12 @@ async function askClaude(env, snapshot, prompt, withFallback = true) {
    安全邊界不變：工具清單由前端寫死，Worker 不執行任何模型產生的程式碼，
    也不把 tools 的內容當指令看待。 */
 
-const MAX_TOOLS = 40;
+/* 工具數上限。這個守衛的用意是「別讓前端送一包超大的東西過來」,
+   但真正該擋的是位元組數而不是工具支數 —— 40 支肥定義可能比 80 支瘦定義還大。
+   所以這裡放寬支數,另外加一道實際的大小上限。
+   （踩過:助手擴充到 64 支工具時撞到原本的 40,整個助手回「工具數量過多」全掛。） */
+const MAX_TOOLS = 100;
+const MAX_TOOLS_BYTES = 160 * 1024;
 const MAX_MSGS = 60;
 
 export async function chatClaude(env, { messages, tools, system }) {
@@ -279,13 +284,17 @@ export async function chatClaude(env, { messages, tools, system }) {
      那是整個請求裡最大也最穩定的一塊。快取的比對是「前綴相符」,渲染順序是
      tools → system → messages,所以把斷點下在 tools 的最後一個與 system 上,
      後面變動的 messages 不會讓前綴失效。
+     TTL 用 1h 而不是預設的 5 分鐘,是查了實際資料才決定的:admin_log 的 121 次呼叫裡,
+     104 次(86%)發生在前一次的 5 分鐘內 —— 那些本來就命中;9 次落在 5 分到 1 小時之間,
+     那 9 次是 1h TTL 真正救回來的。1h 的寫入是 2x(5m 是 1.25x),用多付的寫入換回
+     那 9 次的重寫,淨省約 14%。若之後使用模式變成多為單次提問,這個設定要重新評估。
      cache read 的計費約為 input 的十分之一 —— 以目前的工具量,一輪對話
      大約從 $0.15 降到 $0.02。最小可快取前綴約 1024 tokens,我們遠超過。 */
   const sys = system || SYSTEM;
   const body = {
     model: env.AI_MODEL || MODEL,
     max_tokens: MAX_TOKENS,
-    system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
+    system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral', ttl: '1h' } }],
     messages,
     /* Opus 4.8 省略 thinking 就是「完全不思考」（Opus 5 才是預設 adaptive）。
        這個助手被要求要查證、要交叉比對、要給專業判定,沒有思考會明顯變笨,
@@ -298,7 +307,9 @@ export async function chatClaude(env, { messages, tools, system }) {
     // 只在最後一個工具下斷點:斷點會快取「到此為止的所有內容」,
     // 每個工具都下反而會用掉 4 個斷點上限又沒有多的好處。
     body.tools = tools.map((t, i) =>
-      i === tools.length - 1 ? Object.assign({}, t, { cache_control: { type: 'ephemeral' } }) : t);
+      i === tools.length - 1
+        ? Object.assign({}, t, { cache_control: { type: 'ephemeral', ttl: '1h' } })
+        : t);
   }
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -346,7 +357,12 @@ export function validateChat(body) {
     if (typeof m.content !== 'string' && !Array.isArray(m.content)) return { error: 'content 格式錯誤' };
   }
   const tools = Array.isArray(body.tools) ? body.tools : [];
-  if (tools.length > MAX_TOOLS) return { error: '工具數量過多' };
+  if (tools.length > MAX_TOOLS) return { error: '工具數量過多（上限 ' + MAX_TOOLS + '）' };
+  const tb = JSON.stringify(tools).length;
+  if (tb > MAX_TOOLS_BYTES) {
+    return { error: '工具定義過大（' + Math.round(tb / 1024) + ' KB，上限 '
+      + Math.round(MAX_TOOLS_BYTES / 1024) + ' KB）' };
+  }
   for (const t of tools) {
     if (!t || typeof t.name !== 'string' || !t.input_schema) return { error: '工具定義格式錯誤' };
   }
