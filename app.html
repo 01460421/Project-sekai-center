@@ -4551,7 +4551,8 @@ class Component extends DCLogic {
       };
       const E = {};
       ['PowerEngine', 'SkillEngine', 'EventCalc', 'RunStudio', 'SongEff', 'MasterDB',
-       'GachaBonus', 'EventScan', 'RerunModule', 'epBase', 'EC_BOOST'].forEach(n => { E[n] = pick(n); });
+       'GachaBonus', 'EventScan', 'RerunModule', 'epBase', 'EC_BOOST',
+       'GachaSim', 'EC_cidName'].forEach(n => { E[n] = pick(n); });
       if (!E.PowerEngine) throw new Error('計算引擎載入了，但取不到 PowerEngine');
       this._eng = E;
       return E;
@@ -5209,6 +5210,242 @@ class Component extends DCLogic {
       input_schema: { type: 'object', properties: {
         chapter: { type: 'integer', description: '章節號（第幾章）。不給就用目前進行中的章節；當期不是 WL 就用最近一期 WL 最接近現在的章節。回傳的 available_chapters 會列出這期有哪些章。' },
         only_my_cards: { type: 'boolean', description: '是否只算使用者已勾選持有的卡，預設 false（＝算全卡池的理論最優）。持有清單來自站上「收集率」頁的手動勾選，沒勾過就會是 0。' } } } },
+    { name: 'browse_cards',
+      description: '瀏覽／篩選整本卡庫（1249 張），依技能類型、角色、團體、屬性、稀有度、繁中取得類別篩，'
+        + '預設依滿級綜合力由高到低排序。使用者問「有哪些團分卡」「奶卡列給我看」「ニーゴ的絢爛卡有哪些」'
+        + '「這張現在還抽不抽得到」「我勾的卡裡哪張技能最高」時用。'
+        + '技能類型用站上「卡片技能庫」頁同一套分類：分數提升／判定強化／體力回復／P分／七彩血分／'
+        + '七彩GOOD以上／生日／團分／絢爛角色／絢爛吸技／絢爛虛擬（也吃奶卡、判卡、大分、血分、吸技這類圈內叫法）。'
+        + '每張卡回綜合力、技能 Lv.4 的保底％與拉滿％、取得類別，以及「這張走哪種池」。'
+        + '想知道「現在正開著的池抽不抽得到」要帶 live_pools（見該參數說明）。'
+        + '要單張卡的逐級（Lv.1～4）技能數值請改用 get_card_skills；要算某一期的活動加成請用 get_bonus_cards。',
+      input_schema: { type: 'object', properties: {
+        skill_type: { type: 'string', description: '技能類型。可用代碼或中文：score（分數提升）／judge（判定強化）／'
+          + 'heal（體力回復）／perfect（P分）／cfes_life（七彩血分）／good（七彩GOOD以上）／birthday（生日）／'
+          + 'unit（團分）／bfes_char（絢爛角色）／bfes_ref（絢爛吸技）／bfes_vs（絢爛虛擬）。'
+          + '也接受奶卡／回血／判卡／大分／P卡／血分／吸技／外團型等叫法。不給＝不限' },
+        character: { type: 'string', description: '角色，繁中名或角色 id（1～26）。例如「真冬」「初音未來」「17」' },
+        unit: { type: 'string', description: '團體：ln／mmj／vbs／wxs／n25／vs，也接受 Leo/need、ニーゴ、ワンダショ、'
+          + '虛擬歌手等寫法。V 家角色的團體卡（有支援團）會歸進該團而不是 VIRTUAL SINGER' },
+        attribute: { type: 'string', description: '屬性：帥氣／快樂／神秘／可愛／純真（或 cool／happy／mysterious／cute／pure）' },
+        rarity: { type: 'string', description: '稀有度：1／2／3／4 或「★4」「生日」' },
+        supply: { type: 'string', description: '繁中取得類別：常駐／生日限定／期間限定／彩FES限定／BLOOMFES限定／'
+          + '團體活動限定／聯動限定（也接受 normal、term_limited 這類原始代碼）' },
+        only_owned: { type: 'boolean', description: '只看使用者在站上「收集率」頁勾選為持有的卡（存在這台瀏覽器）。'
+          + '一張都沒勾會直接回錯誤，不會靜靜回空清單' },
+        live_pools: { type: 'string', enum: ['off', 'annotate', 'only'], description: '要不要判斷「現在還抽不抽得到」，預設 off。'
+          + 'annotate＝每張卡加上 obtainable_now 與正開著的池名；only＝只留現在抽得到的卡。'
+          + '這是唯一可靠的判斷方式（取得類別只說明它走哪種池，不代表現在開著）。'
+          + '代價是要現抓約 4.5 MB 的卡池資料，第一次會慢幾秒，之後 30 分鐘內有快取。'
+          + '使用者只是想看卡表就不用帶' },
+        min_power: { type: 'number', description: '只回滿級綜合力大於等於這個值的卡。'
+          + '注意同稀有度的卡綜合力只差幾百點，這個參數實務上等於在篩稀有度' },
+        sort: { type: 'string', enum: ['power', 'skill', 'newest', 'oldest'], description: '排序，預設 power＝滿級綜合力由高到低。'
+          + 'skill＝技能拉滿％由高到低（同％再比綜合力）、newest／oldest＝依實裝日期' },
+        limit: { type: 'integer', description: '回幾張，最多 60，預設 20。'
+          + '這是全部符合條件的卡依 sort 完整排序後的前 N 名，不是取樣——不要用多次小批次去拼湊' },
+        offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的卡' },
+      } } },
+    { name: 'gacha_simulate',
+      description: '抽卡模擬器：對指定卡池「真的照官方機率抽 N 次」，回傳這一輪實際抽到什麼＋統計。'
+        + '同時回傳該池的真實機率模型：各稀有度官方機率、每張 PU 卡的實際單抽機率（由 master data 的 weight 反推，不是「大家都說 0.4%」）、'
+        + '所有可用抽法與價格（含只吃付費水晶的抽法、通行證免費抽、必中★4 抽）、以及該池天井要幾抽（從交換所資料反查，不是一律 300）。'
+        + '使用者說「幫我抽 300 抽看看」「模擬十連」「這池抽 100 抽大概長怎樣」「歪的話會歪到什麼」時用這支。'
+        + '**要「算機率」而不是「抽給你看」請改用 gacha_odds**（期望抽數、預算內至少中 1 張的機率、還差幾抽到天井）——'
+        + 'gacha_odds 是數學期望值，這支是實際擲骰的單一樣本，兩者數字不一致是正常的。'
+        + '結果可重現：帶同一個 seed（配同樣的 gacha／pulls／method）必得完全一樣的結果；省略 seed 會隨機並在 seed_used 回報，想重跑同一輪就把它帶回來。'
+        + 'rare_pulls 是這一輪抽出的 ★4／生日卡「完整時序清單」（含第幾抽、是不是 PU、是不是招募點數保底發的），超過 list_limit 才截斷並用 rare_pulls_truncated 標明，不是取樣——不要用多次呼叫去拼湊。'
+        + '第一次呼叫要下載台服＋日服的 gachas／cards master data（數 MB），可能要等幾秒；之後走瀏覽器快取就很快。'
+        + '本工具只做模擬，不會也不能執行任何實際抽卡或消費。',
+      input_schema: { type: 'object', properties: {
+        gacha: { type: 'string', description: '卡池：純數字＝卡池 id 完全比對，其他＝卡池名稱關鍵字模糊比對（例：「倒映在眼裡的花束」「HAPPY BIRTHDAY」「Recollection」）。'
+          + '省略＝台服目前進行中的卡池（沒有進行中就取最近開跑的那個）。可以查到台服還沒實裝的日服未來池，回傳的 gacha.server 會標明。' },
+        pulls: { type: 'integer', description: '要抽幾抽，1～3000，預設 300（＝一般池天井抽數）。'
+          + '會換算成 method 的批次：例如 method=jewel_10、pulls=300 就是跑 30 次十連。'
+          + '不是批次大小的倍數時，餘數會用同幣別的單抽補；該池沒有單抽才捨去（會在 note 說明）。' },
+        method: { type: 'string', description: '抽法。值取自該池 available_methods 的 key，常見為 jewel_10（3000 水晶十連）、jewel_1（300 水晶單抽）、'
+          + 'ticket_10／ticket_1（招募券）、paid_jewel_10（只吃付費／有償水晶的十連）、paid_jewel_1、free_1（通行證免費抽）。'
+          + '省略＝優先用 jewel_10。給了該池沒有的抽法會回錯誤並列出可用的。'
+          + '必中★4 的抽法（over_rarity_4_once）也走這裡，會正確套用必中保底。' },
+        seed: { type: 'integer', description: '亂數種子（非負整數）。同一組 gacha／pulls／method／seed 一定得到完全相同的結果。'
+          + '省略＝用當下時間當種子，並在 simulation.seed_used 回報，帶回來就能重現同一輪。' },
+        bonus_points: { type: 'boolean', description: '是否套用招募點數（招募附贈點數）保底：付費水晶 1 點／抽、免費水晶與招募券 0.5 點／抽，50 點換未持有的常駐 ★4、100 點換該池 PU ★4。'
+          + '省略＝自動判定（讀該池官方說明有沒有寫「招募附贈點數不適用於本招募」；生日池、復刻池、通行證池通常不適用）。' },
+        list_limit: { type: 'integer', description: 'rare_pulls 最多列幾筆 ★4／生日卡，1～80，預設 40。300 抽大約只會有 9～10 筆，通常不需要調。' } } } },
+    { name: 'get_active_players',
+      description: '活動主榜前 100 名的活躍名單（完整版，不是站上活躍分析卡片那幾筆）：此刻在線（15 分內有成績）、近 1 小時有周回、休息中（逾 60 分沒動）三種名單擇一，每個人附近 1 小時／24 小時時速、周回數、場均、動能與「多久沒動」。' +
+        '使用者問「現在誰在線」「誰還在跑」「哪些人停了」「把在線的人全部列出來」「前面那群人現在的節奏」時用。' +
+        'players 是整桶依規則完整排序後的前 N 名（不是取樣、也不是隨機挑），預設 20 筆，要更後面用 offset 翻頁，不要用多次小 limit 去拼。' +
+        '另外帶 series_uid 可以拿到那位玩家整期的名次／分數時間序列實際點位（每 5～10 分鐘一筆的公用快照，等間隔抽樣），用來回答「他這幾天的名次怎麼變的」「什麼時候被超車」。' +
+        '限制：公開資料只涵蓋當期前 100 名，第 101 名之後沒有本期分數。',
+      input_schema: { type: 'object', properties: {
+        mode: { type: 'string', enum: ['online', 'running', 'resting', 'all'], description: '要哪一份名單：online＝最後一場在 15 分鐘內（預設）、running＝近 1 小時有周回、resting＝逾 60 分沒有成績、all＝前百全部。不管選哪個，回傳的 counts 都會給三種人數' },
+        limit: { type: 'integer', description: '要回幾位，預設 20，最多 100（整個榜就 100 人，設 100 就是全名單）' },
+        offset: { type: 'integer', description: '從排序後的第幾位開始回，預設 0。要看第 21～40 位就帶 offset=20' },
+        series_uid: { type: 'string', description: '要一併取名次／分數時間序列的玩家 uid，純數字。不給就不算序列' },
+        series_points: { type: 'integer', description: '時間序列要回幾個點，預設 24，最多 80。點是從整期快照等間隔抽的（一定含頭尾），不是只取最後幾筆' } } } },
+    { name: 'get_boost_table',
+      description: '火倍率對照表（＝站上計算中心 EP 精算頁下方那張「各火數效率比較」）。同一組參數下，一次回出火 0/1/2/3/5/7/10 '
+        + '各自的單局活動P、每火活動P（省體力指標）與每小時活動P（省時間指標），並標出每火效率最高的檔位。'
+        + '使用者問「該吃幾火」「吃 10 火划算嗎」「不吃火跟吃火差多少」「火倍率表」時用。'
+        + '**這是這組參數下所有火數的完整對照，不是取樣——不要改用多次 calc_event_points 逐個火數去拼。**'
+        + '參數省略就沿用使用者在計算中心的共用設定；要比較不同情境時才明確帶入。',
+      input_schema: { type: 'object', properties: {
+        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '場次類型：solo=單人、auto=自動、multi=協力、cheer=應援（Cheerful Carnival）' },
+        song_id: { type: 'integer', description: '歌曲 id（可用 get_songs 或 song_efficiency 查）。不給就用畫面上選的那首' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度：E/N/H/X/M/A＝EASY/NORMAL/HARD/EXPERT/MASTER/APPEND。指定的難度沒有譜面係數時會自動退回 master→expert→…，回傳的 difficulty 會標明實際用了哪一個' },
+        power: { type: 'number', description: '隊伍綜合力（總合力，例如 250000）' },
+        bonus: { type: 'number', description: '活動加成，單位 %（例如 250 代表 +250%）' },
+        skill: { type: 'number', description: '平均技能倍率（實效值，例如 2.5）。可先用 calc_skill_multiplier 從各卡技能%算出來' },
+        s6: { type: 'number', description: '第 6 技能欄（S6）倍率' },
+        life: { type: 'number', description: '結束時剩餘 Life，只有 cheer 模式會用到（影響 1.15～1.35 的存活加成）' },
+        score: { type: 'number', description: '直接指定歌曲分數。給了就不用歌曲係數推算' },
+        event_rate: { type: 'number', description: '歌曲活動倍率 %（沒指定 song_id 時才會用到，預設 100）' },
+        all_levels: { type: 'boolean', description: '預設 false＝只列玩家實際會用的 0/1/2/3/5/7/10 這七檔（與站上畫面相同）；true＝把 0～10 十一檔全部列出' } } } },
+    { name: 'get_border_matrix',
+      description: '歷期 × 各段位的榜線矩陣（期數當列、段位當欄）。用來回答「T10000 這半年漲多少」「同樣 8.25 天的馬拉松，T20000 都落在哪」「這期要衝到幾分才穩」這種跨期比較。'
+        + '涵蓋段位比 get_history_borders 廣：那支只到 T5000（好處是有 T1～T90），這支再補上 T10000／T20000／T30000／T40000／T50000／T80000／T100000／T150000／T200000，'
+        + '兩份資料源會自動互補（重疊段位實測逐位相同）。'
+        + 'recent／offset 取的是依期數新到舊的**連續一段完整排序，不是取樣**，所以不要用多次小批次去拼——直接把 recent 調大（上限 30 期），要更早的期數就用 offset 往後翻。'
+        + '每一期都附活動型態、天數、團體、屬性與 banner 角色，解讀期與期的差異前先看這些欄位。'
+        + '成本：一期一個 API 請求（已結算的期數同一次對話內有快取），30 期大約要幾秒。',
+      input_schema: { type: 'object', properties: {
+        event_ids: { type: 'array', items: { type: 'integer' }, description: '指定要哪幾期（活動 id），最多 30 期。給了就忽略 recent／offset／include_running。' },
+        recent: { type: 'integer', description: '最近 N 期已結算的活動，預設 12，上限 30。這是完整排序的連續 N 期，不是取樣。' },
+        offset: { type: 'integer', description: '搭配 recent 往更早的期數翻頁：跳過最新的 N 期再取（預設 0）。例如 recent=12、offset=12 就是第 13～24 新的期數。' },
+        tiers: { type: 'array', items: { type: 'integer' }, description: '要哪些段位（填名次數字，不要寫 "T100"）。預設 [100,500,1000,2000,5000,10000,20000,50000,100000]，最多 14 個。'
+          + '可用值：1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000,10000,20000,30000,40000,50000,80000,100000,150000,200000。不在清單上的會直接回錯誤。' },
+        include_running: { type: 'boolean', description: '是否把「進行中、尚未結算」的當期也算進去（預設 false）。設 true 時那一列的 is_final 會是 false，數字是此刻的即時榜線而不是終線。' } } } },
+    { name: 'get_border_timeseries',
+      description: '單一段位的榜線時間走勢：抽樣後的（時間, 分數）序列、實測時速、量測跨距，以及依此外推的終線。'
+        + '資料是本站自己記的公用時序（GitHub Actions 每 30 分鐘觸發一次，每次在同一個 job 內每 5 分鐘取樣、連記 12 筆，'
+        + '所以原始間隔中位數約 5 分鐘；台服官方 API 沒有任何歷史端點），當期再併入這台瀏覽器輪詢時存下的快照。'
+        + '要「各段位現在多少、預測終線多少」的橫向比較請用 get_borders；這支是單一段位的縱向走勢 —— '
+        + '什麼時候加速、什麼時候停滯、每小時多少 P、整段平均與近期速度差多少。'
+        + '回傳的點是「整段活動等距抽樣」而不是最近 N 筆、也不是隨機取樣，總點數與抽樣間隔都會一併回報；'
+        + '想要更密就把 points 調大（上限 120），不要用多次小批次呼叫拼湊。'
+        + '⚠ 查過去期數要下載那一期的整份時序（#176 這種 12 天 World Link 期約 3MB），第一次呼叫可能要幾秒，'
+        + '同一次對話之後有快取。公用時序從第 175 期才開始記錄，更早的期數只有終線（用 get_history_borders）。'
+        + 'World Link 的章節榜不在這支裡（那是各章獨立的榜），看章節走勢用 get_wl_status。',
+      input_schema: { type: 'object', properties: {
+        tier: { type: 'integer', description: '段位（榜線名次），例如 100 / 1000 / 5000 / 100000。不在該期段位清單裡會回錯誤並附上可用段位' },
+        event_id: { type: 'integer', description: '活動期數 id；省略＝當期（已開始的最新一期）' },
+        points: { type: 'integer', description: '要回幾個資料點，預設 24，上限 120。整段等距抽樣，一定包含最早與最新的那一筆' },
+        window_hours: { type: 'number', description: '「近期時速」的窗口小時數，預設 6，上限 72。窗口內跨距不足半小時（快照有空洞時會發生）會自動退回整段，實際跨距看回傳的 measured_recent.span_h' },
+      }, required: ['tier'] } },
+    { name: 'get_chart_consts',
+      description: '查譜面「定數」（非官方難易度表 pentatonic V31，AP 基準，MASTER／APPEND／EXPERT 共 885 張譜面、706 首曲子）。'
+        + '定數不是遊戲內等級：遊戲只給整數 Lv（例如 Lv32），定數是社群把同一個 Lv 內再細分到小數的難度排名（例如 32.9+）。'
+        + '回傳兩個都給（level ＝ 遊戲內等級、const_value／const_label ＝ 難易度表定數），不要拿其中一個當另一個講。'
+        + '可依曲名（日文原名或社群中文譯名）、曲目 id、難度、定數區間、指定定數、遊戲內等級、台服／日服限定來篩。'
+        + '使用者問「某某歌的定數多少」「32.5 有哪些譜面」「33 以上的 APPEND 有哪些」「台服最硬的譜面是哪張」'
+        + '「這首 MASTER 跟 APPEND 差多少」時用。'
+        + '這支只查定數表本身、不看使用者成績；要算他自己的 B30 或「下一張該打哪首」請改用 get_b30。',
+      input_schema: { type: 'object', properties: {
+        q: { type: 'string', description: '曲名關鍵字，比對日文原曲名與社群中文譯名（大小寫、空白都會忽略）。'
+          + '請用日文原名（ヒバナ、初音ミクの激唱）或中文譯名（火花、初音未來的激唱），羅馬拼音查不到。'
+          + '一首歌會同時回它的 MASTER／APPEND／EXPERT 各一列。' },
+        song_id: { type: 'integer', description: '曲目 id（與 get_songs 的 id 相同）。知道 id 就用這個，比曲名精準。' },
+        difficulty: { type: 'string', enum: ['master', 'append', 'expert'],
+          description: '只看某個難度。難易度表只收這三個難度，EASY／NORMAL／HARD 沒有定數（給了會回錯誤）。' },
+        const_eq: { type: 'string', description: '列出某個定數的所有譜面，字串格式。'
+          + '「31.5」＝整帶（31.5、31.5+、31.5++ 都算）；「31.5+」或「32.9++」＝只要那一種寫法。'
+          + '想要區間請改用 const_min／const_max。' },
+        const_min: { type: 'number', description: '定數下限（含）。比較的是含「+」的實際值：31.5+ 算 31.55。' },
+        const_max: { type: 'number', description: '定數上限（含）。' },
+        level: { type: 'integer', description: '遊戲內等級（整數 Lv，表內範圍 24～38），不是定數。'
+          + '「32 級的譜面」用這個；「定數 32 的譜面」要用 const_eq。' },
+        level_min: { type: 'integer', description: '遊戲內等級下限（含）。' },
+        level_max: { type: 'integer', description: '遊戲內等級上限（含）。' },
+        pool: { type: 'string', enum: ['all', 'tw', 'jp'], description: '曲庫範圍，預設 all。'
+          + 'tw＝只看台服打得到的（排除日服限定曲）、jp＝只看日服限定曲。使用者問的是台服的事就帶 tw。' },
+        sort: { type: 'string', enum: ['const_desc', 'const_asc', 'level_desc', 'level_asc', 'song_id'],
+          description: '排序，預設 const_desc（定數由高到低）。同分時定數／等級低的排前面。' },
+        limit: { type: 'integer', description: '要回幾筆，最多 100，預設 20。'
+          + '這是全部符合條件的譜面完整排序後的前 N 筆，不是取樣——不要用多次小批次去拼湊，'
+          + '回傳的 total 就是符合條件的總數。' },
+        offset: { type: 'integer', description: '從第幾筆開始（0 起算），配合 limit 翻頁；has_more=true 代表後面還有。' } } } },
+    { name: 'get_gacha_points',
+      description: '招募點數（BPT）保底＋逐池抽卡成本。三件事一起回：'
+        + '(1) 點數換算規則——付費（有償）水晶 1 點/抽、免費（無償）水晶與招募票券 0.5 點/抽、七彩通行證的免費抽 0 點，'
+        + '取自官方 master data gachaBonusPoints.json；'
+        + '(2) 保底試算——依現有點數＋手上的付費水晶／免費水晶／招募票券，算出各門檻（一般池 50 點＝未持有的常駐 ★4、'
+        + '100 點＝該池 PU ★4；Recollection Festival 這類特殊池另有 150／200 自選檔）還差幾點、還要再抽幾次、要多少石；'
+        + '(3) 逐池成本表——該池官方公告的每一種抽法：單抽／十連各要多少石或幾張券、哪幾種只吃付費水晶不能用無償石、'
+        + '七彩通行證的每日／每週免費抽、十連的 ★3 保底、每種抽法各累積多少招募點數，以及該池天井要幾張貼紙、'
+        + '幾張貼紙交換券可以折抵。'
+        + '使用者問「招募點數還差多少」「50／100 點保底是什麼」「這池怎麼抽最省」「半價十連要多少付費石」'
+        + '「通行證每天有幾抽免費」「這池天井幾張貼紙」時用這支。'
+        + '**與 gacha_odds 的分工**：gacha_odds 算的是機率（預算內至少中 1 張的機率、期望抽數、距 300 抽天井還要多少石），'
+        + '只認「300 抽／生日池 100 抽」這兩個通則；這支不算機率，改回「這一池官方實際寫了哪些抽法、各要多少資源、'
+        + '各給多少招募點數」以及招募點數保底的逐檔缺口。問機率用 gacha_odds，問成本與點數保底用這支；'
+        + '兩者都問就兩支都叫。想「模擬實際抽出什麼卡」請改去 gachasim 頁。'
+        + '不指定卡池時回「現在進行中」的卡池；pools 是完整清單依開始時間新→舊排序後的前 N 筆，不是取樣，'
+        + '要看更多請用 limit／offset，不要用多次小批次去拼湊。'
+        + '注意：第一次呼叫要下載官方 master data（gachas.json 約 4.4 MB），可能要好幾秒；之後有快取就快了。',
+      input_schema: { type: 'object', properties: {
+        gacha_id: { type: 'integer', description: '卡池編號。台服 master 只留現行與近期卡池（含已datamine 到的未來檔期），太舊的池查不到。' },
+        gacha_query: { type: 'string', description: '卡池名稱關鍵字（例如「生日」「通行證」）。與 gacha_id 擇一給，兩個都給時以 gacha_id 為準。都不給就回現在進行中的全部卡池。' },
+        include_pools: { type: 'boolean', description: '是否要逐池成本表，預設 true。只想算招募點數保底、不看卡池成本時給 false，可以省掉 4.4 MB 的 gachas.json 下載。' },
+        limit: { type: 'integer', description: '要回幾個卡池，最多 20，預設 4。這是符合條件的完整清單（pools_total 是總數）依開始時間新→舊排序後的前 N 筆，不是取樣。' },
+        offset: { type: 'integer', description: '從第幾個卡池開始，用來翻頁看更後面的。' },
+        current_points: { type: 'number', description: '目前已累積的招募點數，可帶 0.5。沒給就當 0。' },
+        paid_crystals: { type: 'integer', description: '手上的付費（有償）水晶數。沒給就當 0。每 300 顆 1 抽、每抽 1 點。' },
+        free_crystals: { type: 'integer', description: '手上的免費（無償）水晶數。沒給就當 0。每 300 顆 1 抽、每抽只有 0.5 點。使用者只說「我有 N 顆石」而沒分有償無償時，通常填這裡。' },
+        tickets: { type: 'integer', description: '手上的招募票券張數（1 張＝1 抽＝0.5 點）。注意這不是「招募貼紙交換券」——那是換天井的，不是抽卡用的。' },
+        pool_mode: { type: 'string', enum: ['normal', 'rf'], description: '沒有專屬檔位資料時要套哪組通則檔位。normal（預設）＝常駐／一般池的 50／100 兩檔；rf＝Recollection Festival 這類特殊池的 50／100／150／200 四檔（含自選）。指定的卡池在 master 裡有自己的檔位群組時，會以 master 為準並忽略這個參數。' },
+        tier_group_id: { type: 'integer', description: '直接指定 master 的 gachaBonusItemReceivableRewards groupId 來取檔位表。一般不用給——只有要查某個特殊池的原始檔位設定時才用。' } } } },
+    { name: 'get_pass_value',
+      description: '月卡／通行證的「攤提後 CP 值」與官網 vs App 比價。'
+        + '＝站上「儲值分析 → 月卡·通行證」與「CP 排行 → 官網商店 vs App 商店比價」的同一套算法。'
+        + '使用者問「月卡值不值得買」「七彩通行證划算嗎」「BASIC 還是 PRECIOUS」「高階任務通行證要不要買」'
+        + '「幾天回本」「官網儲值比較划算嗎」「MyCard／GamePay 多送多少」時用這支。'
+        + '兩件事：(1) 把通行證「每日領取」的無償水晶攤提進總價值，換算石/元、跟基準線（App 常駐最佳水晶包）比，'
+        + '給大賺／划算／看需求判定，並算出「要領幾天才回本」；(2) 官網商店同價位比 App 多送多少免費水晶。'
+        + '回傳的是台服目前販售中「全部」月卡／通行證的完整排序（約 18 張，預設一次給滿），不是取樣，不要用多次小批次拼湊。'
+        + '注意：月卡在 master 幾乎都只有 9999 佔位價，price_twd 會是 null——先看該筆的 web_voucher（官網兌換券版價格已知），'
+        + '或請使用者講出商店實售價後用 price_overrides 重算，不要自己編價格。'
+        + '**只做試算與比價，不會也不能執行任何購買、付款或交易。**'
+        + '想看水晶包／優惠組合的完整清單用 get_shop_items；想算「湊到 N 抽最少花多少錢」用 shop_recommend。',
+      input_schema: { type: 'object', properties: {
+        section: { type: 'string', enum: ['all', 'pass', 'compare'],
+          description: '要哪一段。all＝通行證攤提＋官網比價（預設）；pass＝只要通行證攤提；compare＝只要官網 vs App 比價。使用者只問其中一件事時指定，可讓回傳小一半。' },
+        price_overrides: { type: 'object',
+          description: '自填售價，格式 {商品id: 台幣價}，例如 {"67": 170}。用在 master 只有佔位價（price_twd 為 null）的月卡：使用者講出商店實際售價後帶進來，該筆就會算出石/元與回本天數。id 用回傳裡的 id 欄位（App 商品是數字、官網商品是字串）。' },
+        include_ended: { type: 'boolean',
+          description: '是否把已結束販售的通行證也列出來，預設 false（只列現在買得到的）。使用者問「以前那張多少錢」「舊版月卡」時給 true。' },
+        include_ticket_value: { type: 'boolean',
+          description: '是否把招募票券以 300 石/抽折算進總價值，預設 true。正在集 300 抽天井貼紙的人建議給 false——票券抽卡通常不累積天井。' },
+        include_material_value: { type: 'boolean',
+          description: '是否把心願碎片等道具以商店價折算進總價值，預設 true。只想看「純水晶」的划算程度時給 false（任務通行證的心願碎片佔比很大，關掉數字會明顯下降）。' },
+        limit: { type: 'integer', description: '通行證最多回幾筆，預設 30（等於全部給滿，目前販售中約 18 張），上限 40。' },
+        offset: { type: 'integer', description: '通行證分頁起點，預設 0。搭配 limit 用；預設就已回滿，正常不需要動。' } } } },
+    { name: 'get_player_career',
+      description: '玩家生涯紀錄（等同站上 analysis 頁的「生涯紀錄」分頁）：逐期掃描過去各期活動的最終前 100 名名單，'
+        + '算出這位玩家歷屆入榜次數、最佳／平均／中位名次、最高分，以及每一期的名次與相對「上一次入榜」的進退。'
+        + '使用者問「我以前跑過幾期」「我最好排到第幾名」「這個人生涯戰績如何」「他上一期第幾名」時用這支。'
+        + '⚠ 耗時：台服沒有「某玩家歷屆名次」的端點，只能一期打一次 /event/{id}/top100（每期約 370 KB），一次併發 6 個；'
+        + '預設只掃最近 20 期（約 3～6 秒），掃到上限 60 期會超過 10 秒。'
+        + '不要用多次小批次自己拼：要看更早的期數請一次把 limit／offset 給足（同一次對話裡掃過的期數有快取，重複不會再打）。'
+        + 'records 是掃描範圍內「全部」的入榜紀錄，由新到舊完整列出，不是取樣。'
+        + '只涵蓋各期前 100 名的公開名單，沒進前百的期數查不到，所以「沒入榜」不等於「沒打」。',
+      input_schema: { type: 'object', properties: {
+        uid: { type: 'string', description: '玩家 ID（19 位數字字串）。省略＝使用者自己綁定的 uid' },
+        limit: { type: 'integer', description: '往回掃最近幾期已結算活動，預設 20，上限 60。每多一期就多打一次外部請求，非必要不要調高' },
+        offset: { type: 'integer', description: '跳過最近幾期再開始掃，預設 0。要看更早的區段時用（limit=20、offset=20 就是第 21～40 近的已結算期數）' },
+        event_id: { type: 'integer', description: '只查指定的某一期（例如 160）。給了這個就忽略 limit／offset，只打一次請求' } } } },
+    { name: 'get_wl_exchange',
+      description: 'World Link 交換所規劃（＝站上「榜線資料庫」頁下半部那一區）：某一屆 WL 的綜合交換所與各章節交換所有哪些品項、單價幾徽章、最多能換幾個，以及「全部換滿要多少徽章」。'
+        + '使用者問「WL3 交換所換滿要多少徽章」「章節交換所有什麼」「心願小瓶子多少錢」「徽章不夠該先換什麼」「這屆幾章、總需求差多少」時用這支。'
+        + '回傳的是該屆完整的品項清單（綜合 13 項＋每章 5 項），不是取樣，不要分多次小批次拼。'
+        + '重點：章節數各屆不同（WL2 是 OC 團 4 章／V 家 6 章，WL3 是 5 章、3.2 版 6 章），總需求會跟著變，'
+        + '而且章節徽章與綜合徽章不通用（綜合交換所只吃由章節徽章換來的綜合徽章），回傳的 note 有寫清楚，要轉述給使用者。'
+        + '資料來自 good果汁的「WL 交換所規劃表」，由站上每日同步；終章只有一個交換所、不需要規劃，所以沒有終章的資料。',
+      input_schema: { type: 'object', properties: {
+        round: { type: 'string', description: '哪一屆，「WL2」或「WL3」（給 "3" 或 "wl3" 也認得）。省略＝最新一屆。目前只有 WL2、WL3 兩屆有表，給別的會回 available_rounds。' },
+        chapter: { type: 'integer', description: '只回某一區：1～6＝該章節交換所，0＝綜合交換所。省略＝綜合＋全部章節都回。注意這只縮小回傳的區塊，totals 一律是整屆換滿的數字。' },
+        chapter_count: { type: 'integer', description: '這屆實際有幾章（決定總需求要把幾個章節交換所算進去）。省略時用該屆的預設值：WL2＝4（OC 團）、WL3＝5。V 家或 3.2 版那種 6 章的情況要明確給 6。表上固定列 6 個章節交換所，超出的會標成 counted:false 且不計入 totals。' },
+      } } },
     { name: 'list_my_watches',
       description: '列出使用者目前的偵測訂閱，以及最近幾則已觸發的通知。使用者問「我訂了什麼」「有沒有通知」時用。需要已登入。',
       input_schema: { type: 'object', properties: {
@@ -8599,6 +8836,2124 @@ class Component extends DCLogic {
               ? '　⚠ 這是終章：官方沒公開完整規則，這裡採「全卡都吃 others 檔、不限團體、限定卡照 master 逐條計 +20」的推估，'
                 + '經典版 WL 頁對終章是不算限定卡的，兩邊數字會差一截，回答時要講明是推估值。'
               : ''),
+        };
+      }
+
+      case 'browse_cards': {
+        /* 為什麼不是把 get_card_skills 加參數就好：那支是「指定幾張卡、看它的逐級技能數值」，
+           而使用者在卡庫頁真正在做的是「先篩再排」——排序基準是綜合力、篩選軸是技能類型與取得類別，
+           回傳欄位與分頁需求都不一樣，硬塞成一支只會兩邊都不好用。 */
+        await this.loadCards();
+        const idx = this.state.rateCards || [];
+        if (!idx.length) return { error: '卡片索引尚未載入（' + (this.state.rateErr || '請先開啟「收集率」頁') + '）' };
+        const chars = this.state.rateChars || [];
+        if (!chars.length) return { error: '角色索引尚未載入，無法判斷團體，請先開啟「收集率」頁' };
+
+        /* 技能與綜合力只有官方 master 有：cards-index.js 為了壓到 100 KB 只留了圖鑑欄位。
+           載入方式照抄 get_card_skills，並刻意共用同一個 _cardSkillCache——
+           同一次對話裡兩支工具只會抓一次 cards.json / skills.json。 */
+        const DB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+        if (!this._cardSkillCache) {
+          try {
+            const [mc, ms] = await Promise.all([
+              fetch(DB + '/cards.json').then(r => r.json()),
+              fetch(DB + '/skills.json').then(r => r.json()),
+            ]);
+            const byId = {}; ms.forEach(k => { byId[k.id] = k; });
+            this._cardSkillCache = { cards: mc, skills: byId };
+          } catch (e) { return { error: '官方卡片／技能資料載入失敗：' + (e.message || '') }; }
+        }
+        const { cards: mcards, skills } = this._cardSkillCache;
+        if (!mcards || !mcards.length) return { error: '官方卡片資料是空的，取不到技能與綜合力' };
+        const mById = {}; mcards.forEach(c => { mById[c.id] = c; });
+
+        /* 分類表照抄 core.js 的 CardModule.SKILL_CAT —— 那份就是站上卡庫頁在用的分類，
+           照抄才不會出現「AI 講的類型和卡庫頁標的不一樣」。它掛在 CardModule 底下，
+           而 ensureEngine() 取得到的清單裡沒有 CardModule，所以只能複製不能引用。
+           skills.json 目前只到 24（沒有 20／21）；表以外的 skillId 歸「其他」，
+           不像 core.js 那樣預設塞進「分數提升」——免得日後的新技能被默默講成大分卡。 */
+        const SKILL_CAT = {
+          1: 'score', 2: 'score', 3: 'score', 4: 'score',
+          5: 'judge', 6: 'judge', 7: 'judge',
+          8: 'heal', 9: 'heal', 10: 'heal',
+          11: 'perfect', 12: 'cfes_life', 13: 'good', 14: 'birthday',
+          15: 'unit', 16: 'unit', 17: 'unit', 18: 'unit', 19: 'unit',
+          22: 'bfes_char', 23: 'bfes_ref', 24: 'bfes_vs',
+        };
+        const CAT_NAME = {
+          score: '分數提升', judge: '判定強化', heal: '體力回復', perfect: 'P分',
+          cfes_life: '七彩血分', good: '七彩GOOD以上', birthday: '生日', unit: '團分',
+          bfes_char: '絢爛角色', bfes_ref: '絢爛吸技', bfes_vs: '絢爛虛擬', other: '其他',
+        };
+        // 玩家講的是圈內叫法（奶卡／判卡／大分／吸技），比對不到就回錯誤並附完整清單
+        const CAT_ALIAS = {
+          score: ['score', '分數提升', '大分', '大分卡', '一般分數加成', '普通分'],
+          judge: ['judge', '判定強化', '判卡', '判分', 'bad轉perfect', '判定'],
+          heal: ['heal', '體力回復', '奶卡', '回血', '治癒', '回復', 'life'],
+          perfect: ['perfect', 'p分', 'p分卡', 'perfect分數加成', 'p卡'],
+          cfes_life: ['cfes_life', '七彩血分', '血分', 'cfes血分', 'cfes', '體力型'],
+          good: ['good', '七彩good以上', 'good以上', 'keep', '判定保持'],
+          birthday: ['birthday', '生日', '生日卡', 'bd'],
+          unit: ['unit', '團分', '同團加分', '同團'],
+          bfes_char: ['bfes_char', '絢爛角色', 'bfes角色', 'bloomfes角色', '角色等級型'],
+          bfes_ref: ['bfes_ref', '絢爛吸技', '吸技', 'bfes吸技', '吸取隊友'],
+          bfes_vs: ['bfes_vs', '絢爛虛擬', 'bfes虛擬', '虛擬', '外團型', '異團型'],
+        };
+
+        const ATTR = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+        const nz = v => String(v == null ? '' : v).trim().toLowerCase();
+        const uOf = {}, fullOf = {};
+        chars.forEach(c => { uOf[c[0]] = this.UNIT_OF[c[2]] || 'vs'; fullOf[c[0]] = c[1]; });
+        // 有支援團的 V 家卡要算進支援團，和收集率頁／get_missing_cards 同一套規則
+        const unitOf = c => (c[5] >= 0 ? this.UNIT_OF[c[5]] : uOf[c[1]]) || 'vs';
+
+        /* ---- 參數正規化（與 get_missing_cards 同一套）：
+               比對不到一律回錯誤，不要靜靜當成「不篩」而回整本圖鑑 ---- */
+        let cat = null;
+        if (nz(a.skill_type) && nz(a.skill_type) !== 'all' && nz(a.skill_type) !== '全部') {
+          const q = nz(a.skill_type).replace(/[\s★☆*（）()]/g, '');
+          cat = Object.keys(CAT_ALIAS).find(k => k === q
+            || nz(CAT_NAME[k]).replace(/\s/g, '') === q
+            || (CAT_ALIAS[k] || []).some(x => nz(x) === q)) || null;
+          if (!cat) return { error: '不認得技能類型「' + a.skill_type + '」',
+            available_skill_types: Object.keys(CAT_NAME).map(k => k + '（' + CAT_NAME[k] + '）') };
+        }
+
+        let unit = null;
+        if (nz(a.unit) && nz(a.unit) !== 'all' && nz(a.unit) !== '全部') {
+          const q = nz(a.unit).replace(/[\s／/]/g, '');
+          const UAL = {
+            ln: ['ln', 'leoneed', 'leo/need', '萊歐尼德', '萊歐'],
+            mmj: ['mmj', 'moremorejump', 'morejump', '摩摩'],
+            vbs: ['vbs', 'vividbadsquad', 'vivid'],
+            wxs: ['wxs', 'ws', 'wonderlands', 'wonderlandsxshowtime', 'wonderlands×showtime', 'ワンダショ'],
+            n25: ['n25', '25', '25時', 'ニーゴ', 'niigo', '25時、ナイトコードで。'],
+            vs: ['vs', 'virtualsinger', 'vsinger', '虛擬歌手', '無副團', 'piapro', 'v家'],
+          };
+          unit = Object.keys(this.UNITS).find(k => {
+            if (k === q) return true;
+            const n = nz((this.UNITS[k] || {}).n).replace(/[\s／/]/g, '');
+            if (n === q || (q.length >= 2 && n.indexOf(q) >= 0)) return true;
+            return (UAL[k] || []).some(x => nz(x).replace(/[\s／/]/g, '') === q);
+          }) || null;
+          if (!unit) return { error: '不認得團體「' + a.unit + '」',
+            available_units: Object.keys(this.UNITS).map(k => k + '（' + this.UNITS[k].n + '）') };
+        }
+
+        let rarity = null;
+        if (nz(a.rarity) && nz(a.rarity) !== 'all' && nz(a.rarity) !== '全部') {
+          const q = nz(a.rarity).replace(/[★☆*\s]/g, '').replace(/星$/, '');
+          const RM = { '1': 1, '一': 1, '2': 2, '二': 2, '3': 3, '三': 3, '4': 4, '四': 4,
+                       '9': 9, '生日': 9, '生日卡': 9, '生日限定': 9, 'birthday': 9, 'bd': 9 };
+          rarity = RM[q] == null ? null : RM[q];
+          if (rarity == null) return { error: '不認得稀有度「' + a.rarity + '」',
+            available_rarities: this.RARITY.map(r => r[1]) };
+        }
+
+        let supply = null;
+        if (nz(a.supply) && nz(a.supply) !== 'all' && nz(a.supply) !== '全部') {
+          const q = nz(a.supply);
+          const SUPPLY_CODE = ['normal', 'birthday', 'term_limited', 'colorful_festival_limited',
+                               'bloom_festival_limited', 'unit_event_limited', 'collaboration_limited'];
+          let i = this.SUPPLYN.findIndex(nm => nz(nm) === q);
+          if (i < 0) i = SUPPLY_CODE.findIndex(cd => cd === q);
+          if (i < 0) i = this.SUPPLYN.findIndex(nm => q.length >= 2 && nz(nm).indexOf(q) >= 0);
+          if (i < 0) return { error: '不認得取得類別「' + a.supply + '」', available_supplies: this.SUPPLYN.slice() };
+          supply = i;
+        }
+
+        let charId = null;
+        if (a.character != null && String(a.character).trim() !== '') {
+          const t = String(a.character).trim();
+          if (/^\d+$/.test(t)) charId = +t;
+          else {
+            if (this.CHARA_ID[t]) charId = this.CHARA_ID[t];
+            if (!charId) { const h = chars.find(c => c[1] === t) || chars.find(c => String(c[1]).indexOf(t) >= 0); if (h) charId = h[0]; }
+            if (!charId) { const k = Object.keys(this.CHARA_ID).find(n => t.indexOf(n) >= 0); if (k) charId = this.CHARA_ID[k]; }
+          }
+          if (!charId || !chars.some(c => c[0] === charId)) return { error: '不認得角色「' + t + '」',
+            available_characters: chars.map(c => c[1]) };
+        }
+
+        let attr = null;
+        if (nz(a.attribute) && nz(a.attribute) !== 'all' && nz(a.attribute) !== '全部') {
+          const q = nz(a.attribute);
+          let i = ATTR.indexOf(q);
+          if (i < 0) i = ATTR.findIndex(x => nz(this.ATTR_ZH[x]) === q);
+          if (i < 0) return { error: '不認得屬性「' + a.attribute + '」',
+            available_attributes: ATTR.map(x => this.ATTR_ZH[x]) };
+          attr = i;
+        }
+
+        /* 刻意不提供「依 cards-index 卡池旗標篩選」的參數：那個旗標會過期（理由見下面 live_pools），
+           開出來只會被當成「抽不抽得到」誤用。要問抽不抽得到一律走 live_pools。 */
+        const LIVE = ['off', 'annotate', 'only'].indexOf(nz(a.live_pools)) >= 0 ? nz(a.live_pools) : 'off';
+
+        /* only_owned 讀的是「收集率」頁的手動勾選（localStorage）。
+           loadCards() 只有真的去載卡片那一次才會順便 ownLoad()，卡片已在記憶體時要自己補讀，
+           否則 ownSet() 會回一個空 Set，把「還沒讀持有清單」誤判成「一張都沒有」。 */
+        if (!this._own) this.ownLoad();
+        const own = this.ownSet();
+        const onlyOwned = !!a.only_owned;
+        if (onlyOwned && !own.size) return { error: '「收集率」頁一張都還沒勾選，只看持有卡會是空的。'
+          + '持有清單只存在這台瀏覽器（公開 API 抓不到完整持有），請先去勾，或把 only_owned 拿掉。' };
+
+        /* ---- 現在正開著的卡池（live_pools ≠ off 才抓）----
+           為什麼要另外抓 gachas.json 而不是用 cards-index 的「卡池可得」旗標：
+           那個旗標是建置時掃 gachas.json 算的，而 gachas.json 只是一份約 70 個池的「滾動視窗」，
+           不是完整歷史 —— 池輪出視窗後旗標就再也不會被補回來。實測 BLOOM FES 的 12 張卡
+           在索引裡全部標 false，但它們現在確實在 gachas.json 的 gachaDetails 裡。
+           所以「現在抽不抽得到」只能靠現抓，旗標只能當弱參考。
+           代價是 gachas.json 約 4.5 MB，所以預設不抓，並且抓到就快取 30 分鐘。 */
+        let live = null;
+        if (LIVE !== 'off') {
+          const fresh = this._gachaLive && (Date.now() - this._gachaLive.at < 1800000);
+          if (!fresh) {
+            try {
+              const gs = await fetch(DB + '/gachas.json').then(r => r.json());
+              const now = Date.now(), byCard = {};
+              (gs || []).forEach(g => {
+                const st = +g.startAt || 0, en = +g.endAt || 0;
+                if (!(st <= now && now <= en)) return;
+                (g.gachaDetails || []).forEach(d => {
+                  if (!d.cardId) return;
+                  (byCard[d.cardId] = byCard[d.cardId] || []).push({ name: g.name || ('#' + g.id), type: g.gachaType || '', end: en });
+                });
+              });
+              this._gachaLive = { at: Date.now(), byCard: byCard, pools: (gs || []).filter(g => (+g.startAt || 0) <= now && now <= (+g.endAt || 0)).length };
+            } catch (e) { return { error: '卡池資料載入失敗，無法判斷現在抽不抽得到：' + (e.message || '') }; }
+          }
+          live = this._gachaLive;
+        }
+
+        /* Lv.4 技能% 的取法與 get_card_skills 同一套規則：base＝保底值、max＝條件拉滿值。
+           逐級明細（Lv.1～4）仍請用 get_card_skills，這裡只回 Lv.4 兩個數，避免一次列 20 張就爆掉。
+           只取第一個效果會低估的組合：
+             score_up + score_up_character_rank  110% 起，角色等級每 2 級 +1%，滿級 +50 → 160%
+             score_up + score_up_unit_count      90% 起，每 1 種外團 +30%，最多 2 種 → 150%
+             score_up + skillEnhance(同團)       100% 起，每位同團 +10%、全員同團再 +10 → 150%
+             score_up_condition_life / _keep     整串本身就是完整值，第一條是拉滿、最後一條是保底 */
+        const skillOf = card => {
+          const sk = card && skills[card.skillId];
+          if (!sk) return null;
+          const effs = sk.skillEffects || [];
+          const of = t => effs.filter(e => (e.skillEffectType || '') === t);
+          const at = (e, lv) => { const d = (e && e.skillEffectDetails) || [];
+            const f = d.find(x => x.level === lv) || d[d.length - 1]; return f ? +f.activateEffectValue : 0; };
+          const durOf = e => { const d = (e && e.skillEffectDetails) || [];
+            const f = d.find(x => x.level === 4) || d[d.length - 1]; return f ? f.activateEffectDuration : null; };
+          const life = of('score_up_condition_life'), keep = of('score_up_keep');
+          const plain = of('score_up'), rank = of('score_up_character_rank');
+          const ucnt = of('score_up_unit_count'), ref = of('other_member_score_up_reference_rate');
+          const enh = effs.map(e => e.skillEnhance).find(Boolean);
+          let baseEff = null, maxEff = null, add = 0, note = '';
+          if (life.length || keep.length) {
+            const arr = life.length ? life : keep;
+            maxEff = arr[0]; baseEff = arr[arr.length - 1];
+            note = life.length ? '體力越高越接近上限（協力滿血可視為上限）' : '判定保持 GOOD 以上才是上限值';
+          } else if (plain.length) {
+            baseEff = plain[0]; maxEff = plain[0];
+            if (enh && /sub_unit_score_up/.test(enh.skillEnhanceType || '')) {
+              const per = +enh.activateEffectValue || 0; add = per * 5;
+              note = '除自己外每 1 位同團成員 +' + per + '%（最多 4 位），全員同團再 +' + per + '%';
+            } else if (rank.length) {
+              add = Math.max.apply(null, rank.map(e => at(e, 4)));
+              note = '角色等級每 2 級 +1%，滿級達上限';
+            } else if (ucnt.length) {
+              add = Math.max.apply(null, ucnt.map(e => at(e, 4)));
+              note = '編組內每有 1 種外團 +30%，最多 2 種';
+            } else if (ref.length) {
+              note = '另外取隊上隨機 1 人技能上限的 ' + Math.max.apply(null, ref.map(e => at(e, 4))) + '%，實際值看隊伍';
+            }
+          } else return null;
+          const heal = of('life_recovery'), judge = of('judgment_up');
+          return {
+            base: at(baseEff, 4), max: at(maxEff, 4) + add, duration: durOf(baseEff), note: note,
+            heal: heal.length ? at(heal[0], 4) : null,
+            judge_dur: judge.length ? durOf(judge[0]) : null,
+          };
+        };
+
+        /* 滿級綜合力＝三維最後一級相加，★3／★4 再加特訓加成 ——
+           與站上「卡片技能庫」頁顯示的「最大綜合力」同一算法（core.js 的 CardModule.maxPower），
+           數字才對得上使用者眼前的畫面。刻意不含前後篇／專精／角色等級／區域道具／豆森：
+           那些是帳號狀態而不是卡本身的屬性，要含那些請用 calc_team_power。 */
+        const powerOf = card => {
+          const p = (card && card.cardParameters) || {};
+          const last = arr => (Array.isArray(arr) && arr.length ? (+arr[arr.length - 1] || 0) : 0);
+          let s = last(p.param1) + last(p.param2) + last(p.param3);
+          if (!s) return null;
+          if (card.cardRarityType === 'rarity_3' || card.cardRarityType === 'rarity_4') {
+            s += (card.specialTrainingPower1BonusFixed || 0)
+               + (card.specialTrainingPower2BonusFixed || 0)
+               + (card.specialTrainingPower3BonusFixed || 0);
+          }
+          return s;
+        };
+
+        /* 取得類別本身就是「這張卡走哪種池」的可靠答案（它是卡的固有屬性），
+           所以 gacha_status／availability 只看 supply 與稀有度，不摻那個會過期的卡池旗標。 */
+        const STATUS = ['permanent', 'birthday_only', 'limited_rerun', 'limited_rerun',
+                        'limited_rerun', 'limited_rerun', 'collab_limited'];
+        const AVAIL = [
+          '常駐，常駐池隨時抽得到',
+          '生日限定，只在該角色生日期間的生日池（每年生日會復刻）',
+          '期間限定，只有當期池或之後的復刻池',
+          '彩FES 限定，只在 Colorful Festival 池',
+          'BLOOM FES 限定，只在 Bloom Festival 池',
+          '團體活動限定，只在對應的團體活動池',
+          '聯動限定，聯動結束後不一定會再開',
+        ];
+        const statusOf = c => (c[2] === 1 ? 'not_from_gacha' : (STATUS[c[4]] || 'unknown'));
+        const availOf = c => (c[2] === 1 ? '★1 初始卡，不是抽的（新手／任務取得）'
+                                        : (AVAIL[c[4]] || '取得方式不明'));
+
+        /* ---- 篩選 ---- */
+        const minPw = a.min_power == null ? null : (+a.min_power || 0);
+        const rows = [];
+        let catInLibrary = 0;
+        idx.forEach(c => {
+          const m = mById[c[0]] || null;
+          const g = m ? (SKILL_CAT[m.skillId] || 'other') : null;
+          if (cat && g === cat) catInLibrary++;         // 用來分辨「條件寫錯」和「台服還沒實裝這種卡」
+          if (unit && unitOf(c) !== unit) return;
+          if (rarity != null && c[2] !== rarity) return;
+          if (supply != null && c[4] !== supply) return;
+          if (charId != null && c[1] !== charId) return;
+          if (attr != null && c[3] !== attr) return;
+          if (onlyOwned && !own.has(c[0])) return;
+          if (cat && g !== cat) return;
+          const pw = powerOf(m);
+          if (minPw != null && !(pw != null && pw >= minPw)) return;
+          const op = live ? (live.byCard[c[0]] || []) : null;
+          if (LIVE === 'only' && !(op && op.length)) return;
+          rows.push({ c: c, m: m, g: g, pw: pw, sk: skillOf(m), op: op });
+        });
+
+        /* ---- 排序：預設滿級綜合力由高到低。
+               綜合力／技能取不到值的卡（master 還沒收錄）一律沉到最後，
+               不要讓 null 排到第一名假裝自己是最強卡。 ---- */
+        const SORTS = ['power', 'skill', 'newest', 'oldest'];
+        const sort = SORTS.indexOf(nz(a.sort)) >= 0 ? nz(a.sort) : 'power';
+        const rel = x => (x.m && +x.m.releaseAt) || 0;
+        const pwv = x => (x.pw == null ? -1 : x.pw);
+        rows.sort((x, y) => {
+          if (sort === 'newest') return (rel(y) - rel(x)) || (y.c[0] - x.c[0]);
+          if (sort === 'oldest') return (rel(x) - rel(y)) || (x.c[0] - y.c[0]);
+          if (sort === 'skill') {
+            const sx = x.sk ? x.sk.max : -1, sy = y.sk ? y.sk.max : -1;
+            return (sy - sx) || (pwv(y) - pwv(x)) || (x.c[0] - y.c[0]);
+          }
+          return (pwv(y) - pwv(x)) || (x.c[0] - y.c[0]);
+        });
+
+        let lim = a.limit == null ? 20 : Math.round(+a.limit);
+        if (!(lim > 0)) lim = 20;                      // 0／負數／NaN 一律當沒給，不要縮成 1 張
+        const limit = Math.min(60, lim);
+        const offset = Math.max(0, a.offset == null ? 0 : Math.round(+a.offset) || 0);
+        const page = rows.slice(offset, offset + limit);
+
+        const RN = {}; this.RARITY.forEach(r => { RN[r[0]] = r[1]; });
+        const out = page.map(x => {
+          const c = x.c, sk = x.sk;
+          const o = {
+            card_id: c[0],
+            card_name: c[7] || '',
+            character: fullOf[c[1]] || this.chNameOf(c[1]),
+            unit: (this.UNITS[unitOf(c)] || {}).n || unitOf(c),
+            rarity: RN[c[2]] || String(c[2]),
+            attribute: this.ATTR_ZH[ATTR[c[3]]] || String(c[3]),
+            supply: this.SUPPLYN[c[4]] || '',
+            support_unit: c[5] >= 0 ? ((this.UNITS[this.UNIT_OF[c[5]]] || {}).n || null) : null,
+            power_max_level: x.pw,
+            skill_type: x.g ? CAT_NAME[x.g] : null,
+            skill_name: (x.m && x.m.cardSkillName) || null,
+            skill_base_percent: sk ? sk.base : null,
+            skill_max_percent: sk ? sk.max : null,
+            skill_duration_s: sk ? sk.duration : null,
+            gacha_status: statusOf(c),
+            availability: availOf(c),
+          };
+          if (sk && sk.note) o.skill_condition = sk.note;
+          if (sk && sk.heal != null) o.skill_heal_life = sk.heal;              // 回復量，單位＝體力點
+          if (sk && sk.judge_dur != null) o.judge_duration_s = sk.judge_dur;   // Bad 以上轉 PERFECT 的秒數
+          if (live) {
+            o.obtainable_now = !!(x.op && x.op.length);
+            if (x.op && x.op.length) o.open_pools = x.op.slice(0, 3).map(p => p.name);
+          }
+          if (own.size) o.owned = own.has(c[0]);
+          return o;
+        });
+
+        const cnt = keyf => { const m = {}; rows.forEach(x => { const k = keyf(x); if (k != null) m[k] = (m[k] || 0) + 1; }); return m; };
+        const bySkill = cnt(x => x.g), bySup = cnt(x => x.c[4]);
+        const pws = rows.map(pwv).filter(v => v >= 0);
+
+        let head;
+        if (!rows.length && cat && !catInLibrary) {
+          head = '「' + CAT_NAME[cat] + '」這個技能類型台服 master 目前一張卡都沒有（不是篩選條件寫錯）。'
+            + '例如絢爛角色（BloomFES 角色等級型）台服就還沒實裝。';
+        } else if (!rows.length) {
+          head = '這個篩選條件下沒有任何卡片，可能是條件組合本身就不存在（例如 ★3 沒有限定卡、生日技能只出現在生日卡）。';
+        } else if (!page.length) {
+          head = 'offset ' + offset + ' 已經超過符合條件的 ' + rows.length + ' 張，請把 offset 調小。';
+        } else {
+          head = 'cards 是套用篩選後、依 sort（' + sort + '）完整排序的第 ' + (offset + 1) + '～'
+            + (offset + page.length) + ' 名，不是抽樣；符合條件共 ' + rows.length
+            + ' 張，要看更多請調 limit（上限 60）或用 offset 續取，不要重複用小批次拼湊。';
+        }
+
+        return {
+          filter: {
+            skill_type: cat ? CAT_NAME[cat] : '全部',
+            unit: unit ? (this.UNITS[unit] || {}).n : '全部',
+            rarity: rarity == null ? '全部' : (RN[rarity] || String(rarity)),
+            character: charId == null ? '全部' : (fullOf[charId] || this.chNameOf(charId)),
+            attribute: attr == null ? '全部' : this.ATTR_ZH[ATTR[attr]],
+            supply: supply == null ? '全部' : this.SUPPLYN[supply],
+            only_owned: onlyOwned, live_pools: LIVE,
+            min_power: minPw, sort: sort,
+          },
+          library_total: idx.length,
+          matched_total: rows.length,
+          returned: page.length,
+          offset: offset,
+          has_more: offset + page.length < rows.length,
+          power_range: pws.length ? { min: Math.min.apply(null, pws), max: Math.max.apply(null, pws) } : null,
+          open_pool_count: live ? live.pools : undefined,
+          matched_by_skill_type: Object.keys(bySkill).sort((p, q) => bySkill[q] - bySkill[p])
+            .map(k => ({ skill_type: CAT_NAME[k] || k, count: bySkill[k] })),
+          matched_by_supply: Object.keys(bySup).sort((p, q) => bySup[q] - bySup[p])
+            .map(k => ({ supply: this.SUPPLYN[k] || k, count: bySup[k] })),
+          cards: out,
+          note: head
+            + '　power_max_level＝滿等三維（param1＋param2＋param3 的最後一級）相加，★3／★4 再加特訓加成，'
+            + '單位是綜合力點數，與站上「卡片技能庫」頁的「最大綜合力」同一算法。'
+            + '⚠ 同稀有度的卡基礎綜合力幾乎一樣（本次結果的 power_range 就是全距），'
+            + '所以「誰比較強」實際上是看技能與活動加成，不是看綜合力——不要只憑 power_max_level 推薦卡。'
+            + '它不含前後篇、專精、角色等級、區域道具、豆森；要換算：前後篇已讀 ★4 +2550／生日 +2370／'
+            + '★3 +2100／★2 +1350／★1 +900，專精每 1 級 ★4 +600／生日 +540／★3 +450／★2 +300／★1 +150；'
+            + '要精算整隊請用 calc_team_power。'
+            + '　skill_base_percent／skill_max_percent 都是技能 Lv.4：base 是保底、max 是條件拉滿'
+            + '（絢爛角色＝角色等級滿、絢爛虛擬＝湊滿 2 種外團、團分＝全隊同團、七彩血分＝滿血、'
+            + '七彩GOOD以上＝判定保持 GOOD 以上）；絢爛吸技要看隊友技能，單看一張卡算不死，'
+            + '條件都寫在 skill_condition。逐級（Lv.1～4）明細請用 get_card_skills。'
+            + '　availability／gacha_status 只依卡片的取得類別判斷——那是卡的固有屬性，不會過期。'
+            + (live
+                ? '　obtainable_now 是現抓 gachas.json 算的：現在有 ' + live.pools
+                  + ' 個池開著，open_pools 是收錄這張卡且正開著的池名（新手限定／任務／選擇清單池也算在內，'
+                  + '一般玩家不一定抽得到，請看池名判斷）。'
+                : '　「現在正開著哪些池」預設沒查——要精確回答「這張現在還抽不抽得到」請帶 live_pools:"annotate"'
+                  + '（或 "only" 只留現在抽得到的），它會現抓卡池資料。'
+                  + '也不要拿別的工具（例如 get_missing_cards）的 in_gacha_pool 當答案：那份是建置索引時掃 gachas.json 算的，'
+                  + '而 gachas.json 只是約 70 個池的滾動視窗不是完整歷史，池輪出後旗標不會補回，'
+                  + '實測 BLOOM FES 的 12 張全被標成「無卡池紀錄」。')
+            + '　unit 的歸屬優先看卡片的支援團，所以 V 家角色的團體卡會算進該團而不是 VIRTUAL SINGER。'
+            + (own.size ? '　owned 來自站上「收集率」頁的手動勾選（只存在這台瀏覽器）。' : ''),
+        };
+      }
+
+      case 'gacha_simulate': {
+        /* 為什麼借 core.js 的 GachaSim 而不自己寫一套抽卡:
+           官方的模型不是「★4 3%」那麼單純 —— 是「先依 gachaCardRarityRates 抽稀有度,
+           再在該稀有度的卡池內依 gachaDetails[].weight 加權抽一張」。PU 的 weight 被官方
+           調成剛好 0.4%/張(實測 #846:PU weight 400000 / ★4 總權重 2999864 × 3% = 0.40002%),
+           十連的 ★3 保底也是「佔掉第 10 抽」而不是額外加送一張。這些 gachasim 頁那支
+           已經照 master data 實作並對過官方公告的機率,重寫等於再踩一次同樣的坑。
+           GachaSim 沒被 ensureEngine 收進取用清單,但它跟 MasterDB 一樣是 core.js 的頂層
+           const,用同一招 new Function 就取得到。 */
+        const E = await this.ensureEngine();
+        const gPick = n => { try { return new Function('return typeof ' + n + ' !== "undefined" ? ' + n + ' : null')(); } catch (e) { return null; } };
+        const GS = E.GachaSim || (E.GachaSim = gPick('GachaSim'));
+        if (!GS) return { error: '計算引擎載入了，但取不到 GachaSim（抽卡模擬器）' };
+        const cidName = E.EC_cidName || (E.EC_cidName = gPick('EC_cidName')) || (id => '#' + id);
+
+        // _load 會併台服 + 日服的 gachas/cards(日服是為了台服還沒實裝的未來池),回 { gById, cById, list, twIds, stdPool }
+        let D;
+        try { D = await GS._load(); } catch (e) { return { error: '卡池 master data 載入失敗：' + (e.message || '請稍後再試') }; }
+        if (!D || !(D.list || []).length) return { error: '卡池 master data 載入了，但沒有任何含機率表的卡池' };
+
+        // 預設要挑「台服的」當期池;D.list 是台日混合的,直接取 list[0] 會挑到日服的未來池
+        let twGid = null;
+        try { const tw = await E.MasterDB.get('gachas.json'); twGid = new Set((tw || []).map(x => x.id)); } catch (e) {}
+
+        const now = Date.now();
+        const q = String(a.gacha == null ? '' : a.gacha).trim();
+        let g;
+        if (q) {
+          g = GS._find(q);   // 純數字＝卡池 id 完全比對,否則卡池名稱模糊比對
+          if (!g) return { error: '找不到卡池「' + q + '」。可給卡池 id（數字）或名稱關鍵字，例如「倒映在眼裡的花束」「HAPPY BIRTHDAY」。' };
+        } else {
+          const twList = D.list.filter(x => !twGid || twGid.has(x.id));
+          g = twList.find(x => x.startAt <= now && x.endAt >= now) || twList.find(x => x.startAt <= now) || D.list[0];
+        }
+        if (!g) return { error: '取不到可模擬的卡池' };
+
+        GS._g = g; GS._reset();
+        const P = GS._pool;
+        if (!P || !(P.rates || []).length) return { error: '第 ' + g.id + ' 號卡池（' + (g.name || '') + '）沒有機率表，無法模擬' };
+
+        const RN = { rarity_1: '★1', rarity_2: '★2', rarity_3: '★3', rarity_4: '★4', rarity_birthday: '生日' };
+        const KEY = { jewel: 'jewel', paid_jewel: 'paid_jewel', gacha_ticket: 'ticket' };
+        const fdt = ms => { try { return new Date(ms).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }); } catch (e) { return null; } };
+
+        /* ---- 官方機率模型 ---- */
+        // 同一稀有度可能有兩列(例:5週年 FES 把 ★4 拆成 2.8%+3.2%),要先合併再比對
+        const rateBy = {};
+        P.rates.forEach(r => { rateBy[r.cardRarityType] = (rateBy[r.cardRarityType] || 0) + r.rate; });
+        const rarityRows = Object.keys(rateBy).map(k => ({
+          key: k, rarity: RN[k] || k,
+          official_rate_pct: +rateBy[k].toFixed(4),
+          pool_cards: ((P.byRar[k] || {}).items || []).length,
+        })).sort((x, y) => GS._rank(y.key) - GS._rank(x.key) || y.official_rate_pct - x.official_rate_pct);
+
+        const pickup = [...P.pick].map(id => {
+          const c = D.cById[id]; if (!c) return null;
+          const k = c.cardRarityType, grp = P.byRar[k] || {};
+          const it = (grp.items || []).find(i => i.cardId === id);
+          const p = (it && grp.total) ? (rateBy[k] || 0) * it.w / grp.total : null;
+          return { card_id: id, name: c.prefix || ('#' + id), character: cidName(c.characterId),
+            rarity: RN[k] || k, rate_pct: p == null ? null : +p.toFixed(4),
+            weight: it ? it.w : null, in_tw_master: D.twIds.has(id) };
+        }).filter(Boolean).sort((x, y) => (y.rate_pct || 0) - (x.rate_pct || 0));
+
+        // 非 PU ★4 每張的平均機率 —— 用來回答「歪掉的話會歪到什麼」
+        let nonPuEach = null;
+        const g4 = P.byRar.rarity_4;
+        if (g4 && g4.items.length && g4.total) {
+          const puW = g4.items.filter(i => P.pick.has(i.cardId)).reduce((s, i) => s + i.w, 0);
+          const nN = g4.items.filter(i => !P.pick.has(i.cardId)).length;
+          if (nN) nonPuEach = +((rateBy.rarity_4 || 0) * (g4.total - puW) / g4.total / nN).toFixed(5);
+        }
+
+        /* ---- 可用抽法(照官方 gachaBehaviors,去重) ---- */
+        const methods = [], behs = [], byKey = {}, seenM = new Set();
+        (g.gachaBehaviors || []).filter(b => b.spinCount).forEach(b => {
+          const ct = b.costResourceType || '', bt = b.gachaBehaviorType || '';
+          const key = (ct ? (KEY[ct] || ct) : 'free') + '_' + b.spinCount;
+          if (seenM.has(key)) return; seenM.add(key);
+          const gr = /over_rarity_4/.test(bt) ? 4 : /over_rarity_3/.test(bt) ? 3 : 0;
+          // 免費抽官方就是沒有 costResourceType/Quantity(null),不能直接串字串
+          const label = (!ct || b.costResourceQuantity == null)
+            ? (/once_a_week/.test(bt) ? '通行證每週免費' : /once_a_day/.test(bt) ? '通行證每日免費' : '免費')
+            : ct === 'paid_jewel' ? ('付費水晶 ' + b.costResourceQuantity + '（只吃有償石）')
+            : ct === 'jewel' ? (b.costResourceQuantity + ' 水晶')
+            : (b.costResourceQuantity + ' 張招募券');
+          const m = { key, spin_count: b.spinCount, cost_type: ct || null,
+            cost_quantity: b.costResourceQuantity == null ? null : b.costResourceQuantity,
+            cost_label: label, paid_jewel_only: ct === 'paid_jewel',
+            guarantee: gr === 4 ? '最後一抽必中 ★4' : gr === 3 ? '最後一抽保底 ★3 以上' : null,
+            guarantee_rank: gr, execute_limit: b.executeLimit || null, behavior_type: bt || null };
+          methods.push(m); behs.push(b); byKey[key] = { m, b };
+        });
+        if (!methods.length) return { error: '第 ' + g.id + ' 號卡池沒有抽法資料（gachaBehaviors 是空的）' };
+
+        let mk = a.method ? String(a.method).trim() : '';
+        if (mk && !byKey[mk]) return { error: '這個卡池沒有「' + mk + '」這種抽法。可用：' + methods.map(m => m.key).join('／') };
+        if (!mk) mk = ['jewel_10', 'jewel_1', 'ticket_10', 'ticket_1', 'paid_jewel_10', 'paid_jewel_1'].find(k => byKey[k]) || methods[0].key;
+        const M = byKey[mk];
+
+        const pulls = Math.max(1, Math.min(3000, Math.round(+a.pulls || 300)));
+        const batches = Math.floor(pulls / M.b.spinCount);
+        let rem = pulls % M.b.spinCount;
+        // 餘數用「同幣別的單抽」補;該池沒有單抽就無條件捨去並在 note 說明
+        const remKey = (M.m.cost_type ? (KEY[M.m.cost_type] || M.m.cost_type) : 'free') + '_1';
+        const RM = (rem && byKey[remKey] && byKey[remKey].b.spinCount === 1) ? byKey[remKey] : null;
+        if (!RM) rem = 0;
+        const actual = batches * M.b.spinCount + rem;
+        if (!actual) return { error: 'pulls=' + pulls + ' 不足一次「' + mk + '」（一次 ' + M.b.spinCount + ' 抽），請調高 pulls 或改用單抽的 method' };
+
+        /* ---- 天井:抽數要從 gachaCeilExchangeSummaries 反查,不是一律 300 ----
+           #801 Recollection Festival 是 200,生日池是 100,寫死 300 會錯。 */
+        let ceiling = { has_ceiling: false, note: '此卡池沒有天井（沒有招募貼紙）' };
+        if (g.gachaCeilItemId) {
+          let need = null, sub = null, itemName = null, from = 'master';
+          try {
+            const [items, sums] = await Promise.all([
+              E.MasterDB.get('gachaCeilItems.json'), E.MasterDB.get('gachaCeilExchangeSummaries.json')]);
+            const it = (items || []).find(x => x.id === g.gachaCeilItemId);
+            itemName = it ? it.name : null;
+            (sums || []).forEach(su => (su.gachaCeilExchanges || []).forEach(ex => {
+              const c = ex.gachaCeilExchangeCost || {};
+              if (c.resourceType !== 'gacha_ceil_item' || c.resourceId !== g.gachaCeilItemId) return;
+              if (need == null || c.quantity > need) {   // 同一張貼紙還能換素材/心願碎片(1、10 張),換成員的才是天井＝最大那筆
+                need = c.quantity;
+                const sc = (ex.gachaCeilExchangeSubstituteCosts || [])[0];
+                sub = sc ? { per_ticket_stickers: sc.substituteQuantity, max_tickets: ex.substituteLimit || 0 } : null;
+              }
+            }));
+          } catch (e) { from = 'fallback'; }
+          if (need == null) { need = rateBy.rarity_birthday ? 100 : 300; from = 'fallback'; sub = null; }
+          ceiling = { has_ceiling: true, sticker_name: itemName, pulls_needed: need,
+            crystals_needed: need * 300, derived_from: from,
+            exchange_ticket: sub ? { per_ticket_stickers: sub.per_ticket_stickers, max_tickets: sub.max_tickets,
+              min_pulls_with_tickets: Math.max(0, need - sub.per_ticket_stickers * sub.max_tickets) } : null,
+            note: '每抽到 1 位成員得 1 張貼紙；' + need + ' 張可在該池交換所指定換一名成員'
+              + (sub ? ('。限定招募貼紙交換券 1 張抵 ' + sub.per_ticket_stickers + ' 張、最多 ' + sub.max_tickets + ' 張') : '（此池不可用交換券）') };
+        }
+
+        /* ---- 招募點數(gachaBonusPoints):付費水晶 1 點、免費水晶與招募券各 0.5 點 ----
+           不是每個池都吃 —— 生日池、復刻池、通行證池的官方說明會寫「招募附贈點數不適用」。 */
+        const desc = ((g.gachaInformation || {}).description || '');
+        const bptAuto = !/附贈點數不適用/.test(desc);
+        const useBpt = a.bonus_points != null ? !!a.bonus_points : bptAuto;
+
+        /* ---- 種子化亂數(xorshift32)。不用 Math.random:同 seed 要能重現 ---- */
+        const seed = (a.seed != null ? Math.abs(Math.round(+a.seed)) : Date.now()) >>> 0;
+        let _s = seed || 0x9e3779b9;
+        const rng = () => { _s ^= _s << 13; _s >>>= 0; _s ^= _s >>> 17; _s ^= _s << 5; _s >>>= 0; return _s / 4294967296; };
+
+        const listLimit = Math.max(1, Math.min(80, Math.round(+a.list_limit || 40)));
+        const costs = { jewel: 0, paid_jewel: 0, gacha_ticket: 0, free_pulls: 0 };
+        const rare = [];
+        let curGuar = 0, n = 0, rareTotal = 0;
+
+        /* ⚠ 三處覆蓋(都在同步區間內,結束一定還原;引擎是共用單例)：
+           1. GS._render —— doSpin 收尾會呼叫它去抓 #gachaSimCard 重繪。本頁沒有那個節點
+              (它在 index.html?embed=gachasim 的 iframe 裡),而且工具本來就不該動畫面。
+           2. GS.spin —— doSpin 內部寫死 `this.spin(n, guard ? 3 : 0)`,吃不到
+              over_rarity_4_once(必中★4,例如「必中★4成員招募」、5週年高級禮物招募)。
+              包一層把正確的保底階級傳進去。
+           3. Math.random —— 引擎的 _rollRarity / _drawOne / _bptAward 都用它,換成種子化 RNG
+              才有可重現性。這段全同步、沒有 await,不會跟其他程式交錯。 */
+        const oRandom = Math.random, oSpin = GS.spin, oRender = GS._render;
+        GS._render = function () {};
+        GS.spin = function (cnt) { return oSpin.call(this, cnt, curGuar); };
+        Math.random = rng;
+        try {
+          const runBatches = (entry, times) => {
+            for (let i = 0; i < times; i++) {
+              curGuar = entry.m.guarantee_rank;
+              // ct 傳空字串＝這池不吃招募點數,_bptPer 會回 0
+              GS.doSpin(entry.b.spinCount, false, 0, useBpt ? (entry.b.costResourceType || '') : '');
+              const ct = entry.b.costResourceType;
+              if (ct && entry.b.costResourceQuantity != null) costs[ct] = (costs[ct] || 0) + entry.b.costResourceQuantity;
+              else costs.free_pulls += entry.b.spinCount;
+              (GS._hist || []).forEach(r => {
+                n++;
+                if (GS._rank(r.rarity) < 4) return;
+                rareTotal++;
+                if (rare.length >= listLimit) return;
+                const c = D.cById[r.cardId] || {};
+                rare.push({ pull: n, card_id: r.cardId, name: c.prefix || ('#' + r.cardId),
+                  character: cidName(c.characterId), rarity: RN[r.rarity] || r.rarity,
+                  is_pickup: !!r.isPickup, from_bonus_point: r.bonus || null });
+              });
+            }
+          };
+          runBatches(M, batches);
+          if (rem) runBatches(RM, rem);
+        } finally { Math.random = oRandom; GS.spin = oSpin; GS._render = oRender; }
+
+        /* ---- 統計 ---- */
+        const T = GS._tally || {}, got = GS._got || {};
+        const by_rarity = rarityRows.map(r => {
+          const cnt = T[r.key] || 0, pct = cnt / actual * 100;
+          return { rarity: r.rarity, count: cnt, actual_pct: +pct.toFixed(3),
+            official_pct: r.official_rate_pct, diff_pp: +(pct - r.official_rate_pct).toFixed(3),
+            pool_cards: r.pool_cards };
+        });
+        const is4 = k => GS._rank(k) >= 4;
+        const s4 = Object.keys(T).filter(is4).reduce((s, k) => s + T[k], 0);
+        const uniq4 = Object.keys(got).filter(id => { const c = D.cById[id]; return c && is4(c.cardRarityType); });
+        const uniqPk = Object.keys(got).filter(id => P.pick.has(+id));
+        const gaps = GS._gapsTo4 || [];
+        const bptAwards = (GS._bptGot || []).map(x => {
+          const c = D.cById[x.cardId] || {};
+          return { at_points: x.need, reward: x.label, card_id: x.cardId,
+            name: c.prefix || ('#' + x.cardId), character: cidName(c.characterId) };
+        });
+
+        return {
+          gacha: { id: g.id, name: g.name || ('#' + g.id), gacha_type: g.gachaType || null,
+            server: (twGid && !twGid.has(g.id)) ? 'jp（台服尚未實裝，機率取自日服 master）' : 'tw',
+            start: fdt(g.startAt), end: fdt(g.endAt),
+            is_running: g.startAt <= now && g.endAt >= now, total_cards_in_pool: (g.gachaDetails || []).length },
+          rarity_rates: by_rarity.map(r => ({ rarity: r.rarity, official_pct: r.official_pct, pool_cards: r.pool_cards })),
+          pickup_cards: pickup,
+          non_pickup_star4_each_pct: nonPuEach,
+          available_methods: methods,
+          ceiling,
+          bonus_points: { applies: useBpt, auto_detected: bptAuto,
+            points_per_pull: { paid_jewel: 1, jewel: 0.5, gacha_ticket: 0.5, free: 0 },
+            tiers: (GS.BPT_TIERS || []).map(t => ({ points: t[0], reward: t[1] })),
+            note: useBpt ? '招募點數保底是「佔掉這 n 抽裡的最後幾張」，不是額外加送'
+              : '此卡池的官方說明寫明「招募附贈點數不適用於本招募」，已關閉' },
+          simulation: {
+            seed_used: seed, reproducible: true,
+            method: mk, method_label: M.m.cost_label + (M.m.guarantee ? '（' + M.m.guarantee + '）' : ''),
+            batches, remainder_pulls: rem, pulls_requested: pulls, pulls_actual: actual,
+            cost: { jewel: costs.jewel, paid_jewel: costs.paid_jewel,
+              crystals_total: costs.jewel + costs.paid_jewel,
+              gacha_tickets: costs.gacha_ticket, free_pulls: costs.free_pulls },
+            by_rarity,
+            star4_total: s4, star4_unique: uniq4.length,
+            avg_pulls_per_star4: s4 ? +(actual / s4).toFixed(2) : null,
+            avg_gap_between_star4: gaps.length ? +(gaps.reduce((s, x) => s + x, 0) / gaps.length).toFixed(1) : null,
+            longest_drought_pulls: Math.max(GS._sinceLast4 || 0, ...(gaps.length ? gaps : [0])),
+            pickup_hits: GS._pkHits || 0, pickup_unique: uniqPk.length,
+            pickup_expected: +(pickup.reduce((s, p) => s + (p.rate_pct || 0), 0) / 100 * actual).toFixed(2),
+            bonus_points_earned: GS._bpt || 0, bonus_point_awards: bptAwards,
+            ceiling_progress: ceiling.has_ceiling
+              ? { stickers: actual, needed: ceiling.pulls_needed,
+                  remaining: Math.max(0, ceiling.pulls_needed - actual),
+                  reached: actual >= ceiling.pulls_needed } : null,
+            rare_pulls: rare, rare_pulls_total: rareTotal,
+            rare_pulls_truncated: rareTotal > rare.length,
+          },
+          note: '模型（與遊戲一致）：① 依 gachaCardRarityRates 抽稀有度 ② 在該稀有度內依 gachaDetails[].weight 加權抽卡'
+            + '（PU 的 weight 被官方調成剛好每張 0.4%）③ 十連保底佔掉第 10 抽而非加送。'
+            + '單張機率 ＝ 該稀有度官方機率 × 該卡 weight ÷ 該稀有度總 weight。'
+            + '實際 ★3／★4 佔比會略高於官方值，因為保底把不足的那一抽拉上去了——這是正常的，不是模擬有誤。'
+            + '這是「真的抽一輪」的結果，樣本只有 ' + actual + ' 抽，本來就會偏離官方機率；'
+            + '要期望值／天井／預算內至少中一張的機率請改用 gacha_odds。'
+            + (M.m.execute_limit ? '　※「' + mk + '」官方限每期／每日 ' + M.m.execute_limit + ' 次，模擬的 '
+                + batches + ' 批等於要跨 ' + batches + ' 個週期，不是一口氣抽得完。' : '')
+            + (pulls !== actual ? '　※ pulls=' + pulls + ' 不是 ' + M.b.spinCount + ' 的倍數且此池沒有同幣別單抽，已捨去到 ' + actual + ' 抽。' : ''),
+        };
+      }
+
+      case 'get_active_players': {
+        /* 站上「活躍分析」分頁只顯示計數與前 5／8／10 名，這支要能把整份名單交出去。
+           分桶條件直接沿用 activeAnalysis()，才不會出現「頁面說 37 人在線、助手說 41 人」。 */
+        if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+        const V = this.activeAnalysis();
+        if (!V) return { error: '即時排名尚未載入，' + (this.state.liveErr || '請稍後再試') };
+
+        const mode = String(a.mode || 'online');
+        const bucket = { online: V.online, running: V.grinding, resting: V.idle, all: V.list }[mode];
+        if (!bucket) return { error: 'mode 只能是 online／running／resting／all，收到的是「' + a.mode + '」' };
+
+        const ev = this.eventOf(this.state.live);
+        const now = Date.now();
+        const st = (r, k, f) => (r.stats && r.stats[k] && r.stats[k][f] != null) ? r.stats[k][f] : null;
+        const idleMin = r => { const m = V.mins(r); return m == null ? null : Math.round(m); };
+
+        /* resting 桶裡大家時速都是 0，用時速排等於沒排序，改用「停多久」由久到近；
+           其餘桶依近 1 小時時速由快到慢，同速再依名次。 */
+        const rows = bucket.slice().sort(mode === 'resting'
+          ? (x, y) => { const a1 = V.mins(x), b1 = V.mins(y);
+                        if (a1 == null && b1 == null) return x.rank - y.rank;
+                        if (a1 == null) return -1;
+                        if (b1 == null) return 1;
+                        return b1 - a1 || x.rank - y.rank; }
+          : (x, y) => V.sp(y, 'h1') - V.sp(x, 'h1') || x.rank - y.rank);
+
+        const off = Math.max(0, +a.offset || 0);
+        const lim = Math.max(1, Math.min(100, +a.limit || 20));
+        const page = rows.slice(off, off + lim);
+
+        // 三個桶會重疊（在線的人通常也在跑），status 標的是「最貼切的那一個」
+        const statusOf = r => {
+          const m = V.mins(r);
+          if (m == null || m > 60) return 'resting';
+          if (m <= 15) return V.cnt1(r) > 0 ? 'online_running' : 'online_idle';
+          return V.cnt1(r) > 0 ? 'running' : 'slowing';
+        };
+
+        const out = {
+          event: { id: ev.id != null ? ev.id : null, name: ev.name || null },
+          mode,
+          counts: {
+            board_size: V.list.length,
+            online_within_15min: V.online.length,
+            running_last_1h: V.grinding.length,
+            resting_over_60min: V.idle.length,
+            total_rounds_last_1h: V.rounds1h,
+            surging: V.surging.length,
+            cooling: V.cooling.length,
+          },
+          matched: rows.length, offset: off, returned: page.length,
+          players: page.map(r => {
+            const s1 = V.sp(r, 'h1'), s24 = V.sp(r, 'h24');
+            return {
+              rank: r.rank, name: r.name, uid: r.uid, score: r.score,
+              status: statusOf(r),
+              speed_1h_per_hour: Math.round(s1),
+              speed_24h_per_hour: Math.round(s24),
+              rounds_1h: st(r, 'h1', 'count'),
+              avg_per_round_1h: st(r, 'h1', 'average') != null ? Math.round(st(r, 'h1', 'average')) : null,
+              momentum: s24 > 0 ? +(s1 / s24).toFixed(2) : null,
+              minutes_since_last_play: idleMin(r),
+              last_round_gain: r.lastScore != null ? r.lastScore : null,
+            };
+          }),
+          note: '時速單位是活動P／小時，score 是累計活動P。' +
+            'online＝最後一場在 15 分鐘內；running＝近 1 小時 count>0；resting＝逾 60 分沒有成績（或公開資料完全沒有 last_played_at）。' +
+            '這三桶會重疊，每個人的 status 欄標的是最貼切的那一個。' +
+            'momentum ＝ 近 1 小時時速 ÷ 近 24 小時時速（>1 加速、<1 降溫）；counts.surging／cooling 用的是站上同一組門檻 ≥1.2 與 ≤0.5。' +
+            'players 是整桶依上述規則完整排序後的第 ' + (off + 1) + '～' + (off + page.length) + ' 名，不是取樣；要更後面請帶 offset。' +
+            '公開資料只有前 100 名，第 101 名之後沒有任何本期分數；沒有回報時速的人時速欄會是 0 而不是 null。',
+        };
+
+        // 名次／分數時間序列：只有帶 series_uid 才算，省得每次都塞一大包點位回去
+        if (a.series_uid != null && String(a.series_uid).trim() !== '') {
+          const suid = String(a.series_uid).replace(/\D/g, '');
+          /* roster 走的是 GitHub 上的公用快照（每 5～10 分一筆），跟 live 是兩份資料，
+             沒載到就得自己補載；loadBorderHistory 用 _histFor 去重，重複呼叫不會多打。 */
+          if (!this.state.hist) { try { await this.loadBorderHistory(); } catch (e) {} }
+          // 上一次呼叫可能還在飛（去重旗標已設、資料還沒回），await 完再輪詢才保險
+          for (let i = 0; i < 20 && !this.state.hist; i++) await new Promise(r => setTimeout(r, 150));
+          const h = this.state.hist;
+          if (!h || h.eventId !== ev.id || !Array.isArray(h.roster) || !h.roster.length) {
+            out.series = null;
+            out.series_error = '本期的公用時序快照還沒載到（或還沒累積到任何一筆），時間序列查不了';
+          } else {
+            const ui = (h.users || []).findIndex(u => this.sameUid(u, suid));
+            if (ui < 0) {
+              out.series = null;
+              out.series_error = 'uid ' + suid + ' 從來沒有出現在本期的前百快照裡';
+            } else {
+              const scoreAt = {};
+              (h.ranks || []).forEach(r => { scoreAt[r[0]] = r; });
+              const pts = [];
+              h.roster.forEach(row => {
+                const pos = row.indexOf(ui, 1);      // 位置就是當下名次；找不到＝那個時間點不在前百
+                if (pos < 1) return;
+                const sr = scoreAt[row[0]];
+                pts.push({ t: row[0] * 1000, rank: pos, score: (sr && sr[pos] != null) ? sr[pos] : null });
+              });
+              /* 補上此刻的即時名次當最後一點：快照最多落後十分鐘，
+                 不補的話序列的尾巴會跟同一次回傳的 players 對不起來。 */
+              const live = V.list.find(r => this.sameUid(r.uid, suid));
+              if (live && live.rank && (!pts.length || now - pts[pts.length - 1].t > 60000)) {
+                pts.push({ t: now, rank: live.rank, score: live.score != null ? live.score : null });
+              }
+              if (!pts.length) {
+                out.series = null;
+                out.series_error = 'uid ' + suid + ' 在本期快照裡沒有任何在前百的時間點';
+              } else {
+                const want = Math.max(2, Math.min(80, +a.series_points || 24));
+                // 等間隔抽點（頭尾一定保留），不是取最後幾筆，整期形狀才看得出來
+                const n = pts.length;
+                const idx = n <= want ? pts.map((_, i) => i)
+                  : Array.from({ length: want }, (_, i) => Math.round(i * (n - 1) / (want - 1)));
+                const uniq = idx.filter((v, i) => i === 0 || v !== idx[i - 1]);
+                const ranks = pts.map(p => p.rank);
+                const withScore = pts.filter(p => p.score != null);
+                const spanH = (pts[n - 1].t - pts[0].t) / 3600000;
+                out.series = {
+                  uid: suid, name: live ? live.name : null,
+                  samples_total: n, points_returned: uniq.length,
+                  span_hours: +spanH.toFixed(1),
+                  first_at: new Date(pts[0].t).toISOString(),
+                  last_at: new Date(pts[n - 1].t).toISOString(),
+                  best_rank: Math.min.apply(null, ranks),
+                  worst_rank: Math.max.apply(null, ranks),
+                  score_gain: withScore.length > 1 ? withScore[withScore.length - 1].score - withScore[0].score : null,
+                  avg_speed_per_hour: (withScore.length > 1 && spanH > 0)
+                    ? Math.round((withScore[withScore.length - 1].score - withScore[0].score) / spanH) : null,
+                  points: uniq.map(i => ({
+                    at: new Date(pts[i].t).toISOString(), rank: pts[i].rank, score: pts[i].score })),
+                  note: 'points 是實際點位（不是擬合線）：at 為 UTC 時刻、rank 是當下第幾名、score 是當下累計活動P。' +
+                    '快照由 GitHub Actions 每 5～10 分鐘記一筆，只涵蓋這位玩家「在前百」的時段，掉出去的時間點不會有點。' +
+                    '共 ' + n + ' 筆，這裡等間隔抽 ' + uniq.length + ' 點（含頭尾）；要更密就把 series_points 調大（上限 80）。' +
+                    '最後一點是此刻的即時名次，比快照新。',
+                };
+              }
+            }
+          }
+        }
+        return out;
+      }
+
+      case 'get_boost_table': {
+        /* 站上計算中心 ctab='ep' 下方那張「各火數效率比較」表的工具版，
+           算法逐行照搬 renderVals 裡的 boostTable（this.epFor(b) → calcEPValue）。
+           不直接呼叫 epFor()：epFor 只吃 this.state，呼叫端沒辦法只蓋掉其中一個參數，
+           所以改用 calcEPValue 的參數化版本（參數解析與 calc_event_points 同一套），
+           全程只讀 state、不呼叫 setState，因此不會觸發 re-render 動到畫面。
+           這支的存在理由：吃幾火是每天都要做的取捨，一次只回一個火數的話
+           模型得連打七次 calc_event_points 才拼得出這張表。 */
+        if (!(this.state.epSongs || []).length) {
+          // loadEpSongs 不是 async（內部走 import().then），沒有 promise 可 await，只能輪詢它寫回 state
+          this.loadEpSongs();
+          for (let i = 0; i < 40 && !(this.state.epSongs || []).length; i++) await new Promise(r => setTimeout(r, 100));
+        }
+        // setState 會換掉整個 state 物件，所以一定要等載完才取，不能在 await 之前先抓著舊的
+        const s = this.state;
+        const songs = s.epSongs || [];
+        const DK = { E: 'E', N: 'N', H: 'H', X: 'X', M: 'M', A: 'A', EASY: 'E', NORMAL: 'N', HARD: 'H', EXPERT: 'X', MASTER: 'M', APPEND: 'A' };
+        const mode = ['solo', 'auto', 'multi', 'cheer'].indexOf(a.mode) >= 0 ? a.mode : (s.mode || 'multi');
+        const diff = DK[String(a.difficulty || '').toUpperCase()] || s.diff || 'M';
+        const power = a.power != null ? +a.power || 0 : +s.power || 0;
+        const bonus = a.bonus != null ? +a.bonus || 0 : +s.bonus || 0;
+        const skill = a.skill != null ? +a.skill || 0 : +s.skill || 0;
+        const s6 = a.s6 != null ? +a.s6 || 0 : +s.s6 || 0;
+        const life = a.life != null ? +a.life || 0 : +s.life || 0;
+
+        if (a.song_id != null && !songs.length) return { error: 'EP 曲庫尚未載入，請先開啟「計算中心」頁再問一次' };
+        const song = this.songById(a.song_id != null ? a.song_id : s.songKey);
+        if (a.song_id != null && !song) return { error: '找不到 song_id=' + a.song_id + ' 這首歌，可先用 get_songs 查編號' };
+        const rate = song ? song.rate : (a.event_rate != null ? +a.event_rate || 100 : +s.rate || 100);
+        const time = song ? song.time : 100;
+
+        let score, usedDiff = null, scoreFrom;
+        if (a.score != null) { score = +a.score || 0; scoreFrom = '呼叫時直接指定的分數'; }
+        else if (song && song.d) {
+          // 與 scoreNow() 同一套後備順序：指定難度沒係數就往下找有的
+          const k = [diff, 'M', 'X', 'H', 'N', 'E', 'A'].find(x => song.d[x]);
+          usedDiff = k || null;
+          score = k ? this.calcSongScore(song.d[k], mode, power, skill, s6) : 0;
+          scoreFrom = '由歌曲係數與綜合力/技能推算';
+        } else { score = +s.score || 0; scoreFrom = '共用設定裡直接填的分數（沒有歌曲資料）'; }
+        // 分數推不出來的話整張表會全是 0 —— 那是假的答案，寧可講清楚缺什麼
+        if (!(score > 0)) return { error: '算不出歌曲分數，整張對照表會是 0。請給 score（直接指定分數），或給 song_id ＋ power/skill 讓它推算' };
+
+        const cycle = time + this.ohOf(mode);     // 火數不影響單局耗時，整張表共用
+        // 站上那張表固定列 0/1/2/3/5/7/10 這七檔（玩家實際會用的），all_levels 才展開 0～10
+        const LEVELS = a.all_levels ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : [0, 1, 2, 3, 5, 7, 10];
+        const rows = LEVELS.map(e => {
+          const F = this.EM[e] || 1;
+          const ep = this.calcEPValue(mode, score, rate, bonus, F, power, life);
+          return {
+            boost_energy: e,                                  // 吃幾火（＝消耗幾點體力）
+            boost_multiplier: F,                              // 火倍率
+            ep_per_game: ep,                                  // 單局活動P
+            // 0 火不耗體力，「每火活動P」沒有意義（站上那欄顯示「—」），所以給 null 而不是 0
+            ep_per_energy: e > 0 ? Math.round(ep / e) : null,
+            ep_per_hour: cycle > 0 ? Math.round(ep * 3600 / cycle) : 0,   // 不間斷周回
+            energy_per_hour: cycle > 0 ? Math.round(e * 3600 / cycle) : 0, // 這個火數每小時燒掉的體力
+            is_current_setting: e === (+s.energy || 0),       // 計算中心目前選的那一檔
+          };
+        });
+
+        // 每火效率用未四捨五入的比值比，避免 Math.round 把本來相同的名次拆開
+        const withE = rows.filter(r => r.boost_energy > 0);
+        const bestRatio = Math.max.apply(null, withE.map(r => r.ep_per_game / r.boost_energy));
+        const bestPerEnergy = withE.filter(r => Math.abs(r.ep_per_game / r.boost_energy - bestRatio) < 1e-9)
+                                   .map(r => r.boost_energy);
+        const bestPerHour = rows.reduce((x, y) => (y.ep_per_hour > x.ep_per_hour ? y : x), rows[0]).boost_energy;
+
+        return {
+          mode, difficulty: usedDiff || diff,
+          song: song ? { id: song.id, title: song.t, length_s: song.time, event_rate_pct: song.rate } : null,
+          inputs: { power, bonus_pct: bonus, skill, s6, life, event_rate_pct: rate },
+          inputs_from: (a.mode == null && a.power == null && a.bonus == null && a.skill == null
+                        && a.s6 == null && a.score == null && a.song_id == null)
+            ? '全部沿用計算中心的共用設定' : '呼叫時指定的參數，其餘沿用計算中心的共用設定',
+          song_score: Math.round(score), score_from: scoreFrom,
+          cycle_s: cycle, overhead_s: this.ohOf(mode),
+          current_setting_energy: +s.energy || 0,
+          table: rows,
+          best_ep_per_energy: {
+            boost_energy: bestPerEnergy,                      // 可能同時多檔並列
+            ep_per_energy: Math.round(bestRatio),
+            tied: bestPerEnergy.length > 1,
+          },
+          best_ep_per_hour: { boost_energy: bestPerHour },
+          note: '單局活動P ＝ ⌊base × 歌曲倍率 × (1＋加成/100)⌋ × 火倍率；'
+            + 'base 單人場為 100＋⌊分數/20000⌋，協力/應援為 123＋⌊(分數＋0.075×綜合力×5)/17000⌋。'
+            + '火倍率表：0→1、1→5、2→10、3→15、4→20、5→25、6→27、7→29、8→31、9→33、10→35。'
+            + ' table 是這組參數下 ' + rows.length + ' 個火數的完整對照（不是取樣，不用再逐一呼叫 calc_event_points）。'
+            + ' ep_per_energy＝單局活動P ÷ 火數，是省體力指標；ep_per_hour＝單局活動P × 3600 ÷ (歌長＋'
+            + this.ohOf(mode) + 's 結算間隔)，是省時間指標；0 火的 ep_per_energy 是 null（不耗體力，沒有這個比值）。'
+            + ' 結構上 1～5 火的倍率剛好都是 ×5/火（5/10/15/20/25），每火效率完全相同；6 火起倍率遞減（27/29/31/33/35），'
+            + '每火效率越吃越差。所以：體力有限就吃 1～5 火（其中吃 5 火局數最少、最省時間），'
+            + '時間有限或活動最後衝刺才吃 10 火 —— 用 3.5 倍的每火成本換 7 倍的每小時產出。',
+        };
+      }
+
+      case 'get_border_matrix': {
+        await this.loadBorderDB();
+        const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        if (!DB) return { error: '榜線資料庫載入失敗，無法標註各期的活動型態與日數' };
+        const evl = await this.loadEvList().catch(() => []);
+        if (!evl || !evl.length) return { error: '活動清單載入失敗，無法決定要查哪幾期' };
+
+        // 段位白名單＝兩份資料源歷來出現過的所有段位。不在名單上的直接擋掉,
+        // 否則整欄都是 null,模型會誤讀成「那期沒人跑到這個名次」。
+        const DB_T = DB.tiers || [];
+        const API_T = [10000, 20000, 30000, 40000, 50000, 80000, 100000, 150000, 200000];
+        const ALL_T = DB_T.concat(API_T).filter((t, i, s) => s.indexOf(t) === i).sort((x, y) => x - y);
+        const DEF_T = [100, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+        let tiers = (Array.isArray(a.tiers) && a.tiers.length) ? a.tiers.map(Number) : DEF_T;
+        const bad = tiers.filter(t => ALL_T.indexOf(t) < 0);
+        if (bad.length) return { error: '沒有這些段位:' + bad.join('、') + '。可用段位:' + ALL_T.join('、') };
+        tiers = tiers.filter((t, i, s) => s.indexOf(t) === i).sort((x, y) => x - y).slice(0, 14);
+
+        const now = Date.now();
+        const endOf = e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime();
+        const isFinal = e => endOf(e) <= now;
+        let pick = [], notFound = [];
+        if (Array.isArray(a.event_ids) && a.event_ids.length) {
+          const want = a.event_ids.map(Number).slice(0, 30);
+          pick = want.map(id => evl.find(e => +e.id === id)).filter(Boolean);
+          notFound = want.filter(id => !evl.some(e => +e.id === id));
+          if (!pick.length) return { error: '這些期數都不存在:' + want.join('、') };
+        } else {
+          // 依期數新到舊的連續一段,不是取樣;要看更早的用 offset 往後翻
+          const pool = evl.filter(e => isFinal(e)
+            || (a.include_running && new Date(e.start_at).getTime() <= now))
+            .sort((x, y) => y.id - x.id);
+          const off = Math.max(0, Math.min(300, +a.offset || 0));
+          pick = pool.slice(off, off + Math.max(1, Math.min(30, +a.recent || 12)));
+          if (!pick.length) return { error: 'offset 超過已結算的期數，這個範圍內沒有活動' };
+        }
+
+        /* 一期一個請求,所以分批 8 個送(與榜線趨勢同一個節流),並把已結算的期數
+           快取起來 —— 它的終線不會再變。進行中的那期每分鐘都在動,不能快取。 */
+        const cache = (this._bmCache = this._bmCache || {});
+        const live = {}, failed = [];
+        const need = pick.filter(e => !cache[e.id]);
+        for (let i = 0; i < need.length; i += 8) {
+          await Promise.all(need.slice(i, i + 8).map(async e => {
+            try {
+              const rows = this.bordersOf(await this.apiFetch('/event/' + e.id + '/border'));
+              if (!rows.length) throw new Error('empty');
+              if (isFinal(e)) cache[e.id] = rows; else live[e.id] = rows;
+            } catch (err) { failed.push(+e.id); }
+          }));
+        }
+
+        const dbIdx = {}; DB_T.forEach((t, i) => { dbIdx[t] = i; });
+        const cover = {}; tiers.forEach(t => { cover[t] = 0; });
+        const events = pick.map(e => {
+          const api = {};
+          (cache[e.id] || live[e.id] || []).forEach(r => { api[r.rank] = r.score; });
+          const db = (DB.borders || []).find(x => +x.id === +e.id) || null;
+          const meta = (DB.events || []).find(x => +x.id === +e.id) || null;
+          // 卡池表帶的圈內講法(箱活/混活/World Link),有就補,沒有不強求
+          const g = (this.state.gachas || []).find(x => String(x.eid) === String(e.id) && x.et);
+          const borders = {}, notOffered = [], fromDB = [];
+          tiers.forEach(t => {
+            let v = (api[t] != null) ? api[t] : null;
+            if (v == null && db && dbIdx[t] != null && db.t[dbIdx[t]] != null) {
+              v = db.t[dbIdx[t]]; fromDB.push(t);
+            }
+            borders['T' + t] = v;
+            if (v == null) notOffered.push(t); else cover[t]++;
+          });
+          return {
+            event_id: +e.id,
+            name: e.name || (meta ? meta.name : ''),
+            type: meta ? meta.type : ((e.chapters || []).length ? 'World Link' : null),
+            days: meta ? meta.days : +((endOf(e) - new Date(e.start_at).getTime()) / 86400000).toFixed(2),
+            unit: meta ? meta.unit : null,
+            attr: meta ? meta.attr : null,
+            banner_chara: meta ? meta.chara : null,
+            banner_scope: g ? g.et : null,
+            start: e.start_at,
+            aggregate_at: e.aggregate_at || e.closed_at,
+            is_final: isFinal(e),
+            borders,
+            tiers_not_offered: notOffered.length ? notOffered : null,
+            tiers_from_static_db: fromDB.length ? fromDB : null,
+            fetch_failed: failed.indexOf(+e.id) >= 0 ? true : null,
+          };
+        });
+
+        return {
+          score_unit: '活動P（點）',
+          tiers,
+          events_returned: events.length,
+          events,
+          tier_coverage: tiers.map(t => ({ tier: 'T' + t, events_with_value: cover[t], of: events.length })),
+          not_found_event_ids: notFound.length ? notFound : null,
+          fetch_failed_event_ids: failed.length ? failed : null,
+          note: 'borders["T◯"] ＝ 該期第 ◯ 名玩家的累計活動P（is_final=true 是結算終線，false 是此刻的即時值）。'
+            + 'T5000 以下同時有 good果汁靜態表與 HiSekai API，兩邊在 #175 的十二個重疊段位逐位相同；'
+            + 'T10000 以上只有 API，T1～T90 只有靜態表（tiers_from_static_db 標出哪幾段是從靜態表補的）。'
+            + 'null 代表「那期官方沒有開放這個段位」，不是沒人跑到：'
+            + '#1～#107 有 T100000（#65～#106 部分期另有 T200000）、沒有 T1500／T2500；'
+            + '#108～#165 改成 T80000＋T150000（少數期只有 T80000），並開始有 T1500／T2500；'
+            + '#167 起回到 T100000、不再有 T80000／T150000（#166 是官方的測試活動，沒有榜線）。'
+            + '跨期比較前務必先看 type 與 days —— 12 天的 World Link 與 6.25 天的短馬拉松不能直接並列；'
+            + '另外榜線兩年來整體通膨（T100 約漲 2.8 倍），比較最好限縮在相近期數。'
+            + 'World Link 這裡給的是主榜，各章個榜不在這支。',
+        };
+      }
+
+      case 'get_border_timeseries': {
+        const tier = +a.tier;
+        if (!tier) return { error: '缺少 tier（段位），例如 100 / 1000 / 5000' };
+        if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+        const curId = this.eventOf(this.state.live).id;
+        const evId = (a.event_id != null && a.event_id !== '') ? +a.event_id : (curId != null ? +curId : null);
+        if (evId == null) return { error: '取不到活動期數，即時排名資料尚未載入' };
+        const isCur = (curId != null && +curId === evId);
+
+        let pts = [], avail = [], evName = null, stMs = 0, enMs = 0, source = '', localN = 0;
+        if (isCur) {
+          // 當期直接用站上那條合併好的時間軸：公用時序 ＋ 這台瀏覽器自己記的快照。
+          // 跟 analysis 頁的走勢圖、實測時速吃的是同一個 snapList，數字才不會兩套。
+          if (!this.state.hist) { try { await this.loadBorderHistory(); } catch (e) {} }
+          const list = this.snapList(evId);
+          if (!list.length) return { error: '第 ' + evId + ' 期還沒有任何榜線快照' };
+          const h = (this.state.hist && this.state.hist.eventId === evId) ? this.state.hist : {};
+          avail = (h.tiers || []).slice();
+          if (!avail.length) avail = ((list[list.length - 1] || [])[1] || []).map(x => x[0]);
+          if (avail.length && avail.indexOf(tier) < 0) {
+            return { error: '第 ' + evId + ' 期沒有 T' + tier + ' 這一段', available_tiers: avail };
+          }
+          pts = list.map(s => {
+            const f = (s[1] || []).find(x => x[0] === tier);
+            return (f && f[1] != null) ? [s[0], f[1]] : null;
+          }).filter(Boolean);
+          localN = this.snapLocal(evId).length;
+          const ev = this.eventOf(this.state.live);
+          evName = ev.name || h.name || null;
+          stMs = new Date(ev.start_at || h.startAt || 0).getTime() || 0;
+          enMs = new Date(ev.aggregate_at || ev.closed_at || h.aggregateAt || 0).getTime() || 0;
+          source = 'public_timeseries+local_snapshots';
+        } else {
+          // 過去期數自己抓，刻意不走 loadBorderHistory —— 那支會 setState({hist})，
+          // 把 analysis 頁正在畫的走勢圖整個換成別期。這裡只讀不寫 state。
+          // 檔案不小（#176 那種 12 天 WL 期有 3MB），所以在實例上留一份快取。
+          this._btsCache = this._btsCache || {};
+          let d = this._btsCache[evId];
+          if (!d) {
+            try {
+              d = await fetch(this.HIST + '/' + evId + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+            } catch (e) { d = null; }
+            if (!d || !Array.isArray(d.samples) || !d.samples.length) {
+              let ids = null;
+              try { ids = await fetch(this.HIST + '/index.json').then(r => r.ok ? r.json() : null); } catch (e) {}
+              return { error: '第 ' + evId + ' 期沒有公用榜線時序（本站是從第 175 期才開始記的）',
+                       available_event_ids: Array.isArray(ids) ? ids : null };
+            }
+            this._btsCache[evId] = d;
+          }
+          avail = (d.tiers || []).slice();
+          const ci = avail.indexOf(tier);
+          if (ci < 0) return { error: '第 ' + evId + ' 期沒有 T' + tier + ' 這一段', available_tiers: avail };
+          // 一樣要先修單調：WL 期間 API 會把別的榜的值串進來，站上各處都吃修過的資料
+          pts = this.fixMono(d.samples, avail.length)
+            .map(s => (s[ci + 1] != null ? [s[0] * 1000, s[ci + 1]] : null)).filter(Boolean);
+          evName = d.name || null;
+          stMs = new Date(d.startAt || 0).getTime() || 0;
+          enMs = new Date(d.aggregateAt || 0).getTime() || 0;
+          source = 'public_timeseries';
+        }
+        if (pts.length < 2) {
+          return { error: '第 ' + evId + ' 期的 T' + tier + ' 只有 ' + pts.length + ' 筆快照，量不出走勢',
+                   available_tiers: avail };
+        }
+
+        const first = pts[0], last = pts[pts.length - 1], now = Date.now();
+        const gaps = [];
+        for (let j = 1; j < pts.length; j++) gaps.push(pts[j][0] - pts[j - 1][0]);
+        gaps.sort((x, y) => x - y);
+        const medGapMin = gaps[Math.floor(gaps.length / 2)] / 60000;
+        const maxGapH = gaps[gaps.length - 1] / 3600000;
+
+        /* 時速＝窗口內最早一筆到最後一筆的分數差 ÷ 跨距。跨距不足半小時量到的是雜訊，
+           退回整段（與 wlSpeed 同一套規則）。winH 給 null 就是整段，那條剛好等於
+           snapSpeed 給榜線分析用的「實測時速」。 */
+        const spd = winH => {
+          let a0 = winH ? pts.find(p => last[0] - p[0] <= winH * 3600000) : pts[0];
+          if (!a0 || (last[0] - a0[0]) / 3600000 < 0.5) a0 = pts[0];
+          const h = (last[0] - a0[0]) / 3600000;
+          if (h < 0.5) return null;
+          return { rate: (last[1] - a0[1]) / h, spanH: h, from: a0,
+                   n: pts.filter(p => p[0] >= a0[0]).length };
+        };
+        const winH = Math.max(0.5, Math.min(72, +a.window_hours || 6));
+        const full = spd(null), rec = spd(winH);
+
+        // 外推的基準是「最後一筆快照」而不是此刻：快照可能已經放了幾小時，
+        // 拿現在的時間去配舊分數會憑空多算一段。data_age_h 讓模型自己判斷新舊。
+        const leftH = enMs ? Math.max(0, (enMs - last[0]) / 3600000) : null;
+        const frac = (stMs && enMs && enMs > stMs)
+          ? Math.min(1, Math.max(0.001, (last[0] - stMs) / (enMs - stMs))) : null;
+        const ended = enMs ? now >= enMs : false;
+        const pj = r => (r == null || leftH == null) ? null : Math.round(last[1] + r * leftH);
+
+        // 均勻抽樣：整段等距取，不是取最近 N 筆，也不是隨機
+        const want = Math.max(2, Math.min(120, Math.round(+a.points || 24)));
+        const step = Math.max(1, Math.ceil(pts.length / want));
+        const picked = [];
+        for (let j = 0; j < pts.length; j += step) picked.push(pts[j]);
+        if (picked[picked.length - 1] !== last) picked.push(last);
+        const iso = ms => new Date(ms).toISOString();
+
+        return {
+          event: { id: evId, name: evName, status: ended ? 'ended' : 'live',
+                   start: stMs ? iso(stMs) : null, end: enMs ? iso(enMs) : null,
+                   progress_pct_at_last_point: frac != null ? +(frac * 100).toFixed(1) : null,
+                   hours_left_from_last_point: leftH != null ? +leftH.toFixed(2) : null },
+          tier,
+          source, local_snapshot_count: isCur ? localN : 0,
+          available_tiers: avail,
+          series: {
+            total_points: pts.length, returned_points: picked.length, sampled_every_nth: step,
+            raw_interval_median_min: +medGapMin.toFixed(1),
+            sampled_interval_avg_min: +(((last[0] - first[0]) / 60000) / (picked.length - 1)).toFixed(1),
+            largest_hole_h: +maxGapH.toFixed(1),
+            covers: [iso(first[0]), iso(last[0])],
+            data_age_h: +((now - last[0]) / 3600000).toFixed(2),
+          },
+          current_score: last[1],
+          measured_full: full ? { speed_per_hour: Math.round(full.rate), span_h: +full.spanH.toFixed(2),
+                                  points_in_span: full.n, from: iso(full.from[0]), from_score: full.from[1] } : null,
+          measured_recent: rec ? { requested_window_h: winH, speed_per_hour: Math.round(rec.rate),
+                                   span_h: +rec.spanH.toFixed(2), points_in_span: rec.n,
+                                   from: iso(rec.from[0]), from_score: rec.from[1] } : null,
+          projection: ended ? null : {
+            from_full_span_speed: pj(full ? full.rate : null),
+            from_recent_speed: pj(rec ? rec.rate : null),
+            linear: frac ? Math.round(last[1] / frac) : null,
+            site_value: pj(full ? full.rate : null),
+          },
+          points: picked.map((p, j) => {
+            const q = j ? picked[j - 1] : null;
+            const dh = q ? (p[0] - q[0]) / 3600000 : 0;
+            return { t: iso(p[0]), score: p[1],
+                     gain: q ? p[1] - q[1] : null,
+                     speed_per_hour: (q && dh > 0) ? Math.round((p[1] - q[1]) / dh) : null };
+          }),
+          note: '分數單位是活動P，時速是活動P／小時。' +
+                'points 是整段活動「等距抽樣」的結果（每 ' + step + ' 筆取 1 筆），不是最近幾筆也不是隨機，' +
+                '總共 ' + pts.length + ' 筆；要更密就把 points 調大（上限 120），不要多次呼叫拼湊。' +
+                '每點的 speed_per_hour 是「與上一個回傳點之間」的平均時速，抽樣越疏越平滑。　' +
+                '實測時速＝(最後一筆分數 − 窗口起點分數) ÷ 跨距小時；' +
+                '預測終線＝最後一筆分數 ＋ 時速 × 剩餘小時；' +
+                '線性外推＝最後一筆分數 ÷ 活動已過比例（完全不看實測速度，末段一定低估）。' +
+                'site_value 就是站上「榜線分析」那欄預測終線的算法（整段實測速度外推）。　' +
+                'measured_full 是整段平均，會被前期的慢速拖平 —— #176 第三章 T100 整段平均 41.4 萬/h、' +
+                '最近 6 小時卻是 91.9 萬/h，差 2.2 倍；要回答「現在跑多快」看 measured_recent。　' +
+                '外推對末段衝刺是低估的：活動過六成後，回測 #150～#176 顯示 T5000 約低估 2～6%、' +
+                'T1000 10～13%、T100 14～22%，請當下限而不是保證線。　' +
+                '快照由 GitHub Actions 記錄（每 30 分鐘觸發一次，每次在同一個 job 內每 5 分鐘取樣、連記 12 筆，' +
+                '所以原始間隔中位數約 5 分鐘）；Actions 誤點或失敗時會出現數小時的空洞，' +
+                'largest_hole_h 就是本期最大的一個洞，measured_recent 的 span_h 可能因此遠小於要求的窗口。　' +
+                '分數只增不減，站上已用 running-min 修過 WL 期間 API 串值造成的下降。　' +
+                'World Link 的章節榜不在這支裡（那是各章獨立的榜），要看章節走勢用 get_wl_status。',
+        };
+      }
+
+      case 'get_chart_consts': {
+        /* 定數資料是獨立的 classic script（掛 window.B30_CONSTS），App 這邊平常不載。
+           載法與 get_b30 一字不差，並刻意共用同一支 this._b30Loading ——
+           兩支工具在同一輪先後被叫到時，才不會各自再下載一次 88 KB。 */
+        if (!window.B30_CONSTS) {
+          if (!this._b30Loading) {
+            this._b30Loading = new Promise(res => {
+              const s = document.createElement('script');
+              s.src = 'data/b30-consts.js?v=5fb6171929';
+              s.onload = () => res();
+              s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
+              document.head.appendChild(s);
+            });
+          }
+          await this._b30Loading;
+        }
+        const D = window.B30_CONSTS;
+        if (!D || !(D.charts || []).length) return { error: '定數資料（data/b30-consts.js）載入失敗，請重新整理後再試一次。' };
+
+        /* cval／clab 必須跟 get_b30 與 core.js 的 B30Maker 完全一致：
+           「+」是定數的一部分（+＝+0.05、++＝+0.09999999，貼著下一帶但嚴格小於），
+           區間篩選與排序都得用含「+」的值，否則 31.5++ 會被當成 31.5 排在 31.5+ 前面。 */
+        const PLUS = [0, 0.05, 0.09999999];
+        const cval = c => c.c + PLUS[c.p || 0];
+        const clab = c => c.c.toFixed(1) + '+'.repeat(c.p || 0);
+        const DN = { master: 'MASTER', append: 'APPEND', expert: 'EXPERT' };
+        const r2 = v => +v.toFixed(2);
+        // 模型很愛把沒用到的參數塞 null，而 +null===0 會變成「篩 0」，所以不能只用 Number.isFinite
+        const num = v => (v == null || v === '' || !Number.isFinite(+v) ? null : +v);
+
+        const DA = { M: 'master', MAS: 'master', MASTER: 'master', A: 'append', APD: 'append', APPEND: 'append',
+                     X: 'expert', EX: 'expert', EXPERT: 'expert' };
+        let diff = null;
+        if (a.difficulty != null && String(a.difficulty).trim()) {
+          diff = DA[String(a.difficulty).trim().toUpperCase()] || null;
+          if (!diff) return { error: 'difficulty 只能是 master／append／expert。難易度表只收這三個難度，EASY／NORMAL／HARD 沒有定數。' };
+        }
+
+        /* 表上的「31.5」其實是 31.5／31.5+／31.5++ 三種列，使用者說「31.5 的譜面」通常指整帶，
+           所以不寫「+」就整帶都給；明確寫 "31.5+" 才只挑那一種。 */
+        let eqBase = null, eqPlus = null;
+        if (a.const_eq != null && String(a.const_eq).trim()) {
+          const m = String(a.const_eq).trim().match(/^(\d+(?:\.\d+)?)(\++)?$/);
+          if (!m) return { error: 'const_eq 格式錯誤，要寫成 "31.5"（含 31.5+／31.5++）或 "31.5+"、"32.9++"（只要那一種）。' };
+          eqBase = +m[1]; eqPlus = m[2] ? m[2].length : null;
+          if (eqPlus > 2) return { error: 'const_eq 最多兩個「+」，表上只有 + 與 ++。' };
+        }
+
+        // 曲名比對去空白：英文曲名使用者常打成「tellyourworld」，日文原名不受影響
+        const nz = s => String(s == null ? '' : s).toLowerCase().replace(/\s+/g, '');
+        const q = nz(a.q);
+        const songId = num(a.song_id);
+        const cMin = num(a.const_min), cMax = num(a.const_max);
+        const lv = num(a.level), lvMin = num(a.level_min), lvMax = num(a.level_max);
+        const pool = ['all', 'tw', 'jp'].indexOf(a.pool) >= 0 ? a.pool : 'all';
+
+        const hit = D.charts.filter(c => {
+          if (diff && c.d !== diff) return false;
+          if (pool === 'tw' && c.jp) return false;
+          if (pool === 'jp' && !c.jp) return false;
+          if (songId != null && c.id !== songId) return false;
+          if (eqBase != null) {
+            if (Math.abs(c.c - eqBase) > 1e-9) return false;
+            if (eqPlus != null && (c.p || 0) !== eqPlus) return false;
+          }
+          const v = cval(c);
+          if (cMin != null && v < cMin - 1e-9) return false;
+          if (cMax != null && v > cMax + 1e-9) return false;
+          if (lv != null && c.lv !== lv) return false;
+          if (lvMin != null && c.lv < lvMin) return false;
+          if (lvMax != null && c.lv > lvMax) return false;
+          if (q && nz(c.t).indexOf(q) < 0 && nz(c.tc).indexOf(q) < 0) return false;
+          return true;
+        });
+
+        // 查無資料不是錯誤，但要講清楚「為什麼是空的」，免得模型改用更爛的條件亂試
+        if (!hit.length) {
+          return { total: 0, charts: [],
+            note: '沒有符合條件的譜面（不是資料壞掉）。曲名請用日文原曲名（例如「ヒバナ」而不是 Hibana）或社群中文譯名；'
+              + '難易度表只收 MASTER／APPEND／EXPERT 共 ' + D.charts.length + ' 張譜面（涵蓋 '
+              + new Set(D.charts.map(c => c.id)).size + ' 首曲子）、定數 24.9～38.0，'
+              + '條件超出這個範圍（例如 const_min 39、只有 EXPERT 的冷門曲）就會是空的。' };
+        }
+
+        const sort = ['const_desc', 'const_asc', 'level_desc', 'level_asc', 'song_id'].indexOf(a.sort) >= 0 ? a.sort : 'const_desc';
+        const byC = (x, y) => cval(x) - cval(y) || x.lv - y.lv || x.id - y.id;
+        hit.sort(sort === 'const_asc' ? byC
+          : sort === 'level_desc' ? ((x, y) => y.lv - x.lv || cval(y) - cval(x) || x.id - y.id)
+          : sort === 'level_asc' ? ((x, y) => x.lv - y.lv || cval(x) - cval(y) || x.id - y.id)
+          : sort === 'song_id' ? ((x, y) => x.id - y.id || cval(y) - cval(x))
+          : ((x, y) => byC(y, x)));
+
+        const lim = Math.max(1, Math.min(100, +a.limit || 20));
+        const off = Math.max(0, +a.offset || 0);
+        const page = hit.slice(off, off + lim);
+        const cs = hit.map(cval);
+
+        return {
+          total: hit.length, returned: page.length, offset: off,
+          has_more: off + page.length < hit.length,
+          sorted_by: sort,
+          filters: { q: a.q || null, song_id: songId, difficulty: diff, pool,
+            const_eq: a.const_eq || null, const_min: cMin, const_max: cMax,
+            level: lv, level_min: lvMin, level_max: lvMax },
+          matched_const_range: { min: r2(Math.min.apply(null, cs)), max: r2(Math.max.apply(null, cs)) },
+          matched_by_difficulty: {
+            MASTER: hit.filter(c => c.d === 'master').length,
+            APPEND: hit.filter(c => c.d === 'append').length,
+            EXPERT: hit.filter(c => c.d === 'expert').length,
+          },
+          charts: page.map(c => ({
+            song_id: c.id, title: c.t, title_tc: c.tc || null,
+            difficulty: DN[c.d] || c.d,
+            level: c.lv,                       // 遊戲內等級（整數 Lv）
+            const_label: clab(c),              // 表上的寫法，例如 "31.5+"
+            const_value: r2(cval(c)),          // 實際參與計算的數值，例如 31.55
+            jp_only: !!c.jp, estimated_const: !!c.e,
+          })),
+          data_source: D.source, chart_count: D.charts.length,
+          updated: D.builtAt ? new Date(D.builtAt).toISOString().slice(0, 10) : null,
+          note: 'const_label／const_value 是「非官方難易度表」（' + D.source + '，AP 基準）的定數，不是遊戲內等級：'
+            + 'level 才是遊戲裡顯示的 Lv（整數，同一個 Lv 內實際難度可以差很多）；'
+            + '定數是社群把同一個 Lv 再細分到小數的難度排名值（通常落在該 Lv 的 x.0～x.9），兩者不相等也不該互相換算，'
+            + '講給使用者聽時要說「難易度表定數」而不是「等級」。'
+            + '「+」是定數的一部分且計入運算：+＝+0.05、++＝+0.09999999（幾乎貼齊下一帶但嚴格小於），'
+            + '所以 ++ 的 const_value 四捨五入後會顯示成下一個整數（34.9++ → 35），要唸出來請以 const_label 為準。'
+            + 'difficulty 只有 MASTER／APPEND／EXPERT——難易度表沒收 EASY／NORMAL／HARD，也不是每首曲子都有 EXPERT 列（全表只有 36 張），'
+            + '查不到不等於那張譜面不存在，只是表沒收。'
+            + 'jp_only=true 是日服限定曲、台服點不到；estimated_const=true 是難易度表未收錄、由等級推估的定數（全表 7 張，要註明是估的）。'
+            + 'charts 是全部 ' + hit.length + ' 筆符合條件的譜面依 ' + sort + ' 完整排序後的第 '
+            + (off + 1) + '～' + (off + page.length) + ' 筆，不是取樣；要更多就調 limit（最多 100）／offset，不要用多次小批次拼湊。'
+            + 'song_id 可直接餵給 get_songs 查作曲者／音符數／曲長；要算使用者自己的 B30 或「下一張打哪首最划算」請用 get_b30。',
+        };
+      }
+
+      case 'get_gacha_points': {
+        /* 招募點數(BPT)＝ 依「這抽花了什麼資源」累積的點數,跟 300 抽天井是兩套獨立保底。
+           為什麼不直接呼叫 GachaBonus.calc():那支讀 #gbHave/#gbPaid… 再把 HTML 寫回 #gbResult ——
+           那些節點只存在於經典版頁面,在這裡 getElementById 回 null 會直接拋,而且會動到畫面。
+           所以只借它的規則常數(PT／COST／MODES),數字自己算;點數換算再用官方
+           gachaBonusPoints.json 覆寫一次,master 改了不必回頭改這裡。 */
+        const E = await this.ensureEngine();
+        const GB = E && E.GachaBonus;
+        if (!GB) return { error: '計算引擎載入了，但取不到 GachaBonus（招募點數規則）' };
+        const MDB = E && E.MasterDB;
+        if (!MDB) return { error: '計算引擎載入了，但取不到 MasterDB' };
+
+        const COST = GB.COST || 300;
+        const num = (v, d) => (v == null || v === '' || !isFinite(+v)) ? d : Math.max(0, +v);
+        const r1 = n => Math.round(n * 10) / 10;
+        const wantPools = a.include_pools !== false;
+
+        let bpRaw = null, tierRaw = null;
+        try {
+          [bpRaw, tierRaw] = await Promise.all([
+            MDB.get('gachaBonusPoints.json').catch(() => null),
+            MDB.get('gachaBonusItemReceivableRewards.json').catch(() => null),
+          ]);
+        } catch (e) { return { error: '招募點數 master 資料載入失敗：' + (e.message || '') }; }
+
+        const PT = { paid_jewel: GB.PT.paid, jewel: GB.PT.free, gacha_ticket: GB.PT.ticket };
+        let ptSrc = 'core.js GachaBonus.PT（master 表沒載到，用站上內建值）';
+        if (Array.isArray(bpRaw) && bpRaw.length) {
+          bpRaw.forEach(r => { if (r && r.resourceType && r.point != null) PT[r.resourceType] = +r.point; });
+          ptSrc = '官方 master data gachaBonusPoints.json';
+        }
+        const perPull = ct => (ct && PT[ct] != null) ? PT[ct] : 0;
+
+        const now = Date.now();
+        let pools = [], total = 0, off = 0;
+        if (wantPools) {
+          let gachas;
+          try { gachas = await MDB.get('gachas.json'); }
+          catch (e) { return { error: '卡池 master 資料（gachas.json）載入失敗：' + (e.message || '') }; }
+          if (!Array.isArray(gachas) || !gachas.length) return { error: '卡池 master 資料（gachas.json）是空的' };
+
+          const q = String(a.gacha_query || '').trim().toLowerCase();
+          const gid = a.gacha_id != null ? String(a.gacha_id) : '';
+          let picked;
+          if (gid) {
+            picked = gachas.filter(g => String(g.id) === gid);
+            if (!picked.length) return { error: '找不到編號 ' + gid + ' 的卡池（台服 master 只留現行與近期卡池，太舊的池查不到）' };
+          } else if (q) {
+            picked = gachas.filter(g => String(g.name || '').toLowerCase().includes(q));
+            if (!picked.length) return { error: '找不到名稱含「' + a.gacha_query + '」的卡池；不指定 gacha_id／gacha_query 就會回現在進行中的全部卡池' };
+          } else {
+            picked = gachas.filter(g => g.startAt <= now && now <= g.endAt);
+            if (!picked.length) return { error: '目前沒有進行中的卡池（master 資料可能還沒更新）' };
+          }
+          picked = picked.slice().sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
+          total = picked.length;
+          const lim = Math.min(20, Math.max(1, Math.round(num(a.limit, 4))));
+          off = Math.round(num(a.offset, 0));
+          const page = picked.slice(off, off + lim);
+
+          const needCeil = page.some(g => g.gachaCeilItemId);
+          const needTk = page.some(g => (g.gachaBehaviors || []).some(b => b.costResourceType === 'gacha_ticket'));
+          const [sums, ceilItems, mats, tks] = await Promise.all([
+            needCeil ? MDB.get('gachaCeilExchangeSummaries.json').catch(() => null) : Promise.resolve(null),
+            needCeil ? MDB.get('gachaCeilItems.json').catch(() => null) : Promise.resolve(null),
+            needCeil ? MDB.get('materials.json').catch(() => null) : Promise.resolve(null),
+            needTk ? MDB.get('gachaTickets.json').catch(() => null) : Promise.resolve(null),
+          ]);
+          const sumBy = {}; (sums || []).forEach(s => { if (s.gachaCeilItemId) sumBy[s.gachaCeilItemId] = s; });
+          const ciBy = {}; (ceilItems || []).forEach(c => { ciBy[c.id] = c; });
+          const matBy = {}; (mats || []).forEach(m => { matBy[m.id] = m; });
+          const tkBy = {}; (tks || []).forEach(t => { tkBy[t.id] = t; });
+
+          const GUARD = { over_rarity_3_once: '該次至少 1 張 ★3 以上', over_rarity_4_once: '該次必中 1 張 ★4' };
+          const RESET = { once_a_day: '每日 1 次', once_a_week: '每週 1 次' };
+
+          pools = page.map(g => {
+            const seen = new Set(), methods = [];
+            (g.gachaBehaviors || []).filter(b => b.spinCount).forEach(b => {
+              const key = b.spinCount + ':' + b.costResourceType + ':' + b.costResourceQuantity + ':' + b.gachaBehaviorType;
+              if (seen.has(key)) return; seen.add(key);
+              const ct = b.costResourceType || '', qty = b.costResourceQuantity;
+              const free = !ct || qty == null;
+              const paidOnly = ct === 'paid_jewel';
+              const isTk = ct === 'gacha_ticket';
+              const tkName = isTk ? ((tkBy[b.costResourceId] || {}).name || '招募票券') : null;
+              const pp = free ? 0 : perPull(ct);
+              methods.push({
+                spins: b.spinCount,
+                cost_label: free
+                  ? (b.gachaSpinnableType === 'colorful_pass' ? '免費（七彩通行證，' + (RESET[b.gachaBehaviorType] || '限次') + '）' : '免費')
+                  : isTk ? (qty + ' 張' + tkName)
+                  : paidOnly ? ('付費水晶 ' + qty.toLocaleString('en-US') + ' 顆（無償水晶不能用）')
+                  : ct === 'jewel' ? (qty.toLocaleString('en-US') + ' 水晶（付費／免費皆可）')
+                  : (qty + ' ' + ct),
+                cost_resource: ct || null,
+                cost_quantity: qty == null ? null : qty,
+                crystals_per_pull: (ct === 'jewel' || ct === 'paid_jewel') ? Math.round(qty / b.spinCount) : null,
+                ticket_name: tkName,
+                paid_crystals_only: paidOnly,
+                is_free: free,
+                pass_only: b.gachaSpinnableType === 'colorful_pass',
+                reset: RESET[b.gachaBehaviorType] || null,
+                execute_limit: b.executeLimit != null ? b.executeLimit : null,
+                guarantee: GUARD[b.gachaBehaviorType] || null,
+                bonus_points_per_pull: pp,
+                bonus_points_total: r1(pp * b.spinCount),
+              });
+            });
+
+            let ceil = null;
+            const cid = g.gachaCeilItemId;
+            if (cid && sumBy[cid]) {
+              const su = sumBy[cid];
+              const rows = (su.gachaCeilExchanges || []).map(e => ({
+                n: (e.gachaCeilExchangeCost || {}).quantity || 0,
+                sub: (e.gachaCeilExchangeSubstituteCosts || [])[0] || null,
+                subLimit: e.substituteLimit != null ? e.substituteLimit : null,
+              }));
+              const top = rows.reduce((m, r) => Math.max(m, r.n), 0);
+              const main = rows.filter(r => r.n === top);
+              const sub = main[0] && main[0].sub;
+              const subMax = main[0] ? main[0].subLimit : null;
+              // subMax 是 master 的 substituteLimit。沒有這個欄位時代表官方沒寫上限,
+              // 不能自作主張當成「無限折抵」——那會算出「0 抽就能天井」這種假結果,所以留 null。
+              const covered = (sub && subMax != null) ? subMax * sub.substituteQuantity : null;
+              ceil = {
+                sticker_name: (ciBy[cid] || {}).name || null,
+                stickers_per_card: top,
+                pulls_to_ceil: top,
+                crystals_to_ceil: top * COST,
+                exchange_slots: main.length,
+                substitute_ticket: sub ? {
+                  name: (matBy[sub.resourceId] || {}).name || ('material#' + sub.resourceId),
+                  material_id: sub.resourceId,
+                  stickers_each: sub.substituteQuantity,
+                  max_tickets_per_slot: subMax,
+                  pulls_to_ceil_with_max_tickets: covered == null ? null : Math.max(0, top - covered),
+                  crystals_to_ceil_with_max_tickets: covered == null ? null : Math.max(0, top - covered) * COST,
+                } : null,
+                minor_exchange_costs: [...new Set(rows.map(r => r.n).filter(x => x !== top))].sort((x, y) => y - x),
+              };
+            }
+
+            return {
+              id: g.id, name: g.name || ('#' + g.id), gacha_type: g.gachaType || null,
+              is_active: g.startAt <= now && now <= g.endAt,
+              start_at: g.startAt ? new Date(g.startAt).toISOString() : null,
+              end_at: g.endAt ? new Date(g.endAt).toISOString() : null,
+              spin_limit: g.spinLimit != null ? g.spinLimit : null,
+              bonus_reward_group_id: g.gachaBonusItemReceivableRewardGroupId != null ? g.gachaBonusItemReceivableRewardGroupId : null,
+              methods, ceil,
+            };
+          });
+        }
+
+        // ---- 檔位表 ----
+        const CARD_RT = { not_owned_random_rarity4_fixed: 1, selectable_rarity4_fixed: 1 };
+        const grpId = (a.tier_group_id != null) ? +a.tier_group_id
+          : (pools.length === 1 && pools[0].bonus_reward_group_id != null ? pools[0].bonus_reward_group_id : null);
+        let tiers = null, tierSrc = '', itemTiers = null;
+        if (grpId != null && Array.isArray(tierRaw)) {
+          const rows = tierRaw.filter(r => r.groupId === grpId)
+            .sort((x, y) => x.gachaBonusBorderPoint - y.gachaBonusBorderPoint);
+          if (rows.length) {
+            const cards = rows.filter(r => CARD_RT[r.gachaBonusRewardType]);
+            itemTiers = rows.length - cards.length;
+            tiers = (cards.length ? cards : rows).map(r => ({
+              points: r.gachaBonusBorderPoint,
+              reward: r.description || (CARD_RT[r.gachaBonusRewardType] ? '★4 成員' : '道具'),
+              is_card: !!CARD_RT[r.gachaBonusRewardType],
+            }));
+            tierSrc = '官方 master data gachaBonusItemReceivableRewards.json groupId ' + grpId + '（該池實際檔位）'
+              + (cards.length ? '，另有 ' + itemTiers + ' 檔每 10 點的道具獎勵未列出' : '，這一池的 50／100 只給道具、不給卡');
+          }
+        }
+        if (!tiers) {
+          const mode = (a.pool_mode === 'rf') ? 'rf' : 'normal';
+          const M = (GB.MODES && GB.MODES[mode]) || GB.MODES.normal;
+          tiers = M.map(t => ({ points: t[0], reward: t[1], is_card: true }));
+          tierSrc = 'core.js GachaBonus.MODES.' + mode + '（站上通則，'
+            + (mode === 'rf' ? 'Recollection Festival 這類特殊池的四檔含自選' : '常駐／一般池 50／100 兩檔，沒有自選檔')
+            + '）；這一池的 master 沒指定專屬檔位群組';
+        }
+
+        // ---- 保底試算 ----
+        const have = num(a.current_points, 0);
+        const paid = num(a.paid_crystals, 0), freeC = num(a.free_crystals, 0), tk = num(a.tickets, 0);
+        const paidPulls = Math.floor(paid / COST), freePulls = Math.floor(freeC / COST);
+        const gain = paidPulls * PT.paid_jewel + freePulls * PT.jewel + tk * PT.gacha_ticket;
+        const after = r1(have + gain);
+        const prog = tiers.map(t => {
+          const short = Math.max(0, t.points - have);
+          return {
+            points: t.points, reward: t.reward,
+            status: have >= t.points ? 'reached' : after >= t.points ? 'affordable' : 'short',
+            points_short: r1(short),
+            points_still_short_after_spending: r1(Math.max(0, t.points - after)),
+            pulls_needed_paid: short && PT.paid_jewel > 0 ? Math.ceil(short / PT.paid_jewel) : 0,
+            paid_crystals_needed: short && PT.paid_jewel > 0 ? Math.ceil(short / PT.paid_jewel) * COST : 0,
+            pulls_needed_free: short && PT.jewel > 0 ? Math.ceil(short / PT.jewel) : 0,
+            free_crystals_needed: short && PT.jewel > 0 ? Math.ceil(short / PT.jewel) * COST : 0,
+          };
+        });
+
+        return {
+          point_rules: {
+            points_per_pull: { paid_jewel: PT.paid_jewel, jewel: PT.jewel, gacha_ticket: PT.gacha_ticket, colorful_pass_free_pull: 0 },
+            crystals_per_pull: COST, source: ptSrc,
+            note: '付費（有償）水晶抽 1 點／抽；免費（無償）水晶與招募票券 0.5 點／抽；七彩通行證的免費抽 0 點。'
+              + '同樣抽數，免費水晶只拿到付費水晶一半的點數，所以免費抽要兩倍抽數才追平。'
+              + '招募票券 1 張＝1 抽＝0.5 點，跟免費水晶同檔，pulls_needed_free 就等於需要的券數。',
+          },
+          bonus_tiers: tiers,
+          tier_source: tierSrc,
+          tier_item_only_count: itemTiers,
+          progress: {
+            current_points: r1(have),
+            from_paid_crystals: { crystals: paid, pulls: paidPulls, points: r1(paidPulls * PT.paid_jewel) },
+            from_free_crystals: { crystals: freeC, pulls: freePulls, points: r1(freePulls * PT.jewel) },
+            from_tickets: { tickets: tk, pulls: tk, points: r1(tk * PT.gacha_ticket) },
+            points_gained: r1(gain),
+            points_after: after,
+            tiers: prog,
+            note: '點數 ＝ ⌊付費水晶/300⌋×1 ＋ ⌊免費水晶/300⌋×0.5 ＋ 券數×0.5。'
+              + 'pulls_needed_* 是「從 current_points 起算」還要再抽幾次，'
+              + '不是扣掉手上資源後的缺口；扣完資源的缺口看 points_still_short_after_spending。',
+          },
+          pools_total: total, pools_offset: off, pools_shown: pools.length, pools,
+          note: '招募點數與 300 抽天井是兩套各自獨立的保底：天井是抽卡累積貼紙、湊滿去交換所換卡；'
+            + '招募點數是依「花了什麼資源」累積點數、跨過門檻直接發卡。'
+            + 'pools 是符合條件的完整清單依開始時間新→舊排序後的前 N 筆（pools_total 是總數），不是取樣。',
+          caveats: [
+            '只讀規則常數（GachaBonus.PT／COST／MODES）與官方 master 檔，全程沒有呼叫 GachaBonus.calc()——那支會去讀寫經典版頁面的 #gbHave／#gbResult 節點，本頁沒有那些節點，而且會動到畫面。',
+            '「未持有」是看你帳號倉庫，本工具無從得知，所以 50／100 點保底實際會發哪張卡算不出來，只能講規則。',
+            '台服 gachas.json 只留現行與近期卡池（約 70 餘個），太舊的池查不到；資料含已datamine 到的未來檔期，is_active=false 的是還沒開或已結束。',
+            '天井貼紙以「1 抽＝1 張」計；通行證的免費抽是否給貼紙、master 沒有欄位可證實，未納入計算。',
+            'substitute_ticket 是官方 master 寫的貼紙交換券折抵（1 張抵 10 貼紙、每個兌換格上限 max_tickets_per_slot）。注意生日池在 master 裡同樣有折抵設定，與站上 gacha_odds 目前寫的「生日池不可用交換券」不一致，以遊戲內交換所畫面為準。',
+            '第一次呼叫要下載 gachas.json（約 4.4 MB）等 master 檔，可能要幾秒；之後走 IndexedDB 快取（12 小時）。只想算點數不看卡池成本時給 include_pools:false 可以省掉這筆下載。',
+          ],
+        };
+      }
+
+      case 'get_pass_value': {
+        await this.loadBilling();
+        const D = (typeof BILLING_DATA !== 'undefined') ? BILLING_DATA : null;
+        if (!D || !Array.isArray(D.items) || D.items.length < 100) {
+          return { error: '商城商品資料尚未載入（' + (this.state.billErr || '請稍後再試') + '）' };
+        }
+        // passes 是通行證每日領取量的唯一來源,沒有它就只能算到票面,攤提整個失真 —— 寧可回錯誤
+        if (!D.passes || !D.passes.v2 || !D.passes.v2Daily) return { error: '商品資料裡沒有通行證設定（passes），算不出每日領取的攤提' };
+
+        const PULL = 300;                       // 單抽 300 水晶
+        const NOW = Date.now();
+        const onSale = r => (!r.s || r.s <= NOW) && (!r.e || r.e >= NOW);
+        const catOf = r => r.t === 'jewel' ? 'jewel' : r.t === 'value_set' ? 'set' : r.t === 'costume_3d' ? 'costume' : 'pass';
+        const fd = ms => { const d = new Date(ms); return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(); };
+        const limTxt = r => {
+          const L = r.lim || {};
+          if (L.t === 'live_point') return '需當月 LIVE P 達 ' + this.n(L.v) + '（每月重置）';
+          if (L.t === 'unlimited' || L.v == null || L.v < 0) return '不限購';
+          const c = L.v + ' 次';
+          if (L.r === 'day') return '每日 ' + c;
+          if (L.r === 'weekly') return '每週 ' + c;
+          if (L.r === 'monthly') return '每月 ' + c;
+          if (L.t === 'user_rank') return '新手限定 ' + c;
+          return '總共限購 ' + c;
+        };
+
+        const incT = a.include_ticket_value !== false;
+        const incM = a.include_material_value !== false;
+
+        /* 售價三層優先序,照站上「儲值分析」:本次呼叫指定 > 使用者在儲值分析頁自填 > master 定價。
+           月卡/通行證在 master 幾乎都是 9999 佔位價(pk=false),不吃自填就整頁都算不出 CP 值。
+           localStorage 只讀不寫,跟儲值分析頁同一個 key,不會動到使用者的設定。 */
+        let priceOv = {};
+        try { priceOv = JSON.parse(localStorage.getItem('sekai-shop-price-ov') || '{}') || {}; } catch (e) { priceOv = {}; }
+        const argOv = (a.price_overrides && typeof a.price_overrides === 'object') ? a.price_overrides : {};
+        const ovOf = r => +argOv[r.id] || +priceOv[r.id] || 0;
+        const priceOf = r => { const o = ovOf(r); if (!r.pk && o > 0) return o; return (r.pk && r.price > 0) ? r.price : null; };
+        const priceSrc = r => (r.pk && r.price > 0) ? 'master 官方定價'
+          : ovOf(r) > 0 ? (+argOv[r.id] > 0 ? '本次呼叫帶入的售價' : '使用者在「儲值分析」頁自填的售價') : null;
+
+        /* 道具→有償水晶單價表,跟 get_shop_items 共用同一份快取與同一套規則:
+           只認「單一內容物＋有償水晶兌換價＋不含水晶」的純道具包,那是遊戲對該道具的自報價。 */
+        const MAT_SKIP = { ticket: 1, colorful_pass: 1, colorful_pass_v2: 1, mysekai_colorful_pass: 1, costume: 1 };
+        const MAT_MINQ = 10;
+        const cKey = c => c[0] + ' ' + c[2];
+        let mi = this._billMi;
+        if (!mi || mi.built !== D.builtAt) {
+          const idx0 = {};
+          D.items.forEach(r => {
+            const cs = (r.c || []).concat(r.bc || []);
+            if (!r.exch || r.paid || r.free || cs.length !== 1) return;
+            const c = cs[0], q = c[1];
+            if (!(q > 0) || MAT_SKIP[c[0]] || q < MAT_MINQ) return;
+            const per = r.exch / q;
+            if (!(per > 0)) return;
+            const k = cKey(c);
+            if (idx0[k] == null || per < idx0[k].per) idx0[k] = { per, n: c[2] };
+          });
+          mi = this._billMi = { built: D.builtAt, idx: idx0 };
+        }
+        const idx = mi.idx;
+        /* 官網商品的內容物在原始資料裡型別一律是 web_item,cKey 對不上 material,
+           所以站上主表沒把官網附贈的心願碎片折算成石。這張「只看名稱」的表專供
+           uncounted_extras_est_jewels 用,刻意不進主 CP —— 進去會跟站上數字對不起來。 */
+        const byName = {};
+        Object.keys(idx).forEach(k => { const h = idx[k]; if (byName[h.n] == null || h.per < byName[h.n]) byName[h.n] = h.per; });
+
+        // 通行證每日領取的無償石:資料在 colorful_pass(_v2) 的 resource box(禮物盒發放 = 無償)
+        const dailyOf = r => {
+          let total = 0, days = 0, tier = null, kind = null;
+          (r.c || []).forEach(c => {
+            if (c[0] === 'colorful_pass' && c[3] != null) {
+              const d = ((D.passes.v1 || [])[0] || {}).expireDays || 30;
+              total += (D.passes.v1Daily[c[3]] || 0) * d; days = Math.max(days, d); kind = 'colorful_pass_v1'; tier = c[3];
+            }
+            if (c[0] === 'colorful_pass_v2' && c[3] != null) {
+              const p = (D.passes.v2 || []).find(x => x.id === c[3]) || {};
+              const d = p.expireDays || 30;
+              total += (D.passes.v2Daily[c[3]] || 0) * d; days = Math.max(days, d); kind = 'colorful_pass_v2'; tier = c[3];
+            }
+            if (c[0] === 'mysekai_colorful_pass') {
+              kind = 'mysekai_colorful_pass'; tier = c[3] != null ? c[3] : null;
+              days = Math.max(days, (D.passes.mysekai || {}).expireDays || 30);   // 世界通行證沒有每日水晶,只有期限
+            }
+          });
+          return { total, days, tier, kind };
+        };
+        const matBag = r => {
+          const acc = {};
+          (r.c || []).concat(r.bc || []).forEach(c => {
+            const h = idx[cKey(c)];
+            if (!h || !(c[1] > 0)) return;
+            (acc[cKey(c)] || (acc[cKey(c)] = { name: c[2], per: h.per, qty: 0 })).qty += c[1];
+          });
+          return Object.keys(acc).map(k => acc[k]).map(x => (x.jewels = Math.round(x.qty * x.per), x)).sort((p, q) => q.jewels - p.jewels);
+        };
+        /* 官網有幾筆的水晶數寫在品項說明文字裡(「免費水晶*420」,build-billing.py 的正則只認 ×/x),
+           不撈回來這幾筆會顯示 0 石、看起來像全店最爛。跟 get_shop_items 同一套補救。 */
+        const webFree = r => {
+          if (r.src !== 'web' || r.paid || r.free) return 0;
+          let s = 0;
+          (r.c || []).forEach(c => {
+            if (c[0] !== 'web_item') return;
+            const m = String(c[2]).match(/水晶\s*[*x×]\s*([\d,]+)/);
+            if (m) s += +m[1].replace(/,/g, '') || 0;
+          });
+          return s;
+        };
+        // 站上主表算不到價的內容物(官網 web_item…)的補充估值,只做參考、不進 CP
+        const extraEst = r => {
+          let s = 0;
+          (r.c || []).concat(r.bc || []).forEach(c => {
+            if (idx[cKey(c)] || !(c[1] > 0) || MAT_SKIP[c[0]]) return;
+            const per = byName[c[2]];
+            if (per > 0) s += c[1] * per;
+          });
+          return Math.round(s);
+        };
+        // 官方說明有時寫著跟資料庫不一樣的天數(七彩通行證舊版寫「最多14日」,master 的 expireDays 是 30)
+        const descDays = r => { const m = String(r.d || '').match(/最多\s*(\d+)\s*日/); return m ? +m[1] : null; };
+
+        // 基準線:App 商店「常駐不限購」水晶包的最佳石/元。官網包不列入,才顯得出官網多送多少
+        let base = 0, baseR = null;
+        D.items.forEach(r => {
+          if (r.src || r.t !== 'jewel' || r.lim.t !== 'unlimited' || !r.pk || !onSale(r)) return;
+          const v = (r.paid + r.free) / r.price;
+          if (v > base) { base = v; baseR = r; }
+        });
+        base = base || 3.9;
+
+        const PERK = {
+          colorful_pass_v1: p => ['LIVE P 獲得 ×' + (p.livePointMultiple || 1),
+            '每日限定有償招募 ' + (p.dailyPaidGachaSpinLimit || 0) + ' 次',
+            '活力補給上限 ' + (p.boostRecoveryLimit || 0), '每日自動 LIVE ' + (p.dailyAutoLimit || 0) + ' 次'],
+          colorful_pass_v2: p => ['挑戰 LIVE P 獲得 ×' + (p.challengeLivePointRate || 1), 'LIVE P 獲得 ×' + (p.livePointRate || 1),
+            p.dailyFreeGachaSpinLimit ? '每日免費招募 ' + p.dailyFreeGachaSpinLimit + ' 次' : '',
+            '每日限定有償招募 ' + (p.dailyPaidGachaSpinLimit || 0) + ' 次',
+            'LIVE BONUS 上限 ' + (p.maxLiveBonusCount || 0), '自動 LIVE 次數 ' + (p.maxAutoPlayCount || 0)].filter(Boolean),
+          mysekai_colorful_pass: p => ['家具製作時間 −' + Math.round((p.mysekaiConvertFixtureConvertMinutesDecreaseRate || 0) * 100) + '%',
+            '住宅版型預設槽位保留 ' + (p.mysekaiSiteHousingPresetSlotExpireDays || 0) + ' 天'],
+        };
+        const perksOf = r => {
+          const d = dailyOf(r);
+          let out = [];
+          if (d.kind === 'colorful_pass_v1') out = PERK.colorful_pass_v1((D.passes.v1 || [])[0] || {});
+          if (d.kind === 'colorful_pass_v2') out = PERK.colorful_pass_v2((D.passes.v2 || []).find(x => x.id === d.tier) || {});
+          if (d.kind === 'mysekai_colorful_pass') out = PERK.mysekai_colorful_pass(D.passes.mysekai || {});
+          if (r.t.indexOf('live_mission_pass') === 0) out = out.concat(['解鎖當月高階任務獎勵軌（進度水晶／限定服裝／素材，不在票面內，實際價值高於帳面）']);
+          if (r.t.indexOf('mysekai_mission_pass') === 0) out = out.concat(['解鎖「世界」任務獎勵軌（不在票面內）']);
+          return out;
+        };
+
+        // 官網兌換券 ←→ App 直購版:同一件商品的兩個通路(ref 指向 App 版的 id),比價時別當兩件
+        const voucherFor = {};
+        D.items.forEach(r => { if (r.src === 'web' && r.ref != null) voucherFor[r.ref] = r; });
+
+        const row = r => {
+          const d = dailyOf(r);
+          const price = priceOf(r);
+          const freeNow = r.free + webFree(r);
+          const mats = incM ? matBag(r) : [];
+          const matJ = mats.reduce((s, x) => s + x.jewels, 0);
+          const tick = incT ? r.pulls * PULL : 0;
+          const nowJ = r.paid + freeNow + matJ + tick;      // 買下當天就入帳的價值
+          const total = nowJ + d.total;                      // 站上口徑 totalJ:每日領取已全額攤提進來
+          const rate = (price && total) ? total / price : null;
+          /* 回本天數:同一筆錢拿去買 App 常駐最佳水晶包能換到幾顆石,就是門檻;
+             立即入帳的先抵,不足的部分由每日領取一天一天補。0 = 當天就已回本。 */
+          const need = price ? price * base : null;
+          const perDay = d.days ? d.total / d.days : 0;
+          let be = null, beNote;
+          if (!price) beNote = '售價未公布，無法算回本天數（請看 web_voucher 或用 price_overrides 帶入實售價）';
+          else if (need <= nowJ) { be = 0; beNote = '不用等每日領取，買下當天入帳的價值就已超過「同樣的錢買常駐最佳水晶包」'; }
+          else if (perDay > 0) {
+            const k = Math.ceil((need - nowJ) / perDay);
+            if (k <= d.days) { be = k; beNote = '登入領到第 ' + k + ' 天追平「同樣的錢買常駐最佳水晶包」，之後每天都是純賺'; }
+            else beNote = '整期 ' + d.days + ' 天全部領完仍追不平基準線，價值主要在特典（LIVE P 倍率、免費招募）而不是水晶';
+          } else beNote = '沒有每日領取，價值全在購買當下入帳（任務通行證的獎勵軌另計，不在票面內）';
+          const verdict = !price ? '需先確認售價' : rate >= base * 1.5 ? '大賺' : rate >= base ? '划算' : '看需求';
+          const web = (r.src !== 'web' && voucherFor[r.id]) ? voucherFor[r.id] : null;
+          const dd = descDays(r), est = extraEst(r);
+          return {
+            id: r.id, name: r.n, type: r.t,
+            channel: r.src === 'web' ? '官網商店（GamePay/MyCard・信用卡）' : 'App 內商店（iOS/Android 同價）',
+            price_twd: price, price_source: priceSrc(r), verdict: verdict,
+            paid_jewels_now: r.paid,          // 有償水晶：能抽有償限定池、能兌換演出服裝
+            free_jewels_now: freeNow,         // 無償水晶：買下當天就入帳的那部分
+            daily_claim: d.total ? {
+              free_jewels_per_day: Math.round(perDay), days: d.days, free_jewels_total: d.total,
+              kind: '無償水晶（禮物盒發放，不能抽有償限定池）',
+              data_conflict: (dd && dd !== d.days)
+                ? '官方說明寫「最多 ' + dd + ' 日」，但 master 的 expireDays 是 ' + d.days + ' 天。本工具與站上一致採用 ' + d.days + ' 天；若實際只有 ' + dd + ' 天，每日領取合計只有 ' + this.n(perDay * dd) + ' 石（現在算 ' + this.n(d.total) + ' 石），CP 值會高估。回答時請提醒使用者以遊戲內商店說明為準。'
+                : null,
+            } : null,
+            ticket_pulls: r.pulls || 0,
+            ticket_value_jewels: tick || 0,
+            material_value_jewels: matJ,
+            materials: mats.slice(0, 6).map(x => x.name + '×' + this.n(x.qty) + '（' + (+x.per.toFixed(3)) + ' 石/個，計 ' + this.n(x.jewels) + ' 石）'),
+            value_at_purchase_jewels: Math.round(nowJ),
+            total_value_jewels: Math.round(total),
+            jewels_per_twd: rate == null ? null : +rate.toFixed(2),
+            vs_baseline_pct: rate == null ? null : Math.round((rate / base - 1) * 100),
+            breakeven_days: be, breakeven_note: beNote,
+            uncounted_extras_est_jewels: est || null,
+            perks: perksOf(r),
+            purchase_limit: limTxt(r), on_sale_now: onSale(r),
+            ends: r.e && r.e - NOW < 3650 * 86400000 ? fd(r.e) : null,
+            official_desc: r.d ? r.d.replace(/\n/g, ' / ').slice(0, 120) : null,
+            web_voucher: web ? {
+              id: web.id, name: web.n, price_twd: web.price,
+              extra_free_jewels: web.free + webFree(web),
+              extra_paid_jewels: Math.max(0, web.paid - r.paid),
+              hint: '官網買兌換券、遊戲內兌換成同一張通行證；App 版沒公布定價時可拿這個當參考價',
+            } : null,
+            app_same_item_id: r.src === 'web' ? (r.ref != null ? r.ref : null) : null,
+          };
+        };
+
+        const section = ['all', 'pass', 'compare'].indexOf(String(a.section || 'all')) >= 0 ? String(a.section || 'all') : 'all';
+        const expire = (((D.passes.v2 || [])[0] || {}).expireDays) || 30;
+        const out = {
+          ok: true,
+          currency: 'TWD（新台幣，商店標價）',
+          data_built_at: D.builtAt ? new Date(D.builtAt).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : null,
+          web_shop_url: 'https://gamepay.ariel.com.tw/topup/5245',
+          pull_cost_jewels: PULL,
+          baseline_jewels_per_twd: +base.toFixed(2),
+          baseline_source: baseR ? ('App 內商店常駐不限購水晶包的最佳值＝' + baseR.n + '（' + this.n(baseR.paid + baseR.free) + ' 石／NT$' + this.n(baseR.price) + '）')
+            : '資料裡找不到常駐水晶包，退回預設 3.9 石/元',
+          verdict_rule: 'jewels_per_twd ≥ 基準×1.5 →「大賺」；≥ 基準 →「划算」；低於基準 →「看需求」（與站上「儲值分析 → 月卡·通行證」同一條線）',
+          assumptions: {
+            paid_vs_free: 'paid_jewels_now 是有償水晶（可抽有償限定池、可兌換演出服裝）；free_jewels_now 與 daily_claim.free_jewels_total 是無償水晶（不能抽有償池）。CP 值計算時兩者同權相加，站上算法就是這樣，但對只想抽有償池的人要另外看 paid。',
+            amortization: '每日領取的石分 ' + expire + ' 天入帳，站上算法把整期全額攤提進 total_value_jewels，等於假設「天天登入、領好領滿」；少登入一天就少一天的量，中途棄坑等於白花。',
+            breakeven: 'breakeven_days = 同一筆錢改買基準水晶包（' + base.toFixed(2) + ' 石/元）能換到的石當門檻，扣掉購買當下入帳的價值後，還要領幾天才追平。0 = 當天就回本；null 配上 breakeven_note 表示追不平或售價未知。',
+            tickets_counted: incT, materials_counted: incM,
+            material_pricing: '道具單價從資料反推：只認「單一內容物＋有償水晶兌換價＋不含水晶」的純道具包，同道具多檔取最低價，且只採計量 ≥10 的檔位（小包單價含便利溢價，外推會嚴重灌水）。折算出來是商店賣價，不等於實用價值。',
+            official_desc_caveat: 'official_desc 是 master 原文，部分品項還是未在地化的日文舊文案，數字（水晶量、天數）可能跟現行內容物對不上；一切以本工具算出的欄位（來自 resource box）與遊戲內商店顯示為準。',
+            not_counted: '任務通行證（live_mission_pass／mysekai_mission_pass）的任務獎勵軌（進度水晶、限定服裝、素材）不在票面內，也沒進 total_value_jewels，所以這幾張實際價值高於帳面；演出服裝部件一律不折算。',
+          },
+        };
+
+        if (section !== 'compare') {
+          const rows = D.items.filter(r => catOf(r) === 'pass' && (a.include_ended === true || onSale(r)))
+            .map(row).filter(x => x.total_value_jewels > 0 || x.price_twd != null);
+          // 未定價的排最後:它們的 jewels_per_twd 是 null,不能跟有價的混排
+          rows.sort((x, y) => (y.jewels_per_twd == null ? -1 : y.jewels_per_twd) - (x.jewels_per_twd == null ? -1 : x.jewels_per_twd));
+          /* 預設 30 筆時整包回傳約 23.8 KB(≈9,500 tokens),一次呼叫就吃掉大量脈絡。
+           回答「月卡划算嗎」用不到那麼多,10 筆足夠;要看更多再用 offset 翻頁。 */
+        const lim = Math.max(1, Math.min(40, +a.limit || 10));
+          const off = Math.max(0, +a.offset || 0);
+          out.passes_total = rows.length;
+          out.offset = off;
+          out.has_more = off + lim < rows.length;
+          out.unpriced_count = rows.filter(x => x.price_twd == null).length;
+          out.passes = rows.slice(off, off + lim);
+          out.passes_note = '這是台服' + (a.include_ended === true ? '（含已結束）' : '目前販售中') + '全部 ' + rows.length
+            + ' 張月卡／通行證，依 jewels_per_twd 由高到低完整排序後的第 ' + (off + 1) + '～' + Math.min(off + lim, rows.length)
+            + ' 名，不是取樣，不要用多次小批次拼湊。price_twd 為 null 的是 master 只有 9999 佔位價的商品（月卡幾乎都這樣）：'
+            + '先看它的 web_voucher（官網兌換券版價格已知，還常多送水晶），或請使用者到商店確認售價後用 price_overrides 重算。'
+            + ' 同一張通行證會同時出現「App 直購版」與「官網兌換券版」兩筆（用 app_same_item_id／web_voucher 互指），那是同一件商品的兩個通路，不是兩張，別加總。';
+        }
+
+        if (section !== 'pass') {
+          // 官網 vs App 水晶包:以「有償水晶數」配對同一檔位(台幣定價兩邊相同,差別在官網多送無償)
+          const appT = {}, webT = {};
+          D.items.forEach(r => {
+            if (r.t !== 'jewel' || !r.pk || !onSale(r)) return;
+            if (!r.src && r.lim.t === 'unlimited') appT[r.paid] = r;
+            if (r.src === 'web' && /官網專屬水晶/.test(r.n)) webT[r.paid] = r;
+          });
+          const tiers = Object.keys(webT).map(Number).sort((x, y) => x - y).map(paid => {
+            const w = webT[paid], ap = appT[paid];
+            const wr = (w.paid + w.free) / w.price;
+            const ar = ap ? (ap.paid + ap.free) / ap.price : null;
+            return {
+              tier_paid_jewels: paid,
+              app: ap ? { name: ap.n, price_twd: ap.price, free_jewels: ap.free, jewels_per_twd: +ar.toFixed(2), purchase_limit: limTxt(ap) } : null,
+              web: { name: w.n, price_twd: w.price, free_jewels: w.free, jewels_per_twd: +wr.toFixed(2), purchase_limit: limTxt(w) },
+              web_extra_free_jewels: w.free - (ap ? ap.free : 0),
+              web_extra_items: (w.c || []).concat(w.bc || []).filter(c => c[1] > 0).map(c => c[2] + '×' + this.n(c[1])),
+              web_extra_items_est_jewels: extraEst(w) || null,
+              web_advantage_pct: ar ? Math.round((wr / ar - 1) * 100) : null,
+              status: ar ? '同價位、官網多送無償水晶' : '官網限定檔位（App 沒有這個級距）',
+            };
+          });
+          // 官網兌換券 vs App 直購:同一張通行證的兩個通路
+          const vouchers = D.items.filter(r => r.src === 'web' && r.ref != null && onSale(r)).map(w => {
+            const m = D.items.find(x => x.id === w.ref) || null;
+            const mp = m ? priceOf(m) : null;
+            return {
+              web_id: w.id, name: w.n, web_price_twd: w.price,
+              app_item_id: w.ref, app_name: m ? m.n : null, app_price_twd: mp,
+              web_extra_free_jewels: w.free + webFree(w),
+              web_extra_paid_jewels: m ? Math.max(0, w.paid - m.paid) : null,
+              diff: mp == null ? '遊戲內未公布定價，官網券價可當參考價'
+                : w.price < mp ? '官網便宜 NT$' + this.n(mp - w.price)
+                  : w.price === mp ? '同價，官網多送' : '官網貴 NT$' + this.n(w.price - mp),
+            };
+          });
+          // 官網限定、App 完全沒有的商品(見面禮、官網組合包…)
+          const webOnly = D.items.filter(r => r.src === 'web' && r.ref == null && onSale(r) && r.pk && !/官網專屬水晶/.test(r.n))
+            .map(r => {
+              const f = r.free + webFree(r);
+              const t = r.paid + f + (incT ? r.pulls * PULL : 0) + (incM ? matBag(r).reduce((s, x) => s + x.jewels, 0) : 0);
+              return {
+                id: r.id, name: r.n, price_twd: r.price,
+                paid_jewels: r.paid, free_jewels: f, ticket_pulls: r.pulls || 0,
+                jewels_per_twd: r.price ? +(t / r.price).toFixed(2) : null,
+                uncounted_extras_est_jewels: extraEst(r) || null,
+                contents: (r.c || []).concat(r.bc || [])
+                  .filter(c => !(f && c[0] === 'web_item' && /水晶\s*[*x×]\s*[\d,]+/.test(c[2])))
+                  .map(c => c[2] + (c[0] === 'web_item' ? '' : '×' + this.n(c[1]))).slice(0, 8),
+                purchase_limit: limTxt(r),
+                ends: r.e && r.e - NOW < 3650 * 86400000 ? fd(r.e) : null,
+              };
+            }).sort((x, y) => (y.jewels_per_twd || 0) - (x.jewels_per_twd || 0));
+          out.web_vs_app = {
+            crystal_tiers: tiers,
+            pass_vouchers: vouchers,
+            web_only_items: webOnly.slice(0, 12),
+            note: '同一檔位（以有償水晶數配對）官網與 App 的台幣定價相同，差別在官網「多送無償水晶」：'
+              + 'web_extra_free_jewels 就是多送的量，web_advantage_pct 是石/元的提升幅度。'
+              + '官網商品的內容物在原始資料裡型別是 web_item，對不上道具單價表，所以 jewels_per_twd 沒把附贈的心願碎片等算進去'
+              + '（web_extra_items_est_jewels 是用名稱回推的補充估值，站上主表同樣沒計，僅供口頭補充）——'
+              + '也就是官網的實際優勢比表上的百分比再大一些。'
+              + '官網要到 gamepay.ariel.com.tw 用 MyCard／信用卡結帳，付款後水晶與道具直接進遊戲帳號；'
+              + '兌換券版買到的是「券」，要再到遊戲內兌換。**本工具只做試算與比價，不會也不能執行任何購買或付款。**',
+          };
+        }
+
+        out.note = '所有數字都照站上「儲值分析 → 月卡·通行證／CP 排行」的同一套算法重算（本工具自己算，不會動到畫面上的儲值分析區）。'
+          + 'total_value_jewels ＝ 有償水晶 ＋ 立即入帳的無償水晶 ＋ 每日領取無償水晶總額'
+          + (incT ? ' ＋ 招募票券×300 石/抽' : '（票券未折算）')
+          + (incM ? ' ＋ 道具以商店價折算' : '（道具未折算）')
+          + '；jewels_per_twd ＝ total_value_jewels ÷ price_twd。'
+          + '每日領取的石是分 ' + expire + ' 天入帳的，急著今天抽完的人不能把它當現貨，回答時務必照實說「要慢慢領」。'
+          + '價格為資料庫定價（資料時間見 data_built_at），實際以遊戲內商店與官網即時顯示為準。'
+          + '**本工具只做試算，不會也不能執行任何購買或交易。**';
+        return out;
+      }
+
+      case 'get_player_career': {
+        const uid = String(a.uid || this.state.pid || '').replace(/\D/g, '');
+        if (!uid) return { error: '沒有指定 uid，也還沒設定使用者自己的 uid（可先用 set_my_uid）' };
+        const all = await this.loadEvList();
+        if (!all || !all.length) return { error: '活動清單載入失敗，無法掃描歷期前百' };
+        const now = Date.now();
+        // 只掃已結算的期數：還在跑的當期名次隨時在變，混進生涯統計沒有意義
+        const done = all.filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= now)
+                        .sort((x, y) => y.id - x.id);
+        if (!done.length) return { error: '沒有任何已結算的活動' };
+
+        let pick;
+        if (a.event_id != null && a.event_id !== '') {
+          pick = done.filter(e => +e.id === +a.event_id);
+          if (!pick.length) return { error: '找不到第 ' + a.event_id + ' 期，或該期尚未結算' };
+        } else {
+          const off = Math.max(0, Math.min(done.length, Math.floor(+a.offset || 0)));
+          const lim = Math.max(1, Math.min(60, Math.floor(+a.limit || 20)));
+          pick = done.slice(off, off + lim);
+          if (!pick.length) return { error: 'offset ' + off + ' 已超過已結算期數（共 ' + done.length + ' 期）' };
+        }
+
+        // 每期 top100 約 370 KB，一期一個外部請求；同一次對話重複問（換 uid、換區段）直接吃快取
+        this._careerCache = this._careerCache || new Map();
+        const fetchEv = async e => {
+          if (this._careerCache.has(e.id)) return this._careerCache.get(e.id);
+          try {
+            const d = await this.apiFetch('/event/' + e.id + '/top100');
+            const rows = this.ranksOf(d).map(r => ({ uid: r.uid, rank: r.rank, score: r.score, name: r.name }));
+            if (rows.length) this._careerCache.set(e.id, rows);
+            return rows;
+          } catch (err) { return null; }
+        };
+
+        const hits = [];
+        let failed = 0;
+        const BATCH = 6;   // 與站上 loadHistory 同一個併發度，一口氣全轟過去會被擋
+        for (let i = 0; i < pick.length; i += BATCH) {
+          const part = pick.slice(i, i + BATCH);
+          const res = await Promise.all(part.map(e => fetchEv(e).then(rows => ({ e, rows }))));
+          res.forEach(({ e, rows }) => {
+            if (!rows) { failed++; return; }
+            const hit = rows.find(r => this.sameUid(r.uid, uid));
+            if (hit) hits.push({ e, rank: hit.rank, score: hit.score, name: hit.name });
+          });
+        }
+        hits.sort((x, y) => y.e.id - x.e.id);
+
+        const okN = pick.length - failed;
+        if (!hits.length) {
+          return { uid, scanned_events: okN, failed_events: failed,
+            scanned_range: { newest_event_id: pick[0].id, oldest_event_id: pick[pick.length - 1].id },
+            total_finished_events: done.length,
+            appearances: 0, records: [],
+            note: '掃描的 ' + okN + ' 期已結算活動裡，這位玩家都沒有進過前 100 名。'
+              + '公開 API 只提供各期前 100 名的名單，第 101 名之後查不到，所以「沒入榜」不等於「沒打」。' };
+        }
+
+        const ranks = hits.map(h => h.rank);
+        const srt = ranks.slice().sort((x, y) => x - y);
+        const med = srt.length % 2 ? srt[(srt.length - 1) / 2] : (srt[srt.length / 2 - 1] + srt[srt.length / 2]) / 2;
+        const bestH = hits.reduce((b, h) => (h.rank < b.rank ? h : b), hits[0]);
+        const bestS = hits.reduce((b, h) => (h.score > b.score ? h : b), hits[0]);
+
+        return {
+          uid,
+          latest_name: hits[0].name || null,
+          scanned_events: okN,
+          failed_events: failed,
+          scanned_range: { newest_event_id: pick[0].id, oldest_event_id: pick[pick.length - 1].id },
+          total_finished_events: done.length,
+          appearances: hits.length,
+          appearance_rate_pct: okN ? +(hits.length / okN * 100).toFixed(1) : null,
+          best_rank: bestH.rank,
+          best_rank_event: { id: bestH.e.id, name: bestH.e.name || null },
+          average_rank: +(ranks.reduce((s, r) => s + r, 0) / ranks.length).toFixed(1),
+          median_rank: med,
+          worst_rank: Math.max.apply(null, ranks),
+          best_score: bestS.score,
+          best_score_event: { id: bestS.e.id, name: bestS.e.name || null },
+          latest: { event_id: hits[0].e.id, rank: hits[0].rank, score: hits[0].score },
+          records: hits.map((h, i) => {
+            const prev = hits[i + 1];   // 陣列由新到舊，i+1 就是「上一次入榜」
+            return {
+              event_id: h.e.id, event_name: h.e.name || null,
+              ended_at: h.e.aggregate_at || h.e.closed_at || null,
+              rank: h.rank, score: h.score,
+              delta_vs_prev_appearance: prev ? prev.rank - h.rank : null
+            };
+          }),
+          note: 'rank ＝ 該期活動最終榜（前 100 名）的名次；score 單位是活動 P（event point）。'
+            + 'delta_vs_prev_appearance ＝ 上一次入榜名次 − 這次名次，正數代表進步（名次數字變小）；'
+            + '比的是「上一次入榜的那期」而不是「上一期活動」，中間沒入榜的期數會被跳過。'
+            + 'appearance_rate_pct ＝ appearances ÷ scanned_events × 100（單位 %）。'
+            + '只涵蓋各期前 100 名的公開名單，沒進前百的期數查不到，因此 best／average／median 都是「在有入榜的期數之中」算的。'
+        };
+      }
+
+      case 'get_wl_exchange': {
+        /* 交換所表不是獨立檔，是 BORDERS_DB.exchange（tools/build-goodjuice.py 由
+           good果汁的規劃表同步進 data/borders-db.js）。整份榜線資料庫是懶載入的，
+           使用者沒開過榜線／資料庫頁時 BORDERS_DB 還不存在，不補載會誤回「查無資料」。 */
+        await this.loadBorderDB().catch(() => {});
+        const D = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        const EX = D && D.exchange ? D.exchange : null;
+        if (!EX) return { error: 'WL 交換所規劃表載入失敗（榜線資料庫沒載進來），請稍後再試' };
+
+        const rounds = Object.keys(EX).sort();
+        // 模型常常只丟數字（3）或小寫（wl3），統一正規化成 'WL3'
+        const want = String(a.round == null ? '' : a.round).trim().toUpperCase().replace(/^WL/, '');
+        const key = want ? ('WL' + want) : rounds[rounds.length - 1];
+        const secs = EX[key];
+        if (!Array.isArray(secs) || !secs.length) {
+          return { error: '沒有 ' + key + ' 的交換所資料', available_rounds: rounds };
+        }
+
+        /* 表上每屆都列滿 6 個章節交換所，但實際章節數各場不同，而且這件事沒辦法從
+           表本身推出來 —— 與畫面那段 CH_OPTS 是同一份知識，改一邊要改兩邊。
+             WL2 —— OC 團 4 章、V 家 6 章
+             WL3 —— 5 章，其中 3.2 是 6 章
+             終章 —— 只有一個交換所、不需要規劃，所以不列在選項裡 */
+        const CH_OPTS = {
+          WL2: [[4, 'OC 團 4 章'], [6, 'V 家 6 章']],
+          WL3: [[5, '5 章'], [6, '3.2 版 6 章']],
+        };
+        const opts = CH_OPTS[key] || [[4, '4 章'], [6, '6 章']];
+
+        const chSecs = [], ovSecs = [];
+        secs.forEach(sec => (/章節/.test(sec.title) ? chSecs : ovSecs).push(sec));
+
+        const cc = a.chapter_count != null ? Math.round(+a.chapter_count) : opts[0][0];
+        if (!(cc >= 0) || cc > chSecs.length) {
+          return { error: 'chapter_count 只能是 0～' + chSecs.length + ' 的整數',
+            standard_options: opts.map(([v, n2]) => ({ chapters: v, label: n2 })) };
+        }
+
+        const sum = its => its.reduce((t, it) => t + (it.cost || 0) * (it.max || 0), 0);
+        const mk = (sec, no) => ({
+          section: sec.title,
+          kind: no ? 'chapter' : 'overall',
+          chapter: no || null,
+          counted: no ? no <= cc : true,   // 超出這屆實際章節數的不計入總需求
+          currency: no ? '章節徽章' : '綜合徽章',
+          item_count: sec.items.length,
+          section_badges: sum(sec.items),
+          items: sec.items.map(it => ({ item: it.n, cost_each: it.cost, max: it.max,
+            subtotal: (it.cost || 0) * (it.max || 0) })),
+        });
+        const all = ovSecs.map(x => mk(x, 0)).concat(chSecs.map((x, i) => mk(x, i + 1)));
+
+        // chapter 只縮小「回傳哪幾區」，totals 仍然是整屆的，免得模型分批問再自己加錯
+        let show = all;
+        if (a.chapter != null) {
+          const c = Math.round(+a.chapter);
+          show = all.filter(x => (c === 0 ? x.kind === 'overall' : x.chapter === c));
+          if (!show.length) {
+            return { error: '找不到第 ' + a.chapter + ' 章的交換所',
+              available_chapters: chSecs.map((_, i) => i + 1),
+              hint: 'chapter=0 是綜合交換所，省略則回全部' };
+          }
+        }
+
+        const ovB = ovSecs.reduce((t, x) => t + sum(x.items), 0);
+        const perCh = chSecs.map((x, i) => ({ chapter: i + 1, badges: sum(x.items), counted: i + 1 <= cc }));
+        const chB = perCh.filter(x => x.counted).reduce((t, x) => t + x.badges, 0);
+        const total = ovB + chB;
+
+        /* 各章的品項是同一組（只有主角不同），逐章列會是同樣的字重複 N 遍，
+           所以按「品項×計入章數」聚合，直接看得出徽章花在哪幾樣上。 */
+        const agg = {};
+        const push = (it, from) => {
+          const k = from + '｜' + it.n;
+          if (!agg[k]) agg[k] = { item: it.n, from, cost_each: it.cost, copies_each: it.max, times: 0, badges: 0 };
+          agg[k].times += 1;
+          agg[k].badges += (it.cost || 0) * (it.max || 0);
+        };
+        ovSecs.forEach(x => x.items.forEach(it => push(it, '綜合交換所')));
+        chSecs.slice(0, cc).forEach(x => x.items.forEach(it => push(it, '章節交換所')));
+        const sinks = Object.keys(agg).map(k => agg[k]).sort((x, y) => y.badges - x.badges)
+          .map(x => Object.assign({}, x, { pct_of_total: total ? +(x.badges / total * 100).toFixed(1) : 0 }));
+
+        return {
+          round: key,
+          available_rounds: rounds,
+          chapter_count: cc,
+          chapter_count_label: (opts.find(o => o[0] === cc) || [0, cc + ' 章'])[1],
+          chapter_count_is_standard: opts.some(o => o[0] === cc),
+          chapter_count_options: opts.map(([v, n2]) => ({ chapters: v, label: n2 })),
+          sections: show,
+          totals: {
+            overall_exchange_badges: ovB,
+            per_chapter_badges: perCh,
+            chapters_counted_badges: chB,
+            total_badges: total,
+            summary: '全部換滿需 ' + this.n(total) + ' 徽章（綜合 ' + this.n(ovB)
+              + ' ＋ ' + cc + ' 章共 ' + this.n(chB) + '）',
+          },
+          allocation: {
+            per_chapter_budget: perCh.filter(x => x.counted).map(x => ({ chapter: x.chapter, badges: x.badges })),
+            biggest_sinks: sinks,
+            note: '每章要換滿都是各自獨立的 ' + this.n(perCh.length ? perCh[0].badges : 0)
+              + ' 章節徽章，章與章之間不能互相補；綜合交換所的 ' + this.n(ovB)
+              + ' 綜合徽章要另外從章節徽章換過去。徽章不夠時只能在「同一章之內」取捨，'
+              + 'biggest_sinks 是依耗量排序的事實，站上沒有品項價值的評分表，要不要換得看玩家自己的需求。',
+          },
+          source: D.source || null,
+          data_built_at: D.builtAt ? new Date(D.builtAt).toISOString() : null,
+          note: '單位都是徽章。小計＝單價×可換上限；總需求＝綜合交換所小計 ＋ 已計入章節的小計加總。'
+            + '兩種徽章不通用：章節交換所只吃該章的章節徽章，綜合交換所只吃「由章節徽章兌換成的綜合徽章」，'
+            + '所以 total_badges 是把兩者相加的概數，不是同一個池子。'
+            + '章節交換所的品項名帶「(角色)」，實際是該章主角的專屬道具，'
+            + '當期各章是誰用 get_wl_status 查（那支只認當期活動）。'
+            + '這是該屆完整的交換所清單，不是取樣或前幾筆；chapter 只縮小回傳的區塊，totals 一律是整屆的。',
         };
       }
 
