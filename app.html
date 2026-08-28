@@ -5446,6 +5446,122 @@ class Component extends DCLogic {
         chapter: { type: 'integer', description: '只回某一區：1～6＝該章節交換所，0＝綜合交換所。省略＝綜合＋全部章節都回。注意這只縮小回傳的區塊，totals 一律是整屆換滿的數字。' },
         chapter_count: { type: 'integer', description: '這屆實際有幾章（決定總需求要把幾個章節交換所算進去）。省略時用該屆的預設值：WL2＝4（OC 團）、WL3＝5。V 家或 3.2 版那種 6 章的情況要明確給 6。表上固定列 6 個章節交換所，超出的會標成 counted:false 且不計入 totals。' },
       } } },
+    { name: 'card_effective_skill',
+      description: '算「這 5 張卡放在同一隊時，每張的有效 score-up %」以及可直接餵給 calc_event_points 的平均技能倍率。'
+        + '為什麼需要這支：單看一張卡的技能數字沒有意義 —— 團分技能是「除自己外每位同團 +e%、5 張全員一致再 +e%」，'
+        + '混團技能是「編組每多 1 種外團 +v%」，花前吸技能是「吸隊友技能上限的一部分」，'
+        + '同一張卡放在不同隊裡實際加分差到 50%。要單卡的逐級(Lv.1～4)數值請用 get_card_skills，'
+        + '這支只回「在這一隊」的值。回傳含每張卡的 effective_pct／單卡底值／卡面上限、隊長技能、'
+        + '平均技能倍率(skill 與 s6)，以及第一張不是技能最高那張時的換隊長建議。'
+        + '第一次呼叫要載入計算引擎(486KB)與 master 卡片/技能資料，可能要幾秒。',
+      input_schema: { type: 'object', properties: {
+        cards: { type: 'array', items: { type: 'integer' },
+          description: '隊伍的 card_id，最多 5 張，第一張視為隊長(第 6 技能窗 encore 吃的是隊長)。不足 5 張也能算，'
+            + '但團分技能的「全員一致」獎勵需要滿 5 張，會回傳低估警告。' },
+        master_ranks: { type: 'array', items: { type: 'integer' },
+          description: '各卡專精等級 0～5。專精不影響技能%(只影響綜合力與活動加成)，這裡只原樣回聲，'
+            + '要算加成請用 get_bonus_cards。' },
+        skill_levels: { type: 'array', items: { type: 'integer' },
+          description: '各卡技能等級 1～4，預設 4(滿)。只給一個數字代表五張同值。' },
+        char_ranks: { type: 'array', items: { type: 'integer' },
+          description: '各卡「該角色」的角色等級，預設 100。只給一個數字代表五張同值。'
+            + '角色等級型技能(Bfes 花後)每 2 級 +1%，滿 100 級 +50%，等級不同差很多。' },
+        trained: { type: 'array', items: { type: 'boolean' },
+          description: '各卡是否用特訓後(花後)那一面，預設 true。只有 BloomFES／カラフェス 的 V 家卡兩面技能不同'
+            + '(花前吸隊友／花後看角色等級)，這種卡回傳會附上另一面在同一隊的值。' } } } },
+    { name: 'estimate_border_prior',
+      description: '同型態歷史加權估計（先驗）：對「任意一期」——包含還沒開跑、完全沒有實測資料的未來活動——估算各段位的終線會落在哪。'
+        + '演算法與站上榜線分析頁「史」那一行相同：把過去同型態、同日數的活動終線，以「半衰期 6 期」做對數加權平均，再附上最近 8 期的實際值域。'
+        + '使用者問「下一期 6.25 天的箱活 T1000 大概多少」「12 天 WL 的 T100 會到哪」「這種型態歷史上都跑多少」時用這支。'
+        + '重要：這是先驗，不含當期實測。當期活動已經開跑要看預測終線，請用 get_borders（實測時速外推準得多）；'
+        + '只想看某幾期的實際數字用 get_history_borders，要交叉篩選排行用 query_border_db。',
+      input_schema: { type: 'object', properties: {
+        type: { type: 'string', description: '活動型態。只有三種：「馬拉松」（使用者說的「箱活」）、「歡樂嘉年華」（「嘉年華」）、「World Link」。給 event_id 時可省略。' },
+        days: { type: 'number', description: '活動總日數，必須完全相同才算同型態。只有 6.25 / 7.25 / 8.25 / 9.25 / 10.25（馬拉松、嘉年華）與 12（World Link）；給 6 或 8 會篩不到。給 event_id 時可省略。' },
+        unit: { type: 'string', description: '（選填）只取同一個主辦團體的期數：「L/N」「MMJ」「VBS」「WXS」「25」「VS」「/」（混活）。會讓樣本大幅變少，不足 3 期會自動退回不分團體並在 unit_note 說明。' },
+        tier: { type: 'integer', description: '只要單一段位，例如 1000。可用：1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000' },
+        tiers: { type: 'array', items: { type: 'integer' }, description: '一次要多個段位，例如 [100,1000,5000]，最多 8 個。與 tier 擇一；兩個都不給預設回 T100/T500/T1000/T2000/T5000。' },
+        event_id: { type: 'integer', description: '直接指定期數，用該期的型態與日數當條件，並且只採用該期之前的活動當樣本。可以是尚未開跑的期數。不給就當「下一期尚未結算的活動」。' },
+        samples_limit: { type: 'integer', description: '要列出幾期樣本明細，預設 8，上限 20。估計值一律用全部符合的期數算，不受這個影響。' } } } },
+    { name: 'get_calendar',
+      description: '活動日曆:以「日期」為軸看某一天或某個月有哪些活動與卡池，每筆標明是當天/當月開始、結束，還是進行中，並附 PU 角色與卡池伴生活動的主角。'
+        + '使用者問「這個月有什麼」「10/15 那天有什麼在開」「下個月幾號開什麼池」時用這支；'
+        + '要的是「某段區間的卡池清單」(例如未來三個月的 FES 池)則用 get_gacha_schedule。只查資料，不會切換使用者正在看的頁面或月份。',
+      input_schema: { type: 'object', properties: {
+        date: { type: 'string', description: '單日視角，YYYY/MM/DD。與 month 二選一' },
+        month: { type: 'string', description: '整月視角，YYYY/MM。date 與 month 都省略就用本月' },
+        type: { type: 'string', description: '只看某類卡池，例如「FES池」「普通限定池」「復刻限定池」「生日池」「有償池」「常駐池」。整月常有十幾個有償池，只關心限定池時建議帶' },
+        limit: { type: 'integer', description: '卡池筆數上限，預設 24（一個月約 16–20 個池），最多 60' },
+        offset: { type: 'integer', description: '卡池分頁位移，接續上次回傳的 next_offset' } } } },
+    { name: 'get_collection_stats',
+      description: '兩件事合一支：(1) 收集室圖鑑的分佈統計 —— 貼圖依角色／團體、稱號依稀有度與群組各有幾個；'
+        + '(2) 收集率的備份碼 —— 產生使用者目前這台裝置的備份碼（拿去另一台裝置貼上），或解讀別人給的一組備份碼是哪些卡。'
+        + '使用者問「哪個角色貼圖最多」「稱號總共幾個」「我的備份碼是多少」「幫我把收集率搬到手機」'
+        + '「這串碼是什麼」「這串跟我現在的差在哪」時用。'
+        + '⚠ 只產生與解讀，絕不寫入或覆蓋使用者的持卡勾選——那是破壞性動作，要還原請叫使用者自己到「收集率」頁貼上備份碼。'
+        + '貼圖／稱號是全站共通的官方素材圖鑑總數（遊戲沒公開這兩項的持有清單），只有備份碼那段才是使用者自己的紀錄。'
+        + '要「我收集率百分之幾」用 get_collection_rate，要「我缺哪幾張」用 get_missing_cards。',
+      input_schema: { type: 'object', properties: {
+        part: { type: 'string', enum: ['all', 'stamps', 'honors', 'code'],
+          description: '要看哪一段，預設 all（貼圖與稱號的概觀 ＋ 備份碼）。stamps＝貼圖（這時才會展開 26 個角色的逐一分佈）、'
+            + 'honors＝稱號、code＝只要備份碼。給了 decode 就一定會解讀，不受這個參數影響' },
+        decode: { type: 'string',
+          description: '要解讀的備份碼（base64）。給了就改成「讀這一串是哪些卡」並與使用者目前的紀錄比對；'
+            + '不給就是「產生使用者目前的備份碼」。原樣貼進來即可，前後空白會自動去掉' },
+        limit: { type: 'integer',
+          description: '列表要回幾筆，預設 10、上限 50。用在稱號的 top_groups（共 357 個群組）與解讀備份碼時列出的卡片' },
+        offset: { type: 'integer', description: '從第幾筆開始（0 起算），配合 limit 續取下一批' } } } },
+    { name: 'get_misc_calc',
+      description: '三個站上小東西的合集，用 kind 指定要哪一個：'
+        + 'challenge_live＝挑戰 Live 那一場能拿多少活動P（每日一場的那個，公式跟一般場完全不同）；'
+        + 'presets＝站上內建的兩組情境預設參數（衝 T100／輕鬆玩）的完整數值，可以直接當基準報給使用者；'
+        + 'my_extra＝首頁「我的排名」小卡上有、但 get_my_status 沒回的欄位（近 1／24 小時周回數、近 1 小時場均、玩家總綜合力）。'
+        + '這支只讀不寫：不會套用預設、不會改到畫面上的任何設定。'
+        + '要一般場（單人／自動／協力／應援）的活動P 請用 calc_event_points，這支的 challenge_live 只算挑戰場；'
+        + '要動能／預測終分那類節奏剖析用 analyze_player，要與各段榜線的差距用 get_my_status。',
+      input_schema: { type: 'object', properties: {
+        kind: { type: 'string', enum: ['challenge_live', 'presets', 'my_extra'], description: '要哪一項：challenge_live＝挑戰 Live 活動P、presets＝站上情境預設參數、my_extra＝我的周回／場均／總綜合力' },
+        score: { type: 'number', description: '只有 kind=challenge_live 用：挑戰 Live 那一場的歌曲分數。省略就用綁定 uid 的 profile 上的挑戰 Live 最高分' },
+        uid: { type: 'string', description: '只有 kind=my_extra 用：要查誰（19 位數字字串）。省略＝使用者自己綁定的 uid' } },
+        required: ['kind'] } },
+    { name: 'get_page_tutorials',
+      description: '依「使用者正在用哪個功能」推薦教學：給頁面 key（或一個主題詞），回傳教學大全中與該功能情境相關的問答。' +
+        '和 search_tutorial 的差別：search_tutorial 是關鍵字全文搜尋，適合使用者直接問某個名詞；' +
+        '這支是情境對照表（站上每頁底部顯示的那組），適合「我在這頁／我要做這件事，該先懂什麼」，' +
+        '也能反過來回答「這個主題要去哪一頁做」（related_pages）。查無結果時再退回 search_tutorial。' +
+        '有教學對照的頁面：home rank analysis borderdb calc deckpro gacha gachasim shop b30 songs rate collect calendar。' +
+        '只讀資料，不會切換頁面。',
+      input_schema: { type: 'object', properties: {
+        page: { type: 'string', description: '頁面 key，例如 calc（計算中心）、rank（活動排名）、deckpro（進階計算）、gacha（卡池列表）。兩個都不給會回傳可用頁面清單。' },
+        topic: { type: 'string', description: '主題詞或使用者原話，例如「推車」「天井」「我想衝榜線」。會順便回報這個主題對應到站上哪幾頁。可與 page 併用以收斂範圍。' },
+        limit: { type: 'integer', description: '回傳幾則，預設 5，上限 12' },
+        answer_chars: { type: 'integer', description: '每則答案截斷字數，預設 240 字，上限 800 字。要引用完整說明時才調高。' } } } },
+    { name: 'get_site_meta',
+      description: '站台的「關於自己」資訊,三份合一:credits＝製作與致謝(世界計畫開瓶器編輯群 14 位、資料表作者與原始連結、建議採納名單、聯絡方式、著作權聲明);'
+        + 'resources＝資源連結頁的 6 組共 24 條站台(官方資源、資訊站、討論社群、Wiki 百科、社群資料表、本站工具),每條都有網址與一句話說明;'
+        + 'capabilities＝助手自己的能力模塊與問題模板,用來回答「你會做什麼」。'
+        + '使用者問「這站誰做的」「教學是誰寫的」「有沒有別的好用的站或表格」「你能幫我什麼」時用這支。'
+        + '它只回站台本身的靜態資訊,不查任何遊戲數據,也不會切換頁面;要找「哪一頁能做什麼、該叫哪支工具」請改用 get_site_map。',
+      input_schema: { type: 'object', properties: {
+        kind: { type: 'string', description: 'credits / resources / capabilities / all。預設 all。只想回答其中一件事時務必指定,三份全回會長很多' },
+        group: { type: 'string', description: '只限 resources:只回某一組,例如「官方資源」「資訊站」「討論社群」「Wiki 百科」「社群資料表」「本站工具」。給不存在的組名會回 available_groups' },
+        with_examples: { type: 'boolean', description: '只限 capabilities:要不要附上每個模塊與模板的實際問句,預設 false(只回名稱與說明)。要引導使用者「可以這樣問」時才開,回傳量約三倍' },
+      } } },
+    { name: 'predict_card_rerun',
+      description: '卡片復刻預測：某張卡（或某角色、某卡池的 PU 卡）是哪一種限定，下一次復刻是「台服官方已排定」還是「只有推估」，'
+        + '外加現在抽不抽得到、離下次還幾天、日服至今當過幾次 PU。'
+        + '使用者問「這張還會不會再出」「要不要現在抽」「等復刻還是現在課」「奏的限定卡哪張快復刻了」「這池過了還有機會嗎」時用。'
+        + '不給任何參數就回目前進行中卡池的 PU 卡。'
+        + '注意：next_rerun.status 分「已排定」（台服 master data 裡真的排進去的官方排程，日期與卡池名都是官方值）與'
+        + '「預估」（日服同卡開池日 ＋365 天平移，只精確到月份），轉述給使用者時務必照這個分別講；'
+        + '把預估說成確定會出，會害人把石頭壓在一個不存在的日期上。',
+      input_schema: { type: 'object', properties: {
+        card_id: { type: 'integer', description: '卡片 id（數字），查特定一張卡時用；不知道 id 可先用 get_missing_cards 或 search_anything 找' },
+        character: { type: 'string', description: '角色，繁中簡稱或全名皆可（「奏」「宵崎奏」），也可以直接給角色 id。回該角色的限定卡，預設不含常駐' },
+        gacha_name: { type: 'string', description: '卡池名稱關鍵字或卡池 id，回該池的 PU 卡。只查得到台服進行中與已排程的卡池，早就結束的舊池查不到（台服 gachas.json 是線上快照不是歷史檔）' },
+        include_permanent: { type: 'boolean', description: '搭配 character 用：true 才把常駐卡也列進來，預設 false（常駐卡沒有復刻問題）' },
+        limit: { type: 'integer', description: '要回幾張，預設 10，上限 40' },
+        offset: { type: 'integer', description: '從排序後的第幾張開始回（0 起算），配合 limit 續取下一批' } } } },
     { name: 'list_my_watches',
       description: '列出使用者目前的偵測訂閱，以及最近幾則已觸發的通知。使用者問「我訂了什麼」「有沒有通知」時用。需要已登入。',
       input_schema: { type: 'object', properties: {
@@ -10954,6 +11070,1075 @@ class Component extends DCLogic {
             + '章節交換所的品項名帶「(角色)」，實際是該章主角的專屬道具，'
             + '當期各章是誰用 get_wl_status 查（那支只認當期活動）。'
             + '這是該屆完整的交換所清單，不是取樣或前幾筆；chapter 只縮小回傳的區塊，totals 一律是整屆的。',
+        };
+      }
+
+      case 'card_effective_skill': {
+        /* 為什麼不是把 get_card_skills 加參數就好：那支回的是「這張卡自己能到多少」(base/max)，
+           而團分技能的加成量取決於同隊有幾位同團、混團技能取決於隊上有幾種外團、花前吸技能
+           取決於隊友的技能上限 —— 同一張卡換一隊就是不同的數字，非得有整隊 5 張才算得出來。
+           算式一律走 core.js 的 SkillEngine（站上組隊最佳化、跑榜工作室用的同一支），
+           不在這裡自己重寫一份，免得兩邊講出不同的數。 */
+        const raw = Array.isArray(a.cards) ? a.cards : (a.cards != null ? [a.cards] : []);
+        const ids = raw.map(x => Math.round(+x || 0)).filter(n => n > 0);
+        if (!ids.length) return { error: '請給 cards：隊伍的 card_id 陣列（最多 5 張，第一張視為隊長）' };
+        if (ids.length > 5) return { error: '一隊最多 5 張，收到 ' + ids.length + ' 張' };
+        /* 重複 id 一定要擋：SkillEngine 判斷「這位是不是我自己」用的是物件 identity，
+           同一個 id 拿到同一個物件 → 會被當成自己而漏算一位同團，靜靜地少算 10%。 */
+        if (new Set(ids).size !== ids.length) return { error: 'cards 有重複的 card_id，一隊不能放兩張同一張卡' };
+
+        let E;
+        try { E = await this.ensureEngine(); } catch (e) { return { error: e.message || '計算引擎載入失敗' }; }
+        const PE = E.PowerEngine, SK = E.SkillEngine, cidName = E.EC_cidName;
+        if (!PE || !SK) return { error: '計算引擎載入了，但取不到 PowerEngine／SkillEngine' };
+        // SkillEngine._units 要查 PowerEngine.charBands 才知道人類角色屬於哪個團，兩邊都得 ensure
+        const [okP, okS] = await Promise.all([PE.ensure(), SK.ensure()]);
+        if (!okP || !okS) return { error: '卡片／技能 master 資料載入失敗，請稍後再試' };
+
+        const team = ids.map(id => PE.cardById[id]);
+        const miss = ids.filter((id, i) => !team[i]);
+        if (miss.length) return { error: '查不到 card_id：' + miss.join('、') + '（台服 master 沒有這幾張）' };
+
+        // 參數展開：允許只給一個數字代表五張同值(常見情況)，缺的補預設
+        const arr = (v, dflt, lo, hi) => ids.map((_, i) => {
+          const x = Array.isArray(v) ? v[i] : v;
+          const n = x == null || x === '' ? dflt : Math.round(+x || 0);
+          return Math.max(lo, Math.min(hi, isNaN(n) ? dflt : n));
+        });
+        const sls = arr(a.skill_levels, 4, 1, 4);
+        const crs = arr(a.char_ranks, 100, 1, 200);
+        const trs = ids.map((_, i) => {
+          const v = Array.isArray(a.trained) ? a.trained[i] : a.trained;
+          return v == null ? true : !!v;
+        });
+
+        const unitsOf = team.map(c => PE.cardUnits(c) || []);
+        // 全隊同團：五張的可用團體交集不為空(VS 卡的支援團算數)，與 PowerEngine.teamPower 判定一致
+        const common = unitsOf.reduce((acc, u) => acc.filter(x => u.includes(x)), unitsOf[0] ? unitsOf[0].slice() : []);
+
+        const rows = team.map((c, i) => {
+          const sid = (trs[i] && c.specialTrainingSkillId) ? c.specialTrainingSkillId : c.skillId;
+          const sk = SK.skills[sid] || {};
+          const effs = sk.skillEffects || [];
+          const has = t => effs.some(e => e.skillEffectType === t);
+          const enh = effs.map(e => e.skillEnhance).find(Boolean);
+          const condUnit = enh && (enh.skillEnhanceCondition || {}).unit || null;
+          const kind = condUnit ? 'same_unit'
+            : has('score_up_unit_count') ? 'unit_count'
+            : has('score_up_character_rank') ? 'character_rank'
+            : has('other_member_score_up_reference_rate') ? 'reference'
+            : has('score_up_condition_life') ? 'condition_life'
+            : has('score_up_keep') ? 'keep' : 'score_up';
+
+          const at = (e, lv) => { const d = e.skillEffectDetails || [];
+            const f = d.find(x => x.level === lv) || d[d.length - 1]; return f ? (f.activateEffectValue || 0) : 0; };
+
+          const eff = SK.effSkillTeam(c, trs[i], sls[i], crs[i], team);
+          const alone = SK.effSkillTeam(c, trs[i], sls[i], crs[i], [c]);   // 同一張卡「隊伍條件全不成立」的底值
+          let cap = SK.effSkillMax(c, trs[i], sls[i], crs[i]);             // 卡面上限(＝get_card_skills 的 max)
+          /* effSkillMax 是「不知道隊伍時」的同團上限估計，裡面沒有混團加成 —— 直接拿來當上限，
+             混團卡會冒出 cap(90) < effective(150) 的怪數字，所以這裡把混團那一段補回去。 */
+          if (kind === 'unit_count') cap += Math.max.apply(null,
+            effs.filter(e => e.skillEffectType === 'score_up_unit_count').map(e => at(e, sls[i])));
+          const row = {
+            slot: i + 1, card_id: c.id, name: c.prefix || ('#' + c.id),
+            chara: cidName ? cidName(c.characterId) : ('#' + c.characterId),
+            unit: unitsOf[i].join('/'), skill_type: kind, skill_level: sls[i], char_rank: crs[i],
+            trained: trs[i], effective_pct: Math.round(eff * 10) / 10,
+            alone_pct: Math.round(alone * 10) / 10, card_cap_pct: Math.round(cap * 10) / 10,
+            team_gain_pct: Math.round((eff - alone) * 10) / 10,
+          };
+          if (kind === 'same_unit') {
+            const mates = team.filter((m, j) => j !== i && unitsOf[j].includes(condUnit)).length;
+            row.same_unit = condUnit;
+            row.same_unit_mates = mates;   // 除自己外的同團人數(0～4)
+          }
+          if (kind === 'unit_count') {
+            const own = c.characterId <= 20 ? unitsOf[i][0] : 'piapro';
+            row.other_units = new Set(unitsOf.flat().filter(u => u && u !== own)).size;
+          }
+          /* BloomFES／カラフェス 的 V 家卡花前花後是兩個不同技能(常見是「吸隊友」對「角色等級」)，
+             玩家可以自己選要用哪一面 —— 這是實際會影響決策的事，順手把另一面在同一隊的值也算出來。 */
+          if (c.specialTrainingSkillId && c.specialTrainingSkillId !== c.skillId) {
+            row.other_side = { trained: !trs[i],
+              effective_pct: Math.round(SK.effSkillTeam(c, !trs[i], sls[i], crs[i], team) * 10) / 10 };
+          }
+          /* 花前吸技能(BloomFES 未特訓面)：SkillEngine 一律給滿 activateEffectValue2，
+             但實際是「隨機挑另 1 名成員，吸其技能上限的 v%」，隊友上限不夠高就吃不滿。
+             主數值仍照引擎(＝站上其他頁面的數)，這裡另外附上這一隊的期望值。 */
+          if (kind === 'reference') {
+            const e = effs.find(x => x.skillEffectType === 'other_member_score_up_reference_rate');
+            const d = (e.skillEffectDetails || []).find(x => x.level === sls[i]) || (e.skillEffectDetails || []).slice(-1)[0];
+            const rate = d ? (d.activateEffectValue || 0) : 0, refCap = d ? (d.activateEffectValue2 || 0) : 0;
+            const each = team.map((m, j) => j === i ? null
+              : Math.min(refCap, rate / 100 * SK.effSkillMax(m, trs[j], sls[j], crs[j]))).filter(x => x != null);
+            const avg = each.length ? each.reduce((s, x) => s + x, 0) / each.length : 0;
+            row.reference = {
+              rate_pct: rate, cap_pct: refCap,
+              per_mate_pct: each.map(x => Math.round(x * 10) / 10),
+              expected_pct: Math.round(avg * 10) / 10,
+              effective_pct_expected: Math.round((eff - refCap + avg) * 10) / 10,
+            };
+          }
+          return row;
+        });
+
+        // 平均技能倍率：與 calc_skill_multiplier／跑榜工作室同式(隊長全額、其餘四張總和÷5)
+        const mult = idx => {
+          const lead = rows[idx].effective_pct;
+          const sum = rows.reduce((s, r, j) => s + (j === idx ? 0 : r.effective_pct), 0);
+          return +((lead + 100 + sum / 5) / 100).toFixed(4);
+        };
+        const skillMult = mult(0);
+        // 第一張不是技能最高的那張時，值得提醒 —— 第 6 窗(encore)吃的是隊長，換人站頭排就多一截
+        const bestIdx = rows.reduce((b, r, j) => r.effective_pct > rows[b].effective_pct ? j : b, 0);
+
+        const out = {
+          team: rows,
+          leader: { card_id: rows[0].card_id, name: rows[0].name, effective_pct: rows[0].effective_pct,
+            coop_window_pct: Math.round(1.8 * rows[0].effective_pct * 10) / 10 },
+          skill_multiplier: skillMult,
+          for_calc_event_points: { skill: skillMult, s6: skillMult },
+          team_units: common.length ? common.join('/') : '(混團)',
+          all_same_unit: common.length > 0,
+          assumptions: { skill_levels: sls, char_ranks: crs, trained: trs },
+          note: '有效% ＝ 基礎% ＋ 角色等級加成(每 2 級 +1%，滿 100 級 +50%) ＋ 團分加成'
+            + '(除自己外每 1 位同團 +e%，5 張全同團再 +e%) ＋ 混團加成(每多 1 種外團) ＋ 花前吸取值；'
+            + '平均技能倍率 ＝ [隊長% ＋ 100 ＋ (其餘四張總和 ÷ 5)] ÷ 100，與 calc_skill_multiplier 同式，'
+            + '可直接餵給 calc_event_points／song_efficiency 的 skill 與 s6（第 6 窗 encore 就是隊長再發動一次）。'
+            + ' coop_window_pct ＝ 協力場一次隊長發動全員實得(1.8×隊長%，四位隊友假設與你同倍率)。'
+            + ' 專精(MR)不影響技能%，只影響綜合力與活動加成，所以 master_ranks 只回聲不參與計算。',
+        };
+        if (a.master_ranks != null) out.master_ranks_echo = Array.isArray(a.master_ranks) ? a.master_ranks : [a.master_ranks];
+        if (ids.length < 5) out.warning = '只給了 ' + ids.length + ' 張：團分技能的「全員一致」獎勵需要滿 5 張才算，'
+          + '目前這幾張的有效% 是低估值。';
+        if (bestIdx !== 0) out.leader_hint = { suggest_card_id: rows[bestIdx].card_id, name: rows[bestIdx].name,
+          effective_pct: rows[bestIdx].effective_pct, skill_multiplier: mult(bestIdx),
+          note: '這張比目前的隊長高 ' + Math.round((rows[bestIdx].effective_pct - rows[0].effective_pct) * 10) / 10
+            + '%，換它當隊長(第 6 窗 encore 才吃得到)平均倍率由 ' + skillMult + ' 升到 ' + mult(bestIdx) + '。' };
+        return out;
+      }
+
+      case 'estimate_border_prior': {
+        /* 為什麼要獨立一支:bdbRef() 的同型態加權估計只吃「當期 id」,而且一定要
+           在 BORDERS_DB.events 裡查得到那一期。使用者最常問的其實是還沒開跑的那一期
+           ——「下一期 6.25 天箱活 T1000 大概多少」—— 那期沒有實測資料,連活動條目
+           都可能還沒進資料庫,現行的 get_borders 完全接不到。這支把同一套算式
+           (半衰期 6 期的對數加權平均)拆出來,改成吃「型態＋日數」這組屬性,
+           所以任意一期(過去、當期、未開跑)都能算。演算法與站上「史」那一行逐字相同,
+           不另立一套,免得同一個問題在兩個地方給出兩個數字。 */
+        const DB0 = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        if (!DB0) { await this.loadBorderDB().catch(() => {}); }
+        const D = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+        if (!D) return { error: '榜線資料庫載入失敗，請稍後再試' };
+
+        /* 使用者講的是圈內用語,資料庫存的是三種正式名稱。不做這層對應的話,
+           「箱活」「嘉年華」「WL」會全部篩成空集合,而空集合看起來很像
+           「歷史上沒發生過」,比報錯還誤導。 */
+        const TYPE_ALIAS = {
+          '箱活': '馬拉松', '馬拉松': '馬拉松', 'marathon': '馬拉松',
+          '嘉年華': '歡樂嘉年華', '歡樂嘉年華': '歡樂嘉年華', '應援': '歡樂嘉年華',
+          'cheerful': '歡樂嘉年華', 'cheerful_carnival': '歡樂嘉年華',
+          'wl': 'World Link', 'world link': 'World Link', 'world_bloom': 'World Link', 'World Link': 'World Link',
+        };
+        const normType = s => { const k = String(s == null ? '' : s).trim(); return TYPE_ALIAS[k] || TYPE_ALIAS[k.toLowerCase()] || k; };
+
+        const evs = D.events || [], bds = D.borders || [], TIERS = D.tiers || [];
+        if (!bds.length || !TIERS.length) return { error: '榜線總表是空的' };
+        const maxB = bds.reduce((m, b) => Math.max(m, +b.id || 0), 0);
+
+        let type = null, days = null, srcEv = null, anchor = null;
+        let unit = (a.unit == null || a.unit === '') ? null : String(a.unit).trim();
+        if (a.event_id != null && a.event_id !== '') {
+          anchor = Math.floor(+a.event_id);
+          srcEv = evs.find(e => +e.id === anchor) || null;
+          /* 活動一覽會比榜線總表多出幾期(已排程但還沒結算),所以「查得到活動、
+             查不到榜線」是正常狀態,正是這支要服務的情境;真的整期都查不到才要求補參數。 */
+          if (srcEv) { type = srcEv.type; days = srcEv.days; }
+          else if (a.type == null || a.days == null) {
+            return { error: '資料庫裡沒有第 ' + anchor + ' 期的活動資料，請改直接給 type 與 days' };
+          }
+        }
+        if (a.type != null && a.type !== '') type = normType(a.type);
+        if (a.days != null && a.days !== '') days = +a.days;
+        /* 沒指定期數就當「下一期還沒結算的活動」。權重是相對值,分子分母同乘一個常數會約掉,
+           所以 anchor 差一兩期完全不影響估計值,它唯一的作用是決定樣本的截止點。 */
+        if (anchor == null) anchor = maxB + 1;
+        if (!type || days == null || !isFinite(days)) {
+          return { error: '請給 type 與 days（或給 event_id）',
+            type_values: ['馬拉松（＝箱活）', '歡樂嘉年華（＝嘉年華）', 'World Link'],
+            days_values: [...new Set(bds.map(b => b.days).filter(v => v != null))].sort((x, y) => x - y) };
+        }
+
+        // 只取「本期之前、同型態、同日數」——日數必須完全相同,6.25 天與 8.25 天的終線差一截
+        const before = bds.filter(b => +b.id < anchor);
+        const byTD = before.filter(b => b.type === type && b.days === days);
+        if (byTD.length < 3) {
+          const cmb = {};
+          before.forEach(b => { const k = b.type + '|' + b.days; cmb[k] = (cmb[k] || 0) + 1; });
+          return { error: '「' + type + '・' + days + ' 天」在第 ' + anchor + ' 期之前只有 ' + byTD.length + ' 期，樣本太少，不給估計',
+            hint: '日數要完全相同，馬拉松／嘉年華是 6.25 / 7.25 / 8.25 / 9.25 / 10.25，給 6 或 8 會篩不到',
+            available_combos: Object.keys(cmb).filter(k => cmb[k] >= 3)
+              .map(k => ({ type: k.split('|')[0], days: +k.split('|')[1], n: cmb[k] }))
+              .sort((x, y) => x.type.localeCompare(y.type) || x.days - y.days) };
+        }
+
+        /* 團體是額外收窄:原本的「史」不分團,加上團之後樣本常常只剩 3～6 期,
+           少到權重會集中在一兩期上。不足 3 期就退回不分團,並且明講退回了,
+           不要讓使用者以為他拿到的是分團結果。 */
+        let same = byTD, unitApplied = false, unitNote = null;
+        if (unit) {
+          const u = byTD.filter(b => b.unit === unit);
+          if (u.length >= 3) { same = u; unitApplied = true; }
+          else unitNote = '團體「' + unit + '」在同型態同日數裡只有 ' + u.length + ' 期，樣本不足，已退回不分團體的樣本';
+        }
+        same = same.slice().sort((x, y) => y.id - x.id);   // 新到舊,後面取「最近 8 期」要靠這個順序
+
+        /* 段位預設只回 5 條。全部 22 個段位乘上樣本明細會讓回傳膨脹到十幾 KB,
+           而使用者問的通常就是自己卡的那一條線。 */
+        let want = (Array.isArray(a.tiers) && a.tiers.length) ? a.tiers.map(Number)
+          : (a.tier != null && a.tier !== '') ? [Math.floor(+a.tier)]
+          : [100, 500, 1000, 2000, 5000];
+        want = want.filter((t, i, arr) => TIERS.indexOf(t) >= 0 && arr.indexOf(t) === i).slice(0, 8);
+        if (!want.length) return { error: '沒有可用的段位', available_tiers: TIERS };
+
+        const rows = [];
+        let primaryDen = 0;
+        want.forEach(rk => {
+          const i = TIERS.indexOf(rk);
+          const v = same.map(b => ({ id: b.id, v: b.t[i] })).filter(x => x.v != null);
+          // T1500/T2500 是後期才開始記錄的,樣本不足時寧可回 null 也不要拿兩期硬算
+          if (v.length < 3) { rows.push({ tier: 'T' + rk, estimate: null, reason: '只有 ' + v.length + ' 期有這個段位的紀錄' }); return; }
+          /* 半衰期 6 期的對數加權平均,與 bdbRef() 完全同式。取對數是因為榜線是乘性成長
+             (通膨),算術平均會被舊期的低值往下拉;半衰期 6 期則讓權重自然衰減,
+             不必再設期數上限。回測 #150～#176 逐期驗證過,偏誤在 2% 以內。 */
+          let num = 0, den = 0;
+          v.forEach(x => { const w = Math.pow(0.5, (anchor - x.id) / 6); num += w * Math.log(x.v); den += w; });
+          const est = Math.exp(num / den);
+          // 區間刻意用「最近 8 期的實際值域」而不是統計信賴區間 —— 給的是離散度,真的發生過的數字比較有意義
+          const recent = v.slice(0, 8).map(x => x.v).sort((x, y) => x - y);
+          const ws = v.map(x => Math.pow(0.5, (anchor - x.id) / 6)).sort((x, y) => y - x);
+          if (!primaryDen) primaryDen = den;
+          rows.push({
+            tier: 'T' + rk,
+            estimate: Math.round(est), estimate_short: this.short(est),
+            range: [recent[0], recent[recent.length - 1]],
+            range_short: this.short(recent[0]) + ' ～ ' + this.short(recent[recent.length - 1]),
+            sample_n: v.length, range_n: Math.min(8, v.length),
+            top4_weight_pct: +(ws.slice(0, 4).reduce((s, w) => s + w, 0) / den * 100).toFixed(1),
+          });
+        });
+
+        /* 樣本一定要列出來,否則使用者沒辦法判斷這個估計可不可信 ——
+           權重集中在一期爆線的活動上時,數字看起來一樣漂亮,但完全不能用。
+           只列權重最高的前幾期,再往後權重已經衰減到看了也沒意義。 */
+        const lim = Math.min(20, Math.max(3, Math.floor(+a.samples_limit || 8)));
+        const samples = same.slice(0, lim).map(b => {
+          const w = Math.pow(0.5, (anchor - b.id) / 6);
+          const sc = {};
+          want.forEach(rk => { const x = b.t[TIERS.indexOf(rk)]; if (x != null) sc['T' + rk] = x; });
+          return { id: b.id, name: b.name, unit: b.unit, days: b.days,
+            weight_pct: primaryDen ? +(w / primaryDen * 100).toFixed(1) : null, scores: sc };
+        });
+
+        return {
+          basis: {
+            event_id: anchor, event_name: srcEv ? srcEv.name : null,
+            type, days, unit: unitApplied ? unit : null, unit_note: unitNote,
+            has_own_border_record: anchor <= maxB,
+          },
+          method: '半衰期 6 期的對數加權平均（＝榜線分析頁「史」那一行的同一套算式）',
+          sample_count: same.length,
+          tiers: rows,
+          samples_shown: samples.length, samples,
+          note: '估計值 ＝ exp( Σ w·ln(該期該段位終線) ÷ Σ w )，其中 w = 0.5^((' + anchor + ' − 期數) ÷ 6)，'
+            + '也就是每往前 6 期權重減半。權重是相對值（分子分母同乘常數會約掉），所以 anchor 只決定樣本截止到第幾期，不影響估計值本身。'
+            + '樣本條件：期數 < ' + anchor + '、型態 ＝「' + type + '」、日數 ＝ ' + days + ' 天（日數必須完全相同）'
+            + (unitApplied ? '、團體 ＝「' + unit + '」' : '、不分團體') + '。'
+            + 'range 是最近 ' + Math.min(8, same.length) + ' 期同型態的「實際值域」，不是信賴區間 —— 它只表示離散度，估計值不保證落在中間，'
+            + '同型態之間差 2～3 倍是常有的事。分數單位是活動分數（PT），1W ＝ 10,000。'
+            + '這是先驗估計，不含任何當期實測資料；活動開跑後請改用 get_borders 的實測時速外推，那支準得多。'
+            + '（回測 #150～#176：單用歷史估計當預測，T100 誤差約 −42%、T1000 −22%、T5000 −13%。）',
+        };
+      }
+
+      case 'get_calendar': {
+        /* 模型很愛把日期寫成 2026-10-15、2026年10月15日,或省略年份只給 10/15。
+           分隔符不同就查錯月份太蠢,這裡一律正規化再切。 */
+        const parseYmd = raw => {
+          const p = String(raw || '').trim().replace(/[.\-年月]/g, '/').replace(/日/g, '')
+            .split('/').filter(x => x !== '');
+          if (!p.length) return null;
+          const n = p.map(Number);
+          if (n.some(x => !isFinite(x))) return null;
+          if (p.length >= 3) return { kind: 'date', y: n[0], m: n[1] - 1, d: n[2] };
+          // 四位數開頭才當年月;否則是「10/15」這種省略年份的寫法 → 補今年
+          if (p[0].length === 4) return { kind: 'month', y: n[0], m: n[1] - 1 };
+          const t = new Date();
+          return { kind: 'date', y: t.getFullYear(), m: n[0] - 1, d: n[1] };
+        };
+
+        const raw = a.date || a.month || '';
+        const q = raw ? parseYmd(raw) : null;
+        if (raw && !q) return { error: '日期看不懂，請用 YYYY/MM/DD（單日）或 YYYY/MM（整月）' };
+        const now = new Date(), nowMs = now.getTime();
+        // 參數省略 → 本月;把 month 誤填成完整日期(或反之)也照解析結果走,不用怪使用者填錯欄位
+        const view = q || { kind: 'month', y: now.getFullYear(), m: now.getMonth() };
+        const isDay = view.kind === 'date';
+        const lo = isDay ? new Date(view.y, view.m, view.d).getTime() : new Date(view.y, view.m, 1).getTime();
+        const hi = isDay ? lo + 86399999 : new Date(view.y, view.m + 1, 1).getTime() - 1;
+
+        /* 卡池表在 sekai-data.js,是 componentDidMount 非同步 import 的:使用者一進站就問、
+           或那次 import 失敗時 state.gachas 還是空的 → 比照 get_dolls 自己補載一次。
+           版本號要跟 componentDidMount 那行一致,才會命中同一份模組快取而不是重抓。 */
+        let src = this.state.gachas || [];
+        if (!src.length) {
+          try {
+            const m = await import('./data/sekai-data.js?v=8d2812dda5');
+            src = m.GACHAS || [];
+            if (src.length) this.setState({ gachas: src, dolls: (this.state.dolls || []).length ? this.state.dolls : (m.DOLLS || []) });
+          } catch (e) { return { error: '卡池排程資料載入失敗' }; }
+        }
+        if (!src.length) return { error: '卡池排程資料尚未載入，請稍後再試' };
+
+        const f2 = v => String(v).padStart(2, '0');
+        const ymd = ms => { const d = new Date(ms); return d.getFullYear() + '/' + f2(d.getMonth() + 1) + '/' + f2(d.getDate()); };
+        const fmt = ms => { const d = new Date(ms); return ymd(ms) + ' ' + f2(d.getHours()) + ':' + f2(d.getMinutes()); };
+
+        // 狀態是「相對於查詢區間」的,不是相對於今天 —— 問 2026/02 就該回「本月開始/本月結束」,
+        // 問某一天就該回「當日開始/當日結束」;跨越整段的才是進行中
+        const statOf = (s, e) => {
+          const inS = s >= lo && s <= hi, inE = e >= lo && e <= hi;
+          if (inS && inE) return isDay ? '當日開始並結束' : '本月開始並結束';
+          if (inS) return isDay ? '當日開始' : '本月開始';
+          if (inE) return isDay ? '當日結束' : '本月結束';
+          return isDay ? '進行中' : '整月進行中';
+        };
+        // 查的區間含今天才附 open_now/running_now;查未來月份時這欄永遠 false,只是浪費 token
+        const cur = nowMs >= lo && nowMs <= hi;
+        // 卡池表的 e 欄是「最後一天」而不是關閉時刻,結束日整天都還抽得到 —— 站上日曆
+        // (eventsOn/filteredGachas)也是這樣算的,這裡沿用同一條規則,免得日曆與助手講不同話
+        const gEnd = d => d.getTime() + 86399999;
+
+        const type = a.type ? String(a.type) : '';
+        const lim = Math.max(1, Math.min(60, +a.limit || 24));
+        const off = Math.max(0, +a.offset || 0);
+
+        // 活動清單走 API,離線/失敗時只回卡池而不整個報錯 —— 卡池是本機資料,一定拿得到
+        const evl = await this.loadEvList().catch(() => []);
+        const evEnd = e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime();
+        const events = (evl || []).map(e => ({ e, s: new Date(e.start_at).getTime(), t: evEnd(e) }))
+          .filter(x => x.s && x.t && x.s <= hi && x.t >= lo)
+          .sort((x, y) => x.s - y.s)
+          .map(x => {
+            // /event/list 只給名稱與時間,主推角色與加成型態要靠卡池表的伴生欄補(gacha.eid → ech/et)
+            const gk = src.find(g => String(g.eid) === String(x.e.id) && (g.ech || g.et));
+            const o = { id: +x.e.id, name: x.e.name, start: fmt(x.s), end: fmt(x.t), status: statOf(x.s, x.t) };
+            if (gk && gk.ech) o.lead_chara = gk.ech;
+            if (gk && gk.et) o.event_type = gk.et;
+            if (cur) o.running_now = nowMs >= x.s && nowMs <= x.t;
+            return o;
+          });
+
+        const rows = src.map(g => ({ g, s: this.pd(g.s), e: this.pd(g.e) }))
+          .filter(x => x.s && x.e && (!type || x.g.t === type) && x.s.getTime() <= hi && gEnd(x.e) >= lo)
+          .sort((x, y) => x.s - y.s || x.e - y.e);
+        const gachas = rows.slice(off, off + lim).map(x => {
+          const s = x.s.getTime(), e = gEnd(x.e);
+          const o = { name: x.g.n, type: x.g.t, start: x.g.s, end: x.g.e, status: statOf(s, e) };
+          if (x.g.ch) o.pickup = x.g.ch;
+          if (x.g.eid) {
+            o.event_id = +x.g.eid;
+            if (x.g.et) o.event_type = x.g.et;
+            if (x.g.ech) o.event_lead = x.g.ech;
+          }
+          // note 偶有很長的說明(井數、限購規則),日曆視角只需要一眼認出是什麼池 → 截短
+          if (x.g.note) o.note = x.g.note.length > 60 ? x.g.note.slice(0, 58) + '…' : x.g.note;
+          if (cur) o.open_now = nowMs >= s && nowMs <= e;
+          return o;
+        });
+
+        const out = {
+          view: isDay ? 'day' : 'month',
+          range: isDay ? ymd(lo) : ymd(lo) + ' – ' + ymd(hi),
+          today: ymd(nowMs),
+          events, gachas, gacha_total: rows.length,
+        };
+        if (off + gachas.length < rows.length) out.next_offset = off + gachas.length;
+        if (!(evl || []).length) out.events_note = '活動清單（/event/list）暫時取不到，本次只有卡池';
+        out.note = 'status 相對於' + (isDay ? '查詢當日' : '查詢當月') + '（開始／結束／進行中）。'
+          + '卡池 end 是最後一天，當天整日仍可抽（判定用 end + 23:59:59）；'
+          + '活動 end 取 aggregate_at，沒有才用 closed_at。時間為使用者本地時區，卡池日期為台服預測排程。';
+        return out;
+      }
+
+      case 'get_collection_stats': {
+        /* 兩件事共用一支：收集室（貼圖／稱號）的分佈統計，以及收集率備份碼的產生與解讀。
+           備份碼一律只讀不寫 —— 覆蓋持卡勾選是破壞性動作，必須由使用者自己在收集率頁按下還原。 */
+        const PMAP = { all: 'all', '全部': 'all', stamp: 'stamps', stamps: 'stamps', '貼圖': 'stamps',
+                       honor: 'honors', honors: 'honors', '稱號': 'honors', code: 'code', '備份碼': 'code' };
+        const part = PMAP[String(a.part == null ? 'all' : a.part).trim().toLowerCase()] || 'all';
+        const lim = Math.max(1, Math.min(50, a.limit != null ? (Math.round(+a.limit) || 10) : 10));
+        const off = Math.max(0, Math.round(+a.offset) || 0);
+        const raw = a.decode == null ? '' : String(a.decode).trim();
+        // 明確給了 decode 就是要解讀，別因為 part 沒寫對而默默不做
+        const wantCol = part === 'all' || part === 'stamps' || part === 'honors';
+        const wantCode = part === 'all' || part === 'code' || !!raw;
+        const out = {};
+
+        /* 角色名／團體對照要靠 cards-index 的 CHARAS，備份碼解讀也要 CARDS，一次載齊 */
+        await this.loadCards();
+        const CARDS = this.state.rateCards || [], CHARAS = this.state.rateChars || [];
+        const nameOf = {}, unitOf = {};
+        CHARAS.forEach(c => { nameOf[c[0]] = c[1]; unitOf[c[0]] = this.UNIT_OF[c[2]] || 'vs'; });
+        const uName = u => (this.UNITS[u] || {}).n || u;
+
+        /* ---------- 收集室分佈（全站共通圖鑑，不是使用者的持有狀況） ---------- */
+        if (wantCol) {
+          await this.loadCollect();
+          // loadCollect 碰到「別處正在載入中」會直接 return，此時 state 還是空的；不等一下會誤報失敗
+          for (let i = 0; i < 25 && !(this.state.stamps || []).length && !(this.state.honors || []).length; i++)
+            await new Promise(r => setTimeout(r, 100));
+          const stamps = this.state.stamps || [], honors = this.state.honors || [];
+          if (!stamps.length && !honors.length) return { error: '收集室資料尚未載入（' + (this.state.colErr || '請稍後再試') + '）' };
+
+          if (part !== 'honors') {
+            const byC = {}, byU = {};
+            stamps.forEach(s => {
+              byC[s.cid] = (byC[s.cid] || 0) + 1;
+              const u = s.cid ? unitOf[s.cid] : null;
+              if (u) byU[u] = (byU[u] || 0) + 1;
+            });
+            out.stamps = { total: stamps.length, no_character: byC[0] || 0,
+              by_unit: Object.keys(this.UNITS).filter(u => byU[u])
+                .map(u => ({ unit: u, name: uName(u), count: byU[u] })).sort((x, y) => y.count - x.count) };
+            // 26 個角色一次全列約佔 2KB，只有指名要貼圖時才展開，避免 part=all 回一大包
+            if (part === 'stamps') out.stamps.by_character = Object.keys(byC).map(k => +k).filter(id => id > 0)
+              .map(id => ({ character_id: id, character: nameOf[id] || ('#' + id), unit: unitOf[id] || null, count: byC[id] }))
+              .sort((x, y) => y.count - x.count || x.character_id - y.character_id);
+            else out.stamps.hint = '要依角色逐一列出請用 part="stamps"';
+          }
+
+          if (part !== 'stamps') {
+            const RL = { low: '普通', middle: '罕見', high: '稀有', highest: '最高' };
+            const byR = {}, byG = {};
+            let multi = 0;
+            honors.forEach(h => {
+              byR[h.rarity || '（未標）'] = (byR[h.rarity || '（未標）'] || 0) + 1;
+              byG[h.group || '（無群組）'] = (byG[h.group || '（無群組）'] || 0) + 1;
+              if (h.lvCount > 1) multi++;
+            });
+            const groups = Object.keys(byG).map(g => ({ group: g, count: byG[g] }))
+              .sort((x, y) => y.count - x.count || (x.group < y.group ? -1 : 1));
+            out.honors = {
+              total: honors.length,
+              multi_level: multi,
+              groups_total: groups.length,
+              by_rarity: Object.keys(byR).sort((x, y) => ['low', 'middle', 'high', 'highest'].indexOf(x) - ['low', 'middle', 'high', 'highest'].indexOf(y))
+                .map(r => ({ rarity: r, label: RL[r] || r, count: byR[r] })),
+              top_groups: groups.slice(off, off + lim),
+              groups_shown: Math.max(0, Math.min(lim, groups.length - off)),
+              groups_offset: off,
+            };
+          }
+        }
+
+        /* ---------- 備份碼 ---------- */
+        if (wantCode) {
+          if (!CARDS.length) return { error: '卡片索引尚未載入（' + (this.state.rateErr || '請先開啟「收集率」頁') + '）' };
+          // loadCards() 只有真的去載那次才會順便 ownLoad()；卡片已在記憶體時要自己補讀，
+          // 否則 ownSet() 會憑空給一個空 Set，把「還沒讀持有清單」誤判成「一張都沒勾」
+          if (!this._own) this.ownLoad();
+          const mine = this.ownSet();
+
+          const metaOf = {}; CARDS.forEach(c => { metaOf[c[0]] = c; });
+          const rarLabel = {}, rarRank = {};
+          this.RARITY.forEach((r, i) => { rarLabel[r[0]] = r[1]; rarRank[r[0]] = i; });
+          const cardUnit = c => (c[5] >= 0 ? this.UNIT_OF[c[5]] : unitOf[c[1]]) || 'vs';
+          const tally = ids => {
+            const byU = {}, byR = {};
+            ids.forEach(id => {
+              const c = metaOf[id]; if (!c) return;
+              const u = cardUnit(c); byU[u] = (byU[u] || 0) + 1; byR[c[2]] = (byR[c[2]] || 0) + 1;
+            });
+            return {
+              by_unit: Object.keys(this.UNITS).filter(u => byU[u]).map(u => ({ unit: u, name: uName(u), count: byU[u] })),
+              by_rarity: this.RARITY.filter(r => byR[r[0]]).map(r => ({ rarity: r[1], count: byR[r[0]] })),
+            };
+          };
+
+          if (raw) {
+            /* 解讀：整段自己解 bitmap，絕不呼叫 ownFromCode() —— 那會把 this._own 換掉，等於覆蓋使用者的紀錄 */
+            if (raw.length > 4000) return { error: '這串太長了（' + raw.length + ' 字元），不像本站的備份碼；全 ' + CARDS.length + ' 張也只要約 212 字元' };
+            if (!/^[A-Za-z0-9+/=]+$/.test(raw)) return { error: '備份碼含有非 base64 的字元，可能是複製時被截斷或混到別的文字' };
+            let bin = '';
+            try { bin = atob(raw); } catch (e) { return { error: '備份碼無法解碼（不是合法的 base64），請確認整串都複製到了' }; }
+            const ids = [];
+            for (let i = 0; i < bin.length; i++) {
+              const v = bin.charCodeAt(i);
+              for (let k = 0; k < 8; k++) if (v & (1 << k)) ids.push((i << 3) + k);
+            }
+            if (!ids.length) return { error: '這串備份碼解出來一張卡都沒有（可能是還沒勾選任何卡時複製到的空碼）' };
+            const inCode = new Set(ids);
+            const unknown = ids.filter(id => !metaOf[id]);
+            let both = 0; mine.forEach(id => { if (inCode.has(id)) both++; });
+            const sorted = ids.slice().sort((x, y) => {
+              const cx = metaOf[x], cy = metaOf[y];
+              const rx = cx && rarRank[cx[2]] != null ? rarRank[cx[2]] : 99;
+              const ry = cy && rarRank[cy[2]] != null ? rarRank[cy[2]] : 99;
+              return rx - ry || x - y;
+            });
+            out.decoded = Object.assign({
+              input_length_chars: raw.length,
+              cards_in_code: ids.length,
+              known_cards: ids.length - unknown.length,
+              unknown_count: unknown.length,
+              unknown_ids: unknown.slice(0, 20),
+            }, tally(ids), {
+              compare_with_my_record: {
+                my_cards: mine.size, in_both: both,
+                only_in_code: ids.length - both, only_in_my_record: mine.size - both,
+                identical: mine.size === both && ids.length === both,
+              },
+              cards: sorted.slice(off, off + lim).map(id => {
+                const c = metaOf[id];
+                return c ? { id, name: c[7] || '', character: nameOf[c[1]] || ('#' + c[1]),
+                             unit: cardUnit(c), rarity: rarLabel[c[2]] || String(c[2]), in_my_record: mine.has(id) }
+                         : { id, name: '（不在目前的卡片索引裡，可能是更新後的新卡）', in_my_record: mine.has(id) };
+              }),
+              cards_shown: Math.max(0, Math.min(lim, sorted.length - off)),
+              cards_offset: off,
+              note: '只做解讀，沒有動到使用者的持卡紀錄。cards 依稀有度（★4→生日→★3→★2→★1）再依卡片 id 排序後由第 ' + off +
+                ' 張起取 ' + lim + ' 張，要更多用 limit／offset。⚠ only_in_my_record 是「你有、這串沒有」的卡：' +
+                '在收集率頁貼上這串還原會整份蓋掉（不是合併），所以要先提醒使用者把自己現在的碼備份下來。',
+            });
+          } else {
+            /* 產生：ownCode() 是純讀取（bitmap→base64），不寫 localStorage、不改畫面 */
+            const code = this.ownCode();
+            const ids = []; mine.forEach(id => ids.push(id));
+            out.backup_code = Object.assign({
+              code: code || null,
+              length_chars: code.length,
+              owned_cards: mine.size,
+              total_cards: CARDS.length,
+              pct: CARDS.length ? +(mine.size / CARDS.length * 100).toFixed(1) : 0,
+            }, tally(ids), {
+              note: code
+                ? '這是使用者目前的備份碼，整串複製到另一台裝置，在「收集率」頁的「貼上備份碼還原…」欄位貼上即可。'
+                  + '編碼方式＝持有的卡片 id 當 bitmap（第 id 個 bit，每位元組低位在前），再 base64；'
+                  + '所以長度只跟最大的卡片 id 有關，跟勾了幾張無關。'
+                : '目前一張都沒勾選，所以沒有備份碼。收集率是在站上「收集率」頁手動勾選的（存這台瀏覽器的 localStorage，鍵名 ' + this.CARD_KEY + '）。',
+            });
+          }
+        }
+
+        out.note = (wantCol ? '貼圖／稱號是官方素材圖鑑（全站共通的總數），不是使用者的持有狀況 —— 遊戲沒有公開這兩項的持有清單。' : '')
+          + (wantCode ? (wantCol ? ' ' : '') + '備份碼這段對應的收集率，才是使用者自己在「收集率」頁勾選的紀錄。'
+              + '本工具只產生與解讀備份碼，不會寫入或覆蓋任何勾選；真的要還原請引導使用者自己到「收集率」頁貼上。' : '');
+        return out;
+      }
+
+      case 'get_misc_calc': {
+        const kind = String(a.kind || '');
+
+        if (kind === 'challenge_live') {
+          const pd = this.state.pdata || {};
+          // 分數省略時退回 profile 的挑戰 Live 最高分（loadPlayer 已存進 pdata.chHigh）——
+          // 使用者問「我打挑戰 Live 有多少活動P」時，預設要算的就是他自己那一場。
+          const score = a.score != null ? Math.max(0, Math.round(+a.score || 0))
+            : (pd.chHigh != null ? +pd.chHigh : null);
+          if (score == null) return { error: '要給 score（挑戰 Live 的歌曲分數）；或先用 set_my_uid 綁 uid，就會拿你 profile 上的挑戰 Live 最高分來算' };
+          const base = 100 + Math.floor(score / 20000);
+          const ep = base * 120;
+          const cp = 200 + Math.floor(score / 8000);
+          // 同一個分數改打單人場的對照（沿用計算中心的加成與火）：
+          // 挑戰場不吃加成也不吃火，值不值得只有跟一般場並排才看得出來。
+          const s = this.state, F = this.EM[s.energy] || 1;
+          const soloEp = this.calcEPValue('solo', score, 100, +s.bonus || 0, F, +s.power || 0, 0);
+          // 整期概算只在 live 已經在手上時附送——這支是純算式工具，不該為了它去打網路。
+          const ck = this.state.live ? this.eventClock() : null;
+          const daysLeft = ck ? Math.max(0, Math.ceil(ck.leftH / 24)) : null;
+          return {
+            kind, score,
+            score_from: a.score != null ? '呼叫時指定' : '你 profile 上的挑戰 Live 最高分',
+            base, event_points: ep,
+            compare_solo_same_score: { event_points: soloEp, bonus_pct: +s.bonus || 0, energy: s.energy, boost_multiplier: F },
+            challenge_points: cp, challenge_points_with_colorful_pass: cp * 2,
+            days_left_est: daysLeft,
+            event_points_if_played_daily: daysLeft != null ? ep * daysLeft : null,
+            note: '挑戰 Live 單場活動P ＝ (100 ＋ ⌊分數/20000⌋) × 120 ＝ (100＋⌊' + score + '/20000⌋) × 120 ＝ ' + ep + ' P。'
+              + '這條式子不吃歌曲倍率、不吃活動加成、也不吃火（站上活動P計算器切到挑戰模式時，倍率與火兩欄會變灰）。'
+              + '挑戰 Live 每天只能打 1 場、凌晨 4:00 重置，所以 event_points_if_played_daily 只是「剩餘天數每天都打」的概算，'
+              + '沒有精算 4:00 這條界線。challenge_points（＝200＋⌊分數/8000⌋，七彩通行證雙倍）是升 STAGE 用的挑戰點數，'
+              + '跟活動P 是兩種東西，別混著講。',
+          };
+        }
+
+        if (kind === 'presets') {
+          /* 曲庫是進「計算中心」才載的模組，使用者可能沒去過那頁 → 自己補載。
+             loadEpSongs 不是 async（內部走 import().then），沒有 promise 可 await，只能輪詢它寫回 state。 */
+          if (!(this.state.epSongs || []).length) {
+            this.loadEpSongs();
+            for (let i = 0; i < 40 && !(this.state.epSongs || []).length; i++) await new Promise(r => setTimeout(r, 100));
+          }
+          const s = this.state;   // setState 會換掉整個 state 物件，一定要等載完才取
+          const dFull = k => { const d = (this.DIFFS || []).find(x => x[0] === k); return d ? d[1] : k; };
+          const pack = (key, p) => {
+            const song = this.songById(p.song), F = this.EM[p.energy] || 1;
+            // 與 scoreNow() 同一套後備順序：指定難度沒係數就往下找有的
+            const k = (song && song.d) ? [p.diff, 'M', 'X', 'H', 'N', 'E', 'A'].find(x => song.d[x]) : null;
+            const score = k ? this.calcSongScore(song.d[k], p.mode, p.power, p.skill, p.s6) : null;
+            const ep = score != null ? this.calcEPValue(p.mode, score, song.rate, p.bonus, F, p.power, 0) : null;
+            const cycle = song ? song.time + this.ohOf(p.mode) : null;
+            return {
+              key, name: p.n, mode: p.mode,
+              power: p.power, bonus_pct: p.bonus,
+              energy: p.energy, boost_multiplier: F,
+              skill: p.skill, s6: p.s6,
+              difficulty: p.diff, difficulty_full: dFull(p.diff),
+              song: song ? { id: song.id, title: song.t, event_rate_pct: song.rate, length_s: song.time } : { id: p.song, title: null },
+              score_mode: p.scoreMode, goal_event_points: p.goal,
+              estimate: ep == null ? null : {
+                difficulty_used: k, song_score: Math.round(score), event_points: ep,
+                ep_per_hour: cycle ? Math.round(ep * 3600 / cycle) : null, cycle_s: cycle,
+              },
+            };
+          };
+          return {
+            kind,
+            presets: Object.keys(this.PRESETS).map(k => pack(k, this.PRESETS[k])),
+            current: {
+              mode: s.mode, power: +s.power || 0, bonus_pct: +s.bonus || 0,
+              energy: s.energy, boost_multiplier: this.EM[s.energy] || 1,
+              skill: s.skill, s6: s.s6, life: s.life,
+              difficulty: s.diff, song_id: s.songKey, score_mode: s.scoreMode,
+              goal_event_points: s.goal, preset_applied: s.preset || null,
+            },
+            note: 'presets 是站上寫死的兩組情境（計算中心與指令面板的「套用情境」按的就是這些值），可以直接當基準值報給使用者。'
+              + '本工具只讀不套用，不會動到畫面上的設定——要真的套用請使用者自己按，或改用 calc_event_points 帶參數試算。'
+              + 'power＝綜合力、bonus_pct＝活動加成%、energy＝吃幾火（火倍率 boost_multiplier 由 0→1、1→5、2→10、3→15、4→20、5→25、6→27、7→29、8→31、9→33、10→35）、'
+              + 'skill／s6＝平均技能倍率與第 6 技能欄、goal_event_points＝該情境預設的活動P 目標。'
+              + 'estimate 是現算的：單局活動P ＝ ⌊base × 歌曲倍率 × (1＋加成/100)⌋ × 火倍率，'
+              + '協力/應援 base ＝ ⌊(分數＋0.075×綜合力×5)/17000⌋＋123，單人/自動 base ＝ 100＋⌊分數/20000⌋；'
+              + 'ep_per_hour 已含場間 overhead（單人 15 秒、協力/應援 45 秒）。current 是使用者當下的共用設定，用來跟預設對照。',
+          };
+        }
+
+        if (kind === 'my_extra') {
+          const uid = String(a.uid || this.state.pid || '').replace(/\D/g, '');
+          if (!uid) return { error: '還沒設定 uid，請先用 set_my_uid' };
+          if (!this.state.live) { try { await this.loadLive(); } catch (e) {} }
+          const me = this.ranksOf(this.state.live).find(x => this.sameUid(x.uid, uid));
+          const st = (me && me.stats) || {};
+          const cnt = k => (st[k] && st[k].count != null) ? st[k].count : null;   // 周回數（近 1／3／24 小時）
+          const pd = this.state.pdata || {};
+          const own = this.sameUid(uid, this.state.pid);
+          let power = own ? pd.power : null, basePower = own ? pd.basePower : null,
+              crBonus = own ? pd.charRankBonus : null, pRank = own ? pd.rank : null;
+          /* 綜合力不在排名回應裡、只有 profile 有。使用者若還沒開過首頁小卡就是空的，
+             這裡自己補打一次公開 profile —— 但刻意不寫回 state，工具不該順手改到畫面。 */
+          if (power == null) {
+            try {
+              const d = await this.apiFetch('/user/' + encodeURIComponent(uid) + '/profile');
+              const tp = (d && d.totalPower) || {}, gd = (d && (d.userGamedata || d.user_gamedata)) || {};
+              if (tp.totalPower != null) power = tp.totalPower;
+              if (tp.basicCardTotalPower != null) basePower = tp.basicCardTotalPower;
+              if (tp.characterRankBonus != null) crBonus = tp.characterRankBonus;
+              if (gd.rank != null) pRank = gd.rank;
+            } catch (e) {}
+          }
+          return {
+            kind, uid, in_top100: !!me, is_my_own_uid: own,
+            rounds_1h: cnt('h1'), rounds_3h: cnt('h3'), rounds_24h: cnt('h24'),
+            avg_per_round_1h: (st.h1 && st.h1.average != null) ? Math.round(st.h1.average) : null,
+            speed_1h: (me && me.speed1h != null) ? Math.round(me.speed1h) : null,
+            last_round_gain: (me && me.lastScore != null) ? me.lastScore : null,
+            last_played: (me && me.lastPlayed) || null,
+            total_power: power, base_card_power: basePower, character_rank_bonus: crBonus,
+            player_rank: pRank,
+            note: 'rounds_*＝該時段的周回數（局）、avg_per_round_1h＝近 1 小時場均（活動P/局）、speed_1h＝近 1 小時時速（活動P/小時）、'
+              + 'last_round_gain＝上一局實得活動P（不是累計）。這些統計來自 HiSekai 的前百名單，'
+              + '沒進前 100 名就全部是 null（in_top100=false），公開 API 對第 101 名之後不給本期分數，查不到就是查不到、不要猜。'
+              + 'total_power 是遊戲讀取的編組總綜合力（點），＝base_card_power ＋ character_rank_bonus ＋ 區域道具等加成，是實際值不是理論值。'
+              + '要動能／休息時數／預測終分那類完整節奏剖析用 analyze_player；要與各段榜線的差距用 get_my_status。',
+          };
+        }
+
+        return { error: 'kind 必須是 challenge_live、presets 或 my_extra 三者之一' };
+      }
+
+      case 'get_page_tutorials': {
+        /* 頁面底部那條教學提示只有「人」看得到（pageTutorials 讀 state.tutQA 現算），
+           助手拿不到 —— 於是使用者在某頁問「這頁怎麼用」時，助手只能關鍵字亂猜。
+           這支把同一張 PAGE_TUT 對照表開放給助手，讓它按「使用者正在用哪個功能」推薦。 */
+        let src = this.state.tutQA || [], cats0 = this.state.tutCats || [];
+        /* 教學資料是動態 import 的，沒進過教學頁時 state 是空的。這裡刻意「只載不寫回 state」：
+           search_tutorial 會 setState 回去，但那會讓當前頁面底部憑空多出一條教學提示條
+           （tutHintOn 由 pageTutorials 的結果決定）—— 工具不該改動使用者的畫面。
+           dynamic import 有模組快取，重複呼叫不會重新下載。 */
+        if (!src.length) {
+          try {
+            const m = await import('./data/tutorial-data.js?v=4befc9b27b');
+            src = m.TUT_QA || []; cats0 = m.TUT_CATS || [];
+          } catch (e) { return { error: '教學資料載入失敗' }; }
+        }
+        const cats = {}; cats0.forEach(c => { cats[c.id] = c.name; });
+        const page = String(a.page || '').trim();
+        const topic = String(a.topic || '').trim();
+        const allPages = Object.keys(this.PAGE_TUT);
+        const title = p => (this.PAGES[p] || [])[0] || p;
+        if (!page && !topic) {
+          return { error: '要給 page 或 topic',
+            pages: allPages.map(p => ({ page: p, title: title(p), keywords: this.PAGE_TUT[p] })) };
+        }
+        let kws = [], related = [], min = 3;
+        if (page) {
+          kws = (this.PAGE_TUT[page] || []).slice();
+          if (!kws.length) return { error: '這個頁面沒有對照的教學關鍵字（不是每頁都有）',
+            page, pages_with_tutorials: allPages };
+        }
+        if (topic) {
+          /* topic 走「雙向包含」比對：使用者講「我想衝榜線」也要能對到 rank／borderdb 的『榜線』。
+             命中的頁面關鍵字併進評分詞，讓 topic 借到那頁同義詞組的召回率。 */
+          const t = topic.toLowerCase();
+          allPages.forEach(p => {
+            const hit = this.PAGE_TUT[p].filter(w => t.includes(w.toLowerCase()) || w.toLowerCase().includes(t));
+            if (hit.length) {
+              related.push({ page: p, title: title(p), matched: hit });
+              hit.forEach(w => { if (kws.indexOf(w) < 0) kws.push(w); });
+            }
+          });
+          if (kws.indexOf(topic) < 0) kws.push(topic);
+          /* 單一 topic 只有一個詞，套 page 模式的 3 分門檻會把「只在關鍵字欄命中（2 分）」的條目全砍光 */
+          if (!page) min = 2;
+        }
+        const cut = Math.min(800, Math.max(80, +a.answer_chars || 240));
+        const lim = Math.min(12, Math.max(1, +a.limit || 5));
+        /* 評分刻意照抄 pageTutorials，助手講的順序才會跟使用者眼前那條提示條一致 */
+        const scored = src.map(x => {
+          const q = String(x.q || ''), ans = String(x.a || ''), k = String(x.kw || '');
+          let sc = 0;
+          kws.forEach(w => { if (q.includes(w)) sc += 3; if (k.includes(w)) sc += 2; if (ans.includes(w)) sc += 1; });
+          return { x, sc };
+        }).filter(r => r.sc >= min).sort((m, n) => n.sc - m.sc);
+        const out = {
+          page: page || undefined, page_title: page ? title(page) : undefined,
+          topic: topic || undefined, keywords: kws,
+          related_pages: topic ? related.slice(0, 6) : undefined,
+          hits: scored.length, shown: Math.min(lim, scored.length), total_qa: src.length,
+          items: scored.slice(0, lim).map(r => ({
+            category: cats[r.x.cat] || r.x.cat, question: r.x.q,
+            answer: String(r.x.a || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, cut),
+            relevance: r.sc,
+          })),
+          note: '相關度分 = 關鍵字命中加總（標題 +3 分、關鍵字欄 +2 分、內文 +1 分），門檻 ' + min +
+            ' 分；page 模式的排序與該頁底部顯示的教學完全一致。答案已去 HTML 並截到 ' + cut + ' 字。',
+        };
+        if (!scored.length) out.hint = '這組關鍵字沒有對到教學條目，改用 search_tutorial 直接搜使用者的原話。';
+        return out;
+      }
+
+      case 'get_site_meta': {
+        /* 這三份東西全是寫死在 class 上的常數,沒有載入器、也不會跟著遊戲資料變 ——
+           所以整支不 await 任何東西,也不動畫面。
+           分 kind 回是因為三份加起來太長:問「這站誰做的」的人完全用不到 24 條外部連結,
+           而 capabilities 的示範問句一攤開就佔掉一半篇幅,所以另外用 with_examples 控制。 */
+        const kind = String(a.kind || 'all').toLowerCase().trim();
+        const want = k => kind === 'all' || kind === k;
+        const ex = !!a.with_examples;
+        const abs = u => (/^[a-z]+:\/\//i.test(u) ? u
+          : (typeof location !== 'undefined' ? location.origin + '/' : '') + String(u).replace(/^\.?\//, ''));
+        const out = { site: 'Project SEKAI 台服資源站', kind };
+
+        if (want('credits')) {
+          out.credits = {
+            /* 名單原樣照列,不排序也不去重 —— 順序是提供者給的加入順序,重排等於改了原意 */
+            editors: {
+              group: '世界計畫開瓶器編輯群',
+              role: '教學大全 115 則問答的撰寫者;search_tutorial 查到的內容就是出自他們',
+              order_note: '順序僅為加入順序,無先後之分',
+              count: this.CREDIT_EDITORS.length,
+              names: this.CREDIT_EDITORS,
+            },
+            data_authors: this.CREDIT_WORKS.map(w => ({
+              who: w.who,
+              works: w.items.map(it => ({ name: it.n, desc: it.d, url: it.u || null })),
+            })),
+            advisors: { role: '提供建議並實際採納', count: this.CREDIT_ADVISORS.length, names: this.CREDIT_ADVISORS },
+            contact: { who: 'Omega', discord: 'euler_formula_best', purpose: '資料有誤、想加功能、回報問題' },
+            copyright: '歡迎轉載,但請註明作者出處。各份資料表與教學問答的著作權均屬原作者所有,引用時請一併標註原始連結。',
+            note: '本站只是把這些人的成果整合起來;有原始連結的一律以原版為準,那裡永遠比站上新。',
+          };
+        }
+
+        if (want('resources')) {
+          const groups = this.RES_GROUPS || [];
+          const g = String(a.group || '').trim();
+          const hit = g ? groups.filter(x => x.label === g || x.label.indexOf(g) >= 0) : groups;
+          if (g && !hit.length) {
+            out.resources = { error: '沒有這一組:' + g, available_groups: groups.map(x => x.label) };
+          } else {
+            out.resources = {
+              group_count: groups.length,
+              link_count: groups.reduce((s2, x) => s2 + x.items.length, 0),
+              groups: hit.map(x => ({
+                group: x.label,
+                links: x.items.map(it => ({
+                  name: it.name, desc: it.sub, url: abs(it.url),
+                  // 「本站工具」那組是相對路徑,單獨貼給使用者會連不到,所以補成完整網址並標出來
+                  internal: !/^[a-z]+:\/\//i.test(it.url),
+                })),
+              })),
+              note: '這是資源連結頁(?page=res)的完整索引,轉述時請一併附上網址。',
+            };
+          }
+        }
+
+        if (want('capabilities')) {
+          out.capabilities = {
+            tool_count: (this.AI_TOOLS || []).length,
+            /* 模塊與模板不是同一種東西,回傳時要分開講,不然助手會把兩邊混著唸:
+               模塊＝照著問就有答案;模板＝〔〕裡的字要換成使用者自己的數字。 */
+            modules: this.AI_MODULES.map(m => Object.assign(
+              { id: m.id, name: m.n, does: m.d, example_count: m.q.length },
+              ex ? { examples: m.q } : {})),
+            templates: this.AI_TEMPLATES.map(t => Object.assign(
+              { name: t.n, template_count: t.q.length },
+              ex ? { fill_in_the_blank: t.q } : {})),
+            note: 'modules 是站內助手頁上點一下就填進輸入框的示範問句(照著問就有答案);'
+              + 'templates 是填空句,〔〕裡的內容要換成使用者自己的 ID、分數、加成、預算。',
+          };
+          if (!ex) out.capabilities.hint = '要看每一項的實際問句,帶 with_examples:true 再呼叫一次(回傳量約三倍)。';
+        }
+
+        if (!out.credits && !out.resources && !out.capabilities) {
+          return { error: '不認得的 kind:' + kind, valid_kind: ['credits', 'resources', 'capabilities', 'all'] };
+        }
+        return out;
+      }
+
+      case 'predict_card_rerun': {
+        /* 為什麼借 core.js 的 RerunModule，而不在這裡自己推一套：
+           台服 gachas.json 是「線上快照」不是歷史檔 —— 實測整支只有 74 個卡池
+           (3 個沒清掉的舊新手池 ＋ 17 個進行中 ＋ 54 個已排程)，台服過去開過什麼
+           完全查不到。所以能回答「下次什麼時候再出」的來源就只有 RerunModule 用的
+           那兩個：台服 master 裡已經排進去的未來卡池(＝官方已排定)，以及日服同一張卡
+           的開池日 ＋365 天(＝推估)。兩者必須在回傳裡分得一清二楚 —— 把推估講得像
+           排定，會直接害人把石頭壓在一個不存在的日期上。
+           推估的準度是量過的（2026/08 取樣）：當時 192 張「台服已排定 且 日服有對應紀錄」
+           的卡，日服＋365 天與台服實際排定日的誤差中位數 0 天、99% 落在 ±31 天內 ——
+           台服基本上是把日服的排程整份往後推一年，所以這個平移敢拿來用。 */
+        await this.loadCards();
+        const cards = this.state.rateCards || [];
+        if (!cards.length) return { error: '卡片索引尚未載入（' + (this.state.rateErr || '請先開啟「收集率」頁') + '）' };
+
+        let E;
+        try { E = await this.ensureEngine(); }
+        catch (e) { return { error: '計算引擎載入失敗：' + (e.message || '請稍後再試') }; }
+        const R = E.RerunModule;
+        if (!R) return { error: '計算引擎載入了，但取不到 RerunModule（復刻推算）' };
+        if (!(await R.ensure())) return { error: '復刻資料載入失敗（台服／日服 gachas.json 抓不到），稍後再試' };
+
+        /* RerunModule 只留下 startAt，卡池名稱、期間、類型要自己補一份。
+           gachas.json 在 R.ensure() 裡已經抓過，MasterDB 會回同一個 Promise，不會再打一次網路。 */
+        let twG = [];
+        try { twG = (await E.MasterDB.get('gachas.json')) || []; } catch (e) {}
+        if (!twG.length) return { error: '台服卡池表載入失敗，稍後再試' };
+
+        const now = Date.now();
+        const KIND = { ceil: '限定／復刻池（有天井）', normal: '一般池（高級禮物／選擇清單／必中票券等）',
+                       beginner: '新手限定池', subeginner: '新手限定池', return: '回歸玩家池' };
+        const puBy = {}, liveIn = {};
+        twG.forEach(g => {
+          (g.gachaPickups || []).forEach(p => { (puBy[p.cardId] = puBy[p.cardId] || []).push(g); });
+          /* 「現在抽不抽得到」要看進行中卡池的完整 gachaDetails，不能只看 PU：
+             實測 5 週年 FES 池的名單裡收了全部 27 張彩FES ＋ 12 張 BLOOMFES 卡，
+             它們都不是 PU 卻真的抽得到 —— 這正是「要不要現在抽」最關鍵的一格。 */
+          if (g.startAt <= now && g.endAt >= now) (g.gachaDetails || []).forEach(d => { (liveIn[d.cardId] = liveIn[d.cardId] || []).push(g); });
+        });
+        Object.keys(puBy).forEach(k => puBy[k].sort((x, y) => x.startAt - y.startAt));
+
+        // 台灣固定 UTC+8 且無日光節約，位移 8 小時再讀 UTC 就是正確的台北日期，不必碰 toLocaleString
+        const pad = v => String(v).padStart(2, '0');
+        const tpe = ms => { const d = new Date(ms + 8 * 3600000);
+          return { ymd: d.getUTCFullYear() + '/' + pad(d.getUTCMonth() + 1) + '/' + pad(d.getUTCDate()),
+                   ym: d.getUTCFullYear() + '/' + pad(d.getUTCMonth() + 1) }; };
+        const days = ms => Math.round((ms - now) / 86400000);
+
+        const ATTR = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+        const SUPPLY_CODE = ['normal', 'birthday', 'term_limited', 'colorful_festival_limited',
+                             'bloom_festival_limited', 'unit_event_limited', 'collaboration_limited'];
+        const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
+        const schedUntil = twG.reduce((m, g) => Math.max(m, g.startAt || 0), 0);
+
+        const predict = c => {
+          const id = c[0];
+          const type = R.cardType[id] || SUPPLY_CODE[c[4]] || 'normal';   // 以 RerunModule 的分類為準，和經典版頁面同源
+          const inf = R.info(id);                                          // { type, next, isJP }
+          const zh = this.SUPPLYN[SUPPLY_CODE.indexOf(type)] || this.SUPPLYN[c[4]] || '';
+          const live = (liveIn[id] || []).slice().sort((x, y) => x.endAt - y.endAt);
+          const pus = puBy[id] || [];
+          // 同一張卡可能同時掛在好幾個進行中的池（含 2099 才結束的新手池），
+          // 「還剩多久」要取最快結束的那個，取第一個會回到新手池那種假期限
+          const livePu = pus.filter(g => g.startAt <= now && g.endAt >= now).sort((x, y) => x.endAt - y.endAt);
+          const twNext = pus.find(g => g.startAt > now) || null;           // 台服 master 真的排進去了 ＝ 已排定
+          const jpPast = (R.appearJP[id] || []).filter(s => s <= now).length;
+
+          let next;
+          if (type === 'normal') {
+            // 常駐卡沒有「復刻」這回事，講成已排定復刻會誤導；有未來卡池就當「下次成為 PU」講
+            const t = twNext ? tpe(twNext.startAt) : null;
+            next = {
+              status: '常駐', is_confirmed: true, schedule_conflict: false,
+              date: t ? t.ymd : null, year_month: t ? t.ym : null,
+              days_from_now: twNext ? days(twNext.startAt) : null,
+              gacha_id: twNext ? twNext.id : null, gacha_name: twNext ? twNext.name : null,
+              gacha_kind: twNext ? (KIND[twNext.gachaType] || twNext.gachaType) : null,
+              source: twNext ? 'tw_master_scheduled' : null,
+              caveat: c[6] === 1 ? null : '標為常駐，但台服查不到任何卡池收錄過（多半是活動報酬卡）',
+            };
+          } else if (twNext) {
+            const t = tpe(twNext.startAt);
+            next = {
+              status: '已排定', is_confirmed: true, schedule_conflict: false,
+              date: t.ymd, year_month: t.ym, days_from_now: days(twNext.startAt),
+              gacha_id: twNext.id, gacha_name: twNext.name,
+              gacha_kind: KIND[twNext.gachaType] || twNext.gachaType || null,
+              source: 'tw_master_scheduled',
+              caveat: twNext.gachaType === 'ceil' ? null
+                : '這不是復刻 PU 池，是「' + (KIND[twNext.gachaType] || twNext.gachaType) + '」把這張卡收進名單的另一種取得管道',
+            };
+          } else if (inf.next && inf.isJP) {
+            /* 台服排程已經公布到 schedUntil，如果推估日落在那之前卻沒被排進去，
+               這個推估等於已經被官方排程否決了 —— 不標出來，模型會照著一個
+               已知不可能的月份叫人存石頭 */
+            const conflict = inf.next < schedUntil;
+            next = {
+              status: '預估', is_confirmed: false, schedule_conflict: conflict,
+              date: null, year_month: tpe(inf.next).ym, days_from_now: days(inf.next),
+              gacha_id: null, gacha_name: null, gacha_kind: null,
+              source: 'jp_offset_' + Math.round(R.OFFSET / 86400000) + 'd',
+              caveat: conflict ? '台服排程已公布到 ' + tpe(schedUntil).ymd + '、裡面沒有這張，所以實際一定比這個推估晚；這個月份只能當「日服的節奏」看' : null,
+            };
+          } else {
+            const why = type === 'birthday'
+                ? '目前沒有排定，但台服慣例是每年該角色生日檔期同時開當年新卡與歷年復刻池（實測曉山瑞希檔期同時掛了 2026 新卡＋2025／2024／初代三個復刻池）'
+              : (type === 'colorful_festival_limited' || type === 'bloom_festival_limited')
+                ? 'FES 限定卡首次登場後就長駐在 FES 池的抽卡名單裡（只是不再是 PU），下次 FES 期間仍抽得到，只是機率低很多；PU 復刻很罕見'
+              : type === 'collaboration_limited'
+                ? '聯動限定，聯動結束後日服也沒有再開的紀錄，不保證會復刻'
+              : '台服沒有排程，日服也沒有可平移的未來開池紀錄，推不出來';
+            next = { status: '無排定', is_confirmed: false, schedule_conflict: false,
+                     date: null, year_month: null, days_from_now: null,
+                     gacha_id: null, gacha_name: null, gacha_kind: null,
+                     source: null, caveat: why };
+          }
+
+          return {
+            card_id: id, card_name: c[7] || '', character: this.chNameOf(c[1]),
+            rarity: (this.RARITY.find(r => r[0] === c[2]) || [null, '?'])[1],
+            attribute: this.ATTR_ZH[ATTR[c[3]]] || String(c[3]),
+            limited_type: zh, limited_type_code: type,
+            obtainable_now: live.length ? {
+              is_pickup_now: livePu.length > 0,
+              in_pools: live.slice(0, 2).map(g => g.name),
+              pool_count: live.length,
+              pickup_ends_at: livePu.length ? tpe(livePu[0].endAt).ymd : null,
+              pickup_hours_left: livePu.length ? +((livePu[0].endAt - now) / 3600000).toFixed(1) : null,
+            } : null,
+            next_rerun: next,
+            jp_pickup_count: jpPast,
+          };
+        };
+
+        /* ---- 目標選定：card_id ＞ gacha_name ＞ character ＞（都不給）進行中卡池的 PU 卡 ---- */
+        const nz = v => String(v == null ? '' : v).trim();
+        let targets = [], scope = '';
+        if (nz(a.card_id)) {
+          const t = nz(a.card_id);
+          if (!/^\d+$/.test(t)) return { error: 'card_id 必須是數字卡片 id；要用角色或卡池名請改給 character／gacha_name' };
+          const c = byId[+t];
+          if (!c) return { error: '卡片索引裡沒有 id ' + t + ' 這張卡（台服共 ' + cards.length + ' 張）' };
+          targets = [c]; scope = 'card_id ' + t;
+        } else if (nz(a.gacha_name)) {
+          const q = nz(a.gacha_name), lc = q.toLowerCase();
+          const hit = /^\d+$/.test(q) ? twG.find(g => String(g.id) === q)
+                                      : twG.find(g => String(g.name || '').toLowerCase().indexOf(lc) >= 0);
+          if (!hit) return {
+            error: '台服卡池表裡找不到「' + q + '」',
+            hint: '台服 gachas.json 是線上快照（目前 ' + twG.length + ' 個卡池），只有進行中與已排程的池，查不到早就結束的舊池；查舊池的卡請改用 card_id 或 character。',
+            current_and_upcoming: twG.filter(g => g.endAt >= now).sort((x, y) => x.startAt - y.startAt).slice(0, 15).map(g => g.name),
+          };
+          targets = (hit.gachaPickups || []).map(p => byId[p.cardId]).filter(Boolean);
+          scope = '卡池 #' + hit.id + '「' + hit.name + '」的 PU 卡';
+          if (!targets.length) return { error: '卡池 #' + hit.id + '「' + hit.name + '」沒有 PU 卡（或 PU 的卡台服卡庫裡還沒有）' };
+        } else if (nz(a.character)) {
+          const t = nz(a.character);
+          let charId = /^\d+$/.test(t) ? +t : (this.CHARA_ID[t] || null);
+          if (!charId) { const k = Object.keys(this.CHARA_ID).find(nm => t.indexOf(nm) >= 0); if (k) charId = this.CHARA_ID[k]; }
+          if (!charId) return { error: '不認得角色「' + t + '」', available_characters: Object.keys(this.CHARA_ID) };
+          const perm = a.include_permanent === true;
+          targets = cards.filter(c => c[1] === charId && (perm || (R.cardType[c[0]] || SUPPLY_CODE[c[4]]) !== 'normal'));
+          scope = this.chNameOf(charId) + (perm ? ' 的全部卡片' : ' 的限定卡（不含常駐，要含常駐請給 include_permanent=true）');
+          if (!targets.length) return { error: scope + '：找不到符合的卡' };
+        } else {
+          /* 只取「真的當期池」：新手／回歸池與 endAt 掛到 2099 的常設池也有 PU 名單，
+             全撈進來會回一堆常駐卡（實測 71 張，其中大半是新手選擇招募的 26 張），
+             使用者問的從來不是那個 */
+          const seen = {};
+          twG.filter(g => g.startAt <= now && g.endAt >= now
+                       && ['beginner', 'subeginner', 'return'].indexOf(g.gachaType) < 0
+                       && (g.endAt - g.startAt) <= 120 * 86400000)
+            .sort((x, y) => x.startAt - y.startAt)
+            .forEach(g => (g.gachaPickups || []).forEach(p => {
+              if (!seen[p.cardId] && byId[p.cardId]) { seen[p.cardId] = 1; targets.push(byId[p.cardId]); }
+            }));
+          scope = '目前進行中卡池的 PU 卡';
+          if (!targets.length) return { error: '目前沒有進行中的 PU 卡池，請指定 card_id／character／gacha_name' };
+        }
+
+        /* ---- 排序：現在就是 PU ＞ 已排定 ＞ 預估 ＞ 推不出來，同組再依日期由近到遠 ---- */
+        const rows = targets.map(predict);
+        // 排序優先權：現在就是 PU ＞ 已排定 ＞ 乾淨的預估 ＞ 被排程否決的預估 ＞ 常駐 ＞ 推不出來
+        const ord = r => (r.obtainable_now && r.obtainable_now.is_pickup_now) ? 0
+                       : r.next_rerun.status === '已排定' ? 1
+                       : r.next_rerun.status === '預估' ? (r.next_rerun.schedule_conflict ? 3 : 2)
+                       : r.next_rerun.status === '常駐' ? 4 : 5;
+        const dd = r => r.next_rerun.days_from_now == null ? 1e9 : r.next_rerun.days_from_now;
+        rows.sort((x, y) => ord(x) - ord(y) || dd(x) - dd(y) || x.card_id - y.card_id);
+
+        let lim = a.limit == null ? 10 : Math.round(+a.limit);
+        if (!(lim > 0)) lim = 10;                          // 0／負數／NaN 一律當沒給，不要縮成 1 張
+        const limit = Math.min(40, lim);
+        const offset = Math.max(0, a.offset == null ? 0 : Math.round(+a.offset) || 0);
+        const page = rows.slice(offset, offset + limit);
+
+        let head;
+        if (!page.length && offset) head = 'offset ' + offset + ' 已經超過符合的 ' + rows.length + ' 張，請把 offset 調小。';
+        else head = 'cards 是排序後（現在就是 PU ＞ 已排定 ＞ 預估 ＞ 推不出來）的第 ' + (offset + 1) + '～' + (offset + page.length)
+          + ' 張，共 ' + rows.length + ' 張；要更多請調 limit（上限 40）或用 offset 續取。';
+
+        return {
+          scope, matched: rows.length, showing: page.length, limit, offset,
+          cards: page,
+          data_freshness: {
+            tw_gacha_entries: twG.length,
+            tw_scheduled_until: schedUntil ? tpe(schedUntil).ymd : null,
+            queried_at_taipei: tpe(now).ymd,
+          },
+          note: head
+            + '　next_rerun.status 有四種（已排定／預估／常駐／無排定），帶得動抽卡決策的是前兩種，而且必須分開講：'
+            + '「已排定」＝台服官方 master data 已經把這張卡排進某個未來卡池，日期與卡池名都是官方值；'
+            + '「預估」＝台服還沒公布，用日服同一張卡的開池日 ＋365 天平移出來的推算，只精確到月份，不是官方排程，別當成承諾。'
+            + '推估準度是實測過的（2026/08 取樣）：當時 192 張同時有「台服已排定」與「日服對應紀錄」的卡，日服＋365 天與台服實際排定日誤差中位數 0 天、99% 落在 ±31 天內 —— 準，但仍然是推算。'
+            + '　台服排程只公布到 ' + (schedUntil ? tpe(schedUntil).ymd : '—') + '，在那之後的一律只可能是「預估」。'
+            + '　台服 gachas.json 是線上快照而不是歷史檔（目前只有 ' + twG.length + ' 個卡池），查不到台服的過去開池紀錄；'
+            + 'jp_pickup_count＝這張卡在日服至今當過幾次 PU，是「還會不會再出」目前唯一有長度的證據（日服平均：期間限定 3.8 次、生日 3.4 次、團體活動限定 3.0 次、聯動 2.0 次、彩FES 1.2 次、BLOOMFES 1.2 次）。'
+            + '　schedule_conflict=true 代表推估的月份落在台服已公布的排程之內、但官方沒排這張，實際一定會更晚，別照那個月份給建議。'
+            + '　obtainable_now 看的是進行中卡池的完整抽卡名單而不是只有 PU；is_pickup_now=false 代表抽得到但沒有 PU 加權，中的機率低很多。'
+            + '　status「常駐」＝常駐池隨時抽得到、沒有復刻問題，此時 date／gacha 指的是它下次被列為 PU 的卡池而不是復刻。'
+            + 'source 短碼：tw_master_scheduled＝台服 master 已排程（官方值）、jp_offset_365d＝日服日期＋365 天推算。'
+            + '　日期都是台北時間（UTC+8）；days_from_now 單位是天，pickup_hours_left 單位是小時。',
         };
       }
 
