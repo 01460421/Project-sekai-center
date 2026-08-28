@@ -1753,17 +1753,23 @@ select option, select optgroup{
         <button type="button" onClick="{{ onArtSrv }}" data-v="jp" style="padding:6px 15px;border:1px solid {{ artJpBd }};border-radius:999px;background:{{ artJpBg }};color:{{ artJpFg }};font-size:12px;font-weight:800;cursor:pointer">日服</button>
         <span style="font-size:11px;color:var(--text-3)">{{ artSrvNote }}</span>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <input type="text" value="{{ artQ }}" onInput="{{ onField }}" data-k="artQ" placeholder="搜尋卡名、角色或素材名" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit" style-focus="border-color:var(--accent)">
-        <select value="{{ artChara }}" onChange="{{ onField }}" data-k="artChara" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
-          <sc-for list="{{ artCharaOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-        </select>
-        <select value="{{ artRar }}" onChange="{{ onField }}" data-k="artRar" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
-          <sc-for list="{{ artRarOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-        </select>
-        <select value="{{ artSup }}" onChange="{{ onField }}" data-k="artSup" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
-          <sc-for list="{{ artSupOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-        </select>
+      <div style="margin-bottom:10px">
+        <input type="text" value="{{ artQ }}" onInput="{{ onField }}" data-k="artQ" placeholder="搜尋卡名、角色、稀有度或取得類別" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit;margin-bottom:8px" style-focus="border-color:var(--accent)">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
+          <sc-for list="{{ artUnitChips }}" as="c" hint-placeholder-count="7">
+            <button type="button" onClick="{{ onArtUnit }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
+          <sc-for list="{{ artRarChips }}" as="c" hint-placeholder-count="6">
+            <button type="button" onClick="{{ onArtRar }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <sc-for list="{{ artSupChips }}" as="c" hint-placeholder-count="8">
+            <button type="button" onClick="{{ onArtSup }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3)">
         <span>符合 <b style="color:var(--accent-deep)">{{ artTotal }}</b> 張　第 {{ artPage }} / {{ artPages }} 頁</span>
@@ -3611,7 +3617,7 @@ class Component extends DCLogic {
     wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
-    artQ: '', artChara: 0, artRar: 0, artSup: -1, artPage: 1,
+    artQ: '', artUnit: 'all', artRar: 'all', artSup: 'all', artPage: 1,
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
@@ -14254,14 +14260,14 @@ class Component extends DCLogic {
         const cards = jp ? allJp.filter(c => c[9] !== 0) : (s.rateCards || []);
         const jpPending = jp ? (allJp.length - cards.length) : 0;
         const chars = jp ? (s.jpChars || []) : (s.rateChars || []);
-        const nOf = {}; chars.forEach(c => { nOf[c[0]] = c[1]; });
+        const nOf = {}, uOf = {};
+        chars.forEach(c => { nOf[c[0]] = c[1]; uOf[c[0]] = this.UNIT_OF[c[2]] || 'vs'; });
         const q = String(s.artQ || '').trim().toLowerCase();
-        const ch = +s.artChara || 0, rr = +s.artRar || 0;
-        const sp = s.artSup == null ? -1 : +s.artSup;
+        const un = s.artUnit || 'all', rr = s.artRar || 'all', sp = s.artSup || 'all';
         const rows = cards.filter(c => {
-          if (ch && c[1] !== ch) return false;
-          if (rr && c[2] !== rr) return false;
-          if (sp >= 0 && c[4] !== sp) return false;
+          if (un !== 'all' && uOf[c[1]] !== un) return false;
+          if (rr !== 'all' && String(c[2]) !== rr) return false;
+          if (sp !== 'all' && String(c[4]) !== sp) return false;
           if (q) {
             /* 比對範圍要涵蓋「卡片上看得到的所有字」。原本只比卡名、角色與素材名,
                於是打「生日」「常駐」「期間限定」會回 0 張 —— 而那些字就印在每張卡上,
@@ -14279,7 +14285,6 @@ class Component extends DCLogic {
         const A = this.ASSET;
         return {
           artQ: s.artQ || '',
-          artChara: String(ch), artRar: String(rr), artSup: String(sp),
           artTotal: rows.length, artPage: pg, artPages: pages,
           artEmpty: cards.length > 0 && rows.length === 0,
           artMsg: (jp ? s.jpErr : s.rateErr) || (cards.length ? '' : '卡片索引載入中…'),
@@ -14295,12 +14300,22 @@ class Component extends DCLogic {
             ? ('日服 ' + cards.length + ' 張，含台服尚未實裝的卡（卡名為日文）'
                + (jpPending ? '　另有 ' + jpPending + ' 張已公布但素材尚未上架' : ''))
             : ('台服 ' + cards.length + ' 張（繁體中文卡名）'),
-          artCharaOpts: [{ v: '0', n: '全部角色' }].concat(
-            chars.map(c => ({ v: String(c[0]), n: c[1] }))),
-          artRarOpts: [{ v: '0', n: '全部稀有度' }].concat(
-            this.RARITY.map(r => ({ v: String(r[0]), n: r[1] }))),
-          artSupOpts: [{ v: '-1', n: '全部取得類別' }].concat(
-            this.SUPPLYN.map((n2, i) => ({ v: String(i), n: n2 }))),
+          /* 用膠囊而不是 <select>：原本的下拉在部分瀏覽器上渲染成空白小方塊
+             （站主的 iPad Safari 實際遇到，三個下拉包括選項寫死在常數裡的那兩個
+             全都空的）。收集率頁一直是用膠囊，那個版式在同一台裝置上是好的，
+             所以照抄它，而不是繼續猜 select 為什麼不渲染。
+             角色從 26 個變成團體 6 個：26 顆膠囊太多，逐角色改用搜尋框
+             （打「一歌」就是 46 張），搜尋現在也涵蓋稀有度與取得類別。 */
+          artUnitChips: [{ v: 'all', n: '全部', c: null }].concat(
+            this.UNIT_OF.map(u => ({ v: u, n: (this.UNITS[u] || {}).n || u, c: (this.UNITS[u] || {}).c })))
+            .map(x => { const on = un === x.v, st = chip(on, x.c);
+              return Object.assign({}, x, st, { fg: on ? (x.c ? (this.UNITS[x.v] || {}).t || '#fff' : '#fff') : 'var(--text)' }); }),
+          artRarChips: [{ v: 'all', n: '全部' }].concat(this.RARITY.map(([code, label]) => ({ v: String(code), n: label })))
+            .map(x => { const on = rr === x.v, st = chip(on, 'var(--cta)');
+              return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
+          artSupChips: [{ v: 'all', n: '全部' }].concat(this.SUPPLYN.map((nm, i) => ({ v: String(i), n: nm })))
+            .map(x => { const on = sp === x.v, st = chip(on, 'var(--cta)');
+              return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
           artRows: rows.slice((pg - 1) * per, pg * per).map(c => {
             const abn = c[8], trained = (c[2] === 3 || c[2] === 4);
             return {
@@ -15612,7 +15627,7 @@ class Component extends DCLogic {
         if (d.k === 'gq' || d.k === 'gt') patch.gp = 1;
         if (d.k === 'sq' || d.k === 'ssort') patch.sp = 1;
         if (d.k === 'cq') patch.cp = 1;
-        if (d.k === 'artQ' || d.k === 'artChara' || d.k === 'artRar' || d.k === 'artSup') patch.artPage = 1;
+        if (d.k === 'artQ') patch.artPage = 1;
         if (d.k === 'tq') patch.tutMore = false;   // 換搜尋詞就回到收合,不然展開狀態會黏著
         if (d.k === 'songKey') {
           const sg = this.songById(v);
@@ -15699,6 +15714,9 @@ class Component extends DCLogic {
       },
       /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
          而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      onArtUnit: e => this.setState({ artUnit: e.currentTarget.dataset.v, artPage: 1 }),
+      onArtRar: e => this.setState({ artRar: e.currentTarget.dataset.v, artPage: 1 }),
+      onArtSup: e => this.setState({ artSup: e.currentTarget.dataset.v, artPage: 1 }),
       onArtSrv: e => {
         const v = e.currentTarget.dataset.v;
         // 換服等於換一整份清單,篩選條件的角色 id 兩服通用但頁碼一定要歸零
