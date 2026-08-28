@@ -1739,6 +1739,63 @@ select option, select optgroup{
   </div>
   </sc-if>
 
+  <sc-if value="{{ isArt }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:18px 20px;margin-bottom:13px">
+      <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px">超高清卡面下載</div>
+      <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
+        直連官方素材庫的原始檔，不經過本站轉存 —— 你點下載拿到的就是資料庫裡那一份。<br>
+        全解析度 PNG 每張約 3～4 MB（去背立繪小得多，約 150 KB）。行動網路請留意流量。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <input type="text" value="{{ artQ }}" onInput="{{ onField }}" data-k="artQ" placeholder="搜尋卡名、角色或素材名" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit" style-focus="border-color:var(--accent)">
+        <select value="{{ artChara }}" onChange="{{ onField }}" data-k="artChara" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
+          <sc-for list="{{ artCharaOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+        </select>
+        <select value="{{ artRar }}" onChange="{{ onField }}" data-k="artRar" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
+          <sc-for list="{{ artRarOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+        </select>
+        <select value="{{ artSup }}" onChange="{{ onField }}" data-k="artSup" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
+          <sc-for list="{{ artSupOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3)">
+        <span>符合 <b style="color:var(--accent-deep)">{{ artTotal }}</b> 張　第 {{ artPage }} / {{ artPages }} 頁</span>
+        <div style="flex:1"></div>
+        <button type="button" onClick="{{ onArtPrev }}" style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">上一頁</button>
+        <button type="button" onClick="{{ onArtNext }}" style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">下一頁</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--accent-deep);margin-top:8px">{{ artMsg }}</div>
+    </div>
+
+    <sc-if value="{{ artEmpty }}">
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);padding:22px;text-align:center;font-size:12.5px;color:var(--text-3)">沒有符合條件的卡片。</div>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px">
+      <sc-for list="{{ artRows }}" as="c" hint-placeholder-count="12">
+        <div style="border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+          <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
+            <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+            <div style="position:absolute;top:5px;left:5px;padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:800">{{ c.rar }}</div>
+          </div>
+          <div style="padding:7px 9px 9px">
+            <div style="font-size:10.5px;color:var(--text-3);line-height:1.3">{{ c.chara }}　{{ c.sup }}</div>
+            <div style="font-size:11px;font-weight:800;color:var(--ink);line-height:1.35;margin:2px 0 6px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <a href="{{ c.normal }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:5px 0;border-radius:9px;background:var(--ink-grad);color:#fff;font-size:10.5px;font-weight:800;text-decoration:none">特訓前 原圖</a>
+              <sc-if value="{{ c.hasTrained }}">
+                <a href="{{ c.trained }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:5px 0;border-radius:9px;background:var(--ink-grad);color:#fff;font-size:10.5px;font-weight:800;text-decoration:none">特訓後 原圖</a>
+              </sc-if>
+              <a href="{{ c.cutout }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:5px 0;border-radius:9px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:10.5px;font-weight:700;text-decoration:none">去背立繪</a>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ isCardlib }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
@@ -3273,6 +3330,7 @@ class Component extends DCLogic {
     assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
     notices:  ['通知', '偵測訂閱觸發時的站內通知'],
     cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
+    art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
@@ -3547,6 +3605,7 @@ class Component extends DCLogic {
     wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
+    artQ: '', artChara: 0, artRar: 0, artSup: -1, artPage: 1,
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
     credits: null, crMsg: '', crBusy: false, crPend: [],
@@ -4540,7 +4599,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=d41a17e38d';
+      el.src = './js/core.js?v=57bee756e5';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -5258,6 +5317,13 @@ class Component extends DCLogic {
         include_permanent: { type: 'boolean', description: '搭配 character：true 才含常駐卡，預設 false' },
         limit: { type: 'integer', description: '預設 10，上限 40' },
         offset: { type: 'integer', description: '從第幾張開始（0 起算）' } } } },
+    { name: 'get_card_art',
+      description: '取得卡面超高清原圖的下載連結（特訓前／特訓後／去背立繪），直連官方素材庫。使用者問「這張卡的圖」「高清卡面」「桌布」時用。',
+      input_schema: { type: 'object', properties: {
+        q: { type: 'string', description: '卡名、角色或素材名關鍵字' },
+        card_ids: { type: 'array', items: { type: 'integer' }, description: '指定 card_id' },
+        rarity: { type: 'integer', description: '稀有度 1-4，生日卡是 9' },
+        limit: { type: 'integer', description: '預設 5，上限 20' } } } },
     { name: 'list_my_watches',
       description: '列出使用者的偵測訂閱與最近觸發的通知。「我訂了什麼」「有沒有通知」。需已登入。',
       input_schema: { type: 'object', properties: {
@@ -11838,6 +11904,45 @@ class Component extends DCLogic {
         };
       }
 
+      case 'get_card_art': {
+        /* 超高清卡面的下載連結。直連官方素材庫,本站不轉存 —— 回傳的網址就是
+           資料庫裡那一份。特訓後只有 ★3/★4 才有(生日卡實測 404,不要憑稀有度猜)。 */
+        await this.loadCards();
+        const cards = this.state.rateCards || [];
+        if (!cards.length) return { error: '卡片索引尚未載入（' + (this.state.rateErr || '請稍後再試') + '）' };
+        const nOf = {}; (this.state.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+        const q = String(a.q == null ? '' : a.q).trim().toLowerCase();
+        const ids = Array.isArray(a.card_ids) ? a.card_ids.map(Number) : null;
+        let rows = cards;
+        if (ids && ids.length) { const set = new Set(ids); rows = rows.filter(c => set.has(c[0])); }
+        if (q) rows = rows.filter(c =>
+          ((c[7] || '') + ' ' + (nOf[c[1]] || '') + ' ' + (c[8] || '')).toLowerCase().indexOf(q) >= 0);
+        if (a.rarity != null) rows = rows.filter(c => c[2] === +a.rarity);
+        if (!rows.length) {
+          return { error: '找不到符合的卡片。可先用 browse_cards 或 search_anything 找到卡名／card_id 再查。' };
+        }
+        const lim = Math.max(1, Math.min(20, +a.limit || 5));
+        const A = this.ASSET;
+        return {
+          matched: rows.length, returned: Math.min(lim, rows.length),
+          source: '官方素材庫（storage.sekai.best），本站不轉存，連結即資料庫原始檔',
+          cards: rows.slice(0, lim).map(c => {
+            const abn = c[8], tr = (c[2] === 3 || c[2] === 4);
+            return {
+              card_id: c[0], name: c[7], character: nOf[c[1]] || '',
+              rarity: (this.RARITY.find(r => r[0] === c[2]) || [0, '?'])[1],
+              supply: this.SUPPLYN[c[4]] || '',
+              art_normal: A + '/character/member/' + abn + '/card_normal.png',
+              art_after_training: tr ? (A + '/character/member/' + abn + '/card_after_training.png') : null,
+              cutout: A + '/character/member_cutout/' + abn + '/normal.png',
+            };
+          }),
+          note: '全解析度 PNG 每張約 3～4 MB；去背立繪約 150 KB。'
+            + '特訓後只有 ★3／★4 有，其餘為 null（生日卡也沒有）。'
+            + '站上「卡面下載」頁（?page=art）可以用角色／稀有度／取得類別篩選後整批瀏覽。',
+        };
+      }
+
       case 'list_my_watches': {
         if (this.state.me === undefined) {
           try { await this.loadMe(); } catch (e) {}
@@ -13057,7 +13162,7 @@ class Component extends DCLogic {
     if (p === 'songs') this.loadSongs();
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
-    if (p === 'rate') this.loadCards();
+    if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
@@ -13351,7 +13456,7 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
@@ -14110,7 +14215,59 @@ class Component extends DCLogic {
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
+      isArt: s.page === 'art',
       isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
+      ...(() => {
+        /* 卡面下載。直連官方素材庫,本站不轉存 —— 所以這裡做的只有「把 1,249 張卡
+           對到它們在資料庫裡的路徑」,加上篩選與分頁。
+           路徑是實測過的:/character/member/{素材名}/card_normal.png 約 3～4 MB,
+           特訓後只有 ★3/★4 才有(生日卡實測 404),去背立繪在 member_cutout 底下約 150 KB。 */
+        const cards = s.rateCards || [];
+        const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+        const q = String(s.artQ || '').trim().toLowerCase();
+        const ch = +s.artChara || 0, rr = +s.artRar || 0;
+        const sp = s.artSup == null ? -1 : +s.artSup;
+        const rows = cards.filter(c => {
+          if (ch && c[1] !== ch) return false;
+          if (rr && c[2] !== rr) return false;
+          if (sp >= 0 && c[4] !== sp) return false;
+          if (q) {
+            const hay = ((c[7] || '') + ' ' + (nOf[c[1]] || '') + ' ' + (c[8] || '')).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+          }
+          return true;
+        });
+        const per = 48;
+        const pages = Math.max(1, Math.ceil(rows.length / per));
+        const pg = Math.min(Math.max(1, +s.artPage || 1), pages);
+        const A = this.ASSET;
+        return {
+          artQ: s.artQ || '',
+          artChara: String(ch), artRar: String(rr), artSup: String(sp),
+          artTotal: rows.length, artPage: pg, artPages: pages,
+          artEmpty: cards.length > 0 && rows.length === 0,
+          artMsg: s.rateErr || (cards.length ? '' : '卡片索引載入中…'),
+          artCharaOpts: [{ v: '0', n: '全部角色' }].concat(
+            (s.rateChars || []).map(c => ({ v: String(c[0]), n: c[1] }))),
+          artRarOpts: [{ v: '0', n: '全部稀有度' }].concat(
+            this.RARITY.map(r => ({ v: String(r[0]), n: r[1] }))),
+          artSupOpts: [{ v: '-1', n: '全部取得類別' }].concat(
+            this.SUPPLYN.map((n2, i) => ({ v: String(i), n: n2 }))),
+          artRows: rows.slice((pg - 1) * per, pg * per).map(c => {
+            const abn = c[8], trained = (c[2] === 3 || c[2] === 4);
+            return {
+              id: c[0], name: c[7], chara: nOf[c[1]] || '',
+              rar: (this.RARITY.find(r => r[0] === c[2]) || [0, '?'])[1],
+              sup: this.SUPPLYN[c[4]] || '',
+              img: this.cardImg(abn, c[2]),
+              normal: A + '/character/member/' + abn + '/card_normal.png',
+              trained: trained ? (A + '/character/member/' + abn + '/card_after_training.png') : '',
+              hasTrained: trained,
+              cutout: A + '/character/member_cutout/' + abn + '/normal.png',
+            };
+          }),
+        };
+      })(),
       ...(() => {
         const evs = s.wEvents || [];
         return {
@@ -15407,6 +15564,7 @@ class Component extends DCLogic {
         if (d.k === 'gq' || d.k === 'gt') patch.gp = 1;
         if (d.k === 'sq' || d.k === 'ssort') patch.sp = 1;
         if (d.k === 'cq') patch.cp = 1;
+        if (d.k === 'artQ' || d.k === 'artChara' || d.k === 'artRar' || d.k === 'artSup') patch.artPage = 1;
         if (d.k === 'tq') patch.tutMore = false;   // 換搜尋詞就回到收合,不然展開狀態會黏著
         if (d.k === 'songKey') {
           const sg = this.songById(v);
@@ -15493,6 +15651,8 @@ class Component extends DCLogic {
       },
       /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
          而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      onArtPrev: () => this.setState(st => ({ artPage: Math.max(1, (+st.artPage || 1) - 1) })),
+      onArtNext: () => this.setState(st => ({ artPage: (+st.artPage || 1) + 1 })),
       onSysToggle: e => {
         const k = e.currentTarget.dataset.k;
         this.setState(st => ({ sysOpen: Object.assign({}, st.sysOpen, { [k]: !(st.sysOpen || {})[k] }) }));
