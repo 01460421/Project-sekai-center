@@ -1747,6 +1747,12 @@ select option, select optgroup{
         直連官方素材庫的原始檔，不經過本站轉存 —— 你點下載拿到的就是資料庫裡那一份。<br>
         全解析度 PNG 每張約 3～4 MB（去背立繪小得多，約 150 KB）。行動網路請留意流量。
       </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <span style="font-size:11.5px;font-weight:700;color:var(--text-2)">伺服器</span>
+        <button type="button" onClick="{{ onArtSrv }}" data-v="tw" style="padding:6px 15px;border:1px solid {{ artTwBd }};border-radius:999px;background:{{ artTwBg }};color:{{ artTwFg }};font-size:12px;font-weight:800;cursor:pointer">台服</button>
+        <button type="button" onClick="{{ onArtSrv }}" data-v="jp" style="padding:6px 15px;border:1px solid {{ artJpBd }};border-radius:999px;background:{{ artJpBg }};color:{{ artJpFg }};font-size:12px;font-weight:800;cursor:pointer">日服</button>
+        <span style="font-size:11px;color:var(--text-3)">{{ artSrvNote }}</span>
+      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
         <input type="text" value="{{ artQ }}" onInput="{{ onField }}" data-k="artQ" placeholder="搜尋卡名、角色或素材名" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit" style-focus="border-color:var(--accent)">
         <select value="{{ artChara }}" onChange="{{ onField }}" data-k="artChara" data-num="1" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit">
@@ -3606,6 +3612,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     artQ: '', artChara: 0, artRar: 0, artSup: -1, artPage: 1,
+    artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
     credits: null, crMsg: '', crBusy: false, crPend: [],
@@ -13005,11 +13012,25 @@ class Component extends DCLogic {
   /* ---------- 收集率：卡片圖鑑勾選 ----------
      API 的 /user/{id}/profile 只回隊伍與展示卡(共 14 張)，拿不到完整持有清單，
      所以跟參考站一樣採手動勾選，存在 localStorage。 */
+  /* 日服卡片索引。台服 master 只有台服已實裝的 1,249 張,日服有 1,435 張 ——
+     多出來的 186 張是台服還沒上的卡,卡面在素材庫裡早就存在了。
+     兩份分開放、分開載:平常看台服的人不必為了那 91 KB 付流量。 */
+  async loadCardsJP() {
+    if (this.state.jpLoad || this.state.jpCards.length) return;
+    this.setState({ jpLoad: true, jpErr: '' });
+    try {
+      const m = await import('./data/cards-index-jp.js?v=fc0aab61f5');
+      this.setState({ jpCards: m.CARDS || [], jpChars: m.CHARAS || [], jpLoad: false });
+    } catch (e) {
+      this.setState({ jpLoad: false, jpErr: '日服卡片索引載入失敗，點此重試' });
+    }
+  }
+
   async loadCards() {
     if (this.state.rateLoad || this.state.rateCards.length) return;
     this.setState({ rateLoad: true, rateErr: '' });
     try {
-      const m = await import('./data/cards-index.js?v=573daeb787');
+      const m = await import('./data/cards-index.js?v=dc3efb122f');
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -13163,6 +13184,7 @@ class Component extends DCLogic {
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'rate' || p === 'art') this.loadCards();
+    if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
@@ -14222,8 +14244,17 @@ class Component extends DCLogic {
            對到它們在資料庫裡的路徑」,加上篩選與分頁。
            路徑是實測過的:/character/member/{素材名}/card_normal.png 約 3～4 MB,
            特訓後只有 ★3/★4 才有(生日卡實測 404),去背立繪在 member_cutout 底下約 150 KB。 */
-        const cards = s.rateCards || [];
-        const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+        /* 兩服共用同一套版面,只換資料來源。素材庫本來就是日服的
+           (ASSET = sekai-jp-assets),所以台服卡的圖也在那裡 —— 差別只在
+           「哪些卡存在」與「卡名是中文還是日文」。 */
+        const jp = s.artSrv === 'jp';
+        /* 日服 master 會列出「已公布但素材還沒上架」的卡,建置時逐張確認過,
+           第 10 欄為 0 就是查不到圖的 —— 放進格點只會給使用者破圖與死連結。 */
+        const allJp = s.jpCards || [];
+        const cards = jp ? allJp.filter(c => c[9] !== 0) : (s.rateCards || []);
+        const jpPending = jp ? (allJp.length - cards.length) : 0;
+        const chars = jp ? (s.jpChars || []) : (s.rateChars || []);
+        const nOf = {}; chars.forEach(c => { nOf[c[0]] = c[1]; });
         const q = String(s.artQ || '').trim().toLowerCase();
         const ch = +s.artChara || 0, rr = +s.artRar || 0;
         const sp = s.artSup == null ? -1 : +s.artSup;
@@ -14246,9 +14277,21 @@ class Component extends DCLogic {
           artChara: String(ch), artRar: String(rr), artSup: String(sp),
           artTotal: rows.length, artPage: pg, artPages: pages,
           artEmpty: cards.length > 0 && rows.length === 0,
-          artMsg: s.rateErr || (cards.length ? '' : '卡片索引載入中…'),
+          artMsg: (jp ? s.jpErr : s.rateErr) || (cards.length ? '' : '卡片索引載入中…'),
+          artSrv: s.artSrv || 'tw',
+          artIsTw: !jp, artIsJp: jp,
+          artTwBg: jp ? 'var(--card-2)' : 'var(--ink-grad)',
+          artTwFg: jp ? 'var(--text-2)' : '#fff',
+          artTwBd: jp ? 'var(--border)' : 'transparent',
+          artJpBg: jp ? 'var(--ink-grad)' : 'var(--card-2)',
+          artJpFg: jp ? '#fff' : 'var(--text-2)',
+          artJpBd: jp ? 'transparent' : 'var(--border)',
+          artSrvNote: jp
+            ? ('日服 ' + cards.length + ' 張，含台服尚未實裝的卡（卡名為日文）'
+               + (jpPending ? '　另有 ' + jpPending + ' 張已公布但素材尚未上架' : ''))
+            : ('台服 ' + cards.length + ' 張（繁體中文卡名）'),
           artCharaOpts: [{ v: '0', n: '全部角色' }].concat(
-            (s.rateChars || []).map(c => ({ v: String(c[0]), n: c[1] }))),
+            chars.map(c => ({ v: String(c[0]), n: c[1] }))),
           artRarOpts: [{ v: '0', n: '全部稀有度' }].concat(
             this.RARITY.map(r => ({ v: String(r[0]), n: r[1] }))),
           artSupOpts: [{ v: '-1', n: '全部取得類別' }].concat(
@@ -15651,6 +15694,12 @@ class Component extends DCLogic {
       },
       /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
          而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      onArtSrv: e => {
+        const v = e.currentTarget.dataset.v;
+        // 換服等於換一整份清單,篩選條件的角色 id 兩服通用但頁碼一定要歸零
+        this.setState({ artSrv: v, artPage: 1 });
+        if (v === 'jp') this.loadCardsJP();
+      },
       onArtPrev: () => this.setState(st => ({ artPage: Math.max(1, (+st.artPage || 1) - 1) })),
       onArtNext: () => this.setState(st => ({ artPage: (+st.artPage || 1) + 1 })),
       onSysToggle: e => {
