@@ -4573,7 +4573,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=76726e97e7';
+      s.src = 'data/billing.js?v=4c54781829';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4726,105 +4726,103 @@ class Component extends DCLogic {
      Worker 沒有那些東西。Worker 只代理 Claude API(保護金鑰)與稽核。
      模型只能呼叫下面這份寫死的清單,參數由它決定但執行邏輯是我們的。 */
   AI_TOOLS = [
-    { name: 'set_my_uid', description: '設定使用者的遊戲 ID(uid)並載入其公開資料。使用者說「我的 id 是 xxx」時用這個。',
-      input_schema: { type: 'object', properties: { uid: { type: 'string', description: '遊戲內的 ID,純數字' } }, required: ['uid'] } },
-    { name: 'get_my_status', description: '取得目前設定的 uid 在當期活動的狀態:分數、名次、實測時速、預測終分,以及距離各段位還差多少、需要多少時數。',
-      input_schema: { type: 'object', properties: {} } },
-    { name: 'get_current_event', description: '當期活動的名稱、型態(馬拉松/嘉年華/World Link)、開始與結算時間、已過進度、剩餘時數。',
-      input_schema: { type: 'object', properties: {} } },
-    { name: 'get_upcoming_events', description: '接下來幾期活動的排程與型態。要規劃「接下來兩期怎麼跑」時用。',
-      input_schema: { type: 'object', properties: { n: { type: 'integer', description: '要幾期,預設 3' } } } },
-    { name: 'get_borders', description: '當期各段位榜線:目前分數、預測終線(實測或線性)、同型態歷史加權估計與區間。',
-      input_schema: { type: 'object', properties: { tiers: { type: 'array', items: { type: 'integer' }, description: '想看的段位,例如 [100,1000,5000];不給就回全部' } } } },
-    { name: 'get_gacha_schedule', description: '卡池排程:期間、類型、PU 角色、伴生活動。規劃「該抽哪些池」時用。',
+    { name: 'set_my_uid',
+      description: '設定使用者的遊戲 ID(uid)。使用者說「我的 id 是 xxx」時用。',
       input_schema: { type: 'object', properties: {
-        from: { type: 'string', description: '起始日期 YYYY/MM/DD,不給就從今天' },
-        to: { type: 'string', description: '結束日期 YYYY/MM/DD' },
-        type: { type: 'string', description: '只看某類型,例如「FES池」「普通限定池」「常駐池」' } } } },
-    { name: 'get_history_borders', description: '歷史榜線資料庫(174 期):可依活動型態、日數、團體、屬性篩選,看各段位的終線。用來判斷某個目標線合不合理。',
+        uid: { type: 'string', description: '遊戲內 ID，純數字' } }, required: ['uid'] } },
+    { name: 'get_my_status',
+      description: '目前 uid 在當期活動的狀態：分數、名次、實測時速、預測終分、距各段位還差多少分與需要幾小時。',
+      input_schema: { type: 'object', properties: {} } },
+    { name: 'get_current_event',
+      description: '當期活動的名稱、型態(馬拉松/嘉年華/World Link)、起訖時間、已過進度、剩餘時數。',
+      input_schema: { type: 'object', properties: {} } },
+    { name: 'get_upcoming_events',
+      description: '接下來幾期活動的排程與型態。規劃「接下來兩期怎麼跑」時用。',
+      input_schema: { type: 'object', properties: {
+        n: { type: 'integer', description: '要幾期，預設 3，上限 8' } } } },
+    { name: 'get_borders',
+      description: '當期各段位榜線：目前分數、預測終線(實測或線性)、同型態歷史加權估計與區間。',
+      input_schema: { type: 'object', properties: {
+        tiers: { type: 'array', items: { type: 'integer' }, description: '段位如 [100,1000,5000]，不給回全部' } } } },
+    { name: 'get_gacha_schedule',
+      description: '卡池排程：期間、類型、PU 角色、伴生活動。規劃「該抽哪些池」時用。',
+      input_schema: { type: 'object', properties: {
+        from: { type: 'string', description: '起始日 YYYY/MM/DD，預設今天' },
+        to: { type: 'string', description: '結束日 YYYY/MM/DD，預設起始日 +90 天' },
+        type: { type: 'string', description: '類型須完全相符：「FES池」「普通限定池」「常駐池」' } } } },
+    { name: 'get_history_borders',
+      description: '歷史榜線資料庫(174 期)，依型態/日數/團體篩選看各段位終線。判斷某個目標線合不合理時用。',
       input_schema: { type: 'object', properties: {
         type: { type: 'string', description: '馬拉松 / 歡樂嘉年華 / World Link' },
-        days: { type: 'number' }, unit: { type: 'string' }, limit: { type: 'integer' } } } },
-    { name: 'search_tutorial', description: '搜尋站上的教學大全(115 則問答:養成、車隊、衝榜、音遊練習)。使用者問玩法、規則、名詞時先查這個,引用站上既有的說法。',
-      input_schema: { type: 'object', properties: { q: { type: 'string', description: '關鍵字' } }, required: ['q'] } },
-    { name: 'get_my_cards', description: '目前 uid 的持有卡片與編組(來自公開 API),含各卡稀有度、屬性、角色、專精等級。用來算加成或建議該抽什麼。',
+        days: { type: 'number', description: '活動天數' },
+        unit: { type: 'string', description: '團體名' },
+        limit: { type: 'integer', description: '預設 12，上限 30' } } } },
+    { name: 'search_tutorial',
+      description: '搜尋站上教學大全(115 則問答：養成、車隊、衝榜、音遊練習)。問玩法、規則、名詞時先查這個，引用站上說法。',
+      input_schema: { type: 'object', properties: {
+        q: { type: 'string', description: '關鍵字' } }, required: ['q'] } },
+    { name: 'get_my_cards',
+      description: '目前 uid 的持有卡片與編組（公開 API）：稀有度、屬性、角色、專精等級。要算加成或建議抽什麼時用。',
       input_schema: { type: 'object', properties: {} } },
-    { name: 'schedule_task', description: '排一個之後要執行的提醒或動作(存到伺服器,由排程執行)。例如「活動剩 12 小時時提醒我」。',
+    { name: 'schedule_task',
+      description: '排一個之後才執行的提醒（存伺服器由排程跑，需管理員）。如「活動剩 12 小時時提醒我」。',
       input_schema: { type: 'object', properties: {
-        title: { type: 'string' }, action: { type: 'string', description: 'notify(寄信通知)' },
+        title: { type: 'string' },
+        action: { type: 'string', description: 'notify＝寄信通知（預設）' },
         run_at_iso: { type: 'string', description: 'ISO 8601 時間' },
-        repeat_hours: { type: 'number', description: '重複週期(小時),不給就只跑一次' },
-        message: { type: 'string' } }, required: ['title', 'run_at_iso'] } },
+        repeat_hours: { type: 'number', description: '重複週期（小時），不給只跑一次' },
+        message: { type: 'string' } },
+        required: ['title', 'run_at_iso'] } },
     { name: 'calc_event_points',
-      description: '算單場 Live 能拿多少活動 P，以及每體力／每小時的效率。使用者問「這樣跑一場多少 P」「加成 xxx% 值不值得」「哪種模式比較快」時用。' +
-        '所有參數都可省略，省略就沿用使用者在計算中心的共用設定；要比較不同情境時才明確帶入。',
+      description: '算單場 Live 的活動 P 與每體力／每小時效率。問「跑一場多少 P」「加成 xxx% 值不值」「哪種模式快」時用。只算單首，全曲排行用 song_efficiency。參數省略沿用計算中心共用設定。',
       input_schema: { type: 'object', properties: {
-        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '場次類型：solo=單人、auto=自動、multi=協力、cheer=應援（Cheerful Carnival）' },
-        song_id: { type: 'integer', description: '歌曲 id（可用 get_songs 或 song_efficiency 查）。不給就用畫面上選的那首' },
-        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度：E/N/H/X/M/A＝EASY/NORMAL/HARD/EXPERT/MASTER/APPEND' },
-        power: { type: 'number', description: '隊伍綜合力（總合力，例如 250000）' },
-        bonus: { type: 'number', description: '活動加成，單位 %（例如 250 代表 +250%）' },
-        skill: { type: 'number', description: '平均技能倍率（實效值，例如 2.5）。可先用 calc_skill_multiplier 從各卡技能%算出來' },
+        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: 'solo 單人／auto 自動／multi 協力／cheer 應援' },
+        song_id: { type: 'integer', description: '歌曲 id（get_songs 查），不給用畫面選的' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: 'X＝EXPERT、M＝MASTER、A＝APPEND' },
+        power: { type: 'number', description: '隊伍綜合力（如 250000）' },
+        bonus: { type: 'number', description: '活動加成 %（250＝+250%）' },
+        skill: { type: 'number', description: '平均技能倍率（如 2.5），可由 calc_skill_multiplier 算' },
         s6: { type: 'number', description: '第 6 技能欄（S6）倍率' },
-        energy: { type: 'integer', description: '本場消耗體力／火數 0～10（0=不吃火）。火倍率 1/5/10/15/20/25/27/29/31/33/35' },
-        life: { type: 'number', description: '結束時剩餘 Life，只有 cheer 模式會用到（影響 1.15～1.35 的存活加成）' },
-        score: { type: 'number', description: '直接指定歌曲分數。給了就不用歌曲係數推算' },
-        event_rate: { type: 'number', description: '歌曲活動倍率 %（沒指定 song_id 時才會用到，預設 100）' } } } },
-
+        energy: { type: 'integer', description: '吃幾火 0～10（0＝不吃火）' },
+        life: { type: 'number', description: '結束時剩餘 Life，僅 cheer 用到' },
+        score: { type: 'number', description: '直接指定分數，給了就不推算' },
+        event_rate: { type: 'number', description: '歌曲活動倍率 %（無 song_id 時才用，預設 100）' } } } },
     { name: 'song_efficiency',
-      description: '歌曲排行（＝站上計算中心的「效率排行」）。在指定的模式／難度／隊伍條件下把全曲庫排序。' +
-        '**sort_by 決定回答的是哪一個問題，選錯就是答非所問：**' +
-        'eph＝每小時活動P（時間有限、想快，偏好短曲，圈內叫效率曲／短效）；' +
-        'ep＝單局活動P（體力有限、想省火，偏好長曲，圈內叫效益曲／長效／CP值曲）；' +
-        'score＝單局分數（純衝分數，與活動倍率無關）。' +
-        '使用者問「跑哪首最快」用 eph；問「效益曲排行」「哪首最省體力」「一場拿最多P」用 ep；' +
-        '問「哪首分數最高」用 score。參數省略就沿用計算中心的共用設定。',
+      description: '全曲庫效率排行（站上「效率排行」）。問「跑哪首最快」「效益曲排行」「哪首最省體力／一場拿最多 P」「哪首分數最高」時用——用 sort_by 區分，選錯就答非所問。參數省略沿用計算中心設定。',
       input_schema: { type: 'object', properties: {
-        limit: { type: 'integer', description: '要回幾筆，最多 100，預設 20。'
-          + '這是完整排行的前 N 名（全曲庫 602 首都算過），不是取樣——不要用多次小批次去拼湊。' },
-        offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的排名' },
-
-        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '場次類型' },
-        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度' },
+        limit: { type: 'integer', description: '最多 100，預設 20。已是全曲庫完整排行的前 N 名，別分批拼湊' },
+        offset: { type: 'integer', description: '從第幾名開始，翻頁用' },
+        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: 'solo 單人／auto 自動／multi 協力／cheer 應援' },
+        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: 'X＝EXPERT、M＝MASTER、A＝APPEND' },
         power: { type: 'number', description: '隊伍綜合力' },
         bonus: { type: 'number', description: '活動加成 %' },
         skill: { type: 'number', description: '平均技能倍率' },
         s6: { type: 'number', description: 'S6 倍率' },
         energy: { type: 'integer', description: '每場吃幾火 0～10' },
-        interval: { type: 'number', description: '每場之間的間隔秒數（選曲／配對／結算，預設沿用畫面設定的 50 秒）' },
-        sort_by: { type: 'string', enum: ['eph', 'ep', 'score'],
-          description: '依什麼排序，預設 eph。eph＝每小時活動P（時間有限／效率曲）、'
-            + 'ep＝單局活動P（體力有限／效益曲）、score＝單局分數。' } } } },
-
+        interval: { type: 'number', description: '每場間隔秒數（選曲／配對／結算），預設 50' },
+        sort_by: { type: 'string', enum: ['eph', 'ep', 'score'], description: '預設 eph。eph＝每小時活動P（時間有限，偏短曲／效率曲）；ep＝單局活動P（體力有限，偏長曲／效益曲）；score＝單局分數，與活動倍率無關' } } } },
     { name: 'calc_skill_multiplier',
-      description: '由隊長與 4 位隊員的技能加成 %，算出「平均技能倍率」。這個值就是 calc_event_points／song_efficiency 的 skill 參數。' +
-        '規則：隊長技能全額計入，隊員技能總和除以 5。',
+      description: '由隊長與 4 位隊員的技能加成 % 算「平均技能倍率」，即 calc_event_points／song_efficiency 的 skill 參數。隊長全額、隊員總和 ÷5。',
       input_schema: { type: 'object', properties: {
-        leader: { type: 'number', description: '隊長技能加成 %（例如 115 代表分數 +115%）' },
-        members: { type: 'array', items: { type: 'number' }, description: '4 位隊員的技能加成 %，例如 [110,110,110,110]' } } } },
-
+        leader: { type: 'number', description: '隊長技能加成 %（如 115）' },
+        members: { type: 'array', items: { type: 'number' }, description: '4 位隊員技能加成 %，如 [110,110,110,110]' } } } },
     { name: 'gacha_odds',
-      description: '抽卡機率與天井試算：預算內至少中一張的機率、期望抽數、距離天井還要多少水晶。' +
-        '使用者問「我這些石抽得到嗎」「還差幾抽天井」時用。單抽 300 水晶，一般池天井 300 抽、生日池 100 抽。',
+      description: '抽卡機率與天井試算：預算內至少中一張的機率、期望抽數、離天井還差多少水晶。問「我這些石抽得到嗎」「還差幾抽天井」時用。只算機率，不實際模擬抽卡。單抽 300 水晶。',
       input_schema: { type: 'object', properties: {
-        rate: { type: 'number', description: '單抽命中機率（小數）。指定 PU 單張約 0.004、任一 ★4 為 0.03、FES 為 0.06' },
-        crystals: { type: 'number', description: '目前持有水晶數' },
-        pulls_done: { type: 'number', description: '這個池已經抽了幾次（＝已累積的貼紙數）' },
-        tickets: { type: 'number', description: '持有的交換券張數，一張抵 10 張貼紙，最多用 10 張（生日池不能用）' },
-        birthday: { type: 'boolean', description: '是不是生日池（天井 100 抽、不可用交換券）' } } } },
-
+        rate: { type: 'number', description: '單抽命中機率（小數）：指定 PU 約 0.004、任一 ★4 0.03、FES 0.06' },
+        crystals: { type: 'number', description: '持有水晶數' },
+        pulls_done: { type: 'number', description: '此池已抽次數（＝貼紙數）' },
+        tickets: { type: 'number', description: '交換券張數，一張抵 10 貼紙、最多 10 張' },
+        birthday: { type: 'boolean', description: '生日池：天井 100 抽、不可用交換券' } } } },
     { name: 'mysekai_calc',
-      description: 'MySekai（烤森）採集的活動 P 試算：每點體力能換多少 P、指定體力總量共可拿多少。' +
-        '使用者問「烤森採集划不划算」「橘體要不要留給烤森」時用。參數省略就沿用計算中心的綜合力與加成。',
+      description: 'MySekai（烤森）採集的活動 P 試算：每點體力換多少 P、指定體力總量共多少。問「烤森採集划不划算」「橘體要不要留給烤森」時用。參數省略沿用共用設定。',
       input_schema: { type: 'object', properties: {
         power: { type: 'number', description: '隊伍綜合力' },
         bonus: { type: 'number', description: '活動加成 %' },
         fever: { type: 'number', description: '體力倍率：橘體 5、藍體 1' },
         stamina: { type: 'number', description: '打算消費的體力總量' } } } },
-
     { name: 'rank_match',
-      description: '排位賽（Rank Match）判定與晉級試算：兩邊的 PERFECT/GREAT/GOOD 誰贏、升到目標 Class 大概要打幾場。' +
-        '判定式為 PERFECT×3＋GREAT×2＋GOOD×1，同分比 PERFECT 數 → 最大連段 → 剩餘 Life。',
+      description: '排位賽勝負判定與晉級試算：兩邊 PERFECT/GREAT/GOOD 誰贏、升到目標 Class 要打幾場。判定＝P×3＋G×2＋GOOD×1，同分比 PERFECT → 最大連段 → 剩餘 Life。',
       input_schema: { type: 'object', properties: {
         my_perfect: { type: 'number', description: '我方 PERFECT 數' },
         my_great: { type: 'number', description: '我方 GREAT 數' },
@@ -4832,740 +4830,438 @@ class Component extends DCLogic {
         opp_perfect: { type: 'number', description: '對手 PERFECT 數' },
         opp_great: { type: 'number', description: '對手 GREAT 數' },
         opp_good: { type: 'number', description: '對手 GOOD 數' },
-        win_rate: { type: 'number', description: '預估勝率，單位 %（例如 55）' },
-        current_rp: { type: 'number', description: '目前 RP（0～5）' },
-        target_classes: { type: 'number', description: '想升幾個 Class，每個 Class 需要 5 RP' } } } },
-
-    /* ---------- 歌曲與玩家 ---------- */
+        win_rate: { type: 'number', description: '預估勝率 %（如 55）' },
+        current_rp: { type: 'number', description: '目前 RP 0～5' },
+        target_classes: { type: 'number', description: '想升幾個 Class（每個需 5 RP）' } } } },
     { name: 'get_songs',
-      description: '查歌曲資料庫：曲名、作曲、所屬團體、各難度定數與音符數、曲長與活動倍率。' +
-        '使用者問某首歌幾級、多長、哪個團的歌時用；也可用來把曲名換成 song_id 再丟給 calc_event_points。'
-        + '遇到聽起來像曲名的陌生詞（玩家常用簡稱），先用 q 搜一次再說，不要直接回答不知道。',
+      description: '查歌曲：定數、音符數、曲長、活動倍率、所屬團體、作曲者。也可把曲名轉成 song_id 餵給 calc_event_points。聽起來像曲名的陌生詞（玩家簡稱）先用 q 搜過再說，不要直接說不知道。',
       input_schema: { type: 'object', properties: {
-        limit: { type: 'integer', description: '要回幾筆，最多 100，預設 20。'
-          + '這是完整排行的前 N 名（全曲庫 602 首都算過），不是取樣——不要用多次小批次去拼湊。' },
-        offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的排名' },
-
-        q: { type: 'string', description: '曲名或作曲者關鍵字，模糊比對。'
-          + '**曲庫存的是日文原名**（例如「余花にみとれて」「ロキ」），玩家講的常是簡稱'
-          + '（「余花」「蝦」），所以拿使用者講的詞直接丟進來搜就對了，不要因為看起來不像全名就跳過。' },
-        id: { type: 'integer', description: '直接指定歌曲 id' },
-        unit: { type: 'string', enum: ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'], description: '所屬團體：ln=Leo/need、mmj=MMJ、vbs=VBS、wxs=ワンダショ、n25=ニーゴ、vs=虛擬歌手' },
-        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '搭配 sort 使用的難度，預設 M（MASTER）' },
-        sort: { type: 'string', enum: ['id', 'level', 'notes', 'newest', 'shortest'], description: 'id＝依編號、level＝定數由高到低、notes＝音符數由多到少、newest＝最新實裝、shortest＝曲長最短' } } } },
-
+        limit: { type: 'integer', description: '上限 100，預設 20。是完整排行前 N，別用多次小批次拼湊' },
+        offset: { type: 'integer', description: '從第幾名開始，翻頁用' },
+        q: { type: 'string', description: '曲名／作曲者關鍵字。曲庫存日文原名（ロキ），玩家講的簡稱也直接丟進來搜' },
+        id: { type: 'integer', description: '指定歌曲 id' },
+        unit: { type: 'string', enum: ['ln','mmj','vbs','wxs','n25','vs'], description: 'ln=Leo/need、mmj=MMJ、vbs=VBS、wxs=ワンダショ、n25=ニーゴ、vs=虛擬歌手' },
+        difficulty: { type: 'string', enum: ['E','N','H','X','M','A'], description: '搭配 sort 的難度，預設 M（MASTER）' },
+        sort: { type: 'string', enum: ['id','level','notes','newest','shortest'], description: 'level=定數高到低、notes=音符多到少、newest=最新實裝、shortest=曲長最短、id=編號' } } } },
     { name: 'analyze_player',
-      description: '某位玩家的節奏剖析：分數、名次、1／3／24 小時實測時速、周回數、動能（近 1 小時相對 24 小時）、推估休息時數、預測終分與預測名次、場均在前百的百分位。' +
-        '使用者問「我現在跑得算快嗎」「某某人跑多快」「我最後大概第幾名」時用。限制：公開資料只有當期前 100 名，不在前百就查不到。',
+      description: '單一玩家節奏剖析：分數名次、1／3／24 小時實測時速、周回、動能、推估休息時數、預測終分與名次、場均百分位。問「我跑得算快嗎」「最後大概第幾名」時用。只有當期前 100 名查得到。',
       input_schema: { type: 'object', properties: {
-        uid: { type: 'string', description: '要分析的玩家 uid，純數字。不給就用目前設定的 uid' } } } },
-
+        uid: { type: 'string', description: '玩家 uid，純數字；不給就用自己的' } } } },
     { name: 'get_player_games',
-      description: '某位玩家的逐局紀錄：每一場實際加了多少活動 P、當下第幾名、場間隔。可看出對方是連打還是在休息、場均多少 P。' +
-        '資料由本站的 Worker 每 15 秒取樣，只涵蓋當期前 100 名，且從開始追蹤後才有、不會回溯。',
+      description: '單一玩家逐局明細：每場加了多少活動 P、當下名次、場間隔，看得出在連打還是休息。每 15 秒取樣，只涵蓋當期前 100 名，且從開始追蹤後才有、不回溯。',
       input_schema: { type: 'object', properties: {
-        uid: { type: 'string', description: '玩家 uid，純數字。不給就用目前設定的 uid' },
-        limit: { type: 'integer', description: '要回最近幾場的明細，預設 15，最多 20（統計值一律用全部場次算）' },
-        hours: { type: 'number', description: '只看最近幾小時的紀錄，不給就是整期' } } } },
-
+        uid: { type: 'string', description: '玩家 uid，純數字；不給就用自己的' },
+        limit: { type: 'integer', description: '回最近幾場，預設 15，上限 20（統計仍用全部場次）' },
+        hours: { type: 'number', description: '只看最近幾小時，不給＝整期' } } } },
     { name: 'get_player_profile',
-      description: '某位玩家的公開檔案：暱稱、玩家等級、隊伍綜合力（含基礎力與角色等級加成）、目前隊伍的卡片、各角色的角色等級、挑戰 Live 最高分。' +
-        '用來精確推算對方的加成或看對方練度，比看截圖準。',
+      description: '玩家公開檔案：暱稱、玩家等級、隊伍綜合力（含基礎力與角色等級加成）、隊伍卡片、各角色等級、挑戰 Live 最高分。用來精算對方加成或看練度，比看截圖準。',
       input_schema: { type: 'object', properties: {
-        uid: { type: 'string', description: '玩家 uid，純數字。不給就用目前設定的 uid' } } } },
-
+        uid: { type: 'string', description: '玩家 uid，純數字；不給就用自己的' } } } },
     { name: 'get_top100',
-      description: '當期即時前 100 名榜單與整體動態：誰在跑、誰在衝刺、誰停了、近 1 小時全榜共打了幾場。' +
-        '使用者問「現在前面誰在跑」「T100 有多兇」「有沒有人在衝」時用。',
+      description: '當期即時前 100 名榜單與全榜動態：誰在跑、誰在衝刺、誰停了、近 1 小時全榜幾場。問「現在前面誰在跑」「T100 有多兇」時用。',
       input_schema: { type: 'object', properties: {
-        limit: { type: 'integer', description: '要回幾筆名次，預設 10，最多 20' },
-        board: { type: 'string', enum: ['event', 'world_link'], description: '看哪個榜：event＝活動主榜（預設）、world_link＝World Link 章節榜' },
-        chapter: { type: 'integer', description: 'board=world_link 時要看第幾章，不給就用目前進行中的章節' },
-        sort: { type: 'string', enum: ['rank', 'speed_1h', 'speed_24h'], description: '排序方式，預設 rank（名次）' } } } },
-
-    /* ---------- World Link ---------- */
+        limit: { type: 'integer', description: '預設 10，上限 20' },
+        board: { type: 'string', enum: ['event','world_link'], description: 'event＝活動主榜（預設）、world_link＝WL 章節榜' },
+        chapter: { type: 'integer', description: 'board=world_link 時看第幾章，不給用進行中那章' },
+        sort: { type: 'string', enum: ['rank','speed_1h','speed_24h'], description: '排序，預設 rank' } } } },
     { name: 'wl_team_advice',
-      description: 'World Link 配隊建議：針對某一章的角色，從使用者勾選的持有卡裡挑出「四位同團＋湊滿五色屬性」的實際 5 張，並檢查五色缺哪一色。' +
-        '使用者問「這章要怎麼配隊」「我湊得出五色嗎」時用。注意：這是規則檢查不是倍率最佳化，持有清單來自站上收集率頁的手動勾選。',
+      description: 'World Link 配隊建議：從使用者勾選的持有卡挑出「四位同團＋湊滿五色屬性」的實際 5 張，並指出缺哪一色。問「這章怎麼配隊」「我湊得出五色嗎」時用。是規則檢查，不是倍率最佳化。',
       input_schema: { type: 'object', properties: {
-        character: { type: 'string', description: '角色名（繁中，例如「奏」「一歌」）或角色 id。不給就用目前進行中的章節角色' },
-        chapter: { type: 'integer', description: '章節號（1～4）。給了就用該章的角色，會覆蓋 character' } } } },
-
+        character: { type: 'string', description: '角色名（繁中，如「奏」）或角色 id；不給用進行中章節的角色' },
+        chapter: { type: 'integer', description: '章節 1～4，給了會覆蓋 character' } } } },
     { name: 'get_wl_status',
-      description: 'World Link 各章節狀態：章節角色、起訖時間、進行中／已結束、該章的前幾名與分段榜線，以及各段位的實測時速。' +
-        '使用者問「WL 這章榜線多少」「哪一章比較好衝」時用。當期不是 World Link 活動時會回錯誤。',
+      description: 'World Link 章節狀態：章節角色、起訖時間、進行中／已結束、該章前幾名與分段榜線、各段位實測時速。問「WL 這章榜線多少」「哪章好衝」時用。非 WL 活動會回錯誤。',
       input_schema: { type: 'object', properties: {
-        chapter: { type: 'integer', description: '只看某一章（1～4），不給就回全部章節' },
+        chapter: { type: 'integer', description: '只看某章（1～4），不給回全部' },
         tier: { type: 'integer', description: '要量實測時速的段位，預設 100' } } } },
-
-    /* ---------- 收集率 ---------- */
     { name: 'get_collection_rate',
-      description: '使用者的卡片收集率：整體、各團體、各稀有度分別有幾張／缺幾張。' +
-        '使用者問「我收集率多少」「哪個團最缺」時用。資料來自站上收集率頁的手動勾選（存在瀏覽器），沒勾過就會是 0。',
+      description: '使用者的卡片收集率：整體、各團體、各稀有度各有幾張／缺幾張。問「我收集率多少」「哪個團最缺」時用。來自站上收集率頁的手動勾選，沒勾過就是 0。',
       input_schema: { type: 'object', properties: {} } },
-
-    /* ---------- 規劃 ---------- */
     { name: 'plan_target',
-      description: '衝榜規劃：給一個目標段位（或目標分數），回推還差多少 P、需要多少時速、還要跑幾場幾小時、要吃多少體力、換算成水晶與台幣大約多少。' +
-        '使用者問「我想進 T1000 要花多少」「還來得及嗎」時用。段位的目標分數會取站上的預測終線（末段普遍低估，要當下限講）。',
+      description: '衝榜規劃：算到目標段位／分數還差多少 P、要多少時速、幾場幾小時、吃多少體力、多少水晶與台幣。問「進 T1000 要花多少」「還來得及嗎」時用。段位目標取站上預測終線（末段偏低估，要當下限講）。',
       input_schema: { type: 'object', properties: {
-        tier: { type: 'integer', description: '目標段位，例如 100 / 1000 / 5000。與 target_score 二擇一' },
-        target_score: { type: 'number', description: '直接指定目標活動 P。給了就不看段位預測' },
-        current_score: { type: 'number', description: '目前活動 P。不給就用站上抓到的我的分數' },
-        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '打算用哪種場次跑' },
-        song_id: { type: 'integer', description: '打算跑哪首歌（影響曲長與活動倍率）' },
-        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度' },
+        tier: { type: 'integer', description: '目標段位如 100／1000／5000，與 target_score 二擇一' },
+        target_score: { type: 'number', description: '直接指定目標活動 P，給了就不看段位預測' },
+        current_score: { type: 'number', description: '目前活動 P，不給就用站上我的分數' },
+        mode: { type: 'string', enum: ['solo','auto','multi','cheer'], description: '跑哪種場次' },
+        song_id: { type: 'integer', description: '跑哪首歌（影響曲長與活動倍率）' },
+        difficulty: { type: 'string', enum: ['E','N','H','X','M','A'], description: '難度' },
         power: { type: 'number', description: '隊伍綜合力' },
         bonus: { type: 'number', description: '活動加成 %' },
         skill: { type: 'number', description: '平均技能倍率' },
         s6: { type: 'number', description: 'S6 倍率' },
         energy: { type: 'integer', description: '每場吃幾火 0～10' },
-        natural_hours: { type: 'number', description: '剩下時間裡自然回復的小時數（每小時 2 體）' },
+        natural_hours: { type: 'number', description: '自然回復的小時數（每小時 2 體）' },
         large_cans: { type: 'number', description: '大體力罐數（每罐 10 體）' },
         small_cans: { type: 'number', description: '小體力罐數（每罐 5 體）' },
-        crystals: { type: 'number', description: '願意拿來換體力的水晶數（每 100 石換 10 體）' },
-        crystal_rate: { type: 'number', description: '水晶 CP：每 1 元台幣可得幾顆水晶，預設沿用畫面設定（約 7）' } } } },
-
-    /* ---------- 偵測訂閱 ---------- */
+        crystals: { type: 'number', description: '願意換體力的水晶數（100 石＝10 體）' },
+        crystal_rate: { type: 'number', description: '水晶 CP：每 1 元台幣幾顆，預設約 7' } } } },
     { name: 'create_watch',
-      description: '幫使用者建立一條偵測訂閱（達成條件時由伺服器寄信通知）。使用者說「幫我盯著」「到 xxx 分時通知我」「活動快結束時提醒我」時用。' +
-        '需要已登入且帳號通過審核。建立前如果不確定某個 kind 有哪些 mode／欄位，可以先用不完整的參數呼叫一次，錯誤訊息會列出可用選項。' +
-        '常用組合：kind=border + mode=tier_score（榜線到達分數）、kind=border + mode=my_rank_out（我掉出段位）、' +
-        'kind=player + mode=rank_change/started/stopped/passed_me（盯人）、kind=schedule + mode=event_start/event_end/gacha_start/gacha_end/wl_chapter（排程提醒）。',
+      description: '建立偵測訂閱，條件達成時伺服器寄信通知。「幫我盯著」「到 X 分時通知我」「活動快結束提醒我」時用。需已登入且帳號通過審核。不確定欄位就先用不完整參數呼叫一次，錯誤訊息會列出可用選項。',
       input_schema: { type: 'object', properties: {
-        kind: { type: 'string', enum: ['border', 'player', 'schedule'], description: '偵測類型：border=榜線、player=玩家動態、schedule=活動與卡池排程' },
-        mode: { type: 'string', description: '該類型底下的模式，例如 tier_score / my_rank_out / rank_change / started / stopped / passed_me / event_start / event_end / gacha_start / gacha_end / wl_chapter' },
-        params: { type: 'object', description: '該模式需要的欄位。例如 border+tier_score 要 {board:"event", tier:1000, op:"gte", value:3000000}；' +
-          'player 要 {uid:"…"}；schedule 要 {before_h:24}。沒填的欄位會自動補預設值，缺必填欄位會回錯誤並列出欄位規格' },
-        name: { type: 'string', description: '這條訂閱的名稱（給人看的），不給就自動命名' },
-        cooldown_s: { type: 'number', description: '兩次通知之間至少間隔幾秒，不給就用該類型的預設值' } }, required: ['kind', 'mode'] } },
-
+        kind: { type: 'string', enum: ['border','player','schedule'], description: '偵測類型：border=榜線、player=玩家動態、schedule=活動與卡池排程' },
+        mode: { type: 'string', description: 'border：tier_score（榜線到分）／my_rank_out（我掉出段位）；player：rank_change／started／stopped／passed_me；schedule：event_start／event_end／gacha_start／gacha_end／wl_chapter' },
+        params: { type: 'object', description: '該模式的欄位，例如 {board:"event",tier:1000,op:"gte",value:3000000}、{uid:"…"}、{before_h:24}。沒填的自動補預設，缺必填會回欄位規格' },
+        name: { type: 'string', description: '訂閱名稱，不給就自動命名' },
+        cooldown_s: { type: 'number', description: '兩次通知最短間隔秒數，不給用該類型預設' } },
+        required: ['kind','mode'] } },
     { name: 'search_anything',
-      description: '**遇到任何不認識的名詞就先用這個。** 一次搜遍曲庫、活動、卡片、卡池、教學大全，'
-        + '以及站台自己的功能索引（26 個頁面、22 則功能介紹、76 則更新記錄）——'
-        + '所以它也能回答「站上有沒有 X 功能」「X 在哪一頁」。'
-        + ''
-        + '回報那個詞可能是什麼。玩家講的多半是簡稱或圈內叫法（「余花」是曲名 余花にみとれて、'
-        + '「蝦」是 独りんぼエンヴィー、「開闢天地」是 初音天地開闢神話），直接把使用者的原話丟進來即可。'
-        + '完全找不到時會回最接近的幾個候選，不要自己猜或直接說不知道。',
+      description: '**遇到任何不認識的名詞就先用這個。** 一次搜曲庫、活動、卡片、卡池、教學大全，以及站台自己的功能索引——所以也能回答「站上有沒有 X 功能」「X 在哪一頁」。玩家講的多半是簡稱或圈內叫法（余花、蝦、開闢天地），把原話直接丟進來。找不到會回最接近的候選，不要自己猜或說不知道。',
       input_schema: { type: 'object', properties: {
         q: { type: 'string', description: '使用者講的那個詞，原樣丟進來' },
-        kinds: { type: 'array', items: { type: 'string', enum: ['song', 'event', 'card', 'gacha', 'tutorial'] },
-          description: '限定只搜某幾類，不給就全部都搜' } }, required: ['q'] } },
-
+        kinds: { type: 'array', items: { type: 'string', enum: ['song','event','card','gacha','tutorial'] }, description: '限定只搜某幾類，不給就全部搜' } },
+        required: ['q'] } },
     { name: 'get_card_skills',
-      description: '查卡片的技能類型與各等級的實際數值（分數提升 %、持續秒數等），資料取自官方 master 的 skills.json。'
-        + '使用者問「這張卡技能幾 %」「我該抽哪張」「我手上哪張技能最高」時用。'
-        + '可依卡片 id、角色、稀有度篩選，或用 mine:true 直接查使用者持有的卡。',
+      description: '查卡片的技能類型與各等級實際數值（分數提升 %、持續秒數），資料取自官方 master skills.json。問「這張卡技能幾 %」「我該抽哪張」「我手上哪張技能最高」時用。',
       input_schema: { type: 'object', properties: {
         ids: { type: 'array', items: { type: 'integer' }, description: '指定卡片 id' },
-        chara: { type: 'integer', description: '角色 id（1-26）' },
+        chara: { type: 'integer', description: '角色 id 1-26' },
         rarity: { type: 'string', description: 'rarity_4 / rarity_birthday 等' },
-        mine: { type: 'boolean', description: '只看目前 uid 持有的卡（需先設定 uid）' },
-        top: { type: 'integer', description: '依技能數值由高到低回前幾張，預設 15' } } } },
-
+        mine: { type: 'boolean', description: '只看目前 uid 持有的卡（需先設 uid）' },
+        top: { type: 'integer', description: '依技能數值由高到低取前幾張，預設 15、上限 30' } } } },
     { name: 'get_b30',
-      description: '算使用者自己的 B30（Best 30 実効值）＝前 30 名実効值的平均，並給出「下一步該打哪張最划算」。'
-        + '実効值：AP＝譜面定數、FC＝定數−1，定數用非官方難易度表（pentatonic V31，AP 基準，含 MASTER／APPEND／EXPERT 共 885 張譜面）。'
-        + '回傳目前 B30、已計入張數、進榜門檻、前 30 名清單，以及依「B30 提升幅度」排序的建議打歌清單'
-        + '（每筆含目標是 FC 還是 AP、打上去 B30 會變多少）。'
-        + '使用者問「我的 B30 多少」「B30 怎麼提升」「下一張該打哪首」「打哪首最划算」「還差多少上 32」時用。'
-        + '成績來自站上「B30 產生器」頁的手動勾選（台服公開 API 沒有逐曲成績），沒勾就會回提示要他去哪裡勾。',
+      description: '算使用者的 B30（前 30 名実効值平均；AP＝譜面定數、FC＝定數−1，定數用非官方難易度表）並給「下一張打哪最划算」。問「我的 B30 多少」「怎麼提升」「該打哪首」「還差多少上 32」時用。成績來自站上「B30 產生器」頁的手動勾選，沒勾會回提示。',
       input_schema: { type: 'object', properties: {
-        suggest_limit: { type: 'integer', description: '建議清單要回幾筆，最多 50，預設 15。'
-          + '這是全曲庫 885 張譜面都算過、依提升幅度排序的完整結果的前 N 名，不是取樣——不要用多次小批次去拼湊。' },
-        top_limit: { type: 'integer', description: 'B30 清單要回幾筆，最多 30，預設 30（＝整份 B30）。只想看前幾名時才調小。' },
-        max_const: { type: 'number', description: '只建議定數 ≤ 這個值的譜面。使用者說「我只打得動 31 以下」時帶。'
-          + '不給就用他自己的最佳成績自動推上限（見 suggestion_basis）。' },
-        stretch: { type: 'number', description: '自動上限要在玩家最佳成績之上多探幾點定數，預設 0.5，最大 5。'
-          + '使用者想看更有挑戰性的目標就調大（例如 1.5）；max_const 有給時本參數無效。' },
-        pool: { type: 'string', enum: ['all', 'tw', 'jp'], description: '建議清單的曲庫範圍，預設 all。'
-          + 'tw＝只推台服打得到的曲子（排除日服限定曲）、jp＝只看日服限定曲。B30 本身一律用全部已勾選的成績計算，不受此參數影響。' },
-        target: { type: 'string', enum: ['all', 'fc', 'ap'], description: '只看哪一種目標，預設 all。'
-          + 'fc＝只列「先打到 FC」就能加分的（比較好上手）、ap＝只列補 AP 的目標。' } } } },
+        suggest_limit: { type: 'integer', description: '建議清單筆數，預設 15、上限 50。已是全曲庫依提升幅度排序的前 N，不要分批拼湊' },
+        top_limit: { type: 'integer', description: 'B30 清單筆數，預設＝上限 30' },
+        max_const: { type: 'number', description: '只建議定數 ≤ 此值。「我只打得動 31 以下」時帶；不給則依最佳成績自動推上限' },
+        stretch: { type: 'number', description: '自動上限在最佳成績之上多探幾點定數，預設 0.5、最大 5；有 max_const 時無效' },
+        pool: { type: 'string', enum: ['all','tw','jp'], description: '建議清單的曲庫範圍，預設 all。tw＝台服打得到、jp＝只看日服限定。B30 本身不受影響' },
+        target: { type: 'string', enum: ['all','fc','ap'], description: '目標種類，預設 all。fc＝先打到 FC（好上手）、ap＝補 AP' } } } },
     { name: 'get_bonus_cards',
-      description: '查某一期活動的加分卡：該期的加成屬性／團體／主推角色、哪些角色吃加成，以及每一張卡實際的加成％和「為什麼有這個加成」（同角色＋同屬性／只同角色／只同屬性／本期活動卡）。'
-        + '使用者問「這期加分卡有哪些」「我這張吃不吃加成」「這期該用誰」「某某卡這期幾％」時用。'
-        + '算法與站上「跑榜工作室」同一套（台服主資料庫 eventDeckBonuses／eventCards／eventRarityBonusRates），不是靠「加分卡參考」那頁的靜態說明。',
+      description: '查某期活動的加分卡：該期加成屬性／團體／主推角色、哪些角色吃加成，以及每張卡實際加成％與原因（同角色＋同屬性／只同角色／只同屬性／本期活動卡）。問「這期加分卡有哪些」「我這張吃不吃加成」「某卡這期幾％」時用。',
       input_schema: { type: 'object', properties: {
-        event_id: { type: 'integer', description: '活動期數。省略就用當期；未來的期數要接近開活動主資料庫才會有加成設定' },
-        limit: { type: 'integer', description: '要回幾張卡，最多 100，預設 30。'
-          + '這是全部符合的卡依加成由高到低排序後的前 N 名，不是取樣——不要用多次小批次去拼湊' },
-        offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的卡' },
-        master_rank: { type: 'integer', description: '假設所有卡的專精等級 0～5，預設 5（理論滿專精）。'
-          + '專精只影響「稀有度＋專精」那一段（★4 是 MR0 10%→MR5 25%），不影響角色／屬性加成' },
-        chara: { type: 'integer', description: '只看某個角色的卡，角色 id 1～26（1=星乃一歌 … 21=初音未來 … 26=KAITO）' },
-        min_percent: { type: 'number', description: '只回加成％大於等於這個值的卡。例如想只看「同角色＋同屬性」那批就給 70' },
-        include_low_rarity: { type: 'boolean', description: '要不要把 ★1～★3 也列進來，預設 false（只列 ★4 與生日卡）' },
-        mine: { type: 'boolean', description: '只看使用者在站上「收集率」頁勾選為持有的卡。沒勾過會回錯誤' } } } },
+        event_id: { type: 'integer', description: '活動期數，省略用當期；太未來的期數主資料庫還沒加成設定' },
+        limit: { type: 'integer', description: '回幾張，預設 30、上限 100。已是依加成由高到低的前 N，不要分批拼湊' },
+        offset: { type: 'integer', description: '從第幾名開始，翻頁用' },
+        master_rank: { type: 'integer', description: '假設全卡專精 0～5，預設 5。只影響稀有度那段（★4 為 MR0 10%→MR5 25%）' },
+        chara: { type: 'integer', description: '只看某角色，角色 id 1～26' },
+        min_percent: { type: 'number', description: '只回加成％ ≥ 此值。只想看「同角色＋同屬性」那批就給 70' },
+        include_low_rarity: { type: 'boolean', description: '是否列入 ★1～★3，預設 false（只列 ★4 與生日卡）' },
+        mine: { type: 'boolean', description: '只看「收集率」頁勾選為持有的卡' } } } },
     { name: 'get_dolls',
-      description: '月卡玩偶（豆森娃）排程：每個月的月卡附贈玩偶輪到哪些角色，台服與日服月份對照。'
-        + '使用者問「這個月的娃是誰」「下個月輪到誰」「某某什麼時候有娃」「日服現在是誰」「幾月的月卡玩偶」時用。'
-        + '不帶參數＝本月（台服）加上接下來 12 個月；帶 month＝查指定月份；帶 character＝查該角色的全部出現月份。'
-        + '台服比日服晚 9 個月，所以日服欄可以拿來預告台服。'
-        + '資料只排到表的末尾，最後幾個月官方尚未公布角色（回傳的 characters 會是空陣列），不要當成「那幾個月沒有玩偶」。',
+      description: '月卡玩偶（豆森娃）排程：每月的月卡附贈玩偶輪到哪些角色，台服日服對照（台服晚 9 個月，日服欄可預告台服）。問「這個月的娃是誰」「下個月輪到誰」「某某什麼時候有娃」時用。characters 空陣列＝官方尚未公布，不是那個月沒有玩偶。',
       input_schema: { type: 'object', properties: {
-        month: { type: 'string', description: '要查的月份，YYYY/MM（例如 2026/08，也接受 2026/3、2026-03）。'
-          + '這個月份是哪一服的由 server 決定，預設台服。不給就回本月與接下來幾個月。' },
-        server: { type: 'string', enum: ['tw', 'jp'], description: '以哪一服的月份為準，tw＝台服（預設）、jp＝日服。'
-          + '回傳的每一列都同時附上 tw 與 jp 兩個月份，這個參數只影響「本月」和 month 的判讀基準。' },
-        character: { type: 'string', description: '角色名，繁中給定名或全名皆可（初音／未來／初音未來／真冬／朝比奈真冬／MEIKO，也可直接給 characterId 1-26）。'
-          + '給了就回這位角色在整份排程中的全部出現月份與下一次輪到的月份，不是取樣。' },
-        limit: { type: 'integer', description: '不給 month／character 時要列幾個月，預設 12，最多 25（全表就只有 25 個月）。'
-          + '這是從本月起的連續完整清單，不是取樣——不要用多次小批次去拼湊。' },
-        include_past: { type: 'boolean', description: '設 true 就從表頭（最早的月份）開始列，用來回顧過去的玩偶；預設 false，只列本月起的未來月份。' } } } },
+        month: { type: 'string', description: '要查的月份 YYYY/MM（也接受 2026/3、2026-03），哪一服由 server 定。不給就回本月起數個月' },
+        server: { type: 'string', enum: ['tw','jp'], description: '月份以哪一服為準，預設 tw；回傳每列一律同時附 tw 與 jp' },
+        character: { type: 'string', description: '角色名，定名或全名皆可（初音／初音未來／朝比奈真冬／MEIKO），也可給 characterId 1-26。回該角色全部出現月份與下一次' },
+        limit: { type: 'integer', description: '沒給 month／character 時列幾個月，預設 12、上限 25（全表就 25 個月）。是連續完整清單，不要分批拼湊' },
+        include_past: { type: 'boolean', description: 'true＝從表頭列起回顧過去，預設 false 只列本月起' } } } },
     { name: 'get_event_stats',
-      description: '活動編年統計(台服 2021/10 開服至今全部 177 期的彙總,不是取樣)。回答「哪個角色當過最多次活動主角」「某個團多久出一次活動」'
-        + '「馬拉松/嘉年華/World Link 各幾期、平均幾天」「綠屬多久出一次」「某段期間有哪些活動」這類統計問題。'
-        + 'group_by 決定切法(角色/團體/屬性/型態/年份),其餘參數是篩選條件,可疊加。'
-        + '要看某一期的實際榜線數字請改用 get_history_borders,這支只做期數與日程的統計。',
+      description: '活動編年統計（台服 2021/10 開服至今全部 177 期彙總，不是取樣）。答「哪個角色當過最多次活動主角」「某團多久出一次」「馬拉松／嘉年華／World Link 各幾期、平均幾天」「某段期間有哪些活動」。只做期數與日程統計，要看某期實際榜線數字請改用 get_history_borders。',
       input_schema: { type: 'object', properties: {
-        group_by: { type: 'string', enum: ['chara', 'unit', 'attr', 'type', 'year', 'none'],
-          description: '分組維度,預設 chara。chara=活動主角、unit=主打團、attr=屬性、type=活動型態、year=開始年份、'
-            + 'none=不分組(只要整體統計或活動列表時用)。每組會回期數、佔比、平均日數、首末期、平均間隔天數、距今天數。' },
-        type: { type: 'string', description: '只算某型態:馬拉松 / 歡樂嘉年華 / World Link' },
-        unit: { type: 'string', description: '只算某團(需完全相符):L/N、MMJ、VBS、WXS、25、VS,「/」代表混活(無主打團)' },
-        attr: { type: 'string', description: '只算某屬性(需完全相符):紫、藍、橘、綠、粉,World Link 期為「WL全屬性」' },
-        chara: { type: 'string', description: '只算某角色,用包含比對。例如「咲希」;填「未來」會一併抓到 VBS未來/25未來/WXS未來' },
-        from: { type: 'string', description: '起始日期 YYYY/MM/DD,只算開始日在此之後的活動' },
-        to: { type: 'string', description: '結束日期 YYYY/MM/DD,只算開始日在此之前的活動' },
-        limit: { type: 'integer', description: '最多回幾組,預設 30、上限 50。groups 是依期數由多到少的完整排名前 N 組,不是取樣,不要用多次小批次去拼湊' },
-        list_events: { type: 'boolean', description: '是否連符合條件的活動明細一起回傳。問「某段期間有哪些活動」「某角色當過哪幾期」時設 true' },
-        event_limit: { type: 'integer', description: 'list_events 為 true 時最多列幾期,預設 30、上限 60,由新到舊' } } } },
+        group_by: { type: 'string', enum: ['chara','unit','attr','type','year','none'], description: '分組維度，預設 chara。none＝不分組（只要整體統計或活動列表時用）。每組回期數、佔比、平均日數、首末期、平均間隔天數、距今天數' },
+        type: { type: 'string', description: '只算某型態：馬拉松 / 歡樂嘉年華 / World Link' },
+        unit: { type: 'string', description: '只算某團（完全相符）：L/N、MMJ、VBS、WXS、25、VS，「/」＝混活' },
+        attr: { type: 'string', description: '只算某屬性（完全相符）：紫、藍、橘、綠、粉，World Link 期為「WL全屬性」' },
+        chara: { type: 'string', description: '只算某角色，包含比對（填「未來」會一併抓到 VBS未來／25未來／WXS未來）' },
+        from: { type: 'string', description: '起始日 YYYY/MM/DD，只算開始日在此之後' },
+        to: { type: 'string', description: '結束日 YYYY/MM/DD，只算開始日在此之前' },
+        limit: { type: 'integer', description: '最多回幾組，預設 30、上限 50。已是依期數由多到少的完整排名前 N，不要分批拼湊' },
+        list_events: { type: 'boolean', description: '是否附活動明細。問「某段期間有哪些活動」「某角色當過哪幾期」時設 true' },
+        event_limit: { type: 'integer', description: 'list_events 時列幾期，預設 30、上限 60，由新到舊' } } } },
     { name: 'get_missing_cards',
-      description: '列出使用者「還沒有的卡」的實際清單（卡名／角色／團體／稀有度／屬性／取得類別，以及現在還抽不抽得到），可依團體、稀有度、角色、取得類別、屬性篩選。' +
-        '使用者問「我缺哪幾張★4」「25時我還差哪些」「奏的生日卡我缺哪張」「我缺的裡面哪些現在抽得到」時用。' +
-        'get_collection_rate 只回「缺幾張」的統計數字，要點名是哪幾張就用這支。' +
-        'cards 是符合條件的缺卡完整排序後的前 N 張（預設稀有度 ★4→生日→★3→★2→★1），不是抽樣；要更多請調 limit（上限 100）或用 offset 續取，不要重複用小批次拼。' +
-        '持有清單來自站上「收集率」頁的手動勾選（存在瀏覽器），沒勾過就會整本圖鑑都算缺。',
+      description: '列出使用者「缺哪幾張卡」的清單（卡名／角色／團體／稀有度／屬性／取得類別／現在抽不抽得到）。「我缺哪幾張★4」「25時還差哪些」用這支；get_collection_rate 只給「缺幾張」的數字。回的是完整排序前 N 張非取樣，要更多調 limit 或 offset。持有資料來自「收集率」頁勾選，沒勾過會整本算缺。',
       input_schema: { type: 'object', properties: {
-        unit: { type: 'string', description: '團體，接受 ln／mmj／vbs／wxs／n25／vs，或 Leo/need、MMJ、VBS、ワンダショ、ニーゴ、VIRTUAL SINGER、25時 這類寫法。不給就是全部。有支援團的卡算進支援團' },
-        rarity: { type: 'string', description: '稀有度：1／2／3／4（也接受「★4」「四星」），生日卡用「生日」。不給就是全部' },
-        character: { type: 'string', description: '角色，繁中簡稱或全名皆可（「奏」「宵崎奏」），也可以直接給角色 id。不給就是全部' },
-        supply: { type: 'string', description: '取得類別：常駐／生日限定／期間限定／彩FES限定／BLOOMFES限定／團體活動限定／聯動限定。不給就是全部' },
-        attribute: { type: 'string', description: '屬性：帥氣／快樂／神秘／可愛／純真（也接受 cool／happy／mysterious／cute／pure）。不給就是全部' },
-        pool_status: { type: 'string', enum: ['all', 'in_gacha', 'not_in_gacha'], description: '依卡池歷史篩選：in_gacha 只看曾被卡池收錄過的（抽得到的機會較大），not_in_gacha 只看查不到卡池紀錄的（活動報酬卡或台服尚未開池）。預設 all' },
-        sort: { type: 'string', enum: ['rarity', 'newest', 'oldest', 'character'], description: '排序：rarity（預設，★4→生日→★3→★2→★1，同稀有度依卡片 id 由小到大）、newest（新卡在前）、oldest、character（依角色分組）' },
-        limit: { type: 'integer', description: '要回幾張，預設 20，上限 100' },
-        offset: { type: 'integer', description: '從排序後的第幾張開始回（0 起算），配合 limit 續取下一批' } } } },
+        unit: { type: 'string', description: '團體：ln／mmj／vbs／wxs／n25／vs，或 Leo/need、ニーゴ、25時 等寫法。含支援團' },
+        rarity: { type: 'string', description: '1／2／3／4（也接受「★4」「四星」），生日卡給「生日」' },
+        character: { type: 'string', description: '角色繁中簡稱、全名或角色 id' },
+        supply: { type: 'string', description: '取得類別：常駐／生日限定／期間限定／彩FES限定／BLOOMFES限定／團體活動限定／聯動限定' },
+        attribute: { type: 'string', description: '帥氣／快樂／神秘／可愛／純真（也接受 cool 等英文）' },
+        pool_status: { type: 'string', enum: ['all','in_gacha','not_in_gacha'], description: 'in_gacha＝曾被卡池收錄過；not_in_gacha＝查不到卡池紀錄（活動報酬卡或台服未開池）。預設 all' },
+        sort: { type: 'string', enum: ['rarity','newest','oldest','character'], description: 'rarity（預設，★4→生日→★3→★2→★1）／newest／oldest／character' },
+        limit: { type: 'integer', description: '預設 20，上限 100' },
+        offset: { type: 'integer', description: '從第幾張起（0 起算）' } } } },
     { name: 'get_shop_items',
-      description: '商城儲值商品查詢與 CP 值排行（＝站上「儲值商品分析」頁的同一套算法）。'
-        + '974 項商品含台幣定價、有償／無償水晶、招募票券、道具與限購規則，涵蓋 App 內商店與台服官網商店（GamePay／MyCard）。'
-        + '使用者問「現在儲值買哪個最划算」「月卡值不值得」「官網是不是比較便宜」「某某組合包裡有什麼」'
-        + '「湊 300 抽要花多少錢」時用這個。預設只回「現在還在販售、且有已知台幣價」的商品，'
-        + '依每 1 元台幣可得水晶數（CP 值）由高到低排序。',
+      description: '商城儲值商品查詢與 CP 值排行（974 項，含台幣定價、App 內商店與台服官網 GamePay／MyCard）。「現在買哪個最划算」「月卡值不值得」「官網比較便宜嗎」「某組合包裡有什麼」用這支。預設只回在售且有台幣價，依每元可得水晶數排序。要算「湊到目標抽數最省怎麼買」用 shop_recommend。',
       input_schema: { type: 'object', properties: {
-        q: { type: 'string', description: '關鍵字，比對商品名、說明、商店分頁與內容物名稱（例如「水晶」「通行證」「心願碎片」「生日」）' },
-        category: { type: 'string', enum: ['all', 'jewel', 'set', 'pass', 'costume'],
-          description: 'jewel＝純水晶包、set＝優惠組合包、pass＝通行證／月卡、costume＝演出服裝。預設 all' },
-        source: { type: 'string', enum: ['all', 'app', 'web'],
-          description: '購買通路：app＝遊戲內商店（iOS／Android 同價）、web＝台服官網商店（信用卡／MyCard，常有加量或官網專屬包）。預設 all' },
-        availability: { type: 'string', enum: ['on_sale', 'upcoming', 'ended', 'all'],
-          description: '販售狀態，預設 on_sale（只看現在買得到的）。要查過去檔位或做歷史比較才改 ended／all' },
-        sort: { type: 'string', enum: ['cp', 'price_asc', 'price_desc', 'jewels', 'ending_soon'],
-          description: 'cp＝每元可得水晶數由高到低（CP 值排行，預設）、price_asc／price_desc＝依台幣價、jewels＝依總水晶價值、ending_soon＝快下架的排前面' },
-        limit: { type: 'integer',
-          description: '要回幾筆，最多 60，預設 15。這是套完篩選後「完整排序的前 N 名」，不是取樣——不要用多次小批次去拼湊' },
-        offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的排名' },
-        include_unknown_price: { type: 'boolean',
-          description: '是否納入官方 master 只有 9999 佔位價的商品（多為月卡／新手包，實售價只在商店顯示）。'
-            + '預設 false；帶 true 時這些商品的 price_twd 與 jewels_per_twd 會是 null，要請使用者自己到商店確認售價' },
-        include_tickets: { type: 'boolean', description: '招募票券是否以 300 水晶／抽折算進商品價值，預設 true' },
-        include_materials: { type: 'boolean',
-          description: '心願碎片等道具是否以商店標價折算進商品價值，預設 true。只想比「純水晶」時關掉' } } } },
+        q: { type: 'string', description: '關鍵字，比對商品名、說明、商店分頁與內容物' },
+        category: { type: 'string', enum: ['all','jewel','set','pass','costume'], description: 'jewel＝純水晶包、set＝組合包、pass＝通行證／月卡、costume＝服裝。預設 all' },
+        source: { type: 'string', enum: ['all','app','web'], description: 'app＝遊戲內商店、web＝台服官網（常有加量或專屬包）。預設 all' },
+        availability: { type: 'string', enum: ['on_sale','upcoming','ended','all'], description: '販售狀態，預設 on_sale；要查過去檔位才改 ended／all' },
+        sort: { type: 'string', enum: ['cp','price_asc','price_desc','jewels','ending_soon'], description: 'cp＝每元水晶數（預設）／price_asc／price_desc＝台幣價／jewels＝總水晶價值／ending_soon＝快下架的排前面' },
+        limit: { type: 'integer', description: '預設 15，上限 60。是完整排序前 N 名，非取樣' },
+        offset: { type: 'integer', description: '從第幾名開始翻頁' },
+        include_unknown_price: { type: 'boolean', description: '納入 master 只有 9999 佔位價的商品（多為月卡／新手包），此時 price_twd 與 jewels_per_twd 為 null。預設 false' },
+        include_tickets: { type: 'boolean', description: '票券以 300 水晶／抽折算進價值，預設 true' },
+        include_materials: { type: 'boolean', description: '心願碎片等道具以商店標價折算，預設 true。只比純水晶時關掉' } } } },
     { name: 'get_site_map',
-      description: '站台功能地圖：這個網站有哪些功能、在哪一頁、該頁底下有哪些子分頁、各自在做什麼，以及每一項對應到助手的哪一支工具。'
-        + '使用者問「站上有沒有 X」「X 在哪裡」「X 怎麼用」「這個網站能做什麼」時用這個。'
-        + '不給任何參數就回**全部 27 頁與其下所有子分頁的完整地圖**（不是取樣、不是前幾筆，一次就拿得完，不要分批呼叫）；'
-        + '要聚焦時才給 page／q／tool。回來以後：子分頁的 tools 有值就直接呼叫那支工具把答案算給使用者看，'
-        + '不要只描述功能；tools 是空陣列代表助手算不了，才改成告訴他去哪一頁自己操作。',
+      description: '站台功能地圖：有哪些頁、底下有哪些子分頁、各自在做什麼、對應助手哪支工具。「站上有沒有 X」「X 在哪裡」「X 怎麼用」「這網站能做什麼」用這支。不給參數就回全部 27 頁與所有子分頁的完整地圖，一次拿得完不要分批。回來後子分頁 tools 有值就直接呼叫那支工具把答案算出來，不要只描述功能；tools 是空陣列才改成叫他去那頁自己操作。',
       input_schema: { type: 'object', properties: {
-        page: { type: 'string', description: '只看某一頁，傳頁面 key（例如 calc / rank / analysis / borderdb / deckpro）。給了會一併附上該頁的圈內用語別名。' },
-        q: { type: 'string', description: '關鍵字，找「哪一頁或哪個分頁有這個功能」。會比對頁名、說明、子分頁名稱與圈內別名（例如「控分」「烤森」「天井」「榜線趨勢」）。' },
-        tool: { type: 'string', description: '反查某支工具對應站上的哪一頁哪個分頁，例如 song_efficiency。用在使用者問「你算的這個站上哪裡看得到」。' },
-        include_aliases: { type: 'boolean', description: '是否附上該頁的圈內用語別名。預設：有給 page／q／tool 時為 true，回全站地圖時為 false（太長）。' } } } },
-    { name: 'query_border_db', description: '榜線資料庫的完整交叉篩選（等同站上「榜線資料庫」頁）：把歷期終榜線依型態／團體／日數／屬性／主角五個維度交叉篩選，指定段位後可「依期數」或「依該段位分數排行」，並回傳符合期數的平均／中位數／最高／最低。使用者問「8.25 天 WXS 箱活 T1000 排行」「歷代 T100 最高的是哪一期」「紫屬性嘉年華 T500 平均多少」「WL2 第一章 T1000 排行」這類問題時用這支（只要單純看某幾期的完整各段位數字，用 get_history_borders 就好）。回傳的 events 是「完整排序後的前 N 名」，不是取樣，要看更後面請用 offset，不要用多次小批次自己拼。',
+        page: { type: 'string', description: '只看某頁，傳頁面 key（calc／rank／analysis／borderdb／deckpro）' },
+        q: { type: 'string', description: '關鍵字，比對頁名、說明、子分頁名與圈內別名（如「控分」「烤森」「天井」「榜線趨勢」）' },
+        tool: { type: 'string', description: '反查某支工具對應站上哪一頁哪個分頁，如 song_efficiency' },
+        include_aliases: { type: 'boolean', description: '附圈內別名。預設：有給 page／q／tool 時 true，全站地圖時 false' } } } },
+    { name: 'query_border_db',
+      description: '榜線資料庫交叉篩選（＝站上「榜線資料庫」頁）：歷期終榜線依型態／團體／日數／屬性／主角交叉篩，指定段位後可依期數或依該段位分數排行，並回平均／中位數／最高／最低。「8.25天 WXS 箱活 T1000 排行」「歷代 T100 最高哪一期」「WL2 第一章 T1000 排行」用這支；只要看某幾期完整各段位數字用 get_history_borders。events 是完整排序前 N 名非取樣，續看用 offset。',
       input_schema: { type: 'object', properties: {
-        dataset: { type: 'string', enum: ['event', 'wl'], description: 'event＝一般活動總榜線（含 World Link 活動的整期線），共 175 期，段位 T1～T5000；wl＝World Link 的「各章節」榜線（每章 2～3 天，id 形如 112.1），共 46 章，段位 T1～T7000。預設 event。' },
-        tier: { type: 'integer', description: '要看的段位名次，預設 100。event 可用：1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000；wl 可用：同上但沒有 1500/2500，多一個 7000。給錯會回傳可用清單。' },
-        type: { type: 'array', items: { type: 'string' }, description: '活動型態，可複選（同維度任一符合即算）。只有三種：「馬拉松」「歡樂嘉年華」「World Link」。使用者說的「箱活」＝馬拉松，「嘉年華／cheerful」＝歡樂嘉年華。dataset=wl 時無此維度。' },
-        unit: { type: 'array', items: { type: 'string' }, description: '主辦團體，可複選。只有這幾種寫法：「L/N」(Leo/need)、「MMJ」、「VBS」、「WXS」、「25」(25時)、「VS」(虛擬歌手)、「/」(混合／無特定團體)。' },
-        days: { type: 'array', items: { type: 'number' }, description: '活動天數，可複選，要完全相同的數值。event 只有 6.25 / 7.25 / 8.25 / 9.25 / 10.25 / 12；wl 只有 2 / 3。給 8 會篩不到（要給 8.25）。' },
-        attr: { type: 'array', items: { type: 'string' }, description: '活動屬性（加成屬性），可複選。只有「紫」「藍」「橘」「綠」「粉」以及 World Link 期的「WL全屬性」。dataset=wl 時無此維度。' },
-        chara: { type: 'array', items: { type: 'string' }, description: '活動主角（banner 角色），可複選，用繁中角色名如「寧寧」「瑞希」。三種未來要分開寫：「25未來」「VBS未來」「WXS未來」。' },
-        round: { type: 'array', items: { type: 'string' }, description: '只在 dataset=wl 有用：第幾屆 World Link，「WL1」或「WL2」。' },
-        chapter: { type: 'array', items: { type: 'integer' }, description: '只在 dataset=wl 有用：第幾章（1～6），對應 id 小數點後那位。' },
-        ids: { type: 'array', items: { type: 'string' }, description: '直接指定期數，例如 ["149","150"]。dataset=wl 時給母活動期數（如 "112"）會回該期全部章節，給 "112.3" 則只回第 3 章。' },
-        sort: { type: 'string', enum: ['id', 'score', 'score_asc'], description: 'id＝依期數新到舊（預設）；score＝依指定段位分數由高到低排行；score_asc＝由低到高（想找「最低的幾期」時用）。該段位沒紀錄的期數一律排最後。' },
-        limit: { type: 'integer', description: '回傳幾筆，預設 20，上限 60。統計數字一律用全部符合的期數算，不受這個影響。' },
-        offset: { type: 'integer', description: '從排序後的第幾筆開始，預設 0。要看排行第 21～40 名就給 20。' } } } },
+        dataset: { type: 'string', enum: ['event','wl'], description: 'event＝一般活動總榜線（175 期，T1～T5000，含 WL 活動整期線）；wl＝World Link 各章節榜線（46 章，id 形如 112.1，T1～T7000）。預設 event' },
+        tier: { type: 'integer', description: '段位名次，預設 100。event：1／10～100(每10)／200～500(每100)／1000／1500／2000／2500／3000／4000／5000；wl 同上但無 1500・2500、多 7000。給錯會回可用清單' },
+        type: { type: 'array', items: { type: 'string' }, description: '活動型態可複選，只有「馬拉松」（＝箱活）「歡樂嘉年華」（＝嘉年華）「World Link」。dataset=wl 無此維度' },
+        unit: { type: 'array', items: { type: 'string' }, description: '主辦團體可複選，寫法固定：「L/N」「MMJ」「VBS」「WXS」「25」「VS」「/」(混合)' },
+        days: { type: 'array', items: { type: 'number' }, description: '天數可複選且須完全相同。event 只有 6.25／7.25／8.25／9.25／10.25／12；wl 只有 2／3。給 8 會篩不到' },
+        attr: { type: 'array', items: { type: 'string' }, description: '活動加成屬性可複選：紫／藍／橘／綠／粉，WL 期為「WL全屬性」。dataset=wl 無此維度' },
+        chara: { type: 'array', items: { type: 'string' }, description: '活動主角可複選，繁中名如「寧寧」。三種未來分寫「25未來」「VBS未來」「WXS未來」' },
+        round: { type: 'array', items: { type: 'string' }, description: '限 dataset=wl：「WL1」或「WL2」' },
+        chapter: { type: 'array', items: { type: 'integer' }, description: '限 dataset=wl：第幾章 1～6（id 小數點後那位）' },
+        ids: { type: 'array', items: { type: 'string' }, description: '直接指定期數如 ["149","150"]。wl 給 "112" 回該期全章節，"112.3" 只回第 3 章' },
+        sort: { type: 'string', enum: ['id','score','score_asc'], description: 'id＝期數新到舊（預設）／score＝該段位分數高到低／score_asc＝低到高（找最低幾期）。無紀錄的期數排最後' },
+        limit: { type: 'integer', description: '預設 20，上限 60。統計數字仍用全部符合的期數算' },
+        offset: { type: 'integer', description: '從排序後第幾筆開始，預設 0' } } } },
     { name: 'score_control',
-      description: '控分速查（＝計算中心的「控分速查」分頁）：已經知道目前活動P 與想剛好停在的目標活動P，反推「還要打幾局、每局吃幾火、每局分數打到哪個區間」。'
-        + '使用者問「我現在 2,847,300 想剛好到 2,850,000 要怎麼打」「還差 2700 P 怎麼收尾」「控分怎麼打」時用這支。'
-        + '關鍵觀念：活動P 的 base 是無條件捨去的，分數落在同一個 20,000 級距內活動P 完全一樣，'
-        + '所以答案是「分數區間」不是「精準分數」——回答時要照 score_min～score_max 講。'
-        + '差額超過 10,000 P 就不是控分（status 會回 over_range），這時照平常打即可。'
-        + '目前加成湊不出剛好的數字時，會在 alt_bonus_plans 給出鄰近、能精準命中的加成（換卡微調用）。'
-        + '注意：這是活動P 的收尾試算，不是算一局能拿多少分——問單局活動P 用 calc_event_points，問打哪首歌用 song_efficiency。',
+      description: '控分速查（＝計算中心「控分速查」分頁）：已知目前活動P 與想剛好停的目標活動P，反推還要打幾局、每局吃幾火、每局分數打到哪區間。「我現在 2,847,300 想剛好到 2,850,000」「還差 2700P 怎麼收尾」用這支。活動P base 無條件捨去，同一 20,000 分級距內活動P 一樣，所以要照 score_min～score_max 講區間、不是精準分數。差額超過 10,000P 會回 status=over_range（不算控分）；加成湊不出剛好時會在 alt_bonus_plans 給鄰近可精準命中的加成。問單局活動P 用 calc_event_points，問打哪首歌用 song_efficiency。',
       input_schema: { type: 'object', properties: {
-        current_points: { type: 'number', description: '目前的活動P 總數（必填），例如 2847300' },
-        target_points: { type: 'number', description: '想剛好停在的目標活動P（必填），例如 2850000' },
-        bonus: { type: 'number', description: '活動加成 %（例如 250 代表 +250%）。省略就沿用計算中心的共用設定' },
-        limit: { type: 'integer', description: '要回幾組方案，預設 12（與站上畫面顯示的組數相同）、最多 40。'
-          + '這是依「總耗體力由少到多」排序後的前 N 名，不是取樣——不要用多次小批次去拼湊' } } } },
+        current_points: { type: 'number', description: '目前活動P 總數（必填），如 2847300' },
+        target_points: { type: 'number', description: '想剛好停的目標活動P（必填）' },
+        bonus: { type: 'number', description: '活動加成 %（250＝+250%）。省略沿用計算中心共用設定' },
+        limit: { type: 'integer', description: '方案數，預設 12、上限 40。依總耗體力由少到多的前 N 名，非取樣' } } } },
     { name: 'search_collection',
-      description: '搜尋站上「收集室」的貼圖(1073 張)與稱號(1883 種)圖鑑，回傳取得條件敘述與圖片網址。使用者問「這個稱號怎麼拿」「有沒有奏的貼圖」「TOP100 稱號長怎樣」「某活動有哪些稱號」時用這個。回傳的是符合條件的完整排序結果的前 N 筆(不是抽樣)，要更多就把 limit 調大或用 offset 翻頁，不要重複呼叫湊。',
+      description: '搜尋站上「收集室」的貼圖(1073 張)與稱號(1883 種)圖鑑，回取得條件敘述與圖片網址。「這個稱號怎麼拿」「有沒有奏的貼圖」「TOP100 稱號長怎樣」「某活動有哪些稱號」用這支。回的是完整排序前 N 筆非取樣，要更多調 limit 或 offset。',
       input_schema: { type: 'object', properties: {
-        kind: { type: 'string', description: '要找哪一種：stamp(貼圖) / honor(稱號) / both(兩種都找，預設)' },
-        q: { type: 'string', description: '關鍵字，對「名稱＋所屬群組＋取得條件敘述」做子字串比對。例如「TOP100」「BIRTHDAY」「登入」「商店」或活動名。注意稱號敘述用的是 BIRTHDAY 不是「生日」' },
-        character: { type: 'string', description: '角色名(繁中，例如「奏」「一歌」)或角色 id。貼圖用官方角色欄位精準比對，稱號則是在名稱／群組／敘述裡找角色名' },
-        rarity: { type: 'string', description: '只限稱號：稀有度 low / middle / high / highest(由低到高)，也可寫 低／中／高／最高' },
-        group: { type: 'string', description: '只限稱號：所屬群組名，通常是活動名或「◯◯粉絲」系列。給了這個就只回稱號' },
-        limit: { type: 'integer', description: '最多回幾筆，預設 20，上限 60。kind=both 時兩類平分，某一類不足會把配額讓給另一類' },
-        offset: { type: 'integer', description: '從第幾筆開始，用來翻頁，預設 0' } } } },
+        kind: { type: 'string', description: 'stamp(貼圖)／honor(稱號)／both(預設)' },
+        q: { type: 'string', description: '關鍵字，比對名稱＋所屬群組＋取得條件敘述。稱號敘述用 BIRTHDAY 不是「生日」' },
+        character: { type: 'string', description: '角色繁中名或 id。貼圖用官方角色欄位精準比對，稱號在名稱／群組／敘述裡找' },
+        rarity: { type: 'string', description: '只限稱號：low／middle／high／highest（也可寫 低／中／高／最高）' },
+        group: { type: 'string', description: '只限稱號：所屬群組名（活動名或「◯◯粉絲」）。給了就只回稱號' },
+        limit: { type: 'integer', description: '預設 20，上限 60。both 時兩類平分，一類不足會讓配額' },
+        offset: { type: 'integer', description: '從第幾筆開始，預設 0' } } } },
     { name: 'shop_recommend',
-      description: '儲值試算：算出「湊到目標抽數／目標水晶數，最少要花多少台幣、該買哪幾樣、各買幾個」。'
-        + '＝站上「儲值分析 → 智慧推薦」的同一套演算法：把台服 App 商店＋官方網頁商店（GamePay）全部商品，'
-        + '在每項自己的限購次數內做有限背包 DP，解出最低總花費的購買組合（不是貪心挑 CP 最高的包）。'
-        + '使用者問「要抽天井（300 抽）要花多少錢」「儲值 3000 元能抽幾抽」「怎麼買最划算」「哪個水晶包最便宜」「五萬石要多少錢」時用這個。'
-        + '回傳的是唯一一組最佳解（全商店 974 項都算過），不是候選清單，也不是取樣——不要拿它去湊多次呼叫。'
-        + '**只做試算與建議，不會也不能執行任何購買或交易**；價格是資料庫的台幣定價，實際以商店顯示為準。'
-        + 'reached_target 為 false 時代表沒達標，shortfall 會寫明差幾抽／差多少錢，回答時務必照實說差多少，不要把方案講成已達成目標。',
+      description: '儲值試算（＝站上「儲值分析 → 智慧推薦」）：湊到目標抽數／水晶數最少要花多少台幣、該買哪幾樣各幾個。全商店 974 項在各自限購次數內做背包 DP，回唯一一組最低總花費解（不是貪心挑 CP 最高、也不是候選清單、不是取樣）。「天井 300 抽要多少錢」「3000 元能抽幾抽」「怎麼買最划算」「五萬石要多少錢」用這支；只想看商品排行用 get_shop_items。只做試算與建議，不會也不能執行任何購買。reached_target=false 時要照 shortfall 說差幾抽／差多少錢，別講成已達標。',
       input_schema: { type: 'object', properties: {
-        target_pulls: { type: 'integer', description: '目標抽數（1 抽＝300 水晶，天井是 300 抽）。與 target_crystals 擇一給，兩個都給時以這個為準。' },
-        target_crystals: { type: 'integer', description: '目標水晶數。與 target_pulls 擇一給；使用者是用「幾顆石」講目標時用這個。' },
-        budget: { type: 'number', description: '預算上限（新台幣）。選填。給了之後若達標所需金額超過預算，會改回「預算內能拿到最多水晶」的方案，並在 shortfall 標明還差多少錢／多少抽。' },
-        held_crystals: { type: 'integer', description: '使用者手上已經有的水晶數，會先從目標扣掉。預設 0。' },
-        include_limited: { type: 'boolean', description: '是否納入期間限定／特惠商品，預設 true。使用者說「只要常駐的、不想追限時特賣」時給 false。' },
-        include_tickets: { type: 'boolean', description: '是否把招募票券以 300 石/抽折算進目標，預設 true。正在集 300 抽天井貼紙的人建議給 false——票券抽卡通常不累積天井。' },
-        horizon_30d: { type: 'boolean', description: '30 天視角，預設 false。true 時把「每日限購」×30、「每週限購」×4，用來回答「一整個月慢慢買最多能省多少」；false 是「現在立刻能買到的」。' } } } },
+        target_pulls: { type: 'integer', description: '目標抽數（1 抽＝300 石，天井 300 抽）。與 target_crystals 擇一，都給以此為準' },
+        target_crystals: { type: 'integer', description: '目標水晶數，與 target_pulls 擇一（使用者用「幾顆石」講時用）' },
+        budget: { type: 'number', description: '預算上限（台幣）。所需金額超出時改回預算內最多水晶的方案並標 shortfall' },
+        held_crystals: { type: 'integer', description: '手上已有的水晶，先從目標扣掉。預設 0' },
+        include_limited: { type: 'boolean', description: '納入期間限定／特惠商品，預設 true' },
+        include_tickets: { type: 'boolean', description: '票券以 300 石／抽折算進目標，預設 true。集天井貼紙建議 false（票券不累積天井）' },
+        horizon_30d: { type: 'boolean', description: 'true＝每日限購×30、每週×4（一整個月慢慢買）；預設 false＝現在立刻買得到的' } } } },
     { name: 'best_bonus_deck',
-      description: '加成優先的最佳 5 張隊伍，附逐卡活動加成明細。**只挑活動加成最高的卡，完全不看綜合力**——'
-        + '使用者問「這期我最高能湊到幾%加成」「加成上限多少」「缺哪張才能再往上跳」時用這支；'
-        + '問「哪一隊分數／活動P 最高」不要用這支（那要權衡綜合力與技能）。'
-        + '回傳逐卡加成與拆解（屬性／團體、當期特效卡、稀有度×專精）、隊伍總加成；'
-        + 'World Link 另外回隊伍相異屬性加成與支援隊伍加成。'
-        + 'only_my_cards=true 時改用使用者實際持有的卡（優先讀 uid 的公開資料，含實際專精等級；'
-        + '沒設 uid 才退回「收集率」頁的勾選），並回報「還缺哪張、補上去能多幾%」。'
-        + '注意：第一次呼叫要下載官方 master data（卡片／加成表，World Link 還要載綜合力引擎的資料表），'
-        + '可能要好幾秒；之後有快取就快了。',
+      description: '加成優先的最佳 5 張隊伍＋逐卡活動加成明細。**只挑活動加成最高的卡，完全不看綜合力**——「這期最高能湊到幾%加成」「加成上限多少」「缺哪張才能再往上跳」用這支；問「哪一隊分數／活動P 最高」不要用這支。回逐卡加成拆解（屬性／團體、當期特效卡、稀有度×專精）與隊伍總加成；World Link 另回相異屬性加成與支援隊伍加成。首次呼叫要下載官方 master data，可能要好幾秒。',
       input_schema: { type: 'object', properties: {
-        event_id: { type: 'integer', description: '活動期數 id。省略＝當期（已開始的最新一期）。'
-          + '大於台服最新期數的 id 會自動改讀日服 master（台服約一年後才會有這期）' },
-        only_my_cards: { type: 'boolean', description: '只用使用者實際持有的卡來組（預設 false＝不分持有與否的理論上限）。'
-          + '設 true 時會一併回報還缺哪幾張、每張補上去能多幾%' } } } },
+        event_id: { type: 'integer', description: '活動期數 id，省略＝當期。大於台服最新期會自動改讀日服 master' },
+        only_my_cards: { type: 'boolean', description: 'true＝只用實際持有的卡（優先讀 uid 公開資料含專精等級，沒設 uid 才用收集率勾選），並回報還缺哪張、補上能多幾%。預設 false＝理論上限' } } } },
     { name: 'calc_team_power',
-      description: '精算一隊 5 張卡的綜合力，並回每張卡的六項明細（基礎表現力／前後篇／角色等級加成／區域道具加成／豆森加成／畫布加成）。'
-        + '用的是經典版同一支引擎（core.js 的 PowerEngine），數字與站上「編組優化」頁一致。'
-        + 'hisekai 只回得到玩家當下編組的 totalPower，所有 what-if 都得靠這支：「換這張會多多少」「等級／專精拉滿差多少」'
-        + '「區域道具從 Lv15 升到 Lv20 差多少」——做法是改一個參數呼叫兩次，把 total_power 相減。'
-        + '卡片欄位可直接沿用 get_my_cards 的輸出（id／level／master_rank／trained）。'
-        + '注意：第一次呼叫要載入 486 KB 的計算引擎，並抓 cards／characterRanks／cardEpisodes／masterLessons／'
-        + 'areaItemLevels／gameCharacterUnits 等 master 資料（數 MB），可能要幾秒；之後同一次對話裡都有快取，很快。',
+      description: '精算指定 5 張卡的隊伍綜合力，回總值與每張卡六項明細（基礎表現力/前後篇/角色等級/區域道具/豆森/畫布）。what-if 專用：「換這張差多少」「等級專精拉滿差多少」「區域道具 15→20 差多少」＝改一個參數呼叫兩次相減。卡片欄位可直接沿用 get_my_cards 的輸出。',
       input_schema: { type: 'object', properties: {
-        cards: { type: 'array', description: '正好 5 張卡；不是 5 張會直接回錯誤（同團／同色判定要看整隊）',
+        cards: { type: 'array', description: '正好 5 張卡；不是 5 張直接回錯誤（同團/同色要看整隊）',
           items: { type: 'object', properties: {
-            card_id: { type: 'integer', description: '卡片 id（master data cards.json 的 id）' },
-            level: { type: 'integer', description: '卡片等級；不給就用該卡上限（★4 突破滿為 60）' },
-            trained: { type: 'boolean', description: '是否已特訓（花後）；預設 true' },
-            episodes_read: { type: 'boolean', description: '前後篇是否已讀；預設 true' },
-            master_rank: { type: 'integer', description: '專精等級 0～5；預設 5' },
-            character_rank: { type: 'integer', description: '這張卡角色的角色等級；不給就用外層的 character_rank' },
-          }, required: ['card_id'] } },
-        character_rank: { type: 'integer', description: '全隊共用的角色等級；預設 50（與經典版預設一致）。master data 目前只到 160，再往上加成不會再增加' },
-        area_item_level: { type: 'integer', description: '區域道具等級；不給就帶引擎上限（已併入日服 Lv16～20，實測是 20）。算台服玩家請明確給 15' },
-        mysekai_pct: { type: 'number', description: '豆森 MySekai 加成 %；預設 7（滿級大門 4 ＋ 三個玩偶各 1）。畫布不算在這裡，它是每張卡的固定值，一定會計入' },
-      }, required: ['cards'] } },
-    { name: 'estimate_score', description: '單局分數精算(六個技能窗各自獨立)。選歌＋難度＋模式＋綜合力,六窗分別填加分%,回傳預估分數、分數區間、六窗各自的貢獻分數,以及與 calc_event_points 那套「平均技能倍率」簡化模型的差異。什麼時候用這支而不是 calc_event_points:玩家想知道「換掉某一張技能卡 / 換個站位對分數的實際影響」—— 六個窗的譜面權重差距可以到兩倍,平均模型會把這個差異抹平成 0。只算分數,不算活動P;要換活動P 把回傳的 for_calc_event_points 丟給 calc_event_points。第一次呼叫要載入計算引擎(486KB)與譜面資料 music_metas(2.3MB),可能要幾秒;之後有 IndexedDB 快取會很快。',
+            card_id: { type: 'integer', description: '卡片 id' },
+            level: { type: 'integer', description: '等級；預設該卡上限' },
+            trained: { type: 'boolean', description: '是否已特訓，預設 true' },
+            episodes_read: { type: 'boolean', description: '前後篇已讀，預設 true' },
+            master_rank: { type: 'integer', description: '專精 0～5，預設 5' },
+            character_rank: { type: 'integer', description: '該卡角色的角色等級；預設用外層值' } },
+            required: ['card_id'] } },
+        character_rank: { type: 'integer', description: '全隊共用角色等級 1～200，預設 50' },
+        area_item_level: { type: 'integer', description: '區域道具等級；預設引擎上限 20，算台服請給 15' },
+        mysekai_pct: { type: 'number', description: '豆森加成 % 0～12，預設 7。畫布不算在這裡，一定會計入' } },
+        required: ['cards'] } },
+    { name: 'estimate_score',
+      description: '單局分數精算，六個技能窗各自獨立。回預估分數、分數區間、六窗各自貢獻，以及與平均技能倍率簡化模型的差。要看「換一張技能卡／換站位對分數的實際影響」用這支（窗權重差距可達兩倍，平均模型會抹平）。只算分數不算活動P；要換活動P 把回傳的 for_calc_event_points 丟給 calc_event_points。',
       input_schema: { type: 'object', properties: {
-        song_id: { type: 'integer', description: '歌曲編號。不知道編號先用 get_songs 查' },
-        difficulty: { type: 'string', description: '難度:easy / normal / hard / expert / master / append。預設 master;指定的難度沒有譜面資料時會自動退回 master→expert,回傳的 song.difficulty 會標明實際用了哪一個' },
-        mode: { type: 'string', description: 'solo(單人)/ auto(自動)/ multi(協力)/ cheer(應援)。cheer 的計分與 multi 相同(差別只在活動P 換算)。不給就沿用使用者目前的設定' },
-        power: { type: 'number', description: '隊伍綜合力(總合力,例如 280000)。不給就用使用者目前的設定' },
+        song_id: { type: 'integer', description: '歌曲編號，可用 get_songs 查' },
+        difficulty: { type: 'string', description: 'easy/normal/hard/expert/master/append，預設 master；無資料自動退回' },
+        mode: { type: 'string', description: 'solo/auto/multi/cheer，預設沿用使用者設定' },
+        power: { type: 'number', description: '隊伍綜合力，例 280000；預設沿用使用者設定' },
         skills: { type: 'array', items: { type: 'number' },
-          description: '六個技能窗的加分百分比,依發動順序,例如 [130,130,130,130,150,200];第 6 窗是 encore(隊長)。只給一個數字代表六窗同值。注意這裡是百分比(130 = +130%),與 calc_event_points 的 skill/s6 用倍數(1.3)不同。協力場要填「每窗實際生效倍率」而不是卡面技能%:每次發動全隊得(發動者 ＋ 其他四人÷5),滿隊同值 130% 時實際約 234%' },
-      }, required: ['song_id', 'skills'] } },
+          description: '六窗加分百分比（130＝+130%），依發動順序，第 6 窗是 encore；只給一個數字＝六窗同值。協力要填每窗實際生效倍率（滿隊 130% 約 234）而非卡面%' } },
+        required: ['song_id', 'skills'] } },
     { name: 'optimize_deck',
-      description: '組卡優化：算出「單局活動P 最大」的 5 張隊伍。對全部 ★4／生日卡做窮舉（每角色留最佳、V 家卡按支援團分開保留，取前 26 張＝約 6.6 萬組），'
-        + '每組都實算綜合力（含同團 area 道具翻倍）與隊內技能組合，目標函數直接是單局活動P，不是加成或綜合力單看。'
-        + '使用者問「這期我該用哪五張」「最佳隊是什麼」「幫我組卡」「我這隊還能再高嗎」時用。'
-        + '⚠ 第一次呼叫要載入好幾 MB 的 master 資料（卡片、加成表、歌曲 metas），可能要好幾秒；'
-        + '之後窮舉本身還要 1～3 秒（同步計算，這段期間畫面會卡住）。所以不要為了比較而連續多次呼叫，'
-        + '一次問清楚條件再打。回的是理論養成（滿級／MR5／SL4）下的最佳解。',
+      description: '組卡優化：對 ★4／生日卡窮舉約 6.6 萬組，算出「單局活動P 最大」的 5 張隊伍（目標函數就是活動P，不是加成或綜合力）。使用者問「這期該用哪五張」「最佳隊」「幫我組卡」時用。窮舉本身要 1～3 秒且會卡住畫面，一次問清條件再打，別為了比較連續呼叫。回的是理論養成（滿級/MR5/SL4）下的最佳解。',
       input_schema: { type: 'object', properties: {
-        event_id: { type: 'integer', description: '活動期數。省略＝當期。可以帶日服未來檔期（台服約一年後），但那會額外載入日服 master（約 2.7MB）' },
-        song_id: { type: 'integer', description: '歌曲 id（可用 get_songs 或 song_efficiency 查）。省略＝用跑榜常打的基準曲 Sage EXPERT。選不同歌會影響最佳解（技能窗權重不同）' },
-        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度 E/N/H/X/M/A＝EASY/NORMAL/HARD/EXPERT/MASTER/APPEND。有帶 song_id 時預設 M' },
-        energy: { type: 'integer', description: '本場吃幾火 0～10（火倍率 1/5/10/15/20/25/27/29/31/33/35）。省略＝沿用計算中心的共用設定。只縮放最後的活動P，不會改變選出來的隊伍' },
-        only_my_cards: { type: 'boolean', description: '只用使用者實際持有的卡（來自站上「收集率」頁的手動勾選，存在這台瀏覽器）。預設 false＝用全部 ★4／生日卡算理論最強隊。想回答「我組得出來的最強隊」就設 true' },
-        area_item_level: { type: 'integer', description: '區域道具（area item）等級 1～20。省略＝滿級。等級會影響綜合力，也會影響「同團是否值得」的取捨' },
-        character_rank: { type: 'integer', description: '角色等級，預設 100。只影響「角色等級技能」那類卡的技能檔位；綜合力的角色等級加成一律以滿級計' },
-      } } },
+        event_id: { type: 'integer', description: '活動期數，預設當期；可帶日服未來檔期' },
+        song_id: { type: 'integer', description: '歌曲 id，預設基準曲 Sage EXPERT；選不同歌會影響最佳解' },
+        difficulty: { type: 'string', enum: ['E','N','H','X','M','A'], description: '難度 E/N/H/X/M/A；有帶 song_id 時預設 M' },
+        energy: { type: 'integer', description: '吃幾火 0～10，預設沿用共用設定；只縮放活動P，不改隊伍' },
+        only_my_cards: { type: 'boolean', description: '只用使用者在收集率頁勾選持有的卡，預設 false＝理論最強隊' },
+        area_item_level: { type: 'integer', description: '區域道具等級 1～20，預設滿級' },
+        character_rank: { type: 'integer', description: '角色等級，預設 100；只影響角色等級技能檔位' } } } },
     { name: 'wl_support_bonus',
-      description: 'World Link 支援隊伍加成：依指定章節的主角掃全卡池，算出每張卡的支援加成％、貢獻最高的卡片清單，以及支援隊位置填滿後的加成總計（可只算使用者勾選的持有卡）。' +
-        '使用者問「WL 支援隊要放誰」「支援加成有多少」「我支援隊能湊多少％」時用。' +
-        '這是站上 wl_team_advice 沒有涵蓋的那一塊（那支只做主隊的四位同團＋湊五色規則檢查，不算支援加成）。' +
-        '第一次呼叫要下載 cards／worldBlooms／支援加成表等 master data（數 MB），可能要等幾秒，之後走瀏覽器快取就很快。' +
-        '當期不是 World Link 時會自動退回最近一期 WL 並在 resolved_from 標明。',
+      description: 'World Link 支援隊伍加成：依章節主角掃全卡池，算每張卡的支援加成％、貢獻最高的卡片清單、支援隊填滿後的加成總計。使用者問「WL 支援隊放誰」「支援加成有多少」時用。wl_team_advice 只做主隊同團＋湊五色，不算支援加成。當期不是 WL 會退回最近一期並在 resolved_from 標明。',
       input_schema: { type: 'object', properties: {
-        chapter: { type: 'integer', description: '章節號（第幾章）。不給就用目前進行中的章節；當期不是 WL 就用最近一期 WL 最接近現在的章節。回傳的 available_chapters 會列出這期有哪些章。' },
-        only_my_cards: { type: 'boolean', description: '是否只算使用者已勾選持有的卡，預設 false（＝算全卡池的理論最優）。持有清單來自站上「收集率」頁的手動勾選，沒勾過就會是 0。' } } } },
+        chapter: { type: 'integer', description: '第幾章；預設進行中的章節。回傳會列 available_chapters' },
+        only_my_cards: { type: 'boolean', description: '只算勾選持有的卡，預設 false＝全卡池理論最優' } } } },
     { name: 'browse_cards',
-      description: '瀏覽／篩選整本卡庫（1249 張），依技能類型、角色、團體、屬性、稀有度、繁中取得類別篩，'
-        + '預設依滿級綜合力由高到低排序。使用者問「有哪些團分卡」「奶卡列給我看」「ニーゴ的絢爛卡有哪些」'
-        + '「這張現在還抽不抽得到」「我勾的卡裡哪張技能最高」時用。'
-        + '技能類型用站上「卡片技能庫」頁同一套分類：分數提升／判定強化／體力回復／P分／七彩血分／'
-        + '七彩GOOD以上／生日／團分／絢爛角色／絢爛吸技／絢爛虛擬（也吃奶卡、判卡、大分、血分、吸技這類圈內叫法）。'
-        + '每張卡回綜合力、技能 Lv.4 的保底％與拉滿％、取得類別，以及「這張走哪種池」。'
-        + '想知道「現在正開著的池抽不抽得到」要帶 live_pools（見該參數說明）。'
-        + '要單張卡的逐級（Lv.1～4）技能數值請改用 get_card_skills；要算某一期的活動加成請用 get_bonus_cards。',
+      description: '瀏覽／篩選整本卡庫（1249 張），依技能類型、角色、團體、屬性、稀有度、取得類別篩，預設依滿級綜合力排序。使用者問「有哪些團分卡」「奶卡列給我看」「這張現在還抽不抽得到」「我勾的卡裡哪張技能最高」時用。回綜合力、技能 Lv.4 保底％與拉滿％、取得類別。單張卡逐級技能數值用 get_card_skills；某期活動加成用 get_bonus_cards。',
       input_schema: { type: 'object', properties: {
-        skill_type: { type: 'string', description: '技能類型。可用代碼或中文：score（分數提升）／judge（判定強化）／'
-          + 'heal（體力回復）／perfect（P分）／cfes_life（七彩血分）／good（七彩GOOD以上）／birthday（生日）／'
-          + 'unit（團分）／bfes_char（絢爛角色）／bfes_ref（絢爛吸技）／bfes_vs（絢爛虛擬）。'
-          + '也接受奶卡／回血／判卡／大分／P卡／血分／吸技／外團型等叫法。不給＝不限' },
-        character: { type: 'string', description: '角色，繁中名或角色 id（1～26）。例如「真冬」「初音未來」「17」' },
-        unit: { type: 'string', description: '團體：ln／mmj／vbs／wxs／n25／vs，也接受 Leo/need、ニーゴ、ワンダショ、'
-          + '虛擬歌手等寫法。V 家角色的團體卡（有支援團）會歸進該團而不是 VIRTUAL SINGER' },
-        attribute: { type: 'string', description: '屬性：帥氣／快樂／神秘／可愛／純真（或 cool／happy／mysterious／cute／pure）' },
-        rarity: { type: 'string', description: '稀有度：1／2／3／4 或「★4」「生日」' },
-        supply: { type: 'string', description: '繁中取得類別：常駐／生日限定／期間限定／彩FES限定／BLOOMFES限定／'
-          + '團體活動限定／聯動限定（也接受 normal、term_limited 這類原始代碼）' },
-        only_owned: { type: 'boolean', description: '只看使用者在站上「收集率」頁勾選為持有的卡（存在這台瀏覽器）。'
-          + '一張都沒勾會直接回錯誤，不會靜靜回空清單' },
-        live_pools: { type: 'string', enum: ['off', 'annotate', 'only'], description: '要不要判斷「現在還抽不抽得到」，預設 off。'
-          + 'annotate＝每張卡加上 obtainable_now 與正開著的池名；only＝只留現在抽得到的卡。'
-          + '這是唯一可靠的判斷方式（取得類別只說明它走哪種池，不代表現在開著）。'
-          + '代價是要現抓約 4.5 MB 的卡池資料，第一次會慢幾秒，之後 30 分鐘內有快取。'
-          + '使用者只是想看卡表就不用帶' },
-        min_power: { type: 'number', description: '只回滿級綜合力大於等於這個值的卡。'
-          + '注意同稀有度的卡綜合力只差幾百點，這個參數實務上等於在篩稀有度' },
-        sort: { type: 'string', enum: ['power', 'skill', 'newest', 'oldest'], description: '排序，預設 power＝滿級綜合力由高到低。'
-          + 'skill＝技能拉滿％由高到低（同％再比綜合力）、newest／oldest＝依實裝日期' },
-        limit: { type: 'integer', description: '回幾張，最多 60，預設 20。'
-          + '這是全部符合條件的卡依 sort 完整排序後的前 N 名，不是取樣——不要用多次小批次去拼湊' },
-        offset: { type: 'integer', description: '從第幾名開始，用來翻頁看更後面的卡' },
-      } } },
+        skill_type: { type: 'string', description: '技能類型：score 分數提升／judge 判定強化／heal 體力回復／perfect P分／cfes_life 七彩血分／good 七彩GOOD以上／birthday 生日／unit 團分／bfes_char 絢爛角色／bfes_ref 絢爛吸技／bfes_vs 絢爛虛擬；也接受奶卡/判卡/大分/血分/吸技等叫法' },
+        character: { type: 'string', description: '角色繁中名或 id 1～26' },
+        unit: { type: 'string', description: '團體 ln／mmj／vbs／wxs／n25／vs，也接受 ニーゴ、ワンダショ 等寫法。V 家團體卡歸支援團' },
+        attribute: { type: 'string', description: '屬性：帥氣/快樂/神秘/可愛/純真（cool/happy/mysterious/cute/pure）' },
+        rarity: { type: 'string', description: '稀有度 1/2/3/4 或「★4」「生日」' },
+        supply: { type: 'string', description: '取得類別：常駐／生日限定／期間限定／彩FES限定／BLOOMFES限定／團體活動限定／聯動限定（也接受原始代碼）' },
+        only_owned: { type: 'boolean', description: '只看使用者勾選持有的卡；一張都沒勾會回錯誤' },
+        live_pools: { type: 'string', enum: ['off','annotate','only'], description: '判斷現在抽不抽得到，預設 off。annotate＝加 obtainable_now 與開放中的池名；only＝只留抽得到的。取得類別只說明走哪種池，不代表現在開著。要現抓約 4.5MB 卡池資料，純看卡表不用帶' },
+        min_power: { type: 'number', description: '只回滿級綜合力 ≥ 此值的卡（實務上等於篩稀有度）' },
+        sort: { type: 'string', enum: ['power','skill','newest','oldest'], description: '排序，預設 power 綜合力；skill＝技能拉滿％；newest/oldest 依實裝日' },
+        limit: { type: 'integer', description: '最多 60，預設 20。是完整排序後的前 N 名，不是取樣，別用多次小批次拼湊' },
+        offset: { type: 'integer', description: '從第幾名開始，翻頁用' } } } },
     { name: 'gacha_simulate',
-      description: '抽卡模擬器：對指定卡池「真的照官方機率抽 N 次」，回傳這一輪實際抽到什麼＋統計。'
-        + '同時回傳該池的真實機率模型：各稀有度官方機率、每張 PU 卡的實際單抽機率（由 master data 的 weight 反推，不是「大家都說 0.4%」）、'
-        + '所有可用抽法與價格（含只吃付費水晶的抽法、通行證免費抽、必中★4 抽）、以及該池天井要幾抽（從交換所資料反查，不是一律 300）。'
-        + '使用者說「幫我抽 300 抽看看」「模擬十連」「這池抽 100 抽大概長怎樣」「歪的話會歪到什麼」時用這支。'
-        + '**要「算機率」而不是「抽給你看」請改用 gacha_odds**（期望抽數、預算內至少中 1 張的機率、還差幾抽到天井）——'
-        + 'gacha_odds 是數學期望值，這支是實際擲骰的單一樣本，兩者數字不一致是正常的。'
-        + '結果可重現：帶同一個 seed（配同樣的 gacha／pulls／method）必得完全一樣的結果；省略 seed 會隨機並在 seed_used 回報，想重跑同一輪就把它帶回來。'
-        + 'rare_pulls 是這一輪抽出的 ★4／生日卡「完整時序清單」（含第幾抽、是不是 PU、是不是招募點數保底發的），超過 list_limit 才截斷並用 rare_pulls_truncated 標明，不是取樣——不要用多次呼叫去拼湊。'
-        + '第一次呼叫要下載台服＋日服的 gachas／cards master data（數 MB），可能要等幾秒；之後走瀏覽器快取就很快。'
-        + '本工具只做模擬，不會也不能執行任何實際抽卡或消費。',
+      description: '抽卡模擬器：對指定卡池照官方機率真的抽 N 次，回這輪抽到什麼＋統計，並附該池真實機率模型（各稀有度機率、每張 PU 卡由 weight 反推的單抽機率）、所有抽法與價格、該池天井抽數。使用者說「幫我抽 300 抽看看」「模擬十連」「歪的話會歪到什麼」時用。要「算機率」而不是「抽給你看」請改用 gacha_odds（期望抽數、預算內至少中 1 張的機率、還差幾抽到天井）——那支是數學期望值，這支是實際擲骰的單一樣本，數字不一致正常。rare_pulls 是完整時序清單，超過 list_limit 才截斷。只做模擬，不會執行任何實際抽卡或消費。',
       input_schema: { type: 'object', properties: {
-        gacha: { type: 'string', description: '卡池：純數字＝卡池 id 完全比對，其他＝卡池名稱關鍵字模糊比對（例：「倒映在眼裡的花束」「HAPPY BIRTHDAY」「Recollection」）。'
-          + '省略＝台服目前進行中的卡池（沒有進行中就取最近開跑的那個）。可以查到台服還沒實裝的日服未來池，回傳的 gacha.server 會標明。' },
-        pulls: { type: 'integer', description: '要抽幾抽，1～3000，預設 300（＝一般池天井抽數）。'
-          + '會換算成 method 的批次：例如 method=jewel_10、pulls=300 就是跑 30 次十連。'
-          + '不是批次大小的倍數時，餘數會用同幣別的單抽補；該池沒有單抽才捨去（會在 note 說明）。' },
-        method: { type: 'string', description: '抽法。值取自該池 available_methods 的 key，常見為 jewel_10（3000 水晶十連）、jewel_1（300 水晶單抽）、'
-          + 'ticket_10／ticket_1（招募券）、paid_jewel_10（只吃付費／有償水晶的十連）、paid_jewel_1、free_1（通行證免費抽）。'
-          + '省略＝優先用 jewel_10。給了該池沒有的抽法會回錯誤並列出可用的。'
-          + '必中★4 的抽法（over_rarity_4_once）也走這裡，會正確套用必中保底。' },
-        seed: { type: 'integer', description: '亂數種子（非負整數）。同一組 gacha／pulls／method／seed 一定得到完全相同的結果。'
-          + '省略＝用當下時間當種子，並在 simulation.seed_used 回報，帶回來就能重現同一輪。' },
-        bonus_points: { type: 'boolean', description: '是否套用招募點數（招募附贈點數）保底：付費水晶 1 點／抽、免費水晶與招募券 0.5 點／抽，50 點換未持有的常駐 ★4、100 點換該池 PU ★4。'
-          + '省略＝自動判定（讀該池官方說明有沒有寫「招募附贈點數不適用於本招募」；生日池、復刻池、通行證池通常不適用）。' },
-        list_limit: { type: 'integer', description: 'rare_pulls 最多列幾筆 ★4／生日卡，1～80，預設 40。300 抽大約只會有 9～10 筆，通常不需要調。' } } } },
+        gacha: { type: 'string', description: '純數字＝卡池 id 完全比對；其他＝卡池名關鍵字模糊比對。預設台服進行中的池，也查得到日服未來池' },
+        pulls: { type: 'integer', description: '抽數 1～3000，預設 300（一般池天井）。餘數以同幣別單抽補' },
+        method: { type: 'string', description: '抽法，取自該池 available_methods 的 key：jewel_10（3000 水晶十連）／jewel_1／ticket_10／ticket_1／paid_jewel_10（只吃付費水晶）／paid_jewel_1／free_1（通行證免費）／over_rarity_4_once（必中★4）。預設 jewel_10；給錯會回錯誤並列可用的' },
+        seed: { type: 'integer', description: '亂數種子（非負整數）；同 gacha/pulls/method/seed 結果完全相同。省略＝隨機並在 simulation.seed_used 回報' },
+        bonus_points: { type: 'boolean', description: '是否套用招募點數保底（50 點換未持有常駐★4、100 點換該池 PU）。預設自動判定該池適不適用' },
+        list_limit: { type: 'integer', description: 'rare_pulls 最多列幾筆 ★4／生日卡，1～80，預設 40' } } } },
     { name: 'get_active_players',
-      description: '活動主榜前 100 名的活躍名單（完整版，不是站上活躍分析卡片那幾筆）：此刻在線（15 分內有成績）、近 1 小時有周回、休息中（逾 60 分沒動）三種名單擇一，每個人附近 1 小時／24 小時時速、周回數、場均、動能與「多久沒動」。' +
-        '使用者問「現在誰在線」「誰還在跑」「哪些人停了」「把在線的人全部列出來」「前面那群人現在的節奏」時用。' +
-        'players 是整桶依規則完整排序後的前 N 名（不是取樣、也不是隨機挑），預設 20 筆，要更後面用 offset 翻頁，不要用多次小 limit 去拼。' +
-        '另外帶 series_uid 可以拿到那位玩家整期的名次／分數時間序列實際點位（每 5～10 分鐘一筆的公用快照，等間隔抽樣），用來回答「他這幾天的名次怎麼變的」「什麼時候被超車」。' +
-        '限制：公開資料只涵蓋當期前 100 名，第 101 名之後沒有本期分數。',
+      description: '活動主榜前 100 名的完整活躍名單：此刻在線（15 分內有成績）／近 1 小時有周回／休息中三選一，每人附近 1 小時與 24 小時時速、周回數、場均、動能與多久沒動。使用者問「現在誰在線」「誰還在跑」「哪些人停了」「前面那群人的節奏」時用。players 是完整排序後的前 N 名，不是取樣，要更後面用 offset 翻頁。帶 series_uid 可另拿該玩家整期名次／分數的時間序列（回答「他名次怎麼變的」「什麼時候被超車」）。公開資料只涵蓋當期前 100 名。',
       input_schema: { type: 'object', properties: {
-        mode: { type: 'string', enum: ['online', 'running', 'resting', 'all'], description: '要哪一份名單：online＝最後一場在 15 分鐘內（預設）、running＝近 1 小時有周回、resting＝逾 60 分沒有成績、all＝前百全部。不管選哪個，回傳的 counts 都會給三種人數' },
-        limit: { type: 'integer', description: '要回幾位，預設 20，最多 100（整個榜就 100 人，設 100 就是全名單）' },
-        offset: { type: 'integer', description: '從排序後的第幾位開始回，預設 0。要看第 21～40 位就帶 offset=20' },
-        series_uid: { type: 'string', description: '要一併取名次／分數時間序列的玩家 uid，純數字。不給就不算序列' },
-        series_points: { type: 'integer', description: '時間序列要回幾個點，預設 24，最多 80。點是從整期快照等間隔抽的（一定含頭尾），不是只取最後幾筆' } } } },
+        mode: { type: 'string', enum: ['online','running','resting','all'], description: 'online＝最後一場在 15 分內（預設）／running＝近 1 小時有周回／resting＝逾 60 分沒成績／all＝前百全部。counts 一律回三種人數' },
+        limit: { type: 'integer', description: '預設 20，最多 100（＝全名單）' },
+        offset: { type: 'integer', description: '從排序後第幾位開始，預設 0' },
+        series_uid: { type: 'string', description: '要取時間序列的玩家 uid，純數字' },
+        series_points: { type: 'integer', description: '時間序列點數，預設 24，最多 80（整期等間隔抽樣，含頭尾）' } } } },
     { name: 'get_boost_table',
-      description: '火倍率對照表（＝站上計算中心 EP 精算頁下方那張「各火數效率比較」）。同一組參數下，一次回出火 0/1/2/3/5/7/10 '
-        + '各自的單局活動P、每火活動P（省體力指標）與每小時活動P（省時間指標），並標出每火效率最高的檔位。'
-        + '使用者問「該吃幾火」「吃 10 火划算嗎」「不吃火跟吃火差多少」「火倍率表」時用。'
-        + '**這是這組參數下所有火數的完整對照，不是取樣——不要改用多次 calc_event_points 逐個火數去拼。**'
-        + '參數省略就沿用使用者在計算中心的共用設定；要比較不同情境時才明確帶入。',
+      description: '火倍率對照表：同一組參數下，一次回出火 0/1/2/3/5/7/10 各自的單局活動P、每火活動P（省體力）與每小時活動P（省時間），並標出每火效率最高的檔位。使用者問「該吃幾火」「吃 10 火划算嗎」「不吃火差多少」「火倍率表」時用。這是所有火數的完整對照，不要改用多次 calc_event_points 逐個火數拼湊。參數省略＝沿用計算中心的共用設定。',
       input_schema: { type: 'object', properties: {
-        mode: { type: 'string', enum: ['solo', 'auto', 'multi', 'cheer'], description: '場次類型：solo=單人、auto=自動、multi=協力、cheer=應援（Cheerful Carnival）' },
-        song_id: { type: 'integer', description: '歌曲 id（可用 get_songs 或 song_efficiency 查）。不給就用畫面上選的那首' },
-        difficulty: { type: 'string', enum: ['E', 'N', 'H', 'X', 'M', 'A'], description: '難度：E/N/H/X/M/A＝EASY/NORMAL/HARD/EXPERT/MASTER/APPEND。指定的難度沒有譜面係數時會自動退回 master→expert→…，回傳的 difficulty 會標明實際用了哪一個' },
-        power: { type: 'number', description: '隊伍綜合力（總合力，例如 250000）' },
-        bonus: { type: 'number', description: '活動加成，單位 %（例如 250 代表 +250%）' },
-        skill: { type: 'number', description: '平均技能倍率（實效值，例如 2.5）。可先用 calc_skill_multiplier 從各卡技能%算出來' },
+        mode: { type: 'string', enum: ['solo','auto','multi','cheer'], description: '場次：solo 單人／auto 自動／multi 協力／cheer 應援' },
+        song_id: { type: 'integer', description: '歌曲 id，預設畫面上選的那首' },
+        difficulty: { type: 'string', enum: ['E','N','H','X','M','A'], description: '難度 E/N/H/X/M/A；沒有譜面係數會自動退回' },
+        power: { type: 'number', description: '隊伍綜合力，例 250000' },
+        bonus: { type: 'number', description: '活動加成 %（250＝+250%）' },
+        skill: { type: 'number', description: '平均技能倍率，實效值例 2.5；可用 calc_skill_multiplier 算' },
         s6: { type: 'number', description: '第 6 技能欄（S6）倍率' },
-        life: { type: 'number', description: '結束時剩餘 Life，只有 cheer 模式會用到（影響 1.15～1.35 的存活加成）' },
-        score: { type: 'number', description: '直接指定歌曲分數。給了就不用歌曲係數推算' },
-        event_rate: { type: 'number', description: '歌曲活動倍率 %（沒指定 song_id 時才會用到，預設 100）' },
-        all_levels: { type: 'boolean', description: '預設 false＝只列玩家實際會用的 0/1/2/3/5/7/10 這七檔（與站上畫面相同）；true＝把 0～10 十一檔全部列出' } } } },
+        life: { type: 'number', description: '結束時剩餘 Life，只有 cheer 用到' },
+        score: { type: 'number', description: '直接指定歌曲分數；給了就不用歌曲係數推算' },
+        event_rate: { type: 'number', description: '歌曲活動倍率 %，沒給 song_id 時才用，預設 100' },
+        all_levels: { type: 'boolean', description: 'true＝列 0～10 全十一檔；預設 false＝只列七檔' } } } },
     { name: 'get_border_matrix',
-      description: '歷期 × 各段位的榜線矩陣（期數當列、段位當欄）。用來回答「T10000 這半年漲多少」「同樣 8.25 天的馬拉松，T20000 都落在哪」「這期要衝到幾分才穩」這種跨期比較。'
-        + '涵蓋段位比 get_history_borders 廣：那支只到 T5000（好處是有 T1～T90），這支再補上 T10000／T20000／T30000／T40000／T50000／T80000／T100000／T150000／T200000，'
-        + '兩份資料源會自動互補（重疊段位實測逐位相同）。'
-        + 'recent／offset 取的是依期數新到舊的**連續一段完整排序，不是取樣**，所以不要用多次小批次去拼——直接把 recent 調大（上限 30 期），要更早的期數就用 offset 往後翻。'
-        + '每一期都附活動型態、天數、團體、屬性與 banner 角色，解讀期與期的差異前先看這些欄位。'
-        + '成本：一期一個 API 請求（已結算的期數同一次對話內有快取），30 期大約要幾秒。',
+      description: '歷期×段位的榜線矩陣（期數當列、段位當欄），跨期比較用：T10000 這半年漲多少、8.25 天馬拉松的 T20000 都落在哪、這期要衝幾分。段位比 get_history_borders 廣（補 T10000～T200000；那支才有 T1～T90，兩源自動互補）。每期附型態／天數／團體／屬性／banner 角色。recent 取的是連續完整排序不是取樣，別用多次小批次拼。',
       input_schema: { type: 'object', properties: {
-        event_ids: { type: 'array', items: { type: 'integer' }, description: '指定要哪幾期（活動 id），最多 30 期。給了就忽略 recent／offset／include_running。' },
-        recent: { type: 'integer', description: '最近 N 期已結算的活動，預設 12，上限 30。這是完整排序的連續 N 期，不是取樣。' },
-        offset: { type: 'integer', description: '搭配 recent 往更早的期數翻頁：跳過最新的 N 期再取（預設 0）。例如 recent=12、offset=12 就是第 13～24 新的期數。' },
-        tiers: { type: 'array', items: { type: 'integer' }, description: '要哪些段位（填名次數字，不要寫 "T100"）。預設 [100,500,1000,2000,5000,10000,20000,50000,100000]，最多 14 個。'
-          + '可用值：1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000,10000,20000,30000,40000,50000,80000,100000,150000,200000。不在清單上的會直接回錯誤。' },
-        include_running: { type: 'boolean', description: '是否把「進行中、尚未結算」的當期也算進去（預設 false）。設 true 時那一列的 is_final 會是 false，數字是此刻的即時榜線而不是終線。' } } } },
+        event_ids: { type: 'array', items: { type: 'integer' }, description: '指定期數（活動 id），最多 30 期。給了就忽略 recent／offset／include_running' },
+        recent: { type: 'integer', description: '最近 N 期已結算活動，預設 12、上限 30' },
+        offset: { type: 'integer', description: '搭配 recent 往更早翻頁，跳過最新 N 期（預設 0）' },
+        tiers: { type: 'array', items: { type: 'integer' }, description: '要哪些段位（填名次數字，不要寫 "T100"），最多 14 個，預設 [100,500,1000,2000,5000,10000,20000,50000,100000]。可用值：1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000,10000,20000,30000,40000,50000,80000,100000,150000,200000，其他會回錯誤' },
+        include_running: { type: 'boolean', description: '是否含進行中未結算的當期（預設 false）；該列 is_final=false，是即時值不是終線' } } } },
     { name: 'get_border_timeseries',
-      description: '單一段位的榜線時間走勢：抽樣後的（時間, 分數）序列、實測時速、量測跨距，以及依此外推的終線。'
-        + '資料是本站自己記的公用時序（GitHub Actions 每 30 分鐘觸發一次，每次在同一個 job 內每 5 分鐘取樣、連記 12 筆，'
-        + '所以原始間隔中位數約 5 分鐘；台服官方 API 沒有任何歷史端點），當期再併入這台瀏覽器輪詢時存下的快照。'
-        + '要「各段位現在多少、預測終線多少」的橫向比較請用 get_borders；這支是單一段位的縱向走勢 —— '
-        + '什麼時候加速、什麼時候停滯、每小時多少 P、整段平均與近期速度差多少。'
-        + '回傳的點是「整段活動等距抽樣」而不是最近 N 筆、也不是隨機取樣，總點數與抽樣間隔都會一併回報；'
-        + '想要更密就把 points 調大（上限 120），不要用多次小批次呼叫拼湊。'
-        + '⚠ 查過去期數要下載那一期的整份時序（#176 這種 12 天 World Link 期約 3MB），第一次呼叫可能要幾秒，'
-        + '同一次對話之後有快取。公用時序從第 175 期才開始記錄，更早的期數只有終線（用 get_history_borders）。'
-        + 'World Link 的章節榜不在這支裡（那是各章獨立的榜），看章節走勢用 get_wl_status。',
+      description: '單一段位的榜線縱向走勢：等距抽樣的（時間, 分數）序列、實測時速（整段平均與近期）、量測跨距與外推終線 —— 什麼時候加速、什麼時候停滯、每小時多少 P。要各段位「現在多少／預測終線多少」的橫向比較請用 get_borders；WL 章節榜用 get_wl_status。本站時序從第 175 期才開始記，更早的期數只有終線（get_history_borders）。points 是整段等距抽樣，不要多次小批次拼。查過去期數要下載整份時序（約 3MB），第一次可能要幾秒。',
       input_schema: { type: 'object', properties: {
-        tier: { type: 'integer', description: '段位（榜線名次），例如 100 / 1000 / 5000 / 100000。不在該期段位清單裡會回錯誤並附上可用段位' },
-        event_id: { type: 'integer', description: '活動期數 id；省略＝當期（已開始的最新一期）' },
-        points: { type: 'integer', description: '要回幾個資料點，預設 24，上限 120。整段等距抽樣，一定包含最早與最新的那一筆' },
-        window_hours: { type: 'number', description: '「近期時速」的窗口小時數，預設 6，上限 72。窗口內跨距不足半小時（快照有空洞時會發生）會自動退回整段，實際跨距看回傳的 measured_recent.span_h' },
-      }, required: ['tier'] } },
+        tier: { type: 'integer', description: '段位名次，例如 100／1000／5000；該期沒有會回錯誤並附可用段位' },
+        event_id: { type: 'integer', description: '活動期數 id；省略＝當期' },
+        points: { type: 'integer', description: '回幾個資料點，預設 24、上限 120' },
+        window_hours: { type: 'number', description: '「近期時速」的窗口小時數，預設 6、上限 72；跨距不足半小時會自動退回整段' } },
+        required: ['tier'] } },
     { name: 'get_chart_consts',
-      description: '查譜面「定數」（非官方難易度表 pentatonic V31，AP 基準，MASTER／APPEND／EXPERT 共 885 張譜面、706 首曲子）。'
-        + '定數不是遊戲內等級：遊戲只給整數 Lv（例如 Lv32），定數是社群把同一個 Lv 內再細分到小數的難度排名（例如 32.9+）。'
-        + '回傳兩個都給（level ＝ 遊戲內等級、const_value／const_label ＝ 難易度表定數），不要拿其中一個當另一個講。'
-        + '可依曲名（日文原名或社群中文譯名）、曲目 id、難度、定數區間、指定定數、遊戲內等級、台服／日服限定來篩。'
-        + '使用者問「某某歌的定數多少」「32.5 有哪些譜面」「33 以上的 APPEND 有哪些」「台服最硬的譜面是哪張」'
-        + '「這首 MASTER 跟 APPEND 差多少」時用。'
-        + '這支只查定數表本身、不看使用者成績；要算他自己的 B30 或「下一張該打哪首」請改用 get_b30。',
+      description: '查譜面「定數」（非官方難易度表 pentatonic V31，AP 基準，MASTER／APPEND／EXPERT 共 885 張譜、706 首曲）。定數不是遊戲內等級：level 是遊戲給的整數 Lv，const_value／const_label 是社群把同一 Lv 再細分到小數的難度排名（如 32.9+），兩者不可互相當成對方講。使用者問「某某歌定數多少」「32.5 有哪些譜面」「33 以上的 APPEND」「台服最硬的譜面」時用。只查定數表本身、不看使用者成績；算他自己的 B30 或「下一張該打哪首」用 get_b30。',
       input_schema: { type: 'object', properties: {
-        q: { type: 'string', description: '曲名關鍵字，比對日文原曲名與社群中文譯名（大小寫、空白都會忽略）。'
-          + '請用日文原名（ヒバナ、初音ミクの激唱）或中文譯名（火花、初音未來的激唱），羅馬拼音查不到。'
-          + '一首歌會同時回它的 MASTER／APPEND／EXPERT 各一列。' },
-        song_id: { type: 'integer', description: '曲目 id（與 get_songs 的 id 相同）。知道 id 就用這個，比曲名精準。' },
-        difficulty: { type: 'string', enum: ['master', 'append', 'expert'],
-          description: '只看某個難度。難易度表只收這三個難度，EASY／NORMAL／HARD 沒有定數（給了會回錯誤）。' },
-        const_eq: { type: 'string', description: '列出某個定數的所有譜面，字串格式。'
-          + '「31.5」＝整帶（31.5、31.5+、31.5++ 都算）；「31.5+」或「32.9++」＝只要那一種寫法。'
-          + '想要區間請改用 const_min／const_max。' },
-        const_min: { type: 'number', description: '定數下限（含）。比較的是含「+」的實際值：31.5+ 算 31.55。' },
-        const_max: { type: 'number', description: '定數上限（含）。' },
-        level: { type: 'integer', description: '遊戲內等級（整數 Lv，表內範圍 24～38），不是定數。'
-          + '「32 級的譜面」用這個；「定數 32 的譜面」要用 const_eq。' },
-        level_min: { type: 'integer', description: '遊戲內等級下限（含）。' },
-        level_max: { type: 'integer', description: '遊戲內等級上限（含）。' },
-        pool: { type: 'string', enum: ['all', 'tw', 'jp'], description: '曲庫範圍，預設 all。'
-          + 'tw＝只看台服打得到的（排除日服限定曲）、jp＝只看日服限定曲。使用者問的是台服的事就帶 tw。' },
-        sort: { type: 'string', enum: ['const_desc', 'const_asc', 'level_desc', 'level_asc', 'song_id'],
-          description: '排序，預設 const_desc（定數由高到低）。同分時定數／等級低的排前面。' },
-        limit: { type: 'integer', description: '要回幾筆，最多 100，預設 20。'
-          + '這是全部符合條件的譜面完整排序後的前 N 筆，不是取樣——不要用多次小批次去拼湊，'
-          + '回傳的 total 就是符合條件的總數。' },
-        offset: { type: 'integer', description: '從第幾筆開始（0 起算），配合 limit 翻頁；has_more=true 代表後面還有。' } } } },
+        q: { type: 'string', description: '曲名關鍵字，用日文原名（ヒバナ）或中文譯名（火花），羅馬拼音查不到。一首歌會回它的各難度列' },
+        song_id: { type: 'integer', description: '曲目 id（同 get_songs），比曲名精準' },
+        difficulty: { type: 'string', enum: ['master','append','expert'], description: '只看某難度；難易度表只收這三種，其他會回錯誤' },
+        const_eq: { type: 'string', description: '指定定數，字串。「31.5」＝整帶（含 31.5+／31.5++）；「31.5+」「32.9++」＝只要那一種。區間請用 const_min／const_max' },
+        const_min: { type: 'number', description: '定數下限（含）；比的是含「+」的實際值，31.5+ 算 31.55' },
+        const_max: { type: 'number', description: '定數上限（含）' },
+        level: { type: 'integer', description: '遊戲內等級（整數 Lv，範圍 24～38），不是定數；「定數 32」要用 const_eq' },
+        level_min: { type: 'integer', description: '遊戲內等級下限（含）' },
+        level_max: { type: 'integer', description: '遊戲內等級上限（含）' },
+        pool: { type: 'string', enum: ['all','tw','jp'], description: '曲庫，預設 all。tw＝台服打得到、jp＝日服限定；問台服的事就帶 tw' },
+        sort: { type: 'string', enum: ['const_desc','const_asc','level_desc','level_asc','song_id'], description: '排序，預設 const_desc' },
+        limit: { type: 'integer', description: '回幾筆，預設 20、上限 100。是完整排序後的前 N 筆，不是取樣' },
+        offset: { type: 'integer', description: '從第幾筆開始（0 起算），配合 limit 翻頁' } } } },
     { name: 'get_gacha_points',
-      description: '招募點數（BPT）保底＋逐池抽卡成本。三件事一起回：'
-        + '(1) 點數換算規則——付費（有償）水晶 1 點/抽、免費（無償）水晶與招募票券 0.5 點/抽、七彩通行證的免費抽 0 點，'
-        + '取自官方 master data gachaBonusPoints.json；'
-        + '(2) 保底試算——依現有點數＋手上的付費水晶／免費水晶／招募票券，算出各門檻（一般池 50 點＝未持有的常駐 ★4、'
-        + '100 點＝該池 PU ★4；Recollection Festival 這類特殊池另有 150／200 自選檔）還差幾點、還要再抽幾次、要多少石；'
-        + '(3) 逐池成本表——該池官方公告的每一種抽法：單抽／十連各要多少石或幾張券、哪幾種只吃付費水晶不能用無償石、'
-        + '七彩通行證的每日／每週免費抽、十連的 ★3 保底、每種抽法各累積多少招募點數，以及該池天井要幾張貼紙、'
-        + '幾張貼紙交換券可以折抵。'
-        + '使用者問「招募點數還差多少」「50／100 點保底是什麼」「這池怎麼抽最省」「半價十連要多少付費石」'
-        + '「通行證每天有幾抽免費」「這池天井幾張貼紙」時用這支。'
-        + '**與 gacha_odds 的分工**：gacha_odds 算的是機率（預算內至少中 1 張的機率、期望抽數、距 300 抽天井還要多少石），'
-        + '只認「300 抽／生日池 100 抽」這兩個通則；這支不算機率，改回「這一池官方實際寫了哪些抽法、各要多少資源、'
-        + '各給多少招募點數」以及招募點數保底的逐檔缺口。問機率用 gacha_odds，問成本與點數保底用這支；'
-        + '兩者都問就兩支都叫。想「模擬實際抽出什麼卡」請改去 gachasim 頁。'
-        + '不指定卡池時回「現在進行中」的卡池；pools 是完整清單依開始時間新→舊排序後的前 N 筆，不是取樣，'
-        + '要看更多請用 limit／offset，不要用多次小批次去拼湊。'
-        + '注意：第一次呼叫要下載官方 master data（gachas.json 約 4.4 MB），可能要好幾秒；之後有快取就快了。',
+      description: '招募點數（BPT）保底＋逐池抽卡成本。含點數換算（付費水晶 1 點/抽、免費水晶與招募票券 0.5、七彩通行證免費抽 0）、依現有點數與手上資源算各門檻（一般池 50／100 點，Recollection Festival 另有 150／200 自選）還差幾點、幾抽、幾石，以及該池官方每種抽法的石／券成本、各累積多少點數、天井要幾張貼紙。問「招募點數還差多少」「這池怎麼抽最省」「半價十連要多少付費石」「天井幾張貼紙」用這支；問機率（預算內中 1 張的機率、期望抽數、距 300 抽天井）用 gacha_odds；想模擬實際抽出什麼卡去 gachasim 頁。第一次呼叫要下載 4.4MB master data。',
       input_schema: { type: 'object', properties: {
-        gacha_id: { type: 'integer', description: '卡池編號。台服 master 只留現行與近期卡池（含已datamine 到的未來檔期），太舊的池查不到。' },
-        gacha_query: { type: 'string', description: '卡池名稱關鍵字（例如「生日」「通行證」）。與 gacha_id 擇一給，兩個都給時以 gacha_id 為準。都不給就回現在進行中的全部卡池。' },
-        include_pools: { type: 'boolean', description: '是否要逐池成本表，預設 true。只想算招募點數保底、不看卡池成本時給 false，可以省掉 4.4 MB 的 gachas.json 下載。' },
-        limit: { type: 'integer', description: '要回幾個卡池，最多 20，預設 4。這是符合條件的完整清單（pools_total 是總數）依開始時間新→舊排序後的前 N 筆，不是取樣。' },
-        offset: { type: 'integer', description: '從第幾個卡池開始，用來翻頁看更後面的。' },
-        current_points: { type: 'number', description: '目前已累積的招募點數，可帶 0.5。沒給就當 0。' },
-        paid_crystals: { type: 'integer', description: '手上的付費（有償）水晶數。沒給就當 0。每 300 顆 1 抽、每抽 1 點。' },
-        free_crystals: { type: 'integer', description: '手上的免費（無償）水晶數。沒給就當 0。每 300 顆 1 抽、每抽只有 0.5 點。使用者只說「我有 N 顆石」而沒分有償無償時，通常填這裡。' },
-        tickets: { type: 'integer', description: '手上的招募票券張數（1 張＝1 抽＝0.5 點）。注意這不是「招募貼紙交換券」——那是換天井的，不是抽卡用的。' },
-        pool_mode: { type: 'string', enum: ['normal', 'rf'], description: '沒有專屬檔位資料時要套哪組通則檔位。normal（預設）＝常駐／一般池的 50／100 兩檔；rf＝Recollection Festival 這類特殊池的 50／100／150／200 四檔（含自選）。指定的卡池在 master 裡有自己的檔位群組時，會以 master 為準並忽略這個參數。' },
-        tier_group_id: { type: 'integer', description: '直接指定 master 的 gachaBonusItemReceivableRewards groupId 來取檔位表。一般不用給——只有要查某個特殊池的原始檔位設定時才用。' } } } },
+        gacha_id: { type: 'integer', description: '卡池編號。master 只留現行與近期卡池（含已 datamine 的未來檔期）' },
+        gacha_query: { type: 'string', description: '卡池名稱關鍵字（如「生日」「通行證」）。與 gacha_id 擇一，兩個都給以 gacha_id 為準；都不給回進行中的全部卡池' },
+        include_pools: { type: 'boolean', description: '是否要逐池成本表，預設 true。只算點數保底時給 false，可省 4.4MB 下載' },
+        limit: { type: 'integer', description: '回幾個卡池，預設 4、上限 20。依開始時間新→舊完整排序的前 N 筆，不是取樣' },
+        offset: { type: 'integer', description: '卡池分頁起點' },
+        current_points: { type: 'number', description: '目前累積的招募點數，可帶 0.5' },
+        paid_crystals: { type: 'integer', description: '付費（有償）水晶數，每 300 顆 1 抽、每抽 1 點' },
+        free_crystals: { type: 'integer', description: '免費（無償）水晶數，每 300 顆 1 抽、每抽 0.5 點。使用者只說「我有 N 顆石」通常填這裡' },
+        tickets: { type: 'integer', description: '招募票券張數（1 張＝1 抽＝0.5 點）。不是換天井的貼紙交換券' },
+        pool_mode: { type: 'string', enum: ['normal','rf'], description: '沒有專屬檔位資料時套哪組通則：normal（預設）＝50／100 兩檔；rf＝50／100／150／200 四檔（含自選）。master 有自己的檔位群組時忽略此值' },
+        tier_group_id: { type: 'integer', description: '直接指定 master gachaBonusItemReceivableRewards 的 groupId，一般不用給' } } } },
     { name: 'get_pass_value',
-      description: '月卡／通行證的「攤提後 CP 值」與官網 vs App 比價。'
-        + '＝站上「儲值分析 → 月卡·通行證」與「CP 排行 → 官網商店 vs App 商店比價」的同一套算法。'
-        + '使用者問「月卡值不值得買」「七彩通行證划算嗎」「BASIC 還是 PRECIOUS」「高階任務通行證要不要買」'
-        + '「幾天回本」「官網儲值比較划算嗎」「MyCard／GamePay 多送多少」時用這支。'
-        + '兩件事：(1) 把通行證「每日領取」的無償水晶攤提進總價值，換算石/元、跟基準線（App 常駐最佳水晶包）比，'
-        + '給大賺／划算／看需求判定，並算出「要領幾天才回本」；(2) 官網商店同價位比 App 多送多少免費水晶。'
-        + '回傳的是台服目前販售中「全部」月卡／通行證的完整排序（約 18 張，預設一次給滿），不是取樣，不要用多次小批次拼湊。'
-        + '注意：月卡在 master 幾乎都只有 9999 佔位價，price_twd 會是 null——先看該筆的 web_voucher（官網兌換券版價格已知），'
-        + '或請使用者講出商店實售價後用 price_overrides 重算，不要自己編價格。'
-        + '**只做試算與比價，不會也不能執行任何購買、付款或交易。**'
-        + '想看水晶包／優惠組合的完整清單用 get_shop_items；想算「湊到 N 抽最少花多少錢」用 shop_recommend。',
+      description: '月卡／通行證的攤提後 CP 值＋官網 vs App 比價。把「每日領取」的無償水晶攤提進總價值，換算石/元、比基準線給大賺／划算／看需求、算幾天回本；並比官網同價位比 App 多送多少免費水晶。問「月卡值不值得買」「七彩通行證划算嗎」「BASIC 還是 PRECIOUS」「幾天回本」「官網儲值比較划算嗎」「MyCard／GamePay 多送多少」時用。月卡在 master 幾乎都是 9999 佔位價（price_twd 為 null）：先看該筆 web_voucher，或請使用者報實售價後用 price_overrides 重算，不要自己編價格。只做試算比價，不執行任何購買或付款。水晶包完整清單用 get_shop_items；「湊到 N 抽最少花多少錢」用 shop_recommend。',
       input_schema: { type: 'object', properties: {
-        section: { type: 'string', enum: ['all', 'pass', 'compare'],
-          description: '要哪一段。all＝通行證攤提＋官網比價（預設）；pass＝只要通行證攤提；compare＝只要官網 vs App 比價。使用者只問其中一件事時指定，可讓回傳小一半。' },
-        price_overrides: { type: 'object',
-          description: '自填售價，格式 {商品id: 台幣價}，例如 {"67": 170}。用在 master 只有佔位價（price_twd 為 null）的月卡：使用者講出商店實際售價後帶進來，該筆就會算出石/元與回本天數。id 用回傳裡的 id 欄位（App 商品是數字、官網商品是字串）。' },
-        include_ended: { type: 'boolean',
-          description: '是否把已結束販售的通行證也列出來，預設 false（只列現在買得到的）。使用者問「以前那張多少錢」「舊版月卡」時給 true。' },
-        include_ticket_value: { type: 'boolean',
-          description: '是否把招募票券以 300 石/抽折算進總價值，預設 true。正在集 300 抽天井貼紙的人建議給 false——票券抽卡通常不累積天井。' },
-        include_material_value: { type: 'boolean',
-          description: '是否把心願碎片等道具以商店價折算進總價值，預設 true。只想看「純水晶」的划算程度時給 false（任務通行證的心願碎片佔比很大，關掉數字會明顯下降）。' },
-        limit: { type: 'integer', description: '通行證最多回幾筆，預設 30（等於全部給滿，目前販售中約 18 張），上限 40。' },
-        offset: { type: 'integer', description: '通行證分頁起點，預設 0。搭配 limit 用；預設就已回滿，正常不需要動。' } } } },
+        section: { type: 'string', enum: ['all','pass','compare'], description: 'all＝攤提＋官網比價（預設）；pass＝只要攤提；compare＝只要官網 vs App。只問一件事時指定可讓回傳小一半' },
+        price_overrides: { type: 'object', description: '自填售價 {商品id: 台幣價}，例如 {"67": 170}，用在 price_twd 為 null 的月卡。id 用回傳的 id 欄位（App 為數字、官網為字串）' },
+        include_ended: { type: 'boolean', description: '是否含已結束販售的通行證，預設 false' },
+        include_ticket_value: { type: 'boolean', description: '票券是否以 300 石/抽折進總價值，預設 true。正在集 300 抽天井貼紙的人建議 false' },
+        include_material_value: { type: 'boolean', description: '心願碎片等道具是否以商店價折進總價值，預設 true。只看純水晶時給 false' },
+        limit: { type: 'integer', description: '通行證回幾筆，預設 10、上限 40（販售中共約 18 張）' },
+        offset: { type: 'integer', description: '通行證分頁起點，預設 0' } } } },
     { name: 'get_player_career',
-      description: '玩家生涯紀錄（等同站上 analysis 頁的「生涯紀錄」分頁）：逐期掃描過去各期活動的最終前 100 名名單，'
-        + '算出這位玩家歷屆入榜次數、最佳／平均／中位名次、最高分，以及每一期的名次與相對「上一次入榜」的進退。'
-        + '使用者問「我以前跑過幾期」「我最好排到第幾名」「這個人生涯戰績如何」「他上一期第幾名」時用這支。'
-        + '⚠ 耗時：台服沒有「某玩家歷屆名次」的端點，只能一期打一次 /event/{id}/top100（每期約 370 KB），一次併發 6 個；'
-        + '預設只掃最近 20 期（約 3～6 秒），掃到上限 60 期會超過 10 秒。'
-        + '不要用多次小批次自己拼：要看更早的期數請一次把 limit／offset 給足（同一次對話裡掃過的期數有快取，重複不會再打）。'
-        + 'records 是掃描範圍內「全部」的入榜紀錄，由新到舊完整列出，不是取樣。'
-        + '只涵蓋各期前 100 名的公開名單，沒進前百的期數查不到，所以「沒入榜」不等於「沒打」。',
+      description: '玩家生涯紀錄：逐期掃過去各期最終前 100 名名單，算出歷屆入榜次數、最佳／平均／中位名次、最高分，以及每一期的名次與相對上次入榜的進退。問「我以前跑過幾期」「我最好排到第幾名」「這個人生涯戰績如何」「他上一期第幾名」時用。⚠ 耗時：一期打一次外部請求（每期約 370KB），預設掃最近 20 期約 3～6 秒、掃滿 60 期會超過 10 秒；要看更早的一次把 limit／offset 給足，不要分多次小批次。只涵蓋各期前 100 名的公開名單，沒入榜的期數查不到（不等於沒打）。',
       input_schema: { type: 'object', properties: {
-        uid: { type: 'string', description: '玩家 ID（19 位數字字串）。省略＝使用者自己綁定的 uid' },
-        limit: { type: 'integer', description: '往回掃最近幾期已結算活動，預設 20，上限 60。每多一期就多打一次外部請求，非必要不要調高' },
-        offset: { type: 'integer', description: '跳過最近幾期再開始掃，預設 0。要看更早的區段時用（limit=20、offset=20 就是第 21～40 近的已結算期數）' },
-        event_id: { type: 'integer', description: '只查指定的某一期（例如 160）。給了這個就忽略 limit／offset，只打一次請求' } } } },
+        uid: { type: 'string', description: '玩家 ID（19 位數字字串）；省略＝使用者自己綁定的 uid' },
+        limit: { type: 'integer', description: '往回掃最近幾期已結算活動，預設 20、上限 60。每多一期多一次外部請求' },
+        offset: { type: 'integer', description: '跳過最近幾期再開始掃，預設 0' },
+        event_id: { type: 'integer', description: '只查指定的某一期；給了就忽略 limit／offset' } } } },
     { name: 'get_wl_exchange',
-      description: 'World Link 交換所規劃（＝站上「榜線資料庫」頁下半部那一區）：某一屆 WL 的綜合交換所與各章節交換所有哪些品項、單價幾徽章、最多能換幾個，以及「全部換滿要多少徽章」。'
-        + '使用者問「WL3 交換所換滿要多少徽章」「章節交換所有什麼」「心願小瓶子多少錢」「徽章不夠該先換什麼」「這屆幾章、總需求差多少」時用這支。'
-        + '回傳的是該屆完整的品項清單（綜合 13 項＋每章 5 項），不是取樣，不要分多次小批次拼。'
-        + '重點：章節數各屆不同（WL2 是 OC 團 4 章／V 家 6 章，WL3 是 5 章、3.2 版 6 章），總需求會跟著變，'
-        + '而且章節徽章與綜合徽章不通用（綜合交換所只吃由章節徽章換來的綜合徽章），回傳的 note 有寫清楚，要轉述給使用者。'
-        + '資料來自 good果汁的「WL 交換所規劃表」，由站上每日同步；終章只有一個交換所、不需要規劃，所以沒有終章的資料。',
+      description: 'World Link 交換所規劃：某一屆 WL 的綜合與各章節交換所有哪些品項、單價幾徽章、最多能換幾個，以及全部換滿要多少徽章。問「WL3 交換所換滿要多少徽章」「章節交換所有什麼」「心願小瓶子多少錢」「徽章不夠該先換什麼」時用。回的是該屆完整品項清單（綜合 13 項＋每章 5 項），不是取樣。章節數各屆不同、總需求會跟著變，且章節徽章與綜合徽章不通用，回傳的 note 要轉述給使用者。終章不需規劃，沒有資料。',
       input_schema: { type: 'object', properties: {
-        round: { type: 'string', description: '哪一屆，「WL2」或「WL3」（給 "3" 或 "wl3" 也認得）。省略＝最新一屆。目前只有 WL2、WL3 兩屆有表，給別的會回 available_rounds。' },
-        chapter: { type: 'integer', description: '只回某一區：1～6＝該章節交換所，0＝綜合交換所。省略＝綜合＋全部章節都回。注意這只縮小回傳的區塊，totals 一律是整屆換滿的數字。' },
-        chapter_count: { type: 'integer', description: '這屆實際有幾章（決定總需求要把幾個章節交換所算進去）。省略時用該屆的預設值：WL2＝4（OC 團）、WL3＝5。V 家或 3.2 版那種 6 章的情況要明確給 6。表上固定列 6 個章節交換所，超出的會標成 counted:false 且不計入 totals。' },
-      } } },
+        round: { type: 'string', description: '哪一屆，「WL2」或「WL3」（給 "3"／"wl3" 也認）。省略＝最新一屆；只有這兩屆有表' },
+        chapter: { type: 'integer', description: '只回某一區：1～6＝該章節交換所、0＝綜合。省略＝全部都回。只縮小回傳區塊，totals 一律是整屆的數字' },
+        chapter_count: { type: 'integer', description: '這屆實際有幾章（決定總需求算幾個章節交換所）。省略用預設 WL2＝4、WL3＝5；V 家或 3.2 版那種 6 章要明確給 6' } } } },
     { name: 'card_effective_skill',
-      description: '算「這 5 張卡放在同一隊時，每張的有效 score-up %」以及可直接餵給 calc_event_points 的平均技能倍率。'
-        + '為什麼需要這支：單看一張卡的技能數字沒有意義 —— 團分技能是「除自己外每位同團 +e%、5 張全員一致再 +e%」，'
-        + '混團技能是「編組每多 1 種外團 +v%」，花前吸技能是「吸隊友技能上限的一部分」，'
-        + '同一張卡放在不同隊裡實際加分差到 50%。要單卡的逐級(Lv.1～4)數值請用 get_card_skills，'
-        + '這支只回「在這一隊」的值。回傳含每張卡的 effective_pct／單卡底值／卡面上限、隊長技能、'
-        + '平均技能倍率(skill 與 s6)，以及第一張不是技能最高那張時的換隊長建議。'
-        + '第一次呼叫要載入計算引擎(486KB)與 master 卡片/技能資料，可能要幾秒。',
+      description: '算「這 5 張卡放在同一隊時，每張的有效 score-up %」以及可直接餵給 calc_event_points 的平均技能倍率。單看一張卡的技能數字沒有意義：團分技能算同團人數、混團技能算外團種類、花前吸技能吸隊友上限，同一張卡放在不同隊實際加分差到 50%。回傳含每張的 effective_pct／單卡底值／卡面上限、隊長技能、平均技能倍率（skill 與 s6）與換隊長建議。要單卡逐級 Lv.1～4 的數值請用 get_card_skills，這支只給「在這一隊」的值。首次呼叫要載入計算引擎與 master 資料，可能要幾秒。',
       input_schema: { type: 'object', properties: {
-        cards: { type: 'array', items: { type: 'integer' },
-          description: '隊伍的 card_id，最多 5 張，第一張視為隊長(第 6 技能窗 encore 吃的是隊長)。不足 5 張也能算，'
-            + '但團分技能的「全員一致」獎勵需要滿 5 張，會回傳低估警告。' },
-        master_ranks: { type: 'array', items: { type: 'integer' },
-          description: '各卡專精等級 0～5。專精不影響技能%(只影響綜合力與活動加成)，這裡只原樣回聲，'
-            + '要算加成請用 get_bonus_cards。' },
-        skill_levels: { type: 'array', items: { type: 'integer' },
-          description: '各卡技能等級 1～4，預設 4(滿)。只給一個數字代表五張同值。' },
-        char_ranks: { type: 'array', items: { type: 'integer' },
-          description: '各卡「該角色」的角色等級，預設 100。只給一個數字代表五張同值。'
-            + '角色等級型技能(Bfes 花後)每 2 級 +1%，滿 100 級 +50%，等級不同差很多。' },
-        trained: { type: 'array', items: { type: 'boolean' },
-          description: '各卡是否用特訓後(花後)那一面，預設 true。只有 BloomFES／カラフェス 的 V 家卡兩面技能不同'
-            + '(花前吸隊友／花後看角色等級)，這種卡回傳會附上另一面在同一隊的值。' } } } },
+        cards: { type: 'array', items: { type: 'integer' }, description: '隊伍的 card_id，最多 5 張，第一張視為隊長（第 6 技能窗 encore 吃隊長）。不足 5 張也能算，但團分的「全員一致」需滿 5 張，會回低估警告' },
+        master_ranks: { type: 'array', items: { type: 'integer' }, description: '各卡專精 0～5。不影響技能%（只影響綜合力與活動加成），這裡只原樣回聲；算加成用 get_bonus_cards' },
+        skill_levels: { type: 'array', items: { type: 'integer' }, description: '各卡技能等級 1～4，預設 4（滿）。只給一個數字＝五張同值' },
+        char_ranks: { type: 'array', items: { type: 'integer' }, description: '各卡「該角色」的角色等級，預設 100。只給一個數字＝五張同值。角色等級型技能（Bfes 花後）每 2 級 +1%、滿 100 級 +50%' },
+        trained: { type: 'array', items: { type: 'boolean' }, description: '各卡是否用特訓後（花後）那一面，預設 true。只有 BloomFES／カラフェス 的 V 家卡兩面技能不同，會附另一面的值' } } } },
     { name: 'estimate_border_prior',
-      description: '同型態歷史加權估計（先驗）：對「任意一期」——包含還沒開跑、完全沒有實測資料的未來活動——估算各段位的終線會落在哪。'
-        + '演算法與站上榜線分析頁「史」那一行相同：把過去同型態、同日數的活動終線，以「半衰期 6 期」做對數加權平均，再附上最近 8 期的實際值域。'
-        + '使用者問「下一期 6.25 天的箱活 T1000 大概多少」「12 天 WL 的 T100 會到哪」「這種型態歷史上都跑多少」時用這支。'
-        + '重要：這是先驗，不含當期實測。當期活動已經開跑要看預測終線，請用 get_borders（實測時速外推準得多）；'
-        + '只想看某幾期的實際數字用 get_history_borders，要交叉篩選排行用 query_border_db。',
+      description: '同型態歷史加權估計終線（先驗）：對任意一期、包含還沒開跑沒有實測的未來活動。「下一期 6.25 天箱活 T1000 大概多少」「12 天 WL 的 T100 會到哪」。當期已開跑要預測終線改用 get_borders（實測時速外推準得多）；只看某幾期實際數字用 get_history_borders，交叉篩選排行用 query_border_db。',
       input_schema: { type: 'object', properties: {
-        type: { type: 'string', description: '活動型態。只有三種：「馬拉松」（使用者說的「箱活」）、「歡樂嘉年華」（「嘉年華」）、「World Link」。給 event_id 時可省略。' },
-        days: { type: 'number', description: '活動總日數，必須完全相同才算同型態。只有 6.25 / 7.25 / 8.25 / 9.25 / 10.25（馬拉松、嘉年華）與 12（World Link）；給 6 或 8 會篩不到。給 event_id 時可省略。' },
-        unit: { type: 'string', description: '（選填）只取同一個主辦團體的期數：「L/N」「MMJ」「VBS」「WXS」「25」「VS」「/」（混活）。會讓樣本大幅變少，不足 3 期會自動退回不分團體並在 unit_note 說明。' },
-        tier: { type: 'integer', description: '只要單一段位，例如 1000。可用：1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000' },
-        tiers: { type: 'array', items: { type: 'integer' }, description: '一次要多個段位，例如 [100,1000,5000]，最多 8 個。與 tier 擇一；兩個都不給預設回 T100/T500/T1000/T2000/T5000。' },
-        event_id: { type: 'integer', description: '直接指定期數，用該期的型態與日數當條件，並且只採用該期之前的活動當樣本。可以是尚未開跑的期數。不給就當「下一期尚未結算的活動」。' },
-        samples_limit: { type: 'integer', description: '要列出幾期樣本明細，預設 8，上限 20。估計值一律用全部符合的期數算，不受這個影響。' } } } },
+        type: { type: 'string', description: '型態：馬拉松（箱活）／歡樂嘉年華（嘉年華）／World Link。給 event_id 可省略' },
+        days: { type: 'number', description: '總日數，須完全相同：6.25/7.25/8.25/9.25/10.25，World Link 為 12。給 event_id 可省略' },
+        unit: { type: 'string', description: '限主辦團體：L/N、MMJ、VBS、WXS、25、VS、/（混活）。不足 3 期會自動退回不分團' },
+        tier: { type: 'integer', description: '單一段位。可用 1,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,1500,2000,2500,3000,4000,5000' },
+        tiers: { type: 'array', items: { type: 'integer' }, description: '多段位如 [100,1000,5000]，最多 8 個。與 tier 擇一，都不給預設 T100/500/1000/2000/5000' },
+        event_id: { type: 'integer', description: '指定期數（可為未開跑），用該期型態日數、只取該期之前當樣本。不給＝下一期' },
+        samples_limit: { type: 'integer', description: '列幾期樣本明細，預設 8 上限 20；不影響估計值' } } } },
     { name: 'get_calendar',
-      description: '活動日曆:以「日期」為軸看某一天或某個月有哪些活動與卡池，每筆標明是當天/當月開始、結束，還是進行中，並附 PU 角色與卡池伴生活動的主角。'
-        + '使用者問「這個月有什麼」「10/15 那天有什麼在開」「下個月幾號開什麼池」時用這支；'
-        + '要的是「某段區間的卡池清單」(例如未來三個月的 FES 池)則用 get_gacha_schedule。只查資料，不會切換使用者正在看的頁面或月份。',
+      description: '活動日曆，以日期為軸：某一天或某個月有哪些活動與卡池，每筆標明開始／結束／進行中，附 PU 角色與伴生活動主角。「這個月有什麼」「10/15 那天有什麼在開」。要某段區間的卡池清單（例如未來三個月的 FES 池）改用 get_gacha_schedule。只讀，不切換頁面。',
       input_schema: { type: 'object', properties: {
-        date: { type: 'string', description: '單日視角，YYYY/MM/DD。與 month 二選一' },
-        month: { type: 'string', description: '整月視角，YYYY/MM。date 與 month 都省略就用本月' },
-        type: { type: 'string', description: '只看某類卡池，例如「FES池」「普通限定池」「復刻限定池」「生日池」「有償池」「常駐池」。整月常有十幾個有償池，只關心限定池時建議帶' },
-        limit: { type: 'integer', description: '卡池筆數上限，預設 24（一個月約 16–20 個池），最多 60' },
-        offset: { type: 'integer', description: '卡池分頁位移，接續上次回傳的 next_offset' } } } },
+        date: { type: 'string', description: '單日 YYYY/MM/DD，與 month 二選一' },
+        month: { type: 'string', description: '整月 YYYY/MM。兩者都省略＝本月' },
+        type: { type: 'string', description: '只看某類卡池：FES池／普通限定池／復刻限定池／生日池／有償池／常駐池' },
+        limit: { type: 'integer', description: '卡池筆數上限，預設 24，最多 60' },
+        offset: { type: 'integer', description: '卡池分頁位移，接續 next_offset' } } } },
     { name: 'get_collection_stats',
-      description: '兩件事合一支：(1) 收集室圖鑑的分佈統計 —— 貼圖依角色／團體、稱號依稀有度與群組各有幾個；'
-        + '(2) 收集率的備份碼 —— 產生使用者目前這台裝置的備份碼（拿去另一台裝置貼上），或解讀別人給的一組備份碼是哪些卡。'
-        + '使用者問「哪個角色貼圖最多」「稱號總共幾個」「我的備份碼是多少」「幫我把收集率搬到手機」'
-        + '「這串碼是什麼」「這串跟我現在的差在哪」時用。'
-        + '⚠ 只產生與解讀，絕不寫入或覆蓋使用者的持卡勾選——那是破壞性動作，要還原請叫使用者自己到「收集率」頁貼上備份碼。'
-        + '貼圖／稱號是全站共通的官方素材圖鑑總數（遊戲沒公開這兩項的持有清單），只有備份碼那段才是使用者自己的紀錄。'
-        + '要「我收集率百分之幾」用 get_collection_rate，要「我缺哪幾張」用 get_missing_cards。',
+      description: '兩件事合一支：收集室圖鑑分佈（貼圖依角色／團體、稱號依稀有度／群組），以及收集率備份碼的產生與解讀。「哪個角色貼圖最多」「我的備份碼是多少」「這串碼是什麼」「跟我現在差在哪」。貼圖／稱號是全站共通的官方圖鑑總數，不是使用者持有狀況。⚠ 只讀不寫，絕不覆蓋持卡勾選。要收集率百分比用 get_collection_rate，缺哪幾張用 get_missing_cards。',
       input_schema: { type: 'object', properties: {
-        part: { type: 'string', enum: ['all', 'stamps', 'honors', 'code'],
-          description: '要看哪一段，預設 all（貼圖與稱號的概觀 ＋ 備份碼）。stamps＝貼圖（這時才會展開 26 個角色的逐一分佈）、'
-            + 'honors＝稱號、code＝只要備份碼。給了 decode 就一定會解讀，不受這個參數影響' },
-        decode: { type: 'string',
-          description: '要解讀的備份碼（base64）。給了就改成「讀這一串是哪些卡」並與使用者目前的紀錄比對；'
-            + '不給就是「產生使用者目前的備份碼」。原樣貼進來即可，前後空白會自動去掉' },
-        limit: { type: 'integer',
-          description: '列表要回幾筆，預設 10、上限 50。用在稱號的 top_groups（共 357 個群組）與解讀備份碼時列出的卡片' },
-        offset: { type: 'integer', description: '從第幾筆開始（0 起算），配合 limit 續取下一批' } } } },
+        part: { type: 'string', enum: ['all','stamps','honors','code'], description: '預設 all。stamps 才展開 26 角色逐一分佈；給了 decode 一定會解讀' },
+        decode: { type: 'string', description: '要解讀的備份碼（base64）；不給＝產生使用者目前的碼' },
+        limit: { type: 'integer', description: '預設 10 上限 50，用於稱號群組與解讀出的卡片' },
+        offset: { type: 'integer', description: '從第幾筆開始（0 起算）' } } } },
     { name: 'get_misc_calc',
-      description: '三個站上小東西的合集，用 kind 指定要哪一個：'
-        + 'challenge_live＝挑戰 Live 那一場能拿多少活動P（每日一場的那個，公式跟一般場完全不同）；'
-        + 'presets＝站上內建的兩組情境預設參數（衝 T100／輕鬆玩）的完整數值，可以直接當基準報給使用者；'
-        + 'my_extra＝首頁「我的排名」小卡上有、但 get_my_status 沒回的欄位（近 1／24 小時周回數、近 1 小時場均、玩家總綜合力）。'
-        + '這支只讀不寫：不會套用預設、不會改到畫面上的任何設定。'
-        + '要一般場（單人／自動／協力／應援）的活動P 請用 calc_event_points，這支的 challenge_live 只算挑戰場；'
-        + '要動能／預測終分那類節奏剖析用 analyze_player，要與各段榜線的差距用 get_my_status。',
+      description: '三個站上小東西，用 kind 選：挑戰 Live 活動P（公式與一般場完全不同）、站上兩組情境預設參數、我的周回／場均／總綜合力。只讀不套用。一般場（單人／自動／協力／應援）活動P 用 calc_event_points，動能／預測終分用 analyze_player，與各段榜線的差距用 get_my_status。',
       input_schema: { type: 'object', properties: {
-        kind: { type: 'string', enum: ['challenge_live', 'presets', 'my_extra'], description: '要哪一項：challenge_live＝挑戰 Live 活動P、presets＝站上情境預設參數、my_extra＝我的周回／場均／總綜合力' },
-        score: { type: 'number', description: '只有 kind=challenge_live 用：挑戰 Live 那一場的歌曲分數。省略就用綁定 uid 的 profile 上的挑戰 Live 最高分' },
-        uid: { type: 'string', description: '只有 kind=my_extra 用：要查誰（19 位數字字串）。省略＝使用者自己綁定的 uid' } },
+        kind: { type: 'string', enum: ['challenge_live','presets','my_extra'], description: 'challenge_live＝挑戰Live活動P、presets＝情境預設參數、my_extra＝周回／場均／綜合力' },
+        score: { type: 'number', description: '僅 challenge_live：那場歌曲分數。省略用 profile 的挑戰 Live 最高分' },
+        uid: { type: 'string', description: '僅 my_extra：要查誰（19 位數字）。省略＝自己' } },
         required: ['kind'] } },
     { name: 'get_page_tutorials',
-      description: '依「使用者正在用哪個功能」推薦教學：給頁面 key（或一個主題詞），回傳教學大全中與該功能情境相關的問答。' +
-        '和 search_tutorial 的差別：search_tutorial 是關鍵字全文搜尋，適合使用者直接問某個名詞；' +
-        '這支是情境對照表（站上每頁底部顯示的那組），適合「我在這頁／我要做這件事，該先懂什麼」，' +
-        '也能反過來回答「這個主題要去哪一頁做」（related_pages）。查無結果時再退回 search_tutorial。' +
-        '有教學對照的頁面：home rank analysis borderdb calc deckpro gacha gachasim shop b30 songs rate collect calendar。' +
-        '只讀資料，不會切換頁面。',
+      description: '依「使用者正在用哪個功能」推薦教學：給頁面 key 或主題詞，回該情境相關的問答，也能反過來回答這個主題該去哪一頁（related_pages）。search_tutorial 是關鍵字全文搜尋，適合直接問某個名詞；這支是頁面情境對照表，適合「我在這頁該先懂什麼」。查無結果再退回 search_tutorial。只讀，不切換頁面。',
       input_schema: { type: 'object', properties: {
-        page: { type: 'string', description: '頁面 key，例如 calc（計算中心）、rank（活動排名）、deckpro（進階計算）、gacha（卡池列表）。兩個都不給會回傳可用頁面清單。' },
-        topic: { type: 'string', description: '主題詞或使用者原話，例如「推車」「天井」「我想衝榜線」。會順便回報這個主題對應到站上哪幾頁。可與 page 併用以收斂範圍。' },
-        limit: { type: 'integer', description: '回傳幾則，預設 5，上限 12' },
-        answer_chars: { type: 'integer', description: '每則答案截斷字數，預設 240 字，上限 800 字。要引用完整說明時才調高。' } } } },
+        page: { type: 'string', description: '頁面 key：home rank analysis borderdb calc deckpro gacha gachasim shop b30 songs rate collect calendar。與 topic 都不給會回頁面清單' },
+        topic: { type: 'string', description: '主題詞或使用者原話，如「推車」「我想衝榜線」；可與 page 併用' },
+        limit: { type: 'integer', description: '預設 5，上限 12' },
+        answer_chars: { type: 'integer', description: '每則答案截斷字數，預設 240，上限 800' } } } },
     { name: 'get_site_meta',
-      description: '站台的「關於自己」資訊,三份合一:credits＝製作與致謝(世界計畫開瓶器編輯群 14 位、資料表作者與原始連結、建議採納名單、聯絡方式、著作權聲明);'
-        + 'resources＝資源連結頁的 6 組共 24 條站台(官方資源、資訊站、討論社群、Wiki 百科、社群資料表、本站工具),每條都有網址與一句話說明;'
-        + 'capabilities＝助手自己的能力模塊與問題模板,用來回答「你會做什麼」。'
-        + '使用者問「這站誰做的」「教學是誰寫的」「有沒有別的好用的站或表格」「你能幫我什麼」時用這支。'
-        + '它只回站台本身的靜態資訊,不查任何遊戲數據,也不會切換頁面;要找「哪一頁能做什麼、該叫哪支工具」請改用 get_site_map。',
+      description: '站台的「關於自己」三份合一：credits＝製作與致謝（編輯群、資料表作者與原始連結、聯絡方式、著作權）、resources＝資源連結頁 6 組共 24 條站台與網址、capabilities＝助手自己的能力模塊與問題模板。「這站誰做的」「有沒有別的好用的站或表格」「你能幫我什麼」。只回站台靜態資訊，不查遊戲數據；要「哪一頁能做什麼、該叫哪支工具」用 get_site_map。',
       input_schema: { type: 'object', properties: {
-        kind: { type: 'string', description: 'credits / resources / capabilities / all。預設 all。只想回答其中一件事時務必指定,三份全回會長很多' },
-        group: { type: 'string', description: '只限 resources:只回某一組,例如「官方資源」「資訊站」「討論社群」「Wiki 百科」「社群資料表」「本站工具」。給不存在的組名會回 available_groups' },
-        with_examples: { type: 'boolean', description: '只限 capabilities:要不要附上每個模塊與模板的實際問句,預設 false(只回名稱與說明)。要引導使用者「可以這樣問」時才開,回傳量約三倍' },
-      } } },
+        kind: { type: 'string', description: 'credits／resources／capabilities／all，預設 all。三份全回很長，只問一件事務必指定' },
+        group: { type: 'string', description: '限 resources：只回某組，如「官方資源」「資訊站」「討論社群」「Wiki 百科」「社群資料表」「本站工具」' },
+        with_examples: { type: 'boolean', description: '限 capabilities：附上實際問句，預設 false（回傳量約三倍）' } } } },
     { name: 'predict_card_rerun',
-      description: '卡片復刻預測：某張卡（或某角色、某卡池的 PU 卡）是哪一種限定，下一次復刻是「台服官方已排定」還是「只有推估」，'
-        + '外加現在抽不抽得到、離下次還幾天、日服至今當過幾次 PU。'
-        + '使用者問「這張還會不會再出」「要不要現在抽」「等復刻還是現在課」「奏的限定卡哪張快復刻了」「這池過了還有機會嗎」時用。'
-        + '不給任何參數就回目前進行中卡池的 PU 卡。'
-        + '注意：next_rerun.status 分「已排定」（台服 master data 裡真的排進去的官方排程，日期與卡池名都是官方值）與'
-        + '「預估」（日服同卡開池日 ＋365 天平移，只精確到月份），轉述給使用者時務必照這個分別講；'
-        + '把預估說成確定會出，會害人把石頭壓在一個不存在的日期上。',
+      description: '卡片復刻預測：某張卡（或某角色、某卡池 PU 卡）是哪種限定、下次復刻是台服已排定還是只有推估、現在抽不抽得到、離下次幾天、日服當過幾次 PU。「這張還會不會再出」「等復刻還是現在課」「這池過了還有機會嗎」。不給參數＝目前進行中卡池的 PU 卡。轉述務必分清 next_rerun.status 的「已排定」（台服官方排程，日期卡池名皆官方值）與「預估」（日服開池日＋365 天，只精確到月份）——把預估說成確定，會害人把石頭壓在不存在的日期上。',
       input_schema: { type: 'object', properties: {
-        card_id: { type: 'integer', description: '卡片 id（數字），查特定一張卡時用；不知道 id 可先用 get_missing_cards 或 search_anything 找' },
-        character: { type: 'string', description: '角色，繁中簡稱或全名皆可（「奏」「宵崎奏」），也可以直接給角色 id。回該角色的限定卡，預設不含常駐' },
-        gacha_name: { type: 'string', description: '卡池名稱關鍵字或卡池 id，回該池的 PU 卡。只查得到台服進行中與已排程的卡池，早就結束的舊池查不到（台服 gachas.json 是線上快照不是歷史檔）' },
-        include_permanent: { type: 'boolean', description: '搭配 character 用：true 才把常駐卡也列進來，預設 false（常駐卡沒有復刻問題）' },
-        limit: { type: 'integer', description: '要回幾張，預設 10，上限 40' },
-        offset: { type: 'integer', description: '從排序後的第幾張開始回（0 起算），配合 limit 續取下一批' } } } },
+        card_id: { type: 'integer', description: '卡片 id；不知道可先用 get_missing_cards 或 search_anything 找' },
+        character: { type: 'string', description: '角色繁中簡稱、全名或角色 id，回該角色限定卡（預設不含常駐）' },
+        gacha_name: { type: 'string', description: '卡池名關鍵字或卡池 id，回該池 PU 卡。只查得到進行中與已排程的池，舊池查不到' },
+        include_permanent: { type: 'boolean', description: '搭配 character：true 才含常駐卡，預設 false' },
+        limit: { type: 'integer', description: '預設 10，上限 40' },
+        offset: { type: 'integer', description: '從第幾張開始（0 起算）' } } } },
     { name: 'list_my_watches',
-      description: '列出使用者目前的偵測訂閱，以及最近幾則已觸發的通知。使用者問「我訂了什麼」「有沒有通知」時用。需要已登入。',
+      description: '列出使用者的偵測訂閱與最近觸發的通知。「我訂了什麼」「有沒有通知」。需已登入。',
       input_schema: { type: 'object', properties: {
-        include_events: { type: 'boolean', description: '要不要一起回最近觸發的通知，預設 true' } } } },
+        include_events: { type: 'boolean', description: '是否一併回最近觸發的通知，預設 true' } } } },
   ];
 
   /* 工具執行。回傳值會原樣送回模型,所以盡量給結構化又精簡的東西 ——
@@ -6396,7 +6092,7 @@ class Component extends DCLogic {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=5fb6171929';
+              s.src = 'data/b30-consts.js?v=568a80ce6e';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -7827,7 +7523,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=76726e97e7';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=4c54781829';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -10146,7 +9842,7 @@ class Component extends DCLogic {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=5fb6171929';
+              s.src = 'data/b30-consts.js?v=568a80ce6e';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
