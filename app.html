@@ -3259,6 +3259,103 @@ class Component extends DCLogic {
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
     distrib:  ['活動分布', '歷屆活動的時間分布甘特圖']
   };
+  /* 圈內用語 → 站上功能 → 對應工具。玩家講的幾乎都是別名,而站上存的是正式名稱;
+     這張表放在程式碼裡而不是 prompt 裡 —— 它有五百多條,每次請求都送一遍太貴,
+     而 search_anything 只要查到就能直接告訴模型該呼叫哪支工具,效果更確定。
+     格式:[正式名稱, 對應工具(空字串=沒有), 所在頁面, 別名以 | 分隔] */
+  ALIASES = [
+    ['效率排行（每小時活動P，sort_by=\'eph\'）', 'song_efficiency', 'calc（ctab=eff）', '效率曲|短效|短效率|短曲|周回曲|跑哪首最快|哪首打最快|時速最高的歌|刷歌效率|刷活動P效率排行|每分鐘EP|依每分鐘EP|EP排行|EP/h|每小時P|時效|時間有限'],
+    ['效益排行（單局活動P，sort_by=\'ep\'）', 'song_efficiency', 'calc（ctab=eff）', '效益曲|長效|長曲|CP值曲|CP 值最高的歌|省體力曲|哪首最省體力|一場拿最多P|單局P|每局EP|依每局EP|依每火EP|每火EP|省體力排序|體力有限|單場高pt'],
+    ['單局分數排行（sort_by=\'score\'）', 'song_efficiency', 'calc（ctab=eff）', '單局分數|衝分數|哪首分數最高|分數排行|純衝分數'],
+    ['EP 精算（單場活動P試算）', 'calc_event_points', 'calc（ctab=ep）', 'EP 計算|EP 計算器|活動P計算器|活動P/分數估算|PT 計算|ep 分數|算一場多少P|一場拿多少|跑一場多少活動P|每體力效率|活動點數計算|活動加成·活動P 計算器'],
+    ['活動試算（衝榜規劃／目標反推）', 'plan_target', 'calc（ctab=plan）', '活動試算|跑榜規劃|衝榜規劃|算我要跑多久|還要打幾場|追不追得上|要花多少體力|要花多少錢|目標EP|目前EP|石換體|體力來源（差引計算）|每NT$1多少活動P|水晶CP（石/元）'],
+    ['推隊倍率（平均技能倍率／時效值）', 'calc_skill_multiplier', 'calc（ctab=mult）', '倍率|技能倍率|平均技能倍率|實效技能倍率|時效值|倍率計算機|推隊倍率計算器|整隊倍率|整隊上限 2.88|滿技能|3.7|3.71|3.8|3.82|3.88|5人技能加分%|隊長%＋隊員%|單次全隊技能總倍率'],
+    ['抽卡天井與招募點數保底', 'gacha_odds', 'calc（ctab=gacha）／gachasim', '天井|強娶|抽卡天井|抽卡期望|保底|招募點數|招募附贈點數|招募點數保底|PU條|PU 條|300抽|200抽+10券|需要多少石|摃龜|期望抽數|綠券|粉券|招募貼紙兌換券|限定招募貼紙兌換券'],
+    ['MySekai 採集計算', 'mysekai_calc', 'calc（ctab=mysekai）', 'MySekai|mysekai|烤森|豆森|我的「世界」|家園|採集|挖素材|橘體（×5）|藍體（×1）|炎倍率|體力倍率（橘體5／藍體1）|烤森採集怎麼配最有效率'],
+    ['排位賽（Rank Match）', 'rank_match', 'calc（ctab=rank）', '排位|排位賽|ランクマッチ|rank match|RANK MATCH|RM|判定分對戰|段位|Class|RP|段位點數|Rank Point|升段|降段|段位點數獎勵積分|新手／青銅／白銀／黃金／白金／鑽石／大師|ビギナー|ブロンズ|シルバー|ゴールド|プラチナ|ダイヤモンド|マスター|巔峰|亞神|天啓|創造神|La. 分級'],
+    ['控分（控活動結算PT）', '', 'calc（ctab=ctrl）', '控分|控PT|控活動結算PT|控分速查|控分表|0火蝦控分|剛好命中|精準收尾|把分數控在特定數字|Score Art'],
+    ['榜線分析與預測終線', 'get_borders', 'analysis（anaTab=border）／rank', '榜線|border|段位線|分段榜線|榜線分析|終線|預測終線|最終線|卡線|安全圈|實測時速|線性外推|史（歷史對照）|這期會落在第幾名|T100 線|T1000 線|跟我的差距'],
+    ['榜線資料庫（歷史榜線）', 'get_history_borders', 'borderdb', '榜線資料庫|歷史榜線|歷代榜線|歷期榜線|全榜線紀錄|台服全榜線紀錄|174期榜線|同型態歷史|跟以前比|歷史加權|半衰期加權|榜線趨勢|榜線趨勢比較'],
+    ['玩家分析（節奏剖析）', 'analyze_player', 'analysis（anaTab=player）', '玩家分析|節奏剖析|分析我自己|動能|加速|穩定|降速|瞬時|1h均速|近1h周回|時速|場均|周回|時段得分|推估休息時數|預測終分|預測名次'],
+    ['逐局紀錄', 'get_player_games', 'rank（排名詳情）', '逐場|每一場|上局|上一局實得|場間隔|連打還是休息|一場加了多少活動P|每個點是一場'],
+    ['活躍分析（此刻在線與衝刺／降速名單）', 'get_top100', 'analysis（anaTab=active）', '活躍分析|活躍玩家|此刻在線|此刻最快|衝刺中|降速中|誰在跑|誰停了|近1小時全榜打了幾場|依近 1 小時時速排序'],
+    ['生涯紀錄（歷史名次交叉比對）', '', 'analysis（anaTab=history）', '生涯紀錄|生涯|歷史名次|交叉比對以往名次|逐期掃描過去前百|我以前跑過幾期|掃描期數'],
+    ['跑榜工作室（理論隊伍與組卡最佳化）', '', 'deckpro', '跑榜工作室|組卡優化|組卡優化器|最佳化|最佳化活動P|理論隊伍|建議編組|綜合力計算|完整綜合力|分數估算|場均分數|只用我持有的卡|候選池|當期跑榜最佳化'],
+    ['World Link 個榜／章節排行', 'get_wl_status', 'rank（WL 個榜分頁）', 'WL 個榜|個榜|章節排行|章節榜|WL 章節|總榜|綜合排行|綜合交換所|章節徽章|綜合徽章|WL2|WL3|終章|結局章節|邊框|世界連結|World Link|world_bloom|wl_chapter'],
+    ['World Link 配隊建議（五色湊色）', 'wl_team_advice', 'rank（WL 個榜）／deckpro', 'WL 配隊|WL 組隊|World Link 怎麼配隊伍|本章配隊規則|五色|五色屬性|湊色|異色加成|四位同團＋五色|支援隊伍|WL 支援隊伍|WL 支援池|輔助團體加成'],
+    ['卡池列表與排程', 'get_gacha_schedule', 'gacha／calendar', '卡池|招募|gacha|卡池列表|卡池排程|近期卡池|未來預告|卡池開放期間|台服預測卡池|PU 角色|伴生活動|復刻|排期'],
+    ['收集率（卡片圖鑑勾選）', 'get_collection_rate', 'rate', '收集率|收集進度|圖鑑|卡片圖鑑|勾選持有|持有卡|我有哪些卡|缺什麼卡|各團收集率|備份碼|只看未持有'],
+    ['卡片技能庫（卡庫）', 'get_card_skills', 'cardlib', '卡庫|卡片技能庫|卡片技能查詢|技能敘述|技能數值|技能%|保底值與上限值|base 與 max|skills.json'],
+    ['偵測訂閱／通知', 'create_watch', 'notices／account', '偵測訂閱|訂閱|盯著|幫我盯|到 xxx 分時通知我|提醒我|通知|站內通知|watch|tier_score（榜線到達分數）|my_rank_out（我掉出段位）|passed_me（被超車）|started／stopped（開跑／停跑）|event_start／event_end|gacha_start／gacha_end'],
+    ['玩家查詢（公開檔案）', 'get_player_profile', 'lookup', '玩家查詢|查玩家|查 ID|查 uid|Player ID|遊戲 ID|名片|個人檔案|profile|公開資料|編組|隊伍綜合力|角色等級|挑戰 Live 等級'],
+    ['歌曲清單／樂曲資料庫', 'get_songs', 'songs', '歌曲清單|曲庫|樂曲資料庫|歌曲譜面|找歌|選歌|640 首曲庫|定數|譜面|note 數|音符數|曲長|活動倍率|歌曲係數|event rate|R 值'],
+    ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
+    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic V31|Unibot 風格|AP=定數、FC=定數−1'],
+    ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
+    ['抽卡模擬', '', 'gachasim', '模擬抽卡|抽卡模擬器|模擬十連|gachasim'],
+    ['收集室（貼圖與稱號圖鑑）', '', 'collect', '收集室|貼圖|稱號|1,073 張貼圖|1,883 種稱號|取得條件'],
+    ['活動分布甘特圖', '', 'distrib', '活動分布|甘特圖|團推分析|推角分析|團體曲數占比|各團活動分布'],
+    ['加分卡參考', '', 'bonuscards', '加分卡|加成卡|加分卡組合建議|團分1／團分2／團分3|普限輪1～4|書下|Banner 主角色卡'],
+    ['月卡玩偶列表（豆森娃）', '', 'dolls', '月卡玩偶|豆森娃|豆森娃月列表|娃月列表|MySekai 玩偶|月卡娃|玩偶排程'],
+    ['活動日曆', '', 'calendar', '日曆|行事曆|看日曆|當日活動'],
+    ['綜合力', 'calc_event_points', 'deckpro／rank', '総合力|総合|綜合|戰力|power|隊伍總綜合力|跑隊綜合|36.2w|基礎三維|白值'],
+    ['活動加成', 'calc_event_points', 'calc／deckpro', '加成|bonus|活動加成 %|%數|加成%|隊伍總活動加成|300% 加成|700% 加成|專精加成|屬性加成|角色加成'],
+    ['火（LIVE BONUS／體力倍率）', 'calc_event_points', 'calc', '火數|體力倍率|LIVE BONUS|ライブボーナス|消費體力|消耗火|0火|10火|1火是五倍|飲料'],
+    ['體力與回體資源', 'plan_target', 'calc（ctab=plan）', '體力|體力罐|大罐|小罐|回體|消體|水晶換體|自然回復|每小時 2 體|100石換10體|回體量'],
+    ['S6（第 6 技能窗／encore）', 'calc_event_points', 'calc／deckpro', 'S6|s6|第6技能窗|第 6 技能欄|第6次 encore|encore|隊長技能窗|搶 S6|S6 倍率|S6 蝦|S1–S5'],
+    ['周回', 'analyze_player', 'analysis／rank', '一小時打幾場|live clear 次數|場次|31 周回|拖周回|周回提升'],
+    ['時速（每小時活動P）', 'analyze_player', 'analysis', '每小時活動P|衝速|我的時速|速度'],
+    ['車隊', 'search_tutorial', 'tut', '共跑|共跑群|社群|私車|野房|車房|開房|上車|下車|四推一|五跑|車主'],
+    ['跑者與報跑', 'search_tutorial', 'tut', '跑者|報跑|報班|砍班|掛名|還債|免時數報跑|報跑區|跑者禮儀|時數|推車時數'],
+    ['推車／推隊', 'search_tutorial', 'tut', '推車|推隊|推手|回推|獎勵時數|推車點數|養推隊|入門款／進階款／課佬'],
+    ['車頭／站位（P1、L1）', 'search_tutorial', 'tut', '車頭|P1|p1|站位|第一個站位|L1|l1|最後一次多人LIVE|喊 L1|順位'],
+    ['炸房／跳車', 'search_tutorial', 'tut', '炸房|跳車|放手|斷網|踢出|解散|引導使用模式|freeze bug|不要被踢出'],
+    ['單裝／雙開／多開', 'search_tutorial', 'tut', '單裝|雙開|多開|三開|四開|跳推|單人成車|兩部裝置'],
+    ['蝦（独りんぼエンヴィー）', 'search_anything', 'songs', '拍蝦|エンヴィー|envy|Envy|独りんぼエンヴィー|獨自一人的捉迷藏|捉迷藏|最短的曲子|74.2 秒|蝦紅譜|蝦紫譜|0火蝦'],
+    ['開闢天地（初音天地開闢神話）', 'search_anything', 'songs', '開闢天地|天地開闢|初音天地開闢神話|初音未來開闢天地|Master 33 自動曲|AT 曲|99次at'],
+    ['魔王曲', 'search_anything', 'tut／songs', '小魔王|激唱|初音ミクの激唱|高難|難譜|37|38|人生|破譜|Wup'],
+    ['譜面難度（顏色代稱）', 'get_songs', 'songs／calc', '綠譜（EASY）|藍譜（NORMAL）|黃譜（HARD）|紅譜（EXPERT）|紫譜（MASTER）|彩譜（APPEND）|APD|append|EASY/NORMAL/HARD/EXPERT/MASTER/APPEND|E/N/H/X/M/A|Lv.'],
+    ['場次模式', 'calc_event_points', 'calc', '個人|單人|solo|Single Live|自動|AUTO|at|auto|協力|多人|multi|多人 LIVE|協力 Live|應援|Cheerful Carnival|cheer|排位對戰|挑戰 LIVE'],
+    ['活動型態', 'get_current_event', 'home／borderdb', '馬拉松|marathon|歡樂嘉年華|嘉年華|cheerful_carnival|WL|箱活|團體活動|混活|混合活動|應援活動|冷活|燙活'],
+    ['卡（成員）', 'get_my_cards', 'rate／cardlib', '卡面|成員|角色卡|★4|四星|BD|生日卡|AN|紀念日卡|花前|花後|特訓前|特訓後'],
+    ['卡面技能類型', 'get_card_skills', 'cardlib', '奶卡|回血|治癒|判卡|判分|判定強化|Bad轉Perfect|大分|大分卡|一般分數加成|P分|P分卡|Perfect分數加成|血分|Cfes 血分|體力型|團分|同團加分|Bfes 角色|Bfes 虛擬|花後特殊|角色等級型|外團型'],
+    ['專精（特訓）', 'get_my_cards', 'rate／deckpro', '專精|專精等級|特訓|MR|MR5|マスターランク|master rank|表現力|每等 +600 表現力'],
+    ['技能等級', 'get_card_skills', 'cardlib', 'SL|SL4|Lv.4|技能升級譜|技能EXP|心願碎片經驗'],
+    ['角色等級', 'get_player_profile', 'rate', '角色 EXP|花牌|80等|100等|單推角|刷隊長|印章|挑戰 LIVE STAGE|心願小瓶子'],
+    ['區域道具', '', 'deckpro', 'area item|屬性道具|植物|團體道具|個人道具|水滴|祈願水滴|種子|Lv15|Lv20'],
+    ['MySekai 綜合力來源（門／娃／畫布）', '', 'dolls／deckpro', '娃娃|M娃|玩偶|畫布|無框畫|轉換機|家具|角色的記憶|豆森 MySekai%'],
+    ['心願碎片／音符', '', 'shop', '音符|心願純結晶|碎片|心願碎片|心願碎片交換所|音色|虛擬硬幣'],
+    ['Cfes（七彩慶典招募）', 'search_anything', 'gacha', 'Cfes|cfes|CFES|七彩慶典|七彩慶典招募|Colorful Festival|彩色祭|彩FES|彩FES限定|七彩|七彩血分|七彩good以上'],
+    ['Bfes（絢爛慶典招募）', 'search_anything', 'gacha', 'Bfes|bfes|BFES|絢爛慶典|絢爛慶典招募|Bloom Festival|Bloom FES|BLOOMFES限定|絢爛角色|絢爛虛擬|bfes 花前|bfes 花後'],
+    ['卡池類型', 'get_gacha_schedule', 'gacha', 'FES池|普通限定池|限定池|普限|常駐池|有償池|付費池|列表招募|選擇列表招募|高級禮物招募|禮物包招募|生日池|World Link池|WL池|World Link支援池|WL支援池|復刻限定池|復刻池|暗鍋|Recollection Festival|聯動卡池|周年池'],
+    ['貼紙與交換券', 'gacha_odds', 'calc（ctab=gacha）', '綠貼紙|招募貼紙|粉貼紙|限定招募貼紙|生日招募貼紙|交換券|持有交換券'],
+    ['PU（Pick Up）', 'gacha_odds', 'gacha', 'PU|pu|pick up|Pick Up|PU 卡|機率提升|指定 PU|0.4%|歪到'],
+    ['水晶（石）', 'plan_target', 'shop／calc', '水晶|寶石|免費水晶|無償水晶|付費水晶|有償水晶|水晶CP|crystal'],
+    ['月卡／通行證', '', 'shop', '月卡|通行證|七彩通行證|世界通行證|高階任務通行證|我的「世界」任務通行證|PRECIOUS|BASIC|課金'],
+    ['色緞／色牌（活動前段名次）', 'get_borders', 'rank', '色緞|色段|前三|色牌|前五|前排|大前排|T1|爭 1|色段跑者'],
+    ['段位榜線分段', 'get_borders', 'rank／analysis', 'T100|T500|T1000|T5000|T1萬|T10萬|前百|前 100 名|分段|tier|榜線段位'],
+    ['團體（Unit）', 'get_songs', 'songs／rate', 'Leo/need|LN|ln|レオニ|leoneed|MORE MORE JUMP!|MMJ|mmj|モモジャン|Vivid BAD SQUAD|VBS|vbs|ビビバス|ワンダーランズ×ショウタイム|WS|WXS|wxs|ワンダショ|25時、ナイトコードで|25時|n25|ニーゴ|Nightcord|VIRTUAL SINGER|VS|vs|V家|虛擬歌手|バチャシン|原V|純V|無副團|副團'],
+    ['角色別名', 'search_anything', '全站', '一歌/ichika/イチカ/星乃一歌|咲希/saki/サキ/天馬咲希|穗波/honami/穂波/ホナミ/望月穂波|志步/shiho/志歩/シホ/日野森志歩|實乃理/minori/実乃理/ミノリ/花里みのり|遙/haruka/遥/ハルカ/桐谷遥|愛莉/airi/エアリ/桃井愛莉|雫/shizuku/シズク/日野森雫|心羽/kohane/コハネ|杏/an/アン/白石杏|彰人/akito/アキト|冬彌/toya/冬弥/トウヤ|司/tsukasa/ツカサ/天馬司|笑夢/emu/エム/鳳えむ|寧寧/nene/ネネ/草薙寧々|類/rui/ルイ/神代類|奏/kanade/カナデ/宵崎奏|真冬/mafuyu/マフユ/朝比奈まふゆ|繪名/ena/絵名/エナ/東雲絵名|瑞希/mizuki/ミズキ/暁山瑞希|初音/miku/ミク/hatsune/初音未來/初音ミク|鈴/rin/リン/鏡音鈴|連/len/レン/鏡音連|流歌/luka/ルカ/巡音流歌|MEIKO/meiko/メイコ|KAITO/kaito/カイト'],
+    ['屬性（五色）', 'get_my_cards', 'rate／deckpro', '可愛/cute/粉|帥氣/cool/藍|純真/pure/綠|快樂/happy/橙|神秘/mysterious/紫|異色|單色'],
+    ['稀有度與取得類別', 'get_card_skills', 'rate', '★3|★2|★1|生日|常駐|生日限定|期間限定|團體活動限定|聯動限定|rarity_4|rarity_birthday'],
+    ['歌曲中文譯名（社群譯名）', 'search_anything', 'b30／songs', '黑暗火鍋!!!!←ヤミナベ!!!!|初音未來的激唱←初音ミクの激唱|初音未來的消失←初音ミクの消失|火花 -重制版-←ヒバナ -Reloaded-|幽靈法則←ゴーストルール|意想不到的Wonders←トンデモワンダーズ|Lost One的號哭←ロストワンの号哭|陽炎Days←カゲロウデイズ|腦漿炸裂女孩←脳漿炸裂ガール|六兆年零一夜的故事←六兆年と一夜物語'],
+    ['歌單', 'search_tutorial', 'tut', '曲目清單|軍訓|短效率歌單|長曲歌單|摸魚表'],
+    ['音遊設定與練習', 'search_tutorial', 'tut（rhythm）', '流速|判定|判定延遲|上隱|音符開始位置|音壓|目押|手元|多指|三指|尾殺|精度|FC|Full Combo|AP|ALL PERFECT|LIVE CLEAR|通關'],
+    ['anvo（Another Vocal）', '', 'songs（播放器）', 'anvo|Another Vocal|另一版本主唱|主唱卡|虛擬歌手 ver.|世界 ver.|翻唱'],
+    ['衣服與素材', 'search_tutorial', 'tut', '衣服|髮型|裝飾|演出服裝|魔法布|魔法線|百貨公司|衣服套組|金幣'],
+    ['交換所', '', 'borderdb（WL 交換所規劃）', '活動交換所|章節交換所|票券交換所|WL 交換所|WL 交換所規劃|徽章'],
+    ['排名（活動排名）', 'get_top100', 'rank', '排名|即時排名|活動排名|排名追蹤|我的排名|名次|名次走勢|分段排名|主榜|活動榜'],
+    ['活動P（EP／PT）', 'calc_event_points', '全站', '活動P|活動 P|EP|ep|PT|pt|活動點數|event point|得分|總分|期間增加|累計'],
+    ['我的狀態（綁定 uid 後的個人進度）', 'get_my_status', 'home／rank', '我的狀態|我的進度|我現在第幾名|我的分數|我需時|與各段榜線的距離|綁定 Player ID|設定 uid|我的 id 是'],
+    ['當期活動與排程', 'get_current_event', 'home／calendar', '當期活動|這期|本期|活動倒數|剩餘時間|結算|結算時間|aggregate_at|關閉|closed_at|下一期|接下來幾期|未來活動|活動期數|第 N 期'],
+    ['資源與功能索引（站台自我描述）', 'search_anything', 'whatsnew', '這個網站有什麼功能|有沒有 xxx 功能|功能介紹|系統更新|更新紀錄|改版|站上哪裡可以|在哪一頁'],
+    ['備份與雲端同步', '', 'res／account', '備份|匯出備份檔|匯入|還原|資料備份與轉移|雲端同步|從雲端載入|上傳這台裝置的設定|跨裝置'],
+    ['車隊資源與養成規劃', 'search_tutorial', 'tut', '資源分配|跑活資源|儲備|養成|養成艦隊|艦隊|養成步驟|通靈|日服排期|特殊技能表|環境|最高倍率|門檻'],
+    ['編組（隊伍）', 'get_my_cards', 'deckpro／rank', '隊伍|組隊|配隊|隊長|隊員|隊友|我的編組|編組詳情|5 張卡|單裝隊|跑隊'],
+    ['活動加成來源（專精／屬性／角色）', 'calc_event_points', 'home／deckpro', '加成角色|加成屬性|指定角色|指定屬性|當期角色|banner 角色|Banner 主角色|主推角色|副團體|25%|20%|70%|140%'],
+    ['歌曲活動倍率', 'get_songs', 'songs／calc', '歌曲倍率|rate|130%|晴的分析圖'],
+  ];
+
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
     { date: '日曆', title: '活動日曆', desc: '卡池與活動開放期間（台服預測時間），點日期可看當日活動。', to: 'calendar', cta: '前往活動日曆' },
@@ -5761,6 +5858,25 @@ class Component extends DCLogic {
            所以使用者問「效益曲排行」時,它去找一首叫效益曲的歌,當然找不到。
            三份資料合起來就是站台對自己的完整描述:
            PAGES(26 頁一句話)、CHANGELOG(22 則功能介紹)、SYSLOG(78 則詳細更新記錄)。 */
+        /* 別名查表。玩家講的幾乎都是圈內叫法,而站上存的是正式名稱 ——
+           這一步先做,命中就直接告訴模型「這個詞對應哪支工具」,
+           它就不必從一堆搜尋結果裡自己猜。 */
+        {
+          const al = [];
+          (this.ALIASES || []).forEach(row => {
+            const names = [row[0]].concat(String(row[3] || '').split('|'));
+            if (names.some(n2 => hit(n2))) {
+              al.push({ name: row[0], tool: row[1] || null, page: row[2] || null });
+            }
+          });
+          if (al.length) {
+            out.terms = al.slice(0, 5);
+            out.term_note = '這是圈內用語對照。有 tool 欄位的話,'
+              + '**直接呼叫那支工具把結果算出來**,不要只解釋名詞 ——'
+              + '使用者問的是答案,不是定義。';
+          }
+        }
+
         if (want.indexOf('feature') >= 0) {
           const P = this.PAGES || {};
           const pg = Object.keys(P).filter(k2 => hit(P[k2][0]) || hit(P[k2][1]) || hit(k2))
