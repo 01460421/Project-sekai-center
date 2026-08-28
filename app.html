@@ -1552,6 +1552,69 @@ select option, select optgroup{
         </div>
       </div>
 
+      <!-- AI 點數（beta） -->
+      <sc-if value="{{ crShow }}">
+        <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px">
+            <div style="font-size:14.5px;font-weight:800;color:var(--ink)">AI 點數</div>
+            <span style="padding:2px 8px;border-radius:999px;background:color-mix(in oklab,var(--accent) 18%,transparent);color:var(--accent-deep);font-size:10.5px;font-weight:800;letter-spacing:.5px">BETA</span>
+            <div style="flex:1"></div>
+            <div style="font-size:12.5px;color:var(--text-2)">餘額 <b style="font-size:17px;color:var(--accent-deep)">{{ crBalance }}</b> 點</div>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
+            每天的免費額度用完之後，才會開始扣點數；點數不會過期。<br>
+            這是 beta：站上不接金流，下單後依付款說明轉帳並附上對帳碼，管理員確認收到後為你入帳。
+          </div>
+
+          <sc-if value="{{ crHasOpen }}">
+            <div style="padding:13px 15px;border-radius:13px;background:color-mix(in oklab,#ffb86b 13%,transparent);border:1px solid var(--border);margin-bottom:10px">
+              <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:5px">待付款：{{ crOpenName }}　{{ crOpenPoints }} 點　{{ crOpenPrice }}</div>
+              <div style="font-size:12px;color:var(--text-2);line-height:1.9">
+                對帳碼　<b style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;letter-spacing:2px;color:var(--accent-deep)">{{ crOpenRef }}</b><br>
+                付款時請務必在備註填上這組碼，管理員靠它把款項對到你的訂單。
+              </div>
+              <sc-if value="{{ crHasPayInfo }}">
+                <div style="margin-top:8px;padding:10px 13px;border-radius:11px;background:var(--card);border:1px dashed var(--border);font-size:12px;color:var(--text-2);line-height:1.85;white-space:pre-line">{{ crPayInfo }}</div>
+              </sc-if>
+              <sc-if value="{{ crNoPayInfo }}">
+                <div style="margin-top:8px;font-size:12px;color:#d9534f">站台尚未設定付款說明，請聯絡管理員。</div>
+              </sc-if>
+              <button type="button" onClick="{{ onCancelOrder }}" data-id="{{ crOpenId }}" style="margin-top:10px;padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">取消這張訂單</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ crNoOpen }}">
+            <div style="display:flex;gap:9px;flex-wrap:wrap">
+              <sc-for list="{{ crPlans }}" as="pl" hint-placeholder-count="3">
+                <div style="flex:1;min-width:132px;padding:13px 15px;border:1px solid var(--border);border-radius:14px;background:var(--card-2)">
+                  <div style="font-size:12px;font-weight:800;color:var(--ink)">{{ pl.name }}</div>
+                  <div style="font-size:21px;font-weight:800;color:var(--accent-deep);line-height:1.35">{{ pl.points }}<span style="font-size:11.5px;color:var(--text-3);font-weight:700"> 點</span></div>
+                  <div style="font-size:12px;color:var(--text-2)">{{ pl.priceText }}</div>
+                  <div style="font-size:10.5px;color:var(--text-3);margin-bottom:8px">每點 {{ pl.unit }}</div>
+                  <button type="button" onClick="{{ onBuy }}" data-plan="{{ pl.id }}" style="width:100%;padding:7px 0;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">選這個</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ crMsg }}</div>
+
+          <sc-if value="{{ crHasHistory }}">
+            <div style="margin-top:11px;border-top:1px solid var(--border);padding-top:9px">
+              <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:5px">購買紀錄</div>
+              <sc-for list="{{ crOrders }}" as="o" hint-placeholder-count="2">
+                <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--text-3);padding:3px 0">
+                  <span style="min-width:96px">{{ o.when }}</span>
+                  <span style="flex:1;min-width:110px;color:var(--text-2)">{{ o.points }} 點　{{ o.priceText }}</span>
+                  <span style="font-family:ui-monospace,Menlo,monospace">{{ o.ref }}</span>
+                  <span style="font-weight:800;color:{{ o.color }}">{{ o.statusText }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
       <!-- 雲端同步 -->
       <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">雲端同步</div>
@@ -2008,6 +2071,26 @@ select option, select optgroup{
         </sc-for>
         <div style="font-size:11.5px;color:var(--accent-deep);margin-top:8px">{{ admMsg }}</div>
       </div>
+
+      <sc-if value="{{ crHasPend }}">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+          <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">待入帳的點數訂單（{{ crPendN }}）</div>
+          <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
+            站上不接金流，所以「錢收到了沒」只有你知道。核對到對帳碼相符的款項再按入帳。<br>
+            入帳是冪等的：重複按或兩個管理員同時按，都只會加一次點數。
+          </div>
+          <sc-for list="{{ crPendRows }}" as="o" hint-placeholder-count="2">
+            <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)">
+              <div style="font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:800;letter-spacing:1.5px;color:var(--accent-deep);min-width:78px">{{ o.ref }}</div>
+              <div style="flex:1;min-width:150px">
+                <div style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ o.what }}</div>
+                <div style="font-size:11px;color:var(--text-3)">{{ o.who }}　{{ o.when }}</div>
+              </div>
+              <button type="button" onClick="{{ onConfirmOrder }}" data-id="{{ o.id }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">確認已收款，入帳</button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
 
       <sc-if value="{{ admHasAuto }}">
         <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
@@ -2683,6 +2766,9 @@ select option, select optgroup{
               <sc-for list="{{ u.pts }}" as="pt" hint-placeholder-count="2">
                 <span style="display:flex;gap:6px;font-size:11.5px;color:var(--text-2);line-height:1.6"><span style="flex:none;color:var(--accent)">・</span><span>{{ pt }}</span></span>
               </sc-for>
+              <sc-if value="{{ u.hasMore }}">
+                <button type="button" onClick="{{ onSysToggle }}" data-k="{{ u.k }}" style="margin-top:2px;padding:0;border:none;background:none;color:var(--accent-deep);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">{{ u.moreText }}</button>
+              </sc-if>
             </span>
           </span>
         </div>
@@ -3347,6 +3433,8 @@ class Component extends DCLogic {
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
+    credits: null, crMsg: '', crBusy: false, crPend: [],
+    sysOpen: {},
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false, admMsg: '',
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
     effSort: 'eph', dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
@@ -4508,8 +4596,13 @@ class Component extends DCLogic {
         event_rate: { type: 'number', description: '歌曲活動倍率 %（沒指定 song_id 時才會用到，預設 100）' } } } },
 
     { name: 'song_efficiency',
-      description: '效率排行：在指定的模式／難度／隊伍條件下，哪些歌的活動 P 每小時最高（曲子短＋活動倍率高的通常贏）。' +
-        '使用者問「跑哪首歌最快」「哪首 CP 值最高」時用。參數省略就沿用計算中心的共用設定。',
+      description: '歌曲排行（＝站上計算中心的「效率排行」）。在指定的模式／難度／隊伍條件下把全曲庫排序。' +
+        '**sort_by 決定回答的是哪一個問題，選錯就是答非所問：**' +
+        'eph＝每小時活動P（時間有限、想快，偏好短曲，圈內叫效率曲／短效）；' +
+        'ep＝單局活動P（體力有限、想省火，偏好長曲，圈內叫效益曲／長效／CP值曲）；' +
+        'score＝單局分數（純衝分數，與活動倍率無關）。' +
+        '使用者問「跑哪首最快」用 eph；問「效益曲排行」「哪首最省體力」「一場拿最多P」用 ep；' +
+        '問「哪首分數最高」用 score。參數省略就沿用計算中心的共用設定。',
       input_schema: { type: 'object', properties: {
         limit: { type: 'integer', description: '要回幾筆，最多 100，預設 20。'
           + '這是完整排行的前 N 名（全曲庫 602 首都算過），不是取樣——不要用多次小批次去拼湊。' },
@@ -4523,7 +4616,9 @@ class Component extends DCLogic {
         s6: { type: 'number', description: 'S6 倍率' },
         energy: { type: 'integer', description: '每場吃幾火 0～10' },
         interval: { type: 'number', description: '每場之間的間隔秒數（選曲／配對／結算，預設沿用畫面設定的 50 秒）' },
-        limit: { type: 'integer', description: '要回幾首，預設 12，最多 20' } } } },
+        sort_by: { type: 'string', enum: ['eph', 'ep', 'score'],
+          description: '依什麼排序，預設 eph。eph＝每小時活動P（時間有限／效率曲）、'
+            + 'ep＝單局活動P（體力有限／效益曲）、score＝單局分數。' } } } },
 
     { name: 'calc_skill_multiplier',
       description: '由隊長與 4 位隊員的技能加成 %，算出「平均技能倍率」。這個值就是 calc_event_points／song_efficiency 的 skill 參數。' +
@@ -4670,7 +4765,10 @@ class Component extends DCLogic {
         cooldown_s: { type: 'number', description: '兩次通知之間至少間隔幾秒，不給就用該類型的預設值' } }, required: ['kind', 'mode'] } },
 
     { name: 'search_anything',
-      description: '**遇到任何不認識的名詞就先用這個。** 一次搜遍曲庫、活動、卡片、卡池與教學大全，'
+      description: '**遇到任何不認識的名詞就先用這個。** 一次搜遍曲庫、活動、卡片、卡池、教學大全，'
+        + '以及站台自己的功能索引（26 個頁面、22 則功能介紹、76 則更新記錄）——'
+        + '所以它也能回答「站上有沒有 X 功能」「X 在哪一頁」。'
+        + ''
         + '回報那個詞可能是什麼。玩家講的多半是簡稱或圈內叫法（「余花」是曲名 余花にみとれて、'
         + '「蝦」是 独りんぼエンヴィー、「開闢天地」是 初音天地開闢神話），直接把使用者的原話丟進來即可。'
         + '完全找不到時會回最接近的幾個候選，不要自己猜或直接說不知道。',
@@ -4916,15 +5014,29 @@ class Component extends DCLogic {
           const cycle = song.time + iv;
           rows.push({ id: song.id, title: song.t, level: d[0], notes: d[1],
             length_s: song.time, event_rate_pct: song.rate, cycle_s: Math.round(cycle),
-            event_points: ep, ep_per_hour: Math.round(ep * 3600 / cycle) });
+            event_points: ep, ep_per_hour: Math.round(ep * 3600 / cycle), score: Math.round(score) });
         });
         if (!rows.length) return { error: '曲庫裡沒有難度 ' + diff + ' 的資料，換一個難度試試' };
-        rows.sort((x, y) => y.ep_per_hour - x.ep_per_hour);
+
+        /* 三種排序不是同一個問題的三種寫法,是三種不同的處境 ——
+           而站上的效率排行頁本來就有這三個選項(effRanking 的 sortBy)。
+           工具原本只寫死每小時,等於「效益曲排行」這個問題結構上就答不出來:
+           效益曲的定義正是「單局 pt 高但曲長」,那要按單局 P 排,不是按每小時排。 */
+        const SORTS = { eph: 'ep_per_hour', ep: 'event_points', score: 'score' };
+        const sk = SORTS[String(a.sort_by || 'eph')] || 'ep_per_hour';
+        rows.sort((x, y) => (y[sk] || 0) - (x[sk] || 0));
+        const SORT_NOTE = {
+          ep_per_hour: '每小時活動P ＝ 單局EP × 3600 ÷ (曲長＋間隔)。時間有限時看這個，會偏好短曲（俗稱效率曲／短效）。',
+          event_points: '單局活動P。體力有限時看這個，會偏好長曲（俗稱效益曲／長效）——同樣一份體力拿到最多 P。',
+          score: '單局分數。純粹衝分數（例如打歌活動或刷 B30）時看這個，與活動倍率無關。',
+        };
         return {
           mode, difficulty: diff, boost_energy: energy, boost_multiplier: F, interval_s: iv,
+          sort_by: String(a.sort_by || 'eph'),
           inputs: { power, bonus_pct: bonus, skill, s6 },
-          total: rows.length, songs: rows.slice(0, lim),
-          note: '排序依「每小時活動P」＝ 單局EP × 3600 ÷ (曲長＋間隔)。間隔含選曲、配對與結算；協力/應援另有 ' + this.ohOf(mode) + ' 秒固定開銷未計入此處（calc_event_points 才會加）。',
+          total: rows.length, songs: rows.slice(off, off + lim),
+          note: SORT_NOTE[sk] + ' 間隔含選曲、配對與結算；協力/應援另有 ' + this.ohOf(mode)
+            + ' 秒固定開銷未計入此處（calc_event_points 才會加）。',
         };
       }
 
@@ -5556,7 +5668,8 @@ class Component extends DCLogic {
         const base = norm(raw), alt = strip(base);
         const qs = [...new Set([base].concat(alt !== base && alt.length >= 2 ? [alt] : []))];
         const q = qs[0];
-        const want = Array.isArray(a.kinds) && a.kinds.length ? a.kinds : ['song', 'event', 'card', 'gacha', 'tutorial'];
+        const want = Array.isArray(a.kinds) && a.kinds.length ? a.kinds
+          : ['song', 'event', 'card', 'gacha', 'tutorial', 'feature'];
         const hit = (t) => { const n2 = norm(t);
           return !!n2 && qs.some(v => n2.includes(v) || v.includes(n2)); };
         const loose = (t) => { const n2 = norm(t); return n2 && [...q].some(ch => n2.includes(ch)); };
@@ -5641,6 +5754,28 @@ class Component extends DCLogic {
           const ex = src.filter(x => hit(x.q) || hit(x.kw) || String(x.a || '').includes(raw));
           out.tutorial = ex.slice(0, 5).map(x => ({ question: x.q,
             answer: String(x.a || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400) }));
+        }
+
+        /* 站台自己的功能索引。這是助手原本完全碰不到的一塊 ——
+           它能搜曲庫、活動、卡片,卻不知道「這個網站有哪些功能」,
+           所以使用者問「效益曲排行」時,它去找一首叫效益曲的歌,當然找不到。
+           三份資料合起來就是站台對自己的完整描述:
+           PAGES(26 頁一句話)、CHANGELOG(22 則功能介紹)、SYSLOG(78 則詳細更新記錄)。 */
+        if (want.indexOf('feature') >= 0) {
+          const P = this.PAGES || {};
+          const pg = Object.keys(P).filter(k2 => hit(P[k2][0]) || hit(P[k2][1]) || hit(k2))
+            .slice(0, 6).map(k2 => ({ page: k2, name: P[k2][0], desc: P[k2][1] }));
+          const cl = (this.CHANGELOG || []).filter(x => hit(x.title) || hit(x.desc))
+            .slice(0, 6).map(x => ({ name: x.title, desc: x.desc, page: x.to || null }));
+          const sl = (this.SYSLOG || []).filter(x => hit(x.t) || hit(x.s))
+            .slice(0, 6).map(x => ({ date: x.d, name: x.t, detail: String(x.s || '').slice(0, 400) }));
+          if (pg.length) out.pages = pg;
+          if (cl.length) out.features = cl;
+          if (sl.length) out.changelog = sl;
+          if (pg.length || cl.length || sl.length) {
+            out.feature_note = '這個詞指的是站上的一項功能,不是遊戲內容。'
+              + '回答時要說明它在哪一頁、怎麼用,並且優先用對應的工具實際算給使用者看,而不是只描述功能。';
+          }
         }
 
         const found = Object.keys(out).reduce((n2, k) => n2 + (Array.isArray(out[k]) ? out[k].length : 0), 0);
@@ -5782,32 +5917,64 @@ class Component extends DCLogic {
       d: '算出你該跑多少、還來不來得及、要花多少體力與錢',
       q: ['我的 id 是 　，幫我算這期還要跑多久才追得上 T1000',
           '我現在時速多少？照這個速度最後會落在第幾名',
-          '我想進 T500，從現在開始每天要打幾場、要花多少體力'] },
+          '我想進 T500，從現在開始每天要打幾場、要花多少體力',
+          '我一天只擠得出兩小時，這樣進得了 T1000 嗎',
+          '照我現在的節奏，最後大概會停在哪一段',
+          '衝 T100 要花多少錢？值不值得'] },
     { id: 'border', n: '榜線判讀', c: '#ff9db4',
       d: '這期算高還低、預測終線可不可信、跟歷史比如何',
       q: ['這期是什麼型態？跟同型態的歷史比算高還是低',
           'T100 到 T5000 現在各是多少，預測終線分別多少',
-          '幫我看最近幾期同型態活動的終線範圍'] },
+          '幫我看最近幾期同型態活動的終線範圍',
+          '這期終線會比上期高還是低？理由是什麼',
+          '同樣是 6.25 天的箱活，T500 通常落在什麼區間',
+          'World Link 這章各段位現在的實測時速是多少'] },
     { id: 'gacha', n: '抽卡決策', c: '#c39df2',
       d: '該不該抽、抽到天井要多少、招募點數還差多少',
       q: ['接下來三個月有哪些池？以我的持卡該抽哪些',
           '我想抽到指定 PU，期望要多少石？天井呢',
-          '招募點數的保底怎麼算，我還差多少'] },
+          '招募點數的保底怎麼算，我還差多少',
+          '我有三萬石，接下來三個月怎麼分配最好',
+          'bfes 那期是第幾期？那個池值得抽嗎',
+          '常駐池的 50 點保底跟 100 點保底差在哪'] },
     { id: 'deck', n: '編組與加成', c: '#b8e561',
       d: '加成怎麼疊、WL 五色怎麼湊、缺什麼卡',
       q: ['這期我能湊到多少加成？缺什麼',
           'World Link 這章我該怎麼配隊，五色齊了嗎',
-          '我的收集率如何？哪個團最缺'] },
+          '我的收集率如何？哪個團最缺',
+          '我這五張卡的平均技能倍率是多少',
+          '同團加成跟角色加成是怎麼疊起來的',
+          '再抽到哪一張，我的加成才會再往上跳一階'] },
     { id: 'calc', n: '效率試算', c: '#ffd94d',
       d: '打哪首最划算、單場多少 P、烤森與排位',
-      q: ['哪些歌 CP 值最高？我該打哪首',
+      q: ['效益曲排行給我看看',
+          '我體力有限，打哪首最省火',
+          '時間有限跟體力有限，該打的歌一樣嗎',
           '這樣的加成跑一場多少活動 P，每體力效率多少',
-          '烤森採集怎麼配最有效率'] },
+          '烤森採集怎麼配最有效率',
+          '排位賽從 Class 3 升到 Class 5 大概要打幾場'] },
+    { id: 'site', n: '站台與查詢', c: '#f5a3c7',
+      d: '站上有什麼、在哪一頁、名詞是什麼意思',
+      q: ['站上有哪些功能是我可能沒用過的',
+          '效率排行在哪一頁？怎麼用',
+          '余花是哪一期的活動曲',
+          '幫我查這首歌的定數跟音符數',
+          '控分是什麼？站上有工具嗎',
+          '榜線資料庫可以怎麼交叉篩選'] },
+    { id: 'deep', n: '深度規劃', c: '#9aa9ff',
+      d: '多步驟的複雜問題，它會自己串起需要的資料再回答',
+      q: ['我的 id 是 　，幫我算接下來兩期的最佳跑榜隊伍，以及這幾個月該抽哪些池',
+          '我現在時速多少、要跑多久、打什麼，才追得上 T500',
+          '把這期跟同型態的前五期交叉比對，告訴我終線會落在哪、理由是什麼',
+          '以我的持卡和現有石頭，規劃接下來三個月的抽卡與跑榜',
+          '我想在半年內進一次 T100，從現在開始該怎麼準備'] },
     { id: 'watch', n: '通知與排程', c: '#8be0d0',
-      d: '幫你盯著，條件到了寄信通知',
+      d: '幫你盯著，條件成立時發站內通知',
       q: ['幫我訂閱：T1000 榜線超過 300 萬時通知我',
           '我訂了哪些通知？最近有觸發嗎',
-          '活動結算前 12 小時提醒我'] },
+          '活動結算前 12 小時提醒我',
+          '有人超過我的分數時通知我',
+          '這期開始跑之前提醒我把加成卡換上'] },
   ];
 
   AI_SYSTEM = `你是 Project SEKAI 台服資源站的站內助手，服務對象是這個站的管理員與進階玩家。
@@ -5854,8 +6021,11 @@ class Component extends DCLogic {
 
 曲目：
 - 蝦＝独りんぼエンヴィー，拍蝦＝打這首刷分。捉迷藏也是常見的刷分曲。
-- 長效／效益曲：單局 pt 高但曲子長，省體力費時間。
+- 長效／效益曲／CP 值曲：單局 pt 高但曲子長，省體力費時間。
+  → 問「效益曲排行」「哪首最省體力」「一場拿最多 P」= song_efficiency(sort_by='ep')。
 - 短效／效率曲：曲子短，單位時間場次多，周回快但費體力。
+  → 問「效率排行」「跑哪首最快」= song_efficiency(sort_by='eph')。
+  這兩個是相反的排序,選錯就是答非所問:效益曲要按單局 P 排,不是按每小時排。
 - 開闢天地＝初音天地開闢神話，全曲庫活動倍率最高（130%）。
 - 魔王曲：難度極高的譜面。
 
@@ -5877,6 +6047,11 @@ class Component extends DCLogic {
 - AP＝全 PERFECT，FC＝Full Combo。L1／P1 是站位代號。
 
 不確定使用者指的是哪一個時就直接問，不要猜著回答。
+
+**認得一個名詞不等於答得出來 —— 名詞背後如果是站上的某個功能，要實際去算給他看。**
+使用者說的往往是圈內叫法,而站上的功能名稱是另一套。你的詞彙表能解釋那個詞的意思,
+不代表你回答了他的問題:他問「效益曲排行」要的是一張排行表,不是一句名詞解釋。
+先想「站上有沒有哪個工具能產出這個東西」,有就去呼叫它。
 
 **遇到沒見過的專有名詞，一律先 search_anything(q=那個詞)，不要直接回「不知道那是什麼」。**
 它會一次搜曲庫、活動、卡片、卡池與教學大全並告訴你那可能是什麼。
@@ -6027,7 +6202,7 @@ class Component extends DCLogic {
           return patch;
         });
       }
-      if (d && d.user && d.user.status === 'approved') { this.pullCloud(); this.loadNotices(); }
+      if (d && d.user && d.user.status === 'approved') { this.pullCloud(); this.loadNotices(); this.loadCredits(); }
     } catch (e) {
       /* 這裡本來把錯誤吞掉只顯示「未登入」,結果 CORS、cookie、500 全都長一樣,
          連我自己都查不出是哪一種。改成把實際原因留下來顯示在畫面上。 */
@@ -6150,15 +6325,23 @@ class Component extends DCLogic {
     }
   }
 
+  /* 點數（beta）。beta 沒開時後端會回 enabled:false,前端據此整塊不顯示 ——
+     不要用「有沒有拿到資料」判斷,那樣連線失敗會被誤當成功能關閉。 */
+  async loadCredits() {
+    try { this.setState({ credits: await this.api('/api/credits') }); }
+    catch (e) { this.setState({ credits: null }); }
+  }
   async loadAdmin() {
     try {
       /* 自動核准的帳號也要撈:它們的 status 已經是 approved,不會出現在待審核清單裡,
          但仍在試用額度下、也還沒有人真的看過。不撈的話管理員在產品裡永遠找不到它們。 */
-      const [u, ap, st] = await Promise.all([
+      const [u, ap, st, co] = await Promise.all([
         this.api('/admin/users?status=pending'),
         this.api('/admin/users?status=approved'),
         this.api('/admin/stats'),
+        this.api('/admin/credits/orders').catch(() => null),
       ]);
+      this.setState({ crPend: (co && co.orders) || [] });
       const auto = ((ap && ap.users) || []).filter(x => String(x.reviewed_by || '') === 'system:auto');
       this.setState({ admUsers: (u && u.users) || [], admAuto: auto,
         admStats: (st && st.stats) || st || null });
@@ -7620,10 +7803,21 @@ class Component extends DCLogic {
           { target: it.u ? '_blank' : '', arrow: it.u ? ' ↗' : '', u: it.u || 'javascript:void 0' })),
       })),
       // 手機先列 10 筆更新紀錄,更早的收進展開鈕(目前 40+ 筆全列會撐爆頁面)
-      syslog: this.SYSLOG.slice(0, (s.mobile && !s.sysMore) ? 10 : this.SYSLOG.length).map(u => Object.assign({}, u, {
-        // 敘述改條列:依句號切開,去掉空句,保留原句的分號細節
-        pts: String(u.s || '').split(/。\s*/).map(x => x.trim()).filter(Boolean)
-      })),
+      /* 敘述依句號切成條列,但**預設只顯示第一句**。
+         第一句幾乎都是「改了什麼」,後面是細節與理由 —— 全部攤開的話,
+         76 則加起來一萬多字,想快速看過有哪些更新反而看不到。
+         細節不刪,收在展開鈕後面。 */
+      syslog: this.SYSLOG.slice(0, (s.mobile && !s.sysMore) ? 10 : this.SYSLOG.length).map(u => {
+        const pts = String(u.s || '').split(/。\s*/).map(x => x.trim()).filter(Boolean);
+        const k = u.d + '|' + u.t;
+        const open = !!(s.sysOpen || {})[k];
+        return {
+          k, d: u.d, t: u.t,
+          pts: open ? pts : pts.slice(0, 1),
+          hasMore: pts.length > 1,
+          moreText: open ? '收合' : ('展開其餘 ' + (pts.length - 1) + ' 點'),
+        };
+      }),
       sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
@@ -7825,6 +8019,16 @@ class Component extends DCLogic {
           admMsg: s.admMsg || '',
           /* 自動核准、還沒有人覆核過的帳號。它們在試用額度下(AI 次數被壓到很低),
              管理員按一次「確認」就會把 reviewed_by 從 system:auto 換成他自己,額度隨之恢復。 */
+          /* 待入帳的點數訂單。站上不接金流,所以「收到錢了沒」只有人知道 ——
+             這一區就是把那個判斷交回給人的地方。 */
+          crPendN: (s.crPend || []).length,
+          crHasPend: (s.crPend || []).length > 0,
+          crPendRows: (s.crPend || []).map(o => ({
+            id: o.id, ref: o.ref,
+            who: (o.user_name || '(未命名)') + '　' + (o.user_email || ''),
+            what: o.points + ' 點　NT$ ' + (+o.price || 0).toLocaleString(),
+            when: o.created_at ? new Date(o.created_at * 1000).toLocaleString() : '',
+          })),
           admAutoN: (s.admAuto || []).length,
           admHasAuto: (s.admAuto || []).length > 0,
           admAutoRows: (s.admAuto || []).map(u => ({
@@ -7925,6 +8129,45 @@ class Component extends DCLogic {
           })(),
           acErr: s.meErr || '',
           acSyncMsg: s.acSyncMsg || '',
+          ...(() => {
+            /* 點數（beta）。模板不能寫三元或 ||,所有文案與顏色在這裡就算完。 */
+            const cr = s.credits;
+            const on = !!(cr && cr.enabled);
+            const money = (n, c) => (c === 'TWD' || !c ? 'NT$ ' : c + ' ') + (+n || 0).toLocaleString();
+            const orders = (cr && cr.orders) || [];
+            const openO = orders.find(o => o.status === 'pending') || null;
+            const ST = { pending: ['待付款', 'var(--text-2)'], paid: ['已入帳', 'var(--accent-deep)'],
+                         cancelled: ['已取消', 'var(--text-3)'] };
+            const pay = String((cr && cr.pay_instructions) || '');
+            return {
+              crShow: on,
+              crBalance: (cr && cr.balance) || 0,
+              crPlans: on ? (cr.plans || []).map(pl => ({
+                id: pl.id, name: pl.name, points: pl.points,
+                priceText: money(pl.price, pl.currency),
+                // 每點單價要讓人一眼看到划不划算,不要逼他自己除
+                unit: money(Math.round(pl.price / Math.max(1, pl.points) * 10) / 10, pl.currency),
+              })) : [],
+              crHasOpen: !!openO,
+              crNoOpen: on && !openO,
+              crOpenId: openO ? openO.id : '',
+              crOpenRef: openO ? openO.ref : '',
+              crOpenName: openO ? openO.plan : '',
+              crOpenPoints: openO ? openO.points : 0,
+              crOpenPrice: openO ? money(openO.price, openO.currency) : '',
+              crPayInfo: pay,
+              crHasPayInfo: !!pay,
+              crNoPayInfo: !!openO && !pay,
+              crHasHistory: orders.length > 0,
+              crOrders: orders.slice(0, 10).map(o => ({
+                when: o.created_at ? new Date(o.created_at * 1000).toLocaleDateString() : '',
+                points: o.points, priceText: money(o.price, o.currency), ref: o.ref,
+                statusText: (ST[o.status] || [o.status])[0],
+                color: (ST[o.status] || ['', 'var(--text-3)'])[1],
+              })),
+              crMsg: s.crMsg || '',
+            };
+          })(),
           applyNote: s.applyNote || '',
           applyNoteCount: (s.applyNote || '').length + ' / 100 字',
           applyUid: s.applyUid || '',
@@ -8960,6 +9203,38 @@ class Component extends DCLogic {
       },
       /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
          而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      onSysToggle: e => {
+        const k = e.currentTarget.dataset.k;
+        this.setState(st => ({ sysOpen: Object.assign({}, st.sysOpen, { [k]: !(st.sysOpen || {})[k] }) }));
+      },
+      onBuy: async e => {
+        if (this.state.crBusy) return;
+        const plan = e.currentTarget.dataset.plan;
+        this.setState({ crBusy: true, crMsg: '建立訂單…' });
+        try {
+          const r = await this.api('/api/credits/order', { method: 'POST', body: { plan } });
+          this.setState({ crMsg: (r && r.note) || '訂單已建立。' });
+          await this.loadCredits();
+        } catch (er) { this.setState({ crMsg: er.message || '建立訂單失敗' }); }
+        this.setState({ crBusy: false });
+      },
+      onCancelOrder: async e => {
+        if (this.state.crBusy) return;
+        const id = e.currentTarget.dataset.id;
+        this.setState({ crBusy: true, crMsg: '取消中…' });
+        try { await this.api('/api/credits/cancel', { method: 'POST', body: { id } });
+              this.setState({ crMsg: '已取消。' }); await this.loadCredits(); }
+        catch (er) { this.setState({ crMsg: er.message || '取消失敗' }); }
+        this.setState({ crBusy: false });
+      },
+      onConfirmOrder: async e => {
+        const id = e.currentTarget.dataset.id;
+        this.setState({ admMsg: '入帳中…' });
+        try { const r = await this.api('/admin/credits/confirm', { method: 'POST', body: { id } });
+              this.setState({ admMsg: '已入帳 ' + ((r && r.order && r.order.points) || '') + ' 點。' });
+              this.loadAdmin(); }
+        catch (er) { this.setState({ admMsg: '入帳失敗：' + (er.message || '') }); }
+      },
       onVerifyStart: async () => {
         if (this.state.acVerifyBusy) return;
         this.setState({ acVerifyBusy: true, acVerifyMsg: '取得驗證碼…' });

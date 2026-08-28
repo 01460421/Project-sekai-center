@@ -14,6 +14,7 @@ import { WATCH_KINDS } from './watch.js';
 import {
   getUser, unlinkDiscord,
   saveApplication, issueNonce, bumpVerifyTry, bindGameUid,
+  getCredits, spendCredit, createOrder, listOrders, cancelOrder,
   getPrefs, setPrefs,
   listWatches, createWatch, updateWatch, deleteWatch,
   listEvents,
@@ -37,6 +38,32 @@ const APPLY_MAX = 10;              // 每個帳號累計送出上限
 const NONCE_TTL = 15 * 60;         // 驗證碼有效期
 const VERIFY_TRIES = 5;            // 每張驗證碼可比對幾次（每次都要打外部 API）
 const VERIFY_TOTAL = 40;           // 累計比對上限,換新碼不會歸零
+
+/* AI 點數方案（beta）。定價的基準是實測成本:站上每次助手呼叫平均
+   in 約 20,700 / out 約 1,400 tokens,以 Opus 5 的 $5/$25 per MTok 計約 US$0.1385,
+   換算約 NT$4.4。**低於這個單價就是每賣一點虧一點** —— 有 prompt 快取時實際會低一些,
+   但快取只在同一段對話連續提問時才命中,不能當成常態。
+   方案要改就設環境變數 AI_PLANS（JSON 陣列,欄位同下）,不必改程式碼。
+   價格與點數一律以伺服器端的這份為準,前端送什麼都不信。 */
+const AI_PLANS_DEFAULT = [
+  { id: 'trial', name: '體驗包', points: 50, price: 300, currency: 'TWD' },
+  { id: 'std', name: '標準包', points: 200, price: 1000, currency: 'TWD' },
+  { id: 'bulk', name: '大包', points: 600, price: 2700, currency: 'TWD' },
+];
+function aiPlans(env) {
+  if (env.AI_PLANS) {
+    try {
+      const v = JSON.parse(env.AI_PLANS);
+      if (Array.isArray(v) && v.length) {
+        return v.filter(x => x && x.id && +x.points > 0 && +x.price >= 0)
+          .map(x => ({ id: String(x.id), name: String(x.name || x.id),
+            points: Math.floor(+x.points), price: Math.floor(+x.price),
+            currency: String(x.currency || 'TWD') }));
+      }
+    } catch (e) { /* 設壞了就退回預設,不要讓整個端點掛掉 */ }
+  }
+  return AI_PLANS_DEFAULT;
+}
 
 /* 全站唯一的回應出口：JSON ＋ CORS ＋ no-store（帶 session 的東西不能被中間層快取）。 */
 function json(obj, status, req, env) {
@@ -157,7 +184,15 @@ export async function handleApi(req, env, url, user) {
     /* /api/me 一律 200：未登入回 { user: null },前端不必為了「還沒登入」去 catch 401 */
     if (p === '/api/me') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
-      return out({ user: shapeUser(user) });
+      const u2 = shapeUser(user);
+      /* 點數餘額只在 beta 開著時才查。這支端點每次載入頁面都會打,
+         沒開的時候不該為了一個不會顯示的數字多打一次 D1。 */
+      if (u2 && String(env.CREDITS_BETA || '') === '1') {
+        const c = await getCredits(env.DB, user.id);
+        u2.credits = (c && c.balance) || 0;
+        u2.credits_beta = true;
+      }
+      return out({ user: u2 });
     }
 
     /* 偵測規格。前端靠它動態產生表單 —— 規格寫在後端,新增偵測種類時
@@ -297,6 +332,69 @@ export async function handleApi(req, env, url, user) {
        前端看到就切「等待審核」畫面,不用再猜是哪種失敗。 */
     if (user.status !== 'approved') return out({ error: 'pending_approval', status: user.status }, 403);
 
+    /* ---------- AI 點數（beta） ---------- */
+    /* 這裡刻意不接金流。beta 階段只產生訂單與對帳碼,實際收款在站外完成,
+       管理員確認收到款項後才在後台入帳 —— 站上從頭到尾不碰任何付款資訊。 */
+    if (p === '/api/credits') {
+      if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
+      const [c, orders] = await Promise.all([
+        getCredits(env.DB, user.id), listOrders(env.DB, user.id, 20),
+      ]);
+      return out({
+        beta: true,
+        enabled: String(env.CREDITS_BETA || '') === '1',
+        balance: (c && c.balance) || 0,
+        lifetime: (c && c.lifetime) || 0,
+        spent: (c && c.spent) || 0,
+        plans: aiPlans(env),
+        pay_instructions: String(env.PAY_INSTRUCTIONS || ''),
+        orders: (orders || []).map(o => ({
+          id: o.id, plan: o.plan, points: o.points, price: o.price, currency: o.currency,
+          ref: o.ref, status: o.status, created_at: o.created_at, confirmed_at: o.confirmed_at || null,
+        })),
+      });
+    }
+
+    if (p === '/api/credits/order') {
+      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
+      if (String(env.CREDITS_BETA || '') !== '1') {
+        return out({ error: 'disabled', message: '點數方案尚未開放。' }, 403);
+      }
+      const b = await readJson(req);
+      if (b.tooBig) return out({ error: 'payload_too_large' }, 413);
+      if (b.bad) return out({ error: 'bad_json' }, 400);
+      const v = isObj(b.value) ? b.value : {};
+      const plan = aiPlans(env).find(x => x.id === String(v.plan || ''));
+      if (!plan) return out({ error: 'bad_plan', message: '沒有這個方案' }, 400);
+      /* 同時只能有一張未付款的訂單。不然對帳碼會滿天飛,管理員收到一筆款
+         根本不知道要對到哪一張,而使用者也會搞不清楚自己該匯多少。 */
+      const mine = await listOrders(env.DB, user.id, 20);
+      const open1 = (mine || []).find(o => o.status === 'pending');
+      if (open1) {
+        return out({ error: 'order_open',
+          message: '你還有一張未完成的訂單（對帳碼 ' + open1.ref + '）。請先完成或取消它。',
+          order: { id: open1.id, ref: open1.ref, points: open1.points, price: open1.price } }, 409);
+      }
+      const o = await createOrder(env.DB, user.id, plan);
+      return out({ ok: true,
+        order: { id: o.id, plan: o.plan, points: o.points, price: o.price,
+                 currency: o.currency, ref: o.ref, status: o.status, created_at: o.created_at },
+        pay_instructions: String(env.PAY_INSTRUCTIONS || ''),
+        note: '請依照付款說明完成付款，並在備註填上對帳碼。管理員確認收到後會為你入帳。' });
+    }
+
+    if (p === '/api/credits/cancel') {
+      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
+      const b = await readJson(req);
+      if (b.tooBig) return out({ error: 'payload_too_large' }, 413);
+      if (b.bad) return out({ error: 'bad_json' }, 400);
+      const id = str((isObj(b.value) ? b.value : {}).id, 64);
+      if (!id) return out({ error: 'bad_params', message: '缺少訂單 id' }, 400);
+      const okC = await cancelOrder(env.DB, user.id, id);
+      if (!okC) return out({ error: 'not_cancellable', message: '這張訂單無法取消（可能已入帳或已取消）' }, 409);
+      return out({ ok: true });
+    }
+
     /* ---------- 站上設定同步 ---------- */
     if (p === '/api/prefs') {
       if (m === 'GET') return out({ prefs: await getPrefs(env.DB, user.id) });
@@ -406,8 +504,21 @@ export async function handleApi(req, env, url, user) {
       if (siteUsed >= siteCap) {
         return json({ error: 'site_quota', message: '站台今日的 AI 總用量已達上限，請明天再試。' }, 429, req, env);
       }
+      /* 免費額度用完之後才動點數。順序不能反 —— 反過來等於在還有免費額度時
+         就先扣付費使用者的點,那是在懲罰付費的人。
+         扣點是條件式 UPDATE,餘額不足就是不足,不會扣成負數。 */
+      let paidCall = false;
       if (used >= cap) {
-        return json({ error: 'quota', message: '你今日的 AI 用量已達上限（' + cap + ' 次），請明天再試。' }, 429, req, env);
+        paidCall = await spendCredit(env.DB, user.id);
+        if (!paidCall) {
+          const c = await getCredits(env.DB, user.id);
+          return json({ error: 'quota',
+            message: '你今日的免費額度已用完（' + cap + ' 次）'
+              + (String(env.CREDITS_BETA || '') === '1'
+                  ? '，目前點數餘額 ' + ((c && c.balance) || 0) + ' 點。可到「我的帳號」購買點數，或明天再試。'
+                  : '，請明天再試。'),
+            balance: (c && c.balance) || 0 }, 429, req, env);
+        }
       }
       const rb = await readJson(req, 512 * 1024);   // 對話帶著工具結果,body 會比其他端點大
       if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413);
@@ -432,7 +543,7 @@ export async function handleApi(req, env, url, user) {
                      text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out);
       return json({
         content: reply.content, stop_reason: reply.stop_reason, model: reply.model,
-        quota: { used: used + 1, cap, site_used: siteUsed + 1, site_cap: siteCap },
+        quota: { used: used + 1, cap, site_used: siteUsed + 1, site_cap: siteCap, paid: paidCall },
         cache: { read: reply.cache_read || 0, write: reply.cache_write || 0 },
       }, 200, req, env);
     }

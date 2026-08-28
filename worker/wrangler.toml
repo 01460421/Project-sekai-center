@@ -61,5 +61,15 @@ AI_REVIEW_MODEL = "claude-haiku-4-5-20251001"
 AUTO_APPROVE = "0"
 AI_CAP_AUTO = "20"
 
+# AI 點數方案（beta）。預設關閉 —— 開之前請先設定 PAY_INSTRUCTIONS，
+# 否則使用者會下了單卻不知道錢要匯到哪裡。
+# 定價基準是實測成本:每次助手呼叫平均 in 約 20,700 / out 約 1,400 tokens，
+# 以 Opus 5 的 $5/$25 per MTok 計約 US$0.1385，換算約 NT$4.4。
+# **單價低於 4.4 就是每賣一點虧一點。** 預設方案是 6.0 / 5.0 / 4.5 元一點。
+# 要改方案不必動程式碼，設 AI_PLANS 為 JSON 陣列即可，例如：
+#   AI_PLANS = '[{"id":"std","name":"標準包","points":200,"price":1000}]'
+CREDITS_BETA = "0"
+PAY_INSTRUCTIONS = ""
+
 [observability]
 enabled = true

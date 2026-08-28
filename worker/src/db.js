@@ -315,3 +315,79 @@ export async function autoApprove(db, userId) {
       WHERE id=? AND status='pending'`, t, t, userId);
   return !!(r && r.meta && r.meta.changes);
 }
+
+/* ---------- AI 點數（beta） ---------- */
+
+export const getCredits = (db, userId) =>
+  one(db, 'SELECT * FROM ai_credits WHERE user_id=?', userId);
+
+/* 扣一點。條件寫進 WHERE,回 false 就是餘額不足 —— 先查後扣會有競態,
+   而競態在這裡等於「同時開兩個分頁就能多用一次」。 */
+export async function spendCredit(db, userId) {
+  const r = await run(db,
+    'UPDATE ai_credits SET balance=balance-1, spent=spent+1, updated_at=? WHERE user_id=? AND balance>0',
+    now(), userId);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 對帳碼。使用者匯款時附註這組,管理員靠它把款項對到訂單。
+   不用容易看錯的字元,長度取 6 —— 撞號由 UNIQUE index 擋,撞到就重產。 */
+const REF_A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function makeRef() {
+  const b = crypto.getRandomValues(new Uint8Array(6));
+  let s = '';
+  for (let i = 0; i < 6; i++) s += REF_A[b[i] % REF_A.length];
+  return s;
+}
+
+export async function createOrder(db, userId, plan) {
+  const t = now();
+  for (let i = 0; i < 5; i++) {          // 撞號重試
+    const id = newId(), ref = makeRef();
+    try {
+      await run(db,
+        `INSERT INTO ai_orders (id,user_id,plan,points,price,currency,ref,status,created_at,updated_at)
+         VALUES (?,?,?,?,?,?,?,'pending',?,?)`,
+        id, userId, plan.id, plan.points, plan.price, plan.currency || 'TWD', ref, t, t);
+      return one(db, 'SELECT * FROM ai_orders WHERE id=?', id);
+    } catch (e) {
+      if (!/UNIQUE|constraint/i.test(String((e && e.message) || e))) throw e;
+    }
+  }
+  throw new Error('無法產生不重複的對帳碼，請稍後再試');
+}
+
+export const listOrders = (db, userId, limit) =>
+  all(db, 'SELECT * FROM ai_orders WHERE user_id=? ORDER BY created_at DESC LIMIT ?',
+      userId, Math.min(50, limit || 20));
+
+export const pendingOrders = (db, limit) =>
+  all(db, `SELECT o.*, u.name AS user_name, u.email AS user_email
+             FROM ai_orders o JOIN users u ON u.id = o.user_id
+            WHERE o.status='pending' ORDER BY o.created_at LIMIT ?`, Math.min(100, limit || 50));
+
+/* 未付款的訂單使用者可以自己取消。已入帳的不能動 —— 那要走退款,不是取消。 */
+export async function cancelOrder(db, userId, id) {
+  const r = await run(db,
+    "UPDATE ai_orders SET status='cancelled', updated_at=? WHERE id=? AND user_id=? AND status='pending'",
+    now(), id, userId);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 入帳。兩句放同一個 batch（D1 的 batch 是一個交易）,第二句只認這次產生的 token:
+   狀態沒真的從 pending 翻過去的那次,沒有任何一列帶著它的 token,所以加不到點。
+   重複按、兩個管理員同時按,都只會入帳一次。 */
+export async function confirmOrder(db, id, adminId) {
+  const t = now(), tok = newId();
+  await db.batch([
+    db.prepare(`UPDATE ai_orders SET status='paid', confirmed_at=?, confirmed_by=?, confirm_token=?, updated_at=?
+                 WHERE id=? AND status='pending'`).bind(t, adminId, tok, t, id),
+    db.prepare(`INSERT INTO ai_credits (user_id, balance, lifetime, spent, updated_at)
+                SELECT user_id, points, points, 0, ? FROM ai_orders WHERE confirm_token=?
+                ON CONFLICT(user_id) DO UPDATE SET
+                  balance = balance + excluded.balance,
+                  lifetime = lifetime + excluded.lifetime,
+                  updated_at = excluded.updated_at`).bind(t, tok),
+  ]);
+  return one(db, 'SELECT * FROM ai_orders WHERE id=? AND confirm_token=?', id, tok);
+}

@@ -15,7 +15,8 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   logTool,
   listToolLog,
   createTask,
-  listTasks} from './db.js';
+  listTasks,
+  pendingOrders, confirmOrder} from './db.js';
 
 /* 模型 id 與參數依 claude-api skill 查證，不是憑記憶寫的。
    Opus 5 預設就跑 adaptive thinking，不必（也不能）再給 budget_tokens；
@@ -397,6 +398,27 @@ export async function handleAdmin(req, env, url, user) {
       if (!(await getUser(db, id))) return json({ error: 'not_found', message: '查無此使用者' }, 404);
       await reviewUser(db, id, status, user.id);
       return json({ ok: true, user: await getUser(db, id) });
+    }
+
+    /* AI 點數訂單（beta）。站上不接金流,所以「收到錢了沒」只有人知道 ——
+       這支端點就是把那個判斷寫進系統的地方。入帳本身是冪等的（db.js 的 confirmOrder）,
+       重複按或兩個管理員同時按都只會入帳一次。 */
+    if (p === '/admin/credits/orders' && req.method === 'GET') {
+      const rows = await pendingOrders(db, 100);
+      return json({ orders: (rows || []).map(o => ({
+        id: o.id, ref: o.ref, plan: o.plan, points: o.points, price: o.price, currency: o.currency,
+        user_id: o.user_id, user_name: o.user_name || '', user_email: o.user_email || '',
+        created_at: o.created_at,
+      })) });
+    }
+    if (p === '/admin/credits/confirm' && req.method === 'POST') {
+      const id = String(body.id || '');
+      if (!id) return json({ error: 'bad_request', message: '缺少 id' }, 400);
+      const o = await confirmOrder(db, id, user.id);
+      /* 回 null 代表狀態不是 pending —— 可能已經入過帳,也可能被使用者取消了。
+         這不是錯誤,但要講清楚,免得管理員以為沒生效而重按。 */
+      if (!o) return json({ error: 'not_pending', message: '這張訂單不是待付款狀態（可能已入帳或已取消），未做任何變更。' }, 409);
+      return json({ ok: true, order: { id: o.id, ref: o.ref, points: o.points, status: o.status } });
     }
 
     if (p === '/admin/users/admin' && req.method === 'POST') {
