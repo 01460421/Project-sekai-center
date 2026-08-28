@@ -1778,7 +1778,7 @@ select option, select optgroup{
   <sc-if value="{{ isDistrib }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="distribFrame" src="./index.html?embed=distrib" title="活動分布" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+      <iframe id="distribFrame" src="./index.html?embed=distribution" title="活動分布" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
     </div>
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">歷屆活動的時間分布甘特圖。</div>
   </div>
@@ -3700,7 +3700,7 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame', 'cardlibFrame', 'dollsFrame', 'bonuscardsFrame', 'lookupFrame', 'distributionFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame', 'cardlibFrame', 'dollsFrame', 'bonuscardsFrame', 'lookupFrame', 'distribFrame'].forEach(id => {
         const f = document.getElementById(id);
         if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : id === 'gachaCalcFrame' ? 600 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
