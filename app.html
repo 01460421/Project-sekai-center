@@ -14263,7 +14263,12 @@ class Component extends DCLogic {
           if (rr && c[2] !== rr) return false;
           if (sp >= 0 && c[4] !== sp) return false;
           if (q) {
-            const hay = ((c[7] || '') + ' ' + (nOf[c[1]] || '') + ' ' + (c[8] || '')).toLowerCase();
+            /* 比對範圍要涵蓋「卡片上看得到的所有字」。原本只比卡名、角色與素材名,
+               於是打「生日」「常駐」「期間限定」會回 0 張 —— 而那些字就印在每張卡上,
+               使用者當然會拿它們來搜。搜尋框對不上眼前的文字,用起來就是壞的。 */
+            const hay = ((c[7] || '') + ' ' + (nOf[c[1]] || '') + ' ' + (c[8] || '')
+              + ' ' + ((this.RARITY.find(r => r[0] === c[2]) || [0, ''])[1])
+              + ' ' + (this.SUPPLYN[c[4]] || '')).toLowerCase();
             if (hay.indexOf(q) < 0) return false;
           }
           return true;
