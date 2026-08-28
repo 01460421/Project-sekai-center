@@ -1868,6 +1868,25 @@ select option, select optgroup{
                 </div>
               </sc-for>
             </div>
+
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:3px">問題模板</div>
+              <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-bottom:9px">
+                把〔〕裡的東西換成你自己的數字再送出。多數人卡住不是不知道能問什麼，
+                而是不知道一次要講清楚哪些條件 —— 條件給齊，一輪就能拿到答案。
+              </div>
+              <sc-for list="{{ aiTplGroups }}" as="g" hint-placeholder-count="4">
+                <div style="margin-bottom:9px">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                    <span style="width:6px;height:6px;border-radius:50%;background:{{ g.c }};flex:none"></span>
+                    <span style="font-size:11.5px;font-weight:800;color:var(--text-2)">{{ g.n }}</span>
+                  </div>
+                  <sc-for list="{{ g.qs }}" as="t" hint-placeholder-count="3">
+                    <div onClick="{{ onAiPick }}" data-q="{{ t.q }}" style="padding:7px 11px;margin-bottom:4px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);font-size:11.5px;color:var(--text-2);line-height:1.6;cursor:pointer" style-hover="background:var(--bg-soft)">{{ t.q }}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
           </sc-if>
           <sc-for list="{{ aiBubbles }}" as="m" hint-placeholder-count="4">
             <div style="margin-bottom:10px;display:flex;justify-content:{{ m.align }}">
@@ -8900,6 +8919,50 @@ class Component extends DCLogic {
   /* 能力模塊。27 個工具藏在對話裡等於不存在 —— 使用者不會知道可以問什麼。
      依「想解決什麼問題」分組（不是依工具分），每組給幾個真的會問的句子,
      點了直接填進輸入框。 */
+  /* 問題模板。跟 AI_MODULES 的示範問題分開:那些是「照著問就有答案」,
+     這裡是「把〔〕裡的東西換成你自己的」—— 教的是怎麼把手上的數字組成一個好問題。
+     多數人卡住不是不知道能問什麼,是不知道要一次講清楚哪些條件,
+     於是來回問了五輪還沒拿到答案。模板把該給的條件先擺在那裡。 */
+  AI_TEMPLATES = [
+    { n: '報上身家，一次算完', c: '#4ad1e8', q: [
+      '我的 id 是〔ID〕，這期想進 T〔1000〕，幫我算還要跑多久、吃多少體力、大概多少錢',
+      '我的 id 是〔ID〕，我現在這隊多少綜合力？換成理論最佳隊能多多少',
+      '我的 id 是〔ID〕，用我實際持有的卡，這期最高能湊到幾 % 加成？還缺哪張',
+      '我的 id 是〔ID〕，看一下我的生涯紀錄，歷屆最好打到第幾名',
+    ] },
+    { n: '結算前控分', c: '#ffd94d', q: [
+      '我現在〔2847300〕P，想剛好停在〔2850000〕，加成〔300〕%，該怎麼打',
+      '還差〔2700〕P 收尾，用最少體力的打法是什麼',
+    ] },
+    { n: '選曲與吃火', c: '#b8e561', q: [
+      '綜合力〔300000〕、加成〔300〕%、技能倍率〔2.5〕，效益曲排行前十給我',
+      '同樣條件，時間有限的話該打哪首？跟省體力的選擇差在哪',
+      '這組條件下吃 0/1/2/3/5/7/10 火分別多少 P，哪個每火效率最高',
+    ] },
+    { n: '抽卡決策', c: '#c39df2', q: [
+      '我有〔30000〕石，接下來三個月的池該怎麼分配',
+      '〔卡池名〕想抽到 PU，期望多少石？天井要多少',
+      '幫我模擬抽〔100〕抽〔卡池名〕，大概會抽到什麼',
+      '我招募點數還有〔40〕點，付費石〔6000〕，離保底還差多少',
+    ] },
+    { n: '榜線判讀', c: '#ff9db4', q: [
+      '〔8.25〕天的〔WXS〕箱活，T〔1000〕歷史都落在什麼範圍',
+      'T〔1000〕這期的時間走勢跟預測終線，可信嗎',
+      '這期跟同型態的前五期交叉比對，終線會落在哪、理由是什麼',
+    ] },
+    { n: '查東西', c: '#f5a3c7', q: [
+      '〔曲名〕是哪一期的活動曲？定數跟音符數多少',
+      '〔稱號名〕要怎麼拿',
+      '站上有沒有〔功能〕？在哪一頁、怎麼用',
+      '我缺哪些〔25時〕的〔★4〕？哪些現在還抽得到',
+    ] },
+    { n: '儲值划算度', c: '#8be0d0', q: [
+      '我要湊〔100〕抽，預算〔3000〕元，最省錢的買法是什麼',
+      '月卡跟通行證現在買划算嗎？攤提下來一顆石多少錢',
+      '官網商店跟 App 同價位差多少',
+    ] },
+  ];
+
   AI_MODULES = [
     { id: 'run', n: '跑榜規劃', c: '#4ad1e8',
       d: '算出你該跑多少、還來不來得及、要花多少體力與錢',
@@ -11024,6 +11087,9 @@ class Component extends DCLogic {
             when: u.reviewed_at ? new Date(u.reviewed_at * 1000).toLocaleString() : '',
           })),
           aiBubbles: bubbles,
+          /* 模板永遠全部展開（不像模組要點才開）—— 它們的用途是「照著填」,
+             收起來就等於沒有。分類只是視覺分組,不是互斥的開關。 */
+          aiTplGroups: this.AI_TEMPLATES.map(g => ({ n: g.n, c: g.c, qs: g.q.map(q => ({ q })) })),
           aiModules: this.AI_MODULES.map(m => ({
             id: m.id, n: m.n, d: m.d, c: m.c,
             open: s.aiMod === m.id,
