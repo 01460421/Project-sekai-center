@@ -2969,11 +2969,11 @@ select option, select optgroup{
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:13px">
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 12%,var(--card)),var(--card));box-shadow:var(--sh-xs)">
       <div style="font-size:15px;font-weight:800;color:var(--ink)">所有功能一覽</div>
-      <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">本站 App 版的完整功能列表，點各卡片按鈕可直接前往該功能。</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">站上有的東西都在這，點卡片就過去了。</div>
     </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div style="font-size:14px;font-weight:800;color:var(--ink)">配色風格</div>
-      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">六種色調，深色與淺色模式都適用；選擇會記在這台裝置。</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">六種色調，淺色深色都能用。選了會記在這台裝置。</div>
       <div style="display:flex;flex-wrap:wrap;gap:9px">
         <sc-for list="{{ toneChips }}" as="t" hint-placeholder-count="6">
           <button type="button" onClick="{{ onTone }}" data-v="{{ t.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ t.bd }};border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ t.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
@@ -2984,7 +2984,7 @@ select option, select optgroup{
     </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px">系統更新</div>
-      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">近期的功能新增與修正紀錄。</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">最近加了什麼、修了什麼。</div>
       <sc-for list="{{ syslog }}" as="u" hint-placeholder-count="6">
         <div style="display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--border)">
           <span style="flex:none;font-size:10.5px;font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';padding-top:2px;min-width:74px">{{ u.d }}</span>
@@ -3462,36 +3462,40 @@ class Component extends DCLogic {
     ['復刻限定池', 'rr', '復刻池'],
     ['其他', 'ot', '其他']
   ];
+  /* 副標一律用講話的方式寫,不要寫成型錄。三件事最容易露餡:
+     ①名詞前面掛一長串定語(英文 of 結構直譯);②每條都同一個形狀、同樣長度;
+     ③用形容詞代替事實(完整、精準、智慧、一站式)。
+     有的四五個字就講完了,不必硬湊。 */
   PAGES = {
-    home:     ['首頁', '當期活動、我的進度與近期卡池'],
-    calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
-    gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
-    songs:    ['歌曲清單', '完整樂曲資料庫（Sekai-World 台服主資料庫）'],
-    rank:     ['活動排名', '即時排名與分段榜線（HiSekai API）'],
-    calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
-    deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
-    shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
-    b30:      ['B30 產生器', 'Best 30 実効值圖卡(Unibot 風格版面),可下載 PNG'],
-    tut:      ['教學大全', '115 則問答：養成、車隊、衝榜與音遊練習'],
-    gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
-    collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
-    rate:     ['收集率', '卡片圖鑑勾選，即時算出各團與各稀有度的收集進度'],
-    analysis: ['分析中心', '榜線終線預測與玩家節奏剖析'],
-    res:      ['資源連結', '官方、資訊站、社群、Wiki 與工具'],
-    borderdb: ['榜線資料庫', '歷期榜線交叉篩選與各段位排行'],
-    credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
-    whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
-    account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
-    admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
-    assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
-    notices:  ['通知', '偵測訂閱觸發時的站內通知'],
-    cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
-    art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
-    wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合'],
-    dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
-    bonuscards:['加分卡參考', '各活動的加成卡一覽'],
-    lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
-    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖']
+    home:     ['首頁', '這期跑到哪了'],
+    calendar: ['活動日曆', '哪天開什麼'],
+    gacha:    ['卡池列表', '235 個池，排到 2027 年 6 月'],
+    songs:    ['歌曲清單', '全部曲子，難度跟 note 數都有'],
+    rank:     ['活動排名', '前一百名，一分鐘更新一次'],
+    calc:     ['計算中心', '一場拿多少 P，還要打幾場'],
+    deckpro:  ['進階計算', '五張卡怎麼配最好'],
+    shop:     ['儲值分析', '哪一包比較划算'],
+    b30:      ['B30 產生器', '算 Best 30，出一張圖'],
+    tut:      ['教學大全', '115 則問答'],
+    gachasim: ['抽卡模擬', '照官方機率抽給你看'],
+    collect:  ['收集室', '貼圖 1,073 張、稱號 1,883 種'],
+    rate:     ['收集率', '還缺哪些卡'],
+    analysis: ['分析中心', '這期會卡在幾分，誰還在跑'],
+    res:      ['資源連結', '官方、社群，還有別人做的表'],
+    borderdb: ['榜線資料庫', '174 期榜線，想比什麼自己挑'],
+    credits:  ['製作與致謝', '這站是誰做的'],
+    whatsnew: ['功能介紹', '站上有什麼，改了什麼'],
+    account:  ['我的帳號', '登入之後設定跟著你走'],
+    admin:    ['管理後台', '審核、統計、助手'],
+    assistant:['站內助手', '直接問，它自己去翻資料'],
+    notices:  ['通知', '訂閱的東西觸發了會放這'],
+    cardlib:  ['卡片技能庫', '每張卡的技能寫什麼'],
+    art:      ['卡面下載', '官方原圖，直接抓'],
+    wlsup:    ['WL 後排加成', '後排該放誰'],
+    dolls:    ['月卡玩偶', '這個月的娃是誰'],
+    bonuscards:['加分卡參考', '哪些卡有加成'],
+    lookup:   ['玩家查詢', '打 ID 看別人的編組'],
+    distrib:  ['活動分布', '每期從哪天到哪天']
   };
   /* 圈內用語 → 站上功能 → 對應工具。玩家講的幾乎都是別名,而站上存的是正式名稱;
      這張表放在程式碼裡而不是 prompt 裡 —— 它有五百多條,每次請求都送一遍太貴,
@@ -3591,28 +3595,28 @@ class Component extends DCLogic {
   ];
 
   CHANGELOG = [
-    { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
-    { date: '日曆', title: '活動日曆', desc: '卡池與活動開放期間（台服預測時間），點日期可看當日活動。', to: 'calendar', cta: '前往活動日曆' },
-    { date: '卡池', title: '卡池列表', desc: '台服預測卡池；點任一項目顯示該期 PU 卡面、完整技能與詳細資訊。', to: 'gacha', cta: '前往卡池列表' },
-    { date: '歌曲', title: '歌曲清單（列表／方格）', desc: '完整樂曲資料庫，可切列表或封面方格檢視；支援搜尋、依團體篩選、依難度或加入時間排序，難度標籤 EASY→APPEND 完整顯示。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '歌曲', title: '歌曲詳情', desc: '點曲目查看封面、各難度等級與 note 數。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '播放器', title: '收合式浮動音樂播放器', desc: '播放遊戲全曲版，每首自第 10 秒起播 1 分鐘、淡入淡出各 3 秒；可收合成唱片圓鈕、跨頁持續播放。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '播放器', title: '虛擬／世界 ver 切換 ＋ 選團連播', desc: '一鍵切換虛擬歌手 ver 或世界 ver（如有）；於播放器直接挑團即可隨機連播該團全部曲目。', to: 'songs', cta: '前往歌曲清單' },
-    { date: '排名', title: '活動排名', desc: 'HiSekai API 即時排名與分段榜線，每 60 秒更新；點任一排名列查看周回／場均／時速（近 1／3／24 小時）。', to: 'rank', cta: '前往活動排名' },
-    { date: '排名', title: '我的排名', desc: '綁定 Player ID 後顯示個人編組綜合力（直接帶遊戲讀取值）與即時名次、詳細數據。', to: 'rank', cta: '前往活動排名' },
-    { date: '排名', title: '歷代活動查榜', desc: '任選一期（含已結束的 180+ 期），查該期最終前 100 名與各段榜線分數。', to: 'rank', cta: '前往活動排名' },
-    { date: '排名', title: '查看任一玩家編組', desc: '點排名列開詳情，再點「查看這位玩家的編組與加成」，顯示對方的實際 5 張卡、綜合力與逐卡活動加成。', to: 'rank', cta: '前往活動排名' },
-    { date: '排名', title: '榜線趨勢比較', desc: '把最近 12 期的 T100～T10 萬榜線並排比較，並標示最新一期相對前期的增減，用來抓這期該衝多少。', to: 'rank', cta: '前往活動排名' },
-    { date: '收集', title: '收集室', desc: '貼圖 1,073 張與稱號 1,883 種圖鑑，可搜尋、看取得條件與稀有度。', to: 'collect', cta: '前往收集室' },
-    { date: '分析', title: '分析中心', desc: '榜線分析(實測時速、預測終線、時間軸折線圖)、玩家分析(節奏剖析、動能、預測名次)、活躍分析(此刻在線與衝刺/降速名單)、生涯紀錄(逐期掃描過去前百,可查全部期數或指定期數)。', to: 'analysis', cta: '前往分析中心' },
-    { date: '收集', title: '收集率', desc: '全 1,249 張卡片圖鑑勾選持有，即時算出總收集率與各團體、各稀有度進度；可依團體／稀有度／取得類別篩選，支援備份碼跨裝置搬移。綁定玩家 ID 後另外顯示樂曲通關／FC／AP 與角色等級。', to: 'rate', cta: '前往收集率' },
-    { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位一站式工具。', to: 'calc', cta: '前往計算中心' },
-    { date: '計算', title: '抽卡模擬', desc: '依官方 master 資料的機率模型模擬抽卡：可搜尋任一期卡池，顯示各稀有度機率與 PU 卡，支援單抽／十連（含保底★3↑），並統計已抽數、消耗石、★4 與 PU 入手、距天井。', to: 'gachasim', cta: '前往抽卡模擬' },
-    { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
-    { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品內容物與台幣定價、素材篩選、CP 值排行、月卡攤提，官網商店比價（同價多送 11~45%）；智慧推薦依預算或目標抽數算最省錢組合；限時商品約每小時自動更新。', to: 'shop', cta: '前往儲值分析' },
-    { date: '計算', title: 'B30 產生器', desc: '勾選 FC/AP 譜面，依非官方難易度表定數（pentatonic V31）計算 Best 30 実効值，Unibot 風格版面高還原，一鍵輸出 2192×3600 PNG；可綁玩家 ID 帶入名片與 AP/FC 總數核對。', to: 'b30', cta: '前往 B30 產生器' },
-    { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
-    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
+    { date: '首頁', title: '首頁儀表板', desc: '活動剩幾天、跑到幾成。下面掛一個跑榜小窗，區域道具當滿等、一套娃，直接算最佳化的活動 P。再往下是最近開的池。', to: 'home', cta: '前往首頁' },
+    { date: '日曆', title: '活動日曆', desc: '哪天到哪天，點日期看那天有什麼。台服的日期是推算的，不是官方公告。', to: 'calendar', cta: '前往活動日曆' },
+    { date: '卡池', title: '卡池列表', desc: '點進去看那期的 PU 卡面跟技能怎麼寫。', to: 'gacha', cta: '前往卡池列表' },
+    { date: '歌曲', title: '歌曲清單（列表／方格）', desc: '全部曲子。可以切列表或封面方格，也能用搜的、挑團體、照難度或加入時間排。難度從 EASY 到 APPEND 都列出來。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '歌曲', title: '歌曲詳情', desc: '點下去有封面、各難度等級跟 note 數。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '播放器', title: '收合式浮動音樂播放器', desc: '放遊戲的全曲版，每首從第 10 秒開始播一分鐘，頭尾各淡 3 秒。可以收成一顆唱片，換頁也不會斷。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '播放器', title: '虛擬／世界 ver 切換 ＋ 選團連播', desc: '有虛擬歌手 ver 跟世界 ver 的可以直接換。在播放器挑一個團，就隨機連播那團的曲子。', to: 'songs', cta: '前往歌曲清單' },
+    { date: '排名', title: '活動排名', desc: '排名跟各段榜線，每 60 秒更新一次。點任一列看他的周回、場均、時速（近 1、3、24 小時）。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '我的排名', desc: '綁了 Player ID 就會顯示你的綜合力跟名次。綜合力是直接讀遊戲的值，不是估的。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '歷代活動查榜', desc: '任選一期，包含已經結束的那 180 幾期，看那期最後的前一百名跟各段分數。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '查看任一玩家編組', desc: '點排名列開詳情，再點「查看這位玩家的編組與加成」，會列出他實際那 5 張卡、綜合力，還有每張各加了多少。', to: 'rank', cta: '前往活動排名' },
+    { date: '排名', title: '榜線趨勢比較', desc: '最近 12 期的 T100 到 T10 萬排在一起比，順便標最新一期比上期多還少。用來抓這期大概要衝到哪。', to: 'rank', cta: '前往活動排名' },
+    { date: '收集', title: '收集室', desc: '貼圖 1,073 張、稱號 1,883 種。可以用搜的，也看得到怎麼拿跟稀有度。', to: 'collect', cta: '前往收集室' },
+    { date: '分析', title: '分析中心', desc: '四個分頁。榜線那邊看實測時速、預測終線跟走勢圖；玩家那邊看某個人跑得穩不穩、推他最後第幾名；活躍那邊看誰現在還在跑、誰停了；生涯是把過去每一期的前百掃一遍，查全部或指定幾期都行。', to: 'analysis', cta: '前往分析中心' },
+    { date: '收集', title: '收集率', desc: '1,249 張卡一張一張勾，馬上算出總收集率跟各團、各稀有度收了幾成。可以照團體、稀有度、取得類別篩，也能用備份碼搬到別台裝置。綁了玩家 ID 還會多出樂曲通關、FC、AP 跟角色等級。', to: 'rate', cta: '前往收集率' },
+    { date: '計算', title: '計算中心', desc: 'EP 精算、效率排行、分數試算、倍率、天井、烤森、排位，都在這一頁。', to: 'calc', cta: '前往計算中心' },
+    { date: '計算', title: '抽卡模擬', desc: '機率照官方 master 的模型跑。搜任一期的池，看得到各稀有度機率跟 PU 卡；可以單抽或十連（十連有 ★3 以上保底），旁邊統計抽了幾次、花掉多少石、拿到幾張 ★4 跟 PU、離天井還差多少。', to: 'gachasim', cta: '前往抽卡模擬' },
+    { date: '計算', title: '進階計算', desc: '算綜合力、幫你湊卡、估這隊打得出多少分，還有跑榜工作室。引擎跟經典版同一套，資料直接跟主資料庫拿。', to: 'deckpro', cta: '前往進階計算' },
+    { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品內容物與台幣定價、素材篩選、CP 值排行、月卡攤提，官網商店比價（同價多送 11~45%）；填預算或想抽幾抽，它會算哪幾包湊起來最省。限時商品大概每小時更新一次。', to: 'shop', cta: '前往儲值分析' },
+    { date: '計算', title: 'B30 產生器', desc: '勾選 FC/AP 譜面，依非官方難易度表定數（pentatonic V31）計算 Best 30 実効值，版面照 Unibot 排，輸出 2192×3600 的 PNG。綁玩家 ID 可以帶名片進來，順便對一下 AP/FC 總數。', to: 'b30', cta: '前往 B30 產生器' },
+    { date: '學習', title: '教學大全', desc: '115 則問答，從養成、車隊、衝榜到怎麼練手都有。', to: 'tut', cta: '前往教學大全' },
+    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki，還有站上自己的工具。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
     { d: '2026/08/22', t: '帳號系統、偵測訂閱與站內助手上線', s: '網站現在可以用 Google 帳號登入。登入後遊戲 uid、持卡勾選、編組與偏好可以存到雲端跨裝置同步(載入時只補本機沒有的項目,不會蓋掉你當下正在改的東西);也可以綁 Discord,供之後的車隊房間偵測辨識身分。**新帳號需要管理員核准**才能使用訂閱與助手。<br>**偵測訂閱**:條件成立時寄信通知。目前支援榜線(某段位分數到達門檻、我掉出/擠進某段位)、玩家動態(名次變化、開跑停跑)、活動與卡池排程(活動開始結束、卡池開放結束、WL 章節切換,可設提前幾小時)。車隊房間那一類的接點留好了,但目前沒有可用資料源,介面上明確標成未啟用,不會假裝它會動。<br>**站內助手**:用問的就好,它會自己去查站上的資料再回答 —— 當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全都查得到,也能一次做多步驟的規劃(例如「設好我的 id、算接下來兩期怎麼跑、該抽哪些池、還要跑多久」)。它只能呼叫站上寫死的那份工具清單,不會執行任何程式碼,每次呼叫都有稽核紀錄,每日用量也有上限。' },
@@ -16359,7 +16363,8 @@ class Component extends DCLogic {
           const idOf = {}; (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; });
           const ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
 
-          let named = 0, unsure = 0;
+          let named = 0, unsure = 0, noMatch = 0;
+          const dists = [];
           const out = got.map(x => {
             const cid = idOf[String(x.character || '').trim()];
             const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
@@ -16378,29 +16383,64 @@ class Component extends DCLogic {
               return rec;   // 唯一解,不必比對
             }
             const b = x.box || {};   // 模型給的相對座標,換裝置不受影響
-            const sx = Math.max(0, Math.min(1, +b.x || 0)) * img.width;
-            const sy = Math.max(0, Math.min(1, +b.y || 0)) * img.height;
-            const sw = Math.max(4, (+b.w || 0) * img.width);
-            const sh = Math.max(4, (+b.h || 0) * img.height);
+            const bx = Math.max(0, Math.min(1, +b.x || 0)) * img.width;
+            const by = Math.max(0, Math.min(1, +b.y || 0)) * img.height;
+            const bw = Math.max(4, (+b.w || 0) * img.width);
+            const bh = Math.max(4, (+b.h || 0) * img.height);
             /* 整格拿去比,不要裁。
                這點反直覺,但量過:官方縮圖本身就是「整個方形卡面」,遊戲的外框與
                SLv 條是疊在同一張圖上的。裁掉外框等於把真訊號一起裁掉 ——
                實測同一張已知正確的卡,裁過的距離 90+(淹沒在雜訊裡),不裁是 67;
-               整排 20 格用不裁的參數重測是 20/20 全中,裁過的只有 3~4 格。 */
-            const q = this.sigOf(img, sx, sy, sw, sh);
+               整排 20 格用不裁的參數重測是 20/20 全中,裁過的只有 3~4 格。
+
+               但模型給的框只是「大概」。一張截圖塞四五十格時,它抓的邊界會整體
+               偏掉幾個百分點 —— 偏一點指紋就全毀:兩張候選都對不上,距離雙雙
+               落在 128 附近(256 bits 的亂數期望值),於是誰高誰低變成擲骰子,
+               差距隨機地小於門檻,就被標成「不確定」。實際遇到過一批 45 張裡
+               有 27 張是這樣來的。
+               所以在框附近做一次小範圍對位:平移 ±6%、縮放 ±8% 各試幾檔,
+               取距離最小的那個當答案。純瀏覽器端運算,不多花一次 AI 額度。 */
+            const JO = [-0.06, -0.03, 0, 0.03, 0.06], JS = [0.92, 1, 1.08];
+            const cx0 = bx + bw / 2, cy0 = by + bh / 2;
+            const dmin = new Map();   // 卡片id → 這張卡在所有試位裡的最短距離
+            for (const sc of JS) {
+              const w = bw * sc, h = bh * sc;
+              for (const ox of JO) for (const oy of JO) {
+                const q = this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h);
+                for (const c of cand) {
+                  let dc = Infinity;
+                  for (const sig of (SIGS[c[0]] || [])) {
+                    const d = this._ham(q, sig); if (d < dc) dc = d;
+                  }
+                  const pv = dmin.get(c[0]);
+                  if (pv == null || dc < pv) dmin.set(c[0], dc);
+                }
+              }
+            }
+            /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
+               指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
+               (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
             let best = null, second = null;
             for (const c of cand) {
-              for (const sig of (SIGS[c[0]] || [])) {
-                const d = this._ham(q, sig);
-                if (!best || d < best.d) { second = best; best = { d, c }; }
-                else if (!second || d < second.d) second = { d, c };
-              }
+              const d = dmin.get(c[0]);
+              if (d == null) continue;
+              if (!best || d < best.d) { second = best; best = { d, c }; }
+              else if (!second || d < second.d) second = { d, c };
             }
             if (best) {
               rec.cardId = best.c[0]; rec.cardName = best.c[7];
-              // 兩張候選咬得太近就標成不確定,讓使用者自己確認,不要假裝有把握
-              rec.sure = !second || (second.d - best.d) >= 8;
-              if (rec.sure) named++; else unsure++;
+              rec.dist = best.d;
+              dists.push(best.d);
+              /* 兩個條件都要成立才算有把握:
+                 ① 跟第二名拉得開 —— 咬太近就是分不出來。
+                 ② 距離本身夠小 —— 兩張都對不上時差距也可能碰巧很大,
+                    那不是「有把握」,是兩個都錯。256 bits 的亂數期望 128、
+                    標準差 8,對得上的實測落在 50~67,所以 96 以上一律當成沒對上。 */
+              const gapOk = !second || (second.d - best.d) >= 8;
+              const absOk = best.d <= 96;
+              rec.sure = gapOk && absOk;
+              if (rec.sure) named++;
+              else { unsure++; if (!absOk) noMatch++; }
             }
             return rec;
           });
@@ -16414,8 +16454,16 @@ class Component extends DCLogic {
             '讀到 ' + out.length + ' 張'
             + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
             + '，其中 ' + named + ' 張認出是哪張卡'
-            + (unsure ? '、' + unsure + ' 張候選太接近先標為不確定' : '')
+            + (unsure ? '、' + unsure + ' 張標為不確定'
+                 + (noMatch ? '（其中 ' + noMatch + ' 張是卡面根本沒對上，多半是截圖裡格子太小或被裁到）' : '（候選太接近）')
+               : '')
             + '。'
+            /* 把比對距離講出來。對得上的落在 50~67,亂數是 128 ——
+               中位數一看就知道這批是「認錯了」還是「根本沒對上」,
+               不必再靠猜。 */
+            + (dists.length ? '（卡面比對距離中位數 '
+                 + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
+                 + '，50~70 算對得上、100 以上代表沒對上）' : '')
             + (dup ? '與先前重複的 ' + dup + ' 張已合併，這次新增 ' + newly + ' 張，' : '')
             + '累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
         } catch (er) {
