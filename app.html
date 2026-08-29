@@ -1746,8 +1746,8 @@ select option, select optgroup{
       <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
         後排（支援隊伍）的加成是純查表算出來的：每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值。<br>
         入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」，取加成最高的前 {{ wlsN }} 張。<br>
-        <b>選到的那一期，它自己的 {{ wlsBanned }} 張新卡不算在內</b>——那幾張是拿去組前排主隊的。
-        先前幾屆 World Link 的卡則照放，而且還帶著自己那屆的限定 +20%，常常是後排單張最高的一格。
+        <b>當期活動本身的 {{ wlsBanned }} 張新卡不列入候選</b>（那幾張是用於前排主隊）；
+        先前各屆 World Link 的卡不受影響，且仍帶有該屆的限定加成 +20%，往往是後排單張加成最高的一格。
       </div>
       <sc-if value="{{ wlsReady }}">
         <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:5px">屆／期</div>
@@ -1776,26 +1776,26 @@ select option, select optgroup{
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:7px">
-            也可以直接上傳遊戲內「卡片一覽」的截圖：AI 讀出每張卡的角色、稀有度、屬性、專精（右下菱形）與技能等級（左下 SLv.），<br>
-            再由瀏覽器拿卡面跟官方縮圖比對指紋，認出那一格到底是哪一張卡。<br>
-            這樣算出來的是<b>你實際的</b>後排：每張卡用它自己的專精與技能等級，不是全隊套同一個假設值。
+            也可以直接上傳遊戲內「卡片一覽」的截圖：AI 辨識每張卡的角色、稀有度、屬性、專精（右下菱形）與技能等級（左下 SLv.），<br>
+            再由瀏覽器將卡面與官方縮圖比對指紋，判定該格是哪一張卡。<br>
+            這樣算出的是<b>實際持有</b>的後排：每張卡採用各自的專精與技能等級，而不是全隊套用同一組假設值。
           </div>
           <div style="padding:9px 12px;border-radius:11px;background:color-mix(in oklab,var(--accent) 10%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.85;margin-bottom:8px">
-            <b>不要截整個卡庫。</b>後排只收得下本章主角那一團的卡，所以先在遊戲內把篩選設成
-            <b>{{ wlsFilterHint }}</b>，只截那一團的畫面就好。<br>
-            這麼做省下大半的截圖張數（每張約 20 張卡，一次 AI 額度），
-            而且同一團裡只剩「是不是本章主角」這一個分別，認錯角色的機會小很多。
+            <b>不要截整個卡庫。</b>後排只收得下本章主角所屬團體的卡，建議先在遊戲內將篩選設為
+            <b>{{ wlsFilterHint }}</b>，只截取該團體的畫面。<br>
+            這樣可省下大半的截圖張數（每張約 20 張卡，各耗用一次 AI 額度），
+            而且同一團體內只剩「是否為本章主角」這一項差異，角色辨識錯誤的機率小很多。
           </div>
           <div style="font-size:11px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
-            認出卡號之後，本章限定卡的 +20%、以及 VS 卡掛在哪一團的支援，都算得進去。<br>
-            卡庫一頁截不完就分幾張傳，會自動累加；前後兩張重疊到的同一張卡會合併，不會重複計算。<br>
-            累積夠了按「導入我的卡庫」，把認出來的卡連同專精與技能等級寫進收集率頁的持有清單（只新增，不會取消你原本勾的）。<br>
-            反過來，「從卡庫導入」會把持有清單倒回這裡、連同上次存下的專精與技能 ——
-            掃過一次之後，之後每一期 WL 都能直接算，不必再截一次圖。<br>
-            <b>第一次上傳要等 3～5 分鐘</b>，別以為當掉了 —— 那一次要把整份卡面指紋庫載下來、
-            再逐格跟候選卡比對；同一次開站之後再傳就快很多。<br>
-            兩件事還是先講在前面：每張截圖用掉一次 AI 額度；候選卡面太接近時會標成「待確認」，
-            那幾張請自己核對一下 —— 每張卡格上都印著它讀到的 MR 與 SLv.，對不上就代表那一格讀錯了。
+            認出卡號之後，本章限定卡的 +20% 與 VS 卡的支援團體都會一併計入。<br>
+            卡庫一頁截不完可以分成幾張上傳，結果會自動累加；前後兩張重疊到的同一張卡會合併，不會重複計算。<br>
+            累積足夠後可按「導入我的卡庫」，將辨識出的卡連同專精與技能等級寫進收集率頁的持有清單（只新增，不會取消原本已勾選的卡）。<br>
+            反過來，「從卡庫導入」會把持有清單連同上次存下的專精與技能倒回這裡 ——
+            辨識過一次之後，往後每一期 WL 都能直接計算，不必重新截圖。<br>
+            <b>第一次上傳需要 3～5 分鐘</b>：那一次要把整份卡面指紋庫載下來，再逐格與候選卡比對；
+            同一次開站之後再上傳會快很多，過程中請勿關閉或重複點按。<br>
+            兩點先說明：每張截圖耗用一次 AI 額度；候選卡面太接近時會標為「待確認」，
+            那幾張需要自行核對 —— 每張卡格上都印著辨識到的 MR 與 SLv.，與遊戲內對不上就代表該格讀錯。
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
@@ -1849,9 +1849,9 @@ select option, select optgroup{
       <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-top:13px">
         <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">{{ wlsScanTitle }}</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:10px">
-          上面那份是「這一章會用到誰」，這一份是「你到底掃到了什麼」。<br>
-          每傳一張截圖，新讀到的卡都會出現在這裡；用不到的也會寫明原因，不會無聲消失。
-          專精或技能讀錯的話，在這裡最容易看出來。
+          上面那份列的是這一章實際會用到的幾張，這一份列的是辨識到的全部。<br>
+          每上傳一張截圖，新讀到的卡都會出現在這裡；沒有用到的也會標明原因，不會無聲消失。
+          專精或技能若讀錯，在這裡最容易看出來。
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px">
           <sc-for list="{{ wlsScanRows }}" as="c" hint-placeholder-count="20">
@@ -1879,7 +1879,7 @@ select option, select optgroup{
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:18px 20px;margin-bottom:13px">
       <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px">超高清卡面下載</div>
       <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
-        直連官方素材庫的原始檔，不經過本站轉存 —— 你點下載拿到的就是資料庫裡那一份。<br>
+        直連官方素材庫的原始檔，不經過本站轉存 —— 點下載取得的就是資料庫裡的那一份。<br>
         全解析度 PNG 每張約 3～4 MB（去背立繪小得多，約 150 KB）。行動網路請留意流量。
       </div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
@@ -13276,13 +13276,13 @@ class Component extends DCLogic {
           id: x.cardId != null ? x.cardId : null, unsure: x.cardId != null && !x.sure,
           img: row0 ? this.cardImg(row0[8], rr0) : '', why,
         });
-        if (cid == null) { put('認不出角色'); return; }
+        if (cid == null) { put('角色未辨識'); return; }
         /* 認出卡號的話,支援團也就知道了 —— VS 卡進不進得了後排要看這個。
            沒認出來就只能靠角色的原生團判斷。 */
         const row = row0;
-        if (x.cardId != null && banned[x.cardId]) { put('當期新卡，要放前排'); return; }
+        if (x.cardId != null && banned[x.cardId]) { put('當期新卡，不可放後排'); return; }
         const okUnit = uOf[cid] === chUnit || (row && row[5] === chUnit);
-        if (!okUnit) { put('不是本章的團'); return; }
+        if (!okUnit) { put('非本章團體'); return; }
         const rr = rr0;
         const t = supByRar[RAR[rr]]; if (!t) { put('查不到這個稀有度的加成表'); return; }
         const m = Math.min(5, Math.max(0, Math.round(+x.master_rank || 0)));
@@ -14734,7 +14734,7 @@ class Component extends DCLogic {
               key: r.key, name: r.name, chara: r.chara, img: r.img,
               rar: RN[r.rar] || '？', ms: 'MR' + r.mr + '　SLv.' + r.sl,
               bonus: r.bonus == null ? '—' : ('＋' + r.bonus.toFixed(1) + '%'),
-              tag: r.why ? r.why : (used ? '已列入後排' : '加成不夠，未入選'),
+              tag: r.why ? r.why : (used ? '已列入後排' : '加成不足，未入選'),
               tagBg: r.why ? '#8c8c96' : (used ? 'var(--accent)' : 'rgba(0,0,0,.35)'),
               bd: r.unsure ? '#c98a2b' : (used ? 'var(--accent)' : 'var(--border)'),
               warn: r.unsure ? '待確認' : '',
@@ -16276,7 +16276,7 @@ class Component extends DCLogic {
            _sigsP 存在就代表這次開站已經載過,後面幾張快得多。 */
         const first = !this._sigsP;
         this.setState({ wlsShotBusy: true, wlsShotMsg: first
-          ? '讀取圖片…（第一次要載入卡面指紋庫，整趟大約 3～5 分鐘，請不要關掉或重按）'
+          ? '讀取圖片…（第一次要載入卡面指紋庫，整趟大約 3～5 分鐘，請勿關閉或重複點按）'
           : '讀取圖片…' });
         try {
           const img = await new Promise((res, rej) => {
@@ -16303,11 +16303,11 @@ class Component extends DCLogic {
             b64 = cv.toDataURL('image/jpeg', q).split(',')[1] || '';
             if (b64.length <= CAP) break;
           }
-          if (!b64) throw new Error('圖片轉檔失敗，請換一張試試');
+          if (!b64) throw new Error('圖片轉檔失敗，請改用另一張圖片');
 
           const names = (this.state.rateChars || []).map(c => c[1]);
           this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）'
-            + (first ? '　第一次比較久，大約 3～5 分鐘，請不要關掉或重按。' : '') });
+            + (first ? '　第一次較久，約 3～5 分鐘，請勿關閉或重複點按。' : '') });
           const r = await this.api('/api/chat', { method: 'POST', body: {
             system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖。\n'
               + '每個卡片方塊上看得到這些東西：\n'
@@ -16353,7 +16353,7 @@ class Component extends DCLogic {
 
           /* ---- 第二段:認出是哪一張卡 ---- */
           this.setState({ wlsShotMsg: '比對卡面…'
-            + (first ? '（正在載入卡面指紋庫，這一步只有第一次要做）' : '') });
+            + (first ? '（正在載入卡面指紋庫，這一步只有第一次需要）' : '') });
           const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
           const cards = this.state.rateCards || [];
           const idOf = {}; (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; });
@@ -16451,7 +16451,7 @@ class Component extends DCLogic {
             + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
             + '，其中 ' + named + ' 張認出是哪張卡'
             + (unsure ? '、' + unsure + ' 張標為不確定'
-                 + (noMatch ? '（其中 ' + noMatch + ' 張是卡面根本沒對上，多半是截圖裡格子太小或被裁到）' : '（候選太接近）')
+                 + (noMatch ? '（其中 ' + noMatch + ' 張是卡面未能對上，多半是截圖中格子太小或被裁切）' : '（候選太接近）')
                : '')
             + '。'
             /* 把比對距離講出來。對得上的落在 50~67,亂數是 128 ——
@@ -16459,7 +16459,7 @@ class Component extends DCLogic {
                不必再靠猜。 */
             + (dists.length ? '（卡面比對距離中位數 '
                  + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
-                 + '，50~70 算對得上、100 以上代表沒對上）' : '')
+                 + '，50～70 表示對得上，100 以上表示未對上）' : '')
             + (dup ? '與先前重複的 ' + dup + ' 張已合併，這次新增 ' + newly + ' 張，' : '')
             + '累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
         } catch (er) {
@@ -16474,7 +16474,7 @@ class Component extends DCLogic {
       onWlsImportOwn: () => {
         const scan = this.state.wlsScan || [];
         const ids = Array.from(new Set(scan.map(x => x.cardId).filter(x => x != null)));
-        if (!ids.length) { this.setState({ wlsShotMsg: '辨識結果裡沒有認出卡號的卡，沒有東西可以導入。' }); return; }
+        if (!ids.length) { this.setState({ wlsShotMsg: '辨識結果中沒有已認出卡號的卡，無可導入的項目。' }); return; }
         if (!this._own) this.ownLoad();
         const own = this.ownSet();
         let add = 0;
@@ -16495,9 +16495,9 @@ class Component extends DCLogic {
           '已導入我的卡庫：新增 ' + add + ' 張'
           + (ids.length - add ? '（另有 ' + (ids.length - add) + ' 張原本就勾過）' : '')
           + '，目前持有 ' + own.size + ' 張。'
-          + '這 ' + ids.length + ' 張的專精與技能等級也一併存下來了，下次按「從卡庫導入」就能直接叫回來，不必再燒一次 AI 額度。'
-          + (unsure ? '其中 ' + unsure + ' 張是「待確認」，請到收集率頁核對一下。' : '')
-          + '（只會新增，不會取消你原本勾好的卡。）' });
+          + '這 ' + ids.length + ' 張的專精與技能等級也一併存下，下次按「從卡庫導入」即可直接帶回，不必再耗用一次 AI 額度。'
+          + (unsure ? '其中 ' + unsure + ' 張為「待確認」，請至收集率頁核對。' : '')
+          + '（只會新增，不會取消原本已勾選的卡。）' });
       },
       onWlsEv: e => this.setState({ wlsEv: +e.currentTarget.dataset.v || null, wlsCh: '' }),
       /* 反向:把「我的持有卡」倒進辨識池。掃過一次、導進卡庫之後,
@@ -16510,7 +16510,7 @@ class Component extends DCLogic {
         const own = this.ownSet(), lv = this.lvAll();
         const cards = this.state.rateCards || [];
         if (!own.size) {
-          this.setState({ wlsShotMsg: '「我的持有卡」目前是空的。先上傳截圖辨識再按「導入我的卡庫」，或到收集率頁勾選。' });
+          this.setState({ wlsShotMsg: '「我的持有卡」目前是空的：請先上傳截圖辨識後按「導入我的卡庫」，或到收集率頁勾選。' });
           return;
         }
         const nOf = {}; (this.state.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
@@ -16527,9 +16527,9 @@ class Component extends DCLogic {
         this.setState({ wlsScan: merged, wlsPool: 'scan', wlsShotMsg:
           '從卡庫導入 ' + out.length + ' 張'
           + (dup ? '（與已有的辨識結果重複 ' + dup + ' 張，已合併）' : '')
-          + '：其中 ' + real + ' 張帶著實際讀到的專精與技能等級，'
+          + '：其中 ' + real + ' 張帶有實際讀到的專精與技能等級，'
           + (out.length - real
-              ? '另外 ' + (out.length - real) + ' 張沒有記錄，先套上面的 MR' + mrD + '／SLv.' + slD + '。'
+              ? '另外 ' + (out.length - real) + ' 張沒有記錄，先套用上方的 MR' + mrD + '／SLv.' + slD + '。'
               : '全部都是實際讀到的。')
           + '目前池內共 ' + merged.length + ' 張。' });
       },
