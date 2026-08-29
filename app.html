@@ -1788,6 +1788,8 @@ select option, select optgroup{
           </div>
           <div style="font-size:11px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
             認出卡號之後，本章限定卡的 +20%、以及 VS 卡掛在哪一團的支援，都算得進去。<br>
+            卡庫一頁截不完就分幾張傳，會自動累加；前後兩張重疊到的同一張卡會合併，不會重複計算。<br>
+            累積夠了可以按「導入我的卡庫」，把認出來的卡寫進收集率頁的持有清單（只新增，不會取消你原本勾的）。<br>
             兩件事還是先講在前面：每張截圖用掉一次 AI 額度；候選卡面太接近時會標成「待確認」，
             那幾張請自己核對一下 —— 每張卡格上都印著它讀到的 MR 與 SLv.，對不上就代表那一格讀錯了。
           </div>
@@ -1797,6 +1799,7 @@ select option, select optgroup{
               <input type="file" accept="image/*" onChange="{{ onWlsShot }}" style="display:none">
             </label>
             <sc-if value="{{ wlsHasScan }}">
+              <button type="button" onClick="{{ onWlsImportOwn }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer">{{ wlsImportBtn }}</button>
               <button type="button" onClick="{{ onWlsClearShot }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">清除辨識結果</button>
             </sc-if>
           </div>
@@ -14591,6 +14594,7 @@ class Component extends DCLogic {
           return { wlsReady: false, wlsHas: false, wlsN: '', wlsChChips: [], wlsPoolChips: [],
             wlsMR: s.wlsMR, wlsSL: s.wlsSL, wlsAssume: '', wlsChLabel: '', wlsTotal: '0',
             wlsIsScan: false, wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false, wlsBanned: 0,
+            wlsImportBtn: '導入我的卡庫',
             wlsEvChips: [],
             wlsFilterHint: '本章主角所屬的團',
             wlsSummary: '', wlsShort: false, wlsShortMsg: '', wlsRows: [],
@@ -14628,6 +14632,8 @@ class Component extends DCLogic {
           wlsShotMsg: s.wlsShotMsg || '',
           wlsShotBtn: s.wlsShotBusy ? '辨識中…' : '上傳卡庫截圖',
           wlsHasScan: !!(s.wlsScan || []).length,
+          wlsImportBtn: '導入我的卡庫（'
+            + (s.wlsScan || []).filter(x => x.cardId != null).length + ' 張）',
           wlsAssume: '（假設每張後排卡都是 MR' + W.mr + '／SLv.' + W.sl + '）',
           wlsChLabel: '第' + W.cur.chapterNo + '章 '
             + (W.special != null ? (nOf[W.special] || '') : '終章'),
@@ -16245,7 +16251,7 @@ class Component extends DCLogic {
             const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
             const ai = ATTRS.indexOf(String(x.attribute || ''));
             const rec = {
-              character: x.character, characterId: cid == null ? null : cid, rarity: rar,
+              character: x.character, characterId: cid == null ? null : cid, rarity: rar, attr: ai,
               master_rank: Math.min(5, Math.max(0, Math.round(+x.master_rank || 0))),
               skill_level: Math.min(4, Math.max(1, Math.round(+x.skill_level || 1))),
               cardId: null, cardName: '', sure: false,
@@ -16285,21 +16291,63 @@ class Component extends DCLogic {
             return rec;
           });
 
+          /* 累加而不是覆蓋:卡庫一頁截不完,本來就要連傳好幾張。
+             但捲動時前後兩張一定會重疊 —— 同一張卡讀到兩次,不去重的話它會
+             在後排佔掉兩格,加成直接算多。卡庫裡每張卡只有一張,所以卡號就是
+             天然的唯一鍵;認不出卡號的那幾張退而用「角色×稀有度×屬性×專精×技能」
+             當鍵(那五項本來就決定加成),寧可少算也不要讓總分虛胖。 */
           const prev = this.state.wlsScan || [];
-          const merged = prev.concat(out);
+          const seen = new Map();
+          /* 同一張卡讀到兩次就留「看得比較清楚」的那次:先看有沒有被標成待確認,
+             再比專精與技能 —— 邊緣被裁到的那一格通常是少讀到菱形徽章,
+             數字只會偏低不會偏高,所以取大的那個。 */
+          const score = x => (x.sure ? 1000 : 0) + (+x.master_rank || 0) * 10 + (+x.skill_level || 0);
+          let dup = 0;
+          for (const r of prev.concat(out)) {
+            const k = r.cardId != null ? 'c' + r.cardId
+              : 'x' + [r.characterId, r.rarity, r.attr, r.master_rank, r.skill_level].join('/');
+            const old = seen.get(k);
+            if (!old) { seen.set(k, r); continue; }
+            dup++;
+            if (score(r) > score(old)) seen.set(k, r);
+          }
+          const merged = Array.from(seen.values());
+          const newly = merged.length - prev.length;
           const skipped = (use.input.unreadable || 0);
           this.setState({ wlsScan: merged, wlsPool: 'scan', wlsShotMsg:
             '讀到 ' + out.length + ' 張'
             + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
             + '，其中 ' + named + ' 張認出是哪張卡'
             + (unsure ? '、' + unsure + ' 張候選太接近先標為不確定' : '')
-            + '。累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
+            + '。'
+            + (dup ? '與先前重複的 ' + dup + ' 張已合併，這次新增 ' + newly + ' 張，' : '')
+            + '累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
         } catch (er) {
           this.setState({ wlsShotMsg: '辨識失敗：' + ((er && er.message) || '') });
         }
         this.setState({ wlsShotBusy: false });
       },
       onWlsClearShot: () => this.setState({ wlsScan: null, wlsShotMsg: '已清除辨識結果。' }),
+      /* 把辨識到的卡寫進站上的「我的持有卡」(收集率頁那份,localStorage bitmap)。
+         只加不減 —— 截圖只證明「這幾張你有」,證明不了「其他的你沒有」,
+         拿它去覆蓋整份清單會把使用者先前手動勾的紀錄清掉。 */
+      onWlsImportOwn: () => {
+        const scan = this.state.wlsScan || [];
+        const ids = Array.from(new Set(scan.map(x => x.cardId).filter(x => x != null)));
+        if (!ids.length) { this.setState({ wlsShotMsg: '辨識結果裡沒有認出卡號的卡，沒有東西可以導入。' }); return; }
+        if (!this._own) this.ownLoad();
+        const own = this.ownSet();
+        let add = 0;
+        ids.forEach(id => { if (!own.has(id)) { own.add(id); add++; } });
+        this.ownSave();
+        const unsure = scan.filter(x => x.cardId != null && !x.sure).length;
+        this.setState({ wlsShotMsg:
+          '已導入我的卡庫：新增 ' + add + ' 張'
+          + (ids.length - add ? '（另有 ' + (ids.length - add) + ' 張原本就勾過）' : '')
+          + '，目前持有 ' + own.size + ' 張。'
+          + (unsure ? '其中 ' + unsure + ' 張是「待確認」，請到收集率頁核對一下。' : '')
+          + '（只會新增，不會取消你原本勾好的卡。）' });
+      },
       onWlsEv: e => this.setState({ wlsEv: +e.currentTarget.dataset.v || null, wlsCh: '' }),
       onWlsCh: e => this.setState({ wlsCh: +e.currentTarget.dataset.v || 0 }),
       onWlsPool: e => this.setState({ wlsPool: e.currentTarget.dataset.v }),
