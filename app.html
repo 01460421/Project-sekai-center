@@ -16566,19 +16566,15 @@ class Component extends DCLogic {
 
              可靠的依據只有一個:使用者自己在遊戲裡設的篩選。那是他知道、
              模型不知道的事,而且他本來就要設(頁面上一直在建議他設)。 */
-          /* 兩段式比對。先在使用者指定的篩選範圍裡比,那是最準的;
-             但萬一傳的截圖跟篩選對不上(例如篩了 MEIKO 卻傳整個卡庫),
-             硬湊進那五十張裡會全錯而且看起來很有把握 —— 所以加一道退路:
-             範圍內找不到夠像的(距離超過 FALLBACK)就自動改用整庫再比一次。
-             這個門檻分得開:對得上的實測落在 110~140,而範圍裡沒有那張卡時
-             最近的也要 250 以上。只有真的沒對上的那幾格才付整庫的成本。 */
+          /* 比對範圍就是使用者指定的那一個,不做任何退路。
+             這是站主的決定:上面第一步就寫著「在遊戲裡篩成什麼、這裡選一樣的」,
+             沒有人會篩了 MEIKO 卻傳別的東西。代價要知道 —— 傳進來的卡若不在
+             範圍內,會被硬湊到範圍裡最近的一張,而且看起來很有把握。 */
           const fSel = this.wlsFilterOf(this.wlSupCalc());
           const poolCards = cards.filter(c => this.wlsInPool(c, fSel, unOf));
           const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
-          const mkPool = cs => { const a = []; cs.forEach(c => (SIGS[c[0]] || []).forEach(sg => a.push([c[0], sg]))); return a; };
-          const POOL = mkPool(poolCards);
-          const FULL = fSel === 'all' ? POOL : mkPool(cards);
-          const FALLBACK = 200;
+          const POOL = [];
+          poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
 
           /* 把模型給的一堆框「拉回格線上」。
              遊戲的卡片一覽是規則格線:欄距、列距、格子大小都是固定的。
@@ -16632,7 +16628,7 @@ class Component extends DCLogic {
 
           // 比對從 68% 走到 98%，逐格回報
           this.setState({ wlsProg: 68, wlsProgBase: 68, wlsProgSpan: 0, wlsProgLabel: '比對卡面…' });
-          let named = 0, unsure = 0, noMatch = 0, charFix = 0, fallbacks = 0;
+          let named = 0, unsure = 0, noMatch = 0, charFix = 0;
           const dists = [];
           const out = []; for (let i = 0; i < got.length; i++) { const x = got[i];
             const cid = idOf[String(x.character || '').trim()];
@@ -16692,12 +16688,7 @@ class Component extends DCLogic {
               }
               return m;
             };
-            let dmin = scan(POOL);
-            let fellBack = false;
-            if (POOL !== FULL) {
-              let lo = Infinity; dmin.forEach(d => { if (d < lo) lo = d; });
-              if (lo > FALLBACK) { dmin = scan(FULL); fellBack = true; fallbacks++; }
-            }
+            const dmin = scan(POOL);
             /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
                指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
                (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
@@ -16770,7 +16761,7 @@ class Component extends DCLogic {
                不必再靠猜。 */
             + '　比對範圍 ' + poolCards.length + ' 張卡'
             + (fSel === 'all' ? '（沒指定遊戲內的篩選，容易撞錯；指定之後會準很多）' : '')
-            + (fallbacks ? '（其中 ' + fallbacks + ' 張在這個範圍裡找不到，已自動改用全部 1,249 張比對）' : '')
+
             + (dists.length ? '（卡面比對距離中位數 '
                  + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
                  + ' / 768，120 上下表示對得上，280 以上表示未對上）' : '')
