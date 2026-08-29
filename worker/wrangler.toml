@@ -58,7 +58,11 @@ MAIL_FROM = "SEKAI 資源中心 <noreply@project-sekai-center.com>"
 # 而以 AI_CAP_USER=400 計,誤放行一個帳號當天最多能燒掉 $55;壓在 20 次就是 $3,
 # 等管理員事後覆核(在後台按核准，reviewed_by 就會變成他)才升到正常額度。
 AI_REVIEW_MODEL = "claude-haiku-4-5-20251001"
-AUTO_APPROVE = "0"
+# 已開啟(2026-08-29,站主要求「等級一致就通過」)。實際能走到自動核准的,
+# 必須同時滿足:帳號存在、通過遊戲內驗證碼的所有權驗證、沒有已證明的重複、
+# 申請填的等級與 API 回報的差 5 級以內、自由文字沒藏不可見字元、AI 沒標記。
+# 任何一項不成立都退回人工,而且永遠不會自動「拒絕」。
+AUTO_APPROVE = "1"
 AI_CAP_AUTO = "20"
 
 # AI 點數方案（beta）。預設關閉 —— 開之前請先設定 PAY_INSTRUCTIONS，

@@ -256,7 +256,10 @@ async function notifyAdmins(env, rec) {
   if (rec.exists === 'yes') {
     L.push('・API 回報等級：' + (rec.api_rank == null ? '—' : rec.api_rank)
       + '　申請填寫：' + (rec.claimed_level == null ? '—' : rec.claimed_level)
-      + (rec.level_ok === false ? '　← 不一致' : ''));
+      + (rec.level_match === true ? '　← 一致'
+         : rec.level_ok === false ? '　← 不一致'
+         : rec.level_match === false ? '　← 差 ' + rec.level_gap + ' 級，不算一致（自動核准不通過，請人工判斷）'
+         : '　← 無法比對（自動核准不通過，請人工判斷）'));
     if (rec.power != null) L.push('・綜合力：' + rec.power);
   }
   if (rec.dup && rec.dup.length) {
@@ -325,10 +328,20 @@ export async function runApplyReview(env, userId) {
   rec.power = pf.power == null ? null : pf.power;
 
   /* 等級比對只是防呆,不是防弊 —— 答案就寫在同一支公開 API 裡,抄得到。
-     而且升等只會往上,所以「填的比實際低」是完全正常的(他昨天填、今天升了)。 */
-  rec.level_ok = (rec.exists === 'yes' && rec.claimed_level != null && rec.api_rank != null)
+     真正證明「這個帳號是你的」的是 rec.owned(遊戲內自我介紹寫驗證碼),不是這個。
+
+     兩個層次要分開:
+     level_ok   = 沒有明顯矛盾。填得比實際低是正常的(昨天填、今天升了),不算矛盾。
+     level_match= 真的對得起來(差 5 級以內)。自動核准要的是這一個 ——
+                  「填 1 級、實際 200 級」通過不了 level_match,那不是一致,是隨手填的。
+     比不出來(API 沒回等級、或申請時沒填)一律 null,自動核准也不會過:
+     沒有比對過的東西不能當成「比對通過」。 */
+  const cmpOk = rec.exists === 'yes' && rec.claimed_level != null && rec.api_rank != null;
+  rec.level_ok = cmpOk
     ? (rec.claimed_level <= rec.api_rank || Math.abs(rec.claimed_level - rec.api_rank) <= 5)
     : null;
+  rec.level_match = cmpOk ? (Math.abs(rec.claimed_level - rec.api_rank) <= 5) : null;
+  rec.level_gap = cmpOk ? (rec.api_rank - rec.claimed_level) : null;
 
   /* 2. 同一個 id 有沒有別人也在用（訊號，不是拒絕理由） */
   rec.dup = rec.uid ? await uidClaimedBy(env.DB, rec.uid, userId) : [];
@@ -377,8 +390,11 @@ export async function runApplyReview(env, userId) {
      （而已證明的衝突實際上不可能發生,partial unique index 就擋住了；
       這條留著是深度防禦。）未證明的重複照舊列進通知給管理員判斷。 */
   const provenDup = rec.dup.some(x => x.proven);
+  /* 自動核准的門檻是「等級對得起來」(level_match === true),不是「沒有矛盾」——
+     比不出來或差太多都退回人工。這比原本的 level_ok !== false 嚴格:
+     那個條件在「API 查不到等級」時是 null,會一路通過,等於沒比對過也算通過。 */
   const hardOk = rec.exists === 'yes' && rec.owned && !provenDup
-    && rec.level_ok !== false && !rec.note_suspicious;
+    && rec.level_match === true && !rec.note_suspicious;
 
   if (rec.exists === 'unknown') rec.verdict = 'unknown';
   else if (!hardOk) rec.verdict = rec.exists === 'no' ? 'hard_fail' : 'needs_review';
