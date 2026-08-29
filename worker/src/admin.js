@@ -274,7 +274,21 @@ const MAX_TOOLS = 100;
 const MAX_TOOLS_BYTES = 160 * 1024;
 const MAX_MSGS = 60;
 
-export async function chatClaude(env, { messages, tools, system }) {
+/* 呼叫設定檔。前端只能指名代號,實際的模型與參數一律在這裡決定 ——
+   讓前端直接送 model 等於把「要花多少錢」交給任何能打這支 API 的人。
+
+   vision:截圖辨識卡庫用的。那個任務跟助手完全不同 ——
+   助手要查表、要交叉比對、要規劃多步驟,所以值得 Opus 加 adaptive thinking;
+   截圖辨識只是「看 46 格,每格讀右下菱形的數字、左下的 SLv、外框在哪」,
+   是純知覺工作,思考幫不上忙,而且卡片身分現在由指紋決定、不靠模型判讀,
+   模型認錯角色也救得回來。輸出又長(46 筆結構化資料),而輸出速度正是
+   延遲的主因 —— Opus 是最慢的一階。所以換成 Sonnet、關掉思考、effort 降到 low。 */
+const PROFILES = {
+  vision: { model: 'claude-sonnet-5', thinking: null, effort: 'low' },
+};
+
+export async function chatClaude(env, { messages, tools, system, profile }) {
+  const prof = (profile && PROFILES[profile]) || null;
   const headers = {
     'content-type': 'application/json',
     'x-api-key': env.ANTHROPIC_API_KEY,
@@ -292,7 +306,7 @@ export async function chatClaude(env, { messages, tools, system }) {
      大約從 $0.15 降到 $0.02。最小可快取前綴約 1024 tokens,我們遠超過。 */
   const sys = system || SYSTEM;
   const body = {
-    model: env.AI_MODEL || MODEL,
+    model: (prof && prof.model) || env.AI_MODEL || MODEL,
     max_tokens: MAX_TOKENS,
     system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral', ttl: '1h' } }],
     messages,
@@ -303,6 +317,11 @@ export async function chatClaude(env, { messages, tools, system }) {
     thinking: { type: 'adaptive' },
     output_config: { effort: 'medium' },
   };
+  if (prof) {
+    // 有指定設定檔就整組覆寫。thinking 為 null 表示這個任務不需要思考,要把欄位拿掉
+    if (prof.thinking === null) delete body.thinking; else body.thinking = prof.thinking;
+    body.output_config = { effort: prof.effort };
+  }
   if (tools && tools.length) {
     // 只在最後一個工具下斷點:斷點會快取「到此為止的所有內容」,
     // 每個工具都下反而會用掉 4 個斷點上限又沒有多的好處。
@@ -366,7 +385,11 @@ export function validateChat(body) {
   for (const t of tools) {
     if (!t || typeof t.name !== 'string' || !t.input_schema) return { error: '工具定義格式錯誤' };
   }
-  return { messages, tools, system: typeof body.system === 'string' ? body.system.slice(0, 8000) : null };
+  /* profile 只收白名單裡的代號。不接受前端送模型名稱 —— 那等於把選模型
+     (也就是花多少錢)的權力交出去。認不得的代號就當沒指定,退回預設。 */
+  const profile = (typeof body.profile === 'string' && PROFILES[body.profile]) ? body.profile : null;
+  return { messages, tools, profile,
+    system: typeof body.system === 'string' ? body.system.slice(0, 8000) : null };
 }
 
 /* ---------- 路由 ---------- */

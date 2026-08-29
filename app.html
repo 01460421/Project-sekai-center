@@ -1793,7 +1793,7 @@ select option, select optgroup{
             累積足夠後可按「導入我的卡庫」，將辨識出的卡連同專精與技能等級寫進收集率頁的持有清單（只新增，不會取消原本已勾選的卡）。<br>
             反過來，「從卡庫導入」會把持有清單連同上次存下的專精與技能倒回這裡 ——
             辨識過一次之後，往後每一期 WL 都能直接計算，不必重新截圖。<br>
-            <b>第一次上傳需要 3～5 分鐘</b>：那一次要把整份卡面指紋庫載下來，再逐格與候選卡比對；
+            <b>第一次上傳比之後慢</b>：那一次要把整份卡面指紋庫載下來，再逐格與候選卡比對；
             同一次開站之後再上傳會快很多，過程中請勿關閉或重複點按。<br>
             兩點先說明：每張截圖耗用一次 AI 額度；候選卡面太接近時會標為「待確認」，
             那幾張需要自行核對 —— 每張卡格上都印著辨識到的 MR 與 SLv.，與遊戲內對不上就代表該格讀錯。
@@ -16279,12 +16279,12 @@ class Component extends DCLogic {
         const f = (e.currentTarget.files || [])[0];
         e.currentTarget.value = '';
         if (!f || this.state.wlsShotBusy) return;
-        /* 第一次要連指紋庫一起載,整趟 3～5 分鐘跑不掉。不講的話畫面上只有
+        /* 第一次要連指紋庫一起載,比之後慢。不講的話畫面上只有
            「辨識中…」三個字,使用者會以為當掉而重按或關掉 —— 那一次額度就白花了。
            _sigsP 存在就代表這次開站已經載過,後面幾張快得多。 */
         const first = !this._sigsP;
         this.setState({ wlsShotBusy: true, wlsShotMsg: first
-          ? '讀取圖片…（第一次要載入卡面指紋庫，整趟大約 3～5 分鐘，請勿關閉或重複點按）'
+          ? '讀取圖片…（第一次要載入卡面指紋庫，會比之後慢，請勿關閉或重複點按）'
           : '讀取圖片…' });
         try {
           const img = await new Promise((res, rej) => {
@@ -16315,12 +16315,15 @@ class Component extends DCLogic {
 
           const names = (this.state.rateChars || []).map(c => c[1]);
           this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）'
-            + (first ? '　第一次較久，約 3～5 分鐘，請勿關閉或重複點按。' : '') });
+            + (first ? '　第一次較久，請勿關閉或重複點按。' : '') });
           const r = await this.api('/api/chat', { method: 'POST', body: {
+            /* 這一趟走「vision」設定檔:換較快的模型、關掉思考、effort 降到 low。
+               助手那組設定(Opus＋adaptive thinking)是為了查表與多步驟規劃,
+               這裡只是看圖讀數字,思考幫不上忙,而輸出有 46 筆、輸出速度正是
+               延遲的主因。實際用哪個模型由後端的白名單決定,前端只送代號。 */
+            profile: 'vision',
             system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖。\n'
               + '每個卡片方塊上看得到這些東西：\n'
-              + '・左上角小圖示＝屬性：藍色星形＝cool、橘色愛心＝happy、紫色月亮＝mysterious、'
-              + '粉色花＝cute、綠色葉＝pure\n'
               + '・卡面下方的稀有度標記有兩種，先分清楚是哪一種再數：\n'
               + '　　星星（★）→ 一般卡，有幾顆就填幾（1～4）\n'
               + '　　蝴蝶結（緞帶打的結，左右各一片、中間一個結，只有一個，不是星形）→ 生日卡，填 9\n'
@@ -16344,14 +16347,13 @@ class Component extends DCLogic {
                 cards: { type: 'array', description: '每張卡一筆，依畫面順序', items: { type: 'object', properties: {
                   character: { type: 'string', description: '角色名，必須是清單裡的其中一個' },
                   rarity: { type: 'integer', description: '星星幾顆就填幾（1-4）；標記是蝴蝶結（緞帶）的生日卡填 9' },
-                  attribute: { type: 'string', enum: ['cool', 'happy', 'mysterious', 'cute', 'pure'] },
                   master_rank: { type: 'integer', description: '右下角菱形徽章裡的數字 1-5；沒有菱形徽章就填 0' },
                   skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4；沒看到 SLv. 就填 1' },
                   box: { type: 'object', description: '這一格在圖上的相對位置 0~1', properties: {
                     x: { type: 'number' }, y: { type: 'number' },
                     w: { type: 'number' }, h: { type: 'number' } },
                     required: ['x', 'y', 'w', 'h'] },
-                }, required: ['character', 'rarity', 'attribute', 'master_rank', 'skill_level', 'box'] } },
+                }, required: ['character', 'rarity', 'master_rank', 'skill_level', 'box'] } },
                 unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
               }, required: ['cards'] } }],
           } });
@@ -16366,8 +16368,6 @@ class Component extends DCLogic {
           const cards = this.state.rateCards || [];
           const idOf = {}, nmOf = {}, unOf = {};
           (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; nmOf[c[0]] = c[1]; unOf[c[0]] = c[2]; });
-          const ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
-
           /* 候選池由「上面選的那一章」決定,不用模型讀到的角色。
              量過:全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74(5% 分位 80),
              而對得上的落在 29~67 —— 指紋自己就分得開整個卡庫,不需要角色來縮候選。
@@ -16388,7 +16388,10 @@ class Component extends DCLogic {
           const out = got.map(x => {
             const cid = idOf[String(x.character || '').trim()];
             const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
-            const ai = ATTRS.indexOf(String(x.attribute || ''));
+            /* 屬性以前是用來篩候選的三個約束之一,現在候選池由章節決定、
+               身分由指紋決定,它已經沒有用途 —— 就不再叫模型讀,少一個欄位
+               等於 46 格都少吐一截輸出。認出卡號後屬性直接從卡片本身拿。 */
+            const ai = -1;
             const rec = {
               character: x.character, characterId: cid == null ? null : cid, rarity: rar, attr: ai,
               master_rank: Math.min(5, Math.max(0, Math.round(+x.master_rank || 0))),
