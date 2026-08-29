@@ -1776,8 +1776,9 @@ select option, select optgroup{
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:7px">
-            也可以直接上傳遊戲內「卡片一覽」的截圖：AI 辨識每張卡的角色、稀有度、屬性、專精（右下菱形）與技能等級（左下 SLv.），<br>
-            再由瀏覽器將卡面與官方縮圖比對指紋，判定該格是哪一張卡。<br>
+            也可以直接上傳遊戲內「卡片一覽」的截圖：AI 辨識每張卡的角色、稀有度、專精（右下菱形）與技能等級（左下 SLv.），<br>
+            再由瀏覽器將卡面與官方縮圖比對指紋，在上面所選章節的合格卡裡判定該格是哪一張卡。<br>
+            卡片身分以指紋為準，AI 讀到的角色只作交叉核對；兩者不一致時以比對結果為準，並在訊息中標明張數。<br>
             這樣算出的是<b>實際持有</b>的後排：每張卡採用各自的專精與技能等級，而不是全隊套用同一組假設值。
           </div>
           <div style="padding:9px 12px;border-radius:11px;background:color-mix(in oklab,var(--accent) 10%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.85;margin-bottom:8px">
@@ -13351,12 +13352,15 @@ class Component extends DCLogic {
     if (this._sigsP) return this._sigsP;
     this._sigsP = import('./data/card-sigs.js?v=2adabcee9b').then(m => {
       const by = {};
+      const flat = [];   // [卡片id, 指紋] 攤平一份，整庫掃描時直接跑這個
       (m.SIGS || []).forEach(([cid, tr, b64]) => {
         const bin = atob(b64);
         const u = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
         (by[cid] = by[cid] || []).push(u);
+        flat.push([cid, u]);
       });
+      by._flat = flat;
       return by;
     }).catch(e => { this._sigsP = null; throw new Error('卡面指紋載入失敗'); });
     return this._sigsP;
@@ -13390,12 +13394,16 @@ class Component extends DCLogic {
     return out;
   }
 
+  /* 漢明距離。原本每個 byte 逐位剝,整庫掃描時會跑 2,074 枚指紋 × 75 個試位 ×
+     每一格,那樣太慢 —— 改成 256 格的查表,同樣的迴圈次數但每個 byte 只要一次查表。 */
   _ham(a, b) {
-    let n = 0;
-    for (let i = 0; i < a.length; i++) {
-      let v = a[i] ^ b[i];
-      while (v) { v &= v - 1; n++; }
+    let P = this._pop;
+    if (!P) {
+      P = this._pop = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) { let v = i, c = 0; while (v) { c += v & 1; v >>= 1; } P[i] = c; }
     }
+    let n = 0;
+    for (let i = 0; i < a.length; i++) n += P[a[i] ^ b[i]];
     return n;
   }
 
@@ -16356,10 +16364,26 @@ class Component extends DCLogic {
             + (first ? '（正在載入卡面指紋庫，這一步只有第一次需要）' : '') });
           const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
           const cards = this.state.rateCards || [];
-          const idOf = {}; (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; });
+          const idOf = {}, nmOf = {}, unOf = {};
+          (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; nmOf[c[0]] = c[1]; unOf[c[0]] = c[2]; });
           const ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
 
-          let named = 0, unsure = 0, noMatch = 0;
+          /* 候選池由「上面選的那一章」決定,不用模型讀到的角色。
+             量過:全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74(5% 分位 80),
+             而對得上的落在 29~67 —— 指紋自己就分得開整個卡庫,不需要角色來縮候選。
+             反過來說,拿模型讀到的角色當硬性條件是有害的:鏡音鈴讀成鏡音連的那一格,
+             真正那張卡會被排除在候選之外,再怎麼比也比不中 ——
+             這就是「某幾個角色辨識得特別慘」的來源。
+             章節是使用者自己在上面選的,不會讀錯,而且後排本來就只收得下那一團,
+             拿它當憑證比拿模型的判讀可靠。終章不限團體,那時就整庫比。 */
+          const W0 = this.wlSupCalc();
+          const chU = W0 ? W0.chUnit : null;
+          const poolCards = cards.filter(c => chU == null || unOf[c[1]] === chU || c[5] === chU);
+          const byId = {}; poolCards.forEach(c => { byId[c[0]] = c; });
+          const POOL = [];
+          poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
+
+          let named = 0, unsure = 0, noMatch = 0, charFix = 0;
           const dists = [];
           const out = got.map(x => {
             const cid = idOf[String(x.character || '').trim()];
@@ -16371,13 +16395,6 @@ class Component extends DCLogic {
               skill_level: Math.min(4, Math.max(1, Math.round(+x.skill_level || 1))),
               cardId: null, cardName: '', sure: false,
             };
-            // 三個約束先篩:實測中位數只剩 2 張候選
-            const cand = cards.filter(c => c[1] === cid && c[2] === rar && (ai < 0 || c[3] === ai));
-            if (!cand.length) return rec;
-            if (cand.length === 1) {
-              rec.cardId = cand[0][0]; rec.cardName = cand[0][7]; rec.sure = true; named++;
-              return rec;   // 唯一解,不必比對
-            }
             const b = x.box || {};   // 模型給的相對座標,換裝置不受影響
             const bx = Math.max(0, Math.min(1, +b.x || 0)) * img.width;
             const by = Math.max(0, Math.min(1, +b.y || 0)) * img.height;
@@ -16403,13 +16420,10 @@ class Component extends DCLogic {
               const w = bw * sc, h = bh * sc;
               for (const ox of JO) for (const oy of JO) {
                 const q = this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h);
-                for (const c of cand) {
-                  let dc = Infinity;
-                  for (const sig of (SIGS[c[0]] || [])) {
-                    const d = this._ham(q, sig); if (d < dc) dc = d;
-                  }
-                  const pv = dmin.get(c[0]);
-                  if (pv == null || dc < pv) dmin.set(c[0], dc);
+                for (let i = 0; i < POOL.length; i++) {
+                  const d = this._ham(q, POOL[i][1]);
+                  const pv = dmin.get(POOL[i][0]);
+                  if (pv == null || d < pv) dmin.set(POOL[i][0], d);
                 }
               }
             }
@@ -16417,26 +16431,35 @@ class Component extends DCLogic {
                指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
                (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
             let best = null, second = null;
-            for (const c of cand) {
-              const d = dmin.get(c[0]);
-              if (d == null) continue;
-              if (!best || d < best.d) { second = best; best = { d, c }; }
-              else if (!second || d < second.d) second = { d, c };
-            }
-            if (best) {
-              rec.cardId = best.c[0]; rec.cardName = best.c[7];
+            dmin.forEach((d, id) => {
+              if (!best || d < best.d) { second = best; best = { d, id }; }
+              else if (!second || d < second.d) second = { d, id };
+            });
+            const row = best ? byId[best.id] : null;
+            if (row) {
               rec.dist = best.d;
               dists.push(best.d);
               /* 兩個條件都要成立才算有把握:
                  ① 跟第二名拉得開 —— 咬太近就是分不出來。
                  ② 距離本身夠小 —— 兩張都對不上時差距也可能碰巧很大,
                     那不是「有把握」,是兩個都錯。256 bits 的亂數期望 128、
-                    標準差 8,對得上的實測落在 50~67,所以 96 以上一律當成沒對上。 */
-              const gapOk = !second || (second.d - best.d) >= 8;
+                    標準差 8,對得上的實測落在 29~67,所以 96 以上一律當成沒對上。 */
+              const gap = second ? (second.d - best.d) : 999;
               const absOk = best.d <= 96;
-              rec.sure = gapOk && absOk;
-              if (rec.sure) named++;
-              else { unsure++; if (!absOk) noMatch++; }
+              const charSame = cid == null || row[1] === cid;
+              rec.cardId = row[0]; rec.cardName = row[7];
+              /* 模型讀到的角色跟比對結果不一樣時,要更大的餘裕才敢推翻它 ——
+                 整庫最近的兩張不同卡差 74、對得上的落在 29~67,兩者之間只隔幾個 bit,
+                 差距 8 夠在同一個角色的幾張卡之間分勝負,不夠拿來改寫角色。 */
+              rec.sure = absOk && gap >= (charSame ? 8 : 16);
+              if (rec.sure) {
+                // 認定是這張卡之後,角色與稀有度就以卡片本身為準,不再用模型讀到的
+                if (!charSame) { rec.charFixed = true; charFix++; }
+                rec.characterId = row[1];
+                rec.character = nmOf[row[1]] || rec.character;
+                rec.rarity = row[2];
+                named++;
+              } else { unsure++; if (!absOk) noMatch++; }
             }
             return rec;
           });
@@ -16450,6 +16473,7 @@ class Component extends DCLogic {
             '讀到 ' + out.length + ' 張'
             + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
             + '，其中 ' + named + ' 張認出是哪張卡'
+            + (charFix ? '（其中 ' + charFix + ' 張的角色與 AI 讀到的不同，已改用卡面比對的結果）' : '')
             + (unsure ? '、' + unsure + ' 張標為不確定'
                  + (noMatch ? '（其中 ' + noMatch + ' 張是卡面未能對上，多半是截圖中格子太小或被裁切）' : '（候選太接近）')
                : '')
