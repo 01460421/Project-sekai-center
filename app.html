@@ -1798,6 +1798,24 @@ select option, select optgroup{
             兩點先說明：每張截圖耗用一次 AI 額度；候選卡面太接近時會標為「待確認」，
             那幾張需要自行核對 —— 每張卡格上都印著辨識到的 MR 與 SLv.，與遊戲內對不上就代表該格讀錯。
           </div>
+          <div style="padding:9px 12px;border-radius:11px;background:var(--card-2);border:1px solid var(--border);margin-bottom:8px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:2px">這批截圖在遊戲裡篩成了什麼？</div>
+            <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-bottom:6px">
+              比對範圍會照這個縮。遊戲格子上疊著屬性圖示、星星、SLv 條與專精菱形，每一格都一樣，
+              會把卡與卡之間的差距壓小；不縮範圍的話，一整頁同一位角色的卡很容易被別人的卡撞贏。<br>
+              這是你知道、AI 不知道的事，所以由你指定 —— <b>選了之後辨識會準很多</b>。目前比對範圍：<b>{{ wlsPoolNote }}</b>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
+              <sc-for list="{{ wlsFilterChips }}" as="c" hint-placeholder-count="7">
+                <button type="button" onClick="{{ onWlsFilter }}" data-v="{{ c.v }}" style="padding:5px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              <sc-for list="{{ wlsCharChips }}" as="c" hint-placeholder-count="26">
+                <button type="button" onClick="{{ onWlsFilter }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+              </sc-for>
+            </div>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
               {{ wlsShotBtn }}
@@ -3764,7 +3782,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     artQ: '', artUnit: 'all', artChar: 'all', artRar: 'all', artSup: 'all', artPage: 1,
-    wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsData: null, wlsLoad: false, wlsErr: '',
+    wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsFilter: 'all', wlsData: null, wlsLoad: false, wlsErr: '',
     wlsScan: null, wlsShotBusy: false, wlsShotMsg: '',
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
@@ -14706,6 +14724,7 @@ class Component extends DCLogic {
             wlsMR: s.wlsMR, wlsSL: s.wlsSL, wlsAssume: '', wlsChLabel: '', wlsTotal: '0',
             wlsIsScan: false, wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false, wlsBanned: 0,
             wlsImportBtn: '導入我的卡庫', wlsFromOwnBtn: '從卡庫導入',
+            wlsFilterChips: [], wlsCharChips: [], wlsPoolNote: '',
             wlsScanRows: [], wlsScanTitle: '',
             wlsEvChips: [],
             wlsFilterHint: '本章主角所屬的團',
@@ -14748,6 +14767,33 @@ class Component extends DCLogic {
           wlsImportBtn: '導入我的卡庫（'
             + (s.wlsScan || []).filter(x => x.cardId != null).length + ' 張）',
           wlsFromOwnBtn: '從卡庫導入（' + this.ownSet().size + ' 張）',
+          /* 讓使用者指定「遊戲裡設了什麼篩選」。這是唯一可靠的縮小依據 ——
+             模型讀到的角色會錯(MEIKO 最常被讀成望月穗波),選到的章節又不代表
+             截圖內容。指定之後比對範圍從 1,249 縮到五十幾張,邊界就夠了。 */
+          ...(() => {
+            const f = s.wlsFilter || 'all';
+            const cs = s.rateCards || [];
+            const uo = {}; (s.rateChars || []).forEach(c => { uo[c[0]] = c[2]; });
+            const inPool = c => {
+              if (f === 'all') return true;
+              if (f.charAt(0) === 'c') return c[1] === +f.slice(1);
+              const u = this.UNIT_OF.indexOf(f);
+              return u < 0 || uo[c[1]] === u || c[5] === u;
+            };
+            const n = cs.filter(inPool).length;
+            return {
+              wlsPoolNote: n + ' 張卡' + (f === 'all' ? '（不限，建議指定，會準很多）' : ''),
+              wlsFilterChips: [{ v: 'all', n: '不限', c: null }].concat(
+                this.UNIT_OF.map(u => ({ v: u, n: (this.UNITS[u] || {}).n || u, c: (this.UNITS[u] || {}).c })))
+                .map(x => { const on = f === x.v, st = chip(on, x.c);
+                  return Object.assign({}, x, st, { fg: on ? (x.c ? (this.UNITS[x.v] || {}).t || '#fff' : '#fff') : 'var(--text)' }); }),
+              wlsCharChips: (s.rateChars || []).map(c => {
+                const U = this.UNITS[this.UNIT_OF[c[2]]] || {};
+                const v = 'c' + c[0], on = f === v, st = chip(on, U.c || null);
+                return Object.assign({ v: v, n: c[1] }, st, { fg: on ? (U.t || '#fff') : 'var(--text)' });
+              }),
+            };
+          })(),
           /* 掃到的每一張都列出來。前 20 名那份是「這一章會用到誰」,
              這一份是「我到底掃到了什麼」—— 傳第二張截圖時要靠它看見新東西,
              也要靠它抓出讀錯的專精。用不到的那幾張直接寫明原因,不要讓它們無聲消失。 */
@@ -16381,7 +16427,8 @@ class Component extends DCLogic {
           this.setState({ wlsShotMsg: '比對卡面…'
             + (first ? '（正在載入卡面指紋庫，這一步只有第一次需要）' : '') });
           const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
-          const cards = this.state.rateCards || [];
+          const s0 = this.state;
+          const cards = s0.rateCards || [];
           const idOf = {}, nmOf = {}, unOf = {};
           (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; nmOf[c[0]] = c[1]; unOf[c[0]] = c[2]; });
           /* 比對範圍是整個卡庫,不縮。
@@ -16401,12 +16448,83 @@ class Component extends DCLogic {
              整庫比對得起:量過全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74
              (5% 分位 80、中位 88),而對得上的落在 25~67。差得夠開。
              章節該用在哪裡?用在算加成時判斷資格 —— wlSupCalc 本來就在做那件事。 */
-          const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
-          const POOL = SIGS._flat || [];
+          /* 比對範圍。這件事來回改過幾次,把量到的結論寫在這裡:
+
+             真實裁圖對得上的距離約 67,而全庫任兩張不同卡最近是 74 —— 只差 7。
+             邊界這麼薄的原因是遊戲格子上疊著屬性圖示、星星、SLv 條、專精菱形,
+             每一格都一樣,把所有距離往中間壓。攤開 2,074 枚指紋比,真答案一定
+             會被某張撞贏(站主截了一整頁 MEIKO,站上標成真冬／愛莉／寧寧／穗波)。
+
+             所以一定要縮。但不能用模型讀到的角色來縮 —— 它讀錯得最兇的正是
+             MEIKO 這種,縮下去正解就永遠選不到;也不能用選到的章節來縮 ——
+             卡庫截圖裡本來就有別團的卡(MEIKO 50 張只有 9 張進得了 VBS 那章的池)。
+
+             可靠的依據只有一個:使用者自己在遊戲裡設的篩選。那是他知道、
+             模型不知道的事,而且他本來就要設(頁面上一直在建議他設)。 */
+          const fSel = String(s0.wlsFilter || 'all');
+          const poolCards = cards.filter(c => {
+            if (fSel === 'all') return true;
+            if (fSel.charAt(0) === 'c') return c[1] === +fSel.slice(1);      // c12 = 指定角色
+            const u = this.UNIT_OF.indexOf(fSel);                            // vbs = 指定團體
+            return u < 0 || unOf[c[1]] === u || c[5] === u;
+          });
+          const byId = {}; poolCards.forEach(c => { byId[c[0]] = c; });
+          const POOL = [];
+          poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
+
+          /* 把模型給的一堆框「拉回格線上」。
+             遊戲的卡片一覽是規則格線:欄距、列距、格子大小都是固定的。
+             但要模型逐格給座標,四五十格裡總有幾格會偏 —— 而偏 5% 指紋就全毀
+             (實測距離從 29 掉到 128,等同亂數)。
+             既然知道它是格線,就不該逐格採信:把所有框的中心分群成列與欄,
+             取欄距、列距與格子大小的中位數,再用「第幾列第幾欄」重算每一格。
+             少數幾個歪掉的框會被中位數吃掉,不會拖累其他格。 */
+          const fitGrid = (boxes) => {
+            if (boxes.length < 4) return null;
+            const med = a => { const b = a.slice().sort((x, y) => x - y); return b[b.length >> 1]; };
+            const W = med(boxes.map(b => b.w)), H = med(boxes.map(b => b.h));
+            if (!(W > 0 && H > 0)) return null;
+            /* 分群:照座標排序,間隔超過半格就切一群。半格是安全的門檻 ——
+               同一列的格子中心差距遠小於半格,不同列則至少差一整列。 */
+            const group = (vals, tol) => {
+              const idx = vals.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
+              const gid = new Array(vals.length); const centers = [];
+              let g = 0, acc = [idx[0][0]];
+              gid[idx[0][1]] = 0;
+              for (let k = 1; k < idx.length; k++) {
+                if (idx[k][0] - idx[k - 1][0] > tol) { centers.push(med(acc)); g++; acc = []; }
+                acc.push(idx[k][0]); gid[idx[k][1]] = g;
+              }
+              centers.push(med(acc));
+              return { gid, centers };
+            };
+            const R = group(boxes.map(b => b.y + b.h / 2), H * 0.5);
+            const C = group(boxes.map(b => b.x + b.w / 2), W * 0.5);
+            // 只有一列或一欄時算不出間距,那就退回用格子大小本身
+            const pitch = (cs, fallback) => {
+              if (cs.length < 2) return fallback;
+              const d = []; for (let i = 1; i < cs.length; i++) d.push(cs[i] - cs[i - 1]);
+              return med(d) || fallback;
+            };
+            const PX = pitch(C.centers, W), PY = pitch(R.centers, H);
+            // 原點取「各欄中心減掉 欄序×欄距」的中位數,單一偏掉的欄影響不到它
+            const X0 = med(C.centers.map((c, i) => c - i * PX));
+            const Y0 = med(R.centers.map((c, i) => c - i * PY));
+            return { W, H, PX, PY, X0, Y0, gr: R.gid, gc: C.gid,
+                     rows: R.centers.length, cols: C.centers.length };
+          };
+          const rawBoxes = got.map(x => {
+            const b = x.box || {};
+            return { x: Math.max(0, Math.min(1, +b.x || 0)) * img.width,
+                     y: Math.max(0, Math.min(1, +b.y || 0)) * img.height,
+                     w: Math.max(4, (+b.w || 0) * img.width),
+                     h: Math.max(4, (+b.h || 0) * img.height) };
+          });
+          const GRID = fitGrid(rawBoxes);
 
           let named = 0, unsure = 0, noMatch = 0, charFix = 0;
           const dists = [];
-          const out = got.map(x => {
+          const out = got.map((x, i) => {
             const cid = idOf[String(x.character || '').trim()];
             const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
             /* 屬性以前是用來篩候選的三個約束之一,現在候選池由章節決定、
@@ -16419,11 +16537,13 @@ class Component extends DCLogic {
               skill_level: Math.min(4, Math.max(1, Math.round(+x.skill_level || 1))),
               cardId: null, cardName: '', sure: false,
             };
-            const b = x.box || {};   // 模型給的相對座標,換裝置不受影響
-            const bx = Math.max(0, Math.min(1, +b.x || 0)) * img.width;
-            const by = Math.max(0, Math.min(1, +b.y || 0)) * img.height;
-            const bw = Math.max(4, (+b.w || 0) * img.width);
-            const bh = Math.max(4, (+b.h || 0) * img.height);
+            /* 座標用「拉回格線」之後的,不用模型原本給的那一格。
+               格線算不出來(格子太少)時才退回原始框。 */
+            const rb = rawBoxes[i];
+            const bx = GRID ? (GRID.X0 + GRID.gc[i] * GRID.PX - GRID.W / 2) : rb.x;
+            const by = GRID ? (GRID.Y0 + GRID.gr[i] * GRID.PY - GRID.H / 2) : rb.y;
+            const bw = GRID ? GRID.W : rb.w;
+            const bh = GRID ? GRID.H : rb.h;
             /* 整格拿去比,不要裁。
                這點反直覺,但量過:官方縮圖本身就是「整個方形卡面」,遊戲的外框與
                SLv 條是疊在同一張圖上的。裁掉外框等於把真訊號一起裁掉 ——
@@ -16458,20 +16578,13 @@ class Component extends DCLogic {
             /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
                指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
                (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
-            /* 模型讀到的角色當「軟性偏好」,不當篩選條件。
-               篩選(把別的角色整個排除)會在模型讀錯時讓正解永遠選不到;
-               完全不用又浪費了一個多數時候正確的線索 —— 改成加權:
-               角色對不上的卡要多背 PENAL 個 bit 才選得上。
-               這個數字的來源:對得上的實測落在 25~67,任兩張不同卡最近差 74。
-               24 夠讓「模型讀對時」同角色的卡穩穩勝出,又不至於在模型讀錯時
-               擋住一個明顯更像的答案(差 24 以上就照樣翻盤)。 */
-            const PENAL = 24;
+            /* 不拿模型讀到的角色做任何加權。試過,是反效果 ——
+               它讀錯得最兇的正是 MEIKO 這種(短褐髮,跟望月穗波很像),
+               而那也正是最需要救的情況;給它加權等於往錯的方向推。 */
             let best = null, second = null;
             dmin.forEach((d, id) => {
-              const row2 = byId[id];
-              const sc2 = d + ((cid != null && row2 && row2[1] !== cid) ? PENAL : 0);
-              if (!best || sc2 < best.sc) { second = best; best = { d, id, sc: sc2 }; }
-              else if (!second || sc2 < second.sc) second = { d, id, sc: sc2 };
+              if (!best || d < best.d) { second = best; best = { d, id, sc: d }; }
+              else if (!second || d < second.d) second = { d, id, sc: d };
             });
             const row = best ? byId[best.id] : null;
             if (row) {
@@ -16519,6 +16632,8 @@ class Component extends DCLogic {
             /* 把比對距離講出來。對得上的落在 50~67,亂數是 128 ——
                中位數一看就知道這批是「認錯了」還是「根本沒對上」,
                不必再靠猜。 */
+            + '　比對範圍 ' + poolCards.length + ' 張卡'
+            + (fSel === 'all' ? '（沒指定遊戲內的篩選，容易撞錯；指定之後會準很多）' : '')
             + (dists.length ? '（卡面比對距離中位數 '
                  + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
                  + '，50～70 表示對得上，100 以上表示未對上）' : '')
@@ -16529,6 +16644,7 @@ class Component extends DCLogic {
         }
         this.setState({ wlsShotBusy: false });
       },
+      onWlsFilter: e => this.setState({ wlsFilter: e.currentTarget.dataset.v }),
       onWlsClearShot: () => this.setState({ wlsScan: null, wlsShotMsg: '已清除辨識結果。' }),
       /* 把辨識到的卡寫進站上的「我的持有卡」(收集率頁那份,localStorage bitmap)。
          只加不減 —— 截圖只證明「這幾張你有」,證明不了「其他的你沒有」,
