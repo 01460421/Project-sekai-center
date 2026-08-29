@@ -16603,14 +16603,17 @@ class Component extends DCLogic {
                  整庫最近的兩張不同卡差 74、對得上的落在 29~67,兩者之間只隔幾個 bit,
                  差距 8 夠在同一個角色的幾張卡之間分勝負,不夠拿來改寫角色。 */
               rec.sure = absOk && gap >= (charSame ? 8 : 16);
-              if (rec.sure) {
-                // 認定是這張卡之後,角色與稀有度就以卡片本身為準,不再用模型讀到的
-                if (!charSame) { rec.charFixed = true; charFix++; }
-                rec.characterId = row[1];
-                rec.character = nmOf[row[1]] || rec.character;
-                rec.rarity = row[2];
-                named++;
-              } else { unsure++; if (!absOk) noMatch++; }
+              /* 選定了一張卡,那張卡的角色與稀有度就是事實,一律以它為準 ——
+                 即使把握不足也一樣。原本只在「有把握」時才覆寫,結果畫面上
+                 出現自相矛盾的東西:卡名與卡面是 MEIKO 的,角色卻寫望月穗波
+                 (模型讀的)。兩個訊息打架的時候，該顯示的是證據強的那個，
+                 至於把握不足,是用「待確認」標出來,不是靠顯示錯的角色來表達。 */
+              if (!charSame) { rec.charFixed = true; charFix++; }
+              rec.characterId = row[1];
+              rec.character = nmOf[row[1]] || rec.character;
+              rec.rarity = row[2];
+              if (rec.sure) named++;
+              else { unsure++; if (!absOk) noMatch++; }
             }
             return rec;
           });
