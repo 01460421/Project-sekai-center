@@ -13169,20 +13169,31 @@ class Component extends DCLogic {
        但認不出限定卡的 +20%,也判斷不了 VS 卡的支援團。兩件事都要在畫面上講。 */
     if (special != null && scan) {
       const idOf = {}; chars.forEach(c => { idOf[c[1]] = c[0]; });
+      const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
       scan.forEach((x, i) => {
-        const cid = idOf[String(x.character || '').trim()];
-        if (cid == null || uOf[cid] !== chUnit) return;
+        const cid = x.characterId != null ? x.characterId : idOf[String(x.character || '').trim()];
+        if (cid == null) return;
+        /* 認出卡號的話,支援團也就知道了 —— VS 卡進不進得了後排要看這個。
+           沒認出來就只能靠角色的原生團判斷。 */
+        const row = x.cardId != null ? byId[x.cardId] : null;
+        const okUnit = uOf[cid] === chUnit || (row && row[5] === chUnit);
+        if (!okUnit) return;
         const rr = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
         const t = supByRar[RAR[rr]]; if (!t) return;
         const m = Math.min(5, Math.max(0, Math.round(+x.master_rank || 0)));
         const k = Math.min(4, Math.max(1, Math.round(+x.skill_level || 1)));
+        // 有卡號才吃得到本章限定卡的固定加成,這是認出實際卡片最實際的好處
+        const ex = (x.cardId != null && limMap[x.cardId]) ? limMap[x.cardId] : 0;
         const b = pick(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType',
                        cid === special ? 'specific' : 'others')
           + pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', m)
-          + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', k);
-        list.push({ id: -(i + 1), name: 'MR' + m + '／SLv.' + k, chara: nOf[cid] || '', rar: rr,
-          isSpecial: cid === special, isLim: false,
-          bonus: Math.round(b * 10) / 10, img: '' });
+          + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', k) + ex;
+        list.push({ id: x.cardId != null ? x.cardId : -(i + 1),
+          name: x.cardName || ('MR' + m + '／SLv.' + k),
+          chara: nOf[cid] || '', rar: rr,
+          isSpecial: cid === special, isLim: !!ex, unsure: x.cardId != null && !x.sure,
+          bonus: Math.round(b * 10) / 10,
+          img: row ? this.cardImg(row[8], rr) : '' });
       });
     }
     if (special != null && !scan) {
@@ -13214,6 +13225,61 @@ class Component extends DCLogic {
       chIndex: (s.wlsCh == null || s.wlsCh === '') ? def : idx,
       mr, sl, mode, scanN: scan ? scan.length : 0,
     };
+  }
+
+  /* 卡面指紋。114 KB,只在真的要辨識截圖時才載。
+     必須跟 tools/build-card-sigs.py 的 dhash() 算出同一組 bit —— 16x15、
+     左右相鄰比大小。只看梯度方向,所以截圖那層半透明白不影響。 */
+  async loadCardSigs() {
+    if (this._sigsP) return this._sigsP;
+    this._sigsP = import('./data/card-sigs.js?v=2adabcee9b').then(m => {
+      const by = {};
+      (m.SIGS || []).forEach(([cid, tr, b64]) => {
+        const bin = atob(b64);
+        const u = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        (by[cid] = by[cid] || []).push(u);
+      });
+      return by;
+    }).catch(e => { this._sigsP = null; throw new Error('卡面指紋載入失敗'); });
+    return this._sigsP;
+  }
+
+  /* 對一塊畫布區域算指紋。resize 用 canvas 的內建縮放,跟 Python 的 LANCZOS
+     不完全相同 —— 但候選只有兩三張時,這點差異吃得下。 */
+  sigOf(img, sx, sy, sw, sh) {
+    const N = 16;
+    const cv = document.createElement('canvas');
+    cv.width = N + 1; cv.height = N;
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, sx, sy, sw, sh, 0, 0, N + 1, N);
+    const d = cx.getImageData(0, 0, N + 1, N).data;
+    const g = new Float32Array((N + 1) * N);
+    for (let i = 0; i < g.length; i++) {
+      g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    }
+    /* 每列取 N+1 個像素、比 N 組相鄰對 → N×N = 256 bits = 32 bytes。
+       這個數字必須跟 tools/build-card-sigs.py 完全一致 —— 配置小了的話
+       JS 對 Uint8Array 越界寫入是靜默忽略的,比對會永遠對不上而且不報錯。 */
+    const out = new Uint8Array((N * N + 7) >> 3);
+    let k = 0;
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        if (g[y * (N + 1) + x + 1] > g[y * (N + 1) + x]) out[k >> 3] |= 1 << (k & 7);
+        k++;
+      }
+    }
+    return out;
+  }
+
+  _ham(a, b) {
+    let n = 0;
+    for (let i = 0; i < a.length; i++) {
+      let v = a[i] ^ b[i];
+      while (v) { v &= v - 1; n++; }
+    }
+    return n;
   }
 
   async loadWLSup() {
@@ -14509,8 +14575,8 @@ class Component extends DCLogic {
             id: c.id, name: c.name, chara: c.chara, bonus: c.bonus.toFixed(1),
             rar: RN[c.rar] || '', img: c.img,
             bd: c.isSpecial ? 'var(--accent)' : 'var(--border)',
-            tag: c.isLim ? '本章限定' : (c.isSpecial ? '本章主角' : '同團'),
-            tagBg: c.isLim ? '#e0576a' : (c.isSpecial ? 'var(--accent)' : 'rgba(0,0,0,.45)'),
+            tag: c.unsure ? '待確認' : (c.isLim ? '本章限定' : (c.isSpecial ? '本章主角' : '同團')),
+            tagBg: c.unsure ? '#c98a2b' : (c.isLim ? '#e0576a' : (c.isSpecial ? 'var(--accent)' : 'rgba(0,0,0,.45)')),
             tagFg: '#fff',
           })),
           wlsMsg: s.wlsErr || '',
@@ -15991,64 +16057,133 @@ class Component extends DCLogic {
          比在 1,249 張裡認出特定一張容易得多。
          而且辨識出來的每張卡帶著自己的 MR/SL,比「全隊假設 MR5/SL4」更接近真實。
          代價:這會用掉一次你的 AI 額度,而且限定卡的 +20% 認不出來(那需要確切卡號)。 */
+      /* 截圖辨識卡庫。兩段式,因為兩件事該由不同的東西做:
+
+         ① 模型負責「看得懂畫面」—— 每一格的位置(正規化座標)、角色、稀有度、屬性、
+            專精、技能等級。這些不依賴版面,換手機、換解析度都不受影響。
+         ② 瀏覽器負責「認出是哪張卡」—— 依模型給的座標裁圖、算指紋、跟官方縮圖比。
+
+         為什麼不讓模型直接說是哪張卡:實測它做不到。CLIP 在 1,249 張裡選 1,
+         第一名與第二名的相似度只差 0.001~0.01,等於分不出來;要模型記住 1,249 張
+         卡的長相更不可能。但反過來,模型給的三個約束(角色×稀有度×屬性)會把候選
+         縮到中位數 2 張 —— 指紋只要在這兩張之間分勝負就好,那是它做得到的事。 */
       onWlsShot: async e => {
         const f = (e.currentTarget.files || [])[0];
         e.currentTarget.value = '';
-        if (!f) return;
-        if (this.state.wlsShotBusy) return;
+        if (!f || this.state.wlsShotBusy) return;
         this.setState({ wlsShotBusy: true, wlsShotMsg: '讀取圖片…' });
         try {
-          /* 一定要先縮圖:原始截圖動輒好幾 MB,base64 之後會超過後端 512 KB 的 body 上限,
-             而且大圖對辨識沒有幫助 —— 卡面上的數字在 1400px 寬已經很清楚。 */
-          const dataUrl = await new Promise((res, rej) => {
-            const img = new Image();
-            img.onload = () => {
-              const max = 1400, sc = Math.min(1, max / Math.max(img.width, img.height));
-              const cv = document.createElement('canvas');
-              cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
-              cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-              res(cv.toDataURL('image/jpeg', 0.72));
-            };
-            img.onerror = () => rej(new Error('圖片讀取失敗'));
-            img.src = URL.createObjectURL(f);
+          const img = await new Promise((res, rej) => {
+            const im = new Image();
+            im.onload = () => res(im);
+            im.onerror = () => rej(new Error('圖片讀取失敗'));
+            im.src = URL.createObjectURL(f);
           });
-          const b64 = dataUrl.split(',')[1] || '';
+          /* 送給模型的縮到 1400px 就夠讀數字了,原圖動輒數 MB,
+             base64 之後會超過後端 512 KB 的上限。但裁圖比對要用原圖,精度差很多。 */
+          const max = 1400, k = Math.min(1, max / Math.max(img.width, img.height));
+          const cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          const b64 = cv.toDataURL('image/jpeg', 0.72).split(',')[1] || '';
           if (b64.length > 400000) throw new Error('圖片太大，請裁掉空白區域再試');
 
           const names = (this.state.rateChars || []).map(c => c[1]);
           this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）' });
           const r = await this.api('/api/chat', { method: 'POST', body: {
-            system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖，把每一張卡的資料抄下來。\n'
-              + '每個卡片方塊上看得到四樣東西：\n'
-              + '・左下角的「SLv.N」＝技能等級（1～4）\n'
+            system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖。\n'
+              + '每個卡片方塊上看得到這些東西：\n'
+              + '・左上角小圖示＝屬性：藍色星形＝cool、橘色愛心＝happy、紫色月亮＝mysterious、'
+              + '粉色花＝cute、綠色葉＝pure\n'
+              + '・卡面下方那排星星的數量＝稀有度（1～4）；星星是愛心形狀的是生日卡，填 9\n'
+              + '・左下角「SLv.N」＝技能等級（1～4）\n'
               + '・右下角菱形徽章裡的數字＝專精等級（0～5）\n'
-              + '・卡面上方那排星星的數量＝稀有度；生日卡的星星是愛心形狀，稀有度填 9\n'
-              + '・角色＝從頭像辨認，只能填這個清單裡的名字：' + names.join('、') + '\n'
-              + '看不清楚的那一張就不要放進來，寧可漏也不要猜 —— 猜錯會讓使用者的加成算錯。',
+              + '・角色＝從頭像辨認，只能填這個清單裡的名字：' + names.join('、') + '\n\n'
+              + '每一格還要給它在圖片上的位置 box，用 0~1 的相對座標（x,y 是左上角，w,h 是寬高），'
+              + '**要框住整個卡片方塊（含外框與下方的 SLv 條）**，不要只框臉。\n'
+              + '看不清楚的那一格就不要放進來，寧可漏也不要猜 —— 猜錯會讓使用者的加成算錯。',
             messages: [{ role: 'user', content: [
               { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
-              { type: 'text', text: '把這張截圖裡每一張卡的角色、稀有度、專精、技能等級抄下來，呼叫 submit_cards 回報。' },
+              { type: 'text', text: '把這張截圖裡每一張卡抄下來，呼叫 submit_cards 回報。' },
             ] }],
             tools: [{ name: 'submit_cards', description: '回報截圖裡辨識到的卡片。',
               input_schema: { type: 'object', properties: {
-                cards: { type: 'array', description: '每張卡一筆', items: { type: 'object', properties: {
+                cards: { type: 'array', description: '每張卡一筆，依畫面順序', items: { type: 'object', properties: {
                   character: { type: 'string', description: '角色名，必須是清單裡的其中一個' },
                   rarity: { type: 'integer', description: '1-4，生日卡填 9' },
+                  attribute: { type: 'string', enum: ['cool', 'happy', 'mysterious', 'cute', 'pure'] },
                   master_rank: { type: 'integer', description: '右下角菱形的數字 0-5' },
                   skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4' },
-                }, required: ['character', 'rarity', 'master_rank', 'skill_level'] } },
+                  box: { type: 'object', description: '這一格在圖上的相對位置 0~1', properties: {
+                    x: { type: 'number' }, y: { type: 'number' },
+                    w: { type: 'number' }, h: { type: 'number' } },
+                    required: ['x', 'y', 'w', 'h'] },
+                }, required: ['character', 'rarity', 'attribute', 'master_rank', 'skill_level', 'box'] } },
                 unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
               }, required: ['cards'] } }],
           } });
           const use = ((r && r.content) || []).find(c => c.type === 'tool_use' && c.name === 'submit_cards');
           const got = (use && use.input && Array.isArray(use.input.cards)) ? use.input.cards : null;
-          if (!got) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
+          if (!got || !got.length) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
+
+          /* ---- 第二段:認出是哪一張卡 ---- */
+          this.setState({ wlsShotMsg: '比對卡面…' });
+          const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
+          const cards = this.state.rateCards || [];
+          const idOf = {}; (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; });
+          const ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+
+          let named = 0, unsure = 0;
+          const out = got.map(x => {
+            const cid = idOf[String(x.character || '').trim()];
+            const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
+            const ai = ATTRS.indexOf(String(x.attribute || ''));
+            const rec = {
+              character: x.character, characterId: cid == null ? null : cid, rarity: rar,
+              master_rank: Math.min(5, Math.max(0, Math.round(+x.master_rank || 0))),
+              skill_level: Math.min(4, Math.max(1, Math.round(+x.skill_level || 1))),
+              cardId: null, cardName: '', sure: false,
+            };
+            // 三個約束先篩:實測中位數只剩 2 張候選
+            const cand = cards.filter(c => c[1] === cid && c[2] === rar && (ai < 0 || c[3] === ai));
+            if (!cand.length) return rec;
+            if (cand.length === 1) {
+              rec.cardId = cand[0][0]; rec.cardName = cand[0][7]; rec.sure = true; named++;
+              return rec;   // 唯一解,不必比對
+            }
+            const b = x.box || {};
+            const sx = Math.max(0, Math.min(1, +b.x || 0)) * img.width;
+            const sy = Math.max(0, Math.min(1, +b.y || 0)) * img.height;
+            const sw = Math.max(4, (+b.w || 0) * img.width);
+            const sh = Math.max(4, (+b.h || 0) * img.height);
+            /* 只取卡面:去掉外框與底部那條 SLv 帶,不然比到的是 UI 不是畫 */
+            const q = this.sigOf(img, sx + sw * 0.06, sy + sh * 0.05, sw * 0.88, sh * 0.73);
+            let best = null, second = null;
+            for (const c of cand) {
+              for (const sig of (SIGS[c[0]] || [])) {
+                const d = this._ham(q, sig);
+                if (!best || d < best.d) { second = best; best = { d, c }; }
+                else if (!second || d < second.d) second = { d, c };
+              }
+            }
+            if (best) {
+              rec.cardId = best.c[0]; rec.cardName = best.c[7];
+              // 兩張候選咬得太近就標成不確定,讓使用者自己確認,不要假裝有把握
+              rec.sure = !second || (second.d - best.d) >= 8;
+              if (rec.sure) named++; else unsure++;
+            }
+            return rec;
+          });
+
           const prev = this.state.wlsScan || [];
-          const merged = prev.concat(got);
+          const merged = prev.concat(out);
           const skipped = (use.input.unreadable || 0);
-          this.setState({ wlsScan: merged, wlsShotMsg:
-            '辨識到 ' + got.length + ' 張' + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
-            + '，目前累計 ' + merged.length + ' 張。可以再上傳下一張截圖繼續累加。' });
+          this.setState({ wlsScan: merged, wlsPool: 'scan', wlsShotMsg:
+            '讀到 ' + out.length + ' 張'
+            + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
+            + '，其中 ' + named + ' 張認出是哪張卡'
+            + (unsure ? '、' + unsure + ' 張候選太接近先標為不確定' : '')
+            + '。累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
         } catch (er) {
           this.setState({ wlsShotMsg: '辨識失敗：' + ((er && er.message) || '') });
         }
