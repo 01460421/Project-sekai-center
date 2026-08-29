@@ -1766,6 +1766,32 @@ select option, select optgroup{
             <input type="number" min="1" max="4" value="{{ wlsSL }}" onInput="{{ onField }}" data-k="wlsSL" data-num="1" style="width:70px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
           <span style="font-size:11px;color:var(--text-3)">{{ wlsAssume }}</span>
         </div>
+        <div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:7px">
+            也可以直接上傳遊戲內「卡片一覽」的截圖，由 AI 讀出每張卡的角色、稀有度、專精（右下菱形）與技能等級。<br>
+            這樣算出來的是<b>你實際的</b>後排：每張卡用它自己的專精與技能等級，不是全隊套同一個假設值。
+          </div>
+          <div style="padding:9px 12px;border-radius:11px;background:color-mix(in oklab,var(--accent) 10%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.85;margin-bottom:8px">
+            <b>不要截整個卡庫。</b>後排只收得下本章主角那一團的卡，所以先在遊戲內把篩選設成
+            <b>{{ wlsFilterHint }}</b>，只截那一團的畫面就好。<br>
+            這麼做省下大半的截圖張數（每張約 20 張卡，一次 AI 額度），
+            而且同一團裡只剩「是不是本章主角」這一個分別，認錯角色的機會小很多。
+          </div>
+          <div style="font-size:11px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
+            兩個限制先講在前面：每張截圖用掉一次 AI 額度；截圖看不出卡號，
+            所以認不出本章限定卡的 +20%，也判斷不了 VS 卡掛哪一團的支援 —— 那兩種請用上面的「全部卡」對照。
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
+              {{ wlsShotBtn }}
+              <input type="file" accept="image/*" onChange="{{ onWlsShot }}" style="display:none">
+            </label>
+            <sc-if value="{{ wlsHasScan }}">
+              <button type="button" onClick="{{ onWlsClearShot }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">清除辨識結果</button>
+            </sc-if>
+          </div>
+          <div style="font-size:11.5px;color:var(--accent-deep);margin-top:7px">{{ wlsShotMsg }}</div>
+        </div>
       </sc-if>
       <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ wlsMsg }}</div>
     </div>
@@ -3683,7 +3709,8 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     artQ: '', artUnit: 'all', artRar: 'all', artSup: 'all', artPage: 1,
-    wlsCh: 0, wlsMR: 5, wlsSL: 4, wlsOwned: false, wlsData: null, wlsLoad: false, wlsErr: '',
+    wlsCh: 0, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsData: null, wlsLoad: false, wlsErr: '',
+    wlsScan: null, wlsShotBusy: false, wlsShotMsg: '',
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
@@ -4711,7 +4738,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=4c54781829';
+      s.src = 'data/billing.js?v=96862bf616';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4725,7 +4752,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=ee2b6bb001';
+      s.src = 'data/borders-db.js?v=d28cbae962';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -7668,7 +7695,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=4c54781829';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=96862bf616';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -13131,11 +13158,34 @@ class Component extends DCLogic {
     (D.lim || []).forEach(x => { if (x.eventId === evId && x.gameCharacterId === special) limMap[x.cardId] = x.bonusRate; });
 
     const mr = Math.min(5, Math.max(0, Math.round(+s.wlsMR))), sl = Math.min(4, Math.max(1, Math.round(+s.wlsSL)));
-    const own = s.wlsOwned ? this.ownSet() : null;
+    const mode = s.wlsPool || 'all';
+    const scan = mode === 'scan' ? (s.wlsScan || []) : null;
+    const own = mode === 'own' ? this.ownSet() : null;
     const chUnit = special != null ? uOf[special] : null;
 
     const list = [];
-    if (special != null) {
+    /* 截圖辨識來的卡:有角色、稀有度、專精、技能等級,但沒有卡號 ——
+       所以每張用它自己的 MR/SL 算(比全隊套同一個假設值準),
+       但認不出限定卡的 +20%,也判斷不了 VS 卡的支援團。兩件事都要在畫面上講。 */
+    if (special != null && scan) {
+      const idOf = {}; chars.forEach(c => { idOf[c[1]] = c[0]; });
+      scan.forEach((x, i) => {
+        const cid = idOf[String(x.character || '').trim()];
+        if (cid == null || uOf[cid] !== chUnit) return;
+        const rr = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
+        const t = supByRar[RAR[rr]]; if (!t) return;
+        const m = Math.min(5, Math.max(0, Math.round(+x.master_rank || 0)));
+        const k = Math.min(4, Math.max(1, Math.round(+x.skill_level || 1)));
+        const b = pick(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType',
+                       cid === special ? 'specific' : 'others')
+          + pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', m)
+          + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', k);
+        list.push({ id: -(i + 1), name: 'MR' + m + '／SLv.' + k, chara: nOf[cid] || '', rar: rr,
+          isSpecial: cid === special, isLim: false,
+          bonus: Math.round(b * 10) / 10, img: '' });
+      });
+    }
+    if (special != null && !scan) {
       for (const c of cards) {
         if (own && !own.has(c[0])) continue;
         /* 入選資格:角色原生團＝本章主角的團,或這張卡的支援團＝本章團。
@@ -13162,7 +13212,7 @@ class Component extends DCLogic {
       pool: list.length, short: Math.max(0, n - use.length),
       finale: special == null,
       chIndex: (s.wlsCh == null || s.wlsCh === '') ? def : idx,
-      mr, sl, owned: !!s.wlsOwned,
+      mr, sl, mode, scanN: scan ? scan.length : 0,
     };
   }
 
@@ -14411,6 +14461,8 @@ class Component extends DCLogic {
         if (!W) {
           return { wlsReady: false, wlsHas: false, wlsN: '', wlsChChips: [], wlsPoolChips: [],
             wlsMR: s.wlsMR, wlsSL: s.wlsSL, wlsAssume: '', wlsChLabel: '', wlsTotal: '0',
+            wlsIsScan: false, wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false,
+            wlsFilterHint: '本章主角所屬的團',
             wlsSummary: '', wlsShort: false, wlsShortMsg: '', wlsRows: [],
             wlsMsg: s.wlsErr || (s.wlsLoad || s.rateLoad ? '載入中…' : '資料載入中…') };
         }
@@ -14427,9 +14479,17 @@ class Component extends DCLogic {
             return Object.assign({ v: String(i), n: '第' + c.chapterNo + '章 ' + nm }, st,
               { fg: on ? '#fff' : 'var(--text)' });
           }),
-          wlsPoolChips: [{ v: '0', n: '全部卡（理論值）' }, { v: '1', n: '只用我勾選的持有卡' }]
-            .map(x => { const on = (x.v === '1') === W.owned, st = chip(on, 'var(--cta)');
+          wlsPoolChips: [{ v: 'all', n: '全部卡（理論值）' }, { v: 'own', n: '我勾選的持有卡' },
+            { v: 'scan', n: '截圖辨識的卡' + (W.scanN ? '（' + W.scanN + '）' : '') }]
+            .map(x => { const on = x.v === W.mode, st = chip(on, 'var(--cta)');
               return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
+          wlsIsScan: W.mode === 'scan',
+          wlsFilterHint: (W.chUnit != null && this.UNITS[this.UNIT_OF[W.chUnit]])
+            ? (this.UNITS[this.UNIT_OF[W.chUnit]].n + ' 這一團')
+            : '本章主角所屬的團',
+          wlsShotMsg: s.wlsShotMsg || '',
+          wlsShotBtn: s.wlsShotBusy ? '辨識中…' : '上傳卡庫截圖',
+          wlsHasScan: !!(s.wlsScan || []).length,
           wlsAssume: '（假設每張後排卡都是 MR' + W.mr + '／SLv.' + W.sl + '）',
           wlsChLabel: '第' + W.cur.chapterNo + '章 '
             + (W.special != null ? (nOf[W.special] || '') : '終章'),
@@ -14437,11 +14497,14 @@ class Component extends DCLogic {
           wlsSummary: W.finale
             ? '終章的支援隊伍規則與各章不同，這裡不硬估。'
             : ('取加成最高的 ' + W.use.length + ' / ' + W.n + ' 張　候選池 ' + W.pool + ' 張'
-               + (W.owned ? '（只算你勾選的持有卡）' : '（全部卡，理論上限）')),
+               + (W.mode === 'own' ? '（只算你勾選的持有卡）'
+                  : W.mode === 'scan' ? '（截圖辨識的卡，每張用它自己的專精與技能等級）'
+                  : '（全部卡，理論上限）')),
           wlsShort: W.short > 0,
           wlsShortMsg: '候選池只有 ' + W.pool + ' 張，離 ' + W.n + ' 張還差 ' + W.short
             + ' 張 —— 後排沒放滿，缺的那幾格等於 0%。'
-            + (W.owned ? '去收集率頁把持有的卡勾起來，或先看「全部卡」的理論值。' : ''),
+            + (W.mode === 'own' ? '去收集率頁把持有的卡勾起來，或先看「全部卡」的理論值。'
+               : W.mode === 'scan' ? '再上傳幾張截圖就能累加。' : ''),
           wlsRows: W.use.map(c => ({
             id: c.id, name: c.name, chara: c.chara, bonus: c.bonus.toFixed(1),
             rar: RN[c.rar] || '', img: c.img,
@@ -15923,8 +15986,77 @@ class Component extends DCLogic {
       },
       /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
          而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      /* 截圖辨識卡庫。為什麼這個用途值得用辨識:後排加成的公式不需要認出「是哪一張卡」,
+         只要角色、稀有度、專精、技能等級 —— 前三樣都印在卡片上,角色是 26 選 1,
+         比在 1,249 張裡認出特定一張容易得多。
+         而且辨識出來的每張卡帶著自己的 MR/SL,比「全隊假設 MR5/SL4」更接近真實。
+         代價:這會用掉一次你的 AI 額度,而且限定卡的 +20% 認不出來(那需要確切卡號)。 */
+      onWlsShot: async e => {
+        const f = (e.currentTarget.files || [])[0];
+        e.currentTarget.value = '';
+        if (!f) return;
+        if (this.state.wlsShotBusy) return;
+        this.setState({ wlsShotBusy: true, wlsShotMsg: '讀取圖片…' });
+        try {
+          /* 一定要先縮圖:原始截圖動輒好幾 MB,base64 之後會超過後端 512 KB 的 body 上限,
+             而且大圖對辨識沒有幫助 —— 卡面上的數字在 1400px 寬已經很清楚。 */
+          const dataUrl = await new Promise((res, rej) => {
+            const img = new Image();
+            img.onload = () => {
+              const max = 1400, sc = Math.min(1, max / Math.max(img.width, img.height));
+              const cv = document.createElement('canvas');
+              cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+              cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+              res(cv.toDataURL('image/jpeg', 0.72));
+            };
+            img.onerror = () => rej(new Error('圖片讀取失敗'));
+            img.src = URL.createObjectURL(f);
+          });
+          const b64 = dataUrl.split(',')[1] || '';
+          if (b64.length > 400000) throw new Error('圖片太大，請裁掉空白區域再試');
+
+          const names = (this.state.rateChars || []).map(c => c[1]);
+          this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）' });
+          const r = await this.api('/api/chat', { method: 'POST', body: {
+            system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖，把每一張卡的資料抄下來。\n'
+              + '每個卡片方塊上看得到四樣東西：\n'
+              + '・左下角的「SLv.N」＝技能等級（1～4）\n'
+              + '・右下角菱形徽章裡的數字＝專精等級（0～5）\n'
+              + '・卡面上方那排星星的數量＝稀有度；生日卡的星星是愛心形狀，稀有度填 9\n'
+              + '・角色＝從頭像辨認，只能填這個清單裡的名字：' + names.join('、') + '\n'
+              + '看不清楚的那一張就不要放進來，寧可漏也不要猜 —— 猜錯會讓使用者的加成算錯。',
+            messages: [{ role: 'user', content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+              { type: 'text', text: '把這張截圖裡每一張卡的角色、稀有度、專精、技能等級抄下來，呼叫 submit_cards 回報。' },
+            ] }],
+            tools: [{ name: 'submit_cards', description: '回報截圖裡辨識到的卡片。',
+              input_schema: { type: 'object', properties: {
+                cards: { type: 'array', description: '每張卡一筆', items: { type: 'object', properties: {
+                  character: { type: 'string', description: '角色名，必須是清單裡的其中一個' },
+                  rarity: { type: 'integer', description: '1-4，生日卡填 9' },
+                  master_rank: { type: 'integer', description: '右下角菱形的數字 0-5' },
+                  skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4' },
+                }, required: ['character', 'rarity', 'master_rank', 'skill_level'] } },
+                unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
+              }, required: ['cards'] } }],
+          } });
+          const use = ((r && r.content) || []).find(c => c.type === 'tool_use' && c.name === 'submit_cards');
+          const got = (use && use.input && Array.isArray(use.input.cards)) ? use.input.cards : null;
+          if (!got) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
+          const prev = this.state.wlsScan || [];
+          const merged = prev.concat(got);
+          const skipped = (use.input.unreadable || 0);
+          this.setState({ wlsScan: merged, wlsShotMsg:
+            '辨識到 ' + got.length + ' 張' + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
+            + '，目前累計 ' + merged.length + ' 張。可以再上傳下一張截圖繼續累加。' });
+        } catch (er) {
+          this.setState({ wlsShotMsg: '辨識失敗：' + ((er && er.message) || '') });
+        }
+        this.setState({ wlsShotBusy: false });
+      },
+      onWlsClearShot: () => this.setState({ wlsScan: null, wlsShotMsg: '已清除辨識結果。' }),
       onWlsCh: e => this.setState({ wlsCh: +e.currentTarget.dataset.v || 0 }),
-      onWlsPool: e => this.setState({ wlsOwned: e.currentTarget.dataset.v === '1' }),
+      onWlsPool: e => this.setState({ wlsPool: e.currentTarget.dataset.v }),
       onArtUnit: e => this.setState({ artUnit: e.currentTarget.dataset.v, artPage: 1 }),
       onArtRar: e => this.setState({ artRar: e.currentTarget.dataset.v, artPage: 1 }),
       onArtSup: e => this.setState({ artSup: e.currentTarget.dataset.v, artPage: 1 }),
