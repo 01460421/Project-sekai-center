@@ -1739,6 +1739,70 @@ select option, select optgroup{
   </div>
   </sc-if>
 
+  <sc-if value="{{ isWlsup }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px">World Link 後排加成</div>
+      <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
+        後排（支援隊伍）的加成是純查表算出來的：每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值。<br>
+        入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」，取加成最高的前 {{ wlsN }} 張。
+      </div>
+      <sc-if value="{{ wlsReady }}">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:5px">章節</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
+          <sc-for list="{{ wlsChChips }}" as="c" hint-placeholder-count="5">
+            <button type="button" onClick="{{ onWlsCh }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px">
+          <sc-for list="{{ wlsPoolChips }}" as="c" hint-placeholder-count="2">
+            <button type="button" onClick="{{ onWlsPool }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)">專精 MR
+            <input type="number" min="0" max="5" value="{{ wlsMR }}" onInput="{{ onField }}" data-k="wlsMR" data-num="1" style="width:70px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)">技能等級 SL
+            <input type="number" min="1" max="4" value="{{ wlsSL }}" onInput="{{ onField }}" data-k="wlsSL" data-num="1" style="width:70px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
+          <span style="font-size:11px;color:var(--text-3)">{{ wlsAssume }}</span>
+        </div>
+      </sc-if>
+      <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ wlsMsg }}</div>
+    </div>
+
+    <sc-if value="{{ wlsHas }}">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <span style="font-size:12.5px;color:var(--text-2)">{{ wlsChLabel }} 的後排加成</span>
+          <span style="font-size:30px;font-weight:800;color:var(--accent-deep);line-height:1.1">{{ wlsTotal }}</span>
+          <span style="font-size:12.5px;color:var(--text-3)">%</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-top:5px">{{ wlsSummary }}</div>
+        <sc-if value="{{ wlsShort }}">
+          <div style="margin-top:8px;padding:9px 12px;border-radius:11px;background:color-mix(in oklab,#ffb86b 14%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.7">{{ wlsShortMsg }}</div>
+        </sc-if>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px">
+        <sc-for list="{{ wlsRows }}" as="c" hint-placeholder-count="12">
+          <div style="border:1px solid {{ c.bd }};border-radius:13px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+            <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
+              <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+              <div style="position:absolute;top:4px;left:4px;padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:800">{{ c.rar }}</div>
+              <div style="position:absolute;top:4px;right:4px;padding:2px 7px;border-radius:999px;background:{{ c.tagBg }};color:{{ c.tagFg }};font-size:9.5px;font-weight:800">{{ c.tag }}</div>
+            </div>
+            <div style="padding:6px 8px 8px">
+              <div style="font-size:10px;color:var(--text-3)">{{ c.chara }}</div>
+              <div style="font-size:10.5px;font-weight:700;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ c.name }}</div>
+              <div style="font-size:13px;font-weight:800;color:var(--accent-deep);margin-top:3px">＋{{ c.bonus }}%</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ isArt }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:18px 20px;margin-bottom:13px">
@@ -3343,6 +3407,7 @@ class Component extends DCLogic {
     notices:  ['通知', '偵測訂閱觸發時的站內通知'],
     cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
     art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
+    wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
@@ -3618,6 +3683,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     artQ: '', artUnit: 'all', artRar: 'all', artSup: 'all', artPage: 1,
+    wlsCh: 0, wlsMR: 5, wlsSL: 4, wlsOwned: false, wlsData: null, wlsLoad: false, wlsErr: '',
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
@@ -13021,6 +13087,100 @@ class Component extends DCLogic {
   /* 日服卡片索引。台服 master 只有台服已實裝的 1,249 張,日服有 1,435 張 ——
      多出來的 186 張是台服還沒上的卡,卡面在素材庫裡早就存在了。
      兩份分開放、分開載:平常看台服的人不必為了那 91 KB 付流量。 */
+  /* WL 支援隊伍(後排)的加成表。三張表都很小(合計約 13 KB),直接抓就好,
+     不必為了這頁載入 486 KB 的完整引擎。
+     規則(逐條對齊 js/core.js 的 _wlSupport,兩邊算出來必須一致):
+       每張後排卡加成 ＝ 角色加成(本章主角 specific／其他 others,依稀有度)
+                      ＋ 專精加成(依稀有度與 MR)
+                      ＋ 技能等級加成(依稀有度與 SL)
+                      ＋ 該章限定卡的固定加成
+       入選資格 ＝ 角色原生團＝本章主角的團,或該卡的支援團＝本章團(VS 卡靠這條)
+       張數 ＝ WL1(活動 id≤140) 12 張、WL2(≤180) 20 張、WL3 25 張 */
+  /* WL 後排加成試算。刻意不呼叫 core.js 的 _wlSupport:那支寫死 MR5/SL4、
+     章節只認 Date.now()、終章一律回 null,而這頁要讓使用者自己選章節與專精。
+     規則逐條照抄,兩邊算出來必須一致 —— 站上不該有兩個答案。 */
+  wlSupCalc() {
+    const s = this.state, D = s.wlsData;
+    const cards = s.rateCards || [], chars = s.rateChars || [];
+    if (!D || !cards.length || !chars.length) return null;
+
+    const uOf = {}, nOf = {};
+    chars.forEach(c => { uOf[c[0]] = c[2]; nOf[c[0]] = c[1]; });
+
+    // 依活動分組章節,挑「最近一期已開跑的」當預設
+    const byEv = {};
+    (D.wb || []).forEach(w => { (byEv[w.eventId] = byEv[w.eventId] || []).push(w); });
+    const evIds = Object.keys(byEv).map(Number).sort((a, b) => a - b);
+    if (!evIds.length) return null;
+    const now = Date.now();
+    const started = evIds.filter(id => byEv[id].some(c => c.chapterStartAt <= now));
+    const evId = started.length ? started[started.length - 1] : evIds[evIds.length - 1];
+    const chs = byEv[evId].slice().sort((a, b) => a.chapterNo - b.chapterNo);
+
+    // 預設帶「現在進行中」的章節,沒有就帶最後一章
+    let def = chs.findIndex(c => now >= c.chapterStartAt && now <= c.aggregateAt);
+    if (def < 0) def = now < chs[0].chapterStartAt ? 0 : chs.length - 1;
+    const idx = Math.min(Math.max(0, +s.wlsCh || 0), chs.length - 1);
+    const cur = chs[(s.wlsCh == null || s.wlsCh === '') ? def : idx] || chs[def];
+    const special = cur.gameCharacterId != null ? cur.gameCharacterId : null;
+
+    const RAR = { 1: 'rarity_1', 2: 'rarity_2', 3: 'rarity_3', 4: 'rarity_4', 9: 'rarity_birthday' };
+    const supByRar = {}; (D.sup || []).forEach(r => { supByRar[r.cardRarityType] = r; });
+    const pick = (arr, k, v) => (((arr || []).find(o => o[k] === v)) || {}).bonusRate || 0;
+    const limMap = {};
+    (D.lim || []).forEach(x => { if (x.eventId === evId && x.gameCharacterId === special) limMap[x.cardId] = x.bonusRate; });
+
+    const mr = Math.min(5, Math.max(0, Math.round(+s.wlsMR))), sl = Math.min(4, Math.max(1, Math.round(+s.wlsSL)));
+    const own = s.wlsOwned ? this.ownSet() : null;
+    const chUnit = special != null ? uOf[special] : null;
+
+    const list = [];
+    if (special != null) {
+      for (const c of cards) {
+        if (own && !own.has(c[0])) continue;
+        /* 入選資格:角色原生團＝本章主角的團,或這張卡的支援團＝本章團。
+           後者是 VS 卡進得了後排的唯一途徑。 */
+        if (uOf[c[1]] !== chUnit && c[5] !== chUnit) continue;
+        const t = supByRar[RAR[c[2]]]; if (!t) continue;
+        const b = pick(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType',
+                       c[1] === special ? 'specific' : 'others')
+          + pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', mr)
+          + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', sl)
+          + (limMap[c[0]] || 0);
+        list.push({ id: c[0], name: c[7], chara: nOf[c[1]] || '', rar: c[2],
+          isSpecial: c[1] === special, isLim: !!limMap[c[0]],
+          bonus: Math.round(b * 10) / 10, img: this.cardImg(c[8], c[2]) });
+      }
+    }
+    list.sort((a, b) => b.bonus - a.bonus || a.id - b.id);
+    // 張數依屆數,與 core.js 的 wlSupCount 同判定
+    const n = evId <= 140 ? 12 : evId <= 180 ? 20 : 25;
+    const use = list.slice(0, n);
+    const total = Math.round(use.reduce((x, r) => x + r.bonus, 0) * 10) / 10;
+    return {
+      evId, chs, cur, special, chUnit, n, list, use, total,
+      pool: list.length, short: Math.max(0, n - use.length),
+      finale: special == null,
+      chIndex: (s.wlsCh == null || s.wlsCh === '') ? def : idx,
+      mr, sl, owned: !!s.wlsOwned,
+    };
+  }
+
+  async loadWLSup() {
+    if (this.state.wlsLoad || this.state.wlsData) return;
+    this.setState({ wlsLoad: true, wlsErr: '' });
+    try {
+      const [wb, sup, lim] = await Promise.all([
+        fetch(this.TDB + '/worldBlooms.json').then(r => r.json()),
+        fetch(this.TDB + '/worldBloomSupportDeckBonuses.json').then(r => r.json()),
+        fetch(this.TDB + '/worldBloomSupportDeckUnitEventLimitedBonuses.json').then(r => r.json()),
+      ]);
+      this.setState({ wlsData: { wb: wb || [], sup: sup || [], lim: lim || [] }, wlsLoad: false });
+    } catch (e) {
+      this.setState({ wlsLoad: false, wlsErr: 'World Link 加成表載入失敗，請稍後再試' });
+    }
+  }
+
   async loadCardsJP() {
     if (this.state.jpLoad || this.state.jpCards.length) return;
     this.setState({ jpLoad: true, jpErr: '' });
@@ -13191,6 +13351,7 @@ class Component extends DCLogic {
     if (p === 'collect') this.loadCollect();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
+    if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
@@ -13486,7 +13647,7 @@ class Component extends DCLogic {
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
-      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
@@ -14244,6 +14405,54 @@ class Component extends DCLogic {
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
+      isWlsup: s.page === 'wlsup',
+      ...(() => {
+        const W = this.wlSupCalc();
+        if (!W) {
+          return { wlsReady: false, wlsHas: false, wlsN: '', wlsChChips: [], wlsPoolChips: [],
+            wlsMR: s.wlsMR, wlsSL: s.wlsSL, wlsAssume: '', wlsChLabel: '', wlsTotal: '0',
+            wlsSummary: '', wlsShort: false, wlsShortMsg: '', wlsRows: [],
+            wlsMsg: s.wlsErr || (s.wlsLoad || s.rateLoad ? '載入中…' : '資料載入中…') };
+        }
+        const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
+        const RN = { 4: '★4', 9: '生日', 3: '★3', 2: '★2', 1: '★1' };
+        return {
+          wlsReady: true,
+          wlsHas: !W.finale && W.use.length > 0,
+          wlsN: W.n,
+          wlsMR: W.mr, wlsSL: W.sl,
+          wlsChChips: W.chs.map((c, i) => {
+            const on = i === W.chIndex, st = chip(on, 'var(--cta)');
+            const nm = c.gameCharacterId != null ? (nOf[c.gameCharacterId] || ('#' + c.gameCharacterId)) : '終章';
+            return Object.assign({ v: String(i), n: '第' + c.chapterNo + '章 ' + nm }, st,
+              { fg: on ? '#fff' : 'var(--text)' });
+          }),
+          wlsPoolChips: [{ v: '0', n: '全部卡（理論值）' }, { v: '1', n: '只用我勾選的持有卡' }]
+            .map(x => { const on = (x.v === '1') === W.owned, st = chip(on, 'var(--cta)');
+              return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
+          wlsAssume: '（假設每張後排卡都是 MR' + W.mr + '／SLv.' + W.sl + '）',
+          wlsChLabel: '第' + W.cur.chapterNo + '章 '
+            + (W.special != null ? (nOf[W.special] || '') : '終章'),
+          wlsTotal: W.total.toFixed(1),
+          wlsSummary: W.finale
+            ? '終章的支援隊伍規則與各章不同，這裡不硬估。'
+            : ('取加成最高的 ' + W.use.length + ' / ' + W.n + ' 張　候選池 ' + W.pool + ' 張'
+               + (W.owned ? '（只算你勾選的持有卡）' : '（全部卡，理論上限）')),
+          wlsShort: W.short > 0,
+          wlsShortMsg: '候選池只有 ' + W.pool + ' 張，離 ' + W.n + ' 張還差 ' + W.short
+            + ' 張 —— 後排沒放滿，缺的那幾格等於 0%。'
+            + (W.owned ? '去收集率頁把持有的卡勾起來，或先看「全部卡」的理論值。' : ''),
+          wlsRows: W.use.map(c => ({
+            id: c.id, name: c.name, chara: c.chara, bonus: c.bonus.toFixed(1),
+            rar: RN[c.rar] || '', img: c.img,
+            bd: c.isSpecial ? 'var(--accent)' : 'var(--border)',
+            tag: c.isLim ? '本章限定' : (c.isSpecial ? '本章主角' : '同團'),
+            tagBg: c.isLim ? '#e0576a' : (c.isSpecial ? 'var(--accent)' : 'rgba(0,0,0,.45)'),
+            tagFg: '#fff',
+          })),
+          wlsMsg: s.wlsErr || '',
+        };
+      })(),
       isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
       ...(() => {
         /* 卡面下載。直連官方素材庫,本站不轉存 —— 所以這裡做的只有「把 1,249 張卡
@@ -15714,6 +15923,8 @@ class Component extends DCLogic {
       },
       /* 兩支都要防連點:比對次數是有限的(每組碼 5 次、累計 40 次),
          而且每一次都是一輪外部抓取,連點等於替使用者把額度燒掉。 */
+      onWlsCh: e => this.setState({ wlsCh: +e.currentTarget.dataset.v || 0 }),
+      onWlsPool: e => this.setState({ wlsOwned: e.currentTarget.dataset.v === '1' }),
       onArtUnit: e => this.setState({ artUnit: e.currentTarget.dataset.v, artPage: 1 }),
       onArtRar: e => this.setState({ artRar: e.currentTarget.dataset.v, artPage: 1 }),
       onArtSup: e => this.setState({ artSup: e.currentTarget.dataset.v, artPage: 1 }),
