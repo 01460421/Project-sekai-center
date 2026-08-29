@@ -16333,11 +16333,11 @@ class Component extends DCLogic {
           this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）'
             + (first ? '　第一次較久，請勿關閉或重複點按。' : '') });
           const r = await this.api('/api/chat', { method: 'POST', body: {
-            /* 這一趟走「vision」設定檔:換較快的模型、關掉思考、effort 降到 low。
-               助手那組設定(Opus＋adaptive thinking)是為了查表與多步驟規劃,
-               這裡只是看圖讀數字,思考幫不上忙,而輸出有 46 筆、輸出速度正是
-               延遲的主因。實際用哪個模型由後端的白名單決定,前端只送代號。 */
-            profile: 'vision',
+            /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
+               撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
+               真實卡庫不可能每張都滿,那是模型在複製貼上而不是在讀圖,
+               連帶框也不準,整批辨識全錯。這一格的輸出有四十幾筆結構化資料,
+               降階省下的時間換來的是不能用的結果。速度要另外想辦法。 */
             system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖。\n'
               + '每個卡片方塊上看得到這些東西：\n'
               + '・卡面下方的稀有度標記有兩種，先分清楚是哪一種再數：\n'
@@ -16458,10 +16458,20 @@ class Component extends DCLogic {
             /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
                指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
                (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
+            /* 模型讀到的角色當「軟性偏好」,不當篩選條件。
+               篩選(把別的角色整個排除)會在模型讀錯時讓正解永遠選不到;
+               完全不用又浪費了一個多數時候正確的線索 —— 改成加權:
+               角色對不上的卡要多背 PENAL 個 bit 才選得上。
+               這個數字的來源:對得上的實測落在 25~67,任兩張不同卡最近差 74。
+               24 夠讓「模型讀對時」同角色的卡穩穩勝出,又不至於在模型讀錯時
+               擋住一個明顯更像的答案(差 24 以上就照樣翻盤)。 */
+            const PENAL = 24;
             let best = null, second = null;
             dmin.forEach((d, id) => {
-              if (!best || d < best.d) { second = best; best = { d, id }; }
-              else if (!second || d < second.d) second = { d, id };
+              const row2 = byId[id];
+              const sc2 = d + ((cid != null && row2 && row2[1] !== cid) ? PENAL : 0);
+              if (!best || sc2 < best.sc) { second = best; best = { d, id, sc: sc2 }; }
+              else if (!second || sc2 < second.sc) second = { d, id, sc: sc2 };
             });
             const row = best ? byId[best.id] : null;
             if (row) {
@@ -16472,7 +16482,7 @@ class Component extends DCLogic {
                  ② 距離本身夠小 —— 兩張都對不上時差距也可能碰巧很大,
                     那不是「有把握」,是兩個都錯。256 bits 的亂數期望 128、
                     標準差 8,對得上的實測落在 29~67,所以 96 以上一律當成沒對上。 */
-              const gap = second ? (second.d - best.d) : 999;
+              const gap = second ? (second.sc - best.sc) : 999;
               const absOk = best.d <= 96;
               const charSame = cid == null || row[1] === cid;
               rec.cardId = row[0]; rec.cardName = row[7];
