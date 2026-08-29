@@ -13368,7 +13368,7 @@ class Component extends DCLogic {
      左右相鄰比大小。只看梯度方向,所以截圖那層半透明白不影響。 */
   async loadCardSigs() {
     if (this._sigsP) return this._sigsP;
-    this._sigsP = import('./data/card-sigs.js?v=2adabcee9b').then(m => {
+    this._sigsP = import('./data/card-sigs.js?v=68b0b83226').then(m => {
       const by = {};
       const flat = [];   // [卡片id, 指紋] 攤平一份，整庫掃描時直接跑這個
       (m.SIGS || []).forEach(([cid, tr, b64]) => {
@@ -13387,26 +13387,43 @@ class Component extends DCLogic {
   /* 對一塊畫布區域算指紋。resize 用 canvas 的內建縮放,跟 Python 的 LANCZOS
      不完全相同 —— 但候選只有兩三張時,這點差異吃得下。 */
   sigOf(img, sx, sy, sw, sh) {
-    const N = 16;
+    /* 三個顏色通道各做一次 dHash，並把遊戲覆蓋層那兩塊塗成中性灰。
+       兩件事都是量出來的：
+       ・顏色 —— 灰階把卡面差異最大的資訊丟掉了。同樣 16x16 加上顏色，
+         「第一名與第二名的差距」相對值從 0.086 提升到 0.128。
+       ・遮罩 —— 左上的屬性圖示與下方的 SLv 條／專精菱形每一格都長一樣，
+         會把所有卡的距離往中間壓。參考與查詢都塗，比較才公平。
+       這幾個常數必須跟 tools/build-card-sigs.py 一字不差，順序也要一樣：
+       先縮到 (N+1)xN、再套遮罩、再依 R、G、B 逐列取 bit。 */
+    const N = 16, CHANS = 3;
+    const MASK_ROW_FROM = Math.floor(N * 0.78);
+    const MASK_TL_X = Math.floor((N + 1) * 0.24);
+    const MASK_TL_Y = Math.floor(N * 0.24);
     const cv = document.createElement('canvas');
     cv.width = N + 1; cv.height = N;
     const cx = cv.getContext('2d', { willReadFrequently: true });
     cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
     cx.drawImage(img, sx, sy, sw, sh, 0, 0, N + 1, N);
     const d = cx.getImageData(0, 0, N + 1, N).data;
-    const g = new Float32Array((N + 1) * N);
-    for (let i = 0; i < g.length; i++) {
-      g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
-    }
-    /* 每列取 N+1 個像素、比 N 組相鄰對 → N×N = 256 bits = 32 bytes。
-       這個數字必須跟 tools/build-card-sigs.py 完全一致 —— 配置小了的話
-       JS 對 Uint8Array 越界寫入是靜默忽略的,比對會永遠對不上而且不報錯。 */
-    const out = new Uint8Array((N * N + 7) >> 3);
-    let k = 0;
     for (let y = 0; y < N; y++) {
-      for (let x = 0; x < N; x++) {
-        if (g[y * (N + 1) + x + 1] > g[y * (N + 1) + x]) out[k >> 3] |= 1 << (k & 7);
-        k++;
+      for (let x = 0; x < N + 1; x++) {
+        if (y >= MASK_ROW_FROM || (x < MASK_TL_X && y < MASK_TL_Y)) {
+          const i = (y * (N + 1) + x) * 4;
+          d[i] = 128; d[i + 1] = 128; d[i + 2] = 128;
+        }
+      }
+    }
+    /* N×N bits × 3 通道 = 768 bits = 96 bytes。長度算錯的話，
+       JS 對 Uint8Array 越界寫入是靜默忽略的，比對會永遠對不上而且不報錯。 */
+    const out = new Uint8Array((N * N * CHANS + 7) >> 3);
+    let k = 0;
+    for (let c = 0; c < CHANS; c++) {
+      for (let y = 0; y < N; y++) {
+        for (let x = 0; x < N; x++) {
+          const a = (y * (N + 1) + x) * 4 + c, b = (y * (N + 1) + x + 1) * 4 + c;
+          if (d[b] > d[a]) out[k >> 3] |= 1 << (k & 7);
+          k++;
+        }
       }
     }
     return out;
@@ -16594,15 +16611,18 @@ class Component extends DCLogic {
                  ① 跟第二名拉得開 —— 咬太近就是分不出來。
                  ② 距離本身夠小 —— 兩張都對不上時差距也可能碰巧很大,
                     那不是「有把握」,是兩個都錯。256 bits 的亂數期望 128、
-                    標準差 8,對得上的實測落在 29~67,所以 96 以上一律當成沒對上。 */
+                    標準差 8；換算到 768 bits 之後，288 以上一律當成沒對上。 */
+              /* 門檻跟著 bit 數走：256 bits 時是「差距 ≥8、距離 ≤96」，
+                 指紋放大到 768 bits（三通道）之後同比例變成 24 與 288。
+                 實測 rgb16＋遮罩的距離中位數 126、差距中位數 98，離門檻很寬。 */
               const gap = second ? (second.sc - best.sc) : 999;
-              const absOk = best.d <= 96;
+              const absOk = best.d <= 288;
               const charSame = cid == null || row[1] === cid;
               rec.cardId = row[0]; rec.cardName = row[7];
               /* 模型讀到的角色跟比對結果不一樣時,要更大的餘裕才敢推翻它 ——
                  整庫最近的兩張不同卡差 74、對得上的落在 29~67,兩者之間只隔幾個 bit,
                  差距 8 夠在同一個角色的幾張卡之間分勝負,不夠拿來改寫角色。 */
-              rec.sure = absOk && gap >= (charSame ? 8 : 16);
+              rec.sure = absOk && gap >= (charSame ? 24 : 48);
               /* 選定了一張卡,那張卡的角色與稀有度就是事實,一律以它為準 ——
                  即使把握不足也一樣。原本只在「有把握」時才覆寫,結果畫面上
                  出現自相矛盾的東西:卡名與卡面是 MEIKO 的,角色卻寫望月穗波
@@ -16639,7 +16659,7 @@ class Component extends DCLogic {
             + (fSel === 'all' ? '（沒指定遊戲內的篩選，容易撞錯；指定之後會準很多）' : '')
             + (dists.length ? '（卡面比對距離中位數 '
                  + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
-                 + '，50～70 表示對得上，100 以上表示未對上）' : '')
+                 + ' / 768，120 上下表示對得上，280 以上表示未對上）' : '')
             + (dup ? '與先前重複的 ' + dup + ' 張已合併，這次新增 ' + newly + ' 張，' : '')
             + '累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
         } catch (er) {
