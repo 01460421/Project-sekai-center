@@ -16151,13 +16151,17 @@ class Component extends DCLogic {
               rec.cardId = cand[0][0]; rec.cardName = cand[0][7]; rec.sure = true; named++;
               return rec;   // 唯一解,不必比對
             }
-            const b = x.box || {};
+            const b = x.box || {};   // 模型給的相對座標,換裝置不受影響
             const sx = Math.max(0, Math.min(1, +b.x || 0)) * img.width;
             const sy = Math.max(0, Math.min(1, +b.y || 0)) * img.height;
             const sw = Math.max(4, (+b.w || 0) * img.width);
             const sh = Math.max(4, (+b.h || 0) * img.height);
-            /* 只取卡面:去掉外框與底部那條 SLv 帶,不然比到的是 UI 不是畫 */
-            const q = this.sigOf(img, sx + sw * 0.06, sy + sh * 0.05, sw * 0.88, sh * 0.73);
+            /* 整格拿去比,不要裁。
+               這點反直覺,但量過:官方縮圖本身就是「整個方形卡面」,遊戲的外框與
+               SLv 條是疊在同一張圖上的。裁掉外框等於把真訊號一起裁掉 ——
+               實測同一張已知正確的卡,裁過的距離 90+(淹沒在雜訊裡),不裁是 67;
+               整排 20 格用不裁的參數重測是 20/20 全中,裁過的只有 3~4 格。 */
+            const q = this.sigOf(img, sx, sy, sw, sh);
             let best = null, second = null;
             for (const c of cand) {
               for (const sig of (SIGS[c[0]] || [])) {
