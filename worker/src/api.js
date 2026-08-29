@@ -520,7 +520,10 @@ export async function handleApi(req, env, url, user) {
             balance: (c && c.balance) || 0 }, 429, req, env);
         }
       }
-      const rb = await readJson(req, 512 * 1024);   // 對話帶著工具結果,body 會比其他端點大
+      /* 4 MB:對話本來就會帶著工具結果,而截圖辨識還會夾一張 base64 圖片。
+         base64 比原始檔大三分之一,所以 4 MB 大約容得下 3 MB 的 JPEG ——
+         那已經是一張很密的卡庫截圖(60 格以上)縮到 1800px 之後的量級。 */
+      const rb = await readJson(req, 4 * 1024 * 1024);
       if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413);
       if (rb.bad) return out({ error: 'bad_json', message: 'JSON 格式錯誤' }, 400);
       const v = validateChat(rb.value || {});

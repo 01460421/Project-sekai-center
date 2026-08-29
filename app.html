@@ -1745,9 +1745,17 @@ select option, select optgroup{
       <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px">World Link 後排加成</div>
       <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
         後排（支援隊伍）的加成是純查表算出來的：每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值。<br>
-        入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」，取加成最高的前 {{ wlsN }} 張。
+        入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」，取加成最高的前 {{ wlsN }} 張。<br>
+        <b>選到的那一期，它自己的 {{ wlsBanned }} 張新卡不算在內</b>——那幾張是拿去組前排主隊的。
+        先前幾屆 World Link 的卡則照放，而且還帶著自己那屆的限定 +20%，常常是後排單張最高的一格。
       </div>
       <sc-if value="{{ wlsReady }}">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:5px">屆／期</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
+          <sc-for list="{{ wlsEvChips }}" as="c" hint-placeholder-count="13">
+            <button type="button" onClick="{{ onWlsEv }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};opacity:{{ c.op }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
         <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:5px">章節</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
           <sc-for list="{{ wlsChChips }}" as="c" hint-placeholder-count="5">
@@ -1768,7 +1776,8 @@ select option, select optgroup{
         </div>
         <div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:7px">
-            也可以直接上傳遊戲內「卡片一覽」的截圖，由 AI 讀出每張卡的角色、稀有度、專精（右下菱形）與技能等級。<br>
+            也可以直接上傳遊戲內「卡片一覽」的截圖：AI 讀出每張卡的角色、稀有度、屬性、專精（右下菱形）與技能等級（左下 SLv.），<br>
+            再由瀏覽器拿卡面跟官方縮圖比對指紋，認出那一格到底是哪一張卡。<br>
             這樣算出來的是<b>你實際的</b>後排：每張卡用它自己的專精與技能等級，不是全隊套同一個假設值。
           </div>
           <div style="padding:9px 12px;border-radius:11px;background:color-mix(in oklab,var(--accent) 10%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.85;margin-bottom:8px">
@@ -1778,8 +1787,9 @@ select option, select optgroup{
             而且同一團裡只剩「是不是本章主角」這一個分別，認錯角色的機會小很多。
           </div>
           <div style="font-size:11px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
-            兩個限制先講在前面：每張截圖用掉一次 AI 額度；截圖看不出卡號，
-            所以認不出本章限定卡的 +20%，也判斷不了 VS 卡掛哪一團的支援 —— 那兩種請用上面的「全部卡」對照。
+            認出卡號之後，本章限定卡的 +20%、以及 VS 卡掛在哪一團的支援，都算得進去。<br>
+            兩件事還是先講在前面：每張截圖用掉一次 AI 額度；候選卡面太接近時會標成「待確認」，
+            那幾張請自己核對一下 —— 每張卡格上都印著它讀到的 MR 與 SLv.，對不上就代表那一格讀錯了。
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
@@ -1818,7 +1828,7 @@ select option, select optgroup{
               <div style="position:absolute;top:4px;right:4px;padding:2px 7px;border-radius:999px;background:{{ c.tagBg }};color:{{ c.tagFg }};font-size:9.5px;font-weight:800">{{ c.tag }}</div>
             </div>
             <div style="padding:6px 8px 8px">
-              <div style="font-size:10px;color:var(--text-3)">{{ c.chara }}</div>
+              <div style="font-size:10px;color:var(--text-3);display:flex;justify-content:space-between;gap:4px"><span>{{ c.chara }}</span><span style="font-weight:700;color:var(--text-2)">{{ c.ms }}</span></div>
               <div style="font-size:10.5px;font-weight:700;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ c.name }}</div>
               <div style="font-size:13px;font-weight:800;color:var(--accent-deep);margin-top:3px">＋{{ c.bonus }}%</div>
             </div>
@@ -1848,6 +1858,11 @@ select option, select optgroup{
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
           <sc-for list="{{ artUnitChips }}" as="c" hint-placeholder-count="7">
             <button type="button" onClick="{{ onArtUnit }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
+          <sc-for list="{{ artCharChips }}" as="c" hint-placeholder-count="27">
+            <button type="button" onClick="{{ onArtChar }}" data-v="{{ c.v }}" style="padding:6px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
           </sc-for>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
@@ -3708,8 +3723,8 @@ class Component extends DCLogic {
     wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
-    artQ: '', artUnit: 'all', artRar: 'all', artSup: 'all', artPage: 1,
-    wlsCh: 0, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsData: null, wlsLoad: false, wlsErr: '',
+    artQ: '', artUnit: 'all', artChar: 'all', artRar: 'all', artSup: 'all', artPage: 1,
+    wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsData: null, wlsLoad: false, wlsErr: '',
     wlsScan: null, wlsShotBusy: false, wlsShotMsg: '',
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
@@ -8649,14 +8664,15 @@ class Component extends DCLogic {
         const MDB = E && E.MasterDB;
         if (!MDB) return { error: '計算引擎載入了，但取不到 MasterDB' };
 
-        let wbAll, supTbl, limAll, cards, gcu;
+        let wbAll, supTbl, limAll, cards, gcu, evCards;
         try {
-          [wbAll, supTbl, limAll, cards, gcu] = await Promise.all([
+          [wbAll, supTbl, limAll, cards, gcu, evCards] = await Promise.all([
             MDB.get('worldBlooms.json'),
             MDB.get('worldBloomSupportDeckBonuses.json'),
             MDB.get('worldBloomSupportDeckUnitEventLimitedBonuses.json'),
             MDB.get('cards.json'),
             MDB.get('gameCharacterUnits.json'),
+            MDB.get('eventCards.json'),
           ]);
         } catch (e) { return { error: 'master data 載入失敗：' + ((e && e.message) || '') }; }
         if (!Array.isArray(wbAll) || !wbAll.length) return { error: 'worldBlooms.json 讀不到，判斷不出 WL 章節' };
@@ -8705,6 +8721,13 @@ class Component extends DCLogic {
         // 支援隊位置數依屆數(與 core.js wlSupCount 同一條判定)
         const slots = evId <= 140 ? 12 : evId <= 180 ? 20 : 25;
 
+        /* 這一期自己的 4 張新卡不能進後排 —— 那是拿來組前排主隊的。
+           master data 沒有單獨一張表寫這件事，只能從 eventCards 的活動歸屬反推。
+           只排這一期;先前幾屆 WL 的卡照進，而且還帶著 limMap 的 +20，
+           常常就是整個後排單張最高的一格 —— 把「團體活動限定」整類排掉會少算十幾個百分點。 */
+        const banned = {};
+        (evCards || []).forEach(x => { if (+x.eventId === evId) banned[+x.cardId] = 1; });
+
         const byRar = {}; supTbl.forEach(t => { byRar[t.cardRarityType] = t; });
         const pickRate = (arr, k, v) => { const f = (arr || []).find(o => o[k] === v); return f ? (+f.bonusRate || 0) : 0; };
         const MR_FULL = 5, SL_FULL = 4;   // MR0 與 SL1 在五種稀有度都是 0,所以「沒練」的下限＝只剩角色檔＋限定卡
@@ -8734,6 +8757,7 @@ class Component extends DCLogic {
 
         const rows = [];
         (cards || []).forEach(c => {
+          if (banned[c.id]) return;                                  // 這一期自己的卡放前排，不進後排
           const su = (c.supportUnit && c.supportUnit !== 'none') ? c.supportUnit : null;
           const vs = c.characterId >= 21 && su === chUnit;            // V 家卡以「應援團體」進池
           if (!isFinale && nativeUnit(c.characterId) !== chUnit && !vs) return;   // 終章不限團體
@@ -8784,10 +8808,13 @@ class Component extends DCLogic {
           how_it_works: {
             formula: '單張支援卡加成％ = 角色檔(specific／others) ＋ 專精檔(MR) ＋ 技能等級檔(SL) ＋ 前期 WL 限定卡 20；'
               + '支援隊 ' + slots + ' 個位置各自獨立，支援加成總計 = 合格卡池裡加成最高的前 ' + slots + ' 張相加。',
-            eligibility: isFinale
+            eligibility: (isFinale
               ? '終章不限團體，全卡池都能進支援隊。'
               : '合格＝卡片的「原生團體」或「應援團體」等於本章主角的原生團體（' + unitZh(chUnit) + '）。'
-                + '主角是 VIRTUAL SINGER 時原生團＝piapro，等於全 V 家卡合格、人類卡全部排除。',
+                + '主角是 VIRTUAL SINGER 時原生團＝piapro，等於全 V 家卡合格、人類卡全部排除。')
+              + '　另外，這一期活動自己的 ' + Object.keys(banned).length + ' 張新卡不能進支援隊（那是拿來組前排主隊的），'
+              + '已從候選池排除。先前幾屆 World Link 的卡不受影響，照樣可以放，而且還帶著它們那一屆的限定 +20，'
+              + '常常是後排單張加成最高的一格 —— 不要把「團體活動限定」整類排掉。',
             specific_vs_others: isFinale
               ? '終章沒有單一主角，全部卡都吃 others 檔。'
               : '只有「' + this.chNameOf(special) + '」本人的卡吃 specific 檔，同團其他角色一律 others 檔。',
@@ -13140,8 +13167,24 @@ class Component extends DCLogic {
     const evIds = Object.keys(byEv).map(Number).sort((a, b) => a - b);
     if (!evIds.length) return null;
     const now = Date.now();
-    const started = evIds.filter(id => byEv[id].some(c => c.chapterStartAt <= now));
-    const evId = started.length ? started[started.length - 1] : evIds[evIds.length - 1];
+    const stOf = id => Math.min.apply(null, byEv[id].map(c => c.chapterStartAt));
+    const enOf = id => Math.max.apply(null, byEv[id].map(c => c.chapterStartAt));
+
+    /* World Link 分「屆」:一屆是連著開的好幾期,屆與屆之間隔了大半年
+       (WL1 最後一期 2025-08、WL2 第一期 2026-04)。用間隔切而不是把期數寫死,
+       WL3 開跑時就不必再改一次程式。後排收幾張也是跟著屆數走的。 */
+    const SEASON_GAP = 120 * 86400000;
+    const seasonOf = {}; let sn = 1;
+    evIds.forEach((id, i) => {
+      if (i > 0 && stOf(id) - enOf(evIds[i - 1]) > SEASON_GAP) sn++;
+      seasonOf[id] = sn;
+    });
+
+    const started = evIds.filter(id => stOf(id) <= now);
+    /* 預設帶最近一期已開跑的,但每一期都要點得到 —— 使用者常常是回頭算
+       先前某一屆某一期的後排(那些卡與限定加成都還在,算得出來)。 */
+    const evId = (s.wlsEv != null && byEv[s.wlsEv]) ? +s.wlsEv
+      : (started.length ? started[started.length - 1] : evIds[evIds.length - 1]);
     const chs = byEv[evId].slice().sort((a, b) => a.chapterNo - b.chapterNo);
 
     // 預設帶「現在進行中」的章節,沒有就帶最後一章
@@ -13156,6 +13199,14 @@ class Component extends DCLogic {
     const pick = (arr, k, v) => (((arr || []).find(o => o[k] === v)) || {}).bonusRate || 0;
     const limMap = {};
     (D.lim || []).forEach(x => { if (x.eventId === evId && x.gameCharacterId === special) limMap[x.cardId] = x.bonusRate; });
+
+    /* 當期活動的新卡不能放後排 —— 那四張是拿來組前排主隊的。
+       排除的單位是「活動」而不是「章節」:同一屆 WL 的各章共用同一份排除名單。
+       只排當期這一屆。先前幾屆的 World Link 卡照放，而且它們還帶著自己那屆的
+       限定固定加成（+20%），往往是整個後排單張最高的一格 —— 把「團體活動限定」
+       整類排掉是過度排除，會少算十幾個百分點。 */
+    const banned = {};
+    (D.evc || []).forEach(x => { if (+x.eventId === evId) banned[+x.cardId] = 1; });
 
     const mr = Math.min(5, Math.max(0, Math.round(+s.wlsMR))), sl = Math.min(4, Math.max(1, Math.round(+s.wlsSL)));
     const mode = s.wlsPool || 'all';
@@ -13176,6 +13227,7 @@ class Component extends DCLogic {
         /* 認出卡號的話,支援團也就知道了 —— VS 卡進不進得了後排要看這個。
            沒認出來就只能靠角色的原生團判斷。 */
         const row = x.cardId != null ? byId[x.cardId] : null;
+        if (x.cardId != null && banned[x.cardId]) return;   // 當期的卡放前排，不進後排
         const okUnit = uOf[cid] === chUnit || (row && row[5] === chUnit);
         if (!okUnit) return;
         const rr = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
@@ -13190,7 +13242,7 @@ class Component extends DCLogic {
           + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', k) + ex;
         list.push({ id: x.cardId != null ? x.cardId : -(i + 1),
           name: x.cardName || ('MR' + m + '／SLv.' + k),
-          chara: nOf[cid] || '', rar: rr,
+          chara: nOf[cid] || '', rar: rr, mr: m, sl: k,
           isSpecial: cid === special, isLim: !!ex, unsure: x.cardId != null && !x.sure,
           bonus: Math.round(b * 10) / 10,
           img: row ? this.cardImg(row[8], rr) : '' });
@@ -13199,6 +13251,7 @@ class Component extends DCLogic {
     if (special != null && !scan) {
       for (const c of cards) {
         if (own && !own.has(c[0])) continue;
+        if (banned[c[0]]) continue;   // 當期的卡放前排，不進後排
         /* 入選資格:角色原生團＝本章主角的團,或這張卡的支援團＝本章團。
            後者是 VS 卡進得了後排的唯一途徑。 */
         if (uOf[c[1]] !== chUnit && c[5] !== chUnit) continue;
@@ -13208,18 +13261,25 @@ class Component extends DCLogic {
           + pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', mr)
           + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', sl)
           + (limMap[c[0]] || 0);
-        list.push({ id: c[0], name: c[7], chara: nOf[c[1]] || '', rar: c[2],
+        list.push({ id: c[0], name: c[7], chara: nOf[c[1]] || '', rar: c[2], mr, sl,
           isSpecial: c[1] === special, isLim: !!limMap[c[0]],
           bonus: Math.round(b * 10) / 10, img: this.cardImg(c[8], c[2]) });
       }
     }
     list.sort((a, b) => b.bonus - a.bonus || a.id - b.id);
-    // 張數依屆數,與 core.js 的 wlSupCount 同判定
-    const n = evId <= 140 ? 12 : evId <= 180 ? 20 : 25;
+    // 張數依屆數:WL1 收 12 張、WL2 收 20 張、之後 25 張
+    const season = seasonOf[evId] || 1;
+    const n = season === 1 ? 12 : season === 2 ? 20 : 25;
     const use = list.slice(0, n);
     const total = Math.round(use.reduce((x, r) => x + r.bonus, 0) * 10) / 10;
     return {
-      evId, chs, cur, special, chUnit, n, list, use, total,
+      evId, chs, cur, special, chUnit, n, list, use, total, season,
+      banned: Object.keys(banned).length,
+      evs: evIds.slice().reverse().map(id => {
+        const main = byEv[id].map(c => c.gameCharacterId).find(x => x != null);
+        return { id, season: seasonOf[id], unit: main != null ? uOf[main] : null,
+                 started: stOf(id) <= now };
+      }),
       pool: list.length, short: Math.max(0, n - use.length),
       finale: special == null,
       chIndex: (s.wlsCh == null || s.wlsCh === '') ? def : idx,
@@ -13286,12 +13346,15 @@ class Component extends DCLogic {
     if (this.state.wlsLoad || this.state.wlsData) return;
     this.setState({ wlsLoad: true, wlsErr: '' });
     try {
-      const [wb, sup, lim] = await Promise.all([
+      /* eventCards 是拿來認「哪些卡是當期活動的」—— 那些卡要放前排主隊，
+         master data 沒有另一張表寫這件事，只能從活動歸屬反推。 */
+      const [wb, sup, lim, evc] = await Promise.all([
         fetch(this.TDB + '/worldBlooms.json').then(r => r.json()),
         fetch(this.TDB + '/worldBloomSupportDeckBonuses.json').then(r => r.json()),
         fetch(this.TDB + '/worldBloomSupportDeckUnitEventLimitedBonuses.json').then(r => r.json()),
+        fetch(this.TDB + '/eventCards.json').then(r => r.json()),
       ]);
-      this.setState({ wlsData: { wb: wb || [], sup: sup || [], lim: lim || [] }, wlsLoad: false });
+      this.setState({ wlsData: { wb: wb || [], sup: sup || [], lim: lim || [], evc: evc || [] }, wlsLoad: false });
     } catch (e) {
       this.setState({ wlsLoad: false, wlsErr: 'World Link 加成表載入失敗，請稍後再試' });
     }
@@ -14527,7 +14590,8 @@ class Component extends DCLogic {
         if (!W) {
           return { wlsReady: false, wlsHas: false, wlsN: '', wlsChChips: [], wlsPoolChips: [],
             wlsMR: s.wlsMR, wlsSL: s.wlsSL, wlsAssume: '', wlsChLabel: '', wlsTotal: '0',
-            wlsIsScan: false, wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false,
+            wlsIsScan: false, wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false, wlsBanned: 0,
+            wlsEvChips: [],
             wlsFilterHint: '本章主角所屬的團',
             wlsSummary: '', wlsShort: false, wlsShortMsg: '', wlsRows: [],
             wlsMsg: s.wlsErr || (s.wlsLoad || s.rateLoad ? '載入中…' : '資料載入中…') };
@@ -14537,7 +14601,15 @@ class Component extends DCLogic {
         return {
           wlsReady: true,
           wlsHas: !W.finale && W.use.length > 0,
-          wlsN: W.n,
+          wlsN: W.n, wlsBanned: W.banned,
+          wlsEvChips: W.evs.map(e => {
+            const on = e.id === W.evId, st = chip(on, 'var(--accent)');
+            const U = e.unit != null ? this.UNITS[this.UNIT_OF[e.unit]] : null;
+            return Object.assign({ v: String(e.id),
+              n: 'WL' + e.season + '　第' + e.id + '期　' + (U ? U.n : '終章')
+                 + (e.started ? '' : '（未開始）'),
+              op: e.started ? '1' : '.55' }, st, { fg: on ? '#fff' : 'var(--text)' });
+          }),
           wlsMR: W.mr, wlsSL: W.sl,
           wlsChChips: W.chs.map((c, i) => {
             const on = i === W.chIndex, st = chip(on, 'var(--cta)');
@@ -14574,6 +14646,10 @@ class Component extends DCLogic {
           wlsRows: W.use.map(c => ({
             id: c.id, name: c.name, chara: c.chara, bonus: c.bonus.toFixed(1),
             rar: RN[c.rar] || '', img: c.img,
+            /* 專精與技能等級一定要露出來。截圖辨識最可能錯的就是這兩個數字
+               （尤其「沒有菱形徽章＝MR0」），而它們直接決定加成 ——
+               不顯示的話使用者連自己被算錯了都看不出來。 */
+            ms: 'MR' + c.mr + '　SLv.' + c.sl,
             bd: c.isSpecial ? 'var(--accent)' : 'var(--border)',
             tag: c.unsure ? '待確認' : (c.isLim ? '本章限定' : (c.isSpecial ? '本章主角' : '同團')),
             tagBg: c.unsure ? '#c98a2b' : (c.isLim ? '#e0576a' : (c.isSpecial ? 'var(--accent)' : 'rgba(0,0,0,.45)')),
@@ -14602,8 +14678,10 @@ class Component extends DCLogic {
         chars.forEach(c => { nOf[c[0]] = c[1]; uOf[c[0]] = this.UNIT_OF[c[2]] || 'vs'; });
         const q = String(s.artQ || '').trim().toLowerCase();
         const un = s.artUnit || 'all', rr = s.artRar || 'all', sp = s.artSup || 'all';
+        const ch = s.artChar || 'all';
         const rows = cards.filter(c => {
           if (un !== 'all' && uOf[c[1]] !== un) return false;
+          if (ch !== 'all' && String(c[1]) !== ch) return false;
           if (rr !== 'all' && String(c[2]) !== rr) return false;
           if (sp !== 'all' && String(c[4]) !== sp) return false;
           if (q) {
@@ -14642,12 +14720,22 @@ class Component extends DCLogic {
              （站主的 iPad Safari 實際遇到，三個下拉包括選項寫死在常數裡的那兩個
              全都空的）。收集率頁一直是用膠囊，那個版式在同一台裝置上是好的，
              所以照抄它，而不是繼續猜 select 為什麼不渲染。
-             角色從 26 個變成團體 6 個：26 顆膠囊太多，逐角色改用搜尋框
-             （打「一歌」就是 46 張），搜尋現在也涵蓋稀有度與取得類別。 */
+             搜尋現在也涵蓋稀有度與取得類別。 */
           artUnitChips: [{ v: 'all', n: '全部', c: null }].concat(
             this.UNIT_OF.map(u => ({ v: u, n: (this.UNITS[u] || {}).n || u, c: (this.UNITS[u] || {}).c })))
             .map(x => { const on = un === x.v, st = chip(on, x.c);
               return Object.assign({}, x, st, { fg: on ? (x.c ? (this.UNITS[x.v] || {}).t || '#fff' : '#fff') : 'var(--text)' }); }),
+          /* 26 個角色全部給膠囊。原本只有團體 6 顆、要指定角色得自己打字搜尋 ——
+             但「我要看冬彌的卡」是這一頁最常見的用法，不該還要先想到用搜尋框。
+             選了團之後只列那一團的角色，26 顆才不會擠成一整片；
+             分組用的是原生團（uOf），所以 VS 六人固定在 Virtual Singer 底下。 */
+          artCharChips: [{ v: 'all', n: '全部角色', c: null, t: null }].concat(
+            chars.filter(c => un === 'all' || uOf[c[0]] === un).map(c => {
+              const U = this.UNITS[uOf[c[0]]] || {};
+              return { v: String(c[0]), n: c[1], c: U.c || null, t: U.t || '#fff' };
+            }))
+            .map(x => { const on = ch === x.v, st = chip(on, x.c);
+              return Object.assign({}, x, st, { fg: on ? (x.c ? x.t : '#fff') : 'var(--text)' }); }),
           artRarChips: [{ v: 'all', n: '全部' }].concat(this.RARITY.map(([code, label]) => ({ v: String(code), n: label })))
             .map(x => { const on = rr === x.v, st = chip(on, 'var(--cta)');
               return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
@@ -16079,14 +16167,25 @@ class Component extends DCLogic {
             im.onerror = () => rej(new Error('圖片讀取失敗'));
             im.src = URL.createObjectURL(f);
           });
-          /* 送給模型的縮到 1400px 就夠讀數字了,原圖動輒數 MB,
-             base64 之後會超過後端 512 KB 的上限。但裁圖比對要用原圖,精度差很多。 */
-          const max = 1400, k = Math.min(1, max / Math.max(img.width, img.height));
-          const cv = document.createElement('canvas');
-          cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
-          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          const b64 = cv.toDataURL('image/jpeg', 0.72).split(',')[1] || '';
-          if (b64.length > 400000) throw new Error('圖片太大，請裁掉空白區域再試');
+          /* 送給模型的那份一律重新轉檔。手機截圖動輒 3000px、HEIC/PNG 原檔十幾 MB,
+             base64 之後會超過後端上限 —— 以前是丟一句「圖片太大，請裁掉空白再試」,
+             但相機與截圖本來就是那個尺寸,那等於把工具做不到的事推回給使用者。
+             改成自己降:先降品質、再降尺寸,一路試到送得走為止。
+             只有送模型的這一份會縮;裁圖比對用的仍是原圖 img,辨識精度不受影響。 */
+          const CAP = 2600000;   // base64 字元數。後端上限 4 MB，留給 system 與工具定義
+          let b64 = '';
+          for (const [max, q] of [[1600, .8], [1600, .62], [1280, .6], [1024, .55], [800, .5]]) {
+            const k = Math.min(1, max / Math.max(img.width, img.height));
+            const cv = document.createElement('canvas');
+            cv.width = Math.max(1, Math.round(img.width * k));
+            cv.height = Math.max(1, Math.round(img.height * k));
+            const c2 = cv.getContext('2d');
+            c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high';
+            c2.drawImage(img, 0, 0, cv.width, cv.height);
+            b64 = cv.toDataURL('image/jpeg', q).split(',')[1] || '';
+            if (b64.length <= CAP) break;
+          }
+          if (!b64) throw new Error('圖片轉檔失敗，請換一張試試');
 
           const names = (this.state.rateChars || []).map(c => c[1]);
           this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）' });
@@ -16095,9 +16194,16 @@ class Component extends DCLogic {
               + '每個卡片方塊上看得到這些東西：\n'
               + '・左上角小圖示＝屬性：藍色星形＝cool、橘色愛心＝happy、紫色月亮＝mysterious、'
               + '粉色花＝cute、綠色葉＝pure\n'
-              + '・卡面下方那排星星的數量＝稀有度（1～4）；星星是愛心形狀的是生日卡，填 9\n'
-              + '・左下角「SLv.N」＝技能等級（1～4）\n'
-              + '・右下角菱形徽章裡的數字＝專精等級（0～5）\n'
+              + '・卡面下方的稀有度標記有兩種，先分清楚是哪一種再數：\n'
+              + '　　星星（★）→ 一般卡，有幾顆就填幾（1～4）\n'
+              + '　　蝴蝶結（緞帶打的結，左右各一片、中間一個結，只有一個，不是星形）→ 生日卡，填 9\n'
+              + '　看到蝴蝶結就是 9，不要因為它只有一個就填 1 —— 生日卡沒有星星。\n'
+              + '・左下角「SLv.N」＝技能等級，填 N（1～4）。整格找不到 SLv. 字樣才填 1。\n'
+              + '・右下角菱形徽章裡的數字＝專精等級。**這一格沒有菱形徽章就是 0**，\n'
+              + '　不要因為看不到就跳過、也不要猜一個數字 —— 大多數卡本來就是 0。\n'
+              + '　有徽章的話，數字就寫在菱形正中央（1～5）。\n'
+              + '・專精與技能等級直接決定加成的數值，是這張截圖最要緊的兩個數字，\n'
+              + '　每一格都要各自看清楚再填，不要因為前一格是多少就沿用。\n'
               + '・角色＝從頭像辨認，只能填這個清單裡的名字：' + names.join('、') + '\n\n'
               + '每一格還要給它在圖片上的位置 box，用 0~1 的相對座標（x,y 是左上角，w,h 是寬高），'
               + '**要框住整個卡片方塊（含外框與下方的 SLv 條）**，不要只框臉。\n'
@@ -16110,10 +16216,10 @@ class Component extends DCLogic {
               input_schema: { type: 'object', properties: {
                 cards: { type: 'array', description: '每張卡一筆，依畫面順序', items: { type: 'object', properties: {
                   character: { type: 'string', description: '角色名，必須是清單裡的其中一個' },
-                  rarity: { type: 'integer', description: '1-4，生日卡填 9' },
+                  rarity: { type: 'integer', description: '星星幾顆就填幾（1-4）；標記是蝴蝶結（緞帶）的生日卡填 9' },
                   attribute: { type: 'string', enum: ['cool', 'happy', 'mysterious', 'cute', 'pure'] },
-                  master_rank: { type: 'integer', description: '右下角菱形的數字 0-5' },
-                  skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4' },
+                  master_rank: { type: 'integer', description: '右下角菱形徽章裡的數字 1-5；沒有菱形徽章就填 0' },
+                  skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4；沒看到 SLv. 就填 1' },
                   box: { type: 'object', description: '這一格在圖上的相對位置 0~1', properties: {
                     x: { type: 'number' }, y: { type: 'number' },
                     w: { type: 'number' }, h: { type: 'number' } },
@@ -16194,9 +16300,11 @@ class Component extends DCLogic {
         this.setState({ wlsShotBusy: false });
       },
       onWlsClearShot: () => this.setState({ wlsScan: null, wlsShotMsg: '已清除辨識結果。' }),
+      onWlsEv: e => this.setState({ wlsEv: +e.currentTarget.dataset.v || null, wlsCh: '' }),
       onWlsCh: e => this.setState({ wlsCh: +e.currentTarget.dataset.v || 0 }),
       onWlsPool: e => this.setState({ wlsPool: e.currentTarget.dataset.v }),
-      onArtUnit: e => this.setState({ artUnit: e.currentTarget.dataset.v, artPage: 1 }),
+      onArtUnit: e => this.setState({ artUnit: e.currentTarget.dataset.v, artChar: 'all', artPage: 1 }),
+      onArtChar: e => this.setState({ artChar: e.currentTarget.dataset.v, artPage: 1 }),
       onArtRar: e => this.setState({ artRar: e.currentTarget.dataset.v, artPage: 1 }),
       onArtSup: e => this.setState({ artSup: e.currentTarget.dataset.v, artPage: 1 }),
       onArtSrv: e => {
