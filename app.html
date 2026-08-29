@@ -1741,111 +1741,149 @@ select option, select optgroup{
 
   <sc-if value="{{ isWlsup }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+
+    <!-- 這一頁只回答一個問題:我的後排加成是多少。所以數字放最上面,
+         其餘全部是「怎麼算出這個數字」的設定,依重要性往下排。
+         換算方式三選一,而且只顯示選到的那一種的控制項 ——
+         三種的控制項同時攤開就是原本最亂的地方。 -->
     <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
-      <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px">World Link 後排加成</div>
-      <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
-        後排（支援隊伍）的加成是純查表算出來的：每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值。<br>
-        入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」，取加成最高的前 {{ wlsN }} 張。<br>
-        <b>當期活動本身的 {{ wlsBanned }} 張新卡不列入候選</b>（那幾張是用於前排主隊）；
-        先前各屆 World Link 的卡不受影響，且仍帶有該屆的限定加成 +20%，往往是後排單張加成最高的一格。
+      <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+        <span style="font-size:12.5px;color:var(--text-2)">{{ wlsChLabel }} 的後排加成</span>
+        <div style="flex:1"></div>
+        <button type="button" onClick="{{ onWlsHelp }}" style="padding:3px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ wlsHelpBtn }}</button>
       </div>
-      <sc-if value="{{ wlsReady }}">
-        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:5px">屆／期</div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
-          <sc-for list="{{ wlsEvChips }}" as="c" hint-placeholder-count="13">
-            <button type="button" onClick="{{ onWlsEv }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};opacity:{{ c.op }}">{{ c.n }}</button>
-          </sc-for>
+      <sc-if value="{{ wlsHas }}">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px">
+          <span style="font-size:40px;font-weight:800;color:var(--accent-deep);line-height:1.05">{{ wlsTotal }}</span>
+          <span style="font-size:14px;color:var(--text-3)">%</span>
         </div>
-        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:5px">章節</div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
-          <sc-for list="{{ wlsChChips }}" as="c" hint-placeholder-count="5">
-            <button type="button" onClick="{{ onWlsCh }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
-          </sc-for>
-        </div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px">
-          <sc-for list="{{ wlsPoolChips }}" as="c" hint-placeholder-count="2">
-            <button type="button" onClick="{{ onWlsPool }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
-          </sc-for>
-        </div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-          <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)">專精 MR
-            <input type="number" min="0" max="5" value="{{ wlsMR }}" onInput="{{ onField }}" data-k="wlsMR" data-num="1" style="width:70px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)">技能等級 SL
-            <input type="number" min="1" max="4" value="{{ wlsSL }}" onInput="{{ onField }}" data-k="wlsSL" data-num="1" style="width:70px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
-          <span style="font-size:11px;color:var(--text-3)">{{ wlsAssume }}</span>
-        </div>
-        <div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">
-          <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:7px">
-            也可以直接上傳遊戲內「卡片一覽」的截圖：AI 辨識每張卡的角色、稀有度、專精（右下菱形）與技能等級（左下 SLv.），<br>
-            再由瀏覽器將卡面與官方縮圖比對指紋，在全部 1,249 張裡判定該格是哪一張卡。<br>
-            卡片身分以指紋為準，AI 讀到的角色只作交叉核對；兩者不一致時以比對結果為準，並在訊息中標明張數。<br>
-            這樣算出的是<b>實際持有</b>的後排：每張卡採用各自的專精與技能等級，而不是全隊套用同一組假設值。
-          </div>
-          <div style="padding:9px 12px;border-radius:11px;background:color-mix(in oklab,var(--accent) 10%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.85;margin-bottom:8px">
-            <b>不要截整個卡庫。</b>後排只收得下本章主角所屬團體的卡，建議先在遊戲內將篩選設為
-            <b>{{ wlsFilterHint }}</b>，只截取該團體的畫面。<br>
-            這樣可省下大半的截圖張數（每張約 20 張卡，各耗用一次 AI 額度），
-            而且同一團體內只剩「是否為本章主角」這一項差異，角色辨識錯誤的機率小很多。
-          </div>
-          <div style="font-size:11px;color:var(--text-3);line-height:1.75;margin-bottom:7px">
-            認出卡號之後，本章限定卡的 +20% 與 VS 卡的支援團體都會一併計入。<br>
-            卡庫一頁截不完可以分成幾張上傳，結果會自動累加；前後兩張重疊到的同一張卡會合併，不會重複計算。<br>
-            累積足夠後可按「導入我的卡庫」，將辨識出的卡連同專精與技能等級寫進收集率頁的持有清單（只新增，不會取消原本已勾選的卡）。<br>
-            反過來，「從卡庫導入」會把持有清單連同上次存下的專精與技能倒回這裡 ——
-            辨識過一次之後，往後每一期 WL 都能直接計算，不必重新截圖。<br>
-            <b>第一次上傳比之後慢</b>：那一次要把整份卡面指紋庫載下來，再逐格與候選卡比對；
-            同一次開站之後再上傳會快很多，過程中請勿關閉或重複點按。<br>
-            兩點先說明：每張截圖耗用一次 AI 額度；候選卡面太接近時會標為「待確認」，
-            那幾張需要自行核對 —— 每張卡格上都印著辨識到的 MR 與 SLv.，與遊戲內對不上就代表該格讀錯。
-          </div>
-          <div style="padding:9px 12px;border-radius:11px;background:var(--card-2);border:1px solid var(--border);margin-bottom:8px">
-            <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:2px">這批截圖在遊戲裡篩成了什麼？</div>
-            <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-bottom:6px">
-              比對範圍會照這個縮。遊戲格子上疊著屬性圖示、星星、SLv 條與專精菱形，每一格都一樣，
-              會把卡與卡之間的差距壓小；不縮範圍的話，一整頁同一位角色的卡很容易被別人的卡撞贏。<br>
-              這是你知道、AI 不知道的事，所以由你指定 —— <b>選了之後辨識會準很多</b>。目前比對範圍：<b>{{ wlsPoolNote }}</b>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px">
-              <sc-for list="{{ wlsFilterChips }}" as="c" hint-placeholder-count="7">
-                <button type="button" onClick="{{ onWlsFilter }}" data-v="{{ c.v }}" style="padding:5px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
-              </sc-for>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:5px">
-              <sc-for list="{{ wlsCharChips }}" as="c" hint-placeholder-count="26">
-                <button type="button" onClick="{{ onWlsFilter }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
-              </sc-for>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
-              {{ wlsShotBtn }}
-              <input type="file" accept="image/*" onChange="{{ onWlsShot }}" style="display:none">
-            </label>
-            <button type="button" onClick="{{ onWlsFromOwn }}" style="padding:7px 15px;border:1px solid var(--accent);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:800;cursor:pointer">{{ wlsFromOwnBtn }}</button>
-            <sc-if value="{{ wlsHasScan }}">
-              <button type="button" onClick="{{ onWlsImportOwn }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer">{{ wlsImportBtn }}</button>
-              <button type="button" onClick="{{ onWlsClearShot }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">清除辨識結果</button>
-            </sc-if>
-          </div>
-          <div style="font-size:11.5px;color:var(--accent-deep);margin-top:7px">{{ wlsShotMsg }}</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:3px">{{ wlsSummary }}</div>
+      </sc-if>
+      <div style="font-size:11.5px;color:var(--accent-deep);margin-top:6px">{{ wlsMsg }}</div>
+
+      <sc-if value="{{ wlsHelpOpen }}">
+        <div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--card-2);font-size:11px;color:var(--text-3);line-height:1.85">
+          後排（支援隊伍）的加成是純查表算出來的：每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值，取加成最高的前 {{ wlsN }} 張。<br>
+          入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」。<br>
+          當期活動本身的 {{ wlsBanned }} 張新卡不列入候選（那幾張是用於前排主隊）；先前各屆 World Link 的卡不受影響，
+          且仍帶有該屆的限定加成 +20%，往往是後排單張加成最高的一格。
         </div>
       </sc-if>
-      <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ wlsMsg }}</div>
+
+      <sc-if value="{{ wlsShort }}">
+        <div style="margin-top:8px;padding:9px 12px;border-radius:11px;background:color-mix(in oklab,#ffb86b 14%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.7">{{ wlsShortMsg }}</div>
+      </sc-if>
     </div>
 
-    <sc-if value="{{ wlsHas }}">
-      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-          <span style="font-size:12.5px;color:var(--text-2)">{{ wlsChLabel }} 的後排加成</span>
-          <span style="font-size:30px;font-weight:800;color:var(--accent-deep);line-height:1.1">{{ wlsTotal }}</span>
-          <span style="font-size:12.5px;color:var(--text-3)">%</span>
+    <sc-if value="{{ wlsReady }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <!-- 章節。這是最常動的設定，所以擺第一個、永遠展開 -->
+      <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px">
+        <sc-for list="{{ wlsChChips }}" as="c" hint-placeholder-count="5">
+          <button type="button" onClick="{{ onWlsCh }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+        </sc-for>
+        <div style="flex:1"></div>
+        <button type="button" onClick="{{ onWlsEvOpen }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ wlsEvBtn }}</button>
+      </div>
+      <!-- 十三期平常收起來:換屆是偶爾才做一次的事，攤開會蓋過章節 -->
+      <sc-if value="{{ wlsEvOpen }}">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;padding:9px 10px;border-radius:12px;background:var(--card-2)">
+          <sc-for list="{{ wlsEvChips }}" as="c" hint-placeholder-count="13">
+            <button type="button" onClick="{{ onWlsEv }}" data-v="{{ c.v }}" style="padding:5px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }};opacity:{{ c.op }}">{{ c.n }}</button>
+          </sc-for>
         </div>
-        <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-top:5px">{{ wlsSummary }}</div>
-        <sc-if value="{{ wlsShort }}">
-          <div style="margin-top:8px;padding:9px 12px;border-radius:11px;background:color-mix(in oklab,#ffb86b 14%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.7">{{ wlsShortMsg }}</div>
-        </sc-if>
+      </sc-if>
+
+      <div style="height:1px;background:var(--border);margin:2px 0 10px"></div>
+
+      <!-- 換算方式。三選一，下面只顯示選到那一種的控制項 -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">用哪些卡來算</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px">
+        <sc-for list="{{ wlsPoolChips }}" as="c" hint-placeholder-count="3">
+          <button type="button" onClick="{{ onWlsPool }}" data-v="{{ c.v }}" style="padding:6px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+        </sc-for>
       </div>
 
+      <sc-if value="{{ wlsIsTheory }}">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)">專精 MR
+            <input type="number" min="0" max="5" value="{{ wlsMR }}" onInput="{{ onField }}" data-k="wlsMR" data-num="1" style="width:64px;padding:6px 9px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)">技能等級 SL
+            <input type="number" min="1" max="4" value="{{ wlsSL }}" onInput="{{ onField }}" data-k="wlsSL" data-num="1" style="width:64px;padding:6px 9px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12.5px;outline:none;font-family:inherit"></label>
+          <span style="font-size:11px;color:var(--text-3)">全部卡都當成這個養成度</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ wlsIsOwn }}">
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.75">
+          只算你在收集率頁勾選的持有卡，養成度一律套上面的 MR{{ wlsMR }}／SLv.{{ wlsSL }}。<br>
+          想讓每張卡用它自己的專精與技能，改用「截圖辨識」。
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ wlsIsScan }}">
+        <div style="display:flex;gap:7px;align-items:baseline;margin-bottom:4px">
+          <span style="flex:none;width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:17px">1</span>
+          <div style="font-size:11.5px;color:var(--text-2);line-height:1.7">
+            在遊戲裡把「卡片一覽」篩成一位角色或一個團再截圖，這裡選同一個。
+            目前比對範圍 <b style="color:var(--accent-deep)">{{ wlsPoolNote }}</b>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 5px 24px">
+          <sc-for list="{{ wlsFilterChips }}" as="c" hint-placeholder-count="7">
+            <button type="button" onClick="{{ onWlsFilter }}" data-v="{{ c.v }}" style="padding:5px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ wlsHasCharChips }}">
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px 24px">
+            <sc-for list="{{ wlsCharChips }}" as="c" hint-placeholder-count="6">
+              <button type="button" onClick="{{ onWlsFilter }}" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;gap:7px;align-items:baseline;margin-bottom:5px">
+          <span style="flex:none;width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:17px">2</span>
+          <div style="font-size:11.5px;color:var(--text-2)">上傳截圖。可以分成幾張，會自動累加並去掉重複的。</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 7px 24px">
+          <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
+            {{ wlsShotBtn }}
+            <input type="file" accept="image/*" onChange="{{ onWlsShot }}" style="display:none">
+          </label>
+          <button type="button" onClick="{{ onWlsFromOwn }}" style="padding:7px 15px;border:1px solid var(--accent);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:800;cursor:pointer">{{ wlsFromOwnBtn }}</button>
+        </div>
+
+        <!-- 進度條。AI 那一段拿不到真實進度，所以用經過秒數推一條會趨緩但不會停的線；
+             比對那一段是本地運算，逐格回報真實進度。停著不動最容易讓人以為當掉。 -->
+        <sc-if value="{{ wlsBusy }}">
+          <div style="margin:0 0 8px 24px">
+            <div style="height:6px;border-radius:999px;background:var(--card-2);overflow:hidden">
+              <div style="height:100%;width:{{ wlsProgPct }}%;border-radius:999px;background:var(--ink-grad);transition:width .4s ease"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--text-3);margin-top:4px">
+              <span>{{ wlsProgLabel }}</span>
+              <span>{{ wlsProgSide }}</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ wlsHasScan }}">
+          <div style="display:flex;gap:7px;align-items:baseline;margin-bottom:5px">
+            <span style="flex:none;width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:17px">3</span>
+            <div style="font-size:11.5px;color:var(--text-2)">上面已經用這批卡在算了。存進卡庫的話，之後每一期都不必重截。</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:24px">
+            <button type="button" onClick="{{ onWlsImportOwn }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer">{{ wlsImportBtn }}</button>
+            <button type="button" onClick="{{ onWlsClearShot }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">清除辨識結果</button>
+          </div>
+        </sc-if>
+        <div style="font-size:11.5px;color:var(--accent-deep);margin:7px 0 0 24px;line-height:1.7">{{ wlsShotMsg }}</div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ wlsHas }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px">
         <sc-for list="{{ wlsRows }}" as="c" hint-placeholder-count="12">
           <div style="border:1px solid {{ c.bd }};border-radius:13px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
@@ -1864,12 +1902,11 @@ select option, select optgroup{
       </div>
     </sc-if>
 
-    <sc-if value="{{ wlsIsScan }}">
+    <sc-if value="{{ wlsHasScan }}">
       <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-top:13px">
         <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">{{ wlsScanTitle }}</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:10px">
-          上面那份列的是這一章實際會用到的幾張，這一份列的是辨識到的全部。<br>
-          每上傳一張截圖，新讀到的卡都會出現在這裡；沒有用到的也會標明原因，不會無聲消失。
+          上面那份是這一章實際會用到的幾張，這一份是辨識到的全部。沒有用到的會標明原因。
           專精或技能若讀錯，在這裡最容易看出來。
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px">
@@ -3782,7 +3819,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     artQ: '', artUnit: 'all', artChar: 'all', artRar: 'all', artSup: 'all', artPage: 1,
-    wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsFilter: 'all', wlsData: null, wlsLoad: false, wlsErr: '',
+    wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsFilter: null, wlsHelp: false, wlsEvOpen: false, wlsProg: 0, wlsProgBase: 0, wlsProgSpan: 0, wlsProgLabel: '', wlsProgSide: '', wlsData: null, wlsLoad: false, wlsErr: '',
     wlsScan: null, wlsShotBusy: false, wlsShotMsg: '',
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
@@ -13363,7 +13400,21 @@ class Component extends DCLogic {
     };
   }
 
-  /* 卡面指紋。114 KB,只在真的要辨識截圖時才載。
+  /* 截圖篩選:沒指定過就帶本章主角。兩個地方都要用同一份判斷,
+     不然畫面上寫的範圍會跟實際比對的範圍不一樣。 */
+  wlsFilterOf(W) {
+    const f = this.state.wlsFilter;
+    if (f) return f;
+    return (W && W.special != null) ? ('c' + W.special) : 'all';
+  }
+  wlsInPool(c, f, uo) {
+    if (f === 'all') return true;
+    if (f.charAt(0) === 'c') return c[1] === +f.slice(1);
+    const u = this.UNIT_OF.indexOf(f);
+    return u < 0 || uo[c[1]] === u || c[5] === u;
+  }
+
+  /* 卡面指紋。284 KB,只在真的要辨識截圖時才載。
      必須跟 tools/build-card-sigs.py 的 dhash() 算出同一組 bit —— 16x15、
      左右相鄰比大小。只看梯度方向,所以截圖那層半透明白不影響。 */
   async loadCardSigs() {
@@ -14739,9 +14790,12 @@ class Component extends DCLogic {
         if (!W) {
           return { wlsReady: false, wlsHas: false, wlsN: '', wlsChChips: [], wlsPoolChips: [],
             wlsMR: s.wlsMR, wlsSL: s.wlsSL, wlsAssume: '', wlsChLabel: '', wlsTotal: '0',
-            wlsIsScan: false, wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false, wlsBanned: 0,
+            wlsIsScan: false, wlsIsTheory: true, wlsIsOwn: false, wlsEvOpen: false, wlsEvBtn: '',
+            wlsShotMsg: '', wlsShotBtn: '上傳卡庫截圖', wlsHasScan: false, wlsBanned: 0,
             wlsImportBtn: '導入我的卡庫', wlsFromOwnBtn: '從卡庫導入',
-            wlsFilterChips: [], wlsCharChips: [], wlsPoolNote: '',
+            wlsFilterChips: [], wlsCharChips: [], wlsPoolNote: '', wlsHasCharChips: false,
+            wlsHelpOpen: false, wlsHelpBtn: '說明', wlsBusy: false,
+            wlsProgPct: 2, wlsProgLabel: '', wlsProgSide: '',
             wlsScanRows: [], wlsScanTitle: '',
             wlsEvChips: [],
             wlsFilterHint: '本章主角所屬的團',
@@ -14775,6 +14829,12 @@ class Component extends DCLogic {
             .map(x => { const on = x.v === W.mode, st = chip(on, 'var(--cta)');
               return Object.assign({}, x, st, { fg: on ? '#fff' : 'var(--text)' }); }),
           wlsIsScan: W.mode === 'scan',
+          wlsIsTheory: W.mode === 'all', wlsIsOwn: W.mode === 'own',
+          wlsEvOpen: !!s.wlsEvOpen,
+          /* 換屆是偶爾才做一次的事，平常只要看得到「現在是哪一期」就夠了。
+             十三顆膠囊常駐會蓋過真正常動的章節。 */
+          wlsEvBtn: (s.wlsEvOpen ? '收起　' : '') + 'WL' + W.season + '　第' + W.evId + '期'
+            + (s.wlsEvOpen ? '' : '　▾'),
           wlsFilterHint: (W.chUnit != null && this.UNITS[this.UNIT_OF[W.chUnit]])
             ? (this.UNITS[this.UNIT_OF[W.chUnit]].n + ' 這一團')
             : '本章主角所屬的團',
@@ -14788,27 +14848,37 @@ class Component extends DCLogic {
              模型讀到的角色會錯(MEIKO 最常被讀成望月穗波),選到的章節又不代表
              截圖內容。指定之後比對範圍從 1,249 縮到五十幾張,邊界就夠了。 */
           ...(() => {
-            const f = s.wlsFilter || 'all';
+            /* 預設就帶本章主角 —— 會來這一頁的人多半是為了本章去截那一位的卡。
+               預設「不限」等於預設最不準的那一種。萬一傳的截圖跟篩選對不上也不會壞:
+               比對是兩段式的,篩選範圍裡找不到夠像的就自動退回整庫(見 onWlsShot)。 */
+            const f = this.wlsFilterOf(W);
             const cs = s.rateCards || [];
             const uo = {}; (s.rateChars || []).forEach(c => { uo[c[0]] = c[2]; });
-            const inPool = c => {
-              if (f === 'all') return true;
-              if (f.charAt(0) === 'c') return c[1] === +f.slice(1);
-              const u = this.UNIT_OF.indexOf(f);
-              return u < 0 || uo[c[1]] === u || c[5] === u;
-            };
-            const n = cs.filter(inPool).length;
+            const n = cs.filter(c => this.wlsInPool(c, f, uo)).length;
+            /* 角色膠囊只列「選到的那一團」。26 顆全列出來會擠成一大片,
+               而選團本身就是有意義的一步,選完只剩四到六顆。 */
+            const selUnit = f.charAt(0) === 'c'
+              ? (uo[+f.slice(1)] != null ? this.UNIT_OF[uo[+f.slice(1)]] : null)
+              : (f === 'all' ? null : f);
+            const chars = (s.rateChars || []).filter(c => selUnit && this.UNIT_OF[c[2]] === selUnit);
             return {
-              wlsPoolNote: n + ' 張卡' + (f === 'all' ? '（不限，建議指定，會準很多）' : ''),
+              wlsPoolNote: n + ' 張卡' + (f === 'all' ? '（不限，建議指定）' : ''),
               wlsFilterChips: [{ v: 'all', n: '不限', c: null }].concat(
                 this.UNIT_OF.map(u => ({ v: u, n: (this.UNITS[u] || {}).n || u, c: (this.UNITS[u] || {}).c })))
-                .map(x => { const on = f === x.v, st = chip(on, x.c);
+                .map(x => { const on = f === x.v || (selUnit === x.v && f !== 'all'), st = chip(on, x.c);
                   return Object.assign({}, x, st, { fg: on ? (x.c ? (this.UNITS[x.v] || {}).t || '#fff' : '#fff') : 'var(--text)' }); }),
-              wlsCharChips: (s.rateChars || []).map(c => {
+              wlsHasCharChips: chars.length > 0,
+              wlsCharChips: chars.map(c => {
                 const U = this.UNITS[this.UNIT_OF[c[2]]] || {};
                 const v = 'c' + c[0], on = f === v, st = chip(on, U.c || null);
                 return Object.assign({ v: v, n: c[1] }, st, { fg: on ? (U.t || '#fff') : 'var(--text)' });
               }),
+              wlsHelpOpen: !!s.wlsHelp,
+              wlsHelpBtn: s.wlsHelp ? '收起說明' : '說明',
+              wlsBusy: !!s.wlsShotBusy,
+              wlsProgPct: Math.max(2, Math.min(100, Math.round(s.wlsProg || 0))),
+              wlsProgLabel: s.wlsProgLabel || '',
+              wlsProgSide: s.wlsProgSide || '',
             };
           })(),
           /* 掃到的每一張都列出來。前 20 名那份是「這一章會用到誰」,
@@ -16362,9 +16432,26 @@ class Component extends DCLogic {
            「辨識中…」三個字,使用者會以為當掉而重按或關掉 —— 那一次額度就白花了。
            _sigsP 存在就代表這次開站已經載過,後面幾張快得多。 */
         const first = !this._sigsP;
-        this.setState({ wlsShotBusy: true, wlsShotMsg: first
-          ? '讀取圖片…（第一次要載入卡面指紋庫，會比之後慢，請勿關閉或重複點按）'
-          : '讀取圖片…' });
+        /* 進度條。AI 那一段拿不到真實進度 —— 一次請求，中間沒有回報 ——
+           所以用「已經過幾秒」推一條會趨緩但永遠不停的線:
+           pct = 起點 + 幅度 x (1 - e^(-t/40))，四十秒走一半、之後越來越慢，
+           不會提前衝到終點、也不會卡住不動。卡住不動最容易讓人以為當掉而重按。
+           比對那一段是本地運算，逐格回報真實進度。 */
+        const t0 = Date.now();
+        const prog = (pct, label) => this.setState({ wlsProg: pct, wlsProgLabel: label,
+          wlsProgSide: Math.round((Date.now() - t0) / 1000) + ' 秒' });
+        clearInterval(this._wlsTick);
+        this._wlsTick = setInterval(() => {
+          const st = this.state;
+          if (!st.wlsShotBusy) { clearInterval(this._wlsTick); return; }
+          const t = (Date.now() - t0) / 1000;
+          const creep = st.wlsProgBase + st.wlsProgSpan * (1 - Math.exp(-t / 40));
+          this.setState({ wlsProg: Math.max(st.wlsProg, creep),
+            wlsProgSide: Math.round(t) + ' 秒' });
+        }, 500);
+        this.setState({ wlsShotBusy: true, wlsProg: 3, wlsProgBase: 3, wlsProgSpan: 0,
+          wlsProgLabel: '讀取圖片…', wlsProgSide: '0 秒',
+          wlsShotMsg: first ? '第一次上傳要載入卡面指紋庫，會比之後慢，請勿關閉或重複點按。' : '' });
         try {
           const img = await new Promise((res, rej) => {
             const im = new Image();
@@ -16393,8 +16480,9 @@ class Component extends DCLogic {
           if (!b64) throw new Error('圖片轉檔失敗，請改用另一張圖片');
 
           const names = (this.state.rateChars || []).map(c => c[1]);
-          this.setState({ wlsShotMsg: '辨識中…（會用掉一次 AI 額度）'
-            + (first ? '　第一次較久，請勿關閉或重複點按。' : '') });
+          // AI 那一段:從 8% 起，最多爬到 62%，四十秒走一半
+          this.setState({ wlsProg: 8, wlsProgBase: 8, wlsProgSpan: 54,
+            wlsProgLabel: 'AI 讀取每一格的專精與技能等級…' });
           const r = await this.api('/api/chat', { method: 'POST', body: {
             /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
                撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
@@ -16441,8 +16529,8 @@ class Component extends DCLogic {
           if (!got || !got.length) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
 
           /* ---- 第二段:認出是哪一張卡 ---- */
-          this.setState({ wlsShotMsg: '比對卡面…'
-            + (first ? '（正在載入卡面指紋庫，這一步只有第一次需要）' : '') });
+          this.setState({ wlsProg: 64, wlsProgBase: 64, wlsProgSpan: 4,
+            wlsProgLabel: first ? '載入卡面指紋庫…' : '比對卡面…' });
           const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
           const s0 = this.state;
           const cards = s0.rateCards || [];
@@ -16478,16 +16566,19 @@ class Component extends DCLogic {
 
              可靠的依據只有一個:使用者自己在遊戲裡設的篩選。那是他知道、
              模型不知道的事,而且他本來就要設(頁面上一直在建議他設)。 */
-          const fSel = String(s0.wlsFilter || 'all');
-          const poolCards = cards.filter(c => {
-            if (fSel === 'all') return true;
-            if (fSel.charAt(0) === 'c') return c[1] === +fSel.slice(1);      // c12 = 指定角色
-            const u = this.UNIT_OF.indexOf(fSel);                            // vbs = 指定團體
-            return u < 0 || unOf[c[1]] === u || c[5] === u;
-          });
-          const byId = {}; poolCards.forEach(c => { byId[c[0]] = c; });
-          const POOL = [];
-          poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
+          /* 兩段式比對。先在使用者指定的篩選範圍裡比,那是最準的;
+             但萬一傳的截圖跟篩選對不上(例如篩了 MEIKO 卻傳整個卡庫),
+             硬湊進那五十張裡會全錯而且看起來很有把握 —— 所以加一道退路:
+             範圍內找不到夠像的(距離超過 FALLBACK)就自動改用整庫再比一次。
+             這個門檻分得開:對得上的實測落在 110~140,而範圍裡沒有那張卡時
+             最近的也要 250 以上。只有真的沒對上的那幾格才付整庫的成本。 */
+          const fSel = this.wlsFilterOf(this.wlSupCalc());
+          const poolCards = cards.filter(c => this.wlsInPool(c, fSel, unOf));
+          const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
+          const mkPool = cs => { const a = []; cs.forEach(c => (SIGS[c[0]] || []).forEach(sg => a.push([c[0], sg]))); return a; };
+          const POOL = mkPool(poolCards);
+          const FULL = fSel === 'all' ? POOL : mkPool(cards);
+          const FALLBACK = 200;
 
           /* 把模型給的一堆框「拉回格線上」。
              遊戲的卡片一覽是規則格線:欄距、列距、格子大小都是固定的。
@@ -16539,9 +16630,11 @@ class Component extends DCLogic {
           });
           const GRID = fitGrid(rawBoxes);
 
-          let named = 0, unsure = 0, noMatch = 0, charFix = 0;
+          // 比對從 68% 走到 98%，逐格回報
+          this.setState({ wlsProg: 68, wlsProgBase: 68, wlsProgSpan: 0, wlsProgLabel: '比對卡面…' });
+          let named = 0, unsure = 0, noMatch = 0, charFix = 0, fallbacks = 0;
           const dists = [];
-          const out = got.map((x, i) => {
+          const out = []; for (let i = 0; i < got.length; i++) { const x = got[i];
             const cid = idOf[String(x.character || '').trim()];
             const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
             /* 屬性以前是用來篩候選的三個約束之一,現在候選池由章節決定、
@@ -16576,21 +16669,34 @@ class Component extends DCLogic {
                取距離最小的那個當答案。純瀏覽器端運算,不多花一次 AI 額度。 */
             const JO = [-0.06, -0.03, 0, 0.03, 0.06], JS = [0.92, 1, 1.08];
             const cx0 = bx + bw / 2, cy0 = by + bh / 2;
-            const dmin = new Map();   // 卡片id → 這張卡在所有試位裡的最短距離
+            /* 試位的指紋只算一次,兩段比對共用 —— 重算 75 次縮圖是白費力氣 */
+            const QS = [];
             for (const sc of JS) {
               const w = bw * sc, h = bh * sc;
               for (const ox of JO) for (const oy of JO) {
-                const q = this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h);
-                for (let i = 0; i < POOL.length; i++) {
-                  const pv = dmin.get(POOL[i][0]);
-                  /* 已經有紀錄的話就給上限提早結束:2,074 枚指紋 × 75 個試位,
-                     絕大多數比到一半就已經比現有的差了,算完整個 32 bytes 是浪費。
+                QS.push(this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h));
+              }
+            }
+            const scan = (pool) => {
+              const m = new Map();   // 卡片id → 這張卡在所有試位裡的最短距離
+              for (const q of QS) {
+                for (let k = 0; k < pool.length; k++) {
+                  const pv = m.get(pool[k][0]);
+                  /* 已經有紀錄的話就給上限提早結束:上千枚指紋 × 75 個試位,
+                     絕大多數比到一半就已經比現有的差了,算完整條是浪費。
                      回傳值只用來跟 pv 比大小,超過上限時回什麼都不影響結果。 */
-                  const d = pv == null ? this._ham(q, POOL[i][1])
-                                       : this._hamLt(q, POOL[i][1], pv);
-                  if (pv == null || d < pv) dmin.set(POOL[i][0], d);
+                  const d = pv == null ? this._ham(q, pool[k][1])
+                                       : this._hamLt(q, pool[k][1], pv);
+                  if (pv == null || d < pv) m.set(pool[k][0], d);
                 }
               }
+              return m;
+            };
+            let dmin = scan(POOL);
+            let fellBack = false;
+            if (POOL !== FULL) {
+              let lo = Infinity; dmin.forEach(d => { if (d < lo) lo = d; });
+              if (lo > FALLBACK) { dmin = scan(FULL); fellBack = true; fallbacks++; }
             }
             /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
                指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
@@ -16635,8 +16741,15 @@ class Component extends DCLogic {
               if (rec.sure) named++;
               else { unsure++; if (!absOk) noMatch++; }
             }
-            return rec;
-          });
+            out.push(rec);
+            /* 每幾格讓出一次控制權，畫面才畫得出進度。全部同步跑完的話
+               進度條會從 68% 直接跳到 98%，等於沒有進度條。 */
+            if (i % 3 === 2 || i === got.length - 1) {
+              this.setState({ wlsProg: 68 + 30 * (i + 1) / got.length,
+                wlsProgLabel: '比對卡面 ' + (i + 1) + ' / ' + got.length });
+              await new Promise(r => setTimeout(r, 0));
+            }
+          }
 
           // 累加而不是覆蓋（去重規則見 wlsMerge）
           const prev = this.state.wlsScan || [];
@@ -16657,6 +16770,7 @@ class Component extends DCLogic {
                不必再靠猜。 */
             + '　比對範圍 ' + poolCards.length + ' 張卡'
             + (fSel === 'all' ? '（沒指定遊戲內的篩選，容易撞錯；指定之後會準很多）' : '')
+            + (fallbacks ? '（其中 ' + fallbacks + ' 張在這個範圍裡找不到，已自動改用全部 1,249 張比對）' : '')
             + (dists.length ? '（卡面比對距離中位數 '
                  + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
                  + ' / 768，120 上下表示對得上，280 以上表示未對上）' : '')
@@ -16665,9 +16779,12 @@ class Component extends DCLogic {
         } catch (er) {
           this.setState({ wlsShotMsg: '辨識失敗：' + ((er && er.message) || '') });
         }
-        this.setState({ wlsShotBusy: false });
+        clearInterval(this._wlsTick);
+        this.setState({ wlsShotBusy: false, wlsProg: 100, wlsProgLabel: '' });
       },
       onWlsFilter: e => this.setState({ wlsFilter: e.currentTarget.dataset.v }),
+      onWlsHelp: () => this.setState(st => ({ wlsHelp: !st.wlsHelp })),
+      onWlsEvOpen: () => this.setState(st => ({ wlsEvOpen: !st.wlsEvOpen })),
       onWlsClearShot: () => this.setState({ wlsScan: null, wlsShotMsg: '已清除辨識結果。' }),
       /* 把辨識到的卡寫進站上的「我的持有卡」(收集率頁那份,localStorage bitmap)。
          只加不減 —— 截圖只證明「這幾張你有」,證明不了「其他的你沒有」,
@@ -16700,7 +16817,7 @@ class Component extends DCLogic {
           + (unsure ? '其中 ' + unsure + ' 張為「待確認」，請至收集率頁核對。' : '')
           + '（只會新增，不會取消原本已勾選的卡。）' });
       },
-      onWlsEv: e => this.setState({ wlsEv: +e.currentTarget.dataset.v || null, wlsCh: '' }),
+      onWlsEv: e => this.setState({ wlsEv: +e.currentTarget.dataset.v || null, wlsCh: '', wlsEvOpen: false }),
       /* 反向:把「我的持有卡」倒進辨識池。掃過一次、導進卡庫之後,
          之後每一期 WL 都可以直接叫回來算,不必為了同一份資料再截圖一次。
          沒存過等級的卡就退回上面那兩個假設值,並且把張數講出來 ——
