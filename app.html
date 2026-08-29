@@ -1777,7 +1777,7 @@ select option, select optgroup{
         <div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:7px">
             也可以直接上傳遊戲內「卡片一覽」的截圖：AI 辨識每張卡的角色、稀有度、專精（右下菱形）與技能等級（左下 SLv.），<br>
-            再由瀏覽器將卡面與官方縮圖比對指紋，在上面所選章節的合格卡裡判定該格是哪一張卡。<br>
+            再由瀏覽器將卡面與官方縮圖比對指紋，在全部 1,249 張裡判定該格是哪一張卡。<br>
             卡片身分以指紋為準，AI 讀到的角色只作交叉核對；兩者不一致時以比對結果為準，並在訊息中標明張數。<br>
             這樣算出的是<b>實際持有</b>的後排：每張卡採用各自的專精與技能等級，而不是全隊套用同一組假設值。
           </div>
@@ -13396,14 +13396,30 @@ class Component extends DCLogic {
 
   /* 漢明距離。原本每個 byte 逐位剝,整庫掃描時會跑 2,074 枚指紋 × 75 個試位 ×
      每一格,那樣太慢 —— 改成 256 格的查表,同樣的迴圈次數但每個 byte 只要一次查表。 */
-  _ham(a, b) {
+  _popTable() {
     let P = this._pop;
     if (!P) {
       P = this._pop = new Uint8Array(256);
       for (let i = 0; i < 256; i++) { let v = i, c = 0; while (v) { c += v & 1; v >>= 1; } P[i] = c; }
     }
+    return P;
+  }
+  _ham(a, b) {
+    const P = this._popTable();
     let n = 0;
     for (let i = 0; i < a.length; i++) n += P[a[i] ^ b[i]];
+    return n;
+  }
+
+  /* 同上，但超過 lim 就不算了。整庫掃描時多數比對只是要確認「比現有的差」，
+     沒必要把 32 個 byte 都加完。回傳值只用來跟 lim 比大小。 */
+  _hamLt(a, b, lim) {
+    const P = this._popTable();
+    let n = 0;
+    for (let i = 0; i < a.length; i++) {
+      n += P[a[i] ^ b[i]];
+      if (n >= lim) return n;
+    }
     return n;
   }
 
@@ -16368,20 +16384,25 @@ class Component extends DCLogic {
           const cards = this.state.rateCards || [];
           const idOf = {}, nmOf = {}, unOf = {};
           (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; nmOf[c[0]] = c[1]; unOf[c[0]] = c[2]; });
-          /* 候選池由「上面選的那一章」決定,不用模型讀到的角色。
-             量過:全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74(5% 分位 80),
-             而對得上的落在 29~67 —— 指紋自己就分得開整個卡庫,不需要角色來縮候選。
-             反過來說,拿模型讀到的角色當硬性條件是有害的:鏡音鈴讀成鏡音連的那一格,
-             真正那張卡會被排除在候選之外,再怎麼比也比不中 ——
-             這就是「某幾個角色辨識得特別慘」的來源。
-             章節是使用者自己在上面選的,不會讀錯,而且後排本來就只收得下那一團,
-             拿它當憑證比拿模型的判讀可靠。終章不限團體,那時就整庫比。 */
-          const W0 = this.wlSupCalc();
-          const chU = W0 ? W0.chUnit : null;
-          const poolCards = cards.filter(c => chU == null || unOf[c[1]] === chU || c[5] === chU);
-          const byId = {}; poolCards.forEach(c => { byId[c[0]] = c; });
-          const POOL = [];
-          poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
+          /* 比對範圍是整個卡庫,不縮。
+             這裡踩過兩次,兩邊都量過:
+
+             ① 不能用模型讀到的角色當硬性條件。鏡音鈴讀成鏡音連的那一格,
+                真正那張卡就被排除在候選之外,再怎麼比也比不中。
+
+             ② 也不能用「上面選的那一章」來縮。章節本身是可靠的(使用者自己點的),
+                但它只決定「哪些卡有資格進後排」,不決定「截圖裡有哪些卡」——
+                卡庫截圖裡本來就有別團的卡。以 VBS 那一章為例,池子 236 張、
+                池外 1,013 張;MEIKO 的 50 張裡只有 9 張進得了那個池,另外 41 張
+                一定會被硬湊到池子裡最近的一張。實測三張池外的 MEIKO 卡,
+                用池子比全部認錯,其中一張距離 74、差距 9,兩道門檻都通過,
+                被標成「有把握」但是錯的;改用整庫比是 25~37、差距 37~61,三張全對。
+
+             整庫比對得起:量過全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74
+             (5% 分位 80、中位 88),而對得上的落在 25~67。差得夠開。
+             章節該用在哪裡?用在算加成時判斷資格 —— wlSupCalc 本來就在做那件事。 */
+          const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
+          const POOL = SIGS._flat || [];
 
           let named = 0, unsure = 0, noMatch = 0, charFix = 0;
           const dists = [];
@@ -16424,8 +16445,12 @@ class Component extends DCLogic {
               for (const ox of JO) for (const oy of JO) {
                 const q = this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h);
                 for (let i = 0; i < POOL.length; i++) {
-                  const d = this._ham(q, POOL[i][1]);
                   const pv = dmin.get(POOL[i][0]);
+                  /* 已經有紀錄的話就給上限提早結束:2,074 枚指紋 × 75 個試位,
+                     絕大多數比到一半就已經比現有的差了,算完整個 32 bytes 是浪費。
+                     回傳值只用來跟 pv 比大小,超過上限時回什麼都不影響結果。 */
+                  const d = pv == null ? this._ham(q, POOL[i][1])
+                                       : this._hamLt(q, POOL[i][1], pv);
                   if (pv == null || d < pv) dmin.set(POOL[i][0], d);
                 }
               }
