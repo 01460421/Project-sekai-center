@@ -3796,6 +3796,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 // 但「池有 3 色」不等於「湊得出 3 色的合法隊」——同一角色的多屬性變體會灌高池色數,
                 // 而一隊每角色只能用一張(如四位團員全同色、第 5 位只有兩種顏色)。
                 // 所以剪光時要退回不剪枝重跑,不能直接回報無解。
+                const unitOfCard = c => (c.characterId >= 21
+                    ? ((c.supportUnit && c.supportUnit !== 'none') ? c.supportUnit : 'piapro')
+                    : wlNativeUnit(c.characterId));
+                let bestU = null, bestObjU = -1;   // 五張同團的最佳解，另外記
+                let intoUnit = false;               // 目前這一輪是不是同團搜尋
                 const scoreIdx = (idx, prune) => {
                     let bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
                     if (isWL) {
@@ -3810,6 +3815,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const skills = teamCards.map(tc => SkillEngine.effSkillTeam(tc, true, 4, charRank, teamCards));
                     const obj = evalDeck(pw.total, bonus, skills);
                     if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
+                    if (intoUnit && obj > bestObjU) { bestObjU = obj; bestU = { idx, pw, bonus, skills }; }
                 };
                 /* 兩種列舉。原本是寫死的五層迴圈,改成遞迴才有辦法「先固定幾格、
                    只列舉剩下的」。深度最多 5,成本沒差。
@@ -3830,14 +3836,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const all = []; for (let i = 0; i < nPrimary; i++) all.push(i);
                     enumRest([], all, 5, 0, prune);
                 };
-                const runChars = (mustChars, prune) => {
+                const runChars = (mustChars, prune, onlyUnit) => {
+                    const okU = i => !onlyUnit || unitOfCard(pool[i].c) === onlyUnit;
                     const groups = mustChars.map(ch => {
-                        const g = []; for (let i = 0; i < n; i++) if (pool[i].c.characterId === ch) g.push(i);
+                        const g = []; for (let i = 0; i < n; i++) if (pool[i].c.characterId === ch && okU(i)) g.push(i);
                         return g;
                     });
                     if (groups.some(g => !g.length) || mustChars.length > 5) return;
                     const rest = [];
-                    for (let i = 0; i < nPrimary; i++) if (mustChars.indexOf(pool[i].c.characterId) < 0) rest.push(i);
+                    // 自由格也要能挑到「後面補的變體」——同團的第五張往往就是團分卡那一張
+                    for (let i = 0; i < (onlyUnit ? n : nPrimary); i++) {
+                        if (mustChars.indexOf(pool[i].c.characterId) < 0 && okU(i)) rest.push(i);
+                    }
                     const need = 5 - mustChars.length;
                     const sel = [];
                     const walk = (gi, mask) => {
@@ -3871,10 +3881,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     lockChars = Object.keys(byCh).map(Number).sort((a, b) => byCh[b] - byCh[a]).slice(0, 5);
                 }
                 const wlPrune = isWL && new Set(pool.map(x => x.c.attr)).size >= 3;
-                if (lockChars.length) runChars(lockChars, wlPrune);
-                const unitOfCard = c => (c.characterId >= 21
-                    ? ((c.supportUnit && c.supportUnit !== 'none') ? c.supportUnit : 'piapro')
-                    : wlNativeUnit(c.characterId));
+                if (lockChars.length) {
+                    runChars(lockChars, wlPrune);
+                    /* 五張同團。同團才吃得到 area 道具的 allMatch 翻倍(實測 #178 差 8% 綜合力),
+                       而當期角色湊不滿五位時,第五張要用「團分卡」——
+                       supportUnit 等於本團的 V 家卡,它在 area 道具上算同團。
+                       這一輪的結果另外記在 bestU,最後優先採用。 */
+                    const evUnits = new Set();
+                    lockChars.forEach(ch => pool.forEach(x => { if (x.c.characterId === ch) evUnits.add(unitOfCard(x.c)); }));
+                    intoUnit = true;
+                    evUnits.forEach(u => { if (u) runChars(lockChars, wlPrune, u); });
+                    intoUnit = false;
+                }
                 const mixedNow = () => {
                     if (!best) return true;
                     const tc = best.idx.map(i => pool[i].c);
@@ -3884,6 +3902,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!lockedOnly) runFree(wlPrune);
                 if (!best && wlPrune) runFree(false);   // 剪枝把合法解全砍了(持有卡湊不出 3 色):退回不剪枝
                 if (!best) return { ok: false, reason: '找不到可組成的隊伍。' };
+                /* 一般活組得出五張同團的話就用它,即使目標函數算出來略低。
+                   理由是目標函數這裡有一個已知的偏誤:協力場六個窗目前全部套
+                   「隊友假設同我」,等於把自己的隊長技能放大六倍 —— 實際上自己的
+                   隊長只佔六個窗裡的一個,而綜合力是全程都在貢獻。所以它會高估
+                   「換一張高倍率但破壞同團」的價值(實測 #178 差 13 點、0.6%,
+                   而同團那邊多 8% 綜合力)。修模型會牽動全站所有 EP 數字,
+                   在那之前先用這條規則,並把差距記在 unitGap 讓畫面說得出來。 */
+                let unitGap = 0;
+                if (bestU && bestU !== best) { unitGap = Math.round(bestObj - bestObjU); best = bestU; bestObj = bestObjU; }
                 const chosen = best.idx.map(i => pool[i]);
                 let wl = null;
                 if (isWL) {
@@ -3895,7 +3922,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                            cardSum: Math.round((best.bonus - attrBonus - support) * 10) / 10 };
                 }
                 return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, wl, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)),
-                    lockedN: lockChars.length, lockedOnly: lockedOnly };
+                    lockedN: lockChars.length, lockedOnly: lockedOnly, sameUnit: !!bestU, unitGap: unitGap };
             },
             async _renderOpt(src, type) {
                 const teamEl = document.getElementById('rsTeam');
