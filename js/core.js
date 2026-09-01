@@ -3777,13 +3777,27 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
                 const evalDeck = (power, bonus, skills) => {
                     if (!useEP) return power * (1 + bonus / 100);
-                    // 協力場:每位玩家只有「隊長」的技能會為全隊發動,自己另外 4 張卡的技能不會進窗
-                    // (原本誤用單人模型把 5 張卡塞進 6 窗)。6 次發動 = 5 名玩家 + encore;
-                    // 每次全員得「發動者 + 其他4人÷5」,隊友假設同我(與 calc 的「留空=同我」一致)
-                    // → 全 6 窗皆為 1.8×隊長技能,與 RunStudio.calc 的 boost() 完全對齊
+                    /* 協力場:每位玩家只有「隊長」的技能會為全隊發動,自己另外 4 張卡的技能
+                       不會進窗。6 次發動 = 5 名玩家 + encore;每次全員得「發動者 + 其他4人÷5」,
+                       公式與 RunStudio.calc 的 boost() 一致。
+
+                       差別在隊友填什麼。原本填「同我」—— 那等於假設另外四個人都帶著我這副牌,
+                       於是六個窗全部是 1.8×我的隊長,把我單張最高倍率的卡放大了六倍。
+                       實際上我的隊長只佔六個窗裡的一個,綜合力卻是全程都在貢獻,所以那個假設
+                       會系統性高估「換一張高倍率但犧牲綜合力的卡」。實測 #178:純V 第五張
+                       (倍160、綜合力 364k)在舊假設下贏團分 13 點,換成隊友不等於我之後,
+                       團分(倍130、綜合力 393k)反過來贏 72~78 點。
+
+                       預設改成「隊友＝我方平均」:不必憑空給一個常數,而且五張技能一樣時
+                       boost(X)=0.8X+總和/5 會退回 1.8×,跟舊行為完全相同。 */
                     const leader = Math.max(...skills);
-                    const coop = 1.8 * leader;
-                    let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += wSorted[i] * coop / 100;
+                    const mate = skills.reduce((a, b) => a + b, 0) / skills.length;
+                    const players = [leader, mate, mate, mate, mate];
+                    const totalP = players.reduce((a, b) => a + b, 0);
+                    const bst = X => 0.8 * X + totalP / 5;
+                    const boosts = players.map(bst).concat(bst(Math.max.apply(null, players)))
+                        .sort((a, b) => b - a);
+                    let skillPart = 0; for (let i = 0; i < 6; i++) skillPart += wSorted[i] * (boosts[i] || 0) / 100;
                     const score = Math.floor((meta.base_score + feverHalf + skillPart) * power * 4);
                     return Math.floor(epBase('multi', score, power) * R / 100 * (1 + bonus / 100)) * F;   // = 每局活動P
                 };
@@ -3952,7 +3966,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${best.skills[i]}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
                     </table></div>
                     <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div>${r.wl ? `<div class="formula">WL 分解:逐卡 ＋${r.wl.cardSum}%・異色(${r.wl.colors}色)＋${r.wl.attrBonus}%・${r.wl.hasSup ? `支援隊伍(理論滿配,以${r.wl.label}為主)＋${r.wl.support}%——合計已含支援,別再手動加` : '支援隊伍未估(終章或章節資料缺):合計未含支援,請自行加上'}</div>` : ''}</div>
-                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}、SL4、角色等級100(BloomFES 理論倍率)。箱活會納入 V 家「當期團支援」變體湊同團(area 翻倍、V家同團技能);混活按異團編成計(area 不翻倍)。${r.wl ? 'WL 活動:隊伍已按「異色數加成(3/4/5色→75/100/125%)」最佳化,支援隊伍以本章主角、全卡 MR5/SL4 估算;「只用我持有的卡」時支援隊也只算持有卡。' : ''}${useEP ? '技能以有效 score-up%(basic＋角色等級＋同團V＋異團數)逐卡計入,窗位以重排最佳化;BloomFES吸技能為近似。選不同歌會影響最佳解。' : '未選歌:退回 綜合力×加成 目標。'}</div>`;
+                    <div class="note" style="margin-top:4px;">假設全卡擁有、MR5、滿級、area item Lv${areaLv}、SL4、角色等級100(BloomFES 理論倍率)。箱活會納入 V 家「當期團支援」變體湊同團(area 翻倍、V家同團技能);混活按異團編成計(area 不翻倍)。${r.wl ? 'WL 活動:隊伍已按「異色數加成(3/4/5色→75/100/125%)」最佳化,支援隊伍以本章主角、全卡 MR5/SL4 估算;「只用我持有的卡」時支援隊也只算持有卡。' : ''}${useEP ? '技能以有效 score-up%(basic＋角色等級＋同團V＋異團數)逐卡計入,窗位以重排最佳化;BloomFES吸技能為近似。選不同歌會影響最佳解。協力場的隊友倍率<strong>預設取我方五張的平均</strong>(不是「同我」——把自己的隊長當成四位隊友,等於把單張高倍率的卡放大六倍,會高估「犧牲綜合力換倍率」的組合)。想指定實際隊友倍率請用下方跑榜工作室的隊友欄位。' : '未選歌:退回 綜合力×加成 目標。'}</div>`;
             },
             calc() {
                 if (!this._ready) return;
@@ -4068,7 +4082,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 card.innerHTML = `
                     <div class="ms-top">
                         <div class="ms-ev"><span class="ms-type">${typeName}</span><span class="ms-evname">${evName}</span></div>
-                        <div class="ms-sub">最佳化活動P・區域道具 Lv15・角色等級滿(+5%)・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級（混團/混色 area 不翻倍）</div>
+                        <div class="ms-sub">最佳化活動P・區域道具 Lv15・角色等級滿(+5%)・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級・協力隊友倍率取我方平均（混團/混色 area 不翻倍）</div>
                     </div>
                     <div class="ms-thumbs">${chosen.map(x => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" onerror="this.style.opacity=.15"><span>${EC_cidName(x.c.characterId)}</span><i>＋${x.bonus}%</i></div>`).join('')}</div>
                     <div class="ms-kvs">
