@@ -3706,7 +3706,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 // WL 去重鍵要含屬性:異色加成看全隊相異屬性數,每角色只留一張(通常同色)會讓 4/5 色解永遠進不了池
                 cand.forEach(x => { const k = x.c.characterId + (x.c.characterId >= 21 ? ':' + (x.c.supportUnit || 'none') : '') + (isWL ? ':' + x.c.attr : ''); if (!bestByKey[k]) bestByKey[k] = x; });
                 const ordered = Object.values(bestByKey);
-                const pool = ordered.slice(0, isWL ? 24 : 26);   // WL 保底會再補幾張,基數先留餘裕(DFS 成本 ~C(n,5))
+                /* 池的大小。鎖住當期特效卡之後,自由格只剩一兩格,搜尋成本從 C(n,5)
+                   掉到 C(n,1~2) —— 省下來的預算拿去放大池子,自由格的選擇反而更好。
+                   另外不管怎麼截斷,特效卡一定要在池裡:那幾張是整隊加成最大的一塊,
+                   被排序擠掉的話後面鎖也鎖不到。 */
+                const nSp = ordered.filter(x => x.special > 0).length;
+                const pool = ordered.slice(0, isWL ? 24 : (nSp >= 2 ? 40 : 26));
+                ordered.forEach(x => { if (x.special > 0 && pool.indexOf(x) < 0) pool.push(x); });
                 if (isWL) {
                     // 截斷保底:①五色都要在池裡 ②每色都要有「湊數卡(非加成角色)」——
                     // 單團 WL 第 5 位只能用非團員,顏色自由度全靠湊數卡;團員自己五色齊全
@@ -3764,31 +3770,73 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 // 但「池有 3 色」不等於「湊得出 3 色的合法隊」——同一角色的多屬性變體會灌高池色數,
                 // 而一隊每角色只能用一張(如四位團員全同色、第 5 位只有兩種顏色)。
                 // 所以剪光時要退回不剪枝重跑,不能直接回報無解。
-                const run = prune => {
-                for (let a = 0; a < n - 4; a++) { const m1 = cbit[a];
-                for (let b = a + 1; b < n - 3; b++) { if (m1 & cbit[b]) continue; const m2 = m1 | cbit[b];
-                for (let c = b + 1; c < n - 2; c++) { if (m2 & cbit[c]) continue; const m3 = m2 | cbit[c];
-                    for (let d = c + 1; d < n - 1; d++) { if (m3 & cbit[d]) continue; const m4 = m3 | cbit[d];
-                    for (let e = d + 1; e < n; e++) { if (m4 & cbit[e]) continue;
-                        const idx = [a, b, c, d, e];
-                        let bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
-                        if (isWL) {
-                            const nAttr = pop5(abit[a] | abit[b] | abit[c] | abit[d] | abit[e]);
-                            if (prune && nAttr < 3) continue;
-                            // 異色是全隊一個值;支援隊逐組合排除主隊 5 張再取前 N
-                            bonus += (WL_ATTR_BONUS[nAttr] || 0) + (supB ? supB.forDeck(idx.map(i => pool[i].c.id)) : 0);
-                        }
-                        const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 7);   // 豆森 MySekai：門4 + 1+1+1 = 7%
-                        const teamCards = idx.map(i => pool[i].c);
-                        // 技能依「實際隊伍組成」計算：團分卡的同團人數、混團卡的異團種類數都取決於這一隊
-                        const skills = teamCards.map(tc => SkillEngine.effSkillTeam(tc, true, 4, charRank, teamCards));
-                        const obj = evalDeck(pw.total, bonus, skills);
-                        if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
-                    } } } } }
+                const scoreIdx = (idx, prune) => {
+                    let bonus = idx.reduce((s, i) => s + pool[i].bonus, 0);
+                    if (isWL) {
+                        const nAttr = pop5(idx.reduce((m, i) => m | abit[i], 0));
+                        if (prune && nAttr < 3) return;
+                        // 異色是全隊一個值;支援隊逐組合排除主隊 5 張再取前 N
+                        bonus += (WL_ATTR_BONUS[nAttr] || 0) + (supB ? supB.forDeck(idx.map(i => pool[i].c.id)) : 0);
+                    }
+                    const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 7);   // 豆森 MySekai：門4 + 1+1+1 = 7%
+                    const teamCards = idx.map(i => pool[i].c);
+                    // 技能依「實際隊伍組成」計算：團分卡的同團人數、混團卡的異團種類數都取決於這一隊
+                    const skills = teamCards.map(tc => SkillEngine.effSkillTeam(tc, true, 4, charRank, teamCards));
+                    const obj = evalDeck(pw.total, bonus, skills);
+                    if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
                 };
+                /* must = 一定要進隊的池索引(當期特效卡)。原本是寫死的五層迴圈,
+                   改成遞迴才有辦法「固定前幾格、只列舉剩下的」。深度最多 5,成本沒差。 */
+                const run = (must, prune) => {
+                    let m0 = 0;
+                    for (const j of must) { if (m0 & cbit[j]) return; m0 |= cbit[j]; }   // 同角色不可同隊
+                    const need = 5 - must.length;
+                    if (need < 0) return;
+                    const rest = []; for (let i = 0; i < n; i++) if (must.indexOf(i) < 0) rest.push(i);
+                    const pick = [];
+                    const rec = (start, k, mask) => {
+                        if (k === 0) { scoreIdx(must.concat(pick), prune); return; }
+                        for (let i = start; i <= rest.length - k; i++) {
+                            const j = rest[i];
+                            if (mask & cbit[j]) continue;
+                            pick.push(j); rec(i + 1, k - 1, mask | cbit[j]); pick.pop();
+                        }
+                    };
+                    rec(0, need, m0);
+                };
+                /* 當期特效卡一律先鎖進隊伍。那幾張是整隊加成最大的一塊
+                   (特效 50 ＋ 團體 20 ＋ 專精 15 起跳),而一隊只有五格 ——
+                   拿一格去換綜合力,要多出來的綜合力遠超過現實可能。
+                   例外只有一種:鎖完之後隊伍是混團或混色。那時候 area 道具的
+                   allMatch 翻倍拿不到、WL 的異色加成也會變動,加成與綜合力之間
+                   才真的需要權衡 —— 那種情況才多跑一次不設限的搜尋,兩者取高。
+                   同色同團的隊不必跑:加成已經是最大、area 也已經翻倍,沒有可換的。 */
+                const lock = [];
+                // opts.forceFull:跳過鎖定、強制跑完整搜尋。留著是為了 A/B 對照 ——
+                // 「鎖住特效卡有沒有漏掉更好的隊」這件事要量得出來，不能只靠推論。
+                if (!opts.forceFull) {
+                    const seen = new Set();
+                    pool.map((x, i) => i).filter(i => pool[i].special > 0)
+                        .sort((a, b) => pool[b].bonus - pool[a].bonus)
+                        .forEach(i => {
+                            const ch = pool[i].c.characterId;
+                            if (seen.has(ch) || lock.length >= 5) return;
+                            seen.add(ch); lock.push(i);
+                        });
+                }
                 const wlPrune = isWL && new Set(pool.map(x => x.c.attr)).size >= 3;
-                run(wlPrune);
-                if (!best && wlPrune) run(false);   // 剪枝把合法解全砍了(持有卡湊不出 3 色):退回不剪枝
+                if (lock.length) run(lock, wlPrune);
+                const unitOfCard = c => (c.characterId >= 21
+                    ? ((c.supportUnit && c.supportUnit !== 'none') ? c.supportUnit : 'piapro')
+                    : wlNativeUnit(c.characterId));
+                const mixedNow = () => {
+                    if (!best) return true;
+                    const tc = best.idx.map(i => pool[i].c);
+                    return new Set(tc.map(unitOfCard)).size > 1 || new Set(tc.map(c => c.attr)).size > 1;
+                };
+                const lockedOnly = lock.length > 0 && !mixedNow();
+                if (!lockedOnly) run([], wlPrune);
+                if (!best && wlPrune) run([], false);   // 剪枝把合法解全砍了(持有卡湊不出 3 色):退回不剪枝
                 if (!best) return { ok: false, reason: '找不到可組成的隊伍。' };
                 const chosen = best.idx.map(i => pool[i]);
                 let wl = null;
@@ -3800,7 +3848,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     wl = { colors, attrBonus, support, hasSup: !!supB, label: supB ? supB.label : '',
                            cardSum: Math.round((best.bonus - attrBonus - support) * 10) / 10 };
                 }
-                return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, wl, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)) };
+                return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, wl, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)),
+                    lockedN: lock.length, lockedOnly: lockedOnly };
             },
             async _renderOpt(src, type) {
                 const teamEl = document.getElementById('rsTeam');
