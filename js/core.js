@@ -3699,13 +3699,33 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 // 排序用的技能上限估值(假設滿隊同團);真正計分時會用「實際隊伍組成」重算,
                 // 團分技能(除自己外每位同團 +e%、全員一致再 +e%)才不會被算成只有 base
                 const cand = pre.map(x => Object.assign(x, { skill: SkillEngine.effSkillMax(x.c, true, 4, charRank) }));
-                cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 200) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 200));
+                /* 排序用的粗估。技能原本只給加成一半的權重(skill/200),但協力場六個窗
+                   全部吃隊長技能,技能對單局活動P 的影響跟加成是同一量級 —— 壓一半會讓
+                   「同加成但高倍率」的卡在截斷時就先被綜合力高的擠掉。改成 skill/100。
+                   真正計分仍然是 evalDeck,這裡只決定誰進得了池。 */
+                cand.sort((a, b) => b.baseSum * (1 + b.bonus / 100) * (1 + b.skill / 100) - a.baseSum * (1 + a.bonus / 100) * (1 + a.skill / 100));
                 // 一隊每角色最多一張(プロセカ規則);V 家卡按「純V/各支援團」分開保留變體——
                 // 箱活的同團隊需要 V@當期團 變體,不能被加成/數值略高的純V卡在去重時擠掉(否則 DFS 根本看不到同團解、丟失 area 翻倍)
-                const bestByKey = {};
+                const varsByKey = {};
                 // WL 去重鍵要含屬性:異色加成看全隊相異屬性數,每角色只留一張(通常同色)會讓 4/5 色解永遠進不了池
-                cand.forEach(x => { const k = x.c.characterId + (x.c.characterId >= 21 ? ':' + (x.c.supportUnit || 'none') : '') + (isWL ? ':' + x.c.attr : ''); if (!bestByKey[k]) bestByKey[k] = x; });
-                const ordered = Object.values(bestByKey);
+                /* 每個鍵留最多三張,不是一張。「這個角色該用哪張卡」原本是靠排序的
+                   啟發式(綜合力×加成×技能)先砍掉,從來沒有拿真正的目標函數比過 ——
+                   而鎖住角色之後自由度只剩這個,不比就等於沒優化。
+                   多留的那兩張只有鎖定搜尋會用到,不設限的那條路仍只走每鍵第一張,
+                   否則 C(n,5) 會爆掉。 */
+                cand.forEach(x => { const k = x.c.characterId + (x.c.characterId >= 21 ? ':' + (x.c.supportUnit || 'none') : '') + (isWL ? ':' + x.c.attr : ''); (varsByKey[k] = varsByKey[k] || []).push(x); });
+                /* 每個鍵留三張:粗估最好的、加成最高的、技能倍率最高的。
+                   「其餘位置找同加成的高貝卡」要成立,那張高倍率的就必須真的在候選裡 ——
+                   只留粗估第一名的話,同加成但倍率更高的那張根本沒機會被目標函數比到。 */
+                Object.keys(varsByKey).forEach(k => {
+                    const a = varsByKey[k];
+                    const pick = [a[0]];
+                    const add = y => { if (y && pick.indexOf(y) < 0 && pick.length < 3) pick.push(y); };
+                    add(a.reduce((m, y) => (y.bonus > m.bonus ? y : m), a[0]));
+                    add(a.reduce((m, y) => (y.skill > m.skill ? y : m), a[0]));
+                    varsByKey[k] = pick;
+                });
+                const ordered = Object.keys(varsByKey).map(k => varsByKey[k][0]);
                 /* 池的大小。鎖住當期特效卡之後,自由格只剩一兩格,搜尋成本從 C(n,5)
                    掉到 C(n,1~2) —— 省下來的預算拿去放大池子,自由格的選擇反而更好。
                    另外不管怎麼截斷,特效卡一定要在池裡:那幾張是整隊加成最大的一塊,
@@ -3746,6 +3766,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     }
                 }
                 if (new Set(pool.map(x => x.c.characterId)).size < 5) return { ok: false, reason: '符合加成的角色不足 5 個(無法組 5 張不同角色的隊)。' };
+                /* 不設限的搜尋只走前 nPrimary 個(每鍵一張);鎖定搜尋才看得到後面補的變體。 */
+                const nPrimary = pool.length;
+                pool.slice(0, nPrimary).forEach(x => {
+                    const k = x.c.characterId + (x.c.characterId >= 21 ? ':' + (x.c.supportUnit || 'none') : '') + (isWL ? ':' + x.c.attr : '');
+                    (varsByKey[k] || []).slice(1, 3).forEach(v => pool.push(v));
+                });
                 // WL:支援隊伍(理論滿配)加成列表,DFS 逐組合排除主隊 5 張後取前 N
                 const supB = isWL ? await this._wlSupport(src, this._evId, own) : null;
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
@@ -3785,47 +3811,67 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const obj = evalDeck(pw.total, bonus, skills);
                     if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
                 };
-                /* must = 一定要進隊的池索引(當期特效卡)。原本是寫死的五層迴圈,
-                   改成遞迴才有辦法「固定前幾格、只列舉剩下的」。深度最多 5,成本沒差。 */
-                const run = (must, prune) => {
-                    let m0 = 0;
-                    for (const j of must) { if (m0 & cbit[j]) return; m0 |= cbit[j]; }   // 同角色不可同隊
-                    const need = 5 - must.length;
-                    if (need < 0) return;
-                    const rest = []; for (let i = 0; i < n; i++) if (must.indexOf(i) < 0) rest.push(i);
-                    const pick = [];
-                    const rec = (start, k, mask) => {
-                        if (k === 0) { scoreIdx(must.concat(pick), prune); return; }
-                        for (let i = start; i <= rest.length - k; i++) {
-                            const j = rest[i];
+                /* 兩種列舉。原本是寫死的五層迴圈,改成遞迴才有辦法「先固定幾格、
+                   只列舉剩下的」。深度最多 5,成本沒差。
+                   runFree:不設限,只走每鍵第一張(前 nPrimary 個)。
+                   runChars:指定「這些角色一定要在隊上」,每個角色再從他自己的
+                   幾張候選裡挑 —— 鎖住的是角色,不是某一張卡。 */
+                const enumRest = (sel, pickFrom, need, mask, prune) => {
+                    if (need === 0) { scoreIdx(sel.slice(), prune); return; }
+                    for (let i = 0; i <= pickFrom.length - need; i++) {
+                        const j = pickFrom[i];
+                        if (mask & cbit[j]) continue;
+                        sel.push(j);
+                        enumRest(sel, pickFrom.slice(i + 1), need - 1, mask | cbit[j], prune);
+                        sel.pop();
+                    }
+                };
+                const runFree = prune => {
+                    const all = []; for (let i = 0; i < nPrimary; i++) all.push(i);
+                    enumRest([], all, 5, 0, prune);
+                };
+                const runChars = (mustChars, prune) => {
+                    const groups = mustChars.map(ch => {
+                        const g = []; for (let i = 0; i < n; i++) if (pool[i].c.characterId === ch) g.push(i);
+                        return g;
+                    });
+                    if (groups.some(g => !g.length) || mustChars.length > 5) return;
+                    const rest = [];
+                    for (let i = 0; i < nPrimary; i++) if (mustChars.indexOf(pool[i].c.characterId) < 0) rest.push(i);
+                    const need = 5 - mustChars.length;
+                    const sel = [];
+                    const walk = (gi, mask) => {
+                        if (gi === groups.length) { enumRest(sel, rest, need, mask, prune); return; }
+                        for (const j of groups[gi]) {
                             if (mask & cbit[j]) continue;
-                            pick.push(j); rec(i + 1, k - 1, mask | cbit[j]); pick.pop();
+                            sel.push(j); walk(gi + 1, mask | cbit[j]); sel.pop();
                         }
                     };
-                    rec(0, need, m0);
+                    walk(0, 0);
                 };
-                /* 當期特效卡一律先鎖進隊伍。那幾張是整隊加成最大的一塊
-                   (特效 50 ＋ 團體 20 ＋ 專精 15 起跳),而一隊只有五格 ——
-                   拿一格去換綜合力,要多出來的綜合力遠超過現實可能。
+                /* 一般活:當期卡池的卡必放。鎖的是「這幾位角色一定要在隊上」而不是
+                   某一張卡 —— 同一位角色可能有好幾張當期卡,哪一張好交給目標函數決定。
+                   其餘位置從同樣有加成的卡裡挑,目標函數本身就會偏好高倍率的那張
+                   (協力場六個窗全吃隊長技能)。
+                   WL 不套這條:它的第五位本來就是為了湊色的非加成卡,規則不一樣。
                    例外只有一種:鎖完之後隊伍是混團或混色。那時候 area 道具的
                    allMatch 翻倍拿不到、WL 的異色加成也會變動,加成與綜合力之間
                    才真的需要權衡 —— 那種情況才多跑一次不設限的搜尋,兩者取高。
                    同色同團的隊不必跑:加成已經是最大、area 也已經翻倍,沒有可換的。 */
-                const lock = [];
+                let lockChars = [];
                 // opts.forceFull:跳過鎖定、強制跑完整搜尋。留著是為了 A/B 對照 ——
-                // 「鎖住特效卡有沒有漏掉更好的隊」這件事要量得出來，不能只靠推論。
-                if (!opts.forceFull) {
-                    const seen = new Set();
-                    pool.map((x, i) => i).filter(i => pool[i].special > 0)
-                        .sort((a, b) => pool[b].bonus - pool[a].bonus)
-                        .forEach(i => {
-                            const ch = pool[i].c.characterId;
-                            if (seen.has(ch) || lock.length >= 5) return;
-                            seen.add(ch); lock.push(i);
-                        });
+                // 「先鎖會不會漏掉更好的隊」這件事要量得出來，不能只靠推論。
+                if (!opts.forceFull && !isWL) {
+                    const byCh = {};
+                    pool.forEach(x => {
+                        if (!(x.special > 0)) return;               // 當期卡池的卡
+                        const ch = x.c.characterId;
+                        if (byCh[ch] == null || x.bonus > byCh[ch]) byCh[ch] = x.bonus;
+                    });
+                    lockChars = Object.keys(byCh).map(Number).sort((a, b) => byCh[b] - byCh[a]).slice(0, 5);
                 }
                 const wlPrune = isWL && new Set(pool.map(x => x.c.attr)).size >= 3;
-                if (lock.length) run(lock, wlPrune);
+                if (lockChars.length) runChars(lockChars, wlPrune);
                 const unitOfCard = c => (c.characterId >= 21
                     ? ((c.supportUnit && c.supportUnit !== 'none') ? c.supportUnit : 'piapro')
                     : wlNativeUnit(c.characterId));
@@ -3834,9 +3880,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const tc = best.idx.map(i => pool[i].c);
                     return new Set(tc.map(unitOfCard)).size > 1 || new Set(tc.map(c => c.attr)).size > 1;
                 };
-                const lockedOnly = lock.length > 0 && !mixedNow();
-                if (!lockedOnly) run([], wlPrune);
-                if (!best && wlPrune) run([], false);   // 剪枝把合法解全砍了(持有卡湊不出 3 色):退回不剪枝
+                const lockedOnly = lockChars.length > 0 && !mixedNow();
+                if (!lockedOnly) runFree(wlPrune);
+                if (!best && wlPrune) runFree(false);   // 剪枝把合法解全砍了(持有卡湊不出 3 色):退回不剪枝
                 if (!best) return { ok: false, reason: '找不到可組成的隊伍。' };
                 const chosen = best.idx.map(i => pool[i]);
                 let wl = null;
@@ -3849,7 +3895,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                            cardSum: Math.round((best.bonus - attrBonus - support) * 10) / 10 };
                 }
                 return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, wl, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)),
-                    lockedN: lock.length, lockedOnly: lockedOnly };
+                    lockedN: lockChars.length, lockedOnly: lockedOnly };
             },
             async _renderOpt(src, type) {
                 const teamEl = document.getElementById('rsTeam');
