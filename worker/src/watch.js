@@ -330,6 +330,7 @@ export const WATCH_KINDS = {
         label: '活動結算',
         fields: [{ key: 'end_kind', label: '哪一個時間點', type: 'select', default: 'aggregate', options: [
           { value: 'aggregate', label: '榜線結算（aggregate_at）' },
+          { value: 'announce', label: '榜線公布（ranking_announce_at，結算後約 10 分鐘）' },
           { value: 'closed', label: '活動關閉（closed_at）' },
         ] }],
         example: { what: 'event_end', before_h: 24, end_kind: 'aggregate' },
@@ -586,13 +587,18 @@ async function scheduleTargets(what, p, snap, t) {
       const at = iso2sec(e.start_at);
       if (at != null) out.push({ key: `ev:${e.id}:start`, at, name: evLabel(e), extra: `結算：${fmtTW(iso2sec(e.aggregate_at))}` });
     } else if (what === 'event_end') {
-      const useClosed = p.end_kind === 'closed';
-      const at = iso2sec(useClosed ? e.closed_at : e.aggregate_at);
+      /* 三個時間點：結算（分數截止）、公布（榜線正式出來，HiSekai 2026-09 新增的
+         ranking_announce_at，實測是結算後 10 分鐘）、關閉。 */
+      const kind = p.end_kind === 'closed' ? 'closed' : p.end_kind === 'announce' ? 'announce' : 'aggregate';
+      const src = kind === 'closed' ? e.closed_at : kind === 'announce' ? (e.ranking_announce_at || e.aggregate_at) : e.aggregate_at;
+      const at = iso2sec(src);
       if (at != null) {
+        const other = kind === 'aggregate'
+          ? `榜線公布：${fmtTW(iso2sec(e.ranking_announce_at || e.aggregate_at))}`
+          : `榜線結算：${fmtTW(iso2sec(e.aggregate_at))}`;
         out.push({
-          key: `ev:${e.id}:${useClosed ? 'closed' : 'aggregate'}`, at, name: evLabel(e),
-          extra: `開始：${fmtTW(iso2sec(e.start_at))}\n` +
-                 `${useClosed ? '榜線結算' : '活動關閉'}：${fmtTW(iso2sec(useClosed ? e.aggregate_at : e.closed_at))}`,
+          key: `ev:${e.id}:${kind}`, at, name: evLabel(e),
+          extra: `開始：${fmtTW(iso2sec(e.start_at))}\n${other}`,
         });
       }
     } else if (what === 'wl_chapter') {

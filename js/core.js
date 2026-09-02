@@ -3791,7 +3791,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                        預設改成「隊友＝我方平均」:不必憑空給一個常數,而且五張技能一樣時
                        boost(X)=0.8X+總和/5 會退回 1.8×,跟舊行為完全相同。 */
                     const leader = Math.max(...skills);
-                    const mate = skills.reduce((a, b) => a + b, 0) / skills.length;
+                    /* 隊友倍率:跑榜工作室有填隊友欄位就用填的（平均）,沒填才用我方平均。
+                       假設露在畫面上讓人改,同一副牌在不同車隊的差距才看得到。 */
+                    const mate = (opts.mateSkill != null && opts.mateSkill > 0) ? opts.mateSkill
+                               : skills.reduce((a, b) => a + b, 0) / skills.length;
                     const players = [leader, mate, mate, mate, mate];
                     const totalP = players.reduce((a, b) => a + b, 0);
                     const bst = X => 0.8 * X + totalP / 5;
@@ -3945,7 +3948,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const areaEl = document.getElementById('rsAreaLv');
                 const areaLv = Math.max(1, Math.min(20, +(areaEl && areaEl.value) || PowerEngine.areaMaxLv));
                 const noteEl = document.getElementById('rsOwnedNote');
-                const r = await this._computeBest(src, type, { areaLv, charRank: +document.getElementById('rsCharRank').value || 100, songId: +document.getElementById('rsSong').value || 0, diff: (document.getElementById('rsDiff') || {}).value || 'master', boostN: +document.getElementById('rsBoost').value || 0 });
+                // 隊友倍率:rsP1~rsP4 有填的取平均;都留空 → null（最佳化器退回我方平均）
+                const mates = [1, 2, 3, 4].map(i => { const el = document.getElementById('rsP' + i); return el && el.value !== '' ? +el.value : null; }).filter(v => v != null && v > 0);
+                const mateSkill = mates.length ? mates.reduce((a, b) => a + b, 0) / mates.length : null;
+                const r = await this._computeBest(src, type, { mateSkill, areaLv, charRank: +document.getElementById('rsCharRank').value || 100, songId: +document.getElementById('rsSong').value || 0, diff: (document.getElementById('rsDiff') || {}).value || 'master', boostN: +document.getElementById('rsBoost').value || 0 });
                 if (noteEl) noteEl.textContent = this._poolNote
                     ? ('候選 ' + this._poolNote + '（來源:收集率頁的勾選）')
                     : '未勾選時用全部★4計算(理論最強)';
@@ -3966,7 +3972,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${best.skills[i]}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
                     </table></div>
                     <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div>${r.wl ? `<div class="formula">WL 分解:逐卡 ＋${r.wl.cardSum}%・異色(${r.wl.colors}色)＋${r.wl.attrBonus}%・${r.wl.hasSup ? `支援隊伍(理論滿配,以${r.wl.label}為主)＋${r.wl.support}%——合計已含支援,別再手動加` : '支援隊伍未估(終章或章節資料缺):合計未含支援,請自行加上'}</div>` : ''}</div>
-                    <div class="note" style="margin-top:4px;">假設：全卡持有、MR5、滿級、SL4、area item Lv${areaLv}、角色等級 100；協力隊友倍率取我方五張平均。${r.wl ? '　WL：已按異色數加成最佳化，支援隊伍以本章主角、MR5/SL4 估算。' : ''}${useEP ? '' : '　未選歌：退回 綜合力×加成。'}</div>`;
+                    <div class="note" style="margin-top:4px;">假設：全卡持有、MR5、滿級、SL4、area item Lv${areaLv}、角色等級 100；協力隊友倍率${mateSkill ? '＝隊友欄位平均 ' + Math.round(mateSkill) + '%' : '取我方五張平均（隊友欄位留空）'}。${r.wl ? '　WL：已按異色數加成最佳化，支援隊伍以本章主角、MR5/SL4 估算。' : ''}${useEP ? '' : '　未選歌：退回 綜合力×加成。'}</div>`;
             },
             calc() {
                 if (!this._ready) return;

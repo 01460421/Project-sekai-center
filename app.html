@@ -281,6 +281,7 @@ select option, select optgroup{
           <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">剩餘時間</div>
           <div id="liveCd" style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px">{{ liveCountdown }}</div>
           <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
+          <sc-if value="{{ liveHasAnnounce }}"><div style="font-size:10.5px;opacity:.6;margin-top:2px;font-family:'M PLUS Rounded 1c'">{{ liveAnnounce }}</div></sc-if>
         </div>
       </div>
       <div style="position:relative;margin-top:16px;height:8px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden">
@@ -1885,7 +1886,7 @@ select option, select optgroup{
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 7px 24px">
           <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
             {{ wlsShotBtn }}
-            <input type="file" accept="image/*" onChange="{{ onWlsShot }}" style="display:none">
+            <input type="file" accept="image/*" multiple onChange="{{ onWlsShot }}" style="display:none">
           </label>
           <button type="button" onClick="{{ onWlsFromOwn }}" style="padding:7px 15px;border:1px solid var(--accent);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:800;cursor:pointer">{{ wlsFromOwnBtn }}</button>
         </div>
@@ -1932,6 +1933,7 @@ select option, select optgroup{
               <div style="font-size:10px;color:var(--text-3);display:flex;justify-content:space-between;gap:4px"><span>{{ c.chara }}</span><span style="font-weight:700;color:var(--text-2)">{{ c.ms }}</span></div>
               <div style="font-size:10.5px;font-weight:700;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ c.name }}</div>
               <div style="font-size:13px;font-weight:800;color:var(--accent-deep);margin-top:3px">＋{{ c.bonus }}%</div>
+              <div style="font-size:9.5px;color:var(--text-3);margin-top:2px;line-height:1.4">{{ c.edge }}</div>
             </div>
           </div>
         </sc-for>
@@ -2145,6 +2147,7 @@ select option, select optgroup{
           <div style="font-size:11px;color:var(--text-3);margin:4px 0 10px">{{ qaT.author }}　{{ qaT.when }}</div>
           <div style="font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap;word-break:break-word">{{ qaT.body }}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+            <sc-if value="{{ qaT.canAsk }}"><button type="button" onClick="{{ onQaAsk }}" style="padding:5px 12px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:11px;font-weight:800;cursor:pointer">請站內助手回答</button></sc-if>
             <sc-if value="{{ qaT.canSolve }}"><button type="button" onClick="{{ onQaSolve }}" style="padding:5px 12px;border:1px solid var(--accent);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11px;font-weight:700;cursor:pointer">{{ qaT.solveBtn }}</button></sc-if>
             <sc-if value="{{ qaT.canLock }}"><button type="button" onClick="{{ onQaLock }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ qaT.lockBtn }}</button></sc-if>
             <sc-if value="{{ qaT.canDelete }}"><button type="button" onClick="{{ onQaDelete }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:#e0576a;font-size:11px;font-weight:700;cursor:pointer">刪除主題</button></sc-if>
@@ -2156,6 +2159,7 @@ select option, select optgroup{
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:11.5px;font-weight:700;color:var(--text-2)">{{ p.author }}</span>
               <sc-if value="{{ p.isAdmin }}"><span style="padding:1px 6px;border-radius:999px;background:var(--accent);color:#fff;font-size:9.5px;font-weight:800">管理員</span></sc-if>
+              <sc-if value="{{ p.viaAi }}"><span style="padding:1px 6px;border-radius:999px;background:#8a72c8;color:#fff;font-size:9.5px;font-weight:800">站內助手回答</span></sc-if>
               <span style="font-size:11px;color:var(--text-3)">{{ p.when }}</span>
               <div style="flex:1"></div>
               <sc-if value="{{ p.canDel }}"><button type="button" onClick="{{ onQaDelPost }}" data-pid="{{ p.id }}" style="padding:2px 9px;border:none;border-radius:999px;background:transparent;color:var(--text-3);font-size:11px;cursor:pointer">刪除</button></sc-if>
@@ -3085,6 +3089,7 @@ select option, select optgroup{
           </div>
           <div style="position:absolute;top:5px;right:5px;width:21px;height:21px;border-radius:50%;background:{{ c.markBg }};color:{{ c.markFg }};font-size:12px;font-weight:800;display:grid;place-items:center;box-shadow:var(--sh-xs)">{{ c.mark }}</div>
           <div style="position:absolute;top:5px;left:5px;padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:800">{{ c.rar }}</div>
+          <sc-if value="{{ c.hasLv }}"><div style="position:absolute;bottom:34px;left:5px;padding:1px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:800">{{ c.lv }}</div></sc-if>
           <div style="padding:6px 7px 8px;font-size:10px;font-weight:700;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ c.name }}</div>
         </div>
       </sc-for>
@@ -4979,7 +4984,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=0211486f9f';
+      el.src = './js/core.js?v=a48f39f71a';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -12944,6 +12949,32 @@ class Component extends DCLogic {
     }
   }
 
+  /* 沒有畫面的助手迴圈：給提問所「請助手回答」用。
+     跟 aiSend 同一套工具與 system，但對話留在區域變數，不動助手頁的 aiMsgs。
+     回傳最後一則助手訊息裡的文字；查不到就回空字串。 */
+  async aiAsk(question) {
+    const q = String(question || '').trim();
+    if (!q) return '';
+    let cur = [{ role: 'user', content: q }];
+    let text = '';
+    for (let guard = 0; guard < 12; guard++) {
+      const r = await this.api('/api/chat', { method: 'POST', body: { messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
+      const content = (r && r.content) || [];
+      cur = cur.concat([{ role: 'assistant', content }]);
+      text = content.filter(c => c.type === 'text').map(c => c.text).join('\n').trim() || text;
+      const calls = content.filter(c => c.type === 'tool_use');
+      if (!calls.length) break;
+      const results = [];
+      for (const c of calls) {
+        let out;
+        try { out = await this.aiRun(c.name, c.input); } catch (e) { out = { error: (e && e.message) || String(e) }; }
+        results.push({ type: 'tool_result', tool_use_id: c.id, content: JSON.stringify(out).slice(0, 24000) });
+      }
+      cur = cur.concat([{ role: 'user', content: results }]);
+    }
+    return text;
+  }
+
   /* ---------- 帳號 ----------
      後端是同一個 Worker（games 子網域），跟主站不同來源，所以每個請求都要
      credentials:'include' 才會帶上 session cookie，後端也對應開了具名的 CORS。 */
@@ -13061,6 +13092,356 @@ class Component extends DCLogic {
   }
 
   /* 站內通知。未讀數順著 /api/events 一起回來,不另外開一支輪詢。 */
+  /* 單張截圖的完整流程。多選檔案時由 onWlsShot 逐檔呼叫，k/nAll 只拿來顯示進度。 */
+  async wlsScanOne(f, k, nAll) {
+    if (!f || this.state.wlsShotBusy) return;
+    const pre = nAll > 1 ? '第 ' + k + '/' + nAll + ' 張　' : '';
+    /* 第一次要連指紋庫一起載,比之後慢。不講的話畫面上只有
+       「辨識中…」三個字,使用者會以為當掉而重按或關掉 —— 那一次額度就白花了。
+       _sigsP 存在就代表這次開站已經載過,後面幾張快得多。 */
+    const first = !this._sigsP;
+    /* 進度條。AI 那一段拿不到真實進度 —— 一次請求，中間沒有回報 ——
+       所以用「已經過幾秒」推一條會趨緩但永遠不停的線:
+       pct = 起點 + 幅度 x (1 - e^(-t/40))，四十秒走一半、之後越來越慢，
+       不會提前衝到終點、也不會卡住不動。卡住不動最容易讓人以為當掉而重按。
+       比對那一段是本地運算，逐格回報真實進度。 */
+    const t0 = Date.now();
+    const prog = (pct, label) => this.setState({ wlsProg: pct, wlsProgLabel: label,
+      wlsProgSide: Math.round((Date.now() - t0) / 1000) + ' 秒' });
+    clearInterval(this._wlsTick);
+    this._wlsTick = setInterval(() => {
+      const st = this.state;
+      if (!st.wlsShotBusy) { clearInterval(this._wlsTick); return; }
+      const t = (Date.now() - t0) / 1000;
+      const creep = st.wlsProgBase + st.wlsProgSpan * (1 - Math.exp(-t / 40));
+      this.setState({ wlsProg: Math.max(st.wlsProg, creep),
+        wlsProgSide: Math.round(t) + ' 秒' });
+    }, 500);
+    this.setState({ wlsShotBusy: true, wlsProg: 3, wlsProgBase: 3, wlsProgSpan: 0,
+      wlsProgLabel: pre + '讀取圖片…', wlsProgSide: '0 秒',
+      wlsShotMsg: first ? '第一次上傳要載入卡面指紋庫，會比之後慢，請勿關閉或重複點按。' : '' });
+    try {
+      const img = await new Promise((res, rej) => {
+        const im = new Image();
+        im.onload = () => res(im);
+        im.onerror = () => rej(new Error('圖片讀取失敗'));
+        im.src = URL.createObjectURL(f);
+      });
+      /* 送給模型的那份一律重新轉檔。手機截圖動輒 3000px、HEIC/PNG 原檔十幾 MB,
+         base64 之後會超過後端上限 —— 以前是丟一句「圖片太大，請裁掉空白再試」,
+         但相機與截圖本來就是那個尺寸,那等於把工具做不到的事推回給使用者。
+         改成自己降:先降品質、再降尺寸,一路試到送得走為止。
+         只有送模型的這一份會縮;裁圖比對用的仍是原圖 img,辨識精度不受影響。 */
+      const CAP = 2600000;   // base64 字元數。後端上限 4 MB，留給 system 與工具定義
+      let b64 = '';
+      for (const [max, q] of [[1600, .8], [1600, .62], [1280, .6], [1024, .55], [800, .5]]) {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(img.width * k));
+        cv.height = Math.max(1, Math.round(img.height * k));
+        const c2 = cv.getContext('2d');
+        c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high';
+        c2.drawImage(img, 0, 0, cv.width, cv.height);
+        b64 = cv.toDataURL('image/jpeg', q).split(',')[1] || '';
+        if (b64.length <= CAP) break;
+      }
+      if (!b64) throw new Error('圖片轉檔失敗，請改用另一張圖片');
+
+      const names = (this.state.rateChars || []).map(c => c[1]);
+      // AI 那一段:從 8% 起，最多爬到 62%，四十秒走一半
+      this.setState({ wlsProg: 8, wlsProgBase: 8, wlsProgSpan: 54,
+        wlsProgLabel: pre + 'AI 讀取每一格的專精與技能等級…' });
+      const r = await this.api('/api/chat', { method: 'POST', body: {
+        /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
+           撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
+           真實卡庫不可能每張都滿,那是模型在複製貼上而不是在讀圖,
+           連帶框也不準,整批辨識全錯。這一格的輸出有四十幾筆結構化資料,
+           降階省下的時間換來的是不能用的結果。速度要另外想辦法。 */
+        system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖。\n'
+          + '每個卡片方塊上看得到這些東西：\n'
+          + '・卡面下方的稀有度標記有兩種，先分清楚是哪一種再數：\n'
+          + '　　星星（★）→ 一般卡，有幾顆就填幾（1～4）\n'
+          + '　　蝴蝶結（緞帶打的結，左右各一片、中間一個結，只有一個，不是星形）→ 生日卡，填 9\n'
+          + '　看到蝴蝶結就是 9，不要因為它只有一個就填 1 —— 生日卡沒有星星。\n'
+          + '・左下角「SLv.N」＝技能等級，填 N（1～4）。整格找不到 SLv. 字樣才填 1。\n'
+          + '・右下角菱形徽章裡的數字＝專精等級。**這一格沒有菱形徽章就是 0**，\n'
+          + '　不要因為看不到就跳過、也不要猜一個數字 —— 大多數卡本來就是 0。\n'
+          + '　有徽章的話，數字就寫在菱形正中央（1～5）。\n'
+          + '・專精與技能等級直接決定加成的數值，是這張截圖最要緊的兩個數字，\n'
+          + '　每一格都要各自看清楚再填，不要因為前一格是多少就沿用。\n'
+          + '・角色＝從頭像辨認，只能填這個清單裡的名字：' + names.join('、') + '\n\n'
+          + '每一格還要給它在圖片上的位置 box，用 0~1 的相對座標（x,y 是左上角，w,h 是寬高），'
+          + '**要框住整個卡片方塊（含外框與下方的 SLv 條）**，不要只框臉。\n'
+          + '看不清楚的那一格就不要放進來，寧可漏也不要猜 —— 猜錯會讓使用者的加成算錯。',
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+          { type: 'text', text: '把這張截圖裡每一張卡抄下來，呼叫 submit_cards 回報。' },
+        ] }],
+        tools: [{ name: 'submit_cards', description: '回報截圖裡辨識到的卡片。',
+          input_schema: { type: 'object', properties: {
+            cards: { type: 'array', description: '每張卡一筆，依畫面順序', items: { type: 'object', properties: {
+              character: { type: 'string', description: '角色名，必須是清單裡的其中一個' },
+              rarity: { type: 'integer', description: '星星幾顆就填幾（1-4）；標記是蝴蝶結（緞帶）的生日卡填 9' },
+              master_rank: { type: 'integer', description: '右下角菱形徽章裡的數字 1-5；沒有菱形徽章就填 0' },
+              skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4；沒看到 SLv. 就填 1' },
+              box: { type: 'object', description: '這一格在圖上的相對位置 0~1', properties: {
+                x: { type: 'number' }, y: { type: 'number' },
+                w: { type: 'number' }, h: { type: 'number' } },
+                required: ['x', 'y', 'w', 'h'] },
+            }, required: ['character', 'rarity', 'master_rank', 'skill_level', 'box'] } },
+            unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
+          }, required: ['cards'] } }],
+      } });
+      const use = ((r && r.content) || []).find(c => c.type === 'tool_use' && c.name === 'submit_cards');
+      const got = (use && use.input && Array.isArray(use.input.cards)) ? use.input.cards : null;
+      if (!got || !got.length) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
+
+      /* ---- 第二段:認出是哪一張卡 ---- */
+      this.setState({ wlsProg: 64, wlsProgBase: 64, wlsProgSpan: 4,
+        wlsProgLabel: pre + (first ? '載入卡面指紋庫…' : '比對卡面…') });
+      const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
+      const s0 = this.state;
+      const cards = s0.rateCards || [];
+      const idOf = {}, nmOf = {}, unOf = {};
+      (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; nmOf[c[0]] = c[1]; unOf[c[0]] = c[2]; });
+      /* 比對範圍是整個卡庫,不縮。
+         這裡踩過兩次,兩邊都量過:
+
+         ① 不能用模型讀到的角色當硬性條件。鏡音鈴讀成鏡音連的那一格,
+            真正那張卡就被排除在候選之外,再怎麼比也比不中。
+
+         ② 也不能用「上面選的那一章」來縮。章節本身是可靠的(使用者自己點的),
+            但它只決定「哪些卡有資格進後排」,不決定「截圖裡有哪些卡」——
+            卡庫截圖裡本來就有別團的卡。以 VBS 那一章為例,池子 236 張、
+            池外 1,013 張;MEIKO 的 50 張裡只有 9 張進得了那個池,另外 41 張
+            一定會被硬湊到池子裡最近的一張。實測三張池外的 MEIKO 卡,
+            用池子比全部認錯,其中一張距離 74、差距 9,兩道門檻都通過,
+            被標成「有把握」但是錯的;改用整庫比是 25~37、差距 37~61,三張全對。
+
+         整庫比對得起:量過全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74
+         (5% 分位 80、中位 88),而對得上的落在 25~67。差得夠開。
+         章節該用在哪裡?用在算加成時判斷資格 —— wlSupCalc 本來就在做那件事。 */
+      /* 比對範圍。這件事來回改過幾次,把量到的結論寫在這裡:
+
+         真實裁圖對得上的距離約 67,而全庫任兩張不同卡最近是 74 —— 只差 7。
+         邊界這麼薄的原因是遊戲格子上疊著屬性圖示、星星、SLv 條、專精菱形,
+         每一格都一樣,把所有距離往中間壓。攤開 2,074 枚指紋比,真答案一定
+         會被某張撞贏(站主截了一整頁 MEIKO,站上標成真冬／愛莉／寧寧／穗波)。
+
+         所以一定要縮。但不能用模型讀到的角色來縮 —— 它讀錯得最兇的正是
+         MEIKO 這種,縮下去正解就永遠選不到;也不能用選到的章節來縮 ——
+         卡庫截圖裡本來就有別團的卡(MEIKO 50 張只有 9 張進得了 VBS 那章的池)。
+
+         可靠的依據只有一個:使用者自己在遊戲裡設的篩選。那是他知道、
+         模型不知道的事,而且他本來就要設(頁面上一直在建議他設)。 */
+      /* 比對範圍就是使用者指定的那一個,不做任何退路。
+         這是站主的決定:上面第一步就寫著「在遊戲裡篩成什麼、這裡選一樣的」,
+         沒有人會篩了 MEIKO 卻傳別的東西。代價要知道 —— 傳進來的卡若不在
+         範圍內,會被硬湊到範圍裡最近的一張,而且看起來很有把握。 */
+      const fSel = this.wlsFilterOf(this.wlSupCalc());
+      const poolCards = cards.filter(c => this.wlsInPool(c, fSel, unOf));
+      const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
+      const POOL = [];
+      poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
+
+      /* 把模型給的一堆框「拉回格線上」。
+         遊戲的卡片一覽是規則格線:欄距、列距、格子大小都是固定的。
+         但要模型逐格給座標,四五十格裡總有幾格會偏 —— 而偏 5% 指紋就全毀
+         (實測距離從 29 掉到 128,等同亂數)。
+         既然知道它是格線,就不該逐格採信:把所有框的中心分群成列與欄,
+         取欄距、列距與格子大小的中位數,再用「第幾列第幾欄」重算每一格。
+         少數幾個歪掉的框會被中位數吃掉,不會拖累其他格。 */
+      const fitGrid = (boxes) => {
+        if (boxes.length < 4) return null;
+        const med = a => { const b = a.slice().sort((x, y) => x - y); return b[b.length >> 1]; };
+        const W = med(boxes.map(b => b.w)), H = med(boxes.map(b => b.h));
+        if (!(W > 0 && H > 0)) return null;
+        /* 分群:照座標排序,間隔超過半格就切一群。半格是安全的門檻 ——
+           同一列的格子中心差距遠小於半格,不同列則至少差一整列。 */
+        const group = (vals, tol) => {
+          const idx = vals.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
+          const gid = new Array(vals.length); const centers = [];
+          let g = 0, acc = [idx[0][0]];
+          gid[idx[0][1]] = 0;
+          for (let k = 1; k < idx.length; k++) {
+            if (idx[k][0] - idx[k - 1][0] > tol) { centers.push(med(acc)); g++; acc = []; }
+            acc.push(idx[k][0]); gid[idx[k][1]] = g;
+          }
+          centers.push(med(acc));
+          return { gid, centers };
+        };
+        const R = group(boxes.map(b => b.y + b.h / 2), H * 0.5);
+        const C = group(boxes.map(b => b.x + b.w / 2), W * 0.5);
+        // 只有一列或一欄時算不出間距,那就退回用格子大小本身
+        const pitch = (cs, fallback) => {
+          if (cs.length < 2) return fallback;
+          const d = []; for (let i = 1; i < cs.length; i++) d.push(cs[i] - cs[i - 1]);
+          return med(d) || fallback;
+        };
+        const PX = pitch(C.centers, W), PY = pitch(R.centers, H);
+        // 原點取「各欄中心減掉 欄序×欄距」的中位數,單一偏掉的欄影響不到它
+        const X0 = med(C.centers.map((c, i) => c - i * PX));
+        const Y0 = med(R.centers.map((c, i) => c - i * PY));
+        return { W, H, PX, PY, X0, Y0, gr: R.gid, gc: C.gid,
+                 rows: R.centers.length, cols: C.centers.length };
+      };
+      const rawBoxes = got.map(x => {
+        const b = x.box || {};
+        return { x: Math.max(0, Math.min(1, +b.x || 0)) * img.width,
+                 y: Math.max(0, Math.min(1, +b.y || 0)) * img.height,
+                 w: Math.max(4, (+b.w || 0) * img.width),
+                 h: Math.max(4, (+b.h || 0) * img.height) };
+      });
+      const GRID = fitGrid(rawBoxes);
+
+      // 比對從 68% 走到 98%，逐格回報
+      this.setState({ wlsProg: 68, wlsProgBase: 68, wlsProgSpan: 0, wlsProgLabel: pre + '比對卡面…' });
+      let named = 0, unsure = 0, noMatch = 0, charFix = 0;
+      const dists = [];
+      const out = []; for (let i = 0; i < got.length; i++) { const x = got[i];
+        const cid = idOf[String(x.character || '').trim()];
+        const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
+        /* 屬性以前是用來篩候選的三個約束之一,現在候選池由章節決定、
+           身分由指紋決定,它已經沒有用途 —— 就不再叫模型讀,少一個欄位
+           等於 46 格都少吐一截輸出。認出卡號後屬性直接從卡片本身拿。 */
+        const ai = -1;
+        const rec = {
+          character: x.character, characterId: cid == null ? null : cid, rarity: rar, attr: ai,
+          master_rank: Math.min(5, Math.max(0, Math.round(+x.master_rank || 0))),
+          skill_level: Math.min(4, Math.max(1, Math.round(+x.skill_level || 1))),
+          cardId: null, cardName: '', sure: false,
+        };
+        /* 座標用「拉回格線」之後的,不用模型原本給的那一格。
+           格線算不出來(格子太少)時才退回原始框。 */
+        const rb = rawBoxes[i];
+        const bx = GRID ? (GRID.X0 + GRID.gc[i] * GRID.PX - GRID.W / 2) : rb.x;
+        const by = GRID ? (GRID.Y0 + GRID.gr[i] * GRID.PY - GRID.H / 2) : rb.y;
+        const bw = GRID ? GRID.W : rb.w;
+        const bh = GRID ? GRID.H : rb.h;
+        /* 整格拿去比,不要裁。
+           這點反直覺,但量過:官方縮圖本身就是「整個方形卡面」,遊戲的外框與
+           SLv 條是疊在同一張圖上的。裁掉外框等於把真訊號一起裁掉 ——
+           實測同一張已知正確的卡,裁過的距離 90+(淹沒在雜訊裡),不裁是 67;
+           整排 20 格用不裁的參數重測是 20/20 全中,裁過的只有 3~4 格。
+
+           但模型給的框只是「大概」。一張截圖塞四五十格時,它抓的邊界會整體
+           偏掉幾個百分點 —— 偏一點指紋就全毀:兩張候選都對不上,距離雙雙
+           落在 128 附近(256 bits 的亂數期望值),於是誰高誰低變成擲骰子,
+           差距隨機地小於門檻,就被標成「不確定」。實際遇到過一批 45 張裡
+           有 27 張是這樣來的。
+           所以在框附近做一次小範圍對位:平移 ±6%、縮放 ±8% 各試幾檔,
+           取距離最小的那個當答案。純瀏覽器端運算,不多花一次 AI 額度。 */
+        const JO = [-0.06, -0.03, 0, 0.03, 0.06], JS = [0.92, 1, 1.08];
+        const cx0 = bx + bw / 2, cy0 = by + bh / 2;
+        /* 試位的指紋只算一次,兩段比對共用 —— 重算 75 次縮圖是白費力氣 */
+        const QS = [];
+        for (const sc of JS) {
+          const w = bw * sc, h = bh * sc;
+          for (const ox of JO) for (const oy of JO) {
+            QS.push(this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h));
+          }
+        }
+        const scan = (pool) => {
+          const m = new Map();   // 卡片id → 這張卡在所有試位裡的最短距離
+          for (const q of QS) {
+            for (let k = 0; k < pool.length; k++) {
+              const pv = m.get(pool[k][0]);
+              /* 已經有紀錄的話就給上限提早結束:上千枚指紋 × 75 個試位,
+                 絕大多數比到一半就已經比現有的差了,算完整條是浪費。
+                 回傳值只用來跟 pv 比大小,超過上限時回什麼都不影響結果。 */
+              const d = pv == null ? this._ham(q, pool[k][1])
+                                   : this._hamLt(q, pool[k][1], pv);
+              if (pv == null || d < pv) m.set(pool[k][0], d);
+            }
+          }
+          return m;
+        };
+        const dmin = scan(POOL);
+        /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
+           指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
+           (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
+        /* 不拿模型讀到的角色做任何加權。試過,是反效果 ——
+           它讀錯得最兇的正是 MEIKO 這種(短褐髮,跟望月穗波很像),
+           而那也正是最需要救的情況;給它加權等於往錯的方向推。 */
+        let best = null, second = null;
+        dmin.forEach((d, id) => {
+          if (!best || d < best.d) { second = best; best = { d, id, sc: d }; }
+          else if (!second || d < second.d) second = { d, id, sc: d };
+        });
+        const row = best ? byId[best.id] : null;
+        if (row) {
+          rec.dist = best.d;
+          dists.push(best.d);
+          /* 兩個條件都要成立才算有把握:
+             ① 跟第二名拉得開 —— 咬太近就是分不出來。
+             ② 距離本身夠小 —— 兩張都對不上時差距也可能碰巧很大,
+                那不是「有把握」,是兩個都錯。256 bits 的亂數期望 128、
+                標準差 8；換算到 768 bits 之後，288 以上一律當成沒對上。 */
+          /* 門檻跟著 bit 數走：256 bits 時是「差距 ≥8、距離 ≤96」，
+             指紋放大到 768 bits（三通道）之後同比例變成 24 與 288。
+             實測 rgb16＋遮罩的距離中位數 126、差距中位數 98，離門檻很寬。 */
+          const gap = second ? (second.sc - best.sc) : 999;
+          const absOk = best.d <= 288;
+          const charSame = cid == null || row[1] === cid;
+          rec.cardId = row[0]; rec.cardName = row[7];
+          /* 模型讀到的角色跟比對結果不一樣時,要更大的餘裕才敢推翻它 ——
+             整庫最近的兩張不同卡差 74、對得上的落在 29~67,兩者之間只隔幾個 bit,
+             差距 8 夠在同一個角色的幾張卡之間分勝負,不夠拿來改寫角色。 */
+          rec.sure = absOk && gap >= (charSame ? 24 : 48);
+          /* 選定了一張卡,那張卡的角色與稀有度就是事實,一律以它為準 ——
+             即使把握不足也一樣。原本只在「有把握」時才覆寫,結果畫面上
+             出現自相矛盾的東西:卡名與卡面是 MEIKO 的,角色卻寫望月穗波
+             (模型讀的)。兩個訊息打架的時候，該顯示的是證據強的那個，
+             至於把握不足,是用「待確認」標出來,不是靠顯示錯的角色來表達。 */
+          if (!charSame) { rec.charFixed = true; charFix++; }
+          rec.characterId = row[1];
+          rec.character = nmOf[row[1]] || rec.character;
+          rec.rarity = row[2];
+          if (rec.sure) named++;
+          else { unsure++; if (!absOk) noMatch++; }
+        }
+        out.push(rec);
+        /* 每幾格讓出一次控制權，畫面才畫得出進度。全部同步跑完的話
+           進度條會從 68% 直接跳到 98%，等於沒有進度條。 */
+        if (i % 3 === 2 || i === got.length - 1) {
+          this.setState({ wlsProg: 68 + 30 * (i + 1) / got.length,
+            wlsProgLabel: pre + '比對卡面 ' + (i + 1) + ' / ' + got.length });
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+
+      // 累加而不是覆蓋（去重規則見 wlsMerge）
+      const prev = this.state.wlsScan || [];
+      const { merged, dup } = this.wlsMerge(prev, out);
+      const newly = merged.length - prev.length;
+      const skipped = (use.input.unreadable || 0);
+      this.setState({ wlsScan: merged, wlsPool: 'scan', wlsShotMsg:
+        '讀到 ' + out.length + ' 張'
+        + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
+        + '，其中 ' + named + ' 張認出是哪張卡'
+        + (charFix ? '（其中 ' + charFix + ' 張的角色與 AI 讀到的不同，已改用卡面比對的結果）' : '')
+        + (unsure ? '、' + unsure + ' 張標為不確定'
+             + (noMatch ? '（其中 ' + noMatch + ' 張是卡面未能對上，多半是截圖中格子太小或被裁切）' : '（候選太接近）')
+           : '')
+        + '。'
+        /* 把比對距離講出來。對得上的落在 50~67,亂數是 128 ——
+           中位數一看就知道這批是「認錯了」還是「根本沒對上」,
+           不必再靠猜。 */
+        + '　比對範圍 ' + poolCards.length + ' 張卡'
+        + (fSel === 'all' ? '（沒指定遊戲內的篩選，容易撞錯；指定之後會準很多）' : '')
+
+        + (dists.length ? '（卡面比對距離中位數 '
+             + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
+             + ' / 768，120 上下表示對得上，280 以上表示未對上）' : '')
+        + (dup ? '與先前重複的 ' + dup + ' 張已合併，這次新增 ' + newly + ' 張，' : '')
+        + '累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
+    } catch (er) {
+      this.setState({ wlsShotMsg: '辨識失敗：' + ((er && er.message) || '') });
+    }
+    clearInterval(this._wlsTick);
+    this.setState({ wlsShotBusy: false, wlsProg: 100, wlsProgLabel: pre + '' });
+  }
+
   /* ---------- 提問所／討論串 ---------- */
   async loadQa() {
     this.setState({ qaLoad: true, qaMsg: '' });
@@ -13599,11 +13980,26 @@ class Component extends DCLogic {
       }
     }
     list.sort((a, b) => b.bonus - a.bonus || a.id - b.id);
+    /* 每張卡的「邊際價值」，只在截圖模式有意義（理論值全是 MR5/SL4）：
+       ・mrGain：這張卡專精升一級，後排總分多幾 %（只查該稀有度的專精檔位差）。
+       ・swapLoss：把這張卡拿掉、由第 N+1 名遞補，總分少幾 %。
+       玩家真正的決策是「該練哪張」與「哪張可以割」，總分本身回答不了。 */
+    const mrStep = (rar, m) => {
+      const t = supByRar[RAR[rar]]; if (!t || m >= 5) return 0;
+      const cur = pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', m);
+      const nxt = pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', m + 1);
+      return Math.round((nxt - cur) * 10) / 10;
+    };
     // 張數依屆數:WL1 收 12 張、WL2 收 20 張、之後 25 張
     const season = seasonOf[evId] || 1;
     const n = season === 1 ? 12 : season === 2 ? 20 : 25;
     const use = list.slice(0, n);
     const total = Math.round(use.reduce((x, r) => x + r.bonus, 0) * 10) / 10;
+    const sub = list[n] ? list[n].bonus : 0;   // 第 N+1 名：拿掉任一張時的遞補
+    use.forEach(r => {
+      r.mrGain = mode === 'scan' ? mrStep(r.rar, r.mr) : 0;
+      r.swapLoss = Math.round((r.bonus - sub) * 10) / 10;
+    });
     return {
       evId, chs, cur, special, chUnit, n, list, use, total, season, scanAll,
       banned: Object.keys(banned).length,
@@ -14278,6 +14674,11 @@ class Component extends DCLogic {
     const ev = this.eventOf(s.live);
     const endAt = ev.aggregate_at || ev.closed_at || ev.aggregated_at || ev.end_at;
     const startAt = ev.start_at || ev.started_at || ev.startAt;
+    /* 榜線公布：結算之後約 10 分鐘（HiSekai 2026-09 新增 ranking_announce_at）。
+       跑榜的人在意的是「幾點看得到最終名次」，不只是幾點截止。 */
+    const annMs = ev.ranking_announce_at ? new Date(ev.ranking_announce_at).getTime() : null;
+    const annLabel = annMs ? (() => { const d = new Date(annMs); const hh = String(d.getHours()).padStart(2, '0'), mm = String(d.getMinutes()).padStart(2, '0');
+      return '榜線公布 ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hh + ':' + mm + (annMs < Date.now() ? '（已公布）' : ''); })() : '';
     const endMs = endAt ? new Date(endAt).getTime() : null;
     const startMs = startAt ? new Date(startAt).getTime() : null;
     const now = Date.now();
@@ -15148,6 +15549,9 @@ class Component extends DCLogic {
                （尤其「沒有菱形徽章＝MR0」），而它們直接決定加成 ——
                不顯示的話使用者連自己被算錯了都看不出來。 */
             ms: 'MR' + c.mr + '　SLv.' + c.sl,
+            edge: (W.mode === 'scan'
+              ? ((c.mrGain ? '升 1 專精 +' + c.mrGain.toFixed(1) + '%　' : '') + '換掉 −' + (c.swapLoss || 0).toFixed(1) + '%')
+              : ''),
             bd: c.isSpecial ? 'var(--accent)' : 'var(--border)',
             tag: c.unsure ? '待確認' : (c.isLim ? '本章限定' : (c.isSpecial ? '本章主角' : '同團')),
             tagBg: c.unsure ? '#c98a2b' : (c.isLim ? '#e0576a' : (c.isSpecial ? 'var(--accent)' : 'rgba(0,0,0,.45)')),
@@ -15279,10 +15683,11 @@ class Component extends DCLogic {
           qaT: t ? { title: t.title, body: t.body, author: t.author || '', when: when(t.created_at),
             kind: RN[t.kind] || '', solved: !!t.solved, locked: !!t.locked,
             canSolve: !!(t.mine || (me && me.is_admin)), canDelete: !!(t.mine || (me && me.is_admin)), canLock: !!(me && me.is_admin),
-            solveBtn: t.solved ? '取消已解決' : '標為已解決', lockBtn: t.locked ? '解除鎖定' : '鎖定主題' } : {},
+            solveBtn: t.solved ? '取消已解決' : '標為已解決', lockBtn: t.locked ? '解除鎖定' : '鎖定主題',
+            canAsk: !!s.qaCanPost && !t.locked } : {},
           qaPostRows: (s.qaPosts || []).map(x => ({
             id: x.id, body: x.deleted ? '（已刪除）' : x.body, author: x.author || '', when: when(x.created_at),
-            canDel: !x.deleted && !!(x.mine || (me && me.is_admin)), isAdmin: !!x.author_admin,
+            canDel: !x.deleted && !!(x.mine || (me && me.is_admin)), isAdmin: !!x.author_admin, viaAi: !!x.via_ai,
             color: x.deleted ? 'var(--text-3)' : 'var(--text)',
           })),
           qaPostNone: !!t && !(s.qaPosts || []).length,
@@ -15943,8 +16348,10 @@ class Component extends DCLogic {
           ratePageLabel: pg + ' / ' + tot,
           rateRows: rows.slice((pg - 1) * per, pg * per).map(c => {
             const has = own.has(c[0]);
+            const lv = has ? (this.lvAll()[c[0]] || null) : null;   // 截圖辨識存下來的專精／技能
             return {
               id: c[0], name: c[7], chara: nOf[c[1]] || '',
+              lv: lv ? ('MR' + lv[0] + ' SL' + lv[1]) : '', hasLv: !!lv,
               img: this.cardImg(c[8], c[2]),
               rar: (this.RARITY.find(r => r[0] === c[2]) || [0, '?'])[1],
               sup: this.SUPPLYN[c[4]] || '',
@@ -16074,6 +16481,7 @@ class Component extends DCLogic {
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
       liveCountdown: endMs ? this.dur(endMs - now) : '—',
       liveProgress: (prog * 100).toFixed(1) + '%',
+      liveAnnounce: annLabel, liveHasAnnounce: !!annLabel,
       liveProgressLabel: startMs && endMs ? '已過 ' + Math.round(prog * 100) + '%' : '',
       liveLogo: (ev.id != null && s.evArt[ev.id]) ? (this.ASSET + '/event/' + s.evArt[ev.id] + '/logo/logo.webp') : '',
       // World Link 活動沒有去背角色圖(官方 screen/character 不存在,會破圖),
@@ -16674,6 +17082,23 @@ class Component extends DCLogic {
         if (d && d.ok) { this.setState({ qaReply: '' }); this.openQa(id); }
         else if (d && d.message) this.setState({ qaMsg: d.message });
       },
+      onQaAsk: async () => {
+        const id = this.state.qaOpen, t = this.state.qaThread; if (!id || !t || this.state.qaBusy) return;
+        this.setState({ qaBusy: true, qaMsg: '助手查資料中…（會用掉一次 AI 額度，通常 20～60 秒）' });
+        try {
+          /* 把主題與最近幾則回覆一起給它，回答才接得上脈絡；太長的截掉。 */
+          const ctx = (this.state.qaPosts || []).filter(x => !x.deleted && !x.via_ai).slice(-3)
+            .map(x => '・' + (x.author || '') + '：' + String(x.body || '').slice(0, 300)).join('\n');
+          const q = '這是站上提問所的一個' + (t.kind === 'question' ? '提問' : '討論') + '，請用站上的資料回答，講重點、給數字與依據，不要客套。\n\n'
+            + '標題：' + t.title + '\n內容：' + String(t.body || '').slice(0, 2000)
+            + (ctx ? '\n\n最近的回覆：\n' + ctx : '');
+          const ans = await this.aiAsk(q);
+          if (!ans) { this.setState({ qaBusy: false, qaMsg: '助手沒有給出回答，請稍後再試。' }); return; }
+          const d = await this.api('/api/qa/' + encodeURIComponent(id) + '/reply', { method: 'POST', body: { body: ans, via_ai: 1 } });
+          this.setState({ qaBusy: false, qaMsg: (d && d.ok) ? '' : ((d && d.message) || '送出失敗') });
+          if (d && d.ok) this.openQa(id);
+        } catch (e) { this.setState({ qaBusy: false, qaMsg: (e && e.message) || '助手呼叫失敗' }); }
+      },
       onQaSolve: async () => { const id = this.state.qaOpen; const d = await this.qaSend('/api/qa/' + id + '/solve'); if (d && d.ok) this.openQa(id); },
       onQaLock: async () => { const id = this.state.qaOpen; const d = await this.qaSend('/api/qa/' + id + '/lock'); if (d && d.ok) this.openQa(id); },
       onQaDelete: async () => { const id = this.state.qaOpen; if (!confirm('確定刪除這個主題？')) return; const d = await this.qaSend('/api/qa/' + id + '/delete'); if (d && d.ok) { this.openQa(null); this.loadQa(); } },
@@ -16727,354 +17152,15 @@ class Component extends DCLogic {
          第一名與第二名的相似度只差 0.001~0.01,等於分不出來;要模型記住 1,249 張
          卡的長相更不可能。但反過來,模型給的三個約束(角色×稀有度×屬性)會把候選
          縮到中位數 2 張 —— 指紋只要在這兩張之間分勝負就好,那是它做得到的事。 */
+      /* 一次可以選好幾張：排隊逐張跑，同一條進度條顯示第幾張。
+         結果本來就會累加去重，所以逐張呼叫既有流程就好。 */
       onWlsShot: async e => {
-        const f = (e.currentTarget.files || [])[0];
+        const files = Array.prototype.slice.call(e.currentTarget.files || []);
         e.currentTarget.value = '';
-        if (!f || this.state.wlsShotBusy) return;
-        /* 第一次要連指紋庫一起載,比之後慢。不講的話畫面上只有
-           「辨識中…」三個字,使用者會以為當掉而重按或關掉 —— 那一次額度就白花了。
-           _sigsP 存在就代表這次開站已經載過,後面幾張快得多。 */
-        const first = !this._sigsP;
-        /* 進度條。AI 那一段拿不到真實進度 —— 一次請求，中間沒有回報 ——
-           所以用「已經過幾秒」推一條會趨緩但永遠不停的線:
-           pct = 起點 + 幅度 x (1 - e^(-t/40))，四十秒走一半、之後越來越慢，
-           不會提前衝到終點、也不會卡住不動。卡住不動最容易讓人以為當掉而重按。
-           比對那一段是本地運算，逐格回報真實進度。 */
-        const t0 = Date.now();
-        const prog = (pct, label) => this.setState({ wlsProg: pct, wlsProgLabel: label,
-          wlsProgSide: Math.round((Date.now() - t0) / 1000) + ' 秒' });
-        clearInterval(this._wlsTick);
-        this._wlsTick = setInterval(() => {
-          const st = this.state;
-          if (!st.wlsShotBusy) { clearInterval(this._wlsTick); return; }
-          const t = (Date.now() - t0) / 1000;
-          const creep = st.wlsProgBase + st.wlsProgSpan * (1 - Math.exp(-t / 40));
-          this.setState({ wlsProg: Math.max(st.wlsProg, creep),
-            wlsProgSide: Math.round(t) + ' 秒' });
-        }, 500);
-        this.setState({ wlsShotBusy: true, wlsProg: 3, wlsProgBase: 3, wlsProgSpan: 0,
-          wlsProgLabel: '讀取圖片…', wlsProgSide: '0 秒',
-          wlsShotMsg: first ? '第一次上傳要載入卡面指紋庫，會比之後慢，請勿關閉或重複點按。' : '' });
-        try {
-          const img = await new Promise((res, rej) => {
-            const im = new Image();
-            im.onload = () => res(im);
-            im.onerror = () => rej(new Error('圖片讀取失敗'));
-            im.src = URL.createObjectURL(f);
-          });
-          /* 送給模型的那份一律重新轉檔。手機截圖動輒 3000px、HEIC/PNG 原檔十幾 MB,
-             base64 之後會超過後端上限 —— 以前是丟一句「圖片太大，請裁掉空白再試」,
-             但相機與截圖本來就是那個尺寸,那等於把工具做不到的事推回給使用者。
-             改成自己降:先降品質、再降尺寸,一路試到送得走為止。
-             只有送模型的這一份會縮;裁圖比對用的仍是原圖 img,辨識精度不受影響。 */
-          const CAP = 2600000;   // base64 字元數。後端上限 4 MB，留給 system 與工具定義
-          let b64 = '';
-          for (const [max, q] of [[1600, .8], [1600, .62], [1280, .6], [1024, .55], [800, .5]]) {
-            const k = Math.min(1, max / Math.max(img.width, img.height));
-            const cv = document.createElement('canvas');
-            cv.width = Math.max(1, Math.round(img.width * k));
-            cv.height = Math.max(1, Math.round(img.height * k));
-            const c2 = cv.getContext('2d');
-            c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high';
-            c2.drawImage(img, 0, 0, cv.width, cv.height);
-            b64 = cv.toDataURL('image/jpeg', q).split(',')[1] || '';
-            if (b64.length <= CAP) break;
-          }
-          if (!b64) throw new Error('圖片轉檔失敗，請改用另一張圖片');
-
-          const names = (this.state.rateChars || []).map(c => c[1]);
-          // AI 那一段:從 8% 起，最多爬到 62%，四十秒走一半
-          this.setState({ wlsProg: 8, wlsProgBase: 8, wlsProgSpan: 54,
-            wlsProgLabel: 'AI 讀取每一格的專精與技能等級…' });
-          const r = await this.api('/api/chat', { method: 'POST', body: {
-            /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
-               撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
-               真實卡庫不可能每張都滿,那是模型在複製貼上而不是在讀圖,
-               連帶框也不準,整批辨識全錯。這一格的輸出有四十幾筆結構化資料,
-               降階省下的時間換來的是不能用的結果。速度要另外想辦法。 */
-            system: '你在讀一張 Project SEKAI 遊戲內「卡片一覽」的截圖。\n'
-              + '每個卡片方塊上看得到這些東西：\n'
-              + '・卡面下方的稀有度標記有兩種，先分清楚是哪一種再數：\n'
-              + '　　星星（★）→ 一般卡，有幾顆就填幾（1～4）\n'
-              + '　　蝴蝶結（緞帶打的結，左右各一片、中間一個結，只有一個，不是星形）→ 生日卡，填 9\n'
-              + '　看到蝴蝶結就是 9，不要因為它只有一個就填 1 —— 生日卡沒有星星。\n'
-              + '・左下角「SLv.N」＝技能等級，填 N（1～4）。整格找不到 SLv. 字樣才填 1。\n'
-              + '・右下角菱形徽章裡的數字＝專精等級。**這一格沒有菱形徽章就是 0**，\n'
-              + '　不要因為看不到就跳過、也不要猜一個數字 —— 大多數卡本來就是 0。\n'
-              + '　有徽章的話，數字就寫在菱形正中央（1～5）。\n'
-              + '・專精與技能等級直接決定加成的數值，是這張截圖最要緊的兩個數字，\n'
-              + '　每一格都要各自看清楚再填，不要因為前一格是多少就沿用。\n'
-              + '・角色＝從頭像辨認，只能填這個清單裡的名字：' + names.join('、') + '\n\n'
-              + '每一格還要給它在圖片上的位置 box，用 0~1 的相對座標（x,y 是左上角，w,h 是寬高），'
-              + '**要框住整個卡片方塊（含外框與下方的 SLv 條）**，不要只框臉。\n'
-              + '看不清楚的那一格就不要放進來，寧可漏也不要猜 —— 猜錯會讓使用者的加成算錯。',
-            messages: [{ role: 'user', content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
-              { type: 'text', text: '把這張截圖裡每一張卡抄下來，呼叫 submit_cards 回報。' },
-            ] }],
-            tools: [{ name: 'submit_cards', description: '回報截圖裡辨識到的卡片。',
-              input_schema: { type: 'object', properties: {
-                cards: { type: 'array', description: '每張卡一筆，依畫面順序', items: { type: 'object', properties: {
-                  character: { type: 'string', description: '角色名，必須是清單裡的其中一個' },
-                  rarity: { type: 'integer', description: '星星幾顆就填幾（1-4）；標記是蝴蝶結（緞帶）的生日卡填 9' },
-                  master_rank: { type: 'integer', description: '右下角菱形徽章裡的數字 1-5；沒有菱形徽章就填 0' },
-                  skill_level: { type: 'integer', description: 'SLv. 後面的數字 1-4；沒看到 SLv. 就填 1' },
-                  box: { type: 'object', description: '這一格在圖上的相對位置 0~1', properties: {
-                    x: { type: 'number' }, y: { type: 'number' },
-                    w: { type: 'number' }, h: { type: 'number' } },
-                    required: ['x', 'y', 'w', 'h'] },
-                }, required: ['character', 'rarity', 'master_rank', 'skill_level', 'box'] } },
-                unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
-              }, required: ['cards'] } }],
-          } });
-          const use = ((r && r.content) || []).find(c => c.type === 'tool_use' && c.name === 'submit_cards');
-          const got = (use && use.input && Array.isArray(use.input.cards)) ? use.input.cards : null;
-          if (!got || !got.length) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
-
-          /* ---- 第二段:認出是哪一張卡 ---- */
-          this.setState({ wlsProg: 64, wlsProgBase: 64, wlsProgSpan: 4,
-            wlsProgLabel: first ? '載入卡面指紋庫…' : '比對卡面…' });
-          const [SIGS] = await Promise.all([this.loadCardSigs(), this.loadCards()]);
-          const s0 = this.state;
-          const cards = s0.rateCards || [];
-          const idOf = {}, nmOf = {}, unOf = {};
-          (this.state.rateChars || []).forEach(c => { idOf[c[1]] = c[0]; nmOf[c[0]] = c[1]; unOf[c[0]] = c[2]; });
-          /* 比對範圍是整個卡庫,不縮。
-             這裡踩過兩次,兩邊都量過:
-
-             ① 不能用模型讀到的角色當硬性條件。鏡音鈴讀成鏡音連的那一格,
-                真正那張卡就被排除在候選之外,再怎麼比也比不中。
-
-             ② 也不能用「上面選的那一章」來縮。章節本身是可靠的(使用者自己點的),
-                但它只決定「哪些卡有資格進後排」,不決定「截圖裡有哪些卡」——
-                卡庫截圖裡本來就有別團的卡。以 VBS 那一章為例,池子 236 張、
-                池外 1,013 張;MEIKO 的 50 張裡只有 9 張進得了那個池,另外 41 張
-                一定會被硬湊到池子裡最近的一張。實測三張池外的 MEIKO 卡,
-                用池子比全部認錯,其中一張距離 74、差距 9,兩道門檻都通過,
-                被標成「有把握」但是錯的;改用整庫比是 25~37、差距 37~61,三張全對。
-
-             整庫比對得起:量過全部 1,249 張一起比,任兩張不同卡的指紋最近也差 74
-             (5% 分位 80、中位 88),而對得上的落在 25~67。差得夠開。
-             章節該用在哪裡?用在算加成時判斷資格 —— wlSupCalc 本來就在做那件事。 */
-          /* 比對範圍。這件事來回改過幾次,把量到的結論寫在這裡:
-
-             真實裁圖對得上的距離約 67,而全庫任兩張不同卡最近是 74 —— 只差 7。
-             邊界這麼薄的原因是遊戲格子上疊著屬性圖示、星星、SLv 條、專精菱形,
-             每一格都一樣,把所有距離往中間壓。攤開 2,074 枚指紋比,真答案一定
-             會被某張撞贏(站主截了一整頁 MEIKO,站上標成真冬／愛莉／寧寧／穗波)。
-
-             所以一定要縮。但不能用模型讀到的角色來縮 —— 它讀錯得最兇的正是
-             MEIKO 這種,縮下去正解就永遠選不到;也不能用選到的章節來縮 ——
-             卡庫截圖裡本來就有別團的卡(MEIKO 50 張只有 9 張進得了 VBS 那章的池)。
-
-             可靠的依據只有一個:使用者自己在遊戲裡設的篩選。那是他知道、
-             模型不知道的事,而且他本來就要設(頁面上一直在建議他設)。 */
-          /* 比對範圍就是使用者指定的那一個,不做任何退路。
-             這是站主的決定:上面第一步就寫著「在遊戲裡篩成什麼、這裡選一樣的」,
-             沒有人會篩了 MEIKO 卻傳別的東西。代價要知道 —— 傳進來的卡若不在
-             範圍內,會被硬湊到範圍裡最近的一張,而且看起來很有把握。 */
-          const fSel = this.wlsFilterOf(this.wlSupCalc());
-          const poolCards = cards.filter(c => this.wlsInPool(c, fSel, unOf));
-          const byId = {}; cards.forEach(c => { byId[c[0]] = c; });
-          const POOL = [];
-          poolCards.forEach(c => (SIGS[c[0]] || []).forEach(sg => POOL.push([c[0], sg])));
-
-          /* 把模型給的一堆框「拉回格線上」。
-             遊戲的卡片一覽是規則格線:欄距、列距、格子大小都是固定的。
-             但要模型逐格給座標,四五十格裡總有幾格會偏 —— 而偏 5% 指紋就全毀
-             (實測距離從 29 掉到 128,等同亂數)。
-             既然知道它是格線,就不該逐格採信:把所有框的中心分群成列與欄,
-             取欄距、列距與格子大小的中位數,再用「第幾列第幾欄」重算每一格。
-             少數幾個歪掉的框會被中位數吃掉,不會拖累其他格。 */
-          const fitGrid = (boxes) => {
-            if (boxes.length < 4) return null;
-            const med = a => { const b = a.slice().sort((x, y) => x - y); return b[b.length >> 1]; };
-            const W = med(boxes.map(b => b.w)), H = med(boxes.map(b => b.h));
-            if (!(W > 0 && H > 0)) return null;
-            /* 分群:照座標排序,間隔超過半格就切一群。半格是安全的門檻 ——
-               同一列的格子中心差距遠小於半格,不同列則至少差一整列。 */
-            const group = (vals, tol) => {
-              const idx = vals.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
-              const gid = new Array(vals.length); const centers = [];
-              let g = 0, acc = [idx[0][0]];
-              gid[idx[0][1]] = 0;
-              for (let k = 1; k < idx.length; k++) {
-                if (idx[k][0] - idx[k - 1][0] > tol) { centers.push(med(acc)); g++; acc = []; }
-                acc.push(idx[k][0]); gid[idx[k][1]] = g;
-              }
-              centers.push(med(acc));
-              return { gid, centers };
-            };
-            const R = group(boxes.map(b => b.y + b.h / 2), H * 0.5);
-            const C = group(boxes.map(b => b.x + b.w / 2), W * 0.5);
-            // 只有一列或一欄時算不出間距,那就退回用格子大小本身
-            const pitch = (cs, fallback) => {
-              if (cs.length < 2) return fallback;
-              const d = []; for (let i = 1; i < cs.length; i++) d.push(cs[i] - cs[i - 1]);
-              return med(d) || fallback;
-            };
-            const PX = pitch(C.centers, W), PY = pitch(R.centers, H);
-            // 原點取「各欄中心減掉 欄序×欄距」的中位數,單一偏掉的欄影響不到它
-            const X0 = med(C.centers.map((c, i) => c - i * PX));
-            const Y0 = med(R.centers.map((c, i) => c - i * PY));
-            return { W, H, PX, PY, X0, Y0, gr: R.gid, gc: C.gid,
-                     rows: R.centers.length, cols: C.centers.length };
-          };
-          const rawBoxes = got.map(x => {
-            const b = x.box || {};
-            return { x: Math.max(0, Math.min(1, +b.x || 0)) * img.width,
-                     y: Math.max(0, Math.min(1, +b.y || 0)) * img.height,
-                     w: Math.max(4, (+b.w || 0) * img.width),
-                     h: Math.max(4, (+b.h || 0) * img.height) };
-          });
-          const GRID = fitGrid(rawBoxes);
-
-          // 比對從 68% 走到 98%，逐格回報
-          this.setState({ wlsProg: 68, wlsProgBase: 68, wlsProgSpan: 0, wlsProgLabel: '比對卡面…' });
-          let named = 0, unsure = 0, noMatch = 0, charFix = 0;
-          const dists = [];
-          const out = []; for (let i = 0; i < got.length; i++) { const x = got[i];
-            const cid = idOf[String(x.character || '').trim()];
-            const rar = [1, 2, 3, 4, 9].indexOf(+x.rarity) >= 0 ? +x.rarity : 0;
-            /* 屬性以前是用來篩候選的三個約束之一,現在候選池由章節決定、
-               身分由指紋決定,它已經沒有用途 —— 就不再叫模型讀,少一個欄位
-               等於 46 格都少吐一截輸出。認出卡號後屬性直接從卡片本身拿。 */
-            const ai = -1;
-            const rec = {
-              character: x.character, characterId: cid == null ? null : cid, rarity: rar, attr: ai,
-              master_rank: Math.min(5, Math.max(0, Math.round(+x.master_rank || 0))),
-              skill_level: Math.min(4, Math.max(1, Math.round(+x.skill_level || 1))),
-              cardId: null, cardName: '', sure: false,
-            };
-            /* 座標用「拉回格線」之後的,不用模型原本給的那一格。
-               格線算不出來(格子太少)時才退回原始框。 */
-            const rb = rawBoxes[i];
-            const bx = GRID ? (GRID.X0 + GRID.gc[i] * GRID.PX - GRID.W / 2) : rb.x;
-            const by = GRID ? (GRID.Y0 + GRID.gr[i] * GRID.PY - GRID.H / 2) : rb.y;
-            const bw = GRID ? GRID.W : rb.w;
-            const bh = GRID ? GRID.H : rb.h;
-            /* 整格拿去比,不要裁。
-               這點反直覺,但量過:官方縮圖本身就是「整個方形卡面」,遊戲的外框與
-               SLv 條是疊在同一張圖上的。裁掉外框等於把真訊號一起裁掉 ——
-               實測同一張已知正確的卡,裁過的距離 90+(淹沒在雜訊裡),不裁是 67;
-               整排 20 格用不裁的參數重測是 20/20 全中,裁過的只有 3~4 格。
-
-               但模型給的框只是「大概」。一張截圖塞四五十格時,它抓的邊界會整體
-               偏掉幾個百分點 —— 偏一點指紋就全毀:兩張候選都對不上,距離雙雙
-               落在 128 附近(256 bits 的亂數期望值),於是誰高誰低變成擲骰子,
-               差距隨機地小於門檻,就被標成「不確定」。實際遇到過一批 45 張裡
-               有 27 張是這樣來的。
-               所以在框附近做一次小範圍對位:平移 ±6%、縮放 ±8% 各試幾檔,
-               取距離最小的那個當答案。純瀏覽器端運算,不多花一次 AI 額度。 */
-            const JO = [-0.06, -0.03, 0, 0.03, 0.06], JS = [0.92, 1, 1.08];
-            const cx0 = bx + bw / 2, cy0 = by + bh / 2;
-            /* 試位的指紋只算一次,兩段比對共用 —— 重算 75 次縮圖是白費力氣 */
-            const QS = [];
-            for (const sc of JS) {
-              const w = bw * sc, h = bh * sc;
-              for (const ox of JO) for (const oy of JO) {
-                QS.push(this.sigOf(img, cx0 - w / 2 + ox * bw, cy0 - h / 2 + oy * bh, w, h));
-              }
-            }
-            const scan = (pool) => {
-              const m = new Map();   // 卡片id → 這張卡在所有試位裡的最短距離
-              for (const q of QS) {
-                for (let k = 0; k < pool.length; k++) {
-                  const pv = m.get(pool[k][0]);
-                  /* 已經有紀錄的話就給上限提早結束:上千枚指紋 × 75 個試位,
-                     絕大多數比到一半就已經比現有的差了,算完整條是浪費。
-                     回傳值只用來跟 pv 比大小,超過上限時回什麼都不影響結果。 */
-                  const d = pv == null ? this._ham(q, pool[k][1])
-                                       : this._hamLt(q, pool[k][1], pv);
-                  if (pv == null || d < pv) m.set(pool[k][0], d);
-                }
-              }
-              return m;
-            };
-            const dmin = scan(POOL);
-            /* 第二名要取「另一張卡」的最短距離。★3/★4 每張卡存了特訓前後兩枚
-               指紋,拿同一張卡的另一枚當第二名是沒有意義的比較。
-               (實測同卡兩枚指紋的距離中位數 123、最小 87,本來就互不相像。) */
-            /* 不拿模型讀到的角色做任何加權。試過,是反效果 ——
-               它讀錯得最兇的正是 MEIKO 這種(短褐髮,跟望月穗波很像),
-               而那也正是最需要救的情況;給它加權等於往錯的方向推。 */
-            let best = null, second = null;
-            dmin.forEach((d, id) => {
-              if (!best || d < best.d) { second = best; best = { d, id, sc: d }; }
-              else if (!second || d < second.d) second = { d, id, sc: d };
-            });
-            const row = best ? byId[best.id] : null;
-            if (row) {
-              rec.dist = best.d;
-              dists.push(best.d);
-              /* 兩個條件都要成立才算有把握:
-                 ① 跟第二名拉得開 —— 咬太近就是分不出來。
-                 ② 距離本身夠小 —— 兩張都對不上時差距也可能碰巧很大,
-                    那不是「有把握」,是兩個都錯。256 bits 的亂數期望 128、
-                    標準差 8；換算到 768 bits 之後，288 以上一律當成沒對上。 */
-              /* 門檻跟著 bit 數走：256 bits 時是「差距 ≥8、距離 ≤96」，
-                 指紋放大到 768 bits（三通道）之後同比例變成 24 與 288。
-                 實測 rgb16＋遮罩的距離中位數 126、差距中位數 98，離門檻很寬。 */
-              const gap = second ? (second.sc - best.sc) : 999;
-              const absOk = best.d <= 288;
-              const charSame = cid == null || row[1] === cid;
-              rec.cardId = row[0]; rec.cardName = row[7];
-              /* 模型讀到的角色跟比對結果不一樣時,要更大的餘裕才敢推翻它 ——
-                 整庫最近的兩張不同卡差 74、對得上的落在 29~67,兩者之間只隔幾個 bit,
-                 差距 8 夠在同一個角色的幾張卡之間分勝負,不夠拿來改寫角色。 */
-              rec.sure = absOk && gap >= (charSame ? 24 : 48);
-              /* 選定了一張卡,那張卡的角色與稀有度就是事實,一律以它為準 ——
-                 即使把握不足也一樣。原本只在「有把握」時才覆寫,結果畫面上
-                 出現自相矛盾的東西:卡名與卡面是 MEIKO 的,角色卻寫望月穗波
-                 (模型讀的)。兩個訊息打架的時候，該顯示的是證據強的那個，
-                 至於把握不足,是用「待確認」標出來,不是靠顯示錯的角色來表達。 */
-              if (!charSame) { rec.charFixed = true; charFix++; }
-              rec.characterId = row[1];
-              rec.character = nmOf[row[1]] || rec.character;
-              rec.rarity = row[2];
-              if (rec.sure) named++;
-              else { unsure++; if (!absOk) noMatch++; }
-            }
-            out.push(rec);
-            /* 每幾格讓出一次控制權，畫面才畫得出進度。全部同步跑完的話
-               進度條會從 68% 直接跳到 98%，等於沒有進度條。 */
-            if (i % 3 === 2 || i === got.length - 1) {
-              this.setState({ wlsProg: 68 + 30 * (i + 1) / got.length,
-                wlsProgLabel: '比對卡面 ' + (i + 1) + ' / ' + got.length });
-              await new Promise(r => setTimeout(r, 0));
-            }
-          }
-
-          // 累加而不是覆蓋（去重規則見 wlsMerge）
-          const prev = this.state.wlsScan || [];
-          const { merged, dup } = this.wlsMerge(prev, out);
-          const newly = merged.length - prev.length;
-          const skipped = (use.input.unreadable || 0);
-          this.setState({ wlsScan: merged, wlsPool: 'scan', wlsShotMsg:
-            '讀到 ' + out.length + ' 張'
-            + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
-            + '，其中 ' + named + ' 張認出是哪張卡'
-            + (charFix ? '（其中 ' + charFix + ' 張的角色與 AI 讀到的不同，已改用卡面比對的結果）' : '')
-            + (unsure ? '、' + unsure + ' 張標為不確定'
-                 + (noMatch ? '（其中 ' + noMatch + ' 張是卡面未能對上，多半是截圖中格子太小或被裁切）' : '（候選太接近）')
-               : '')
-            + '。'
-            /* 把比對距離講出來。對得上的落在 50~67,亂數是 128 ——
-               中位數一看就知道這批是「認錯了」還是「根本沒對上」,
-               不必再靠猜。 */
-            + '　比對範圍 ' + poolCards.length + ' 張卡'
-            + (fSel === 'all' ? '（沒指定遊戲內的篩選，容易撞錯；指定之後會準很多）' : '')
-
-            + (dists.length ? '（卡面比對距離中位數 '
-                 + dists.slice().sort((a, b) => a - b)[dists.length >> 1]
-                 + ' / 768，120 上下表示對得上，280 以上表示未對上）' : '')
-            + (dup ? '與先前重複的 ' + dup + ' 張已合併，這次新增 ' + newly + ' 張，' : '')
-            + '累計 ' + merged.length + ' 張，可以再上傳下一張截圖繼續累加。' });
-        } catch (er) {
-          this.setState({ wlsShotMsg: '辨識失敗：' + ((er && er.message) || '') });
+        if (!files.length || this.state.wlsShotBusy) return;
+        for (let i = 0; i < files.length; i++) {
+          await this.wlsScanOne(files[i], i + 1, files.length);
         }
-        clearInterval(this._wlsTick);
-        this.setState({ wlsShotBusy: false, wlsProg: 100, wlsProgLabel: '' });
       },
       onWlsFilter: e => this.setState({ wlsFilter: e.currentTarget.dataset.v }),
       onWlsHelp: () => this.setState(st => ({ wlsHelp: !st.wlsHelp })),

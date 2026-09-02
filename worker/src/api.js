@@ -234,7 +234,7 @@ export async function handleApi(req, env, url, user) {
         const posts = await listPosts(env.DB, id);
         return out({ thread: shape(t), can_post: !!(user && user.status === 'approved') && !t.locked, is_admin: isAdmin,
           posts: posts.map(x => ({ id: x.id, body: x.deleted ? '' : x.body, deleted: !!x.deleted, author: x.author,
-            author_admin: !!x.author_admin, mine: !!(user && x.user_id === user.id), created_at: x.created_at })) });
+            author_admin: !!x.author_admin, via_ai: !!x.via_ai, mine: !!(user && x.user_id === user.id), created_at: x.created_at })) });
       }
       if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
 
@@ -244,14 +244,17 @@ export async function handleApi(req, env, url, user) {
         const b = await readJson(req); if (b.bad) return out({ error: 'bad_json' }, 400);
         const body = sanitizeNote(str((b.value || {}).body, BODY_MAX)).text.trim();
         if (body.length < 1) return out({ error: 'bad_body', message: '內容不能是空的' }, 400);
+        /* via_ai:這則是「請站內助手回答」貼上來的。助手回答本身已經在 /api/chat 那邊
+           扣過使用者的 AI 額度,這裡只是把結果存成回覆並標記來源。 */
+        const viaAi = !!(b.value || {}).via_ai;
         const last = await lastPostedAt(env.DB, user.id);
         if (Date.now() / 1000 - last < QA_COOLDOWN) return out({ error: 'cooldown', message: '發文間隔至少 ' + QA_COOLDOWN + ' 秒' }, 429);
-        const pidNew = await addPost(env.DB, user.id, id, body);
+        const pidNew = await addPost(env.DB, user.id, id, body, viaAi);
         /* 通知原作者:純站內(no_mail),watch_id 用 qa: 前綴讓助手快照能整段排除 */
         if (t.user_id !== user.id) {
           try { await addEvent(env.DB, { watch_id: 'qa:' + id, user_id: t.user_id, no_mail: 1,
             title: '你的' + (t.kind === 'question' ? '提問' : '討論') + '有新回覆：' + t.title.slice(0, 40),
-            body: (user.name || '有人') + '：' + body.slice(0, 200) }); } catch (e) {}
+            body: (viaAi ? '（' + (user.name || '有人') + ' 請站內助手回答）' : (user.name || '有人') + '：') + body.slice(0, 200) }); } catch (e) {}
         }
         return out({ ok: true, id: pidNew });
       }
