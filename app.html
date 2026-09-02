@@ -9,10 +9,10 @@ try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app
 var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
-<script src="./support.js?v=8fe7df7440"></script>
+<script src="./support.js?v=516399057a"></script>
 </head>
 <body>
-<x-dc>
+<x-dc><template>
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SEKAI 資源中心 — App</title>
@@ -1765,10 +1765,8 @@ select option, select optgroup{
 
       <sc-if value="{{ wlsHelpOpen }}">
         <div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--card-2);font-size:11px;color:var(--text-3);line-height:1.85">
-          後排（支援隊伍）的加成是純查表算出來的：每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值，取加成最高的前 {{ wlsN }} 張。<br>
-          入選資格是「角色原生團＝本章主角的團」或「這張卡的支援團＝本章團」。<br>
-          當期活動本身的 {{ wlsBanned }} 張新卡不列入候選（那幾張是用於前排主隊）；先前各屆 World Link 的卡不受影響，
-          且仍帶有該屆的限定加成 +20%，往往是後排單張加成最高的一格。
+          每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值，取前 {{ wlsN }} 張。資格：原生團或支援團＝本章團。<br>
+          當期的 {{ wlsBanned }} 張新卡不列入（前排用）；先前各屆 WL 卡照放，且保有該屆限定 +20%。
         </div>
       </sc-if>
 
@@ -1818,8 +1816,7 @@ select option, select optgroup{
 
       <sc-if value="{{ wlsIsOwn }}">
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.75">
-          只算你在收集率頁勾選的持有卡，養成度一律套上面的 MR{{ wlsMR }}／SLv.{{ wlsSL }}。<br>
-          想讓每張卡用它自己的專精與技能，改用「截圖辨識」。
+          只算收集率頁勾選的持有卡，一律套 MR{{ wlsMR }}／SLv.{{ wlsSL }}；要逐卡專精請用「截圖辨識」。
         </div>
       </sc-if>
 
@@ -1827,8 +1824,7 @@ select option, select optgroup{
         <div style="display:flex;gap:7px;align-items:baseline;margin-bottom:4px">
           <span style="flex:none;width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:17px">1</span>
           <div style="font-size:11.5px;color:var(--text-2);line-height:1.7">
-            在遊戲裡把「卡片一覽」篩成一位角色或一個團再截圖，這裡選同一個。
-            目前比對範圍 <b style="color:var(--accent-deep)">{{ wlsPoolNote }}</b>
+            遊戲裡先篩成一位角色或一個團再截圖，這裡選同一個。比對範圍 <b style="color:var(--accent-deep)">{{ wlsPoolNote }}</b>
           </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 5px 24px">
@@ -1846,7 +1842,7 @@ select option, select optgroup{
 
         <div style="display:flex;gap:7px;align-items:baseline;margin-bottom:5px">
           <span style="flex:none;width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:17px">2</span>
-          <div style="font-size:11.5px;color:var(--text-2)">上傳截圖。可以分成幾張，會自動累加並去掉重複的。</div>
+          <div style="font-size:11.5px;color:var(--text-2)">上傳截圖，可分多張，自動累加去重。</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 7px 24px">
           <label style="display:inline-flex;align-items:center;padding:7px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">
@@ -1873,7 +1869,7 @@ select option, select optgroup{
         <sc-if value="{{ wlsHasScan }}">
           <div style="display:flex;gap:7px;align-items:baseline;margin-bottom:5px">
             <span style="flex:none;width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:17px">3</span>
-            <div style="font-size:11.5px;color:var(--text-2)">上面已經用這批卡在算了。存進卡庫的話，之後每一期都不必重截。</div>
+            <div style="font-size:11.5px;color:var(--text-2)">存進卡庫，之後每期都不必重截。</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:24px">
             <button type="button" onClick="{{ onWlsImportOwn }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer">{{ wlsImportBtn }}</button>
@@ -1908,8 +1904,7 @@ select option, select optgroup{
       <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-top:13px">
         <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">{{ wlsScanTitle }}</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:10px">
-          上面那份是這一章實際會用到的幾張，這一份是辨識到的全部。沒有用到的會標明原因。
-          專精或技能若讀錯，在這裡最容易看出來。
+          辨識到的全部；未用到的標明原因。專精或技能讀錯在這裡最容易看出來。
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px">
           <sc-for list="{{ wlsScanRows }}" as="c" hint-placeholder-count="20">
@@ -1937,8 +1932,7 @@ select option, select optgroup{
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:18px 20px;margin-bottom:13px">
       <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px">超高清卡面下載</div>
       <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-bottom:11px">
-        直連官方素材庫的原始檔，不經過本站轉存 —— 點下載取得的就是資料庫裡的那一份。<br>
-        全解析度 PNG 每張約 3～4 MB（去背立繪小得多，約 150 KB）。行動網路請留意流量。
+        直連官方素材庫原始檔。全解析度 PNG 每張約 3～4 MB，去背立繪約 150 KB。
       </div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <span style="font-size:11.5px;font-weight:700;color:var(--text-2)">伺服器</span>
@@ -3437,7 +3431,7 @@ select option, select optgroup{
 </div>
 </sc-if>
 
-</x-dc>
+</template></x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}">
 class Component extends DCLogic {
   BOOST = { 0:1, 1:5, 2:10, 3:15, 4:19, 5:23, 6:26, 7:29, 8:31, 9:33, 10:35 };
@@ -3949,7 +3943,18 @@ class Component extends DCLogic {
     idle(() => import('./data/tutorial-data.js?v=4befc9b27b')
       .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
       .catch(() => {}));
-    this.syncFrames();
+    this.mountFrames();
+    /* runtime 會把 sc-if 分支裡的節點在「主元件更新之後」才插進 DOM（串流 placeholder
+       的子渲染有自己的生命週期），那時 componentDidUpdate 已經跑完了 —— 所以再用
+       MutationObserver 盯著新增的節點，每一批只跑一次。 */
+    try {
+      let pend = false;
+      this._frameMO = new MutationObserver(() => {
+        if (pend) return; pend = true;
+        requestAnimationFrame(() => { pend = false; this.mountFrames(); });
+      });
+      this._frameMO.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
 
     try {
       const pid = localStorage.getItem('sekai-app-pid') || '';
@@ -3988,15 +3993,17 @@ class Component extends DCLogic {
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.syncFrames(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); }
   /* iframe 的 src 不寫在模板裡，改成 data-src、渲染後再由這裡填入。
+     （名字不能叫 syncFrames —— 下面已經有一個同名方法在做主題色同步，
+     class 裡後定義的會蓋掉先定義的，第一版就是這樣被蓋掉、整個沒跑。）
      原因量過：冷啟動時模板會先整份渲染一次（所有 sc-if 分支都在），
      13 個 iframe 的 src 一寫上去瀏覽器就全部去抓 —— 首頁只需要跑榜小窗一個，
      另外 11 個（計算器、儲值、B30、卡片技能庫…）各抓了 index.html 並開始啟動
      500 KB 的引擎，然後才被拆掉；連 {{ deckSrc }} 這種還沒綁值的字面文字也被當
      網址抓成 404。改成進到那一頁、元素真的在 DOM 裡才給 src，就只載用到的。
      已經有 src 的不動，所以切頁回來不會重載。 */
-  syncFrames() {
+  mountFrames() {
     document.querySelectorAll('iframe[data-src]').forEach(f => {
       const want = f.getAttribute('data-src') || '';
       if (!want || want.indexOf('{{') >= 0) return;          // 還沒綁值就先不動
@@ -4004,6 +4011,7 @@ class Component extends DCLogic {
     });
   }
   componentWillUnmount() {
+    if (this._frameMO) { try { this._frameMO.disconnect(); } catch (e) {} }
     clearInterval(this._live); clearInterval(this._tick);
     document.removeEventListener('keydown', this._key);
     window.removeEventListener('message', this._frameMsg);
@@ -4835,7 +4843,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=bbbc2c2233';
+      el.src = './js/core.js?v=0211486f9f';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -4868,7 +4876,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=e9a5fb8e85';
+      s.src = 'data/billing.js?v=25190e0a4b';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -7825,7 +7833,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=e9a5fb8e85';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=25190e0a4b';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });

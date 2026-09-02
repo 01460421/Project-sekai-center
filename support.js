@@ -28,8 +28,11 @@
     const { props, preview } = parseDataProps(
       scriptEl?.getAttribute("data-props") ?? null
     );
+    // 模板可以包在 <template> 裡：解析器不會替 <template> 內容抓資源，
+    // 於是 <img src="{{ x }}"> 這種還沒綁值的字面網址就不會在 JS 跑之前先被抓成 404。
+    const inert = dc.querySelector(":scope > template");
     return {
-      template: dc.innerHTML,
+      template: inert ? inert.innerHTML : dc.innerHTML,
       js: scriptEl ? scriptEl.textContent || "" : "",
       props,
       preview
@@ -40,7 +43,9 @@
     if (!openMatch) return null;
     const close = src.lastIndexOf("</x-dc>");
     if (close === -1 || close < openMatch.index) return null;
-    const template = src.slice(openMatch.index + openMatch[0].length, close);
+    // 與 parseDcDocument 對齊：外層若有 <template> 包著就剝掉
+    const template = src.slice(openMatch.index + openMatch[0].length, close)
+      .replace(/^\s*<template(?:\s[^>]*)?>/, "").replace(/<\/template>\s*$/, "");
     const doc = new DOMParser().parseFromString(src, "text/html");
     const scriptEl = doc.querySelector("script[data-dc-script]");
     const { props, preview } = parseDataProps(
