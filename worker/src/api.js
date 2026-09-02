@@ -24,7 +24,9 @@ import {
   createTask,
   unreadCount,
   markRead,
-  aiUsedTodaySite} from './db.js';
+  aiUsedTodaySite,
+  listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost,
+  addEvent} from './db.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
@@ -182,6 +184,102 @@ export async function handleApi(req, env, url, user) {
 
   try {
     /* /api/me 一律 200：未登入回 { user: null },前端不必為了「還沒登入」去 catch 401 */
+    /* ---------- 提問所／討論串 ----------
+       讀不需要登入(公開看得到才有人回答);寫要「已核准」的帳號,跟站上其他功能一致。
+       文字一律過 sanitizeNote(去不可見字元、正規化),長度上限與站內通知同一組數字。 */
+    if (p === '/api/qa' || p.startsWith('/api/qa/')) {
+      const QA_COOLDOWN = 60, TITLE_MAX = 80, BODY_MAX = 4000;
+      const seg = p.split('/').filter(Boolean);          // ['api','qa', id?, action?, pid?]
+      const id = str(seg[2] || '', 64), action = str(seg[3] || '', 16), pid = str(seg[4] || '', 64);
+      const needWrite = () => {
+        if (!user) return out({ error: 'not_signed_in', message: '請先登入' }, 401);
+        if (user.status !== 'approved') return out({ error: 'pending_approval', status: user.status, message: '帳號尚未核准' }, 403);
+        return null;
+      };
+      const shape = t => t && ({
+        id: t.id, kind: t.kind, title: t.title, body: t.body, preview: t.preview, author: t.author, author_admin: !!t.author_admin,
+        mine: !!(user && t.user_id === user.id), created_at: t.created_at, updated_at: t.updated_at,
+        reply_count: t.reply_count, last_reply_at: t.last_reply_at, solved: !!t.solved, locked: !!t.locked });
+
+      if (!id) {
+        if (m === 'GET') {
+          const kind = url.searchParams.get('kind') === 'discussion' ? 'discussion' : 'question';
+          const before = parseInt(url.searchParams.get('before'), 10);
+          const rows = await listThreads(env.DB, kind, 30, Number.isFinite(before) ? before : null);
+          return out({ threads: rows.map(shape), can_post: !!(user && user.status === 'approved') });
+        }
+        if (m === 'POST') {
+          const deny = needWrite(); if (deny) return deny;
+          const b = await readJson(req); if (b.bad) return out({ error: 'bad_json' }, 400);
+          const v = b.value || {};
+          const kind = v.kind === 'discussion' ? 'discussion' : 'question';
+          const title = sanitizeNote(str(v.title, TITLE_MAX)).text.trim();
+          const body = sanitizeNote(str(v.body, BODY_MAX)).text.trim();
+          if (title.length < 2) return out({ error: 'bad_title', message: '標題至少 2 個字' }, 400);
+          if (body.length < 2) return out({ error: 'bad_body', message: '內容至少 2 個字' }, 400);
+          const last = await lastPostedAt(env.DB, user.id);
+          if (Date.now() / 1000 - last < QA_COOLDOWN) return out({ error: 'cooldown', message: '發文間隔至少 ' + QA_COOLDOWN + ' 秒' }, 429);
+          const tid = await createThread(env.DB, user.id, kind, title, body);
+          return out({ ok: true, id: tid });
+        }
+        return out({ error: 'method_not_allowed' }, 405);
+      }
+
+      const t = await getThread(env.DB, id);
+      if (!t) return out({ error: 'not_found' }, 404);
+      const isAdmin = !!(user && user.is_admin), isOwner = !!(user && user.id === t.user_id);
+
+      if (!action) {
+        if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
+        const posts = await listPosts(env.DB, id);
+        return out({ thread: shape(t), can_post: !!(user && user.status === 'approved') && !t.locked, is_admin: isAdmin,
+          posts: posts.map(x => ({ id: x.id, body: x.deleted ? '' : x.body, deleted: !!x.deleted, author: x.author,
+            author_admin: !!x.author_admin, mine: !!(user && x.user_id === user.id), created_at: x.created_at })) });
+      }
+      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
+
+      if (action === 'reply') {
+        const deny = needWrite(); if (deny) return deny;
+        if (t.locked) return out({ error: 'locked', message: '這個主題已鎖定' }, 403);
+        const b = await readJson(req); if (b.bad) return out({ error: 'bad_json' }, 400);
+        const body = sanitizeNote(str((b.value || {}).body, BODY_MAX)).text.trim();
+        if (body.length < 1) return out({ error: 'bad_body', message: '內容不能是空的' }, 400);
+        const last = await lastPostedAt(env.DB, user.id);
+        if (Date.now() / 1000 - last < QA_COOLDOWN) return out({ error: 'cooldown', message: '發文間隔至少 ' + QA_COOLDOWN + ' 秒' }, 429);
+        const pidNew = await addPost(env.DB, user.id, id, body);
+        /* 通知原作者:純站內(no_mail),watch_id 用 qa: 前綴讓助手快照能整段排除 */
+        if (t.user_id !== user.id) {
+          try { await addEvent(env.DB, { watch_id: 'qa:' + id, user_id: t.user_id, no_mail: 1,
+            title: '你的' + (t.kind === 'question' ? '提問' : '討論') + '有新回覆：' + t.title.slice(0, 40),
+            body: (user.name || '有人') + '：' + body.slice(0, 200) }); } catch (e) {}
+        }
+        return out({ ok: true, id: pidNew });
+      }
+      if (action === 'solve') {                       // 作者或管理員都能標／取消「已解決」
+        if (!isOwner && !isAdmin) return out({ error: 'forbidden' }, 403);
+        await setThreadFlag(env.DB, id, 'solved', !t.solved);
+        return out({ ok: true, solved: !t.solved });
+      }
+      if (action === 'lock') {
+        if (!isAdmin) return out({ error: 'forbidden' }, 403);
+        await setThreadFlag(env.DB, id, 'locked', !t.locked);
+        return out({ ok: true, locked: !t.locked });
+      }
+      if (action === 'delete') {
+        if (!isOwner && !isAdmin) return out({ error: 'forbidden' }, 403);
+        await setThreadFlag(env.DB, id, 'deleted', 1);
+        return out({ ok: true });
+      }
+      if (action === 'post' && pid) {                 // /api/qa/:id/post/:pid → 刪除單則回覆
+        const po = await getPost(env.DB, pid);
+        if (!po || po.thread_id !== id) return out({ error: 'not_found' }, 404);
+        if (!isAdmin && !(user && user.id === po.user_id)) return out({ error: 'forbidden' }, 403);
+        await deletePost(env.DB, pid);
+        return out({ ok: true });
+      }
+      return out({ error: 'not_found' }, 404);
+    }
+
     if (p === '/api/me') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       const u2 = shapeUser(user);

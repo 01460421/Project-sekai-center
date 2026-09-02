@@ -391,3 +391,46 @@ export async function confirmOrder(db, id, adminId) {
   ]);
   return one(db, 'SELECT * FROM ai_orders WHERE id=? AND confirm_token=?', id, tok);
 }
+
+
+/* ---------- 提問所／討論串 ---------- */
+/* 作者名稱一律從 users 表 JOIN 出來，不存進 threads/posts:改暱稱時舊文才會跟著變。 */
+const AUTHOR = `COALESCE(NULLIF(u.name,''), substr(u.email,1,3)||'…') AS author, u.is_admin AS author_admin`;
+export const listThreads = (db, kind, limit, before) =>
+  all(db, `SELECT t.id,t.kind,t.title,t.user_id,t.created_at,t.updated_at,t.reply_count,t.last_reply_at,t.solved,t.locked,
+                  substr(t.body,1,140) AS preview, ${AUTHOR}
+           FROM threads t JOIN users u ON u.id=t.user_id
+           WHERE t.deleted=0 AND t.kind=? AND t.updated_at < ?
+           ORDER BY t.updated_at DESC LIMIT ?`, kind, before || 2147483647, Math.min(50, limit || 30));
+export const getThread = (db, id) =>
+  one(db, `SELECT t.*, ${AUTHOR} FROM threads t JOIN users u ON u.id=t.user_id WHERE t.id=? AND t.deleted=0`, id);
+export const listPosts = (db, threadId) =>
+  all(db, `SELECT p.id,p.user_id,p.body,p.created_at,p.deleted, ${AUTHOR}
+           FROM posts p JOIN users u ON u.id=p.user_id WHERE p.thread_id=? ORDER BY p.created_at LIMIT 500`, threadId);
+export async function createThread(db, userId, kind, title, body) {
+  const id = newId(), t = now();
+  await run(db, 'INSERT INTO threads (id,kind,title,body,user_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
+    id, kind, title, body, userId, t, t);
+  return id;
+}
+export async function addPost(db, userId, threadId, body) {
+  const id = newId(), t = now();
+  /* 兩句要一起成立:回覆寫進去、主題的計數與時間更新。D1 的 batch 是一個交易。 */
+  await db.batch([
+    db.prepare('INSERT INTO posts (id,thread_id,user_id,body,created_at) VALUES (?,?,?,?,?)').bind(id, threadId, userId, body, t),
+    db.prepare('UPDATE threads SET reply_count=reply_count+1, last_reply_at=?, updated_at=? WHERE id=?').bind(t, t, threadId),
+  ]);
+  return id;
+}
+/* 冷卻:同一個人上一篇（主題或回覆）距今幾秒。防連發，不是防弊。 */
+export async function lastPostedAt(db, userId) {
+  const a = await one(db, 'SELECT MAX(created_at) AS t FROM threads WHERE user_id=?', userId);
+  const b = await one(db, 'SELECT MAX(created_at) AS t FROM posts WHERE user_id=?', userId);
+  return Math.max((a && a.t) || 0, (b && b.t) || 0);
+}
+export const setThreadFlag = (db, id, col, v) => {
+  if (['solved', 'locked', 'deleted'].indexOf(col) < 0) throw new Error('bad flag');   // 欄位名不吃外部輸入
+  return run(db, `UPDATE threads SET ${col}=?, updated_at=? WHERE id=?`, v ? 1 : 0, now(), id);
+};
+export const deletePost = (db, id) => run(db, 'UPDATE posts SET deleted=1 WHERE id=?', id);
+export const getPost = (db, id) => one(db, 'SELECT * FROM posts WHERE id=?', id);

@@ -113,7 +113,7 @@ async function siteStats(db) {
    使用的那個 AI」下指令。title 本身已經改成程式碼樣板產生（不含任何外來字串），
    這裡是第二道:就算樣板哪天被改壞,也不會變成注入通道。 */
 const recentEventTitles = db =>
-  rows(db, "SELECT title, created_at FROM events WHERE watch_id NOT LIKE 'apply:%' ORDER BY created_at DESC LIMIT 30")
+  rows(db, "SELECT title, created_at FROM events WHERE watch_id NOT LIKE 'apply:%' AND watch_id NOT LIKE 'qa:%' ORDER BY created_at DESC LIMIT 30")
     .then(r => r.map(x => [x.created_at, String(x.title || '').slice(0, 120)]));
 
 /* ---------- 當期榜線（HiSekai） ---------- */

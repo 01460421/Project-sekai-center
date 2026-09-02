@@ -2046,6 +2046,97 @@ select option, select optgroup{
   </sc-if>
 
   <!-- ========== 通知 ========== -->
+  <sc-if value="{{ isQa }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ qaIsList }}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <sc-for list="{{ qaKindChips }}" as="c" hint-placeholder-count="2">
+          <button type="button" onClick="{{ onQaKind }}" data-v="{{ c.v }}" style="padding:6px 14px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
+        </sc-for>
+        <div style="flex:1"></div>
+        <button type="button" onClick="{{ onQaReload }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">重新整理</button>
+      </div>
+
+      <sc-if value="{{ qaCanPost }}">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);padding:14px 16px;margin-bottom:12px">
+          <input type="text" value="{{ qaTitle }}" onInput="{{ onField }}" data-k="qaTitle" maxlength="80" placeholder="標題" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;font-family:inherit;margin-bottom:7px">
+          <textarea value="{{ qaBody }}" onInput="{{ onField }}" data-k="qaBody" maxlength="4000" rows="4" placeholder="內容（發{{ qaKindName }}）" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:vertical"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <button type="button" onClick="{{ onQaPost }}" style="padding:7px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">發表</button>
+            <span style="font-size:11.5px;color:var(--accent-deep)">{{ qaMsg }}</span>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ qaLoggedOut }}">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">看不用登入；要發文請先登入並通過核准。</div>
+      </sc-if>
+      <sc-if value="{{ qaPending }}">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">帳號核准後就能發文。</div>
+      </sc-if>
+
+      <sc-if value="{{ qaNone }}">
+        <div style="padding:26px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">還沒有{{ qaKindName }}。</div>
+      </sc-if>
+      <sc-for list="{{ qaRows }}" as="r" hint-placeholder-count="6">
+        <div onClick="{{ onQaOpen }}" data-id="{{ r.id }}" style="border:1px solid var(--border);border-radius:16px;padding:12px 16px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:8px;cursor:pointer">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ r.title }}</span>
+            <sc-if value="{{ r.hasTag }}"><span style="padding:2px 8px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10px;font-weight:800">{{ r.tag }}</span></sc-if>
+            <div style="flex:1"></div>
+            <span style="font-size:11px;color:var(--text-3)">{{ r.replies }} 則回覆　{{ r.when }}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.preview }}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:3px">{{ r.author }}</div>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ qaIsThread }}">
+      <button type="button" onClick="{{ onQaBack }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer;margin-bottom:10px">← 回列表</button>
+      <sc-if value="{{ qaHasThread }}">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);padding:16px 18px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="padding:2px 8px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:10.5px;font-weight:800">{{ qaT.kind }}</span>
+            <span style="font-size:16px;font-weight:800;color:var(--ink)">{{ qaT.title }}</span>
+            <sc-if value="{{ qaT.solved }}"><span style="padding:2px 8px;border-radius:999px;background:var(--accent);color:#fff;font-size:10px;font-weight:800">已解決</span></sc-if>
+            <sc-if value="{{ qaT.locked }}"><span style="padding:2px 8px;border-radius:999px;background:#8c8c96;color:#fff;font-size:10px;font-weight:800">已鎖定</span></sc-if>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin:4px 0 10px">{{ qaT.author }}　{{ qaT.when }}</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap;word-break:break-word">{{ qaT.body }}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+            <sc-if value="{{ qaT.canSolve }}"><button type="button" onClick="{{ onQaSolve }}" style="padding:5px 12px;border:1px solid var(--accent);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11px;font-weight:700;cursor:pointer">{{ qaT.solveBtn }}</button></sc-if>
+            <sc-if value="{{ qaT.canLock }}"><button type="button" onClick="{{ onQaLock }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ qaT.lockBtn }}</button></sc-if>
+            <sc-if value="{{ qaT.canDelete }}"><button type="button" onClick="{{ onQaDelete }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:#e0576a;font-size:11px;font-weight:700;cursor:pointer">刪除主題</button></sc-if>
+          </div>
+        </div>
+        <sc-if value="{{ qaPostNone }}"><div style="font-size:12px;color:var(--text-3);margin:0 0 10px 4px">還沒有回覆。</div></sc-if>
+        <sc-for list="{{ qaPostRows }}" as="p" hint-placeholder-count="4">
+          <div style="border:1px solid var(--border);border-radius:14px;background:var(--card);padding:11px 15px;margin-bottom:7px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11.5px;font-weight:700;color:var(--text-2)">{{ p.author }}</span>
+              <sc-if value="{{ p.isAdmin }}"><span style="padding:1px 6px;border-radius:999px;background:var(--accent);color:#fff;font-size:9.5px;font-weight:800">管理員</span></sc-if>
+              <span style="font-size:11px;color:var(--text-3)">{{ p.when }}</span>
+              <div style="flex:1"></div>
+              <sc-if value="{{ p.canDel }}"><button type="button" onClick="{{ onQaDelPost }}" data-pid="{{ p.id }}" style="padding:2px 9px;border:none;border-radius:999px;background:transparent;color:var(--text-3);font-size:11px;cursor:pointer">刪除</button></sc-if>
+            </div>
+            <div style="font-size:12.5px;color:{{ p.color }};line-height:1.75;margin-top:4px;white-space:pre-wrap;word-break:break-word">{{ p.body }}</div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ qaCanPost }}">
+          <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);padding:12px 15px;margin-top:10px">
+            <textarea value="{{ qaReply }}" onInput="{{ onField }}" data-k="qaReply" maxlength="4000" rows="3" placeholder="回覆" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:vertical"></textarea>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+              <button type="button" onClick="{{ onQaReply }}" style="padding:7px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">送出回覆</button>
+              <span style="font-size:11.5px;color:var(--accent-deep)">{{ qaMsg }}</span>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+      <div style="font-size:11.5px;color:var(--accent-deep);margin-top:8px">{{ qaMsg }}</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ isNotices }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ acLoggedOut }}">
@@ -3537,6 +3628,7 @@ class Component extends DCLogic {
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
     assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
     notices:  ['通知', '偵測訂閱觸發時的站內通知'],
+    qa:       ['提問所', '提問與討論串；看不用登入，發文要核准的帳號'],
     cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
     art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
     wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合'],
@@ -3838,6 +3930,7 @@ class Component extends DCLogic {
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
+    qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
     songKey: 74, diff: 'M', epq: '', skill: 2.5, s6: 2.5, scoreMode: 'calc', energy: 3, interval: 50,
     natHr: 0, lCan: 0, sCan: 0, crys: 0,
     power: 250000, bonus: 250, rate: 115, score: 1200000, mode: 'multi', life: 800,
@@ -12892,6 +12985,28 @@ class Component extends DCLogic {
   }
 
   /* 站內通知。未讀數順著 /api/events 一起回來,不另外開一支輪詢。 */
+  /* ---------- 提問所／討論串 ---------- */
+  async loadQa() {
+    this.setState({ qaLoad: true, qaMsg: '' });
+    try {
+      const d = await this.api('/api/qa?kind=' + (this.state.qaKind || 'question'));
+      this.setState({ qaList: (d && d.threads) || [], qaCanPost: !!(d && d.can_post), qaLoad: false });
+    } catch (e) { this.setState({ qaLoad: false, qaMsg: '載入失敗，請稍後再試' }); }
+  }
+  async openQa(id) {
+    if (!id) { this.setState({ qaOpen: null, qaThread: null, qaPosts: [] }); return; }
+    this.setState({ qaOpen: id, qaThread: null, qaPosts: [], qaMsg: '' });
+    try {
+      const d = await this.api('/api/qa/' + encodeURIComponent(id));
+      this.setState({ qaThread: (d && d.thread) || null, qaPosts: (d && d.posts) || [], qaCanPost: !!(d && d.can_post) });
+    } catch (e) { this.setState({ qaMsg: '讀取失敗' }); }
+  }
+  async qaSend(path, body) {
+    if (this.state.qaBusy) return null;
+    this.setState({ qaBusy: true, qaMsg: '' });
+    try { const d = await this.api(path, { method: 'POST', body: body || {} }); this.setState({ qaBusy: false }); return d; }
+    catch (e) { this.setState({ qaBusy: false, qaMsg: (e && e.message) || '送出失敗' }); return null; }
+  }
   async loadNotices() {
     try {
       const d = await this.api('/api/events?limit=50');
@@ -13764,6 +13879,7 @@ class Component extends DCLogic {
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
     if (p === 'assistant') this.loadChats();
     if (p === 'notices') this.loadNotices();
+    if (p === 'qa') { if (this.state.me === undefined) this.loadMe(); this.loadQa(); }
     if (p === 'admin') { this.loadAdmin(); this.loadDash('overview'); }
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -14056,7 +14172,7 @@ class Component extends DCLogic {
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['whatsnew', '功能介紹', '#8be0d0']]],
+      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
     const navGroups = navSpec.map(([label, items]) => ({
       label,
@@ -14809,7 +14925,7 @@ class Component extends DCLogic {
       sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
-      isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices',
+      isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
       isWlsup: s.page === 'wlsup',
@@ -15052,6 +15168,39 @@ class Component extends DCLogic {
               cutout: A + '/character/member_cutout/' + abn + '/normal.png',
             };
           }),
+        };
+      })(),
+      ...(() => {
+        const me = s.me || null, t = s.qaThread;
+        const when = ts => ts ? this.ago(ts * 1000) : '';
+        const RN = { question: '提問', discussion: '討論' };
+        return {
+          qaKindChips: [['question', '提問'], ['discussion', '討論']].map(([v, n]) => {
+            const on = (s.qaKind || 'question') === v, st = chip(on, 'var(--cta)');
+            return Object.assign({ v, n }, st, { fg: on ? '#fff' : 'var(--text)' });
+          }),
+          qaIsList: !s.qaOpen, qaIsThread: !!s.qaOpen, qaHasThread: !!t,
+          qaLoading: !!s.qaLoad, qaNone: !s.qaLoad && !(s.qaList || []).length,
+          qaCanPost: !!s.qaCanPost, qaLoggedOut: !me,
+          qaPending: !!(me && me.status !== 'approved'),
+          qaKindName: RN[s.qaKind || 'question'],
+          qaRows: (s.qaList || []).map(x => ({
+            id: x.id, title: x.title, preview: x.preview || '', author: x.author || '', when: when(x.updated_at),
+            replies: x.reply_count || 0, tag: x.solved ? '已解決' : (x.locked ? '已鎖定' : ''),
+            tagBg: x.solved ? 'var(--accent)' : '#8c8c96', hasTag: !!(x.solved || x.locked),
+          })),
+          qaTitle: s.qaTitle || '', qaBody: s.qaBody || '', qaReply: s.qaReply || '',
+          qaMsg: s.qaMsg || '', qaBusy: !!s.qaBusy,
+          qaT: t ? { title: t.title, body: t.body, author: t.author || '', when: when(t.created_at),
+            kind: RN[t.kind] || '', solved: !!t.solved, locked: !!t.locked,
+            canSolve: !!(t.mine || (me && me.is_admin)), canDelete: !!(t.mine || (me && me.is_admin)), canLock: !!(me && me.is_admin),
+            solveBtn: t.solved ? '取消已解決' : '標為已解決', lockBtn: t.locked ? '解除鎖定' : '鎖定主題' } : {},
+          qaPostRows: (s.qaPosts || []).map(x => ({
+            id: x.id, body: x.deleted ? '（已刪除）' : x.body, author: x.author || '', when: when(x.created_at),
+            canDel: !x.deleted && !!(x.mine || (me && me.is_admin)), isAdmin: !!x.author_admin,
+            color: x.deleted ? 'var(--text-3)' : 'var(--text)',
+          })),
+          qaPostNone: !!t && !(s.qaPosts || []).length,
         };
       })(),
       ...(() => {
@@ -16406,6 +16555,25 @@ class Component extends DCLogic {
       onAiMod: e => { const v = e.currentTarget.dataset.v; this.setState(st => ({ aiMod: st.aiMod === v ? '' : v })); },
       onAiPick: e => { const q = e.currentTarget.dataset.q || ''; this.setState({ admAsk: q, aiMod: '' });
         try { const el = document.querySelector('input[data-k="admAsk"]'); if (el) { el.focus(); el.setSelectionRange(q.length, q.length); } } catch (er) {} },
+      onQaKind: e => { this.setState({ qaKind: e.currentTarget.dataset.v, qaOpen: null }); setTimeout(() => this.loadQa(), 0); },
+      onQaOpen: e => this.openQa(e.currentTarget.dataset.id),
+      onQaBack: () => { this.openQa(null); this.loadQa(); },
+      onQaReload: () => this.loadQa(),
+      onQaPost: async () => {
+        const d = await this.qaSend('/api/qa', { kind: this.state.qaKind, title: this.state.qaTitle, body: this.state.qaBody });
+        if (d && d.ok) { this.setState({ qaTitle: '', qaBody: '' }); this.openQa(d.id); }
+        else if (d && d.message) this.setState({ qaMsg: d.message });
+      },
+      onQaReply: async () => {
+        const id = this.state.qaOpen; if (!id) return;
+        const d = await this.qaSend('/api/qa/' + encodeURIComponent(id) + '/reply', { body: this.state.qaReply });
+        if (d && d.ok) { this.setState({ qaReply: '' }); this.openQa(id); }
+        else if (d && d.message) this.setState({ qaMsg: d.message });
+      },
+      onQaSolve: async () => { const id = this.state.qaOpen; const d = await this.qaSend('/api/qa/' + id + '/solve'); if (d && d.ok) this.openQa(id); },
+      onQaLock: async () => { const id = this.state.qaOpen; const d = await this.qaSend('/api/qa/' + id + '/lock'); if (d && d.ok) this.openQa(id); },
+      onQaDelete: async () => { const id = this.state.qaOpen; if (!confirm('確定刪除這個主題？')) return; const d = await this.qaSend('/api/qa/' + id + '/delete'); if (d && d.ok) { this.openQa(null); this.loadQa(); } },
+      onQaDelPost: async e => { const id = this.state.qaOpen, pid = e.currentTarget.dataset.pid; if (!confirm('刪除這則回覆？')) return; const d = await this.qaSend('/api/qa/' + id + '/post/' + pid); if (d && d.ok) this.openQa(id); },
       onNoticeRead: e => this.readNotice(e.currentTarget.dataset.id),
       onNoticeReadAll: () => this.readNotice(null),
       onNoticeReload: () => this.loadNotices(),
