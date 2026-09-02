@@ -252,7 +252,9 @@ select option, select optgroup{
   <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
 
-    <div style="position:relative;overflow:hidden;border-radius:24px;padding:26px 26px 22px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md)">
+    <!-- 首頁每個區塊都可以在「我的帳號 → 自訂版面」隱藏或調順序：外框是 flex column，順序靠 CSS order，顯示與否靠 sc-if -->
+    <sc-if value="{{ homeShow.hero }}">
+    <div style="order:{{ homeOrd.hero }};position:relative;overflow:hidden;border-radius:24px;padding:26px 26px 22px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md)">
       <span style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
       <span style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px 200px at 88% -50%,rgba(120,180,255,.28),transparent 70%)"></span>
       <sc-if value="{{ hasLiveArt }}">
@@ -285,8 +287,10 @@ select option, select optgroup{
         <div style="height:100%;border-radius:999px;background:var(--rainbow);transition:width .8s cubic-bezier(.32,.72,.24,1);width:{{ liveProgress }}"></div>
       </div>
     </div>
+    </sc-if>
 
-    <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px">
+    <sc-if value="{{ homeShow.me }}">
+    <div style="order:{{ homeOrd.me }};display:grid;grid-template-columns:{{ twoCol }};gap:14px">
       <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
           <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
@@ -327,8 +331,10 @@ select option, select optgroup{
         <iframe id="miniStudioFrame" data-src="./index.html?embed=ministudio" title="當期跑榜最佳化" scrolling="no" style="width:100%;height:480px;border:none;background:transparent;display:block"></iframe>
       </div>
     </div>
+    </sc-if>
 
-    <div>
+    <sc-if value="{{ homeShow.gacha }}">
+    <div style="order:{{ homeOrd.gacha }}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 11px">
         <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">近期卡池</span></div>
         <button type="button" onClick="{{ onGo }}" data-p="calendar" style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">看日曆</button>
@@ -344,8 +350,10 @@ select option, select optgroup{
         </sc-for>
       </div>
     </div>
+    </sc-if>
 
-    <div>
+    <sc-if value="{{ homeShow.units }}">
+    <div style="order:{{ homeOrd.units }}">
       <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">團體</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px">
         <sc-for list="{{ unitTiles }}" as="u" hint-placeholder-count="6">
@@ -359,8 +367,10 @@ select option, select optgroup{
         </sc-for>
       </div>
     </div>
+    </sc-if>
 
-    <div>
+    <sc-if value="{{ homeShow.quick }}">
+    <div style="order:{{ homeOrd.quick }}">
       <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">快速前往</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px">
         <sc-for list="{{ quickLinks }}" as="q" hint-placeholder-count="6">
@@ -372,6 +382,7 @@ select option, select optgroup{
         </sc-for>
       </div>
     </div>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -1729,6 +1740,33 @@ select option, select optgroup{
             <span style="flex:1;font-size:12.5px;color:var(--text)">{{ e.title }}</span>
             <span style="font-size:11px;color:var(--text-3)">{{ e.when }}</span>
             <span style="font-size:11px;font-weight:700;color:{{ e.mailedFg }}">{{ e.mailed }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-top:14px">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:15px;font-weight:800;color:var(--ink)">自訂版面</span>
+          <span style="font-size:11.5px;color:var(--text-3);flex:1">側欄功能與首頁區塊的順序、顯示；設定會跟著帳號同步</span>
+          <button type="button" onClick="{{ onLayoutReset }}" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">還原預設</button>
+        </div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:10px 0 5px">首頁區塊</div>
+        <sc-for list="{{ layoutHomeRows }}" as="r" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">
+            <span style="flex:1;font-size:12.5px;color:{{ r.fg }}">{{ r.name }}</span>
+            <button type="button" onClick="{{ onLayoutMove }}" data-scope="home" data-id="{{ r.id }}" data-dir="up" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↑</button>
+            <button type="button" onClick="{{ onLayoutMove }}" data-scope="home" data-id="{{ r.id }}" data-dir="down" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↓</button>
+            <button type="button" onClick="{{ onLayoutToggle }}" data-scope="home" data-id="{{ r.id }}" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:{{ r.fg }};font-size:11px;font-weight:700;cursor:pointer;min-width:52px">{{ r.btn }}</button>
+          </div>
+        </sc-for>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:14px 0 5px">側欄功能</div>
+        <sc-for list="{{ layoutNavRows }}" as="r" hint-placeholder-count="20">
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">
+            <span style="font-size:10.5px;color:var(--text-3);width:34px">{{ r.group }}</span>
+            <span style="flex:1;font-size:12.5px;color:{{ r.fg }}">{{ r.name }}</span>
+            <button type="button" onClick="{{ onLayoutMove }}" data-scope="nav" data-id="{{ r.id }}" data-dir="up" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↑</button>
+            <button type="button" onClick="{{ onLayoutMove }}" data-scope="nav" data-id="{{ r.id }}" data-dir="down" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↓</button>
+            <button type="button" onClick="{{ onLayoutToggle }}" data-scope="nav" data-id="{{ r.id }}" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:{{ r.fg }};font-size:11px;font-weight:700;cursor:pointer;min-width:52px">{{ r.btn }}</button>
           </div>
         </sc-for>
       </div>
@@ -3930,6 +3968,7 @@ class Component extends DCLogic {
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
+    layout: null,   // { nav:{order:[],hidden:[]}, home:{order:[],hidden:[]} }，null＝預設
     qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
     songKey: 74, diff: 'M', epq: '', skill: 2.5, s6: 2.5, scoreMode: 'calc', energy: 3, interval: 50,
     natHr: 0, lCan: 0, sCan: 0, crys: 0,
@@ -4050,6 +4089,7 @@ class Component extends DCLogic {
     } catch (e) {}
 
     try {
+      try { const L = JSON.parse(localStorage.getItem('sekai-layout') || 'null'); if (L && typeof L === 'object') this.setState({ layout: L }); } catch (e) {}
       const pid = localStorage.getItem('sekai-app-pid') || '';
       const goal = +localStorage.getItem('sekai-app-goal') || 1000000;
       const cur = +localStorage.getItem('sekai-app-cur') || 0;
@@ -12964,8 +13004,41 @@ class Component extends DCLogic {
     } catch (e) {}
   }
 
+  /* ---------- 自訂版面 ---------- */
+  HOME_BLOCKS = [['hero', '進行中的活動'], ['me', '我的排名與跑榜小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
+  layoutOf(scope) { const L = (this.state.layout || {})[scope] || {}; return { order: Array.isArray(L.order) ? L.order : [], hidden: Array.isArray(L.hidden) ? L.hidden : [] }; }
+  /* 依使用者設定重排：沒排到的照原本順序接在後面（新功能上線時才不會消失）。 */
+  layoutApply(ids, scope) {
+    const L = this.layoutOf(scope);
+    const rank = {}; L.order.forEach((id, i) => { rank[id] = i; });
+    return ids.slice().sort((a, b) => ((rank[a] == null ? 999 : rank[a]) - (rank[b] == null ? 999 : rank[b])));
+  }
+  layoutSave(next) {
+    this.setState({ layout: next });
+    try { localStorage.setItem('sekai-layout', JSON.stringify(next)); } catch (e) {}
+    // 登入且已核准就順手同步到雲端；連按好幾下只送最後一次
+    clearTimeout(this._layoutPush);
+    this._layoutPush = setTimeout(() => {
+      if (this.state.me && this.state.me.status === 'approved') { this.pushCloud().catch(() => {}); }
+    }, 1500);
+  }
+  layoutMove(scope, id, dir, allIds) {
+    const cur = this.layoutApply(allIds, scope);
+    const i = cur.indexOf(id); if (i < 0) return;
+    const j = dir === 'up' ? i - 1 : i + 1; if (j < 0 || j >= cur.length) return;
+    cur.splice(i, 1); cur.splice(j, 0, id);
+    const next = Object.assign({}, this.state.layout || {}); next[scope] = Object.assign({}, this.layoutOf(scope), { order: cur });
+    this.layoutSave(next);
+  }
+  layoutToggle(scope, id) {
+    const L = this.layoutOf(scope);
+    const hidden = L.hidden.indexOf(id) >= 0 ? L.hidden.filter(x => x !== id) : L.hidden.concat([id]);
+    const next = Object.assign({}, this.state.layout || {}); next[scope] = Object.assign({}, L, { hidden });
+    this.layoutSave(next);
+  }
+
   /* 本機 → 雲端。只送站上自己的鍵，不要把整個 localStorage 倒上去。 */
-  CLOUD_KEYS = ['sekai-pid', 'sekai-owned', 'sekai-deck', 'sekai-fav', 'sekai-ep', 'sekai-b30', 'sekai-rate'];
+  CLOUD_KEYS = ['sekai-pid', 'sekai-owned', 'sekai-deck', 'sekai-fav', 'sekai-ep', 'sekai-b30', 'sekai-rate', 'sekai-layout'];
   async pushCloud() {
     const obj = {};
     this.CLOUD_KEYS.forEach(k => {
@@ -14160,6 +14233,7 @@ class Component extends DCLogic {
     const seg = on => on ? { bg: 'var(--card)', fg: 'var(--ink)', sh: 'var(--sh-sm)' } : { bg: 'transparent', fg: 'var(--text-3)', sh: 'none' };
 
     /* 導覽 */
+    this._navSpecIds = null;
     const navSpec = [
       ['主頁', [['home', '首頁', '#4ad1e8']]],
       /* 帳號擺在最前面：手機版「更多」面板照這個順序排,掛在最後要捲很久才看得到。
@@ -14174,7 +14248,15 @@ class Component extends DCLogic {
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
-    const navGroups = navSpec.map(([label, items]) => ({
+    this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
+    /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
+    const navHidden = this.layoutOf('nav').hidden;
+    const navGroups = navSpec.map(([label, items]) => {
+      const byId = {}; items.forEach(it => { byId[it[0]] = it; });
+      const ordered = this.layoutApply(items.map(it => it[0]), 'nav').map(id => byId[id])
+        .filter(it => it && (navHidden.indexOf(it[0]) < 0 || it[0] === 'home' || it[0] === 'account'));
+      return { label, items: ordered };
+    }).filter(g => g.items.length).map(({ label, items }) => ({
       label,
       items: items.map(([id, name, dot]) => ({
         id, name, dot,
@@ -15955,6 +16037,24 @@ class Component extends DCLogic {
         };
       })(),
       twoCol: s.mobile ? '1fr' : '1fr 1fr',
+      ...(() => {
+        const ids = this.HOME_BLOCKS.map(b => b[0]);
+        const ord = this.layoutApply(ids, 'home'), hid = this.layoutOf('home').hidden;
+        const homeOrd = {}, homeShow = {};
+        ids.forEach(id => { homeOrd[id] = ord.indexOf(id); homeShow[id] = hid.indexOf(id) < 0; });
+        const nameOf = {}; this.HOME_BLOCKS.forEach(([id, n]) => { nameOf[id] = n; });
+        const navAll = []; navSpec.forEach(([label, items]) => items.forEach(([id, name]) => navAll.push({ id, name, group: label })));
+        const navOrd = this.layoutApply(navAll.map(x => x.id), 'nav'), navHid = this.layoutOf('nav').hidden;
+        const navById = {}; navAll.forEach(x => { navById[x.id] = x; });
+        const row = (id, name, group, hidden, fixed) => ({ id, name, group: group || '', fg: hidden ? 'var(--text-3)' : 'var(--text)',
+          btn: fixed ? '固定' : (hidden ? '已隱藏' : '顯示中') });
+        return {
+          homeOrd, homeShow,
+          layoutHomeRows: ord.map(id => row(id, nameOf[id], '', hid.indexOf(id) >= 0, false)),
+          layoutNavRows: navOrd.map(id => navById[id]).filter(Boolean)
+            .map(x => row(x.id, x.name, x.group, navHid.indexOf(x.id) >= 0, x.id === 'home' || x.id === 'account')),
+        };
+      })(),
       threeCol: s.mobile ? '1fr' : 'repeat(3,1fr)',
       calcCols: s.mobile ? '1fr' : '320px 1fr',
       gachaCols: s.mobile ? '1fr' : '108px minmax(0,1.5fr) 92px minmax(0,1fr) minmax(0,.9fr)',
@@ -16574,6 +16674,9 @@ class Component extends DCLogic {
       onQaLock: async () => { const id = this.state.qaOpen; const d = await this.qaSend('/api/qa/' + id + '/lock'); if (d && d.ok) this.openQa(id); },
       onQaDelete: async () => { const id = this.state.qaOpen; if (!confirm('確定刪除這個主題？')) return; const d = await this.qaSend('/api/qa/' + id + '/delete'); if (d && d.ok) { this.openQa(null); this.loadQa(); } },
       onQaDelPost: async e => { const id = this.state.qaOpen, pid = e.currentTarget.dataset.pid; if (!confirm('刪除這則回覆？')) return; const d = await this.qaSend('/api/qa/' + id + '/post/' + pid); if (d && d.ok) this.openQa(id); },
+      onLayoutMove: e => { const d = e.currentTarget.dataset; this.layoutMove(d.scope, d.id, d.dir, d.scope === 'home' ? this.HOME_BLOCKS.map(b => b[0]) : (this._navSpecIds || [])); },
+      onLayoutToggle: e => { const d = e.currentTarget.dataset; if (d.scope === 'nav' && (d.id === 'home' || d.id === 'account')) return; this.layoutToggle(d.scope, d.id); },
+      onLayoutReset: () => { this.layoutSave({}); },
       onNoticeRead: e => this.readNotice(e.currentTarget.dataset.id),
       onNoticeReadAll: () => this.readNotice(null),
       onNoticeReload: () => this.loadNotices(),
