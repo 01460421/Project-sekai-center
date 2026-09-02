@@ -34,6 +34,9 @@
     return {
       template: inert ? inert.innerHTML : dc.innerHTML,
       js: scriptEl ? scriptEl.textContent || "" : "",
+      // 邏輯可以放在外部檔:<script type="text/x-dc" data-dc-script src="./js/app.js">
+      // 內容留空。boot 看到 js 是空的、有 jsSrc，就先 fetch 再啟動。
+      jsSrc: scriptEl ? scriptEl.getAttribute("src") || null : null,
       props,
       preview
     };
@@ -155,8 +158,21 @@
   function boot(runtime, doc = document) {
     const parsed = parseDcDocument(doc);
     if (!parsed) return null;
-    const React = getReact();
     const rootName = rootNameForDocument(doc, location);
+    /* 邏輯在外部檔的話先抓回來再繼續。這一步之前只做了「解析模板」，
+       DOM 還沒動（x-dc 仍在、仍被 hideRawTemplate 藏著），所以延後啟動對畫面沒有影響。
+       抓失敗就留在主控台 —— 頁面本來也不會有東西，沒必要再包裝一層。 */
+    if (!parsed.js && parsed.jsSrc) {
+      fetch(parsed.jsSrc).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+        .then((t) => { parsed.js = t; finishBoot(runtime, doc, parsed, rootName); })
+        .catch((err) => console.error("dc-script load failed:", parsed.jsSrc, err));
+      return rootName;
+    }
+    finishBoot(runtime, doc, parsed, rootName);
+    return rootName;
+  }
+  function finishBoot(runtime, doc, parsed, rootName) {
+    const React = getReact();
     runtime.markFetched(rootName);
     runtime.setRootName(rootName);
     runtime.adoptParsed(rootName, parsed);

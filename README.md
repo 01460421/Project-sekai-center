@@ -55,3 +55,7 @@ immutable 快取，沒重新戳記的話使用者會拿到舊檔，出現「新 
 ```bash
 python3 -m http.server 8899
 ```
+
+## 開發備忘（2026-09）
+- `app.html` 只剩模板；邏輯在 `js/app.js`（由 `tools/split-app.py` 從內嵌 script 抽出）。**改邏輯請改 `js/app.js`**，改完跑 `python3 tools/stamp-assets.py`。語法檢查：`node --check js/app.js`。
+- `support.js` 的 `boot()` 看到 `data-dc-script` 有 `src` 而內容為空時會先 fetch 再啟動。
