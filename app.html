@@ -803,15 +803,15 @@ select option, select optgroup{
 
     <sc-if value="{{ isLiveTab }}">
     <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <div style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:11px 16px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
+      <div style="display:grid;grid-template-columns:{{ rankCols }};gap:{{ rankGap }};padding:11px {{ rankPad }};background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.7px">
         <span>#</span><span>玩家</span><span style="text-align:right">{{ rankScoreLabel }}</span><span style="text-align:right">{{ rankExtraLabel }}</span>
         <sc-if value="{{ isDesktop }}"><span style="text-align:right">近1h周回</span><span style="text-align:right">最後更新</span></sc-if>
       </div>
       <sc-for list="{{ rankRows }}" as="r" hint-placeholder-count="10">
-        <div onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:12px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
+        <div onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:{{ rankGap }};padding:10px {{ rankPad }};border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
           <span style="min-width:0;display:flex;align-items:center;gap:9px">
-            <span style="position:relative;width:34px;height:34px;flex:none;border-radius:50%;background:{{ r.avatarBg }};display:grid;place-items:center;overflow:hidden">
+            <span style="position:relative;width:{{ rankAv }};height:{{ rankAv }};flex:none;border-radius:50%;background:{{ r.avatarBg }};display:grid;place-items:center;overflow:hidden">
               <img src="{{ r.avatar }}" referrerpolicy="no-referrer" decoding="async" alt="" width="250" height="200" style="width:32px;height:32px;object-fit:contain;object-position:center 22%;display:block">
               <sc-if value="{{ r.active }}"><i style="position:absolute;right:0;bottom:1px;width:9px;height:9px;border-radius:50%;background:#34c77b;box-shadow:0 0 0 2px var(--card)"></i></sc-if>
             </span>
@@ -2106,7 +2106,10 @@ select option, select optgroup{
         </div>
       </sc-if>
       <sc-if value="{{ qaLoggedOut }}">
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">看不用登入；要發文請先登入並通過核准。</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-3);margin-bottom:12px">
+          <span>看不用登入；要發文請先登入並通過核准。</span>
+          <a href="{{ acLoginUrl }}" style="padding:5px 13px;border-radius:999px;background:var(--ink-grad);color:#fff;font-weight:800;text-decoration:none;font-size:11.5px">使用 Google 登入</a>
+        </div>
       </sc-if>
       <sc-if value="{{ qaPending }}">
         <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">帳號核准後就能發文。</div>
@@ -14634,7 +14637,7 @@ class Component extends DCLogic {
     const rankRows = rankList.slice(0, 100).map((r, idx) => ({
       i: idx,
       rank: s.rankTab === 'live' ? '#' + r.rank : 'T' + this.n(r.rank),
-      name: r.name, score: this.n(r.score),
+      name: r.name, score: s.mobile ? this.short(r.score) : this.n(r.score),   // 手機用 15554W 這種短格式，省下的寬度給名字
       extra: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
       avatar: (() => { const cc = s.cardChara; const cid = cc && r.cardId ? cc[r.cardId] : 0; return cid ? this.charaSd(cid) : ''; })(),
       avatarBg: (() => { const cc = s.cardChara; const cid = cc && r.cardId ? cc[r.cardId] : 0; return cid ? 'color-mix(in oklab,' + (this.CHARA_COLOR[cid] || '#888') + ' 22%,transparent)' : 'var(--card-2)'; })(),
@@ -16059,7 +16062,7 @@ class Component extends DCLogic {
       calcCols: s.mobile ? '1fr' : '320px 1fr',
       gachaCols: s.mobile ? '1fr' : '108px minmax(0,1.5fr) 92px minmax(0,1fr) minmax(0,.9fr)',
       songCols: s.mobile ? '1fr' : '58px minmax(0,1.6fr) minmax(0,1fr) 150px',
-      rankCols: s.mobile ? '46px minmax(0,1fr) 88px 66px' : '58px minmax(0,1fr) 122px 96px 92px 104px',
+      rankCols: s.mobile ? '38px minmax(0,1fr) 72px 56px' : '58px minmax(0,1fr) 122px 96px 92px 104px',   // 手機：名字欄實測只剩兩三個字，其餘欄能縮就縮
       rowGap: s.mobile ? '4px' : '12px',
       rowPad: s.mobile ? '13px 15px' : '11px 16px',
       dayH: s.mobile ? '54px' : '92px',
@@ -16343,6 +16346,7 @@ class Component extends DCLogic {
       trendCols: (() => { const n = (s.trend || []).length; return '78px repeat(' + Math.max(1, n) + ',minmax(58px,1fr)) 78px'; })(),
       rankRows, rankBusy: s.liveLoad || (!rankRows.length && !s.liveLoad),
       rankStatus: s.liveErr || (s.liveLoad ? '載入排名資料…' : '目前沒有排名資料'),
+      rankGap: s.mobile ? '8px' : '12px', rankPad: s.mobile ? '12px' : '16px', rankAv: s.mobile ? '28px' : '34px',   // 手機把間距、內距、頭像都收一點，名字欄多出約 30px
       rankScoreLabel: s.rankTab === 'live' ? '活動 P' : '分數',
       rankExtraLabel: s.rankTab === 'live' ? '1h 均速' : '—',
 
