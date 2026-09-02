@@ -405,7 +405,7 @@ export const listThreads = (db, kind, limit, before) =>
 export const getThread = (db, id) =>
   one(db, `SELECT t.*, ${AUTHOR} FROM threads t JOIN users u ON u.id=t.user_id WHERE t.id=? AND t.deleted=0`, id);
 export const listPosts = (db, threadId) =>
-  all(db, `SELECT p.id,p.user_id,p.body,p.created_at,p.deleted,p.via_ai, ${AUTHOR}
+  all(db, `SELECT p.id,p.user_id,p.body,p.created_at,p.deleted,p.via_ai,p.reply_to, ${AUTHOR}
            FROM posts p JOIN users u ON u.id=p.user_id WHERE p.thread_id=? ORDER BY p.created_at LIMIT 500`, threadId);
 export async function createThread(db, userId, kind, title, body) {
   const id = newId(), t = now();
@@ -413,11 +413,11 @@ export async function createThread(db, userId, kind, title, body) {
     id, kind, title, body, userId, t, t);
   return id;
 }
-export async function addPost(db, userId, threadId, body, viaAi) {
+export async function addPost(db, userId, threadId, body, viaAi, replyTo) {
   const id = newId(), t = now();
   /* 兩句要一起成立:回覆寫進去、主題的計數與時間更新。D1 的 batch 是一個交易。 */
   await db.batch([
-    db.prepare('INSERT INTO posts (id,thread_id,user_id,body,created_at,via_ai) VALUES (?,?,?,?,?,?)').bind(id, threadId, userId, body, t, viaAi ? 1 : 0),
+    db.prepare('INSERT INTO posts (id,thread_id,user_id,body,created_at,via_ai,reply_to) VALUES (?,?,?,?,?,?,?)').bind(id, threadId, userId, body, t, viaAi ? 1 : 0, replyTo || null),
     db.prepare('UPDATE threads SET reply_count=reply_count+1, last_reply_at=?, updated_at=? WHERE id=?').bind(t, t, threadId),
   ]);
   return id;
@@ -434,3 +434,7 @@ export const setThreadFlag = (db, id, col, v) => {
 };
 export const deletePost = (db, id) => run(db, 'UPDATE posts SET deleted=1 WHERE id=?', id);
 export const getPost = (db, id) => one(db, 'SELECT * FROM posts WHERE id=?', id);
+
+/* 一串裡所有發過言的人（作者＋回覆者），通知用。上限 30 位，再多就不像討論串了。 */
+export const threadParticipants = (db, threadId) =>
+  all(db, `SELECT DISTINCT user_id FROM posts WHERE thread_id=? AND deleted=0 LIMIT 30`, threadId).then(r => r.map(x => x.user_id));

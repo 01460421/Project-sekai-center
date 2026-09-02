@@ -25,7 +25,7 @@ import {
   unreadCount,
   markRead,
   aiUsedTodaySite,
-  listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost,
+  listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
   addEvent} from './db.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce } from './review.js';
 
@@ -232,9 +232,12 @@ export async function handleApi(req, env, url, user) {
       if (!action) {
         if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
         const posts = await listPosts(env.DB, id);
+        /* 被回的那則：從同一串裡找作者與前 80 字當摘要，畫面顯示「回覆 某人：…」 */
+        const byId = {}; posts.forEach(x => { byId[x.id] = x; });
+        const quote = x => { const q = x.reply_to && byId[x.reply_to]; return q ? { id: q.id, author: q.author, excerpt: q.deleted ? '（已刪除）' : String(q.body || '').slice(0, 80) } : null; };
         return out({ thread: shape(t), can_post: !!(user && user.status === 'approved') && !t.locked, is_admin: isAdmin,
           posts: posts.map(x => ({ id: x.id, body: x.deleted ? '' : x.body, deleted: !!x.deleted, author: x.author,
-            author_admin: !!x.author_admin, via_ai: !!x.via_ai, mine: !!(user && x.user_id === user.id), created_at: x.created_at })) });
+            author_admin: !!x.author_admin, via_ai: !!x.via_ai, reply_to: quote(x), mine: !!(user && x.user_id === user.id), created_at: x.created_at })) });
       }
       if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
 
@@ -247,15 +250,28 @@ export async function handleApi(req, env, url, user) {
         /* via_ai:這則是「請站內助手回答」貼上來的。助手回答本身已經在 /api/chat 那邊
            扣過使用者的 AI 額度,這裡只是把結果存成回覆並標記來源。 */
         const viaAi = !!(b.value || {}).via_ai;
+        // reply_to 只認同一串裡的回覆；亂給就當沒給，不報錯（那不是使用者能修的事）
+        let replyTo = str((b.value || {}).reply_to, 64) || null;
+        if (replyTo) { const q = await getPost(env.DB, replyTo); if (!q || q.thread_id !== id) replyTo = null; }
         const last = await lastPostedAt(env.DB, user.id);
         if (Date.now() / 1000 - last < QA_COOLDOWN) return out({ error: 'cooldown', message: '發文間隔至少 ' + QA_COOLDOWN + ' 秒' }, 429);
-        const pidNew = await addPost(env.DB, user.id, id, body, viaAi);
-        /* 通知原作者:純站內(no_mail),watch_id 用 qa: 前綴讓助手快照能整段排除 */
-        if (t.user_id !== user.id) {
-          try { await addEvent(env.DB, { watch_id: 'qa:' + id, user_id: t.user_id, no_mail: 1,
-            title: '你的' + (t.kind === 'question' ? '提問' : '討論') + '有新回覆：' + t.title.slice(0, 40),
-            body: (viaAi ? '（' + (user.name || '有人') + ' 請站內助手回答）' : (user.name || '有人') + '：') + body.slice(0, 200) }); } catch (e) {}
-        }
+        const pidNew = await addPost(env.DB, user.id, id, body, viaAi, replyTo);
+        /* 通知所有參與過的人（作者＋每一位回過的人），不只作者 —— 互相討論靠的就是
+           「有人回我了」這個訊號。純站內(no_mail)，watch_id 用 qa: 前綴讓助手快照能整段排除。
+           被指名回覆的人標題不一樣，讓他知道是回他。 */
+        try {
+          const who = new Set([t.user_id].concat(await threadParticipants(env.DB, id)));
+          who.delete(user.id);
+          const target = replyTo ? (await getPost(env.DB, replyTo)) : null;
+          const kindZh = t.kind === 'question' ? '提問' : '討論';
+          for (const uid of who) {
+            const direct = target && target.user_id === uid;
+            await addEvent(env.DB, { watch_id: 'qa:' + id, user_id: uid, no_mail: 1,
+              title: (direct ? (user.name || '有人') + ' 回覆了你' : (uid === t.user_id ? '你的' + kindZh + '有新回覆' : '你參與的' + kindZh + '有新回覆'))
+                + '：' + t.title.slice(0, 40),
+              body: (viaAi ? '（' + (user.name || '有人') + ' 請站內助手回答）' : (user.name || '有人') + '：') + body.slice(0, 200) });
+          }
+        } catch (e) {}
         return out({ ok: true, id: pidNew });
       }
       if (action === 'solve') {                       // 作者或管理員都能標／取消「已解決」

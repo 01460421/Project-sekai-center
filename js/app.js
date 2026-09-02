@@ -405,7 +405,7 @@ class Component extends DCLogic {
     ctab: 'ep', preset: '',
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
     layout: null,   // { nav:{order:[],hidden:[]}, home:{order:[],hidden:[]} }，null＝預設
-    qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
+    qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaReplyTo: null, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
     songKey: 74, diff: 'M', epq: '', skill: 2.5, s6: 2.5, scoreMode: 'calc', energy: 3, interval: 50,
     natHr: 0, lCan: 0, sCan: 0, crys: 0,
     power: 250000, bonus: 250, rate: 115, score: 1200000, mode: 'multi', life: 800,
@@ -9879,7 +9879,7 @@ class Component extends DCLogic {
     } catch (e) { this.setState({ qaLoad: false, qaMsg: '載入失敗，請稍後再試' }); }
   }
   async openQa(id) {
-    if (!id) { this.setState({ qaOpen: null, qaThread: null, qaPosts: [] }); return; }
+    if (!id) { this.setState({ qaOpen: null, qaThread: null, qaPosts: [], qaReplyTo: null }); return; }
     this.setState({ qaOpen: id, qaThread: null, qaPosts: [], qaMsg: '' });
     try {
       const d = await this.api('/api/qa/' + encodeURIComponent(id));
@@ -12107,6 +12107,8 @@ class Component extends DCLogic {
             tagBg: x.solved ? 'var(--accent)' : '#8c8c96', hasTag: !!(x.solved || x.locked),
           })),
           qaTitle: s.qaTitle || '', qaBody: s.qaBody || '', qaReply: s.qaReply || '',
+          qaHasReplyTo: !!s.qaReplyTo,
+          qaReplyToLabel: s.qaReplyTo ? ('回覆 ' + (s.qaReplyTo.author || '') + '：' + String(s.qaReplyTo.excerpt || '').slice(0, 60)) : '',
           qaMsg: s.qaMsg || '', qaBusy: !!s.qaBusy,
           qaT: t ? { title: t.title, body: t.body, author: t.author || '', when: when(t.created_at),
             kind: RN[t.kind] || '', solved: !!t.solved, locked: !!t.locked,
@@ -12116,6 +12118,10 @@ class Component extends DCLogic {
           qaPostRows: (s.qaPosts || []).map(x => ({
             id: x.id, body: x.deleted ? '（已刪除）' : x.body, author: x.author || '', when: when(x.created_at),
             canDel: !x.deleted && !!(x.mine || (me && me.is_admin)), isAdmin: !!x.author_admin, viaAi: !!x.via_ai,
+            canReply: !!s.qaCanPost && !x.deleted,
+            excerpt: String(x.body || '').replace(/\s+/g, ' ').slice(0, 80),
+            hasQuote: !!x.reply_to, quoteAuthor: x.reply_to ? (x.reply_to.author || '') : '',
+            quoteText: x.reply_to ? String(x.reply_to.excerpt || '') : '',
             color: x.deleted ? 'var(--text-3)' : 'var(--text)',
           })),
           qaPostNone: !!t && !(s.qaPosts || []).length,
@@ -13504,10 +13510,15 @@ class Component extends DCLogic {
         if (d && d.ok) { this.setState({ qaTitle: '', qaBody: '' }); this.openQa(d.id); }
         else if (d && d.message) this.setState({ qaMsg: d.message });
       },
+      /* 指定回哪一則：只記 id 與作者、摘要給畫面用，送出時帶 reply_to */
+      onQaReplyTo: e => { const d = e.currentTarget.dataset; this.setState({ qaReplyTo: { id: d.pid, author: d.author || '', excerpt: d.excerpt || '' } });
+        const ta = document.querySelector('textarea[data-k="qaReply"]'); if (ta) { try { ta.focus(); } catch (er) {} } },
+      onQaReplyCancel: () => this.setState({ qaReplyTo: null }),
       onQaReply: async () => {
         const id = this.state.qaOpen; if (!id) return;
-        const d = await this.qaSend('/api/qa/' + encodeURIComponent(id) + '/reply', { body: this.state.qaReply });
-        if (d && d.ok) { this.setState({ qaReply: '' }); this.openQa(id); }
+        const rt = this.state.qaReplyTo;
+        const d = await this.qaSend('/api/qa/' + encodeURIComponent(id) + '/reply', { body: this.state.qaReply, reply_to: rt ? rt.id : null });
+        if (d && d.ok) { this.setState({ qaReply: '', qaReplyTo: null }); this.openQa(id); }
         else if (d && d.message) this.setState({ qaMsg: d.message });
       },
       onQaAsk: async () => {
