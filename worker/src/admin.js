@@ -143,6 +143,7 @@ async function liveDigest() {
     out.event = {
       id: d.id, name: d.name,
       start_at: d.start_at, aggregate_at: d.aggregate_at, closed_at: d.closed_at,
+      ranking_announce_at: d.ranking_announce_at,   // 榜線公布時間（結算後約 10 分鐘），HiSekai 2026-09 新增
     };
     const rk = d.player_top_100_rankings || [];
     out.top100 = {
@@ -161,6 +162,7 @@ async function liveDigest() {
       out.event = {
         id: d.id, name: d.name,
         start_at: d.start_at, aggregate_at: d.aggregate_at, closed_at: d.closed_at,
+        ranking_announce_at: d.ranking_announce_at,
       };
     }
     out.border = {
@@ -170,7 +172,8 @@ async function liveDigest() {
     out.world_link = (d.world_link_border_rankings || []).map(w => ({
       chapter: w.chapter, character: w.character,
       start_at: w.start_at, aggregate_at: w.aggregate_at,
-      borders: (w.player_borders || []).map(r => [r.rank, r.score]),
+      ranking_announce_at: w.ranking_announce_at || w.closed_at,   // 章節物件 2026-09 改名，舊名當後備
+      borders: (w.player_border_rankings || w.player_borders || []).map(r => [r.rank, r.score]),
     }));
   } else {
     out.border_error = String(border.reason).slice(0, 120);

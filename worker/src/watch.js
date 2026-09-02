@@ -184,7 +184,12 @@ function boardRows(data, board, t, which) {
     const list = which === 'live' ? data.world_link_top_100_rankings : data.world_link_border_rankings;
     const ch = currentChapter(list, t);
     if (!ch) return null;
-    const rows = which === 'live' ? ch.player_rankings : ch.player_borders;
+    /* 2026-09 HiSekai 把章節物件的欄位改名：player_rankings → player_top_100_rankings、
+       player_borders → player_border_rankings、closed_at → ranking_announce_at。
+       新名在前、舊名保留當後備，兩種版本的回應都吃得下。 */
+    const rows = which === 'live'
+      ? (ch.player_top_100_rankings || ch.player_rankings)
+      : (ch.player_border_rankings || ch.player_borders);
     const who = CHARA[ch.character] ? `／${CHARA[ch.character]}` : '';
     return { rows: rows || [], label: `世界連結第 ${ch.chapter} 章${who}`, chapter: ch.chapter, meta: ch };
   }
