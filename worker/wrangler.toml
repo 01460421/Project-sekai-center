@@ -44,6 +44,10 @@ COOKIE_DOMAIN = ".project-sekai-center.com"
 # 因為帳戶餘額是共用的,個人上限擋不住多人同時用滿。
 # 換模型不必改程式碼。sonnet-5 $2/$10、opus-4.8 與 opus-5 都是 $5/$25 per MTok。
 AI_MODEL = "claude-opus-5"
+# 2026-09 起額度單位改成「操作」:一次提問／一次截圖辨識算一次,裡面跑幾輪都做到完。
+# 每人每日 AI_OPS_USER 次,台灣時間 00:00 重置;管理員不限。AI_OPS_AUTO 有設才生效
+# (自動核准、未人工覆核的帳號)。AI_CAP_USER／AI_CAP_ADMIN 已停用,留著只是紀錄。
+AI_OPS_USER = "20"
 AI_CAP_USER = "400"
 AI_CAP_ADMIN = "2000"
 AI_CAP_SITE = "1500"

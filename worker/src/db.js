@@ -134,9 +134,9 @@ export const listEvents = (db, userId, limit) =>
 /* ---------- 管理員稽核 ---------- */
 /* x:{ model, cache_read, cache_write, kind }。kind 分 chat（站內助手）／admin（管理員提問）／review（自動審核）。 */
 export const logAdmin = (db, userId, prompt, reply, ti, to, x) =>
-  run(db, 'INSERT INTO admin_log (id,user_id,prompt,reply,tokens_in,tokens_out,created_at,model,cache_read,cache_write,kind) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+  run(db, 'INSERT INTO admin_log (id,user_id,prompt,reply,tokens_in,tokens_out,created_at,model,cache_read,cache_write,kind,op_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
     newId(), userId, String(prompt || '').slice(0, 4000), String(reply || '').slice(0, 8000), ti || 0, to || 0, now(),
-    String((x && x.model) || ''), (x && +x.cache_read) || 0, (x && +x.cache_write) || 0, String((x && x.kind) || 'chat'));
+    String((x && x.model) || ''), (x && +x.cache_read) || 0, (x && +x.cache_write) || 0, String((x && x.kind) || 'chat'), (x && x.op_id) || null);
 
 /* 用量彙總。以 model 分組是為了算錢:不同模型單價差五倍,合在一起就算不出來。
    since=0 就是累計。userId 不給就是全站。 */
@@ -462,3 +462,34 @@ export const getPost = (db, id) => one(db, 'SELECT * FROM posts WHERE id=?', id)
 /* 一串裡所有發過言的人（作者＋回覆者），通知用。上限 30 位，再多就不像討論串了。 */
 export const threadParticipants = (db, threadId) =>
   all(db, `SELECT DISTINCT user_id FROM posts WHERE thread_id=? AND deleted=0 LIMIT 30`, threadId).then(r => r.map(x => x.user_id));
+
+/* ---------- AI 操作(額度單位) ----------
+   一次提問／一次截圖辨識算一次操作;中間跑幾輪工具都算同一次,做到完為止。
+   額度以台灣時間的日曆日計(00:00 重置),不是 24 小時滾動 —— 使用者看得懂「今天還剩幾次」。 */
+export const twDayStart = () => Math.floor((now() + 8 * 3600) / 86400) * 86400 - 8 * 3600;
+export const aiOpsToday = async (db, userId) => {
+  const r = await one(db, 'SELECT COUNT(*) AS c FROM ai_ops WHERE user_id=? AND created_at>=?', userId, twDayStart());
+  return (r && r.c) || 0;
+};
+export async function createOp(db, userId, kind, ttl, paid) {
+  const id = newId(), t = now(), exp = t + (ttl || 1800);
+  await run(db, 'INSERT INTO ai_ops (id,user_id,kind,created_at,expires_at,rounds,paid,last_at) VALUES (?,?,?,?,?,0,?,?)',
+    id, userId, String(kind || 'chat').slice(0, 16), t, exp, paid ? 1 : 0, t);
+  return { id, created_at: t, expires_at: exp };
+}
+/* 記一輪。條件式 UPDATE:逾時或輪數用完就不加,changes=0 再查原因。 */
+export async function touchOp(db, id, userId, maxRounds) {
+  const t = now();
+  const r = await run(db, 'UPDATE ai_ops SET rounds=rounds+1, last_at=? WHERE id=? AND user_id=? AND expires_at>=? AND rounds<?',
+    t, id, userId, t, maxRounds || 60);
+  if (r && r.meta && r.meta.changes > 0) {
+    const o = await one(db, 'SELECT rounds FROM ai_ops WHERE id=?', id);
+    return { ok: true, rounds: (o && o.rounds) || 1 };
+  }
+  const o = await one(db, 'SELECT * FROM ai_ops WHERE id=? AND user_id=?', id, userId);
+  if (!o) return { ok: false, reason: 'not_found' };
+  if (o.expires_at < t) return { ok: false, reason: 'expired' };
+  return { ok: false, reason: 'exhausted', rounds: o.rounds };
+}
+export const aiOpsByUser = (db, since) =>
+  all(db, 'SELECT user_id, COUNT(*) AS ops FROM ai_ops WHERE created_at>=? GROUP BY user_id', since || 0);

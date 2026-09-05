@@ -1599,7 +1599,8 @@ select option, select optgroup{
             </div>
           </div>
           <div style="font-size:11.5px;color:var(--text-3);line-height:1.8">
-            額度以 24 小時滾動計。費用依官方定價估算（{{ usModel }}：{{ usPriceText }}），近 30 天快取命中率 {{ usCacheText }}。站台今日總量 {{ usSiteText }} 次。
+            一次提問或一次截圖辨識算一次操作，中途查幾輪都算同一次，做到完為止；{{ usResetText }}。今日實際呼叫 {{ usReqText }} 次。<br>
+            費用依官方定價估算（{{ usModel }}：{{ usPriceText }}），近 30 天快取命中率 {{ usCacheText }}。站台今日總量 {{ usSiteText }} 次。
           </div>
         </div>
       </sc-if>
@@ -2290,7 +2291,7 @@ select option, select optgroup{
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
           可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
-          它讀得到的就是站上這些資料，回答前會實際去查。每日用量有上限。<sc-if value="{{ aiQuotaShow }}"><span style="display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent-deep);font-weight:800">{{ aiQuotaText }}</span></sc-if>
+          它讀得到的就是站上這些資料，回答前會實際去查。每人每天 20 次操作，一次提問算一次。<sc-if value="{{ aiQuotaShow }}"><span style="display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent-deep);font-weight:800">{{ aiQuotaText }}</span></sc-if>
         </div>
         <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
           <sc-if value="{{ aiEmpty }}">
@@ -2530,7 +2531,8 @@ select option, select optgroup{
           <sc-for list="{{ auUsers }}" as="u" hint-placeholder-count="3">
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);font-size:12.5px">
               <div style="flex:1;min-width:140px;font-weight:800;color:var(--ink)">{{ u.name }} <span style="font-size:10.5px;color:var(--accent-deep)">{{ u.tag }}</span></div>
-              <div style="color:var(--text-2)">{{ u.calls }} 次</div>
+              <div style="color:var(--text-2)">{{ u.ops }}</div>
+              <div style="color:var(--text-2)">{{ u.calls }} 次呼叫</div>
               <div style="color:var(--text-2)">{{ u.tok }} tokens</div>
               <div style="font-weight:800;color:var(--ink);min-width:72px;text-align:right">{{ u.cost }}</div>
               <div style="font-size:11px;color:var(--text-3)">{{ u.when }}</div>
@@ -3652,6 +3654,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=86afe24bfd"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=b662b855ad"></script>
 </body>
 </html>

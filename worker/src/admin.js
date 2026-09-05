@@ -16,7 +16,7 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   listToolLog,
   createTask,
   listTasks,
-  pendingOrders, confirmOrder, aiUsageRows, aiUsageByUser, aiUsageDaily } from './db.js';
+  pendingOrders, confirmOrder, aiUsageRows, aiUsageByUser, aiUsageDaily, aiOpsByUser, twDayStart } from './db.js';
 import { summarize, costUsd, priceOf } from './pricing.js';
 
 /* 模型 id 與參數依 claude-api skill 查證，不是憑記憶寫的。
@@ -492,6 +492,9 @@ export async function handleAdmin(req, env, url, user) {
         aiUsageRows(db, { since: t - 30 * 86400 }), aiUsageRows(db, { since: 0 }),
         aiUsageByUser(db, t - 30 * 86400), aiUsageDaily(db, t - 14 * 86400),
       ]);
+      const [ops30, opsToday] = await Promise.all([aiOpsByUser(db, t - 30 * 86400), aiOpsByUser(db, twDayStart())]);
+      const opsMap = (rows, k, into) => (rows || []).forEach(r => { (into[r.user_id] = into[r.user_id] || {})[k] = +r.ops || 0; });
+      const opsBy = {}; opsMap(ops30, 'd30', opsBy); opsMap(opsToday, 'today', opsBy);
       const users = {};
       for (const r of byUser || []) {
         const u = users[r.user_id] || (users[r.user_id] = { user_id: r.user_id, name: r.name || '', email: r.email || '',
@@ -500,6 +503,7 @@ export async function handleAdmin(req, env, url, user) {
         u.cache_read += +r.cache_read || 0; u.cache_write += +r.cache_write || 0;
         u.cost_usd += costUsd(r, env); u.last_at = Math.max(u.last_at, +r.last_at || 0);
       }
+      Object.values(users).forEach(u => { const o = opsBy[u.user_id] || {}; u.ops_today = o.today || 0; u.ops_30d = o.d30 || 0; });
       const days = {};
       for (const r of daily || []) {
         const d = days[r.d] || (days[r.d] = { d: r.d, calls: 0, cost_usd: 0 });
@@ -508,7 +512,7 @@ export async function handleAdmin(req, env, url, user) {
       const r4 = x => Math.round(x * 10000) / 10000;
       return json({
         model: String(env.AI_MODEL || ''), price: priceOf(env.AI_MODEL, env),
-        caps: { user: +env.AI_CAP_USER || 2000, auto: +env.AI_CAP_AUTO || 20, site: +env.AI_CAP_SITE || 6000, admin: null },
+        caps: { unit: 'ops', ops_user: +env.AI_OPS_USER || 20, ops_auto: env.AI_OPS_AUTO ? (+env.AI_OPS_AUTO || 20) : null, site: +env.AI_CAP_SITE || 6000, admin: null },
         totals: { today: summarize(today, env), d7: summarize(d7, env), d30: summarize(d30, env), all: summarize(allR, env) },
         users: Object.values(users).map(u => Object.assign(u, { cost_usd: r4(u.cost_usd) })).sort((a, b) => b.cost_usd - a.cost_usd).slice(0, 50),
         daily: Object.values(days).map(d => Object.assign(d, { cost_usd: r4(d.cost_usd) })),

@@ -9358,9 +9358,10 @@ class Component extends DCLogic {
     let cur = (this.state.aiMsgs || []).concat([{ role: 'user', content: q }]);
     this.setState({ aiMsgs: cur, admBusy: true, admAsk: '', aiErr: '' });
     try {
+      const op = await this.aiOpStart('chat');
       for (let guard = 0; guard < 12; guard++) {
         const r = await this.api('/api/chat', { method: 'POST', body: {
-          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
+          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op } });
         if (r && r.quota) this.setState({ aiQuota: r.quota });
         const content = (r && r.content) || [];
         cur = cur.concat([{ role: 'assistant', content }]);
@@ -9394,8 +9395,9 @@ class Component extends DCLogic {
     if (!q) return '';
     let cur = [{ role: 'user', content: q }];
     let text = '';
+    const op = await this.aiOpStart('qa');
     for (let guard = 0; guard < 12; guard++) {
-      const r = await this.api('/api/chat', { method: 'POST', body: { messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
+      const r = await this.api('/api/chat', { method: 'POST', body: { messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op } });
       if (r && r.quota) this.setState({ aiQuota: r.quota });
       const content = (r && r.content) || [];
       cur = cur.concat([{ role: 'assistant', content }]);
@@ -9590,6 +9592,7 @@ class Component extends DCLogic {
       this.setState({ wlsProg: 8, wlsProgBase: 8, wlsProgSpan: 54,
         wlsProgLabel: pre + 'AI 讀取每一格的專精與技能等級…' });
       const r = await this.api('/api/chat', { method: 'POST', body: {
+        op: this._wlsOp,
         /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
            撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
            真實卡庫不可能每張都滿,那是模型在複製貼上而不是在讀圖,
@@ -9993,6 +9996,13 @@ class Component extends DCLogic {
   async loadUsage() {
     try { this.setState({ usage: await this.api('/api/usage') }); }
     catch (e) { this.setState({ usage: null }); }
+  }
+  /* 開一次操作。額度以操作計:一次提問／一次截圖辨識算一次,中間幾輪都算同一次。
+     用完會直接丟錯(訊息由後端給,含重置時間),呼叫端把它顯示出來就好。 */
+  async aiOpStart(kind) {
+    const r = await this.api('/api/ai/op', { method: 'POST', body: { kind } });
+    if (r && r.quota) this.setState({ aiQuota: r.quota });
+    return r.op;
   }
   async loadAdmin() {
     try {
@@ -12300,9 +12310,10 @@ class Component extends DCLogic {
               auUsers: ((A && A.users) || []).map(u => ({
                 name: u.name || u.email || String(u.user_id || '').slice(0, 8), tag: u.is_admin ? '管理員・不限' : '',
                 calls: this.n(u.calls || 0), tok: tok(sumTok(u)), cost: usd(u.cost_usd || 0),
+                ops: '今日 ' + this.n(u.ops_today || 0) + '・30 天 ' + this.n(u.ops_30d || 0) + ' 次操作',
                 when: u.last_at ? new Date(u.last_at * 1000).toLocaleDateString() : '' })),
               auNoUsers: !!A && !((A.users || []).length),
-              auCaps: A && A.caps ? ('一般 ' + A.caps.user + ' 次／日・試用 ' + A.caps.auto + ' 次／日・站台 ' + A.caps.site + ' 次／日・管理員不限') : '',
+              auCaps: A && A.caps ? ('每人每日 ' + (A.caps.ops_user || 20) + ' 次操作' + (A.caps.ops_auto ? ('・試用 ' + A.caps.ops_auto + ' 次') : '') + '・站台 ' + A.caps.site + ' 次請求／日・管理員不限') : '',
               auModel: A ? (A.model || '') : '',
             };
           })(),
@@ -12480,9 +12491,9 @@ class Component extends DCLogic {
             const U = s.usage;
             const tok = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n || 0);
             const usd = x => 'US$ ' + (+x || 0).toFixed(+x >= 100 ? 0 : 2);
-            const ST = { unlimited: ['管理員・不限額度', 'var(--accent-deep)'], ok: ['正常', 'var(--accent-deep)'],
-                         near: ['接近上限', '#e0a000'], exhausted: ['免費額度已用完', '#d9534f'],
-                         paid: ['免費額度用完，改扣點數', '#e0a000'], site_full: ['站台今日總量已滿', '#d9534f'] };
+            const ST = { unlimited: ['管理員・不限次數', 'var(--accent-deep)'], ok: ['正常', 'var(--accent-deep)'],
+                         near: ['接近上限', '#e0a000'], exhausted: ['今日操作次數已用完', '#d9534f'],
+                         paid: ['免費次數用完，改扣點數', '#e0a000'], site_full: ['站台今日總量已滿', '#d9534f'] };
             const st = U ? (ST[U.status] || ST.ok) : ST.ok;
             const cap = U && U.cap ? U.cap : 0;
             const used = U ? (U.used_today || 0) : 0;
@@ -12492,12 +12503,14 @@ class Component extends DCLogic {
             const mo = (U && U.month) || {};
             const allIn = (mo.tokens_in || 0) + (mo.cache_read || 0) + (mo.cache_write || 0);
             const q = s.aiQuota;
-            const quotaText = q ? (q.unlimited ? '管理員・不限額度' : ('今日已用 ' + q.used + ' / ' + q.cap + ' 次'))
-              : U ? (U.unlimited ? '管理員・不限額度' : ('今日已用 ' + used + ' / ' + cap + ' 次')) : '';
+            const quotaText = q ? (q.unlimited ? '管理員・不限次數' : ('今日操作 ' + (q.ops_used == null ? q.used : q.ops_used) + ' / ' + (q.ops_cap == null ? q.cap : q.ops_cap) + ' 次'))
+              : U ? (U.unlimited ? '管理員・不限次數' : ('今日操作 ' + used + ' / ' + cap + ' 次')) : '';
+            const resetText = U && U.reset_at ? ('台灣時間 00:00 重置') : '';
             return {
               usShow: !!U, usUnlimited: !!(U && U.unlimited), usLimited: !!(U && !U.unlimited),
               usStatusText: st[0], usStatusColor: st[1],
-              usUsedText: cap ? (this.n(used) + ' / ' + this.n(cap) + ' 次') : (this.n(used) + ' 次'),
+              usUsedText: cap ? (this.n(used) + ' / ' + this.n(cap) + ' 次操作') : (this.n(used) + ' 次操作'),
+              usResetText: resetText, usReqText: U ? this.n(U.requests_today || 0) : '0',
               usPct: pct + '%', usBarColor: pct >= 100 ? '#d9534f' : pct >= 80 ? '#e0a000' : 'var(--accent)',
               usToday: win('today'), usMonth: win('month'), usAll: win('all'),
               usSiteText: U && U.site ? (this.n(U.site.used) + ' / ' + this.n(U.site.cap)) : '',
@@ -13669,6 +13682,9 @@ class Component extends DCLogic {
         const files = Array.prototype.slice.call(e.currentTarget.files || []);
         e.currentTarget.value = '';
         if (!files.length || this.state.wlsShotBusy) return;
+        // 一批截圖算一次操作:先開,再逐張跑;開不了(額度用完)就把後端的理由顯示出來
+        try { this._wlsOp = await this.aiOpStart('scan'); }
+        catch (err) { this.setState({ wlsShotMsg: (err && err.message) || '無法開始辨識' }); return; }
         for (let i = 0; i < files.length; i++) {
           await this.wlsScanOne(files[i], i + 1, files.length);
         }

@@ -27,7 +27,7 @@ import {
   markRead,
   aiUsedTodaySite,
   listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
-  addEvent, aiUsageRows } from './db.js';
+  addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart } from './db.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
@@ -84,6 +84,42 @@ function json(obj, status, req, env) {
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+
+/* ---------- 操作額度 ----------
+   額度單位是「操作」:一次提問、一次截圖辨識、一次請助手答提問所,各算一次。
+   一次操作裡跑幾輪 /api/chat 都不再另計 —— 開了就做到完,不會做到一半被擋。
+   每人每日 AI_OPS_USER 次(預設 20),台灣時間 00:00 重置;管理員不限。
+   AI_OPS_AUTO 有設才生效:自動核准、尚未人工覆核的帳號用它。 */
+const opsCapOf = (env, user) => user.is_admin ? Infinity
+  : (String(user.reviewed_by || '') === 'system:auto' && env.AI_OPS_AUTO) ? (+env.AI_OPS_AUTO || 20)
+  : (+env.AI_OPS_USER || 20);
+const nextReset = () => twDayStart() + 86400;
+/* 開一次操作。免費次數用完才扣點,一次操作扣 1 點;站台總量只在這裡看,進行中的操作不會被它打斷。 */
+async function startOp(env, user, kind) {
+  const unlimited = !!user.is_admin;
+  const cap = opsCapOf(env, user);
+  const siteCap = +env.AI_CAP_SITE || 6000;
+  const [used, siteUsed] = await Promise.all([aiOpsToday(env.DB, user.id), aiUsedTodaySite(env.DB)]);
+  if (!unlimited && siteUsed >= siteCap) {
+    return { error: 'site_quota', status: 429,
+      body: { error: 'site_quota', message: '站台今日的 AI 總用量已達上限，請明天再試。', reset_at: nextReset() } };
+  }
+  let paid = false;
+  if (!unlimited && used >= cap) {
+    paid = await spendCredit(env.DB, user.id);
+    if (!paid) {
+      const c = await getCredits(env.DB, user.id);
+      return { error: 'quota', status: 429, body: { error: 'quota',
+        message: '今天的 ' + cap + ' 次操作已用完，台灣時間 00:00 重置'
+          + (String(env.CREDITS_BETA || '') === '1'
+              ? '；點數餘額 ' + ((c && c.balance) || 0) + ' 點，可到「我的帳號」購買，一次操作扣 1 點。' : '。'),
+        balance: (c && c.balance) || 0, ops_used: used, ops_cap: cap, reset_at: nextReset() } };
+    }
+  }
+  const o = await createOp(env.DB, user.id, kind, +env.AI_OP_TTL || 1800, paid);
+  return { op: o, quota: { ops_used: used + 1, ops_cap: unlimited ? null : cap, unlimited, paid,
+                           reset_at: nextReset(), site_used: siteUsed, site_cap: siteCap } };
+}
 
 /* 讀 body。前端送什麼都不能信,先擋大小再解析;
    回 { value } / { tooBig } / { bad },讓呼叫端決定要回哪種錯誤碼。 */
@@ -459,15 +495,16 @@ export async function handleApi(req, env, url, user) {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       const unlimited = !!user.is_admin;
       const onProbation = !unlimited && String(user.reviewed_by || '') === 'system:auto';
-      const cap = unlimited ? null : onProbation ? (+env.AI_CAP_AUTO || 20) : (+env.AI_CAP_USER || 2000);
+      const cap = unlimited ? null : opsCapOf(env, user);
       const siteCap = +env.AI_CAP_SITE || 6000;
       const t = Math.floor(Date.now() / 1000);
-      const [used, siteUsed, dRows, mRows, aRows, c] = await Promise.all([
-        aiUsedToday(env.DB, user.id), aiUsedTodaySite(env.DB),
+      const [used, siteUsed, dRows, mRows, aRows, c, reqToday] = await Promise.all([
+        aiOpsToday(env.DB, user.id), aiUsedTodaySite(env.DB),
         aiUsageRows(env.DB, { userId: user.id, since: t - 86400 }),
         aiUsageRows(env.DB, { userId: user.id, since: t - 30 * 86400 }),
         aiUsageRows(env.DB, { userId: user.id, since: 0 }),
         getCredits(env.DB, user.id),
+        aiUsedToday(env.DB, user.id),
       ]);
       const balance = (c && c.balance) || 0;
       const creditsOn = String(env.CREDITS_BETA || '') === '1';
@@ -476,7 +513,8 @@ export async function handleApi(req, env, url, user) {
         : used >= cap ? (creditsOn && balance > 0 ? 'paid' : 'exhausted')
         : used >= cap * 0.8 ? 'near' : 'ok';
       return out({
-        unlimited, cap, used_today: used, probation: onProbation, status,
+        unit: 'ops', unlimited, cap, used_today: used, requests_today: reqToday, reset_at: nextReset(),
+        probation: onProbation, status,
         site: { used: siteUsed, cap: siteCap },
         credits: { enabled: creditsOn, balance },
         today: summarize(dRows, env), month: summarize(mRows, env), all: summarize(aRows, env),
@@ -627,59 +665,48 @@ export async function handleApi(req, env, url, user) {
     }
 
     /* ---------- 觸發紀錄 ---------- */
+    /* 開始一次操作(提問／截圖辨識／提問所請助手答)。之後每一輪 /api/chat 都帶這個 op。 */
+    if (p === '/api/ai/op' && req.method === 'POST') {
+      if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
+      const b = await readJson(req);
+      const kind = str((isObj(b.value) ? b.value : {}).kind, 16) || 'chat';
+      const r = await startOp(env, user, kind);
+      if (r.error) return json(r.body, r.status, req, env);
+      return json({ ok: true, op: r.op.id, expires_at: r.op.expires_at, quota: r.quota }, 200, req, env);
+    }
+
     /* 站內助手。開放給「已核准」的一般使用者 —— 核准本身就是管理員的許可。
        工具在瀏覽器執行,Worker 只代理 Claude API 並記帳。
-       每日上限:一般使用者 40 次、管理員 200 次。一次對話會來回好幾輪,
-       所以這裡算的是「請求數」不是「問題數」。 */
+       額度看 startOp:一次操作開了,裡面的每一輪都做完,不再逐輪擋。 */
     if (p === '/api/chat' && req.method === 'POST') {
       if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
-      /* 兩層額度。個人上限可由 env 調整;站台總量是保護網 —— 個人上限擋得住
-         單一使用者,擋不住十個人同時用滿,而帳戶餘額是全站共用的。
-         實測每次呼叫約 $0.14(in 約 2 萬 tokens、out 約 1.4 千),設定時請對著
-         這個數字換算:2000 次 ≈ $277／人／日。 */
-      /* 自動核准的帳號先給試用額度。自動審核再嚴謹也可能誤放行一個人,
-         而誤放行的代價是真金白銀 —— 以 AI_CAP_USER=400、每次約 $0.14 計,
-         一個誤放行的帳號當天最多能燒掉 $55。壓在 20 次就是 $3,
-         等管理員事後覆核(把 reviewed_by 改成自己)才升到正常額度。 */
-      /* 管理員不設限:個人上限、站台總量、點數三道都不擋,只記帳。
-         站台總量那道是防陌生帳號把餘額燒光,管理員就是付錢的人,擋他沒有意義。 */
-      const unlimited = !!user.is_admin;
-      const onProbation = !unlimited && String(user.reviewed_by || '') === 'system:auto';
-      const cap = unlimited ? Infinity
-        : onProbation ? (+env.AI_CAP_AUTO || 20)
-        : (+env.AI_CAP_USER || 2000);
-      const siteCap = +env.AI_CAP_SITE || 6000;
-      const [used, siteUsed] = await Promise.all([
-        aiUsedToday(env.DB, user.id),
-        aiUsedTodaySite(env.DB),
-      ]);
-      if (!unlimited && siteUsed >= siteCap) {
-        return json({ error: 'site_quota', message: '站台今日的 AI 總用量已達上限，請明天再試。' }, 429, req, env);
-      }
-      /* 免費額度用完之後才動點數。順序不能反 —— 反過來等於在還有免費額度時
-         就先扣付費使用者的點,那是在懲罰付費的人。
-         扣點是條件式 UPDATE,餘額不足就是不足,不會扣成負數。 */
-      let paidCall = false;
-      if (!unlimited && used >= cap) {
-        paidCall = await spendCredit(env.DB, user.id);
-        if (!paidCall) {
-          const c = await getCredits(env.DB, user.id);
-          return json({ error: 'quota',
-            message: '你今日的免費額度已用完（' + cap + ' 次）'
-              + (String(env.CREDITS_BETA || '') === '1'
-                  ? '，目前點數餘額 ' + ((c && c.balance) || 0) + ' 點。可到「我的帳號」購買點數，或明天再試。'
-                  : '，請明天再試。'),
-            balance: (c && c.balance) || 0 }, 429, req, env);
-        }
-      }
       /* 4 MB:對話本來就會帶著工具結果,而截圖辨識還會夾一張 base64 圖片。
          base64 比原始檔大三分之一,所以 4 MB 大約容得下 3 MB 的 JPEG ——
          那已經是一張很密的卡庫截圖(60 格以上)縮到 1800px 之後的量級。 */
       const rb = await readJson(req, 4 * 1024 * 1024);
       if (rb.tooBig) return out({ error: 'payload_too_large', message: '對話內容過大，請按「清除」開新對話' }, 413);
       if (rb.bad) return out({ error: 'bad_json', message: 'JSON 格式錯誤' }, 400);
-      const v = validateChat(rb.value || {});
+      const body = isObj(rb.value) ? rb.value : {};
+      const v = validateChat(body);
       if (v.error) return out({ error: 'bad_request', message: v.error }, 400);
+      /* 沒帶 op 的請求(舊版頁面、或忘了先開)就當場開一次操作,額度照算。
+         帶了 op 就只記一輪:逾時要重開,輪數用完(防呆上限 60)也要重開。 */
+      const unlimited = !!user.is_admin;
+      let opId = str(body.op, 64), quota = null, paidCall = false;
+      if (!opId) {
+        const st = await startOp(env, user, str(body.kind, 16) || 'chat');
+        if (st.error) return json(st.body, st.status, req, env);
+        opId = st.op.id; quota = st.quota; paidCall = !!st.quota.paid;
+      }
+      const tk = await touchOp(env.DB, opId, user.id, +env.AI_OP_MAX_ROUNDS || 60);
+      if (!tk.ok) {
+        if (tk.reason === 'exhausted') return json({ error: 'op_exhausted', message: '這次操作已經跑了太多輪，請重新開始一次。' }, 429, req, env);
+        return json({ error: 'op_invalid', message: '這次操作已逾時，請重新送出。' }, 400, req, env);
+      }
+      if (!quota) {
+        quota = { ops_used: await aiOpsToday(env.DB, user.id), ops_cap: unlimited ? null : opsCapOf(env, user),
+                  unlimited, paid: false, reset_at: nextReset() };
+      }
       /* 這個變數原本叫 out,把上面那個回應 helper 遮蔽掉了 —— let 的 TDZ 涵蓋整個
          區塊,所以上面兩行的 out(...) 會拋 ReferenceError 而不是回 413/400,
          被外層 catch 吞成一個看不出原因的 500。 */
@@ -688,7 +715,7 @@ export async function handleApi(req, env, url, user) {
         reply = await chatClaude(env, v);
       } catch (e) {
         const msg = (e && e.message) || String(e);
-        await logAdmin(env.DB, user.id, '[chat]', '[失敗] ' + msg, 0, 0);
+        await logAdmin(env.DB, user.id, '[chat]', '[失敗] ' + msg, 0, 0, { kind: 'chat', op_id: opId });
         return json({ error: 'claude_failed', message: msg }, 502, req, env);
       }
       const calls = (reply.content || []).filter(c => c.type === 'tool_use');
@@ -696,10 +723,10 @@ export async function handleApi(req, env, url, user) {
       const text = (reply.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
       await logAdmin(env.DB, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
                      text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out,
-                     { model: reply.model, cache_read: reply.cache_read, cache_write: reply.cache_write, kind: 'chat' });
+                     { model: reply.model, cache_read: reply.cache_read, cache_write: reply.cache_write, kind: 'chat', op_id: opId });
       return json({
         content: reply.content, stop_reason: reply.stop_reason, model: reply.model,
-        quota: { used: used + 1, cap: unlimited ? null : cap, unlimited, site_used: siteUsed + 1, site_cap: siteCap, paid: paidCall },
+        quota: Object.assign({}, quota, { op: opId, rounds: tk.rounds, paid: paidCall || !!quota.paid }),
         cache: { read: reply.cache_read || 0, write: reply.cache_write || 0 },
       }, 200, req, env);
     }
