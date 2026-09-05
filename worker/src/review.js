@@ -372,7 +372,8 @@ export async function runApplyReview(env, userId) {
         const j = await aiJudge(env, note.text);
         rec.ai = { flags: j.flags, summary: j.summary };
         // 記進 admin_log，讓既有的每日額度統計也管得到自動審核
-        await logAdmin(env.DB, userId, '[auto_review]', JSON.stringify(j.flags), j.tokens_in, j.tokens_out);
+        await logAdmin(env.DB, userId, '[auto_review]', JSON.stringify(j.flags), j.tokens_in, j.tokens_out,
+                       { model: j.model || env.AI_REVIEW_MODEL || '', cache_read: j.cache_read, cache_write: j.cache_write, kind: 'review' });
       } catch (e) {
         // 呼叫失敗一律 fail-closed:當成「有問題」轉人工,不當成「沒問題」
         rec.ai_error = 'AI 判定失敗：' + String((e && e.message) || e).slice(0, 200);

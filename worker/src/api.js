@@ -9,6 +9,7 @@
 
 import { allowOrigin, corsHeaders, preflight } from './cors.js';
 import { chatClaude, validateChat } from './admin.js';
+import { summarize, priceOf } from './pricing.js';
 import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
 import {
@@ -26,7 +27,7 @@ import {
   markRead,
   aiUsedTodaySite,
   listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
-  addEvent} from './db.js';
+  addEvent, aiUsageRows } from './db.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
@@ -452,6 +453,37 @@ export async function handleApi(req, env, url, user) {
     /* ---------- AI 點數（beta） ---------- */
     /* 這裡刻意不接金流。beta 階段只產生訂單與對帳碼,實際收款在站外完成,
        管理員確認收到款項後才在後台入帳 —— 站上從頭到尾不碰任何付款資訊。 */
+    /* 我的 AI 用量。額度是 24 小時滾動窗(跟 /api/chat 擋額度用的同一把尺),
+       費用照官方定價估,含快取讀寫;管理員回 unlimited,前端就不畫進度條。 */
+    if (p === '/api/usage') {
+      if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
+      const unlimited = !!user.is_admin;
+      const onProbation = !unlimited && String(user.reviewed_by || '') === 'system:auto';
+      const cap = unlimited ? null : onProbation ? (+env.AI_CAP_AUTO || 20) : (+env.AI_CAP_USER || 2000);
+      const siteCap = +env.AI_CAP_SITE || 6000;
+      const t = Math.floor(Date.now() / 1000);
+      const [used, siteUsed, dRows, mRows, aRows, c] = await Promise.all([
+        aiUsedToday(env.DB, user.id), aiUsedTodaySite(env.DB),
+        aiUsageRows(env.DB, { userId: user.id, since: t - 86400 }),
+        aiUsageRows(env.DB, { userId: user.id, since: t - 30 * 86400 }),
+        aiUsageRows(env.DB, { userId: user.id, since: 0 }),
+        getCredits(env.DB, user.id),
+      ]);
+      const balance = (c && c.balance) || 0;
+      const creditsOn = String(env.CREDITS_BETA || '') === '1';
+      const status = unlimited ? 'unlimited'
+        : siteUsed >= siteCap ? 'site_full'
+        : used >= cap ? (creditsOn && balance > 0 ? 'paid' : 'exhausted')
+        : used >= cap * 0.8 ? 'near' : 'ok';
+      return out({
+        unlimited, cap, used_today: used, probation: onProbation, status,
+        site: { used: siteUsed, cap: siteCap },
+        credits: { enabled: creditsOn, balance },
+        today: summarize(dRows, env), month: summarize(mRows, env), all: summarize(aRows, env),
+        model: String(env.AI_MODEL || ''), price: priceOf(env.AI_MODEL, env),
+      });
+    }
+
     if (p === '/api/credits') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       const [c, orders] = await Promise.all([
@@ -609,8 +641,11 @@ export async function handleApi(req, env, url, user) {
          而誤放行的代價是真金白銀 —— 以 AI_CAP_USER=400、每次約 $0.14 計,
          一個誤放行的帳號當天最多能燒掉 $55。壓在 20 次就是 $3,
          等管理員事後覆核(把 reviewed_by 改成自己)才升到正常額度。 */
-      const onProbation = !user.is_admin && String(user.reviewed_by || '') === 'system:auto';
-      const cap = user.is_admin ? (+env.AI_CAP_ADMIN || 5000)
+      /* 管理員不設限:個人上限、站台總量、點數三道都不擋,只記帳。
+         站台總量那道是防陌生帳號把餘額燒光,管理員就是付錢的人,擋他沒有意義。 */
+      const unlimited = !!user.is_admin;
+      const onProbation = !unlimited && String(user.reviewed_by || '') === 'system:auto';
+      const cap = unlimited ? Infinity
         : onProbation ? (+env.AI_CAP_AUTO || 20)
         : (+env.AI_CAP_USER || 2000);
       const siteCap = +env.AI_CAP_SITE || 6000;
@@ -618,14 +653,14 @@ export async function handleApi(req, env, url, user) {
         aiUsedToday(env.DB, user.id),
         aiUsedTodaySite(env.DB),
       ]);
-      if (siteUsed >= siteCap) {
+      if (!unlimited && siteUsed >= siteCap) {
         return json({ error: 'site_quota', message: '站台今日的 AI 總用量已達上限，請明天再試。' }, 429, req, env);
       }
       /* 免費額度用完之後才動點數。順序不能反 —— 反過來等於在還有免費額度時
          就先扣付費使用者的點,那是在懲罰付費的人。
          扣點是條件式 UPDATE,餘額不足就是不足,不會扣成負數。 */
       let paidCall = false;
-      if (used >= cap) {
+      if (!unlimited && used >= cap) {
         paidCall = await spendCredit(env.DB, user.id);
         if (!paidCall) {
           const c = await getCredits(env.DB, user.id);
@@ -660,10 +695,11 @@ export async function handleApi(req, env, url, user) {
       for (const c of calls) await logTool(env.DB, user.id, c.name, c.input, true, 'requested');
       const text = (reply.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
       await logAdmin(env.DB, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
-                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out);
+                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out,
+                     { model: reply.model, cache_read: reply.cache_read, cache_write: reply.cache_write, kind: 'chat' });
       return json({
         content: reply.content, stop_reason: reply.stop_reason, model: reply.model,
-        quota: { used: used + 1, cap, site_used: siteUsed + 1, site_cap: siteCap, paid: paidCall },
+        quota: { used: used + 1, cap: unlimited ? null : cap, unlimited, site_used: siteUsed + 1, site_cap: siteCap, paid: paidCall },
         cache: { read: reply.cache_read || 0, write: reply.cache_write || 0 },
       }, 200, req, env);
     }

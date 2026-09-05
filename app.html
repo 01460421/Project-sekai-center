@@ -1566,6 +1566,44 @@ select option, select optgroup{
         </div>
       </div>
 
+      <!-- AI 用量 -->
+      <sc-if value="{{ usShow }}">
+        <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px">
+            <div style="font-size:14.5px;font-weight:800;color:var(--ink)">AI 用量</div>
+            <span style="padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:800;color:#fff;background:{{ usStatusColor }}">{{ usStatusText }}</span>
+            <div style="flex:1"></div>
+            <div style="font-size:12.5px;color:var(--text-2)">今日 <b style="font-size:16px;color:var(--ink)">{{ usUsedText }}</b></div>
+          </div>
+          <sc-if value="{{ usLimited }}">
+            <div style="height:8px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);overflow:hidden;margin-bottom:11px"><div style="height:100%;width:{{ usPct }};background:{{ usBarColor }};border-radius:999px"></div></div>
+          </sc-if>
+          <sc-if value="{{ usProbation }}">
+            <div style="font-size:11.5px;color:#e0a000;margin-bottom:9px">帳號還在試用額度（自動核准後尚未人工覆核），管理員確認後回到一般額度。</div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:10px">
+            <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)">
+              <div style="font-size:11px;color:var(--text-3);font-weight:700">今日</div>
+              <div style="font-size:18px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ usToday.cost }}</div>
+              <div style="font-size:11px;color:var(--text-2)">{{ usToday.calls }} 次・{{ usToday.tok }} tokens</div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)">
+              <div style="font-size:11px;color:var(--text-3);font-weight:700">近 30 天</div>
+              <div style="font-size:18px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ usMonth.cost }}</div>
+              <div style="font-size:11px;color:var(--text-2)">{{ usMonth.calls }} 次・{{ usMonth.tok }} tokens</div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)">
+              <div style="font-size:11px;color:var(--text-3);font-weight:700">累計</div>
+              <div style="font-size:18px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ usAll.cost }}</div>
+              <div style="font-size:11px;color:var(--text-2)">{{ usAll.calls }} 次・{{ usAll.tok }} tokens</div>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-3);line-height:1.8">
+            額度以 24 小時滾動計。費用依官方定價估算（{{ usModel }}：{{ usPriceText }}），近 30 天快取命中率 {{ usCacheText }}。站台今日總量 {{ usSiteText }} 次。
+          </div>
+        </div>
+      </sc-if>
+
       <!-- AI 點數（beta） -->
       <sc-if value="{{ crShow }}">
         <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
@@ -2252,7 +2290,7 @@ select option, select optgroup{
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
           可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
-          它讀得到的就是站上這些資料，回答前會實際去查。每日用量有上限。
+          它讀得到的就是站上這些資料，回答前會實際去查。每日用量有上限。<sc-if value="{{ aiQuotaShow }}"><span style="display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent-deep);font-weight:800">{{ aiQuotaText }}</span></sc-if>
         </div>
         <div style="max-height:52vh;overflow-y:auto;margin-bottom:11px">
           <sc-if value="{{ aiEmpty }}">
@@ -2465,6 +2503,41 @@ select option, select optgroup{
           </div>
         </sc-for>
       </div>
+
+      <sc-if value="{{ auShow }}">
+        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px">
+            <div style="font-size:13.5px;font-weight:800;color:var(--ink)">AI 用量與費用</div>
+            <div style="flex:1"></div>
+            <div style="font-size:11px;color:var(--text-3)">{{ auModel }}　{{ auCaps }}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-bottom:12px">
+            <sc-for list="{{ auTotals }}" as="t" hint-placeholder-count="4">
+              <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)">
+                <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ t.k }}</div>
+                <div style="font-size:18px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ t.cost }}</div>
+                <div style="font-size:11px;color:var(--text-2)">{{ t.calls }} 次・{{ t.tok }} tokens</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:4px;height:64px;margin-bottom:5px">
+            <sc-for list="{{ auDays }}" as="d" hint-placeholder-count="7">
+              <div title="{{ d.d }}　{{ d.cost }}　{{ d.calls }} 次" style="flex:1;height:{{ d.w }};background:var(--accent);border-radius:4px 4px 0 0;opacity:.85"></div>
+            </sc-for>
+          </div>
+          <div style="font-size:10.5px;color:var(--text-3);margin-bottom:12px">近 14 天每日費用，滑過看數字。</div>
+          <sc-if value="{{ auNoUsers }}"><div style="font-size:12.5px;color:var(--text-3)">近 30 天沒有任何 AI 呼叫。</div></sc-if>
+          <sc-for list="{{ auUsers }}" as="u" hint-placeholder-count="3">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);font-size:12.5px">
+              <div style="flex:1;min-width:140px;font-weight:800;color:var(--ink)">{{ u.name }} <span style="font-size:10.5px;color:var(--accent-deep)">{{ u.tag }}</span></div>
+              <div style="color:var(--text-2)">{{ u.calls }} 次</div>
+              <div style="color:var(--text-2)">{{ u.tok }} tokens</div>
+              <div style="font-weight:800;color:var(--ink);min-width:72px;text-align:right">{{ u.cost }}</div>
+              <div style="font-size:11px;color:var(--text-3)">{{ u.when }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
 
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:9px">待審核申請（{{ admPendingN }}）</div>
@@ -3579,6 +3652,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=85ba96b862"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=86afe24bfd"></script>
 </body>
 </html>

@@ -132,9 +132,33 @@ export const listEvents = (db, userId, limit) =>
   all(db, 'SELECT * FROM events WHERE user_id=? ORDER BY created_at DESC LIMIT ?', userId, Math.min(100, limit || 30));
 
 /* ---------- 管理員稽核 ---------- */
-export const logAdmin = (db, userId, prompt, reply, ti, to) =>
-  run(db, 'INSERT INTO admin_log (id,user_id,prompt,reply,tokens_in,tokens_out,created_at) VALUES (?,?,?,?,?,?,?)',
-    newId(), userId, String(prompt || '').slice(0, 4000), String(reply || '').slice(0, 8000), ti || 0, to || 0, now());
+/* x:{ model, cache_read, cache_write, kind }。kind 分 chat（站內助手）／admin（管理員提問）／review（自動審核）。 */
+export const logAdmin = (db, userId, prompt, reply, ti, to, x) =>
+  run(db, 'INSERT INTO admin_log (id,user_id,prompt,reply,tokens_in,tokens_out,created_at,model,cache_read,cache_write,kind) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    newId(), userId, String(prompt || '').slice(0, 4000), String(reply || '').slice(0, 8000), ti || 0, to || 0, now(),
+    String((x && x.model) || ''), (x && +x.cache_read) || 0, (x && +x.cache_write) || 0, String((x && x.kind) || 'chat'));
+
+/* 用量彙總。以 model 分組是為了算錢:不同模型單價差五倍,合在一起就算不出來。
+   since=0 就是累計。userId 不給就是全站。 */
+export const aiUsageRows = (db, { userId, since }) => userId
+  ? all(db, `SELECT model, COUNT(*) AS calls, SUM(tokens_in) AS tokens_in, SUM(tokens_out) AS tokens_out,
+       SUM(cache_read) AS cache_read, SUM(cache_write) AS cache_write
+       FROM admin_log WHERE user_id=? AND created_at>=? GROUP BY model`, userId, since || 0)
+  : all(db, `SELECT model, COUNT(*) AS calls, SUM(tokens_in) AS tokens_in, SUM(tokens_out) AS tokens_out,
+       SUM(cache_read) AS cache_read, SUM(cache_write) AS cache_write
+       FROM admin_log WHERE created_at>=? GROUP BY model`, since || 0);
+/* 每人每模型一列,費用在外面算完再合併成每人一列。 */
+export const aiUsageByUser = (db, since) =>
+  all(db, `SELECT a.user_id, u.name, u.email, u.is_admin, a.model, COUNT(*) AS calls,
+       SUM(a.tokens_in) AS tokens_in, SUM(a.tokens_out) AS tokens_out,
+       SUM(a.cache_read) AS cache_read, SUM(a.cache_write) AS cache_write, MAX(a.created_at) AS last_at
+       FROM admin_log a LEFT JOIN users u ON u.id=a.user_id
+       WHERE a.created_at>=? GROUP BY a.user_id, a.model`, since || 0);
+export const aiUsageDaily = (db, since) =>
+  all(db, `SELECT date(created_at,'unixepoch') AS d, model, COUNT(*) AS calls,
+       SUM(tokens_in) AS tokens_in, SUM(tokens_out) AS tokens_out,
+       SUM(cache_read) AS cache_read, SUM(cache_write) AS cache_write
+       FROM admin_log WHERE created_at>=? GROUP BY d, model ORDER BY d`, since || 0);
 export const listAdminLog = (db, limit) =>
   all(db, 'SELECT * FROM admin_log ORDER BY created_at DESC LIMIT ?', Math.min(100, limit || 30));
 

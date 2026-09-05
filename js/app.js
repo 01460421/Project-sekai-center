@@ -387,6 +387,7 @@ class Component extends DCLogic {
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
     credits: null, crMsg: '', crBusy: false, crPend: [],
+    usage: null, admUsage: null, aiQuota: null,
     sysOpen: {},
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false, admMsg: '',
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
@@ -562,7 +563,14 @@ class Component extends DCLogic {
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); }
+  /* 切到「我的帳號」時重抓用量 —— 助手用過之後數字才會是新的。只在換頁那一刻抓一次。 */
+  usageTick() {
+    const p = this.state.page;
+    if (p === this._usagePage) return;
+    this._usagePage = p;
+    if (p === 'account' && this.state.me && this.state.me.status === 'approved') this.loadUsage();
+  }
   /* iframe 的 src 不寫在模板裡，改成 data-src、渲染後再由這裡填入。
      （名字不能叫 syncFrames —— 下面已經有一個同名方法在做主題色同步，
      class 裡後定義的會蓋掉先定義的，第一版就是這樣被蓋掉、整個沒跑。）
@@ -9353,6 +9361,7 @@ class Component extends DCLogic {
       for (let guard = 0; guard < 12; guard++) {
         const r = await this.api('/api/chat', { method: 'POST', body: {
           messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
+        if (r && r.quota) this.setState({ aiQuota: r.quota });
         const content = (r && r.content) || [];
         cur = cur.concat([{ role: 'assistant', content }]);
         this.setState({ aiMsgs: cur });
@@ -9387,6 +9396,7 @@ class Component extends DCLogic {
     let text = '';
     for (let guard = 0; guard < 12; guard++) {
       const r = await this.api('/api/chat', { method: 'POST', body: { messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM } });
+      if (r && r.quota) this.setState({ aiQuota: r.quota });
       const content = (r && r.content) || [];
       cur = cur.concat([{ role: 'assistant', content }]);
       text = content.filter(c => c.type === 'text').map(c => c.text).join('\n').trim() || text;
@@ -9445,7 +9455,7 @@ class Component extends DCLogic {
           return patch;
         });
       }
-      if (d && d.user && d.user.status === 'approved') { this.pullCloud(); this.loadNotices(); this.loadCredits(); }
+      if (d && d.user && d.user.status === 'approved') { this.pullCloud(); this.loadNotices(); this.loadCredits(); this.loadUsage(); }
     } catch (e) {
       /* 這裡本來把錯誤吞掉只顯示「未登入」,結果 CORS、cookie、500 全都長一樣,
          連我自己都查不出是哪一種。改成把實際原因留下來顯示在畫面上。 */
@@ -9979,17 +9989,23 @@ class Component extends DCLogic {
     try { this.setState({ credits: await this.api('/api/credits') }); }
     catch (e) { this.setState({ credits: null }); }
   }
+  /* 我的 AI 用量:額度、今日／30 天／累計的次數、token 與估算費用。管理員回 unlimited。 */
+  async loadUsage() {
+    try { this.setState({ usage: await this.api('/api/usage') }); }
+    catch (e) { this.setState({ usage: null }); }
+  }
   async loadAdmin() {
     try {
       /* 自動核准的帳號也要撈:它們的 status 已經是 approved,不會出現在待審核清單裡,
          但仍在試用額度下、也還沒有人真的看過。不撈的話管理員在產品裡永遠找不到它們。 */
-      const [u, ap, st, co] = await Promise.all([
+      const [u, ap, st, co, au] = await Promise.all([
         this.api('/admin/users?status=pending'),
         this.api('/admin/users?status=approved'),
         this.api('/admin/stats'),
         this.api('/admin/credits/orders').catch(() => null),
+        this.api('/admin/usage').catch(() => null),
       ]);
-      this.setState({ crPend: (co && co.orders) || [] });
+      this.setState({ crPend: (co && co.orders) || [], admUsage: au || null });
       const auto = ((ap && ap.users) || []).filter(x => String(x.reviewed_by || '') === 'system:auto');
       this.setState({ admUsers: (u && u.users) || [], admAuto: auto,
         admStats: (st && st.stats) || st || null });
@@ -12266,6 +12282,30 @@ class Component extends DCLogic {
             return cards.filter(c => typeof c[1] === 'number').map(c => ({ k: c[0], v: this.n(c[1]) }));
           })(),
           admStatErr: st && st.error ? ('統計載入失敗：' + st.error) : '',
+          ...(() => {
+            /* 全站 AI 用量與費用。每人一列是 30 天內的,每日長條是 14 天。 */
+            const A = s.admUsage;
+            const tok = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n || 0);
+            const usd = x => 'US$ ' + (+x || 0).toFixed(+x >= 100 ? 0 : 2);
+            const sumTok = w => (w.tokens_in || 0) + (w.tokens_out || 0) + (w.cache_read || 0) + (w.cache_write || 0);
+            const W = [['今日', 'today'], ['7 天', 'd7'], ['30 天', 'd30'], ['累計', 'all']];
+            const daily = (A && A.daily) || [];
+            const maxCost = Math.max(0.0001, ...daily.map(d => d.cost_usd || 0));
+            return {
+              auShow: !!A,
+              auTotals: A ? W.map(([k, key]) => { const w = (A.totals || {})[key] || {};
+                return { k, calls: this.n(w.calls || 0), tok: tok(sumTok(w)), cost: usd(w.cost_usd || 0) }; }) : [],
+              auDays: daily.map(d => ({ d: String(d.d || '').slice(5), calls: this.n(d.calls || 0), cost: usd(d.cost_usd || 0),
+                w: Math.max(3, Math.round((d.cost_usd || 0) / maxCost * 100)) + '%' })),
+              auUsers: ((A && A.users) || []).map(u => ({
+                name: u.name || u.email || String(u.user_id || '').slice(0, 8), tag: u.is_admin ? '管理員・不限' : '',
+                calls: this.n(u.calls || 0), tok: tok(sumTok(u)), cost: usd(u.cost_usd || 0),
+                when: u.last_at ? new Date(u.last_at * 1000).toLocaleDateString() : '' })),
+              auNoUsers: !!A && !((A.users || []).length),
+              auCaps: A && A.caps ? ('一般 ' + A.caps.user + ' 次／日・試用 ' + A.caps.auto + ' 次／日・站台 ' + A.caps.site + ' 次／日・管理員不限') : '',
+              auModel: A ? (A.model || '') : '',
+            };
+          })(),
           admPendingN: pend.length,
           admNoPending: pend.length === 0,
           admUserRows: pend.map(u => {
@@ -12435,6 +12475,38 @@ class Component extends DCLogic {
           })(),
           acErr: s.meErr || '',
           acSyncMsg: s.acSyncMsg || '',
+          ...(() => {
+            /* AI 用量。額度是 24 小時滾動窗;費用照官方定價估。管理員 unlimited,不畫進度條。 */
+            const U = s.usage;
+            const tok = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n || 0);
+            const usd = x => 'US$ ' + (+x || 0).toFixed(+x >= 100 ? 0 : 2);
+            const ST = { unlimited: ['管理員・不限額度', 'var(--accent-deep)'], ok: ['正常', 'var(--accent-deep)'],
+                         near: ['接近上限', '#e0a000'], exhausted: ['免費額度已用完', '#d9534f'],
+                         paid: ['免費額度用完，改扣點數', '#e0a000'], site_full: ['站台今日總量已滿', '#d9534f'] };
+            const st = U ? (ST[U.status] || ST.ok) : ST.ok;
+            const cap = U && U.cap ? U.cap : 0;
+            const used = U ? (U.used_today || 0) : 0;
+            const pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0;
+            const sumTok = w => (w.tokens_in || 0) + (w.tokens_out || 0) + (w.cache_read || 0) + (w.cache_write || 0);
+            const win = k => { const w = (U && U[k]) || {}; return { calls: this.n(w.calls || 0), tok: tok(sumTok(w)), cost: usd(w.cost_usd || 0) }; };
+            const mo = (U && U.month) || {};
+            const allIn = (mo.tokens_in || 0) + (mo.cache_read || 0) + (mo.cache_write || 0);
+            const q = s.aiQuota;
+            const quotaText = q ? (q.unlimited ? '管理員・不限額度' : ('今日已用 ' + q.used + ' / ' + q.cap + ' 次'))
+              : U ? (U.unlimited ? '管理員・不限額度' : ('今日已用 ' + used + ' / ' + cap + ' 次')) : '';
+            return {
+              usShow: !!U, usUnlimited: !!(U && U.unlimited), usLimited: !!(U && !U.unlimited),
+              usStatusText: st[0], usStatusColor: st[1],
+              usUsedText: cap ? (this.n(used) + ' / ' + this.n(cap) + ' 次') : (this.n(used) + ' 次'),
+              usPct: pct + '%', usBarColor: pct >= 100 ? '#d9534f' : pct >= 80 ? '#e0a000' : 'var(--accent)',
+              usToday: win('today'), usMonth: win('month'), usAll: win('all'),
+              usSiteText: U && U.site ? (this.n(U.site.used) + ' / ' + this.n(U.site.cap)) : '',
+              usCacheText: allIn ? (Math.round((mo.cache_read || 0) / allIn * 100) + '%') : '—',
+              usModel: U ? (U.model || '') : '', usProbation: !!(U && U.probation),
+              usPriceText: U && U.price ? ('輸入 $' + U.price[0] + '・輸出 $' + U.price[1] + '・快取讀取 $' + U.price[3] + '，每百萬 token') : '',
+              aiQuotaShow: !!quotaText, aiQuotaText: quotaText,
+            };
+          })(),
           ...(() => {
             /* 點數（beta）。模板不能寫三元或 ||,所有文案與顏色在這裡就算完。 */
             const cr = s.credits;

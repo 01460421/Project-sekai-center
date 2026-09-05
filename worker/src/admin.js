@@ -16,7 +16,8 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   listToolLog,
   createTask,
   listTasks,
-  pendingOrders, confirmOrder} from './db.js';
+  pendingOrders, confirmOrder, aiUsageRows, aiUsageByUser, aiUsageDaily } from './db.js';
+import { summarize, costUsd, priceOf } from './pricing.js';
 
 /* 模型 id 與參數依 claude-api skill 查證，不是憑記憶寫的。
    Opus 5 預設就跑 adaptive thinking，不必（也不能）再給 budget_tokens；
@@ -58,9 +59,12 @@ const firstRow = async (db, sql, ...a) => (await rows(db, sql, ...a))[0] || {};
 
 /* 三張表各用一句條件式聚合湊齊，比逐項 COUNT 少打好幾次 D1。
    SUM(布林) 在空表會回 NULL，所以出口統一過 n()。 */
-async function siteStats(db) {
+async function siteStats(db, env) {
   const t = Math.floor(Date.now() / 1000);
   const d7 = t - 7 * 86400;
+  const [aiToday, ai7, ai30] = await Promise.all([
+    aiUsageRows(db, { since: t - 86400 }), aiUsageRows(db, { since: d7 }), aiUsageRows(db, { since: t - 30 * 86400 }),
+  ]);
 
   const [u, e, a, w] = await Promise.all([
     firstRow(db, `SELECT COUNT(*) AS total,
@@ -103,6 +107,10 @@ async function siteStats(db) {
     admin_asks: {
       total: n(a.total), last_7d: n(a.last_7d),
       tokens_in: n(a.tokens_in), tokens_out: n(a.tokens_out),
+    },
+    ai: {
+      total: n(a.total), last_7d: n(a.last_7d),
+      today: summarize(aiToday, env), d7: summarize(ai7, env), d30: summarize(ai30, env),
     },
   };
 }
@@ -476,8 +484,38 @@ export async function handleAdmin(req, env, url, user) {
       return json({ ok: true, user: await getUser(db, id) });
     }
 
+    /* 全站 AI 用量與費用。每人一列(30 天內),每日一列(14 天),四個時間窗的總計。 */
+    if (p === '/admin/usage' && req.method === 'GET') {
+      const t = Math.floor(Date.now() / 1000);
+      const [today, d7, d30, allR, byUser, daily] = await Promise.all([
+        aiUsageRows(db, { since: t - 86400 }), aiUsageRows(db, { since: t - 7 * 86400 }),
+        aiUsageRows(db, { since: t - 30 * 86400 }), aiUsageRows(db, { since: 0 }),
+        aiUsageByUser(db, t - 30 * 86400), aiUsageDaily(db, t - 14 * 86400),
+      ]);
+      const users = {};
+      for (const r of byUser || []) {
+        const u = users[r.user_id] || (users[r.user_id] = { user_id: r.user_id, name: r.name || '', email: r.email || '',
+          is_admin: !!r.is_admin, calls: 0, tokens_in: 0, tokens_out: 0, cache_read: 0, cache_write: 0, cost_usd: 0, last_at: 0 });
+        u.calls += +r.calls || 0; u.tokens_in += +r.tokens_in || 0; u.tokens_out += +r.tokens_out || 0;
+        u.cache_read += +r.cache_read || 0; u.cache_write += +r.cache_write || 0;
+        u.cost_usd += costUsd(r, env); u.last_at = Math.max(u.last_at, +r.last_at || 0);
+      }
+      const days = {};
+      for (const r of daily || []) {
+        const d = days[r.d] || (days[r.d] = { d: r.d, calls: 0, cost_usd: 0 });
+        d.calls += +r.calls || 0; d.cost_usd += costUsd(r, env);
+      }
+      const r4 = x => Math.round(x * 10000) / 10000;
+      return json({
+        model: String(env.AI_MODEL || ''), price: priceOf(env.AI_MODEL, env),
+        caps: { user: +env.AI_CAP_USER || 2000, auto: +env.AI_CAP_AUTO || 20, site: +env.AI_CAP_SITE || 6000, admin: null },
+        totals: { today: summarize(today, env), d7: summarize(d7, env), d30: summarize(d30, env), all: summarize(allR, env) },
+        users: Object.values(users).map(u => Object.assign(u, { cost_usd: r4(u.cost_usd) })).sort((a, b) => b.cost_usd - a.cost_usd).slice(0, 50),
+        daily: Object.values(days).map(d => Object.assign(d, { cost_usd: r4(d.cost_usd) })),
+      });
+    }
     if (p === '/admin/stats' && req.method === 'GET') {
-      return json({ stats: await siteStats(db) });
+      return json({ stats: await siteStats(db, env) });
     }
 
     if (p === '/admin/log' && req.method === 'GET') {
@@ -497,7 +535,7 @@ export async function handleAdmin(req, env, url, user) {
 
       // 三份資料互不相干，並行抓；榜線那邊失敗也只是快照少一段，不影響回答其他問題
       const [stats, titles, live] = await Promise.all([
-        siteStats(db), recentEventTitles(db), liveDigest(),
+        siteStats(db, env), recentEventTitles(db), liveDigest(),
       ]);
       const snapshot = {
         site: 'Project SEKAI 台服資源站',
@@ -516,7 +554,8 @@ export async function handleAdmin(req, env, url, user) {
         await logAdmin(db, user.id, prompt, '[失敗] ' + msg, 0, 0);
         return json({ error: 'claude_failed', message: msg }, 502);
       }
-      await logAdmin(db, user.id, prompt, out.reply, out.tokens_in, out.tokens_out);
+      await logAdmin(db, user.id, prompt, out.reply, out.tokens_in, out.tokens_out,
+                     { model: out.model, cache_read: out.cache_read, cache_write: out.cache_write, kind: 'admin' });
       return json({
         reply: out.reply,
         refused: out.refused,
@@ -543,7 +582,8 @@ export async function handleAdmin(req, env, url, user) {
       for (const c of calls) await logTool(db, user.id, c.name, c.input, true, 'requested');
       const text = out.content.filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
       await logAdmin(db, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
-                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), out.tokens_in, out.tokens_out);
+                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), out.tokens_in, out.tokens_out,
+                     { model: out.model, cache_read: out.cache_read, cache_write: out.cache_write, kind: 'chat' });
       return json({
         content: out.content, stop_reason: out.stop_reason, model: out.model,
         tokens: { in: out.tokens_in, out: out.tokens_out },
