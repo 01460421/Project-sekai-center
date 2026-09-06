@@ -235,6 +235,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/06', t: '修好 Safari 載不出選曲清單', s: '曲庫改成不帶版本戳的固定網址之後，Safari 會載不出來，選曲下拉是空的。原因是它走動態 import，那受瀏覽器的模組規則管轄，content-type 稍有出入就整個拒絕，而各家嚴格程度不一。純資料檔沒有理由承受這個風險，改用 fetch 拿文字自己解析，各瀏覽器行為一致；動態 import 留作後備。載入失敗時也會把實際原因寫在畫面上，而不是只留一個空的下拉。' },
+    { d: '2026/09/06', t: '版本戳改成自動維護', s: '程式碼裡用 import 動態載入的資料檔，版本戳一直是手改的，改完資料忘記改戳記就會讓瀏覽器用一年期快取黏住舊資料。戳記工具改成兩輪：先把資料檔的戳記寫進程式碼，再把程式碼的戳記寫進 HTML。刻意不帶戳記的那幾支（走 must-revalidate 的、或自己接了時間桶的）不會被誤加。' },
     { d: '2026/09/06', t: '摸魚表可以搜尋曲名', s: '排行本身有七百多列，要看特定一首歌得自己捲。加上搜尋框，日文原名與中文譯名都能比對，半形片假名也搜得到。搜到的結果會連同上方的「目前最高 PT」一起跟著變，所以可以直接拿來查單曲該打哪個難度。' },
     { d: '2026/09/06', t: '曲庫更新獨立成自己的排程', s: '原本掛在「儲值商品資料更新」底下，但曲庫跟商城沒有關係，混在一起會讓人不知道為什麼要去那裡重跑，也沒辦法只重跑曲庫。拆成獨立的一支，時間也錯開。' },
     { d: '2026/09/06', t: '曲庫自我校驗改成看分布而不是看比例', s: '第一次實際執行就被自己的校驗擋下來：上游重新模擬了一批 APPEND 譜面，不符比例 2.79% 超過門檻。但 97% 的係數完全吻合，那顯然不是欄位對應錯誤。改成看不符的「分布」：同一個欄位在大多數譜面上都不符才是對應錯了，集中在特定曲目則是上游正常改資料，放行。' },
@@ -1469,7 +1471,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=25190e0a4b';
+      s.src = 'data/billing.js?v=5561c43354';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -1483,7 +1485,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=d28cbae962';
+      s.src = 'data/borders-db.js?v=2f45287cc6';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -4426,7 +4428,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=25190e0a4b';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=5561c43354';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -10857,20 +10859,50 @@ class Component extends DCLogic {
     if (!force && this.state.epSongs && this.state.epSongs.length) return;
     this._epLoading = true;
     this.setState({ epErr: '' });
-    const done = arr => { this._epLoading = false; this.setState({ epSongs: arr || [], epErr: (arr && arr.length) ? '' : '曲庫載入失敗，點此重試' }); };
-    /* 固定 URL、不帶 ?v=：這支現在由 tools/build-ep-songs.py 每天重建，
-       而版本戳是寫死在這行的（stamp-assets.py 只改 HTML，管不到這裡），
-       留著會讓瀏覽器用 immutable 快取黏住改版前的曲庫。改走 vercel.json 的
-       must-revalidate 規則（見該檔 /data/(billing|b30-consts|ep-songs) 那條），
-       交給 HTTP 驗證判斷新舊 —— 跟 b30-consts 同一套做法。 */
-    import('./data/ep-songs.js')
-      .then(m => done(m.EP_SONGS || []))
-      .catch(() => {
-        // 後備：直接抓檔文字，抽出 EP_SONGS 陣列（動態 import 被擋時仍能載入）
-        fetch('./data/ep-songs.js').then(r => r.text()).then(t => {
-          const k = t.indexOf('EP_SONGS'), i = t.indexOf('[', k), j = t.lastIndexOf(']');
-          done((k >= 0 && i > k && j > i) ? JSON.parse(t.slice(i, j + 1)) : []);
-        }).catch(() => { this._epLoading = false; this.setState({ epErr: '曲庫載入失敗，點此重試' }); });
+    const fail = why => {
+      this._epLoading = false;
+      this.setState({ epErr: '曲庫載入失敗（' + (why || '原因不明') + '），點此重試' });
+    };
+    const done = arr => {
+      this._epLoading = false;
+      if (arr && arr.length) this.setState({ epSongs: arr, epErr: '' });
+      else fail('內容是空的');
+    };
+    /* 用 fetch 拿文字自己解析,不走動態 import。
+       import() 受瀏覽器的模組規則管轄:content-type 稍有出入就整個拒絕載入,
+       而各家嚴格程度不一(Safari 特別嚴)。這支是純資料檔,沒有理由承受那個風險 ——
+       一旦被擋,使用者看到的是一個空的選曲下拉,完全不知道發生什麼事。
+       fetch 沒有 MIME 限制,各瀏覽器行為一致。動態 import 留作後備。 */
+    const parse = t => {
+      const k = t.indexOf('EP_SONGS');
+      if (k < 0) throw new Error('格式不符');
+      const i = t.indexOf('[', k);
+      if (i < 0) throw new Error('找不到陣列');
+      /* 從陣列開頭做括號配對。原本用 lastIndexOf(']') 抓結尾,那在檔案後面
+         再加任何含 ] 的匯出時就會抓錯位置,而且錯得很安靜。 */
+      let depth = 0, inStr = null, esc = false, end = -1;
+      for (let p = i; p < t.length; p++) {
+        const c = t[p];
+        if (inStr) {
+          if (esc) esc = false;
+          else if (c === '\\') esc = true;
+          else if (c === inStr) inStr = null;
+          continue;
+        }
+        if (c === '"' || c === "'") { inStr = c; continue; }
+        if (c === '[') depth++;
+        else if (c === ']') { depth--; if (!depth) { end = p; break; } }
+      }
+      if (end < 0) throw new Error('陣列沒有結尾');
+      return JSON.parse(t.slice(i, end + 1));
+    };
+    fetch('./data/ep-songs.js?v=5107c1e41f')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(t => done(parse(t)))
+      .catch(e1 => {
+        import('./data/ep-songs.js?v=5107c1e41f')
+          .then(m => done(m.EP_SONGS || []))
+          .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
   }
 
