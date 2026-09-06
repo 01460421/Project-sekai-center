@@ -75,7 +75,9 @@ def restamp(path, assets, only_existing=False):
 def main():
     # 第一輪:先把 data / css / vendor 的戳記寫進程式碼檔。
     # 這一輪會改動 js/app.js 之類的檔案,所以它們的雜湊要等這輪做完才算得準。
-    data_assets = collect(['data', 'css', 'vendor'])
+    # 也要含 js:js/app.js 會用 ?v= 引用 js/core.js。core.js 不反過來引用 app.js,
+    # 所以先算 core.js 的雜湊再改 app.js 不會有循環。
+    data_assets = collect(['data', 'css', 'vendor', 'js'])
     code_changed = [f for f in CODE if restamp(ROOT / f, data_assets, only_existing=True)]
 
     # 第二輪:所有資源(含剛被改過的程式碼檔)的戳記寫進 HTML。
@@ -90,6 +92,28 @@ def main():
         print(f'  {rel:32s} v={h}')
     print(f'更新的程式碼檔：{", ".join(code_changed) if code_changed else "無（已是最新）"}')
     print(f'更新的 HTML：{", ".join(changed) if changed else "無（已是最新）"}')
+
+    # 收尾驗證:掃過所有帶戳記的引用,對不上就讓這支失敗。
+    # 戳記過期是會靜靜壞掉的那種問題 —— 使用者拿到一年期快取裡的舊檔,
+    # 畫面上看起來一切正常,只是新功能就是不出現。寧可在這裡紅掉。
+    stale = []
+    for name in HTML + CODE:
+        f = ROOT / name
+        if not f.is_file():
+            continue
+        for m in re.finditer(r'((?:data|js|css|vendor)/[A-Za-z0-9._-]+\.(?:js|css))\?v=([0-9a-f]+)', f.read_text(encoding='utf-8')):
+            rel, ver = m.group(1), m.group(2)
+            t = ROOT / rel
+            if not t.is_file():
+                stale.append(f'{name}: 引用了不存在的 {rel}')
+            elif digest(t) != ver:
+                stale.append(f'{name}: {rel} 戳記 {ver} != 實際 {digest(t)}')
+    if stale:
+        print('\n還有對不上的戳記：', file=sys.stderr)
+        for line in sorted(set(stale)):
+            print('  ' + line, file=sys.stderr)
+        return 1
+    print('戳記一致性檢查：通過')
     return 0
 
 
