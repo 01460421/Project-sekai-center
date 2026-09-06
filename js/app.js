@@ -235,6 +235,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/06', t: '指令面板也能用中文找歌', s: '⌘K 的曲目搜尋跟共用設定犯同一個毛病：只比對日文原名，曲庫裡兩百多首有中文譯名的用中文打就找不到。改用同一支正規化，中文、日文、半形片假名都找得到，結果也會把兩種名字一起顯示。' },
     { d: '2026/09/06', t: '共用設定的選曲修好：475 首原本選不到', s: '計算中心「共用設定」的選曲下拉寫死只顯示前 240 首。曲庫 715 首的現在，那代表有 475 首在下拉裡根本不存在，捲到底也選不到，而且畫面上沒有任何提示——曲庫愈更新愈嚴重。上限拿掉，現在全部都選得到。搜尋也一併修：原本只比對日文原名，曲庫有 245 首有中文譯名卻搜不到；現在中文、日文、半形片假名都找得到，標籤會顯示符合幾首。' },
     { d: '2026/09/06', t: '修好一個會讓新功能看不見的過期戳記', s: 'app.js 載入 core.js 時用的版本戳是舊的，而那是一年期快取 —— 載過舊檔的人會拿到改版前的 core.js，B30 的新功能對他們就是不存在，畫面上又完全看不出異常。戳記工具現在會在收尾時掃過所有引用，只要有一個對不上就讓自己失敗，這種問題不該靠人眼發現。' },
     { d: '2026/09/06', t: '說明文字精簡', s: '各頁的介紹段落砍掉一半：把「這頁能做什麼」留下，把只有動手時才需要知道的操作細節拿掉——那些畫面上本來就看得到。最長的一段從 316 字降到 132 字。公式、段位規則、保底規則、火倍率表這些不動，那是使用者真正要查的內容，砍掉等於毀掉價值。順帶修掉 B30 那句「以三位小數呈現」，小數位數現在可調，那句已經不對了。' },
@@ -11240,8 +11241,13 @@ class Component extends DCLogic {
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
       });
-      (this.state.epSongs || []).filter(x => x.t.toLowerCase().includes(lq)).slice(0, 6).forEach(x => {
-        out.push({ tag: '選曲', tagBg: '#9a63d8', main: x.t, sub: x.time + 's · R' + x.rate, run: () => this.setState({ page: 'calc', ctab: 'ep', songKey: x.id, epq: '', cmdk: false }) });
+      /* 指令面板的曲目搜尋跟共用設定用同一支正規化:原本只比對日文原名,
+         曲庫裡有中文譯名的兩百多首用中文打就找不到。 */
+      const nq = this.normSong(q);
+      (this.state.epSongs || []).filter(x => this.songHay(x).includes(nq)).slice(0, 6).forEach(x => {
+        out.push({ tag: '選曲', tagBg: '#9a63d8', main: x.tc && x.tc !== x.t ? x.tc + '／' + x.t : x.t,
+                   sub: x.time + 's · R' + x.rate,
+                   run: () => this.setState({ page: 'calc', ctab: 'ep', songKey: x.id, epq: '', cmdk: false }) });
       });
       (this.state.tutQA || []).filter(x => ((x.q || '') + (x.kw || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(x => {
         out.push({ tag: '教學', tagBg: '#b8e561', main: x.q, sub: '教學大全', run: () => this.setState({ page: 'tut', tq: x.q, tcat: 'all', tOpen: { [x.cat + '::' + x.q]: 1 }, cmdk: false }) });
