@@ -18,6 +18,7 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   listTasks,
   pendingOrders, confirmOrder, aiUsageRows, aiUsageByUser, aiUsageDaily, aiOpsByUser, twDayStart } from './db.js';
 import { summarize, costUsd, priceOf } from './pricing.js';
+import { chatGemini, hasGemini, geminiModel, listGeminiModels } from './gemini.js';
 
 /* 模型 id 與參數依 claude-api skill 查證，不是憑記憶寫的。
    Opus 5 預設就跑 adaptive thinking，不必（也不能）再給 budget_tokens；
@@ -399,7 +400,17 @@ export function validateChat(body) {
   /* profile 只收白名單裡的代號。不接受前端送模型名稱 —— 那等於把選模型
      (也就是花多少錢)的權力交出去。認不得的代號就當沒指定,退回預設。 */
   const profile = (typeof body.profile === 'string' && PROFILES[body.profile]) ? body.profile : null;
-  return { messages, tools, profile,
+  /* 供應商同樣只收白名單代號。dual=true 就是雙路並行(Claude + Gemini 同時跑),
+     provider 則是單指定一路。都不給就走預設的 claude。
+     跟 profile 一樣的理由:不接受前端送模型名稱。 */
+  const KNOWN = ['claude', 'gemini'];
+  let providers;
+  if (body.dual === true) providers = KNOWN.slice();
+  else {
+    const one = typeof body.provider === 'string' && KNOWN.indexOf(body.provider) >= 0 ? body.provider : 'claude';
+    providers = [one];
+  }
+  return { messages, tools, profile, providers,
     system: typeof body.system === 'string' ? body.system.slice(0, 8000) : null };
 }
 
@@ -701,6 +712,29 @@ export async function handleAdmin(req, env, url, user) {
       const k = String(env.ANTHROPIC_API_KEY);
       return json({ model: env.AI_MODEL || MODEL, key_shape: k.slice(0, 8) + '…' + k.slice(-4) + '（長度 ' + k.length + '）',
                     trials: out });
+    }
+
+    /* Gemini 連線診斷。接上去第一次最常見的錯是模型 id 不對(Google 的命名
+       換得比 Anthropic 勤),所以這支主要就是把「這把金鑰實際看得到哪些模型」
+       列出來,再拿設定中的那個做一次最小呼叫。 */
+    if (p === '/admin/diag/gemini' && req.method === 'GET') {
+      if (!hasGemini(env)) return json({ error: 'no_key', message: '尚未設定 GEMINI_API_KEY' }, 503);
+      const model = geminiModel(env);
+      let models = null, listErr = null;
+      try { models = await listGeminiModels(env); } catch (e) { listErr = (e && e.message) || String(e); }
+      let call = null;
+      try {
+        const r = await chatGemini(env, { messages: [{ role: 'user', content: 'ping' }], tools: [], system: null, profile: null });
+        call = { ok: true, model: r.model, stop_reason: r.stop_reason, tokens_in: r.tokens_in, tokens_out: r.tokens_out,
+                 text: (r.content || []).filter(c => c.type === 'text').map(c => c.text).join('').slice(0, 120) };
+      } catch (e) { call = { ok: false, error: (e && e.message) || String(e) }; }
+      const gk = String(env.GEMINI_API_KEY);
+      return json({
+        model, configured_by: env.AI_GEMINI_MODEL ? 'AI_GEMINI_MODEL' : '預設值',
+        key_shape: gk.slice(0, 6) + '…' + gk.slice(-4) + '（長度 ' + gk.length + '）',
+        model_available: models ? models.indexOf(model) >= 0 : null,
+        models, models_error: listErr, call,
+      });
     }
 
     if (p === '/admin/tasks' && req.method === 'GET') {

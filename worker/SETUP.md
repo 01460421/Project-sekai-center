@@ -43,6 +43,7 @@ MailChannels 的 Workers 免費方案已於 2024 年終止，Cloudflare 官方�
 <https://discord.com/developers/applications> 建 application →
 OAuth2 → Redirects 加入 `https://games.project-sekai-center.com/auth/discord/callback` →
 ```bash
+npx wrangler secret put GEMINI_API_KEY   # 選用：AI 雙路並行的第二家
 npx wrangler secret put DISCORD_CLIENT_ID
 npx wrangler secret put DISCORD_CLIENT_SECRET
 ```

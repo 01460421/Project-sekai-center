@@ -247,9 +247,15 @@ export const markRead = (db, userId, id) => id
 
 /* 今日全站的 AI 呼叫數。個人上限擋得住單一使用者,擋不住「十個人同時用滿」——
    帳戶餘額是全站共用的,所以需要一道總量保護。 */
+/* 站台上限算的是「操作次數」,不是 admin_log 的列數。
+   雙路並行之後一輪會寫兩列(Claude 一列、Gemini 一列),照列數算的話
+   站台閘門會在一半的流量就跳掉。改成數不同的 op_id,跟 685c826 之後
+   的每人上限(也是算操作)口徑一致;沒帶 op_id 的舊列各自算一次。 */
 export async function aiUsedTodaySite(db) {
   const since = now() - 86400;
-  const r = await one(db, 'SELECT count(*) AS c FROM admin_log WHERE created_at>=?', since);
+  const r = await one(db,
+    'SELECT (SELECT count(DISTINCT op_id) FROM admin_log WHERE created_at>=?1 AND op_id IS NOT NULL)'
+    + ' + (SELECT count(*) FROM admin_log WHERE created_at>=?1 AND op_id IS NULL) AS c', since);
   return (r && r.c) || 0;
 }
 

@@ -5987,7 +5987,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     lines.forEach((t, i) => ctx.fillText(t, x, yTop + i * lh, 994));
                     ctx.textAlign = 'left';
                 };
-                const built = (() => { try { const b = this.D() && this.D().builtAt; return b ? String(b).slice(0, 10) : ''; } catch (e) { return ''; } })();
+                // builtAt 是 unix 毫秒(例:1787888107618),不是日期字串,要轉過再截
+                const built = (() => { try { const b = this.D() && this.D().builtAt; if (!b) return ''; const d = new Date(typeof b === 'number' ? b : +b); return isFinite(+d) ? d.toISOString().slice(0, 10) : ''; } catch (e) { return ''; } })();
 
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 12.5px ' + FB;
                 foot([
