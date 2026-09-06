@@ -27,6 +27,12 @@ jobs:
       - name: 重建 data/b30-consts.js(定數表)
         run: python3 tools/build-b30.py || echo "定數表更新失敗,本輪略過"
 
+      # 計算中心／摸魚表的曲庫。原本是一次性從 ep-calculator.html 抽出來的,沒有
+      # 更新機制,新歌一直進不來 —— 補這支之前它比定數表少了 70 首。
+      # 腳本內建自我校驗:重建結果跟舊檔對不上就會自己中止,不會寫出錯的曲庫。
+      - name: 重建 data/ep-songs.js(EP 曲庫)
+        run: python3 tools/build-ep-songs.py || echo "EP 曲庫更新失敗,本輪略過"
+
       # good果汁的榜線/交換所表格、瑞憶春希的豆森娃月列表:上游更新後這裡跟著同步。
       # 兩支都是「內容沒變就不寫檔」,所以多數日子不會產生提交。
       - name: 同步社群資料表(good果汁)
@@ -37,14 +43,14 @@ jobs:
 
       - name: 提交變更
         run: |
-          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js)" ]; then
+          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/ep-songs.js data/ep-song-windows.js)" ]; then
             echo "沒有新資料，不提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js
-          git commit -m "商城/定數資料 $(date -u '+%Y-%m-%d') [skip ci]"
+          git add data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/ep-songs.js data/ep-song-windows.js
+          git commit -m "商城/定數/曲庫資料 $(date -u '+%Y-%m-%d') [skip ci]"
           # 與榜線快照同款:落後就先 rebase 再推
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
