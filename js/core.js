@@ -5385,6 +5385,278 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             }
         };
 
+        /* ========== B30 截圖辨識 ==========
+           從台服選曲畫面的截圖讀出每首曲子的 FC／AP。
+
+           成績符號不用 AI:遊戲畫面用的是四種固定塗色,判得比模型準、也不花錢也不排隊。
+           以一張 2420x1668 的真實截圖、36 格人工核對過,四種狀態是:
+             未通關=深藍黑、已通關=金黃(hue≈47°)、FC=洋紅(hue≈288°)、AP=彩虹漸層。
+           判法刻意反過來寫:FC 一定被洋紅佔滿(實測佔比 ≥0.62)、CLEAR 一定被金色佔滿,
+           而彩虹永遠不會被單一色相佔滿(洋紅佔比實測 ≤0.31)——所以「亮著、又不是這兩者」
+           就是 AP。這比「找綠色像素」耐得住縮圖與 JPEG:壓縮會把彩虹洗淡,但洗不成純色。
+
+           解析度自適應:所有門檻都是量到的幾何的比例,沒有任何絕對像素常數;
+           偵測完先看符號多大,太小就整張放大到 TARGET 再重跑一次 ——
+           直接在小圖上取色會因為取樣點太少而抖。
+           以 0.30x～1.5x 縮放與 JPEG q60～q85 實測:凡是抓到的列,判讀正確率都是 100%,
+           極端壓縮下只會少抓到幾列,不會給出錯的資料。 */
+        const B30Shot = (() => {
+
+        var TARGET_GLYPH = 22;   // 取色穩定所需的符號邊長
+        var MIN_GLYPH = 7;       // 原圖再小就沒有細節可救了
+        var MAXW = 3400;
+
+        // 難度順序固定:由左而右 綠藍黃紅紫彩
+        var SLOTS = ['easy', 'normal', 'hard', 'expert', 'master', 'append'];
+
+        function hsvOf(r, g, b) {
+          var mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+          var mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+          var d = mx - mn, h = 0;
+          if (d > 0) {
+            if (mx === r) h = ((g - b) / d) % 6;
+            else if (mx === g) h = (b - r) / d + 2;
+            else h = (r - g) / d + 4;
+            h *= 60; if (h < 0) h += 360;
+          }
+          return [h, mx > 0 ? d / mx : 0, mx / 255];
+        }
+
+        /* 把 ImageData 拆成三張平面圖,後面每個步驟都只讀不算 */
+        function planes(img) {
+          var n = img.width * img.height, d = img.data;
+          var H = new Float32Array(n), S = new Float32Array(n), V = new Float32Array(n);
+          for (var i = 0, p = 0; i < n; i++, p += 4) {
+            var c = hsvOf(d[p], d[p + 1], d[p + 2]);
+            H[i] = c[0]; S[i] = c[1]; V[i] = c[2];
+          }
+          return { H: H, S: S, V: V, w: img.width, h: img.height };
+        }
+
+        /* 4-連通元件。用 Int32Array 當堆疊,不遞迴 —— 一張 3400px 寬的截圖
+           遞迴會炸掉呼叫堆疊。 */
+        function components(P) {
+          var w = P.w, h = P.h, n = w * h;
+          var seen = new Uint8Array(n), stack = new Int32Array(n), out = [];
+          for (var i = 0; i < n; i++) {
+            if (seen[i] || !(P.S[i] > 0.16 && P.V[i] > 0.55)) continue;
+            var sp = 0; stack[sp++] = i; seen[i] = 1;
+            var x0 = i % w, x1 = x0, y0 = (i / w) | 0, y1 = y0, area = 0;
+            while (sp > 0) {
+              var q = stack[--sp], qx = q % w, qy = (q / w) | 0;
+              area++;
+              if (qx < x0) x0 = qx; if (qx > x1) x1 = qx;
+              if (qy < y0) y0 = qy; if (qy > y1) y1 = qy;
+              if (qx > 0) { var a = q - 1; if (!seen[a] && P.S[a] > 0.16 && P.V[a] > 0.55) { seen[a] = 1; stack[sp++] = a; } }
+              if (qx < w - 1) { var b = q + 1; if (!seen[b] && P.S[b] > 0.16 && P.V[b] > 0.55) { seen[b] = 1; stack[sp++] = b; } }
+              if (qy > 0) { var c = q - w; if (!seen[c] && P.S[c] > 0.16 && P.V[c] > 0.55) { seen[c] = 1; stack[sp++] = c; } }
+              if (qy < h - 1) { var e = q + w; if (!seen[e] && P.S[e] > 0.16 && P.V[e] > 0.55) { seen[e] = 1; stack[sp++] = e; } }
+            }
+            var bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+            if (bh < MIN_GLYPH - 1 || bw < MIN_GLYPH - 1) continue;
+            if (bh > h * 0.08 || bw > w * 0.08) continue;      // 不是封面那種大色塊
+            var ar = bw / bh;
+            if (ar < 0.70 || ar > 1.80) continue;              // 接近正方
+            if (area < 0.35 * bw * bh) continue;               // 是實心,不是外框
+            out.push([x0, x1 + 1, y0, y1 + 1, bw, bh]);
+          }
+          return out;
+        }
+
+        function median(a) {
+          if (!a.length) return 0;
+          var b = a.slice().sort(function (x, y) { return x - y; });
+          var m = b.length >> 1;
+          return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2;
+        }
+
+        /* 候選符號大小。用百分位掃描而不是分群 —— 高度分佈是連續的,
+           鏈結式分群會把雜訊一路併到真正的符號,最後得到一個沒有用的中位數。 */
+        function sizeHypotheses(cands) {
+          if (cands.length < 8) return [];
+          var hs = cands.map(function (c) { return c[5]; }).sort(function (a, b) { return a - b; });
+          var seen = {}, out = [];
+          for (var q = 5; q < 100; q += 5) {
+            var v = Math.round(hs[Math.min(hs.length - 1, Math.floor(hs.length * q / 100))]);
+            if (v >= MIN_GLYPH && !seen[v]) { seen[v] = 1; out.push(v); }
+          }
+          return out;
+        }
+
+        /* 依垂直重疊分列。用重疊而不是中心距離,才容得下被選中那一列放大的符號。 */
+        function bands(boxes) {
+          var rows = [];
+          boxes.slice().sort(function (a, b) { return a[2] - b[2]; }).forEach(function (b) {
+            for (var i = 0; i < rows.length; i++) {
+              var r = rows[i], ry0 = Infinity, ry1 = -Infinity;
+              for (var j = 0; j < r.length; j++) { if (r[j][2] < ry0) ry0 = r[j][2]; if (r[j][3] > ry1) ry1 = r[j][3]; }
+              var ov = Math.min(ry1, b[3]) - Math.max(ry0, b[2]);
+              if (ov > 0.45 * Math.min(ry1 - ry0, b[3] - b[2])) { r.push(b); return; }
+            }
+            rows.push([b]);
+          });
+          rows.forEach(function (r) { r.sort(function (a, b) { return (a[0] + a[1]) - (b[0] + b[1]); }); });
+          rows.sort(function (a, b) { return a[0][2] - b[0][2]; });
+          return rows;
+        }
+
+        /* 一列裡切出「等距的一組符號」。
+           前五個菱形等距,APPEND 那顆被推得比較開,所以做法是:拿掉最寬的那個間距,
+           其餘必須等距,再回頭確認被拿掉的那個是合理的 APPEND 間距、而且在最右邊。
+           早期版本用兩個各自獨立的門檻(>1.25 算寬、其餘容許 0.22),中間留下一道
+           死角:實測被選中那列的比值是 1.235,兩邊都不符合而整列被丟掉。 */
+        function groupsInBand(r, h) {
+          var raw = [], cur = [r[0]];
+          for (var i = 1; i < r.length; i++) {
+            var gap = (r[i][0] + r[i][1]) / 2 - (cur[cur.length - 1][0] + cur[cur.length - 1][1]) / 2;
+            if (gap > 2.4 * h) { raw.push(cur); cur = []; }
+            cur.push(r[i]);
+          }
+          raw.push(cur);
+          var good = [];
+          raw.forEach(function (g) {
+            if (g.length < 4 || g.length > 6) return;
+            var cs = g.map(function (b) { return (b[0] + b[1]) / 2; }), gaps = [];
+            for (var i = 1; i < cs.length; i++) gaps.push(cs[i] - cs[i - 1]);
+            if (!gaps.length || Math.min.apply(null, gaps) <= 0) return;
+            var k = 0; for (var j = 1; j < gaps.length; j++) if (gaps[j] > gaps[k]) k = j;
+            var rest = gaps.filter(function (_, j) { return j !== k; });
+            if (!rest.length) return;
+            var base = median(rest);
+            if (base <= 0) return;
+            for (var m = 0; m < rest.length; m++) if (Math.abs(rest[m] - base) / base > 0.20) return;
+            var ratio = gaps[k] / base;
+            if (ratio < 0.90 || ratio > 2.30) return;
+            if (ratio > 1.18 && k !== gaps.length - 1) return;   // 寬的那個一定是最右邊(APPEND)
+            good.push(g);
+          });
+          return good;
+        }
+
+        function findGroups(P) {
+          var cands = components(P);
+          if (!cands.length) return null;
+          var per = [], hyp = sizeHypotheses(cands);
+          for (var i = 0; i < hyp.length; i++) {
+            var med = hyp[i];
+            var sel = cands.filter(function (c) { return c[5] >= 0.82 * med && c[5] <= 1.22 * med; });
+            if (sel.length < 4) continue;
+            var gs = [];
+            bands(sel).forEach(function (b) { gs = gs.concat(groupsInBand(b, med)); });
+            if (gs.length) per.push({ med: med, gs: gs });
+          }
+          if (!per.length) return null;
+          var score = function (o) { return o.gs.filter(function (g) { return g.length >= 5; }).length * 10 + o.gs.length; };
+          var best = per[0];
+          per.forEach(function (o) { if (score(o) > score(best)) best = o; });
+          var out = best.gs.slice();
+          var ov = function (g, e) {
+            var a0 = Math.min.apply(null, g.map(function (b) { return b[2]; })), a1 = Math.max.apply(null, g.map(function (b) { return b[3]; }));
+            var b0 = Math.min.apply(null, e.map(function (b) { return b[2]; })), b1 = Math.max.apply(null, e.map(function (b) { return b[3]; }));
+            return Math.min(a1, b1) - Math.max(a0, b0) > 0.35 * Math.min(a1 - a0, b1 - b0);
+          };
+          // 併入其他尺寸找到的列(被選中那列會被畫大)。完整的六格一定勝過重疊的殘缺組。
+          per.forEach(function (o) {
+            if (o === best) return;
+            o.gs.forEach(function (g) {
+              if (g.length < 5) return;
+              var clash = out.filter(function (e) { return ov(g, e); });
+              if (!clash.length) { out.push(g); return; }
+              if (clash.every(function (e) { return g.length > e.length; })) {
+                out = out.filter(function (e) { return clash.indexOf(e) < 0; });
+                out.push(g);
+              }
+            });
+          });
+          return { med: best.med, groups: out };
+        }
+
+        function classify(P, x0, x1, y0, y1) {
+          var w = x1 - x0, h = y1 - y0;
+          // 只取內縮後的核心,避開深色描邊與列背景;符號太小就少縮一點,不然取樣點不夠
+          var f = Math.min(w, h) >= 14 ? 0.30 : 0.18;
+          var ix0 = Math.round(x0 + w * f), ix1 = Math.round(x1 - w * f);
+          var iy0 = Math.round(y0 + h * f), iy1 = Math.round(y1 - h * f);
+          if (ix1 - ix0 < 2) { ix0 = x0; ix1 = x1; }
+          if (iy1 - iy0 < 2) { iy0 = y0; iy1 = y1; }
+          var sumV = 0, sumS = 0, n = 0, hues = [], sats = [];
+          for (var y = iy0; y < iy1; y++) {
+            if (y < 0 || y >= P.h) continue;
+            for (var x = ix0; x < ix1; x++) {
+              if (x < 0 || x >= P.w) continue;
+              var i = y * P.w + x;
+              sumV += P.V[i]; sumS += P.S[i]; n++;
+              hues.push(P.H[i]); sats.push(P.S[i]);
+            }
+          }
+          if (!n) return 'none';
+          if (sumV / n < 0.42 && sumS / n < 0.55) return 'none';   // 未通關是一片深藍黑
+          var lit = [];
+          for (var k = 0; k < hues.length; k++) if (sats[k] > 0.25) lit.push(hues[k]);
+          // 亮部的白色高光色相不穩,先用高飽和的核心;真的太少再放寬
+          if (lit.length < 4) { lit = []; for (var k2 = 0; k2 < hues.length; k2++) if (sats[k2] > 0.15) lit.push(hues[k2]); }
+          if (lit.length < 4 || lit.length < 0.25 * n) return 'none';
+          var mag = 0, gld = 0;
+          for (var t = 0; t < lit.length; t++) {
+            var hv = lit[t];
+            if (hv >= 265 && hv <= 320) mag++;
+            else if (hv >= 30 && hv <= 65) gld++;
+          }
+          mag /= lit.length; gld /= lit.length;
+          if (mag > 0.50) return 'fc';
+          if (gld > 0.50) return 'clear';
+          return 'ap';   // 亮著、又不被單一色相佔滿 = 彩虹
+        }
+
+        /* 主入口。傳入一個能給 ImageData 的取樣函式,讓瀏覽器與測試共用同一段邏輯。
+           draw(scale) 要回傳整張圖以 scale 倍縮放後的 ImageData。 */
+        function read(draw, natW) {
+          var pre = natW > MAXW ? MAXW / natW : 1;
+          var P = planes(draw(pre));
+          var fg = findGroups(P);
+          if (!fg) return { rows: [], reason: 'no-marks' };
+          var up = 1;
+          if (fg.med < TARGET_GLYPH) {
+            if (fg.med < MIN_GLYPH) return { rows: [], reason: 'too-small' };
+            up = Math.min(TARGET_GLYPH / fg.med, 4);
+            var P2 = planes(draw(pre * up));
+            var fg2 = findGroups(P2);
+            if (fg2) { P = P2; fg = fg2; } else { up = 1; }
+          }
+          var med = fg.med, groups = fg.groups;
+          var six = groups.filter(function (g) {
+            return g.length === 6 && Math.abs(median(g.map(function (b) { return b[5]; })) - med) <= 0.18 * med;
+          });
+          var cols = null;
+          if (six.length >= 2) {
+            cols = [];
+            for (var i = 0; i < 6; i++) cols.push(median(six.map(function (g) { return (g[i][0] + g[i][1]) / 2; })));
+          }
+          var rows = [];
+          groups.forEach(function (g) {
+            var hh = median(g.map(function (b) { return b[5]; }));
+            var y0 = median(g.map(function (b) { return b[2]; })), y1 = median(g.map(function (b) { return b[3]; }));
+            var slots;
+            if (g.length === 6) slots = g.map(function (b) { return [b[0], b[1]]; });
+            else if (cols && Math.abs(hh - med) <= 0.18 * med) {
+              slots = cols.map(function (c) { return [Math.round(c - hh / 2), Math.round(c + hh / 2)]; });
+            } else return;
+            var marks = slots.map(function (s) { return classify(P, s[0], s[1], y0, y1); });
+            if (marks.every(function (m) { return m === 'none'; })) return;
+            var k = pre * up;
+            rows.push({
+              y0: y0 / k, y1: y1 / k, cy: (y0 + y1) / 2 / k,
+              marks: marks,
+              // B30 的曲庫只有 expert／master／append,綠藍黃三格用不到
+              of: { expert: marks[3], master: marks[4], append: marks[5] }
+            });
+          });
+          rows.sort(function (a, b) { return a.cy - b.cy; });
+          return { rows: rows, glyph: med / up, scale: pre * up, reason: rows.length ? '' : 'no-rows' };
+        }
+            return { read, SLOTS, _classify: classify };
+        })();
+
         // ========== 二十五:B30 產生器(Unibot 版面高還原+PNG 匯出) ==========
         // 定數:pentatonic V31 難易度表(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
         // 実効值:AP=定數;FC=定數−1(本站採用,取代 Unibot 的 −1.5/−1 分段) — 非官方
@@ -5401,23 +5673,327 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             // + = +0.05;++ = +0.09999999(緊貼下一帶但嚴格小於——顯示四捨五入成下一帶值,
             // 排序永遠保持在真正下一帶譜面「後面」,如 34.9++ 顯示 35.00 但排在 35.0 之後)
             fmt: 'plus',
+            // 小數位數(使用者可調 0~4)。套用到 B30 実効值/理論值,以及「數值計算」模式下的定數與実効值。
+            // 符號模式(34.9+)結構上綁死 1 位小數,不受這個設定影響——否則 0 位會變成「35+」而跟真正的 35.0 撞號。
+            dec: 3,
             PLUS_ADD: [0, 0.05, 0.09999999],
             // 「+」一律計入運算(單一真相),兩種模式只差在「怎麼寫」——符號模式沿用 34.9+ 寫法,
             // 且 FC 減值後仍保留符號(34.9+ 的 FC = 33.9+),不會把 + 吃掉
             cval(c) { return c.c + this.PLUS_ADD[c.p || 0]; },
-            cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(2) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
+            cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(this.dec) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
             vTxt(v, c) {
-                if (this.fmt === 'num') return v.toFixed(2);
+                if (this.fmt === 'num') return v.toFixed(this.dec);
                 const p = (c && c.p) || 0;
                 return (v - this.PLUS_ADD[p]).toFixed(1) + '+'.repeat(p);
             },
-            bTxt(v) { return v.toFixed(3); },
+            bTxt(v) { return v.toFixed(this.dec); },
             setFmt(v) {
                 this.fmt = v === 'num' ? 'num' : 'plus';
                 try { localStorage.setItem('sekai-b30-fmt', this.fmt); } catch (e) {}
                 this.renderStats(); this.renderList();
                 const msg = document.getElementById('b30GenMsg');
                 if (msg) msg.textContent = '定數格式已切換,重按「產生」即可套用到圖片。';
+            },
+            setDec(v) {
+                const n = parseInt(v, 10);
+                this.dec = (n >= 0 && n <= 4) ? n : 3;
+                try { localStorage.setItem('sekai-b30-dec', String(this.dec)); } catch (e) {}
+                this.renderStats(); this.renderList();
+                const msg = document.getElementById('b30GenMsg');
+                if (msg) msg.textContent = '小數位數已切換,重按「產生」即可套用到圖片。';
+            },
+
+            /* ---------- 截圖辨識 ---------- */
+            /* 成績符號由 B30Shot 純前端判讀(準、免費、離線);曲名走站上的 AI 代理。
+               曲名是唯一需要模型的部分:遊戲字體 + 日文,傳統 OCR 認不準,
+               而 Tesseract 的日文語言包又是十幾 MB,對一個靜態站台不划算。
+               雙路並行(dual)在這裡特別有價值:兩家各讀一次,不一致的列直接標出來讓人看。 */
+            GAMES_API: 'https://games.project-sekai-center.com',
+            shot: { busy: false, msg: '', rows: [], err: '' },
+
+            shotNorm(t) {
+                let x = String(t || '');
+                try { x = x.normalize('NFKC'); } catch (e) {}
+                return x.toLowerCase()
+                    .replace(/[ー‐‑‒–—―−－-]/g, '')
+                    .replace(/[〜～~]/g, '')
+                    .replace(/[\s　]/g, '')
+                    .replace(/[!?！？.,、。・:;'"“”‘’()（）\[\]【】《》「」『』+*/\\&@#_]/g, '');
+            },
+            /* 曲名 → 曲庫。先精確,再前綴,最後才用相似度。
+               相似度用最長公共子序列比例,對 OCR 常見的漏字/多字比編輯距離穩。 */
+            shotMatch(title) {
+                const D = this.D(); if (!D) return null;
+                const q = this.shotNorm(title);
+                if (!q) return null;
+                if (!this._shotIdx) {
+                    const idx = {};
+                    D.charts.forEach(c => {
+                        [c.t, c.tc].forEach(nm => {
+                            if (!nm) return;
+                            const k = this.shotNorm(nm);
+                            if (!k) return;
+                            if (idx[k] == null) idx[k] = c.id;
+                        });
+                    });
+                    this._shotIdx = idx;
+                    this._shotKeys = Object.keys(idx);
+                }
+                if (this._shotIdx[q] != null) return { id: this._shotIdx[q], score: 1 };
+                const lcs = (a, b) => {
+                    a = a.slice(0, 40); b = b.slice(0, 40);
+                    const m = a.length, n = b.length;
+                    if (!m || !n) return 0;
+                    let prev = new Uint16Array(n + 1), cur = new Uint16Array(n + 1);
+                    for (let i = 1; i <= m; i++) {
+                        for (let j = 1; j <= n; j++) {
+                            cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
+                        }
+                        const t = prev; prev = cur; cur = t; cur.fill(0);
+                    }
+                    return prev[n] / Math.max(m, n);
+                };
+                let best = null;
+                for (const k of this._shotKeys) {
+                    let sc = 0;
+                    if (k.indexOf(q) === 0 || q.indexOf(k) === 0) {
+                        sc = 0.90 * Math.min(k.length, q.length) / Math.max(k.length, q.length);
+                    } else if (Math.abs(k.length - q.length) <= Math.max(4, q.length * 0.5)) {
+                        sc = lcs(q, k) * 0.88;
+                    }
+                    if (sc > 0.55 && (!best || sc > best.score)) best = { id: this._shotIdx[k], score: sc };
+                }
+                return best;
+            },
+            /* 一張圖縮成 base64。逐級退讓到進得了 /api/chat 的 4MB body。 */
+            shotB64(img) {
+                const CAP = 2600000;
+                const steps = [[1800, 0.86], [1600, 0.82], [1400, 0.78], [1100, 0.7], [900, 0.6]];
+                for (const st of steps) {
+                    const sc = Math.min(1, st[0] / img.naturalWidth);
+                    const cv = document.createElement('canvas');
+                    cv.width = Math.max(1, Math.round(img.naturalWidth * sc));
+                    cv.height = Math.max(1, Math.round(img.naturalHeight * sc));
+                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                    const b = cv.toDataURL('image/jpeg', st[1]).split(',')[1];
+                    if (b && b.length <= CAP) return b;
+                }
+                return null;
+            },
+            async shotTitles(b64) {
+                const body = {
+                    kind: 'scan',
+                    dual: (() => { try { return localStorage.getItem('sekai-ai-dual') === '1'; } catch (e) { return false; } })(),
+                    system: '你在讀一張 Project SEKAI(世界計畫)遊戲內「選曲畫面」的截圖。\n'
+                        + '畫面左側是曲目清單,每一列有封面縮圖、曲名,曲名下方有一排成績符號。\n'
+                        + '請由上而下,把每一列的「曲名」抄下來。\n'
+                        + '・曲名照畫面上的原文抄,通常是日文;不要翻譯、不要補字、不要猜。\n'
+                        + '・被裁切到只剩半行、或被其他元素蓋住而讀不全的那一列就不要放進來。\n'
+                        + '・右側如果有被放大的單曲預覽面板,那是同一首歌的重複顯示,不要另外列一筆。\n'
+                        + '・每一列還要給 y:那一列在整張圖上的垂直中心,用 0~1 的相對值。\n'
+                        + '　這個數字用來跟前端自己算出來的位置對齊,務必照實填。',
+                    messages: [{ role: 'user', content: [
+                        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+                        { type: 'text', text: '把這張選曲畫面裡每一列的曲名抄下來,呼叫 submit_songs 回報。' },
+                    ] }],
+                    tools: [{ name: 'submit_songs', description: '回報截圖裡每一列的曲名與垂直位置。',
+                        input_schema: { type: 'object', properties: {
+                            songs: { type: 'array', description: '每列一筆,由上而下', items: { type: 'object', properties: {
+                                title: { type: 'string', description: '畫面上的曲名原文' },
+                                y: { type: 'number', description: '這一列垂直中心在圖上的相對位置 0~1' },
+                            }, required: ['title', 'y'] } },
+                        }, required: ['songs'] } }],
+                };
+                const r = await fetch(this.GAMES_API + '/api/chat', {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const d = await r.json().catch(() => null);
+                if (!r.ok) {
+                    if (r.status === 403 || (d && d.error === 'not_signed_in')) {
+                        throw new Error('請先在本站登入(首頁右上角)再用截圖辨識。成績符號的判讀不需要登入,但曲名要透過站上的 AI 代理。');
+                    }
+                    throw new Error((d && d.message) || ('HTTP ' + r.status));
+                }
+                const pick = (content) => {
+                    const u = (content || []).find(c => c.type === 'tool_use' && c.name === 'submit_songs');
+                    return (u && u.input && Array.isArray(u.input.songs)) ? u.input.songs : null;
+                };
+                const lanes = ((d && d.results) || []).filter(l => l && l.ok)
+                    .map(l => ({ provider: l.provider, songs: pick(l.content) }))
+                    .filter(l => l.songs && l.songs.length);
+                const primary = pick(d && d.content);
+                if (!lanes.length) return { songs: primary || [], alt: null };
+                return { songs: lanes[0].songs || primary || [], alt: lanes.length > 1 ? lanes[1] : null };
+            },
+            async shotFiles(files) {
+                const list = Array.prototype.slice.call(files || []).filter(f => f && /^image\//.test(f.type));
+                if (!list.length) return;
+                if (!this.D()) { this.shot.err = '定數資料還沒載入,請稍候再試。'; this.renderShot(); return; }
+                this.shot = { busy: true, msg: '讀取中…', rows: (this.shot && this.shot.rows) || [], err: '' };
+                this.renderShot();
+                try {
+                    for (let n = 0; n < list.length; n++) {
+                        const pre = list.length > 1 ? '(' + (n + 1) + '/' + list.length + ') ' : '';
+                        const img = await new Promise((res, rej) => {
+                            const im = new Image(); const u = URL.createObjectURL(list[n]);
+                            im.onload = () => { URL.revokeObjectURL(u); res(im); };
+                            im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('圖片讀取失敗')); };
+                            im.src = u;
+                        });
+                        this.shot.msg = pre + '判讀成績符號…'; this.renderShot();
+                        const cv = document.createElement('canvas');
+                        const cx = cv.getContext('2d', { willReadFrequently: true });
+                        const draw = (scale) => {
+                            cv.width = Math.max(1, Math.round(img.naturalWidth * scale));
+                            cv.height = Math.max(1, Math.round(img.naturalHeight * scale));
+                            cx.clearRect(0, 0, cv.width, cv.height);
+                            cx.drawImage(img, 0, 0, cv.width, cv.height);
+                            return cx.getImageData(0, 0, cv.width, cv.height);
+                        };
+                        const det = B30Shot.read(draw, img.naturalWidth);
+                        if (!det.rows.length) {
+                            this.shot.err = det.reason === 'too-small'
+                                ? '截圖太小,成績符號已經糊掉了。請用原始解析度的截圖,不要先縮圖。'
+                                : '這張圖裡找不到成績符號那一排。請截「選曲畫面」的曲目清單,不要只截單曲面板。';
+                            continue;
+                        }
+                        this.shot.msg = pre + '讀到 ' + det.rows.length + ' 列,辨識曲名…'; this.renderShot();
+                        const b64 = this.shotB64(img);
+                        if (!b64) throw new Error('圖片轉檔失敗,請換一張圖片');
+                        const got = await this.shotTitles(b64);
+                        const songs = got.songs, alt = got.alt;
+                        if (!songs || !songs.length) throw new Error('曲名辨識沒有回傳結果,請換一張更清楚的截圖');
+                        const H = img.naturalHeight;
+                        /* 把 AI 給的曲名配到前端自己算出來的列上。
+                           數量一樣就照順序配 —— 兩邊都是由上而下,順序比座標可靠,
+                           而且模型給的 y 常常抓的是整列的中心、前端抓的是符號那一排,
+                           兩者本來就差了一個標題的高度。
+                           數量不一樣才退回用垂直距離,而且一個曲名只能被用一次,
+                           否則兩列會搶到同一首歌。 */
+                        const byY = (arr) => (arr || []).slice().sort((a, b) => (+a.y || 0) - (+b.y || 0));
+                        const assign = (arr) => {
+                            const src = byY(arr), out = new Array(det.rows.length).fill(null);
+                            if (src.length === det.rows.length) { for (let i = 0; i < src.length; i++) out[i] = src[i]; return out; }
+                            const used = new Array(src.length).fill(false);
+                            const pairs = [];
+                            det.rows.forEach((row, ri) => src.forEach((s, si) => {
+                                pairs.push([Math.abs((+s.y || 0) * H - row.cy), ri, si]);
+                            }));
+                            pairs.sort((a, b) => a[0] - b[0]);
+                            pairs.forEach(pr => {
+                                if (pr[0] > H * 0.06) return;
+                                if (out[pr[1]] || used[pr[2]]) return;
+                                out[pr[1]] = src[pr[2]]; used[pr[2]] = true;
+                            });
+                            return out;
+                        };
+                        const mainA = assign(songs);
+                        const altA = alt ? assign(alt.songs) : null;
+                        det.rows.forEach((row, ri) => {
+                            const hit = mainA[ri];
+                            if (!hit || !hit.title) return;
+                            const mt = this.shotMatch(hit.title);
+                            const other = (altA && altA[ri] && altA[ri].title) || '';
+                            this.shot.rows.push({
+                                title: hit.title, songId: mt ? mt.id : null, score: mt ? mt.score : 0,
+                                of: row.of, use: !!mt,
+                                dis: other && this.shotNorm(other) !== this.shotNorm(hit.title) ? other : '',
+                            });
+                        });
+                    }
+                    const seen = {};
+                    this.shot.rows = this.shot.rows.reverse().filter(r => {
+                        const k = r.songId != null ? 's' + r.songId : 't' + r.title;
+                        if (seen[k]) return false; seen[k] = 1; return true;
+                    }).reverse();
+                    this.shot.msg = this.shot.rows.length
+                        ? '辨識完成,共 ' + this.shot.rows.length + ' 首。確認後按「套用」寫進成績。' : '';
+                } catch (e) {
+                    this.shot.err = (e && e.message) || '辨識失敗';
+                } finally {
+                    this.shot.busy = false; this.renderShot();
+                }
+            },
+            shotToggle(i) { const r = this.shot.rows[i]; if (r) { r.use = !r.use; this.renderShot(); } },
+            shotSet(i, id) {
+                const r = this.shot.rows[i]; if (!r) return;
+                r.songId = id ? +id : null; r.score = id ? 1 : 0; r.use = !!id; this.renderShot();
+            },
+            shotClear() { this.shot = { busy: false, msg: '', rows: [], err: '' }; this.renderShot(); },
+            /* 寫回成績。截圖只看得到「最佳狀態」,通關不等於 FC ——
+               所以只有 fc/ap 會寫入,clear 與 none 一律略過,不會蓋掉既有紀錄。 */
+            shotApply() {
+                const D = this.D(); if (!D) return;
+                const byId = {};
+                D.charts.forEach(c => { (byId[c.id] = byId[c.id] || {})[c.d] = c; });
+                let n = 0, skip = 0;
+                this.shot.rows.forEach(r => {
+                    if (!r.use || r.songId == null) return;
+                    const set = byId[r.songId]; if (!set) return;
+                    ['expert', 'master', 'append'].forEach(d => {
+                        const st = r.of[d];
+                        if (st !== 'fc' && st !== 'ap') return;
+                        const c = set[d];
+                        if (!c) { skip++; return; }
+                        this.marks[this.key(c)] = st === 'ap' ? 2 : 1;
+                        n++;
+                    });
+                });
+                this.save(); this.renderStats(); this.renderList();
+                this.shot.msg = '已寫入 ' + n + ' 筆成績'
+                    + (skip ? '(略過 ' + skip + ' 筆:定數表裡沒有該難度)' : '') + '。';
+                this.renderShot();
+            },
+            renderShot() {
+                const el = document.getElementById('b30ShotBody');
+                if (!el) return;
+                const S = this.shot;
+                const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                const L = { fc: 'FC', ap: 'AP', clear: '通關', none: '—' };
+                const CL = { fc: 'color:#e46bb6;font-weight:800', ap: 'color:#0eb3c5;font-weight:800',
+                             clear: 'color:var(--text-light)', none: 'color:var(--text-light);opacity:.45' };
+                let h = '';
+                if (S.err) h += '<div class="note" style="color:var(--primary);margin-top:0;">' + esc(S.err) + '</div>';
+                if (S.busy) h += '<div class="note" style="margin-top:0;">' + esc(S.msg || '處理中…') + '</div>';
+                else if (S.msg) h += '<div class="note" style="margin-top:0;">' + esc(S.msg) + '</div>';
+                if (S.rows.length) {
+                    if (!this._shotOpts) {
+                        const D = this.D(), seen = {}, out = ['<option value="">(不寫入)</option>'];
+                        if (D) D.charts.forEach(c => {
+                            if (seen[c.id]) return; seen[c.id] = 1;
+                            out.push('<option value="' + c.id + '">' + esc(this.name(c)) + '</option>');
+                        });
+                        this._shotOpts = out.join('');
+                    }
+                    h += '<div style="overflow:auto;max-height:46vh;margin-top:8px;"><table class="b30-shot-tb">'
+                       + '<thead><tr><th style="width:32px;"></th><th>辨識到的曲名</th><th>對到的曲目</th>'
+                       + '<th style="width:50px;">EX</th><th style="width:50px;">MA</th><th style="width:54px;">APD</th>'
+                       + '</tr></thead><tbody>';
+                    S.rows.forEach((r, i) => {
+                        const bad = r.songId == null;
+                        const sel = this._shotOpts.replace('value="' + r.songId + '"', 'value="' + r.songId + '" selected');
+                        h += '<tr' + (bad ? ' style="background:color-mix(in oklab,var(--primary) 7%,transparent)"' : '') + '>'
+                          + '<td><input type="checkbox" ' + (r.use ? 'checked' : '') + ' onchange="B30Maker.shotToggle(' + i + ')"></td>'
+                          + '<td style="font-size:12px;">' + esc(r.title)
+                          + (r.dis ? '<div style="font-size:10.5px;color:var(--primary);">另一路讀成:' + esc(r.dis) + '</div>' : '')
+                          + (bad ? '<div style="font-size:10.5px;color:var(--primary);">曲庫裡找不到,請手動指定</div>'
+                                 : (r.score < 0.92 ? '<div style="font-size:10.5px;color:var(--text-light);">相似度 ' + (r.score * 100).toFixed(0) + '%,請確認</div>' : ''))
+                          + '</td>'
+                          + '<td><select style="max-width:190px;font-size:12px;" onchange="B30Maker.shotSet(' + i + ', this.value)">' + sel + '</select></td>'
+                          + '<td style="' + CL[r.of.expert] + '">' + L[r.of.expert] + '</td>'
+                          + '<td style="' + CL[r.of.master] + '">' + L[r.of.master] + '</td>'
+                          + '<td style="' + CL[r.of.append] + '">' + L[r.of.append] + '</td></tr>';
+                    });
+                    h += '</tbody></table></div>'
+                       + '<div class="sa-chiprow" style="margin-top:9px;">'
+                       + '<button type="button" class="sa-chip" onclick="B30Maker.shotApply()">套用勾選的成績</button>'
+                       + '<button type="button" class="sa-chip" onclick="B30Maker.shotClear()">清空辨識結果</button>'
+                       + '<span style="font-size:11px;color:var(--text-light);">只有 FC／AP 會寫入;「通關」與「—」不會動到既有紀錄。</span>'
+                       + '</div>';
+                }
+                el.innerHTML = h;
             },
 
             ensure() {
@@ -5428,6 +6004,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.custName = localStorage.getItem('sekai-b30-name') || ''; } catch (e) {}
                 try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
                 try { this.zh = localStorage.getItem('sekai-b30-zh') !== '0'; } catch (e) {}
+                try { const d = parseInt(localStorage.getItem('sekai-b30-dec'), 10); if (d >= 0 && d <= 4) this.dec = d; } catch (e) {}
                 const s = document.createElement('script');
                 // 這支已在 vercel.json 設 must-revalidate(見該檔 /data/(billing|b30-consts) 規則),
                 // 舊版時間桶會讓瀏覽器黏著改版前的檔案,改用固定 URL 交給 HTTP 驗證
@@ -5486,6 +6063,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                 <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
                                 <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
                             </select></div>
+                            <div class="calc-row"><label>小數位數</label><select id="b30Dec" onchange="B30Maker.setDec(this.value)">
+                                <option value="0"${this.dec === 0 ? ' selected' : ''}>0 位(35)</option>
+                                <option value="1"${this.dec === 1 ? ' selected' : ''}>1 位(35.1)</option>
+                                <option value="2"${this.dec === 2 ? ' selected' : ''}>2 位(35.12)</option>
+                                <option value="3"${this.dec === 3 ? ' selected' : ''}>3 位(35.123)</option>
+                                <option value="4"${this.dec === 4 ? ' selected' : ''}>4 位(35.1234)</option>
+                            </select></div>
                             <div class="sa-chiprow" style="margin-top:8px;">
                                 <span style="font-size:11px;color:var(--text-light);">換裝置備份(含收集率/儲值設定):</span>
                                 <button type="button" class="sa-chip" onclick="B30Maker.exportJson()">匯出全站 JSON</button>
@@ -5497,6 +6081,22 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div id="b30GenMsg" style="font-size:11.5px;color:var(--text-light);margin-top:6px;"></div>
                         </div>
                     </div>
+                    <div class="calc-section" style="margin-top:14px;"><h4>用截圖匯入成績<span style="font-weight:400;font-size:11px;color:var(--text-light);">　選曲畫面的曲目清單,可一次選多張</span></h4>
+                        <div class="note" style="margin-top:0;">
+                            截「選曲畫面」的曲目清單(就是每首歌下面有一排菱形符號的那個畫面),
+                            FC／AP 由瀏覽器直接判讀顏色,不經過 AI 也不用等;
+                            <strong>曲名</strong>則需要登入後透過站上的 AI 代理辨識。
+                            由左而右是 綠(EASY)藍(NORMAL)黃(HARD)紅(EXPERT)紫(MASTER)彩(APPEND),
+                            粉色是 FC、彩虹是 AP —— B30 只用得到 EXPERT／MASTER／APPEND 三格。
+                            <strong>請用原始解析度的截圖</strong>,先縮過的圖符號會糊掉。辨識結果一定會先列出來讓你確認,不會直接寫進成績。
+                        </div>
+                        <div class="sa-chiprow" style="margin-top:8px;">
+                            <button type="button" class="sa-chip" onclick="document.getElementById('b30ShotFile').click()">選擇截圖…</button>
+                            <input type="file" id="b30ShotFile" accept="image/*" multiple style="display:none" onchange="B30Maker.shotFiles(this.files);this.value=''">
+                            <span style="font-size:11px;color:var(--text-light);">也可以直接 Ctrl/⌘+V 貼上截圖</span>
+                        </div>
+                        <div id="b30ShotBody"></div>
+                    </div>
                     <div class="calc-section" style="margin-top:14px;"><h4>勾選你的成績<span style="font-weight:400;font-size:11px;color:var(--text-light);">　點譜面循環:無 → FC → AP;定數由高到低</span></h4>
                         <div class="sa-chiprow" id="b30Filters"></div>
                         <div id="b30List"></div>
@@ -5504,7 +6104,25 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <div id="b30Out" style="margin-top:14px;"></div>
                     </div>`;
                 }
-                this.renderFilters(); this.renderStats(); this.renderList();
+                this.renderFilters(); this.renderStats(); this.renderList(); this.renderShot();
+                /* 貼上截圖。只在 B30 區塊真的存在時才收,免得在其他頁面誤攔剪貼簿。
+                   綁一次就好,render() 每次被呼叫都綁會疊出一堆 handler。 */
+                if (!this._pasteBound) {
+                    this._pasteBound = true;
+                    document.addEventListener('paste', (ev) => {
+                        if (!document.getElementById('b30ShotBody')) return;
+                        const it = (ev.clipboardData && ev.clipboardData.items) || [];
+                        const fs = [];
+                        for (let i = 0; i < it.length; i++) {
+                            if (it[i].kind === 'file' && /^image\//.test(it[i].type)) {
+                                const f = it[i].getAsFile(); if (f) fs.push(f);
+                            }
+                        }
+                        if (!fs.length) return;
+                        ev.preventDefault();
+                        this.shotFiles(fs);
+                    });
+                }
             },
             renderFilters() {
                 const el = document.getElementById('b30Filters'); if (!el) return;
@@ -5833,7 +6451,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ]);
                 } catch (e) {}
 
-                const W = 1096, H = 1800, S = 2;
+                const W = 1096, H = 1900, S = 2;
                 const cv = document.createElement('canvas');
                 cv.width = W * S; cv.height = H * S;
                 const ctx = cv.getContext('2d');
@@ -5892,7 +6510,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ng.addColorStop(0, '#22c3d6'); ng.addColorStop(.5, '#3f8cf3'); ng.addColorStop(1, '#c39df2');
                 ctx.save();
                 ctx.shadowColor = 'rgba(63,140,243,.35)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, CX, 148);
+                // 402px 寬的卡片:4 位小數(如 35.1234)在 76px 會頂到邊,依字數縮一級
+                ctx.fillStyle = ng; ctx.font = '800 ' + (bv.length >= 7 ? 62 : bv.length >= 6 ? 68 : 76) + 'px ' + FB;
+                ctx.fillText(bv, CX, 148, 360);
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
                 ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.bTxt(this.theory())}`, CX, 210);
@@ -5941,11 +6561,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     // 定數膠囊(16..38,中心 27) → 実効值;寬 64 容納「34.9++」「34.99」
                     const ct = this.cTxt(c) + (c.e ? '*' : '');   // *=難易度表未收錄的推估值
                     ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 64, 22, 11); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.font = '800 ' + (ct.length >= 6 ? 14.5 : 16.5) + 'px ' + FB;
+                    ctx.fillStyle = '#fff'; ctx.font = '800 ' + (ct.length >= 8 ? 12 : ct.length >= 7 ? 13 : ct.length >= 6 ? 14.5 : 16.5) + 'px ' + FB;
                     ctx.fillText(ct, x0 + 153, y0 + 28);
                     ctx.textAlign = 'left';
                     ctx.fillStyle = '#252e4d'; ctx.font = '800 17px ' + FB;
-                    ctx.fillText('→ ' + this.vTxt(it.v, c), x0 + 192, y0 + 28);
+                    ctx.fillText('→ ' + this.vTxt(it.v, c), x0 + 192, y0 + 28, 112);
                     // 曲名(裁切,中心線 y0+58)
                     ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
                     const full = this.name(c);
@@ -5958,14 +6578,34 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     else { ctx.fillStyle = it.m === 2 ? '#8ee' : '#f7a'; ctx.font = '800 18px ' + FB; ctx.fillText(it.m === 2 ? 'ALL PERFECT!!' : 'FULL COMBO!', x0 + 121, y0 + 92); }
                 }
 
-                // ---- 頁尾 ----
-                ctx.fillStyle = '#0eb3c5'; ctx.font = '600 15px ' + FB;
-                ctx.fillText('非官方算法,僅供參考娛樂。定數:pentatonic V31(可能變動)', 53, 1722);
-                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 53, 1750);
-                ctx.textAlign = 'right';
-                ctx.font = '700 15px ' + FB;
-                ctx.fillText('Generated by SEKAI 資源中心', 1047, 1722);
-                ctx.fillText('project-sekai-center.vercel.app', 1047, 1750);
+                // ---- 頁尾:參考資料 ----
+                // textBaseline 在上面設成 'middle' 之後就沒再改過,所以這裡每個 y 都是「該行的垂直中心」,不是基線。
+                // 53 與 1047 是卡片格線的左右邊界(53 + 2*342 + 310),對齊上面的卡片。
+                const foot = (lines, x, yTop, lh, align) => {
+                    ctx.textAlign = align;
+                    lines.forEach((t, i) => ctx.fillText(t, x, yTop + i * lh, 994));
+                    ctx.textAlign = 'left';
+                };
+                // builtAt 是 unix 毫秒(例:1787888107618),不是日期字串,要轉過再截
+                const built = (() => { try { const b = this.D() && this.D().builtAt; if (!b) return ''; const d = new Date(typeof b === 'number' ? b : +b); return isFinite(+d) ? d.toISOString().slice(0, 10) : ''; } catch (e) { return ''; } })();
+
+                ctx.fillStyle = '#8b93ac'; ctx.font = '600 12.5px ' + FB;
+                foot([
+                    '定數:腐食氏「プロセカ難易度表」pentatonic V31(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
+                    '曲目/譜面:Sekai-World sekai-master-db-diff(日)、sekai-master-db-tc-diff(台);中文譯名:Sekai Viewer 社群 i18n',
+                    '封面/頭像:storage.sekai.best・版面還原自 Unibot(MIT / Watagashi_uni)',
+                    '実効值:AP=定數、FC=定數−1,分母固定 30。非官方算法,僅供參考娛樂。'
+                ], 53, 1726, 21, 'left');
+
+                ctx.fillStyle = '#0eb3c5'; ctx.font = '700 15px ' + FB;
+                foot(['Generated by SEKAI 資源中心', 'project-sekai-center.vercel.app'], 1047, 1726, 21, 'right');
+
+                // 版權聲明(照使用者提供的參考版面完整列出)
+                ctx.fillStyle = '#9aa3b5'; ctx.font = '600 13px ' + FB;
+                foot([
+                    '※本画像におけるロゴ・背景・楽曲ジャケット画像の著作権は、全て著作権所有者に帰属します。',
+                    '※本画像は非公式のものであり、株式会社Colorful Palette様及びその関連会社とは一切関係ありません。'
+                ], 53, 1838, 24, 'left');
                 ctx.textAlign = 'left';
 
                 // ---- 輸出 ----
@@ -5976,7 +6616,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const fn = `b30_${(hide ? 'player' : (this.pid || 'player'))}_${new Date().toISOString().slice(0, 10)}.png`;
                     out.innerHTML = `<div class="sa-chiprow" style="margin-bottom:8px;">
                         <a class="sa-cart-go" href="${url}" download="${fn}">下載 PNG(${(blob.size / 1048576).toFixed(1)} MB)</a>
-                        <span style="font-size:11px;color:var(--text-light);">手機也可長按圖片存檔;圖為 2192×3600</span></div>
+                        <span style="font-size:11px;color:var(--text-light);">手機也可長按圖片存檔;圖為 ${W * S}×${H * S}</span></div>
                         <img src="${url}" alt="B30" style="width:100%;max-width:760px;border:1px solid var(--border);border-radius:14px;display:block;">`;
                     if (msg) msg.textContent = '完成!';
                     out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

@@ -9,6 +9,7 @@
 
 import { allowOrigin, corsHeaders, preflight } from './cors.js';
 import { chatClaude, validateChat } from './admin.js';
+import { chatGemini, hasGemini, geminiModel } from './gemini.js';
 import { summarize, priceOf } from './pricing.js';
 import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
@@ -667,7 +668,7 @@ export async function handleApi(req, env, url, user) {
     /* ---------- 觸發紀錄 ---------- */
     /* 開始一次操作(提問／截圖辨識／提問所請助手答)。之後每一輪 /api/chat 都帶這個 op。 */
     if (p === '/api/ai/op' && req.method === 'POST') {
-      if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
+      if (!env.ANTHROPIC_API_KEY && !hasGemini(env)) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
       const b = await readJson(req);
       const kind = str((isObj(b.value) ? b.value : {}).kind, 16) || 'chat';
       const r = await startOp(env, user, kind);
@@ -679,7 +680,8 @@ export async function handleApi(req, env, url, user) {
        工具在瀏覽器執行,Worker 只代理 Claude API 並記帳。
        額度看 startOp:一次操作開了,裡面的每一輪都做完,不再逐輪擋。 */
     if (p === '/api/chat' && req.method === 'POST') {
-      if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
+      // 只要有一家的金鑰就能跑。加了 Gemini 卻沒設 ANTHROPIC_API_KEY 不該把整個助手 503 掉
+      if (!env.ANTHROPIC_API_KEY && !hasGemini(env)) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
       /* 4 MB:對話本來就會帶著工具結果,而截圖辨識還會夾一張 base64 圖片。
          base64 比原始檔大三分之一,所以 4 MB 大約容得下 3 MB 的 JPEG ——
          那已經是一張很密的卡庫截圖(60 格以上)縮到 1800px 之後的量級。 */
@@ -710,24 +712,52 @@ export async function handleApi(req, env, url, user) {
       /* 這個變數原本叫 out,把上面那個回應 helper 遮蔽掉了 —— let 的 TDZ 涵蓋整個
          區塊,所以上面兩行的 out(...) 會拋 ReferenceError 而不是回 413/400,
          被外層 catch 吞成一個看不出原因的 500。 */
-      let reply;
-      try {
-        reply = await chatClaude(env, v);
-      } catch (e) {
-        const msg = (e && e.message) || String(e);
+      /* 雙路並行:v.providers 是白名單過的 ['claude'] / ['gemini'] / 兩者。
+         金鑰沒設的那一路直接跳過,不要讓它變成一個假的失敗。
+         用 allSettled 不用 all —— 一路掛掉不該把另一路已經拿到的答案丟掉。
+         兩路是併發的,牆鐘時間跟單路一樣(前端那條假進度條是照 ~40s 調的)。 */
+      const want = (v.providers || ['claude']).filter(pv =>
+        pv === 'gemini' ? hasGemini(env) : !!env.ANTHROPIC_API_KEY);
+      if (!want.length) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
+      const settled = await Promise.allSettled(want.map(pv =>
+        pv === 'gemini' ? chatGemini(env, v) : chatClaude(env, v)));
+
+      const lanes = [];
+      for (let i = 0; i < want.length; i++) {
+        const pv = want[i], st = settled[i];
+        if (st.status === 'fulfilled') lanes.push({ provider: pv, ok: true, reply: st.value });
+        else lanes.push({ provider: pv, ok: false, error: (st.reason && st.reason.message) || String(st.reason) });
+      }
+      const good = lanes.filter(l => l.ok);
+      if (!good.length) {
+        // 全掛才算失敗。錯誤代碼沿用 claude_failed,前端的訊息路徑不用改
+        const msg = lanes.map(l => l.provider + '：' + l.error).join('　/　');
         await logAdmin(env.DB, user.id, '[chat]', '[失敗] ' + msg, 0, 0, { kind: 'chat', op_id: opId });
         return json({ error: 'claude_failed', message: msg }, 502, req, env);
       }
-      const calls = (reply.content || []).filter(c => c.type === 'tool_use');
-      for (const c of calls) await logTool(env.DB, user.id, c.name, c.input, true, 'requested');
-      const text = (reply.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
-      await logAdmin(env.DB, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
-                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), reply.tokens_in, reply.tokens_out,
-                     { model: reply.model, cache_read: reply.cache_read, cache_write: reply.cache_write, kind: 'chat', op_id: opId });
+      /* 主路:優先用當初指定的第一家,它掛了才換另一家頂上。
+         這樣舊版前端(只讀最上層 content)永遠拿得到能用的東西。 */
+      const primary = (good.find(l => l.provider === want[0]) || good[0]).reply;
+
+      // 每一路各記一列,pricing.js / /admin/usage 用 model 分群,不必改
+      for (const l of good) {
+        const rp = l.reply;
+        const calls = (rp.content || []).filter(c => c.type === 'tool_use');
+        if (l.reply === primary) for (const c of calls) await logTool(env.DB, user.id, c.name, c.input, true, 'requested');
+        const text = (rp.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+        await logAdmin(env.DB, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
+                       text || ('[tool_use] ' + calls.map(c => c.name).join(',')), rp.tokens_in, rp.tokens_out,
+                       { model: rp.model, cache_read: rp.cache_read, cache_write: rp.cache_write, kind: 'chat', op_id: opId });
+      }
       return json({
-        content: reply.content, stop_reason: reply.stop_reason, model: reply.model,
+        // 最上層維持單路的形狀,舊呼叫端(wlsScanOne 等)完全不用改
+        content: primary.content, stop_reason: primary.stop_reason, model: primary.model,
+        results: lanes.map(l => l.ok
+          ? { provider: l.provider, ok: true, content: l.reply.content, stop_reason: l.reply.stop_reason,
+              model: l.reply.model, tokens: { in: l.reply.tokens_in, out: l.reply.tokens_out } }
+          : { provider: l.provider, ok: false, error: l.error }),
         quota: Object.assign({}, quota, { op: opId, rounds: tk.rounds, paid: paidCall || !!quota.paid }),
-        cache: { read: reply.cache_read || 0, write: reply.cache_write || 0 },
+        cache: { read: primary.cache_read || 0, write: primary.cache_write || 0 },
       }, 200, req, env);
     }
 

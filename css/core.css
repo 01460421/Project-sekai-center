@@ -952,7 +952,13 @@ body.embed-distribution .container > section#distribution > h2{ display:none !im
         .b30-row:active{ transform:scale(.98); }
         .b30-row.st1{ background:color-mix(in oklab, #ff7ab0 14%, var(--card)); border-color:#ff7ab0; }
         .b30-row.st2{ background:color-mix(in oklab, #37d1c0 16%, var(--card)); border-color:#22b7a8; }
-        .b30-const{ flex:none; width:54px; font-weight:800; font-family:var(--font-num); color:var(--primary); }
+                /* 截圖辨識的對照表 */
+        .b30-shot-tb{ width:100%; border-collapse:collapse; font-size:12.5px; }
+        .b30-shot-tb th{ position:sticky; top:0; z-index:1; background:var(--card); text-align:left; font-size:11px; font-weight:800; color:var(--text-3); padding:6px 7px; border-bottom:1px solid var(--border); white-space:nowrap; }
+        .b30-shot-tb td{ padding:6px 7px; border-bottom:1px solid var(--border); vertical-align:middle; }
+        .b30-shot-tb tr:last-child td{ border-bottom:none; }
+        .b30-shot-tb select{ width:100%; }
+        .b30-const{ flex:none; width:66px; font-weight:800; font-family:var(--font-num); color:var(--primary); }
         .b30-diff{ flex:none; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:800; color:#fff; background:#BB33EE; }
         .b30-diff.append{ background:#222; }
         .b30-diff.expert{ background:#EE4466; }

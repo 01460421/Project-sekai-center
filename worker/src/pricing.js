@@ -11,6 +11,14 @@ const DEFAULT_PRICES = {
   'claude-haiku-4-5': [1, 5, 1.25, 0.1],
   'claude-opus-4':    [5, 25, 6.25, 0.5],
   'claude-sonnet-4':  [3, 15, 3.75, 0.3],
+  /* Gemini。Google 的價目分層(超過約 200k token 換一個價),四元組表達不了,
+     這裡一律填「高階層」的數字 —— 帳面寧可高估也不要低估。
+     實際數字請用 env.AI_PRICES 覆蓋,不必改程式。 */
+  'gemini-2.5-pro':   [2.5, 15, 0, 0.625],
+  'gemini-2.5-flash': [0.3, 2.5, 0, 0.075],
+  'gemini-3-pro':     [2.5, 15, 0, 0.625],
+  'gemini-3-flash':   [0.3, 2.5, 0, 0.075],
+  'gemini':           [2.5, 15, 0, 0.625],
 };
 
 function table(env) {
@@ -26,7 +34,10 @@ export function priceOf(model, env) {
   // 前綴比對:先長後短,免得 claude-opus-4 搶走 claude-opus-4-5
   const keys = Object.keys(T).sort((a, b) => b.length - a.length);
   const k = keys.find(k => m.startsWith(k));
-  return k ? T[k] : (T[String((env && env.AI_MODEL) || '')] || T['claude-opus-5']);
+  if (k) return T[k];
+  /* 認不得的 id 不要拿 Opus 的價去套 —— 那會讓一筆便宜的呼叫在帳上變成
+     最貴的那一種,而且沒有任何跡象。認不得就記 0,帳面上看得出「沒定價」。 */
+  return T[String((env && env.AI_MODEL) || '')] || [0, 0, 0, 0];
 }
 
 /* 一筆或一組彙總列 → 美元。列的欄位:tokens_in / tokens_out / cache_read / cache_write。 */

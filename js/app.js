@@ -11,6 +11,7 @@ class Component extends DCLogic {
     ['sekai-cards-own', '收集率:持有卡片'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
     ['sekai-b30-zh', 'B30:曲名語言'], ['sekai-b30-fmt', 'B30:定數格式'],
+    ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
     ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格']
@@ -119,6 +120,7 @@ class Component extends DCLogic {
     ['效率排行（每小時活動P，sort_by=\'eph\'）', 'song_efficiency', 'calc（ctab=eff）', '效率曲|短效|短效率|短曲|周回曲|跑哪首最快|哪首打最快|時速最高的歌|刷歌效率|刷活動P效率排行|每分鐘EP|依每分鐘EP|EP排行|EP/h|每小時P|時效|時間有限'],
     ['效益排行（單局活動P，sort_by=\'ep\'）', 'song_efficiency', 'calc（ctab=eff）', '效益曲|長效|長曲|CP值曲|CP 值最高的歌|省體力曲|哪首最省體力|一場拿最多P|單局P|每局EP|依每局EP|依每火EP|每火EP|省體力排序|體力有限|單場高pt'],
     ['單局分數排行（sort_by=\'score\'）', 'song_efficiency', 'calc（ctab=eff）', '單局分數|衝分數|哪首分數最高|分數排行|純衝分數'],
+    ['摸魚表（每首歌該打哪個難度）', 'song_efficiency', 'calc（ctab=moyu）', '摸魚表|摸魚|哪個難度最划算|該打哪個難度|難度五選一|最高pt的難度|最高PT|消體打哪個難度|野房消體|彩譜分開算|彩譜排行|append分開算'],
     ['EP 精算（單場活動P試算）', 'calc_event_points', 'calc（ctab=ep）', 'EP 計算|EP 計算器|活動P計算器|活動P/分數估算|PT 計算|ep 分數|算一場多少P|一場拿多少|跑一場多少活動P|每體力效率|活動點數計算|活動加成·活動P 計算器'],
     ['活動試算（衝榜規劃／目標反推）', 'plan_target', 'calc（ctab=plan）', '活動試算|跑榜規劃|衝榜規劃|算我要跑多久|還要打幾場|追不追得上|要花多少體力|要花多少錢|目標EP|目前EP|石換體|體力來源（差引計算）|每NT$1多少活動P|水晶CP（石/元）'],
     ['推隊倍率（平均技能倍率／時效值）', 'calc_skill_multiplier', 'calc（ctab=mult）', '倍率|技能倍率|平均技能倍率|實效技能倍率|時效值|倍率計算機|推隊倍率計算器|整隊倍率|整隊上限 2.88|滿技能|3.7|3.71|3.8|3.82|3.88|5人技能加分%|隊長%＋隊員%|單次全隊技能總倍率'],
@@ -341,6 +343,8 @@ class Component extends DCLogic {
   OH = { solo: 15, auto: 15, multi: 45, cheer: 45 };
   ohOf(mode) { const v = this.OH[mode]; return v == null ? 15 : v; }
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
+  DIFF_NAME = {E:'EASY',N:'NORMAL',H:'HARD',X:'EXPERT',M:'MASTER',A:'APPEND'};
+  DIFF_COLOR = {E:'#54ba54',N:'#42abd4',H:'#eba041',X:'#e0576a',M:'#9a63d8',A:'#f0619e'};
   PRESETS = {
     t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:2.88, s6:2.88, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
     casual:{ n:'輕鬆玩',   power:150000, bonus:120, energy:1,  skill:2,   s6:2,   mode:'solo',  song:1,  diff:'X', goal:300000,  scoreMode:'calc' }
@@ -391,6 +395,8 @@ class Component extends DCLogic {
     sysOpen: {},
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false, admMsg: '',
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
+    // 雙路並行:同一題同時問 Claude 與 Gemini。預設關,開了成本大約翻倍
+    aiDual: (() => { try { return localStorage.getItem('sekai-ai-dual') === '1'; } catch (e) { return false; } })(),
     effSort: 'eph', dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
     chatList: [], chatId: null, aiMod: '', unread: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
@@ -404,6 +410,7 @@ class Component extends DCLogic {
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
+    moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40,
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
     layout: null,   // { nav:{order:[],hidden:[]}, home:{order:[],hidden:[]} }，null＝預設
     qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaReplyTo: null, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
@@ -9350,6 +9357,37 @@ class Component extends DCLogic {
   }
   newChat() { this._savedN = 0; this.setState({ aiMsgs: [], chatId: null, aiErr: '' }); }
 
+  setAiDual(on) {
+    const v = !!on;
+    try { localStorage.setItem('sekai-ai-dual', v ? '1' : '0'); } catch (e) {}
+    this.setState({ aiDual: v });
+  }
+
+  /* 從 /api/chat 的回應裡挑出某個工具的輸出。
+     雙路模式下 results[] 會有兩家的答案,這時用 validate 決定採用誰:
+     兩家都過就用主路的,只有一家過就用那家,都沒過就回主路的讓上層報錯。
+     回傳 { input, provider, agreed } —— agreed 給 UI 標示「兩家講的一樣嗎」。 */
+  aiPickLane(r, toolName, validate) {
+    const grab = (content) => {
+      const u = ((content) || []).find(c => c.type === 'tool_use' && c.name === toolName);
+      return (u && u.input) || null;
+    };
+    const ok = (x) => { try { return !!x && (!validate || validate(x)); } catch (e) { return false; } };
+    const lanes = ((r && r.results) || []).filter(l => l && l.ok)
+      .map(l => ({ provider: l.provider, input: grab(l.content) }));
+    if (!lanes.length) {
+      const input = grab(r && r.content);
+      return { input, provider: (r && r.model) || '', agreed: null };
+    }
+    const good = lanes.filter(l => ok(l.input));
+    const pick = good[0] || lanes[0];
+    let agreed = null;
+    if (lanes.length > 1) {
+      try { agreed = JSON.stringify(lanes[0].input) === JSON.stringify(lanes[1].input); } catch (e) { agreed = null; }
+    }
+    return { input: pick.input, provider: pick.provider, agreed, lanes };
+  }
+
   /* 對話迴圈:模型要工具就在瀏覽器執行,把結果送回,直到它給出文字結論。
      上限 12 輪是防呆 —— 正常的複雜任務大約 3～6 輪,跑到 12 通常代表它卡住了。 */
   async aiSend(text) {
@@ -9361,10 +9399,24 @@ class Component extends DCLogic {
       const op = await this.aiOpStart('chat');
       for (let guard = 0; guard < 12; guard++) {
         const r = await this.api('/api/chat', { method: 'POST', body: {
-          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op } });
+          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op,
+          dual: !!this.state.aiDual } });
         if (r && r.quota) this.setState({ aiQuota: r.quota });
         const content = (r && r.content) || [];
-        cur = cur.concat([{ role: 'assistant', content }]);
+        /* 只有主路的工具會真的執行。aiRun 裡的 set_my_uid／schedule_task 有副作用,
+           兩路各跑一次會寫兩份。副路只取它的文字結論拿來對照。 */
+        const alt = (() => {
+          const ls = (r && r.results) || [];
+          if (ls.length < 2) return null;
+          const sec = ls.find(l => l.model !== r.model) || ls[1];
+          if (!sec) return null;
+          if (!sec.ok) return { provider: sec.provider, err: sec.error };
+          const t = (sec.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+          return t ? { provider: sec.provider, text: t } : null;
+        })();
+        const amsg = { role: 'assistant', content };
+        if (alt) amsg._alt = alt;
+        cur = cur.concat([amsg]);
         this.setState({ aiMsgs: cur });
         const calls = content.filter(c => c.type === 'tool_use');
         if (!calls.length) break;
@@ -9593,6 +9645,8 @@ class Component extends DCLogic {
         wlsProgLabel: pre + 'AI 讀取每一格的專精與技能等級…' });
       const r = await this.api('/api/chat', { method: 'POST', body: {
         op: this._wlsOp,
+        // 截圖辨識沒有副作用,是雙路最划算的地方:兩家各讀一次再挑能用的那份
+        dual: !!this.state.aiDual,
         /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
            撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
            真實卡庫不可能每張都滿,那是模型在複製貼上而不是在讀圖,
@@ -9633,9 +9687,23 @@ class Component extends DCLogic {
             unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
           }, required: ['cards'] } }],
       } });
-      const use = ((r && r.content) || []).find(c => c.type === 'tool_use' && c.name === 'submit_cards');
-      const got = (use && use.input && Array.isArray(use.input.cards)) ? use.input.cards : null;
+      /* 上面那段註解記的失敗樣態(整批 MR5／SLv.4)一直沒有守門的程式,只有人眼發現。
+         現在把它寫成驗證條件:整批專精＋技能等級完全一致就是模型在複製貼上,
+         不是在讀圖。雙路模式下這一路會被判定不可用,自動改採另一家。 */
+      const sane = (x) => {
+        const cs = x && Array.isArray(x.cards) ? x.cards : null;
+        if (!cs || !cs.length) return false;
+        if (cs.length >= 6) {
+          const uniq = {}; let k = 0;
+          cs.forEach(c => { const key = c.master_rank + '/' + c.skill_level; if (!uniq[key]) { uniq[key] = 1; k++; } });
+          if (k === 1) return false;
+        }
+        return true;
+      };
+      const pick = this.aiPickLane(r, 'submit_cards', sane);
+      const got = (pick.input && Array.isArray(pick.input.cards)) ? pick.input.cards : null;
       if (!got || !got.length) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
+      if (!sane(pick.input)) throw new Error('辨識結果每一格都一樣，通常代表模型沒有真的在讀圖，請換一張更清楚的截圖');
 
       /* ---- 第二段:認出是哪一張卡 ---- */
       this.setState({ wlsProg: 64, wlsProgBase: 64, wlsProgSpan: 4,
@@ -10894,6 +10962,50 @@ class Component extends DCLogic {
     });
     return rows.sort((a, b) => (b[key] || 0) - (a[key] || 0)).slice(0, Math.max(1, +limit || 15));
   }
+
+  /* 摸魚表：一首歌到底該打哪個難度。
+     跟「效率排行」的差別是難度變成了一個維度 —— effRanking 是把全部歌固定在
+     同一個難度上比,摸魚表是每首歌先自己挑出最划算的那一個難度再一起比。
+
+     規則(依需求):
+       1. 綠藍黃紅紫(EASY/NORMAL/HARD/EXPERT/MASTER)五個裡面,只留活動 P 最高的那一個。
+       2. 彩譜(APPEND)不參與這個五選一,而是篩完之後整批加回來,各自成一列。
+     所以最後的列表 = 每首歌一列(五選一) + 所有彩譜各一列。
+
+     為什麼五選一可以直接用活動 P 比:同一首歌的歌長與間隔是固定的,
+     每小時 P 只是每局 P 乘上一個同樣的常數,所以不論用哪個排序,
+     五個難度裡勝出的都是同一個。挑的時候固定用 ep,語意才對得上「最高PT」。 */
+  moyuRanking(sortBy, limit) {
+    const s = this.state, F = this.EM[s.energy] || 1, iv = +s.interval || 50;
+    const key = sortBy || s.moyuSort || 'ep';
+    const scope = s.moyuScope || 'all';
+    const FIVE = ['E', 'N', 'H', 'X', 'M'];
+    const rows = [];
+    (s.epSongs || []).forEach(song => {
+      if (!song.time || song.time <= 0 || !song.d) return;
+      const cycle = song.time + iv;
+      const mk = (dk) => {
+        const d = song.d[dk];
+        if (!d) return null;
+        const score = this.calcSongScore(d, s.mode, +s.power || 0, +s.skill || 0, +s.s6 || 0);
+        const ep = this.calcEPValue(s.mode, score, song.rate, +s.bonus || 0, F, +s.power || 0, +s.life || 0);
+        return { id: song.id, title: song.t, diff: dk, lv: d[0], notes: d[1],
+                 time: song.time, rate: song.rate, score, ep,
+                 eph: Math.round(ep * 3600 / cycle),
+                 epe: (+s.energy || 0) > 0 ? Math.round(ep / s.energy) : ep };
+      };
+      if (scope !== 'append') {
+        let best = null;
+        FIVE.forEach(dk => { const r = mk(dk); if (r && (!best || r.ep > best.ep)) best = r; });
+        if (best) { best.kind = 'pick'; rows.push(best); }
+      }
+      if (scope !== 'five') {
+        const a = mk('A');
+        if (a) { a.kind = 'append'; rows.push(a); }
+      }
+    });
+    return rows.sort((a, b) => (b[key] || 0) - (a[key] || 0)).slice(0, Math.max(1, +limit || 40));
+  }
   plan() {
     const s = this.state, r = this.epResult();
     const left = Math.max(0, (+s.goal || 0) - (+s.cur || 0));
@@ -11200,6 +11312,26 @@ class Component extends DCLogic {
       ];
       formulaText = 'EP/h = 每局 EP × 3600 ÷ (歌長 + 間隔)';
       formulaNote = '排行依所選難度與模式重算全 640 首；間隔含結算與選歌時間，車隊常用 45–60 秒。';
+    } else if (s.ctab === 'moyu') {
+      calcInputTitle = '摸魚表參數';
+      calcFields = [
+        { k: 'skill', label: '平均技能倍率', value: s.skill },
+        { k: 's6', label: 'S6 倍率', value: s.s6 },
+        { k: 'interval', label: '每場間隔（秒）', value: s.interval },
+        { k: 'moyuLimit', label: '顯示筆數', value: s.moyuLimit }
+      ];
+      const mo = this.moyuRanking(s.moyuSort || 'ep', 1)[0];
+      resultLabel = '目前設定下的最高 PT';
+      resultValue = mo ? this.n(mo.ep) : '—';
+      resultSub = mo ? (mo.title + ' · ' + (this.DIFF_NAME[mo.diff] || mo.diff) + ' Lv.' + mo.lv) : '曲庫載入中…';
+      resultStats = [
+        { l: '每小時 P', v: mo ? this.short(mo.eph) : '—', sub: '間隔 ' + s.interval + 's' },
+        { l: '每體力 P', v: mo ? this.n(mo.epe) : '—', sub: '體力 ' + s.energy + '/場' },
+        { l: '推算分數', v: mo ? this.short(mo.score) : '—', sub: modeLabels[s.mode] },
+        { l: '歌長', v: mo ? (mo.time + 's') : '—', sub: mo ? ('係數 R' + mo.rate) : '' }
+      ];
+      formulaText = '每首歌先在 綠/藍/黃/紅/紫 五個難度裡挑出活動 P 最高的那一個，再把所有彩譜加回來一起排。';
+      formulaNote = '彩譜(APPEND)不參與五選一 —— 它跟同一首歌的其他難度是分開算的，所以有彩譜的歌會出現兩列：一列是五選一的贏家，一列是彩譜本身。同一首歌的歌長固定，所以「最高 P」跟「最高每小時 P」挑出來的難度必然相同。';
     } else if (s.ctab === 'plan') {
       calcInputTitle = '活動試算';
       calcFields = [
@@ -11426,6 +11558,34 @@ class Component extends DCLogic {
       main: effSort === 'score' ? this.short(r.score) : effSort === 'ep' ? this.n(r.ep) : this.short(r.eph) + '/h',
       sub: effSort === 'score' ? (this.short(r.eph) + '/h') : effSort === 'ep' ? (this.short(r.eph) + '/h') : (this.n(r.ep) + ' EP'),
       eph: this.short(r.eph) + '/h', ep: this.n(r.ep) + ' EP', score: this.short(r.score),
+      numColor: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#e28743' : 'var(--text-3)',
+      rowBg: r.id === +s.songKey ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent'
+    }));
+
+    /* 摸魚表 */
+    const moyuSort = s.moyuSort || 'ep';
+    const MOYU_SORTS = [['ep', '單局 P', '最高 PT'], ['eph', '每小時 P', '時間有限'], ['epe', '每體力 P', '省體力'], ['score', '單局分數', '衝分數']];
+    const moyuSortChips = MOYU_SORTS.map(([v, n2, hint]) => {
+      const on = moyuSort === v, st = chip(on, 'var(--cta)');
+      return Object.assign({ v, n: n2, hint }, st);
+    });
+    const MOYU_SCOPES = [['all', '五選一＋彩譜'], ['five', '只看五選一'], ['append', '只看彩譜']];
+    const moyuScopeChips = MOYU_SCOPES.map(([v, n2]) => {
+      const on = (s.moyuScope || 'all') === v, st = chip(on, 'var(--ink-grad)');
+      return Object.assign({ v, n: n2 }, st);
+    });
+    const moyuAll = s.ctab === 'moyu' ? this.moyuRanking(moyuSort, +s.moyuLimit || 40) : [];
+    const moyuRows = moyuAll.map((r, i) => ({
+      i: i + 1, title: r.title,
+      diff: this.DIFF_NAME[r.diff] || r.diff, diffColor: this.DIFF_COLOR[r.diff] || 'var(--text-3)',
+      // 彩譜是「另外加回來的那一批」,給它一個明確的標記,不然跟五選一的贏家混在一起看不出來
+      tag: r.kind === 'append' ? '彩譜' : '五選一',
+      tagBg: r.kind === 'append' ? 'color-mix(in oklab,#f0619e 18%,transparent)' : 'var(--card-2)',
+      tagFg: r.kind === 'append' ? '#c4407c' : 'var(--text-3)',
+      meta: 'Lv.' + r.lv + ' · ' + r.notes + ' notes · ' + r.time + 's · R' + r.rate,
+      main: moyuSort === 'score' ? this.short(r.score) : moyuSort === 'eph' ? this.short(r.eph) + '/h'
+            : moyuSort === 'epe' ? this.n(r.epe) : this.n(r.ep),
+      sub: moyuSort === 'ep' ? (this.short(r.eph) + '/h') : (this.n(r.ep) + ' P'),
       numColor: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#e28743' : 'var(--text-3)',
       rowBg: r.id === +s.songKey ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent'
     }));
@@ -12275,6 +12435,19 @@ class Component extends DCLogic {
                              align: 'flex-start', bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)' });
             }
           });
+          /* 雙路模式的第二家答案。只顯示文字結論 —— 工具只在主路跑,
+             副路的 tool_use 沒有被執行過,秀出來只會讓人以為它做了什麼。 */
+          if (m._alt) {
+            const a = m._alt;
+            bubbles.push({ text: '', wrap: 'normal', align: 'flex-start',
+              bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)',
+              html: React.createElement('div', null,
+                React.createElement('div', { style: { fontSize: '11px', fontWeight: 800, color: 'var(--text-3)',
+                  letterSpacing: '.3px', marginBottom: '4px' } }, '雙路對照 · ' + (a.provider || '')),
+                a.err
+                  ? React.createElement('div', { style: { fontSize: '12px', color: 'var(--text-3)' } }, '這一路失敗：' + a.err)
+                  : React.createElement('div', { dangerouslySetInnerHTML: { __html: this.mdLite(a.text) } })) });
+          }
         });
         return {
           admDenied: me !== undefined && !isAdm,
@@ -12518,6 +12691,11 @@ class Component extends DCLogic {
               usModel: U ? (U.model || '') : '', usProbation: !!(U && U.probation),
               usPriceText: U && U.price ? ('輸入 $' + U.price[0] + '・輸出 $' + U.price[1] + '・快取讀取 $' + U.price[3] + '，每百萬 token') : '',
               aiQuotaShow: !!quotaText, aiQuotaText: quotaText,
+              // 雙路並行的開關。模板不能寫三元,文案與樣式在這裡就算完
+              aiDualOn: !!s.aiDual,
+              aiDualText: s.aiDual ? '雙路並行：開' : '雙路並行：關',
+              aiDualBg: s.aiDual ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card-2)',
+              aiDualFg: s.aiDual ? 'var(--accent-deep)' : 'var(--text-3)',
             };
           })(),
           ...(() => {
@@ -13330,6 +13508,11 @@ class Component extends DCLogic {
           + this.n(x.s1) + ' ～ ' + this.n(x.s2),
       })),
       ctrlHasAlts: !!(this._ctrlAlts || []).length,
+      hasMoyuTable: s.ctab === 'moyu', moyuRows, moyuSortChips, moyuScopeChips,
+      moyuTitle: '摸魚表 · ' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時活動 P' : moyuSort === 'epe' ? '每體力活動 P' : '單局活動 P'),
+      moyuCols: s.mobile ? '30px minmax(0,1fr) 84px' : '38px minmax(0,1fr) 110px 104px',
+      moyuNote: modeLabels[s.mode] + ' · 加成 ' + s.bonus + '% · 體力 ' + s.energy + ' · 共 ' + moyuRows.length + ' 列',
+      moyuEmpty: s.ctab === 'moyu' && !moyuRows.length,
       hasEffTable: s.ctab === 'eff', effRows, effSortChips,
       effTitle: (s.effSort === 'score' ? '單首分數' : s.effSort === 'ep' ? '單局活動 P' : '時間效率') + ' TOP 15', effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
       effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
@@ -13343,7 +13526,7 @@ class Component extends DCLogic {
       ],
       planSummary: '約合 NT$' + this.n(pl.twd) + '（每 NT$1 ≈ ' + this.n(pl.epPerTwd) + ' 活動P）｜需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
       calcTabs: [
-        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
+        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'moyu', n: '摸魚表' }, { v: 'plan', n: '活動試算' },
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
         { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }, { v: 'ctrl', n: '控分速查' }
       ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),
@@ -13356,7 +13539,7 @@ class Component extends DCLogic {
           return Object.assign({}, c, st, { dot: on ? 'rgba(255,255,255,.85)' : c.dot, fg: on ? '#fff' : 'var(--text)' });
         }),
       calcInputTitle, calcFields,
-      showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'plan',
+      showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'moyu' || s.ctab === 'plan',
       modeChips: [
         { v: 'solo', n: '個人' }, { v: 'auto', n: '自動' }, { v: 'multi', n: '協力' }, { v: 'cheer', n: '排位對戰' }
       ].map(m => Object.assign({}, m, chip(s.mode === m.v, 'var(--ink-grad)'))),
@@ -13962,6 +14145,7 @@ class Component extends DCLogic {
       },
       onColClose: () => this.setState({ colPick: null }),
       onTheme: () => this.cycleTheme(),
+      onAiDual: () => this.setAiDual(!this.state.aiDual),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;

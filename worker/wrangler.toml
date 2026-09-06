@@ -33,7 +33,7 @@ database_name = "pjsk-users"
 database_id = "63ad1759-8919-4ed5-aa88-0b4c31e347ae"
 
 # 非機密設定。機密（GOOGLE_CLIENT_SECRET / DISCORD_CLIENT_SECRET /
-# RESEND_API_KEY / ANTHROPIC_API_KEY / SESSION_SECRET）一律用
+# RESEND_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / SESSION_SECRET）一律用
 # `wrangler secret put <NAME>`，不要寫進這個檔案（它會進 git）。
 [vars]
 SITE_BASE = "https://project-sekai-center.com"
@@ -44,9 +44,17 @@ COOKIE_DOMAIN = ".project-sekai-center.com"
 # 因為帳戶餘額是共用的,個人上限擋不住多人同時用滿。
 # 換模型不必改程式碼。sonnet-5 $2/$10、opus-4.8 與 opus-5 都是 $5/$25 per MTok。
 AI_MODEL = "claude-opus-5"
+# 雙路並行(前端送 dual:true)時另外跑的第二家。要設 GEMINI_API_KEY 才會啟用,
+# 沒設就自動跳過那一路,助手照常運作。
+# 模型 id 不寫死在程式裡:Google 的命名換得比 Anthropic 勤,寫死等於埋定時炸彈。
+# 接上去之後先開 /admin/diag/gemini,它會列出這把金鑰實際看得到的模型,
+# 確認過再把 id 填到這裡。
+AI_GEMINI_MODEL = "gemini-2.5-pro"
 # 2026-09 起額度單位改成「操作」:一次提問／一次截圖辨識算一次,裡面跑幾輪都做到完。
 # 每人每日 AI_OPS_USER 次,台灣時間 00:00 重置;管理員不限。AI_OPS_AUTO 有設才生效
 # (自動核准、未人工覆核的帳號)。AI_CAP_USER／AI_CAP_ADMIN 已停用,留著只是紀錄。
+# 注意:雙路並行一次操作會同時打兩家,錢大約是單路的兩倍,但仍算「一次操作」。
+# 若之後把 dual 開放給所有人,這個數字要重新評估。
 AI_OPS_USER = "20"
 AI_CAP_USER = "400"
 AI_CAP_ADMIN = "2000"
