@@ -953,7 +953,7 @@ select option, select optgroup{
            good果汁那份表做得比這裡完整，直接指過去比自己重做一個半吊子的好。 -->
       <a href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener" style="display:block;margin-top:11px;padding:12px 15px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);text-decoration:none">
         <div style="font-size:13px;font-weight:800;color:var(--accent-deep)">想做更細的交叉篩選？台服全榜線紀錄 ↗</div>
-        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">good果汁製作。含活動一覽與各期排行，可依活動長度／團體／類型自行篩選與客製化（例如「時長 8.25、9.25 天的 wxs 箱活 T1000 排行」）。原表的篩選器需要電腦版才能操作，手機仍可檢視；站上的「榜線資料庫」則是手機也能篩。</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">good果汁製作。活動一覽與各期排行，可依長度、團體、類型篩選。原表的篩選器需要電腦版；手機請改用站上的「榜線資料庫」。</div>
       </a>
     </sc-if>
 
@@ -1641,7 +1641,7 @@ select option, select optgroup{
             </div>
           </div>
           <div style="font-size:11.5px;color:var(--text-3);line-height:1.8">
-            一次提問或一次截圖辨識算一次操作，中途查幾輪都算同一次，做到完為止；{{ usResetText }}。今日實際呼叫 {{ usReqText }} 次。<br>
+            一次提問或一次截圖辨識算一次操作，中途查幾輪都算同一次；{{ usResetText }}。今日實際呼叫 {{ usReqText }} 次。<br>
             費用依官方定價估算（{{ usModel }}：{{ usPriceText }}），近 30 天快取命中率 {{ usCacheText }}。站台今日總量 {{ usSiteText }} 次。
           </div>
         </div>
@@ -2332,8 +2332,7 @@ select option, select optgroup{
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">站內助手</div>
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">
-          可以查當期與歷史榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。
-          它讀得到的就是站上這些資料，回答前會實際去查。每人每天 20 次操作，一次提問算一次。<sc-if value="{{ aiQuotaShow }}"><span style="display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent-deep);font-weight:800">{{ aiQuotaText }}</span></sc-if>
+          可以查榜線、活動與卡池排程、你的遊戲資料與持卡、教學大全，並依此做多步驟規劃。回答前會實際去查。每人每天 20 次操作。<sc-if value="{{ aiQuotaShow }}"><span style="display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent-deep);font-weight:800">{{ aiQuotaText }}</span></sc-if>
         </div>
         <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:-4px 0 12px">
           <button type="button" onClick="{{ onAiDual }}" style="padding:3px 11px;border:1px solid var(--border);border-radius:999px;background:{{ aiDualBg }};color:{{ aiDualFg }};font-size:11.5px;font-weight:800;cursor:pointer">{{ aiDualText }}</button>
@@ -2744,7 +2743,7 @@ select option, select optgroup{
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
       <iframe id="gachaSimFrame" data-src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
     </div>
-    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">機率、卡池內容與保底規則全部取自官方 master 資料（gachaCardRarityRates／gachaDetails／gachaBehaviors），不是估算值。模擬結果僅供參考，不代表實際抽卡。</div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">機率、卡池內容與保底規則全部取自官方 master 資料，不是估算值。模擬結果僅供參考。</div>
 
     <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">抽卡期望 · 天井 · 招募點數保底</span></div>
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
@@ -3700,6 +3699,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=e94354f639"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=af68912223"></script>
 </body>
 </html>
