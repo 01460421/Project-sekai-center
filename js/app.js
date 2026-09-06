@@ -235,7 +235,10 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2026/09/06', t: '曲庫改為每日自動更新', s: 'EP 曲庫原本是一次性從舊版計算器抽出的靜態檔，沒有更新機制，比每天重建的定數表整整少了 70 首歌，摸魚表與效率排行的結論因此不完整。改成每日排程重建，並帶自我校驗：重建結果與舊檔差異過大就中止不寫檔，寧可沒更新也不要寫出一份看起來正常、實際上錯的曲庫。' },
+    { d: '2026/09/06', t: '摸魚表可以搜尋曲名', s: '排行本身有七百多列，要看特定一首歌得自己捲。加上搜尋框，日文原名與中文譯名都能比對，半形片假名也搜得到。搜到的結果會連同上方的「目前最高 PT」一起跟著變，所以可以直接拿來查單曲該打哪個難度。' },
+    { d: '2026/09/06', t: '曲庫更新獨立成自己的排程', s: '原本掛在「儲值商品資料更新」底下，但曲庫跟商城沒有關係，混在一起會讓人不知道為什麼要去那裡重跑，也沒辦法只重跑曲庫。拆成獨立的一支，時間也錯開。' },
+    { d: '2026/09/06', t: '曲庫自我校驗改成看分布而不是看比例', s: '第一次實際執行就被自己的校驗擋下來：上游重新模擬了一批 APPEND 譜面，不符比例 2.79% 超過門檻。但 97% 的係數完全吻合，那顯然不是欄位對應錯誤。改成看不符的「分布」：同一個欄位在大多數譜面上都不符才是對應錯了，集中在特定曲目則是上游正常改資料，放行。' },
+    { d: '2026/09/06', t: '曲庫改為每日自動更新', s: 'EP 曲庫原本是一次性從舊版計算器抽出的靜態檔，沒有更新機制，比每天重建的定數表整整少了 70 首歌，摸魚表與效率排行的結論因此不完整。改成每日獨立排程重建，並帶自我校驗：重建結果與舊檔差異過大就中止不寫檔，寧可沒更新也不要寫出一份看起來正常、實際上錯的曲庫。' },
     { d: '2026/09/06', t: '每個技能窗的倍率獨立成檔', s: '曲庫原本每個難度只存「前 5 個技能窗的係數總和」與第 6 窗兩個數字，看不到單一技能的影響。新增一份把 6 個窗拆開的資料，個人／協力／自動各一組。體積較大，按需載入，不影響計算中心開啟速度。' },
     { d: '2026/09/06', t: '摸魚表', s: '計算中心新增摸魚表：每首歌先在綠藍黃紅紫五個難度裡挑出活動 P 最高的那一個，彩譜不參與這個五選一、篩完之後整批加回來，所以有彩譜的歌會出現兩列。同一首歌歌長固定，換排序不會跳難度。' },
     { d: '2026/09/06', t: 'B30 用截圖匯入成績', s: '上傳選曲畫面的曲目清單截圖自動填成績，一次最多 10 張、整批只算一次 AI 額度。FC/AP 由瀏覽器直接判顏色，不經過 AI 也不用等；只有曲名需要辨識。任何解析度都會自動校正，結果一定先列出來讓你確認，而且只有 FC/AP 會寫入，通關與未通關不會蓋掉既有紀錄。' },
@@ -416,7 +419,7 @@ class Component extends DCLogic {
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
-    moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40,
+    moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40, moyuQ: '',
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
     layout: null,   // { nav:{order:[],hidden:[]}, home:{order:[],hidden:[]} }，null＝預設
     qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaReplyTo: null, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
@@ -10993,9 +10996,16 @@ class Component extends DCLogic {
     const key = sortBy || s.moyuSort || 'ep';
     const scope = s.moyuScope || 'all';
     const FIVE = ['E', 'N', 'H', 'X', 'M'];
+    /* 曲名搜尋。全形轉半形再比,不然使用者打半形括號會搜不到全形的曲名;
+       中文譯名(tc)有的話也一起比,只記得中文名的人才找得到。 */
+    const q = String(s.moyuQ || '').trim().toLowerCase().normalize('NFKC');
     const rows = [];
     (s.epSongs || []).forEach(song => {
       if (!song.time || song.time <= 0 || !song.d) return;
+      if (q) {
+        const hay = ((song.t || '') + ' ' + (song.tc || '')).toLowerCase().normalize('NFKC');
+        if (hay.indexOf(q) < 0) return;
+      }
       const cycle = song.time + iv;
       const mk = (dk) => {
         const d = song.d[dk];
@@ -13522,9 +13532,12 @@ class Component extends DCLogic {
       })),
       ctrlHasAlts: !!(this._ctrlAlts || []).length,
       hasMoyuTable: s.ctab === 'moyu', moyuRows, moyuSortChips, moyuScopeChips,
+      moyuQ: s.moyuQ,
+      moyuQHint: s.moyuQ ? ('「' + s.moyuQ + '」符合 ' + moyuRows.length + ' 列') : '',
       moyuTitle: '摸魚表 · ' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時活動 P' : moyuSort === 'epe' ? '每體力活動 P' : '單局活動 P'),
       moyuCols: s.mobile ? '30px minmax(0,1fr) 84px' : '38px minmax(0,1fr) 110px 104px',
       moyuNote: modeLabels[s.mode] + ' · 加成 ' + s.bonus + '% · 體力 ' + s.energy + ' · 共 ' + moyuRows.length + ' 列',
+      moyuEmptyText: s.moyuQ ? ('沒有曲名符合「' + s.moyuQ + '」。') : '曲庫還沒載入完，或目前的篩選沒有任何結果。',
       moyuEmpty: s.ctab === 'moyu' && !moyuRows.length,
       hasEffTable: s.ctab === 'eff', effRows, effSortChips,
       effTitle: (s.effSort === 'score' ? '單首分數' : s.effSort === 'ep' ? '單局活動 P' : '時間效率') + ' TOP 15', effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',

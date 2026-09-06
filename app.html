@@ -1096,13 +1096,15 @@ select option, select optgroup{
                 </button>
               </sc-for>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 16px 10px">
               <sc-for list="{{ moyuScopeChips }}" as="c" hint-placeholder-count="3">
                 <button type="button" onClick="{{ onSet }}" data-k="moyuScope" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button>
               </sc-for>
+              <input type="text" placeholder="搜尋曲名…" value="{{ moyuQ }}" onInput="{{ onField }}" data-k="moyuQ" style="flex:1;min-width:150px;padding:5px 12px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;outline:none" style-focus="border-color:var(--accent)">
+              <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ moyuQHint }}</span>
             </div>
             <sc-if value="{{ moyuEmpty }}">
-              <div style="padding:16px;font-size:12px;color:var(--text-3);border-top:1px solid var(--border)">曲庫還沒載入完，或目前的篩選沒有任何結果。</div>
+              <div style="padding:16px;font-size:12px;color:var(--text-3);border-top:1px solid var(--border)">{{ moyuEmptyText }}</div>
             </sc-if>
             <sc-for list="{{ moyuRows }}" as="r" hint-placeholder-count="10">
               <div style="display:grid;grid-template-columns:{{ moyuCols }};gap:10px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s" style-hover="background:var(--bg-soft)">
@@ -3698,6 +3700,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=4343257571"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=3da8e94a8e"></script>
 </body>
 </html>
