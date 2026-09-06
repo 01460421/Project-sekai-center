@@ -9,7 +9,7 @@
 
 import { allowOrigin, corsHeaders, preflight } from './cors.js';
 import { chatClaude, validateChat } from './admin.js';
-import { chatGemini, hasGemini, geminiModel } from './gemini.js';
+import { chatGemini, hasGemini, geminiModel, runLanes, lanesReport } from './gemini.js';
 import { summarize, priceOf } from './pricing.js';
 import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
@@ -709,35 +709,16 @@ export async function handleApi(req, env, url, user) {
         quota = { ops_used: await aiOpsToday(env.DB, user.id), ops_cap: unlimited ? null : opsCapOf(env, user),
                   unlimited, paid: false, reset_at: nextReset() };
       }
-      /* 這個變數原本叫 out,把上面那個回應 helper 遮蔽掉了 —— let 的 TDZ 涵蓋整個
-         區塊,所以上面兩行的 out(...) 會拋 ReferenceError 而不是回 413/400,
-         被外層 catch 吞成一個看不出原因的 500。 */
-      /* 雙路並行:v.providers 是白名單過的 ['claude'] / ['gemini'] / 兩者。
-         金鑰沒設的那一路直接跳過,不要讓它變成一個假的失敗。
-         用 allSettled 不用 all —— 一路掛掉不該把另一路已經拿到的答案丟掉。
-         兩路是併發的,牆鐘時間跟單路一樣(前端那條假進度條是照 ~40s 調的)。 */
-      const want = (v.providers || ['claude']).filter(pv =>
-        pv === 'gemini' ? hasGemini(env) : !!env.ANTHROPIC_API_KEY);
-      if (!want.length) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
-      const settled = await Promise.allSettled(want.map(pv =>
-        pv === 'gemini' ? chatGemini(env, v) : chatClaude(env, v)));
-
-      const lanes = [];
-      for (let i = 0; i < want.length; i++) {
-        const pv = want[i], st = settled[i];
-        if (st.status === 'fulfilled') lanes.push({ provider: pv, ok: true, reply: st.value });
-        else lanes.push({ provider: pv, ok: false, error: (st.reason && st.reason.message) || String(st.reason) });
-      }
-      const good = lanes.filter(l => l.ok);
+      /* 雙路並行。分派收在 gemini.js 的 runLanes,/admin/chat 用的是同一支 ——
+         失敗處理一旦兩邊走鐘,debug 起來會非常痛苦。 */
+      const { lanes, good, primary } = await runLanes(env, v, { claude: chatClaude, gemini: chatGemini });
+      if (!lanes.length) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
       if (!good.length) {
         // 全掛才算失敗。錯誤代碼沿用 claude_failed,前端的訊息路徑不用改
         const msg = lanes.map(l => l.provider + '：' + l.error).join('　/　');
         await logAdmin(env.DB, user.id, '[chat]', '[失敗] ' + msg, 0, 0, { kind: 'chat', op_id: opId });
         return json({ error: 'claude_failed', message: msg }, 502, req, env);
       }
-      /* 主路:優先用當初指定的第一家,它掛了才換另一家頂上。
-         這樣舊版前端(只讀最上層 content)永遠拿得到能用的東西。 */
-      const primary = (good.find(l => l.provider === want[0]) || good[0]).reply;
 
       // 每一路各記一列,pricing.js / /admin/usage 用 model 分群,不必改
       for (const l of good) {
@@ -752,10 +733,7 @@ export async function handleApi(req, env, url, user) {
       return json({
         // 最上層維持單路的形狀,舊呼叫端(wlsScanOne 等)完全不用改
         content: primary.content, stop_reason: primary.stop_reason, model: primary.model,
-        results: lanes.map(l => l.ok
-          ? { provider: l.provider, ok: true, content: l.reply.content, stop_reason: l.reply.stop_reason,
-              model: l.reply.model, tokens: { in: l.reply.tokens_in, out: l.reply.tokens_out } }
-          : { provider: l.provider, ok: false, error: l.error }),
+        results: lanesReport(lanes),
         quota: Object.assign({}, quota, { op: opId, rounds: tk.rounds, paid: paidCall || !!quota.paid }),
         cache: { read: primary.cache_read || 0, write: primary.cache_write || 0 },
       }, 200, req, env);
