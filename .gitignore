@@ -2,3 +2,7 @@
 # Cloudflare Worker 本機產物
 worker/.wrangler/
 worker/node_modules/
+
+# Python 快取
+__pycache__/
+*.pyc

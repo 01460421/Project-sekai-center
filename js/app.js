@@ -10847,11 +10847,16 @@ class Component extends DCLogic {
     this._epLoading = true;
     this.setState({ epErr: '' });
     const done = arr => { this._epLoading = false; this.setState({ epSongs: arr || [], epErr: (arr && arr.length) ? '' : '曲庫載入失敗，點此重試' }); };
-    import('./data/ep-songs.js?v=5107c1e41f')
+    /* 固定 URL、不帶 ?v=：這支現在由 tools/build-ep-songs.py 每天重建，
+       而版本戳是寫死在這行的（stamp-assets.py 只改 HTML，管不到這裡），
+       留著會讓瀏覽器用 immutable 快取黏住改版前的曲庫。改走 vercel.json 的
+       must-revalidate 規則（見該檔 /data/(billing|b30-consts|ep-songs) 那條），
+       交給 HTTP 驗證判斷新舊 —— 跟 b30-consts 同一套做法。 */
+    import('./data/ep-songs.js')
       .then(m => done(m.EP_SONGS || []))
       .catch(() => {
         // 後備：直接抓檔文字，抽出 EP_SONGS 陣列（動態 import 被擋時仍能載入）
-        fetch('./data/ep-songs.js?v=5107c1e41f').then(r => r.text()).then(t => {
+        fetch('./data/ep-songs.js').then(r => r.text()).then(t => {
           const k = t.indexOf('EP_SONGS'), i = t.indexOf('[', k), j = t.lastIndexOf(']');
           done((k >= 0 && i > k && j > i) ? JSON.parse(t.slice(i, j + 1)) : []);
         }).catch(() => { this._epLoading = false; this.setState({ epErr: '曲庫載入失敗，點此重試' }); });

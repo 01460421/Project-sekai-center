@@ -92,7 +92,7 @@
       }
     },
     {
-      "src": "/data/(billing|b30-consts|borders-db)\\.js",
+      "src": "/data/(billing|b30-consts|borders-db|ep-songs|ep-song-windows)\\.js",
       "dest": "/data/$1.js",
       "headers": {
         "cache-control": "public, max-age=0, must-revalidate"
