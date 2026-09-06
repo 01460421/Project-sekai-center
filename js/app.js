@@ -11,6 +11,7 @@ class Component extends DCLogic {
     ['sekai-cards-own', '收集率:持有卡片'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
     ['sekai-b30-zh', 'B30:曲名語言'], ['sekai-b30-fmt', 'B30:定數格式'],
+    ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
     ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格']
@@ -391,6 +392,8 @@ class Component extends DCLogic {
     sysOpen: {},
     wForm: null, admUsers: [], admStats: null, admAsk: '', admReply: '', admBusy: false, admMsg: '',
     aiMsgs: [], aiErr: '', watchKinds: null, caps: {}, acSyncMsg: '',
+    // 雙路並行:同一題同時問 Claude 與 Gemini。預設關,開了成本大約翻倍
+    aiDual: (() => { try { return localStorage.getItem('sekai-ai-dual') === '1'; } catch (e) { return false; } })(),
     effSort: 'eph', dashTab: 'overview', dashData: {}, dashBusy: false, dashErr: '', tutHint: false,
     chatList: [], chatId: null, aiMod: '', unread: 0,
     wlRuleOpen: false, wlMoreB: false, wlMoreR: false,
@@ -9350,6 +9353,37 @@ class Component extends DCLogic {
   }
   newChat() { this._savedN = 0; this.setState({ aiMsgs: [], chatId: null, aiErr: '' }); }
 
+  setAiDual(on) {
+    const v = !!on;
+    try { localStorage.setItem('sekai-ai-dual', v ? '1' : '0'); } catch (e) {}
+    this.setState({ aiDual: v });
+  }
+
+  /* 從 /api/chat 的回應裡挑出某個工具的輸出。
+     雙路模式下 results[] 會有兩家的答案,這時用 validate 決定採用誰:
+     兩家都過就用主路的,只有一家過就用那家,都沒過就回主路的讓上層報錯。
+     回傳 { input, provider, agreed } —— agreed 給 UI 標示「兩家講的一樣嗎」。 */
+  aiPickLane(r, toolName, validate) {
+    const grab = (content) => {
+      const u = ((content) || []).find(c => c.type === 'tool_use' && c.name === toolName);
+      return (u && u.input) || null;
+    };
+    const ok = (x) => { try { return !!x && (!validate || validate(x)); } catch (e) { return false; } };
+    const lanes = ((r && r.results) || []).filter(l => l && l.ok)
+      .map(l => ({ provider: l.provider, input: grab(l.content) }));
+    if (!lanes.length) {
+      const input = grab(r && r.content);
+      return { input, provider: (r && r.model) || '', agreed: null };
+    }
+    const good = lanes.filter(l => ok(l.input));
+    const pick = good[0] || lanes[0];
+    let agreed = null;
+    if (lanes.length > 1) {
+      try { agreed = JSON.stringify(lanes[0].input) === JSON.stringify(lanes[1].input); } catch (e) { agreed = null; }
+    }
+    return { input: pick.input, provider: pick.provider, agreed, lanes };
+  }
+
   /* 對話迴圈:模型要工具就在瀏覽器執行,把結果送回,直到它給出文字結論。
      上限 12 輪是防呆 —— 正常的複雜任務大約 3～6 輪,跑到 12 通常代表它卡住了。 */
   async aiSend(text) {
@@ -9361,10 +9395,24 @@ class Component extends DCLogic {
       const op = await this.aiOpStart('chat');
       for (let guard = 0; guard < 12; guard++) {
         const r = await this.api('/api/chat', { method: 'POST', body: {
-          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op } });
+          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op,
+          dual: !!this.state.aiDual } });
         if (r && r.quota) this.setState({ aiQuota: r.quota });
         const content = (r && r.content) || [];
-        cur = cur.concat([{ role: 'assistant', content }]);
+        /* 只有主路的工具會真的執行。aiRun 裡的 set_my_uid／schedule_task 有副作用,
+           兩路各跑一次會寫兩份。副路只取它的文字結論拿來對照。 */
+        const alt = (() => {
+          const ls = (r && r.results) || [];
+          if (ls.length < 2) return null;
+          const sec = ls.find(l => l.model !== r.model) || ls[1];
+          if (!sec) return null;
+          if (!sec.ok) return { provider: sec.provider, err: sec.error };
+          const t = (sec.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+          return t ? { provider: sec.provider, text: t } : null;
+        })();
+        const amsg = { role: 'assistant', content };
+        if (alt) amsg._alt = alt;
+        cur = cur.concat([amsg]);
         this.setState({ aiMsgs: cur });
         const calls = content.filter(c => c.type === 'tool_use');
         if (!calls.length) break;
@@ -9593,6 +9641,8 @@ class Component extends DCLogic {
         wlsProgLabel: pre + 'AI 讀取每一格的專精與技能等級…' });
       const r = await this.api('/api/chat', { method: 'POST', body: {
         op: this._wlsOp,
+        // 截圖辨識沒有副作用,是雙路最划算的地方:兩家各讀一次再挑能用的那份
+        dual: !!this.state.aiDual,
         /* 這裡曾經為了求快改走 vision 設定檔(Sonnet＋關閉思考＋effort low)。
            撤回了:實測 41 格的輸出裡,專精與技能等級全部是 MR5／SLv.4 ——
            真實卡庫不可能每張都滿,那是模型在複製貼上而不是在讀圖,
@@ -9633,9 +9683,23 @@ class Component extends DCLogic {
             unreadable: { type: 'integer', description: '看不清楚而略過的張數' },
           }, required: ['cards'] } }],
       } });
-      const use = ((r && r.content) || []).find(c => c.type === 'tool_use' && c.name === 'submit_cards');
-      const got = (use && use.input && Array.isArray(use.input.cards)) ? use.input.cards : null;
+      /* 上面那段註解記的失敗樣態(整批 MR5／SLv.4)一直沒有守門的程式,只有人眼發現。
+         現在把它寫成驗證條件:整批專精＋技能等級完全一致就是模型在複製貼上,
+         不是在讀圖。雙路模式下這一路會被判定不可用,自動改採另一家。 */
+      const sane = (x) => {
+        const cs = x && Array.isArray(x.cards) ? x.cards : null;
+        if (!cs || !cs.length) return false;
+        if (cs.length >= 6) {
+          const uniq = {}; let k = 0;
+          cs.forEach(c => { const key = c.master_rank + '/' + c.skill_level; if (!uniq[key]) { uniq[key] = 1; k++; } });
+          if (k === 1) return false;
+        }
+        return true;
+      };
+      const pick = this.aiPickLane(r, 'submit_cards', sane);
+      const got = (pick.input && Array.isArray(pick.input.cards)) ? pick.input.cards : null;
       if (!got || !got.length) throw new Error('辨識沒有回傳結果，請換一張更清楚的截圖');
+      if (!sane(pick.input)) throw new Error('辨識結果每一格都一樣，通常代表模型沒有真的在讀圖，請換一張更清楚的截圖');
 
       /* ---- 第二段:認出是哪一張卡 ---- */
       this.setState({ wlsProg: 64, wlsProgBase: 64, wlsProgSpan: 4,
@@ -12275,6 +12339,19 @@ class Component extends DCLogic {
                              align: 'flex-start', bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)' });
             }
           });
+          /* 雙路模式的第二家答案。只顯示文字結論 —— 工具只在主路跑,
+             副路的 tool_use 沒有被執行過,秀出來只會讓人以為它做了什麼。 */
+          if (m._alt) {
+            const a = m._alt;
+            bubbles.push({ text: '', wrap: 'normal', align: 'flex-start',
+              bg: 'transparent', fg: 'var(--text-3)', bd: 'var(--border)',
+              html: React.createElement('div', null,
+                React.createElement('div', { style: { fontSize: '11px', fontWeight: 800, color: 'var(--text-3)',
+                  letterSpacing: '.3px', marginBottom: '4px' } }, '雙路對照 · ' + (a.provider || '')),
+                a.err
+                  ? React.createElement('div', { style: { fontSize: '12px', color: 'var(--text-3)' } }, '這一路失敗：' + a.err)
+                  : React.createElement('div', { dangerouslySetInnerHTML: { __html: this.mdLite(a.text) } })) });
+          }
         });
         return {
           admDenied: me !== undefined && !isAdm,
@@ -12518,6 +12595,11 @@ class Component extends DCLogic {
               usModel: U ? (U.model || '') : '', usProbation: !!(U && U.probation),
               usPriceText: U && U.price ? ('輸入 $' + U.price[0] + '・輸出 $' + U.price[1] + '・快取讀取 $' + U.price[3] + '，每百萬 token') : '',
               aiQuotaShow: !!quotaText, aiQuotaText: quotaText,
+              // 雙路並行的開關。模板不能寫三元,文案與樣式在這裡就算完
+              aiDualOn: !!s.aiDual,
+              aiDualText: s.aiDual ? '雙路並行：開' : '雙路並行：關',
+              aiDualBg: s.aiDual ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card-2)',
+              aiDualFg: s.aiDual ? 'var(--accent-deep)' : 'var(--text-3)',
             };
           })(),
           ...(() => {
@@ -13962,6 +14044,7 @@ class Component extends DCLogic {
       },
       onColClose: () => this.setState({ colPick: null }),
       onTheme: () => this.cycleTheme(),
+      onAiDual: () => this.setAiDual(!this.state.aiDual),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;
