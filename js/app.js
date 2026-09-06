@@ -120,6 +120,7 @@ class Component extends DCLogic {
     ['效率排行（每小時活動P，sort_by=\'eph\'）', 'song_efficiency', 'calc（ctab=eff）', '效率曲|短效|短效率|短曲|周回曲|跑哪首最快|哪首打最快|時速最高的歌|刷歌效率|刷活動P效率排行|每分鐘EP|依每分鐘EP|EP排行|EP/h|每小時P|時效|時間有限'],
     ['效益排行（單局活動P，sort_by=\'ep\'）', 'song_efficiency', 'calc（ctab=eff）', '效益曲|長效|長曲|CP值曲|CP 值最高的歌|省體力曲|哪首最省體力|一場拿最多P|單局P|每局EP|依每局EP|依每火EP|每火EP|省體力排序|體力有限|單場高pt'],
     ['單局分數排行（sort_by=\'score\'）', 'song_efficiency', 'calc（ctab=eff）', '單局分數|衝分數|哪首分數最高|分數排行|純衝分數'],
+    ['摸魚表（每首歌該打哪個難度）', 'song_efficiency', 'calc（ctab=moyu）', '摸魚表|摸魚|哪個難度最划算|該打哪個難度|難度五選一|最高pt的難度|最高PT|消體打哪個難度|野房消體|彩譜分開算|彩譜排行|append分開算'],
     ['EP 精算（單場活動P試算）', 'calc_event_points', 'calc（ctab=ep）', 'EP 計算|EP 計算器|活動P計算器|活動P/分數估算|PT 計算|ep 分數|算一場多少P|一場拿多少|跑一場多少活動P|每體力效率|活動點數計算|活動加成·活動P 計算器'],
     ['活動試算（衝榜規劃／目標反推）', 'plan_target', 'calc（ctab=plan）', '活動試算|跑榜規劃|衝榜規劃|算我要跑多久|還要打幾場|追不追得上|要花多少體力|要花多少錢|目標EP|目前EP|石換體|體力來源（差引計算）|每NT$1多少活動P|水晶CP（石/元）'],
     ['推隊倍率（平均技能倍率／時效值）', 'calc_skill_multiplier', 'calc（ctab=mult）', '倍率|技能倍率|平均技能倍率|實效技能倍率|時效值|倍率計算機|推隊倍率計算器|整隊倍率|整隊上限 2.88|滿技能|3.7|3.71|3.8|3.82|3.88|5人技能加分%|隊長%＋隊員%|單次全隊技能總倍率'],
@@ -342,6 +343,8 @@ class Component extends DCLogic {
   OH = { solo: 15, auto: 15, multi: 45, cheer: 45 };
   ohOf(mode) { const v = this.OH[mode]; return v == null ? 15 : v; }
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
+  DIFF_NAME = {E:'EASY',N:'NORMAL',H:'HARD',X:'EXPERT',M:'MASTER',A:'APPEND'};
+  DIFF_COLOR = {E:'#54ba54',N:'#42abd4',H:'#eba041',X:'#e0576a',M:'#9a63d8',A:'#f0619e'};
   PRESETS = {
     t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:2.88, s6:2.88, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
     casual:{ n:'輕鬆玩',   power:150000, bonus:120, energy:1,  skill:2,   s6:2,   mode:'solo',  song:1,  diff:'X', goal:300000,  scoreMode:'calc' }
@@ -407,6 +410,7 @@ class Component extends DCLogic {
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
+    moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40,
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
     layout: null,   // { nav:{order:[],hidden:[]}, home:{order:[],hidden:[]} }，null＝預設
     qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaReplyTo: null, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
@@ -10958,6 +10962,50 @@ class Component extends DCLogic {
     });
     return rows.sort((a, b) => (b[key] || 0) - (a[key] || 0)).slice(0, Math.max(1, +limit || 15));
   }
+
+  /* 摸魚表：一首歌到底該打哪個難度。
+     跟「效率排行」的差別是難度變成了一個維度 —— effRanking 是把全部歌固定在
+     同一個難度上比,摸魚表是每首歌先自己挑出最划算的那一個難度再一起比。
+
+     規則(依需求):
+       1. 綠藍黃紅紫(EASY/NORMAL/HARD/EXPERT/MASTER)五個裡面,只留活動 P 最高的那一個。
+       2. 彩譜(APPEND)不參與這個五選一,而是篩完之後整批加回來,各自成一列。
+     所以最後的列表 = 每首歌一列(五選一) + 所有彩譜各一列。
+
+     為什麼五選一可以直接用活動 P 比:同一首歌的歌長與間隔是固定的,
+     每小時 P 只是每局 P 乘上一個同樣的常數,所以不論用哪個排序,
+     五個難度裡勝出的都是同一個。挑的時候固定用 ep,語意才對得上「最高PT」。 */
+  moyuRanking(sortBy, limit) {
+    const s = this.state, F = this.EM[s.energy] || 1, iv = +s.interval || 50;
+    const key = sortBy || s.moyuSort || 'ep';
+    const scope = s.moyuScope || 'all';
+    const FIVE = ['E', 'N', 'H', 'X', 'M'];
+    const rows = [];
+    (s.epSongs || []).forEach(song => {
+      if (!song.time || song.time <= 0 || !song.d) return;
+      const cycle = song.time + iv;
+      const mk = (dk) => {
+        const d = song.d[dk];
+        if (!d) return null;
+        const score = this.calcSongScore(d, s.mode, +s.power || 0, +s.skill || 0, +s.s6 || 0);
+        const ep = this.calcEPValue(s.mode, score, song.rate, +s.bonus || 0, F, +s.power || 0, +s.life || 0);
+        return { id: song.id, title: song.t, diff: dk, lv: d[0], notes: d[1],
+                 time: song.time, rate: song.rate, score, ep,
+                 eph: Math.round(ep * 3600 / cycle),
+                 epe: (+s.energy || 0) > 0 ? Math.round(ep / s.energy) : ep };
+      };
+      if (scope !== 'append') {
+        let best = null;
+        FIVE.forEach(dk => { const r = mk(dk); if (r && (!best || r.ep > best.ep)) best = r; });
+        if (best) { best.kind = 'pick'; rows.push(best); }
+      }
+      if (scope !== 'five') {
+        const a = mk('A');
+        if (a) { a.kind = 'append'; rows.push(a); }
+      }
+    });
+    return rows.sort((a, b) => (b[key] || 0) - (a[key] || 0)).slice(0, Math.max(1, +limit || 40));
+  }
   plan() {
     const s = this.state, r = this.epResult();
     const left = Math.max(0, (+s.goal || 0) - (+s.cur || 0));
@@ -11264,6 +11312,26 @@ class Component extends DCLogic {
       ];
       formulaText = 'EP/h = 每局 EP × 3600 ÷ (歌長 + 間隔)';
       formulaNote = '排行依所選難度與模式重算全 640 首；間隔含結算與選歌時間，車隊常用 45–60 秒。';
+    } else if (s.ctab === 'moyu') {
+      calcInputTitle = '摸魚表參數';
+      calcFields = [
+        { k: 'skill', label: '平均技能倍率', value: s.skill },
+        { k: 's6', label: 'S6 倍率', value: s.s6 },
+        { k: 'interval', label: '每場間隔（秒）', value: s.interval },
+        { k: 'moyuLimit', label: '顯示筆數', value: s.moyuLimit }
+      ];
+      const mo = this.moyuRanking(s.moyuSort || 'ep', 1)[0];
+      resultLabel = '目前設定下的最高 PT';
+      resultValue = mo ? this.n(mo.ep) : '—';
+      resultSub = mo ? (mo.title + ' · ' + (this.DIFF_NAME[mo.diff] || mo.diff) + ' Lv.' + mo.lv) : '曲庫載入中…';
+      resultStats = [
+        { l: '每小時 P', v: mo ? this.short(mo.eph) : '—', sub: '間隔 ' + s.interval + 's' },
+        { l: '每體力 P', v: mo ? this.n(mo.epe) : '—', sub: '體力 ' + s.energy + '/場' },
+        { l: '推算分數', v: mo ? this.short(mo.score) : '—', sub: modeLabels[s.mode] },
+        { l: '歌長', v: mo ? (mo.time + 's') : '—', sub: mo ? ('係數 R' + mo.rate) : '' }
+      ];
+      formulaText = '每首歌先在 綠/藍/黃/紅/紫 五個難度裡挑出活動 P 最高的那一個，再把所有彩譜加回來一起排。';
+      formulaNote = '彩譜(APPEND)不參與五選一 —— 它跟同一首歌的其他難度是分開算的，所以有彩譜的歌會出現兩列：一列是五選一的贏家，一列是彩譜本身。同一首歌的歌長固定，所以「最高 P」跟「最高每小時 P」挑出來的難度必然相同。';
     } else if (s.ctab === 'plan') {
       calcInputTitle = '活動試算';
       calcFields = [
@@ -11490,6 +11558,34 @@ class Component extends DCLogic {
       main: effSort === 'score' ? this.short(r.score) : effSort === 'ep' ? this.n(r.ep) : this.short(r.eph) + '/h',
       sub: effSort === 'score' ? (this.short(r.eph) + '/h') : effSort === 'ep' ? (this.short(r.eph) + '/h') : (this.n(r.ep) + ' EP'),
       eph: this.short(r.eph) + '/h', ep: this.n(r.ep) + ' EP', score: this.short(r.score),
+      numColor: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#e28743' : 'var(--text-3)',
+      rowBg: r.id === +s.songKey ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent'
+    }));
+
+    /* 摸魚表 */
+    const moyuSort = s.moyuSort || 'ep';
+    const MOYU_SORTS = [['ep', '單局 P', '最高 PT'], ['eph', '每小時 P', '時間有限'], ['epe', '每體力 P', '省體力'], ['score', '單局分數', '衝分數']];
+    const moyuSortChips = MOYU_SORTS.map(([v, n2, hint]) => {
+      const on = moyuSort === v, st = chip(on, 'var(--cta)');
+      return Object.assign({ v, n: n2, hint }, st);
+    });
+    const MOYU_SCOPES = [['all', '五選一＋彩譜'], ['five', '只看五選一'], ['append', '只看彩譜']];
+    const moyuScopeChips = MOYU_SCOPES.map(([v, n2]) => {
+      const on = (s.moyuScope || 'all') === v, st = chip(on, 'var(--ink-grad)');
+      return Object.assign({ v, n: n2 }, st);
+    });
+    const moyuAll = s.ctab === 'moyu' ? this.moyuRanking(moyuSort, +s.moyuLimit || 40) : [];
+    const moyuRows = moyuAll.map((r, i) => ({
+      i: i + 1, title: r.title,
+      diff: this.DIFF_NAME[r.diff] || r.diff, diffColor: this.DIFF_COLOR[r.diff] || 'var(--text-3)',
+      // 彩譜是「另外加回來的那一批」,給它一個明確的標記,不然跟五選一的贏家混在一起看不出來
+      tag: r.kind === 'append' ? '彩譜' : '五選一',
+      tagBg: r.kind === 'append' ? 'color-mix(in oklab,#f0619e 18%,transparent)' : 'var(--card-2)',
+      tagFg: r.kind === 'append' ? '#c4407c' : 'var(--text-3)',
+      meta: 'Lv.' + r.lv + ' · ' + r.notes + ' notes · ' + r.time + 's · R' + r.rate,
+      main: moyuSort === 'score' ? this.short(r.score) : moyuSort === 'eph' ? this.short(r.eph) + '/h'
+            : moyuSort === 'epe' ? this.n(r.epe) : this.n(r.ep),
+      sub: moyuSort === 'ep' ? (this.short(r.eph) + '/h') : (this.n(r.ep) + ' P'),
       numColor: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#e28743' : 'var(--text-3)',
       rowBg: r.id === +s.songKey ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent'
     }));
@@ -13412,6 +13508,11 @@ class Component extends DCLogic {
           + this.n(x.s1) + ' ～ ' + this.n(x.s2),
       })),
       ctrlHasAlts: !!(this._ctrlAlts || []).length,
+      hasMoyuTable: s.ctab === 'moyu', moyuRows, moyuSortChips, moyuScopeChips,
+      moyuTitle: '摸魚表 · ' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時活動 P' : moyuSort === 'epe' ? '每體力活動 P' : '單局活動 P'),
+      moyuCols: s.mobile ? '30px minmax(0,1fr) 84px' : '38px minmax(0,1fr) 110px 104px',
+      moyuNote: modeLabels[s.mode] + ' · 加成 ' + s.bonus + '% · 體力 ' + s.energy + ' · 共 ' + moyuRows.length + ' 列',
+      moyuEmpty: s.ctab === 'moyu' && !moyuRows.length,
       hasEffTable: s.ctab === 'eff', effRows, effSortChips,
       effTitle: (s.effSort === 'score' ? '單首分數' : s.effSort === 'ep' ? '單局活動 P' : '時間效率') + ' TOP 15', effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
       effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
@@ -13425,7 +13526,7 @@ class Component extends DCLogic {
       ],
       planSummary: '約合 NT$' + this.n(pl.twd) + '（每 NT$1 ≈ ' + this.n(pl.epPerTwd) + ' 活動P）｜需要 ' + this.n(pl.totalEnergy) + ' 體力，可回復 ' + this.n(pl.recoverable) + '（自然 ' + (+s.natHr || 0) * 2 + '／大罐 ' + (+s.lCan || 0) * 10 + '／小罐 ' + (+s.sCan || 0) * 5 + '／石 ' + (+s.crys || 0) * 10 + '），差引 ' + this.n(pl.net) + ' 體力 ≈ ' + this.n(pl.crystal) + ' 石。',
       calcTabs: [
-        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'plan', n: '活動試算' },
+        { v: 'ep', n: 'EP 精算' }, { v: 'eff', n: '效率排行' }, { v: 'moyu', n: '摸魚表' }, { v: 'plan', n: '活動試算' },
         { v: 'mult', n: '推隊倍率' }, { v: 'gacha', n: '抽卡天井' },
         { v: 'mysekai', n: 'MySekai' }, { v: 'rank', n: '排位賽' }, { v: 'ctrl', n: '控分速查' }
       ].map(t => Object.assign({}, t, seg(s.ctab === t.v))),
@@ -13438,7 +13539,7 @@ class Component extends DCLogic {
           return Object.assign({}, c, st, { dot: on ? 'rgba(255,255,255,.85)' : c.dot, fg: on ? '#fff' : 'var(--text)' });
         }),
       calcInputTitle, calcFields,
-      showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'plan',
+      showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'moyu' || s.ctab === 'plan',
       modeChips: [
         { v: 'solo', n: '個人' }, { v: 'auto', n: '自動' }, { v: 'multi', n: '協力' }, { v: 'cheer', n: '排位對戰' }
       ].map(m => Object.assign({}, m, chip(s.mode === m.v, 'var(--ink-grad)'))),
