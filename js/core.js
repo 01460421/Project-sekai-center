@@ -5401,23 +5401,34 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             // + = +0.05;++ = +0.09999999(緊貼下一帶但嚴格小於——顯示四捨五入成下一帶值,
             // 排序永遠保持在真正下一帶譜面「後面」,如 34.9++ 顯示 35.00 但排在 35.0 之後)
             fmt: 'plus',
+            // 小數位數(使用者可調 0~4)。套用到 B30 実効值/理論值,以及「數值計算」模式下的定數與実効值。
+            // 符號模式(34.9+)結構上綁死 1 位小數,不受這個設定影響——否則 0 位會變成「35+」而跟真正的 35.0 撞號。
+            dec: 3,
             PLUS_ADD: [0, 0.05, 0.09999999],
             // 「+」一律計入運算(單一真相),兩種模式只差在「怎麼寫」——符號模式沿用 34.9+ 寫法,
             // 且 FC 減值後仍保留符號(34.9+ 的 FC = 33.9+),不會把 + 吃掉
             cval(c) { return c.c + this.PLUS_ADD[c.p || 0]; },
-            cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(2) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
+            cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(this.dec) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
             vTxt(v, c) {
-                if (this.fmt === 'num') return v.toFixed(2);
+                if (this.fmt === 'num') return v.toFixed(this.dec);
                 const p = (c && c.p) || 0;
                 return (v - this.PLUS_ADD[p]).toFixed(1) + '+'.repeat(p);
             },
-            bTxt(v) { return v.toFixed(3); },
+            bTxt(v) { return v.toFixed(this.dec); },
             setFmt(v) {
                 this.fmt = v === 'num' ? 'num' : 'plus';
                 try { localStorage.setItem('sekai-b30-fmt', this.fmt); } catch (e) {}
                 this.renderStats(); this.renderList();
                 const msg = document.getElementById('b30GenMsg');
                 if (msg) msg.textContent = '定數格式已切換,重按「產生」即可套用到圖片。';
+            },
+            setDec(v) {
+                const n = parseInt(v, 10);
+                this.dec = (n >= 0 && n <= 4) ? n : 3;
+                try { localStorage.setItem('sekai-b30-dec', String(this.dec)); } catch (e) {}
+                this.renderStats(); this.renderList();
+                const msg = document.getElementById('b30GenMsg');
+                if (msg) msg.textContent = '小數位數已切換,重按「產生」即可套用到圖片。';
             },
 
             ensure() {
@@ -5428,6 +5439,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.custName = localStorage.getItem('sekai-b30-name') || ''; } catch (e) {}
                 try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
                 try { this.zh = localStorage.getItem('sekai-b30-zh') !== '0'; } catch (e) {}
+                try { const d = parseInt(localStorage.getItem('sekai-b30-dec'), 10); if (d >= 0 && d <= 4) this.dec = d; } catch (e) {}
                 const s = document.createElement('script');
                 // 這支已在 vercel.json 設 must-revalidate(見該檔 /data/(billing|b30-consts) 規則),
                 // 舊版時間桶會讓瀏覽器黏著改版前的檔案,改用固定 URL 交給 HTTP 驗證
@@ -5485,6 +5497,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                             <div class="calc-row"><label>定數「+」格式</label><select id="b30Fmt" onchange="B30Maker.setFmt(this.value)">
                                 <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
                                 <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
+                            </select></div>
+                            <div class="calc-row"><label>小數位數</label><select id="b30Dec" onchange="B30Maker.setDec(this.value)">
+                                <option value="0"${this.dec === 0 ? ' selected' : ''}>0 位(35)</option>
+                                <option value="1"${this.dec === 1 ? ' selected' : ''}>1 位(35.1)</option>
+                                <option value="2"${this.dec === 2 ? ' selected' : ''}>2 位(35.12)</option>
+                                <option value="3"${this.dec === 3 ? ' selected' : ''}>3 位(35.123)</option>
+                                <option value="4"${this.dec === 4 ? ' selected' : ''}>4 位(35.1234)</option>
                             </select></div>
                             <div class="sa-chiprow" style="margin-top:8px;">
                                 <span style="font-size:11px;color:var(--text-light);">換裝置備份(含收集率/儲值設定):</span>
@@ -5833,7 +5852,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ]);
                 } catch (e) {}
 
-                const W = 1096, H = 1800, S = 2;
+                const W = 1096, H = 1900, S = 2;
                 const cv = document.createElement('canvas');
                 cv.width = W * S; cv.height = H * S;
                 const ctx = cv.getContext('2d');
@@ -5892,7 +5911,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ng.addColorStop(0, '#22c3d6'); ng.addColorStop(.5, '#3f8cf3'); ng.addColorStop(1, '#c39df2');
                 ctx.save();
                 ctx.shadowColor = 'rgba(63,140,243,.35)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-                ctx.fillStyle = ng; ctx.font = '800 76px ' + FB; ctx.fillText(bv, CX, 148);
+                // 402px 寬的卡片:4 位小數(如 35.1234)在 76px 會頂到邊,依字數縮一級
+                ctx.fillStyle = ng; ctx.font = '800 ' + (bv.length >= 7 ? 62 : bv.length >= 6 ? 68 : 76) + 'px ' + FB;
+                ctx.fillText(bv, CX, 148, 360);
                 ctx.restore();
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 14px ' + FB;
                 ctx.fillText(`計入 ${t30.length}/30・理論值 ${this.bTxt(this.theory())}`, CX, 210);
@@ -5941,11 +5962,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     // 定數膠囊(16..38,中心 27) → 実効值;寬 64 容納「34.9++」「34.99」
                     const ct = this.cTxt(c) + (c.e ? '*' : '');   // *=難易度表未收錄的推估值
                     ctx.fillStyle = col; this._rr(ctx, x0 + 121, y0 + 16, 64, 22, 11); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.font = '800 ' + (ct.length >= 6 ? 14.5 : 16.5) + 'px ' + FB;
+                    ctx.fillStyle = '#fff'; ctx.font = '800 ' + (ct.length >= 8 ? 12 : ct.length >= 7 ? 13 : ct.length >= 6 ? 14.5 : 16.5) + 'px ' + FB;
                     ctx.fillText(ct, x0 + 153, y0 + 28);
                     ctx.textAlign = 'left';
                     ctx.fillStyle = '#252e4d'; ctx.font = '800 17px ' + FB;
-                    ctx.fillText('→ ' + this.vTxt(it.v, c), x0 + 192, y0 + 28);
+                    ctx.fillText('→ ' + this.vTxt(it.v, c), x0 + 192, y0 + 28, 112);
                     // 曲名(裁切,中心線 y0+58)
                     ctx.font = '700 19px ' + FB; ctx.fillStyle = '#252e4d';
                     const full = this.name(c);
@@ -5958,14 +5979,33 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     else { ctx.fillStyle = it.m === 2 ? '#8ee' : '#f7a'; ctx.font = '800 18px ' + FB; ctx.fillText(it.m === 2 ? 'ALL PERFECT!!' : 'FULL COMBO!', x0 + 121, y0 + 92); }
                 }
 
-                // ---- 頁尾 ----
-                ctx.fillStyle = '#0eb3c5'; ctx.font = '600 15px ' + FB;
-                ctx.fillText('非官方算法,僅供參考娛樂。定數:pentatonic V31(可能變動)', 53, 1722);
-                ctx.fillText('版面還原自 Unibot(MIT/Watagashi_uni)', 53, 1750);
-                ctx.textAlign = 'right';
-                ctx.font = '700 15px ' + FB;
-                ctx.fillText('Generated by SEKAI 資源中心', 1047, 1722);
-                ctx.fillText('project-sekai-center.vercel.app', 1047, 1750);
+                // ---- 頁尾:參考資料 ----
+                // textBaseline 在上面設成 'middle' 之後就沒再改過,所以這裡每個 y 都是「該行的垂直中心」,不是基線。
+                // 53 與 1047 是卡片格線的左右邊界(53 + 2*342 + 310),對齊上面的卡片。
+                const foot = (lines, x, yTop, lh, align) => {
+                    ctx.textAlign = align;
+                    lines.forEach((t, i) => ctx.fillText(t, x, yTop + i * lh, 994));
+                    ctx.textAlign = 'left';
+                };
+                const built = (() => { try { const b = this.D() && this.D().builtAt; return b ? String(b).slice(0, 10) : ''; } catch (e) { return ''; } })();
+
+                ctx.fillStyle = '#8b93ac'; ctx.font = '600 12.5px ' + FB;
+                foot([
+                    '定數:腐食氏「プロセカ難易度表」pentatonic V31(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
+                    '曲目/譜面:Sekai-World sekai-master-db-diff(日)、sekai-master-db-tc-diff(台);中文譯名:Sekai Viewer 社群 i18n',
+                    '封面/頭像:storage.sekai.best・版面還原自 Unibot(MIT / Watagashi_uni)',
+                    '実効值:AP=定數、FC=定數−1,分母固定 30。非官方算法,僅供參考娛樂。'
+                ], 53, 1726, 21, 'left');
+
+                ctx.fillStyle = '#0eb3c5'; ctx.font = '700 15px ' + FB;
+                foot(['Generated by SEKAI 資源中心', 'project-sekai-center.vercel.app'], 1047, 1726, 21, 'right');
+
+                // 版權聲明(照使用者提供的參考版面完整列出)
+                ctx.fillStyle = '#9aa3b5'; ctx.font = '600 13px ' + FB;
+                foot([
+                    '※本画像におけるロゴ・背景・楽曲ジャケット画像の著作権は、全て著作権所有者に帰属します。',
+                    '※本画像は非公式のものであり、株式会社Colorful Palette様及びその関連会社とは一切関係ありません。'
+                ], 53, 1838, 24, 'left');
                 ctx.textAlign = 'left';
 
                 // ---- 輸出 ----
@@ -5976,7 +6016,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const fn = `b30_${(hide ? 'player' : (this.pid || 'player'))}_${new Date().toISOString().slice(0, 10)}.png`;
                     out.innerHTML = `<div class="sa-chiprow" style="margin-bottom:8px;">
                         <a class="sa-cart-go" href="${url}" download="${fn}">下載 PNG(${(blob.size / 1048576).toFixed(1)} MB)</a>
-                        <span style="font-size:11px;color:var(--text-light);">手機也可長按圖片存檔;圖為 2192×3600</span></div>
+                        <span style="font-size:11px;color:var(--text-light);">手機也可長按圖片存檔;圖為 ${W * S}×${H * S}</span></div>
                         <img src="${url}" alt="B30" style="width:100%;max-width:760px;border:1px solid var(--border);border-radius:14px;display:block;">`;
                     if (msg) msg.textContent = '完成!';
                     out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
