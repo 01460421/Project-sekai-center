@@ -660,7 +660,7 @@
             </div>
 
             <div id="song-eff" class="tab-content">
-                <div class="note" style="margin-top:0;">刷活動 P 效率排行。每局 EP 依所選模式/分數/加成/火計算,再除以歌長估「每分鐘 EP」;資料來源 <a href="https://sekai.best/" target="_blank" class="external">sekai.best music_metas</a>(歌曲係數 event_rate、譜面秒數)。</div>
+                <div class="note" style="margin-top:0;">刷活動 P 的效率排行,依模式、分數、加成與火數算每局 EP,再除以歌長估每分鐘 EP。資料來自 <a href="https://sekai.best/" target="_blank" class="external">sekai.best music_metas</a>。</div>
                 <div class="song-filters" style="align-items:center;">
                     <select id="seMode" onchange="SongEff.render()">
                         <option value="solo">單人 Live</option>
@@ -1180,7 +1180,7 @@
         <!-- 二十三、跑榜工作室 -->
         <section id="run-studio">
             <h2>二十三、跑榜工作室 <span class="en">Grind Studio</span></h2>
-            <div class="note">選一個活動期,自動帶出期程、加成優先的理論隊伍、當期月卡玩偶(卡片排程),再算協力(多人)的場均分數與場均活動P。<strong>v1 為估算工具</strong>,理論隊伍以「活動加成最高」排序(未含個人卡池/技能最佳化)。</div>
+            <div class="note">選一個活動期,自動帶出期程、加成優先的理論隊伍與當期月卡玩偶,再算協力場均分數與場均活動P。理論隊伍只以活動加成排序,未做個人卡池與技能最佳化。</div>
             <div class="analysis-input" style="flex-wrap:wrap;gap:10px;">
                 <label style="font-size:14px;">活動期</label>
                 <input id="rsEventSearch" type="text" inputmode="text" placeholder="輸入期數或角色名（例：153 或 志步）" oninput="RunStudio.onEventSearch(this.value)" onkeydown="if(event.key==='Enter')RunStudio.onEventSearch(this.value,true)" list="rsEventList" style="flex:1;min-width:180px;max-width:240px;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);">
@@ -1244,7 +1244,7 @@
         <!-- 二十四、儲值商品分析 -->
         <section id="shop-analyzer">
             <h2>二十四、儲值商品分析 <span class="en">Shop Analyzer</span></h2>
-            <div class="note">台服商城全商品(水晶包、優惠組合、通行證、裝扮兌換)+<strong>官方網頁商店(GamePay)</strong>的內容物、台幣定價與 CP 值一次看,可依素材(心願碎片、招募票券…)、通路、付款方式智慧篩選;「智慧推薦」依你的預算或目標抽數,在限購規則內算出<strong>最省錢的購買組合</strong>,並附官網 vs App 比價。資料每日自動更新;少數 App 商品資料庫僅有佔位價,可點「自填售價」讓分析納入。</div>
+            <div class="note">台服商城與<strong>官方網頁商店(GamePay)</strong>全商品的內容物、台幣定價與 CP 值,可依素材、通路、付款方式篩選。「智慧推薦」會在限購規則內算出<strong>最省錢的購買組合</strong>,並附官網與 App 比價。資料每日自動更新。</div>
             <div class="sa-disclaimer">免責聲明:本站為玩家自製的非官方資源站,與 SEGA、Colorful Palette、龍成網路及 Ariel(GamePay)均無關聯。商品內容、價格與限購資訊來自遊戲主資料庫與官網商店公開介面,可能延遲或有誤,<strong>一切以遊戲內商店與官方網頁商店即時顯示為準</strong>;CP 值與推薦組合僅供參考,不構成消費建議。所有儲值付款均於官方管道完成,本站不經手任何金流、不儲存付款資訊;請自行確認遊戲 ID、金額與購買內容,量力而為、理性消費。</div>
             <div class="shop-tabbar" id="shopTabs">
                 <button type="button" class="active" data-v="ov" onclick="ShopAnalyzer.go('ov')">商品總覽</button>
@@ -1258,7 +1258,7 @@
         <!-- 二十五、B30 產生器 -->
         <section id="b30-maker">
             <h2>二十五、B30 產生器 <span class="en">Best 30 Generator</span></h2>
-            <div class="note">用非官方難易度表定數(<a href="https://docs.google.com/spreadsheets/d/18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU/" target="_blank" rel="noopener">腐食氏「プロセカ難易度表」</a>,AP 基準)計算你的 <strong>Best 30 実効值</strong>,以 Unibot 風格版面產生圖卡並可下載 PNG。曲名顯示社群中文譯名(台服官方不翻曲名,可切回日文原名;中日文皆可搜尋)。台服公開 API 沒有逐曲成績,譜面請手動勾選(會存在瀏覽器);可輸入玩家 ID 帶入名片與各難度 AP/FC 總數方便核對。実効值:AP=定數、FC=定數−1,非官方算法僅供參考娛樂。定數的「+/++」記號可選<strong>符號表示</strong>(34.9+)或<strong>數值計算</strong>(+=+0.05;++≈+0.1,顯示四捨五入成下一帶值但排序仍居其後,如 34.9++→顯示 35.00、排在 35.0 之後),B30 於數值模式以三位小數呈現。</div>
+            <div class="note">依非官方難易度表定數(<a href="https://docs.google.com/spreadsheets/d/18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU/" target="_blank" rel="noopener">腐食氏「プロセカ難易度表」</a>,AP 基準)算 <strong>Best 30 実効值</strong>,輸出 Unibot 風格圖卡。<strong>実効值:AP=定數、FC=定數−1</strong>,非官方算法僅供參考。台服 API 沒有逐曲成績,譜面請手動勾選或上傳選曲畫面截圖匯入;成績只存在這台瀏覽器。</div>
             <div id="b30Body"><div class="note">捲動到此區塊會自動載入定數資料…</div></div>
         </section>
 
