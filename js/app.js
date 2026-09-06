@@ -86,7 +86,7 @@ class Component extends DCLogic {
     gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
     songs:    ['歌曲清單', '完整樂曲資料庫（Sekai-World 台服主資料庫）'],
     rank:     ['活動排名', '即時排名與分段榜線（HiSekai API）'],
-    calc:     ['計算中心', 'EP 精算 · 效率排行 · 試算 · 倍率 · 天井 · 烤森 · 排位'],
+    calc:     ['計算中心', 'EP 精算 · 效率排行 · 摸魚表 · 活動試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
     shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
     b30:      ['B30 產生器', 'Best 30 実効值圖卡(Unibot 風格版面),可下載 PNG'],
@@ -13551,6 +13551,9 @@ class Component extends DCLogic {
           const on = s.tcat === c.v, st = chip(on, c.v === 'all' ? null : c.dot);
           return Object.assign({}, c, st, { dot: on ? 'rgba(255,255,255,.85)' : c.dot, fg: on ? '#fff' : 'var(--text)' });
         }),
+      // 曲庫首數改成實算的:這份資料從現在起每天由排程重建,寫死的數字一定會過期
+      songLibCount: (s.epSongs || []).length,
+      songPickLabel: (s.epSongs || []).length ? ('找歌（' + (s.epSongs || []).length + ' 首曲庫）') : '找歌（曲庫載入中）',
       calcInputTitle, calcFields,
       showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'moyu' || s.ctab === 'plan',
       modeChips: [
@@ -13598,7 +13601,7 @@ class Component extends DCLogic {
           { name: 'WL 交換所規劃表', url: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link', sub: 'good果汁・World Link 交換所資源規劃' }
         ]},
         { label: '本站工具', items: [
-          { name: 'EP 計算器', url: 'ep-calculator.html', sub: '640 首曲庫・EP／控分／排行' },
+          { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
           { name: '抽卡模擬器', url: 'https://sekai.best/gacha', sub: 'Sekai.best' }
