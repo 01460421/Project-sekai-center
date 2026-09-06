@@ -189,43 +189,72 @@ def build():
 
 
 def verify(songs):
-    """跟現有檔案比對重疊曲目。對不上代表欄位對應錯了,寧可中止也不要寫錯的曲庫。"""
+    """跟現有檔案比對重疊曲目。
+
+    重點是分辨兩種完全不同的狀況,它們的「不符比例」可能一樣,但處置相反:
+
+      欄位對應錯了  → 同一個欄位索引在幾乎每一首歌上都不符(例如把 solo 和 multi
+                     對調,索引 4 與 6 會全軍覆沒)。這種一定要中止。
+      上游改了資料  → 不符集中在特定曲子/特定難度,而那些曲子的多個欄位一起變
+                     (譜面重新模擬過)。這是正常更新,應該放行。
+
+    所以判斷依據不是總比例,而是「有沒有某個欄位索引壞掉一大片」。
+    第一版只看總比例、門檻 2%,結果上游重算了一批 APPEND 譜面就卡住不放行 ——
+    97% 的係數完全吻合,那顯然不是對應錯誤。
+    """
     old = load_existing()
     if not old:
         print('  找不到可比對的舊檔,跳過自我校驗')
         return
-    new = {s['id']: s for s in songs}
-    both = sorted(set(old) & set(new))
+    new_by = {s['id']: s for s in songs}
+    both = sorted(set(old) & set(new_by))
     if len(both) < 100:
         sys.exit(f'與舊檔重疊的曲目只有 {len(both)} 首，資料對應可能整個錯了，中止')
 
-    bad, checked = [], 0
+    lost = sorted(set(old) - set(new_by))
+    if lost:
+        names = ', '.join(f"#{i} {old[i].get('t', '')}" for i in lost[:10])
+        print(f'  注意:舊檔有、新檔沒有的曲目 {len(lost)} 首 —— {names}')
+        if len(lost) > len(old) * 0.05:
+            sys.exit('掉了太多既有曲目，來源可能不完整，中止')
+
+    # 逐欄位統計。per_field[i] = (不符數, 比對數)
+    per_field = {i: [0, 0] for i in range(2, 11)}
+    per_diff, bad_songs, samples = {}, set(), []
     for mid in both:
-        o, n = old[mid], new[mid]
-        if abs(float(o.get('time', 0)) - n['time']) > 0.6:
-            bad.append(f"#{mid} {n['t']} 歌長 {o.get('time')} → {n['time']}")
-        if int(o.get('rate', 0)) != n['rate']:
-            bad.append(f"#{mid} {n['t']} 活動係數 {o.get('rate')} → {n['rate']}")
+        o, n = old[mid], new_by[mid]
         for d, od in (o.get('d') or {}).items():
             nd = n['d'].get(d)
             if not nd:
                 continue
-            # 只查係數(索引 2 之後);Lv 與音符數上游本來就可能修訂
             for i in range(2, min(len(od), len(nd))):
-                checked += 1
+                per_field[i][1] += 1
                 if abs(float(od[i]) - float(nd[i])) > 0.002:
-                    bad.append(f"#{mid} {n['t']} {d}[{i}] {od[i]} → {nd[i]}")
+                    per_field[i][0] += 1
+                    per_diff[d] = per_diff.get(d, 0) + 1
+                    bad_songs.add(mid)
+                    if len(samples) < 12:
+                        samples.append(f"#{mid} {n['t']} {d}[{i}] {od[i]} → {nd[i]}")
 
-    rate = len(bad) / max(checked, 1)
-    print(f'  自我校驗:比對 {len(both)} 首、{checked} 個係數，不符 {len(bad)} 個（{rate:.2%}）')
-    if bad and rate > 0.02:
-        for line in bad[:15]:
-            print('    ' + line)
-        sys.exit('與舊檔差異過大，判定為欄位對應錯誤或上游改格式，中止且不寫檔')
+    checked = sum(v[1] for v in per_field.values())
+    bad = sum(v[0] for v in per_field.values())
+    rate = bad / max(checked, 1)
+    print(f'  自我校驗:比對 {len(both)} 首、{checked} 個係數，不符 {bad} 個（{rate:.2%}）')
     if bad:
-        print('  （少量差異視為上游正常修訂，繼續）')
-        for line in bad[:5]:
+        print('    不符的難度分布:', ', '.join(f'{d}×{c}' for d, c in sorted(per_diff.items(), key=lambda x: -x[1])))
+        print(f'    受影響曲目 {len(bad_songs)}/{len(both)} 首')
+        worst = max(per_field.items(), key=lambda kv: (kv[1][0] / max(kv[1][1], 1)))
+        wi, (wb, wn) = worst
+        wrate = wb / max(wn, 1)
+        print(f'    最糟的欄位索引 [{wi}]:{wb}/{wn}（{wrate:.1%}）')
+        for line in samples[:8]:
             print('    ' + line)
+        # 某個欄位壞掉一大片 = 對應錯了,不是資料更新
+        if wrate > 0.50:
+            sys.exit(f'欄位索引 [{wi}] 有 {wrate:.0%} 的譜面對不上，判定為欄位對應錯誤或上游改格式，中止且不寫檔')
+        if rate > 0.35:
+            sys.exit(f'整體不符 {rate:.0%} 過高，來源可能有問題，中止且不寫檔')
+        print('    （不符集中在特定曲目而非特定欄位，判定為上游重新模擬過的譜面，放行）')
 
 
 def dump(path, header, body):

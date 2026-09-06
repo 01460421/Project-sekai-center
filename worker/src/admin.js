@@ -18,7 +18,7 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   listTasks,
   pendingOrders, confirmOrder, aiUsageRows, aiUsageByUser, aiUsageDaily, aiOpsByUser, twDayStart } from './db.js';
 import { summarize, costUsd, priceOf } from './pricing.js';
-import { chatGemini, hasGemini, geminiModel, listGeminiModels } from './gemini.js';
+import { chatGemini, hasGemini, geminiModel, listGeminiModels, runLanes, lanesReport } from './gemini.js';
 
 /* 模型 id 與參數依 claude-api skill 查證，不是憑記憶寫的。
    Opus 5 預設就跑 adaptive thinking，不必（也不能）再給 budget_tokens；
@@ -378,6 +378,19 @@ export async function chatClaude(env, { messages, tools, system, profile }) {
   };
 }
 
+/* Gemini 版的管理員問答。回傳形狀刻意跟 askClaude 一模一樣,
+   這樣 /admin/ask 的兩路可以用同一支 runLanes 分派、下游也不用分辨是誰答的。 */
+async function askGemini(env, snapshot, prompt) {
+  const r = await chatGemini(env, {
+    messages: [{ role: 'user',
+      content: '【唯讀資料快照】\n' + JSON.stringify(snapshot) + '\n\n【管理員的問題】\n' + prompt }],
+    tools: [], system: SYSTEM, profile: null,
+  });
+  const reply = ((r && r.content) || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+  return { model: r.model, refused: false, tokens_in: r.tokens_in, tokens_out: r.tokens_out,
+           reply: reply || '（模型沒有回傳內容。）' };
+}
+
 /* 前端送來的東西一律當成不可信輸入檢查過再轉發 */
 export function validateChat(body) {
   const messages = Array.isArray(body.messages) ? body.messages : null;
@@ -560,47 +573,63 @@ export async function handleAdmin(req, env, url, user) {
         live,
       };
 
-      let out;
-      try {
-        out = await askClaude(env, snapshot, prompt);
-      } catch (e) {
-        const msg = (e && e.message) || String(e);
+      /* 這條也走雙路。管理員在問「站上的數字是什麼意思」,兩家各讀同一份快照
+         再對照,比單一模型的說法可信 —— 資料本身是唯讀的,問兩次沒有副作用。 */
+      const want = body && body.dual === true ? ['claude', 'gemini'] : ['claude'];
+      const { lanes, good, primary } = await runLanes(env, { providers: want },
+        { claude: (e2) => askClaude(e2, snapshot, prompt), gemini: (e2) => askGemini(e2, snapshot, prompt) });
+      if (!good.length) {
+        const msg = lanes.length ? lanes.map(l => l.provider + '：' + l.error).join('　/　') : '尚未設定 AI 金鑰';
         // 失敗也要留稽核：這樣「他問了什麼但沒問成」在紀錄裡看得出來
         await logAdmin(db, user.id, prompt, '[失敗] ' + msg, 0, 0);
-        return json({ error: 'claude_failed', message: msg }, 502);
+        return json({ error: 'claude_failed', message: msg }, lanes.length ? 502 : 503);
       }
-      await logAdmin(db, user.id, prompt, out.reply, out.tokens_in, out.tokens_out,
-                     { model: out.model, cache_read: out.cache_read, cache_write: out.cache_write, kind: 'admin' });
+      const out = primary;
+      for (const l of good) {
+        await logAdmin(db, user.id, prompt, l.reply.reply, l.reply.tokens_in, l.reply.tokens_out,
+                       { model: l.reply.model, kind: 'admin' });
+      }
       return json({
         reply: out.reply,
         refused: out.refused,
         model: out.model,
         tokens: { in: out.tokens_in, out: out.tokens_out },
-        snapshot,   // 一併回傳讓管理員看得到「Claude 依據的就是這些數字」
+        results: lanes.map(l => l.ok
+          ? { provider: l.provider, ok: true, model: l.reply.model, reply: l.reply.reply, refused: l.reply.refused }
+          : { provider: l.provider, ok: false, error: l.error }),
+        snapshot,   // 一併回傳讓管理員看得到「回答依據的就是這些數字」
       });
     }
 
     if (p === '/admin/chat' && req.method === 'POST') {
-      if (!env.ANTHROPIC_API_KEY) return json({ error: 'no_key', message: '尚未設定 ANTHROPIC_API_KEY' }, 503);
+      // 至少一家有金鑰就能跑,跟 /api/chat 同一個判斷
+      if (!env.ANTHROPIC_API_KEY && !hasGemini(env)) return json({ error: 'no_key', message: '尚未設定 AI 金鑰' }, 503);
       const v = validateChat(body);
       if (v.error) return json({ error: 'bad_request', message: v.error }, 400);
-      let out;
-      try {
-        out = await chatClaude(env, v);
-      } catch (e) {
-        const msg = (e && e.message) || String(e);
+      /* 管理員這條也走雙路,分派用的是 /api/chat 同一支 runLanes。 */
+      const { lanes, good, primary } = await runLanes(env, v, { claude: chatClaude, gemini: chatGemini });
+      if (!lanes.length) return json({ error: 'no_key', message: '尚未設定 AI 金鑰' }, 503);
+      if (!good.length) {
+        const msg = lanes.map(l => l.provider + '：' + l.error).join('　/　');
         await logAdmin(db, user.id, '[chat]', '[失敗] ' + msg, 0, 0);
         return json({ error: 'claude_failed', message: msg }, 502);
       }
+      const out = primary;
       // 稽核：記下這一輪模型決定呼叫了哪些工具與參數
       const calls = out.content.filter(c => c.type === 'tool_use');
       for (const c of calls) await logTool(db, user.id, c.name, c.input, true, 'requested');
-      const text = out.content.filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
-      await logAdmin(db, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
-                     text || ('[tool_use] ' + calls.map(c => c.name).join(',')), out.tokens_in, out.tokens_out,
-                     { model: out.model, cache_read: out.cache_read, cache_write: out.cache_write, kind: 'chat' });
+      // 每一路各記一列,計價與用量統計是用 model 分群的,不必另外改
+      for (const l of good) {
+        const rp = l.reply;
+        const t2 = (rp.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+        const cl = (rp.content || []).filter(c => c.type === 'tool_use');
+        await logAdmin(db, user.id, JSON.stringify(v.messages.slice(-1)).slice(0, 2000),
+                       t2 || ('[tool_use] ' + cl.map(c => c.name).join(',')), rp.tokens_in, rp.tokens_out,
+                       { model: rp.model, cache_read: rp.cache_read, cache_write: rp.cache_write, kind: 'chat' });
+      }
       return json({
         content: out.content, stop_reason: out.stop_reason, model: out.model,
+        results: lanesReport(lanes),
         tokens: { in: out.tokens_in, out: out.tokens_out },
       });
     }

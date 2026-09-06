@@ -5780,9 +5780,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 return null;
             },
-            async shotTitles(b64) {
+            async shotTitles(b64, op) {
                 const body = {
                     kind: 'scan',
+                    // 一批截圖共用同一個 op:沒帶 op 的話 Worker 會每一輪各開一次操作,
+                    // 十張就吃掉半天的額度。帶了就整批只算一次。
+                    op: op || undefined,
                     dual: (() => { try { return localStorage.getItem('sekai-ai-dual') === '1'; } catch (e) { return false; } })(),
                     system: '你在讀一張 Project SEKAI(世界計畫)遊戲內「選曲畫面」的截圖。\n'
                         + '畫面左側是曲目清單,每一列有封面縮圖、曲名,曲名下方有一排成績符號。\n'
@@ -5827,13 +5830,32 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!lanes.length) return { songs: primary || [], alt: null };
                 return { songs: lanes[0].songs || primary || [], alt: lanes.length > 1 ? lanes[1] : null };
             },
+            /* 開一次「操作」。額度是以操作計的(每人每天 20 次),一批截圖應該算一次。
+               開不起來(沒登入/額度用完)就回 null,讓後面的呼叫走原本的路徑並帶出錯誤。 */
+            async shotOp() {
+                try {
+                    const r = await fetch(this.GAMES_API + '/api/ai/op', {
+                        method: 'POST', credentials: 'include',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ kind: 'scan' }),
+                    });
+                    const d = await r.json().catch(() => null);
+                    return (r.ok && d && d.op) ? d.op : null;
+                } catch (e) { return null; }
+            },
+            SHOT_MAX: 10,
             async shotFiles(files) {
-                const list = Array.prototype.slice.call(files || []).filter(f => f && /^image\//.test(f.type));
+                let list = Array.prototype.slice.call(files || []).filter(f => f && /^image\//.test(f.type));
                 if (!list.length) return;
+                // 一次十張。超過的不默默丟掉,要講清楚哪幾張沒處理。
+                let over = 0;
+                if (list.length > this.SHOT_MAX) { over = list.length - this.SHOT_MAX; list = list.slice(0, this.SHOT_MAX); }
                 if (!this.D()) { this.shot.err = '定數資料還沒載入,請稍候再試。'; this.renderShot(); return; }
                 this.shot = { busy: true, msg: '讀取中…', rows: (this.shot && this.shot.rows) || [], err: '' };
+                if (over) this.shot.err = '一次最多 ' + this.SHOT_MAX + ' 張,這次只處理前 ' + this.SHOT_MAX + ' 張,其餘 ' + over + ' 張請分批再傳。';
                 this.renderShot();
                 try {
+                    const op = await this.shotOp();
                     for (let n = 0; n < list.length; n++) {
                         const pre = list.length > 1 ? '(' + (n + 1) + '/' + list.length + ') ' : '';
                         const img = await new Promise((res, rej) => {
@@ -5862,7 +5884,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         this.shot.msg = pre + '讀到 ' + det.rows.length + ' 列,辨識曲名…'; this.renderShot();
                         const b64 = this.shotB64(img);
                         if (!b64) throw new Error('圖片轉檔失敗,請換一張圖片');
-                        const got = await this.shotTitles(b64);
+                        const got = await this.shotTitles(b64, op);
                         const songs = got.songs, alt = got.alt;
                         if (!songs || !songs.length) throw new Error('曲名辨識沒有回傳結果,請換一張更清楚的截圖');
                         const H = img.naturalHeight;
@@ -6093,7 +6115,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="sa-chiprow" style="margin-top:8px;">
                             <button type="button" class="sa-chip" onclick="document.getElementById('b30ShotFile').click()">選擇截圖…</button>
                             <input type="file" id="b30ShotFile" accept="image/*" multiple style="display:none" onchange="B30Maker.shotFiles(this.files);this.value=''">
-                            <span style="font-size:11px;color:var(--text-light);">也可以直接 Ctrl/⌘+V 貼上截圖</span>
+                            <span style="font-size:11px;color:var(--text-light);">一次最多 10 張,也可以直接 Ctrl/⌘+V 貼上截圖</span>
                         </div>
                         <div id="b30ShotBody"></div>
                     </div>

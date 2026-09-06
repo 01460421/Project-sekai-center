@@ -213,3 +213,44 @@ export async function listGeminiModels(env) {
     .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
     .map((m) => String(m.name || '').replace(/^models\//, ''));
 }
+
+/* ---------- 雙路分派 ---------- */
+
+/* 把「同時打好幾家、允許其中幾家掛掉」這件事收在一個地方。
+   /api/chat 與 /admin/chat 都用這支,不要各寫一次 —— 兩邊的失敗處理一旦
+   走鐘,debug 起來會非常痛苦。
+
+   實作函式由呼叫端傳進來(impls),這樣這個檔案就不用去 import admin.js,
+   避免 providers ↔ admin 的循環相依。
+
+   回傳 { want, lanes, good, primary }:
+     want    實際會打的供應商(金鑰沒設的那家會被濾掉)
+     lanes   每一家的結果或錯誤,依 want 的順序
+     good    成功的那幾家
+     primary 主路的回覆 —— 優先用當初指定的第一家,它掛了才換人頂上,
+             這樣舊版前端(只讀最上層 content)永遠拿得到能用的東西
+   全掛時 good 為空、primary 為 null,由呼叫端決定要回什麼錯誤碼。 */
+export async function runLanes(env, v, impls) {
+  const want = (v.providers || ['claude']).filter(pv =>
+    pv === 'gemini' ? hasGemini(env) : !!env.ANTHROPIC_API_KEY);
+  if (!want.length) return { want, lanes: [], good: [], primary: null };
+  // allSettled 不是 all:一路掛掉不該把另一路已經拿到的答案丟掉
+  const settled = await Promise.allSettled(want.map(pv => impls[pv](env, v)));
+  const lanes = want.map((pv, i) => {
+    const st = settled[i];
+    return st.status === 'fulfilled'
+      ? { provider: pv, ok: true, reply: st.value }
+      : { provider: pv, ok: false, error: (st.reason && st.reason.message) || String(st.reason) };
+  });
+  const good = lanes.filter(l => l.ok);
+  const primary = good.length ? (good.find(l => l.provider === want[0]) || good[0]).reply : null;
+  return { want, lanes, good, primary };
+}
+
+/* 給前端看的每一路摘要。兩個端點的回應都帶這個欄位,形狀才一致。 */
+export function lanesReport(lanes) {
+  return lanes.map(l => l.ok
+    ? { provider: l.provider, ok: true, content: l.reply.content, stop_reason: l.reply.stop_reason,
+        model: l.reply.model, tokens: { in: l.reply.tokens_in, out: l.reply.tokens_out } }
+    : { provider: l.provider, ok: false, error: l.error });
+}
