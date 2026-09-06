@@ -30,16 +30,23 @@ jobs:
       - name: 重建曲庫
         run: python3 tools/build-ep-songs.py
 
+      # 曲庫是 immutable 長快取,網址帶內容雜湊。檔案一變戳記就要跟著重算,
+      # 否則瀏覽器會黏住改版前的曲庫整整一年。
+      # 戳記會從 data → js/app.js → 各 HTML 一路串下去,所以提交範圍要含這些。
+      - name: 重算版本戳
+        run: python3 tools/stamp-assets.py
+
       - name: 提交變更
         run: |
           # 只看實際存在的檔案。git status 對「不存在的 pathspec」會直接 fatal,
           # 之前就是因為 ep-song-windows.js 還沒被產生出來,整個步驟以 128 掛掉。
           FILES=""
-          for f in data/ep-songs.js data/ep-song-windows.js; do
+          for f in data/ep-songs.js data/ep-song-windows.js js/app.js js/core.js \
+                   index.html app.html ep-calculator.html tutorial.html; do
             [ -f "$f" ] && FILES="$FILES $f"
           done
           if [ -z "$FILES" ]; then
-            echo "沒有任何曲庫檔案，不提交"
+            echo "沒有任何檔案可提交"
             exit 0
           fi
           if [ -z "$(git status --porcelain -- $FILES)" ]; then
