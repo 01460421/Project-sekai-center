@@ -235,6 +235,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/06', t: '共用設定的選曲修好：475 首原本選不到', s: '計算中心「共用設定」的選曲下拉寫死只顯示前 240 首。曲庫 715 首的現在，那代表有 475 首在下拉裡根本不存在，捲到底也選不到，而且畫面上沒有任何提示——曲庫愈更新愈嚴重。上限拿掉，現在全部都選得到。搜尋也一併修：原本只比對日文原名，曲庫有 245 首有中文譯名卻搜不到；現在中文、日文、半形片假名都找得到，標籤會顯示符合幾首。' },
     { d: '2026/09/06', t: '修好一個會讓新功能看不見的過期戳記', s: 'app.js 載入 core.js 時用的版本戳是舊的，而那是一年期快取 —— 載過舊檔的人會拿到改版前的 core.js，B30 的新功能對他們就是不存在，畫面上又完全看不出異常。戳記工具現在會在收尾時掃過所有引用，只要有一個對不上就讓自己失敗，這種問題不該靠人眼發現。' },
     { d: '2026/09/06', t: '說明文字精簡', s: '各頁的介紹段落砍掉一半：把「這頁能做什麼」留下，把只有動手時才需要知道的操作細節拿掉——那些畫面上本來就看得到。最長的一段從 316 字降到 132 字。公式、段位規則、保底規則、火倍率表這些不動，那是使用者真正要查的內容，砍掉等於毀掉價值。順帶修掉 B30 那句「以三位小數呈現」，小數位數現在可調，那句已經不對了。' },
     { d: '2026/09/06', t: '修好 Safari 載不出選曲清單', s: '曲庫改成不帶版本戳的固定網址之後，Safari 會載不出來，選曲下拉是空的。原因是它走動態 import，那受瀏覽器的模組規則管轄，content-type 稍有出入就整個拒絕，而各家嚴格程度不一。純資料檔沒有理由承受這個風險，改用 fetch 拿文字自己解析，各瀏覽器行為一致；動態 import 留作後備。載入失敗時也會把實際原因寫在畫面上，而不是只留一個空的下拉。' },
@@ -10961,6 +10962,20 @@ class Component extends DCLogic {
     else rate = base + fever * 0.5 + d[6] * skill + d[7] * s6;
     return Math.floor(rate * power * 4);
   }
+  /* 曲名比對用的正規化。日文原名與中文譯名一起比,並且做 NFKC ——
+     曲庫有 245 首有中文譯名,只比日文原名的話用中文根本搜不到;
+     半形片假名與全形的差異也會讓人搜不到自己看得到的曲子。
+     共用設定的選曲與摸魚表的搜尋都走這支,兩處行為要一致。 */
+  normSong(t) {
+    let x = String(t || '');
+    try { x = x.normalize('NFKC'); } catch (e) {}
+    return x.toLowerCase().replace(/[\s\u3000]/g, '');
+  }
+  songHay(x) { return this.normSong((x.t || '') + ' ' + (x.tc || '')); }
+  songLabel(x) {
+    const zh = x.tc && x.tc !== x.t ? x.tc + '／' : '';
+    return '#' + x.id + ' ' + zh + x.t + '（' + x.time + 's・R' + x.rate + '）';
+  }
   songById(id) { return (this.state.epSongs || []).find(x => x.id === +id) || null; }
   scoreNow(song) {
     const s = this.state;
@@ -11032,14 +11047,11 @@ class Component extends DCLogic {
     const FIVE = ['E', 'N', 'H', 'X', 'M'];
     /* 曲名搜尋。全形轉半形再比,不然使用者打半形括號會搜不到全形的曲名;
        中文譯名(tc)有的話也一起比,只記得中文名的人才找得到。 */
-    const q = String(s.moyuQ || '').trim().toLowerCase().normalize('NFKC');
+    const q = this.normSong(s.moyuQ);
     const rows = [];
     (s.epSongs || []).forEach(song => {
       if (!song.time || song.time <= 0 || !song.d) return;
-      if (q) {
-        const hay = ((song.t || '') + ' ' + (song.tc || '')).toLowerCase().normalize('NFKC');
-        if (hay.indexOf(q) < 0) return;
-      }
+      if (q && this.songHay(song).indexOf(q) < 0) return;
       const cycle = song.time + iv;
       const mk = (dk) => {
         const d = song.d[dk];
@@ -13525,12 +13537,23 @@ class Component extends DCLogic {
       epEmpty: !(s.epSongs && s.epSongs.length), epMsg: s.epErr ? s.epErr : '曲庫載入中…（點此重新載入）', epCount: (s.epSongs || []).length,
       songRate: song ? song.rate : 100, songTime: song ? song.time : 0,
       songOptions: (() => {
-        const q = s.epq.trim().toLowerCase();
+        /* 這裡原本寫死 list.slice(0, 240)。曲庫 715 首的現在,那代表有 475 首
+           在下拉裡根本不存在 —— 使用者捲到底也選不到,而且沒有任何提示。
+           曲庫愈更新愈嚴重。上限拿掉,只留一個純防呆的高值。
+
+           記憶化:這個 view model 只要任何 state 變動就整個重算,而改綜合力、
+           點難度這些跟選曲清單無關的操作也會害它重建七百多個選項物件。
+           只在真正相關的三個輸入變動時才重建。 */
+        const q = this.normSong(s.epq);
+        const key = (s.epSongs || []).length + '|' + q + '|' + (song ? song.id : '');
+        if (this._songOptKey === key) return this._songOptVal;
         let list = (s.epSongs || []);
-        if (q) list = list.filter(x => x.t.toLowerCase().includes(q));
-        list = list.slice(0, 240);
+        if (q) list = list.filter(x => this.songHay(x).includes(q));
+        if (list.length > 2000) list = list.slice(0, 2000);
         if (song && !list.some(x => x.id === song.id)) list = [song].concat(list);
-        return list.map(x => ({ v: x.id, n: '#' + x.id + ' ' + x.t + '（' + x.time + 's・R' + x.rate + '）' }));
+        this._songOptKey = key;
+        this._songOptVal = list.map(x => ({ v: x.id, n: this.songLabel(x) }));
+        return this._songOptVal;
       })(),
       diffChips: this.DIFFS.map(([k, n, c]) => {
         const has = !!(song && song.d && song.d[k]), on = s.diff === k;
@@ -13600,7 +13623,14 @@ class Component extends DCLogic {
         }),
       // 曲庫首數改成實算的:這份資料從現在起每天由排程重建,寫死的數字一定會過期
       songLibCount: (s.epSongs || []).length,
-      songPickLabel: (s.epSongs || []).length ? ('找歌（' + (s.epSongs || []).length + ' 首曲庫）') : '找歌（曲庫載入中）',
+      songPickLabel: (() => {
+        const all = (s.epSongs || []).length;
+        if (!all) return '找歌（曲庫載入中）';
+        const q = this.normSong(s.epq);
+        if (!q) return '找歌（' + all + ' 首曲庫）';
+        const n = (s.epSongs || []).filter(x => this.songHay(x).includes(q)).length;
+        return n ? ('找歌（符合 ' + n + ' / ' + all + ' 首）') : '找歌（沒有符合的曲名）';
+      })(),
       calcInputTitle, calcFields,
       showModeChips: s.ctab === 'ep' || s.ctab === 'eff' || s.ctab === 'moyu' || s.ctab === 'plan',
       modeChips: [
