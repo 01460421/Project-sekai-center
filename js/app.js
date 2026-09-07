@@ -14,7 +14,7 @@ class Component extends DCLogic {
     ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
-    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格']
+    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式']
   ];
   bkCollect() {
     const d = {};
@@ -373,6 +373,7 @@ class Component extends DCLogic {
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
+    vmode: '',       // 視覺模式：''(經典) / 'ensemble'(合鳴，六團色環境光暈＋首頁旗艦動效)
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     evType: {},
     cardChara: null, // cardId → characterId（排名頭像用）
@@ -516,6 +517,10 @@ class Component extends DCLogic {
     try { savedTone = localStorage.getItem('sekai-tone') || 'aurora'; } catch (e) {}
     this.setState({ tone: savedTone });
     this.applyTone(savedTone);
+    let savedVmode = '';
+    try { savedVmode = localStorage.getItem('sekai-visual') || ''; } catch (e) {}
+    this.setState({ vmode: savedVmode });
+    this.applyVisualMode(savedVmode);
     import('./data/card-chara.js?v=279ffc7580').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
     // 站徽每 8 秒換一種常駐素材（隨機起點，避免每次都從碎片開始）
     this.setState({ matIdx: Math.floor(Math.random() * this.MATS.length) });
@@ -741,7 +746,7 @@ class Component extends DCLogic {
   // 內嵌的經典版 iframe（跑榜小窗／編組／卡池／進階）不會自己知道 App 換了主題，
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
-    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora' };
+    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora', sekaiVisual: this.state.vmode || '' };
     ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
@@ -758,6 +763,16 @@ class Component extends DCLogic {
     this.SKINS.forEach(x => c.remove('tone-' + x.v));
     if (t && t !== 'aurora') c.add('tone-' + t);
     try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
+    this.syncFrames();
+  }
+  /* 視覺模式（第三個獨立切換軸）：目前只有「合鳴」一種，用開關而不是像 tone 一樣做多選清單，
+     之後要加新方向再擴充 VMODES 即可，寫法照抄 applyTone。 */
+  VMODES = [{ v: 'ensemble', n: '合鳴', c: '#4455dd' }];
+  applyVisualMode(v) {
+    const c = document.documentElement.classList;
+    this.VMODES.forEach(x => c.remove('style-' + x.v));
+    if (v) c.add('style-' + v);
+    try { if (!v) localStorage.removeItem('sekai-visual'); else localStorage.setItem('sekai-visual', v); } catch (e) {}
     this.syncFrames();
   }
   cycleTheme() {   // 淺色 → 深色 → 跟隨系統 → 淺色…
@@ -13191,6 +13206,11 @@ class Component extends DCLogic {
         bg: s.tone === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
         fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
+      vmChips: [{ v: '', n: '經典', c: 'var(--text-3)' }].concat(this.VMODES).map(x => ({ v: x.v, n: x.n, c: x.c,
+        bd: (s.vmode || '') === x.v ? x.c : 'var(--border)',
+        bg: (s.vmode || '') === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
+        fg: (s.vmode || '') === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
+        ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
@@ -14246,6 +14266,7 @@ class Component extends DCLogic {
       onTheme: () => this.cycleTheme(),
       onAiDual: () => this.setAiDual(!this.state.aiDual),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
+      onVisualMode: e => { const v = e.currentTarget.dataset.v; const next = this.state.vmode === v ? '' : v; this.setState({ vmode: next }); this.applyVisualMode(next); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;
         this.setState(st => {

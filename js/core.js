@@ -40,9 +40,16 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this.TONE_KEYS.forEach(k => c.remove('tone-' + k));
                 if (t && t !== 'aurora') c.add('tone-' + t);
             },
-            // 被 App 以 iframe 內嵌時，主題/色調由母頁指定，否則深色 App 裡會出現白色面板
+            VISUAL_KEYS: ['ensemble'],
+            applyVisual(v) {
+                const c = document.documentElement.classList;
+                this.VISUAL_KEYS.forEach(k => c.remove('style-' + k));
+                if (v) c.add('style-' + v);
+            },
+            // 被 App 以 iframe 內嵌時，主題/色調/視覺模式由母頁指定，否則深色 App 裡會出現白色面板
             initEmbedSync() {
                 try { this.applyTone(localStorage.getItem('sekai-tone') || 'aurora'); } catch (e) {}
+                try { this.applyVisual(localStorage.getItem('sekai-visual') || ''); } catch (e) {}
                 window.addEventListener('message', e => {
                     const d = e && e.data; if (!d || typeof d !== 'object') return;
                     if (d.sekaiTheme) {
@@ -50,6 +57,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         this.apply(d.sekaiTheme === 'dark' || (d.sekaiTheme === 'auto' && this.mq.matches));
                     }
                     if (d.sekaiTone) this.applyTone(d.sekaiTone);
+                    if (d.sekaiVisual !== undefined) this.applyVisual(d.sekaiVisual);
                 });
             }
         };

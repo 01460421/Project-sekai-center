@@ -68,6 +68,28 @@
             --grad-cta:linear-gradient(135deg,#6485bb 0%,#3c5c95 100%); }
         :root.dark.tone-ink { --accent:#86a8de; --accent-deep:#aec7ec; --link:#aec7ec; }
 
+        /* ===== 合鳴：可切換視覺模式（與 App 版 style-ensemble 同步）=====
+           App 版用 .theme-dark，這裡（內嵌 iframe：跑榜小窗／編組／卡池／進階）沿用既有的 .dark 慣例。 */
+        :root.style-ensemble {
+            --ens-halo-op:.14;
+            --rainbow:linear-gradient(90deg,var(--ln-color),var(--mmj-color),var(--vbs-color),var(--wxs-color),var(--n25-color),var(--vs-color),var(--ln-color));
+            --grad-cta:linear-gradient(90deg,var(--ln-color),var(--mmj-color),var(--vbs-color),var(--wxs-color),var(--n25-color),var(--vs-color),var(--ln-color));
+            --ens-halo:conic-gradient(from 180deg,var(--ln-color),var(--mmj-color),var(--vbs-color),var(--wxs-color),var(--n25-color),var(--vs-color),var(--ln-color));
+        }
+        :root.dark.style-ensemble { --ens-halo-op:.22; }
+        @keyframes ensembleBreathe{0%,100%{opacity:calc(var(--ens-halo-op) * .78)}30%{opacity:var(--ens-halo-op)}62%{opacity:calc(var(--ens-halo-op) * .55)}100%{opacity:calc(var(--ens-halo-op) * .78)}}
+        :root.style-ensemble body::before {
+            background:
+                radial-gradient(620px 420px at 8% 6%,color-mix(in oklab,var(--ln-color) 55%,transparent),transparent 68%),
+                radial-gradient(600px 400px at 92% 12%,color-mix(in oklab,var(--vbs-color) 50%,transparent),transparent 68%),
+                radial-gradient(640px 440px at 18% 96%,color-mix(in oklab,var(--n25-color) 48%,transparent),transparent 68%),
+                radial-gradient(560px 380px at 88% 92%,color-mix(in oklab,var(--vs-color) 46%,transparent),transparent 70%);
+            animation:ensembleBreathe 47s ease-in-out infinite;
+        }
+        :root.dark.style-ensemble body::before { mix-blend-mode:screen; }
+        :root.style-ensemble :focus-visible { outline:2px solid var(--vs-color); outline-offset:2px; box-shadow:0 0 0 4px color-mix(in oklab,var(--vs-color) 30%,transparent); }
+        @media (prefers-reduced-motion:reduce) { :root.style-ensemble body::before { animation:none; } }
+
         /* ===== 抽卡模擬 UI ===== */
         .gs-wrap{display:flex;flex-direction:column;gap:14px;}
         /* 頂部橫幅：卡池 logo + 名稱 + 機率 */

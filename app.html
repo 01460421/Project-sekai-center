@@ -6,7 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍 */
 try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme'));if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');
-var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);}catch(e){}</script>
+var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);
+var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
 <script src="./support.js?v=4f96c5fb4a"></script>
@@ -29,6 +30,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --ink-grad:linear-gradient(135deg,#273052 0%,#3b4878 100%);
 --grad-cta:linear-gradient(135deg,#22c3d6 0%,#3f8cf3 100%);
 --rainbow:linear-gradient(90deg,#4ad1e8,#3ee0a8,#b8e561,#ffd94d,#ff9db4,#c39df2,#7fb4f7);
+--ln-color:#4455dd;--mmj-color:#88cc44;--vbs-color:#ee6644;--wxs-color:#ffbb33;--n25-color:#aa66cc;--vs-color:#44cccc;--mix-color:#ff6699;
 --sh-xs:0 1px 2px rgba(31,42,80,.05);
 --sh-sm:0 1px 2px rgba(31,42,80,.04),0 4px 14px rgba(31,42,80,.06);
 --sh-md:0 2px 6px rgba(31,42,80,.06),0 12px 32px rgba(31,42,80,.11);
@@ -60,6 +62,7 @@ color-scheme:dark;
 --paid-bg:#332d08;--paid-fg:#ffe066;--bd-bg:#2a1440;--bd-fg:#d0a5ff;
 --rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
+--ln-color:#7788ff;--mmj-color:#a5e05e;--vbs-color:#ff8577;--wxs-color:#ffcc55;--n25-color:#c58aeb;--vs-color:#55dddd;--mix-color:#ff85ad;
 }}
 :root.theme-dark{
 color-scheme:dark;
@@ -75,6 +78,7 @@ color-scheme:dark;
 --paid-bg:#332d08;--paid-fg:#ffe066;--bd-bg:#2a1440;--bd-fg:#d0a5ff;
 --rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
+--ln-color:#7788ff;--mmj-color:#a5e05e;--vbs-color:#ff8577;--wxs-color:#ffcc55;--n25-color:#c58aeb;--vs-color:#55dddd;--mix-color:#ff85ad;
 }
 /* ===== 六種配色風格（藝術典雅）：只覆蓋強調色系，底色與對比交給深/淺色主題 ===== */
 :root.tone-sakura{--accent:#e06a92;--accent-deep:#c24b76;
@@ -103,6 +107,51 @@ color-scheme:dark;
 @media (prefers-color-scheme:dark){:root:not(.theme-light).tone-amber{--accent:#e8b866;--accent-deep:#f2d09a;}}
 :root.theme-dark.tone-ink{--accent:#86a8de;--accent-deep:#aec7ec;}
 @media (prefers-color-scheme:dark){:root:not(.theme-light).tone-ink{--accent:#86a8de;--accent-deep:#aec7ec;}}
+/* ===== 合鳴：可切換視覺模式（第三軸，獨立於主題／配色風格之外），預設關閉 =====
+   來源：四方向平行設計＋三位評審交叉評分（總分 42.3，2/3 票勝出）。
+   只覆寫 --rainbow／--cta 兩個裝飾用漸層變數＋新增 body::before 光暈，
+   不碰 --accent/--link/--primary 等單色強調變數，所以能跟六種 tone 疊加使用。 */
+:root.style-ensemble{
+  --ens-halo-op:.14;
+  /* --rainbow 全站有十幾處直接當細長強調條/進度條用，維持線性才不會糊掉；
+     conic 光暈另外用 --ens-halo，只給 body::before 與 .se-hero::before 這種大面積用途。 */
+  --rainbow:linear-gradient(90deg,var(--ln-color),var(--mmj-color),var(--vbs-color),var(--wxs-color),var(--n25-color),var(--vs-color),var(--ln-color));
+  --cta:linear-gradient(90deg,var(--ln-color),var(--mmj-color),var(--vbs-color),var(--wxs-color),var(--n25-color),var(--vs-color),var(--ln-color));
+  --ens-halo:conic-gradient(from 180deg,var(--ln-color),var(--mmj-color),var(--vbs-color),var(--wxs-color),var(--n25-color),var(--vs-color),var(--ln-color));
+}
+:root.style-ensemble.theme-dark{--ens-halo-op:.22}
+@media (prefers-color-scheme:dark){:root.style-ensemble:not(.theme-light){--ens-halo-op:.22}}
+/* 環境光暈：47s／61s 互質週期＋不對稱呼吸曲線（評審建議從「極光脈動」案截長補短，
+   避免固定週期在長時間停留的排行榜頁被看出「在循環」）。 */
+@keyframes ensembleRotate{to{transform:rotate(1turn)}}
+@keyframes ensembleBreathe{0%,100%{opacity:calc(var(--ens-halo-op) * .78)}30%{opacity:var(--ens-halo-op)}62%{opacity:calc(var(--ens-halo-op) * .55)}100%{opacity:calc(var(--ens-halo-op) * .78)}}
+:root.style-ensemble body::before{
+  background:
+    radial-gradient(620px 420px at 8% 6%,color-mix(in oklab,var(--ln-color) 55%,transparent),transparent 68%),
+    radial-gradient(600px 400px at 92% 12%,color-mix(in oklab,var(--vbs-color) 50%,transparent),transparent 68%),
+    radial-gradient(640px 440px at 18% 96%,color-mix(in oklab,var(--n25-color) 48%,transparent),transparent 68%),
+    radial-gradient(560px 380px at 88% 92%,color-mix(in oklab,var(--vs-color) 46%,transparent),transparent 70%);
+  animation:ensembleBreathe 47s ease-in-out infinite;
+}
+:root.style-ensemble .se-hero::before{background:var(--ens-halo)}
+:root.style-ensemble.theme-dark body::before{mix-blend-mode:screen}
+@media (prefers-color-scheme:dark){:root.style-ensemble:not(.theme-light) body::before{mix-blend-mode:screen}}
+:root.style-ensemble :focus-visible{outline:2px solid var(--vs-color);outline-offset:2px;box-shadow:0 0 0 4px color-mix(in oklab,var(--vs-color) 30%,transparent)}
+/* 首頁 hero：旗艦展示位置。se-hero 進場一次性光暈＋合奏光環緩旋；se-title 標題漸層流動；
+   se-flow 是既有彩虹強調條的動態版（掛在既有的 8~24px 小色塊/進度條上）。
+   資料密集頁（榜線／計算機／卡片庫）刻意不加這些 class，只吃 --rainbow/--cta 變數重新配色，
+   維持數字冷靜可讀——這條紀律沿用鋒白案評審一致認可的規則。 */
+@keyframes seBaton{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes seVoiceLead{0%{opacity:0;transform:translateY(18px) scale(.98)}100%{opacity:1;transform:none}}
+:root.style-ensemble .se-hero{animation:seVoiceLead .8s cubic-bezier(.34,1.45,.44,1) both}
+:root.style-ensemble .se-hero::before{content:'';position:absolute;inset:-70%;z-index:-1;pointer-events:none;
+  background:var(--ens-halo);filter:blur(60px);opacity:.32;animation:ensembleRotate 61s linear infinite}
+:root.style-ensemble .se-title{background:var(--cta);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:seBaton 9s linear infinite}
+:root.style-ensemble .se-flow{background:var(--cta)!important;background-size:300% 100%!important;animation:seBaton 9s linear infinite}
+@media (prefers-reduced-motion:reduce){
+  :root.style-ensemble body::before,:root.style-ensemble .se-hero::before,
+  :root.style-ensemble .se-title,:root.style-ensemble .se-flow,:root.style-ensemble .se-hero{animation:none}
+}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
@@ -254,8 +303,8 @@ select option, select optgroup{
 
     <!-- 首頁每個區塊都可以在「我的帳號 → 自訂版面」隱藏或調順序：外框是 flex column，順序靠 CSS order，顯示與否靠 sc-if -->
     <sc-if value="{{ homeShow.hero }}">
-    <div style="order:{{ homeOrd.hero }};position:relative;overflow:hidden;border-radius:24px;padding:26px 26px 22px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md)">
-      <span style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
+    <div class="se-hero" style="order:{{ homeOrd.hero }};position:relative;overflow:hidden;border-radius:24px;padding:26px 26px 22px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md)">
+      <span class="se-flow" style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
       <span style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px 200px at 88% -50%,rgba(120,180,255,.28),transparent 70%)"></span>
       <sc-if value="{{ hasLiveArt }}">
         <div style="position:absolute;right:0;top:0;bottom:0;width:min(50%,430px);pointer-events:none;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 38%);mask-image:linear-gradient(90deg,transparent,#000 38%)">
@@ -271,7 +320,7 @@ select option, select optgroup{
           <sc-if value="{{ hasLiveArt }}">
             <img src="{{ liveLogo }}" referrerpolicy="no-referrer" decoding="async" alt="{{ liveName }}" style="display:block;width:min(290px,74%);max-height:74px;object-fit:contain;object-position:left;margin:10px 0 2px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))">
           </sc-if>
-          <div style="font-size:clamp(21px,3.2vw,29px);font-weight:800;line-height:1.25;margin-top:9px">{{ liveName }}</div>
+          <div class="se-title" style="font-size:clamp(21px,3.2vw,29px);font-weight:800;line-height:1.25;margin-top:9px">{{ liveName }}</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
             <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
             <span style="font-size:11.5px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-family:'M PLUS Rounded 1c'">{{ liveRange }}</span>
@@ -285,7 +334,7 @@ select option, select optgroup{
         </div>
       </div>
       <div style="position:relative;margin-top:16px;height:8px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden">
-        <div style="height:100%;border-radius:999px;background:var(--rainbow);transition:width .8s cubic-bezier(.32,.72,.24,1);width:{{ liveProgress }}"></div>
+        <div class="se-flow" style="height:100%;border-radius:999px;background:var(--rainbow);transition:width .8s cubic-bezier(.32,.72,.24,1);width:{{ liveProgress }}"></div>
       </div>
     </div>
     </sc-if>
@@ -3302,6 +3351,17 @@ select option, select optgroup{
       </div>
     </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
+      <div style="font-size:14px;font-weight:800;color:var(--ink)">視覺模式</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">合鳴：把世界計畫六個角色團體的代表色做成會呼吸的環境光暈，首頁標題與強調條會跟著流動；預設關閉，不影響其他人看到的畫面。</div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px">
+        <sc-for list="{{ vmChips }}" as="v" hint-placeholder-count="2">
+          <button type="button" onClick="{{ onVisualMode }}" data-v="{{ v.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ v.bd }};border-radius:999px;background:{{ v.bg }};color:{{ v.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ v.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+            <span style="width:15px;height:15px;border-radius:50%;flex:none;background:{{ v.c }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)"></span>{{ v.n }}
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px">系統更新</div>
       <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px;line-height:1.6">近期的功能新增與修正紀錄。</div>
       <sc-for list="{{ syslog }}" as="u" hint-placeholder-count="6">
@@ -3699,6 +3759,10 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
+<<<<<<< Updated upstream
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=cb933624dc"></script>
+=======
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=1f4a29620c"></script>
+>>>>>>> Stashed changes
 </body>
 </html>
