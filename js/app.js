@@ -9956,7 +9956,7 @@ class Component extends DCLogic {
       const prev = this.state.wlsScan || [];
       const { merged, dup } = this.wlsMerge(prev, out);
       const newly = merged.length - prev.length;
-      const skipped = (use.input.unreadable || 0);
+      const skipped = (pick.input.unreadable || 0);
       this.setState({ wlsScan: merged, wlsPool: 'scan', wlsShotMsg:
         '讀到 ' + out.length + ' 張'
         + (skipped ? '（略過看不清楚的 ' + skipped + ' 張）' : '')
