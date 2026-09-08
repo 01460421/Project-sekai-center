@@ -376,6 +376,7 @@ class Component extends DCLogic {
     vmode: '',       // 視覺模式：''(經典) / 'ensemble'(合鳴，六團色環境光暈＋首頁旗艦動效)
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     evType: {},
+    homeBoard: 'main',   // 首頁「我的排名」切換：main=主榜 / wl=WL 個榜（只在當期是 WL 活動時可切）
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
@@ -1490,7 +1491,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=33c8f1b2ea';
+      s.src = 'data/billing.js?v=f14f2886ea';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4447,7 +4448,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=33c8f1b2ea';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=f14f2886ea';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -10294,6 +10295,13 @@ class Component extends DCLogic {
     });
   }
   isWL() { return this.wlChapters().length > 0; }
+  /* 首頁小工具用：優先選「正在進行」的章節，沒有的話退回最近一章（而不是第一章）——
+     首頁講的是「現在」，冷開機或章節交接空窗時看最新一章比看第一章更有意義。 */
+  myWlPick() {
+    const chs = this.wlChapters();
+    if (!chs.length) return null;
+    return chs.find(c => c.live) || chs[chs.length - 1];
+  }
 
   ranksOf(d) {
     if (!d) return [];
@@ -13298,6 +13306,41 @@ class Component extends DCLogic {
         { l: '場均·近1h', v: pd.myAvg1h != null ? this.short(pd.myAvg1h) : '—' },
         { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
       ],
+      homeIsWL: this.isWL(),
+      homeBoardIsMain: (s.homeBoard || 'main') !== 'wl',
+      homeBoardIsWl: s.homeBoard === 'wl' && this.isWL(),
+      homeBoardChips: [
+        { v: 'main', n: '主榜', on: (s.homeBoard || 'main') !== 'wl' },
+        { v: 'wl', n: 'WL 個榜', on: s.homeBoard === 'wl' }
+      ].map(c => ({ v: c.v, n: c.n,
+        bd: c.on ? 'var(--accent)' : 'var(--border)',
+        bg: c.on ? 'color-mix(in oklab,var(--accent) 14%,transparent)' : 'var(--card)',
+        fg: c.on ? 'var(--accent-deep)' : 'var(--text-2)' })),
+      /* WL 個榜的「我的名次」跟主榜是兩個獨立資料源：wlChapters() 每章的 ranks 已經走過
+         ranksOf()/normRank()，跟主榜同一種形狀，才能直接沿用 sameUid 比對、直接沿用
+         playerStats 同一組欄位標籤，只是資料換成該章節的。 */
+      ...(() => {
+        if (s.homeBoard !== 'wl' || !this.isWL()) return { homeWlChapterLabel: '', playerStatsWl: [] };
+        const pick = this.myWlPick();
+        if (!pick) return { homeWlChapterLabel: '', playerStatsWl: [] };
+        const me = s.pid ? (pick.ranks || []).find(r => this.sameUid(r.uid, s.pid)) : null;
+        const st = (me && me.stats) || {};
+        const cnt = k => (st[k] && st[k].count != null) ? st[k].count : null;
+        const avg = k => (st[k] && st[k].average != null) ? st[k].average : null;
+        return {
+          homeWlChapterLabel: '第 ' + pick.chapter + ' 章 · ' + pick.name + (pick.live ? '（進行中）' : pick.done ? '（已結束）' : '（尚未開始）'),
+          playerStatsWl: [
+            { l: '本章名次', v: me ? '#' + me.rank : '未進前100' },
+            { l: '本章P·累計', v: me && me.score != null ? this.short(me.score) : '—' },
+            { l: '本章P·上局', v: me && me.lastScore != null ? this.n(me.lastScore) : '—' },
+            { l: '時速·近1h', v: me && me.speed1h != null ? this.short(me.speed1h) + '/h' : '—' },
+            { l: '周回·近1h', v: cnt('h1') != null ? cnt('h1') + ' 回' : '—' },
+            { l: '周回·近24h', v: cnt('h24') != null ? this.n(cnt('h24')) + ' 回' : '—' },
+            { l: '場均·近1h', v: avg('h1') != null ? this.short(avg('h1')) : '—' },
+            { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
+          ]
+        };
+      })(),
       goal: s.goal, cur: s.cur,
       goalPct: (goal > 0 ? Math.min(100, cur / goal * 100) : 0).toFixed(1) + '%',
       goalPctLabel: (goal > 0 ? Math.min(100, cur / goal * 100).toFixed(1) : '0') + '%',
@@ -13759,7 +13802,12 @@ class Component extends DCLogic {
       onGamesNext: () => this.gamesStep(1),
       // 從排名詳情開啟該玩家的編組（重用 ?embed=deck 的完整引擎：真實隊伍＋綜合力＋逐卡加成）
       onRankDeck: e => { const uid = e.currentTarget.dataset.uid; if (uid) this.setState({ deckPid: uid, detail: null }); },
+      onHomeBoard: e => { const v = e.currentTarget.dataset.v; this.setState({ homeBoard: v }); },
       onMyDetail: () => {
+        // WL 個榜的排名走勢圖是另一套資料源（wlSnap/wlChart，不是主榜的 rankChart），
+        // 詳情面板的走勢圖只認得主榜資料，硬套會顯示錯的圖——直接導去榜線頁的 WL 個榜分頁，
+        // 讓使用者在正確的頁面裡看，而不是打開一張圖表對不上的詳情卡。
+        if (this.state.homeBoard === 'wl' && this.isWL()) { this.setState({ rankTab: 'wl' }); this.go('rank'); return; }
         const me = (this.ranksOf(this.state.live) || []).find(r => this.sameUid(r.uid, this.state.pid));
         if (me && me.stats && (me.stats.h1 || me.stats.h3 || me.stats.h24)) this.setState({ detail: me });
         else this.go('rank');   // 沒進前百 → 導去完整榜
