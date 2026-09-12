@@ -366,7 +366,7 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
@@ -722,19 +722,24 @@ class Component extends DCLogic {
     const a = new Audio('https://storage.sekai.best/sekai-jp-assets/music/long/' + abn + '/' + abn + '.mp3');
     a.preload = 'auto'; try { a.volume = 0; } catch (e) {}
     a._st = 0; a._fi = false; a._fo = false;
-    a.onloadedmetadata = () => { const st = (a.duration && a.duration > c.start + c.fin + c.fout + 2) ? c.start : 0; a._st = st; if (st) { try { a.currentTime = st; } catch (e) {} } };
+    a.onloadedmetadata = () => { const st = (!this.state.plFull && a.duration && a.duration > c.start + c.fin + c.fout + 2) ? c.start : 0; a._st = st; if (st) { try { a.currentTime = st; } catch (e) {} } if (a === this._audio) this.setState({ plDur: a.duration || 0 }); };
     return a;
   }
   _wire(a) {   // 綁定「目前曲」事件：淡入、到點淡出／交叉、結束／錯誤前進
     const c = this._AC;
-    a.onplaying = () => { if (!a._fi) { a._fi = true; this._fadeTo(a, c.vol, c.fin); } };
+    a.onplaying = () => { this._errRun = 0; if (!a._fi) { a._fi = true; this._fadeTo(a, c.vol, this.state.plFull ? 1.2 : c.fin); } };
     a.ontimeupdate = () => {
       if (a !== this._audio) return;
-      const end = Math.min(a._st + c.clip, a.duration || (a._st + c.clip));
+      /* 進度回報：每 400ms 才 setState 一次，播放器收合時不報（renderVals 很重，別為看不到的進度條重算） */
+      const now = Date.now();
+      if (now - (this._posAt || 0) > 400 && !this.state.playerMin) { this._posAt = now; this.setState({ plPos: a.currentTime || 0, plDur: a.duration || 0 }); }
+      // 完整模式：播到曲終；試聽模式：起播秒 + 片段長
+      const end = this.state.plFull ? (a.duration || Infinity) : Math.min(a._st + c.clip, a.duration || (a._st + c.clip));
       if (!a._fo && a.currentTime >= end - c.fout) {
         a._fo = true;
-        if (this._queue && this._queue.length > 1) this._crossfade(a);
-        else this._fadeTo(a, 0, c.fout, () => { if (this._queue) this._onEnded(); else { try { a.pause(); } catch (e) {} this.setState({ playAbn: '' }); } });
+        const ni = this._nextIdx(1);
+        if (this._queue && this._queue.length > 1 && ni >= 0 && ni !== this._qIdx) this._crossfade(a);
+        else this._fadeTo(a, 0, c.fout, () => { if (this._queue && ni >= 0) this._onEnded(); else { try { a.pause(); } catch (e) {} this.setState({ playAbn: '' }); } });
       }
     };
     a.onended = () => { if (a === this._audio && !a._fo) this._onEnded(); };
@@ -747,13 +752,27 @@ class Component extends DCLogic {
         try { a.src = a.src.replace('sekai-jp-assets', 'sekai-tc-assets'); a.load(); a.play().catch(() => {}); } catch (e) {}
         return;
       }
+      /* 連續多首都失敗（離線、素材站掛掉）就停下來，不要把整份清單一路跳到底 */
+      this._errRun = (this._errRun || 0) + 1;
+      if (this._errRun > 5) { this._killAudio(); this.setState({ playAbn: '' }); this._toast('連續多首無法播放，已暫停'); return; }
       if (this._queue) this._onEnded(); else this.setState({ playAbn: '' });
     };
   }
+  /* 下一首的索引：單曲循環回自己；不循環播到底回 -1；其餘環狀。上一首永遠環狀往回。 */
+  _nextIdx(dir) {
+    const q = this._queue; if (!q || !q.length) return -1;
+    if (dir > 0 && this.state.plRepeat === 'one') return this._qIdx;
+    const n = this._qIdx + dir;
+    if (n >= q.length) return this.state.plRepeat === 'off' ? -1 : 0;
+    if (n < 0) return q.length - 1;
+    return n;
+  }
+  _bumpQ() { this.setState(st => ({ plQ: (st.plQ || 0) + 1 })); }
   _preloadNext() {   // 佇列模式：預先載入下一首，消除切歌空檔
     this._disposeAudio(this._nextA); this._nextA = null;
     const q = this._queue; if (!q || q.length < 2) return;
-    const nx = q[(this._qIdx + 1) % q.length], abn = this.songAbn(nx);
+    const ni = this._nextIdx(1); if (ni < 0 || ni === this._qIdx) return;
+    const nx = q[ni], abn = this.songAbn(nx);
     if (!abn) return;
     const n = this._nextA = this._newAudio(abn); n._song = nx;
     try { n.load(); } catch (e) {}
@@ -761,7 +780,7 @@ class Component extends DCLogic {
   _crossfade(cur) {   // 淡出目前曲、同時淡入已預載的下一首（重疊 → 連續不間斷）
     const c = this._AC;
     this._fadeTo(cur, 0, c.fout, () => this._disposeAudio(cur));
-    this._qIdx = (this._qIdx + 1) % this._queue.length;
+    this._qIdx = this._nextIdx(1);
     const nx = this._queue[this._qIdx];
     let n = this._nextA; this._nextA = null;
     if (!n) { n = this._newAudio(this.songAbn(nx)); n._song = nx; }
@@ -770,22 +789,51 @@ class Component extends DCLogic {
     this._wire(n);
     try { if (n.currentTime < n._st) n.currentTime = n._st; } catch (e) {}
     n.play().then(() => this._fadeTo(n, c.vol, c.fout)).catch(() => this._fadeTo(n, c.vol, c.fout));
-    this.setState({ playAbn: this.songAbn(nx), playerCur: nx.title, playerJkt: nx.jkt || '' });
+    this.setState({ playAbn: this.songAbn(nx), playerCur: nx.title, playerJkt: nx.jkt || '', plPos: 0, plDur: n.duration || 0 });
     this._preloadNext();
   }
   _playSong(song) { if (!song) return; this._cur = song; this._playAbnDirect(this.songAbn(song), song.title, song.jkt || ''); }
   _playAbnDirect(abn, title, jkt) {
     if (!abn) return;
     this._killAudio();
-    this.setState({ playAbn: abn, playerCur: title || this.state.playerCur, playerJkt: jkt != null ? jkt : this.state.playerJkt });
+    this.setState({ playAbn: abn, playerCur: title || this.state.playerCur, playerJkt: jkt != null ? jkt : this.state.playerJkt, plPos: 0, plDur: 0 });
     const a = this._audio = this._newAudio(abn);
     this._wire(a);
-    a.play().catch(() => { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); });
+    a.play().catch(err => {
+      // 瀏覽器擋自動播放（NotAllowedError）：留在清單、等使用者按播放，不要當成壞檔跳過
+      if (err && err.name === 'NotAllowedError') { this.setState({ playAbn: '' }); return; }
+      // 載入失敗（jp 桶 404 等）交給 onerror 走 tc 桶備援與連續失敗上限；這裡再前進會在單曲循環時無限重載同一個 404
+      if (a.error) return;
+      if (this._queue) this._onEnded(); else this.setState({ playAbn: '' });
+    });
     this._preloadNext();   // 佇列模式先備好下一首
   }
   _onEnded() {   // 手動下一首／自然結束／錯誤時的硬切前進
-    if (this._queue && this._queue.length) { this._qIdx = (this._qIdx + 1) % this._queue.length; this._playSong(this._queue[this._qIdx]); }
-    else this.setState({ playAbn: '' });
+    const ni = this._nextIdx(1);
+    if (this._queue && this._queue.length && ni >= 0) { this._qIdx = ni; this._playSong(this._queue[this._qIdx]); }
+    else { try { if (this._audio) this._audio.pause(); } catch (e) {} this.setState({ playAbn: '' }); }
+  }
+  /* 佇列：從清單「某一首起」連播（清單順序），或把單曲加到尾端 */
+  _queueFrom(list, song) {
+    const q = (list || []).filter(x => this.songAbn(x));
+    let i = q.findIndex(x => x.id === song.id);
+    if (i < 0) { q.unshift(song); i = 0; }
+    this._queue = q; this._queueOrig = q.slice(); this._qIdx = i;
+    if (this.state.plShuffle) this._applyShuffle();
+    this.setState({ playerOn: true, playerMin: false });
+    this._playSong(this._queue[this._qIdx]);
+    this._bumpQ();
+  }
+  _applyShuffle() {   // 目前這首留在原位，其餘洗牌
+    const q = this._queue; if (!q || q.length < 3) return;
+    const cur = q[this._qIdx];
+    const rest = q.filter((_, i) => i !== this._qIdx);
+    for (let i = rest.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = rest[i]; rest[i] = rest[j]; rest[j] = t; }
+    this._queue = [cur].concat(rest); this._qIdx = 0;
+  }
+  _toast(msg) {
+    this.setState({ plToast: msg });
+    clearTimeout(this._toastT); this._toastT = setTimeout(() => this.setState({ plToast: '' }), 1500);
   }
   /* ---------- 主題（淺色／深色／跟隨系統） ---------- */
   applyTheme(t) {
@@ -838,9 +886,10 @@ class Component extends DCLogic {
   _shuffleList(list) {   // 洗牌 → 建立連播佇列（存歌曲物件，音源版本於播放時解析）並播放
     if (!list || !list.length) return;
     for (let i = list.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = list[i]; list[i] = list[j]; list[j] = t; }
-    this._queue = list.slice(); this._qIdx = 0;
-    this.setState({ playerOn: true, playerMin: false });
+    this._queue = list.slice(); this._queueOrig = list.slice(); this._qIdx = 0;
+    this.setState({ playerOn: true, playerMin: false, plShuffle: true });
     this._playSong(this._queue[0]);
+    this._bumpQ();
   }
   dur(ms) {
     if (ms == null) return '—';
@@ -13318,7 +13367,28 @@ class Component extends DCLogic {
       vocalNote: this._cur ? (s.vocalPref === 'sekai' && !this._cur.abnS ? '此曲無世界 ver' : (s.vocalPref === 'virtual' && !this._cur.abnV && this._cur.abnS ? '此曲僅世界 ver' : '')) : '',
       playerJktUrl: s.playerJkt ? ('https://storage.sekai.best/sekai-jp-assets/music/jacket/' + s.playerJkt + '/' + s.playerJkt + '.webp') : '',
       playerHasQueue: !!(this._queue && this._queue.length),
-      playerSub: (this._queue && this._queue.length) ? ('連播 ' + ((this._qIdx || 0) + 1) + '／' + this._queue.length + ' · 全曲版') : '單曲試聽 · 全曲版',
+      playerSub: (this._queue && this._queue.length) ? ('播放清單 ' + ((this._qIdx || 0) + 1) + '／' + this._queue.length + (s.plFull ? ' · 完整播放' : ' · 試聽片段')) : (s.plFull ? '單曲 · 完整播放' : '單曲 · 試聽片段'),
+      ...(() => {
+        const q = this._queue || [], qi = this._qIdx || 0;
+        const fmt = t => { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+        const chip = on => ({ bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)' });
+        const rl = { all: '循環', one: '單曲循環', off: '播完停止' };
+        return {
+          plQ: s.plQ || 0,
+          plOpen: !!s.plOpen, plCount: q.length, plCountText: q.length ? ('播放清單 ' + q.length + ' 首') : '播放清單',
+          plRows: q.map((x, i) => Object.assign({ i, title: x.title, sub: x.composer || '', on: i === qi, no: i + 1,
+            jkt: x.jkt ? (this.ASSET + '/thumbnail/music_jacket/' + x.jkt + '.webp') : '' },
+            { bg: i === qi ? 'color-mix(in oklab,var(--accent) 12%,transparent)' : 'transparent', fg: i === qi ? 'var(--accent-deep)' : 'var(--ink)' })),
+          plEmpty: !q.length,
+          plPosText: fmt(s.plPos), plDurText: s.plDur ? fmt(s.plDur) : '--:--',
+          plPct: (s.plDur ? Math.min(100, s.plPos / s.plDur * 100) : 0).toFixed(2) + '%',
+          plRepeatLabel: rl[s.plRepeat] || '循環', plRepeatBg: chip(s.plRepeat !== 'off').bg, plRepeatFg: chip(s.plRepeat !== 'off').fg,
+          plShuffleBg: chip(!!s.plShuffle).bg, plShuffleFg: chip(!!s.plShuffle).fg,
+          plFullLabel: s.plFull ? '完整' : '試聽', plFullBg: chip(!!s.plFull).bg, plFullFg: chip(!!s.plFull).fg,
+          plQueueBg: chip(!!s.plOpen).bg, plQueueFg: chip(!!s.plOpen).fg,
+          plToast: s.plToast || '', plToastShow: !!s.plToast,
+        };
+      })(),
       playerUnitChips: [{ u: 'all', n: '全曲', c: 'var(--accent)', t: '#fff' }].concat(Object.keys(this.UNITS).map(k => ({ u: k, n: this.UNITS[k].n, c: this.UNITS[k].c, t: this.UNITS[k].t }))).map(o => ({ u: o.u, n: o.n, bg: s.su === o.u ? o.c : 'var(--card-2)', fg: s.su === o.u ? (o.t || '#fff') : 'var(--text-2)', bd: s.su === o.u ? o.c : 'var(--border)' })),
       songOpen: !!s.songId,
       songDetailData: (() => {
@@ -13925,10 +13995,53 @@ class Component extends DCLogic {
         if (!abn) return;
         const song = (this.state.songs || []).find(y => this.songAbn(y) === abn || y.abnV === abn || y.abnS === abn || y.abn === abn);
         const cur = song ? this.songAbn(song) : abn;
-        if (this._audio && this.state.playAbn && (this.state.playAbn === abn || this.state.playAbn === cur)) { this._killAudio(); this.setState({ playAbn: '', playerOn: !!this._queue }); return; }   // 再點同一首＝停止
-        this._queue = null;   // 單首試聽：離開連播佇列
-        this.setState({ playerOn: true, playerMin: false });
-        if (song) this._playSong(song); else this._playAbnDirect(abn, '', '');
+        if (this._audio && this.state.playAbn && (this.state.playAbn === abn || this.state.playAbn === cur)) { this._audio.pause(); this.setState({ playAbn: '' }); return; }   // 同一首：暫停（保留佇列與進度）
+        if (this._audio && this._cur && song && this._cur.id === song.id && !this.state.playAbn) { this._audio.play().catch(() => {}); this.setState({ playAbn: cur, playerOn: true }); return; }   // 同一首暫停中：續播
+        /* 從清單點播＝以目前篩選/排序的清單為佇列、從這首起接續播放；
+           詳情面板等清單外的來源則把這首插到佇列最前面。 */
+        if (song) this._queueFrom(this.filteredSongs ? this.filteredSongs() : this.state.songs, song);
+        else { this._queue = null; this.setState({ playerOn: true, playerMin: false }); this._playAbnDirect(abn, '', ''); }
+      },
+      onQueueAdd: e => {   // ＋：加到播放清單尾端；沒有佇列就從這首開始
+        if (e && e.stopPropagation) e.stopPropagation();
+        const id = +e.currentTarget.dataset.id;
+        const song = (this.state.songs || []).find(y => y.id === id); if (!song || !this.songAbn(song)) return;
+        if (!this._queue || !this._queue.length) { this._queue = [song]; this._queueOrig = [song]; this._qIdx = 0; this.setState({ playerOn: true, playerMin: false }); this._playSong(song); this._bumpQ(); this._toast('開始播放：' + song.title); return; }
+        if (this._queue.some(x => x.id === id)) { this._toast('已在清單裡'); return; }
+        this._queue.push(song); if (this._queueOrig) this._queueOrig.push(song);
+        this._preloadNext(); this._bumpQ(); this._toast('已加入清單（' + this._queue.length + '）');
+      },
+      onPlayerQueue: () => this.setState(st => ({ plOpen: !st.plOpen })),
+      onQueueJump: e => { const i = +e.currentTarget.dataset.i; if (!this._queue || !this._queue[i]) return; this._qIdx = i; this._playSong(this._queue[i]); this._bumpQ(); },
+      onQueueRemove: e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const i = +e.currentTarget.dataset.i; const q = this._queue; if (!q || !q[i]) return;
+        const removed = q.splice(i, 1)[0]; if (this._queueOrig) this._queueOrig = this._queueOrig.filter(x => x.id !== removed.id);
+        if (!q.length) { this._queue = null; this._killAudio(); this.setState({ playAbn: '', playerCur: '', playerJkt: '', plPos: 0, plDur: 0 }); this._bumpQ(); return; }
+        if (i < this._qIdx) this._qIdx--;
+        else if (i === this._qIdx) { this._qIdx = Math.min(this._qIdx, q.length - 1); this._playSong(q[this._qIdx]); }
+        this._preloadNext(); this._bumpQ();
+      },
+      onQueueClear: () => { this._queue = null; this._queueOrig = null; this._killAudio(); this.setState({ playAbn: '', playerCur: '', playerJkt: '', plOpen: false, plPos: 0, plDur: 0, playerOn: false, playerMin: false }); this._bumpQ(); },
+      onPlayerRepeat: () => { const nx = { all: 'one', one: 'off', off: 'all' }[this.state.plRepeat] || 'all'; this.setState({ plRepeat: nx }, () => this._preloadNext()); },
+      onPlayerShuffle: () => {
+        const on = !this.state.plShuffle;
+        if (this._queue) {
+          if (on) this._applyShuffle();
+          else if (this._queueOrig) { const cur = this._queue[this._qIdx]; this._queue = this._queueOrig.slice(); this._qIdx = Math.max(0, this._queue.findIndex(x => cur && x.id === cur.id)); }
+        }
+        this.setState({ plShuffle: on }, () => { this._preloadNext(); this._bumpQ(); });
+      },
+      onPlayerFull: () => {   // 完整／試聽切換：立即生效，試聽模式下超過片段會在下一拍淡出
+        const full = !this.state.plFull;
+        this.setState({ plFull: full }, () => { const a = this._audio; if (a) { a._fo = false; if (!full && a._st === 0 && a.duration > this._AC.start + 8 && a.currentTime < this._AC.start) { try { a.currentTime = this._AC.start; } catch (e) {} } } });
+      },
+      onPlayerSeek: e => {   // 點進度條跳到該位置；若已在淡出，把音量拉回來
+        const a = this._audio; if (!a || !a.duration) return;
+        const r = e.currentTarget.getBoundingClientRect(); const x = Math.max(0, Math.min(1, (e.clientX - r.left) / (r.width || 1)));
+        try { a.currentTime = x * a.duration; } catch (er) {}
+        a._fo = false; this._fadeTo(a, this._AC.vol, .25);
+        this.setState({ plPos: a.currentTime, plDur: a.duration });
       },
       onShuffleAll: () => {   // 隨機連續播放（依目前篩選/搜尋的播放範圍）
         const list = ((this.filteredSongs ? this.filteredSongs() : this.state.songs) || []).filter(x => this.songAbn(x));
@@ -13955,7 +14068,7 @@ class Component extends DCLogic {
         else { this._audio.play().catch(() => {}); this.setState({ playAbn: this._queue && this._queue[this._qIdx] ? this.songAbn(this._queue[this._qIdx]) : this.state.playAbn }); }
       },
       onPlayerMin: () => this.setState(st => ({ playerMin: !st.playerMin })),
-      onPlayerStop: () => { this._killAudio(); this._queue = null; this.setState({ playerOn: false, playAbn: '', playerCur: '', playerJkt: '', playerMin: false }); },
+      onPlayerStop: () => { this._killAudio(); this._queue = null; this._queueOrig = null; this.setState({ playerOn: false, playAbn: '', playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plPos: 0, plDur: 0 }); },
       onDock: e => {
         const p = e.currentTarget.dataset.p;
         if (p === 'more') this.setState(st => ({ sheet: !st.sheet }));

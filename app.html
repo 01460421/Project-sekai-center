@@ -644,7 +644,7 @@ select option, select optgroup{
       </sc-if>
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
         <div style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s" style-hover="background:var(--bg-soft)">
-          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:block"><path d="{{ s.playPath }}"></path></svg></button>#{{ s.id }}</span>
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:block"><path d="{{ s.playPath }}"></path></svg></button><button type="button" onClick="{{ onQueueAdd }}" data-id="{{ s.id }}" title="加入播放清單" style="width:24px;height:24px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;padding:0">＋</button>#{{ s.id }}</span>
           <span onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情（難度/封面）" style="min-width:0;cursor:pointer"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
             <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
@@ -674,7 +674,7 @@ select option, select optgroup{
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="10">
         <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
           <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
-            <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="if(!this.dataset.a){this.dataset.a=1;this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets')}else{this.style.display='none'}" style="width:100%;height:100%;object-fit:cover;display:block">
+            <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="this.dataset.a?this.style.display='none':(this.dataset.a=1,this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets'))" style="width:100%;height:100%;object-fit:cover;display:block">
             <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" style="display:block"><path d="{{ s.playPath }}"></path></svg></button>
           </div>
           <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" style="padding:8px 10px 10px;cursor:pointer">
@@ -3437,7 +3437,7 @@ select option, select optgroup{
   <!-- 收合：浮動唱片圓鈕 -->
   <sc-if value="{{ playerMin }}">
     <button type="button" onClick="{{ onPlayerMin }}" title="展開播放器" style="position:relative;width:60px;height:60px;border:none;border-radius:50%;padding:0;cursor:pointer;background:var(--cta);box-shadow:0 8px 26px rgba(37,125,220,.42);overflow:hidden">
-      <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="if(!this.dataset.a){this.dataset.a=1;this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets')}else{this.style.display='none'}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;animation:{{ playerSpin }}">
+      <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="this.dataset.a?this.style.display='none':(this.dataset.a=1,this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets'))" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;animation:{{ playerSpin }}">
       <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:rgba(10,14,28,.5)"></span>
       <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex"><svg viewBox="0 0 24 24" width="13" height="13" fill="#fff" style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))"><path d="{{ playIconPath }}"></path></svg></span>
     </button>
@@ -3445,24 +3445,63 @@ select option, select optgroup{
 
   <!-- 展開：播放器卡片 -->
   <sc-if value="{{ playerExpanded }}">
-  <div style="width:min(324px,calc(100vw - 24px));padding:12px;border-radius:22px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-lg);animation:popIn .3s cubic-bezier(.34,1.45,.44,1)">
+  <div style="width:min(340px,calc(100vw - 24px));padding:12px;border-radius:22px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-lg);animation:popIn .3s cubic-bezier(.34,1.45,.44,1)">
     <div style="display:flex;align-items:center;gap:11px">
       <div style="width:46px;height:46px;flex:none;border-radius:12px;overflow:hidden;background:var(--card-2);box-shadow:var(--sh-xs)">
-        <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="if(!this.dataset.a){this.dataset.a=1;this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets')}else{this.style.display='none'}" style="width:100%;height:100%;object-fit:cover;display:block">
+        <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="this.dataset.a?this.style.display='none':(this.dataset.a=1,this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets'))" style="width:100%;height:100%;object-fit:cover;display:block">
       </div>
       <div style="min-width:0;flex:1">
         <div style="font-size:13px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerCur }}</div>
         <div style="font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">{{ playerSub }}</div>
       </div>
-      <button type="button" onClick="{{ onPlayerMin }}" title="收合" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 9.5l6 6 6-6"></path></svg></button>
-      <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display:block"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerMin }}" title="收合" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerStop }}" title="關閉" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:15px;margin-top:12px">
-      <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:block"><path d="M7 5h2.3v14H7z"></path><path d="M20 5v14L9.6 12z"></path></svg></button>
-      <button type="button" onClick="{{ onPlayerToggle }}" title="播放／暫停" style="width:46px;height:46px;border:none;border-radius:50%;background:var(--cta);color:#fff;cursor:pointer;box-shadow:0 4px 15px rgba(37,125,220,.36);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="#fff" style="display:block"><path d="{{ playIconPath }}"></path></svg></button>
-      <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:block"><path d="M14.7 5H17v14h-2.3z"></path><path d="M4 5v14l10.4-7z"></path></svg></button>
+    <!-- 進度：點任一處跳到該位置 -->
+    <div style="margin-top:11px">
+      <div onClick="{{ onPlayerSeek }}" title="點一下跳到該位置" style="position:relative;height:16px;display:flex;align-items:center;cursor:pointer">
+        <div style="position:relative;width:100%;height:5px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);overflow:hidden">
+          <div style="height:100%;width:{{ plPct }};background:var(--cta);border-radius:999px;transition:width .35s linear"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:1px"><span>{{ plPosText }}</span><span>{{ plDurText }}</span></div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)">
+    <div style="display:flex;align-items:center;justify-content:center;gap:15px;margin-top:8px">
+      <button type="button" onClick="{{ onPlayerPrev }}" title="上一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="display:block"><path d="M6 6h2v12H6zM20 6l-10 6 10 6z"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerToggle }}" title="播放／暫停" style="width:46px;height:46px;border:none;border-radius:50%;background:var(--cta);color:#fff;cursor:pointer;box-shadow:0 4px 15px rgba(37,125,220,.3);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:block"><path d="{{ playIconPath }}"></path></svg></button>
+      <button type="button" onClick="{{ onPlayerNext }}" title="下一首" style="width:34px;height:34px;border:none;border-radius:50%;background:var(--card-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="display:block"><path d="M16 6h2v12h-2zM4 6l10 6-10 6z"></path></svg></button>
+    </div>
+    <div style="display:flex;gap:5px;justify-content:center;margin-top:10px;flex-wrap:wrap">
+      <button type="button" onClick="{{ onPlayerShuffle }}" title="隨機播放" style="padding:5px 11px;border:none;border-radius:999px;background:{{ plShuffleBg }};color:{{ plShuffleFg }};font-size:11px;font-weight:800;cursor:pointer">隨機</button>
+      <button type="button" onClick="{{ onPlayerRepeat }}" title="循環模式" style="padding:5px 11px;border:none;border-radius:999px;background:{{ plRepeatBg }};color:{{ plRepeatFg }};font-size:11px;font-weight:800;cursor:pointer">{{ plRepeatLabel }}</button>
+      <button type="button" onClick="{{ onPlayerFull }}" title="完整播放／60 秒試聽片段" style="padding:5px 11px;border:none;border-radius:999px;background:{{ plFullBg }};color:{{ plFullFg }};font-size:11px;font-weight:800;cursor:pointer">{{ plFullLabel }}</button>
+      <button type="button" onClick="{{ onPlayerQueue }}" title="播放清單" style="padding:5px 11px;border:none;border-radius:999px;background:{{ plQueueBg }};color:{{ plQueueFg }};font-size:11px;font-weight:800;cursor:pointer">{{ plCountText }}</button>
+    </div>
+    <sc-if value="{{ plToastShow }}"><div style="margin-top:8px;text-align:center;font-size:11px;color:var(--accent-deep);font-weight:700">{{ plToast }}</div></sc-if>
+    <!-- 播放清單 -->
+    <sc-if value="{{ plOpen }}">
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:9px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:10px;font-weight:800;color:var(--text-3);letter-spacing:.5px">播放清單</span>
+          <button type="button" onClick="{{ onQueueClear }}" style="padding:3px 9px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-3);font-size:10.5px;font-weight:700;cursor:pointer">清空</button>
+        </div>
+        <sc-if value="{{ plEmpty }}"><div style="font-size:11.5px;color:var(--text-3);padding:6px 2px">清單是空的。歌曲清單裡按 ＋ 加入，或按 ▶ 從那首開始接續播放。</div></sc-if>
+        <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ plRows }}" as="p" hint-placeholder-count="4">
+            <div onClick="{{ onQueueJump }}" data-i="{{ p.i }}" style="display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:10px;background:{{ p.bg }};cursor:pointer">
+              <span style="width:18px;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';text-align:right;flex:none">{{ p.no }}</span>
+              <img src="{{ p.jkt }}" referrerpolicy="no-referrer" loading="lazy" onerror="this.dataset.a?this.style.visibility='hidden':(this.dataset.a=1,this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets'))" style="width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none;background:var(--card-2)">
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font-size:12px;font-weight:700;color:{{ p.fg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.title }}</span>
+                <span style="display:block;font-size:10px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.sub }}</span>
+              </span>
+              <button type="button" onClick="{{ onQueueRemove }}" data-i="{{ p.i }}" title="移出清單" style="width:22px;height:22px;flex:none;border:none;border-radius:50%;background:transparent;color:var(--text-3);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:11px;border-top:1px solid var(--border)">
       <span style="font-size:10px;font-weight:800;color:var(--text-3);letter-spacing:.5px;flex:none">音源</span>
       <div style="display:inline-flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);flex:none">
         <button type="button" onClick="{{ onVocalPref }}" data-v="virtual" title="虛擬歌手 ver." style="padding:5px 12px;border:none;border-radius:999px;background:{{ vpVBg }};color:{{ vpVFg }};font-size:11px;font-weight:800;cursor:pointer">虛擬</button>
@@ -3689,7 +3728,7 @@ select option, select optgroup{
 <div onClick="{{ onSongClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(500px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:popCenter .3s cubic-bezier(.34,1.4,.44,1)">
   <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
-    <img src="{{ songDetailData.jacket }}" referrerpolicy="no-referrer" onerror="if(!this.dataset.a){this.dataset.a=1;this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets')}else{this.style.opacity=.15}" style="width:88px;height:88px;flex:none;border-radius:14px;object-fit:cover;border:1px solid var(--border)">
+    <img src="{{ songDetailData.jacket }}" referrerpolicy="no-referrer" onerror="this.dataset.a?this.style.opacity=.15:(this.dataset.a=1,this.src=this.src.replace('sekai-jp-assets','sekai-tc-assets'))" style="width:88px;height:88px;flex:none;border-radius:14px;object-fit:cover;border:1px solid var(--border)">
     <div style="min-width:0;flex:1">
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.35">{{ songDetailData.title }}</div>
       <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ songDetailData.composer }}</div>
@@ -3706,7 +3745,8 @@ select option, select optgroup{
       </div>
     </sc-for>
   </div>
-  <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ songDetailData.abn }}" style="width:100%;padding:11px;border:none;border-radius:12px;background:var(--cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px"><svg viewBox="0 0 24 24" width="15" height="15" fill="#fff" style="display:block"><path d="M8 5v14l11-7z"></path></svg>試聽（全曲版）</button>
+  <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ songDetailData.abn }}" style="width:100%;padding:11px;border:none;border-radius:12px;background:var(--cta);color:#fff;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px"><svg viewBox="0 0 24 24" width="15" height="15" fill="#fff" style="display:block"><path d="M8 5v14l11-7z"></path></svg>播放</button>
+  <button type="button" onClick="{{ onQueueAdd }}" data-id="{{ songDetailData.id }}" style="width:100%;margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text-2);font-weight:800;font-size:13px;cursor:pointer">＋ 加入播放清單</button>
 </div>
 </sc-if>
 
@@ -3762,6 +3802,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=186c8dc0af"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=1ac5abe1b4"></script>
 </body>
 </html>
