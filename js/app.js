@@ -745,18 +745,24 @@ class Component extends DCLogic {
     a.onended = () => { if (a === this._audio && !a._fo) this._onEnded(); };
     /* 台服獨佔曲（如 11011 ハオ、11012 前ノハナシ）的 mp3 只在 sekai-tc-assets 桶，jp 桶 404；
        反過來 JP 曲在 tc 桶也 404。先試 jp、失敗再換 tc 桶重載一次，兩邊都沒有才算真的失敗。 */
-    a.onerror = () => {
-      if (a !== this._audio) return;
-      if (!a._alt && /sekai-jp-assets/.test(a.src || '')) {
-        a._alt = true; a._fi = false; a._fo = false;
-        try { a.src = a.src.replace('sekai-jp-assets', 'sekai-tc-assets'); a.load(); a.play().catch(() => {}); } catch (e) {}
-        return;
-      }
-      /* 連續多首都失敗（離線、素材站掛掉）就停下來，不要把整份清單一路跳到底 */
-      this._errRun = (this._errRun || 0) + 1;
-      if (this._errRun > 5) { this._killAudio(); this.setState({ playAbn: '' }); this._toast('連續多首無法播放，已暫停'); return; }
-      if (this._queue) this._onEnded(); else this.setState({ playAbn: '' });
-    };
+    /* 沒有 a.error 的 error 事件是換 src 後殘留的舊事件（load() 中止舊抓取），忽略 */
+    a.onerror = () => { if (a !== this._audio || !a.error) return; if (this._altSrc(a)) return; this._audioFail(); };
+  }
+  /* jp 桶 404 → 換 tc 桶再試一次（a._alt 只試一次）。onerror 與 play().catch 兩條路都走這裡：
+     404 時 play() 的 promise 會先以 NotSupportedError 拒絕、那一刻 a.error 還是 null，
+     只靠 onerror 會被 catch 那條先 _onEnded → _killAudio 清掉，備援永遠輪不到。 */
+  _altSrc(a) {
+    if (!a || a._alt || !/sekai-jp-assets/.test(a.src || '')) return false;
+    a._alt = true; a._fi = false; a._fo = false;
+    try { a.src = a.src.replace('sekai-jp-assets', 'sekai-tc-assets'); a.load(); a.play().catch(() => { if (a === this._audio) this._audioFail(); }); } catch (e) { return false; }
+    return true;
+  }
+  _audioFail() {   // 兩個桶都失敗：連續失敗計數，超過就停，不要把清單一路跳到底或無限重載同一首
+    this._errRun = (this._errRun || 0) + 1;
+    if (this._errRun > Math.min(5, Math.max(2, (this._queue || []).length))) {
+      this._killAudio(); this.setState({ playAbn: '' }); this._toast('音檔無法載入，已暫停'); this._errRun = 0; return;
+    }
+    if (this._queue) this._onEnded(); else this.setState({ playAbn: '' });
   }
   /* 下一首的索引：單曲循環回自己；不循環播到底回 -1；其餘環狀。上一首永遠環狀往回。 */
   _nextIdx(dir) {
@@ -800,11 +806,11 @@ class Component extends DCLogic {
     const a = this._audio = this._newAudio(abn);
     this._wire(a);
     a.play().catch(err => {
-      // 瀏覽器擋自動播放（NotAllowedError）：留在清單、等使用者按播放，不要當成壞檔跳過
-      if (err && err.name === 'NotAllowedError') { this.setState({ playAbn: '' }); return; }
-      // 載入失敗（jp 桶 404 等）交給 onerror 走 tc 桶備援與連續失敗上限；這裡再前進會在單曲循環時無限重載同一個 404
-      if (a.error) return;
-      if (this._queue) this._onEnded(); else this.setState({ playAbn: '' });
+      if (a !== this._audio) return;
+      if (err && err.name === 'NotAllowedError') { this.setState({ playAbn: '' }); return; }   // 瀏覽器擋自動播放：留在清單等使用者按播放
+      if (this._altSrc(a)) return;                                                             // jp 桶 404：換 tc 桶再試（不等 onerror）
+      if (a.error || (err && /NotSupported|Abort/.test(err.name || ''))) return;               // 其餘載入錯誤交給 onerror，兩條路只能前進一次
+      this._audioFail();
     });
     this._preloadNext();   // 佇列模式先備好下一首
   }
@@ -13933,6 +13939,19 @@ class Component extends DCLogic {
 
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      /* 圖片載入失敗的統一處理。dc-runtime 把 on* 屬性一律當 React 事件 prop，
+         inline 字串會在事件觸發時炸 React #231（Expected onError listener to be a function），
+         所以只能綁函式。data-fb 指定失敗後怎麼收：none／hidden／opacity。
+         素材在 jp 桶 404 的（台服獨佔曲封面）先換 tc 桶再試一次，兩邊都沒有才收。 */
+      onImgErr: e => {
+        const im = e && e.currentTarget; if (!im) return;
+        if (!im.getAttribute('src')) return;   // 封面還沒決定時 src 是空字串也會觸發 error，這時不能把圖藏起來（之後 src 補上就顯示不出來）
+        if (!im.dataset.a && /sekai-jp-assets/.test(im.src || '')) { im.dataset.a = '1'; im.src = im.src.replace('sekai-jp-assets', 'sekai-tc-assets'); return; }
+        const fb = im.dataset.fb || 'none';
+        if (fb === 'hidden') im.style.visibility = 'hidden';
+        else if (fb === 'opacity') im.style.opacity = '.15';
+        else im.style.display = 'none';
+      },
       onRankClick: e => {
         this.loadBorderHistory();
         const r = (this._rankList || [])[+e.currentTarget.dataset.i];
