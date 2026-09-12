@@ -422,7 +422,7 @@ class Component extends DCLogic {
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
-    live: null, borders: null, liveErr: '', liveLoad: true, rankTab: 'live',
+    live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
@@ -494,9 +494,53 @@ class Component extends DCLogic {
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { b.firstChild.style.transform = ''; b.firstChild.style.boxShadow = ''; }));
   }
 
+  /* 排行榜頁的懸浮重新載入鈕：捲到看不見工具列時浮在左下角（回頂鈕在右下角，兩邊對稱）。
+     跟回頂鈕一樣用原生 DOM 掛在 body，捲動時不觸發 renderVals；
+     轉圈／停用狀態由 _syncReloadFab() 跟 state.refreshing 同步。 */
+  _initReloadFab() {
+    if (this._reloadFab) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.id = 'appReloadFab';
+    b.setAttribute('aria-label', '重新載入排名'); b.title = '重新載入排名';
+    b.innerHTML = '<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg></span>';
+    b.style.cssText = 'position:fixed;left:16px;z-index:70;padding:0;border:none;background:none;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(14px) scale(.85);transition:opacity .3s,transform .3s cubic-bezier(.34,1.45,.44,1),visibility .3s';
+    b.firstChild.style.cssText = 'display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background:var(--cta);color:#fff;box-shadow:var(--sh-md);transition:transform .2s cubic-bezier(.34,1.45,.44,1),box-shadow .2s';
+    b.querySelector('svg').style.cssText = 'width:19px;height:19px;display:block';
+    const place = () => { b.style.bottom = window.innerWidth <= 900 ? 'calc(80px + env(safe-area-inset-bottom,0px))' : 'calc(20px + env(safe-area-inset-bottom,0px))'; };
+    place();
+    document.body.appendChild(b);
+    this._reloadFab = b;
+    let queued = false;
+    const apply = () => {
+      queued = false;
+      const on = this.state.page === 'rank' && window.scrollY > 420;   // 工具列捲出視野後才浮出
+      b.style.opacity = on ? '1' : '0';
+      b.style.visibility = on ? 'visible' : 'hidden';
+      b.style.transform = on ? 'translateY(0) scale(1)' : 'translateY(14px) scale(.85)';
+    };
+    this._reloadFabApply = apply;
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(apply); } };
+    apply();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', place);
+    b.addEventListener('click', () => this.refreshLive(true));
+    b.addEventListener('pointerenter', () => { if (!b.disabled) { b.firstChild.style.transform = 'translateY(-3px)'; b.firstChild.style.boxShadow = 'var(--sh-lg,var(--sh-md))'; } });
+    b.addEventListener('pointerdown', () => { if (!b.disabled) b.firstChild.style.transform = 'scale(.9)'; });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { b.firstChild.style.transform = ''; b.firstChild.style.boxShadow = ''; }));
+  }
+  _syncReloadFab() {
+    const b = this._reloadFab; if (!b) return;
+    const busy = !!this.state.refreshing;
+    b.disabled = busy; b.style.cursor = busy ? 'wait' : 'pointer';
+    b.firstChild.style.opacity = busy ? '.72' : '1';
+    b.querySelector('svg').style.animation = busy ? 'spin .8s linear infinite' : 'none';
+    if (this._reloadFabApply) this._reloadFabApply();
+  }
+
   componentDidMount() {
     this.applyProps();
     this._initToTop();
+    this._initReloadFab();
     // 起始頁:?page= 深連結優先(可直接分享某個分頁),其次元件 props
     let sp = this.props.startPage;
     try { const q = new URLSearchParams(location.search).get('page'); if (q && this.PAGES[q]) sp = q; } catch (e) {}
@@ -563,7 +607,7 @@ class Component extends DCLogic {
     } catch (e) {}
 
     this.loadLive();
-    this._live = setInterval(() => this.loadLive(), 60000);
+    this._live = setInterval(() => this.refreshLive(false), 60000);
     // 倒數計時直接寫 DOM：每秒 setState 會讓 800 行 renderVals 全量重算，純浪費
     this._tick = setInterval(() => {
       if (this.state.page !== 'home' || !this._endMs) return;
@@ -591,7 +635,7 @@ class Component extends DCLogic {
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); }
   /* 切到「我的帳號」時重抓用量 —— 助手用過之後數字才會是新的。只在換頁那一刻抓一次。 */
   usageTick() {
     const p = this.state.page;
@@ -694,7 +738,17 @@ class Component extends DCLogic {
       }
     };
     a.onended = () => { if (a === this._audio && !a._fo) this._onEnded(); };
-    a.onerror = () => { if (a === this._audio) { if (this._queue) this._onEnded(); else this.setState({ playAbn: '' }); } };
+    /* 台服獨佔曲（如 11011 ハオ、11012 前ノハナシ）的 mp3 只在 sekai-tc-assets 桶，jp 桶 404；
+       反過來 JP 曲在 tc 桶也 404。先試 jp、失敗再換 tc 桶重載一次，兩邊都沒有才算真的失敗。 */
+    a.onerror = () => {
+      if (a !== this._audio) return;
+      if (!a._alt && /sekai-jp-assets/.test(a.src || '')) {
+        a._alt = true; a._fi = false; a._fo = false;
+        try { a.src = a.src.replace('sekai-jp-assets', 'sekai-tc-assets'); a.load(); a.play().catch(() => {}); } catch (e) {}
+        return;
+      }
+      if (this._queue) this._onEnded(); else this.setState({ playAbn: '' });
+    };
   }
   _preloadNext() {   // 佇列模式：預先載入下一首，消除切歌空檔
     this._disposeAudio(this._nextA); this._nextA = null;
@@ -834,6 +888,18 @@ class Component extends DCLogic {
     } catch (e) {
       this.setState({ liveLoad: false, liveErr: '排名資料暫時無法載入' });
     }
+  }
+  /* 手動／自動重載共用。手動：按鈕轉圈＋暫時停用；自動（每 60 秒）：只讓綠點換色，
+     不動按鈕 —— 每分鐘閃一次 disabled 會像壞掉。轉圈至少 500ms，快取秒回時才看得出有在動。
+     不借用 liveLoad：它同時驅動首頁活動卡文字與列表底部 spinner，會多出不必要的閃動。 */
+  async refreshLive(manual) {
+    if (this.state.refreshing) return;
+    this.setState(manual ? { refreshing: true } : { autoSync: true });
+    const t0 = Date.now();
+    await this.loadLive();
+    const wait = Math.max(0, 700 - (Date.now() - t0));
+    clearTimeout(this._refreshT);
+    this._refreshT = setTimeout(() => this.setState({ refreshing: false, autoSync: false }), wait);
   }
   /* 歷代活動：/event/list 取全部期數；/event/{id}/top100 與 /border 對任一期都可查（含已結束） */
   // 回傳活動清單本身（不要讓呼叫端讀 this.state，setState 是非同步的，剛設好可能還讀不到）
@@ -1491,7 +1557,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=e4a97d2f3e';
+      s.src = 'data/billing.js?v=ecaf6d477e';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4448,7 +4514,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=e4a97d2f3e';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=ecaf6d477e';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -11409,7 +11475,7 @@ class Component extends DCLogic {
         { l: '每小時體力', v: this.n(Math.round((+s.energy || 0) * 3600 / (epR.time + (+s.interval || 50)))), sub: '體力 ' + s.energy + '/場' }
       ];
       formulaText = 'EP/h = 每局 EP × 3600 ÷ (歌長 + 間隔)';
-      formulaNote = '排行依所選難度與模式重算全 640 首；間隔含結算與選歌時間，車隊常用 45–60 秒。';
+      formulaNote = '排行依所選難度與模式重算全曲庫；間隔含結算與選歌時間，車隊常用 45–60 秒。';
     } else if (s.ctab === 'moyu') {
       calcInputTitle = '摸魚表參數';
       calcFields = [
@@ -11746,10 +11812,12 @@ class Component extends DCLogic {
 
     /* 排名 */
     const rankList = s.rankTab === 'live' ? myRanks : myBorders;
-    this._rankList = rankList;   // 快取供 onRankClick 依 index 取詳情
-    const rankRows = rankList.slice(0, 100).map((r, idx) => ({
+    /* 列建構器抽出來給主榜與 WL 個榜共用：WL 章節的 ranks 已走過 ranksOf()/normRank()，
+       跟主榜同一種形狀（頭像 cardId、stats.h1/h3/h24、lastPlayed 都在），
+       兩張表各自維護一定會走鐘，所以只留一套。 */
+    const mkRankRow = (r, idx, tab) => ({
       i: idx,
-      rank: s.rankTab === 'live' ? '#' + r.rank : 'T' + this.n(r.rank),
+      rank: tab === 'border' ? 'T' + this.n(r.rank) : '#' + r.rank,
       name: r.name, score: s.mobile ? this.short(r.score) : this.n(r.score),   // 手機用 15554W 這種短格式，省下的寬度給名字
       extra: r.speed1h != null ? this.short(r.speed1h) + '/h' : '—',
       avatar: (() => { const cc = s.cardChara; const cid = cc && r.cardId ? cc[r.cardId] : 0; return cid ? this.charaSd(cid) : ''; })(),
@@ -11761,23 +11829,40 @@ class Component extends DCLogic {
       subLine: ((r.stats && r.stats.h1 && r.stats.h1.count != null) ? ('近1h ' + r.stats.h1.count + ' 回') : '')
              + (r.lastPlayed ? ((r.stats && r.stats.h1 && r.stats.h1.count != null ? ' · ' : '') + this.ago(r.lastPlayed)) : ''),
       rankColor: r.rank === 1 ? '#eab308' : r.rank === 2 ? '#94a3b8' : r.rank === 3 ? '#e28743' : 'var(--ink)',
-      rowBg: String(r.uid) === String(s.pid) && s.pid ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent',
-      canDetail: s.rankTab === 'live' && !!(r.stats && (r.stats.h1 || r.stats.h3 || r.stats.h24))
-    }));
+      rowBg: s.pid && this.sameUid(r.uid, s.pid) ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent',
+      canDetail: tab !== 'border' && !!(r.stats && (r.stats.h1 || r.stats.h3 || r.stats.h24))
+    });
+    const rankRows = rankList.slice(0, 100).map((r, idx) => mkRankRow(r, idx, s.rankTab));
+    /* WL 個榜：同一張表、同一種列。手機預設 20 列，「顯示完整前百」再展開。 */
+    let wlBoardRows = [], wlBoardList = [];
+    const wlAvail = this.isWL();
+    if (s.rankTab === 'wl' && wlAvail) {
+      const chs = this.wlChapters();
+      const pick = chs.find(c => c.chapter === +s.wlCh) || chs.find(c => c.live) || chs[0];
+      if (pick) {
+        this._wlPick = pick;
+        wlBoardList = pick.ranks;
+        wlBoardRows = pick.ranks.slice(0, (s.mobile && !s.wlMoreR) ? 20 : 100).map((r, idx) => mkRankRow(r, idx, 'wl'));
+      }
+    }
+    const boardRows = s.rankTab === 'wl' ? wlBoardRows : rankRows;
+    this._rankList = s.rankTab === 'wl' ? wlBoardList : rankList;   // 快取供 onRankClick 依 index 取詳情（兩邊都從 0 起）
     /* 排名詳情 sheet：周回/時段得分/場均/時速（1h/3h/24h），同資源中心 */
     const dt = s.detail;
     const perRow = (label, x) => ({ label, count: x && x.count != null ? this.n(x.count) + ' 回' : '—', score: x && x.score != null ? this.n(x.score) : '—', avg: x && x.average != null ? this.n(x.average) : '—', speed: x && x.speed != null ? this.short(x.speed) + '/h' : '—' });
     const detailData = dt ? {
-      title: (dt.rank != null ? '#' + dt.rank + '　' : '') + (dt.name || '—'),
+      title: (dt.wl ? 'WL 第 ' + dt.wlChapter + ' 章・' + (dt.wlName || '') + '　' : '') + (dt.rank != null ? '#' + dt.rank + '　' : '') + (dt.name || '—'),
       score: this.n(dt.score), speed1h: dt.speed1h != null ? this.short(dt.speed1h) + '/h' : '—',
       lastScore: dt.lastScore != null ? this.n(dt.lastScore) : '—',
       lastPlayed: dt.lastPlayed ? this.ago(dt.lastPlayed) : '—',
       uid: dt.uid || '', hasUid: !!dt.uid,
       rows: [perRow('近 1 小時', dt.stats && dt.stats.h1), perRow('近 3 小時', dt.stats && dt.stats.h3), perRow('近 24 小時', dt.stats && dt.stats.h24)],
       ...(() => {                       // 直接嵌在詳情裡的名次走勢圖，不另開視窗
-        const c = dt.rank <= 100 ? this.rankChart(dt.rank) : null;
+        // WL 個榜沒有逐名次序列（公用快照只記各段榜線），硬套主榜的走勢圖會畫出錯的資料。
+        const c = (!dt.wl && dt.rank <= 100) ? this.rankChart(dt.rank) : null;
         if (!c) return { hasChart: false, chartNo: true,
-          chartPct: '', chartMsg: dt.rank <= 100 ? '這個名次還沒有累積到足夠的走勢資料（伺服器每 30 分鐘記一筆）。'
+          chartPct: '', chartMsg: dt.wl ? '章節個榜沒有逐名次走勢；本章各段榜線的走勢請看 WL 個榜分頁上方的「章節走勢」。'
+                                   : dt.rank <= 100 ? '這個名次還沒有累積到足夠的走勢資料（伺服器每 30 分鐘記一筆）。'
                                    : '走勢紀錄只涵蓋前 100 名。' };
         return { hasChart: true, chartNo: false, chartMsg: '',
           chartW: c.W, chartH: c.H, chartLine: c.line, chartArea: c.area, chartTicks: c.ticks,
@@ -11797,6 +11882,8 @@ class Component extends DCLogic {
           gamesDayChips: [], gamesHasDays: false,
           gamesNote: '',
         }, extra);
+        // 逐局紀錄只採樣主榜前 50 名；gamesUid 快取會留著上一次主榜同一人的資料，WL 面板一定要在這裡擋掉
+        if (dt.wl) return mk({ gamesMsg: '逐局紀錄目前只採樣主榜，章節個榜暫無。' });
         if (s.gamesLoad) return mk({ gamesMsg: '載入逐局紀錄…' });
         if (s.gamesErr) return mk({ gamesMsg: s.gamesErr });
         const all = s.gamesRows;
@@ -13405,6 +13492,7 @@ class Component extends DCLogic {
         .concat([{ v: 'past', n: '歷代活動' }, { v: 'trend', n: '榜線趨勢' }])
         .map(t => Object.assign({}, t, seg(s.rankTab === t.v))),
       isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl',
+      isBoardTab: s.rankTab === 'live' || s.rankTab === 'border' || (s.rankTab === 'wl' && wlAvail),
       ...(() => {
         const chs = this.wlChapters();
         if (!chs.length) return { wlChips: [], wlRows: [], wlBorders: [], wlTitle: '', wlSub: '', wlEmpty: true, wlHasRows: false, wlHasBorders: false, wlRules: [], wlCkOn: false, wlCkMsg: '', wlCkRows: [], wlProjNote: '', wlSugOn: false, wlSugCards: [], wlSugNote: '', wlChartHas: false, wlChartOk: false, wlChartNo: false, wlTierChips: [] };
@@ -13483,7 +13571,7 @@ class Component extends DCLogic {
           })(),
           // 手機:預設只給前幾筆,點「顯示全部」再展開,避免一進頁就是一大坨
           wlBMore: s.mobile && !s.wlMoreB && pick.borders.length > 6,
-          wlRMore: s.mobile && !s.wlMoreR && pick.ranks.length > 20,
+          wlRMore: s.rankTab === 'wl' && s.mobile && !s.wlMoreR && pick.ranks.length > 20,
           wlRuleFold: s.mobile && !s.wlRuleOpen,
           wlRuleShow: !s.mobile || s.wlRuleOpen,
           wlRules: this.WL_RULES.map(([n, pts]) => ({ n, pts })),
@@ -13587,11 +13675,21 @@ class Component extends DCLogic {
         });
       })(),
       trendCols: (() => { const n = (s.trend || []).length; return '78px repeat(' + Math.max(1, n) + ',minmax(58px,1fr)) 78px'; })(),
-      rankRows, rankBusy: s.liveLoad || (!rankRows.length && !s.liveLoad),
+      rankRows, boardRows, rankBusy: s.liveLoad || (!boardRows.length && !s.liveLoad),
       rankStatus: s.liveErr || (s.liveLoad ? '載入排名資料…' : '目前沒有排名資料'),
       rankGap: s.mobile ? '8px' : '12px', rankPad: s.mobile ? '12px' : '16px', rankAv: s.mobile ? '28px' : '34px',   // 手機把間距、內距、頭像都收一點，名字欄多出約 30px
-      rankScoreLabel: s.rankTab === 'live' ? '活動 P' : '分數',
-      rankExtraLabel: s.rankTab === 'live' ? '1h 均速' : '—',
+      rankScoreLabel: s.rankTab === 'wl' ? '章節 P' : s.rankTab === 'live' ? '活動 P' : '分數',
+      rankExtraLabel: s.rankTab === 'border' ? '—' : '1h 均速',
+      /* 重新載入按鈕的載入回饋（模板不能寫三元，全部在這裡算好）。手動：轉圈＋暫停用；
+         自動：只讓綠點換色、文字變「更新中」。prefers-reduced-motion 會把 spin 關掉，
+         所以文字與透明度是必要的非動態回饋。 */
+      refreshBusy: !!s.refreshing,
+      refreshLabel: s.refreshing ? '載入中…' : '重新載入',
+      refreshAnim: s.refreshing ? 'spin .8s linear infinite' : 'none',
+      refreshOp: s.refreshing ? '.72' : '1',
+      refreshCur: s.refreshing ? 'wait' : 'pointer',
+      autoDotBg: (s.autoSync || s.refreshing) ? 'var(--accent)' : '#34c77b',
+      autoLabel: (s.autoSync || s.refreshing) ? '更新中' : '每 60 秒自動更新',
 
       /* 計算中心 */
       presets: Object.keys(this.PRESETS).map(k => Object.assign({ v: k, n: this.PRESETS[k].n }, chip(s.preset === k, 'var(--cta)'))),
@@ -13769,8 +13867,11 @@ class Component extends DCLogic {
         this.loadBorderHistory();
         const r = (this._rankList || [])[+e.currentTarget.dataset.i];
         if (r && r.stats && (r.stats.h1 || r.stats.h3 || r.stats.h24)) {
-          this.setState({ detail: r });
-          if (r.uid) this.loadGames(r.uid);   // 逐局紀錄:非同步載,載完自己重繪
+          const wl = this.state.rankTab === 'wl';
+          const p = this._wlPick || {};
+          // WL 列：詳情面板一樣開（1h/3h/24h 周回、場均、時速都在），但標記 wl 讓走勢圖與逐局紀錄走 WL 分支
+          this.setState({ detail: wl ? Object.assign({}, r, { wl: true, wlChapter: p.chapter, wlName: p.name }) : r });
+          if (r.uid && !wl) this.loadGames(r.uid);   // 逐局紀錄:非同步載,載完自己重繪（只採樣主榜）
         }
       },
       onDetailClose: () => this.setState({ detail: null }),
@@ -14344,7 +14445,7 @@ class Component extends DCLogic {
       },
       onDay: e => { const k = e.currentTarget.dataset.k; this.setState(st => ({ daySel: st.daySel === k ? null : k })); },
       onDayClose: () => this.setState({ daySel: null }),
-      onRefresh: () => { this.setState({ liveLoad: true }); this.loadLive(); },
+      onRefresh: () => { this.refreshLive(true); },
       onBind: () => {
         const id = String(this.state.pidInput || '').trim();
         if (!/^\d+$/.test(id)) { this.setState({ pErr: 'Player ID 應為純數字' }); return; }
