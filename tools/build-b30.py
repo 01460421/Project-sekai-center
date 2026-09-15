@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""從「プロセカ難易度表」(pentatonic V31) 產生 data/b30-consts.js(B30 產生器用定數表)。
+"""從「プロセカ難易度表」(pentatonic,線上試算表＋repo 內釘選版 tools/src/pentatonic-pin.json 取較新者)產生 data/b30-consts.js(B30 產生器用定數表)。
 
 資料源:
   - 難易度表試算表(公開 Google Sheet,xlsx 匯出):難易度表(MAS)/難易度表(APD) 兩分頁
@@ -18,6 +18,7 @@
 import json
 import pathlib
 import re
+import sys
 import time
 import unicodedata
 import urllib.request
@@ -31,6 +32,10 @@ TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main
 I18N = 'https://raw.githubusercontent.com/Sekai-World/sekai-i18n/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'b30-consts.js'
+# 釘選版:作者釋出新版 xlsx 時線上試算表往往還停在舊版(V32 時線上仍是 V31),
+# 把本機 xlsx 解析成小 JSON 釘在 repo 裡,線上版追上(含所有釘選曲目)前以釘選版為準。
+# 更新方式:python3 tools/build-b30.py --pin '/path/to/スプシ用難易度表PENTATONIC v33.xlsx'
+PIN = ROOT / 'tools' / 'src' / 'pentatonic-pin.json'
 
 
 def get(url, binary=False):
@@ -106,8 +111,63 @@ def parse_sheet(xlsx_bytes):
     return res
 
 
+def write_pin(xlsx_path):
+    """把本機 xlsx 解析成釘選 JSON(版本號取檔名裡的 v 加數字,例如 v32)。"""
+    xp = pathlib.Path(xlsx_path)
+    m = re.search(r'[vV](\d+)', xp.stem)
+    ver = int(m.group(1)) if m else 0
+    sheet = parse_sheet(xp.read_bytes())
+    PIN.parent.mkdir(parents=True, exist_ok=True)
+    PIN.write_text(json.dumps({'version': ver, 'file': xp.name,
+                               'master': sheet['master'], 'append': sheet['append']},
+                              ensure_ascii=False, indent=0), encoding='utf-8')
+    print(f'釘選 V{ver}:{xp.name} → {PIN.relative_to(ROOT)}(MAS {len(sheet["master"])}/APD {len(sheet["append"])})')
+
+
+def load_pin():
+    if not PIN.exists():
+        return None
+    try:
+        d = json.loads(PIN.read_text(encoding='utf-8'))
+        return {'version': int(d.get('version') or 0),
+                'master': [tuple(x) for x in d.get('master', [])],
+                'append': [tuple(x) for x in d.get('append', [])]}
+    except Exception as ex:
+        print(f'釘選檔讀取失敗({ex}),改用線上版')
+        return None
+
+
+def merge_pin(sheet, pin):
+    """線上版已涵蓋釘選版全部曲目 → 線上版較新或相同,用線上版;
+    否則線上版還是舊版 → 以線上版為底、釘選版覆蓋並補上新曲。回傳 (sheet, 來源標籤)。"""
+    if not pin or not pin['version']:
+        return sheet, 'pentatonic プロセカ難易度表'
+    ver = f"V{pin['version']}"
+    online_has = {k: {norm(t) for t, _, _ in sheet.get(k, [])} for k in ('master', 'append')}
+    covered = all({norm(t) for t, _, _ in pin[k]} <= online_has[k] for k in ('master', 'append'))
+    if covered:
+        print(f'線上版已含釘選 {ver} 全部曲目,採線上版')
+        return sheet, f'pentatonic {ver}+ プロセカ難易度表'
+    merged = {}
+    n_over = n_add = 0
+    for k in ('master', 'append'):
+        by = {norm(t): (t, c, p) for t, c, p in sheet.get(k, [])}
+        for t, c, p in pin[k]:
+            key = norm(t)
+            if key in by:
+                if by[key][1:] != (c, p):
+                    n_over += 1
+            else:
+                n_add += 1
+            by[key] = (t, c, p)
+        merged[k] = list(by.values())
+    print(f'線上版落後釘選 {ver}:覆蓋 {n_over} 筆定數、新增 {n_add} 譜面')
+    return merged, f'pentatonic {ver} プロセカ難易度表'
+
+
 def main():
     sheet = parse_sheet(get(SHEET, binary=True))
+    sheet, source = merge_pin(sheet, load_pin())
     jp_musics = get(f'{JP}/musics.json')
     jp_diffs = get(f'{JP}/musicDifficulties.json')
     tc_musics = get(f'{TC}/musics.json')
@@ -231,7 +291,7 @@ def main():
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
 
-    data = {'source': 'pentatonic V31 プロセカ難易度表', 'charts': charts}
+    data = {'source': source, 'charts': charts}
     if OUT.exists():
         m = re.search(r'window\.B30_CONSTS\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
         if m:
@@ -245,10 +305,12 @@ def main():
                 pass
     data['builtAt'] = int(time.time() * 1000)
     body = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-    OUT.write_text('// 由 tools/build-b30.py 產生,勿手改。定數:pentatonic V31 プロセカ難易度表(AP 基準,非官方)\n'
+    OUT.write_text(f'// 由 tools/build-b30.py 產生,勿手改。定數:{source}(AP 基準,非官方)\n'
                    f'window.B30_CONSTS={body};\n')
     print(f'寫入 {OUT.name}:{OUT.stat().st_size // 1024} KB')
 
 
 if __name__ == '__main__':
+    if len(sys.argv) >= 3 and sys.argv[1] == '--pin':
+        write_pin(sys.argv[2])
     main()
