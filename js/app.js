@@ -235,6 +235,14 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/15', t: '定數表更新至 PENTATONIC V32', s: '定數表更新到 pentatonic 難易度表 V32：新增 10 張譜面、修正 26 筆定數（含「+」「++」細分），B30 実効值與理論值即時重算。作者釋出新版時線上試算表往往還停在舊版，站上現在會把新版「釘住」，線上版追上之前不會被每日自動更新蓋回舊版。新增的 10 張目前都是日服限定，切到「台＋日服」才會列出。' },
+    { d: '2026/09/13', t: '歌曲播放器全面升級：播放清單與完整控制', s: '歌曲頁新增完整播放器：進度條可拖曳、上一首／下一首、隨機播放、循環（全部／單曲／關閉），完整播放與 60 秒試聽可切換。清單任一首都可「加入播放清單」，也可以從某一首起接續播放整份篩選結果，播放中隨時展開清單、直接跳到任一首。播放狀態收合成底部小列，切換頁面不會中斷播放。' },
+    { d: '2026/09/13', t: '台服獨佔曲終於播得出來', s: 'ハオ、前ノハナシ 等 7 首台服獨佔曲的音檔與封面只放在台服素材桶，先前會播不出聲、封面破圖；現在會自動改抓台服來源。圖片載入失敗的處理全站統一，不再出現破圖框或空白格。' },
+    { d: '2026/09/13', t: '排行榜：WL 個榜與主榜同一張表，重新載入更順手', s: 'WL 個榜改用主榜同一張表呈現：章節 P、近 1 小時周回、頭像與詳情面板（場均、時速）全部對齊主榜。重新載入按鈕加上轉圈動畫並防止連點，往下捲超過一個畫面後會懸浮在左下角，不必捲回頂端。每 60 秒的自動更新改成只更新綠點與時間文字，不再整頁閃動。' },
+    { d: '2026/09/08', t: '新視覺模式「合鳴」', s: '新增可切換的視覺模式「合鳴」：六團代表色化為環境光暈，首頁旗艦區塊、卡片與導覽列都有新的動態表現，動畫流暢且不影響操作。在帳號頁切換，設定會同步到所有內嵌小窗；預設維持原本樣式，不想換的人完全不受影響。' },
+    { d: '2026/09/08', t: '首頁「我的排名」可切換 WL 個榜', s: '首頁「我的排名」新增主榜／WL 個榜切換，個榜顯示章節名次與章節 P，切換狀態會記住。已登入的帳號頁新增「菜根機器人管理頁」入口，車隊管理員一鍵前往。' },
+    { d: '2026/09/08', t: '修正：WL 後排加成截圖辨識失敗', s: '修正 WL 後排加成「截圖辨識」在存檔前出錯、整個流程失敗且看起來像額度用完的問題。同日短暫出現的首頁無法載入已於當時修復。' },
+    { d: '2026/09/05', t: 'AI 助手額度改為「操作次數」，用量看得到', s: 'AI 助手改以「操作次數」計額：每人每天 20 次，一次提問、一批截圖辨識或一次請助手回答提問所各算 1 次，同一次操作內的多輪來回不重複計，台灣時間 00:00 重置。帳號頁新增用量面板：今日／本月／累計次數與估算費用一目了然；管理員不受額度限制。登入方式新增 Discord。' },
     { d: '2026/09/06', t: '指令面板也能用中文找歌', s: '⌘K 的曲目搜尋跟共用設定犯同一個毛病：只比對日文原名，曲庫裡兩百多首有中文譯名的用中文打就找不到。改用同一支正規化，中文、日文、半形片假名都找得到，結果也會把兩種名字一起顯示。' },
     { d: '2026/09/06', t: '共用設定的選曲修好：475 首原本選不到', s: '計算中心「共用設定」的選曲下拉寫死只顯示前 240 首。曲庫 715 首的現在，那代表有 475 首在下拉裡根本不存在，捲到底也選不到，而且畫面上沒有任何提示——曲庫愈更新愈嚴重。上限拿掉，現在全部都選得到。搜尋也一併修：原本只比對日文原名，曲庫有 245 首有中文譯名卻搜不到；現在中文、日文、半形片假名都找得到，標籤會顯示符合幾首。' },
     { d: '2026/09/06', t: '修好一個會讓新功能看不見的過期戳記', s: 'app.js 載入 core.js 時用的版本戳是舊的，而那是一年期快取 —— 載過舊檔的人會拿到改版前的 core.js，B30 的新功能對他們就是不存在，畫面上又完全看不出異常。戳記工具現在會在收尾時掃過所有引用，只要有一個對不上就讓自己失敗，這種問題不該靠人眼發現。' },
@@ -1612,7 +1620,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=e6e8bb144d';
+      s.src = 'data/billing.js?v=8bb3312670';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -3138,7 +3146,7 @@ class Component extends DCLogic {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=d2d247ab47';
+              s.src = 'data/b30-consts.js?v=7f878df18f';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -4109,7 +4117,7 @@ class Component extends DCLogic {
             '外部連結索引,六類:官方資源、資訊站、討論社群、Wiki 百科、社群資料表(good果汁的榜線／控分／交換所表)、本站工具。'],
           ['credits', '更多', '', [], [], '共同作者、合作夥伴與感謝名單。'],
           ['whatsnew', '更多', '', ['search_anything'], [],
-            '本站功能一覽與快速前往(CHANGELOG 22 則),下方是系統更新記錄(SYSLOG 76 則)。'],
+            '本站功能一覽與快速前往(CHANGELOG 22 則),下方是系統更新記錄(SYSLOG 101 則)。'],
           ['account', '帳號', '登入後才有雲端同步', ['set_my_uid', 'list_my_watches'], [],
             '綁定遊戲 ID、雲端同步設定、管理偵測訂閱與通知,以及備份匯出／匯入。'],
           ['notices', '帳號', '需登入', ['list_my_watches', 'create_watch'], [],
@@ -4569,7 +4577,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=e6e8bb144d';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=8bb3312670';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -6900,7 +6908,7 @@ class Component extends DCLogic {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=d2d247ab47';
+              s.src = 'data/b30-consts.js?v=7f878df18f';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -9081,7 +9089,7 @@ class Component extends DCLogic {
            它能搜曲庫、活動、卡片,卻不知道「這個網站有哪些功能」,
            所以使用者問「效益曲排行」時,它去找一首叫效益曲的歌,當然找不到。
            三份資料合起來就是站台對自己的完整描述:
-           PAGES(26 頁一句話)、CHANGELOG(22 則功能介紹)、SYSLOG(78 則詳細更新記錄)。 */
+           PAGES(26 頁一句話)、CHANGELOG(22 則功能介紹)、SYSLOG(101 則詳細更新記錄)。 */
         /* 別名查表。玩家講的幾乎都是圈內叫法,而站上存的是正式名稱 ——
            這一步先做,命中就直接告訴模型「這個詞對應哪支工具」,
            它就不必從一堆搜尋結果裡自己猜。 */
