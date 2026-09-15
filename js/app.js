@@ -235,7 +235,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲詳情新增 BPM（變速曲顯示範圍與主要 BPM），資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
+    { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
     { d: '2026/09/15', t: '榜線預測改用回測驗證的模型', s: '榜線終線預測不再只是線性外推：改用「速率剖面＋隨進度集成」模型，把台灣時刻、距結算時數、開跑時數的增速差異算進去，再依活動進度把 24 小時／6 小時實測、歷史同型態先驗與上一段位的走勢集成起來。以 175～178 期留一法回測，主榜平均誤差從 13.8% 降到 5.6%（T1000 3–8%、T5000 1–6%），WL 章節榜從 13.3% 降到 5.9%，前百逐名次線從 19% 降到 12%，前百玩家終分從 21.6% 降到 14.9%。榜線分析新增第 1／2／3／10／20／30／40／50 名的預測線，每條預測都附 P10～P90 區間，依據欄標「模型」。前百玩家的預測終分與預測名次、WL 各章榜線、AI 助手的榜線工具全部改用同一套模型；參數每天由伺服器用新結束的活動重擬。T100 與前三名是少數人的個人行為，誤差仍有一成多，越前面越不準，目標線請看區間上緣。' },
     { d: '2026/09/15', t: '定數表更新至 PENTATONIC V32', s: '定數表更新到 pentatonic 難易度表 V32：新增 10 張譜面、修正 26 筆定數（含「+」「++」細分），B30 実効值與理論值即時重算。作者釋出新版時線上試算表往往還停在舊版，站上現在會把新版「釘住」，線上版追上之前不會被每日自動更新蓋回舊版。新增的 10 張目前都是日服限定，切到「台＋日服」才會列出。' },
     { d: '2026/09/13', t: '歌曲播放器全面升級：播放清單與完整控制', s: '歌曲頁新增完整播放器：進度條可拖曳、上一首／下一首、隨機播放、循環（全部／單曲／關閉），完整播放與 60 秒試聽可切換。清單任一首都可「加入播放清單」，也可以從某一首起接續播放整份篩選結果，播放中隨時展開清單、直接跳到任一首。播放狀態收合成底部小列，切換頁面不會中斷播放。' },
@@ -1728,7 +1728,7 @@ class Component extends DCLogic {
   /* 歌曲 BPM（社長 bot／t-wy 的公開資料庫），只有打開歌曲詳情才載，~10 KB。 */
   loadSongBpm() {
     if (this._bpmP) return;
-    this._bpmP = import('./data/song-bpm.js?v=c2a271b1d5').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
+    this._bpmP = import('./data/song-bpm.js?v=bb17a0616e').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
   }
   async loadBorderDB() {
     if (this.state.bdbReady || this._bdbLoading) return;
@@ -11177,7 +11177,7 @@ class Component extends DCLogic {
   go(p) {
     if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
     if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
-    if (p === 'songs') this.loadSongs();
+    if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); }
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'rate' || p === 'art') this.loadCards();
@@ -11456,7 +11456,14 @@ class Component extends DCLogic {
       return (x.title + ' ' + x.composer).toLowerCase().includes(q);
     });
     const hi = x => (x.lv.append || 0) || (x.lv.master || 0) || (x.lv.expert || 0) || 0;
+    // BPM／歌長來自社長 bot 的公開資料庫（songBpm[id] = [主BPM, 最低, 最高, 歌長秒]），沒資料的排最後
+    const B = s.songBpm || {};
+    const bpmOf = x => (B[x.id] && B[x.id][0]) || 0, lenOf = x => (B[x.id] && B[x.id][3]) || 0;
     if (s.ssort === 'new') list = list.slice().sort((a, b) => (b.published - a.published) || (b.id - a.id));
+    else if (s.ssort === 'bpm') list = list.slice().sort((a, b) => (bpmOf(b) - bpmOf(a)) || (a.id - b.id));
+    else if (s.ssort === 'bpmAsc') list = list.slice().sort((a, b) => ((bpmOf(a) || 9999) - (bpmOf(b) || 9999)) || (a.id - b.id));
+    else if (s.ssort === 'len') list = list.slice().sort((a, b) => (lenOf(b) - lenOf(a)) || (a.id - b.id));
+    else if (s.ssort === 'lenAsc') list = list.slice().sort((a, b) => ((lenOf(a) || 9999) - (lenOf(b) || 9999)) || (a.id - b.id));
     else if (s.ssort === 'master') list = list.slice().sort((a, b) => (hi(b) - hi(a)) || (a.id - b.id));
     else if (s.ssort === 'masterAsc') list = list.slice().sort((a, b) => (hi(a) - hi(b)) || (a.id - b.id));
     else list = list.slice().sort((a, b) => a.id - b.id);
@@ -11975,8 +11982,12 @@ class Component extends DCLogic {
     const songRows = sAll.slice((sp - 1) * sPer, sp * sPer).map(x => {
       const ab = this.songAbn(x);
       const on = !!(s.playAbn === ab && ab);
+      const bi = (s.songBpm || {})[x.id];
+      const bpmTxt = bi && bi[0] ? (bi[1] === bi[2] ? 'BPM ' + bi[0] : 'BPM ' + bi[1] + '–' + bi[2]) : '';
+      const lenTxt = bi && bi[3] ? Math.floor(bi[3] / 60) + ':' + String(bi[3] % 60).padStart(2, '0') : '';
       return {
-        id: x.id, title: x.title, composer: x.composer || '—', abn: ab, playIcon: on ? '⏸' : '▶', playPath: on ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
+        id: x.id, title: x.title, composer: x.composer || '—', abn: ab,
+        meta: [bpmTxt, lenTxt].filter(Boolean).join(' · '), playIcon: on ? '⏸' : '▶', playPath: on ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
         jacket: x.jkt ? (this.ASSET + '/thumbnail/music_jacket/' + x.jkt + '.webp') : '', playing: on,   // 縮圖版(約10–27KB),清單一次30張才不會爆流量
         cardBd: on ? 'var(--accent)' : 'var(--border)', gBtnBg: on ? 'var(--cta)' : 'rgba(15,20,40,.58)',
         units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
@@ -13529,7 +13540,7 @@ class Component extends DCLogic {
           id: x.id, title: x.title, composer: x.composer || '—', abn: this.songAbn(x),
           jacket: x.jkt ? (ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '',
           units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
-          bpm: (() => { const b = s.songBpm && s.songBpm[x.id]; if (!b) return ''; return b[1] === b[2] ? 'BPM ' + b[0] : 'BPM ' + b[1] + '–' + b[2] + '（主要 ' + b[0] + '）'; })(),
+          bpm: (() => { const b = s.songBpm && s.songBpm[x.id]; if (!b) return ''; const t = b[0] ? (b[1] === b[2] ? 'BPM ' + b[0] : 'BPM ' + b[1] + '–' + b[2] + '（主要 ' + b[0] + '）') : ''; const l = b[3] ? '歌長 ' + Math.floor(b[3] / 60) + ':' + String(b[3] % 60).padStart(2, '0') : ''; return [t, l].filter(Boolean).join(' · '); })(),
           diffs: DF.filter(([k]) => x.lv[k]).map(([k, n, c]) => ({ n, c, lv: x.lv[k], notes: (x.nt && x.nt[k]) ? this.n(x.nt[k]) + ' notes' : '' }))
         };
       })(),

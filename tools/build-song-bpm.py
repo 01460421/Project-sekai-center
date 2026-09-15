@@ -3,7 +3,7 @@
 
 來源:社長 bot(t-wy)的公開資料庫 game-public-data/pjsk/song_bpm.json —
       遊戲內譜面製作功能用的 BPM 段落(每首 [{bpm, time, beats}, …]),691 首,曲目 id 同日服 master。
-輸出:export const SONG_BPM = { id: [主BPM, 最低, 最高] }
+輸出:export const SONG_BPM = { id: [主BPM, 最低, 最高, 歌長秒] }(沒有 BPM 的台服獨佔曲主BPM 為 0,只有歌長)
       主BPM = 各段落依持續秒數加總後最長的那個;最低／最高不含 4 拍以下的過門段(time 差 < 1 秒的段落)。
       單一 BPM 的歌三個值相同。體積 ~10 KB,歌曲詳情打開時才載入。
 內容沒變就不寫檔。重跑:python3 tools/build-song-bpm.py && python3 tools/stamp-assets.py
@@ -15,6 +15,7 @@ import sys
 import urllib.request
 
 SRC = 'https://raw.githubusercontent.com/t-wy/game-public-data/main/pjsk/song_bpm.json'
+DUR = 'https://raw.githubusercontent.com/t-wy/game-public-data/main/pjsk/song_duration_tc.json'   # 台服預設音源的歌長(秒)
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'song-bpm.js'
 
@@ -45,18 +46,26 @@ def summarize(segs, total_hint=None):
 def main():
     d = get(SRC)
     rows = d['data'] if isinstance(d, dict) else d
+    try:
+        dur = get(DUR)['data']
+    except Exception as e:
+        print(f'歌長抓取失敗({e}),本輪不帶歌長')
+        dur = {}
     out = {}
     for row in rows:
         mid = row.get('id')
         s = summarize(row.get('bpm') or [])
         if mid is not None and s:
-            out[mid] = s
+            out[mid] = s + [int(round(float(dur.get(str(mid), 0))))]
+    for k, v in dur.items():             # 只有歌長沒有 BPM 的(台服獨佔曲):主BPM 0
+        if int(k) not in out and v:
+            out[int(k)] = [0, 0, 0, int(round(float(v)))]
     if len(out) < 300:
         sys.exit(f'BPM 資料只有 {len(out)} 首,來源可能有問題,中止')
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
     text = ('// 歌曲 BPM(由 tools/build-song-bpm.py 產生,勿手改)。\n'
             '// 來源:社長 bot(t-wy)game-public-data/pjsk/song_bpm.json(遊戲內譜面製作功能的 BPM 段落)\n'
-            '// SONG_BPM[id] = [主BPM, 最低, 最高];曲目 id 同日服 master。\n'
+            '// SONG_BPM[id] = [主BPM, 最低, 最高, 歌長秒(台服預設音源)];曲目 id 同日服 master;沒有 BPM 的台服獨佔曲主BPM 為 0。\n'
             f'export const SONG_BPM = {body};\n')
     if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
         print(f'內容無變化,不更新 {OUT.name}({len(out)} 首)')
