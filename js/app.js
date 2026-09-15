@@ -235,7 +235,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
-    { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
+    { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單納入日服曲：台服 613 首之外再列出台服尚未實裝的日服曲（標「日服」，可切換台＋日服／僅台服／僅日服限定），全庫 726 首。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
     { d: '2026/09/15', t: '榜線預測改用回測驗證的模型', s: '榜線終線預測不再只是線性外推：改用「速率剖面＋隨進度集成」模型，把台灣時刻、距結算時數、開跑時數的增速差異算進去，再依活動進度把 24 小時／6 小時實測、歷史同型態先驗與上一段位的走勢集成起來。以 175～178 期留一法回測，主榜平均誤差從 13.8% 降到 5.6%（T1000 3–8%、T5000 1–6%），WL 章節榜從 13.3% 降到 5.9%，前百逐名次線從 19% 降到 12%，前百玩家終分從 21.6% 降到 14.9%。榜線分析新增第 1／2／3／10／20／30／40／50 名的預測線，每條預測都附 P10～P90 區間，依據欄標「模型」。前百玩家的預測終分與預測名次、WL 各章榜線、AI 助手的榜線工具全部改用同一套模型；參數每天由伺服器用新結束的活動重擬。T100 與前三名是少數人的個人行為，誤差仍有一成多，越前面越不準，目標線請看區間上緣。' },
     { d: '2026/09/15', t: '定數表更新至 PENTATONIC V32', s: '定數表更新到 pentatonic 難易度表 V32：新增 10 張譜面、修正 26 筆定數（含「+」「++」細分），B30 実効值與理論值即時重算。作者釋出新版時線上試算表往往還停在舊版，站上現在會把新版「釘住」，線上版追上之前不會被每日自動更新蓋回舊版。新增的 10 張目前都是日服限定，切到「台＋日服」才會列出。' },
     { d: '2026/09/13', t: '歌曲播放器全面升級：播放清單與完整控制', s: '歌曲頁新增完整播放器：進度條可拖曳、上一首／下一首、隨機播放、循環（全部／單曲／關閉），完整播放與 60 秒試聽可切換。清單任一首都可「加入播放清單」，也可以從某一首起接續播放整份篩選結果，播放中隨時展開清單、直接跳到任一首。播放狀態收合成底部小列，切換頁面不會中斷播放。' },
@@ -380,7 +380,7 @@ class Component extends DCLogic {
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
-    songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
+    songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sv: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
     vmode: '',       // 視覺模式：''(經典) / 'ensemble'(合鳴，六團色環境光暈＋首頁旗艦動效)
@@ -4168,7 +4168,7 @@ class Component extends DCLogic {
           ['gacha', '資料', '', ['get_gacha_schedule'], [],
             '台服預測卡池 235 筆(資料到 2027/6),可依類型／PU 角色／是否進行中篩選。'],
           ['songs', '資料', '', ['get_songs', 'search_anything'], [],
-            '完整樂曲資料庫,列表／方格兩種檢視,含定數、note 數、曲長、活動倍率與 anvo 試聽播放器。'],
+            '完整樂曲資料庫(台服 613 首＋日服未實裝曲,標 jp),列表／方格兩種檢視,含 BPM、歌長、note 數與播放器。'],
           ['cardlib', '資料', '', ['get_card_skills'], [],
             '逐張卡的技能敘述與各等級數值,直接讀官方 master 的 skills.json。'],
           ['dolls', '資料', '', [], [], '豆森娃(MySekai 玩偶)月列表與輪替。'],
@@ -10599,33 +10599,43 @@ class Component extends DCLogic {
     if (this.state.songLoad || this.state.songs.length) return;
     this.setState({ songLoad: true });
     try {
-      const [ms, md, mv] = await Promise.all([
-        fetch(this.TDB + '/musics.json').then(r => r.json()).catch(() => []),
-        fetch(this.TDB + '/musicDifficulties.json').then(r => r.json()).catch(() => []),
-        fetch(this.TDB + '/musicVocals.json').then(r => r.json()).catch(() => [])
+      // 台服 master 為主；日服 master 補「台服尚未實裝」的曲目（標 jp:1），清單才是完整的 700+ 首。
+      // 素材（封面／音檔）走日服桶，台服獨佔曲由播放器的 _altSrc 自動換台服桶。
+      const JDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
+      const j = u => fetch(u).then(r => r.json()).catch(() => []);
+      const [ms, md, mv, jms, jmd, jmv] = await Promise.all([
+        j(this.TDB + '/musics.json'), j(this.TDB + '/musicDifficulties.json'), j(this.TDB + '/musicVocals.json'),
+        j(JDB + '/musics.json'), j(JDB + '/musicDifficulties.json'), j(JDB + '/musicVocals.json')
       ]);
-      const lv = {}, nt = {};
-      md.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; (nt[d.musicId] = nt[d.musicId] || {})[d.musicDifficulty] = d.totalNoteCount; });
       const cu = c => c <= 4 ? 'ln' : c <= 8 ? 'mmj' : c <= 12 ? 'vbs' : c <= 16 ? 'wxs' : c <= 20 ? 'n25' : 'vs';
-      const um = {}, vV = {}, vS = {}, vAny = {};   // 音源版本：虛擬歌手 ver／世界 ver／任一
-      mv.forEach(v => {
-        (um[v.musicId] = um[v.musicId] || new Set());
-        (v.characters || []).forEach(c => { if (c.characterId) um[v.musicId].add(cu(c.characterId)); });
-        const abn = v.assetbundleName; if (!abn) return;
-        if (!vAny[v.musicId]) vAny[v.musicId] = abn;
-        const t = v.musicVocalType;
-        if (t === 'virtual_singer' && !vV[v.musicId]) vV[v.musicId] = abn;
-        else if (t === 'original_song' && !vV[v.musicId]) vV[v.musicId] = abn;   // VS 原曲＝虛擬歌手 ver
-        if (t === 'sekai' && !vS[v.musicId]) vS[v.musicId] = abn;
-      });
-      const songs = ms.map(s => {
-        const abnV = vV[s.id] || '', abnS = vS[s.id] || '', abn0 = abnV || abnS || vAny[s.id] || '';
-        return {
-          id: s.id, title: s.title || '', composer: s.composer || s.arranger || '',
-          published: s.publishedAt || 0, units: Array.from(um[s.id] || []),
-          lv: lv[s.id] || {}, nt: nt[s.id] || {}, abn: abn0, abnV, abnS, jkt: s.assetbundleName || ''
-        };
-      });
+      const build = (mlist, dlist, vlist, jp) => {
+        const lv = {}, nt = {};
+        dlist.forEach(d => { (lv[d.musicId] = lv[d.musicId] || {})[d.musicDifficulty] = d.playLevel; (nt[d.musicId] = nt[d.musicId] || {})[d.musicDifficulty] = d.totalNoteCount; });
+        const um = {}, vV = {}, vS = {}, vAny = {};   // 音源版本：虛擬歌手 ver／世界 ver／任一
+        vlist.forEach(v => {
+          (um[v.musicId] = um[v.musicId] || new Set());
+          (v.characters || []).forEach(c => { if (c.characterId) um[v.musicId].add(cu(c.characterId)); });
+          const abn = v.assetbundleName; if (!abn) return;
+          if (!vAny[v.musicId]) vAny[v.musicId] = abn;
+          const t = v.musicVocalType;
+          if (t === 'virtual_singer' && !vV[v.musicId]) vV[v.musicId] = abn;
+          else if (t === 'original_song' && !vV[v.musicId]) vV[v.musicId] = abn;   // VS 原曲＝虛擬歌手 ver
+          if (t === 'sekai' && !vS[v.musicId]) vS[v.musicId] = abn;
+        });
+        return mlist.map(x => {
+          const abnV = vV[x.id] || '', abnS = vS[x.id] || '', abn0 = abnV || abnS || vAny[x.id] || '';
+          const rec = {
+            id: x.id, title: x.title || '', composer: x.composer || x.arranger || '',
+            published: x.publishedAt || 0, units: Array.from(um[x.id] || []),
+            lv: lv[x.id] || {}, nt: nt[x.id] || {}, abn: abn0, abnV, abnS, jkt: x.assetbundleName || ''
+          };
+          if (jp) rec.jp = 1;   // 日服限定：台服尚未實裝
+          return rec;
+        });
+      };
+      const tw = build(ms, md, mv, 0);
+      const have = new Set(tw.map(x => x.id));
+      const songs = tw.concat(build(jms.filter(x => !have.has(x.id)), jmd, jmv, 1));
       this.setState({ songs, songLoad: false, songErr: songs.length ? '' : '歌曲資料來源無回應' });
     } catch (e) {
       this.setState({ songLoad: false, songErr: '歌曲資料載入失敗' });
@@ -11452,6 +11462,8 @@ class Component extends DCLogic {
     const s = this.state, q = s.sq.trim().toLowerCase();
     let list = (s.songs || []).filter(x => {
       if (s.su !== 'all' && !x.units.includes(s.su)) return false;
+      if (s.sv === 'tw' && x.jp) return false;
+      if (s.sv === 'jp' && !x.jp) return false;
       if (!q) return true;
       return (x.title + ' ' + x.composer).toLowerCase().includes(q);
     });
@@ -11987,7 +11999,8 @@ class Component extends DCLogic {
       const lenTxt = bi && bi[3] ? Math.floor(bi[3] / 60) + ':' + String(bi[3] % 60).padStart(2, '0') : '';
       return {
         id: x.id, title: x.title, composer: x.composer || '—', abn: ab,
-        meta: [bpmTxt, lenTxt].filter(Boolean).join(' · '), playIcon: on ? '⏸' : '▶', playPath: on ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
+        meta: [bpmTxt, lenTxt].filter(Boolean).join(' · '),
+        jpTag: !!x.jp, playIcon: on ? '⏸' : '▶', playPath: on ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
         jacket: x.jkt ? (this.ASSET + '/thumbnail/music_jacket/' + x.jkt + '.webp') : '', playing: on,   // 縮圖版(約10–27KB),清單一次30張才不會爆流量
         cardBd: on ? 'var(--accent)' : 'var(--border)', gBtnBg: on ? 'var(--cta)' : 'rgba(15,20,40,.58)',
         units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
@@ -12168,6 +12181,8 @@ class Component extends DCLogic {
         const st = chip(on, c);
         return Object.assign({}, u, st, { dot: on ? 'rgba(255,255,255,.85)' : u.dot, fg: on ? (u.v !== 'all' && this.UNITS[u.v] ? this.UNITS[u.v].t : '#fff') : 'var(--text)' });
       });
+    const songSvChips = [{ v: 'all', n: '台＋日服' }, { v: 'tw', n: '僅台服' }, { v: 'jp', n: '僅日服限定' }]
+      .map(u => { const on = s.sv === u.v; return Object.assign({}, u, chip(on, null), { fg: on ? '#fff' : 'var(--text)' }); });
 
     const cmdResults = this.buildCmd();
     this._cmd = cmdResults;
@@ -13538,6 +13553,7 @@ class Component extends DCLogic {
         const DF = [['easy', 'EASY', '#43c93f'], ['normal', 'NORMAL', '#4599e8'], ['hard', 'HARD', '#f0a020'], ['expert', 'EXPERT', '#f45c9a'], ['master', 'MASTER', '#a24df0'], ['append', 'APPEND', '#ee4499']];
         return {
           id: x.id, title: x.title, composer: x.composer || '—', abn: this.songAbn(x),
+          jpTag: !!x.jp,
           jacket: x.jkt ? (ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '',
           units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
           bpm: (() => { const b = s.songBpm && s.songBpm[x.id]; if (!b) return ''; const t = b[0] ? (b[1] === b[2] ? 'BPM ' + b[0] : 'BPM ' + b[1] + '–' + b[2] + '（主要 ' + b[0] + '）') : ''; const l = b[3] ? '歌長 ' + Math.floor(b[3] / 60) + ':' + String(b[3] % 60).padStart(2, '0') : ''; return [t, l].filter(Boolean).join(' · '); })(),
@@ -13690,8 +13706,8 @@ class Component extends DCLogic {
       gachaPageLabel: gp + ' / ' + gPages,
 
       /* 歌曲 */
-      sq: s.sq, ssort: s.ssort, songUnitChips, songRows, songGrid: s.songView === 'grid', songList: s.songView !== 'grid', gridBtnBg: s.songView === 'grid' ? 'var(--cta)' : 'var(--card)', gridBtnFg: s.songView === 'grid' ? '#fff' : 'var(--text-2)', listBtnBg: s.songView !== 'grid' ? 'var(--cta)' : 'var(--card)', listBtnFg: s.songView !== 'grid' ? '#fff' : 'var(--text-2)',
-      songCount: s.songs.length ? '共 ' + sAll.length + ' 首（全庫 ' + s.songs.length + '）' : '',
+      sq: s.sq, ssort: s.ssort, songUnitChips, songSvChips, songRows, songGrid: s.songView === 'grid', songList: s.songView !== 'grid', gridBtnBg: s.songView === 'grid' ? 'var(--cta)' : 'var(--card)', gridBtnFg: s.songView === 'grid' ? '#fff' : 'var(--text-2)', listBtnBg: s.songView !== 'grid' ? 'var(--cta)' : 'var(--card)', listBtnFg: s.songView !== 'grid' ? '#fff' : 'var(--text-2)',
+      songCount: s.songs.length ? '共 ' + sAll.length + ' 首（台服 ' + s.songs.filter(x => !x.jp).length + '＋日服限定 ' + s.songs.filter(x => x.jp).length + '）' : '',
       songPageLabel: sp + ' / ' + sPages,
       songEmpty: !!s.songs.length && sAll.length === 0,
       songBusy: s.songLoad || (!s.songs.length && !s.songErr) || !!s.songErr,
@@ -14269,7 +14285,7 @@ class Component extends DCLogic {
         const d = e.currentTarget.dataset, v = d.num ? +d.v : d.v;
         const patch = { [d.k]: v };
         if (d.k === 'gu' || d.k === 'gLive') patch.gp = 1;   // 換篩選要回第一頁,否則會停在空白頁
-        if (d.k === 'su') patch.sp = 1;
+        if (d.k === 'su' || d.k === 'sv') patch.sp = 1;
         if (d.k === 'tcat') patch.tutMore = false;
         this.setState(patch);
       },

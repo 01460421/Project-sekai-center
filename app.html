@@ -633,6 +633,11 @@ select option, select optgroup{
         </button>
       </sc-for>
     </div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      <sc-for list="{{ songSvChips }}" as="u" hint-placeholder-count="3">
+        <button type="button" onClick="{{ onSet }}" data-k="sv" data-v="{{ u.v }}" style="padding:6px 13px;border:1px solid {{ u.bd }};border-radius:999px;background:{{ u.bg }};color:{{ u.fg }};font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">{{ u.n }}</button>
+      </sc-for>
+    </div>
     <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ songCount }}</div>
 
     <sc-if value="{{ songList }}">
@@ -647,6 +652,7 @@ select option, select optgroup{
           <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:block"><path d="{{ s.playPath }}"></path></svg></button><button type="button" onClick="{{ onQueueAdd }}" data-id="{{ s.id }}" title="加入播放清單" style="width:24px;height:24px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;padding:0">＋</button>#{{ s.id }}</span>
           <span onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情（難度/封面）" style="min-width:0;cursor:pointer"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span><sc-if value="{{ s.meta }}"><span style="display:block;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:1px">{{ s.meta }}</span></sc-if></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
+            <sc-if value="{{ s.jpTag }}"><span title="日服限定，台服尚未實裝" style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#3f8cf3;color:#fff">日服</span></sc-if>
             <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
               <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span>
             </sc-for>
@@ -675,6 +681,7 @@ select option, select optgroup{
         <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
           <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
             <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="none" style="width:100%;height:100%;object-fit:cover;display:block">
+            <sc-if value="{{ s.jpTag }}"><span title="日服限定，台服尚未實裝" style="position:absolute;left:6px;top:6px;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px;background:#3f8cf3;color:#fff">日服</span></sc-if>
             <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" style="display:block"><path d="{{ s.playPath }}"></path></svg></button>
           </div>
           <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" style="padding:8px 10px 10px;cursor:pointer">
@@ -3732,6 +3739,7 @@ select option, select optgroup{
     <div style="min-width:0;flex:1">
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.35">{{ songDetailData.title }}</div>
       <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ songDetailData.composer }}</div>
+      <sc-if value="{{ songDetailData.jpTag }}"><div style="margin-top:4px"><span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#3f8cf3;color:#fff">日服限定・台服尚未實裝</span></div></sc-if>
       <sc-if value="{{ songDetailData.bpm }}"><div style="font-size:11.5px;color:var(--text-2);margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ songDetailData.bpm }}</div></sc-if>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><sc-for list="{{ songDetailData.units }}" as="u" hint-placeholder-count="1"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span></sc-for></div>
     </div>
@@ -3803,6 +3811,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=109a6c9f5e"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=c4ca14dc1b"></script>
 </body>
 </html>
