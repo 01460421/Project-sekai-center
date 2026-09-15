@@ -43,6 +43,11 @@ import sys
 import urllib.request
 
 METAS = 'https://storage.sekai.best/sekai-best-assets/music_metas.json'
+# 社長 bot（t-wy）的公開資料庫:台服譜面自行模擬的分數係數與歌長。music_metas 只追日服,
+# 台服獨佔曲(ハオ、前ノハナシ 等)在那裡永遠不會有;這裡只拿來補 metas 沒有的曲目,
+# 不覆蓋既有曲目 —— 兩邊的模擬器系統性不同(重疊 3116 張譜面 base_score 中位差 6%),
+# 站上所有計算都以 metas 為準,混用會讓同一份表裡的數字不可比。
+TWY = 'https://raw.githubusercontent.com/t-wy/game-public-data/main/pjsk'
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
 I18N = 'https://raw.githubusercontent.com/Sekai-World/sekai-i18n/main/zh-TW/music_titles.json'
@@ -133,13 +138,52 @@ def build():
                 continue
             lvnote[(mid, d)] = (row.get('playLevel') or 0, row.get('totalNoteCount') or 0)
 
-    by = {}
+    by, twy_by = {}, {}
     for m in metas:
         mid = m.get('music_id')
         d = DKEY.get(m.get('difficulty'))
         if mid is None or not d:
             continue
         by.setdefault(mid, {})[d] = m
+
+    # ---- 社長資料補齊 metas 缺的台服曲(只補、不覆蓋) ----
+    twy_filled = []
+    try:
+        sc = get(f'{TWY}/song_score_data_tc.json')['data']
+        du = get(f'{TWY}/song_duration_tc.json')['data']
+        # 活動倍率社長沒有台服獨佔曲的值,用「歌長相近曲目的中位倍率」推估,並在曲目上標 re=1
+        rate_by_len = [(float(m['music_time']), int(m['event_rate'])) for m in metas
+                       if m.get('music_time') and m.get('event_rate')]
+        def est_rate(t):
+            near = sorted(r for l, r in rate_by_len if abs(l - t) <= 5)
+            return near[len(near) // 2] if near else 100
+        for row in sc.values():
+            mid, d = row.get('music_id'), DKEY.get(row.get('music_difficulty'))
+            if mid is None or not d or mid not in tc_ids:
+                continue
+            if mid in by:                  # metas 有的一律不動
+                continue
+            t = du.get(str(mid))
+            if not t:
+                continue
+            sd = row['score_data']
+            inc = lambda arr: [x[1] for x in arr]          # 第二個數是 inclusive coverage,與 metas 同慣例
+            solo, auto, fev = inc(sd['skill_score_solo']), inc(sd['skill_score_auto']), inc(sd['fever_skill_score'])
+            twy_by.setdefault(mid, {})[d] = {
+                'music_id': mid, 'difficulty': row['music_difficulty'],
+                'music_time': float(t), 'event_rate': est_rate(float(t)),
+                'base_score': sd['base_score'], 'base_score_auto': sd['base_score_auto'],
+                'skill_score_solo': solo, 'skill_score_auto': auto,
+                # 協力窗＝單人窗＋0.5×FEVER 窗:在兩邊完全一致的 61 張譜面上與 metas 的 multi 精確吻合
+                'skill_score_multi': [a + 0.5 * f for a, f in zip(solo, fev)],
+                'fever_score': sd['fever_score'][1],
+            }
+        for mid, diffs in twy_by.items():
+            by[mid] = diffs
+            twy_filled.append(mid)
+        print(f'  社長資料補齊 metas 沒有的台服曲 {len(twy_filled)} 首:{sorted(twy_filled)}', flush=True)
+    except Exception as e:
+        print(f'  社長資料抓取失敗（{e}），本輪只用 metas')
 
     songs, wins = [], []
     for mid in sorted(by):
@@ -182,6 +226,9 @@ def build():
             rec['tc'] = zt                 # 中文譯名(社群翻譯,非官方)
         if mid not in tc_ids:
             rec['jp'] = 1                  # 日服限定,台服還沒實裝
+        if mid in twy_filled:
+            rec['src'] = 'twy'             # 係數來自社長 bot（t-wy）的台服模擬;metas 沒有這首
+            rec['re'] = 1                  # 活動倍率為歌長相近曲目的推估值
         songs.append(rec)
         wins.append({'id': mid, 'w': w_out})
 
@@ -276,7 +323,8 @@ def main():
     j = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
 
     dump(OUT,
-         '// 曲庫（EP 計算用）：由 tools/build-ep-songs.py 自 music_metas 與 master 資料重建\n'
+         '// 曲庫（EP 計算用）：由 tools/build-ep-songs.py 自 music_metas 與 master 資料重建；\n'
+         '// metas 沒有的台服獨佔曲由社長 bot（t-wy）game-public-data 補齊（src:"twy"，活動倍率推估 re:1）\n'
          '// d[難度] = [lv, notes, base, baseAuto, soloSkill, soloS6, multiSkill, multiS6, autoSkill, autoS6, fever]\n'
          '// soloSkill 等為「前 5 個技能窗的係數總和」，S6 為第 6 窗（encore／隊長）。\n'
          '// 想看每一個技能窗各自的倍率請用 data/ep-song-windows.js。\n',

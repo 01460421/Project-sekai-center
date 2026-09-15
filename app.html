@@ -2933,7 +2933,7 @@ select option, select optgroup{
               <span style="font-family:'M PLUS Rounded 1c';font-weight:700;color:var(--ink)">{{ b.score }}</span>
               <sc-if value="{{ anaWide }}"><span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ b.speed }}</span></sc-if>
               <sc-if value="{{ anaWide }}"><span style="text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:{{ b.srcBg }};color:{{ b.srcFg }};font-size:10.5px;font-weight:700">{{ b.src }}</span></span></sc-if>
-              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ b.proj }}<br><span title="{{ b.refTip }}" style="font-size:10px;font-weight:600;color:{{ b.refFg }};cursor:help">{{ b.ref }}</span></span>
+              <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ b.proj }}<br><span style="font-size:10px;font-weight:600;color:var(--text-3)">{{ b.rng }}</span> <span title="{{ b.refTip }}" style="font-size:10px;font-weight:600;color:{{ b.refFg }};cursor:help">{{ b.ref }}</span></span>
               <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:{{ b.gapFg }}">{{ b.gap }}</span>
               <sc-if value="{{ anaWide }}"><span style="text-align:right;font-size:11.5px;color:var(--text-3)">{{ b.need }}</span></sc-if>
             </div>
@@ -2943,7 +2943,7 @@ select option, select optgroup{
       <sc-if value="{{ anaBMore }}">
         <button type="button" onClick="{{ onAnaMoreB }}" style="width:100%;margin-top:9px;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">顯示全部段位（T1萬～T10萬）▾</button>
       </sc-if>
-      <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">預測終線＝目前分數＋剩餘時數×該段速度。標「實測」者速度來自本機累積的快照，標「線性」者只是把目前分數按已過時間等比外推，活動末段通常會被低估。</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">依據標「模型」者＝回測過的預測模型（速率剖面＋隨進度集成），預測下方的小字是 P10～P90 區間；標「實測」者＝目前分數＋剩餘時數×本機快照量到的速度；標「線性」者＝按已過進度等比外推。第 1～50 名是前百逐名次線，屬少數人的個人行為，誤差比段位線大。</div>
     </sc-if>
 
     <!-- 玩家分析 -->
@@ -3732,6 +3732,7 @@ select option, select optgroup{
     <div style="min-width:0;flex:1">
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.35">{{ songDetailData.title }}</div>
       <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ songDetailData.composer }}</div>
+      <sc-if value="{{ songDetailData.bpm }}"><div style="font-size:11.5px;color:var(--text-2);margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ songDetailData.bpm }}</div></sc-if>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><sc-for list="{{ songDetailData.units }}" as="u" hint-placeholder-count="1"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span></sc-for></div>
     </div>
     <button type="button" onClick="{{ onSongClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
@@ -3802,6 +3803,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=65da15bd01"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=1bbb415319"></script>
 </body>
 </html>

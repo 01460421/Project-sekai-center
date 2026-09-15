@@ -128,7 +128,7 @@ class Component extends DCLogic {
     ['MySekai 採集計算', 'mysekai_calc', 'calc（ctab=mysekai）', 'MySekai|mysekai|烤森|豆森|我的「世界」|家園|採集|挖素材|橘體（×5）|藍體（×1）|炎倍率|體力倍率（橘體5／藍體1）|烤森採集怎麼配最有效率'],
     ['排位賽（Rank Match）', 'rank_match', 'calc（ctab=rank）', '排位|排位賽|ランクマッチ|rank match|RANK MATCH|RM|判定分對戰|段位|Class|RP|段位點數|Rank Point|升段|降段|段位點數獎勵積分|新手／青銅／白銀／黃金／白金／鑽石／大師|ビギナー|ブロンズ|シルバー|ゴールド|プラチナ|ダイヤモンド|マスター|巔峰|亞神|天啓|創造神|La. 分級'],
     ['控分（控活動結算PT）', '', 'calc（ctab=ctrl）', '控分|控PT|控活動結算PT|控分速查|控分表|0火蝦控分|剛好命中|精準收尾|把分數控在特定數字|Score Art'],
-    ['榜線分析與預測終線', 'get_borders', 'analysis（anaTab=border）／rank', '榜線|border|段位線|分段榜線|榜線分析|終線|預測終線|最終線|卡線|安全圈|實測時速|線性外推|史（歷史對照）|這期會落在第幾名|T100 線|T1000 線|跟我的差距'],
+    ['榜線分析與預測終線', 'get_borders', 'analysis（anaTab=border）／rank', '榜線|border|段位線|分段榜線|榜線分析|終線|預測終線|最終線|卡線|安全圈|實測時速|線性外推|模型|區間|史（歷史對照）|這期會落在第幾名|T100 線|T1000 線|跟我的差距'],
     ['榜線資料庫（歷史榜線）', 'get_history_borders', 'borderdb', '榜線資料庫|歷史榜線|歷代榜線|歷期榜線|全榜線紀錄|台服全榜線紀錄|174期榜線|同型態歷史|跟以前比|歷史加權|半衰期加權|榜線趨勢|榜線趨勢比較'],
     ['玩家分析（節奏剖析）', 'analyze_player', 'analysis（anaTab=player）', '玩家分析|節奏剖析|分析我自己|動能|加速|穩定|降速|瞬時|1h均速|近1h周回|時速|場均|周回|時段得分|推估休息時數|預測終分|預測名次'],
     ['逐局紀錄', 'get_player_games', 'rank（排名詳情）', '逐場|每一場|上局|上一局實得|場間隔|連打還是休息|一場加了多少活動P|每個點是一場'],
@@ -235,6 +235,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲詳情新增 BPM（變速曲顯示範圍與主要 BPM），資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
+    { d: '2026/09/15', t: '榜線預測改用回測驗證的模型', s: '榜線終線預測不再只是線性外推：改用「速率剖面＋隨進度集成」模型，把台灣時刻、距結算時數、開跑時數的增速差異算進去，再依活動進度把 24 小時／6 小時實測、歷史同型態先驗與上一段位的走勢集成起來。以 175～178 期留一法回測，主榜平均誤差從 13.8% 降到 5.6%（T1000 3–8%、T5000 1–6%），WL 章節榜從 13.3% 降到 5.9%，前百逐名次線從 19% 降到 12%，前百玩家終分從 21.6% 降到 14.9%。榜線分析新增第 1／2／3／10／20／30／40／50 名的預測線，每條預測都附 P10～P90 區間，依據欄標「模型」。前百玩家的預測終分與預測名次、WL 各章榜線、AI 助手的榜線工具全部改用同一套模型；參數每天由伺服器用新結束的活動重擬。T100 與前三名是少數人的個人行為，誤差仍有一成多，越前面越不準，目標線請看區間上緣。' },
     { d: '2026/09/15', t: '定數表更新至 PENTATONIC V32', s: '定數表更新到 pentatonic 難易度表 V32：新增 10 張譜面、修正 26 筆定數（含「+」「++」細分），B30 実効值與理論值即時重算。作者釋出新版時線上試算表往往還停在舊版，站上現在會把新版「釘住」，線上版追上之前不會被每日自動更新蓋回舊版。新增的 10 張目前都是日服限定，切到「台＋日服」才會列出。' },
     { d: '2026/09/13', t: '歌曲播放器全面升級：播放清單與完整控制', s: '歌曲頁新增完整播放器：進度條可拖曳、上一首／下一首、隨機播放、循環（全部／單曲／關閉），完整播放與 60 秒試聽可切換。清單任一首都可「加入播放清單」，也可以從某一首起接續播放整份篩選結果，播放中隨時展開清單、直接跳到任一首。播放狀態收合成底部小列，切換頁面不會中斷播放。' },
     { d: '2026/09/13', t: '台服獨佔曲終於播得出來', s: 'ハオ、前ノハナシ 等 7 首台服獨佔曲的音檔與封面只放在台服素材桶，先前會播不出聲、封面破圖；現在會自動改抓台服來源。圖片載入失敗的處理全站統一，不再出現破圖框或空白格。' },
@@ -374,7 +376,7 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, songBpm: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
@@ -1376,6 +1378,10 @@ class Component extends DCLogic {
     return { type: me.type, days: me.days, n: same.length, ids: same.map(b => b.id), by };
   }
 
+  /* 榜線終線預測。主體是回測過的模型（速率剖面＋隨進度集成，4 期留一法：主榜 5.6%、WL 5.9%、
+     前百逐名 11.8%，線性外推是 13.8%）；模型或參數沒到、或活動已結算，才退回原本的實測時速／線性外推。
+     rows＝各段位（T100～），rankRows＝前百逐名次線（第 1／2／3／10／20／30／40／50 名）。 */
+  BM_RANK_LINES = [1, 2, 3, 10, 20, 30, 40, 50];
   borderAnalysis() {
     const ck = this.eventClock();
     const tiers = this.bordersOf(this.state.borders);
@@ -1384,25 +1390,54 @@ class Component extends DCLogic {
     const myScore = pd.myScore != null ? pd.myScore : null;
     const mySpeed = pd.mySpeed != null ? pd.mySpeed : null;
     const ref = this.bdbRef(ck.id);
-    const rows = tiers.map(t => {
-      const m = this.snapSpeed(ck.id, t.rank);
-      const proj = m ? (t.score + m.speed * ck.leftH) : (t.score / ck.frac);
+    const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+    const useModel = !!(this._bmParams && typeof BorderModel !== 'undefined' && ck.leftH > 0);
+    let modelN = 0;
+    const est = (kind, rank, score, series, anchor) => {
+      const m = kind === 'tier' ? this.snapSpeed(ck.id, rank) : null;
+      let proj = m ? (score + m.speed * ck.leftH) : (score / ck.frac);
+      let lo = null, hi = null, method = m ? 'measured' : 'linear', tag = '';
+      if (useModel) {
+        let prior = null;
+        if (DB && kind === 'tier') { try { prior = BorderModel.dbPrior(DB, ck.id, rank); } catch (e) { prior = null; } }
+        const r = this.bmPredict({ family: kind, spec: (kind === 'tier' ? 'T' : 'R') + rank, start: ck.st, end: ck.en, now: ck.now,
+                                   series, score, prior: prior || null, anchor: anchor || null });
+        if (r && r.final >= score) { proj = r.final; lo = r.lo; hi = r.hi; method = 'model'; tag = r.method || ''; modelN++; }
+      }
+      return { m, proj, lo, hi, method, tag };
+    };
+    const sorted = tiers.slice().sort((a, b) => a.rank - b.rank);
+    let prev = null;
+    const rows = sorted.map(t => {
+      const series = this.bmSeriesTier(ck.id, t.rank);
+      const e = est('tier', t.rank, t.score, series, prev ? { spec: 'T' + prev.rank, series: prev.series, score: prev.score } : null);
+      prev = { rank: t.rank, series, score: t.score };
       const gap = myScore != null ? (t.score - myScore) : null;
-      const projGap = myScore != null ? (proj - myScore - (mySpeed || 0) * ck.leftH) : null;
+      const projGap = myScore != null ? (e.proj - myScore - (mySpeed || 0) * ck.leftH) : null;
       const r = ref && ref.by[t.rank];
       return {
         rank: t.rank, score: t.score,
-        measured: !!m, speed: m ? m.speed : null, spanH: m ? m.hours : null,
-        proj, gap,
-        // 歷史同型態的區間,單純給對照(預測仍只用當期資料算)
+        measured: !!e.m, speed: e.m ? e.m.speed : null, spanH: e.m ? e.m.hours : null,
+        proj: e.proj, lo: e.lo, hi: e.hi, method: e.method, tag: e.tag, gap,
+        // 歷史同型態的區間,單純給對照(不參與計算)
         refMed: r ? r.med : null, refLo: r ? r.lo : null, refHi: r ? r.hi : null,
-        // 預測落在歷史區間的哪裡:低於歷史最低或高於最高都值得留意
-        refPos: r ? (proj < r.lo ? 'low' : proj > r.hi ? 'high' : 'in') : null,
+        refPos: r ? (e.proj < r.lo ? 'low' : e.proj > r.hi ? 'high' : 'in') : null,
         needH: (gap != null && gap > 0 && mySpeed > 0) ? gap / mySpeed : null,
         reach: projGap != null ? projGap <= 0 : null
       };
     });
-    return { clock: ck, rows, myScore, mySpeed, snapN: this.snapList(ck.id).length, ref };
+    // 前百逐名次線：現分來自前百即時名單，時序來自公用快照的 ranks
+    const live = this.ranksOf(this.state.live);
+    const rankRows = this.BM_RANK_LINES.map(pos => {
+      const p = live.find(x => +x.rank === pos);
+      if (!p || p.score == null) return null;
+      const e = est('rank', pos, p.score, this.bmSeriesRank(pos), null);
+      const gap = myScore != null ? (p.score - myScore) : null;
+      return { pos, rank: pos, isRankLine: true, name: p.name || '', score: p.score, proj: e.proj, lo: e.lo, hi: e.hi, method: e.method, tag: e.tag,
+               measured: false, speed: null, spanH: null, gap, refMed: null, refLo: null, refHi: null, refPos: null,
+               needH: (gap != null && gap > 0 && mySpeed > 0) ? gap / mySpeed : null, reach: null };
+    }).filter(Boolean);
+    return { clock: ck, rows, rankRows, myScore, mySpeed, snapN: this.snapList(ck.id).length, ref, useModel, modelN };
   }
 
   /* ---------- 玩家分析 ---------- */
@@ -1422,14 +1457,22 @@ class Component extends DCLogic {
     // 作息：24h 實際周回 vs 用近 3h 節奏推估的滿載周回
     const full = h3.count != null ? h3.count / 3 * 24 : null;
     const restH = (full && h24.count != null && full > 0) ? Math.max(0, (1 - h24.count / full) * 24) : null;
-    const proj = (ck && s24 != null) ? me.score + s24 * ck.leftH : null;
-    // 預測名次：把前百都用各自的 24h 時速投影後重排
+    // 終分：模型的玩家家族（用該玩家在前百的時序＋現分；沒時序也能用剖面比例），模型沒到才退回 24h 時速外推
+    const useModel = !!(ck && this._bmParams && typeof BorderModel !== 'undefined' && ck.leftH > 0);
+    const projOf = r => {
+      const v = (r.stats && r.stats.h24 && r.stats.h24.speed) || 0;
+      const lin = r.score + v * ck.leftH;
+      if (!useModel || !r.rank) return { p: lin, lo: null, hi: null, model: false };
+      const m = this.bmPredict({ family: 'player', spec: 'R' + r.rank, start: ck.st, end: ck.en, now: ck.now, series: this.bmSeriesPlayer(r.uid), score: r.score, prior: null, anchor: null });
+      return (m && m.final >= r.score) ? { p: m.final, lo: m.lo, hi: m.hi, model: true } : { p: lin, lo: null, hi: null, model: false };
+    };
+    const mine = ck ? projOf(me) : null;
+    const proj = mine ? mine.p : ((ck && s24 != null) ? me.score + s24 * ck.leftH : null);
+    const projLo = mine ? mine.lo : null, projHi = mine ? mine.hi : null, projModel = !!(mine && mine.model);
+    // 預測名次：把前百都投影後重排
     let projRank = null;
     if (ck) {
-      const all = list.map(r => {
-        const v = (r.stats && r.stats.h24 && r.stats.h24.speed) || 0;
-        return { uid: r.uid, p: r.score + v * ck.leftH };
-      }).sort((a, b) => b.p - a.p);
+      const all = list.map(r => ({ uid: r.uid, p: projOf(r).p })).sort((a, b) => b.p - a.p);
       const i = all.findIndex(x => this.sameUid(x.uid, me.uid));
       if (i >= 0) projRank = i + 1;
     }
@@ -1438,7 +1481,7 @@ class Component extends DCLogic {
     const myAvg = h24.average || 0;
     const pctile = (avgs.length && myAvg) ? Math.round(avgs.filter(x => x <= myAvg).length / avgs.length * 100) : null;
     return {
-      me, clock: ck, h1, h3, h24, s1, s3, s24, mom, restH, proj, projRank, pctile,
+      me, clock: ck, h1, h3, h24, s1, s3, s24, mom, restH, proj, projLo, projHi, projModel, projRank, pctile,
       borders: this.bordersOf(this.state.borders)
     };
   }
@@ -1620,13 +1663,73 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=8bb3312670';
+      s.src = 'data/billing.js?v=8d8c65a2bf';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
     }));
   }
 
+  /* 榜線終線預測模型：js/border-model.js 是推論（純 JS），data/border-model.json 是參數
+     （CI 每日用 data/history 已結束的期數重擬；固定網址、must-revalidate）。
+     模型／參數任一沒到就回 null，呼叫端退回原本的實測／線性外推。 */
+  async loadBorderModel() {
+    if (this._bmLoading || this._bmParams) return;
+    this._bmLoading = true;
+    try {
+      if (typeof BorderModel === 'undefined') {
+        await new Promise((res, rej) => {
+          const el = document.createElement('script');
+          el.src = 'js/border-model.js?v=e2a6bca33f';
+          el.onload = res; el.onerror = rej;
+          document.head.appendChild(el);
+        });
+      }
+      const pr = await fetch('data/border-model.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+      if (pr && pr.families) { this._bmParams = pr; this.setState({ bmReady: true }); }
+      else this._bmLoading = false;
+    } catch (e) { this._bmLoading = false; }
+  }
+  bmPredict(inp) {
+    const P = this._bmParams;
+    if (!P || typeof BorderModel === 'undefined') return null;
+    try {
+      const r = BorderModel.predict(P, inp);
+      return (r && isFinite(r.final) && r.final > 0) ? r : null;
+    } catch (e) { return null; }
+  }
+  /* 給模型用的序列，一律 [[ms, 分數]]、只到現在、已修單調 */
+  bmSeriesTier(evId, rank) {
+    return this.snapList(evId).map(x => { const f = (x[1] || []).find(y => y[0] === rank); return (f && f[1] != null) ? [x[0], f[1]] : null; }).filter(Boolean);
+  }
+  bmSeriesRank(pos) {
+    const h = this.state.hist, ev = this.eventOf(this.state.live);
+    if (!h || h.eventId !== ev.id || !Array.isArray(h.ranks) || !h.ranks.length) return [];
+    if (this._rankFixId !== h.eventId) { this._rankFixId = h.eventId; this._rankFix = this.fixMono(h.ranks, 100); }
+    return this._rankFix.map(r => (r[pos] != null ? [r[0] * 1000, r[pos]] : null)).filter(Boolean);
+  }
+  bmSeriesPlayer(uid) {
+    const h = this.state.hist, ev = this.eventOf(this.state.live);
+    if (!h || h.eventId !== ev.id || !Array.isArray(h.roster) || !uid) return [];
+    const ui = (h.users || []).findIndex(u => this.sameUid(u, uid));
+    if (ui < 0) return [];
+    const at = {}; (h.ranks || []).forEach(r => { at[r[0]] = r; });
+    const out = [];
+    h.roster.forEach(row => { const pos = row.indexOf(ui, 1); const sr = at[row[0]]; if (pos >= 1 && sr && sr[pos] != null) out.push([row[0] * 1000, sr[pos]]); });
+    return out;
+  }
+  bmSeriesWl(chapter, rank) {
+    const w = this.wlSnap(chapter);
+    if (!w || !Array.isArray(w.samples)) return [];
+    const i = (w.tiers || []).indexOf(+rank);
+    if (i < 0) return [];
+    return w.samples.map(x => (x[i + 1] != null ? [x[0] * 1000, x[i + 1]] : null)).filter(Boolean);
+  }
+  /* 歌曲 BPM（社長 bot／t-wy 的公開資料庫），只有打開歌曲詳情才載，~10 KB。 */
+  loadSongBpm() {
+    if (this._bpmP) return;
+    this._bpmP = import('./data/song-bpm.js?v=c2a271b1d5').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
+  }
   async loadBorderDB() {
     if (this.state.bdbReady || this._bdbLoading) return;
     this._bdbLoading = true;
@@ -2346,7 +2449,8 @@ class Component extends DCLogic {
           clock: B ? { progress_pct: +(B.clock.frac * 100).toFixed(1), hours_left: +B.clock.leftH.toFixed(1) } : null,
           tiers: B ? B.rows.map(r => ({
             tier: r.rank, current: r.score, projected_final: Math.round(r.proj),
-            method: r.measured ? 'measured' : 'linear',
+            method: r.method || (r.measured ? 'measured' : 'linear'),
+            range_p10_p90: r.lo != null ? [Math.round(r.lo), Math.round(r.hi)] : null,
             gap_from_me: r.gap, hours_i_need: r.needH != null ? +r.needH.toFixed(1) : null,
             reachable: r.reach,
           })) : null,
@@ -2374,9 +2478,12 @@ class Component extends DCLogic {
         const B = this.borderAnalysis();
         if (!B) return { error: '榜線資料尚未載入' };
         const want = Array.isArray(a.tiers) && a.tiers.length ? a.tiers.map(Number) : null;
-        return { tiers: B.rows.filter(r => !want || want.indexOf(r.rank) >= 0).map(r => ({
+        return { method_note: B.useModel ? '模型＝速率剖面＋隨進度集成（4 期留一法回測：主榜 5.6%、WL 5.9%、前百逐名 11.8%；線性外推 13.8%），range_p10_p90 是模型的 P10～P90 區間' : '模型參數未載入，為實測／線性外推',
+          rank_lines: (B.rankRows || []).map(r => ({ position: r.pos, current: r.score, projected_final: Math.round(r.proj), method: r.method, range_p10_p90: r.lo != null ? [Math.round(r.lo), Math.round(r.hi)] : null })),
+          tiers: B.rows.filter(r => !want || want.indexOf(r.rank) >= 0).map(r => ({
           tier: r.rank, current: r.score, projected_final: Math.round(r.proj),
-          method: r.measured ? 'measured' : 'linear',
+          method: r.method || (r.measured ? 'measured' : 'linear'),
+          range_p10_p90: r.lo != null ? [Math.round(r.lo), Math.round(r.hi)] : null,
           history_weighted: r.refMed != null ? Math.round(r.refMed) : null,
           history_range: r.refLo != null ? [r.refLo, r.refHi] : null,
         })) };
@@ -3052,7 +3159,7 @@ class Component extends DCLogic {
         const epPerHour = Math.round(ep * 3600 / cycle);
         return {
           target: { tier: a.tier != null ? +a.tier : null, target_score: goal,
-            target_from: a.target_score != null ? '呼叫時指定' : (tierRow ? (tierRow.measured ? '該段位的實測時速外推' : '該段位的線性外推') : null),
+            target_from: a.target_score != null ? '呼叫時指定' : (tierRow ? (tierRow.method === 'model' ? '該段位的模型預測（速率剖面＋集成）' : tierRow.measured ? '該段位的實測時速外推' : '該段位的線性外推') : null),
             history_weighted: tierRow && tierRow.refMed != null ? Math.round(tierRow.refMed) : null,
             history_range: tierRow && tierRow.refLo != null ? [tierRow.refLo, tierRow.refHi] : null },
           current_score: cur, gap: left,
@@ -3072,7 +3179,7 @@ class Component extends DCLogic {
             enough_time: totalMin / 60 <= leftH,
             required_vs_achievable_pct: epPerHour > 0 ? +(needSpeed / epPerHour * 100).toFixed(0) : null,
           } : null,
-          note: '段位目標取站上的預測終線；末段普遍低估（T5000 約 2～6%、T1000 約 10～13%、T100 約 14～22%），要當下限看，安全起見再往上抓一成。' +
+          note: '段位目標取站上的預測終線（模型：4 期留一法回測主榜平均誤差 5.6%，T100 仍有一成多、越前面越不準；未載入模型時為外推法，末段會低估），安全起見再往上抓一成。' +
                 '體力換算：可回復 ＝ 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10；不足的部分每 10 體 100 石，水晶 CP 用 ' + jRate + ' 石/元。' +
                 'required.speed_per_hour 是「剩餘時間內平均要跑多快」，per_play.ep_per_hour 是「照這個配置滿載能跑多快」，兩者相比就知道還有沒有餘裕。',
         };
@@ -4577,7 +4684,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=8bb3312670';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=8d8c65a2bf';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -9392,9 +9499,9 @@ class Component extends DCLogic {
 
 - **先給結論與建議**，再用數字支撐。
 - **講清楚依據與前提**：是實測還是外推、樣本多少、什麼條件下成立。
-- **主動點出風險**：榜線預測在末段普遍低估（以 #175 回測，活動過六成後
-  線性外推對 T5000 約低估 2～6%、T1000 約 10～13%、T100 約 14～22%），
-  給目標線時要提醒把預測當下限。
+- **主動點出風險**：榜線預測是回測過的模型（4 期留一法：主榜平均誤差 5.6%、
+  WL 章節 5.9%、前百逐名 11.8%；T100 與前三名仍有一成多，越前面越不準），
+  給目標線時要連 P10～P90 區間一起講，並提醒往上抓一成當安全圈。
 - **區分保底值與上限值**：技能有 base 與 max 兩種（例如同團型 100／150、
   角色等級型 110／160），講的時候要說清楚是哪一種、要怎樣才拉得滿。
 - 資料本身有疑點就直說。例如某段位的樣本只有 3 期、或歷史區間跨度達 3 倍，
@@ -10310,6 +10417,10 @@ class Component extends DCLogic {
       { n: '卡池列表', d: '各期卡池與 PU 角色整理', u: 'https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/edit?usp=sharing' },
       { n: '豆森娃月列表', d: 'MySekai 月卡玩偶的台日服排程對照', u: '' },
     ]},
+    { who: '社長 bot（t-wy）', items: [
+      { n: 'game-public-data', d: '台服獨佔曲的分數係數與歌長、全曲 BPM 段落（社長 bot 的公開資料庫，每日同步）', u: 'https://github.com/t-wy/game-public-data' },
+      { n: '社長 bot', d: '多平台世界計畫查詢機器人', u: 'https://twy.name/contribution/' },
+    ]},
     { who: 'good果汁', items: [
       { n: '控分表', d: '独りんぼエンヴィー（蝦）單人 0 體控分', u: 'https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link' },
       { n: 'WL 交換所規劃表', d: 'World Link 交換所的資源規劃', u: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link' },
@@ -11052,11 +11163,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=8e0f4e69d3')
+    fetch('./data/ep-songs.js?v=c20467081f')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=8e0f4e69d3')
+        import('./data/ep-songs.js?v=c20467081f')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
@@ -11072,7 +11183,8 @@ class Component extends DCLogic {
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
-    if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); }
+    if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); this.loadBorderModel(); }
+    if (p === 'rank' || p === 'home' || p === 'assistant') { this.loadBorderModel(); this.loadBorderDB(); }
     if (p === 'account' || p === 'admin' || p === 'assistant') { if (this.state.me === undefined) this.loadMe(); }
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
     if (p === 'assistant') this.loadChats();
@@ -13061,14 +13173,16 @@ class Component extends DCLogic {
           anaReady: true,
           anaLeft: hm(ck.leftH), anaFrac: (ck.frac * 100).toFixed(1) + '%',
           anaMeta: '第 ' + ck.id + ' 期 · 已過 ' + (ck.frac * 100).toFixed(1) + '% · 剩 ' + hm(ck.leftH),
-          anaMethod: (B.rows.some(r => r.measured)
-            ? ('已累積 ' + B.snapN + ' 筆本機快照，有實測速度的段位用實測推估')
-            : ('本機快照 ' + B.snapN + ' 筆，尚不足以量出速度（需間隔 30 分鐘以上），先用線性推估'))
+          anaMethod: (B.useModel
+            ? ('預測來自回測過的模型：以台灣時刻、距結算時數與開跑時數的速率剖面推進度，再依進度集成 24h／6h 實測、歷史先驗與上一段位（' + B.snapN + ' 筆快照；小字為 P10～P90 區間）')
+            : (B.rows.some(r => r.measured)
+              ? ('模型參數尚未載入；已累積 ' + B.snapN + ' 筆快照，有實測速度的段位用實測推估')
+              : ('模型參數尚未載入；快照 ' + B.snapN + ' 筆，尚不足以量出速度，先用線性推估')))
             + (B.ref ? ('。「史」為同型態活動（' + B.ref.type + '・' + B.ref.days + ' 天・' + B.ref.n + ' 期）的加權估計，'
                 + '越近期權重越高（半衰期 6 期），只作對照不參與計算；預測低於近 8 期區間會標紅、高於標綠') : ''),
           // 拿 #175 回測過:兩種外推法都會低估終線,段位越前面低估越多。誠實寫出來,
           // 免得有人把預測值當成保證線。
-          anaBias: '外推法在末段普遍低估。以 #175 回測，活動走到六成之後，線性外推對 T5000 約低估 2～6%、T1000 約 10～13%、T100 約 14～22%，實測外推也差不多（略差一點）。要卡線的話把預測值當下限看。',
+          anaBias: (B.useModel ? '模型以 4 期留一法回測：主榜平均誤差 5.6%（線性外推 13.8%）、WL 章節 5.9%、前百逐名 11.8%；T100 與前三名是少數人的個人行為，仍有一成多的誤差，越前面越不準，目標線請看區間上緣。' : '外推法在末段普遍低估：以 #175 回測，活動走到六成之後，線性外推對 T5000 約低估 2～6%、T1000 約 10～13%、T100 約 14～22%，請把預測當下限看。'),
           ...(() => {
             const rk = +s.anaTier || 100;
             const c = this.histChart(ck.id, rk);
@@ -13095,14 +13209,15 @@ class Component extends DCLogic {
           anaMyScore: B.myScore != null ? this.n(B.myScore) : '—',
           anaMySpeed: B.mySpeed != null ? this.short(B.mySpeed) + '/h' : '—',
           anaBMore: anaFold && B.rows.some(r => r.rank > 5000),
-          anaBorderRows: B.rows.filter(r => !anaFold || r.rank <= 5000).map(r => ({
-            rank: 'T' + this.n(r.rank),
+          anaBorderRows: (B.rankRows || []).concat(B.rows.filter(r => !anaFold || r.rank <= 5000)).map(r => ({
+            rank: r.isRankLine ? ('第 ' + r.pos + ' 名') : ('T' + this.n(r.rank)),
             score: this.n(r.score),
             speed: r.measured ? (this.short(r.speed) + '/h') : '—',
-            src: r.measured ? ('實測 ' + r.spanH.toFixed(1) + 'h') : '線性',
-            srcBg: r.measured ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card-2)',
-            srcFg: r.measured ? 'var(--accent-deep)' : 'var(--text-3)',
+            src: r.method === 'model' ? '模型' : r.measured ? ('實測 ' + r.spanH.toFixed(1) + 'h') : '線性',
+            srcBg: r.method === 'model' ? 'color-mix(in oklab,var(--cta) 18%,transparent)' : r.measured ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card-2)',
+            srcFg: r.method === 'model' ? 'var(--cta)' : r.measured ? 'var(--accent-deep)' : 'var(--text-3)',
             proj: this.short(r.proj),
+            rng: r.lo != null ? (this.short(r.lo) + '～' + this.short(r.hi)) : '',
             // 歷史同型態中位數,純對照。預測明顯落在歷史區間外時把顏色點出來,
             // 提醒使用者這期偏冷/偏熱(或是預測本身有問題),但不去動預測值。
             ref: r.refMed == null ? '' : ('史 ' + this.short(r.refMed)),
@@ -13414,6 +13529,7 @@ class Component extends DCLogic {
           id: x.id, title: x.title, composer: x.composer || '—', abn: this.songAbn(x),
           jacket: x.jkt ? (ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp') : '',
           units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
+          bpm: (() => { const b = s.songBpm && s.songBpm[x.id]; if (!b) return ''; return b[1] === b[2] ? 'BPM ' + b[0] : 'BPM ' + b[1] + '–' + b[2] + '（主要 ' + b[0] + '）'; })(),
           diffs: DF.filter(([k]) => x.lv[k]).map(([k, n, c]) => ({ n, c, lv: x.lv[k], notes: (x.nt && x.nt[k]) ? this.n(x.nt[k]) + ' notes' : '' }))
         };
       })(),
@@ -13615,19 +13731,25 @@ class Component extends DCLogic {
             const frac = Math.max(0.02, Math.min(1, (now - pick.start) / (pick.end - pick.start || 1)));
             const leftH = Math.max(0, (pick.end - now) / 3600000);
             const bs = (s.mobile && !s.wlMoreB) ? pick.borders.slice(0, 6) : pick.borders;
+            const useModel = !!(this._bmParams && typeof BorderModel !== 'undefined' && !pick.done && leftH > 0 && pick.start && pick.end);
             return bs.map(b => {
               const sp = this.wlSpeed(pick.chapter, b.rank);
-              const projV = sp ? b.score + sp.rate * leftH : b.score / frac;
+              let projV = sp ? b.score + sp.rate * leftH : b.score / frac, tag = sp ? '實測' : '線性', rng = '';
+              if (useModel) {
+                const m = this.bmPredict({ family: 'wl', spec: 'T' + b.rank, start: pick.start, end: pick.end, now, series: this.bmSeriesWl(pick.chapter, b.rank), score: b.score, prior: null, anchor: null });
+                if (m && m.final >= b.score) { projV = m.final; tag = '模型'; rng = this.short(m.lo) + '～' + this.short(m.hi); }
+              }
               return {
                 rank: 'T' + this.n(b.rank), score: this.n(b.score), name: b.name,
-                proj: pick.done ? '—' : this.short(projV),
-                projTag: pick.done ? '' : (sp ? '實測' : '線性'),
-                projTagFg: sp ? 'var(--accent-deep)' : 'var(--text-3)',
+                proj: pick.done ? '—' : this.short(projV), rng: pick.done ? '' : rng,
+                projTag: pick.done ? '' : tag,
+                projTagFg: tag === '模型' ? 'var(--cta)' : sp ? 'var(--accent-deep)' : 'var(--text-3)',
                 projSub: pick.done ? '已結算' : ('剩 ' + (leftH >= 24 ? Math.floor(leftH / 24) + '天' + Math.round(leftH % 24) + '時' : leftH.toFixed(1) + '時'))
               };
             });
           })(),
-          wlProjNote: pick.done ? '' : (this.wlSpeed(pick.chapter, (pick.borders[0] || {}).rank)
+          wlProjNote: pick.done ? '' : ((this._bmParams && typeof BorderModel !== 'undefined') ? '標「模型」者＝回測過的預測模型（WL 章節 4 章留一法平均誤差 5.9%），小字是 P10～P90 區間；沒有本章時序時退回「實測」6 小時速度或「線性」外推。'
+            : this.wlSpeed(pick.chapter, (pick.borders[0] || {}).rank)
             ? '標「實測」者＝目前分數＋剩餘時數×最近 6 小時的實際速度；標「線性」者是按已過進度等比外推，末段衝刺通常會被低估。'
             : '預測＝目前分數 ÷ 已過進度（線性外推）。章節僅 3 天，末段衝刺通常會高於此估。'),
           ...(() => {
@@ -14014,7 +14136,7 @@ class Component extends DCLogic {
       onDeckClose: () => this.setState({ deckPid: null }),
       onGachaClick: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
       onGachaClose: () => this.setState({ gachaGid: null }),
-      onSongDetail: e => { const id = +e.currentTarget.dataset.id; if (id) this.setState({ songId: id }); },
+      onSongDetail: e => { const id = +e.currentTarget.dataset.id; if (id) { this.loadSongBpm(); this.setState({ songId: id }); } },
       onSongClose: () => this.setState({ songId: null }),
       onPlaySong: e => {
         if (e && e.stopPropagation) e.stopPropagation();   // 別觸發整列的詳情
