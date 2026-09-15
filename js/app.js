@@ -11956,7 +11956,7 @@ class Component extends DCLogic {
     const moyuUnit = moyuSort === 'score' ? '分' : moyuSort === 'eph' ? 'P/h' : moyuSort === 'epe' ? 'P/體力' : 'P';
     const moyuFN = Math.max(0, +s.moyuFN || 0);
     const moyuFHint = moyuFMode === 'none' ? '' :
-      moyuFMode === 'top' ? ('依' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時 P' : moyuSort === 'epe' ? '每體力 P' : '單局 P') + '排序取前 ' + moyuFN + '% → ' + moyuAll.length + ' 列') :
+      moyuFMode === 'top' ? ('依' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時 P' : moyuSort === 'epe' ? '每體力 P' : '單局 P') + ' 排序取前 ' + moyuFN + '% → ' + moyuAll.length + ' 列') :
       moyuFMode === 'gap' ? ('與第 1 名差距 ≤ ' + moyuFN + '%' + (moyuAll.length ? '（≥ ' + this.n(Math.round((moyuAll[0][moyuSort] || 0) * (1 - moyuFN / 100))) + ' ' + moyuUnit + '）' : '') + ' → ' + moyuAll.length + ' 列') :
       ('≥ ' + this.n(moyuFN) + ' ' + moyuUnit + ' → ' + moyuAll.length + ' 列');
     const moyuRows = moyuAll.map((r, i) => ({
