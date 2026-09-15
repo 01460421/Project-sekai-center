@@ -235,6 +235,7 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '摸魚表加入自訂篩選', s: '摸魚表新增自訂篩選：「前 n%」依目前排序只留前 n% 的列、「與最高差 ≤ n%」只留跟第 1 名差距在 n% 以內的歌、「≥ n」只留數值達到門檻的歌（單位跟著排序：單局 P、每小時 P、每體力 P 或分數）。有篩選時列數上限放寬到 300，不會被預設的 40 列截掉。篩選提示會直接告訴你門檻換算成多少與符合幾列。' },
     { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單納入日服曲：台服 613 首之外再列出台服尚未實裝的日服曲（標「日服」，可切換台＋日服／僅台服／僅日服限定），全庫 726 首。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
     { d: '2026/09/15', t: '榜線預測改用回測驗證的模型', s: '榜線終線預測不再只是線性外推：改用「速率剖面＋隨進度集成」模型，把台灣時刻、距結算時數、開跑時數的增速差異算進去，再依活動進度把 24 小時／6 小時實測、歷史同型態先驗與上一段位的走勢集成起來。以 175～178 期留一法回測，主榜平均誤差從 13.8% 降到 5.6%（T1000 3–8%、T5000 1–6%），WL 章節榜從 13.3% 降到 5.9%，前百逐名次線從 19% 降到 12%，前百玩家終分從 21.6% 降到 14.9%。榜線分析新增第 1／2／3／10／20／30／40／50 名的預測線，每條預測都附 P10～P90 區間，依據欄標「模型」。前百玩家的預測終分與預測名次、WL 各章榜線、AI 助手的榜線工具全部改用同一套模型；參數每天由伺服器用新結束的活動重擬。T100 與前三名是少數人的個人行為，誤差仍有一成多，越前面越不準，目標線請看區間上緣。' },
     { d: '2026/09/15', t: '定數表更新至 PENTATONIC V32', s: '定數表更新到 pentatonic 難易度表 V32：新增 10 張譜面、修正 26 筆定數（含「+」「++」細分），B30 実効值與理論值即時重算。作者釋出新版時線上試算表往往還停在舊版，站上現在會把新版「釘住」，線上版追上之前不會被每日自動更新蓋回舊版。新增的 10 張目前都是日服限定，切到「台＋日服」才會列出。' },
@@ -437,7 +438,7 @@ class Component extends DCLogic {
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
     ctab: 'ep', preset: '',
-    moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40, moyuQ: '',
+    moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40, moyuQ: '', moyuFMode: 'none', moyuFN: 10,
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
     layout: null,   // { nav:{order:[],hidden:[]}, home:{order:[],hidden:[]} }，null＝預設
     qaKind: 'question', qaList: [], qaCanPost: false, qaThread: null, qaPosts: [], qaOpen: null, qaLoad: false, qaReplyTo: null, qaMsg: '', qaTitle: '', qaBody: '', qaReply: '', qaBusy: false,
@@ -11315,7 +11316,7 @@ class Component extends DCLogic {
      為什麼五選一可以直接用活動 P 比:同一首歌的歌長與間隔是固定的,
      每小時 P 只是每局 P 乘上一個同樣的常數,所以不論用哪個排序,
      五個難度裡勝出的都是同一個。挑的時候固定用 ep,語意才對得上「最高PT」。 */
-  moyuRanking(sortBy, limit) {
+  moyuRanking(sortBy, limit, useFilter) {
     const s = this.state, F = this.EM[s.energy] || 1, iv = +s.interval || 50;
     const key = sortBy || s.moyuSort || 'ep';
     const scope = s.moyuScope || 'all';
@@ -11348,7 +11349,20 @@ class Component extends DCLogic {
         if (a) { a.kind = 'append'; rows.push(a); }
       }
     });
-    return rows.sort((a, b) => (b[key] || 0) - (a[key] || 0)).slice(0, Math.max(1, +limit || 40));
+    let sorted = rows.sort((a, b) => (b[key] || 0) - (a[key] || 0));
+    /* 自訂篩選（站長要的「前 n%」「≥ n」這類）：依目前排序的那個數值篩。
+       top ＝依排序取前 n% 列；gap ＝與第 1 名差距在 n% 以內（值 ≥ 最高×(1−n%)）；min ＝值 ≥ n。
+       有篩選時把列數上限放寬到 300，不然「前 30%」會被 40 列的預設上限截掉。 */
+    const fm = useFilter === false ? 'none' : (s.moyuFMode || 'none');
+    let cap = Math.max(1, +limit || 40);
+    if (fm !== 'none' && sorted.length) {
+      const n = Math.max(0, +s.moyuFN || 0), v = r => (r[key] || 0);
+      if (fm === 'top') sorted = sorted.slice(0, Math.max(1, Math.ceil(sorted.length * n / 100)));
+      else if (fm === 'gap') { const top = v(sorted[0]); sorted = sorted.filter(r => v(r) >= top * (1 - n / 100)); }
+      else if (fm === 'min') sorted = sorted.filter(r => v(r) >= n);
+      cap = Math.max(cap, 300);
+    }
+    return sorted.slice(0, cap);
   }
   plan() {
     const s = this.state, r = this.epResult();
@@ -11678,7 +11692,7 @@ class Component extends DCLogic {
         { k: 'interval', label: '每場間隔（秒）', value: s.interval },
         { k: 'moyuLimit', label: '顯示筆數', value: s.moyuLimit }
       ];
-      const mo = this.moyuRanking(s.moyuSort || 'ep', 1)[0];
+      const mo = this.moyuRanking(s.moyuSort || 'ep', 1, false)[0];
       resultLabel = '目前設定下的最高 PT';
       resultValue = mo ? this.n(mo.ep) : '—';
       resultSub = mo ? (mo.title + ' · ' + (this.DIFF_NAME[mo.diff] || mo.diff) + ' Lv.' + mo.lv) : '曲庫載入中…';
@@ -11933,6 +11947,18 @@ class Component extends DCLogic {
       return Object.assign({ v, n: n2 }, st);
     });
     const moyuAll = s.ctab === 'moyu' ? this.moyuRanking(moyuSort, +s.moyuLimit || 40) : [];
+    const MOYU_FILTERS = [['none', '不篩選'], ['top', '前 n%'], ['gap', '與最高差 ≤ n%'], ['min', '≥ n']];
+    const moyuFMode = s.moyuFMode || 'none';
+    const moyuFilterChips = MOYU_FILTERS.map(([v, n2]) => {
+      const on = moyuFMode === v, st = chip(on, 'var(--ink-grad)');
+      return Object.assign({ v, n: n2 }, st);
+    });
+    const moyuUnit = moyuSort === 'score' ? '分' : moyuSort === 'eph' ? 'P/h' : moyuSort === 'epe' ? 'P/體力' : 'P';
+    const moyuFN = Math.max(0, +s.moyuFN || 0);
+    const moyuFHint = moyuFMode === 'none' ? '' :
+      moyuFMode === 'top' ? ('依' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時 P' : moyuSort === 'epe' ? '每體力 P' : '單局 P') + '排序取前 ' + moyuFN + '% → ' + moyuAll.length + ' 列') :
+      moyuFMode === 'gap' ? ('與第 1 名差距 ≤ ' + moyuFN + '%' + (moyuAll.length ? '（≥ ' + this.n(Math.round((moyuAll[0][moyuSort] || 0) * (1 - moyuFN / 100))) + ' ' + moyuUnit + '）' : '') + ' → ' + moyuAll.length + ' 列') :
+      ('≥ ' + this.n(moyuFN) + ' ' + moyuUnit + ' → ' + moyuAll.length + ' 列');
     const moyuRows = moyuAll.map((r, i) => ({
       i: i + 1, title: r.title,
       diff: this.DIFF_NAME[r.diff] || r.diff, diffColor: this.DIFF_COLOR[r.diff] || 'var(--text-3)',
@@ -13990,11 +14016,12 @@ class Component extends DCLogic {
       ctrlHasAlts: !!(this._ctrlAlts || []).length,
       hasMoyuTable: s.ctab === 'moyu', moyuRows, moyuSortChips, moyuScopeChips,
       moyuQ: s.moyuQ,
+      moyuFilterChips, moyuFOn: moyuFMode !== 'none', moyuFN: s.moyuFN, moyuFUnit: moyuFMode === 'min' ? moyuUnit : '%', moyuFHint,
       moyuQHint: s.moyuQ ? ('「' + s.moyuQ + '」符合 ' + moyuRows.length + ' 列') : '',
       moyuTitle: '摸魚表 · ' + (moyuSort === 'score' ? '單局分數' : moyuSort === 'eph' ? '每小時活動 P' : moyuSort === 'epe' ? '每體力活動 P' : '單局活動 P'),
       moyuCols: s.mobile ? '30px minmax(0,1fr) 84px' : '38px minmax(0,1fr) 110px 104px',
       moyuNote: modeLabels[s.mode] + ' · 加成 ' + s.bonus + '% · 體力 ' + s.energy + ' · 共 ' + moyuRows.length + ' 列',
-      moyuEmptyText: s.moyuQ ? ('沒有曲名符合「' + s.moyuQ + '」。') : '曲庫還沒載入完，或目前的篩選沒有任何結果。',
+      moyuEmptyText: s.moyuQ ? ('沒有曲名符合「' + s.moyuQ + '」。') : (moyuFMode !== 'none' ? '目前的自訂篩選沒有任何結果，把 n 放寬一點或改成不篩選。' : '曲庫還沒載入完，或目前的篩選沒有任何結果。'),
       moyuEmpty: s.ctab === 'moyu' && !moyuRows.length,
       hasEffTable: s.ctab === 'eff', effRows, effSortChips,
       effTitle: (s.effSort === 'score' ? '單首分數' : s.effSort === 'ep' ? '單局活動 P' : '時間效率') + ' TOP 15', effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
