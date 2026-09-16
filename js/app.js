@@ -119,6 +119,7 @@ class Component extends DCLogic {
     ost:      ['原聲帶', '遊戲內 BGM：區域、劇情、Live 與卡池音樂，站內直接播放'],
     lives:    ['虛擬 Live', '歷代虛擬 Live 的期間、場次、歌單與出演角色'],
     news:     ['遊戲公告', '台服遊戲內公告一覽，可依類型篩選與搜尋'],
+    story:    ['劇情閱讀器', '活動、主線、卡片、區域對話、個人與特別劇情：台服翻譯文本，可播語音'],
     guesswho: ['猜角色', '看一小塊卡面猜是誰：十題一局，猜得越快分數越高'],
     guessjacket:['猜封面', '看一小塊曲繪猜歌名：十題一局，可調選項數與難度'],
     stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製']
@@ -162,6 +163,7 @@ class Component extends DCLogic {
     ['原聲帶', '', 'ost', '原聲帶|BGM|背景音樂|區域音樂|劇情音樂|OST|soundtrack|音樂播放|遊戲音樂'],
     ['虛擬 Live', '', 'lives', '虛擬Live|虛擬 Live|バーチャルライブ|virtual live|VL|生日 Live|Live 場次|Live 時間|Live 歌單|演唱會|連線 Live|嘉年華'],
     ['遊戲公告', '', 'news', '公告|遊戲公告|官方公告|情報|通知|維護公告|更新公告|活動公告|招募公告|遊戲內公告'],
+    ['劇情閱讀器', '', 'story', '劇情|劇情閱讀|看劇情|活動劇情|主線劇情|卡片劇情|支線劇情|區域對話|個人劇情|特別劇情|劇本|台詞|story|scenario|語音'],
     ['猜角色', '', 'guesswho', '猜角色|猜卡面|猜猜看|猜謎|小遊戲|遊戲|guess who|看圖猜角色|卡面猜謎'],
     ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
     ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
@@ -263,11 +265,13 @@ class Component extends DCLogic {
     { date: '圖鑑', title: '原聲帶', desc: '遊戲內 BGM 依分類瀏覽，站內直接播放。', to: 'ost', cta: '前往原聲帶' },
     { date: '資料', title: '虛擬 Live', desc: '歷代虛擬 Live 的期間、場次、歌單與出演角色。', to: 'lives', cta: '前往虛擬 Live' },
     { date: '資料', title: '遊戲公告', desc: '台服遊戲內公告依類型篩選與搜尋，直達官方公告頁。', to: 'news', cta: '前往遊戲公告' },
+    { date: '資料', title: '劇情閱讀器', desc: '活動、主線、卡片、區域對話、個人與特別劇情的台服翻譯文本，逐句可播語音。', to: 'story', cta: '前往劇情閱讀器' },
     { date: '遊戲', title: '猜角色', desc: '看一小塊卡面猜是誰，十題一局；難度、團體、稀有度、限時可調。', to: 'guesswho', cta: '來玩猜角色' },
     { date: '遊戲', title: '猜封面', desc: '看一小塊曲繪猜歌名，十題一局；選項數與難度可調。', to: 'guessjacket', cta: '來玩猜封面' },
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '新增劇情閱讀器', s: '活動劇情（182 場）、主線劇情、卡片支線劇情（1,192 張卡的前後篇）、區域對話（2,654 段）、個人劇情與特別劇情都能在站上讀：目錄由每日排程整理成索引，劇本本文從素材庫抓台服翻譯版（抓不到退回日服原文），逐句顯示說話者與台詞、換背景與字幕，有語音的句子可以直接播放。' },
     { d: '2026/09/16', t: '新增卡片圖鑑，並補上鍵盤快捷鍵、骨架載入等介面細節', s: '卡片圖鑑：台服 1,249 張卡依團體、角色、屬性、稀有度、來源篩選，可依最新／最舊／編號排序；詳情視窗有滿等表演／技巧／體力與綜合力（含特訓後）、技能敘述 Lv1／Lv4、釋出日與招募台詞，並可一鍵前往卡面下載。介面部分參考 Moesekai：Esc 現在會關閉所有詳情視窗，按「?」有快捷鍵說明；圖鑑類分頁載入中改顯示骨架方格而不是轉圈；手機上過長的角色篩選籤改成橫向滑動，不再把畫面撐高。' },
     { d: '2026/09/16', t: '新增小遊戲「猜角色」「猜封面」與「貼圖製作器」', s: '同樣移植自 Moesekai：猜角色每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從 26 位角色裡選；猜封面每題出示一小塊曲繪，從 4～10 個歌名裡挑。兩者都是十題一局、三次猜錯或超時算失敗，分數依難度倍率（簡單 0.8×～極限 2.2×）、作答速度與猜錯次數計算，極限難度還會隨機加上灰階、反相、色相翻轉或翻轉；最佳成績存在本機。貼圖製作器可用官方貼圖（收集室的 1,000 多張）或自己上傳的圖當底圖，加上文字：大小、位置、旋轉、字距、描邊粗細與顏色、字型（粉圓／M PLUS Rounded）都能調，可下載 PNG 或直接複製到剪貼簿。' },
     { d: '2026/09/16', t: '新增七個圖鑑類分頁：角色、家具、素材、一格漫畫、原聲帶、虛擬 Live、遊戲公告', s: '把 Moesekai（pjsk.moe）站上本站還沒有的資料庫功能移植過來：角色圖鑑（聲優、生日、身高、學校、喜好、介紹與相關卡片）、MySekai 家具圖鑑（主／子分類、角色標籤、尺寸、其他顏色、製作素材）、素材圖鑑、一格漫畫（台服翻譯版，台服桶沒有的自動退回日服原版）、原聲帶（遊戲內 BGM 依分類瀏覽、站內直接播放）、虛擬 Live（期間、每場時間、下一場、歌單與出演角色）與台服遊戲公告（依類型與進行中／已結束篩選）。七頁共用同一套搜尋、篩選籤、「顯示更多」與詳情視窗。導覽新增「圖鑑」群組，收集室與收集率也移到那裡。虛擬 Live 與家具的原始資料各 1～3 MB，改由每日排程壓成索引檔（tools/build-db-index.py）。' },
@@ -481,6 +485,8 @@ class Component extends DCLogic {
     stkTab: 'stamp', stkq: '', stkChar: 0, stkN: 48,
     /* 卡片圖鑑的篩選；kbHelp = 快捷鍵說明視窗 */
     cardX: null, cdUnit: '', cdChar: 0, cdAttr: -1, cdRar: 0, cdSup: -1, cdSort: 'new', kbHelp: false,
+    /* 劇情閱讀器：目錄索引 stories、分頁 stTab、目前打開的劇本 rd、正在播的語音行 rdVoice */
+    stories: null, stTab: 'event', stEvent: 0, stChar: 0, stArea: 0, rd: null, rdVoice: -1,
     live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
@@ -4224,6 +4230,7 @@ class Component extends DCLogic {
           ['dolls', '資料', '', [], [], '豆森娃(MySekai 玩偶)月列表與輪替。'],
           ['lives', '資料', '', [], [], '歷代虛擬 Live:類型、期間、每場時間、歌單與出演角色。'],
           ['news', '資料', '', [], [], '台服遊戲內公告一覽,依類型(活動／招募／樂曲／更新…)篩選與搜尋,連到官方公告頁。'],
+          ['story', '資料', '', [], [], '劇情閱讀器:活動／主線／卡片／區域對話／個人／特別劇情的台服翻譯文本,逐句附語音、背景與字幕。'],
           ['cards', '圖鑑', '', [], [], '卡片圖鑑:台服全部卡片依團體／角色／屬性／稀有度／來源篩選與排序,詳情有滿等數值、特訓加成、技能敘述(Lv1／Lv4)、釋出日、招募台詞。'],
           ['chars', '圖鑑', '', [], [], '26 位角色的檔案(聲優、生日、身高、學校、喜好、介紹)與相關卡片。'],
           ['fixtures', '圖鑑', '', [], [], 'MySekai 家具圖鑑:主／子分類與角色標籤篩選,尺寸、顏色與製作素材。'],
@@ -11149,8 +11156,8 @@ class Component extends DCLogic {
      角色／素材／一格漫畫／原聲帶／公告的來源檔都很小（< 300 KB），直接抓台服 master；
      虛擬 Live 與家具原檔各 1～3 MB，由 tools/build-db-index.py 壓成索引檔再載。
      每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
-  DB_PAGES = ['cards', 'chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news'];
-  DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news' };
+  DB_PAGES = ['cards', 'chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news', 'story'];
+  DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news', story: 'stories' };
   dbGet(name) {
     return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
@@ -11202,6 +11209,88 @@ class Component extends DCLogic {
       unresolved = true; return '…';
     }).replace(/\n/g, ' ');
     return txt + (unresolved ? '（「…」的數值依編組或狀態而定）' : '');
+  }
+  /* ---------- 劇情閱讀器 ----------
+     目錄從 data/stories-index.js 來（每日排程壓好），劇本本文從素材 CDN 抓：
+     台服桶（sekai-tc-assets）有翻譯過的文字，抓不到再退回日服桶；背景圖與語音固定走日服桶。
+     劇本 JSON 的 Snippets 依序指到 TalkData（對話）／SpecialEffectData（換背景、字幕）；
+     角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
+  loadStories() {
+    return this.dbRun('stories', async () => {
+      const m = await import('./data/stories-index.js?v=8aa0c9e874');
+      return { events: m.ST_EVENTS || [], units: m.ST_UNITS || [], cards: m.ST_CARDS || {}, areas: m.ST_AREAS || [], talks: m.ST_TALKS || [], special: m.ST_SPECIAL || [], self: m.ST_SELF || {} };
+    });
+  }
+  ST_KIND = { event: '活動劇情', unit: '主線劇情', card: '卡片劇情', talk: '區域對話', self: '個人劇情', special: '特別劇情' };
+  stUrls(path) { const tc = this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets'); return [tc + '/' + path, this.ASSET + '/' + path]; }
+  stOpen(kind, title, sub, paths, voiceDir) {
+    this.stStopVoice();
+    const urls = [].concat.apply([], paths.map(x => this.stUrls(x)));
+    const rd = { kind, title, sub: sub || '', urls, voiceBase: this.ASSET + '/' + voiceDir, lines: null, err: '' };
+    this.setState({ rd, rdVoice: -1 }, () => this.stLoad(rd));
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  }
+  async stLoad(rd) {
+    const tryFetch = async urls => {
+      let last = '';
+      for (const u of urls) {
+        try { const r = await fetch(u); if (r.ok) return await r.json(); last = 'HTTP ' + r.status; } catch (e) { last = (e && e.message) || '抓取失敗'; }
+      }
+      throw new Error(last || '找不到劇本');
+    };
+    try {
+      const [data, c2d, mobs] = await Promise.all([
+        tryFetch(rd.urls),
+        this._c2d ? this._c2d : this.dbGet('character2ds').then(x => (this._c2d = x)).catch(() => []),
+        this._mobs ? this._mobs : this.dbGet('mobCharacters').then(x => (this._mobs = x)).catch(() => []),
+      ]);
+      if (this.state.rd !== rd) return;
+      this.setState({ rd: Object.assign({}, rd, { lines: this.stParse(data, rd, c2d || [], mobs || []) }) });
+    } catch (e) {
+      if (this.state.rd !== rd) return;
+      this.setState({ rd: Object.assign({}, rd, { err: '劇本載入失敗（' + ((e && e.message) || '原因不明') + '）' }) });
+    }
+  }
+  stParse(data, rd, c2d, mobs) {
+    const byId = {}; c2d.forEach(c => { byId[c.id] = c; });
+    const mobName = {}; mobs.forEach(m => { mobName[m.id] = m.name; });
+    const bg = n => this.ASSET + '/scenario/background/' + n + '/' + n + '.webp';
+    const lines = [];
+    if (data.FirstBackground) lines.push({ t: 'bg', img: bg(data.FirstBackground) });
+    const talks = data.TalkData || [], ses = data.SpecialEffectData || [];
+    (data.Snippets || []).forEach(sn => {
+      if (sn.Action === 1) {   // 對話
+        const td = talks[sn.ReferenceIndex]; if (!td) return;
+        const cid2 = (td.TalkCharacters && td.TalkCharacters[0] && td.TalkCharacters[0].Character2dId) || 0;
+        const c = byId[cid2], gid = c && c.characterType === 'game_character' ? c.characterId : 0;
+        const name = td.WindowDisplayName || (c ? (gid ? this.charName(gid) : (mobName[c.characterId] || '')) : '') || '？？？';
+        const v = td.Voices && td.Voices[0] && td.Voices[0].VoiceId;
+        lines.push({ t: 'talk', name, body: String(td.Body || '').replace(/\r/g, ''), color: gid ? (this.CHARA_COLOR[gid] || '#888') : '#8b93ac',
+          voice: v ? rd.voiceBase + '/' + data.ScenarioId + '/' + v + '.mp3' : '' });
+      } else if (sn.Action === 6) {   // 特效：只留換背景與字幕，其他（震動、淡入淡出）對閱讀沒有意義
+        const se = ses[sn.ReferenceIndex]; if (!se) return;
+        if (se.EffectType === 7 || se.EffectType === 17) lines.push({ t: 'bg', img: bg(se.StringValSub || se.StringVal) });
+        else if ((se.EffectType === 8 || se.EffectType === 18 || se.EffectType === 24 || se.EffectType === 38) && se.StringVal) lines.push({ t: 'telop', text: se.StringVal });
+      }
+    });
+    return lines;
+  }
+  stStopVoice() {
+    const a = this._stA; this._stA = null;
+    if (a) { try { a.pause(); a.src = ''; } catch (e) {} }
+    if (this.state.rdVoice >= 0) this.setState({ rdVoice: -1 });
+  }
+  stVoice(i) {
+    const rd = this.state.rd; if (!rd || !rd.lines) return;
+    const ln = rd.lines[i]; if (!ln || !ln.voice) return;
+    if (this.state.rdVoice === i) { this.stStopVoice(); return; }
+    this.stStopVoice();
+    try { this._killAudio(); this.setState({ playAbn: '' }); } catch (e) {}
+    const a = new Audio(ln.voice);
+    a.onended = () => { if (a === this._stA) this.setState({ rdVoice: -1 }); };
+    a.onerror = () => { if (a === this._stA && a.error) { this._stA = null; this.setState({ rdVoice: -1 }); this._toast('語音無法載入'); } };
+    this._stA = a; this.setState({ rdVoice: i });
+    a.play().catch(() => { if (a === this._stA) { this._stA = null; this.setState({ rdVoice: -1 }); this._toast('語音無法播放'); } });
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
@@ -11288,8 +11377,8 @@ class Component extends DCLogic {
     const hit = (...f) => !q || this.normSong(f.join(' ')).includes(q);
     const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
     const busy = s.dbLoad === this.DB_KEY[p];
-    const PH = { chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
-    const out = { dbq: s.dbq, dbPlaceholder: PH[p] || '搜尋…', dbBusy: busy, dbHasErr: !!s.dbErr, dbErrMsg: s.dbErr, dbMore: false, dbMoreLabel: '', dbEmpty: false, dbCount: busy ? '載入中…' : '' };
+    const PH = { story: '搜尋劇情標題、活動、角色…', chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
+    const out = { dbShowSearch: true, dbq: s.dbq, dbPlaceholder: PH[p] || '搜尋…', dbBusy: busy, dbHasErr: !!s.dbErr, dbErrMsg: s.dbErr, dbMore: false, dbMoreLabel: '', dbEmpty: false, dbCount: busy ? '載入中…' : '' };
     let view = null;
     const page = (all, per) => {
       const n = Math.min(all.length, s.dbN || per || 48);
@@ -11335,6 +11424,68 @@ class Component extends DCLogic {
             ['技能', ex[9] || ''], ['技能 Lv1', skill ? this.skillText(skill, 1, ch[1]) : ''], ['技能 Lv4', skill ? this.skillText(skill, 4, ch[1]) : ''],
             ['招募台詞', ex[8] && ex[8] !== '-' ? ex[8] : '']].filter(x => x[1]).map(x => ({ l: x[0], v: x[1] })) : [],
           text: X ? '' : '詳細資料載入中…', list: [], listTitle: '', colors: [], goTo: 'art', goLabel: '前往卡面下載（原圖／立繪）' };
+      }
+    }
+
+    if (p === 'story') {
+      const d = s.stories, rd = s.rd;
+      Object.assign(out, { stEventRows: [], stEpRows: [], stCardRows: [], stTalkRows: [], stSelfRows: [], stCharChips: [], stAreaChips: [], stHasBack: false, stBackLabel: '', stOutline: '', rdLines: [], rdTitle: '', rdSub: '', rdKind: '', rdBusy: false, rdErr: '', rdHasErr: false, rdCount: '' });
+      const TABS = [['event', '活動劇情'], ['unit', '主線劇情'], ['card', '卡片劇情'], ['talk', '區域對話'], ['self', '個人劇情'], ['special', '特別劇情']];
+      out.stTabs = TABS.map(t => Object.assign({ v: t[0], n: t[1] }, chip(s.stTab === t[0])));
+      out.rdOpen = !!rd; out.rdClosed = !rd; out.dbShowSearch = !rd && s.stTab !== 'self';
+      ['event', 'unit', 'card', 'talk', 'self', 'special'].forEach(k => { out['stIs' + k[0].toUpperCase() + k.slice(1)] = !rd && s.stTab === k; });
+      if (rd) {
+        out.rdTitle = rd.title; out.rdSub = rd.sub; out.rdKind = this.ST_KIND[rd.kind] || '';
+        out.rdBusy = !rd.lines && !rd.err; out.rdErr = rd.err; out.rdHasErr = !!rd.err;
+        out.rdLines = (rd.lines || []).map((l, i) => ({ i, isTalk: l.t === 'talk', isBg: l.t === 'bg', isTelop: l.t === 'telop', name: l.name || '', body: l.body || '', color: l.color || '', img: l.img || '', text: l.text || '',
+          hasVoice: !!l.voice, on: s.rdVoice === i, vbg: s.rdVoice === i ? 'var(--cta)' : 'var(--card-2)', vfg: s.rdVoice === i ? '#fff' : 'var(--text-2)', icon: s.rdVoice === i ? '❚❚' : '▶' }));
+        out.rdCount = rd.lines ? rd.lines.filter(l => l.t === 'talk').length + ' 句對話' : '';
+        out.dbCount = ''; out.dbMore = false; out.dbEmpty = false;
+      } else if (d) {
+        const chars = s.rateChars || [];
+        if (s.stTab === 'event') {
+          if (!s.stEvent) {
+            const all = d.events.filter(e => hit(e[1], e[3]));
+            out.stEventRows = page(all, 30).map(e => ({ id: e[0], name: e[1] || ('活動 #' + e[0]), outline: e[3], n: e[4].length + ' 話', img: this.ASSET + '/event/' + e[2].replace(/_story$/, '') + '/logo/logo.webp' }));
+            out.stHasBack = false;
+          } else {
+            const e = d.events.find(x => x[0] === s.stEvent);
+            out.stHasBack = true; out.stBackLabel = e ? e[1] : '';
+            out.stOutline = e ? e[3] : '';
+            out.stEpRows = e ? e[4].map(ep => ({ label: '第 ' + ep[0] + ' 話', title: ep[1], kind: 'event', sid: ep[2], abn: e[2], sub: e[1] + ' 第 ' + ep[0] + ' 話' })) : [];
+            out.dbCount = e ? e[4].length + ' 話' : ''; out.dbMore = false; out.dbEmpty = !e;
+          }
+        }
+        if (s.stTab === 'unit') {
+          const rows = [];
+          d.units.forEach(u => { const key = { light_sound: 'ln', idol: 'mmj', street: 'vbs', theme_park: 'wxs', school_refusal: 'n25', piapro: 'vs' }[u[0]] || 'vs';
+            u[1].forEach(c => c[3].forEach(ep => rows.push({ unit: this.UNITS[key].n, color: this.UNITS[key].c, label: ep[0], title: ep[1], kind: 'unit', sid: ep[2], abn: c[1], sub: this.UNITS[key].n + ' ' + ep[0] }))); });
+          const all = rows.filter(r => hit(r.title, r.unit, r.label));
+          out.stEpRows = page(all, 60);
+        }
+        if (s.stTab === 'card') {
+          out.stCharChips = chars.map(c => Object.assign({ v: c[0], n: this.charShort(c[0]) || c[1] }, chip(s.stChar === c[0], this.CHARA_COLOR[c[0]])));
+          const cards = (s.rateCards || []).filter(r => d.cards[r[0]] && (!s.stChar || r[1] === s.stChar) && hit(r[7]));
+          const RAR = { 1: '★1', 2: '★2', 3: '★3', 4: '★4', 9: '生日' };
+          out.stCardRows = page(cards.slice().sort((a, b) => b[0] - a[0]), 40).map(r => ({ id: r[0], name: r[7], sub: (chars.find(c => c[0] === r[1]) || [])[1] + ' · ' + (RAR[r[2]] || ''), img: this.cardImg(r[8], r[2]), abn: r[8],
+            parts: d.cards[r[0]].map(pt => ({ label: pt[0] || (pt[2] === 's' ? '後篇' : '前篇'), kind: 'card', sid: pt[1], abn: r[8], title: r[7], sub: (pt[0] || (pt[2] === 's' ? '支線劇情（後篇）' : '支線劇情（前篇）')) })) }));
+        }
+        if (s.stTab === 'talk') {
+          const used = new Set(d.talks.map(t => t[1]));
+          out.stAreaChips = [{ v: 0, n: '全部區域' }].concat(d.areas.filter(a => used.has(a[0])).map(a => ({ v: a[0], n: a[1] }))).map(a => Object.assign(a, chip(s.stArea === a.v)));
+          const areaName = id => (d.areas.find(a => a[0] === id) || [])[1] || '';
+          const all = d.talks.filter(t => (!s.stArea || t[1] === s.stArea) && (!q || hit(t[2].map(c => this.charName(c)).join(' '), areaName(t[1]))));
+          out.stTalkRows = page(all.slice().sort((a, b) => b[0] - a[0]), 40).map(t => ({ id: t[0], chars: t[2].map(c => ({ n: this.charShort(c) || ('#' + c), c: this.CHARA_COLOR[c] || '#8b93ac' })), area: areaName(t[1]), kind: 'talk', sid: t[3] || t[4], sid2: t[4], abn: String(Math.floor(t[0] / 100)), title: t[2].map(c => this.charShort(c) || ('#' + c)).join('・'), sub: areaName(t[1]) + ' · #' + t[0] }));
+        }
+        if (s.stTab === 'self') {
+          out.stSelfRows = chars.filter(c => d.self[c[0]]).map(c => ({ id: c[0], name: c[1], color: this.CHARA_COLOR[c[0]] || '#888', img: this.ASSET + '/character/character_select/chr_tl_' + c[0] + '.webp', kind: 'self', sid: d.self[c[0]], abn: '', title: c[1] + ' 的個人劇情', sub: '個人劇情' }));
+          out.dbCount = ''; out.dbMore = false; out.dbEmpty = false;
+        }
+        if (s.stTab === 'special') {
+          const rows = [];
+          d.special.forEach(sp => sp[3].forEach(ep => rows.push({ label: (sp[1] || ('特別劇情 #' + sp[0])) + ' · ' + ep[0], title: ep[1], kind: 'special', sid: ep[2], abn: sp[2], sub: sp[1] || ('特別劇情 #' + sp[0]) })));
+          out.stEpRows = page(rows.filter(r => hit(r.title, r.label)), 60);
+        }
       }
     }
 
@@ -11846,6 +11997,8 @@ class Component extends DCLogic {
     if (p === 'collect') this.loadCollect();
     if (p === 'chars') { this.loadChars(); this.loadCards(); }
     if (p === 'cards') { this.loadCards(); this.loadCardX(); }
+    if (p === 'story') { this.loadStories(); this.loadCards(); }
+    if (p !== 'story' && this.state.rd) { this.stStopVoice(); this.setState({ rd: null }); }
     if (p === 'fixtures') this.loadFixtures();
     if (p === 'materials') this.loadMats();
     if (p === 'comics') this.loadComics();
@@ -12245,7 +12398,7 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['story', '劇情閱讀器', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
       ['圖鑑', [['cards', '卡片圖鑑', '#7fb4f7'], ['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
@@ -13108,7 +13261,7 @@ class Component extends DCLogic {
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
-      isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
+      isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
       kbHelpOpen: !!s.kbHelp,
       ...this.dbVals(s),
@@ -15413,6 +15566,23 @@ class Component extends DCLogic {
       onDbClose: () => this.setState({ dbPick: null }),
       onDbGo: e => { const p = e.currentTarget.dataset.p; this.setState({ dbPick: null }); if (p) this.go(p); },
       onKbHelp: () => this.setState(st => ({ kbHelp: !st.kbHelp })),
+      /* 劇情閱讀器 */
+      onStTab: e => this.setState({ stTab: e.currentTarget.dataset.v, stEvent: 0, dbq: '', dbN: 48 }),
+      onStEvent: e => this.setState({ stEvent: +e.currentTarget.dataset.id, dbq: '' }),
+      onStBack: () => this.setState({ stEvent: 0 }),
+      onStOpen: e => {
+        const d = e.currentTarget.dataset, k = d.kind;
+        const paths = k === 'event' ? ['event_story/' + d.abn + '/scenario/' + d.sid + '.json']
+          : k === 'unit' ? ['scenario/unitstory/' + d.abn + '/' + d.sid + '.json']
+          : k === 'card' ? ['character/member/' + d.abn + '/' + d.sid + '.json']
+          : k === 'talk' ? ['scenario/actionset/group' + d.abn + '/' + d.sid + '.json'].concat(d.sid2 && d.sid2 !== d.sid ? ['scenario/actionset/group' + d.abn + '/' + d.sid2 + '.json'] : [])
+          : k === 'self' ? ['scenario/profile/' + d.sid + '.json']
+          : ['scenario/special/' + d.abn + '/' + d.sid + '.json'];
+        const voiceDir = k === 'card' ? 'sound/card_scenario/voice' : k === 'talk' ? 'sound/actionset/voice' : 'sound/scenario/voice';
+        this.stOpen(k, d.title || d.sid, d.sub || '', paths, voiceDir);
+      },
+      onRdClose: () => { this.stStopVoice(); this.setState({ rd: null }); },
+      onRdVoice: e => this.stVoice(+e.currentTarget.dataset.i),
       onDbReload: () => { const p = this.state.page, k = this.DB_KEY[p]; if (!k) return; this.setState({ dbErr: '', [k]: null }, () => this.go(p)); },
       onOstPlay: e => this.ostToggle(+e.currentTarget.dataset.id),
       onOstStop: () => this.ostStop(),

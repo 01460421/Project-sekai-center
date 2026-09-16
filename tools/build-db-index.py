@@ -7,6 +7,7 @@ virtualLives.json 2.7 MB、mysekaiFixtures.json 1 MB（外加 tags 170 KB、藍�
 
     data/lives-index.js      虛擬 Live：類型、名稱、期間、場次、歌單、出演角色       （約 60 KB）
     data/fixtures-index.js   MySekai 家具：分類、標籤、尺寸、顏色、製作素材            （約 120 KB）
+    data/stories-index.js    劇情目錄：活動／主線／卡片／區域對話／個人／特別 的章節與 scenarioId（約 250 KB）
 
 角色／素材／一格漫畫／原聲帶／公告那幾頁的來源檔都很小（< 300 KB），
 前端直接抓 master 就好，不經過這裡。
@@ -25,6 +26,7 @@ JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT_LIVES = ROOT / 'data' / 'lives-index.js'
 OUT_FIX = ROOT / 'data' / 'fixtures-index.js'
+OUT_ST = ROOT / 'data' / 'stories-index.js'
 
 
 def get(url):
@@ -142,6 +144,66 @@ def build_fixtures():
     return write_if_changed(OUT_FIX, header, body)
 
 
+# ---------------------------------------------------------------- 劇情目錄
+def build_stories():
+    """劇情閱讀器只需要「有哪些章節、每章的 scenarioId 與素材路徑」；劇本本文另外從素材 CDN 抓。
+    eventStories 587 KB、cardEpisodes 1.1 MB、actionSets 876 KB 都是為了報酬／解鎖條件才那麼大。"""
+    ev_st = get(f'{TC}/eventStories.json')
+    events = {e['id']: e for e in get(f'{TC}/events.json')}
+    unit_st = get(f'{TC}/unitStories.json')
+    card_eps = get(f'{TC}/cardEpisodes.json')
+    action_sets = get(f'{TC}/actionSets.json')
+    areas = get(f'{TC}/areas.json')
+    specials = get(f'{TC}/specialStories.json')
+    profiles = get(f'{TC}/characterProfiles.json')
+
+    st_events = []
+    for st in sorted(ev_st, key=lambda x: -x['eventId']):
+        eps = sorted(st.get('eventStoryEpisodes') or [], key=lambda e: e.get('episodeNo') or 0)
+        st_events.append([st['eventId'], events.get(st['eventId'], {}).get('name', ''), st.get('assetbundleName') or '',
+                          st.get('outline') or '', [[e.get('episodeNo') or 0, e.get('title') or '', e.get('scenarioId') or ''] for e in eps]])
+    st_units = []
+    for u in sorted(unit_st, key=lambda x: x.get('seq') or 0):
+        chapters = []
+        for c in sorted(u.get('chapters') or [], key=lambda x: x.get('chapterNo') or 0):
+            eps = sorted(c.get('episodes') or [], key=lambda e: (e.get('chapterNo') or 0, e.get('episodeNo') or 0))
+            chapters.append([c.get('chapterNo') or 0, c.get('assetbundleName') or '', c.get('title') or '',
+                             [[e.get('episodeNoLabel') or '', e.get('title') or '', e.get('scenarioId') or ''] for e in eps]])
+        st_units.append([u.get('unit') or '', chapters])
+    # 卡片劇情的標題幾乎都是「支線劇情（前篇／後篇）」，跟前後篇欄位重複，只有不一樣時才存
+    st_cards = {}
+    DEFAULT_TITLE = {'first_part': '支線劇情（前篇）', 'second_part': '支線劇情（後篇）'}
+    for e in sorted(card_eps, key=lambda x: x['id']):
+        part = e.get('cardEpisodePartType') or ''
+        title = e.get('title') or ''
+        st_cards.setdefault(e['cardId'], []).append(['' if title == DEFAULT_TITLE.get(part) else title, e.get('scenarioId') or '', part[:1]])
+    st_areas = [[a['id'], a.get('name') or '', a.get('areaType') or ''] for a in sorted(areas, key=lambda x: x['id'])]
+    # 劇本檔名在鏡像站用 scenarioId（areatalk_…），舊資料只有 scriptId（as_…）；兩個都存，前端一個抓不到換另一個
+    st_talks = [[a['id'], a.get('areaId') or 0, a.get('characterIds') or [], a.get('scenarioId') or '', a.get('scriptId') or '']
+                for a in sorted(action_sets, key=lambda x: x['id']) if a.get('scenarioId') or a.get('scriptId')]
+    st_special = []
+    for sp in sorted(specials, key=lambda x: x['id']):
+        eps = sorted(sp.get('episodes') or [], key=lambda e: e.get('episodeNo') or 0)
+        st_special.append([sp['id'], sp.get('title') or '', sp.get('assetbundleName') or '',
+                           [[e.get('episodeNo') or 0, e.get('title') or '', e.get('scenarioId') or '', e.get('assetbundleName') or ''] for e in eps]])
+    st_self = {pf['characterId']: pf.get('scenarioId') or '' for pf in profiles if pf.get('scenarioId')}
+
+    body = ('export const ST_EVENTS=' + dump(st_events) + ';\n'
+            'export const ST_UNITS=' + dump(st_units) + ';\n'
+            'export const ST_CARDS=' + dump(st_cards) + ';\n'
+            'export const ST_AREAS=' + dump(st_areas) + ';\n'
+            'export const ST_TALKS=' + dump(st_talks) + ';\n'
+            'export const ST_SPECIAL=' + dump(st_special) + ';\n'
+            'export const ST_SELF=' + dump(st_self) + ';\n')
+    header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
+              ' ST_EVENTS=[活動id,名稱,劇情素材名,大綱,[[話數,標題,scenarioId]]] ST_UNITS=[[團,[[章,章素材名,章名,[[話標籤,標題,scenarioId]]]]]]'
+              ' ST_CARDS={卡id:[[標題(空=預設的「支線劇情（前篇／後篇）」),scenarioId,f/s]]} ST_AREAS=[[區域id,名稱,類型]] ST_TALKS=[[對話id,區域id,[角色id],scenarioId,scriptId]]'
+              ' ST_SPECIAL=[[id,標題,素材名,[[話數,標題,scenarioId,話素材名]]]] ST_SELF={角色id:scenarioId} */\n')
+    print(f'劇情目錄:活動 {len(st_events)}、主線章 {sum(len(u[1]) for u in st_units)}、卡片 {len(st_cards)}、區域對話 {len(st_talks)}、特別 {len(st_special)}、個人 {len(st_self)}')
+    return write_if_changed(OUT_ST, header, body)
+
+
 if __name__ == '__main__':
     build_lives()
     build_fixtures()
+    build_stories()
