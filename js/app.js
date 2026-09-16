@@ -111,6 +111,7 @@ class Component extends DCLogic {
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
     distrib:  ['活動分布', '歷屆活動的時間分布甘特圖'],
+    cards:    ['卡片圖鑑', '台服全部卡片：依團體、角色、屬性、稀有度、來源篩選，看滿等數值、技能與釋出日'],
     chars:    ['角色圖鑑', '26 位角色的檔案：聲優、生日、身高、學校、喜好與相關卡片'],
     fixtures: ['家具圖鑑', 'MySekai 家具：分類、標籤、尺寸、顏色與製作素材'],
     materials:['素材圖鑑', '養成素材與 MySekai 素材一覽'],
@@ -153,6 +154,7 @@ class Component extends DCLogic {
     ['偵測訂閱／通知', 'create_watch', 'notices／account', '偵測訂閱|訂閱|盯著|幫我盯|到 xxx 分時通知我|提醒我|通知|站內通知|watch|tier_score（榜線到達分數）|my_rank_out（我掉出段位）|passed_me（被超車）|started／stopped（開跑／停跑）|event_start／event_end|gacha_start／gacha_end'],
     ['玩家查詢（公開檔案）', 'get_player_profile', 'lookup', '玩家查詢|查玩家|查 ID|查 uid|Player ID|遊戲 ID|名片|個人檔案|profile|公開資料|編組|隊伍綜合力|角色等級|挑戰 Live 等級'],
     ['歌曲清單／樂曲資料庫', 'get_songs', 'songs', '歌曲清單|曲庫|樂曲資料庫|歌曲譜面|找歌|選歌|640 首曲庫|定數|譜面|note 數|音符數|曲長|活動倍率|歌曲係數|event rate|R 值'],
+    ['卡片圖鑑', '', 'cards', '卡片圖鑑|卡片一覽|所有卡片|卡片列表|找卡|卡片數值|滿等數值|綜合力多少|卡片技能|卡片釋出日|哪張卡|什麼時候出的卡|招募台詞'],
     ['角色圖鑑', '', 'chars', '角色|角色檔案|角色資料|角色介紹|生日|身高|聲優|CV|學校|年級|興趣|特技|喜歡的食物|討厭的食物|誰的生日|角色圖鑑'],
     ['家具圖鑑', '', 'fixtures', '家具|MySekai 家具|烤森家具|豆森家具|家具圖鑑|藍圖|製作素材|家具尺寸|壁紙|地板|家具怎麼做|家具材料|家具分類'],
     ['素材圖鑑', '', 'materials', '素材|素材圖鑑|碎片|寶石|課程|MySekai 素材|木材|礦石|素材說明|素材用途'],
@@ -253,6 +255,7 @@ class Component extends DCLogic {
     { date: '計算', title: 'B30 產生器', desc: '勾選或上傳截圖匯入 FC/AP，依非官方定數算 Best 30 実効值，輸出 Unibot 風格圖卡。', to: 'b30', cta: '前往 B30 產生器' },
     { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' },
+    { date: '圖鑑', title: '卡片圖鑑', desc: '台服全部卡片依團體、角色、屬性、稀有度、來源篩選；詳情有滿等數值、技能與釋出日。', to: 'cards', cta: '前往卡片圖鑑' },
     { date: '圖鑑', title: '角色圖鑑', desc: '26 位角色的聲優、生日、學校、喜好與介紹，並列出相關卡片。', to: 'chars', cta: '前往角色圖鑑' },
     { date: '圖鑑', title: '家具圖鑑', desc: 'MySekai 家具依分類、角色篩選，看尺寸、顏色與製作素材。', to: 'fixtures', cta: '前往家具圖鑑' },
     { date: '圖鑑', title: '素材圖鑑', desc: '養成素材與 MySekai 素材一覽，含用途說明。', to: 'materials', cta: '前往素材圖鑑' },
@@ -265,6 +268,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '新增卡片圖鑑，並補上鍵盤快捷鍵、骨架載入等介面細節', s: '卡片圖鑑：台服 1,249 張卡依團體、角色、屬性、稀有度、來源篩選，可依最新／最舊／編號排序；詳情視窗有滿等表演／技巧／體力與綜合力（含特訓後）、技能敘述 Lv1／Lv4、釋出日與招募台詞，並可一鍵前往卡面下載。介面部分參考 Moesekai：Esc 現在會關閉所有詳情視窗，按「?」有快捷鍵說明；圖鑑類分頁載入中改顯示骨架方格而不是轉圈；手機上過長的角色篩選籤改成橫向滑動，不再把畫面撐高。' },
     { d: '2026/09/16', t: '新增小遊戲「猜角色」「猜封面」與「貼圖製作器」', s: '同樣移植自 Moesekai：猜角色每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從 26 位角色裡選；猜封面每題出示一小塊曲繪，從 4～10 個歌名裡挑。兩者都是十題一局、三次猜錯或超時算失敗，分數依難度倍率（簡單 0.8×～極限 2.2×）、作答速度與猜錯次數計算，極限難度還會隨機加上灰階、反相、色相翻轉或翻轉；最佳成績存在本機。貼圖製作器可用官方貼圖（收集室的 1,000 多張）或自己上傳的圖當底圖，加上文字：大小、位置、旋轉、字距、描邊粗細與顏色、字型（粉圓／M PLUS Rounded）都能調，可下載 PNG 或直接複製到剪貼簿。' },
     { d: '2026/09/16', t: '新增七個圖鑑類分頁：角色、家具、素材、一格漫畫、原聲帶、虛擬 Live、遊戲公告', s: '把 Moesekai（pjsk.moe）站上本站還沒有的資料庫功能移植過來：角色圖鑑（聲優、生日、身高、學校、喜好、介紹與相關卡片）、MySekai 家具圖鑑（主／子分類、角色標籤、尺寸、其他顏色、製作素材）、素材圖鑑、一格漫畫（台服翻譯版，台服桶沒有的自動退回日服原版）、原聲帶（遊戲內 BGM 依分類瀏覽、站內直接播放）、虛擬 Live（期間、每場時間、下一場、歌單與出演角色）與台服遊戲公告（依類型與進行中／已結束篩選）。七頁共用同一套搜尋、篩選籤、「顯示更多」與詳情視窗。導覽新增「圖鑑」群組，收集室與收集率也移到那裡。虛擬 Live 與家具的原始資料各 1～3 MB，改由每日排程壓成索引檔（tools/build-db-index.py）。' },
     { d: '2026/09/16', t: '摸魚表加入自訂篩選', s: '摸魚表新增自訂篩選：「前 n%」依目前排序只留前 n% 的列、「與最高差 ≤ n%」只留跟第 1 名差距在 n% 以內的歌、「≥ n」只留數值達到門檻的歌（單位跟著排序：單局 P、每小時 P、每體力 P 或分數）。有篩選時列數上限放寬到 300，不會被預設的 40 列截掉。篩選提示會直接告訴你門檻換算成多少與符合幾列。' },
@@ -475,6 +479,8 @@ class Component extends DCLogic {
     qzBest: (() => { const o = {}; ['who', 'jacket'].forEach(k => { try { o[k] = +localStorage.getItem('sekai-quiz-best-' + k) || 0; } catch (e) {} }); return o; })(),
     stk: { base: null, text: '', size: 16, color: '#ff66bb', stroke: '#ffffff', sw: 8, x: 50, y: 22, rot: -4, sp: 0, font: 'Huninn', bg: 'transparent' },
     stkTab: 'stamp', stkq: '', stkChar: 0, stkN: 48,
+    /* 卡片圖鑑的篩選；kbHelp = 快捷鍵說明視窗 */
+    cardX: null, cdUnit: '', cdChar: 0, cdAttr: -1, cdRar: 0, cdSup: -1, cdSort: 'new', kbHelp: false,
     live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
@@ -672,7 +678,8 @@ class Component extends DCLogic {
     this.wireCharts();
     this._key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
-      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false });
+      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false });
+      if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
       if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
     };
     document.addEventListener('keydown', this._key);
@@ -4217,6 +4224,7 @@ class Component extends DCLogic {
           ['dolls', '資料', '', [], [], '豆森娃(MySekai 玩偶)月列表與輪替。'],
           ['lives', '資料', '', [], [], '歷代虛擬 Live:類型、期間、每場時間、歌單與出演角色。'],
           ['news', '資料', '', [], [], '台服遊戲內公告一覽,依類型(活動／招募／樂曲／更新…)篩選與搜尋,連到官方公告頁。'],
+          ['cards', '圖鑑', '', [], [], '卡片圖鑑:台服全部卡片依團體／角色／屬性／稀有度／來源篩選與排序,詳情有滿等數值、特訓加成、技能敘述(Lv1／Lv4)、釋出日、招募台詞。'],
           ['chars', '圖鑑', '', [], [], '26 位角色的檔案(聲優、生日、身高、學校、喜好、介紹)與相關卡片。'],
           ['fixtures', '圖鑑', '', [], [], 'MySekai 家具圖鑑:主／子分類與角色標籤篩選,尺寸、顏色與製作素材。'],
           ['materials', '圖鑑', '', [], [], '養成素材與 MySekai 素材一覽,含說明。'],
@@ -11022,7 +11030,7 @@ class Component extends DCLogic {
     if (this.state.rateLoad || this.state.rateCards.length) return;
     this.setState({ rateLoad: true, rateErr: '' });
     try {
-      const m = await import('./data/cards-index.js?v=dc3efb122f');
+      const m = await import('./data/cards-index.js?v=2ae280b4ad');
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -11141,8 +11149,8 @@ class Component extends DCLogic {
      角色／素材／一格漫畫／原聲帶／公告的來源檔都很小（< 300 KB），直接抓台服 master；
      虛擬 Live 與家具原檔各 1～3 MB，由 tools/build-db-index.py 壓成索引檔再載。
      每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
-  DB_PAGES = ['chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news'];
-  DB_KEY = { chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news' };
+  DB_PAGES = ['cards', 'chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news'];
+  DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news' };
   dbGet(name) {
     return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
@@ -11173,6 +11181,27 @@ class Component extends DCLogic {
       }));
       return { list, units };
     });
+  }
+  loadCardX() {
+    return this.dbRun('cardX', async () => { const m = await import('./data/cards-extra.js?v=3ae08c816b'); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
+  }
+  /* 技能敘述：master 的樣板長 {{效果id;欄位}}，d=秒數、v=數值、e=同團加成、m=加成上限、c=角色名；
+     少數技能（體力連動、角色等級連動、隨機成員）的欄位是編組時才算得出來的組合值，那些留成「…」並加註。 */
+  skillText(skill, lv, charName) {
+    const tpl = skill[0] || '', eff = skill[1] || {};
+    let unresolved = false;
+    const txt = String(tpl).replace(/\{\{([\d,]+);(\w+)\}\}/g, (m, ids, k) => {
+      if (k === 'c') return charName || '角色';
+      const e = eff[ids.split(',')[0]];
+      if (!e) { unresolved = true; return '…'; }
+      const row = (e.lv || [])[lv - 1] || {};
+      if (k === 'd' && row.d != null) return String(row.d);
+      if (k === 'v' && row.v != null) return String(row.v);
+      if (k === 'e' && e.e != null) return String(e.e);
+      if (k === 'm' && e.m != null) return String(e.m);
+      unresolved = true; return '…';
+    }).replace(/\n/g, ' ');
+    return txt + (unresolved ? '（「…」的數值依編組或狀態而定）' : '');
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
@@ -11270,6 +11299,44 @@ class Component extends DCLogic {
       return all.slice(0, n);
     };
     const pick = kind => (s.dbPick && s.dbPick.kind === kind) ? s.dbPick.id : null;
+
+    if (p === 'cards') {
+      const X = s.cardX, cards = s.rateCards || [], chars = s.rateChars || [];
+      const ATTR = [['cool', '帥氣', '#4d8ef5'], ['happy', '快樂', '#ffaa1c'], ['mysterious', '神秘', '#9d62d8'], ['cute', '可愛', '#ff6ba0'], ['pure', '純真', '#7fcf3f']];   // 順序照 cards-index 的 ATTRS
+      const RAR = { 1: '★1', 2: '★2', 3: '★3', 4: '★4', 9: '生日' };
+      const charOf = id => chars.find(c => c[0] === id) || [id, '#' + id, 5];
+      let all = cards.filter(r => r[8]);
+      if (s.cdUnit) all = all.filter(r => this.UNIT_OF[charOf(r[1])[2]] === s.cdUnit);
+      if (s.cdChar) all = all.filter(r => r[1] === s.cdChar);
+      if (s.cdAttr >= 0) all = all.filter(r => r[3] === s.cdAttr);
+      if (s.cdRar) all = all.filter(r => r[2] === s.cdRar);
+      if (s.cdSup >= 0) all = all.filter(r => r[4] === s.cdSup);
+      if (q) all = all.filter(r => hit(r[7], charOf(r[1])[1], (X && X.extra[r[0]] ? X.extra[r[0]][9] : '')));
+      const rel = id => (X && X.extra[id] ? X.extra[id][1] : 0);
+      all = all.slice().sort((a, b) => s.cdSort === 'old' ? ((rel(a[0]) - rel(b[0])) || (a[0] - b[0])) : s.cdSort === 'id' ? (a[0] - b[0]) : ((rel(b[0]) - rel(a[0])) || (b[0] - a[0])));
+      out.cdUnitChips = [{ v: '', n: '全部團體' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n }))).map(c => Object.assign(c, chip(s.cdUnit === c.v, c.v ? this.UNITS[c.v].c : '')));
+      out.cdCharChips = chars.filter(c => !s.cdUnit || this.UNIT_OF[c[2]] === s.cdUnit).map(c => Object.assign({ v: c[0], n: this.charShort(c[0]) || c[1] }, chip(s.cdChar === c[0], this.CHARA_COLOR[c[0]])));
+      out.cdAttrChips = [{ v: -1, n: '全屬性' }].concat(ATTR.map((a, i) => ({ v: i, n: a[1] }))).map(c => Object.assign(c, chip(s.cdAttr === c.v, c.v >= 0 ? ATTR[c.v][2] : '')));
+      out.cdRarChips = [{ v: 0, n: '全稀有度' }].concat(this.RARITY.map(r => ({ v: r[0], n: r[1] }))).map(c => Object.assign(c, chip(s.cdRar === c.v)));
+      out.cdSupChips = [{ v: -1, n: '全部來源' }].concat(this.SUPPLYN.map((n, i) => ({ v: i, n }))).map(c => Object.assign(c, chip(s.cdSup === c.v, 'var(--accent-deep)')));
+      out.cdSortChips = [['new', '最新優先'], ['old', '最舊優先'], ['id', '依編號']].map(x => Object.assign({ v: x[0], n: x[1] }, chip((s.cdSort || 'new') === x[0], 'var(--accent-deep)')));
+      out.cdRows = page(all, 48).map(r => ({ id: r[0], name: r[7], img: this.cardImg(r[8], r[2]), sub: charOf(r[1])[1], rar: RAR[r[2]] || '', attr: ATTR[r[3]] ? ATTR[r[3]][1] : '', attrBg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888', color: this.CHARA_COLOR[r[1]] || '#888' }));
+      const r = pick('card') != null ? cards.find(x => x[0] === pick('card')) : null;
+      if (r) {
+        const ex = (X && X.extra[r[0]]) || null, ch = charOf(r[1]);
+        const tot = ex ? ex[2] + ex[3] + ex[4] : 0, bonus = ex ? ex[5] + ex[6] + ex[7] : 0;
+        const skill = ex && X.skills[ex[0]] ? X.skills[ex[0]] : null;
+        const su = r[5] >= 0 ? this.UNITS[this.UNIT_OF[r[5]]] : null;
+        view = { title: r[7], sub: ch[1] + ' · ' + (RAR[r[2]] || '') + ' · #' + r[0], img: this.cardImg(r[8], r[2]), imgRatio: '1/1', wide: true,
+          chips: [{ n: ATTR[r[3]] ? ATTR[r[3]][1] : '', bg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888' }, { n: this.SUPPLYN[r[4]] || '', bg: 'var(--accent-deep)' }, { n: r[6] ? '卡池可得' : '非卡池（活動報酬等）', bg: 'var(--text-3)' }].concat(su ? [{ n: '支援團 ' + su.n, bg: su.c }] : []).filter(x => x.n),
+          rows: ex ? [['釋出日', ex[1] ? this.dbDate(ex[1] * 1000) : ''],
+            ['滿等綜合力', this.n(tot) + (bonus ? '（特訓後 ' + this.n(tot + bonus) + '）' : '')],
+            ['表演／技巧／體力', this.n(ex[2]) + ' / ' + this.n(ex[3]) + ' / ' + this.n(ex[4]) + (bonus ? '（特訓 +' + ex[5] + ' / +' + ex[6] + ' / +' + ex[7] + '）' : '')],
+            ['技能', ex[9] || ''], ['技能 Lv1', skill ? this.skillText(skill, 1, ch[1]) : ''], ['技能 Lv4', skill ? this.skillText(skill, 4, ch[1]) : ''],
+            ['招募台詞', ex[8] && ex[8] !== '-' ? ex[8] : '']].filter(x => x[1]).map(x => ({ l: x[0], v: x[1] })) : [],
+          text: X ? '' : '詳細資料載入中…', list: [], listTitle: '', colors: [], goTo: 'art', goLabel: '前往卡面下載（原圖／立繪）' };
+      }
+    }
 
     if (p === 'chars') {
       const d = s.chars;
@@ -11418,6 +11485,8 @@ class Component extends DCLogic {
     out.dbPickHasText = !!view.text; out.dbPickHasList = view.list.length > 0 || !!view.listTitle; out.dbPickHasColors = (view.colors || []).length > 0;
     out.dbPickHasLink = !!view.link; out.dbPickLink = view.link || '#'; out.dbPickLinkLabel = view.linkLabel || '';
     out.dbPickListGrid = !!view.listGrid; out.dbPickListRows = !view.listGrid;
+    out.dbPickHasGo = !!view.goTo; out.dbPickGo = view.goTo || ''; out.dbPickGoLabel = view.goLabel || '';
+    out.dbSkel = busy ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => ({ i })) : [];
     return out;
   }
 
@@ -11776,6 +11845,7 @@ class Component extends DCLogic {
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'chars') { this.loadChars(); this.loadCards(); }
+    if (p === 'cards') { this.loadCards(); this.loadCardX(); }
     if (p === 'fixtures') this.loadFixtures();
     if (p === 'materials') this.loadMats();
     if (p === 'comics') this.loadComics();
@@ -12176,7 +12246,7 @@ class Component extends DCLogic {
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
-      ['圖鑑', [['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
+      ['圖鑑', [['cards', '卡片圖鑑', '#7fb4f7'], ['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
       ['遊戲', [['guesswho', '猜角色', '#ff9db4'], ['guessjacket', '猜封面', '#5ec9f2']]],
@@ -13038,8 +13108,9 @@ class Component extends DCLogic {
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
-      isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
+      isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
+      kbHelpOpen: !!s.kbHelp,
       ...this.dbVals(s),
       isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
       ...this.qzVals(s),
@@ -15336,10 +15407,12 @@ class Component extends DCLogic {
       onColClose: () => this.setState({ colPick: null }),
       /* 圖鑑類分頁共用：搜尋、篩選籤、顯示更多、詳情 */
       onDbField: e => this.setState({ dbq: e.target.value, dbN: 48 }),
-      onDbChip: e => { const d = e.currentTarget.dataset; const patch = { [d.k]: d.num ? +d.v : d.v, dbN: 48 }; if (d.k === 'fixGenre') patch.fixSub = 0; this.setState(patch); },
+      onDbChip: e => { const d = e.currentTarget.dataset; const patch = { [d.k]: d.num ? +d.v : d.v, dbN: 48 }; if (d.k === 'fixGenre') patch.fixSub = 0; if (d.k === 'cdUnit') patch.cdChar = 0; this.setState(patch); },
       onDbMore: () => this.setState(st => ({ dbN: (st.dbN || 48) + 48 })),
       onDbPick: e => { const d = e.currentTarget.dataset; this.setState({ dbPick: { kind: d.kind, id: d.num ? +d.id : d.id } }); },
       onDbClose: () => this.setState({ dbPick: null }),
+      onDbGo: e => { const p = e.currentTarget.dataset.p; this.setState({ dbPick: null }); if (p) this.go(p); },
+      onKbHelp: () => this.setState(st => ({ kbHelp: !st.kbHelp })),
       onDbReload: () => { const p = this.state.page, k = this.DB_KEY[p]; if (!k) return; this.setState({ dbErr: '', [k]: null }, () => this.go(p)); },
       onOstPlay: e => this.ostToggle(+e.currentTarget.dataset.id),
       onOstStop: () => this.ostStop(),
