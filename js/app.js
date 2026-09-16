@@ -110,7 +110,19 @@ class Component extends DCLogic {
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
-    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖']
+    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖'],
+    cards:    ['卡片圖鑑', '台服全部卡片：依團體、角色、屬性、稀有度、來源篩選，看滿等數值、技能與釋出日'],
+    chars:    ['角色圖鑑', '26 位角色的檔案：聲優、生日、身高、學校、喜好與相關卡片'],
+    fixtures: ['家具圖鑑', 'MySekai 家具：分類、標籤、尺寸、顏色與製作素材'],
+    materials:['素材圖鑑', '養成素材與 MySekai 素材一覽'],
+    comics:   ['一格漫畫', '遊戲內小提示的一格漫畫（台服翻譯版）'],
+    ost:      ['原聲帶', '遊戲內 BGM：區域、劇情、Live 與卡池音樂，站內直接播放'],
+    lives:    ['虛擬 Live', '歷代虛擬 Live 的期間、場次、歌單與出演角色'],
+    news:     ['遊戲公告', '台服遊戲內公告一覽，可依類型篩選與搜尋'],
+    story:    ['劇情閱讀器', '活動、主線、卡片、區域對話、個人與特別劇情：台服翻譯文本，可播語音'],
+    guesswho: ['猜角色', '看一小塊卡面猜是誰：十題一局，猜得越快分數越高'],
+    guessjacket:['猜封面', '看一小塊曲繪猜歌名：十題一局，可調選項數與難度'],
+    stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製']
   };
   /* 圈內用語 → 站上功能 → 對應工具。玩家講的幾乎都是別名,而站上存的是正式名稱;
      這張表放在程式碼裡而不是 prompt 裡 —— 它有五百多條,每次請求都送一遍太貴,
@@ -143,6 +155,18 @@ class Component extends DCLogic {
     ['偵測訂閱／通知', 'create_watch', 'notices／account', '偵測訂閱|訂閱|盯著|幫我盯|到 xxx 分時通知我|提醒我|通知|站內通知|watch|tier_score（榜線到達分數）|my_rank_out（我掉出段位）|passed_me（被超車）|started／stopped（開跑／停跑）|event_start／event_end|gacha_start／gacha_end'],
     ['玩家查詢（公開檔案）', 'get_player_profile', 'lookup', '玩家查詢|查玩家|查 ID|查 uid|Player ID|遊戲 ID|名片|個人檔案|profile|公開資料|編組|隊伍綜合力|角色等級|挑戰 Live 等級'],
     ['歌曲清單／樂曲資料庫', 'get_songs', 'songs', '歌曲清單|曲庫|樂曲資料庫|歌曲譜面|找歌|選歌|640 首曲庫|定數|譜面|note 數|音符數|曲長|活動倍率|歌曲係數|event rate|R 值'],
+    ['卡片圖鑑', '', 'cards', '卡片圖鑑|卡片一覽|所有卡片|卡片列表|找卡|卡片數值|滿等數值|綜合力多少|卡片技能|卡片釋出日|哪張卡|什麼時候出的卡|招募台詞'],
+    ['角色圖鑑', '', 'chars', '角色|角色檔案|角色資料|角色介紹|生日|身高|聲優|CV|學校|年級|興趣|特技|喜歡的食物|討厭的食物|誰的生日|角色圖鑑'],
+    ['家具圖鑑', '', 'fixtures', '家具|MySekai 家具|烤森家具|豆森家具|家具圖鑑|藍圖|製作素材|家具尺寸|壁紙|地板|家具怎麼做|家具材料|家具分類'],
+    ['素材圖鑑', '', 'materials', '素材|素材圖鑑|碎片|寶石|課程|MySekai 素材|木材|礦石|素材說明|素材用途'],
+    ['一格漫畫', '', 'comics', '一格漫畫|漫畫|小提示漫畫|comic|提示漫畫'],
+    ['原聲帶', '', 'ost', '原聲帶|BGM|背景音樂|區域音樂|劇情音樂|OST|soundtrack|音樂播放|遊戲音樂'],
+    ['虛擬 Live', '', 'lives', '虛擬Live|虛擬 Live|バーチャルライブ|virtual live|VL|生日 Live|Live 場次|Live 時間|Live 歌單|演唱會|連線 Live|嘉年華'],
+    ['遊戲公告', '', 'news', '公告|遊戲公告|官方公告|情報|通知|維護公告|更新公告|活動公告|招募公告|遊戲內公告'],
+    ['劇情閱讀器', '', 'story', '劇情|劇情閱讀|看劇情|活動劇情|主線劇情|卡片劇情|支線劇情|區域對話|個人劇情|特別劇情|劇本|台詞|story|scenario|語音'],
+    ['猜角色', '', 'guesswho', '猜角色|猜卡面|猜猜看|猜謎|小遊戲|遊戲|guess who|看圖猜角色|卡面猜謎'],
+    ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
+    ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
     ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic V31|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
@@ -232,9 +256,25 @@ class Component extends DCLogic {
     { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品的內容物、台幣定價與 CP 值排行，含官網比價與最省錢組合推薦。', to: 'shop', cta: '前往儲值分析' },
     { date: '計算', title: 'B30 產生器', desc: '勾選或上傳截圖匯入 FC/AP，依非官方定數算 Best 30 実効值，輸出 Unibot 風格圖卡。', to: 'b30', cta: '前往 B30 產生器' },
     { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
-    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
+    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' },
+    { date: '圖鑑', title: '卡片圖鑑', desc: '台服全部卡片依團體、角色、屬性、稀有度、來源篩選；詳情有滿等數值、技能與釋出日。', to: 'cards', cta: '前往卡片圖鑑' },
+    { date: '圖鑑', title: '角色圖鑑', desc: '26 位角色的聲優、生日、學校、喜好與介紹，並列出相關卡片。', to: 'chars', cta: '前往角色圖鑑' },
+    { date: '圖鑑', title: '家具圖鑑', desc: 'MySekai 家具依分類、角色篩選，看尺寸、顏色與製作素材。', to: 'fixtures', cta: '前往家具圖鑑' },
+    { date: '圖鑑', title: '素材圖鑑', desc: '養成素材與 MySekai 素材一覽，含用途說明。', to: 'materials', cta: '前往素材圖鑑' },
+    { date: '圖鑑', title: '一格漫畫', desc: '遊戲內小提示漫畫（台服翻譯版），可放大與開啟原圖。', to: 'comics', cta: '前往一格漫畫' },
+    { date: '圖鑑', title: '原聲帶', desc: '遊戲內 BGM 依分類瀏覽，站內直接播放。', to: 'ost', cta: '前往原聲帶' },
+    { date: '資料', title: '虛擬 Live', desc: '歷代虛擬 Live 的期間、場次、歌單與出演角色。', to: 'lives', cta: '前往虛擬 Live' },
+    { date: '資料', title: '遊戲公告', desc: '台服遊戲內公告依類型篩選與搜尋，直達官方公告頁。', to: 'news', cta: '前往遊戲公告' },
+    { date: '資料', title: '劇情閱讀器', desc: '活動、主線、卡片、區域對話、個人與特別劇情的台服翻譯文本，逐句可播語音。', to: 'story', cta: '前往劇情閱讀器' },
+    { date: '遊戲', title: '猜角色', desc: '看一小塊卡面猜是誰，十題一局；難度、團體、稀有度、限時可調。', to: 'guesswho', cta: '來玩猜角色' },
+    { date: '遊戲', title: '猜封面', desc: '看一小塊曲繪猜歌名，十題一局；選項數與難度可調。', to: 'guessjacket', cta: '來玩猜封面' },
+    { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '新增劇情閱讀器', s: '活動劇情（182 場）、主線劇情、卡片支線劇情（1,192 張卡的前後篇）、區域對話（2,654 段）、個人劇情與特別劇情都能在站上讀：目錄由每日排程整理成索引，劇本本文從素材庫抓台服翻譯版（抓不到退回日服原文），逐句顯示說話者與台詞、換背景與字幕，有語音的句子可以直接播放。' },
+    { d: '2026/09/16', t: '新增卡片圖鑑，並補上鍵盤快捷鍵、骨架載入等介面細節', s: '卡片圖鑑：台服 1,249 張卡依團體、角色、屬性、稀有度、來源篩選，可依最新／最舊／編號排序；詳情視窗有滿等表演／技巧／體力與綜合力（含特訓後）、技能敘述 Lv1／Lv4、釋出日與招募台詞，並可一鍵前往卡面下載。介面部分參考 Moesekai：Esc 現在會關閉所有詳情視窗，按「?」有快捷鍵說明；圖鑑類分頁載入中改顯示骨架方格而不是轉圈；手機上過長的角色篩選籤改成橫向滑動，不再把畫面撐高。' },
+    { d: '2026/09/16', t: '新增小遊戲「猜角色」「猜封面」與「貼圖製作器」', s: '同樣移植自 Moesekai：猜角色每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從 26 位角色裡選；猜封面每題出示一小塊曲繪，從 4～10 個歌名裡挑。兩者都是十題一局、三次猜錯或超時算失敗，分數依難度倍率（簡單 0.8×～極限 2.2×）、作答速度與猜錯次數計算，極限難度還會隨機加上灰階、反相、色相翻轉或翻轉；最佳成績存在本機。貼圖製作器可用官方貼圖（收集室的 1,000 多張）或自己上傳的圖當底圖，加上文字：大小、位置、旋轉、字距、描邊粗細與顏色、字型（粉圓／M PLUS Rounded）都能調，可下載 PNG 或直接複製到剪貼簿。' },
+    { d: '2026/09/16', t: '新增七個圖鑑類分頁：角色、家具、素材、一格漫畫、原聲帶、虛擬 Live、遊戲公告', s: '把 Moesekai（pjsk.moe）站上本站還沒有的資料庫功能移植過來：角色圖鑑（聲優、生日、身高、學校、喜好、介紹與相關卡片）、MySekai 家具圖鑑（主／子分類、角色標籤、尺寸、其他顏色、製作素材）、素材圖鑑、一格漫畫（台服翻譯版，台服桶沒有的自動退回日服原版）、原聲帶（遊戲內 BGM 依分類瀏覽、站內直接播放）、虛擬 Live（期間、每場時間、下一場、歌單與出演角色）與台服遊戲公告（依類型與進行中／已結束篩選）。七頁共用同一套搜尋、篩選籤、「顯示更多」與詳情視窗。導覽新增「圖鑑」群組，收集室與收集率也移到那裡。虛擬 Live 與家具的原始資料各 1～3 MB，改由每日排程壓成索引檔（tools/build-db-index.py）。' },
     { d: '2026/09/16', t: '摸魚表加入自訂篩選', s: '摸魚表新增自訂篩選：「前 n%」依目前排序只留前 n% 的列、「與最高差 ≤ n%」只留跟第 1 名差距在 n% 以內的歌、「≥ n」只留數值達到門檻的歌（單位跟著排序：單局 P、每小時 P、每體力 P 或分數）。有篩選時列數上限放寬到 300，不會被預設的 40 列截掉。篩選提示會直接告訴你門檻換算成多少與符合幾列。' },
     { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單納入日服曲：台服 613 首之外再列出台服尚未實裝的日服曲（標「日服」，可切換台＋日服／僅台服／僅日服限定），全庫 726 首。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
     { d: '2026/09/15', t: '榜線預測改用回測驗證的模型', s: '榜線終線預測不再只是線性外推：改用「速率剖面＋隨進度集成」模型，把台灣時刻、距結算時數、開跑時數的增速差異算進去，再依活動進度把 24 小時／6 小時實測、歷史同型態先驗與上一段位的走勢集成起來。以 175～178 期留一法回測，主榜平均誤差從 13.8% 降到 5.6%（T1000 3–8%、T5000 1–6%），WL 章節榜從 13.3% 降到 5.9%，前百逐名次線從 19% 降到 12%，前百玩家終分從 21.6% 降到 14.9%。榜線分析新增第 1／2／3／10／20／30／40／50 名的預測線，每條預測都附 P10～P90 區間，依據欄標「模型」。前百玩家的預測終分與預測名次、WL 各章榜線、AI 助手的榜線工具全部改用同一套模型；參數每天由伺服器用新結束的活動重擬。T100 與前三名是少數人的個人行為，誤差仍有一成多，越前面越不準，目標線請看區間上緣。' },
@@ -433,6 +473,20 @@ class Component extends DCLogic {
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
+    /* 圖鑑類分頁（角色／家具／素材／一格漫畫／原聲帶／虛擬 Live／公告）。
+       共用一組搜尋字串 dbq、顯示數 dbN 與詳情 dbPick；換頁時在 go() 清掉，各頁資料各自快取在自己的 key。 */
+    dbq: '', dbN: 48, dbPick: null, dbLoad: '', dbErr: '',
+    chars: null, fixtures: null, mats: null, comics: null, ost: null, lives: null, news: null,
+    fixGenre: 0, fixSub: 0, fixChar: 0, matType: '', ostCat: 0, ostPlay: 0, liveType: '', liveStat: '', newsTag: '', newsStat: '',
+    /* 小遊戲（猜角色／猜封面）與貼圖製作器 */
+    qz: null, qzDiff: 'normal', qzUnits: [], qzRar: [3, 4], qzOpts: 6, qzTime: 60,
+    qzBest: (() => { const o = {}; ['who', 'jacket'].forEach(k => { try { o[k] = +localStorage.getItem('sekai-quiz-best-' + k) || 0; } catch (e) {} }); return o; })(),
+    stk: { base: null, text: '', size: 16, color: '#ff66bb', stroke: '#ffffff', sw: 8, x: 50, y: 22, rot: -4, sp: 0, font: 'Huninn', bg: 'transparent' },
+    stkTab: 'stamp', stkq: '', stkChar: 0, stkN: 48,
+    /* 卡片圖鑑的篩選；kbHelp = 快捷鍵說明視窗 */
+    cardX: null, cdUnit: '', cdChar: 0, cdAttr: -1, cdRar: 0, cdSup: -1, cdSort: 'new', kbHelp: false,
+    /* 劇情閱讀器：目錄索引 stories、分頁 stTab、目前打開的劇本 rd、正在播的語音行 rdVoice */
+    stories: null, stTab: 'event', stEvent: 0, stChar: 0, stArea: 0, rd: null, rdVoice: -1,
     live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
@@ -630,7 +684,8 @@ class Component extends DCLogic {
     this.wireCharts();
     this._key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
-      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false });
+      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false });
+      if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
       if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
     };
     document.addEventListener('keydown', this._key);
@@ -1664,7 +1719,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=3bdc375757';
+      s.src = 'data/billing.js?v=704d4b3fab';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4173,6 +4228,18 @@ class Component extends DCLogic {
           ['cardlib', '資料', '', ['get_card_skills'], [],
             '逐張卡的技能敘述與各等級數值,直接讀官方 master 的 skills.json。'],
           ['dolls', '資料', '', [], [], '豆森娃(MySekai 玩偶)月列表與輪替。'],
+          ['lives', '資料', '', [], [], '歷代虛擬 Live:類型、期間、每場時間、歌單與出演角色。'],
+          ['news', '資料', '', [], [], '台服遊戲內公告一覽,依類型(活動／招募／樂曲／更新…)篩選與搜尋,連到官方公告頁。'],
+          ['story', '資料', '', [], [], '劇情閱讀器:活動／主線／卡片／區域對話／個人／特別劇情的台服翻譯文本,逐句附語音、背景與字幕。'],
+          ['cards', '圖鑑', '', [], [], '卡片圖鑑:台服全部卡片依團體／角色／屬性／稀有度／來源篩選與排序,詳情有滿等數值、特訓加成、技能敘述(Lv1／Lv4)、釋出日、招募台詞。'],
+          ['chars', '圖鑑', '', [], [], '26 位角色的檔案(聲優、生日、身高、學校、喜好、介紹)與相關卡片。'],
+          ['fixtures', '圖鑑', '', [], [], 'MySekai 家具圖鑑:主／子分類與角色標籤篩選,尺寸、顏色與製作素材。'],
+          ['materials', '圖鑑', '', [], [], '養成素材與 MySekai 素材一覽,含說明。'],
+          ['comics', '圖鑑', '', [], [], '遊戲內小提示的一格漫畫(台服翻譯版),可放大與開啟原圖。'],
+          ['ost', '圖鑑', '', [], [], '遊戲內 BGM(區域、劇情、Live、卡池…)站內直接播放。'],
+          ['guesswho', '遊戲', '', [], [], '猜角色:看一小塊卡面猜是誰,十題一局,可選難度／團體／稀有度／限時。'],
+          ['guessjacket', '遊戲', '', [], [], '猜封面:看一小塊曲繪猜歌名,十題一局,可選難度／團體／選項數／限時。'],
+          ['stickers', '工具', '', [], [], '貼圖製作器:官方貼圖或上傳的圖加上文字(大小、位置、旋轉、描邊、字型),匯出 PNG 或複製。'],
           ['rank', '追蹤', '', [], [
             ['live', '即時排名', '前 100 名即時分數與 1h 均速;點某人開「排名詳情」看逐局紀錄', ['get_top100', 'get_player_games']],
             ['border', '分段榜線', 'T100～T10萬 各段位目前分數與預測終線', ['get_borders']],
@@ -4685,7 +4752,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=3bdc375757';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=704d4b3fab';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -10970,7 +11037,7 @@ class Component extends DCLogic {
     if (this.state.rateLoad || this.state.rateCards.length) return;
     this.setState({ rateLoad: true, rateErr: '' });
     try {
-      const m = await import('./data/cards-index.js?v=dc3efb122f');
+      const m = await import('./data/cards-index.js?v=2ae280b4ad');
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -11085,6 +11152,743 @@ class Component extends DCLogic {
   pct(have, n) { return n > 0 ? (have / n * 100) : 0; }
 
   /* 收集室：貼圖 + 稱號圖鑑。素材清單為實際列舉 CDN 產生，只留真的有圖的，避免破圖 */
+  /* ---------- 圖鑑類分頁的資料 ----------
+     角色／素材／一格漫畫／原聲帶／公告的來源檔都很小（< 300 KB），直接抓台服 master；
+     虛擬 Live 與家具原檔各 1～3 MB，由 tools/build-db-index.py 壓成索引檔再載。
+     每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
+  DB_PAGES = ['cards', 'chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news', 'story'];
+  DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news', story: 'stories' };
+  dbGet(name) {
+    return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  async dbRun(key, task) {
+    if (this.state.dbLoad === key || this.state[key]) return;
+    this.setState({ dbLoad: key, dbErr: '' });
+    try {
+      const v = await task();
+      this.setState({ [key]: v, dbLoad: '' });
+    } catch (e) {
+      this.setState({ dbLoad: '', dbErr: '資料載入失敗（' + ((e && e.message) || '原因不明') + '），點此重試' });
+    }
+  }
+  loadChars() {
+    return this.dbRun('chars', async () => {
+      const [gc, pf, up, gu] = await Promise.all([this.dbGet('gameCharacters'), this.dbGet('characterProfiles'), this.dbGet('unitProfiles'), this.dbGet('gameCharacterUnits')]);
+      const prof = {}; (pf || []).forEach(x => { prof[x.characterId] = x; });
+      const unitOf = {}; (gc || []).forEach(c => { unitOf[c.id] = c.unit; });
+      // 角色代表色取「所屬團」那一筆（VS 在各團都有一筆副團色，主團才是本色）
+      const color = {}; (gu || []).forEach(u => { if (!color[u.gameCharacterId] || u.unit === unitOf[u.gameCharacterId]) color[u.gameCharacterId] = u.colorCode; });
+      // 虛擬歌手在 master 的代表色是 #ffffff，白底上等於看不見，改用站內的 VS 色
+      const unitColor = u => (u.colorCode && u.colorCode.toLowerCase() !== '#ffffff') ? u.colorCode : this.UNITS.vs.c;
+      const units = (up || []).slice().sort((a, b) => (a.seq || 0) - (b.seq || 0)).map(u => ({ key: u.unit, name: u.unitName || u.unit, color: unitColor(u), sentence: u.profileSentence || '' }));
+      const list = (gc || []).map(c => ({
+        id: c.id, name: (c.firstName || '') + (c.givenName || ''), ruby: ((c.firstNameRuby || '') + ' ' + (c.givenNameRuby || '')).trim(),
+        en: ((c.firstNameEnglish || '') + ' ' + (c.givenNameEnglish || '')).trim(), unit: c.unit, gender: c.gender,
+        color: this.CHARA_COLOR[c.id] || color[c.id] || '#888', p: prof[c.id] || {}
+      }));
+      return { list, units };
+    });
+  }
+  loadCardX() {
+    return this.dbRun('cardX', async () => { const m = await import('./data/cards-extra.js?v=3ae08c816b'); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
+  }
+  /* 技能敘述：master 的樣板長 {{效果id;欄位}}，d=秒數、v=數值、e=同團加成、m=加成上限、c=角色名；
+     少數技能（體力連動、角色等級連動、隨機成員）的欄位是編組時才算得出來的組合值，那些留成「…」並加註。 */
+  skillText(skill, lv, charName) {
+    const tpl = skill[0] || '', eff = skill[1] || {};
+    let unresolved = false;
+    const txt = String(tpl).replace(/\{\{([\d,]+);(\w+)\}\}/g, (m, ids, k) => {
+      if (k === 'c') return charName || '角色';
+      const e = eff[ids.split(',')[0]];
+      if (!e) { unresolved = true; return '…'; }
+      const row = (e.lv || [])[lv - 1] || {};
+      if (k === 'd' && row.d != null) return String(row.d);
+      if (k === 'v' && row.v != null) return String(row.v);
+      if (k === 'e' && e.e != null) return String(e.e);
+      if (k === 'm' && e.m != null) return String(e.m);
+      unresolved = true; return '…';
+    }).replace(/\n/g, ' ');
+    return txt + (unresolved ? '（「…」的數值依編組或狀態而定）' : '');
+  }
+  /* ---------- 劇情閱讀器 ----------
+     目錄從 data/stories-index.js 來（每日排程壓好），劇本本文從素材 CDN 抓：
+     台服桶（sekai-tc-assets）有翻譯過的文字，抓不到再退回日服桶；背景圖與語音固定走日服桶。
+     劇本 JSON 的 Snippets 依序指到 TalkData（對話）／SpecialEffectData（換背景、字幕）；
+     角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
+  loadStories() {
+    return this.dbRun('stories', async () => {
+      const m = await import('./data/stories-index.js?v=8aa0c9e874');
+      return { events: m.ST_EVENTS || [], units: m.ST_UNITS || [], cards: m.ST_CARDS || {}, areas: m.ST_AREAS || [], talks: m.ST_TALKS || [], special: m.ST_SPECIAL || [], self: m.ST_SELF || {} };
+    });
+  }
+  ST_KIND = { event: '活動劇情', unit: '主線劇情', card: '卡片劇情', talk: '區域對話', self: '個人劇情', special: '特別劇情' };
+  stUrls(path) { const tc = this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets'); return [tc + '/' + path, this.ASSET + '/' + path]; }
+  stOpen(kind, title, sub, paths, voiceDir) {
+    this.stStopVoice();
+    const urls = [].concat.apply([], paths.map(x => this.stUrls(x)));
+    const rd = { kind, title, sub: sub || '', urls, voiceBase: this.ASSET + '/' + voiceDir, lines: null, err: '' };
+    this.setState({ rd, rdVoice: -1 }, () => this.stLoad(rd));
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  }
+  async stLoad(rd) {
+    const tryFetch = async urls => {
+      let last = '';
+      for (const u of urls) {
+        try { const r = await fetch(u); if (r.ok) return await r.json(); last = 'HTTP ' + r.status; } catch (e) { last = (e && e.message) || '抓取失敗'; }
+      }
+      throw new Error(last || '找不到劇本');
+    };
+    try {
+      const [data, c2d, mobs] = await Promise.all([
+        tryFetch(rd.urls),
+        this._c2d ? this._c2d : this.dbGet('character2ds').then(x => (this._c2d = x)).catch(() => []),
+        this._mobs ? this._mobs : this.dbGet('mobCharacters').then(x => (this._mobs = x)).catch(() => []),
+      ]);
+      if (this.state.rd !== rd) return;
+      this.setState({ rd: Object.assign({}, rd, { lines: this.stParse(data, rd, c2d || [], mobs || []) }) });
+    } catch (e) {
+      if (this.state.rd !== rd) return;
+      this.setState({ rd: Object.assign({}, rd, { err: '劇本載入失敗（' + ((e && e.message) || '原因不明') + '）' }) });
+    }
+  }
+  stParse(data, rd, c2d, mobs) {
+    const byId = {}; c2d.forEach(c => { byId[c.id] = c; });
+    const mobName = {}; mobs.forEach(m => { mobName[m.id] = m.name; });
+    const bg = n => this.ASSET + '/scenario/background/' + n + '/' + n + '.webp';
+    const lines = [];
+    if (data.FirstBackground) lines.push({ t: 'bg', img: bg(data.FirstBackground) });
+    const talks = data.TalkData || [], ses = data.SpecialEffectData || [];
+    (data.Snippets || []).forEach(sn => {
+      if (sn.Action === 1) {   // 對話
+        const td = talks[sn.ReferenceIndex]; if (!td) return;
+        const cid2 = (td.TalkCharacters && td.TalkCharacters[0] && td.TalkCharacters[0].Character2dId) || 0;
+        const c = byId[cid2], gid = c && c.characterType === 'game_character' ? c.characterId : 0;
+        const name = td.WindowDisplayName || (c ? (gid ? this.charName(gid) : (mobName[c.characterId] || '')) : '') || '？？？';
+        const v = td.Voices && td.Voices[0] && td.Voices[0].VoiceId;
+        lines.push({ t: 'talk', name, body: String(td.Body || '').replace(/\r/g, ''), color: gid ? (this.CHARA_COLOR[gid] || '#888') : '#8b93ac',
+          voice: v ? rd.voiceBase + '/' + data.ScenarioId + '/' + v + '.mp3' : '' });
+      } else if (sn.Action === 6) {   // 特效：只留換背景與字幕，其他（震動、淡入淡出）對閱讀沒有意義
+        const se = ses[sn.ReferenceIndex]; if (!se) return;
+        if (se.EffectType === 7 || se.EffectType === 17) lines.push({ t: 'bg', img: bg(se.StringValSub || se.StringVal) });
+        else if ((se.EffectType === 8 || se.EffectType === 18 || se.EffectType === 24 || se.EffectType === 38) && se.StringVal) lines.push({ t: 'telop', text: se.StringVal });
+      }
+    });
+    return lines;
+  }
+  stStopVoice() {
+    const a = this._stA; this._stA = null;
+    if (a) { try { a.pause(); a.src = ''; } catch (e) {} }
+    if (this.state.rdVoice >= 0) this.setState({ rdVoice: -1 });
+  }
+  stVoice(i) {
+    const rd = this.state.rd; if (!rd || !rd.lines) return;
+    const ln = rd.lines[i]; if (!ln || !ln.voice) return;
+    if (this.state.rdVoice === i) { this.stStopVoice(); return; }
+    this.stStopVoice();
+    try { this._killAudio(); this.setState({ playAbn: '' }); } catch (e) {}
+    const a = new Audio(ln.voice);
+    a.onended = () => { if (a === this._stA) this.setState({ rdVoice: -1 }); };
+    a.onerror = () => { if (a === this._stA && a.error) { this._stA = null; this.setState({ rdVoice: -1 }); this._toast('語音無法載入'); } };
+    this._stA = a; this.setState({ rdVoice: i });
+    a.play().catch(() => { if (a === this._stA) { this._stA = null; this.setState({ rdVoice: -1 }); this._toast('語音無法播放'); } });
+  }
+  loadFixtures() {
+    return this.dbRun('fixtures', async () => {
+      const m = await import('./data/fixtures-index.js?v=b2b014c145');
+      return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
+    });
+  }
+  loadMats() {
+    return this.dbRun('mats', async () => {
+      const [a, b] = await Promise.all([this.dbGet('materials'), this.dbGet('mysekaiMaterials')]);
+      const rows = (a || []).map(x => ({ id: 'm' + x.id, name: x.name || '', desc: x.flavorText || '', type: x.materialType || 'common',
+        img: this.ASSET + '/thumbnail/material/material' + x.id + '.webp', seq: x.seq || x.id }))
+        .concat((b || []).map(x => ({ id: 'k' + x.id, name: x.name || '', desc: x.description || '', type: 'mysekai',
+          rarity: +String(x.mysekaiMaterialRarityType || '').replace(/\D/g, '') || 0,
+          img: this.ASSET + '/mysekai/thumbnail/material/' + x.iconAssetbundleName + '.png', seq: 1e6 + (x.seq || x.id) })));
+      rows.sort((x, y) => x.seq - y.seq);
+      return rows;
+    });
+  }
+  loadComics() {
+    return this.dbRun('comics', async () => {
+      const t = await this.dbGet('tips');
+      return (t || []).filter(x => x.assetbundleName).map(x => ({ id: x.id, title: x.title || '', abn: x.assetbundleName, rank: x.fromUserRank || 0 })).sort((x, y) => y.id - x.id);
+    });
+  }
+  loadOst() {
+    return this.dbRun('ost', async () => {
+      const [tr, cat] = await Promise.all([this.dbGet('musicSoundTracks'), this.dbGet('musicSoundTrackCategories')]);
+      const cats = (cat || []).map(c => ({ id: c.id, name: this.OST_CAT[c.name] || c.name }));
+      const rows = (tr || []).slice().sort((a, b) => (a.seq || 0) - (b.seq || 0)).map(x => ({
+        id: x.id, title: x.title || '', cat: x.musicSoundTrackCategoryId || 0,
+        url: this.ASSET + '/' + String(x.assetbundleName || '').replace(/^\/+/, '') + '/' + x.assetbundleFileName + '.mp3' }));
+      return { rows, cats };
+    });
+  }
+  loadLives() {
+    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=96c8236dfd'); return m.LIVES || []; });
+  }
+  loadNews() {
+    return this.dbRun('news', async () => {
+      const u = await this.dbGet('userInformations');
+      return (u || []).map(x => ({ id: x.id, title: x.title || '', tag: x.informationTag || 'information', type: x.informationType || 'normal',
+        url: x.path || '', s: x.startAt || 0, e: x.endAt || 0 })).filter(x => x.title).sort((x, y) => (y.s - x.s) || (y.id - x.id));
+    });
+  }
+  /* 原聲帶播放：獨立於歌曲播放器（那邊有交叉淡入淡出與佇列，BGM 不需要），同時只有一條在響 */
+  ostToggle(id) {
+    const d = this.state.ost; if (!d) return;
+    const t = d.rows.find(x => x.id === id); if (!t) return;
+    if (this.state.ostPlay === id) { this.ostStop(); return; }
+    this.ostStop();
+    try { this._killAudio(); this.setState({ playAbn: '' }); } catch (e) {}
+    const a = new Audio(t.url); a.preload = 'auto'; a.volume = 0.8;
+    a.onended = () => { if (a === this._ost) this.setState({ ostPlay: 0 }); };
+    a.onerror = () => { if (a === this._ost && a.error) { this._ost = null; this.setState({ ostPlay: 0 }); this._toast('音檔無法載入'); } };
+    this._ost = a;
+    this.setState({ ostPlay: id });
+    a.play().catch(() => { if (a === this._ost) { this._ost = null; this.setState({ ostPlay: 0 }); this._toast('音檔無法播放'); } });
+  }
+  ostStop() {
+    const a = this._ost; this._ost = null;
+    if (a) { try { a.pause(); a.src = ''; } catch (e) {} }
+    if (this.state.ostPlay) this.setState({ ostPlay: 0 });
+  }
+  OST_CAT = { 'ユニット総合': '團體綜合', 'バチャシン': 'VIRTUAL SINGER', 'レオニ': 'Leo/need', 'モモジャン': 'MORE MORE JUMP！', 'ビビバス': 'Vivid BAD SQUAD', 'ワンダショ': 'Wonderlands×Showtime', 'ニーゴ': '25時、Nightcord見。', 'ゲーム内': '遊戲內', 'マイセカイ': 'MySekai', 'シナリオ': '劇情', 'ライブ': 'Live', 'バーチャルライブ': '虛擬 Live', 'ガチャ': '卡池', 'その他': '其他', 'コラボ': '聯動' };
+  dbDate(ms, withTime) {
+    if (!ms) return '';
+    const d = new Date(ms), z = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '/' + z(d.getMonth() + 1) + '/' + z(d.getDate()) + (withTime ? ' ' + z(d.getHours()) + ':' + z(d.getMinutes()) : '');
+  }
+  charShort(cid) {
+    if (!this._charShort) {
+      this._charShort = {};
+      Object.keys(this.CHARA_ID || {}).forEach(k => { const v = this.CHARA_ID[k]; if (!this._charShort[v] || k.length < this._charShort[v].length) this._charShort[v] = k; });
+    }
+    return this._charShort[cid] || '';
+  }
+  /* 圖鑑類分頁的畫面資料：只算目前這一頁的，其他頁回空物件，renderVals 不會因為多七頁而變慢。
+     每頁的流程都一樣：拿快取 → 套篩選 → 套搜尋 → 只切前 dbN 筆 → 詳情視窗（dbPick）從同一份資料組出來。 */
+  dbVals(s) {
+    const p = s.page;
+    if (!this.DB_PAGES.includes(p)) return {};
+    const q = this.normSong(s.dbq || '');
+    const hit = (...f) => !q || this.normSong(f.join(' ')).includes(q);
+    const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
+    const busy = s.dbLoad === this.DB_KEY[p];
+    const PH = { story: '搜尋劇情標題、活動、角色…', chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
+    const out = { dbShowSearch: true, dbq: s.dbq, dbPlaceholder: PH[p] || '搜尋…', dbBusy: busy, dbHasErr: !!s.dbErr, dbErrMsg: s.dbErr, dbMore: false, dbMoreLabel: '', dbEmpty: false, dbCount: busy ? '載入中…' : '' };
+    let view = null;
+    const page = (all, per) => {
+      const n = Math.min(all.length, s.dbN || per || 48);
+      out.dbCount = all.length ? ('共 ' + this.n(all.length) + ' 項' + (n < all.length ? '，顯示前 ' + this.n(n) + ' 項' : '')) : (busy ? '載入中…' : '沒有符合的項目');
+      out.dbMore = n < all.length; out.dbMoreLabel = '顯示更多（' + this.n(n) + ' / ' + this.n(all.length) + '）';
+      out.dbEmpty = !busy && !s.dbErr && all.length === 0;
+      return all.slice(0, n);
+    };
+    const pick = kind => (s.dbPick && s.dbPick.kind === kind) ? s.dbPick.id : null;
+
+    if (p === 'cards') {
+      const X = s.cardX, cards = s.rateCards || [], chars = s.rateChars || [];
+      const ATTR = [['cool', '帥氣', '#4d8ef5'], ['happy', '快樂', '#ffaa1c'], ['mysterious', '神秘', '#9d62d8'], ['cute', '可愛', '#ff6ba0'], ['pure', '純真', '#7fcf3f']];   // 順序照 cards-index 的 ATTRS
+      const RAR = { 1: '★1', 2: '★2', 3: '★3', 4: '★4', 9: '生日' };
+      const charOf = id => chars.find(c => c[0] === id) || [id, '#' + id, 5];
+      let all = cards.filter(r => r[8]);
+      if (s.cdUnit) all = all.filter(r => this.UNIT_OF[charOf(r[1])[2]] === s.cdUnit);
+      if (s.cdChar) all = all.filter(r => r[1] === s.cdChar);
+      if (s.cdAttr >= 0) all = all.filter(r => r[3] === s.cdAttr);
+      if (s.cdRar) all = all.filter(r => r[2] === s.cdRar);
+      if (s.cdSup >= 0) all = all.filter(r => r[4] === s.cdSup);
+      if (q) all = all.filter(r => hit(r[7], charOf(r[1])[1], (X && X.extra[r[0]] ? X.extra[r[0]][9] : '')));
+      const rel = id => (X && X.extra[id] ? X.extra[id][1] : 0);
+      all = all.slice().sort((a, b) => s.cdSort === 'old' ? ((rel(a[0]) - rel(b[0])) || (a[0] - b[0])) : s.cdSort === 'id' ? (a[0] - b[0]) : ((rel(b[0]) - rel(a[0])) || (b[0] - a[0])));
+      out.cdUnitChips = [{ v: '', n: '全部團體' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n }))).map(c => Object.assign(c, chip(s.cdUnit === c.v, c.v ? this.UNITS[c.v].c : '')));
+      out.cdCharChips = chars.filter(c => !s.cdUnit || this.UNIT_OF[c[2]] === s.cdUnit).map(c => Object.assign({ v: c[0], n: this.charShort(c[0]) || c[1] }, chip(s.cdChar === c[0], this.CHARA_COLOR[c[0]])));
+      out.cdAttrChips = [{ v: -1, n: '全屬性' }].concat(ATTR.map((a, i) => ({ v: i, n: a[1] }))).map(c => Object.assign(c, chip(s.cdAttr === c.v, c.v >= 0 ? ATTR[c.v][2] : '')));
+      out.cdRarChips = [{ v: 0, n: '全稀有度' }].concat(this.RARITY.map(r => ({ v: r[0], n: r[1] }))).map(c => Object.assign(c, chip(s.cdRar === c.v)));
+      out.cdSupChips = [{ v: -1, n: '全部來源' }].concat(this.SUPPLYN.map((n, i) => ({ v: i, n }))).map(c => Object.assign(c, chip(s.cdSup === c.v, 'var(--accent-deep)')));
+      out.cdSortChips = [['new', '最新優先'], ['old', '最舊優先'], ['id', '依編號']].map(x => Object.assign({ v: x[0], n: x[1] }, chip((s.cdSort || 'new') === x[0], 'var(--accent-deep)')));
+      out.cdRows = page(all, 48).map(r => ({ id: r[0], name: r[7], img: this.cardImg(r[8], r[2]), sub: charOf(r[1])[1], rar: RAR[r[2]] || '', attr: ATTR[r[3]] ? ATTR[r[3]][1] : '', attrBg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888', color: this.CHARA_COLOR[r[1]] || '#888' }));
+      const r = pick('card') != null ? cards.find(x => x[0] === pick('card')) : null;
+      if (r) {
+        const ex = (X && X.extra[r[0]]) || null, ch = charOf(r[1]);
+        const tot = ex ? ex[2] + ex[3] + ex[4] : 0, bonus = ex ? ex[5] + ex[6] + ex[7] : 0;
+        const skill = ex && X.skills[ex[0]] ? X.skills[ex[0]] : null;
+        const su = r[5] >= 0 ? this.UNITS[this.UNIT_OF[r[5]]] : null;
+        view = { title: r[7], sub: ch[1] + ' · ' + (RAR[r[2]] || '') + ' · #' + r[0], img: this.cardImg(r[8], r[2]), imgRatio: '1/1', wide: true,
+          chips: [{ n: ATTR[r[3]] ? ATTR[r[3]][1] : '', bg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888' }, { n: this.SUPPLYN[r[4]] || '', bg: 'var(--accent-deep)' }, { n: r[6] ? '卡池可得' : '非卡池（活動報酬等）', bg: 'var(--text-3)' }].concat(su ? [{ n: '支援團 ' + su.n, bg: su.c }] : []).filter(x => x.n),
+          rows: ex ? [['釋出日', ex[1] ? this.dbDate(ex[1] * 1000) : ''],
+            ['滿等綜合力', this.n(tot) + (bonus ? '（特訓後 ' + this.n(tot + bonus) + '）' : '')],
+            ['表演／技巧／體力', this.n(ex[2]) + ' / ' + this.n(ex[3]) + ' / ' + this.n(ex[4]) + (bonus ? '（特訓 +' + ex[5] + ' / +' + ex[6] + ' / +' + ex[7] + '）' : '')],
+            ['技能', ex[9] || ''], ['技能 Lv1', skill ? this.skillText(skill, 1, ch[1]) : ''], ['技能 Lv4', skill ? this.skillText(skill, 4, ch[1]) : ''],
+            ['招募台詞', ex[8] && ex[8] !== '-' ? ex[8] : '']].filter(x => x[1]).map(x => ({ l: x[0], v: x[1] })) : [],
+          text: X ? '' : '詳細資料載入中…', list: [], listTitle: '', colors: [], goTo: 'art', goLabel: '前往卡面下載（原圖／立繪）' };
+      }
+    }
+
+    if (p === 'story') {
+      const d = s.stories, rd = s.rd;
+      Object.assign(out, { stEventRows: [], stEpRows: [], stCardRows: [], stTalkRows: [], stSelfRows: [], stCharChips: [], stAreaChips: [], stHasBack: false, stBackLabel: '', stOutline: '', rdLines: [], rdTitle: '', rdSub: '', rdKind: '', rdBusy: false, rdErr: '', rdHasErr: false, rdCount: '' });
+      const TABS = [['event', '活動劇情'], ['unit', '主線劇情'], ['card', '卡片劇情'], ['talk', '區域對話'], ['self', '個人劇情'], ['special', '特別劇情']];
+      out.stTabs = TABS.map(t => Object.assign({ v: t[0], n: t[1] }, chip(s.stTab === t[0])));
+      out.rdOpen = !!rd; out.rdClosed = !rd; out.dbShowSearch = !rd && s.stTab !== 'self';
+      ['event', 'unit', 'card', 'talk', 'self', 'special'].forEach(k => { out['stIs' + k[0].toUpperCase() + k.slice(1)] = !rd && s.stTab === k; });
+      if (rd) {
+        out.rdTitle = rd.title; out.rdSub = rd.sub; out.rdKind = this.ST_KIND[rd.kind] || '';
+        out.rdBusy = !rd.lines && !rd.err; out.rdErr = rd.err; out.rdHasErr = !!rd.err;
+        out.rdLines = (rd.lines || []).map((l, i) => ({ i, isTalk: l.t === 'talk', isBg: l.t === 'bg', isTelop: l.t === 'telop', name: l.name || '', body: l.body || '', color: l.color || '', img: l.img || '', text: l.text || '',
+          hasVoice: !!l.voice, on: s.rdVoice === i, vbg: s.rdVoice === i ? 'var(--cta)' : 'var(--card-2)', vfg: s.rdVoice === i ? '#fff' : 'var(--text-2)', icon: s.rdVoice === i ? '❚❚' : '▶' }));
+        out.rdCount = rd.lines ? rd.lines.filter(l => l.t === 'talk').length + ' 句對話' : '';
+        out.dbCount = ''; out.dbMore = false; out.dbEmpty = false;
+      } else if (d) {
+        const chars = s.rateChars || [];
+        if (s.stTab === 'event') {
+          if (!s.stEvent) {
+            const all = d.events.filter(e => hit(e[1], e[3]));
+            out.stEventRows = page(all, 30).map(e => ({ id: e[0], name: e[1] || ('活動 #' + e[0]), outline: e[3], n: e[4].length + ' 話', img: this.ASSET + '/event/' + e[2].replace(/_story$/, '') + '/logo/logo.webp' }));
+            out.stHasBack = false;
+          } else {
+            const e = d.events.find(x => x[0] === s.stEvent);
+            out.stHasBack = true; out.stBackLabel = e ? e[1] : '';
+            out.stOutline = e ? e[3] : '';
+            out.stEpRows = e ? e[4].map(ep => ({ label: '第 ' + ep[0] + ' 話', title: ep[1], kind: 'event', sid: ep[2], abn: e[2], sub: e[1] + ' 第 ' + ep[0] + ' 話' })) : [];
+            out.dbCount = e ? e[4].length + ' 話' : ''; out.dbMore = false; out.dbEmpty = !e;
+          }
+        }
+        if (s.stTab === 'unit') {
+          const rows = [];
+          d.units.forEach(u => { const key = { light_sound: 'ln', idol: 'mmj', street: 'vbs', theme_park: 'wxs', school_refusal: 'n25', piapro: 'vs' }[u[0]] || 'vs';
+            u[1].forEach(c => c[3].forEach(ep => rows.push({ unit: this.UNITS[key].n, color: this.UNITS[key].c, label: ep[0], title: ep[1], kind: 'unit', sid: ep[2], abn: c[1], sub: this.UNITS[key].n + ' ' + ep[0] }))); });
+          const all = rows.filter(r => hit(r.title, r.unit, r.label));
+          out.stEpRows = page(all, 60);
+        }
+        if (s.stTab === 'card') {
+          out.stCharChips = chars.map(c => Object.assign({ v: c[0], n: this.charShort(c[0]) || c[1] }, chip(s.stChar === c[0], this.CHARA_COLOR[c[0]])));
+          const cards = (s.rateCards || []).filter(r => d.cards[r[0]] && (!s.stChar || r[1] === s.stChar) && hit(r[7]));
+          const RAR = { 1: '★1', 2: '★2', 3: '★3', 4: '★4', 9: '生日' };
+          out.stCardRows = page(cards.slice().sort((a, b) => b[0] - a[0]), 40).map(r => ({ id: r[0], name: r[7], sub: (chars.find(c => c[0] === r[1]) || [])[1] + ' · ' + (RAR[r[2]] || ''), img: this.cardImg(r[8], r[2]), abn: r[8],
+            parts: d.cards[r[0]].map(pt => ({ label: pt[0] || (pt[2] === 's' ? '後篇' : '前篇'), kind: 'card', sid: pt[1], abn: r[8], title: r[7], sub: (pt[0] || (pt[2] === 's' ? '支線劇情（後篇）' : '支線劇情（前篇）')) })) }));
+        }
+        if (s.stTab === 'talk') {
+          const used = new Set(d.talks.map(t => t[1]));
+          out.stAreaChips = [{ v: 0, n: '全部區域' }].concat(d.areas.filter(a => used.has(a[0])).map(a => ({ v: a[0], n: a[1] }))).map(a => Object.assign(a, chip(s.stArea === a.v)));
+          const areaName = id => (d.areas.find(a => a[0] === id) || [])[1] || '';
+          const all = d.talks.filter(t => (!s.stArea || t[1] === s.stArea) && (!q || hit(t[2].map(c => this.charName(c)).join(' '), areaName(t[1]))));
+          out.stTalkRows = page(all.slice().sort((a, b) => b[0] - a[0]), 40).map(t => ({ id: t[0], chars: t[2].map(c => ({ n: this.charShort(c) || ('#' + c), c: this.CHARA_COLOR[c] || '#8b93ac' })), area: areaName(t[1]), kind: 'talk', sid: t[3] || t[4], sid2: t[4], abn: String(Math.floor(t[0] / 100)), title: t[2].map(c => this.charShort(c) || ('#' + c)).join('・'), sub: areaName(t[1]) + ' · #' + t[0] }));
+        }
+        if (s.stTab === 'self') {
+          out.stSelfRows = chars.filter(c => d.self[c[0]]).map(c => ({ id: c[0], name: c[1], color: this.CHARA_COLOR[c[0]] || '#888', img: this.ASSET + '/character/character_select/chr_tl_' + c[0] + '.webp', kind: 'self', sid: d.self[c[0]], abn: '', title: c[1] + ' 的個人劇情', sub: '個人劇情' }));
+          out.dbCount = ''; out.dbMore = false; out.dbEmpty = false;
+        }
+        if (s.stTab === 'special') {
+          const rows = [];
+          d.special.forEach(sp => sp[3].forEach(ep => rows.push({ label: (sp[1] || ('特別劇情 #' + sp[0])) + ' · ' + ep[0], title: ep[1], kind: 'special', sid: ep[2], abn: sp[2], sub: sp[1] || ('特別劇情 #' + sp[0]) })));
+          out.stEpRows = page(rows.filter(r => hit(r.title, r.label)), 60);
+        }
+      }
+    }
+
+    if (p === 'chars') {
+      const d = s.chars;
+      const list = d ? d.list.filter(c => hit(c.name, c.ruby, c.en)) : [];
+      out.charUnits = d ? d.units.map(u => ({ key: u.key, name: u.name, color: u.color, sentence: u.sentence,
+        chars: list.filter(c => c.unit === u.key).map(c => ({ id: c.id, name: c.name, color: c.color, img: this.ASSET + '/character/character_select/chr_tl_' + c.id + '.webp' })) }))
+        .filter(u => u.chars.length) : [];
+      out.dbCount = d ? ('共 ' + list.length + ' 位角色') : (busy ? '載入中…' : '');
+      out.dbEmpty = !!d && list.length === 0;
+      const c = d && pick('char') != null ? d.list.find(x => x.id === pick('char')) : null;
+      if (c) {
+        const u = d.units.find(x => x.key === c.unit) || {}, pr = c.p || {};
+        const cards = (s.rateCards || []).filter(r => r[1] === c.id).sort((a, b) => b[0] - a[0]).map(r => ({ id: r[0], name: r[7], sub: (this.RARITY.find(x => x[0] === r[2]) || ['', ''])[1], img: this.cardImg(r[8], r[2]), hasImg: true }));
+        view = { title: c.name, sub: [c.ruby, c.en].filter(Boolean).join(' · '), img: this.ASSET + '/character/character_select/chr_tl_' + c.id + '.webp', imgRatio: '3/4', wide: true,
+          chips: [{ n: u.name || c.unit, bg: u.color || c.color }].concat(c.gender === 'female' ? [{ n: '女', bg: 'var(--text-3)' }] : c.gender === 'male' ? [{ n: '男', bg: 'var(--text-3)' }] : []),
+          rows: [['聲優', pr.characterVoice], ['生日', pr.birthday], ['身高', pr.height], ['學校', pr.school], ['年級', pr.schoolYear], ['興趣', pr.hobby], ['特技', pr.specialSkill], ['喜歡的食物', pr.favoriteFood], ['討厭的食物', pr.hatedFood], ['不擅長', pr.weak]].filter(r => r[1]).map(r => ({ l: r[0], v: r[1] })),
+          text: pr.introduction || '', list: cards, listTitle: cards.length ? '相關卡片（' + cards.length + '）' : (s.rateLoad ? '卡片載入中…' : ''), listGrid: true, colors: [] };
+      }
+    }
+
+    if (p === 'fixtures') {
+      const d = s.fixtures;
+      const tagName = id => (d && d.tags[id] ? d.tags[id][0] : '');
+      const genreOf = id => ((d ? d.genres.find(g => g[0] === id) : null) || [])[1] || '';
+      const subOf = id => ((d ? d.subs.find(g => g[0] === id) : null) || [])[1] || '';
+      const charTags = d ? Object.keys(d.tags).filter(k => d.tags[k][1] === 'game_character').map(k => ({ id: +k, name: d.tags[k][0], cid: d.tags[k][2] })).sort((a, b) => a.cid - b.cid) : [];
+      let all = d ? d.rows : [];
+      if (s.fixGenre) all = all.filter(r => r[2] === s.fixGenre);
+      if (s.fixSub) all = all.filter(r => r[3] === s.fixSub);
+      if (s.fixChar) all = all.filter(r => r[4].includes(s.fixChar));
+      if (q) all = all.filter(r => hit(r[1], r[8], r[4].map(tagName).join(' ')));
+      // 牆壁／地板是貼圖而不是模型，縮圖放在 surface_appearance 底下
+      const img = r => r[2] === 7 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_wall_appearance_1.png'
+        : r[2] === 8 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_floor_appearance_1.png'
+        : this.ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.png';
+      const usedG = new Set((d ? d.rows : []).map(r => r[2]));
+      out.fixGenreChips = [{ v: 0, n: '全部' }].concat(d ? d.genres.filter(g => g[0] !== 1 && usedG.has(g[0])).map(g => ({ v: g[0], n: g[1] })) : []).map(g => Object.assign(g, chip(s.fixGenre === g.v)));
+      const usedS = new Set((d ? d.rows : []).filter(r => !s.fixGenre || r[2] === s.fixGenre).map(r => r[3]));
+      out.fixSubChips = (d && s.fixGenre) ? [{ v: 0, n: '全部子分類' }].concat(d.subs.filter(g => g[0] !== 1 && usedS.has(g[0])).map(g => ({ v: g[0], n: g[1] }))).map(g => Object.assign(g, chip(s.fixSub === g.v, 'var(--accent-deep)'))) : [];
+      out.fixHasSub = out.fixSubChips.length > 1;
+      out.fixCharChips = charTags.map(t => Object.assign({ v: t.id, n: this.charShort(t.cid) || t.name }, chip(s.fixChar === t.id, this.CHARA_COLOR[t.cid])));
+      // 牆壁／地板這類貼圖沒有格數，尺寸全 0 就不顯示
+      out.fixRows = page(all, 48).map(r => ({ id: r[0], name: r[1], img: img(r), sub: (subOf(r[3]) || genreOf(r[2]) || '') + (r[5].some(v => v > 0) ? ' · ' + r[5][0] + '×' + r[5][1] + '×' + r[5][2] : '') }));
+      const r = d && pick('fix') != null ? d.rows.find(x => x[0] === pick('fix')) : null;
+      if (r) {
+        const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
+        view = { title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: img(r), imgRatio: '1/1', wide: false,
+          chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]),
+          rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
+          list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '', hasImg: !!m[1] }; }),
+          listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
+      }
+    }
+
+    if (p === 'materials') {
+      const d = s.mats;
+      const TYPES = [['', '全部'], ['common', '碎片與寶石'], ['master_lesson', '專精課程'], ['music', '樂曲'], ['character_rank_exp_ticket', '角色經驗'], ['card_ticket', '卡片券'], ['web_ticket', '網頁券'], ['vocal_card_ticket', '歌唱券'], ['mysekai', 'MySekai'], ['other', '其他']];
+      const known = new Set(TYPES.map(t => t[0]).filter(Boolean));
+      const typeOf = x => known.has(x.type) ? x.type : 'other';
+      const label = x => (TYPES.find(t => t[0] === typeOf(x)) || [])[1] || '';
+      let all = d || [];
+      if (s.matType) all = all.filter(x => typeOf(x) === s.matType);
+      if (q) all = all.filter(x => hit(x.name, x.desc));
+      const usedT = new Set((d || []).map(typeOf));
+      out.matTypeChips = TYPES.filter(t => !t[0] || usedT.has(t[0])).map(t => Object.assign({ v: t[0], n: t[1] }, chip(s.matType === t[0])));
+      const RAR = { 1: '★', 2: '★★', 3: '★★★', 4: '★★★★' };
+      out.matRows = page(all, 60).map(x => ({ id: x.id, name: x.name, img: x.img, sub: x.type === 'mysekai' ? ('MySekai ' + (RAR[x.rarity] || '')) : label(x) }));
+      const x = d && pick('mat') != null ? d.find(y => y.id === pick('mat')) : null;
+      if (x) view = { title: x.name, sub: x.type === 'mysekai' ? 'MySekai 素材' + (x.rarity ? ' · ' + RAR[x.rarity] : '') : label(x), img: x.img, imgRatio: '1/1', wide: false, chips: [], rows: [], text: x.desc, list: [], listTitle: '', colors: [] };
+    }
+
+    if (p === 'comics') {
+      const d = s.comics;
+      let all = d || [];
+      if (q) all = all.filter(x => hit(x.title));
+      // 台服桶有翻譯版；沒有的話 onImgErr 會自動換日服桶
+      const img = x => this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets') + '/comic/one_frame/' + x.abn + '.webp';
+      out.comicRows = page(all, 24).map(x => ({ id: x.id, title: x.title, img: img(x), sub: '#' + x.id + (x.rank > 1 ? ' · Rank ' + x.rank + ' 起' : '') }));
+      const x = d && pick('comic') != null ? d.find(y => y.id === pick('comic')) : null;
+      if (x) view = { title: x.title, sub: '一格漫畫 #' + x.id, img: img(x), imgRatio: '4/3', wide: true, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [], link: img(x), linkLabel: '開啟原圖 ↗' };
+    }
+
+    if (p === 'ost') {
+      const d = s.ost;
+      let all = d ? d.rows : [];
+      if (s.ostCat) all = all.filter(x => x.cat === s.ostCat);
+      if (q) all = all.filter(x => hit(x.title));
+      const catName = id => ((d ? d.cats.find(c => c.id === id) : null) || {}).name || '';
+      const used = new Set((d ? d.rows : []).map(x => x.cat));
+      out.ostCatChips = [{ v: 0, n: '全部' }].concat(d ? d.cats.filter(c => used.has(c.id)).map(c => ({ v: c.id, n: c.name })) : []).map(c => Object.assign(c, chip(s.ostCat === c.v)));
+      out.ostRows = page(all, 200).map(x => ({ id: x.id, title: x.title, sub: catName(x.cat), url: x.url,
+        bg: s.ostPlay === x.id ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'transparent', icon: s.ostPlay === x.id ? '❚❚' : '▶' }));
+      const now = d && s.ostPlay ? d.rows.find(x => x.id === s.ostPlay) : null;
+      out.ostNow = now ? '播放中：' + now.title : '';
+      out.ostHasNow = !!now;
+    }
+
+    if (p === 'lives') {
+      const d = s.lives, now = Date.now();
+      const TY = { normal: ['一般', '#5ec9f2'], cheerful_carnival: ['歡樂嘉年華', '#ffb86b'], virtual_message: ['虛擬留言', '#c39df2'], beginner: ['新手', '#8bc34a'], streaming: ['直播', '#ff9db4'], archive: ['回顧', '#9aa9ff'], connect_live: ['連線 Live', '#ff8fb0'] };
+      const stat = x => x.s > now ? 'up' : (x.e && x.e < now) ? 'end' : 'on';
+      const ST = { on: ['進行中', '#3ec49a'], up: ['即將開始', '#e0a800'], end: ['已結束', '#8b93ac'] };
+      let all = d || [];
+      if (s.liveType) all = all.filter(x => x.ty === s.liveType);
+      if (s.liveStat) all = all.filter(x => stat(x) === s.liveStat);
+      if (q) all = all.filter(x => hit(x.n, x.set.map(y => y[1]).join(' ')));
+      const usedT = new Set((d || []).map(x => x.ty));
+      out.liveTypeChips = [{ v: '', n: '全部' }].concat(Object.keys(TY).filter(k => usedT.has(k)).map(k => ({ v: k, n: TY[k][0] }))).map(c => Object.assign(c, chip(s.liveType === c.v)));
+      out.liveStatChips = [{ v: '', n: '全部時間' }, { v: 'on', n: '進行中' }, { v: 'up', n: '即將開始' }, { v: 'end', n: '已結束' }].map(c => Object.assign(c, chip(s.liveStat === c.v, 'var(--accent-deep)')));
+      const banner = x => this.ASSET + '/virtual_live/select/banner/' + x.abn + '/' + x.abn + '.webp';
+      out.liveRows = page(all, 24).map(x => ({ id: x.id, name: x.n, img: banner(x), type: (TY[x.ty] || [x.ty])[0], typeBg: (TY[x.ty] || ['', '#888'])[1],
+        stat: ST[stat(x)][0], statBg: ST[stat(x)][1], period: this.dbDate(x.s) + ' ～ ' + this.dbDate(x.e),
+        meta: [x.sch ? x.sch[2].length + ' 場' : '', x.set.length ? x.set.length + ' 首' : '', x.ch.length ? x.ch.map(c => this.charShort(c)).filter(Boolean).slice(0, 6).join('・') : ''].filter(Boolean).join(' · ') }));
+      const x = d && pick('live') != null ? d.find(y => y.id === pick('live')) : null;
+      if (x) {
+        const sched = x.sch ? x.sch[2].map(o => x.sch[0] + o * 60000) : [];
+        const next = sched.find(t => t + (x.sch ? x.sch[1] : 0) * 60000 > now);
+        view = { title: x.n, sub: this.dbDate(x.s, true) + ' ～ ' + this.dbDate(x.e, true), img: banner(x), imgRatio: '16/7', wide: true,
+          chips: [{ n: (TY[x.ty] || [x.ty])[0], bg: (TY[x.ty] || ['', '#888'])[1] }, { n: ST[stat(x)][0], bg: ST[stat(x)][1] }].concat(x.ch.map(c => ({ n: this.charShort(c) || ('#' + c), bg: this.CHARA_COLOR[c] || 'var(--text-3)' }))),
+          rows: [['場次', sched.length ? sched.length + ' 場，每場 ' + x.sch[1] + ' 分鐘' : '—'], ['首場', sched.length ? this.dbDate(sched[0], true) : ''], ['末場', sched.length ? this.dbDate(sched[sched.length - 1], true) : ''], ['下一場', next ? this.dbDate(next, true) : '']].filter(r => r[1]).map(r => ({ l: r[0], v: r[1] })),
+          text: '', list: x.set.map((y, i) => ({ id: y[0], name: y[1], sub: 'M' + (i + 1), img: y[2] ? this.ASSET + '/music/jacket/' + y[2] + '/' + y[2] + '.webp' : '', hasImg: !!y[2] })),
+          listTitle: x.set.length ? '歌單（' + x.set.length + ' 首）' : '', listGrid: false, colors: [] };
+      }
+    }
+
+    if (p === 'news') {
+      const d = s.news, now = Date.now();
+      const TAG = { information: ['公告', '#7fb4f7'], event: ['活動', '#ff9db4'], gacha: ['招募', '#c39df2'], music: ['樂曲', '#5ec9f2'], campaign: ['企劃', '#ffb86b'], update: ['更新', '#3ee0a8'], bug: ['問題', '#e0576a'] };
+      const stat = x => x.s > now ? 'up' : (x.e && x.e < now) ? 'end' : 'on';
+      let all = d || [];
+      if (s.newsTag) all = all.filter(x => x.tag === s.newsTag);
+      if (s.newsStat) all = all.filter(x => stat(x) === s.newsStat);
+      if (q) all = all.filter(x => hit(x.title));
+      const used = new Set((d || []).map(x => x.tag));
+      out.newsTagChips = [{ v: '', n: '全部' }].concat(Object.keys(TAG).filter(k => used.has(k)).map(k => ({ v: k, n: TAG[k][0] }))).map(c => Object.assign(c, chip(s.newsTag === c.v)));
+      out.newsStatChips = [{ v: '', n: '全部時間' }, { v: 'on', n: '進行中' }, { v: 'end', n: '已結束' }].map(c => Object.assign(c, chip(s.newsStat === c.v, 'var(--accent-deep)')));
+      out.newsRows = page(all, 40).map(x => ({ id: x.id, title: x.title, tag: (TAG[x.tag] || [x.tag])[0], tagBg: (TAG[x.tag] || ['', '#888'])[1],
+        date: this.dbDate(x.s), until: (x.e && x.e < 4e12) ? '～ ' + this.dbDate(x.e) : '', url: x.url || '#', dim: stat(x) === 'end' ? '.62' : '1' }));
+    }
+
+    out.dbPickOpen = !!view;
+    view = view || { title: '', sub: '', img: '', imgRatio: '1/1', wide: false, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [] };
+    out.dbPickView = view;
+    out.dbPickW = view.wide ? '680px' : '440px';
+    out.dbPickHasImg = !!view.img; out.dbPickHasChips = view.chips.length > 0; out.dbPickHasRows = view.rows.length > 0;
+    out.dbPickHasText = !!view.text; out.dbPickHasList = view.list.length > 0 || !!view.listTitle; out.dbPickHasColors = (view.colors || []).length > 0;
+    out.dbPickHasLink = !!view.link; out.dbPickLink = view.link || '#'; out.dbPickLinkLabel = view.linkLabel || '';
+    out.dbPickListGrid = !!view.listGrid; out.dbPickListRows = !view.listGrid;
+    out.dbPickHasGo = !!view.goTo; out.dbPickGo = view.goTo || ''; out.dbPickGoLabel = view.goLabel || '';
+    out.dbSkel = busy ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => ({ i })) : [];
+    return out;
+  }
+
+  /* ---------- 小遊戲：猜角色／猜封面 ----------
+     兩個遊戲共用一顆引擎（qz）：十題一局，每題看一小塊圖猜答案，三次猜錯或超時算失敗；
+     分數 = 1000 × 難度倍率 × 時間係數（越快越高，最低 0.5）× (1 − 0.3 × 猜錯次數)。
+     圖用 CSS background 裁切（不進 canvas，不必管 CORS）；極限難度再隨機加濾鏡／翻轉。 */
+  QZ_DIFF = { easy: ['簡單', 0.55, 0.8], normal: ['普通', 0.38, 1], hard: ['困難', 0.26, 1.5], extreme: ['極限', 0.17, 2.2] };
+  QZ_ROUNDS = 10;
+  charUnit(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? this.UNIT_OF[c[2]] : ''; }
+  charName(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? c[1] : ('#' + cid); }
+  qzPool(kind) {
+    const s = this.state, units = s.qzUnits || [];
+    if (kind === 'who') {
+      const rar = s.qzRar || [];
+      return (s.rateCards || []).filter(r => r[8] && (!rar.length || rar.includes(r[2])) && (!units.length || units.includes(this.charUnit(r[1]))));
+    }
+    return (s.songs || []).filter(x => x.jkt && (!units.length || (x.units || []).some(u => units.includes(u))));
+  }
+  qzShuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = b[i]; b[i] = b[j]; b[j] = t; } return b; }
+  qzStart(kind) {
+    const s = this.state, pool = this.qzPool(kind), need = kind === 'who' ? this.QZ_ROUNDS : Math.max(this.QZ_ROUNDS, s.qzOpts || 6);
+    if (pool.length < need) { this._toast('符合條件的題庫不夠（' + pool.length + '），放寬篩選再試'); return; }
+    const picked = this.qzShuffle(pool).slice(0, this.QZ_ROUNDS);
+    const rounds = picked.map(x => {
+      if (kind === 'who') {
+        const trained = (x[2] === 3 || x[2] === 4) && Math.random() < 0.5;
+        const base = this.ASSET + '/character/member/' + x[8] + '/card_' + (trained ? 'after_training' : 'normal');
+        // 先試 webp（小很多），沒有再退回實測存在的 png
+        return { id: x[0], answer: x[1], name: this.charName(x[1]), title: x[7], urls: [base + '.webp', base + '.png'], thumb: this.cardImg(x[8], x[2]) };
+      }
+      const others = this.qzShuffle(pool.filter(y => y.id !== x.id)).slice(0, Math.max(1, (s.qzOpts || 6) - 1));
+      const jk = this.ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp';
+      return { id: x.id, answer: x.id, name: x.title, title: x.composer || '', urls: [jk], thumb: jk,
+        options: this.qzShuffle(others.concat([x])).map(y => ({ id: y.id, n: y.title })) };
+    });
+    this.qzQuit(false);
+    this.setState({ qz: { kind, phase: 'play', i: 0, rounds, strikes: 0, wrong: [], combo: 0, score: 0, results: [], fb: null, t0: 0, left: s.qzTime || 0, img: '', crop: null, distort: 'none', loading: true } }, () => this.qzLoadRound());
+  }
+  qzLoadRound() {
+    const q = this.state.qz; if (!q || q.phase !== 'play') return;
+    const r = q.rounds[q.i]; if (!r) return;
+    const frac = (this.QZ_DIFF[this.state.qzDiff] || this.QZ_DIFF.normal)[1];
+    const tryUrl = k => {
+      if (k >= r.urls.length) { this.qzSkip(); return; }   // 每種副檔名都沒有：這題跳過
+      const im = new Image();
+      im.onload = () => {
+        const cur = this.state.qz; if (!cur || cur.phase !== 'play' || cur.rounds[cur.i] !== r) return;
+        const w = im.naturalWidth || 1, h = im.naturalHeight || 1, side = Math.max(24, Math.round(Math.min(w, h) * frac));
+        const x = Math.round(Math.random() * Math.max(0, w - side)), y = Math.round(Math.random() * Math.max(0, h - side));
+        const distort = this.state.qzDiff === 'extreme' ? this.qzShuffle(['none', 'gray', 'invert', 'hue', 'flipH', 'flipV'])[0] : 'none';
+        this.setState({ qz: Object.assign({}, cur, { img: r.urls[k], crop: { x, y, side, w, h }, loading: false, t0: Date.now(), left: this.state.qzTime || 0, distort }) }, () => this.qzTick());
+        const nx = cur.rounds[cur.i + 1]; if (nx) { const pre = new Image(); pre.src = nx.urls[0]; }   // 預載下一題，換題不用等
+      };
+      im.onerror = () => tryUrl(k + 1);
+      im.src = r.urls[k];
+    };
+    tryUrl(0);
+  }
+  qzTick() {
+    clearInterval(this._qzT);
+    if (!(this.state.qzTime > 0)) return;
+    this._qzT = setInterval(() => {
+      const q = this.state.qz; if (!q || q.phase !== 'play' || q.fb || q.loading) return;
+      const left = Math.max(0, (this.state.qzTime || 0) - (Date.now() - q.t0) / 1000);
+      if (left <= 0) { clearInterval(this._qzT); this.qzAnswer(null); return; }
+      this.setState({ qz: Object.assign({}, q, { left }) });
+    }, 250);
+  }
+  qzSkip() {
+    const q = this.state.qz; if (!q) return;
+    const r = q.rounds[q.i];
+    const results = q.results.concat([{ round: q.i + 1, name: r.name, title: r.title, thumb: r.thumb, guess: '（圖片無法載入，略過）', ok: false, pts: 0, sec: 0 }]);
+    this.setState({ qz: Object.assign({}, q, { results }) }, () => this.qzNext());
+  }
+  qzAnswer(id) {
+    const q = this.state.qz; if (!q || q.phase !== 'play' || q.fb || q.loading) return;
+    const r = q.rounds[q.i], sec = (Date.now() - q.t0) / 1000;
+    const ok = id != null && id === r.answer;
+    const guessName = id == null ? '（超時）' : (q.kind === 'who' ? this.charName(id) : (((r.options || []).find(o => o.id === id) || {}).n || ''));
+    if (!ok && id != null && q.strikes < 2) {   // 還有機會：記一次錯，把那個選項灰掉
+      this.setState({ qz: Object.assign({}, q, { strikes: q.strikes + 1, wrong: (q.wrong || []).concat([id]) }) });
+      return;
+    }
+    clearInterval(this._qzT);
+    const mult = (this.QZ_DIFF[this.state.qzDiff] || this.QZ_DIFF.normal)[2];
+    const tf = this.state.qzTime > 0 ? Math.max(0.5, 1 - 0.5 * sec / this.state.qzTime) : 1;
+    const pts = ok ? Math.round(1000 * mult * tf * (1 - 0.3 * q.strikes)) : 0;
+    const results = q.results.concat([{ round: q.i + 1, name: r.name, title: r.title, thumb: r.thumb, guess: guessName, ok, pts, sec: Math.round(sec * 10) / 10 }]);
+    this.setState({ qz: Object.assign({}, q, { fb: { ok, pts, guess: guessName }, score: q.score + pts, combo: ok ? q.combo + 1 : 0, results }) });
+    clearTimeout(this._qzN); this._qzN = setTimeout(() => this.qzNext(), 2600);
+  }
+  qzNext() {
+    clearTimeout(this._qzN);
+    const q = this.state.qz; if (!q || q.phase !== 'play') return;
+    const i = q.i + 1;
+    if (i >= q.rounds.length) {
+      const best = Math.max(q.score, +((this.state.qzBest || {})[q.kind] || 0));
+      const qzBest = Object.assign({}, this.state.qzBest, { [q.kind]: best });
+      try { localStorage.setItem('sekai-quiz-best-' + q.kind, String(best)); } catch (e) {}
+      this.setState({ qz: Object.assign({}, q, { phase: 'result', fb: null }), qzBest });
+      return;
+    }
+    this.setState({ qz: Object.assign({}, q, { i, strikes: 0, wrong: [], fb: null, img: '', crop: null, loading: true, t0: 0 }) }, () => this.qzLoadRound());
+  }
+  qzQuit(reset) {
+    clearInterval(this._qzT); clearTimeout(this._qzN);
+    if (reset !== false && this.state.qz) this.setState({ qz: null });
+  }
+  qzVals(s) {
+    const p = s.page; if (p !== 'guesswho' && p !== 'guessjacket') return {};
+    const kind = p === 'guesswho' ? 'who' : 'jacket', q = s.qz && s.qz.kind === kind ? s.qz : null;
+    const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
+    const pool = this.qzPool(kind);
+    const busy = kind === 'who' ? (s.rateLoad && !(s.rateCards || []).length) : (s.songLoad && !(s.songs || []).length);
+    const best = +((s.qzBest || {})[kind] || 0);
+    const out = {
+      qzIsWho: kind === 'who', qzIsJacket: kind === 'jacket',
+      qzSetup: !q, qzPlay: !!q && q.phase === 'play', qzResult: !!q && q.phase === 'result',
+      qzDiffChips: Object.keys(this.QZ_DIFF).map(k => Object.assign({ v: k, n: this.QZ_DIFF[k][0] + '（' + this.QZ_DIFF[k][2] + '×）' }, chip(s.qzDiff === k))),
+      qzUnitChips: this.UNIT_OF.map(u => Object.assign({ v: u, n: this.UNITS[u].n }, chip((s.qzUnits || []).includes(u), this.UNITS[u].c))),
+      qzRarChips: this.RARITY.map(r => Object.assign({ v: r[0], n: r[1] }, chip((s.qzRar || []).includes(r[0])))),
+      qzOptChips: [4, 6, 8, 10].map(n => Object.assign({ v: n, n: n + ' 選 1' }, chip((s.qzOpts || 6) === n))),
+      qzTimeChips: [[0, '不限時'], [30, '30 秒'], [60, '60 秒'], [120, '120 秒']].map(t => Object.assign({ v: t[0], n: t[1] }, chip((s.qzTime || 0) === t[0]))),
+      qzPoolText: busy ? '題庫載入中…' : ('題庫 ' + this.n(pool.length) + (kind === 'who' ? ' 張卡面' : ' 首歌')),
+      qzBestText: best ? '最佳成績 ' + this.n(best) : '',
+      qzRule: kind === 'who' ? '每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從角色裡選；三次猜錯或超時算失敗。'
+                            : '每題出示一小塊曲繪，從選項裡挑出正確歌名；三次猜錯或超時算失敗。',
+    };
+    if (!q) return out;
+    const r = q.rounds[q.i] || {}, total = q.rounds.length;
+    out.qzHead = '第 ' + Math.min(q.i + 1, total) + ' / ' + total + ' 題';
+    out.qzScore = this.n(q.score); out.qzCombo = q.combo > 1 ? q.combo + ' 連對' : '';
+    out.qzStrikes = [0, 1, 2].map(i => ({ bg: i < 3 - q.strikes ? '#e0576a' : 'var(--border)' }));
+    out.qzHasTimer = s.qzTime > 0; out.qzLeft = Math.ceil(q.left || 0) + ' 秒';
+    out.qzLeftPct = s.qzTime > 0 ? Math.max(0, Math.min(100, (q.left || 0) / s.qzTime * 100)) : 100;
+    out.qzLeftColor = (q.left || 0) < 10 && s.qzTime > 0 ? '#e0576a' : 'var(--accent)';
+    out.qzLoading = !!q.loading;
+    const c = q.crop;
+    const filt = { none: '', gray: 'grayscale(1)', invert: 'invert(1)', hue: 'hue-rotate(180deg)' }[q.distort] || '';
+    const flip = q.distort === 'flipH' ? 'scaleX(-1)' : q.distort === 'flipV' ? 'scaleY(-1)' : 'none';
+    out.qzCropStyle = c ? ("background-image:url('" + q.img + "');background-size:" + (c.w / c.side * 100).toFixed(2) + '% auto;background-position:'
+      + (c.w > c.side ? (c.x / (c.w - c.side) * 100).toFixed(2) : 0) + '% ' + (c.h > c.side ? (c.y / (c.h - c.side) * 100).toFixed(2) : 0) + '%;filter:' + (filt || 'none') + ';transform:' + flip) : '';
+    out.qzDistortNote = { gray: '灰階', invert: '反相', hue: '色相翻轉', flipH: '左右翻轉', flipV: '上下翻轉' }[q.distort] || '';
+    out.qzHasDistort = !!out.qzDistortNote;
+    out.qzFb = !!q.fb; out.qzFbOk = !!(q.fb && q.fb.ok);
+    out.qzFbTitle = q.fb ? (q.fb.ok ? '答對了！ +' + this.n(q.fb.pts) : (q.fb.guess === '（超時）' ? '時間到' : '答錯了')) : '';
+    out.qzFbAnswer = r.name || ''; out.qzFbSub = r.title || '';
+    out.qzFbImg = q.img || r.thumb || '';
+    out.qzFbBg = q.fb ? (q.fb.ok ? 'color-mix(in oklab,#3ec49a 18%,var(--card))' : 'color-mix(in oklab,#e0576a 14%,var(--card))') : 'var(--card)';
+    const wrong = new Set(q.wrong || []);
+    if (kind === 'who') {
+      const units = (s.qzUnits || []).length ? s.qzUnits : this.UNIT_OF;
+      out.qzWhoUnits = units.map(u => ({ key: u, name: this.UNITS[u].n, color: this.UNITS[u].c,
+        chars: (s.rateChars || []).filter(x => this.UNIT_OF[x[2]] === u).map(x => ({ id: x[0], n: this.charShort(x[0]) || x[1], c: this.CHARA_COLOR[x[0]] || '#888', dis: wrong.has(x[0]) ? '.3' : '1' })) }));
+    } else {
+      out.qzOptions = (r.options || []).map(o => ({ id: o.id, n: o.n, dis: wrong.has(o.id) ? '.3' : '1' }));
+    }
+    if (q.phase === 'result') {
+      const okN = q.results.filter(x => x.ok).length;
+      out.qzResScore = this.n(q.score); out.qzResOk = '答對 ' + okN + ' / ' + total; out.qzResBest = best ? '最佳成績 ' + this.n(best) : '';
+      out.qzResRows = q.results.map(x => ({ round: x.round, name: x.name, title: x.title, thumb: x.thumb, guess: x.guess, pts: x.pts ? '+' + this.n(x.pts) : '0', sec: x.sec ? x.sec + ' 秒' : '', fg: x.ok ? '#3ec49a' : '#e0576a', mark: x.ok ? '○' : '✕' }));
+    }
+    return out;
+  }
+
+  /* ---------- 貼圖製作器 ----------
+     底圖用官方貼圖（收集室那份清單，CDN 確定有圖）或自己上傳的圖，文字用 canvas 畫上去再匯出 PNG。
+     字型走站上已載入的 Huninn／M PLUS Rounded 1c，不另外下載字型檔。 */
+  STK_FONTS = [['Huninn', '粉圓'], ['M PLUS Rounded 1c', 'M PLUS Rounded'], ['sans-serif', '系統字型']];
+  stkSetBase(base, color) {
+    this._stkImg = null;
+    const im = new Image();
+    if (base.kind === 'stamp') im.crossOrigin = 'anonymous';   // 要進 canvas 再匯出，CDN 圖得帶 CORS
+    im.onload = () => { if (this.state.stk.base === base) { this._stkImg = im; this.stkDraw(); } };
+    im.onerror = () => { if (this.state.stk.base === base) this._toast('圖片載入失敗'); };
+    im.src = base.url;
+    const patch = { base };
+    if (color) patch.color = color;
+    if (!this.state.stk.text) patch.text = base.kind === 'stamp' ? '' : '';
+    this.setState({ stk: Object.assign({}, this.state.stk, patch) });
+  }
+  stkDraw() {
+    const cv = this._stkCanvas, st = this.state.stk, im = this._stkImg; if (!cv || !st) return;
+    const iw = im ? (im.naturalWidth || 296) : 296, ih = im ? (im.naturalHeight || 256) : 256;
+    const k = Math.min(1, 800 / Math.max(iw, ih)), w = Math.round(iw * k) || 296, h = Math.round(ih * k) || 256;
+    if (cv.width !== w) cv.width = w;
+    if (cv.height !== h) cv.height = h;
+    const ctx = cv.getContext('2d'); if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    if (st.bg === 'white') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+    if (im) { try { ctx.drawImage(im, 0, 0, w, h); } catch (e) {} }
+    const text = String(st.text || ''); if (!text.trim()) return;
+    const lines = text.split('\n'), fontPx = Math.max(6, w * (+st.size || 16) / 100);
+    ctx.save();
+    ctx.translate(w * (+st.x || 0) / 100, h * (+st.y || 0) / 100);
+    ctx.rotate((+st.rot || 0) * Math.PI / 180);
+    ctx.font = '800 ' + fontPx + 'px "' + (st.font || 'Huninn') + '", "M PLUS Rounded 1c", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    try { ctx.letterSpacing = (fontPx * (+st.sp || 0) / 100) + 'px'; } catch (e) {}
+    const lw = fontPx * (+st.sw || 0) / 50;
+    lines.forEach((ln, i) => {
+      const y = (i - (lines.length - 1) / 2) * fontPx * 1.15;
+      if (lw > 0) { ctx.lineWidth = lw; ctx.strokeStyle = st.stroke || '#fff'; ctx.strokeText(ln, 0, y); }
+      ctx.fillStyle = st.color || '#333'; ctx.fillText(ln, 0, y);
+    });
+    ctx.restore();
+  }
+  stkExport(mode) {
+    const cv = this._stkCanvas; if (!cv) return;
+    if (!this.state.stk.base) { this._toast('先選一張底圖'); return; }
+    try {
+      cv.toBlob(b => {
+        if (!b) { this._toast('匯出失敗'); return; }
+        if (mode === 'copy') {
+          try { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).then(() => this._toast('已複製到剪貼簿')).catch(() => this._toast('這個瀏覽器不支援複製圖片，改用下載')); }
+          catch (e) { this._toast('這個瀏覽器不支援複製圖片，改用下載'); }
+          return;
+        }
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'sticker-' + Date.now() + '.png'; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      }, 'image/png');
+    } catch (e) { this._toast('匯出失敗：圖片來源不允許跨域使用'); }
+  }
+  stkVals(s) {
+    if (s.page !== 'stickers') return {};
+    const st = s.stk || {};
+    const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
+    const q = this.normSong(s.stkq || '');
+    let all = (s.stamps || []);
+    if (s.stkChar) all = all.filter(x => x.cid === s.stkChar);
+    if (q) all = all.filter(x => this.normSong(x.name + ' ' + x.desc).includes(q));
+    const n = Math.min(all.length, s.stkN || 48);
+    // 畫布跟著狀態重畫：排在這一輪 render 之後
+    clearTimeout(this._stkD); this._stkD = setTimeout(() => this.stkDraw(), 30);
+    return {
+      stkTabs: [{ v: 'stamp', n: '官方貼圖' }, { v: 'upload', n: '上傳圖片' }].map(t => Object.assign(t, chip(s.stkTab === t.v))),
+      stkIsStamp: s.stkTab === 'stamp', stkIsUpload: s.stkTab === 'upload',
+      stkCharChips: (s.rateChars || []).map(x => Object.assign({ v: x[0], n: this.charShort(x[0]) || x[1] }, chip(s.stkChar === x[0], this.CHARA_COLOR[x[0]]))),
+      stkq: s.stkq,
+      stkRows: all.slice(0, n).map(x => ({ abn: x.abn, name: x.name, img: this.ASSET + '/stamp/' + x.abn + '/' + x.abn + '.webp', bd: st.base && st.base.url && st.base.url.indexOf('/' + x.abn + '/') > -1 ? 'var(--cta)' : 'var(--border)' })),
+      stkCount: s.colLoad ? '貼圖載入中…' : (all.length ? '共 ' + this.n(all.length) + ' 張' + (n < all.length ? '，顯示前 ' + n + ' 張' : '') : (s.colErr ? '貼圖清單載入失敗' : '沒有符合的貼圖')),
+      stkMore: n < all.length, stkMoreLabel: '顯示更多（' + n + ' / ' + all.length + '）',
+      stkHasBase: !!st.base, stkBaseName: st.base ? ('底圖：' + (st.base.name || '')) : '先從左邊選一張官方貼圖，或上傳自己的圖',
+      stkPreviewBg: st.bg === 'white' ? '#fff' : 'repeating-conic-gradient(var(--card-2) 0 25%,var(--card) 0 50%) 0 0/16px 16px',
+      stkText: st.text || '', stkSize: st.size, stkX: st.x, stkY: st.y, stkRot: st.rot, stkSp: st.sp, stkSw: st.sw, stkColor: st.color, stkStroke: st.stroke,
+      stkFontChips: this.STK_FONTS.map(f => Object.assign({ v: f[0], n: f[1] }, chip(st.font === f[0]))),
+      stkBgLabel: st.bg === 'white' ? '背景：白色' : '背景：透明',
+    };
+  }
+
   async loadCollect() {
     if (this.state.colLoad || this.state.stamps.length) return;
     this.setState({ colLoad: true, colErr: '' });
@@ -11191,6 +11995,21 @@ class Component extends DCLogic {
     if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); }
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
+    if (p === 'chars') { this.loadChars(); this.loadCards(); }
+    if (p === 'cards') { this.loadCards(); this.loadCardX(); }
+    if (p === 'story') { this.loadStories(); this.loadCards(); }
+    if (p !== 'story' && this.state.rd) { this.stStopVoice(); this.setState({ rd: null }); }
+    if (p === 'fixtures') this.loadFixtures();
+    if (p === 'materials') this.loadMats();
+    if (p === 'comics') this.loadComics();
+    if (p === 'ost') this.loadOst();
+    if (p === 'lives') this.loadLives();
+    if (p === 'news') this.loadNews();
+    if (this.DB_PAGES.includes(p) && p !== this.state.page) this.setState({ dbq: '', dbN: 48, dbPick: null });
+    if (p === 'guesswho' || p === 'stickers') this.loadCards();
+    if (p === 'guessjacket') this.loadSongs();
+    if (p === 'stickers') { this.loadCollect(); try { document.fonts.load('800 40px Huninn').then(() => this.stkDraw()); } catch (e) {} }
+    if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
@@ -11579,11 +12398,13 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['story', '劇情閱讀器', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['圖鑑', [['cards', '卡片圖鑑', '#7fb4f7'], ['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
-      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
+      ['遊戲', [['guesswho', '猜角色', '#ff9db4'], ['guessjacket', '猜封面', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
+      ['更多', [['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
     this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
@@ -12440,6 +13261,13 @@ class Component extends DCLogic {
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
+      isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
+      isDbPage: this.DB_PAGES.includes(s.page),
+      kbHelpOpen: !!s.kbHelp,
+      ...this.dbVals(s),
+      isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
+      ...this.qzVals(s),
+      ...this.stkVals(s),
       isWlsup: s.page === 'wlsup',
       ...(() => {
         const W = this.wlSupCalc();
@@ -14131,6 +14959,8 @@ class Component extends DCLogic {
         const im = e && e.currentTarget; if (!im) return;
         if (!im.getAttribute('src')) return;   // 封面還沒決定時 src 是空字串也會觸發 error，這時不能把圖藏起來（之後 src 補上就顯示不出來）
         if (!im.dataset.a && /sekai-jp-assets/.test(im.src || '')) { im.dataset.a = '1'; im.src = im.src.replace('sekai-jp-assets', 'sekai-tc-assets'); return; }
+        // 反過來也一樣：一格漫畫先抓台服翻譯版，台服桶沒有的就退回日服原版
+        if (!im.dataset.a && /sekai-tc-assets/.test(im.src || '')) { im.dataset.a = '1'; im.src = im.src.replace('sekai-tc-assets', 'sekai-jp-assets'); return; }
         const fb = im.dataset.fb || 'none';
         if (fb === 'hidden') im.style.visibility = 'hidden';
         else if (fb === 'opacity') im.style.opacity = '.15';
@@ -14728,6 +15558,56 @@ class Component extends DCLogic {
         if (x) this.setState({ colPick: Object.assign({ kind }, x) });
       },
       onColClose: () => this.setState({ colPick: null }),
+      /* 圖鑑類分頁共用：搜尋、篩選籤、顯示更多、詳情 */
+      onDbField: e => this.setState({ dbq: e.target.value, dbN: 48 }),
+      onDbChip: e => { const d = e.currentTarget.dataset; const patch = { [d.k]: d.num ? +d.v : d.v, dbN: 48 }; if (d.k === 'fixGenre') patch.fixSub = 0; if (d.k === 'cdUnit') patch.cdChar = 0; this.setState(patch); },
+      onDbMore: () => this.setState(st => ({ dbN: (st.dbN || 48) + 48 })),
+      onDbPick: e => { const d = e.currentTarget.dataset; this.setState({ dbPick: { kind: d.kind, id: d.num ? +d.id : d.id } }); },
+      onDbClose: () => this.setState({ dbPick: null }),
+      onDbGo: e => { const p = e.currentTarget.dataset.p; this.setState({ dbPick: null }); if (p) this.go(p); },
+      onKbHelp: () => this.setState(st => ({ kbHelp: !st.kbHelp })),
+      /* 劇情閱讀器 */
+      onStTab: e => this.setState({ stTab: e.currentTarget.dataset.v, stEvent: 0, dbq: '', dbN: 48 }),
+      onStEvent: e => this.setState({ stEvent: +e.currentTarget.dataset.id, dbq: '' }),
+      onStBack: () => this.setState({ stEvent: 0 }),
+      onStOpen: e => {
+        const d = e.currentTarget.dataset, k = d.kind;
+        const paths = k === 'event' ? ['event_story/' + d.abn + '/scenario/' + d.sid + '.json']
+          : k === 'unit' ? ['scenario/unitstory/' + d.abn + '/' + d.sid + '.json']
+          : k === 'card' ? ['character/member/' + d.abn + '/' + d.sid + '.json']
+          : k === 'talk' ? ['scenario/actionset/group' + d.abn + '/' + d.sid + '.json'].concat(d.sid2 && d.sid2 !== d.sid ? ['scenario/actionset/group' + d.abn + '/' + d.sid2 + '.json'] : [])
+          : k === 'self' ? ['scenario/profile/' + d.sid + '.json']
+          : ['scenario/special/' + d.abn + '/' + d.sid + '.json'];
+        const voiceDir = k === 'card' ? 'sound/card_scenario/voice' : k === 'talk' ? 'sound/actionset/voice' : 'sound/scenario/voice';
+        this.stOpen(k, d.title || d.sid, d.sub || '', paths, voiceDir);
+      },
+      onRdClose: () => { this.stStopVoice(); this.setState({ rd: null }); },
+      onRdVoice: e => this.stVoice(+e.currentTarget.dataset.i),
+      onDbReload: () => { const p = this.state.page, k = this.DB_KEY[p]; if (!k) return; this.setState({ dbErr: '', [k]: null }, () => this.go(p)); },
+      onOstPlay: e => this.ostToggle(+e.currentTarget.dataset.id),
+      onOstStop: () => this.ostStop(),
+      /* 猜角色／猜封面 */
+      onQzChip: e => { const d = e.currentTarget.dataset, k = d.k; let v = d.num ? +d.v : d.v;
+        if (k === 'qzUnits' || k === 'qzRar') { const cur = this.state[k] || []; v = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]); }
+        this.setState({ [k]: v }); },
+      onQzStart: () => this.qzStart(this.state.page === 'guesswho' ? 'who' : 'jacket'),
+      onQzPick: e => this.qzAnswer(+e.currentTarget.dataset.id),
+      onQzNext: () => this.qzNext(),
+      onQzQuit: () => this.qzQuit(),
+      /* 貼圖製作器 */
+      stkRef: el => { if (el) { this._stkCanvas = el; this.stkDraw(); } },
+      onStkTab: e => this.setState({ stkTab: e.currentTarget.dataset.v }),
+      onStkChar: e => { const v = +e.currentTarget.dataset.v; this.setState({ stkChar: v === this.state.stkChar ? 0 : v, stkN: 48 }); },
+      onStkQ: e => this.setState({ stkq: e.target.value, stkN: 48 }),
+      onStkMore: () => this.setState(st => ({ stkN: (st.stkN || 48) + 48 })),
+      onStkPick: e => { const abn = e.currentTarget.dataset.abn, x = (this.state.stamps || []).find(y => y.abn === abn); if (!x) return;
+        this.stkSetBase({ kind: 'stamp', url: this.ASSET + '/stamp/' + abn + '/' + abn + '.webp', name: x.name }, this.CHARA_COLOR[x.cid] || ''); },
+      onStkUpload: e => { const f = e.target.files && e.target.files[0]; if (!f) return; this.stkSetBase({ kind: 'upload', url: URL.createObjectURL(f), name: f.name }); e.target.value = ''; },
+      onStkField: e => { const d = e.currentTarget.dataset, v = d.num ? +e.target.value : e.target.value; this.setState({ stk: Object.assign({}, this.state.stk, { [d.k]: v }) }); },
+      onStkFont: e => this.setState({ stk: Object.assign({}, this.state.stk, { font: e.currentTarget.dataset.v }) }),
+      onStkBg: () => this.setState({ stk: Object.assign({}, this.state.stk, { bg: this.state.stk.bg === 'white' ? 'transparent' : 'white' }) }),
+      onStkSave: () => this.stkExport('save'),
+      onStkCopy: () => this.stkExport('copy'),
       onTheme: () => this.cycleTheme(),
       onAiDual: () => this.setAiDual(!this.state.aiDual),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },

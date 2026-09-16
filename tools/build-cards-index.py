@@ -136,12 +136,66 @@ def build(server):
     body.append(f'export const CHARAS = {json.dumps(ch_rows, ensure_ascii=False, separators=(",", ":"))};')
     out.write_text('\n'.join(body) + '\n', encoding='utf-8')
 
+    if server == 'tw':
+        write_extra(db, cards)
+
     kb = out.stat().st_size / 1024
     n_ev = sum(1 for r in rows if r[6] == 0)
     print(f'寫出 {out.relative_to(ROOT)}  {kb:.0f} KB')
     print(f'  卡片 {len(rows)} 張 / 角色 {len(ch_rows)} 位')
     print(f'  非卡池取得(活動報酬等) {n_ev} 張')
     return len(rows)
+
+
+def write_extra(db, cards):
+    """卡片圖鑑詳情用的補充資料：滿等數值、特訓加成、技能、釋出日、招募台詞。
+    跟 cards-index 分開放：收集率／卡面下載頁用不到這些，不必為了圖鑑多載 100 KB。
+    cardParameters 在台服 master 是壓縮格式 {param1:[逐等級], param2, param3}，
+    最後一格就是該稀有度的滿等值（★4/生日 60、★3 50、★2 40、★1 20）。"""
+    skills = get(db, 'skills.json')
+    # 樣板裡的 {{44;v}} 是「效果 id 44」不是第幾個效果，所以效果要用 id 當 key。
+    # e = 同團加成（skillEnhance，每多一位同團成員 +e%）、m = 該等級的上限（v + e×5：四位同團再加全員一致）。
+    sk = {}
+    for x in skills:
+        effects = {}
+        for e in (x.get('skillEffects') or []):
+            enh = (e.get('skillEnhance') or {}).get('activateEffectValue')
+            lv = {}
+            for d in (e.get('skillEffectDetails') or []):
+                row = {'d': d.get('activateEffectDuration'), 'v': d.get('activateEffectValue')}
+                if enh is not None and isinstance(row['v'], (int, float)):
+                    row['m'] = row['v'] + enh * 5
+                lv[d.get('level') or 0] = row
+            obj = {'lv': [lv.get(i) for i in range(1, 5)]}
+            if enh is not None:
+                obj['e'] = enh
+            effects[e['id']] = obj
+        sk[x['id']] = [x.get('description') or '', effects]
+
+    extra = {}
+    for c in cards:
+        cp = c.get('cardParameters') or {}
+        if isinstance(cp, dict):
+            mx = [(cp.get(k) or [0])[-1] for k in ('param1', 'param2', 'param3')]
+        else:   # 舊格式：逐筆 {cardLevel, cardParameterType, power}
+            best = {}
+            for r in cp:
+                t = r.get('cardParameterType'); best[t] = max(best.get(t, 0), r.get('power') or 0)
+            mx = [best.get('param1', 0), best.get('param2', 0), best.get('param3', 0)]
+        extra[c['id']] = [
+            c.get('skillId') or 0, int((c.get('releaseAt') or 0) / 1000),
+            mx[0], mx[1], mx[2],
+            c.get('specialTrainingPower1BonusFixed') or 0, c.get('specialTrainingPower2BonusFixed') or 0, c.get('specialTrainingPower3BonusFixed') or 0,
+            c.get('gachaPhrase') or '', c.get('cardSkillName') or '',
+        ]
+    out = ROOT / 'data' / 'cards-extra.js'
+    body = ['/* 由 tools/build-cards-index.py 產生,請勿手改。',
+            '   CARD_EXTRA[id] = [技能id, 釋出(秒), 滿等表演, 滿等技巧, 滿等體力, 特訓加成×3, 招募台詞, 技能名]',
+            '   SKILLS[id] = [敘述樣板({{效果id;d}}=秒數、{{效果id;v}}=數值、e=同團加成、m=上限、c=角色名), {效果id:{lv:[Lv1..Lv4 的 {d,v,m}], e}}] */',
+            'export const CARD_EXTRA=' + json.dumps(extra, ensure_ascii=False, separators=(',', ':')) + ';',
+            'export const SKILLS=' + json.dumps(sk, ensure_ascii=False, separators=(',', ':')) + ';']
+    out.write_text('\n'.join(body) + '\n', encoding='utf-8')
+    print(f'寫出 {out.relative_to(ROOT)}  {out.stat().st_size / 1024:.0f} KB（{len(extra)} 張、{len(sk)} 種技能）')
 
 
 def main():
