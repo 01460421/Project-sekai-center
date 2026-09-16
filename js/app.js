@@ -117,7 +117,10 @@ class Component extends DCLogic {
     comics:   ['一格漫畫', '遊戲內小提示的一格漫畫（台服翻譯版）'],
     ost:      ['原聲帶', '遊戲內 BGM：區域、劇情、Live 與卡池音樂，站內直接播放'],
     lives:    ['虛擬 Live', '歷代虛擬 Live 的期間、場次、歌單與出演角色'],
-    news:     ['遊戲公告', '台服遊戲內公告一覽，可依類型篩選與搜尋']
+    news:     ['遊戲公告', '台服遊戲內公告一覽，可依類型篩選與搜尋'],
+    guesswho: ['猜角色', '看一小塊卡面猜是誰：十題一局，猜得越快分數越高'],
+    guessjacket:['猜封面', '看一小塊曲繪猜歌名：十題一局，可調選項數與難度'],
+    stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製']
   };
   /* 圈內用語 → 站上功能 → 對應工具。玩家講的幾乎都是別名,而站上存的是正式名稱;
      這張表放在程式碼裡而不是 prompt 裡 —— 它有五百多條,每次請求都送一遍太貴,
@@ -157,6 +160,9 @@ class Component extends DCLogic {
     ['原聲帶', '', 'ost', '原聲帶|BGM|背景音樂|區域音樂|劇情音樂|OST|soundtrack|音樂播放|遊戲音樂'],
     ['虛擬 Live', '', 'lives', '虛擬Live|虛擬 Live|バーチャルライブ|virtual live|VL|生日 Live|Live 場次|Live 時間|Live 歌單|演唱會|連線 Live|嘉年華'],
     ['遊戲公告', '', 'news', '公告|遊戲公告|官方公告|情報|通知|維護公告|更新公告|活動公告|招募公告|遊戲內公告'],
+    ['猜角色', '', 'guesswho', '猜角色|猜卡面|猜猜看|猜謎|小遊戲|遊戲|guess who|看圖猜角色|卡面猜謎'],
+    ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
+    ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
     ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic V31|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
@@ -253,9 +259,13 @@ class Component extends DCLogic {
     { date: '圖鑑', title: '一格漫畫', desc: '遊戲內小提示漫畫（台服翻譯版），可放大與開啟原圖。', to: 'comics', cta: '前往一格漫畫' },
     { date: '圖鑑', title: '原聲帶', desc: '遊戲內 BGM 依分類瀏覽，站內直接播放。', to: 'ost', cta: '前往原聲帶' },
     { date: '資料', title: '虛擬 Live', desc: '歷代虛擬 Live 的期間、場次、歌單與出演角色。', to: 'lives', cta: '前往虛擬 Live' },
-    { date: '資料', title: '遊戲公告', desc: '台服遊戲內公告依類型篩選與搜尋，直達官方公告頁。', to: 'news', cta: '前往遊戲公告' }
+    { date: '資料', title: '遊戲公告', desc: '台服遊戲內公告依類型篩選與搜尋，直達官方公告頁。', to: 'news', cta: '前往遊戲公告' },
+    { date: '遊戲', title: '猜角色', desc: '看一小塊卡面猜是誰，十題一局；難度、團體、稀有度、限時可調。', to: 'guesswho', cta: '來玩猜角色' },
+    { date: '遊戲', title: '猜封面', desc: '看一小塊曲繪猜歌名，十題一局；選項數與難度可調。', to: 'guessjacket', cta: '來玩猜封面' },
+    { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '新增小遊戲「猜角色」「猜封面」與「貼圖製作器」', s: '同樣移植自 Moesekai：猜角色每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從 26 位角色裡選；猜封面每題出示一小塊曲繪，從 4～10 個歌名裡挑。兩者都是十題一局、三次猜錯或超時算失敗，分數依難度倍率（簡單 0.8×～極限 2.2×）、作答速度與猜錯次數計算，極限難度還會隨機加上灰階、反相、色相翻轉或翻轉；最佳成績存在本機。貼圖製作器可用官方貼圖（收集室的 1,000 多張）或自己上傳的圖當底圖，加上文字：大小、位置、旋轉、字距、描邊粗細與顏色、字型（粉圓／M PLUS Rounded）都能調，可下載 PNG 或直接複製到剪貼簿。' },
     { d: '2026/09/16', t: '新增七個圖鑑類分頁：角色、家具、素材、一格漫畫、原聲帶、虛擬 Live、遊戲公告', s: '把 Moesekai（pjsk.moe）站上本站還沒有的資料庫功能移植過來：角色圖鑑（聲優、生日、身高、學校、喜好、介紹與相關卡片）、MySekai 家具圖鑑（主／子分類、角色標籤、尺寸、其他顏色、製作素材）、素材圖鑑、一格漫畫（台服翻譯版，台服桶沒有的自動退回日服原版）、原聲帶（遊戲內 BGM 依分類瀏覽、站內直接播放）、虛擬 Live（期間、每場時間、下一場、歌單與出演角色）與台服遊戲公告（依類型與進行中／已結束篩選）。七頁共用同一套搜尋、篩選籤、「顯示更多」與詳情視窗。導覽新增「圖鑑」群組，收集室與收集率也移到那裡。虛擬 Live 與家具的原始資料各 1～3 MB，改由每日排程壓成索引檔（tools/build-db-index.py）。' },
     { d: '2026/09/16', t: '摸魚表加入自訂篩選', s: '摸魚表新增自訂篩選：「前 n%」依目前排序只留前 n% 的列、「與最高差 ≤ n%」只留跟第 1 名差距在 n% 以內的歌、「≥ n」只留數值達到門檻的歌（單位跟著排序：單局 P、每小時 P、每體力 P 或分數）。有篩選時列數上限放寬到 300，不會被預設的 40 列截掉。篩選提示會直接告訴你門檻換算成多少與符合幾列。' },
     { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單納入日服曲：台服 613 首之外再列出台服尚未實裝的日服曲（標「日服」，可切換台＋日服／僅台服／僅日服限定），全庫 726 首。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
@@ -460,6 +470,11 @@ class Component extends DCLogic {
     dbq: '', dbN: 48, dbPick: null, dbLoad: '', dbErr: '',
     chars: null, fixtures: null, mats: null, comics: null, ost: null, lives: null, news: null,
     fixGenre: 0, fixSub: 0, fixChar: 0, matType: '', ostCat: 0, ostPlay: 0, liveType: '', liveStat: '', newsTag: '', newsStat: '',
+    /* 小遊戲（猜角色／猜封面）與貼圖製作器 */
+    qz: null, qzDiff: 'normal', qzUnits: [], qzRar: [3, 4], qzOpts: 6, qzTime: 60,
+    qzBest: (() => { const o = {}; ['who', 'jacket'].forEach(k => { try { o[k] = +localStorage.getItem('sekai-quiz-best-' + k) || 0; } catch (e) {} }); return o; })(),
+    stk: { base: null, text: '', size: 16, color: '#ff66bb', stroke: '#ffffff', sw: 8, x: 50, y: 22, rot: -4, sp: 0, font: 'Huninn', bg: 'transparent' },
+    stkTab: 'stamp', stkq: '', stkChar: 0, stkN: 48,
     live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
@@ -4207,6 +4222,9 @@ class Component extends DCLogic {
           ['materials', '圖鑑', '', [], [], '養成素材與 MySekai 素材一覽,含說明。'],
           ['comics', '圖鑑', '', [], [], '遊戲內小提示的一格漫畫(台服翻譯版),可放大與開啟原圖。'],
           ['ost', '圖鑑', '', [], [], '遊戲內 BGM(區域、劇情、Live、卡池…)站內直接播放。'],
+          ['guesswho', '遊戲', '', [], [], '猜角色:看一小塊卡面猜是誰,十題一局,可選難度／團體／稀有度／限時。'],
+          ['guessjacket', '遊戲', '', [], [], '猜封面:看一小塊曲繪猜歌名,十題一局,可選難度／團體／選項數／限時。'],
+          ['stickers', '工具', '', [], [], '貼圖製作器:官方貼圖或上傳的圖加上文字(大小、位置、旋轉、描邊、字型),匯出 PNG 或複製。'],
           ['rank', '追蹤', '', [], [
             ['live', '即時排名', '前 100 名即時分數與 1h 均速;點某人開「排名詳情」看逐局紀錄', ['get_top100', 'get_player_games']],
             ['border', '分段榜線', 'T100～T10萬 各段位目前分數與預測終線', ['get_borders']],
@@ -11293,7 +11311,8 @@ class Component extends DCLogic {
       out.fixSubChips = (d && s.fixGenre) ? [{ v: 0, n: '全部子分類' }].concat(d.subs.filter(g => g[0] !== 1 && usedS.has(g[0])).map(g => ({ v: g[0], n: g[1] }))).map(g => Object.assign(g, chip(s.fixSub === g.v, 'var(--accent-deep)'))) : [];
       out.fixHasSub = out.fixSubChips.length > 1;
       out.fixCharChips = charTags.map(t => Object.assign({ v: t.id, n: this.charShort(t.cid) || t.name }, chip(s.fixChar === t.id, this.CHARA_COLOR[t.cid])));
-      out.fixRows = page(all, 48).map(r => ({ id: r[0], name: r[1], img: img(r), sub: (subOf(r[3]) || genreOf(r[2]) || '') + ' · ' + r[5][0] + '×' + r[5][1] + '×' + r[5][2] }));
+      // 牆壁／地板這類貼圖沒有格數，尺寸全 0 就不顯示
+      out.fixRows = page(all, 48).map(r => ({ id: r[0], name: r[1], img: img(r), sub: (subOf(r[3]) || genreOf(r[2]) || '') + (r[5].some(v => v > 0) ? ' · ' + r[5][0] + '×' + r[5][1] + '×' + r[5][2] : '') }));
       const r = d && pick('fix') != null ? d.rows.find(x => x[0] === pick('fix')) : null;
       if (r) {
         const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
@@ -11400,6 +11419,254 @@ class Component extends DCLogic {
     out.dbPickHasLink = !!view.link; out.dbPickLink = view.link || '#'; out.dbPickLinkLabel = view.linkLabel || '';
     out.dbPickListGrid = !!view.listGrid; out.dbPickListRows = !view.listGrid;
     return out;
+  }
+
+  /* ---------- 小遊戲：猜角色／猜封面 ----------
+     兩個遊戲共用一顆引擎（qz）：十題一局，每題看一小塊圖猜答案，三次猜錯或超時算失敗；
+     分數 = 1000 × 難度倍率 × 時間係數（越快越高，最低 0.5）× (1 − 0.3 × 猜錯次數)。
+     圖用 CSS background 裁切（不進 canvas，不必管 CORS）；極限難度再隨機加濾鏡／翻轉。 */
+  QZ_DIFF = { easy: ['簡單', 0.55, 0.8], normal: ['普通', 0.38, 1], hard: ['困難', 0.26, 1.5], extreme: ['極限', 0.17, 2.2] };
+  QZ_ROUNDS = 10;
+  charUnit(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? this.UNIT_OF[c[2]] : ''; }
+  charName(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? c[1] : ('#' + cid); }
+  qzPool(kind) {
+    const s = this.state, units = s.qzUnits || [];
+    if (kind === 'who') {
+      const rar = s.qzRar || [];
+      return (s.rateCards || []).filter(r => r[8] && (!rar.length || rar.includes(r[2])) && (!units.length || units.includes(this.charUnit(r[1]))));
+    }
+    return (s.songs || []).filter(x => x.jkt && (!units.length || (x.units || []).some(u => units.includes(u))));
+  }
+  qzShuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = b[i]; b[i] = b[j]; b[j] = t; } return b; }
+  qzStart(kind) {
+    const s = this.state, pool = this.qzPool(kind), need = kind === 'who' ? this.QZ_ROUNDS : Math.max(this.QZ_ROUNDS, s.qzOpts || 6);
+    if (pool.length < need) { this._toast('符合條件的題庫不夠（' + pool.length + '），放寬篩選再試'); return; }
+    const picked = this.qzShuffle(pool).slice(0, this.QZ_ROUNDS);
+    const rounds = picked.map(x => {
+      if (kind === 'who') {
+        const trained = (x[2] === 3 || x[2] === 4) && Math.random() < 0.5;
+        const base = this.ASSET + '/character/member/' + x[8] + '/card_' + (trained ? 'after_training' : 'normal');
+        // 先試 webp（小很多），沒有再退回實測存在的 png
+        return { id: x[0], answer: x[1], name: this.charName(x[1]), title: x[7], urls: [base + '.webp', base + '.png'], thumb: this.cardImg(x[8], x[2]) };
+      }
+      const others = this.qzShuffle(pool.filter(y => y.id !== x.id)).slice(0, Math.max(1, (s.qzOpts || 6) - 1));
+      const jk = this.ASSET + '/music/jacket/' + x.jkt + '/' + x.jkt + '.webp';
+      return { id: x.id, answer: x.id, name: x.title, title: x.composer || '', urls: [jk], thumb: jk,
+        options: this.qzShuffle(others.concat([x])).map(y => ({ id: y.id, n: y.title })) };
+    });
+    this.qzQuit(false);
+    this.setState({ qz: { kind, phase: 'play', i: 0, rounds, strikes: 0, wrong: [], combo: 0, score: 0, results: [], fb: null, t0: 0, left: s.qzTime || 0, img: '', crop: null, distort: 'none', loading: true } }, () => this.qzLoadRound());
+  }
+  qzLoadRound() {
+    const q = this.state.qz; if (!q || q.phase !== 'play') return;
+    const r = q.rounds[q.i]; if (!r) return;
+    const frac = (this.QZ_DIFF[this.state.qzDiff] || this.QZ_DIFF.normal)[1];
+    const tryUrl = k => {
+      if (k >= r.urls.length) { this.qzSkip(); return; }   // 每種副檔名都沒有：這題跳過
+      const im = new Image();
+      im.onload = () => {
+        const cur = this.state.qz; if (!cur || cur.phase !== 'play' || cur.rounds[cur.i] !== r) return;
+        const w = im.naturalWidth || 1, h = im.naturalHeight || 1, side = Math.max(24, Math.round(Math.min(w, h) * frac));
+        const x = Math.round(Math.random() * Math.max(0, w - side)), y = Math.round(Math.random() * Math.max(0, h - side));
+        const distort = this.state.qzDiff === 'extreme' ? this.qzShuffle(['none', 'gray', 'invert', 'hue', 'flipH', 'flipV'])[0] : 'none';
+        this.setState({ qz: Object.assign({}, cur, { img: r.urls[k], crop: { x, y, side, w, h }, loading: false, t0: Date.now(), left: this.state.qzTime || 0, distort }) }, () => this.qzTick());
+        const nx = cur.rounds[cur.i + 1]; if (nx) { const pre = new Image(); pre.src = nx.urls[0]; }   // 預載下一題，換題不用等
+      };
+      im.onerror = () => tryUrl(k + 1);
+      im.src = r.urls[k];
+    };
+    tryUrl(0);
+  }
+  qzTick() {
+    clearInterval(this._qzT);
+    if (!(this.state.qzTime > 0)) return;
+    this._qzT = setInterval(() => {
+      const q = this.state.qz; if (!q || q.phase !== 'play' || q.fb || q.loading) return;
+      const left = Math.max(0, (this.state.qzTime || 0) - (Date.now() - q.t0) / 1000);
+      if (left <= 0) { clearInterval(this._qzT); this.qzAnswer(null); return; }
+      this.setState({ qz: Object.assign({}, q, { left }) });
+    }, 250);
+  }
+  qzSkip() {
+    const q = this.state.qz; if (!q) return;
+    const r = q.rounds[q.i];
+    const results = q.results.concat([{ round: q.i + 1, name: r.name, title: r.title, thumb: r.thumb, guess: '（圖片無法載入，略過）', ok: false, pts: 0, sec: 0 }]);
+    this.setState({ qz: Object.assign({}, q, { results }) }, () => this.qzNext());
+  }
+  qzAnswer(id) {
+    const q = this.state.qz; if (!q || q.phase !== 'play' || q.fb || q.loading) return;
+    const r = q.rounds[q.i], sec = (Date.now() - q.t0) / 1000;
+    const ok = id != null && id === r.answer;
+    const guessName = id == null ? '（超時）' : (q.kind === 'who' ? this.charName(id) : (((r.options || []).find(o => o.id === id) || {}).n || ''));
+    if (!ok && id != null && q.strikes < 2) {   // 還有機會：記一次錯，把那個選項灰掉
+      this.setState({ qz: Object.assign({}, q, { strikes: q.strikes + 1, wrong: (q.wrong || []).concat([id]) }) });
+      return;
+    }
+    clearInterval(this._qzT);
+    const mult = (this.QZ_DIFF[this.state.qzDiff] || this.QZ_DIFF.normal)[2];
+    const tf = this.state.qzTime > 0 ? Math.max(0.5, 1 - 0.5 * sec / this.state.qzTime) : 1;
+    const pts = ok ? Math.round(1000 * mult * tf * (1 - 0.3 * q.strikes)) : 0;
+    const results = q.results.concat([{ round: q.i + 1, name: r.name, title: r.title, thumb: r.thumb, guess: guessName, ok, pts, sec: Math.round(sec * 10) / 10 }]);
+    this.setState({ qz: Object.assign({}, q, { fb: { ok, pts, guess: guessName }, score: q.score + pts, combo: ok ? q.combo + 1 : 0, results }) });
+    clearTimeout(this._qzN); this._qzN = setTimeout(() => this.qzNext(), 2600);
+  }
+  qzNext() {
+    clearTimeout(this._qzN);
+    const q = this.state.qz; if (!q || q.phase !== 'play') return;
+    const i = q.i + 1;
+    if (i >= q.rounds.length) {
+      const best = Math.max(q.score, +((this.state.qzBest || {})[q.kind] || 0));
+      const qzBest = Object.assign({}, this.state.qzBest, { [q.kind]: best });
+      try { localStorage.setItem('sekai-quiz-best-' + q.kind, String(best)); } catch (e) {}
+      this.setState({ qz: Object.assign({}, q, { phase: 'result', fb: null }), qzBest });
+      return;
+    }
+    this.setState({ qz: Object.assign({}, q, { i, strikes: 0, wrong: [], fb: null, img: '', crop: null, loading: true, t0: 0 }) }, () => this.qzLoadRound());
+  }
+  qzQuit(reset) {
+    clearInterval(this._qzT); clearTimeout(this._qzN);
+    if (reset !== false && this.state.qz) this.setState({ qz: null });
+  }
+  qzVals(s) {
+    const p = s.page; if (p !== 'guesswho' && p !== 'guessjacket') return {};
+    const kind = p === 'guesswho' ? 'who' : 'jacket', q = s.qz && s.qz.kind === kind ? s.qz : null;
+    const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
+    const pool = this.qzPool(kind);
+    const busy = kind === 'who' ? (s.rateLoad && !(s.rateCards || []).length) : (s.songLoad && !(s.songs || []).length);
+    const best = +((s.qzBest || {})[kind] || 0);
+    const out = {
+      qzIsWho: kind === 'who', qzIsJacket: kind === 'jacket',
+      qzSetup: !q, qzPlay: !!q && q.phase === 'play', qzResult: !!q && q.phase === 'result',
+      qzDiffChips: Object.keys(this.QZ_DIFF).map(k => Object.assign({ v: k, n: this.QZ_DIFF[k][0] + '（' + this.QZ_DIFF[k][2] + '×）' }, chip(s.qzDiff === k))),
+      qzUnitChips: this.UNIT_OF.map(u => Object.assign({ v: u, n: this.UNITS[u].n }, chip((s.qzUnits || []).includes(u), this.UNITS[u].c))),
+      qzRarChips: this.RARITY.map(r => Object.assign({ v: r[0], n: r[1] }, chip((s.qzRar || []).includes(r[0])))),
+      qzOptChips: [4, 6, 8, 10].map(n => Object.assign({ v: n, n: n + ' 選 1' }, chip((s.qzOpts || 6) === n))),
+      qzTimeChips: [[0, '不限時'], [30, '30 秒'], [60, '60 秒'], [120, '120 秒']].map(t => Object.assign({ v: t[0], n: t[1] }, chip((s.qzTime || 0) === t[0]))),
+      qzPoolText: busy ? '題庫載入中…' : ('題庫 ' + this.n(pool.length) + (kind === 'who' ? ' 張卡面' : ' 首歌')),
+      qzBestText: best ? '最佳成績 ' + this.n(best) : '',
+      qzRule: kind === 'who' ? '每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從角色裡選；三次猜錯或超時算失敗。'
+                            : '每題出示一小塊曲繪，從選項裡挑出正確歌名；三次猜錯或超時算失敗。',
+    };
+    if (!q) return out;
+    const r = q.rounds[q.i] || {}, total = q.rounds.length;
+    out.qzHead = '第 ' + Math.min(q.i + 1, total) + ' / ' + total + ' 題';
+    out.qzScore = this.n(q.score); out.qzCombo = q.combo > 1 ? q.combo + ' 連對' : '';
+    out.qzStrikes = [0, 1, 2].map(i => ({ bg: i < 3 - q.strikes ? '#e0576a' : 'var(--border)' }));
+    out.qzHasTimer = s.qzTime > 0; out.qzLeft = Math.ceil(q.left || 0) + ' 秒';
+    out.qzLeftPct = s.qzTime > 0 ? Math.max(0, Math.min(100, (q.left || 0) / s.qzTime * 100)) : 100;
+    out.qzLeftColor = (q.left || 0) < 10 && s.qzTime > 0 ? '#e0576a' : 'var(--accent)';
+    out.qzLoading = !!q.loading;
+    const c = q.crop;
+    const filt = { none: '', gray: 'grayscale(1)', invert: 'invert(1)', hue: 'hue-rotate(180deg)' }[q.distort] || '';
+    const flip = q.distort === 'flipH' ? 'scaleX(-1)' : q.distort === 'flipV' ? 'scaleY(-1)' : 'none';
+    out.qzCropStyle = c ? ("background-image:url('" + q.img + "');background-size:" + (c.w / c.side * 100).toFixed(2) + '% auto;background-position:'
+      + (c.w > c.side ? (c.x / (c.w - c.side) * 100).toFixed(2) : 0) + '% ' + (c.h > c.side ? (c.y / (c.h - c.side) * 100).toFixed(2) : 0) + '%;filter:' + (filt || 'none') + ';transform:' + flip) : '';
+    out.qzDistortNote = { gray: '灰階', invert: '反相', hue: '色相翻轉', flipH: '左右翻轉', flipV: '上下翻轉' }[q.distort] || '';
+    out.qzHasDistort = !!out.qzDistortNote;
+    out.qzFb = !!q.fb; out.qzFbOk = !!(q.fb && q.fb.ok);
+    out.qzFbTitle = q.fb ? (q.fb.ok ? '答對了！ +' + this.n(q.fb.pts) : (q.fb.guess === '（超時）' ? '時間到' : '答錯了')) : '';
+    out.qzFbAnswer = r.name || ''; out.qzFbSub = r.title || '';
+    out.qzFbImg = q.img || r.thumb || '';
+    out.qzFbBg = q.fb ? (q.fb.ok ? 'color-mix(in oklab,#3ec49a 18%,var(--card))' : 'color-mix(in oklab,#e0576a 14%,var(--card))') : 'var(--card)';
+    const wrong = new Set(q.wrong || []);
+    if (kind === 'who') {
+      const units = (s.qzUnits || []).length ? s.qzUnits : this.UNIT_OF;
+      out.qzWhoUnits = units.map(u => ({ key: u, name: this.UNITS[u].n, color: this.UNITS[u].c,
+        chars: (s.rateChars || []).filter(x => this.UNIT_OF[x[2]] === u).map(x => ({ id: x[0], n: this.charShort(x[0]) || x[1], c: this.CHARA_COLOR[x[0]] || '#888', dis: wrong.has(x[0]) ? '.3' : '1' })) }));
+    } else {
+      out.qzOptions = (r.options || []).map(o => ({ id: o.id, n: o.n, dis: wrong.has(o.id) ? '.3' : '1' }));
+    }
+    if (q.phase === 'result') {
+      const okN = q.results.filter(x => x.ok).length;
+      out.qzResScore = this.n(q.score); out.qzResOk = '答對 ' + okN + ' / ' + total; out.qzResBest = best ? '最佳成績 ' + this.n(best) : '';
+      out.qzResRows = q.results.map(x => ({ round: x.round, name: x.name, title: x.title, thumb: x.thumb, guess: x.guess, pts: x.pts ? '+' + this.n(x.pts) : '0', sec: x.sec ? x.sec + ' 秒' : '', fg: x.ok ? '#3ec49a' : '#e0576a', mark: x.ok ? '○' : '✕' }));
+    }
+    return out;
+  }
+
+  /* ---------- 貼圖製作器 ----------
+     底圖用官方貼圖（收集室那份清單，CDN 確定有圖）或自己上傳的圖，文字用 canvas 畫上去再匯出 PNG。
+     字型走站上已載入的 Huninn／M PLUS Rounded 1c，不另外下載字型檔。 */
+  STK_FONTS = [['Huninn', '粉圓'], ['M PLUS Rounded 1c', 'M PLUS Rounded'], ['sans-serif', '系統字型']];
+  stkSetBase(base, color) {
+    this._stkImg = null;
+    const im = new Image();
+    if (base.kind === 'stamp') im.crossOrigin = 'anonymous';   // 要進 canvas 再匯出，CDN 圖得帶 CORS
+    im.onload = () => { if (this.state.stk.base === base) { this._stkImg = im; this.stkDraw(); } };
+    im.onerror = () => { if (this.state.stk.base === base) this._toast('圖片載入失敗'); };
+    im.src = base.url;
+    const patch = { base };
+    if (color) patch.color = color;
+    if (!this.state.stk.text) patch.text = base.kind === 'stamp' ? '' : '';
+    this.setState({ stk: Object.assign({}, this.state.stk, patch) });
+  }
+  stkDraw() {
+    const cv = this._stkCanvas, st = this.state.stk, im = this._stkImg; if (!cv || !st) return;
+    const iw = im ? (im.naturalWidth || 296) : 296, ih = im ? (im.naturalHeight || 256) : 256;
+    const k = Math.min(1, 800 / Math.max(iw, ih)), w = Math.round(iw * k) || 296, h = Math.round(ih * k) || 256;
+    if (cv.width !== w) cv.width = w;
+    if (cv.height !== h) cv.height = h;
+    const ctx = cv.getContext('2d'); if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    if (st.bg === 'white') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+    if (im) { try { ctx.drawImage(im, 0, 0, w, h); } catch (e) {} }
+    const text = String(st.text || ''); if (!text.trim()) return;
+    const lines = text.split('\n'), fontPx = Math.max(6, w * (+st.size || 16) / 100);
+    ctx.save();
+    ctx.translate(w * (+st.x || 0) / 100, h * (+st.y || 0) / 100);
+    ctx.rotate((+st.rot || 0) * Math.PI / 180);
+    ctx.font = '800 ' + fontPx + 'px "' + (st.font || 'Huninn') + '", "M PLUS Rounded 1c", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    try { ctx.letterSpacing = (fontPx * (+st.sp || 0) / 100) + 'px'; } catch (e) {}
+    const lw = fontPx * (+st.sw || 0) / 50;
+    lines.forEach((ln, i) => {
+      const y = (i - (lines.length - 1) / 2) * fontPx * 1.15;
+      if (lw > 0) { ctx.lineWidth = lw; ctx.strokeStyle = st.stroke || '#fff'; ctx.strokeText(ln, 0, y); }
+      ctx.fillStyle = st.color || '#333'; ctx.fillText(ln, 0, y);
+    });
+    ctx.restore();
+  }
+  stkExport(mode) {
+    const cv = this._stkCanvas; if (!cv) return;
+    if (!this.state.stk.base) { this._toast('先選一張底圖'); return; }
+    try {
+      cv.toBlob(b => {
+        if (!b) { this._toast('匯出失敗'); return; }
+        if (mode === 'copy') {
+          try { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).then(() => this._toast('已複製到剪貼簿')).catch(() => this._toast('這個瀏覽器不支援複製圖片，改用下載')); }
+          catch (e) { this._toast('這個瀏覽器不支援複製圖片，改用下載'); }
+          return;
+        }
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'sticker-' + Date.now() + '.png'; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      }, 'image/png');
+    } catch (e) { this._toast('匯出失敗：圖片來源不允許跨域使用'); }
+  }
+  stkVals(s) {
+    if (s.page !== 'stickers') return {};
+    const st = s.stk || {};
+    const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
+    const q = this.normSong(s.stkq || '');
+    let all = (s.stamps || []);
+    if (s.stkChar) all = all.filter(x => x.cid === s.stkChar);
+    if (q) all = all.filter(x => this.normSong(x.name + ' ' + x.desc).includes(q));
+    const n = Math.min(all.length, s.stkN || 48);
+    // 畫布跟著狀態重畫：排在這一輪 render 之後
+    clearTimeout(this._stkD); this._stkD = setTimeout(() => this.stkDraw(), 30);
+    return {
+      stkTabs: [{ v: 'stamp', n: '官方貼圖' }, { v: 'upload', n: '上傳圖片' }].map(t => Object.assign(t, chip(s.stkTab === t.v))),
+      stkIsStamp: s.stkTab === 'stamp', stkIsUpload: s.stkTab === 'upload',
+      stkCharChips: (s.rateChars || []).map(x => Object.assign({ v: x[0], n: this.charShort(x[0]) || x[1] }, chip(s.stkChar === x[0], this.CHARA_COLOR[x[0]]))),
+      stkq: s.stkq,
+      stkRows: all.slice(0, n).map(x => ({ abn: x.abn, name: x.name, img: this.ASSET + '/stamp/' + x.abn + '/' + x.abn + '.webp', bd: st.base && st.base.url && st.base.url.indexOf('/' + x.abn + '/') > -1 ? 'var(--cta)' : 'var(--border)' })),
+      stkCount: s.colLoad ? '貼圖載入中…' : (all.length ? '共 ' + this.n(all.length) + ' 張' + (n < all.length ? '，顯示前 ' + n + ' 張' : '') : (s.colErr ? '貼圖清單載入失敗' : '沒有符合的貼圖')),
+      stkMore: n < all.length, stkMoreLabel: '顯示更多（' + n + ' / ' + all.length + '）',
+      stkHasBase: !!st.base, stkBaseName: st.base ? ('底圖：' + (st.base.name || '')) : '先從左邊選一張官方貼圖，或上傳自己的圖',
+      stkPreviewBg: st.bg === 'white' ? '#fff' : 'repeating-conic-gradient(var(--card-2) 0 25%,var(--card) 0 50%) 0 0/16px 16px',
+      stkText: st.text || '', stkSize: st.size, stkX: st.x, stkY: st.y, stkRot: st.rot, stkSp: st.sp, stkSw: st.sw, stkColor: st.color, stkStroke: st.stroke,
+      stkFontChips: this.STK_FONTS.map(f => Object.assign({ v: f[0], n: f[1] }, chip(st.font === f[0]))),
+      stkBgLabel: st.bg === 'white' ? '背景：白色' : '背景：透明',
+    };
   }
 
   async loadCollect() {
@@ -11516,6 +11783,10 @@ class Component extends DCLogic {
     if (p === 'lives') this.loadLives();
     if (p === 'news') this.loadNews();
     if (this.DB_PAGES.includes(p) && p !== this.state.page) this.setState({ dbq: '', dbN: 48, dbPick: null });
+    if (p === 'guesswho' || p === 'stickers') this.loadCards();
+    if (p === 'guessjacket') this.loadSongs();
+    if (p === 'stickers') { this.loadCollect(); try { document.fonts.load('800 40px Huninn').then(() => this.stkDraw()); } catch (e) {} }
+    if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
@@ -11907,7 +12178,8 @@ class Component extends DCLogic {
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
       ['圖鑑', [['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
-      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
+      ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
+      ['遊戲', [['guesswho', '猜角色', '#ff9db4'], ['guessjacket', '猜封面', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
       ['更多', [['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
@@ -12769,6 +13041,9 @@ class Component extends DCLogic {
       isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
       ...this.dbVals(s),
+      isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
+      ...this.qzVals(s),
+      ...this.stkVals(s),
       isWlsup: s.page === 'wlsup',
       ...(() => {
         const W = this.wlSupCalc();
@@ -15068,6 +15343,28 @@ class Component extends DCLogic {
       onDbReload: () => { const p = this.state.page, k = this.DB_KEY[p]; if (!k) return; this.setState({ dbErr: '', [k]: null }, () => this.go(p)); },
       onOstPlay: e => this.ostToggle(+e.currentTarget.dataset.id),
       onOstStop: () => this.ostStop(),
+      /* 猜角色／猜封面 */
+      onQzChip: e => { const d = e.currentTarget.dataset, k = d.k; let v = d.num ? +d.v : d.v;
+        if (k === 'qzUnits' || k === 'qzRar') { const cur = this.state[k] || []; v = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]); }
+        this.setState({ [k]: v }); },
+      onQzStart: () => this.qzStart(this.state.page === 'guesswho' ? 'who' : 'jacket'),
+      onQzPick: e => this.qzAnswer(+e.currentTarget.dataset.id),
+      onQzNext: () => this.qzNext(),
+      onQzQuit: () => this.qzQuit(),
+      /* 貼圖製作器 */
+      stkRef: el => { if (el) { this._stkCanvas = el; this.stkDraw(); } },
+      onStkTab: e => this.setState({ stkTab: e.currentTarget.dataset.v }),
+      onStkChar: e => { const v = +e.currentTarget.dataset.v; this.setState({ stkChar: v === this.state.stkChar ? 0 : v, stkN: 48 }); },
+      onStkQ: e => this.setState({ stkq: e.target.value, stkN: 48 }),
+      onStkMore: () => this.setState(st => ({ stkN: (st.stkN || 48) + 48 })),
+      onStkPick: e => { const abn = e.currentTarget.dataset.abn, x = (this.state.stamps || []).find(y => y.abn === abn); if (!x) return;
+        this.stkSetBase({ kind: 'stamp', url: this.ASSET + '/stamp/' + abn + '/' + abn + '.webp', name: x.name }, this.CHARA_COLOR[x.cid] || ''); },
+      onStkUpload: e => { const f = e.target.files && e.target.files[0]; if (!f) return; this.stkSetBase({ kind: 'upload', url: URL.createObjectURL(f), name: f.name }); e.target.value = ''; },
+      onStkField: e => { const d = e.currentTarget.dataset, v = d.num ? +e.target.value : e.target.value; this.setState({ stk: Object.assign({}, this.state.stk, { [d.k]: v }) }); },
+      onStkFont: e => this.setState({ stk: Object.assign({}, this.state.stk, { font: e.currentTarget.dataset.v }) }),
+      onStkBg: () => this.setState({ stk: Object.assign({}, this.state.stk, { bg: this.state.stk.bg === 'white' ? 'transparent' : 'white' }) }),
+      onStkSave: () => this.stkExport('save'),
+      onStkCopy: () => this.stkExport('copy'),
       onTheme: () => this.cycleTheme(),
       onAiDual: () => this.setAiDual(!this.state.aiDual),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
