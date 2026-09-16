@@ -24,6 +24,8 @@ jobs:
       - name: 重建 data/billing.js
         run: python3 tools/build-billing.py
 
+      # 線上試算表落後快照(製作者發新版時是另開檔案)時會沿用 tools/b30-table.json,
+      # 所以快照也要一起提交,底線才會跟著往前走。
       - name: 重建 data/b30-consts.js(定數表)
         run: python3 tools/build-b30.py || echo "定數表更新失敗,本輪略過"
 
@@ -37,13 +39,13 @@ jobs:
 
       - name: 提交變更
         run: |
-          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js)" ]; then
+          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js tools/b30-table.json)" ]; then
             echo "沒有新資料，不提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js
+          git add data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js tools/b30-table.json
           git commit -m "商城/定數資料 $(date -u '+%Y-%m-%d') [skip ci]"
           # 與榜線快照同款:落後就先 rebase 再推
           for i in 1 2 3; do

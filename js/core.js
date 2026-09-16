@@ -5666,7 +5666,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         })();
 
         // ========== 二十五:B30 產生器(Unibot 版面高還原+PNG 匯出) ==========
-        // 定數:pentatonic V31 難易度表(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
+        // 定數:pentatonic 難易度表(AP 基準,tools/build-b30.py 產生 data/b30-consts.js)
         // 実効值:AP=定數;FC=定數−1(本站採用,取代 Unibot 的 −1.5/−1 分段) — 非官方
         // 台服公開 API 沒有逐曲成績(只有各難度 AP/FC 總數),所以譜面成績採手動勾選
         const B30Maker = {
@@ -6618,10 +6618,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 };
                 // builtAt 是 unix 毫秒(例:1787888107618),不是日期字串,要轉過再截
                 const built = (() => { try { const b = this.D() && this.D().builtAt; if (!b) return ''; const d = new Date(typeof b === 'number' ? b : +b); return isFinite(+d) ? d.toISOString().slice(0, 10) : ''; } catch (e) { return ''; } })();
+                // 版號寫在 data 的 source 欄(例:'pentatonic v32 プロセカ難易度表'),別寫死在這裡:
+                // 難易度表改版時只有 build 腳本知道,圖上的署名跟著資料走才不會過期
+                const tbl = (() => { try { const m = /\bv\s*\d+/i.exec((this.D() || {}).source || ''); return m ? 'pentatonic ' + m[0].replace(/\s+/g, '') : 'pentatonic 最新版'; } catch (e) { return 'pentatonic'; } })();
 
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 12.5px ' + FB;
                 foot([
-                    '定數:腐食氏「プロセカ難易度表」pentatonic V31(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
+                    '定數:腐食氏「プロセカ難易度表」' + tbl + '(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
                     '曲目/譜面:Sekai-World sekai-master-db-diff(日)、sekai-master-db-tc-diff(台);中文譯名:Sekai Viewer 社群 i18n',
                     '封面/頭像:storage.sekai.best・版面還原自 Unibot(MIT / Watagashi_uni)',
                     '実効值:AP=定數、FC=定數−1,分母固定 30。非官方算法,僅供參考娛樂。'

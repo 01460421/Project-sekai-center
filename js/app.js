@@ -144,7 +144,7 @@ class Component extends DCLogic {
     ['玩家查詢（公開檔案）', 'get_player_profile', 'lookup', '玩家查詢|查玩家|查 ID|查 uid|Player ID|遊戲 ID|名片|個人檔案|profile|公開資料|編組|隊伍綜合力|角色等級|挑戰 Live 等級'],
     ['歌曲清單／樂曲資料庫', 'get_songs', 'songs', '歌曲清單|曲庫|樂曲資料庫|歌曲譜面|找歌|選歌|640 首曲庫|定數|譜面|note 數|音符數|曲長|活動倍率|歌曲係數|event rate|R 值'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
-    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic V31|Unibot 風格|AP=定數、FC=定數−1'],
+    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
     ['抽卡模擬', '', 'gachasim', '模擬抽卡|抽卡模擬器|模擬十連|gachasim'],
     ['收集室（貼圖與稱號圖鑑）', '', 'collect', '收集室|貼圖|稱號|1,073 張貼圖|1,883 種稱號|取得條件'],
@@ -235,6 +235,8 @@ class Component extends DCLogic {
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
   ];
   SYSLOG = [
+    { d: '2026/09/13', t: 'B30 定數表更新到 pentatonic v32', s: '難易度表換上 v32：新增陽炎計畫聯動的九張譜（ロスタイムメモリー MAS 31.5+、チルドレンレコード APP 34.7 等），27 張譜的定數有調整（千本桜 32.5→32.5+、カゲロウデイズ APP 33.6→33.8、snooze 32.0→32.1…），「空に免じて」從推估值換成表上的真實定數 26.1。曲庫 888 → 897 張譜、715 首曲，沒有任何一張消失。' },
+    { d: '2026/09/13', t: '定數表不會再被舊版蓋回去', s: '每日排程是從一個固定網址抓難易度表，但製作者發新版時是另開一份檔案，那個網址會永遠停在舊版 —— 手動更新的新定數隔天就被蓋掉。現在表會存一份快照當底線：線上那份的曲目要涵蓋快照才採用，少了曲目就判定為落後版本、沿用快照並在紀錄裡講明。線上版超前時快照自動跟上，署名也跟著資料走，不再寫死在程式裡。' },
     { d: '2026/09/06', t: '指令面板也能用中文找歌', s: '⌘K 的曲目搜尋跟共用設定犯同一個毛病：只比對日文原名，曲庫裡兩百多首有中文譯名的用中文打就找不到。改用同一支正規化，中文、日文、半形片假名都找得到，結果也會把兩種名字一起顯示。' },
     { d: '2026/09/06', t: '共用設定的選曲修好：475 首原本選不到', s: '計算中心「共用設定」的選曲下拉寫死只顯示前 240 首。曲庫 715 首的現在，那代表有 475 首在下拉裡根本不存在，捲到底也選不到，而且畫面上沒有任何提示——曲庫愈更新愈嚴重。上限拿掉，現在全部都選得到。搜尋也一併修：原本只比對日文原名，曲庫有 245 首有中文譯名卻搜不到；現在中文、日文、半形片假名都找得到，標籤會顯示符合幾首。' },
     { d: '2026/09/06', t: '修好一個會讓新功能看不見的過期戳記', s: 'app.js 載入 core.js 時用的版本戳是舊的，而那是一年期快取 —— 載過舊檔的人會拿到改版前的 core.js，B30 的新功能對他們就是不存在，畫面上又完全看不出異常。戳記工具現在會在收尾時掃過所有引用，只要有一個對不上就讓自己失敗，這種問題不該靠人眼發現。' },
@@ -1579,7 +1581,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=fba36bbfb8';
+      el.src = './js/core.js?v=648d6df0a4';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -1612,7 +1614,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=a31c269aeb';
+      s.src = 'data/billing.js?v=19081218c8';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2183,7 +2185,7 @@ class Component extends DCLogic {
         window_hours: { type: 'number', description: '「近期時速」的窗口小時數，預設 6、上限 72；跨距不足半小時會自動退回整段' } },
         required: ['tier'] } },
     { name: 'get_chart_consts',
-      description: '查譜面「定數」（非官方難易度表 pentatonic V31，AP 基準，MASTER／APPEND／EXPERT 共 885 張譜、706 首曲）。定數不是遊戲內等級：level 是遊戲給的整數 Lv，const_value／const_label 是社群把同一 Lv 再細分到小數的難度排名（如 32.9+），兩者不可互相當成對方講。使用者問「某某歌定數多少」「32.5 有哪些譜面」「33 以上的 APPEND」「台服最硬的譜面」時用。只查定數表本身、不看使用者成績；算他自己的 B30 或「下一張該打哪首」用 get_b30。',
+      description: '查譜面「定數」（非官方難易度表 pentatonic v32，AP 基準，MASTER／APPEND／EXPERT 共 897 張譜、715 首曲）。定數不是遊戲內等級：level 是遊戲給的整數 Lv，const_value／const_label 是社群把同一 Lv 再細分到小數的難度排名（如 32.9+），兩者不可互相當成對方講。使用者問「某某歌定數多少」「32.5 有哪些譜面」「33 以上的 APPEND」「台服最硬的譜面」時用。只查定數表本身、不看使用者成績；算他自己的 B30 或「下一張該打哪首」用 get_b30。',
       input_schema: { type: 'object', properties: {
         q: { type: 'string', description: '曲名關鍵字，用日文原名（ヒバナ）或中文譯名（火花），羅馬拼音查不到。一首歌會回它的各難度列' },
         song_id: { type: 'integer', description: '曲目 id（同 get_songs），比曲名精準' },
@@ -3138,7 +3140,7 @@ class Component extends DCLogic {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=d2d247ab47';
+              s.src = 'data/b30-consts.js?v=cef7d8e85d';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -4569,7 +4571,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=a31c269aeb';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=19081218c8';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -6900,7 +6902,7 @@ class Component extends DCLogic {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=d2d247ab47';
+              s.src = 'data/b30-consts.js?v=cef7d8e85d';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);

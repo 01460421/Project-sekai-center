@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""從「プロセカ難易度表」(pentatonic V31) 產生 data/b30-consts.js(B30 產生器用定數表)。
+"""從「プロセカ難易度表」(pentatonic) 產生 data/b30-consts.js(B30 產生器用定數表)。
 
 資料源:
   - 難易度表試算表(公開 Google Sheet,xlsx 匯出):難易度表(MAS)/難易度表(APD) 兩分頁
     定數為 AP 難度基準(注意事項原文),曲名為日文原名
+  - tools/b30-table.json:上面那張表的快照,同時當「不准倒退」的底線(見 resolve_sheet)
   - JP master musics.json:曲名 → musicId/封面 assetbundleName(台服曲名同日服)
   - TC master musics.json + musicDifficulties.json:過濾台服已實裝曲池、取遊戲內 Lv
 
@@ -14,7 +15,13 @@
 
     python3 tools/build-b30.py
     python3 tools/stamp-assets.py
+
+拿到新版難易度表的 xlsx(製作者另開新檔、線上那份還沒跟上時)可以直接餵進來,
+會順便更新 tools/b30-table.json 快照:
+
+    python3 tools/build-b30.py --xlsx ~/Downloads/PENTATONIC_v32.xlsx --version v32
 """
+import argparse
 import json
 import pathlib
 import re
@@ -31,6 +38,7 @@ TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main
 I18N = 'https://raw.githubusercontent.com/Sekai-World/sekai-i18n/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'b30-consts.js'
+SNAP = ROOT / 'tools' / 'b30-table.json'
 
 
 def get(url, binary=False):
@@ -106,8 +114,88 @@ def parse_sheet(xlsx_bytes):
     return res
 
 
+def load_snap():
+    """讀快照。回傳 (version, {'master': [...], 'append': [...]}) 或 (None, None)。"""
+    if not SNAP.is_file():
+        return None, None
+    try:
+        d = json.loads(SNAP.read_text(encoding='utf-8'))
+    except Exception as ex:
+        print(f'快照讀取失敗({ex}),忽略')
+        return None, None
+    sheet = {k: [(t, float(c), int(pl)) for t, c, pl in d.get(k, [])] for k in ('master', 'append')}
+    return d.get('version'), sheet
+
+
+def save_snap(version, sheet):
+    body = {'note': '難易度表(MAS/APD)的曲名+定數快照,由 tools/build-b30.py 維護,勿手改。'
+                    'version=null 代表線上表已超前上次標記的版本、版號未知。',
+            'version': version}
+    # 一列一譜面:diff 看得出哪首改了定數,不會整個檔炸開
+    out = [json.dumps(body, ensure_ascii=False)[:-1]]
+    for k in ('master', 'append'):
+        rows = ',\n  '.join(json.dumps([t, c, pl], ensure_ascii=False) for t, c, pl in sheet[k])
+        out.append(f', "{k}": [\n  {rows}\n ]')
+    SNAP.write_text(''.join(out) + '}\n', encoding='utf-8')
+
+
+def resolve_sheet(args):
+    """決定這次要用哪份難易度表,回傳 (version, sheet)。
+
+    線上那份試算表是寫死的單一文件 id。製作者若是「另開一份新檔」發 v32,
+    這個網址就會永遠停在舊版 —— 手動把新版的定數建進去,隔天 CI 一跑又被蓋回去。
+    所以快照除了當離線備援,還當「不准倒退」的底線:
+
+      - 線上表的曲目 ⊇ 快照的曲目 → 線上是同版或更新,採用線上(難易度表只會加曲不會砍曲)
+      - 線上表少了快照才有的曲目   → 線上落後,沿用快照並警告
+      - 線上抓不到                 → 沿用快照
+
+    採用線上、而且內容跟快照不一樣時,快照會被更新,版號則清成 null:
+    表裡沒有任何版本欄位,線上比 v32 新時我們無從得知它是 v33 還是 v34,
+    與其標一個錯的版號,不如標「不知道」(輸出的署名會改成「線上最新版」)。
+    """
+    if args.xlsx:
+        sheet = parse_sheet(pathlib.Path(args.xlsx).read_bytes())
+        version = args.version or None
+        save_snap(version, sheet)
+        print(f'採用本機 xlsx({args.xlsx}),版號 {version or "未標記"},已更新 {SNAP.name}')
+        return version, sheet
+
+    snap_ver, snap = load_snap()
+    try:
+        live = parse_sheet(get(args.url, binary=True))
+    except Exception as ex:
+        if not snap:
+            raise
+        print(f'線上難易度表抓取失敗({ex}),沿用快照 {snap_ver or "未標記"}')
+        return snap_ver, snap
+    if not snap:
+        return None, live
+
+    titles = lambda sh: {(k, norm(t)) for k in ('master', 'append') for t, _c, _p in sh[k]}
+    missing = titles(snap) - titles(live)
+    if missing:
+        sample = [t for _k, t in list(missing)[:6]]
+        print(f'線上難易度表少了快照裡的 {len(missing)} 張譜({sample}…),判定為落後版本,'
+              f'沿用快照 {snap_ver or "未標記"}')
+        return snap_ver, snap
+    if live != snap:
+        version = snap_ver if titles(live) == titles(snap) else None
+        save_snap(version, live)
+        print(f'線上難易度表已更新,快照同步更新(版號 {version or "未知 → 標為線上最新版"})')
+        return version, live
+    return snap_ver, snap
+
+
 def main():
-    sheet = parse_sheet(get(SHEET, binary=True))
+    ap = argparse.ArgumentParser(description='產生 data/b30-consts.js')
+    ap.add_argument('--xlsx', help='改用本機的難易度表 xlsx,並更新 tools/b30-table.json 快照')
+    ap.add_argument('--version', help='搭配 --xlsx 標記版號,例:v32')
+    ap.add_argument('--url', default=SHEET, help='線上難易度表的 xlsx 匯出網址')
+    args = ap.parse_args()
+
+    version, sheet = resolve_sheet(args)
+    src = f'pentatonic {version} プロセカ難易度表' if version else 'pentatonic プロセカ難易度表(線上最新版)'
     jp_musics = get(f'{JP}/musics.json')
     jp_diffs = get(f'{JP}/musicDifficulties.json')
     tc_musics = get(f'{TC}/musics.json')
@@ -231,7 +319,7 @@ def main():
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
 
-    data = {'source': 'pentatonic V31 プロセカ難易度表', 'charts': charts}
+    data = {'source': src, 'charts': charts}
     if OUT.exists():
         m = re.search(r'window\.B30_CONSTS\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
         if m:
@@ -245,7 +333,7 @@ def main():
                 pass
     data['builtAt'] = int(time.time() * 1000)
     body = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-    OUT.write_text('// 由 tools/build-b30.py 產生,勿手改。定數:pentatonic V31 プロセカ難易度表(AP 基準,非官方)\n'
+    OUT.write_text(f'// 由 tools/build-b30.py 產生,勿手改。定數:{src}(AP 基準,非官方)\n'
                    f'window.B30_CONSTS={body};\n')
     print(f'寫入 {OUT.name}:{OUT.stat().st_size // 1024} KB')
 
