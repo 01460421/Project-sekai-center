@@ -271,6 +271,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '既有頁面體檢：返回鍵可用、連結可分享、視窗一律 Esc 關、清單圖片延遲載入', s: '把 27 個既有分頁用無頭瀏覽器走過一遍（沒有 JS 錯誤、手機沒有橫向溢出），修了三件事：① 換頁現在會進瀏覽器歷史，返回鍵回上一頁而不是離開網站；② 分頁、子分頁與篩選寫進網址（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），連結可以分享、重新整理不掉狀態、返回時篩選與搜尋字串都還在；③ 歌曲、卡池、編組、排名詳情視窗也能按 Esc 關閉。另外卡池、收集室、收集率的清單圖片改延遲載入，榜線資料庫與卡面下載的角色籤列在手機上改成橫向滑動。' },
     { d: '2026/09/16', t: '新增劇情閱讀器', s: '活動劇情（182 場）、主線劇情、卡片支線劇情（1,192 張卡的前後篇）、區域對話（2,654 段）、個人劇情與特別劇情都能在站上讀：目錄由每日排程整理成索引，劇本本文從素材庫抓台服翻譯版（抓不到退回日服原文），逐句顯示說話者與台詞、換背景與字幕，有語音的句子可以直接播放。' },
     { d: '2026/09/16', t: '新增卡片圖鑑，並補上鍵盤快捷鍵、骨架載入等介面細節', s: '卡片圖鑑：台服 1,249 張卡依團體、角色、屬性、稀有度、來源篩選，可依最新／最舊／編號排序；詳情視窗有滿等表演／技巧／體力與綜合力（含特訓後）、技能敘述 Lv1／Lv4、釋出日與招募台詞，並可一鍵前往卡面下載。介面部分參考 Moesekai：Esc 現在會關閉所有詳情視窗，按「?」有快捷鍵說明；圖鑑類分頁載入中改顯示骨架方格而不是轉圈；手機上過長的角色篩選籤改成橫向滑動，不再把畫面撐高。' },
     { d: '2026/09/16', t: '新增小遊戲「猜角色」「猜封面」與「貼圖製作器」', s: '同樣移植自 Moesekai：猜角色每題出示一小塊卡面（★3／★4 有一半機率是特訓後），從 26 位角色裡選；猜封面每題出示一小塊曲繪，從 4～10 個歌名裡挑。兩者都是十題一局、三次猜錯或超時算失敗，分數依難度倍率（簡單 0.8×～極限 2.2×）、作答速度與猜錯次數計算，極限難度還會隨機加上灰階、反相、色相翻轉或翻轉；最佳成績存在本機。貼圖製作器可用官方貼圖（收集室的 1,000 多張）或自己上傳的圖當底圖，加上文字：大小、位置、旋轉、字距、描邊粗細與顏色、字型（粉圓／M PLUS Rounded）都能調，可下載 PNG 或直接複製到剪貼簿。' },
@@ -608,8 +609,16 @@ class Component extends DCLogic {
     this._initReloadFab();
     // 起始頁:?page= 深連結優先(可直接分享某個分頁),其次元件 props
     let sp = this.props.startPage;
-    try { const q = new URLSearchParams(location.search).get('page'); if (q && this.PAGES[q]) sp = q; } catch (e) {}
-    if (sp && this.PAGES[sp]) { this.setState({ page: sp }); this.go(sp); }
+    // 網址同步：先記下各鍵的預設值（之後只把「非預設」的值寫進網址），再讀網址裡的分頁與子分頁／篩選
+    this._urlDefaults = {};
+    Object.keys(this.URL_KEYS).forEach(pg => this.URL_KEYS[pg].forEach(k => { if (!(k in this._urlDefaults)) this._urlDefaults[k] = this.state[k]; }));
+    const up = this._readUrl();
+    if (up.page) sp = up.page;
+    // go() 會在換頁時清掉圖鑑類的搜尋，所以網址帶來的值要排在 go() 之後套
+    if (sp && this.PAGES[sp]) { this.setState({ page: sp }); this.go(sp, { silent: true }); delete up.page; if (Object.keys(up).length) this.setState(up); }
+    // 返回鍵：照網址把分頁與篩選還原，不再另推一筆歷史
+    this._pop = () => { const u = this._readUrl(); const pg = u.page || 'home'; delete u.page; this.go(pg, { silent: true }); if (Object.keys(u).length) this.setState(u); };
+    window.addEventListener('popstate', this._pop);
     // 開站就問一次「我是誰」——導覽列要知道是不是管理員才決定顯不顯示後台入口
     this.loadMe();
     this.mq = window.matchMedia('(max-width: 900px)');
@@ -684,7 +693,7 @@ class Component extends DCLogic {
     this.wireCharts();
     this._key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
-      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false });
+      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null });
       if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
       if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
     };
@@ -701,7 +710,7 @@ class Component extends DCLogic {
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); }
   /* 切到「我的帳號」時重抓用量 —— 助手用過之後數字才會是新的。只在換頁那一刻抓一次。 */
   usageTick() {
     const p = this.state.page;
@@ -726,6 +735,7 @@ class Component extends DCLogic {
     });
   }
   componentWillUnmount() {
+    window.removeEventListener('popstate', this._pop);
     if (this._frameMO) { try { this._frameMO.disconnect(); } catch (e) {} }
     clearInterval(this._live); clearInterval(this._tick);
     document.removeEventListener('keydown', this._key);
@@ -11989,7 +11999,8 @@ class Component extends DCLogic {
   }
 
   /* ---------- 導航 ---------- */
-  go(p) {
+  go(p, opts) {
+    const changed = p !== this.state.page, silent = !!(opts && opts.silent);
     if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
     if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
     if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); }
@@ -12021,8 +12032,48 @@ class Component extends DCLogic {
     if (p === 'notices') this.loadNotices();
     if (p === 'qa') { if (this.state.me === undefined) this.loadMe(); this.loadQa(); }
     if (p === 'admin') { this.loadAdmin(); this.loadDash('overview'); }
+    // 換頁才推一筆歷史（返回鍵回上一頁）；同頁重按、返回鍵觸發、開站第一次都不推。
+    // 推的動作放在 componentDidUpdate 的 _syncUrl 裡做：setState 的 callback 比 didUpdate 晚，
+    // 若在 callback 才 push，didUpdate 會先用新頁的網址 replace 掉舊頁那筆，返回鍵就回不去了。
+    if (changed && !silent) this._pendingPage = p;
     this.setState({ page: p, sheet: false, cmdk: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  }
+  /* ---------- 網址同步 ----------
+     分頁、子分頁與篩選寫進網址：連結可以分享（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），
+     重新整理不會掉狀態，返回鍵能回上一頁。只寫「不是預設值」的鍵，網址才不會一長串。 */
+  URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
+    cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], materials: ['dbq', 'matType'], comics: ['dbq'],
+    ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
+    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'] };
+  _urlOf(s) {
+    const q = new URLSearchParams(); q.set('page', s.page);
+    (this.URL_KEYS[s.page] || []).forEach(k => {
+      const v = s[k], d = (this._urlDefaults || {})[k];
+      if (v === undefined || v === null || String(v) === '' || String(v) === String(d === undefined || d === null ? '' : d)) return;
+      q.set(k, String(v));
+    });
+    return '?' + q.toString();
+  }
+  _syncUrl() {
+    try {
+      const push = !!this._pendingPage && this.state.page === this._pendingPage;
+      if (push) this._pendingPage = null;
+      const url = this._urlOf(this.state);
+      if (url === this._lastUrl && !push) return;
+      this._lastUrl = url;
+      if (push) history.pushState({ p: this.state.page }, '', url); else history.replaceState({ p: this.state.page }, '', url);
+    } catch (e) {}
+  }
+  _readUrl() {   // 只認得 URL_KEYS 裡登記的鍵；數字型的鍵照預設值的型別轉回數字
+    const patch = {};
+    try {
+      const q = new URLSearchParams(location.search), pg = q.get('page');
+      if (!pg || !this.PAGES[pg]) return patch;
+      patch.page = pg;
+      (this.URL_KEYS[pg] || []).forEach(k => { if (!q.has(k)) return; const d = (this._urlDefaults || {})[k], raw = q.get(k); patch[k] = typeof d === 'number' ? (isFinite(+raw) ? +raw : d) : raw; });
+    } catch (e) {}
+    return patch;
   }
   openCmd() {
     this.setState({ cmdk: true, cmdq: '', cmdi: 0 });
