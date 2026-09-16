@@ -110,7 +110,14 @@ class Component extends DCLogic {
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
-    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖']
+    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖'],
+    chars:    ['角色圖鑑', '26 位角色的檔案：聲優、生日、身高、學校、喜好與相關卡片'],
+    fixtures: ['家具圖鑑', 'MySekai 家具：分類、標籤、尺寸、顏色與製作素材'],
+    materials:['素材圖鑑', '養成素材與 MySekai 素材一覽'],
+    comics:   ['一格漫畫', '遊戲內小提示的一格漫畫（台服翻譯版）'],
+    ost:      ['原聲帶', '遊戲內 BGM：區域、劇情、Live 與卡池音樂，站內直接播放'],
+    lives:    ['虛擬 Live', '歷代虛擬 Live 的期間、場次、歌單與出演角色'],
+    news:     ['遊戲公告', '台服遊戲內公告一覽，可依類型篩選與搜尋']
   };
   /* 圈內用語 → 站上功能 → 對應工具。玩家講的幾乎都是別名,而站上存的是正式名稱;
      這張表放在程式碼裡而不是 prompt 裡 —— 它有五百多條,每次請求都送一遍太貴,
@@ -143,6 +150,13 @@ class Component extends DCLogic {
     ['偵測訂閱／通知', 'create_watch', 'notices／account', '偵測訂閱|訂閱|盯著|幫我盯|到 xxx 分時通知我|提醒我|通知|站內通知|watch|tier_score（榜線到達分數）|my_rank_out（我掉出段位）|passed_me（被超車）|started／stopped（開跑／停跑）|event_start／event_end|gacha_start／gacha_end'],
     ['玩家查詢（公開檔案）', 'get_player_profile', 'lookup', '玩家查詢|查玩家|查 ID|查 uid|Player ID|遊戲 ID|名片|個人檔案|profile|公開資料|編組|隊伍綜合力|角色等級|挑戰 Live 等級'],
     ['歌曲清單／樂曲資料庫', 'get_songs', 'songs', '歌曲清單|曲庫|樂曲資料庫|歌曲譜面|找歌|選歌|640 首曲庫|定數|譜面|note 數|音符數|曲長|活動倍率|歌曲係數|event rate|R 值'],
+    ['角色圖鑑', '', 'chars', '角色|角色檔案|角色資料|角色介紹|生日|身高|聲優|CV|學校|年級|興趣|特技|喜歡的食物|討厭的食物|誰的生日|角色圖鑑'],
+    ['家具圖鑑', '', 'fixtures', '家具|MySekai 家具|烤森家具|豆森家具|家具圖鑑|藍圖|製作素材|家具尺寸|壁紙|地板|家具怎麼做|家具材料|家具分類'],
+    ['素材圖鑑', '', 'materials', '素材|素材圖鑑|碎片|寶石|課程|MySekai 素材|木材|礦石|素材說明|素材用途'],
+    ['一格漫畫', '', 'comics', '一格漫畫|漫畫|小提示漫畫|comic|提示漫畫'],
+    ['原聲帶', '', 'ost', '原聲帶|BGM|背景音樂|區域音樂|劇情音樂|OST|soundtrack|音樂播放|遊戲音樂'],
+    ['虛擬 Live', '', 'lives', '虛擬Live|虛擬 Live|バーチャルライブ|virtual live|VL|生日 Live|Live 場次|Live 時間|Live 歌單|演唱會|連線 Live|嘉年華'],
+    ['遊戲公告', '', 'news', '公告|遊戲公告|官方公告|情報|通知|維護公告|更新公告|活動公告|招募公告|遊戲內公告'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
     ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic V31|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
@@ -232,9 +246,17 @@ class Component extends DCLogic {
     { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品的內容物、台幣定價與 CP 值排行，含官網比價與最省錢組合推薦。', to: 'shop', cta: '前往儲值分析' },
     { date: '計算', title: 'B30 產生器', desc: '勾選或上傳截圖匯入 FC/AP，依非官方定數算 Best 30 実効值，輸出 Unibot 風格圖卡。', to: 'b30', cta: '前往 B30 產生器' },
     { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
-    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' }
+    { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' },
+    { date: '圖鑑', title: '角色圖鑑', desc: '26 位角色的聲優、生日、學校、喜好與介紹，並列出相關卡片。', to: 'chars', cta: '前往角色圖鑑' },
+    { date: '圖鑑', title: '家具圖鑑', desc: 'MySekai 家具依分類、角色篩選，看尺寸、顏色與製作素材。', to: 'fixtures', cta: '前往家具圖鑑' },
+    { date: '圖鑑', title: '素材圖鑑', desc: '養成素材與 MySekai 素材一覽，含用途說明。', to: 'materials', cta: '前往素材圖鑑' },
+    { date: '圖鑑', title: '一格漫畫', desc: '遊戲內小提示漫畫（台服翻譯版），可放大與開啟原圖。', to: 'comics', cta: '前往一格漫畫' },
+    { date: '圖鑑', title: '原聲帶', desc: '遊戲內 BGM 依分類瀏覽，站內直接播放。', to: 'ost', cta: '前往原聲帶' },
+    { date: '資料', title: '虛擬 Live', desc: '歷代虛擬 Live 的期間、場次、歌單與出演角色。', to: 'lives', cta: '前往虛擬 Live' },
+    { date: '資料', title: '遊戲公告', desc: '台服遊戲內公告依類型篩選與搜尋，直達官方公告頁。', to: 'news', cta: '前往遊戲公告' }
   ];
   SYSLOG = [
+    { d: '2026/09/16', t: '新增七個圖鑑類分頁：角色、家具、素材、一格漫畫、原聲帶、虛擬 Live、遊戲公告', s: '把 Moesekai（pjsk.moe）站上本站還沒有的資料庫功能移植過來：角色圖鑑（聲優、生日、身高、學校、喜好、介紹與相關卡片）、MySekai 家具圖鑑（主／子分類、角色標籤、尺寸、其他顏色、製作素材）、素材圖鑑、一格漫畫（台服翻譯版，台服桶沒有的自動退回日服原版）、原聲帶（遊戲內 BGM 依分類瀏覽、站內直接播放）、虛擬 Live（期間、每場時間、下一場、歌單與出演角色）與台服遊戲公告（依類型與進行中／已結束篩選）。七頁共用同一套搜尋、篩選籤、「顯示更多」與詳情視窗。導覽新增「圖鑑」群組，收集室與收集率也移到那裡。虛擬 Live 與家具的原始資料各 1～3 MB，改由每日排程壓成索引檔（tools/build-db-index.py）。' },
     { d: '2026/09/16', t: '摸魚表加入自訂篩選', s: '摸魚表新增自訂篩選：「前 n%」依目前排序只留前 n% 的列、「與最高差 ≤ n%」只留跟第 1 名差距在 n% 以內的歌、「≥ n」只留數值達到門檻的歌（單位跟著排序：單局 P、每小時 P、每體力 P 或分數）。有篩選時列數上限放寬到 300，不會被預設的 40 列截掉。篩選提示會直接告訴你門檻換算成多少與符合幾列。' },
     { d: '2026/09/16', t: '整合社長 bot 的公開資料庫：台服獨佔曲補齊、歌曲頁顯示 BPM', s: '計算中心與摸魚表的曲庫補齊 7 首台服獨佔曲（ハオ、前ノハナシ 等）：這些歌在 sekai.best 的日服係數表裡永遠不會有，現在改由社長 bot（t-wy）以台服譜面模擬的分數係數補上，協力窗係數依「單人窗＋一半 FEVER 窗」的關係合成，活動倍率用歌長相近曲目推估並標示。歌曲清單納入日服曲：台服 613 首之外再列出台服尚未實裝的日服曲（標「日服」，可切換台＋日服／僅台服／僅日服限定），全庫 726 首。歌曲清單每首標上 BPM 與歌長，排序新增「BPM 高→低／低→高」「歌長 長→短／短→長」，詳情頁顯示變速範圍與主要 BPM；資料同樣來自社長 bot 的 game-public-data，每日跟著曲庫一起同步。既有曲目的係數維持 sekai.best 來源不變，兩套模擬器有系統性差異，不混用。製作與致謝已加上社長 bot 與原始連結。' },
     { d: '2026/09/15', t: '榜線預測改用回測驗證的模型', s: '榜線終線預測不再只是線性外推：改用「速率剖面＋隨進度集成」模型，把台灣時刻、距結算時數、開跑時數的增速差異算進去，再依活動進度把 24 小時／6 小時實測、歷史同型態先驗與上一段位的走勢集成起來。以 175～178 期留一法回測，主榜平均誤差從 13.8% 降到 5.6%（T1000 3–8%、T5000 1–6%），WL 章節榜從 13.3% 降到 5.9%，前百逐名次線從 19% 降到 12%，前百玩家終分從 21.6% 降到 14.9%。榜線分析新增第 1／2／3／10／20／30／40／50 名的預測線，每條預測都附 P10～P90 區間，依據欄標「模型」。前百玩家的預測終分與預測名次、WL 各章榜線、AI 助手的榜線工具全部改用同一套模型；參數每天由伺服器用新結束的活動重擬。T100 與前三名是少數人的個人行為，誤差仍有一成多，越前面越不準，目標線請看區間上緣。' },
@@ -433,6 +455,11 @@ class Component extends DCLogic {
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
     colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
+    /* 圖鑑類分頁（角色／家具／素材／一格漫畫／原聲帶／虛擬 Live／公告）。
+       共用一組搜尋字串 dbq、顯示數 dbN 與詳情 dbPick；換頁時在 go() 清掉，各頁資料各自快取在自己的 key。 */
+    dbq: '', dbN: 48, dbPick: null, dbLoad: '', dbErr: '',
+    chars: null, fixtures: null, mats: null, comics: null, ost: null, lives: null, news: null,
+    fixGenre: 0, fixSub: 0, fixChar: 0, matType: '', ostCat: 0, ostPlay: 0, liveType: '', liveStat: '', newsTag: '', newsStat: '',
     live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
@@ -1664,7 +1691,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=3bdc375757';
+      s.src = 'data/billing.js?v=704d4b3fab';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4173,6 +4200,13 @@ class Component extends DCLogic {
           ['cardlib', '資料', '', ['get_card_skills'], [],
             '逐張卡的技能敘述與各等級數值,直接讀官方 master 的 skills.json。'],
           ['dolls', '資料', '', [], [], '豆森娃(MySekai 玩偶)月列表與輪替。'],
+          ['lives', '資料', '', [], [], '歷代虛擬 Live:類型、期間、每場時間、歌單與出演角色。'],
+          ['news', '資料', '', [], [], '台服遊戲內公告一覽,依類型(活動／招募／樂曲／更新…)篩選與搜尋,連到官方公告頁。'],
+          ['chars', '圖鑑', '', [], [], '26 位角色的檔案(聲優、生日、身高、學校、喜好、介紹)與相關卡片。'],
+          ['fixtures', '圖鑑', '', [], [], 'MySekai 家具圖鑑:主／子分類與角色標籤篩選,尺寸、顏色與製作素材。'],
+          ['materials', '圖鑑', '', [], [], '養成素材與 MySekai 素材一覽,含說明。'],
+          ['comics', '圖鑑', '', [], [], '遊戲內小提示的一格漫畫(台服翻譯版),可放大與開啟原圖。'],
+          ['ost', '圖鑑', '', [], [], '遊戲內 BGM(區域、劇情、Live、卡池…)站內直接播放。'],
           ['rank', '追蹤', '', [], [
             ['live', '即時排名', '前 100 名即時分數與 1h 均速;點某人開「排名詳情」看逐局紀錄', ['get_top100', 'get_player_games']],
             ['border', '分段榜線', 'T100～T10萬 各段位目前分數與預測終線', ['get_borders']],
@@ -4685,7 +4719,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=3bdc375757';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=704d4b3fab';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -11085,6 +11119,289 @@ class Component extends DCLogic {
   pct(have, n) { return n > 0 ? (have / n * 100) : 0; }
 
   /* 收集室：貼圖 + 稱號圖鑑。素材清單為實際列舉 CDN 產生，只留真的有圖的，避免破圖 */
+  /* ---------- 圖鑑類分頁的資料 ----------
+     角色／素材／一格漫畫／原聲帶／公告的來源檔都很小（< 300 KB），直接抓台服 master；
+     虛擬 Live 與家具原檔各 1～3 MB，由 tools/build-db-index.py 壓成索引檔再載。
+     每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
+  DB_PAGES = ['chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news'];
+  DB_KEY = { chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news' };
+  dbGet(name) {
+    return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  async dbRun(key, task) {
+    if (this.state.dbLoad === key || this.state[key]) return;
+    this.setState({ dbLoad: key, dbErr: '' });
+    try {
+      const v = await task();
+      this.setState({ [key]: v, dbLoad: '' });
+    } catch (e) {
+      this.setState({ dbLoad: '', dbErr: '資料載入失敗（' + ((e && e.message) || '原因不明') + '），點此重試' });
+    }
+  }
+  loadChars() {
+    return this.dbRun('chars', async () => {
+      const [gc, pf, up, gu] = await Promise.all([this.dbGet('gameCharacters'), this.dbGet('characterProfiles'), this.dbGet('unitProfiles'), this.dbGet('gameCharacterUnits')]);
+      const prof = {}; (pf || []).forEach(x => { prof[x.characterId] = x; });
+      const unitOf = {}; (gc || []).forEach(c => { unitOf[c.id] = c.unit; });
+      // 角色代表色取「所屬團」那一筆（VS 在各團都有一筆副團色，主團才是本色）
+      const color = {}; (gu || []).forEach(u => { if (!color[u.gameCharacterId] || u.unit === unitOf[u.gameCharacterId]) color[u.gameCharacterId] = u.colorCode; });
+      // 虛擬歌手在 master 的代表色是 #ffffff，白底上等於看不見，改用站內的 VS 色
+      const unitColor = u => (u.colorCode && u.colorCode.toLowerCase() !== '#ffffff') ? u.colorCode : this.UNITS.vs.c;
+      const units = (up || []).slice().sort((a, b) => (a.seq || 0) - (b.seq || 0)).map(u => ({ key: u.unit, name: u.unitName || u.unit, color: unitColor(u), sentence: u.profileSentence || '' }));
+      const list = (gc || []).map(c => ({
+        id: c.id, name: (c.firstName || '') + (c.givenName || ''), ruby: ((c.firstNameRuby || '') + ' ' + (c.givenNameRuby || '')).trim(),
+        en: ((c.firstNameEnglish || '') + ' ' + (c.givenNameEnglish || '')).trim(), unit: c.unit, gender: c.gender,
+        color: this.CHARA_COLOR[c.id] || color[c.id] || '#888', p: prof[c.id] || {}
+      }));
+      return { list, units };
+    });
+  }
+  loadFixtures() {
+    return this.dbRun('fixtures', async () => {
+      const m = await import('./data/fixtures-index.js?v=b2b014c145');
+      return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
+    });
+  }
+  loadMats() {
+    return this.dbRun('mats', async () => {
+      const [a, b] = await Promise.all([this.dbGet('materials'), this.dbGet('mysekaiMaterials')]);
+      const rows = (a || []).map(x => ({ id: 'm' + x.id, name: x.name || '', desc: x.flavorText || '', type: x.materialType || 'common',
+        img: this.ASSET + '/thumbnail/material/material' + x.id + '.webp', seq: x.seq || x.id }))
+        .concat((b || []).map(x => ({ id: 'k' + x.id, name: x.name || '', desc: x.description || '', type: 'mysekai',
+          rarity: +String(x.mysekaiMaterialRarityType || '').replace(/\D/g, '') || 0,
+          img: this.ASSET + '/mysekai/thumbnail/material/' + x.iconAssetbundleName + '.png', seq: 1e6 + (x.seq || x.id) })));
+      rows.sort((x, y) => x.seq - y.seq);
+      return rows;
+    });
+  }
+  loadComics() {
+    return this.dbRun('comics', async () => {
+      const t = await this.dbGet('tips');
+      return (t || []).filter(x => x.assetbundleName).map(x => ({ id: x.id, title: x.title || '', abn: x.assetbundleName, rank: x.fromUserRank || 0 })).sort((x, y) => y.id - x.id);
+    });
+  }
+  loadOst() {
+    return this.dbRun('ost', async () => {
+      const [tr, cat] = await Promise.all([this.dbGet('musicSoundTracks'), this.dbGet('musicSoundTrackCategories')]);
+      const cats = (cat || []).map(c => ({ id: c.id, name: this.OST_CAT[c.name] || c.name }));
+      const rows = (tr || []).slice().sort((a, b) => (a.seq || 0) - (b.seq || 0)).map(x => ({
+        id: x.id, title: x.title || '', cat: x.musicSoundTrackCategoryId || 0,
+        url: this.ASSET + '/' + String(x.assetbundleName || '').replace(/^\/+/, '') + '/' + x.assetbundleFileName + '.mp3' }));
+      return { rows, cats };
+    });
+  }
+  loadLives() {
+    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=96c8236dfd'); return m.LIVES || []; });
+  }
+  loadNews() {
+    return this.dbRun('news', async () => {
+      const u = await this.dbGet('userInformations');
+      return (u || []).map(x => ({ id: x.id, title: x.title || '', tag: x.informationTag || 'information', type: x.informationType || 'normal',
+        url: x.path || '', s: x.startAt || 0, e: x.endAt || 0 })).filter(x => x.title).sort((x, y) => (y.s - x.s) || (y.id - x.id));
+    });
+  }
+  /* 原聲帶播放：獨立於歌曲播放器（那邊有交叉淡入淡出與佇列，BGM 不需要），同時只有一條在響 */
+  ostToggle(id) {
+    const d = this.state.ost; if (!d) return;
+    const t = d.rows.find(x => x.id === id); if (!t) return;
+    if (this.state.ostPlay === id) { this.ostStop(); return; }
+    this.ostStop();
+    try { this._killAudio(); this.setState({ playAbn: '' }); } catch (e) {}
+    const a = new Audio(t.url); a.preload = 'auto'; a.volume = 0.8;
+    a.onended = () => { if (a === this._ost) this.setState({ ostPlay: 0 }); };
+    a.onerror = () => { if (a === this._ost && a.error) { this._ost = null; this.setState({ ostPlay: 0 }); this._toast('音檔無法載入'); } };
+    this._ost = a;
+    this.setState({ ostPlay: id });
+    a.play().catch(() => { if (a === this._ost) { this._ost = null; this.setState({ ostPlay: 0 }); this._toast('音檔無法播放'); } });
+  }
+  ostStop() {
+    const a = this._ost; this._ost = null;
+    if (a) { try { a.pause(); a.src = ''; } catch (e) {} }
+    if (this.state.ostPlay) this.setState({ ostPlay: 0 });
+  }
+  OST_CAT = { 'ユニット総合': '團體綜合', 'バチャシン': 'VIRTUAL SINGER', 'レオニ': 'Leo/need', 'モモジャン': 'MORE MORE JUMP！', 'ビビバス': 'Vivid BAD SQUAD', 'ワンダショ': 'Wonderlands×Showtime', 'ニーゴ': '25時、Nightcord見。', 'ゲーム内': '遊戲內', 'マイセカイ': 'MySekai', 'シナリオ': '劇情', 'ライブ': 'Live', 'バーチャルライブ': '虛擬 Live', 'ガチャ': '卡池', 'その他': '其他', 'コラボ': '聯動' };
+  dbDate(ms, withTime) {
+    if (!ms) return '';
+    const d = new Date(ms), z = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '/' + z(d.getMonth() + 1) + '/' + z(d.getDate()) + (withTime ? ' ' + z(d.getHours()) + ':' + z(d.getMinutes()) : '');
+  }
+  charShort(cid) {
+    if (!this._charShort) {
+      this._charShort = {};
+      Object.keys(this.CHARA_ID || {}).forEach(k => { const v = this.CHARA_ID[k]; if (!this._charShort[v] || k.length < this._charShort[v].length) this._charShort[v] = k; });
+    }
+    return this._charShort[cid] || '';
+  }
+  /* 圖鑑類分頁的畫面資料：只算目前這一頁的，其他頁回空物件，renderVals 不會因為多七頁而變慢。
+     每頁的流程都一樣：拿快取 → 套篩選 → 套搜尋 → 只切前 dbN 筆 → 詳情視窗（dbPick）從同一份資料組出來。 */
+  dbVals(s) {
+    const p = s.page;
+    if (!this.DB_PAGES.includes(p)) return {};
+    const q = this.normSong(s.dbq || '');
+    const hit = (...f) => !q || this.normSong(f.join(' ')).includes(q);
+    const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
+    const busy = s.dbLoad === this.DB_KEY[p];
+    const PH = { chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
+    const out = { dbq: s.dbq, dbPlaceholder: PH[p] || '搜尋…', dbBusy: busy, dbHasErr: !!s.dbErr, dbErrMsg: s.dbErr, dbMore: false, dbMoreLabel: '', dbEmpty: false, dbCount: busy ? '載入中…' : '' };
+    let view = null;
+    const page = (all, per) => {
+      const n = Math.min(all.length, s.dbN || per || 48);
+      out.dbCount = all.length ? ('共 ' + this.n(all.length) + ' 項' + (n < all.length ? '，顯示前 ' + this.n(n) + ' 項' : '')) : (busy ? '載入中…' : '沒有符合的項目');
+      out.dbMore = n < all.length; out.dbMoreLabel = '顯示更多（' + this.n(n) + ' / ' + this.n(all.length) + '）';
+      out.dbEmpty = !busy && !s.dbErr && all.length === 0;
+      return all.slice(0, n);
+    };
+    const pick = kind => (s.dbPick && s.dbPick.kind === kind) ? s.dbPick.id : null;
+
+    if (p === 'chars') {
+      const d = s.chars;
+      const list = d ? d.list.filter(c => hit(c.name, c.ruby, c.en)) : [];
+      out.charUnits = d ? d.units.map(u => ({ key: u.key, name: u.name, color: u.color, sentence: u.sentence,
+        chars: list.filter(c => c.unit === u.key).map(c => ({ id: c.id, name: c.name, color: c.color, img: this.ASSET + '/character/character_select/chr_tl_' + c.id + '.webp' })) }))
+        .filter(u => u.chars.length) : [];
+      out.dbCount = d ? ('共 ' + list.length + ' 位角色') : (busy ? '載入中…' : '');
+      out.dbEmpty = !!d && list.length === 0;
+      const c = d && pick('char') != null ? d.list.find(x => x.id === pick('char')) : null;
+      if (c) {
+        const u = d.units.find(x => x.key === c.unit) || {}, pr = c.p || {};
+        const cards = (s.rateCards || []).filter(r => r[1] === c.id).sort((a, b) => b[0] - a[0]).map(r => ({ id: r[0], name: r[7], sub: (this.RARITY.find(x => x[0] === r[2]) || ['', ''])[1], img: this.cardImg(r[8], r[2]), hasImg: true }));
+        view = { title: c.name, sub: [c.ruby, c.en].filter(Boolean).join(' · '), img: this.ASSET + '/character/character_select/chr_tl_' + c.id + '.webp', imgRatio: '3/4', wide: true,
+          chips: [{ n: u.name || c.unit, bg: u.color || c.color }].concat(c.gender === 'female' ? [{ n: '女', bg: 'var(--text-3)' }] : c.gender === 'male' ? [{ n: '男', bg: 'var(--text-3)' }] : []),
+          rows: [['聲優', pr.characterVoice], ['生日', pr.birthday], ['身高', pr.height], ['學校', pr.school], ['年級', pr.schoolYear], ['興趣', pr.hobby], ['特技', pr.specialSkill], ['喜歡的食物', pr.favoriteFood], ['討厭的食物', pr.hatedFood], ['不擅長', pr.weak]].filter(r => r[1]).map(r => ({ l: r[0], v: r[1] })),
+          text: pr.introduction || '', list: cards, listTitle: cards.length ? '相關卡片（' + cards.length + '）' : (s.rateLoad ? '卡片載入中…' : ''), listGrid: true, colors: [] };
+      }
+    }
+
+    if (p === 'fixtures') {
+      const d = s.fixtures;
+      const tagName = id => (d && d.tags[id] ? d.tags[id][0] : '');
+      const genreOf = id => ((d ? d.genres.find(g => g[0] === id) : null) || [])[1] || '';
+      const subOf = id => ((d ? d.subs.find(g => g[0] === id) : null) || [])[1] || '';
+      const charTags = d ? Object.keys(d.tags).filter(k => d.tags[k][1] === 'game_character').map(k => ({ id: +k, name: d.tags[k][0], cid: d.tags[k][2] })).sort((a, b) => a.cid - b.cid) : [];
+      let all = d ? d.rows : [];
+      if (s.fixGenre) all = all.filter(r => r[2] === s.fixGenre);
+      if (s.fixSub) all = all.filter(r => r[3] === s.fixSub);
+      if (s.fixChar) all = all.filter(r => r[4].includes(s.fixChar));
+      if (q) all = all.filter(r => hit(r[1], r[8], r[4].map(tagName).join(' ')));
+      // 牆壁／地板是貼圖而不是模型，縮圖放在 surface_appearance 底下
+      const img = r => r[2] === 7 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_wall_appearance_1.png'
+        : r[2] === 8 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_floor_appearance_1.png'
+        : this.ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.png';
+      const usedG = new Set((d ? d.rows : []).map(r => r[2]));
+      out.fixGenreChips = [{ v: 0, n: '全部' }].concat(d ? d.genres.filter(g => g[0] !== 1 && usedG.has(g[0])).map(g => ({ v: g[0], n: g[1] })) : []).map(g => Object.assign(g, chip(s.fixGenre === g.v)));
+      const usedS = new Set((d ? d.rows : []).filter(r => !s.fixGenre || r[2] === s.fixGenre).map(r => r[3]));
+      out.fixSubChips = (d && s.fixGenre) ? [{ v: 0, n: '全部子分類' }].concat(d.subs.filter(g => g[0] !== 1 && usedS.has(g[0])).map(g => ({ v: g[0], n: g[1] }))).map(g => Object.assign(g, chip(s.fixSub === g.v, 'var(--accent-deep)'))) : [];
+      out.fixHasSub = out.fixSubChips.length > 1;
+      out.fixCharChips = charTags.map(t => Object.assign({ v: t.id, n: this.charShort(t.cid) || t.name }, chip(s.fixChar === t.id, this.CHARA_COLOR[t.cid])));
+      out.fixRows = page(all, 48).map(r => ({ id: r[0], name: r[1], img: img(r), sub: (subOf(r[3]) || genreOf(r[2]) || '') + ' · ' + r[5][0] + '×' + r[5][1] + '×' + r[5][2] }));
+      const r = d && pick('fix') != null ? d.rows.find(x => x[0] === pick('fix')) : null;
+      if (r) {
+        const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
+        view = { title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: img(r), imgRatio: '1/1', wide: false,
+          chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]),
+          rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
+          list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '', hasImg: !!m[1] }; }),
+          listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
+      }
+    }
+
+    if (p === 'materials') {
+      const d = s.mats;
+      const TYPES = [['', '全部'], ['common', '碎片與寶石'], ['master_lesson', '專精課程'], ['music', '樂曲'], ['character_rank_exp_ticket', '角色經驗'], ['card_ticket', '卡片券'], ['web_ticket', '網頁券'], ['vocal_card_ticket', '歌唱券'], ['mysekai', 'MySekai'], ['other', '其他']];
+      const known = new Set(TYPES.map(t => t[0]).filter(Boolean));
+      const typeOf = x => known.has(x.type) ? x.type : 'other';
+      const label = x => (TYPES.find(t => t[0] === typeOf(x)) || [])[1] || '';
+      let all = d || [];
+      if (s.matType) all = all.filter(x => typeOf(x) === s.matType);
+      if (q) all = all.filter(x => hit(x.name, x.desc));
+      const usedT = new Set((d || []).map(typeOf));
+      out.matTypeChips = TYPES.filter(t => !t[0] || usedT.has(t[0])).map(t => Object.assign({ v: t[0], n: t[1] }, chip(s.matType === t[0])));
+      const RAR = { 1: '★', 2: '★★', 3: '★★★', 4: '★★★★' };
+      out.matRows = page(all, 60).map(x => ({ id: x.id, name: x.name, img: x.img, sub: x.type === 'mysekai' ? ('MySekai ' + (RAR[x.rarity] || '')) : label(x) }));
+      const x = d && pick('mat') != null ? d.find(y => y.id === pick('mat')) : null;
+      if (x) view = { title: x.name, sub: x.type === 'mysekai' ? 'MySekai 素材' + (x.rarity ? ' · ' + RAR[x.rarity] : '') : label(x), img: x.img, imgRatio: '1/1', wide: false, chips: [], rows: [], text: x.desc, list: [], listTitle: '', colors: [] };
+    }
+
+    if (p === 'comics') {
+      const d = s.comics;
+      let all = d || [];
+      if (q) all = all.filter(x => hit(x.title));
+      // 台服桶有翻譯版；沒有的話 onImgErr 會自動換日服桶
+      const img = x => this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets') + '/comic/one_frame/' + x.abn + '.webp';
+      out.comicRows = page(all, 24).map(x => ({ id: x.id, title: x.title, img: img(x), sub: '#' + x.id + (x.rank > 1 ? ' · Rank ' + x.rank + ' 起' : '') }));
+      const x = d && pick('comic') != null ? d.find(y => y.id === pick('comic')) : null;
+      if (x) view = { title: x.title, sub: '一格漫畫 #' + x.id, img: img(x), imgRatio: '4/3', wide: true, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [], link: img(x), linkLabel: '開啟原圖 ↗' };
+    }
+
+    if (p === 'ost') {
+      const d = s.ost;
+      let all = d ? d.rows : [];
+      if (s.ostCat) all = all.filter(x => x.cat === s.ostCat);
+      if (q) all = all.filter(x => hit(x.title));
+      const catName = id => ((d ? d.cats.find(c => c.id === id) : null) || {}).name || '';
+      const used = new Set((d ? d.rows : []).map(x => x.cat));
+      out.ostCatChips = [{ v: 0, n: '全部' }].concat(d ? d.cats.filter(c => used.has(c.id)).map(c => ({ v: c.id, n: c.name })) : []).map(c => Object.assign(c, chip(s.ostCat === c.v)));
+      out.ostRows = page(all, 200).map(x => ({ id: x.id, title: x.title, sub: catName(x.cat), url: x.url,
+        bg: s.ostPlay === x.id ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'transparent', icon: s.ostPlay === x.id ? '❚❚' : '▶' }));
+      const now = d && s.ostPlay ? d.rows.find(x => x.id === s.ostPlay) : null;
+      out.ostNow = now ? '播放中：' + now.title : '';
+      out.ostHasNow = !!now;
+    }
+
+    if (p === 'lives') {
+      const d = s.lives, now = Date.now();
+      const TY = { normal: ['一般', '#5ec9f2'], cheerful_carnival: ['歡樂嘉年華', '#ffb86b'], virtual_message: ['虛擬留言', '#c39df2'], beginner: ['新手', '#8bc34a'], streaming: ['直播', '#ff9db4'], archive: ['回顧', '#9aa9ff'], connect_live: ['連線 Live', '#ff8fb0'] };
+      const stat = x => x.s > now ? 'up' : (x.e && x.e < now) ? 'end' : 'on';
+      const ST = { on: ['進行中', '#3ec49a'], up: ['即將開始', '#e0a800'], end: ['已結束', '#8b93ac'] };
+      let all = d || [];
+      if (s.liveType) all = all.filter(x => x.ty === s.liveType);
+      if (s.liveStat) all = all.filter(x => stat(x) === s.liveStat);
+      if (q) all = all.filter(x => hit(x.n, x.set.map(y => y[1]).join(' ')));
+      const usedT = new Set((d || []).map(x => x.ty));
+      out.liveTypeChips = [{ v: '', n: '全部' }].concat(Object.keys(TY).filter(k => usedT.has(k)).map(k => ({ v: k, n: TY[k][0] }))).map(c => Object.assign(c, chip(s.liveType === c.v)));
+      out.liveStatChips = [{ v: '', n: '全部時間' }, { v: 'on', n: '進行中' }, { v: 'up', n: '即將開始' }, { v: 'end', n: '已結束' }].map(c => Object.assign(c, chip(s.liveStat === c.v, 'var(--accent-deep)')));
+      const banner = x => this.ASSET + '/virtual_live/select/banner/' + x.abn + '/' + x.abn + '.webp';
+      out.liveRows = page(all, 24).map(x => ({ id: x.id, name: x.n, img: banner(x), type: (TY[x.ty] || [x.ty])[0], typeBg: (TY[x.ty] || ['', '#888'])[1],
+        stat: ST[stat(x)][0], statBg: ST[stat(x)][1], period: this.dbDate(x.s) + ' ～ ' + this.dbDate(x.e),
+        meta: [x.sch ? x.sch[2].length + ' 場' : '', x.set.length ? x.set.length + ' 首' : '', x.ch.length ? x.ch.map(c => this.charShort(c)).filter(Boolean).slice(0, 6).join('・') : ''].filter(Boolean).join(' · ') }));
+      const x = d && pick('live') != null ? d.find(y => y.id === pick('live')) : null;
+      if (x) {
+        const sched = x.sch ? x.sch[2].map(o => x.sch[0] + o * 60000) : [];
+        const next = sched.find(t => t + (x.sch ? x.sch[1] : 0) * 60000 > now);
+        view = { title: x.n, sub: this.dbDate(x.s, true) + ' ～ ' + this.dbDate(x.e, true), img: banner(x), imgRatio: '16/7', wide: true,
+          chips: [{ n: (TY[x.ty] || [x.ty])[0], bg: (TY[x.ty] || ['', '#888'])[1] }, { n: ST[stat(x)][0], bg: ST[stat(x)][1] }].concat(x.ch.map(c => ({ n: this.charShort(c) || ('#' + c), bg: this.CHARA_COLOR[c] || 'var(--text-3)' }))),
+          rows: [['場次', sched.length ? sched.length + ' 場，每場 ' + x.sch[1] + ' 分鐘' : '—'], ['首場', sched.length ? this.dbDate(sched[0], true) : ''], ['末場', sched.length ? this.dbDate(sched[sched.length - 1], true) : ''], ['下一場', next ? this.dbDate(next, true) : '']].filter(r => r[1]).map(r => ({ l: r[0], v: r[1] })),
+          text: '', list: x.set.map((y, i) => ({ id: y[0], name: y[1], sub: 'M' + (i + 1), img: y[2] ? this.ASSET + '/music/jacket/' + y[2] + '/' + y[2] + '.webp' : '', hasImg: !!y[2] })),
+          listTitle: x.set.length ? '歌單（' + x.set.length + ' 首）' : '', listGrid: false, colors: [] };
+      }
+    }
+
+    if (p === 'news') {
+      const d = s.news, now = Date.now();
+      const TAG = { information: ['公告', '#7fb4f7'], event: ['活動', '#ff9db4'], gacha: ['招募', '#c39df2'], music: ['樂曲', '#5ec9f2'], campaign: ['企劃', '#ffb86b'], update: ['更新', '#3ee0a8'], bug: ['問題', '#e0576a'] };
+      const stat = x => x.s > now ? 'up' : (x.e && x.e < now) ? 'end' : 'on';
+      let all = d || [];
+      if (s.newsTag) all = all.filter(x => x.tag === s.newsTag);
+      if (s.newsStat) all = all.filter(x => stat(x) === s.newsStat);
+      if (q) all = all.filter(x => hit(x.title));
+      const used = new Set((d || []).map(x => x.tag));
+      out.newsTagChips = [{ v: '', n: '全部' }].concat(Object.keys(TAG).filter(k => used.has(k)).map(k => ({ v: k, n: TAG[k][0] }))).map(c => Object.assign(c, chip(s.newsTag === c.v)));
+      out.newsStatChips = [{ v: '', n: '全部時間' }, { v: 'on', n: '進行中' }, { v: 'end', n: '已結束' }].map(c => Object.assign(c, chip(s.newsStat === c.v, 'var(--accent-deep)')));
+      out.newsRows = page(all, 40).map(x => ({ id: x.id, title: x.title, tag: (TAG[x.tag] || [x.tag])[0], tagBg: (TAG[x.tag] || ['', '#888'])[1],
+        date: this.dbDate(x.s), until: (x.e && x.e < 4e12) ? '～ ' + this.dbDate(x.e) : '', url: x.url || '#', dim: stat(x) === 'end' ? '.62' : '1' }));
+    }
+
+    out.dbPickOpen = !!view;
+    view = view || { title: '', sub: '', img: '', imgRatio: '1/1', wide: false, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [] };
+    out.dbPickView = view;
+    out.dbPickW = view.wide ? '680px' : '440px';
+    out.dbPickHasImg = !!view.img; out.dbPickHasChips = view.chips.length > 0; out.dbPickHasRows = view.rows.length > 0;
+    out.dbPickHasText = !!view.text; out.dbPickHasList = view.list.length > 0 || !!view.listTitle; out.dbPickHasColors = (view.colors || []).length > 0;
+    out.dbPickHasLink = !!view.link; out.dbPickLink = view.link || '#'; out.dbPickLinkLabel = view.linkLabel || '';
+    out.dbPickListGrid = !!view.listGrid; out.dbPickListRows = !view.listGrid;
+    return out;
+  }
+
   async loadCollect() {
     if (this.state.colLoad || this.state.stamps.length) return;
     this.setState({ colLoad: true, colErr: '' });
@@ -11191,6 +11508,14 @@ class Component extends DCLogic {
     if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); }
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
+    if (p === 'chars') { this.loadChars(); this.loadCards(); }
+    if (p === 'fixtures') this.loadFixtures();
+    if (p === 'materials') this.loadMats();
+    if (p === 'comics') this.loadComics();
+    if (p === 'ost') this.loadOst();
+    if (p === 'lives') this.loadLives();
+    if (p === 'news') this.loadNews();
+    if (this.DB_PAGES.includes(p) && p !== this.state.page) this.setState({ dbq: '', dbN: 48, dbPick: null });
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
@@ -11579,11 +11904,12 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
+      ['圖鑑', [['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2']]],
       ['學習', [['tut', '教學大全', '#b8e561']]],
-      ['更多', [['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
+      ['更多', [['bonuscards', '加分卡參考', '#ffd94d'], ['res', '資源連結', '#ffd94d'], ['credits', '製作與致謝', '#ffa8c0'], ['qa', '提問所', '#8be0d0'], ['whatsnew', '功能介紹', '#8be0d0']]],
     ];
     this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
@@ -12440,6 +12766,9 @@ class Component extends DCLogic {
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
+      isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
+      isDbPage: this.DB_PAGES.includes(s.page),
+      ...this.dbVals(s),
       isWlsup: s.page === 'wlsup',
       ...(() => {
         const W = this.wlSupCalc();
@@ -14131,6 +14460,8 @@ class Component extends DCLogic {
         const im = e && e.currentTarget; if (!im) return;
         if (!im.getAttribute('src')) return;   // 封面還沒決定時 src 是空字串也會觸發 error，這時不能把圖藏起來（之後 src 補上就顯示不出來）
         if (!im.dataset.a && /sekai-jp-assets/.test(im.src || '')) { im.dataset.a = '1'; im.src = im.src.replace('sekai-jp-assets', 'sekai-tc-assets'); return; }
+        // 反過來也一樣：一格漫畫先抓台服翻譯版，台服桶沒有的就退回日服原版
+        if (!im.dataset.a && /sekai-tc-assets/.test(im.src || '')) { im.dataset.a = '1'; im.src = im.src.replace('sekai-tc-assets', 'sekai-jp-assets'); return; }
         const fb = im.dataset.fb || 'none';
         if (fb === 'hidden') im.style.visibility = 'hidden';
         else if (fb === 'opacity') im.style.opacity = '.15';
@@ -14728,6 +15059,15 @@ class Component extends DCLogic {
         if (x) this.setState({ colPick: Object.assign({ kind }, x) });
       },
       onColClose: () => this.setState({ colPick: null }),
+      /* 圖鑑類分頁共用：搜尋、篩選籤、顯示更多、詳情 */
+      onDbField: e => this.setState({ dbq: e.target.value, dbN: 48 }),
+      onDbChip: e => { const d = e.currentTarget.dataset; const patch = { [d.k]: d.num ? +d.v : d.v, dbN: 48 }; if (d.k === 'fixGenre') patch.fixSub = 0; this.setState(patch); },
+      onDbMore: () => this.setState(st => ({ dbN: (st.dbN || 48) + 48 })),
+      onDbPick: e => { const d = e.currentTarget.dataset; this.setState({ dbPick: { kind: d.kind, id: d.num ? +d.id : d.id } }); },
+      onDbClose: () => this.setState({ dbPick: null }),
+      onDbReload: () => { const p = this.state.page, k = this.DB_KEY[p]; if (!k) return; this.setState({ dbErr: '', [k]: null }, () => this.go(p)); },
+      onOstPlay: e => this.ostToggle(+e.currentTarget.dataset.id),
+      onOstStop: () => this.ostStop(),
       onTheme: () => this.cycleTheme(),
       onAiDual: () => this.setAiDual(!this.state.aiDual),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },

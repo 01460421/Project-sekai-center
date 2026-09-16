@@ -2883,6 +2883,198 @@ select option, select optgroup{
   </div>
   </sc-if>
 
+  <!-- ========== 圖鑑類分頁：角色／家具／素材／一格漫畫／原聲帶／虛擬 Live／遊戲公告（共用搜尋、篩選籤、顯示更多與詳情視窗） ========== -->
+  <sc-if value="{{ isDbPage }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:10px">
+      <input type="text" placeholder="{{ dbPlaceholder }}" value="{{ dbq }}" onInput="{{ onDbField }}" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;outline:none">
+      <span style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ dbCount }}</span>
+    </div>
+
+    <sc-if value="{{ isFixtures }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ fixGenreChips }}" as="c" hint-placeholder-count="10">
+          <button type="button" onClick="{{ onDbChip }}" data-k="fixGenre" data-v="{{ c.v }}" data-num="1" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ fixHasSub }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ fixSubChips }}" as="c" hint-placeholder-count="6">
+          <button type="button" onClick="{{ onDbChip }}" data-k="fixSub" data-v="{{ c.v }}" data-num="1" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      </sc-if>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ fixCharChips }}" as="c" hint-placeholder-count="26">
+          <button type="button" onClick="{{ onDbChip }}" data-k="fixChar" data-v="{{ c.v }}" data-num="1" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isMaterials }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ matTypeChips }}" as="c" hint-placeholder-count="8">
+          <button type="button" onClick="{{ onDbChip }}" data-k="matType" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isOst }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ ostCatChips }}" as="c" hint-placeholder-count="12">
+          <button type="button" onClick="{{ onDbChip }}" data-k="ostCat" data-v="{{ c.v }}" data-num="1" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isLives }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ liveTypeChips }}" as="c" hint-placeholder-count="6">
+          <button type="button" onClick="{{ onDbChip }}" data-k="liveType" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ liveStatChips }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ onDbChip }}" data-k="liveStat" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isNews }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ newsTagChips }}" as="c" hint-placeholder-count="7">
+          <button type="button" onClick="{{ onDbChip }}" data-k="newsTag" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ newsStatChips }}" as="c" hint-placeholder-count="3">
+          <button type="button" onClick="{{ onDbChip }}" data-k="newsStat" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dbHasErr }}">
+      <button type="button" onClick="{{ onDbReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ dbErrMsg }}</button>
+    </sc-if>
+    <sc-if value="{{ dbBusy }}">
+      <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+        <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入中…
+      </div>
+    </sc-if>
+
+    <!-- 角色：依團分區，點角色開檔案 -->
+    <sc-if value="{{ isChars }}">
+      <sc-for list="{{ charUnits }}" as="u" hint-placeholder-count="6">
+        <div style="border:1px solid var(--border);border-top:3px solid {{ u.color }};border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <span style="font-size:15px;font-weight:800;color:{{ u.color }}">{{ u.name }}</span>
+            <span style="font-size:11.5px;color:var(--text-3);line-height:1.55">{{ u.sentence }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
+            <sc-for list="{{ u.chars }}" as="c" hint-placeholder-count="6">
+              <div onClick="{{ onDbPick }}" data-kind="char" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2));transition:transform .18s">
+                <div style="aspect-ratio:3/4;display:grid;place-items:center;padding:6px 6px 0"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
+                <div style="padding:7px 8px 9px;font-size:12px;font-weight:800;color:var(--ink);text-align:center;border-top:2px solid {{ c.color }}">{{ c.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <!-- 家具 -->
+    <sc-if value="{{ isFixtures }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px">
+        <sc-for list="{{ fixRows }}" as="c" hint-placeholder-count="12">
+          <div onClick="{{ onDbPick }}" data-kind="fix" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
+            <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:8px"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
+            <div style="padding:7px 9px 9px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.sub }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- 素材 -->
+    <sc-if value="{{ isMaterials }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:11px">
+        <sc-for list="{{ matRows }}" as="c" hint-placeholder-count="12">
+          <div onClick="{{ onDbPick }}" data-kind="mat" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
+            <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:12px"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
+            <div style="padding:7px 9px 9px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.sub }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- 一格漫畫 -->
+    <sc-if value="{{ isComics }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">
+        <sc-for list="{{ comicRows }}" as="c" hint-placeholder-count="8">
+          <div onClick="{{ onDbPick }}" data-kind="comic" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;cursor:zoom-in">
+            <div style="aspect-ratio:4/3;background:var(--card-2)"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
+            <div style="padding:9px 11px 11px"><div style="font-size:12.5px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ c.sub }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- 原聲帶 -->
+    <sc-if value="{{ isOst }}">
+      <sc-if value="{{ ostHasNow }}">
+        <div style="position:sticky;top:8px;z-index:3;margin-bottom:10px;padding:9px 14px;border:1px solid var(--border);border-radius:13px;background:var(--bg-soft);box-shadow:var(--sh-xs);font-size:12.5px;font-weight:700;color:var(--accent-deep);display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ostNow }}</span>
+          <button type="button" onClick="{{ onOstStop }}" style="flex:none;padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">停止</button>
+        </div>
+      </sc-if>
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+        <sc-for list="{{ ostRows }}" as="r" hint-placeholder-count="12">
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border);background:{{ r.bg }}">
+            <button type="button" onClick="{{ onOstPlay }}" data-id="{{ r.id }}" aria-label="播放／暫停" style="width:36px;height:36px;flex:none;border:none;border-radius:50%;background:var(--ink-grad);color:#fff;font-size:11px;cursor:pointer;display:grid;place-items:center">{{ r.icon }}</button>
+            <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">{{ r.sub }}</div></div>
+            <a href="{{ r.url }}" target="_blank" rel="noopener" style="flex:none;font-size:11px;color:var(--text-3);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:4px 10px">mp3 ↗</a>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- 虛擬 Live -->
+    <sc-if value="{{ isLives }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
+        <sc-for list="{{ liveRows }}" as="c" hint-placeholder-count="8">
+          <div onClick="{{ onDbPick }}" data-kind="live" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
+            <div style="position:relative;aspect-ratio:16/7;background:var(--card-2)">
+              <img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block">
+              <span style="position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:999px;background:{{ c.typeBg }};color:#fff;font-size:10.5px;font-weight:800">{{ c.type }}</span>
+              <span style="position:absolute;right:8px;top:8px;padding:3px 9px;border-radius:999px;background:{{ c.statBg }};color:#fff;font-size:10.5px;font-weight:800">{{ c.stat }}</span>
+            </div>
+            <div style="padding:9px 12px 11px">
+              <div style="font-size:13px;font-weight:800;color:var(--ink);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{ c.name }}</div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px;font-family:'M PLUS Rounded 1c'">{{ c.period }}</div>
+              <div style="font-size:11px;color:var(--text-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.meta }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- 遊戲公告：每列直接連到官方公告頁 -->
+    <sc-if value="{{ isNews }}">
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+        <sc-for list="{{ newsRows }}" as="r" hint-placeholder-count="12">
+          <a href="{{ r.url }}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);text-decoration:none;opacity:{{ r.dim }}">
+            <span style="flex:none;min-width:44px;text-align:center;padding:3px 9px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10.5px;font-weight:800">{{ r.tag }}</span>
+            <span style="flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink);line-height:1.45">{{ r.title }}</span>
+            <span style="flex:none;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';text-align:right;line-height:1.4">{{ r.date }}<br>{{ r.until }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dbEmpty }}">
+      <div style="padding:38px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">沒有符合的項目，試著清空搜尋或篩選。</div>
+    </sc-if>
+    <sc-if value="{{ dbMore }}">
+      <button type="button" onClick="{{ onDbMore }}" style="display:block;margin:16px auto 0;padding:10px 26px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">{{ dbMoreLabel }}</button>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 分析中心 ========== -->
   <sc-if value="{{ isAnalysis }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
@@ -3797,6 +3989,81 @@ select option, select optgroup{
 </div>
 </sc-if>
 
+<!-- ========== 圖鑑詳情視窗（角色／家具／素材／一格漫畫／虛擬 Live 共用） ========== -->
+<sc-if value="{{ dbPickOpen }}">
+<div onClick="{{ onDbClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min({{ dbPickW }},calc(100vw - 28px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-lg);animation:popCenter .32s cubic-bezier(.34,1.45,.44,1)">
+  <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.4">{{ dbPickView.title }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">{{ dbPickView.sub }}</div>
+    </div>
+    <button type="button" onClick="{{ onDbClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </div>
+  <sc-if value="{{ dbPickHasImg }}">
+    <div style="border:1px solid var(--border);border-radius:14px;background:var(--card-2);padding:12px;display:grid;place-items:center;aspect-ratio:{{ dbPickView.imgRatio }};max-height:52vh">
+      <img src="{{ dbPickView.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
+    </div>
+  </sc-if>
+  <sc-if value="{{ dbPickHasChips }}">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+      <sc-for list="{{ dbPickView.chips }}" as="c" hint-placeholder-count="4">
+        <span style="font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;background:{{ c.bg }};color:#fff">{{ c.n }}</span>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ dbPickHasColors }}">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:11px;color:var(--text-3)">其他顏色
+      <sc-for list="{{ dbPickView.colors }}" as="c" hint-placeholder-count="4">
+        <span title="{{ c.c }}" style="width:18px;height:18px;border-radius:50%;border:1px solid var(--border);background:{{ c.c }};display:inline-block"></span>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ dbPickHasRows }}">
+    <div style="margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <sc-for list="{{ dbPickView.rows }}" as="r" hint-placeholder-count="8">
+        <div style="display:flex;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.55">
+          <span style="flex:none;width:84px;font-weight:700;color:var(--text-3)">{{ r.l }}</span>
+          <span style="flex:1;min-width:0;color:var(--ink)">{{ r.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ dbPickHasText }}">
+    <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-top:12px;white-space:pre-line">{{ dbPickView.text }}</div>
+  </sc-if>
+  <sc-if value="{{ dbPickHasList }}">
+    <div style="font-size:12px;font-weight:800;color:var(--ink);margin-top:14px;margin-bottom:8px">{{ dbPickView.listTitle }}</div>
+    <sc-if value="{{ dbPickListGrid }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px">
+        <sc-for list="{{ dbPickView.list }}" as="x" hint-placeholder-count="8">
+          <div title="{{ x.name }}" style="border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--card-2)">
+            <img src="{{ x.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">
+            <div style="font-size:9.5px;color:var(--text-3);text-align:center;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ dbPickListRows }}">
+      <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden">
+        <sc-for list="{{ dbPickView.list }}" as="x" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border)">
+            <sc-if value="{{ x.hasImg }}"><img src="{{ x.img }}" onError="{{ onImgErr }}" data-fb="hidden" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:34px;height:34px;flex:none;object-fit:contain;border-radius:8px;background:var(--card-2)"></sc-if>
+            <span style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.name }}</span>
+            <span style="flex:none;font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ x.sub }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+  <sc-if value="{{ dbPickHasLink }}">
+    <a href="{{ dbPickLink }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12.5px;font-weight:700;text-decoration:none">{{ dbPickLinkLabel }}</a>
+  </sc-if>
+</div>
+</sc-if>
+
 <!-- ========== ⌘K 指令面板 ========== -->
 <sc-if value="{{ cmdkOpen }}">
 <div onClick="{{ onCmdClose }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,14,28,.45);backdrop-filter:blur(10px) saturate(1.2);animation:fadeIn .25s ease"></div>
@@ -3823,6 +4090,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=e5928712be"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=e749ce16c0"></script>
 </body>
 </html>
