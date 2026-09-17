@@ -3046,7 +3046,7 @@ select option, select optgroup{
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
             <sc-for list="{{ u.chars }}" as="c" hint-placeholder-count="6">
               <div onClick="{{ onDbPick }}" data-kind="char" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2));transition:transform .18s">
-                <div style="aspect-ratio:3/4;display:grid;place-items:center;padding:6px 6px 0"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
+                <div style="position:relative;aspect-ratio:3/4;overflow:hidden"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="position:absolute;left:6px;right:6px;top:6px;bottom:0;width:calc(100% - 12px);height:calc(100% - 6px);object-fit:contain;object-position:center bottom;display:block"></div>
                 <div style="padding:7px 8px 9px;font-size:12px;font-weight:800;color:var(--ink);text-align:center;border-top:2px solid {{ c.color }}">{{ c.name }}</div>
               </div>
             </sc-for>
@@ -3243,7 +3243,7 @@ select option, select optgroup{
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
             <sc-for list="{{ stSelfRows }}" as="c" hint-placeholder-count="26">
               <div onClick="{{ onStOpen }}" data-kind="self" data-sid="{{ c.sid }}" data-abn="" data-title="{{ c.title }}" data-sub="{{ c.sub }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2))">
-                <div style="aspect-ratio:3/4;display:grid;place-items:center;padding:6px 6px 0"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
+                <div style="position:relative;aspect-ratio:3/4;overflow:hidden"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="position:absolute;left:6px;right:6px;top:6px;bottom:0;width:calc(100% - 12px);height:calc(100% - 6px);object-fit:contain;object-position:center bottom;display:block"></div>
                 <div style="padding:7px 8px 9px;font-size:12px;font-weight:800;color:var(--ink);text-align:center;border-top:2px solid {{ c.color }}">{{ c.name }}</div>
               </div>
             </sc-for>
