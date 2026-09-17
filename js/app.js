@@ -271,6 +271,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/17', t: '既有功能 20 項有感優化', s: '① 分頁標題跟著頁面走；② 頁首「複製連結」（含篩選）；③ ⌘K 先列最近前往；④ Player ID 按 Enter 就綁定；⑤ 搜尋框 ✕ 清除；⑥ 圖鑑有篩選時可一鍵清除；⑦ 圖鑑詳情 ←→ 切上下一筆；⑧ 活動最後一天首頁倒數變色；⑨ 卡池列表顯示倒數／進行中；⑩ 歌曲搜尋不再卡頓；⑪ 圖鑑載入失敗 2 秒後自動重試；⑫ 數字欄位等寬不抖動；⑬ 側欄目前頁自動捲入視野；⑭ 歌曲詳情一鍵去算活動 P；⑮ 圖鑑捲到底自動載入更多；⑯ 視窗開著時鎖住背景捲動；⑰ 提示訊息全站可見（原本只在播放器裡）；⑱ 手機搜尋鍵盤顯示「搜尋」；⑲ 桌機進圖鑑自動聚焦搜尋；⑳ 圖鑑詳情可直接分享連結。' },
     { d: '2026/09/17', t: '首頁：新功能通知膠囊、自訂首頁面板、功能引導', s: '首頁最上方多了一顆通知膠囊，有新功能更新時會顯示最新一則標題與未讀數，點進去看更新紀錄、按 ✕ 就標為已讀。右上角新增「自訂首頁」面板，三個分頁：版面（區塊順序與顯示，原本要進帳號頁才有）、資訊顯示（「我的排名」八格數字每一格都能關，「快速前往」可從全站 40 多個功能自選要放哪些）、資料設定（綁定／解除 Player ID、音源版本、主題與配色、AI 雙路、匯出／匯入備份、清除本機資料）。第一次進站會跳四步的功能引導（搜尋、側欄分組、綁定 ID、自訂首頁），可勾「不再於此瀏覽器顯示」，之後也能從自訂面板再打開。' },
     { d: '2026/09/16', t: '既有頁面體檢：返回鍵可用、連結可分享、視窗一律 Esc 關、清單圖片延遲載入', s: '把 27 個既有分頁用無頭瀏覽器走過一遍（沒有 JS 錯誤、手機沒有橫向溢出），修了三件事：① 換頁現在會進瀏覽器歷史，返回鍵回上一頁而不是離開網站；② 分頁、子分頁與篩選寫進網址（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），連結可以分享、重新整理不掉狀態、返回時篩選與搜尋字串都還在；③ 歌曲、卡池、編組、排名詳情視窗也能按 Esc 關閉。另外卡池、收集室、收集率的清單圖片改延遲載入，榜線資料庫與卡面下載的角色籤列在手機上改成橫向滑動。' },
     { d: '2026/09/16', t: '新增劇情閱讀器', s: '活動劇情（182 場）、主線劇情、卡片支線劇情（1,192 張卡的前後篇）、區域對話（2,654 段）、個人劇情與特別劇情都能在站上讀：目錄由每日排程整理成索引，劇本本文從素材庫抓台服翻譯版（抓不到退回日服原文），逐句顯示說話者與台詞、換背景與字幕，有語音的句子可以直接播放。' },
@@ -434,6 +435,8 @@ class Component extends DCLogic {
     seenLog: (() => { try { return localStorage.getItem('sekai-seen-log') || ''; } catch (e) { return ''; } })(),
     homeCfg: false, homeCfgTab: 'layout',
     guide: null, guideHide: false,
+    toast: '',           // 全站提示（右下角短暫浮出）
+    recent: (() => { try { return JSON.parse(localStorage.getItem('sekai-recent') || '[]'); } catch (e) { return []; } })(),
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
@@ -620,7 +623,8 @@ class Component extends DCLogic {
     const up = this._readUrl();
     if (up.page) sp = up.page;
     // go() 會在換頁時清掉圖鑑類的搜尋，所以網址帶來的值要排在 go() 之後套
-    if (sp && this.PAGES[sp]) { this.setState({ page: sp }); this.go(sp, { silent: true }); delete up.page; if (Object.keys(up).length) this.setState(up); }
+    // 這個執行環境的 setState 是同步的：先 setState({page}) 再 go()，go() 就看不出「換了頁」（最近前往、聚焦搜尋都靠它）
+    if (sp && this.PAGES[sp]) { this.go(sp, { silent: true }); delete up.page; if (Object.keys(up).length) this.setState(up); }
     // 返回鍵：照網址把分頁與篩選還原，不再另推一筆歷史
     this._pop = () => { const u = this._readUrl(); const pg = u.page || 'home'; delete u.page; this.go(pg, { silent: true }); if (Object.keys(u).length) this.setState(u); };
     window.addEventListener('popstate', this._pop);
@@ -696,6 +700,8 @@ class Component extends DCLogic {
     this._live = setInterval(() => this.refreshLive(false), 60000);
     // 倒數計時直接寫 DOM：每秒 setState 會讓 800 行 renderVals 全量重算，純浪費
     this._tick = setInterval(() => {
+      // 分頁標題：開站那一次被執行環境把 <head> 還原成模板原文，這裡每秒對一次、不同就再寫
+      try { const w = this._wantTitle; if (w && document.title !== w) document.title = w; } catch (e) {}
       if (this.state.page !== 'home' || !this._endMs) return;
       const el = document.getElementById('liveCd');
       if (!el) return;
@@ -707,6 +713,7 @@ class Component extends DCLogic {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
       if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null });
       if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && this.state.dbPick && this._dbNav && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.dbPickStep(e.key === 'ArrowRight' ? 1 : -1); }
       if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
     };
     document.addEventListener('keydown', this._key);
@@ -722,7 +729,31 @@ class Component extends DCLogic {
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); }
+  /* 視窗開著時鎖住背景捲動（手機上滑視窗不會連底下頁面一起捲）；「顯示更多」捲到底自動按 */
+  _modalSide() {
+    const s = this.state;
+    if (this._focusPage && this._focusPage === s.page && !s.dbLoad) {
+      this._focusPage = null;
+      try { const i = document.querySelector('input[placeholder^="搜尋"]'); if (i && (!document.activeElement || document.activeElement === document.body)) i.focus({ preventScroll: true }); } catch (e) {}
+    }
+    const open = !!(s.dbPick || s.colPick || s.songId || s.gachaGid || s.deckPid || s.detail || s.cmdk || s.kbHelp || s.homeCfg || s.guide || (s.sheet && s.mobile));
+    if (open !== this._locked) { this._locked = open; try { document.body.style.overflow = open ? 'hidden' : ''; } catch (e) {} }
+    try {
+      const btn = document.getElementById('dbMoreBtn');
+      if (btn && btn !== this._moreEl) {
+        if (this._moreIO) this._moreIO.disconnect();
+        this._moreEl = btn;
+        if ('IntersectionObserver' in window) { this._moreIO = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { this._moreIO.disconnect(); this._moreEl = null; this.setState(st => ({ dbN: (st.dbN || 48) + 48 })); } }, { rootMargin: '200px' }); this._moreIO.observe(btn); }
+      } else if (!btn && this._moreEl) { if (this._moreIO) this._moreIO.disconnect(); this._moreEl = null; }
+    } catch (e) {}
+  }
+  dbPickStep(dir) {
+    const nav = this._dbNav, pk = this.state.dbPick; if (!nav || !pk || nav.kind !== pk.kind) return;
+    const i = nav.ids.indexOf(pk.id); if (i < 0) return;
+    const j = i + dir; if (j < 0 || j >= nav.ids.length) return;
+    this.setState({ dbPick: { kind: pk.kind, id: nav.ids[j] } });
+  }
   /* 切到「我的帳號」時重抓用量 —— 助手用過之後數字才會是新的。只在換頁那一刻抓一次。 */
   usageTick() {
     const p = this.state.page;
@@ -926,8 +957,9 @@ class Component extends DCLogic {
     this._queue = [cur].concat(rest); this._qIdx = 0;
   }
   _toast(msg) {
-    this.setState({ plToast: msg });
-    clearTimeout(this._toastT); this._toastT = setTimeout(() => this.setState({ plToast: '' }), 1500);
+    // 原本只寫進播放器列（plToast），播放器沒開時什麼都看不到；現在一律浮出全站提示，播放器開著時兩邊都顯示
+    this.setState({ toast: msg, plToast: this.state.playerOn ? msg : '' });
+    clearTimeout(this._toastT); this._toastT = setTimeout(() => this.setState({ toast: '', plToast: '' }), 1800);
   }
   /* ---------- 主題（淺色／深色／跟隨系統） ---------- */
   applyTheme(t) {
@@ -9972,6 +10004,14 @@ class Component extends DCLogic {
     this.setState({ seenLog: d });
   }
 
+  bindPid() {   // 首頁、自訂面板的綁定鈕與 Enter 都走這裡
+    const id = String(this.state.pidInput || '').trim();
+    if (!/^\d+$/.test(id)) { this.setState({ pErr: 'Player ID 應為純數字' }); return; }
+    this.setState({ pid: id, pErr: '', pidInput: '' });
+    try { localStorage.setItem('sekai-app-pid', id); } catch (er) {}
+    this.loadPlayer(id);
+  }
+
   /* 本機 → 雲端。只送站上自己的鍵，不要把整個 localStorage 倒上去。 */
   CLOUD_KEYS = ['sekai-pid', 'sekai-owned', 'sekai-deck', 'sekai-fav', 'sekai-ep', 'sekai-b30', 'sekai-rate', 'sekai-layout'];
   async pushCloud() {
@@ -11233,14 +11273,20 @@ class Component extends DCLogic {
   dbGet(name) {
     return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
-  async dbRun(key, task) {
+  async dbRun(key, task, retried) {
     if (this.state.dbLoad === key || this.state[key]) return;
     this.setState({ dbLoad: key, dbErr: '' });
     try {
       const v = await task();
       this.setState({ [key]: v, dbLoad: '' });
     } catch (e) {
-      this.setState({ dbLoad: '', dbErr: '資料載入失敗（' + ((e && e.message) || '原因不明') + '），點此重試' });
+      const why = (e && e.message) || '原因不明';
+      if (!retried) {   // 行動網路瞬斷很常見：先自己重試一次，再把錯誤交給使用者
+        this.setState({ dbLoad: '', dbErr: '資料載入失敗（' + why + '），2 秒後自動重試…' });
+        setTimeout(() => { if (!this.state[key] && this.state.dbErr) this.dbRun(key, task, true); }, 2000);
+        return;
+      }
+      this.setState({ dbLoad: '', dbErr: '資料載入失敗（' + why + '），點此重試' });
     }
   }
   loadChars() {
@@ -11449,7 +11495,7 @@ class Component extends DCLogic {
     const hit = (...f) => !q || this.normSong(f.join(' ')).includes(q);
     const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
     const busy = s.dbLoad === this.DB_KEY[p];
-    const PH = { story: '搜尋劇情標題、活動、角色…', chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
+    const PH = { cards: '搜尋卡名、角色、技能名…', story: '搜尋劇情標題、活動、角色…', chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
     const out = { dbShowSearch: true, dbq: s.dbq, dbPlaceholder: PH[p] || '搜尋…', dbBusy: busy, dbHasErr: !!s.dbErr, dbErrMsg: s.dbErr, dbMore: false, dbMoreLabel: '', dbEmpty: false, dbCount: busy ? '載入中…' : '' };
     let view = null;
     const page = (all, per) => {
@@ -11481,6 +11527,7 @@ class Component extends DCLogic {
       out.cdRarChips = [{ v: 0, n: '全稀有度' }].concat(this.RARITY.map(r => ({ v: r[0], n: r[1] }))).map(c => Object.assign(c, chip(s.cdRar === c.v)));
       out.cdSupChips = [{ v: -1, n: '全部來源' }].concat(this.SUPPLYN.map((n, i) => ({ v: i, n }))).map(c => Object.assign(c, chip(s.cdSup === c.v, 'var(--accent-deep)')));
       out.cdSortChips = [['new', '最新優先'], ['old', '最舊優先'], ['id', '依編號']].map(x => Object.assign({ v: x[0], n: x[1] }, chip((s.cdSort || 'new') === x[0], 'var(--accent-deep)')));
+      this._dbNav = { kind: 'card', ids: all.map(r => r[0]) };
       out.cdRows = page(all, 48).map(r => ({ id: r[0], name: r[7], img: this.cardImg(r[8], r[2]), sub: charOf(r[1])[1], rar: RAR[r[2]] || '', attr: ATTR[r[3]] ? ATTR[r[3]][1] : '', attrBg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888', color: this.CHARA_COLOR[r[1]] || '#888' }));
       const r = pick('card') != null ? cards.find(x => x[0] === pick('card')) : null;
       if (r) {
@@ -11564,6 +11611,7 @@ class Component extends DCLogic {
     if (p === 'chars') {
       const d = s.chars;
       const list = d ? d.list.filter(c => hit(c.name, c.ruby, c.en)) : [];
+      this._dbNav = { kind: 'char', ids: list.map(c => c.id) };
       out.charUnits = d ? d.units.map(u => ({ key: u.key, name: u.name, color: u.color, sentence: u.sentence,
         chars: list.filter(c => c.unit === u.key).map(c => ({ id: c.id, name: c.name, color: c.color, img: this.ASSET + '/character/character_select/chr_tl_' + c.id + '.webp' })) }))
         .filter(u => u.chars.length) : [];
@@ -11601,6 +11649,7 @@ class Component extends DCLogic {
       out.fixSubChips = (d && s.fixGenre) ? [{ v: 0, n: '全部子分類' }].concat(d.subs.filter(g => g[0] !== 1 && usedS.has(g[0])).map(g => ({ v: g[0], n: g[1] }))).map(g => Object.assign(g, chip(s.fixSub === g.v, 'var(--accent-deep)'))) : [];
       out.fixHasSub = out.fixSubChips.length > 1;
       out.fixCharChips = charTags.map(t => Object.assign({ v: t.id, n: this.charShort(t.cid) || t.name }, chip(s.fixChar === t.id, this.CHARA_COLOR[t.cid])));
+      this._dbNav = { kind: 'fix', ids: all.map(r => r[0]) };
       // 牆壁／地板這類貼圖沒有格數，尺寸全 0 就不顯示
       out.fixRows = page(all, 48).map(r => ({ id: r[0], name: r[1], img: img(r), sub: (subOf(r[3]) || genreOf(r[2]) || '') + (r[5].some(v => v > 0) ? ' · ' + r[5][0] + '×' + r[5][1] + '×' + r[5][2] : '') }));
       const r = d && pick('fix') != null ? d.rows.find(x => x[0] === pick('fix')) : null;
@@ -11626,6 +11675,7 @@ class Component extends DCLogic {
       const usedT = new Set((d || []).map(typeOf));
       out.matTypeChips = TYPES.filter(t => !t[0] || usedT.has(t[0])).map(t => Object.assign({ v: t[0], n: t[1] }, chip(s.matType === t[0])));
       const RAR = { 1: '★', 2: '★★', 3: '★★★', 4: '★★★★' };
+      this._dbNav = { kind: 'mat', ids: all.map(x => x.id) };
       out.matRows = page(all, 60).map(x => ({ id: x.id, name: x.name, img: x.img, sub: x.type === 'mysekai' ? ('MySekai ' + (RAR[x.rarity] || '')) : label(x) }));
       const x = d && pick('mat') != null ? d.find(y => y.id === pick('mat')) : null;
       if (x) view = { title: x.name, sub: x.type === 'mysekai' ? 'MySekai 素材' + (x.rarity ? ' · ' + RAR[x.rarity] : '') : label(x), img: x.img, imgRatio: '1/1', wide: false, chips: [], rows: [], text: x.desc, list: [], listTitle: '', colors: [] };
@@ -11637,6 +11687,7 @@ class Component extends DCLogic {
       if (q) all = all.filter(x => hit(x.title));
       // 台服桶有翻譯版；沒有的話 onImgErr 會自動換日服桶
       const img = x => this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets') + '/comic/one_frame/' + x.abn + '.webp';
+      this._dbNav = { kind: 'comic', ids: all.map(x => x.id) };
       out.comicRows = page(all, 24).map(x => ({ id: x.id, title: x.title, img: img(x), sub: '#' + x.id + (x.rank > 1 ? ' · Rank ' + x.rank + ' 起' : '') }));
       const x = d && pick('comic') != null ? d.find(y => y.id === pick('comic')) : null;
       if (x) view = { title: x.title, sub: '一格漫畫 #' + x.id, img: img(x), imgRatio: '4/3', wide: true, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [], link: img(x), linkLabel: '開啟原圖 ↗' };
@@ -11670,6 +11721,7 @@ class Component extends DCLogic {
       out.liveTypeChips = [{ v: '', n: '全部' }].concat(Object.keys(TY).filter(k => usedT.has(k)).map(k => ({ v: k, n: TY[k][0] }))).map(c => Object.assign(c, chip(s.liveType === c.v)));
       out.liveStatChips = [{ v: '', n: '全部時間' }, { v: 'on', n: '進行中' }, { v: 'up', n: '即將開始' }, { v: 'end', n: '已結束' }].map(c => Object.assign(c, chip(s.liveStat === c.v, 'var(--accent-deep)')));
       const banner = x => this.ASSET + '/virtual_live/select/banner/' + x.abn + '/' + x.abn + '.webp';
+      this._dbNav = { kind: 'live', ids: all.map(x => x.id) };
       out.liveRows = page(all, 24).map(x => ({ id: x.id, name: x.n, img: banner(x), type: (TY[x.ty] || [x.ty])[0], typeBg: (TY[x.ty] || ['', '#888'])[1],
         stat: ST[stat(x)][0], statBg: ST[stat(x)][1], period: this.dbDate(x.s) + ' ～ ' + this.dbDate(x.e),
         meta: [x.sch ? x.sch[2].length + ' 場' : '', x.set.length ? x.set.length + ' 首' : '', x.ch.length ? x.ch.map(c => this.charShort(c)).filter(Boolean).slice(0, 6).join('・') : ''].filter(Boolean).join(' · ') }));
@@ -11700,6 +11752,11 @@ class Component extends DCLogic {
         date: this.dbDate(x.s), until: (x.e && x.e < 4e12) ? '～ ' + this.dbDate(x.e) : '', url: x.url || '#', dim: stat(x) === 'end' ? '.62' : '1' }));
     }
 
+    // 有非預設的篩選就給「清除篩選」（搜尋字串與排序不算）
+    const fk = (this.URL_KEYS[p] || []).filter(k => k !== 'dbq' && k !== 'cdSort' && k !== 'stTab');
+    out.dbFiltered = fk.some(k => String(s[k] == null ? '' : s[k]) !== String((this._urlDefaults || {})[k] == null ? '' : this._urlDefaults[k]));
+    out.dbPickNav = !!(view && this._dbNav && s.dbPick && this._dbNav.kind === s.dbPick.kind && this._dbNav.ids.length > 1);
+    out.dbPickPos = out.dbPickNav ? (this._dbNav.ids.indexOf(s.dbPick.id) + 1) + ' / ' + this._dbNav.ids.length : '';
     out.dbPickOpen = !!view;
     view = view || { title: '', sub: '', img: '', imgRatio: '1/1', wide: false, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [] };
     out.dbPickView = view;
@@ -12098,7 +12155,17 @@ class Component extends DCLogic {
     // 推的動作放在 componentDidUpdate 的 _syncUrl 裡做：setState 的 callback 比 didUpdate 晚，
     // 若在 callback 才 push，didUpdate 會先用新頁的網址 replace 掉舊頁那筆，返回鍵就回不去了。
     if (changed && !silent) this._pendingPage = p;
-    this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false });
+    if (changed && p !== 'home') {   // 最近前往：⌘K 沒輸入字時排最前面
+      const recent = [p].concat((this.state.recent || []).filter(x => x !== p)).slice(0, 5);
+      try { localStorage.setItem('sekai-recent', JSON.stringify(recent)); } catch (e) {}
+      this.setState({ recent });
+    }
+    this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
+      // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
+      try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+      // 聚焦要等資料載完再做：載入中→載完那次重繪會把輸入框換掉，太早聚焦會被吃掉（在 _modalSide 裡完成）
+      this._focusPage = (changed && !this.state.mobile && this.DB_PAGES.includes(p) && p !== 'story') ? p : null;
+    });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
   /* ---------- 網址同步 ----------
@@ -12110,6 +12177,7 @@ class Component extends DCLogic {
     guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'] };
   _urlOf(s) {
     const q = new URLSearchParams(); q.set('page', s.page);
+    if (s.dbPick && this.DB_PAGES.includes(s.page)) q.set('pick', s.dbPick.kind + ':' + s.dbPick.id);   // 圖鑑詳情也能分享
     (this.URL_KEYS[s.page] || []).forEach(k => {
       const v = s[k], d = (this._urlDefaults || {})[k];
       if (v === undefined || v === null || String(v) === '' || String(v) === String(d === undefined || d === null ? '' : d)) return;
@@ -12125,6 +12193,10 @@ class Component extends DCLogic {
       if (url === this._lastUrl && !push) return;
       this._lastUrl = url;
       if (push) history.pushState({ p: this.state.page }, '', url); else history.replaceState({ p: this.state.page }, '', url);
+      // 分頁標題跟著頁面走：瀏覽器分頁列與歷史紀錄看得出這是哪一頁
+      const t = ((this.PAGES[this.state.page] || [])[0] || '') ; const want = (t ? t + ' · ' : '') + 'SEKAI 資源中心';
+      this._wantTitle = want;
+      if (document.title !== want) document.title = want;
     } catch (e) {}
   }
   _readUrl() {   // 只認得 URL_KEYS 裡登記的鍵；數字型的鍵照預設值的型別轉回數字
@@ -12133,6 +12205,7 @@ class Component extends DCLogic {
       const q = new URLSearchParams(location.search), pg = q.get('page');
       if (!pg || !this.PAGES[pg]) return patch;
       patch.page = pg;
+      const pk = q.get('pick'); if (pk && this.DB_PAGES.includes(pg)) { const [kind, id] = pk.split(':'); if (kind && id) patch.dbPick = { kind, id: /^\d+$/.test(id) ? +id : id }; }
       (this.URL_KEYS[pg] || []).forEach(k => { if (!q.has(k)) return; const d = (this._urlDefaults || {})[k], raw = q.get(k); patch[k] = typeof d === 'number' ? (isFinite(+raw) ? +raw : d) : raw; });
     } catch (e) {}
     return patch;
@@ -12406,6 +12479,14 @@ class Component extends DCLogic {
   }
   filteredSongs() {
     const s = this.state, q = s.sq.trim().toLowerCase();
+    // 715 首每個按鍵全掃一次會卡，同一組條件直接回上次結果
+    const key = [q, s.su, s.sv, s.ssort, (s.songs || []).length, s.songBpm ? Object.keys(s.songBpm).length : 0].join('|');
+    if (this._fsKey === key && this._fsSongs === s.songs) return this._fsVal;
+    const val = this._filteredSongs(s, q);
+    this._fsKey = key; this._fsSongs = s.songs; this._fsVal = val;
+    return val;
+  }
+  _filteredSongs(s, q) {
     let list = (s.songs || []).filter(x => {
       if (s.su !== 'all' && !x.units.includes(s.su)) return false;
       if (s.sv === 'tw' && x.jp) return false;
@@ -12457,8 +12538,10 @@ class Component extends DCLogic {
       if (k === 'score') patch.scoreMode = 'direct';
       out.push({ tag: '指令', tagBg: '#f0619e', main: '設定' + label + ' = ' + v.toLocaleString('en-US'), sub: '前往 EP 精算', run: () => this.setState(patch) });
     }
+    if (!q) (s.recent || []).forEach(p => { if (this.PAGES[p]) out.push({ tag: '最近', tagBg: '#8b93ac', main: this.PAGES[p][0], sub: this.PAGES[p][1], run: () => this.go(p) }); });
     Object.keys(this.PAGES).forEach(p => {
       const [n, sub] = this.PAGES[p];
+      if (!q && (s.recent || []).includes(p)) return;
       if (!q || n.toLowerCase().includes(lq) || p.includes(lq)) out.push({ tag: '前往', tagBg: '#3f8cf3', main: n, sub, run: () => this.go(p) });
     });
     this.PRESETS && Object.keys(this.PRESETS).forEach(k => {
@@ -12938,9 +13021,13 @@ class Component extends DCLogic {
     const gp = Math.min(s.gp, gPages);
     const gachaRows = gAll.slice((gp - 1) * gPer, gp * gPer).map(g => {
       const tn = this.tone(g.t);
+      const ds = this.pd(g.s), de = this.pd(g.e), nowD = Date.now();
+      const dEnd = de ? new Date(de.getFullYear(), de.getMonth(), de.getDate() + 1).getTime() : 0;   // 結束日整天都算進行中
+      const days = ms => Math.ceil(ms / 86400000);
+      const st = !ds || !de ? ['', ''] : nowD < ds.getTime() ? [days(ds.getTime() - nowD) + ' 天後開始', 'var(--text-3)'] : nowD < dEnd ? ['進行中 · 剩 ' + days(dEnd - nowD) + ' 天', '#3ec49a'] : ['已結束', 'var(--text-3)'];
       return {
         gid: g.id || '',
-        range: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)),
+        range: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), status: st[0], statusFg: st[1], statusW: st[0] && st[0].startsWith('進行中') ? '800' : '600',
         n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—', chSd: this.chSdList(g.ch),
         ev: g.eid ? ('#' + g.eid + ' ' + (g.et || '') + (g.ech ? ' · ' + g.ech : '')) : (g.note || '—')
       };
@@ -13377,6 +13464,7 @@ class Component extends DCLogic {
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
       kbHelpOpen: !!s.kbHelp,
+      toastShow: !!s.toast, toastText: s.toast || '',
       ...this.dbVals(s),
       isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
       ...this.qzVals(s),
@@ -14584,6 +14672,7 @@ class Component extends DCLogic {
       liveType: ev.id != null ? '第 ' + ev.id + ' 期' : '—',
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
       liveCountdown: endMs ? this.dur(endMs - now) : '—',
+      liveUrgent: !!(endMs && endMs > now && endMs - now < 86400000), liveCdColor: (endMs && endMs > now && endMs - now < 86400000) ? '#ffb4c2' : '#fff',
       liveProgress: (prog * 100).toFixed(1) + '%',
       liveAnnounce: annLabel, liveHasAnnounce: !!annLabel,
       liveProgressLabel: startMs && endMs ? '已過 ' + Math.round(prog * 100) + '%' : '',
@@ -15360,6 +15449,11 @@ class Component extends DCLogic {
       onLayoutMove: e => { const d = e.currentTarget.dataset; this.layoutMove(d.scope, d.id, d.dir, d.scope === 'home' ? this.HOME_BLOCKS.map(b => b[0]) : (this._navSpecIds || [])); },
       onLayoutToggle: e => { const d = e.currentTarget.dataset; if (d.scope === 'nav' && (d.id === 'home' || d.id === 'account')) return; this.layoutToggle(d.scope, d.id); },
       onLayoutReset: () => { this.layoutSave({}); },
+      onSongCalc: e => { const id = +e.currentTarget.dataset.id; this.setState({ songId: null, ctab: 'ep', songKey: id, epq: '' }); this.go('calc'); },
+      onPidKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.bindPid(); } },
+      onCopyLink: () => { try { navigator.clipboard.writeText(location.href).then(() => this._toast('已複製這一頁的連結'), () => this._toast('無法複製，請手動複製網址')); } catch (e) { this._toast('無法複製，請手動複製網址'); } },
+      onClearField: e => { const k = e.currentTarget.dataset.k; const patch = { [k]: '' }; if (k === 'sq') patch.sp = 1; if (k === 'gq') patch.gp = 1; if (k === 'cq') patch.cp = 1; if (k === 'dbq') patch.dbN = 48; this.setState(patch); },
+      onDbClearFilters: () => { const p = this.state.page, patch = { dbq: '', dbN: 48 }; (this.URL_KEYS[p] || []).forEach(k => { if (k !== 'cdSort' && k !== 'stTab') patch[k] = (this._urlDefaults || {})[k]; }); this.setState(patch); },
       /* 首頁：通知膠囊、自訂面板、功能引導 */
       onNoticeGo: () => { this.markLogSeen(); this.go('whatsnew'); },
       onNoticeDismiss: e => { e.stopPropagation(); this.markLogSeen(); },
@@ -15715,6 +15809,8 @@ class Component extends DCLogic {
       onDbMore: () => this.setState(st => ({ dbN: (st.dbN || 48) + 48 })),
       onDbPick: e => { const d = e.currentTarget.dataset; this.setState({ dbPick: { kind: d.kind, id: d.num ? +d.id : d.id } }); },
       onDbClose: () => this.setState({ dbPick: null }),
+      onDbPrev: () => this.dbPickStep(-1),
+      onDbNext: () => this.dbPickStep(1),
       onDbGo: e => { const p = e.currentTarget.dataset.p; this.setState({ dbPick: null }); if (p) this.go(p); },
       onKbHelp: () => this.setState(st => ({ kbHelp: !st.kbHelp })),
       /* 劇情閱讀器 */
@@ -15793,13 +15889,7 @@ class Component extends DCLogic {
       onDay: e => { const k = e.currentTarget.dataset.k; this.setState(st => ({ daySel: st.daySel === k ? null : k })); },
       onDayClose: () => this.setState({ daySel: null }),
       onRefresh: () => { this.refreshLive(true); },
-      onBind: () => {
-        const id = String(this.state.pidInput || '').trim();
-        if (!/^\d+$/.test(id)) { this.setState({ pErr: 'Player ID 應為純數字' }); return; }
-        this.setState({ pid: id, pErr: '', pidInput: '' });
-        try { localStorage.setItem('sekai-app-pid', id); } catch (er) {}
-        this.loadPlayer(id);
-      },
+      onBind: () => this.bindPid(),
       onUnbind: () => {
         this.setState({ pid: '', pdata: null });
         try { localStorage.removeItem('sekai-app-pid'); } catch (er) {}
