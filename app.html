@@ -3054,6 +3054,47 @@ select option, select optgroup{
         </sc-for>
       </div>
     </sc-if>
+    <sc-if value="{{ isMstalk }}">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:10px;padding:12px 14px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs)">
+        <div style="flex:1;min-width:220px">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-size:13.5px;font-weight:800;color:var(--ink)">已看過 {{ mstDoneN }} / {{ mstTotal }} 則</span><span style="font-size:12.5px;font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ mstPct }}</span><span style="font-size:11px;color:var(--text-3)">{{ mstFiltered }}</span></div>
+          <div style="margin-top:6px;height:7px;border-radius:999px;background:var(--card-2);overflow:hidden"><div style="height:100%;width:{{ mstPct }};background:var(--rainbow);background-size:400% 100%;border-radius:999px;transition:width .4s"></div></div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.6">MySekai 每則角色對話首次看完會給角色 EXP。點一下對話就勾選；切到「家具檢視」會依家具彙整還沒看的對話，標記已擁有的家具，就知道還缺什麼。紀錄只存這台裝置，可在「我的帳號 → 備份」匯出。</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <sc-for list="{{ mstViewChips }}" as="c" hint-placeholder-count="2"><button type="button" onClick="{{ onDbChip }}" data-k="mstView" data-v="{{ c.v }}" style="padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
+          <button type="button" onClick="{{ onMstClear }}" style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-3);font-size:11.5px;font-weight:700;cursor:pointer">清除紀錄</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ mstUnitChips }}" as="c" hint-placeholder-count="7">
+          <button type="button" onClick="{{ onDbChip }}" data-k="mstUnit" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ mstCharChips }}" as="c" hint-placeholder-count="27">
+          <button type="button" onClick="{{ onDbChip }}" data-k="mstChar" data-v="{{ c.v }}" data-num="1" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ mstStatChips }}" as="c" hint-placeholder-count="3">
+          <button type="button" onClick="{{ onDbChip }}" data-k="mstStat" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <sc-for list="{{ mstKindChips }}" as="c" hint-placeholder-count="5">
+          <button type="button" onClick="{{ onDbChip }}" data-k="mstKind" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ mstIsFix }}">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center">
+          <sc-for list="{{ mstOwnChips }}" as="c" hint-placeholder-count="3">
+            <button type="button" onClick="{{ onDbChip }}" data-k="mstOwnF" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
+          </sc-for>
+          <span style="font-size:12px;font-weight:800;color:var(--accent-deep);margin-left:4px">{{ mstFixSummary }}</span>
+        </div>
+      </sc-if>
+    </sc-if>
     <sc-if value="{{ isNews }}">
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
         <sc-for list="{{ newsTagChips }}" as="c" hint-placeholder-count="7">
@@ -3187,6 +3228,60 @@ select option, select optgroup{
           </div>
         </sc-for>
       </div>
+    </sc-if>
+
+    <!-- 豆森對話：對話清單（點一下勾選）／家具檢視（依解鎖條件彙整） -->
+    <sc-if value="{{ isMstalk }}">
+      <sc-if value="{{ mstIsTalk }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
+          <sc-for list="{{ mstRows }}" as="r" hint-placeholder-count="12">
+            <div onClick="{{ onMstToggle }}" data-id="{{ r.id }}" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:{{ r.bg }};box-shadow:var(--sh-xs);cursor:pointer;opacity:{{ r.op }};transition:background .15s,opacity .15s">
+              <span style="flex:none;width:24px;height:24px;border-radius:8px;border:2px solid {{ r.boxBd }};background:{{ r.boxBg }};color:{{ r.boxFg }};display:grid;place-items:center;font-size:14px;font-weight:900;line-height:1">{{ r.mark }}</span>
+              <div style="flex:none;display:flex">
+                <sc-for list="{{ r.chars }}" as="c" hint-placeholder-count="2"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;margin-right:-6px;border:2px solid {{ c.c }};background:var(--card-2)"></sc-for>
+              </div>
+              <div style="flex:1;min-width:0;margin-left:6px">
+                <div style="font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.4">{{ r.names }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+                  <sc-for list="{{ r.conds }}" as="c" hint-placeholder-count="1">
+                    <sc-if value="{{ c.isFix }}"><button type="button" onClick="{{ onMstFix }}" data-id="{{ c.fid }}" title="看家具詳情" style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 3px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer;max-width:100%"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" width="64" height="64" style="width:20px;height:20px;border-radius:50%;object-fit:contain;background:var(--card);display:block"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.t }}</span><span style="flex:none;color:{{ c.ownFg }}">{{ c.ownTag }}</span></button></sc-if>
+                    <sc-if value="{{ c.notFix }}"><span style="display:inline-block;padding:2px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 10%,transparent);color:var(--accent-deep);font-size:11px;font-weight:700">{{ c.t }}</span></sc-if>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ mstIsFix }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">
+          <sc-for list="{{ mstFixRows }}" as="f" hint-placeholder-count="8">
+            <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:12px 14px;opacity:{{ f.op }}">
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <sc-if value="{{ f.hasImg }}"><div onClick="{{ onMstFix }}" data-id="{{ f.fid }}" title="看家具詳情" style="flex:none;width:64px;height:64px;border-radius:12px;background:var(--card-2);overflow:hidden;cursor:pointer"><img src="{{ f.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div></sc-if>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.4">{{ f.name }}</div>
+                  <div style="font-size:12px;font-weight:800;color:{{ f.countFg }};margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ f.count }}</div>
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;margin-top:6px">
+                    <sc-for list="{{ f.chars }}" as="c" hint-placeholder-count="4"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:28px;height:28px;border-radius:50%;object-fit:cover;display:block;margin-right:-5px;border:2px solid {{ c.c }};background:var(--card-2)"></sc-for>
+                    <span style="font-size:11px;color:var(--text-3);margin-left:10px">{{ f.more }}</span>
+                  </div>
+                </div>
+              </div>
+              <sc-if value="{{ f.hasCost }}">
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px">
+                  <sc-for list="{{ f.cost }}" as="m" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);font-size:11px;color:var(--text-2);font-weight:700"><img src="{{ m.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" width="64" height="64" style="width:18px;height:18px;object-fit:contain;display:block">{{ m.n }} <span style="font-family:'M PLUS Rounded 1c';color:var(--ink)">{{ m.q }}</span></span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ f.noCraft }}"><div style="font-size:11px;color:var(--text-3);margin-top:8px">{{ f.noCraft }}</div></sc-if>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px">
+                <sc-if value="{{ f.isFix }}"><button type="button" onClick="{{ onMstOwn }}" data-id="{{ f.fid }}" style="padding:6px 13px;border:1px solid {{ f.ownBd }};border-radius:999px;background:{{ f.ownBg }};color:{{ f.ownFg }};font-size:12px;font-weight:800;cursor:pointer">{{ f.ownBtn }}</button></sc-if>
+                <button type="button" onClick="{{ onMstDoneAll }}" data-key="{{ f.key }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">{{ f.allBtn }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
     </sc-if>
 
     <!-- 遊戲公告：每列直接連到官方公告頁 -->
@@ -4721,6 +4816,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=f01a9e1d7c"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=3b67b8ab17"></script>
 </body>
 </html>
