@@ -11334,6 +11334,7 @@ class Component extends DCLogic {
   /* ---------- 劇情閱讀器 ----------
      目錄從 data/stories-index.js 來（每日排程壓好），劇本本文從素材 CDN 抓：
      台服桶（sekai-tc-assets）有翻譯過的文字，抓不到再退回日服桶；背景圖與語音固定走日服桶。
+     劇本檔是 .asset（JSON 內容，實測 .json 全 404），路徑不加 _rip。
      劇本 JSON 的 Snippets 依序指到 TalkData（對話）／SpecialEffectData（換背景、字幕）；
      角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
   loadStories() {
@@ -11355,7 +11356,8 @@ class Component extends DCLogic {
     const tryFetch = async urls => {
       let last = '';
       for (const u of urls) {
-        try { const r = await fetch(u); if (r.ok) return await r.json(); last = 'HTTP ' + r.status; } catch (e) { last = (e && e.message) || '抓取失敗'; }
+        // .asset 的 content-type 是 octet-stream，自己 parse，不靠 r.json()
+        try { const r = await fetch(u); if (r.ok) { const t = await r.text(); try { return JSON.parse(t); } catch (e) { last = '劇本格式非預期'; continue; } } last = 'HTTP ' + r.status; } catch (e) { last = (e && e.message) || '抓取失敗'; }
       }
       throw new Error(last || '找不到劇本');
     };
@@ -15841,12 +15843,15 @@ class Component extends DCLogic {
       onStBack: () => this.setState({ stEvent: 0 }),
       onStOpen: e => {
         const d = e.currentTarget.dataset, k = d.kind;
-        const paths = k === 'event' ? ['event_story/' + d.abn + '/scenario/' + d.sid + '.json']
-          : k === 'unit' ? ['scenario/unitstory/' + d.abn + '/' + d.sid + '.json']
-          : k === 'card' ? ['character/member/' + d.abn + '/' + d.sid + '.json']
-          : k === 'talk' ? ['scenario/actionset/group' + d.abn + '/' + d.sid + '.json'].concat(d.sid2 && d.sid2 !== d.sid ? ['scenario/actionset/group' + d.abn + '/' + d.sid2 + '.json'] : [])
-          : k === 'self' ? ['scenario/profile/' + d.sid + '.json']
-          : ['scenario/special/' + d.abn + '/' + d.sid + '.json'];
+        /* 劇本在 storage.sekai.best 是 .asset（內容是 JSON），不是 .json —— 2026-09-17 用 GitHub Runner 實測：
+           event_story/{abn}/scenario/{sid}.asset、character/member/{abn}/{sid}.asset、scenario/profile/{sid}.asset 都是 200，
+           同路徑換 .json 一律 404。目錄不加 _rip。 */
+        const paths = k === 'event' ? ['event_story/' + d.abn + '/scenario/' + d.sid + '.asset']
+          : k === 'unit' ? ['scenario/unitstory/' + d.abn + '/' + d.sid + '.asset']
+          : k === 'card' ? ['character/member/' + d.abn + '/' + d.sid + '.asset']
+          : k === 'talk' ? ['scenario/actionset/group' + d.abn + '/' + d.sid + '.asset'].concat(d.sid2 && d.sid2 !== d.sid ? ['scenario/actionset/group' + d.abn + '/' + d.sid2 + '.asset'] : [])
+          : k === 'self' ? ['scenario/profile/' + d.sid + '.asset']
+          : ['scenario/special/' + d.abn + '/' + d.sid + '.asset'];
         const voiceDir = k === 'card' ? 'sound/card_scenario/voice' : k === 'talk' ? 'sound/actionset/voice' : 'sound/scenario/voice';
         this.stOpen(k, d.title || d.sid, d.sub || '', paths, voiceDir);
       },
