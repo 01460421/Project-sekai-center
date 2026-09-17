@@ -271,6 +271,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/17', t: '首頁：新功能通知膠囊、自訂首頁面板、功能引導', s: '首頁最上方多了一顆通知膠囊，有新功能更新時會顯示最新一則標題與未讀數，點進去看更新紀錄、按 ✕ 就標為已讀。右上角新增「自訂首頁」面板，三個分頁：版面（區塊順序與顯示，原本要進帳號頁才有）、資訊顯示（「我的排名」八格數字每一格都能關，「快速前往」可從全站 40 多個功能自選要放哪些）、資料設定（綁定／解除 Player ID、音源版本、主題與配色、AI 雙路、匯出／匯入備份、清除本機資料）。第一次進站會跳四步的功能引導（搜尋、側欄分組、綁定 ID、自訂首頁），可勾「不再於此瀏覽器顯示」，之後也能從自訂面板再打開。' },
     { d: '2026/09/16', t: '既有頁面體檢：返回鍵可用、連結可分享、視窗一律 Esc 關、清單圖片延遲載入', s: '把 27 個既有分頁用無頭瀏覽器走過一遍（沒有 JS 錯誤、手機沒有橫向溢出），修了三件事：① 換頁現在會進瀏覽器歷史，返回鍵回上一頁而不是離開網站；② 分頁、子分頁與篩選寫進網址（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），連結可以分享、重新整理不掉狀態、返回時篩選與搜尋字串都還在；③ 歌曲、卡池、編組、排名詳情視窗也能按 Esc 關閉。另外卡池、收集室、收集率的清單圖片改延遲載入，榜線資料庫與卡面下載的角色籤列在手機上改成橫向滑動。' },
     { d: '2026/09/16', t: '新增劇情閱讀器', s: '活動劇情（182 場）、主線劇情、卡片支線劇情（1,192 張卡的前後篇）、區域對話（2,654 段）、個人劇情與特別劇情都能在站上讀：目錄由每日排程整理成索引，劇本本文從素材庫抓台服翻譯版（抓不到退回日服原文），逐句顯示說話者與台詞、換背景與字幕，有語音的句子可以直接播放。' },
     { d: '2026/09/16', t: '新增卡片圖鑑，並補上鍵盤快捷鍵、骨架載入等介面細節', s: '卡片圖鑑：台服 1,249 張卡依團體、角色、屬性、稀有度、來源篩選，可依最新／最舊／編號排序；詳情視窗有滿等表演／技巧／體力與綜合力（含特訓後）、技能敘述 Lv1／Lv4、釋出日與招募台詞，並可一鍵前往卡面下載。介面部分參考 Moesekai：Esc 現在會關閉所有詳情視窗，按「?」有快捷鍵說明；圖鑑類分頁載入中改顯示骨架方格而不是轉圈；手機上過長的角色篩選籤改成橫向滑動，不再把畫面撐高。' },
@@ -429,6 +430,10 @@ class Component extends DCLogic {
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     evType: {},
     homeBoard: 'main',   // 首頁「我的排名」切換：main=主榜 / wl=WL 個榜（只在當期是 WL 活動時可切）
+    /* 首頁：通知膠囊看過到哪一天、自訂面板（版面／資訊顯示／資料）、功能引導 */
+    seenLog: (() => { try { return localStorage.getItem('sekai-seen-log') || ''; } catch (e) { return ''; } })(),
+    homeCfg: false, homeCfgTab: 'layout',
+    guide: null, guideHide: false,
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
@@ -619,6 +624,13 @@ class Component extends DCLogic {
     // 返回鍵：照網址把分頁與篩選還原，不再另推一筆歷史
     this._pop = () => { const u = this._readUrl(); const pg = u.page || 'home'; delete u.page; this.go(pg, { silent: true }); if (Object.keys(u).length) this.setState(u); };
     window.addEventListener('popstate', this._pop);
+    // 功能引導：這個瀏覽器沒勾過「不再顯示」、這次分頁也還沒看過，就在首頁跳一次（深連結進其他頁不打擾）
+    try {
+      if (!localStorage.getItem('sekai-guide-hide') && !sessionStorage.getItem('sekai-guide-seen') && (!sp || sp === 'home')) {
+        sessionStorage.setItem('sekai-guide-seen', '1');
+        setTimeout(() => this.setState({ guide: { step: 0 } }), 900);
+      }
+    } catch (e) {}
     // 開站就問一次「我是誰」——導覽列要知道是不是管理員才決定顯不顯示後台入口
     this.loadMe();
     this.mq = window.matchMedia('(max-width: 900px)');
@@ -693,7 +705,7 @@ class Component extends DCLogic {
     this.wireCharts();
     this._key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
-      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null });
+      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null });
       if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
       if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
     };
@@ -9910,6 +9922,56 @@ class Component extends DCLogic {
     this.layoutSave(next);
   }
 
+  /* 首頁「我的排名」的八格數字與「快速前往」的項目也走同一套 layout（scope=stats／quick），
+     所以跟版面一樣會存本機並跟著帳號同步。快速前往預設六個，其餘頁面預設隱藏：
+     第一次改動時先把「預設之外的全部」寫進 hidden，之後才是單純的切換。 */
+  QUICK_DEFAULT = ['calc', 'rank', 'gacha', 'songs', 'calendar', 'res'];
+  QUICK_SUB = { calc: '一套設定通吃所有計算', rank: 'T100 與分段榜線', gacha: '235 筆台服預測', songs: '難度與團體篩選', calendar: '本月卡池一目瞭然', res: '官方・社群・工具' };
+  quickAll() { return (this._navSpecIds || []).filter(id => !['home', 'account', 'notices', 'assistant', 'admin'].includes(id)); }
+  quickShown() {
+    const L = (this.state.layout || {}).quick;
+    const all = this.quickAll();
+    if (!L) return this.layoutApply(this.QUICK_DEFAULT.filter(id => all.includes(id) || !all.length), 'quick');
+    const hid = this.layoutOf('quick').hidden;
+    return this.layoutApply(all.filter(id => !hid.includes(id)), 'quick');
+  }
+  quickToggle(id) {
+    const next = Object.assign({}, this.state.layout || {});
+    if (!next.quick) next.quick = { order: this.QUICK_DEFAULT.slice(), hidden: this.quickAll().filter(x => !this.QUICK_DEFAULT.includes(x)) };
+    const hid = next.quick.hidden || [];
+    next.quick = Object.assign({}, next.quick, { hidden: hid.includes(id) ? hid.filter(x => x !== id) : hid.concat([id]) });
+    this.layoutSave(next);
+  }
+  /* 功能引導的四步：文案放這裡，畫面只負責翻頁 */
+  GUIDE = [
+    { t: '歡迎來到 SEKAI 資源中心', b: '這裡把世界計畫台服的活動、卡池、歌曲、計算工具與圖鑑都收在一起。接下來三步帶你認識最常用的入口，隨時可以按「略過」。', k: '' },
+    { t: '搜尋什麼都從這裡開始', b: '按 ⌘K（Windows 用 Ctrl K）或鍵盤上的「/」打開指令面板：找歌、找卡池、跳到任何功能，也能直接輸入「ep 1500000」這種算式。', k: '⌘ K' },
+    { t: '側欄分成六組', b: '資料（日曆、卡池、歌曲、劇情）、圖鑑（卡片、角色、家具…）、追蹤（排名、榜線、分析）、工具（計算中心、B30、貼圖製作器）、遊戲（猜角色、猜封面）與學習。手機版在下方「更多」裡。', k: '' },
+    { t: '把首頁變成你的', b: '綁定 Player ID 之後首頁會顯示你的名次、時速與周回；右上角的「自訂首頁」可以調整區塊順序、選要顯示哪些數字與快速入口，也能備份或清除本機資料。', k: '' },
+  ];
+  guideStep(dir) {
+    const g = this.state.guide; if (!g) return;
+    const n = g.step + dir;
+    if (n >= this.GUIDE.length) { this.guideClose(); return; }
+    this.setState({ guide: { step: Math.max(0, n) } });
+  }
+  guideClose() {
+    if (this.state.guideHide) { try { localStorage.setItem('sekai-guide-hide', '1'); } catch (e) {} }
+    this.setState({ guide: null });
+  }
+  /* 首頁通知膠囊：更新紀錄裡「比上次看過的日期新」的那幾則 */
+  newLog() {
+    // 第一次來的人沒有「看過到哪」的記錄，把 110 則全算成未讀沒有意義：沒記錄就只算最近 14 天的
+    let seen = this.state.seenLog || '';
+    if (!seen) { const d = new Date(Date.now() - 14 * 864e5), z = n => String(n).padStart(2, '0'); seen = d.getFullYear() + '/' + z(d.getMonth() + 1) + '/' + z(d.getDate()); }
+    return this.SYSLOG.filter(u => u.d > seen);
+  }
+  markLogSeen() {
+    const d = (this.SYSLOG[0] || {}).d || '';
+    try { localStorage.setItem('sekai-seen-log', d); } catch (e) {}
+    this.setState({ seenLog: d });
+  }
+
   /* 本機 → 雲端。只送站上自己的鍵，不要把整個 localStorage 倒上去。 */
   CLOUD_KEYS = ['sekai-pid', 'sekai-owned', 'sekai-deck', 'sekai-fav', 'sekai-ep', 'sekai-b30', 'sekai-rate', 'sekai-layout'];
   async pushCloud() {
@@ -12036,7 +12098,7 @@ class Component extends DCLogic {
     // 推的動作放在 componentDidUpdate 的 _syncUrl 裡做：setState 的 callback 比 didUpdate 晚，
     // 若在 callback 才 push，didUpdate 會先用新頁的網址 replace 掉舊頁那筆，返回鍵就回不去了。
     if (changed && !silent) this._pendingPage = p;
-    this.setState({ page: p, sheet: false, cmdk: false });
+    this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false });
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
   /* ---------- 網址同步 ----------
@@ -14477,8 +14539,31 @@ class Component extends DCLogic {
         const navById = {}; navAll.forEach(x => { navById[x.id] = x; });
         const row = (id, name, group, hidden, fixed) => ({ id, name, group: group || '', fg: hidden ? 'var(--text-3)' : 'var(--text)',
           btn: fixed ? '固定' : (hidden ? '已隱藏' : '顯示中') });
+        const STAT_NAMES = [['rank', '本期名次'], ['score', '活動P·累計'], ['last', '活動P·上局'], ['speed', '時速·近1h'], ['r1h', '周回·近1h'], ['r24h', '周回·近24h'], ['avg', '場均·近1h'], ['power', '總綜合力']];
+        const statHid = this.layoutOf('stats').hidden, quickOn = new Set(this.quickShown());
+        const chip = on => ({ bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'var(--cta)' : 'var(--border)' });
+        const fresh = this.newLog(), g = s.guide, gs = g ? this.GUIDE[g.step] : null;
         return {
           homeOrd, homeShow,
+          /* 通知膠囊 */
+          noticeOpen: s.page === 'home' && fresh.length > 0,
+          noticeCount: fresh.length > 9 ? '9+' : fresh.length, noticeTitle: fresh.length ? fresh[0].t : '', noticeDate: fresh.length ? fresh[0].d : '',
+          noticeMore: fresh.length > 1 ? '＋' + (fresh.length - 1) + ' 項' : '',
+          /* 自訂首頁面板 */
+          homeCfgOpen: !!s.homeCfg,
+          cfgTabs: [['layout', '版面'], ['info', '資訊顯示'], ['data', '資料設定']].map(([v, n]) => Object.assign({ v, n }, chip((s.homeCfgTab || 'layout') === v))),
+          cfgIsLayout: (s.homeCfgTab || 'layout') === 'layout', cfgIsInfo: s.homeCfgTab === 'info', cfgIsData: s.homeCfgTab === 'data',
+          statChips: STAT_NAMES.map(([k, n]) => Object.assign({ v: k, n }, chip(!statHid.includes(k)))),
+          quickChips: this.quickAll().map(id => Object.assign({ v: id, n: (this.PAGES[id] || [id])[0] }, chip(quickOn.has(id)))),
+          quickOnCount: quickOn.size,
+          /* 功能引導 */
+          guideOpen: !!g, guideTitle: gs ? gs.t : '', guideBody: gs ? gs.b : '', guideKey: gs ? gs.k : '', guideHasKey: !!(gs && gs.k),
+          guideStepLabel: g ? (g.step + 1) + ' / ' + this.GUIDE.length : '',
+          guideDots: this.GUIDE.map((_, i) => ({ bg: g && i === g.step ? 'var(--accent)' : 'var(--border-2)', w: g && i === g.step ? '22px' : '8px' })),
+          guideIsFirst: !!g && g.step === 0, guideIsLast: !!g && g.step === this.GUIDE.length - 1,
+          guidePrevOpacity: g && g.step === 0 ? '.35' : '1',
+          guideNextLabel: g && g.step === this.GUIDE.length - 1 ? '開始使用' : '下一步 →',
+          guideHideChecked: !!s.guideHide,
           layoutHomeRows: ord.map(id => row(id, nameOf[id], '', hid.indexOf(id) >= 0, false)),
           layoutNavRows: navOrd.map(id => navById[id]).filter(Boolean)
             .map(x => row(x.id, x.name, x.group, navHid.indexOf(x.id) >= 0, x.id === 'home' || x.id === 'account')),
@@ -14516,15 +14601,15 @@ class Component extends DCLogic {
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
       playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
       playerStats: [
-        { l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '未進前100' },
-        { l: '活動P·累計', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
-        { l: '活動P·上局', v: pd.myLastScore != null ? this.n(pd.myLastScore) : '—' },
-        { l: '時速·近1h', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
-        { l: '周回·近1h', v: pd.myRounds1h != null ? pd.myRounds1h + ' 回' : '—' },
-        { l: '周回·近24h', v: pd.myRounds24h != null ? this.n(pd.myRounds24h) + ' 回' : '—' },
-        { l: '場均·近1h', v: pd.myAvg1h != null ? this.short(pd.myAvg1h) : '—' },
-        { l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
-      ],
+        { k: 'rank', l: '本期名次', v: pd.myRank ? '#' + pd.myRank : '未進前100' },
+        { k: 'score', l: '活動P·累計', v: pd.myScore != null ? this.short(pd.myScore) : '—' },
+        { k: 'last', l: '活動P·上局', v: pd.myLastScore != null ? this.n(pd.myLastScore) : '—' },
+        { k: 'speed', l: '時速·近1h', v: pd.mySpeed != null ? this.short(pd.mySpeed) + '/h' : '—' },
+        { k: 'r1h', l: '周回·近1h', v: pd.myRounds1h != null ? pd.myRounds1h + ' 回' : '—' },
+        { k: 'r24h', l: '周回·近24h', v: pd.myRounds24h != null ? this.n(pd.myRounds24h) + ' 回' : '—' },
+        { k: 'avg', l: '場均·近1h', v: pd.myAvg1h != null ? this.short(pd.myAvg1h) : '—' },
+        { k: 'power', l: '總綜合力', v: pd.power != null ? this.short(pd.power) : '—' }
+      ].filter(x => !this.layoutOf('stats').hidden.includes(x.k)),
       homeIsWL: this.isWL(),
       homeBoardIsMain: (s.homeBoard || 'main') !== 'wl',
       homeBoardIsWl: s.homeBoard === 'wl' && this.isWL(),
@@ -14582,14 +14667,11 @@ class Component extends DCLogic {
         v, n, jp, c: this.UNITS[v] ? this.UNITS[v].c : 'var(--accent)',
         count: (s.gachas || []).filter(g => this.unitOf(g.u) === v).length
       })),
-      quickLinks: [
-        { id: 'calc', name: '活動 P 試算', sub: '一套設定通吃所有計算', dot: '#7fb4f7' },
-        { id: 'rank', name: '即時排名', sub: 'T100 與分段榜線', dot: '#ff9db4' },
-        { id: 'gacha', name: '卡池列表', sub: '235 筆台服預測', dot: '#ffd94d' },
-        { id: 'songs', name: '歌曲清單', sub: '難度與團體篩選', dot: '#c39df2' },
-        { id: 'calendar', name: '活動日曆', sub: '本月卡池一目瞭然', dot: '#3ee0a8' },
-        { id: 'res', name: '資源連結', sub: '官方・社群・工具', dot: '#b8e561' }
-      ],
+      quickLinks: (() => {
+        const dot = {}; navSpec.forEach(([, items]) => items.forEach(([id, , c]) => { dot[id] = c; }));
+        const NAME = { calc: '活動 P 試算', rank: '即時排名' };
+        return this.quickShown().map(id => ({ id, name: NAME[id] || (this.PAGES[id] || [id])[0], sub: this.QUICK_SUB[id] || String((this.PAGES[id] || ['', ''])[1]).split(/[：:，,（(]/)[0].slice(0, 16), dot: dot[id] || 'var(--accent)' }));
+      })(),
 
       /* 日曆 */
       calTitle: s.calY + ' 年 ' + (s.calM + 1) + ' 月',
@@ -15278,6 +15360,24 @@ class Component extends DCLogic {
       onLayoutMove: e => { const d = e.currentTarget.dataset; this.layoutMove(d.scope, d.id, d.dir, d.scope === 'home' ? this.HOME_BLOCKS.map(b => b[0]) : (this._navSpecIds || [])); },
       onLayoutToggle: e => { const d = e.currentTarget.dataset; if (d.scope === 'nav' && (d.id === 'home' || d.id === 'account')) return; this.layoutToggle(d.scope, d.id); },
       onLayoutReset: () => { this.layoutSave({}); },
+      /* 首頁：通知膠囊、自訂面板、功能引導 */
+      onNoticeGo: () => { this.markLogSeen(); this.go('whatsnew'); },
+      onNoticeDismiss: e => { e.stopPropagation(); this.markLogSeen(); },
+      onHomeCfg: () => this.setState(st => ({ homeCfg: !st.homeCfg })),
+      onCfgTab: e => this.setState({ homeCfgTab: e.currentTarget.dataset.v }),
+      onStatToggle: e => this.layoutToggle('stats', e.currentTarget.dataset.v),
+      onQuickToggle: e => this.quickToggle(e.currentTarget.dataset.v),
+      onGuideOpen: () => this.setState({ guide: { step: 0 }, homeCfg: false }),
+      onGuideNext: () => this.guideStep(1),
+      onGuidePrev: () => this.guideStep(-1),
+      onGuideClose: () => this.guideClose(),
+      onGuideHide: e => this.setState({ guideHide: !!e.target.checked }),
+      onGuideReset: () => { try { localStorage.removeItem('sekai-guide-hide'); } catch (e) {} this.setState({ guideHide: false, guide: { step: 0 }, homeCfg: false }); },
+      onClearLocal: () => {
+        if (!confirm('要清除這個瀏覽器裡本站的所有資料嗎？（綁定的 ID、勾選的收集、B30 成績、版面設定…）建議先匯出備份。')) return;
+        try { Object.keys(localStorage).filter(k => k.startsWith('sekai-')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+        location.reload();
+      },
       onNoticeRead: e => this.readNotice(e.currentTarget.dataset.id),
       onNoticeReadAll: () => this.readNotice(null),
       onNoticeReload: () => this.loadNotices(),
