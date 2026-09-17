@@ -222,6 +222,8 @@ select option, select optgroup{
   color:var(--text);
   background-color:var(--card);
 }
+/* 數字欄位等寬：排名、榜線、倒數每次更新時位數不會左右抖動 */
+[style*="M PLUS Rounded 1c"]{font-variant-numeric:tabular-nums}
 /* 圖鑑類分頁的載入骨架：閃一閃的方格，比轉圈更看得出「等一下這裡會長出格點」 */
 .skel{background:linear-gradient(90deg,var(--card-2) 25%,var(--card) 50%,var(--card-2) 75%);background-size:200% 100%;animation:skel 1.3s linear infinite}
 @keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
@@ -286,6 +288,9 @@ select option, select optgroup{
         <sc-if value="{{ isDesktop }}"><span style="font-size:12.5px;font-weight:700;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerName }}</span></sc-if>
       </button>
     </sc-if>
+    <button type="button" onClick="{{ onCopyLink }}" title="複製這一頁的連結（含目前的篩選）" aria-label="複製連結" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
+    </button>
     <button type="button" onClick="{{ onTheme }}" title="{{ themeTitle }}" aria-label="{{ themeTitle }}" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);cursor:pointer;box-shadow:var(--sh-xs);transition:color .2s,border-color .2s" style-hover="color:var(--accent);border-color:var(--border-2)">
       <sc-if value="{{ themeIsLight }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:17px;height:17px"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.6v2.2M12 19.2v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"></path></svg>
@@ -353,7 +358,8 @@ select option, select optgroup{
         </div>
         <div style="text-align:right;min-width:150px">
           <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">剩餘時間</div>
-          <div id="liveCd" style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px">{{ liveCountdown }}</div>
+          <sc-if value="{{ liveUrgent }}"><div style="display:inline-block;margin-bottom:3px;padding:2px 10px;border-radius:999px;background:#ff5c7a;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:1px;animation:pulseDot 1.6s infinite">最後一天</div></sc-if>
+          <div id="liveCd" style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px;color:{{ liveCdColor }}">{{ liveCountdown }}</div>
           <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
           <sc-if value="{{ liveHasAnnounce }}"><div style="font-size:10.5px;opacity:.6;margin-top:2px;font-family:'M PLUS Rounded 1c'">{{ liveAnnounce }}</div></sc-if>
         </div>
@@ -411,7 +417,7 @@ select option, select optgroup{
         <sc-if value="{{ noPlayer }}">
           <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;line-height:1.7">綁定遊戲內 Player ID，首頁就會顯示你的排名與進度（只存在這台裝置）。</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" style="flex:1;min-width:150px;padding:10px 14px;border:1.5px solid var(--border);border-radius:13px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)">
+            <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" onKeyDown="{{ onPidKey }}" style="flex:1;min-width:150px;padding:10px 14px;border:1.5px solid var(--border);border-radius:13px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)">
             <button type="button" onClick="{{ onBind }}" style="padding:10px 22px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;box-shadow:0 5px 16px rgba(37,125,220,.28);transition:transform .28s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.96)">綁定</button>
           </div>
           <div style="font-size:11.5px;color:var(--lim-fg);margin-top:8px;min-height:16px">{{ playerErr }}</div>
@@ -558,7 +564,7 @@ select option, select optgroup{
   <sc-if value="{{ isGacha }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
-      <input type="text" placeholder="搜尋卡池名稱、角色、備註…" value="{{ gq }}" onInput="{{ onField }}" data-k="gq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <input type="search" enterkeyhint="search" placeholder="搜尋卡池名稱、角色、備註…" value="{{ gq }}" onInput="{{ onField }}" data-k="gq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
       <select value="{{ gt }}" onChange="{{ onField }}" data-k="gt" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
         <sc-for list="{{ gachaTypes }}" as="t" hint-placeholder-count="5"><option value="{{ t.v }}">{{ t.n }}</option></sc-for>
       </select>
@@ -585,7 +591,7 @@ select option, select optgroup{
       </sc-if>
       <sc-for list="{{ gachaRows }}" as="g" hint-placeholder-count="8">
         <div onClick="{{ onGachaClick }}" data-gid="{{ g.gid }}" style="display:grid;grid-template-columns:{{ gachaCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
-          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ g.range }}</span>
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ g.range }}<br><span style="font-size:10.5px;color:{{ g.statusFg }};font-weight:{{ g.statusW }}">{{ g.status }}</span></span>
           <span style="font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.45">{{ g.n }}</span>
           <span><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2.5px 10px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span></span>
           <span style="font-size:12.5px;color:var(--text-2)">{{ g.ch }}<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px"><sc-for list="{{ g.chSd }}" as="c" hint-placeholder-count="3"><img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:30px;height:30px;object-fit:contain;display:block;border-radius:50%;background:color-mix(in oklab,{{ c.color }} 22%,transparent)"></sc-for></div></span>
@@ -641,7 +647,7 @@ select option, select optgroup{
   <sc-if value="{{ isSongs }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
-      <input type="text" placeholder="搜尋曲名、作曲者…" value="{{ sq }}" onInput="{{ onField }}" data-k="sq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <input type="search" enterkeyhint="search" placeholder="搜尋曲名、作曲者…" value="{{ sq }}" onInput="{{ onField }}" data-k="sq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
       <select value="{{ ssort }}" onChange="{{ onField }}" data-k="ssort" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
         <option value="id">ID 由小到大</option><option value="new">最新加入</option><option value="master">難度 高→低</option><option value="masterAsc">難度 低→高</option><option value="bpm">BPM 高→低</option><option value="bpmAsc">BPM 低→高</option><option value="len">歌長 長→短</option><option value="lenAsc">歌長 短→長</option>
       </select>
@@ -1175,7 +1181,7 @@ select option, select optgroup{
               <sc-for list="{{ moyuScopeChips }}" as="c" hint-placeholder-count="3">
                 <button type="button" onClick="{{ onSet }}" data-k="moyuScope" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button>
               </sc-for>
-              <input type="text" placeholder="搜尋曲名…" value="{{ moyuQ }}" onInput="{{ onField }}" data-k="moyuQ" style="flex:1;min-width:150px;padding:5px 12px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;outline:none" style-focus="border-color:var(--accent)">
+              <input type="search" enterkeyhint="search" placeholder="搜尋曲名…" value="{{ moyuQ }}" onInput="{{ onField }}" data-k="moyuQ" style="flex:1;min-width:150px;padding:5px 12px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;outline:none" style-focus="border-color:var(--accent)">
               <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ moyuQHint }}</span>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 16px 10px">
@@ -1352,7 +1358,7 @@ select option, select optgroup{
   <!-- ========== 教學大全 ========== -->
   <sc-if value="{{ isTut }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
-    <input type="text" placeholder="搜尋教學（例：S6、蝦、控分、火、烤森…）" value="{{ tq }}" onInput="{{ onField }}" data-k="tq" style="width:100%;padding:12px 18px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14.5px;min-height:46px;outline:none;box-shadow:var(--sh-xs);margin-bottom:12px" style-focus="border-color:var(--accent)">
+    <input type="search" enterkeyhint="search" placeholder="搜尋教學（例：S6、蝦、控分、火、烤森…）" value="{{ tq }}" onInput="{{ onField }}" data-k="tq" style="width:100%;padding:12px 18px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14.5px;min-height:46px;outline:none;box-shadow:var(--sh-xs);margin-bottom:12px" style-focus="border-color:var(--accent)">
     <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
       <sc-for list="{{ tutCats }}" as="c" hint-placeholder-count="7">
         <button type="button" onClick="{{ onSet }}" data-k="tcat" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
@@ -2858,7 +2864,7 @@ select option, select optgroup{
           <button type="button" onClick="{{ onColTab }}" data-v="{{ t.v }}" style="padding:8px 20px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:700;cursor:pointer;box-shadow:{{ t.sh }};transition:background .3s,color .2s">{{ t.n }}</button>
         </sc-for>
       </div>
-      <input type="text" placeholder="搜尋名稱、系列、取得條件…" value="{{ cq }}" onInput="{{ onField }}" data-k="cq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <input type="search" enterkeyhint="search" placeholder="搜尋名稱、系列、取得條件…" value="{{ cq }}" onInput="{{ onField }}" data-k="cq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
     </div>
     <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;font-family:'M PLUS Rounded 1c'">{{ colCount }}</div>
 
@@ -2913,7 +2919,11 @@ select option, select optgroup{
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ dbShowSearch }}">
     <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:10px">
-      <input type="text" placeholder="{{ dbPlaceholder }}" value="{{ dbq }}" onInput="{{ onDbField }}" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;outline:none">
+      <span style="position:relative;flex:1;min-width:190px;display:flex">
+        <input type="search" enterkeyhint="search" placeholder="{{ dbPlaceholder }}" value="{{ dbq }}" onInput="{{ onDbField }}" style="flex:1;min-width:0;padding:11px 40px 11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;outline:none">
+        <sc-if value="{{ dbq }}"><button type="button" onClick="{{ onClearField }}" data-k="dbq" aria-label="清除搜尋" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:26px;height:26px;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);font-size:12px;cursor:pointer">✕</button></sc-if>
+      </span>
+      <sc-if value="{{ dbFiltered }}"><button type="button" onClick="{{ onDbClearFilters }}" style="padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">清除篩選 ✕</button></sc-if>
       <span style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ dbCount }}</span>
     </div>
     </sc-if>
@@ -3268,7 +3278,7 @@ select option, select optgroup{
       <div style="padding:38px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">沒有符合的項目，試著清空搜尋或篩選。</div>
     </sc-if>
     <sc-if value="{{ dbMore }}">
-      <button type="button" onClick="{{ onDbMore }}" style="display:block;margin:16px auto 0;padding:10px 26px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">{{ dbMoreLabel }}</button>
+      <button type="button" id="dbMoreBtn" onClick="{{ onDbMore }}" style="display:block;margin:16px auto 0;padding:10px 26px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">{{ dbMoreLabel }}</button>
     </sc-if>
   </div>
   </sc-if>
@@ -3423,7 +3433,7 @@ select option, select optgroup{
           </sc-for>
         </div>
         <sc-if value="{{ stkIsStamp }}">
-          <input type="text" placeholder="搜尋貼圖名稱或台詞…" value="{{ stkq }}" onInput="{{ onStkQ }}" style="width:100%;box-sizing:border-box;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;outline:none;margin-bottom:8px">
+          <input type="search" enterkeyhint="search" placeholder="搜尋貼圖名稱或台詞…" value="{{ stkq }}" onInput="{{ onStkQ }}" style="width:100%;box-sizing:border-box;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;outline:none;margin-bottom:8px">
           <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
             <sc-for list="{{ stkCharChips }}" as="c" hint-placeholder-count="26">
               <button type="button" onClick="{{ onStkChar }}" data-v="{{ c.v }}" style="padding:5px 10px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer">{{ c.n }}</button>
@@ -3683,7 +3693,7 @@ select option, select optgroup{
           <div style="font-size:13.5px;font-weight:800;color:var(--ink);flex:1;min-width:120px">挑一位前百玩家</div>
           <button type="button" onClick="{{ onAnaMe }}" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer">分析我自己</button>
         </div>
-        <input type="text" placeholder="搜尋名稱或名次…" value="{{ anaQ }}" onInput="{{ onField }}" data-k="anaQ" style="width:100%;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;margin-bottom:10px" style-focus="border-color:var(--accent)">
+        <input type="search" enterkeyhint="search" placeholder="搜尋名稱或名次…" value="{{ anaQ }}" onInput="{{ onField }}" data-k="anaQ" style="width:100%;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;margin-bottom:10px" style-focus="border-color:var(--accent)">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:7px;max-height:290px;overflow-y:auto">
           <sc-for list="{{ anaPickRows }}" as="p" hint-placeholder-count="12">
             <button type="button" onClick="{{ onAnaPick }}" data-uid="{{ p.uid }}" style="text-align:left;padding:9px 12px;border:1px solid var(--border);border-radius:11px;background:{{ p.bg }};color:{{ p.fg }};font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.n }}</button>
@@ -3852,7 +3862,7 @@ select option, select optgroup{
 
     <!-- 工具列 -->
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:11px">
-      <input type="text" placeholder="搜尋卡名、角色、卡片 ID…" value="{{ rq }}" onInput="{{ onField }}" data-k="rq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
+      <input type="search" enterkeyhint="search" placeholder="搜尋卡名、角色、卡片 ID…" value="{{ rq }}" onInput="{{ onField }}" data-k="rq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
       <button type="button" onClick="{{ onRateMiss }}" style="padding:10px 18px;border:none;border-radius:999px;background:{{ rMissChip.bg }};color:{{ rMissChip.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:{{ rMissChip.sh }};min-height:44px">只看未持有</button>
       <sc-if value="{{ rateFilBtn }}">
         <button type="button" onClick="{{ onRateFil }}" style="padding:10px 18px;border:none;border-radius:999px;background:{{ rFilChip.bg }};color:{{ rFilChip.fg }};font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:{{ rFilChip.sh }};min-height:44px">{{ rFilLabel }}</button>
@@ -4372,6 +4382,7 @@ select option, select optgroup{
       <sc-if value="{{ songDetailData.bpm }}"><div style="font-size:11.5px;color:var(--text-2);margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ songDetailData.bpm }}</div></sc-if>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><sc-for list="{{ songDetailData.units }}" as="u" hint-placeholder-count="1"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span></sc-for></div>
     </div>
+    <button type="button" onClick="{{ onSongCalc }}" data-id="{{ songDetailData.id }}" title="到計算中心用這首歌算活動 P" style="flex:none;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">算活動 P →</button>
     <button type="button" onClick="{{ onSongClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;margin-bottom:13px">
@@ -4423,6 +4434,13 @@ select option, select optgroup{
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.4">{{ dbPickView.title }}</div>
       <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">{{ dbPickView.sub }}</div>
     </div>
+    <sc-if value="{{ dbPickNav }}">
+      <span style="display:inline-flex;align-items:center;gap:4px;flex:none">
+        <button type="button" onClick="{{ onDbPrev }}" aria-label="上一筆" title="上一筆（←）" style="width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">‹</button>
+        <span style="font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';min-width:44px;text-align:center">{{ dbPickPos }}</span>
+        <button type="button" onClick="{{ onDbNext }}" aria-label="下一筆" title="下一筆（→）" style="width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">›</button>
+      </span>
+    </sc-if>
     <button type="button" onClick="{{ onDbClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
     </button>
@@ -4544,7 +4562,7 @@ select option, select optgroup{
     </sc-if>
     <sc-if value="{{ noPlayer }}">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-        <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" style="flex:1;min-width:150px;padding:9px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;outline:none">
+        <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" onKeyDown="{{ onPidKey }}" style="flex:1;min-width:150px;padding:9px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;outline:none">
         <button type="button" onClick="{{ onBind }}" style="padding:9px 20px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13px;font-weight:800;cursor:pointer">綁定</button>
       </div>
       <div style="font-size:11.5px;color:var(--lim-fg);min-height:16px;margin-bottom:8px">{{ playerErr }}</div>
@@ -4605,6 +4623,11 @@ select option, select optgroup{
 </div>
 </sc-if>
 
+<!-- ========== 全站提示 ========== -->
+<sc-if value="{{ toastShow }}">
+<div role="status" style="position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:99;max-width:calc(100vw - 32px);padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;box-shadow:var(--sh-md);animation:fadeIn .2s ease;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ toastText }}</div>
+</sc-if>
+
 <!-- ========== 鍵盤快捷鍵說明（按 ? 開關） ========== -->
 <sc-if value="{{ kbHelpOpen }}">
 <div onClick="{{ onKbHelp }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
@@ -4628,7 +4651,7 @@ select option, select optgroup{
 <div style="position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:91;width:min(640px,calc(100vw - 24px));max-height:78vh;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:22px;background:var(--bg-soft);box-shadow:var(--sh-lg);overflow:hidden;animation:popIn .4s cubic-bezier(.34,1.45,.44,1)">
   <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)">
     <svg viewBox="0 0 20 20" fill="none" style="width:17px;height:17px;color:var(--text-3);flex:none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
-    <input type="text" placeholder="搜尋卡池、歌曲、功能，或輸入指令（例：ep 1500000）" value="{{ cmdq }}" onInput="{{ onCmdInput }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" style="flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:15.5px;padding:4px 2px">
+    <input type="search" enterkeyhint="search" placeholder="搜尋卡池、歌曲、功能，或輸入指令（例：ep 1500000）" value="{{ cmdq }}" onInput="{{ onCmdInput }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" style="flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:15.5px;padding:4px 2px">
     <button type="button" onClick="{{ onCmdClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:16px;cursor:pointer">✕</button>
   </div>
   <div style="padding:7px 18px;border-bottom:1px solid var(--border);background:var(--card-2);font-size:11px;color:var(--text-3)">↑↓ 選擇 · Enter 執行 · Esc 關閉　指令：<b>ep 分數</b>、<b>加成 250</b>、<b>綜合力 280000</b>、<b>火 10</b></div>
@@ -4648,6 +4671,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=74d16dfdff"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=9c870d1300"></script>
 </body>
 </html>
