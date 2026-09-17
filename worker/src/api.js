@@ -29,7 +29,7 @@ import {
   aiUsedTodaySite,
   listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
   addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart } from './db.js';
-import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce } from './review.js';
+import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce, approveOnExists } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
 const MAX_WATCHES = 20;            // 每人上限,免得有人開一百個把掃描迴圈拖垮
@@ -390,10 +390,12 @@ export async function handleApi(req, env, url, user) {
       if (!/^\d{15,20}$/.test(uid)) {
         return out({ error: 'bad_uid', message: '玩家 id 應為 15～20 位數字，可在遊戲內個人檔案查到' }, 400);
       }
-      const lv = Math.floor(Number(v.level));
-      if (!(lv >= 1 && lv <= 999)) {
-        return out({ error: 'bad_level', message: '玩家等級應為 1～999 的整數' }, 400);
+      /* 等級改為選填:核准只看 id 查不查得到帳號,等級只是寫進通知給管理員參考。 */
+      const lvRaw = v.level == null || v.level === '' ? null : Math.floor(Number(v.level));
+      if (lvRaw != null && !(lvRaw >= 1 && lvRaw <= 999)) {
+        return out({ error: 'bad_level', message: '玩家等級應為 1～999 的整數（也可以留空）' }, 400);
       }
+      const lv = lvRaw;
       const note = sanitizeNote(v.note);
 
       /* 驗證通過才扣冷卻與次數 —— 打錯字不該消耗使用者的重試機會。 */
@@ -408,21 +410,31 @@ export async function handleApi(req, env, url, user) {
          可以立刻改。真正花時間的 AI 判斷才丟到背景。外部 API 出問題時回 unknown,
          照樣收下申請 —— 別人的服務壞掉不該變成使用者眼中的失敗。 */
       const pf = await fetchProfile(uid);
+      const check = {
+        exists: pf.exists,
+        reason: pf.reason || '',
+        api_level: pf.rank == null ? null : pf.rank,
+        level_match: (pf.exists === 'yes' && pf.rank != null && lv != null)
+          ? (lv <= pf.rank || Math.abs(lv - pf.rank) <= 5) : null,
+        note_cleaned: note.suspicious,
+      };
 
+      /* 站台規則:id 查得到帳號就當場核准,不必等背景審核。AUTO_APPROVE="0" 才退回舊流程。 */
+      const allowAuto = String(env.AUTO_APPROVE == null ? '1' : env.AUTO_APPROVE) !== '0';
+      if (allowAuto && pf.exists === 'yes') {
+        const fresh = await getUser(env.DB, user.id);
+        if (fresh && await approveOnExists(env, fresh, pf)) {
+          return out({ ok: true, status: 'approved', check });
+        }
+      }
+
+      /* 查不到、或外部 API 暫時無法確認:排背景審核(unknown 會再抓一次),並通知管理員 */
       await createTask(env.DB, user.id, {
         title: '申請自動審核', action: 'review_apply',
         params: { user_id: user.id }, run_at: 0, repeat_s: 0,
       });
 
-      return out({ ok: true, status: 'pending',
-        check: {
-          exists: pf.exists,
-          reason: pf.reason || '',
-          api_level: pf.rank == null ? null : pf.rank,
-          level_match: (pf.exists === 'yes' && pf.rank != null)
-            ? (lv <= pf.rank || Math.abs(lv - pf.rank) <= 5) : null,
-          note_cleaned: note.suspicious,
-        } });
+      return out({ ok: true, status: 'pending', check });
     }
 
     /* 所有權驗證。前面的檢查全都只證明「這個遊戲帳號存在」,而站上的 T100 榜單

@@ -371,7 +371,7 @@ select option, select optgroup{
     </sc-if>
 
     <sc-if value="{{ homeShow.me }}">
-    <div style="order:{{ homeOrd.me }};display:grid;grid-template-columns:{{ twoCol }};gap:14px">
+    <div style="order:{{ homeOrd.me }};display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
       <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
           <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
@@ -424,6 +424,55 @@ select option, select optgroup{
         </sc-if>
       </div>
 
+      <!-- 右半：遊戲通知 ＋ 當前主要卡池 -->
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">遊戲通知</span></div>
+            <button type="button" onClick="{{ onGo }}" data-p="news" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">看全部</button>
+          </div>
+          <sc-if value="{{ homeNewsLoad }}"><div style="font-size:12px;color:var(--text-3);padding:6px 0">載入公告…</div></sc-if>
+          <sc-if value="{{ homeNewsErr }}"><div style="font-size:12px;color:var(--text-3);padding:6px 0">公告暫時載不到，稍後會自動重試。</div></sc-if>
+          <sc-if value="{{ homeNewsEmpty }}"><div style="font-size:12px;color:var(--text-3);padding:6px 0">目前沒有進行中的公告。</div></sc-if>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ homeNews }}" as="r" hint-placeholder-count="6">
+              <a href="{{ r.url }}" target="_blank" rel="noopener" title="{{ r.title }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);text-decoration:none;min-width:0">
+                <span style="flex:none;min-width:40px;text-align:center;padding:2px 8px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10px;font-weight:800">{{ r.tag }}</span>
+                <span style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
+                <span style="flex:none;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.date }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">當前主要卡池</span></div>
+            <button type="button" onClick="{{ onGo }}" data-p="gacha" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">卡池列表</button>
+          </div>
+          <sc-if value="{{ homeGachaEmpty }}"><div style="font-size:12px;color:var(--text-3);padding:6px 0">目前沒有進行中的限定卡池。</div></sc-if>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ homeGacha }}" as="g" hint-placeholder-count="2">
+              <div style="display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1px solid var(--border);border-radius:15px;background:var(--card-2);min-width:0">
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+                    <span style="font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span>
+                    <sc-if value="{{ g.main }}"><span style="font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--cta);color:#fff">{{ g.main }}</span></sc-if>
+                  </div>
+                  <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-top:6px;line-height:1.4">{{ g.n }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px"><sc-for list="{{ g.chSd }}" as="c" hint-placeholder-count="3"><img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:28px;height:28px;object-fit:contain;display:block;border-radius:50%;background:color-mix(in oklab,{{ c.color }} 22%,transparent)"></sc-for></div>
+                  <div style="font-size:11px;color:var(--text-3);margin-top:5px;font-family:'M PLUS Rounded 1c'">{{ g.range }}<sc-if value="{{ g.note }}"> · {{ g.note }}</sc-if></div>
+                </div>
+                <div style="flex:none;text-align:right;font-family:'M PLUS Rounded 1c';font-size:12.5px;font-weight:800;color:{{ g.leftFg }};white-space:nowrap">{{ g.left }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ homeShow.studio }}">
+    <div style="order:{{ homeOrd.studio }}">
       <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">當期跑榜 · 最佳化活動P</span></div>
@@ -1627,8 +1676,8 @@ select option, select optgroup{
             <div style="font-size:11.5px;color:var(--text-3)">{{ acEmail }}</div></div>
         </div>
         <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#ffb86b 14%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.75;margin-bottom:12px">
-          你的帳號正在等待管理員核准。核准之前可以先登入，但還不能建立偵測訂閱。<br>
-          填好下面三項送出，系統會自動初審並通知管理員，通常比純人工快很多。
+          填入你的玩家 id 送出，查到遊戲帳號就會立刻自動核准，不必等管理員。<br>
+          核准之前可以先登入，但還不能建立偵測訂閱。
         </div>
         <div style="margin-bottom:10px">
           <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">玩家 id</div>
@@ -1636,7 +1685,7 @@ select option, select optgroup{
           <div style="font-size:11px;color:var(--text-3);margin-top:4px;line-height:1.7">遊戲左上角頭像 → 個人檔案可以看到。</div>
         </div>
         <div style="margin-bottom:10px">
-          <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">玩家等級</div>
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">玩家等級（選填）</div>
           <input type="number" value="{{ applyLv }}" onInput="{{ onField }}" data-k="applyLv" data-num="1" placeholder="例如 180" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit">
         </div>
         <div style="margin-bottom:10px">
@@ -1659,10 +1708,10 @@ select option, select optgroup{
 
         <sc-if value="{{ acVerifyShow }}">
           <div style="margin-top:11px;padding:12px 15px;border-radius:13px;background:color-mix(in oklab,var(--accent) 9%,transparent);border:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">證明這個帳號是你的（選填，但會大幅加快審核）</div>
+            <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">證明這個帳號是你的（選填）</div>
             <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;margin-bottom:8px">
-              填寫 id 只能證明那個帳號存在 —— 站上的排行榜就公開列著別人的 id，任何人都抄得到。<br>
-              要證明它是你的，只要把驗證碼貼進遊戲內的自我介紹，我們讀得到就算數。
+              核准只看帳號存不存在；若之後有人聲稱同一個 id 是他的，已完成驗證的一方會被視為擁有者。<br>
+              只要把驗證碼貼進遊戲內的自我介紹，我們讀得到就算數。
             </div>
             <sc-if value="{{ acVerified }}">
               <div style="font-size:12px;font-weight:800;color:var(--accent-deep)">已完成驗證，這個遊戲帳號已確認屬於你。</div>
@@ -4671,6 +4720,6 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=9c870d1300"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.js?v=94a02e137f"></script>
 </body>
 </html>
