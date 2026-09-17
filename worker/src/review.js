@@ -1,6 +1,10 @@
 /* 申請自動審核。
  *
- * 這個模組的核心主張:**「能不能核准」由程式碼決定,AI 只負責讀那句自由文字。**
+ * 2026-09-17 站主決定:**填的遊戲 id 查得到帳號,就直接核准。** 不再要求所有權驗證、
+ * 等級比對或 AI 判定 —— 那些檢查全部保留,但只當成「寫給管理員看的訊號」,
+ * 不再擋人。自動核准的帳號 reviewed_by 是 system:auto,後台仍看得到、隨時能撤。
+ *
+ * 這個模組原本的核心主張仍然成立:**「能不能核准」由程式碼決定,AI 只負責讀那句自由文字。**
  *
  * 原因是申請者填的東西全部不可信,而且不只有他自己打的那句話 —— 遊戲內的暱稱、
  * 自我介紹、隊伍名稱同樣是他能自由編輯的字串,只要送進 prompt 就是一條注入通道。
@@ -300,6 +304,41 @@ async function notifyAdmins(env, rec) {
   return n;
 }
 
+/* ---------- 送出當下直接核准 ---------- */
+
+/* /api/apply 在收到申請的同一個請求裡呼叫:外部 API 已經回報「帳號存在」,
+   就當場核准,使用者不用等 cron。回 false 代表狀態已經不是 pending(例如剛被拒絕),
+   呼叫端就照舊排背景審核。AI 判定在這條路不跑 —— 它不再影響結果,而且每個申請者
+   都會觸發一次,省下來是純賺。 */
+export async function approveOnExists(env, u, pf) {
+  const rec = {
+    user_id: u.id,
+    uid: u.apply_uid || '',
+    claimed_level: u.apply_level == null ? null : +u.apply_level,
+    owned: !!(u.game_uid && u.apply_uid && u.game_uid === u.apply_uid),
+    at: now(),
+    exists: 'yes', exists_reason: '',
+    api_rank: pf.rank == null ? null : pf.rank,
+    power: pf.power == null ? null : pf.power,
+  };
+  const cmpOk = rec.claimed_level != null && rec.api_rank != null;
+  rec.level_ok = cmpOk ? (rec.claimed_level <= rec.api_rank || Math.abs(rec.claimed_level - rec.api_rank) <= 5) : null;
+  rec.level_match = cmpOk ? (Math.abs(rec.claimed_level - rec.api_rank) <= 5) : null;
+  rec.level_gap = cmpOk ? (rec.api_rank - rec.claimed_level) : null;
+  rec.dup = rec.uid ? await uidClaimedBy(env.DB, rec.uid, u.id) : [];
+  const note = sanitizeNote(u.apply_note || '');
+  rec.note_len = note.text.length;
+  rec.note_suspicious = (+u.apply_note_dropped || 0) > 0;
+  rec.note_dropped = +u.apply_note_dropped || 0;
+  rec.note_text = note.text;
+  rec.verdict = 'auto_approved';
+  rec.note_auto = '遊戲 id 查得到帳號，送出當下直接核准（站台規則：有帳號即通過）。';
+  if (!(await autoApprove(env.DB, u.id))) return false;
+  await saveReview(env.DB, u.id, JSON.stringify(rec));
+  await notifyAdmins(env, rec);
+  return true;
+}
+
 /* ---------- 主流程 ---------- */
 
 /* 由 cron 執行(index.js 的 runDueTasks)。不放在使用者的請求裡,因為:
@@ -394,17 +433,18 @@ export async function runApplyReview(env, userId) {
   /* 自動核准的門檻是「等級對得起來」(level_match === true),不是「沒有矛盾」——
      比不出來或差太多都退回人工。這比原本的 level_ok !== false 嚴格:
      那個條件在「API 查不到等級」時是 null,會一路通過,等於沒比對過也算通過。 */
-  const hardOk = rec.exists === 'yes' && rec.owned && !provenDup
-    && rec.level_match === true && !rec.note_suspicious;
+  /* 站台規則(2026-09-17):帳號存在就核准。所有權、等級、重複、AI 標記都只是
+     通知裡的訊號,不擋人 —— 這些欄位照算、照寫,讓管理員事後有東西看。
+     「已證明所有權的重複」仍然擋:那代表這個 id 真的屬於另一個人。 */
+  rec.signals = { owned: rec.owned, provenDup, level_match: rec.level_match, note_suspicious: rec.note_suspicious, aiClean, ai_error: rec.ai_error || '' };
+  const hardOk = rec.exists === 'yes' && !provenDup;
 
   if (rec.exists === 'unknown') rec.verdict = 'unknown';
   else if (!hardOk) rec.verdict = rec.exists === 'no' ? 'hard_fail' : 'needs_review';
-  else if (!aiClean || rec.ai_error) rec.verdict = 'needs_review';
   else rec.verdict = 'auto_approved';
 
-  /* 自動核准預設關閉。開啟之後也只有「通過所有權驗證」的申請有機會走到這裡 ——
-     沒有那道驗證,前面的檢查全部可以靠抄一個公開 uid 通過。 */
-  const allowAuto = String(env.AUTO_APPROVE || '') === '1';
+  /* 自動核准預設開啟;要關掉請把 AUTO_APPROVE 設成 "0"。 */
+  const allowAuto = String(env.AUTO_APPROVE == null ? '1' : env.AUTO_APPROVE) !== '0';
   if (rec.verdict === 'auto_approved') {
     if (!allowAuto) {
       rec.verdict = 'needs_review';

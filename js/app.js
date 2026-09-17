@@ -81,7 +81,7 @@ class Component extends DCLogic {
     ['其他', 'ot', '其他']
   ];
   PAGES = {
-    home:     ['首頁', '當期活動、我的進度與近期卡池'],
+    home:     ['首頁', '當期活動、遊戲通知、主要卡池與我的進度'],
     calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
     gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
     songs:    ['歌曲清單', '台服全曲＋日服未實裝曲（Sekai-World 主資料庫），BPM／歌長來自社長 bot'],
@@ -271,6 +271,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/17', t: '首頁右半改放遊戲通知與當前主要卡池；帳號申請自動核准', s: '首頁「我的排名」右側預設改為遊戲內公告（最新幾則，點了直達官方公告頁）與目前進行中的主要卡池（本期活動池優先，顯示角色、期間與剩餘天數）；跑榜最佳化小窗改為獨立區塊，可在「自訂首頁」調順序或隱藏。帳號申請改為自動核准：填入玩家 id、查到帳號就立刻通過，不必等管理員；等級改為選填。' },
     { d: '2026/09/17', t: '既有功能 20 項有感優化', s: '① 分頁標題跟著頁面走；② 頁首「複製連結」（含篩選）；③ ⌘K 先列最近前往；④ Player ID 按 Enter 就綁定；⑤ 搜尋框 ✕ 清除；⑥ 圖鑑有篩選時可一鍵清除；⑦ 圖鑑詳情 ←→ 切上下一筆；⑧ 活動最後一天首頁倒數變色；⑨ 卡池列表顯示倒數／進行中；⑩ 歌曲搜尋不再卡頓；⑪ 圖鑑載入失敗 2 秒後自動重試；⑫ 數字欄位等寬不抖動；⑬ 側欄目前頁自動捲入視野；⑭ 歌曲詳情一鍵去算活動 P；⑮ 圖鑑捲到底自動載入更多；⑯ 視窗開著時鎖住背景捲動；⑰ 提示訊息全站可見（原本只在播放器裡）；⑱ 手機搜尋鍵盤顯示「搜尋」；⑲ 桌機進圖鑑自動聚焦搜尋；⑳ 圖鑑詳情可直接分享連結。' },
     { d: '2026/09/17', t: '首頁：新功能通知膠囊、自訂首頁面板、功能引導', s: '首頁最上方多了一顆通知膠囊，有新功能更新時會顯示最新一則標題與未讀數，點進去看更新紀錄、按 ✕ 就標為已讀。右上角新增「自訂首頁」面板，三個分頁：版面（區塊順序與顯示，原本要進帳號頁才有）、資訊顯示（「我的排名」八格數字每一格都能關，「快速前往」可從全站 40 多個功能自選要放哪些）、資料設定（綁定／解除 Player ID、音源版本、主題與配色、AI 雙路、匯出／匯入備份、清除本機資料）。第一次進站會跳四步的功能引導（搜尋、側欄分組、綁定 ID、自訂首頁），可勾「不再於此瀏覽器顯示」，之後也能從自訂面板再打開。' },
     { d: '2026/09/16', t: '既有頁面體檢：返回鍵可用、連結可分享、視窗一律 Esc 關、清單圖片延遲載入', s: '把 27 個既有分頁用無頭瀏覽器走過一遍（沒有 JS 錯誤、手機沒有橫向溢出），修了三件事：① 換頁現在會進瀏覽器歷史，返回鍵回上一頁而不是離開網站；② 分頁、子分頁與篩選寫進網址（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），連結可以分享、重新整理不掉狀態、返回時篩選與搜尋字串都還在；③ 歌曲、卡池、編組、排名詳情視窗也能按 Esc 關閉。另外卡池、收集室、收集率的清單圖片改延遲載入，榜線資料庫與卡面下載的角色籤列在手機上改成橫向滑動。' },
@@ -625,6 +626,8 @@ class Component extends DCLogic {
     // go() 會在換頁時清掉圖鑑類的搜尋，所以網址帶來的值要排在 go() 之後套
     // 這個執行環境的 setState 是同步的：先 setState({page}) 再 go()，go() 就看不出「換了頁」（最近前往、聚焦搜尋都靠它）
     if (sp && this.PAGES[sp]) { this.go(sp, { silent: true }); delete up.page; if (Object.keys(up).length) this.setState(up); }
+    // 首頁右半的遊戲通知要公告資料；延後一點抓，先讓活動與排名先畫出來
+    if (this.state.page === 'home') setTimeout(() => { if (this.state.page === 'home') this.loadNews(); }, 1200);
     // 返回鍵：照網址把分頁與篩選還原，不再另推一筆歷史
     this._pop = () => { const u = this._readUrl(); const pg = u.page || 'home'; delete u.page; this.go(pg, { silent: true }); if (Object.keys(u).length) this.setState(u); };
     window.addEventListener('popstate', this._pop);
@@ -9922,7 +9925,7 @@ class Component extends DCLogic {
   }
 
   /* ---------- 自訂版面 ---------- */
-  HOME_BLOCKS = [['hero', '進行中的活動'], ['me', '我的排名與跑榜小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
+  HOME_BLOCKS = [['hero', '進行中的活動'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
   layoutOf(scope) { const L = (this.state.layout || {})[scope] || {}; return { order: Array.isArray(L.order) ? L.order : [], hidden: Array.isArray(L.hidden) ? L.hidden : [] }; }
   /* 依使用者設定重排：沒排到的照原本順序接在後面（新功能上線時才不會消失）。 */
   layoutApply(ids, scope) {
@@ -12134,7 +12137,7 @@ class Component extends DCLogic {
     if (p === 'comics') this.loadComics();
     if (p === 'ost') this.loadOst();
     if (p === 'lives') this.loadLives();
-    if (p === 'news') this.loadNews();
+    if (p === 'news' || p === 'home') this.loadNews();
     if (this.DB_PAGES.includes(p) && p !== this.state.page) this.setState({ dbq: '', dbN: 48, dbPick: null });
     if (p === 'guesswho' || p === 'stickers') this.loadCards();
     if (p === 'guessjacket') this.loadSongs();
@@ -12656,6 +12659,22 @@ class Component extends DCLogic {
           when: started ? '進行中 · 至 ' + this.md(b) : this.md(a) + ' 開始（' + Math.max(1, Math.ceil((a.getTime() - now) / 86400000)) + ' 天後）'
         };
       });
+
+    /* 首頁右半：當前主要卡池（進行中、非有償／常駐；本期活動池優先，再依開始日新到舊）與遊戲通知 */
+    const evId = String(ev.id || ev.event_id || '');
+    const homeGacha = (s.gachas || []).map(g => ({ g, a: this.pd(g.s), b: this.pd(g.e) }))
+      .filter(x => x.a && x.b && x.a.getTime() <= now && x.b.getTime() + 86399000 >= now && x.g.t !== '有償池' && x.g.t !== '常駐池')
+      .sort((x, y) => ((evId && String(y.g.eid) === evId ? 1 : 0) - (evId && String(x.g.eid) === evId ? 1 : 0)) || (y.a - x.a))
+      .slice(0, 3)
+      .map(({ g, a, b }) => {
+        const tn = this.tone(g.t), left = Math.max(1, Math.ceil((b.getTime() + 86399000 - now) / 86400000));
+        return { id: g.id, n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—', chSd: this.chSdList(g.ch),
+          range: this.md(a) + ' – ' + this.md(b), left: left <= 1 ? '最後一天' : '剩 ' + left + ' 天', leftFg: left <= 1 ? '#e0576a' : 'var(--accent-deep)',
+          note: g.note || '', main: (evId && String(g.eid) === evId) ? '本期活動池' : '' };
+      });
+    const NTAG = { information: ['公告', '#7fb4f7'], event: ['活動', '#ff9db4'], gacha: ['招募', '#c39df2'], music: ['樂曲', '#5ec9f2'], campaign: ['企劃', '#ffb86b'], update: ['更新', '#3ee0a8'], bug: ['問題', '#e0576a'] };
+    const homeNews = (s.news || []).filter(x => x.s <= now && !(x.e && x.e < now)).slice(0, 6)
+      .map(x => ({ id: x.id, title: x.title, tag: (NTAG[x.tag] || [x.tag])[0], tagBg: (NTAG[x.tag] || ['', '#888'])[1], date: this.dbDate(x.s), url: x.url || '#' }));
 
     /* 計算結果 */
     const epR = this.epResult(), pl = this.plan(), goal = +s.goal || 0, cur = +s.cur || 0;
@@ -14194,9 +14213,8 @@ class Component extends DCLogic {
               if (ck.exists === 'yes') {
                 t = '已找到這個遊戲帳號';
                 if (ck.api_level != null) t += '（遊戲內等級 ' + ck.api_level + '）';
-                t += ck.level_match === false
-                  ? '，但和你填的等級對不上，管理員會人工確認。'
-                  : '，等級也對得上。';
+                t += '，已自動核准。';
+                if (ck.level_match === false) t += '（你填的等級和遊戲內對不上，不影響核准，但會一併記給管理員。）';
               } else if (ck.exists === 'no') {
                 t = '查無此遊戲帳號（' + (ck.reason || '') + '）。申請還是收下了，但需要管理員人工確認 —— 如果是打錯了，改好再送一次會快很多。';
               } else {
@@ -14745,6 +14763,8 @@ class Component extends DCLogic {
       ],
       epPerPlay: this.n(epR.ep), modeLabel: modeLabels[s.mode], boost: s.energy,
       upcoming,
+      homeGacha, homeGachaEmpty: !homeGacha.length,
+      homeNews, homeNewsEmpty: !homeNews.length && !!s.news, homeNewsLoad: !s.news && !s.dbErr, homeNewsErr: !s.news && !!s.dbErr,
       unitTiles: [
         ['vs', 'VIRTUAL SINGER', 'バーチャル・シンガー'],
         ['ln', 'Leo/need', 'レオニード'],
@@ -15486,18 +15506,20 @@ class Component extends DCLogic {
            而那是他上次填錯的那組 id 的結果。 */
         this.setState({ acCheck: null });
         const uid = String(this.state.applyUid || '').replace(/\D/g, '');
-        const lv = +this.state.applyLv || 0;
+        const lv = String(this.state.applyLv || '').trim() === '' ? null : +this.state.applyLv;
         /* 前端先擋一次,純粹是為了不浪費使用者的冷卻額度 ——
            真正的驗證在後端,這裡擋不住的東西那邊照樣會擋。 */
         if (!/^\d{15,20}$/.test(uid)) { this.setState({ wBusy: '玩家 id 應為 15～20 位數字。' }); return; }
-        if (!(lv >= 1 && lv <= 999)) { this.setState({ wBusy: '玩家等級應為 1～999 的整數。' }); return; }
+        if (lv != null && !(lv >= 1 && lv <= 999)) { this.setState({ wBusy: '玩家等級應為 1～999 的整數（也可以留空）。' }); return; }
         this.setState({ acApplyBusy: true, wBusy: '送出中…' });
         try {
           const r = await this.api('/api/apply', { method: 'POST',
             body: { uid, level: lv, note: this.state.applyNote || '' } });
+          const passed = !!(r && r.status === 'approved');
           this.setState({ acCheck: (r && r.check) || null,
-            wBusy: '已送出。系統正在初審，結果會一併通知管理員。' });
+            wBusy: passed ? '查到帳號，已自動核准，歡迎使用！' : '已送出。目前查不到這個帳號，系統會再確認一次並通知管理員。' });
           await this.loadMe();
+          if (passed) this._toast('帳號已核准');
         } catch (e) { this.setState({ wBusy: '送出失敗：' + (e.message || '') }); }
         this.setState({ acApplyBusy: false });
       },
