@@ -8,6 +8,7 @@ virtualLives.json 2.7 MB、mysekaiFixtures.json 1 MB（外加 tags 170 KB、藍�
     data/lives-index.js      虛擬 Live：類型、名稱、期間、場次、歌單、出演角色       （約 60 KB）
     data/fixtures-index.js   MySekai 家具：分類、標籤、尺寸、顏色、製作素材            （約 120 KB）
     data/stories-index.js    劇情目錄：活動／主線／卡片／區域對話／個人／特別 的章節與 scenarioId（約 250 KB）
+    data/mysekai-talks-index.js  MySekai 角色對話：每則對話的角色與解鎖條件（家具／劇情／現象／來訪次數）（約 130 KB）
 
 角色／素材／一格漫畫／原聲帶／公告那幾頁的來源檔都很小（< 300 KB），
 前端直接抓 master 就好，不經過這裡。
@@ -27,6 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT_LIVES = ROOT / 'data' / 'lives-index.js'
 OUT_FIX = ROOT / 'data' / 'fixtures-index.js'
 OUT_ST = ROOT / 'data' / 'stories-index.js'
+OUT_MST = ROOT / 'data' / 'mysekai-talks-index.js'
 
 
 def get(url):
@@ -203,7 +205,65 @@ def build_stories():
     return write_if_changed(OUT_ST, header, body)
 
 
+
+# ---------------------------------------------------------------- MySekai 角色對話
+def build_mysekai_talks():
+    """豆森對話清單：mysekaiCharacterTalks 2.3 MB，前端只需要「哪幾個角色、要什麼條件」。
+    以遊戲內對話一覽的分組（characterArchiveMysekaiCharacterTalkGroupId）為一則，
+    同一則的多筆變體（不同天氣、單人／多人）合併：角色取聯集、條件取聯集。"""
+    talks = get(f'{TC}/mysekaiCharacterTalks.json')
+    conds = get(f'{TC}/mysekaiCharacterTalkConditions.json')
+    cgroups = get(f'{TC}/mysekaiCharacterTalkConditionGroups.json')
+    ugroups = get(f'{TC}/mysekaiGameCharacterUnitGroups.json')
+    gcus = get(f'{TC}/gameCharacterUnits.json')
+    phen = get(f'{TC}/mysekaiPhenomenas.json')
+    ev_st = get(f'{TC}/eventStories.json')
+    events = {e['id']: e for e in get(f'{TC}/events.json')}
+
+    # 遊戲角色單位 id → 角色 id（VS 在各團的分身要折回本體）
+    base_of = {g['id']: g['gameCharacterId'] for g in gcus}
+    chars_of = {}
+    for u in ugroups:
+        ids = [u.get(f'gameCharacterUnitId{i}') for i in range(1, 6)]
+        chars_of[u['id']] = sorted({base_of.get(i, i) for i in ids if i})
+    cond_by_id = {c['id']: c for c in conds}
+    KIND = {'mysekai_fixture_id': 'f', 'read_event_story_episode_id': 's', 'mysekai_phenomena_id': 'p', 'mysekai_character_visit_count': 'v'}
+    conds_of = {}
+    for row in cgroups:
+        c = cond_by_id.get(row['mysekaiCharacterTalkConditionId'])
+        if c:
+            conds_of.setdefault(row['groupId'], []).append((KIND.get(c['mysekaiCharacterTalkConditionType'], c['mysekaiCharacterTalkConditionType']), c['mysekaiCharacterTalkConditionTypeValue']))
+
+    groups = {}
+    for t in sorted(talks, key=lambda x: x['id']):
+        gid = t.get('characterArchiveMysekaiCharacterTalkGroupId') or t['id']
+        g = groups.setdefault(gid, {'chars': set(), 'conds': set()})
+        g['chars'].update(chars_of.get(t.get('mysekaiGameCharacterUnitGroupId'), []))
+        g['conds'].update(conds_of.get(t.get('mysekaiCharacterTalkConditionGroupId'), []))
+    rows = [[gid, sorted(g['chars']), sorted(g['conds'])] for gid, g in sorted(groups.items()) if g['chars']]
+
+    # 條件的顯示名稱：劇情話數與天氣現象（家具名稱由 fixtures-index 提供）
+    ep_name = {}
+    for st in ev_st:
+        ev = events.get(st['eventId'], {}).get('name', '')
+        for e in st.get('eventStoryEpisodes') or []:
+            ep_name[e['id']] = f"{ev} 第 {e.get('episodeNo') or 0} 話"
+    used_s = {v for r in rows for k, v in r[2] if k == 's'}
+    used_p = {v for r in rows for k, v in r[2] if k == 'p'}
+    names = {'s': {i: ep_name.get(i, f'活動劇情 #{i}') for i in sorted(used_s)},
+             'p': {p['id']: p.get('name') or '' for p in phen if p['id'] in used_p}}
+    body = ('export const MST_TALKS=' + dump(rows) + ';\n'
+            'export const MST_NAMES=' + dump(names) + ';\n')
+    header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
+              ' MST_TALKS=[[對話組id,[角色id],[[條件種類,值]]]] 種類:f=家具id s=活動劇情話id p=天氣現象id v=來訪次數；'
+              ' MST_NAMES={s:{話id:名稱},p:{現象id:名稱}} */\n')
+    n_fix = sum(1 for r in rows if any(k == 'f' for k, _ in r[2]))
+    print(f'MySekai 對話:{len(rows)} 則（需家具 {n_fix}、原始 {len(talks)} 筆）')
+    return write_if_changed(OUT_MST, header, body)
+
+
 if __name__ == '__main__':
     build_lives()
     build_fixtures()
     build_stories()
+    build_mysekai_talks()

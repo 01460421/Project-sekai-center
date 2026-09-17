@@ -8,7 +8,7 @@ class Component extends DCLogic {
      所以在這裡備份就涵蓋全站。只收使用者資料,不收可重建的快取。 */
   BK_KEYS = [
     ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-app-cur', '活動P 目前'],
-    ['sekai-cards-own', '收集率:持有卡片'],
+    ['sekai-cards-own', '收集率:持有卡片'], ['sekai-mst-done', '豆森對話:已看過'], ['sekai-mst-own', '豆森對話:已擁有的家具'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
     ['sekai-b30-zh', 'B30:曲名語言'], ['sekai-b30-fmt', 'B30:定數格式'],
     ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
@@ -114,6 +114,7 @@ class Component extends DCLogic {
     cards:    ['卡片圖鑑', '台服全部卡片：依團體、角色、屬性、稀有度、來源篩選，看滿等數值、技能與釋出日'],
     chars:    ['角色圖鑑', '26 位角色的檔案：聲優、生日、身高、學校、喜好與相關卡片'],
     fixtures: ['家具圖鑑', 'MySekai 家具：分類、標籤、尺寸、顏色與製作素材'],
+    mstalk:   ['豆森對話', 'MySekai 角色對話清單：勾選看過的對話，一眼看出還缺哪些家具'],
     materials:['素材圖鑑', '養成素材與 MySekai 素材一覽'],
     comics:   ['一格漫畫', '遊戲內小提示的一格漫畫（台服翻譯版）'],
     ost:      ['原聲帶', '遊戲內 BGM：區域、劇情、Live 與卡池音樂，站內直接播放'],
@@ -158,6 +159,7 @@ class Component extends DCLogic {
     ['卡片圖鑑', '', 'cards', '卡片圖鑑|卡片一覽|所有卡片|卡片列表|找卡|卡片數值|滿等數值|綜合力多少|卡片技能|卡片釋出日|哪張卡|什麼時候出的卡|招募台詞'],
     ['角色圖鑑', '', 'chars', '角色|角色檔案|角色資料|角色介紹|生日|身高|聲優|CV|學校|年級|興趣|特技|喜歡的食物|討厭的食物|誰的生日|角色圖鑑'],
     ['家具圖鑑', '', 'fixtures', '家具|MySekai 家具|烤森家具|豆森家具|家具圖鑑|藍圖|製作素材|家具尺寸|壁紙|地板|家具怎麼做|家具材料|家具分類'],
+    ['豆森對話', '', 'mstalk', '豆森對話|烤森對話|MySekai 對話|角色對話|對話清單|對話列表|角色 EXP|角色經驗|會話|家具對話|缺的家具|未完成家具'],
     ['素材圖鑑', '', 'materials', '素材|素材圖鑑|碎片|寶石|課程|MySekai 素材|木材|礦石|素材說明|素材用途'],
     ['一格漫畫', '', 'comics', '一格漫畫|漫畫|小提示漫畫|comic|提示漫畫'],
     ['原聲帶', '', 'ost', '原聲帶|BGM|背景音樂|區域音樂|劇情音樂|OST|soundtrack|音樂播放|遊戲音樂'],
@@ -260,6 +262,7 @@ class Component extends DCLogic {
     { date: '圖鑑', title: '卡片圖鑑', desc: '台服全部卡片依團體、角色、屬性、稀有度、來源篩選；詳情有滿等數值、技能與釋出日。', to: 'cards', cta: '前往卡片圖鑑' },
     { date: '圖鑑', title: '角色圖鑑', desc: '26 位角色的聲優、生日、學校、喜好與介紹，並列出相關卡片。', to: 'chars', cta: '前往角色圖鑑' },
     { date: '圖鑑', title: '家具圖鑑', desc: 'MySekai 家具依分類、角色篩選，看尺寸、顏色與製作素材。', to: 'fixtures', cta: '前往家具圖鑑' },
+    { date: '圖鑑', title: '豆森對話', desc: 'MySekai 角色對話清單：勾選看過的，切到家具檢視就知道還缺哪些家具、要什麼素材。', to: 'mstalk', cta: '前往豆森對話' },
     { date: '圖鑑', title: '素材圖鑑', desc: '養成素材與 MySekai 素材一覽，含用途說明。', to: 'materials', cta: '前往素材圖鑑' },
     { date: '圖鑑', title: '一格漫畫', desc: '遊戲內小提示漫畫（台服翻譯版），可放大與開啟原圖。', to: 'comics', cta: '前往一格漫畫' },
     { date: '圖鑑', title: '原聲帶', desc: '遊戲內 BGM 依分類瀏覽，站內直接播放。', to: 'ost', cta: '前往原聲帶' },
@@ -271,6 +274,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/17', t: '新增「豆森對話」：MySekai 角色對話清單', s: '圖鑑群組新增豆森對話：列出全部 MySekai 角色對話（首次看完會給角色 EXP）與解鎖條件，可依團體、角色、條件種類篩選並勾選已看過；切到「家具檢視」會依家具彙整還沒看完的對話，標記已擁有的家具、顯示製作素材，一鍵勾完整件家具的對話。紀錄存在本機，可備份。' },
     { d: '2026/09/17', t: '修正：劇情閱讀器載不到劇本、角色圖鑑詳情圖片蓋到文字', s: '劇本改抓素材站的 .asset 檔（原本的 .json 路徑全部 404）；圖鑑詳情視窗的圖片改絕對定位，立繪再高也不會撐出外框蓋到下面的資料。' },
     { d: '2026/09/17', t: '首頁右半改放遊戲通知與當前主要卡池；帳號申請自動核准', s: '首頁「我的排名」右側預設改為遊戲內公告（最新幾則，點了直達官方公告頁）與目前進行中的主要卡池（本期活動池優先，顯示角色、期間與剩餘天數）；跑榜最佳化小窗改為獨立區塊，可在「自訂首頁」調順序或隱藏。帳號申請改為自動核准：填入玩家 id、查到帳號就立刻通過，不必等管理員；等級改為選填。' },
     { d: '2026/09/17', t: '既有功能 20 項有感優化', s: '① 分頁標題跟著頁面走；② 頁首「複製連結」（含篩選）；③ ⌘K 先列最近前往；④ Player ID 按 Enter 就綁定；⑤ 搜尋框 ✕ 清除；⑥ 圖鑑有篩選時可一鍵清除；⑦ 圖鑑詳情 ←→ 切上下一筆；⑧ 活動最後一天首頁倒數變色；⑨ 卡池列表顯示倒數／進行中；⑩ 歌曲搜尋不再卡頓；⑪ 圖鑑載入失敗 2 秒後自動重試；⑫ 數字欄位等寬不抖動；⑬ 側欄目前頁自動捲入視野；⑭ 歌曲詳情一鍵去算活動 P；⑮ 圖鑑捲到底自動載入更多；⑯ 視窗開著時鎖住背景捲動；⑰ 提示訊息全站可見（原本只在播放器裡）；⑱ 手機搜尋鍵盤顯示「搜尋」；⑲ 桌機進圖鑑自動聚焦搜尋；⑳ 圖鑑詳情可直接分享連結。' },
@@ -488,7 +492,10 @@ class Component extends DCLogic {
        共用一組搜尋字串 dbq、顯示數 dbN 與詳情 dbPick；換頁時在 go() 清掉，各頁資料各自快取在自己的 key。 */
     dbq: '', dbN: 48, dbPick: null, dbLoad: '', dbErr: '',
     chars: null, fixtures: null, mats: null, comics: null, ost: null, lives: null, news: null,
-    fixGenre: 0, fixSub: 0, fixChar: 0, matType: '', ostCat: 0, ostPlay: 0, liveType: '', liveStat: '', newsTag: '', newsStat: '',
+    fixGenre: 0, fixSub: 0, fixChar: 0, mstView: 'talk', mstUnit: '', mstChar: 0, mstStat: '', mstKind: '', mstOwnF: '',
+    mstDone: (() => { try { return JSON.parse(localStorage.getItem('sekai-mst-done') || '{}') || {}; } catch (e) { return {}; } })(),
+    mstOwn: (() => { try { return JSON.parse(localStorage.getItem('sekai-mst-own') || '{}') || {}; } catch (e) { return {}; } })(),
+    matType: '', ostCat: 0, ostPlay: 0, liveType: '', liveStat: '', newsTag: '', newsStat: '',
     /* 小遊戲（猜角色／猜封面）與貼圖製作器 */
     qz: null, qzDiff: 'normal', qzUnits: [], qzRar: [3, 4], qzOpts: 6, qzTime: 60,
     qzBest: (() => { const o = {}; ['who', 'jacket'].forEach(k => { try { o[k] = +localStorage.getItem('sekai-quiz-best-' + k) || 0; } catch (e) {} }); return o; })(),
@@ -4292,6 +4299,7 @@ class Component extends DCLogic {
           ['cards', '圖鑑', '', [], [], '卡片圖鑑:台服全部卡片依團體／角色／屬性／稀有度／來源篩選與排序,詳情有滿等數值、特訓加成、技能敘述(Lv1／Lv4)、釋出日、招募台詞。'],
           ['chars', '圖鑑', '', [], [], '26 位角色的檔案(聲優、生日、身高、學校、喜好、介紹)與相關卡片。'],
           ['fixtures', '圖鑑', '', [], [], 'MySekai 家具圖鑑:主／子分類與角色標籤篩選,尺寸、顏色與製作素材。'],
+          ['mstalk', '圖鑑', '', [], [], 'MySekai 角色對話清單:每則對話的角色與解鎖條件(家具／劇情／天氣／來訪次數),可勾選已看過,家具檢視列出還缺的家具與製作素材。'],
           ['materials', '圖鑑', '', [], [], '養成素材與 MySekai 素材一覽,含說明。'],
           ['comics', '圖鑑', '', [], [], '遊戲內小提示的一格漫畫(台服翻譯版),可放大與開啟原圖。'],
           ['ost', '圖鑑', '', [], [], '遊戲內 BGM(區域、劇情、Live、卡池…)站內直接播放。'],
@@ -11272,8 +11280,8 @@ class Component extends DCLogic {
      角色／素材／一格漫畫／原聲帶／公告的來源檔都很小（< 300 KB），直接抓台服 master；
      虛擬 Live 與家具原檔各 1～3 MB，由 tools/build-db-index.py 壓成索引檔再載。
      每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
-  DB_PAGES = ['cards', 'chars', 'fixtures', 'materials', 'comics', 'ost', 'lives', 'news', 'story'];
-  DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news', story: 'stories' };
+  DB_PAGES = ['cards', 'chars', 'fixtures', 'mstalk', 'materials', 'comics', 'ost', 'lives', 'news', 'story'];
+  DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', mstalk: 'mst', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news', story: 'stories' };
   dbGet(name) {
     return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
@@ -11422,6 +11430,11 @@ class Component extends DCLogic {
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
+  loadMst() {
+    return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=e2aa0e8a26'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
+  }
+  /* 勾選／擁有紀錄只存這台裝置（可用備份匯出）。 */
+  mstSave(key, ls, obj) { this.setState({ [key]: obj }); try { localStorage.setItem(ls, JSON.stringify(obj)); } catch (e) {} }
   loadMats() {
     return this.dbRun('mats', async () => {
       const [a, b] = await Promise.all([this.dbGet('materials'), this.dbGet('mysekaiMaterials')]);
@@ -11494,6 +11507,24 @@ class Component extends DCLogic {
   }
   /* 圖鑑類分頁的畫面資料：只算目前這一頁的，其他頁回空物件，renderVals 不會因為多七頁而變慢。
      每頁的流程都一樣：拿快取 → 套篩選 → 套搜尋 → 只切前 dbN 筆 → 詳情視窗（dbPick）從同一份資料組出來。 */
+  /* 家具縮圖：牆壁／地板是貼圖而不是模型，縮圖放在 surface_appearance 底下 */
+  fixImg(r) {
+    return r[2] === 7 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_wall_appearance_1.png'
+      : r[2] === 8 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_floor_appearance_1.png'
+      : this.ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.png';
+  }
+  /* 家具詳情視窗的資料：家具圖鑑與豆森對話共用 */
+  fixDetail(d, r) {
+    const tagName = id => (d.tags[id] ? d.tags[id][0] : '');
+    const genreOf = id => (d.genres.find(g => g[0] === id) || [])[1] || '';
+    const subOf = id => (d.subs.find(g => g[0] === id) || [])[1] || '';
+    const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
+    return { title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: this.fixImg(r), imgRatio: '1/1', wide: false,
+      chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]),
+      rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
+      list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '', hasImg: !!m[1] }; }),
+      listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
+  }
   dbVals(s) {
     const p = s.page;
     if (!this.DB_PAGES.includes(p)) return {};
@@ -11501,7 +11532,7 @@ class Component extends DCLogic {
     const hit = (...f) => !q || this.normSong(f.join(' ')).includes(q);
     const chip = (on, c) => ({ bg: on ? (c || 'var(--cta)') : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? (c || 'var(--cta)') : 'var(--border)' });
     const busy = s.dbLoad === this.DB_KEY[p];
-    const PH = { cards: '搜尋卡名、角色、技能名…', story: '搜尋劇情標題、活動、角色…', chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
+    const PH = { cards: '搜尋卡名、角色、技能名…', story: '搜尋劇情標題、活動、角色…', chars: '搜尋角色名、假名、英文…', fixtures: '搜尋家具名、標籤、說明…', mstalk: '搜尋角色、家具名、條件…', materials: '搜尋素材名、說明…', comics: '搜尋漫畫標題…', ost: '搜尋曲名…', lives: '搜尋 Live 名稱、歌單曲名…', news: '搜尋公告標題…' };
     const out = { dbShowSearch: true, dbq: s.dbq, dbPlaceholder: PH[p] || '搜尋…', dbBusy: busy, dbHasErr: !!s.dbErr, dbErrMsg: s.dbErr, dbMore: false, dbMoreLabel: '', dbEmpty: false, dbCount: busy ? '載入中…' : '' };
     let view = null;
     const page = (all, per) => {
@@ -11645,10 +11676,7 @@ class Component extends DCLogic {
       if (s.fixSub) all = all.filter(r => r[3] === s.fixSub);
       if (s.fixChar) all = all.filter(r => r[4].includes(s.fixChar));
       if (q) all = all.filter(r => hit(r[1], r[8], r[4].map(tagName).join(' ')));
-      // 牆壁／地板是貼圖而不是模型，縮圖放在 surface_appearance 底下
-      const img = r => r[2] === 7 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_wall_appearance_1.png'
-        : r[2] === 8 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_floor_appearance_1.png'
-        : this.ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.png';
+      const img = r => this.fixImg(r);
       const usedG = new Set((d ? d.rows : []).map(r => r[2]));
       out.fixGenreChips = [{ v: 0, n: '全部' }].concat(d ? d.genres.filter(g => g[0] !== 1 && usedG.has(g[0])).map(g => ({ v: g[0], n: g[1] })) : []).map(g => Object.assign(g, chip(s.fixGenre === g.v)));
       const usedS = new Set((d ? d.rows : []).filter(r => !s.fixGenre || r[2] === s.fixGenre).map(r => r[3]));
@@ -11659,14 +11687,80 @@ class Component extends DCLogic {
       // 牆壁／地板這類貼圖沒有格數，尺寸全 0 就不顯示
       out.fixRows = page(all, 48).map(r => ({ id: r[0], name: r[1], img: img(r), sub: (subOf(r[3]) || genreOf(r[2]) || '') + (r[5].some(v => v > 0) ? ' · ' + r[5][0] + '×' + r[5][1] + '×' + r[5][2] : '') }));
       const r = d && pick('fix') != null ? d.rows.find(x => x[0] === pick('fix')) : null;
-      if (r) {
-        const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
-        view = { title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: img(r), imgRatio: '1/1', wide: false,
-          chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]),
-          rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
-          list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '', hasImg: !!m[1] }; }),
-          listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
+      if (r) view = this.fixDetail(d, r);
+    }
+
+    if (p === 'mstalk') {
+      const d = s.mst, F = s.fixtures, done = s.mstDone || {}, own = s.mstOwn || {};
+      const fixMap = {}; if (F) F.rows.forEach(r => { fixMap[r[0]] = r; });
+      const fixName = id => (fixMap[id] || [])[1] || ('家具 #' + id);
+      const N = d ? d.names : {};
+      const condText = c => c[0] === 'f' ? fixName(c[1]) : c[0] === 's' ? '看過劇情：' + ((N.s || {})[c[1]] || '#' + c[1]) : c[0] === 'p' ? '天氣：' + ((N.p || {})[c[1]] || '#' + c[1]) : c[0] === 'v' ? '來訪 ' + c[1] + ' 次' : (c[0] + ' ' + c[1]);
+      const UNIT_CHARS = { ln: [1, 2, 3, 4], mmj: [5, 6, 7, 8], vbs: [9, 10, 11, 12], wxs: [13, 14, 15, 16], n25: [17, 18, 19, 20], vs: [21, 22, 23, 24, 25, 26] };
+      const unitOfChar = cid => Object.keys(UNIT_CHARS).find(u => UNIT_CHARS[u].includes(cid)) || '';
+      const KINDS = [['', '全部條件'], ['f', '需要家具'], ['s', '需要劇情'], ['p', '天氣現象'], ['v', '來訪次數']];
+      const rows0 = d ? d.rows : [];
+      let all = rows0;
+      if (s.mstUnit) all = all.filter(r => r[1].some(c => unitOfChar(c) === s.mstUnit));
+      if (s.mstChar) all = all.filter(r => r[1].includes(s.mstChar));
+      if (s.mstKind) all = all.filter(r => r[2].some(c => c[0] === s.mstKind));
+      if (s.mstStat === 'todo') all = all.filter(r => !done[r[0]]); else if (s.mstStat === 'done') all = all.filter(r => !!done[r[0]]);
+      if (q) all = all.filter(r => hit(r[1].map(c => this.charShort(c)).join(' '), r[2].map(condText).join(' ')));
+      this._mstFiltered = all;   // 「全部勾完」只勾目前篩選範圍內的
+      // 篩選籤
+      out.mstViewChips = [{ v: 'talk', n: '對話清單' }, { v: 'fix', n: '家具檢視' }].map(c => Object.assign(c, chip((s.mstView || 'talk') === c.v)));
+      out.mstUnitChips = [{ v: '', n: '全部團體' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n }))).map(c => Object.assign(c, chip(s.mstUnit === c.v, c.v ? this.UNITS[c.v].c : '')));
+      const charIds = s.mstUnit ? UNIT_CHARS[s.mstUnit] : [].concat.apply([], this.UNIT_OF.map(u => UNIT_CHARS[u]));
+      out.mstCharChips = [{ v: 0, n: '全部角色' }].concat(charIds.map(c => ({ v: c, n: this.charShort(c) || ('#' + c) }))).map(c => Object.assign(c, chip(s.mstChar === c.v, c.v ? this.CHARA_COLOR[c.v] : '')));
+      out.mstStatChips = [{ v: '', n: '全部' }, { v: 'todo', n: '還沒看' }, { v: 'done', n: '已看過' }].map(c => Object.assign(c, chip(s.mstStat === c.v, 'var(--accent-deep)')));
+      out.mstKindChips = KINDS.map(([v, n]) => Object.assign({ v, n }, chip(s.mstKind === v, 'var(--accent-deep)')));
+      out.mstIsTalk = (s.mstView || 'talk') !== 'fix'; out.mstIsFix = !out.mstIsTalk;
+      // 進度
+      const doneN = rows0.filter(r => done[r[0]]).length, fDone = all.filter(r => done[r[0]]).length;
+      out.mstTotal = this.n(rows0.length); out.mstDoneN = this.n(doneN);
+      out.mstPct = rows0.length ? Math.round(doneN * 100 / rows0.length) + '%' : '0%';
+      out.mstFiltered = all.length !== rows0.length ? '（篩選中：' + this.n(fDone) + ' / ' + this.n(all.length) + '）' : '';
+      const charChip = c => ({ id: c, n: this.charShort(c) || ('#' + c), c: this.CHARA_COLOR[c] || '#888', img: this.ASSET + '/character/character_sd_l/chr_sp_' + c + '.webp' });
+      if (out.mstIsTalk) {
+        out.mstRows = page(all, 60).map(r => {
+          const dn = !!done[r[0]];
+          return { id: r[0], done: dn, mark: dn ? '✓' : '', chars: r[1].map(charChip), names: r[1].map(c => this.charShort(c) || ('#' + c)).join('・'),
+            conds: r[2].map(c => ({ t: condText(c), isFix: c[0] === 'f', notFix: c[0] !== 'f', fid: c[0] === 'f' ? c[1] : 0, own: c[0] === 'f' && !!own[c[1]], ownTag: c[0] === 'f' ? (own[c[1]] ? '已擁有' : '未擁有') : '', ownFg: own[c[1]] ? 'var(--accent-deep)' : 'var(--lim-fg)', img: c[0] === 'f' && fixMap[c[1]] ? this.fixImg(fixMap[c[1]]) : '' })),
+            bg: dn ? 'color-mix(in oklab,var(--accent) 9%,var(--card))' : 'var(--card)', op: dn ? '.66' : '1',
+            boxBg: dn ? 'var(--cta)' : 'var(--card-2)', boxFg: dn ? '#fff' : 'transparent', boxBd: dn ? 'var(--cta)' : 'var(--border-2)' };
+        });
+        out.mstFixRows = [];
+      } else {
+        // 家具檢視：依「解鎖條件」彙整還沒看完的對話；家具以外的條件各自成一列
+        const g = {};
+        all.forEach(r => r[2].forEach(c => {
+          const key = c[0] + ':' + c[1]; const e = g[key] || (g[key] = { key, kind: c[0], fid: c[0] === 'f' ? c[1] : 0, total: 0, todo: 0, chars: {} });
+          e.total++; if (!done[r[0]]) { e.todo++; r[1].forEach(cid => { e.chars[cid] = 1; }); }
+        }));
+        let list = Object.values(g);
+        if (s.mstOwnF === 'no') list = list.filter(e => e.kind !== 'f' || !own[e.fid]); else if (s.mstOwnF === 'yes') list = list.filter(e => e.kind === 'f' && own[e.fid]);
+        // 還沒看完的在前；家具在前（非家具的條件沒辦法靠製作完成）；未擁有在前；缺越多越前
+        list.sort((a, b) => ((b.todo > 0) - (a.todo > 0)) || ((a.kind === 'f' ? 0 : 1) - (b.kind === 'f' ? 0 : 1)) || ((a.kind === 'f' && own[a.fid] ? 1 : 0) - (b.kind === 'f' && own[b.fid] ? 1 : 0)) || (b.todo - a.todo) || (a.fid - b.fid));
+        out.mstOwnChips = [{ v: '', n: '全部家具' }, { v: 'no', n: '未擁有' }, { v: 'yes', n: '已擁有' }].map(c => Object.assign(c, chip(s.mstOwnF === c.v, 'var(--accent-deep)')));
+        const lack = list.filter(e => e.kind === 'f' && e.todo > 0 && !own[e.fid]);
+        out.mstFixSummary = d ? ('還缺 ' + this.n(lack.length) + ' 件家具（可解鎖 ' + this.n(lack.reduce((a, e) => a + e.todo, 0)) + ' 則對話）') : '';
+        this._dbNav = { kind: 'fix', ids: list.filter(e => e.kind === 'f').map(e => e.fid) };
+        out.mstFixRows = page(list, 40).map(e => {
+          const r = e.kind === 'f' ? fixMap[e.fid] : null, isOwn = e.kind === 'f' && !!own[e.fid], clear = e.todo === 0;
+          const cost = r ? r[10].map(x => { const m = (F && F.mats[x[0]]) || ['素材 #' + x[0], '', '']; return { id: x[0], n: m[0], q: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '' }; }) : [];
+          return { key: e.key, fid: e.fid, isFix: e.kind === 'f', name: e.kind === 'f' ? fixName(e.fid) : condText([e.kind, e.fid === 0 ? e.key.split(':')[1] : e.fid]).replace(/^(看過劇情|天氣)：/, '$1 · '),
+            img: r ? this.fixImg(r) : '', hasImg: !!r,
+            todo: e.todo, total: e.total, count: clear ? '全部看完（' + e.total + ' 則）' : '還有 ' + e.todo + ' / ' + e.total + ' 則',
+            countFg: clear ? 'var(--accent-deep)' : 'var(--ink)',
+            chars: Object.keys(e.chars).map(Number).sort((a, b) => a - b).slice(0, 10).map(charChip), more: Object.keys(e.chars).length > 10 ? '＋' + (Object.keys(e.chars).length - 10) : '',
+            isOwn, ownBtn: isOwn ? '已擁有 ✓' : '標記已擁有', ownBg: isOwn ? 'var(--cta)' : 'var(--card-2)', ownFg: isOwn ? '#fff' : 'var(--text-2)', ownBd: isOwn ? 'var(--cta)' : 'var(--border)',
+            allBtn: clear ? '取消全部勾選' : '全部勾完', cost, hasCost: cost.length > 0, noCraft: !!r && !r[10].length && !r[12] ? '無法自行製作（活動、任務或商店取得）' : '',
+            op: clear ? '.6' : '1' };
+        });
+        out.mstRows = [];
       }
+      const r = F && pick('fix') != null ? fixMap[pick('fix')] : null;
+      if (r) view = this.fixDetail(F, r);
     }
 
     if (p === 'materials') {
@@ -12136,6 +12230,7 @@ class Component extends DCLogic {
     if (p === 'story') { this.loadStories(); this.loadCards(); }
     if (p !== 'story' && this.state.rd) { this.stStopVoice(); this.setState({ rd: null }); }
     if (p === 'fixtures') this.loadFixtures();
+    if (p === 'mstalk') { this.loadMst(); this.loadFixtures(); }
     if (p === 'materials') this.loadMats();
     if (p === 'comics') this.loadComics();
     if (p === 'ost') this.loadOst();
@@ -12178,7 +12273,7 @@ class Component extends DCLogic {
      分頁、子分頁與篩選寫進網址：連結可以分享（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），
      重新整理不會掉狀態，返回鍵能回上一頁。只寫「不是預設值」的鍵，網址才不會一長串。 */
   URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
-    cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], materials: ['dbq', 'matType'], comics: ['dbq'],
+    cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
     guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'] };
   _urlOf(s) {
@@ -12601,7 +12696,7 @@ class Component extends DCLogic {
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
       ['資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['news', '遊戲公告', '#ffb86b'], ['story', '劇情閱讀器', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0']]],
-      ['圖鑑', [['cards', '卡片圖鑑', '#7fb4f7'], ['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
+      ['圖鑑', [['cards', '卡片圖鑑', '#7fb4f7'], ['chars', '角色圖鑑', '#ff9db4'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0'], ['fixtures', '家具圖鑑', '#b8e561'], ['mstalk', '豆森對話', '#8be0d0'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2']]],
       ['追蹤', [['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0']]],
       ['工具', [['calc', '計算中心', '#7fb4f7'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
       ['遊戲', [['guesswho', '猜角色', '#ff9db4'], ['guessjacket', '猜封面', '#5ec9f2']]],
@@ -13483,7 +13578,7 @@ class Component extends DCLogic {
       isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
-      isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
+      isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
       kbHelpOpen: !!s.kbHelp,
       toastShow: !!s.toast, toastText: s.toast || '',
@@ -15830,9 +15925,24 @@ class Component extends DCLogic {
       onColClose: () => this.setState({ colPick: null }),
       /* 圖鑑類分頁共用：搜尋、篩選籤、顯示更多、詳情 */
       onDbField: e => this.setState({ dbq: e.target.value, dbN: 48 }),
-      onDbChip: e => { const d = e.currentTarget.dataset; const patch = { [d.k]: d.num ? +d.v : d.v, dbN: 48 }; if (d.k === 'fixGenre') patch.fixSub = 0; if (d.k === 'cdUnit') patch.cdChar = 0; this.setState(patch); },
+      onDbChip: e => { const d = e.currentTarget.dataset; const patch = { [d.k]: d.num ? +d.v : d.v, dbN: 48 }; if (d.k === 'fixGenre') patch.fixSub = 0; if (d.k === 'cdUnit') patch.cdChar = 0; if (d.k === 'mstUnit') patch.mstChar = 0; this.setState(patch); },
       onDbMore: () => this.setState(st => ({ dbN: (st.dbN || 48) + 48 })),
       onDbPick: e => { const d = e.currentTarget.dataset; this.setState({ dbPick: { kind: d.kind, id: d.num ? +d.id : d.id } }); },
+      /* 豆森對話：勾選／家具擁有紀錄 */
+      onMstToggle: e => { const id = +e.currentTarget.dataset.id, d = Object.assign({}, this.state.mstDone || {}); if (d[id]) delete d[id]; else d[id] = 1; this.mstSave('mstDone', 'sekai-mst-done', d); },
+      onMstOwn: e => { e.stopPropagation(); const id = +e.currentTarget.dataset.id, o = Object.assign({}, this.state.mstOwn || {}); if (o[id]) delete o[id]; else o[id] = 1; this.mstSave('mstOwn', 'sekai-mst-own', o); },
+      onMstFix: e => { e.stopPropagation(); this.setState({ dbPick: { kind: 'fix', id: +e.currentTarget.dataset.id } }); },
+      onMstDoneAll: e => {
+        e.stopPropagation();
+        const key = e.currentTarget.dataset.key, d = this.state.mst; if (!d || !key) return;
+        const [k, v] = key.split(':'), done = Object.assign({}, this.state.mstDone || {});
+        const ids = (this._mstFiltered || d.rows).filter(r => r[2].some(c => c[0] === k && String(c[1]) === v)).map(r => r[0]);
+        const allDone = ids.every(i => done[i]);
+        ids.forEach(i => { if (allDone) delete done[i]; else done[i] = 1; });
+        this.mstSave('mstDone', 'sekai-mst-done', done);
+        this._toast(allDone ? '已取消 ' + ids.length + ' 則的勾選' : '已勾選 ' + ids.length + ' 則對話');
+      },
+      onMstClear: () => { if (!confirm('清除這台裝置上「豆森對話」的全部勾選與家具擁有紀錄？')) return; this.mstSave('mstDone', 'sekai-mst-done', {}); this.mstSave('mstOwn', 'sekai-mst-own', {}); this._toast('已清除'); },
       onDbClose: () => this.setState({ dbPick: null }),
       onDbPrev: () => this.dbPickStep(-1),
       onDbNext: () => this.dbPickStep(1),
