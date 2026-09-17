@@ -1,6 +1,8 @@
 name: probe-assets (temporary)
 on:
-  workflow_dispatch:
+  push:
+    branches: [claude/b30-moyu-table-page-dn9zkp]
+    paths: ['tools/probe-assets.sh', '.github/workflows/probe-assets.yml']
 jobs:
   probe:
     runs-on: ubuntu-latest
