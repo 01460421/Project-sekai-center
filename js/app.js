@@ -271,6 +271,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/17', t: '修正：劇情閱讀器載不到劇本、角色圖鑑詳情圖片蓋到文字', s: '劇本改抓素材站的 .asset 檔（原本的 .json 路徑全部 404）；圖鑑詳情視窗的圖片改絕對定位，立繪再高也不會撐出外框蓋到下面的資料。' },
     { d: '2026/09/17', t: '首頁右半改放遊戲通知與當前主要卡池；帳號申請自動核准', s: '首頁「我的排名」右側預設改為遊戲內公告（最新幾則，點了直達官方公告頁）與目前進行中的主要卡池（本期活動池優先，顯示角色、期間與剩餘天數）；跑榜最佳化小窗改為獨立區塊，可在「自訂首頁」調順序或隱藏。帳號申請改為自動核准：填入玩家 id、查到帳號就立刻通過，不必等管理員；等級改為選填。' },
     { d: '2026/09/17', t: '既有功能 20 項有感優化', s: '① 分頁標題跟著頁面走；② 頁首「複製連結」（含篩選）；③ ⌘K 先列最近前往；④ Player ID 按 Enter 就綁定；⑤ 搜尋框 ✕ 清除；⑥ 圖鑑有篩選時可一鍵清除；⑦ 圖鑑詳情 ←→ 切上下一筆；⑧ 活動最後一天首頁倒數變色；⑨ 卡池列表顯示倒數／進行中；⑩ 歌曲搜尋不再卡頓；⑪ 圖鑑載入失敗 2 秒後自動重試；⑫ 數字欄位等寬不抖動；⑬ 側欄目前頁自動捲入視野；⑭ 歌曲詳情一鍵去算活動 P；⑮ 圖鑑捲到底自動載入更多；⑯ 視窗開著時鎖住背景捲動；⑰ 提示訊息全站可見（原本只在播放器裡）；⑱ 手機搜尋鍵盤顯示「搜尋」；⑲ 桌機進圖鑑自動聚焦搜尋；⑳ 圖鑑詳情可直接分享連結。' },
     { d: '2026/09/17', t: '首頁：新功能通知膠囊、自訂首頁面板、功能引導', s: '首頁最上方多了一顆通知膠囊，有新功能更新時會顯示最新一則標題與未讀數，點進去看更新紀錄、按 ✕ 就標為已讀。右上角新增「自訂首頁」面板，三個分頁：版面（區塊順序與顯示，原本要進帳號頁才有）、資訊顯示（「我的排名」八格數字每一格都能關，「快速前往」可從全站 40 多個功能自選要放哪些）、資料設定（綁定／解除 Player ID、音源版本、主題與配色、AI 雙路、匯出／匯入備份、清除本機資料）。第一次進站會跳四步的功能引導（搜尋、側欄分組、綁定 ID、自訂首頁），可勾「不再於此瀏覽器顯示」，之後也能從自訂面板再打開。' },
@@ -1776,7 +1777,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=d0fd80731e';
+      s.src = 'data/billing.js?v=efe06f914a';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -4809,7 +4810,7 @@ class Component extends DCLogic {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=d0fd80731e';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=efe06f914a';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -11334,6 +11335,7 @@ class Component extends DCLogic {
   /* ---------- 劇情閱讀器 ----------
      目錄從 data/stories-index.js 來（每日排程壓好），劇本本文從素材 CDN 抓：
      台服桶（sekai-tc-assets）有翻譯過的文字，抓不到再退回日服桶；背景圖與語音固定走日服桶。
+     劇本檔是 .asset（JSON 內容，實測 .json 全 404），路徑不加 _rip。
      劇本 JSON 的 Snippets 依序指到 TalkData（對話）／SpecialEffectData（換背景、字幕）；
      角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
   loadStories() {
@@ -11355,7 +11357,8 @@ class Component extends DCLogic {
     const tryFetch = async urls => {
       let last = '';
       for (const u of urls) {
-        try { const r = await fetch(u); if (r.ok) return await r.json(); last = 'HTTP ' + r.status; } catch (e) { last = (e && e.message) || '抓取失敗'; }
+        // .asset 的 content-type 是 octet-stream，自己 parse，不靠 r.json()
+        try { const r = await fetch(u); if (r.ok) { const t = await r.text(); try { return JSON.parse(t); } catch (e) { last = '劇本格式非預期'; continue; } } last = 'HTTP ' + r.status; } catch (e) { last = (e && e.message) || '抓取失敗'; }
       }
       throw new Error(last || '找不到劇本');
     };
@@ -15841,12 +15844,15 @@ class Component extends DCLogic {
       onStBack: () => this.setState({ stEvent: 0 }),
       onStOpen: e => {
         const d = e.currentTarget.dataset, k = d.kind;
-        const paths = k === 'event' ? ['event_story/' + d.abn + '/scenario/' + d.sid + '.json']
-          : k === 'unit' ? ['scenario/unitstory/' + d.abn + '/' + d.sid + '.json']
-          : k === 'card' ? ['character/member/' + d.abn + '/' + d.sid + '.json']
-          : k === 'talk' ? ['scenario/actionset/group' + d.abn + '/' + d.sid + '.json'].concat(d.sid2 && d.sid2 !== d.sid ? ['scenario/actionset/group' + d.abn + '/' + d.sid2 + '.json'] : [])
-          : k === 'self' ? ['scenario/profile/' + d.sid + '.json']
-          : ['scenario/special/' + d.abn + '/' + d.sid + '.json'];
+        /* 劇本在 storage.sekai.best 是 .asset（內容是 JSON），不是 .json —— 2026-09-17 用 GitHub Runner 實測：
+           event_story/{abn}/scenario/{sid}.asset、character/member/{abn}/{sid}.asset、scenario/profile/{sid}.asset 都是 200，
+           同路徑換 .json 一律 404。目錄不加 _rip。 */
+        const paths = k === 'event' ? ['event_story/' + d.abn + '/scenario/' + d.sid + '.asset']
+          : k === 'unit' ? ['scenario/unitstory/' + d.abn + '/' + d.sid + '.asset']
+          : k === 'card' ? ['character/member/' + d.abn + '/' + d.sid + '.asset']
+          : k === 'talk' ? ['scenario/actionset/group' + d.abn + '/' + d.sid + '.asset'].concat(d.sid2 && d.sid2 !== d.sid ? ['scenario/actionset/group' + d.abn + '/' + d.sid2 + '.asset'] : [])
+          : k === 'self' ? ['scenario/profile/' + d.sid + '.asset']
+          : ['scenario/special/' + d.abn + '/' + d.sid + '.asset'];
         const voiceDir = k === 'card' ? 'sound/card_scenario/voice' : k === 'talk' ? 'sound/actionset/voice' : 'sound/scenario/voice';
         this.stOpen(k, d.title || d.sid, d.sub || '', paths, voiceDir);
       },
