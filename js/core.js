@@ -176,6 +176,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             const url = API + path;
             const attempts = [
                 url,
+                'https://games.project-sekai-center.com/proxy/hisekai' + path,   // 自家 Worker 代理，先於公共代理
                 'https://corsproxy.io/?url=' + encodeURIComponent(url),
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
             ];

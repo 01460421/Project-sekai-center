@@ -17,6 +17,14 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SEKAI 資源中心 — App</title>
+<meta name="description" content="Project SEKAI 台服資源中心：活動日曆、卡池、歌曲、活動 P 計算、B30、排名追蹤與各種圖鑑。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SEKAI 資源中心">
+<meta property="og:description" content="Project SEKAI 台服資源中心：活動日曆、卡池、歌曲、活動 P 計算、B30、排名追蹤與各種圖鑑。">
+<meta property="og:url" content="https://project-sekai-center.com/">
+<meta property="og:image" content="https://project-sekai-center.com/icons/icon-512.png">
+<meta name="twitter:card" content="summary">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1428" media="(prefers-color-scheme: dark)">
@@ -265,6 +273,8 @@ select option, select optgroup{
   .song-row>span:nth-child(2),.song-row>span:nth-child(3),.song-row>span:nth-child(4){grid-column:2}
   /* 螢幕鍵盤打開時把底部 Dock 收起來，免得蓋住正在填的欄位 */
   body.kb-open .dock{display:none!important}
+  /* 圖鑑頁的搜尋列黏在表頭下面，捲到深處也能直接改關鍵字 */
+  .db-search{position:sticky;top:var(--head-h,58px);z-index:30;background:var(--bg);padding:6px 0 4px;margin-bottom:6px!important}
 }
 @keyframes sheetUp{from{transform:translateY(48px);opacity:.5}to{transform:translateY(0);opacity:1}}
 @media (max-width:480px){.page-sub{display:none}}
@@ -305,7 +315,7 @@ select option, select optgroup{
 </sc-if>
 
 <main style="flex:1;min-width:0;display:flex;flex-direction:column">
-  <div style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:11px clamp(14px,3vw,32px);border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--bg) 78%,transparent);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 -3px 0 -0.5px transparent">
+  <div class="app-head" style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:11px clamp(14px,3vw,32px);border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--bg) 78%,transparent);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 -3px 0 -0.5px transparent">
     <span style="position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--rainbow);background-size:300% 100%;opacity:.75;animation:rainbowPan 14s linear infinite"></span>
     <sc-if value="{{ isMobile }}">
       <img src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;flex:none;object-fit:contain;display:block">
@@ -354,7 +364,7 @@ select option, select optgroup{
           <span style="flex:none;padding:2px 8px;border-radius:999px;background:var(--cta);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.5px">新功能 {{ noticeCount }}</span>
           <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ noticeTitle }}</span>
           <span style="flex:none;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ noticeDate }}{{ noticeMore }}</span>
-          <span onClick="{{ onNoticeDismiss }}" role="button" aria-label="標為已讀" title="標為已讀" style="flex:none;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--text-3);font-size:11px">✕</span>
+          <span role="button" tabindex="0" onClick="{{ onNoticeDismiss }}" role="button" aria-label="標為已讀" title="標為已讀" style="flex:none;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--text-3);font-size:11px">✕</span>
         </button>
       </sc-if>
       <div style="flex:1"></div>
@@ -469,7 +479,7 @@ select option, select optgroup{
           <div style="display:flex;flex-direction:column">
             <sc-for list="{{ homeNews }}" as="r" hint-placeholder-count="6">
               <a href="{{ r.url }}" target="_blank" rel="noopener" title="{{ r.title }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);text-decoration:none;min-width:0">
-                <span style="flex:none;min-width:40px;text-align:center;padding:2px 8px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10px;font-weight:800">{{ r.tag }}</span>
+                <span style="flex:none;min-width:40px;text-align:center;padding:2px 8px;border-radius:999px;background:{{ r.tagBg }};color:{{ r.tagFg }};font-size:10px;font-weight:800">{{ r.tag }}</span>
                 <span style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
                 <span style="flex:none;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.date }}</span>
               </a>
@@ -614,6 +624,20 @@ select option, select optgroup{
       </div>
     </div>
 
+    <sc-if value="{{ hasAgenda }}">
+      <div style="margin-top:14px;border:1px solid var(--border);border-radius:20px;padding:14px 16px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:14px;font-weight:800;color:var(--ink)">本月開始的卡池</span></div>
+        <sc-for list="{{ calAgenda }}" as="a" hint-placeholder-count="8">
+          <button type="button" onClick="{{ onDay }}" data-k="{{ a.key }}" style="display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:9px 4px;border:none;border-top:1px solid var(--border);background:transparent;cursor:pointer">
+            <span style="flex:none;width:52px;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink);font-size:13px;line-height:1.3">{{ a.day }}<br><span style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ a.w }}</span></span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <sc-for list="{{ a.items }}" as="g" hint-placeholder-count="2"><span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="flex:none;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span><span style="font-size:12.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.n }}</span></span></sc-for>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
     <sc-if value="{{ hasDaySel }}">
       <div style="margin-top:14px;border:1px solid var(--border);border-radius:20px;padding:18px;background:var(--card);box-shadow:var(--sh-sm);animation:riseIn .4s cubic-bezier(.32,.72,.24,1)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
@@ -671,7 +695,7 @@ select option, select optgroup{
         </div>
       </sc-if>
       <sc-for list="{{ gachaRows }}" as="g" hint-placeholder-count="8">
-        <div onClick="{{ onGachaClick }}" data-gid="{{ g.gid }}" style="display:grid;grid-template-columns:{{ gachaCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
+        <div role="button" tabindex="0" onClick="{{ onGachaClick }}" data-gid="{{ g.gid }}" style="display:grid;grid-template-columns:{{ gachaCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700">{{ g.range }}<br><span style="font-size:10.5px;color:{{ g.statusFg }};font-weight:{{ g.statusW }}">{{ g.status }}</span></span>
           <span style="font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.45">{{ g.n }}</span>
           <span><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2.5px 10px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span></span>
@@ -695,7 +719,7 @@ select option, select optgroup{
     <!-- 豆森娃月列表：MySekai 月卡玩偶的排程。日服先行、台服約晚 9 個月，
          所以看日服那欄就知道台服接下來會輪到誰。 -->
     <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:16px">
-      <div onClick="{{ onDollFold }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer">
+      <div role="button" tabindex="0" onClick="{{ onDollFold }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer">
         <div>
           <span style="font-size:14px;font-weight:800;color:var(--ink)">豆森娃月列表</span>
           <span style="font-size:11.5px;color:var(--text-3);margin-left:8px">{{ dollSub }}</span>
@@ -762,7 +786,7 @@ select option, select optgroup{
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
         <div class="song-row" style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s" style-hover="background:var(--bg-soft)">
           <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:block"><path d="{{ s.playPath }}"></path></svg></button><button type="button" onClick="{{ onQueueAdd }}" data-id="{{ s.id }}" title="加入播放清單" style="width:24px;height:24px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;padding:0">＋</button><span>#{{ s.id }}</span></span>
-          <span onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情（難度/封面）" style="min-width:0;cursor:pointer"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span><sc-if value="{{ s.meta }}"><span style="display:block;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:1px">{{ s.meta }}</span></sc-if></span>
+          <span role="button" tabindex="0" onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情（難度/封面）" style="min-width:0;cursor:pointer"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span><sc-if value="{{ s.meta }}"><span style="display:block;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:1px">{{ s.meta }}</span></sc-if></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
             <sc-if value="{{ s.jpTag }}"><span title="日服限定，台服尚未實裝" style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#3f8cf3;color:#fff">日服</span></sc-if>
             <sc-for list="{{ s.units }}" as="u" hint-placeholder-count="1">
@@ -771,7 +795,7 @@ select option, select optgroup{
           </span>
           <span style="display:flex;flex-wrap:wrap;gap:3px">
             <sc-for list="{{ s.diffs }}" as="d" hint-placeholder-count="3">
-              <span style="min-width:24px;text-align:center;font-size:10px;font-weight:800;padding:2px 5px;border-radius:6px;color:#fff;font-family:'M PLUS Rounded 1c';background:{{ d.c }}">{{ d.v }}</span>
+              <span style="min-width:24px;text-align:center;font-size:10px;font-weight:800;padding:2px 5px;border-radius:6px;color:{{ d.fg }};font-family:'M PLUS Rounded 1c';background:{{ d.c }}">{{ d.v }}</span>
             </sc-for>
           </span>
         </div>
@@ -791,16 +815,16 @@ select option, select optgroup{
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:13px">
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="10">
         <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
-          <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
+          <div role="button" tabindex="0" onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
             <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="none" style="width:100%;height:100%;object-fit:cover;display:block">
             <sc-if value="{{ s.jpTag }}"><span title="日服限定，台服尚未實裝" style="position:absolute;left:6px;top:6px;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px;background:#3f8cf3;color:#fff">日服</span></sc-if>
             <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" style="display:block"><path d="{{ s.playPath }}"></path></svg></button>
           </div>
-          <div onClick="{{ onSongDetail }}" data-id="{{ s.id }}" style="padding:8px 10px 10px;cursor:pointer">
+          <div role="button" tabindex="0" onClick="{{ onSongDetail }}" data-id="{{ s.id }}" style="padding:8px 10px 10px;cursor:pointer">
             <div style="font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em">{{ s.title }}</div>
             <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">
               <sc-for list="{{ s.diffsMain }}" as="d" hint-placeholder-count="1">
-                <span style="min-width:20px;text-align:center;font-size:9px;font-weight:800;padding:1px 4px;border-radius:5px;color:#fff;font-family:'M PLUS Rounded 1c';background:{{ d.c }}">{{ d.v }}</span>
+                <span style="min-width:20px;text-align:center;font-size:9px;font-weight:800;padding:1px 4px;border-radius:5px;color:{{ d.fg }};font-family:'M PLUS Rounded 1c';background:{{ d.c }}">{{ d.v }}</span>
               </sc-for>
             </div>
           </div>
@@ -851,7 +875,7 @@ select option, select optgroup{
       <div style="font-size:11.5px;color:var(--text-3);margin:3px 0 12px">{{ wlSub }}</div>
 
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
-        <div onClick="{{ onWlRule }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer">
+        <div role="button" tabindex="0" onClick="{{ onWlRule }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer">
           <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">本章配隊規則</div>
           <sc-if value="{{ wlRuleFold }}"><span style="font-size:11px;color:var(--accent-deep);font-weight:700">展開 ▾</span></sc-if>
         </div>
@@ -968,7 +992,7 @@ select option, select optgroup{
         <sc-if value="{{ isDesktop }}"><span style="text-align:right">近1h周回</span><span style="text-align:right">最後更新</span></sc-if>
       </div>
       <sc-for list="{{ boardRows }}" as="r" hint-placeholder-count="10">
-        <div onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:{{ rankGap }};padding:10px {{ rankPad }};border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
+        <div role="button" tabindex="0" onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:{{ rankGap }};padding:10px {{ rankPad }};border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
           <span style="min-width:0;display:flex;align-items:center;gap:9px">
             <span style="position:relative;width:{{ rankAv }};height:{{ rankAv }};flex:none;border-radius:50%;background:{{ r.avatarBg }};display:grid;place-items:center;overflow:hidden">
@@ -1286,7 +1310,7 @@ select option, select optgroup{
                 <span style="min-width:0">
                   <span style="display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
                   <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">
-                    <span style="display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:999px;background:{{ r.diffColor }};color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.5px">{{ r.diff }}</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:999px;background:{{ r.diffColor }};color:{{ r.diffFg }};font-size:9.5px;font-weight:800;letter-spacing:.5px">{{ r.diff }}</span>
                     <span style="padding:1px 7px;border-radius:999px;background:{{ r.tagBg }};color:{{ r.tagFg }};font-size:9.5px;font-weight:800">{{ r.tag }}</span>
                     <span style="font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.meta }}</span>
                   </span>
@@ -2385,10 +2409,10 @@ select option, select optgroup{
         <div style="padding:26px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">還沒有{{ qaKindName }}。</div>
       </sc-if>
       <sc-for list="{{ qaRows }}" as="r" hint-placeholder-count="6">
-        <div onClick="{{ onQaOpen }}" data-id="{{ r.id }}" style="border:1px solid var(--border);border-radius:16px;padding:12px 16px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:8px;cursor:pointer">
+        <div role="button" tabindex="0" onClick="{{ onQaOpen }}" data-id="{{ r.id }}" style="border:1px solid var(--border);border-radius:16px;padding:12px 16px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:8px;cursor:pointer">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ r.title }}</span>
-            <sc-if value="{{ r.hasTag }}"><span style="padding:2px 8px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10px;font-weight:800">{{ r.tag }}</span></sc-if>
+            <sc-if value="{{ r.hasTag }}"><span data-fgfix="1" style="padding:2px 8px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10px;font-weight:800">{{ r.tag }}</span></sc-if>
             <div style="flex:1"></div>
             <span style="font-size:11px;color:var(--text-3)">{{ r.replies }} 則回覆　{{ r.when }}</span>
           </div>
@@ -2483,7 +2507,7 @@ select option, select optgroup{
       </sc-if>
 
       <sc-for list="{{ noticeRows }}" as="e" hint-placeholder-count="5">
-        <div onClick="{{ onNoticeRead }}" data-id="{{ e.id }}" style="border:1px solid var(--border);border-radius:16px;padding:14px 16px;background:{{ e.bg }};box-shadow:var(--sh-xs);margin-bottom:9px;cursor:pointer">
+        <div role="button" tabindex="0" onClick="{{ onNoticeRead }}" data-id="{{ e.id }}" style="border:1px solid var(--border);border-radius:16px;padding:14px 16px;background:{{ e.bg }};box-shadow:var(--sh-xs);margin-bottom:9px;cursor:pointer">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
             <span style="width:7px;height:7px;border-radius:50%;background:{{ e.dot }};flex:none"></span>
             <span style="flex:1;font-size:13px;font-weight:800;color:var(--ink)">{{ e.title }}</span>
@@ -2529,7 +2553,7 @@ select option, select optgroup{
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px">
               <sc-for list="{{ aiModules }}" as="m" hint-placeholder-count="6">
                 <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:{{ m.bg }};transition:background .2s">
-                  <div onClick="{{ onAiMod }}" data-v="{{ m.id }}" style="padding:11px 13px;cursor:pointer">
+                  <div role="button" tabindex="0" onClick="{{ onAiMod }}" data-v="{{ m.id }}" style="padding:11px 13px;cursor:pointer">
                     <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
                       <span style="width:7px;height:7px;border-radius:50%;background:{{ m.c }};flex:none"></span>
                       <span style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ m.n }}</span>
@@ -2537,7 +2561,7 @@ select option, select optgroup{
                     <div style="font-size:11px;color:var(--text-3);line-height:1.6">{{ m.d }}</div>
                   </div>
                   <sc-for list="{{ m.qs }}" as="q" hint-placeholder-count="3">
-                    <div onClick="{{ onAiPick }}" data-q="{{ q.q }}" style="padding:9px 13px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.65;cursor:pointer" style-hover="background:var(--bg-soft)">{{ q.q }}</div>
+                    <div role="button" tabindex="0" onClick="{{ onAiPick }}" data-q="{{ q.q }}" style="padding:9px 13px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.65;cursor:pointer" style-hover="background:var(--bg-soft)">{{ q.q }}</div>
                   </sc-for>
                 </div>
               </sc-for>
@@ -2556,7 +2580,7 @@ select option, select optgroup{
                     <span style="font-size:11.5px;font-weight:800;color:var(--text-2)">{{ g.n }}</span>
                   </div>
                   <sc-for list="{{ g.qs }}" as="t" hint-placeholder-count="3">
-                    <div onClick="{{ onAiPick }}" data-q="{{ t.q }}" style="padding:7px 11px;margin-bottom:4px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);font-size:11.5px;color:var(--text-2);line-height:1.6;cursor:pointer" style-hover="background:var(--bg-soft)">{{ t.q }}</div>
+                    <div role="button" tabindex="0" onClick="{{ onAiPick }}" data-q="{{ t.q }}" style="padding:7px 11px;margin-bottom:4px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);font-size:11.5px;color:var(--text-2);line-height:1.6;cursor:pointer" style-hover="background:var(--bg-soft)">{{ t.q }}</div>
                   </sc-for>
                 </div>
               </sc-for>
@@ -2575,10 +2599,10 @@ select option, select optgroup{
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-top:10px;border-top:1px solid var(--border)">
             <span style="font-size:11px;color:var(--text-3);font-weight:700;align-self:center;margin-right:2px">歷史對話</span>
             <sc-for list="{{ chatRows }}" as="c" hint-placeholder-count="4">
-              <span onClick="{{ onChatOpen }}" data-id="{{ c.id }}" style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:{{ c.bg }};cursor:pointer;max-width:230px">
+              <span role="button" tabindex="0" onClick="{{ onChatOpen }}" data-id="{{ c.id }}" style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:{{ c.bg }};cursor:pointer;max-width:230px">
                 <span style="font-size:11.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</span>
                 <span style="font-size:10px;color:var(--text-3);flex:none">{{ c.when }}</span>
-                <span onClick="{{ onChatDel }}" data-id="{{ c.id }}" style="font-size:11px;color:var(--text-3);flex:none;padding:0 2px">×</span>
+                <span role="button" tabindex="0" onClick="{{ onChatDel }}" data-id="{{ c.id }}" style="font-size:11px;color:var(--text-3);flex:none;padding:0 2px">×</span>
               </span>
             </sc-for>
           </div>
@@ -2961,7 +2985,7 @@ select option, select optgroup{
     <sc-if value="{{ colIsStamp }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:12px">
         <sc-for list="{{ colRows }}" as="c" hint-placeholder-count="12">
-          <div onClick="{{ onColPick }}" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-left:3px solid {{ c.accent }};border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
+          <div role="button" tabindex="0" onClick="{{ onColPick }}" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-left:3px solid {{ c.accent }};border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
             <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:7px">
               <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="" loading="lazy" width="296" height="256" style="width:100%;height:100%;object-fit:contain;display:block">
             </div>
@@ -2974,7 +2998,7 @@ select option, select optgroup{
     <sc-if value="{{ colIsHonor }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:12px">
         <sc-for list="{{ colRows }}" as="c" hint-placeholder-count="8">
-          <div onClick="{{ onColPick }}" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;padding:11px 12px;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
+          <div role="button" tabindex="0" onClick="{{ onColPick }}" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;padding:11px 12px;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
             <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="" loading="lazy" width="380" height="80" style="width:100%;aspect-ratio:380/80;object-fit:contain;display:block;border-radius:6px">
             <div style="font-size:12px;font-weight:800;color:var(--ink);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
             <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.sub }}</div>
@@ -2999,13 +3023,13 @@ select option, select optgroup{
   <sc-if value="{{ isDbPage }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ dbShowSearch }}">
-    <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:10px">
+    <div class="db-search" style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:10px">
       <span style="position:relative;flex:1;min-width:190px;display:flex">
         <input type="search" enterkeyhint="search" placeholder="{{ dbPlaceholder }}" value="{{ dbq }}" onInput="{{ onDbField }}" style="flex:1;min-width:0;padding:11px 40px 11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;outline:none">
         <sc-if value="{{ dbq }}"><button type="button" onClick="{{ onClearField }}" data-k="dbq" aria-label="清除搜尋" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:26px;height:26px;border:none;border-radius:50%;background:var(--card-2);color:var(--text-3);font-size:12px;cursor:pointer">✕</button></sc-if>
       </span>
       <sc-if value="{{ dbFiltered }}"><button type="button" onClick="{{ onDbClearFilters }}" style="padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">清除篩選 ✕</button></sc-if>
-      <span style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ dbCount }}</span>
+      <span style="font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ dbCount }}<sc-if value="{{ dbBuilt }}"><span style="margin-left:8px;color:var(--text-3);font-weight:600">· {{ dbBuilt }}</span></sc-if></span>
     </div>
     </sc-if>
 
@@ -3155,10 +3179,10 @@ select option, select optgroup{
     <sc-if value="{{ isCards }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px">
         <sc-for list="{{ cdRows }}" as="c" hint-placeholder-count="12">
-          <div onClick="{{ onDbPick }}" data-kind="card" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;border-bottom:3px solid {{ c.color }}">
+          <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="card" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;border-bottom:3px solid {{ c.color }}">
             <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
               <img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
-              <span style="position:absolute;left:6px;top:6px;padding:2px 7px;border-radius:999px;background:{{ c.attrBg }};color:#fff;font-size:10px;font-weight:800">{{ c.attr }}</span>
+              <span style="position:absolute;left:6px;top:6px;padding:2px 7px;border-radius:999px;background:{{ c.attrBg }};color:{{ c.attrFg }};font-size:10px;font-weight:800">{{ c.attr }}</span>
               <span style="position:absolute;right:6px;top:6px;padding:2px 7px;border-radius:999px;background:rgba(10,14,28,.6);color:#ffd94d;font-size:10px;font-weight:800">{{ c.rar }}</span>
             </div>
             <div style="padding:7px 9px 8px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.sub }}</div></div>
@@ -3177,7 +3201,7 @@ select option, select optgroup{
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
             <sc-for list="{{ u.chars }}" as="c" hint-placeholder-count="6">
-              <div onClick="{{ onDbPick }}" data-kind="char" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2));transition:transform .18s">
+              <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="char" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2));transition:transform .18s">
                 <div style="position:relative;aspect-ratio:3/4;overflow:hidden"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="position:absolute;left:6px;right:6px;top:6px;bottom:0;width:calc(100% - 12px);height:calc(100% - 6px);object-fit:contain;object-position:center bottom;display:block"></div>
                 <div style="padding:7px 8px 9px;font-size:12px;font-weight:800;color:var(--ink);text-align:center;border-top:2px solid {{ c.color }}">{{ c.name }}</div>
               </div>
@@ -3191,7 +3215,7 @@ select option, select optgroup{
     <sc-if value="{{ isFixtures }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px">
         <sc-for list="{{ fixRows }}" as="c" hint-placeholder-count="12">
-          <div onClick="{{ onDbPick }}" data-kind="fix" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
+          <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="fix" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
             <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:8px"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
             <div style="padding:7px 9px 9px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.sub }}</div></div>
           </div>
@@ -3203,7 +3227,7 @@ select option, select optgroup{
     <sc-if value="{{ isMaterials }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:11px">
         <sc-for list="{{ matRows }}" as="c" hint-placeholder-count="12">
-          <div onClick="{{ onDbPick }}" data-kind="mat" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
+          <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="mat" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
             <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:12px"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
             <div style="padding:7px 9px 9px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.sub }}</div></div>
           </div>
@@ -3215,7 +3239,7 @@ select option, select optgroup{
     <sc-if value="{{ isComics }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">
         <sc-for list="{{ comicRows }}" as="c" hint-placeholder-count="8">
-          <div onClick="{{ onDbPick }}" data-kind="comic" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;cursor:zoom-in">
+          <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="comic" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;cursor:zoom-in">
             <div style="aspect-ratio:4/3;background:var(--card-2)"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
             <div style="padding:9px 11px 11px"><div style="font-size:12.5px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</div><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ c.sub }}</div></div>
           </div>
@@ -3246,11 +3270,11 @@ select option, select optgroup{
     <sc-if value="{{ isLives }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
         <sc-for list="{{ liveRows }}" as="c" hint-placeholder-count="8">
-          <div onClick="{{ onDbPick }}" data-kind="live" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
+          <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="live" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
             <div style="position:relative;aspect-ratio:16/7;background:var(--card-2)">
               <img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block">
-              <span style="position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:999px;background:{{ c.typeBg }};color:#fff;font-size:10.5px;font-weight:800">{{ c.type }}</span>
-              <span style="position:absolute;right:8px;top:8px;padding:3px 9px;border-radius:999px;background:{{ c.statBg }};color:#fff;font-size:10.5px;font-weight:800">{{ c.stat }}</span>
+              <span style="position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:999px;background:{{ c.typeBg }};color:{{ c.typeFg }};font-size:10.5px;font-weight:800">{{ c.type }}</span>
+              <span style="position:absolute;right:8px;top:8px;padding:3px 9px;border-radius:999px;background:{{ c.statBg }};color:{{ c.statFg }};font-size:10.5px;font-weight:800">{{ c.stat }}</span>
             </div>
             <div style="padding:9px 12px 11px">
               <div style="font-size:13px;font-weight:800;color:var(--ink);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{ c.name }}</div>
@@ -3267,7 +3291,7 @@ select option, select optgroup{
       <sc-if value="{{ mstIsTalk }}">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
           <sc-for list="{{ mstRows }}" as="r" hint-placeholder-count="12">
-            <div onClick="{{ onMstToggle }}" data-id="{{ r.id }}" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:{{ r.bg }};box-shadow:var(--sh-xs);cursor:pointer;opacity:{{ r.op }};transition:background .15s,opacity .15s">
+            <div role="button" tabindex="0" onClick="{{ onMstToggle }}" data-id="{{ r.id }}" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:{{ r.bg }};box-shadow:var(--sh-xs);cursor:pointer;opacity:{{ r.op }};transition:background .15s,opacity .15s">
               <span style="flex:none;width:24px;height:24px;border-radius:8px;border:2px solid {{ r.boxBd }};background:{{ r.boxBg }};color:{{ r.boxFg }};display:grid;place-items:center;font-size:14px;font-weight:900;line-height:1">{{ r.mark }}</span>
               <div style="flex:none;display:flex">
                 <sc-for list="{{ r.chars }}" as="c" hint-placeholder-count="2"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;margin-right:-6px;border:2px solid {{ c.c }};background:var(--card-2)"></sc-for>
@@ -3290,7 +3314,7 @@ select option, select optgroup{
           <sc-for list="{{ mstFixRows }}" as="f" hint-placeholder-count="8">
             <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:12px 14px;opacity:{{ f.op }}">
               <div style="display:flex;gap:12px;align-items:flex-start">
-                <sc-if value="{{ f.hasImg }}"><div onClick="{{ onMstFix }}" data-id="{{ f.fid }}" title="看家具詳情" style="flex:none;width:64px;height:64px;border-radius:12px;background:var(--card-2);overflow:hidden;cursor:pointer"><img src="{{ f.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div></sc-if>
+                <sc-if value="{{ f.hasImg }}"><div role="button" tabindex="0" onClick="{{ onMstFix }}" data-id="{{ f.fid }}" title="看家具詳情" style="flex:none;width:64px;height:64px;border-radius:12px;background:var(--card-2);overflow:hidden;cursor:pointer"><img src="{{ f.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div></sc-if>
                 <div style="flex:1;min-width:0">
                   <div style="font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.4">{{ f.name }}</div>
                   <div style="font-size:12px;font-weight:800;color:{{ f.countFg }};margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ f.count }}</div>
@@ -3321,7 +3345,7 @@ select option, select optgroup{
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
         <sc-for list="{{ newsRows }}" as="r" hint-placeholder-count="12">
           <a href="{{ r.url }}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);text-decoration:none;opacity:{{ r.dim }}">
-            <span style="flex:none;min-width:44px;text-align:center;padding:3px 9px;border-radius:999px;background:{{ r.tagBg }};color:#fff;font-size:10.5px;font-weight:800">{{ r.tag }}</span>
+            <span style="flex:none;min-width:44px;text-align:center;padding:3px 9px;border-radius:999px;background:{{ r.tagBg }};color:{{ r.tagFg }};font-size:10.5px;font-weight:800">{{ r.tag }}</span>
             <span style="flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink);line-height:1.45">{{ r.title }}</span>
             <span style="flex:none;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';text-align:right;line-height:1.4">{{ r.date }}<br>{{ r.until }}</span>
           </a>
@@ -3417,7 +3441,7 @@ select option, select optgroup{
             <sc-for list="{{ stTalkRows }}" as="r" hint-placeholder-count="12">
               <button type="button" onClick="{{ onStOpen }}" data-kind="talk" data-sid="{{ r.sid }}" data-sid2="{{ r.sid2 }}" data-abn="{{ r.abn }}" data-title="{{ r.title }}" data-sub="{{ r.sub }}" style="display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer">
                 <span style="display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0">
-                  <sc-for list="{{ r.chars }}" as="c" hint-placeholder-count="3"><span style="padding:3px 9px;border-radius:999px;background:{{ c.c }};color:#fff;font-size:11px;font-weight:800">{{ c.n }}</span></sc-for>
+                  <sc-for list="{{ r.chars }}" as="c" hint-placeholder-count="3"><span style="padding:3px 9px;border-radius:999px;background:{{ c.c }};color:{{ c.fg }};font-size:11px;font-weight:800">{{ c.n }}</span></sc-for>
                 </span>
                 <span style="flex:none;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ r.area }} · #{{ r.id }}</span>
               </button>
@@ -3428,7 +3452,7 @@ select option, select optgroup{
         <sc-if value="{{ stIsSelf }}">
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
             <sc-for list="{{ stSelfRows }}" as="c" hint-placeholder-count="26">
-              <div onClick="{{ onStOpen }}" data-kind="self" data-sid="{{ c.sid }}" data-abn="" data-title="{{ c.title }}" data-sub="{{ c.sub }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2))">
+              <div role="button" tabindex="0" onClick="{{ onStOpen }}" data-kind="self" data-sid="{{ c.sid }}" data-abn="" data-title="{{ c.title }}" data-sub="{{ c.sub }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2))">
                 <div style="position:relative;aspect-ratio:3/4;overflow:hidden"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="position:absolute;left:6px;right:6px;top:6px;bottom:0;width:calc(100% - 12px);height:calc(100% - 6px);object-fit:contain;object-position:center bottom;display:block"></div>
                 <div style="padding:7px 8px 9px;font-size:12px;font-weight:800;color:var(--ink);text-align:center;border-top:2px solid {{ c.color }}">{{ c.name }}</div>
               </div>
@@ -3618,7 +3642,7 @@ select option, select optgroup{
           <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">{{ stkCount }}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px">
             <sc-for list="{{ stkRows }}" as="c" hint-placeholder-count="12">
-              <div onClick="{{ onStkPick }}" data-abn="{{ c.abn }}" title="{{ c.name }}" style="border:2px solid {{ c.bd }};border-radius:12px;background:var(--card-2);padding:4px;cursor:pointer"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;display:block"></div>
+              <div role="button" tabindex="0" onClick="{{ onStkPick }}" data-abn="{{ c.abn }}" title="{{ c.name }}" style="border:2px solid {{ c.bd }};border-radius:12px;background:var(--card-2);padding:4px;cursor:pointer"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;display:block"></div>
             </sc-for>
           </div>
           <sc-if value="{{ stkMore }}"><button type="button" onClick="{{ onStkMore }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;display:block;margin:12px auto 0">{{ stkMoreLabel }}</button></sc-if>
@@ -4087,7 +4111,7 @@ select option, select optgroup{
     <!-- 卡片格 -->
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px">
       <sc-for list="{{ rateRows }}" as="c" hint-placeholder-count="12">
-        <div onClick="{{ onRateToggle }}" data-id="{{ c.id }}" title="{{ c.chara }}｜{{ c.name }}｜{{ c.sup }}" style="position:relative;border:2px solid {{ c.bd }};border-radius:14px;background:{{ c.bg }};box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,border-color .2s,background .2s" style-hover="transform:translateY(-3px)">
+        <div role="button" tabindex="0" onClick="{{ onRateToggle }}" data-id="{{ c.id }}" title="{{ c.chara }}｜{{ c.name }}｜{{ c.sup }}" style="position:relative;border:2px solid {{ c.bd }};border-radius:14px;background:{{ c.bg }};box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,border-color .2s,background .2s" style-hover="transform:translateY(-3px)">
           <div style="aspect-ratio:1;background:var(--card-2);opacity:{{ c.op }};transition:opacity .2s">
             <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="" loading="lazy" width="156" height="156" style="width:100%;height:100%;object-fit:cover;display:block">
           </div>
@@ -4281,7 +4305,7 @@ select option, select optgroup{
     </div>
     <!-- 進度：點任一處跳到該位置 -->
     <div style="margin-top:11px">
-      <div onClick="{{ onPlayerSeek }}" title="點一下跳到該位置" style="position:relative;height:16px;display:flex;align-items:center;cursor:pointer">
+      <div role="button" tabindex="0" onClick="{{ onPlayerSeek }}" title="點一下跳到該位置" style="position:relative;height:16px;display:flex;align-items:center;cursor:pointer">
         <div style="position:relative;width:100%;height:5px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);overflow:hidden">
           <div style="height:100%;width:{{ plPct }};background:var(--cta);border-radius:999px;transition:width .35s linear"></div>
         </div>
@@ -4310,7 +4334,7 @@ select option, select optgroup{
         <sc-if value="{{ plEmpty }}"><div style="font-size:11.5px;color:var(--text-3);padding:6px 2px">清單是空的。歌曲清單裡按 ＋ 加入，或按 ▶ 從那首開始接續播放。</div></sc-if>
         <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
           <sc-for list="{{ plRows }}" as="p" hint-placeholder-count="4">
-            <div onClick="{{ onQueueJump }}" data-i="{{ p.i }}" style="display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:10px;background:{{ p.bg }};cursor:pointer">
+            <div role="button" tabindex="0" onClick="{{ onQueueJump }}" data-i="{{ p.i }}" style="display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:10px;background:{{ p.bg }};cursor:pointer">
               <span style="width:18px;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';text-align:right;flex:none">{{ p.no }}</span>
               <img src="{{ p.jkt }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="hidden" style="width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none;background:var(--card-2)">
               <span style="min-width:0;flex:1">
@@ -4630,7 +4654,7 @@ select option, select optgroup{
   <sc-if value="{{ dbPickHasChips }}">
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
       <sc-for list="{{ dbPickView.chips }}" as="c" hint-placeholder-count="4">
-        <span style="font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;background:{{ c.bg }};color:#fff">{{ c.n }}</span>
+        <span style="font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</span>
       </sc-for>
     </div>
   </sc-if>
@@ -4689,7 +4713,7 @@ select option, select optgroup{
 
 <!-- ========== 自訂首頁面板：版面／資訊顯示／資料設定 ========== -->
 <sc-if value="{{ homeCfgOpen }}">
-<div onClick="{{ onHomeCfg }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div role="button" tabindex="0" onClick="{{ onHomeCfg }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div class="modal" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(560px,calc(100vw - 28px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-xs)">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
     <span style="flex:1;font-size:16px;font-weight:800;color:var(--ink)">自訂首頁</span>
@@ -4801,13 +4825,20 @@ select option, select optgroup{
 </sc-if>
 
 <!-- ========== 全站提示 ========== -->
+<sc-if value="{{ errBar }}">
+<div role="alert" style="position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);padding:10px 12px 10px 16px;border-radius:14px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;box-shadow:var(--sh-md)">
+  <span>頁面出了點問題，重新整理通常就好。</span>
+  <button type="button" onClick="{{ onReload }}" style="padding:6px 13px;border:none;border-radius:999px;background:#fff;color:var(--ink);font-size:12px;font-weight:800;cursor:pointer">重新整理</button>
+  <button type="button" onClick="{{ onErrClose }}" aria-label="關閉" style="width:26px;height:26px;border:none;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:13px;cursor:pointer">✕</button>
+</div>
+</sc-if>
 <sc-if value="{{ toastShow }}">
 <div role="status" style="position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:99;max-width:calc(100vw - 32px);padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;box-shadow:var(--sh-md);animation:fadeIn .2s ease;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ toastText }}</div>
 </sc-if>
 
 <!-- ========== 鍵盤快捷鍵說明（按 ? 開關） ========== -->
 <sc-if value="{{ kbHelpOpen }}">
-<div onClick="{{ onKbHelp }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div role="button" tabindex="0" onClick="{{ onKbHelp }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div class="modal" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(380px,calc(100vw - 28px));padding:18px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-xs)">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <span style="font-size:15px;font-weight:800;color:var(--ink)">鍵盤快捷鍵</span>
@@ -4848,7 +4879,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3c636f0291"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=488ffec462"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

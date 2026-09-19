@@ -44,6 +44,14 @@
     {
       "src": "icons/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "robots.txt",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "sitemap.xml",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -51,42 +59,66 @@
       "src": "/ep-calculator.html",
       "dest": "/ep-calculator.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
       "src": "/tutorial.html",
       "dest": "/tutorial.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
       "src": "/classic",
       "dest": "/index.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
       "src": "/index.html",
       "dest": "/index.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
       "src": "/app",
       "dest": "/app.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
       "src": "/app.html",
       "dest": "/app.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
@@ -146,6 +178,21 @@
       }
     },
     {
+      "src": "/robots.txt",
+      "dest": "/robots.txt",
+      "headers": {
+        "cache-control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/sitemap.xml",
+      "dest": "/sitemap.xml",
+      "headers": {
+        "cache-control": "public, max-age=86400",
+        "content-type": "application/xml"
+      }
+    },
+    {
       "src": "/sw.js",
       "dest": "/sw.js",
       "headers": {
@@ -179,14 +226,22 @@
       "src": "/",
       "dest": "/app.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     },
     {
       "src": "/(.*)",
       "dest": "/app.html",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
       }
     }
   ]
