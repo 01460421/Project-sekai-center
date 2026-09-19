@@ -287,7 +287,8 @@ export async function handleAuth(req, env, url) {
   }
 
   if (p === '/auth/logout') {
-    const res = bounce(site + '/app.html', '已登出');
+    const r = url.searchParams.get('r');                 // 車隊頁登出後要回車隊頁；沒帶就回首頁
+    const res = bounce(site + (r ? safePath(r) : '/app.html'), '已登出');
     res.headers.append('Set-Cookie', clearCookie(env.COOKIE_DOMAIN));
     return res;
   }

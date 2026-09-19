@@ -431,6 +431,18 @@ reset();
   ok('真實路由的跳轉頁也帶 CSP', /default-src 'none'/.test(cb.r.headers.get('content-security-policy') || ''), cb.status);
 }
 
+/* ---------- 登出：清 cookie、依 r 回到站內頁面、r 不合格退回安全頁 ---------- */
+{
+  const lo = await send('GET', '/auth/logout?r=' + encodeURIComponent('/app.html?page=car'), { origin: null });
+  const lb = lo.text;
+  ok('登出清掉 session cookie', /sekai_session=;/.test(lo.r.headers.get('set-cookie') || '') , lo.r.headers.get('set-cookie'));
+  ok('登出後回車隊頁', lb.includes('/app.html?page=car"'), lb.slice(0, 200));
+  const lo2 = await send('GET', '/auth/logout?r=' + encodeURIComponent('//evil.example/x'), { origin: null });
+  ok('登出 r 指向外站 → 不跳外站', !lo2.text.includes('evil.example'));
+  const lo3 = await send('GET', '/auth/logout', { origin: null });
+  ok('登出沒帶 r → 回首頁', lo3.text.includes('/app.html"'));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (botServer) botServer.close();
 process.exit(fail ? 1 : 0);

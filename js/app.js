@@ -2953,6 +2953,7 @@ class Component extends DCLogic {
       carLoading: me === undefined || (!!me && cm === undefined && !s.carNeed && !s.carErr),
       carNeedId: !!me && s.carNeed === 'identity',
       carIdDiscordUrl: api + '/auth/discord?r=' + encodeURIComponent('/app.html?page=car'),
+      carLogoutUrl: api + '/auth/logout?r=' + encodeURIComponent('/app.html?page=car'),   // 登出後留在車隊頁（顯示登入卡）
       carErr: (!!me && !s.carNeed && s.carErr) ? s.carErr : '',
       carNoGuild: !!cm && !guilds.length,
       carReady: !!cm && !!gd,
