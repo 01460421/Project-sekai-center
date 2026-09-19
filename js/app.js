@@ -4088,8 +4088,538 @@ class Component extends DCLogic {
   /* ---------- end @@SEC-E@@ ---------- */
 
   /* @@SEC-F@@ settings（設定／紀錄／系統：全部設定鍵、多車設定、試算表同步、操作紀錄、機器人狀態、維護動作）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+  /* ===== 設定／紀錄／系統（三個分頁都只限管理員；成員就算網址帶 carTab 也不讀、不顯示）=====
+     設定：值與目錄都在管理員的 /state（settings、settings_meta、sections、channels、vchannels），不另外抓；
+           寫入 POST /setting {key, value}。分車鍵（機器人的 _CAR_SETTING_KEYS，/state 會附 car_label）只改目前這一車，
+           其餘全車隊共用。頻道 id 是 19 位數：一律當字串送、當字串存（機器人回的 value 是數字、會失真，不拿來用）。
+           下拉選單的值要照原型別送回（reminder_lead_min 的選項是數字，送字串機器人會回 bad option）。
+     試算表：POST /sheet（每車一張表）。紀錄：GET /log?src=。系統：GET /status（分頁開著、畫面看得到時每 10 秒重抓一次）、
+           POST /action（維護）、快速指令（/run、/swap、/music、/action，班表指令只作用在目前這一車）。
+     慢的寫入（點歌、維護、試算表）機器人可能先回 {ok, pending, msg}：照樣提示 msg，約 5 秒後重抓。 */
+  CAR_F_CARKEYS = new Set(('schedule_open schedule_auto_confirm s6_over_bonus schedule_never_lock signup_lock_enabled signup_lock_trigger_time '
+    + 'signup_lock_target_day signup_lock_target_range signup_lock_allow_shortage shortage_open_all shortage_open_hours support_slots_display '
+    + 'schedule_hidden_mode runner_hidden_mode auto_expand_alert last_expand_alert schedule_board_channel schedule_board_message '
+    + 'schedule_board_date gsheet_id gsheet_auto gsheet_last_push').split(' '));
+  CAR_F_GENRE = { v: 'Vocaloid', a: '動漫曲', c: '中文抒情', e: '英文流行', j: '日文流行' };
+  carFAdm() {
+    const gd = this.carGuild(), st = (this.state.carStates || {})[this.carNo()];
+    return !!((st && st.role === 'admin') || (gd && gd.role === 'admin'));
+  }
+  carFQQ() { return /^qqg_/.test(String(this.state.g || '')); }
+  /* 機器人產生的提示字串（msg、紀錄的動作名）只拿掉彩色 emoji；★✓✕ 保留 */
+  carFTxt(v) { return String(v == null ? '' : v).replace(/[\u{1F000}-\u{1FAFF}\u{FE0F}\u{200D}\u{2600}-\u{2604}\u{2606}-\u{2712}\u{2714}\u{2716}-\u{27BF}]/gu, '').trim(); }
+  carFMsg(d, dflt) { const m = this.carFTxt(d && d.msg); return (d && d.pending) ? (m || '已送出，機器人處理中') : (m || dflt); }
+  /* 機器人回 pending 時：約 5 秒後重抓（切了車隊就不抓） */
+  carFLater(fn) { const g0 = String(this.state.g || ''); setTimeout(() => { if (String(this.state.g || '') !== g0) return; try { fn(); } catch (e) {} }, 5000); }
+  /* 中文輸入法選字時按的 Enter 不算送出（Safari 的 isComposing 會是 false，要看 keyCode 229） */
+  carFEnter(e) { return !!e && e.key === 'Enter' && !(e.nativeEvent && e.nativeEvent.isComposing) && e.keyCode !== 229; }
+  carFYmd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  carFToday() {
+    const st = (this.state.carStates || {})[this.carNo()];
+    return st && /^\d{4}-\d{2}-\d{2}$/.test(String(st.today || '')) ? String(st.today) : this.carFYmd(new Date());
+  }
+  carFAddDay(ymd, n) { const p = String(ymd).split('-').map(Number); return this.carFYmd(new Date(p[0], p[1] - 1, p[2] + n)); }
+  carFCarName(no) {
+    const gd = this.carGuild(), c = gd ? this.carCars(gd).find(x => x.no === +no) : null;
+    return c ? c.name : (this.CAR_NAMES[+no] || (no + '車'));
+  }
+  carFCarSeg(segOn) {
+    const gd = this.carGuild(), no = this.carNo();
+    return gd ? this.carCars(gd).map(c => Object.assign({ v: String(c.no), n: c.name, sel: c.no === no ? 'true' : 'false' }, segOn(c.no === no))) : [];
+  }
+  /* 多筆依序送（快速指令的開班／砍班／換人），跟 carAct 共用「一次只跑一個」的鎖 */
+  async carFSeq(list, no) {
+    if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
+    this._carActBusy = true; this.setState({ carActBusy: true });
+    let ok = 0, fail = 0, err = '';
+    try {
+      for (const it of list) {
+        try { await this.carApi(it.path, { body: it.body, car: no }); ok++; }
+        catch (e) {
+          fail++; if (!err) err = String((e && e.message) || '失敗').slice(0, 60);
+          const st = e && e.status;
+          if (!st || st >= 500 || st === 401 || st === 403) break;      // 機器人連不上或沒權限：後面也一樣會失敗
+        }
+      }
+    } finally { this._carActBusy = false; this.setState({ carActBusy: false }); }
+    return { ok, fail, err };
+  }
 
+  /* ---------- 設定 ---------- */
+  carSec_settings(force) {
+    if (!this.carFAdm()) return;
+    this.carFSheetInfo(force);
+  }
+  carFSheetInfo(force) { return this.carSecFetch(this.carSecKey('sheet', true), '/sheet', { body: { action: 'info' } }, force); }
+  carFMeta(key) {
+    const st = (this.state.carStates || {})[this.carNo()] || {};
+    const m = (Array.isArray(st.settings_meta) ? st.settings_meta : []).find(x => x && x.key === key) || null;
+    return { m, v: m ? (st.settings || {})[key] : undefined };
+  }
+  carFDk(key) { return (this.CAR_F_CARKEYS.has(key) ? this.carNo() : 'g') + ':' + key; }
+  carFShort(m) { const l = String((m && (m.label || m.key)) || ''); return (l.split(/[？?（(]/)[0] || l).trim(); }
+  /* 顯示值：送出中的值 > 還沒存的草稿 > /state 的值 */
+  carFCur(key) {
+    const s = this.state, dk = this.carFDk(key), p = (s.carFSetPend || {})[dk];
+    if (p) return p.v;
+    return this.carFMeta(key).v;
+  }
+  async carFSetSave(key, value, okMsg) {
+    const { m } = this.carFMeta(key);
+    if (!m) { this._toast('找不到這個設定，請重新整理'); return null; }
+    if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
+    const no = this.carNo(), gid = String(this.state.g || ''), dk = this.carFDk(key);
+    const dropPend = st => { const p = Object.assign({}, st.carFSetPend); delete p[dk]; return p; };
+    this.setState(st => ({ carFSetPend: Object.assign({}, st.carFSetPend, { [dk]: { v: value } }) }));
+    const d = await this.carAct('/setting', { key, value }, okMsg, no);
+    if (!d || String(this.state.g || '') !== gid) { this.setState(st => ({ carFSetPend: dropPend(st) })); return null; }
+    const perCar = !!m.car_label || this.CAR_F_CARKEYS.has(key);
+    this.setState(st => {
+      const sts = Object.assign({}, st.carStates);
+      Object.keys(sts).forEach(n => {
+        const x = sts[n];
+        if (!x || !x.settings || (perCar && +n !== no)) return;
+        sts[n] = Object.assign({}, x, { settings: Object.assign({}, x.settings, { [key]: value }) });
+      });
+      const dr = Object.assign({}, st.carFSetDraft);
+      if (dr[dk] != null && (m.type === 'range' || String(dr[dk]).trim() === String(value).trim())) delete dr[dk];
+      return { carStates: sts, carFSetPend: dropPend(st), carFSetDraft: dr };
+    });
+    if (key === 'cars_enabled' || /^car_name_\d$/.test(key)) this.carLoad();      // 車的數量／名稱來自 /car/me：重抓，分頁才會跟著變
+    return d;
+  }
+  carFSetDraft(key, v) { const dk = this.carFDk(key); this.setState(st => ({ carFSetDraft: Object.assign({}, st.carFSetDraft, { [dk]: v }) })); }
+  carFSetText(key) {
+    const { m, v } = this.carFMeta(key); if (!m) return;
+    const dr = (this.state.carFSetDraft || {})[this.carFDk(key)];
+    if (dr == null) return;
+    let nv = String(dr);
+    if (/^car_name_\d$/.test(key)) { nv = nv.trim(); if ([...nv].length > 12) { this._toast('車名最多 12 個字'); return; } }
+    else nv = nv.slice(0, 200);
+    if (nv === String(v == null ? '' : v)) { this.carFSetDraft(key, null); return; }
+    this.carFSetSave(key, nv, this.carFShort(m) + (nv ? ' 已更新' : ' 已恢復預設'));
+  }
+  carFSetRange(key) {
+    const { m } = this.carFMeta(key); if (!m) return;
+    const dr = (this.state.carFSetDraft || {})[this.carFDk(key)];
+    if (dr == null) return;
+    const n = Math.max(5, Math.min(200, Math.round((+dr || 100) / 5) * 5));
+    this.carFSetSave(key, n, this.carFShort(m) + ' ' + n + '%');
+  }
+  async carFSheet(act) {
+    const no = this.carNo(), key = this.carSecKey('sheet', true), s = this.state, dk = no + ':__sheet';
+    const info = (this.carSecOf(key) || {}).data || null;
+    if (act === 'config') {
+      const dv = (s.carFSetDraft || {})[dk];
+      const v = String(dv != null ? dv : ((info && info.sheet_id) || '')).trim();
+      if (v.length > 300) { this._toast('太長了，請只貼試算表網址或 ID'); return; }
+      if (v && !/^[A-Za-z0-9_-]{20,}$/.test(v) && !/\/spreadsheets\/d\/[A-Za-z0-9_-]{20,}/.test(v)) { this._toast('看起來不是 Google 試算表的網址或 ID'); return; }
+      const d = await this.carAct('/sheet', { action: 'config', sheet_id: v }, v ? '已儲存試算表 ID' : '已清除試算表 ID', no);
+      if (!d) return;
+      this.setState(st => { const dr = Object.assign({}, st.carFSetDraft); delete dr[dk]; return { carFSetDraft: dr }; });
+      this.carFSheetInfo(true);
+      return;
+    }
+    if (!info) { this._toast('試算表狀態還沒讀到，請稍候再試'); return; }
+    if (!info.sheet_id) { this._toast('先貼上試算表網址或 ID 並儲存'); return; }
+    const today = this.carFToday(), dates = [0, 1, 2, 3, 4, 5, 6].map(i => this.carFAddDay(today, i));
+    const date = dates.indexOf(s.carFShDate) >= 0 ? s.carFShDate : today;
+    if (act === 'pull' && !window.confirm('從試算表套用「' + this.carFCarName(no) + '」' + date + '：分頁上 P2～P5 的名字會覆蓋網頁上這一天的班表（查無成員的名字不會套用，會列出來）。確定？')) return;
+    const body = act === 'week' ? { action: 'push', dates } : { action: act === 'pull' ? 'pull' : 'push', date };
+    this._toast(act === 'pull' ? '讀取中…' : (act === 'week' ? '推送 7 天中…' : '推送中…'), 25000);
+    const d = await this.carAct('/sheet', body, null, no);
+    if (!d) return;
+    const msg = this.carFMsg(d, act === 'pull' ? '已套用' : '已推送');
+    this._toast(msg, 4000);
+    this.setState({ carFShRes: { k: key, msg, miss: (Array.isArray(d.miss) ? d.miss : []).slice(0, 8).map(x => String(x)) } });
+    if (act === 'pull') this.carLoadStates(no);
+    this.carFSheetInfo(true);
+    if (d.pending) this.carFLater(() => { this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true); if (act === 'pull') this.carLoadStates(no); });
+  }
+  carSecVals_settings(c) {
+    const { s, st, carNo, segOn } = c, no = carNo;
+    const stErr = (s.carStErr || {})[no] || '';
+    const base = {
+      carFSetLoading: !st && !stErr, carFSetErr: !st && stErr ? String(stErr) : '',
+      carFCarSeg: this.carFCarSeg(segOn), carFSetCarName: this.carFCarName(no),
+    };
+    if (!st) return base;
+    const meta = (Array.isArray(st.settings_meta) ? st.settings_meta : []).filter(m => m && typeof m.key === 'string' && m.key);
+    const vals = (st.settings && typeof st.settings === 'object') ? st.settings : {};
+    const dr = s.carFSetDraft || {}, pend = s.carFSetPend || {};
+    const dk = k => (this.CAR_F_CARKEYS.has(k) ? no : 'g') + ':' + k;
+    const cur = k => { const p = pend[dk(k)]; return p ? p.v : vals[k]; };
+    const qq = this.carFQQ(), busy = !!s.carActBusy;
+    const chList = a => (Array.isArray(a) ? a : []).filter(x => x && x.id != null).map(x => ({ id: String(x.id), name: String(x.name || '') }));
+    const chans = chList(st.channels), vchans = chList(st.vchannels);
+    const noChTxt = qq ? 'QQ 車隊沒有 Discord 頻道，這項用不到' : '讀不到頻道清單（機器人可能不在這個伺服器）';
+    const sw = on => ({ on: on ? 'true' : 'false', swBg: on ? 'var(--ink-grad)' : 'var(--card-2)', swBd: on ? 'transparent' : 'var(--border)', swL: on ? '20px' : '2px', swK: on ? '#fff' : 'var(--text-3)' });
+    const TYPES = ['bool', 'select', 'channel1', 'voice1', 'channels', 'range', 'note'];
+    const row = m => {
+      const k = m.key, t = TYPES.indexOf(m.type) >= 0 ? m.type : 'text', v = cur(k);
+      const o = { k, label: String(m.label || k), carLbl: m.car_label ? String(m.car_label) : '', hasCarLbl: !!m.car_label,
+        isBool: t === 'bool', isSel: t === 'select', isChan: t === 'channel1' || t === 'voice1', isChans: t === 'channels', isRange: t === 'range', isNote: t === 'note', isText: t === 'text' };
+      o.cf = (o.isChans || o.isRange || o.isText) ? '1 1 100%' : '0 1 auto';
+      if (o.isBool) Object.assign(o, sw(!!v));
+      if (o.isSel) {
+        const opts = (Array.isArray(m.options) ? m.options : []).filter(x => x && x.value != null).map(x => ({ v: String(x.value), n: String(x.label != null ? x.label : x.value) }));
+        const cv = v == null ? '' : String(v);
+        if (!opts.some(x => x.v === cv)) opts.unshift({ v: cv, n: cv ? '目前：' + cv : '（未設定）' });
+        o.opts = opts; o.cur = cv;
+      }
+      if (o.isChan) {
+        const list = t === 'voice1' ? vchans : chans, cv = v ? String(v) : '';
+        const opts = [{ v: '', n: '（未設定）' }].concat(list.map(x => ({ v: x.id, n: (t === 'voice1' ? '語音 · ' : '#') + x.name })));
+        if (cv && !list.some(x => x.id === cv)) opts.push({ v: cv, n: '（頻道已不存在）' });
+        o.opts = opts; o.cur = cv; o.noCh = !list.length && !cv; o.hasCh = !o.noCh; o.noChTxt = noChTxt;
+      }
+      if (o.isChans) {
+        const set = new Set((Array.isArray(v) ? v : []).map(String));
+        o.chips = chans.map(x => { const on = set.has(x.id); return { k, id: x.id, n: '#' + x.name, on: on ? 'true' : 'false', bg: on ? 'var(--ink-grad)' : 'var(--card)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'transparent' : 'var(--border)' }; });
+        o.noCh = !chans.length; o.hasChips = chans.length > 0; o.noChTxt = noChTxt;
+        o.chN = set.size ? '已選 ' + set.size + ' 個' : '未選（全部不套用）';
+      }
+      if (o.isRange) {
+        const d = dr[dk(k)], n = d != null ? +d : ((v === '' || v == null) ? 100 : +v);
+        o.rv = String(isFinite(n) ? n : 100); o.rTxt = o.rv + '%';
+      }
+      if (o.isText) {
+        const saved = v == null ? '' : String(v), d = dr[dk(k)];
+        o.tv = d != null ? String(d) : saved; o.dirty = d != null && String(d) !== saved;
+        o.max = /^car_name_/.test(k) ? '12' : '200'; o.ph = '留空＝預設';
+      }
+      return o;
+    };
+    const MULTI = /^(cars_enabled|car_name_[123])$/;
+    const q = String(s.carFSetQ || '').trim().toLowerCase(), openMap = s.carFSetOpen || {};
+    const names = [];
+    (Array.isArray(st.sections) ? st.sections : []).concat(meta.map(m => m.section)).forEach(x => { const n = String(x || '其他'); if (names.indexOf(n) < 0) names.push(n); });
+    let shown = 0;
+    const secs = names.map(sec => {
+      const items = meta.filter(m => String(m.section || '其他') === sec && !MULTI.test(m.key)
+        && (!q || String(m.label || '').toLowerCase().indexOf(q) >= 0 || m.key.toLowerCase().indexOf(q) >= 0));
+      if (!items.length) return null;
+      shown += items.length;
+      const open = !!q || !!openMap[sec], nCar = items.filter(m => m.car_label).length;
+      return { sec, n: items.length + ' 項' + (nCar ? ' · ' + nCar + ' 項分車' : ''), arrow: open ? '▲' : '▼', open, exp: open ? 'true' : 'false', rows: open ? items.map(row) : [] };
+    }).filter(Boolean);
+    const allOpen = secs.length > 0 && secs.every(x => x.open);
 
+    /* 多車平行排班：cars_enabled＋三個車名（改完會重抓 /car/me） */
+    const hasMulti = meta.some(m => m.key === 'cars_enabled');
+    const nOn = Math.max(1, Math.min(3, parseInt(cur('cars_enabled'), 10) || 1));
+    const carNames = [1, 2, 3].filter(n => n <= nOn && meta.some(m => m.key === 'car_name_' + n)).map(n => {
+      const k = 'car_name_' + n, saved = vals[k] == null ? '' : String(vals[k]), d = dr[dk(k)];
+      return { k, lbl: this.CAR_NAMES[n] + '名稱', tv: d != null ? String(d) : saved, dirty: d != null && String(d) !== saved, ph: '留空＝' + this.CAR_NAMES[n] };
+    });
+
+    /* Google 試算表（這一車） */
+    const shKey = this.carSecKey('sheet', true), sh = this.carSecOf(shKey), info = sh && sh.data;
+    const shOpen = !!openMap.__sheet, today = /^\d{4}-\d{2}-\d{2}$/.test(String(st.today || '')) ? String(st.today) : this.carFYmd(new Date());
+    const shDates = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = this.carFAddDay(today, i); return { v: d, n: this.carDayLabel(d, today) }; });
+    const shDraft = dr[no + ':__sheet'], shSaved = info ? String(info.sheet_id || '') : '';
+    const shRes = s.carFShRes && s.carFShRes.k === shKey ? s.carFShRes : null;
+    const okFg = 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))', badFg = 'color-mix(in oklab,#ee6644 55%,var(--car-fg))';
+
+    return Object.assign(base, {
+      carFSetReady: true,
+      carFSetNoMeta: !meta.length,
+      carFSetCount: q ? '符合 ' + shown + ' 項' : meta.length + ' 項設定',
+      carFSetQ: s.carFSetQ || '', carFSetHasQ: !!q,
+      carFSetSecs: secs, carFSetHasSecs: secs.length > 0 && !q, carFSetNone: !!meta.length && !secs.length,
+      carFSetAllTxt: allOpen ? '全部收合' : '全部展開',
+      carFSetCarNote: '標「此項分車」的設定只改目前選的「' + this.carFCarName(no) + '」；其他設定整個車隊共用。',
+      carFMultiShow: hasMulti && !q,
+      carFCarsSeg: [1, 2, 3].map(n => Object.assign({ v: String(n), n: n + ' 台', sel: n === nOn ? 'true' : 'false' }, segOn(n === nOn))),
+      carFCarNames: carNames,
+      carFShShow: !q,
+      carFShOpen: shOpen, carFShExp: shOpen ? 'true' : 'false', carFShArrow: shOpen ? '▲' : '▼',
+      carFShTag: this.carFCarName(no),
+      carFShSum: !info ? (sh && sh.err ? '讀取失敗' : '') : (!info.sheet_id ? '尚未連接' : (info.last_push ? '上次推送 ' + String(info.last_push) : '已連接')),
+      carFShLoading: shOpen && !info && !(sh && sh.err), carFShErr: shOpen && !info && sh && sh.err ? String(sh.err) : '',
+      carFShHas: shOpen && !!info,
+      carFShCred: info ? (info.has_creds ? '✓ 已設定 Google 服務帳號' : '✕ 主機沒有設定 Google 服務帳號（GDRIVE_CREDS），暫時無法同步') : '',
+      carFShCredFg: info && info.has_creds ? okFg : badFg,
+      carFShLast: info ? (info.last_push ? '上次推送 ' + String(info.last_push) : '還沒推送過') : '',
+      carFShId: shDraft != null ? String(shDraft) : shSaved,
+      carFShDirty: shDraft != null && String(shDraft).trim() !== shSaved,
+      carFShNoId: !!info && !info.sheet_id,
+      carFShEmail: info && info.service_email ? String(info.service_email) : '', carFShNoEmail: !!info && !info.service_email,
+      carFShDates: shDates, carFShDate: shDates.some(x => x.v === s.carFShDate) ? s.carFShDate : today,
+      carFShResShow: !!shRes, carFShResMsg: shRes ? shRes.msg : '', carFShMiss: shRes ? shRes.miss.map((x, i) => ({ i: String(i), t: x })) : [], carFShHasMiss: !!(shRes && shRes.miss.length),
+      carFBusyTxt: busy ? '處理中…' : '',
+      onCarFSetSec: e => { const k = String(e.currentTarget.dataset.sec || ''); if (!k) return; this.setState(st2 => ({ carFSetOpen: Object.assign({}, st2.carFSetOpen, { [k]: !(st2.carFSetOpen || {})[k] }) })); if (k === '__sheet') this.carFSheetInfo(false); },
+      onCarFSetAll: () => { const o = Object.assign({}, s.carFSetOpen); secs.forEach(x => { o[x.sec] = !allOpen; }); this.setState({ carFSetOpen: o }); },
+      onCarFSetBool: e => {
+        const k = String(e.currentTarget.dataset.k || ''), { m } = this.carFMeta(k); if (!m) return;
+        const nv = !this.carFCur(k);
+        this.carFSetSave(k, nv, this.carFShort(m) + (nv ? ' 開啟' : ' 關閉'));
+      },
+      onCarFSetSel: e => {
+        const k = String(e.currentTarget.dataset.k || ''), raw = String(e.target.value), { m } = this.carFMeta(k); if (!m) return;
+        const opt = (Array.isArray(m.options) ? m.options : []).find(x => x && x.value != null && String(x.value) === raw);
+        if (!opt) return;                                              // 「目前：…」那種舊值選項不送
+        this.carFSetSave(k, opt.value, this.carFShort(m) + ' 已更新');   // 照原型別送（數字選項送數字）
+      },
+      onCarFSetChan: e => {
+        const k = String(e.currentTarget.dataset.k || ''), raw = String(e.target.value), { m } = this.carFMeta(k); if (!m) return;
+        if (raw && !/^\d{1,25}$/.test(raw)) return;
+        this.carFSetSave(k, raw, this.carFShort(m) + (raw ? ' 已更新' : ' 已清除'));
+      },
+      onCarFSetChip: e => {
+        const d = e.currentTarget.dataset, k = String(d.k || ''), id = String(d.id || ''), { m } = this.carFMeta(k); if (!m || !/^\d{1,25}$/.test(id)) return;
+        const cv = this.carFCur(k), set = (Array.isArray(cv) ? cv : []).map(String);
+        const nv = set.indexOf(id) >= 0 ? set.filter(x => x !== id) : set.concat([id]);
+        this.carFSetSave(k, nv, this.carFShort(m) + ' 已更新');
+      },
+      onCarFSetRange: e => {
+        const k = String(e.currentTarget.dataset.k || ''); if (!k) return;
+        this.carFSetDraft(k, String(e.target.value));
+        clearTimeout(this._carFRangeT); this._carFRangeT = setTimeout(() => this.carFSetRange(k), 650);   // 拖完停一下才存
+      },
+      onCarFSetText: e => { const k = String(e.currentTarget.dataset.k || ''); if (k) this.carFSetDraft(k, String(e.target.value)); },
+      onCarFSetTextKey: e => { if (this.carFEnter(e)) { e.preventDefault(); this.carFSetText(String(e.currentTarget.dataset.k || '')); } },
+      onCarFSetTextSave: e => this.carFSetText(String(e.currentTarget.dataset.k || '')),
+      onCarFCars: e => {
+        const n = parseInt(e.currentTarget.dataset.v, 10), { m } = this.carFMeta('cars_enabled'); if (!m || !(n >= 1 && n <= 3) || n === nOn) return;
+        const opt = (Array.isArray(m.options) ? m.options : []).find(x => x && String(x.value) === String(n));
+        if (!opt) { this._toast('機器人不支援這個車數'); return; }
+        if (n < nOn && !window.confirm('改成只開 ' + n + ' 台車：' + [2, 3].filter(x => x > n && x <= nOn).map(x => this.carFCarName(x)).join('、') + ' 會停止報班並從車隊頁隱藏（班表資料保留，之後再開回來就會出現）。確定？')) return;
+        this.carFSetSave('cars_enabled', opt.value, '已改成同時開 ' + n + ' 台車');
+      },
+      onCarFShId: e => { const v = String(e.target.value); this.setState(st2 => ({ carFSetDraft: Object.assign({}, st2.carFSetDraft, { [no + ':__sheet']: v }) })); },
+      onCarFShIdKey: e => { if (this.carFEnter(e)) { e.preventDefault(); this.carFSheet('config'); } },
+      onCarFShSave: () => this.carFSheet('config'),
+      onCarFSheet: e => this.carFSheet(String(e.currentTarget.dataset.a || 'push')),
+      onCarFShReload: () => this.carFSheetInfo(true),
+      onCarFShCopy: () => {
+        const t = info && info.service_email ? String(info.service_email) : ''; if (!t) return;
+        try { navigator.clipboard.writeText(t).then(() => this._toast('已複製服務帳號'), () => this._toast('無法複製，請手動選取')); } catch (er) { this._toast('無法複製，請手動選取'); }
+      },
+    });
+  }
+
+  /* ---------- 紀錄（GET /log?src=，機器人只回最新 150 筆，新的在前） ---------- */
+  carFLogSrc() { const v = String(this.state.carFLogSrc || ''); return ['web', 'discord', 'system'].indexOf(v) >= 0 ? v : ''; }
+  carSec_log(force) {
+    if (!this.carFAdm()) return;
+    const src = this.carFLogSrc();
+    return this.carSecFetch(this.carSecKey('log-' + (src || 'all'), false), '/log', src ? { query: { src } } : {}, force);
+  }
+  carSecVals_log(c) {
+    const { s, segOn } = c, src = this.carFLogSrc();
+    const sec = this.carSecOf(this.carSecKey('log-' + (src || 'all'), false)), d = sec && sec.data;
+    const SRC = { web: ['網頁', '#2f9e57'], discord: ['Discord', '#5865f2'], system: ['系統', '#8b90b5'] };
+    const q = String(s.carFLogQ || '').trim().toLowerCase();
+    const all = d && Array.isArray(d.log) ? d.log.filter(x => x && typeof x === 'object') : [];
+    const rows = all.map((x, i) => {
+      const sc = SRC[x.src] || [this.carFTxt(x.src) || '其他', '#8b90b5'], cs = this.carTagStyle(sc[1]);
+      return { i: String(i), ts: String(x.ts || ''), src: sc[0], sBg: cs.bg, sFg: cs.fg, act: this.carFTxt(x.action) || '—', det: String(x.detail == null ? '' : x.detail), who: String(x.who || '') || '—' };
+    }).filter(r => !q || (r.ts + ' ' + r.act + ' ' + r.det + ' ' + r.who).toLowerCase().indexOf(q) >= 0);
+    const has = rows.length > 0;
+    return {
+      carFLogTabs: [['', '全部'], ['web', '網頁'], ['discord', 'Discord'], ['system', '系統']].map(([v, n]) => Object.assign({ v, n, sel: v === src ? 'true' : 'false' }, segOn(v === src))),
+      carFLogLoading: !d && !(sec && sec.err),
+      carFLogErr: !d && sec && sec.err ? String(sec.err) : '',
+      carFLogCnt: d ? (q ? '符合 ' + rows.length + ' 筆 · ' : '') + all.length + ' / ' + (Math.max(0, parseInt(d.total, 10) || 0)) + ' 筆' : '',
+      carFLogRows: rows, carFLogEmpty: !!d && !has, carFLogEmptyTxt: q ? '沒有符合的紀錄' : '尚無紀錄',
+      carFLogWide: has && !s.mobile, carFLogNarrow: has && !!s.mobile,
+      carFLogQ: s.carFLogQ || '', carFLogHasQ: !!q,
+      carFLogBusyTxt: sec && sec.busy ? '讀取中…' : '重新整理',
+      onCarFLogSrc: e => { const v = String(e.currentTarget.dataset.v || ''); this.setState({ carFLogSrc: v }); setTimeout(() => this.carSec_log(false), 0); },
+      onCarFLogReload: () => this.carSec_log(true),
+    };
+  }
+
+  /* ---------- 系統：機器人狀態（輕量輪詢）、快速指令、快速操作、同步與維護 ---------- */
+  carSec_system(force) {
+    if (!this.carFAdm()) return;
+    this.carSecFetch(this.carSecKey('status', false), '/status', {}, force);
+    if (!this._carFPollT) this._carFPollT = setInterval(() => this.carFTick(false), 10000);
+    if (!this._carFVis) { this._carFVis = () => { if (!document.hidden) this.carFTick(true); }; try { document.addEventListener('visibilitychange', this._carFVis); } catch (e) {} }
+  }
+  /* 只在：車隊頁、系統分頁、管理員、畫面看得到 時才重抓；離開車隊頁或系統分頁就停掉計時器 */
+  carFTick(wake) {
+    const s = this.state;
+    if (s.page !== 'car' || s.carTab !== 'system' || !this.carGuild() || !this.carFAdm()) {
+      if (!wake && this._carFPollT) { clearInterval(this._carFPollT); this._carFPollT = null; }
+      return;
+    }
+    if (document.hidden) return;
+    const key = this.carSecKey('status', false), cur = this.carSecOf(key);
+    if (cur && cur.busy) return;
+    if (wake && cur && cur.at && Date.now() - cur.at < 4000) return;
+    this.carSecFetch(key, '/status', {}, true);
+  }
+  async carFAction(a) {
+    const no = this.carNo(), cn = this.carFCarName(no);
+    const Q = {
+      reseat: '全部重排補位：依排位規則重新整理「' + cn + '」今天起每一天的班表，把卡在報名名單、還沒排上位的人補進空位（已排好的位置可能會被調整）。確定要執行？',
+      top3: 'Top3 立即播報：機器人會進語音頻道播報目前的排名（會用到語音合成額度）。確定？',
+    };
+    if (Q[a] && !window.confirm(Q[a])) return null;
+    const DONE = { board: '班表看板已重繪', extsup: '外援看板已同步', reseat: '已重排補位', top3: '已播報', backup: '已建立備份' };
+    this._toast('執行中…', 25000);
+    const d = await this.carAct('/action', { action: a }, null, no);
+    if (!d) return null;
+    this._toast(this.carFMsg(d, DONE[a] || '完成'), 3500);
+    if (a === 'reseat') this.carLoadStates(no);
+    if (d.pending) this.carFLater(() => { if (a === 'reseat') this.carLoadStates(no); if (this.state.carTab === 'system') this.carSecFetch(this.carSecKey('status', false), '/status', {}, true); });
+    return d;
+  }
+  async carFMusic(action, extra) {
+    if (this.carFQQ()) { this._toast('QQ 車隊沒有語音功能'); return null; }
+    if (action === 'stop' && !window.confirm('停止音樂：會停掉正在播的歌並清空整個佇列（自動歌單也會關閉）。確定？')) return null;
+    if (action === 'play') this._toast('解析中…', 25000);
+    const d = await this.carAct('/music', Object.assign({ action }, extra || {}), null);
+    if (!d) return null;
+    let msg;
+    if (action === 'play' && !d.pending) {
+      const n = +d.added || 0;
+      msg = '已加入：' + String(d.title || '') + (n > 1 ? '（' + n + ' 首）' : '') + (d.queued_only ? '（機器人還沒進語音，進去後會自動播）' : (d.vc ? '（→ ' + String(d.vc) + '）' : ''));
+    } else msg = this.carFMsg(d, { stop: '已停止並清空', skip: '已跳過', volume: '音量 ' + (+d.volume || 0) + '%', play: '已加入' }[action] || '完成');
+    this._toast(msg, 3200);
+    const key = this.carSecKey('status', false);
+    this.carSecFetch(key, '/status', {}, true);
+    if (d.pending) this.carFLater(() => this.carSecFetch(this.carSecKey('status', false), '/status', {}, true));
+    return d;
+  }
+  async carFPlay() {
+    const v = String(this.state.carFPlay || '').trim();
+    if (!v) { this._toast('請輸入 YouTube 網址或關鍵字'); return; }
+    if (v.length > 300) { this._toast('太長了，請貼網址或簡短的關鍵字'); return; }
+    const d = await this.carFMusic('play', { query: v });
+    if (d) this.setState({ carFPlay: '' });
+  }
+  /* 快速指令（舊面板置頂指令列的文法）。班表指令只作用在目前這一車；多時段依序送 */
+  async carFRun() {
+    const v = String(this.state.carFCmd || '').trim().replace(/\s+/g, ' ');
+    if (!v) return;
+    const no = this.carNo(), today = this.carFToday(), cn = this.carFCarName(no);
+    const done = () => this.setState({ carFCmd: '' });
+    const span = (a, b) => {
+      a = +a; b = +b; if (b <= a) b += 24;
+      if (!(a >= 0 && a <= 29 && b <= 30 && b - a <= 12)) return null;
+      const hs = []; for (let h = a; h < b; h++) hs.push(String(h).padStart(2, '0') + ':00');
+      return hs;
+    };
+    const dateOf = x => {
+      if (!x || x === '今天') return today;
+      if (x === '明天') return this.carFAddDay(today, 1);
+      if (x === '後天') return this.carFAddDay(today, 2);
+      let p = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(x);
+      if (p) return p[1] + '-' + p[2].padStart(2, '0') + '-' + p[3].padStart(2, '0');
+      p = /^(\d{1,2})[/-](\d{1,2})$/.exec(x);
+      if (p) { let d = today.slice(0, 4) + '-' + p[1].padStart(2, '0') + '-' + p[2].padStart(2, '0'); if (d < today) d = (+today.slice(0, 4) + 1) + d.slice(4); return d; }
+      return null;
+    };
+    const rng = hs => hs[0].slice(0, 2) + ':00～' + String(+hs[hs.length - 1].slice(0, 2) + 1).padStart(2, '0') + ':00';
+    const tail = r => r.fail ? '（失敗 ' + r.fail + '：' + r.err + '）' : '';
+    let m;
+    try {
+      if ((m = /^(?:播放|點播) (.+)$/.exec(v))) { if (await this.carFMusic('play', { query: m[1].slice(0, 300) })) done(); return; }
+      if ((m = /^音量 ?(\d{1,3})%?$/.exec(v))) { if (await this.carFMusic('volume', { value: Math.max(5, Math.min(200, +m[1])) })) done(); return; }
+      if (/^(?:跳過|skip)$/i.test(v)) { if (await this.carFMusic('skip')) done(); return; }
+      if (/^(?:停止|stop)$/i.test(v)) { if (await this.carFMusic('stop')) done(); return; }
+      if ((m = /^(?:砍班|砍|取消) ?(\d{1,2})-(\d{1,2})(?: (\S+))?$/.exec(v))) {
+        const hs = span(m[1], m[2]), date = dateOf(m[3]);
+        if (!hs) { this._toast('時段格式：20-24（一次最多 12 小時）'); return; }
+        if (!date) { this._toast('日期格式：2026-09-20、9/20、今天或明天'); return; }
+        if (!window.confirm('砍班：清空「' + cn + '」' + date + ' ' + rng(hs) + '（' + hs.length + ' 個時段）的所有人員、報名與候補，並取消這些時段。確定？')) return;
+        const r = await this.carFSeq(hs.map(h => ({ path: '/run', body: { date, hour: h, action: 'unmark' } })), no);
+        if (!r) return;
+        this._toast('已砍班 ' + r.ok + ' 個時段' + tail(r), 3500);
+        if (r.ok) { done(); this.carLoadStates(no); }
+        return;
+      }
+      if ((m = /^(\d{1,2})-(\d{1,2})(?: ?(?:開班|開))?(?: (\S+))?$/.exec(v))) {
+        const hs = span(m[1], m[2]), date = dateOf(m[3]);
+        if (!hs) { this._toast('時段格式：20-24（一次最多 12 小時）'); return; }
+        if (!date) { this._toast('日期格式：2026-09-20、9/20、今天或明天'); return; }
+        const r = await this.carFSeq(hs.map(h => ({ path: '/run', body: { date, hour: h, action: 'mark' } })), no);
+        if (!r) return;
+        this._toast('已開班 ' + r.ok + ' 個時段（' + cn + ' ' + date + '）' + tail(r), 3500);
+        if (r.ok) { done(); this.carLoadStates(no); }
+        return;
+      }
+      if ((m = /^(\S+?) ?(?:補|上) ?(\d{1,2})-(\d{1,2})(?: ?(p[2-5]|s6))?$/i.exec(v))) {
+        const nm = m[1], hs = span(m[2], m[3]), p = (m[4] || 'p3').toLowerCase(), pos = p === 's6' ? 'p2' : p;
+        if (!hs) { this._toast('時段格式：20-24（一次最多 12 小時）'); return; }
+        const r = await this.carFSeq(hs.map(h => ({ path: '/swap', body: { date: today, hour: h, pos, new: nm, role: p === 's6' ? 's6' : '' } })), no);
+        if (!r) return;
+        this._toast(nm + ' 已排入 ' + r.ok + ' 個時段 ' + (p === 's6' ? 'P2（S6）' : pos.toUpperCase()) + tail(r), 3500);
+        if (r.ok) { done(); this.carLoadStates(no); }
+        return;
+      }
+      if (/^(?:重排|補位|重排補位)$/.test(v)) { if (await this.carFAction('reseat')) done(); return; }
+      if (/^(?:看板|重繪|重繪看板)$/.test(v)) { if (await this.carFAction('board')) done(); return; }
+      this._toast('看不懂這個指令，格式請看輸入框下方的說明', 3500);
+    } catch (e) { this._toast('執行失敗：' + String((e && e.message) || e).slice(0, 60)); }
+  }
+  carSecVals_system(c) {
+    const { s, carNo, segOn } = c, qq = this.carFQQ(), busy = !!s.carActBusy;
+    const sec = this.carSecOf(this.carSecKey('status', false)), d = sec && sec.data;
+    const ok = 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))', bad = 'color-mix(in oklab,#ee6644 55%,var(--car-fg))';
+    const num = x => (x === null || x === undefined || x === '' || typeof x === 'boolean' || !isFinite(+x)) ? null : +x;
+    let stats = [];
+    if (d) {
+      const lat = num(d.latency), vol = num(d.volume), keys = num(d.gemini_keys), ql = num(d.queue_len) || 0;
+      stats = [
+        ['語音', d.voice_connected ? (String(d.voice_channel || '') || '已連線') : '未連線', d.voice_connected ? ok : bad, 1],
+        ['延遲', lat != null ? Math.round(lat) + ' ms' : '—', '', 1],
+        ['佇列', ql + ' 首', '', 1],
+        ['音量', vol != null ? Math.round(vol) + '%' : '—', '', 1],
+        ['混音', d.mix ? '開' : '關', d.mix ? ok : '', 1],
+        ['常駐', d.voice_home ? '開' : '關', d.voice_home ? ok : '', 1],
+        ['自動歌單', d.auto_genre ? (this.CAR_F_GENRE[d.auto_genre] || String(d.auto_genre)) : '關', '', 1],
+        ['Gemini 金鑰', keys != null ? keys + ' 把' : '—', keys == null ? '' : (keys > 1 ? ok : bad), 0],
+        ['OpenAI 金鑰', d.openai ? '已設定' : '未設定', d.openai ? ok : '', 0],
+      ].filter(x => !(qq && x[3])).map(([k, v, fg]) => ({ k, v: String(v), fg: fg || 'var(--ink)' }));
+    }
+    const p = d && d.playing && typeof d.playing === 'object' ? d.playing : null;
+    const fd = x => { const n = num(x); if (!n) return '—'; const t = Math.floor(n); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+    const pct = p && num(p.duration) ? Math.max(0, Math.min(100, (num(p.pos) || 0) / num(p.duration) * 100)) : 0;
+    const on = d ? !!d.online : null, err = sec && sec.err ? String(sec.err) : '';
+    const at = sec && sec.at ? new Date(sec.at) : null;
+    const acts = [['board', '重繪班表看板', 1], ['extsup', '同步外援看板', 1], ['reseat', '全部重排補位', 0], ['top3', 'Top3 立即播報', 1], ['backup', '建立備份', 0]]
+      .filter(x => !(qq && x[2])).map(([a, n]) => ({ a, n }));
+    const ex = ['20-22 開班', '砍 20-22', '小婉 補 20-22 p3', '重排', '看板'].concat(qq ? [] : ['播放 歌名', '音量 80', '跳過']).map(t => ({ t }));
+    const cn = this.carFCarName(carNo);
+    return {
+      carFCarSeg: this.carFCarSeg(segOn),
+      carFSysCarNote: '重排補位、重繪看板與快速指令裡的班表動作，只作用在目前選的「' + cn + '」。',
+      carFSysOnTxt: d ? (on ? '機器人在線' : '機器人未連上 Discord') : (err ? '連不上機器人' : '讀取中…'),
+      carFSysOnDot: d ? (on ? '#2f9e57' : '#ee6644') : (err ? '#ee6644' : '#8b90b5'),
+      carFSysOnBg: d ? (on ? 'color-mix(in oklab,#2f9e57 15%,var(--card))' : 'color-mix(in oklab,#ee6644 15%,var(--card))') : 'var(--card-2)',
+      carFSysOnFg: d ? (on ? ok : bad) : (err ? bad : 'var(--text-3)'),
+      carFSysAt: at ? '更新於 ' + String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') + ':' + String(at.getSeconds()).padStart(2, '0') + ' · 每 10 秒自動更新' : '',
+      carFSysBusyTxt: sec && sec.busy ? '更新中…' : '重新整理',
+      carFSysLoading: !d && !err, carFSysErr: !d ? err : '',
+      carFSysStats: stats, carFSysHasStats: stats.length > 0,
+      carFSysQQ: qq, carFSysDc: !qq,
+      carFSysQQNote: '這是 QQ 車隊：語音、音樂、看板與 Top3 播報只有 Discord 車隊能用，這裡只顯示機器人本身的狀態。',
+      carFSysNow: !qq && !!p, carFSysNowT: p ? String(p.title || '（沒有標題）') : '',
+      carFSysNowSub: p ? fd(p.pos) + ' / ' + fd(p.duration) + (p.requester ? ' · ' + String(p.requester) + ' 點播' : '') : '',
+      carFSysNowW: pct.toFixed(1) + '%',
+      carFCmd: s.carFCmd || '', carFCmdEx: ex,
+      carFCmdPh: qq ? '快速指令：20-22 開班 ／ 砍 20-22 ／ 小婉 補 20-22 p3' : '快速指令：20-22 開班 ／ 砍 20-22 ／ 小婉 補 20-22 p3 ／ 播放 歌名 ／ 音量 80',
+      carFCmdBtn: busy ? '處理中…' : '執行',
+      carFCmdHelp: '開班「20-22」或「20-22 開班 明天」；砍班「砍 20-22」；換人「小婉 補 20-22 p3」（今天，位置可寫 p2～p5 或 s6）；「重排」重排補位、「看板」重繪看板'
+        + (qq ? '。' : '；音樂「播放 歌名」、「音量 80」、「跳過」、「停止」。') + '班表指令作用在「' + cn + '」。',
+      carFPlay: s.carFPlay || '',
+      carFActs: acts,
+      carFActBusy: busy,
+      onCarFSysReload: () => this.carSec_system(true),
+      onCarFAct: e => this.carFAction(String(e.currentTarget.dataset.a || '')),
+      onCarFPlayGo: () => this.carFPlay(),
+      onCarFPlayKey: e => { if (this.carFEnter(e)) { e.preventDefault(); this.carFPlay(); } },
+      onCarFStop: () => this.carFMusic('stop'),
+      onCarFGoBoard: () => { this.setState({ carTab: 'sched', carView: 'board', carPop: null, carTagMgr: false }); setTimeout(() => this.carLoadSec('sched'), 0); },
+      onCarFCmdKey: e => { if (this.carFEnter(e)) { e.preventDefault(); this.carFRun(); } },
+      onCarFCmdGo: () => this.carFRun(),
+      onCarFCmdEx: e => this.setState({ carFCmd: String(e.currentTarget.dataset.t || '') }),
+    };
+  }
   /* ---------- end @@SEC-F@@ ---------- */
 
   /* 寫入型操作的共用外殼：一次只跑一個、錯誤訊息浮出來、座位變動（409）就重抓 */
