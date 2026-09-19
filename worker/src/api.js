@@ -35,7 +35,9 @@ const KINDS = ['border', 'player', 'team', 'schedule'];
 const MAX_WATCHES = 20;            // 每人上限,免得有人開一百個把掃描迴圈拖垮
 const MAX_BODY = 32 * 1024;        // 一般請求
 const MAX_PREFS = 256 * 1024;      // 設定整包上限,避免有人拿 D1 當雲端硬碟
-const MAX_PARAMS = 8 * 1024;       // 單一 watch 的 params
+const MAX_PARAMS = 8 * 1024;
+/* 提問所的主題種類（前端籤與版型同步）：提問／討論／車隊招募／榜線回報 */
+const QA_KINDS = { question: '提問', discussion: '討論', recruit: '車隊招募', border: '榜線回報' };       // 單一 watch 的 params
 const MAX_PREF_KEYS = 200;
 const APPLY_COOLDOWN = 60;         // 兩次送出之間至少隔這麼久（秒）
 const APPLY_MAX = 10;              // 每個帳號累計送出上限
@@ -242,7 +244,7 @@ export async function handleApi(req, env, url, user) {
 
       if (!id) {
         if (m === 'GET') {
-          const kind = url.searchParams.get('kind') === 'discussion' ? 'discussion' : 'question';
+          const kind = QA_KINDS[url.searchParams.get('kind')] ? url.searchParams.get('kind') : 'question';
           const before = parseInt(url.searchParams.get('before'), 10);
           const rows = await listThreads(env.DB, kind, 30, Number.isFinite(before) ? before : null);
           return out({ threads: rows.map(shape), can_post: !!(user && user.status === 'approved') });
@@ -251,7 +253,7 @@ export async function handleApi(req, env, url, user) {
           const deny = needWrite(); if (deny) return deny;
           const b = await readJson(req); if (b.bad) return out({ error: 'bad_json' }, 400);
           const v = b.value || {};
-          const kind = v.kind === 'discussion' ? 'discussion' : 'question';
+          const kind = QA_KINDS[v.kind] ? v.kind : 'question';
           const title = sanitizeNote(str(v.title, TITLE_MAX)).text.trim();
           const body = sanitizeNote(str(v.body, BODY_MAX)).text.trim();
           if (title.length < 2) return out({ error: 'bad_title', message: '標題至少 2 個字' }, 400);
@@ -302,7 +304,7 @@ export async function handleApi(req, env, url, user) {
           const who = new Set([t.user_id].concat(await threadParticipants(env.DB, id)));
           who.delete(user.id);
           const target = replyTo ? (await getPost(env.DB, replyTo)) : null;
-          const kindZh = t.kind === 'question' ? '提問' : '討論';
+          const kindZh = QA_KINDS[t.kind] || '討論';
           for (const uid of who) {
             const direct = target && target.user_id === uid;
             await addEvent(env.DB, { watch_id: 'qa:' + id, user_id: uid, no_mail: 1,
