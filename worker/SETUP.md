@@ -50,6 +50,35 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 
 ---
 
+## 瀏覽器推播（Web Push，選用）
+
+沒設定時「我的帳號」會顯示「站方尚未設定推播金鑰」，其他功能不受影響。
+
+1. 產一組 VAPID 金鑰（任何有 Node 的機器）：
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+2. 放進 Worker：
+   ```bash
+   npx wrangler secret put VAPID_PUBLIC     # Public Key（base64url，87 字元）
+   npx wrangler secret put VAPID_PRIVATE    # Private Key（base64url，43 字元）
+   npx wrangler secret put VAPID_SUBJECT    # 選用，mailto:你的信箱；預設 mailto:noreply@project-sekai-center.com
+   ```
+3. 套用資料表：
+   ```bash
+   npx wrangler d1 execute pjsk-users --remote --file=sql/015_push.sql
+   ```
+   （`events` 已經有 `pushed_at` 欄的話最後一句會報 duplicate column，忽略即可。）
+4. `npx wrangler deploy`。
+
+運作方式：cron 每分鐘把還沒推過的事件依使用者合併，對每台登記的裝置送一個「不帶內容」的推播；
+網站的 service worker 收到後自己去 `/api/events` 拿最新通知來顯示。推播服務回 404／410 的訂閱會自動刪掉。
+
+## 行事曆訂閱源
+
+`GET /cal/sekai.ics` 從台服 master 產活動與卡池的 iCalendar（近 60 天到未來），邊緣快取一小時；
+網站活動日曆的「訂閱」按鈕指到 `webcal://games.project-sekai-center.com/cal/sekai.ics`。不需要設定。
+
 ## 每次改完 Worker 都要
 
 ```bash

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>og</title>
+<!-- 分享預覽圖的版型：tools/build-og.mjs 用無頭瀏覽器把每頁的標題與說明套進來截成 og/<page>.jpg。
+     不吃站上的 CSS 與字型（截圖機器沒網路也要能跑），字型用系統的中文字體。 -->
+<style>
+html,body{margin:0;width:1200px;height:630px;overflow:hidden;font-family:system-ui,"Noto Sans CJK TC","Noto Sans TC","WenQuanYi Zen Hei","PingFang TC","Microsoft JhengHei",sans-serif}
+body{background:linear-gradient(135deg,#273052 0%,#3b4878 100%);color:#fff;position:relative}
+.bar{position:absolute;top:0;left:0;right:0;height:14px;background:linear-gradient(90deg,#4ad1e8,#3ee0a8,#b8e561,#ffd94d,#ff9db4,#c39df2,#7fb4f7)}
+.glow{position:absolute;inset:0;background:radial-gradient(520px 260px at 90% -10%,rgba(120,180,255,.32),transparent 70%)}
+.wrap{position:absolute;left:84px;right:84px;top:96px}
+.brand{font-size:30px;font-weight:800;letter-spacing:4px;opacity:.8}
+.title{font-size:84px;font-weight:800;line-height:1.15;margin-top:22px;letter-spacing:1px}
+.desc{font-size:32px;line-height:1.55;opacity:.86;margin-top:26px;max-height:150px;overflow:hidden}
+.foot{position:absolute;left:84px;right:84px;bottom:56px;display:flex;align-items:center;justify-content:space-between;font-size:26px;font-weight:700;opacity:.7}
+.chips{display:flex;gap:10px}.chip{padding:8px 18px;border-radius:999px;background:rgba(255,255,255,.14);font-size:22px}
+</style></head><body>
+<span class="bar"></span><span class="glow"></span>
+<div class="wrap"><div class="brand">SEKAI 資源中心</div><div class="title" id="t">SEKAI 資源中心</div><div class="desc" id="d"></div></div>
+<div class="foot"><span>project-sekai-center.com</span><span class="chips"><span class="chip">台服</span><span class="chip">Project SEKAI</span></span></div>
+<script>
+const q = new URLSearchParams(location.search);
+const t = q.get('t') || 'SEKAI 資源中心', d = q.get('d') || '';
+document.getElementById('t').textContent = t; document.getElementById('d').textContent = d;
+if (t.length > 9) document.getElementById('t').style.fontSize = '64px';
+</script>
+</body></html>

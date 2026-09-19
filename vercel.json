@@ -46,6 +46,14 @@
       "use": "@vercel/static"
     },
     {
+      "src": "og/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "og.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "robots.txt",
       "use": "@vercel/static"
     },
@@ -213,6 +221,13 @@
       "dest": "/icons/$1",
       "headers": {
         "cache-control": "public, max-age=604800"
+      }
+    },
+    {
+      "src": "/og/(.*)",
+      "dest": "/og/$1",
+      "headers": {
+        "cache-control": "public, max-age=86400"
       }
     },
     {

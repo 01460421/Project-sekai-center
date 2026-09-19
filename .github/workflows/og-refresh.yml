@@ -1,0 +1,39 @@
+# 分享預覽圖：PAGES 表（js/app.js）或版型（og.html）改了就重產 og/*.jpg 並提交。
+name: og-refresh
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [js/app.js, og.html, tools/build-og.mjs]
+permissions:
+  contents: write
+concurrency: og-refresh
+jobs:
+  og:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: 字型與瀏覽器
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+          npm i --no-save --silent playwright@1.48.2
+          npx playwright install --with-deps chromium
+      - name: 產圖
+        run: |
+          python3 -m http.server 8765 >/dev/null 2>&1 &
+          sleep 1
+          node tools/build-og.mjs
+      - name: 提交
+        run: |
+          git add -- og
+          git diff --cached --quiet && { echo "沒有變化"; exit 0; }
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "分享預覽圖 $(date -u '+%Y-%m-%d') [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
