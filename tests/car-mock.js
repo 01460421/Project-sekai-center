@@ -149,7 +149,195 @@ export function install(BASE, mode0) {
 
     /* ---------- end @@MOCK-B@@ ---------- */
     /* @@MOCK-C@@ stats */
-
+    {
+      /* 統計分頁：/insight、/history（每車）與 /seidan、/seidan/detail（整個車隊共用）。形狀照 engine_omega 的
+         _web_api_insight／_web_api_history／_web_api_seidan*。測試開關（在頁面的 console 設）：
+           globalThis.__mockC.fail = {'/insight': 500}   讓某條 GET 失敗
+           globalThis.__mockC.liveOff = true             /seidan live=1 讀不到即時榜（live_ok:false）
+           globalThis.__mockC.liveErr = true             /seidan live=1 整個請求 504（Worker 逾時） */
+      const MC = globalThis.__mockC || (globalThis.__mockC = { arch: {}, sei: {} });
+      const p2 = n => String(n).padStart(2, '0');
+      const iso = ms => { const d = new Date(ms); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()); };
+      const DRE = /^\d{4}-\d{2}-\d{2}$/, HRE = /^\d{2}:\d{2}$/;
+      const failSt = MC.fail && MC.fail[rest];
+      if (failSt && m === 'GET') return J(failSt === 404 ? { error: 'not_found' } : { error: 'mock_fail: ' + rest }, failSt);
+      /* 封存班表（schedule_archive）：拿這台車今天的時段，往前做 5 天、分兩期 */
+      const archOf = () => {
+        const k = gid + ':' + no;
+        if (MC.arch[k]) return MC.arch[k];
+        const hs = Object.keys(c.sched[today] || {}).filter(h => HRE.test(h)), ar = {};
+        const who = [['菜根', '小明', '阿華', '小美'], ['小明', '大雄', '靜香', null], ['<b>小夫</b>', '胖虎', null, '我自己']];
+        [1, 2, 3, 4, 5].forEach(n => {
+          if (!hs.length) return;
+          const ev = n <= 2 ? '143' : '142', d = addDay(today, -n), day = {};
+          hs.forEach((h, i) => {
+            const ppl = who[(n + i) % who.length];
+            const sh = { car_type: '蝦', run_planned: true, locked: n === 1 && i === 0, manual_override: n === 2 && i === 1, applicants: i === 0 ? [{ user_id: 'u9', name: '路人' }] : [], waitlist: i === 1 ? [{ name: '胖虎' }] : [] };
+            ['p2', 'p3', 'p4', 'p5'].forEach((p, j) => { const mm = MEMBERS.find(x => x.name === ppl[j]); sh[p] = mm ? { name: mm.name, bonus: j === 0 && mm.s6_bonus ? mm.s6_bonus : mm.bonus, role: j === 0 && mm.s6_bonus ? 's6' : 'pusher', user_id: mm.uid } : null; });
+            day[h] = sh;
+          });
+          ((ar[ev] = ar[ev] || { saved_at: iso(Date.now()), schedule: {} }).schedule)[d] = day;
+        });
+        return (MC.arch[k] = ar);
+      };
+      if (rest === '/insight' && m === 'GET') {
+        const sched = c.sched || {}, dates = Object.keys(sched).filter(d => d >= today).sort().slice(0, 7);
+        const shortage = [], counts = {}; let total = 0, filled = 0;
+        dates.forEach(d => Object.keys(sched[d]).sort().forEach(h => {
+          const sh = sched[d][h] || {}; if (!sh.run_planned) return;
+          const lack = []; let s6 = false;
+          ['p2', 'p3', 'p4', 'p5'].forEach(p => { const x = sh[p]; total++;
+            if (x && typeof x === 'object') { filled++; if (x.name) counts[x.name] = (counts[x.name] || 0) + 1; if (x.role === 's6') s6 = true; } else lack.push(p.toUpperCase()); });
+          if (lack.length) shortage.push({ date: d, hour: h, lack, no_s6: !s6, waitlist: (sh.waitlist || []).map(w => String((w || {}).name || '')) });
+        }));
+        const rank = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([name, count]) => ({ name, count }));
+        return J({ dates, total_slots: total, filled, rate: total ? Math.round(filled / total * 100) : 0, shortage: shortage.slice(0, 40), rank });
+      }
+      if (rest === '/history' && m === 'GET') {
+        const sched = c.sched || {}, ar = archOf(), d = q.get('date') || '';
+        if (!d || q.get('dates')) {
+          const idx = [];
+          Object.keys(sched).filter(x => DRE.test(x)).sort().forEach(dd => {
+            const n = Object.values(sched[dd] || {}).filter(s => s && typeof s === 'object' && (s.run_planned || s.p2 || (s.applicants || []).length)).length;
+            if (n) idx.push({ date: dd, hours: n, past: dd < today, src: 'live' });
+          });
+          Object.keys(ar).sort().reverse().forEach(ev => Object.keys(ar[ev].schedule || {}).sort().forEach(dd => {
+            if (!idx.some(x => x.date === dd)) idx.push({ date: dd, hours: Object.keys(ar[ev].schedule[dd]).length, past: true, src: 'archive' });
+          }));
+          idx.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+          return J({ dates: idx, today, oldest: idx.length ? idx[idx.length - 1].date : '' });
+        }
+        if (!DRE.test(d)) return J({ error: '日期格式須為 YYYY-MM-DD' }, 400);
+        let raw = sched[d] && Object.keys(sched[d]).length ? sched[d] : null, src = 'live';
+        if (!raw) for (const ev of Object.keys(ar).sort().reverse()) { const cand = (ar[ev].schedule || {})[d]; if (cand) { raw = cand; src = 'archive:' + ev; break; } }
+        if (!raw) return J({ date: d, rows: [], src: 'none', readonly: true, note: '這天沒有留下班表資料' });
+        const rows = Object.keys(raw).filter(h => HRE.test(h)).sort().map(h => { const sh = raw[h] || {};
+          return { hour: h, car_type: sh.car_type || '蝦', locked: !!sh.locked, manual: !!sh.manual_override,
+            seats: ['p2', 'p3', 'p4', 'p5'].map(p => { const x = sh[p]; return { pos: p, name: x ? x.name : null, role: x ? x.role : null, bonus: x ? x.bonus : null }; }),
+            applicants: (sh.applicants || []).filter(a => a && typeof a === 'object').length,
+            waitlist: (sh.waitlist || []).filter(w => w && typeof w === 'object').map(w => w.name) }; });
+        return J({ date: d, rows, src, readonly: true, past: d < today });
+      }
+      /* 色段監控：bot_data.seidan[gid]，'111' 有三位（一位停用、一位不在前百），'222' 沒設定 */
+      if (rest === '/seidan' || rest === '/seidan/detail') {
+        const now = Date.now();
+        if (!MC.board) {           /* 假的活動前百榜 */
+          MC.board = Array.from({ length: 100 }, (_, i) => ({ rank: i + 1, name: i === 34 ? '<i>路人</i>' : '玩家' + (i + 1), score: 52000000 - i * 185000 - (i * 7919 % 50000),
+            last_score: 0, speed_1h: 1500000 - i * 9000, count_1h: 22 - (i % 7), speed_3h: 1400000 - i * 8000, speed_24h: 1100000 - i * 6000, last_played_at: iso(now - (i % 9) * 60000), player_id: 'x' + i }));
+          MC.board.forEach(r => { r.last_score = r.score - 70000; });
+        }
+        if (!MC.sei['111']) {
+          const mk = (pid, o) => {
+            const rl = [], snaps = [], tLast = now - o.idle * 1000;
+            const gaps = Array.from({ length: o.n }, (_, i) => (i ? o.gap + (i * 37 % 23) - 11 : 0));
+            let t = tLast - gaps.reduce((a, b) => a + b, 0) * 1000, score = 0;
+            for (let i = 0; i < o.n; i++) {
+              const gap = gaps[i], diff = o.ep + (i * 7919 % 9000) - 4500;
+              t += gap * 1000; score += diff;
+              rl.push({ ms: t, time: iso(t), score, diff, gap_sec: gap });
+              if (i % 4 === 0) snaps.push({ time: iso(t), score });
+            }
+            const row = o.rank ? MC.board[o.rank - 1] : null, target = row ? row.score : 9000000 + o.n * 1000;
+            const off = target - score; rl.forEach(r => { r.score += off; }); snaps.forEach(x => { x.score += off; });
+            if (row) row.player_id = pid;
+            return Object.assign({ enabled: true, player_id: pid, channel_id: '1100000000000000001', admin_role_id: '1200000000000000002', nickname: '', player_name: '',
+              thresh: 60000, last_score: target, last_fetch_time: iso(now - 30000), last_change_time: rl.length ? rl[rl.length - 1].time : '', round_log: rl, snapshot_log: snaps,
+              mode: 'unknown', window_start: iso(now - 3 * 3600000), window_rounds: 12, alerted_stale: false, alerted_slow: false, alerted_doosen: false, alerted_pt: false, alerted_poor_form: false,
+              last_stale_alert_time: '', peak_round_ep: Math.max.apply(null, rl.map(r => r.diff).concat([0])), poor_form_hours: 3, poor_form_ratio: 0.95, poor_form_dm: false, poor_form_public: true, poor_form_dm_uid: '',
+              auto_stale_trigger: 3, auto_stale_repeat: 5, source: 'hisekai' }, o.cfg || {});
+          };
+          MC.sei['111'] = {
+            _default_pid: '5823749102938475',
+            '5823749102938475': mk('5823749102938475', { n: 420, gap: 110, ep: 72000, idle: 45, rank: 37, cfg: { nickname: '跑者A', player_name: 'Runner_A', mode: 'multi' } }),
+            '7300000000000000001': mk('7300000000000000001', { n: 60, gap: 130, ep: 41000, idle: 1500, rank: 52, cfg: { player_name: '<b>小夫</b>', mode: 'auto', alerted_stale: true, alerted_poor_form: true, poor_form_dm: true, poor_form_dm_uid: '998877665544332211' } }),
+            '1234567890': mk('1234567890', { n: 5, gap: 200, ep: 30000, idle: 7200, rank: 0, cfg: { nickname: '三號', player_name: 'Player3', enabled: false, auto_stale_trigger: 0, auto_stale_repeat: 0 } }),
+          };
+        }
+        const sd = MC.sei[gid] || (MC.sei[gid] = {});
+        const statsOf = s => {
+          const rl = s.round_log || [], recent = [], diffs = [], gaps = [], hourly = {}, sum = a => a.reduce((x, y) => x + y, 0);
+          rl.forEach(r => { const d = r.diff || 0; if (d) diffs.push(d); if (r.gap_sec) gaps.push(r.gap_sec); const age = (now - r.ms) / 1000;
+            if (age <= 3600) recent.push(r); if (age <= 86400) { const hh = p2(new Date(r.ms).getHours()); hourly[hh] = (hourly[hh] || 0) + d; } });
+          const last = rl.length ? rl[rl.length - 1] : null, idle = last ? Math.floor((now - last.ms) / 1000) : null;
+          const g10 = gaps.slice(-10), gapAvg = g10.length ? Math.round(sum(g10) / g10.length) : 0, d10 = diffs.slice(-10);
+          const lim = Math.floor(Math.max(300, Math.min(900, (gapAvg || 300) * 2.5)));
+          return { rounds: rl.length, recent_1h: recent.length, avg10: d10.length ? Math.round(sum(d10) / d10.length) : 0, avg_all: diffs.length ? Math.round(sum(diffs) / diffs.length) : 0,
+            best: diffs.length ? Math.max.apply(null, diffs) : 0, worst: diffs.length ? Math.min.apply(null, diffs) : 0, speed_log_1h: sum(recent.map(r => r.diff || 0)),
+            gap_avg: gapAvg, gap_last: gaps.length ? gaps[gaps.length - 1] : 0, idle, idle_limit: lim, stopped: idle != null && idle > lim,
+            trend: rl.slice(-30).map(r => r.diff || 0), hourly: Object.keys(hourly).sort().map(h => ({ h, v: hourly[h] })),
+            first_time: rl.length ? rl[0].time : '', last_time: last ? last.time : '' };
+        };
+        const nbOf = (rank, span) => { const i = MC.board.findIndex(r => r.rank === rank); if (i < 0) return [];
+          const me = MC.board[i].score; return MC.board.slice(Math.max(0, i - span), i + span + 1).map(r => ({ rank: r.rank, name: r.name, score: r.score, speed_1h: r.speed_1h, diff: r.score - me, me: r.rank === rank })); };
+        const lvOf = pid => MC.board.find(r => r.player_id === pid) || null;
+        const wantLive = rest === '/seidan/detail' || q.get('live') !== '0';
+        if (m === 'GET' && wantLive) {
+          await new Promise(r => setTimeout(r, rest === '/seidan' ? 900 : 500));      // 機器人要先抓 HiSekai 前百（最多 15 秒）
+          if (MC.liveErr) return J({ error: 'bot_unreachable', message: '車隊機器人目前連不上，請稍後再試' }, 504);
+        }
+        const liveOk = wantLive && !MC.liveOff;
+        const nameOf = (pid, s) => s.nickname || s.player_name || String(s.player_id || pid);
+        if (rest === '/seidan' && m === 'GET') {
+          const players = Object.keys(sd).filter(pid => pid[0] !== '_' && sd[pid] && typeof sd[pid] === 'object').map(pid => {
+            const s = sd[pid], real = String(s.player_id || pid), lv = liveOk ? lvOf(real) : null;
+            const it = Object.assign({ pid, player_id: real, name: nameOf(pid, s), player_name: s.player_name || '', nickname: s.nickname || '', source: s.source || '', mode: s.mode || '',
+              enabled: !!s.enabled, thresh: s.thresh, window_rounds: s.window_rounds || 0, window_start: s.window_start || '',
+              channel_id: String(s.channel_id || ''), admin_role_id: String(s.admin_role_id || ''),
+              auto_stale_trigger: s.auto_stale_trigger || 0, auto_stale_repeat: s.auto_stale_repeat || 0,
+              poor_form_hours: s.poor_form_hours || 0, poor_form_ratio: s.poor_form_ratio || 0, poor_form_dm: !!s.poor_form_dm, poor_form_public: !!s.poor_form_public,
+              poor_form_dm_uid: String(s.poor_form_dm_uid || ''), last_score: s.last_score || 0, peak_round_ep: s.peak_round_ep || 0,
+              last_fetch_time: s.last_fetch_time || '', last_change_time: s.last_change_time || '', last_stale_alert_time: s.last_stale_alert_time || '',
+              alerts: { alerted_doosen: !!s.alerted_doosen, alerted_slow: !!s.alerted_slow, alerted_stale: !!s.alerted_stale, alerted_pt: !!s.alerted_pt, alerted_poor_form: !!s.alerted_poor_form },
+              snapshots: (s.snapshot_log || []).length }, statsOf(s));
+            it.live = lv ? { rank: lv.rank, score: lv.score, last_score: lv.last_score, speed_1h: lv.speed_1h, count_1h: lv.count_1h, speed_3h: lv.speed_3h, speed_24h: lv.speed_24h, last_played_at: lv.last_played_at, neighbors: nbOf(lv.rank, 3) } : null;
+            if (!admin) { delete it.channel_id; delete it.admin_role_id; delete it.poor_form_dm_uid; }    // 合約 C5：成員看不到 Discord id
+            return it;
+          });
+          players.sort((a, b) => ((a.live ? -a.live.score : 0) - (b.live ? -b.live.score : 0)) || ((b.last_score || 0) - (a.last_score || 0)));
+          return J({ players, event: liveOk ? '第 142 期 · 夏日祭典' : '', live_ok: liveOk, top: liveOk ? MC.board.slice(0, 20) : [] });
+        }
+        if (rest === '/seidan/detail' && m === 'GET') {
+          const pid = q.get('pid') || '', s = sd[pid];
+          if (!s || typeof s !== 'object' || pid[0] === '_') return J({ error: '找不到監控對象' }, 404);
+          let limit = parseInt(q.get('limit') || '120', 10), offset = parseInt(q.get('offset') || '0', 10);
+          if (isNaN(limit) || isNaN(offset)) { limit = 120; offset = 0; }
+          limit = Math.max(1, Math.min(500, limit)); offset = Math.max(0, offset);
+          const rl = (s.round_log || []).slice().reverse(), real = String(s.player_id || pid), lv = liveOk ? lvOf(real) : null;
+          const snaps = (s.snapshot_log || []).slice().reverse();
+          const out = { pid, player_id: real, name: nameOf(pid, s), stats: statsOf(s), rounds: rl.slice(offset, offset + limit).map(r => ({ time: r.time, score: r.score, diff: r.diff, gap_sec: r.gap_sec })),
+            total_rounds: rl.length, offset, limit, snapshots: snaps.slice(0, 200), total_snapshots: snaps.length,
+            live: lv ? { rank: lv.rank, score: lv.score, speed_1h: lv.speed_1h, speed_3h: lv.speed_3h, speed_24h: lv.speed_24h, last_played_at: lv.last_played_at, neighbors: nbOf(lv.rank, 5) } : null,
+            event: liveOk ? '第 142 期 · 夏日祭典' : '' };
+          if (admin) { const raw = {}; Object.keys(s).forEach(k => { if (k !== 'round_log' && k !== 'snapshot_log') raw[k] = s[k]; }); out.raw = raw; }   // 合約 C5
+          return J(out);
+        }
+        if (rest === '/seidan' && m === 'POST') {
+          if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+          const pid = String(body.pid || ''), s = sd[pid];
+          if (!s || typeof s !== 'object' || pid[0] === '_') return J({ error: '找不到監控對象' }, 404);
+          if (body.action === 'toggle') { s.enabled = !s.enabled; return J({ ok: true, enabled: s.enabled }); }
+          if (body.action === 'field') {
+            const kind = { thresh: 'int', window_rounds: 'int', auto_stale_trigger: 'int', auto_stale_repeat: 'int', poor_form_hours: 'int', poor_form_ratio: 'float', poor_form_dm: 'bool', poor_form_public: 'bool', nickname: 'str', mode: 'str' }[body.key];
+            if (!kind) return J({ error: '不可修改的欄位' }, 400);
+            let v = body.value;
+            if (kind === 'int' || kind === 'float') {      // Python int()／float()：數字或數字字串；int('1.5') 會失敗
+              const str = typeof v === 'string' ? v.trim() : v;
+              const okN = typeof str === 'number' || typeof str === 'boolean' || (typeof str === 'string' && (kind === 'int' ? /^[+-]?\d+$/ : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/).test(str));
+              if (!okN || (typeof str === 'number' && !isFinite(str))) return J({ error: '值的格式不對' }, 400);
+              v = kind === 'int' ? Math.trunc(Number(str)) : Number(str);
+            } else if (kind === 'bool') v = !!v && v !== 0 && v !== '';
+            else v = v == null ? 'None' : String(v);
+            if (body.key === 'poor_form_ratio') v = Math.max(0, Math.min(2, v));
+            else if (kind === 'int') v = Math.max(0, v);
+            else if (body.key === 'mode' && v !== 'single' && v !== 'multi') return J({ error: '模式只能是 single 或 multi' }, 400);
+            s[body.key] = v;
+            return J({ ok: true, key: body.key, value: v });
+          }
+          if (body.action === 'clear_alerts') { ['alerted_doosen', 'alerted_slow', 'alerted_stale', 'alerted_pt', 'alerted_poor_form'].forEach(k => { s[k] = false; }); return J({ ok: true }); }
+          return J({ error: 'unknown action' }, 400);
+        }
+      }
+    }
     /* ---------- end @@MOCK-C@@ ---------- */
     /* @@MOCK-D@@ music */
 
