@@ -2563,9 +2563,17 @@ class Component extends DCLogic {
   /* 失敗在中途：把 carAct 浮出的錯誤訊息補上「已完成幾個」 */
   carABulkEnd(r, okTxt, no, date) {
     if (!r) return;
+    const pend = r.out.filter(d => d && d.pending);
     if (r.fail) { if (r.out.length) this._toast(String(this.state.toast || '操作失敗') + '（前 ' + r.out.length + ' 個已完成）', 4000); }
+    else if (pend.length) this._toast(String(pend[0].msg || '機器人還在處理，稍後會更新'), 4000);
     else if (okTxt) this._toast(okTxt, 3000);
     if (r.out.length) { if (date) this.setState({ carDate: date, carPop: null }); this.carLoadStates(no); }
+    if (pend.length) this.carALater(no);
+  }
+  /* 機器人先回 {pending:true} 的動作：等它做完（約 5 秒）再抓一次班表 */
+  carALater(no) {
+    const g0 = String(this.state.g || '');
+    setTimeout(() => { if (String(this.state.g || '') === g0) this.carLoadStates(no); }, 5000);
   }
   carAInput(st, key) {
     const date = this.carADate(st), rg = this.carARange(date, this.state[key || 'carAR']);
@@ -2616,7 +2624,7 @@ class Component extends DCLogic {
     if (!window.confirm('把 ' + lf + ' 的班表複製到 ' + lt + (withPeople ? '（含人員）' : '（只複製開班時段）') + '？\n' + lt + ' 同一時段原本的安排會被覆蓋。')) return;
     const d = await this.carAct('/batch', { action: 'copy', from: f, to: t, with_people: !!withPeople }, r => String(r.msg || '已複製'), no);
     // 來源／目標寫回欄位：複製完會跳到目標那天，沒寫回的話「從哪一天」會跟著跳走
-    if (d) { this.setState({ carDate: t, carPop: null, carACpFrom: f, carACpTo: t }); this.carLoadStates(no); }
+    if (d) { this.setState({ carDate: t, carPop: null, carACpFrom: f, carACpTo: t }); this.carLoadStates(no); if (d.pending) this.carALater(no); }
   }
   carACpFrom(st) {
     const v = this.state.carACpFrom;
@@ -2639,12 +2647,12 @@ class Component extends DCLogic {
   }
   /* 快速操作：重排補位／重繪看板。機器人做不完會先回 {pending:true, msg}，5 秒後再抓一次班表 */
   async carAQuick(act) {
-    const no = this.carNo(), g0 = String(this.state.g || '');
+    const no = this.carNo();
     const a = act === 'board' ? 'board' : 'reseat';
     if (a === 'reseat' && !window.confirm('依報班與倍率重新排這一車今天以後的所有班？\n手動排過的時段只會補空位，其他時段的座位可能會變動。')) return;
     const d = await this.carAct('/action', { action: a }, r => String(r.msg || (a === 'board' ? '班表看板已重繪' : '已重排')), no);
     if (!d) return;
-    if (d.pending) setTimeout(() => { if (String(this.state.g || '') === g0) this.carLoadStates(no); }, 5000);
+    if (d.pending) this.carALater(no);
     else if (a === 'reseat') this.carLoadStates(no);
   }
   /* 單一時段砍班（表格／看板每一列的按鈕）；跨日時段是昨天的日期，機器人會拒絕，先擋下 */

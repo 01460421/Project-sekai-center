@@ -203,6 +203,7 @@ export function install(BASE, mode0) {
         if (!(date && hour && (action === 'mark' || action === 'unmark'))) return J({ error: 'bad params' }, 400);
         if (typeof hour !== 'string' || !/^\d{2}:\d{2}$/.test(hour)) return J({ error: '時段格式須為 HH:MM' }, 400);
         const g = guard(date); if (g) return g;
+        if (A.pending) { A.pending = false; return J({ ok: true, pending: true, msg: '開班還在處理，稍後會自動更新' }); }
         const day = c.sched[date] || (c.sched[date] = {});
         if (action === 'mark') { const sh = day[hour] || (day[hour] = { car_type: '蝦', p2: null, p3: null, p4: null, p5: null, applicants: [], waitlist: [] }); sh.run_planned = true; c.open = true; }
         else delete day[hour];              // 機器人是拿掉 run_planned 並清空；共用的 stateOut 不濾 run_planned，所以這裡直接刪
