@@ -8,13 +8,14 @@
    瀏覽器會直接拒絕 `*`。統一由 json() 補齊，不要逐路由重抄一遍。 */
 
 import { allowOrigin, corsHeaders, preflight } from './cors.js';
+import { issueSession } from './auth.js';
 import { chatClaude, validateChat } from './admin.js';
 import { chatGemini, hasGemini, geminiModel, runLanes, lanesReport } from './gemini.js';
 import { summarize, priceOf } from './pricing.js';
 import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
 import {
-  getUser, unlinkDiscord, applyIpCount, logApplyIp,
+  getUser, unlinkDiscord, applyIpCount, logApplyIp, passwordOfUser, qqOfUser, unlinkQQ, bumpSessionVer,
   saveApplication, issueNonce, bumpVerifyTry, bindGameUid,
   getCredits, spendCredit, createOrder, listOrders, cancelOrder,
   getPrefs, setPrefs,
@@ -182,6 +183,27 @@ function shapeUser(u) {
   };
 }
 
+/* 解綁身分後工作階段版本 +1（其他裝置全部登出 —— 例如被人綁上 QQ 後用那個 QQ 重設密碼登入的盜用者）,
+   這個瀏覽器換發新 cookie,本人不會被一起踢掉。 */
+async function withNewSession(env, fresh, make) {
+  const r = await make(fresh);
+  if (fresh) r.headers.append('Set-Cookie', await issueSession(env, fresh));
+  return r;
+}
+
+/* 車隊頁要的登入方式與身分（合約第 5 節）。015 遷移沒跑時兩張表不存在,
+   db.js 那兩支查詢會吞掉錯誤回 null／[],這裡就當作沒設密碼、沒綁 QQ。
+   QQ 只回群 id 與名字,member_openid 不外送（前端用不到）。 */
+async function loginMethods(env, user) {
+  const [pw, qq] = await Promise.all([passwordOfUser(env.DB, user.id), qqOfUser(env.DB, user.id)]);
+  return {
+    username: pw ? pw.username : null,
+    hasPassword: !!pw,
+    google: !!user.google_sub,
+    qq: qq.map(r => ({ g: r.group_openid, n: r.name || '' })),
+  };
+}
+
 /* params 在 D1 裡是字串,前端要的是物件;last_state 純屬內部比對用,不外送。 */
 function shapeWatch(w) {
   let params = {};
@@ -224,6 +246,15 @@ export async function handleApi(req, env, url, user) {
 
   const out = (o, s) => json(o, s, req, env);
   const m = req.method;
+
+  /* 會改狀態的請求一律要求 Origin 是本站（含 www）、Worker 自己,或本機開發（跟 CORS 放行的範圍一致）。
+     SameSite=Lax 擋不住同網站（same-site）的子網域 —— cookie 的 Domain 是整個 .project-sekai-center.com,
+     bot.* 之類的子網域送出的表單 POST 也會帶 cookie,而 readJson 不看 Content-Type,
+     text/plain 的表單就能打進來。沒有 Origin（非瀏覽器）也拒絕。 */
+  if (m !== 'GET' && m !== 'HEAD' && m !== 'OPTIONS') {
+    const o = req.headers.get('Origin');
+    if (!o || (o !== url.origin && !allowOrigin(req, env))) return out({ error: 'bad_origin' }, 403);
+  }
 
   try {
     /* /api/me 一律 200：未登入回 { user: null },前端不必為了「還沒登入」去 catch 401 */
@@ -345,6 +376,7 @@ export async function handleApi(req, env, url, user) {
     if (p === '/api/me') {
       if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
       const u2 = shapeUser(user);
+      if (u2) Object.assign(u2, await loginMethods(env, user));
       /* 點數餘額只在 beta 開著時才查。這支端點每次載入頁面都會打,
          沒開的時候不該為了一個不會顯示的數字多打一次 D1。 */
       if (u2 && String(env.CREDITS_BETA || '') === '1') {
@@ -372,6 +404,32 @@ export async function handleApi(req, env, url, user) {
 
     // 以下都要登入
     if (!user) return out({ error: 'unauthorized' }, 401);
+
+    /* ---------- Discord／QQ 解綁 ----------
+       放在核准檢查之前：只靠 Discord／QQ 進來用車隊頁的帳號多半還是 pending,也要能管理自己的身分。 */
+    if (p === '/api/discord/unlink') {
+      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
+      /* 只靠 Discord 登入的帳號（沒有 Google、沒設密碼）解綁之後就再也登不進去了 */
+      const lm = await loginMethods(env, user);
+      if (!lm.google && !lm.hasPassword) {
+        return out({ error: 'last_login_method', message: '這是你唯一的登入方式，請先設定帳號密碼再解除 Discord 綁定。' }, 400);
+      }
+      await unlinkDiscord(env.DB, user.id);
+      return await withNewSession(env, await bumpSessionVer(env.DB, user.id),
+        async fresh => out({ ok: true, user: Object.assign(shapeUser(fresh), await loginMethods(env, fresh)) }));
+    }
+
+    /* ---------- QQ 解綁（依群 id；同一個群的身分一起解除） ---------- */
+    if (p === '/api/qq/unlink') {
+      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
+      const b = await readJson(req); if (b.bad || b.tooBig) return out({ error: 'bad_json' }, 400);
+      const g = str((b.value || {}).g, 128);
+      if (!g) return out({ error: 'bad_group' }, 400);
+      await unlinkQQ(env.DB, user.id, g);
+      return await withNewSession(env, await bumpSessionVer(env.DB, user.id),
+        async () => out({ ok: true, qq: (await qqOfUser(env.DB, user.id)).map(r => ({ g: r.group_openid, n: r.name || '' })) }));
+    }
+
 
     /* 對話存檔自成一個模組。放在登入檢查之後、核准檢查之前,
        由 chats.js 自己決定要不要求核准。 */
@@ -803,13 +861,6 @@ export async function handleApi(req, env, url, user) {
       const rows = await listEvents(env.DB, user.id, limit);
       // 一併回未讀數,前端才不用為了那個紅點再打一次
       return out({ events: rows.map(shapeEvent), unread: await unreadCount(env.DB, user.id) });
-    }
-
-    /* ---------- Discord 解綁 ---------- */
-    if (p === '/api/discord/unlink') {
-      if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
-      await unlinkDiscord(env.DB, user.id);
-      return out({ ok: true, user: shapeUser(await getUser(env.DB, user.id)) });
     }
 
     return out({ error: 'not_found' }, 404);

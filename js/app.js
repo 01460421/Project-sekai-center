@@ -103,6 +103,7 @@ class Component extends DCLogic {
     credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
+    car:      ['私車排班', '菜根機器人的車隊班表：三車分開排班、報班與推手標記（Discord 或綁定 QQ 登入）'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
     assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
     notices:  ['通知', '偵測訂閱觸發時的站內通知'],
@@ -484,6 +485,12 @@ class Component extends DCLogic {
     wlCh: 0, pastWlCh: 0, wlOpen: 0, wlTier: 100,
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
+    /* 私車排班：g＝車隊 gid、car＝第幾車（1～3），兩者都進網址（?page=car&g=…&car=2）；carMe＝/car/api/car/me 的結果 */
+    g: '', car: 1, carView: 'table', carDate: '', carMe: undefined, carNeed: '', carErr: '', carBusy: false, carStates: {}, carStErr: {},
+    carTags: null, carMembers: null, carPop: null, carActBusy: false, carPick: '', carPickRole: '', carTagSel: '', carTagScope: 'shift', carTagDetail: '', carTagUntil: '',
+    carTagMgr: false, carTmForm: false, carTmId: '', carTmLabel: '', carTmColor: '#3f8cf3', carTmDetail: '', carTmVis: 'all',
+    /* 帳號密碼登入／QQ 註冊／忘記密碼（lgQQ＝目前顯示中的 6 位數驗證碼）與帳號頁的密碼設定 */
+    lgMode: 'login', lgUser: '', lgPass: '', lgMsg: '', lgBusy: false, lgQQ: null, lgNewPass: '', pwUser: '', pwCur: '', pwNew: '', pwMsg: '', pwBusy: false,
     artQ: '', artUnit: 'all', artChar: 'all', artRar: 'all', artSup: 'all', artPage: 1,
     wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsFilter: null, wlsHelp: false, wlsEvOpen: false, wlsProg: 0, wlsProgBase: 0, wlsProgSpan: 0, wlsProgLabel: '', wlsProgSide: '', wlsData: null, wlsLoad: false, wlsErr: '',
     wlsScan: null, wlsShotBusy: false, wlsShotMsg: '',
@@ -638,6 +645,7 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
+    this._mockReady = this._carMockInit();   // 只有本機開發（localhost）帶 ?carmock= 才有值；要在任何 API 呼叫之前
     this.applyProps();
     this._initToTop();
     this._initReloadFab();
@@ -648,6 +656,7 @@ class Component extends DCLogic {
     Object.keys(this.URL_KEYS).forEach(pg => this.URL_KEYS[pg].forEach(k => { if (!(k in this._urlDefaults)) this._urlDefaults[k] = this.state[k]; }));
     const up = this._readUrl();
     if (up.page) sp = up.page;
+    this._authErrFromUrl();
     // go() 會在換頁時清掉圖鑑類的搜尋，所以網址帶來的值要排在 go() 之後套
     // 這個執行環境的 setState 是同步的：先 setState({page}) 再 go()，go() 就看不出「換了頁」（最近前往、聚焦搜尋都靠它）
     if (sp && this.PAGES[sp]) { this.go(sp, { silent: true }); delete up.page; if (Object.keys(up).length) this.setState(up); }
@@ -827,7 +836,7 @@ class Component extends DCLogic {
   _measureHead() {
     try { const h = document.querySelector('.app-head'); if (h) document.documentElement.style.setProperty('--head-h', Math.round(h.getBoundingClientRect().height) + 'px'); } catch (e) {}
   }
-  _closeAll() { this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null }); }
+  _closeAll() { this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null, carPop: null, carTagMgr: false }); }
   /* 手機手勢：底部抽屜下滑關閉、左右滑切上下一筆；排行榜頁頂端下拉重新載入；螢幕鍵盤打開時收起 Dock。
      全部掛在 document 上一次，靠 e.target 判斷落在哪裡，不用逐個元素綁。 */
   _mobileGestures() {
@@ -1072,10 +1081,10 @@ class Component extends DCLogic {
     for (let i = rest.length - 1; i > 0; i--) { const j = (this._shuf = ((this._shuf || 7) * 9301 + 49297) % 233280) % (i + 1); const t = rest[i]; rest[i] = rest[j]; rest[j] = t; }
     this._queue = [cur].concat(rest); this._qIdx = 0;
   }
-  _toast(msg) {
+  _toast(msg, ms) {
     // 原本只寫進播放器列（plToast），播放器沒開時什麼都看不到；現在一律浮出全站提示，播放器開著時兩邊都顯示
     this.setState({ toast: msg, plToast: this.state.playerOn ? msg : '' });
-    clearTimeout(this._toastT); this._toastT = setTimeout(() => this.setState({ toast: '', plToast: '' }), 1800);
+    clearTimeout(this._toastT); this._toastT = setTimeout(() => this.setState({ toast: '', plToast: '' }), ms || 1800);
   }
   /* ---------- 主題（淺色／深色／跟隨系統） ---------- */
   applyTheme(t) {
@@ -2233,6 +2242,7 @@ class Component extends DCLogic {
      後端是同一個 Worker（games 子網域），跟主站不同來源，所以每個請求都要
      credentials:'include' 才會帶上 session cookie，後端也對應開了具名的 CORS。 */
   async api(path, opts) {
+    if (this._mockReady) await this._mockReady;
     const o = Object.assign({ credentials: 'include', headers: {} }, opts || {});
     if (o.body && typeof o.body !== 'string') { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(o.body); }
     const r = await fetch(this.GAMES_API + path, o);
@@ -2276,7 +2286,703 @@ class Component extends DCLogic {
       /* 這裡本來把錯誤吞掉只顯示「未登入」,結果 CORS、cookie、500 全都長一樣,
          連我自己都查不出是哪一種。改成把實際原因留下來顯示在畫面上。 */
       this.setState({ me: null, meErr: (e && e.message) || String(e) });
-    } finally { this._meLoading = false; }
+    } finally {
+      this._meLoading = false;
+      if (this.state.page === 'car') setTimeout(() => this.carLoad(), 0);   // 車隊頁要等知道是誰才能問有哪些車隊
+    }
+  }
+
+  /* ---------- 私車排班（菜根機器人的排班，經 Worker 的 /car/api/* 代理） ----------
+     Worker 驗站內登入、簽章後轉給機器人；權限（成員／管理員）由機器人依車隊角色決定。
+     每個請求都帶 gid（哪個車隊）與 car（1～3 車），三車各自一份班表、各自運作。
+     ⚠ 名字、標籤、細節、候補名單全是使用者可控字串：一律交給模板的 {{ }}（React 文字節點），
+       絕不拼進 innerHTML；顏色只接受 #RRGGBB，其他一律換成預設灰。 */
+  CAR_NAMES = ['', '一車', '二車', '三車'];
+  CAR_HEX = /^#[0-9a-fA-F]{6}$/;
+  CAR_USER_RE = /^[a-z0-9_]{3,20}$/;
+  /* 本機開發用的假後端：只在 localhost／127.0.0.1 且網址帶 ?carmock=<模式> 才載入 tests/car-mock.js
+     （那個資料夾不在 vercel.json 的 builds 裡，正式站連檔案都沒有；主機名不對也根本不會去抓）。 */
+  _carMockInit() {
+    let dev = false;
+    try { dev = /^(localhost|127\.0\.0\.1)$/.test(location.hostname); } catch (e) {}
+    if (!dev) return null;
+    let mode = '';
+    try {
+      const q = new URLSearchParams(location.search).get('carmock');
+      if (q != null) { if (q === 'off' || q === '') sessionStorage.removeItem('sekai-carmock'); else sessionStorage.setItem('sekai-carmock', q); }
+      mode = sessionStorage.getItem('sekai-carmock') || '';
+    } catch (e) {}
+    if (!mode) return null;
+    return import('./tests/car-mock.js').then(m => m.install(this.GAMES_API, mode)).catch(e => { try { console.warn('car mock 載入失敗', e); } catch (er) {} });
+  }
+  async carApi(path, o) {
+    o = o || {};
+    if (this._mockReady) await this._mockReady;
+    const q = new URLSearchParams(o.query || {});
+    if (o.gid !== false) {
+      const gid = o.gid != null ? o.gid : this.state.g;
+      if (gid) q.set('gid', String(gid));
+      q.set('car', String(o.car || this.carNo()));
+    }
+    const qs = q.toString();
+    const init = { method: o.body ? 'POST' : 'GET', credentials: 'include', headers: {} };
+    if (o.body) {
+      init.headers['Content-Type'] = 'application/json';
+      init.body = JSON.stringify(o.gid === false ? o.body : Object.assign({}, o.body, { gid: q.get('gid'), car: +q.get('car') }));
+    }
+    let r;
+    try { r = await fetch(this.GAMES_API + '/car/api' + path + (qs ? '?' + qs : ''), init); }
+    catch (e) { throw Object.assign(new Error('連不上伺服器，請檢查網路後再試'), { code: 'network', status: 0 }); }
+    let d = null; try { d = await r.json(); } catch (e) {}
+    if (!r.ok) {
+      const code = (d && d.error) || ('HTTP ' + r.status);
+      let msg = String(code);
+      if (code === 'need_login') msg = '請先登入';
+      else if (code === 'need_identity') msg = '這個帳號還沒綁定 Discord 或 QQ';
+      // 機器人回的不是 JSON 時 Worker 會換成這兩種；代碼不給使用者看，只顯示 Worker 附的說明
+      else if (code === 'bot_not_updated') msg = String((d && d.message) || '車隊機器人尚未更新或不支援這個功能');
+      else if (code === 'bot_bad_response') msg = String((d && d.message) || '車隊機器人回應異常，請稍後再試');
+      // 只有 need_login 才是「沒登入」；其他 401 是網站和機器人之間的簽章被拒（密鑰不符、時鐘差太多、重送），再登入一次也沒用
+      else if (r.status === 401) msg = '車隊機器人驗證失敗，請通知管理員（' + String(code).slice(0, 40) + '）';
+      else if (r.status >= 502 && r.status <= 504) msg = '菜根機器人暫時連不上，請稍後再試';
+      else if (/^invalid token$/i.test(msg) || r.status === 403 && !d) msg = '你沒有這個車隊的權限';
+      throw Object.assign(new Error(msg), { status: r.status, code, data: d });
+    }
+    return d || {};
+  }
+  carNo() {
+    const gd = this.carGuild(), cars = gd ? this.carCars(gd) : [];
+    const c = +this.state.car || 1;
+    return cars.length && !cars.some(x => x.no === c) ? cars[0].no : c;
+  }
+  carGuild() {
+    const cm = this.state.carMe;
+    return (cm && (cm.guilds || []).find(x => String(x.gid) === String(this.state.g))) || null;
+  }
+  carCars(gd) {
+    const cs = (gd && Array.isArray(gd.cars) && gd.cars.length) ? gd.cars : [{ no: 1 }];
+    return cs.map(c => ({ no: +c.no || 1, name: String(c.name || this.CAR_NAMES[+c.no] || (c.no + '車')) }))
+      .filter(c => c.no >= 1 && c.no <= 3).slice(0, 3);
+  }
+  carSlot(h) {
+    const m = /^(\d{2}):(\d{2})$/.exec(String(h || ''));
+    if (!m) return String(h || '');
+    const a = (+m[1]) % 24, b = (a + 1) % 24;
+    return String(a).padStart(2, '0') + '-' + String(b).padStart(2, '0');
+  }
+  carDayLabel(d, today, xday) {
+    const dt = new Date(String(d) + 'T00:00:00');
+    if (isNaN(dt)) return String(d);
+    const md = (dt.getMonth() + 1) + '/' + dt.getDate(), wk = '（' + '日一二三四五六'[dt.getDay()] + '）';
+    if (xday) return md + ' 跨日';
+    if (d === today) return '今天 ' + md + wk;
+    const t = new Date(String(today) + 'T00:00:00');
+    if (!isNaN(t) && Math.round((dt - t) / 86400000) === 1) return '明天 ' + md + wk;
+    return md + wk;
+  }
+  carTagStyle(c) {
+    const col = this.CAR_HEX.test(String(c || '')) ? c : '#8b90b5';
+    return { bg: 'color-mix(in oklab,' + col + ' 17%,var(--card))', fg: 'color-mix(in oklab,' + col + ' 50%,var(--car-fg))' };
+  }
+  carSeatAt(no, date, hour, pos) {
+    const st = (this.state.carStates || {})[no];
+    if (!st) return {};
+    const day = (st.days || []).find(d => d.date === date);
+    const row = day && (day.rows || []).find(r => r.hour === hour);
+    const seat = row && (row.seats || []).find(x => x && x.pos === pos);
+    return { st, day, row, seat };
+  }
+  carDayOf(st, want) {
+    const days = (st && st.days) || [];
+    return days.find(d => d.date === want && !d.xday) || days.find(d => d.date === want)
+      || days.find(d => !d.xday && st && d.date === st.today) || days.find(d => !d.xday) || days[0] || null;
+  }
+  async carLoad() {
+    const me = this.state.me;
+    if (me === undefined) { this.loadMe(); return; }
+    if (!me) { this.setState({ carMe: null, carNeed: 'login', carErr: '' }); return; }
+    if (this._carLoading) return;
+    this._carLoading = true;
+    this.setState({ carBusy: true, carErr: '' });
+    try {
+      const d = await this.carApi('/car/me', { gid: false });
+      const guilds = (Array.isArray(d.guilds) ? d.guilds : []).filter(x => x && x.gid != null)
+        .map(x => Object.assign({}, x, { gid: String(x.gid) }));
+      const s = this.state;
+      const g = s.g && guilds.some(x => x.gid === String(s.g)) ? String(s.g) : (guilds[0] ? guilds[0].gid : '');
+      this.setState({ carMe: { guilds }, carNeed: '', g });
+      if (g) await this.carLoadStates();
+    } catch (e) {
+      const need = e.code === 'need_identity' ? 'identity' : e.code === 'need_login' ? 'login' : '';
+      this.setState({ carMe: null, carNeed: need, carErr: need ? '' : e.message });
+    } finally { this._carLoading = false; this.setState({ carBusy: false }); }
+  }
+  /* 載入班表。only 給定時只重抓那一車（操作後），否則整個車隊的每一車平行抓（切車隊時）。 */
+  async carLoadStates(only) {
+    const gd = this.carGuild(); if (!gd) return;
+    const gid = gd.gid, cars = this.carCars(gd);
+    const car = this.carNo();
+    if (car !== +this.state.car) this.setState({ car });
+    const list = only ? cars.filter(c => c.no === +only) : cars;
+    if (!list.length) return;
+    const res = await Promise.all(list.map(c => this.carApi('/state', { gid, car: c.no })
+      .then(d => [c.no, d, ''], e => [c.no, null, e.message || '讀取失敗'])));
+    if (String(this.state.g) !== gid) return;             // 抓的途中換了車隊，結果作廢
+    const st = Object.assign({}, only ? (this.state.carStates || {}) : {});
+    const errs = Object.assign({}, only ? (this.state.carStErr || {}) : {});
+    res.forEach(([no, d, err]) => { if (d) { st[no] = d; delete errs[no]; } else { delete st[no]; errs[no] = err; } });
+    this.setState({ carStates: st, carStErr: errs });
+    if (!only || !this.state.carTags) this.carLoadTags();
+  }
+  async carLoadTags(no) {
+    no = no || this.carNo();
+    const key = this.state.g + ':' + no;
+    try {
+      const d = await this.carApi('/tags', { car: no });
+      if (this.state.g + ':' + this.carNo() !== key) return;
+      this.setState({ carTags: { key, pal: Array.isArray(d.tags) ? d.tags : [], colors: (Array.isArray(d.colors) ? d.colors : []).filter(c => this.CAR_HEX.test(String(c))) } });
+    } catch (e) { this.setState({ carTags: { key, pal: [], colors: [] } }); }
+  }
+  async carLoadMembers() {
+    const key = this.state.g + ':' + this.carNo();
+    if (this.state.carMembers && this.state.carMembers.key === key) return;
+    try {
+      const d = await this.carApi('/members');
+      const list = (Array.isArray(d.members) ? d.members : []).map(m => ({ name: String(m.name || ''), bonus: m.bonus, s6: m.s6_bonus })).filter(m => m.name);
+      this.setState({ carMembers: { key, list } });
+    } catch (e) { this.setState({ carMembers: { key, list: [] } }); }
+  }
+  /* 寫入型操作的共用外殼：一次只跑一個、錯誤訊息浮出來、座位變動（409）就重抓 */
+  async carAct(path, body, okMsg, no) {
+    if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
+    no = no || this.carNo();
+    this._carActBusy = true; this.setState({ carActBusy: true });
+    try {
+      const d = await this.carApi(path, { body, car: no });
+      if (okMsg) this._toast(typeof okMsg === 'function' ? okMsg(d) : okMsg);
+      return d;
+    } catch (e) {
+      this._toast(e.message || '操作失敗');
+      if (e.status === 409 || (e.status === 404 && e.code !== 'bot_not_updated')) this.carLoadStates(no);
+      return null;
+    } finally { this._carActBusy = false; this.setState({ carActBusy: false }); }
+  }
+  carOpenPop(kind, el, extra) {
+    const d = el.dataset, r = el.getBoundingClientRect();
+    const pop = Object.assign({ kind, no: this.carNo(), date: d.d || '', hour: d.h || '', pos: d.pos || '', ti: d.i != null ? +d.i : -1, x: r.left, y: r.bottom, top: r.top }, extra || {});
+    const patch = { carPop: pop };
+    if (kind === 'addtag') Object.assign(patch, { carTagSel: '', carTagScope: 'shift', carTagDetail: '', carTagUntil: '' });
+    if (kind === 'empty' || kind === 'seat') Object.assign(patch, { carPick: '', carPickRole: '' });
+    this.setState(patch);
+    const st = (this.state.carStates || {})[pop.no];
+    if (st && st.role === 'admin' && (kind === 'empty' || kind === 'seat')) this.carLoadMembers();
+  }
+  async carSign(date, hour, act, role) {
+    const no = this.carNo();
+    if (act === 'cancel' && !window.confirm('確定取消 ' + this.carSlot(hour) + ' 這一班？')) return;
+    const d = await this.carAct('/signup', { date, hours: [hour], action: act === 'cancel' ? 'cancel' : 'add', role: role === 's6' ? 's6' : 'pusher' }, null, no);
+    if (!d) return;
+    const ok = (d.done || []).indexOf(hour) >= 0;
+    this._toast(ok ? ((act === 'cancel' ? '已取消 ' : '已報班 ') + this.carSlot(hour))
+      : (act === 'cancel' ? '這個時段沒有你的報班' : '這個時段目前不能報班（可能已鎖班或還沒開放）'));
+    this.setState({ carPop: null });
+    this.carLoadStates(no);
+  }
+  async carPlace() {
+    const p = this.state.carPop, s = this.state; if (!p) return;
+    const nm = String(s.carPick || '').trim();
+    if (!nm) { this._toast('輸入或選一位成員'); return; }
+    const d = await this.carAct('/swap', { date: p.date, hour: p.hour, pos: p.pos, new: nm, role: s.carPickRole || '' },
+      r => (r.name || nm) + ' 已排入 ' + this.carSlot(p.hour) + ' ' + p.pos.toUpperCase() + (r.role === 's6' ? '（S6）' : ''), p.no);
+    if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
+  }
+  async carClearSeat() {
+    const p = this.state.carPop; if (!p) return;
+    const { seat } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+    if (!window.confirm('把 ' + ((seat && seat.name) || '這個人') + ' 移出 ' + this.carSlot(p.hour) + ' ' + p.pos.toUpperCase() + '？')) return;
+    const d = await this.carAct('/swap', { date: p.date, hour: p.hour, pos: p.pos, new: '' }, '已移出', p.no);
+    if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
+  }
+  /* 拖拉換人：同一班內兩人互換（對方是空位＝原位清空）；拖到別的時段＝把他也排進那一格（原本的班不動）；
+     拖到「移出」區＝清空原座位。邏輯跟機器人原本的網頁面板一致。 */
+  async carDrop(t) {
+    const src = this._carDrag; this._carDrag = null;
+    if (!src || !src.nm) return;
+    const no = this.carNo(), date = src.d || t.d;
+    if (t.zone === 'out') {
+      if (!src.h) return;
+      const d = await this.carAct('/swap', { date, hour: src.h, pos: src.pos, new: '' }, '已移出 ' + src.nm, no);
+      if (d) this.carLoadStates(no);
+      return;
+    }
+    const h = t.h, pos = t.pos;
+    if (!h || !pos || (src.h === h && src.pos === pos)) return;
+    const d = await this.carAct('/swap', { date: t.d || date, hour: h, pos, new: src.nm, role: '' }, null, no);
+    if (!d) return;
+    if (src.h && src.h === h && src.pos) {
+      await this.carAct('/swap', { date, hour: src.h, pos: src.pos, new: t.nm || '', role: '' }, null, no);
+    }
+    this._toast((d.name || src.nm) + ' → ' + this.carSlot(h) + ' ' + pos.toUpperCase() + (d.role === 's6' ? '（S6）' : ''));
+    this.carLoadStates(no);
+  }
+  async carSetOpen() {
+    const no = this.carNo(), st = (this.state.carStates || {})[no]; if (!st) return;
+    const v = !(st.settings && st.settings.schedule_open);
+    const d = await this.carAct('/setting', { key: 'schedule_open', value: v }, v ? '已開放成員自助報班' : '已停止報班', no);
+    if (d) this.carLoadStates(no);
+  }
+  async carLock(hours, v) {
+    const no = this.carNo(), st = (this.state.carStates || {})[no], day = this.carDayOf(st, this.state.carDate);
+    if (!day || !hours.length) return;
+    const d = await this.carAct('/batch', { action: 'lock', date: day.date, hours, value: !!v }, r => r.msg || (v ? '已鎖班' : '已解鎖'), no);
+    if (d) this.carLoadStates(no);
+  }
+  async carTagPut() {
+    const p = this.state.carPop, s = this.state; if (!p) return;
+    if (!s.carTagSel) { this._toast('先選一個標記'); return; }
+    const { seat } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+    if (!seat || !seat.fp) { this._toast('座位已變動，請重新整理'); this.carLoadStates(p.no); return; }
+    const body = { date: p.date, hour: p.hour, pos: p.pos, tag: s.carTagSel, scope: s.carTagScope === 'member' ? 'member' : 'shift', detail: String(s.carTagDetail || '').slice(0, 100), action: 'add', fp: seat.fp };
+    if (body.scope === 'member' && s.carTagUntil) body.until = s.carTagUntil;
+    const d = await this.carAct('/seattag', body, '已貼上標記', p.no);
+    if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
+  }
+  async carTagDel() {
+    const p = this.state.carPop; if (!p) return;
+    const { seat } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+    const t = seat && (seat.tags || [])[p.ti];
+    if (!t || !seat.fp) { this._toast('座位已變動，請重新整理'); this.carLoadStates(p.no); return; }
+    if (!window.confirm('移除「' + t.label + '」這個標記？')) return;
+    const d = await this.carAct('/seattag', { date: p.date, hour: p.hour, pos: p.pos, tag: t.tag, scope: t.scope === 'member' ? 'member' : 'shift', action: 'del', fp: seat.fp }, '已移除標記', p.no);
+    if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
+  }
+  carTmEdit(id) {
+    const pal = (this.state.carTags && this.state.carTags.pal) || [];
+    const t = id ? pal.find(x => x.id === id) : null;
+    const cols = (this.state.carTags && this.state.carTags.colors) || [];
+    this.setState(t ? { carTmId: t.id, carTmLabel: t.label, carTmColor: this.CAR_HEX.test(t.color) ? t.color : '#8b90b5', carTmDetail: t.detail || '', carTmVis: t.visibility === 'admin' ? 'admin' : 'all', carTmForm: true }
+      : { carTmId: '', carTmLabel: '', carTmColor: cols[0] || '#3f8cf3', carTmDetail: '', carTmVis: 'all', carTmForm: true });
+  }
+  async carTmSave() {
+    const s = this.state, lb = String(s.carTmLabel || '').trim();
+    if (!lb) { this._toast('標籤名稱不能空白'); return; }
+    if ([...lb].length > 6) { this._toast('標籤名稱最多 6 個字'); return; }
+    if (/[<>&"'`]/.test(lb)) { this._toast('標籤名稱不能含 < > & " \' ` 這些符號'); return; }
+    if (!this.CAR_HEX.test(String(s.carTmColor || ''))) { this._toast('顏色格式須為 #RRGGBB'); return; }
+    const body = { action: s.carTmId ? 'edit' : 'add', label: lb, color: String(s.carTmColor).toLowerCase(), detail: String(s.carTmDetail || '').slice(0, 100), visibility: s.carTmVis === 'admin' ? 'admin' : 'all' };
+    if (s.carTmId) body.id = s.carTmId;
+    const no = this.carNo();
+    const d = await this.carAct('/tags', body, s.carTmId ? '已更新標籤' : '已新增標籤', no);
+    if (d) {
+      if (Array.isArray(d.tags)) this.setState({ carTags: Object.assign({}, this.state.carTags || {}, { key: this.state.g + ':' + no, pal: d.tags }) });
+      this.setState({ carTmForm: false, carTmId: '' });
+      this.carLoadStates(no);
+    }
+  }
+  async carTmDel() {
+    const s = this.state; if (!s.carTmId) return;
+    if (!window.confirm('刪除「' + s.carTmLabel + '」？已經貼出去的這個標記也會一併消失。')) return;
+    const no = this.carNo();
+    const d = await this.carAct('/tags', { action: 'del', id: s.carTmId }, '已刪除標籤', no);
+    if (d) {
+      if (Array.isArray(d.tags)) this.setState({ carTags: Object.assign({}, this.state.carTags || {}, { pal: d.tags }) });
+      this.setState({ carTmForm: false, carTmId: '' });
+      this.carLoadStates(no);
+    }
+  }
+
+  /* ---------- 帳號密碼、QQ 註冊／綁定／重設（Worker 的 /auth/*） ---------- */
+  _authErr(e) {
+    if (e && e.status === 429) return '嘗試次數太多，請 15 分鐘後再試';
+    const d = e && e.data;
+    return String((d && (d.message || d.error)) || (e && e.message) || '發生錯誤');
+  }
+  async lgLogin() {
+    const s = this.state, u = String(s.lgUser || '').trim().toLowerCase(), p = String(s.lgPass || '');
+    if (!u || !p) { this.setState({ lgMsg: '請輸入帳號與密碼' }); return; }
+    if (s.lgBusy) return;
+    this.setState({ lgBusy: true, lgMsg: '' });
+    try {
+      await this.api('/auth/password/login', { method: 'POST', body: { username: u, password: p } });
+      this.setState({ lgBusy: false, lgPass: '' });
+      await this.loadMe();
+      if (this.state.me) this._toast('登入成功');
+    } catch (e) { this.setState({ lgBusy: false, lgMsg: this._authErr(e) }); }
+  }
+  /* retry：驗證碼作廢／過期後按「重新取得」。註冊時密碼欄在第一次拿碼後就清掉了，
+     所以帳密只暫存在記憶體（this._qqReg，不進 state、不進 localStorage），視窗關掉或完成就丟。 */
+  async qqStart(purpose, retry) {
+    const s = this.state, body = { purpose };
+    const msgKey = purpose === 'link' ? 'pwMsg' : 'lgMsg';
+    if (purpose === 'register') {
+      const keep = retry && this._qqReg;
+      const u = keep ? keep.u : String(s.lgUser || '').trim().toLowerCase(), p = keep ? keep.p : String(s.lgPass || '');
+      if (!this.CAR_USER_RE.test(u)) { this.setState({ lgMsg: '帳號須為 3～20 個英文小寫、數字或底線' }); return; }
+      if (p.length < 8 || p.length > 64) { this.setState({ lgMsg: '密碼須為 8～64 個字元' }); return; }
+      body.username = u; body.password = p;
+      this._qqReg = { u, p };
+    } else this._qqReg = null;
+    if (purpose === 'reset') {
+      const u = String(s.lgUser || '').trim().toLowerCase();
+      if (!this.CAR_USER_RE.test(u)) { this.setState({ lgMsg: '先填要重設的帳號名稱' }); return; }
+      body.username = u;
+    }
+    if (s.lgBusy) return;
+    this.setState({ lgBusy: true, [msgKey]: '' });
+    try {
+      const d = await this.api('/auth/qq/start', { method: 'POST', body });
+      const code = String((d && d.code) || '');
+      if (!/^\d{6}$/.test(code) || !d.k) throw new Error('伺服器沒有回傳驗證碼');
+      this.setState({ lgBusy: false, lgPass: purpose === 'register' ? '' : s.lgPass, lgQQ: { purpose, code, k: String(d.k), exp: Date.now() + (+d.ttl || 120) * 1000, status: 'pending', stage: '', qqn: '', now: Date.now() } });
+      this.qqPoll();
+    } catch (e) {
+      // 重拿失敗（例如帳號名剛被註冊走）時把密碼放回欄位，使用者改個帳號名就能再送
+      const back = purpose === 'register' && retry && this._qqReg ? { lgPass: this._qqReg.p } : {};
+      this.setState(Object.assign({ lgBusy: false, [msgKey]: this._authErr(e) }, back));
+    }
+  }
+  qqPoll() {
+    clearTimeout(this._qqT);
+    const tick = async () => {
+      const q = this.state.lgQQ; if (!q || !q.k || q.status !== 'pending') return;
+      if (Date.now() > q.exp + 3000) { this.setState({ lgQQ: Object.assign({}, q, { status: 'expired', now: Date.now() }) }); return; }
+      let d = null;
+      try { d = await this.api('/auth/qq/poll?k=' + encodeURIComponent(q.k)); } catch (e) { d = e && e.status === 404 ? { status: 'expired' } : null; }
+      const cur = this.state.lgQQ; if (!cur || cur.k !== q.k) return;
+      if (d && d.status === 'done') {
+        if (q.purpose === 'reset') {
+          if (!d.resetToken) { this.setState({ lgQQ: Object.assign({}, cur, { status: 'fail', msg: String(d.text || d.message || '重設失敗') }) }); return; }
+          this.setState({ lgQQ: Object.assign({}, cur, { status: 'reset', token: String(d.resetToken), now: Date.now() }), lgNewPass: '' });
+          return;
+        }
+        this._qqReg = null;
+        this.setState({ lgQQ: null });
+        this._toast(q.purpose === 'register' ? '註冊完成，已登入' : '已綁定 QQ');
+        await this.loadMe();
+        if (this.state.page === 'car') this.carLoad();
+        return;
+      }
+      if (d && (d.status === 'expired' || d.status === 'fail')) {
+        const msg = d.status === 'fail' ? String(d.message || d.text || '這組驗證碼已作廢，請重新取得。') : String(d.text || d.message || '');
+        this.setState({ lgQQ: Object.assign({}, cur, { status: d.status, reason: String(d.reason || ''), msg, now: Date.now() }) });
+        return;
+      }
+      const patch = { now: Date.now() };
+      if (d && d.status === 'pending') {
+        // 第一步完成後 Worker 會把期限延到確認碼的期限，倒數跟著走，才不會網頁先喊過期
+        if (+d.ttl > 0) patch.exp = Date.now() + (+d.ttl) * 1000;
+        patch.stage = d.stage === 'confirm' ? 'confirm' : '';
+        patch.qqn = d.stage === 'confirm' && d.qq && d.qq.n ? String(d.qq.n).slice(0, 40) : '';
+      }
+      this.setState({ lgQQ: Object.assign({}, cur, patch) });
+      this._qqT = setTimeout(tick, 2000);
+    };
+    this._qqT = setTimeout(tick, 2000);
+  }
+  async lgResetFinish() {
+    const s = this.state, q = s.lgQQ, p = String(s.lgNewPass || '');
+    if (!q || !q.token) return;
+    if (p.length < 8 || p.length > 64) { this.setState({ lgQQ: Object.assign({}, q, { msg: '密碼須為 8～64 個字元' }) }); return; }
+    if (s.lgBusy) return;
+    this.setState({ lgBusy: true });
+    try {
+      await this.api('/auth/password/reset', { method: 'POST', body: { resetToken: q.token, password: p } });
+      // Worker 重設成功時已經順便發了登入 cookie，直接重新問「我是誰」就好，不用再叫使用者登入一次
+      this.setState({ lgBusy: false, lgQQ: null, lgNewPass: '', lgMode: 'login', lgPass: '', lgMsg: '' });
+    } catch (e) { this.setState({ lgBusy: false, lgQQ: Object.assign({}, q, { msg: this._authErr(e) }) }); return; }
+    await this.loadMe();
+    if (this.state.me) { this._toast('密碼已重設，已登入；其他裝置已登出', 4000); if (this.state.page === 'car') this.carLoad(); }
+    else this.setState({ lgMsg: '密碼已重設，請用新密碼登入（其他裝置已登出）' });
+  }
+  async pwSet() {
+    const s = this.state, me = s.me || {}, p = String(s.pwNew || '');
+    const body = { password: p };
+    if (!me.username) {
+      const u = String(s.pwUser || '').trim().toLowerCase();
+      if (!this.CAR_USER_RE.test(u)) { this.setState({ pwMsg: '帳號須為 3～20 個英文小寫、數字或底線' }); return; }
+      body.username = u;
+    }
+    if (me.hasPassword) {
+      if (!s.pwCur) { this.setState({ pwMsg: '請輸入目前的密碼' }); return; }
+      body.current = String(s.pwCur);
+    }
+    if (p.length < 8 || p.length > 64) { this.setState({ pwMsg: '新密碼須為 8～64 個字元' }); return; }
+    if (s.pwBusy) return;
+    this.setState({ pwBusy: true, pwMsg: '' });
+    try {
+      await this.api('/auth/password/set', { method: 'POST', body });
+      this.setState({ pwBusy: false, pwCur: '', pwNew: '', pwUser: '', pwMsg: me.hasPassword ? '密碼已更新，其他裝置已登出（這個瀏覽器維持登入）' : '已設定帳號密碼，之後可以用帳號密碼登入' });
+      await this.loadMe();
+    } catch (e) { this.setState({ pwBusy: false, pwMsg: this._authErr(e) }); }
+  }
+
+  /* 私車排班頁、登入卡、帳號頁「登入方式」、QQ 驗證碼視窗的畫面資料 */
+  carVals(s) {
+    const isCar = s.page === 'car', isAcc = s.page === 'account', me = s.me, api = this.GAMES_API;
+    const back = isCar ? ('/app.html?page=car' + (s.g ? '&g=' + encodeURIComponent(s.g) : '')) : '/app.html?page=account';
+    const segOn = on => on ? { bg: 'var(--card)', fg: 'var(--ink)', sh: 'var(--sh-xs)' } : { bg: 'transparent', fg: 'var(--text-2)', sh: 'none' };
+    const pill = on => on ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' };
+    const q = s.lgQQ;
+    const qLeft = q ? Math.max(0, Math.ceil((q.exp - (q.now || Date.now())) / 1000)) : 0;
+    const out = {
+      isCar,
+      /* 登入卡：車隊頁與帳號頁在未登入時共用 */
+      lgShow: (isCar || isAcc) && (me === null || (isCar && !!me && s.carNeed === 'login')),
+      lgTitle: isCar ? '登入以使用私車排班' : '登入以同步你的資料',
+      lgDesc: isCar ? '車隊頁只顯示你所在車隊的班表。Discord 車隊用 Discord 登入；QQ 車隊用綁定過 QQ 的帳號密碼登入。'
+        : '登入後遊戲 uid、持卡勾選、編組設定會存到雲端跨裝置共用，也能使用偵測訂閱與私車排班。',
+      lgDiscordUrl: api + '/auth/discord?r=' + encodeURIComponent(back),
+      lgGoogleUrl: api + '/auth/google?r=' + encodeURIComponent(back),
+      lgModeLogin: (s.lgMode || 'login') === 'login', lgModeQQ: s.lgMode === 'qqreg', lgModeReset: s.lgMode === 'reset',
+      lgModeTitle: s.lgMode === 'qqreg' ? 'QQ 車隊：用 QQ 註冊' : s.lgMode === 'reset' ? '忘記密碼' : '或用帳號密碼',
+      lgPwShow: s.lgMode !== 'reset', lgPwAuto: s.lgMode === 'qqreg' ? 'new-password' : 'current-password',
+      lgPwPh: s.lgMode === 'qqreg' ? '設定密碼（8～64 字）' : '密碼',
+      lgLinks: ((s.lgMode || 'login') === 'login' ? [['qqreg', 'QQ 車隊？用 QQ 註冊'], ['reset', '忘記密碼']]
+        : [['login', '← 回到帳號密碼登入'], s.lgMode === 'qqreg' ? ['reset', '忘記密碼'] : ['qqreg', '用 QQ 註冊']])
+        .map(([v, n], i) => ({ v, n, fg: i === 0 ? 'var(--accent-deep)' : 'var(--text-3)' })),
+      lgUser: s.lgUser || '', lgPass: s.lgPass || '', lgMsg: s.lgMsg || '', lgHasMsg: !!s.lgMsg,
+      lgBtn: s.lgBusy ? '處理中…' : '登入', lgQQBtn: s.lgBusy ? '處理中…' : '取得 QQ 驗證碼', lgResetBtn: s.lgBusy ? '處理中…' : '用 QQ 驗證身分',
+      lgErr: me === null ? (s.meErr || '') : '',
+      /* QQ 驗證碼視窗（註冊／加綁／重設共用） */
+      qqShow: !!q,
+      qqTitle: q ? ({ register: '用 QQ 註冊', link: '加綁 QQ', reset: '用 QQ 重設密碼' }[q.purpose] || 'QQ 驗證') : '',
+      qqCode: q ? q.code : '', qqCmd: q ? '/网页 ' + q.code : '',
+      qqPending: !!(q && q.status === 'pending'), qqExpired: !!(q && (q.status === 'expired' || q.status === 'fail')),
+      qqConfirm: !!(q && q.status === 'pending' && q.stage === 'confirm'),
+      qqConfirmMsg: q && q.stage === 'confirm' ? ('QQ「' + (q.qqn || 'QQ 使用者') + '」已送出碼，請在 QQ 送出機器人回覆的確認碼（/网页 確認碼）。如果不是你本人送的，請直接關掉這個視窗。') : '',
+      qqWait: q && q.stage === 'confirm' ? '等待同一個 QQ 送出確認碼…' : '等待機器人確認中…',
+      qqStep2: '送出之後機器人會在群裡回一組 6 位數確認碼，請用同一個 QQ 再傳一次「/网页 確認碼」才會完成。',
+      qqRetryBtn: s.lgBusy ? '處理中…' : '重新取得驗證碼',
+      qqReset: !!(q && q.status === 'reset'),
+      qqLeft: q ? ('剩 ' + qLeft + ' 秒') : '', qqMsg: (q && q.msg) || (q && q.status === 'expired' ? '驗證碼已過期，請重新取得。' : ''),
+      qqHow: q && q.purpose === 'link' ? '到你所在的 QQ 群 @機器人，傳送下面這行，就會把那個 QQ 身分綁到目前登入的帳號。'
+        : q && q.purpose === 'reset' ? '到你綁定過的那個 QQ 群 @機器人，傳送下面這行；只有這個帳號已綁定的 QQ 能通過。'
+        : '到你的車隊 QQ 群 @機器人，傳送下面這行，就會建立帳號並綁定這個 QQ。',
+      lgNewPass: s.lgNewPass || '', qqResetBtn: s.lgBusy ? '處理中…' : '設定新密碼',
+    };
+    if (!isCar && !isAcc) return out;
+
+    /* 帳號頁：登入方式與身分綁定 */
+    if (isAcc) {
+      const qqs = (me && Array.isArray(me.qq)) ? me.qq : [];
+      const dc = me && me.discord;
+      const gOn = !!(me && (me.google || me.email));
+      const ids = [{ k: 'Google', v: gOn ? String((me && me.email) || '已綁定') : '未綁定', on: gOn },
+        { k: 'Discord', v: dc ? String(dc.name || dc.id || '') : '未綁定', on: !!dc }]
+        .concat(qqs.map(x => ({ k: 'QQ', v: String((x && x.n) || 'QQ 使用者') + (x && x.g ? ' · 群 ' + String(x.g).slice(0, 8) + '…' : ''), on: true, g: String((x && x.g) || '') })))
+        .concat(qqs.length ? [] : [{ k: 'QQ', v: '未綁定', on: false }]);
+      Object.assign(out, {
+        acLoggedIn: !!me,
+        acIds: ids.map((x, i) => ({ i: String(i), k: x.k, v: x.v, g: x.g || '', canUnlink: !!x.g, bg: x.on ? 'color-mix(in oklab,#2f9e57 14%,var(--card))' : 'var(--card-2)', fg: x.on ? 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))' : 'var(--text-3)' })),
+        acDiscordUrl2: api + '/auth/discord?r=' + encodeURIComponent('/app.html?page=account'),
+        acDiscordBtn2: dc ? '重新綁定 Discord' : '綁定 Discord',
+        acUsername: (me && me.username) || '',
+        pwTitle: me && me.hasPassword ? '修改密碼' : '設定帳號密碼',
+        pwDesc: me && me.hasPassword ? '要帶目前的密碼。忘記的話可以登出後在登入卡按「忘記密碼」，用綁定的 QQ 重設。'
+          : '設好之後，QQ 車隊的成員也能直接用帳號密碼登入本站（帳號：3～20 個英文小寫、數字或底線；密碼 8～64 字）。',
+        pwNeedUser: !!me && !me.username, pwShowUser: !!(me && me.username), pwNeedCur: !!(me && me.hasPassword),
+        pwUser: s.pwUser || '', pwCur: s.pwCur || '', pwNew: s.pwNew || '', pwMsg: s.pwMsg || '',
+        pwBtn: s.pwBusy ? '處理中…' : (me && me.hasPassword ? '更新密碼' : '儲存'),
+      });
+      return out;
+    }
+
+    /* ===== 車隊頁 ===== */
+    const cm = s.carMe, guilds = (cm && cm.guilds) || [];
+    const gd = guilds.find(x => String(x.gid) === String(s.g)) || null;
+    const cars = gd ? this.carCars(gd) : [];
+    const carNo = cars.some(c => c.no === +s.car) ? +s.car : (cars[0] ? cars[0].no : 1);
+    const curCar = cars.find(c => c.no === carNo) || { no: carNo, name: this.CAR_NAMES[carNo] || '' };
+    const sts = s.carStates || {}, st = sts[carNo] || null;
+    const admin = !!(st && st.role === 'admin');
+    const day = this.carDayOf(st, s.carDate);
+    const today = (st && st.today) || '';
+    const fmt = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : (+v).toFixed(2);
+    const mine = (st && st.me && typeof st.me === 'object') ? st.me : {};
+    const nowH = new Date().getHours();
+    const roleTxt = { admin: '管理員', member: '成員' };
+    const via = me ? ((me.discord ? 'Discord' : '') || ((me.qq || []).length ? 'QQ' : '') || '帳號') : '';
+
+    const rows = day ? (day.rows || []).map(r => {
+      const my = ((mine[day.date] || []).find(x => x && x.hour === r.hour)) || null;
+      const hr = +String(r.hour).slice(0, 2);
+      const live = day.date === today ? hr === nowH : (!!day.xday && hr - 24 === nowH);
+      const cells = ['p2', 'p3', 'p4', 'p5'].map(pos => {
+        const se = (r.seats || []).find(x => x && x.pos === pos) || { pos };
+        const has = !!se.name, isMine = !!(my && my.seat === pos);
+        const tags = (Array.isArray(se.tags) ? se.tags : []).map((t, i) => {
+          const c = this.carTagStyle(t.color);
+          return { i: String(i), label: String(t.label || ''), bg: c.bg, fg: c.fg, title: String(t.label || '') + (t.detail ? '：' + t.detail : ''), h: r.hour, pos, d: day.date };
+        });
+        return {
+          pos, P: pos.toUpperCase(), h: r.hour, d: day.date, has, empty: !has,
+          name: String(se.name || ''), nm: String(se.name || ''), s6: se.role === 's6', bonus: fmt(se.bonus),
+          tags: tags.slice(0, 3), hasMore: tags.length > 3, tagMore: '+' + Math.max(0, tags.length - 3),
+          canTag: admin && has && !!se.fp,
+          drag: admin && has ? 'true' : 'false',
+          emptyTxt: admin ? '缺 · 點此排人' : (r.locked ? '缺 · 已鎖班' : '缺 · 點此報班'),
+          bg: isMine ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
+          mine: isMine,
+        };
+      });
+      const filled = cells.filter(c => c.has).length;
+      const wl = (Array.isArray(r.waitlist) ? r.waitlist : []).filter(Boolean).map(String);
+      const noteParts = [];
+      if (wl.length) noteParts.push('候補 ' + wl.join('、'));
+      if (r.applicants) noteParts.push('報班 ' + r.applicants);
+      let signShow = false, signTxt = '', signAct = '';
+      if (!admin) {
+        if (my) { signShow = true; signAct = 'cancel'; signTxt = my.seat ? '砍班' : (my.waitlist ? '取消候補' : '取消報班'); }
+        else if (!r.locked) { signShow = true; signAct = 'add'; signTxt = '報班'; }
+      }
+      const myTxt = my ? (my.seat ? '我在 ' + my.seat.toUpperCase() : my.waitlist ? '我在候補' : '我已報班') : '';
+      return {
+        hour: r.hour, d: day.date, slot: this.carSlot(r.hour), runner: String((st && st.p1) || '跑者'), ctype: String(r.car_type || ''),
+        locked: !!r.locked, cells, filled,
+        note: noteParts.join(' · ') || (myTxt ? '' : '—'), myTxt, hasMy: !!myTxt,
+        signShow, signTxt, signAct,
+        lockShow: admin, lockTxt: r.locked ? '解鎖' : '鎖班', lockV: r.locked ? '0' : '1',
+        wl: wl.map(n => ({ nm: n, drag: admin ? 'true' : 'false', h: '', d: day.date })), hasWl: wl.length > 0,
+        bg: live ? 'color-mix(in oklab,var(--accent) 7%,var(--card))' : 'transparent',
+        colBd: live ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
+      };
+    }) : [];
+    const allSeats = [].concat.apply([], rows.map(r => r.cells));
+    const bon = allSeats.filter(c => c.has && c.bonus).map(c => +c.bonus);
+    const miss = allSeats.filter(c => !c.has).length;
+    const open = admin && st && st.settings ? !!st.settings.schedule_open : null;
+    const allLocked = rows.length > 0 && rows.every(r => r.locked);
+
+    /* 三車分頁：每車顯示同一天「滿員時段／總時段」 */
+    const carTabs = cars.map(c => {
+      const cs = sts[c.no], cd = cs && day ? ((cs.days || []).find(x => x.date === day.date && !!x.xday === !!day.xday)) : null;
+      const n = cd ? (cd.rows || []).length : 0;
+      const full = cd ? (cd.rows || []).filter(r => (r.seats || []).filter(x => x && x.name).length >= 4).length : 0;
+      const on = c.no === carNo;
+      return Object.assign({ v: String(c.no), n: c.name, cnt: cs ? (n ? full + '/' + n : '—') : ((s.carStErr || {})[c.no] ? '!' : '…'), cntFg: on ? 'var(--accent-deep)' : 'var(--text-3)' }, segOn(on));
+    });
+    const dates = ((st && st.days) || []).map(d => Object.assign({ v: d.date, x: d.xday ? '1' : '', n: this.carDayLabel(d.date, today, d.xday) }, pill(day && d.date === day.date && !!d.xday === !!day.xday)));
+
+    /* 我的班：三車合併，同一天連續、同座位的時段併成一段 */
+    const myList = [];
+    cars.forEach(c => {
+      const cs = sts[c.no]; if (!cs || !cs.me || typeof cs.me !== 'object') return;
+      Object.keys(cs.me).sort().forEach(d => {
+        const hs = (cs.me[d] || []).filter(x => x && /^\d{2}:\d{2}$/.test(String(x.hour))).slice().sort((a, b) => a.hour < b.hour ? -1 : 1);
+        const st2 = x => x.seat ? x.seat.toUpperCase() + (() => { const dd = (cs.days || []).find(y => y.date === d); const rr = dd && (dd.rows || []).find(y => y.hour === x.hour); const se = rr && (rr.seats || []).find(y => y && y.pos === x.seat); return se && se.role === 's6' ? ' S6' : ''; })() : x.waitlist ? '候補' : '已報班';
+        let seg = null;
+        hs.forEach(x => {
+          const v = st2(x), h = +x.hour.slice(0, 2);
+          if (seg && seg.v === v && seg.b === h) { seg.b = h + 1; return; }
+          if (seg) myList.push(seg);
+          seg = { c: c.name, d, a: h, b: h + 1, v };
+        });
+        if (seg) myList.push(seg);
+      });
+    });
+    const pad = n => String(n % 24).padStart(2, '0');
+    const dayShort = d => { const t = this.carDayLabel(d, today, false); return t.replace(/（.）$/, ''); };
+
+    /* 標籤盤 */
+    const tagKey = s.g + ':' + carNo;
+    const pal = (s.carTags && s.carTags.key === tagKey && s.carTags.pal) || [];
+    const palChips = pal.map(t => { const c = this.carTagStyle(t.color); return { id: String(t.id), label: String(t.label || ''), bg: c.bg, fg: c.fg, title: String(t.label || '') + (t.detail ? '：' + t.detail : '') + (t.visibility === 'admin' ? '（僅管理員可見）' : ''), adm: t.visibility === 'admin' }; });
+
+    /* 彈出框 */
+    const p = s.carPop;
+    let pv = { carPopShow: false };
+    if (p && p.no === carNo) {
+      const { seat, row } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+      const W = 290, vw = (typeof window !== 'undefined' ? window.innerWidth : 1200), vh = (typeof window !== 'undefined' ? window.innerHeight : 800);
+      const left = Math.max(12, Math.min(vw - W - 12, p.x - 20));
+      const below = p.y + 12, h0 = p.kind === 'tag' ? 170 : 360;
+      const top = below + h0 > vh - 12 ? Math.max(12, p.top - h0 - 10) : below;
+      const mem = (s.carMembers && s.carMembers.key === tagKey && s.carMembers.list) || [];
+      const tags = seat && Array.isArray(seat.tags) ? seat.tags : [];
+      const t = p.kind === 'tag' ? tags[p.ti] : null;
+      const tc = t ? this.carTagStyle(t.color) : null;
+      const where = (curCar.name || '') + ' · ' + this.carSlot(p.hour) + ' · ' + String(p.pos || '').toUpperCase();
+      const my = ((mine[p.date] || []).find(x => x && x.hour === p.hour)) || null;
+      pv = {
+        carPopShow: !!(row && (p.kind === 'empty' || seat)) && (p.kind !== 'tag' || !!t),
+        carPopL: Math.round(left) + 'px', carPopT: Math.round(top) + 'px',
+        carPopAdminPick: admin && (p.kind === 'empty' || p.kind === 'seat'), carPickTitle: p.kind === 'empty' ? '排人進這個座位' : '換成別人',
+        carPopWhere: where,
+        carPopIsTag: p.kind === 'tag', carPopIsSeat: p.kind === 'seat', carPopIsEmpty: p.kind === 'empty', carPopIsAdd: p.kind === 'addtag',
+        carPopName: String((seat && seat.name) || ''),
+        carPopBonus: seat && seat.name ? ((seat.role === 's6' ? 'S6 · ' : '推手 · ') + '倍率 ' + (fmt(seat.bonus) || '—')) : '',
+        carPopTagLabel: t ? String(t.label || '') : '', carPopTagBg: tc ? tc.bg : '', carPopTagFg: tc ? tc.fg : '',
+        carPopTagScope: t ? (t.scope === 'member' ? ('這個人長期' + (t.until ? '（至 ' + t.until + '）' : '')) : '只這一班') : '',
+        carPopTagDetail: t ? (String(t.detail || '') || '（沒有細節）') : '',
+        carPopTagBy: t && admin && t.by ? '由 ' + String(t.by) + ' 標記' + (t.vis === 'admin' ? ' · 僅管理員可見' : '') : '',
+        carPopSeatTags: tags.map((x, i) => { const c = this.carTagStyle(x.color); return { i: String(i), label: String(x.label || ''), bg: c.bg, fg: c.fg, h: p.hour, pos: p.pos, d: p.date }; }),
+        carPopHasTags: tags.length > 0,
+        carPopAdmin: admin, carPopMember: !admin,
+        carPopCanTag: admin && !!(seat && seat.fp),
+        carPopMine: !admin && !!(my && my.seat === p.pos),
+        carPopCanSign: !admin && p.kind === 'empty' && !(row && row.locked) && !my,
+        carPopLockedTxt: !admin && p.kind === 'empty' ? ((row && row.locked) ? '這個時段已鎖班，暫時不能報。' : (my ? '你已經在這個時段了（' + (my.seat ? my.seat.toUpperCase() : my.waitlist ? '候補' : '已報班') + '）。' : '報班後由機器人依倍率自動排位；想排 S6 請選「報 S6」。')) : '',
+        carPopH: p.hour, carPopD: p.date, carPopPos: p.pos,
+        carPick: s.carPick || '', carPickRole: s.carPickRole || '',
+        carMemOpts: mem.slice(0, 300).map(m => ({ v: m.name, n: m.name + (m.bonus ? ' · ' + fmt(m.bonus) : '') + (m.s6 ? ' · S6 ' + fmt(m.s6) : '') })),
+        carPlaceBtn: s.carActBusy ? '處理中…' : (p.kind === 'empty' ? '排入' : '換人'),
+        carTagChips: palChips.map(x => Object.assign({}, x, { bd: s.carTagSel === x.id ? 'var(--ink)' : 'transparent' })),
+        carTagScopeChips: [['shift', '只這一班'], ['member', '這個人長期']].map(([v, n]) => Object.assign({ v, n }, pill((s.carTagScope || 'shift') === v))),
+        carTagIsMember: s.carTagScope === 'member',
+        carTagDetail: s.carTagDetail || '', carTagUntil: s.carTagUntil || '', carTagMin: today,
+        carTagPutBtn: s.carActBusy ? '處理中…' : '貼上',
+      };
+    }
+
+    /* 標籤盤管理視窗 */
+    const tmOpen = !!s.carTagMgr && admin;
+    const tmv = tmOpen ? {
+      carTmList: palChips.map(x => Object.assign({}, x, { on: s.carTmId === x.id, bd: s.carTmId === x.id ? 'var(--ink)' : 'transparent', vis: x.adm ? '僅管理員' : '全員可見' })),
+      carTmForm: !!s.carTmForm, carTmIsEdit: !!s.carTmId,
+      carTmLabel: s.carTmLabel || '', carTmColor: this.CAR_HEX.test(String(s.carTmColor || '')) ? s.carTmColor : '#8b90b5',
+      carTmDetail: s.carTmDetail || '', carTmVis: s.carTmVis === 'admin' ? 'admin' : 'all',
+      carTmColors: ((s.carTags && s.carTags.colors) || []).map(c => ({ v: c, bd: String(s.carTmColor).toLowerCase() === String(c).toLowerCase() ? 'var(--ink)' : 'transparent' })),
+      carTmPrevBg: this.carTagStyle(s.carTmColor).bg, carTmPrevFg: this.carTagStyle(s.carTmColor).fg,
+      carTmPrev: String(s.carTmLabel || '').trim() || '預覽',
+      carTmSaveBtn: s.carActBusy ? '處理中…' : (s.carTmId ? '儲存變更' : '新增標籤'),
+      carTmCanAdd: pal.length < 30,
+    } : {};
+
+    const carErrNo = (s.carStErr || {})[carNo] || '';
+    return Object.assign(out, {
+      carLoading: me === undefined || (!!me && cm === undefined && !s.carNeed && !s.carErr),
+      carNeedId: !!me && s.carNeed === 'identity',
+      carIdDiscordUrl: api + '/auth/discord?r=' + encodeURIComponent('/app.html?page=car'),
+      carErr: (!!me && !s.carNeed && s.carErr) ? s.carErr : '',
+      carNoGuild: !!cm && !guilds.length,
+      carReady: !!cm && !!gd,
+      carCtx: gd ? (String(gd.name || '車隊') + ' · ' + (roleTxt[(st && st.role) || gd.role] || '成員') + (via ? ' · ' + via + ' 已登入' : '')) : '',
+      carGuildOpts: guilds.map(x => ({ v: String(x.gid), n: String(x.name || x.gid) })), carG: String(s.g || ''), carMultiGuild: guilds.length > 1,
+      carCarTabs: carTabs, carMultiCar: cars.length > 1,
+      carViewTabs: [['table', '表格'], ['board', '看板']].map(([v, n]) => Object.assign({ v, n }, segOn((s.carView || 'table') === v))),
+      carIsTable: (s.carView || 'table') !== 'board', carIsBoard: s.carView === 'board',
+      carIsAdmin: admin,
+      carOpenBtn: open ? '停止報班' : '開放報班', carOpenBg: open ? 'var(--card-2)' : 'var(--ink-grad)', carOpenFg: open ? 'var(--text-2)' : '#fff', carOpenBd: open ? 'var(--border)' : 'transparent',
+      carLockBtn: allLocked ? '解鎖全天' : '鎖班', carLockV: allLocked ? '0' : '1',
+      carDates: dates, carHasDates: dates.length > 0,
+      carStLoading: !st && !carErrNo, carStErr: carErrNo,
+      carNoRows: !!st && rows.length === 0,
+      carDayTitle: (curCar.name || '') + (day ? ' · ' + this.carDayLabel(day.date, today, day.xday).replace(/^(今天|明天) /, '') : ''),
+      carStatShow: rows.length > 0,
+      carStatusShow: open !== null || allLocked,
+      carStatusTxt: allLocked ? '已鎖班' : (open ? '報班開放中' : '報班已關閉'),
+      carStatusBg: allLocked ? 'color-mix(in oklab,#ee6644 15%,var(--card))' : open ? 'color-mix(in oklab,#2f9e57 15%,var(--card))' : 'var(--card-2)',
+      carStatusFg: allLocked ? 'color-mix(in oklab,#ee6644 55%,var(--car-fg))' : open ? 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))' : 'var(--text-3)',
+      carAvg: bon.length ? (bon.reduce((a, b) => a + b, 0) / bon.length).toFixed(2) : '—', carMiss: String(miss),
+      carRows: rows,
+      carMine: myList.map(x => ({ t: x.c + ' · ' + dayShort(x.d) + ' ' + pad(x.a) + '-' + pad(x.b), v: x.v })),
+      carMineEmpty: !myList.length,
+      carMineTxt: admin && !(st && st.me) ? '管理員畫面不列出自己的班，請看左邊的表格。' : '這幾天還沒有你的班。',
+      carPal: palChips, carHasPal: palChips.length > 0,
+      carPalNote: admin ? '點名字旁的 ＋ 貼標記；可選「只這一班」或「這個人長期」。標籤盤裡設成「僅管理員」的標記，成員看不到。' : '管理員貼在座位上的標記；點標記可以看細節。',
+      carTagMgrShow: tmOpen,
+      carBusyTxt: s.carBusy ? '更新中…' : '重新整理',
+    }, pv, tmv);
   }
 
   /* 雲端設定 → 本機。只補「本機沒有」的鍵，不覆蓋使用者當下的操作,
@@ -4689,6 +5395,7 @@ class Component extends DCLogic {
     if (p === 'account') { this.loadWatchKinds(); this.loadWatches(); }
     if (p === 'assistant') this.loadAi().then(() => this.loadChats()).catch(() => {});
     if (p === 'notices') this.loadNotices();
+    if (p === 'car') this.carLoad();
     if (p === 'qa') { if (this.state.me === undefined) this.loadMe(); this.loadQa(); }
     if (p === 'admin') { this.loadAdmin(); this.loadDash('overview'); }
     // 換頁才推一筆歷史（返回鍵回上一頁）；同頁重按、返回鍵觸發、開站第一次都不推。
@@ -4717,7 +5424,7 @@ class Component extends DCLogic {
   URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
-    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'] };
+    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView'] };
   _urlOf(s) {
     const q = new URLSearchParams(); q.set('page', s.page);
     if (s.dbPick && this.DB_PAGES.includes(s.page)) q.set('pick', s.dbPick.kind + ':' + s.dbPick.id);   // 圖鑑詳情也能分享
@@ -4749,6 +5456,18 @@ class Component extends DCLogic {
         setM('meta[property="og:image"]', og); setM('meta[name="twitter:image"]', og);
       } catch (e) {}
       if (document.title !== want) document.title = want;
+    } catch (e) {}
+  }
+  /* Worker 登入流程失敗時會把 ?auth_error=<代碼> 帶回來（彈回頁只閃一下，說明要在這裡顯示），顯示後從網址拿掉 */
+  _authErrFromUrl() {
+    try {
+      const u = new URL(location.href), code = u.searchParams.get('auth_error');
+      if (!code) return;
+      u.searchParams.delete('auth_error');
+      history.replaceState(history.state, '', u.pathname + (u.search || '') + u.hash);
+      const MSG = { discord_taken: '這個 Discord 已綁在另一個網站帳號上' };
+      const msg = MSG[code] || ('登入失敗（' + String(code).replace(/[^\w-]/g, '').slice(0, 30) + '）');
+      setTimeout(() => this._toast(msg, 6000), 400);
     } catch (e) {}
   }
   _readUrl() {   // 只認得 URL_KEYS 裡登記的鍵；數字型的鍵照預設值的型別轉回數字
@@ -5251,6 +5970,7 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
+      ['車隊', [['car', '私車排班', '#9aa9ff']]],
     ].concat(fav.length >= 3 ? [['常用 · 依使用次數', fav]] : []).concat(navBase);
     this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
@@ -6145,6 +6865,7 @@ class Component extends DCLogic {
       kbHelpOpen: !!s.kbHelp,
       toastShow: !!s.toast, toastText: s.toast || '', errBar: !!s.errBar,
       ...this.dbVals(s),
+      ...this.carVals(s),
       ...this.evVals(s),
       ...this.favVals(s),
       ...this.digestVals(s),
@@ -7883,6 +8604,72 @@ class Component extends DCLogic {
 
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      /* 私車排班 */
+      onCarGuild: e => { const v = String(e.target.value || ''); if (v === String(this.state.g)) return; this.setState({ g: v, carStates: {}, carStErr: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => this.carLoadStates(), 0); },
+      onCarNo: e => { const no = +e.currentTarget.dataset.v; if (!no) return; this.setState({ car: no, carPop: null, carTagMgr: false }); if (!(this.state.carStates || {})[no]) this.carLoadStates(no); this.carLoadTags(no); },
+      onCarView: e => this.setState({ carView: e.currentTarget.dataset.v === 'board' ? 'board' : 'table', carPop: null }),
+      onCarDate: e => this.setState({ carDate: e.currentTarget.dataset.v || '', carPop: null }),
+      onCarReload: () => { this.setState({ carPop: null }); this.carLoad(); },
+      onCarSeat: e => this.carOpenPop('seat', e.currentTarget),
+      onCarTag: e => { e.stopPropagation(); this.carOpenPop('tag', e.currentTarget); },
+      onCarAddTag: e => { e.stopPropagation(); this.carOpenPop('addtag', e.currentTarget); },
+      onCarEmpty: e => this.carOpenPop('empty', e.currentTarget),
+      onCarPopClose: () => this.setState({ carPop: null }),
+      onCarPopTag: e => { const d = e.currentTarget.dataset, p = this.state.carPop; if (p) this.setState({ carPop: Object.assign({}, p, { kind: 'tag', ti: +d.i }) }); },
+      onCarPopAdd: () => { const p = this.state.carPop; if (p) this.setState({ carPop: Object.assign({}, p, { kind: 'addtag' }), carTagSel: '', carTagScope: 'shift', carTagDetail: '', carTagUntil: '' }); },
+      onCarSign: e => { const d = e.currentTarget.dataset; this.carSign(d.d, d.h, d.act, d.role); },
+      onCarPlace: () => this.carPlace(),
+      onCarPickKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carPlace(); } },
+      onCarClear: () => this.carClearSeat(),
+      onCarTagDel: () => this.carTagDel(),
+      onCarTagPut: () => this.carTagPut(),
+      onCarTagSel: e => this.setState({ carTagSel: e.currentTarget.dataset.id || '' }),
+      onCarTagScope: e => this.setState({ carTagScope: e.currentTarget.dataset.v === 'member' ? 'member' : 'shift' }),
+      onCarOpen: () => this.carSetOpen(),
+      onCarLockDay: e => { const st = (this.state.carStates || {})[this.carNo()], day = this.carDayOf(st, this.state.carDate); const v = e.currentTarget.dataset.v === '1';
+        if (!day) return; if (v && !window.confirm('鎖定這一天的全部時段？鎖班後成員不能再自己報班。')) return; this.carLock((day.rows || []).map(r => r.hour), v); },
+      onCarLockRow: e => { const d = e.currentTarget.dataset; this.carLock([d.h], d.v === '1'); },
+      onCarTagMgr: () => this.setState(st => ({ carTagMgr: !st.carTagMgr, carTmForm: false, carTmId: '', carPop: null })),
+      onCarTmPick: e => this.carTmEdit(e.currentTarget.dataset.id),
+      onCarTmNew: () => this.carTmEdit(''),
+      onCarTmColor: e => this.setState({ carTmColor: e.currentTarget.dataset.v }),
+      onCarTmSave: () => this.carTmSave(),
+      onCarTmDel: () => this.carTmDel(),
+      onCarTmCancel: () => this.setState({ carTmForm: false, carTmId: '' }),
+      onCarDragStart: e => { const d = e.currentTarget.dataset; if (!d.nm) return; this._carDrag = { nm: d.nm, h: d.h || '', pos: d.pos || '', d: d.d || '' };
+        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', d.nm); } catch (er) {} },
+      onCarDragEnd: () => { this._carDrag = null; try { document.querySelectorAll('.car-over').forEach(x => x.classList.remove('car-over')); } catch (er) {} },
+      onCarDragOver: e => { if (!this._carDrag) return; e.preventDefault(); try { e.currentTarget.classList.add('car-over'); } catch (er) {} },
+      onCarDragLeave: e => { try { e.currentTarget.classList.remove('car-over'); } catch (er) {} },
+      onCarDrop: e => { e.preventDefault(); const d = e.currentTarget.dataset; try { e.currentTarget.classList.remove('car-over'); } catch (er) {}
+        this.carDrop({ h: d.h || '', pos: d.pos || '', nm: d.nm || '', d: d.d || '', zone: d.zone || '' }); },
+      /* 登入卡與帳號密碼 */
+      onLgMode: e => this.setState({ lgMode: e.currentTarget.dataset.v || 'login', lgMsg: '' }),
+      onLgLogin: () => this.lgLogin(),
+      onLgKey: e => { if (e.key === 'Enter') { e.preventDefault(); const m = this.state.lgMode || 'login'; if (m === 'login') this.lgLogin(); else if (m === 'qqreg') this.qqStart('register'); else this.qqStart('reset'); } },
+      onLgQQReg: () => this.qqStart('register'),
+      onLgReset: () => this.qqStart('reset'),
+      onQQLink: () => this.qqStart('link'),
+      onQQClose: () => { clearTimeout(this._qqT); this._qqReg = null; this.setState({ lgQQ: null }); },
+      onQQRetry: () => {
+        const q = this.state.lgQQ; if (!q || this.state.lgBusy) return;
+        clearTimeout(this._qqT);
+        // 帳號名被搶走時重拿同一個帳號名一定失敗：關掉視窗、把密碼放回去，讓使用者換帳號名
+        if (q.purpose === 'register' && q.reason === 'username_taken') {
+          const back = this._qqReg; this._qqReg = null;
+          this.setState(Object.assign({ lgQQ: null, lgMode: 'qqreg', lgMsg: q.msg || '這個帳號名已被使用，請換一個。' }, back ? { lgPass: back.p } : {}));
+          return;
+        }
+        this.setState({ lgQQ: null }); this.qqStart(q.purpose, true);
+      },
+      onQQCopy: () => { const q = this.state.lgQQ; if (!q) return; try { navigator.clipboard.writeText('/网页 ' + q.code).then(() => this._toast('已複製'), () => this._toast('無法複製，請手動輸入')); } catch (er) { this._toast('無法複製，請手動輸入'); } },
+      onQQResetDone: () => this.lgResetFinish(),
+      onPwSet: () => this.pwSet(),
+      onQQUnlink: async e => {
+        const g = e.currentTarget.dataset.g; if (!g || !window.confirm('解除這個 QQ 群的身分綁定？解除後就看不到那個 QQ 車隊的班表。')) return;
+        try { await this.api('/api/qq/unlink', { method: 'POST', body: { g } }); this.setState({ pwMsg: '已解除 QQ 綁定，其他裝置已登出（這個瀏覽器維持登入）' }); await this.loadMe(); }
+        catch (er) { this.setState({ pwMsg: this._authErr(er) }); }
+      },
       /* 圖片載入失敗的統一處理。dc-runtime 把 on* 屬性一律當 React 事件 prop，
          inline 字串會在事件觸發時炸 React #231（Expected onError listener to be a function），
          所以只能綁函式。data-fb 指定失敗後怎麼收：none／hidden／opacity。

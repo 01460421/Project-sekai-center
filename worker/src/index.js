@@ -17,6 +17,8 @@
  */
 
 import { handleAuth, currentUser } from './auth.js';
+import { handleAccounts } from './accounts.js';
+import { handleCar } from './car.js';
 import { handleApi } from './api.js';
 import { handleAdmin } from './admin.js';
 import { runWatches } from './watch.js';
@@ -255,7 +257,13 @@ export default {
        這些路由自己處理 CORS（要帶 cookie，Allow-Origin 不能用萬用字元），
        所以不要套用下面那組給 /games 用的寬鬆 CORS。 */
     if (p.startsWith('/auth/')) {
-      const r = await handleAuth(req, env, url);
+      // 帳密與 QQ 綁定回 JSON（前端 fetch 呼叫）,OAuth 那幾支回 HTML 跳轉頁,分開兩個模組
+      const r = (await handleAccounts(req, env, url)) || (await handleAuth(req, env, url));
+      if (r) return r;
+    }
+    /* 私車排班頁：/car/api/* 代理到菜根機器人（加簽章）,/car/qqbind 收機器人回呼。 */
+    if (p.startsWith('/car/')) {
+      const r = await handleCar(req, env, url);
       if (r) return r;
     }
     /* 前端排名 API 的代理：直連 api.hisekai.org 被 CORS 或網路擋下時，先走這裡再退到公共代理。

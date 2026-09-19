@@ -61,6 +61,10 @@ AI_CAP_ADMIN = "2000"
 AI_CAP_SITE = "1500"
 MAIL_FROM = "SEKAI 資源中心 <noreply@project-sekai-center.com>"
 
+# 私車排班頁（/car/api/*）代理的目的地：菜根機器人的網頁 API（Cloudflare 固定隧道）。
+# 兩邊共用的簽章密鑰 CAIBOT_BRIDGE_SECRET 是機密,用 `wrangler secret put` 設,不要寫在這裡。
+CAIBOT_API_BASE = "https://bot.project-sekai-center.com"
+
 # 申請自動審核。
 # AI_REVIEW_MODEL 跟站內助手分開:這裡只是判斷一句話是不是廣告或亂填,
 # 不需要助手那種要查表、要交叉比對的能力,而它是每個申請者都會觸發一次的。

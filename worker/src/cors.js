@@ -37,3 +37,20 @@ export function preflight(req, env) {
   return new Response(null, { status: 204, headers: h });
 }
 
+/* 會改變狀態的請求（登入、設密碼、代理到機器人的 POST）要求 Origin 必須是本站（含 www）。
+   跟 allowOrigin 不同：這裡預設不放行 localhost —— 本機開發要測就在 .dev.vars 設
+   CAR_ALLOW_LOCALHOST=1。沒有 Origin 一律拒絕（瀏覽器的跨站 POST/fetch 一定會帶）。 */
+export function originIsSite(req, env) {
+  const o = req.headers.get('Origin');
+  if (!o) return false;
+  const site = String(env.SITE_BASE || 'https://project-sekai-center.com').replace(/\/+$/, '');
+  const ok = [site];
+  try {
+    const u = new URL(site);
+    const alt = u.hostname.startsWith('www.') ? u.hostname.slice(4) : 'www.' + u.hostname;
+    ok.push(u.protocol + '//' + u.host.replace(u.hostname, alt));
+  } catch (e) { /* SITE_BASE 設壞了就只比對字串 */ }
+  if (ok.indexOf(o) >= 0) return true;
+  if (String(env.CAR_ALLOW_LOCALHOST || '') === '1' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o)) return true;
+  return false;
+}

@@ -308,6 +308,71 @@ select option, select optgroup{
 }
 @keyframes sheetUp{from{transform:translateY(48px);opacity:.5}to{transform:translateY(0);opacity:1}}
 @media (max-width:480px){.page-sub{display:none}}
+/* ===== 私車排班（?page=car）：表格／看板、推手標記膠囊、彈出框 =====
+   標記膠囊是「淡底深字」：底色＝標籤色 17% 混卡片底，字色＝標籤色 50% 混 --car-fg。
+   --car-fg 淺色主題是深藍、深色主題是白，所以同一組公式兩種主題都讀得到（黃色也過 4.5）。 */
+:root{--car-fg:#1a2140;--car-s6:#8e4bb0}
+@media (prefers-color-scheme:dark){:root:not(.theme-light){--car-fg:#ffffff;--car-s6:#cfa6f2}}
+:root.theme-dark{--car-fg:#ffffff;--car-s6:#cfa6f2}
+.car-wrap{display:flex;gap:18px;align-items:flex-start}
+.car-main{flex:1;min-width:0}
+.car-side{width:290px;flex:none;display:flex;flex-direction:column;gap:14px}
+.car-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm)}
+.car-seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--card-2);gap:2px;max-width:100%}
+.car-seg>button{padding:7px 15px;border:none;border-radius:999px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;font-family:inherit}
+.car-btn{padding:8px 17px;border-radius:999px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-family:inherit}
+.car-row{display:grid;grid-template-columns:78px minmax(0,.85fr) repeat(4,minmax(0,1fr)) minmax(0,.95fr);border-top:1px solid var(--border)}
+.car-row.car-head{border-top:none;background:var(--card-2)}
+.car-gh{font-size:11px;font-weight:800;letter-spacing:1.6px;color:var(--text-3);padding:11px 12px}
+.car-cell{padding:10px 12px;min-height:56px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;border-radius:12px}
+.car-slot{font-size:15px;color:var(--ink);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700}
+.car-nm{font-size:14px;font-weight:700;color:var(--ink);display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-width:0}
+.car-name{border:none;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.car-name:hover{color:var(--accent-deep)}
+.car-bn{font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700}
+.car-tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border:none;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.3px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.car-add{width:20px;height:20px;display:inline-grid;place-items:center;padding:0;border:1px dashed var(--border-2);border-radius:999px;background:transparent;color:var(--text-3);font-size:12px;font-weight:800;cursor:pointer;line-height:1}
+.car-add:hover{color:var(--accent-deep);border-color:var(--accent)}
+/* 有滑鼠的裝置：＋ 平常收起來，滑到座位上才出現（每格都掛一顆太吵）；觸控裝置一律顯示 */
+@media (hover:hover){.car-seat{position:relative}.car-add{position:absolute;top:6px;right:6px;opacity:0;transition:opacity .15s}.car-seat:hover .car-add,.car-add:focus-visible{opacity:1}}
+.car-s6{color:var(--car-s6);font-size:11px;font-weight:800}
+.car-p{font-size:10.5px;font-weight:800;color:var(--text-3);letter-spacing:.5px}
+.car-empty{width:100%;border:1.5px dashed var(--border-2);border-radius:12px;color:var(--text-3);font-size:12.5px;padding:8px 10px;text-align:center;background:transparent;cursor:pointer;font-family:inherit}
+.car-empty:hover{border-color:var(--accent);color:var(--accent-deep)}
+.car-mini{padding:4px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit}
+.car-mini.pri{background:var(--ink-grad);color:#fff;border-color:transparent}
+.car-note{font-size:12px;color:var(--text-2);line-height:1.5;overflow-wrap:anywhere}
+.car-lock{display:inline-block;padding:0 7px;border-radius:999px;background:color-mix(in oklab,#ee6644 15%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));font-size:10.5px;font-weight:800}
+.car-m-only{display:none}
+.car-seat[draggable="true"] .car-name{cursor:grab}
+.car-over{outline:2px dashed var(--accent);outline-offset:-3px;background:color-mix(in oklab,var(--accent) 10%,transparent)!important}
+.car-cols{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity}
+.car-col{flex:0 0 212px;scroll-snap-align:start;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:12px;display:flex;flex-direction:column;gap:8px}
+.car-col .car-cell{border:1px solid var(--border);background:var(--card-2);min-height:50px;padding:8px 10px}
+.car-wl{display:inline-flex;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:var(--card-2);font-size:12px;font-weight:700;color:var(--text-2)}
+.car-wl[draggable="true"]{cursor:grab}
+/* 觸控裝置沒有 HTML5 拖放：不顯示拖放區，改用點名字 → 換人／移出座位 */
+@media (hover:none){.car-out{display:none}}
+.car-out{border:1.5px dashed var(--border-2);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--text-3);margin-bottom:10px}
+.car-in{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit;box-sizing:border-box}
+.car-in:focus{border-color:var(--accent)}
+.car-pop{position:fixed;z-index:77;width:290px;max-height:80vh;overflow-y:auto;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-lg);font-size:12.5px;color:var(--text);animation:fadeIn .18s ease;box-sizing:border-box}
+@media (max-width:1100px){.car-wrap{flex-direction:column;align-items:stretch}.car-side{width:auto;flex-direction:row;flex-wrap:wrap}.car-side>*{flex:1 1 260px}}
+@media (max-width:640px){
+  .car-head{display:none!important}
+  .car-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:8px 6px}
+  .car-row>.car-c-slot{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;min-height:0;padding:2px 6px}
+  .car-row>.car-c-p1{display:none}
+  .car-row>.car-c-note{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;min-height:0;padding:2px 6px}
+  .car-row .car-cell{min-height:0;padding:6px 8px}
+  .car-row .car-seat{border:1px solid var(--border)}
+  .car-m-only{display:inline}
+  .car-admin{width:100%}
+  .car-admin>button{flex:1 1 auto;min-height:40px}
+  .car-side{flex-direction:column}
+  .car-side>*{flex:0 0 auto}
+  .car-col{flex-basis:78vw}
+}
 </style>
 </helmet>
 
@@ -1925,32 +1990,280 @@ select option, select optgroup{
   </sc-if>
 
   <!-- ========== 我的帳號 ========== -->
-  <sc-if value="{{ isAccount }}">
-  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+  <!-- ========== 登入卡（私車排班／我的帳號 未登入時共用） ========== -->
+  <sc-if value="{{ lgShow }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);max-width:520px;margin:10px auto 0">
+    <div class="car-card" style="padding:26px 26px 20px">
+      <div style="font-size:19px;font-weight:800;color:var(--ink);margin-bottom:6px">{{ lgTitle }}</div>
+      <div style="font-size:13px;color:var(--text-2);line-height:1.8;margin-bottom:18px">{{ lgDesc }}</div>
+      <a href="{{ lgDiscordUrl }}" style="display:block;text-align:center;padding:12px 18px;border-radius:999px;background:#5865f2;color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-shadow:var(--sh-sm);margin-bottom:10px">用 Discord 登入</a>
+      <a href="{{ lgGoogleUrl }}" style="display:block;text-align:center;padding:11px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:14px;font-weight:800;text-decoration:none">用 Google 登入</a>
+      <div style="display:flex;align-items:center;gap:10px;margin:18px 0 14px;font-size:11.5px;color:var(--text-3)"><span style="flex:1;height:1px;background:var(--border)"></span>{{ lgModeTitle }}<span style="flex:1;height:1px;background:var(--border)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input class="car-in" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="帳號" value="{{ lgUser }}" onInput="{{ onField }}" onKeyDown="{{ onLgKey }}" data-k="lgUser">
+        <sc-if value="{{ lgPwShow }}">
+          <input class="car-in" type="password" autocomplete="{{ lgPwAuto }}" maxlength="64" placeholder="{{ lgPwPh }}" value="{{ lgPass }}" onInput="{{ onField }}" onKeyDown="{{ onLgKey }}" data-k="lgPass">
+        </sc-if>
+        <sc-if value="{{ lgModeLogin }}">
+          <button type="button" onClick="{{ onLgLogin }}" style="padding:12px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:var(--sh-sm)">{{ lgBtn }}</button>
+        </sc-if>
+        <sc-if value="{{ lgModeQQ }}">
+          <div style="font-size:12px;color:var(--text-2);line-height:1.75">先想好帳號與密碼，按下面的按鈕會拿到 6 位數驗證碼，到 QQ 群 @機器人 打 <b style="color:var(--ink)">/网页 驗證碼</b> 就完成註冊並綁定這個 QQ。</div>
+          <button type="button" onClick="{{ onLgQQReg }}" style="padding:12px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:var(--sh-sm)">{{ lgQQBtn }}</button>
+        </sc-if>
+        <sc-if value="{{ lgModeReset }}">
+          <div style="font-size:12px;color:var(--text-2);line-height:1.75">填帳號後取得驗證碼，用<b style="color:var(--ink)">這個帳號綁定過的 QQ</b> 在群裡 @機器人 打 <b style="color:var(--ink)">/网页 驗證碼</b>，通過後就能設定新密碼。綁了 Discord 的帳號直接用上面的 Discord 登入即可。</div>
+          <button type="button" onClick="{{ onLgReset }}" style="padding:12px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:var(--sh-sm)">{{ lgResetBtn }}</button>
+        </sc-if>
+        <sc-if value="{{ lgHasMsg }}"><div role="status" style="font-size:12.5px;font-weight:700;color:var(--accent-deep)">{{ lgMsg }}</div></sc-if>
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:2px">
+          <sc-for list="{{ lgLinks }}" as="l">
+            <button type="button" onClick="{{ onLgMode }}" data-v="{{ l.v }}" style="padding:4px 0;border:none;background:none;color:{{ l.fg }};font-size:12.5px;font-weight:800;cursor:pointer">{{ l.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ lgErr }}">
+        <div style="margin-top:14px;padding:11px 14px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:11.5px;line-height:1.75">
+          <b>連線後端時發生問題</b>（這代表登入狀態讀不到，不一定是你沒登入）：<br>
+          <code style="font-size:11px;word-break:break-all">{{ lgErr }}</code>
+        </div>
+      </sc-if>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;text-align:center;margin-top:12px;padding:0 8px">
+      Discord／Google 登入只取得名稱與頭像（Google 另含信箱，用來寄通知），不會讀取訊息或其他資料。<br>
+      忘記密碼時，用綁定過的 QQ 重新證明身分即可重設，不需要 email（Discord 登入的帳號直接用 Discord 登入即可）。
+    </div>
+  </div>
+  </sc-if>
 
-    <!-- 未登入 -->
-    <sc-if value="{{ acLoggedOut }}">
-      <div style="border:1px solid var(--border);border-radius:20px;padding:26px 22px;background:var(--card);box-shadow:var(--sh-sm);text-align:center">
-        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:8px">登入以同步你的資料</div>
-        <div style="font-size:13px;color:var(--text-2);line-height:1.8;margin-bottom:18px;max-width:520px;margin-left:auto;margin-right:auto">
-          目前你的遊戲 uid、持卡勾選、編組設定都只存在這台裝置的瀏覽器裡，換手機或清快取就沒了。
-          登入之後會存到雲端，跨裝置共用。<br>
-          登入也才能使用偵測訂閱 —— 榜線到達你設定的門檻、或追蹤的玩家有動靜時，寄信通知你。
+  <!-- ========== 私車排班 ========== -->
+  <sc-if value="{{ isCar }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ carLoading }}">
+      <div class="car-card skel" style="height:220px;border-radius:20px"></div>
+    </sc-if>
+
+    <sc-if value="{{ carNeedId }}">
+      <div class="car-card" style="max-width:560px;margin:10px auto 0;padding:24px">
+        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:6px">還沒綁定車隊身分</div>
+        <div style="font-size:13px;color:var(--text-2);line-height:1.8;margin-bottom:16px">車隊頁靠 Discord 或 QQ 身分判斷你在哪些車隊。Discord 車隊請綁 Discord；QQ 車隊請取得驗證碼後在群裡 @機器人 綁定。</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="{{ carIdDiscordUrl }}" style="padding:11px 20px;border-radius:999px;background:#5865f2;color:#fff;font-size:13.5px;font-weight:800;text-decoration:none">綁定 Discord</a>
+          <button type="button" onClick="{{ onQQLink }}" class="car-btn" style="font-size:13.5px;padding:11px 20px">加綁 QQ</button>
         </div>
-        <a href="{{ acLoginUrl }}" style="display:inline-block;padding:12px 26px;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-shadow:var(--sh-sm)">使用 Google 帳號登入</a>
-        <div style="font-size:11px;color:var(--text-3);margin-top:14px;line-height:1.7">
-          本站只會取得你的 Google 名稱、頭像與信箱（信箱用來寄通知）。不會讀取你的信件或其他資料。<br>
-          新帳號需要管理員核准後才能使用訂閱功能。
+        <div style="font-size:12px;color:var(--accent-deep);margin-top:10px">{{ pwMsg }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ carErr }}">
+      <div class="car-card" style="max-width:560px;margin:10px auto 0;padding:22px">
+        <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:6px">車隊資料讀取失敗</div>
+        <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-bottom:12px">{{ carErr }}</div>
+        <button type="button" onClick="{{ onCarReload }}" class="car-btn">重試</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ carNoGuild }}">
+      <div class="car-card" style="max-width:560px;margin:10px auto 0;padding:22px">
+        <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:6px">你目前不在任何車隊裡</div>
+        <div style="font-size:12.5px;color:var(--text-2);line-height:1.8">只有菜根機器人所在、而且你是成員的車隊才會出現。剛加入車隊的話，請先在車隊裡用機器人登記成員，再回來重新整理。</div>
+        <button type="button" onClick="{{ onCarReload }}" class="car-btn" style="margin-top:12px">重新整理</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ carReady }}">
+      <!-- 車隊與身分 -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="flex:1;min-width:0;font-size:12.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ carCtx }}</div>
+        <sc-if value="{{ carMultiGuild }}">
+          <select value="{{ carG }}" onChange="{{ onCarGuild }}" aria-label="切換車隊" style="max-width:220px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;min-height:38px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
+            <sc-for list="{{ carGuildOpts }}" as="o"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
+          </select>
+        </sc-if>
+        <button type="button" onClick="{{ onCarReload }}" class="car-btn" style="background:var(--card)">{{ carBusyTxt }}</button>
+      </div>
+
+      <!-- 車／檢視／管理員操作 -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="car-seg" role="tablist" aria-label="選擇車" style="overflow-x:auto;scrollbar-width:none">
+          <sc-for list="{{ carCarTabs }}" as="c">
+            <button type="button" role="tab" onClick="{{ onCarNo }}" data-v="{{ c.v }}" style="background:{{ c.bg }};color:{{ c.fg }};box-shadow:{{ c.sh }}">{{ c.n }}<span style="font-family:'M PLUS Rounded 1c';font-size:12px;color:{{ c.cntFg }}">{{ c.cnt }}</span></button>
+          </sc-for>
         </div>
-        <sc-if value="{{ acErr }}">
-          <div style="margin-top:14px;padding:11px 14px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:11.5px;line-height:1.75;text-align:left">
-            <b>連線後端時發生問題</b>（這代表登入狀態讀不到，不一定是你沒登入）：<br>
-            <code style="font-size:11px;word-break:break-all">{{ acErr }}</code><br>
-            <span style="color:var(--text-3)">把這行字回報給站方即可。</span>
+        <div class="car-seg" role="tablist" aria-label="檢視方式">
+          <sc-for list="{{ carViewTabs }}" as="v">
+            <button type="button" role="tab" onClick="{{ onCarView }}" data-v="{{ v.v }}" style="background:{{ v.bg }};color:{{ v.fg }};box-shadow:{{ v.sh }}">{{ v.n }}</button>
+          </sc-for>
+        </div>
+        <div style="flex:1"></div>
+        <sc-if value="{{ carIsAdmin }}">
+          <div class="car-admin" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" onClick="{{ onCarTagMgr }}" class="car-btn">標記管理</button>
+            <button type="button" onClick="{{ onCarLockDay }}" data-v="{{ carLockV }}" class="car-btn">{{ carLockBtn }}</button>
+            <button type="button" onClick="{{ onCarOpen }}" class="car-btn" style="background:{{ carOpenBg }};color:{{ carOpenFg }};border-color:{{ carOpenBd }};box-shadow:var(--sh-xs)">{{ carOpenBtn }}</button>
           </div>
         </sc-if>
       </div>
+
+      <!-- 日期 -->
+      <sc-if value="{{ carHasDates }}">
+        <div class="chips-scroll" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <sc-for list="{{ carDates }}" as="d">
+            <button type="button" onClick="{{ onCarDate }}" data-v="{{ d.v }}" style="padding:7px 15px;border:1px solid {{ d.bd }};border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap">{{ d.n }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div class="car-wrap">
+        <div class="car-main">
+          <sc-if value="{{ carStLoading }}"><div class="car-card skel" style="height:260px"></div></sc-if>
+          <sc-if value="{{ carStErr }}">
+            <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">這一車的班表讀不到：{{ carStErr }}<br><button type="button" onClick="{{ onCarReload }}" class="car-btn" style="margin-top:10px">重試</button></div>
+          </sc-if>
+          <sc-if value="{{ carNoRows }}">
+            <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">這幾天還沒有開班的時段。<br>開班請在車隊裡用機器人的排班指令，開好後這裡就會出現。</div>
+          </sc-if>
+
+          <sc-if value="{{ carStatShow }}">
+          <div class="car-card" style="overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:15px 18px 10px">
+              <div style="font-size:15px;font-weight:800;color:var(--ink)">{{ carDayTitle }}</div>
+              <sc-if value="{{ carStatusShow }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:{{ carStatusBg }};color:{{ carStatusFg }}">{{ carStatusTxt }}</span></sc-if>
+              <div style="flex:1"></div>
+              <span style="font-size:11.5px;color:var(--text-3)">均倍率 <b style="font-family:'M PLUS Rounded 1c';color:var(--ink)">{{ carAvg }}</b> · 缺 <b style="font-family:'M PLUS Rounded 1c';color:#d64533">{{ carMiss }}</b></span>
+            </div>
+
+            <!-- 表格 -->
+            <sc-if value="{{ carIsTable }}">
+              <div class="car-row car-head">
+                <div class="car-gh">時段</div><div class="car-gh">P1 跑者</div><div class="car-gh">P2</div><div class="car-gh">P3</div><div class="car-gh">P4</div><div class="car-gh">P5</div><div class="car-gh">候補／報班</div>
+              </div>
+              <sc-for list="{{ carRows }}" as="r">
+                <div class="car-row" style="background:{{ r.bg }}">
+                  <div class="car-cell car-c-slot">
+                    <span class="car-slot">{{ r.slot }}</span>
+                    <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
+                    <span class="car-m-only car-bn">跑者 {{ r.runner }}</span>
+                  </div>
+                  <div class="car-cell car-c-p1"><div class="car-nm">{{ r.runner }}</div><div class="car-bn">{{ r.ctype }}</div></div>
+                  <sc-for list="{{ r.cells }}" as="c">
+                    <div class="car-cell car-seat" draggable="{{ c.drag }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-nm="{{ c.nm }}" data-d="{{ c.d }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}" style="background:{{ c.bg }}">
+                      <sc-if value="{{ c.has }}">
+                        <div class="car-nm">
+                          <span class="car-p car-m-only">{{ c.P }}</span>
+                          <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if>
+                          <button type="button" class="car-name" onClick="{{ onCarSeat }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}">{{ c.name }}</button>
+                          <sc-for list="{{ c.tags }}" as="t">
+                            <button type="button" class="car-tag" onClick="{{ onCarTag }}" data-h="{{ t.h }}" data-pos="{{ t.pos }}" data-d="{{ t.d }}" data-i="{{ t.i }}" title="{{ t.title }}" style="background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+                          </sc-for>
+                          <sc-if value="{{ c.hasMore }}"><span class="car-bn">{{ c.tagMore }}</span></sc-if>
+                          <sc-if value="{{ c.canTag }}"><button type="button" class="car-add" onClick="{{ onCarAddTag }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}" title="貼標記" aria-label="貼標記">＋</button></sc-if>
+                        </div>
+                        <div class="car-bn">{{ c.bonus }}</div>
+                      </sc-if>
+                      <sc-if value="{{ c.empty }}">
+                        <button type="button" class="car-empty" onClick="{{ onCarEmpty }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}"><span class="car-m-only">{{ c.P }} </span>{{ c.emptyTxt }}</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <div class="car-cell car-c-note" style="gap:6px">
+                    <sc-if value="{{ r.hasMy }}"><span style="font-size:11.5px;font-weight:800;color:var(--accent-deep)">{{ r.myTxt }}</span></sc-if>
+                    <span class="car-note">{{ r.note }}</span>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                      <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
+                      <sc-if value="{{ r.lockShow }}"><button type="button" class="car-mini" onClick="{{ onCarLockRow }}" data-h="{{ r.hour }}" data-v="{{ r.lockV }}">{{ r.lockTxt }}</button></sc-if>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </sc-if>
+
+            <!-- 看板 -->
+            <sc-if value="{{ carIsBoard }}">
+              <div style="padding:4px 14px 14px">
+                <sc-if value="{{ carIsAdmin }}">
+                  <div class="car-out" data-zone="out" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}">拖到這裡＝把人移出座位　·　拖到同一班的另一格＝兩人互換　·　拖到別的時段＝也排進那一格</div>
+                </sc-if>
+                <div class="car-cols">
+                  <sc-for list="{{ carRows }}" as="r">
+                    <div class="car-col" style="border-color:{{ r.colBd }}">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <span class="car-slot">{{ r.slot }}</span>
+                        <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
+                        <div style="flex:1"></div>
+                        <span class="car-bn">P1 {{ r.runner }}</span>
+                      </div>
+                      <sc-for list="{{ r.cells }}" as="c">
+                        <div class="car-cell car-seat" draggable="{{ c.drag }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-nm="{{ c.nm }}" data-d="{{ c.d }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}" style="background:{{ c.bg }}">
+                          <sc-if value="{{ c.has }}">
+                            <div class="car-nm">
+                              <span class="car-p">{{ c.P }}</span>
+                              <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if>
+                              <button type="button" class="car-name" onClick="{{ onCarSeat }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}">{{ c.name }}</button>
+                              <span class="car-bn" style="margin-left:auto">{{ c.bonus }}</span>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+                              <sc-for list="{{ c.tags }}" as="t">
+                                <button type="button" class="car-tag" onClick="{{ onCarTag }}" data-h="{{ t.h }}" data-pos="{{ t.pos }}" data-d="{{ t.d }}" data-i="{{ t.i }}" title="{{ t.title }}" style="background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+                              </sc-for>
+                              <sc-if value="{{ c.hasMore }}"><span class="car-bn">{{ c.tagMore }}</span></sc-if>
+                              <sc-if value="{{ c.canTag }}"><button type="button" class="car-add" onClick="{{ onCarAddTag }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}" title="貼標記" aria-label="貼標記">＋</button></sc-if>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{ c.empty }}">
+                            <button type="button" class="car-empty" onClick="{{ onCarEmpty }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}">{{ c.P }} · {{ c.emptyTxt }}</button>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ r.hasWl }}">
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center"><span class="car-bn">候補</span>
+                          <sc-for list="{{ r.wl }}" as="w"><span class="car-wl" draggable="{{ w.drag }}" data-nm="{{ w.nm }}" data-d="{{ w.d }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}">{{ w.nm }}</span></sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:auto">
+                        <sc-if value="{{ r.hasMy }}"><span style="font-size:11.5px;font-weight:800;color:var(--accent-deep)">{{ r.myTxt }}</span></sc-if>
+                        <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
+                        <sc-if value="{{ r.lockShow }}"><button type="button" class="car-mini" onClick="{{ onCarLockRow }}" data-h="{{ r.hour }}" data-v="{{ r.lockV }}">{{ r.lockTxt }}</button></sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          </sc-if>
+        </div>
+
+        <div class="car-side">
+          <div class="car-card" style="padding:17px 19px">
+            <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:6px">我的班</div>
+            <sc-for list="{{ carMine }}" as="m">
+              <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--border);font-size:12.5px">
+                <span style="color:var(--text);min-width:0">{{ m.t }}</span><b style="font-family:'M PLUS Rounded 1c';color:var(--ink);flex:none">{{ m.v }}</b>
+              </div>
+            </sc-for>
+            <sc-if value="{{ carMineEmpty }}"><div style="font-size:12px;color:var(--text-3);line-height:1.7">{{ carMineTxt }}</div></sc-if>
+          </div>
+          <div class="car-card" style="padding:17px 19px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px">
+              <span style="font-size:14.5px;font-weight:800;color:var(--ink)">推手標記</span>
+              <sc-if value="{{ carIsAdmin }}"><button type="button" onClick="{{ onCarTagMgr }}" style="border:none;background:none;padding:2px 0;color:var(--accent-deep);font-size:12px;font-weight:800;cursor:pointer">編輯</button></sc-if>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+              <sc-for list="{{ carPal }}" as="t"><span class="car-tag" title="{{ t.title }}" style="cursor:default;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</span></sc-for>
+            </div>
+            <div style="font-size:11.5px;color:var(--text-3);line-height:1.75">{{ carPalNote }}</div>
+          </div>
+        </div>
+      </div>
     </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isAccount }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+
+    <!-- 未登入：登入卡在上面（lgShow，跟私車排班頁共用） -->
 
     <!-- 等待審核 -->
     <sc-if value="{{ acPending }}">
@@ -2034,16 +2347,43 @@ select option, select optgroup{
           <a href="{{ acLogoutUrl }}" style="padding:8px 17px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;text-decoration:none">登出</a>
         </div>
       </div>
+    </sc-if>
 
-      <!-- 菜根機器人管理頁 -->
-      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <div style="font-size:14.5px;font-weight:800;color:var(--ink)">菜根機器人</div>
-          <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.7">車隊管理 Discord 機器人的網頁後台，排班、簽到、車房、成員名冊都在這裡管理。跟本站是不同系統，需要另外登入。</div>
+    <!-- 登入方式與身分綁定（等待審核、已核准都看得到：用 Discord 登入的新帳號也要能設密碼、加綁 QQ） -->
+    <sc-if value="{{ acLoggedIn }}">
+      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">登入方式與身分綁定</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">私車排班靠這裡綁定的 Discord 或 QQ 身分判斷你在哪些車隊。綁定只取得名稱，不會讀取訊息內容。</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:11px">
+          <sc-for list="{{ acIds }}" as="x">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:{{ x.bg }}">
+              <span style="flex:none;width:62px;font-size:11.5px;font-weight:800;color:var(--text-2)">{{ x.k }}</span>
+              <span style="min-width:0;flex:1;font-size:12.5px;font-weight:700;color:{{ x.fg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.v }}</span>
+              <sc-if value="{{ x.canUnlink }}"><button type="button" onClick="{{ onQQUnlink }}" data-g="{{ x.g }}" class="car-mini" style="flex:none">解除</button></sc-if>
+            </div>
+          </sc-for>
         </div>
-        <a href="https://bot.project-sekai-center.com" target="_blank" rel="noopener" style="flex:none;padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">前往管理頁面 ↗</a>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px">
+          <a href="{{ acDiscordUrl2 }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none">{{ acDiscordBtn2 }}</a>
+          <button type="button" onClick="{{ onQQLink }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">加綁 QQ</button>
+          <button type="button" onClick="{{ onGo }}" data-p="car" style="padding:9px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">開啟私車排班</button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:13px">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">{{ pwTitle }}</div>
+          <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:9px">{{ pwDesc }}</div>
+          <sc-if value="{{ pwShowUser }}"><div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">帳號：<b style="color:var(--ink)">{{ acUsername }}</b></div></sc-if>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:360px">
+            <sc-if value="{{ pwNeedUser }}"><input class="car-in" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="帳號（3～20 個英文小寫、數字或底線）" value="{{ pwUser }}" onInput="{{ onField }}" data-k="pwUser"></sc-if>
+            <sc-if value="{{ pwNeedCur }}"><input class="car-in" type="password" autocomplete="current-password" maxlength="64" placeholder="目前的密碼" value="{{ pwCur }}" onInput="{{ onField }}" data-k="pwCur"></sc-if>
+            <input class="car-in" type="password" autocomplete="new-password" maxlength="64" placeholder="新密碼（8～64 字）" value="{{ pwNew }}" onInput="{{ onField }}" data-k="pwNew">
+            <div><button type="button" onClick="{{ onPwSet }}" style="padding:9px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">{{ pwBtn }}</button></div>
+          </div>
+          <div role="status" style="font-size:12px;color:var(--accent-deep);margin-top:8px">{{ pwMsg }}</div>
+        </div>
       </div>
+    </sc-if>
 
+    <sc-if value="{{ acReady }}">
       <!-- AI 用量 -->
       <sc-if value="{{ usShow }}">
         <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
@@ -2157,18 +2497,6 @@ select option, select optgroup{
           <button type="button" onClick="{{ onPull }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">從雲端載入</button>
         </div>
         <div style="font-size:11.5px;color:var(--accent-deep);margin-top:9px">{{ acSyncMsg }}</div>
-      </div>
-
-      <!-- Discord 綁定 -->
-      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
-        <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px">Discord 綁定</div>
-        <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">
-          車隊房間相關的偵測需要辨識你的 Discord 身分。綁定只會取得你的帳號名稱與所在伺服器清單，不會讀取訊息內容。
-        </div>
-        <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:12.5px;color:var(--text-2);font-weight:700">{{ acDiscord }}</span>
-          <a href="{{ acDiscordUrl }}" style="padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none">{{ acDiscordBtn }}</a>
-        </div>
       </div>
 
       <!-- 偵測訂閱 -->
@@ -4790,6 +5118,156 @@ select option, select optgroup{
 </div>
 </sc-if>
 
+<!-- ========== 私車排班：座位／標記彈出框（桌機貼在點擊處，手機變底部抽屜） ========== -->
+<sc-if value="{{ carPopShow }}">
+<div onClick="{{ onCarPopClose }}" style="position:fixed;inset:0;z-index:76;background:transparent"></div>
+<div class="car-pop modal" role="dialog" aria-label="{{ carPopWhere }}" style="left:{{ carPopL }};top:{{ carPopT }}">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+    <span style="flex:1;min-width:0;font-size:11px;font-weight:800;letter-spacing:1px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ carPopWhere }}</span>
+    <button type="button" onClick="{{ onCarPopClose }}" aria-label="關閉" style="width:26px;height:26px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;cursor:pointer">✕</button>
+  </div>
+
+  <sc-if value="{{ carPopIsTag }}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span class="car-tag" style="cursor:default;background:{{ carPopTagBg }};color:{{ carPopTagFg }}">{{ carPopTagLabel }}</span>
+      <b style="color:var(--ink);font-size:13px">{{ carPopName }} · {{ carPopTagScope }}</b>
+    </div>
+    <div style="color:var(--text-2);line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere">{{ carPopTagDetail }}</div>
+    <sc-if value="{{ carPopTagBy }}"><div style="margin-top:9px;font-size:11px;color:var(--text-3)">{{ carPopTagBy }}</div></sc-if>
+    <sc-if value="{{ carPopAdmin }}">
+      <button type="button" onClick="{{ onCarTagDel }}" class="car-mini" style="margin-top:12px">移除這個標記</button>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ carPopIsSeat }}">
+    <div style="font-size:15px;font-weight:800;color:var(--ink);overflow-wrap:anywhere">{{ carPopName }}</div>
+    <div class="car-bn" style="margin-bottom:9px">{{ carPopBonus }}</div>
+    <sc-if value="{{ carPopHasTags }}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        <sc-for list="{{ carPopSeatTags }}" as="t"><button type="button" class="car-tag" onClick="{{ onCarPopTag }}" data-i="{{ t.i }}" style="background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ carPopMine }}">
+      <button type="button" onClick="{{ onCarSign }}" data-d="{{ carPopD }}" data-h="{{ carPopH }}" data-act="cancel" class="car-mini">砍班（取消我這一班）</button>
+    </sc-if>
+    <sc-if value="{{ carPopAdmin }}">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <sc-if value="{{ carPopCanTag }}"><button type="button" onClick="{{ onCarPopAdd }}" class="car-mini">＋ 貼標記</button></sc-if>
+        <button type="button" onClick="{{ onCarClear }}" class="car-mini">移出座位</button>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ carPopIsEmpty }}">
+    <sc-if value="{{ carPopMember }}">
+      <div style="color:var(--text-2);line-height:1.7;margin-bottom:10px">{{ carPopLockedTxt }}</div>
+      <sc-if value="{{ carPopCanSign }}">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" onClick="{{ onCarSign }}" data-d="{{ carPopD }}" data-h="{{ carPopH }}" data-act="add" data-role="pusher" class="car-mini pri" style="padding:8px 16px">報推手</button>
+          <button type="button" onClick="{{ onCarSign }}" data-d="{{ carPopD }}" data-h="{{ carPopH }}" data-act="add" data-role="s6" class="car-mini" style="padding:8px 16px">報 S6</button>
+        </div>
+      </sc-if>
+    </sc-if>
+  </sc-if>
+
+  <!-- 管理員：排人／換人 -->
+  <sc-if value="{{ carPopAdminPick }}">
+    <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:5px">{{ carPickTitle }}</div>
+    <input class="car-in" list="carMemList" value="{{ carPick }}" onInput="{{ onField }}" onKeyDown="{{ onCarPickKey }}" data-k="carPick" placeholder="成員名稱或別名" autocomplete="off" style="margin-bottom:8px">
+    <datalist id="carMemList"><sc-for list="{{ carMemOpts }}" as="o"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select value="{{ carPickRole }}" onChange="{{ onField }}" data-k="carPickRole" aria-label="身分" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:40px;outline:none">
+        <option value="">自動（P2 有 S6 倍率就排 S6）</option><option value="s6">S6</option><option value="pusher">推手</option>
+      </select>
+      <button type="button" onClick="{{ onCarPlace }}" class="car-mini pri" style="padding:9px 16px">{{ carPlaceBtn }}</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ carPopIsAdd }}">
+    <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px">幫 {{ carPopName }} 貼標記</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <sc-for list="{{ carTagChips }}" as="t"><button type="button" class="car-tag" onClick="{{ onCarTagSel }}" data-id="{{ t.id }}" title="{{ t.title }}" style="height:24px;padding:0 10px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:0 0 0 2px {{ t.bd }}">{{ t.label }}</button></sc-for>
+    </div>
+    <div class="car-seg" style="margin-bottom:9px">
+      <sc-for list="{{ carTagScopeChips }}" as="c"><button type="button" onClick="{{ onCarTagScope }}" data-v="{{ c.v }}" style="padding:5px 12px;font-size:12px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for>
+    </div>
+    <sc-if value="{{ carTagIsMember }}">
+      <label style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-2);margin-bottom:8px">到期日（選填）<input type="date" value="{{ carTagUntil }}" min="{{ carTagMin }}" onInput="{{ onField }}" data-k="carTagUntil" class="car-in" style="flex:1;min-height:36px;padding:5px 10px"></label>
+    </sc-if>
+    <textarea maxlength="100" placeholder="細節（選填，例如：晚 10 分到，先請大雄代推前兩首）" value="{{ carTagDetail }}" onInput="{{ onField }}" data-k="carTagDetail" class="car-in" style="min-height:58px;resize:vertical;margin-bottom:9px"></textarea>
+    <button type="button" onClick="{{ onCarTagPut }}" class="car-mini pri" style="padding:8px 18px">{{ carTagPutBtn }}</button>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ========== 私車排班：標籤盤管理（僅管理員） ========== -->
+<sc-if value="{{ carTagMgrShow }}">
+<div onClick="{{ onCarTagMgr }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div class="modal" role="dialog" aria-label="標記管理" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(480px,calc(100vw - 28px));max-height:86vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-lg);animation:popCenter .32s cubic-bezier(.34,1.45,.44,1);box-sizing:border-box">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+    <span style="font-size:15px;font-weight:800;color:var(--ink)">標記管理</span>
+    <button type="button" onClick="{{ onCarTagMgr }}" aria-label="關閉" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
+  </div>
+  <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:12px">這一車的標籤盤（最多 30 個）。點一個標籤編輯；刪掉的標籤，已經貼出去的也會一起消失。</div>
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+    <sc-for list="{{ carTmList }}" as="t"><button type="button" class="car-tag" onClick="{{ onCarTmPick }}" data-id="{{ t.id }}" title="{{ t.vis }}" style="height:26px;padding:0 11px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:0 0 0 2px {{ t.bd }}">{{ t.label }}</button></sc-for>
+    <sc-if value="{{ carTmCanAdd }}"><button type="button" onClick="{{ onCarTmNew }}" class="car-mini" style="height:26px">＋ 新增</button></sc-if>
+  </div>
+  <sc-if value="{{ carTmForm }}">
+    <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11.5px;color:var(--text-3)">預覽</span><span class="car-tag" style="cursor:default;background:{{ carTmPrevBg }};color:{{ carTmPrevFg }}">{{ carTmPrev }}</span></div>
+      <input class="car-in" maxlength="6" placeholder="標籤名稱（最多 6 字）" value="{{ carTmLabel }}" onInput="{{ onField }}" data-k="carTmLabel">
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <sc-for list="{{ carTmColors }}" as="c"><button type="button" onClick="{{ onCarTmColor }}" data-v="{{ c.v }}" aria-label="{{ c.v }}" style="width:24px;height:24px;border-radius:50%;border:2px solid {{ c.bd }};background:{{ c.v }};cursor:pointer;padding:0"></button></sc-for>
+        <input type="color" value="{{ carTmColor }}" onInput="{{ onField }}" data-k="carTmColor" aria-label="自訂顏色" style="width:34px;height:26px;border:1px solid var(--border);border-radius:8px;background:var(--card);padding:0;cursor:pointer">
+      </div>
+      <select value="{{ carTmVis }}" onChange="{{ onField }}" data-k="carTmVis" aria-label="可見度" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:40px;outline:none">
+        <option value="all">全員可見</option><option value="admin">僅管理員可見</option>
+      </select>
+      <textarea maxlength="100" placeholder="預設說明（選填）" value="{{ carTmDetail }}" onInput="{{ onField }}" data-k="carTmDetail" class="car-in" style="min-height:54px;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" onClick="{{ onCarTmSave }}" class="car-mini pri" style="padding:8px 18px">{{ carTmSaveBtn }}</button>
+        <sc-if value="{{ carTmIsEdit }}"><button type="button" onClick="{{ onCarTmDel }}" class="car-mini" style="padding:8px 16px;color:#d64533">刪除</button></sc-if>
+        <button type="button" onClick="{{ onCarTmCancel }}" class="car-mini" style="padding:8px 16px">取消</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ========== QQ 驗證碼（註冊／加綁／重設密碼共用） ========== -->
+<sc-if value="{{ qqShow }}">
+<div onClick="{{ onQQClose }}" style="position:fixed;inset:0;z-index:78;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
+<div class="modal" role="dialog" aria-label="{{ qqTitle }}" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:79;width:min(420px,calc(100vw - 28px));max-height:86vh;overflow-y:auto;padding:20px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-lg);animation:popCenter .32s cubic-bezier(.34,1.45,.44,1);box-sizing:border-box">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+    <span style="font-size:15px;font-weight:800;color:var(--ink)">{{ qqTitle }}</span>
+    <button type="button" onClick="{{ onQQClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
+  </div>
+  <sc-if value="{{ qqPending }}">
+    <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-bottom:8px">{{ qqHow }}</div>
+    <div style="font-size:12px;color:var(--text-3);line-height:1.7;margin-bottom:12px">{{ qqStep2 }}</div>
+    <div style="padding:14px;border-radius:14px;background:var(--card-2);border:1px dashed var(--border-2);text-align:center;margin-bottom:10px">
+      <div style="font-family:'M PLUS Rounded 1c',ui-monospace,monospace;font-size:26px;font-weight:800;letter-spacing:3px;color:var(--ink)">{{ qqCmd }}</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">{{ qqLeft }} · {{ qqWait }}</div>
+    </div>
+    <sc-if value="{{ qqConfirm }}">
+      <div role="status" style="font-size:12.5px;line-height:1.75;color:var(--ink);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,var(--card));border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));margin-bottom:10px">{{ qqConfirmMsg }}</div>
+    </sc-if>
+    <button type="button" onClick="{{ onQQCopy }}" class="car-mini" style="padding:8px 16px">複製這行</button>
+  </sc-if>
+  <sc-if value="{{ qqExpired }}">
+    <div role="alert" style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-bottom:12px">{{ qqMsg }}</div>
+    <button type="button" onClick="{{ onQQRetry }}" class="car-mini pri" style="padding:8px 18px">{{ qqRetryBtn }}</button>
+  </sc-if>
+  <sc-if value="{{ qqReset }}">
+    <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-bottom:10px">QQ 身分確認通過，請在 10 分鐘內設定新密碼（8～64 字）。</div>
+    <input class="car-in" type="password" autocomplete="new-password" maxlength="64" placeholder="新密碼" value="{{ lgNewPass }}" onInput="{{ onField }}" data-k="lgNewPass" style="margin-bottom:10px">
+    <button type="button" onClick="{{ onQQResetDone }}" class="car-mini pri" style="padding:9px 18px">{{ qqResetBtn }}</button>
+    <div style="font-size:12px;color:var(--accent-deep);margin-top:8px">{{ qqMsg }}</div>
+  </sc-if>
+</div>
+</sc-if>
+
 <!-- ========== 我的編組詳情（自動算加成） ========== -->
 <sc-if value="{{ deckOpen }}">
 <div onClick="{{ onDeckClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
@@ -5144,7 +5622,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=d56de1c2ef"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=45111e4c53"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

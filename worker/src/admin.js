@@ -9,7 +9,7 @@
    個資最小化：送進 Claude 的快照只有聚合數字與活動榜線，沒有 email、Google sub、
    Discord id，也沒有玩家 uid —— 這些欄位對「回答統計問題」毫無幫助，帶出去只是風險。 */
 
-import { corsHeaders, preflight } from './cors.js';
+import { allowOrigin, corsHeaders, preflight } from './cors.js';
 import { handleDashboard } from './dashboard.js';
 import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   logTool,
@@ -442,6 +442,11 @@ export async function handleAdmin(req, env, url, user) {
      真正的差別放在 body 讓前端決定要跳登入還是顯示無權限。 */
   if (!user) return json({ error: 'not_signed_in', message: '請先登入' }, 403);
   if (!user.is_admin) return json({ error: 'not_admin', message: '沒有管理員權限' }, 403);
+  /* 跟 /api 同一條規則：會改狀態的請求要求 Origin 是本站／Worker 自己／本機開發,擋同網站子網域的 CSRF */
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    const o = req.headers.get('Origin');
+    if (!o || (o !== url.origin && !allowOrigin(req, env))) return json({ error: 'bad_origin' }, 403);
+  }
 
   /* 儀表板自成一個模組(只讀、查詢多),在這裡先分流出去,
      免得 handleAdmin 被一堆統計 SQL 撐爆。 */

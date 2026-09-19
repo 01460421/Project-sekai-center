@@ -34,13 +34,17 @@ export async function upsertGoogleUser(db, p, adminEmail) {
 
 export const getUser = (db, id) => one(db, 'SELECT * FROM users WHERE id = ?', id);
 
-/* Discord 綁定。同一個 Discord 帳號不能綁到兩個站台帳號，
-   所以先把別人身上的同一個 discord_id 解除，避免 UNIQUE 撞車。 */
-export async function linkDiscord(db, userId, d) {
-  await run(db, 'UPDATE users SET discord_id=NULL, discord_name=NULL WHERE discord_id=? AND id<>?', d.id, userId);
-  await run(db, 'UPDATE users SET discord_id=?, discord_name=?, updated_at=? WHERE id=?', d.id, d.username || '', now(), userId);
+/* 工作階段版本（017_session_ver.sql）。session cookie 裡帶 v,currentUser 比對 users.session_ver,
+   改密碼／重設密碼／解綁身分時 +1,舊 cookie 就全部失效。 */
+export const bumpSessionVerStmt = (db, userId) =>
+  db.prepare('UPDATE users SET session_ver = COALESCE(session_ver, 0) + 1, updated_at = ? WHERE id = ?').bind(now(), userId);
+export async function bumpSessionVer(db, userId) {
+  await bumpSessionVerStmt(db, userId).run();
   return getUser(db, userId);
 }
+
+/* Discord 綁定改用 linkDiscordSafe（見檔尾）：舊版會把別人身上的同一個 discord_id 清成 NULL,
+   在可以只靠 Discord 登入之後,那會製造登不進去的孤兒帳號。 */
 export const unlinkDiscord = (db, userId) =>
   run(db, 'UPDATE users SET discord_id=NULL, discord_name=NULL, updated_at=? WHERE id=?', now(), userId);
 
@@ -531,3 +535,220 @@ export const pendingPushEvents = (db, limit) =>
 export const markPushed = (db, ids) => ids.length
   ? run(db, `UPDATE events SET pushed_at=? WHERE id IN (${ids.map(() => '?').join(',')})`, now(), ...ids)
   : Promise.resolve();
+
+/* ---------- 車隊頁帳號：Discord 直接登入、帳密、QQ 綁定（016_car_accounts.sql） ---------- */
+
+export const userByDiscord = (db, discordId) => one(db, 'SELECT * FROM users WHERE discord_id = ?', discordId);
+
+/* 用 Discord 直接建帳號。google_sub 留 NULL、email 留空字串（寄信那邊會自己跳過沒 email 的人）。
+   discord_id 是 UNIQUE —— 兩個分頁同時完成授權時,後到的那個 INSERT 會撞約束,
+   這時改撈先建好的那一筆,不要回錯誤。 */
+export async function createDiscordUser(db, d) {
+  const t = now(), id = newId();
+  try {
+    await run(db,
+      `INSERT INTO users (id, google_sub, email, name, picture, discord_id, discord_name, is_admin, status, created_at, updated_at)
+       VALUES (?, NULL, '', ?, ?, ?, ?, 0, 'pending', ?, ?)`,
+      id, String(d.username || '').slice(0, 80), d.avatar || '', d.id, String(d.username || '').slice(0, 80), t, t);
+  } catch (e) {
+    if (!/UNIQUE|constraint/i.test(String((e && e.message) || e))) throw e;
+  }
+  return userByDiscord(db, d.id);
+}
+
+/* 綁定 Discord（已登入的帳號）。不再把別人身上的同一個 discord_id 清掉 ——
+   那會讓只靠 Discord 登入的帳號變成孤兒(再也登不進去)。
+   回 { ok } / { taken:true }（被別的帳號綁走了,呼叫端提示使用者）。 */
+export async function linkDiscordSafe(db, userId, d) {
+  const owner = await userByDiscord(db, d.id);
+  if (owner && owner.id !== userId) return { taken: true };
+  try {
+    await run(db, 'UPDATE users SET discord_id=?, discord_name=?, updated_at=? WHERE id=?',
+      d.id, String(d.username || '').slice(0, 80), now(), userId);
+  } catch (e) {
+    if (/UNIQUE|constraint/i.test(String((e && e.message) || e))) return { taken: true };
+    throw e;
+  }
+  return { ok: true };
+}
+
+export const passwordOfUser = (db, userId) =>
+  one(db, 'SELECT * FROM user_passwords WHERE user_id = ?', userId).catch(() => null);
+export const passwordByUsername = (db, username) =>
+  one(db, 'SELECT * FROM user_passwords WHERE username = ?', username);
+
+/* 第一次設定帳密。username UNIQUE 撞到 → taken。 */
+export async function insertPassword(db, userId, username, hash) {
+  const t = now();
+  try {
+    await run(db, 'INSERT INTO user_passwords (user_id, username, hash, created_at, updated_at) VALUES (?,?,?,?,?)',
+      userId, username, hash, t, t);
+    return { ok: true };
+  } catch (e) {
+    if (/UNIQUE|constraint/i.test(String((e && e.message) || e))) return { taken: true };
+    throw e;
+  }
+}
+/* 換密碼一定連同工作階段版本一起 +1（同一個交易）：密碼被人改過的帳號,
+   本人重設之後攻擊者手上的舊 cookie 要跟著失效,反之亦然。 */
+export async function updatePasswordHash(db, userId, hash) {
+  await db.batch([
+    db.prepare('UPDATE user_passwords SET hash=?, updated_at=? WHERE user_id=?').bind(hash, now(), userId),
+    bumpSessionVerStmt(db, userId),
+  ]);
+  return getUser(db, userId);
+}
+
+export const qqOfUser = (db, userId) =>
+  all(db, 'SELECT group_openid, member_openid, name, created_at FROM user_qq WHERE user_id = ? ORDER BY created_at', userId)
+    .catch(() => []);
+export const qqOwner = (db, g, m) =>
+  one(db, 'SELECT * FROM user_qq WHERE group_openid = ? AND member_openid = ?', g, m);
+export const unlinkQQ = (db, userId, g) =>
+  run(db, 'DELETE FROM user_qq WHERE user_id = ? AND group_openid = ?', userId, g);
+export const unlinkQQMember = (db, g, m) =>
+  run(db, 'DELETE FROM user_qq WHERE group_openid = ? AND member_openid = ?', g, m);
+
+/* ---- 失敗計數（限流） ----
+   kind:ip（登入 IP 前綴）/ userip（帳號名|IP 前綴）/ user（帳號名總數）/ okip（帳號名|曾成功登入的 IP 前綴,留 30 天）
+        / qqm（QQ 成員送錯碼）/ qqg（同群送錯碼）/ qqall（全站送錯碼）/ qqstart（發碼次數）。
+   只記「時間點」,查的時候數視窗內的筆數,不必另外維護計數器的過期。 */
+export async function failCount(db, kind, k, windowS) {
+  const r = await one(db, 'SELECT COUNT(*) AS n FROM login_fail WHERE kind=? AND k=? AND at>=?', kind, String(k).slice(0, 200), now() - windowS);
+  return (r && r.n) || 0;
+}
+export async function addFail(db, pairs) {
+  const t = now();
+  const st = db.prepare('INSERT INTO login_fail (kind, k, at) VALUES (?,?,?)');
+  const batch = pairs.map(([kind, k]) => st.bind(kind, String(k).slice(0, 200), t));
+  /* 順手清掉舊列,表才不會無限長大。okip（曾成功登入的 IP 前綴）要留 30 天,其他一天。 */
+  batch.push(db.prepare("DELETE FROM login_fail WHERE at < ? AND kind <> 'okip'").bind(t - 86400));
+  batch.push(db.prepare("DELETE FROM login_fail WHERE at < ? AND kind = 'okip'").bind(t - 30 * 86400));
+  await db.batch(batch);
+}
+export const clearFails = (db, kind, k) => run(db, 'DELETE FROM login_fail WHERE kind=? AND k=?', kind, String(k).slice(0, 200));
+/* 記一筆「這個帳號從這個 IP 前綴成功登入過」（同一組只留最新一筆） */
+export async function markGoodIp(db, k) {
+  const t = now(), key = String(k).slice(0, 200);
+  await db.batch([
+    db.prepare("DELETE FROM login_fail WHERE kind='okip' AND k=?").bind(key),
+    db.prepare("INSERT INTO login_fail (kind, k, at) VALUES ('okip', ?, ?)").bind(key, t),
+  ]);
+}
+
+/* ---- QQ 綁定碼 ----
+   主碼（purpose register/link/reset）的 done_json 狀態：
+     NULL                                   未使用
+     {"status":"processing"}                機器人那端正在處理（搶碼用的暫態）
+     {"status":"await",g,m,n,cc}            第一步完成：(g,m) 送了碼,Worker 回了確認碼 cc,等同一個 QQ 再送 cc
+     {"status":"done",...}                  完成（register/link 輪詢兌換後刪列；reset 留著給 resetToken 一次性用）
+     {"status":"failed",reason}             作廢。**碼一旦被機器人搶下就絕不放回未使用** ——
+                                            碼是公開打在群裡的,放回去等於讓旁觀者接手。
+   確認碼是 purpose='confirm' 的另一列（payload {parent,g,m}）,同樣 6 位數、同一個主鍵空間,
+   browser_key 用不是 32 位 hex 的值,輪詢永遠對不到它。 */
+export async function createQQCode(db, purpose, payload, ip, ttlS, browserKey) {
+  const t = now();
+  /* 過期很久的碼順手清掉（reset 完成後的 resetToken 要用到該列 10 分鐘,所以留一小時） */
+  await run(db, 'DELETE FROM qq_codes WHERE exp < ?', t - 3600);
+  for (let i = 0; i < 8; i++) {
+    const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
+    const code = String(n).padStart(6, '0');
+    // browserKey 有給（確認碼那種列）就用「前綴:uuid」—— 不是 32 位 hex,輪詢永遠對不到
+    const k = browserKey ? browserKey + ':' + crypto.randomUUID()
+      : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+    try {
+      await run(db, 'INSERT INTO qq_codes (code, purpose, payload_json, browser_key, exp, ip, done_json) VALUES (?,?,?,?,?,?,NULL)',
+        code, purpose, JSON.stringify(payload || {}), k, t + ttlS, ip || '');
+      return { code, k, exp: t + ttlS };
+    } catch (e) {
+      if (!/UNIQUE|constraint/i.test(String((e && e.message) || e))) throw e;
+    }
+  }
+  throw new Error('無法產生不重複的綁定碼，請稍後再試');
+}
+export const qqCodeByKey = (db, k) => one(db, 'SELECT * FROM qq_codes WHERE browser_key = ?', k);
+export const qqCodeByCode = (db, code) => one(db, 'SELECT * FROM qq_codes WHERE code = ?', code);
+
+/* 搶下這張碼（一次性）：只有把 done_json 從 NULL 改成 processing 的那一次算數。 */
+export async function claimQQCode(db, code) {
+  const r = await run(db,
+    `UPDATE qq_codes SET done_json='{"status":"processing"}' WHERE code=? AND done_json IS NULL AND exp>=?`, code, now());
+  return !!(r && r.meta && r.meta.changes);
+}
+/* 第一步完成：記下送碼的 QQ 身分與確認碼,並把期限延到確認碼的期限（輪詢才不會先喊過期）。 */
+export const awaitQQCode = (db, code, done, exp) =>
+  run(db, 'UPDATE qq_codes SET done_json=?, exp=? WHERE code=?', JSON.stringify(done), exp, code);
+/* 條件式轉換：只有目前 done_json 等於 expect 時才寫入（防兩個請求同時處理同一張碼） */
+export async function swapQQCode(db, code, expectJson, done) {
+  const r = await run(db, 'UPDATE qq_codes SET done_json=? WHERE code=? AND done_json=?', JSON.stringify(done), code, expectJson);
+  return !!(r && r.meta && r.meta.changes);
+}
+export const finishQQCode = (db, code, done) =>
+  run(db, 'UPDATE qq_codes SET done_json=? WHERE code=?', JSON.stringify(done), code);
+/* 瀏覽器兌換後就把 browser_key 換掉（兌換即焚）；reset 的列還要留著給 resetToken 用。 */
+export const burnQQKey = (db, code) =>
+  run(db, 'UPDATE qq_codes SET browser_key=? WHERE code=?',
+    'burned:' + crypto.randomUUID(), code);
+export const deleteQQCode = (db, code) => run(db, 'DELETE FROM qq_codes WHERE code=?', code);
+
+/* resetToken 一次性：條件式 UPDATE,只有第一次會 changes=1 */
+export async function useResetToken(db, code, userId) {
+  const r = await run(db,
+    `UPDATE qq_codes SET done_json=json_set(done_json, '$.rt_used', 1)
+      WHERE code=? AND json_extract(done_json,'$.purpose')='reset'
+        AND json_extract(done_json,'$.user_id')=? AND json_extract(done_json,'$.rt_used')=0`, code, userId);
+  return !!(r && r.meta && r.meta.changes);
+}
+
+/* 橋接 nonce 去重（5 分鐘）。PRIMARY KEY 撞到 = 重放。 */
+export async function useBridgeNonce(db, nonce) {
+  const t = now();
+  try {
+    await db.batch([
+      db.prepare('DELETE FROM bridge_nonce WHERE at < ?').bind(t - 300),
+      db.prepare('INSERT INTO bridge_nonce (nonce, at) VALUES (?, ?)').bind(nonce, t),
+    ]);
+    return true;
+  } catch (e) {
+    if (/UNIQUE|constraint/i.test(String((e && e.message) || e))) return false;
+    throw e;
+  }
+}
+
+/* QQ 註冊：建帳號＋帳密＋QQ 身分,三句放同一個 batch（D1 的 batch 是一個交易）,
+   帳號名或 QQ 身分任一撞約束就整批不成立,不會留下半套帳號。 */
+export async function createQQUser(db, { username, hash, name, g, m, qqName }) {
+  const t = now(), id = newId();
+  try {
+    await db.batch([
+      db.prepare(`INSERT INTO users (id, google_sub, email, name, picture, is_admin, status, created_at, updated_at)
+                  VALUES (?, NULL, '', ?, '', 0, 'pending', ?, ?)`).bind(id, String(name || username).slice(0, 80), t, t),
+      db.prepare('INSERT INTO user_passwords (user_id, username, hash, created_at, updated_at) VALUES (?,?,?,?,?)')
+        .bind(id, username, hash, t, t),
+      db.prepare('INSERT INTO user_qq (group_openid, member_openid, user_id, name, created_at) VALUES (?,?,?,?,?)')
+        .bind(g, m, id, String(qqName || '').slice(0, 80), t),
+    ]);
+    return { ok: true, id };
+  } catch (e) {
+    if (/UNIQUE|constraint/i.test(String((e && e.message) || e))) return { taken: true };
+    throw e;
+  }
+}
+
+/* 加綁 QQ。(g,m) 是主鍵：已綁在自己身上就更新名字,綁在別人身上回 taken。 */
+export async function linkQQ(db, userId, g, m, qqName) {
+  const owner = await qqOwner(db, g, m);
+  if (owner && owner.user_id !== userId) return { taken: true };
+  if (owner) {
+    await run(db, 'UPDATE user_qq SET name=? WHERE group_openid=? AND member_openid=?', String(qqName || '').slice(0, 80), g, m);
+    return { ok: true };
+  }
+  try {
+    await run(db, 'INSERT INTO user_qq (group_openid, member_openid, user_id, name, created_at) VALUES (?,?,?,?,?)',
+      g, m, userId, String(qqName || '').slice(0, 80), now());
+    return { ok: true };
+  } catch (e) {
+    if (/UNIQUE|constraint/i.test(String((e && e.message) || e))) return { taken: true };
+    throw e;
+  }
+}
