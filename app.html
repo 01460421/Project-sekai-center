@@ -406,6 +406,7 @@ select option, select optgroup{
           <sc-if value="{{ liveUrgent }}"><div style="display:inline-block;margin-bottom:3px;padding:2px 10px;border-radius:999px;background:#ff5c7a;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:1px;animation:pulseDot 1.6s infinite">最後一天</div></sc-if>
           <div id="liveCd" style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px;color:{{ liveCdColor }}">{{ liveCountdown }}</div>
           <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
+          <button type="button" onClick="{{ onGo }}" data-p="event" style="margin-top:8px;padding:6px 14px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:12px;font-weight:800;cursor:pointer">活動總覽 →</button>
           <sc-if value="{{ liveHasAnnounce }}"><div style="font-size:10.5px;opacity:.6;margin-top:2px;font-family:'M PLUS Rounded 1c'">{{ liveAnnounce }}</div></sc-if>
         </div>
       </div>
@@ -457,6 +458,7 @@ select option, select optgroup{
             <button type="button" onClick="{{ onUnbind }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">解除綁定</button>
             <button type="button" onClick="{{ onMyDetail }}" style="padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26)">查看排名細節</button>
             <button type="button" onClick="{{ onDeckDetail }}" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">編組詳情</button>
+            <sc-if value="{{ rateSeedN }}"><button type="button" onClick="{{ onRateSync }}" title="公開資料只含隊伍與展示卡，當作勾選的起點" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ rateSeedLabel }}</button></sc-if>
           </div>
         </sc-if>
         <sc-if value="{{ noPlayer }}">
@@ -577,6 +579,124 @@ select option, select optgroup{
         </sc-for>
       </div>
     </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ========== 活動總覽 ========== -->
+  <sc-if value="{{ isEvent }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ evNoData }}"><div style="padding:28px;text-align:center;color:var(--text-3);font-size:13px;border:1px dashed var(--border);border-radius:18px">目前沒有進行中的活動，或排名資料暫時載不到。</div></sc-if>
+    <sc-if value="{{ evLoading }}"><div style="padding:28px;text-align:center;color:var(--text-3);font-size:13px">載入活動資訊…</div></sc-if>
+    <sc-if value="{{ evHas }}">
+    <div class="se-hero" style="position:relative;overflow:hidden;border-radius:24px;padding:22px 24px 20px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px">
+      <span class="se-flow" style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
+      <div style="position:relative;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+        <div style="min-width:220px;flex:1">
+          <div style="font-size:11px;font-weight:800;letter-spacing:2px;opacity:.85">{{ liveState }}</div>
+          <sc-if value="{{ hasLiveArt }}"><img src="{{ liveLogo }}" referrerpolicy="no-referrer" decoding="async" alt="{{ liveName }}" style="display:block;width:min(260px,70%);max-height:66px;object-fit:contain;object-position:left;margin:8px 0 2px"></sc-if>
+          <div class="se-title" style="font-size:clamp(19px,2.8vw,26px);font-weight:800;line-height:1.3;margin-top:6px">{{ liveName }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
+            <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
+            <span style="font-size:11.5px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-family:'M PLUS Rounded 1c'">{{ liveRange }}</span>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:140px">
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">剩餘時間</div>
+          <div style="font-family:'M PLUS Rounded 1c';font-size:clamp(22px,3.2vw,30px);font-weight:800;color:{{ liveCdColor }}">{{ liveCountdown }}</div>
+          <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
+        </div>
+      </div>
+      <div style="position:relative;margin-top:14px;height:7px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden"><div class="se-flow" style="height:100%;border-radius:999px;background:var(--rainbow);width:{{ liveProgress }}"></div></div>
+    </div>
+    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      <button type="button" onClick="{{ onGo }}" data-p="rank" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">活動排名</button>
+      <button type="button" onClick="{{ onGo }}" data-p="analysis" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">分析中心</button>
+      <button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch="{{ evMoyuPatch }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">摸魚表</button>
+      <button type="button" onClick="{{ onGo }}" data-p="bonuscards" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">加分卡參考</button>
+      <button type="button" onClick="{{ onGo }}" data-p="borderdb" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">榜線資料庫</button>
+      <sc-if value="{{ evHasStory }}"><button type="button" onClick="{{ onDbRelated }}" data-p="story" data-patch="{{ evStoryPatch }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">活動劇情（{{ evStoryN }}）</button></sc-if>
+    </div>
+    <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">我的名次</span></div>
+        <sc-if value="{{ hasPlayer }}">
+          <div style="font-size:16px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
+          <div style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-bottom:10px">ID {{ playerId }} · {{ playerRankLabel }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+            <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
+              <div style="background:var(--card-2);border-radius:13px;padding:11px 13px"><div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div></div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noPlayer }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.7">在首頁綁定 Player ID，這裡會顯示你的名次、時速與周回，榜線表也會算出你和每條線的差距。</div><button type="button" onClick="{{ onGo }}" data-p="home" style="margin-top:8px;padding:7px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer">去綁定</button></sc-if>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">榜線與終線預測</span></div>
+        </div>
+        <sc-if value="{{ evHasTiers }}">
+          <div style="display:grid;grid-template-columns:auto 1fr 1fr auto;gap:6px 10px;font-size:12.5px;align-items:center">
+            <span style="font-size:10.5px;font-weight:800;color:var(--text-3)">段位</span><span style="font-size:10.5px;font-weight:800;color:var(--text-3)">現在</span><span style="font-size:10.5px;font-weight:800;color:var(--text-3)">預測終線</span><span style="font-size:10.5px;font-weight:800;color:var(--text-3)">我</span>
+            <sc-for list="{{ evTiers }}" as="t" hint-placeholder-count="6">
+              <span style="font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ t.t }}</span>
+              <span style="font-family:'M PLUS Rounded 1c';color:var(--text)">{{ t.score }}</span>
+              <span style="font-family:'M PLUS Rounded 1c';color:var(--accent-deep);font-weight:700">{{ t.proj }}<sc-if value="{{ t.range }}"><span style="display:block;font-size:10.5px;color:var(--text-3);font-weight:600">{{ t.range }}</span></sc-if></span>
+              <span style="font-size:11.5px;font-weight:700;color:{{ t.gapFg }};white-space:nowrap">{{ t.gap }}</span>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:8px">{{ evPredNote }}</div>
+        </sc-if>
+        <sc-if value="{{ evHasTiers }}"></sc-if>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start;margin-top:14px">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">當期卡池</span></div>
+          <button type="button" onClick="{{ onGo }}" data-p="gacha" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">卡池列表</button>
+        </div>
+        <sc-if value="{{ evHasGachas }}">
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ evGachas }}" as="g" hint-placeholder-count="2">
+              <button type="button" onClick="{{ onDbRelated }}" data-p="gacha" data-patch="{{ g.patchJson }}" style="text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:15px;background:var(--card-2);cursor:pointer">
+                <span style="font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span>
+                <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-top:6px;line-height:1.4">{{ g.n }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px"><sc-for list="{{ g.chSd }}" as="c" hint-placeholder-count="3"><img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:28px;height:28px;object-fit:contain;display:block;border-radius:50%;background:color-mix(in oklab,{{ c.color }} 22%,transparent)"></sc-for></div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:5px;font-family:'M PLUS Rounded 1c'">{{ g.range }}<sc-if value="{{ g.note }}"> · {{ g.note }}</sc-if></div>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ evHasGachas }}"></sc-if>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">加分卡 <span style="font-size:11.5px;color:var(--text-3);font-weight:700">{{ evBonusN }}</span></span></div>
+          <button type="button" onClick="{{ onGo }}" data-p="bonuscards" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">完整參考</button>
+        </div>
+        <sc-if value="{{ evBonusLoad }}"><div style="font-size:12px;color:var(--text-3)">載入加分卡…</div></sc-if>
+        <sc-if value="{{ evHasBonus }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px">
+            <sc-for list="{{ evBonus }}" as="c" hint-placeholder-count="10">
+              <div role="button" tabindex="0" onClick="{{ onDbRelated }}" data-p="cards" data-patch='{"dbPick":{"kind":"card","id":{{ c.id }}}}' title="{{ c.name }}" style="cursor:pointer;text-align:center">
+                <div style="position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--card-2)"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="{{ c.name }}" style="width:100%;height:100%;object-fit:cover;display:block"><span style="position:absolute;right:3px;bottom:3px;padding:1px 6px;border-radius:999px;background:var(--ink);color:#fff;font-size:10px;font-weight:800;font-family:'M PLUS Rounded 1c'">{{ c.rate }}</span></div>
+                <div style="font-size:10.5px;color:var(--text-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.ch }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    <sc-if value="{{ evHasStory }}">
+      <div style="margin-top:14px;border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">活動劇情 <span style="font-size:11.5px;color:var(--text-3);font-weight:700">{{ evStoryN }}</span></span></div>
+          <button type="button" onClick="{{ onDbRelated }}" data-p="story" data-patch="{{ evStoryPatch }}" style="padding:6px 14px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;cursor:pointer">開始閱讀</button>
+        </div>
+        <sc-if value="{{ evStoryOutline }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.75;margin-top:8px">{{ evStoryOutline }}</div></sc-if>
+      </div>
+    </sc-if>
     </sc-if>
   </div>
   </sc-if>
@@ -4592,6 +4712,10 @@ select option, select optgroup{
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><sc-for list="{{ songDetailData.units }}" as="u" hint-placeholder-count="1"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span></sc-for></div>
     </div>
     <button type="button" onClick="{{ onSongCalc }}" data-id="{{ songDetailData.id }}" title="到計算中心用這首歌算活動 P" style="flex:none;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">算活動 P →</button>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;flex-basis:100%">
+      <span style="font-size:11px;font-weight:800;color:var(--text-3)">相關</span>
+      <sc-for list="{{ songDetailData.related }}" as="r" hint-placeholder-count="2"><button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ r.n }} →</button></sc-for>
+    </div>
     <button type="button" onClick="{{ onSongClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;margin-bottom:13px">
@@ -4711,6 +4835,12 @@ select option, select optgroup{
       </div>
     </sc-if>
   </sc-if>
+    <sc-if value="{{ dbPickHasRelated }}">
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;align-items:center">
+      <span style="font-size:11px;font-weight:800;color:var(--text-3);margin-right:2px">相關</span>
+      <sc-for list="{{ dbPickView.related }}" as="r" hint-placeholder-count="3"><button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ r.n }} →</button></sc-for>
+    </div>
+    </sc-if>
   <sc-if value="{{ dbPickHasGo }}">
     <button type="button" onClick="{{ onDbGo }}" data-p="{{ dbPickGo }}" style="display:inline-block;margin-top:14px;padding:9px 18px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer">{{ dbPickGoLabel }} →</button>
   </sc-if>
@@ -4888,7 +5018,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=853a37f497"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=b41ad356c3"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

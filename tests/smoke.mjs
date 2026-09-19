@@ -13,7 +13,7 @@ const MDB = process.env.MDB_DIR ? process.env.MDB_DIR.replace(/\/?$/, '/') : '';
 const routeMdb = async ctx => { if (!MDB) return; await ctx.route(/raw\.githubusercontent\.com\/Sekai-World\/(sekai-master-db-tc-diff|sekai-master-db-diff)\/main\/([A-Za-z0-9]+)\.json/, (r, req) => { const m = /Sekai-World\/(sekai-master-db-tc-diff|sekai-master-db-diff)\/main\/([A-Za-z0-9]+)\.json/.exec(req.url()); const name = m[1] === 'sekai-master-db-diff' ? (m[2] === 'musics' ? 'musics_jp' : 'jp_' + m[2]) : m[2]; const f = MDB + name + '.json'; if (fs.existsSync(f)) r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }); else r.abort(); }); };
 const CASES = [
   ['home', /首頁|近期卡池/], ['calendar', /活動日曆/], ['gacha', /卡池/], ['songs', /共 \d+ 首/], ['calc', /共用設定|活動 P/],
-  ['cards', /共 [\d,]+ 項/], ['chars', /角色圖鑑/], ['fixtures', /共 [\d,]+ 項/], ['mstalk', /已看過 \d/], ['story', /活動劇情/], ['news', /遊戲公告/], ['b30', /B30/], ['account', /登入|我的帳號/],
+  ['cards', /共 [\d,]+ 項/], ['chars', /角色圖鑑/], ['fixtures', /共 [\d,]+ 項/], ['mstalk', /已看過 \d/], ['story', /活動劇情/], ['news', /遊戲公告/], ['b30', /B30/], ['account', /登入|我的帳號/], ['event', /活動總覽/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {
