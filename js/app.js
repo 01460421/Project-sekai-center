@@ -15,7 +15,7 @@ class Component extends DCLogic {
     ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
-    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式']
+    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式'], ['sekai-unit', '團體主題色']
   ];
   bkCollect() {
     const d = {};
@@ -277,6 +277,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/19', t: '今日摘要、行事曆匯出、分享圖卡、提問所版型、團體主題色、空狀態與視窗整理', s: '首頁多了「今日摘要」：活動第幾天、T1000 線與我的一天變化、快結束／今天開始的卡池、今天的公告、跑榜計畫與豆森待辦；活動總覽與活動日曆可匯出 .ics 加進手機行事曆；我的排名、收集率、豆森進度可產生分享圖卡；提問所新增「車隊招募」「榜線回報」兩類並附範本；外觀可選團體主題色（六團強調色）；全站空狀態改成同一種樣式，歌曲視窗的關閉鈕不再被擠到第二行。' },
     { d: '2026/09/19', t: '跑榜計畫器、收藏與待辦頁、抽卡預算、儲存設定', s: '活動試算多了「目標名次」籤（直接帶入預測終線）與「帶入我的活動P」，並依剩餘天數攤成每天要打幾場、幾小時、多少體力，首頁與活動總覽會提示；新增「收藏與待辦」頁：卡片、角色、家具、歌曲、卡池詳情都能按星號收藏，待辦列出跑榜差距、豆森缺的家具、未讀通知；抽卡天井加「每天存石 × 距卡池天數」預算，可點未來卡池自動填天數；計算中心與跑榜工作室都能把整組設定存成「我的設定」一鍵套用（備份與雲端同步一起帶）。' },
     { d: '2026/09/19', t: '新增活動總覽頁、詳情視窗的相關連結、側欄改依資料來源分組並自動列出常用', s: '活動總覽把本期活動的倒數、我的名次、各段榜線與終線預測、當期卡池、加分卡、劇情集中在一頁；卡片、角色、家具、歌曲的詳情視窗多了「相關」連結（同期卡池、卡片劇情、豆森對話、虛擬 Live）；側欄改成即時資料／遊戲資料／計算工具／遊戲／說明與社群五組，用過兩次以上的頁面自動排進「常用」；首頁綁定 Player ID 後可一鍵把隊伍與展示卡帶入收集率。' },
     { d: '2026/09/19', t: 'AI 助手拆成延後載入、站上多了自動測試、偵測訂閱一鍵預設', s: 'AI 助手（約 500 KB）從主程式抽出，登入核准後才載入，一般訪客首屏 JS 少一半；每個 PR 自動跑語法、戳記與 26 個頁面的煙霧測試；偵測訂閱新增三個一鍵預設（T1000 破 300 萬、我掉出 T100、我擠進 T1000）。' },
@@ -691,6 +692,10 @@ class Component extends DCLogic {
     try { savedVmode = localStorage.getItem('sekai-visual') || ''; } catch (e) {}
     this.setState({ vmode: savedVmode });
     this.applyVisualMode(savedVmode);
+    let savedUnit = '';
+    try { savedUnit = localStorage.getItem('sekai-unit') || ''; } catch (e) {}
+    this.setState({ unit: savedUnit });
+    this.applyUnit(savedUnit);
     import('./data/card-chara.js?v=279ffc7580').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
     // 站徽每 8 秒換一種常駐素材（隨機起點，避免每次都從碎片開始）
     this.setState({ matIdx: Math.floor(Math.random() * this.MATS.length) });
@@ -1101,6 +1106,123 @@ class Component extends DCLogic {
     try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
     this.syncFrames();
   }
+  /* 團體主題色：第四個獨立軸，只換強調色（--accent／--cta／--rainbow），底色與深淺色照舊 */
+  applyUnit(u) {
+    const c = document.documentElement.classList;
+    this.UNIT_OF.forEach(x => c.remove('unit-' + x));
+    if (u && this.UNITS[u]) c.add('unit-' + u);
+    try { if (!u) localStorage.removeItem('sekai-unit'); else localStorage.setItem('sekai-unit', u); } catch (e) {}
+    this.syncFrames();
+  }
+  /* ===== 今日摘要（首頁）：活動進度與我的變化、快結束／今天開始的卡池、今天的公告 ===== */
+  digestVals(s) {
+    if (s.page !== 'home') return {};
+    const now = Date.now(), d = new Date(now), W = ['日', '一', '二', '三', '四', '五', '六'];
+    const rows = [];
+    const ev = this.eventOf(s.live);
+    const st = new Date(ev.start_at || ev.started_at || 0).getTime(), en = new Date(ev.aggregate_at || ev.closed_at || ev.aggregated_at || ev.end_at || 0).getTime();
+    if (ev.id != null && st && en && now < en) {
+      const day = Math.floor((now - st) / 86400000) + 1, days = Math.ceil((en - st) / 86400000);
+      let sub = '剩 ' + this.dur(en - now);
+      const snaps = this.snapLocal(ev.id), old = snaps.filter(x => x[0] <= now - 20 * 3600000).pop(), cur = snaps[snaps.length - 1];
+      if (old && cur) {
+        const t1 = r => { const t = (r[1] || []).find(x => x[0] === 1000); return t ? t[1] : null; };
+        const a = t1(old), b = t1(cur);
+        if (a != null && b != null) sub += ' · T1000 線一天 +' + this.short(b - a);
+        if (old[2] != null && cur[2] != null) sub += ' · 我 +' + this.short(cur[2] - old[2]);
+      }
+      rows.push({ ic: '🏁', t: (ev.name || '活動') + '：第 ' + day + ' 天／共 ' + days + ' 天', s: sub, p: 'event', patchJson: '{}' });
+    }
+    const gs = (s.gachas || []), soon = [], today = [];
+    gs.forEach(g => { const a = this.pd(g.s), b = this.pd(g.e); if (!a || !b) return; const endMs = b.getTime() + 86400000, left = endMs - now;
+      if (left > 0 && left <= 48 * 3600000) soon.push({ g, left });
+      if (a.getTime() <= now && now - a.getTime() < 86400000) today.push(g); });
+    soon.sort((x, y) => x.left - y.left).slice(0, 3).forEach(({ g, left }) => rows.push({ ic: '⏳', t: '卡池「' + g.n + '」' + (left <= 24 * 3600000 ? '今天結束' : '明天結束'), s: '剩 ' + this.dur(left), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
+    today.slice(0, 3).forEach(g => rows.push({ ic: '🎉', t: '卡池「' + g.n + '」今天開始', s: '到 ' + this.md(this.pd(g.e)), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const newsN = (s.news || []).filter(x => x.s >= dayStart && x.s <= now).length;
+    if (newsN) rows.push({ ic: '📢', t: '今天有 ' + newsN + ' 則遊戲公告', s: '點開看全部', p: 'news', patchJson: '{}' });
+    const hint = s.pid ? this.planHintText() : '';
+    if (hint) rows.push({ ic: '🏃', t: hint.replace(/ →$/, ''), s: '到計算中心調整目標', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
+    const lack = this.mstLack();
+    if (lack && lack.n) rows.push({ ic: '🪑', t: '豆森還缺 ' + this.n(lack.n) + ' 件家具', s: '可解鎖 ' + this.n(lack.talks) + ' 則對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
+    return { digestRows: rows, digestEmpty: !rows.length, digestDate: (d.getMonth() + 1) + '/' + d.getDate() + '（' + W[d.getDay()] + '）' };
+  }
+  /* ===== .ics 匯出：活動與卡池丟進手機／桌面行事曆 ===== */
+  icsText(items) {
+    const esc = t => String(t || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, m => '\\' + m);
+    const utc = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const day = ms => { const x = new Date(ms); return x.getFullYear() + String(x.getMonth() + 1).padStart(2, '0') + String(x.getDate()).padStart(2, '0'); };
+    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SEKAI 中心//TW', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:SEKAI 中心'];
+    items.forEach(it => {
+      L.push('BEGIN:VEVENT', 'UID:' + it.uid + '@project-sekai-center.com', 'DTSTAMP:' + utc(Date.now()));
+      if (it.allDay) L.push('DTSTART;VALUE=DATE:' + day(it.start), 'DTEND;VALUE=DATE:' + day(it.end));
+      else L.push('DTSTART:' + utc(it.start), 'DTEND:' + utc(it.end));
+      L.push('SUMMARY:' + esc(it.title));
+      if (it.desc) L.push('DESCRIPTION:' + esc(it.desc));
+      if (it.url) L.push('URL:' + it.url);
+      L.push('END:VEVENT');
+    });
+    L.push('END:VCALENDAR');
+    return L.join('\r\n') + '\r\n';
+  }
+  icsDownload(name, items) {
+    if (!items.length) { this._toast('沒有可匯出的項目'); return; }
+    const blob = new Blob([this.icsText(items)], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.ics'; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    this._toast('已匯出 ' + items.length + ' 個行事曆項目');
+  }
+  icsEventItem() {
+    const ev = this.eventOf(this.state.live);
+    const st = new Date(ev.start_at || ev.started_at || 0).getTime(), en = new Date(ev.aggregate_at || ev.closed_at || ev.aggregated_at || ev.end_at || 0).getTime();
+    if (ev.id == null || !st || !en) return null;
+    return { uid: 'event-' + ev.id, title: '活動：' + (ev.name || '#' + ev.id), start: st, end: en, desc: '結算 ' + new Date(en).toLocaleString('zh-TW'), url: 'https://project-sekai-center.com/app.html?page=event' };
+  }
+  icsGachaItems(filter) {
+    return (this.state.gachas || []).filter(g => this.pd(g.s) && this.pd(g.e) && (!filter || filter(g))).map(g => ({ uid: 'gacha-' + g.id, allDay: true, title: '卡池：' + g.n, start: this.pd(g.s).getTime(), end: this.pd(g.e).getTime() + 86400000, desc: (g.ch ? '出場：' + g.ch : '') , url: 'https://project-sekai-center.com/app.html?page=gacha' }));
+  }
+  /* ===== 分享圖卡：把我的排名／收集率／豆森進度畫成 1080×1080 PNG，能分享就分享，不能就下載 ===== */
+  async shareCard(kind) {
+    const v = this.renderVals(), s = this.state, today = new Date().toLocaleDateString('zh-TW');
+    let spec = null;
+    if (kind === 'rank') {
+      if (!s.pid) { this._toast('先在首頁綁定 Player ID'); return; }
+      spec = { title: '我的排名', sub: v.liveName || '', big: ((s.pdata || {}).myRank ? '#' + (s.pdata || {}).myRank : '未進前100'), rows: (v.playerStats || []).filter(x => x.k !== 'rank').slice(0, 6).map(x => [x.l, x.v]), foot: v.planHint ? v.planHint.replace(/ →$/, '') : '' };
+    } else if (kind === 'rate') {
+      spec = { title: '卡片收集率', sub: v.rateTotalLabel || '', big: v.rateTotalPct || '0%', rows: (v.rateUnitRows || []).map(x => [x.n, x.pct + '（' + x.label + '）']) };
+    } else if (kind === 'mst') {
+      spec = { title: '豆森對話進度', sub: '已看過 ' + (v.mstDoneN || 0) + ' / ' + (v.mstTotal || 0) + ' 則', big: v.mstPct || '0%', rows: [], foot: v.mstFixSummary || '' };
+    }
+    if (!spec) return;
+    const W = 1080, H = 1080, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), F = "'M PLUS Rounded 1c','Huninn',system-ui,sans-serif";
+    const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#273052'); bg.addColorStop(1, '#3b4878'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    const rb = x.createLinearGradient(0, 0, W, 0); ['#4ad1e8', '#3ee0a8', '#b8e561', '#ffd94d', '#ff9db4', '#c39df2', '#7fb4f7'].forEach((cc, i, a) => rb.addColorStop(i / (a.length - 1), cc)); x.fillStyle = rb; x.fillRect(0, 0, W, 14);
+    x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '800 30px ' + F; x.fillText('SEKAI 中心', 72, 96);
+    x.fillStyle = '#fff'; x.font = '800 60px ' + F; x.fillText(spec.title, 72, 176);
+    x.fillStyle = 'rgba(255,255,255,.8)'; x.font = '700 34px ' + F; x.fillText(String(spec.sub).slice(0, 26), 72, 232);
+    x.fillStyle = '#fff'; x.font = '800 150px ' + F; x.fillText(spec.big, 72, 420);
+    let y = 520; const rows = spec.rows || [];
+    rows.forEach((r, i) => { const col = i % 2, cx = 72 + col * 480; if (i && !col) y += 130;
+      x.fillStyle = 'rgba(255,255,255,.14)'; x.beginPath(); x.roundRect(cx, y, 440, 110, 22); x.fill();
+      x.fillStyle = 'rgba(255,255,255,.7)'; x.font = '700 26px ' + F; x.fillText(String(r[0]), cx + 24, y + 42);
+      x.fillStyle = '#fff'; x.font = '800 42px ' + F; x.fillText(String(r[1]).slice(0, 18), cx + 24, y + 90); });
+    if (spec.foot) { x.fillStyle = 'rgba(255,255,255,.85)'; x.font = '700 28px ' + F; x.fillText(String(spec.foot).slice(0, 34), 72, 960); }
+    x.fillStyle = 'rgba(255,255,255,.6)'; x.font = '700 26px ' + F; x.fillText('project-sekai-center.com · ' + today, 72, 1020);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    if (!blob) { this._toast('圖卡產生失敗'); return; }
+    const file = new File([blob], 'sekai-' + kind + '.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: spec.title }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    this._toast('已下載圖卡 PNG');
+  }
+  /* 提問所版型：車隊招募／榜線回報有固定欄位，套範本再填 */
+  QA_TPL = {
+    recruit: '【車隊招募】\n活動：\n目標名次／PT：\n時段（台灣時間）：\n需求（加成／技能／綜合力）：\n人數：\n聯絡方式（Discord／遊戲內 ID）：\n備註：',
+    border: '【榜線回報】\n活動：\n時間（台灣時間）：\nT100：\nT500：\nT1000：\nT2000：\nT5000：\nT10000：\n來源／備註：'
+  };
   /* 視覺模式（第三個獨立切換軸）：目前只有「合鳴」一種，用開關而不是像 tone 一樣做多選清單，
      之後要加新方向再擴充 VMODES 即可，寫法照抄 applyTone。 */
   VMODES = [{ v: 'ensemble', n: '合鳴', c: '#4455dd' }];
@@ -2180,7 +2302,7 @@ class Component extends DCLogic {
   }
 
   /* ---------- 自訂版面 ---------- */
-  HOME_BLOCKS = [['hero', '進行中的活動'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
+  HOME_BLOCKS = [['hero', '進行中的活動'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
   layoutOf(scope) { const L = (this.state.layout || {})[scope] || {}; return { order: Array.isArray(L.order) ? L.order : [], hidden: Array.isArray(L.hidden) ? L.hidden : [] }; }
   /* 依使用者設定重排：沒排到的照原本順序接在後面（新功能上線時才不會消失）。 */
   layoutApply(ids, scope) {
@@ -2280,7 +2402,7 @@ class Component extends DCLogic {
   /* 本機 → 雲端。只送站上自己的鍵，不要把整個 localStorage 倒上去。 */
   /* 同步的鍵直接沿用備份清單（BK_KEYS），主題三個是裝置偏好不上雲。
      以前這裡列的是 sekai-owned／sekai-b30 這種站上根本沒寫過的鍵，等於什麼都沒同步到。 */
-  CLOUD_KEYS = this.BK_KEYS.map(k => k[0]).filter(k => ['sekai-theme', 'sekai-tone', 'sekai-visual'].indexOf(k) < 0);
+  CLOUD_KEYS = this.BK_KEYS.map(k => k[0]).filter(k => ['sekai-theme', 'sekai-tone', 'sekai-visual', 'sekai-unit'].indexOf(k) < 0);
   async pushCloud() {
     const obj = {};
     this.CLOUD_KEYS.forEach(k => {
@@ -6008,6 +6130,7 @@ class Component extends DCLogic {
       ...this.dbVals(s),
       ...this.evVals(s),
       ...this.favVals(s),
+      ...this.digestVals(s),
       isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
       ...this.qzVals(s),
       ...this.stkVals(s),
@@ -6259,9 +6382,10 @@ class Component extends DCLogic {
       ...(() => {
         const me = s.me || null, t = s.qaThread;
         const when = ts => ts ? this.ago(ts * 1000) : '';
-        const RN = { question: '提問', discussion: '討論' };
+        const RN = { question: '提問', discussion: '討論', recruit: '車隊招募', border: '榜線回報' };
         return {
-          qaKindChips: [['question', '提問'], ['discussion', '討論']].map(([v, n]) => {
+          qaHasTpl: !!this.QA_TPL[s.qaKind], qaTplHint: this.QA_TPL[s.qaKind] ? '這一類有固定欄位，按「套用範本」再填。' : '',
+          qaKindChips: [['question', '提問'], ['discussion', '討論'], ['recruit', '車隊招募'], ['border', '榜線回報']].map(([v, n]) => {
             const on = (s.qaKind || 'question') === v, st = chip(on, 'var(--cta)');
             return Object.assign({ v, n }, st, { fg: on ? '#fff' : 'var(--text)' });
           }),
@@ -7102,6 +7226,7 @@ class Component extends DCLogic {
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
+      unitChips: [{ v: '', n: '不指定', c: 'var(--text-3)' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n, c: this.UNITS[u].c }))).map(x => Object.assign({}, x, (s.unit || '') === x.v ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' })),
       toneChips: this.SKINS.map(x => ({ v: x.v, n: x.n, c: x.c,
         bd: s.tone === x.v ? x.c : 'var(--border)',
         bg: s.tone === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
@@ -8476,6 +8601,14 @@ class Component extends DCLogic {
       onTheme: () => this.cycleTheme(),
       onAiDual: () => this.loadAi().then(() => this.setAiDual(!this.state.aiDual)).catch(() => {}),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
+      onUnitTheme: e => { const v = e.currentTarget.dataset.v || ''; this.setState({ unit: v }); this.applyUnit(v); },
+      onShareCard: e => { this.shareCard(e.currentTarget.dataset.kind); },
+      onIcsEvent: () => { const it = this.icsEventItem(); this.icsDownload(it ? ('sekai-event-' + it.uid.replace('event-', '')) : 'sekai-event', it ? [it] : []); },
+      onIcsMonth: () => { const y = this.state.calY, m = this.state.calM, a = new Date(y, m, 1).getTime(), b = new Date(y, m + 1, 1).getTime();
+        const items = this.icsGachaItems(g => this.pd(g.e).getTime() + 86400000 > a && this.pd(g.s).getTime() < b);
+        const ev = this.icsEventItem(); if (ev && ev.end > a && ev.start < b) items.unshift(ev);
+        this.icsDownload('sekai-' + y + '-' + String(m + 1).padStart(2, '0'), items); },
+      onQaTpl: () => { const t = this.QA_TPL[this.state.qaKind]; if (!t) return; if (this.state.qaBody && !window.confirm('內容會被範本取代，確定？')) return; this.setState({ qaBody: t }); },
       onVisualMode: e => { const v = e.currentTarget.dataset.v; const next = this.state.vmode === v ? '' : v; this.setState({ vmode: next }); this.applyVisualMode(next); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;

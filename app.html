@@ -96,6 +96,30 @@ color-scheme:dark;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
 --ln-color:#7788ff;--mmj-color:#a5e05e;--vbs-color:#ff8577;--wxs-color:#ffcc55;--n25-color:#c58aeb;--vs-color:#55dddd;--mix-color:#ff85ad;
 }
+/* ===== 空狀態統一：一種樣式走遍全站（列表內用 .in-list 去邊框） ===== */
+.empty{padding:28px 18px;text-align:center;color:var(--text-3);font-size:13px;line-height:1.75;border:1px dashed var(--border);border-radius:18px;background:var(--bg-soft)}
+.empty.in-list{border:none;border-top:1px solid var(--border);border-radius:0;background:transparent}
+.empty b{display:block;color:var(--text-2);font-size:13.5px;margin-bottom:2px}
+.empty.loading{border-color:transparent;background:transparent}
+/* ===== 詳情視窗共用：標題列（標題／動作鈕同一行）＋相關連結列 ===== */
+.modal-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.modal-acts{display:flex;align-items:center;gap:6px;flex:none}
+.modal-x{width:30px;height:30px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer;line-height:1}
+.modal-related{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+/* ===== 團體主題色：只覆蓋強調色，與配色風格互斥（後者被 unit-* 蓋掉） ===== */
+:root.unit-ln{--accent:#4455dd;--accent-deep:#3344bb;--cta:linear-gradient(135deg,#5b6cf0 0%,#3344bb 100%);--rainbow:linear-gradient(90deg,#8b97ff,#5b6cf0,#4455dd,#33aaee,#7fb4f7,#b8c2ff,#8b97ff)}
+:root.unit-mmj{--accent:#6fb52e;--accent-deep:#558f22;--cta:linear-gradient(135deg,#a5e05e 0%,#6fb52e 100%);--rainbow:linear-gradient(90deg,#d5f0b0,#a5e05e,#88cc44,#6fb52e,#b8e561,#e3f5c8,#d5f0b0)}
+:root.unit-vbs{--accent:#e5533f;--accent-deep:#c23f2d;--cta:linear-gradient(135deg,#ff8577 0%,#c23f2d 100%);--rainbow:linear-gradient(90deg,#ffc0b8,#ff8577,#e5533f,#ee4499,#ffb0c8,#ffd9d4,#ffc0b8)}
+:root.unit-wxs{--accent:#d9a31a;--accent-deep:#b58610;--cta:linear-gradient(135deg,#ffcc55 0%,#d9a31a 100%);--rainbow:linear-gradient(90deg,#ffe9a8,#ffcc55,#d9a31a,#ffb86b,#ffd94d,#fff0c0,#ffe9a8)}
+:root.unit-n25{--accent:#9c5fd0;--accent-deep:#7f47b5;--cta:linear-gradient(135deg,#c58aeb 0%,#7f47b5 100%);--rainbow:linear-gradient(90deg,#e0c8f5,#c58aeb,#9c5fd0,#c39df2,#8fa0ff,#ead9fa,#e0c8f5)}
+:root.unit-vs{--accent:#22b6b6;--accent-deep:#188f8f;--cta:linear-gradient(135deg,#55dddd 0%,#188f8f 100%);--rainbow:linear-gradient(90deg,#b0f0f0,#55dddd,#22b6b6,#4ad1e8,#3ee0a8,#d0f6f6,#b0f0f0)}
+:root.theme-dark.unit-ln{--accent:#8b97ff;--accent-deep:#a7b0ff}
+:root.theme-dark.unit-mmj{--accent:#a5e05e;--accent-deep:#bdea82}
+:root.theme-dark.unit-vbs{--accent:#ff8577;--accent-deep:#ffa398}
+:root.theme-dark.unit-wxs{--accent:#ffcc55;--accent-deep:#ffd97a}
+:root.theme-dark.unit-n25{--accent:#c58aeb;--accent-deep:#d4a6f1}
+:root.theme-dark.unit-vs{--accent:#55dddd;--accent-deep:#7fe6e6}
+@media (prefers-color-scheme:dark){:root:not(.theme-light).unit-ln{--accent:#8b97ff;--accent-deep:#a7b0ff}:root:not(.theme-light).unit-mmj{--accent:#a5e05e;--accent-deep:#bdea82}:root:not(.theme-light).unit-vbs{--accent:#ff8577;--accent-deep:#ffa398}:root:not(.theme-light).unit-wxs{--accent:#ffcc55;--accent-deep:#ffd97a}:root:not(.theme-light).unit-n25{--accent:#c58aeb;--accent-deep:#d4a6f1}:root:not(.theme-light).unit-vs{--accent:#55dddd;--accent-deep:#7fe6e6}}
 /* ===== 六種配色風格（藝術典雅）：只覆蓋強調色系，底色與對比交給深/淺色主題 ===== */
 :root.tone-sakura{--accent:#e06a92;--accent-deep:#c24b76;
   --cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
@@ -416,12 +440,30 @@ select option, select optgroup{
     </div>
     </sc-if>
 
+    <sc-if value="{{ homeShow.digest }}">
+    <div style="order:{{ homeOrd.digest }};border:1px solid var(--border);border-radius:20px;padding:16px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+        <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
+        <span style="font-size:15px;font-weight:800;color:var(--ink)">今日摘要</span>
+        <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ digestDate }}</span>
+      </div>
+      <sc-if value="{{ digestEmpty }}"><div class="empty" style="padding:16px">今天沒有特別的事：沒有快結束的卡池，也沒有新公告。</div></sc-if>
+      <div style="display:grid;grid-template-columns:{{ twoCol }};gap:8px">
+        <sc-for list="{{ digestRows }}" as="r" hint-placeholder-count="3">
+          <button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--text);cursor:pointer;min-width:0">
+            <span style="font-size:17px;line-height:1.2;flex:none">{{ r.ic }}</span>
+            <span style="min-width:0;flex:1"><span style="display:block;font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.45">{{ r.t }}</span><span style="display:block;font-size:11px;color:var(--text-3);margin-top:2px;line-height:1.5">{{ r.s }}</span></span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
     <sc-if value="{{ homeShow.me }}">
     <div style="order:{{ homeOrd.me }};display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
       <div style="border:1px solid var(--border);border-radius:20px;padding:20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
           <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
-          <span style="font-size:15px;font-weight:800;color:var(--ink)">我的排名</span>
+          <span style="font-size:15px;font-weight:800;color:var(--ink)">我的排名</span><span style="flex:1"></span><button type="button" onClick="{{ onShareCard }}" data-kind="rank" title="產生分享圖卡（PNG）" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">分享圖卡</button>
         </div>
         <sc-if value="{{ hasPlayer }}">
           <div style="font-size:18px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
@@ -587,8 +629,8 @@ select option, select optgroup{
   <!-- ========== 活動總覽 ========== -->
   <sc-if value="{{ isEvent }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
-    <sc-if value="{{ evNoData }}"><div style="padding:28px;text-align:center;color:var(--text-3);font-size:13px;border:1px dashed var(--border);border-radius:18px">目前沒有進行中的活動，或排名資料暫時載不到。</div></sc-if>
-    <sc-if value="{{ evLoading }}"><div style="padding:28px;text-align:center;color:var(--text-3);font-size:13px">載入活動資訊…</div></sc-if>
+    <sc-if value="{{ evNoData }}"><div class="empty">目前沒有進行中的活動，或排名資料暫時載不到。</div></sc-if>
+    <sc-if value="{{ evLoading }}"><div class="empty">載入活動資訊…</div></sc-if>
     <sc-if value="{{ evHas }}">
     <div class="se-hero" style="position:relative;overflow:hidden;border-radius:24px;padding:22px 24px 20px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px">
       <span class="se-flow" style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
@@ -616,11 +658,12 @@ select option, select optgroup{
       <button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch="{{ evMoyuPatch }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">摸魚表</button>
       <button type="button" onClick="{{ onGo }}" data-p="bonuscards" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">加分卡參考</button>
       <button type="button" onClick="{{ onGo }}" data-p="borderdb" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">榜線資料庫</button>
+      <button type="button" onClick="{{ onIcsEvent }}" title="下載 .ics，加進手機或桌面行事曆" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">📅 加入行事曆</button>
       <sc-if value="{{ evHasStory }}"><button type="button" onClick="{{ onDbRelated }}" data-p="story" data-patch="{{ evStoryPatch }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">活動劇情（{{ evStoryN }}）</button></sc-if>
     </div>
     <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
       <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">我的名次</span></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">我的名次</span><span style="flex:1"></span><button type="button" onClick="{{ onShareCard }}" data-kind="rank" title="產生分享圖卡（PNG）" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">分享圖卡</button></div>
         <sc-if value="{{ hasPlayer }}">
           <div style="font-size:16px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
           <div style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-bottom:10px">ID {{ playerId }} · {{ playerRankLabel }}</div>
@@ -720,11 +763,11 @@ select option, select optgroup{
             </sc-for>
           </div>
         </sc-if>
-        <sc-if value="{{ favNoTodo }}"><div style="padding:18px;text-align:center;color:var(--text-3);font-size:12.5px;border:1px dashed var(--border);border-radius:14px">目前沒有待辦，都做完了。</div></sc-if>
+        <sc-if value="{{ favNoTodo }}"><div class="empty">目前沒有待辦，都做完了。</div></sc-if>
       </div>
       <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">收藏</span><span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ favN }} 項</span></div>
-        <sc-if value="{{ favEmpty }}"><div style="padding:18px;text-align:center;color:var(--text-3);font-size:12.5px;line-height:1.7;border:1px dashed var(--border);border-radius:14px">還沒有收藏。<br>在卡片、角色、家具、歌曲或卡池的詳情視窗按 ☆ 就會出現在這裡。</div></sc-if>
+        <sc-if value="{{ favEmpty }}"><div class="empty">還沒有收藏。<br>在卡片、角色、家具、歌曲或卡池的詳情視窗按 ☆ 就會出現在這裡。</div></sc-if>
         <sc-for list="{{ favGroups }}" as="g" hint-placeholder-count="2">
           <div style="margin-bottom:12px">
             <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:6px">{{ g.label }} <span style="color:var(--text-3);font-weight:600">{{ g.count }}</span></div>
@@ -752,6 +795,7 @@ select option, select optgroup{
         <button type="button" onClick="{{ onMonth }}" data-d="-1" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">◀ 上月</button>
         <button type="button" onClick="{{ onMonth }}" data-d="0" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">今天</button>
         <button type="button" onClick="{{ onMonth }}" data-d="1" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">下月 ▶</button>
+        <button type="button" onClick="{{ onIcsMonth }}" title="把這個月的卡池與活動匯出成 .ics" style="padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">📅 .ics</button>
       </div>
     </div>
 
@@ -869,7 +913,7 @@ select option, select optgroup{
         </div>
       </sc-for>
       <sc-if value="{{ gachaEmpty }}">
-        <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px;border-top:1px solid var(--border)">沒有符合條件的卡池，試著清空搜尋或改選團體／類型</div>
+        <div class="empty in-list">沒有符合條件的卡池，試著清空搜尋或改選團體／類型</div>
       </sc-if>
     </div>
 
@@ -966,10 +1010,10 @@ select option, select optgroup{
         </div>
       </sc-for>
       <sc-if value="{{ songEmpty }}">
-        <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px;border-top:1px solid var(--border)">沒有符合條件的歌曲，試著清空搜尋或改選團體</div>
+        <div class="empty in-list">沒有符合條件的歌曲，試著清空搜尋或改選團體</div>
       </sc-if>
       <sc-if value="{{ songBusy }}">
-        <div style="padding:36px;text-align:center;color:var(--text-3);font-size:13px">
+        <div class="empty loading">
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>{{ songStatus }}
         </div>
       </sc-if>
@@ -1145,7 +1189,7 @@ select option, select optgroup{
       </sc-if>
 
       <sc-if value="{{ wlEmpty }}">
-        <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">本期不是 World Link 活動，或章節資料尚未開放。</div>
+        <div class="empty">本期不是 World Link 活動，或章節資料尚未開放。</div>
       </sc-if>
       <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.6">WL 每章有獨立的角色、期程與榜線，跟主榜分開結算。未開始的章節官方尚未提供資料，會等開章後才有。</div>
     </sc-if>
@@ -1178,7 +1222,7 @@ select option, select optgroup{
         </div>
       </sc-for>
       <sc-if value="{{ rankBusy }}">
-        <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px">
+        <div class="empty loading">
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>{{ rankStatus }}
         </div>
       </sc-if>
@@ -1236,7 +1280,7 @@ select option, select optgroup{
         <button type="button" onClick="{{ onPastRetry }}" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ pastErrMsg }}</button>
       </sc-if>
       <sc-if value="{{ pastBusy }}">
-        <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+        <div class="empty loading">
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入 {{ pastTitle }} …
         </div>
       </sc-if>
@@ -1263,7 +1307,7 @@ select option, select optgroup{
         </div>
       </div>
       <sc-if value="{{ pastEmpty }}">
-        <div style="padding:38px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">這一期沒有可查的排名資料。</div>
+        <div class="empty">這一期沒有可查的排名資料。</div>
       </sc-if>
     </sc-if>
 
@@ -1279,7 +1323,7 @@ select option, select optgroup{
         </sc-for>
       </div>
       <sc-if value="{{ trendBusy }}">
-        <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+        <div class="empty loading">
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入榜線…{{ trendProg }}
         </div>
       </sc-if>
@@ -1670,7 +1714,7 @@ select option, select optgroup{
         <button type="button" onClick="{{ onTutMore }}" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">顯示其餘 {{ tutMoreN }} 則 ▾</button>
       </sc-if>
       <sc-if value="{{ tutEmpty }}">
-        <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:16px;background:var(--card)">找不到符合的教學條目</div>
+        <div class="empty">找不到符合的教學條目</div>
       </sc-if>
     </div>
     <div style="margin-top:14px;font-size:11.5px;color:var(--text-3);line-height:1.8">由台啤開瓶器編輯團隊整理，共 115 則問答，教學圖片直接內嵌顯示。完整原始文檔（含最新增補）：<a href="{{ tutDoc }}" target="_blank">教學文檔 ↗</a></div>
@@ -1729,7 +1773,7 @@ select option, select optgroup{
   <sc-if value="{{ isBorderDB }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ bdbBusy }}">
-      <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+      <div class="empty loading">
         <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入榜線資料庫…
       </div>
     </sc-if>
@@ -2250,7 +2294,7 @@ select option, select optgroup{
     </sc-if>
 
     <sc-if value="{{ acLoading }}">
-      <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px">載入中…</div>
+      <div class="empty loading">載入中…</div>
     </sc-if>
   </div>
   </sc-if>
@@ -2577,6 +2621,7 @@ select option, select optgroup{
           <input type="text" value="{{ qaTitle }}" onInput="{{ onField }}" data-k="qaTitle" maxlength="80" placeholder="標題" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;font-family:inherit;margin-bottom:7px">
           <textarea value="{{ qaBody }}" onInput="{{ onField }}" data-k="qaBody" maxlength="4000" rows="4" placeholder="內容（發{{ qaKindName }}）" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:vertical"></textarea>
           <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <sc-if value="{{ qaHasTpl }}"><button type="button" onClick="{{ onQaTpl }}" style="padding:7px 14px;border:1px dashed var(--border-2);border-radius:999px;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">套用範本</button></sc-if>
             <button type="button" onClick="{{ onQaPost }}" style="padding:7px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">發表</button>
             <span style="font-size:11.5px;color:var(--accent-deep)">{{ qaMsg }}</span>
           </div>
@@ -2593,7 +2638,7 @@ select option, select optgroup{
       </sc-if>
 
       <sc-if value="{{ qaNone }}">
-        <div style="padding:26px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">還沒有{{ qaKindName }}。</div>
+        <div class="empty">還沒有{{ qaKindName }}。</div>
       </sc-if>
       <sc-for list="{{ qaRows }}" as="r" hint-placeholder-count="6">
         <div role="button" tabindex="0" onClick="{{ onQaOpen }}" data-id="{{ r.id }}" style="border:1px solid var(--border);border-radius:16px;padding:12px 16px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:8px;cursor:pointer">
@@ -2670,7 +2715,7 @@ select option, select optgroup{
   <sc-if value="{{ isNotices }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ acLoggedOut }}">
-      <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13.5px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+      <div class="empty">
         通知需要登入才能使用。<br>
         <a href="{{ acLoginUrl }}" style="color:var(--accent-deep);font-weight:700">使用 Google 帳號登入</a>
       </div>
@@ -2687,7 +2732,7 @@ select option, select optgroup{
       </div>
 
       <sc-if value="{{ noticeNone }}">
-        <div style="padding:30px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+        <div class="empty">
           還沒有任何通知。<br>
           到<a href="?page=account" style="color:var(--accent-deep);font-weight:700">我的帳號</a>建立偵測訂閱，條件成立時就會通知你。
         </div>
@@ -2711,7 +2756,7 @@ select option, select optgroup{
   <sc-if value="{{ isAssistant }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ acLoggedOut }}">
-      <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13.5px;border:1px solid var(--border);border-radius:20px;background:var(--card);line-height:1.9">
+      <div class="empty">
         站內助手需要登入才能使用。<br>
         <a href="{{ acLoginUrl }}" style="color:var(--accent-deep);font-weight:700">使用 Google 帳號登入</a>
       </div>
@@ -2810,7 +2855,7 @@ select option, select optgroup{
   <sc-if value="{{ isAdminPage }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ admDenied }}">
-      <div style="padding:34px;text-align:center;color:var(--text-3);font-size:13.5px;border:1px solid var(--border);border-radius:20px;background:var(--card)">
+      <div class="empty">
         這個頁面只有管理員能用。<a href="{{ acLoginUrl }}" style="color:var(--accent-deep)">登入</a>
       </div>
     </sc-if>
@@ -3164,7 +3209,7 @@ select option, select optgroup{
       <button type="button" onClick="{{ onColReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ colErrMsg }}</button>
     </sc-if>
     <sc-if value="{{ colBusy }}">
-      <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+      <div class="empty loading">
         <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入收集室資料…
       </div>
     </sc-if>
@@ -3195,7 +3240,7 @@ select option, select optgroup{
     </sc-if>
 
     <sc-if value="{{ colEmpty }}">
-      <div style="padding:38px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">沒有符合的項目，試著清空搜尋。</div>
+      <div class="empty">沒有符合的項目，試著清空搜尋。</div>
     </sc-if>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px">
@@ -3306,6 +3351,7 @@ select option, select optgroup{
         </div>
         <div class="chips-scroll" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <sc-for list="{{ mstViewChips }}" as="c" hint-placeholder-count="2"><button type="button" onClick="{{ onDbChip }}" data-k="mstView" data-v="{{ c.v }}" style="padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
+          <button type="button" onClick="{{ onShareCard }}" data-kind="mst" title="產生分享圖卡（PNG）" style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-3);font-size:11.5px;font-weight:700;cursor:pointer">分享圖卡</button>
           <button type="button" onClick="{{ onMstClear }}" style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-3);font-size:11.5px;font-weight:700;cursor:pointer">清除紀錄</button>
         </div>
       </div>
@@ -3662,7 +3708,7 @@ select option, select optgroup{
     </sc-if>
 
     <sc-if value="{{ dbEmpty }}">
-      <div style="padding:38px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">沒有符合的項目，試著清空搜尋或篩選。</div>
+      <div class="empty">沒有符合的項目，試著清空搜尋或篩選。</div>
     </sc-if>
     <sc-if value="{{ dbMore }}">
       <button type="button" id="dbMoreBtn" onClick="{{ onDbMore }}" style="display:block;margin:16px auto 0;padding:10px 26px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">{{ dbMoreLabel }}</button>
@@ -4213,6 +4259,7 @@ select option, select optgroup{
       <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
         <div style="font-family:'M PLUS Rounded 1c';font-size:clamp(30px,5vw,44px);font-weight:800;color:var(--accent-deep);line-height:1">{{ rateTotalPct }}</div>
         <div style="font-size:13px;color:var(--text-2);font-weight:700">{{ rateTotalLabel }}</div>
+        <span style="flex:1"></span><button type="button" onClick="{{ onShareCard }}" data-kind="rate" title="產生分享圖卡（PNG）" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">分享圖卡</button>
       </div>
       <div style="height:10px;border-radius:999px;background:var(--card-2);overflow:hidden;margin-top:12px">
         <div style="height:100%;width:{{ rateTotalBar }};background:var(--grad-cta);border-radius:999px;transition:width .45s cubic-bezier(.32,.72,.24,1)"></div>
@@ -4290,7 +4337,7 @@ select option, select optgroup{
       <button type="button" onClick="{{ onRateReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ rateErrMsg }}</button>
     </sc-if>
     <sc-if value="{{ rateBusy }}">
-      <div style="padding:44px;text-align:center;color:var(--text-3);font-size:13px">
+      <div class="empty loading">
         <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>載入卡片圖鑑…
       </div>
     </sc-if>
@@ -4311,7 +4358,7 @@ select option, select optgroup{
     </div>
 
     <sc-if value="{{ rateEmpty }}">
-      <div style="padding:38px 18px;text-align:center;color:var(--text-3);font-size:13px;border:1px solid var(--border);border-radius:18px;background:var(--card)">沒有符合的卡片，試著放寬篩選條件。</div>
+      <div class="empty">沒有符合的卡片，試著放寬篩選條件。</div>
     </sc-if>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px">
@@ -4761,7 +4808,7 @@ select option, select optgroup{
 <sc-if value="{{ songOpen }}">
 <div onClick="{{ onSongClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div class="modal" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(500px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:popCenter .3s cubic-bezier(.34,1.4,.44,1)">
-  <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+  <div class="modal-head">
     <img src="{{ songDetailData.jacket }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="opacity" style="width:88px;height:88px;flex:none;border-radius:14px;object-fit:cover;border:1px solid var(--border)">
     <div style="min-width:0;flex:1">
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.35">{{ songDetailData.title }}</div>
@@ -4770,12 +4817,14 @@ select option, select optgroup{
       <sc-if value="{{ songDetailData.bpm }}"><div style="font-size:11.5px;color:var(--text-2);margin-top:3px;font-family:'M PLUS Rounded 1c'">{{ songDetailData.bpm }}</div></sc-if>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><sc-for list="{{ songDetailData.units }}" as="u" hint-placeholder-count="1"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ u.c }};color:{{ u.t }}">{{ u.n }}</span></sc-for></div>
     </div>
-    <button type="button" onClick="{{ onSongCalc }}" data-id="{{ songDetailData.id }}" title="到計算中心用這首歌算活動 P" style="flex:none;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">算活動 P →</button>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;flex-basis:100%">
-      <span style="font-size:11px;font-weight:800;color:var(--text-3)">相關</span>
-      <sc-for list="{{ songDetailData.related }}" as="r" hint-placeholder-count="2"><button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ r.n }} →</button></sc-for><button type="button" onClick="{{ onFav }}" data-fav="{{ songFavData }}" title="{{ songFavTitle }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:{{ songFavFg }};font-size:12px;font-weight:700;cursor:pointer">{{ songFavMark }} 收藏</button>
+    <div class="modal-acts">
+      <button type="button" onClick="{{ onSongCalc }}" data-id="{{ songDetailData.id }}" title="到計算中心用這首歌算活動 P" style="flex:none;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">算活動 P →</button>
+      <button type="button" onClick="{{ onFav }}" data-fav="{{ songFavData }}" title="{{ songFavTitle }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:{{ songFavFg }};font-size:15px;cursor:pointer;line-height:1">{{ songFavMark }}</button>
+      <button type="button" onClick="{{ onSongClose }}" class="modal-x">✕</button>
     </div>
-    <button type="button" onClick="{{ onSongClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
+  </div>
+  <div class="modal-related"><span style="font-size:11px;font-weight:800;color:var(--text-3)">相關</span>
+    <sc-for list="{{ songDetailData.related }}" as="r" hint-placeholder-count="2"><button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ r.n }} →</button></sc-for>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;margin-bottom:13px">
     <sc-for list="{{ songDetailData.diffs }}" as="d" hint-placeholder-count="5">
@@ -4984,6 +5033,12 @@ select option, select optgroup{
         <button type="button" onClick="{{ onVisualMode }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
       </sc-for>
     </div>
+    <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:10px 0 6px">團體主題色</div>
+    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <sc-for list="{{ unitChips }}" as="c" hint-placeholder-count="7">
+        <button type="button" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+      </sc-for>
+    </div>
 
     <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">本機資料</div>
     <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:8px">{{ bkCount }}。備份檔含綁定 ID、收集勾選、B30 成績、版面與外觀設定，可以在另一台裝置匯入。</div>
@@ -5071,14 +5126,14 @@ select option, select optgroup{
       </button>
     </sc-for>
     <sc-if value="{{ cmdEmpty }}">
-      <div style="padding:34px 18px;text-align:center;color:var(--text-3);font-size:13px">找不到符合的結果</div>
+      <div class="empty">找不到符合的結果</div>
     </sc-if>
   </div>
 </div>
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=e97c728b30"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=8ba2365785"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
