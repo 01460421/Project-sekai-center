@@ -50,10 +50,6 @@
       "use": "@vercel/static"
     },
     {
-      "src": "og.html",
-      "use": "@vercel/static"
-    },
-    {
       "src": "robots.txt",
       "use": "@vercel/static"
     },
