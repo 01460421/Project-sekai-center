@@ -29,7 +29,18 @@ for (const mobile of [false, true]) {
       await page.waitForFunction(r => new RegExp(r).test(document.body.innerText), re.source, { timeout: 45000 });
       await page.waitForTimeout(300);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-      ok = !errors.length && !(mobile && overflow); why = errors[0] || (overflow ? '橫向溢出' : '');
+      let detail = '';
+      if (mobile && overflow) {
+        // 印出沒被任何捲動容器夾住、卻超出視窗的元素，CI 上直接看得出是誰
+        detail = await page.evaluate(() => {
+          const w = document.documentElement.clientWidth;
+          const clipped = el => { let e = el.parentElement; while (e && e !== document.body) { const o = getComputedStyle(e).overflowX; if (o === 'auto' || o === 'hidden' || o === 'scroll' || o === 'clip') return true; e = e.parentElement; } return false; };
+          const bad = [];
+          for (const el of document.querySelectorAll('body *')) { const b = el.getBoundingClientRect(); if (b.right > w + 1 && b.width > 0 && !clipped(el)) bad.push(el.tagName + (el.className ? '.' + String(el.className).split(' ')[0] : '') + ' w=' + Math.round(b.width) + ' right=' + Math.round(b.right) + ' "' + (el.textContent || '').trim().slice(0, 24).replace(/\s+/g, ' ') + '" style=' + (el.getAttribute('style') || '').slice(0, 100)); }
+          return ' scrollWidth=' + document.documentElement.scrollWidth + ' | ' + bad.slice(0, 6).join(' || ');
+        });
+      }
+      ok = !errors.length && !(mobile && overflow); why = errors[0] || (overflow ? '橫向溢出' + detail : '');
     } catch (e) { why = e.message.slice(0, 120); }
     console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' ' + p + (why ? ' — ' + why : ''));
     if (!ok) fail++;
