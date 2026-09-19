@@ -2118,7 +2118,7 @@ select option, select optgroup{
         <sc-if value="{{ carIsAdmin }}">
           <div class="car-admin" style="display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" onClick="{{ onCarTagMgr }}" class="car-btn">標記管理</button>
-            <button type="button" onClick="{{ onCarLockDay }}" data-v="{{ carLockV }}" class="car-btn">{{ carLockBtn }}</button>
+            <sc-if value="{{ carLockShow }}"><button type="button" onClick="{{ onCarLockDay }}" data-v="{{ carLockV }}" class="car-btn">{{ carLockBtn }}</button></sc-if>
             <button type="button" onClick="{{ onCarOpen }}" class="car-btn" style="background:{{ carOpenBg }};color:{{ carOpenFg }};border-color:{{ carOpenBd }};box-shadow:var(--sh-xs)">{{ carOpenBtn }}</button>
           </div>
         </sc-if>
@@ -2140,7 +2140,7 @@ select option, select optgroup{
             <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">這一車的班表讀不到：{{ carStErr }}<br><button type="button" onClick="{{ onCarReload }}" class="car-btn" style="margin-top:10px">重試</button></div>
           </sc-if>
           <sc-if value="{{ carNoRows }}">
-            <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">這幾天還沒有開班的時段。<br>開班請在車隊裡用機器人的排班指令，開好後這裡就會出現。</div>
+            <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">{{ carNoRowsTxt }}</div>
           </sc-if>
 
           <sc-if value="{{ carStatShow }}">
@@ -2162,6 +2162,7 @@ select option, select optgroup{
                   <div class="car-cell car-c-slot">
                     <span class="car-slot">{{ r.slot }}</span>
                     <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
+                    <sc-if value="{{ r.manual }}"><span title="管理員手動排過：自動排位只會補空位，不會重排這一班" style="display:inline-block;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:800">手動</span></sc-if>
                     <span class="car-m-only car-bn">跑者 {{ r.runner }}</span>
                   </div>
                   <div class="car-cell car-c-p1"><div class="car-nm">{{ r.runner }}</div><div class="car-bn">{{ r.ctype }}</div></div>
@@ -2181,7 +2182,8 @@ select option, select optgroup{
                         <div class="car-bn">{{ c.bonus }}</div>
                       </sc-if>
                       <sc-if value="{{ c.empty }}">
-                        <button type="button" class="car-empty" onClick="{{ onCarEmpty }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}"><span class="car-m-only">{{ c.P }} </span>{{ c.emptyTxt }}</button>
+                        <sc-if value="{{ c.emptyBtn }}"><button type="button" class="car-empty" onClick="{{ onCarEmpty }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}"><span class="car-m-only">{{ c.P }} </span>{{ c.emptyTxt }}</button></sc-if>
+                        <sc-if value="{{ c.emptyRo }}"><div style="border:1.5px dashed var(--border-2);border-radius:12px;color:var(--text-3);font-size:12.5px;padding:8px 10px;text-align:center;box-sizing:border-box"><span class="car-m-only">{{ c.P }} </span>{{ c.emptyTxt }}</div></sc-if>
                       </sc-if>
                     </div>
                   </sc-for>
@@ -2189,8 +2191,9 @@ select option, select optgroup{
                     <sc-if value="{{ r.hasMy }}"><span style="font-size:11.5px;font-weight:800;color:var(--accent-deep)">{{ r.myTxt }}</span></sc-if>
                     <span class="car-note">{{ r.note }}</span>
                     <div style="display:flex;gap:6px;flex-wrap:wrap">
-                      <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
+                      <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarARowSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
                       <sc-if value="{{ r.lockShow }}"><button type="button" class="car-mini" onClick="{{ onCarLockRow }}" data-h="{{ r.hour }}" data-v="{{ r.lockV }}">{{ r.lockTxt }}</button></sc-if>
+                      <sc-if value="{{ r.unmarkShow }}"><button type="button" class="car-mini" onClick="{{ onCarAUnmark }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" title="清空這個時段並取消開班" style="background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">砍班</button></sc-if>
                     </div>
                   </div>
                 </div>
@@ -2200,8 +2203,30 @@ select option, select optgroup{
             <!-- 看板 -->
             <sc-if value="{{ carIsBoard }}">
               <div style="padding:4px 14px 14px">
-                <sc-if value="{{ carIsAdmin }}">
-                  <div class="car-out" data-zone="out" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}">拖到這裡＝把人移出座位　·　拖到同一班的另一格＝兩人互換　·　拖到別的時段＝也排進那一格</div>
+                <!-- 成員池（管理員）：拖到座位＝排進去；座位上的人拖回來＝移出；手機改成「點成員 → 點座位」 -->
+                <sc-if value="{{ carAPoolShow }}">
+                  <div data-zone="out" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}" style="border:1.5px dashed var(--border-2);border-radius:14px;padding:10px 12px;margin-bottom:10px;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                      <span style="font-size:12.5px;font-weight:800;color:var(--ink)">成員池</span>
+                      <input class="car-in" placeholder="搜尋名字或別名" value="{{ carAPoolQ }}" onInput="{{ onField }}" data-k="carAPoolQ" autocomplete="off" aria-label="搜尋成員" style="flex:1 1 140px;width:auto;min-width:0;max-width:240px;min-height:34px;padding:5px 12px">
+                      <div class="car-seg" role="radiogroup" aria-label="放進去的身分" style="overflow-x:auto;scrollbar-width:none">
+                        <sc-for list="{{ carARoles }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarARole }}" data-v="{{ o.v }}" style="padding:5px 11px;font-size:12px;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+                      </div>
+                    </div>
+                    <sc-if value="{{ carAPoolLoading }}"><div style="font-size:12px;color:var(--text-3)">名冊載入中…</div></sc-if>
+                    <sc-if value="{{ carAPoolErr }}"><div style="font-size:12px;color:var(--text-2);line-height:1.7">名冊讀不到：{{ carAPoolErr }} <button type="button" class="car-mini" onClick="{{ onCarAMemRetry }}">重試</button></div></sc-if>
+                    <sc-if value="{{ carAPoolEmpty }}"><div style="font-size:12px;color:var(--text-3)">{{ carAPoolEmptyTxt }}</div></sc-if>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:136px;overflow-y:auto;padding:2px">
+                      <sc-for list="{{ carAPool }}" as="m"><span class="car-wl" draggable="true" role="button" tabindex="0" aria-pressed="{{ m.sel }}" data-nm="{{ m.nm }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}" onClick="{{ onCarAPoolPick }}" onKeyDown="{{ onCarAPoolKey }}" style="gap:6px;align-items:center;cursor:pointer;background:{{ m.bg }};border-color:{{ m.bd }};max-width:100%"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.nm }}</span><span class="car-bn" style="flex:none">{{ m.bn }}</span></span></sc-for>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-top:8px">拖到座位＝排進去（身分照上面選的）　·　座位上的人拖回這裡＝移出　·　拖到同一班的另一格＝兩人互換　·　手機：點一下成員，再點座位</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ carAPickShow }}">
+                  <div role="status" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;margin-bottom:10px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,var(--card));border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));font-size:12.5px;color:var(--text)">
+                    <span style="flex:1;min-width:0">{{ carAPickTxt }}</span>
+                    <button type="button" class="car-mini" onClick="{{ onCarAPickClear }}">取消選取</button>
+                  </div>
                 </sc-if>
                 <div class="car-cols">
                   <sc-for list="{{ carRows }}" as="r">
@@ -2209,6 +2234,7 @@ select option, select optgroup{
                       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                         <span class="car-slot">{{ r.slot }}</span>
                         <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
+                        <sc-if value="{{ r.manual }}"><span title="管理員手動排過：自動排位只會補空位，不會重排這一班" style="display:inline-block;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:800">手動</span></sc-if>
                         <div style="flex:1"></div>
                         <span class="car-bn">P1 {{ r.runner }}</span>
                       </div>
@@ -2218,7 +2244,7 @@ select option, select optgroup{
                             <div class="car-nm">
                               <span class="car-p">{{ c.P }}</span>
                               <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if>
-                              <button type="button" class="car-name" onClick="{{ onCarSeat }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}">{{ c.name }}</button>
+                              <button type="button" class="car-name" onClick="{{ onCarASeat }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}" data-nm="{{ c.nm }}">{{ c.name }}</button>
                               <span class="car-bn" style="margin-left:auto">{{ c.bonus }}</span>
                             </div>
                             <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">
@@ -2230,7 +2256,8 @@ select option, select optgroup{
                             </div>
                           </sc-if>
                           <sc-if value="{{ c.empty }}">
-                            <button type="button" class="car-empty" onClick="{{ onCarEmpty }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}">{{ c.P }} · {{ c.emptyTxt }}</button>
+                            <sc-if value="{{ c.emptyBtn }}"><button type="button" class="car-empty" onClick="{{ onCarAEmpty }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}" data-nm="">{{ c.P }} · {{ c.emptyTxt }}</button></sc-if>
+                            <sc-if value="{{ c.emptyRo }}"><div style="border:1.5px dashed var(--border-2);border-radius:12px;color:var(--text-3);font-size:12.5px;padding:8px 10px;text-align:center;box-sizing:border-box">{{ c.P }} · {{ c.emptyTxt }}</div></sc-if>
                           </sc-if>
                         </div>
                       </sc-for>
@@ -2241,8 +2268,9 @@ select option, select optgroup{
                       </sc-if>
                       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:auto">
                         <sc-if value="{{ r.hasMy }}"><span style="font-size:11.5px;font-weight:800;color:var(--accent-deep)">{{ r.myTxt }}</span></sc-if>
-                        <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
+                        <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarARowSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
                         <sc-if value="{{ r.lockShow }}"><button type="button" class="car-mini" onClick="{{ onCarLockRow }}" data-h="{{ r.hour }}" data-v="{{ r.lockV }}">{{ r.lockTxt }}</button></sc-if>
+                        <sc-if value="{{ r.unmarkShow }}"><button type="button" class="car-mini" onClick="{{ onCarAUnmark }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" title="清空這個時段並取消開班" style="background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">砍班</button></sc-if>
                       </div>
                     </div>
                   </sc-for>
@@ -2263,6 +2291,24 @@ select option, select optgroup{
             </sc-for>
             <sc-if value="{{ carMineEmpty }}"><div style="font-size:12px;color:var(--text-3);line-height:1.7">{{ carMineTxt }}</div></sc-if>
           </div>
+          <!-- 成員：一次報一段時間（可選 S6）／取消 -->
+          <sc-if value="{{ carASelfShow }}">
+            <div class="car-card" style="padding:17px 19px">
+              <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:9px">我要報班</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+                <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:1 1 130px;min-width:0;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:40px;outline:none;font-family:inherit"></select>
+                <input class="car-in" placeholder="時段 20-22" aria-label="時段" value="{{ carAR }}" onInput="{{ onField }}" data-k="carAR" autocomplete="off" style="flex:1 1 90px;width:auto;min-width:0;min-height:40px">
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <div class="car-seg" role="radiogroup" aria-label="身分">
+                  <sc-for list="{{ carASignRoles }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarASignRole }}" data-v="{{ o.v }}" style="padding:5px 12px;font-size:12.5px;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+                </div>
+                <button type="button" class="car-mini pri" onClick="{{ onCarASelf }}" data-act="add" disabled="{{ carABusyOn }}" style="padding:8px 16px">{{ carASelfBtn }}</button>
+                <button type="button" class="car-mini" onClick="{{ onCarASelf }}" data-act="cancel" disabled="{{ carABusyOn }}" style="padding:8px 14px;background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">取消報班</button>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">「20-22」是 20:00～22:00 兩個時段，跨午夜寫「22-26」。報班後由管理員確認（車隊開了自動確認就直接依倍率排位）；沒開班或已鎖班的時段會略過。</div>
+            </div>
+          </sc-if>
           <div class="car-card" style="padding:17px 19px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px">
               <span style="font-size:14.5px;font-weight:800;color:var(--ink)">推手標記</span>
@@ -2273,6 +2319,17 @@ select option, select optgroup{
             </div>
             <div style="font-size:11.5px;color:var(--text-3);line-height:1.75">{{ carPalNote }}</div>
           </div>
+          <!-- 管理員快速操作：重排補位（/action reseat）、重繪看板（/action board；QQ 車隊沒有看板） -->
+          <sc-if value="{{ carAQuickShow }}">
+            <div class="car-card" style="padding:17px 19px">
+              <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:9px">快速操作</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px">
+                <button type="button" class="car-btn" onClick="{{ onCarAQuick }}" data-act="reseat" disabled="{{ carABusyOn }}">重排補位</button>
+                <sc-if value="{{ carABoardShow }}"><button type="button" class="car-btn" onClick="{{ onCarAQuick }}" data-act="board" disabled="{{ carABusyOn }}">重繪看板</button></sc-if>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-3);line-height:1.75">重排補位：依報班與倍率重排這一車今天以後的班，手動排過的時段只補空位。重繪看板：重畫 Discord 頻道裡這一車的班表看板。</div>
+            </div>
+          </sc-if>
         </div>
       </div>
       </sc-if>
@@ -2280,6 +2337,71 @@ select option, select optgroup{
       <sc-if value="{{ carTabIs.sched }}">
         <div class="car-sec" data-sec="sched">
           <!-- @@SEC-A-TPL-sched@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+          <!-- 排班工具（管理員）：開班／砍班、代報班、複製班表、整段處理。日期與時段欄四個工具共用 -->
+          <sc-if value="{{ carAToolsShow }}">
+            <div class="car-card" style="padding:16px 18px;margin-top:14px;min-width:0">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                <div style="font-size:15px;font-weight:800;color:var(--ink)">排班工具</div>
+                <div style="flex:1"></div>
+                <div class="car-seg" role="tablist" aria-label="排班工具" style="overflow-x:auto;scrollbar-width:none">
+                  <sc-for list="{{ carAToolTabs }}" as="t"><button type="button" role="tab" aria-selected="{{ t.sel }}" onClick="{{ onCarATool }}" data-v="{{ t.v }}" style="padding:6px 13px;font-size:12.5px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }}">{{ t.n }}</button></sc-for>
+                </div>
+              </div>
+
+              <sc-if value="{{ carAToolRun }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                  <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
+                  <input class="car-in" placeholder="時段，例 20-22" aria-label="時段" value="{{ carAR }}" onInput="{{ onField }}" data-k="carAR" autocomplete="off" style="flex:0 1 150px;width:auto;min-width:0">
+                  <button type="button" class="car-mini pri" onClick="{{ onCarARun }}" data-act="mark" disabled="{{ carABusyOn }}" style="padding:9px 18px">{{ carARunBtn }}</button>
+                  <button type="button" class="car-mini" onClick="{{ onCarARun }}" data-act="unmark" disabled="{{ carABusyOn }}" style="padding:9px 16px;background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">砍班</button>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">開班＝把這段時間設成要跑，並自動打開成員自助報班；砍班會清空座位、報班與候補。「20-22」是 20:00～22:00 兩個時段，跨午夜寫「22-26」，單一小時寫「20」。</div>
+              </sc-if>
+
+              <sc-if value="{{ carAToolProxy }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+                  <input class="car-in" list="carAMemList" placeholder="成員名稱或別名" aria-label="成員" value="{{ carAPxName }}" onInput="{{ onField }}" data-k="carAPxName" autocomplete="off" style="flex:1 1 180px;width:auto;min-width:0;max-width:280px">
+                  <datalist id="carAMemList"><sc-for list="{{ carAPxOpts }}" as="o"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
+                  <div class="car-seg" role="radiogroup" aria-label="身分">
+                    <sc-for list="{{ carASignRoles }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarASignRole }}" data-v="{{ o.v }}" style="padding:5px 12px;font-size:12.5px;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                  <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
+                  <input class="car-in" placeholder="時段，例 20-22" aria-label="時段" value="{{ carAR }}" onInput="{{ onField }}" data-k="carAR" autocomplete="off" style="flex:0 1 150px;width:auto;min-width:0">
+                  <button type="button" class="car-mini pri" onClick="{{ onCarAProxy }}" data-act="add" disabled="{{ carABusyOn }}" style="padding:9px 18px">{{ carAPxBtn }}</button>
+                  <button type="button" class="car-mini" onClick="{{ onCarAProxy }}" data-act="cancel" disabled="{{ carABusyOn }}" style="padding:9px 16px;background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">取消報班</button>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">幫成員報班（不是直接指定座位）：代報會直接確認，機器人依倍率排位，滿了就進候補；取消會一併清掉他在這些時段的座位與候補。要指定座位請點表格裡的座位。</div>
+              </sc-if>
+
+              <sc-if value="{{ carAToolCopy }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                  <select aria-label="從哪一天" value="{{ carACpFrom }}" onChange="{{ onField }}" data-k="carACpFrom" sc-options="{{ carACpFromOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
+                  <span style="color:var(--text-3);font-weight:800">→</span>
+                  <select aria-label="複製到哪一天" value="{{ carACpTo }}" onChange="{{ onField }}" data-k="carACpTo" sc-options="{{ carACpToOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
+                  <button type="button" class="car-mini pri" onClick="{{ onCarACopy }}" data-p="0" disabled="{{ carABusyOn }}" style="padding:9px 16px">只複製開班時段</button>
+                  <button type="button" class="car-mini" onClick="{{ onCarACopy }}" data-p="1" disabled="{{ carABusyOn }}" style="padding:9px 16px">連人員一起複製</button>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">常用於「明天照今天排」，只在這一車裡複製。目標那天同一時段原本的安排會被覆蓋；連人員複製的時段會標成「手動」，之後自動排位只補空位。</div>
+              </sc-if>
+
+              <sc-if value="{{ carAToolRange }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                  <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
+                  <input class="car-in" placeholder="時段，例 20-24" aria-label="時段" value="{{ carAR }}" onInput="{{ onField }}" data-k="carAR" autocomplete="off" style="flex:0 1 150px;width:auto;min-width:0">
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
+                  <button type="button" class="car-mini" onClick="{{ onCarARange }}" data-act="clear" disabled="{{ carABusyOn }}" style="padding:9px 16px;background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">清空人員</button>
+                  <button type="button" class="car-mini" onClick="{{ onCarARange }}" data-act="lock" disabled="{{ carABusyOn }}" style="padding:9px 16px">鎖定</button>
+                  <button type="button" class="car-mini" onClick="{{ onCarARange }}" data-act="unlock" disabled="{{ carABusyOn }}" style="padding:9px 16px">解鎖</button>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">清空只移除人員（座位、報班、候補），開班狀態保留；鎖定後成員不能再自己報班。</div>
+              </sc-if>
+            </div>
+          </sc-if>
 
         </div>
       </sc-if>
@@ -5697,7 +5819,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c597e9f262"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=d9df909356"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

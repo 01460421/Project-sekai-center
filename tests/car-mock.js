@@ -143,6 +143,154 @@ export function install(BASE, mode0) {
     /* 各分頁的假後端：每一組只寫在自己的 @@MOCK 標記下面；回傳 Response 就結束，回 undefined 就交給後面的路由。
        可用：rest、m（方法）、q（query）、body、gid、no、role、admin、c（該車資料）、J(obj, status)、MEMBERS */
     /* @@MOCK-A@@ sched */
+    {
+      /* 班表（A 組）：/run、/signup、/swap、/batch（copy／clear_range／lock）、/action（reseat／board）照機器人的行為與回應形狀。
+         測試開關（預設全關，關著時不碰 /state、/members，留給其他分頁的假後端）：
+           sessionStorage 'sekai-carmockA' 或執行中改 globalThis.__mockA：
+             state   /state 加上 manual（手動）、跨日列（昨天 24:00 以後，xday）、cars 清單，日期只留今天以後 7 天
+             members /members 回機器人管理員版（uid／aliases／power），支援 ?q=
+             auto    成員自助報班直接確認（等同開了 schedule_auto_confirm）；關著＝待管理員確認
+             pending 下一次 /action 回 {pending:true}（模擬機器人 12 秒內做不完）
+           __mockA.cars = { '111': 2 }：這個車隊只開 2 台車，car=3 的請求回 400 {cars_enabled}（跟 _web_car_mw 一樣）*/
+      const A = globalThis.__mockA || (globalThis.__mockA = (() => {
+        let f = ''; try { f = sessionStorage.getItem('sekai-carmockA') || ''; } catch (e) {}
+        const has = k => f.split(',').indexOf(k) >= 0;
+        return { state: has('state'), members: has('members'), auto: has('auto'), pending: has('pending'), cars: {} };
+      })());
+      const AG = ['/me', '/switch', '/status', '/qqcode', '/music', '/members', '/member', '/tags', '/bridge', '/log', '/seidan', '/seidan/detail'];
+      const ne = A.cars && +A.cars[gid];
+      if (ne && no > ne && AG.indexOf(rest) < 0) return J({ error: '這個車隊目前只開 ' + ne + ' 台車（car=' + no + ' 不存在）', cars_enabled: ne }, 400);
+      const POS = ['p2', 'p3', 'p4', 'p5'];
+      const ALIAS = { u2: ['阿明'], u5: ['Nobita'], u6: ['shizuka'] };
+      const noAdm = () => J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+      const guard = (d, f) => { if (!d) return null; if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d))) return J({ error: (f || '日期') + '格式須為 YYYY-MM-DD' }, 400); if (String(d) < today) return J({ error: d + ' 已過去，歷史班表為唯讀' }, 400); return null; };
+      const findM = nm => { const l = String(nm).toLowerCase(); return MEMBERS.find(x => x.name.toLowerCase() === l || (ALIAS[x.uid] || []).some(a => a.toLowerCase() === l)); };
+      const seatIt = (sh, mem, rl) => {       // 假的 refresh_schedule：已在座位就不動；有空位就坐（S6 優先 P2），滿了進候補
+        if (POS.some(p => sh[p] && sh[p].user_id === mem.uid)) return;
+        const free = rl === 's6' && !sh.p2 ? 'p2' : POS.find(p => !sh[p]);
+        if (free) { sh[free] = seat(mem, rl === 's6' && free === 'p2' ? 's6' : 'pusher'); sh.waitlist = (sh.waitlist || []).filter(w => w.user_id !== mem.uid); }
+        else if (!(sh.waitlist || []).some(w => w.user_id === mem.uid)) (sh.waitlist = sh.waitlist || []).push({ user_id: mem.uid, name: mem.name });
+      };
+      if (A.state && !c.aSeed) {            // 跨日列與手動時段的種子資料（只在 state 開關打開時加）
+        c.aSeed = 1;
+        const yd = addDay(today, -1), by = n => MEMBERS.find(x => x.name === n);
+        c.sched[yd] = c.sched[yd] || {};
+        ['24:00', '25:00'].forEach((h, i) => { c.sched[yd][h] = { run_planned: true, car_type: '蝦', applicants: [], waitlist: [], p2: seat(by('菜根'), 's6'), p3: seat(by('小明'), 'pusher'), p4: i ? null : seat(by('阿華'), 'pusher'), p5: null }; });
+        const t21 = (c.sched[today] || {})['21:00']; if (t21) t21.manual_override = true;
+      }
+      if (rest === '/state' && A.state) {
+        const out = stateOut(gid, no, role), yd = addDay(today, -1);
+        out.days.forEach(dy => (dy.rows || []).forEach(r => { const sh = (c.sched[dy.date] || {})[r.hour]; r.manual = !!(sh && sh.manual_override); }));
+        const y = out.days.find(dy => dy.date === yd);
+        const xr = y ? y.rows.filter(r => r.hour >= '24:00') : [];
+        out.days = (xr.length ? [{ date: yd, rows: xr, xday: true }] : []).concat(out.days.filter(dy => dy.date >= today).slice(0, 7));
+        if (out.me) Object.keys(out.me).forEach(d => { if (d < today) delete out.me[d]; });
+        const n = +(A.cars && A.cars[gid]) || (gid === '222' ? 1 : 3);
+        out.cars = [1, 2, 3].slice(0, n).map(k => ({ no: k, name: ['', '一車', '二車', '三車'][k] }));
+        out.car = no;
+        return J(out);
+      }
+      if (rest === '/members' && m === 'GET' && A.members) {
+        const qq = String(q.get('q') || '').trim().toLowerCase();
+        const list = MEMBERS.filter(x => !qq || x.name.toLowerCase().indexOf(qq) >= 0 || (ALIAS[x.uid] || []).some(a => a.toLowerCase().indexOf(qq) >= 0) || (admin && x.uid.indexOf(qq) >= 0))
+          .map(x => { const r = { name: x.name, bonus: x.bonus, s6_bonus: x.s6_bonus, identity: '', aliases: (ALIAS[x.uid] || []).slice() }; if (admin) { r.uid = x.uid; r.power = 300000; } return r; })
+          .sort((a, b) => (b.bonus - a.bonus) || (a.name < b.name ? -1 : 1));
+        return J({ members: list.slice(0, 300), total: list.length });
+      }
+      if (rest === '/run' && m === 'POST') {
+        if (!admin) return noAdm();
+        const { date, hour, action } = body;
+        if (!(date && hour && (action === 'mark' || action === 'unmark'))) return J({ error: 'bad params' }, 400);
+        if (typeof hour !== 'string' || !/^\d{2}:\d{2}$/.test(hour)) return J({ error: '時段格式須為 HH:MM' }, 400);
+        const g = guard(date); if (g) return g;
+        const day = c.sched[date] || (c.sched[date] = {});
+        if (action === 'mark') { const sh = day[hour] || (day[hour] = { car_type: '蝦', p2: null, p3: null, p4: null, p5: null, applicants: [], waitlist: [] }); sh.run_planned = true; c.open = true; }
+        else delete day[hour];              // 機器人是拿掉 run_planned 並清空；共用的 stateOut 不濾 run_planned，所以這裡直接刪
+        return J({ ok: true });
+      }
+      if (rest === '/swap' && m === 'POST') {
+        if (!admin) return noAdm();
+        const g = guard(body.date); if (g) return g;
+        const sh = (c.sched[body.date] || {})[body.hour];
+        if (!sh || POS.indexOf(body.pos) < 0) return J({ error: 'bad target' }, 400);
+        const nm = String(body.new || '').trim();
+        if (!nm) { sh[body.pos] = null; sh.manual_override = true; return J({ ok: true, cleared: true }); }
+        const mm = findM(nm); if (!mm) return J({ error: '找不到成員「' + nm + '」' }, 404);
+        const want = String(body.role || '').toLowerCase();
+        if (want === 's6' && !(mm.s6_bonus > 0)) return J({ error: mm.name + ' 沒有登記 S6 倍率，無法排 S6' }, 400);
+        const rl = want === 's6' ? 's6' : want === 'pusher' ? 'pusher' : (body.pos === 'p2' && mm.s6_bonus > 0 ? 's6' : 'pusher');
+        sh[body.pos] = seat(mm, rl); sh.manual_override = true;
+        return J({ ok: true, name: mm.name, role: rl });
+      }
+      if (rest === '/signup' && m === 'POST') {
+        let uid = String(body.uid || ''); const act = body.action, rl = body.role || 'pusher';
+        if (!admin) { if (uid && uid !== 'me') return J({ error: '只能報自己的班' }, 403); uid = 'me'; }
+        if (!body.date || typeof body.date !== 'string') return J({ error: '日期格式須為 YYYY-MM-DD' }, 400);
+        const g = guard(body.date); if (g) return g;
+        const mem = MEMBERS.find(x => x.uid === uid); if (!mem) return J({ error: '找不到成員' }, 404);
+        if (rl === 's6' && !(mem.s6_bonus > 0)) return J({ error: '此成員沒有登記 S6 倍率' }, 400);
+        const day = c.sched[body.date] || {}, done = [], skip = [];
+        (Array.isArray(body.hours) ? body.hours : []).forEach(h => {
+          const sh = day[h];
+          if (!sh || !sh.run_planned) { skip.push(h); return; }
+          if (!admin && sh.locked && act !== 'cancel') { skip.push(h); return; }
+          sh.applicants = sh.applicants || []; sh.waitlist = sh.waitlist || [];
+          if (act === 'cancel') {
+            const n0 = sh.applicants.length;
+            sh.applicants = sh.applicants.filter(a => a.user_id !== uid);
+            POS.forEach(p => { if (sh[p] && sh[p].user_id === uid) sh[p] = null; });
+            sh.waitlist = sh.waitlist.filter(w => w.user_id !== uid);
+            (sh.applicants.length !== n0 ? done : skip).push(h); return;
+          }
+          const ok = admin || A.auto;
+          const a2 = { user_id: uid, name: mem.name, role: rl, status: ok ? 'confirmed' : 'pending' };
+          const i = sh.applicants.findIndex(a => a.user_id === uid); if (i < 0) sh.applicants.push(a2); else sh.applicants[i] = a2;
+          if (ok) seatIt(sh, mem, rl);
+          done.push(h);
+        });
+        return J({ ok: true, done, skip, name: mem.name });
+      }
+      if (rest === '/batch' && m === 'POST') {
+        if (!admin) return noAdm();
+        if (body.action === 'copy') {
+          if (!body.to) return J({ error: '目的地格式須為 YYYY-MM-DD' }, 400);
+          const g = guard(body.to, '目的地'); if (g) return g;
+          const src = c.sched[body.from] || {};
+          if (!Object.keys(src).length) return J({ error: body.from + ' 沒有班表' }, 400);
+          const dst = c.sched[body.to] || (c.sched[body.to] = {});
+          let n = 0;
+          Object.keys(src).forEach(h => {
+            const s0 = src[h]; if (!s0 || !s0.run_planned) return;
+            const nw = { car_type: s0.car_type || '蝦', p2: null, p3: null, p4: null, p5: null, applicants: [], waitlist: [], run_planned: true };
+            if (body.with_people) { POS.forEach(p => { if (s0[p]) { nw[p] = Object.assign({}, s0[p]); nw.applicants.push({ user_id: s0[p].user_id, name: s0[p].name, role: s0[p].role, status: 'confirmed' }); } }); nw.manual_override = true; }
+            dst[h] = nw; n++;
+          });
+          return J({ ok: true, msg: '已複製 ' + n + ' 個時段到 ' + body.to + (body.with_people ? '（含人員）' : '（僅開班）') });
+        }
+        if (body.action === 'clear_range' || body.action === 'lock') {
+          const g = guard(body.date); if (g) return g;
+          const day = c.sched[body.date] || {}; let n = 0;
+          (Array.isArray(body.hours) ? body.hours : []).forEach(h => {
+            const sh = day[h]; if (!sh) return;
+            if (body.action === 'clear_range') { POS.forEach(p => { sh[p] = null; }); sh.applicants = []; sh.waitlist = []; delete sh.manual_override; sh.locked = false; n++; }
+            else if (sh.run_planned) { sh.locked = !!body.value; n++; }
+          });
+          return J({ ok: true, msg: body.action === 'lock' ? '已' + (body.value ? '鎖定' : '解鎖') + ' ' + n + ' 個時段' : '已清空 ' + n + ' 個時段的人員' });
+        }
+        return J({ error: 'unknown action' }, 400);
+      }
+      if (rest === '/action' && m === 'POST' && (body.action === 'reseat' || body.action === 'board')) {
+        if (!admin) return noAdm();
+        if (A.pending) { A.pending = false; return J({ ok: true, pending: true, msg: body.action === 'board' ? '看板重繪中，完成後頻道裡的看板會自動更新' : '重排補位還在處理，稍後會自動更新' }); }
+        if (body.action === 'board') return J({ ok: true, msg: '班表看板已重繪' });
+        let n = 0;
+        Object.keys(c.sched).forEach(d => {
+          if (d < today) return; n++;
+          Object.keys(c.sched[d]).forEach(h => { const sh = c.sched[d][h]; (sh.applicants || []).filter(a => a.status === 'confirmed').forEach(a => { const mem = MEMBERS.find(x => x.uid === a.user_id); if (mem) seatIt(sh, mem, a.role); }); });
+        });
+        return J({ ok: true, msg: '已重排 ' + n + ' 個日期（含卡住的報班補位）' });
+      }
+    }
 
     /* ---------- end @@MOCK-A@@ ---------- */
     /* @@MOCK-B@@ members */

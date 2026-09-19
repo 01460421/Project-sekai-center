@@ -2346,8 +2346,14 @@ class Component extends DCLogic {
       else if (r.status === 401) msg = '車隊機器人驗證失敗，請通知管理員（' + String(code).slice(0, 40) + '）';
       else if (r.status >= 502 && r.status <= 504) msg = '菜根機器人暫時連不上，請稍後再試';
       else if (/^invalid token$/i.test(msg) || r.status === 403 && !d) msg = '你沒有這個車隊的權限';
+      // 多車：那台車已經關掉（別處把車數調低）→ 收掉那台、切回第一台；寫入不自動重送到別台車，請使用者重新操作
+      if (r.status === 400 && d && d.cars_enabled != null && o.gid !== false) {
+        const c1 = this.carAClosed(q.get('gid') || '', +d.cars_enabled);
+        throw Object.assign(new Error(String(d.error || '這台車已關閉') + '，已切回' + c1 + (o.body ? '，請重新操作' : '')), { status: r.status, code: 'car_closed', data: d });
+      }
       throw Object.assign(new Error(msg), { status: r.status, code, data: d });
     }
+    if (path === '/state' && d && Array.isArray(d.cars) && o.gid !== false) this.carASyncCars(q.get('gid') || '', d.cars);
     return d || {};
   }
   carNo() {
@@ -2480,7 +2486,310 @@ class Component extends DCLogic {
   carLoadSec(tab, force) { const fn = this['carSec_' + (tab || this.state.carTab || 'sched')]; return typeof fn === 'function' ? fn.call(this, !!force) : null; }
 
   /* @@SEC-A@@ sched（班表加強：開班砍班、代報、批次（複製／清空／鎖定）、成員池、鎖定／待確認標示、快速操作（重排補位、重繪看板））：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+  /* 班表分頁加強（A 組）。state 鍵一律 carA* 開頭（初始值都是 undefined，讀的時候自己給預設）：
+       carATool 排班工具分頁（run／proxy／copy／range）　carAD／carAR 工具共用的日期與時段文字
+       carASignRole 報班身分（pusher／s6）　carAPxName 代報班的成員名　carACpFrom／carACpTo 複製班表
+       carARole 成員池放人時的身分（''＝自動／s6／pusher）　carAPoolQ 成員池搜尋　carAPick 點選放置中的成員名
+       carABusy 連續寫入進行中
+     日期一律用機器人的「今天」（st.today）往後推，不用瀏覽器時鐘；時段「22-26」的 24 點以後落在隔天 00:00 起
+     （機器人班表的 key 只存 00:00～23:00，跨日顯示的 24:00+ 是隔天的班）。 */
+  carAAddDay(d, n) {
+    const t = Date.parse(String(d || '') + 'T00:00:00Z');
+    return isNaN(t) ? '' : new Date(t + n * 86400000).toISOString().slice(0, 10);
+  }
+  carADays(today, from) {
+    const out = [];
+    for (let i = from || 0; i < 7; i++) {
+      const d = this.carAAddDay(today, i);
+      if (d) out.push({ v: d, n: (i === -1 ? '昨天 ' : '') + this.carDayLabel(d, today, false) });
+    }
+    return out;
+  }
+  carAState() { return (this.state.carStates || {})[this.carNo()] || null; }
+  /* 工具選單的日期：使用者選過就用他選的，否則跟著上面日期列選中的那天（跨日列或 7 天外就用今天） */
+  carADate(st, key) {
+    const opts = this.carADays(st.today), v = this.state[key || 'carAD'];
+    if (v && opts.some(o => o.v === v)) return v;
+    const day = this.carDayOf(st, this.state.carDate);
+    return day && !day.xday && opts.some(o => o.v === day.date) ? day.date : (opts[0] ? opts[0].v : String(st.today || ''));
+  }
+  /* 「20-22」→ {groups:[{date, hours:['20:00','21:00']}], n, txt}；單一數字＝那一小時；24 點以後排到隔天 */
+  carARange(date, txt) {
+    const m = /^\s*(\d{1,2})(?::00)?\s*(?:[-~～－—到至]\s*(\d{1,2})(?::00)?)?\s*$/.exec(String(txt || ''));
+    if (!m || !date) return null;
+    const a = +m[1], b = m[2] ? +m[2] : a + 1;
+    if (a > 47 || b > 48 || b <= a || b - a > 24) return null;
+    const groups = [];
+    for (let h = a; h < b; h++) {
+      const d = h >= 24 ? this.carAAddDay(date, Math.floor(h / 24)) : date;
+      let g = groups[groups.length - 1];
+      if (!g || g.date !== d) groups.push(g = { date: d, hours: [] });
+      g.hours.push(String(h % 24).padStart(2, '0') + ':00');
+    }
+    return { groups, n: b - a, txt: String(a).padStart(2, '0') + '-' + String(b).padStart(2, '0') };
+  }
+  carADayTxt(d) { const st = this.carAState(); return this.carDayLabel(d, (st && st.today) || d, false).replace(/（.）$/, ''); }
+  carAMemKey() { return this.carSecKey('amem', false); }
+  carAMemLoad(force) { return this.carSecFetch(this.carAMemKey(), '/members', {}, force); }
+  carAMemList() { const c = this.carSecOf(this.carAMemKey()); return (c && c.data && Array.isArray(c.data.members)) ? c.data.members : []; }
+  /* 名稱（或別名，不分大小寫）→ {uid, name}；本機名冊找不到就問機器人 /members?q= */
+  async carAFindMember(nm) {
+    const low = String(nm).toLowerCase();
+    const exact = l => (l || []).find(m => m && (String(m.name || '').toLowerCase() === low
+      || (Array.isArray(m.aliases) && m.aliases.some(a => String(a).toLowerCase() === low))));
+    let m = exact(this.carAMemList());
+    if (!m) {
+      let l = [];
+      try { const d = await this.carApi('/members', { query: { q: String(nm) } }); l = Array.isArray(d.members) ? d.members.filter(x => x && x.name) : []; }
+      catch (e) { this._toast(e.message || '讀取成員失敗'); return null; }
+      m = exact(l) || (l.length === 1 ? l[0] : null);
+      if (!m && l.length > 1) { this._toast('有 ' + l.length + ' 位成員符合「' + nm + '」，請輸入完整名稱'); return null; }
+    }
+    if (!m) { this._toast('找不到成員「' + nm + '」'); return null; }
+    if (m.uid == null || m.uid === '') { this._toast('機器人沒有回傳成員 ID，請更新機器人後再代報'); return null; }
+    return { uid: String(m.uid), name: String(m.name || nm) };
+  }
+  /* 一連串寫入（開班一小時一個請求、跨午夜的時段分兩天送）：依序走 carAct，任何一個失敗就停在那裡
+     （carAct 已經把錯誤浮出來）。回 {out:[成功的回應], fail} */
+  async carABulk(list, fn) {
+    if (this._carABusy) { this._toast('上一個操作還在處理中'); return null; }
+    this._carABusy = true; this.setState({ carABusy: true });
+    const out = [];
+    try {
+      for (const x of list) { const d = await fn(x); if (!d) return { out, fail: true }; out.push(d); }
+      return { out, fail: false };
+    } finally { this._carABusy = false; this.setState({ carABusy: false }); }
+  }
+  /* 失敗在中途：把 carAct 浮出的錯誤訊息補上「已完成幾個」 */
+  carABulkEnd(r, okTxt, no, date) {
+    if (!r) return;
+    if (r.fail) { if (r.out.length) this._toast(String(this.state.toast || '操作失敗') + '（前 ' + r.out.length + ' 個已完成）', 4000); }
+    else if (okTxt) this._toast(okTxt, 3000);
+    if (r.out.length) { if (date) this.setState({ carDate: date, carPop: null }); this.carLoadStates(no); }
+  }
+  carAInput(st, key) {
+    const date = this.carADate(st), rg = this.carARange(date, this.state[key || 'carAR']);
+    if (!rg) this._toast('時段格式：20-22（跨午夜寫 22-26，單一小時寫 20）');
+    return rg ? { date, rg, when: this.carADayTxt(date) + ' ' + rg.txt } : null;
+  }
+  /* 開班（mark）／砍班（unmark）一段時間：機器人 /run 一次一小時 */
+  async carARun(act) {
+    const st = this.carAState(), no = this.carNo(); if (!st) return;
+    const x = this.carAInput(st); if (!x) return;
+    if (act === 'unmark' && !window.confirm('砍掉 ' + x.when + '（' + x.rg.n + ' 個時段）？\n這些時段的座位、報班與候補都會清空，也不再開放報班。')) return;
+    const items = [].concat.apply([], x.rg.groups.map(g => g.hours.map(h => ({ date: g.date, hour: h }))));
+    const r = await this.carABulk(items, it => this.carAct('/run', { date: it.date, hour: it.hour, action: act === 'unmark' ? 'unmark' : 'mark' }, null, no));
+    this.carABulkEnd(r, r && (act === 'unmark' ? '已砍班 ' : '已開班 ') + r.out.length + ' 個時段（' + x.when + '）', no, x.rg.groups[0].date);
+  }
+  /* 管理員代報班／取消：機器人 /signup 帶 uid（管理員代報直接確認並重排） */
+  async carAProxy(act) {
+    const s = this.state, st = this.carAState(), no = this.carNo(); if (!st) return;
+    const nm = String(s.carAPxName || '').trim();
+    if (!nm) { this._toast('請輸入成員名稱'); return; }
+    const x = this.carAInput(st); if (!x) return;
+    const mem = await this.carAFindMember(nm); if (!mem) return;
+    if (act === 'cancel' && !window.confirm('取消 ' + mem.name + ' 在 ' + x.when + ' 的報班？\n他在這些時段的座位與候補也會一併清掉。')) return;
+    const role = s.carASignRole === 's6' ? 's6' : 'pusher';
+    const r = await this.carABulk(x.rg.groups, g => this.carAct('/signup', { date: g.date, hours: g.hours, uid: mem.uid, action: act === 'cancel' ? 'cancel' : 'add', role }, null, no));
+    const sum = k => r ? r.out.reduce((n, d) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0) : 0;
+    const who = String((r && r.out[0] && r.out[0].name) || mem.name);
+    this.carABulkEnd(r, r && who + '：' + (act === 'cancel' ? '已取消 ' : '已報 ') + sum('done') + ' 個時段' + (sum('skip') ? '（跳過 ' + sum('skip') + '：沒開班' + (act === 'cancel' ? '或沒有他的報班' : '') + '）' : ''), no, x.rg.groups[0].date);
+  }
+  /* 成員自己報一段時間／取消（機器人只准操作自己；鎖班或沒開班的時段會被略過） */
+  async carASelf(act) {
+    const s = this.state, st = this.carAState(), no = this.carNo(); if (!st) return;
+    const x = this.carAInput(st); if (!x) return;
+    if (act === 'cancel' && !window.confirm('取消你在 ' + x.when + ' 的報班？\n座位與候補也會一併取消。')) return;
+    const role = s.carASignRole === 's6' ? 's6' : 'pusher';
+    const r = await this.carABulk(x.rg.groups, g => this.carAct('/signup', { date: g.date, hours: g.hours, action: act === 'cancel' ? 'cancel' : 'add', role }, null, no));
+    const sum = k => r ? r.out.reduce((n, d) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0) : 0;
+    this.carABulkEnd(r, r && (act === 'cancel' ? '已取消 ' : '已報班 ') + sum('done') + ' 個時段'
+      + (sum('skip') ? '（跳過 ' + sum('skip') + '：' + (act === 'cancel' ? '這些時段沒有你的報班' : '沒開班或已鎖班') + '）' : ''), no, x.rg.groups[0].date);
+  }
+  /* 複製班表（同一台車）：只複製開班時段／連人員一起 */
+  async carACopy(withPeople) {
+    const s = this.state, st = this.carAState(), no = this.carNo(); if (!st) return;
+    const f = this.carACpFrom(st), t = this.carACpTo(st, f);
+    if (!f || !t) return;
+    if (f === t) { this._toast('來源與目標相同'); return; }
+    const lf = this.carADayTxt(f), lt = this.carADayTxt(t);
+    if (!window.confirm('把 ' + lf + ' 的班表複製到 ' + lt + (withPeople ? '（含人員）' : '（只複製開班時段）') + '？\n' + lt + ' 同一時段原本的安排會被覆蓋。')) return;
+    const d = await this.carAct('/batch', { action: 'copy', from: f, to: t, with_people: !!withPeople }, r => String(r.msg || '已複製'), no);
+    // 來源／目標寫回欄位：複製完會跳到目標那天，沒寫回的話「從哪一天」會跟著跳走
+    if (d) { this.setState({ carDate: t, carPop: null, carACpFrom: f, carACpTo: t }); this.carLoadStates(no); }
+  }
+  carACpFrom(st) {
+    const v = this.state.carACpFrom;
+    return this.carADays(st.today, -1).some(o => o.v === v) ? v : this.carADate(st);
+  }
+  carACpTo(st, from) {
+    const v = this.state.carACpTo, opts = this.carADays(st.today);
+    if (opts.some(o => o.v === v)) return v;
+    const nx = this.carAAddDay(from, 1);
+    return opts.some(o => o.v === nx) ? nx : ((opts.find(o => o.v !== from) || {}).v || '');
+  }
+  /* 整段處理：清空人員（保留開班）／鎖定／解鎖 */
+  async carARangeAct(act) {
+    const st = this.carAState(), no = this.carNo(); if (!st) return;
+    const x = this.carAInput(st); if (!x) return;
+    if (act === 'clear' && !window.confirm('清空 ' + x.when + ' 的所有人員？\n座位、報班與候補都會清掉，開班狀態保留。')) return;
+    const body = g => act === 'clear' ? { action: 'clear_range', date: g.date, hours: g.hours } : { action: 'lock', date: g.date, hours: g.hours, value: act === 'lock' };
+    const r = await this.carABulk(x.rg.groups, g => this.carAct('/batch', body(g), null, no));
+    this.carABulkEnd(r, r && (r.out.map(d => String(d.msg || '')).filter(Boolean).join('；') || '完成'), no, x.rg.groups[0].date);
+  }
+  /* 快速操作：重排補位／重繪看板。機器人做不完會先回 {pending:true, msg}，5 秒後再抓一次班表 */
+  async carAQuick(act) {
+    const no = this.carNo(), g0 = String(this.state.g || '');
+    const a = act === 'board' ? 'board' : 'reseat';
+    if (a === 'reseat' && !window.confirm('依報班與倍率重新排這一車今天以後的所有班？\n手動排過的時段只會補空位，其他時段的座位可能會變動。')) return;
+    const d = await this.carAct('/action', { action: a }, r => String(r.msg || (a === 'board' ? '班表看板已重繪' : '已重排')), no);
+    if (!d) return;
+    if (d.pending) setTimeout(() => { if (String(this.state.g || '') === g0) this.carLoadStates(no); }, 5000);
+    else if (a === 'reseat') this.carLoadStates(no);
+  }
+  /* 單一時段砍班（表格／看板每一列的按鈕）；跨日時段是昨天的日期，機器人會拒絕，先擋下 */
+  async carAUnmark(date, hour) {
+    const no = this.carNo(), st = this.carAState();
+    if (st && st.today && String(date) < st.today) { this._toast('跨日時段已過日期，不能砍班'); return; }
+    if (!window.confirm(this.carSlot(hour) + ' 砍班？\n這個時段的座位、報班與候補都會清空，也不再開放報班。')) return;
+    const d = await this.carAct('/run', { date, hour, action: 'unmark' }, this.carSlot(hour) + ' 已砍班', no);
+    if (d) { this.setState({ carPop: null }); this.carLoadStates(no); }
+  }
+  /* 成員池「點一下成員、再點座位」：手機沒有 HTML5 拖放，靠這個排人（桌機也能用） */
+  async carAPlaceAt(el) {
+    const s = this.state, nm = String(s.carAPick || ''), d = el.dataset, no = this.carNo(), st = this.carAState();
+    if (!nm || !d.h || !d.pos) return;
+    if (st && st.today && String(d.d) < st.today) { this._toast('跨日時段已過日期，只能貼標記'); return; }
+    const cur = String(d.nm || '');
+    if (cur === nm) return;
+    if (cur && !window.confirm('用 ' + nm + ' 換掉 ' + this.carSlot(d.h) + ' ' + String(d.pos).toUpperCase() + ' 的 ' + cur + '？')) return;
+    const role = s.carARole === 's6' || s.carARole === 'pusher' ? s.carARole : '';
+    const r = await this.carAct('/swap', { date: d.d, hour: d.h, pos: d.pos, new: nm, role },
+      x => (x.name || nm) + ' → ' + this.carSlot(d.h) + ' ' + String(d.pos).toUpperCase() + (x.role === 's6' ? '（S6）' : '（推手）'), no);
+    if (r) this.carLoadStates(no);
+  }
+  /* 多車：機器人回 400 {cars_enabled} ＝ 這台車已被關掉（別處把車數調低）。收掉超過的車，
+     目前就在那台車的話切回第一台；回傳切過去那台的名字（給錯誤訊息用）。 */
+  carAClosed(gid, ne) {
+    const cm = this.state.carMe, gd = cm && (cm.guilds || []).find(x => String(x.gid) === String(gid));
+    if (!gd) return this.CAR_NAMES[1];
+    const n = Math.max(1, Math.min(3, +ne || 1));
+    const keep = this.carCars(gd).filter(c => c.no <= n);
+    const list = keep.length ? keep : [{ no: 1, name: this.CAR_NAMES[1] }];
+    const moved = String(this.state.g) === String(gid) && +this.state.car > n;
+    this.carASyncCars(gid, list);
+    if (moved && Date.now() - (this._carAClosedT || 0) > 3000) {
+      this._carAClosedT = Date.now();
+      this._toast('這個車隊目前只開 ' + n + ' 台車，已切回' + list[0].name, 3500);
+    }
+    return list[0].name;
+  }
+  /* /state 會帶目前的車清單（cars）：車數或車名變了（例如在設定改了 cars_enabled／car_name_N）就同步分頁，
+     新開的車順便載入班表；目前那台被關掉就切到第一台 */
+  carASyncCars(gid, list) {
+    const cm = this.state.carMe; if (!cm || !gid) return;
+    const gd = (cm.guilds || []).find(x => String(x.gid) === String(gid)); if (!gd) return;
+    const next = (Array.isArray(list) ? list : []).map(c => { const no = +(c && c.no) || 0; return { no, name: String((c && c.name) || this.CAR_NAMES[no] || (no + '車')) }; })
+      .filter(c => c.no >= 1 && c.no <= 3).slice(0, 3);
+    if (!next.length) return;
+    const cur = this.carCars(gd);
+    if (cur.length === next.length && cur.every((c, i) => c.no === next[i].no && c.name === next[i].name)) return;
+    const added = next.filter(c => !cur.some(x => x.no === c.no)).map(c => c.no);
+    const guilds = (cm.guilds || []).map(x => String(x.gid) === String(gid) ? Object.assign({}, x, { cars: next }) : x);
+    const here = String(this.state.g) === String(gid);
+    const patch = { carMe: Object.assign({}, cm, { guilds }) };
+    const move = here && !next.some(c => c.no === +this.state.car);
+    if (move) Object.assign(patch, { car: next[0].no, carPop: null, carAPick: '' });
+    this.setState(patch);
+    if (!here) return;
+    setTimeout(() => {
+      added.forEach(no => this.carLoadStates(no));
+      if (move) { if (!(this.state.carStates || {})[next[0].no]) this.carLoadStates(next[0].no); this.carLoadTags(next[0].no); this.carLoadSec(this.state.carTab); }
+    }, 0);
+  }
+  /* 班表分頁：切回來超過 8 秒就重抓目前這台車；管理員順便載名冊（成員池、代報班要 uid） */
+  carSec_sched(force) {
+    const gd = this.carGuild(); if (!gd) return;
+    const no = this.carNo(), st = (this.state.carStates || {})[no];
+    if (force) this._carASchedAt = Date.now();
+    else if (st && Date.now() - (this._carASchedAt || 0) > 8000) { this._carASchedAt = Date.now(); this.carLoadStates(no); }
+    if ((st && st.role === 'admin') || gd.role === 'admin') this.carAMemLoad(!!force);
+  }
+  carSecVals_sched(c) {
+    const { s, gd, st, segOn } = c;
+    const stAdmin = !!(st && st.role === 'admin');
+    const busy = !!(s.carABusy || s.carActBusy);
+    const fmt = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '—' : (+v).toFixed(2);
+    const day = st ? this.carDayOf(st, s.carDate) : null;
+    const today = (st && st.today) || '';
+    const days = today ? this.carADays(today) : [];
+    const tool = ['run', 'proxy', 'copy', 'range'].indexOf(s.carATool) >= 0 ? s.carATool : 'run';
+    const cpFrom = st && today ? this.carACpFrom(st) : '';
+    const isQQ = /^qqg_/.test(String(gd.gid || ''));
+    const signRole = s.carASignRole === 's6' ? 's6' : 'pusher';
+    const dropRole = s.carARole === 's6' || s.carARole === 'pusher' ? s.carARole : '';
 
+    /* 成員池（看板、管理員、非跨日）：搜尋名字或別名 */
+    const memC = this.carSecOf(this.carAMemKey());
+    const mems = this.carAMemList().filter(m => m && m.name);
+    const pq = String(s.carAPoolQ || '').trim().toLowerCase();
+    const poolShow = stAdmin && s.carView === 'board' && !!day && !day.xday;
+    const pool = poolShow ? mems.filter(m => !pq || String(m.name).toLowerCase().indexOf(pq) >= 0
+      || (Array.isArray(m.aliases) && m.aliases.some(a => String(a).toLowerCase().indexOf(pq) >= 0)))
+      .slice(0, 300).map(m => {
+        const nm = String(m.name), on = s.carAPick === nm;
+        return { nm, bn: fmt(m.bonus) + (+m.s6_bonus > 0 ? ' · S6 ' + fmt(m.s6_bonus) : ''), sel: on ? 'true' : 'false',
+          bg: on ? 'color-mix(in oklab,var(--accent) 16%,var(--card))' : 'var(--card-2)', bd: on ? 'var(--accent)' : 'var(--border)' };
+      }) : [];
+    const pick = poolShow ? String(s.carAPick || '') : '';
+    const roleName = { '': '自動', s6: 'S6', pusher: '推手' };
+
+    return {
+      /* 排班工具（管理員）／我要報班（成員） */
+      carAToolsShow: stAdmin && !!today,
+      carASelfShow: !!st && !stAdmin && !!today,
+      carAToolTabs: [['run', '開班'], ['proxy', '代報班'], ['copy', '複製班表'], ['range', '整段處理']].map(([v, n]) => Object.assign({ v, n, sel: tool === v ? 'true' : 'false' }, segOn(tool === v))),
+      carAToolRun: tool === 'run', carAToolProxy: tool === 'proxy', carAToolCopy: tool === 'copy', carAToolRange: tool === 'range',
+      carADateOpts: days, carAD: st && today ? this.carADate(st) : '', carAR: s.carAR || '',
+      carACpFromOpts: today ? this.carADays(today, -1) : [], carACpToOpts: days,
+      carACpFrom: cpFrom, carACpTo: st && today ? this.carACpTo(st, cpFrom) : '',
+      carAPxName: s.carAPxName || '',
+      carAPxOpts: stAdmin ? mems.slice(0, 300).map(m => ({ v: String(m.name), n: String(m.name) + ' · ' + fmt(m.bonus)
+        + (Array.isArray(m.aliases) && m.aliases.length ? ' · ' + m.aliases.map(String).join('、') : '') })) : [],
+      carASignRoles: [['pusher', '推手'], ['s6', 'S6']].map(([v, n]) => Object.assign({ v, n, sel: signRole === v ? 'true' : 'false' }, segOn(signRole === v))),
+      carABusyOn: busy,
+      carARunBtn: busy ? '處理中…' : '開班', carAPxBtn: busy ? '處理中…' : '代報班', carASelfBtn: busy ? '處理中…' : '報班',
+      /* 快速操作（管理員）：QQ 車隊沒有 Discord 看板，不顯示重繪看板 */
+      carAQuickShow: stAdmin, carABoardShow: stAdmin && !isQQ,
+      /* 成員池 */
+      carAPoolShow: poolShow, carAPool: pool, carAPoolQ: s.carAPoolQ || '',
+      carAPoolLoading: poolShow && !!memC && !!memC.busy && !mems.length,
+      carAPoolErr: poolShow && memC && memC.err ? String(memC.err) : '',
+      carAPoolEmpty: poolShow && !!memC && !memC.busy && !memC.err && !pool.length,
+      carAPoolEmptyTxt: pq ? '找不到符合的成員' : '名冊是空的',
+      carARoles: [['', '自動'], ['s6', 'S6'], ['pusher', '推手']].map(([v, n]) => Object.assign({ v, n, sel: dropRole === v ? 'true' : 'false' }, segOn(dropRole === v))),
+      carAPickShow: !!pick, carAPickTxt: pick ? '已選「' + pick + '」：點座位放進去（身分：' + roleName[dropRole] + '），可連續放好幾格' : '',
+
+      onCarATool: e => this.setState({ carATool: String(e.currentTarget.dataset.v || 'run') }),
+      onCarASignRole: e => this.setState({ carASignRole: e.currentTarget.dataset.v === 's6' ? 's6' : 'pusher' }),
+      onCarARole: e => { const v = String(e.currentTarget.dataset.v || ''); this.setState({ carARole: v === 's6' || v === 'pusher' ? v : '' }); },
+      onCarARun: e => this.carARun(e.currentTarget.dataset.act === 'unmark' ? 'unmark' : 'mark'),
+      onCarAProxy: e => this.carAProxy(e.currentTarget.dataset.act === 'cancel' ? 'cancel' : 'add'),
+      onCarASelf: e => this.carASelf(e.currentTarget.dataset.act === 'cancel' ? 'cancel' : 'add'),
+      onCarACopy: e => this.carACopy(e.currentTarget.dataset.p === '1'),
+      onCarARange: e => { const a = String(e.currentTarget.dataset.act || ''); if (a === 'clear' || a === 'lock' || a === 'unlock') this.carARangeAct(a); },
+      onCarAQuick: e => this.carAQuick(e.currentTarget.dataset.act),
+      onCarAUnmark: e => { const d = e.currentTarget.dataset; this.carAUnmark(d.d, d.h); },
+      /* 成員那一列的「報班」：打開選身分（推手／S6）的小視窗；取消則直接走原本的 carSign（有確認） */
+      onCarARowSign: e => { const d = e.currentTarget.dataset; if (d.act === 'cancel') this.carSign(d.d, d.h, 'cancel'); else this.carOpenPop('empty', e.currentTarget); },
+      onCarAPoolPick: e => { const nm = String(e.currentTarget.dataset.nm || ''); this.setState({ carAPick: this.state.carAPick === nm ? '' : nm, carPop: null }); },
+      onCarAPoolKey: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const nm = String(e.currentTarget.dataset.nm || ''); this.setState({ carAPick: this.state.carAPick === nm ? '' : nm, carPop: null }); } },
+      onCarAPickClear: () => this.setState({ carAPick: '' }),
+      onCarASeat: e => { if (this.state.carAPick && this.state.carView === 'board') this.carAPlaceAt(e.currentTarget); else this.carOpenPop('seat', e.currentTarget); },
+      onCarAEmpty: e => { if (this.state.carAPick && this.state.carView === 'board') this.carAPlaceAt(e.currentTarget); else this.carOpenPop('empty', e.currentTarget); },
+      onCarAMemRetry: () => this.carAMemLoad(true),
+    };
+  }
 
   /* ---------- end @@SEC-A@@ ---------- */
 
@@ -2555,7 +2864,8 @@ class Component extends DCLogic {
   }
   async carClearSeat() {
     const p = this.state.carPop; if (!p) return;
-    const { seat } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+    const { seat, st } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+    if (st && st.today && String(p.date) < st.today) { this._toast('跨日時段已過日期，不能移出，只能貼標記'); return; }
     if (!window.confirm('把 ' + ((seat && seat.name) || '這個人') + ' 移出 ' + this.carSlot(p.hour) + ' ' + p.pos.toUpperCase() + '？')) return;
     const d = await this.carAct('/swap', { date: p.date, hour: p.hour, pos: p.pos, new: '' }, '已移出', p.no);
     if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
@@ -2565,7 +2875,10 @@ class Component extends DCLogic {
   async carDrop(t) {
     const src = this._carDrag; this._carDrag = null;
     if (!src || !src.nm) return;
-    const no = this.carNo(), date = src.d || t.d;
+    const no = this.carNo(), date = src.d || t.d, st0 = (this.state.carStates || {})[no];
+    // 跨日時段（昨天的日期）機器人只准貼標記；放進去的身分照成員池上選的（自動／S6／推手，跟舊面板一樣）
+    if ([src.d, t.d].some(x => x && st0 && st0.today && String(x) < st0.today)) { this._toast('跨日時段已過日期，只能貼標記'); return; }
+    const dropRole = this.state.carARole === 's6' || this.state.carARole === 'pusher' ? this.state.carARole : '';
     if (t.zone === 'out') {
       if (!src.h) return;
       const d = await this.carAct('/swap', { date, hour: src.h, pos: src.pos, new: '' }, '已移出 ' + src.nm, no);
@@ -2574,7 +2887,7 @@ class Component extends DCLogic {
     }
     const h = t.h, pos = t.pos;
     if (!h || !pos || (src.h === h && src.pos === pos)) return;
-    const d = await this.carAct('/swap', { date: t.d || date, hour: h, pos, new: src.nm, role: '' }, null, no);
+    const d = await this.carAct('/swap', { date: t.d || date, hour: h, pos, new: src.nm, role: dropRole }, null, no);
     if (!d) return;
     if (src.h && src.h === h && src.pos) {
       await this.carAct('/swap', { date, hour: src.h, pos: src.pos, new: t.nm || '', role: '' }, null, no);
@@ -2860,6 +3173,8 @@ class Component extends DCLogic {
     const roleTxt = { admin: '管理員', member: '成員' };
     const via = me ? ((me.discord ? 'Discord' : '') || ((me.qq || []).length ? 'QQ' : '') || '帳號') : '';
 
+    /* 跨日時段（昨天 24:00 以後）日期已過：機器人只准貼標記，換人／移出／砍班／鎖班／報班一律不給按 */
+    const xd = !!(day && day.xday);
     const rows = day ? (day.rows || []).map(r => {
       const my = ((mine[day.date] || []).find(x => x && x.hour === r.hour)) || null;
       const hr = +String(r.hour).slice(0, 2);
@@ -2876,8 +3191,9 @@ class Component extends DCLogic {
           name: String(se.name || ''), nm: String(se.name || ''), s6: se.role === 's6', bonus: fmt(se.bonus),
           tags: tags.slice(0, 3), hasMore: tags.length > 3, tagMore: '+' + Math.max(0, tags.length - 3),
           canTag: admin && has && !!se.fp,
-          drag: admin && has ? 'true' : 'false',
-          emptyTxt: admin ? '缺 · 點此排人' : (r.locked ? '缺 · 已鎖班' : '缺 · 點此報班'),
+          drag: admin && has && !xd ? 'true' : 'false',
+          emptyTxt: xd ? '缺' : admin ? '缺 · 點此排人' : (r.locked ? '缺 · 已鎖班' : '缺 · 點此報班'),
+          emptyBtn: !xd, emptyRo: xd,
           bg: isMine ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
           mine: isMine,
         };
@@ -2888,18 +3204,20 @@ class Component extends DCLogic {
       if (wl.length) noteParts.push('候補 ' + wl.join('、'));
       if (r.applicants) noteParts.push('報班 ' + r.applicants);
       let signShow = false, signTxt = '', signAct = '';
-      if (!admin) {
+      if (!admin && !xd) {
         if (my) { signShow = true; signAct = 'cancel'; signTxt = my.seat ? '砍班' : (my.waitlist ? '取消候補' : '取消報班'); }
         else if (!r.locked) { signShow = true; signAct = 'add'; signTxt = '報班'; }
       }
-      const myTxt = my ? (my.seat ? '我在 ' + my.seat.toUpperCase() : my.waitlist ? '我在候補' : '我已報班') : '';
+      // 報了但還沒上位也不在候補＝等管理員確認（車隊沒開自動確認時，網頁報班都是這個狀態）
+      const myTxt = my ? (my.seat ? '我在 ' + my.seat.toUpperCase() : my.waitlist ? '我在候補' : '我已報班 · 待確認') : '';
       return {
         hour: r.hour, d: day.date, slot: this.carSlot(r.hour), runner: String((st && st.p1) || '跑者'), ctype: String(r.car_type || ''),
-        locked: !!r.locked, cells, filled,
+        locked: !!r.locked, manual: !!r.manual, cells, filled,
         note: noteParts.join(' · ') || (myTxt ? '' : '—'), myTxt, hasMy: !!myTxt,
         signShow, signTxt, signAct,
-        lockShow: admin, lockTxt: r.locked ? '解鎖' : '鎖班', lockV: r.locked ? '0' : '1',
-        wl: wl.map(n => ({ nm: n, drag: admin ? 'true' : 'false', h: '', d: day.date })), hasWl: wl.length > 0,
+        lockShow: admin && !xd, lockTxt: r.locked ? '解鎖' : '鎖班', lockV: r.locked ? '0' : '1',
+        unmarkShow: admin && !xd,
+        wl: wl.map(n => ({ nm: n, drag: admin && !xd ? 'true' : 'false', h: '', d: day.date })), hasWl: wl.length > 0,
         bg: live ? 'color-mix(in oklab,var(--accent) 7%,var(--card))' : 'transparent',
         colBd: live ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
       };
@@ -2926,7 +3244,8 @@ class Component extends DCLogic {
       const cs = sts[c.no]; if (!cs || !cs.me || typeof cs.me !== 'object') return;
       Object.keys(cs.me).sort().forEach(d => {
         const hs = (cs.me[d] || []).filter(x => x && /^\d{2}:\d{2}$/.test(String(x.hour))).slice().sort((a, b) => a.hour < b.hour ? -1 : 1);
-        const st2 = x => x.seat ? x.seat.toUpperCase() + (() => { const dd = (cs.days || []).find(y => y.date === d); const rr = dd && (dd.rows || []).find(y => y.hour === x.hour); const se = rr && (rr.seats || []).find(y => y && y.pos === x.seat); return se && se.role === 's6' ? ' S6' : ''; })() : x.waitlist ? '候補' : '已報班';
+        const st2 = x => (x.seat ? x.seat.toUpperCase() + (() => { const dd = (cs.days || []).find(y => y.date === d); const rr = dd && (dd.rows || []).find(y => y.hour === x.hour); const se = rr && (rr.seats || []).find(y => y && y.pos === x.seat); return se && se.role === 's6' ? ' S6' : ''; })() : x.waitlist ? '候補' : '待確認')
+          + (x.locked ? ' · 已鎖' : '');
         let seg = null;
         hs.forEach(x => {
           const v = st2(x), h = +x.hour.slice(0, 2);
@@ -2958,16 +3277,17 @@ class Component extends DCLogic {
       const tags = seat && Array.isArray(seat.tags) ? seat.tags : [];
       const t = p.kind === 'tag' ? tags[p.ti] : null;
       const tc = t ? this.carTagStyle(t.color) : null;
-      const where = (curCar.name || '') + ' · ' + this.carSlot(p.hour) + ' · ' + String(p.pos || '').toUpperCase();
+      const where = (curCar.name || '') + ' · ' + this.carSlot(p.hour) + (p.pos ? ' · ' + String(p.pos).toUpperCase() : '');
       const my = ((mine[p.date] || []).find(x => x && x.hour === p.hour)) || null;
+      const pxd = !!(st && st.today && String(p.date) < st.today);     // 跨日時段：只能看／貼標記
       pv = {
         carPopShow: !!(row && (p.kind === 'empty' || seat)) && (p.kind !== 'tag' || !!t),
         carPopL: Math.round(left) + 'px', carPopT: Math.round(top) + 'px',
-        carPopAdminPick: admin && (p.kind === 'empty' || p.kind === 'seat'), carPickTitle: p.kind === 'empty' ? '排人進這個座位' : '換成別人',
+        carPopAdminPick: admin && (p.kind === 'empty' || p.kind === 'seat') && !pxd, carPickTitle: p.kind === 'empty' ? '排人進這個座位' : '換成別人',
         carPopWhere: where,
         carPopIsTag: p.kind === 'tag', carPopIsSeat: p.kind === 'seat', carPopIsEmpty: p.kind === 'empty', carPopIsAdd: p.kind === 'addtag',
         carPopName: String((seat && seat.name) || ''),
-        carPopBonus: seat && seat.name ? ((seat.role === 's6' ? 'S6 · ' : '推手 · ') + '倍率 ' + (fmt(seat.bonus) || '—')) : '',
+        carPopBonus: seat && seat.name ? ((seat.role === 's6' ? 'S6 · ' : '推手 · ') + '倍率 ' + (fmt(seat.bonus) || '—') + (admin && pxd ? ' · 跨日時段只能貼標記' : '')) : '',
         carPopTagLabel: t ? String(t.label || '') : '', carPopTagBg: tc ? tc.bg : '', carPopTagFg: tc ? tc.fg : '',
         carPopTagScope: t ? (t.scope === 'member' ? ('這個人長期' + (t.until ? '（至 ' + t.until + '）' : '')) : '只這一班') : '',
         carPopTagDetail: t ? (String(t.detail || '') || '（沒有細節）') : '',
@@ -2976,9 +3296,9 @@ class Component extends DCLogic {
         carPopHasTags: tags.length > 0,
         carPopAdmin: admin, carPopMember: !admin,
         carPopCanTag: admin && !!(seat && seat.fp),
-        carPopMine: !admin && !!(my && my.seat === p.pos),
-        carPopCanSign: !admin && p.kind === 'empty' && !(row && row.locked) && !my,
-        carPopLockedTxt: !admin && p.kind === 'empty' ? ((row && row.locked) ? '這個時段已鎖班，暫時不能報。' : (my ? '你已經在這個時段了（' + (my.seat ? my.seat.toUpperCase() : my.waitlist ? '候補' : '已報班') + '）。' : '報班後由機器人依倍率自動排位；想排 S6 請選「報 S6」。')) : '',
+        carPopMine: !admin && !!(my && my.seat === p.pos) && !pxd,
+        carPopCanSign: !admin && p.kind === 'empty' && !(row && row.locked) && !my && !pxd,
+        carPopLockedTxt: !admin && p.kind === 'empty' ? (pxd ? '跨日時段已過日期，不能報班。' : (row && row.locked) ? '這個時段已鎖班，暫時不能報。' : (my ? '你已經在這個時段了（' + (my.seat ? my.seat.toUpperCase() : my.waitlist ? '候補' : '待確認') + '）。' : '報班後由管理員確認（車隊開了自動確認就會直接依倍率排位）；想排 S6 請選「報 S6」。')) : '',
         carPopH: p.hour, carPopD: p.date, carPopPos: p.pos,
         carPick: s.carPick || '', carPickRole: s.carPickRole || '',
         carMemOpts: mem.slice(0, 300).map(m => ({ v: m.name, n: m.name + (m.bonus ? ' · ' + fmt(m.bonus) : '') + (m.s6 ? ' · S6 ' + fmt(m.s6) : '') })),
@@ -3037,10 +3357,12 @@ class Component extends DCLogic {
       carIsTable: (s.carView || 'table') !== 'board', carIsBoard: s.carView === 'board',
       carIsAdmin: admin,
       carOpenBtn: open ? '停止報班' : '開放報班', carOpenBg: open ? 'var(--card-2)' : 'var(--ink-grad)', carOpenFg: open ? 'var(--text-2)' : '#fff', carOpenBd: open ? 'var(--border)' : 'transparent',
-      carLockBtn: allLocked ? '解鎖全天' : '鎖班', carLockV: allLocked ? '0' : '1',
+      carLockBtn: allLocked ? '解鎖全天' : '鎖班', carLockV: allLocked ? '0' : '1', carLockShow: admin && !!day && !xd,
       carDates: dates, carHasDates: dates.length > 0,
       carStLoading: !st && !carErrNo, carStErr: carErrNo,
       carNoRows: !!st && rows.length === 0,
+      carNoRowsTxt: (day ? '這一天' : '這幾天') + (admin ? '還沒有開班的時段。用下方「排班工具」的開班，選日期、填時段（例如 20-22）就能開。'
+        : '還沒有開班的時段，管理員開班後這裡就會出現。'),
       carDayTitle: (curCar.name || '') + (day ? ' · ' + this.carDayLabel(day.date, today, day.xday).replace(/^(今天|明天) /, '') : ''),
       carStatShow: rows.length > 0,
       carStatusShow: open !== null || allLocked,
