@@ -2315,21 +2315,276 @@ select option, select optgroup{
       <sc-if value="{{ carTabIs.settings }}">
         <div class="car-sec" data-sec="settings">
           <!-- @@SEC-F-TPL-settings@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+          <sc-if value="{{ carFSetLoading }}"><div class="car-card skel" style="height:260px"></div></sc-if>
+          <sc-if value="{{ carFSetErr }}">
+            <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">這一車的設定讀不到：{{ carFSetErr }}<br><button type="button" onClick="{{ onCarReload }}" class="car-btn" style="margin-top:10px">重試</button></div>
+          </sc-if>
+          <sc-if value="{{ carFSetReady }}">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+              <div style="font-size:17px;font-weight:800;color:var(--ink)">機器人設定</div>
+              <span class="car-bn">{{ carFSetCount }}</span>
+              <div style="flex:1"></div>
+              <sc-if value="{{ carMultiCar }}">
+                <div class="car-seg" role="tablist" aria-label="設定哪一車" style="overflow-x:auto;scrollbar-width:none">
+                  <sc-for list="{{ carFCarSeg }}" as="c"><button type="button" role="tab" aria-selected="{{ c.sel }}" onClick="{{ onCarNo }}" data-v="{{ c.v }}" style="background:{{ c.bg }};color:{{ c.fg }};box-shadow:{{ c.sh }}">{{ c.n }}</button></sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ carMultiCar }}"><div class="car-note" style="color:var(--text-3);margin:-2px 0 12px">{{ carFSetCarNote }}</div></sc-if>
 
+            <sc-if value="{{ carFMultiShow }}">
+              <div class="car-card" style="padding:15px 18px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <div style="font-size:14.5px;font-weight:800;color:var(--ink)">多車平行排班</div>
+                  <div style="flex:1"></div>
+                  <div class="car-seg" role="radiogroup" aria-label="同時開幾台車">
+                    <sc-for list="{{ carFCarsSeg }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarFCars }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+                  </div>
+                </div>
+                <div class="car-note" style="margin-top:8px;color:var(--text-3)">每台車各自一份班表、報班開關、鎖班與看板，成員、倍率與標記全車隊共用。合班／橋接中不能開多車。</div>
+                <sc-for list="{{ carFCarNames }}" as="r">
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                    <span style="flex:none;width:66px;font-size:12.5px;font-weight:800;color:var(--text-2)">{{ r.lbl }}</span>
+                    <input class="car-in" type="text" maxlength="12" placeholder="{{ r.ph }}" value="{{ r.tv }}" onInput="{{ onCarFSetText }}" onKeyDown="{{ onCarFSetTextKey }}" data-k="{{ r.k }}" aria-label="{{ r.lbl }}" style="flex:1;min-width:0;max-width:280px;min-height:38px;padding:7px 12px">
+                    <sc-if value="{{ r.dirty }}"><button type="button" class="car-mini pri" onClick="{{ onCarFSetTextSave }}" data-k="{{ r.k }}">儲存</button></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ carFShShow }}">
+              <div class="car-card" style="margin-bottom:12px;overflow:hidden">
+                <button type="button" onClick="{{ onCarFSetSec }}" data-sec="__sheet" aria-expanded="{{ carFShExp }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 18px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-family:inherit;text-align:left">
+                  <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14.5px;font-weight:800">Google 試算表同步</span><sc-if value="{{ carMultiCar }}"><span style="padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 12%,var(--card));color:var(--accent-deep);font-size:11px;font-weight:800;white-space:nowrap">{{ carFShTag }}</span></sc-if></span>
+                  <span style="flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">{{ carFShSum }} {{ carFShArrow }}</span>
+                </button>
+                <sc-if value="{{ carFShOpen }}">
+                  <div style="padding:2px 18px 16px;border-top:1px solid var(--border)">
+                    <sc-if value="{{ carFShLoading }}"><div class="skel" style="height:96px;border-radius:14px;margin-top:12px"></div></sc-if>
+                    <sc-if value="{{ carFShErr }}"><div style="margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到試算表設定：{{ carFShErr }} <button type="button" class="car-mini" onClick="{{ onCarFShReload }}">重試</button></div></sc-if>
+                    <sc-if value="{{ carFShHas }}">
+                      <div style="margin-top:12px;font-size:12.5px;line-height:1.8"><span style="font-weight:800;color:{{ carFShCredFg }}">{{ carFShCred }}</span><span style="color:var(--text-3)">　{{ carFShLast }}</span></div>
+                      <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">連接設定</div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <input class="car-in" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="300" placeholder="貼上試算表網址或 ID" value="{{ carFShId }}" onInput="{{ onCarFShId }}" onKeyDown="{{ onCarFShIdKey }}" aria-label="試算表網址或 ID" style="flex:1 1 220px;min-width:0;min-height:40px">
+                        <button type="button" class="car-btn" onClick="{{ onCarFShSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">儲存</button>
+                      </div>
+                      <sc-if value="{{ carFShNoId }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">還沒連接試算表，先照下面的步驟分享給服務帳號，再貼上網址儲存。</div></sc-if>
+                      <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:14px 0 6px">同步</div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                        <select sc-options="{{ carFShDates }}" value="{{ carFShDate }}" onChange="{{ onField }}" data-k="carFShDate" aria-label="同步哪一天" style="flex:0 1 190px;min-width:0;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;min-height:40px;cursor:pointer;outline:none;font-family:inherit"></select>
+                        <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="push" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">推送到試算表</button>
+                        <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="pull">從試算表套用</button>
+                        <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="week">推送未來 7 天</button>
+                      </div>
+                      <sc-if value="{{ carFShResShow }}">
+                        <div style="margin-top:10px;padding:10px 13px;border-radius:14px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 10%,var(--card));font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShResMsg }}
+                          <sc-if value="{{ carFShHasMiss }}"><div style="margin-top:4px;font-size:12px;color:var(--text-2)">查無成員（沒有套用）：<sc-for list="{{ carFShMiss }}" as="x"><span style="display:inline-block;margin:2px 6px 0 0;padding:1px 9px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700">{{ x.t }}</span></sc-for></div></sc-if>
+                        </div>
+                      </sc-if>
+                      <div class="car-note" style="margin-top:10px;color:var(--text-3)">推送：一天一個分頁（時段／車種／P1～P5／候補／報名數）。套用：讀分頁上 P2～P5 的名字寫回班表，S6 請寫「S6 名字」；查無成員的名字會列出來、不會套用。</div>
+                      <div style="margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
+                        <div style="font-weight:800;color:var(--ink);margin-bottom:2px">使用步驟</div>
+                        1. 建立 Google 試算表，分享給下面的服務帳號（權限選編輯者）<br>2. 貼上試算表網址並儲存，按「推送到試算表」產生分頁<br>3. 在表上排班（P2～P5 填成員名稱），再按「從試算表套用」
+                        <sc-if value="{{ carFShEmail }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px"><span>服務帳號：</span><span style="user-select:all;-webkit-user-select:all;font-weight:700;color:var(--accent-deep);overflow-wrap:anywhere;min-width:0">{{ carFShEmail }}</span><button type="button" class="car-mini" onClick="{{ onCarFShCopy }}">複製</button></div></sc-if>
+                        <sc-if value="{{ carFShNoEmail }}"><div style="margin-top:8px;color:var(--text-3)">（讀不到服務帳號 email）</div></sc-if>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ carFShShow }}">
+              <div class="car-card" style="padding:13px 18px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <div style="flex:1 1 220px;min-width:0">
+                  <div style="font-size:14.5px;font-weight:800;color:var(--ink)">座位標記標籤盤</div>
+                  <div class="car-note" style="color:var(--text-3);margin-top:2px">排班表名字後面的彩色小膠囊；可新增、改色、刪除，設成「僅管理員」的標籤成員看不到。</div>
+                </div>
+                <button type="button" class="car-btn" onClick="{{ onCarTagMgr }}">管理標籤盤</button>
+              </div>
+            </sc-if>
+
+            <div class="car-card" style="padding:11px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+              <input class="car-in" type="search" enterkeyhint="search" placeholder="搜尋設定…（例：候補、提醒、音量、外援）" value="{{ carFSetQ }}" onInput="{{ onField }}" data-k="carFSetQ" aria-label="搜尋設定" style="flex:1;min-width:0;min-height:40px;-webkit-appearance:none;appearance:none">
+              <sc-if value="{{ carFSetHasQ }}"><button type="button" class="car-mini" onClick="{{ onSet }}" data-k="carFSetQ" data-v="">清除</button></sc-if>
+              <sc-if value="{{ carFSetHasSecs }}"><button type="button" class="car-mini" onClick="{{ onCarFSetAll }}">{{ carFSetAllTxt }}</button></sc-if>
+            </div>
+
+            <sc-if value="{{ carFSetNoMeta }}"><div class="car-card" style="padding:26px 18px;text-align:center;font-size:13px;color:var(--text-3)">機器人沒有回傳設定清單（可能是機器人版本太舊，或你在這台車不是管理員）。</div></sc-if>
+            <sc-if value="{{ carFSetNone }}"><div class="car-card" style="padding:26px 18px;text-align:center;font-size:13px;color:var(--text-3)">找不到符合的設定</div></sc-if>
+
+            <sc-for list="{{ carFSetSecs }}" as="g">
+              <div class="car-card" style="margin-bottom:10px;overflow:hidden">
+                <button type="button" onClick="{{ onCarFSetSec }}" data-sec="{{ g.sec }}" aria-expanded="{{ g.exp }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 18px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-family:inherit;text-align:left">
+                  <span style="flex:1;min-width:0;font-size:14.5px;font-weight:800;overflow-wrap:anywhere">{{ g.sec }}</span>
+                  <span style="flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">{{ g.n }} {{ g.arrow }}</span>
+                </button>
+                <sc-if value="{{ g.open }}">
+                  <sc-for list="{{ g.rows }}" as="r">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 18px;border-top:1px solid var(--border)">
+                      <div style="flex:1 1 220px;min-width:0">
+                        <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.55;overflow-wrap:anywhere">{{ r.label }}</div>
+                        <sc-if value="{{ r.hasCarLbl }}"><span style="display:inline-block;margin-top:4px;padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 12%,var(--card));color:var(--accent-deep);font-size:11px;font-weight:800">{{ r.carLbl }}</span></sc-if>
+                      </div>
+                      <div style="flex:{{ r.cf }};min-width:0;max-width:100%;display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+                        <sc-if value="{{ r.isBool }}"><button type="button" role="switch" aria-checked="{{ r.on }}" aria-label="{{ r.label }}" onClick="{{ onCarFSetBool }}" data-k="{{ r.k }}" style="position:relative;flex:none;width:46px;height:28px;padding:0;border-radius:999px;border:1px solid {{ r.swBd }};background:{{ r.swBg }};cursor:pointer;transition:background .2s"><span style="position:absolute;top:2px;left:{{ r.swL }};width:22px;height:22px;border-radius:999px;background:{{ r.swK }};box-shadow:var(--sh-xs);transition:left .18s ease"></span></button></sc-if>
+                        <sc-if value="{{ r.isSel }}"><select sc-options="{{ r.opts }}" value="{{ r.cur }}" onChange="{{ onCarFSetSel }}" data-k="{{ r.k }}" aria-label="{{ r.label }}" style="max-width:100%;min-width:150px;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;min-height:40px;cursor:pointer;outline:none;font-family:inherit"></select></sc-if>
+                        <sc-if value="{{ r.isChan }}">
+                          <sc-if value="{{ r.hasCh }}"><select sc-options="{{ r.opts }}" value="{{ r.cur }}" onChange="{{ onCarFSetChan }}" data-k="{{ r.k }}" aria-label="{{ r.label }}" style="max-width:100%;min-width:150px;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;min-height:40px;cursor:pointer;outline:none;font-family:inherit"></select></sc-if>
+                          <sc-if value="{{ r.noCh }}"><span style="font-size:12px;color:var(--text-3)">{{ r.noChTxt }}</span></sc-if>
+                        </sc-if>
+                        <sc-if value="{{ r.isChans }}">
+                          <sc-for list="{{ r.chips }}" as="h"><button type="button" onClick="{{ onCarFSetChip }}" data-k="{{ h.k }}" data-id="{{ h.id }}" aria-pressed="{{ h.on }}" style="max-width:100%;padding:5px 12px;border:1px solid {{ h.bd }};border-radius:999px;background:{{ h.bg }};color:{{ h.fg }};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.n }}</button></sc-for>
+                          <sc-if value="{{ r.noCh }}"><span style="font-size:12px;color:var(--text-3)">{{ r.noChTxt }}</span></sc-if>
+                          <sc-if value="{{ r.hasChips }}"><span style="flex-basis:100%;font-size:11.5px;color:var(--text-3)">{{ r.chN }}</span></sc-if>
+                        </sc-if>
+                        <sc-if value="{{ r.isRange }}"><input type="range" min="5" max="200" step="5" value="{{ r.rv }}" onInput="{{ onCarFSetRange }}" data-k="{{ r.k }}" aria-label="{{ r.label }}" style="flex:1;min-width:0;accent-color:var(--accent)"><span style="flex:none;width:52px;text-align:right;font-family:'M PLUS Rounded 1c';font-weight:700;font-size:13px;color:var(--accent-deep)">{{ r.rTxt }}</span></sc-if>
+                        <sc-if value="{{ r.isNote }}"><span style="font-size:12px;color:var(--text-3)">（唯讀）</span></sc-if>
+                        <sc-if value="{{ r.isText }}"><input class="car-in" type="text" maxlength="{{ r.max }}" placeholder="{{ r.ph }}" value="{{ r.tv }}" onInput="{{ onCarFSetText }}" onKeyDown="{{ onCarFSetTextKey }}" data-k="{{ r.k }}" aria-label="{{ r.label }}" style="flex:1;min-width:0;min-height:38px;padding:7px 12px"><sc-if value="{{ r.dirty }}"><button type="button" class="car-mini pri" onClick="{{ onCarFSetTextSave }}" data-k="{{ r.k }}">儲存</button></sc-if></sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-for>
+          </sc-if>
         </div>
       </sc-if>
 
       <sc-if value="{{ carTabIs.log }}">
         <div class="car-sec" data-sec="log">
           <!-- @@SEC-F-TPL-log@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
-
+          <div class="car-card" style="overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:15px 18px 10px">
+              <div style="font-size:15px;font-weight:800;color:var(--ink)">操作紀錄</div>
+              <span class="car-bn">{{ carFLogCnt }}</span>
+              <div style="flex:1"></div>
+              <button type="button" class="car-btn" onClick="{{ onCarFLogReload }}" style="background:var(--card)">{{ carFLogBusyTxt }}</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 18px 12px">
+              <div class="car-seg" role="tablist" aria-label="紀錄來源" style="overflow-x:auto;scrollbar-width:none">
+                <sc-for list="{{ carFLogTabs }}" as="t"><button type="button" role="tab" aria-selected="{{ t.sel }}" onClick="{{ onCarFLogSrc }}" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }}">{{ t.n }}</button></sc-for>
+              </div>
+              <input class="car-in" type="search" enterkeyhint="search" placeholder="搜尋動作、內容或操作者" value="{{ carFLogQ }}" onInput="{{ onField }}" data-k="carFLogQ" aria-label="搜尋紀錄" style="flex:1 1 180px;min-width:0;max-width:300px;min-height:38px;padding:7px 13px;-webkit-appearance:none;appearance:none">
+            </div>
+            <sc-if value="{{ carFLogLoading }}"><div class="skel" style="height:220px;margin:0 18px 18px;border-radius:14px"></div></sc-if>
+            <sc-if value="{{ carFLogErr }}">
+              <div style="padding:2px 18px 18px;font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到紀錄：{{ carFLogErr }}<br><button type="button" onClick="{{ onCarFLogReload }}" class="car-btn" style="margin-top:10px">重試</button></div>
+            </sc-if>
+            <sc-if value="{{ carFLogEmpty }}"><div style="padding:26px 18px 30px;border-top:1px solid var(--border);text-align:center;font-size:13px;color:var(--text-3)">{{ carFLogEmptyTxt }}</div></sc-if>
+            <sc-if value="{{ carFLogWide }}">
+              <div style="display:grid;grid-template-columns:124px 82px minmax(86px,.8fr) minmax(0,2.2fr) minmax(70px,.7fr);background:var(--card-2);border-top:1px solid var(--border)">
+                <div class="car-gh">時間</div><div class="car-gh">來源</div><div class="car-gh">動作</div><div class="car-gh">內容</div><div class="car-gh">操作者</div>
+              </div>
+              <sc-for list="{{ carFLogRows }}" as="x">
+                <div style="display:grid;grid-template-columns:124px 82px minmax(86px,.8fr) minmax(0,2.2fr) minmax(70px,.7fr);align-items:start;border-top:1px solid var(--border)">
+                  <div style="padding:9px 12px;font-size:12px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;white-space:nowrap">{{ x.ts }}</div>
+                  <div style="padding:8px 12px"><span style="display:inline-block;padding:1px 9px;border-radius:999px;background:{{ x.sBg }};color:{{ x.sFg }};font-size:11px;font-weight:800;white-space:nowrap">{{ x.src }}</span></div>
+                  <div style="padding:9px 12px;font-size:12.5px;font-weight:800;color:var(--ink);overflow-wrap:anywhere;min-width:0">{{ x.act }}</div>
+                  <div style="padding:9px 12px;font-size:12.5px;color:var(--text-2);line-height:1.6;overflow-wrap:anywhere;min-width:0">{{ x.det }}</div>
+                  <div style="padding:9px 12px;font-size:12px;color:var(--text-3);overflow-wrap:anywhere;min-width:0">{{ x.who }}</div>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ carFLogNarrow }}">
+              <sc-for list="{{ carFLogRows }}" as="x">
+                <div style="padding:10px 16px;border-top:1px solid var(--border)">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3)">
+                    <span style="font-family:'M PLUS Rounded 1c';font-weight:700;white-space:nowrap">{{ x.ts }}</span>
+                    <span style="display:inline-block;padding:1px 9px;border-radius:999px;background:{{ x.sBg }};color:{{ x.sFg }};font-size:11px;font-weight:800;white-space:nowrap">{{ x.src }}</span>
+                    <span style="margin-left:auto;min-width:0;overflow-wrap:anywhere">{{ x.who }}</span>
+                  </div>
+                  <div style="margin-top:4px;font-size:13px;line-height:1.6;overflow-wrap:anywhere"><span style="font-weight:800;color:var(--ink)">{{ x.act }}</span>　<span style="color:var(--text-2)">{{ x.det }}</span></div>
+                </div>
+              </sc-for>
+            </sc-if>
+          </div>
         </div>
       </sc-if>
 
       <sc-if value="{{ carTabIs.system }}">
         <div class="car-sec" data-sec="system">
           <!-- @@SEC-F-TPL-system@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <div style="font-size:17px;font-weight:800;color:var(--ink)">系統</div>
+            <span style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border-radius:999px;background:{{ carFSysOnBg }};color:{{ carFSysOnFg }};font-size:12px;font-weight:800;white-space:nowrap"><span style="width:8px;height:8px;border-radius:999px;background:{{ carFSysOnDot }};flex:none"></span>{{ carFSysOnTxt }}</span>
+            <div style="flex:1"></div>
+            <sc-if value="{{ carMultiCar }}">
+              <div class="car-seg" role="tablist" aria-label="班表動作作用在哪一車" style="overflow-x:auto;scrollbar-width:none">
+                <sc-for list="{{ carFCarSeg }}" as="c"><button type="button" role="tab" aria-selected="{{ c.sel }}" onClick="{{ onCarNo }}" data-v="{{ c.v }}" style="background:{{ c.bg }};color:{{ c.fg }};box-shadow:{{ c.sh }}">{{ c.n }}</button></sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ carMultiCar }}"><div class="car-note" style="color:var(--text-3);margin:-2px 0 12px">{{ carFSysCarNote }}</div></sc-if>
 
+          <div class="car-card" style="padding:15px 18px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+              <div style="font-size:14.5px;font-weight:800;color:var(--ink)">機器人狀態</div>
+              <span style="font-size:11.5px;color:var(--text-3)">{{ carFSysAt }}</span>
+              <div style="flex:1"></div>
+              <button type="button" class="car-mini" onClick="{{ onCarFSysReload }}">{{ carFSysBusyTxt }}</button>
+            </div>
+            <sc-if value="{{ carFSysLoading }}"><div class="skel" style="height:120px;border-radius:14px"></div></sc-if>
+            <sc-if value="{{ carFSysErr }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到機器人狀態：{{ carFSysErr }}</div></sc-if>
+            <sc-if value="{{ carFSysHasStats }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">
+                <sc-for list="{{ carFSysStats }}" as="x">
+                  <div style="min-width:0;padding:10px 12px;border-radius:14px;background:var(--card-2)">
+                    <div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--text-3)">{{ x.k }}</div>
+                    <div style="margin-top:3px;font-size:14.5px;font-weight:800;color:{{ x.fg }};font-family:'M PLUS Rounded 1c';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ carFSysNow }}">
+              <div style="margin-top:10px;padding:10px 13px;border-radius:14px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 10%,var(--card))">
+                <div style="font-size:13px;font-weight:800;color:var(--ink);overflow-wrap:anywhere">正在播放：{{ carFSysNowT }}</div>
+                <div style="margin-top:2px;font-size:11.5px;color:var(--text-2);overflow-wrap:anywhere">{{ carFSysNowSub }}</div>
+                <div style="margin-top:7px;height:4px;border-radius:999px;background:var(--card-2);overflow:hidden"><div style="height:100%;width:{{ carFSysNowW }};background:var(--ink-grad)"></div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ carFSysQQ }}"><div class="car-note" style="margin-top:10px;color:var(--text-3)">{{ carFSysQQNote }}</div></sc-if>
+          </div>
+
+          <div class="car-card" style="padding:15px 18px;margin-bottom:12px">
+            <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:10px">快速指令</div>
+            <div style="display:flex;gap:8px">
+              <input class="car-in" type="text" enterkeyhint="send" autocomplete="off" maxlength="200" placeholder="{{ carFCmdPh }}" value="{{ carFCmd }}" onInput="{{ onField }}" onKeyDown="{{ onCarFCmdKey }}" data-k="carFCmd" aria-label="快速指令" style="flex:1;min-width:0">
+              <button type="button" class="car-btn" onClick="{{ onCarFCmdGo }}" style="flex:none;background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ carFCmdBtn }}</button>
+            </div>
+            <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+              <sc-for list="{{ carFCmdEx }}" as="x"><button type="button" onClick="{{ onCarFCmdEx }}" data-t="{{ x.t }}" style="padding:4px 11px;border:1px dashed var(--border-2);border-radius:999px;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">{{ x.t }}</button></sc-for>
+            </div>
+            <div class="car-note" style="margin-top:8px;color:var(--text-3)">{{ carFCmdHelp }}</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;align-items:start">
+            <div class="car-card" style="padding:15px 18px">
+              <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:10px">快速操作</div>
+              <sc-if value="{{ carFSysDc }}">
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                  <input class="car-in" type="text" enterkeyhint="go" autocomplete="off" maxlength="300" placeholder="貼 YouTube 網址或關鍵字…" value="{{ carFPlay }}" onInput="{{ onField }}" onKeyDown="{{ onCarFPlayKey }}" data-k="carFPlay" aria-label="要播放的網址或關鍵字" style="flex:1;min-width:0">
+                  <button type="button" class="car-btn" onClick="{{ onCarFPlayGo }}" style="flex:none;background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">播放</button>
+                </div>
+              </sc-if>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="car-btn" onClick="{{ onCarFGoBoard }}">拖拉排班</button>
+                <button type="button" class="car-btn" onClick="{{ onCarFAct }}" data-a="reseat">重排補位</button>
+                <sc-if value="{{ carFSysDc }}">
+                  <button type="button" class="car-btn" onClick="{{ onCarFAct }}" data-a="board">重繪看板</button>
+                  <button type="button" class="car-btn" onClick="{{ onCarFStop }}" style="color:color-mix(in oklab,#d64533 55%,var(--car-fg))">停止音樂</button>
+                </sc-if>
+              </div>
+            </div>
+            <div class="car-card" style="padding:15px 18px">
+              <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:10px">同步與維護</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ carFActs }}" as="a"><button type="button" class="car-btn" onClick="{{ onCarFAct }}" data-a="{{ a.a }}">{{ a.n }}</button></sc-for>
+              </div>
+              <div class="car-note" style="margin-top:10px;color:var(--text-3)">全部重排補位：把卡在報名名單、沒排上位的人補進空位（只作用在目前這一車）。慢的動作會先回「處理中」，完成後狀態會自己更新。</div>
+            </div>
+          </div>
         </div>
       </sc-if>
 
@@ -5697,7 +5952,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c597e9f262"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4f8550eaad"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
