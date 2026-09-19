@@ -1190,6 +1190,14 @@
             </div>
             <div id="rsEventSearchHint" class="note" style="margin-top:4px;font-size:12px;color:var(--text-light);">可直接輸入期數或角色名快速跳轉，或用右側下拉選單。</div>
             <div id="rsEventInfo" class="note" style="margin-top:8px;"></div>
+            <div class="analysis-input" style="flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center;">
+                <label style="font-size:13px;">儲存的設定</label>
+                <select id="rsPreset" style="max-width:220px;padding:7px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);"><option value="">— 尚未儲存 —</option></select>
+                <button type="button" onclick="RunStudio.loadPreset()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer;">載入</button>
+                <button type="button" onclick="RunStudio.savePreset()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer;">＋ 存目前設定</button>
+                <button type="button" onclick="RunStudio.deletePreset()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-light);font-size:12px;cursor:pointer;">刪除</button>
+                <span class="note" style="font-size:11px;color:var(--text-light);margin:0;">活動、模式、綜合力、加成、選歌、難度、火與技能欄整組存在這台裝置（站內備份／雲端同步會一起帶）。</span>
+            </div>
 
             <div style="font-size:14px;font-weight:600;color:var(--primary);margin:14px 0 6px;">理論隊伍
                 <span style="font-weight:400;font-size:12px;">
@@ -1284,7 +1292,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=439386c2d1"></script>
+    <script src="js/core.js?v=4965562c2d"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){

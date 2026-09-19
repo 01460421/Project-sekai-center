@@ -3280,6 +3280,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     this._fillEventList();
                 }
                 this.filterSongs();
+                this._fillPresets();
                 this._ready = true;
                 await this.onEvent();
                 this._loadJPEvents();   // 日服活動：背景載入，完成後補進下拉
@@ -3673,6 +3674,43 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             },
             _ownRaw() { try { return localStorage.getItem('sekai-cards-own') || ''; } catch (e) { return ''; } },
             _ownedOn() { const el = document.getElementById('rsOwnedOnly'); return !!(el && el.checked); },
+            /* 儲存的設定：活動＋輸入欄整組存本機（sekai-rs-presets），站內備份／雲端同步一起帶走 */
+            PRESET_KEY: 'sekai-rs-presets',
+            _presetFields: ['rsPower', 'rsBonus', 'rsAreaLv', 'rsSong', 'rsDiff', 'rsBoost', 'rsCharRank', 'rsP0', 'rsP1', 'rsP2', 'rsP3', 'rsP4', 'rsP5'],
+            _presets() { try { const v = JSON.parse(localStorage.getItem(this.PRESET_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } },
+            _fillPresets(sel) {
+                const el = document.getElementById('rsPreset'); if (!el) return;
+                const list = this._presets(), esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                el.innerHTML = '<option value="">' + (list.length ? '— 選一組 —' : '— 尚未儲存 —') + '</option>' + list.map(p => `<option value="${esc(p.n)}">${esc(p.n)}</option>`).join('');
+                if (sel != null) el.value = sel;
+            },
+            savePreset() {
+                const name = (window.prompt('幫這組設定取個名字', '') || '').trim(); if (!name) return;
+                const v = { ev: this._evId, mode: (document.querySelector('input[name="rsMode"]:checked') || {}).value || 'bonus', owned: this._ownedOn() };
+                this._presetFields.forEach(id => { const el = document.getElementById(id); if (el) v[id] = el.value; });
+                const list = this._presets().filter(p => p.n !== name).concat([{ n: name, t: Date.now(), v }]).slice(-12);
+                try { localStorage.setItem(this.PRESET_KEY, JSON.stringify(list)); } catch (e) {}
+                this._fillPresets(name);
+            },
+            async loadPreset() {
+                const el = document.getElementById('rsPreset'), p = this._presets().find(x => x.n === (el && el.value)); if (!p) return;
+                const v = p.v || {};
+                const sel = document.getElementById('rsEvent'); if (sel && v.ev != null) { sel.value = String(v.ev); this._evId = +v.ev; }
+                const m = document.querySelector('input[name="rsMode"][value="' + (v.mode || 'bonus') + '"]'); if (m) m.checked = true;
+                const own = document.getElementById('rsOwnedOnly'); if (own) own.checked = !!v.owned;
+                const put = ids => ids.forEach(id => { const x = document.getElementById(id); if (x && v[id] != null) x.value = v[id]; });
+                put(this._presetFields);
+                await this.onEvent();
+                // onEvent 會把綜合力／加成蓋成理論隊伍值，存的值最後再放回去
+                put(['rsPower', 'rsBonus', 'rsSong', 'rsDiff', 'rsBoost']);
+                this.calc();
+            },
+            deletePreset() {
+                const el = document.getElementById('rsPreset'), n = el && el.value; if (!n) return;
+                if (!window.confirm('刪除「' + n + '」？')) return;
+                try { localStorage.setItem(this.PRESET_KEY, JSON.stringify(this._presets().filter(p => p.n !== n))); } catch (e) {}
+                this._fillPresets('');
+            },
             async _computeBest(src, type, opts) {
                 await Promise.all([PowerEngine.ensure(), SkillEngine.ensure()]);
                 if (src.isJP) this._mergeJPEpi();   // 日服限定卡的前後篇補進 epi 表

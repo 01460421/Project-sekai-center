@@ -9,6 +9,7 @@ class Component extends DCLogic {
   BK_KEYS = [
     ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-app-cur', '活動P 目前'],
     ['sekai-cards-own', '收集率:持有卡片'], ['sekai-mst-done', '豆森對話:已看過'], ['sekai-mst-own', '豆森對話:已擁有的家具'],
+    ['sekai-fav', '收藏與待辦'], ['sekai-calc-presets', '計算中心:我的設定'], ['sekai-rs-presets', '跑榜工作室:儲存設定'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
     ['sekai-b30-zh', 'B30:曲名語言'], ['sekai-b30-fmt', 'B30:定數格式'],
     ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
@@ -83,6 +84,7 @@ class Component extends DCLogic {
   PAGES = {
     home:     ['首頁', '當期活動、遊戲通知、主要卡池與我的進度'],
     event:    ['活動總覽', '本期活動一頁看完：倒數、我的名次、榜線預測、當期卡池、加分卡與劇情'],
+    favs:     ['收藏與待辦', '星號收藏的卡片、角色、家具、歌曲與卡池，加上還沒做完的事：跑榜目標、豆森缺的家具、未讀通知'],
     calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
     gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
     songs:    ['歌曲清單', '台服全曲＋日服未實裝曲（Sekai-World 主資料庫），BPM／歌長來自社長 bot'],
@@ -275,6 +277,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/19', t: '跑榜計畫器、收藏與待辦頁、抽卡預算、儲存設定', s: '活動試算多了「目標名次」籤（直接帶入預測終線）與「帶入我的活動P」，並依剩餘天數攤成每天要打幾場、幾小時、多少體力，首頁與活動總覽會提示；新增「收藏與待辦」頁：卡片、角色、家具、歌曲、卡池詳情都能按星號收藏，待辦列出跑榜差距、豆森缺的家具、未讀通知；抽卡天井加「每天存石 × 距卡池天數」預算，可點未來卡池自動填天數；計算中心與跑榜工作室都能把整組設定存成「我的設定」一鍵套用（備份與雲端同步一起帶）。' },
     { d: '2026/09/19', t: '新增活動總覽頁、詳情視窗的相關連結、側欄改依資料來源分組並自動列出常用', s: '活動總覽把本期活動的倒數、我的名次、各段榜線與終線預測、當期卡池、加分卡、劇情集中在一頁；卡片、角色、家具、歌曲的詳情視窗多了「相關」連結（同期卡池、卡片劇情、豆森對話、虛擬 Live）；側欄改成即時資料／遊戲資料／計算工具／遊戲／說明與社群五組，用過兩次以上的頁面自動排進「常用」；首頁綁定 Player ID 後可一鍵把隊伍與展示卡帶入收集率。' },
     { d: '2026/09/19', t: 'AI 助手拆成延後載入、站上多了自動測試、偵測訂閱一鍵預設', s: 'AI 助手（約 500 KB）從主程式抽出，登入核准後才載入，一般訪客首屏 JS 少一半；每個 PR 自動跑語法、戳記與 26 個頁面的煙霧測試；偵測訂閱新增三個一鍵預設（T1000 破 300 萬、我掉出 T100、我擠進 T1000）。' },
     { d: '2026/09/19', t: '站台整體優化：雲端同步修正、錯誤提示、對比色、日曆議程、資料日期、分享預覽', s: '修正雲端同步鍵名（以前上傳的是站上沒寫過的鍵，等於沒同步），現在收集率、B30、豆森對話、版面都會跨裝置；出錯時會提示並可一鍵重新整理；亮色籤改深字、深色模式看得清；手機日曆多了本月議程清單；長按歌曲列加入播放清單；圖鑑頁角落顯示資料更新日期；分享連結有每頁的標題與說明；可點的列都能用鍵盤操作；排名 API 改走自家代理。' },
@@ -448,6 +451,9 @@ class Component extends DCLogic {
     guide: null, guideHide: false,
     toast: '', errBar: false, built: null, evCards: null,
     visits: (() => { try { return JSON.parse(localStorage.getItem('sekai-visits') || '{}') || {}; } catch (e) { return {}; } })(),           // 全站提示（右下角短暫浮出）
+    favs: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-fav') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
+    calcPresets: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-calc-presets') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
+    planTier: 0, planHrs: 3, gcDaily: 100, gcDays: 0,
     recent: (() => { try { return JSON.parse(localStorage.getItem('sekai-recent') || '[]'); } catch (e) { return []; } })(),
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
@@ -1797,8 +1803,9 @@ class Component extends DCLogic {
   sameUid(a, b) {
     if (a == null || b == null || a === '' || b === '') return false;
     if (String(a) === String(b)) return true;
+    // 19 位玩家 ID 超過 2^53，轉成數字會失精而撞在一起，只有安全整數範圍才用數值比對（吃掉前導 0）
     const na = Number(a), nb = Number(b);
-    return Number.isFinite(na) && Number.isFinite(nb) && String(na) === String(nb);
+    return Number.isSafeInteger(na) && Number.isSafeInteger(nb) && na === nb;
   }
 
   normRank(r) {
@@ -1842,7 +1849,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=439386c2d1';
+      el.src = './js/core.js?v=4965562c2d';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -4157,6 +4164,9 @@ class Component extends DCLogic {
     view.related = (view.related || []).map(r => Object.assign({ patchJson: JSON.stringify(r.patch || {}) }, r));
     out.dbPickHasRelated = view.related.length > 0;
     out.dbPickView = view;
+    const FAV_PAGE = { card: 'cards', char: 'chars', fix: 'fixtures', mat: 'materials', comic: 'comics', live: 'lives' };
+    const pk = s.dbPick || {};
+    Object.assign(out, this.favOut('dbPick', pk.kind || '', pk.id != null ? pk.id : null, view.title, FAV_PAGE[pk.kind] || s.page, pk.kind ? { dbPick: { kind: pk.kind, id: pk.id } } : null));
     out.dbPickW = view.wide ? '680px' : '440px';
     out.dbPickHasImg = !!view.img; out.dbPickHasChips = view.chips.length > 0; out.dbPickHasRows = view.rows.length > 0;
     out.dbPickHasText = !!view.text; out.dbPickHasList = view.list.length > 0 || !!view.listTitle; out.dbPickHasColors = (view.colors || []).length > 0;
@@ -4565,6 +4575,7 @@ class Component extends DCLogic {
       this.setState({ recent, visits });
     }
     if (p === 'event') { this.loadStories(); this.loadCards(); this.loadEventCards(); }
+    if (p === 'favs') { this.loadMst(); this.loadFixtures(); }
     this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
@@ -4978,6 +4989,95 @@ class Component extends DCLogic {
     }
     return out.slice(0, 24);
   }
+  /* ===== 收藏與待辦（sekai-fav；備份與雲端同步一起帶） ===== */
+  favKey(kind, id) { return kind + ':' + id; }
+  isFav(kind, id) { const k = this.favKey(kind, id); return (this.state.favs || []).some(f => f.k === k); }
+  toggleFav(item) {
+    const k = this.favKey(item.kind, item.id);
+    const cur = this.state.favs || [], has = cur.some(f => f.k === k);
+    const next = has ? cur.filter(f => f.k !== k) : cur.concat([{ k, kind: item.kind, id: item.id, n: item.name || '', p: item.p || 'home', patch: item.patch || null, t: Date.now() }]).slice(-200);
+    this.setState({ favs: next });
+    try { localStorage.setItem('sekai-fav', JSON.stringify(next)); } catch (e) {}
+    this._toast(has ? '已從收藏移除' : '已加入收藏（收藏與待辦頁）');
+  }
+  /* 各詳情視窗的星號：prefix + FavMark／FavTitle／FavFg／FavData */
+  favOut(prefix, kind, id, name, p, patch) {
+    const on = id != null && this.isFav(kind, id);
+    return { [prefix + 'FavMark']: on ? '★' : '☆', [prefix + 'FavTitle']: on ? '從收藏移除' : '加入收藏', [prefix + 'FavFg']: on ? '#f0a020' : 'var(--text-3)', [prefix + 'FavData']: JSON.stringify({ kind, id, name: name || '', p, patch: patch || null }) };
+  }
+  /* 豆森：還缺哪些家具（未擁有、且還有沒看過的對話靠它解鎖）；收藏與待辦頁用 */
+  mstLack() {
+    const s = this.state, d = s.mst, done = s.mstDone || {}, own = s.mstOwn || {};
+    if (!d) return null;
+    const g = {};
+    d.rows.forEach(r => { if (done[r[0]]) return; r[2].forEach(c => { if (c[0] !== 'f' || own[c[1]]) return; g[c[1]] = (g[c[1]] || 0) + 1; }); });
+    const ids = Object.keys(g);
+    return { n: ids.length, talks: ids.reduce((a, id) => a + g[id], 0) };
+  }
+  favVals(s) {
+    const out = {};
+    if (s.page !== 'favs') return out;
+    const KIND = { card: '卡片', char: '角色', fix: '家具', mat: '素材', song: '歌曲', gacha: '卡池', live: '虛擬 Live', comic: '一格漫畫' };
+    const favs = (s.favs || []).slice().sort((a, b) => (b.t || 0) - (a.t || 0));
+    const groups = {};
+    favs.forEach(f => { const g = groups[f.kind] || (groups[f.kind] = { kind: f.kind, label: KIND[f.kind] || f.kind, items: [] }); g.items.push({ k: f.k, n: f.n || (f.kind + ' #' + f.id), p: f.p || 'home', patchJson: JSON.stringify(f.patch || {}) }); });
+    out.favGroups = Object.values(groups).map(g => Object.assign(g, { count: g.items.length + ' 項' }));
+    out.favN = favs.length; out.favEmpty = !favs.length;
+    const todo = [];
+    const pl = this.planInfo();
+    if (pl.active && pl.left > 0) todo.push({ id: 'plan', ic: '🏃', t: '跑榜：距目標還差 ' + this.short(pl.left) + ' EP', s: pl.perDay ? ('每天約 ' + this.n(pl.perDay) + ' 場（約 ' + pl.hrsDay + ' 小時），還有 ' + pl.daysLeft + ' 天') : '到計算中心的活動試算設定每局 EP', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
+    const lack = this.mstLack();
+    if (lack && lack.n) todo.push({ id: 'mst', ic: '🪑', t: '豆森：還缺 ' + this.n(lack.n) + ' 件家具', s: '做出來可解鎖 ' + this.n(lack.talks) + ' 則還沒看的對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
+    if (s.me && s.unread) todo.push({ id: 'notice', ic: '🔔', t: '有 ' + s.unread + ' 則未讀通知', s: '訂閱的偵測或站內訊息', p: 'notices', patchJson: '{}' });
+    if (!s.pid) todo.push({ id: 'pid', ic: '🪪', t: '還沒綁定 Player ID', s: '綁定後首頁與活動總覽會顯示你的名次與進度', p: 'home', patchJson: '{}' });
+    out.favTodo = todo; out.favHasTodo = todo.length > 0; out.favNoTodo = !todo.length && !!lack;
+    return out;
+  }
+  /* 跑榜計畫：把活動試算的目標／目前 EP 攤到剩餘天數，算每天要打幾場、幾小時、多少體力 */
+  planInfo() {
+    const s = this.state, ev = this.eventOf(s.live);
+    const endAt = ev.aggregate_at || ev.closed_at || ev.aggregated_at || ev.end_at;
+    const endMs = endAt ? new Date(endAt).getTime() : 0, now = Date.now();
+    const active = !!(ev.id != null && endMs > now);
+    const pd = s.pdata || {};
+    const left = Math.max(0, (+s.goal || 0) - (+s.cur || 0));
+    let pl = null; try { pl = this.plan(); } catch (e) {}
+    const plays = pl ? pl.plays : 0;
+    const daysLeft = active ? Math.max(1, Math.ceil((endMs - now) / 86400000)) : 0;
+    const perDay = daysLeft && plays ? Math.ceil(plays / daysLeft) : 0;
+    const minPerDay = (pl && perDay && plays) ? perDay * (pl.totalMin / plays) : 0;
+    const hrsDay = minPerDay ? Math.round(minPerDay / 6) / 10 : 0;
+    const hrsCap = +s.planHrs || 0;
+    return { active, left, plays, ep: pl ? pl.ep : 0, daysLeft, perDay, hrsDay, energyDay: perDay * (+s.energy || 0), feasible: !hrsCap || !hrsDay || hrsDay <= hrsCap, hrsCap, myScore: pd.myScore != null ? pd.myScore : null };
+  }
+  planHintText() {
+    const s = this.state;
+    if (!s.pid || !(+s.goal > +s.cur)) return '';
+    // 首頁／活動總覽也要算每局 EP，曲庫沒載入時先載（一次，之後同計算中心共用）
+    if (!this.songById(s.songKey)) { if (!s.epErr) this.loadEpSongs(); return ''; }
+    const pi = this.planInfo();
+    if (!pi.active || !(pi.left > 0) || !pi.perDay) return '';
+    return '跑榜計畫：距目標 ' + this.short(pi.left) + ' EP，每天約 ' + this.n(pi.perDay) + ' 場（約 ' + pi.hrsDay + ' 小時）· 還有 ' + pi.daysLeft + ' 天' + (pi.feasible ? '' : ' · 超過每天可玩時數');
+  }
+  /* 活動試算的「目標名次」籤：各段預測終線（沒有模型就用現在的榜線） */
+  planTierChips(s) {
+    let rows = []; try { const ba = this.borderAnalysis(); rows = ba ? ba.rows : []; } catch (e) {}
+    if (!rows.length) rows = this.bordersOf(s.borders).map(t => ({ rank: t.rank, score: t.score }));
+    const want = [100, 500, 1000, 2000, 5000, 10000, 20000, 50000];
+    const chip = on => ({ bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'var(--cta)' : 'var(--border)' });
+    return rows.filter(t => want.includes(t.rank)).map(t => { const v = Math.round(t.proj != null ? t.proj : t.score); return Object.assign({ v, rank: t.rank, n: 'T' + this.n(t.rank) + ' · ' + this.short(v) }, chip(s.planTier === t.rank)); });
+  }
+  /* 抽卡預算：現在的水晶＋每天存的 × 天數，對照天井差多少、約合台幣 */
+  gachaBudget(g) {
+    const s = this.state, days = Math.max(0, +s.gcDays || 0), then = (+s.gcC || 0) + days * Math.max(0, +s.gcDaily || 0);
+    const lack = Math.max(0, g.toCeil - then), rate = Math.max(0.1, +s.jRate || 7);
+    return { then, pulls: Math.floor(then / 300), lack, twd: Math.ceil(lack / rate) };
+  }
+  gcUpcoming(s) {
+    const now = Date.now(), chip = on => ({ bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'var(--cta)' : 'var(--border)' });
+    return (s.gachas || []).filter(g => g.s && this.pd(g.s).getTime() > now).sort((a, b) => this.pd(a.s) - this.pd(b.s)).slice(0, 6)
+      .map(g => { const days = Math.max(1, Math.ceil((this.pd(g.s).getTime() - now) / 86400000)); const nm = String(g.n || '卡池'); return Object.assign({ v: days, full: nm + '（' + this.md(this.pd(g.s)) + '）', n: (nm.length > 16 ? nm.slice(0, 15) + '…' : nm) + ' · ' + days + ' 天後' }, chip(+s.gcDays === days)); });
+  }
   applyPreset(k) {
     const p = this.PRESETS[k]; if (!p) return;
     this.setState({
@@ -5010,7 +5110,7 @@ class Component extends DCLogic {
     const visits = s.visits || {};
     const fav = Object.keys(visits).filter(k => navItemOf[k] && visits[k] >= 2).sort((a, b) => visits[b] - visits[a]).slice(0, 6).map(k => navItemOf[k]);
     const navSpec = [
-      ['主頁', [['home', '首頁', '#4ad1e8']]],
+      ['主頁', [['home', '首頁', '#4ad1e8'], ['favs', '收藏與待辦', '#ffd94d']]],
       ['帳號', [['account', s.me ? '我的帳號' : '登入', '#8be0d0']]
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
@@ -5157,7 +5257,8 @@ class Component extends DCLogic {
         { k: 'goal', label: '目標 EP', value: s.goal },
         { k: 'cur', label: '目前 EP', value: s.cur },
         { k: 'skill', label: '平均技能倍率', value: s.skill },
-        { k: 's6', label: 'S6 倍率', value: s.s6 }
+        { k: 's6', label: 'S6 倍率', value: s.s6 },
+        { k: 'planHrs', label: '每天可玩（小時）', value: s.planHrs }
       ];
       resultLabel = '需要場次';
       resultValue = plays ? this.n(plays) : '—';
@@ -5170,6 +5271,11 @@ class Component extends DCLogic {
         { l: '約合台幣', v: 'NT$' + this.n(pl.twd), sub: s.jRate + ' 石/元' },
         { l: '每 NT$1', v: this.n(pl.epPerTwd), sub: '活動P' }
       ];
+      const pi = this.planInfo();
+      if (pi.active && plays) resultStats.unshift(
+        { l: '剩餘天數', v: pi.daysLeft + ' 天', sub: '到活動結算' },
+        { l: '每天要打', v: this.n(pi.perDay) + ' 場', sub: '約 ' + pi.hrsDay + ' 小時' + (pi.feasible ? '' : '，超過每天可玩') },
+        { l: '每天體力', v: this.n(pi.energyDay), sub: '自然回復約 48／天' });
       formulaText = '場次 = ⌈(目標 − 目前) ÷ 每局 EP⌉；時間 = 場次 × (歌長 + ' + this.ohOf(s.mode) + 's)';
       formulaNote = '可回復體力 = 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10。';
     } else if (s.ctab === 'mult') {
@@ -5193,16 +5299,20 @@ class Component extends DCLogic {
       calcFields = [
         { k: 'gcC', label: '持有水晶', value: s.gcC },
         { k: 'gcP', label: '已抽次數（貼紙）', value: s.gcP },
-        { k: 'gcV', label: '持有交換券', value: s.gcV }
+        { k: 'gcV', label: '持有交換券', value: s.gcV },
+        { k: 'gcDaily', label: '每天約存水晶', value: s.gcDaily },
+        { k: 'gcDays', label: '距目標卡池天數', value: s.gcDays }
       ];
-      const g = this.gacha();
+      const g = this.gacha(), gb = this.gachaBudget(g);
       resultLabel = '預算內至少中 1 張';
       resultValue = (g.pAfford * 100).toFixed(1) + '%';
       resultSub = '現有水晶可抽 ' + g.afford + ' 次 · 天井 ' + g.ceil + ' 抽';
       resultStats = [
         { l: '期望抽數', v: g.eNo.toFixed(0), sub: '無天井 ≈ ' + this.short(g.eNo * 300) + ' 水晶' },
         { l: '抽到即停', v: g.eCeil.toFixed(1), sub: '含天井保底' },
-        { l: '距天井', v: this.short(g.toCeil), sub: '水晶' }
+        { l: '距天井', v: this.short(g.toCeil), sub: '水晶' },
+        { l: '屆時水晶', v: this.short(gb.then), sub: (+s.gcDays || 0) + ' 天後 · 可抽 ' + this.n(gb.pulls) + ' 次' },
+        { l: '天井差額', v: gb.lack ? this.short(gb.lack) : '足夠', sub: gb.lack ? ('約 NT$' + this.n(gb.twd) + '（' + s.jRate + ' 石/元）') : '不用儲值' }
       ];
       formulaText = 'P(N) = 1 − (1 − ' + g.p + ')^N';
       formulaNote = g.note + '。4★ 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶。';
@@ -5672,7 +5782,7 @@ class Component extends DCLogic {
 
     return {
       isDesktop, isMobile: s.mobile,
-      isHome: s.page === 'home', isEvent: s.page === 'event', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
+      isHome: s.page === 'home', isEvent: s.page === 'event', isFavs: s.page === 'favs', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
       isShop: s.page === 'shop',
@@ -5897,6 +6007,7 @@ class Component extends DCLogic {
       toastShow: !!s.toast, toastText: s.toast || '', errBar: !!s.errBar,
       ...this.dbVals(s),
       ...this.evVals(s),
+      ...this.favVals(s),
       isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
       ...this.qzVals(s),
       ...this.stkVals(s),
@@ -7037,6 +7148,8 @@ class Component extends DCLogic {
       })(),
       playerUnitChips: [{ u: 'all', n: '全曲', c: 'var(--accent)', t: '#fff' }].concat(Object.keys(this.UNITS).map(k => ({ u: k, n: this.UNITS[k].n, c: this.UNITS[k].c, t: this.UNITS[k].t }))).map(o => ({ u: o.u, n: o.n, bg: s.su === o.u ? o.c : 'var(--card-2)', fg: s.su === o.u ? (o.t || '#fff') : 'var(--text-2)', bd: s.su === o.u ? o.c : 'var(--border)' })),
       songOpen: !!s.songId,
+      ...this.favOut('song', 'song', s.songId || null, (((s.songs || []).find(y => y.id === s.songId) || {}).title), 'songs', s.songId ? { songId: s.songId } : null),
+      ...this.favOut('gacha', 'gacha', s.gachaGid || null, (((s.gachas || []).find(g => String(g.id) === String(s.gachaGid)) || {}).n), 'gacha', s.gachaGid ? { gachaGid: s.gachaGid } : null),
       songDetailData: (() => {
         if (!s.songId) return null;
         const x = (s.songs || []).find(y => y.id === s.songId); if (!x) return null;
@@ -7125,6 +7238,7 @@ class Component extends DCLogic {
       liveCharFit: 'cover',
       liveCharPos: ((s.evType || {})[ev.id] === 'world_bloom') ? 'center 30%' : 'center 12%',
       hasLiveArt: !!(ev.id != null && s.evArt[ev.id]),
+      planHint: s.pid ? this.planHintText() : '',
       hasPlayer: !!s.pid, noPlayer: !s.pid, pidInput: s.pidInput, playerErr: s.pErr,
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
       playerRankLabel: pd.rank ? 'Rank ' + pd.rank : '資料同步中',
@@ -7520,6 +7634,13 @@ class Component extends DCLogic {
       effTitle: (s.effSort === 'score' ? '單首分數' : s.effSort === 'ep' ? '單局活動 P' : '時間效率') + ' TOP 15', effCols: s.mobile ? '30px minmax(0,1fr) 82px' : '38px minmax(0,1fr) 110px 110px',
       effNote: modeLabels[s.mode] + ' · ' + s.diff + ' · 體力 ' + s.energy,
       hasPlanCards: s.ctab === 'plan',
+      planTierChips: s.ctab === 'plan' ? this.planTierChips(s) : [],
+      planHasTiers: s.ctab === 'plan' && this.planTierChips(s).length > 0,
+      planNoTiers: s.ctab === 'plan' && !this.planTierChips(s).length,
+      planCanCur: (s.pdata || {}).myScore != null, planMyScore: this.short((s.pdata || {}).myScore || 0),
+      planTierNote: '點一段把「預測終線」帶入目標 EP' + ((this.planInfo().active) ? '，並依剩餘 ' + this.planInfo().daysLeft + ' 天攤成每天要打的場數。' : '。'),
+      hasGcUpcoming: s.ctab === 'gacha' && this.gcUpcoming(s).length > 0, gcUpcoming: s.ctab === 'gacha' ? this.gcUpcoming(s) : [],
+      calcPresetChips: (s.calcPresets || []).map(p => ({ n: p.n })),
       planFields: [
         { k: 'natHr', label: '自然回復（小時）', value: s.natHr },
         { k: 'lCan', label: '大罐（×10）', value: s.lCan },
@@ -8131,6 +8252,20 @@ class Component extends DCLogic {
         catch (e) { this.setState({ acSyncMsg: '載入失敗：' + (e.message || '') }); }
       },
       onPreset: e => this.applyPreset(e.currentTarget.dataset.v),
+      onPlanTier: e => { const d = e.currentTarget.dataset, goal = +d.v || 0; this.setState({ planTier: +d.rank || 0, goal }); try { localStorage.setItem('sekai-app-goal', String(goal)); } catch (e2) {} },
+      onPlanCur: () => { const pd = this.state.pdata || {}; if (pd.myScore == null) { this._toast('還沒對到你的名次'); return; } this.setState({ cur: pd.myScore }); try { localStorage.setItem('sekai-app-cur', String(pd.myScore)); } catch (e) {} },
+      onGcDays: e => this.setState({ gcDays: +e.currentTarget.dataset.v || 0 }),
+      onFav: e => { try { const d = JSON.parse(e.currentTarget.dataset.fav || '{}'); if (d.kind && d.id != null) this.toggleFav(d); } catch (e2) {} },
+      onFavRemove: e => { const k = e.currentTarget.dataset.k; const next = (this.state.favs || []).filter(f => f.k !== k); this.setState({ favs: next }); try { localStorage.setItem('sekai-fav', JSON.stringify(next)); } catch (e2) {} },
+      onCalcSave: () => {
+        const name = (window.prompt('幫這組設定取個名字', '') || '').trim(); if (!name) return;
+        const s = this.state, v = { power: s.power, bonus: s.bonus, energy: s.energy, skill: s.skill, s6: s.s6, mode: s.mode, songKey: s.songKey, diff: s.diff, goal: s.goal, cur: s.cur, scoreMode: s.scoreMode, planHrs: s.planHrs };
+        const next = (s.calcPresets || []).filter(p => p.n !== name).concat([{ n: name, t: Date.now(), v }]).slice(-12);
+        this.setState({ calcPresets: next }); try { localStorage.setItem('sekai-calc-presets', JSON.stringify(next)); } catch (e) {}
+        this._toast('已儲存「' + name + '」');
+      },
+      onCalcLoad: e => { const n = e.currentTarget.dataset.n, p = (this.state.calcPresets || []).find(x => x.n === n); if (!p) return; this.setState(Object.assign({ preset: '' }, p.v || {})); this._toast('已套用「' + n + '」'); },
+      onCalcDel: e => { const n = e.currentTarget.dataset.n; if (!window.confirm('刪除「' + n + '」？')) return; const next = (this.state.calcPresets || []).filter(x => x.n !== n); this.setState({ calcPresets: next }); try { localStorage.setItem('sekai-calc-presets', JSON.stringify(next)); } catch (e2) {} },
       onReloadEp: () => this.loadEpSongs(true),
       onColTab: e => this.setState({ colTab: e.currentTarget.dataset.v, cp: 1, cq: '' }),
 

@@ -436,7 +436,8 @@ select option, select optgroup{
           <sc-if value="{{ homeBoardIsWl }}">
             <div style="font-size:11.5px;color:var(--text-3);margin-bottom:9px">{{ homeWlChapterLabel }}</div>
           </sc-if>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+          <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">🏃 {{ planHint }} →</button></sc-if>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
             <sc-if value="{{ homeBoardIsMain }}">
               <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
                 <div style="background:var(--card-2);border-radius:13px;padding:11px 13px">
@@ -623,7 +624,8 @@ select option, select optgroup{
         <sc-if value="{{ hasPlayer }}">
           <div style="font-size:16px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
           <div style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-bottom:10px">ID {{ playerId }} · {{ playerRankLabel }}</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+          <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">🏃 {{ planHint }} →</button></sc-if>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
             <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
               <div style="background:var(--card-2);border-radius:13px;padding:11px 13px"><div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div></div>
             </sc-for>
@@ -698,6 +700,46 @@ select option, select optgroup{
       </div>
     </sc-if>
     </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ========== 收藏與待辦 ========== -->
+  <sc-if value="{{ isFavs }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">待辦</span></div>
+        <sc-if value="{{ favHasTodo }}">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ favTodo }}" as="t" hint-placeholder-count="3">
+              <button type="button" onClick="{{ onDbRelated }}" data-p="{{ t.p }}" data-patch="{{ t.patchJson }}" style="display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--text);cursor:pointer">
+                <span style="font-size:18px;line-height:1.2;flex:none">{{ t.ic }}</span>
+                <span style="min-width:0;flex:1"><span style="display:block;font-size:13px;font-weight:800;color:var(--ink)">{{ t.t }}</span><span style="display:block;font-size:11.5px;color:var(--text-3);margin-top:2px;line-height:1.5">{{ t.s }}</span></span>
+                <span style="font-size:12px;color:var(--text-3);flex:none">→</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ favNoTodo }}"><div style="padding:18px;text-align:center;color:var(--text-3);font-size:12.5px;border:1px dashed var(--border);border-radius:14px">目前沒有待辦，都做完了。</div></sc-if>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">收藏</span><span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ favN }} 項</span></div>
+        <sc-if value="{{ favEmpty }}"><div style="padding:18px;text-align:center;color:var(--text-3);font-size:12.5px;line-height:1.7;border:1px dashed var(--border);border-radius:14px">還沒有收藏。<br>在卡片、角色、家具、歌曲或卡池的詳情視窗按 ☆ 就會出現在這裡。</div></sc-if>
+        <sc-for list="{{ favGroups }}" as="g" hint-placeholder-count="2">
+          <div style="margin-bottom:12px">
+            <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:6px">{{ g.label }} <span style="color:var(--text-3);font-weight:600">{{ g.count }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ g.items }}" as="f" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <button type="button" onClick="{{ onDbRelated }}" data-p="{{ f.p }}" data-patch="{{ f.patchJson }}" style="flex:1;min-width:0;text-align:left;padding:9px 13px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">★ {{ f.n }}</button>
+                  <button type="button" onClick="{{ onFavRemove }}" data-k="{{ f.k }}" aria-label="移除收藏" title="移除收藏" style="width:32px;height:34px;flex:none;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--text-3);font-size:12px;cursor:pointer">✕</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
   </div>
   </sc-if>
 
@@ -1281,6 +1323,10 @@ select option, select optgroup{
           <sc-for list="{{ presets }}" as="p" hint-placeholder-count="3">
             <button type="button" onClick="{{ onPreset }}" data-v="{{ p.v }}" style="padding:7px 15px;border:1px solid {{ p.bd }};border-radius:999px;background:{{ p.bg }};color:{{ p.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">{{ p.n }}</button>
           </sc-for>
+          <sc-for list="{{ calcPresetChips }}" as="p" hint-placeholder-count="2">
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card-2);overflow:hidden"><button type="button" onClick="{{ onCalcLoad }}" data-n="{{ p.n }}" title="套用我的設定" style="padding:7px 4px 7px 13px;border:none;background:transparent;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">★ {{ p.n }}</button><button type="button" onClick="{{ onCalcDel }}" data-n="{{ p.n }}" aria-label="刪除設定" style="padding:7px 10px 7px 4px;border:none;background:transparent;color:var(--text-3);font-size:11px;cursor:pointer">✕</button></span>
+          </sc-for>
+          <button type="button" onClick="{{ onCalcSave }}" style="padding:7px 13px;border:1px dashed var(--border-2);border-radius:999px;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">＋ 存目前設定</button>
         </div>
       </div>
       <div style="font-size:11px;color:var(--text-3);margin-bottom:11px;line-height:1.6">此處「技能倍率」＝<b>時效值</b>（單次全隊技能總倍率，<b>不得大於 2.88</b>）。單張卡單次技能 20%～160%，滿隊整隊上限 ×2.88。</div>
@@ -1356,6 +1402,12 @@ select option, select optgroup{
             <sc-for list="{{ gcTargets }}" as="t" hint-placeholder-count="4">
               <button type="button" onClick="{{ onSet }}" data-k="gcT" data-v="{{ t.v }}" style="padding:9px 15px;border:1px solid {{ t.bd }};border-radius:13px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:700;cursor:pointer;text-align:left">{{ t.n }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasGcUpcoming }}">
+          <span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin:14px 0 6px">存到哪個卡池（點了自動填天數）</span>
+          <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ gcUpcoming }}" as="g" hint-placeholder-count="3"><button type="button" onClick="{{ onGcDays }}" data-v="{{ g.v }}" title="{{ g.full }}" style="padding:7px 12px;border:1px solid {{ g.bd }};border-radius:999px;background:{{ g.bg }};color:{{ g.fg }};font-size:11.5px;font-weight:700;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.n }}</button></sc-for>
           </div>
         </sc-if>
       </div>
@@ -1471,6 +1523,12 @@ select option, select optgroup{
         </sc-if>
 
         <sc-if value="{{ hasPlanCards }}">
+          <div style="border:1px solid var(--border);border-radius:18px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-xs)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:9px"><div style="font-size:13px;font-weight:800;color:var(--ink)">跑榜計畫：目標名次</div><sc-if value="{{ planCanCur }}"><button type="button" onClick="{{ onPlanCur }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:11.5px;font-weight:700;cursor:pointer">帶入我的活動P（{{ planMyScore }}）</button></sc-if></div>
+            <sc-if value="{{ planHasTiers }}"><div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ planTierChips }}" as="t" hint-placeholder-count="4"><button type="button" onClick="{{ onPlanTier }}" data-v="{{ t.v }}" data-rank="{{ t.rank }}" style="padding:7px 13px;border:1px solid {{ t.bd }};border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12px;font-weight:700;cursor:pointer;font-family:'M PLUS Rounded 1c'">{{ t.n }}</button></sc-for></div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ planTierNote }}</div></sc-if>
+            <sc-if value="{{ planNoTiers }}"><div style="font-size:12px;color:var(--text-3);line-height:1.6">目前沒有進行中的活動或榜線資料，先手動填目標 EP。</div></sc-if>
+          </div>
           <div style="border:1px solid var(--border);border-radius:18px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-xs)">
             <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:11px">體力來源（差引計算）</div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
@@ -4691,7 +4749,8 @@ select option, select optgroup{
 <div onClick="{{ onGachaClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div class="modal" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(620px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;padding:16px 18px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:popCenter .3s cubic-bezier(.34,1.4,.44,1)">
   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
-    <span style="font-size:15px;font-weight:800;color:var(--ink)">卡池 · PU 卡面/技能</span>
+    <span style="font-size:15px;font-weight:800;color:var(--ink);flex:1;min-width:0">卡池 · PU 卡面/技能</span>
+    <button type="button" onClick="{{ onFav }}" data-fav="{{ gachaFavData }}" title="{{ gachaFavTitle }}" aria-label="{{ gachaFavTitle }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:{{ gachaFavFg }};font-size:15px;cursor:pointer;line-height:1">{{ gachaFavMark }}</button>
     <button type="button" onClick="{{ onGachaClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
   <iframe id="gachaInfoFrame" data-src="{{ gachaSrc }}" title="卡池詳情" scrolling="no" style="width:100%;height:400px;border:none;background:transparent;display:block"></iframe>
@@ -4714,7 +4773,7 @@ select option, select optgroup{
     <button type="button" onClick="{{ onSongCalc }}" data-id="{{ songDetailData.id }}" title="到計算中心用這首歌算活動 P" style="flex:none;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">算活動 P →</button>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;flex-basis:100%">
       <span style="font-size:11px;font-weight:800;color:var(--text-3)">相關</span>
-      <sc-for list="{{ songDetailData.related }}" as="r" hint-placeholder-count="2"><button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ r.n }} →</button></sc-for>
+      <sc-for list="{{ songDetailData.related }}" as="r" hint-placeholder-count="2"><button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">{{ r.n }} →</button></sc-for><button type="button" onClick="{{ onFav }}" data-fav="{{ songFavData }}" title="{{ songFavTitle }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:{{ songFavFg }};font-size:12px;font-weight:700;cursor:pointer">{{ songFavMark }} 收藏</button>
     </div>
     <button type="button" onClick="{{ onSongClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
@@ -4767,6 +4826,7 @@ select option, select optgroup{
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.4">{{ dbPickView.title }}</div>
       <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">{{ dbPickView.sub }}</div>
     </div>
+    <button type="button" onClick="{{ onFav }}" data-fav="{{ dbPickFavData }}" title="{{ dbPickFavTitle }}" aria-label="{{ dbPickFavTitle }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:{{ dbPickFavFg }};font-size:15px;cursor:pointer;line-height:1">{{ dbPickFavMark }}</button>
     <sc-if value="{{ dbPickNav }}">
       <span style="display:inline-flex;align-items:center;gap:4px;flex:none">
         <button type="button" onClick="{{ onDbPrev }}" aria-label="上一筆" title="上一筆（←）" style="width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">‹</button>
@@ -5018,7 +5078,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=b41ad356c3"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=e97c728b30"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
