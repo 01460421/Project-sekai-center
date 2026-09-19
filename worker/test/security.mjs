@@ -14,7 +14,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { bridgeHeaders, bridgeVerify, cleanSecret } from '../src/bridge.js';
-import { signToken } from '../src/auth.js';
+import { signToken, safePath, scriptStr, bounce } from '../src/auth.js';
 import { ipKey } from '../src/accounts.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -413,6 +413,22 @@ reset();
   ok('改密碼後本瀏覽器新 cookie 有效', ((await send('GET', '/api/me', { cookie: sessionOf(ch.r) })).j.user || {}).username === 'unl');
   const oldTok = 'sekai_session=' + await signToken('h-secret', { u: uidOf('unl'), e: Math.floor(Date.now() / 1000) + 3600 });
   ok('沒有 v 的舊版 cookie 在版本 >0 後失效', HTTP || (await send('GET', '/api/me', { cookie: oldTok })).j.user === null);
+}
+
+/* ---------- 登入跳轉頁：返回網址白名單＋script 字串跳脫＋CSP（OAuth ?r= 反射 XSS） ---------- */
+{
+  const bad = ['/x</script><b>M</b>', '/a"b', "/a'b", '/a b', '/a`b', '/\\evil', '//evil.com', '/中文', 'https://evil.example/'];
+  ok('safePath 擋掉含 < > 引號 空白 反斜線 非 ASCII 的返回網址', bad.every(v => safePath(v) === '/app.html?page=account'), bad.map(v => safePath(v)));
+  const good = ['/app.html?page=car', '/app.html?page=car&g=123', '/app.html?page=car&g=qqg_A%20B', '/app.html?page=account#x'];
+  ok('safePath 放行站內正常網址', good.every(v => safePath(v) === v), good.map(v => safePath(v)));
+  ok('scriptStr 跳脫 </script> 與 &', !/[<>&]/.test(scriptStr('</script><script>alert(1)</script>&')));
+  const res = bounce('https://project-sekai-center.com/x</script><script>alert(1)</script>');
+  const body = await res.text();
+  ok('bounce 頁沒有被插入 script', !/<\/script><script>alert/.test(body) && (body.match(/<script>/g) || []).length === 1);
+  const csp = res.headers.get('content-security-policy') || '';
+  ok('bounce 頁有 CSP 禁止連線', /default-src 'none'/.test(csp) && !/connect-src/.test(csp) && res.headers.get('x-content-type-options') === 'nosniff');
+  const cb = await send('GET', '/auth/discord/callback?error=access_denied', { origin: null });
+  ok('真實路由的跳轉頁也帶 CSP', /default-src 'none'/.test(cb.r.headers.get('content-security-policy') || ''), cb.status);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

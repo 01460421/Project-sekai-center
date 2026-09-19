@@ -97,11 +97,11 @@ npx wrangler tail
 
 ## 全新的 D1（本機測試／重建環境）
 
-`sql/schema.sql` 是 002～016 全部跑完之後的完整結構快照，空資料庫只跑這一支：
+`sql/schema.sql` 是 002～017 全部跑完之後的完整結構快照，空資料庫只跑這一支：
 ```
 npx wrangler d1 execute pjsk-users --local --persist-to <目錄> --file=sql/schema.sql
 ```
-不要接著跑 002～016（ADD COLUMN 會報 duplicate column，無害但沒必要）。線上已經在用的 D1 照下面各節補跑缺的編號遷移；
+不要接著跑 002～017（ADD COLUMN 會報 duplicate column，無害但沒必要）。線上已經在用的 D1 照下面各節補跑缺的編號遷移；
 對它跑 schema.sql 是 no-op。之後新增遷移時，同樣的變動也要補進 schema.sql。
 
 ## 2026-09-19 遷移：申請 IP 紀錄
@@ -117,10 +117,10 @@ npx wrangler d1 execute pjsk-users --remote --file=sql/014_apply_ip.sql
 npx wrangler d1 execute pjsk-users --remote --file=sql/016_car_accounts.sql
 npx wrangler d1 execute pjsk-users --remote --file=sql/017_session_ver.sql
 ```
-015 新增 user_passwords、user_qq、qq_codes、login_fail、bridge_nonce 五張表；
-016 在 users 加 `session_ver`（改密碼／重設密碼／解綁身分時 +1，舊的 session cookie 全部失效）。016 只能跑一次，重跑會報 duplicate column（無害）。
-**要先跑兩支遷移再部署**：015 沒跑的話 /api/me 仍正常（新欄位當作沒設），但帳密登入、QQ 綁定、代理會回 500；
-016 沒跑的話登入照常，但改密碼／重設密碼會回 500（刻意不默默略過 —— 那等於盜用者的 cookie 撤不掉）。
+016 新增 user_passwords、user_qq、qq_codes、login_fail、bridge_nonce 五張表；
+017 在 users 加 `session_ver`（改密碼／重設密碼／解綁身分時 +1，舊的 session cookie 全部失效）。017 只能跑一次，重跑會報 duplicate column（無害）。
+**要先跑兩支遷移再部署**：016 沒跑的話 /api/me 仍正常（新欄位當作沒設），但帳密登入、QQ 綁定、代理會回 500；
+017 沒跑的話登入照常，但改密碼／重設密碼會回 500（刻意不默默略過 —— 那等於盜用者的 cookie 撤不掉）。
 
 設定：
 - `wrangler.toml` 的 `[vars]` 已加 `CAIBOT_API_BASE = "https://bot.project-sekai-center.com"`

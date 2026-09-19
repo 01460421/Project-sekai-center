@@ -1,9 +1,9 @@
--- pjsk-center 使用者資料庫：完整結構快照（等同 002～016 全部跑完之後的樣子）
+-- pjsk-center 使用者資料庫：完整結構快照（等同 002～017 全部跑完之後的樣子）
 --
 -- 用法分兩種，不要混用：
---   * 全新的 D1（本機測試、重建環境）：只跑這一支就好，不要再跑 002～016。
+--   * 全新的 D1（本機測試、重建環境）：只跑這一支就好，不要再跑 002～017。
 --       npx wrangler d1 execute pjsk-users --local --file=sql/schema.sql
---     之後跑 015 是無害的（全部 IF NOT EXISTS）；002/006/007/010～013/016 的 ADD COLUMN
+--     之後跑 016 是無害的（全部 IF NOT EXISTS）；002/006/007/010～013/015/017 的 ADD COLUMN
 --     會報 duplicate column，也是無害的（那一支整批回滾，而欄位本來就在）。
 --   * 已經在用的 D1（線上）：照 SETUP.md 補跑缺的編號遷移。這支對它是 no-op
 --     （全部 IF NOT EXISTS），重跑不會動到資料。
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
   review_json        TEXT,
   last_apply_at      INTEGER,
   apply_count        INTEGER NOT NULL DEFAULT 0,
-  -- 016 工作階段版本：改密碼／重設密碼／解綁身分時 +1，舊 cookie 全部失效
+  -- 017 工作階段版本：改密碼／重設密碼／解綁身分時 +1，舊 cookie 全部失效
   session_ver        INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status, created_at);
@@ -85,11 +85,25 @@ CREATE TABLE IF NOT EXISTS events (
   mailed_at   INTEGER,
   mail_error  TEXT,
   read_at     INTEGER,                     -- 006 已讀時間
-  no_mail     INTEGER NOT NULL DEFAULT 0   -- 007 只要站內看得到、不寄信
+  no_mail     INTEGER NOT NULL DEFAULT 0,  -- 007 只要站內看得到、不寄信
+  pushed_at   INTEGER                      -- 015 瀏覽器推播叮過的時間
 );
 CREATE INDEX IF NOT EXISTS idx_events_user    ON events(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_events_pending ON events(mailed_at, created_at);
 CREATE INDEX IF NOT EXISTS idx_events_unread  ON events(user_id, read_at, created_at DESC);
+
+-- Web Push 訂閱（015）：一個帳號可有多台裝置
+CREATE TABLE IF NOT EXISTS push_subs (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL,
+  endpoint   TEXT NOT NULL UNIQUE,
+  p256dh     TEXT,
+  auth       TEXT,
+  ua         TEXT,
+  created_at INTEGER NOT NULL,
+  fail_n     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subs(user_id);
 
 -- AI 呼叫紀錄（稽核＋計費，見 012／013）
 CREATE TABLE IF NOT EXISTS admin_log (
@@ -245,7 +259,7 @@ CREATE TABLE IF NOT EXISTS apply_ip (
 );
 CREATE INDEX IF NOT EXISTS idx_apply_ip ON apply_ip(ip, at);
 
--- 車隊頁：帳密、QQ 身分、QQ 綁定碼、限流、橋接 nonce（見 015）
+-- 車隊頁：帳密、QQ 身分、QQ 綁定碼、限流、橋接 nonce（見 016）
 CREATE TABLE IF NOT EXISTS user_passwords (
   user_id     TEXT PRIMARY KEY,
   username    TEXT NOT NULL UNIQUE,

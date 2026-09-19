@@ -191,7 +191,7 @@ async function withNewSession(env, fresh, make) {
   return r;
 }
 
-/* 車隊頁要的登入方式與身分（合約第 5 節）。015 遷移沒跑時兩張表不存在,
+/* 車隊頁要的登入方式與身分（合約第 5 節）。016 遷移沒跑時兩張表不存在,
    db.js 那兩支查詢會吞掉錯誤回 null／[],這裡就當作沒設密碼、沒綁 QQ。
    QQ 只回群 id 與名字,member_openid 不外送（前端用不到）。 */
 async function loginMethods(env, user) {
