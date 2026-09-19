@@ -146,7 +146,109 @@ export function install(BASE, mode0) {
 
     /* ---------- end @@MOCK-A@@ ---------- */
     /* @@MOCK-B@@ members */
+    /* 成員名冊 GET /members、成員編輯 POST /member（管理員）、在線人員 GET /online —— 形狀照 engine_omega
+       _web_api_members／_web_api_member_edit／_web_api_online（網頁在線照合約 C3：每個請求記下 (gid, 誰) 最後出現時間）。
+       名冊是整個車隊共用（不分車），存在 globalThis.__mockB.mem[gid]；在線的「本時段就位」看該車的班表。
+       測試開關（sessionStorage）：sekai-carmock-b-big=1 → 名冊多 340 人（超過 300，走機器人端搜尋）；
+         sekai-carmock-b-err=members|online → 該 API 回錯誤；sekai-carmock-b-empty=1 → 名冊是空的。 */
+    {
+      const B = globalThis.__mockB || (globalThis.__mockB = { mem: {}, seen: {} });
+      const flag = k => { try { return sessionStorage.getItem('sekai-carmock-b-' + k); } catch (e) { return null; } };
+      const pyf = v => Number.isInteger(v) ? v.toFixed(1) : String(v);          // Python 的 f"{float}"
+      const memOf = g => {
+        if (B.mem[g]) return B.mem[g];
+        const ID = { u1: 'pusher+s6', u2: 'pusher+s6', u3: 'runner', u4: 'pusher', u5: '跑推兼任', u6: 'pusher+s6', u7: 'pusher', u8: '', me: 'pusher+s6' };
+        const AL = { u1: ['老菜', 'caigen'], u2: ['明明'], u6: ['<i>香香</i>', '靜'], u8: ['<script>alert(1)</script>'], me: ['自己'] };
+        const PW = { u1: 402000, u2: 385000, u3: 352000, u4: 330500, u5: 341000, u6: 377000, u7: 298000, u8: 0, me: 360000 };
+        const o = {};
+        if (!flag('empty')) MEMBERS.forEach(x => { o[x.uid] = { name: x.name, bonus: x.bonus, s6_bonus: x.s6_bonus, identity: ID[x.uid] || '', aliases: (AL[x.uid] || []).slice(), power: PW[x.uid] || 0 }; });
+        if (flag('big')) for (let i = 1; i <= 340; i++) o['9' + String(i).padStart(17, '0')] = { name: '路人' + String(i).padStart(3, '0'), bonus: 1.5 + (i % 150) / 100, s6_bonus: 0, identity: 'pusher', aliases: i % 7 ? [] : ['別名' + i], power: 200000 + i * 100 };
+        return (B.mem[g] = o);
+      };
+      const who = mode === 'admin' ? ['u1', '菜根', 'admin'] : mode === 'qq' ? ['qq_abc', 'QQ 玩家', 'member'] : ['me', '我自己', 'member'];
+      const PAGE = { '/state': '班表', '/online': '在線人員', '/members': '成員名冊', '/member': '成員名冊', '/insight': '缺額分析', '/history': '歷史班表', '/status': '音樂', '/music': '音樂', '/log': '操作紀錄', '/setting': '設定', '/swap': '排班', '/signup': '報班', '/tags': '標記', '/seattag': '標記' };
+      (B.seen[gid] = B.seen[gid] || {})[who[0]] = { name: who[1], role: role === 'admin' ? 'admin' : 'member', t: Date.now(), page: PAGE[rest] || '' };
 
+      if (rest === '/members' && m === 'GET') {
+        if (flag('err') === 'members') return J({ error: '讀取成員失敗（模擬）' }, 500);
+        const qq = (q.get('q') || '').trim().toLowerCase(), slim = !admin, out = [];
+        Object.entries(memOf(gid)).forEach(([uid, x]) => {
+          const al = (x.aliases || []).map(a => String(a).toLowerCase());
+          if (qq && !String(x.name).toLowerCase().includes(qq) && !al.some(a => a.includes(qq)) && !(!slim && uid.includes(qq))) return;
+          const row = { name: x.name, bonus: x.bonus || 0, s6_bonus: x.s6_bonus || 0, identity: x.identity || '', aliases: (x.aliases || []).slice() };
+          if (!slim) { row.uid = uid; row.power = x.power || 0; }
+          out.push(row);
+        });
+        out.sort((a, b) => (b.bonus || 0) - (a.bonus || 0) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+        return J({ members: out.slice(0, 300), total: out.length });
+      }
+      if (rest === '/member' && m === 'POST') {
+        if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+        const x = memOf(gid)[String(body.uid || '')];
+        if (!x) return J({ error: '找不到成員' }, 404);
+        const changed = [], num = v => (typeof v === 'number' ? v : (String(v).trim() === '' ? NaN : Number(v)));
+        for (const [k, lb] of [['bonus', '倍率'], ['s6_bonus', 'S6倍率']]) {
+          if (body[k] != null && String(body[k]) !== '') {
+            const v = num(body[k]);
+            if (!isFinite(v)) return J({ error: lb + '格式錯誤' }, 400);
+            if (v !== 0 && !(v >= 1.18 && v <= 3.88)) return J({ error: lb + '須為 0 或 1.18~3.88' }, 400);
+            x[k] = v; changed.push(lb + '=' + pyf(v));
+          }
+        }
+        if (body.power != null && String(body.power) !== '') {
+          const p = num(body.power);
+          if (!isFinite(p)) return J({ error: '綜合力格式錯誤' }, 400);
+          x.power = p < 1000 ? Math.trunc(p * 10000) : Math.trunc(p); changed.push('綜合力=' + x.power);
+        }
+        if (body.aliases != null) {
+          const al = (Array.isArray(body.aliases) ? body.aliases : []).map(a => String(a).trim()).filter(Boolean).slice(0, 10);
+          x.aliases = al; changed.push('別名' + al.length + '個');
+        }
+        if (!changed.length) return J({ error: '沒有變更' }, 400);
+        return J({ ok: true, name: x.name, changed: changed.join('、') });
+      }
+      if (rest === '/online' && m === 'GET') {
+        if (flag('err') === 'online') return J({ error: '伺服器不在線' }, 503);
+        const mem = memOf(gid), crew = uid => (mem[uid] || {}).name || null, slim = !admin;
+        const now = new Date(), hk = String(now.getHours()).padStart(2, '0') + ':00';
+        // 1) 語音（整個車隊共用；222 當成沒人在語音的車隊）
+        const VC = gid === '111' ? [
+          ['推車語音 1', '900000000000000001', [['u1', '菜根', { stream: true }], ['u2', '小明', { mute: true }], ['u8', '<b>小夫</b>', {}], ['x1', '路過的人', {}]]],
+          ['<img src=x onerror=alert(1)>', '900000000000000002', [['u6', '靜香', { mute: true, deaf: true }]]],
+        ] : [];
+        const inVoice = {};
+        const voice = VC.map(([ch, id, ppl]) => ({ channel: ch, id, count: ppl.length, members: ppl.map(([uid, disp, f]) => {
+          inVoice[uid] = ch;
+          const r = { name: crew(uid) || disp, display: disp === '菜根' ? '菜根 (Discord)' : disp, crew: !!crew(uid), mute: !!f.mute, deaf: !!f.deaf, stream: !!f.stream };
+          if (!slim) r.uid = uid; return r;
+        }).sort((a, b) => (a.crew === b.crew ? (a.name < b.name ? -1 : 1) : a.crew ? -1 : 1)) })).sort((a, b) => b.count - a.count);
+        // 2) 本時段就位（跟車走）：這一車現在這個小時有開班就照班表；一車沒有就假造一班，方便測畫面
+        let sh = (c.sched[today] || {})[hk];
+        if (!sh && gid === '111' && no === 1) {
+          const by = n => { const e = Object.entries(mem).find(([, v]) => v.name === n); return e ? { user_id: e[0], name: e[1].name, role: 'pusher', bonus: e[1].bonus } : null; };
+          sh = { run_planned: true, p2: Object.assign(by('菜根') || {}, { role: 's6' }), p3: by('小明'), p4: null, p5: by('<b>小夫</b>') };
+          if (!sh.p2.user_id) sh.p2 = null;
+        }
+        const checked = new Set(['u1', 'u8']);
+        const onduty = [];
+        if (sh && sh.run_planned) ['p2', 'p3', 'p4', 'p5'].forEach(pp => {
+          const p = sh[pp];
+          if (!p) { onduty.push({ pos: pp.toUpperCase(), name: null }); return; }
+          const uid = String(p.user_id || '');
+          onduty.push({ pos: pp.toUpperCase(), name: p.name, role: p.role, bonus: p.bonus, voice: inVoice[uid] || null, checked: checked.has(uid) });
+        });
+        // 3) Discord 在線（222 當成沒開 presences intent）
+        const presence = gid === '111' ? { online: ['小明', '菜根'], idle: ['阿華'], dnd: [] } : null;
+        // 4) 網頁在線（合約 C3：網站的簽章請求也算；10 分鐘內，同一人只算一次）
+        const nowTs = Date.now(), seen = Object.assign({}, B.seen[gid] || {});
+        if (gid === '111') { seen.u2 = seen.u2 || { name: '小明', role: 'member', t: nowTs - 250000, page: '班表' }; seen.u8 = seen.u8 || { name: '<b>小夫</b>', role: 'member', t: nowTs - 30000, page: '' }; }
+        const web = Object.entries(seen).filter(([, s]) => nowTs - s.t <= 600000)
+          .map(([uid, s]) => { const r = { name: crew(uid) || s.name || '?', role: s.role || 'member', ago: Math.floor((nowTs - s.t) / 1000), page: s.page || '' }; if (!slim) r.uid = uid; return r; })
+          .sort((a, b) => a.ago - b.ago);
+        return J({ voice, voice_total: voice.reduce((a, v) => a + v.count, 0), web, web_total: web.length, onduty, hour: hk,
+          run_planned: !!(sh && sh.run_planned), presence, presence_available: !!presence, crew_total: Object.keys(mem).length });
+      }
+    }
     /* ---------- end @@MOCK-B@@ ---------- */
     /* @@MOCK-C@@ stats */
 
