@@ -2500,7 +2500,300 @@ class Component extends DCLogic {
   /* ---------- end @@SEC-D@@ ---------- */
 
   /* @@SEC-E@@ bridge（合班：配對碼／加入／續期／退出、共用車房、代報、各隊頻道）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
-
+  /* 合班＝私車橋接：多個伺服器／QQ 群共用一張班表。發起的那一隊是跑者方，一次 200 小時，到期自動解散。
+     GET /bridge 成員也能看；POST /bridge 只有管理員（機器人 _WEB_TIER 預設 admin，handler 再用 bridge_is_admin 擋）。
+     橋接只作用在 1 車（多車車隊不能橋接），所以讀寫一律帶 car=1，代報也寫進共用的 1 車班表。
+     指定「別隊」的動作（channel）用 target_gid 帶對方；gid 永遠是自己這隊，只拿來驗權限（合約 C2）。
+     表單草稿放在 carSec['bridgeUi:<gid>']：切車隊時 carSec 整包清掉，草稿不會跟到別隊。
+     機器人給的名字、房號、略過原因一律只走 {{ }}；頻道 ID 是大整數，全程當字串。 */
+  carSec_bridge(force) { return this.carSecFetch(this.carSecKey('bridge'), '/bridge', { car: 1 }, force); }
+  carBrUiOf() { return this.carSecOf(this.carSecKey('bridgeUi')) || {}; }
+  carBrUi(patch) { this.carSecPut(this.carSecKey('bridgeUi'), patch); }
+  carBrData() { const x = this.carSecOf(this.carSecKey('bridge')); return x && x.data && typeof x.data === 'object' ? x.data : null; }
+  carBrNum(v) { return v != null && v !== '' && isFinite(+v) ? +v : null; }
+  /* 代報可選的日期：1 車班表裡今天起有開班的日子（橋接共用的就是那一份）；班表還沒載到就給今天起 7 天 */
+  carBrDates() {
+    const st = (this.state.carStates || {})[1], pad = n => String(n).padStart(2, '0'), t0 = new Date();
+    const today = /^\d{4}-\d{2}-\d{2}$/.test(String((st && st.today) || '')) ? String(st.today) : t0.getFullYear() + '-' + pad(t0.getMonth() + 1) + '-' + pad(t0.getDate());
+    let ds = (st && Array.isArray(st.days) ? st.days : []).filter(x => x && !x.xday && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date)) && String(x.date) >= today).map(x => String(x.date));
+    if (!ds.length) {
+      const [y, m, d] = today.split('-').map(Number);   // 用年月日建日期：Safari 舊版會把 'YYYY-MM-DDTHH:MM' 當 UTC
+      ds = [0, 1, 2, 3, 4, 5, 6].map(i => { const x = new Date(y, m - 1, d + i); return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); });
+    }
+    return Array.from(new Set(ds)).slice(0, 8).map(v => ({ v, n: this.carDayLabel(v, today) }));
+  }
+  /* 所有橋接寫入都走 carAct（一次一個、錯誤浮出），固定 car=1。
+     失敗時把完整訊息留在該卡片（浮動提示是單行，手機上長訊息會被截斷）。
+     機器人來不及做完會回 {pending:true, msg}（合約 C1）：提示 msg，5 秒後重抓狀態。 */
+  async carBrPost(slot, body, okMsg) {
+    if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
+    const gid = String(this.state.g || '');
+    const d = await this.carAct('/bridge', body, x => (x && x.pending) ? String(x.msg || '已送出，機器人正在背景處理') : String(typeof okMsg === 'function' ? okMsg(x || {}) : okMsg), 1);
+    if (String(this.state.g || '') !== gid) return null;               // 等回應的途中切了車隊：結果不套到別隊
+    // 機器人有些錯誤字串會原樣帶 gid（QQ 車隊的 key 是 qqg_<群 openid>）：不要把 openid 吐在畫面上
+    this.carBrUi({ ['err_' + slot]: d ? '' : String(this.state.toast || '操作失敗').replace(/qqg_[A-Za-z0-9_-]{4,}/g, 'QQ 車隊') });
+    if (d && d.pending) setTimeout(() => { if (String(this.state.g || '') === gid) this.carSec_bridge(true); }, 5000);
+    return d;
+  }
+  async carBrCode() {
+    const d0 = this.carBrData(), n0 = d0 && d0.bridged && Array.isArray(d0.peers) ? d0.peers.length : 0;
+    const d = await this.carBrPost('pair', { action: 'code' }, x => '配對碼已產生：' + String(x.code || ''));
+    if (!d) return;
+    const code = String(d.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+    if (!code) { this.carSec_bridge(true); return; }
+    const mins = Math.min(120, Math.max(1, parseInt(d.minutes, 10) || 15)), exp = Date.now() + mins * 60000;
+    this.carBrUi({ code, codeExp: exp });
+    this.carBrWatch(code, exp, n0);
+  }
+  /* 配對碼有效期間，停在合班分頁時每 8 秒看一次有沒有隊伍加入；有人加入（碼被用掉）或過期就停 */
+  carBrWatch(code, exp, n0) {
+    clearInterval(this._carBrPollT);
+    const gid = String(this.state.g || '');
+    const stop = () => { clearInterval(this._carBrPollT); this._carBrPollT = null; };
+    this._carBrPollT = setInterval(async () => {
+      if (String(this.state.g || '') !== gid || this.carBrUiOf().code !== code) { stop(); return; }
+      if (Date.now() > exp) { stop(); this.carBrUi({ codeTick: Date.now() }); return; }   // 讓畫面換成「已過期」
+      if (this.state.page !== 'car' || this.state.carTab !== 'bridge' || document.hidden || this._carActBusy) return;
+      const d = await this.carSec_bridge(true);
+      if (String(this.state.g || '') !== gid || this.carBrUiOf().code !== code) return;
+      const n = d && d.bridged && Array.isArray(d.peers) ? d.peers.length : 0;
+      if (n > n0) { stop(); this.carBrUi({ code: '', codeExp: 0 }); this._toast('有車隊用配對碼加入了'); this.carLoadStates(1); }
+    }, 8000);
+  }
+  async carBrJoin() {
+    const code = String(this.carBrUiOf().join || '').toUpperCase().replace(/[\s-]/g, '');
+    if (!code) { this._toast('先填配對碼'); return; }
+    if (!/^[A-Z0-9]{6}$/.test(code)) { this._toast('配對碼是 6 碼英文和數字'); return; }
+    const d = await this.carBrPost('pair', { action: 'join', code }, x => '已加入橋接組' + (x.members_moved != null ? '（併入成員 ' + (this.carBrNum(x.members_moved) || 0) + ' 位、班表 ' + (this.carBrNum(x.days_merged) || 0) + ' 天）' : ''));
+    if (!d) return;
+    clearInterval(this._carBrPollT);
+    this.carBrUi({ join: '', code: '', codeExp: 0 });
+    this.carLoad();          // 班表變成共用那一份、車清單也可能變：整個車隊頁重抓（會順便重抓這個分頁）
+  }
+  async carBrRenew() {
+    const d = await this.carBrPost('pair', { action: 'renew' }, x => this.carBrNum(x.hours_left) != null ? '已續期，還剩 ' + this.carBrNum(x.hours_left) + ' 小時' : '已續期');
+    if (d) this.carSec_bridge(true);
+  }
+  async carBrLeave() {
+    const d0 = this.carBrData(); if (!d0 || !d0.bridged) return;
+    const ask = d0.is_anchor
+      ? '確定要解散整個橋接組？\n\n你這隊是跑者方：跑者方退出＝整組解散。\n班表會複製一份留在各隊，之後各排各的；房號與頻道設定不再同步。'
+      : '確定要退出橋接？\n\n班表會複製一份留在各隊，其他隊繼續共用；之後這一隊的班表跟橋接組分開。';
+    if (!window.confirm(ask)) return;
+    const d = await this.carBrPost('pair', { action: 'leave' }, x => x.dissolved ? '整組已解散' : '已退出橋接');
+    if (!d) return;
+    clearInterval(this._carBrPollT);
+    this.carBrUi({ code: '', codeExp: 0, room: null, roomRes: null, ch: {}, err_room: '', err_px: '', err_ch: '' });
+    this.carLoad();
+  }
+  async carBrRoom(close) {
+    const d0 = this.carBrData(); if (!d0 || !d0.bridged) return;
+    let room = '';
+    if (close) {
+      if (!window.confirm('確定要關房？\n\n整組 Discord 隊的車牌頻道會改回原名，目前的房號會清掉。')) return;
+    } else {
+      const ui = this.carBrUiOf();
+      room = String(ui.room != null ? ui.room : (d0.room || '')).replace(/\s+/g, '');
+      if (!room) { this._toast('先填房號'); return; }
+      if (!/^\d{1,10}$/.test(room)) { this._toast('房號只能是數字'); return; }
+    }
+    const gid = String(this.state.g || '');
+    this.carBrUi({ roomRes: null });
+    const n = v => this.carBrNum(v) || 0;
+    const d = await this.carBrPost('room', { action: 'room', room }, x => close ? '已關房（' + n(x.restored) + ' 個車牌還原）' : '房號 ' + room + '：車牌改名 ' + n(x.renamed) + ' · 公告 ' + n(x.messaged) + ' · QQ ' + n(x.qq));
+    if (!d) {
+      // Discord 改名有頻率限制，機器人可能還在背景跑（代理 20 秒就放棄）：稍後再看一次結果
+      setTimeout(() => { if (String(this.state.g || '') === gid) this.carSec_bridge(true); }, 5000);
+      return;
+    }
+    // 草稿清掉、輸入框改顯示機器人那邊的房號（pending 時 5 秒後重抓就會看到新房號）
+    const L = a => (Array.isArray(a) ? a : []).map(x => String(x == null ? '' : x)).filter(Boolean).slice(0, 40);
+    this.carBrUi({ room: null, roomRes: close || d.pending ? null : { room, ok: L(d.renamed_detail), skip: L(d.skipped), renamed: n(d.renamed), messaged: n(d.messaged), qq: n(d.qq) } });
+    this.carSec_bridge(true);
+  }
+  async carBrProxy() {
+    const ui = this.carBrUiOf(), dates = this.carBrDates();
+    const name = String(ui.pxName || '').trim(), bs = String(ui.pxBonus || '').trim(), hours = String(ui.pxHours || '').trim();
+    if (!name || !bs || !hours) { this._toast('名字、倍率、時段都要填'); return; }
+    const bonus = Number(bs);
+    if (!isFinite(bonus) || (bonus !== 0 && (bonus < 1.18 || bonus > 3.88))) { this._toast('倍率要是 0 或 1.18～3.88'); return; }
+    const role = ui.pxRole === 's6' ? 's6' : 'pusher';
+    const date = dates.some(o => o.v === ui.pxDate) ? ui.pxDate : (dates[0] ? dates[0].v : '');
+    const body = { action: 'proxy', name, bonus, hours, date, role };
+    if (role === 's6') {
+      const s6 = Number(String(ui.pxS6 || '').trim());
+      if (!isFinite(s6) || s6 <= 0) { this._toast('報 S6 要填 S6 倍率'); return; }
+      body.s6_bonus = s6;
+    }
+    const d = await this.carBrPost('px', body, x => {
+      const ok = Array.isArray(x.hours) ? x.hours.length : 0, sk = Array.isArray(x.skipped) ? x.skipped.length : 0;
+      return ok ? String(x.name || name) + ' 已代報 ' + ok + ' 個時段' + (sk ? '（' + sk + ' 段沒開班，略過）' : '') : '沒有報到：這些時段都沒開班';
+    });
+    if (!d || d.pending) return;
+    if (Array.isArray(d.hours) && d.hours.length) this.carBrUi({ pxName: '' });
+    this.carLoadStates(1);
+  }
+  async carBrChSave(g) {
+    const d0 = this.carBrData(); if (!d0 || !d0.bridged) return;
+    const p = (Array.isArray(d0.peers) ? d0.peers : []).find(x => x && String(x.gid) === String(g) && x.kind === 'dc');
+    if (!p) return;
+    const dr = (this.carBrUiOf().ch || {})[String(p.gid)] || {};
+    const body = { action: 'channel', target_gid: String(p.gid) };
+    let n = 0;
+    for (const [k, lab] of [['board', '看板頻道'], ['plate', '車牌頻道'], ['room_ch', '房號公告頻道']]) {
+      if (dr[k] == null) continue;
+      const v = String(dr[k]).trim();
+      if (v === String(p[k] || '')) continue;         // 只送有改的欄位：機器人每收到一次車牌／看板就會丟掉原名紀錄與舊看板訊息
+      if (v && !/^\d{15,22}$/.test(v)) { this._toast(lab + '要填頻道 ID（一串數字）'); this.carBrUi({ err_ch: '「' + String(p.name || '') + '」的' + lab + '要填頻道 ID（一長串數字），或留空沿用原本的設定。' }); return; }
+      body[k] = v; n++;
+    }
+    if (!n) { this._toast('沒有變更'); return; }
+    const d = await this.carBrPost('ch', body, '已儲存「' + String(p.name || '') + '」的橋接頻道');
+    if (!d) return;
+    if (d.gid != null && String(d.gid) !== String(p.gid)) {
+      // 舊版機器人不認得 target_gid，會把設定寫到自己這隊：講清楚，別讓人以為對方那隊已經設好
+      const msg = '注意：機器人版本太舊，這次的設定被存到了本隊而不是「' + String(p.name || '') + '」。請更新機器人後再設一次，並檢查本隊的頻道設定。';
+      this._toast('機器人版本太舊，設定存到了本隊');
+      this.carBrUi({ err_ch: msg });
+    } else {
+      const ch = Object.assign({}, this.carBrUiOf().ch); delete ch[String(p.gid)];
+      this.carBrUi({ ch });
+    }
+    this.carSec_bridge(true);
+  }
+  carSecVals_bridge(c) {
+    const { s, gd } = c;
+    const sec = this.carSecOf(this.carSecKey('bridge')) || {}, ui = this.carBrUiOf();
+    const d = sec.data && typeof sec.data === 'object' ? sec.data : null;
+    const busy = !!s.carActBusy, adm = !!(c.admin || (d && d.admin === true)), on = !!(d && d.bridged);
+    const num = v => this.carBrNum(v);
+    const peers = on && Array.isArray(d.peers) ? d.peers.filter(p => p && typeof p === 'object') : [];
+    const anchorP = peers.find(p => p.anchor) || null, anchorName = anchorP ? String(anchorP.name || '') : '';
+    const nCars = this.carCars(gd).length, multi = !on && nCars > 1;
+    const hl = on ? num(d.hours_left) : null, ttl = num(d && d.ttl_hours) || 200;
+    const em = /^\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String((d && d.expires_at) || ''));   // 機器人的本地時間字串，照字面顯示不換時區
+    const expTxt = em ? (+em[1]) + '/' + (+em[2]) + ' ' + em[3] + ':' + em[4] : '';
+    const mix = hex => ({ bg: 'color-mix(in oklab,' + hex + ' 15%,var(--card))', fg: 'color-mix(in oklab,' + hex + ' 55%,var(--car-fg))' });
+    const neutral = { bg: 'var(--card-2)', fg: 'var(--text-3)' };
+    const stP = on ? mix('#2f9e57') : neutral, hrP = hl != null && hl < 24 ? mix('#ee6644') : neutral;
+    const room = on ? String(d.room || '') : '', roomSrc = on ? String(d.room_src || '') : '';
+    const roomNow = room ? '目前房號 ' + room + (roomSrc ? '（由 ' + roomSrc + ' 設定）' : '') : '目前沒有房號';
+    /* 配對碼 */
+    const code = String(ui.code || ''), codeExp = +ui.codeExp || 0, codeLive = !!code && Date.now() < codeExp;
+    const hm = t => { const x = new Date(t); return String(x.getHours()).padStart(2, '0') + ':' + String(x.getMinutes()).padStart(2, '0'); };
+    /* 房號同步結果 */
+    const rr = on && ui.roomRes && typeof ui.roomRes === 'object' ? ui.roomRes : null;
+    /* 代報 */
+    const dates = this.carBrDates();
+    const pxDate = dates.some(o => o.v === ui.pxDate) ? ui.pxDate : (dates[0] ? dates[0].v : '');
+    const pxS6 = ui.pxRole === 's6';
+    /* 各隊頻道：本隊（Discord）有頻道清單時用選單，其他隊只能填頻道 ID（機器人沒有給別隊的頻道清單） */
+    const st1 = (s.carStates || {})[1];
+    const chList = st1 && Array.isArray(st1.channels) ? st1.channels.filter(x => x && /^\d{5,25}$/.test(String(x.id))).map(x => ({ v: String(x.id), n: '#' + String(x.name || x.id) })) : [];
+    const chName = id => { const f = chList.find(o => o.v === String(id)); return f ? f.n : ''; };
+    const drafts = ui.ch && typeof ui.ch === 'object' ? ui.ch : {};
+    const FIELDS = [['board', '看板頻道', ''], ['plate', '車牌頻道', 'plate_fallback'], ['room_ch', '房號公告頻道', 'room_fallback']];
+    const chRows = on && adm ? peers.filter(p => p.kind === 'dc' && /^\d+$/.test(String(p.gid))).map(p => {
+      const g = String(p.gid), dr = drafts[g] || {}, pick = !!p.me && chList.length > 0;
+      const fields = FIELDS.map(([k, label, fbk]) => {
+        const cur = String(p[k] || ''), val = dr[k] != null ? String(dr[k]) : cur, fb = fbk ? String(p[fbk] || '') : '';
+        const fbName = fb ? ((pick && chName(fb)) || fb) : '';
+        const ph = k === 'board' ? '看板頻道 ID（留空＝不貼看板）' : fb ? '沿用 ' + fbName : (k === 'plate' ? '車牌頻道 ID（房號改名用）' : '房號公告頻道 ID');
+        let opts = [];
+        if (pick) {
+          opts = [{ v: '', n: k === 'board' ? '（不貼看板）' : fb ? '（沿用 ' + fbName + '）' : '（未設定）' }].concat(chList);
+          if (val && !chList.some(o => o.v === val)) opts.push({ v: val, n: '（找不到這個頻道：' + val + '）' });
+        }
+        return { g, k, label, val, ph, pick, raw: !pick, opts, dirty: val.trim() !== cur };
+      });
+      const dirty = fields.some(f => f.dirty);
+      return { g, name: String(p.name || '（未命名）'), anchor: !!p.anchor, me: !!p.me, fields,
+        sbg: dirty ? 'var(--ink-grad)' : 'var(--card)', sfg: dirty ? '#fff' : 'var(--text-2)', sbd: dirty ? 'transparent' : 'var(--border)' };
+    }) : [];
+    const setUi = (patch) => this.carBrUi(patch);
+    return {
+      carBrLoading: !d && !sec.err,
+      carBrErr: !d && sec.err ? String(sec.err) : '',
+      carBrReady: !!d,
+      carBrBusy: busy, carBrOp: busy ? '.6' : '1',
+      carBrAdm: adm, carBrOn: on, carBrNone: !!d && !on,
+      carBrStTxt: on ? '已橋接 · ' + peers.length + ' 隊' : '未橋接', carBrStBg: stP.bg, carBrStFg: stP.fg,
+      carBrHrShow: on && hl != null, carBrHrTxt: hl != null && hl > 0 ? '剩 ' + Math.round(hl * 10) / 10 + ' 小時' : '已到期', carBrHrBg: hrP.bg, carBrHrFg: hrP.fg,
+      carBrHead: on
+        ? '跑者方 ' + (anchorName || '（未知）') + ' · ' + peers.length + ' 隊共用一張班表' + (expTxt ? ' · ' + expTxt + ' 到期' : '') + (hl != null && hl <= 0 ? '（下一次掃描就會自動解散）' : '')
+        : '一次 ' + ttl + ' 小時，到期自動解散。',
+      carBrTtl: String(ttl),
+      carBrCanPair: !on && adm && !multi,
+      carBrMultiNote: !on && adm && multi ? '這個車隊開著多車平行排班（' + nCars + ' 台車），不能橋接：橋接只共用一張班表，2、3 車的班表沒有地方放。要橋接請先到「設定」把同時開車數調回 1。' : '',
+      carBrMemberNote: !!d && !on && !adm,
+      carBrMemberOnNote: on && !adm,
+      carBrJoinVal: String(ui.join || ''),
+      carBrPeers: peers.map((p, i) => ({ name: String(p.name || '（未命名）'), anchor: !!p.anchor, me: !!p.me,
+        side: (p.anchor ? '跑者方' : '推手方') + ' · ' + (p.kind === 'qq' ? 'QQ 群' : 'Discord'),
+        bt: i ? 'var(--border)' : 'transparent', bg: p.me ? 'color-mix(in oklab,var(--accent) 7%,var(--card))' : 'transparent' })),
+      carBrIsAnchor: on && !!d.is_anchor,
+      carBrNotAnchorNote: on && adm && !d.is_anchor ? '要再加一隊，請跑者方（' + (anchorName || '跑者方') + '）的管理員產生配對碼。' : '',
+      carBrLeaveBtn: on && d.is_anchor ? '解散橋接' : '退出橋接',
+      carBrRoomNow: roomNow,
+      carBrCodeShow: adm && !!code && (!on || !!d.is_anchor),
+      carBrCodeLive: codeLive, carBrCodeOld: !!code && !codeLive,
+      carBrCode: code,
+      carBrCodeLeft: codeLive ? Math.max(1, Math.ceil((codeExp - Date.now()) / 60000)) + ' 分鐘內有效（到 ' + hm(codeExp) + '）' : '',
+      carBrCodeDc: '/橋接 動作:加入 配對碼:' + code, carBrCodeQq: '/桥接 ' + code,
+      carBrErrPair: String(ui.err_pair || ''),
+      carBrOps: on && adm,
+      carBrRoomVal: ui.room != null ? String(ui.room) : room,
+      carBrRoomBtn: busy ? '處理中…' : '設定並同步',
+      carBrRoomRes: !!rr,
+      carBrRoomResHead: rr ? '房號 ' + String(rr.room) + ' 同步結果：車牌改名 ' + (+rr.renamed || 0) + ' · 公告 ' + (+rr.messaged || 0) + ' · QQ ' + (+rr.qq || 0) : '',
+      carBrRoomOk: rr ? (rr.ok || []).map(t => ({ t: String(t) + '-' + String(rr.room) })) : [],
+      carBrRoomSkip: rr ? (rr.skip || []).map(t => ({ t: String(t) })) : [],
+      carBrErrRoom: String(ui.err_room || ''),
+      carBrPxName: String(ui.pxName || ''), carBrPxBonus: String(ui.pxBonus || ''), carBrPxHours: String(ui.pxHours || ''), carBrPxS6: String(ui.pxS6 || ''),
+      carBrPxIsS6: pxS6,
+      carBrPxRoles: [['pusher', '推手'], ['s6', 'S6']].map(([v, n]) => Object.assign({ v, n, sel: (v === 's6') === pxS6 ? 'true' : 'false' }, c.segOn((v === 's6') === pxS6))),
+      carBrPxDates: dates.map(o => Object.assign({}, o, c.pill(o.v === pxDate))),
+      carBrPxBtn: busy ? '處理中…' : '代報',
+      carBrErrPx: String(ui.err_px || ''),
+      carBrChShow: on && adm,
+      carBrChRows: chRows, carBrChNone: on && adm && !chRows.length,
+      carBrErrCh: String(ui.err_ch || ''),
+      onCarBrReload: () => this.carSec_bridge(true),
+      onCarBrField: e => {
+        const k = String(e.currentTarget.dataset.k || '');
+        const slot = { join: 'pair', room: 'room', pxName: 'px', pxBonus: 'px', pxHours: 'px', pxS6: 'px' }[k];
+        if (!slot) return;
+        setUi({ [k]: String(e.currentTarget.value), ['err_' + slot]: '' });
+      },
+      onCarBrKey: e => {
+        if (e.key !== 'Enter' || (e.nativeEvent && e.nativeEvent.isComposing) || e.keyCode === 229) return;   // 注音／拼音選字中的 Enter 不算送出（Safari 用 229 表示）
+        const a = e.currentTarget.dataset.act; e.preventDefault();
+        if (a === 'join') this.carBrJoin(); else if (a === 'room') this.carBrRoom(false); else if (a === 'px') this.carBrProxy();
+      },
+      onCarBrPxRole: e => setUi({ pxRole: e.currentTarget.dataset.v === 's6' ? 's6' : 'pusher', err_px: '' }),
+      onCarBrPxDate: e => setUi({ pxDate: String(e.currentTarget.dataset.v || ''), err_px: '' }),
+      onCarBrChField: e => {
+        const ds = e.currentTarget.dataset, g = String(ds.g || ''), k = String(ds.k || '');
+        if (!g || ['board', 'plate', 'room_ch'].indexOf(k) < 0) return;
+        const ch = Object.assign({}, this.carBrUiOf().ch);
+        ch[g] = Object.assign({}, ch[g], { [k]: String(e.currentTarget.value) });
+        setUi({ ch, err_ch: '' });
+      },
+      onCarBrCode: () => this.carBrCode(),
+      onCarBrCopy: () => {
+        const cd = String(this.carBrUiOf().code || ''); if (!cd) return;
+        try { navigator.clipboard.writeText(cd).then(() => this._toast('已複製配對碼'), () => this._toast('無法自動複製，請手動抄下配對碼')); }
+        catch (er) { this._toast('無法自動複製，請手動抄下配對碼'); }
+      },
+      onCarBrJoin: () => this.carBrJoin(),
+      onCarBrRenew: () => this.carBrRenew(),
+      onCarBrLeave: () => this.carBrLeave(),
+      onCarBrRoom: () => this.carBrRoom(false),
+      onCarBrRoomClose: () => this.carBrRoom(true),
+      onCarBrProxy: () => this.carBrProxy(),
+      onCarBrChSave: e => this.carBrChSave(String(e.currentTarget.dataset.g || '')),
+    };
+  }
 
   /* ---------- end @@SEC-E@@ ---------- */
 

@@ -2308,6 +2308,165 @@ select option, select optgroup{
       <sc-if value="{{ carTabIs.bridge }}">
         <div class="car-sec" data-sec="bridge">
           <!-- @@SEC-E-TPL-bridge@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+          <!-- 合班（私車橋接）：狀態與配對（成員可看）、共用車房／代報／各隊頻道（管理員）。選單一律 sc-options；select 裡不放 sc-for／sc-if（Safari 會丟掉） -->
+          <sc-if value="{{ carBrLoading }}"><div class="car-card skel" style="height:240px"></div></sc-if>
+          <sc-if value="{{ carBrErr }}">
+            <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到橋接狀態：{{ carBrErr }}<br><button type="button" onClick="{{ onCarBrReload }}" class="car-btn" style="margin-top:10px">重試</button></div>
+          </sc-if>
+          <sc-if value="{{ carBrReady }}">
+          <div style="display:flex;flex-direction:column;gap:14px;min-width:0;animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+
+            <!-- 橋接狀態：未橋接＝說明＋產生／輸入配對碼；已橋接＝隊伍列表＋續期／退出 -->
+            <div class="car-card" style="padding:16px 18px;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <div style="font-size:16px;font-weight:800;color:var(--ink)">私車橋接</div>
+                <span style="display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;background:{{ carBrStBg }};color:{{ carBrStFg }}">{{ carBrStTxt }}</span>
+                <sc-if value="{{ carBrHrShow }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;background:{{ carBrHrBg }};color:{{ carBrHrFg }}">{{ carBrHrTxt }}</span></sc-if>
+              </div>
+              <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-top:6px;overflow-wrap:anywhere">{{ carBrHead }}</div>
+
+              <sc-if value="{{ carBrNone }}">
+                <div style="font-size:12.5px;color:var(--text-2);line-height:1.85;margin-top:10px;padding:12px 14px;border-radius:14px;background:var(--card-2)">橋接＝多個伺服器／QQ 群共用<b style="color:var(--ink)">同一張班表</b>。<b style="color:var(--ink)">發起的那一隊就是跑者所在</b>，其他隊拿配對碼加入，可以一對多。加入後大家都是正位推手，照倍率一起排 P2-P5；退出或到期時，各隊都會拿回一份完整班表。</div>
+                <sc-if value="{{ carBrMultiNote }}">
+                  <div role="note" style="margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--ink);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,var(--card));border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border))">{{ carBrMultiNote }}</div>
+                </sc-if>
+                <sc-if value="{{ carBrCanPair }}">
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <button type="button" onClick="{{ onCarBrCode }}" disabled="{{ carBrBusy }}" class="car-btn" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs);opacity:{{ carBrOp }}">我是跑者方 · 產生配對碼</button>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+                    <input class="car-in" type="text" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="配對碼" placeholder="對方給的 6 碼配對碼" value="{{ carBrJoinVal }}" onInput="{{ onCarBrField }}" onKeyDown="{{ onCarBrKey }}" data-k="join" data-act="join" style="flex:1 1 170px;max-width:260px;text-transform:uppercase;letter-spacing:1.5px">
+                    <button type="button" onClick="{{ onCarBrJoin }}" disabled="{{ carBrBusy }}" class="car-btn" style="opacity:{{ carBrOp }}">加入對方的橋接</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ carBrMemberNote }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:10px">只有管理員能發起或加入橋接。</div></sc-if>
+              </sc-if>
+
+              <sc-if value="{{ carBrOn }}">
+                <div style="margin-top:12px;border:1px solid var(--border);border-radius:16px;overflow:hidden">
+                  <sc-for list="{{ carBrPeers }}" as="p">
+                    <div style="display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid {{ p.bt }};background:{{ p.bg }}">
+                      <span style="font-size:13.5px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ p.name }}</span>
+                      <sc-if value="{{ p.anchor }}"><span class="car-tag" style="cursor:default;background:color-mix(in oklab,var(--accent) 16%,var(--card));color:var(--accent-deep)">跑者方</span></sc-if>
+                      <sc-if value="{{ p.me }}"><span class="car-tag" style="cursor:default;background:color-mix(in oklab,#2f9e57 14%,var(--card));color:color-mix(in oklab,#2f9e57 55%,var(--car-fg))">本隊</span></sc-if>
+                      <span style="flex:1"></span>
+                      <span style="font-size:11.5px;color:var(--text-3);white-space:nowrap">{{ p.side }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ carBrMemberOnNote }}">
+                  <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-top:10px">{{ carBrRoomNow }}</div>
+                  <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:4px">班表是整組共用的一張，照倍率一起排；配對、房號與代報由各隊管理員操作。</div>
+                </sc-if>
+                <sc-if value="{{ carBrAdm }}">
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <sc-if value="{{ carBrIsAnchor }}"><button type="button" onClick="{{ onCarBrCode }}" disabled="{{ carBrBusy }}" class="car-btn" style="opacity:{{ carBrOp }}">再加一隊 · 產生配對碼</button></sc-if>
+                    <button type="button" onClick="{{ onCarBrRenew }}" disabled="{{ carBrBusy }}" class="car-btn" style="opacity:{{ carBrOp }}">續期（重新拉滿 {{ carBrTtl }} 小時）</button>
+                    <button type="button" onClick="{{ onCarBrLeave }}" disabled="{{ carBrBusy }}" class="car-btn" style="color:color-mix(in oklab,#d64533 55%,var(--car-fg));opacity:{{ carBrOp }}">{{ carBrLeaveBtn }}</button>
+                  </div>
+                  <sc-if value="{{ carBrNotAnchorNote }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:8px;overflow-wrap:anywhere">{{ carBrNotAnchorNote }}</div></sc-if>
+                </sc-if>
+              </sc-if>
+
+              <sc-if value="{{ carBrCodeShow }}">
+                <div style="margin-top:12px;padding:14px;border-radius:14px;background:var(--card-2);border:1px dashed var(--border-2)">
+                  <sc-if value="{{ carBrCodeLive }}">
+                    <div style="display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap">
+                      <div style="font-family:'M PLUS Rounded 1c',ui-monospace,monospace;font-size:26px;font-weight:800;letter-spacing:4px;color:var(--ink);user-select:all;-webkit-user-select:all">{{ carBrCode }}</div>
+                      <div style="font-size:11.5px;color:var(--text-3)">{{ carBrCodeLeft }}</div>
+                      <div style="flex:1"></div>
+                      <button type="button" onClick="{{ onCarBrCopy }}" class="car-mini" style="padding:6px 14px">複製配對碼</button>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-2);line-height:1.85;margin-top:8px;overflow-wrap:anywhere">把碼給要加入的那一隊的管理員，任一種方式都可以：<br>網頁：合班分頁 →「加入對方的橋接」<br>Discord：<span style="font-family:ui-monospace,monospace;color:var(--ink)">{{ carBrCodeDc }}</span><br>QQ：<span style="font-family:ui-monospace,monospace;color:var(--ink)">{{ carBrCodeQq }}</span></div>
+                    <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:4px">一組碼只能用一次；重新產生會讓上一組碼失效。有隊伍加入時這裡會自動更新。</div>
+                  </sc-if>
+                  <sc-if value="{{ carBrCodeOld }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.8">這組配對碼已過期，請重新產生。</div></sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{ carBrErrPair }}"><div role="alert" style="margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--text);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);border:1px solid color-mix(in oklab,#e0576a 30%,var(--border));white-space:pre-line;overflow-wrap:anywhere">{{ carBrErrPair }}</div></sc-if>
+            </div>
+
+            <sc-if value="{{ carBrOps }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px;align-items:start;min-width:0">
+              <!-- 共用車房：房號整組同步（Discord 車牌改名＋公告、QQ 發訊息） -->
+              <div class="car-card" style="padding:16px 18px;min-width:0">
+                <div style="font-size:15px;font-weight:800;color:var(--ink)">共用車房</div>
+                <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-top:4px;overflow-wrap:anywhere">{{ carBrRoomNow }}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+                  <input class="car-in" type="text" inputmode="numeric" maxlength="10" autocomplete="off" aria-label="房號" placeholder="房號（數字）" value="{{ carBrRoomVal }}" onInput="{{ onCarBrField }}" onKeyDown="{{ onCarBrKey }}" data-k="room" data-act="room" style="flex:1 1 120px;max-width:190px">
+                  <button type="button" onClick="{{ onCarBrRoom }}" disabled="{{ carBrBusy }}" class="car-btn" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs);opacity:{{ carBrOp }}">{{ carBrRoomBtn }}</button>
+                  <button type="button" onClick="{{ onCarBrRoomClose }}" disabled="{{ carBrBusy }}" class="car-btn" style="color:color-mix(in oklab,#d64533 55%,var(--car-fg));opacity:{{ carBrOp }}">關房</button>
+                </div>
+                <sc-if value="{{ carBrRoomRes }}">
+                  <div role="status" style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--card-2);font-size:12px;line-height:1.8">
+                    <div style="font-weight:800;color:var(--ink);overflow-wrap:anywhere">{{ carBrRoomResHead }}</div>
+                    <sc-for list="{{ carBrRoomOk }}" as="x"><div style="color:var(--text-2);overflow-wrap:anywhere">✓ {{ x.t }}</div></sc-for>
+                    <sc-for list="{{ carBrRoomSkip }}" as="x"><div style="color:color-mix(in oklab,#d64533 55%,var(--car-fg));overflow-wrap:anywhere">· {{ x.t }}</div></sc-for>
+                  </div>
+                </sc-if>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:10px">設定後整組同步：Discord 隊把車牌頻道改名成「原名-房號」並在房號公告頻道發一則訊息；QQ 群只能發訊息公告（QQ 官方沒有改群名的 API）。Discord 每個頻道 10 分鐘只能改名 2 次，改太頻繁會被略過或要等一下；顯示連不上時，稍後按重新整理看結果。</div>
+                <sc-if value="{{ carBrErrRoom }}"><div role="alert" style="margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--text);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);border:1px solid color-mix(in oklab,#e0576a 30%,var(--border));white-space:pre-line;overflow-wrap:anywhere">{{ carBrErrRoom }}</div></sc-if>
+              </div>
+
+              <!-- 代報不在場的人：只要名字＋倍率，直接寫進共用班表（已開班的時段） -->
+              <div class="car-card" style="padding:16px 18px;min-width:0">
+                <div style="font-size:15px;font-weight:800;color:var(--ink)">代報不在場的人</div>
+                <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:8px;margin-top:10px">
+                  <input class="car-in" type="text" maxlength="40" autocomplete="off" aria-label="名字" placeholder="名字" value="{{ carBrPxName }}" onInput="{{ onCarBrField }}" data-k="pxName">
+                  <input class="car-in" type="text" inputmode="decimal" maxlength="5" autocomplete="off" aria-label="倍率" placeholder="倍率 3.66" value="{{ carBrPxBonus }}" onInput="{{ onCarBrField }}" data-k="pxBonus">
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+                  <div class="car-seg" role="tablist" aria-label="身分">
+                    <sc-for list="{{ carBrPxRoles }}" as="r"><button type="button" role="tab" aria-selected="{{ r.sel }}" onClick="{{ onCarBrPxRole }}" data-v="{{ r.v }}" style="background:{{ r.bg }};color:{{ r.fg }};box-shadow:{{ r.sh }}">{{ r.n }}</button></sc-for>
+                  </div>
+                  <sc-if value="{{ carBrPxIsS6 }}"><input class="car-in" type="text" inputmode="decimal" maxlength="5" autocomplete="off" aria-label="S6 倍率" placeholder="S6 倍率" value="{{ carBrPxS6 }}" onInput="{{ onCarBrField }}" data-k="pxS6" style="flex:1 1 100px;max-width:150px"></sc-if>
+                </div>
+                <div class="chips-scroll" role="group" aria-label="日期" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+                  <sc-for list="{{ carBrPxDates }}" as="o"><button type="button" onClick="{{ onCarBrPxDate }}" data-v="{{ o.v }}" style="padding:5px 12px;border:1px solid {{ o.bd }};border-radius:999px;background:{{ o.bg }};color:{{ o.fg }};font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">{{ o.n }}</button></sc-for>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+                  <input class="car-in" type="text" maxlength="20" autocomplete="off" aria-label="時段" placeholder="時段 20-24" value="{{ carBrPxHours }}" onInput="{{ onCarBrField }}" onKeyDown="{{ onCarBrKey }}" data-k="pxHours" data-act="px" style="flex:1 1 110px;max-width:170px">
+                  <button type="button" onClick="{{ onCarBrProxy }}" disabled="{{ carBrBusy }}" class="car-btn" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs);opacity:{{ carBrOp }}">{{ carBrPxBtn }}</button>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:10px">給名字跟倍率就能報，不用先加進名冊；同名會共用同一筆臨時資料。直接寫進共用班表，只報已開班的時段，其餘略過。報 S6 要另外填 S6 倍率。</div>
+                <sc-if value="{{ carBrErrPx }}"><div role="alert" style="margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--text);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);border:1px solid color-mix(in oklab,#e0576a 30%,var(--border));white-space:pre-line;overflow-wrap:anywhere">{{ carBrErrPx }}</div></sc-if>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ carBrChShow }}">
+            <!-- 各隊的橋接頻道：整組在這裡一次設好（target_gid 指定哪一隊）；本隊有頻道清單就用選單 -->
+            <div class="car-card" style="padding:16px 18px;min-width:0">
+              <div style="font-size:15px;font-weight:800;color:var(--ink)">各隊的橋接頻道</div>
+              <div style="font-size:12px;color:var(--text-2);line-height:1.8;margin-top:4px">整組都在這裡設，不用每一隊各自登入一次——漏掉一隊就會變成「房號只改到一個伺服器」。</div>
+              <sc-if value="{{ carBrChNone }}"><div style="font-size:12.5px;color:var(--text-3);padding:12px 0 2px">這組裡沒有 Discord 車隊</div></sc-if>
+              <sc-for list="{{ carBrChRows }}" as="r">
+                <div style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:16px;background:var(--card-2);min-width:0">
+                  <div style="display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-bottom:8px">
+                    <span style="font-size:13.5px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ r.name }}</span>
+                    <sc-if value="{{ r.anchor }}"><span class="car-tag" style="cursor:default;background:color-mix(in oklab,var(--accent) 16%,var(--card));color:var(--accent-deep)">跑者方</span></sc-if>
+                    <sc-if value="{{ r.me }}"><span class="car-tag" style="cursor:default;background:color-mix(in oklab,#2f9e57 14%,var(--card));color:color-mix(in oklab,#2f9e57 55%,var(--car-fg))">本隊</span></sc-if>
+                    <span style="flex:1"></span>
+                    <button type="button" onClick="{{ onCarBrChSave }}" data-g="{{ r.g }}" disabled="{{ carBrBusy }}" class="car-mini" style="padding:6px 16px;background:{{ r.sbg }};color:{{ r.sfg }};border-color:{{ r.sbd }};opacity:{{ carBrOp }}">儲存</button>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px">
+                    <sc-for list="{{ r.fields }}" as="f">
+                      <label style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                        <span style="font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--text-3)">{{ f.label }}</span>
+                        <sc-if value="{{ f.pick }}"><select value="{{ f.val }}" onChange="{{ onCarBrChField }}" data-g="{{ f.g }}" data-k="{{ f.k }}" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;min-height:42px;outline:none;cursor:pointer;font-family:inherit;box-sizing:border-box" sc-options="{{ f.opts }}"></select></sc-if>
+                        <sc-if value="{{ f.raw }}"><input class="car-in" type="text" inputmode="numeric" maxlength="22" autocomplete="off" spellcheck="false" placeholder="{{ f.ph }}" value="{{ f.val }}" onInput="{{ onCarBrChField }}" data-g="{{ f.g }}" data-k="{{ f.k }}" style="background:var(--card)"></sc-if>
+                      </label>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:12px"><b style="color:var(--text-2)">車牌頻道</b>會被改名成「原名-房號」；<b style="color:var(--text-2)">看板頻道</b>貼共用班表並自動更新；<b style="color:var(--text-2)">房號公告</b>只發一則訊息。留空會沿用這一隊車房系統原本的設定（灰字就是沿用中）。QQ 車隊沒有頻道，不用填。頻道 ID：Discord 開啟開發者模式後，在頻道上按右鍵 →「複製頻道 ID」；也可以在該伺服器打 /橋接頻道 直接選。</div>
+              <sc-if value="{{ carBrErrCh }}"><div role="alert" style="margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--text);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,#e0576a 10%,transparent);border:1px solid color-mix(in oklab,#e0576a 30%,var(--border));white-space:pre-line;overflow-wrap:anywhere">{{ carBrErrCh }}</div></sc-if>
+            </div>
+            </sc-if>
+
+          </div>
+          </sc-if>
 
         </div>
       </sc-if>
@@ -5697,7 +5856,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c597e9f262"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=fad7cd11f3"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
