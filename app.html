@@ -2301,6 +2301,109 @@ select option, select optgroup{
       <sc-if value="{{ carTabIs.music }}">
         <div class="car-sec" data-sec="music">
           <!-- @@SEC-D-TPL-music@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+          <sc-if value="{{ carMuQQ }}">
+            <div class="car-card" style="padding:22px">
+              <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:6px">QQ 車隊沒有點歌功能</div>
+              <div style="font-size:12.5px;color:var(--text-2);line-height:1.8">點歌要靠機器人待在 Discord 的語音頻道裡播放，QQ 群沒有語音頻道，所以這個分頁只有 Discord 車隊能用。班表、成員等其他分頁不受影響。</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ carMuLoading }}"><div class="car-card skel" style="height:240px"></div></sc-if>
+          <sc-if value="{{ carMuErr }}">
+            <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">點歌狀態讀不到：{{ carMuErr }}<br><button type="button" onClick="{{ onCarMuReload }}" class="car-btn" style="margin-top:10px">重試</button></div>
+          </sc-if>
+          <sc-if value="{{ carMuReady }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <!-- 正在播放＋播放控制（控制列、音量、自動歌單只有管理員看得到） -->
+              <div class="car-card" style="padding:16px 18px">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                  <div style="font-size:15px;font-weight:800;color:var(--ink);margin-right:auto">正在播放</div>
+                  <sc-for list="{{ carMuPills }}" as="mp"><span style="display:inline-block;height:22px;line-height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:{{ mp.bg }};color:{{ mp.fg }};max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box">{{ mp.t }}</span></sc-for>
+                </div>
+                <sc-if value="{{ carMuPlaying }}">
+                  <div style="font-size:15px;font-weight:800;color:var(--ink);line-height:1.5;overflow-wrap:anywhere;word-break:break-word">{{ carMuTitle }}</div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:3px;line-height:1.6;overflow-wrap:anywhere;word-break:break-word"><span style="font-family:'M PLUS Rounded 1c';font-weight:700">{{ carMuTime }}</span>　｜　點播 {{ carMuBy }}</div>
+                  <div style="height:6px;border-radius:999px;background:var(--card-2);overflow:hidden;margin-top:10px"><div style="height:100%;width:{{ carMuPct }}%;border-radius:999px;background:var(--accent)"></div></div>
+                </sc-if>
+                <sc-if value="{{ carMuIdle }}"><div style="font-size:13px;color:var(--text-3);padding:4px 0">目前沒有播放</div></sc-if>
+                <sc-if value="{{ carMuNoVc }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:8px">機器人目前不在語音頻道。點歌時會先試著進語音常駐頻道或你所在的語音頻道；都進不去就先排進佇列，等機器人進語音後自動開始播。</div></sc-if>
+                <sc-if value="{{ carMuAdmin }}">
+                  <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                      <button type="button" class="car-btn" onClick="{{ onCarMuCtl }}" data-a="pause" disabled="{{ carMuBusy }}" style="opacity:{{ carMuBusyOp }}">暫停／繼續</button>
+                      <button type="button" class="car-btn" onClick="{{ onCarMuCtl }}" data-a="skip" disabled="{{ carMuBusy }}" style="opacity:{{ carMuBusyOp }}">跳過</button>
+                      <button type="button" class="car-btn" onClick="{{ onCarMuCtl }}" data-a="mix" disabled="{{ carMuBusy }}" style="opacity:{{ carMuBusyOp }}">{{ carMuMixTxt }}</button>
+                      <button type="button" class="car-btn" onClick="{{ onCarMuCtl }}" data-a="stop" disabled="{{ carMuBusy }}" style="opacity:{{ carMuBusyOp }};background:color-mix(in oklab,#ee6644 15%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 30%,var(--border))">停止清空</button>
+                      <button type="button" class="car-btn" onClick="{{ onCarMuCtl }}" data-a="leave" disabled="{{ carMuBusy }}" style="opacity:{{ carMuBusyOp }};background:color-mix(in oklab,#ee6644 15%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 30%,var(--border))">離開語音</button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                      <span style="font-size:13px;font-weight:800;color:var(--ink)">音量</span>
+                      <input type="range" min="5" max="200" step="5" value="{{ carMuVol }}" onInput="{{ onCarMuVol }}" aria-label="音量" style="flex:1 1 160px;min-width:0;accent-color:var(--accent)">
+                      <b style="font-family:'M PLUS Rounded 1c';font-size:14px;color:var(--accent-deep);min-width:46px;text-align:right">{{ carMuVolTxt }}</b>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px">自動歌單</div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <sc-for list="{{ carMuGenres }}" as="mg"><button type="button" onClick="{{ onCarMuGenre }}" data-g="{{ mg.k }}" aria-pressed="{{ mg.on }}" disabled="{{ carMuBusy }}" style="padding:7px 15px;border:1px solid {{ mg.bd }};border-radius:999px;background:{{ mg.bg }};color:{{ mg.fg }};font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit;opacity:{{ carMuBusyOp }}">{{ mg.n }}</button></sc-for>
+                      </div>
+                      <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:8px">佇列播完後機器人會照選的曲風自己挑歌接著播。機器人要先在語音頻道裡（或設好語音常駐頻道）才能開；按「停止清空」或「離開語音」會一起關掉。</div>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ carMuPErr }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:10px">狀態更新失敗：{{ carMuPErr }}（稍後自動重試）</div></sc-if>
+              </div>
+
+              <div style="display:grid;grid-template-columns:{{ carMuCols }};gap:14px;align-items:start">
+                <!-- 點播：搜尋／網址直接加入 -->
+                <div class="car-card" style="padding:16px 18px;min-width:0">
+                  <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:10px">點播</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <input class="car-in" type="text" autocomplete="off" maxlength="300" placeholder="YouTube 網址／播放清單／關鍵字" aria-label="點歌關鍵字或網址" value="{{ carMuQ }}" onInput="{{ onField }}" onKeyDown="{{ onCarMuKey }}" data-k="carMuQ" style="flex:1 1 200px;width:auto;min-width:0">
+                    <button type="button" class="car-btn" onClick="{{ onCarMuSearch }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ carMuSearchBtn }}</button>
+                    <sc-if value="{{ carMuAdmin }}"><button type="button" class="car-btn" onClick="{{ onCarMuPlayNow }}">直接播放</button></sc-if>
+                  </div>
+                  <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:8px">{{ carMuTip }}</div>
+                  <sc-if value="{{ carMuResShow }}">
+                    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px">
+                      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px">
+                        <div style="flex:1;min-width:0;font-size:12px;color:var(--text-2);line-height:1.6;overflow-wrap:anywhere;word-break:break-word">{{ carMuResLine }}</div>
+                        <button type="button" onClick="{{ onCarMuResClear }}" style="flex:none;border:none;background:none;padding:2px 0;color:var(--accent-deep);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">清除</button>
+                      </div>
+                      <sc-for list="{{ carMuRes }}" as="mr">
+                        <button type="button" onClick="{{ onCarMuAdd }}" data-i="{{ mr.i }}" disabled="{{ mr.dis }}" title="{{ mr.title }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:7px 6px;border:none;border-radius:12px;background:transparent;text-align:left;cursor:pointer;font-family:inherit;color:inherit;opacity:{{ mr.op }};min-width:0;box-sizing:border-box" style-hover="background:var(--card-2)">
+                          <sc-if value="{{ mr.hasThumb }}"><img src="{{ mr.thumb }}" onError="{{ onImgErr }}" data-fb="hidden" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" style="width:72px;height:41px;flex:none;object-fit:cover;border-radius:8px;background:var(--card-2)"></sc-if>
+                          <sc-if value="{{ mr.noThumb }}"><span style="width:72px;height:41px;flex:none;border-radius:8px;background:var(--card-2)"></span></sc-if>
+                          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                            <span style="font-size:13px;font-weight:700;color:var(--ink);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;word-break:break-word">{{ mr.title }}</span>
+                            <span style="font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ mr.sub }}</span>
+                          </span>
+                          <sc-if value="{{ mr.tag }}"><span style="flex:none;font-size:11px;font-weight:800;color:var(--accent-deep)">{{ mr.tag }}</span></sc-if>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <!-- 佇列（機器人最多列 15 首） -->
+                <div class="car-card" style="padding:16px 18px;min-width:0">
+                  <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">
+                    <div style="font-size:15px;font-weight:800;color:var(--ink)">佇列</div>
+                    <span class="car-bn">{{ carMuQueueN }}</span>
+                  </div>
+                  <sc-for list="{{ carMuQueue }}" as="mq">
+                    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 0;border-top:1px solid var(--border);min-width:0">
+                      <span class="car-bn" style="flex:none;min-width:18px;text-align:right">{{ mq.n }}</span>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:13px;font-weight:700;color:var(--ink);line-height:1.5;overflow-wrap:anywhere;word-break:break-word">{{ mq.title }}</div>
+                        <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;overflow-wrap:anywhere;word-break:break-word">{{ mq.sub }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ carMuQueueEmpty }}"><div style="font-size:12.5px;color:var(--text-3);padding:10px 0 4px">佇列是空的</div></sc-if>
+                  <sc-if value="{{ carMuQueueMore }}"><div style="font-size:11.5px;color:var(--text-3);padding-top:8px;border-top:1px solid var(--border)">{{ carMuQueueMore }}</div></sc-if>
+                </div>
+              </div>
+            </div>
+          </sc-if>
 
         </div>
       </sc-if>
@@ -5697,7 +5800,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c597e9f262"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=9a477d15f9"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

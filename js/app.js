@@ -2495,7 +2495,266 @@ class Component extends DCLogic {
   /* ---------- end @@SEC-C@@ ---------- */
 
   /* @@SEC-D@@ music（點歌：正在播放與佇列、搜尋點播、播放控制）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+  /* 點歌（語音／音樂；整個車隊共用，不分車）
+     GET /status：成員拿精簡版 {online, voice_connected, voice_channel, playing, queue_len, queue, member_view:true}；
+                  管理員另有 voice_home、mix、volume、auto_genre、latency（gemini_keys／openai 屬於系統分頁，這裡不顯示）
+     POST /music {action}：search／play 成員也能用（每人最多 3 首排隊，超過機器人回 429）；
+                  pause／skip／stop／mix／leave／volume／auto 限管理員（成員 403）
+     播放要機器人待在 Discord 語音頻道：QQ 車隊（gid 以 qqg_ 開頭）不抓、不輪詢、不送動作，只顯示說明。
+     可能很久的動作（play、清單、auto…）機器人超過約 12 秒會先回 {ok, pending:true, msg}、背景做完：浮出 msg，5 秒後再抓一次狀態。
+     輪詢：只有「點歌分頁開著＋頁面看得見」時每 10 秒抓一次 /status；離開分頁或換頁後，下一次 tick 就自己停掉。
+     歌名、點播者、語音頻道名都是使用者可控字串：只進 {{ }}；縮圖只收 https://。 */
+  CAR_MU_GENRES = [['v', 'Vocaloid'], ['a', '動漫曲'], ['c', '中文抒情'], ['e', '英文流行'], ['j', '日文流行']];
+  carMuIsQQ(gid) { return /^qqg_/.test(String(gid == null ? '' : gid)); }
+  carMuLive() {
+    const s = this.state, gd = this.carGuild();
+    return s.page === 'car' && s.carTab === 'music' && !!gd && !this.carMuIsQQ(gd.gid);
+  }
+  carMuErr(e) { return (e && e.code === 'not_found') ? '機器人版本不支援這個功能，請更新機器人' : String((e && e.message) || '讀取失敗'); }
+  carSec_music(force) {
+    const gd = this.carGuild();
+    if (!gd || this.carMuIsQQ(gd.gid)) { this.carMuStop(); return null; }
+    this.carMuPoll();
+    return this.carSecFetch(this.carSecKey('music'), '/status', { gid: gd.gid }, force);
+  }
+  /* 輪詢與動作後的重抓：失敗時保留舊畫面，只多一行「狀態更新失敗」；上一次還沒回來就排一次補抓 */
+  async carMuRefresh() {
+    const gd = this.carGuild();
+    if (!gd || this.carMuIsQQ(gd.gid)) return;
+    if (this._carMuBusy) { this._carMuAgain = true; return; }
+    const gid = String(gd.gid), key = this.carSecKey('music');
+    this._carMuBusy = true; this._carMuAgain = false;
+    try {
+      const d = await this.carApi('/status', { gid });
+      if (String(this.state.g || '') === gid) this.carSecPut(key, { data: d, err: '', perr: '', busy: false, at: Date.now() });
+    } catch (e) {
+      if (String(this.state.g || '') === gid) {
+        const cur = this.carSecOf(key);
+        if (cur && cur.data) this.carSecPut(key, { perr: this.carMuErr(e), pat: Date.now() });   // 只標在畫面上；之後任何一次成功（at 較新）就不再顯示
+        else this.carSecPut(key, { data: null, err: this.carMuErr(e), busy: false, at: Date.now() });
+      }
+    } finally {
+      this._carMuBusy = false;
+      if (this._carMuAgain) { this._carMuAgain = false; if (this.carMuLive()) this.carMuRefresh(); }
+    }
+  }
+  carMuPoll() {
+    if (this._carMuT) return;
+    this._carMuT = setInterval(() => {
+      if (!this.carMuLive()) { this.carMuStop(); return; }
+      if (document.visibilityState !== 'hidden') this.carMuRefresh();
+    }, 10000);
+    // 切回這個瀏覽器分頁時馬上補一次（舊面板也是 visibilitychange 立刻 tick）
+    this._carMuVis = () => {
+      if (!this.carMuLive()) { this.carMuStop(); return; }
+      if (document.visibilityState !== 'visible') return;
+      const cur = this.carSecOf(this.carSecKey('music'));
+      if (!cur || Date.now() - (cur.at || 0) > 5000) this.carMuRefresh();
+    };
+    document.addEventListener('visibilitychange', this._carMuVis);
+  }
+  carMuStop() {
+    clearInterval(this._carMuT); this._carMuT = null;
+    clearTimeout(this._carMuLaterT); this._carMuLaterT = null;
+    if (this._carMuVis) { document.removeEventListener('visibilitychange', this._carMuVis); this._carMuVis = null; }
+  }
+  carMuLater(ms) {
+    clearTimeout(this._carMuLaterT);
+    this._carMuLaterT = setTimeout(() => { this._carMuLaterT = null; if (this.carMuLive()) this.carMuRefresh(); }, ms || 5000);
+  }
+  /* 寫入一律走 carAct（一次一個、錯誤訊息浮出）；pending＝機器人還在背景處理 */
+  async carMuAct(action, extra, okMsg) {
+    const gd = this.carGuild(); if (!gd) return null;
+    if (this.carMuIsQQ(gd.gid)) { this._toast('QQ 車隊沒有語音頻道，不能點歌'); return null; }
+    const gid = String(gd.gid), same = () => String(this.state.g || '') === gid;
+    const d = await this.carAct('/music', Object.assign({ action }, extra || {}), null);
+    if (!d) { if ((action === 'play' || action === 'auto') && same()) this.carMuLater(5000); return null; }   // 逾時的點歌機器人可能還是排進去了
+    if (d.pending) { this._toast(String(d.msg || '已送出，機器人還在處理，稍後會更新'), 4500); if (same()) this.carMuLater(5000); return d; }
+    const m = typeof okMsg === 'function' ? okMsg(d) : okMsg;
+    if (m) this._toast(String(m), action === 'play' ? 3600 : 0);
+    if (same()) { this.carMuRefresh(); if (action === 'play' || action === 'skip' || action === 'auto') this.carMuLater(4000); }
+    return d;
+  }
+  carMuNote(d) {
+    if (d.queued_only) return '（' + String(d.guild || '') + ' 機器人還沒進語音，進去後會自動播）';
+    return d.vc ? '　→ ' + String(d.guild || '') + ' #' + String(d.vc) : '';
+  }
+  async carMuPlay(q, clear) {
+    q = String(q || '').trim();
+    if (!q) { this._toast('請輸入網址或關鍵字'); return null; }
+    if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
+    this._toast('解析中…', 20000);
+    const d = await this.carMuAct('play', { query: q.slice(0, 500) },
+      r => '已加入：' + String(r.title || '') + ((+r.added || 0) > 1 ? '（' + (+r.added) + ' 首）' : '') + this.carMuNote(r));
+    if (d && clear && String(this.state.carMuQ || '').trim() === q) this.setState({ carMuQ: '' });
+    return d;
+  }
+  /* 搜尋是讀取（不走 carAct，不擋其他操作）；網址就直接點播，跟舊面板一樣 */
+  async carMuSearch(q, tries) {
+    const gd = this.carGuild(); if (!gd || this.carMuIsQQ(gd.gid)) return;
+    q = String(q || '').trim();
+    if (!q) { this._toast('請輸入關鍵字'); return; }
+    if (/^https?:\/\//i.test(q)) { this.carMuPlay(q, true); return; }
+    const gid = String(gd.gid), seq = this._carMuSeq = (this._carMuSeq || 0) + 1;
+    clearTimeout(this._carMuSrchT);
+    const prev = this.state.carMuRes;
+    this.setState({ carMuRes: { rid: seq, gid, q, list: [], busy: true, err: '', note: tries && prev ? String(prev.note || '') : '', added: {} } });
+    let d = null, err = '';
+    try { d = await this.carApi('/music', { gid, body: { action: 'search', query: q.slice(0, 200), n: 12 } }); }
+    catch (e) { err = this.carMuErr(e); }
+    if (seq !== this._carMuSeq) return;
+    if (String(this.state.g || '') !== gid) { const r = this.state.carMuRes; if (r && r.rid === seq) this.setState({ carMuRes: null }); return; }   // 搜到一半換了車隊：丟掉，免得切回來卡在「搜尋中」
+    if (d && d.pending) {
+      const again = (tries || 0) < 1;
+      this.setState({ carMuRes: { rid: seq, gid, q, list: [], busy: again, err: '', note: String(d.msg || '搜尋比較久，請稍後再試一次'), added: {} } });
+      if (again) this._carMuSrchT = setTimeout(() => {
+        if (seq !== this._carMuSeq) return;
+        if (this.carMuLive() && String(this.state.g || '') === gid) this.carMuSearch(q, (tries || 0) + 1);
+        else { const r = this.state.carMuRes; if (r && r.rid === seq) this.setState({ carMuRes: Object.assign({}, r, { busy: false }) }); }
+      }, 5000);
+      return;
+    }
+    const list = ((d && Array.isArray(d.results)) ? d.results : [])
+      .filter(r => r && typeof r.url === 'string' && /^https?:\/\//i.test(r.url)).slice(0, 20)
+      .map(r => ({ title: String(r.title || '?'), url: r.url, duration: +r.duration || 0, uploader: String(r.uploader || ''), views: +r.views || 0, thumb: typeof r.thumb === 'string' ? r.thumb : '' }));
+    this.setState({ carMuRes: { rid: seq, gid, q: String((d && d.query) || q), list, busy: false, err, note: '', added: {} } });
+  }
+  async carMuAdd(i) {
+    const r = this.state.carMuRes, it = r && r.list[i];
+    if (!it || (r.added || {})[i]) return;
+    if (this._carActBusy) { this._toast('上一個操作還在處理中'); return; }
+    const rid = r.rid;
+    const mark = v => this.setState(st => {
+      const cur = st.carMuRes; if (!cur || cur.rid !== rid) return null;
+      const added = Object.assign({}, cur.added); if (v) added[i] = v; else delete added[i];
+      return { carMuRes: Object.assign({}, cur, { added }) };
+    });
+    mark('busy');
+    const d = await this.carMuPlay(it.url, false);
+    mark(d ? 'done' : '');
+  }
+  /* 音量：拖拉時只改畫面，停手 0.45 秒後才送一次（避免拖一下送幾十個請求） */
+  carMuVol(v) {
+    const gd = this.carGuild(); if (!gd) return;
+    v = Math.max(5, Math.min(200, Math.round((+v || 100) / 5) * 5));
+    const gid = String(gd.gid);
+    this.setState({ carMuVolDraft: { gid, v } });
+    clearTimeout(this._carMuVolT);
+    this._carMuVolT = setTimeout(async () => {
+      const d = await this.carMuAct('volume', { value: v }, r => '音量 ' + (r.volume != null ? r.volume : v) + '%');
+      const key = 'music:' + gid, cur = this.carSecOf(key);
+      if (d && !d.pending && d.volume != null && cur && cur.data) this.carSecPut(key, { data: Object.assign({}, cur.data, { volume: +d.volume }) });
+      const dr = this.state.carMuVolDraft;
+      if (dr && dr.gid === gid && dr.v === v) this.setState({ carMuVolDraft: null });
+    }, 450);
+  }
+  carSecVals_music(c) {
+    const s = c.s, gid = String((c.gd && c.gd.gid) || ''), pill = c.pill;
+    if (this.carMuIsQQ(gid)) return { carMuQQ: true, carMuLoading: false, carMuErr: '', carMuReady: false };
+    const fd = x => {
+      x = Math.max(0, Math.floor(+x || 0)); if (!x) return '—';
+      const h = Math.floor(x / 3600), mm = Math.floor(x % 3600 / 60), ss = String(x % 60).padStart(2, '0');
+      return h ? h + ':' + String(mm).padStart(2, '0') + ':' + ss : mm + ':' + ss;
+    };
+    const fv = v => v >= 1e8 ? (v / 1e8).toFixed(1) + '億' : v >= 1e4 ? Math.round(v / 1e4) + '萬' : String(v);
+    const ok = t => ({ t, bg: 'color-mix(in oklab,#2f9e57 15%,var(--card))', fg: 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))' });
+    const bad = t => ({ t, bg: 'color-mix(in oklab,#ee6644 15%,var(--card))', fg: 'color-mix(in oklab,#ee6644 55%,var(--car-fg))' });
+    const neu = t => ({ t, bg: 'var(--card-2)', fg: 'var(--text-3)' });
+    const sec = (s.carSec || {})['music:' + gid] || null;
+    const d = (sec && sec.data && typeof sec.data === 'object') ? sec.data : null;
+    const adm = !!c.admin && !!d && !d.member_view;
+    const busy = !!s.carActBusy;
+    const q = String(s.carMuQ || '');
+    const R = s.carMuRes && s.carMuRes.gid === gid ? s.carMuRes : null;
+    const out = {
+      carMuQQ: false,
+      carMuLoading: !d && !(sec && sec.err),
+      carMuErr: !d && sec && sec.err ? String(sec.err) : '',
+      carMuReady: !!d,
+      carMuQ: q,
+      carMuSearchBtn: R && R.busy ? '搜尋中…' : (/^https?:\/\//i.test(q.trim()) ? '加入佇列' : '搜尋'),
+      carMuCols: s.mobile ? 'minmax(0,1fr)' : 'minmax(0,1.25fr) minmax(0,1fr)',
+      onCarMuReload: () => { this.carSec_music(true); },
+      onCarMuKey: e => {
+        if (e.key !== 'Enter') return;
+        if ((e.nativeEvent && e.nativeEvent.isComposing) || e.keyCode === 229) return;   // 注音／日文輸入法按 Enter 選字（Safari 會送 keyCode 229）不算送出
+        e.preventDefault(); this.carMuSearch(this.state.carMuQ);
+      },
+      onCarMuSearch: () => this.carMuSearch(this.state.carMuQ),
+      onCarMuPlayNow: () => this.carMuPlay(this.state.carMuQ, true),
+      onCarMuResClear: () => { clearTimeout(this._carMuSrchT); this._carMuSeq = (this._carMuSeq || 0) + 1; this.setState({ carMuRes: null }); },
+      onCarMuAdd: e => { const i = +e.currentTarget.dataset.i; if (i >= 0) this.carMuAdd(i); },
+      onCarMuCtl: e => {
+        const a = String(e.currentTarget.dataset.a || '');
+        const C = {
+          pause: [r => r.state === 'paused' ? '已暫停' : '繼續播放'],
+          skip: ['已跳過'],
+          mix: [r => '混音 ' + (r.mix ? '開啟' : '關閉')],
+          stop: ['已停止並清空', '停止播放並清空佇列？\n正在播的歌會停掉、排隊中的歌全部移除，自動歌單也會一起關閉。'],
+          leave: ['已離開語音頻道', '讓機器人離開語音頻道？\n會清空佇列、關閉自動歌單，並取消「語音常駐頻道」設定（之後要常駐得重新設定）。'],
+        }[a];
+        if (!C) return;
+        if (C[1] && !window.confirm(C[1])) return;
+        this.carMuAct(a, null, C[0]);
+      },
+      onCarMuVol: e => this.carMuVol(e.target.value),
+      onCarMuGenre: e => {
+        const k = String(e.currentTarget.dataset.g || '');
+        if (!this.CAR_MU_GENRES.some(x => x[0] === k)) return;
+        this.carMuAct('auto', { genre: k }, r => '自動播放：' + String(r.genre || ''));
+      },
+    };
+    if (!d) return out;
 
+    const p = d.playing && typeof d.playing === 'object' ? d.playing : null;
+    const dur = p ? Math.max(0, +p.duration || 0) : 0, pos = p ? Math.max(0, +p.pos || 0) : 0;
+    const pills = [d.online ? ok('機器人在線') : bad('機器人離線'),
+      d.voice_connected ? ok('語音 · ' + String(d.voice_channel || '已連線')) : neu('語音未連線')];
+    const gName = (this.CAR_MU_GENRES.find(x => x[0] === d.auto_genre) || [])[1] || '';
+    if (adm) {
+      if (d.latency != null && isFinite(+d.latency)) pills.push(neu('延遲 ' + Math.round(+d.latency) + ' ms'));
+      pills.push(d.voice_home ? ok('常駐 開') : neu('常駐 關'));
+      if (gName) pills.push(ok('自動歌單 ' + gName));
+    }
+    const qa = Array.isArray(d.queue) ? d.queue.filter(t => t && typeof t === 'object') : [];
+    const qn = Math.max(qa.length, Math.floor(+d.queue_len || 0));
+    const queue = qa.slice(0, 15).map((t, i) => ({ n: String(i + 1), title: String(t.title || '?'), sub: (t.requester ? String(t.requester) + ' · ' : '') + fd(t.duration) }));
+    const dr = s.carMuVolDraft;
+    const vol = dr && dr.gid === gid ? dr.v : Math.max(5, Math.min(200, Math.round(+d.volume || 100)));
+    const list = R ? R.list : [];
+    const res = list.map((x, i) => {
+      const st = (R.added || {})[i] || '', th = /^https:\/\//i.test(x.thumb) ? x.thumb : '';
+      return { i: String(i), title: x.title, sub: [fd(x.duration), x.uploader, x.views ? fv(x.views) + ' 次' : ''].filter(Boolean).join(' · '),
+        thumb: th, hasThumb: !!th, noThumb: !th, dis: !!st, op: st ? '.5' : '1', tag: st === 'done' ? '已加入' : st === 'busy' ? '加入中…' : '' };
+    });
+    return Object.assign(out, {
+      carMuPErr: sec && sec.perr && (sec.pat || 0) >= (sec.at || 0) ? String(sec.perr) : '',
+      carMuPills: pills,
+      carMuPlaying: !!p, carMuIdle: !p,
+      carMuTitle: p ? String(p.title || '?') : '',
+      carMuTime: p ? fd(dur ? Math.min(pos, dur) : pos) + ' / ' + fd(dur) : '',
+      carMuBy: p ? String(p.requester || '—') : '',
+      carMuPct: dur ? Math.max(0, Math.min(100, Math.round(pos / dur * 1000) / 10)) : 0,
+      carMuNoVc: !d.voice_connected,
+      carMuAdmin: adm,
+      carMuBusy: busy, carMuBusyOp: busy ? '.55' : '1',
+      carMuMixTxt: '混音 ' + (d.mix ? '開' : '關'),
+      carMuVol: vol, carMuVolTxt: vol + '%',
+      carMuGenres: this.CAR_MU_GENRES.map(([k, n]) => Object.assign({ k, n, on: d.auto_genre === k ? 'true' : 'false' }, pill(d.auto_genre === k))),
+      carMuTip: adm ? '輸入關鍵字按「搜尋」挑歌，點結果加入佇列；貼網址（含播放清單）或按「直接播放」會直接排進佇列（關鍵字取第一筆）。'
+        : '搜尋後點一下即可加入佇列（每人最多 3 首排隊中）；貼 YouTube 網址會直接加入。',
+      carMuResShow: !!R,
+      carMuResLine: !R ? '' : R.err ? (/^搜尋失敗/.test(R.err) ? R.err : '搜尋失敗：' + R.err)
+        : R.note ? R.note + (R.busy ? '（稍後自動再試一次）' : '')
+        : R.busy ? '搜尋中…'
+        : res.length ? '「' + R.q + '」' + res.length + ' 筆 · 點一下加入佇列' : '「' + R.q + '」找不到結果',
+      carMuRes: res,
+      carMuQueue: queue,
+      carMuQueueN: qn ? '共 ' + qn + ' 首' : '',
+      carMuQueueEmpty: !queue.length,
+      carMuQueueMore: qn > queue.length ? '還有 ' + (qn - queue.length) + ' 首沒列出' : '',
+    });
+  }
 
   /* ---------- end @@SEC-D@@ ---------- */
 
