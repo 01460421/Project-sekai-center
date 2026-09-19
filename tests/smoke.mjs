@@ -37,7 +37,11 @@ for (const mobile of [false, true]) {
           const clipped = el => { let e = el.parentElement; while (e && e !== document.body) { const o = getComputedStyle(e).overflowX; if (o === 'auto' || o === 'hidden' || o === 'scroll' || o === 'clip') return true; e = e.parentElement; } return false; };
           const bad = [];
           for (const el of document.querySelectorAll('body *')) { const b = el.getBoundingClientRect(); if (b.right > w + 1 && b.width > 0 && !clipped(el)) bad.push(el.tagName + (el.className ? '.' + String(el.className).split(' ')[0] : '') + ' w=' + Math.round(b.width) + ' right=' + Math.round(b.right) + ' "' + (el.textContent || '').trim().slice(0, 24).replace(/\s+/g, ' ') + '" style=' + (el.getAttribute('style') || '').slice(0, 100)); }
-          return ' scrollWidth=' + document.documentElement.scrollWidth + ' | ' + bad.slice(0, 6).join(' || ');
+          // 再往下挖：第一個超出的元素裡，最深的哪些葉節點也超出（通常就是撐爆 min-content 的那一個）
+          let leaf = '';
+          const first = [...document.querySelectorAll('body *')].find(el => { const b = el.getBoundingClientRect(); return b.right > w + 1 && b.width > 0 && !clipped(el); });
+          if (first) leaf = ' | leaves: ' + [...first.querySelectorAll('*')].filter(el => !el.children.length && el.getBoundingClientRect().right > w + 1).slice(0, 5).map(el => el.tagName + ' w=' + Math.round(el.getBoundingClientRect().width) + ' "' + (el.textContent || el.getAttribute('src') || '').trim().slice(0, 30) + '" style=' + (el.getAttribute('style') || '').slice(0, 80)).join(' || ');
+          return ' scrollWidth=' + document.documentElement.scrollWidth + ' | ' + bad.slice(0, 4).join(' || ') + leaf;
         });
       }
       ok = !errors.length && !(mobile && overflow); why = errors[0] || (overflow ? '橫向溢出' + detail : '');

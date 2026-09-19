@@ -274,6 +274,8 @@ select option, select optgroup{
   .song-row>span:nth-child(2),.song-row>span:nth-child(3),.song-row>span:nth-child(4){grid-column:2}
   /* 螢幕鍵盤打開時把底部 Dock 收起來，免得蓋住正在填的欄位 */
   body.kb-open .dock{display:none!important}
+  /* 手機上 grid／flex 的子項一律允許縮到 0：min-content 撐爆軌道是橫向溢出最常見的原因（CI 抓到首頁右欄三張卡 392px > 362px） */
+  [style*="display:grid"]>*,[style*="display: grid"]>*,[style*="display:flex"]>*,[style*="display: flex"]>*{min-width:0}
   /* 圖鑑頁的搜尋列黏在表頭下面，捲到深處也能直接改關鍵字 */
   .db-search{position:sticky;top:var(--head-h,58px);z-index:30;background:var(--bg);padding:6px 0 4px;margin-bottom:6px!important}
 }
