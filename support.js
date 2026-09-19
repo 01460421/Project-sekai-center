@@ -830,6 +830,18 @@
       if (pseudoClasses.length) {
         props.className = [props.className, ...pseudoClasses].filter(Boolean).join(" ");
       }
+      // <select sc-options="{{ list }}">：選項由 [{v, n}] 陣列產生。
+      // Safari 的 HTML 解析器會把 <select> 裡的 <sc-for> 整個丟掉（只剩一個空白 option），
+      // 所以 select 的動態選項一律走這個屬性，不要在 select 裡放 sc-for／sc-if。
+      if (realTag === "select" && "sc-options" in props) {
+        const list = props["sc-options"];
+        delete props["sc-options"];
+        const opts = Array.isArray(list) ? list.map((o, i) => {
+          const v = o == null ? "" : String(o.v == null ? "" : o.v);
+          return h("option", { key: "o" + i + "|" + v, value: v }, o == null ? "" : String(o.n == null ? v : o.n));
+        }) : [];
+        return h(realTag, props, ...renderDeckKids(kids, kidKeys, vals, ctx), ...opts);
+      }
       return h(realTag, props, ...renderDeckKids(kids, kidKeys, vals, ctx));
     };
   }

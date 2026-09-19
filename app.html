@@ -10,7 +10,7 @@ var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.document
 var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
-<script src="./support.js?v=4f96c5fb4a"></script>
+<script src="./support.js?v=f07edc7399"></script>
 </head>
 <body>
 <x-dc><template>
@@ -948,9 +948,7 @@ select option, select optgroup{
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
       <input type="search" enterkeyhint="search" placeholder="搜尋卡池名稱、角色、備註…" value="{{ gq }}" onInput="{{ onField }}" data-k="gq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
-      <select value="{{ gt }}" onChange="{{ onField }}" data-k="gt" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
-        <sc-for list="{{ gachaTypes }}" as="t" hint-placeholder-count="5"><option value="{{ t.v }}">{{ t.n }}</option></sc-for>
-      </select>
+      <select value="{{ gt }}" onChange="{{ onField }}" data-k="gt" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)" sc-options="{{ gachaTypes }}"></select>
     </div>
     <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
       <sc-for list="{{ unitChips }}" as="u" hint-placeholder-count="7">
@@ -1447,9 +1445,7 @@ select option, select optgroup{
         <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ songPickLabel }}</span>
           <input type="text" placeholder="曲名關鍵字…" value="{{ epq }}" onInput="{{ onField }}" data-k="epq" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none" style-focus="border-color:var(--accent)"></label>
         <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">選曲 · 係數 R{{ songRate }} · {{ songTime }}s</span>
-          <select value="{{ songKey }}" onChange="{{ onField }}" data-k="songKey" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:42px;cursor:pointer;outline:none">
-            <sc-for list="{{ songOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-          </select></label>
+          <select value="{{ songKey }}" onChange="{{ onField }}" data-k="songKey" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:42px;cursor:pointer;outline:none" sc-options="{{ songOptions }}"></select></label>
         <sc-if value="{{ epEmpty }}">
           <button type="button" onClick="{{ onReloadEp }}" style="margin-top:8px;width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent);font-size:12.5px;font-weight:700;cursor:pointer">{{ epMsg }}</button>
         </sc-if>
@@ -2083,13 +2079,22 @@ select option, select optgroup{
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
         <div style="flex:1;min-width:0;font-size:12.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ carCtx }}</div>
         <sc-if value="{{ carMultiGuild }}">
-          <select value="{{ carG }}" onChange="{{ onCarGuild }}" aria-label="切換車隊" style="max-width:220px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;min-height:38px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
-            <sc-for list="{{ carGuildOpts }}" as="o"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-          </select>
+          <button type="button" onClick="{{ onCarGuildToggle }}" class="car-btn" aria-haspopup="listbox" aria-expanded="{{ carGuildOpen }}" style="background:var(--card);line-height:normal">切換車隊 {{ carGuildArrow }}</button>
         </sc-if>
         <button type="button" onClick="{{ onCarReload }}" class="car-btn" style="background:var(--card)">{{ carBusyTxt }}</button>
         <a href="{{ carLogoutUrl }}" class="car-btn" style="background:var(--card);text-decoration:none;display:inline-block;line-height:normal">登出</a>
       </div>
+
+      <sc-if value="{{ carGuildOpen }}">
+        <div class="car-card" role="listbox" aria-label="切換車隊" style="padding:6px;margin:-4px 0 14px;display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ carGuildList }}" as="o">
+            <button type="button" role="option" aria-selected="{{ o.on }}" onClick="{{ onCarGuildPick }}" data-v="{{ o.v }}" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:none;border-radius:12px;background:{{ o.bg }};color:{{ o.fg }};font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;min-width:0">
+              <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.n }}</span>
+              <span style="flex:none;font-size:11.5px;font-weight:800;color:{{ o.rc }}">{{ o.role }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
 
       <!-- 車／檢視／管理員操作 -->
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -2560,9 +2565,7 @@ select option, select optgroup{
               <div style="margin-bottom:9px">
                 <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</div>
                 <sc-if value="{{ f.isSelect }}">
-                  <select value="{{ f.val }}" onChange="{{ onWField }}" data-k="{{ f.key }}" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none">
-                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4"><option value="{{ o.v }}">{{ o.n }}</option></sc-for>
-                  </select>
+                  <select value="{{ f.val }}" onChange="{{ onWField }}" data-k="{{ f.key }}" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none" sc-options="{{ f.options }}"></select>
                 </sc-if>
                 <sc-if value="{{ f.isNumber }}">
                   <input type="number" value="{{ f.val }}" onInput="{{ onWField }}" data-k="{{ f.key }}" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;outline:none">
@@ -5630,7 +5633,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ca9737a357"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=cb6c6bddd9"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

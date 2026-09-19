@@ -2958,7 +2958,10 @@ class Component extends DCLogic {
       carNoGuild: !!cm && !guilds.length,
       carReady: !!cm && !!gd,
       carCtx: gd ? (String(gd.name || '車隊') + ' · ' + (roleTxt[(st && st.role) || gd.role] || '成員') + (via ? ' · ' + via + ' 已登入' : '')) : '',
-      carGuildOpts: guilds.map(x => ({ v: String(x.gid), n: String(x.name || x.gid) })), carG: String(s.g || ''), carMultiGuild: guilds.length > 1,
+      /* 切換車隊：不用原生 <select>（macOS 深色下原生選單會畫成一顆看不到名字的鈕），改成自己畫的清單 */
+      carGuildList: guilds.map(x => { const on = String(x.gid) === String(s.g || ''); return { v: String(x.gid), n: String(x.name || x.gid), role: roleTxt[x.role] || '成員', on: on ? 'true' : 'false',
+        bg: on ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'transparent', fg: on ? 'var(--ink)' : 'var(--text-2)', rc: on ? 'var(--accent-deep)' : 'var(--text-3)' }; }),
+      carGuildOpen: guilds.length > 1 && !!s.carGuildOpen, carGuildArrow: s.carGuildOpen ? '▴' : '▾', carMultiGuild: guilds.length > 1,
       carCarTabs: carTabs, carMultiCar: cars.length > 1,
       carViewTabs: [['table', '表格'], ['board', '看板']].map(([v, n]) => Object.assign({ v, n }, segOn((s.carView || 'table') === v))),
       carIsTable: (s.carView || 'table') !== 'board', carIsBoard: s.carView === 'board',
@@ -8606,7 +8609,8 @@ class Component extends DCLogic {
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
       /* 私車排班 */
-      onCarGuild: e => { const v = String(e.target.value || ''); if (v === String(this.state.g)) return; this.setState({ g: v, carStates: {}, carStErr: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => this.carLoadStates(), 0); },
+      onCarGuildToggle: () => this.setState({ carGuildOpen: !this.state.carGuildOpen, carPop: null }),
+      onCarGuildPick: e => { const v = String(e.currentTarget.dataset.v || ''); if (!v || v === String(this.state.g)) { this.setState({ carGuildOpen: false }); return; } this.setState({ g: v, carGuildOpen: false, carStates: {}, carStErr: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => this.carLoadStates(), 0); },
       onCarNo: e => { const no = +e.currentTarget.dataset.v; if (!no) return; this.setState({ car: no, carPop: null, carTagMgr: false }); if (!(this.state.carStates || {})[no]) this.carLoadStates(no); this.carLoadTags(no); },
       onCarView: e => this.setState({ carView: e.currentTarget.dataset.v === 'board' ? 'board' : 'table', carPop: null }),
       onCarDate: e => this.setState({ carDate: e.currentTarget.dataset.v || '', carPop: null }),
