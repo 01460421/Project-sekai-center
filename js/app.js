@@ -277,6 +277,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/19', t: '側欄群組可摺疊', s: '側欄項目太多，改成點群組標題就能收起或展開；預設只展開主頁、帳號、常用與即時資料，其餘只留標題與數量，目前所在的頁在收起的群組裡仍會顯示。手機的「更多」面板同樣適用，摺疊狀態記在這台裝置。' },
     { d: '2026/09/19', t: '瀏覽器推播、行事曆訂閱源、每頁分享預覽圖', s: '我的帳號的偵測訂閱區多了「開啟瀏覽器推播」：條件成立或有人回覆時，就算沒開著網站也會跳系統通知（站方要先設定 VAPID 金鑰）；活動日曆多了「訂閱」，用 webcal 把活動與卡池訂進手機行事曆會自動更新；分享網址到社群時每一頁各有自己的大圖預覽。' },
     { d: '2026/09/19', t: '今日摘要、行事曆匯出、分享圖卡、提問所版型、團體主題色、空狀態與視窗整理', s: '首頁多了「今日摘要」：活動第幾天、T1000 線與我的一天變化、快結束／今天開始的卡池、今天的公告、跑榜計畫與豆森待辦；活動總覽與活動日曆可匯出 .ics 加進手機行事曆；我的排名、收集率、豆森進度可產生分享圖卡；提問所新增「車隊招募」「榜線回報」兩類並附範本；外觀可選團體主題色（六團強調色）；全站空狀態改成同一種樣式，歌曲視窗的關閉鈕不再被擠到第二行。' },
     { d: '2026/09/19', t: '跑榜計畫器、收藏與待辦頁、抽卡預算、儲存設定', s: '活動試算多了「目標名次」籤（直接帶入預測終線）與「帶入我的活動P」，並依剩餘天數攤成每天要打幾場、幾小時、多少體力，首頁與活動總覽會提示；新增「收藏與待辦」頁：卡片、角色、家具、歌曲、卡池詳情都能按星號收藏，待辦列出跑榜差距、豆森缺的家具、未讀通知；抽卡天井加「每天存石 × 距卡池天數」預算，可點未來卡池自動填天數；計算中心與跑榜工作室都能把整組設定存成「我的設定」一鍵套用（備份與雲端同步一起帶）。' },
@@ -456,6 +457,7 @@ class Component extends DCLogic {
     favs: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-fav') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
     calcPresets: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-calc-presets') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
     planTier: 0, planHrs: 3, gcDaily: 100, gcDays: 0,
+    navFold: (() => { try { return JSON.parse(localStorage.getItem('sekai-nav-fold') || '{}') || {}; } catch (e) { return {}; } })(),   // 側欄群組摺疊（1=收起）
     pushOn: (() => { try { return localStorage.getItem('sekai-push') === '1'; } catch (e) { return false; } })(), pushBusy: false,
     recent: (() => { try { return JSON.parse(localStorage.getItem('sekai-recent') || '[]'); } catch (e) { return []; } })(),
     cardChara: null, // cardId → characterId（排名頭像用）
@@ -5117,6 +5119,12 @@ class Component extends DCLogic {
     }
     return out.slice(0, 24);
   }
+  NAV_OPEN_DEFAULT = ['主頁', '帳號', '即時資料'];
+  navOpen(label) {
+    const f = this.state.navFold || {};
+    if (f[label] != null) return !f[label];
+    return this.NAV_OPEN_DEFAULT.includes(label) || /^常用/.test(label);
+  }
   /* ===== 收藏與待辦（sekai-fav；備份與雲端同步一起帶） ===== */
   favKey(kind, id) { return kind + ':' + id; }
   isFav(kind, id) { const k = this.favKey(kind, id); return (this.state.favs || []).some(f => f.k === k); }
@@ -5252,14 +5260,17 @@ class Component extends DCLogic {
       const ordered = this.layoutApply(items.map(it => it[0]), 'nav').map(id => byId[id])
         .filter(it => it && (navHidden.indexOf(it[0]) < 0 || it[0] === 'home' || it[0] === 'account'));
       return { label, items: ordered };
-    }).filter(g => g.items.length).map(({ label, items }) => ({
-      label,
-      items: items.map(([id, name, dot]) => ({
+    }).filter(g => g.items.length).map(({ label, items }) => {
+      /* 群組可摺疊：預設只展開主頁、帳號、常用、即時資料，其餘收起只留標題；
+         目前頁在收起的群組裡時仍顯示那一項，才知道自己在哪。摺疊狀態記本機。 */
+      const open = this.navOpen(label);
+      const all = items.map(([id, name, dot]) => ({
         id, name, dot,
         bg: s.page === id ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
         fg: s.page === id ? 'var(--accent-deep)' : 'var(--text)'
-      }))
-    }));
+      }));
+      return { label, open, arrow: open ? '▾' : '▸', count: open ? '' : String(all.length), items: open ? all : all.filter(it => it.id === s.page) };
+    });
     const dockSpec = [['home', '首頁', '#4ad1e8'], ['calendar', '日曆', '#3ee0a8'], ['calc', '計算', '#7fb4f7'], ['rank', '排名', '#ff9db4'], ['more', '更多', '#ffd94d']];
     const dockItems = dockSpec.map(([id, name, dot]) => ({
       id, name, dot,
@@ -8636,6 +8647,7 @@ class Component extends DCLogic {
         } catch (e) { this._toast('推播設定失敗：' + String(e && e.message || e).slice(0, 60)); }
         finally { this.setState({ pushBusy: false }); }
       },
+      onNavFold: e => { const g = e.currentTarget.dataset.g; const f = Object.assign({}, this.state.navFold || {}); f[g] = this.navOpen(g) ? 1 : 0; this.setState({ navFold: f }); try { localStorage.setItem('sekai-nav-fold', JSON.stringify(f)); } catch (e2) {} },
       onUnitTheme: e => { const v = e.currentTarget.dataset.v || ''; this.setState({ unit: v }); this.applyUnit(v); },
       onShareCard: e => { this.shareCard(e.currentTarget.dataset.kind); },
       onIcsEvent: () => { const it = this.icsEventItem(); this.icsDownload(it ? ('sekai-event-' + it.uid.replace('event-', '')) : 'sekai-event', it ? [it] : []); },
