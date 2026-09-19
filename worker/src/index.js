@@ -225,6 +225,25 @@ export class GameTracker {
   }
 }
 
+const PROXY_OK = /^\/proxy\/hisekai\/(event\/[A-Za-z0-9_\/-]{1,80}|user\/\d{15,20}\/profile)$/;
+async function proxyHisekai(req, url) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+  if (req.method !== 'GET') return new Response(JSON.stringify({ error: 'method_not_allowed' }), { status: 405, headers: { ...CORS, 'content-type': 'application/json' } });
+  if (!PROXY_OK.test(url.pathname)) return new Response(JSON.stringify({ error: 'not_allowed' }), { status: 403, headers: { ...CORS, 'content-type': 'application/json' } });
+  const upstream = 'https://api.hisekai.org/tw/' + url.pathname.slice('/proxy/hisekai/'.length) + url.search;
+  let up;
+  try {
+    up = await fetch(upstream, { headers: { 'user-agent': 'pjsk-center/1.0 (+https://project-sekai-center.com)', accept: 'application/json' },
+      cf: { cacheTtl: 30, cacheEverything: true }, signal: AbortSignal.timeout(15000) });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'upstream', message: String((e && e.message) || e).slice(0, 120) }), { status: 502, headers: { ...CORS, 'content-type': 'application/json' } });
+  }
+  const h = new Headers(CORS);
+  h.set('content-type', up.headers.get('content-type') || 'application/json; charset=utf-8');
+  h.set('cache-control', 'public, max-age=30');
+  return new Response(up.body, { status: up.status, headers: h });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -237,6 +256,9 @@ export default {
       const r = await handleAuth(req, env, url);
       if (r) return r;
     }
+    /* 前端排名 API 的代理：直連 api.hisekai.org 被 CORS 或網路擋下時，先走這裡再退到公共代理。
+       只放行固定幾條路徑、只讀、邊緣快取 30 秒，不帶 cookie。 */
+    if (p.startsWith('/proxy/hisekai/')) return proxyHisekai(req, url);
     if (p.startsWith('/api/') || p === '/api') {
       const user = await currentUser(req, env);
       const r = await handleApi(req, env, url, user);

@@ -65,3 +65,10 @@ npx wrangler secret list
 npx wrangler d1 execute pjsk-users --remote --command "SELECT name,status,is_admin FROM users"
 npx wrangler tail
 ```
+
+## 2026-09-19 遷移：申請 IP 紀錄
+
+```
+npx wrangler d1 execute pjsk-users --remote --file=sql/014_apply_ip.sql
+```
+沒跑也不會壞：查詢失敗時視為 0 次、不擋申請；跑了才有「同一個 IP 一天最多 8 次申請」的保護。

@@ -29,6 +29,7 @@ OUT_LIVES = ROOT / 'data' / 'lives-index.js'
 OUT_FIX = ROOT / 'data' / 'fixtures-index.js'
 OUT_ST = ROOT / 'data' / 'stories-index.js'
 OUT_MST = ROOT / 'data' / 'mysekai-talks-index.js'
+OUT_BUILT = ROOT / 'data' / 'data-built.js'
 
 
 def get(url):
@@ -262,8 +263,33 @@ def build_mysekai_talks():
     return write_if_changed(OUT_MST, header, body)
 
 
+
+# ---------------------------------------------------------------- 資料日期
+def write_built(changed):
+    """data/data-built.js：各索引檔最近一次「內容真的有變」的日期，圖鑑頁角落顯示「資料 9/18 更新」。
+    沒變的索引保留舊日期，這個小檔本身只在日期有變時才改（避免每天戳記都變、快取白白失效）。"""
+    import datetime
+    old = {}
+    if OUT_BUILT.exists():
+        m = __import__('re').search(r'BUILT=(\{.*?\});', OUT_BUILT.read_text(encoding='utf-8'), __import__('re').S)
+        if m:
+            try:
+                old = json.loads(m.group(1))
+            except Exception:
+                old = {}
+    today = datetime.date.today().isoformat()
+    for k, did in changed.items():
+        if did or k not in old:
+            old[k] = today
+    body = 'export const BUILT=' + dump(old) + ';\n'
+    return write_if_changed(OUT_BUILT, '/* 由 tools/build-db-index.py 產生,勿手改。各索引檔最近一次內容有變的日期 */\n', body)
+
+
 if __name__ == '__main__':
-    build_lives()
-    build_fixtures()
-    build_stories()
-    build_mysekai_talks()
+    changed = {
+        'lives': build_lives(),
+        'fixtures': build_fixtures(),
+        'stories': build_stories(),
+        'mst': build_mysekai_talks(),
+    }
+    write_built(changed)

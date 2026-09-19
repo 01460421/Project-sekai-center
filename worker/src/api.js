@@ -14,7 +14,7 @@ import { summarize, priceOf } from './pricing.js';
 import { handleChats } from './chats.js';
 import { WATCH_KINDS } from './watch.js';
 import {
-  getUser, unlinkDiscord,
+  getUser, unlinkDiscord, applyIpCount, logApplyIp,
   saveApplication, issueNonce, bumpVerifyTry, bindGameUid,
   getCredits, spendCredit, createOrder, listOrders, cancelOrder,
   getPrefs, setPrefs,
@@ -39,6 +39,7 @@ const MAX_PARAMS = 8 * 1024;       // 單一 watch 的 params
 const MAX_PREF_KEYS = 200;
 const APPLY_COOLDOWN = 60;         // 兩次送出之間至少隔這麼久（秒）
 const APPLY_MAX = 10;              // 每個帳號累計送出上限
+const APPLY_IP_MAX = 8;            // 同一個 IP 一天最多送出幾次申請（帳號自動核准後的最後一道門）
 const NONCE_TTL = 15 * 60;         // 驗證碼有效期
 const VERIFY_TRIES = 5;            // 每張驗證碼可比對幾次（每次都要打外部 API）
 const VERIFY_TOTAL = 40;           // 累計比對上限,換新碼不會歸零
@@ -398,9 +399,15 @@ export async function handleApi(req, env, url, user) {
       const lv = lvRaw;
       const note = sanitizeNote(v.note);
 
+      /* 同一個 IP 一天的申請上限：帳號有帳號即通過之後，這是唯一擋機器人的門 */
+      const ip = req.headers.get('cf-connecting-ip') || '';
+      if (ip && await applyIpCount(env.DB, ip, Math.floor(Date.now() / 1000) - 86400) >= APPLY_IP_MAX) {
+        return out({ error: 'too_frequent', message: '這個網路今天送出的申請太多了，請明天再試或聯絡管理員。' }, 429);
+      }
       /* 驗證通過才扣冷卻與次數 —— 打錯字不該消耗使用者的重試機會。 */
       const saved = await saveApplication(env.DB, user.id,
         { uid, level: lv, note: note.text, dropped: note.dropped }, APPLY_COOLDOWN, APPLY_MAX);
+      if (saved && ip) await logApplyIp(env.DB, ip);
       if (!saved) {
         return out({ error: 'too_frequent',
           message: '送出太頻繁，或已達送出次數上限（' + APPLY_MAX + ' 次）。請稍候再試，或聯絡管理員。' }, 429);

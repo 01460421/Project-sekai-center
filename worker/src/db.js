@@ -499,3 +499,15 @@ export async function touchOp(db, id, userId, maxRounds) {
 }
 export const aiOpsByUser = (db, since) =>
   all(db, 'SELECT user_id, COUNT(*) AS ops FROM ai_ops WHERE created_at>=? GROUP BY user_id', since || 0);
+
+/* ---------- 申請的 IP 頻率 ---------- */
+/* 自動核准開了之後,唯一擋機器人的門是這個:同一個 IP 一天最多幾次。表沒建（還沒跑 014 遷移）時回 0、不擋。 */
+export async function applyIpCount(db, ip, since) {
+  try {
+    const r = await one(db, 'SELECT COUNT(*) AS n FROM apply_ip WHERE ip=? AND at>=?', ip, since);
+    return (r && r.n) || 0;
+  } catch (e) { return 0; }
+}
+export async function logApplyIp(db, ip) {
+  try { await run(db, 'INSERT INTO apply_ip (ip, at) VALUES (?, ?)', ip, now()); } catch (e) {}
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /index.html?embed=
+Sitemap: https://project-sekai-center.com/sitemap.xml
