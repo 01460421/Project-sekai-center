@@ -2596,6 +2596,315 @@ select option, select optgroup{
       <sc-if value="{{ carTabIs.stats }}">
         <div class="car-sec" data-sec="stats">
           <!-- @@SEC-C-TPL-stats@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+          <!-- 統計：缺額分析／歷史班表（每車）、色段監控（整個車隊） -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <div class="car-seg" role="tablist" aria-label="統計項目" style="overflow-x:auto;scrollbar-width:none">
+              <sc-for list="{{ carStViews }}" as="v"><button type="button" role="tab" aria-selected="{{ v.sel }}" onClick="{{ onCarStView }}" data-v="{{ v.v }}" style="background:{{ v.bg }};color:{{ v.fg }};box-shadow:{{ v.sh }}">{{ v.n }}<sc-if value="{{ v.badge }}"><span style="font-family:'M PLUS Rounded 1c';font-size:12px;color:{{ v.bfg }}">{{ v.badge }}</span></sc-if></button></sc-for>
+            </div>
+            <sc-if value="{{ carStCarSeg }}">
+              <div class="car-seg" role="tablist" aria-label="選擇車" style="overflow-x:auto;scrollbar-width:none">
+                <sc-for list="{{ carCarTabs }}" as="c"><button type="button" role="tab" onClick="{{ onCarNo }}" data-v="{{ c.v }}" style="background:{{ c.bg }};color:{{ c.fg }};box-shadow:{{ c.sh }}">{{ c.n }}</button></sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- 缺額分析 -->
+          <sc-if value="{{ carStIsIns }}">
+            <sc-if value="{{ carInsLoading }}"><div class="car-card skel" style="height:260px"></div></sc-if>
+            <sc-if value="{{ carInsErr }}">
+              <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">缺額分析讀不到：{{ carInsErr }}<br><button type="button" onClick="{{ onCarStRetry }}" class="car-btn" style="margin-top:10px">重試</button></div>
+            </sc-if>
+            <sc-if value="{{ carInsReady }}">
+              <div class="car-card" style="padding:15px 18px 16px;margin-bottom:14px">
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                  <div style="font-size:15px;font-weight:800;color:var(--ink)">填充率</div>
+                  <div style="font-size:11.5px;color:var(--text-3);min-width:0">{{ carInsSub }}</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+                  <sc-for list="{{ carInsStats }}" as="x">
+                    <div style="background:var(--card-2);border-radius:13px;padding:11px 13px;min-width:0">
+                      <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ x.k }}</div>
+                      <div style="font-size:19px;font-weight:800;color:{{ x.fg }};font-family:'M PLUS Rounded 1c'">{{ x.v }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="height:6px;border-radius:999px;background:var(--card-2);margin-top:12px;overflow:hidden"><div style="height:100%;width:{{ carInsBarW }};border-radius:999px;background:{{ carInsBarBg }}"></div></div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px;align-items:start">
+                <div class="car-card" style="overflow:hidden;min-width:0">
+                  <div style="display:flex;align-items:center;gap:10px;padding:15px 18px 10px">
+                    <div style="font-size:15px;font-weight:800;color:var(--ink)">缺額時段</div>
+                    <div style="flex:1"></div>
+                    <span style="font-size:11.5px;color:var(--text-3)">{{ carInsLackCnt }}</span>
+                  </div>
+                  <sc-if value="{{ carInsNoLack }}"><div style="padding:14px 18px 22px;text-align:center;font-size:13px;color:var(--text-3)">{{ carInsNoLackTxt }}</div></sc-if>
+                  <sc-for list="{{ carInsGroups }}" as="g">
+                    <div style="padding:7px 18px;background:var(--card-2);border-top:1px solid var(--border);font-size:11.5px;font-weight:800;color:var(--text-2)">{{ g.day }}</div>
+                    <sc-for list="{{ g.rows }}" as="r">
+                      <div style="display:grid;grid-template-columns:54px minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 18px;border-top:1px solid var(--border)">
+                        <span class="car-slot" style="font-size:14px">{{ r.slot }}</span>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;min-width:0">
+                          <span class="car-tag" style="cursor:default;background:color-mix(in oklab,#d64533 14%,var(--card));color:color-mix(in oklab,#d64533 55%,var(--car-fg))">{{ r.lackTxt }}</span>
+                          <sc-if value="{{ r.noS6 }}"><span class="car-tag" style="cursor:default;background:color-mix(in oklab,var(--car-s6) 16%,var(--card));color:var(--car-s6)">缺 S6</span></sc-if>
+                        </div>
+                        <span class="car-note" style="font-size:12px;color:{{ r.wlFg }}">{{ r.wl }}</span>
+                        <button type="button" class="car-mini" onClick="{{ onCarInsGo }}" data-d="{{ r.d }}">看班表</button>
+                      </div>
+                    </sc-for>
+                  </sc-for>
+                </div>
+                <div class="car-card" style="overflow:hidden;min-width:0">
+                  <div style="padding:15px 18px 10px;font-size:15px;font-weight:800;color:var(--ink)">出勤排行（7 天）</div>
+                  <sc-if value="{{ carInsNoRank }}"><div style="padding:14px 18px 22px;text-align:center;font-size:13px;color:var(--text-3)">尚無出勤紀錄</div></sc-if>
+                  <sc-for list="{{ carInsRank }}" as="x">
+                    <div style="display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 18px;border-top:1px solid var(--border)">
+                      <span class="car-bn" style="text-align:center">{{ x.i }}</span>
+                      <div style="min-width:0">
+                        <div style="font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.name }}</div>
+                        <div style="height:4px;border-radius:999px;background:var(--card-2);margin-top:5px;overflow:hidden"><div style="height:100%;width:{{ x.w }};border-radius:999px;background:var(--accent)"></div></div>
+                      </div>
+                      <span style="font-size:12.5px;font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ x.n }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- 歷史班表（唯讀） -->
+          <sc-if value="{{ carStIsHist }}">
+            <sc-if value="{{ carHistLoading }}"><div class="car-card skel" style="height:260px"></div></sc-if>
+            <sc-if value="{{ carHistErr }}">
+              <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">歷史班表讀不到：{{ carHistErr }}<br><button type="button" onClick="{{ onCarStRetry }}" class="car-btn" style="margin-top:10px">重試</button></div>
+            </sc-if>
+            <sc-if value="{{ carHistNone }}">
+              <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">沒有任何班表紀錄。<br>開過班的日期、以及換期時封存的前幾期班表，會出現在這裡。</div>
+            </sc-if>
+            <sc-if value="{{ carHistReady }}">
+              <div class="car-card" style="padding:14px 18px;margin-bottom:14px">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <button type="button" class="car-btn" onClick="{{ onCarHistStep }}" data-v="1" disabled="{{ !carHistOlderOk }}" aria-label="前一個日期" title="前一個日期" style="padding:8px 14px" style-disabled="opacity:.4;cursor:default">‹</button>
+                  <div style="position:relative;flex:1 1 200px;min-width:0;max-width:380px">
+                    <select aria-label="選擇日期" sc-options="{{ carHistOpts }}" value="{{ carHistSel }}" onChange="{{ onCarHistDate }}" style="width:100%;padding:9px 34px 9px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;font-weight:700;min-height:42px;cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;font-family:inherit;box-sizing:border-box;text-overflow:ellipsis"></select>
+                    <span aria-hidden="true" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-3);font-size:12px">▾</span>
+                  </div>
+                  <button type="button" class="car-btn" onClick="{{ onCarHistStep }}" data-v="-1" disabled="{{ !carHistNewerOk }}" aria-label="後一個日期" title="後一個日期" style="padding:8px 14px" style-disabled="opacity:.4;cursor:default">›</button>
+                  <div style="flex:1"></div>
+                  <span style="font-size:11.5px;color:var(--text-3)">{{ carHistCnt }}</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:8px;line-height:1.6">唯讀檢視，要改班請到「班表」。{{ carHistSrc }}</div>
+              </div>
+              <div class="car-card" style="overflow:hidden">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:15px 18px 10px">
+                  <div style="font-size:15px;font-weight:800;color:var(--ink)">{{ carHistTitle }}</div>
+                  <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-3)">唯讀</span>
+                </div>
+                <sc-if value="{{ carHistDayLoading }}"><div class="skel" style="height:180px;margin:0 18px 18px;border-radius:14px"></div></sc-if>
+                <sc-if value="{{ carHistDayErr }}">
+                  <div style="padding:0 18px 18px;font-size:12.5px;color:var(--text-2);line-height:1.8">這天的班表讀不到：{{ carHistDayErr }}<br><button type="button" onClick="{{ onCarStRetry }}" class="car-btn" style="margin-top:10px">重試</button></div>
+                </sc-if>
+                <sc-if value="{{ carHistNoRows }}"><div style="padding:14px 18px 24px;text-align:center;font-size:13px;color:var(--text-3)">{{ carHistEmptyTxt }}</div></sc-if>
+                <sc-if value="{{ carHistHasRows }}">
+                  <div class="car-row car-head">
+                    <div class="car-gh">時段</div><div class="car-gh">車種</div><div class="car-gh">P2</div><div class="car-gh">P3</div><div class="car-gh">P4</div><div class="car-gh">P5</div><div class="car-gh">候補／報班</div>
+                  </div>
+                  <sc-for list="{{ carHistRows }}" as="r">
+                    <div class="car-row">
+                      <div class="car-cell car-c-slot">
+                        <span class="car-slot">{{ r.slot }}</span>
+                        <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
+                        <sc-if value="{{ r.manual }}"><span style="display:inline-block;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:800">手動</span></sc-if>
+                        <span class="car-m-only car-bn">{{ r.ctype }}</span>
+                      </div>
+                      <div class="car-cell car-c-p1"><div class="car-bn">{{ r.ctype }}</div></div>
+                      <sc-for list="{{ r.cells }}" as="x">
+                        <div class="car-cell car-seat">
+                          <sc-if value="{{ x.has }}">
+                            <div class="car-nm"><span class="car-p car-m-only">{{ x.P }}</span><sc-if value="{{ x.s6 }}"><span class="car-s6">S6</span></sc-if><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.name }}</span></div>
+                            <div class="car-bn">{{ x.bonus }}</div>
+                          </sc-if>
+                          <sc-if value="{{ x.empty }}"><span style="font-size:12.5px;color:var(--text-3)"><span class="car-m-only">{{ x.P }} </span>—</span></sc-if>
+                        </div>
+                      </sc-for>
+                      <div class="car-cell car-c-note"><span class="car-note">{{ r.note }}</span></div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- 色段監控：總覽 -->
+          <sc-if value="{{ carStIsSei }}">
+            <sc-if value="{{ carSeiList }}">
+              <sc-if value="{{ carSeiLoading }}"><div class="car-card skel" style="height:260px"></div></sc-if>
+              <sc-if value="{{ carSeiErr }}">
+                <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">色段監控讀不到：{{ carSeiErr }}<br><button type="button" onClick="{{ onCarStRetry }}" class="car-btn" style="margin-top:10px">重試</button></div>
+              </sc-if>
+              <sc-if value="{{ carSeiReady }}">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 12px">
+                  <div style="font-size:15px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ carSeiHead }}</div>
+                  <sc-if value="{{ carSeiLiveShow }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:{{ carSeiLiveBg }};color:{{ carSeiLiveFg }}">{{ carSeiLive }}</span></sc-if>
+                  <sc-if value="{{ carSeiLiveRetry }}"><button type="button" class="car-mini" onClick="{{ onCarSeiLive }}">重讀即時排名</button></sc-if>
+                </div>
+                <sc-if value="{{ carSeiEmpty }}">
+                  <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">尚未設定色段監控。<br>管理員可以在 Discord 用 /色段 監控 新增要追蹤的玩家，這裡就會列出他的分數、時速與警報。</div>
+                </sc-if>
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <sc-for list="{{ carSeiPlayers }}" as="p">
+                    <div class="car-card" style="padding:15px 18px 16px;min-width:0;border-color:{{ p.bd }}">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <div style="font-size:16px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ p.name }}</div>
+                        <sc-if value="{{ p.hasRank }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep)">{{ p.rankTxt }}</span></sc-if>
+                        <sc-if value="{{ p.stopped }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,#ee6644 15%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg))">{{ p.stopTxt }}</span></sc-if>
+                        <sc-if value="{{ p.off }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-3)">停用</span></sc-if>
+                        <sc-if value="{{ p.modeTxt }}"><span style="font-size:11.5px;color:var(--text-3)">{{ p.modeTxt }}</span></sc-if>
+                        <sc-if value="{{ p.hasSpark }}"><span title="最近 30 場的單場分數" style="margin-left:auto;display:inline-flex;gap:1px;align-items:flex-end;height:18px"><sc-for list="{{ p.spark }}" as="b"><i style="display:block;width:3px;height:{{ b }}px;border-radius:1px;background:var(--accent);opacity:.8"></i></sc-for></span></sc-if>
+                      </div>
+                      <sc-if value="{{ p.sub }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:2px;overflow-wrap:anywhere">{{ p.sub }}</div></sc-if>
+                      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:12px">
+                        <sc-for list="{{ p.stats }}" as="x">
+                          <div style="background:var(--card-2);border-radius:13px;padding:9px 11px;min-width:0">
+                            <div style="font-size:10.5px;color:var(--text-3);font-weight:700;white-space:nowrap">{{ x.k }}</div>
+                            <div style="font-size:15.5px;font-weight:800;color:{{ x.fg }};font-family:'M PLUS Rounded 1c';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.v }}</div>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ p.hasNb }}">
+                        <div style="margin-top:12px;font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--text-3)">周邊排名</div>
+                        <div style="overflow-x:auto;margin-top:6px;border:1px solid var(--border);border-radius:14px">
+                          <div style="min-width:300px">
+                            <div style="display:grid;grid-template-columns:40px minmax(0,1fr) 62px 56px 62px;gap:6px;padding:7px 12px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3)"><span>名次</span><span>玩家</span><span style="text-align:right">分數</span><span style="text-align:right">1h</span><span style="text-align:right">分差</span></div>
+                            <sc-for list="{{ p.nb }}" as="n">
+                              <div style="display:grid;grid-template-columns:40px minmax(0,1fr) 62px 56px 62px;gap:6px;padding:7px 12px;border-top:1px solid var(--border);background:{{ n.bg }};font-size:12.5px;align-items:center">
+                                <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ n.rank }}</span>
+                                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:{{ n.fw }}">{{ n.name }}<sc-if value="{{ n.me }}"><span style="margin-left:6px;font-size:11px;font-weight:800;color:var(--accent-deep)">監控中</span></sc-if></span>
+                                <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2);white-space:nowrap">{{ n.score }}</span>
+                                <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2);white-space:nowrap">{{ n.s1h }}</span>
+                                <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ n.dfg }};white-space:nowrap">{{ n.diff }}</span>
+                              </div>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">{{ p.foot }}</div>
+                      <sc-if value="{{ p.hasAlert }}">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px">
+                          <span style="font-size:11.5px;color:var(--text-2);font-weight:800">已觸發警報</span>
+                          <sc-for list="{{ p.alerts }}" as="a"><span class="car-tag" style="cursor:default;background:{{ a.bg }};color:{{ a.fg }}">{{ a.n }}</span></sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                        <button type="button" class="car-btn" onClick="{{ onCarSeiOpen }}" data-pid="{{ p.pid }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">完整紀錄</button>
+                        <sc-if value="{{ p.admin }}">
+                          <button type="button" class="car-btn" onClick="{{ onCarSeiToggle }}" data-pid="{{ p.pid }}">{{ p.togTxt }}</button>
+                          <button type="button" class="car-btn" onClick="{{ onCarSeiCfg }}" data-pid="{{ p.pid }}" aria-expanded="{{ p.cfgOpen }}">{{ p.cfgTxt }}</button>
+                          <button type="button" class="car-btn" onClick="{{ onCarSeiClear }}" data-pid="{{ p.pid }}">重置警報</button>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ p.cfgOpen }}">
+                        <div style="margin-top:12px;padding:14px;border-radius:16px;background:var(--card-2)">
+                          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px">
+                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">暱稱（留空＝遊戲名稱）</span><input class="car-in" type="text" maxlength="32" value="{{ p.fNick }}" placeholder="{{ p.fNickPh }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="nick" style="background:var(--card)"></label>
+                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">判定門檻（單場分數）</span><input class="car-in" type="text" inputmode="numeric" maxlength="10" value="{{ p.fThresh }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="thresh" style="background:var(--card)"></label>
+                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">手感門檻（%）</span><input class="car-in" type="text" inputmode="decimal" maxlength="6" value="{{ p.fRatio }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="ratio" style="background:var(--card)"></label>
+                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">手感觀察時數（1～24）</span><input class="car-in" type="text" inputmode="numeric" maxlength="2" value="{{ p.fHours }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="hours" style="background:var(--card)"></label>
+                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">斷 auto 觸發（分鐘）</span><input class="car-in" type="text" inputmode="numeric" maxlength="2" value="{{ p.fTrig }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="trig" style="background:var(--card)"></label>
+                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">斷 auto 重複（分鐘）</span><input class="car-in" type="text" inputmode="numeric" maxlength="2" value="{{ p.fRep }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="rep" style="background:var(--card)"></label>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin-top:12px">
+                            <span style="font-size:11.5px;font-weight:800;color:var(--text-2)">狀態不佳警報</span>
+                            <div class="car-seg" role="group" aria-label="私訊玩家">
+                              <sc-for list="{{ p.dmSeg }}" as="o"><button type="button" onClick="{{ onCarSeiBool }}" data-k="{{ o.k }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};padding:6px 13px;font-size:12.5px">{{ o.n }}</button></sc-for>
+                            </div>
+                            <div class="car-seg" role="group" aria-label="頻道公開">
+                              <sc-for list="{{ p.pubSeg }}" as="o"><button type="button" onClick="{{ onCarSeiBool }}" data-k="{{ o.k }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};padding:6px 13px;font-size:12.5px">{{ o.n }}</button></sc-for>
+                            </div>
+                          </div>
+                          <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:10px">判定門檻：單場分數達到門檻算多人場，低於算 Auto。手感門檻：近幾小時內單場低於最佳的這個百分比就發「狀態不佳」警報。斷 auto：連續幾分鐘沒上分就提醒，重複填 0＝只提醒一次；提醒本身要先在 Discord 用 /色段 斷auto設定 開啟。{{ p.dmNote }}</div>
+                          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                            <button type="button" class="car-btn" onClick="{{ onCarSeiSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ p.saveBtn }}</button>
+                            <button type="button" class="car-btn" onClick="{{ onCarSeiCfg }}" data-pid="{{ p.pid }}" style="background:var(--card)">取消</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <!-- 色段監控：單一玩家完整紀錄 -->
+            <sc-if value="{{ carSeiDetail }}">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                <button type="button" class="car-btn" onClick="{{ onCarSeiBack }}" style="background:var(--card)">← 返回列表</button>
+                <div style="font-size:16px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ carSdName }}</div>
+                <sc-if value="{{ carSdHasRank }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep)">{{ carSdRank }}</span></sc-if>
+              </div>
+              <sc-if value="{{ carSdLoading }}"><div class="car-card skel" style="height:320px"></div></sc-if>
+              <sc-if value="{{ carSdErr }}">
+                <div class="car-card" style="padding:20px;font-size:12.5px;color:var(--text-2);line-height:1.8">完整紀錄讀不到：{{ carSdErr }}<br><button type="button" onClick="{{ onCarSdRetry }}" class="car-btn" style="margin-top:10px">重試</button></div>
+              </sc-if>
+              <sc-if value="{{ carSdReady }}">
+                <div class="car-card" style="padding:15px 18px 16px;margin-bottom:14px">
+                  <sc-if value="{{ carSdSub }}"><div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px;overflow-wrap:anywhere">{{ carSdSub }}</div></sc-if>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px">
+                    <sc-for list="{{ carSdStats }}" as="x">
+                      <div style="background:var(--card-2);border-radius:13px;padding:9px 11px;min-width:0">
+                        <div style="font-size:10.5px;color:var(--text-3);font-weight:700;white-space:nowrap">{{ x.k }}</div>
+                        <div style="font-size:15.5px;font-weight:800;color:{{ x.fg }};font-family:'M PLUS Rounded 1c';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.v }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ carSdHasHourly }}">
+                    <div style="margin-top:14px;font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--text-3)">24 小時分佈</div>
+                    <div role="img" aria-label="{{ carSdHourNote }}" style="display:flex;gap:3px;align-items:flex-end;height:64px;margin-top:8px">
+                      <sc-for list="{{ carSdHours }}" as="b"><div title="{{ b.t }}" style="flex:1;min-width:0;height:{{ b.px }}px;opacity:{{ b.op }};border-radius:4px 4px 1px 1px;background:linear-gradient(180deg,var(--accent),color-mix(in oklab,var(--accent) 40%,var(--card)))"></div></sc-for>
+                    </div>
+                    <div aria-hidden="true" style="display:flex;gap:3px;margin-top:4px">
+                      <sc-for list="{{ carSdHours }}" as="b"><div style="flex:1;min-width:0;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ b.lb }}</div></sc-for>
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">{{ carSdHourNote }}</div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ carSdHasNb }}">
+                  <div class="car-card" style="padding:15px 18px 16px;margin-bottom:14px">
+                    <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:10px">周邊排名</div>
+                    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:14px">
+                      <div style="min-width:300px">
+                        <div style="display:grid;grid-template-columns:40px minmax(0,1fr) 62px 56px 62px;gap:6px;padding:7px 12px;background:var(--card-2);font-size:11px;font-weight:800;color:var(--text-3)"><span>名次</span><span>玩家</span><span style="text-align:right">分數</span><span style="text-align:right">1h</span><span style="text-align:right">分差</span></div>
+                        <sc-for list="{{ carSdNb }}" as="n">
+                          <div style="display:grid;grid-template-columns:40px minmax(0,1fr) 62px 56px 62px;gap:6px;padding:7px 12px;border-top:1px solid var(--border);background:{{ n.bg }};font-size:12.5px;align-items:center">
+                            <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ n.rank }}</span>
+                            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:{{ n.fw }}">{{ n.name }}<sc-if value="{{ n.me }}"><span style="margin-left:6px;font-size:11px;font-weight:800;color:var(--accent-deep)">監控中</span></sc-if></span>
+                            <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2);white-space:nowrap">{{ n.score }}</span>
+                            <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2);white-space:nowrap">{{ n.s1h }}</span>
+                            <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ n.dfg }};white-space:nowrap">{{ n.diff }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+                <div class="car-card" style="overflow:hidden">
+                  <div style="padding:15px 18px 10px;font-size:15px;font-weight:800;color:var(--ink)">{{ carSdRoundsTitle }}</div>
+                  <sc-if value="{{ carSdNoRounds }}"><div style="padding:14px 18px 22px;text-align:center;font-size:13px;color:var(--text-3)">還沒有上分紀錄</div></sc-if>
+                  <sc-if value="{{ carSdHasRounds }}">
+                    <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) 52px;gap:8px;padding:8px 18px;background:var(--card-2);font-size:11px;font-weight:800;letter-spacing:1px;color:var(--text-3)"><span>時間</span><span style="text-align:right">分數</span><span style="text-align:right">單場</span><span style="text-align:right">間隔</span></div>
+                    <sc-for list="{{ carSdRounds }}" as="r">
+                      <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) 52px;gap:8px;padding:7px 18px;border-top:1px solid var(--border);font-size:12.5px;align-items:center">
+                        <span style="color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.t }}</span>
+                        <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2);white-space:nowrap">{{ r.score }}</span>
+                        <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ r.dfg }};white-space:nowrap">{{ r.diff }}</span>
+                        <span style="text-align:right;font-family:'M PLUS Rounded 1c';color:var(--text-2);white-space:nowrap">{{ r.gap }}</span>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                  <sc-if value="{{ carSdMore }}"><div style="padding:12px 18px 16px;border-top:1px solid var(--border);text-align:center"><button type="button" class="car-btn" onClick="{{ onCarSdMore }}">{{ carSdMoreBtn }}</button></div></sc-if>
+                </div>
+              </sc-if>
+            </sc-if>
+          </sc-if>
 
         </div>
       </sc-if>
@@ -5999,7 +6308,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=44c6fc19a3"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=834682bb69"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

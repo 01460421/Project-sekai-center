@@ -3086,6 +3086,441 @@ class Component extends DCLogic {
   /* ---------- end @@SEC-B@@ ---------- */
 
   /* @@SEC-C@@ stats（統計：缺額分析、歷史班表、色段監控與完整紀錄）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+  /* 統計分頁裡再分三塊（state.carStView）：
+       insight 缺額分析（每車）GET /insight            → 未來 7 天填充率、缺額時段（缺 S6、候補可補）、出勤排行；停在這頁每 20 秒自動更新
+       hist    歷史班表（每車，唯讀）GET /history?dates=1 → 日期索引（含封存期數）；GET /history?date= → 那天的班表
+       seidan  色段監控（整個車隊）GET /seidan           → 先 live=0 秒回，再抓即時排名（機器人要等 HiSekai 最多 15 秒）；停在這頁每 60 秒更新
+               完整紀錄 GET /seidan/detail?pid=&limit=&offset=；管理員 POST /seidan {pid, action: toggle|field|clear_alerts}
+     玩家名、暱稱、活動名、周邊玩家名都是外部字串：只走 {{ }}；pid／player_id 一律當字串（19 位數會失去精度）。 */
+  CAR_ST_VIEWS = [['insight', '缺額分析'], ['hist', '歷史班表'], ['seidan', '色段監控']];
+  CAR_SEI_ALERTS = [['alerted_stale', 'Auto 停止'], ['alerted_slow', '多人周回偏低'], ['alerted_doosen', '豆森偵測'], ['alerted_pt', 'Pt 異常'], ['alerted_poor_form', '狀態不佳']];
+  CAR_SEI_MODES = { auto: 'Auto', multi: '多人', unknown: '偵測中', single: '單人' };
+  carStView() { const v = this.state.carStView; return this.CAR_ST_VIEWS.some(x => x[0] === v) ? v : 'insight'; }
+  carSeiCur() { const d = this.state.carSeiDet; return d && d.pid && String(d.g) === String(this.state.g || '') ? d : null; }
+  carSec_stats(force) {
+    if (!this._carStT) this._carStT = setInterval(() => this.carStTick(), 10000);
+    const v = this.carStView();
+    if (v === 'hist') return this.carStHistLoad(force);
+    if (v === 'seidan') return this.carStSeiLoad(force);
+    return this.carSecFetch(this.carSecKey('insight', true), '/insight', {}, force);
+  }
+  /* 背景更新：只在「車隊頁 → 統計」而且分頁在前景時；失敗就安靜跳過（不把畫面換成錯誤卡） */
+  carStTick() {
+    const s = this.state;
+    if (s.page !== 'car' || s.carTab !== 'stats' || (typeof document !== 'undefined' && document.hidden) || !this.carGuild()) return;
+    const v = this.carStView(), now = Date.now();
+    if (v === 'insight') {
+      const key = this.carSecKey('insight', true), cur = this.carSecOf(key);
+      if (!cur || cur.busy || !cur.data || now - (cur.at || 0) < 20000) return;
+      const g0 = String(s.g || '');
+      this.carSecPut(key, { at: now });
+      this.carApi('/insight', {}).then(d => { if (String(this.state.g || '') === g0 && d) this.carSecPut(key, { data: d, err: '', at: Date.now() }); }, () => {});
+    } else if (v === 'seidan' && !this.carSeiCur() && !s.carSeiCfg) {
+      const cur = this.carSecOf(this.carSecKey('seidan'));
+      if (cur && cur.data && !cur.busy && cur.live !== 'busy' && now - (cur.at || 0) >= 60000) this.carStSeiLoad(true);
+    }
+  }
+  carStHistPick(idx) {
+    const list = idx && Array.isArray(idx.dates) ? idx.dates.filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date))) : [];
+    const want = String(this.state.carHistDate || ''), today = String((idx && idx.today) || '');
+    if (want && list.some(x => x.date === want)) return want;
+    if (today && list.some(x => x.date === today)) return today;
+    return list[0] ? String(list[0].date) : '';
+  }
+  async carStHistLoad(force) {
+    const ik = this.carSecKey('histidx', true);
+    const got = await this.carSecFetch(ik, '/history', { query: { dates: '1' } }, force);
+    const idx = got || (this.carSecOf(ik) || {}).data;
+    const date = idx ? this.carStHistPick(idx) : '';
+    if (date) return this.carStHistDay(date, force);
+    return null;
+  }
+  carStHistDay(date, force) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return null;
+    return this.carSecFetch(this.carSecKey('histday', true) + ':' + date, '/history', { query: { date } }, force);
+  }
+  /* 色段總覽：第一次先 live=0（馬上有畫面），再補即時排名；已經有資料時（重新整理、背景更新）只抓即時版 */
+  async carStSeiLoad(force) {
+    const det = this.carSeiCur();
+    if (det) return this.carStSeiDetail(det.pid, force);
+    const key = this.carSecKey('seidan'), cur = this.carSecOf(key), g0 = String(this.state.g || '');
+    if (cur && (cur.busy || cur.live === 'busy')) return null;
+    if (cur && cur.data && !force && Date.now() - (cur.at || 0) < 15000) return null;
+    if (!cur || !cur.data) {
+      const quick = await this.carSecFetch(key, '/seidan', { query: { live: '0' } }, true);
+      if (!quick || !Array.isArray(quick.players) || !quick.players.length || String(this.state.g || '') !== g0) return null;
+    }
+    this.carSecPut(key, { live: 'busy' });
+    try {
+      const d = await this.carApi('/seidan', { gid: g0 });
+      if (String(this.state.g || '') !== g0) return null;
+      this.carSecPut(key, { data: d, err: '', live: d && d.live_ok ? 'ok' : 'off', at: Date.now() });
+    } catch (e) {
+      if (String(this.state.g || '') === g0) this.carSecPut(key, { live: 'fail', at: Date.now() });
+    }
+    return null;
+  }
+  carStSeiDetail(pid, force) {
+    return this.carSecFetch(this.carSecKey('seidet') + ':' + pid, '/seidan/detail', { query: { pid: String(pid), limit: '60' } }, force);
+  }
+  async carStSeiMore(pid) {
+    const key = this.carSecKey('seidet') + ':' + pid, cur = this.carSecOf(key), d0 = cur && cur.data;
+    if (!d0 || cur.more || cur.busy) return;
+    const have = Array.isArray(d0.rounds) ? d0.rounds : [], g0 = String(this.state.g || '');
+    this.carSecPut(key, { more: true });
+    try {
+      const d = await this.carApi('/seidan/detail', { query: { pid: String(pid), limit: '100', offset: String(have.length) } });
+      if (String(this.state.g || '') !== g0) return;
+      const seen = {}; have.forEach(r => { seen[String(r && r.time)] = 1; });      // 兩次之間又上分，位移會重疊：用時間去重
+      const add = (Array.isArray(d.rounds) ? d.rounds : []).filter(r => r && !seen[String(r.time)]);
+      this.carSecPut(key, { more: false, data: Object.assign({}, d0, { rounds: have.concat(add), total_rounds: d.total_rounds != null ? d.total_rounds : d0.total_rounds }) });
+    } catch (e) {
+      this.carSecPut(key, { more: false });
+      this._toast(e.message || '讀取失敗');
+    }
+  }
+  /* 管理員操作成功後，用機器人回的值直接改本地資料（不用再等一次 HiSekai） */
+  carStSeiPatch(pid, patch) {
+    const key = this.carSecKey('seidan'), sec = this.carSecOf(key), d = sec && sec.data;
+    if (!d || !Array.isArray(d.players)) return;
+    const players = d.players.map(p => {
+      if (!p || String(p.pid) !== String(pid)) return p;
+      const q = Object.assign({}, p, patch);
+      if (Object.prototype.hasOwnProperty.call(patch, 'nickname')) q.name = String(patch.nickname || '') || p.player_name || String(p.player_id || p.pid);
+      return q;
+    });
+    this.carSecPut(key, { data: Object.assign({}, d, { players }) });
+  }
+  carStSeiFind(pid) {
+    const sec = this.carSecOf(this.carSecKey('seidan')), d = sec && sec.data;
+    return (d && Array.isArray(d.players) ? d.players : []).find(p => p && String(p.pid) === String(pid)) || null;
+  }
+  async carStSeiToggle(pid) {
+    const p = this.carStSeiFind(pid); if (!p) return;
+    const nm = String(p.name || p.pid);
+    if (p.enabled && !window.confirm('確定停用「' + nm + '」的色段監控？\n\n停用後機器人不再追蹤這位玩家的分數，也不會發出任何警報。之後可以再按「啟用監控」恢復，過去的紀錄會保留。')) return;
+    const d = await this.carAct('/seidan', { pid: String(pid), action: 'toggle' }, r => (r && r.enabled ? '已啟用「' + nm + '」的監控' : '已停用「' + nm + '」的監控'));
+    if (d) this.carStSeiPatch(pid, { enabled: !!d.enabled });
+  }
+  async carStSeiClear(pid) {
+    const p = this.carStSeiFind(pid); if (!p) return;
+    const nm = String(p.name || p.pid);
+    if (!window.confirm('確定重置「' + nm + '」的警報？\n\n已觸發過的警報（例如 Auto 停止、狀態不佳）會清掉重新計算，條件再次成立時機器人會再通知一次。')) return;
+    const d = await this.carAct('/seidan', { pid: String(pid), action: 'clear_alerts' }, '已重置「' + nm + '」的警報');
+    if (d) { const a = {}; this.CAR_SEI_ALERTS.forEach(([k]) => { a[k] = false; }); this.carStSeiPatch(pid, { alerts: a }); }
+  }
+  /* 監控設定表單：開啟時把目前值抄一份成字串，儲存時只送有改的欄位（一次一欄，機器人逐欄驗證） */
+  carStSeiCfgOf(p) {
+    const n = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : String(+v);
+    return { nick: String(p.nickname || ''), thresh: n(p.thresh), ratio: p.poor_form_ratio == null || isNaN(+p.poor_form_ratio) ? '' : String(Math.round(+p.poor_form_ratio * 1000) / 10),
+      hours: n(p.poor_form_hours), trig: n(p.auto_stale_trigger), rep: n(p.auto_stale_repeat), dm: !!p.poor_form_dm, pub: !!p.poor_form_public };
+  }
+  async carStSeiSave() {
+    const cfg = this.state.carSeiCfg;
+    if (!cfg || String(cfg.g) !== String(this.state.g || '')) return;
+    const p = this.carStSeiFind(cfg.pid);
+    if (!p) { this._toast('找不到這位玩家，請重新整理'); return; }
+    const f = cfg.f || {}, o = this.carStSeiCfgOf(p), ch = [];
+    const int = (k, key, lo, hi, label) => {
+      const v = String(f[k] == null ? '' : f[k]).trim();
+      if (v === o[k]) return true;
+      if (!/^\d+$/.test(v) || +v < lo || +v > hi) { this._toast(label + '要是 ' + lo + '～' + hi + ' 的整數'); return false; }
+      ch.push([key, +v]); return true;
+    };
+    if (!int('thresh', 'thresh', 0, 999999999, '判定門檻')) return;
+    const rv = String(f.ratio == null ? '' : f.ratio).trim();
+    if (rv !== o.ratio) {
+      if (!/^\d+(\.\d+)?$/.test(rv) || +rv < 1 || +rv > 200) { this._toast('手感門檻要是 1～200 的百分比'); return; }
+      ch.push(['poor_form_ratio', Math.round(+rv * 10) / 1000]);
+    }
+    if (!int('hours', 'poor_form_hours', 1, 24, '手感觀察時數')) return;
+    if (!int('trig', 'auto_stale_trigger', 1, 60, '斷 auto 觸發分鐘')) return;
+    if (!int('rep', 'auto_stale_repeat', 0, 60, '斷 auto 重複分鐘')) return;
+    const nk = String(f.nick == null ? '' : f.nick).trim().slice(0, 32);
+    if (nk !== o.nick) ch.push(['nickname', nk]);
+    if (!!f.dm !== o.dm) ch.push(['poor_form_dm', !!f.dm]);
+    if (!!f.pub !== o.pub) ch.push(['poor_form_public', !!f.pub]);
+    if (!ch.length) { this._toast('沒有要變更的設定'); return; }
+    let n = 0;
+    for (const [key, value] of ch) {
+      const d = await this.carAct('/seidan', { pid: String(p.pid), action: 'field', key, value }, null);
+      if (!d) break;                                  // 錯誤已由 carAct 浮出；表單留著讓使用者修正
+      n++;
+      this.carStSeiPatch(p.pid, { [String(d.key || key)]: d.value !== undefined ? d.value : value });
+    }
+    if (n === ch.length) { this._toast('已儲存 ' + n + ' 項設定'); this.setState({ carSeiCfg: null }); }
+  }
+  /* 數字：億／萬（跟舊控制台一樣），負數保留正負號 */
+  carStN(v) {
+    const n = +v || 0, a = Math.abs(n), sg = n < 0 ? '-' : '';
+    return sg + (a >= 1e8 ? (a / 1e8).toFixed(2) + '億' : a >= 1e4 ? (a / 1e4).toFixed(1) + '萬' : String(Math.round(a)));
+  }
+  carStIdle(s) {
+    if (s === null || s === undefined || s === '' || isNaN(+s)) return '—';
+    s = Math.max(0, Math.floor(+s));
+    return s < 60 ? s + '秒' : s < 3600 ? Math.floor(s / 60) + '分' : Math.floor(s / 3600) + '時' + Math.floor(s % 3600 / 60) + '分';
+  }
+  /* 機器人的時間是 isoformat 字串：只切字串，不丟給 Date（Safari 不吃空白分隔的日期時間） */
+  carStTime(v, sec) { const t = String(v || '').replace('T', ' '); return t.length >= 16 ? t.slice(5, sec ? 19 : 16) : (t || '—'); }
+  carSecVals_stats(c) {
+    const s = c.s, view = this.carStView(), cars = this.carCars(c.gd);
+    const ins = this.carSecOf(this.carSecKey('insight', true));
+    const lackN = ins && ins.data && Array.isArray(ins.data.shortage) ? ins.data.shortage.length : 0;
+    const out = {
+      carStViews: this.CAR_ST_VIEWS.map(([v, n]) => Object.assign({ v, n, sel: v === view ? 'true' : 'false', badge: v === 'insight' && lackN ? String(lackN) : '',
+        bfg: v === view ? 'color-mix(in oklab,#d64533 55%,var(--car-fg))' : 'var(--text-3)' }, c.segOn(v === view))),
+      carStCarSeg: view !== 'seidan' && cars.length > 1,
+      carStIsIns: view === 'insight', carStIsHist: view === 'hist', carStIsSei: view === 'seidan',
+      onCarStView: e => {
+        const v = String(e.currentTarget.dataset.v || '');
+        if (!this.CAR_ST_VIEWS.some(x => x[0] === v)) return;
+        this.setState({ carStView: v, carSeiDet: null, carSeiCfg: null });
+        setTimeout(() => this.carSec_stats(false), 0);
+      },
+      onCarStRetry: () => this.carSec_stats(true),
+    };
+    const carName = (cars.find(x => x.no === c.carNo) || {}).name || this.CAR_NAMES[c.carNo] || '';
+    if (view === 'insight') return Object.assign(out, this.carStInsVals(ins, carName));
+    if (view === 'hist') return Object.assign(out, this.carStHistVals(carName));
+    return Object.assign(out, this.carSeiCur() ? this.carStSdVals(c) : this.carStSeiVals(c));
+  }
+  carStInsVals(sec, carName) {
+    const d = sec && sec.data && typeof sec.data === 'object' ? sec.data : null;
+    const tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))';
+    const total = d ? Math.max(0, +d.total_slots || 0) : 0, filled = d ? Math.max(0, +d.filled || 0) : 0, rate = d ? Math.max(0, Math.min(100, +d.rate || 0)) : 0;
+    const tone = rate >= 80 ? '#2f9e57' : rate >= 50 ? '#d99a1e' : '#d64533';
+    const nDays = d && Array.isArray(d.dates) ? d.dates.length : 0;
+    const lack = d && Array.isArray(d.shortage) ? d.shortage.filter(x => x && typeof x === 'object') : [];
+    const rank = d && Array.isArray(d.rank) ? d.rank.filter(x => x && typeof x === 'object') : [];
+    const today = String((((this.state.carStates || {})[this.carNo()] || {}).today) || '');
+    const groups = [];
+    lack.forEach(x => {
+      const date = String(x.date || ''), wl = (Array.isArray(x.waitlist) ? x.waitlist : []).map(v => String(v == null ? '' : v)).filter(Boolean);
+      let g = groups[groups.length - 1];
+      if (!g || g.date !== date) groups.push(g = { date, day: this.carDayLabel(date, today, false), rows: [] });
+      const lk = (Array.isArray(x.lack) ? x.lack : []).map(v => String(v)).filter(Boolean);
+      g.rows.push({ d: date, slot: this.carSlot(x.hour), lackTxt: lk.length ? '缺 ' + lk.join('、') : '缺人', noS6: !!x.no_s6,
+        wl: wl.length ? '候補 ' + wl.join('、') : '沒有候補', wlFg: wl.length ? 'var(--text-2)' : 'var(--text-3)' });
+    });
+    const top = rank.reduce((a, x) => Math.max(a, +x.count || 0), 0) || 1;
+    return {
+      carInsLoading: !d && !(sec && sec.err), carInsErr: !d && sec && sec.err ? String(sec.err) : '', carInsReady: !!d,
+      carInsSub: carName + ' · ' + (nDays ? '統計今天起 ' + nDays + ' 天的班表' : '今天起 7 天內還沒有班表'),
+      carInsStats: [
+        { k: '總位置', v: String(total), fg: 'var(--ink)' },
+        { k: '已排', v: String(filled), fg: filled ? tfg('#2f9e57') : 'var(--ink)' },
+        { k: '缺額', v: String(Math.max(0, total - filled)), fg: total - filled > 0 ? tfg('#d64533') : 'var(--ink)' },
+        { k: '填充率', v: total ? rate + '%' : '—', fg: total ? tfg(tone) : 'var(--text-3)' },
+      ],
+      carInsBarW: (total ? rate : 0) + '%', carInsBarBg: tone,
+      carInsLackCnt: lack.length ? lack.length + ' 個時段' : '', carInsGroups: groups, carInsHasLack: lack.length > 0,
+      carInsNoLack: !lack.length, carInsNoLackTxt: total ? '未來 7 天沒有缺額' : '未來 7 天還沒有開班的時段',
+      carInsRank: rank.map((x, i) => ({ i: String(i + 1), name: String(x.name == null ? '' : x.name), n: (+x.count || 0) + ' 班', w: Math.round((+x.count || 0) / top * 100) + '%' })),
+      carInsHasRank: rank.length > 0, carInsNoRank: !rank.length,
+      onCarInsGo: e => {
+        const v = String(e.currentTarget.dataset.d || '');
+        this.setState({ carTab: 'sched', carDate: v, carPop: null, carTagMgr: false });
+        setTimeout(() => this.carLoadSec('sched'), 0);
+        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
+      },
+    };
+  }
+  carStHistVals(carName) {
+    const idx = this.carSecOf(this.carSecKey('histidx', true)), d = idx && idx.data;
+    const list = d && Array.isArray(d.dates) ? d.dates.filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date))) : [];
+    const today = String((d && d.today) || ''), sel = d ? this.carStHistPick(d) : '';
+    const day = sel ? this.carSecOf(this.carSecKey('histday', true) + ':' + sel) : null, dd = day && day.data;
+    const fmt = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : (+v).toFixed(2);
+    const rows = (dd && Array.isArray(dd.rows) ? dd.rows : []).filter(r => r && typeof r === 'object').map(r => {
+      const cells = ['p2', 'p3', 'p4', 'p5'].map(pos => {
+        const se = (Array.isArray(r.seats) ? r.seats : []).find(x => x && x.pos === pos) || {};
+        const has = se.name != null && String(se.name) !== '';
+        return { P: pos.toUpperCase(), has, empty: !has, name: has ? String(se.name) : '', s6: se.role === 's6', bonus: fmt(se.bonus) };
+      });
+      const wl = (Array.isArray(r.waitlist) ? r.waitlist : []).filter(v => v != null && v !== '').map(String);
+      const note = [];
+      if (wl.length) note.push('候補 ' + wl.join('、'));
+      if (+r.applicants) note.push('報班 ' + (+r.applicants));
+      return { slot: this.carSlot(r.hour), ctype: String(r.car_type || ''), locked: !!r.locked, manual: !!r.manual, cells, note: note.join(' · ') || '—' };
+    });
+    let src = '';
+    if (dd) {
+      const sv = String(dd.src || '');
+      src = '資料來源：' + (sv.indexOf('archive') === 0 ? '期數封存' + (sv.split(':')[1] ? ' ' + sv.split(':')[1] : '') : sv === 'live' ? '即時班表' : sv === 'none' ? '無資料' : sv)
+        + (dd.past ? '（過去日期，唯讀）' : '');
+    }
+    return {
+      carHistLoading: !d && !(idx && idx.err), carHistErr: !d && idx && idx.err ? String(idx.err) : '',
+      carHistNone: !!d && !list.length, carHistReady: !!d && list.length > 0,
+      carHistOpts: list.map(x => ({ v: String(x.date), n: String(x.date) + (x.date === today ? '（今天）' : (x.past ? '' : '（未來）')) + ' · ' + (+x.hours || 0) + ' 時段' + (x.src === 'archive' ? ' · 封存' : '') })),
+      carHistSel: sel, carHistCnt: list.length ? '共 ' + list.length + ' 天' + (d.oldest ? ' · 最早 ' + String(d.oldest) : '') : '',
+      carHistDayLoading: !!sel && !dd && !(day && day.err), carHistDayErr: !dd && day && day.err ? String(day.err) : '',
+      carHistSrc: src, carHistTitle: carName + ' · ' + (sel ? this.carDayLabel(sel, today, false) : ''),
+      carHistShow: !!dd, carHistRows: rows, carHistHasRows: rows.length > 0, carHistNoRows: !!dd && !rows.length,
+      carHistEmptyTxt: dd && dd.note ? String(dd.note) : '這天沒有已開班的時段',
+      onCarHistDate: e => {
+        const v = String(e.currentTarget.value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+        this.setState({ carHistDate: v });
+        setTimeout(() => this.carStHistDay(v, false), 0);
+      },
+      onCarHistStep: e => {
+        const i = list.findIndex(x => x.date === sel) + (+e.currentTarget.dataset.v || 0), x = list[i];
+        if (!x) return;
+        this.setState({ carHistDate: String(x.date) });
+        setTimeout(() => this.carStHistDay(String(x.date), false), 0);
+      },
+      carHistOlderOk: list.findIndex(x => x.date === sel) < list.length - 1, carHistNewerOk: list.findIndex(x => x.date === sel) > 0,
+    };
+  }
+  /* 色段卡片共用：統計格、周邊排名、24 小時分佈 */
+  carStSeiNb(nb) {
+    const tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))';
+    return (Array.isArray(nb) ? nb : []).filter(n => n && typeof n === 'object').map(n => {
+      const df = +n.diff || 0;
+      return { rank: String(+n.rank || '—'), name: String(n.name == null ? '' : n.name), score: this.carStN(n.score), s1h: this.carStN(n.speed_1h),
+        diff: n.me ? '—' : (df > 0 ? '+' : '') + this.carStN(df), dfg: n.me || !df ? 'var(--text-3)' : df > 0 ? tfg('#d64533') : tfg('#2f9e57'),
+        me: !!n.me, bg: n.me ? 'color-mix(in oklab,var(--accent) 11%,transparent)' : 'transparent', fw: n.me ? '800' : '700' };
+    });
+  }
+  carStSeiVals(c) {
+    const key = this.carSecKey('seidan'), sec = this.carSecOf(key), d = sec && sec.data && typeof sec.data === 'object' ? sec.data : null;
+    const tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))', tbg = h => 'color-mix(in oklab,' + h + ' 15%,var(--card))';
+    const ps = d && Array.isArray(d.players) ? d.players.filter(p => p && typeof p === 'object' && p.pid != null) : [];
+    const cfg = c.s.carSeiCfg && String(c.s.carSeiCfg.g) === String(c.s.g || '') ? c.s.carSeiCfg : null;
+    const live = sec && sec.live;
+    let lt = '', lbg = 'var(--card-2)', lfg = 'var(--text-3)';
+    if (ps.length) {
+      if (live === 'busy') lt = '即時排名讀取中…';
+      else if (live === 'ok' || (d && d.live_ok)) { lt = '即時'; lbg = tbg('#2f9e57'); lfg = tfg('#2f9e57'); }
+      else if (live === 'fail') { lt = '即時排名讀取失敗'; lbg = tbg('#ee6644'); lfg = tfg('#ee6644'); }
+      else lt = '離線（讀不到即時排名）';
+    }
+    const players = ps.map(p => {
+      const lv = p.live && typeof p.live === 'object' ? p.live : null, pid = String(p.pid);
+      const tr = (Array.isArray(p.trend) ? p.trend : []).map(v => +v || 0), mx = Math.max.apply(null, tr.concat([1]));
+      const al = p.alerts && typeof p.alerts === 'object' ? p.alerts : {};
+      const alerts = this.CAR_SEI_ALERTS.filter(([k]) => al[k]).map(([, n]) => n);
+      const open = !!(cfg && cfg.pid === pid && c.admin);
+      const stats = [
+        { k: '總分', v: this.carStN(lv ? lv.score : p.last_score), fg: 'var(--ink)' },
+        { k: '1h 時速', v: this.carStN(lv ? lv.speed_1h : p.speed_log_1h), fg: 'var(--accent-deep)' },
+        { k: '場均（10）', v: this.carStN(p.avg10), fg: 'var(--ink)' },
+        { k: '最佳', v: this.carStN(p.best), fg: tfg('#2f9e57') },
+        { k: '峰值', v: this.carStN(p.peak_round_ep), fg: 'var(--ink)' },
+        { k: '場數', v: String(+p.rounds || 0), fg: 'var(--ink)' },
+        { k: '間隔', v: +p.gap_avg ? (+p.gap_avg) + 's' : '—', fg: 'var(--ink)' },
+        { k: '閒置', v: this.carStIdle(p.idle), fg: p.stopped ? tfg('#d64533') : 'var(--ink)' },
+      ];
+      if (lv) stats.push({ k: '3h 時速', v: this.carStN(lv.speed_3h), fg: 'var(--ink)' }, { k: '24h 時速', v: this.carStN(lv.speed_24h), fg: 'var(--ink)' }, { k: '近 1h 場數', v: String(+lv.count_1h || 0), fg: 'var(--ink)' });
+      const nb = lv ? this.carStSeiNb(lv.neighbors) : [];
+      const ratio = +p.poor_form_ratio || 0;
+      const f = open ? (cfg.f || {}) : {};
+      return {
+        pid, name: String(p.name == null ? pid : p.name), sub: p.nickname && p.player_name ? '遊戲名稱 ' + String(p.player_name) : '',
+        hasRank: !!(lv && lv.rank), rankTxt: lv && lv.rank ? '第 ' + (+lv.rank) + ' 名' : '',
+        stopped: !!p.stopped, stopTxt: '停車 ' + this.carStIdle(p.idle), off: !p.enabled,
+        modeTxt: p.mode ? '模式 ' + (this.CAR_SEI_MODES[p.mode] || String(p.mode)) : '',
+        spark: tr.map(v => Math.max(2, Math.round(Math.max(0, v) / mx * 18))), hasSpark: tr.length > 0,
+        stats, hasNb: nb.length > 0, nb,
+        foot: ['門檻 ' + this.carStN(p.thresh), '視窗 ' + (+p.window_rounds || 0) + ' 場', '手感 近 ' + (+p.poor_form_hours || 0) + ' 小時低於 ' + Math.round(ratio * 100) + '%',
+          '快照 ' + (+p.snapshots || 0), '最後上分 ' + this.carStTime(p.last_time, false)].join(' · '),
+        hasAlert: alerts.length > 0, alerts: alerts.map(n => ({ n, bg: tbg('#ee6644'), fg: tfg('#ee6644') })),
+        admin: !!c.admin, togTxt: p.enabled ? '停用監控' : '啟用監控', cfgTxt: open ? '收起設定' : '監控設定',
+        cfgOpen: open, bd: open ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
+        fNick: String(f.nick == null ? '' : f.nick), fThresh: String(f.thresh == null ? '' : f.thresh), fRatio: String(f.ratio == null ? '' : f.ratio),
+        fHours: String(f.hours == null ? '' : f.hours), fTrig: String(f.trig == null ? '' : f.trig), fRep: String(f.rep == null ? '' : f.rep),
+        fNickPh: String(p.player_name || p.player_id || pid),
+        dmSeg: [['1', '私訊'], ['0', '不私訊']].map(([v, n]) => Object.assign({ k: 'dm', v, n }, c.segOn((v === '1') === !!f.dm))),
+        pubSeg: [['1', '頻道公開'], ['0', '不公開']].map(([v, n]) => Object.assign({ k: 'pub', v, n }, c.segOn((v === '1') === !!f.pub))),
+        dmNote: p.poor_form_dm_uid ? '私訊對象已設定。' : '還沒指定私訊對象，開了也只會發在頻道；對象要在 Discord 用 /色段 狀態不佳設定 指定。',
+        saveBtn: c.s.carActBusy ? '處理中…' : '儲存變更',
+      };
+    });
+    return {
+      carSeiList: true, carSeiDetail: false,
+      carSeiLoading: !d && !(sec && sec.err), carSeiErr: !d && sec && sec.err ? String(sec.err) : '', carSeiReady: !!d,
+      carSeiEmpty: !!d && !ps.length, carSeiHas: ps.length > 0,
+      carSeiHead: ps.length + ' 位監控中' + (d && d.event ? ' · ' + String(d.event) : ''),
+      carSeiLive: lt, carSeiLiveShow: !!lt, carSeiLiveBg: lbg, carSeiLiveFg: lfg,
+      carSeiLiveRetry: ps.length > 0 && live !== 'busy' && (live === 'fail' || (!!d && !d.live_ok)),
+      onCarSeiLive: () => this.carStSeiLoad(true),
+      carSeiPlayers: players,
+      onCarSeiOpen: e => {
+        const pid = String(e.currentTarget.dataset.pid || ''); if (!pid) return;
+        this.setState({ carSeiDet: { g: String(this.state.g || ''), pid }, carSeiCfg: null });
+        setTimeout(() => this.carStSeiDetail(pid, false), 0);
+        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
+      },
+      onCarSeiToggle: e => this.carStSeiToggle(String(e.currentTarget.dataset.pid || '')),
+      onCarSeiClear: e => this.carStSeiClear(String(e.currentTarget.dataset.pid || '')),
+      onCarSeiCfg: e => {
+        const pid = String(e.currentTarget.dataset.pid || ''), cur = this.state.carSeiCfg;
+        if (cur && cur.pid === pid && String(cur.g) === String(this.state.g || '')) { this.setState({ carSeiCfg: null }); return; }
+        const p = this.carStSeiFind(pid); if (!p) return;
+        this.setState({ carSeiCfg: { g: String(this.state.g || ''), pid, f: this.carStSeiCfgOf(p) } });
+      },
+      onCarSeiIn: e => {
+        const k = String(e.currentTarget.dataset.k || ''), v = String(e.currentTarget.value);
+        if (['nick', 'thresh', 'ratio', 'hours', 'trig', 'rep'].indexOf(k) < 0) return;
+        this.setState(st => st.carSeiCfg ? { carSeiCfg: Object.assign({}, st.carSeiCfg, { f: Object.assign({}, st.carSeiCfg.f, { [k]: v }) }) } : {});
+      },
+      onCarSeiBool: e => {
+        const k = String(e.currentTarget.dataset.k || ''), v = e.currentTarget.dataset.v === '1';
+        if (k !== 'dm' && k !== 'pub') return;
+        this.setState(st => st.carSeiCfg ? { carSeiCfg: Object.assign({}, st.carSeiCfg, { f: Object.assign({}, st.carSeiCfg.f, { [k]: v }) }) } : {});
+      },
+      onCarSeiSave: () => this.carStSeiSave(),
+      onCarSeiKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carStSeiSave(); } },
+    };
+  }
+  /* 單一玩家完整紀錄 */
+  carStSdVals(c) {
+    const det = this.carSeiCur(), pid = det ? String(det.pid) : '';
+    const sec = this.carSecOf(this.carSecKey('seidet') + ':' + pid), d = sec && sec.data && typeof sec.data === 'object' ? sec.data : null;
+    const tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))';
+    const st = d && d.stats && typeof d.stats === 'object' ? d.stats : {}, lv = d && d.live && typeof d.live === 'object' ? d.live : null;
+    const rounds = d && Array.isArray(d.rounds) ? d.rounds.filter(r => r && typeof r === 'object') : [];
+    const total = d ? Math.max(+d.total_rounds || 0, rounds.length) : 0;
+    const hv = {}; (Array.isArray(st.hourly) ? st.hourly : []).forEach(x => { if (x && /^\d{1,2}$/.test(String(x.h))) hv[+x.h] = (hv[+x.h] || 0) + (+x.v || 0); });
+    const hmx = Math.max.apply(null, Object.keys(hv).map(k => hv[k]).concat([1]));
+    const hours = Array.from({ length: 24 }, (_, h) => {
+      const v = hv[h] || 0;
+      return { px: v > 0 ? Math.max(4, Math.round(v / hmx * 64)) : 2, op: v > 0 ? '1' : '.35', t: String(h).padStart(2, '0') + '時 ' + this.carStN(v), lb: h % 3 === 0 ? String(h).padStart(2, '0') : '' };
+    });
+    const best = Object.keys(hv).sort((a, b) => hv[b] - hv[a])[0];
+    const stats = [
+      { k: '總場數', v: String(+st.rounds || 0), fg: 'var(--ink)' },
+      { k: '近 1h', v: String(+st.recent_1h || 0) + ' 場', fg: 'var(--accent-deep)' },
+      { k: '場均（10）', v: this.carStN(st.avg10), fg: 'var(--ink)' },
+      { k: '全場均', v: this.carStN(st.avg_all), fg: 'var(--ink)' },
+      { k: '最佳', v: this.carStN(st.best), fg: tfg('#2f9e57') },
+      { k: '最差', v: this.carStN(st.worst), fg: tfg('#d64533') },
+      { k: '平均間隔', v: +st.gap_avg ? (+st.gap_avg) + 's' : '—', fg: 'var(--ink)' },
+      { k: '快照', v: String(+(d && d.total_snapshots) || 0), fg: 'var(--ink)' },
+    ];
+    if (lv) stats.unshift({ k: '總分', v: this.carStN(lv.score), fg: 'var(--ink)' }, { k: '1h 時速', v: this.carStN(lv.speed_1h), fg: 'var(--accent-deep)' },
+      { k: '3h 時速', v: this.carStN(lv.speed_3h), fg: 'var(--ink)' }, { k: '24h 時速', v: this.carStN(lv.speed_24h), fg: 'var(--ink)' });
+    const nb = lv ? this.carStSeiNb(lv.neighbors) : [];
+    return {
+      carSeiList: false, carSeiDetail: true,
+      carSdLoading: !d && !(sec && sec.err), carSdErr: !d && sec && sec.err ? String(sec.err) : '', carSdReady: !!d,
+      carSdName: d ? String(d.name == null ? pid : d.name) : '', carSdHasRank: !!(lv && lv.rank), carSdRank: lv && lv.rank ? '第 ' + (+lv.rank) + ' 名' : '',
+      carSdSub: [d && d.event ? String(d.event) : '', st.first_time ? '紀錄 ' + this.carStTime(st.first_time, false) + ' 起' : '', st.last_time ? '最後上分 ' + this.carStTime(st.last_time, false) : ''].filter(Boolean).join(' · '),
+      carSdStats: stats,
+      carSdHours: hours, carSdHasHourly: Object.keys(hv).length > 0,
+      carSdHourNote: best !== undefined ? '最近 24 小時上分最多的是 ' + String(best).padStart(2, '0') + ' 時（' + this.carStN(hv[best]) + '）' : '',
+      carSdHasNb: nb.length > 0, carSdNb: nb,
+      carSdRoundsTitle: '上分紀錄（最新 ' + rounds.length + ' / 共 ' + total + '）',
+      carSdRounds: rounds.map(r => ({ t: this.carStTime(r.time, true), score: this.carStN(r.score), diff: this.carStN(r.diff), gap: +r.gap_sec ? (+r.gap_sec) + 's' : '—',
+        dfg: (+r.diff || 0) < 0 ? tfg('#d64533') : 'var(--accent-deep)' })),
+      carSdHasRounds: rounds.length > 0, carSdNoRounds: !!d && !rounds.length,
+      carSdMore: !!d && rounds.length < total, carSdMoreBtn: sec && sec.more ? '讀取中…' : '載入更多（還有 ' + Math.max(0, total - rounds.length) + ' 筆）',
+      onCarSeiBack: () => { this.setState({ carSeiDet: null }); setTimeout(() => this.carStSeiLoad(false), 0); },
+      onCarSdMore: () => this.carStSeiMore(pid),
+      onCarSdRetry: () => this.carStSeiDetail(pid, true),
+    };
+  }
 
 
   /* ---------- end @@SEC-C@@ ---------- */
