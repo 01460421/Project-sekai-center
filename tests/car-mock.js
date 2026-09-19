@@ -591,7 +591,101 @@ export function install(BASE, mode0) {
     }
     /* ---------- end @@MOCK-C@@ ---------- */
     /* @@MOCK-D@@ music */
-
+    /* 照 engine_omega _web_api_status／_web_api_music：/status 成員拿精簡版（member_view），/music 成員只能 search／play（403）、
+       每人最多 3 首排隊（429）；整個車隊共用一份（不分車）。111 正在播＋佇列（含 XSS 探針），222 沒進語音、空佇列。
+       測試用關鍵字：搜尋 fail＝500、none＝0 筆、slow＝一直 pending、slow1＝第一次 pending 第二次有結果；
+       點播網址含 slow（或清單網址含 slow）＝回 pending、2.5 秒後才真的加入；非 YouTube 網址＝解析失敗 500。
+       auto 在機器人還沒進語音但有常駐頻道時回 pending（模擬連語音很久）。 */
+    if (rest === '/status' || rest === '/music') {
+      const MD = (globalThis.__mockD = globalThis.__mockD || { g: {}, titles: {}, slow1: 0 });
+      const GN = { v: 'Vocaloid', a: '動漫曲', c: '中文抒情', e: '英文流行', j: '日文流行' };
+      const guildName = gid === '111' ? '菜根車隊' : '測試車隊';
+      const tr = (title, duration, requester) => ({ title, duration, requester });
+      const S = MD.g[gid] || (MD.g[gid] = gid === '111'
+        ? { online: true, vc: '語音大廳', home: true, mix: false, vol: 100, auto: null, paused: false,
+            now: Object.assign(tr('DECO*27 - ヴァンパイア feat. 初音ミク', 222, '網頁'), { pos0: 64, t0: Date.now() }),
+            queue: [tr('YOASOBI「アイドル」Official Music Video', 214, '小明'), tr('<b>小夫</b> 的 <img src=x onerror=alert(1)> 點歌', 185, '<b>小夫</b>'),
+              tr('Ado - 唱（直播版）', 0, '網頁'), tr('米津玄師 - KICK BACK', 193, '我自己'),
+              tr('一首很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長的歌名', 3725, '阿華')] }
+        : { online: true, vc: '', home: false, mix: false, vol: 80, auto: null, paused: false, now: null, queue: [] });
+      const posOf = () => S.now ? Math.min(S.now.duration || 1e9, Math.floor(S.now.pos0 + (S.paused ? 0 : (Date.now() - S.now.t0) / 1000))) : 0;
+      const next = () => {
+        S.paused = false;
+        if (S.queue.length) S.now = Object.assign(S.queue.shift(), { pos0: 0, t0: Date.now() });
+        else if (S.auto && S.vc) S.now = Object.assign(tr(GN[S.auto] + ' 自動選曲 ' + (Math.random() * 100 | 0), 240, '自動歌單'), { pos0: 0, t0: Date.now() });
+        else S.now = null;
+      };
+      if (rest === '/status') {
+        if (m !== 'GET') return J({ error: 'method_not_allowed' }, 405);
+        if (S.now && S.now.duration && posOf() >= S.now.duration) next();   // 播完換下一首
+        const played = S.now ? { title: S.now.title, duration: S.now.duration, pos: posOf(), requester: S.now.requester } : null;
+        const qv = S.queue.slice(0, 15).map(t => ({ title: t.title, duration: t.duration, requester: t.requester }));
+        if (!admin) return J({ online: S.online, voice_connected: !!S.vc, voice_channel: S.vc || null, playing: played, queue_len: S.queue.length, queue: qv, member_view: true });
+        return J({ online: S.online, voice_connected: !!S.vc, voice_channel: S.vc || null, voice_home: S.home, mix: S.mix, volume: S.vol, auto_genre: S.auto,
+          playing: played, queue: qv, queue_len: S.queue.length, gemini_keys: 2, openai: false, latency: S.vc ? 42 : null });
+      }
+      if (m !== 'POST') return J({ error: 'method_not_allowed' }, 405);
+      const a = body.action, who = admin ? '網頁' : '我自己';
+      if (!admin && a !== 'search' && a !== 'play') return J({ error: '播放控制僅限管理員，你可以搜尋與點歌' }, 403);
+      if (a === 'search') {
+        const qs = String(body.query || '').trim();
+        if (!qs) return J({ error: '請輸入搜尋關鍵字' }, 400);
+        if (qs === 'fail') return J({ error: '搜尋失敗 ERROR: [youtube] HTTP Error 429: Too Many Requests' }, 500);
+        if (qs === 'slow') return J({ ok: true, pending: true, msg: '搜尋比較久，機器人還在找' });
+        if (qs === 'slow1' && (MD.slow1++ % 2 === 0)) return J({ ok: true, pending: true, msg: '搜尋比較久，機器人還在找' });
+        if (qs === 'none') return J({ ok: true, results: [], query: qs });
+        const n = Math.max(1, Math.min(20, parseInt(body.n, 10) || 12));
+        const ids = ['dQw4w9WgXcQ', 'kJQP7kiw5Fk', '9bZkp7q19f0', 'e-ORhEE9VVg', 'OPf0YbXqDm0'];
+        const results = Array.from({ length: n }, (_, i) => {
+          const id = ids[i % ids.length], url = 'https://www.youtube.com/watch?v=' + id + (i >= ids.length ? '&t=' + i : '');
+          const title = i === 1 ? '<b>小夫</b> 翻唱 <img src=x onerror=alert(1)> ' + qs
+            : qs + ' 搜尋結果 ' + (i + 1) + (i === 5 ? '（非常長的標題會自動換行而且最多顯示兩行，超過的部分要被截掉，才不會把整個版面撐開或讓手機出現橫向捲動）' : '');
+          MD.titles[url] = title;
+          return { title, url, duration: i === 2 ? 0 : 150 + i * 37, uploader: i === 1 ? '<b>小夫</b>' : 'Channel ' + (i + 1), views: [1234, 56789, 123456789, 0, 98765432][i % 5],
+            thumb: i === 3 ? 'javascript:alert(1)' : i === 4 ? '' : i === 6 ? 'http://i.ytimg.com/vi/' + id + '/mqdefault.jpg' : 'https://i.ytimg.com/vi/' + id + '/mqdefault.jpg' };
+        });
+        return J({ ok: true, results, query: qs });
+      }
+      if (a === 'play') {
+        const qs = String(body.query || '').trim();
+        if (!qs) return J({ error: 'empty' }, 400);
+        const mine = S.queue.filter(t => String(t.requester || '').startsWith(who)).length;
+        if (!admin && mine >= 3) return J({ error: '你已經有 ' + mine + ' 首在佇列中（每人上限 3 首），等播完再點' }, 429);
+        if (/^https?:\/\//i.test(qs) && !/^https?:\/\/([a-z0-9-]+\.)?(youtube\.com|youtu\.be)\//i.test(qs)) return J({ error: '解析失敗 ERROR: Unsupported URL: ' + qs.slice(0, 40) }, 500);
+        if (!S.vc && S.home) S.vc = '語音大廳';   // 連線順序：現有連線 → 常駐頻道 →（點歌者所在頻道，假後端沒有）
+        const add = list => { S.queue.push(...list); if (!S.now && S.vc) next(); };
+        if (/list=/.test(qs) && /:\/\//.test(qs)) {
+          const list = [1, 2, 3, 4].map(k => tr('Mock 播放清單 第 ' + k + ' 首', 200 + k * 11, who));
+          if (/slow/i.test(qs)) { setTimeout(() => add(list), 2500); return J({ ok: true, pending: true, msg: '播放清單比較長，機器人背景解析中，完成後會自動加入佇列' }); }
+          add(list);
+          return J({ ok: true, added: list.length, title: 'Mock 播放清單', queued_only: !S.vc, guild: guildName, vc: S.vc || '' });
+        }
+        const title = MD.titles[qs] || (/^https?:\/\//i.test(qs) ? 'YouTube 影片 ' + qs.slice(-11) : qs + '（第一筆搜尋結果）');
+        const t = tr(title, 201, who);
+        if (/slow/i.test(qs)) { setTimeout(() => add([t]), 2500); return J({ ok: true, pending: true, msg: '機器人還在解析這首歌，完成後會自動加入佇列' }); }
+        add([t]);
+        return J({ ok: true, added: 1, title, queued_only: !S.vc, guild: guildName, vc: S.vc || '' });
+      }
+      if (a === 'auto') {
+        if (!GN[body.genre]) return J({ error: 'bad genre' }, 400);
+        if (!S.vc && !S.home) return J({ error: '機器人不在語音頻道。先進語音頻道再用 /語音 播放，或設定 /頻道 語音常駐 讓它常駐' }, 400);
+        S.auto = body.genre;
+        if (!S.vc) { setTimeout(() => { S.vc = '語音大廳'; if (!S.now) next(); }, 2500); return J({ ok: true, pending: true, msg: '機器人正在進語音頻道，自動歌單稍後開始' }); }
+        if (!S.now) next();
+        return J({ ok: true, genre: GN[body.genre] });
+      }
+      if (a === 'skip') { next(); return J({ ok: true }); }
+      if (a === 'stop') { S.auto = null; S.queue = []; S.now = null; S.paused = false; return J({ ok: true }); }
+      if (a === 'pause') {
+        if (!S.vc || !S.now) return J({ error: '沒在播' }, 400);
+        if (S.paused) { S.now.t0 = Date.now(); S.paused = false; return J({ ok: true, state: 'resumed' }); }
+        S.now.pos0 = posOf(); S.paused = true; return J({ ok: true, state: 'paused' });
+      }
+      if (a === 'volume') { const v = parseInt(body.value == null ? 100 : body.value, 10); if (!isFinite(v)) return J({ error: 'bad value' }, 400); S.vol = Math.max(5, Math.min(200, v)); return J({ ok: true, volume: S.vol }); }
+      if (a === 'mix') { S.mix = !S.mix; return J({ ok: true, mix: S.mix }); }
+      if (a === 'leave') { S.home = false; S.auto = null; S.queue = []; S.now = null; S.vc = ''; S.paused = false; return J({ ok: true }); }
+      return J({ error: 'unknown action' }, 400);
+    }
     /* ---------- end @@MOCK-D@@ ---------- */
     /* @@MOCK-E@@ bridge */
 
