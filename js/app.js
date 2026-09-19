@@ -486,7 +486,7 @@ class Component extends DCLogic {
     // 帳號:me=null 代表未登入,undefined 代表還沒問過後端
     me: undefined, meErr: '', applyNote: '', watches: [], wEvents: [], wBusy: '',
     /* 私車排班：g＝車隊 gid、car＝第幾車（1～3），兩者都進網址（?page=car&g=…&car=2）；carMe＝/car/api/car/me 的結果 */
-    g: '', car: 1, carView: 'table', carDate: '', carMe: undefined, carNeed: '', carErr: '', carBusy: false, carStates: {}, carStErr: {},
+    g: '', car: 1, carView: 'table', carTab: 'sched', carSec: {}, carDate: '', carMe: undefined, carNeed: '', carErr: '', carBusy: false, carStates: {}, carStErr: {},
     carTags: null, carMembers: null, carPop: null, carActBusy: false, carPick: '', carPickRole: '', carTagSel: '', carTagScope: 'shift', carTagDetail: '', carTagUntil: '',
     carTagMgr: false, carTmForm: false, carTmId: '', carTmLabel: '', carTmColor: '#3f8cf3', carTmDetail: '', carTmVis: 'all',
     /* 帳號密碼登入／QQ 註冊／忘記密碼（lgQQ＝目前顯示中的 6 位數驗證碼）與帳號頁的密碼設定 */
@@ -2412,6 +2412,7 @@ class Component extends DCLogic {
       const g = s.g && guilds.some(x => x.gid === String(s.g)) ? String(s.g) : (guilds[0] ? guilds[0].gid : '');
       this.setState({ carMe: { guilds }, carNeed: '', g });
       if (g) await this.carLoadStates();
+      if (g) this.carLoadSec(this.state.carTab, true);
     } catch (e) {
       const need = e.code === 'need_identity' ? 'identity' : e.code === 'need_login' ? 'login' : '';
       this.setState({ carMe: null, carNeed: need, carErr: need ? '' : e.message });
@@ -2452,6 +2453,62 @@ class Component extends DCLogic {
       this.setState({ carMembers: { key, list } });
     } catch (e) { this.setState({ carMembers: { key, list: [] } }); }
   }
+  /* ===== 車隊頁子分頁 =====
+     CAR_TABS：[id, 名稱, 只限管理員]。每個分頁自己實作兩支方法（沒實作就是空分頁）：
+       carSec_<id>(force)   讀資料：切到該分頁、切車隊／切車、按重新整理時呼叫
+       carSecVals_<id>(c)   回傳該分頁模板要的值與 on* 事件；只有「目前分頁」會被呼叫
+                            c = { s, gd, st, carNo, admin, segOn, pill }
+     共用：carSecKey(name, perCar) 產生含 gid（與車號）的快取 key；
+          carSecFetch(key, path, opt, force) 讀 /car/api<path>，結果放 state.carSec[key] = {data, err, busy, at}；
+          carSecOf(key)／carSecPut(key, patch) 讀寫同一份快取。寫入動作一律走 carAct（一次一個、錯誤浮出、409 重抓）。 */
+  CAR_TABS = [['sched', '班表'], ['members', '成員'], ['stats', '統計'], ['music', '點歌'], ['bridge', '合班'], ['settings', '設定', 1], ['log', '紀錄', 1], ['system', '系統', 1]];
+  carSecKey(name, perCar) { return name + ':' + String(this.state.g || '') + (perCar ? ':' + this.carNo() : ''); }
+  carSecOf(key) { return (this.state.carSec || {})[key] || null; }
+  carSecPut(key, patch) { this.setState(st => ({ carSec: Object.assign({}, st.carSec, { [key]: Object.assign({}, (st.carSec || {})[key], patch) }) })); }
+  async carSecFetch(key, path, opt, force) {
+    const cur = this.carSecOf(key);
+    if (cur && !force && (cur.busy || (cur.data && Date.now() - (cur.at || 0) < 15000))) return cur.data;
+    const g0 = String(this.state.g || '');
+    this.carSecPut(key, { busy: true, err: '' });
+    let data = null, err = '';
+    try { data = await this.carApi(path, opt || {}); }
+    catch (e) { err = (e && e.code === 'not_found') ? '機器人版本不支援這個功能，請更新機器人' : ((e && e.message) || '讀取失敗'); }
+    if (String(this.state.g || '') !== g0) return null;          // 讀到一半切了車隊：結果丟掉
+    this.carSecPut(key, { data, err, busy: false, at: Date.now() });
+    return data;
+  }
+  carLoadSec(tab, force) { const fn = this['carSec_' + (tab || this.state.carTab || 'sched')]; return typeof fn === 'function' ? fn.call(this, !!force) : null; }
+
+  /* @@SEC-A@@ sched（班表加強：開班砍班、代報、批次（複製／清空／鎖定）、成員池、鎖定／待確認標示、快速操作（重排補位、重繪看板））：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+
+
+  /* ---------- end @@SEC-A@@ ---------- */
+
+  /* @@SEC-B@@ members（成員：名冊、成員編輯、在線人員）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+
+
+  /* ---------- end @@SEC-B@@ ---------- */
+
+  /* @@SEC-C@@ stats（統計：缺額分析、歷史班表、色段監控與完整紀錄）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+
+
+  /* ---------- end @@SEC-C@@ ---------- */
+
+  /* @@SEC-D@@ music（點歌：正在播放與佇列、搜尋點播、播放控制）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+
+
+  /* ---------- end @@SEC-D@@ ---------- */
+
+  /* @@SEC-E@@ bridge（合班：配對碼／加入／續期／退出、共用車房、代報、各隊頻道）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+
+
+  /* ---------- end @@SEC-E@@ ---------- */
+
+  /* @@SEC-F@@ settings（設定／紀錄／系統：全部設定鍵、多車設定、試算表同步、操作紀錄、機器人狀態、維護動作）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+
+
+  /* ---------- end @@SEC-F@@ ---------- */
+
   /* 寫入型操作的共用外殼：一次只跑一個、錯誤訊息浮出來、座位變動（409）就重抓 */
   async carAct(path, body, okMsg, no) {
     if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
@@ -2948,6 +3005,19 @@ class Component extends DCLogic {
       carTmCanAdd: pal.length < 30,
     } : {};
 
+    /* 子分頁：只算目前分頁的值（carSecVals_<id>）；分頁程式出錯只影響該分頁 */
+    const secAdm = admin || !!(gd && gd.role === 'admin');
+    const secTabs = this.CAR_TABS.filter(t => !t[2] || secAdm);
+    const secTab = secTabs.some(t => t[0] === s.carTab) ? s.carTab : 'sched';
+    const secIs = {}; secTabs.forEach(t => { secIs[t[0]] = t[0] === secTab; });
+    let secV = {};
+    const secFn = this['carSecVals_' + secTab];
+    if (gd && typeof secFn === 'function') {
+      try { secV = secFn.call(this, { s, gd, st, carNo, admin: secAdm, segOn, pill }) || {}; }
+      catch (e) { console.error('carSecVals_' + secTab, e); secV = {}; }
+    }
+    const secOut = { carSecTabs: secTabs.map(([v, n]) => Object.assign({ v, n, sel: v === secTab ? 'true' : 'false' }, segOn(v === secTab))), carTabIs: secIs, carTabCur: secTab };
+
     const carErrNo = (s.carStErr || {})[carNo] || '';
     return Object.assign(out, {
       carLoading: me === undefined || (!!me && cm === undefined && !s.carNeed && !s.carErr),
@@ -2986,7 +3056,7 @@ class Component extends DCLogic {
       carPalNote: admin ? '點名字旁的 ＋ 貼標記；可選「只這一班」或「這個人長期」。標籤盤裡設成「僅管理員」的標記，成員看不到。' : '管理員貼在座位上的標記；點標記可以看細節。',
       carTagMgrShow: tmOpen,
       carBusyTxt: s.carBusy ? '更新中…' : '重新整理',
-    }, pv, tmv);
+    }, pv, tmv, secOut, secV);
   }
 
   /* 雲端設定 → 本機。只補「本機沒有」的鍵，不覆蓋使用者當下的操作,
@@ -5428,7 +5498,7 @@ class Component extends DCLogic {
   URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
-    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView'] };
+    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab'] };
   _urlOf(s) {
     const q = new URLSearchParams(); q.set('page', s.page);
     if (s.dbPick && this.DB_PAGES.includes(s.page)) q.set('pick', s.dbPick.kind + ':' + s.dbPick.id);   // 圖鑑詳情也能分享
@@ -8610,8 +8680,9 @@ class Component extends DCLogic {
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
       /* 私車排班 */
       onCarGuildToggle: () => this.setState({ carGuildOpen: !this.state.carGuildOpen, carPop: null }),
-      onCarGuildPick: e => { const v = String(e.currentTarget.dataset.v || ''); if (!v || v === String(this.state.g)) { this.setState({ carGuildOpen: false }); return; } this.setState({ g: v, carGuildOpen: false, carStates: {}, carStErr: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => this.carLoadStates(), 0); },
-      onCarNo: e => { const no = +e.currentTarget.dataset.v; if (!no) return; this.setState({ car: no, carPop: null, carTagMgr: false }); if (!(this.state.carStates || {})[no]) this.carLoadStates(no); this.carLoadTags(no); },
+      onCarGuildPick: e => { const v = String(e.currentTarget.dataset.v || ''); if (!v || v === String(this.state.g)) { this.setState({ carGuildOpen: false }); return; } this.setState({ g: v, carGuildOpen: false, carStates: {}, carStErr: {}, carSec: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => { this.carLoadStates(); this.carLoadSec(this.state.carTab); }, 0); },
+      onCarTab: e => { const v = String(e.currentTarget.dataset.v || 'sched'); this.setState({ carTab: v, carPop: null, carTagMgr: false, carGuildOpen: false }); setTimeout(() => this.carLoadSec(v), 0); },
+      onCarNo: e => { const no = +e.currentTarget.dataset.v; if (!no) return; this.setState({ car: no, carPop: null, carTagMgr: false }); if (!(this.state.carStates || {})[no]) this.carLoadStates(no); this.carLoadTags(no); setTimeout(() => this.carLoadSec(this.state.carTab), 0); },
       onCarView: e => this.setState({ carView: e.currentTarget.dataset.v === 'board' ? 'board' : 'table', carPop: null }),
       onCarDate: e => this.setState({ carDate: e.currentTarget.dataset.v || '', carPop: null }),
       onCarReload: () => { this.setState({ carPop: null }); this.carLoad(); },

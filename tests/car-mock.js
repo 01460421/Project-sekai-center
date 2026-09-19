@@ -140,6 +140,26 @@ export function install(BASE, mode0) {
     if (!gid) return J({ error: 'missing gid' }, 400);
     const role = gid === '222' ? 'member' : role0, admin = role === 'admin';
     const c = carOf(gid, no);
+    /* 各分頁的假後端：每一組只寫在自己的 @@MOCK 標記下面；回傳 Response 就結束，回 undefined 就交給後面的路由。
+       可用：rest、m（方法）、q（query）、body、gid、no、role、admin、c（該車資料）、J(obj, status)、MEMBERS */
+    /* @@MOCK-A@@ sched */
+
+    /* ---------- end @@MOCK-A@@ ---------- */
+    /* @@MOCK-B@@ members */
+
+    /* ---------- end @@MOCK-B@@ ---------- */
+    /* @@MOCK-C@@ stats */
+
+    /* ---------- end @@MOCK-C@@ ---------- */
+    /* @@MOCK-D@@ music */
+
+    /* ---------- end @@MOCK-D@@ ---------- */
+    /* @@MOCK-E@@ bridge */
+
+    /* ---------- end @@MOCK-E@@ ---------- */
+    /* @@MOCK-F@@ settings */
+
+    /* ---------- end @@MOCK-F@@ ---------- */
     if (rest === '/state') return J(stateOut(gid, no, role));
     if (rest === '/tags' && m === 'GET') return J({ tags: Object.entries(c.pal).filter(([, t]) => admin || t.visibility !== 'admin').map(([id, t]) => ({ id, label: t.label, color: t.color, fg: fg(t.color), detail: t.detail, visibility: t.visibility })), colors: COLORS });
     if (rest === '/members') return J({ members: MEMBERS.map(x => ({ name: x.name, bonus: x.bonus, s6_bonus: x.s6_bonus, identity: '', aliases: [] })), total: MEMBERS.length });

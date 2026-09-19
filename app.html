@@ -2096,6 +2096,12 @@ select option, select optgroup{
         </div>
       </sc-if>
 
+      <!-- 車隊功能子分頁（CAR_TABS；設定／紀錄／系統只有管理員看得到） -->
+      <div class="car-seg" role="tablist" aria-label="車隊功能" style="display:flex;overflow-x:auto;scrollbar-width:none;margin-bottom:14px">
+        <sc-for list="{{ carSecTabs }}" as="t"><button type="button" role="tab" aria-selected="{{ t.sel }}" onClick="{{ onCarTab }}" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }}">{{ t.n }}</button></sc-for>
+      </div>
+
+      <sc-if value="{{ carTabIs.sched }}">
       <!-- 車／檢視／管理員操作 -->
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
         <div class="car-seg" role="tablist" aria-label="選擇車" style="overflow-x:auto;scrollbar-width:none">
@@ -2269,6 +2275,64 @@ select option, select optgroup{
           </div>
         </div>
       </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.sched }}">
+        <div class="car-sec" data-sec="sched">
+          <!-- @@SEC-A-TPL-sched@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.members }}">
+        <div class="car-sec" data-sec="members">
+          <!-- @@SEC-B-TPL-members@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.stats }}">
+        <div class="car-sec" data-sec="stats">
+          <!-- @@SEC-C-TPL-stats@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.music }}">
+        <div class="car-sec" data-sec="music">
+          <!-- @@SEC-D-TPL-music@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.bridge }}">
+        <div class="car-sec" data-sec="bridge">
+          <!-- @@SEC-E-TPL-bridge@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.settings }}">
+        <div class="car-sec" data-sec="settings">
+          <!-- @@SEC-F-TPL-settings@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.log }}">
+        <div class="car-sec" data-sec="log">
+          <!-- @@SEC-F-TPL-log@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ carTabIs.system }}">
+        <div class="car-sec" data-sec="system">
+          <!-- @@SEC-F-TPL-system@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
+
+        </div>
+      </sc-if>
+
     </sc-if>
   </div>
   </sc-if>
@@ -5633,7 +5697,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=cb6c6bddd9"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c597e9f262"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
