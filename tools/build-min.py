@@ -19,27 +19,31 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC = ROOT / 'js' / 'app.js'
-OUT = ROOT / 'js' / 'app.min.js'
+# (來源, 輸出, 是否 ES module)。ai.js 是 export function，terser 要加 --module 才會保留 export。
+TARGETS = [
+    (ROOT / 'js' / 'app.js', ROOT / 'js' / 'app.min.js', False),
+    (ROOT / 'js' / 'ai.js', ROOT / 'js' / 'ai.min.js', True),
+]
 
 
-def src_hash():
-    text = SRC.read_text(encoding='utf-8')
+def src_hash(src):
+    text = src.read_text(encoding='utf-8')
     return hashlib.sha256(re.sub(r'\?v=[0-9a-f]+', '', text).encode('utf-8')).hexdigest()[:10]
 
 
 def main():
     terser = os.environ.get('TERSER') or shutil.which('terser')
-    cmd = [terser] if terser else ['npx', '--yes', 'terser@5']
-    cmd += [str(SRC), '-o', str(OUT), '--compress', 'passes=2', '--mangle', '--format', 'comments=false,ascii_only=false']
-    print('執行：' + ' '.join(cmd))
-    r = subprocess.run(cmd)
-    if r.returncode != 0:
-        print('terser 失敗', file=sys.stderr)
-        return r.returncode
-    code = OUT.read_text(encoding='utf-8')
-    OUT.write_text(f'/*! src={src_hash()} */\n' + code, encoding='utf-8')
-    print(f'app.js {SRC.stat().st_size // 1024} KB → app.min.js {OUT.stat().st_size // 1024} KB')
+    base = [terser] if terser else ['npx', '--yes', 'terser@5']
+    for src, out, is_module in TARGETS:
+        cmd = base + [str(src), '-o', str(out), '--compress', 'passes=2', '--mangle', '--format', 'comments=false,ascii_only=false'] + (['--module'] if is_module else [])
+        print('執行：' + ' '.join(cmd))
+        r = subprocess.run(cmd)
+        if r.returncode != 0:
+            print('terser 失敗', file=sys.stderr)
+            return r.returncode
+        code = out.read_text(encoding='utf-8')
+        out.write_text(f'/*! src={src_hash(src)} */\n' + code, encoding='utf-8')
+        print(f'{src.name} {src.stat().st_size // 1024} KB → {out.name} {out.stat().st_size // 1024} KB')
     return 0
 
 
