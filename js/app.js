@@ -1145,21 +1145,21 @@ class Component extends DCLogic {
         if (a != null && b != null) sub += ' · T1000 線一天 +' + this.short(b - a);
         if (old[2] != null && cur[2] != null) sub += ' · 我 +' + this.short(cur[2] - old[2]);
       }
-      rows.push({ ic: '🏁', t: (ev.name || '活動') + '：第 ' + day + ' 天／共 ' + days + ' 天', s: sub, p: 'event', patchJson: '{}' });
+      rows.push({ ic: '活動', t: (ev.name || '活動') + '：第 ' + day + ' 天／共 ' + days + ' 天', s: sub, p: 'event', patchJson: '{}' });
     }
     const gs = (s.gachas || []), soon = [], today = [];
     gs.forEach(g => { const a = this.pd(g.s), b = this.pd(g.e); if (!a || !b) return; const endMs = b.getTime() + 86400000, left = endMs - now;
       if (left > 0 && left <= 48 * 3600000) soon.push({ g, left });
       if (a.getTime() <= now && now - a.getTime() < 86400000) today.push(g); });
-    soon.sort((x, y) => x.left - y.left).slice(0, 3).forEach(({ g, left }) => rows.push({ ic: '⏳', t: '卡池「' + g.n + '」' + (left <= 24 * 3600000 ? '今天結束' : '明天結束'), s: '剩 ' + this.dur(left), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
-    today.slice(0, 3).forEach(g => rows.push({ ic: '🎉', t: '卡池「' + g.n + '」今天開始', s: '到 ' + this.md(this.pd(g.e)), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
+    soon.sort((x, y) => x.left - y.left).slice(0, 3).forEach(({ g, left }) => rows.push({ ic: '卡池', t: '卡池「' + g.n + '」' + (left <= 24 * 3600000 ? '今天結束' : '明天結束'), s: '剩 ' + this.dur(left), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
+    today.slice(0, 3).forEach(g => rows.push({ ic: '卡池', t: '卡池「' + g.n + '」今天開始', s: '到 ' + this.md(this.pd(g.e)), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
     const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const newsN = (s.news || []).filter(x => x.s >= dayStart && x.s <= now).length;
-    if (newsN) rows.push({ ic: '📢', t: '今天有 ' + newsN + ' 則遊戲公告', s: '點開看全部', p: 'news', patchJson: '{}' });
+    if (newsN) rows.push({ ic: '公告', t: '今天有 ' + newsN + ' 則遊戲公告', s: '點開看全部', p: 'news', patchJson: '{}' });
     const hint = s.pid ? this.planHintText() : '';
-    if (hint) rows.push({ ic: '🏃', t: hint.replace(/ →$/, ''), s: '到計算中心調整目標', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
+    if (hint) rows.push({ ic: '跑榜', t: hint.replace(/ →$/, ''), s: '到計算中心調整目標', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
     const lack = this.mstLack();
-    if (lack && lack.n) rows.push({ ic: '🪑', t: '豆森還缺 ' + this.n(lack.n) + ' 件家具', s: '可解鎖 ' + this.n(lack.talks) + ' 則對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
+    if (lack && lack.n) rows.push({ ic: '豆森', t: '豆森還缺 ' + this.n(lack.n) + ' 件家具', s: '可解鎖 ' + this.n(lack.talks) + ' 則對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
     return { digestRows: rows, digestEmpty: !rows.length, digestDate: (d.getMonth() + 1) + '/' + d.getDate() + '（' + W[d.getDay()] + '）' };
   }
   /* ===== .ics 匯出：活動與卡池丟進手機／桌面行事曆 ===== */
@@ -2231,7 +2231,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=171aeb7108').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=d831aecb2d').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -5880,11 +5880,11 @@ class Component extends DCLogic {
     out.favN = favs.length; out.favEmpty = !favs.length;
     const todo = [];
     const pl = this.planInfo();
-    if (pl.active && pl.left > 0) todo.push({ id: 'plan', ic: '🏃', t: '跑榜：距目標還差 ' + this.short(pl.left) + ' EP', s: pl.perDay ? ('每天約 ' + this.n(pl.perDay) + ' 場（約 ' + pl.hrsDay + ' 小時），還有 ' + pl.daysLeft + ' 天') : '到計算中心的活動試算設定每局 EP', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
+    if (pl.active && pl.left > 0) todo.push({ id: 'plan', ic: '跑榜', t: '跑榜：距目標還差 ' + this.short(pl.left) + ' EP', s: pl.perDay ? ('每天約 ' + this.n(pl.perDay) + ' 場（約 ' + pl.hrsDay + ' 小時），還有 ' + pl.daysLeft + ' 天') : '到計算中心的活動試算設定每局 EP', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
     const lack = this.mstLack();
-    if (lack && lack.n) todo.push({ id: 'mst', ic: '🪑', t: '豆森：還缺 ' + this.n(lack.n) + ' 件家具', s: '做出來可解鎖 ' + this.n(lack.talks) + ' 則還沒看的對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
-    if (s.me && s.unread) todo.push({ id: 'notice', ic: '🔔', t: '有 ' + s.unread + ' 則未讀通知', s: '訂閱的偵測或站內訊息', p: 'notices', patchJson: '{}' });
-    if (!s.pid) todo.push({ id: 'pid', ic: '🪪', t: '還沒綁定 Player ID', s: '綁定後首頁與活動總覽會顯示你的名次與進度', p: 'home', patchJson: '{}' });
+    if (lack && lack.n) todo.push({ id: 'mst', ic: '豆森', t: '豆森：還缺 ' + this.n(lack.n) + ' 件家具', s: '做出來可解鎖 ' + this.n(lack.talks) + ' 則還沒看的對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
+    if (s.me && s.unread) todo.push({ id: 'notice', ic: '通知', t: '有 ' + s.unread + ' 則未讀通知', s: '訂閱的偵測或站內訊息', p: 'notices', patchJson: '{}' });
+    if (!s.pid) todo.push({ id: 'pid', ic: '綁定', t: '還沒綁定 Player ID', s: '綁定後首頁與活動總覽會顯示你的名次與進度', p: 'home', patchJson: '{}' });
     out.favTodo = todo; out.favHasTodo = todo.length > 0; out.favNoTodo = !todo.length && !!lack;
     return out;
   }

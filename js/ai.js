@@ -466,7 +466,7 @@ export function aiMembers() {
         limit: { type: 'integer', description: '通行證回幾筆，預設 10、上限 40（販售中共約 18 張）' },
         offset: { type: 'integer', description: '通行證分頁起點，預設 0' } } } },
     { name: 'get_player_career',
-      description: '玩家生涯紀錄：逐期掃過去各期最終前 100 名名單，算出歷屆入榜次數、最佳／平均／中位名次、最高分，以及每一期的名次與相對上次入榜的進退。問「我以前跑過幾期」「我最好排到第幾名」「這個人生涯戰績如何」「他上一期第幾名」時用。⚠ 耗時：一期打一次外部請求（每期約 370KB），預設掃最近 20 期約 3～6 秒、掃滿 60 期會超過 10 秒；要看更早的一次把 limit／offset 給足，不要分多次小批次。只涵蓋各期前 100 名的公開名單，沒入榜的期數查不到（不等於沒打）。',
+      description: '玩家生涯紀錄：逐期掃過去各期最終前 100 名名單，算出歷屆入榜次數、最佳／平均／中位名次、最高分，以及每一期的名次與相對上次入榜的進退。問「我以前跑過幾期」「我最好排到第幾名」「這個人生涯戰績如何」「他上一期第幾名」時用。注意：耗時：一期打一次外部請求（每期約 370KB），預設掃最近 20 期約 3～6 秒、掃滿 60 期會超過 10 秒；要看更早的一次把 limit／offset 給足，不要分多次小批次。只涵蓋各期前 100 名的公開名單，沒入榜的期數查不到（不等於沒打）。',
       input_schema: { type: 'object', properties: {
         uid: { type: 'string', description: '玩家 ID（19 位數字字串）；省略＝使用者自己綁定的 uid' },
         limit: { type: 'integer', description: '往回掃最近幾期已結算活動，預設 20、上限 60。每多一期多一次外部請求' },
@@ -505,7 +505,7 @@ export function aiMembers() {
         limit: { type: 'integer', description: '卡池筆數上限，預設 24，最多 60' },
         offset: { type: 'integer', description: '卡池分頁位移，接續 next_offset' } } } },
     { name: 'get_collection_stats',
-      description: '兩件事合一支：收集室圖鑑分佈（貼圖依角色／團體、稱號依稀有度／群組），以及收集率備份碼的產生與解讀。「哪個角色貼圖最多」「我的備份碼是多少」「這串碼是什麼」「跟我現在差在哪」。貼圖／稱號是全站共通的官方圖鑑總數，不是使用者持有狀況。⚠ 只讀不寫，絕不覆蓋持卡勾選。要收集率百分比用 get_collection_rate，缺哪幾張用 get_missing_cards。',
+      description: '兩件事合一支：收集室圖鑑分佈（貼圖依角色／團體、稱號依稀有度／群組），以及收集率備份碼的產生與解讀。「哪個角色貼圖最多」「我的備份碼是多少」「這串碼是什麼」「跟我現在差在哪」。貼圖／稱號是全站共通的官方圖鑑總數，不是使用者持有狀況。注意：只讀不寫，絕不覆蓋持卡勾選。要收集率百分比用 get_collection_rate，缺哪幾張用 get_missing_cards。',
       input_schema: { type: 'object', properties: {
         part: { type: 'string', enum: ['all','stamps','honors','code'], description: '預設 all。stamps 才展開 26 角色逐一分佈；給了 decode 一定會解讀' },
         decode: { type: 'string', description: '要解讀的備份碼（base64）；不給＝產生使用者目前的碼' },
@@ -1716,7 +1716,7 @@ export function aiMembers() {
                 ? '這是完整清單依加成由高到低排序的前 ' + page.length + ' 名（共 ' + list.length + ' 張符合），不是取樣，不要用多次小批次去拼湊；'
                 : '目前的篩選條件一張都沒選到，放寬 chara／min_percent／mine 再試；')
             + '預設只列 ★4 與生日卡，要 ★1-3 請帶 include_low_rarity。'
-            + (isWL ? ' ⚠ 這是 World Link：這裡算的只有「主隊」加成（全角色一律 ' + charOnlyRate + '%），'
+            + (isWL ? ' 注意：這是 World Link：這裡算的只有「主隊」加成（全角色一律 ' + charOnlyRate + '%），'
                     + 'WL 真正的大頭是支援隊伍加成（另一套 worldBloomSupportDeckBonuses 規則、依章節主角變動），本工具不涵蓋，'
                     + '要看支援隊請改用站上「跑榜工作室」或 wl_team_advice。' : ''),
         };
@@ -3964,7 +3964,7 @@ export function aiMembers() {
                 : '　目前一張都沒勾選，my_cards_* 全是 0；請先到「收集率」頁勾選持有卡。')
               : '　目前算的是全卡池理論最優，沒有過濾持有；要看自己實際湊得到多少請帶 only_my_cards=true。')
             + (isFinale
-              ? '　⚠ 這是終章：官方沒公開完整規則，這裡採「全卡都吃 others 檔、不限團體、限定卡照 master 逐條計 +20」的推估，'
+              ? '　注意：這是終章：官方沒公開完整規則，這裡採「全卡都吃 others 檔、不限團體、限定卡照 master 逐條計 +20」的推估，'
                 + '經典版 WL 頁對終章是不算限定卡的，兩邊數字會差一截，回答時要講明是推估值。'
               : ''),
         };
@@ -4360,7 +4360,7 @@ export function aiMembers() {
           note: head
             + '　power_max_level＝滿等三維（param1＋param2＋param3 的最後一級）相加，★3／★4 再加特訓加成，'
             + '單位是綜合力點數，與站上「卡片技能庫」頁的「最大綜合力」同一算法。'
-            + '⚠ 同稀有度的卡基礎綜合力幾乎一樣（本次結果的 power_range 就是全距），'
+            + '注意：同稀有度的卡基礎綜合力幾乎一樣（本次結果的 power_range 就是全距），'
             + '所以「誰比較強」實際上是看技能與活動加成，不是看綜合力——不要只憑 power_max_level 推薦卡。'
             + '它不含前後篇、專精、角色等級、區域道具、豆森；要換算：前後篇已讀 ★4 +2550／生日 +2370／'
             + '★3 +2100／★2 +1350／★1 +900，專精每 1 級 ★4 +600／生日 +540／★3 +450／★2 +300／★1 +150；'
@@ -6624,7 +6624,7 @@ export function aiMembers() {
               cards_shown: Math.max(0, Math.min(lim, sorted.length - off)),
               cards_offset: off,
               note: '只做解讀，沒有動到使用者的持卡紀錄。cards 依稀有度（★4→生日→★3→★2→★1）再依卡片 id 排序後由第 ' + off +
-                ' 張起取 ' + lim + ' 張，要更多用 limit／offset。⚠ only_in_my_record 是「你有、這串沒有」的卡：' +
+                ' 張起取 ' + lim + ' 張，要更多用 limit／offset。注意：only_in_my_record 是「你有、這串沒有」的卡：' +
                 '在收集率頁貼上這串還原會整份蓋掉（不是合併），所以要先提醒使用者把自己現在的碼備份下來。',
             });
           } else {

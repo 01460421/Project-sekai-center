@@ -519,7 +519,7 @@ select option, select optgroup{
       <div style="display:grid;grid-template-columns:{{ twoCol }};gap:8px">
         <sc-for list="{{ digestRows }}" as="r" hint-placeholder-count="3">
           <button type="button" onClick="{{ onDbRelated }}" data-p="{{ r.p }}" data-patch="{{ r.patchJson }}" style="display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--text);cursor:pointer;min-width:0">
-            <span style="font-size:17px;line-height:1.2;flex:none">{{ r.ic }}</span>
+            <span style="flex:none;min-width:34px;text-align:center;padding:3px 7px;margin-top:1px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep);font-size:10.5px;font-weight:800;line-height:1.4;letter-spacing:.02em">{{ r.ic }}</span>
             <span style="min-width:0;flex:1"><span style="display:block;font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.45">{{ r.t }}</span><span style="display:block;font-size:11px;color:var(--text-3);margin-top:2px;line-height:1.5">{{ r.s }}</span></span>
           </button>
         </sc-for>
@@ -546,7 +546,7 @@ select option, select optgroup{
           <sc-if value="{{ homeBoardIsWl }}">
             <div style="font-size:11.5px;color:var(--text-3);margin-bottom:9px">{{ homeWlChapterLabel }}</div>
           </sc-if>
-          <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">🏃 {{ planHint }} →</button></sc-if>
+          <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">{{ planHint }} →</button></sc-if>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
             <sc-if value="{{ homeBoardIsMain }}">
               <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
@@ -726,7 +726,7 @@ select option, select optgroup{
       <button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch="{{ evMoyuPatch }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">摸魚表</button>
       <button type="button" onClick="{{ onGo }}" data-p="bonuscards" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">加分卡參考</button>
       <button type="button" onClick="{{ onGo }}" data-p="borderdb" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">榜線資料庫</button>
-      <button type="button" onClick="{{ onIcsEvent }}" title="下載 .ics，加進手機或桌面行事曆" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">📅 加入行事曆</button>
+      <button type="button" onClick="{{ onIcsEvent }}" title="下載 .ics，加進手機或桌面行事曆" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">加入行事曆</button>
       <sc-if value="{{ evHasStory }}"><button type="button" onClick="{{ onDbRelated }}" data-p="story" data-patch="{{ evStoryPatch }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">活動劇情（{{ evStoryN }}）</button></sc-if>
     </div>
     <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;align-items:start">
@@ -735,7 +735,7 @@ select option, select optgroup{
         <sc-if value="{{ hasPlayer }}">
           <div style="font-size:16px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
           <div style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-bottom:10px">ID {{ playerId }} · {{ playerRankLabel }}</div>
-          <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">🏃 {{ planHint }} →</button></sc-if>
+          <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">{{ planHint }} →</button></sc-if>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
             <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
               <div style="background:var(--card-2);border-radius:13px;padding:11px 13px"><div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div></div>
@@ -824,7 +824,7 @@ select option, select optgroup{
           <div style="display:flex;flex-direction:column;gap:8px">
             <sc-for list="{{ favTodo }}" as="t" hint-placeholder-count="3">
               <button type="button" onClick="{{ onDbRelated }}" data-p="{{ t.p }}" data-patch="{{ t.patchJson }}" style="display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--text);cursor:pointer">
-                <span style="font-size:18px;line-height:1.2;flex:none">{{ t.ic }}</span>
+                <span style="flex:none;min-width:34px;text-align:center;padding:3px 7px;margin-top:1px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep);font-size:10.5px;font-weight:800;line-height:1.4;letter-spacing:.02em">{{ t.ic }}</span>
                 <span style="min-width:0;flex:1"><span style="display:block;font-size:13px;font-weight:800;color:var(--ink)">{{ t.t }}</span><span style="display:block;font-size:11.5px;color:var(--text-3);margin-top:2px;line-height:1.5">{{ t.s }}</span></span>
                 <span style="font-size:12px;color:var(--text-3);flex:none">→</span>
               </button>
@@ -863,8 +863,8 @@ select option, select optgroup{
         <button type="button" onClick="{{ onMonth }}" data-d="-1" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">◀ 上月</button>
         <button type="button" onClick="{{ onMonth }}" data-d="0" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(37,125,220,.26);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">今天</button>
         <button type="button" onClick="{{ onMonth }}" data-d="1" style="padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.94)">下月 ▶</button>
-        <button type="button" onClick="{{ onIcsMonth }}" title="把這個月的卡池與活動匯出成 .ics" style="padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">📅 .ics</button>
-        <a href="webcal://games.project-sekai-center.com/cal/sekai.ics" title="訂閱後，手機或桌面行事曆會自動更新活動與卡池" style="padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;text-decoration:none">📆 訂閱</a>
+        <button type="button" onClick="{{ onIcsMonth }}" title="把這個月的卡池與活動匯出成 .ics" style="padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer">匯出 .ics</button>
+        <a href="webcal://games.project-sekai-center.com/cal/sekai.ics" title="訂閱後，手機或桌面行事曆會自動更新活動與卡池" style="padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;text-decoration:none">訂閱行事曆</a>
       </div>
     </div>
 
@@ -2519,7 +2519,7 @@ select option, select optgroup{
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:11px">條件成立時寄信通知你。每人最多 20 條。</div>
         <sc-if value="{{ pushSupported }}">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 13px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);margin-bottom:11px">
-            <span style="font-size:12px;font-weight:800;color:var(--ink);flex:none">🔔 瀏覽器推播</span>
+            <span style="font-size:12px;font-weight:800;color:var(--ink);flex:none">瀏覽器推播</span>
             <span style="flex:1;min-width:160px;font-size:11.5px;color:var(--text-3);line-height:1.6">{{ pushHint }}</span>
             <sc-if value="{{ pushAvail }}"><button type="button" onClick="{{ onPushToggle }}" style="padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;flex:none">{{ pushBtn }}</button></sc-if>
           </div>
@@ -5622,7 +5622,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=45111e4c53"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=eaab2e3eca"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
