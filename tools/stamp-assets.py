@@ -22,7 +22,7 @@ ASSET_FILES = ['support.js']
 # js/*.js 內部也會用 import('./data/xxx.js?v=…') 動態載入資料檔,那些戳記
 # 以前是手改的,改完資料忘記改戳記,瀏覽器就會用一年期 immutable 快取黏住舊資料。
 # 這些檔案要先被改寫,改完之後它們自己的雜湊才算得準,所以分兩輪。
-CODE = ['js/app.js', 'js/core.js', 'support.js']
+CODE = ['js/app.js', 'js/app.min.js', 'js/core.js', 'support.js']
 
 
 def digest(path):
@@ -72,7 +72,24 @@ def restamp(path, assets, only_existing=False):
     return False
 
 
+def check_min():
+    """app.html 載的是 js/app.min.js；它的檔頭記著來源 app.js 的雜湊（去掉 ?v= 戳記算的）。
+    對不上代表改了 app.js 沒重新壓縮 —— 這裡直接失敗，別讓舊程式碼上線。"""
+    src, out = ROOT / 'js' / 'app.js', ROOT / 'js' / 'app.min.js'
+    if not out.is_file():
+        return None
+    want = hashlib.sha256(re.sub(r'\?v=[0-9a-f]+', '', src.read_text(encoding='utf-8')).encode('utf-8')).hexdigest()[:10]
+    m = re.match(r'/\*! src=([0-9a-f]+) \*/', out.read_text(encoding='utf-8', errors='ignore')[:64])
+    if not m or m.group(1) != want:
+        return f'js/app.min.js 不是由目前的 js/app.js 壓出來的（檔頭 {m.group(1) if m else "缺"} != {want}），請先跑 python3 tools/build-min.py'
+    return None
+
+
 def main():
+    err = check_min()
+    if err:
+        print(err, file=sys.stderr)
+        return 1
     # 第一輪:先把 data / css / vendor 的戳記寫進程式碼檔。
     # 這一輪會改動 js/app.js 之類的檔案,所以它們的雜湊要等這輪做完才算得準。
     # 也要含 js:js/app.js 會用 ?v= 引用 js/core.js。core.js 不反過來引用 app.js,

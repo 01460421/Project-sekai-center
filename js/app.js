@@ -274,6 +274,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/19', t: '行動版整體優化：可加到主畫面、底部抽屜、籤列橫滑、點擊目標放大', s: '手機上：詳情與設定視窗改成底部抽屜（下滑關閉、左右滑切上下一筆）；所有篩選籤改單列橫滑；籤與圖示鈕的點擊區放大到 40px 以上；輸入框改 16px 不再觸發 iOS 放大；最小字級 12px；歌曲清單改緊湊列；頁首「複製連結」改叫出系統分享；螢幕鍵盤打開時收起底部 Dock；排行榜頁頂端下拉重新載入；返回鍵回到原本的捲動位置；首頁預設不放跑榜小窗、遊戲通知只留 3 則。全站：可加到主畫面（PWA），家具與素材縮圖改用 webp（小 5 倍）。' },
     { d: '2026/09/17', t: '新增「豆森對話」：MySekai 角色對話清單', s: '圖鑑群組新增豆森對話：列出全部 MySekai 角色對話（首次看完會給角色 EXP）與解鎖條件，可依團體、角色、條件種類篩選並勾選已看過；切到「家具檢視」會依家具彙整還沒看完的對話，標記已擁有的家具、顯示製作素材，一鍵勾完整件家具的對話。紀錄存在本機，可備份。' },
     { d: '2026/09/17', t: '修正：劇情閱讀器載不到劇本、角色圖鑑詳情圖片蓋到文字', s: '劇本改抓素材站的 .asset 檔（原本的 .json 路徑全部 404）；圖鑑詳情視窗的圖片改絕對定位，立繪再高也不會撐出外框蓋到下面的資料。' },
     { d: '2026/09/17', t: '首頁右半改放遊戲通知與當前主要卡池；帳號申請自動核准', s: '首頁「我的排名」右側預設改為遊戲內公告（最新幾則，點了直達官方公告頁）與目前進行中的主要卡池（本期活動池優先，顯示角色、期間與剩餘天數）；跑榜最佳化小窗改為獨立區塊，可在「自訂首頁」調順序或隱藏。帳號申請改為自動核准：填入玩家 id、查到帳號就立刻通過，不必等管理員；等級改為選填。' },
@@ -637,7 +638,14 @@ class Component extends DCLogic {
     // 首頁右半的遊戲通知要公告資料；延後一點抓，先讓活動與排名先畫出來
     if (this.state.page === 'home') setTimeout(() => { if (this.state.page === 'home') this.loadNews(); }, 1200);
     // 返回鍵：照網址把分頁與篩選還原，不再另推一筆歷史
-    this._pop = () => { const u = this._readUrl(); const pg = u.page || 'home'; delete u.page; this.go(pg, { silent: true }); if (Object.keys(u).length) this.setState(u); };
+    this._pop = () => {
+      const u = this._readUrl(); const pg = u.page || 'home'; delete u.page;
+      const sv = (this._scrollPos || {})[pg];
+      this.go(pg, { silent: true, keepScroll: !!sv });
+      if (Object.keys(u).length) this.setState(u);
+      // 還原離開時的捲動位置與已載入的筆數（資料是非同步的，多試一次）
+      if (sv) { if (sv.dbN && this.DB_PAGES.includes(pg)) this.setState({ dbN: sv.dbN }); [60, 450].forEach(ms => setTimeout(() => { try { window.scrollTo({ top: sv.y }); } catch (e) {} }, ms)); }
+    };
     window.addEventListener('popstate', this._pop);
     // 功能引導：這個瀏覽器沒勾過「不再顯示」、這次分頁也還沒看過，就在首頁跳一次（深連結進其他頁不打擾）
     try {
@@ -649,6 +657,7 @@ class Component extends DCLogic {
     // 開站就問一次「我是誰」——導覽列要知道是不是管理員才決定顯不顯示後台入口
     this.loadMe();
     this.mq = window.matchMedia('(max-width: 900px)');
+    this._mobileGestures();
     const onMq = e => this.setState({ mobile: e.matches });
     this.setState({ mobile: this.mq.matches });
     this.mq.addEventListener ? this.mq.addEventListener('change', onMq) : this.mq.addListener(onMq);
@@ -722,7 +731,7 @@ class Component extends DCLogic {
     this.wireCharts();
     this._key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
-      if (e.key === 'Escape') this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null });
+      if (e.key === 'Escape') this._closeAll();
       if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
       if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && this.state.dbPick && this._dbNav && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.dbPickStep(e.key === 'ArrowRight' ? 1 : -1); }
       if (e.key === '/' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.openCmd(); }
@@ -758,6 +767,38 @@ class Component extends DCLogic {
         if ('IntersectionObserver' in window) { this._moreIO = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { this._moreIO.disconnect(); this._moreEl = null; this.setState(st => ({ dbN: (st.dbN || 48) + 48 })); } }, { rootMargin: '200px' }); this._moreIO.observe(btn); }
       } else if (!btn && this._moreEl) { if (this._moreIO) this._moreIO.disconnect(); this._moreEl = null; }
     } catch (e) {}
+  }
+  _closeAll() { this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null }); }
+  /* 手機手勢：底部抽屜下滑關閉、左右滑切上下一筆；排行榜頁頂端下拉重新載入；螢幕鍵盤打開時收起 Dock。
+     全部掛在 document 上一次，靠 e.target 判斷落在哪裡，不用逐個元素綁。 */
+  _mobileGestures() {
+    if (this._gest) return; this._gest = true;
+    const isM = () => !!this.state.mobile;
+    const isField = el => el && /^(input|textarea|select)$/i.test(el.tagName) && !/checkbox|radio|range/.test(el.type || '');
+    document.addEventListener('focusin', e => { if (isM() && isField(e.target)) document.body.classList.add('kb-open'); });
+    document.addEventListener('focusout', () => setTimeout(() => { if (!isField(document.activeElement)) document.body.classList.remove('kb-open'); }, 80));
+    let t0 = null;
+    document.addEventListener('touchstart', e => {
+      if (!isM() || e.touches.length !== 1) { t0 = null; return; }
+      const t = e.touches[0], el = e.target && e.target.closest ? e.target.closest('.modal') : null;
+      t0 = { x: t.clientX, y: t.clientY, modal: el, top: (window.scrollY || 0) <= 0, ptr: false };
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+      if (!t0 || t0.modal) return;
+      const dy = e.touches[0].clientY - t0.y;
+      if (this.state.page === 'rank' && t0.top && dy > 70 && !t0.ptr) { t0.ptr = true; this._toast('放開重新載入排名'); }
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      if (!t0) return;
+      const st = t0; t0 = null;
+      const t = e.changedTouches[0], dx = t.clientX - st.x, dy = t.clientY - st.y, s = this.state;
+      if (st.modal) {
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5 && s.dbPick) this.dbPickStep(dx < 0 ? 1 : -1);
+        else if (dy > 90 && dy > Math.abs(dx) * 1.5 && st.modal.scrollTop <= 0) this._closeAll();
+        return;
+      }
+      if (st.ptr && s.page === 'rank' && !s.refreshing) this.refreshLive(true);
+    }, { passive: true });
   }
   dbPickStep(dir) {
     const nav = this._dbNav, pk = this.state.dbPick; if (!nav || !pk || nav.kind !== pk.kind) return;
@@ -9961,6 +10002,13 @@ class Component extends DCLogic {
   }
   layoutToggle(scope, id) {
     const L = this.layoutOf(scope);
+    if (scope === 'home' && id === 'studio' && this.state.mobile) {
+      // 手機上跑榜小窗預設隱藏，這裡切的是「手機也要顯示」旗標，不動桌機的 hidden
+      const next = Object.assign({}, this.state.layout || {});
+      const cur = ((next.home || {}).mobileShow) || [];
+      next.home = Object.assign({}, next.home || {}, L, { hidden: L.hidden.filter(x => x !== id), mobileShow: cur.includes(id) ? cur.filter(x => x !== id) : cur.concat([id]) });
+      this.layoutSave(next); return;
+    }
     const hidden = L.hidden.indexOf(id) >= 0 ? L.hidden.filter(x => x !== id) : L.hidden.concat([id]);
     const next = Object.assign({}, this.state.layout || {}); next[scope] = Object.assign({}, L, { hidden });
     this.layoutSave(next);
@@ -11442,7 +11490,7 @@ class Component extends DCLogic {
         img: this.ASSET + '/thumbnail/material/material' + x.id + '.webp', seq: x.seq || x.id }))
         .concat((b || []).map(x => ({ id: 'k' + x.id, name: x.name || '', desc: x.description || '', type: 'mysekai',
           rarity: +String(x.mysekaiMaterialRarityType || '').replace(/\D/g, '') || 0,
-          img: this.ASSET + '/mysekai/thumbnail/material/' + x.iconAssetbundleName + '.png', seq: 1e6 + (x.seq || x.id) })));
+          img: this.ASSET + '/mysekai/thumbnail/material/' + x.iconAssetbundleName + '.webp', seq: 1e6 + (x.seq || x.id) })));
       rows.sort((x, y) => x.seq - y.seq);
       return rows;
     });
@@ -11511,7 +11559,7 @@ class Component extends DCLogic {
   fixImg(r) {
     return r[2] === 7 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_wall_appearance_1.png'
       : r[2] === 8 ? this.ASSET + '/mysekai/thumbnail/surface_appearance/' + r[6] + '/tex_' + r[6] + '_floor_appearance_1.png'
-      : this.ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.png';
+      : this.ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp';   // 同路徑有 webp（3 KB）與 png（19 KB），實測 2026-09-17
   }
   /* 家具詳情視窗的資料：家具圖鑑與豆森對話共用 */
   fixDetail(d, r) {
@@ -11522,7 +11570,7 @@ class Component extends DCLogic {
     return { title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: this.fixImg(r), imgRatio: '1/1', wide: false,
       chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]),
       rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
-      list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '', hasImg: !!m[1] }; }),
+      list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.webp' : '', hasImg: !!m[1] }; }),
       listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
   }
   dbVals(s) {
@@ -11747,7 +11795,7 @@ class Component extends DCLogic {
         this._dbNav = { kind: 'fix', ids: list.filter(e => e.kind === 'f').map(e => e.fid) };
         out.mstFixRows = page(list, 40).map(e => {
           const r = e.kind === 'f' ? fixMap[e.fid] : null, isOwn = e.kind === 'f' && !!own[e.fid], clear = e.todo === 0;
-          const cost = r ? r[10].map(x => { const m = (F && F.mats[x[0]]) || ['素材 #' + x[0], '', '']; return { id: x[0], n: m[0], q: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.png' : '' }; }) : [];
+          const cost = r ? r[10].map(x => { const m = (F && F.mats[x[0]]) || ['素材 #' + x[0], '', '']; return { id: x[0], n: m[0], q: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.webp' : '' }; }) : [];
           return { key: e.key, fid: e.fid, isFix: e.kind === 'f', name: e.kind === 'f' ? fixName(e.fid) : condText([e.kind, e.fid === 0 ? e.key.split(':')[1] : e.fid]).replace(/^(看過劇情|天氣)：/, '$1 · '),
             img: r ? this.fixImg(r) : '', hasImg: !!r,
             todo: e.todo, total: e.total, count: clear ? '全部看完（' + e.total + ' 則）' : '還有 ' + e.todo + ' / ' + e.total + ' 則',
@@ -12220,6 +12268,7 @@ class Component extends DCLogic {
   /* ---------- 導航 ---------- */
   go(p, opts) {
     const changed = p !== this.state.page, silent = !!(opts && opts.silent);
+    if (changed) { this._scrollPos = this._scrollPos || {}; this._scrollPos[this.state.page] = { y: window.scrollY || 0, dbN: this.state.dbN }; }   // 返回鍵時還原捲動位置
     if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
     if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
     if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); }
@@ -12267,7 +12316,7 @@ class Component extends DCLogic {
       // 聚焦要等資料載完再做：載入中→載完那次重繪會把輸入框換掉，太早聚焦會被吃掉（在 _modalSide 裡完成）
       this._focusPage = (changed && !this.state.mobile && this.DB_PAGES.includes(p) && p !== 'story') ? p : null;
     });
-    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+    if (!(opts && opts.keepScroll)) try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
   /* ---------- 網址同步 ----------
      分頁、子分頁與篩選寫進網址：連結可以分享（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），
@@ -12771,7 +12820,7 @@ class Component extends DCLogic {
           note: g.note || '', main: (evId && String(g.eid) === evId) ? '本期活動池' : '' };
       });
     const NTAG = { information: ['公告', '#7fb4f7'], event: ['活動', '#ff9db4'], gacha: ['招募', '#c39df2'], music: ['樂曲', '#5ec9f2'], campaign: ['企劃', '#ffb86b'], update: ['更新', '#3ee0a8'], bug: ['問題', '#e0576a'] };
-    const homeNews = (s.news || []).filter(x => x.s <= now && !(x.e && x.e < now)).slice(0, 6)
+    const homeNews = (s.news || []).filter(x => x.s <= now && !(x.e && x.e < now)).slice(0, s.mobile ? 3 : 6)
       .map(x => ({ id: x.id, title: x.title, tag: (NTAG[x.tag] || [x.tag])[0], tagBg: (NTAG[x.tag] || ['', '#888'])[1], date: this.dbDate(x.s), url: x.url || '#' }));
 
     /* 計算結果 */
@@ -14737,6 +14786,8 @@ class Component extends DCLogic {
         const ord = this.layoutApply(ids, 'home'), hid = this.layoutOf('home').hidden;
         const homeOrd = {}, homeShow = {};
         ids.forEach(id => { homeOrd[id] = ord.indexOf(id); homeShow[id] = hid.indexOf(id) < 0; });
+        // 手機預設不放 480px 高的跑榜小窗；使用者在自訂首頁按「顯示」才記進 mobileShow
+        if (s.mobile && !(((s.layout || {}).home || {}).mobileShow || []).includes('studio')) homeShow.studio = false;
         const nameOf = {}; this.HOME_BLOCKS.forEach(([id, n]) => { nameOf[id] = n; });
         const navAll = []; navSpec.forEach(([label, items]) => items.forEach(([id, name]) => navAll.push({ id, name, group: label })));
         const navOrd = this.layoutApply(navAll.map(x => x.id), 'nav'), navHid = this.layoutOf('nav').hidden;
@@ -14768,7 +14819,7 @@ class Component extends DCLogic {
           guidePrevOpacity: g && g.step === 0 ? '.35' : '1',
           guideNextLabel: g && g.step === this.GUIDE.length - 1 ? '開始使用' : '下一步 →',
           guideHideChecked: !!s.guideHide,
-          layoutHomeRows: ord.map(id => row(id, nameOf[id], '', hid.indexOf(id) >= 0, false)),
+          layoutHomeRows: ord.map(id => row(id, nameOf[id], '', !homeShow[id], false)),
           layoutNavRows: navOrd.map(id => navById[id]).filter(Boolean)
             .map(x => row(x.id, x.name, x.group, navHid.indexOf(x.id) >= 0, x.id === 'home' || x.id === 'account')),
         };
@@ -15569,7 +15620,7 @@ class Component extends DCLogic {
       onLayoutReset: () => { this.layoutSave({}); },
       onSongCalc: e => { const id = +e.currentTarget.dataset.id; this.setState({ songId: null, ctab: 'ep', songKey: id, epq: '' }); this.go('calc'); },
       onPidKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.bindPid(); } },
-      onCopyLink: () => { try { navigator.clipboard.writeText(location.href).then(() => this._toast('已複製這一頁的連結'), () => this._toast('無法複製，請手動複製網址')); } catch (e) { this._toast('無法複製，請手動複製網址'); } },
+      onCopyLink: () => { if (this.state.mobile && navigator.share) { navigator.share({ title: document.title, url: location.href }).catch(() => {}); return; } try { navigator.clipboard.writeText(location.href).then(() => this._toast('已複製這一頁的連結'), () => this._toast('無法複製，請手動複製網址')); } catch (e) { this._toast('無法複製，請手動複製網址'); } },
       onClearField: e => { const k = e.currentTarget.dataset.k; const patch = { [k]: '' }; if (k === 'sq') patch.sp = 1; if (k === 'gq') patch.gp = 1; if (k === 'cq') patch.cp = 1; if (k === 'dbq') patch.dbN = 48; this.setState(patch); },
       onDbClearFilters: () => { const p = this.state.page, patch = { dbq: '', dbN: 48 }; (this.URL_KEYS[p] || []).forEach(k => { if (k !== 'cdSort' && k !== 'stTab') patch[k] = (this._urlDefaults || {})[k]; }); this.setState(patch); },
       /* 首頁：通知膠囊、自訂面板、功能引導 */
