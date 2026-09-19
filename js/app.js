@@ -277,6 +277,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/19', t: '瀏覽器推播、行事曆訂閱源、每頁分享預覽圖', s: '我的帳號的偵測訂閱區多了「開啟瀏覽器推播」：條件成立或有人回覆時，就算沒開著網站也會跳系統通知（站方要先設定 VAPID 金鑰）；活動日曆多了「訂閱」，用 webcal 把活動與卡池訂進手機行事曆會自動更新；分享網址到社群時每一頁各有自己的大圖預覽。' },
     { d: '2026/09/19', t: '今日摘要、行事曆匯出、分享圖卡、提問所版型、團體主題色、空狀態與視窗整理', s: '首頁多了「今日摘要」：活動第幾天、T1000 線與我的一天變化、快結束／今天開始的卡池、今天的公告、跑榜計畫與豆森待辦；活動總覽與活動日曆可匯出 .ics 加進手機行事曆；我的排名、收集率、豆森進度可產生分享圖卡；提問所新增「車隊招募」「榜線回報」兩類並附範本；外觀可選團體主題色（六團強調色）；全站空狀態改成同一種樣式，歌曲視窗的關閉鈕不再被擠到第二行。' },
     { d: '2026/09/19', t: '跑榜計畫器、收藏與待辦頁、抽卡預算、儲存設定', s: '活動試算多了「目標名次」籤（直接帶入預測終線）與「帶入我的活動P」，並依剩餘天數攤成每天要打幾場、幾小時、多少體力，首頁與活動總覽會提示；新增「收藏與待辦」頁：卡片、角色、家具、歌曲、卡池詳情都能按星號收藏，待辦列出跑榜差距、豆森缺的家具、未讀通知；抽卡天井加「每天存石 × 距卡池天數」預算，可點未來卡池自動填天數；計算中心與跑榜工作室都能把整組設定存成「我的設定」一鍵套用（備份與雲端同步一起帶）。' },
     { d: '2026/09/19', t: '新增活動總覽頁、詳情視窗的相關連結、側欄改依資料來源分組並自動列出常用', s: '活動總覽把本期活動的倒數、我的名次、各段榜線與終線預測、當期卡池、加分卡、劇情集中在一頁；卡片、角色、家具、歌曲的詳情視窗多了「相關」連結（同期卡池、卡片劇情、豆森對話、虛擬 Live）；側欄改成即時資料／遊戲資料／計算工具／遊戲／說明與社群五組，用過兩次以上的頁面自動排進「常用」；首頁綁定 Player ID 後可一鍵把隊伍與展示卡帶入收集率。' },
@@ -455,6 +456,7 @@ class Component extends DCLogic {
     favs: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-fav') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
     calcPresets: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-calc-presets') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
     planTier: 0, planHrs: 3, gcDaily: 100, gcDays: 0,
+    pushOn: (() => { try { return localStorage.getItem('sekai-push') === '1'; } catch (e) { return false; } })(), pushBusy: false,
     recent: (() => { try { return JSON.parse(localStorage.getItem('sekai-recent') || '[]'); } catch (e) { return []; } })(),
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
@@ -1106,6 +1108,7 @@ class Component extends DCLogic {
     try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
     this.syncFrames();
   }
+  _b64uBytes(str) { let b = String(str || '').replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '='; return Uint8Array.from(atob(b), c => c.charCodeAt(0)); }
   /* 團體主題色：第四個獨立軸，只換強調色（--accent／--cta／--rainbow），底色與深淺色照舊 */
   applyUnit(u) {
     const c = document.documentElement.classList;
@@ -2004,7 +2007,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=18ff910d12';
+      s.src = 'data/billing.js?v=11c51c67ec';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2217,7 +2220,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=e4da3d7a19').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=171aeb7108').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -4739,6 +4742,9 @@ class Component extends DCLogic {
         const desc = (this.PAGES[this.state.page] || [])[1] || '';
         const setM = (q, v) => { const m = document.querySelector(q); if (m && v && m.getAttribute('content') !== v) m.setAttribute('content', v); };
         setM('meta[name="description"]', desc); setM('meta[property="og:description"]', desc); setM('meta[property="og:title"]', want); setM('meta[property="og:url"]', location.href);
+        // 每頁各有自己的預覽圖（tools/build-og.mjs 產在 og/），沒有的頁退回首頁那張
+        const og = 'https://project-sekai-center.com/og/' + (this.PAGES[this.state.page] ? this.state.page : 'home') + '.jpg';
+        setM('meta[property="og:image"]', og); setM('meta[name="twitter:image"]', og);
       } catch (e) {}
       if (document.title !== want) document.title = want;
     } catch (e) {}
@@ -6734,6 +6740,10 @@ class Component extends DCLogic {
               ],
               // 站方沒設定寄信服務時要明講,否則訂閱建了卻永遠收不到信
               wMailOff: (s.caps && s.caps.mail === false),
+              pushSupported: (typeof window !== 'undefined') && 'PushManager' in window && 'serviceWorker' in navigator && 'Notification' in window,
+              pushAvail: !!(s.caps && s.caps.push), pushOn: !!s.pushOn, pushBusy: !!s.pushBusy,
+              pushBtn: s.pushBusy ? '處理中…' : (s.pushOn ? '關閉這台裝置的推播' : '開啟瀏覽器推播'),
+              pushHint: !(s.caps && s.caps.push) ? '站方尚未設定推播金鑰（VAPID），設定後這裡就能開。' : (s.pushOn ? '這台裝置會在偵測條件成立、有人回覆你時跳系統通知。' : '開啟後不必開著網站，條件成立時這台裝置會跳系統通知。'),
               wKindChips: kindKeys.map(k => {
                 const on = f && f.kind === k, st = chip(on, 'var(--cta)');
                 return Object.assign({ v: k, n: K[k].label + (K[k].available === false ? '（未啟用）' : '') }, st);
@@ -8601,6 +8611,31 @@ class Component extends DCLogic {
       onTheme: () => this.cycleTheme(),
       onAiDual: () => this.loadAi().then(() => this.setAiDual(!this.state.aiDual)).catch(() => {}),
       onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
+      onPushToggle: async () => {
+        const s = this.state; if (s.pushBusy) return;
+        this.setState({ pushBusy: true });
+        try {
+          if (s.pushOn) {
+            const reg = await navigator.serviceWorker.ready, cur = await reg.pushManager.getSubscription();
+            if (cur) { try { await this.api('/api/push', { method: 'DELETE', body: { endpoint: cur.endpoint } }); } catch (e) {} await cur.unsubscribe(); }
+            this.setState({ pushOn: false }); try { localStorage.setItem('sekai-push', '0'); } catch (e) {}
+            this._toast('已關閉這台裝置的推播');
+          } else {
+            const key = (s.caps || {}).push_key; if (!key) { this._toast('站方尚未設定推播金鑰'); return; }
+            /* 權限要在點擊的同一個手勢裡要，先問再等 service worker */
+            const within = (pr, ms, why) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(why)), ms))]);
+            const perm = await within(Notification.requestPermission(), 60000, '瀏覽器沒有回應通知權限');
+            if (perm !== 'granted') { this._toast('瀏覽器沒有允許通知'); return; }
+            const reg = await within(navigator.serviceWorker.ready, 15000, 'service worker 還沒就緒，稍後再試');
+            const sub = (await reg.pushManager.getSubscription()) || await within(reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this._b64uBytes(key) }), 20000, '推播服務沒有回應（無痕模式不支援推播）');
+            const j = sub.toJSON();
+            await this.api('/api/push', { method: 'POST', body: { endpoint: sub.endpoint, keys: j.keys || {} } });
+            this.setState({ pushOn: true }); try { localStorage.setItem('sekai-push', '1'); } catch (e) {}
+            this._toast('已開啟推播');
+          }
+        } catch (e) { this._toast('推播設定失敗：' + String(e && e.message || e).slice(0, 60)); }
+        finally { this.setState({ pushBusy: false }); }
+      },
       onUnitTheme: e => { const v = e.currentTarget.dataset.v || ''; this.setState({ unit: v }); this.applyUnit(v); },
       onShareCard: e => { this.shareCard(e.currentTarget.dataset.kind); },
       onIcsEvent: () => { const it = this.icsEventItem(); this.icsDownload(it ? ('sekai-event-' + it.uid.replace('event-', '')) : 'sekai-event', it ? [it] : []); },

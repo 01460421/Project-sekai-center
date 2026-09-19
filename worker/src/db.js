@@ -511,3 +511,23 @@ export async function applyIpCount(db, ip, since) {
 export async function logApplyIp(db, ip) {
   try { await run(db, 'INSERT INTO apply_ip (ip, at) VALUES (?, ?)', ip, now()); } catch (e) {}
 }
+
+/* ---------- Web Push 訂閱 ---------- */
+export async function addPushSub(db, userId, s) {
+  await run(db, `INSERT INTO push_subs (id,user_id,endpoint,p256dh,auth,ua,created_at) VALUES (?,?,?,?,?,?,?)
+                 ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id, p256dh=excluded.p256dh, auth=excluded.auth, ua=excluded.ua, fail_n=0`,
+    newId(), userId, s.endpoint, s.p256dh || '', s.auth || '', String(s.ua || '').slice(0, 200), now());
+}
+export const deletePushSub = (db, userId, endpoint) => run(db, 'DELETE FROM push_subs WHERE user_id=? AND endpoint=?', userId, endpoint);
+export const dropPushSub = (db, id) => run(db, 'DELETE FROM push_subs WHERE id=?', id);
+export const bumpPushFail = (db, id) => run(db, 'UPDATE push_subs SET fail_n=fail_n+1 WHERE id=?', id);
+export const countPushSubs = async (db, userId) => { const r = await one(db, 'SELECT COUNT(*) AS n FROM push_subs WHERE user_id=?', userId); return r ? (r.n || 0) : 0; };
+export const pushSubsByUsers = (db, ids) => ids.length
+  ? all(db, `SELECT * FROM push_subs WHERE fail_n < 5 AND user_id IN (${ids.map(() => '?').join(',')})`, ...ids)
+  : Promise.resolve([]);
+/* 一天內還沒叮過的事件；再舊的就算了（cron 停過一陣子回來不該一次叮爆） */
+export const pendingPushEvents = (db, limit) =>
+  all(db, 'SELECT id, user_id FROM events WHERE pushed_at IS NULL AND created_at > ? ORDER BY created_at LIMIT ?', now() - 86400, Math.min(100, limit || 50));
+export const markPushed = (db, ids) => ids.length
+  ? run(db, `UPDATE events SET pushed_at=? WHERE id IN (${ids.map(() => '?').join(',')})`, now(), ...ids)
+  : Promise.resolve();

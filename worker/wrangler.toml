@@ -32,7 +32,7 @@ binding = "DB"
 database_name = "pjsk-users"
 database_id = "63ad1759-8919-4ed5-aa88-0b4c31e347ae"
 
-# 非機密設定。機密（GOOGLE_CLIENT_SECRET / DISCORD_CLIENT_SECRET /
+# 非機密設定。機密（GOOGLE_CLIENT_SECRET / DISCORD_CLIENT_SECRET / VAPID_PUBLIC / VAPID_PRIVATE /
 # RESEND_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / SESSION_SECRET）一律用
 # `wrangler secret put <NAME>`，不要寫進這個檔案（它會進 git）。
 [vars]

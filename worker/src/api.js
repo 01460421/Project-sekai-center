@@ -28,7 +28,9 @@ import {
   markRead,
   aiUsedTodaySite,
   listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
-  addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart } from './db.js';
+  addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart,
+  addPushSub, deletePushSub, countPushSubs } from './db.js';
+import { pushEnabled } from './push.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce, approveOnExists } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
@@ -363,6 +365,8 @@ export async function handleApi(req, env, url, user) {
         mail: !!env.RESEND_API_KEY,
         ai: !!env.ANTHROPIC_API_KEY,
         discord: !!env.DISCORD_CLIENT_ID,
+        push: pushEnabled(env),
+        push_key: pushEnabled(env) ? env.VAPID_PUBLIC : '',
       } });
     }
 
@@ -767,6 +771,29 @@ export async function handleApi(req, env, url, user) {
       const id = str((b.value || {}).id, 64);
       await markRead(env.DB, user.id, id || null);
       return out({ ok: true, unread: await unreadCount(env.DB, user.id) });
+    }
+
+    /* ---------- Web Push 訂閱：一個帳號可登記多台裝置；金鑰沒設就回 503 讓前端講明 ---------- */
+    if (p === '/api/push') {
+      if (!user) return out({ error: 'not_signed_in', message: '請先登入' }, 401);
+      const on = pushEnabled(env);
+      if (m === 'GET') return out({ enabled: on, key: on ? env.VAPID_PUBLIC : '', subs: on ? await countPushSubs(env.DB, user.id) : 0 });
+      if (m === 'POST') {
+        if (!on) return out({ error: 'push_disabled', message: '站方尚未設定推播金鑰' }, 503);
+        const b = await readJson(req, 4096);
+        if (b.bad || !isObj(b.value)) return out({ error: 'bad_json' }, 400);
+        const ep = String(b.value.endpoint || ''), keys = isObj(b.value.keys) ? b.value.keys : {};
+        if (!/^https:\/\/\S{10,1900}$/.test(ep)) return out({ error: 'bad_endpoint', message: '訂閱端點格式不對' }, 400);
+        await addPushSub(env.DB, user.id, { endpoint: ep, p256dh: String(keys.p256dh || '').slice(0, 200), auth: String(keys.auth || '').slice(0, 100), ua: req.headers.get('User-Agent') || '' });
+        return out({ ok: true, subs: await countPushSubs(env.DB, user.id) });
+      }
+      if (m === 'DELETE') {
+        const b = await readJson(req, 4096);
+        const ep = b.value && b.value.endpoint;
+        if (ep) await deletePushSub(env.DB, user.id, String(ep).slice(0, 2000));
+        return out({ ok: true, subs: on ? await countPushSubs(env.DB, user.id) : 0 });
+      }
+      return out({ error: 'method_not_allowed' }, 405);
     }
 
     if (p === '/api/events') {

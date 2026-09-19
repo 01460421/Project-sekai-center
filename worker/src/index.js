@@ -21,6 +21,8 @@ import { handleApi } from './api.js';
 import { handleAdmin } from './admin.js';
 import { runWatches } from './watch.js';
 import { flushMail } from './mail.js';
+import { flushPush, pushEnabled } from './push.js';
+import { handleCal } from './cal.js';
 import { dueTasks, finishTask, addEvent, claimTask, reclaimStaleTasks } from './db.js';
 import { runApplyReview } from './review.js';
 
@@ -259,6 +261,8 @@ export default {
     /* 前端排名 API 的代理：直連 api.hisekai.org 被 CORS 或網路擋下時，先走這裡再退到公共代理。
        只放行固定幾條路徑、只讀、邊緣快取 30 秒，不帶 cookie。 */
     if (p.startsWith('/proxy/hisekai/')) return proxyHisekai(req, url);
+    /* 行事曆訂閱源：公開、只讀、邊緣快取一小時 */
+    if (p.startsWith('/cal/')) return handleCal(req, env, url);
     if (p.startsWith('/api/') || p === '/api') {
       const user = await currentUser(req, env);
       const r = await handleApi(req, env, url, user);
@@ -303,6 +307,10 @@ export default {
          事件寫進 events 的當下使用者在網站上就看得到了,寄信是額外的。 */
       if (env.RESEND_API_KEY) {
         try { await flushMail(env); } catch (e) { console.error('flushMail', e && e.message); }
+      }
+      /* 瀏覽器推播：有設 VAPID 金鑰才跑；一人一輪只叮一次 */
+      if (pushEnabled(env)) {
+        try { await flushPush(env); } catch (e) { console.error('flushPush', e && e.message); }
       }
     })());
   },
