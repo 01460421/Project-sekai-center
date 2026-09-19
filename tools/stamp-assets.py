@@ -22,7 +22,7 @@ ASSET_FILES = ['support.js']
 # js/*.js 內部也會用 import('./data/xxx.js?v=…') 動態載入資料檔,那些戳記
 # 以前是手改的,改完資料忘記改戳記,瀏覽器就會用一年期 immutable 快取黏住舊資料。
 # 這些檔案要先被改寫,改完之後它們自己的雜湊才算得準,所以分兩輪。
-CODE = ['js/app.js', 'js/app.min.js', 'js/core.js', 'support.js']
+CODE = ['js/app.js', 'js/app.min.js', 'js/ai.js', 'js/ai.min.js', 'js/core.js', 'support.js']
 
 
 def digest(path):
@@ -47,7 +47,7 @@ def collect(only=None):
     return out
 
 
-def restamp(path, assets, only_existing=False):
+def restamp(path, assets, only_existing=False, dry=False):
     """把 path 裡對這些資源的引用重新戳上版本。有改到回 True。
 
     only_existing=True 時「只更新已經有 ?v= 的地方,絕不替沒戳記的網址加上戳記」。
@@ -67,25 +67,28 @@ def restamp(path, assets, only_existing=False):
         pat = re.compile(r'(["\'])((?:\./|/)?' + re.escape(rel) + r')' + ver + r'\1')
         new = pat.sub(lambda m: f'{m.group(1)}{m.group(2)}?v={h}{m.group(1)}', new)
     if new != src:
-        path.write_text(new, encoding='utf-8')
+        if not dry:
+            path.write_text(new, encoding='utf-8')
         return True
     return False
 
 
 def check_min():
-    """app.html 載的是 js/app.min.js；它的檔頭記著來源 app.js 的雜湊（去掉 ?v= 戳記算的）。
-    對不上代表改了 app.js 沒重新壓縮 —— 這裡直接失敗，別讓舊程式碼上線。"""
-    src, out = ROOT / 'js' / 'app.js', ROOT / 'js' / 'app.min.js'
-    if not out.is_file():
-        return None
-    want = hashlib.sha256(re.sub(r'\?v=[0-9a-f]+', '', src.read_text(encoding='utf-8')).encode('utf-8')).hexdigest()[:10]
-    m = re.match(r'/\*! src=([0-9a-f]+) \*/', out.read_text(encoding='utf-8', errors='ignore')[:64])
-    if not m or m.group(1) != want:
-        return f'js/app.min.js 不是由目前的 js/app.js 壓出來的（檔頭 {m.group(1) if m else "缺"} != {want}），請先跑 python3 tools/build-min.py'
+    """app.html 載 js/app.min.js、app.js 動態載 js/ai.min.js；兩個壓縮檔的檔頭都記著來源的雜湊
+    （去掉 ?v= 戳記算的）。對不上代表改了來源沒重新壓縮 —— 直接失敗，別讓舊程式碼上線。"""
+    for name in ('app', 'ai'):
+        src, out = ROOT / 'js' / f'{name}.js', ROOT / 'js' / f'{name}.min.js'
+        if not out.is_file():
+            continue
+        want = hashlib.sha256(re.sub(r'\?v=[0-9a-f]+', '', src.read_text(encoding='utf-8')).encode('utf-8')).hexdigest()[:10]
+        m = re.match(r'/\*! src=([0-9a-f]+) \*/', out.read_text(encoding='utf-8', errors='ignore')[:64])
+        if not m or m.group(1) != want:
+            return f'js/{name}.min.js 不是由目前的 js/{name}.js 壓出來的（檔頭 {m.group(1) if m else "缺"} != {want}），請先跑 python3 tools/build-min.py'
     return None
 
 
 def main():
+    check_only = '--check' in sys.argv
     err = check_min()
     if err:
         print(err, file=sys.stderr)
@@ -95,14 +98,14 @@ def main():
     # 也要含 js:js/app.js 會用 ?v= 引用 js/core.js。core.js 不反過來引用 app.js,
     # 所以先算 core.js 的雜湊再改 app.js 不會有循環。
     data_assets = collect(['data', 'css', 'vendor', 'js'])
-    code_changed = [f for f in CODE if restamp(ROOT / f, data_assets, only_existing=True)]
+    code_changed = [f for f in CODE if restamp(ROOT / f, data_assets, only_existing=True, dry=check_only)]
 
     # 第二輪:所有資源(含剛被改過的程式碼檔)的戳記寫進 HTML。
     assets = collect()
     if not assets:
         print('找不到任何資源檔', file=sys.stderr)
         return 1
-    changed = [n for n in HTML if restamp(ROOT / n, assets)]
+    changed = [n for n in HTML if restamp(ROOT / n, assets, dry=check_only)]
 
     print(f'資源 {len(assets)} 個：')
     for rel, h in assets.items():
@@ -129,6 +132,9 @@ def main():
         print('\n還有對不上的戳記：', file=sys.stderr)
         for line in sorted(set(stale)):
             print('  ' + line, file=sys.stderr)
+        return 1
+    if check_only and (code_changed or changed):
+        print('戳記過期（--check 模式不改檔）：請跑 python3 tools/stamp-assets.py 後再提交', file=sys.stderr)
         return 1
     print('戳記一致性檢查：通過')
     return 0
