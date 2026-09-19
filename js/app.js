@@ -2181,7 +2181,7 @@ class Component extends DCLogic {
     const inline = t => esc(t)
       .replace(/`([^`]+)`/g, '<code style="background:var(--card);padding:1px 5px;border-radius:5px;font-size:.92em">$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<b style="color:var(--ink)">$1</b>')
-      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<i>$1</i>');
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>')   // 不用 lookbehind：Safari 16.4 以前解析期就會 SyntaxError，整支腳本不執行;
     const lines = String(src || '').split('\n');
     const out = [];
     let i = 0, list = null;
@@ -7624,7 +7624,7 @@ class Component extends DCLogic {
   URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
-    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab'] };
+    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'] };
   _urlOf(s) {
     const q = new URLSearchParams(); q.set('page', s.page);
     if (s.dbPick && this.DB_PAGES.includes(s.page)) q.set('pick', s.dbPick.kind + ':' + s.dbPick.id);   // 圖鑑詳情也能分享
