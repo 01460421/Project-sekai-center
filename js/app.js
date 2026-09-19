@@ -2802,7 +2802,286 @@ class Component extends DCLogic {
   /* ---------- end @@SEC-A@@ ---------- */
 
   /* @@SEC-B@@ members（成員：名冊、成員編輯、在線人員）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
+  /* 成員分頁＝兩個子畫面（state.carMbView：'roster' 名冊｜'online' 在線人員）。
+     名冊 GET /members（整個車隊共用、不分車；成員版沒有 uid／綜合力）；編輯 POST /member（管理員）。
+     在線人員 GET /online：「本時段就位」跟著車走，所以每一台車平行各問一次；語音／網頁／Discord 在線是整個車隊共用，
+     取第一個成功的回應。開著這個畫面時每 10 秒自動更新（分頁藏起來、離開車隊頁或切走就停）。
+     自己的 state 鍵一律 carMb 開頭：carMbView、carMbQ（搜尋字）、carMbSrv（名冊超過 300 人時的機器人端搜尋結果）、
+     carMbEdit（編輯中的成員，含 gid）與表單 carMbFB／carMbFS／carMbFP／carMbFA。 */
+  CAR_MB_ID = { pusher: '推者', runner: '跑者', s6: 'S6專職', '跑推兼任': '跑推兼任', 'pusher+s6': '推者+S6', '跑推+s6': '跑推+S6' };
+  carSec_members(force) {
+    if (!force && this.state.carMbEdit) this.setState({ carMbEdit: null });   // 從別的分頁切回來：不要冒出上次沒關的編輯視窗
+    this.carMbLoad(force);
+    if (this.state.carMbView === 'online') this.carMbOnline(force);
+  }
+  carMbLoad(force) { return this.carSecFetch(this.carSecKey('members'), '/members', {}, force); }
+  /* 機器人最多回 300 位（依倍率排序）。名冊有被截斷時，搜尋改問機器人（比對名稱、別名；管理員也比對 uid），
+     否則直接在手上的名單裡篩，不必每打一個字就打一次 API。 */
+  carMbSearch(raw) {
+    clearTimeout(this._carMbQT);
+    const q = String(raw || '').trim();
+    const sec = this.carSecOf(this.carSecKey('members')), d = sec && sec.data;
+    const n = d && Array.isArray(d.members) ? d.members.length : 0;
+    if (!q || !d || !((+d.total || 0) > n)) return;
+    const gid = String(this.state.g || ''), seq = this._carMbQSeq = (this._carMbQSeq || 0) + 1;
+    this._carMbQT = setTimeout(async () => {
+      let r;
+      try { r = await this.carApi('/members', { query: { q } }); }
+      catch (e) { r = { members: [], total: 0, err: (e && e.message) || '搜尋失敗' }; }
+      if (seq !== this._carMbQSeq || String(this.state.g || '') !== gid) return;   // 已經打了新的字或換了車隊
+      this.setState({ carMbSrv: { gid, q, list: Array.isArray(r.members) ? r.members : [], total: +r.total || 0, err: String(r.err || '') } });
+    }, 250);
+  }
+  carMbFind(uid) {
+    const sec = this.carSecOf(this.carSecKey('members')), d = sec && sec.data;
+    const srv = this.state.carMbSrv;
+    const all = [].concat((d && Array.isArray(d.members)) ? d.members : [], (srv && Array.isArray(srv.list)) ? srv.list : []);
+    return all.find(x => x && x.uid != null && String(x.uid) === String(uid)) || null;
+  }
+  carMbOpen(uid) {
+    const m = this.carMbFind(uid); if (!m) { this._toast('找不到這位成員，請重新整理'); return; }
+    const num = v => (v === null || v === undefined || v === '' || !isFinite(+v) || +v === 0) ? '' : String(+v);
+    const pw = +m.power > 0 ? String(+(+m.power / 10000).toFixed(4)) : '';
+    const al = (Array.isArray(m.aliases) ? m.aliases : []).filter(a => typeof a === 'string' && a.trim()).join('、');
+    const f = { gid: String(this.state.g || ''), uid: String(m.uid), name: String(m.name || ''), identity: String(m.identity || ''), b0: num(m.bonus), s0: num(m.s6_bonus), p0: pw, a0: al };
+    this.setState({ carMbEdit: f, carMbFB: f.b0, carMbFS: f.s0, carMbFP: f.p0, carMbFA: f.a0 });
+    if (!this._carMbEsc) {   // Esc 關閉（全站的 _closeAll 不認得這個視窗）
+      this._carMbEsc = e => { if (e.key === 'Escape' && this.state.carMbEdit) this.setState({ carMbEdit: null }); };
+      document.addEventListener('keydown', this._carMbEsc);
+    }
+  }
+  carMbAliases(raw) {
+    const seen = new Set(), out = [];
+    String(raw == null ? '' : raw).split(/[,，、\n]/).map(x => x.trim()).filter(Boolean).forEach(a => { if (!seen.has(a)) { seen.add(a); out.push(a); } });
+    return out;
+  }
+  /* 綜合力：跟機器人同一套規則（小於 1000 當「萬」）；可以寫 35.2萬／35.2w。整數在這裡先算好再送，
+     避免機器人 int(35.2*10000)=351999 的浮點誤差。回傳 null＝格式錯。 */
+  carMbPower(raw) {
+    let t = String(raw == null ? '' : raw).trim().replace(/[,，\s]/g, '');
+    if (!t) return '';
+    const wan = /[萬万wW]$/.test(t); if (wan) t = t.slice(0, -1);
+    if (!/^\d+(\.\d+)?$/.test(t)) return null;
+    const v = +t;
+    return (wan || v < 1000) ? Math.round(v * 10000) : Math.round(v);
+  }
+  async carMbSave() {
+    const s = this.state, f = s.carMbEdit; if (!f || s.carActBusy) return;
+    const body = { uid: f.uid }, bad = [];
+    const rate = (raw, lb, k, orig) => {
+      const t = String(raw == null ? '' : raw).trim(); if (t === '' || t === orig) return;
+      if (!/^\d+(\.\d+)?$/.test(t)) { bad.push(lb + '格式錯誤（例：3.66）'); return; }
+      const v = +t;
+      if (v !== 0 && !(v >= 1.18 && v <= 3.88)) { bad.push(lb + '須為 0 或 1.18～3.88'); return; }
+      if ((orig === '' ? 0 : +orig) === v) return;          // 3.9 對 3.90、空白對 0 都算沒改
+      body[k] = v;
+    };
+    rate(s.carMbFB, '推手倍率', 'bonus', f.b0);
+    rate(s.carMbFS, 'S6 倍率', 's6_bonus', f.s0);
+    const pt = String(s.carMbFP == null ? '' : s.carMbFP).trim();
+    if (pt !== '' && pt !== f.p0) {
+      const p = this.carMbPower(pt);
+      if (p === null) bad.push('綜合力格式錯誤（例：35.2 或 352000）');
+      else if (p !== this.carMbPower(f.p0)) body.power = p;
+    }
+    const al = this.carMbAliases(s.carMbFA);
+    if (al.length > 10) bad.push('別名最多 10 個（目前 ' + al.length + ' 個）');
+    else if (al.join('、') !== this.carMbAliases(f.a0).join('、')) body.aliases = al;
+    if (bad.length) { this._toast(bad[0], 2600); return; }
+    if (Object.keys(body).length < 2) { this._toast('沒有變更'); return; }
+    const d = await this.carAct('/member', body, r => (r && r.pending) ? String(r.msg || '已送出，稍後更新')
+      : (String((r && r.name) || f.name) + '：' + String((r && r.changed) || '已更新')));
+    if (!d) return;
+    this.setState({ carMbEdit: null, carMembers: null, carMbSrv: null });   // carMembers＝班表彈出框的成員清單快取，倍率變了要重抓
+    this.carMbLoad(true);
+    if (this.state.carMbQ) this.carMbSearch(this.state.carMbQ);
+    if (d.pending) setTimeout(() => this.carMbLoad(true), 5000);
+  }
+  /* 在線人員：每台車各問一次 /online（同一輪一次 setState）。quiet＝輪詢：不顯示載入骨架、失敗時保留上一份資料。 */
+  async carMbOnline(force, quiet) {
+    const gd = this.carGuild(); if (!gd) return null;
+    const key = this.carSecKey('mbonline'), cur = this.carSecOf(key);
+    this.carMbPoll();
+    if (!force && cur && (cur.busy || (cur.data && Date.now() - (cur.at || 0) < 8000))) return cur.data;
+    if (this._carMbOnBusy) return null;
+    this._carMbOnBusy = true;
+    const gid = String(gd.gid), cars = this.carCars(gd);
+    if (!quiet) this.carSecPut(key, { busy: true, err: '' });
+    try {
+      // 機器人自己回的 503（例如「伺服器不在線」＝讀不到這個 Discord 伺服器）帶中文說明，不要被 carApi 換成「連不上」
+      const why = e => (e && e.code === 'not_found') ? '機器人版本不支援這個功能，請更新機器人'
+        : (e && e.status === 503 && e.data && typeof e.data.error === 'string' && /[^\x00-\x7f]/.test(e.data.error)) ? ('機器人回報：' + e.data.error.slice(0, 80))
+        : ((e && e.message) || '讀取失敗');
+      const res = await Promise.all(cars.map(c => this.carApi('/online', { gid, car: c.no }).then(
+        d => ({ no: c.no, name: c.name, d, err: '' }),
+        e => ({ no: c.no, name: c.name, d: null, err: why(e) }))));
+      if (String(this.state.g || '') !== gid) return null;          // 讀到一半換了車隊
+      const ok = res.some(r => r.d), prev = this.carSecOf(key);
+      const firstErr = (res.find(r => r.err) || {}).err || '讀取失敗';
+      this.carSecPut(key, ok ? { data: { cars: res }, err: '', busy: false, at: Date.now() }
+        : { data: (quiet && prev && prev.data) || null, err: firstErr, busy: false, at: (prev && prev.at) || 0 });
+      return ok ? { cars: res } : null;
+    } finally { this._carMbOnBusy = false; }
+  }
+  carMbPoll() {
+    if (this._carMbPollT) return;
+    this._carMbPollT = setInterval(() => {
+      const s = this.state;
+      if (s.page !== 'car' || s.carTab !== 'members' || s.carMbView !== 'online' || !this.carGuild()) { clearInterval(this._carMbPollT); this._carMbPollT = null; return; }
+      if ((typeof document !== 'undefined' && document.hidden) || this._carMbOnBusy) return;
+      this.carMbOnline(true, true);
+    }, 10000);
+  }
+  carSecVals_members(c) {
+    const { s, gd, admin, segOn } = c;
+    const view = s.carMbView === 'online' ? 'online' : 'roster';
+    const gid = String(gd.gid), isDc = /^\d+$/.test(gid);
+    const fmt = v => (v === null || v === undefined || v === '' || !isFinite(+v) || +v === 0) ? '—' : (+v).toFixed(2);
+    const sec = this.carSecOf(this.carSecKey('members'));
+    const d = sec && sec.data, all = (d && Array.isArray(d.members)) ? d.members.filter(x => x && typeof x === 'object') : [];
+    const total = d ? Math.max(+d.total || 0, all.length) : 0;
+    const on = this.carSecOf(this.carSecKey('mbonline'));
+    const od = on && on.data, oc = (od && Array.isArray(od.cars)) ? od.cars : [];
+    const g0r = oc.find(r => r && r.d && typeof r.d === 'object'), g0 = g0r ? g0r.d : null;
+    const out = {
+      carMbIsRoster: view === 'roster', carMbIsOnline: view === 'online', carMbAdmin: admin,
+      carMbViews: [['roster', '名冊', d ? String(total) : ''], ['online', '在線人員', g0 ? String((isDc ? +g0.voice_total : +g0.web_total) || 0) : '']]
+        .map(([v, n, cnt]) => Object.assign({ v, n, cnt, sel: v === view ? 'true' : 'false', cntFg: v === view ? 'var(--accent-deep)' : 'var(--text-3)' }, segOn(v === view))),
+      onCarMbView: e => { const v = e.currentTarget.dataset.v === 'online' ? 'online' : 'roster'; this.setState({ carMbView: v }); if (v === 'online') setTimeout(() => this.carMbOnline(false), 0); },
+      onCarMbQ: e => { const v = e.target.value; this.setState({ carMbQ: v }); this.carMbSearch(v); },
+      onCarMbRetry: () => this.carMbLoad(true),
+      onCarMbOnRetry: () => this.carMbOnline(true),
+      onCarMbEdit: e => this.carMbOpen(e.currentTarget.dataset.uid),
+      onCarMbClose: () => this.setState({ carMbEdit: null }),
+      onCarMbSave: () => this.carMbSave(),
+      // Enter 儲存；中文輸入法選字時的 Enter 不算（Safari 選字那一下 isComposing 是 false、keyCode 是 229）
+      onCarMbKey: e => { if (e.key !== 'Enter' || e.keyCode === 229 || (e.nativeEvent && e.nativeEvent.isComposing)) return; e.preventDefault(); this.carMbSave(); },
+      // 手機底部抽屜下滑關閉（全站手勢呼叫的 _closeAll 不認得這個視窗，自己處理）
+      onCarMbTs: e => { const t = e.touches && e.touches[0]; this._carMbT0 = t && e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null; },
+      onCarMbTe: e => {
+        const a = this._carMbT0, t = e.changedTouches && e.changedTouches[0]; this._carMbT0 = null;
+        if (!a || !t || !this.state.mobile) return;
+        const dx = t.clientX - a.x, dy = t.clientY - a.y;
+        if (dy > 90 && dy > Math.abs(dx) * 1.5 && e.currentTarget.scrollTop <= 0) this.setState({ carMbEdit: null });
+      },
+    };
 
+    if (view === 'roster') {
+      const qRaw = String(s.carMbQ || '').trim(), q = qRaw.toLowerCase();
+      const trunc = total > all.length;
+      const srv = (q && trunc && s.carMbSrv && s.carMbSrv.gid === gid && String(s.carMbSrv.q).toLowerCase() === q) ? s.carMbSrv : null;
+      let list = all;
+      if (q && srv) list = (srv.list || []).filter(x => x && typeof x === 'object');
+      else if (q) list = all.filter(m => String(m.name || '').toLowerCase().includes(q)
+        || (Array.isArray(m.aliases) ? m.aliases : []).some(a => String(a).toLowerCase().includes(q))
+        || (admin && m.uid != null && String(m.uid).toLowerCase().includes(q)));
+      const rows = list.slice(0, 300).map(m => {
+        const al = (Array.isArray(m.aliases) ? m.aliases : []).filter(a => typeof a === 'string' && a.trim()).map(a => a.trim());
+        const idc = String(m.identity || ''), id = this.CAR_MB_ID[idc] || idc;
+        const pw = +m.power > 0 ? (+m.power / 10000).toFixed(1) + ' 萬' : '—';
+        const uid = m.uid != null ? String(m.uid) : '';
+        return { uid, canEdit: admin && !!uid, name: String(m.name || '') || '（未命名）', id, hasId: !!id,
+          bonus: fmt(m.bonus), s6: fmt(m.s6_bonus), s6Fg: +m.s6_bonus > 0 ? 'var(--car-s6)' : 'var(--text-3)', power: pw,
+          al: al.length ? al.join('、') : '—', hasAl: al.length > 0, alTxt: '別名：' + al.join('、'),
+          line: '倍率 ' + fmt(m.bonus) + ' · S6 ' + fmt(m.s6_bonus) + (admin ? ' · 綜合 ' + pw : '') };
+      });
+      const head = admin ? [['名稱', 'left'], ['倍率', 'right'], ['S6', 'right'], ['綜合', 'right'], ['別名', 'left'], ['', 'right']]
+        : [['名稱', 'left'], ['倍率', 'right'], ['S6', 'right'], ['別名', 'left']];
+      const shown = q ? (srv ? srv.total : list.length) : total;
+      let more = '';
+      if (q && trunc && !srv) more = '成員超過 300 位，正在向機器人搜尋全部名單…';
+      else if (srv && srv.err) more = '搜尋全部名單失敗：' + srv.err;
+      else if (srv && srv.total > srv.list.length) more = '符合的人太多，只列出倍率最高的 ' + srv.list.length + ' 位。';
+      else if (!q && trunc) more = '成員太多，這裡只列出倍率最高的 ' + all.length + ' 位；用上面的搜尋可以找到其他人。';
+      Object.assign(out, {
+        carMbQ: s.carMbQ || '', carMbQPh: admin ? '搜尋名稱、別名或 ID' : '搜尋名稱或別名', carMbQW: s.mobile ? '100%' : '320px',
+        carMbLoading: !d && !(sec && sec.err), carMbErr: (!d && sec && sec.err) ? String(sec.err) : '', carMbReady: !!d,
+        carMbCnt: q ? ('符合 ' + shown + ' / ' + total + ' 人') : (total + ' 人'),
+        carMbNote: admin ? '點「編輯」修改倍率、綜合力與別名' : '倍率有誤請找管理員更新',
+        carMbWide: !s.mobile && rows.length > 0, carMbNarrow: !!s.mobile,
+        carMbCols: admin ? 'minmax(0,1.25fr) 58px 58px 70px minmax(0,1.5fr) 60px' : 'minmax(0,1.3fr) 58px 58px minmax(0,1.7fr)',
+        carMbHead: head.map(([n, al]) => ({ n, al })),
+        carMbRows: rows,
+        carMbEmpty: !rows.length && !(q && trunc && !srv),
+        carMbEmptyTxt: q ? ('找不到符合「' + qRaw + '」的成員。') : '還沒有登記的成員。成員要先在車隊裡用機器人的成員指令登記，這裡才會出現。',
+        carMbMore: !!more, carMbMoreTxt: more,
+      });
+      /* 編輯視窗（管理員；只認這個車隊的） */
+      const f = (admin && s.carMbEdit && s.carMbEdit.gid === gid) ? s.carMbEdit : null;
+      if (f) {
+        const pv = this.carMbPower(s.carMbFP), als = this.carMbAliases(s.carMbFA);
+        Object.assign(out, {
+          carMbEditShow: true, carMbEName: f.name || '（未命名）', carMbEId: this.CAR_MB_ID[f.identity] || f.identity, carMbEHasId: !!f.identity, carMbEUid: 'ID ' + f.uid,
+          carMbFB: s.carMbFB == null ? '' : String(s.carMbFB), carMbFS: s.carMbFS == null ? '' : String(s.carMbFS),
+          carMbFP: s.carMbFP == null ? '' : String(s.carMbFP), carMbFA: s.carMbFA == null ? '' : String(s.carMbFA),
+          carMbFPHint: pv === null ? '格式不對：填 35.2（萬）或 352000' : pv === '' ? '留空＝不改' : ('＝ ' + String(pv).replace(/\B(?=(\d{3})+$)/g, ',')),
+          carMbFAHint: als.length > 10 ? ('目前 ' + als.length + ' 個，最多 10 個') : (als.length + ' / 10 個別名'),
+          carMbFAFg: als.length > 10 ? 'color-mix(in oklab,#d64533 55%,var(--car-fg))' : 'var(--text-3)',
+          carMbFPFg: pv === null ? 'color-mix(in oklab,#d64533 55%,var(--car-fg))' : 'var(--text-3)',
+          carMbAF: !s.mobile,
+          carMbSaveBtn: s.carActBusy ? '處理中…' : '儲存',
+        });
+      } else out.carMbEditShow = false;
+      return out;
+    }
+
+    /* ===== 在線人員 ===== */
+    const ago = a => { a = Math.max(0, Math.floor(+a || 0)); return a < 60 ? '剛剛' : Math.floor(a / 60) + ' 分鐘前'; };
+    const cap = hex => ({ bg: 'color-mix(in oklab,' + hex + ' 15%,var(--card))', fg: 'color-mix(in oklab,' + hex + ' 55%,var(--car-fg))' });
+    const OK = cap('#2f9e57'), WARN = cap('#d9822b'), BAD = cap('#d64533'), NEU = { bg: 'var(--card-2)', fg: 'var(--text-3)' };
+    const multi = oc.length > 1;
+    const duty = oc.map(r => {
+      const dd = r && r.d && typeof r.d === 'object' ? r.d : null;
+      const planned = !!(dd && dd.run_planned);
+      const rows = planned && Array.isArray(dd.onduty) ? dd.onduty.map(x => {
+        x = x && typeof x === 'object' ? x : {};
+        const has = !!x.name, v = has ? (x.voice ? OK : WARN) : NEU, k = has ? (x.checked ? OK : BAD) : NEU;
+        return { pos: String(x.pos || ''), has, name: has ? String(x.name) : '空', nameFg: has ? 'var(--ink)' : 'var(--text-3)', s6: has && x.role === 's6',
+          vShow: isDc && has, vTxt: has ? (x.voice ? '#' + String(x.voice) : '未進語音') : '', vBg: v.bg, vFg: v.fg,
+          cShow: has, cTxt: has ? (x.checked ? '已簽到' : '未簽到') : '', cBg: k.bg, cFg: k.fg };
+      }) : [];
+      const seated = rows.filter(x => x.has);
+      const sum = planned ? ('就位 ' + seated.length + '/' + rows.length + (isDc ? ' · 語音 ' + seated.filter(x => x.vTxt !== '未進語音').length + '/' + seated.length : '')
+        + ' · 簽到 ' + seated.filter(x => x.cTxt === '已簽到').length + '/' + seated.length) : '';
+      const slot = dd ? this.carSlot(dd.hour) : '';
+      return { t: (multi ? String((r && r.name) || '') + ' · ' : '') + (slot || '目前時段'), sum, hasSum: !!sum,
+        err: r && r.err ? String(r.err) : '', hasErr: !!(r && r.err && !dd),
+        isIdle: !!dd && !planned, idle: (slot ? slot + ' ' : '') + '這個時段沒有開跑',
+        rows, cols: isDc ? '34px minmax(0,1fr) minmax(0,auto) auto' : '34px minmax(0,1fr) auto' };
+    });
+    const voice = (g0 && Array.isArray(g0.voice) ? g0.voice : []).filter(v => v && typeof v === 'object').map(v => {
+      const mem = (Array.isArray(v.members) ? v.members : []).filter(p => p && typeof p === 'object');
+      return { ch: '#' + String(v.channel || ''), cnt: String(+v.count || mem.length) + ' 人',
+        mem: mem.map(p => ({ n: String(p.name || p.display || '?'), title: p.display && String(p.display) !== String(p.name) ? 'Discord 名稱：' + String(p.display) : '',
+          bg: p.crew ? 'color-mix(in oklab,var(--accent) 13%,var(--card))' : 'var(--card-2)', fg: p.crew ? 'var(--ink)' : 'var(--text-2)',
+          fl: [p.deaf ? '拒聽' : (p.mute ? '靜音' : ''), p.stream ? '直播' : ''].filter(Boolean) })) };
+    });
+    const web = (g0 && Array.isArray(g0.web) ? g0.web : []).filter(w => w && typeof w === 'object')
+      .map(w => ({ n: String(w.name || '?'), adm: w.role === 'admin', page: w.page ? String(w.page) : '', hasPage: !!w.page, ago: ago(w.ago) }));
+    const pres = (g0 && g0.presence && typeof g0.presence === 'object')
+      ? [['online', '線上', '#2f9e57'], ['idle', '閒置', '#e0a100'], ['dnd', '忙碌', '#d64533']].map(([k, lb, dot]) => {
+        const a = Array.isArray(g0.presence[k]) ? g0.presence[k].map(String) : [];
+        return { lb, dot, n: String(a.length), names: a.length ? a.join('、') : '—' };
+      }) : [];
+    const stats = g0 ? [isDc ? ['語音', +g0.voice_total || 0] : null, ['網頁', +g0.web_total || web.length], ['車隊', +g0.crew_total || 0]].filter(Boolean).map(([k, v]) => ({ k, v: String(v) + ' 人' })) : [];
+    const pad = n => String(n).padStart(2, '0');
+    const at = on && on.at && od ? new Date(on.at) : null;
+    Object.assign(out, {
+      carMbOnLoading: !od && !(on && on.err), carMbOnErr: (!od && on && on.err) ? String(on.err) : '', carMbOnReady: !!od,
+      carMbOnAt: '每 10 秒自動更新' + (at ? ' · ' + pad(at.getHours()) + ':' + pad(at.getMinutes()) + ':' + pad(at.getSeconds()) : ''),
+      carMbOnStale: (od && on && on.err) ? String(on.err) : '',
+      carMbOnStats: stats,
+      carMbDuty: duty,
+      carMbOnCols: s.mobile ? 'minmax(0,1fr)' : 'minmax(0,1.15fr) minmax(0,1fr)',
+      carMbVoice: voice, carMbVoiceEmpty: !voice.length,
+      carMbVoiceTxt: isDc ? '目前沒有人在語音頻道。' : 'QQ 車隊沒有 Discord 語音頻道，這裡不會有資料。',
+      carMbVoiceNote: voice.length ? '有底色的是車隊成員。' : '',
+      carMbWeb: web, carMbWebEmpty: !web.length,
+      carMbPres: pres, carMbPresShow: pres.length > 0,
+      carMbEditShow: false,
+    });
+    return out;
+  }
 
   /* ---------- end @@SEC-B@@ ---------- */
 
