@@ -32,6 +32,18 @@
     {
       "src": "favicon.ico",
       "use": "@vercel/static"
+    },
+    {
+      "src": "sw.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "icons/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -129,6 +141,29 @@
     {
       "src": "/favicon.ico",
       "dest": "/favicon.ico",
+      "headers": {
+        "cache-control": "public, max-age=604800"
+      }
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "service-worker-allowed": "/"
+      }
+    },
+    {
+      "src": "/manifest.webmanifest",
+      "dest": "/manifest.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/icons/(.*)",
+      "dest": "/icons/$1",
       "headers": {
         "cache-control": "public, max-age=604800"
       }
