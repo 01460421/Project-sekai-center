@@ -2231,7 +2231,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=d831aecb2d').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=71202104e2').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -2586,8 +2586,10 @@ class Component extends DCLogic {
     const x = this.carAInput(st); if (!x) return;
     if (act === 'unmark' && !window.confirm('砍掉 ' + x.when + '（' + x.rg.n + ' 個時段）？\n這些時段的座位、報班與候補都會清空，也不再開放報班。')) return;
     const items = [].concat.apply([], x.rg.groups.map(g => g.hours.map(h => ({ date: g.date, hour: h }))));
-    const r = await this.carABulk(items, it => this.carAct('/run', { date: it.date, hour: it.hour, action: act === 'unmark' ? 'unmark' : 'mark' }, null, no));
-    this.carABulkEnd(r, r && (act === 'unmark' ? '已砍班 ' : '已開班 ') + r.out.length + ' 個時段（' + x.when + '）', no, x.rg.groups[0].date);
+    // 車隊模式：開班可以順便帶這段時間的跑者（選填；已經開著的時段也會一起改成這位跑者）
+    const who = act !== 'unmark' && this.carTeamOn(no) ? this.carRunWho(this.state.carARunWho) : '';
+    const r = await this.carABulk(items, it => this.carAct('/run', Object.assign({ date: it.date, hour: it.hour, action: act === 'unmark' ? 'unmark' : 'mark' }, who ? { runner: who } : {}), null, no));
+    this.carABulkEnd(r, r && (act === 'unmark' ? '已砍班 ' : '已開班 ') + r.out.length + ' 個時段（' + x.when + '）' + (who ? '，跑者 ' + who : ''), no, x.rg.groups[0].date);
   }
   /* 管理員代報班／取消：機器人 /signup 帶 uid（管理員代報直接確認並重排） */
   async carAProxy(act) {
@@ -2715,6 +2717,117 @@ class Component extends DCLogic {
       if (move) { if (!(this.state.carStates || {})[next[0].no]) this.carLoadStates(next[0].no); this.carLoadTags(next[0].no); this.carLoadSec(this.state.carTab); }
     }, 0);
   }
+  /* ===== 車隊模式：每個時段可以各自指定跑者（P1）=====
+     /state 每一列帶 p1 {name, custom, bonus}（custom＝另外指定的；false＝車隊預設跑者），最上層 team_mode＝車隊（true）／私車（false）。
+     私車模式只顯示不給改；車隊模式管理員可以：點跑者格開小視窗、看板把成員拖到／點到 P1 格、開班時順便帶跑者、「指定跑者」工具一次改一段。
+     寫入 POST /runner {date, hours:[HH:MM…], runner}（runner 空字串＝恢復預設跑者；只會動已開班的時段，回 done／skip）。
+     跨日列（昨天的日期）機器人會拒絕，前端先擋。state 鍵：carRunName／carRunChain（小視窗）、carARunWho（開班順便帶）、carARunSetWho（工具）。 */
+  CAR_RUN_IDS = ['runner', '跑者', '跑推兼任', '跑推+s6'];
+  carTeamOn(no) { const st = (this.state.carStates || {})[no || this.carNo()]; return !!(st && st.team_mode === true); }
+  /* 輸入的文字 → 要送給機器人的 runner：剛好是名冊裡某人的名字或別名（不分大小寫）就換成他的正式名字，其餘原樣送（沒註冊的跑者直接打名字） */
+  carRunWho(txt) {
+    const t = String(txt == null ? '' : txt).trim();
+    if (!t) return '';
+    const low = t.toLowerCase(), l = this.carAMemList().filter(m => m && m.name);
+    const m = l.find(x => String(x.name).toLowerCase() === low) || l.find(x => Array.isArray(x.aliases) && x.aliases.some(a => String(a).toLowerCase() === low));
+    return m ? String(m.name) : t;
+  }
+  /* 這一列起、同一天「一小時接一小時」連著開班的時段（chain 關掉就只有自己） */
+  carRunHours(day, hour, chain) {
+    const h0 = String(hour || ''), mm = h0.slice(2) || ':00';
+    if (!chain) return [h0];
+    const have = new Set(((day && day.rows) || []).map(r => String(r && r.hour)));
+    const out = [];
+    for (let h = +h0.slice(0, 2); out.length < 48; h++) {
+      const k = String(h).padStart(2, '0') + mm;
+      if (!have.has(k)) break;
+      out.push(k);
+    }
+    return out.length ? out : [h0];
+  }
+  /* ['20:00','21:00','22:00'] → 20-23；不連續就列幾個時段 */
+  carRunSpan(hours) {
+    const hs = (hours || []).map(h => +String(h).slice(0, 2)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+    if (!hs.length) return '';
+    const cont = hs.every((n, i) => !i || n === hs[i - 1] + 1);
+    const pad = n => String(n % 24).padStart(2, '0');
+    return cont ? pad(hs[0]) + '-' + pad(hs[hs.length - 1] + 1) : hs.length + ' 個時段';
+  }
+  async carRunSend(date, hours, who, no) {
+    const st = (this.state.carStates || {})[no];
+    if (st && st.today && String(date) < st.today) { this._toast('跨日時段已過日期，不能改跑者'); return null; }
+    if (!date || !hours || !hours.length) return null;
+    const d = await this.carAct('/runner', { date, hours, runner: String(who || '') }, null, no);
+    if (!d) return null;
+    const done = Array.isArray(d.done) ? d.done : hours, skip = Array.isArray(d.skip) ? d.skip : [];
+    const nm = String(d.name || who || '');
+    this._toast(d.pending ? String(d.msg || '機器人還在處理，稍後會更新')
+      : ((who ? '已指定 ' + this.carRunSpan(done) + ' 的跑者：' : '已恢復 ' + this.carRunSpan(done) + ' 的預設跑者：') + nm
+        + (skip.length ? '（跳過 ' + skip.length + ' 個：還沒開班）' : '')), 3000);
+    this.setState({ carPop: null });
+    this.carLoadStates(no);
+    if (d.pending) this.carALater(no);
+    return d;
+  }
+  /* 小視窗的「指定」／「恢復預設跑者」 */
+  async carRunSubmit(reset) {
+    const p = this.state.carPop; if (!p || p.kind !== 'runner') return;
+    const { day, row } = this.carSeatAt(p.no, p.date, p.hour, '');
+    if (!day || !row) { this._toast('班表已變動，請重新整理'); this.carLoadStates(p.no); return; }
+    const who = reset ? '' : this.carRunWho(this.state.carRunName);
+    if (!reset && !who) { this._toast('輸入或選一位跑者'); return; }
+    await this.carRunSend(p.date, this.carRunHours(day, p.hour, !!this.state.carRunChain), who, p.no);
+  }
+  /* 點跑者：只有車隊模式的管理員、而且不是跨日列才有反應。看板上如果成員池有點選中的人＝直接指定他，否則開小視窗 */
+  carRunClick(el, board) {
+    const no = this.carNo(), st = (this.state.carStates || {})[no], d = el.dataset;
+    if (!st || st.role !== 'admin' || st.team_mode !== true || !d.h || !d.d) return;
+    if (st.today && String(d.d) < st.today) return;
+    if (board && this.state.carAPick && this.state.carView === 'board') this.carRunPlace(el, this.state.carAPick, true);
+    else this.carOpenPop('runner', el);
+  }
+  /* 看板：成員池點選中的成員 → 點 P1 格；或把成員拖到 P1 格（座位上的人不能拖來當跑者） */
+  async carRunPlace(el, nm, ask) {
+    const d = el.dataset, no = this.carNo();
+    nm = String(nm || '');
+    if (!nm || !d.h || !d.d || !this.carTeamOn(no)) return;
+    const cur = String(d.nm || '');
+    if (cur === nm && d.c === '1') return;
+    if (ask && d.c === '1' && cur && !window.confirm('用 ' + nm + ' 換掉 ' + this.carSlot(d.h) + ' 的跑者 ' + cur + '？')) return;
+    await this.carRunSend(d.d, [d.h], nm, no);
+  }
+  /* 工具「指定跑者」：一段時間一次改（跨午夜分兩天送）。某一天整段都還沒開班機器人回 400 {skip}：算跳過、繼續下一天 */
+  async carARunTool(reset) {
+    const st = this.carAState(), no = this.carNo(); if (!st) return;
+    if (!this.carTeamOn(no)) { this._toast('私車模式不能指定跑者，請先切到車隊模式'); return; }
+    const x = this.carAInput(st); if (!x) return;
+    const who = reset ? '' : this.carRunWho(this.state.carARunSetWho);
+    if (!who && !window.confirm('把 ' + x.when + '（' + x.rg.n + ' 個時段）的跑者改回預設跑者「' + String(st.p1 || '跑者') + '」？\n這些時段另外指定的跑者會被清掉。')) return;
+    const soft = e => (e && e.status === 400 && e.data && Array.isArray(e.data.skip)) ? { none: true, done: [], skip: e.data.skip } : null;
+    const r = await this.carABulk(x.rg.groups, g => this.carAct('/runner', { date: g.date, hours: g.hours, runner: who }, null, no, soft));
+    if (!r) return;
+    const sum = k => r.out.reduce((n, d) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0);
+    const done = sum('done'), skip = sum('skip'), hit = r.out.find(d => d && !d.none && d.name);
+    if (!r.fail && !done && !r.out.some(d => d && d.pending)) { this._toast('這些時段都還沒開班，先開班再指定跑者（跳過 ' + skip + ' 個）', 3500); return; }
+    const first = r.out.findIndex(d => d && !d.none);
+    this.carABulkEnd(r, (who ? '已指定 ' : '已恢復 ') + done + ' 個時段的' + (who ? '跑者：' : '預設跑者：') + String((hit && hit.name) || who || st.p1 || '')
+      + '（' + x.when + '）' + (skip ? '（跳過 ' + skip + ' 個：還沒開班）' : ''), no, (x.rg.groups[first < 0 ? 0 : first] || x.rg.groups[0]).date);
+  }
+  /* 私車／車隊模式開關（整個車隊共用，不分車）：POST /setting {key:'team_mode'}，改完每一台車都重抓 */
+  async carSetMode(team) {
+    const no = this.carNo(), st = (this.state.carStates || {})[no]; if (!st) return;
+    team = !!team;
+    if (!!st.team_mode === team) return;
+    if (!team) {
+      const day = this.carDayOf(st, this.state.carDate);
+      const any = !!day && (day.rows || []).some(r => r && r.p1 && r.p1.custom);
+      if (any && !window.confirm('切回私車後，各時段指定的跑者仍會保留並照樣顯示，只是不能在網頁上再調整；確定要切換嗎？')) return;
+    }
+    const d = await this.carAct('/setting', { key: 'team_mode', value: team }, team ? '已切換成車隊模式' : '已切換成私車模式', no);
+    if (!d) return;
+    this.setState({ carPop: null });
+    this.carLoadStates();
+  }
   /* 班表分頁：切回來超過 8 秒就重抓目前這台車；管理員順便載名冊（成員池、代報班要 uid） */
   carSec_sched(force) {
     const gd = this.carGuild(); if (!gd) return;
@@ -2731,7 +2844,8 @@ class Component extends DCLogic {
     const day = st ? this.carDayOf(st, s.carDate) : null;
     const today = (st && st.today) || '';
     const days = today ? this.carADays(today) : [];
-    const tool = ['run', 'proxy', 'copy', 'range'].indexOf(s.carATool) >= 0 ? s.carATool : 'run';
+    const teamOn = stAdmin && st.team_mode === true;       // 車隊模式才有「指定跑者」相關的操作
+    const tool = ['run', 'proxy', 'copy', 'range'].concat(teamOn ? ['runner'] : []).indexOf(s.carATool) >= 0 ? s.carATool : 'run';
     const cpFrom = st && today ? this.carACpFrom(st) : '';
     const isQQ = /^qqg_/.test(String(gd.gid || ''));
     const signRole = s.carASignRole === 's6' ? 's6' : 'pusher';
@@ -2752,12 +2866,34 @@ class Component extends DCLogic {
     const pick = poolShow ? String(s.carAPick || '') : '';
     const roleName = { '': '自動', s6: 'S6', pusher: '推手' };
 
+    /* 跑者的建議名單（車隊模式）：身分是跑者的排前面；名字一個選項、每個別名也各一個選項（Safari 的 datalist 只比對 value）。
+       只有用得到的時候才產生（小視窗開著、或工具停在「開班」「指定跑者」），名冊大的車隊才不會每次重繪都多畫幾百個 option */
+    const runPop = !!(s.carPop && s.carPop.kind === 'runner');
+    const runListOn = teamOn && (runPop || (!!today && (tool === 'run' || tool === 'runner')));
+    const runOpts = [];
+    if (runListOn) {
+      const isRun = m => this.CAR_RUN_IDS.indexOf(String(m.identity || '')) >= 0;
+      const l = mems.slice(0, 300);
+      l.filter(isRun).concat(l.filter(m => !isRun(m))).forEach(m => {
+        const nm = String(m.name), al = (Array.isArray(m.aliases) ? m.aliases : []).map(a => String(a == null ? '' : a)).filter(Boolean);
+        runOpts.push({ v: nm, n: (isRun(m) ? '跑者 · ' : '') + fmt(m.bonus) + (al.length ? ' · ' + al.join('、') : '') });
+        al.forEach(a => { if (a.toLowerCase() !== nm.toLowerCase()) runOpts.push({ v: a, n: nm + ' 的別名' }); });
+      });
+    }
+    const pickRun = teamOn && !!pick;
+
     return {
       /* 排班工具（管理員）／我要報班（成員） */
       carAToolsShow: stAdmin && !!today,
       carASelfShow: !!st && !stAdmin && !!today,
-      carAToolTabs: [['run', '開班'], ['proxy', '代報班'], ['copy', '複製班表'], ['range', '整段處理']].map(([v, n]) => Object.assign({ v, n, sel: tool === v ? 'true' : 'false' }, segOn(tool === v))),
-      carAToolRun: tool === 'run', carAToolProxy: tool === 'proxy', carAToolCopy: tool === 'copy', carAToolRange: tool === 'range',
+      carAToolTabs: [['run', '開班']].concat(teamOn ? [['runner', '指定跑者']] : [], [['proxy', '代報班'], ['copy', '複製班表'], ['range', '整段處理']]).map(([v, n]) => Object.assign({ v, n, sel: tool === v ? 'true' : 'false' }, segOn(tool === v))),
+      carAToolRun: tool === 'run', carAToolProxy: tool === 'proxy', carAToolCopy: tool === 'copy', carAToolRange: tool === 'range', carAToolRunner: tool === 'runner',
+      /* 車隊模式：開班順便帶跑者、「指定跑者」工具、跑者建議名單 */
+      carATeamOn: teamOn, carARunWho: s.carARunWho || '', carARunSetWho: s.carARunSetWho || '',
+      carRunListOn: runListOn, carRunOpts: runOpts,
+      carARunSetBtn: busy ? '處理中…' : '指定跑者',
+      carARunHelp: '開班＝把這段時間設成要跑，並自動打開成員自助報班；砍班會清空座位、報班與候補。「20-22」是 20:00～22:00 兩個時段，跨午夜寫「22-26」，單一小時寫「20」。'
+        + (teamOn ? '跑者選填：有填的話，這段時間（含已經開著的時段）的跑者都會改成他；留空就是車隊預設跑者。' : ''),
       carADateOpts: days, carAD: st && today ? this.carADate(st) : '', carAR: s.carAR || '',
       carACpFromOpts: today ? this.carADays(today, -1) : [], carACpToOpts: days,
       carACpFrom: cpFrom, carACpTo: st && today ? this.carACpTo(st, cpFrom) : '',
@@ -2776,7 +2912,27 @@ class Component extends DCLogic {
       carAPoolEmpty: poolShow && !!memC && !memC.busy && !memC.err && !pool.length,
       carAPoolEmptyTxt: pq ? '找不到符合的成員' : '名冊是空的',
       carARoles: [['', '自動'], ['s6', 'S6'], ['pusher', '推手']].map(([v, n]) => Object.assign({ v, n, sel: dropRole === v ? 'true' : 'false' }, segOn(dropRole === v))),
-      carAPickShow: !!pick, carAPickTxt: pick ? '已選「' + pick + '」：點座位放進去（身分：' + roleName[dropRole] + '），可連續放好幾格' : '',
+      carAPickShow: !!pick, carAPickTxt: pick ? '已選「' + pick + '」：點座位放進去（身分：' + roleName[dropRole] + '），可連續放好幾格' + (pickRun ? '；點 P1 格＝指定他當那個時段的跑者' : '') : '',
+      carAPoolHelp: '拖到座位＝排進去（身分照上面選的）　·　座位上的人拖回這裡＝移出　·　拖到同一班的另一格＝兩人互換' + (teamOn ? '　·　拖到 P1 格＝指定成那個時段的跑者' : '') + '　·　手機：點一下成員，再點座位',
+
+      /* 跑者（車隊模式、管理員）：表格／手機點跑者＝開小視窗；看板的 P1 格先看成員池有沒有點選中的人 */
+      onCarRunner: e => { e.stopPropagation(); this.carRunClick(e.currentTarget, false); },
+      onCarP1Cell: e => { if (e.target && e.target.closest && e.target.closest('button')) return; this.carRunClick(e.currentTarget, false); },       // 表格：整個 P1 格都能點
+      onCarARunner: e => { e.stopPropagation(); this.carRunClick(e.currentTarget, true); },
+      onCarAP1Cell: e => { if (e.target && e.target.closest && e.target.closest('button')) return; this.carRunClick(e.currentTarget, true); },   // 整個 P1 格都能點（名字那顆按鈕自己處理）
+      onCarRunSet: () => this.carRunSubmit(false),
+      onCarRunReset: () => this.carRunSubmit(true),
+      onCarRunKey: e => { if (this.carFEnter(e)) { e.preventDefault(); this.carRunSubmit(false); } },
+      onCarRunChain: e => this.setState({ carRunChain: !!e.target.checked }),
+      onCarRDragOver: e => { const g = this._carDrag; if (!teamOn || !g || !g.nm || g.pos) return; e.preventDefault(); try { e.currentTarget.classList.add('car-over'); } catch (er) {} },
+      onCarRDrop: e => {
+        e.preventDefault(); try { e.currentTarget.classList.remove('car-over'); } catch (er) {}
+        const g = this._carDrag; this._carDrag = null;
+        if (!teamOn || !g || !g.nm || g.pos) return;        // 只收成員池／候補的名字；座位上的人（帶 pos）不當跑者拖
+        this.carRunPlace(e.currentTarget, g.nm, false);
+      },
+      onCarARunTool: e => this.carARunTool(e.currentTarget.dataset.act === 'reset'),
+      onCarARunToolKey: e => { if (this.carFEnter(e)) { e.preventDefault(); this.carARunTool(false); } },
 
       onCarATool: e => this.setState({ carATool: String(e.currentTarget.dataset.v || 'run') }),
       onCarASignRole: e => this.setState({ carASignRole: e.currentTarget.dataset.v === 's6' ? 's6' : 'pusher' }),
@@ -3120,10 +3276,12 @@ class Component extends DCLogic {
       if (cur && cur.data && !cur.busy && cur.live !== 'busy' && now - (cur.at || 0) >= 60000) this.carStSeiLoad(true);
     }
   }
+  /* 要看哪一天：使用者選過（清單或日期欄，任何 YYYY-MM-DD 都收——清單裡沒有的日期機器人一樣會去現用班表與封存裡找）
+     > 今天（清單裡有的話）> 清單第一個 */
   carStHistPick(idx) {
     const list = idx && Array.isArray(idx.dates) ? idx.dates.filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date))) : [];
     const want = String(this.state.carHistDate || ''), today = String((idx && idx.today) || '');
-    if (want && list.some(x => x.date === want)) return want;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(want)) return want;
     if (today && list.some(x => x.date === today)) return today;
     return list[0] ? String(list[0].date) : '';
   }
@@ -3331,6 +3489,8 @@ class Component extends DCLogic {
     const today = String((d && d.today) || ''), sel = d ? this.carStHistPick(d) : '';
     const day = sel ? this.carSecOf(this.carSecKey('histday', true) + ':' + sel) : null, dd = day && day.data;
     const fmt = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : (+v).toFixed(2);
+    /* 跑者：那一格有存就用那一格的（r.p1.name），沒有就退回這台車現在的預設跑者 */
+    const dflt = String((((this.state.carStates || {})[this.carNo()] || {}).p1) || '');
     const rows = (dd && Array.isArray(dd.rows) ? dd.rows : []).filter(r => r && typeof r === 'object').map(r => {
       const cells = ['p2', 'p3', 'p4', 'p5'].map(pos => {
         const se = (Array.isArray(r.seats) ? r.seats : []).find(x => x && x.pos === pos) || {};
@@ -3341,36 +3501,53 @@ class Component extends DCLogic {
       const note = [];
       if (wl.length) note.push('候補 ' + wl.join('、'));
       if (+r.applicants) note.push('報班 ' + (+r.applicants));
-      return { slot: this.carSlot(r.hour), ctype: String(r.car_type || ''), locked: !!r.locked, manual: !!r.manual, cells, note: note.join(' · ') || '—' };
+      const rp = r.p1 && typeof r.p1 === 'object' && r.p1.name != null && String(r.p1.name) !== '' ? r.p1 : null;
+      const runner = rp ? String(rp.name) : (dflt || '—'), rb = rp && +rp.bonus > 0 ? fmt(rp.bonus) : '';
+      return { slot: this.carSlot(r.hour), ctype: String(r.car_type || ''), locked: !!r.locked, manual: !!r.manual, cells, note: note.join(' · ') || '—',
+        runner, rSub: [String(r.car_type || ''), rb].filter(Boolean).join(' · '), rM: '跑者 ' + runner + (r.car_type ? ' · ' + String(r.car_type) : '') };
     });
-    let src = '';
-    if (dd) {
-      const sv = String(dd.src || '');
-      src = '資料來源：' + (sv.indexOf('archive') === 0 ? '期數封存' + (sv.split(':')[1] ? ' ' + sv.split(':')[1] : '') : sv === 'live' ? '即時班表' : sv === 'none' ? '無資料' : sv)
-        + (dd.past ? '（過去日期，唯讀）' : '');
-    }
+    /* 資料來源：現用班表／第 N 期封存／這天沒有留下班表資料 */
+    const sv = dd ? String(dd.src || '') : '', isNone = sv === 'none';
+    const srcTxt = !dd ? '' : sv.indexOf('archive') === 0 ? ((sv.split(':')[1] ? '第 ' + sv.split(':')[1] + ' 期' : '期數') + '封存') : sv === 'live' ? '現用班表' : isNone ? '這天沒有留下班表資料' : sv;
+    const inList = list.some(x => x.date === sel);
+    const opts = list.map(x => ({ v: String(x.date), n: String(x.date) + (x.date === today ? '（今天）' : (x.past ? '' : '（未來）')) + ' · ' + (+x.hours || 0) + ' 時段' + (x.src === 'archive' ? ' · 封存' : '') }));
+    if (sel && !inList) opts.unshift({ v: sel, n: sel + ' · 自選日期' });        // 日期欄選的日期不在清單裡：下拉選單也要顯示得出來
+    /* 前一個／後一個日期：清單是新到舊；自選日期不在清單裡時，找它前後最近的那一天 */
+    const older = sel ? list.find(x => x.date < sel) : null, newer = sel ? list.slice().reverse().find(x => x.date > sel) : null;
+    const go = v => { clearTimeout(this._carHistT); this.setState({ carHistDate: v, carHistDraft: '' }); setTimeout(() => this.carStHistDay(v, false), 0); };
+    const maxDay = today || this.carFYmd(new Date());
     return {
       carHistLoading: !d && !(idx && idx.err), carHistErr: !d && idx && idx.err ? String(idx.err) : '',
       carHistNone: !!d && !list.length, carHistReady: !!d && list.length > 0,
-      carHistOpts: list.map(x => ({ v: String(x.date), n: String(x.date) + (x.date === today ? '（今天）' : (x.past ? '' : '（未來）')) + ' · ' + (+x.hours || 0) + ' 時段' + (x.src === 'archive' ? ' · 封存' : '') })),
+      carHistOpts: opts,
       carHistSel: sel, carHistCnt: list.length ? '共 ' + list.length + ' 天' + (d.oldest ? ' · 最早 ' + String(d.oldest) : '') : '',
+      carHistPick: /^\d{4}-\d{2}-\d{2}$/.test(String(this.state.carHistDraft || '')) ? this.state.carHistDraft : (sel && sel <= maxDay ? sel : ''), carHistMax: maxDay,
       carHistDayLoading: !!sel && !dd && !(day && day.err), carHistDayErr: !dd && day && day.err ? String(day.err) : '',
-      carHistSrc: src, carHistTitle: carName + ' · ' + (sel ? this.carDayLabel(sel, today, false) : ''),
+      carHistSrc: dd && !isNone ? '資料來源：' + srcTxt + (dd.past ? '（過去的日期）' : '') : '', carHistSrcTag: dd && !isNone ? srcTxt : '', carHistHasSrcTag: !!dd && !isNone && !!srcTxt,
+      carHistTitle: carName + ' · ' + (sel && today && sel.slice(0, 4) !== today.slice(0, 4) ? sel.slice(0, 4) + '/' : '') + (sel ? this.carDayLabel(sel, today, false) : ''),   // 跨年的日期把年份寫出來
       carHistShow: !!dd, carHistRows: rows, carHistHasRows: rows.length > 0, carHistNoRows: !!dd && !rows.length,
-      carHistEmptyTxt: dd && dd.note ? String(dd.note) : '這天沒有已開班的時段',
+      carHistEmptyTxt: isNone ? '這天沒有留下班表資料' : (dd && dd.note ? String(dd.note) : '這天沒有已開班的時段'),
+      carHistEmptySub: isNone ? '機器人會先找現用班表，再找最近 8 期換期時封存的班表；更早的日期或當天沒開班，就不會有資料。' : '',
       onCarHistDate: e => {
         const v = String(e.currentTarget.value || '');
         if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
-        this.setState({ carHistDate: v });
-        setTimeout(() => this.carStHistDay(v, false), 0);
+        go(v);
+      },
+      /* 日期欄：任何過去的日期都可以直接查（最晚到今天；未來的日期從下拉清單選） */
+      onCarHistPickDate: e => {
+        const v = String(e.currentTarget.value || '');
+        clearTimeout(this._carHistT);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;                 // 清空或還沒打完：不動
+        if (v > maxDay) { this.setState({ carHistDraft: '' }); this._toast('日期欄最晚只能選到今天；未來的日期請從下拉清單選'); return; }
+        // 用鍵盤一格一格打日期時，每打一格瀏覽器都會送一次「完整的日期」：欄位先照打的顯示，停手 0.4 秒才真的去查
+        this.setState({ carHistDraft: v });
+        this._carHistT = setTimeout(() => go(v), 400);
       },
       onCarHistStep: e => {
-        const i = list.findIndex(x => x.date === sel) + (+e.currentTarget.dataset.v || 0), x = list[i];
-        if (!x) return;
-        this.setState({ carHistDate: String(x.date) });
-        setTimeout(() => this.carStHistDay(String(x.date), false), 0);
+        const x = (+e.currentTarget.dataset.v || 0) > 0 ? older : newer;
+        if (x) go(String(x.date));
       },
-      carHistOlderOk: list.findIndex(x => x.date === sel) < list.length - 1, carHistNewerOk: list.findIndex(x => x.date === sel) > 0,
+      carHistOlderOk: !!older, carHistNewerOk: !!newer,
     };
   }
   /* 色段卡片共用：統計格、周邊排名、24 小時分佈 */
@@ -4179,7 +4356,8 @@ class Component extends DCLogic {
       Object.keys(sts).forEach(n => {
         const x = sts[n];
         if (!x || !x.settings || (perCar && +n !== no)) return;
-        sts[n] = Object.assign({}, x, { settings: Object.assign({}, x.settings, { [key]: value }) });
+        // team_mode（私車／車隊）另外在 /state 最上層有一份，班表分頁的開關看的是那一份：在設定頁改了也要跟著變
+        sts[n] = Object.assign({}, x, { settings: Object.assign({}, x.settings, { [key]: value }) }, key === 'team_mode' ? { team_mode: !!value } : {});
       });
       const dr = Object.assign({}, st.carFSetDraft);
       if (dr[dk] != null && (m.type === 'range' || String(dr[dk]).trim() === String(value).trim())) delete dr[dk];
@@ -4222,6 +4400,35 @@ class Component extends DCLogic {
     }
     if (!info) { this._toast('試算表狀態還沒讀到，請稍候再試'); return; }
     if (!info.sheet_id) { this._toast('先貼上試算表網址或 ID 並儲存'); return; }
+    /* 雙向同步（表為準）：自動同步開關＝既有的 auto（config 的 auto 欄位）。注意：機器人的 config 一定會改寫 sheet_id，
+       所以要把「已儲存的那個 ID」一起送回去（不是輸入框裡還沒存的草稿），否則會把試算表清掉 */
+    if (act === 'auto') {
+      const nv = !info.auto;
+      const d = await this.carAct('/sheet', { action: 'config', sheet_id: String(info.sheet_id), auto: nv }, nv ? '已開啟自動同步' : '已關閉自動同步', no);
+      if (!d) return;
+      const cur = (this.carSecOf(key) || {}).data;
+      if (cur) this.carSecPut(key, { data: Object.assign({}, cur, { auto: nv }) });
+      this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
+      return;
+    }
+    /* 立即同步：對一次表。慢的時候機器人先回 {pending}（約 5 秒後重抓狀態與班表）；失敗回 500 {error: 看得懂的原因} */
+    if (act === 'sync') {
+      this._toast('同步中…', 25000);
+      let why = '';
+      const d = await this.carAct('/sheet', { action: 'sync' }, null, no, e => { why = String((e && e.message) || '同步失敗'); return null; });
+      if (!d) {
+        if (why) this.setState({ carFShRes: { k: key, msg: '同步失敗：' + this.carFTxt(why), miss: [], bad: true, sync: true } });
+        this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);      // 機器人會把失敗原因記在 last_err
+        return;
+      }
+      const msg = this.carFMsg(d, '已同步');
+      this._toast(msg, 4000);
+      this.setState({ carFShRes: { k: key, msg, miss: (Array.isArray(d.miss) ? d.miss : []).slice(0, 12).map(x => String(x)), sync: true } });
+      if (+d.pulled > 0) this.carLoadStates(no);                                           // 表上的修改寫回機器人了：班表跟著更新
+      this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
+      if (d.pending) this.carFLater(() => { this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true); this.carLoadStates(no); });
+      return;
+    }
     const today = this.carFToday(), dates = [0, 1, 2, 3, 4, 5, 6].map(i => this.carFAddDay(today, i));
     const date = dates.indexOf(s.carFShDate) >= 0 ? s.carFShDate : today;
     if (act === 'pull' && !window.confirm('從試算表套用「' + this.carFCarName(no) + '」' + date + '：分頁上 P2～P5 的名字會覆蓋網頁上這一天的班表（查無成員的名字不會套用，會列出來）。確定？')) return;
@@ -4320,6 +4527,13 @@ class Component extends DCLogic {
     const shDraft = dr[no + ':__sheet'], shSaved = info ? String(info.sheet_id || '') : '';
     const shRes = s.carFShRes && s.carFShRes.k === shKey ? s.carFShRes : null;
     const okFg = 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))', badFg = 'color-mix(in oklab,#ee6644 55%,var(--car-fg))';
+    /* 雙向同步（表為準）：info.two_way 才有（舊機器人沒有 → 只顯示舊版的推送／回讀） */
+    const two = !!(info && info.two_way);
+    const shUrl = two && /^https:\/\/docs\.google\.com\//.test(String(info.url || '')) ? String(info.url) : '';
+    const shSec = two && +info.interval > 0 ? Math.round(+info.interval) : 60;
+    const shTabs = two ? (Array.isArray(info.tabs) ? info.tabs : []).map(x => String(x == null ? '' : x)).filter(Boolean).slice(0, 6) : [];
+    const shTab = two ? String(info.tab || shTabs[0] || '班表') : '班表';
+    const shLegacy = !two || !!openMap.__sheetOld;
 
     return Object.assign(base, {
       carFSetReady: true,
@@ -4335,7 +4549,8 @@ class Component extends DCLogic {
       carFShShow: !q,
       carFShOpen: shOpen, carFShExp: shOpen ? 'true' : 'false', carFShArrow: shOpen ? '▲' : '▼',
       carFShTag: this.carFCarName(no),
-      carFShSum: !info ? (sh && sh.err ? '讀取失敗' : '') : (!info.sheet_id ? '尚未連接' : (info.last_push ? '上次推送 ' + String(info.last_push) : '已連接')),
+      carFShSum: !info ? (sh && sh.err ? '讀取失敗' : '') : (!info.sheet_id ? '尚未連接' : two ? (info.last_err ? '同步失敗' : info.synced_at ? '上次同步 ' + String(info.synced_at).slice(0, 11) : (info.auto ? '自動同步已開' : '尚未同步'))
+        : (info.last_push ? '上次推送 ' + String(info.last_push) : '已連接')),
       carFShLoading: shOpen && !info && !(sh && sh.err), carFShErr: shOpen && !info && sh && sh.err ? String(sh.err) : '',
       carFShHas: shOpen && !!info,
       carFShCred: info ? (info.has_creds ? '✓ 已設定 Google 服務帳號' : '✕ 主機沒有設定 Google 服務帳號（GDRIVE_CREDS），暫時無法同步') : '',
@@ -4346,7 +4561,29 @@ class Component extends DCLogic {
       carFShNoId: !!info && !info.sheet_id,
       carFShEmail: info && info.service_email ? String(info.service_email) : '', carFShNoEmail: !!info && !info.service_email,
       carFShDates: shDates, carFShDate: shDates.some(x => x.v === s.carFShDate) ? s.carFShDate : today,
-      carFShResShow: !!shRes, carFShResMsg: shRes ? shRes.msg : '', carFShMiss: shRes ? shRes.miss.map((x, i) => ({ i: String(i), t: x })) : [], carFShHasMiss: !!(shRes && shRes.miss.length),
+      carFShResShow: !!shRes && !shRes.sync, carFShResMsg: shRes ? shRes.msg : '', carFShMiss: shRes ? shRes.miss.map((x, i) => ({ i: String(i), t: x })) : [], carFShHasMiss: !!(shRes && shRes.miss.length),
+      /* 雙向同步 */
+      carFShTwo: shOpen && two, carFShOneWay: shOpen && !!info && !two,
+      carFShSyncAt: two ? (info.synced_at ? '上次同步 ' + String(info.synced_at) : '尚未同步') : '',
+      carFShSyncFg: two && info.synced_at ? okFg : 'var(--text-3)',
+      carFShLastErr: two && info.last_err ? '注意：上次同步失敗　' + this.carFTxt(info.last_err) : '', carFShHasErr: !!(two && info.last_err),
+      carFShTabs: shTabs.map((t, i) => ({ t, sub: i === 0 ? '可以直接改' : '機器人維護（唯讀）', bg: i === 0 ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'var(--card)', fg: i === 0 ? 'var(--accent-deep)' : 'var(--text-2)' })),
+      carFShUrl: shUrl, carFShHasUrl: !!shUrl,
+      carFShSyncBtn: busy ? '處理中…' : '立即同步',
+      carFShAutoLbl: '自動同步（每 ' + shSec + ' 秒，試算表為準）',
+      carFShAuto: sw(!!(info && info.auto)),
+      carFShSyncResShow: !!shRes && !!shRes.sync,
+      carFShSyncResBd: shRes && shRes.bad ? 'color-mix(in oklab,#ee6644 35%,var(--border))' : 'color-mix(in oklab,var(--accent) 30%,var(--border))',
+      carFShSyncResBg: shRes && shRes.bad ? 'color-mix(in oklab,#ee6644 10%,var(--card))' : 'color-mix(in oklab,var(--accent) 10%,var(--card))',
+      carFShRules: two ? [
+        '雙向同步、試算表為準：機器人每 ' + shSec + ' 秒跟試算表對一次。',
+        '有人在「' + shTab + '」分頁改了座位、跑者、車種或替補，就照表改回機器人；那個時段會標成「手動」，之後自動排位不會重排它。',
+        '表上新增一列＝開一個班；刪掉一列不會砍班（下一輪會再寫回去），砍班請用班表分頁或指令。',
+        '只同步今天以後的日期，過去的班表不會被試算表回頭改。',
+        '「時數」「成員」兩個分頁由機器人維護（唯讀），改了也會被蓋回去。',
+        '要先把試算表共用給下面的服務帳號信箱（權限選「編輯者」）。',
+      ].map((t, i) => ({ i: String(i), t })) : [],
+      carFShOldOpen: shLegacy, carFShOldExp: shLegacy ? 'true' : 'false', carFShOldArrow: shLegacy ? '▲' : '▼', carFShOldToggle: two,
       carFBusyTxt: busy ? '處理中…' : '',
       onCarFSetSec: e => { const k = String(e.currentTarget.dataset.sec || ''); if (!k) return; this.setState(st2 => ({ carFSetOpen: Object.assign({}, st2.carFSetOpen, { [k]: !(st2.carFSetOpen || {})[k] }) })); if (k === '__sheet') this.carFSheetInfo(false); },
       onCarFSetAll: () => { const o = Object.assign({}, s.carFSetOpen); secs.forEach(x => { o[x.sec] = !allOpen; }); this.setState({ carFSetOpen: o }); },
@@ -4394,8 +4631,24 @@ class Component extends DCLogic {
       onCarFShReload: () => this.carFSheetInfo(true),
       onCarFShCopy: () => {
         const t = info && info.service_email ? String(info.service_email) : ''; if (!t) return;
-        try { navigator.clipboard.writeText(t).then(() => this._toast('已複製服務帳號'), () => this._toast('無法複製，請手動選取')); } catch (er) { this._toast('無法複製，請手動選取'); }
+        /* 剪貼簿 API 只在安全環境（https／localhost）而且有權限時才有；不行就退回「暫時的 textarea + execCommand」 */
+        const old = () => {
+          let ok = false;
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+            document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+            ok = !!document.execCommand('copy');
+            document.body.removeChild(ta);
+          } catch (er) { ok = false; }
+          this._toast(ok ? '已複製服務帳號' : '無法複製，請手動選取');
+        };
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => this._toast('已複製服務帳號'), old);
+          else old();
+        } catch (er) { old(); }
       },
+      onCarFShOld: () => this.setState(st2 => ({ carFSetOpen: Object.assign({}, st2.carFSetOpen, { __sheetOld: !(st2.carFSetOpen || {}).__sheetOld }) })),
     });
   }
 
@@ -4622,8 +4875,9 @@ class Component extends DCLogic {
   }
   /* ---------- end @@SEC-F@@ ---------- */
 
-  /* 寫入型操作的共用外殼：一次只跑一個、錯誤訊息浮出來、座位變動（409）就重抓 */
-  async carAct(path, body, okMsg, no) {
+  /* 寫入型操作的共用外殼：一次只跑一個、錯誤訊息浮出來、座位變動（409）就重抓。
+     soft(e)（選填）：呼叫端想自己消化某種錯誤時給——回傳非空值＝當成這次的結果、不浮錯誤；回傳空值＝照常浮出錯誤 */
+  async carAct(path, body, okMsg, no, soft) {
     if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
     no = no || this.carNo();
     this._carActBusy = true; this.setState({ carActBusy: true });
@@ -4632,6 +4886,7 @@ class Component extends DCLogic {
       if (okMsg) this._toast(typeof okMsg === 'function' ? okMsg(d) : okMsg);
       return d;
     } catch (e) {
+      if (typeof soft === 'function') { let v = null; try { v = soft(e); } catch (er) {} if (v) return v; }
       this._toast(e.message || '操作失敗');
       if (e.status === 409 || (e.status === 404 && e.code !== 'bot_not_updated')) this.carLoadStates(no);
       return null;
@@ -4643,9 +4898,11 @@ class Component extends DCLogic {
     const patch = { carPop: pop };
     if (kind === 'addtag') Object.assign(patch, { carTagSel: '', carTagScope: 'shift', carTagDetail: '', carTagUntil: '' });
     if (kind === 'empty' || kind === 'seat') Object.assign(patch, { carPick: '', carPickRole: '' });
+    if (kind === 'runner') Object.assign(patch, { carRunName: '', carRunChain: false });
     this.setState(patch);
     const st = (this.state.carStates || {})[pop.no];
     if (st && st.role === 'admin' && (kind === 'empty' || kind === 'seat')) this.carLoadMembers();
+    if (st && st.role === 'admin' && kind === 'runner') this.carAMemLoad(false);      // 跑者的建議名單用班表分頁那份名冊（有別名與身分）
   }
   async carSign(date, hour, act, role) {
     const no = this.carNo();
@@ -4979,7 +5236,13 @@ class Component extends DCLogic {
 
     /* 跨日時段（昨天 24:00 以後）日期已過：機器人只准貼標記，換人／移出／砍班／鎖班／報班一律不給按 */
     const xd = !!(day && day.xday);
+    /* 私車／車隊：team_mode 是整個車隊共用的開關（舊機器人沒有這個欄位 → 不顯示開關、當成私車）。
+       每一列的跑者看 r.p1（沒有就退回車隊預設跑者）；只有車隊模式的管理員、而且不是跨日列，才能改 */
+    const teamKnown = !!st && typeof st.team_mode === 'boolean', teamOn = teamKnown && st.team_mode === true;
+    const runEdit = admin && teamOn && !xd;
     const rows = day ? (day.rows || []).map(r => {
+      const rp = (r.p1 && typeof r.p1 === 'object' && r.p1.name != null && String(r.p1.name) !== '') ? r.p1 : null;
+      const rCustom = !!(rp && rp.custom), rBonus = rp && +rp.bonus > 0 ? fmt(rp.bonus) : '';
       const my = ((mine[day.date] || []).find(x => x && x.hour === r.hour)) || null;
       const hr = +String(r.hour).slice(0, 2);
       const live = day.date === today ? hr === nowH : (!!day.xday && hr - 24 === nowH);
@@ -5015,7 +5278,10 @@ class Component extends DCLogic {
       // 報了但還沒上位也不在候補＝等管理員確認（車隊沒開自動確認時，網頁報班都是這個狀態）
       const myTxt = my ? (my.seat ? '我在 ' + my.seat.toUpperCase() : my.waitlist ? '我在候補' : '我已報班 · 待確認') : '';
       return {
-        hour: r.hour, d: day.date, slot: this.carSlot(r.hour), runner: String((st && st.p1) || '跑者'), ctype: String(r.car_type || ''),
+        hour: r.hour, d: day.date, slot: this.carSlot(r.hour), runner: rp ? String(rp.name) : String((st && st.p1) || '跑者'), ctype: String(r.car_type || ''),
+        rCustom, rC: rCustom ? '1' : '', rBonus, rSub: [String(r.car_type || ''), rBonus].filter(Boolean).join(' · '),
+        rFg: rCustom ? 'var(--accent-deep)' : 'var(--ink)', rFg2: rCustom ? 'var(--accent-deep)' : 'var(--text-3)',
+        rEdit: runEdit, rRo: !runEdit, rCur: runEdit ? 'pointer' : 'default', rTitle: '點一下指定這個時段的跑者',
         locked: !!r.locked, manual: !!r.manual, cells, filled,
         note: noteParts.join(' · ') || (myTxt ? '' : '—'), myTxt, hasMy: !!myTxt,
         signShow, signTxt, signAct,
@@ -5072,20 +5338,37 @@ class Component extends DCLogic {
     const p = s.carPop;
     let pv = { carPopShow: false };
     if (p && p.no === carNo) {
-      const { seat, row } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+      const { seat, row, day: pday } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
       const W = 290, vw = (typeof window !== 'undefined' ? window.innerWidth : 1200), vh = (typeof window !== 'undefined' ? window.innerHeight : 800);
       const left = Math.max(12, Math.min(vw - W - 12, p.x - 20));
-      const below = p.y + 12, h0 = p.kind === 'tag' ? 170 : 360;
+      const isRun = p.kind === 'runner';
+      const below = p.y + 12, h0 = p.kind === 'tag' ? 170 : isRun ? 300 : 360;
       const top = below + h0 > vh - 12 ? Math.max(12, p.top - h0 - 10) : below;
       const mem = (s.carMembers && s.carMembers.key === tagKey && s.carMembers.list) || [];
       const tags = seat && Array.isArray(seat.tags) ? seat.tags : [];
       const t = p.kind === 'tag' ? tags[p.ti] : null;
       const tc = t ? this.carTagStyle(t.color) : null;
-      const where = (curCar.name || '') + ' · ' + this.carSlot(p.hour) + (p.pos ? ' · ' + String(p.pos).toUpperCase() : '');
+      const where = (curCar.name || '') + ' · ' + this.carSlot(p.hour) + (isRun ? ' · P1 跑者' : p.pos ? ' · ' + String(p.pos).toUpperCase() : '');
       const my = ((mine[p.date] || []).find(x => x && x.hour === p.hour)) || null;
       const pxd = !!(st && st.today && String(p.date) < st.today);     // 跨日時段：只能看／貼標記
-      pv = {
-        carPopShow: !!(row && (p.kind === 'empty' || seat)) && (p.kind !== 'tag' || !!t),
+      /* 這個時段的跑者（車隊模式、管理員）：目前是誰、勾了「連續時段一起改」會動到哪幾格 */
+      let rv = {};
+      if (isRun && row) {
+        const rp = (row.p1 && typeof row.p1 === 'object' && row.p1.name) ? row.p1 : null;
+        const chain = !!s.carRunChain, hs = this.carRunHours(pday, p.hour, chain);
+        rv = {
+          carRunCur: rp ? String(rp.name) : String((st && st.p1) || '跑者'),
+          carRunCurTag: rp && rp.custom ? '指定' : '預設跑者', carRunCurFg: rp && rp.custom ? 'var(--accent-deep)' : 'var(--ink)',
+          carRunName: s.carRunName || '', carRunChain: chain,
+          carRunChainTxt: !chain ? '只改 ' + this.carSlot(p.hour) + ' 這一個時段'
+            : hs.length > 1 ? '會一起改 ' + this.carRunSpan(hs) + '（' + hs.length + ' 個連續的開班時段）' : '後面沒有連著的開班時段，只會改 ' + this.carSlot(p.hour),
+          carRunSetBtn: s.carActBusy ? '處理中…' : '指定',
+          carRunDflt: '預設跑者：' + String((st && st.p1) || '跑者'),
+        };
+      }
+      pv = Object.assign(rv, {
+        carPopShow: !!(row && (p.kind === 'empty' || isRun || seat)) && (p.kind !== 'tag' || !!t) && (!isRun || (runEdit && !pxd)),
+        carPopIsRun: isRun,
         carPopL: Math.round(left) + 'px', carPopT: Math.round(top) + 'px',
         carPopAdminPick: admin && (p.kind === 'empty' || p.kind === 'seat') && !pxd, carPickTitle: p.kind === 'empty' ? '排人進這個座位' : '換成別人',
         carPopWhere: where,
@@ -5112,7 +5395,7 @@ class Component extends DCLogic {
         carTagIsMember: s.carTagScope === 'member',
         carTagDetail: s.carTagDetail || '', carTagUntil: s.carTagUntil || '', carTagMin: today,
         carTagPutBtn: s.carActBusy ? '處理中…' : '貼上',
-      };
+      });
     }
 
     /* 標籤盤管理視窗 */
@@ -5151,7 +5434,15 @@ class Component extends DCLogic {
       carErr: (!!me && !s.carNeed && s.carErr) ? s.carErr : '',
       carNoGuild: !!cm && !guilds.length,
       carReady: !!cm && !!gd,
-      carCtx: gd ? (String(gd.name || '車隊') + ' · ' + (roleTxt[(st && st.role) || gd.role] || '成員') + (via ? ' · ' + via + ' 已登入' : '')) : '',
+      carCtx: gd ? (String(gd.name || '車隊') + ' · ' + (roleTxt[(st && st.role) || gd.role] || '成員') + (via ? ' · ' + via + ' 已登入' : '')
+        + (teamKnown && !admin ? ' · ' + (teamOn ? '車隊模式' : '私車模式') : '')) : '',      // 成員沒有開關：這一行最後面寫目前的模式（手機上這行會被截斷，工具列右邊另外再寫一次，見 carModeTxt）
+      /* 私車／車隊開關（管理員，班表分頁的工具列）；onCarMode 在下面的事件表 */
+      carModeShow: admin && teamKnown,
+      carModeSeg: [['solo', '私車'], ['team', '車隊']].map(([v, n]) => Object.assign({ v, n, sel: (teamOn ? 'team' : 'solo') === v ? 'true' : 'false' }, segOn((teamOn ? 'team' : 'solo') === v))),
+      carModeNote: '私車＝整隊固定一位跑者；車隊＝每個時段可以各自指定跑者（從成員池挑或直接打名字）。',
+      /* 成員：工具列右邊再寫一次目前的模式（手機上最上面那一行會被截斷，看不到最後面的模式） */
+      carModeTxt: teamKnown && !admin ? (teamOn ? '車隊模式' : '私車模式') : '',
+      carModeTip: teamOn ? '車隊模式：每個時段可以各自指定跑者' : '私車模式：整隊固定一位跑者',
       /* 切換車隊：不用原生 <select>（macOS 深色下原生選單會畫成一顆看不到名字的鈕），改成自己畫的清單 */
       carGuildList: guilds.map(x => { const on = String(x.gid) === String(s.g || ''); return { v: String(x.gid), n: String(x.name || x.gid), role: roleTxt[x.role] || '成員', on: on ? 'true' : 'false',
         bg: on ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'transparent', fg: on ? 'var(--ink)' : 'var(--text-2)', rc: on ? 'var(--accent-deep)' : 'var(--text-3)' }; }),
@@ -10828,6 +11119,7 @@ class Component extends DCLogic {
       onCarTagSel: e => this.setState({ carTagSel: e.currentTarget.dataset.id || '' }),
       onCarTagScope: e => this.setState({ carTagScope: e.currentTarget.dataset.v === 'member' ? 'member' : 'shift' }),
       onCarOpen: () => this.carSetOpen(),
+      onCarMode: e => this.carSetMode(e.currentTarget.dataset.v === 'team'),
       onCarLockDay: e => { const st = (this.state.carStates || {})[this.carNo()], day = this.carDayOf(st, this.state.carDate); const v = e.currentTarget.dataset.v === '1';
         if (!day) return; if (v && !window.confirm('鎖定這一天的全部時段？鎖班後成員不能再自己報班。')) return; this.carLock((day.rows || []).map(r => r.hour), v); },
       onCarLockRow: e => { const d = e.currentTarget.dataset; this.carLock([d.h], d.v === '1'); },

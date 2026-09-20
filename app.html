@@ -343,12 +343,17 @@ select option, select optgroup{
 .car-mini.pri{background:var(--ink-grad);color:#fff;border-color:transparent}
 .car-note{font-size:12px;color:var(--text-2);line-height:1.5;overflow-wrap:anywhere}
 .car-lock{display:inline-block;padding:0 7px;border-radius:999px;background:color-mix(in oklab,#ee6644 15%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));font-size:10.5px;font-weight:800}
+/* 車隊模式：另外指定的跑者旁邊的「指定」小膠囊；手機那一行的跑者是可以點的（管理員） */
+.car-rp{display:inline-block;flex:none;padding:0 7px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep);font-size:10.5px;font-weight:800;line-height:1.6;white-space:nowrap}
+.car-rbtn{border:none;background:none;margin:0;padding:4px 0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.car-mode-note{font-size:11.5px;color:var(--text-3);line-height:1.7;margin:-6px 2px 12px;text-align:right}
 .car-m-only{display:none}
 .car-seat[draggable="true"] .car-name{cursor:grab}
 .car-over{outline:2px dashed var(--accent);outline-offset:-3px;background:color-mix(in oklab,var(--accent) 10%,transparent)!important}
 .car-cols{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity}
 .car-col{flex:0 0 212px;scroll-snap-align:start;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:12px;display:flex;flex-direction:column;gap:8px}
 .car-col .car-cell{border:1px solid var(--border);background:var(--card-2);min-height:50px;padding:8px 10px}
+.car-col .car-p1c{min-height:0;padding:7px 10px}
 .car-wl{display:inline-flex;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:var(--card-2);font-size:12px;font-weight:700;color:var(--text-2)}
 .car-wl[draggable="true"]{cursor:grab}
 /* 觸控裝置沒有 HTML5 拖放：不顯示拖放區，改用點名字 → 換人／移出座位 */
@@ -369,6 +374,7 @@ select option, select optgroup{
   .car-m-only{display:inline}
   .car-admin{width:100%}
   .car-admin>button{flex:1 1 auto;min-height:40px}
+  .car-mode-note{text-align:left;margin-top:-4px}
   .car-side{flex-direction:column}
   .car-side>*{flex:0 0 auto}
   .car-col{flex-basis:78vw}
@@ -2115,14 +2121,22 @@ select option, select optgroup{
           </sc-for>
         </div>
         <div style="flex:1"></div>
+        <sc-if value="{{ carModeTxt }}"><span data-car-mode="1" title="{{ carModeTip }}" style="font-size:12px;font-weight:800;color:var(--text-3);white-space:nowrap">{{ carModeTxt }}</span></sc-if>
         <sc-if value="{{ carIsAdmin }}">
-          <div class="car-admin" style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="car-admin" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <!-- 私車／車隊：整個車隊共用的開關（POST /setting team_mode）；成員沒有這顆，只在上面那行看得到目前的模式 -->
+            <sc-if value="{{ carModeShow }}">
+              <div class="car-seg" role="radiogroup" aria-label="排班模式">
+                <sc-for list="{{ carModeSeg }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarMode }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+              </div>
+            </sc-if>
             <button type="button" onClick="{{ onCarTagMgr }}" class="car-btn">標記管理</button>
             <sc-if value="{{ carLockShow }}"><button type="button" onClick="{{ onCarLockDay }}" data-v="{{ carLockV }}" class="car-btn">{{ carLockBtn }}</button></sc-if>
             <button type="button" onClick="{{ onCarOpen }}" class="car-btn" style="background:{{ carOpenBg }};color:{{ carOpenFg }};border-color:{{ carOpenBd }};box-shadow:var(--sh-xs)">{{ carOpenBtn }}</button>
           </div>
         </sc-if>
       </div>
+      <sc-if value="{{ carModeShow }}"><div class="car-mode-note">{{ carModeNote }}</div></sc-if>
 
       <!-- 日期 -->
       <sc-if value="{{ carHasDates }}">
@@ -2163,9 +2177,19 @@ select option, select optgroup{
                     <span class="car-slot">{{ r.slot }}</span>
                     <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
                     <sc-if value="{{ r.manual }}"><span title="管理員手動排過：自動排位只會補空位，不會重排這一班" style="display:inline-block;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:800">手動</span></sc-if>
-                    <span class="car-m-only car-bn">跑者 {{ r.runner }}</span>
+                    <!-- 手機：跑者寫在時段那一行（P1 欄在手機上收起來）；車隊模式的管理員可以點 -->
+                    <sc-if value="{{ r.rEdit }}"><button type="button" class="car-m-only car-bn car-rbtn" onClick="{{ onCarRunner }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" title="{{ r.rTitle }}" style="color:{{ r.rFg2 }}">跑者 {{ r.runner }}</button></sc-if>
+                    <sc-if value="{{ r.rRo }}"><span class="car-m-only car-bn" style="color:{{ r.rFg2 }}">跑者 {{ r.runner }}</span></sc-if>
+                    <sc-if value="{{ r.rCustom }}"><span class="car-m-only"><span class="car-rp">指定</span></span></sc-if>
                   </div>
-                  <div class="car-cell car-c-p1"><div class="car-nm">{{ r.runner }}</div><div class="car-bn">{{ r.ctype }}</div></div>
+                  <div class="car-cell car-c-p1" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" onClick="{{ onCarP1Cell }}" style="cursor:{{ r.rCur }}">
+                    <div class="car-nm">
+                      <sc-if value="{{ r.rEdit }}"><button type="button" class="car-name" onClick="{{ onCarRunner }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" title="{{ r.rTitle }}" style="color:{{ r.rFg }}">{{ r.runner }}</button></sc-if>
+                      <sc-if value="{{ r.rRo }}"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ r.rFg }}">{{ r.runner }}</span></sc-if>
+                      <sc-if value="{{ r.rCustom }}"><span class="car-rp">指定</span></sc-if>
+                    </div>
+                    <div class="car-bn">{{ r.rSub }}</div>
+                  </div>
                   <sc-for list="{{ r.cells }}" as="c">
                     <div class="car-cell car-seat" draggable="{{ c.drag }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-nm="{{ c.nm }}" data-d="{{ c.d }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}" style="background:{{ c.bg }}">
                       <sc-if value="{{ c.has }}">
@@ -2219,7 +2243,7 @@ select option, select optgroup{
                     <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:136px;overflow-y:auto;padding:2px">
                       <sc-for list="{{ carAPool }}" as="m"><span class="car-wl" draggable="true" role="button" tabindex="0" aria-pressed="{{ m.sel }}" data-nm="{{ m.nm }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}" onClick="{{ onCarAPoolPick }}" onKeyDown="{{ onCarAPoolKey }}" style="gap:6px;align-items:center;cursor:pointer;background:{{ m.bg }};border-color:{{ m.bd }};max-width:100%"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.nm }}</span><span class="car-bn" style="flex:none">{{ m.bn }}</span></span></sc-for>
                     </div>
-                    <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-top:8px">拖到座位＝排進去（身分照上面選的）　·　座位上的人拖回這裡＝移出　·　拖到同一班的另一格＝兩人互換　·　手機：點一下成員，再點座位</div>
+                    <div style="font-size:11px;color:var(--text-3);line-height:1.7;margin-top:8px">{{ carAPoolHelp }}</div>
                   </div>
                 </sc-if>
                 <sc-if value="{{ carAPickShow }}">
@@ -2236,7 +2260,17 @@ select option, select optgroup{
                         <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
                         <sc-if value="{{ r.manual }}"><span title="管理員手動排過：自動排位只會補空位，不會重排這一班" style="display:inline-block;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:800">手動</span></sc-if>
                         <div style="flex:1"></div>
-                        <span class="car-bn">P1 {{ r.runner }}</span>
+                        <span class="car-bn">{{ r.ctype }}</span>
+                      </div>
+                      <!-- P1 跑者：車隊模式的管理員可以點（開小視窗，或把成員池點選中的人放進來）、也可以把成員池的人拖進來 -->
+                      <div class="car-cell car-p1c" data-p1="1" data-h="{{ r.hour }}" data-d="{{ r.d }}" data-pos="" data-nm="{{ r.runner }}" data-c="{{ r.rC }}" onClick="{{ onCarAP1Cell }}" onDragOver="{{ onCarRDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarRDrop }}" style="cursor:{{ r.rCur }}">
+                        <div class="car-nm">
+                          <span class="car-p">P1</span>
+                          <sc-if value="{{ r.rEdit }}"><button type="button" class="car-name" onClick="{{ onCarARunner }}" data-h="{{ r.hour }}" data-d="{{ r.d }}" data-pos="" data-nm="{{ r.runner }}" data-c="{{ r.rC }}" title="{{ r.rTitle }}" style="color:{{ r.rFg }}">{{ r.runner }}</button></sc-if>
+                          <sc-if value="{{ r.rRo }}"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ r.rFg }}">{{ r.runner }}</span></sc-if>
+                          <sc-if value="{{ r.rCustom }}"><span class="car-rp">指定</span></sc-if>
+                          <span class="car-bn" style="margin-left:auto">{{ r.rBonus }}</span>
+                        </div>
                       </div>
                       <sc-for list="{{ r.cells }}" as="c">
                         <div class="car-cell car-seat" draggable="{{ c.drag }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-nm="{{ c.nm }}" data-d="{{ c.d }}" onDragStart="{{ onCarDragStart }}" onDragEnd="{{ onCarDragEnd }}" onDragOver="{{ onCarDragOver }}" onDragLeave="{{ onCarDragLeave }}" onDrop="{{ onCarDrop }}" style="background:{{ c.bg }}">
@@ -2337,7 +2371,9 @@ select option, select optgroup{
       <sc-if value="{{ carTabIs.sched }}">
         <div class="car-sec" data-sec="sched">
           <!-- @@SEC-A-TPL-sched@@ 這個分頁的模板寫在這一行下面、</div> 上面 -->
-          <!-- 排班工具（管理員）：開班／砍班、代報班、複製班表、整段處理。日期與時段欄四個工具共用 -->
+          <!-- 跑者的建議名單（車隊模式）：開班的「跑者（選填）」、「指定跑者」工具、點跑者的小視窗三個地方共用 -->
+          <sc-if value="{{ carRunListOn }}"><datalist id="carRunList"><sc-for list="{{ carRunOpts }}" as="o"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist></sc-if>
+          <!-- 排班工具（管理員）：開班／砍班、指定跑者（車隊模式）、代報班、複製班表、整段處理。日期與時段欄各工具共用 -->
           <sc-if value="{{ carAToolsShow }}">
             <div class="car-card" style="padding:16px 18px;margin-top:14px;min-width:0">
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -2352,10 +2388,26 @@ select option, select optgroup{
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                   <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
                   <input class="car-in" placeholder="時段，例 20-22" aria-label="時段" value="{{ carAR }}" onInput="{{ onField }}" data-k="carAR" autocomplete="off" style="flex:0 1 150px;width:auto;min-width:0">
+                  <!-- 車隊模式：開班順便帶這段時間的跑者（選填） -->
+                  <sc-if value="{{ carATeamOn }}"><input class="car-in" list="carRunList" maxlength="24" placeholder="跑者（選填）" aria-label="跑者（選填）" value="{{ carARunWho }}" onInput="{{ onField }}" data-k="carARunWho" autocomplete="off" style="flex:0 1 170px;width:auto;min-width:0"></sc-if>
                   <button type="button" class="car-mini pri" onClick="{{ onCarARun }}" data-act="mark" disabled="{{ carABusyOn }}" style="padding:9px 18px">{{ carARunBtn }}</button>
                   <button type="button" class="car-mini" onClick="{{ onCarARun }}" data-act="unmark" disabled="{{ carABusyOn }}" style="padding:9px 16px;background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">砍班</button>
                 </div>
-                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">開班＝把這段時間設成要跑，並自動打開成員自助報班；砍班會清空座位、報班與候補。「20-22」是 20:00～22:00 兩個時段，跨午夜寫「22-26」，單一小時寫「20」。</div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">{{ carARunHelp }}</div>
+              </sc-if>
+
+              <!-- 指定跑者（車隊模式）：一段時間一次改；跑者留空＝恢復預設跑者 -->
+              <sc-if value="{{ carAToolRunner }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                  <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:0 1 180px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit"></select>
+                  <input class="car-in" placeholder="時段，例 20-24" aria-label="時段" value="{{ carAR }}" onInput="{{ onField }}" data-k="carAR" autocomplete="off" style="flex:0 1 150px;width:auto;min-width:0">
+                  <input class="car-in" list="carRunList" maxlength="24" placeholder="跑者：成員名稱、別名，或直接打名字" aria-label="跑者" value="{{ carARunSetWho }}" onInput="{{ onField }}" onKeyDown="{{ onCarARunToolKey }}" data-k="carARunSetWho" autocomplete="off" style="flex:1 1 200px;width:auto;min-width:0;max-width:300px">
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
+                  <button type="button" class="car-mini pri" onClick="{{ onCarARunTool }}" data-act="set" disabled="{{ carABusyOn }}" style="padding:9px 18px">{{ carARunSetBtn }}</button>
+                  <button type="button" class="car-mini" onClick="{{ onCarARunTool }}" data-act="reset" disabled="{{ carABusyOn }}" style="padding:9px 16px">恢復預設跑者</button>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:9px">把這段時間的跑者（P1）一次改成同一個人：可以從成員池挑（打名字或別名會跳出建議），也可以直接打一個還沒註冊的名字。只會改已經開班的時段，沒開班的會略過並回報；跑者留空再按「指定跑者」＝恢復成預設跑者。要改單一時段，直接點班表上的跑者。</div>
               </sc-if>
 
               <sc-if value="{{ carAToolProxy }}">
@@ -2689,24 +2741,27 @@ select option, select optgroup{
                     <span aria-hidden="true" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-3);font-size:12px">▾</span>
                   </div>
                   <button type="button" class="car-btn" onClick="{{ onCarHistStep }}" data-v="-1" disabled="{{ !carHistNewerOk }}" aria-label="後一個日期" title="後一個日期" style="padding:8px 14px" style-disabled="opacity:.4;cursor:default">›</button>
+                  <!-- 任何過去的日期都能直接查（清單裡沒有的日期，機器人一樣會去現用班表與前幾期的封存裡找） -->
+                  <label style="display:flex;align-items:center;gap:7px;flex:0 1 auto;min-width:0;font-size:12px;font-weight:800;color:var(--text-2);white-space:nowrap">指定日期<input type="date" class="car-in" aria-label="指定日期" value="{{ carHistPick }}" max="{{ carHistMax }}" onChange="{{ onCarHistPickDate }}" style="width:auto;min-width:0;flex:0 1 170px;min-height:42px;padding:7px 11px;font-weight:700;background:var(--card)"></label>
                   <div style="flex:1"></div>
                   <span style="font-size:11.5px;color:var(--text-3)">{{ carHistCnt }}</span>
                 </div>
-                <div style="font-size:11.5px;color:var(--text-3);margin-top:8px;line-height:1.6">唯讀檢視，要改班請到「班表」。{{ carHistSrc }}</div>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:8px;line-height:1.6">唯讀檢視，要改班請到「班表」。下拉清單是有紀錄的日期；「指定日期」可以直接查任何一天（私車、車隊模式都一樣，每台車各自一份）。{{ carHistSrc }}</div>
               </div>
               <div class="car-card" style="overflow:hidden">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:15px 18px 10px">
                   <div style="font-size:15px;font-weight:800;color:var(--ink)">{{ carHistTitle }}</div>
                   <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-3)">唯讀</span>
+                  <sc-if value="{{ carHistHasSrcTag }}"><span data-hist-src="1" style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep)">{{ carHistSrcTag }}</span></sc-if>
                 </div>
                 <sc-if value="{{ carHistDayLoading }}"><div class="skel" style="height:180px;margin:0 18px 18px;border-radius:14px"></div></sc-if>
                 <sc-if value="{{ carHistDayErr }}">
                   <div style="padding:0 18px 18px;font-size:12.5px;color:var(--text-2);line-height:1.8">這天的班表讀不到：{{ carHistDayErr }}<br><button type="button" onClick="{{ onCarStRetry }}" class="car-btn" style="margin-top:10px">重試</button></div>
                 </sc-if>
-                <sc-if value="{{ carHistNoRows }}"><div style="padding:14px 18px 24px;text-align:center;font-size:13px;color:var(--text-3)">{{ carHistEmptyTxt }}</div></sc-if>
+                <sc-if value="{{ carHistNoRows }}"><div style="padding:14px 18px 24px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">{{ carHistEmptyTxt }}<sc-if value="{{ carHistEmptySub }}"><div style="font-size:11.5px;margin-top:4px">{{ carHistEmptySub }}</div></sc-if></div></sc-if>
                 <sc-if value="{{ carHistHasRows }}">
                   <div class="car-row car-head">
-                    <div class="car-gh">時段</div><div class="car-gh">車種</div><div class="car-gh">P2</div><div class="car-gh">P3</div><div class="car-gh">P4</div><div class="car-gh">P5</div><div class="car-gh">候補／報班</div>
+                    <div class="car-gh">時段</div><div class="car-gh">P1 跑者</div><div class="car-gh">P2</div><div class="car-gh">P3</div><div class="car-gh">P4</div><div class="car-gh">P5</div><div class="car-gh">候補／報班</div>
                   </div>
                   <sc-for list="{{ carHistRows }}" as="r">
                     <div class="car-row">
@@ -2714,9 +2769,9 @@ select option, select optgroup{
                         <span class="car-slot">{{ r.slot }}</span>
                         <sc-if value="{{ r.locked }}"><span class="car-lock">已鎖</span></sc-if>
                         <sc-if value="{{ r.manual }}"><span style="display:inline-block;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:800">手動</span></sc-if>
-                        <span class="car-m-only car-bn">{{ r.ctype }}</span>
+                        <span class="car-m-only car-bn">{{ r.rM }}</span>
                       </div>
-                      <div class="car-cell car-c-p1"><div class="car-bn">{{ r.ctype }}</div></div>
+                      <div class="car-cell car-c-p1"><div class="car-nm"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.runner }}</span></div><div class="car-bn">{{ r.rSub }}</div></div>
                       <sc-for list="{{ r.cells }}" as="x">
                         <div class="car-cell car-seat">
                           <sc-if value="{{ x.has }}">
@@ -3236,31 +3291,83 @@ select option, select optgroup{
                     <sc-if value="{{ carFShLoading }}"><div class="skel" style="height:96px;border-radius:14px;margin-top:12px"></div></sc-if>
                     <sc-if value="{{ carFShErr }}"><div style="margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到試算表設定：{{ carFShErr }} <button type="button" class="car-mini" onClick="{{ onCarFShReload }}">重試</button></div></sc-if>
                     <sc-if value="{{ carFShHas }}">
-                      <div style="margin-top:12px;font-size:12.5px;line-height:1.8"><span style="font-weight:800;color:{{ carFShCredFg }}">{{ carFShCred }}</span><span style="color:var(--text-3)">　{{ carFShLast }}</span></div>
+                      <div style="margin-top:12px;font-size:12.5px;line-height:1.8"><span style="font-weight:800;color:{{ carFShCredFg }}">{{ carFShCred }}</span><sc-if value="{{ carFShOneWay }}"><span style="color:var(--text-3)">　{{ carFShLast }}</span></sc-if></div>
                       <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">連接設定</div>
                       <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <input class="car-in" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="300" placeholder="貼上試算表網址或 ID" value="{{ carFShId }}" onInput="{{ onCarFShId }}" onKeyDown="{{ onCarFShIdKey }}" aria-label="試算表網址或 ID" style="flex:1 1 220px;min-width:0;min-height:40px">
                         <button type="button" class="car-btn" onClick="{{ onCarFShSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">儲存</button>
+                        <sc-if value="{{ carFShHasUrl }}"><a href="{{ carFShUrl }}" target="_blank" rel="noopener noreferrer" class="car-btn" data-sheet-link="1" style="background:var(--card);text-decoration:none;display:inline-flex;align-items:center;line-height:normal">開啟試算表</a></sc-if>
                       </div>
-                      <sc-if value="{{ carFShNoId }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">還沒連接試算表，先照下面的步驟分享給服務帳號，再貼上網址儲存。</div></sc-if>
-                      <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:14px 0 6px">同步</div>
-                      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                        <select sc-options="{{ carFShDates }}" value="{{ carFShDate }}" onChange="{{ onField }}" data-k="carFShDate" aria-label="同步哪一天" style="flex:0 1 190px;min-width:0;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;min-height:40px;cursor:pointer;outline:none;font-family:inherit"></select>
-                        <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="push" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">推送到試算表</button>
-                        <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="pull">從試算表套用</button>
-                        <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="week">推送未來 7 天</button>
-                      </div>
-                      <sc-if value="{{ carFShResShow }}">
-                        <div style="margin-top:10px;padding:10px 13px;border-radius:14px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 10%,var(--card));font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShResMsg }}
-                          <sc-if value="{{ carFShHasMiss }}"><div style="margin-top:4px;font-size:12px;color:var(--text-2)">查無成員（沒有套用）：<sc-for list="{{ carFShMiss }}" as="x"><span style="display:inline-block;margin:2px 6px 0 0;padding:1px 9px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700">{{ x.t }}</span></sc-for></div></sc-if>
+                      <sc-if value="{{ carFShNoId }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">還沒連接試算表：先把試算表共用給下面的服務帳號（編輯者），再貼上網址儲存。</div></sc-if>
+
+                      <!-- 雙向同步（表為準）：狀態、立即同步、自動同步開關、規則說明 -->
+                      <sc-if value="{{ carFShTwo }}">
+                        <div data-sheet-two="1">
+                          <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:14px 0 6px">雙向同步</div>
+                          <div style="display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12.5px;line-height:1.7">
+                            <span style="color:var(--text-3)">同步狀態</span>
+                            <span data-sheet-synced="1" style="font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ carFShSyncFg }}">{{ carFShSyncAt }}</span>
+                          </div>
+                          <sc-if value="{{ carFShHasErr }}">
+                            <div role="alert" data-sheet-err="1" style="margin-top:8px;padding:9px 13px;border-radius:14px;border:1px solid color-mix(in oklab,#ee6644 35%,var(--border));background:color-mix(in oklab,#ee6644 10%,var(--card));font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShLastErr }}</div>
+                          </sc-if>
+                          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px">
+                            <span style="font-size:12px;color:var(--text-3)">分頁</span>
+                            <sc-for list="{{ carFShTabs }}" as="x"><span data-sheet-tab="1" title="{{ x.sub }}" style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:{{ x.bg }};color:{{ x.fg }};font-size:12px;font-weight:800;max-width:100%;overflow-wrap:anywhere">{{ x.t }}<span style="font-size:10.5px;font-weight:700;color:var(--text-3)">{{ x.sub }}</span></span></sc-for>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:12px">
+                            <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="sync" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ carFShSyncBtn }}</button>
+                            <span style="display:inline-flex;align-items:center;gap:9px;min-width:0;flex:1 1 230px">
+                              <button type="button" role="switch" aria-checked="{{ carFShAuto.on }}" aria-label="{{ carFShAutoLbl }}" onClick="{{ onCarFSheet }}" data-a="auto" style="position:relative;flex:none;width:46px;height:28px;padding:0;border-radius:999px;border:1px solid {{ carFShAuto.swBd }};background:{{ carFShAuto.swBg }};cursor:pointer;transition:background .2s"><span style="position:absolute;top:2px;left:{{ carFShAuto.swL }};width:22px;height:22px;border-radius:999px;background:{{ carFShAuto.swK }};box-shadow:var(--sh-xs);transition:left .18s ease"></span></button>
+                              <span style="font-size:12.5px;font-weight:700;color:var(--text);min-width:0">{{ carFShAutoLbl }}</span>
+                            </span>
+                          </div>
+                          <sc-if value="{{ carFShSyncResShow }}">
+                            <div data-sheet-res="1" style="margin-top:10px;padding:10px 13px;border-radius:14px;border:1px solid {{ carFShSyncResBd }};background:{{ carFShSyncResBg }};font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShResMsg }}
+                              <sc-if value="{{ carFShHasMiss }}"><div style="margin-top:4px;font-size:12px;color:var(--text-2)">表上對不到成員的名字（照樣排上去，但沒有倍率）：<sc-for list="{{ carFShMiss }}" as="x"><span style="display:inline-block;margin:2px 6px 0 0;padding:1px 9px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700">{{ x.t }}</span></sc-for></div></sc-if>
+                            </div>
+                          </sc-if>
+                          <ul style="margin:12px 0 0;padding:12px 14px 12px 30px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
+                            <sc-for list="{{ carFShRules }}" as="x"><li>{{ x.t }}</li></sc-for>
+                          </ul>
                         </div>
                       </sc-if>
-                      <div class="car-note" style="margin-top:10px;color:var(--text-3)">推送：一天一個分頁（時段／車種／P1～P5／候補／報名數）。套用：讀分頁上 P2～P5 的名字寫回班表，S6 請寫「S6 名字」；查無成員的名字會列出來、不會套用。</div>
-                      <div style="margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
-                        <div style="font-weight:800;color:var(--ink);margin-bottom:2px">使用步驟</div>
-                        1. 建立 Google 試算表，分享給下面的服務帳號（權限選編輯者）<br>2. 貼上試算表網址並儲存，按「推送到試算表」產生分頁<br>3. 在表上排班（P2～P5 填成員名稱），再按「從試算表套用」
-                        <sc-if value="{{ carFShEmail }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px"><span>服務帳號：</span><span style="user-select:all;-webkit-user-select:all;font-weight:700;color:var(--accent-deep);overflow-wrap:anywhere;min-width:0">{{ carFShEmail }}</span><button type="button" class="car-mini" onClick="{{ onCarFShCopy }}">複製</button></div></sc-if>
-                        <sc-if value="{{ carFShNoEmail }}"><div style="margin-top:8px;color:var(--text-3)">（讀不到服務帳號 email）</div></sc-if>
+
+                      <!-- 服務帳號（兩種同步都要先共用給它） -->
+                      <div style="margin-top:12px;padding:10px 14px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
+                        <sc-if value="{{ carFShEmail }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>服務帳號：</span><span data-sheet-email="1" style="user-select:all;-webkit-user-select:all;font-weight:700;color:var(--accent-deep);overflow-wrap:anywhere;min-width:0">{{ carFShEmail }}</span><button type="button" class="car-mini" onClick="{{ onCarFShCopy }}">複製</button></div></sc-if>
+                        <sc-if value="{{ carFShNoEmail }}"><div style="color:var(--text-3)">（讀不到服務帳號 email）</div></sc-if>
+                      </div>
+
+                      <!-- 舊版：每天一個分頁的推送／回讀（有雙向同步時收起來，免得搞混） -->
+                      <div style="margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:hidden">
+                        <sc-if value="{{ carFShOldToggle }}">
+                          <button type="button" onClick="{{ onCarFShOld }}" aria-expanded="{{ carFShOldExp }}" data-sheet-old="1" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;text-align:left;font-size:12.5px;font-weight:800">
+                            <span style="flex:1;min-width:0">舊版：每天一個分頁的推送／回讀</span><span style="flex:none;font-size:11.5px;color:var(--text-3)">{{ carFShOldArrow }}</span>
+                          </button>
+                        </sc-if>
+                        <sc-if value="{{ carFShOldOpen }}">
+                          <div style="padding:4px 14px 14px">
+                            <sc-if value="{{ carFShOldToggle }}"><div class="car-note" style="color:var(--text-3);margin-bottom:8px">跟上面的雙向同步是兩套：這裡是手動把某一天推成一個獨立分頁（分頁名＝日期），或從那個分頁讀回來。平常用雙向同步就好。{{ carFShLast }}</div></sc-if>
+                            <sc-if value="{{ carFShOneWay }}"><div style="font-size:12px;font-weight:800;color:var(--text-2);margin:8px 0 6px">同步</div></sc-if>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                              <select sc-options="{{ carFShDates }}" value="{{ carFShDate }}" onChange="{{ onField }}" data-k="carFShDate" aria-label="同步哪一天" style="flex:0 1 190px;min-width:0;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13px;min-height:40px;cursor:pointer;outline:none;font-family:inherit"></select>
+                              <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="push">推送到試算表</button>
+                              <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="pull">從試算表套用</button>
+                              <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="week">推送未來 7 天</button>
+                            </div>
+                            <sc-if value="{{ carFShResShow }}">
+                              <div style="margin-top:10px;padding:10px 13px;border-radius:14px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 10%,var(--card));font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShResMsg }}
+                                <sc-if value="{{ carFShHasMiss }}"><div style="margin-top:4px;font-size:12px;color:var(--text-2)">查無成員（沒有套用）：<sc-for list="{{ carFShMiss }}" as="x"><span style="display:inline-block;margin:2px 6px 0 0;padding:1px 9px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700">{{ x.t }}</span></sc-for></div></sc-if>
+                              </div>
+                            </sc-if>
+                            <div class="car-note" style="margin-top:10px;color:var(--text-3)">推送：一天一個分頁（時段／車種／P1～P5／候補／報名數）。套用：讀分頁上 P2～P5 的名字寫回班表，S6 請寫「S6 名字」；查無成員的名字會列出來、不會套用。</div>
+                            <div style="margin-top:10px;font-size:12px;color:var(--text-2);line-height:1.85">
+                              <div style="font-weight:800;color:var(--ink);margin-bottom:2px">使用步驟</div>
+                              1. 建立 Google 試算表，分享給上面的服務帳號（權限選編輯者）<br>2. 貼上試算表網址並儲存，按「推送到試算表」產生分頁<br>3. 在表上排班（P2～P5 填成員名稱），再按「從試算表套用」
+                            </div>
+                          </div>
+                        </sc-if>
                       </div>
                     </sc-if>
                   </div>
@@ -6373,6 +6480,24 @@ select option, select optgroup{
     </sc-if>
   </sc-if>
 
+  <!-- 車隊模式：這個時段的跑者（管理員） -->
+  <sc-if value="{{ carPopIsRun }}">
+    <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px">這個時段的跑者</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-width:0">
+      <span style="font-size:11.5px;color:var(--text-3)">目前</span>
+      <span style="font-size:14px;font-weight:800;color:{{ carRunCurFg }};min-width:0;overflow-wrap:anywhere">{{ carRunCur }}</span>
+      <span class="car-rp">{{ carRunCurTag }}</span>
+    </div>
+    <input class="car-in" list="carRunList" maxlength="24" value="{{ carRunName }}" onInput="{{ onField }}" onKeyDown="{{ onCarRunKey }}" data-k="carRunName" placeholder="成員名稱、別名，或直接打名字" aria-label="跑者" autocomplete="off" style="margin-bottom:8px">
+    <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-2);line-height:1.6;cursor:pointer;margin-bottom:4px"><input type="checkbox" checked="{{ carRunChain }}" onChange="{{ onCarRunChain }}" style="accent-color:var(--accent);margin-top:3px;flex:none"><span>同一天後面連續的開班時段一起改</span></label>
+    <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:10px">{{ carRunChainTxt }}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" onClick="{{ onCarRunSet }}" class="car-mini pri" style="padding:9px 18px">{{ carRunSetBtn }}</button>
+      <button type="button" onClick="{{ onCarRunReset }}" class="car-mini" style="padding:9px 14px">恢復預設跑者</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-3);line-height:1.6;margin-top:9px">{{ carRunDflt }}。名冊裡的成員會帶上他的倍率；沒註冊的跑者直接打名字就可以。</div>
+  </sc-if>
+
   <!-- 管理員：排人／換人 -->
   <sc-if value="{{ carPopAdminPick }}">
     <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:5px">{{ carPickTitle }}</div>
@@ -6825,7 +6950,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=6463dda86b"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=7b837e2846"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

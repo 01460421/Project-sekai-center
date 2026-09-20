@@ -40,6 +40,11 @@ function mkCar(no) {
       sched[d][h] = sh;
     });
   });
+  /* 車隊模式的種子資料：一車今天 22:00 指定成員「阿華」當跑者（帶倍率）、23:00 是沒註冊的跑者（純文字名字） */
+  if (no === 1 && sched[today]) {
+    if (sched[today]['22:00']) sched[today]['22:00'].p1 = { name: '阿華', fixed: true, custom: true, user_id: 'u3', bonus: 3.72 };
+    if (sched[today]['23:00']) sched[today]['23:00'].p1 = { name: '外援小王', fixed: true, custom: true };
+  }
   const pal = {}; PAL0.forEach(([id, label, color, vis]) => { pal[id] = { label, color, detail: '', visibility: vis }; });
   const seatTags = {};
   seatTags[today + '|20:00|u2'] = [{ tag: 't1', detail: '晚 10 分到，先請大雄代推前兩首。', by: '菜根', at: '17:42' }];
@@ -48,6 +53,36 @@ function mkCar(no) {
 }
 const DB = {};
 const carOf = (gid, no) => { const k = gid + ':' + no; if (!DB[k]) DB[k] = mkCar(gid === '222' ? 2 : +no); return DB[k]; };
+/* 車隊模式（R 組：跑者／私車車隊開關／歷史任意日期／試算表雙向同步）共用的假資料與測試開關。
+   team_mode 是整個車隊共用（不分車）：'111' 一開始是車隊模式（才測得到跑者的操作）、'222' 是私車。
+   測試開關：sessionStorage 'sekai-carmockR'（逗號分隔）或執行中改 globalThis.__mockR：
+     oldbot   /state 不帶每一列的 p1 與 team_mode（舊機器人）；/runner 回 404 bot_not_updated
+     oldsheet /sheet info 不帶雙向同步的欄位（舊機器人）
+   __mockR.sheet = 'err'｜'pending'｜''：下一次 /sheet sync 回 500 {error}／{ok, pending, msg}／正常
+   __mockR.runPending = true：下一次 /runner 回 {ok, pending, msg} */
+const TEAM = { '111': true, '222': false };
+const mockR = () => globalThis.__mockR || (globalThis.__mockR = (() => {
+  let f = ''; try { f = sessionStorage.getItem('sekai-carmockR') || ''; } catch (e) {}
+  const has = k => f.split(',').indexOf(k) >= 0;
+  return { oldbot: has('oldbot'), oldsheet: has('oldsheet'), sheet: '', runPending: false };
+})());
+const R_ALIAS = { u2: ['阿明'], u5: ['Nobita'], u6: ['shizuka'] };
+/* 跟機器人的 _slot_runner 一樣：另外指定過（custom／有 user_id／名字跟預設不同）才算 custom，其餘＝車隊預設跑者 */
+const slotRunner = (c, sh) => {
+  const p = sh && sh.p1;
+  if (p && p.name && (p.custom || p.user_id || String(p.name) !== c.p1)) return { name: String(p.name), custom: true, bonus: p.bonus || null };
+  return { name: c.p1, custom: false, bonus: null };
+};
+/* 跟機器人的 _runner_entry 一樣：uid／名字／別名（再來是前綴、子字串）對得到成員就帶 user_id 與倍率，對不到就當純文字名字；空字串回 null */
+const runnerEntry = who => {
+  const t = String(who || '').trim(); if (!t) return null;
+  const l = t.toLowerCase(), al = x => (R_ALIAS[x.uid] || []).map(a => a.toLowerCase());
+  const m = MEMBERS.find(x => x.uid === t) || MEMBERS.find(x => x.name.toLowerCase() === l) || MEMBERS.find(x => al(x).indexOf(l) >= 0)
+    || MEMBERS.find(x => x.name.toLowerCase().startsWith(l)) || MEMBERS.find(x => x.name.toLowerCase().indexOf(l) >= 0);
+  if (m) return { name: m.name, fixed: true, custom: true, user_id: m.uid, bonus: m.bonus };
+  const nm = t.replace(/[\x00-\x1f\x7f<>@#`]/g, '').trim().slice(0, 24);
+  return nm ? { name: nm, fixed: true, custom: true } : null;
+};
 
 function stateOut(gid, no, role) {
   const c = carOf(gid, no), admin = role === 'admin';
@@ -62,11 +97,14 @@ function stateOut(gid, no, role) {
     }));
     return out;
   };
+  const old = mockR().oldbot;                       // 舊機器人：每一列沒有 p1、最上層沒有 team_mode
   const days = Object.keys(c.sched).sort().map(d => ({ date: d, rows: Object.keys(c.sched[d]).sort().map(h => {
     const sh = c.sched[d][h];
-    return { hour: h, car_type: sh.car_type, locked: !!sh.locked, manual: false,
+    const row = { hour: h, car_type: sh.car_type, locked: !!sh.locked, manual: false,
       seats: ['p2', 'p3', 'p4', 'p5'].map(p => { const x = sh[p]; const o = { pos: p, name: x ? x.name : null, role: x ? x.role : null, bonus: x ? x.bonus : null, tags: tagsOf(d, h, x) }; if (admin && x) o.fp = 'fp-' + d + h + p + x.user_id; return o; }),
       applicants: sh.applicants.length, waitlist: sh.waitlist.map(w => w.name) };
+    if (!old) row.p1 = slotRunner(c, sh);
+    return row;
   }) }));
   const me = {};
   Object.keys(c.sched).forEach(d => { const hs = []; Object.keys(c.sched[d]).sort().forEach(h => { const sh = c.sched[d][h];
@@ -74,6 +112,7 @@ function stateOut(gid, no, role) {
     const ap = sh.applicants.some(a => a.user_id === 'me'), wl = sh.waitlist.some(w => w.user_id === 'me');
     if (st || ap || wl) hs.push({ hour: h, seat: st, applied: ap, waitlist: wl, locked: !!sh.locked }); }); if (hs.length) me[d] = hs; });
   const base = { guild: gid === '111' ? '菜根車隊' : '測試車隊', p1: c.p1, today, days };
+  if (!old) base.team_mode = !!TEAM[gid];
   if (!admin) return Object.assign(base, { role: 'member', settings: {}, me });
   return Object.assign(base, { role: 'admin', settings: { schedule_open: c.open }, me });
 }
@@ -142,6 +181,39 @@ export function install(BASE, mode0) {
     const c = carOf(gid, no);
     /* 各分頁的假後端：每一組只寫在自己的 @@MOCK 標記下面；回傳 Response 就結束，回 undefined 就交給後面的路由。
        可用：rest、m（方法）、q（query）、body、gid、no、role、admin、c（該車資料）、J(obj, status)、MEMBERS */
+    /* @@MOCK-R@@ runner（車隊模式：POST /runner、POST /setting team_mode；/run 帶 runner 寫在 A 組的 /run 裡、
+       /history 的跑者與任意日期寫在 C 組、/sheet 的雙向同步寫在 F 組） */
+    {
+      const R = mockR();
+      if (rest === '/runner' && m === 'POST') {
+        if (R.oldbot) return J({ error: 'bot_not_updated', message: '車隊機器人尚未更新或不支援這個功能' }, 404);
+        if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+        const { date, hours, runner } = body;
+        if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return J({ error: '日期格式須為 YYYY-MM-DD' }, 400);
+        if (!Array.isArray(hours) || !hours.length || hours.length > 48 || !hours.every(h => typeof h === 'string' && /^\d{2}:\d{2}$/.test(h))) return J({ error: '時段格式須為 HH:MM 的清單' }, 400);
+        if (runner != null && typeof runner !== 'string') return J({ error: '跑者須為文字' }, 400);
+        if (typeof runner === 'string' && runner.length > 60) return J({ error: '跑者名稱太長' }, 400);
+        if (date < today) return J({ error: date + ' 已過去，歷史班表為唯讀' }, 400);
+        const ent = runnerEntry(runner), day = c.sched[date] || {}, done = [], skip = [];
+        hours.forEach(h => {
+          const sh = day[h];
+          if (!sh || !sh.run_planned) { skip.push(h); return; }
+          sh.p1 = ent ? Object.assign({}, ent) : { name: c.p1, fixed: true };
+          done.push(h);
+        });
+        if (!done.length) return J({ error: '這些時段都還沒開班，先開班再指定跑者', skip }, 400);
+        if (String(runner || '').trim()) TEAM[gid] = true;            // 跟機器人一樣：第一次指定跑者＝開始用車隊模式
+        if (R.runPending) { R.runPending = false; return J({ ok: true, pending: true, msg: '跑者還在處理，稍後會自動更新' }); }
+        return J({ ok: true, done, skip, name: ent ? ent.name : c.p1, custom: !!String(runner || '').trim() });
+      }
+      if (rest === '/setting' && m === 'POST' && body.key === 'team_mode') {
+        if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+        if (R.oldbot) return J({ error: 'bad key' }, 400);
+        TEAM[gid] = !!body.value;
+        return J({ ok: true, key: 'team_mode', value: TEAM[gid] });
+      }
+    }
+    /* ---------- end @@MOCK-R@@ ---------- */
     /* @@MOCK-A@@ sched */
     {
       /* 班表（A 組）：/run、/signup、/swap、/batch（copy／clear_range／lock）、/action（reseat／board）照機器人的行為與回應形狀。
@@ -176,6 +248,7 @@ export function install(BASE, mode0) {
         const yd = addDay(today, -1), by = n => MEMBERS.find(x => x.name === n);
         c.sched[yd] = c.sched[yd] || {};
         ['24:00', '25:00'].forEach((h, i) => { c.sched[yd][h] = { run_planned: true, car_type: '蝦', applicants: [], waitlist: [], p2: seat(by('菜根'), 's6'), p3: seat(by('小明'), 'pusher'), p4: i ? null : seat(by('阿華'), 'pusher'), p5: null }; });
+        c.sched[yd]['24:00'].p1 = { name: '大雄', fixed: true, custom: true, user_id: 'u5', bonus: 3.61 };      // R 組：跨日列也有指定跑者（只能看、不能改）
         const t21 = (c.sched[today] || {})['21:00']; if (t21) t21.manual_override = true;
       }
       if (rest === '/state' && A.state) {
@@ -205,7 +278,11 @@ export function install(BASE, mode0) {
         const g = guard(date); if (g) return g;
         if (A.pending) { A.pending = false; return J({ ok: true, pending: true, msg: '開班還在處理，稍後會自動更新' }); }
         const day = c.sched[date] || (c.sched[date] = {});
-        if (action === 'mark') { const sh = day[hour] || (day[hour] = { car_type: '蝦', p2: null, p3: null, p4: null, p5: null, applicants: [], waitlist: [] }); sh.run_planned = true; c.open = true; }
+        if (action === 'mark') {
+          const sh = day[hour] || (day[hour] = { car_type: '蝦', p2: null, p3: null, p4: null, p5: null, applicants: [], waitlist: [] }); sh.run_planned = true; c.open = true;
+          const ent = typeof body.runner === 'string' && body.runner.trim() ? runnerEntry(body.runner) : null;      // R 組：開班順便帶跑者（已經開著的時段也會改）
+          if (ent) sh.p1 = ent;
+        }
         else delete day[hour];              // 機器人是拿掉 run_planned 並清空；共用的 stateOut 不濾 run_planned，所以這裡直接刪
         return J({ ok: true });
       }
@@ -424,6 +501,8 @@ export function install(BASE, mode0) {
           hs.forEach((h, i) => {
             const ppl = who[(n + i) % who.length];
             const sh = { car_type: '蝦', run_planned: true, locked: n === 1 && i === 0, manual_override: n === 2 && i === 1, applicants: i === 0 ? [{ user_id: 'u9', name: '路人' }] : [], waitlist: i === 1 ? [{ name: '胖虎' }] : [] };
+            /* R 組：封存的班表也留著跑者（昨天第一個時段是另外指定的跑者，其餘是當時的預設跑者；前天第二個時段故意不留 → 前端退回預設跑者） */
+            if (!(n === 2 && i === 1)) sh.p1 = n === 1 && i === 0 ? { name: '靜香', user_id: 'u6', bonus: 3.8, fixed: true, custom: true } : { name: c.p1, fixed: true, custom: false };
             ['p2', 'p3', 'p4', 'p5'].forEach((p, j) => { const mm = MEMBERS.find(x => x.name === ppl[j]); sh[p] = mm ? { name: mm.name, bonus: j === 0 && mm.s6_bonus ? mm.s6_bonus : mm.bonus, role: j === 0 && mm.s6_bonus ? 's6' : 'pusher', user_id: mm.uid } : null; });
             day[h] = sh;
           });
@@ -461,12 +540,22 @@ export function install(BASE, mode0) {
         if (!DRE.test(d)) return J({ error: '日期格式須為 YYYY-MM-DD' }, 400);
         let raw = sched[d] && Object.keys(sched[d]).length ? sched[d] : null, src = 'live';
         if (!raw) for (const ev of Object.keys(ar).sort().reverse()) { const cand = (ar[ev].schedule || {})[d]; if (cand) { raw = cand; src = 'archive:' + ev; break; } }
+        /* R 組：任何日期都能查。30 天前那一天是「第 178 期封存」裡的班表，但故意不放進日期索引
+           （機器人的索引有 30 秒快取，也可能剛換期）→ 測「清單裡沒有的日期，用日期欄一樣查得到」 */
+        if (!raw && d === addDay(today, -30) && gid === '111' && no === 1) {           // 只有一車有（歷史班表是每車各自的）
+          const mk = (nm, rl) => { const mm = MEMBERS.find(x => x.name === nm); return mm ? { name: mm.name, bonus: rl === 's6' ? mm.s6_bonus : mm.bonus, role: rl, user_id: mm.uid } : null; };
+          raw = { '20:00': { car_type: '蝦', run_planned: true, p1: { name: '阿華', user_id: 'u3', bonus: 3.72, fixed: true, custom: true }, p2: mk('菜根', 's6'), p3: mk('小明', 'pusher'), p4: mk('<b>小夫</b>', 'pusher'), p5: null, applicants: [], waitlist: [] },
+            '21:00': { car_type: '蝦', run_planned: true, p1: { name: '老跑者', fixed: true, custom: false }, p2: mk('靜香', 's6'), p3: null, p4: null, p5: mk('大雄', 'pusher'), applicants: [], waitlist: [{ name: '胖虎' }] } };
+          src = 'archive:178';
+        }
         if (!raw) return J({ date: d, rows: [], src: 'none', readonly: true, note: '這天沒有留下班表資料' });
         const rows = Object.keys(raw).filter(h => HRE.test(h)).sort().map(h => { const sh = raw[h] || {};
-          return { hour: h, car_type: sh.car_type || '蝦', locked: !!sh.locked, manual: !!sh.manual_override,
+          const row = { hour: h, car_type: sh.car_type || '蝦', locked: !!sh.locked, manual: !!sh.manual_override,
             seats: ['p2', 'p3', 'p4', 'p5'].map(p => { const x = sh[p]; return { pos: p, name: x ? x.name : null, role: x ? x.role : null, bonus: x ? x.bonus : null }; }),
             applicants: (sh.applicants || []).filter(a => a && typeof a === 'object').length,
-            waitlist: (sh.waitlist || []).filter(w => w && typeof w === 'object').map(w => w.name) }; });
+            waitlist: (sh.waitlist || []).filter(w => w && typeof w === 'object').map(w => w.name) };
+          if (sh.p1 && sh.p1.name && !mockR().oldbot) row.p1 = { name: String(sh.p1.name), bonus: sh.p1.bonus || null };     // 跟 _web_hist_rows 一樣：那一格有存跑者才帶
+          return row; });
         return J({ date: d, rows, src, readonly: true, past: d < today });
       }
       /* 色段監控：bot_data.seidan[gid]，'111' 有三位（一位停用、一位不在前百），'222' 沒設定 */
@@ -832,6 +921,7 @@ export function install(BASE, mode0) {
          合約 C1：外援同步、推送 7 天、含 list= 的點歌 → 先回 {ok, pending, msg}，背景完成。C4：寫入都記 who（操作者）。 */
       const F = globalThis.__mockF || (globalThis.__mockF = { g: {} });
       const CAT = F.cat || (F.cat = [["art_bonus","顯示倍率小字？","bool","班表表格","display"],["art_s6_badge","S6 用主色徽章？（否＝純文字前綴）","bool","班表表格","display"],["art_empty_que","空位顯示「缺」？（否＝顯示 —）","bool","班表表格","display"],["art_loose","行高寬鬆＋表頭加高？（否＝緊湊）","bool","班表表格","display"],["art_time_strong","時段欄加粗＋淡色底強調？","bool","班表表格","display"],["art_zebra","隔行斑馬紋？","bool","班表表格","display"],["art_grid","格線樣式","select","班表表格","display",[["全格線（橫＋直）","full"],["僅橫線","h"],["無格線","none"]]],["schedule_art_color","主色（表頭/斑馬紋/頁底）","select","班表表格","settings",[["保持現狀","__keep__"],["櫻粉","#FF9AA2"],["珊瑚","#FF6F61"],["緋紅","#E63946"],["橘陽","#FF8C42"],["琥珀","#FFB703"],["鵝黃","#FFD166"],["抹茶","#B5C99A"],["嫩綠","#8AC926"],["翡翠","#2EC4B6"],["湖水","#4ECDC4"],["天青","#48CAE4"],["海藍","#4361EE"]]],["schedule_hidden_mode","班表隱藏模式","select","班表行為","settings",[["不隱藏","off"],["全部隱藏","full"],["隱藏姓名","hide_names"],["隱藏倍率","hide_bonus"],["嚴格（僅見自己）","strict"]]],["schedule_open","開放成員自助報班？","bool","班表行為","settings"],["schedule_default_show_waitlist","班表預設顯示候補名單？","bool","班表行為","settings"],["mobile_schedule","預設使用手機直式班表？","bool","班表行為","settings"],["auto_dm_schedule","報班成功自動私訊班表？","bool","班表行為","settings"],["shortage_open_all","缺人時自動對全員開放報班？","bool","班表行為","settings"],["s6_over_bonus","S6 優先於倍率？（S6 一定佔 P2，砍人先砍推手）","bool","班表行為","settings"],["signup_lock_enabled","啟用報班鎖定（時間到自動鎖班）？","bool","報班鎖定","settings"],["mod_as_admin","版主也算管理員？（有管訊息／踢人／禁言等任一權限即可用全功能）","bool","班表行為","settings"],["signup_lock_allow_shortage","鎖定後缺人時段仍可報？","bool","報班鎖定","settings"],["schedule_never_lock","完全不鎖班？（滿員也不鎖，已鎖的下次重排自動解開）","bool","報班鎖定","settings"],["rank_speed","列表顯示 1h 時速？","bool","排名顯示","display"],["rank_count","列表顯示 1h 場次？","bool","排名顯示","display"],["rank_last","列表顯示上局 PT？","bool","排名顯示","display"],["rank_gap","顯示與前後名分差？","bool","排名顯示","display"],["rank_speedboard","列表底部顯示時速榜？","bool","排名顯示","display"],["rank_profile","詳情顯示綜合力／稱號／隊長？","bool","排名顯示","display"],["rank_images","詳情顯示隊長縮圖／稱號圖？","bool","排名顯示","display"],["rank_theme","排名配色主題","select","排名顯示","settings",[["pjsk（預設）","pjsk"],["經典","經典"],["深色","深色"],["高對比","高對比"],["商務藍","商務藍"],["櫻花粉","櫻花粉"],["薄荷綠","薄荷綠"],["薰衣草紫","薰衣草紫"],["復古橘","復古橘"],["海洋藍","海洋藍"],["暮色金","暮色金"]]],["shortcuts_enabled","啟用純文字捷徑（b/m/榜線/pt1…）？","bool","聊天捷徑","settings"],["shortcuts_limit","捷徑只在特定頻道生效？（否＝所有頻道）","bool","聊天捷徑","settings"],["shortcuts_channels","捷徑允許頻道（複選）","channels","聊天捷徑","settings"],["shortcut_strict","嚴格捷徑（裸 b/c/e/m/t 與 08-12 僅在指定頻道生效，防誤觸）？","bool","聊天捷徑","settings"],["query_only_mode","啟用查分模式（只放行查分捷徑）？","bool","聊天捷徑","settings"],["silent_channels","禁止主動發言頻道（複選，捷徑/自動觸發全停）","channels","聊天捷徑","settings"],["reminder_enabled","啟用整點前排班提醒？","bool","排班提醒","settings"],["reminder_lead_min","提前幾分鐘提醒","select","排班提醒","settings",[["5 分鐘",5],["10 分鐘",10],["15 分鐘",15],["20 分鐘",20],["30 分鐘",30]]],["reminder_mention","提醒時 @ 提及上車成員？","bool","排班提醒","settings"],["reminder_show_car","提醒內容包含車種？","bool","排班提醒","settings"],["reminder_show_bonus","提醒內容包含平均倍率？","bool","排班提醒","settings"],["reminder_channel","排班提醒頻道（單選）","channel1","排班提醒","checkin"],["coop_schedule_open","開放共跑報班？","bool","共跑","settings"],["coop_reg_channel","共跑快捷註冊頻道（單選；輸入 r2.05 28.5w 即註冊）","channel1","共跑","settings"],["recruit_text_channel","文字招募讀取頻道（單選；招募文含「提醒：是」才追蹤報名並於開班前10分在車廂發簽到，否則忽略；機器人不主動點表符）","channel1","共跑","settings"],["coop_noshow_enabled","鴿班紀錄（開車 2 分未簽＝遲到、逾 5 分＝鴿班）？","bool","共跑","settings"],["coop_reminder_enabled","啟用共跑整點前提醒？","bool","共跑","settings"],["coop_reminder_channel","共跑提醒頻道（單選）","channel1","共跑","settings"],["ai_multiturn","AI 問答接續上下文（每頻道記近 6 輪）？","bool","AI","settings"],["ai_autorespond","AI 聊天頻道自動回覆？","bool","AI","settings"],["ai_chat_channel","AI 聊天頻道（單選）","channel1","AI","settings"],["daily_announce_enabled","啟用每日公告？","bool","每日公告","settings"],["daily_announce_channel","每日公告頻道（單選）","channel1","每日公告","settings"],["daily_morning_reminder","早上提醒（當日班表概況）？","bool","每日公告","settings"],["daily_evening_announce","晚間公告（明日班表）？","bool","每日公告","settings"],["daily_announce_lock_room","每日公告附房間鎖定狀態？","bool","每日公告","settings"],["welcome","新成員加入發送歡迎訊息？","bool","歡迎感謝","settings"],["welcome_channel","歡迎訊息頻道（單選）","channel1","歡迎感謝","settings"],["thanks_enabled","整點後自動發下班感謝？","bool","歡迎感謝","settings"],["thanks_channel_id","下班感謝頻道（單選）","channel1","歡迎感謝","settings"],["room_lock_enabled","啟用房間鎖定系統？","bool","房間語音","settings"],["room_lock_notify_channel","房間鎖定通知頻道（單選）","channel1","房間語音","settings"],["room_entry_track","追蹤房號進出紀錄？","bool","房間語音","settings"],["show_voice_status","顯示語音頻道狀態？","bool","房間語音","settings"],["voice_report","語音上下車自動回報？","bool","房間語音","settings"],["voice_log_channel","語音紀錄頻道（單選）","channel1","房間語音","settings"],["admin_notify_channel","管理通知頻道（單選）","channel1","系統通知","settings"],["error_channel","錯誤回報頻道（單選）","channel1","系統通知","settings"],["auto_dm_owner","異常時私訊車主？","bool","系統通知","settings"],["auto_dm_inviter","新人加入私訊邀請人？","bool","系統通知","settings"],["hidden_mode_bypass_log","隱藏模式被繞過時記錄日誌？","bool","系統通知","settings"],["schedule_theme","班表圖配色主題","select","班表表格","settings",[["pjsk（預設）","pjsk"],["淡米","淡米"],["深色","深色"],["高對比","高對比"],["商務藍","商務藍"],["櫻花粉","櫻花粉"],["薄荷綠","薄荷綠"],["薰衣草紫","薰衣草紫"],["復古橘","復古橘"],["海洋藍","海洋藍"],["暮色金","暮色金"]]],["schedule_auto_confirm","報班自動確認（免管理員按確認）","bool","班表行為","settings"],["schedule_board_channel","班表看板頻道（自動更新置頂班表）","channel1","班表行為","settings"],["voice_home_channel","語音常駐頻道（斷線自動回家、沒人也不離開）","voice1","語音・音樂","settings"],["voice_mix","混音模式（說話與音樂同時出聲）","bool","語音・音樂","settings"],["voice_say_channels","快念頻道（頻道內所有訊息都朗讀）","channels","語音・音樂","settings"],["tts_say_allowed_note","／語音 說 授權名單請用 Discord 指令管理","note","語音・音樂","settings"],["voice_volume_pct","播放音量（5-200%）","range","語音・音樂","settings"],["tts_voice","TTS 預設音色","select","語音・音樂","settings",[["Kore","Kore"],["Puck","Puck"],["Charon","Charon"],["Aoede","Aoede"],["Fenrir","Fenrir"],["Leda","Leda"],["Orus","Orus"],["Zephyr","Zephyr"],["[OpenAI] nova","nova"],["[OpenAI] shimmer","shimmer"],["[OpenAI] alloy","alloy"],["[OpenAI] echo","echo"],["[OpenAI] onyx","onyx"],["[OpenAI] fable","fable"]]],["ext_sup_enabled","私車外援系統啟用","bool","私車外援","settings"],["ext_sup_announce_channel","外援班表公告／報班頻道","channel1","私車外援","settings"],["ext_sup_room_channel","外援車房頻道","channel1","私車外援","settings"],["ext_sup_plate_channel","外援 1 車車牌頻道","channel1","私車外援","settings"],["cars_enabled","同時平行開幾台車（1＝單車，跟以前一樣）","select","多車排班","settings",[["1 台（預設）","1"],["2 台","2"],["3 台","3"]]],["car_name_1","一車顯示名稱（留空＝一車）","text","多車排班","settings"],["car_name_2","二車顯示名稱（留空＝二車）","text","多車排班","settings"],["car_name_3","三車顯示名稱（留空＝三車）","text","多車排班","settings"],["car_channels_2","綁定到二車的 Discord 頻道（在這些頻道報班＝二車）","channels","多車排班","settings"],["car_channels_3","綁定到三車的 Discord 頻道（在這些頻道報班＝三車）","channels","多車排班","settings"]]);
+      if (!CAT.some(r => r[0] === 'team_mode')) CAT.push(['team_mode', '車隊模式（多位跑者：每個時段可以各自指定跑者）', 'bool', '班表行為', 'settings']);      // R 組：新的設定鍵照樣從 settings_meta 進來
       const CARK = F.cark || (F.cark = new Set(['schedule_open', 'schedule_auto_confirm', 's6_over_bonus', 'schedule_never_lock', 'signup_lock_enabled', 'signup_lock_allow_shortage', 'shortage_open_all', 'schedule_hidden_mode', 'schedule_board_channel', 'gsheet_id', 'gsheet_auto', 'gsheet_last_push']));
       const CH = gid === '111' ? [['1234567890123456789', '排班公告'], ['1234567890123456790', '報班區'], ['1234567890123456791', '聊天室'], ['1234567890123456792', '<b>小夫</b>的頻道'], ['1234567890123456793', '機器人指令']].map(([id, name]) => ({ id, name })) : [];
       const VCH = gid === '111' ? [['2234567890123456789', '語音大廳'], ['2234567890123456790', '車房一']].map(([id, name]) => ({ id, name })) : [];
@@ -856,7 +946,7 @@ export function install(BASE, mode0) {
       const sfx = () => carsN() > 1 ? '（' + carNm(no) + '）' : '';
       const logF = (action, detail) => { gF.log.push({ ts: ts(), src: 'web', action, detail: String(detail).slice(0, 180), who: '菜根' }); if (gF.log.length > 400) gF.log.splice(0, gF.log.length - 400); };
       const deny = () => J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
-      const getV = k => CARK.has(k) ? (k === 'schedule_open' ? c.open : cF[k]) : gF.set[k];
+      const getV = k => k === 'team_mode' ? !!TEAM[gid] : CARK.has(k) ? (k === 'schedule_open' ? c.open : cF[k]) : gF.set[k];
       if (rest === '/state' && m === 'GET' && admin) {
         const o = stateOut(gid, no, role), meta = [], vals = {};
         const lbl = carsN() > 1 ? '此項分車（目前：' + carNm(no) + '）' : '';
@@ -933,7 +1023,33 @@ export function install(BASE, mode0) {
       if (rest === '/sheet' && m === 'POST') {
         if (!admin) return deny();
         const act = body.action || 'info';
-        if (act === 'info') return J({ sheet_id: cF.gsheet_id || '', service_email: 'caibot-sheet@caibot-sync.iam.gserviceaccount.com', has_creds: true, last_push: cF.gsheet_last_push || '', auto: !!cF.gsheet_auto });
+        /* R 組：雙向同步（表為準）。info 多回 two_way／tab／tabs／synced_at／last_err／interval／url；action:'sync' 馬上對一次。
+           __mockR.sheet = 'err' → 500 {error}（也會記到 last_err）；'pending' → {ok, pending, msg}，約 2.5 秒後才更新 synced_at */
+        const RS = mockR(), tabNm = no === 1 ? '班表' : '班表-' + carNm(no);
+        if (act === 'info') return J(Object.assign({ sheet_id: cF.gsheet_id || '', service_email: 'caibot-sheet@caibot-sync.iam.gserviceaccount.com', has_creds: true, last_push: cF.gsheet_last_push || '', auto: !!cF.gsheet_auto },
+          RS.oldsheet ? {} : { two_way: true, tab: tabNm, tabs: [tabNm, '時數', '成員'], synced_at: cF.gsheet_synced_at || '', last_err: cF.gsheet_last_err || '', interval: 60,
+            url: cF.gsheet_id ? 'https://docs.google.com/spreadsheets/d/' + cF.gsheet_id + '/edit' : '' }));
+        if (act === 'sync') {
+          if (RS.oldsheet) return J({ error: 'unknown action' }, 400);
+          if (!cF.gsheet_id) return J({ error: '尚未設定試算表 ID' }, 400);
+          if (RS.sheet === 'err') {
+            const why = '機器人沒有這張試算表的權限：把試算表共用給服務帳號信箱（編輯者）';
+            cF.gsheet_last_err = ts().slice(0, 11) + ' ' + why;
+            return J({ error: why }, 500);
+          }
+          const fin = () => { cF.gsheet_synced_at = ts(); cF.gsheet_last_push = ts().slice(0, 11); delete cF.gsheet_last_err; };
+          if (RS.sheet === 'pending') { setTimeout(fin, 2500); logF('試算表同步', '背景處理中' + sfx()); return J({ ok: true, pending: true, msg: '正在跟試算表雙向同步，完成後狀態會更新' }); }
+          /* 假裝有人在表上把今天第一個時段的 P5 填了「阿華」、又填了一個名冊裡沒有的名字 */
+          const day0 = c.sched[today] || {}, h0 = Object.keys(day0).sort()[0], sh0 = h0 ? day0[h0] : null, ah = MEMBERS.find(x => x.name === '阿華');
+          let pulled = 0; const miss = [];
+          if (sh0 && !cF.gsheet_synced_at) { if (!sh0.p5 && ah) { sh0.p5 = { user_id: ah.uid, name: ah.name, role: 'pusher', bonus: ah.bonus }; } sh0.manual_override = true; pulled = 1; miss.push(h0 + ' P4:<b>路人甲</b>'); }
+          fin(); logF('試算表同步', (pulled ? '以表為準套用 ' + pulled + ' 個時段' : '沒有變更') + sfx());
+          const pushed = pulled ? [tabNm, '時數'] : [], bits = [];
+          if (pulled) bits.push('以表為準套用 ' + pulled + ' 個時段');
+          if (pushed.length) bits.push('已更新分頁：' + pushed.join('、'));
+          if (miss.length) bits.push('表上有 ' + miss.length + ' 個名字對不到成員（照樣排上去，但沒有倍率）');
+          return J({ ok: true, msg: bits.join('；') || '表跟機器人一致，沒有要更新的', pulled, created: 0, pushed, miss, err: '' });
+        }
         if (act === 'config') {
           const raw = String(body.sheet_id || '').trim(), mm = /\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/.exec(raw);
           cF.gsheet_id = mm ? mm[1] : raw; if (body.auto != null) cF.gsheet_auto = !!body.auto;
