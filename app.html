@@ -320,6 +320,52 @@ select option, select optgroup{
 .car-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm)}
 .car-seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--card-2);gap:2px;max-width:100%}
 .car-seg>button{padding:7px 15px;border:none;border-radius:999px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;font-family:inherit}
+/* 菜根機器人介紹頁（page=bot） */
+.bot-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:20px 22px}
+.bot-h2{font-size:16px;font-weight:800;color:var(--ink)}
+.bot-sub{font-size:12.5px;color:var(--text-3);margin-top:4px;line-height:1.75}
+.bot-hero{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:22px;box-shadow:var(--sh-xs);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 15%,var(--card)),var(--card) 64%)}
+.bot-hero-in{padding:28px 20px 28px 28px;position:relative;z-index:1;min-width:0}
+.bot-eyebrow{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.2em;color:var(--accent-deep);padding:5px 12px;border-radius:999px;border:1px solid color-mix(in oklab,var(--accent) 35%,var(--border));background:color-mix(in oklab,var(--accent) 10%,var(--card))}
+.bot-h1{font-size:34px;font-weight:900;color:var(--ink);line-height:1.2;margin-top:14px;letter-spacing:-.01em}
+.bot-lead{font-size:13.5px;color:var(--text-2);line-height:1.9;margin-top:10px;max-width:34em}
+.bot-hero-art{position:relative;min-height:250px}
+.bot-hero-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:left 30%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 34%);mask-image:linear-gradient(90deg,transparent 0,#000 34%)}
+.bot-cta{display:inline-flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:999px;border:1px solid transparent;background:color-mix(in oklab,var(--accent-deep) 86%,#000);color:var(--card);font-size:13px;font-weight:800;cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .2s,box-shadow .2s}
+.bot-cta:hover{transform:translateY(-1px);box-shadow:var(--sh-sm)}
+.bot-cta.ghost{background:var(--card);color:var(--ink);border-color:var(--border)}
+.bot-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.bot-stat{font-size:11.5px;font-weight:700;color:var(--text-2);padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card)}
+.bot-stat b{color:var(--ink);font-weight:800;margin-right:4px}
+.bot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr));gap:10px;margin-top:14px}
+.bot-feat{padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--card-2)}
+.bot-feat-t{font-size:13.5px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.bot-feat-d{font-size:12px;color:var(--text-2);line-height:1.8;margin-top:5px}
+.bot-new{font-size:10px;font-weight:800;letter-spacing:.1em;padding:1px 8px;border-radius:999px;color:var(--accent-deep);border:1px solid color-mix(in oklab,var(--accent) 40%,var(--border));background:color-mix(in oklab,var(--accent) 12%,var(--card))}
+.bot-grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px;margin-top:14px}
+.bot-side{padding:15px 16px;border:1px solid var(--border);border-radius:16px;background:var(--card-2);min-width:0}
+.bot-side-h{display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:800;color:var(--ink);margin-bottom:9px}
+.bot-side-h i{width:9px;height:9px;border-radius:50%;flex:none;align-self:center}
+.bot-side-h span{font-size:11.5px;font-weight:600;color:var(--text-3)}
+.bot-row{display:flex;gap:9px;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-2);line-height:1.7}
+.bot-row:first-of-type{border-top:0}
+.bot-code{flex:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:var(--accent-deep);padding:1px 8px;border-radius:8px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 9%,var(--card));white-space:nowrap}
+.bot-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:12px;margin-top:14px}
+.bot-shot{display:block;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--card-2);text-decoration:none;transition:transform .2s,border-color .2s,box-shadow .2s}
+.bot-shot:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--sh-sm)}
+.bot-shot img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+.bot-shot-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 13px;font-size:12.5px;font-weight:800;color:var(--ink)}
+.bot-shot-cap span{font-size:11px;font-weight:700;color:var(--text-3)}
+.bot-step-n{font-size:26px;font-weight:900;line-height:1;color:var(--accent-deep)}
+.bot-step-t{font-size:14px;font-weight:800;color:var(--ink);margin:8px 0 6px}
+@media (max-width:760px){
+  .bot-hero{grid-template-columns:1fr}
+  .bot-hero-art{order:-1;min-height:190px}
+  .bot-hero-art img{object-position:left 22%;-webkit-mask-image:linear-gradient(180deg,#000 58%,transparent);mask-image:linear-gradient(180deg,#000 58%,transparent)}
+  .bot-hero-in{padding:6px 18px 22px}
+  .bot-h1{font-size:28px;margin-top:10px}
+  .bot-card{padding:17px 16px}
+}
 .car-btn{padding:8px 17px;border-radius:999px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-family:inherit}
 .car-row{display:grid;grid-template-columns:78px minmax(0,.85fr) repeat(4,minmax(0,1fr)) minmax(0,.95fr);border-top:1px solid var(--border)}
 .car-row.car-head{border-top:none;background:var(--card-2)}
@@ -3569,6 +3615,100 @@ select option, select optgroup{
       </sc-if>
 
     </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- 菜根機器人：介紹與指令清單圖 -->
+  <sc-if value="{{ isBot }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
+
+    <div class="bot-hero">
+      <div class="bot-hero-in">
+        <div class="bot-eyebrow">DISCORD · QQ · 網頁</div>
+        <div class="bot-h1">菜根機器人</div>
+        <div class="bot-lead">車隊排班、查榜、點歌、時數統計，一個機器人包辦。同一張班表在 Discord、QQ 群和網頁三邊同步，誰在哪一邊報班都算數。</div>
+        <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:18px">
+          <button type="button" class="bot-cta" onClick="{{ onGo }}" data-p="car">開啟私車排班</button>
+          <button type="button" class="bot-cta ghost" onClick="{{ onBotSheets }}">看指令清單圖</button>
+        </div>
+        <div class="bot-stats">
+          <sc-for list="{{ botStats }}" as="st" hint-placeholder-count="4">
+            <span class="bot-stat"><b>{{ st.k }}</b>{{ st.v }}</span>
+          </sc-for>
+        </div>
+      </div>
+      <div class="bot-hero-art"><img src="{{ botHeroImg }}" alt="" loading="eager" decoding="async"></div>
+    </div>
+
+    <div class="bot-card">
+      <div class="bot-h2">能做什麼</div>
+      <div class="bot-sub">從報班到結算時數，車隊管理會用到的事都在裡面。標 NEW 的是 2026 年 9 月新加的。</div>
+      <div class="bot-grid">
+        <sc-for list="{{ botFeatures }}" as="f" hint-placeholder-count="12">
+          <div class="bot-feat">
+            <div class="bot-feat-t">{{ f.t }}<sc-if value="{{ f.isNew }}"><span class="bot-new">NEW</span></sc-if></div>
+            <div class="bot-feat-d">{{ f.d }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="bot-card">
+      <div class="bot-h2">三邊怎麼用</div>
+      <div class="bot-sub">同一件事三邊都能做，挑你順手的。QQ 群要先 @機器人，指令用簡體。</div>
+      <div class="bot-grid3">
+        <sc-for list="{{ botSides }}" as="sd" hint-placeholder-count="3">
+          <div class="bot-side">
+            <div class="bot-side-h"><i style="background:{{ sd.c }}"></i>{{ sd.n }}<span>{{ sd.s }}</span></div>
+            <sc-for list="{{ sd.rows }}" as="r" hint-placeholder-count="5">
+              <div class="bot-row"><code class="bot-code">{{ r.c }}</code><span>{{ r.d }}</span></div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="bot-card" id="bot-sheets">
+      <div class="bot-h2">指令清單圖</div>
+      <div class="bot-sub">Discord、QQ、網頁三邊並排對照，一張看完。同一份內容配八種卡面，點圖會開原圖，可以存下來貼到群公告。{{ botSheetNote }}</div>
+      <div class="bot-gal">
+        <sc-for list="{{ botSheets }}" as="g" hint-placeholder-count="8">
+          <a class="bot-shot" href="{{ g.full }}" target="_blank" rel="noopener">
+            <img src="{{ g.thumb }}" alt="{{ g.alt }}" loading="lazy" decoding="async" width="800" height="450">
+            <span class="bot-shot-cap">{{ g.n }}<span>{{ g.tone }}</span></span>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="bot-card">
+      <div class="bot-h2">第一次用，先做這三件事</div>
+      <div class="bot-sub">順序不能反。跳過第一步，報班一定會被擋。</div>
+      <div class="bot-grid3">
+        <sc-for list="{{ botSteps }}" as="sp" hint-placeholder-count="3">
+          <div class="bot-side">
+            <div class="bot-step-n">{{ sp.n }}</div>
+            <div class="bot-step-t">{{ sp.t }}</div>
+            <sc-for list="{{ sp.rows }}" as="r" hint-placeholder-count="2">
+              <div class="bot-row"><code class="bot-code">{{ r.c }}</code><span>{{ r.d }}</span></div>
+            </sc-for>
+            <div class="bot-feat-d">{{ sp.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="bot-card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="flex:1 1 260px;min-width:0">
+        <div class="bot-h2">想讓自己的車隊也用？</div>
+        <div class="bot-sub">機器人目前由站長代管。想讓自己的車隊也用，可以到提問所留言，寫上車隊用 Discord 還是 QQ、大概幾個人。已經在用的車隊，直接登入私車排班就能看到自己的班表。</div>
+      </div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button type="button" class="bot-cta" onClick="{{ onGo }}" data-p="qa">到提問所留言</button>
+        <button type="button" class="bot-cta ghost" onClick="{{ onGo }}" data-p="tut">看教學大全</button>
+      </div>
+    </div>
+
   </div>
   </sc-if>
 
@@ -7019,7 +7159,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=fbc70b398f"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a2714e8945"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

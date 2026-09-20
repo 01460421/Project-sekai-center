@@ -104,6 +104,7 @@ class Component extends DCLogic {
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
     car:      ['私車排班', '菜根機器人的車隊班表：三車分開排班、報班與推手標記（Discord 或綁定 QQ 登入）'],
+    bot:      ['菜根機器人', '車隊排班、查榜、點歌的機器人：Discord、QQ、網頁三邊同步，附指令清單圖'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
     assistant:['站內助手', '用問的就好：榜線、卡池、編組、規劃，它會自己去查站上的資料'],
     notices:  ['通知', '偵測訂閱觸發時的站內通知'],
@@ -190,6 +191,7 @@ class Component extends DCLogic {
     ['周回', 'analyze_player', 'analysis／rank', '一小時打幾場|live clear 次數|場次|31 周回|拖周回|周回提升'],
     ['時速（每小時活動P）', 'analyze_player', 'analysis', '每小時活動P|衝速|我的時速|速度'],
     ['車隊', 'search_tutorial', 'tut', '共跑|共跑群|社群|私車|野房|車房|開房|上車|下車|四推一|五跑|車主'],
+    ['菜根機器人', 'search_tutorial', 'bot', '菜根|機器人|bot|指令|指令清單|一圖流|排班機器人|報班|Discord|QQ|點歌|錄音|車隊模式|試算表'],
     ['跑者與報跑', 'search_tutorial', 'tut', '跑者|報跑|報班|砍班|掛名|還債|免時數報跑|報跑區|跑者禮儀|時數|推車時數'],
     ['推車／推隊', 'search_tutorial', 'tut', '推車|推隊|推手|回推|獎勵時數|推車點數|養推隊|入門款／進階款／課佬'],
     ['車頭／站位（P1、L1）', 'search_tutorial', 'tut', '車頭|P1|p1|站位|第一個站位|L1|l1|最後一次多人LIVE|喊 L1|順位'],
@@ -240,6 +242,41 @@ class Component extends DCLogic {
     ['歌曲活動倍率', 'get_songs', 'songs／calc', '歌曲倍率|rate|130%|晴的分析圖'],
   ];
 
+  /* 菜根機器人介紹頁（page=bot）。圖在 /bot-img/，換圖時把 BOT_IMG_VER 一起改掉才會破快取。 */
+  BOT_IMG_VER = '20260920';
+  BOT_SHEET_DATE = '2026.09.20';
+  BOT_SHEETS = [['淺藍', '淺色'], ['粉紫', '淺色'], ['灰藍', '淺色'], ['暖橘', '淺色'], ['草綠', '淺色'], ['糖果粉', '淺色'], ['薰衣草', '淺色'], ['夜色', '深色']];
+  BOT_STATS = [{ k: '三邊', v: 'Discord、QQ、網頁同一張班表' }, { k: '三車', v: '同一群平行排班' }, { k: '快捷', v: '打 h20-24 就報班' }, { k: '手機', v: '網頁排班手機也能用' }];
+  BOT_FEATURES = [
+    { t: '報班與自動排位', d: '打 h20-24 就報進去，S6、雙開、外援各有寫法。依倍率自動排位，滿了進候補，有人砍班自動遞補。' },
+    { t: '三車平行', d: '同一個群開到三台車，各車分開排班、分開鎖班；指令後面加車號，或在綁定的頻道直接報。' },
+    { t: '車隊模式與指定跑者', d: '多位跑者輪流開車：每個時段的 P1 各自指定，可從成員池挑，也能直接打外援的名字。', isNew: true },
+    { t: '網頁排班', d: '看板拖拉換人、推手標記、鎖班與開放報班，手機也能用。成員只看得到自己所在的車隊。' },
+    { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。', isNew: true },
+    { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；在表上改座位或跑者會寫回機器人，兩邊不同時以試算表為準。', isNew: true },
+    { t: '查榜', d: '即時名次、時速、分段榜線與角色章節榜，算出到目標分數還差幾場。' },
+    { t: '時數統計', d: '推車、S6、支援與開車時數分開計算，試算表的「時數」分頁也會跟著同步。' },
+    { t: 'Discord 與 QQ 互通', d: '兩邊共用一張班表，群訊息可以互通，Discord 端會顯示發言者的 QQ 頭像。QQ 每小時 :55 提醒下一班的人。' },
+    { t: '點歌與語音播報', d: 'YouTube 網址或關鍵字點歌，網頁也能排隊、跳過、調音量；音質上限可調，網路不穩時調低比較不會斷。' },
+    { t: '語音錄音', d: '管理員可以錄下語音頻道的對話。開始時一定會公告、機器人暱稱也會標示，不提供安靜錄音。實驗功能。', isNew: true },
+    { t: '伺服器事件記錄', d: '訊息刪改、成員進出、語音動態、頻道與身分組變更，回報到指定頻道；各類別可以分開開關。', isNew: true },
+  ];
+  BOT_SIDES = [
+    { n: 'Discord', s: '頻道直接打字，或用斜線指令', c: '#5865f2', rows: [
+      { c: 'h20-24', d: '報推手班；s 是 S6、d 是雙開' }, { c: 'x20-24', d: '取消自己的班' }, { c: 'sch9/13', d: '看那天的班表，過去的也行' },
+      { c: 't100', d: '第 100 名現在幾分' }, { c: '/班表 跑者', d: '指定某些時段由誰開車' }] },
+    { n: 'QQ 群', s: '先 @機器人，指令用簡體', c: '#12a9c2', rows: [
+      { c: '/h 20-24', d: '報推手班；/s 是 S6、/d 是雙開' }, { c: '/砍 20-24', d: '取消自己的班' }, { c: '/班表 明天', d: '出一張班表圖' },
+      { c: '/排名 100', d: '查名次與分數' }, { c: '/报跑 20-24 小明', d: '報跑順便指定跑者' }] },
+    { n: '網頁', s: '左側「車隊」裡的私車排班', c: '#8a6fe0', rows: [
+      { c: '班表', d: '每一列右邊一鍵報班、砍班' }, { c: '看板', d: '管理員直接拖拉換人' }, { c: '統計', d: '缺額分析與任一天的歷史班表' },
+      { c: '點歌', d: '搜尋、排隊、跳過、調音量' }, { c: '設定', d: '班表行為、試算表、語音、事件記錄' }] },
+  ];
+  BOT_STEPS = [
+    { n: '1', t: '登記名字與倍率', rows: [{ c: '%小明 h3.88', d: 'Discord' }, { c: '/登记 小明 h3.88', d: 'QQ' }], note: 'S6 倍率用 s，雙開用 d。' },
+    { n: '2', t: '綁定遊戲 ID', rows: [{ c: 'myid 12345678', d: 'Discord' }, { c: '/绑定 12345678', d: 'QQ' }], note: '綁了之後查排名、查自己才找得到你。' },
+    { n: '3', t: '等跑者先報跑', rows: [{ c: 'bgn20-24', d: 'Discord 管理員' }, { c: '/报跑 20-24', d: 'QQ 管理員' }], note: '時段還沒人報跑，推手報不進去。「報班沒反應」多半就是這個。' },
+  ];
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
     { date: '日曆', title: '活動日曆', desc: '卡池與活動開放期間（台服預測時間），點日期可看當日活動。', to: 'calendar', cta: '前往活動日曆' },
@@ -262,6 +299,8 @@ class Component extends DCLogic {
     { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品的內容物、台幣定價與 CP 值排行，含官網比價與最省錢組合推薦。', to: 'shop', cta: '前往儲值分析' },
     { date: '計算', title: 'B30 產生器', desc: '勾選或上傳截圖匯入 FC/AP，依非官方定數算 Best 30 実効值，輸出 Unibot 風格圖卡。', to: 'b30', cta: '前往 B30 產生器' },
     { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
+    { date: '車隊', title: '私車排班', desc: '菜根機器人的車隊班表搬上網頁：三車分開排班、看板拖拉換人、推手標記、車隊模式指定跑者、歷史班表與試算表同步。', to: 'car', cta: '前往私車排班' },
+    { date: '車隊', title: '菜根機器人', desc: '車隊排班、查榜、點歌的機器人，Discord、QQ、網頁三邊同步；附八種卡面的指令清單圖，可存下來貼群公告。', to: 'bot', cta: '認識菜根機器人' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' },
     { date: '圖鑑', title: '卡片圖鑑', desc: '台服全部卡片依團體、角色、屬性、稀有度、來源篩選；詳情有滿等數值、技能與釋出日。', to: 'cards', cta: '前往卡片圖鑑' },
     { date: '圖鑑', title: '角色圖鑑', desc: '26 位角色的聲優、生日、學校、喜好與介紹，並列出相關卡片。', to: 'chars', cta: '前往角色圖鑑' },
@@ -8545,7 +8584,7 @@ class Component extends DCLogic {
         .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
         .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['車隊', [['car', '私車排班', '#9aa9ff']]],
+      ['車隊', [['car', '私車排班', '#9aa9ff'], ['bot', '菜根機器人', '#b8e561']]],
     ].concat(fav.length >= 3 ? [['常用 · 依使用次數', fav]] : []).concat(navBase);
     this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
@@ -9402,6 +9441,16 @@ class Component extends DCLogic {
           bdbSrcNote: '資料來源：good果汁的公開表格，由本站定期同步。',
         };
       })(),
+      /* 菜根機器人介紹頁 */
+      isBot: s.page === 'bot',
+      botHeroImg: './bot-img/hero.webp?v=' + this.BOT_IMG_VER,
+      botStats: this.BOT_STATS, botFeatures: this.BOT_FEATURES, botSides: this.BOT_SIDES, botSteps: this.BOT_STEPS,
+      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上車隊模式、試算表同步、點歌與錄音。',
+      botSheets: this.BOT_SHEETS.map((g, i) => ({
+        n: '卡面 ' + (i + 1), tone: g[1], alt: '菜根機器人指令清單，卡面 ' + (i + 1) + '（' + g[0] + '）',
+        full: './bot-img/cmd-' + (i + 1) + '.webp?v=' + this.BOT_IMG_VER,
+        thumb: './bot-img/cmd-' + (i + 1) + '-thumb.webp?v=' + this.BOT_IMG_VER,
+      })),
       /* 製作與致謝 */
       isCredits: s.page === 'credits',
       creditEditors: this.CREDIT_EDITORS,
@@ -11230,6 +11279,7 @@ class Component extends DCLogic {
 
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      onBotSheets: () => { const el = document.getElementById('bot-sheets'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
       /* 私車排班 */
       onCarGuildToggle: () => this.setState({ carGuildOpen: !this.state.carGuildOpen, carPop: null }),
       onCarGuildPick: e => { const v = String(e.currentTarget.dataset.v || ''); if (!v || v === String(this.state.g)) { this.setState({ carGuildOpen: false }); return; } this.setState({ g: v, carGuildOpen: false, carStates: {}, carStErr: {}, carSec: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => { this.carLoadStates(); this.carLoadSec(this.state.carTab); }, 0); },
