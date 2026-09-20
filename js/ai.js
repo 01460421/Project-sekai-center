@@ -362,6 +362,7 @@ export function aiMembers() {
       description: 'World Link 支援隊伍加成：依章節主角掃全卡池，算每張卡的支援加成％、貢獻最高的卡片清單、支援隊填滿後的加成總計。使用者問「WL 支援隊放誰」「支援加成有多少」時用。wl_team_advice 只做主隊同團＋湊五色，不算支援加成。當期不是 WL 會退回最近一期並在 resolved_from 標明。',
       input_schema: { type: 'object', properties: {
         chapter: { type: 'integer', description: '第幾章；預設進行中的章節。回傳會列 available_chapters' },
+        leader_character: { type: 'string', description: '只有終章要帶：主隊隊長的角色（繁中名或 id 1～26）。終章的支援加成跟隊長角色走，沒帶只會得到下限值' },
         only_my_cards: { type: 'boolean', description: '只算勾選持有的卡，預設 false＝全卡池理論最優' } } } },
     { name: 'browse_cards',
       description: '瀏覽／篩選整本卡庫（1249 張），依技能類型、角色、團體、屬性、稀有度、取得類別篩，預設依滿級綜合力排序。使用者問「有哪些團分卡」「奶卡列給我看」「這張現在還抽不抽得到」「我勾的卡裡哪張技能最高」時用。回綜合力、技能 Lv.4 保底％與拉滿％、取得類別。單張卡逐級技能數值用 get_card_skills；某期活動加成用 get_bonus_cards。',
@@ -2830,7 +2831,7 @@ export function aiMembers() {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=b085c44090';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=2a4a4b6785';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -3828,7 +3829,18 @@ export function aiMembers() {
         }
         // 終章的 gameCharacterId 在 master 裡是「整個欄位缺席」而不是 null,所以要用 == null 一起接
         const isFinale = ch.gameCharacterId == null;
-        const special = isFinale ? null : ch.gameCharacterId;
+        /* 終章：支援隊與一般 WL2 章節相同，只差角色限制 —— 不限團體，specific 檔（多的 5%）與 WL1 限定卡 +20
+           都改成跟「主隊隊長的角色」走。沒帶隊長角色就沒有任何一張吃得到這兩項，回傳會提醒要帶 leader_character。 */
+        let leaderId = null;
+        if (isFinale && a.leader_character != null && String(a.leader_character).trim() !== '') {
+          const q = String(a.leader_character).trim();
+          if (/^\d+$/.test(q) && +q >= 1 && +q <= 26) leaderId = +q;
+          else for (let i = 1; i <= 26; i++) {
+            const nm = this.chNameOf(i) || '';
+            if (nm && (nm === q || nm.indexOf(q) >= 0 || q.indexOf(nm) >= 0)) { leaderId = i; break; }
+          }
+        }
+        const special = isFinale ? leaderId : ch.gameCharacterId;
 
         /* 角色的原生團體:V 家(id≥21)一律 piapro,人類角色查 gameCharacterUnits。
            同一個 characterId 有多筆(V 家還有各團的應援分身),取 id 最小的那筆才是原生團。 */
@@ -3859,7 +3871,7 @@ export function aiMembers() {
         const limMap = {};
         (limAll || []).forEach(x => {
           if (x.eventId !== evId) return;
-          if (!isFinale && x.gameCharacterId !== special) return;
+          if (x.gameCharacterId !== special) return;   // 終章也一樣：只認隊長那一位（special＝隊長角色）
           limMap[x.cardId] = +x.bonusRate || 20;
         });
 
@@ -3882,7 +3894,7 @@ export function aiMembers() {
           const vs = c.characterId >= 21 && su === chUnit;            // V 家卡以「應援團體」進池
           if (!isFinale && nativeUnit(c.characterId) !== chUnit && !vs) return;   // 終章不限團體
           const t = byRar[c.cardRarityType]; if (!t) return;
-          const isMain = !isFinale && c.characterId === special;      // 只有本章主角本人吃 specific 檔
+          const isMain = special != null && c.characterId === special;   // 本章主角（終章＝主隊隊長的角色）本人才吃 specific 檔
           const chB = pickRate(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType', isMain ? 'specific' : 'others');
           const lim = limMap[c.id] || 0;
           const full = chB + pickRate(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', MR_FULL)
@@ -3924,7 +3936,14 @@ export function aiMembers() {
           available_chapters: chs.map(c => c.chapterNo),
           support_deck_slots: slots,
           eligible_unit: isFinale ? null : unitZh(chUnit),
-          estimated: isFinale,
+          estimated: isFinale && leaderId == null,
+          finale_leader: isFinale ? (leaderId != null ? this.chNameOf(leaderId) : null) : undefined,
+          finale_main_deck: isFinale ? {
+            rule: '終章主隊：所有角色都是 5%（五張固定 25%）；WL2 限定卡每張另 +25%，最多計 4 張；稀有度與專精照一般活動，單張最多 25%（★4 MR5）；隊內異色 3／4／5 色 ＝ 75／100／125%；隊長是 WL2 限定卡 +20%；主稱號是隊長角色那一章的排名稱號（台服 T500 以內、角色要與隊長一致）+50%。',
+            theory_pct: { main_deck: 375, leader: 20, title: 50, main_shown_in_game: 445, support: 370, total: 815 },
+            limits: '限制以 master 為準：eventSkillScoreUpLimits（scoreUpRateLimit 是分數倍率，240＝單張技能 +140%）——撰寫時台服第 180 期寫 300＝+200%，等於不設限，日服當時是 240（滿配跑隊倍率最高 3.20、推隊 3.52）；eventMysekaiFixtureGameCharacterPerformanceBonusLimits＝玩偶的角色綜合力加成上限 2%（平常 10%，滿配綜合力約 36.15 萬）；eventCardBonusLimits＝WL2 限定卡最多計 4 張。排名報酬角色看終章期間用最多次的隊長；單場控分最低 125 pt。跑榜工作室的最佳化會自動套用這三張表。',
+            where: '站上「WL 後排加成」頁選到終章那一期，就有主隊五格的逐項試算與總加成。',
+          } : undefined,
           how_it_works: {
             formula: '單張支援卡加成％ = 角色檔(specific／others) ＋ 專精檔(MR) ＋ 技能等級檔(SL) ＋ 前期 WL 限定卡 20；'
               + '支援隊 ' + slots + ' 個位置各自獨立，支援加成總計 = 合格卡池裡加成最高的前 ' + slots + ' 張相加。',
@@ -3936,7 +3955,8 @@ export function aiMembers() {
               + '已從候選池排除。先前幾屆 World Link 的卡不受影響，照樣可以放，而且還帶著它們那一屆的限定 +20，'
               + '常常是後排單張加成最高的一格 —— 不要把「團體活動限定」整類排掉。',
             specific_vs_others: isFinale
-              ? '終章沒有單一主角，全部卡都吃 others 檔。'
+              ? (leaderId != null ? ('終章：只有與主隊隊長同角色（' + this.chNameOf(leaderId) + '）的卡吃 specific 檔，其餘一律 others 檔。')
+                                  : '終章：specific 檔跟主隊隊長的角色走；這次沒帶 leader_character，所以全部卡都先以 others 檔計。')
               : '只有「' + this.chNameOf(special) + '」本人的卡吃 specific 檔，同團其他角色一律 others 檔。',
             rate_table: '★4：specific 12.5％／others 7.5％，MR0→5 = 0／0.5／1／1.5／2／2.5，SL1→4 = 0／0.25／1／2.5。'
               + '生日卡：10％／5％，MR 最高 2、SL 最高 2。★3：7／2。★2：6／1。★1：5.5／0.5。',
@@ -3964,8 +3984,9 @@ export function aiMembers() {
                 : '　目前一張都沒勾選，my_cards_* 全是 0；請先到「收集率」頁勾選持有卡。')
               : '　目前算的是全卡池理論最優，沒有過濾持有；要看自己實際湊得到多少請帶 only_my_cards=true。')
             + (isFinale
-              ? '　注意：這是終章：官方沒公開完整規則，這裡採「全卡都吃 others 檔、不限團體、限定卡照 master 逐條計 +20」的推估，'
-                + '經典版 WL 頁對終章是不算限定卡的，兩邊數字會差一截，回答時要講明是推估值。'
+              ? (leaderId != null
+                ? '　這是終章：支援隊不限團體；與隊長（' + this.chNameOf(leaderId) + '）同角色的卡吃 specific 檔，WL1 限定卡的 +20 也只認隊長那一位；這一期的 26 張 WL2 限定卡留給主隊。主隊怎麼算看 finale_main_deck。'
+                : '　這是終章：支援加成跟主隊隊長的角色走，請問使用者隊長要放誰，再帶 leader_character 重算；沒帶的話這裡只有 others 檔的下限值。主隊怎麼算看 finale_main_deck。')
               : ''),
         };
       }

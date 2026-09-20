@@ -2708,6 +2708,29 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         const wlAttrCnt = cards => new Set(cards.map(c => c.attr)).size;
         // 支援隊伍張數依屆數:WL1(活動id≤140)=12、WL2(≤180)=20、WL3=25(sekai-calculator 同款判定)
         const wlSupCount = evId => evId <= 140 ? 12 : evId <= 180 ? 20 : 25;
+        /* 活動限制表（目前只有 WL 終章那一期有資料，全部照 master 讀、不寫死）：
+             eventSkillScoreUpLimits.scoreUpRateLimit      單張卡技能的分數倍率上限，240＝+140%（日服第 180 期）；
+                                                           台服同一期寫 300＝+200%，等於不設限 —— 兩服不同，所以一定要讀表
+             eventMysekaiFixtureGameCharacterPerformanceBonusLimits.bonusRateLimit   玩偶的角色綜合力加成上限，20＝2.0%（平常 100＝10%）
+             eventCardBonusLimits.memberCountLimit          特效卡（WL2 限定卡）最多計幾張，4 */
+        const EventLimits = {
+            _c: {},
+            async get(src, evId) {
+                const key = (src && src.isJP ? 'jp' : 'tw') + ':' + evId;
+                if (this._c[key]) return this._c[key];
+                const JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
+                const load = f => (src && src.isJP ? IDBCache.wrap(JP + '/' + f, 43200000) : MasterDB.get(f)).catch(() => []);
+                const [sk, dl, cn] = await Promise.all([load('eventSkillScoreUpLimits.json'),
+                    load('eventMysekaiFixtureGameCharacterPerformanceBonusLimits.json'), load('eventCardBonusLimits.json')]);
+                const of = arr => (Array.isArray(arr) ? arr : []).find(x => +x.eventId === +evId) || null;
+                const a = of(sk), b = of(dl), c = of(cn);
+                const r = { skillCap: a && a.scoreUpRateLimit ? a.scoreUpRateLimit - 100 : null,
+                            dollPct: b && b.bonusRateLimit != null ? b.bonusRateLimit / 10 : null,
+                            memberLimit: c && c.memberCountLimit ? c.memberCountLimit : null };
+                this._c[key] = r;
+                return r;
+            }
+        };
         // 角色的原生團(支援隊資格判定用):V 家一律 piapro,人類角色查 gameCharacterUnits
         const wlNativeUnit = cid => cid >= 21 ? 'piapro' : ((EventCalc._gcu[cid] || {}).unit);
 
@@ -3432,6 +3455,56 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                specific(本章主角本人)/others 檔位+MR+SL 檔位;前期 WL 限定卡 +20 只在其主角章節生效;
                取加成最高前 N 張(N 依屆數 12/20/25),已在主隊的卡要排除。終章(gameCharacterId=null)規則不同,回 null 不估。 */
             _wlSupCache: {},
+            /* WL 終章：沒有章節主角。支援隊與一般 WL2 章節同一套表，只差角色限制 ——
+               不限團體；specific 檔（多的那 5%）與 WL1 限定卡 +20 都只認「主隊隊長的角色」。
+               所以支援加成是隊長角色的函數：每位角色各排一份清單（用到才排、排過就留著）。
+               這一期自己的 26 張 WL2 限定卡留給主隊，不進支援池（與 WL 後排加成頁同一條規則）。
+               不是終章回 null。 */
+            async _wlFinale(src, evId, own) {
+                try {
+                    const JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
+                    const [wb, sup, lim] = await Promise.all([
+                        src.isJP ? IDBCache.wrap(JP + '/worldBlooms.json', 43200000) : MasterDB.get('worldBlooms.json'),
+                        src.isJP ? IDBCache.wrap(JP + '/worldBloomSupportDeckBonuses.json', 43200000) : MasterDB.get('worldBloomSupportDeckBonuses.json'),
+                        src.isJP ? IDBCache.wrap(JP + '/worldBloomSupportDeckUnitEventLimitedBonuses.json', 43200000) : MasterDB.get('worldBloomSupportDeckUnitEventLimitedBonuses.json')
+                    ]);
+                    const chs = (wb || []).filter(w => w.eventId === evId);
+                    if (!chs.length || !chs.every(c2 => c2.gameCharacterId == null)) return null;
+                    const key = 'fin:' + evId + ':' + (own ? 'o' + (this._ownRaw() || '') : 'all');
+                    if (this._wlSupCache[key]) return this._wlSupCache[key];
+                    const supByRar = {}; (sup || []).forEach(r => { supByRar[r.cardRarityType] = r; });
+                    const pick = (arr, k, v) => (((arr || []).find(o => o[k] === v)) || {}).bonusRate || 0;
+                    const limOf = {};   // 角色 → { 卡號: +20 }
+                    (lim || []).forEach(x => { if (x.eventId === evId && x.gameCharacterId != null) (limOf[x.gameCharacterId] = limOf[x.gameCharacterId] || {})[x.cardId] = x.bonusRate || 20; });
+                    const evc = (src.evCards || []).filter(x => x.eventId === evId);
+                    const banned = new Set(evc.map(x => x.cardId));
+                    const base = [];    // 每張卡的 [others 檔合計, specific 檔合計]
+                    for (const c of src.cards) {
+                        if (own && !own.has(c.id)) continue;
+                        if (banned.has(c.id)) continue;
+                        const t = supByRar[c.cardRarityType]; if (!t) continue;
+                        const ms = pick(t.worldBloomSupportDeckMasterRankBonuses, 'masterRank', 5) + pick(t.worldBloomSupportDeckSkillLevelBonuses, 'skillLevel', 4);
+                        base.push({ id: c.id, cid: c.characterId,
+                            o: pick(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType', 'others') + ms,
+                            s: pick(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType', 'specific') + ms });
+                    }
+                    const n = wlSupCount(evId), lists = {};
+                    const listFor = ch => {
+                        if (lists[ch]) return lists[ch];
+                        const lm = limOf[ch] || {};
+                        const l = base.map(x => ({ id: x.id, bonus: Math.round(((x.cid === ch ? x.s : x.o) + (lm[x.id] || 0)) * 10) / 10 }));
+                        l.sort((x, y) => y.bonus - x.bonus);
+                        return (lists[ch] = l);
+                    };
+                    const res = {
+                        n, limRate: (evc[0] && evc[0].bonusRate) || 25, leaderRate: (evc[0] && evc[0].leaderBonusRate) || 20,
+                        isLimited: id => banned.has(id),
+                        forLeader(ch, ids) { const ex = new Set(ids); let t = 0, k = 0; for (const r of listFor(ch)) { if (ex.has(r.id)) continue; t += r.bonus; if (++k >= n) break; } return Math.round(t * 10) / 10; }
+                    };
+                    this._wlSupCache[key] = res;
+                    return res;
+                } catch (e) { return null; }
+            },
             async _wlSupport(src, evId, own) {
                 try {
                     const JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
@@ -3625,9 +3698,21 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const pick = this._wlBonusTeam(pool);
                     ranked = pick.team;
                     const supB = await this._wlSupport(src, this._evId, null);
+                    const fin = supB ? null : await this._wlFinale(src, this._evId, null);
+                    const lim = fin ? await EventLimits.get(src, this._evId) : null;
                     if (gen !== this._evGen) return;
-                    const support = supB ? supB.forDeck(ranked.map(x => x.c.id)) : 0;
-                    wlInfo = { colors: pick.colors, attrBonus: pick.attrBonus, support, hasSup: !!supB, label: supB ? supB.label : '',
+                    let support = supB ? supB.forDeck(ranked.map(x => x.c.id)) : 0, label = supB ? supB.label : '', leaderBonus = 0, limOver = 0;
+                    if (fin) {
+                        /* 終章：特效卡（WL2 限定）最多計 4 張；隊長是限定卡 +20；支援隊跟隊長角色走。
+                           隊長從隊上的限定卡裡挑「支援加成最高」的那位（理論滿配下各角色多半一樣）。 */
+                        const ids = ranked.map(x => x.c.id), limited = ranked.filter(x => x.special > 0);
+                        const cap = (lim && lim.memberLimit) || 4;
+                        limOver = Math.max(0, limited.length - cap) * fin.limRate;
+                        let bestL = null;
+                        (limited.length ? limited : ranked).forEach(x => { const v = fin.forLeader(x.c.characterId, ids); if (!bestL || v > bestL.v) bestL = { x, v }; });
+                        if (bestL) { support = bestL.v; leaderBonus = bestL.x.special > 0 ? fin.leaderRate : 0; label = '終章・隊長 ' + EC_cidName(bestL.x.c.characterId); }
+                    }
+                    wlInfo = { colors: pick.colors, attrBonus: pick.attrBonus, support, hasSup: !!(supB || fin), label, finale: !!fin, leaderBonus, limOver,
                                sameUnit: !!pick.sameUnit, skill: pick.skill > 0 ? Math.round(pick.skill * 10) / 10 : 0 };
                 } else {
                     const bestPerChar = {};
@@ -3636,7 +3721,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ranked = Object.values(bestPerChar).sort((a, b) => b.per - a.per).slice(0, 5);
                 }
                 const cardSum = Math.round(ranked.reduce((s, x) => s + x.per, 0) * 10) / 10;
-                const total = Math.round((cardSum + (wlInfo ? wlInfo.attrBonus + wlInfo.support : 0)) * 10) / 10;
+                const total = Math.round((cardSum + (wlInfo ? wlInfo.attrBonus + wlInfo.support + (wlInfo.leaderBonus || 0) - (wlInfo.limOver || 0) : 0)) * 10) / 10;
                 const bonusInput = document.getElementById('rsBonus');
                 if (bonusInput) bonusInput.value = Math.round(total);
                 const teamEl = document.getElementById('rsTeam');
@@ -3648,7 +3733,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>取得/復刻</th><th>加成明細</th><th>加成</th></tr></thead>
                     <tbody>${ranked.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td style="font-size:11px;color:var(--text-light);">屬性/團 ${x.deck}%${x.special ? ' ＋特效' + x.special + '%' : ''} ＋稀有度/專精 ${x.mr}%</td><td class="score">＋${x.per}%</td></tr>`).join('')}</tbody>
                     </table></div>
-                    <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>${wlInfo ? `＝逐卡 ${cardSum}% ＋ WL 異色(${wlInfo.colors}色)${wlInfo.attrBonus}%${wlInfo.hasSup ? ` ＋ 支援隊伍(理論滿配,以${wlInfo.label}為主)${wlInfo.support}%` : '(支援隊伍未估,未含在內)'}` : ''}(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」${wlInfo ? (wlInfo.hasSup ? ',已含支援,別再手動加' : ',支援請自行加上') : ''})。${wlInfo ? `加成相同時的取捨順序:<strong>全隊同團</strong>(area 道具翻倍,整隊綜合力都漲)→<strong>技能倍率</strong>(協力場只有隊長技能會發動,取隊內最高)→基礎綜合力。所以第 5 位優先用「本團 V 團分」(支援團=本團的 V 家卡):沒有角色加成、只吃稀有度/專精,但能讓全隊同團。本隊${wlInfo.sameUnit ? '<strong style="color:var(--primary);">全隊同團 ✓</strong>(area 翻倍)' : '<strong>未能全隊同團</strong>(area 不翻倍,持有/卡池湊不出同團的第 5 色)'}${wlInfo.skill ? '、隊長技能 ' + wlInfo.skill + '%' : ''}。` : ''}</div>`
+                    <div class="note" style="margin-top:6px;">合計 <strong>＋${total}%</strong>${wlInfo ? `＝逐卡 ${cardSum}% ＋ WL 異色(${wlInfo.colors}色)${wlInfo.attrBonus}%${wlInfo.finale ? ` ＋ 隊長 ${wlInfo.leaderBonus}%${wlInfo.limOver ? ` − 限定卡只計 4 張 ${wlInfo.limOver}%` : ''}` : ''}${wlInfo.hasSup ? ` ＋ 支援隊伍(理論滿配,以${wlInfo.label}為主)${wlInfo.support}%` : '(支援隊伍未估,未含在內)'}` : ''}(假設 5 張皆 MR5、皆已擁有;已帶入下方「活動加成」${wlInfo ? (wlInfo.hasSup ? ',已含支援,別再手動加' : ',支援請自行加上') : ''})。${wlInfo ? `加成相同時的取捨順序:<strong>全隊同團</strong>(area 道具翻倍,整隊綜合力都漲)→<strong>技能倍率</strong>(協力場只有隊長技能會發動,取隊內最高)→基礎綜合力。所以第 5 位優先用「本團 V 團分」(支援團=本團的 V 家卡):沒有角色加成、只吃稀有度/專精,但能讓全隊同團。本隊${wlInfo.sameUnit ? '<strong style="color:var(--primary);">全隊同團 ✓</strong>(area 翻倍)' : '<strong>未能全隊同團</strong>(area 不翻倍,持有/卡池湊不出同團的第 5 色)'}${wlInfo.skill ? '、隊長技能 ' + wlInfo.skill + '%' : ''}。` : ''}</div>`
                     : '<div class="note">此活動查無加成卡資料。</div>';
                 this.calc();
             },
@@ -3745,7 +3830,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }
                 // 排序用的技能上限估值(假設滿隊同團);真正計分時會用「實際隊伍組成」重算,
                 // 團分技能(除自己外每位同團 +e%、全員一致再 +e%)才不會被算成只有 base
-                const cand = pre.map(x => Object.assign(x, { skill: SkillEngine.effSkillMax(x.c, true, 4, charRank) }));
+                /* 活動限制（WL 終章）：技能上限、玩偶綜合力上限、特效卡計幾張，全部讀 master。沒有資料就是不設限。 */
+                const lim = await EventLimits.get(src, this._evId);
+                const capS = v => (lim.skillCap != null ? Math.min(v, lim.skillCap) : v);
+                const mysPct = 4 + Math.min(3, lim.dollPct != null ? lim.dollPct : 3);   // 豆森：門 4% ＋ 玩偶（平常 1+1+1＝3%，終章上限 2%）
+                const cand = pre.map(x => Object.assign(x, { skill: capS(SkillEngine.effSkillMax(x.c, true, 4, charRank)) }));
                 /* 排序用的粗估。技能原本只給加成一半的權重(skill/200),但協力場六個窗
                    全部吃隊長技能,技能對單局活動P 的影響跟加成是同一量級 —— 壓一半會讓
                    「同加成但高倍率」的卡在截斷時就先被綜合力高的擠掉。改成 skill/100。
@@ -3821,8 +3910,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 });
                 // WL:支援隊伍(理論滿配)加成列表,DFS 逐組合排除主隊 5 張後取前 N
                 const supB = isWL ? await this._wlSupport(src, this._evId, own) : null;
+                /* 終章：支援隊與隊長加成都跟「誰當隊長」走，所以每一隊要把五個隊長人選各算一次。 */
+                const fin = isWL ? await this._wlFinale(src, this._evId, own) : null;
+                const finLimit = (fin && lim.memberLimit) ? lim.memberLimit : 4;
                 const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
-                const evalDeck = (power, bonus, skills) => {
+                const evalDeck = (power, bonus, skills, leaderSkill) => {
                     if (!useEP) return power * (1 + bonus / 100);
                     /* 協力場:每位玩家只有「隊長」的技能會為全隊發動,自己另外 4 張卡的技能
                        不會進窗。6 次發動 = 5 名玩家 + encore;每次全員得「發動者 + 其他4人÷5」,
@@ -3837,7 +3929,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
                        預設改成「隊友＝我方平均」:不必憑空給一個常數,而且五張技能一樣時
                        boost(X)=0.8X+總和/5 會退回 1.8×,跟舊行為完全相同。 */
-                    const leader = Math.max(...skills);
+                    // 一般活動隊長放倍率最高的那張；終章的隊長另有加成考量，由呼叫端指定
+                    const leader = leaderSkill != null ? leaderSkill : Math.max(...skills);
                     /* 隊友倍率:跑榜工作室有填隊友欄位就用填的（平均）,沒填才用我方平均。
                        假設露在畫面上讓人改,同一副牌在不同車隊的差距才看得到。 */
                     const mate = (opts.mateSkill != null && opts.mateSkill > 0) ? opts.mateSkill
@@ -3873,13 +3966,27 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         // 異色是全隊一個值;支援隊逐組合排除主隊 5 張再取前 N
                         bonus += (WL_ATTR_BONUS[nAttr] || 0) + (supB ? supB.forDeck(idx.map(i => pool[i].c.id)) : 0);
                     }
-                    const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, 7);   // 豆森 MySekai：門4 + 1+1+1 = 7%
+                    const pw = PowerEngine.teamPower(idx.map(i => mk(pool[i])), areaLv, mysPct);   // 豆森 MySekai：門4 + 玩偶（終章有上限）
                     const teamCards = idx.map(i => pool[i].c);
-                    // 技能依「實際隊伍組成」計算：團分卡的同團人數、混團卡的異團種類數都取決於這一隊
-                    const skills = teamCards.map(tc => SkillEngine.effSkillTeam(tc, true, 4, charRank, teamCards));
-                    const obj = evalDeck(pw.total, bonus, skills);
-                    if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills }; }
-                    if (intoUnit && obj > bestObjU) { bestObjU = obj; bestU = { idx, pw, bonus, skills }; }
+                    // 技能依「實際隊伍組成」計算：團分卡的同團人數、混團卡的異團種類數都取決於這一隊；活動有技能上限就套上
+                    const skills = teamCards.map(tc => capS(SkillEngine.effSkillTeam(tc, true, 4, charRank, teamCards)));
+                    let obj, leaderIdx = null, leaderBonus = 0, finSup = 0;
+                    if (fin) {
+                        // 特效卡（WL2 限定）最多計 finLimit 張：多出來的那幾張把逐卡加成裡的 +25 扣回去
+                        const nLim = idx.reduce((k, i) => k + (pool[i].special > 0 ? 1 : 0), 0);
+                        if (nLim > finLimit) bonus -= (nLim - finLimit) * fin.limRate;
+                        const ids = teamCards.map(c => c.id);
+                        obj = -1;
+                        for (let k = 0; k < idx.length; k++) {
+                            const L = pool[idx[k]];
+                            const lb = L.special > 0 ? fin.leaderRate : 0, sp = fin.forLeader(L.c.characterId, ids);
+                            const o = evalDeck(pw.total, bonus + lb + sp, skills, skills[k]);
+                            if (o > obj) { obj = o; leaderIdx = k; leaderBonus = lb; finSup = sp; }
+                        }
+                        bonus += leaderBonus + finSup;
+                    } else obj = evalDeck(pw.total, bonus, skills);
+                    if (obj > bestObj) { bestObj = obj; best = { idx, pw, bonus, skills, leaderIdx, leaderBonus, finSup }; }
+                    if (intoUnit && obj > bestObjU) { bestObjU = obj; bestU = { idx, pw, bonus, skills, leaderIdx, leaderBonus, finSup }; }
                 };
                 /* 兩種列舉。原本是寫死的五層迴圈,改成遞迴才有辦法「先固定幾格、
                    只列舉剩下的」。深度最多 5,成本沒差。
@@ -3981,9 +4088,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const tc = chosen.map(x => x.c);
                     const colors = wlAttrCnt(tc);
                     const attrBonus = WL_ATTR_BONUS[colors] || 0;
-                    const support = supB ? supB.forDeck(tc.map(c => c.id)) : 0;
-                    wl = { colors, attrBonus, support, hasSup: !!supB, label: supB ? supB.label : '',
-                           cardSum: Math.round((best.bonus - attrBonus - support) * 10) / 10 };
+                    const support = fin ? (best.finSup || 0) : (supB ? supB.forDeck(tc.map(c => c.id)) : 0);
+                    const leaderCard = (fin && best.leaderIdx != null) ? tc[best.leaderIdx] : null;
+                    wl = { colors, attrBonus, support, hasSup: !!(supB || fin),
+                           label: fin ? ('終章・隊長 ' + (leaderCard ? EC_cidName(leaderCard.characterId) : '')) : (supB ? supB.label : ''),
+                           finale: !!fin, leaderId: leaderCard ? leaderCard.id : null, leaderBonus: fin ? (best.leaderBonus || 0) : 0,
+                           skillCap: lim.skillCap, dollPct: lim.dollPct, memberLimit: fin ? finLimit : null,
+                           cardSum: Math.round((best.bonus - attrBonus - support - (fin ? (best.leaderBonus || 0) : 0)) * 10) / 10 };
                 }
                 return { ok: true, chosen, best, totalBonus: Math.round(best.bonus * 10) / 10, wl, obj: bestObj, useEP, areaLv, meta, R, feverHalf, F, boostN, myMult: Math.round(Math.max(...best.skills)),
                     lockedN: lockChars.length, lockedOnly: lockedOnly, sameUnit: !!bestU, unitGap: unitGap };
@@ -4018,8 +4129,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>取得/復刻</th><th>加成</th><th>技能%</th><th>綜合力</th></tr></thead>
                     <tbody>${chosen.map((x, i) => `<tr><td>${i + 1}</td><td>${EC_cidName(x.c.characterId)}</td><td style="font-size:12px;">${x.c.prefix || ('#' + x.c.id)}</td><td style="font-size:10px;color:var(--text-light);">${x.special ? '<span style="color:var(--primary);">當期特效</span>' : RerunModule.label(x.c.id)}</td><td class="score">＋${x.bonus}%</td><td class="score">${best.skills[i]}%</td><td class="score">${best.pw.per[i].total.toLocaleString()}</td></tr>`).join('')}</tbody>
                     </table></div>
-                    <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div>${r.wl ? `<div class="formula">WL 分解:逐卡 ＋${r.wl.cardSum}%・異色(${r.wl.colors}色)＋${r.wl.attrBonus}%・${r.wl.hasSup ? `支援隊伍(理論滿配,以${r.wl.label}為主)＋${r.wl.support}%——合計已含支援,別再手動加` : '支援隊伍未估(終章或章節資料缺):合計未含支援,請自行加上'}</div>` : ''}</div>
-                    <div class="note" style="margin-top:4px;">假設：全卡持有、MR5、滿級、SL4、area item Lv${areaLv}、角色等級 100；協力隊友倍率${mateSkill ? '＝隊友欄位平均 ' + Math.round(mateSkill) + '%' : '取我方五張平均（隊友欄位留空）'}。${r.wl ? '　WL：已按異色數加成最佳化，支援隊伍以本章主角、MR5/SL4 估算。' : ''}${useEP ? '' : '　未選歌：退回 綜合力×加成。'}</div>`;
+                    <div class="calc-result" style="margin-top:8px;"><div class="label">最佳隊(前 20 候選窮舉,${useEP ? '目標=協力場均活動P' : '目標=綜合力×加成'})</div><div class="value" style="font-size:20px;">${useEP ? '場均活動P ' + Math.round(bestObj).toLocaleString() : '綜合力 ' + best.pw.total.toLocaleString()}</div><div class="formula">綜合力 ${best.pw.total.toLocaleString()}・加成 ＋${totalBonus}%${useEP ? '・已依技能逐卡最佳化(含Fes角色等級/同團技能)' : ''};已帶入下方</div>${r.wl ? `<div class="formula">WL 分解:逐卡 ＋${r.wl.cardSum}%・異色(${r.wl.colors}色)＋${r.wl.attrBonus}%・${r.wl.finale ? `隊長 ＋${r.wl.leaderBonus}%・` : ''}${r.wl.hasSup ? `支援隊伍(理論滿配,以${r.wl.label}為主)＋${r.wl.support}%——合計已含支援,別再手動加` : '支援隊伍未估(終章或章節資料缺):合計未含支援,請自行加上'}</div>` : ''}</div>
+                    <div class="note" style="margin-top:4px;">假設：全卡持有、MR5、滿級、SL4、area item Lv${areaLv}、角色等級 100；協力隊友倍率${mateSkill ? '＝隊友欄位平均 ' + Math.round(mateSkill) + '%' : '取我方五張平均（隊友欄位留空）'}。${r.wl ? (r.wl.finale ? ('　WL 終章：每一隊五個隊長人選各算一次（隊長是 WL2 限定卡 ＋' + r.wl.leaderBonus + '%、支援隊跟隊長角色走）；限定卡最多計 ' + r.wl.memberLimit + ' 張；稱號 ＋50% 未計，有的話自己加。技能上限' + (r.wl.skillCap != null ? ' ＋' + r.wl.skillCap + '%' : '無') + '、玩偶綜合力上限 ' + (r.wl.dollPct != null ? r.wl.dollPct + '%' : '無') + '（皆讀 master）。') : '　WL：已按異色數加成最佳化，支援隊伍以本章主角、MR5/SL4 估算。') : ''}${useEP ? '' : '　未選歌：退回 綜合力×加成。'}</div>`;
             },
             calc() {
                 if (!this._ready) return;
@@ -4144,7 +4255,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         <div class="ms-kv"><span>跑隊倍率</span><b>×${teamMult.toFixed(2)}</b></div>
                     </div>
                     <div class="ms-break">綜合力＝基礎表現力 ${sB.toLocaleString()}（每張≈${Math.round(sB / (per.length || 5)).toLocaleString()}，含前後篇 ${sEpi.toLocaleString()}＋畫布 ${sCv.toLocaleString()}）　＋角色等級 ${pct(sC)}%　＋區域道具 ${pct(sA)}%　＋豆森 ${pct(sM)}%</div>
-                    ${r.wl ? `<div class="ms-break">World Link：異色(${r.wl.colors}色)＋${r.wl.attrBonus}%${r.wl.hasSup ? `・支援隊伍(理論滿配,${r.wl.label})＋${r.wl.support}%` : '・支援隊伍未估(未含在下方數字內)'}，已含在活動加成內</div>` : ''}
+                    ${r.wl ? `<div class="ms-break">World Link：異色(${r.wl.colors}色)＋${r.wl.attrBonus}%${r.wl.finale ? `・隊長＋${r.wl.leaderBonus}%` : ''}${r.wl.hasSup ? `・支援隊伍(理論滿配,${r.wl.label})＋${r.wl.support}%` : '・支援隊伍未估(未含在下方數字內)'}，已含在活動加成內</div>` : ''}
                     ${useEP ? `<div class="ms-ep">
                         <div class="ms-ep-title">場均活動P　<span>歌：${songName}</span></div>
                         <div class="ms-ep-grid">
