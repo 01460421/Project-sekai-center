@@ -2944,9 +2944,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 if (!this._wlReady || this._wlEventId !== this._evId) {
                     document.getElementById('ecWLResult').innerHTML = '<div class="event-loading" style="padding:16px;">載入卡片與支援加成表…</div>';
                     try {
-                        [this._cards, this._wlSup, this._wlLim, this._wlChs] = await Promise.all([
+                        [this._cards, this._wlSup, this._wlLim, this._wlEvc, this._wlChs] = await Promise.all([
                             MasterDB.get('cards.json'), MasterDB.get('worldBloomSupportDeckBonuses.json'),
                             MasterDB.get('worldBloomSupportDeckUnitEventLimitedBonuses.json'),
+                            MasterDB.get('eventCards.json').catch(() => []),   // 用來認「這一期自己的卡」：那幾張放前排，不進支援隊
                             MasterDB.get('worldBlooms.json').then(wb => (wb || []).filter(w => w.eventId === this._evId).sort((a, b) => a.chapterNo - b.chapterNo)).catch(() => [])
                         ]);
                         this._wlReady = true; this._wlEventId = this._evId;
@@ -2998,8 +2999,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const lim = limMap[cardId] || 0;
                     return roundf(ch + mr + sl + lim);
                 };
+                // 這一期活動自己的卡不進支援隊（前排用）；先前幾屆的 WL 卡照放。與新版頁面、站內助手同一條規則
+                const banned = new Set((this._wlEvc || []).filter(x => x.eventId === eid).map(x => x.cardId));
                 const rows = [];
                 this._cards.forEach(c => {
+                    if (banned.has(c.id)) return;
                     const su = c.supportUnit && c.supportUnit !== 'none' ? c.supportUnit : null;
                     const vsSupport = c.characterId >= 21 && su === chUnit;
                     if (!isFinale && wlNativeUnit(c.characterId) !== chUnit && !vsSupport) return;   // 終章不限團
@@ -3015,8 +3019,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const rarName = { rarity_4: '★4', rarity_birthday: '生日', rarity_3: '★3', rarity_2: '★2', rarity_1: '★1' };
                 const info = document.getElementById('ecWLInfo');
                 if (info) info.innerHTML = isFinale
-                    ? `<strong>終章</strong>:沒有單一章節主角,全部卡都以 others 檔計、不限團體、無前期 WL 卡 +20。<strong style="color:var(--primary);">終章的支援隊伍規則官方未公開完整表格,以下為推估</strong>,僅供參考。假設全部 MR${MR}/SL${SL};上限 ${supN} 張。`
-                    : `當期 WL 團體:<strong>${[...featured].map(EC_cidName).join('、')}</strong>;本章主角 <strong>${EC_cidName(special)}</strong>(只有主角本人吃 specific 檔,前期 WL 卡 +20 也只在其章節生效)。假設全部 MR${MR}/SL${SL};支援隊伍上限 ${supN} 張(WL1=12/WL2=20/WL3=25)。每張卡加成獨立,故排序取前 ${supN} 即最優。`;
+                    ? `<strong>終章</strong>:支援隊不限團體,但角色加成(specific 檔)與前期 WL 卡 +20 都只認「主隊隊長的角色」。這一頁沒有選隊長的地方,所以下面是<strong style="color:var(--primary);">還沒指定隊長時的下限</strong>(全部卡以 others 檔計);要照隊長算,請到 App 的「WL 後排加成」頁選終章那一期,或用跑榜工作室的最佳化(會自動挑隊長)。這一期自己的 ${banned.size} 張卡留給主隊,已排除。假設全部 MR${MR}/SL${SL};上限 ${supN} 張。`
+                    : `當期 WL 團體:<strong>${[...featured].map(EC_cidName).join('、')}</strong>;本章主角 <strong>${EC_cidName(special)}</strong>(只有主角本人吃 specific 檔,前期 WL 卡 +20 也只在其章節生效)。這一期自己的 ${banned.size} 張新卡放前排,不列入。假設全部 MR${MR}/SL${SL};支援隊伍上限 ${supN} 張(WL1=12/WL2=20/WL3=25)。每張卡加成獨立,故排序取前 ${supN} 即最優。`;
                 el.innerHTML = `<div class="calc-result" style="margin:8px 0;"><div class="label">前 ${supN} 張支援卡加成合計(此假設下)</div><div class="value">＋${total}%</div></div>
                     <div class="table-wrapper"><table>
                     <thead><tr><th>#</th><th>角色</th><th>卡名</th><th>稀有</th><th>支援加成</th></tr></thead>
@@ -3528,9 +3532,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const supByRar = {}; (sup || []).forEach(r => { supByRar[r.cardRarityType] = r; });
                     const limMap = {}; (lim || []).forEach(x => { if (x.eventId === evId && x.gameCharacterId === special) limMap[x.cardId] = x.bonusRate || 20; });
                     const pick = (arr, k, v) => (((arr || []).find(o => o[k] === v)) || {}).bonusRate || 0;
+                    /* 這一期活動自己的卡不進支援隊 —— 那幾張是拿來組前排主隊的（master 沒有專門欄位，
+                       只能拿 eventCards 的活動歸屬反推）。只排當期；先前幾屆的 WL 卡照放，而且還帶著
+                       它們那屆的限定 +20。與 app.js 的 wlSupCalc、站內助手的 wl_support_bonus 同一條規則。 */
+                    const banned = new Set((src.evCards || []).filter(x => x.eventId === evId).map(x => x.cardId));
                     const list = [];
                     for (const c of src.cards) {
                         if (own && !own.has(c.id)) continue;
+                        if (banned.has(c.id)) continue;
                         const su = c.supportUnit && c.supportUnit !== 'none' ? c.supportUnit : null;
                         if (wlNativeUnit(c.characterId) !== chUnit && su !== chUnit) continue;
                         const t = supByRar[c.cardRarityType]; if (!t) continue;
