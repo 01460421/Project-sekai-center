@@ -3866,7 +3866,8 @@ select option, select optgroup{
       <sc-if value="{{ wlsHelpOpen }}">
         <div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--card-2);font-size:11px;color:var(--text-3);line-height:1.85">
           每張卡 ＝ 角色加成 ＋ 專精 ＋ 技能等級 ＋ 該章限定卡固定值，取前 {{ wlsN }} 張。資格：原生團或支援團＝本章團。<br>
-          當期的 {{ wlsBanned }} 張新卡不列入（前排用）；先前各屆 WL 卡照放，且保有該屆限定 +20%。
+          當期的 {{ wlsBanned }} 張新卡不列入（前排用）；先前各屆 WL 卡照放，且保有該屆限定 +20%。<br>
+          終章例外：不限團體；角色加成與 WL1 限定 +20% 只認主隊隊長那一位；當期 26 張 WL2 限定卡一樣留給主隊。
         </div>
       </sc-if>
 
@@ -3874,6 +3875,73 @@ select option, select optgroup{
         <div style="margin-top:8px;padding:9px 12px;border-radius:11px;background:color-mix(in oklab,#ffb86b 14%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.7">{{ wlsShortMsg }}</div>
       </sc-if>
     </div>
+
+    <!-- WL 終章：主隊試算＋總加成。只有選到終章那一期才出現。
+         支援隊（上面那個數字與下方清單）跟著這裡選的隊長角色變。 -->
+    <sc-if value="{{ wlsFinale }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <div style="font-size:12.5px;color:var(--text-2)">終章總加成（主隊＋支援）</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;flex-wrap:wrap">
+        <span style="font-size:40px;font-weight:800;color:var(--accent-deep);line-height:1.05">{{ wlsFinTotal }}</span>
+        <span style="font-size:14px;color:var(--text-3)">%</span>
+        <span style="font-size:12px;color:var(--text-2);margin-left:6px">{{ wlsFinLine }}</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:3px">{{ wlsFinTheory }}</div>
+
+      <div style="height:1px;background:var(--border);margin:12px 0 11px"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:11px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--text-2)">主隊隊長的角色
+          <select aria-label="主隊隊長的角色" value="{{ wlsLeader }}" onChange="{{ onWlsFin }}" data-k="wlsLeader" sc-options="{{ wlsLeaderOpts }}" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;min-height:38px;cursor:pointer;outline:none"></select>
+        </label>
+        <span style="font-size:11px;color:var(--text-3)">支援隊的角色加成、WL1 限定卡與稱號都認這一位</span>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:6px">主隊五張卡</div>
+      <sc-for list="{{ wlsFmRows }}" as="m" hint-placeholder-count="5">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 0;border-top:1px solid var(--border)">
+          <span style="flex:none;width:52px;font-size:12px;font-weight:800;color:var(--ink)">{{ m.label }}</span>
+          <button type="button" onClick="{{ onWlsFm }}" data-i="{{ m.i }}" data-f="lim" style="padding:6px 12px;border:none;border-radius:999px;background:{{ m.limBg }};color:{{ m.limFg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ m.limBtn }}</button>
+          <select aria-label="稀有度" value="{{ m.rar }}" onChange="{{ onWlsFm }}" data-i="{{ m.i }}" data-f="rar" sc-options="{{ wlsRarOpts }}" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12px;min-height:34px;outline:none;opacity:{{ m.rarOp }}"></select>
+          <select aria-label="專精" value="{{ m.mr }}" onChange="{{ onWlsFm }}" data-i="{{ m.i }}" data-f="mr" sc-options="{{ wlsMrOpts }}" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text);font-size:12px;min-height:34px;outline:none"></select>
+          <span style="flex:1;min-width:120px;font-size:11px;color:var(--text-3)">{{ m.parts }}</span>
+          <span style="flex:none;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--accent-deep);font-size:12.5px">{{ m.sum }}</span>
+        </div>
+      </sc-for>
+
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:11px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">隊內有幾種屬性</div>
+          <div class="chips-scroll" style="display:flex;gap:5px;flex-wrap:wrap">
+            <sc-for list="{{ wlsFattrChips }}" as="c" hint-placeholder-count="5">
+              <button type="button" onClick="{{ onWlsFin }}" data-k="wlsFattr" data-v="{{ c.v }}" style="padding:6px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">隊長角色的章節排名稱號</div>
+          <button type="button" onClick="{{ onWlsFtitle }}" style="padding:6px 14px;border:none;border-radius:999px;background:{{ wlsFtitleBg }};color:{{ wlsFtitleFg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ wlsFtitleBtn }}</button>
+        </div>
+      </div>
+
+      <div style="margin-top:13px;border:1px solid var(--border);border-radius:14px;overflow:hidden">
+        <sc-for list="{{ wlsFinRows }}" as="r" hint-placeholder-count="7">
+          <div style="display:flex;gap:10px;align-items:baseline;padding:8px 13px;border-bottom:1px solid var(--border);font-size:12px">
+            <span style="flex:none;width:92px;font-weight:700;color:var(--ink)">{{ r.k }}</span>
+            <span style="flex:1;min-width:0;font-size:11px;color:var(--text-3);line-height:1.6">{{ r.n }}</span>
+            <span style="flex:none;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--accent-deep)">{{ r.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:12px;padding:11px 13px;border-radius:12px;background:var(--card-2)">
+        <div style="font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:4px">終章須知</div>
+        <sc-for list="{{ wlsFinNotes }}" as="t" hint-placeholder-count="6">
+          <div style="display:flex;gap:6px;font-size:11px;color:var(--text-2);line-height:1.75"><span style="flex:none;color:var(--accent)">・</span><span>{{ t }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
 
     <sc-if value="{{ wlsReady }}">
     <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
@@ -3883,6 +3951,7 @@ select option, select optgroup{
           <button type="button" onClick="{{ onWlsCh }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:{{ c.sh }}">{{ c.n }}</button>
         </sc-for>
         <div style="flex:1"></div>
+        <sc-if value="{{ wlsFinBtnOn }}"><button type="button" onClick="{{ onWlsEv }}" data-v="{{ wlsFinEv }}" style="padding:5px 12px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:11px;font-weight:700;cursor:pointer">{{ wlsFinBtn }}</button></sc-if>
         <button type="button" onClick="{{ onWlsEvOpen }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ wlsEvBtn }}</button>
       </div>
       <!-- 十三期平常收起來:換屆是偶爾才做一次的事，攤開會蓋過章節 -->
@@ -6825,7 +6894,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=6463dda86b"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=dd17cc93d4"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -110,7 +110,7 @@ class Component extends DCLogic {
     qa:       ['提問所', '提問與討論串；看不用登入，發文要核准的帳號'],
     cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
     art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
-    wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合'],
+    wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合；終章另有主隊與總加成試算'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
@@ -278,6 +278,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/20', t: 'WL 終章加成計算器', s: 'WL 後排加成頁支援終章了：選好主隊隊長的角色，支援隊會照終章規則重排（不限團體，與隊長同角色的卡多 5%，WL1 限定卡的 +20% 也只認隊長那一位）。同頁新增終章主隊試算：五格各自設定是不是 WL2 限定卡、稀有度與專精，再選隊內異色數與稱號，逐項列出角色 25%、WL2 限定最多 100%、稀有度與專精、異色、隊長 +20%、稱號 +50%，合計主隊、支援與總加成，並對照滿配上限 815%。規則逐項對過台服 master（第 180 期 9/25 開跑）。頁尾附終章須知：技能上限 140%、玩偶綜合力上限 2%、控分最低 125 pt、排名報酬角色的判定。站內助手的支援加成工具同步支援終章，帶隊長角色就會照新規則算。' },
     { d: '2026/09/19', t: '側欄群組可摺疊', s: '側欄項目太多，改成點群組標題就能收起或展開；預設只展開主頁、帳號、常用與即時資料，其餘只留標題與數量，目前所在的頁在收起的群組裡仍會顯示。手機的「更多」面板同樣適用，摺疊狀態記在這台裝置。' },
     { d: '2026/09/19', t: '瀏覽器推播、行事曆訂閱源、每頁分享預覽圖', s: '我的帳號的偵測訂閱區多了「開啟瀏覽器推播」：條件成立或有人回覆時，就算沒開著網站也會跳系統通知（站方要先設定 VAPID 金鑰）；活動日曆多了「訂閱」，用 webcal 把活動與卡池訂進手機行事曆會自動更新；分享網址到社群時每一頁各有自己的大圖預覽。' },
     { d: '2026/09/19', t: '今日摘要、行事曆匯出、分享圖卡、提問所版型、團體主題色、空狀態與視窗整理', s: '首頁多了「今日摘要」：活動第幾天、T1000 線與我的一天變化、快結束／今天開始的卡池、今天的公告、跑榜計畫與豆森待辦；活動總覽與活動日曆可匯出 .ics 加進手機行事曆；我的排名、收集率、豆森進度可產生分享圖卡；提問所新增「車隊招募」「榜線回報」兩類並附範本；外觀可選團體主題色（六團強調色）；全站空狀態改成同一種樣式，歌曲視窗的關閉鈕不再被擠到第二行。' },
@@ -494,6 +495,10 @@ class Component extends DCLogic {
     artQ: '', artUnit: 'all', artChar: 'all', artRar: 'all', artSup: 'all', artPage: 1,
     wlsCh: 0, wlsEv: null, wlsMR: 5, wlsSL: 4, wlsPool: 'all', wlsFilter: null, wlsHelp: false, wlsEvOpen: false, wlsProg: 0, wlsProgBase: 0, wlsProgSpan: 0, wlsProgLabel: '', wlsProgSide: '', wlsData: null, wlsLoad: false, wlsErr: '',
     wlsScan: null, wlsShotBusy: false, wlsShotMsg: '',
+    /* WL 終章：隊長角色、主隊五格（是否 WL2 限定／稀有度／專精）、異色數、稱號。記在這台瀏覽器。 */
+    wlsLeader: 0, wlsFm: null, wlsFattr: 5, wlsFtitle: true,
+    ...(() => { try { const j = JSON.parse(localStorage.getItem('sekai-wls-finale') || 'null');
+      return j ? { wlsLeader: +j.leader || 0, wlsFm: Array.isArray(j.fm) ? j.fm : null, wlsFattr: +j.attr || 5, wlsFtitle: j.title !== false } : {}; } catch (e) { return {}; } })(),
     artSrv: 'tw', jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
@@ -2018,7 +2023,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=b085c44090';
+      s.src = 'data/billing.js?v=2a4a4b6785';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2231,7 +2236,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=d831aecb2d').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=c4335778c9').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -6180,7 +6185,13 @@ class Component extends DCLogic {
     if (def < 0) def = now < chs[0].chapterStartAt ? 0 : chs.length - 1;
     const idx = Math.min(Math.max(0, +s.wlsCh || 0), chs.length - 1);
     const cur = chs[(s.wlsCh == null || s.wlsCh === '') ? def : idx] || chs[def];
-    const special = cur.gameCharacterId != null ? cur.gameCharacterId : null;
+    /* 終章沒有章節主角。支援隊規則與一般 WL2 章節相同，只差角色限制：
+         ・入選不限團體；
+         ・specific 檔（多的那 5%）與 WL1 限定卡 +20 都改成跟「主隊隊長的角色」走。
+       所以終章把使用者選的隊長角色當成 special，下面的算式完全沿用。 */
+    const finale = cur.gameCharacterId == null;
+    const leader = finale ? ((+s.wlsLeader && nOf[+s.wlsLeader]) ? +s.wlsLeader : (chars[0] ? chars[0][0] : 1)) : null;
+    const special = finale ? leader : cur.gameCharacterId;
 
     const RAR = { 1: 'rarity_1', 2: 'rarity_2', 3: 'rarity_3', 4: 'rarity_4', 9: 'rarity_birthday' };
     const supByRar = {}; (D.sup || []).forEach(r => { supByRar[r.cardRarityType] = r; });
@@ -6200,7 +6211,7 @@ class Component extends DCLogic {
     const mode = s.wlsPool || 'all';
     const scan = mode === 'scan' ? (s.wlsScan || []) : null;
     const own = mode === 'own' ? this.ownSet() : null;
-    const chUnit = special != null ? uOf[special] : null;
+    const chUnit = finale ? null : (special != null ? uOf[special] : null);
 
     const list = [];
     /* 截圖辨識來的卡:有角色、稀有度、專精、技能等級,但沒有卡號 ——
@@ -6230,7 +6241,7 @@ class Component extends DCLogic {
            沒認出來就只能靠角色的原生團判斷。 */
         const row = row0;
         if (x.cardId != null && banned[x.cardId]) { put('當期新卡，不可放後排'); return; }
-        const okUnit = uOf[cid] === chUnit || (row && row[5] === chUnit);
+        const okUnit = finale || uOf[cid] === chUnit || (row && row[5] === chUnit);
         if (!okUnit) { put('非本章團體'); return; }
         const rr = rr0;
         const t = supByRar[RAR[rr]]; if (!t) { put('查不到這個稀有度的加成表'); return; }
@@ -6260,7 +6271,7 @@ class Component extends DCLogic {
         if (banned[c[0]]) continue;   // 當期的卡放前排，不進後排
         /* 入選資格:角色原生團＝本章主角的團,或這張卡的支援團＝本章團。
            後者是 VS 卡進得了後排的唯一途徑。 */
-        if (uOf[c[1]] !== chUnit && c[5] !== chUnit) continue;
+        if (!finale && uOf[c[1]] !== chUnit && c[5] !== chUnit) continue;
         const t = supByRar[RAR[c[2]]]; if (!t) continue;
         const b = pick(t.worldBloomSupportDeckCharacterBonuses, 'worldBloomSupportDeckCharacterType',
                        c[1] === special ? 'specific' : 'others')
@@ -6302,10 +6313,72 @@ class Component extends DCLogic {
                  started: stOf(id) <= now };
       }),
       pool: list.length, short: Math.max(0, n - use.length),
-      finale: special == null,
+      finale, leader, fin: finale ? this.wlsFinaleMain(D, evId, total, n) : null,
+      // 還沒結束的終章那一期（給「改算終章」捷徑用；預設帶的是最近一期已開跑的，終章開跑前要自己切過去）
+      finaleUp: evIds.find(id => byEv[id].every(c => c.gameCharacterId == null)
+        && Math.max.apply(null, byEv[id].map(c => c.aggregateAt)) > now) || null,
       chIndex: (s.wlsCh == null || s.wlsCh === '') ? def : idx,
       mr, sl, mode, scanN: scan ? scan.length : 0,
     };
+  }
+
+  /* WL 終章的主隊加成。規則（master 逐項對過：eventDeckBonuses 第 180 期 56 個角色條目全是 5%、
+     eventCards 26 張 WL2 限定卡 bonusRate 25／leaderBonusRate 20、eventHonorBonuses 每角色 6 個稱號各 50）：
+       ・角色加成：所有角色都是 5%，所以五張怎麼組都是 25%；
+       ・WL2 限定卡：每張另 +25%，最多計 4 張（100%）；
+       ・稀有度×專精：照一般活動（★4 MR0→5 ＝ 10／12.5／15／17.5／20／25，單張最多 25%）；
+       ・隊內異色：3／4／5 色 ＝ 75／100／125%；
+       ・隊長是 WL2 限定卡 +20%；主稱號是「隊長角色」那一章的排名稱號 +50%（稱號角色要與隊長一致）。
+     滿配 375＋20＋50＝445%，加支援隊 370% ＝ 815%。隊長與稱號遊戲內會併在主隊那一格顯示。 */
+  WLS_FM_DEF = [{ lim: 1, rar: 4, mr: 5 }, { lim: 1, rar: 4, mr: 5 }, { lim: 1, rar: 4, mr: 5 }, { lim: 1, rar: 4, mr: 5 }, { lim: 0, rar: 4, mr: 5 }];
+  wlsFmSlots() {
+    const f = this.state.wlsFm;
+    return this.WLS_FM_DEF.map((d, i) => {
+      const x = (Array.isArray(f) && f[i]) || d;
+      const rar = [1, 2, 3, 4, 9].indexOf(+x.rar) >= 0 ? +x.rar : 4;
+      return { lim: x.lim ? 1 : 0, rar, mr: Math.min(5, Math.max(0, Math.round(+x.mr || 0))) };
+    });
+  }
+  wlsFinSave(patch) {
+    const s = Object.assign({}, this.state, patch || {});
+    try { localStorage.setItem('sekai-wls-finale', JSON.stringify({ leader: +s.wlsLeader || 0, fm: s.wlsFm || null, attr: +s.wlsFattr || 5, title: s.wlsFtitle !== false })); } catch (e) {}
+  }
+  wlsFinaleMain(D, evId, supTotal, supN) {
+    const s = this.state;
+    const RAR = { 1: 'rarity_1', 2: 'rarity_2', 3: 'rarity_3', 4: 'rarity_4', 9: 'rarity_birthday' };
+    const FB = { rarity_1: [0, .1, .2, .3, .4, .5], rarity_2: [0, .2, .4, .6, .8, 1], rarity_3: [0, 1, 2, 3, 4, 5],
+                 rarity_4: [10, 12.5, 15, 17.5, 20, 25], rarity_birthday: [5, 7, 9, 11, 13, 15] };
+    const tbl = {};
+    (D.rar || []).forEach(x => { (tbl[x.cardRarityType] = tbl[x.cardRarityType] || [])[x.masterRank] = +x.bonusRate || 0; });
+    const rarB = (rar, mr) => { const t = (tbl[RAR[rar]] && tbl[RAR[rar]].length) ? tbl[RAR[rar]] : (FB[RAR[rar]] || []); return t[mr] != null ? t[mr] : 0; };
+    const attrT = { 1: 0, 2: 0, 3: 75, 4: 100, 5: 125 };
+    (D.attr || []).forEach(x => { attrT[x.attributeCount] = +x.bonusRate || 0; });
+    const ec = (D.evc || []).find(x => +x.eventId === evId) || {};
+    const LIM = +ec.bonusRate || 25, LEAD = +ec.leaderBonusRate || 20, LIM_MAX = 4, CHAR = 5;
+    const hon = (D.hon || []).find(x => +x.eventId === evId);
+    const TITLE = hon ? (+hon.bonusRate || 50) : 50;
+    let limUsed = 0;
+    const slots = this.wlsFmSlots().map((x, i) => {
+      const rar = x.lim ? 4 : x.rar;                       // WL 限定卡都是 ★4
+      const counted = x.lim && limUsed < LIM_MAX;
+      if (counted) limUsed++;
+      const limB = counted ? LIM : 0, rb = rarB(rar, x.mr);
+      return { i, lim: x.lim, rar, mr: x.mr, charB: CHAR, limB, rarB: rb, capped: !!(x.lim && !counted), sum: CHAR + limB + rb };
+    });
+    const attrN = Math.min(5, Math.max(1, Math.round(+s.wlsFattr || 5)));
+    const charSum = slots.length * CHAR, limSum = slots.reduce((a, x) => a + x.limB, 0), rarSum = slots.reduce((a, x) => a + x.rarB, 0);
+    const attrB = attrT[attrN] || 0;
+    const leaderB = slots[0].lim ? LEAD : 0, titleB = s.wlsFtitle !== false ? TITLE : 0;
+    const deck = charSum + limSum + rarSum + attrB;          // 主隊本身
+    const main = deck + leaderB + titleB;                    // 遊戲內「主隊」那一格看到的數字
+    const r1 = v => Math.round(v * 10) / 10;
+    const supT = (D.sup || []).find(r => r.cardRarityType === 'rarity_4') || {};
+    const mx = (arr) => Math.max.apply(null, [0].concat((arr || []).map(o => +o.bonusRate || 0)));
+    const supTheory = supN * (mx(supT.worldBloomSupportDeckCharacterBonuses) + mx(supT.worldBloomSupportDeckMasterRankBonuses) + mx(supT.worldBloomSupportDeckSkillLevelBonuses)) + 20;
+    const deckTheory = 5 * CHAR + LIM_MAX * LIM + 5 * rarB(4, 5) + (attrT[5] || 125);
+    return { slots, attrN, attrT, charSum, limSum: r1(limSum), rarSum: r1(rarSum), attrB, leaderB, titleB, LIM, LEAD, TITLE, LIM_MAX,
+      deck: r1(deck), main: r1(main), sup: r1(supTotal), total: r1(main + supTotal),
+      theory: { deck: r1(deckTheory), main: r1(deckTheory + LEAD + TITLE), sup: r1(supTheory), total: r1(deckTheory + LEAD + TITLE + supTheory) } };
   }
 
   /* 截圖篩選:沒指定過就帶本章主角。兩個地方都要用同一份判斷,
@@ -6423,13 +6496,17 @@ class Component extends DCLogic {
     try {
       /* eventCards 是拿來認「哪些卡是當期活動的」—— 那些卡要放前排主隊，
          master data 沒有另一張表寫這件事，只能從活動歸屬反推。 */
-      const [wb, sup, lim, evc] = await Promise.all([
+      const soft = f => fetch(this.TDB + '/' + f).then(r => r.ok ? r.json() : []).catch(() => []);
+      const [wb, sup, lim, evc, rar, attr, hon] = await Promise.all([
         fetch(this.TDB + '/worldBlooms.json').then(r => r.json()),
         fetch(this.TDB + '/worldBloomSupportDeckBonuses.json').then(r => r.json()),
         fetch(this.TDB + '/worldBloomSupportDeckUnitEventLimitedBonuses.json').then(r => r.json()),
         fetch(this.TDB + '/eventCards.json').then(r => r.json()),
+        // 終章主隊用：稀有度×專精加成、隊內異色加成、稱號加成。三張都很小；抓不到就用計算端的備援常數
+        soft('eventRarityBonusRates.json'), soft('worldBloomDifferentAttributeBonuses.json'), soft('eventHonorBonuses.json'),
       ]);
-      this.setState({ wlsData: { wb: wb || [], sup: sup || [], lim: lim || [], evc: evc || [] }, wlsLoad: false });
+      this.setState({ wlsData: { wb: wb || [], sup: sup || [], lim: lim || [], evc: evc || [],
+        rar: rar || [], attr: attr || [], hon: hon || [] }, wlsLoad: false });
     } catch (e) {
       this.setState({ wlsLoad: false, wlsErr: 'World Link 加成表載入失敗，請稍後再試' });
     }
@@ -9087,7 +9164,7 @@ class Component extends DCLogic {
             wlsScanRows: [], wlsScanTitle: '',
             wlsEvChips: [],
             wlsFilterHint: '本章主角所屬的團',
-            wlsSummary: '', wlsShort: false, wlsShortMsg: '', wlsRows: [],
+            wlsSummary: '', wlsShort: false, wlsShortMsg: '', wlsRows: [], wlsFinale: false, wlsFinBtnOn: false,
             wlsMsg: s.wlsErr || (s.wlsLoad || s.rateLoad ? '載入中…' : '資料載入中…') };
         }
         const nOf = {}; (s.rateChars || []).forEach(c => { nOf[c[0]] = c[1]; });
@@ -9095,7 +9172,7 @@ class Component extends DCLogic {
         const useIds = new Set(W.use.map(c => c.id));
         return {
           wlsReady: true,
-          wlsHas: !W.finale && W.use.length > 0,
+          wlsHas: W.use.length > 0,
           wlsN: W.n, wlsBanned: W.banned,
           wlsEvChips: W.evs.map(e => {
             const on = e.id === W.evId, st = chip(on, 'var(--accent)');
@@ -9186,12 +9263,11 @@ class Component extends DCLogic {
             };
           }),
           wlsAssume: '（假設每張後排卡都是 MR' + W.mr + '／SLv.' + W.sl + '）',
-          wlsChLabel: '第' + W.cur.chapterNo + '章 '
-            + (W.special != null ? (nOf[W.special] || '') : '終章'),
+          wlsChLabel: W.finale ? ('終章（隊長 ' + (nOf[W.leader] || '') + '）')
+            : ('第' + W.cur.chapterNo + '章 ' + (W.special != null ? (nOf[W.special] || '') : '')),
           wlsTotal: W.total.toFixed(1),
-          wlsSummary: W.finale
-            ? '終章的支援隊伍規則與各章不同，這裡不硬估。'
-            : ('取加成最高的 ' + W.use.length + ' / ' + W.n + ' 張　候選池 ' + W.pool + ' 張'
+          wlsSummary: (W.finale ? '終章不限團體；與隊長同角色的卡多 5%，WL1 限定 +20% 也只認隊長那一位。' : '')
+            + ('取加成最高的 ' + W.use.length + ' / ' + W.n + ' 張　候選池 ' + W.pool + ' 張'
                + (W.mode === 'own' ? '（只算你勾選的持有卡）'
                   : W.mode === 'scan' ? '（截圖辨識的卡，每張用它自己的專精與技能等級）'
                   : '（全部卡，理論上限）')),
@@ -9211,11 +9287,60 @@ class Component extends DCLogic {
               ? ((c.mrGain ? '升 1 專精 +' + c.mrGain.toFixed(1) + '%　' : '') + '換掉 −' + (c.swapLoss || 0).toFixed(1) + '%')
               : ''),
             bd: c.isSpecial ? 'var(--accent)' : 'var(--border)',
-            tag: c.unsure ? '待確認' : (c.isLim ? '本章限定' : (c.isSpecial ? '本章主角' : '同團')),
+            tag: c.unsure ? '待確認' : (c.isLim ? (W.finale ? 'WL1 限定' : '本章限定') : (c.isSpecial ? (W.finale ? '與隊長同角' : '本章主角') : (W.finale ? '其他角色' : '同團'))),
             tagBg: c.unsure ? '#c98a2b' : (c.isLim ? '#e0576a' : (c.isSpecial ? 'var(--accent)' : 'rgba(0,0,0,.45)')),
             tagFg: '#fff',
           })),
           wlsMsg: s.wlsErr || '',
+          wlsFinale: !!W.finale,
+          wlsFinBtnOn: !!(W.finaleUp && W.finaleUp !== W.evId),
+          wlsFinEv: String(W.finaleUp || ''),
+          wlsFinBtn: W.finaleUp ? ('改算終章（第 ' + W.finaleUp + ' 期）') : '',
+          ...(() => {
+            const F = W.fin;
+            if (!F) return {};
+            const pc = v => (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, '') + '%';
+            const RN2 = { 4: '★4', 9: '生日', 3: '★3', 2: '★2', 1: '★1' };
+            return {
+              wlsLeader: String(W.leader),
+              wlsLeaderOpts: (s.rateChars || []).slice().sort((a, b) => a[0] - b[0]).map(c => ({
+                v: String(c[0]), n: ((this.UNITS[this.UNIT_OF[c[2]]] || {}).n || '') + '｜' + c[1] })),
+              wlsRarOpts: [4, 9, 3, 2, 1].map(r => ({ v: String(r), n: RN2[r] })),
+              wlsMrOpts: [0, 1, 2, 3, 4, 5].map(m => ({ v: String(m), n: 'MR' + m })),
+              wlsFmRows: F.slots.map(x => ({
+                i: String(x.i), label: x.i === 0 ? '隊長' : ('成員 ' + (x.i + 1)),
+                limBtn: x.lim ? 'WL2 限定卡' : '一般卡',
+                limBg: x.lim ? 'var(--cta)' : 'var(--card-2)', limFg: x.lim ? '#fff' : 'var(--text-2)',
+                rar: String(x.rar), mr: String(x.mr), rarOp: x.lim ? '.5' : '1',
+                parts: '角色 ' + x.charB + (x.limB ? '＋限定 ' + x.limB : (x.capped ? '＋限定 0（只計 ' + F.LIM_MAX + ' 張）' : '')) + '＋' + (RN2[x.rar] || '') + ' MR' + x.mr + ' ' + pc(x.rarB).replace('%', ''),
+                sum: '＋' + pc(x.sum),
+              })),
+              wlsFattrChips: [1, 2, 3, 4, 5].map(nn => { const on = nn === F.attrN, st = chip(on, 'var(--cta)');
+                return Object.assign({ v: String(nn), n: nn + ' 色 ＋' + (F.attrT[nn] || 0) + '%' }, st, { fg: on ? '#fff' : 'var(--text)' }); }),
+              wlsFtitleBtn: F.titleB ? ('已設定　＋' + F.TITLE + '%') : '未設定',
+              wlsFtitleBg: F.titleB ? 'var(--cta)' : 'var(--card-2)', wlsFtitleFg: F.titleB ? '#fff' : 'var(--text-2)',
+              wlsFinTotal: pc(F.total).replace('%', ''),
+              wlsFinLine: '主隊 ' + pc(F.main) + '　＋　支援 ' + pc(F.sup),
+              wlsFinTheory: '滿配上限 ' + pc(F.theory.total) + '（主隊 ' + pc(F.theory.main) + '＋支援 ' + pc(F.theory.sup) + '）　目前差 ' + pc(Math.max(0, F.theory.total - F.total)),
+              wlsFinRows: [
+                { k: '角色加成', v: pc(F.charSum), n: '五位各 5%，怎麼組都一樣' },
+                { k: 'WL2 限定卡', v: pc(F.limSum), n: '每張 ＋' + F.LIM + '%，最多計 ' + F.LIM_MAX + ' 張' },
+                { k: '稀有度與專精', v: pc(F.rarSum), n: '單張最多 25%（★4 MR5）' },
+                { k: '隊內異色', v: pc(F.attrB), n: '3／4／5 色 ＝ 75／100／125%' },
+                { k: '隊長加成', v: pc(F.leaderB), n: F.leaderB ? '隊長是 WL2 限定卡' : '隊長不是 WL2 限定卡，拿不到 ＋' + F.LEAD + '%' },
+                { k: '稱號加成', v: pc(F.titleB), n: '主稱號＝隊長角色那一章的排名稱號（台服 T500 以內），角色要與隊長一致' },
+                { k: '支援隊伍', v: pc(F.sup), n: '下方清單，隨隊長角色改變' },
+              ],
+              wlsFinNotes: [
+                '遊戲內「主隊」那一格會把隊長與稱號加成併進去，滿配看到的是主隊 ' + pc(F.theory.main) + '＋支援 ' + pc(F.theory.sup) + '。',
+                '終章期間單張卡的技能效果上限 140%，所以滿配跑隊倍率最高 3.20、推隊最高 3.52；BLOOM FES 算法不變，團分卡改成每位同團成員 8%、未滿技的初始值調高 10%。',
+                '終章期間 MySekai 玩偶給的角色綜合力加成上限 2%，滿配跑隊與一般推隊的綜合力不會超過 36.15 萬，挑戰隊也會受影響。',
+                '終章排名報酬給哪個角色，看終章期間你用最多次的隊長是誰。',
+                '控分：主隊一定有 25% 角色加成，單場最低 125 pt；沒有世界通行證時，藍體可以單次控 20／50 pt（橘體只能 100／250）。',
+                '日服當時的配套：終章那四天 BASIC 月卡也有每日 99 次 AUTO，且 AUTO 周回之後常駐提速，99 次可能不到 3 小時就跑完，休息時間要重新估。',
+              ],
+            };
+          })(),
         };
       })(),
       isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
@@ -11312,6 +11437,14 @@ class Component extends DCLogic {
           + '目前池內共 ' + merged.length + ' 張。' });
       },
       onWlsCh: e => this.setState({ wlsCh: +e.currentTarget.dataset.v || 0 }),
+      // 終章：隊長角色／異色數（data-k 指定欄位）、主隊五格（data-i 第幾格、data-f 哪一欄）、稱號開關
+      onWlsFin: e => { const d = e.currentTarget.dataset, v = +(d.v != null ? d.v : e.target.value) || 0;
+        const patch = { [d.k]: v }; this.setState(patch); this.wlsFinSave(patch); },
+      onWlsFm: e => { const d = e.currentTarget.dataset, i = +d.i, slots = this.wlsFmSlots();
+        if (!slots[i]) return;
+        if (d.f === 'lim') slots[i].lim = slots[i].lim ? 0 : 1; else slots[i][d.f] = +e.target.value || 0;
+        this.setState({ wlsFm: slots }); this.wlsFinSave({ wlsFm: slots }); },
+      onWlsFtitle: () => { const patch = { wlsFtitle: this.state.wlsFtitle === false }; this.setState(patch); this.wlsFinSave(patch); },
       onWlsPool: e => this.setState({ wlsPool: e.currentTarget.dataset.v }),
       onArtUnit: e => this.setState({ artUnit: e.currentTarget.dataset.v, artChar: 'all', artPage: 1 }),
       onArtChar: e => this.setState({ artChar: e.currentTarget.dataset.v, artPage: 1 }),
