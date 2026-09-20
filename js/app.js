@@ -278,7 +278,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
-    { d: '2026/09/20', t: 'WL 終章加成計算器', s: 'WL 後排加成頁支援終章了：選好主隊隊長的角色，支援隊會照終章規則重排（不限團體，與隊長同角色的卡多 5%，WL1 限定卡的 +20% 也只認隊長那一位）。同頁新增終章主隊試算：五格各自設定是不是 WL2 限定卡、稀有度與專精，再選隊內異色數與稱號，逐項列出角色 25%、WL2 限定最多 100%、稀有度與專精、異色、隊長 +20%、稱號 +50%，合計主隊、支援與總加成，並對照滿配上限 815%。規則逐項對過台服 master（第 180 期 9/25 開跑）。頁尾附終章須知：技能上限 140%、玩偶綜合力上限 2%、控分最低 125 pt、排名報酬角色的判定。站內助手的支援加成工具同步支援終章，帶隊長角色就會照新規則算。' },
+    { d: '2026/09/20', t: 'WL 終章加成計算器', s: 'WL 後排加成頁支援終章了：選好主隊隊長的角色，支援隊會照終章規則重排（不限團體，與隊長同角色的卡多 5%，WL1 限定卡的 +20% 也只認隊長那一位）。同頁新增終章主隊試算：五格各自設定是不是 WL2 限定卡、稀有度與專精，再選隊內異色數與稱號，逐項列出角色 25%、WL2 限定最多 100%、稀有度與專精、異色、隊長 +20%、稱號 +50%，合計主隊、支援與總加成，並對照滿配上限 815%。規則逐項對過台服 master（第 180 期 9/25 開跑）。頁尾附終章須知：技能上限與玩偶綜合力上限直接讀 master（台服目前技能上限寫 +200%，等於不設限，日服當時是 +140%；玩偶上限 2%）、控分最低 125 pt、排名報酬角色的判定。跑榜工作室與首頁跑榜小窗的最佳化也套用終章規則：WL2 限定卡最多計 4 張、每一隊五個隊長人選各算一次（隊長 +20%、支援隊跟隊長角色走）、技能上限與玩偶上限照表套用，滿配綜合力約 36 萬。站內助手的支援加成工具同步支援終章，帶隊長角色就會照新規則算。' },
     { d: '2026/09/19', t: '側欄群組可摺疊', s: '側欄項目太多，改成點群組標題就能收起或展開；預設只展開主頁、帳號、常用與即時資料，其餘只留標題與數量，目前所在的頁在收起的群組裡仍會顯示。手機的「更多」面板同樣適用，摺疊狀態記在這台裝置。' },
     { d: '2026/09/19', t: '瀏覽器推播、行事曆訂閱源、每頁分享預覽圖', s: '我的帳號的偵測訂閱區多了「開啟瀏覽器推播」：條件成立或有人回覆時，就算沒開著網站也會跳系統通知（站方要先設定 VAPID 金鑰）；活動日曆多了「訂閱」，用 webcal 把活動與卡池訂進手機行事曆會自動更新；分享網址到社群時每一頁各有自己的大圖預覽。' },
     { d: '2026/09/19', t: '今日摘要、行事曆匯出、分享圖卡、提問所版型、團體主題色、空狀態與視窗整理', s: '首頁多了「今日摘要」：活動第幾天、T1000 線與我的一天變化、快結束／今天開始的卡池、今天的公告、跑榜計畫與豆森待辦；活動總覽與活動日曆可匯出 .ics 加進手機行事曆；我的排名、收集率、豆森進度可產生分享圖卡；提問所新增「車隊招募」「榜線回報」兩類並附範本；外觀可選團體主題色（六團強調色）；全站空狀態改成同一種樣式，歌曲視窗的關閉鈕不再被擠到第二行。' },
@@ -1990,7 +1990,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=4965562c2d';
+      el.src = './js/core.js?v=3f4a0caea5';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2236,7 +2236,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=c4335778c9').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=911e4a0c5d').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -6354,7 +6354,12 @@ class Component extends DCLogic {
     const attrT = { 1: 0, 2: 0, 3: 75, 4: 100, 5: 125 };
     (D.attr || []).forEach(x => { attrT[x.attributeCount] = +x.bonusRate || 0; });
     const ec = (D.evc || []).find(x => +x.eventId === evId) || {};
-    const LIM = +ec.bonusRate || 25, LEAD = +ec.leaderBonusRate || 20, LIM_MAX = 4, CHAR = 5;
+    const ofEv = arr => (Array.isArray(arr) ? arr : []).find(x => +x.eventId === evId) || null;
+    const cnl = ofEv(D.cnl), skl = ofEv(D.skl), dll = ofEv(D.dll);
+    const LIM = +ec.bonusRate || 25, LEAD = +ec.leaderBonusRate || 20, LIM_MAX = (cnl && +cnl.memberCountLimit) || 4, CHAR = 5;
+    // 技能上限：scoreUpRateLimit 是分數倍率（240＝+140%）；玩偶上限：bonusRateLimit 20＝2.0%。沒有資料＝不設限
+    const skillCap = skl && +skl.scoreUpRateLimit ? +skl.scoreUpRateLimit - 100 : null;
+    const dollPct = dll && dll.bonusRateLimit != null ? +dll.bonusRateLimit / 10 : null;
     const hon = (D.hon || []).find(x => +x.eventId === evId);
     const TITLE = hon ? (+hon.bonusRate || 50) : 50;
     let limUsed = 0;
@@ -6376,7 +6381,7 @@ class Component extends DCLogic {
     const mx = (arr) => Math.max.apply(null, [0].concat((arr || []).map(o => +o.bonusRate || 0)));
     const supTheory = supN * (mx(supT.worldBloomSupportDeckCharacterBonuses) + mx(supT.worldBloomSupportDeckMasterRankBonuses) + mx(supT.worldBloomSupportDeckSkillLevelBonuses)) + 20;
     const deckTheory = 5 * CHAR + LIM_MAX * LIM + 5 * rarB(4, 5) + (attrT[5] || 125);
-    return { slots, attrN, attrT, charSum, limSum: r1(limSum), rarSum: r1(rarSum), attrB, leaderB, titleB, LIM, LEAD, TITLE, LIM_MAX,
+    return { skillCap, dollPct, slots, attrN, attrT, charSum, limSum: r1(limSum), rarSum: r1(rarSum), attrB, leaderB, titleB, LIM, LEAD, TITLE, LIM_MAX,
       deck: r1(deck), main: r1(main), sup: r1(supTotal), total: r1(main + supTotal),
       theory: { deck: r1(deckTheory), main: r1(deckTheory + LEAD + TITLE), sup: r1(supTheory), total: r1(deckTheory + LEAD + TITLE + supTheory) } };
   }
@@ -6497,16 +6502,18 @@ class Component extends DCLogic {
       /* eventCards 是拿來認「哪些卡是當期活動的」—— 那些卡要放前排主隊，
          master data 沒有另一張表寫這件事，只能從活動歸屬反推。 */
       const soft = f => fetch(this.TDB + '/' + f).then(r => r.ok ? r.json() : []).catch(() => []);
-      const [wb, sup, lim, evc, rar, attr, hon] = await Promise.all([
+      const [wb, sup, lim, evc, rar, attr, hon, skl, dll, cnl] = await Promise.all([
         fetch(this.TDB + '/worldBlooms.json').then(r => r.json()),
         fetch(this.TDB + '/worldBloomSupportDeckBonuses.json').then(r => r.json()),
         fetch(this.TDB + '/worldBloomSupportDeckUnitEventLimitedBonuses.json').then(r => r.json()),
         fetch(this.TDB + '/eventCards.json').then(r => r.json()),
         // 終章主隊用：稀有度×專精加成、隊內異色加成、稱號加成。三張都很小；抓不到就用計算端的備援常數
         soft('eventRarityBonusRates.json'), soft('worldBloomDifferentAttributeBonuses.json'), soft('eventHonorBonuses.json'),
+        // 終章的三張限制表：技能上限、玩偶綜合力上限、特效卡計幾張（兩服數值不同，所以讀表不寫死）
+        soft('eventSkillScoreUpLimits.json'), soft('eventMysekaiFixtureGameCharacterPerformanceBonusLimits.json'), soft('eventCardBonusLimits.json'),
       ]);
       this.setState({ wlsData: { wb: wb || [], sup: sup || [], lim: lim || [], evc: evc || [],
-        rar: rar || [], attr: attr || [], hon: hon || [] }, wlsLoad: false });
+        rar: rar || [], attr: attr || [], hon: hon || [], skl: skl || [], dll: dll || [], cnl: cnl || [] }, wlsLoad: false });
     } catch (e) {
       this.setState({ wlsLoad: false, wlsErr: 'World Link 加成表載入失敗，請稍後再試' });
     }
@@ -9333,8 +9340,11 @@ class Component extends DCLogic {
               ],
               wlsFinNotes: [
                 '遊戲內「主隊」那一格會把隊長與稱號加成併進去，滿配看到的是主隊 ' + pc(F.theory.main) + '＋支援 ' + pc(F.theory.sup) + '。',
-                '終章期間單張卡的技能效果上限 140%，所以滿配跑隊倍率最高 3.20、推隊最高 3.52；BLOOM FES 算法不變，團分卡改成每位同團成員 8%、未滿技的初始值調高 10%。',
-                '終章期間 MySekai 玩偶給的角色綜合力加成上限 2%，滿配跑隊與一般推隊的綜合力不會超過 36.15 萬，挑戰隊也會受影響。',
+                (F.skillCap == null ? '技能上限：master 沒有這一期的資料，視為不設限。'
+                  : F.skillCap >= 160 ? ('技能上限：台服 master 目前寫的是 ＋' + F.skillCap + '%，高過任何一張卡，等於不設限。日服當時是 ＋140%（滿配跑隊倍率最高 3.20、推隊 3.52，團分卡等同每位同團成員 8%）；開跑前 master 若改表，這裡與跑榜工作室會自動跟著套用。')
+                  : ('終章期間單張卡的技能效果上限 ＋' + F.skillCap + '%（讀自 master）' + (F.skillCap === 140 ? '，滿配跑隊倍率最高 3.20、推隊最高 3.52；團分卡滿技同團五人一樣是 140%。' : '。') + '跑榜工作室的最佳化已套用。')),
+                (F.dollPct == null ? 'MySekai 玩偶的角色綜合力加成：master 沒有這一期的上限資料。'
+                  : ('終章期間 MySekai 玩偶給的角色綜合力加成上限 ' + F.dollPct + '%（平常 10%，讀自 master）' + (F.dollPct === 2 ? '，滿配跑隊與一般推隊的綜合力不會超過 36.15 萬，挑戰隊也會受影響' : '') + '。跑榜工作室的最佳化已套用。')),
                 '終章排名報酬給哪個角色，看終章期間你用最多次的隊長是誰。',
                 '控分：主隊一定有 25% 角色加成，單場最低 125 pt；沒有世界通行證時，藍體可以單次控 20／50 pt（橘體只能 100／250）。',
                 '日服當時的配套：終章那四天 BASIC 月卡也有每日 99 次 AUTO，且 AUTO 周回之後常駐提速，99 次可能不到 3 小時就跑完，休息時間要重新估。',

@@ -3941,7 +3941,7 @@ export function aiMembers() {
           finale_main_deck: isFinale ? {
             rule: '終章主隊：所有角色都是 5%（五張固定 25%）；WL2 限定卡每張另 +25%，最多計 4 張；稀有度與專精照一般活動，單張最多 25%（★4 MR5）；隊內異色 3／4／5 色 ＝ 75／100／125%；隊長是 WL2 限定卡 +20%；主稱號是隊長角色那一章的排名稱號（台服 T500 以內、角色要與隊長一致）+50%。',
             theory_pct: { main_deck: 375, leader: 20, title: 50, main_shown_in_game: 445, support: 370, total: 815 },
-            limits: '終章期間單張卡技能效果上限 140%（滿配跑隊倍率最高 3.20、推隊 3.52；團分卡改成每位同團成員 8%、未滿技初始值 +10%）；MySekai 玩偶的角色綜合力加成上限 2%（滿配綜合力不超過 36.15 萬）；排名報酬角色看終章期間用最多次的隊長；單場控分最低 125 pt。',
+            limits: '限制以 master 為準：eventSkillScoreUpLimits（scoreUpRateLimit 是分數倍率，240＝單張技能 +140%）——撰寫時台服第 180 期寫 300＝+200%，等於不設限，日服當時是 240（滿配跑隊倍率最高 3.20、推隊 3.52）；eventMysekaiFixtureGameCharacterPerformanceBonusLimits＝玩偶的角色綜合力加成上限 2%（平常 10%，滿配綜合力約 36.15 萬）；eventCardBonusLimits＝WL2 限定卡最多計 4 張。排名報酬角色看終章期間用最多次的隊長；單場控分最低 125 pt。跑榜工作室的最佳化會自動套用這三張表。',
             where: '站上「WL 後排加成」頁選到終章那一期，就有主隊五格的逐項試算與總加成。',
           } : undefined,
           how_it_works: {
