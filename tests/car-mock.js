@@ -64,13 +64,21 @@ const TEAM = { '111': true, '222': false };
 const mockR = () => globalThis.__mockR || (globalThis.__mockR = (() => {
   let f = ''; try { f = sessionStorage.getItem('sekai-carmockR') || ''; } catch (e) {}
   const has = k => f.split(',').indexOf(k) >= 0;
-  return { oldbot: has('oldbot'), oldsheet: has('oldsheet'), sheet: '', runPending: false };
+  /* 跑者自行報跑（S 組）：selfrun＝一開始就開放；notrunner＝登入的人沒登記跑者倍率（預設有）；
+     oldself＝機器人還沒有這個功能（/state 不帶 runner_self_signup、/runself 回 404） */
+  return { oldbot: has('oldbot'), oldsheet: has('oldsheet'), sheet: '', runPending: false,
+    selfrun: has('selfrun'), notrunner: has('notrunner'), oldself: has('oldself') };
 })());
+const RUNSELF = {};
 const R_ALIAS = { u2: ['阿明'], u5: ['Nobita'], u6: ['shizuka'] };
 /* 跟機器人的 _slot_runner 一樣：另外指定過（custom／有 user_id／名字跟預設不同）才算 custom，其餘＝車隊預設跑者 */
 const slotRunner = (c, sh) => {
   const p = sh && sh.p1;
-  if (p && p.name && (p.custom || p.user_id || String(p.name) !== c.p1)) return { name: String(p.name), custom: true, bonus: p.bonus || null };
+  if (p && p.name && (p.custom || p.user_id || String(p.name) !== c.p1)) {
+    const o = { name: String(p.name), custom: true, bonus: p.bonus || null };
+    if (p.user_id === 'me') o.mine = true;               // 跟機器人一樣：只告訴網頁「這格是不是我」，不送別人的 uid
+    return o;
+  }
   return { name: c.p1, custom: false, bonus: null };
 };
 /* 跟機器人的 _runner_entry 一樣：uid／名字／別名（再來是前綴、子字串）對得到成員就帶 user_id 與倍率，對不到就當純文字名字；空字串回 null */
@@ -113,6 +121,11 @@ function stateOut(gid, no, role) {
     if (st || ap || wl) hs.push({ hour: h, seat: st, applied: ap, waitlist: wl, locked: !!sh.locked }); }); if (hs.length) me[d] = hs; });
   const base = { guild: gid === '111' ? '菜根車隊' : '測試車隊', p1: c.p1, today, days };
   if (!old) base.team_mode = !!TEAM[gid];
+  if (!old && !mockR().oldself) {
+    if (RUNSELF[gid] === undefined) RUNSELF[gid] = !!mockR().selfrun;
+    base.runner_self_signup = !!TEAM[gid] && !!RUNSELF[gid];
+    base.me_runner = !mockR().notrunner;
+  }
   if (!admin) return Object.assign(base, { role: 'member', settings: {}, me });
   return Object.assign(base, { role: 'admin', settings: { schedule_open: c.open }, me });
 }
@@ -205,6 +218,49 @@ export function install(BASE, mode0) {
         if (String(runner || '').trim()) TEAM[gid] = true;            // 跟機器人一樣：第一次指定跑者＝開始用車隊模式
         if (R.runPending) { R.runPending = false; return J({ ok: true, pending: true, msg: '跑者還在處理，稍後會自動更新' }); }
         return J({ ok: true, done, skip, name: ent ? ent.name : c.p1, custom: !!String(runner || '').trim() });
+      }
+      if (rest === '/setting' && m === 'POST' && body.key === 'runner_self_signup') {
+        if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+        if (R.oldbot || R.oldself) return J({ error: 'bad key' }, 400);
+        RUNSELF[gid] = !!body.value;
+        if (RUNSELF[gid]) TEAM[gid] = true;                           // 跟機器人一樣：打開它＝一起開車隊模式
+        return J({ ok: true, key: 'runner_self_signup', value: RUNSELF[gid] });
+      }
+      if (rest === '/runself' && m === 'POST') {
+        if (R.oldbot || R.oldself) return J({ error: 'bot_not_updated', message: '車隊機器人尚未更新或不支援這個功能' }, 404);
+        const { date, hours } = body, act = body.action || 'open';
+        if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return J({ error: '日期格式須為 YYYY-MM-DD' }, 400);
+        if (!Array.isArray(hours) || !hours.length || hours.length > 48 || !hours.every(h => typeof h === 'string' && /^\d{2}:\d{2}$/.test(h))) return J({ error: '時段格式須為 HH:MM 的清單' }, 400);
+        if (act !== 'open' && act !== 'cancel') return J({ error: 'action 只能是 open 或 cancel' }, 400);
+        if (date < today) return J({ error: date + ' 已過去，歷史班表為唯讀' }, 400);
+        if (R.notrunner) return J({ error: '你還沒登記跑者倍率：Discord 打 %名字 r3.40，QQ 打 /登记 名字 r3.40' }, 403);
+        if (!(TEAM[gid] && RUNSELF[gid]) && !admin) return J({ error: '這個車隊沒有開放跑者自行報跑，請找管理員指定' }, 403);
+        const day = c.sched[date] || (c.sched[date] = {});
+        const meEnt = { name: '我自己', fixed: true, custom: true, user_id: 'me', bonus: 3.4 };
+        if (act === 'cancel') {
+          const done = []; let cleared = 0;
+          hours.forEach(h => { const sh = day[h]; if (!sh || !sh.run_planned || !sh.p1 || sh.p1.user_id !== 'me') return;
+            ['p2', 'p3', 'p4', 'p5'].forEach(k => { if (sh[k]) { cleared++; sh[k] = null; } });
+            delete day[h]; done.push(h); });
+          if (!done.length) return J({ error: '這些時段的跑者不是你' }, 400);
+          return J({ ok: true, done, cleared });
+        }
+        const opened = [], took = [], msgs = [];
+        hours.forEach(h => {
+          const sh = day[h];
+          if (sh && sh.run_planned) {
+            const r = slotRunner(c, sh);
+            if (r.mine) { msgs.push('本來就是你：' + h); return; }
+            if (r.custom) { msgs.push(h + ' 已經有跑者 ' + r.name + '，沒有動'); return; }
+            if (['p2', 'p3', 'p4', 'p5'].some(k => sh[k] && sh[k].user_id === 'me') || (sh.applicants || []).some(a => a.user_id === 'me')) { msgs.push(h + ' 你已經報了推手班'); return; }
+            sh.p1 = Object.assign({}, meEnt); took.push(h); return;
+          }
+          day[h] = { car_type: '蝦', p1: Object.assign({}, meEnt), p2: null, p3: null, p4: null, p5: null, applicants: [], waitlist: [], run_planned: true };
+          opened.push(h);
+        });
+        const done = opened.concat(took).sort();
+        if (!done.length) return J({ error: msgs.join('；') || '這些時段都沒有動' }, 400);
+        return J({ ok: true, done, opened, took, msg: [date + ' ' + done.join('、') + ' 由你開車'].concat(msgs).join('；') });
       }
       if (rest === '/setting' && m === 'POST' && body.key === 'team_mode') {
         if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);

@@ -366,6 +366,9 @@ select option, select optgroup{
   .bot-h1{font-size:28px;margin-top:10px}
   .bot-card{padding:17px 16px}
 }
+.car-rs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:10px 12px;border:1px dashed color-mix(in oklab,var(--accent) 40%,var(--border));border-radius:14px;background:color-mix(in oklab,var(--accent) 6%,var(--card))}
+.car-rs-t{font-size:12.5px;font-weight:800;color:var(--accent-deep);white-space:nowrap}
+.car-rs-n{flex:1 1 260px;min-width:0;font-size:11.5px;color:var(--text-3);line-height:1.6}
 .car-btn{padding:8px 17px;border-radius:999px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-family:inherit}
 .car-row{display:grid;grid-template-columns:78px minmax(0,.85fr) repeat(4,minmax(0,1fr)) minmax(0,.95fr);border-top:1px solid var(--border)}
 .car-row.car-head{border-top:none;background:var(--card-2)}
@@ -2176,6 +2179,8 @@ select option, select optgroup{
                 <sc-for list="{{ carModeSeg }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarMode }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
               </div>
             </sc-if>
+            <!-- 車隊模式底下的選項：開放登記過跑者倍率的成員自己開班（POST /setting runner_self_signup） -->
+            <sc-if value="{{ carRsAdmShow }}"><button type="button" class="car-btn" aria-pressed="{{ carRsAdmPressed }}" onClick="{{ onCarRunSelfAdm }}" data-v="{{ carRsAdmV }}" data-car-runself="adm" style="background:{{ carRsAdmBg }};color:{{ carRsAdmFg }};border-color:{{ carRsAdmBd }}">{{ carRsAdmTxt }}</button></sc-if>
             <button type="button" onClick="{{ onCarTagMgr }}" class="car-btn">標記管理</button>
             <sc-if value="{{ carLockShow }}"><button type="button" onClick="{{ onCarLockDay }}" data-v="{{ carLockV }}" class="car-btn">{{ carLockBtn }}</button></sc-if>
             <button type="button" onClick="{{ onCarOpen }}" class="car-btn" style="background:{{ carOpenBg }};color:{{ carOpenFg }};border-color:{{ carOpenBd }};box-shadow:var(--sh-xs)">{{ carOpenBtn }}</button>
@@ -2183,6 +2188,15 @@ select option, select optgroup{
         </sc-if>
       </div>
       <sc-if value="{{ carModeShow }}"><div class="car-mode-note">{{ carModeNote }}</div></sc-if>
+      <sc-if value="{{ carRsToolShow }}">
+        <div class="car-rs" data-car-runself="tool">
+          <span class="car-rs-t">跑者報跑</span>
+          <input class="car-in" placeholder="時段 20-24" aria-label="要開車的時段" value="{{ carRsHours }}" onInput="{{ onField }}" onKeyDown="{{ onCarRunSelfKey }}" data-k="carRsHours" autocomplete="off" inputmode="numeric" style="flex:0 1 130px;width:auto;min-width:0;min-height:40px">
+          <button type="button" class="car-btn" onClick="{{ onCarRunSelfTool }}">我要開車</button>
+          <span class="car-rs-n">{{ carRsToolNote }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ carRsHintShow }}"><div class="car-mode-note" data-car-runself="hint">{{ carRsHint }}</div></sc-if>
 
       <!-- 日期 -->
       <sc-if value="{{ carHasDates }}">
@@ -2261,7 +2275,7 @@ select option, select optgroup{
                     <sc-if value="{{ r.hasMy }}"><span style="font-size:11.5px;font-weight:800;color:var(--accent-deep)">{{ r.myTxt }}</span></sc-if>
                     <span class="car-note">{{ r.note }}</span>
                     <div style="display:flex;gap:6px;flex-wrap:wrap">
-                      <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarARowSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
+                      <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarARowSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if><sc-if value="{{ r.rsShow }}"><button type="button" class="car-mini" onClick="{{ onCarRunSelfRow }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-act="{{ r.rsAct }}">{{ r.rsTxt }}</button></sc-if>
                       <sc-if value="{{ r.lockShow }}"><button type="button" class="car-mini" onClick="{{ onCarLockRow }}" data-h="{{ r.hour }}" data-v="{{ r.lockV }}">{{ r.lockTxt }}</button></sc-if>
                       <sc-if value="{{ r.unmarkShow }}"><button type="button" class="car-mini" onClick="{{ onCarAUnmark }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" title="清空這個時段並取消開班" style="background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">砍班</button></sc-if>
                     </div>
@@ -2348,7 +2362,7 @@ select option, select optgroup{
                       </sc-if>
                       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:auto">
                         <sc-if value="{{ r.hasMy }}"><span style="font-size:11.5px;font-weight:800;color:var(--accent-deep)">{{ r.myTxt }}</span></sc-if>
-                        <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarARowSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if>
+                        <sc-if value="{{ r.signShow }}"><button type="button" class="car-mini" onClick="{{ onCarARowSign }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-pos="" data-act="{{ r.signAct }}">{{ r.signTxt }}</button></sc-if><sc-if value="{{ r.rsShow }}"><button type="button" class="car-mini" onClick="{{ onCarRunSelfRow }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" data-act="{{ r.rsAct }}">{{ r.rsTxt }}</button></sc-if>
                         <sc-if value="{{ r.lockShow }}"><button type="button" class="car-mini" onClick="{{ onCarLockRow }}" data-h="{{ r.hour }}" data-v="{{ r.lockV }}">{{ r.lockTxt }}</button></sc-if>
                         <sc-if value="{{ r.unmarkShow }}"><button type="button" class="car-mini" onClick="{{ onCarAUnmark }}" data-d="{{ r.d }}" data-h="{{ r.hour }}" title="清空這個時段並取消開班" style="background:color-mix(in oklab,#ee6644 12%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg));border-color:color-mix(in oklab,#ee6644 35%,var(--border))">砍班</button></sc-if>
                       </div>
@@ -7159,7 +7173,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a2714e8945"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=15efd6a585"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

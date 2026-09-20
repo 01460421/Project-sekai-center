@@ -243,7 +243,7 @@ class Component extends DCLogic {
   ];
 
   /* 菜根機器人介紹頁（page=bot）。圖在 /bot-img/，換圖時把 BOT_IMG_VER 一起改掉才會破快取。 */
-  BOT_IMG_VER = '20260920';
+  BOT_IMG_VER = '20260920b';
   BOT_SHEET_DATE = '2026.09.20';
   BOT_SHEETS = [['淺藍', '淺色'], ['粉紫', '淺色'], ['灰藍', '淺色'], ['暖橘', '淺色'], ['草綠', '淺色'], ['糖果粉', '淺色'], ['薰衣草', '淺色'], ['夜色', '深色']];
   BOT_STATS = [{ k: '三邊', v: 'Discord、QQ、網頁同一張班表' }, { k: '三車', v: '同一群平行排班' }, { k: '快捷', v: '打 h20-24 就報班' }, { k: '手機', v: '網頁排班手機也能用' }];
@@ -251,6 +251,7 @@ class Component extends DCLogic {
     { t: '報班與自動排位', d: '打 h20-24 就報進去，S6、雙開、外援各有寫法。依倍率自動排位，滿了進候補，有人砍班自動遞補。' },
     { t: '三車平行', d: '同一個群開到三台車，各車分開排班、分開鎖班；指令後面加車號，或在綁定的頻道直接報。' },
     { t: '車隊模式與指定跑者', d: '多位跑者輪流開車：每個時段的 P1 各自指定，可從成員池挑，也能直接打外援的名字。', isNew: true },
+    { t: '跑者自行報跑', d: '管理員開放之後，登記過跑者倍率的成員可以自己開班：Discord 打 r20-24、QQ 打 /r 20-24，網頁按「我來開車」。別人報跑的時段不能搶。', isNew: true },
     { t: '網頁排班', d: '看板拖拉換人、推手標記、鎖班與開放報班，手機也能用。成員只看得到自己所在的車隊。' },
     { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。', isNew: true },
     { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；在表上改座位或跑者會寫回機器人，兩邊不同時以試算表為準。', isNew: true },
@@ -264,16 +265,16 @@ class Component extends DCLogic {
   BOT_SIDES = [
     { n: 'Discord', s: '頻道直接打字，或用斜線指令', c: '#5865f2', rows: [
       { c: 'h20-24', d: '報推手班；s 是 S6、d 是雙開' }, { c: 'x20-24', d: '取消自己的班' }, { c: 'sch9/13', d: '看那天的班表，過去的也行' },
-      { c: 't100', d: '第 100 名現在幾分' }, { c: '/班表 跑者', d: '指定某些時段由誰開車' }] },
+      { c: 't100', d: '第 100 名現在幾分' }, { c: '/班表 跑者', d: '管理員指定某些時段由誰開車' }, { c: 'r20-24', d: '跑者自己報跑（要管理員先開放）' }] },
     { n: 'QQ 群', s: '先 @機器人，指令用簡體', c: '#12a9c2', rows: [
       { c: '/h 20-24', d: '報推手班；/s 是 S6、/d 是雙開' }, { c: '/砍 20-24', d: '取消自己的班' }, { c: '/班表 明天', d: '出一張班表圖' },
-      { c: '/排名 100', d: '查名次與分數' }, { c: '/报跑 20-24 小明', d: '報跑順便指定跑者' }] },
+      { c: '/排名 100', d: '查名次與分數' }, { c: '/报跑 20-24 小明', d: '管理員報跑順便指定跑者' }, { c: '/r 20-24', d: '跑者自己報跑（要管理員先開放）' }] },
     { n: '網頁', s: '左側「車隊」裡的私車排班', c: '#8a6fe0', rows: [
       { c: '班表', d: '每一列右邊一鍵報班、砍班' }, { c: '看板', d: '管理員直接拖拉換人' }, { c: '統計', d: '缺額分析與任一天的歷史班表' },
-      { c: '點歌', d: '搜尋、排隊、跳過、調音量' }, { c: '設定', d: '班表行為、試算表、語音、事件記錄' }] },
+      { c: '點歌', d: '搜尋、排隊、跳過、調音量' }, { c: '設定', d: '班表行為、試算表、語音、事件記錄' }, { c: '我來開車', d: '跑者在每一列自己報跑、取消報跑' }] },
   ];
   BOT_STEPS = [
-    { n: '1', t: '登記名字與倍率', rows: [{ c: '%小明 h3.88', d: 'Discord' }, { c: '/登记 小明 h3.88', d: 'QQ' }], note: 'S6 倍率用 s，雙開用 d。' },
+    { n: '1', t: '登記名字與倍率', rows: [{ c: '%小明 h3.88', d: 'Discord' }, { c: '/登记 小明 h3.88', d: 'QQ' }], note: 'S6 倍率用 s，雙開用 d，跑者用 r。' },
     { n: '2', t: '綁定遊戲 ID', rows: [{ c: 'myid 12345678', d: 'Discord' }, { c: '/绑定 12345678', d: 'QQ' }], note: '綁了之後查排名、查自己才找得到你。' },
     { n: '3', t: '等跑者先報跑', rows: [{ c: 'bgn20-24', d: 'Discord 管理員' }, { c: '/报跑 20-24', d: 'QQ 管理員' }], note: '時段還沒人報跑，推手報不進去。「報班沒反應」多半就是這個。' },
   ];
@@ -2858,6 +2859,36 @@ class Component extends DCLogic {
       + '（' + x.when + '）' + (skip ? '（跳過 ' + skip + ' 個：還沒開班）' : ''), no, (x.rg.groups[first < 0 ? 0 : first] || x.rg.groups[0]).date);
   }
   /* 私車／車隊模式開關（整個車隊共用，不分車）：POST /setting {key:'team_mode'}，改完每一台車都重抓 */
+  /* 跑者自行報跑（車隊模式）：管理員的開關；跑者成員自己開班／取消。機器人端 POST /runself，身分一律看登入的人 */
+  async carSetRunSelf(on) {
+    const no = this.carNo();
+    const d = await this.carAct('/setting', { key: 'runner_self_signup', value: !!on }, on ? '已開放跑者自行報跑' : '已關閉跑者自行報跑', no);
+    if (d) this.carLoadStates();
+  }
+  async carRunSelf(groups, act, no) {
+    let done = 0, last = null;
+    for (const g of groups) {
+      const d = await this.carAct('/runself', { date: g.date, hours: g.hours, action: act }, null, no);
+      if (!d) break;
+      last = d; done += (d.done || []).length;
+    }
+    if (last) this._toast(act === 'cancel' ? ('已取消報跑 ' + done + ' 個時段' + (last.cleared ? '（連帶清掉 ' + last.cleared + ' 位推手）' : ''))
+      : (last.msg ? String(last.msg).split('；')[0] : '已報跑 ' + done + ' 個時段'), 4000);
+    this.carLoadStates(no);
+  }
+  async carRunSelfRow(el) {
+    const d = el.dataset, act = d.act === 'cancel' ? 'cancel' : 'open';
+    if (!d.d || !d.h) return;
+    if (act === 'cancel' && !window.confirm('取消 ' + this.carSlot(d.h) + ' 的報跑？\n這個時段已經報班的推手會一起清掉，時段也會關閉。')) return;
+    await this.carRunSelf([{ date: d.d, hours: [d.h] }], act, this.carNo());
+  }
+  async carRunSelfTool() {
+    const st = this.carAState(); if (!st) return;
+    const date = this.state.carDate || st.today, rg = this.carARange(date, this.state.carRsHours);
+    if (!rg) { this._toast('時段格式：20-24（跨午夜寫 22-26，單一小時寫 20）'); return; }
+    await this.carRunSelf(rg.groups, 'open', this.carNo());
+    this.setState({ carRsHours: '' });
+  }
   async carSetMode(team) {
     const no = this.carNo(), st = (this.state.carStates || {})[no]; if (!st) return;
     team = !!team;
@@ -5284,6 +5315,11 @@ class Component extends DCLogic {
        每一列的跑者看 r.p1（沒有就退回車隊預設跑者）；只有車隊模式的管理員、而且不是跨日列，才能改 */
     const teamKnown = !!st && typeof st.team_mode === 'boolean', teamOn = teamKnown && st.team_mode === true;
     const runEdit = admin && teamOn && !xd;
+    /* 跑者自行報跑（車隊模式底下的選項；舊機器人沒有這個欄位 → 整組不顯示）：
+       管理員看到開關；登記過跑者倍率的成員看到「我來開車／取消報跑」與報跑輸入框 */
+    const selfKnown = teamKnown && typeof st.runner_self_signup === 'boolean', selfOn = selfKnown && teamOn && st.runner_self_signup === true;
+    const meRunner = !!(st && st.me_runner === true);
+    const runSelf = !admin && selfOn && meRunner && !xd;
     const rows = day ? (day.rows || []).map(r => {
       const rp = (r.p1 && typeof r.p1 === 'object' && r.p1.name != null && String(r.p1.name) !== '') ? r.p1 : null;
       const rCustom = !!(rp && rp.custom), rBonus = rp && +rp.bonus > 0 ? fmt(rp.bonus) : '';
@@ -5314,6 +5350,12 @@ class Component extends DCLogic {
       const noteParts = [];
       if (wl.length) noteParts.push('候補 ' + wl.join('、'));
       if (r.applicants) noteParts.push('報班 ' + r.applicants);
+      const rMine = !!(rp && rp.mine === true);
+      let rsShow = false, rsTxt = '', rsAct = '';
+      if (runSelf) {
+        if (rMine) { rsShow = true; rsAct = 'cancel'; rsTxt = '取消報跑'; }
+        else if (!rCustom && !my) { rsShow = true; rsAct = 'open'; rsTxt = '我來開車'; }
+      }
       let signShow = false, signTxt = '', signAct = '';
       if (!admin && !xd) {
         if (my) { signShow = true; signAct = 'cancel'; signTxt = my.seat ? '砍班' : (my.waitlist ? '取消候補' : '取消報班'); }
@@ -5328,7 +5370,8 @@ class Component extends DCLogic {
         rEdit: runEdit, rRo: !runEdit, rCur: runEdit ? 'pointer' : 'default', rTitle: '點一下指定這個時段的跑者',
         locked: !!r.locked, manual: !!r.manual, cells, filled,
         note: noteParts.join(' · ') || (myTxt ? '' : '—'), myTxt, hasMy: !!myTxt,
-        signShow, signTxt, signAct,
+        signShow: signShow && !rMine, signTxt, signAct,
+        rsShow, rsTxt, rsAct, rMine,
         lockShow: admin && !xd, lockTxt: r.locked ? '解鎖' : '鎖班', lockV: r.locked ? '0' : '1',
         unmarkShow: admin && !xd,
         wl: wl.map(n => ({ nm: n, drag: admin && !xd ? 'true' : 'false', h: '', d: day.date })), hasWl: wl.length > 0,
@@ -5483,7 +5526,16 @@ class Component extends DCLogic {
       /* 私車／車隊開關（管理員，班表分頁的工具列）；onCarMode 在下面的事件表 */
       carModeShow: admin && teamKnown,
       carModeSeg: [['solo', '私車'], ['team', '車隊']].map(([v, n]) => Object.assign({ v, n, sel: (teamOn ? 'team' : 'solo') === v ? 'true' : 'false' }, segOn((teamOn ? 'team' : 'solo') === v))),
-      carModeNote: '私車＝整隊固定一位跑者；車隊＝每個時段可以各自指定跑者（從成員池挑或直接打名字）。',
+      carModeNote: '私車＝整隊固定一位跑者；車隊＝每個時段可以各自指定跑者（從成員池挑或直接打名字）。'
+        + (selfKnown && teamOn ? (selfOn ? '已開放跑者自行報跑：登記過跑者倍率的成員可以自己開班（Discord r20-24、QQ /r 20-24、網頁「我來開車」）。' : '想讓跑者自己開班，打開右邊的「跑者自行報跑」。') : ''),
+      carRsAdmShow: admin && selfKnown && teamOn,
+      carRsAdmTxt: '跑者自行報跑：' + (selfOn ? '開' : '關'), carRsAdmV: selfOn ? '0' : '1', carRsAdmPressed: selfOn ? 'true' : 'false',
+      carRsAdmBg: selfOn ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'var(--card-2)', carRsAdmFg: selfOn ? 'var(--accent-deep)' : 'var(--text-2)',
+      carRsAdmBd: selfOn ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
+      carRsToolShow: runSelf, carRsHours: s.carRsHours || '',
+      carRsToolNote: '在下面選的日期開班，跑者就是你；跨午夜寫 22-26。已經開班、還沒有人開車的時段，直接按那一列的「我來開車」。',
+      carRsHintShow: !admin && selfOn && !meRunner && !xd,
+      carRsHint: '這個車隊開放跑者自行報跑。想開車先登記跑者倍率：Discord 打 %名字 r3.40，QQ 打 /登记 名字 r3.40，登記完重新整理就會出現「我來開車」。',
       /* 成員：工具列右邊再寫一次目前的模式（手機上最上面那一行會被截斷，看不到最後面的模式） */
       carModeTxt: teamKnown && !admin ? (teamOn ? '車隊模式' : '私車模式') : '',
       carModeTip: teamOn ? '車隊模式：每個時段可以各自指定跑者' : '私車模式：整隊固定一位跑者',
@@ -9445,7 +9497,7 @@ class Component extends DCLogic {
       isBot: s.page === 'bot',
       botHeroImg: './bot-img/hero.webp?v=' + this.BOT_IMG_VER,
       botStats: this.BOT_STATS, botFeatures: this.BOT_FEATURES, botSides: this.BOT_SIDES, botSteps: this.BOT_STEPS,
-      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上車隊模式、試算表同步、點歌與錄音。',
+      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上車隊模式、跑者自行報跑、試算表同步、點歌與錄音。',
       botSheets: this.BOT_SHEETS.map((g, i) => ({
         n: '卡面 ' + (i + 1), tone: g[1], alt: '菜根機器人指令清單，卡面 ' + (i + 1) + '（' + g[0] + '）',
         full: './bot-img/cmd-' + (i + 1) + '.webp?v=' + this.BOT_IMG_VER,
@@ -11305,6 +11357,10 @@ class Component extends DCLogic {
       onCarTagScope: e => this.setState({ carTagScope: e.currentTarget.dataset.v === 'member' ? 'member' : 'shift' }),
       onCarOpen: () => this.carSetOpen(),
       onCarMode: e => this.carSetMode(e.currentTarget.dataset.v === 'team'),
+      onCarRunSelfAdm: e => this.carSetRunSelf(e.currentTarget.dataset.v === '1'),
+      onCarRunSelfRow: e => this.carRunSelfRow(e.currentTarget),
+      onCarRunSelfTool: () => this.carRunSelfTool(),
+      onCarRunSelfKey: e => { if (e.key === 'Enter') this.carRunSelfTool(); },
       onCarLockDay: e => { const st = (this.state.carStates || {})[this.carNo()], day = this.carDayOf(st, this.state.carDate); const v = e.currentTarget.dataset.v === '1';
         if (!day) return; if (v && !window.confirm('鎖定這一天的全部時段？鎖班後成員不能再自己報班。')) return; this.carLock((day.rows || []).map(r => r.hour), v); },
       onCarLockRow: e => { const d = e.currentTarget.dataset; this.carLock([d.h], d.v === '1'); },
