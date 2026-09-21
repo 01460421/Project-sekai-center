@@ -30,6 +30,7 @@ OUT_FIX = ROOT / 'data' / 'fixtures-index.js'
 OUT_ST = ROOT / 'data' / 'stories-index.js'
 OUT_MST = ROOT / 'data' / 'mysekai-talks-index.js'
 OUT_BUILT = ROOT / 'data' / 'data-built.js'
+OUT_MSEV = ROOT / 'data' / 'mysekai-events.js'
 
 
 def get(url):
@@ -88,11 +89,17 @@ def build_lives():
             's': v.get('startAt') or 0, 'e': v.get('endAt') or 0,
             'sch': [base, dur, offs] if sch else None,
             'set': setlist, 'ch': chars,
+            'g': v.get('virtualLiveGroupId') or 0,   # 6.0 起:同一組（如五週年特別留言 26 場）合併顯示
         })
     rows.sort(key=lambda r: (-(r['s'] or 0), -r['id']))
-    body = 'export const LIVES=' + dump(rows) + ';\n'
+    try:
+        groups = [[g['id'], g.get('name') or '', g.get('startAt') or 0, g.get('endAt') or 0] for g in get(f'{TC}/virtualLiveGroups.json')]
+    except Exception:
+        groups = []
+    body = 'export const LIVES=' + dump(rows) + ';\nexport const LIVE_GROUPS=' + dump(groups) + ';\n'
     header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
-              ' 欄位:id 類型ty 名稱n 素材abn 期間s/e 場次sch=[起點,每場分鐘,各場分鐘偏移] 歌單set=[[曲id,曲名,封面素材名]] 出演ch=[角色id] */\n')
+              ' 欄位:id 類型ty 名稱n 素材abn 期間s/e 場次sch=[起點,每場分鐘,各場分鐘偏移] 歌單set=[[曲id,曲名,封面素材名]] 出演ch=[角色id] 群組g;'
+              ' LIVE_GROUPS=[[群組id,名稱,起,迄]] */\n')
     print(f'虛擬 Live:{len(rows)} 場（有場次 {sum(1 for r in rows if r["sch"])}、有歌單 {sum(1 for r in rows if r["set"])}）')
     return write_if_changed(OUT_LIVES, header, body)
 
@@ -112,6 +119,11 @@ def build_fixtures():
     for c in costs:
         cost_of.setdefault(c['mysekaiBlueprintId'], []).append((c.get('seq') or 0, c['mysekaiMaterialId'], c.get('quantity') or 0))
     tag_name = {t['id']: t for t in tags}
+    # 6.0 起的豆森生日派對家具:記派對 id,圖鑑上標「生日派對家具」
+    try:
+        bday_of = {x['mysekaiFixtureId']: x['birthdayPartyId'] for x in get(f'{TC}/birthdayPartyMysekaiFixtures.json')}
+    except Exception:
+        bday_of = {}
 
     rows, used_tags = [], set()
     for f in fx:
@@ -130,6 +142,7 @@ def build_fixtures():
             [c.get('colorCode') for c in (f.get('mysekaiFixtureAnotherColors') or []) if c.get('colorCode')],
             [[mid, qty] for _s, mid, qty in cost],
             f.get('mysekaiSettableSiteType') or '', 1 if f.get('isAssembled') else 0,
+            bday_of.get(f['id'], 0),
         ])
     rows.sort(key=lambda r: r[0])
     tag_rows = {t: [tag_name[t].get('name') or '', tag_name[t].get('mysekaiFixtureTagType') or 'none', tag_name[t].get('externalId') or 0]
@@ -142,7 +155,7 @@ def build_fixtures():
             'export const FIX_MATS=' + dump(mat_rows) + ';\n'
             'export const FIXTURES=' + dump(rows) + ';\n')
     header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
-              ' FIXTURES 欄位:[id, 名稱, 主分類id, 子分類id, 標籤id[], [寬,深,高], 素材名, 類型, 說明, 其他顏色[], 製作素材[[素材id,數量]], 可放置場所, 可製作] */\n')
+              ' FIXTURES 欄位:[id, 名稱, 主分類id, 子分類id, 標籤id[], [寬,深,高], 素材名, 類型, 說明, 其他顏色[], 製作素材[[素材id,數量]], 可放置場所, 可製作, 生日派對id(0=否)] */\n')
     print(f'家具:{len(rows)} 件（有製作素材 {sum(1 for r in rows if r[10])}、標籤 {len(tag_rows)} 條）')
     return write_if_changed(OUT_FIX, header, body)
 
@@ -264,6 +277,31 @@ def build_mysekai_talks():
 
 
 
+# ---------------------------------------------------------------- 豆森活動（6.0 起）
+def build_mysekai_events():
+    """data/mysekai-events.js：豆森生日派對（birthdayParties）與我的「世界」百景競賽（mysekaiHousingCompetitions）。
+    日曆、今日摘要與行事曆匯出用。台服沒有這兩張表時輸出空清單。"""
+    unit_chara = {u['id']: u['gameCharacterId'] for u in get(f'{TC}/gameCharacterUnits.json')}
+    rows = []
+    try:
+        for b in get(f'{TC}/birthdayParties.json'):
+            rows.append({'k': 'bday', 'id': b['id'], 'ch': unit_chara.get(b.get('gameCharacterUnitId')) or 0,
+                         's': b.get('startAt') or 0, 'e': b.get('closedAt') or 0, 'bs': b.get('birthdayStartAt') or 0})
+    except Exception:
+        pass
+    try:
+        for c in get(f'{TC}/mysekaiHousingCompetitions.json'):
+            rows.append({'k': 'contest', 'id': c['id'], 'n': c.get('name') or '', 'd': c.get('description') or '',
+                         's': c.get('submitStartAt') or 0, 'e': c.get('submitEndAt') or 0, 'agg': c.get('aggregateAt') or 0})
+    except Exception:
+        pass
+    rows.sort(key=lambda r: r['s'])
+    body = 'export const MS_EVENTS=' + dump(rows) + ';\n'
+    header = '/* 由 tools/build-db-index.py 產生,勿手改。豆森活動:k=bday(生日派對:ch 角色id、s/e 期間、bs 生日當天) 或 contest(百景競賽:n 名稱、d 說明、s/e 投稿期間、agg 結算) */\n'
+    print(f'豆森活動:{len(rows)} 筆')
+    return write_if_changed(OUT_MSEV, header, body)
+
+
 # ---------------------------------------------------------------- 資料日期
 def write_built(changed):
     """data/data-built.js：各索引檔最近一次「內容真的有變」的日期，圖鑑頁角落顯示「資料 9/18 更新」。
@@ -291,5 +329,6 @@ if __name__ == '__main__':
         'fixtures': build_fixtures(),
         'stories': build_stories(),
         'mst': build_mysekai_talks(),
+        'msev': build_mysekai_events(),
     }
     write_built(changed)
