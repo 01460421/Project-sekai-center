@@ -79,8 +79,20 @@ class Component extends DCLogic {
     ['World Link池', 'wl', 'WL 池'],
     ['World Link支援池', 'wl', 'WL 支援'],
     ['復刻限定池', 'rr', '復刻池'],
+    ['免費池', 'free', '免費池'],
+    ['禮物池', 'gift', '禮物池'],
+    ['新手池', 'nb', '新手池'],
     ['其他', 'ot', '其他']
   ];
+  /* 卡池表的「其他」太籠統：6.0 起有免費招募、歡樂禮物包（gift）、新手／回歸池，照名稱與備註分出來 */
+  gachaTone(g) {
+    if (g.t && g.t !== '其他') return g.t;
+    const h = (g.n || '') + ' ' + (g.note || '');
+    if (/免費/.test(h)) return '免費池';
+    if (/禮物包|禮物招募/.test(h)) return '禮物池';
+    if (/新手|回歸|邀請朋友/.test(h)) return '新手池';
+    return g.t || '其他';
+  }
   PAGES = {
     home:     ['首頁', '當期活動、遊戲通知、主要卡池與我的進度'],
     event:    ['活動總覽', '本期活動一頁看完：倒數、我的名次、榜線預測、當期卡池、加分卡與劇情'],
@@ -318,6 +330,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/21', t: '五週年（6.0）資料對應 II：卡池來源索引、卡池類型、取得即特訓的卡', s: '台服 master 從 6 月起只留近期卡池，卡片「能不能從卡池取得」改合併日服卡池明細來判斷，舊卡不再被標成活動卡；卡池類型分出「免費池」「禮物池」「新手池」（五週年的免費招募、歡樂禮物包、邀請朋友池），日曆圖例與篩選跟著多這三類；一拿到就是特訓後的卡（如 11/20 的「交織的境界」）在卡片圖鑑標示；活動總覽的加分卡標示「隊長+20」，有結局章節規則表的活動會列出規則。' },
     { d: '2026/09/20', t: 'WL 終章加成計算器', s: 'WL 後排加成頁支援終章了：選好主隊隊長的角色，支援隊會照終章規則重排（不限團體，與隊長同角色的卡多 5%，WL1 限定卡的 +20% 也只認隊長那一位）。同頁新增終章主隊試算：五格各自設定是不是 WL2 限定卡、稀有度與專精，再選隊內異色數與稱號，逐項列出角色 25%、WL2 限定最多 100%、稀有度與專精、異色、隊長 +20%、稱號 +50%，合計主隊、支援與總加成，並對照滿配上限 815%。規則逐項對過台服 master（第 180 期 9/25 開跑）。頁尾附終章須知：技能上限與玩偶綜合力上限直接讀 master（台服目前技能上限寫 +200%，等於不設限，日服當時是 +140%；玩偶上限 2%）、控分最低 125 pt、排名報酬角色的判定。跑榜工作室與首頁跑榜小窗的最佳化也套用終章規則：WL2 限定卡最多計 4 張、每一隊五個隊長人選各算一次（隊長 +20%、支援隊跟隊長角色走）、技能上限與玩偶上限照表套用，滿配綜合力約 36 萬。站內助手的支援加成工具同步支援終章，帶隊長角色就會照新規則算。' },
     { d: '2026/09/19', t: '側欄群組可摺疊', s: '側欄項目太多，改成點群組標題就能收起或展開；預設只展開主頁、帳號、常用與即時資料，其餘只留標題與數量，目前所在的頁在收起的群組裡仍會顯示。手機的「更多」面板同樣適用，摺疊狀態記在這台裝置。' },
     { d: '2026/09/19', t: '瀏覽器推播、行事曆訂閱源、每頁分享預覽圖', s: '我的帳號的偵測訂閱區多了「開啟瀏覽器推播」：條件成立或有人回覆時，就算沒開著網站也會跳系統通知（站方要先設定 VAPID 金鑰）；活動日曆多了「訂閱」，用 webcal 把活動與卡池訂進手機行事曆會自動更新；分享網址到社群時每一頁各有自己的大圖預覽。' },
@@ -494,7 +507,7 @@ class Component extends DCLogic {
     seenLog: (() => { try { return localStorage.getItem('sekai-seen-log') || ''; } catch (e) { return ''; } })(),
     homeCfg: false, homeCfgTab: 'layout',
     guide: null, guideHide: false,
-    toast: '', errBar: false, built: null, evCards: null,
+    toast: '', errBar: false, built: null, evCards: null, evRulesAll: null,
     visits: (() => { try { return JSON.parse(localStorage.getItem('sekai-visits') || '{}') || {}; } catch (e) { return {}; } })(),           // 全站提示（右下角短暫浮出）
     favs: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-fav') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
     calcPresets: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-calc-presets') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
@@ -762,7 +775,7 @@ class Component extends DCLogic {
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
     import('./data/sekai-data.js?v=8d2812dda5')
-      .then(m => this.setState({ gachas: m.GACHAS || [], dolls: m.DOLLS || [] }))
+      .then(m => this.setState({ gachas: (m.GACHAS || []).map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] }))
       .catch(() => {});
     /* ep-songs（95 KB）只有計算中心與進階計算用得到，go() 進那兩頁時會載，
        不必在首頁啟動就抓。教學資料（26 KB）只供頁面底部的提示條與教學頁，
@@ -2063,7 +2076,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=60be3363aa';
+      s.src = 'data/billing.js?v=bd7620c82d';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2276,7 +2289,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=f6ae73ca57').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=09805f9772').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -6916,7 +6929,7 @@ class Component extends DCLogic {
     if (this.state.rateLoad || this.state.rateCards.length) return;
     this.setState({ rateLoad: true, rateErr: '' });
     try {
-      const m = await import('./data/cards-index.js?v=2ae280b4ad');
+      const m = await import('./data/cards-index.js?v=69f0356006');
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -7198,7 +7211,11 @@ class Component extends DCLogic {
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
     if (this.state.evCards || this._evCardsP) return;
-    this._evCardsP = this.dbGet('eventCards').then(list => this.setState({ evCards: (list || []).map(x => [x.eventId, x.cardId, x.bonusRate]) })).catch(() => this.setState({ evCards: [] }));
+    this._evCardsP = this.dbGet('eventCards').then(list => this.setState({ evCards: (list || []).map(x => [x.eventId, x.cardId, x.bonusRate, x.leaderBonusRate || 0]) })).catch(() => this.setState({ evCards: [] }));
+    // 6.0 規則表（結局章節）:四張小表一起抓;沒有就空陣列
+    const small = n => this.dbGet(n).catch(() => []);
+    Promise.all([small('eventCardBonusLimits'), small('eventSkillScoreUpLimits'), small('eventHonorBonuses'), small('eventMysekaiFixtureGameCharacterPerformanceBonusLimits')])
+      .then(([lim, sk, hon, fx]) => this.setState({ evRulesAll: { lim: lim || [], sk: sk || [], hon: hon || [], fx: fx || [] } })).catch(() => this.setState({ evRulesAll: { lim: [], sk: [], hon: [], fx: [] } }));
   }
   /* 活動總覽頁的畫面資料：倒數等 hero 值在 renderVals 本來就算好，這裡只補榜線、卡池、加分卡、劇情 */
   evVals(s) {
@@ -7219,8 +7236,21 @@ class Component extends DCLogic {
     out.evGachas = gs; out.evHasGachas = gs.length > 0;
     const cards = s.rateCards || [], byId = {}; cards.forEach(r => { byId[r[0]] = r; });
     const bonus = (s.evCards || []).filter(x => String(x[0]) === id);
-    out.evBonus = bonus.map(x => { const r = byId[x[1]]; return r ? { id: r[0], name: r[7], img: this.cardImg(r[8], r[2]), rate: '+' + x[2] + '%', ch: this.charShort(r[1]) || '', rateN: +x[2] || 0 } : null; }).filter(Boolean).sort((a, b) => b.rateN - a.rateN).slice(0, 40);
+    out.evBonus = bonus.map(x => { const r = byId[x[1]]; return r ? { id: r[0], name: r[7], img: this.cardImg(r[8], r[2]), rate: '+' + x[2] + '%' + (x[3] ? '（隊長+' + x[3] + '）' : ''), ch: this.charShort(r[1]) || '', rateN: +x[2] || 0 } : null; }).filter(Boolean).sort((a, b) => b.rateN - a.rateN).slice(0, 40);
     out.evHasBonus = out.evBonus.length > 0; out.evBonusLoad = !s.evCards || !cards.length; out.evBonusN = bonus.length ? bonus.length + ' 張' : '';
+    // 6.0 規則（結局章節）:有規則表才顯示。技能上限照表：台服 300＝+200%（等於不設限）、日服 240
+    const R = s.evRulesAll || null, eid = +id;
+    out.evRulesText = '';
+    if (R) {
+      const L = R.lim.find(x => x.eventId === eid), S = R.sk.find(x => x.eventId === eid), F = R.fx.find(x => x.eventId === eid), H = R.hon.filter(x => x.eventId === eid);
+      const t = [];
+      if (L) t.push('特效卡只計前 ' + L.memberCountLimit + ' 張');
+      if (bonus.some(x => x[3])) t.push('當期卡當隊長另 +' + Math.max.apply(null, bonus.map(x => x[3] || 0)) + '%');
+      if (H.length) t.push('持有指定稱號且該角色當隊長 +' + Math.max.apply(null, H.map(x => x.bonusRate || 0)) + '%（' + H.length + ' 種稱號）');
+      if (S) t.push('單張卡技能倍率上限 ' + S.scoreUpRateLimit + '%' + (S.scoreUpRateLimit >= 300 ? '（等於不設限）' : ''));
+      if (F) t.push('豆森玩偶加成上限 ' + (F.bonusRateLimit / 10) + '%');
+      if (L || S || F || H.length) out.evRulesText = '結局章節規則：' + t.join('、') + '。WL 後排加成頁與進階計算已照這些規則試算。';
+    }
     const st = (s.stories && s.stories.events) ? s.stories.events.find(e => String(e[0]) === id) : null;
     out.evHasStory = !!st; out.evStoryN = st ? st[4].length + ' 話' : ''; out.evStoryOutline = st ? (st[3] || '') : '';
     out.evStoryPatch = JSON.stringify({ stTab: 'event', stEvent: +id, dbq: '' });
@@ -7372,7 +7402,7 @@ class Component extends DCLogic {
         const related = relG.map(g => ({ n: '卡池：' + g.n, p: 'gacha', patch: { gq: g.n, gp: 1, gt: '' } }))
           .concat([{ n: '卡片劇情', p: 'story', patch: { stTab: 'card', stChar: r[1], dbq: r[7] } }, { n: '角色：' + ch[1], p: 'chars', patch: { dbPick: { kind: 'char', id: r[1] } } }]);
         view = { related, title: r[7], sub: ch[1] + ' · ' + (RAR[r[2]] || '') + ' · #' + r[0], img: this.cardImg(r[8], r[2]), imgRatio: '1/1', wide: true,
-          chips: [{ n: ATTR[r[3]] ? ATTR[r[3]][1] : '', bg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888' }, { n: this.SUPPLYN[r[4]] || '', bg: 'var(--accent-deep)' }, { n: r[6] ? '卡池可得' : '非卡池（活動報酬等）', bg: 'var(--text-3)' }].concat(su ? [{ n: '支援團 ' + su.n, bg: su.c }] : []).filter(x => x.n),
+          chips: [{ n: ATTR[r[3]] ? ATTR[r[3]][1] : '', bg: ATTR[r[3]] ? ATTR[r[3]][2] : '#888' }, { n: this.SUPPLYN[r[4]] || '', bg: 'var(--accent-deep)' }, { n: r[6] ? '卡池可得' : '非卡池（活動報酬等）', bg: 'var(--text-3)' }].concat(su ? [{ n: '支援團 ' + su.n, bg: su.c }] : []).concat(r[10] === 1 ? [{ n: '取得即特訓後', bg: '#c2185b' }] : []).filter(x => x.n),
           rows: ex ? [['釋出日', ex[1] ? this.dbDate(ex[1] * 1000) : ''],
             ['滿等綜合力', this.n(tot) + (bonus ? '（特訓後 ' + this.n(tot + bonus) + '）' : '')],
             ['表演／技巧／體力', this.n(ex[2]) + ' / ' + this.n(ex[3]) + ' / ' + this.n(ex[4]) + (bonus ? '（特訓 +' + ex[5] + ' / +' + ex[6] + ' / +' + ex[7] + '）' : '')],

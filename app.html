@@ -54,7 +54,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 --sh-sm:0 1px 2px rgba(31,42,80,.04),0 4px 14px rgba(31,42,80,.06);
 --sh-md:0 2px 6px rgba(31,42,80,.06),0 12px 32px rgba(31,42,80,.11);
 --sh-lg:0 8px 20px rgba(31,42,80,.10),0 28px 70px rgba(31,42,80,.2);
---fes-bg:#fff3d4;--fes-fg:#b07500;--lim-bg:#ffe4ec;--lim-fg:#d6336c;
+--fes-bg:#fff3d4;--fes-fg:#b07500;--lim-bg:#ffe4ec;--lim-fg:#d6336c;--free-bg:#e3f6ea;--free-fg:#1b7f45;--gift-bg:#fde7f0;--gift-fg:#c2185b;--nb-bg:#e8f1ff;--nb-fg:#2a5db0;
 --paid-bg:#fdf7d8;--paid-fg:#9c8300;--bd-bg:#f3e8ff;--bd-fg:#9c53d6;
 --rr-bg:#ffe3de;--rr-fg:#d64533;--wl-bg:#def0ff;--wl-fg:#2277cc;
 --nm-bg:#def5e6;--nm-fg:#2f9e57;--ot-bg:#edf0f7;--ot-fg:#5d6884;
@@ -77,7 +77,7 @@ color-scheme:dark;
 --grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
 --sh-xs:0 1px 2px rgba(0,0,0,.25);--sh-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
 --sh-md:0 2px 6px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35);--sh-lg:0 8px 20px rgba(0,0,0,.35),0 28px 70px rgba(0,0,0,.5);
---fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;
+--fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;--free-bg:#0f2f22;--free-fg:#5fd59a;--gift-bg:#3a1226;--gift-fg:#ff8fc0;--nb-bg:#0e2340;--nb-fg:#7cb8ff;
 --paid-bg:#332d08;--paid-fg:#ffe066;--bd-bg:#2a1440;--bd-fg:#d0a5ff;
 --rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
@@ -93,7 +93,7 @@ color-scheme:dark;
 --grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
 --sh-xs:0 1px 2px rgba(0,0,0,.25);--sh-sm:0 1px 2px rgba(0,0,0,.2),0 4px 14px rgba(0,0,0,.25);
 --sh-md:0 2px 6px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35);--sh-lg:0 8px 20px rgba(0,0,0,.35),0 28px 70px rgba(0,0,0,.5);
---fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;
+--fes-bg:#33270a;--fes-fg:#ffd15c;--lim-bg:#3a1220;--lim-fg:#ff8fb5;--free-bg:#0f2f22;--free-fg:#5fd59a;--gift-bg:#3a1226;--gift-fg:#ff8fc0;--nb-bg:#0e2340;--nb-fg:#7cb8ff;
 --paid-bg:#332d08;--paid-fg:#ffe066;--bd-bg:#2a1440;--bd-fg:#d0a5ff;
 --rr-bg:#3a1510;--rr-fg:#ff9d8a;--wl-bg:#0d2440;--wl-fg:#7cc0ff;
 --nm-bg:#0d2e1a;--nm-fg:#69dd95;--ot-bg:#1d2338;--ot-fg:#9aa5c5;
@@ -841,6 +841,7 @@ select option, select optgroup{
       <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span><span style="font-size:15px;font-weight:800;color:var(--ink)">加分卡 <span style="font-size:11.5px;color:var(--text-3);font-weight:700">{{ evBonusN }}</span></span></div>
+        <sc-if value="{{ evRulesText }}"><div style="margin:-4px 0 10px;padding:9px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,transparent);font-size:12px;color:var(--text-2);line-height:1.7">{{ evRulesText }}</div></sc-if>
           <button type="button" onClick="{{ onGo }}" data-p="bonuscards" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">完整參考</button>
         </div>
         <sc-if value="{{ evBonusLoad }}"><div style="font-size:12px;color:var(--text-3)">載入加分卡…</div></sc-if>
@@ -7173,7 +7174,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=2c7dc7a9f3"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=0cb66178a3"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
