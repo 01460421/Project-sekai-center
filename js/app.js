@@ -84,6 +84,7 @@ class Component extends DCLogic {
     ['新手池', 'nb', '新手池'],
     ['豆森活動', 'ms', '豆森'],
     ['應援活動', 'sup', '應援'],
+    ['選角池', 'sel', '選角池'],
     ['其他', 'ot', '其他']
   ];
   /* 卡池表的「其他」太籠統：6.0 起有免費招募、歡樂禮物包（gift）、新手／回歸池，照名稱與備註分出來 */
@@ -93,6 +94,7 @@ class Component extends DCLogic {
     if (/免費/.test(h)) return '免費池';
     if (/禮物包|禮物招募/.test(h)) return '禮物池';
     if (/新手|回歸|邀請朋友/.test(h)) return '新手池';
+    if (/選角|自選角色|セレクトキャラクター/.test(h)) return '選角池';   // 5.5 週年（日服 6.4）：自選角色的招募，抽到該角色另有氣球可換
     return g.t || '其他';
   }
   PAGES = {
@@ -332,6 +334,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/21', t: '6.4（WL3・5.5 週年）資料對應', s: '日服 6.4 起的 World Link 第三輪每期有「總合力上限 336,000」（master 新表 eventTotalPowerLimits）：跑榜工作室的最佳化與活動總覽的規則文字改成讀這張表，台服 6.4 一到就會自動套用；WL3 支援池的「自選二段卡」機率（0.2%）加進抽卡天井目標；5.5 週年的自選角色招募在卡池類型分出「選角池」。' },
     { d: '2026/09/21', t: '應援活動（應援季）', s: '台服 master 的應援活動表（歷來 8 回，最近一回 2026/2/15–2/25）進了活動日曆、今日摘要與 .ics 匯出；計算中心新增「應援活動」分頁：選 Live 種類、火數與評價，填每天場數與目前點數，算每場／每天應援點數、到下一段獎勵與「值得刷到」那一段還要幾場、幾天，並列出整份個人獎勵表（六團只差稱號）與全體得分獎勵；下一回的期程進 master 後會自動更新。' },
     { d: '2026/09/21', t: '五週年（6.0）資料對應 IV：邊框、收藏 BOX、免持有藍圖', s: '收集室多了「邊框」（WL 結局章節 TOP100 起的玩家邊框，52 個，依角色）與「收藏 BOX」（歷年連線 Live 商品復刻商店，11 間）；6.0 起有「不用持有藍圖也能做」的家具，豆森對話的「還缺家具」不再把它算進去，家具圖鑑也會標示。' },
     { d: '2026/09/21', t: '五週年（6.0）資料對應 III：特別留言 Live 合併、豆森生日派對與百景競賽', s: '虛擬 Live 圖鑑把同一組的場次（五週年 Special Message 26 場）合併成一列，點開看各場；豆森的角色生日派對（10/1 遙、10/23 穗波）與我的「世界」百景競賽（含 9/17 中秋）進了活動日曆、今日摘要與 .ics 匯出，生日派對專屬家具在家具圖鑑有標籤。' },
@@ -2060,7 +2063,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=cfddee5db9';
+      el.src = './js/core.js?v=679c44cc63';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -7266,8 +7269,9 @@ class Component extends DCLogic {
     this._evCardsP = this.dbGet('eventCards').then(list => this.setState({ evCards: (list || []).map(x => [x.eventId, x.cardId, x.bonusRate, x.leaderBonusRate || 0]) })).catch(() => this.setState({ evCards: [] }));
     // 6.0 規則表（結局章節）:四張小表一起抓;沒有就空陣列
     const small = n => this.dbGet(n).catch(() => []);
-    Promise.all([small('eventCardBonusLimits'), small('eventSkillScoreUpLimits'), small('eventHonorBonuses'), small('eventMysekaiFixtureGameCharacterPerformanceBonusLimits')])
-      .then(([lim, sk, hon, fx]) => this.setState({ evRulesAll: { lim: lim || [], sk: sk || [], hon: hon || [], fx: fx || [] } })).catch(() => this.setState({ evRulesAll: { lim: [], sk: [], hon: [], fx: [] } }));
+    // 6.4（WL3）多一張 eventTotalPowerLimits：總合力上限
+    Promise.all([small('eventCardBonusLimits'), small('eventSkillScoreUpLimits'), small('eventHonorBonuses'), small('eventMysekaiFixtureGameCharacterPerformanceBonusLimits'), small('eventTotalPowerLimits')])
+      .then(([lim, sk, hon, fx, tp]) => this.setState({ evRulesAll: { lim: lim || [], sk: sk || [], hon: hon || [], fx: fx || [], tp: tp || [] } })).catch(() => this.setState({ evRulesAll: { lim: [], sk: [], hon: [], fx: [], tp: [] } }));
   }
   /* 活動總覽頁的畫面資料：倒數等 hero 值在 renderVals 本來就算好，這裡只補榜線、卡池、加分卡、劇情 */
   evVals(s) {
@@ -7294,14 +7298,15 @@ class Component extends DCLogic {
     const R = s.evRulesAll || null, eid = +id;
     out.evRulesText = '';
     if (R) {
-      const L = R.lim.find(x => x.eventId === eid), S = R.sk.find(x => x.eventId === eid), F = R.fx.find(x => x.eventId === eid), H = R.hon.filter(x => x.eventId === eid);
+      const L = R.lim.find(x => x.eventId === eid), S = R.sk.find(x => x.eventId === eid), F = R.fx.find(x => x.eventId === eid), H = R.hon.filter(x => x.eventId === eid), P = (R.tp || []).find(x => x.eventId === eid);
       const t = [];
+      if (P && P.upperTotalPower) t.push('總合力上限 ' + this.n(P.upperTotalPower) + '（超過不計分）');
       if (L) t.push('特效卡只計前 ' + L.memberCountLimit + ' 張');
       if (bonus.some(x => x[3])) t.push('當期卡當隊長另 +' + Math.max.apply(null, bonus.map(x => x[3] || 0)) + '%');
       if (H.length) t.push('持有指定稱號且該角色當隊長 +' + Math.max.apply(null, H.map(x => x.bonusRate || 0)) + '%（' + H.length + ' 種稱號）');
       if (S) t.push('單張卡技能倍率上限 ' + S.scoreUpRateLimit + '%' + (S.scoreUpRateLimit >= 300 ? '（等於不設限）' : ''));
       if (F) t.push('豆森玩偶加成上限 ' + (F.bonusRateLimit / 10) + '%');
-      if (L || S || F || H.length) out.evRulesText = '結局章節規則：' + t.join('、') + '。WL 後排加成頁與進階計算已照這些規則試算。';
+      if (L || S || F || H.length || P) out.evRulesText = (P && !(L || S || F || H.length) ? 'WL3 規則：' : '結局章節規則：') + t.join('、') + '。WL 後排加成頁與進階計算已照這些規則試算。';
     }
     const st = (s.stories && s.stories.events) ? s.stories.events.find(e => String(e[0]) === id) : null;
     out.evHasStory = !!st; out.evStoryN = st ? st[4].length + ' 話' : ''; out.evStoryOutline = st ? (st[3] || '') : '';
@@ -11443,7 +11448,8 @@ class Component extends DCLogic {
       showGcTarget: s.ctab === 'gacha',
       gcTargets: [
         { v: '0.004', n: '指定 PU 4★（0.4%）' }, { v: '0.03', n: '任一 4★・一般池（3%）' },
-        { v: '0.06', n: '任一 4★・Fes 池（6%）' }, { v: '0.03b', n: '生日限定卡（3%）' }
+        { v: '0.06', n: '任一 4★・Fes 池（6%）' }, { v: '0.03b', n: '生日限定卡（3%）' },
+        { v: '0.002', n: '自選二段卡・WL 支援池（0.2%）' }
       ].map(t => Object.assign({}, t, chip(s.gcT === t.v, 'var(--ink-grad)'))),
       resultLabel, resultValue, resultSub, resultStats,
       hasBoostTable: s.ctab === 'ep', boostTable,
