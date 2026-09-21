@@ -82,6 +82,7 @@ class Component extends DCLogic {
     ['免費池', 'free', '免費池'],
     ['禮物池', 'gift', '禮物池'],
     ['新手池', 'nb', '新手池'],
+    ['豆森活動', 'ms', '豆森'],
     ['其他', 'ot', '其他']
   ];
   /* 卡池表的「其他」太籠統：6.0 起有免費招募、歡樂禮物包（gift）、新手／回歸池，照名稱與備註分出來 */
@@ -330,6 +331,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/21', t: '五週年（6.0）資料對應 III：特別留言 Live 合併、豆森生日派對與百景競賽', s: '虛擬 Live 圖鑑把同一組的場次（五週年 Special Message 26 場）合併成一列，點開看各場；豆森的角色生日派對（10/1 遙、10/23 穗波）與我的「世界」百景競賽（含 9/17 中秋）進了活動日曆、今日摘要與 .ics 匯出，生日派對專屬家具在家具圖鑑有標籤。' },
     { d: '2026/09/21', t: '五週年（6.0）資料對應 II：卡池來源索引、卡池類型、取得即特訓的卡', s: '台服 master 從 6 月起只留近期卡池，卡片「能不能從卡池取得」改合併日服卡池明細來判斷，舊卡不再被標成活動卡；卡池類型分出「免費池」「禮物池」「新手池」（五週年的免費招募、歡樂禮物包、邀請朋友池），日曆圖例與篩選跟著多這三類；一拿到就是特訓後的卡（如 11/20 的「交織的境界」）在卡片圖鑑標示；活動總覽的加分卡標示「隊長+20」，有結局章節規則表的活動會列出規則。' },
     { d: '2026/09/20', t: 'WL 終章加成計算器', s: 'WL 後排加成頁支援終章了：選好主隊隊長的角色，支援隊會照終章規則重排（不限團體，與隊長同角色的卡多 5%，WL1 限定卡的 +20% 也只認隊長那一位）。同頁新增終章主隊試算：五格各自設定是不是 WL2 限定卡、稀有度與專精，再選隊內異色數與稱號，逐項列出角色 25%、WL2 限定最多 100%、稀有度與專精、異色、隊長 +20%、稱號 +50%，合計主隊、支援與總加成，並對照滿配上限 815%。規則逐項對過台服 master（第 180 期 9/25 開跑）。頁尾附終章須知：技能上限與玩偶綜合力上限直接讀 master（台服目前技能上限寫 +200%，等於不設限，日服當時是 +140%；玩偶上限 2%）、控分最低 125 pt、排名報酬角色的判定。跑榜工作室與首頁跑榜小窗的最佳化也套用終章規則：WL2 限定卡最多計 4 張、每一隊五個隊長人選各算一次（隊長 +20%、支援隊跟隊長角色走）、技能上限與玩偶上限照表套用，滿配綜合力約 36 萬。站內助手的支援加成工具同步支援終章，帶隊長角色就會照新規則算。' },
     { d: '2026/09/19', t: '側欄群組可摺疊', s: '側欄項目太多，改成點群組標題就能收起或展開；預設只展開主頁、帳號、常用與即時資料，其餘只留標題與數量，目前所在的頁在收起的群組裡仍會顯示。手機的「更多」面板同樣適用，摺疊狀態記在這台裝置。' },
@@ -1211,6 +1213,11 @@ class Component extends DCLogic {
       if (a.getTime() <= now && now - a.getTime() < 86400000) today.push(g); });
     soon.sort((x, y) => x.left - y.left).slice(0, 3).forEach(({ g, left }) => rows.push({ ic: '卡池', t: '卡池「' + g.n + '」' + (left <= 24 * 3600000 ? '今天結束' : '明天結束'), s: '剩 ' + this.dur(left), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
     today.slice(0, 3).forEach(g => rows.push({ ic: '卡池', t: '卡池「' + g.n + '」今天開始', s: '到 ' + this.md(this.pd(g.e)), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
+    (s.msEvents || []).forEach(x => {
+      if (!(x.s && x.e)) return;
+      if (now >= x.s && now <= x.e) rows.push({ ic: x.k === 'bday' ? '🎂' : '🏠', t: this.msEventName(x) + '進行中', s: '到 ' + this.md(new Date(x.e)) + (x.k === 'bday' ? '，生日當天 ' + this.md(new Date(x.bs || x.s)) : '，投稿截止後結算'), p: 'calendar', patchJson: '{}' });
+      else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: x.k === 'bday' ? '🎂' : '🏠', t: this.msEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' });
+    });
     const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const newsN = (s.news || []).filter(x => x.s >= dayStart && x.s <= now).length;
     if (newsN) rows.push({ ic: '公告', t: '今天有 ' + newsN + ' 則遊戲公告', s: '點開看全部', p: 'news', patchJson: '{}' });
@@ -7194,10 +7201,15 @@ class Component extends DCLogic {
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
-      const m = await import('./data/fixtures-index.js?v=b2b014c145');
+      const m = await import('./data/fixtures-index.js?v=5308e4381a');
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
+  /* 豆森活動（生日派對、百景競賽）：日曆、今日摘要、行事曆匯出用 */
+  loadMsEvents() {
+    return this.dbRun('msEvents', async () => { const m = await import('./data/mysekai-events.js?v=0eacf155fc'); return m.MS_EVENTS || []; });
+  }
+  msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   loadMst() {
     return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=e2aa0e8a26'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
   }
@@ -7206,7 +7218,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = import('./data/data-built.js?v=6b37db81ab').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = import('./data/data-built.js?v=3a6a1faaab').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
@@ -7287,7 +7299,7 @@ class Component extends DCLogic {
     });
   }
   loadLives() {
-    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=96c8236dfd'); return m.LIVES || []; });
+    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=f5e0a9cbec'); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
   }
   loadNews() {
     return this.dbRun('news', async () => {
@@ -7344,7 +7356,7 @@ class Component extends DCLogic {
     const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
     return { related: [{ n: '會觸發的角色對話', p: 'mstalk', patch: { mstView: 'fix', dbq: r[1] } }],
       title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: this.fixImg(r), imgRatio: '1/1', wide: false,
-      chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]),
+      chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]).concat(r[13] ? [{ n: '生日派對家具', bg: '#e0508a' }] : []),
       rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
       list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.webp' : '', hasImg: !!m[1] }; }),
       listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
@@ -7644,6 +7656,13 @@ class Component extends DCLogic {
       const stat = x => x.s > now ? 'up' : (x.e && x.e < now) ? 'end' : 'on';
       const ST = { on: ['進行中', '#3ec49a'], up: ['即將開始', '#e0a800'], end: ['已結束', '#8b93ac'] };
       let all = d || [];
+      // 6.0 起同一組的 Live（五週年特別留言 26 場）合併成一列，id 用負的群組 id；搜尋時仍逐場找
+      const G = this._liveGroups || [];
+      if (G.length && !q) {
+        const byG = {}; all.forEach(x => { if (x.g) (byG[x.g] = byG[x.g] || []).push(x); });
+        all = all.filter(x => !x.g).concat(G.filter(g => byG[g[0]]).map(g => { const ms = byG[g[0]]; return { id: -g[0], grp: g[0], ty: ms[0].ty, n: g[1] + '（' + ms.length + ' 場）', abn: ms[0].abn, s: g[2] || Math.min.apply(null, ms.map(x => x.s)), e: g[3] || Math.max.apply(null, ms.map(x => x.e)), sch: null, set: [], ch: [...new Set([].concat.apply([], ms.map(x => x.ch)))], members: ms }; }));
+        all.sort((a, b) => ((b.s || 0) - (a.s || 0)) || (b.id - a.id));
+      }
       if (s.liveType) all = all.filter(x => x.ty === s.liveType);
       if (s.liveStat) all = all.filter(x => stat(x) === s.liveStat);
       if (q) all = all.filter(x => hit(x.n, x.set.map(y => y[1]).join(' ')));
@@ -7655,8 +7674,15 @@ class Component extends DCLogic {
       out.liveRows = page(all, 24).map(x => ({ id: x.id, name: x.n, img: banner(x), type: (TY[x.ty] || [x.ty])[0], typeBg: (TY[x.ty] || ['', '#888'])[1], typeFg: this.fgOn((TY[x.ty] || ['', '#888'])[1]),
         stat: ST[stat(x)][0], statBg: ST[stat(x)][1], statFg: this.fgOn(ST[stat(x)][1]), period: this.dbDate(x.s) + ' ～ ' + this.dbDate(x.e),
         meta: [x.sch ? x.sch[2].length + ' 場' : '', x.set.length ? x.set.length + ' 首' : '', x.ch.length ? x.ch.map(c => this.charShort(c)).filter(Boolean).slice(0, 6).join('・') : ''].filter(Boolean).join(' · ') }));
-      const x = d && pick('live') != null ? d.find(y => y.id === pick('live')) : null;
-      if (x) {
+      const pk = pick('live');
+      const x = d && pk != null ? (pk < 0 ? all.find(y => y.id === pk) : d.find(y => y.id === pk)) : null;
+      if (x && x.members) {
+        view = { title: x.n, sub: this.dbDate(x.s, true) + ' ～ ' + this.dbDate(x.e, true), img: banner(x), imgRatio: '16/7', wide: true,
+          chips: [{ n: (TY[x.ty] || [x.ty])[0], bg: (TY[x.ty] || ['', '#888'])[1] }, { n: ST[stat(x)][0], bg: ST[stat(x)][1] }],
+          rows: [['場次', x.members.length + ' 場'], ['期間', this.dbDate(x.s, true) + ' ～ ' + this.dbDate(x.e, true)]], text: '',
+          list: x.members.map(m => ({ id: m.id, name: m.n, sub: this.dbDate(m.s) + (m.ch.length ? ' · ' + m.ch.map(c => this.charShort(c)).filter(Boolean).join('・') : ''), img: banner(m), hasImg: true })),
+          listTitle: '各場（' + x.members.length + '）', listGrid: false, colors: [] };
+      } else if (x) {
         const sched = x.sch ? x.sch[2].map(o => x.sch[0] + o * 60000) : [];
         const next = sched.find(t => t + (x.sch ? x.sch[1] : 0) * 60000 > now);
         view = { title: x.n, sub: this.dbDate(x.s, true) + ' ～ ' + this.dbDate(x.e, true), img: banner(x), imgRatio: '16/7', wide: true,
@@ -8106,6 +8132,7 @@ class Component extends DCLogic {
     }
     if (p === 'event') { this.loadStories(); this.loadCards(); this.loadEventCards(); }
     if (p === 'favs') { this.loadMst(); this.loadFixtures(); }
+    if (p === 'calendar' || p === 'home' || p === 'favs') this.loadMsEvents();
     this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
@@ -8413,13 +8440,22 @@ class Component extends DCLogic {
   }
   eventsOn(d) {
     const t = d.getTime();
-    return (this.state.gachas || []).filter(g => {
+    const list = (this.state.gachas || []).filter(g => {
       const a = this.pd(g.s), b = this.pd(g.e);
       return a && b && t >= a.getTime() && t <= b.getTime() + 86399000;
     }).map(g => {
       const tn = this.tone(g.t);
       return { n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—', chSd: this.chSdList(g.ch), note: g.note || '', range: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)) };
     });
+    // 豆森活動（生日派對／百景競賽）：整天事件，跟卡池排在一起
+    const tn = this.tone('豆森活動');
+    (this.state.msEvents || []).forEach(x => {
+      if (!(x.s && x.e && t + 86399000 >= x.s && t <= x.e)) return;
+      list.unshift({ n: this.msEventName(x), t: tn.label, bg: tn.bg, fg: tn.fg, ch: x.k === 'bday' ? (this.charShort(x.ch) || '') : '', chSd: x.k === 'bday' ? this.chSdList(this.charShort(x.ch) || '') : [],
+        note: x.k === 'bday' ? ('生日當天 ' + this.md(new Date(x.bs || x.s)) + '，派對期間可做專屬家具與配送') : (x.d || '') + (x.agg ? '（結算 ' + this.md(new Date(x.agg)) + '）' : ''),
+        range: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.e)) });
+    });
+    return list;
   }
 
   /* ---------- 列表 ---------- */
@@ -12213,6 +12249,7 @@ class Component extends DCLogic {
       onIcsEvent: () => { const it = this.icsEventItem(); this.icsDownload(it ? ('sekai-event-' + it.uid.replace('event-', '')) : 'sekai-event', it ? [it] : []); },
       onIcsMonth: () => { const y = this.state.calY, m = this.state.calM, a = new Date(y, m, 1).getTime(), b = new Date(y, m + 1, 1).getTime();
         const items = this.icsGachaItems(g => this.pd(g.e).getTime() + 86400000 > a && this.pd(g.s).getTime() < b);
+        (this.state.msEvents || []).filter(x => x.s && x.e && x.e > a && x.s < b).forEach(x => items.push({ uid: 'ms-' + x.k + '-' + x.id, allDay: true, title: '豆森：' + this.msEventName(x), start: x.s, end: x.e + 1, desc: x.k === 'bday' ? '生日當天 ' + new Date(x.bs || x.s).toLocaleDateString('zh-TW') : (x.d || ''), url: 'https://project-sekai-center.com/app.html?page=calendar' }));
         const ev = this.icsEventItem(); if (ev && ev.end > a && ev.start < b) items.unshift(ev);
         this.icsDownload('sekai-' + y + '-' + String(m + 1).padStart(2, '0'), items); },
       onQaTpl: () => { const t = this.QA_TPL[this.state.qaKind]; if (!t) return; if (this.state.qaBody && !window.confirm('內容會被範本取代，確定？')) return; this.setState({ qaBody: t }); },
