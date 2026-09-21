@@ -3100,7 +3100,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const b = document.getElementById('pwBreak');
                 if (b) b.textContent = `基礎表現力 ${sumBase.toLocaleString()}（每張≈${Math.round(sumBase / (per.length || 5)).toLocaleString()}，含前後篇 ${sumEpi.toLocaleString()}、畫布 ${sumCanvas.toLocaleString()}） ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()}`;
                 const note = document.getElementById('pwNote');
-                if (note) note.textContent = `area item 可選到 Lv20(5週年;台服目前 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
+                if (note) note.textContent = `area item 可選到 Lv20(日服已到 Lv20;台服 6.0 仍是 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
             },
             powerToScore() {
                 const e = document.getElementById('scPower'); if (e) e.value = this._lastPower || 0;
