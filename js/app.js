@@ -331,6 +331,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/21', t: '五週年（6.0）資料對應 IV：邊框、收藏 BOX、免持有藍圖', s: '收集室多了「邊框」（WL 結局章節 TOP100 起的玩家邊框，52 個，依角色）與「收藏 BOX」（歷年連線 Live 商品復刻商店，11 間）；6.0 起有「不用持有藍圖也能做」的家具，豆森對話的「還缺家具」不再把它算進去，家具圖鑑也會標示。' },
     { d: '2026/09/21', t: '五週年（6.0）資料對應 III：特別留言 Live 合併、豆森生日派對與百景競賽', s: '虛擬 Live 圖鑑把同一組的場次（五週年 Special Message 26 場）合併成一列，點開看各場；豆森的角色生日派對（10/1 遙、10/23 穗波）與我的「世界」百景競賽（含 9/17 中秋）進了活動日曆、今日摘要與 .ics 匯出，生日派對專屬家具在家具圖鑑有標籤。' },
     { d: '2026/09/21', t: '五週年（6.0）資料對應 II：卡池來源索引、卡池類型、取得即特訓的卡', s: '台服 master 從 6 月起只留近期卡池，卡片「能不能從卡池取得」改合併日服卡池明細來判斷，舊卡不再被標成活動卡；卡池類型分出「免費池」「禮物池」「新手池」（五週年的免費招募、歡樂禮物包、邀請朋友池），日曆圖例與篩選跟著多這三類；一拿到就是特訓後的卡（如 11/20 的「交織的境界」）在卡片圖鑑標示；活動總覽的加分卡標示「隊長+20」，有結局章節規則表的活動會列出規則。' },
     { d: '2026/09/20', t: 'WL 終章加成計算器', s: 'WL 後排加成頁支援終章了：選好主隊隊長的角色，支援隊會照終章規則重排（不限團體，與隊長同角色的卡多 5%，WL1 限定卡的 +20% 也只認隊長那一位）。同頁新增終章主隊試算：五格各自設定是不是 WL2 限定卡、稀有度與專精，再選隊內異色數與稱號，逐項列出角色 25%、WL2 限定最多 100%、稀有度與專精、異色、隊長 +20%、稱號 +50%，合計主隊、支援與總加成，並對照滿配上限 815%。規則逐項對過台服 master（第 180 期 9/25 開跑）。頁尾附終章須知：技能上限與玩偶綜合力上限直接讀 master（台服目前技能上限寫 +200%，等於不設限，日服當時是 +140%；玩偶上限 2%）、控分最低 125 pt、排名報酬角色的判定。跑榜工作室與首頁跑榜小窗的最佳化也套用終章規則：WL2 限定卡最多計 4 張、每一隊五個隊長人選各算一次（隊長 +20%、支援隊跟隊長角色走）、技能上限與玩偶上限照表套用，滿配綜合力約 36 萬。站內助手的支援加成工具同步支援終章，帶隊長角色就會照新規則算。' },
@@ -571,7 +572,7 @@ class Component extends DCLogic {
     jRate: 7,   // 水晶 CP:每 1 元台幣可得幾顆水晶(儲值分析可查,雙倍檔位約 7.0~7.8)
     hisUid: '', hisInput: '', hisRows: null, hisLoad: false, hisErr: '', hisProg: '', hisScanned: 0, hisSpan: 20, hisOnly: '',
     evArt: {},       // 活動 id → assetbundleName（首頁 hero 美術）
-    colTab: 'stamp', stamps: [], honors: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
+    colTab: 'stamp', stamps: [], honors: [], frames: [], cpShops: [], colLoad: false, colErr: '', cq: '', cp: 1, colPick: null,
     /* 圖鑑類分頁（角色／家具／素材／一格漫畫／原聲帶／虛擬 Live／公告）。
        共用一組搜尋字串 dbq、顯示數 dbN 與詳情 dbPick；換頁時在 go() 清掉，各頁資料各自快取在自己的 key。 */
     dbq: '', dbN: 48, dbPick: null, dbLoad: '', dbErr: '',
@@ -2050,7 +2051,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=d4c95261dd';
+      el.src = './js/core.js?v=cfddee5db9';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -7201,7 +7202,7 @@ class Component extends DCLogic {
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
-      const m = await import('./data/fixtures-index.js?v=5308e4381a');
+      const m = await import('./data/fixtures-index.js?v=d3de50da2c');
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
@@ -7356,7 +7357,7 @@ class Component extends DCLogic {
     const SITE = { any: '室內外皆可放', room: '只能放室內', home: '只能放室外' };
     return { related: [{ n: '會觸發的角色對話', p: 'mstalk', patch: { mstView: 'fix', dbq: r[1] } }],
       title: r[1], sub: genreOf(r[2]) + (subOf(r[3]) ? ' › ' + subOf(r[3]) : '') + ' · #' + r[0], img: this.fixImg(r), imgRatio: '1/1', wide: false,
-      chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]).concat(r[13] ? [{ n: '生日派對家具', bg: '#e0508a' }] : []),
+      chips: r[4].map(tagName).filter(Boolean).map(n => ({ n, bg: 'var(--text-3)' })).concat([{ n: '尺寸 ' + r[5].join('×'), bg: 'var(--accent-deep)' }, { n: SITE[r[11]] || r[11], bg: 'var(--accent-deep)' }]).concat(r[13] ? [{ n: '生日派對家具', bg: '#e0508a' }] : []).concat(r[14] ? [{ n: '不用持有藍圖也能做', bg: '#2e7d32' }] : []),
       rows: [], text: r[8] || '', colors: (r[9] || []).map(c => ({ c })),
       list: r[10].map(x => { const m = d.mats[x[0]] || ['素材 #' + x[0], '', '']; return { id: x[0], name: m[0], sub: '×' + x[1], img: m[1] ? this.ASSET + '/mysekai/thumbnail/material/' + m[1] + '.webp' : '', hasImg: !!m[1] }; }),
       listTitle: r[10].length ? '製作所需素材' : (r[12] ? '' : '無法自行製作（活動、任務或商店取得）'), listGrid: false };
@@ -7584,7 +7585,8 @@ class Component extends DCLogic {
         // 還沒看完的在前；家具在前（非家具的條件沒辦法靠製作完成）；未擁有在前；缺越多越前
         list.sort((a, b) => ((b.todo > 0) - (a.todo > 0)) || ((a.kind === 'f' ? 0 : 1) - (b.kind === 'f' ? 0 : 1)) || ((a.kind === 'f' && own[a.fid] ? 1 : 0) - (b.kind === 'f' && own[b.fid] ? 1 : 0)) || (b.todo - a.todo) || (a.fid - b.fid));
         out.mstOwnChips = [{ v: '', n: '全部家具' }, { v: 'no', n: '未擁有' }, { v: 'yes', n: '已擁有' }].map(c => Object.assign(c, chip(s.mstOwnF === c.v, 'var(--accent-deep)')));
-        const lack = list.filter(e => e.kind === 'f' && e.todo > 0 && !own[e.fid]);
+        const freeBp = this.freeBpSet();
+        const lack = list.filter(e => e.kind === 'f' && e.todo > 0 && !own[e.fid] && !freeBp.has(e.fid));
         out.mstFixSummary = d ? ('還缺 ' + this.n(lack.length) + ' 件家具（可解鎖 ' + this.n(lack.reduce((a, e) => a + e.todo, 0)) + ' 則對話）') : '';
         this._dbNav = { kind: 'fix', ids: list.filter(e => e.kind === 'f').map(e => e.fid) };
         out.mstFixRows = page(list, 40).map(e => {
@@ -7987,12 +7989,18 @@ class Component extends DCLogic {
     if (this.state.colLoad || this.state.stamps.length) return;
     this.setState({ colLoad: true, colErr: '' });
     try {
-      const [ok, st, ho, hg] = await Promise.all([
+      const j = n => fetch(this.TDB + '/' + n + '.json').then(r => r.json()).catch(() => []);
+      const [ok, st, ho, hg, pf, pg, cps] = await Promise.all([
         import('./data/collection-assets.js?v=73b9d40b67'),
         fetch(this.TDB + '/stamps.json').then(r => r.json()),
         fetch(this.TDB + '/honors.json').then(r => r.json()),
-        fetch(this.TDB + '/honorGroups.json').then(r => r.json()).catch(() => [])
+        j('honorGroups'),
+        // 6.0 起：玩家邊框（WL 結局章節 TOP100 起）與收藏 BOX 復刻商店
+        j('playerFrames'), j('playerFrameGroups'), j('customProfileGachaShops')
       ]);
+      const fg = {}; (pg || []).forEach(g => { fg[g.id] = g; });
+      const frames = (pf || []).map(f => { const g = fg[f.playerFrameGroupId] || {}; return { id: f.id, name: (g.name || '邊框').replace(/^\[邊框\]\s*/, '') + (f.gameCharacterId ? '・' + (this.charShort(f.gameCharacterId) || '#' + f.gameCharacterId) : ''), cid: f.gameCharacterId || 0, desc: f.description || '', group: g.name || '', abn: g.assetbundleName || '' }; });
+      const cpShops = (cps || []).map(x => ({ id: x.id, name: String(x.name || '').replace(/\n/g, ' '), year: x.releasedYear || 0, cids: (x.customProfileGachaShopGameCharacters || []).map(c => c.gameCharacterId).filter(Boolean), abn: x.assetbundleName || '', desc: (x.customProfileGachaShopGameCharacters || []).map(c => this.charShort(c.gameCharacterId)).filter(Boolean).join('・') }));
       const sOk = new Set(ok.STAMP_OK || []), hNum = new Set(ok.HONOR_OK_NUM || []), hName = new Set(ok.HONOR_OK_NAMED || []);
       const hasHonor = a => { const m = /^honor_(\d+)$/.exec(a || ''); return m ? hNum.has(+m[1]) : hName.has(a); };
       const gName = {}; (hg || []).forEach(g => { gName[g.id] = g.name; });
@@ -8007,7 +8015,7 @@ class Component extends DCLogic {
         honors.push({ id: h.id, name: h.name || '', abn: h.assetbundleName, rarity: h.honorRarity || '',
           group: gName[h.groupId] || '', desc: (lv[lv.length - 1] || {}).description || '', lvCount: lv.length });
       });
-      this.setState({ stamps, honors, colLoad: false, colErr: (stamps.length || honors.length) ? '' : '收集室資料載入失敗，點此重試' });
+      this.setState({ stamps, honors, frames, cpShops, colLoad: false, colErr: (stamps.length || honors.length) ? '' : '收集室資料載入失敗，點此重試' });
     } catch (e) {
       this.setState({ colLoad: false, colErr: '收集室資料載入失敗，點此重試' });
     }
@@ -8523,7 +8531,7 @@ class Component extends DCLogic {
 
   colFiltered() {
     const s = this.state, q = (s.cq || '').trim().toLowerCase();
-    const list = s.colTab === 'stamp' ? (s.stamps || []) : (s.honors || []);
+    const list = s.colTab === 'stamp' ? (s.stamps || []) : s.colTab === 'frame' ? (s.frames || []) : s.colTab === 'shop' ? (s.cpShops || []) : (s.honors || []);
     if (!q) return list;
     return list.filter(x => ((x.name || '') + ' ' + (x.group || '') + ' ' + (x.desc || '')).toLowerCase().includes(q));
   }
@@ -8593,11 +8601,13 @@ class Component extends DCLogic {
     return { [prefix + 'FavMark']: on ? '★' : '☆', [prefix + 'FavTitle']: on ? '從收藏移除' : '加入收藏', [prefix + 'FavFg']: on ? '#f0a020' : 'var(--text-3)', [prefix + 'FavData']: JSON.stringify({ kind, id, name: name || '', p, patch: patch || null }) };
   }
   /* 豆森：還缺哪些家具（未擁有、且還有沒看過的對話靠它解鎖）；收藏與待辦頁用 */
+  /* 6.0 起「不用持有藍圖也能做」的家具（fixtures 索引第 15 欄）：算「還缺家具」時視同已擁有 */
+  freeBpSet() { const F = this.state.fixtures; if (!F || this._freeBpFor === F) return this._freeBp || new Set(); this._freeBpFor = F; this._freeBp = new Set((F.rows || []).filter(r => r[14]).map(r => r[0])); return this._freeBp; }
   mstLack() {
     const s = this.state, d = s.mst, done = s.mstDone || {}, own = s.mstOwn || {};
     if (!d) return null;
-    const g = {};
-    d.rows.forEach(r => { if (done[r[0]]) return; r[2].forEach(c => { if (c[0] !== 'f' || own[c[1]]) return; g[c[1]] = (g[c[1]] || 0) + 1; }); });
+    const g = {}, freeBp = this.freeBpSet();
+    d.rows.forEach(r => { if (done[r[0]]) return; r[2].forEach(c => { if (c[0] !== 'f' || own[c[1]] || freeBp.has(c[1])) return; g[c[1]] = (g[c[1]] || 0) + 1; }); });
     const ids = Object.keys(g);
     return { n: ids.length, talks: ids.reduce((a, id) => a + g[id], 0) };
   }
@@ -10731,18 +10741,19 @@ class Component extends DCLogic {
       })(),
       rateHasMusic: !!(pd.musicClear || []).length,
       rateHasChar: !!(pd.charRanks || []).length,
-      colTabs: [{ v: 'stamp', n: '貼圖' }, { v: 'honor', n: '稱號' }].map(t => Object.assign({}, t,
+      colTabs: [{ v: 'stamp', n: '貼圖' }, { v: 'honor', n: '稱號' }].concat((s.frames || []).length ? [{ v: 'frame', n: '邊框' }] : []).concat((s.cpShops || []).length ? [{ v: 'shop', n: '收藏 BOX' }] : []).map(t => Object.assign({}, t,
         chip(s.colTab === t.v, 'var(--cta)'), { fg: s.colTab === t.v ? '#fff' : 'var(--text)' })),
-      colIsStamp: s.colTab === 'stamp', colIsHonor: s.colTab === 'honor',
+      colIsStamp: s.colTab === 'stamp', colIsHonor: s.colTab === 'honor', colIsFrame: s.colTab === 'frame', colIsShop: s.colTab === 'shop',
       colBusy: s.colLoad, colErrMsg: s.colErr, colHasErr: !!s.colErr, cq: s.cq,
-      colCount: (() => { const r = this.colFiltered(); return r.length ? ('共 ' + this.n(r.length) + ' 個' + (s.colTab === 'stamp' ? '貼圖' : '稱號')) : (s.colLoad ? '載入中…' : '沒有符合的項目'); })(),
+      colCount: (() => { const r = this.colFiltered(); return r.length ? ('共 ' + this.n(r.length) + ' 個' + ({ stamp: '貼圖', honor: '稱號', frame: '邊框', shop: '商店' }[s.colTab] || '')) : (s.colLoad ? '載入中…' : '沒有符合的項目'); })(),
       colRows: (() => {
         const all = this.colFiltered(), per = 60, tp = Math.max(1, Math.ceil(all.length / per)), cp = Math.min(s.cp, tp);
         const RL = { low: '普通', middle: '罕見', high: '稀有', highest: '最高' };
         return all.slice((cp - 1) * per, cp * per).map(x => Object.assign({}, x, {
           img: s.colTab === 'stamp' ? (this.ASSET + '/stamp/' + x.abn + '/' + x.abn + '.webp')
                                     : (this.ASSET + '/honor/' + x.abn + '/degree_main.webp'),
-          accent: x.cid ? (this.CHARA_COLOR[x.cid] || 'var(--border)') : 'var(--border)',
+          accent: x.cid ? (this.CHARA_COLOR[x.cid] || 'var(--border)') : ((x.cids || [])[0] ? (this.CHARA_COLOR[x.cids[0]] || 'var(--border)') : 'var(--border)'),
+          yearLabel: x.year ? x.year + ' 年' : '',
           // 同名稱號常有多個稀有度階級，副標顯示稀有度＋等級數才分得出來
           sub: (RL[x.rarity] || x.rarity || '') + (x.lvCount > 1 ? ' · ' + x.lvCount + ' 級' : '')
              + ((x.group && x.group !== x.name) ? ' · ' + x.group : '')

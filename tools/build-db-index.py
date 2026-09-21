@@ -115,6 +115,8 @@ def build_fixtures():
     mats = get(f'{TC}/mysekaiMaterials.json')
 
     bp_of = {b['craftTargetId']: b['id'] for b in bps if b.get('mysekaiCraftType') == 'mysekai_fixture'}
+    # 6.0 起藍圖多了 isAvailableWithoutPossession（不用持有藍圖也能做）：豆森對話的「還缺家具」不該算它
+    free_bp = {b['craftTargetId'] for b in bps if b.get('mysekaiCraftType') == 'mysekai_fixture' and b.get('isAvailableWithoutPossession')}
     cost_of = {}
     for c in costs:
         cost_of.setdefault(c['mysekaiBlueprintId'], []).append((c.get('seq') or 0, c['mysekaiMaterialId'], c.get('quantity') or 0))
@@ -142,7 +144,7 @@ def build_fixtures():
             [c.get('colorCode') for c in (f.get('mysekaiFixtureAnotherColors') or []) if c.get('colorCode')],
             [[mid, qty] for _s, mid, qty in cost],
             f.get('mysekaiSettableSiteType') or '', 1 if f.get('isAssembled') else 0,
-            bday_of.get(f['id'], 0),
+            bday_of.get(f['id'], 0), 1 if f['id'] in free_bp else 0,
         ])
     rows.sort(key=lambda r: r[0])
     tag_rows = {t: [tag_name[t].get('name') or '', tag_name[t].get('mysekaiFixtureTagType') or 'none', tag_name[t].get('externalId') or 0]
@@ -155,7 +157,7 @@ def build_fixtures():
             'export const FIX_MATS=' + dump(mat_rows) + ';\n'
             'export const FIXTURES=' + dump(rows) + ';\n')
     header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
-              ' FIXTURES 欄位:[id, 名稱, 主分類id, 子分類id, 標籤id[], [寬,深,高], 素材名, 類型, 說明, 其他顏色[], 製作素材[[素材id,數量]], 可放置場所, 可製作, 生日派對id(0=否)] */\n')
+              ' FIXTURES 欄位:[id, 名稱, 主分類id, 子分類id, 標籤id[], [寬,深,高], 素材名, 類型, 說明, 其他顏色[], 製作素材[[素材id,數量]], 可放置場所, 可製作, 生日派對id(0=否), 免持有藍圖可做(1)] */\n')
     print(f'家具:{len(rows)} 件（有製作素材 {sum(1 for r in rows if r[10])}、標籤 {len(tag_rows)} 條）')
     return write_if_changed(OUT_FIX, header, body)
 
