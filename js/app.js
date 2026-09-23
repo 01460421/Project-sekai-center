@@ -305,13 +305,13 @@ class Component extends DCLogic {
   ];
 
   /* 菜根機器人介紹頁（page=bot）。圖在 /bot-img/，換圖時把 BOT_IMG_VER 一起改掉才會破快取。 */
-  BOT_IMG_VER = '20260923';
+  BOT_IMG_VER = '20260923e';
   BOT_SHEET_DATE = '2026.09.23';
   BOT_SHEETS = [['淺藍', '淺色'], ['粉紫', '淺色'], ['灰藍', '淺色'], ['暖橘', '淺色'], ['草綠', '淺色'], ['糖果粉', '淺色'], ['薰衣草', '淺色'], ['夜色', '深色']];
   BOT_STATS = [{ k: '三邊', v: 'Discord、QQ、網頁同一張班表' }, { k: '三車', v: '同一群平行排班' }, { k: '快捷', v: '打 h20-24 就報班' }, { k: '手機', v: '網頁排班手機也能用' }];
   BOT_FEATURES = [
     { t: '報班與自動排位', d: '打 h20-24 就報進去，S6、雙開、外援各有寫法。依倍率自動排位，滿了進候補，有人砍班自動遞補。' },
-    { t: '三車平行', d: '同一個群開到三台車，各車分開排班、分開鎖班；指令後面加車號，或在綁定的頻道直接報。' },
+    { t: '三車平行', d: '同一個群開到三台車，各車分開排班、分開鎖班；指令後面加車號，或在綁定的頻道直接報。橋接／合班的隊也能多車，整組共用。' },
     { t: '車隊模式與指定跑者', d: '多位跑者輪流開車：每個時段的 P1 各自指定，可從成員池挑，也能直接打外援的名字。', isNew: true },
     { t: '跑者自行報跑', d: '管理員開放之後，登記過跑者倍率的成員可以自己開班：Discord 打 r20-24、QQ 打 /r 20-24，網頁按「我來開車」。別人報跑的時段不能搶。', isNew: true },
     { t: '排班身份組', d: '管理員指定一個 Discord 身分組，有它的人可以開班、換人、鎖班、確認、指定跑者，網頁的班表分頁跟管理員一樣；但不能改任何設定。', isNew: true },
@@ -319,9 +319,11 @@ class Component extends DCLogic {
     { t: '網頁排班', d: '看板拖拉換人、推手標記、鎖班與開放報班，手機也能用。成員只看得到自己所在的車隊。' },
     { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。', isNew: true },
     { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；在表上改座位或跑者會寫回機器人，兩邊不同時以試算表為準。', isNew: true },
-    { t: '查榜', d: '即時名次、時速、分段榜線與角色章節榜，算出到目標分數還差幾場。' },
+    { t: '查榜', d: '即時名次、時速、分段榜線與角色章節榜，算出到目標分數還差幾場。過往期數的最終榜線也查得到：Discord 打 140b，QQ 打 /榜线 140。' },
+    { t: 'Haruki 抓包', d: '成員用 Haruki 工具箱上傳自己的存檔、打開公開 API 後，機器人就讀得到完整隊伍與技能等級，倍率一模一樣。Discord 打 /查詢 抓包 看教學，QQ 打 /抓包。', isNew: true },
     { t: '時數統計', d: '推車、S6、支援與開車時數分開計算，試算表的「時數」分頁也會跟著同步。' },
     { t: 'Discord 與 QQ 互通', d: '兩邊共用一張班表，群訊息可以互通，Discord 端會顯示發言者的 QQ 頭像。QQ 每小時 :55 提醒下一班的人。' },
+    { t: 'QQ 小號', d: '一般 QQ 帳號進群當第二隻機器人：不用 @，裸打 h20-24 就報班；提醒真的 @ 到 QQ 號；管理員直接打房號，群名就改成「房號-原名」。跟官方機器人共用同一份名冊與班表，任何人 @ 官方機器人一次就自動對上。', isNew: true },
     { t: '點歌與語音播報', d: 'YouTube 網址或關鍵字點歌，網頁也能排隊、跳過、調音量；音質上限可調，網路不穩時調低比較不會斷。' },
     { t: '語音錄音', d: '管理員可以錄下語音頻道的對話。開始時一定會公告、機器人暱稱也會標示，不提供安靜錄音。實驗功能。', isNew: true },
     { t: '伺服器事件記錄', d: '訊息刪改、成員進出、語音動態、頻道與身分組變更，回報到指定頻道；各類別可以分開開關。', isNew: true },
@@ -330,9 +332,9 @@ class Component extends DCLogic {
     { n: 'Discord', s: '頻道直接打字，或用斜線指令', c: '#5865f2', rows: [
       { c: 'h20-24', d: '報推手班；s 是 S6、d 是雙開' }, { c: 'x20-24', d: '取消自己的班' }, { c: 'sch9/13', d: '看那天的班表，過去的也行' },
       { c: 't100', d: '第 100 名現在幾分' }, { c: '/班表 跑者', d: '管理員指定某些時段由誰開車' }, { c: 'r20-24', d: '跑者自己報跑（要管理員先開放）' }, { c: '/設定 排班身份組', d: '指定能排班、不能改設定的身分組' }] },
-    { n: 'QQ 群', s: '先 @機器人，指令用簡體', c: '#12a9c2', rows: [
+    { n: 'QQ 群', s: '官方機器人要 @，小號免 @；指令用簡體', c: '#12a9c2', rows: [
       { c: '/h 20-24', d: '報推手班；/s 是 S6、/d 是雙開' }, { c: '/砍 20-24', d: '取消自己的班' }, { c: '/班表 明天', d: '出一張班表圖' },
-      { c: '/排名 100', d: '查名次與分數' }, { c: '/报跑 20-24 小明', d: '管理員報跑順便指定跑者' }, { c: '/r 20-24', d: '跑者自己報跑（要管理員先開放）' }] },
+      { c: '/排名 100', d: '查名次與分數' }, { c: '/榜线 140', d: '第 140 期的最終榜線' }, { c: '/报跑 20-24 小明', d: '管理員報跑順便指定跑者' }, { c: '/r 20-24', d: '跑者自己報跑（要管理員先開放）' }, { c: 'h20-24', d: '群裡有小號時裸打也收，不用 @' }] },
     { n: '網頁', s: '左側「車隊」裡的私車排班', c: '#8a6fe0', rows: [
       { c: '班表', d: '每一列右邊一鍵報班、砍班' }, { c: '看板', d: '管理員直接拖拉換人' }, { c: '統計', d: '缺額分析與任一天的歷史班表' },
       { c: '點歌', d: '搜尋、排隊、跳過、調音量' }, { c: '設定', d: '班表行為、權限、試算表、語音、事件記錄' }, { c: '我來開車', d: '跑者在每一列自己報跑、取消報跑' }] },
@@ -2157,7 +2159,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=4b2bfae6ef';
+      s.src = 'data/billing.js?v=f1a19e3999';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2370,7 +2372,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=d3be03b7ac').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=ca5f9c5289').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;

@@ -3410,7 +3410,7 @@ select option, select optgroup{
                     <sc-for list="{{ carFCarsSeg }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarFCars }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
                   </div>
                 </div>
-                <div class="car-note" style="margin-top:8px;color:var(--text-3)">每台車各自一份班表、報班開關、鎖班與看板，成員、倍率與標記全車隊共用。合班／橋接中不能開多車。</div>
+                <div class="car-note" style="margin-top:8px;color:var(--text-3)">每台車各自一份班表、報班開關、鎖班與看板，成員、倍率與標記全車隊共用。合班／橋接中也能開多車：車數與每台車的班表整組共用，各隊自己的頻道用「綁定」綁到要的車。</div>
                 <sc-for list="{{ carFCarNames }}" as="r">
                   <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
                     <span style="flex:none;width:66px;font-size:12.5px;font-weight:800;color:var(--text-2)">{{ r.lbl }}</span>
@@ -3750,7 +3750,7 @@ select option, select optgroup{
 
     <div class="bot-card">
       <div class="bot-h2">三邊怎麼用</div>
-      <div class="bot-sub">同一件事三邊都能做，挑你順手的。QQ 群要先 @機器人，指令用簡體。</div>
+      <div class="bot-sub">同一件事三邊都能做，挑你順手的。QQ 群 @官方機器人，或直接裸打給小號；指令用簡體。</div>
       <div class="bot-grid3">
         <sc-for list="{{ botSides }}" as="sd" hint-placeholder-count="3">
           <div class="bot-side">
@@ -7294,7 +7294,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3a617e31ba"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=79cd7e46a7"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
