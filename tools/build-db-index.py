@@ -30,6 +30,8 @@ OUT_FIX = ROOT / 'data' / 'fixtures-index.js'
 OUT_ST = ROOT / 'data' / 'stories-index.js'
 OUT_MST = ROOT / 'data' / 'mysekai-talks-index.js'
 OUT_BUILT = ROOT / 'data' / 'data-built.js'
+OUT_MSEV = ROOT / 'data' / 'mysekai-events.js'
+OUT_SUP = ROOT / 'data' / 'support-events.js'
 
 
 def get(url):
@@ -88,11 +90,17 @@ def build_lives():
             's': v.get('startAt') or 0, 'e': v.get('endAt') or 0,
             'sch': [base, dur, offs] if sch else None,
             'set': setlist, 'ch': chars,
+            'g': v.get('virtualLiveGroupId') or 0,   # 6.0 起:同一組（如五週年特別留言 26 場）合併顯示
         })
     rows.sort(key=lambda r: (-(r['s'] or 0), -r['id']))
-    body = 'export const LIVES=' + dump(rows) + ';\n'
+    try:
+        groups = [[g['id'], g.get('name') or '', g.get('startAt') or 0, g.get('endAt') or 0] for g in get(f'{TC}/virtualLiveGroups.json')]
+    except Exception:
+        groups = []
+    body = 'export const LIVES=' + dump(rows) + ';\nexport const LIVE_GROUPS=' + dump(groups) + ';\n'
     header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
-              ' 欄位:id 類型ty 名稱n 素材abn 期間s/e 場次sch=[起點,每場分鐘,各場分鐘偏移] 歌單set=[[曲id,曲名,封面素材名]] 出演ch=[角色id] */\n')
+              ' 欄位:id 類型ty 名稱n 素材abn 期間s/e 場次sch=[起點,每場分鐘,各場分鐘偏移] 歌單set=[[曲id,曲名,封面素材名]] 出演ch=[角色id] 群組g;'
+              ' LIVE_GROUPS=[[群組id,名稱,起,迄]] */\n')
     print(f'虛擬 Live:{len(rows)} 場（有場次 {sum(1 for r in rows if r["sch"])}、有歌單 {sum(1 for r in rows if r["set"])}）')
     return write_if_changed(OUT_LIVES, header, body)
 
@@ -108,10 +116,17 @@ def build_fixtures():
     mats = get(f'{TC}/mysekaiMaterials.json')
 
     bp_of = {b['craftTargetId']: b['id'] for b in bps if b.get('mysekaiCraftType') == 'mysekai_fixture'}
+    # 6.0 起藍圖多了 isAvailableWithoutPossession（不用持有藍圖也能做）：豆森對話的「還缺家具」不該算它
+    free_bp = {b['craftTargetId'] for b in bps if b.get('mysekaiCraftType') == 'mysekai_fixture' and b.get('isAvailableWithoutPossession')}
     cost_of = {}
     for c in costs:
         cost_of.setdefault(c['mysekaiBlueprintId'], []).append((c.get('seq') or 0, c['mysekaiMaterialId'], c.get('quantity') or 0))
     tag_name = {t['id']: t for t in tags}
+    # 6.0 起的豆森生日派對家具:記派對 id,圖鑑上標「生日派對家具」
+    try:
+        bday_of = {x['mysekaiFixtureId']: x['birthdayPartyId'] for x in get(f'{TC}/birthdayPartyMysekaiFixtures.json')}
+    except Exception:
+        bday_of = {}
 
     rows, used_tags = [], set()
     for f in fx:
@@ -130,6 +145,7 @@ def build_fixtures():
             [c.get('colorCode') for c in (f.get('mysekaiFixtureAnotherColors') or []) if c.get('colorCode')],
             [[mid, qty] for _s, mid, qty in cost],
             f.get('mysekaiSettableSiteType') or '', 1 if f.get('isAssembled') else 0,
+            bday_of.get(f['id'], 0), 1 if f['id'] in free_bp else 0,
         ])
     rows.sort(key=lambda r: r[0])
     tag_rows = {t: [tag_name[t].get('name') or '', tag_name[t].get('mysekaiFixtureTagType') or 'none', tag_name[t].get('externalId') or 0]
@@ -142,7 +158,7 @@ def build_fixtures():
             'export const FIX_MATS=' + dump(mat_rows) + ';\n'
             'export const FIXTURES=' + dump(rows) + ';\n')
     header = ('/* 由 tools/build-db-index.py 產生,勿手改。'
-              ' FIXTURES 欄位:[id, 名稱, 主分類id, 子分類id, 標籤id[], [寬,深,高], 素材名, 類型, 說明, 其他顏色[], 製作素材[[素材id,數量]], 可放置場所, 可製作] */\n')
+              ' FIXTURES 欄位:[id, 名稱, 主分類id, 子分類id, 標籤id[], [寬,深,高], 素材名, 類型, 說明, 其他顏色[], 製作素材[[素材id,數量]], 可放置場所, 可製作, 生日派對id(0=否), 免持有藍圖可做(1)] */\n')
     print(f'家具:{len(rows)} 件（有製作素材 {sum(1 for r in rows if r[10])}、標籤 {len(tag_rows)} 條）')
     return write_if_changed(OUT_FIX, header, body)
 
@@ -264,6 +280,103 @@ def build_mysekai_talks():
 
 
 
+# ---------------------------------------------------------------- 豆森活動（6.0 起）
+def build_mysekai_events():
+    """data/mysekai-events.js：豆森生日派對（birthdayParties）與我的「世界」百景競賽（mysekaiHousingCompetitions）。
+    日曆、今日摘要與行事曆匯出用。台服沒有這兩張表時輸出空清單。"""
+    unit_chara = {u['id']: u['gameCharacterId'] for u in get(f'{TC}/gameCharacterUnits.json')}
+    rows = []
+    try:
+        for b in get(f'{TC}/birthdayParties.json'):
+            rows.append({'k': 'bday', 'id': b['id'], 'ch': unit_chara.get(b.get('gameCharacterUnitId')) or 0,
+                         's': b.get('startAt') or 0, 'e': b.get('closedAt') or 0, 'bs': b.get('birthdayStartAt') or 0})
+    except Exception:
+        pass
+    try:
+        for c in get(f'{TC}/mysekaiHousingCompetitions.json'):
+            rows.append({'k': 'contest', 'id': c['id'], 'n': c.get('name') or '', 'd': c.get('description') or '',
+                         's': c.get('submitStartAt') or 0, 'e': c.get('submitEndAt') or 0, 'agg': c.get('aggregateAt') or 0})
+    except Exception:
+        pass
+    rows.sort(key=lambda r: r['s'])
+    body = 'export const MS_EVENTS=' + dump(rows) + ';\n'
+    header = '/* 由 tools/build-db-index.py 產生,勿手改。豆森活動:k=bday(生日派對:ch 角色id、s/e 期間、bs 生日當天) 或 contest(百景競賽:n 名稱、d 說明、s/e 投稿期間、agg 結算) */\n'
+    print(f'豆森活動:{len(rows)} 筆')
+    return write_if_changed(OUT_MSEV, header, body)
+
+
+# ---------------------------------------------------------------- 應援活動
+def build_support_events():
+    """data/support-events.js：應援活動（supportEvents）。期程、各 Live 種類×火數的應援點數係數、評價係數、
+    個人／全體得分獎勵。獎勵明細從 compactResourceBoxDetails（欄式壓縮版）解出；個人獎勵六個團體只差稱號，
+    存一份並把稱號寫成「團體稱號」。日曆、今日摘要、行事曆匯出與計算中心「應援活動」分頁用。"""
+    try:
+        evs = get(f'{TC}/supportEvents.json')
+    except Exception:
+        evs = []
+    if not evs:
+        body = 'export const SUPPORT_EVENTS=[];\n'
+        return write_if_changed(OUT_SUP, '/* 由 tools/build-db-index.py 產生,勿手改。應援活動（台服目前沒有這張表） */\n', body)
+    names = {}
+    for typ, fname in (('material', 'materials'), ('boost_item', 'boostItems'), ('gacha_ticket', 'gachaTickets'),
+                       ('mysekai_material', 'mysekaiMaterials'), ('stamp', 'stamps')):
+        try:
+            names[typ] = {x['id']: x.get('name') or '' for x in get(f'{TC}/{fname}.json')}
+        except Exception:
+            names[typ] = {}
+    fixed = {'jewel': '水晶', 'paid_jewel': '有償水晶', 'coin': '金幣', 'virtual_coin': '虛擬硬幣', 'honor': '團體稱號',
+             'practice_ticket': '練習券', 'skill_practice_ticket': '技能練習券', 'live_point': 'Live 點數',
+             'card': '卡片', 'costume_3d': '服裝', 'penlight': '螢光棒', 'player_frame': '玩家邊框'}
+    c = get(f'{TC}/compactResourceBoxDetails.json')
+    en = c['__ENUM__']
+    box = {}
+    for i, pi in enumerate(c['resourceBoxPurpose']):
+        pn = en['resourceBoxPurpose'][pi]
+        if not pn.startswith('support_event_'):
+            continue
+        box.setdefault((pn, c['resourceBoxId'][i]), []).append(
+            (en['resourceType'][c['resourceType'][i]], c['resourceId'][i], c['resourceQuantity'][i] or 0))
+
+    def label(items):
+        out = []
+        for typ, rid, qty in items:
+            nm = names.get(typ, {}).get(rid) or fixed.get(typ) or typ
+            if typ == 'stamp':
+                nm = '貼圖'
+            out.append(nm + ('×' + str(qty) if qty and qty > 1 else ''))
+        return '、'.join(out)
+
+    def jewel(items):
+        return sum(q for typ, _, q in items if typ == 'jewel')
+
+    rows = []
+    for e in evs:
+        boost = {}
+        for b in e.get('liveBoostRates') or []:
+            boost.setdefault(b['liveType'], {})[b['boost']] = b['boostRate']
+        boost = {k: [v.get(i, 0) for i in range(max(v) + 1)] for k, v in boost.items()}
+        rank = {r['scoreRank']: r['rate'] for r in e.get('liveScoreRankRates') or []}
+        units = sorted({r['unit'] for r in e.get('personalScoreRewards') or []})
+        u0 = units[0] if units else None
+        personal = []
+        for r in sorted((x for x in e.get('personalScoreRewards') or [] if x['unit'] == u0), key=lambda x: x['unitScore']):
+            it = box.get(('support_event_personal_reward', r['resourceBoxId']), [])
+            personal.append([r['unitScore'], label(it), jewel(it)])
+        total = []
+        for r in sorted((x for x in e.get('totalScoreRewards') or [] if x['unit'] == u0), key=lambda x: x['unitScore']):
+            it = box.get(('support_event_total_reward', r['resourceBoxId']), [])
+            total.append([r['unitScore'], label(it)])
+        rows.append({'id': e['id'], 's': e.get('startAt') or 0, 'agg': e.get('aggregateAt') or 0, 'c': e.get('closeAt') or 0,
+                     'boost': boost, 'rank': rank, 'personal': personal, 'total': total})
+    rows.sort(key=lambda r: r['s'])
+    body = 'export const SUPPORT_EVENTS=' + dump(rows) + ';\n'
+    header = ('/* 由 tools/build-db-index.py 產生,勿手改。應援活動:id、s 開始、agg 結算、c 關閉；'
+              ' boost={live種類:[火0..火10 的應援點數係數]}；rank={評價:係數}；'
+              ' personal=[[個人分數門檻,獎勵,水晶數]]（六團只差稱號,存一份）；total=[[全體分數門檻,獎勵]] */\n')
+    print(f'應援活動:{len(rows)} 場')
+    return write_if_changed(OUT_SUP, header, body)
+
+
 # ---------------------------------------------------------------- 資料日期
 def write_built(changed):
     """data/data-built.js：各索引檔最近一次「內容真的有變」的日期，圖鑑頁角落顯示「資料 9/18 更新」。
@@ -291,5 +404,7 @@ if __name__ == '__main__':
         'fixtures': build_fixtures(),
         'stories': build_stories(),
         'mst': build_mysekai_talks(),
+        'msev': build_mysekai_events(),
+        'sup': build_support_events(),
     }
     write_built(changed)

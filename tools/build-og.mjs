@@ -20,7 +20,7 @@ const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, dev
 fs.mkdirSync(path.join(ROOT, 'og'), { recursive: true });
 for (const p of pages) {
   await page.goto(BASE + '/og.html?' + new URLSearchParams({ t: p.t, d: p.d, k: p.k }), { waitUntil: 'load' });
-  await page.waitForTimeout(80);
+  await page.evaluate(() => document.fonts.ready).catch(() => {}); await page.waitForTimeout(120);
   await page.screenshot({ path: path.join(ROOT, 'og', p.k + '.jpg'), type: 'jpeg', quality: 82 });
 }
 await browser.close();

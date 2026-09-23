@@ -70,6 +70,23 @@ def get(db, name):
         return json.load(r)
 
 
+def prev_gacha_flags(fname):
+    """上一版索引裡標為「卡池可得」的卡 id（見 build 內的說明）。"""
+    out = ROOT / 'data' / fname
+    ids = set()
+    if not out.exists():
+        return ids
+    for line in out.read_text(encoding='utf-8').split('\n'):
+        if line.startswith('[') and line.endswith('],'):
+            try:
+                r = json.loads(line[:-1])
+                if r[6] == 1:
+                    ids.add(r[0])
+            except Exception:
+                pass
+    return ids
+
+
 def build(server):
     db, fname, label = SERVERS[server]
     print(f'下載 {label} master DB…')
@@ -85,6 +102,19 @@ def build(server):
         for d in (g.get('gachaDetails') or []):
             if d.get('cardId'):
                 in_gacha.add(d['cardId'])
+    if server == 'tw':
+        # 2026/06 起台服的 gachas.json 只保留近期卡池（六十幾筆），舊卡「能不能從卡池取得」
+        # 已經查不到。卡片 id 兩服相同，所以把日服（完整 1,000 多筆）的卡池明細也算進來，
+        # 再用上一版索引的旗標當最後保險（日服也拿不到時不要把舊卡全標成活動卡）。
+        try:
+            for g in get(SERVERS['jp'][0], 'gachas.json'):
+                for d in (g.get('gachaDetails') or []):
+                    if d.get('cardId'):
+                        in_gacha.add(d['cardId'])
+            print(f'  卡池明細已合併日服（台服 {len(gachas)} 筆）')
+        except Exception as e:
+            print(f'  日服 gachas.json 讀不到（{e}），只用台服＋上一版索引')
+        in_gacha |= prev_gacha_flags(fname)
 
     ch_rows = []
     for c in sorted(charas, key=lambda x: x['id']):
@@ -107,6 +137,11 @@ def build(server):
             c.get('prefix') or '',
             c.get('assetbundleName') or '',
         ])
+        # 6.0 起有「一拿到就是特訓後」的卡（initialSpecialTrainingStatus=done）：
+        # 第 10 欄先補素材旗標 1，第 11 欄記 1；其他卡維持 9 欄不動。
+        if c.get('initialSpecialTrainingStatus') == 'done':
+            rows[-1].append(1)
+            rows[-1].append(1)
 
     if server == 'jp':
         # 只查最後 300 張:更早的卡素材一定早就上架,全查 1,435 張是白花時間
@@ -117,7 +152,10 @@ def build(server):
         missing = 0
         for r, has in zip(tail, ok):
             if not has:
-                r.append(0)
+                if len(r) > 9:
+                    r[9] = 0
+                else:
+                    r.append(0)
                 missing += 1
         print(f'  素材尚未上架 {missing} 張（前端不列入）')
 
@@ -128,7 +166,7 @@ def build(server):
         f'export const ATTRS = {json.dumps(ATTRS)};',
         f'export const SUPPLY = {json.dumps(SUPPLY_ORDER)};',
         '/* [id, 角色, 稀有度(1-4,9=生日), 屬性, 取得類別, 支援團(-1=無), 卡池可得, 卡名, 素材名]',
-        '   第 10 欄若為 0 代表素材庫還沒有這張卡的圖(日服已公布但未上架),前端不列入 */',
+        '   第 10 欄若為 0 代表素材庫還沒有這張卡的圖(日服已公布但未上架),前端不列入;第 11 欄為 1 代表取得即特訓後(6.0 起) */',
         'export const CARDS = [',
     ]
     body += [json.dumps(r, ensure_ascii=False, separators=(',', ':')) + ',' for r in rows]

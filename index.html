@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
     <meta charset="UTF-8">
     <!-- storage.sekai.best 有防盜連：帶 Referer 會 403。文件級 no-referrer 才穩，
          單靠 <img referrerpolicy> 在 innerHTML 動態插入時可能來不及生效。 -->
@@ -14,7 +15,8 @@
     try{var _m=localStorage.getItem('sekai-theme');var _d=_m==='dark'||(!_m&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(_d)document.documentElement.classList.add('dark');
     var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);
     var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
     <link rel="stylesheet" href="css/core.css?v=423821ee6a">
 </head>
 <body>
@@ -1292,7 +1294,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=d4c95261dd"></script>
+    <script src="js/core.js?v=679c44cc63"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
