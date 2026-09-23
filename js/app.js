@@ -1228,19 +1228,19 @@ class Component extends DCLogic {
     today.slice(0, 3).forEach(g => rows.push({ ic: '卡池', t: '卡池「' + g.n + '」今天開始', s: '到 ' + this.md(this.pd(g.e)), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
     (s.msEvents || []).forEach(x => {
       if (!(x.s && x.e)) return;
-      if (now >= x.s && now <= x.e) rows.push({ ic: x.k === 'bday' ? '🎂' : '🏠', t: this.msEventName(x) + '進行中', s: '到 ' + this.md(new Date(x.e)) + (x.k === 'bday' ? '，生日當天 ' + this.md(new Date(x.bs || x.s)) : '，投稿截止後結算'), p: 'calendar', patchJson: '{}' });
-      else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: x.k === 'bday' ? '🎂' : '🏠', t: this.msEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' });
+      if (now >= x.s && now <= x.e) rows.push({ ic: x.k === 'bday' ? '生日' : '豆森', t: this.msEventName(x) + '進行中', s: '到 ' + this.md(new Date(x.e)) + (x.k === 'bday' ? '，生日當天 ' + this.md(new Date(x.bs || x.s)) : '，投稿截止後結算'), p: 'calendar', patchJson: '{}' });
+      else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: x.k === 'bday' ? '生日' : '豆森', t: this.msEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' });
     });
     (s.supEvents || []).forEach(x => {
       if (!(x.s && x.c)) return;
-      if (now >= x.s && now <= x.agg) rows.push({ ic: '📣', t: this.supEventName(x) + '進行中', s: '結算 ' + this.md(new Date(x.agg)) + '（剩 ' + this.dur(x.agg - now) + '），點開試算每天要打幾場', p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
-      else if (now > x.agg && now <= x.c) rows.push({ ic: '📣', t: this.supEventName(x) + '已結算', s: '獎勵領取到 ' + this.md(new Date(x.c)), p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
-      else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: '📣', t: this.supEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.agg)), p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
+      if (now >= x.s && now <= x.agg) rows.push({ ic: '應援', t: this.supEventName(x) + '進行中', s: '結算 ' + this.md(new Date(x.agg)) + '（剩 ' + this.dur(x.agg - now) + '），點開試算每天要打幾場', p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
+      else if (now > x.agg && now <= x.c) rows.push({ ic: '應援', t: this.supEventName(x) + '已結算', s: '獎勵領取到 ' + this.md(new Date(x.c)), p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
+      else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: '應援', t: this.supEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.agg)), p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
     });
     const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    (s.charProfiles || []).forEach(b => { if (b.m === d.getMonth() + 1 && b.d === d.getDate()) rows.push({ ic: '🎂', t: '今天是 ' + (this.charShort(b.ch) || '#' + b.ch) + ' 的生日', s: '生日池與生日 Live 看日曆', p: 'calendar', patchJson: '{}' }); });
-    (s.songs || []).filter(x => !x.jp && x.published >= dayStart && x.published < dayStart + 86400000).slice(0, 2).forEach(x => rows.push({ ic: '🎵', t: '新曲「' + x.title + '」今天實裝', s: '到歌曲清單看難度與定數', p: 'songs', patchJson: JSON.stringify({ songId: x.id }) }));
-    (s.loginBonus || []).filter(x => x.s >= dayStart && x.s < dayStart + 86400000).slice(0, 1).forEach(x => rows.push({ ic: '🎁', t: '登入活動「' + x.n + '」今天開始', s: '到 ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' }));
+    (s.charProfiles || []).forEach(b => { if (b.m === d.getMonth() + 1 && b.d === d.getDate()) rows.push({ ic: '生日', t: '今天是 ' + (this.charShort(b.ch) || '#' + b.ch) + ' 的生日', s: '生日池與生日 Live 看日曆', p: 'calendar', patchJson: '{}' }); });
+    (s.songs || []).filter(x => !x.jp && x.published >= dayStart && x.published < dayStart + 86400000).slice(0, 2).forEach(x => rows.push({ ic: '新曲', t: '新曲「' + x.title + '」今天實裝', s: '到歌曲清單看難度與定數', p: 'songs', patchJson: JSON.stringify({ songId: x.id }) }));
+    (s.loginBonus || []).filter(x => x.s >= dayStart && x.s < dayStart + 86400000).slice(0, 1).forEach(x => rows.push({ ic: '登入', t: '登入活動「' + x.n + '」今天開始', s: '到 ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' }));
     const newsN = (s.news || []).filter(x => x.s >= dayStart && x.s <= now).length;
     if (newsN) rows.push({ ic: '公告', t: '今天有 ' + newsN + ' 則遊戲公告', s: '點開看全部', p: 'news', patchJson: '{}' });
     const hint = s.pid ? this.planHintText() : '';
