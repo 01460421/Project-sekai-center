@@ -7427,6 +7427,8 @@ class Component extends DCLogic {
     try { sessionStorage.removeItem(this.HK_PEND_KEY); } catch (e) {}
     if (q.get('error')) throw new Error(q.get('error_description') || q.get('error'));
     if (!q.get('state') || q.get('state') !== pend.state) throw new Error('state 對不上，請重新連結一次');
+    // 對方文件 §11：state 只能用一次（上面已從 sessionStorage 刪掉）且要有期限；超過 15 分鐘就請使用者重來
+    if (!pend.at || Date.now() - pend.at > 15 * 60000) throw new Error('授權逾時，請重新連結一次');
     this.setState({ hkBusy: true, hkMsg: '換取授權中…' });
     const p = await this.hkTokenReq({ grant_type: 'authorization_code', code: q.get('code'), redirect_uri: this.hkRedirect(), code_verifier: pend.verifier });
     this.hkSaveTok(p, null);
@@ -7536,7 +7538,7 @@ class Component extends DCLogic {
   hkForget() { try { localStorage.removeItem(this.HK_TOK_KEY); } catch (e) {} this.setState({ hkTok: null }); }
   async hkDisconnect() {
     const t = this.state.hkTok, cfg = this.state.hkCfg;
-    if (t && cfg && cfg.clientId) { try { await fetch(this.GAMES_API + '/haruki/oauth/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: t.refresh || t.access, client_id: cfg.clientId }).toString() }); } catch (e) {} }
+    if (t && cfg && cfg.clientId) { try { await fetch(this.GAMES_API + '/haruki/oauth/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: t.refresh || t.access, token_type_hint: t.refresh ? 'refresh_token' : 'access_token', client_id: cfg.clientId }).toString() }); } catch (e) {} }
     this.hkForget(); this.setState({ hkMsg: '已解除連結；匯入過的資料留在這台裝置上。' });
   }
   hkUndoCards() {
