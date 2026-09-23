@@ -384,8 +384,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
-    { d: '2026/09/23', t: 'Haruki 工具箱一鍵匯入', s: '我的帳號多一張「Haruki 工具箱匯入」：授權 Haruki 讀取台服遊戲資料後，一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。授權只存在這台瀏覽器，讀取經本站 Worker 轉送、不保存；收集率以遊戲為準整份取代（可按「還原收集率」退回），B30 只升不降。站方拿到 Haruki 的 OAuth client 後開通。', p: 'account' },
-    { d: '2026/09/23', t: 'Haruki 工具箱一鍵匯入', s: '我的帳號多一張「Haruki 工具箱匯入」：授權 Haruki 讀取台服遊戲資料後，一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。授權只存在這台瀏覽器；收集率以遊戲為準整份取代（可按「還原收集率」退回），B30 只升不降。站方拿到 Haruki 的 OAuth client 後開通。', p: 'account' },
+    { d: '2026/09/23', t: 'Haruki 工具箱一鍵匯入', s: '我的帳號多一張「Haruki 工具箱匯入」：在 Haruki 工具箱把帳號設成「允許公開 API」後，填 Player ID（或貼上工具箱網址）就能匯入，不必登入；站方開通後也能改用 Haruki 帳號授權。一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。讀取經本站 Worker 轉送、不保存；收集率以遊戲為準整份取代（可按「還原收集率」退回），B30 只升不降。', p: 'account' },
     { d: '2026/09/23', t: '台服資料改用 Haruki 的 6.4 版，排名多一個備援', s: '卡片、歌曲、活動、豆森與應援活動改讀 Team-Haruki 的台服 master（已是 6.4：卡片 1,249 → 1,357 張、歌曲多 32 首、活動排到第 202 期），缺的表自動退回 Sekai-World。應援活動依開始時間編回數，9/24 開始的第 9 回是新的棋盤版。HiSekai 連不上時，排名、首頁、逐局追蹤與榜線快照改用 Haruki 公開 API，畫面會標出「Haruki 備援資料」。', p: 'rank' },
     { d: '2026/09/23', t: '首頁依活動階段給建議', s: '首頁活動卡下方多一塊「現在該做什麼」：開跑前、開跑、中盤、最後衝刺、結算中、下期預告六種狀態，各配一句提醒與四個捷徑（活動試算、摸魚表、榜線、加分卡等）；活動卡的倒數在開跑前改數距開始時間。可在自訂首頁隱藏或調順序。', p: 'home' },
     { d: '2026/09/23', t: '卡片圖鑑查詢語法', s: '卡片圖鑑的搜尋框可以直接打組合條件，例如「mmj 藍 限定 2025」「miku 生日」「25 四星 fes」：團體、角色（中文短名或 ick／mnr／miku 這類縮寫）、屬性（紅藍綠黃紫或英文）、稀有度、來源（限定／常駐／fes／聯動）、年份都會被認出來當篩選，其餘文字才當卡名關鍵字；套用了什麼會顯示在篩選列上方。' },
@@ -7451,6 +7450,15 @@ class Component extends DCLogic {
     if (!r.ok) throw new Error((p && (p.error_description || p.message)) || ('HTTP ' + r.status));
     return p && p.updatedData !== undefined ? p.updatedData : p;
   }
+  /* 工具箱公開 API（玩家在工具箱把帳號設成「允許公開 API」就不必登入）：經 Worker 轉送，404＝沒上傳或沒公開 */
+  async hkPublic(kind, uid) {
+    const r = await fetch(this.GAMES_API + '/haruki/public/tw/' + kind + '/' + uid);
+    let p = null; try { p = await r.json(); } catch (e) {}
+    if (!r.ok) { const err = new Error(r.status === 404 ? 'not_public' : ((p && (p.message || p.error)) || ('HTTP ' + r.status))); err.status = r.status; throw err; }
+    return p && p.updatedData !== undefined ? p.updatedData : p;
+  }
+  /* 輸入框收 Player ID 或整段工具箱網址（網址裡最後一串 6～20 位數字就是 ID） */
+  hkUidFrom(text) { const m = String(text || '').match(/\d{6,20}/g); return m ? m[m.length - 1] : ''; }
   /* 要匯入哪個台服帳號：授權有 bindings:read 就問 Haruki 綁了哪些，否則用站上填的 Player ID */
   async hkTargetUid() {
     const t = this.state.hkTok || {};
@@ -7485,16 +7493,17 @@ class Component extends DCLogic {
     const g = (suite && (suite.userGamedata || suite.user)) || {};
     return { own, lv, marks, talks, fix, name: g.name || '', rank: g.rank || 0, hasMysekai: !!bps.length };
   }
-  async hkImport() {
+  async hkImport(mode) {
     if (this.state.hkBusy) return;
-    const uid = await this.hkTargetUid();
-    if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkMsg: '先在上面填你的台服 Player ID（或在 Haruki 綁定台服帳號），再按匯入。' }); return; }
+    const pub = mode === 'public';
+    const uid = pub ? this.hkUidFrom(this.state.hkUid || this.state.pid) : await this.hkTargetUid();
+    if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkMsg: pub ? '先填你的台服 Player ID，或貼上工具箱的網址。' : '先在上面填你的台服 Player ID（或在 Haruki 綁定台服帳號），再按匯入。' }); return; }
     this.setState({ hkBusy: true, hkMsg: '向 Haruki 讀取 ' + uid + ' 的遊戲資料…' });
     try {
-      const suite = await this.hkGet('/api/oauth2/game-data/tw/suite/' + uid);
+      const suite = pub ? await this.hkPublic('suite', uid) : await this.hkGet('/api/oauth2/game-data/tw/suite/' + uid);
       let mys = null, bpMap = null;
       try {
-        mys = await this.hkGet('/api/oauth2/game-data/tw/mysekai/' + uid);
+        mys = pub ? await this.hkPublic('mysekai', uid) : await this.hkGet('/api/oauth2/game-data/tw/mysekai/' + uid);
         const bp = await this.dbGet('mysekaiBlueprints').catch(() => []);
         bpMap = {}; (bp || []).forEach(b => { if (b.mysekaiCraftType === 'mysekai_fixture') bpMap[b.id] = b.craftTargetId; });
       } catch (e) {}
@@ -7518,7 +7527,10 @@ class Component extends DCLogic {
       this.setState({ hkBusy: false, hkLast: last, hkMsg: '匯入完成' });
       this._toast('已從 Haruki 匯入 ' + r.own.length + ' 張卡與 ' + (ap + fc) + ' 個 FC／AP', 3000);
     } catch (e) {
-      this.setState({ hkBusy: false, hkMsg: '匯入失敗：' + ((e && e.message) || e) + '（若是 404，請先到 Haruki 工具箱上傳一次遊戲資料）' });
+      const why = (e && e.message) === 'not_public'
+        ? 'Haruki 找不到這個帳號的公開資料：請確認已在工具箱上傳過，並在工具箱把這個帳號的 Suite 設成「允許公開 API」（MySekai 選填）。'
+        : '匯入失敗：' + ((e && e.message) || e) + '（若是 404，請先到 Haruki 工具箱上傳一次遊戲資料）';
+      this.setState({ hkBusy: false, hkMsg: why });
     }
   }
   hkForget() { try { localStorage.removeItem(this.HK_TOK_KEY); } catch (e) {} this.setState({ hkTok: null }); }
@@ -10078,7 +10090,8 @@ class Component extends DCLogic {
             { k: 'B30', v: 'AP ' + this.n(L.ap) + '、FC ' + this.n(L.fc) + (L.up ? '（新增或升級 ' + this.n(L.up) + ' 首）' : '') },
             { k: '豆森', v: L.mys ? ('看過的對話 ' + this.n(L.talks) + ' 則、有藍圖的家具 ' + this.n(L.fix) + ' 件') : ('看過的對話 ' + this.n(L.talks) + ' 則（沒有豆森資料，只匯入對話）') }
           ] : [],
-          hkBtnLabel: s.hkBusy ? '處理中…' : '立即匯入',
+          hkBtnLabel: s.hkBusy ? '處理中…' : '立即匯入', hkPubLabel: s.hkBusy ? '處理中…' : '從 Haruki 匯入', hkUidVal: s.hkUid || s.pid || '',
+          hkHasUndo: (() => { try { return localStorage.getItem('sekai-cards-own-prev') != null; } catch (e) { return false; } })(),
         };
       })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
@@ -12278,7 +12291,7 @@ class Component extends DCLogic {
       onNoticeGo: () => { this.markLogSeen(); this.go('whatsnew'); },
       onNoticeDismiss: e => { e.stopPropagation(); this.markLogSeen(); },
       onHomeCfg: () => this.setState(st => ({ homeCfg: !st.homeCfg })),
-      onHkStart: () => this.hkStart(), onHkImport: () => this.hkImport(), onHkUndo: () => this.hkUndoCards(),
+      onHkStart: () => this.hkStart(), onHkImport: () => this.hkImport(), onHkUndo: () => this.hkUndoCards(), onHkPublic: () => this.hkImport('public'),
       onHkDisconnect: () => { if (confirm('解除 Haruki 連結？匯入過的資料會留在這台裝置上。')) this.hkDisconnect(); },
       onCfgTab: e => this.setState({ homeCfgTab: e.currentTarget.dataset.v }),
       onStatToggle: e => this.layoutToggle('stats', e.currentTarget.dataset.v),

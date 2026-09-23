@@ -127,5 +127,35 @@ ok(o.status === 404, '路徑穿越不轉送');
 o = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: form.toString() }, { SITE_BASE: 'https://project-sekai-center.com' });
 ok(o.status === 503, '沒設 client id 時回 503');
 
+/* 工具箱公開 API 轉送（不需要 token） */
+{
+  const hits = [];
+  let suiteDown = false;
+  globalThis.fetch = async (u, init) => {
+    const url = String(u); hits.push({ url, headers: (init && init.headers) || {} });
+    if (url.startsWith('https://suite-api.haruki.seiunx.com/public/tw/suite/') && suiteDown) return new Response('down', { status: 503 });
+    if (/\/public\/tw\/suite\/7482960281734567890$/.test(url)) return new Response(JSON.stringify({ userCards: [{ cardId: 5 }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (/\/public\/tw\/mysekai\/7482960281734567890$/.test(url)) return new Response(JSON.stringify({ message: 'not found' }), { status: 404 });
+    return new Response('{}', { status: 404 });
+  };
+  const pcall = async (path, method) => { const u = 'https://games.test' + path; return handleHaruki(new Request(u, { method: method || 'GET' }), {}, new URL(u)); };
+  let r = await pcall('/haruki/public/tw/suite/7482960281734567890'); let b = await r.json();
+  ok(r.status === 200 && b.userCards[0].cardId === 5 && hits.at(-1).url === 'https://suite-api.haruki.seiunx.com/public/tw/suite/7482960281734567890', '公開 suite：打 suite-api 的 /public/tw/suite/{id}');
+  ok(!hits.at(-1).headers.authorization && !hits.at(-1).headers['x-haruki-sekai-token'], '公開 API 不帶任何 token');
+  ok(r.headers.get('access-control-allow-origin') === '*' && /max-age=60/.test(r.headers.get('cache-control')), '公開資料 CORS 開放、快取一分鐘');
+  r = await pcall('/haruki/public/tw/mysekai/7482960281734567890');
+  ok(r.status === 404 && r.headers.get('cache-control') === 'no-store', '沒公開的回 404 且不快取');
+  const n0 = hits.length; suiteDown = true;
+  r = await pcall('/haruki/public/tw/suite/7482960281734567890'); b = await r.json();
+  ok(r.status === 200 && hits.length === n0 + 2 && hits.at(-1).url === 'https://toolbox-api-direct.haruki.seiunx.com/api/public/tw/suite/7482960281734567890', 'suite-api 掛掉就改打工具箱後端的 /api/public');
+  const n1 = hits.length;
+  r = await pcall('/haruki/public/jp/suite/7482960281734567890');
+  ok(r.status === 404 && hits.length === n1, '只轉送台服');
+  r = await pcall('/haruki/public/tw/suite/12');
+  ok(r.status === 404 && hits.length === n1, 'ID 格式不對不轉送');
+  r = await pcall('/haruki/public/tw/suite/7482960281734567890', 'POST');
+  ok(r.status === 405, '公開 API 只收 GET');
+}
+
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
 process.exit(fail ? 1 : 0);

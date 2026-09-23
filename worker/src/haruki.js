@@ -159,8 +159,38 @@ export async function handleHarukiOAuth(req, env, url) {
   return new Response(upstream.body, { status: upstream.status, headers: h });
 }
 
+/* ---------- 工具箱公開 API（不需要 token） ----------
+   玩家在 Haruki 工具箱把自己帳號的 Suite／MySekai 設成「允許公開 API」後，
+   /public/{server}/{suite|mysekai}/{userId} 不必登入就讀得到（對方 internal/modules/public）。
+   一樣不開 CORS，所以經 Worker 轉一手；主機先打 suite-api（Uni PJSK Viewer 用的那台），失敗再打工具箱後端的 /api/public。
+   回應原樣轉回（404＝沒上傳或沒公開，對方刻意不分這兩種），邊緣快取一分鐘。 */
+export const HARUKI_SUITE_DEFAULT = 'https://suite-api.haruki.seiunx.com';
+const PUBLIC_OK = /^\/haruki\/public\/tw\/(suite|mysekai)\/(\d{6,20})$/;
+async function handleHarukiPublic(req, env, url) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+  if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const m = PUBLIC_OK.exec(url.pathname);
+  if (!m) return json({ error: 'not_found' }, 404);
+  const tail = '/tw/' + m[1] + '/' + m[2] + (url.searchParams.get('key') ? '?key=' + encodeURIComponent(url.searchParams.get('key')) : '');
+  const hosts = [((env && env.HARUKI_SUITE_API_BASE) || HARUKI_SUITE_DEFAULT).replace(/\/+$/, '') + '/public',
+    ((env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT).replace(/\/+$/, '') + '/api/public'];
+  let last = null;
+  for (const h of hosts) {
+    try {
+      const r = await fetch(h + tail, { headers: { accept: 'application/json', 'user-agent': UA }, cf: { cacheTtl: 60, cacheEverything: true }, signal: AbortSignal.timeout(30000) });
+      if (r.status >= 500) { last = r; continue; }   // 這台掛了才換下一台；404 是「沒公開」，換台也一樣
+      const hd = new Headers(CORS);
+      hd.set('content-type', r.headers.get('content-type') || 'application/json; charset=utf-8');
+      hd.set('cache-control', r.ok ? 'public, max-age=60' : 'no-store');
+      return new Response(r.body, { status: r.status, headers: hd });
+    } catch (e) { last = e; }
+  }
+  return json({ error: 'upstream', message: 'Haruki 工具箱暫時連不上' + (last && last.status ? '（HTTP ' + last.status + '）' : '') }, 502);
+}
+
 export async function handleHaruki(req, env, url) {
   if (url.pathname.startsWith('/haruki/oauth/')) return handleHarukiOAuth(req, env, url);
+  if (url.pathname.startsWith('/haruki/public/')) return handleHarukiPublic(req, env, url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
   const m = PATH_OK.exec(url.pathname);
