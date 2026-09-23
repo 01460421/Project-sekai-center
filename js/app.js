@@ -302,8 +302,8 @@ class Component extends DCLogic {
   ];
 
   /* 菜根機器人介紹頁（page=bot）。圖在 /bot-img/，換圖時把 BOT_IMG_VER 一起改掉才會破快取。 */
-  BOT_IMG_VER = '20260920b';
-  BOT_SHEET_DATE = '2026.09.20';
+  BOT_IMG_VER = '20260923';
+  BOT_SHEET_DATE = '2026.09.23';
   BOT_SHEETS = [['淺藍', '淺色'], ['粉紫', '淺色'], ['灰藍', '淺色'], ['暖橘', '淺色'], ['草綠', '淺色'], ['糖果粉', '淺色'], ['薰衣草', '淺色'], ['夜色', '深色']];
   BOT_STATS = [{ k: '三邊', v: 'Discord、QQ、網頁同一張班表' }, { k: '三車', v: '同一群平行排班' }, { k: '快捷', v: '打 h20-24 就報班' }, { k: '手機', v: '網頁排班手機也能用' }];
   BOT_FEATURES = [
@@ -311,6 +311,8 @@ class Component extends DCLogic {
     { t: '三車平行', d: '同一個群開到三台車，各車分開排班、分開鎖班；指令後面加車號，或在綁定的頻道直接報。' },
     { t: '車隊模式與指定跑者', d: '多位跑者輪流開車：每個時段的 P1 各自指定，可從成員池挑，也能直接打外援的名字。', isNew: true },
     { t: '跑者自行報跑', d: '管理員開放之後，登記過跑者倍率的成員可以自己開班：Discord 打 r20-24、QQ 打 /r 20-24，網頁按「我來開車」。別人報跑的時段不能搶。', isNew: true },
+    { t: '排班身份組', d: '管理員指定一個 Discord 身分組，有它的人可以開班、換人、鎖班、確認、指定跑者，網頁的班表分頁跟管理員一樣；但不能改任何設定。', isNew: true },
+    { t: '班表圖顯示 P1', d: '車隊模式下可以選擇讓班表圖每個時段多一欄 P1（誰開車），有指定的跑者用主色標示；私車模式維持原樣。', isNew: true },
     { t: '網頁排班', d: '看板拖拉換人、推手標記、鎖班與開放報班，手機也能用。成員只看得到自己所在的車隊。' },
     { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。', isNew: true },
     { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；在表上改座位或跑者會寫回機器人，兩邊不同時以試算表為準。', isNew: true },
@@ -324,13 +326,13 @@ class Component extends DCLogic {
   BOT_SIDES = [
     { n: 'Discord', s: '頻道直接打字，或用斜線指令', c: '#5865f2', rows: [
       { c: 'h20-24', d: '報推手班；s 是 S6、d 是雙開' }, { c: 'x20-24', d: '取消自己的班' }, { c: 'sch9/13', d: '看那天的班表，過去的也行' },
-      { c: 't100', d: '第 100 名現在幾分' }, { c: '/班表 跑者', d: '管理員指定某些時段由誰開車' }, { c: 'r20-24', d: '跑者自己報跑（要管理員先開放）' }] },
+      { c: 't100', d: '第 100 名現在幾分' }, { c: '/班表 跑者', d: '管理員指定某些時段由誰開車' }, { c: 'r20-24', d: '跑者自己報跑（要管理員先開放）' }, { c: '/設定 排班身份組', d: '指定能排班、不能改設定的身分組' }] },
     { n: 'QQ 群', s: '先 @機器人，指令用簡體', c: '#12a9c2', rows: [
       { c: '/h 20-24', d: '報推手班；/s 是 S6、/d 是雙開' }, { c: '/砍 20-24', d: '取消自己的班' }, { c: '/班表 明天', d: '出一張班表圖' },
       { c: '/排名 100', d: '查名次與分數' }, { c: '/报跑 20-24 小明', d: '管理員報跑順便指定跑者' }, { c: '/r 20-24', d: '跑者自己報跑（要管理員先開放）' }] },
     { n: '網頁', s: '左側「車隊」裡的私車排班', c: '#8a6fe0', rows: [
       { c: '班表', d: '每一列右邊一鍵報班、砍班' }, { c: '看板', d: '管理員直接拖拉換人' }, { c: '統計', d: '缺額分析與任一天的歷史班表' },
-      { c: '點歌', d: '搜尋、排隊、跳過、調音量' }, { c: '設定', d: '班表行為、試算表、語音、事件記錄' }, { c: '我來開車', d: '跑者在每一列自己報跑、取消報跑' }] },
+      { c: '點歌', d: '搜尋、排隊、跳過、調音量' }, { c: '設定', d: '班表行為、權限、試算表、語音、事件記錄' }, { c: '我來開車', d: '跑者在每一列自己報跑、取消報跑' }] },
   ];
   BOT_STEPS = [
     { n: '1', t: '登記名字與倍率', rows: [{ c: '%小明 h3.88', d: 'Discord' }, { c: '/登记 小明 h3.88', d: 'QQ' }], note: 'S6 倍率用 s，雙開用 d，跑者用 r。' },
@@ -2853,6 +2855,9 @@ class Component extends DCLogic {
      跨日列（昨天的日期）機器人會拒絕，前端先擋。state 鍵：carRunName／carRunChain（小視窗）、carARunWho（開班順便帶）、carARunSetWho（工具）。 */
   CAR_RUN_IDS = ['runner', '跑者', '跑推兼任', '跑推+s6'];
   carTeamOn(no) { const st = (this.state.carStates || {})[no || this.carNo()]; return !!(st && st.team_mode === true); }
+  /* 角色：admin＝管理員（全部）；scheduler＝排班身份組（班表分頁的工具跟管理員一樣，但沒有設定／紀錄／系統分頁、不能改設定）；member */
+  carRole(st, gd) { const r = (st && st.role) || (gd && gd.role) || 'member'; return r === 'admin' || r === 'scheduler' ? r : 'member'; }
+  carIsSched(st, gd) { const r = this.carRole(st, gd); return r === 'admin' || r === 'scheduler'; }
   /* 輸入的文字 → 要送給機器人的 runner：剛好是名冊裡某人的名字或別名（不分大小寫）就換成他的正式名字，其餘原樣送（沒註冊的跑者直接打名字） */
   carRunWho(txt) {
     const t = String(txt == null ? '' : txt).trim();
@@ -2910,7 +2915,7 @@ class Component extends DCLogic {
   /* 點跑者：只有車隊模式的管理員、而且不是跨日列才有反應。看板上如果成員池有點選中的人＝直接指定他，否則開小視窗 */
   carRunClick(el, board) {
     const no = this.carNo(), st = (this.state.carStates || {})[no], d = el.dataset;
-    if (!st || st.role !== 'admin' || st.team_mode !== true || !d.h || !d.d) return;
+    if (!st || !this.carIsSched(st) || st.team_mode !== true || !d.h || !d.d) return;
     if (st.today && String(d.d) < st.today) return;
     if (board && this.state.carAPick && this.state.carView === 'board') this.carRunPlace(el, this.state.carAPick, true);
     else this.carOpenPop('runner', el);
@@ -2993,11 +2998,11 @@ class Component extends DCLogic {
     const no = this.carNo(), st = (this.state.carStates || {})[no];
     if (force) this._carASchedAt = Date.now();
     else if (st && Date.now() - (this._carASchedAt || 0) > 8000) { this._carASchedAt = Date.now(); this.carLoadStates(no); }
-    if ((st && st.role === 'admin') || gd.role === 'admin') this.carAMemLoad(!!force);
+    if (this.carIsSched(st, gd)) this.carAMemLoad(!!force);
   }
   carSecVals_sched(c) {
     const { s, gd, st, segOn } = c;
-    const stAdmin = !!(st && st.role === 'admin');
+    const stAdmin = !!st && this.carIsSched(st, gd);   // 排班身份組也用得到排班工具（state 還沒載入時一律當成員）
     const busy = !!(s.carABusy || s.carActBusy);
     const fmt = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '—' : (+v).toFixed(2);
     const day = st ? this.carDayOf(st, s.carDate) : null;
@@ -4617,14 +4622,14 @@ class Component extends DCLogic {
     const cur = k => { const p = pend[dk(k)]; return p ? p.v : vals[k]; };
     const qq = this.carFQQ(), busy = !!s.carActBusy;
     const chList = a => (Array.isArray(a) ? a : []).filter(x => x && x.id != null).map(x => ({ id: String(x.id), name: String(x.name || '') }));
-    const chans = chList(st.channels), vchans = chList(st.vchannels);
+    const chans = chList(st.channels), vchans = chList(st.vchannels), roles = chList(st.roles);
     const noChTxt = qq ? 'QQ 車隊沒有 Discord 頻道，這項用不到' : '讀不到頻道清單（機器人可能不在這個伺服器）';
     const sw = on => ({ on: on ? 'true' : 'false', swBg: on ? 'var(--ink-grad)' : 'var(--card-2)', swBd: on ? 'transparent' : 'var(--border)', swL: on ? '20px' : '2px', swK: on ? '#fff' : 'var(--text-3)' });
-    const TYPES = ['bool', 'select', 'channel1', 'voice1', 'channels', 'range', 'note'];
+    const TYPES = ['bool', 'select', 'channel1', 'voice1', 'role1', 'channels', 'range', 'note'];
     const row = m => {
       const k = m.key, t = TYPES.indexOf(m.type) >= 0 ? m.type : 'text', v = cur(k);
       const o = { k, label: String(m.label || k), carLbl: m.car_label ? String(m.car_label) : '', hasCarLbl: !!m.car_label,
-        isBool: t === 'bool', isSel: t === 'select', isChan: t === 'channel1' || t === 'voice1', isChans: t === 'channels', isRange: t === 'range', isNote: t === 'note', isText: t === 'text' };
+        isBool: t === 'bool', isSel: t === 'select', isChan: t === 'channel1' || t === 'voice1' || t === 'role1', isChans: t === 'channels', isRange: t === 'range', isNote: t === 'note', isText: t === 'text' };
       o.cf = (o.isChans || o.isRange || o.isText) ? '1 1 100%' : '0 1 auto';
       if (o.isBool) Object.assign(o, sw(!!v));
       if (o.isSel) {
@@ -4634,10 +4639,11 @@ class Component extends DCLogic {
         o.opts = opts; o.cur = cv;
       }
       if (o.isChan) {
-        const list = t === 'voice1' ? vchans : chans, cv = v ? String(v) : '';
-        const opts = [{ v: '', n: '（未設定）' }].concat(list.map(x => ({ v: x.id, n: (t === 'voice1' ? '語音 · ' : '#') + x.name })));
-        if (cv && !list.some(x => x.id === cv)) opts.push({ v: cv, n: '（頻道已不存在）' });
-        o.opts = opts; o.cur = cv; o.noCh = !list.length && !cv; o.hasCh = !o.noCh; o.noChTxt = noChTxt;
+        const list = t === 'voice1' ? vchans : t === 'role1' ? roles : chans, cv = v ? String(v) : '';
+        const opts = [{ v: '', n: '（未設定）' }].concat(list.map(x => ({ v: x.id, n: (t === 'voice1' ? '語音 · ' : t === 'role1' ? '@' : '#') + x.name })));
+        if (cv && !list.some(x => x.id === cv)) opts.push({ v: cv, n: t === 'role1' ? '（身分組已不存在）' : '（頻道已不存在）' });
+        o.opts = opts; o.cur = cv; o.noCh = !list.length && !cv; o.hasCh = !o.noCh;
+        o.noChTxt = t === 'role1' ? (qq ? 'QQ 車隊沒有 Discord 身分組，這項用不到' : '讀不到身分組清單（機器人可能不在這個伺服器）') : noChTxt;
       }
       if (o.isChans) {
         const set = new Set((Array.isArray(v) ? v : []).map(String));
@@ -5060,8 +5066,8 @@ class Component extends DCLogic {
     if (kind === 'runner') Object.assign(patch, { carRunName: '', carRunChain: false });
     this.setState(patch);
     const st = (this.state.carStates || {})[pop.no];
-    if (st && st.role === 'admin' && (kind === 'empty' || kind === 'seat')) this.carLoadMembers();
-    if (st && st.role === 'admin' && kind === 'runner') this.carAMemLoad(false);      // 跑者的建議名單用班表分頁那份名冊（有別名與身分）
+    if (st && this.carIsSched(st) && (kind === 'empty' || kind === 'seat')) this.carLoadMembers();
+    if (st && this.carIsSched(st) && kind === 'runner') this.carAMemLoad(false);      // 跑者的建議名單用班表分頁那份名冊（有別名與身分）
   }
   async carSign(date, hour, act, role) {
     const no = this.carNo();
@@ -5384,13 +5390,13 @@ class Component extends DCLogic {
     const carNo = cars.some(c => c.no === +s.car) ? +s.car : (cars[0] ? cars[0].no : 1);
     const curCar = cars.find(c => c.no === carNo) || { no: carNo, name: this.CAR_NAMES[carNo] || '' };
     const sts = s.carStates || {}, st = sts[carNo] || null;
-    const admin = !!(st && st.role === 'admin');
+    const admin = this.carIsSched(st), fullAdmin = !!(st && st.role === 'admin');   // admin＝能排班（含排班身份組）；fullAdmin＝能改設定
     const day = this.carDayOf(st, s.carDate);
     const today = (st && st.today) || '';
     const fmt = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : (+v).toFixed(2);
     const mine = (st && st.me && typeof st.me === 'object') ? st.me : {};
     const nowH = new Date().getHours();
-    const roleTxt = { admin: '管理員', member: '成員' };
+    const roleTxt = { admin: '管理員', scheduler: '排班員', member: '成員' };
     const via = me ? ((me.discord ? 'Discord' : '') || ((me.qq || []).length ? 'QQ' : '') || '帳號') : '';
 
     /* 跨日時段（昨天 24:00 以後）日期已過：機器人只准貼標記，換人／移出／砍班／鎖班／報班一律不給按 */
@@ -5584,7 +5590,7 @@ class Component extends DCLogic {
     } : {};
 
     /* 子分頁：只算目前分頁的值（carSecVals_<id>）；分頁程式出錯只影響該分頁 */
-    const secAdm = admin || !!(gd && gd.role === 'admin');
+    const secAdm = fullAdmin || !!(gd && gd.role === 'admin');   // 設定／紀錄／系統分頁只給管理員（排班身份組沒有）
     const secTabs = this.CAR_TABS.filter(t => !t[2] || secAdm);
     const secTab = secTabs.some(t => t[0] === s.carTab) ? s.carTab : 'sched';
     const secIs = {}; secTabs.forEach(t => { secIs[t[0]] = t[0] === secTab; });
@@ -5608,11 +5614,11 @@ class Component extends DCLogic {
       carCtx: gd ? (String(gd.name || '車隊') + ' · ' + (roleTxt[(st && st.role) || gd.role] || '成員') + (via ? ' · ' + via + ' 已登入' : '')
         + (teamKnown && !admin ? ' · ' + (teamOn ? '車隊模式' : '私車模式') : '')) : '',      // 成員沒有開關：這一行最後面寫目前的模式（手機上這行會被截斷，工具列右邊另外再寫一次，見 carModeTxt）
       /* 私車／車隊開關（管理員，班表分頁的工具列）；onCarMode 在下面的事件表 */
-      carModeShow: admin && teamKnown,
+      carModeShow: fullAdmin && teamKnown,          // 私車／車隊是設定，排班身份組不能切
       carModeSeg: [['solo', '私車'], ['team', '車隊']].map(([v, n]) => Object.assign({ v, n, sel: (teamOn ? 'team' : 'solo') === v ? 'true' : 'false' }, segOn((teamOn ? 'team' : 'solo') === v))),
       carModeNote: '私車＝整隊固定一位跑者；車隊＝每個時段可以各自指定跑者（從成員池挑或直接打名字）。'
         + (selfKnown && teamOn ? (selfOn ? '已開放跑者自行報跑：登記過跑者倍率的成員可以自己開班（Discord r20-24、QQ /r 20-24、網頁「我來開車」）。' : '想讓跑者自己開班，打開右邊的「跑者自行報跑」。') : ''),
-      carRsAdmShow: admin && selfKnown && teamOn,
+      carRsAdmShow: fullAdmin && selfKnown && teamOn,
       carRsAdmTxt: '跑者自行報跑：' + (selfOn ? '開' : '關'), carRsAdmV: selfOn ? '0' : '1', carRsAdmPressed: selfOn ? 'true' : 'false',
       carRsAdmBg: selfOn ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'var(--card-2)', carRsAdmFg: selfOn ? 'var(--accent-deep)' : 'var(--text-2)',
       carRsAdmBd: selfOn ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
@@ -5621,7 +5627,7 @@ class Component extends DCLogic {
       carRsHintShow: !admin && selfOn && !meRunner && !xd,
       carRsHint: '這個車隊開放跑者自行報跑。想開車先登記跑者倍率：Discord 打 %名字 r3.40，QQ 打 /登记 名字 r3.40，登記完重新整理就會出現「我來開車」。',
       /* 成員：工具列右邊再寫一次目前的模式（手機上最上面那一行會被截斷，看不到最後面的模式） */
-      carModeTxt: teamKnown && !admin ? (teamOn ? '車隊模式' : '私車模式') : '',
+      carModeTxt: teamKnown && !fullAdmin ? (teamOn ? '車隊模式' : '私車模式') : '',
       carModeTip: teamOn ? '車隊模式：每個時段可以各自指定跑者' : '私車模式：整隊固定一位跑者',
       /* 切換車隊：不用原生 <select>（macOS 深色下原生選單會畫成一顆看不到名字的鈕），改成自己畫的清單 */
       carGuildList: guilds.map(x => { const on = String(x.gid) === String(s.g || ''); return { v: String(x.gid), n: String(x.name || x.gid), role: roleTxt[x.role] || '成員', on: on ? 'true' : 'false',
@@ -5631,6 +5637,7 @@ class Component extends DCLogic {
       carViewTabs: [['table', '表格'], ['board', '看板']].map(([v, n]) => Object.assign({ v, n }, segOn((s.carView || 'table') === v))),
       carIsTable: (s.carView || 'table') !== 'board', carIsBoard: s.carView === 'board',
       carIsAdmin: admin,
+      carTagMgrBtn: fullAdmin,                      // 標籤盤是設定類，排班身份組不能改（carTagMgrShow 是彈窗開關，別撞名）
       carOpenBtn: open ? '停止報班' : '開放報班', carOpenBg: open ? 'var(--card-2)' : 'var(--ink-grad)', carOpenFg: open ? 'var(--text-2)' : '#fff', carOpenBd: open ? 'var(--border)' : 'transparent',
       carLockBtn: allLocked ? '解鎖全天' : '鎖班', carLockV: allLocked ? '0' : '1', carLockShow: admin && !!day && !xd,
       carDates: dates, carHasDates: dates.length > 0,
@@ -9801,7 +9808,7 @@ class Component extends DCLogic {
       isBot: s.page === 'bot',
       botHeroImg: './bot-img/hero.webp?v=' + this.BOT_IMG_VER,
       botStats: this.BOT_STATS, botFeatures: this.BOT_FEATURES, botSides: this.BOT_SIDES, botSteps: this.BOT_STEPS,
-      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上車隊模式、跑者自行報跑、試算表同步、點歌與錄音。',
+      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上排班身份組、班表圖顯示 P1、跑者自行報跑、試算表同步、點歌與錄音。',
       botSheets: this.BOT_SHEETS.map((g, i) => ({
         n: '卡面 ' + (i + 1), tone: g[1], alt: '菜根機器人指令清單，卡面 ' + (i + 1) + '（' + g[0] + '）',
         full: './bot-img/cmd-' + (i + 1) + '.webp?v=' + this.BOT_IMG_VER,
