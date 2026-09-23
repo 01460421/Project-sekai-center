@@ -2831,7 +2831,7 @@ export function aiMembers() {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=3d6fc7f641';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=507a968234';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
