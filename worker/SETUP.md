@@ -92,6 +92,8 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
    回呼網址填 `https://project-sekai-center.com/app.html`，scope 至少要 `game-data:read`，建議加 `offline_access`
    （可免重新授權）與 `bindings:read`（自動帶出綁定的台服帳號）。拿到 client id 後改 `wrangler.toml` 的
    `HARUKI_OAUTH_CLIENT_ID`（與 `HARUKI_OAUTH_SCOPES`）再部署。前端讀 `/haruki/config`，快取五分鐘。
+   工具箱不對其他網站開 CORS，所以前端換 token、撤銷、讀資料都走 `/haruki/oauth/*` 由 Worker 原樣轉送
+   （只放行固定路徑、只給本站網域、client_id 必須相符，不記錄也不保存）；只有授權頁是整頁跳轉到 Haruki。
 3. 檢查：
    ```
    curl https://games.project-sekai-center.com/haruki/config

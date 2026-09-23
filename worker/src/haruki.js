@@ -104,7 +104,54 @@ export async function harukiLive(env, kind, eventId) {
 
 const PATH_OK = /^\/haruki\/(config|event\/list|event\/(live|\d{1,4})\/(top100|border))$/;
 
+/* ---------- 工具箱 OAuth 轉送 ----------
+   Haruki 工具箱不對其他網站開 CORS，瀏覽器不能直接呼叫它（對方 2026-09 回覆），所以換 token、撤銷、
+   讀綁定與遊戲資料都經這裡轉一手：原封不動送過去、原封不動回來，不記錄、不快取、不保存任何 token。
+   只放行固定幾條路徑；CORS 只給本站網域；client_id 必須是 Worker 設定的那一個，避免被拿去替別的 client 代打。 */
+const OAUTH_GET = /^\/haruki\/oauth\/(user\/bindings|user\/profile|game-data\/tw\/(suite|mysekai)\/\d{6,20})$/;
+const OAUTH_POST = /^\/haruki\/oauth\/(token|revoke)$/;
+function siteCors(env, req) {
+  const site = (env && env.SITE_BASE) || 'https://project-sekai-center.com';
+  const origin = req.headers.get('origin') || '';
+  const allow = origin === site ? origin : site;
+  return { 'access-control-allow-origin': allow, 'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': 'authorization, content-type', 'access-control-max-age': '600', vary: 'Origin' };
+}
+export async function handleHarukiOAuth(req, env, url) {
+  const cors = siteCors(env, req);
+  const out = (obj, status) => new Response(JSON.stringify(obj), { status, headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const base = ((env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT).replace(/\/+$/, '');
+  const clientId = (env && env.HARUKI_OAUTH_CLIENT_ID) || '';
+  if (!clientId) return out({ error: 'not_configured', error_description: '站方尚未設定 Haruki OAuth client' }, 503);
+  let upstream;
+  try {
+    if (req.method === 'POST' && OAUTH_POST.test(url.pathname)) {
+      const form = new URLSearchParams(await req.text());
+      if (form.get('client_id') !== clientId) return out({ error: 'invalid_client', error_description: 'client_id 不符' }, 400);
+      const which = OAUTH_POST.exec(url.pathname)[1];
+      if (which === 'token' && !['authorization_code', 'refresh_token'].includes(form.get('grant_type') || '')) return out({ error: 'unsupported_grant_type' }, 400);
+      upstream = await fetch(base + '/api/oauth2/' + which, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'user-agent': UA },
+        body: form.toString(), signal: AbortSignal.timeout(20000) });
+    } else if (req.method === 'GET' && OAUTH_GET.test(url.pathname)) {
+      const auth = req.headers.get('authorization') || '';
+      if (!/^Bearer [\w\-.~+/=]{8,4096}$/.test(auth)) return out({ error: 'invalid_token', error_description: '缺少授權' }, 401);
+      upstream = await fetch(base + '/api/oauth2/' + url.pathname.slice('/haruki/oauth/'.length), { headers: { authorization: auth, accept: 'application/json', 'user-agent': UA },
+        signal: AbortSignal.timeout(30000) });
+    } else {
+      return out({ error: 'not_found' }, 404);
+    }
+  } catch (e) {
+    return out({ error: 'upstream', error_description: 'Haruki 工具箱連線失敗：' + String((e && e.message) || e).slice(0, 120) }, 502);
+  }
+  const h = new Headers(cors);
+  h.set('content-type', upstream.headers.get('content-type') || 'application/json; charset=utf-8');
+  h.set('cache-control', 'no-store');
+  return new Response(upstream.body, { status: upstream.status, headers: h });
+}
+
 export async function handleHaruki(req, env, url) {
+  if (url.pathname.startsWith('/haruki/oauth/')) return handleHarukiOAuth(req, env, url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
   const m = PATH_OK.exec(url.pathname);
