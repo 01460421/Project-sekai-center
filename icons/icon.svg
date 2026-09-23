@@ -1,22 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2352"/><stop offset="1" stop-color="#2c3f97"/></linearGradient>
-    <linearGradient id="rb" gradientUnits="userSpaceOnUse" x1="118" y1="0" x2="404" y2="0"><stop offset="0" stop-color="#4ad1e8"/><stop offset=".3" stop-color="#3ee0a8"/><stop offset=".55" stop-color="#ffd94d"/><stop offset=".8" stop-color="#ff9db4"/><stop offset="1" stop-color="#c39df2"/></linearGradient>
+    <linearGradient id="rb" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="356"><stop offset="0" stop-color="#4ad1e8"/><stop offset=".3" stop-color="#3ee0a8"/><stop offset=".55" stop-color="#ffd94d"/><stop offset=".8" stop-color="#ff9db4"/><stop offset="1" stop-color="#c39df2"/></linearGradient>
     <linearGradient id="rbTop" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4ad1e8"/><stop offset=".2" stop-color="#3ee0a8"/><stop offset=".4" stop-color="#b8e561"/><stop offset=".55" stop-color="#ffd94d"/><stop offset=".75" stop-color="#ff9db4"/><stop offset="1" stop-color="#7fb4f7"/></linearGradient>
     <clipPath id="cp"><rect width="512" height="512" rx="112"/></clipPath>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
   <rect width="512" height="14" fill="url(#rbTop)" clip-path="url(#cp)"/>
-  <circle cx="420" cy="80" r="150" fill="#fff" fill-opacity=".06" clip-path="url(#cp)"/>
-  <g transform="translate(256 272) scale(1) translate(-256 -272)">
-    <circle cx="256" cy="272" r="172" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="3"/>
-    <polygon points="256.0,120.0 387.6,196.0 387.6,348.0 256.0,424.0 124.4,348.0 124.4,196.0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="4" stroke-linejoin="round"/>
-    <polygon points="256.0,120.0 387.6,348.0 124.4,348.0" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="3" stroke-linejoin="round"/><polygon points="387.6,196.0 256.0,424.0 124.4,196.0" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="3" stroke-linejoin="round"/><polygon points="294.0,206.2 332.0,272.0 294.0,337.8 218.0,337.8 180.0,272.0 218.0,206.2" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="3" stroke-linejoin="round"/>
-    <polyline points="118,356 196,304 262,326 334,226 404,178" fill="none" stroke="#0b1236" stroke-opacity=".45" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
-    <polyline points="118,356 196,304 262,326 334,226 404,178" fill="none" stroke="url(#rb)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="404" cy="178" r="20" fill="#fff"/>
-    <circle cx="404" cy="178" r="9" fill="#c39df2"/>
-    <circle cx="118" cy="356" r="11" fill="#fff" fill-opacity=".9"/>
-    <circle cx="262" cy="326" r="8" fill="#fff" fill-opacity=".85"/>
+  <circle cx="430" cy="70" r="150" fill="#fff" fill-opacity=".06" clip-path="url(#cp)"/>
+  <g transform="translate(256 256) scale(1) translate(-256 -256)">
+    <g fill="none" stroke="#fff" stroke-width="2.5">
+      <circle cx="256" cy="164" r="64" stroke-opacity=".32"/>
+      <circle cx="256" cy="292" r="64" stroke-opacity=".32"/>
+      <circle cx="256" cy="228" r="162" stroke-opacity=".16"/>
+      <polygon points="256.0,66.0 396.3,147.0 396.3,309.0 256.0,390.0 115.7,309.0 115.7,147.0" stroke-opacity=".22" stroke-linejoin="round"/>
+      <line x1="68" y1="228" x2="444" y2="228" stroke-opacity=".14" stroke-dasharray="6 8"/>
+      <line x1="256" y1="40" x2="256" y2="416" stroke-opacity=".14" stroke-dasharray="6 8"/>
+      <line x1="88" y1="100" x2="424" y2="100" stroke-opacity=".12"/>
+      <line x1="88" y1="356" x2="424" y2="356" stroke-opacity=".12"/>
+    </g>
+    <g fill="#fff" fill-opacity=".7"><circle cx="320" cy="164" r="4"/><circle cx="256" cy="228" r="4"/><circle cx="192" cy="292" r="4"/></g>
+    <path d="M320.0,164.0 A64,64 0 1 0 256.0,228.0 A64,64 0 1 1 192.0,292.0" fill="none" stroke="#0b1236" stroke-opacity=".5" stroke-width="54" stroke-linecap="round"/>
+    <path d="M320.0,164.0 A64,64 0 1 0 256.0,228.0 A64,64 0 1 1 192.0,292.0" fill="none" stroke="url(#rb)" stroke-width="40" stroke-linecap="round"/>
+    <g transform="translate(180.9 0)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3,401.5 A9.5,9.5 0 1 0 11.8,411.0 A9.5,9.5 0 1 1 2.3,420.5"/><path d="M36.56,392 V430 M36.56,392 H60.120000000000005 M36.56,411.0 H55.408 M36.56,430 H60.120000000000005"/><path d="M73.12,392 V430 M96.68,392 L73.12,412.9 M80.188,407.2 L96.68,430"/><path d="M109.68,430 L121.46000000000001,392 L133.24,430 M114.8632,417.08 H128.0568"/><path d="M148.24,392 V430"/></g>
   </g>
 </svg>
