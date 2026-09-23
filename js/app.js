@@ -162,6 +162,33 @@ class Component extends DCLogic {
     hubCom:   ['car', 'bot', 'qa', 'tut', 'res', 'whatsnew', 'credits', 'account', 'notices', 'assistant']
   };
   hubOf(p) { for (const k in this.HUBS) if (this.HUBS[k].includes(p)) return k; return null; }
+  /* 卡片查詢語法：搜尋框可以直接打「mmj 藍 限定 2025」這種組合，認得出的字當篩選、其餘當卡名關鍵字。
+     團體：ln／mmj／vbs／ws／25／vs（含中日文別名）；角色：站內短名與常見羅馬拼音／縮寫；
+     屬性：紅藍綠黃紫或 cute／cool／pure／happy／mysterious；稀有度：4／四星／★4／生日；
+     來源：限定／常駐／fes／期間限定／聯動；年份：2025／2025年／今年／去年 */
+  Q_UNIT = { ln: 'ln', leo: 'ln', leoneed: 'ln', 'leo/need': 'ln', mmj: 'mmj', more: 'mmj', morejump: 'mmj', vbs: 'vbs', vivid: 'vbs', vividbad: 'vbs', ws: 'wxs', wxs: 'wxs', wonder: 'wxs', wonderlands: 'wxs', 'ワンダショ': 'wxs', 'ニーゴ': 'n25', '25': 'n25', n25: 'n25', '25時': 'n25', niigo: 'n25', nightcord: 'n25', vs: 'vs', virtual: 'vs', 'v家': 'vs', 'vsinger': 'vs' };
+  Q_CHAR = { ichika: 1, ick: 1, saki: 2, honami: 3, hnm: 3, shiho: 4, shh: 4, minori: 5, mnr: 5, haruka: 6, hrk: 6, airi: 7, shizuku: 8, szk: 8, kohane: 9, khn: 9, an: 10, akito: 11, akt: 11, toya: 12, touya: 12, tsukasa: 13, tks: 13, emu: 14, nene: 15, rui: 16, kanade: 17, knd: 17, mafuyu: 18, mfy: 18, ena: 19, mizuki: 20, mzk: 20, miku: 21, rin: 22, len: 23, luka: 24, meiko: 25, kaito: 26 };
+  Q_ATTR = { '紅': 3, red: 3, cute: 3, '可愛': 3, '藍': 0, blue: 0, cool: 0, '帥氣': 0, '綠': 4, green: 4, pure: 4, '純真': 4, '黃': 1, yellow: 1, happy: 1, '快樂': 1, '紫': 2, purple: 2, mysterious: 2, '神秘': 2 };
+  Q_RAR = { '4': 4, '四星': 4, '★4': 4, '4星': 4, '3': 3, '三星': 3, '★3': 3, '3星': 3, '2': 2, '二星': 2, '★2': 2, '1': 1, '一星': 1, '★1': 1, '生日': 9, bd: 9, birthday: 9, '生日卡': 9 };
+  Q_SUP = { '限定': [2, 3, 4, 5, 6], limited: [2, 3, 4, 5, 6], '常駐': [0], normal: [0], fes: [3, 4], 'フェス': [3, 4], '彩fes': [3], 'bfes': [4], '花fes': [4], '期間限定': [2], '聯動': [6], collab: [6], '團限': [5], '團體限定': [5] };
+  parseCardQuery(q) {
+    const out = { unit: null, chars: [], attr: null, rar: null, sup: null, year: null, rest: [], tags: [] };
+    const now = new Date().getFullYear();
+    String(q || '').split(/\s+/).filter(Boolean).forEach(raw => {
+      const tk = raw.toLowerCase();
+      if (this.Q_UNIT[tk] != null) { out.unit = this.Q_UNIT[tk]; out.tags.push(this.UNITS[out.unit].n); return; }
+      if (this.Q_CHAR[tk] != null) { out.chars.push(this.Q_CHAR[tk]); out.tags.push(this.charShort(this.Q_CHAR[tk]) || raw); return; }
+      if (this.CHARA_ID[raw] != null) { out.chars.push(this.CHARA_ID[raw]); out.tags.push(raw); return; }
+      if (this.Q_ATTR[tk] != null) { out.attr = this.Q_ATTR[tk]; out.tags.push(['帥氣', '快樂', '神秘', '可愛', '純真'][out.attr]); return; }
+      if (this.Q_RAR[tk] != null) { out.rar = this.Q_RAR[tk]; out.tags.push(out.rar === 9 ? '生日卡' : '★' + out.rar); return; }
+      if (this.Q_SUP[tk] != null) { out.sup = this.Q_SUP[tk]; out.tags.push(raw); return; }
+      const ym = /^(20\d\d)年?$/.exec(tk); if (ym) { out.year = +ym[1]; out.tags.push(ym[1] + ' 年'); return; }
+      if (tk === '今年') { out.year = now; out.tags.push(now + ' 年'); return; }
+      if (tk === '去年') { out.year = now - 1; out.tags.push((now - 1) + ' 年'); return; }
+      out.rest.push(raw);
+    });
+    return out;
+  }
   /* 圈內用語 → 站上功能 → 對應工具。玩家講的幾乎都是別名,而站上存的是正式名稱;
      這張表放在程式碼裡而不是 prompt 裡 —— 它有五百多條,每次請求都送一遍太貴,
      而 search_anything 只要查到就能直接告訴模型該呼叫哪支工具,效果更確定。
@@ -350,6 +377,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/23', t: '卡片圖鑑查詢語法', s: '卡片圖鑑的搜尋框可以直接打組合條件，例如「mmj 藍 限定 2025」「miku 生日」「25 四星 fes」：團體、角色（中文短名或 ick／mnr／miku 這類縮寫）、屬性（紅藍綠黃紫或英文）、稀有度、來源（限定／常駐／fes／聯動）、年份都會被認出來當篩選，其餘文字才當卡名關鍵字；套用了什麼會顯示在篩選列上方。' },
     { d: '2026/09/23', t: '手機五個入口與樞紐頁、體力回復試算', s: '手機底部改成首頁、追活動、圖鑑、工具、更多五個入口；追活動、圖鑑、工具、社群各有一頁樞紐：上面一句今天的狀態（活動名與我的名次、圖鑑資料日期、已存設定、未讀通知），下面是子頁卡片；在子頁時底部會點亮所屬入口。計算中心新增「體力回復」：填目前體力與目標，算回滿與到目標的時刻。' },
     { d: '2026/09/23', t: '對照同類站的第一批：時速籤、日曆四類新事件、定數、查房', s: '活動總覽多了時速籤：自己的近 1h／3h／日速（前百有 API 統計）與 T1000、T5000 的實測時速；活動日曆納入新曲實裝、虛擬 Live 期間、登入活動與角色生日，圖例可點選隱藏某一類，.ics 匯出與今日摘要跟著多這幾類；歌曲詳情各難度顯示 B30 定數；排名詳情的逐局紀錄多了「上次上分距今、間隔中位、最長停車、近 1h 場數」。' },
     { d: '2026/09/21', t: '6.4（WL3・5.5 週年）資料對應', s: '日服 6.4 起的 World Link 第三輪每期有「總合力上限 336,000」（master 新表 eventTotalPowerLimits）：跑榜工作室的最佳化與活動總覽的規則文字改成讀這張表，台服 6.4 一到就會自動套用；WL3 支援池的「自選二段卡」機率（0.2%）加進抽卡天井目標；5.5 週年的自選角色招募在卡池類型分出「選角池」。' },
@@ -7494,8 +7522,18 @@ class Component extends DCLogic {
       if (s.cdAttr >= 0) all = all.filter(r => r[3] === s.cdAttr);
       if (s.cdRar) all = all.filter(r => r[2] === s.cdRar);
       if (s.cdSup >= 0) all = all.filter(r => r[4] === s.cdSup);
-      if (q) all = all.filter(r => hit(r[7], charOf(r[1])[1], (X && X.extra[r[0]] ? X.extra[r[0]][9] : '')));
       const rel = id => (X && X.extra[id] ? X.extra[id][1] : 0);
+      // 查詢語法：認得出的字當篩選，剩下的才是卡名關鍵字
+      const pq = this.parseCardQuery(s.dbq || '');
+      if (pq.unit) all = all.filter(r => this.UNIT_OF[charOf(r[1])[2]] === pq.unit || (r[5] >= 0 && this.UNIT_OF[r[5]] === pq.unit));
+      if (pq.chars.length) all = all.filter(r => pq.chars.includes(r[1]));
+      if (pq.attr != null) all = all.filter(r => r[3] === pq.attr);
+      if (pq.rar) all = all.filter(r => r[2] === pq.rar);
+      if (pq.sup) all = all.filter(r => pq.sup.includes(r[4]));
+      if (pq.year) all = all.filter(r => rel(r[0]) && new Date(rel(r[0]) * 1000).getFullYear() === pq.year);
+      const q2 = pq.rest.join(' ').trim().toLowerCase();
+      if (q2) all = all.filter(r => [r[7], charOf(r[1])[1], (X && X.extra[r[0]] ? X.extra[r[0]][9] : '')].some(v => String(v || '').toLowerCase().includes(q2)));
+      out.cdQueryHint = pq.tags.length ? '已依關鍵字套用：' + pq.tags.join(' · ') + (q2 ? '，並搜尋「' + q2 + '」' : '') : '';
       all = all.slice().sort((a, b) => s.cdSort === 'old' ? ((rel(a[0]) - rel(b[0])) || (a[0] - b[0])) : s.cdSort === 'id' ? (a[0] - b[0]) : ((rel(b[0]) - rel(a[0])) || (b[0] - a[0])));
       out.cdUnitChips = [{ v: '', n: '全部團體' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n }))).map(c => Object.assign(c, chip(s.cdUnit === c.v, c.v ? this.UNITS[c.v].c : '')));
       out.cdCharChips = chars.filter(c => !s.cdUnit || this.UNIT_OF[c[2]] === s.cdUnit).map(c => Object.assign({ v: c[0], n: this.charShort(c[0]) || c[1] }, chip(s.cdChar === c[0], this.CHARA_COLOR[c[0]])));
