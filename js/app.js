@@ -384,6 +384,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/23', t: 'Haruki 工具箱一鍵匯入', s: '我的帳號多一張「Haruki 工具箱匯入」：在 Haruki 工具箱把帳號設成「允許公開 API」後，填 Player ID（或貼上工具箱網址）就能匯入，不必登入；站方開通後也能改用 Haruki 帳號授權。一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。讀取經本站 Worker 轉送、不保存；收集率以遊戲為準整份取代（可按「還原收集率」退回），B30 只升不降。', p: 'account' },
     { d: '2026/09/23', t: '台服資料改用 Haruki 的 6.4 版，排名多一個備援', s: '卡片、歌曲、活動、豆森與應援活動改讀 Team-Haruki 的台服 master（已是 6.4：卡片 1,249 → 1,357 張、歌曲多 32 首、活動排到第 202 期），缺的表自動退回 Sekai-World。應援活動依開始時間編回數，9/24 開始的第 9 回是新的棋盤版。HiSekai 連不上時，排名、首頁、逐局追蹤與榜線快照改用 Haruki 公開 API，畫面會標出「Haruki 備援資料」。', p: 'rank' },
     { d: '2026/09/23', t: '首頁依活動階段給建議', s: '首頁活動卡下方多一塊「現在該做什麼」：開跑前、開跑、中盤、最後衝刺、結算中、下期預告六種狀態，各配一句提醒與四個捷徑（活動試算、摸魚表、榜線、加分卡等）；活動卡的倒數在開跑前改數距開始時間。可在自訂首頁隱藏或調順序。', p: 'home' },
     { d: '2026/09/23', t: '卡片圖鑑查詢語法', s: '卡片圖鑑的搜尋框可以直接打組合條件，例如「mmj 藍 限定 2025」「miku 生日」「25 四星 fes」：團體、角色（中文短名或 ick／mnr／miku 這類縮寫）、屬性（紅藍綠黃紫或英文）、稀有度、來源（限定／常駐／fes／聯動）、年份都會被認出來當篩選，其餘文字才當卡名關鍵字；套用了什麼會顯示在篩選列上方。' },
@@ -656,6 +657,7 @@ class Component extends DCLogic {
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
+    hkCfg: null, hkTok: null, hkBusy: false, hkMsg: '', hkLast: null, hkUid: '',
     ctab: 'ep', preset: '',
     moyuSort: 'ep', moyuScope: 'all', moyuLimit: 40, moyuQ: '', moyuFMode: 'none', moyuFN: 10,
     epSongs: [], epErr: '', tutQA: [], tutCats: [], tutDoc: '',
@@ -805,6 +807,7 @@ class Component extends DCLogic {
     } catch (e) {}
     // 開站就問一次「我是誰」——導覽列要知道是不是管理員才決定顯不顯示後台入口
     this.loadMe();
+    this.hkBoot();   // Haruki 工具箱 OAuth：處理授權回呼、讀 client 設定
     this.mq = window.matchMedia('(max-width: 900px)');
     this._mobileGestures();
     this._initErrorGuard();
@@ -7360,6 +7363,190 @@ class Component extends DCLogic {
   loadMst() {
     return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=ef5d8ff8a6'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
   }
+  /* ---------- Haruki 工具箱 OAuth 匯入 ----------
+     流程照 Uni PJSK Viewer 與 33Kit 的公開 client：授權碼＋PKCE，token 只存在這台瀏覽器（localStorage）。
+     Haruki 工具箱不對其他網站開 CORS，所以授權頁之外的呼叫（換 token、撤銷、讀資料）都經自家 Worker 的
+     /haruki/oauth/* 原樣轉送，Worker 不記錄也不保存。client id 由 /haruki/config 提供，沒設就不顯示入口。
+     匯入寫進站上原本的四份本機紀錄：收集率持有卡、專精／技能等級、B30 成績、豆森對話與家具。 */
+  HK_TOK_KEY = 'sekai-haruki-oauth';
+  HK_PEND_KEY = 'sekai-haruki-pending';
+  HK_LAST_KEY = 'sekai-haruki-last';
+  hkRedirect() { return location.origin + '/app.html'; }
+  hkB64(bytes) { let s = ''; bytes.forEach(b => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  hkRand(n) { const b = new Uint8Array(n || 32); crypto.getRandomValues(b); return this.hkB64(b); }
+  async hkBoot() {
+    let tok = null, last = null;
+    try { tok = JSON.parse(localStorage.getItem(this.HK_TOK_KEY) || 'null'); } catch (e) {}
+    try { last = JSON.parse(localStorage.getItem(this.HK_LAST_KEY) || 'null'); } catch (e) {}
+    this.setState({ hkTok: tok, hkLast: last });
+    const q = new URLSearchParams(location.search);
+    let pend = null; try { pend = JSON.parse(sessionStorage.getItem(this.HK_PEND_KEY) || 'null'); } catch (e) {}
+    if (pend && (q.get('code') || q.get('error'))) {
+      // 先把 code／state 從網址拿掉：重新整理或分享網址都不該再送一次
+      try { const u = new URL(location.href); ['code', 'state', 'error', 'error_description', 'iss'].forEach(k => u.searchParams.delete(k)); u.searchParams.set('page', 'account'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) {}
+      this.go('account', { silent: true });
+      await this.hkLoadCfg();
+      try { await this.hkFinish(q, pend); } catch (e) { this.setState({ hkBusy: false, hkMsg: '授權失敗：' + ((e && e.message) || e) }); }
+    }
+  }
+  async hkLoadCfg() {
+    if (this.state.hkCfg) return this.state.hkCfg;
+    try {
+      const r = await fetch(this.GAMES_API + '/haruki/config');
+      const c = r.ok ? await r.json() : null;
+      const cfg = { base: (c && c.oauth && c.oauth.base) || 'https://toolbox-api-direct.haruki.seiunx.com', clientId: (c && c.oauth && c.oauth.clientId) || '', scopes: (c && c.oauth && c.oauth.scopes) || ['offline_access', 'game-data:read'] };
+      this.setState({ hkCfg: cfg }); return cfg;
+    } catch (e) { const cfg = { base: '', clientId: '', scopes: [] }; this.setState({ hkCfg: cfg }); return cfg; }
+  }
+  async hkStart() {
+    const cfg = await this.hkLoadCfg();
+    if (!cfg.clientId) { this.setState({ hkMsg: '站方還沒拿到 Haruki 的 OAuth client，暫時不能連結。' }); return; }
+    const state = this.hkRand(24), verifier = this.hkRand(32);
+    const dig = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+    try { sessionStorage.setItem(this.HK_PEND_KEY, JSON.stringify({ state, verifier, at: Date.now() })); } catch (e) {}
+    const u = new URL('/api/oauth2/authorize', cfg.base);
+    u.searchParams.set('response_type', 'code'); u.searchParams.set('client_id', cfg.clientId);
+    u.searchParams.set('redirect_uri', this.hkRedirect()); u.searchParams.set('scope', cfg.scopes.join(' '));
+    u.searchParams.set('state', state); u.searchParams.set('code_challenge', this.hkB64(new Uint8Array(dig))); u.searchParams.set('code_challenge_method', 'S256');
+    location.assign(u.toString());
+  }
+  hkSaveTok(p, prev) {
+    const t = { access: p.access_token || (prev && prev.access) || '', refresh: p.refresh_token || (prev && prev.refresh) || '', scope: p.scope || (prev && prev.scope) || '',
+      exp: typeof p.expires_in === 'number' ? Date.now() + p.expires_in * 1000 : ((prev && prev.exp) || 0) };
+    try { localStorage.setItem(this.HK_TOK_KEY, JSON.stringify(t)); } catch (e) {}
+    this.setState({ hkTok: t }); return t;
+  }
+  async hkTokenReq(body) {
+    const cfg = await this.hkLoadCfg();
+    const r = await fetch(this.GAMES_API + '/haruki/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.assign({ client_id: cfg.clientId }, body)).toString() });
+    let p = null; try { p = await r.json(); } catch (e) {}
+    if (!r.ok) { const err = new Error((p && (p.error_description || p.message)) || ('HTTP ' + r.status)); err.code = p && p.error; throw err; }
+    return p || {};
+  }
+  async hkFinish(q, pend) {
+    try { sessionStorage.removeItem(this.HK_PEND_KEY); } catch (e) {}
+    if (q.get('error')) throw new Error(q.get('error_description') || q.get('error'));
+    if (!q.get('state') || q.get('state') !== pend.state) throw new Error('state 對不上，請重新連結一次');
+    // 對方文件 §11：state 只能用一次（上面已從 sessionStorage 刪掉）且要有期限；超過 15 分鐘就請使用者重來
+    if (!pend.at || Date.now() - pend.at > 15 * 60000) throw new Error('授權逾時，請重新連結一次');
+    this.setState({ hkBusy: true, hkMsg: '換取授權中…' });
+    const p = await this.hkTokenReq({ grant_type: 'authorization_code', code: q.get('code'), redirect_uri: this.hkRedirect(), code_verifier: pend.verifier });
+    this.hkSaveTok(p, null);
+    this.setState({ hkBusy: false, hkMsg: '已連結 Haruki，開始匯入…' });
+    await this.hkImport();
+  }
+  async hkAccess(force) {
+    const t = this.state.hkTok;
+    if (!t || (!t.access && !t.refresh)) throw new Error('還沒連結 Haruki');
+    if (!force && t.access && (!t.exp || Date.now() < t.exp - 30000)) return t.access;
+    if (!t.refresh) { this.hkForget(); throw new Error('授權過期，請重新連結'); }
+    try { return this.hkSaveTok(await this.hkTokenReq({ grant_type: 'refresh_token', refresh_token: t.refresh }), t).access; }
+    catch (e) { if (e.code === 'invalid_grant' || e.code === 'invalid_token') this.hkForget(); throw e; }
+  }
+  async hkGet(path) {
+    const cfg = await this.hkLoadCfg();
+    const go = async tok => fetch(this.GAMES_API + '/haruki/oauth/' + path.replace(/^\/api\/oauth2\//, ''), { headers: { Authorization: 'Bearer ' + tok } });
+    let r = await go(await this.hkAccess());
+    if (r.status === 401 && this.state.hkTok && this.state.hkTok.refresh) r = await go(await this.hkAccess(true));
+    let p = null; try { p = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error((p && (p.error_description || p.message)) || ('HTTP ' + r.status));
+    return p && p.updatedData !== undefined ? p.updatedData : p;
+  }
+  /* 工具箱公開 API（玩家在工具箱把帳號設成「允許公開 API」就不必登入）：經 Worker 轉送，404＝沒上傳或沒公開 */
+  async hkPublic(kind, uid) {
+    const r = await fetch(this.GAMES_API + '/haruki/public/tw/' + kind + '/' + uid);
+    let p = null; try { p = await r.json(); } catch (e) {}
+    if (!r.ok) { const err = new Error(r.status === 404 ? 'not_public' : ((p && (p.message || p.error)) || ('HTTP ' + r.status))); err.status = r.status; throw err; }
+    return p && p.updatedData !== undefined ? p.updatedData : p;
+  }
+  /* 輸入框收 Player ID 或整段工具箱網址（網址裡最後一串 6～20 位數字就是 ID） */
+  hkUidFrom(text) { const m = String(text || '').match(/\d{6,20}/g); return m ? m[m.length - 1] : ''; }
+  /* 要匯入哪個台服帳號：授權有 bindings:read 就問 Haruki 綁了哪些，否則用站上填的 Player ID */
+  async hkTargetUid() {
+    const t = this.state.hkTok || {};
+    if (/\bbindings:read\b/.test(t.scope || '')) {
+      try {
+        const list = await this.hkGet('/api/oauth2/user/bindings');
+        // 工具箱只讓「已驗證」的綁定讀遊戲資料（對方文件 §7.3）：已驗證的排前面
+        const tw = (Array.isArray(list) ? list : []).filter(b => String(b.server || b.region || '').toLowerCase() === 'tw')
+          .sort((x, y) => (y.verified ? 1 : 0) - (x.verified ? 1 : 0)).map(b => String(b.userId || b.user_id || b.gameUserId || '')).filter(Boolean);
+        if (tw.length) return tw.includes(String(this.state.pid)) ? String(this.state.pid) : tw[0];
+      } catch (e) {}
+    }
+    return String(this.state.pid || this.state.hkUid || '').trim();
+  }
+  /* 純函式：Haruki 的 suite／mysekai → 站上四份紀錄要寫的內容（抽出來方便測試） */
+  hkParse(suite, mysekai, bpMap) {
+    const cards = (suite && suite.userCards) || [];
+    const own = cards.map(c => +c.cardId).filter(n => n > 0);
+    const lv = {}; cards.forEach(c => { if (c.cardId) lv[c.cardId] = [+c.masterRank || 0, Math.max(1, +c.skillLevel || 1)]; });
+    const marks = {}, D = { expert: 'e', master: 'm', append: 'a' };
+    const put = (mid, diff, res) => {
+      const k = D[diff]; if (!k || !mid) return;
+      const m = res === 'full_perfect' ? 2 : res === 'full_combo' ? 1 : 0;
+      if (m > (marks[k + mid] || 0)) marks[k + mid] = m;
+    };
+    ((suite && suite.userMusicResults) || []).forEach(r => put(r.musicId, r.musicDifficultyType || r.musicDifficulty, r.playResult || (r.fullPerfectFlg ? 'full_perfect' : r.fullComboFlg ? 'full_combo' : '')));
+    ((suite && suite.userMusics) || []).forEach(m => (m.userMusicDifficultyStatuses || []).forEach(st => (st.userMusicResults || []).forEach(r =>
+      put(m.musicId, st.musicDifficulty || st.musicDifficultyType, r.playResult || (r.fullPerfectFlg ? 'full_perfect' : r.fullComboFlg ? 'full_combo' : '')))));
+    const talks = {}; ((suite && suite.userMysekaiCharacterTalks) || []).forEach(t => { const id = +(t.mysekaiCharacterTalkId || t.characterTalkId); if (id > 0 && t.isRead) talks[id] = 1; });
+    const fix = {}; const bps = (mysekai && mysekai.updatedResources && mysekai.updatedResources.userMysekaiBlueprints) || (mysekai && mysekai.userMysekaiBlueprints) || [];
+    bps.forEach(b => { const f = bpMap && bpMap[+(b.mysekaiBlueprintId || b.blueprintId)]; if (f) fix[f] = 1; });
+    const g = (suite && (suite.userGamedata || suite.user)) || {};
+    return { own, lv, marks, talks, fix, name: g.name || '', rank: g.rank || 0, hasMysekai: !!bps.length };
+  }
+  async hkImport(mode) {
+    if (this.state.hkBusy) return;
+    const pub = mode === 'public';
+    const uid = pub ? this.hkUidFrom(this.state.hkUid || this.state.pid) : await this.hkTargetUid();
+    if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkMsg: pub ? '先填你的台服 Player ID，或貼上工具箱的網址。' : '先在上面填你的台服 Player ID（或在 Haruki 綁定台服帳號），再按匯入。' }); return; }
+    this.setState({ hkBusy: true, hkMsg: '向 Haruki 讀取 ' + uid + ' 的遊戲資料…' });
+    try {
+      const suite = pub ? await this.hkPublic('suite', uid) : await this.hkGet('/api/oauth2/game-data/tw/suite/' + uid);
+      let mys = null, bpMap = null;
+      try {
+        mys = pub ? await this.hkPublic('mysekai', uid) : await this.hkGet('/api/oauth2/game-data/tw/mysekai/' + uid);
+        const bp = await this.dbGet('mysekaiBlueprints').catch(() => []);
+        bpMap = {}; (bp || []).forEach(b => { if (b.mysekaiCraftType === 'mysekai_fixture') bpMap[b.id] = b.craftTargetId; });
+      } catch (e) {}
+      const r = this.hkParse(suite, mys, bpMap);
+      // 1. 收集率：遊戲裡有的就是全部，直接取代；舊的留一份，按「還原」可退回
+      try { localStorage.setItem('sekai-cards-own-prev', localStorage.getItem(this.CARD_KEY) || ''); } catch (e) {}
+      this._own = new Set(r.own); this.ownSave();
+      // 2. 專精／技能等級：以遊戲為準覆寫這些卡
+      const lv = this.lvAll(); Object.keys(r.lv).forEach(k => { lv[k] = r.lv[k]; }); this.lvSave();
+      // 3. B30：只往上升（FC→AP），不把手動標過的降下來
+      let marks = {}; try { marks = JSON.parse(localStorage.getItem('sekai-b30-marks') || '{}') || {}; } catch (e) {}
+      let up = 0; Object.keys(r.marks).forEach(k => { if ((marks[k] | 0) < r.marks[k]) { marks[k] = r.marks[k]; up++; } });
+      try { localStorage.setItem('sekai-b30-marks', JSON.stringify(marks)); } catch (e) {}
+      try { if (typeof B30Maker !== 'undefined' && B30Maker._loaded) { B30Maker.marks = marks; B30Maker.render(); } } catch (e) {}
+      // 4. 豆森：看過的對話、有藍圖的家具，聯集
+      const done = Object.assign({}, this.state.mstDone || {}, r.talks), fx = Object.assign({}, this.state.mstOwn || {}, r.fix);
+      this.mstSave('mstDone', 'sekai-mst-done', done); this.mstSave('mstOwn', 'sekai-mst-own', fx);
+      const ap = Object.values(r.marks).filter(v => v === 2).length, fc = Object.values(r.marks).filter(v => v === 1).length;
+      const last = { at: Date.now(), uid, name: r.name, rank: r.rank, cards: r.own.length, lv: Object.keys(r.lv).length, ap, fc, up, talks: Object.keys(r.talks).length, fix: Object.keys(r.fix).length, mys: r.hasMysekai };
+      try { localStorage.setItem(this.HK_LAST_KEY, JSON.stringify(last)); } catch (e) {}
+      this.setState({ hkBusy: false, hkLast: last, hkMsg: '匯入完成' });
+      this._toast('已從 Haruki 匯入 ' + r.own.length + ' 張卡與 ' + (ap + fc) + ' 個 FC／AP', 3000);
+    } catch (e) {
+      const why = (e && e.message) === 'not_public'
+        ? 'Haruki 找不到這個帳號的公開資料：請確認已在工具箱上傳過，並在工具箱把這個帳號的 Suite 設成「允許公開 API」（MySekai 選填）。'
+        : '匯入失敗：' + ((e && e.message) || e) + '（若是 404，請先到 Haruki 工具箱上傳一次遊戲資料）';
+      this.setState({ hkBusy: false, hkMsg: why });
+    }
+  }
+  hkForget() { try { localStorage.removeItem(this.HK_TOK_KEY); } catch (e) {} this.setState({ hkTok: null }); }
+  async hkDisconnect() {
+    const t = this.state.hkTok, cfg = this.state.hkCfg;
+    if (t && cfg && cfg.clientId) { try { await fetch(this.GAMES_API + '/haruki/oauth/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: t.refresh || t.access, token_type_hint: t.refresh ? 'refresh_token' : 'access_token', client_id: cfg.clientId }).toString() }); } catch (e) {} }
+    this.hkForget(); this.setState({ hkMsg: '已解除連結；匯入過的資料留在這台裝置上。' });
+  }
+  hkUndoCards() {
+    let prev = null; try { prev = localStorage.getItem('sekai-cards-own-prev'); } catch (e) {}
+    if (prev == null) { this.setState({ hkMsg: '沒有可以還原的收集率紀錄。' }); return; }
+    this.ownFromCode(prev); this.ownSave(); try { localStorage.removeItem('sekai-cards-own-prev'); } catch (e) {}
+    this.setState({ hkMsg: '收集率已還原成匯入前的勾選。' });
+  }
   /* 勾選／擁有紀錄只存這台裝置（可用備份匯出）。 */
   mstSave(key, ls, obj) { this.setState({ [key]: obj }); try { localStorage.setItem(ls, JSON.stringify(obj)); } catch (e) {} }
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
@@ -8308,7 +8495,8 @@ class Component extends DCLogic {
     if (p === 'calendar' || p === 'home' || p === 'favs') this.loadMsEvents();
     if (p === 'calendar' || p === 'home' || p === 'favs' || p === 'calc') this.loadSupportEvents();
     if (p === 'calendar' || p === 'home') { this.loadLoginBonus(); this.loadCharProfiles(); this.loadLives(); }
-    if (p === 'home') this.loadEvList();   // 結算後要知道下期什麼時候開始
+    if (p === 'home') this.loadEvList();
+    if (p === 'account') this.hkLoadCfg();   // 結算後要知道下期什麼時候開始
     if (p === 'calendar') this.loadSongs();
     this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
@@ -9888,7 +10076,26 @@ class Component extends DCLogic {
       sysMoreBtn: s.mobile && !s.sysMore && this.SYSLOG.length > 10,
       sysMoreN: Math.max(0, this.SYSLOG.length - 10),
       isCollect: s.page === 'collect', isGachaSim: s.page === 'gachasim',
-      isAccount: s.page === 'account', isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
+      isAccount: s.page === 'account',
+      ...(() => {
+        if (s.page !== 'account') return {};
+        const c = s.hkCfg, t = s.hkTok, L = s.hkLast;
+        const when = L ? (() => { const d = new Date(L.at); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); })() : '';
+        return {
+          hkReady: !!c, hkNoClient: !!c && !c.clientId, hkCanLink: !!(c && c.clientId && !t), hkLinked: !!t,
+          hkBusy: !!s.hkBusy, hkMsg: s.hkMsg || '', hkHasMsg: !!s.hkMsg,
+          hkUidLabel: s.pid ? '會匯入 Player ID ' + s.pid + (t && /bindings:read/.test(t.scope || '') ? '（或你在 Haruki 綁定的台服帳號）' : '') : (t && /bindings:read/.test(t.scope || '') ? '會匯入你在 Haruki 綁定的台服帳號' : '還沒填 Player ID：先在上方或首頁綁定，才知道要匯入哪個帳號'),
+          hkHasLast: !!L,
+          hkLastText: L ? (when + ' 匯入' + (L.name ? '「' + L.name + '」' : '') + (L.rank ? '（等級 ' + L.rank + '）' : '')) : '',
+          hkLastRows: L ? [
+            { k: '收集率', v: this.n(L.cards) + ' 張持有卡' }, { k: '專精／技能', v: this.n(L.lv) + ' 張' },
+            { k: 'B30', v: 'AP ' + this.n(L.ap) + '、FC ' + this.n(L.fc) + (L.up ? '（新增或升級 ' + this.n(L.up) + ' 首）' : '') },
+            { k: '豆森', v: L.mys ? ('看過的對話 ' + this.n(L.talks) + ' 則、有藍圖的家具 ' + this.n(L.fix) + ' 件') : ('看過的對話 ' + this.n(L.talks) + ' 則（沒有豆森資料，只匯入對話）') }
+          ] : [],
+          hkBtnLabel: s.hkBusy ? '處理中…' : '立即匯入', hkPubLabel: s.hkBusy ? '處理中…' : '從 Haruki 匯入', hkUidVal: s.hkUid || s.pid || '',
+          hkHasUndo: (() => { try { return localStorage.getItem('sekai-cards-own-prev') != null; } catch (e) { return false; } })(),
+        };
+      })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       isArt: s.page === 'art',
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
@@ -12086,6 +12293,8 @@ class Component extends DCLogic {
       onNoticeGo: () => { this.markLogSeen(); this.go('whatsnew'); },
       onNoticeDismiss: e => { e.stopPropagation(); this.markLogSeen(); },
       onHomeCfg: () => this.setState(st => ({ homeCfg: !st.homeCfg })),
+      onHkStart: () => this.hkStart(), onHkImport: () => this.hkImport(), onHkUndo: () => this.hkUndoCards(), onHkPublic: () => this.hkImport('public'),
+      onHkDisconnect: () => { if (confirm('解除 Haruki 連結？匯入過的資料會留在這台裝置上。')) this.hkDisconnect(); },
       onCfgTab: e => this.setState({ homeCfgTab: e.currentTarget.dataset.v }),
       onStatToggle: e => this.layoutToggle('stats', e.currentTarget.dataset.v),
       onQuickToggle: e => this.quickToggle(e.currentTarget.dataset.v),

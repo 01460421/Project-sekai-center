@@ -72,5 +72,90 @@ res = await handleHaruki(new Request('https://games.test/haruki/config', { metho
 ok(res.status === 405, '只收 GET');
 Date.now = realNow;
 
+/* 工具箱 OAuth 轉送 */
+const OB = 'https://toolbox-api-direct.haruki.seiunx.com';
+const sent = [];
+globalThis.fetch = async (u, init) => {
+  const url = String(u); sent.push({ url, method: (init && init.method) || 'GET', headers: (init && init.headers) || {}, body: init && init.body });
+  if (url === OB + '/api/oauth2/token') return new Response(JSON.stringify({ access_token: 'AT', refresh_token: 'RT', expires_in: 3600 }), { status: 200, headers: { 'content-type': 'application/json' } });
+  if (url === OB + '/api/oauth2/revoke') return new Response('{}', { status: 200 });
+  if (url.startsWith(OB + '/api/oauth2/game-data/tw/suite/')) return new Response(JSON.stringify({ updatedData: { userCards: [{ cardId: 1 }] } }), { status: 200, headers: { 'content-type': 'application/json' } });
+  if (url === OB + '/api/oauth2/user/bindings') return new Response(JSON.stringify({ updatedData: [] }), { status: 401 });
+  return new Response('{}', { status: 404 });
+};
+const oenv = { SITE_BASE: 'https://project-sekai-center.com', HARUKI_OAUTH_CLIENT_ID: 'pjsk-center' };
+const ocall = async (path, init, e) => { const u = 'https://games.test' + path; return handleHaruki(new Request(u, init), e || oenv, new URL(u)); };
+const SITE = { origin: 'https://project-sekai-center.com' };
+let o = await ocall('/haruki/oauth/token', { method: 'OPTIONS', headers: { ...SITE, 'access-control-request-method': 'POST' } });
+ok(o.status === 204 && o.headers.get('access-control-allow-origin') === 'https://project-sekai-center.com' && /authorization/.test(o.headers.get('access-control-allow-headers')), '預檢：只回本站網域、允許 Authorization');
+o = await ocall('/haruki/oauth/token', { method: 'OPTIONS', headers: { origin: 'https://evil.example' } });
+ok(o.headers.get('access-control-allow-origin') === 'https://project-sekai-center.com', '別的網站拿不到自己的 Allow-Origin');
+const form = new URLSearchParams({ grant_type: 'authorization_code', client_id: 'pjsk-center', code: 'C', redirect_uri: 'https://project-sekai-center.com/app.html', code_verifier: 'v'.repeat(43) });
+o = await ocall('/haruki/oauth/token', { method: 'POST', headers: { ...SITE, 'content-type': 'application/x-www-form-urlencoded' }, body: form.toString() });
+let ob = await o.json();
+ok(o.status === 200 && ob.access_token === 'AT' && o.headers.get('cache-control') === 'no-store', '換 token 原樣轉送、不快取');
+ok(sent.at(-1).url === OB + '/api/oauth2/token' && new URLSearchParams(sent.at(-1).body).get('code_verifier').length === 43, '表單內容（含 code_verifier）送到 Haruki');
+o = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: 'someone-else' }).toString() });
+ok(o.status === 400, '別的 client_id 不代打');
+o = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: new URLSearchParams({ grant_type: 'client_credentials', client_id: 'pjsk-center' }).toString() });
+ok(o.status === 400, '只收 authorization_code 與 refresh_token');
+o = await ocall('/haruki/oauth/revoke', { method: 'POST', headers: SITE, body: new URLSearchParams({ token: 'RT', client_id: 'pjsk-center' }).toString() });
+ok(o.status === 200 && sent.at(-1).url === OB + '/api/oauth2/revoke', '撤銷轉送');
+o = await ocall('/haruki/oauth/game-data/tw/suite/7482960281734567890', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
+ob = await o.json();
+ok(o.status === 200 && ob.updatedData.userCards[0].cardId === 1 && sent.at(-1).headers.authorization === 'Bearer AT123456', '讀遊戲資料：帶著使用者的 Bearer 轉送');
+o = await ocall('/haruki/oauth/user/bindings', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
+ok(o.status === 401, 'Haruki 回 401 就照樣回 401（前端據此換新 token）');
+o = await ocall('/haruki/oauth/game-data/tw/suite/7482960281734567890', { headers: SITE });
+ok(o.status === 401, '沒帶授權不轉送');
+const before = sent.length;
+o = await ocall('/haruki/oauth/game-data/jp/suite/123456789', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
+ok(o.status === 404 && sent.length === before, '白名單外（日服、其他路徑）不轉送');
+o = await ocall('/haruki/oauth/../admin', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
+ok(o.status === 404, '路徑穿越不轉送');
+{
+  const cenv = { ...oenv, HARUKI_OAUTH_CLIENT_SECRET: 's3cr/et+' };
+  const r2 = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: form.toString() }, cenv);
+  const last = sent.at(-1), body2 = new URLSearchParams(last.body);
+  ok(r2.status === 200 && last.headers.authorization === 'Basic ' + btoa('pjsk-center:' + encodeURIComponent('s3cr/et+')) && !body2.has('client_id') && body2.get('code') === 'C',
+    '保密客戶端：換 token 改用 Basic（secret 先 urlencode）、表單不帶 client_id');
+  await ocall('/haruki/oauth/revoke', { method: 'POST', headers: SITE, body: new URLSearchParams({ token: 'RT', client_id: 'pjsk-center' }).toString() }, cenv);
+  ok(/^Basic /.test(sent.at(-1).headers.authorization || ''), '保密客戶端：撤銷也帶 Basic');
+  const r3 = await ocall('/haruki/oauth/game-data/tw/suite/7482960281734567890', { headers: { ...SITE, authorization: 'Bearer AT123456' } }, cenv);
+  ok(r3.status === 200 && sent.at(-1).headers.authorization === 'Bearer AT123456', '保密客戶端：讀資料仍用使用者的 Bearer，不外洩 secret');
+}
+o = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: form.toString() }, { SITE_BASE: 'https://project-sekai-center.com' });
+ok(o.status === 503, '沒設 client id 時回 503');
+
+/* 工具箱公開 API 轉送（不需要 token） */
+{
+  const hits = [];
+  let suiteDown = false;
+  globalThis.fetch = async (u, init) => {
+    const url = String(u); hits.push({ url, headers: (init && init.headers) || {} });
+    if (url.startsWith('https://suite-api.haruki.seiunx.com/public/tw/suite/') && suiteDown) return new Response('down', { status: 503 });
+    if (/\/public\/tw\/suite\/7482960281734567890$/.test(url)) return new Response(JSON.stringify({ userCards: [{ cardId: 5 }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (/\/public\/tw\/mysekai\/7482960281734567890$/.test(url)) return new Response(JSON.stringify({ message: 'not found' }), { status: 404 });
+    return new Response('{}', { status: 404 });
+  };
+  const pcall = async (path, method) => { const u = 'https://games.test' + path; return handleHaruki(new Request(u, { method: method || 'GET' }), {}, new URL(u)); };
+  let r = await pcall('/haruki/public/tw/suite/7482960281734567890'); let b = await r.json();
+  ok(r.status === 200 && b.userCards[0].cardId === 5 && hits.at(-1).url === 'https://suite-api.haruki.seiunx.com/public/tw/suite/7482960281734567890', '公開 suite：打 suite-api 的 /public/tw/suite/{id}');
+  ok(!hits.at(-1).headers.authorization && !hits.at(-1).headers['x-haruki-sekai-token'], '公開 API 不帶任何 token');
+  ok(r.headers.get('access-control-allow-origin') === '*' && /max-age=60/.test(r.headers.get('cache-control')), '公開資料 CORS 開放、快取一分鐘');
+  r = await pcall('/haruki/public/tw/mysekai/7482960281734567890');
+  ok(r.status === 404 && r.headers.get('cache-control') === 'no-store', '沒公開的回 404 且不快取');
+  const n0 = hits.length; suiteDown = true;
+  r = await pcall('/haruki/public/tw/suite/7482960281734567890'); b = await r.json();
+  ok(r.status === 200 && hits.length === n0 + 2 && hits.at(-1).url === 'https://toolbox-api-direct.haruki.seiunx.com/api/public/tw/suite/7482960281734567890', 'suite-api 掛掉就改打工具箱後端的 /api/public');
+  const n1 = hits.length;
+  r = await pcall('/haruki/public/jp/suite/7482960281734567890');
+  ok(r.status === 404 && hits.length === n1, '只轉送台服');
+  r = await pcall('/haruki/public/tw/suite/12');
+  ok(r.status === 404 && hits.length === n1, 'ID 格式不對不轉送');
+  r = await pcall('/haruki/public/tw/suite/7482960281734567890', 'POST');
+  ok(r.status === 405, '公開 API 只收 GET');
+}
+
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
 process.exit(fail ? 1 : 0);
