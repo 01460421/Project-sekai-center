@@ -552,7 +552,7 @@ select option, select optgroup{
           </div>
         </div>
         <div style="text-align:right;min-width:150px">
-          <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">剩餘時間</div>
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">{{ liveCdLabel }}</div>
           <sc-if value="{{ liveUrgent }}"><div style="display:inline-block;margin-bottom:3px;padding:2px 10px;border-radius:999px;background:#ff5c7a;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:1px;animation:pulseDot 1.6s infinite">最後一天</div></sc-if>
           <div id="liveCd" style="font-family:'M PLUS Rounded 1c';font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:.5px;color:{{ liveCdColor }}">{{ liveCountdown }}</div>
           <div style="font-size:11px;opacity:.7;font-family:'M PLUS Rounded 1c'">{{ liveProgressLabel }}</div>
@@ -564,6 +564,24 @@ select option, select optgroup{
         <div class="se-flow" style="height:100%;border-radius:999px;background:var(--rainbow);transition:width .8s cubic-bezier(.32,.72,.24,1);width:{{ liveProgress }}"></div>
       </div>
     </div>
+    </sc-if>
+
+    <!-- 現在該做什麼：依活動階段（開跑前／開跑／中盤／最後衝刺／結算中／下期預告）給一句提醒與四個捷徑 -->
+    <sc-if value="{{ homeShow.phase }}">
+    <sc-if value="{{ phaseOn }}">
+    <div style="order:{{ homeOrd.phase }};border:1px solid var(--border);border-left:5px solid {{ phaseTone }};border-radius:20px;padding:14px 18px;background:var(--card);box-shadow:var(--sh-sm)">
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:{{ phaseTone }};color:#fff;letter-spacing:.5px">{{ phaseLabel }}</span>
+        <span style="font-size:13.5px;font-weight:800;color:var(--ink)">{{ phaseTitle }}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.6;margin-top:6px">{{ phaseTip }}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <sc-for list="{{ phaseActs }}" as="a" hint-placeholder-count="4">
+          <button type="button" onClick="{{ onDbRelated }}" data-p="{{ a.p }}" data-patch="{{ a.patchJson }}" style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font-size:12px;font-weight:700;cursor:pointer">{{ a.n }}</button>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
     </sc-if>
 
     <sc-if value="{{ homeShow.digest }}">
@@ -7276,7 +7294,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=38fb30651f"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c495bd1db1"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
