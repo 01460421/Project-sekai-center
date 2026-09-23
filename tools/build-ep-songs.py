@@ -49,7 +49,7 @@ METAS = 'https://storage.sekai.best/sekai-best-assets/music_metas.json'
 # 站上所有計算都以 metas 為準,混用會讓同一份表裡的數字不可比。
 TWY = 'https://raw.githubusercontent.com/t-wy/game-public-data/main/pjsk'
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
-TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
+from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
 I18N = 'https://raw.githubusercontent.com/Sekai-World/sekai-i18n/main/zh-TW/music_titles.json'
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -62,6 +62,8 @@ ORDER = ['E', 'N', 'H', 'X', 'M', 'A']
 
 
 def get(url, timeout=120):
+    if url.startswith((TC, TC_SW)):
+        return tc_json(url, timeout)
     req = urllib.request.Request(url, headers={'user-agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())

@@ -27,7 +27,7 @@ import io
 
 SHEET = 'https://docs.google.com/spreadsheets/d/18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU/export?format=xlsx'
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
-TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
+from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
 # 台服官方不翻譯曲名(master title=日文原名);中文譯名採 Sekai Viewer 社群翻譯(非官方)
 I18N = 'https://raw.githubusercontent.com/Sekai-World/sekai-i18n/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -39,6 +39,8 @@ PIN = ROOT / 'tools' / 'src' / 'pentatonic-pin.json'
 
 
 def get(url, binary=False):
+    if not binary and url.startswith((TC, TC_SW)):
+        return tc_json(url, 60)
     req = urllib.request.Request(url, headers={'user-agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=60) as r:
         data = r.read()

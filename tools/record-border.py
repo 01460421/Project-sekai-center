@@ -41,10 +41,22 @@ def write_atomic(path, text):
     os.replace(tmp, path)
 
 
-def get(path):
-    req = urllib.request.Request(API + path, headers={'User-Agent': 'project-sekai-center/1.0'})
+# HiSekai 讀不到時改問自家 Worker 的 Haruki 備援（已轉成 HiSekai 同樣的欄位，下面的程式不必分兩套）
+HARUKI_FALLBACK = 'https://games.project-sekai-center.com/haruki'
+
+
+def _get(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'project-sekai-center/1.0'})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)
+
+
+def get(path):
+    try:
+        return _get(API + path)
+    except Exception as e:
+        print(f'HiSekai {path} 失敗（{e}），改用 Haruki 備援', file=sys.stderr)
+        return _get(HARUKI_FALLBACK + path)
 
 
 def iso_to_unix(s):
