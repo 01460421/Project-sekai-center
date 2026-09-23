@@ -65,6 +65,8 @@ AI_OPS_USER = "20"
 #   申請到的 client secret 是機密：Cloudflare 儀表板 Workers → pjsk-games → Settings → Variables and Secrets
 #   新增 Secret「HARUKI_OAUTH_CLIENT_SECRET」（或 `wrangler secret put HARUKI_OAUTH_CLIENT_SECRET`）。
 # - HARUKI_OAUTH_SCOPES：要跟申請時登記的 scope 一致，空白分隔；不能超出登記範圍。
+# 排名備援先問 Haruki Event Tracker 的公開 web API（不需要 token），沒資料再問上面的公開 API。
+HARUKI_TRACKER_BASE = "https://toolbox-api-direct.haruki.seiunx.com/event-tracker"
 HARUKI_API_BASE = "https://public-api.haruki.seiunx.com/sekai-api/v5/api/tw"
 HARUKI_OAUTH_BASE = "https://toolbox-api-direct.haruki.seiunx.com"
 HARUKI_OAUTH_CLIENT_ID = ""

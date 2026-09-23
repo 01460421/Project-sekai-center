@@ -1441,7 +1441,7 @@ class Component extends DCLogic {
   async loadLive() {
     try {
       const [top, brd] = await Promise.all([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
-      this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.source === 'haruki') || (brd && brd.source === 'haruki') ? 'haruki' : 'hisekai' });
+      this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.via === 'tracker') ? 'tracker' : ((top && top.source === 'haruki') || (brd && brd.source === 'haruki')) ? 'haruki' : 'hisekai' });
       if (this.state.pid) this.matchMyRank(top);
       this.snapPush(top, brd);
       // 公用快照要等 live 出來才知道期數。切頁時 live 常常還沒回,那次的
@@ -11378,8 +11378,9 @@ class Component extends DCLogic {
       dayH: s.mobile ? '54px' : '92px',
 
       /* 首頁 */
-      liveState: (s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動')) + (s.liveSrc === 'haruki' && !s.liveLoad ? '　·　Haruki 備援資料' : ''),
-      liveSrcNote: s.liveSrc === 'haruki' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki 公開 API（經本站 Worker 轉換格式），時速等統計欄位暫時沒有。' : '',
+      liveState: (s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動')) + ((s.liveSrc === 'haruki' || s.liveSrc === 'tracker') && !s.liveLoad ? '　·　Haruki 備援資料' : ''),
+      liveSrcNote: s.liveSrc === 'tracker' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki Event Tracker（經本站 Worker 轉換格式）。時速照常顯示；對方把玩家 ID 匿名化了，「我的排名」暫時比對不到，周回與場均也沒有。'
+        : s.liveSrc === 'haruki' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki 公開 API（經本站 Worker 轉換格式），時速等統計欄位暫時沒有。' : '',
       liveName: s.liveLoad ? '載入活動資訊…' : (ev.name || ev.event_name || (s.liveErr || '目前沒有進行中的活動')),
       liveType: ev.id != null ? '第 ' + ev.id + ' 期' : '—',
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
