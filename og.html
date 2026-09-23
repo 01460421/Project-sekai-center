@@ -8,14 +8,16 @@ body{background:linear-gradient(135deg,#273052 0%,#3b4878 100%);color:#fff;posit
 .bar{position:absolute;top:0;left:0;right:0;height:14px;background:linear-gradient(90deg,#4ad1e8,#3ee0a8,#b8e561,#ffd94d,#ff9db4,#c39df2,#7fb4f7)}
 .glow{position:absolute;inset:0;background:radial-gradient(520px 260px at 90% -10%,rgba(120,180,255,.32),transparent 70%)}
 .wrap{position:absolute;left:84px;right:84px;top:96px}
-.brand{font-size:30px;font-weight:800;letter-spacing:4px;opacity:.8}
+.brand{display:flex;align-items:center;gap:18px;font-size:30px;font-weight:800;letter-spacing:4px;opacity:.9}
+.brand img{width:72px;height:72px;border-radius:18px;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.mark{position:absolute;right:84px;top:96px;width:200px;height:200px;border-radius:48px;box-shadow:0 18px 50px rgba(0,0,0,.4)}
 .title{font-size:84px;font-weight:800;line-height:1.15;margin-top:22px;letter-spacing:1px}
 .desc{font-size:32px;line-height:1.55;opacity:.86;margin-top:26px;max-height:150px;overflow:hidden}
 .foot{position:absolute;left:84px;right:84px;bottom:56px;display:flex;align-items:center;justify-content:space-between;font-size:26px;font-weight:700;opacity:.7}
 .chips{display:flex;gap:10px}.chip{padding:8px 18px;border-radius:999px;background:rgba(255,255,255,.14);font-size:22px}
 </style></head><body>
 <span class="bar"></span><span class="glow"></span>
-<div class="wrap"><div class="brand">SEKAI 資源中心</div><div class="title" id="t">SEKAI 資源中心</div><div class="desc" id="d"></div></div>
+<img class="mark" src="icons/icon-512.png" alt=""><div class="wrap" style="right:330px"><div class="brand"><img src="icons/icon-512.png" alt="">SEKAI 資源中心</div><div class="title" id="t">SEKAI 資源中心</div><div class="desc" id="d"></div></div>
 <div class="foot"><span>project-sekai-center.com</span><span class="chips"><span class="chip">台服</span><span class="chip">Project SEKAI</span></span></div>
 <script>
 const q = new URLSearchParams(location.search);
