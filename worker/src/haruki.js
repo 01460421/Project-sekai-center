@@ -107,7 +107,10 @@ const PATH_OK = /^\/haruki\/(config|event\/list|event\/(live|\d{1,4})\/(top100|b
 /* ---------- 工具箱 OAuth 轉送 ----------
    Haruki 工具箱不對其他網站開 CORS，瀏覽器不能直接呼叫它（對方 2026-09 回覆），所以換 token、撤銷、
    讀綁定與遊戲資料都經這裡轉一手：原封不動送過去、原封不動回來，不記錄、不快取、不保存任何 token。
-   只放行固定幾條路徑；CORS 只給本站網域；client_id 必須是 Worker 設定的那一個，避免被拿去替別的 client 代打。 */
+   只放行固定幾條路徑；CORS 只給本站網域；client_id 必須是 Worker 設定的那一個，避免被拿去替別的 client 代打。
+   本站有後端，向 Haruki 申請的是保密客戶端（confidential，見對方 docs/oauth2-integration §2、§5.2）：
+   有設 HARUKI_OAUTH_CLIENT_SECRET 時，換 token 與撤銷改用 client_secret_basic（Basic 認證、表單不帶 client_id），
+   secret 只存在 Worker，瀏覽器看不到。沒設 secret 就照公開客戶端（PKCE）轉送。 */
 const OAUTH_GET = /^\/haruki\/oauth\/(user\/bindings|user\/profile|game-data\/tw\/(suite|mysekai)\/\d{6,20})$/;
 const OAUTH_POST = /^\/haruki\/oauth\/(token|revoke)$/;
 function siteCors(env, req) {
@@ -131,8 +134,14 @@ export async function handleHarukiOAuth(req, env, url) {
       if (form.get('client_id') !== clientId) return out({ error: 'invalid_client', error_description: 'client_id 不符' }, 400);
       const which = OAUTH_POST.exec(url.pathname)[1];
       if (which === 'token' && !['authorization_code', 'refresh_token'].includes(form.get('grant_type') || '')) return out({ error: 'unsupported_grant_type' }, 400);
-      upstream = await fetch(base + '/api/oauth2/' + which, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'user-agent': UA },
-        body: form.toString(), signal: AbortSignal.timeout(20000) });
+      const headers = { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'user-agent': UA };
+      const secret = (env && env.HARUKI_OAUTH_CLIENT_SECRET) || '';
+      if (secret) {
+        // RFC 6749 §2.3.1：id 與 secret 先各自 form-urlencode 再組 Basic
+        headers.authorization = 'Basic ' + btoa(encodeURIComponent(clientId) + ':' + encodeURIComponent(secret));
+        form.delete('client_id');
+      }
+      upstream = await fetch(base + '/api/oauth2/' + which, { method: 'POST', headers, body: form.toString(), signal: AbortSignal.timeout(20000) });
     } else if (req.method === 'GET' && OAUTH_GET.test(url.pathname)) {
       const auth = req.headers.get('authorization') || '';
       if (!/^Bearer [\w\-.~+/=]{8,4096}$/.test(auth)) return out({ error: 'invalid_token', error_description: '缺少授權' }, 401);

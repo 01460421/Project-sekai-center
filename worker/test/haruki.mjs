@@ -113,6 +113,17 @@ o = await ocall('/haruki/oauth/game-data/jp/suite/123456789', { headers: { ...SI
 ok(o.status === 404 && sent.length === before, '白名單外（日服、其他路徑）不轉送');
 o = await ocall('/haruki/oauth/../admin', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
 ok(o.status === 404, '路徑穿越不轉送');
+{
+  const cenv = { ...oenv, HARUKI_OAUTH_CLIENT_SECRET: 's3cr/et+' };
+  const r2 = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: form.toString() }, cenv);
+  const last = sent.at(-1), body2 = new URLSearchParams(last.body);
+  ok(r2.status === 200 && last.headers.authorization === 'Basic ' + btoa('pjsk-center:' + encodeURIComponent('s3cr/et+')) && !body2.has('client_id') && body2.get('code') === 'C',
+    '保密客戶端：換 token 改用 Basic（secret 先 urlencode）、表單不帶 client_id');
+  await ocall('/haruki/oauth/revoke', { method: 'POST', headers: SITE, body: new URLSearchParams({ token: 'RT', client_id: 'pjsk-center' }).toString() }, cenv);
+  ok(/^Basic /.test(sent.at(-1).headers.authorization || ''), '保密客戶端：撤銷也帶 Basic');
+  const r3 = await ocall('/haruki/oauth/game-data/tw/suite/7482960281734567890', { headers: { ...SITE, authorization: 'Bearer AT123456' } }, cenv);
+  ok(r3.status === 200 && sent.at(-1).headers.authorization === 'Bearer AT123456', '保密客戶端：讀資料仍用使用者的 Bearer，不外洩 secret');
+}
 o = await ocall('/haruki/oauth/token', { method: 'POST', headers: SITE, body: form.toString() }, { SITE_BASE: 'https://project-sekai-center.com' });
 ok(o.status === 503, '沒設 client id 時回 503');
 

@@ -88,10 +88,12 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
    ```
    npx wrangler secret put HARUKI_API_TOKEN
    ```
-2. **OAuth 匯入**（我的帳號 → Haruki 工具箱匯入）：向 Team-Haruki 申請 public client（PKCE，不需要 secret），
-   回呼網址填 `https://project-sekai-center.com/app.html`，scope 至少要 `game-data:read`，建議加 `offline_access`
-   （可免重新授權）與 `bindings:read`（自動帶出綁定的台服帳號）。拿到 client id 後改 `wrangler.toml` 的
-   `HARUKI_OAUTH_CLIENT_ID`（與 `HARUKI_OAUTH_SCOPES`）再部署。前端讀 `/haruki/config`，快取五分鐘。
+2. **OAuth 匯入**（我的帳號 → Haruki 工具箱匯入）：向 Team-Haruki 申請 **confidential** client（對方
+   `docs/oauth2-integration.zh-CN.md` §10），提供：clientId `project-sekai-center`、name `SEKAI 資源中心`、
+   clientType `confidential`、redirectUris `["https://project-sekai-center.com/app.html"]`、
+   scopes `["offline_access", "bindings:read", "game-data:read"]`。對方回傳的 clientSecret 只給一次：
+   存成 Worker secret `HARUKI_OAUTH_CLIENT_SECRET`；client id 改 `wrangler.toml` 的 `HARUKI_OAUTH_CLIENT_ID` 後推上 main
+   （自動部署）。前端讀 `/haruki/config`，快取五分鐘。
    工具箱不對其他網站開 CORS，所以前端換 token、撤銷、讀資料都走 `/haruki/oauth/*` 由 Worker 原樣轉送
    （只放行固定路徑、只給本站網域、client_id 必須相符，不記錄也不保存）；只有授權頁是整頁跳轉到 Haruki。
 3. 檢查：

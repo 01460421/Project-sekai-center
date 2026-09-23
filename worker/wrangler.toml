@@ -60,13 +60,15 @@ AI_OPS_USER = "20"
 # Haruki（Team-Haruki）串接，見 src/haruki.js：
 # - HARUKI_API_BASE：公開 API 的台服根路徑（HiSekai 掛掉時的排名備援）。
 #   排名路徑要 token：向 Team-Haruki 申請後 `wrangler secret put HARUKI_API_TOKEN`；沒設也會試，對方若開放就能用。
-# - HARUKI_OAUTH_CLIENT_ID：工具箱 OAuth 的 client id（向 Team-Haruki 申請，回呼網址填
-#   https://project-sekai-center.com/app.html）。空字串＝前端不顯示「Haruki 匯入」。不是機密，放這裡即可。
-# - HARUKI_OAUTH_SCOPES：申請到的 scope，空白分隔；client 有開 bindings:read 的話加上它，就不必手填遊戲 ID。
+# - HARUKI_OAUTH_CLIENT_ID：工具箱 OAuth 的 client id（向 Team-Haruki 申請 confidential client，
+#   回呼網址 https://project-sekai-center.com/app.html）。空字串＝前端不顯示「Haruki 匯入」。不是機密，放這裡即可。
+#   申請到的 client secret 是機密：Cloudflare 儀表板 Workers → pjsk-games → Settings → Variables and Secrets
+#   新增 Secret「HARUKI_OAUTH_CLIENT_SECRET」（或 `wrangler secret put HARUKI_OAUTH_CLIENT_SECRET`）。
+# - HARUKI_OAUTH_SCOPES：要跟申請時登記的 scope 一致，空白分隔；不能超出登記範圍。
 HARUKI_API_BASE = "https://public-api.haruki.seiunx.com/sekai-api/v5/api/tw"
 HARUKI_OAUTH_BASE = "https://toolbox-api-direct.haruki.seiunx.com"
 HARUKI_OAUTH_CLIENT_ID = ""
-HARUKI_OAUTH_SCOPES = "offline_access game-data:read"
+HARUKI_OAUTH_SCOPES = "offline_access bindings:read game-data:read"
 AI_CAP_USER = "400"
 AI_CAP_ADMIN = "2000"
 AI_CAP_SITE = "1500"

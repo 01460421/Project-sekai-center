@@ -7457,7 +7457,9 @@ class Component extends DCLogic {
     if (/\bbindings:read\b/.test(t.scope || '')) {
       try {
         const list = await this.hkGet('/api/oauth2/user/bindings');
-        const tw = (Array.isArray(list) ? list : []).filter(b => String(b.server || b.region || '').toLowerCase() === 'tw').map(b => String(b.userId || b.user_id || b.gameUserId || '')).filter(Boolean);
+        // 工具箱只讓「已驗證」的綁定讀遊戲資料（對方文件 §7.3）：已驗證的排前面
+        const tw = (Array.isArray(list) ? list : []).filter(b => String(b.server || b.region || '').toLowerCase() === 'tw')
+          .sort((x, y) => (y.verified ? 1 : 0) - (x.verified ? 1 : 0)).map(b => String(b.userId || b.user_id || b.gameUserId || '')).filter(Boolean);
         if (tw.length) return tw.includes(String(this.state.pid)) ? String(this.state.pid) : tw[0];
       } catch (e) {}
     }
