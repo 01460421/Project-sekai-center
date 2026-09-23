@@ -1,7 +1,10 @@
 class Component extends DCLogic {
   BOOST = { 0:1, 1:5, 2:10, 3:15, 4:19, 5:23, 6:26, 7:29, 8:31, 9:33, 10:35 };
   API = 'https://api.hisekai.org/tw';
-  TDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+  /* 台服 master：2026-09 起以 Haruki 的 6.4 版為主（卡片、歌曲、活動與總合力上限都比 Sekai-World 新），
+     Haruki 缺的表（configs、userInformations、mobCharacters 等）或整張是空的，逐檔退回 Sekai-World。 */
+  TDB = 'https://raw.githubusercontent.com/Team-Haruki/haruki-sekai-tc-master/main/master';
+  TDB_SW = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
   /* ---------- 收集率 ---------- */
   /* ---------- 全站資料備份 ----------
      app.html 與 index.html(經典版/B30/儲值分析)同源,共用同一份 localStorage,
@@ -107,7 +110,7 @@ class Component extends DCLogic {
     favs:     ['收藏與待辦', '星號收藏的卡片、角色、家具、歌曲與卡池，加上還沒做完的事：跑榜目標、豆森缺的家具、未讀通知'],
     calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
     gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
-    songs:    ['歌曲清單', '台服全曲＋日服未實裝曲（Sekai-World 主資料庫），BPM／歌長來自社長 bot'],
+    songs:    ['歌曲清單', '台服全曲（Haruki 台服 master）＋日服未實裝曲（Sekai-World 日服 master），BPM／歌長來自社長 bot'],
     rank:     ['活動排名', '即時排名與分段榜線（HiSekai API）'],
     calc:     ['計算中心', 'EP 精算 · 效率排行 · 摸魚表 · 活動試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
@@ -381,6 +384,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/23', t: '台服資料改用 Haruki 的 6.4 版，排名多一個備援', s: '卡片、歌曲、活動、豆森與應援活動改讀 Team-Haruki 的台服 master（已是 6.4：卡片 1,249 → 1,357 張、歌曲多 32 首、活動排到第 202 期），缺的表自動退回 Sekai-World。應援活動依開始時間編回數，9/24 開始的第 9 回是新的棋盤版。HiSekai 連不上時，排名、首頁、逐局追蹤與榜線快照改用 Haruki 公開 API，畫面會標出「Haruki 備援資料」。', p: 'rank' },
     { d: '2026/09/23', t: '首頁依活動階段給建議', s: '首頁活動卡下方多一塊「現在該做什麼」：開跑前、開跑、中盤、最後衝刺、結算中、下期預告六種狀態，各配一句提醒與四個捷徑（活動試算、摸魚表、榜線、加分卡等）；活動卡的倒數在開跑前改數距開始時間。可在自訂首頁隱藏或調順序。', p: 'home' },
     { d: '2026/09/23', t: '卡片圖鑑查詢語法', s: '卡片圖鑑的搜尋框可以直接打組合條件，例如「mmj 藍 限定 2025」「miku 生日」「25 四星 fes」：團體、角色（中文短名或 ick／mnr／miku 這類縮寫）、屬性（紅藍綠黃紫或英文）、稀有度、來源（限定／常駐／fes／聯動）、年份都會被認出來當篩選，其餘文字才當卡名關鍵字；套用了什麼會顯示在篩選列上方。' },
     { d: '2026/09/23', t: '手機五個入口與樞紐頁、體力回復試算', s: '手機底部改成首頁、追活動、圖鑑、工具、更多五個入口；追活動、圖鑑、工具、社群各有一頁樞紐：上面一句今天的狀態（活動名與我的名次、圖鑑資料日期、已存設定、未讀通知），下面是子頁卡片；在子頁時底部會點亮所屬入口。計算中心新增「體力回復」：填目前體力與目標，算回滿與到目標的時刻。' },
@@ -1414,7 +1418,10 @@ class Component extends DCLogic {
   async apiFetch(path) {
     const url = this.API + path;
     // 直連 → 自家 Worker 代理（30 秒邊緣快取）→ 公共代理（最後手段，不穩也看得到流量）
-    const tries = [url, this.GAMES_API + '/proxy/hisekai' + path, 'https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+    /* 排名類路徑多一個來源：自家 Worker 的 Haruki 備援（遊戲原始資料轉成 HiSekai 同樣的欄位，回應帶 source:'haruki'）。
+       排在公共代理之前 —— HiSekai 本身掛掉時，公共代理也只會拿到同一個錯誤。 */
+    const hk = /^\/event\/((live|\d+)\/(top100|border)|list)$/.test(path) ? [this.GAMES_API + '/haruki' + path] : [];
+    const tries = [url, this.GAMES_API + '/proxy/hisekai' + path].concat(hk, ['https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)]);
     let err;
     for (const u of tries) {
       try {
@@ -1431,7 +1438,7 @@ class Component extends DCLogic {
   async loadLive() {
     try {
       const [top, brd] = await Promise.all([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
-      this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '' });
+      this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.source === 'haruki') || (brd && brd.source === 'haruki') ? 'haruki' : 'hisekai' });
       if (this.state.pid) this.matchMyRank(top);
       this.snapPush(top, brd);
       // 公用快照要等 live 出來才知道期數。切頁時 live 常常還沒回,那次的
@@ -2119,7 +2126,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=679c44cc63';
+      el.src = './js/core.js?v=e8270b12c7';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2152,7 +2159,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=507a968234';
+      s.src = 'data/billing.js?v=f1a19e3999';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2365,7 +2372,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=553a698fd8').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=ca5f9c5289').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -6566,7 +6573,7 @@ class Component extends DCLogic {
       const JDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
       const j = u => fetch(u).then(r => r.json()).catch(() => []);
       const [ms, md, mv, jms, jmd, jmv] = await Promise.all([
-        j(this.TDB + '/musics.json'), j(this.TDB + '/musicDifficulties.json'), j(this.TDB + '/musicVocals.json'),
+        this.tdbJson('musics.json').catch(() => []), this.tdbJson('musicDifficulties.json').catch(() => []), this.tdbJson('musicVocals.json').catch(() => []),
         j(JDB + '/musics.json'), j(JDB + '/musicDifficulties.json'), j(JDB + '/musicVocals.json')
       ]);
       const cu = c => c <= 4 ? 'ln' : c <= 8 ? 'mmj' : c <= 12 ? 'vbs' : c <= 16 ? 'wxs' : c <= 20 ? 'n25' : 'vs';
@@ -6977,12 +6984,12 @@ class Component extends DCLogic {
     try {
       /* eventCards 是拿來認「哪些卡是當期活動的」—— 那些卡要放前排主隊，
          master data 沒有另一張表寫這件事，只能從活動歸屬反推。 */
-      const soft = f => fetch(this.TDB + '/' + f).then(r => r.ok ? r.json() : []).catch(() => []);
+      const soft = f => this.tdbJson(f).catch(() => []);
       const [wb, sup, lim, evc, rar, attr, hon, skl, dll, cnl] = await Promise.all([
-        fetch(this.TDB + '/worldBlooms.json').then(r => r.json()),
-        fetch(this.TDB + '/worldBloomSupportDeckBonuses.json').then(r => r.json()),
-        fetch(this.TDB + '/worldBloomSupportDeckUnitEventLimitedBonuses.json').then(r => r.json()),
-        fetch(this.TDB + '/eventCards.json').then(r => r.json()),
+        this.tdbJson('worldBlooms.json'),
+        this.tdbJson('worldBloomSupportDeckBonuses.json'),
+        this.tdbJson('worldBloomSupportDeckUnitEventLimitedBonuses.json'),
+        this.tdbJson('eventCards.json'),
         // 終章主隊用：稀有度×專精加成、隊內異色加成、稱號加成。三張都很小；抓不到就用計算端的備援常數
         soft('eventRarityBonusRates.json'), soft('worldBloomDifferentAttributeBonuses.json'), soft('eventHonorBonuses.json'),
         // 終章的三張限制表：技能上限、玩偶綜合力上限、特效卡計幾張（兩服數值不同，所以讀表不寫死）
@@ -7010,7 +7017,7 @@ class Component extends DCLogic {
     if (this.state.rateLoad || this.state.rateCards.length) return;
     this.setState({ rateLoad: true, rateErr: '' });
     try {
-      const m = await import('./data/cards-index.js?v=69f0356006');
+      const m = await import('./data/cards-index.js?v=7bf4e29bce');
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -7131,8 +7138,12 @@ class Component extends DCLogic {
      每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
   DB_PAGES = ['cards', 'chars', 'fixtures', 'mstalk', 'materials', 'comics', 'ost', 'lives', 'news', 'story'];
   DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', mstalk: 'mst', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news', story: 'stories' };
-  dbGet(name) {
-    return fetch(this.TDB + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  dbGet(name) { return this.tdbJson(name + '.json'); }
+  /* 台服 master 的單一檔：先 Haruki，404／網路錯誤／空陣列就改抓 Sekai-World 同名檔；兩邊都失敗才丟錯 */
+  tdbJson(file) {
+    const sw = () => fetch(this.TDB_SW + '/' + file).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    return fetch(this.TDB + '/' + file).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(d => (Array.isArray(d) && !d.length) ? sw().catch(() => d) : d, () => sw());
   }
   async dbRun(key, task, retried) {
     if (this.state.dbLoad === key || this.state[key]) return;
@@ -7169,7 +7180,7 @@ class Component extends DCLogic {
     });
   }
   loadCardX() {
-    return this.dbRun('cardX', async () => { const m = await import('./data/cards-extra.js?v=3ae08c816b'); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
+    return this.dbRun('cardX', async () => { const m = await import('./data/cards-extra.js?v=560757f6c4'); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
   }
   /* 技能敘述：master 的樣板長 {{效果id;欄位}}，d=秒數、v=數值、e=同團加成、m=加成上限、c=角色名；
      少數技能（體力連動、角色等級連動、隨機成員）的欄位是編組時才算得出來的組合值，那些留成「…」並加註。 */
@@ -7197,7 +7208,7 @@ class Component extends DCLogic {
      角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
   loadStories() {
     return this.dbRun('stories', async () => {
-      const m = await import('./data/stories-index.js?v=8aa0c9e874');
+      const m = await import('./data/stories-index.js?v=0f2f5c00f1');
       return { events: m.ST_EVENTS || [], units: m.ST_UNITS || [], cards: m.ST_CARDS || {}, areas: m.ST_AREAS || [], talks: m.ST_TALKS || [], special: m.ST_SPECIAL || [], self: m.ST_SELF || {} };
     });
   }
@@ -7275,20 +7286,21 @@ class Component extends DCLogic {
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
-      const m = await import('./data/fixtures-index.js?v=d3de50da2c');
+      const m = await import('./data/fixtures-index.js?v=2ac09f543d');
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
   /* 豆森活動（生日派對、百景競賽）：日曆、今日摘要、行事曆匯出用 */
   loadMsEvents() {
-    return this.dbRun('msEvents', async () => { const m = await import('./data/mysekai-events.js?v=0eacf155fc'); return m.MS_EVENTS || []; });
+    return this.dbRun('msEvents', async () => { const m = await import('./data/mysekai-events.js?v=502684d845'); return m.MS_EVENTS || []; });
   }
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
   loadSupportEvents() {
-    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=70fc1a770c'); return m.SUPPORT_EVENTS || []; });
+    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=b42b133022'); return m.SUPPORT_EVENTS || []; });
   }
-  supEventName(x) { return '第 ' + x.id + ' 回應援活動'; }
+  /* 第幾回用 n（依開始時間排序）：Haruki 的 6.4 master 重新編號，id 已經不等於回數。v2 是 6.4 新增的棋盤版 */
+  supEventName(x) { return '第 ' + (x.n || x.id) + ' 回應援活動' + (x.v === 'v2' ? '（棋盤版）' : ''); }
   /* 日曆的四類補充：登入活動（limitedLoginBonuses）、角色生日（characterProfiles 的「8月11日」）；新曲用 songs.published、Live 用 lives-index */
   loadLoginBonus() {
     return this.dbRun('loginBonus', async () => { const l = await this.dbGet('limitedLoginBonuses'); return (l || []).map(x => ({ id: x.id, n: x.name || '登入活動', s: x.startAt || 0, e: x.endAt || 0 })).filter(x => x.s && x.e); });
@@ -7327,8 +7339,11 @@ class Component extends DCLogic {
   /* 應援點數試算：每場 = 火數係數 × 評價係數（係數直接讀 master；挑戰 Live 固定一種係數） */
   supportCalc(s) {
     const ev = this.supCurrent(), now = Date.now();
-    const boost = (ev && ev.boost) || { solo: [1, 5, 10, 15, 19, 23, 26, 29, 31, 33, 35], multi_open: [1, 5, 10, 15, 19, 23, 26, 29, 31, 33, 35], challenge_live: [10] };
-    const rank = (ev && ev.rank) || { S: 20, A: 18, B: 15, C: 10, D: 1 };
+    /* 棋盤版（v2）的 master 沒有火數與評價係數：借最近一場有係數的來算，畫面上標明是參考值 */
+    const hasCoef = ev && ev.boost && Object.keys(ev.boost).length > 0;
+    const ref = hasCoef ? ev : (this.state.supEvents || []).filter(x => x.boost && Object.keys(x.boost).length && (!ev || x.s < ev.s)).sort((a, b) => b.s - a.s)[0];
+    const boost = (ref && ref.boost) || { solo: [1, 5, 10, 15, 19, 23, 26, 29, 31, 33, 35], multi_open: [1, 5, 10, 15, 19, 23, 26, 29, 31, 33, 35], challenge_live: [10] };
+    const rank = (ref && ref.rank && Object.keys(ref.rank).length && ref.rank) || { S: 20, A: 18, B: 15, C: 10, D: 1 };
     const arr = boost[s.spType] || boost.multi_open || boost.solo || [1];
     const bi = Math.min(Math.max(+s.spBoost || 0, 0), arr.length - 1);
     const per = (arr[bi] || 0) * (rank[s.spRank] || 0);
@@ -7340,17 +7355,17 @@ class Component extends DCLogic {
     const need = thr => per > 0 ? Math.max(0, Math.ceil((thr - cur) / per)) : 0;
     const phase = !ev ? 'none' : (now < ev.s ? 'soon' : now <= ev.agg ? 'on' : now <= ev.c ? 'closing' : 'over');
     const daysLeft = ev && phase === 'on' ? Math.max(0, Math.ceil((ev.agg - now) / 86400000)) : 0;
-    return { ev, arr, rank, per, plays, cur, day: per * plays, personal, total, next, good, need, phase, daysLeft };
+    return { ev, arr, rank, per, plays, cur, day: per * plays, personal, total, next, good, need, phase, daysLeft, board: !!(ev && ev.v === 'v2'), borrowed: !!(ev && !hasCoef && ref), refName: ref && !hasCoef ? this.supEventName(ref) : '' };
   }
   loadMst() {
-    return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=e2aa0e8a26'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
+    return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=ef5d8ff8a6'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
   }
   /* 勾選／擁有紀錄只存這台裝置（可用備份匯出）。 */
   mstSave(key, ls, obj) { this.setState({ [key]: obj }); try { localStorage.setItem(ls, JSON.stringify(obj)); } catch (e) {} }
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = import('./data/data-built.js?v=3a6a1faaab').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = import('./data/data-built.js?v=7a63124190').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
@@ -7440,7 +7455,7 @@ class Component extends DCLogic {
     });
   }
   loadLives() {
-    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=f5e0a9cbec'); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
+    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=6113642cdd'); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
   }
   loadNews() {
     return this.dbRun('news', async () => {
@@ -8139,11 +8154,11 @@ class Component extends DCLogic {
     if (this.state.colLoad || this.state.stamps.length) return;
     this.setState({ colLoad: true, colErr: '' });
     try {
-      const j = n => fetch(this.TDB + '/' + n + '.json').then(r => r.json()).catch(() => []);
+      const j = n => this.tdbJson(n + '.json').catch(() => []);
       const [ok, st, ho, hg, pf, pg, cps] = await Promise.all([
         import('./data/collection-assets.js?v=73b9d40b67'),
-        fetch(this.TDB + '/stamps.json').then(r => r.json()),
-        fetch(this.TDB + '/honors.json').then(r => r.json()),
+        this.tdbJson('stamps.json'),
+        this.tdbJson('honors.json'),
         j('honorGroups'),
         // 6.0 起：玩家邊框（WL 結局章節 TOP100 起）與收藏 BOX 復刻商店
         j('playerFrames'), j('playerFrameGroups'), j('customProfileGachaShops')
@@ -8175,7 +8190,7 @@ class Component extends DCLogic {
   loadEventArt() {
     if (this._evArtLoading || Object.keys(this.state.evArt || {}).length) return;
     this._evArtLoading = true;
-    fetch(this.TDB + '/events.json').then(r => r.json()).then(list => {
+    this.tdbJson('events.json').then(list => {
       const m = {};
       const ty = {};
       (list || []).forEach(e => {
@@ -9145,7 +9160,7 @@ class Component extends DCLogic {
         { l: '最高一段', v: last ? this.n(last[0]) : '—', sub: last ? ('還要 ' + this.n(sp.need(last[0])) + ' 場' + (sp.plays ? '（約 ' + this.n(Math.ceil(sp.need(last[0]) / sp.plays)) + ' 天）' : '')) : '' }
       ];
       formulaText = '每場應援點數 = 火數係數 × 評價係數';
-      formulaNote = '係數直接讀台服 master 的應援活動表' + (sp.ev ? '（第 ' + sp.ev.id + ' 回）' : '') + '：火 0～10 對應 1／5／10／15／19／23／26／29／31／33／35，S／A／B／C／D 評價對應 20／18／15／10／1，挑戰 Live 固定 10；假設每場都拿到所選評價，實際仍以遊戲內顯示為準。個人獎勵在 25,000 pt 後多半只剩稱號，教學的「40,000 pt 之後沒有資源性價比」也是這個意思。';
+      formulaNote = (sp.board ? '第 ' + (sp.ev.n || sp.ev.id) + ' 回是 6.4 新增的棋盤版：master 沒有火數係數與個人得分獎勵，個人獎勵改由棋盤格發放（共 ' + (sp.ev.tiles || 0) + ' 格、' + (sp.ev.turn || 0) + ' 回合）；下面的每場點數借' + (sp.refName || '前幾回') + '的係數，只供參考。' : '') + '係數直接讀台服 master 的應援活動表' + (sp.ev && !sp.borrowed ? '（第 ' + (sp.ev.n || sp.ev.id) + ' 回）' : '') + '：火 0～10 對應 1／5／10／15／19／23／26／29／31／33／35，S／A／B／C／D 評價對應 20／18／15／10／1，挑戰 Live 固定 10；假設每場都拿到所選評價，實際仍以遊戲內顯示為準。個人獎勵在 25,000 pt 後多半只剩稱號，教學的「40,000 pt 之後沒有資源性價比」也是這個意思。';
     } else if (s.ctab === 'stam') {
       calcInputTitle = '體力回復試算';
       calcFields = [
@@ -11156,7 +11171,8 @@ class Component extends DCLogic {
       dayH: s.mobile ? '54px' : '92px',
 
       /* 首頁 */
-      liveState: s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動'),
+      liveState: (s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動')) + (s.liveSrc === 'haruki' && !s.liveLoad ? '　·　Haruki 備援資料' : ''),
+      liveSrcNote: s.liveSrc === 'haruki' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki 公開 API（經本站 Worker 轉換格式），時速等統計欄位暫時沒有。' : '',
       liveName: s.liveLoad ? '載入活動資訊…' : (ev.name || ev.event_name || (s.liveErr || '目前沒有進行中的活動')),
       liveType: ev.id != null ? '第 ' + ev.id + ' 期' : '—',
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
@@ -11598,7 +11614,7 @@ class Component extends DCLogic {
       spBoostChips: (s.ctab === 'support' ? this.supportCalc(s).arr : []).map((r, i) => Object.assign({ v: i, n: i, mult: '×' + r }, chip(Math.min(+s.spBoost || 0, (this.supportCalc(s).arr.length - 1)) === i, 'var(--cta)'))),
       spRankChips: ['S', 'A', 'B', 'C', 'D'].map(v => Object.assign({ v, n: v + ' 評價' }, chip(s.spRank === v, 'var(--ink-grad)'))),
       hasSpTable: s.ctab === 'support' && this.supportCalc(s).personal.length > 0,
-      spTableTitle: (() => { if (s.ctab !== 'support') return ''; const sp = this.supportCalc(s); return sp.ev ? ('第 ' + sp.ev.id + ' 回個人獎勵（' + this.md(new Date(sp.ev.s)) + ' – ' + this.md(new Date(sp.ev.agg)) + '）') : '個人獎勵'; })(),
+      spTableTitle: (() => { if (s.ctab !== 'support') return ''; const sp = this.supportCalc(s); return sp.ev ? ('第 ' + (sp.ev.n || sp.ev.id) + ' 回個人獎勵（' + this.md(new Date(sp.ev.s)) + ' – ' + this.md(new Date(sp.ev.agg)) + '）') : '個人獎勵'; })(),
       spDateNote: (() => {
         if (s.ctab !== 'support') return '';
         const sp = this.supportCalc(s), ev = sp.ev;

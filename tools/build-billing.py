@@ -24,7 +24,8 @@ import re
 import time
 import urllib.request
 
-DB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
+from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
+DB = TC
 # 台服官方網頁商店(GamePay/Ariel,MyCard·信用卡通路)的公開商品 API,無需登入
 WEB_API = 'https://gamepay.ariel.com.tw/web/payment/app/5245/country/TW/all_goods_detail'
 WEB_SHOP_URL = 'https://gamepay.ariel.com.tw/topup/5245'
@@ -45,9 +46,7 @@ WEB_DIM = {0: 'none', 1: 'monthly', 2: 'weekly', 4: 'monthly'}
 
 
 def get(name):
-    req = urllib.request.Request(f'{DB}/{name}', headers={'Accept-Encoding': 'identity'})
-    with urllib.request.urlopen(req) as r:
-        return json.load(r)
+    return tc_json(f'{DB}/{name}', 120)
 
 
 def fetch_web(rows_by_id):
@@ -271,7 +270,7 @@ def main():
             daily_v1[bid] = q
     passes = {'v1': pass_v1, 'v1Daily': daily_v1, 'v2': pass_v2, 'v2Daily': daily, 'mysekai': mysekai_pass}
 
-    data = {'source': 'sekai-master-db-tc-diff', 'items': rows, 'passes': passes}
+    data = {'source': 'haruki-sekai-tc-master', 'items': rows, 'passes': passes}
 
     # 內容沒變就不寫(builtAt 除外),CI 才不會空提交
     if OUT.exists():
@@ -288,7 +287,7 @@ def main():
 
     data['builtAt'] = int(time.time() * 1000)
     body = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-    OUT.write_text('// 由 tools/build-billing.py 產生,勿手改。資料源:sekai-master-db-tc-diff\n'
+    OUT.write_text('// 由 tools/build-billing.py 產生,勿手改。資料源:haruki-sekai-tc-master（缺檔退回 sekai-master-db-tc-diff）\n'
                    f'window.BILLING_DATA={body};\n')
     known = sum(1 for r in rows if r['pk'])
     print(f'寫入 {OUT.name}:{len(rows)} 項商品(已知台幣價 {known}、有償水晶兌換 {sum(1 for r in rows if r["exch"])})、{OUT.stat().st_size // 1024} KB')

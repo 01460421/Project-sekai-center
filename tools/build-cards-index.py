@@ -48,10 +48,12 @@ def art_exists(abn):
         return False
 
 
+from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
+
 SERVERS = {
-    # 台服的 master 是 tc-diff,日服是 diff。日服永遠比台服快約一年,
+    # 台服 master 以 Haruki 為主(缺檔退回 tc-diff),日服是 diff。日服永遠比台服快約一年,
     # 所以日服索引裡會有台服還查不到的卡 —— 卡面下載頁就是靠這一份補齊。
-    'tw': ('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main',
+    'tw': (TC,
            'cards-index.js', '台服'),
     'jp': ('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main',
            'cards-index-jp.js', '日服'),
@@ -66,6 +68,8 @@ SUPPLY_ORDER = ['normal', 'birthday', 'term_limited', 'colorful_festival_limited
 
 
 def get(db, name):
+    if db == TC:
+        return tc_json(f'{db}/{name}', 120)
     with urllib.request.urlopen(f'{db}/{name}') as r:
         return json.load(r)
 
