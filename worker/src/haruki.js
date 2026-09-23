@@ -11,6 +11,10 @@ import { getJson } from './cal.js';
 
 export const HARUKI_API_DEFAULT = 'https://public-api.haruki.seiunx.com/sekai-api/v5/api/tw';
 export const HARUKI_OAUTH_DEFAULT = 'https://toolbox-api-direct.haruki.seiunx.com';
+/* Haruki Event Tracker（Team-Haruki/Haruki-Event-Tracker）的公開 web API：不需要 token，
+   Haruki 工具箱自己的排名頁就讀這個（前端 .env 的 VITE_HARUKI_EVENT_TRACKER_URL）。
+   玩家 ID 會匿名化成每期固定的 unique_id，所以「用 Player ID 找自己」在這個來源對不上。 */
+export const HARUKI_TRACKER_DEFAULT = 'https://toolbox-api-direct.haruki.seiunx.com/event-tracker';
 const UA = 'project-sekai-center/1.0 (+https://project-sekai-center.com) haruki-fallback';
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, OPTIONS' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'content-type': 'application/json; charset=utf-8', ...extra } });
@@ -92,14 +96,67 @@ async function harukiGet(env, path) {
   return parseSafe(await r.text());
 }
 
-/** 逐局追蹤器與其他模組共用：直接拿 HiSekai 形狀的當期前百（不經 HTTP） */
+/* ---------- Event Tracker → HiSekai 形狀 ----------
+   overview 回：topRankings[{rankData:{rank,score,userId,timestamp}, userData:{name,cardId,…}}]、
+   topPlayerGrowths[{userId,growth,timeDiff}]（interval 內的增量，換算成時速）、borderLines[{rank,score}]。 */
+export function trackerRows(ov) {
+  const grow = new Map(((ov && ov.topPlayerGrowths) || []).map(g => [String(g.userId), g]));
+  return ((ov && ov.topRankings) || []).map(it => {
+    const r = (it && it.rankData) || {}, u = (it && it.userData) || {};
+    const uid = String(r.userId != null ? r.userId : (u.userId || ''));
+    const g = grow.get(uid);
+    const speed = g && g.timeDiff > 0 && g.growth != null ? Math.round(g.growth * 3600 / g.timeDiff) : null;
+    return { rank: r.rank, score: r.score, name: u.name || '', user_id: uid,
+      last_player_info: { profile: { id: uid, word: u.profileWord || '' },
+        card: u.cardId != null ? { id: u.cardId, level: u.cardLevel, master_rank: u.cardMasterRank, special_training: u.cardSpecialTrainingStatus === 'done' } : null },
+      last_1h_stats: speed != null ? { speed } : null };
+  }).filter(x => x.rank);
+}
+export function trackerBorders(ov) {
+  return ((ov && ov.borderLines) || []).filter(b => b && b.rank).map(b => ({ rank: b.rank, score: b.score, name: '', user_id: '' }));
+}
+async function trackerGet(env, eventId, charId) {
+  const base = ((env && env.HARUKI_TRACKER_BASE) || HARUKI_TRACKER_DEFAULT).replace(/\/+$/, '');
+  const path = '/api/v2/web/events/tw/' + eventId + '/leaderboards/' + (charId ? 'world-bloom/' + charId + '/overview' : 'total/overview') + '?interval=3600';
+  const r = await fetch(base + path, { headers: { accept: 'application/json', 'user-agent': UA }, cf: { cacheTtl: 0, cacheEverything: false }, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error('tracker HTTP ' + r.status);
+  return parseSafe(await r.text());
+}
+async function fromTracker(env, kind, ev, wbs) {
+  const ov = await trackerGet(env, ev.id);
+  const main = kind === 'top100' ? trackerRows(ov) : trackerBorders(ov);
+  if (!main.length) throw new Error('tracker 沒有這一期的資料');
+  const out = { ...eventMeta(ev), source: 'haruki', via: 'tracker' };
+  if (kind === 'top100') out.player_top_100_rankings = main; else out.player_border_rankings = main;
+  const chs = (wbs || []).filter(w => w.eventId === ev.id);
+  if (chs.length) {
+    const per = await Promise.all(chs.map(w => trackerGet(env, ev.id, w.gameCharacterId).catch(() => null)));
+    const list = chs.map((w, i) => {
+      if (!per[i]) return null;
+      const meta = chapterMeta(wbs, ev.id, w.gameCharacterId);
+      if (kind === 'top100') return { ...meta, player_top_100_rankings: trackerRows(per[i]) };
+      const pb = trackerBorders(per[i]);
+      return { ...meta, player_border_rankings: pb, player_borders: pb };
+    }).filter(Boolean).sort((a, b) => a.chapter - b.chapter);
+    if (list.length) out[kind === 'top100' ? 'world_link_top_100_rankings' : 'world_link_border_rankings'] = list;
+  }
+  return out;
+}
+
+/** 逐局追蹤器與其他模組共用：直接拿 HiSekai 形狀的當期前百／榜線（不經 HTTP）。
+    先問 Event Tracker（公開、不用 token、有時速），不行再問 Haruki 公開 API（要 token）。 */
 export async function harukiLive(env, kind, eventId) {
   const events = await getJson('events.json');
   const ev = eventId ? events.find(e => String(e.id) === String(eventId)) : pickCurrent(events, Date.now());
   if (!ev) throw new Error('no event');
   const wbs = ev.eventType === 'world_bloom' ? await getJson('worldBlooms.json').catch(() => []) : [];
-  if (kind === 'top100') return toTop100(await harukiGet(env, '/event/' + ev.id + '/ranking-top100'), ev, wbs);
-  return toBorder(await harukiGet(env, '/event/' + ev.id + '/ranking-border'), ev, wbs);
+  try { return await fromTracker(env, kind, ev, wbs); }
+  catch (e) {
+    try {
+      if (kind === 'top100') return toTop100(await harukiGet(env, '/event/' + ev.id + '/ranking-top100'), ev, wbs);
+      return toBorder(await harukiGet(env, '/event/' + ev.id + '/ranking-border'), ev, wbs);
+    } catch (e2) { throw new Error('Event Tracker：' + ((e && e.message) || e) + '；公開 API：' + ((e2 && e2.message) || e2)); }
+  }
 }
 
 const PATH_OK = /^\/haruki\/(config|event\/list|event\/(live|\d{1,4})\/(top100|border))$/;

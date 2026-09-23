@@ -1,6 +1,6 @@
 /* Haruki 串接的回歸測試：遊戲原始排名 → HiSekai 形狀、當期判定、WL 章節、/haruki/* 路由（假 fetch）。
    用法：node worker/test/haruki.mjs   任何一項失敗就 exit 1。 */
-import { toTop100, toBorder, pickCurrent, parseSafe, eventMeta, handleHaruki, toEventList } from '../src/haruki.js';
+import { toTop100, toBorder, pickCurrent, parseSafe, eventMeta, handleHaruki, toEventList, trackerRows, trackerBorders, harukiLive } from '../src/haruki.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -155,6 +155,45 @@ ok(o.status === 503, '沒設 client id 時回 503');
   ok(r.status === 404 && hits.length === n1, 'ID 格式不對不轉送');
   r = await pcall('/haruki/public/tw/suite/7482960281734567890', 'POST');
   ok(r.status === 405, '公開 API 只收 GET');
+}
+
+/* Event Tracker（公開、不用 token）→ HiSekai 形狀 */
+{
+  const ov = { topRankings: [
+      { rankData: { rank: 1, score: 50000000, userId: 'u_abc', timestamp: 1 }, userData: { userId: 'u_abc', name: '甲', cardId: 1201, cardLevel: 60, cardMasterRank: 5, cardSpecialTrainingStatus: 'done', profileWord: 'hi' } },
+      { rankData: { rank: 2, score: 49000000, userId: 'u_def', timestamp: 1 }, userData: { userId: 'u_def', name: '乙' } } ],
+    topPlayerGrowths: [{ rank: 1, userId: 'u_abc', growth: 1200000, timeDiff: 1800 }],
+    borderLines: [{ rank: 100, score: 20000000, timestamp: 1 }, { rank: 1000, score: 9000000, timestamp: 1 }] };
+  const rows = trackerRows(ov);
+  ok(rows.length === 2 && rows[0].rank === 1 && rows[0].name === '甲' && rows[0].last_player_info.profile.id === 'u_abc' && rows[0].last_player_info.card.id === 1201, 'tracker 前百：名次、名字、匿名 ID、隊長卡');
+  ok(rows[0].last_1h_stats.speed === 2400000 && rows[1].last_1h_stats === null, 'tracker 增量換算成時速（30 分鐘 120 萬 → 時速 240 萬）');
+  ok(trackerBorders(ov).map(b => b.rank).join() === '100,1000', 'tracker 榜線');
+  const seen2 = [];
+  globalThis.fetch = async (u) => { const url = String(u); seen2.push(url);
+    if (url.endsWith('/events.json')) return new Response(JSON.stringify(events), { status: 200 });
+    if (url.endsWith('/worldBlooms.json')) return new Response(JSON.stringify([{ eventId: 180, gameCharacterId: 21, chapterNo: 1, chapterStartAt: now - D, aggregateAt: now + D }, { eventId: 180, gameCharacterId: 22, chapterNo: 2, chapterStartAt: now, aggregateAt: now + 2 * D }]), { status: 200 });
+    if (/event-tracker\/api\/v2\/web\/events\/tw\/180\/leaderboards\/total\/overview\?interval=3600$/.test(url)) return new Response(JSON.stringify(ov), { status: 200 });
+    if (/world-bloom\/21\/overview/.test(url)) return new Response(JSON.stringify(ov), { status: 200 });
+    if (/world-bloom\/22\/overview/.test(url)) return new Response('{}', { status: 500 });
+    return new Response('{}', { status: 404 });
+  };
+  Date.now = () => now;
+  const t = await harukiLive({}, 'top100');
+  ok(t.via === 'tracker' && t.source === 'haruki' && t.id === 180 && t.player_top_100_rankings.length === 2, '當期前百先走 tracker');
+  ok(t.world_link_top_100_rankings.length === 1 && t.world_link_top_100_rankings[0].chapter === 1, 'WL：每章各打一次，掛掉的章節略過');
+  const bd = await harukiLive({}, 'border');
+  ok(bd.via === 'tracker' && bd.player_border_rankings.length === 2 && bd.world_link_border_rankings[0].player_borders.length === 2, 'tracker 榜線（含 WL 章節，兩種欄位名都給）');
+  ok(!seen2.some(u => u.includes('public-api')), 'tracker 有資料就不打要 token 的公開 API');
+  globalThis.fetch = async (u) => { const url = String(u);
+    if (url.endsWith('/events.json')) return new Response(JSON.stringify(events), { status: 200 });
+    if (url.endsWith('/worldBlooms.json')) return new Response('[]', { status: 200 });
+    if (url.includes('event-tracker')) return new Response(JSON.stringify({ topRankings: [] }), { status: 200 });
+    if (/public-api.*ranking-top100$/.test(url)) return new Response(big, { status: 200 });
+    return new Response('{}', { status: 404 });
+  };
+  const fb = await harukiLive({}, 'top100');
+  ok(!fb.via && fb.player_top_100_rankings[0].user_id === '7482960281734567890', 'tracker 沒這一期資料就退到公開 API');
+  Date.now = realNow;
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');

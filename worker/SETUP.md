@@ -83,7 +83,9 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 
 程式在 `src/haruki.js`，路由是 `/haruki/*`。不設任何東西也能部署，只是備援可能被對方擋下、匯入按鈕不會出現。
 
-1. **排名備援**：HiSekai 掛掉時，前端、逐局追蹤器（`/status` 的 `src` 會變成 `haruki`）與榜線快照改讀 Haruki 公開 API。
+1. **排名備援**：HiSekai 掛掉時，前端、逐局追蹤器（`/status` 的 `src` 會變成 `haruki`）與榜線快照改讀 Haruki。
+   先問 Haruki Event Tracker 的公開 web API（`HARUKI_TRACKER_BASE`，不需要 token，有時速；玩家 ID 為每期匿名 ID），
+   沒這一期的資料才改問 Haruki 公開 API。
    排名路徑要 token，向 Team-Haruki 申請後：
    ```
    npx wrangler secret put HARUKI_API_TOKEN
