@@ -85,6 +85,10 @@ class Component extends DCLogic {
     ['豆森活動', 'ms', '豆森'],
     ['應援活動', 'sup', '應援'],
     ['選角池', 'sel', '選角池'],
+    ['新曲', 'song', '新曲'],
+    ['虛擬 Live', 'live', 'Live'],
+    ['登入活動', 'login', '登入'],
+    ['角色生日', 'cb', '生日'],
     ['其他', 'ot', '其他']
   ];
   /* 卡池表的「其他」太籠統：6.0 起有免費招募、歡樂禮物包（gift）、新手／回歸池，照名稱與備註分出來 */
@@ -334,6 +338,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/23', t: '對照同類站的第一批：時速籤、日曆四類新事件、定數、查房', s: '活動總覽多了時速籤：自己的近 1h／3h／日速（前百有 API 統計）與 T1000、T5000 的實測時速；活動日曆納入新曲實裝、虛擬 Live 期間、登入活動與角色生日，圖例可點選隱藏某一類，.ics 匯出與今日摘要跟著多這幾類；歌曲詳情各難度顯示 B30 定數；排名詳情的逐局紀錄多了「上次上分距今、間隔中位、最長停車、近 1h 場數」。' },
     { d: '2026/09/21', t: '6.4（WL3・5.5 週年）資料對應', s: '日服 6.4 起的 World Link 第三輪每期有「總合力上限 336,000」（master 新表 eventTotalPowerLimits）：跑榜工作室的最佳化與活動總覽的規則文字改成讀這張表，台服 6.4 一到就會自動套用；WL3 支援池的「自選二段卡」機率（0.2%）加進抽卡天井目標；5.5 週年的自選角色招募在卡池類型分出「選角池」。' },
     { d: '2026/09/21', t: '應援活動（應援季）', s: '台服 master 的應援活動表（歷來 8 回，最近一回 2026/2/15–2/25）進了活動日曆、今日摘要與 .ics 匯出；計算中心新增「應援活動」分頁：選 Live 種類、火數與評價，填每天場數與目前點數，算每場／每天應援點數、到下一段獎勵與「值得刷到」那一段還要幾場、幾天，並列出整份個人獎勵表（六團只差稱號）與全體得分獎勵；下一回的期程進 master 後會自動更新。' },
     { d: '2026/09/21', t: '五週年（6.0）資料對應 IV：邊框、收藏 BOX、免持有藍圖', s: '收集室多了「邊框」（WL 結局章節 TOP100 起的玩家邊框，52 個，依角色）與「收藏 BOX」（歷年連線 Live 商品復刻商店，11 間）；6.0 起有「不用持有藍圖也能做」的家具，豆森對話的「還缺家具」不再把它算進去，家具圖鑑也會標示。' },
@@ -521,6 +526,7 @@ class Component extends DCLogic {
     calcPresets: (() => { try { const v = JSON.parse(localStorage.getItem('sekai-calc-presets') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
     planTier: 0, planHrs: 3, gcDaily: 100, gcDays: 0,
     spType: 'multi_open', spBoost: 10, spRank: 'S', spPlays: 20, spCur: 0, supEvents: null,   // 應援活動試算
+    calOff: (() => { try { return JSON.parse(localStorage.getItem('sekai-cal-off') || '{}') || {}; } catch (e) { return {}; } })(), loginBonus: null, charProfiles: null, consts: null,   // 日曆分類開關、登入活動、角色生日、定數
     navFold: (() => { try { return JSON.parse(localStorage.getItem('sekai-nav-fold') || '{}') || {}; } catch (e) { return {}; } })(),   // 側欄群組摺疊（1=收起）
     pushOn: (() => { try { return localStorage.getItem('sekai-push') === '1'; } catch (e) { return false; } })(), pushBusy: false,
     recent: (() => { try { return JSON.parse(localStorage.getItem('sekai-recent') || '[]'); } catch (e) { return []; } })(),
@@ -1232,6 +1238,9 @@ class Component extends DCLogic {
       else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: '📣', t: this.supEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.agg)), p: 'calc', patchJson: JSON.stringify({ ctab: 'support' }) });
     });
     const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    (s.charProfiles || []).forEach(b => { if (b.m === d.getMonth() + 1 && b.d === d.getDate()) rows.push({ ic: '🎂', t: '今天是 ' + (this.charShort(b.ch) || '#' + b.ch) + ' 的生日', s: '生日池與生日 Live 看日曆', p: 'calendar', patchJson: '{}' }); });
+    (s.songs || []).filter(x => !x.jp && x.published >= dayStart && x.published < dayStart + 86400000).slice(0, 2).forEach(x => rows.push({ ic: '🎵', t: '新曲「' + x.title + '」今天實裝', s: '到歌曲清單看難度與定數', p: 'songs', patchJson: JSON.stringify({ songId: x.id }) }));
+    (s.loginBonus || []).filter(x => x.s >= dayStart && x.s < dayStart + 86400000).slice(0, 1).forEach(x => rows.push({ ic: '🎁', t: '登入活動「' + x.n + '」今天開始', s: '到 ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' }));
     const newsN = (s.news || []).filter(x => x.s >= dayStart && x.s <= now).length;
     if (newsN) rows.push({ ic: '公告', t: '今天有 ' + newsN + ' 則遊戲公告', s: '點開看全部', p: 'news', patchJson: '{}' });
     const hint = s.pid ? this.planHintText() : '';
@@ -7228,6 +7237,34 @@ class Component extends DCLogic {
     return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=70fc1a770c'); return m.SUPPORT_EVENTS || []; });
   }
   supEventName(x) { return '第 ' + x.id + ' 回應援活動'; }
+  /* 日曆的四類補充：登入活動（limitedLoginBonuses）、角色生日（characterProfiles 的「8月11日」）；新曲用 songs.published、Live 用 lives-index */
+  loadLoginBonus() {
+    return this.dbRun('loginBonus', async () => { const l = await this.dbGet('limitedLoginBonuses'); return (l || []).map(x => ({ id: x.id, n: x.name || '登入活動', s: x.startAt || 0, e: x.endAt || 0 })).filter(x => x.s && x.e); });
+  }
+  loadCharProfiles() {
+    return this.dbRun('charProfiles', async () => { const l = await this.dbGet('characterProfiles'); return (l || []).map(x => { const m = /(\d+)月(\d+)日/.exec(x.birthday || ''); return m ? { ch: x.characterId, m: +m[1], d: +m[2] } : null; }).filter(Boolean); });
+  }
+  /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
+  loadConsts() {
+    if (this.state.consts || this._constsP) return;
+    this._constsP = fetch('./data/b30-consts.js?v=7f878df18f').then(r => r.text()).then(txt => {
+      const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
+      ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
+      this.setState({ consts: map });
+    }).catch(() => this.setState({ consts: {} }));
+  }
+  calOn(label) { return !(this.state.calOff || {})[label]; }
+  /* 指定時窗的實測時速：拿離「現在－N 小時」最近的快照當基準；跨距不到六成就不算 */
+  snapSpeedWin(evId, rank, hours) {
+    const l = this.snapList(evId); if (l.length < 2) return null;
+    const at = s => { const f = (s[1] || []).find(x => x[0] === rank); return f ? f[1] : null; };
+    const b = l[l.length - 1], aScore = at(b); if (aScore == null) return null;
+    const target = b[0] - hours * 3600000; let best = null;
+    for (const x of l) { if (x === b || at(x) == null) continue; if (best === null || Math.abs(x[0] - target) < Math.abs(best[0] - target)) best = x; }
+    if (!best) return null;
+    const h = (b[0] - best[0]) / 3600000; if (h < hours * 0.6) return null;
+    return { speed: (aScore - at(best)) / h, hours: h };
+  }
   SP_TYPES = [['multi_open', '協力（公開）'], ['multi_private', '協力（私人）'], ['solo', '單人'], ['cheerful_carnival_open', '排位對戰'], ['challenge_live', '挑戰 Live']];
   /* 目前進行中的那場；沒有就拿最近一場（結束的或未來的），沒資料回 null */
   supCurrent(now) {
@@ -7288,6 +7325,13 @@ class Component extends DCLogic {
       gapFg: (t.gap != null && t.gap > 0) ? 'var(--lim-fg)' : 'var(--accent-deep)' }));
     out.evHasTiers = out.evTiers.length > 0;
     out.evPredNote = ba ? (ba.useModel ? '終線預測：速率剖面模型（回測誤差約 6%）' : '終線預測：實測時速線性外推') : '';
+    // 時速／日速籤：我（前百有 API 的 1h/3h/24h 統計）與 T1000／T5000（快照差分）
+    const spd = [], meRow = s.pid ? this.ranksOf(s.live).find(r => this.sameUid(r.uid, s.pid)) : null;
+    if (meRow) { const st = meRow.stats || {}; [['h1', '近 1h', 1], ['h3', '近 3h', 3], ['h24', '日速（24h）', 24]].forEach(([k, l, hrs]) => { const o = st[k]; if (!o) return;
+      const v = o.speed != null ? o.speed : (o.count != null && o.average != null ? o.count * o.average / hrs : null);
+      if (v != null) spd.push({ l: '我 · ' + l, v: this.short(v) + '/h', sub: o.count != null ? o.count + ' 場' : '' }); }); }
+    if (ev.id) [1000, 5000].forEach(rk => [1, 24].forEach(h => { const r = this.snapSpeedWin(ev.id, rk, h); if (r) spd.push({ l: 'T' + rk + ' · ' + (h === 24 ? '日速' : '近 1h'), v: this.short(r.speed) + '/h', sub: '實測 ' + r.hours.toFixed(1) + 'h' }); }));
+    out.evSpeed = spd; out.evHasSpeed = spd.length > 0;
     const gs = (s.gachas || []).filter(g => id && String(g.eid) === id).map(g => { const tn = this.tone(g.t), a = this.pd(g.s), b = this.pd(g.e); return { n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, range: this.md(a) + ' – ' + this.md(b), ch: g.ch || '', chSd: this.chSdList(g.ch), note: g.note || '', patchJson: JSON.stringify({ gq: g.n, gp: 1, gt: '' }) }; });
     out.evGachas = gs; out.evHasGachas = gs.length > 0;
     const cards = s.rateCards || [], byId = {}; cards.forEach(r => { byId[r[0]] = r; });
@@ -8140,7 +8184,7 @@ class Component extends DCLogic {
     if (changed) { this._scrollPos = this._scrollPos || {}; this._scrollPos[this.state.page] = { y: window.scrollY || 0, dbN: this.state.dbN }; }   // 返回鍵時還原捲動位置
     if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
     if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
-    if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); }
+    if (p === 'songs') { this.loadSongs(); this.loadSongBpm(); this.loadConsts(); }
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'collect') this.loadCollect();
     if (p === 'chars') { this.loadChars(); this.loadCards(); }
@@ -8186,6 +8230,8 @@ class Component extends DCLogic {
     if (p === 'favs') { this.loadMst(); this.loadFixtures(); }
     if (p === 'calendar' || p === 'home' || p === 'favs') this.loadMsEvents();
     if (p === 'calendar' || p === 'home' || p === 'favs' || p === 'calc') this.loadSupportEvents();
+    if (p === 'calendar' || p === 'home') { this.loadLoginBonus(); this.loadCharProfiles(); this.loadLives(); }
+    if (p === 'calendar') this.loadSongs();
     this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
@@ -8517,7 +8563,19 @@ class Component extends DCLogic {
         note: '結算 ' + this.md(new Date(x.agg)) + '，關閉 ' + this.md(new Date(x.c)) + '；個人獎勵到 ' + this.n((x.personal || []).slice(-1)[0] ? x.personal.slice(-1)[0][0] : 0) + ' pt，計算中心可試算每天要打幾場',
         range: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.agg)) });
     });
-    return list;
+    // 新曲（台服實裝日）、虛擬 Live（期間）、登入活動、角色生日
+    const dayEnd = t + 86399999, push = (label, o) => { const tn = this.tone(label); list.push(Object.assign({ t: tn.label, bg: tn.bg, fg: tn.fg, ch: '', chSd: [], note: '' }, o)); };
+    (this.state.songs || []).forEach(x => { if (!x.jp && x.published && x.published >= t && x.published <= dayEnd) push('新曲', { n: '新曲「' + x.title + '」', note: x.composer ? '作者 ' + x.composer : '', range: this.md(d) }); });
+    const seenG = {};
+    (this.state.lives || []).forEach(l => {
+      if (!(l.s && l.e && dayEnd >= l.s && t <= l.e)) return;
+      if (l.g) { if (seenG[l.g]) return; seenG[l.g] = 1; }
+      const n = (l.sch || []).length ? '（' + (l.sch[2] || []).length + ' 場／日）' : '';
+      push('虛擬 Live', { n: l.n, note: '虛擬 Live' + n, range: this.md(new Date(l.s)) + ' – ' + this.md(new Date(l.e)) });
+    });
+    (this.state.loginBonus || []).forEach(x => { if (dayEnd >= x.s && t <= x.e) push('登入活動', { n: x.n, note: '登入就能領', range: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.e)) }); });
+    (this.state.charProfiles || []).forEach(b => { if (b.m === d.getMonth() + 1 && b.d === d.getDate()) { const nm = this.charShort(b.ch) || ('#' + b.ch); push('角色生日', { n: nm + ' 的生日', ch: nm, chSd: this.chSdList(nm), note: '生日池與生日 Live 通常同天開', range: this.md(d) }); } });
+    return list.filter(x => this.calOn(x.t));
   }
 
   /* ---------- 列表 ---------- */
@@ -9412,12 +9470,23 @@ class Component extends DCLogic {
               title: md(g.t) + ' ' + hhmm(g.t) + '　+' + this.n(g.delta) + ' P',
             };
           }),
-          gamesStats: [
-            { l: '場數', v: this.n(rows.length) },
-            { l: '合計', v: this.short(sum) },
-            { l: '場均', v: this.n(Math.round(sum / rows.length)) },
-            { l: '最高', v: this.n(max) },
-          ],
+          gamesStats: (() => {
+            // 查房：上次上分距今、間隔中位數、最長停車、近 1 小時場數（後三者看目前選的範圍）
+            const fmtD = sec => sec < 60 ? sec + ' 秒' : sec < 3600 ? Math.floor(sec / 60) + ' 分' : (Math.floor(sec / 3600) + ' 時 ' + Math.round((sec % 3600) / 60) + ' 分');
+            const gaps = rows.slice(1).map((g, i) => g.t - rows[i].t).sort((x, y) => x - y);
+            const med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0, longest = gaps.length ? gaps[gaps.length - 1] : 0;
+            const lastAgo = Math.max(0, nowRel - all[all.length - 1].t), n1h = all.filter(g => g.t >= nowRel - 3600).length;
+            return [
+              { l: '場數', v: this.n(rows.length) },
+              { l: '合計', v: this.short(sum) },
+              { l: '場均', v: this.n(Math.round(sum / rows.length)) },
+              { l: '最高', v: this.n(max) },
+              { l: '上次上分', v: fmtD(lastAgo) + '前' },
+              { l: '間隔中位', v: gaps.length ? fmtD(med) : '—' },
+              { l: '最長停車', v: gaps.length ? fmtD(longest) : '—' },
+              { l: '近 1h', v: n1h + ' 場' },
+            ];
+          })(),
           gamesHasPick: !!pick,
           gamesPickInfo: pick ? (md(pick.t) + ' ' + hhmm(pick.t) + '　+' + this.n(pick.delta) + ' P') : '',
           gamesPickSub: pick ? ('當下第 ' + pick.rank + ' 名' + (gapTxt(s.gamesPick) ? '　·　' + gapTxt(s.gamesPick) : '')) : '',
@@ -10906,7 +10975,7 @@ class Component extends DCLogic {
           units: x.units.map(u => ({ n: this.UNITS[u] ? this.UNITS[u].n : u, c: this.UNITS[u] ? this.UNITS[u].c : 'var(--ot-bg)', t: this.UNITS[u] ? this.UNITS[u].t : 'var(--ot-fg)' })),
           bpm: (() => { const b = s.songBpm && s.songBpm[x.id]; if (!b) return ''; const t = b[0] ? (b[1] === b[2] ? 'BPM ' + b[0] : 'BPM ' + b[1] + '–' + b[2] + '（主要 ' + b[0] + '）') : ''; const l = b[3] ? '歌長 ' + Math.floor(b[3] / 60) + ':' + String(b[3] % 60).padStart(2, '0') : ''; return [t, l].filter(Boolean).join(' · '); })(),
           related: [{ n: '虛擬 Live 場次', p: 'lives', patch: { dbq: x.title, liveType: '', liveStat: '' }, patchJson: JSON.stringify({ dbq: x.title, liveType: '', liveStat: '' }) }, { n: 'B30 產生器', p: 'b30', patch: {}, patchJson: '{}' }],
-          diffs: DF.filter(([k]) => x.lv[k]).map(([k, n, c]) => ({ n, c, fg: this.fgOn(c), lv: x.lv[k], notes: (x.nt && x.nt[k]) ? this.n(x.nt[k]) + ' notes' : '' }))
+          diffs: DF.filter(([k]) => x.lv[k]).map(([k, n, c]) => ({ n, c, fg: this.fgOn(c), lv: x.lv[k], notes: (x.nt && x.nt[k]) ? this.n(x.nt[k]) + ' notes' : '', cst: (s.consts && s.consts[x.id + ':' + k] != null) ? '定數 ' + (+s.consts[x.id + ':' + k]).toFixed(1) : '' }))
         };
       })(),
       twoCol: s.mobile ? '1fr' : '1fr 1fr',
@@ -11066,7 +11135,7 @@ class Component extends DCLogic {
       calTitle: s.calY + ' 年 ' + (s.calM + 1) + ' 月',
       calDays: this.calendarDays(),
       calAgenda: this.calAgenda(), hasAgenda: !!s.mobile && this.calAgenda().length > 0,
-      typeLegend: this.TONES.filter(t => t[0] !== 'World Link支援池').map(t => this.tone(t[0])),
+      typeLegend: this.TONES.filter(t => t[0] !== 'World Link支援池').map(t => Object.assign(this.tone(t[0]), { op: this.calOn(t[2]) ? '1' : '.35', title: this.calOn(t[2]) ? '點一下隱藏這一類' : '已隱藏，點一下顯示' })),
       hasDaySel: !!daySel, dayEvents, dayEmpty: !!daySel && dayEvents.length === 0,
       daySelLabel: daySel ? daySel.replace(/-/g, '/') : '',
 
@@ -12360,8 +12429,12 @@ class Component extends DCLogic {
         const items = this.icsGachaItems(g => this.pd(g.e).getTime() + 86400000 > a && this.pd(g.s).getTime() < b);
         (this.state.msEvents || []).filter(x => x.s && x.e && x.e > a && x.s < b).forEach(x => items.push({ uid: 'ms-' + x.k + '-' + x.id, allDay: true, title: '豆森：' + this.msEventName(x), start: x.s, end: x.e + 1, desc: x.k === 'bday' ? '生日當天 ' + new Date(x.bs || x.s).toLocaleDateString('zh-TW') : (x.d || ''), url: 'https://project-sekai-center.com/app.html?page=calendar' }));
         (this.state.supEvents || []).filter(x => x.s && x.agg && x.agg > a && x.s < b).forEach(x => items.push({ uid: 'sup-' + x.id, allDay: true, title: this.supEventName(x), start: x.s, end: x.agg + 1, desc: '結算 ' + new Date(x.agg).toLocaleString('zh-TW') + '，關閉 ' + new Date(x.c).toLocaleString('zh-TW'), url: 'https://project-sekai-center.com/app.html?page=calc&ctab=support' }));
+        (this.state.songs || []).filter(x => !x.jp && x.published >= a && x.published < b).forEach(x => items.push({ uid: 'song-' + x.id, allDay: true, title: '新曲：' + x.title, start: x.published, end: x.published + 1, desc: x.composer || '', url: 'https://project-sekai-center.com/app.html?page=songs' }));
+        (this.state.loginBonus || []).filter(x => x.e > a && x.s < b).forEach(x => items.push({ uid: 'login-' + x.id, allDay: true, title: '登入活動：' + x.n, start: x.s, end: x.e + 1, desc: '', url: 'https://project-sekai-center.com/app.html?page=calendar' }));
+        (this.state.charProfiles || []).forEach(c => { if (c.m === m + 1) { const st = new Date(y, m, c.d).getTime(); items.push({ uid: 'bday-' + c.ch + '-' + y, allDay: true, title: (this.charShort(c.ch) || '#' + c.ch) + ' 的生日', start: st, end: st + 1, desc: '', url: 'https://project-sekai-center.com/app.html?page=calendar' }); } });
         const ev = this.icsEventItem(); if (ev && ev.end > a && ev.start < b) items.unshift(ev);
         this.icsDownload('sekai-' + y + '-' + String(m + 1).padStart(2, '0'), items); },
+      onCalTone: e => { const v = e.currentTarget.dataset.v; const o = Object.assign({}, this.state.calOff || {}); if (o[v]) delete o[v]; else o[v] = 1; this.setState({ calOff: o }); try { localStorage.setItem('sekai-cal-off', JSON.stringify(o)); } catch (e2) {} },
       onQaTpl: () => { const t = this.QA_TPL[this.state.qaKind]; if (!t) return; if (this.state.qaBody && !window.confirm('內容會被範本取代，確定？')) return; this.setState({ qaBody: t }); },
       onVisualMode: e => { const v = e.currentTarget.dataset.v; const next = this.state.vmode === v ? '' : v; this.setState({ vmode: next }); this.applyVisualMode(next); },
       onTut: e => {
