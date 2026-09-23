@@ -379,6 +379,7 @@ class Component extends DCLogic {
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' }
   ];
   SYSLOG = [
+    { d: '2026/09/23', t: '首頁依活動階段給建議', s: '首頁活動卡下方多一塊「現在該做什麼」：開跑前、開跑、中盤、最後衝刺、結算中、下期預告六種狀態，各配一句提醒與四個捷徑（活動試算、摸魚表、榜線、加分卡等）；活動卡的倒數在開跑前改數距開始時間。可在自訂首頁隱藏或調順序。', p: 'home' },
     { d: '2026/09/23', t: '卡片圖鑑查詢語法', s: '卡片圖鑑的搜尋框可以直接打組合條件，例如「mmj 藍 限定 2025」「miku 生日」「25 四星 fes」：團體、角色（中文短名或 ick／mnr／miku 這類縮寫）、屬性（紅藍綠黃紫或英文）、稀有度、來源（限定／常駐／fes／聯動）、年份都會被認出來當篩選，其餘文字才當卡名關鍵字；套用了什麼會顯示在篩選列上方。' },
     { d: '2026/09/23', t: '手機五個入口與樞紐頁、體力回復試算', s: '手機底部改成首頁、追活動、圖鑑、工具、更多五個入口；追活動、圖鑑、工具、社群各有一頁樞紐：上面一句今天的狀態（活動名與我的名次、圖鑑資料日期、已存設定、未讀通知），下面是子頁卡片；在子頁時底部會點亮所屬入口。計算中心新增「體力回復」：填目前體力與目標，算回滿與到目標的時刻。' },
     { d: '2026/09/23', t: '對照同類站的第一批：時速籤、日曆四類新事件、定數、查房', s: '活動總覽多了時速籤：自己的近 1h／3h／日速（前百有 API 統計）與 T1000、T5000 的實測時速；活動日曆納入新曲實裝、虛擬 Live 期間、登入活動與角色生日，圖例可點選隱藏某一類，.ics 匯出與今日摘要跟著多這幾類；歌曲詳情各難度顯示 B30 定數；排名詳情的逐局紀錄多了「上次上分距今、間隔中位、最長停車、近 1h 場數」。' },
@@ -872,7 +873,7 @@ class Component extends DCLogic {
     this._tick = setInterval(() => {
       // 分頁標題：開站那一次被執行環境把 <head> 還原成模板原文，這裡每秒對一次、不同就再寫
       try { const w = this._wantTitle; if (w && document.title !== w) document.title = w; } catch (e) {}
-      if (this.state.page !== 'home' || !this._endMs) return;
+      if (this.state.page !== 'home' || !this._endMs || this._endMs <= Date.now()) return;
       const el = document.getElementById('liveCd');
       if (!el) return;
       const t = this.dur(this._endMs - Date.now());
@@ -5691,7 +5692,7 @@ class Component extends DCLogic {
   }
 
   /* ---------- 自訂版面 ---------- */
-  HOME_BLOCKS = [['hero', '進行中的活動'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
+  HOME_BLOCKS = [['hero', '進行中的活動'], ['phase', '現在該做什麼'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
   layoutOf(scope) { const L = (this.state.layout || {})[scope] || {}; return { order: Array.isArray(L.order) ? L.order : [], hidden: Array.isArray(L.hidden) ? L.hidden : [] }; }
   /* 依使用者設定重排：沒排到的照原本順序接在後面（新功能上線時才不會消失）。 */
   layoutApply(ids, scope) {
@@ -8290,6 +8291,7 @@ class Component extends DCLogic {
     if (p === 'calendar' || p === 'home' || p === 'favs') this.loadMsEvents();
     if (p === 'calendar' || p === 'home' || p === 'favs' || p === 'calc') this.loadSupportEvents();
     if (p === 'calendar' || p === 'home') { this.loadLoginBonus(); this.loadCharProfiles(); this.loadLives(); }
+    if (p === 'home') this.loadEvList();   // 結算後要知道下期什麼時候開始
     if (p === 'calendar') this.loadSongs();
     this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
@@ -8933,12 +8935,37 @@ class Component extends DCLogic {
     const endMs = endAt ? new Date(endAt).getTime() : null;
     const startMs = startAt ? new Date(startAt).getTime() : null;
     const now = Date.now();
-    this._endMs = endMs;   // 給每秒倒數直接寫 DOM 用，免整頁重算
+    this._endMs = (startMs && now < startMs) ? startMs : endMs;   // 給每秒倒數直接寫 DOM 用，免整頁重算；開跑前倒數的是開始時間
     let prog = 0;
     if (startMs && endMs && endMs > startMs) prog = Math.max(0, Math.min(1, (now - startMs) / (endMs - startMs)));
     const myRanks = this.ranksOf(s.live);
     const myBorders = this.bordersOf(s.borders);
     const pd = s.pdata || {};
+
+    const hhmm = ms => { const d = new Date(ms); return this.md(d) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    /* 首頁依活動階段給建議：開跑前／開跑／中盤／最後衝刺／結算中／下期預告，各配四個捷徑 */
+    const phase = (() => {
+      if (!ev.id || (!startMs && !endMs)) return null;   // 沒活動資料就不猜
+      const A = (n, p, patch) => ({ n, p, patchJson: JSON.stringify(patch || {}) });
+      const nextEv = (s.evList || []).filter(e => e.start_at && new Date(e.start_at).getTime() > now).sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0] || null;
+      const preActs = [A('活動加分卡', 'event'), A('當期卡池', 'gacha'), A('體力回復試算', 'calc', { ctab: 'stam' }), A('上期回顧', 'analysis')];
+      if (startMs && now < startMs) return { k: 'pre', label: '開跑前', tone: '#3f8cf3', title: '距開始 ' + this.dur(startMs - now) + '　·　' + hhmm(startMs) + ' 開跑',
+        tip: '先看加分卡與卡池，把隊伍組好；開跑前把體力回滿、卡池要抽的先抽，開跑第一天就能上速度。', acts: preActs };
+      if (endMs && now >= endMs) {
+        const annDone = annMs ? now >= annMs : now >= endMs + 600000;
+        if (nextEv) { const ns = new Date(nextEv.start_at).getTime();
+          return { k: 'next', label: '下期預告', tone: '#9a63d8', title: (nextEv.name || '下期活動') + '　·　' + hhmm(ns) + ' 開始（' + this.dur(ns - now) + '）',
+            tip: '結算後的空檔：領獎、補豆森素材、算下期抽卡預算；下期加分卡公布後再組隊。', acts: [A('最終榜線', 'rank'), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('抽卡預算', 'calc', { ctab: 'gacha' }), A('活動日曆', 'calendar')] }; }
+        return { k: 'post', label: annDone ? '已結算' : '結算中', tone: '#8b93ac', title: annDone ? '名次已公布，可以領獎了' : '結算後約 10 分鐘公布最終名次',
+          tip: '看最終榜線與自己的名次曲線，順手存一張分享圖；下期時間出來會顯示在這裡。', acts: [A('最終榜線', 'rank'), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('收藏與待辦', 'favs'), A('活動日曆', 'calendar')] };
+      }
+      if (endMs && endMs - now < 86400000) return { k: 'final', label: '最後衝刺', tone: '#ff5c7a', title: '剩 ' + this.dur(endMs - now) + '　·　' + hhmm(endMs) + ' 結算',
+        tip: '最後一天榜線通常再漲一到兩成：盯目標分段的時速，別等結算前一小時才補分；結算前 10 分鐘的場次可能算不進去。', acts: [A('分段榜線', 'rank'), A('摸魚表', 'calc', { ctab: 'moyu' }), A('跑榜工作室', 'deckpro'), A('活動試算', 'calc', { ctab: 'plan' })] };
+      if (prog < 0.3) return { k: 'early', label: '開跑階段', tone: '#0eb3c5', title: '已過 ' + Math.round(prog * 100) + '%　·　先定目標與每天要打的場數',
+        tip: '用活動試算把目標分段換算成每天場數，效率排行挑歌；前段榜線還沒定型，不用急著追。', acts: [A('活動試算', 'calc', { ctab: 'plan' }), A('活動加分卡', 'event'), A('效率排行', 'calc', { ctab: 'eff' }), A('榜線走勢', 'rank')] };
+      return { k: 'mid', label: '中盤', tone: '#f0a020', title: '已過 ' + Math.round(prog * 100) + '%　·　對照榜線調整節奏',
+        tip: '中盤榜線最準：看終線預測決定要加速還是摸魚，體力別攢到最後一天。', acts: [A('分段榜線', 'rank'), A('摸魚表', 'calc', { ctab: 'moyu' }), A('分析中心', 'analysis'), A('收藏與待辦', 'favs')] };
+    })();
 
     const upcoming = (s.gachas || []).map(g => {
       const a = this.pd(g.s), b = this.pd(g.e);
@@ -11075,6 +11102,8 @@ class Component extends DCLogic {
       ...(() => {
         const ids = this.HOME_BLOCKS.map(b => b[0]);
         const ord = this.layoutApply(ids, 'home'), hid = this.layoutOf('home').hidden;
+        // 「現在該做什麼」是後來加的：舊的自訂順序沒有它時，放在活動卡正下方，不要掉到最尾巴
+        if (!this.layoutOf('home').order.includes('phase')) { const i = ord.indexOf('phase'); if (i >= 0) { ord.splice(i, 1); ord.splice(ord.indexOf('hero') + 1, 0, 'phase'); } }
         const homeOrd = {}, homeShow = {};
         ids.forEach(id => { homeOrd[id] = ord.indexOf(id); homeShow[id] = hid.indexOf(id) < 0; });
         // 手機預設不放 480px 高的跑榜小窗；使用者在自訂首頁按「顯示」才記進 mobileShow
@@ -11125,11 +11154,13 @@ class Component extends DCLogic {
       dayH: s.mobile ? '54px' : '92px',
 
       /* 首頁 */
-      liveState: s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : '進行中的活動'),
+      liveState: s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動'),
       liveName: s.liveLoad ? '載入活動資訊…' : (ev.name || ev.event_name || (s.liveErr || '目前沒有進行中的活動')),
       liveType: ev.id != null ? '第 ' + ev.id + ' 期' : '—',
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
-      liveCountdown: endMs ? this.dur(endMs - now) : '—',
+      liveCountdown: (startMs && now < startMs) ? this.dur(startMs - now) : (endMs && now >= endMs) ? hhmm(endMs) : (endMs ? this.dur(endMs - now) : '—'),
+      liveCdLabel: (startMs && now < startMs) ? '距開始' : (endMs && now >= endMs) ? '結算時間' : '剩餘時間',
+      phaseOn: !!phase, phaseLabel: phase ? phase.label : '', phaseTone: phase ? phase.tone : 'var(--accent)', phaseTitle: phase ? phase.title : '', phaseTip: phase ? phase.tip : '', phaseActs: phase ? phase.acts : [],
       liveUrgent: !!(endMs && endMs > now && endMs - now < 86400000), liveCdColor: (endMs && endMs > now && endMs - now < 86400000) ? '#ffb4c2' : '#fff',
       liveProgress: (prog * 100).toFixed(1) + '%',
       liveAnnounce: annLabel, liveHasAnnounce: !!annLabel,
