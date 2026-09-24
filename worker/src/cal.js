@@ -1,7 +1,9 @@
 /* 行事曆訂閱源：GET /cal/sekai.ics（手機用 webcal://games.project-sekai-center.com/cal/sekai.ics 訂閱）。
    從台服 master 的 events.json／gachas.json／supportEvents.json 產 iCalendar：近 60 天到未來的活動、卡池與應援活動，
    上游抓取與回應都在邊緣快取一小時，行事曆程式每 6 小時來拿一次也不會打到 GitHub。 */
-const TDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+/* 台服 master：Haruki 的 6.4 版為主，缺檔或整張空的退回 Sekai-World（與前端 tdbJson 同邏輯） */
+const TDB = 'https://raw.githubusercontent.com/Team-Haruki/haruki-sekai-tc-master/main/master';
+const TDB_SW = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
 const SITE = 'https://project-sekai-center.com/app.html';
 const esc = t => String(t || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, m => '\\' + m);
 const utc = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
@@ -24,7 +26,8 @@ export function buildIcs(events, gachas, now, supports, extra) {
   (gachas || []).filter(g => g && g.startAt && g.endAt && g.endAt > since && g.startAt < until)
     .forEach(g => add('gacha-' + g.id, '卡池：' + g.name, g.startAt, g.endAt, g.gachaType || '', SITE + '?page=gacha'));
   (supports || []).filter(x => x && x.startAt && x.aggregateAt && x.aggregateAt > since && x.startAt < until)
-    .forEach(x => add('sup-' + x.id, '第 ' + x.id + ' 回應援活動', x.startAt, x.aggregateAt, '結算後領獎到 ' + new Date(x.closeAt || x.aggregateAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }), SITE + '?page=calc&ctab=support'));
+    // Haruki 的 6.4 master 把應援活動重新編號（id 5、6、101…），id 不再等於「第幾回」，標題改成不帶回數；uid 加 hk 前綴避免跟舊編號撞
+    .forEach(x => add('sup-hk-' + x.id, x.eventType === 'v2' ? '應援活動（棋盤版）' : '應援活動', x.startAt, x.aggregateAt, '結算後領獎到 ' + new Date(x.closeAt || x.aggregateAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }), SITE + '?page=calc&ctab=support'));
   const ex = extra || {};
   (ex.logins || []).filter(x => x && x.startAt && x.endAt && x.endAt > since && x.startAt < until)
     .forEach(x => add('login-' + x.id, '登入活動：' + (x.name || ''), x.startAt, x.endAt, '', SITE + '?page=calendar'));
@@ -42,10 +45,16 @@ export function buildIcs(events, gachas, now, supports, extra) {
   return L.join('\r\n') + '\r\n';
 }
 
-async function getJson(name) {
-  const r = await fetch(TDB + '/' + name, { cf: { cacheTtl: 3600, cacheEverything: true } });
+async function getFrom(base, name) {
+  const r = await fetch(base + '/' + name, { cf: { cacheTtl: 3600, cacheEverything: true } });
   if (!r.ok) throw new Error(name + ' HTTP ' + r.status);
   return r.json();
+}
+export async function getJson(name) {
+  let d;
+  try { d = await getFrom(TDB, name); } catch (e) { return getFrom(TDB_SW, name); }
+  if (Array.isArray(d) && !d.length) { try { const alt = await getFrom(TDB_SW, name); if (Array.isArray(alt) && alt.length) return alt; } catch (e) {} }
+  return d;
 }
 
 export async function handleCal(req, env, url) {

@@ -25,6 +25,7 @@ import { runWatches } from './watch.js';
 import { flushMail } from './mail.js';
 import { flushPush, pushEnabled } from './push.js';
 import { handleCal } from './cal.js';
+import { handleHaruki, harukiLive } from './haruki.js';
 import { dueTasks, finishTask, addEvent, claimTask, reclaimStaleTasks } from './db.js';
 import { runApplyReview } from './review.js';
 
@@ -43,13 +44,22 @@ function parseSafe(text) {
   return JSON.parse(text.replace(/([[:,]\s*)(\d{16,})/g, '$1"$2"'));
 }
 
-async function fetchTop100() {
+async function fetchHisekaiTop100() {
   const r = await fetch(API, {
     headers: { 'user-agent': UA, 'accept-encoding': 'br, gzip' },
     cf: { cacheTtl: 0, cacheEverything: false },   // 這支要的是「此刻」，不能吃快取
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return parseSafe(await r.text());
+}
+/* HiSekai 失敗就改讀 Haruki（已轉成同樣的形狀）；兩邊都失敗才算這一輪失敗。
+   回傳 [資料, 來源]，來源寫進 /status 方便看目前吃哪一家。 */
+async function fetchTop100(env) {
+  try { return [await fetchHisekaiTop100(), 'hisekai']; }
+  catch (e) {
+    try { return [await harukiLive(env, 'top100'), 'haruki']; }
+    catch (e2) { throw new Error(String(e) + '；Haruki 備援：' + String(e2)); }
+  }
 }
 
 export class GameTracker {
@@ -114,6 +124,7 @@ export class GameTracker {
         gaps: [...this.sql.exec('SELECT COUNT(*) AS n FROM gaps')][0].n,
         lastOk: this.get('lastOk'),
         fails: this.get('fails', 0),
+        src: this.get('src', 'hisekai'),
         nextAlarm: await this.ctx.storage.getAlarm(),
         topN: TOP_N, intervalMs: TICK_MS,
       });
@@ -161,8 +172,10 @@ export class GameTracker {
 
     let d;
     try {
-      d = await fetchTop100();
+      let src;
+      [d, src] = await fetchTop100(this.env);
       this.put('fails', 0);
+      this.put('src', src);
     } catch (e) {
       // 失敗退避：不改排程間隔（下一棒已排），只記錄失敗次數供 /status 觀察
       const fails = (this.get('fails', 0) || 0) + 1;
@@ -269,6 +282,8 @@ export default {
     /* 前端排名 API 的代理：直連 api.hisekai.org 被 CORS 或網路擋下時，先走這裡再退到公共代理。
        只放行固定幾條路徑、只讀、邊緣快取 30 秒，不帶 cookie。 */
     if (p.startsWith('/proxy/hisekai/')) return proxyHisekai(req, url);
+    /* Haruki：HiSekai 的備援排名（轉成同樣的形狀）與 OAuth 設定。公開、只讀、邊緣快取 30 秒。 */
+    if (p.startsWith('/haruki/')) return handleHaruki(req, env, url);
     /* 行事曆訂閱源：公開、只讀、邊緣快取一小時 */
     if (p.startsWith('/cal/')) return handleCal(req, env, url);
     if (p.startsWith('/api/') || p === '/api') {

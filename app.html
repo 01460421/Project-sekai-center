@@ -1507,7 +1507,7 @@ select option, select optgroup{
       </a>
     </sc-if>
 
-    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">資料來源：HiSekai API（台服）。連線被瀏覽器阻擋時會自動改走公開代理重試。</div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">資料來源：HiSekai API（台服），掛掉時改用 Haruki 公開 API 備援；連線被瀏覽器阻擋時會再改走公開代理重試。</div><sc-if value="{{ liveSrcNote }}"><div style="font-size:11.5px;color:var(--warn,#b45309);margin-top:4px;line-height:1.6">{{ liveSrcNote }}</div></sc-if>
   </div>
   </sc-if>
 
@@ -4180,6 +4180,56 @@ select option, select optgroup{
         </sc-for>
       </div>
 
+    </sc-if>
+
+    <!-- Haruki 工具箱匯入：token 只存在這台瀏覽器，不需要登入本站 -->
+    <sc-if value="{{ hkReady }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-top:13px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+        <span style="width:8px;height:20px;border-radius:5px;background:var(--rainbow);background-size:400% 100%"></span>
+        <span style="font-size:15px;font-weight:800;color:var(--ink)">Haruki 工具箱匯入</span>
+        <sc-if value="{{ hkLinked }}"><span style="font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;background:color-mix(in oklab,#22c55e 18%,var(--card));color:#15803d">已連結</span></sc-if>
+      </div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.75">從 Haruki 工具箱讀你的台服遊戲資料，一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。讀取經本站 Worker 轉送（Haruki 不開放其他網站直接呼叫），不會記錄或保存你的遊戲資料。遊戲資料要先在 Haruki 工具箱上傳過一次。</div>
+      <!-- 方法一：工具箱公開 API，不用登入 -->
+      <div style="margin-top:12px;padding:12px 15px;border-radius:13px;background:var(--card-2);border:1px solid var(--border)">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:4px">方法一：公開資料匯入（不用登入）</div>
+        <div style="font-size:11.5px;color:var(--text-2);line-height:1.75">在 Haruki 工具箱上傳資料後，到工具箱的帳號設定把這個遊戲帳號的 Suite 設成「允許公開 API」（要匯入豆森再把 MySekai 也打開），回來填 Player ID 或貼上工具箱網址就能匯入。</div>
+        <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
+          <input type="text" value="{{ hkUidVal }}" onInput="{{ onField }}" data-k="hkUid" placeholder="Player ID 或工具箱網址" style="flex:1;min-width:180px;padding:9px 13px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--text);font-size:13px">
+          <button type="button" onClick="{{ onHkPublic }}" disabled="{{ hkBusy }}" style="padding:9px 18px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">{{ hkPubLabel }}</button>
+          <sc-if value="{{ hkHasUndo }}"><button type="button" onClick="{{ onHkUndo }}" style="padding:9px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">還原收集率</button></sc-if>
+        </div>
+      </div>
+      <!-- 方法二：Haruki 帳號授權（站方拿到 OAuth client 後開通） -->
+      <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-top:13px">方法二：Haruki 帳號授權</div>
+      <sc-if value="{{ hkNoClient }}">
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;line-height:1.7">不必把資料設成公開，登入 Haruki 授權本站讀取即可。站方正在向 Team-Haruki 申請，開通後這裡會出現「連結 Haruki 帳號」按鈕。</div>
+      </sc-if>
+      <sc-if value="{{ hkCanLink }}">
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:8px">{{ hkUidLabel }}</div>
+        <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
+          <button type="button" onClick="{{ onHkStart }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">連結 Haruki 帳號</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hkLinked }}">
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:8px">{{ hkUidLabel }}</div>
+        <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
+          <button type="button" onClick="{{ onHkImport }}" disabled="{{ hkBusy }}" style="padding:10px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer">{{ hkBtnLabel }}</button>
+          <button type="button" onClick="{{ onHkDisconnect }}" style="padding:10px 16px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer">解除連結</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hkHasMsg }}"><div style="font-size:12px;color:var(--accent-deep);margin-top:9px;line-height:1.6">{{ hkMsg }}</div></sc-if>
+      <sc-if value="{{ hkHasLast }}">
+        <div style="margin-top:11px;padding:11px 14px;border-radius:12px;background:var(--card-2);border:1px solid var(--border)">
+          <div style="font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:6px">{{ hkLastText }}</div>
+          <sc-for list="{{ hkLastRows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;gap:10px;font-size:12px;line-height:1.8"><span style="flex:none;width:72px;color:var(--text-3)">{{ r.k }}</span><span style="color:var(--text-2)">{{ r.v }}</span></div>
+          </sc-for>
+          <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.6">收集率以遊戲為準整份取代（按「還原收集率」可退回匯入前）；B30 只會把成績往上升，豆森紀錄只會增加。</div>
+        </div>
+      </sc-if>
+    </div>
     </sc-if>
 
     <sc-if value="{{ acLoading }}">
@@ -7299,7 +7349,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=8e2c615886"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=7d8ac4a617"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

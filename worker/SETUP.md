@@ -79,6 +79,31 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 `GET /cal/sekai.ics` 從台服 master 產活動與卡池的 iCalendar（近 60 天到未來），邊緣快取一小時；
 網站活動日曆的「訂閱」按鈕指到 `webcal://games.project-sekai-center.com/cal/sekai.ics`。不需要設定。
 
+## Haruki 串接（排名備援、OAuth 匯入）
+
+程式在 `src/haruki.js`，路由是 `/haruki/*`。不設任何東西也能部署，只是備援可能被對方擋下、匯入按鈕不會出現。
+
+1. **排名備援**：HiSekai 掛掉時，前端、逐局追蹤器（`/status` 的 `src` 會變成 `haruki`）與榜線快照改讀 Haruki。
+   先問 Haruki Event Tracker 的公開 web API（`HARUKI_TRACKER_BASE`，不需要 token，有時速；玩家 ID 為每期匿名 ID），
+   沒這一期的資料才改問 Haruki 公開 API。
+   排名路徑要 token，向 Team-Haruki 申請後：
+   ```
+   npx wrangler secret put HARUKI_API_TOKEN
+   ```
+2. **OAuth 匯入**（我的帳號 → Haruki 工具箱匯入）：向 Team-Haruki 申請 **confidential** client（對方
+   `docs/oauth2-integration.zh-CN.md` §10），提供：clientId `project-sekai-center`、name `SEKAI 資源中心`、
+   clientType `confidential`、redirectUris `["https://project-sekai-center.com/app.html"]`、
+   scopes `["offline_access", "bindings:read", "game-data:read"]`。對方回傳的 clientSecret 只給一次：
+   存成 Worker secret `HARUKI_OAUTH_CLIENT_SECRET`；client id 改 `wrangler.toml` 的 `HARUKI_OAUTH_CLIENT_ID` 後推上 main
+   （自動部署）。前端讀 `/haruki/config`，快取五分鐘。
+   工具箱不對其他網站開 CORS，所以前端換 token、撤銷、讀資料都走 `/haruki/oauth/*` 由 Worker 原樣轉送
+   （只放行固定路徑、只給本站網域、client_id 必須相符，不記錄也不保存）；只有授權頁是整頁跳轉到 Haruki。
+3. 檢查：
+   ```
+   curl https://games.project-sekai-center.com/haruki/config
+   curl https://games.project-sekai-center.com/haruki/event/live/border | head -c 300
+   ```
+
 ## 每次改完 Worker 都要
 
 ```bash

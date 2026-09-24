@@ -22,7 +22,7 @@ import json
 import pathlib
 import urllib.request
 
-TC = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main'
+from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT_LIVES = ROOT / 'data' / 'lives-index.js'
@@ -35,6 +35,8 @@ OUT_SUP = ROOT / 'data' / 'support-events.js'
 
 
 def get(url):
+    if url.startswith((TC, TC_SW)):
+        return tc_json(url)
     req = urllib.request.Request(url, headers={'user-agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=300) as r:
         return json.loads(r.read())
@@ -309,12 +311,21 @@ def build_mysekai_events():
 def build_support_events():
     """data/support-events.js：應援活動（supportEvents）。期程、各 Live 種類×火數的應援點數係數、評價係數、
     個人／全體得分獎勵。獎勵明細從 compactResourceBoxDetails（欄式壓縮版）解出；個人獎勵六個團體只差稱號，
-    存一份並把稱號寫成「團體稱號」。日曆、今日摘要、行事曆匯出與計算中心「應援活動」分頁用。"""
-    try:
-        evs = get(f'{TC}/supportEvents.json')
-    except Exception:
-        evs = []
-    if not evs:
+    存一份並把稱號寫成「團體稱號」。日曆、今日摘要、行事曆匯出與計算中心「應援活動」分頁用。
+
+    2026-09 改吃 Haruki 的 6.4 master 後要注意兩件事：
+    1. 它只留最近三場，而且重新編號（Sekai-World 的第 7、8 場在這裡是 id 5、6），所以更早的場次
+       從 Sekai-World 補回來；同一場在兩邊的開始時間可能差一天（台服改過期程），三天內算同一場，以 Haruki 為準。
+    2. 6.4 新增 eventType=v2（棋盤版）：沒有火數係數與個人得分獎勵，改由棋盤格發獎。
+    顯示用的「第 N 回」依開始時間排序算出來（n），不再直接拿 master id。"""
+    def load(url):
+        try:
+            return get(url) or []
+        except Exception:
+            return []
+    hk = load(f'{TC}/supportEvents.json')
+    sw = load(f'{TC_SW}/supportEvents.json') if TC != TC_SW else []
+    if not hk and not sw:
         body = 'export const SUPPORT_EVENTS=[];\n'
         return write_if_changed(OUT_SUP, '/* 由 tools/build-db-index.py 產生,勿手改。應援活動（台服目前沒有這張表） */\n', body)
     names = {}
@@ -327,15 +338,23 @@ def build_support_events():
     fixed = {'jewel': '水晶', 'paid_jewel': '有償水晶', 'coin': '金幣', 'virtual_coin': '虛擬硬幣', 'honor': '團體稱號',
              'practice_ticket': '練習券', 'skill_practice_ticket': '技能練習券', 'live_point': 'Live 點數',
              'card': '卡片', 'costume_3d': '服裝', 'penlight': '螢光棒', 'player_frame': '玩家邊框'}
-    c = get(f'{TC}/compactResourceBoxDetails.json')
-    en = c['__ENUM__']
-    box = {}
-    for i, pi in enumerate(c['resourceBoxPurpose']):
-        pn = en['resourceBoxPurpose'][pi]
-        if not pn.startswith('support_event_'):
-            continue
-        box.setdefault((pn, c['resourceBoxId'][i]), []).append(
-            (en['resourceType'][c['resourceType'][i]], c['resourceId'][i], c['resourceQuantity'][i] or 0))
+
+    def boxes(base):
+        try:
+            c = get(f'{base}/compactResourceBoxDetails.json')
+        except Exception:
+            return {}
+        en = c['__ENUM__']
+        out = {}
+        for i, pi in enumerate(c['resourceBoxPurpose']):
+            pn = en['resourceBoxPurpose'][pi]
+            if not pn.startswith('support_event_'):
+                continue
+            out.setdefault((pn, c['resourceBoxId'][i]), []).append(
+                (en['resourceType'][c['resourceType'][i]], c['resourceId'][i], c['resourceQuantity'][i] or 0))
+        return out
+    box_hk = boxes(TC) if hk else {}
+    box_sw = boxes(TC_SW) if sw else {}
 
     def label(items):
         out = []
@@ -349,14 +368,13 @@ def build_support_events():
     def jewel(items):
         return sum(q for typ, _, q in items if typ == 'jewel')
 
-    rows = []
-    for e in evs:
+    def row(e, box, src):
         boost = {}
         for b in e.get('liveBoostRates') or []:
             boost.setdefault(b['liveType'], {})[b['boost']] = b['boostRate']
         boost = {k: [v.get(i, 0) for i in range(max(v) + 1)] for k, v in boost.items()}
         rank = {r['scoreRank']: r['rate'] for r in e.get('liveScoreRankRates') or []}
-        units = sorted({r['unit'] for r in e.get('personalScoreRewards') or []})
+        units = sorted({r['unit'] for r in (e.get('personalScoreRewards') or []) + (e.get('totalScoreRewards') or [])})
         u0 = units[0] if units else None
         personal = []
         for r in sorted((x for x in e.get('personalScoreRewards') or [] if x['unit'] == u0), key=lambda x: x['unitScore']):
@@ -366,14 +384,32 @@ def build_support_events():
         for r in sorted((x for x in e.get('totalScoreRewards') or [] if x['unit'] == u0), key=lambda x: x['unitScore']):
             it = box.get(('support_event_total_reward', r['resourceBoxId']), [])
             total.append([r['unitScore'], label(it)])
-        rows.append({'id': e['id'], 's': e.get('startAt') or 0, 'agg': e.get('aggregateAt') or 0, 'c': e.get('closeAt') or 0,
-                     'boost': boost, 'rank': rank, 'personal': personal, 'total': total})
+        out = {'id': e['id'], 's': e.get('startAt') or 0, 'agg': e.get('aggregateAt') or 0, 'c': e.get('closeAt') or 0,
+               'boost': boost, 'rank': rank, 'personal': personal, 'total': total, 'src': src}
+        v = e.get('eventType') or 'v1'
+        if v != 'v1':
+            out['v'] = v
+            out['turn'] = e.get('turn') or 0
+            out['jump'] = e.get('maxJumpPoint') or 0
+            out['tiles'] = len(e.get('v2MapTiles') or [])
+        return out
+
+    rows = [row(e, box_hk, 'hk') for e in hk]
+    DAY3 = 3 * 86400000
+    for e in sw:
+        st = e.get('startAt') or 0
+        if any(abs(st - (r['s'] or 0)) <= DAY3 for r in rows):
+            continue   # 同一場,以 Haruki(較新)為準
+        rows.append(row(e, box_sw, 'sw'))
     rows.sort(key=lambda r: r['s'])
+    for i, r in enumerate(rows):
+        r['n'] = i + 1
     body = 'export const SUPPORT_EVENTS=' + dump(rows) + ';\n'
-    header = ('/* 由 tools/build-db-index.py 產生,勿手改。應援活動:id、s 開始、agg 結算、c 關閉；'
-              ' boost={live種類:[火0..火10 的應援點數係數]}；rank={評價:係數}；'
-              ' personal=[[個人分數門檻,獎勵,水晶數]]（六團只差稱號,存一份）；total=[[全體分數門檻,獎勵]] */\n')
-    print(f'應援活動:{len(rows)} 場')
+    header = ('/* 由 tools/build-db-index.py 產生,勿手改。應援活動:id master id（Haruki 與 Sekai-World 編號不同）、n 第幾回、'
+              's 開始、agg 結算、c 關閉；boost={live種類:[火0..火10 的應援點數係數]}；rank={評價:係數}；'
+              ' personal=[[個人分數門檻,獎勵,水晶數]]（六團只差稱號,存一份）；total=[[全體分數門檻,獎勵]]；'
+              ' v=v2 為棋盤版（turn 回合、jump 跳躍點上限、tiles 格數,個人獎勵改由棋盤發放）；src hk/sw 資料來源 */\n')
+    print(f'應援活動:{len(rows)} 場（Haruki {len(hk)}、Sekai-World 補 {len(rows) - len(hk)}）')
     return write_if_changed(OUT_SUP, header, body)
 
 
