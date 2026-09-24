@@ -840,7 +840,7 @@ export function install(BASE, mode0) {
     //   產生配對碼約 2.5 秒後，假裝「夜櫻車隊」（第二次起是 QQ 二群）拿碼加入，本隊變跑者方。
     //   房號 99999＝機器人來不及做完（合約 C1：{ok, pending, msg}，3 秒後才真的設好）；星空、<b>小夫</b> 兩隊示範改名被略過。
     //   channel 用 target_gid 指定哪一隊（合約 C2），沒帶才退回 gid。
-    //   注意：機器人會拒絕多車車隊橋接（crew_merge_preview）；假後端不擋，前端自己會擋多車（測試時把 111 的車數改成 1 再點）。
+    //   多車車隊可以橋接（機器人 v12 起每台車各自共用）；代報帶 body.car → 寫進那台車（跟機器人 v13.7 一樣）。
     if (rest === '/bridge') {
       const H = 3600e3, now = Date.now();
       const E = globalThis.__mockE || (globalThis.__mockE = {
@@ -949,7 +949,8 @@ export function install(BASE, mode0) {
         const s6 = Number(body.s6_bonus || 0) || 0, r6 = body.role === 's6';
         if (r6 && s6 <= 0) return J({ error: nm + ' 沒有 S6 倍率，不能報 S6' }, 400);
         let hsh = 0; for (const ch of nm) hsh = (hsh * 31 + ch.codePointAt(0)) >>> 0;
-        const uid = 'ghost_' + hsh.toString(16), c1 = carOf(gid, 1), day = c1.sched[date] || {}, ok = [], skipped = [];
+        const pcar = Math.min(3, Math.max(1, +body.car || 1));
+        const uid = 'ghost_' + hsh.toString(16), c1 = carOf(gid, pcar), day = c1.sched[date] || {}, ok = [], skipped = [];
         hrs.forEach(h => {
           const sh = day[h]; if (!sh) { skipped.push(h); return; }
           if (['p2', 'p3', 'p4', 'p5'].some(p => sh[p] && sh[p].user_id === uid) || sh.waitlist.some(w => w.user_id === uid)) { ok.push(h); return; }
@@ -958,7 +959,7 @@ export function install(BASE, mode0) {
           if (empty) sh[empty] = who; else sh.waitlist.push({ user_id: uid, name: nm });
           ok.push(h);
         });
-        return J({ ok: true, uid, name: nm, date, hours: ok, skipped });
+        return J({ ok: true, car: pcar, uid, name: nm, date, hours: ok, skipped });
       }
       if (act === 'channel') {
         const tgt = String(body.target_gid || body.gid || gid);

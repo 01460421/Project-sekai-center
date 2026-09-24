@@ -2152,7 +2152,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=507a968234';
+      s.src = 'data/billing.js?v=b72348311b';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2365,7 +2365,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=553a698fd8').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=b55dab56fb').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -4136,7 +4136,8 @@ class Component extends DCLogic {
   /* @@SEC-E@@ bridge（合班：配對碼／加入／續期／退出、共用車房、代報、各隊頻道）：這一組的方法全部寫在這一行下面、下一個 @@SEC 標記上面 */
   /* 合班＝私車橋接：多個伺服器／QQ 群共用一張班表。發起的那一隊是跑者方，一次 200 小時，到期自動解散。
      GET /bridge 成員也能看；POST /bridge 只有管理員（機器人 _WEB_TIER 預設 admin，handler 再用 bridge_is_admin 擋）。
-     橋接只作用在 1 車（多車車隊不能橋接），所以讀寫一律帶 car=1，代報也寫進共用的 1 車班表。
+     多車車隊也能橋接（機器人 v12 起）：每台車的班表各自共用（一車對一車、二車對二車），加入時整組車數取兩邊較多的。
+     配對、續期、房號、頻道跟車無關（帶 car=1）；代報要選哪台車，帶那台車的 car。
      指定「別隊」的動作（channel）用 target_gid 帶對方；gid 永遠是自己這隊，只拿來驗權限（合約 C2）。
      表單草稿放在 carSec['bridgeUi:<gid>']：切車隊時 carSec 整包清掉，草稿不會跟到別隊。
      機器人給的名字、房號、略過原因一律只走 {{ }}；頻道 ID 是大整數，全程當字串。 */
@@ -4145,9 +4146,9 @@ class Component extends DCLogic {
   carBrUi(patch) { this.carSecPut(this.carSecKey('bridgeUi'), patch); }
   carBrData() { const x = this.carSecOf(this.carSecKey('bridge')); return x && x.data && typeof x.data === 'object' ? x.data : null; }
   carBrNum(v) { return v != null && v !== '' && isFinite(+v) ? +v : null; }
-  /* 代報可選的日期：1 車班表裡今天起有開班的日子（橋接共用的就是那一份）；班表還沒載到就給今天起 7 天 */
-  carBrDates() {
-    const st = (this.state.carStates || {})[1], pad = n => String(n).padStart(2, '0'), t0 = new Date();
+  /* 代報可選的日期：那台車的班表裡今天起有開班的日子（橋接共用的就是那一份）；班表還沒載到就給今天起 7 天 */
+  carBrDates(car) {
+    const st = (this.state.carStates || {})[car || 1], pad = n => String(n).padStart(2, '0'), t0 = new Date();
     const today = /^\d{4}-\d{2}-\d{2}$/.test(String((st && st.today) || '')) ? String(st.today) : t0.getFullYear() + '-' + pad(t0.getMonth() + 1) + '-' + pad(t0.getDate());
     let ds = (st && Array.isArray(st.days) ? st.days : []).filter(x => x && !x.xday && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date)) && String(x.date) >= today).map(x => String(x.date));
     if (!ds.length) {
@@ -4156,13 +4157,13 @@ class Component extends DCLogic {
     }
     return Array.from(new Set(ds)).slice(0, 8).map(v => ({ v, n: this.carDayLabel(v, today) }));
   }
-  /* 所有橋接寫入都走 carAct（一次一個、錯誤浮出），固定 car=1。
+  /* 所有橋接寫入都走 carAct（一次一個、錯誤浮出）；car 預設 1，代報帶選的那台車。
      失敗時把完整訊息留在該卡片（浮動提示是單行，手機上長訊息會被截斷）。
      機器人來不及做完會回 {pending:true, msg}（合約 C1）：提示 msg，5 秒後重抓狀態。 */
-  async carBrPost(slot, body, okMsg) {
+  async carBrPost(slot, body, okMsg, car) {
     if (this._carActBusy) { this._toast('上一個操作還在處理中'); return null; }
     const gid = String(this.state.g || '');
-    const d = await this.carAct('/bridge', body, x => (x && x.pending) ? String(x.msg || '已送出，機器人正在背景處理') : String(typeof okMsg === 'function' ? okMsg(x || {}) : okMsg), 1);
+    const d = await this.carAct('/bridge', body, x => (x && x.pending) ? String(x.msg || '已送出，機器人正在背景處理') : String(typeof okMsg === 'function' ? okMsg(x || {}) : okMsg), car || 1);
     if (String(this.state.g || '') !== gid) return null;               // 等回應的途中切了車隊：結果不套到別隊
     // 機器人有些錯誤字串會原樣帶 gid（QQ 車隊的 key 是 qqg_<群 openid>）：不要把 openid 吐在畫面上
     this.carBrUi({ ['err_' + slot]: d ? '' : String(this.state.toast || '操作失敗').replace(/qqg_[A-Za-z0-9_-]{4,}/g, 'QQ 車隊') });
@@ -4245,8 +4246,15 @@ class Component extends DCLogic {
     this.carBrUi({ room: null, roomRes: close || d.pending ? null : { room, ok: L(d.renamed_detail), skip: L(d.skipped), renamed: n(d.renamed), messaged: n(d.messaged), qq: n(d.qq) } });
     this.carSec_bridge(true);
   }
+  /* 代報要報哪台車：表單選過的 → 目前看的那台 → 1 車（超過目前開的台數就退回 1 車） */
+  carBrPxCar(gd) {
+    const nos = this.carCars(gd || this.carGuild()).map(c => c.no), ui = this.carBrUiOf();
+    const want = +ui.pxCar || +this.carNo() || 1;
+    return nos.indexOf(want) >= 0 ? want : 1;
+  }
   async carBrProxy() {
-    const ui = this.carBrUiOf(), dates = this.carBrDates();
+    const car = this.carBrPxCar();
+    const ui = this.carBrUiOf(), dates = this.carBrDates(car);
     const name = String(ui.pxName || '').trim(), bs = String(ui.pxBonus || '').trim(), hours = String(ui.pxHours || '').trim();
     if (!name || !bs || !hours) { this._toast('名字、倍率、時段都要填'); return; }
     const bonus = Number(bs);
@@ -4259,13 +4267,16 @@ class Component extends DCLogic {
       if (!isFinite(s6) || s6 <= 0) { this._toast('報 S6 要填 S6 倍率'); return; }
       body.s6_bonus = s6;
     }
+    const multiCar = this.carCars(this.carGuild()).length > 1;
+    const cname = multiCar ? '（' + (this.carCars(this.carGuild()).find(c => c.no === car) || { name: car + '車' }).name + '）' : '';
+    body.car = car;
     const d = await this.carBrPost('px', body, x => {
       const ok = Array.isArray(x.hours) ? x.hours.length : 0, sk = Array.isArray(x.skipped) ? x.skipped.length : 0;
-      return ok ? String(x.name || name) + ' 已代報 ' + ok + ' 個時段' + (sk ? '（' + sk + ' 段沒開班，略過）' : '') : '沒有報到：這些時段都沒開班';
-    });
+      return ok ? String(x.name || name) + ' 已代報 ' + ok + ' 個時段' + cname + (sk ? '（' + sk + ' 段沒開班，略過）' : '') : '沒有報到：這些時段都沒開班' + cname;
+    }, car);
     if (!d || d.pending) return;
     if (Array.isArray(d.hours) && d.hours.length) this.carBrUi({ pxName: '' });
-    this.carLoadStates(1);
+    this.carLoadStates(car);
   }
   async carBrChSave(g) {
     const d0 = this.carBrData(); if (!d0 || !d0.bridged) return;
@@ -4303,7 +4314,8 @@ class Component extends DCLogic {
     const num = v => this.carBrNum(v);
     const peers = on && Array.isArray(d.peers) ? d.peers.filter(p => p && typeof p === 'object') : [];
     const anchorP = peers.find(p => p.anchor) || null, anchorName = anchorP ? String(anchorP.name || '') : '';
-    const nCars = this.carCars(gd).length, multi = !on && nCars > 1;
+    const nCars = this.carCars(gd).length, multi = nCars > 1;
+    const pxCar = this.carBrPxCar(gd);
     const hl = on ? num(d.hours_left) : null, ttl = num(d && d.ttl_hours) || 200;
     const em = /^\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String((d && d.expires_at) || ''));   // 機器人的本地時間字串，照字面顯示不換時區
     const expTxt = em ? (+em[1]) + '/' + (+em[2]) + ' ' + em[3] + ':' + em[4] : '';
@@ -4318,7 +4330,7 @@ class Component extends DCLogic {
     /* 房號同步結果 */
     const rr = on && ui.roomRes && typeof ui.roomRes === 'object' ? ui.roomRes : null;
     /* 代報 */
-    const dates = this.carBrDates();
+    const dates = this.carBrDates(pxCar);
     const pxDate = dates.some(o => o.v === ui.pxDate) ? ui.pxDate : (dates[0] ? dates[0].v : '');
     const pxS6 = ui.pxRole === 's6';
     /* 各隊頻道：本隊（Discord）有頻道清單時用選單，其他隊只能填頻道 ID（機器人沒有給別隊的頻道清單） */
@@ -4354,11 +4366,11 @@ class Component extends DCLogic {
       carBrStTxt: on ? '已橋接 · ' + peers.length + ' 隊' : '未橋接', carBrStBg: stP.bg, carBrStFg: stP.fg,
       carBrHrShow: on && hl != null, carBrHrTxt: hl != null && hl > 0 ? '剩 ' + Math.round(hl * 10) / 10 + ' 小時' : '已到期', carBrHrBg: hrP.bg, carBrHrFg: hrP.fg,
       carBrHead: on
-        ? '跑者方 ' + (anchorName || '（未知）') + ' · ' + peers.length + ' 隊共用一張班表' + (expTxt ? ' · ' + expTxt + ' 到期' : '') + (hl != null && hl <= 0 ? '（下一次掃描就會自動解散）' : '')
+        ? '跑者方 ' + (anchorName || '（未知）') + ' · ' + peers.length + ' 隊共用' + (multi ? ' ' + nCars + ' 台車的班表（每台車各自共用）' : '一張班表') + (expTxt ? ' · ' + expTxt + ' 到期' : '') + (hl != null && hl <= 0 ? '（下一次掃描就會自動解散）' : '')
         : '一次 ' + ttl + ' 小時，到期自動解散。',
       carBrTtl: String(ttl),
-      carBrCanPair: !on && adm && !multi,
-      carBrMultiNote: !on && adm && multi ? '這個車隊開著多車平行排班（' + nCars + ' 台車），不能橋接：橋接只共用一張班表，2、3 車的班表沒有地方放。要橋接請先到「設定」把同時開車數調回 1。' : '',
+      carBrCanPair: !on && adm,
+      carBrMultiNote: !on && adm && multi ? '這個車隊同時開 ' + nCars + ' 台車：橋接後每台車的班表各自共用（一車對一車、二車對二車），對方加入時整組車數取兩邊較多的；各隊綁到某台車的頻道照樣報那台車。' : '',
       carBrMemberNote: !!d && !on && !adm,
       carBrMemberOnNote: on && !adm,
       carBrJoinVal: String(ui.join || ''),
@@ -4387,6 +4399,8 @@ class Component extends DCLogic {
       carBrPxIsS6: pxS6,
       carBrPxRoles: [['pusher', '推手'], ['s6', 'S6']].map(([v, n]) => Object.assign({ v, n, sel: (v === 's6') === pxS6 ? 'true' : 'false' }, c.segOn((v === 's6') === pxS6))),
       carBrPxDates: dates.map(o => Object.assign({}, o, c.pill(o.v === pxDate))),
+      carBrPxMulti: multi,
+      carBrPxCars: multi ? this.carCars(gd).map(x => Object.assign({ v: String(x.no), n: x.name }, c.pill(x.no === pxCar))) : [],
       carBrPxBtn: busy ? '處理中…' : '代報',
       carBrErrPx: String(ui.err_px || ''),
       carBrChShow: on && adm,
@@ -4406,6 +4420,7 @@ class Component extends DCLogic {
       },
       onCarBrPxRole: e => setUi({ pxRole: e.currentTarget.dataset.v === 's6' ? 's6' : 'pusher', err_px: '' }),
       onCarBrPxDate: e => setUi({ pxDate: String(e.currentTarget.dataset.v || ''), err_px: '' }),
+      onCarBrPxCar: e => { const n = +e.currentTarget.dataset.v || 1; setUi({ pxCar: n, pxDate: '', err_px: '' }); this.carLoadStates(n); },
       onCarBrChField: e => {
         const ds = e.currentTarget.dataset, g = String(ds.g || ''), k = String(ds.k || '');
         if (!g || ['board', 'plate', 'room_ch'].indexOf(k) < 0) return;

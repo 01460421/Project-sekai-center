@@ -3236,7 +3236,7 @@ select option, select optgroup{
               <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-top:6px;overflow-wrap:anywhere">{{ carBrHead }}</div>
 
               <sc-if value="{{ carBrNone }}">
-                <div style="font-size:12.5px;color:var(--text-2);line-height:1.85;margin-top:10px;padding:12px 14px;border-radius:14px;background:var(--card-2)">橋接＝多個伺服器／QQ 群共用<b style="color:var(--ink)">同一張班表</b>。<b style="color:var(--ink)">發起的那一隊就是跑者所在</b>，其他隊拿配對碼加入，可以一對多。加入後大家都是正位推手，照倍率一起排 P2-P5；退出或到期時，各隊都會拿回一份完整班表。</div>
+                <div style="font-size:12.5px;color:var(--text-2);line-height:1.85;margin-top:10px;padding:12px 14px;border-radius:14px;background:var(--card-2)">橋接＝多個伺服器／QQ 群共用<b style="color:var(--ink)">同一張班表</b>。<b style="color:var(--ink)">發起的那一隊就是跑者所在</b>，其他隊拿配對碼加入，可以一對多。加入後大家都是正位推手，照倍率一起排 P2-P5；開多台車時每台車的班表各自共用。退出或到期時，各隊都會拿回一份完整班表。</div>
                 <sc-if value="{{ carBrMultiNote }}">
                   <div role="note" style="margin-top:10px;font-size:12.5px;line-height:1.75;color:var(--ink);padding:10px 12px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,var(--card));border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border))">{{ carBrMultiNote }}</div>
                 </sc-if>
@@ -3331,6 +3331,11 @@ select option, select optgroup{
                   </div>
                   <sc-if value="{{ carBrPxIsS6 }}"><input class="car-in" type="text" inputmode="decimal" maxlength="5" autocomplete="off" aria-label="S6 倍率" placeholder="S6 倍率" value="{{ carBrPxS6 }}" onInput="{{ onCarBrField }}" data-k="pxS6" style="flex:1 1 100px;max-width:150px"></sc-if>
                 </div>
+                <sc-if value="{{ carBrPxMulti }}">
+                <div class="chips-scroll" role="group" aria-label="報哪台車" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+                  <sc-for list="{{ carBrPxCars }}" as="o"><button type="button" onClick="{{ onCarBrPxCar }}" data-v="{{ o.v }}" style="padding:5px 12px;border:1px solid {{ o.bd }};border-radius:999px;background:{{ o.bg }};color:{{ o.fg }};font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">{{ o.n }}</button></sc-for>
+                </div>
+                </sc-if>
                 <div class="chips-scroll" role="group" aria-label="日期" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
                   <sc-for list="{{ carBrPxDates }}" as="o"><button type="button" onClick="{{ onCarBrPxDate }}" data-v="{{ o.v }}" style="padding:5px 12px;border:1px solid {{ o.bd }};border-radius:999px;background:{{ o.bg }};color:{{ o.fg }};font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">{{ o.n }}</button></sc-for>
                 </div>
@@ -7294,7 +7299,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=358beb1c8e"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=8e2c615886"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
