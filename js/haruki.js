@@ -235,7 +235,8 @@ export function hzMembers() {
   async hzSuite() {
     if (this._hzSuite && this._hzSuiteAt === (this.state.hzMeta || {}).at) return this._hzSuite;
     const rec = await this.hkSuiteGet();
-    this._hzSuite = rec && rec.suite; this._hzSuiteAt = rec && rec.at;
+    // 之前匯入的資料可能沒有 userGamedata（Haruki 公開 API 不給），讀出來時一樣補上
+    this._hzSuite = rec && rec.suite ? this.hkNormalize(rec.suite, rec.uid) : null; this._hzSuiteAt = rec && rec.at;
     return this._hzSuite;
   },
   /* 下拉選單要的活動與歌曲：只拿小表 */
@@ -368,7 +369,7 @@ export function hzMembers() {
     if (!this._hzCrankM) return;
     const rows = [];
     for (let c = 1; c <= 26; c++) { const r = hzCharacterMissions(c, this._hzCrankM, suite || {}); if (r) rows.push(r); }
-    this.setState({ hzCrank: { rows, has: !!(suite && suite.userCharacters), at: Date.now() } });
+    this.setState({ hzCrank: { rows, has: !!(suite && suite.userCharacters), missions: !!(suite && Array.isArray(suite.userCharacterMissionV2s)), at: Date.now() } });
   },
   hzLevelTotal(lv) { const l = ((this._hzCrankM || {}).levels || []).find(x => x.levelType === 'character' && x.level === lv); return l ? l.totalExp : null; },
 
@@ -387,7 +388,9 @@ export function hzMembers() {
     await this.hzLoadTrain();
     const M = this._hzTrainM; if (!M) return;
     const U = (await this.hzSuite().catch(() => null)) || {};
-    this.setState({ hzTrain: { has: Array.isArray(U.userCharacters), leaders: hzLeaders(M.groups, U), bonds: hzBonds(M, U), power: hzPowerBonus(M, U), chal: hzChallenge(M.chal, U), at: Date.now() } });
+    this.setState({ hzTrain: { has: Array.isArray(U.userCharacters), leaders: hzLeaders(M.groups, U), bonds: hzBonds(M, U), power: hzPowerBonus(M, U), chal: hzChallenge(M.chal, U),
+      // Haruki 公開 API／OAuth 的預設鍵清單沒有這幾項，拿不到就提示去工具箱看，不要顯示一排 0
+      gotLeader: Array.isArray(U.userCharacterMissionV2s) || Array.isArray(U.userCharacterLiveUsageCounts), gotBond: Array.isArray(U.userBonds), at: Date.now() } });
   },
   async hzAreaRun() {
     if (this.state.hzAreaBusy) return;
@@ -488,20 +491,21 @@ export function hzMembers() {
       });
     }
     if (tab === 'crank') {
-      const C = s.hzCrank, open = s.hzCrankOpen;
+      const C = s.hzCrank, open = s.hzCrankOpen, noM = !!(C && C.has && !C.missions);
       const rows = C ? C.rows.map(r => {
         const pct = r.need > 0 ? Math.min(100, Math.round(r.curExp / r.need * 100)) : 100;
         const miss = r.rows.filter(x => x.nextNeed > 0).sort((a, b) => (b.nextExp || 0) - (a.nextExp || 0));
         return { cid: r.cid, name: chName[r.cid] || ('#' + r.cid), lv: r.lv || '—', exp: r.need ? r.curExp + ' / ' + r.need : (r.lv >= r.maxLv ? '已達上限' : String(r.curExp)),
           pct: pct + '%', pending: r.pending > 0 ? '可領 ' + r.pending + ' EXP，領完 Lv' + r.finalLv : '', hasPending: r.pending > 0,
-          open: String(open) === String(r.cid), btn: String(open) === String(r.cid) ? '收起' : '任務',
-          missions: miss.map(x => ({ t: x.sentence ? x.sentence.replace('{requirement}', String(x.nextNeed)) : x.type,
+          open: !noM && String(open) === String(r.cid), btn: String(open) === String(r.cid) ? '收起' : '任務', canOpen: !noM,
+          missions: noM ? [] : miss.map(x => ({ t: x.sentence ? x.sentence.replace('{requirement}', String(x.nextNeed)) : x.type,
             p: (x.ex ? '累計 ' : '') + x.cur + ' / ' + x.nextNeed + (x.unit ? '' : ''), e: '+' + x.nextExp + ' EXP' })) };
       }) : [];
       const f = Math.max(1, +s.hzCalcFrom || 1), t = Math.max(f, +s.hzCalcTo || f);
       const a = this.hzLevelTotal(f), b = this.hzLevelTotal(t);
       Object.assign(out, {
         hzCrankLoading: !C, hzCrankRows: rows, hzCrankHas: !!(C && C.has), hzCrankNoUser: !!(C && !C.has),
+        hzCrankNoMission: !!(C && C.has && !C.missions),
         hzCalcFrom: s.hzCalcFrom || '', hzCalcTo: s.hzCalcTo || '',
         hzCalcOut: a != null && b != null ? 'Lv' + f + ' → Lv' + t + ' 需要 ' + (b - a) + ' EXP' : '輸入兩個等級（1～' + (((this._hzCrankM || {}).levels || []).filter(l => l.levelType === 'character').length || 175) + '）',
         onHzCrankOpen: e => { const c = e.currentTarget.dataset.c; this.setState({ hzCrankOpen: String(this.state.hzCrankOpen) === c ? null : c }); },
@@ -521,7 +525,8 @@ export function hzMembers() {
         hzTrainChips: [['leader', '隊長次數'], ['bond', '羈絆'], ['power', '綜合力加成'], ['chal', '挑戰 Live'], ['area', '區域道具']].map(([v, n]) => Object.assign({ v, n }, chipOn(sub === v))),
         onHzTrainTab: e => this.setState({ hzTrainTab: e.currentTarget.dataset.v }),
         onHzTrainRefresh: () => this.hzTrainBuild(),
-        hzTLeader: sub === 'leader', hzTBond: sub === 'bond', hzTPower: sub === 'power', hzTChal: sub === 'chal', hzTArea: sub === 'area',
+        hzTNoLeader: !!(T && T.has && sub === 'leader' && !T.gotLeader), hzTNoBond: !!(T && T.has && sub === 'bond' && !T.gotBond),
+        hzTLeader: sub === 'leader' && !!(!T || !T.has || T.gotLeader), hzTBond: sub === 'bond' && !!(!T || !T.has || T.gotBond), hzTPower: sub === 'power', hzTChal: sub === 'chal', hzTArea: sub === 'area',
       });
       if (T && sub === 'leader') {
         const L = T.leaders;
