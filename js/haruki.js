@@ -543,7 +543,8 @@ export function hzMembers() {
       const names = ['mysekaiSites', 'mysekaiMaterials', 'mysekaiItems', 'mysekaiMusicRecords', 'mysekaiGateMaterialGroups', 'mysekaiGates', 'mysekaiGameCharacterUnitGroups', 'gameCharacterUnits', 'mysekaiPhenomenas', 'materials', 'musics', 'limitedTimeMusics', 'musicTags'];
       const got = await Promise.all(names.map(soft));
       const M = {}; names.forEach((n, i) => { M[n] = got[i] || []; });
-      try { M.fixtures = ((await this.loadFixtures()) || {}).rows || []; } catch (e) { M.fixtures = []; }
+      // 家具名稱表由 loadFixtures() 放進 this.state.fixtures（它本身不回傳資料），畫面上直接讀那裡，載好就會重繪
+      this.loadFixtures();
       this._hzMysM = M;
     })().catch(e => { this._hzMysP = null; this.setState({ hzMsg: 'MySekai 資料載入失敗：' + ((e && e.message) || e) }); });
     return this._hzMysP;
@@ -784,7 +785,7 @@ export function hzMembers() {
       if (Y && Y.has) {
         const by = (list, k) => { const o = {}; (list || []).forEach(x => { o[x[k || 'id']] = x; }); return o; };
         const mat = by(M.mysekaiMaterials), com = by(M.materials), item = by(M.mysekaiItems), rec = by(M.mysekaiMusicRecords), mus = by(M.musics), site = by(M.mysekaiSites), gate = by(M.mysekaiGates), phen = by(M.mysekaiPhenomenas), gcu = by(M.gameCharacterUnits);
-        const fix = {}; (M.fixtures || []).forEach(r => { fix[r[0]] = r; });
+        const fix = {}; ((s.fixtures || {}).rows || []).forEach(r => { fix[r[0]] = r; });
         const jk = a => this.ASSET + '/music/jacket/' + a + '/' + a + '.webp';
         const resOf = it => {
           if (it.type === 'mysekai_material') { const m = mat[it.id]; return [m ? m.name : '素材 #' + it.id, m ? this.ASSET + '/mysekai/thumbnail/material/' + m.iconAssetbundleName + '.webp' : '']; }
