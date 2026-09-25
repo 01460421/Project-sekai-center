@@ -53,7 +53,7 @@ globalThis.fetch = async (u, init) => {
   return J({}, 404);
 };
 const realNow = Date.now; Date.now = () => now;
-const env = { HARUKI_API_TOKEN: 'tok', HARUKI_OAUTH_CLIENT_ID: 'pjsk-center' };
+const env = { HARUKI_API_TOKEN: 'tok', HARUKI_OAUTH_CLIENT_ID: 'pjsk-center', HARUKI_OAUTH_CLIENT_SECRET: 'sec' };
 const call = async p => handleHaruki(new Request('https://games.test' + p), env, new URL('https://games.test' + p));
 let res = await call('/haruki/event/live/top100'); let body = await res.json();
 ok(res.status === 200 && body.id === 180 && body.player_top_100_rankings.length === 1, '/haruki/event/live/top100 取當期');
@@ -66,6 +66,11 @@ res = await call('/haruki/event/list'); body = await res.json();
 ok(Array.isArray(body) && body[0].id === 181, '/haruki/event/list');
 res = await call('/haruki/config'); body = await res.json();
 ok(body.oauth.clientId === 'pjsk-center' && body.oauth.scopes.includes('game-data:read') && body.api.token === true, '/haruki/config 回 OAuth 設定');
+ok(body.oauth.confidential === true && !JSON.stringify(body).includes('sec"'), '/haruki/config 標出保密客戶端，但不外洩 secret');
+{ const r0 = await handleHaruki(new Request('https://games.test/haruki/config'), { HARUKI_OAUTH_CLIENT_ID: 'pjsk-center' }, new URL('https://games.test/haruki/config'));
+  const b0 = await r0.json(); ok(b0.oauth.clientId === '' && b0.oauth.confidential === false, 'secret 還沒存好時不公布 client id（前端不顯示連結按鈕）');
+  const r1 = await handleHaruki(new Request('https://games.test/haruki/config'), { HARUKI_OAUTH_CLIENT_ID: 'pjsk-center', HARUKI_OAUTH_PUBLIC: '1' }, new URL('https://games.test/haruki/config'));
+  ok((await r1.json()).oauth.clientId === 'pjsk-center', '公開客戶端不需要 secret 就公布 client id'); }
 res = await call('/haruki/user/1/profile');
 ok(res.status === 404, '白名單以外的路徑回 404');
 res = await handleHaruki(new Request('https://games.test/haruki/config', { method: 'POST' }), env, new URL('https://games.test/haruki/config'));

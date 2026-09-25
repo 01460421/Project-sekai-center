@@ -254,7 +254,11 @@ export async function handleHaruki(req, env, url) {
   if (!m) return json({ error: 'not_found' }, 404);
   if (m[1] === 'config') {
     return json({
-      oauth: { base: (env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT, clientId: (env && env.HARUKI_OAUTH_CLIENT_ID) || '',
+      /* 保密客戶端要等 Cloudflare 上的 HARUKI_OAUTH_CLIENT_SECRET 真的存好才對外公布 client id（前端沒 id 就不顯示連結按鈕），
+         否則玩家按下去換 token 一定失敗；HARUKI_OAUTH_PUBLIC="1" 表示申請的是公開客戶端，不需要 secret。 */
+      oauth: { base: (env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT,
+        clientId: (env && env.HARUKI_OAUTH_CLIENT_ID && (env.HARUKI_OAUTH_CLIENT_SECRET || env.HARUKI_OAUTH_PUBLIC === '1')) ? env.HARUKI_OAUTH_CLIENT_ID : '',
+        confidential: !!(env && env.HARUKI_OAUTH_CLIENT_SECRET),
         scopes: ((env && env.HARUKI_OAUTH_SCOPES) || 'offline_access game-data:read').split(/\s+/).filter(Boolean) },
       api: { token: !!(env && env.HARUKI_API_TOKEN) },
     }, 200, { 'cache-control': 'public, max-age=300' });

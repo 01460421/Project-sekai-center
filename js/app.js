@@ -843,7 +843,7 @@ class Component extends DCLogic {
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
 
-    import('./data/sekai-data.js?v=8d2812dda5')
+    import('./data/sekai-data.js?v=debc1682f8')
       .then(m => this.setState({ gachas: (m.GACHAS || []).map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] }))
       .catch(() => {});
     /* ep-songs（95 KB）只有計算中心與進階計算用得到，go() 進那兩頁時會載，
@@ -2162,7 +2162,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=599927666a';
+      s.src = 'data/billing.js?v=e96f0b2f88';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2375,7 +2375,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=cc695957ec').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=33423de441').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
