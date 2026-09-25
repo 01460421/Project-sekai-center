@@ -700,19 +700,40 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
             async loadLive() {
                 try {
-                    const [top, brd] = await Promise.all([
+                    // 榜線端點壞掉（2026-09 WL 終章 HiSekai /event/live/border 回 500）不該連前百都載不出來：
+                    // 分開等，榜線失敗就從前百補一份只有 T100 的榜線
+                    const [topR, brdR] = await Promise.allSettled([
                         apiFetch('/event/live/top100'),
                         apiFetch('/event/live/border'),
                         this.loadEventTypes(),
                         this.loadCharNames(),
                         this.loadWorldBlooms()
                     ]);
+                    if (topR.status !== 'fulfilled') throw topR.reason;
+                    const top = topR.value;
+                    const brd = brdR.status === 'fulfilled' && brdR.value ? brdR.value : this.bordersFromTop(top);
                     this.liveData = top;
                     this.borderData = brd;
                     this.renderLive(top, brd);
                 } catch(e) {
                     document.getElementById('currentEventInfo').innerHTML = `<div class="event-error">載入失敗，請稍後重試。</div>`;
                 }
+            },
+
+            bordersFromTop(top) {
+                if (!top) return null;
+                const t100 = rows => (rows || []).filter(r => r && r.rank === 100).map(r => ({ rank: 100, score: r.score }));
+                const out = Object.assign({}, top, { player_border_rankings: t100(top.player_top_100_rankings), partial: true });
+                delete out.player_top_100_rankings;
+                if (Array.isArray(top.world_link_top_100_rankings)) {
+                    out.world_link_border_rankings = top.world_link_top_100_rankings.map(c => {
+                        const ch = Object.assign({}, c, { player_border_rankings: t100(c.player_top_100_rankings || c.player_rankings) });
+                        delete ch.player_top_100_rankings; delete ch.player_rankings;
+                        return ch;
+                    });
+                    delete out.world_link_top_100_rankings;
+                }
+                return out;
             },
 
             extractEventInfo(data) {
@@ -1040,7 +1061,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const bodyEl = document.getElementById('borderBody');
                 if (this.borderData) { this.renderBorder(this.borderData); return; }
                 try {
-                    const brd = await apiFetch('/event/live/border');
+                    let brd;
+                    try { brd = await apiFetch('/event/live/border'); }
+                    catch (e) { brd = this.bordersFromTop(this.liveData || await apiFetch('/event/live/top100')); }
+                    if (!brd) throw new Error('no data');
                     this.borderData = brd;
                     this.renderBorder(brd);
                 } catch(e) {

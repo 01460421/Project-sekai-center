@@ -112,8 +112,13 @@ export function trackerRows(ov) {
       last_1h_stats: speed != null ? { speed } : null };
   }).filter(x => x.rank);
 }
+/* 官方段位端點出錯時（2026-09 第 180 期 WL 終章整期如此，Tracker 只存得到前百），
+   borderLines 會是空的：退一步用前百第 100 名當 T100，至少榜線頁與快照還有東西。 */
 export function trackerBorders(ov) {
-  return ((ov && ov.borderLines) || []).filter(b => b && b.rank).map(b => ({ rank: b.rank, score: b.score, name: '', user_id: '' }));
+  const lines = ((ov && ov.borderLines) || []).filter(b => b && b.rank).map(b => ({ rank: b.rank, score: b.score, name: '', user_id: '' }));
+  if (lines.length) return lines;
+  const r100 = ((ov && ov.topRankings) || []).map(it => (it && it.rankData) || {}).find(r => r.rank === 100);
+  return r100 && r100.score != null ? [{ rank: 100, score: r100.score, name: '', user_id: '', partial: true }] : [];
 }
 async function trackerGet(env, eventId, charId) {
   const base = ((env && env.HARUKI_TRACKER_BASE) || HARUKI_TRACKER_DEFAULT).replace(/\/+$/, '');

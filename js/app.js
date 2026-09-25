@@ -1446,9 +1446,32 @@ class Component extends DCLogic {
     throw err || new Error('fetch failed');
   }
 
+  /* 榜線段位端點壞掉時（2026-09 第 180 期 WL 終章：HiSekai /event/live/border 回 500、top100 正常），
+     從前百補一份只有 T100 的榜線，WL 各章同樣取該章第 100 名。標 partial，畫面照常顯示前百。 */
+  bordersFromTop(top) {
+    if (!top) return null;
+    const t100 = rows => (rows || []).filter(r => r && r.rank === 100).map(r => ({ rank: 100, score: r.score }));
+    const out = {};
+    ['id', 'name', 'start_at', 'closed_at', 'aggregate_at', 'ranking_announce_at', 'source', 'via'].forEach(k => { if (top[k] != null) out[k] = top[k]; });
+    out.player_border_rankings = t100(top.player_top_100_rankings);
+    if (Array.isArray(top.world_link_top_100_rankings)) {
+      out.world_link_border_rankings = top.world_link_top_100_rankings.map(c => {
+        const ch = Object.assign({}, c); delete ch.player_top_100_rankings; delete ch.player_rankings;
+        ch.player_border_rankings = t100(c.player_top_100_rankings || c.player_rankings);
+        return ch;
+      });
+    }
+    out.partial = true;
+    return out;
+  }
+
   async loadLive() {
     try {
-      const [top, brd] = await Promise.all([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
+      // 前百與榜線分開抓：以前 Promise.all 一起等，榜線端點一壞連前百都顯示「無法載入」
+      const [topR, brdR] = await Promise.allSettled([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
+      if (topR.status !== 'fulfilled') throw topR.reason;
+      const top = topR.value;
+      const brd = brdR.status === 'fulfilled' && brdR.value ? brdR.value : this.bordersFromTop(top);
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.via === 'tracker') ? 'tracker' : ((top && top.source === 'haruki') || (brd && brd.source === 'haruki')) ? 'haruki' : 'hisekai' });
       if (this.state.pid) this.matchMyRank(top);
       this.snapPush(top, brd);
@@ -2137,7 +2160,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=bee3406111';
+      el.src = './js/core.js?v=0131ead783';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -11489,7 +11512,8 @@ class Component extends DCLogic {
       /* 首頁 */
       liveState: (s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動')) + ((s.liveSrc === 'haruki' || s.liveSrc === 'tracker') && !s.liveLoad ? '　·　Haruki 備援資料' : ''),
       liveSrcNote: s.liveSrc === 'tracker' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki Event Tracker（經本站 Worker 轉換格式）。時速照常顯示；對方把玩家 ID 匿名化了，「我的排名」暫時比對不到，周回與場均也沒有。'
-        : s.liveSrc === 'haruki' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki 公開 API（經本站 Worker 轉換格式），時速等統計欄位暫時沒有。' : '',
+        : s.liveSrc === 'haruki' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki 公開 API（經本站 Worker 轉換格式），時速等統計欄位暫時沒有。'
+        : (s.borders && s.borders.partial) ? '榜線段位端點暫時取不到資料（前百正常），分段榜線先只顯示由前百換算的 T100。' : '',
       liveName: s.liveLoad ? '載入活動資訊…' : (ev.name || ev.event_name || (s.liveErr || '目前沒有進行中的活動')),
       liveType: ev.id != null ? '第 ' + ev.id + ' 期' : '—',
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
