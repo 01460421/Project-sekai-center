@@ -1,7 +1,8 @@
 /* Haruki 專區的純函式測試：角色任務 EXP、目前隊伍、預設歌曲，以及 app.js 的 compact 展開。
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
-import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge } from '../js/haruki.js';
+import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
+  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -65,6 +66,40 @@ ok(P.attrs.find(a => a.a === 'cool').total === 3, '屬性：區域道具');
 const C = hzChallenge([{ id: 1, characterId: 1, highScore: 100000 }, { id: 2, characterId: 1, highScore: 500000 }, { id: 3, characterId: 1, highScore: 3000000 }],
   { userChallengeLiveSoloResults: [{ characterId: 1, highScore: 800000 }], userChallengeLiveSoloStages: [{ characterId: 1, rank: 12 }], userChallengeLiveSoloHighScoreRewards: [{ challengeLiveHighScoreRewardId: 1 }] });
 ok(C.length === 26 && C[0].hs === 800000 && C[0].stage === 12 && C[0].next === 3000000 && C[0].unclaimed === 1, '挑戰 Live：最高分、關卡、下一個門檻、沒領的個數');
+
+/* MySekai：資料在 updatedResources 底下；重置在台灣時間 5:00 與 17:00 */
+const mys = { upload_time: 1790290800, updatedResources: { now: 1790290000000,
+  userMysekaiHarvestMaps: [{ mysekaiSiteId: 5, userMysekaiSiteHarvestResourceDrops: [
+    { resourceType: 'mysekai_material', resourceId: 1, quantity: 3, mysekaiSiteHarvestResourceDropStatus: 'before_drop' },
+    { resourceType: 'mysekai_material', resourceId: 5, quantity: 1, mysekaiSiteHarvestResourceDropStatus: 'before_drop' },
+    { resourceType: 'mysekai_music_record', resourceId: 9, quantity: 1, mysekaiSiteHarvestResourceDropStatus: 'before_drop' },
+    { resourceType: 'mysekai_material', resourceId: 1, quantity: 2, mysekaiSiteHarvestResourceDropStatus: 'before_drop' },
+    { resourceType: 'mysekai_material', resourceId: 2, quantity: 9, mysekaiSiteHarvestResourceDropStatus: 'dropped' }] },
+    { mysekaiSiteId: 6, userMysekaiSiteHarvestResourceDrops: [] }] },
+  userMysekaiGateCharacterVisit: { userMysekaiGateCharacters: [{ mysekaiGameCharacterUnitGroupId: 1, isReservation: true }, { mysekaiGameCharacterUnitGroupId: 2 }, { mysekaiGameCharacterUnitGroupId: 1 }] },
+  mysekaiPhenomenaSchedules: [{ mysekaiPhenomenaId: 3 }, { mysekaiPhenomenaId: 1 }] };
+ok(hzMysGet(mys, 'userMysekaiHarvestMaps').length === 2 && hzMysGet(mys, 'userMysekaiGateCharacterVisit') === mys.userMysekaiGateCharacterVisit, 'MySekai 鍵先找 updatedResources 再找最上層');
+ok(hzMysTime(mys) === 1790290800000, '資料時間取 now 與 upload_time（秒換毫秒）較新的');
+const T0 = Date.UTC(2026, 8, 25, 1, 0);   // 台灣 9:00
+ok(hzMysLastReset(T0) === Date.UTC(2026, 8, 24, 21, 0) && hzMysLastReset(Date.UTC(2026, 8, 25, 10, 0)) === Date.UTC(2026, 8, 25, 9, 0) && hzMysLastReset(Date.UTC(2026, 8, 24, 19, 0)) === Date.UTC(2026, 8, 24, 9, 0), '上一次重置：台灣 5:00／17:00');
+ok(hzMysRarity('mysekai_material_5') === 2 && hzMysRarity('mysekai_material_33') === 1 && hzMysRarity('mysekai_material_70') === 2 && hzMysRarity('mysekai_material_40', { 40: 'rarity_2' }) === 1 && hzMysRarity('mysekai_music_record_3') === 1 && hzMysRarity('mysekai_material_1') === 0, '資源稀有度');
+const R = hzMysResources(mys, {});
+ok(R.length === 1 && R[0].site === 5 && R[0].items.map(i => i.key).join() === 'mysekai_music_record_9,mysekai_material_5,mysekai_material_1' && R[0].items[2].qty === 5, '今日資源：只算未採的、同種加總、唱片最前再依稀有度，空的場所不列');
+const V = hzMysVisitors(mys, [{ id: 1, gameCharacterUnitId1: 17 }, { id: 2, gameCharacterUnitId1: 3, gameCharacterUnitId2: 4 }]);
+ok(V.length === 1 && V[0].unit === 17 && V[0].invited, '來訪角色：組合角色與重複的略過，邀請函標記');
+const G = hzMysGates([{ mysekaiGateId: 1, mysekaiGateLevel: 2 }], [{ mysekaiMaterialId: 1, quantity: 10 }, { mysekaiMaterialId: 2, quantity: 1 }],
+  [{ groupId: 1001, mysekaiMaterialId: 1, quantity: 1 }, { groupId: 1003, mysekaiMaterialId: 1, quantity: 4 }, { groupId: 1004, mysekaiMaterialId: 1, quantity: 5 }, { groupId: 1004, mysekaiMaterialId: 2, quantity: 1 }, { groupId: 1005, mysekaiMaterialId: 1, quantity: 5 }, { groupId: 2040, mysekaiMaterialId: 1, quantity: 1 }], 5);
+const g1 = G.find(g => g.gate === 1);
+ok(g1.lv === 2 && g1.steps.map(x => x.lv).join() === '3,4,5' && g1.steps[1].mats[0].cum === 9 && g1.steps[1].ok && !g1.steps[2].ok && g1.reach === 4, '大門：從目前等級往上累計素材，算出手上的能升到幾級');
+ok(G.find(g => g.gate === 2).lv === 0 && G.find(g => g.gate === 2).steps.length === 0, '沒有這扇門的紀錄就從 0 開始，只列前 5 級內有素材表的');
+const REC = hzMysRecords([{ mysekaiMusicRecordId: 1 }], [{ id: 1, externalId: 10, mysekaiMusicTrackType: 'music' }, { id: 2, externalId: 11, mysekaiMusicTrackType: 'music' }, { id: 3, externalId: 241, mysekaiMusicTrackType: 'music' },
+  { id: 4, externalId: 12, mysekaiMusicTrackType: 'music' }, { id: 5, externalId: 13, mysekaiMusicTrackType: 'bgm' }, { id: 6, externalId: 14, mysekaiMusicTrackType: 'music' }],
+  [{ id: 10, title: 'a', publishedAt: 0 }, { id: 11, title: 'b', publishedAt: 0 }, { id: 12, title: 'c', publishedAt: 9e15 }, { id: 14, title: 'd', publishedAt: 0 }, { id: 241, title: 'x', publishedAt: 0 }],
+  [{ musicId: 14, startAt: 0, endAt: 1 }], [{ musicId: 10, musicTag: 'idol' }, { musicId: 10, musicTag: 'all' }], Date.now());
+ok(REC.total === 2 && REC.got === 1 && REC.cats[0].tag === 'idol' && REC.cats[0].got === 1 && REC.cats[1].tag === 'vocaloid', '唱片：排除 241／未上架／限時下架／非樂曲，依團體分類');
+const W = hzMysWeather(mys, T0);
+ok(W.length === 2 && W[0].from === Date.UTC(2026, 8, 24, 21, 0) && W[1].from === Date.UTC(2026, 8, 25, 9, 0) && W[0].id === 3, '天氣：從上一次 5:00 起每 12 小時一段');
+ok(hzMysWeather(mys, Date.UTC(2026, 8, 25, 10, 0))[0].from === Date.UTC(2026, 8, 24, 21, 0), '17:00 之後也從當天 5:00 那段算起');
 
 /* app.js 的 hkExpandCompact / hkNormalize（從原始碼抽出來測，不載整個 App） */
 const src = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
