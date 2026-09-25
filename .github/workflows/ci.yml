@@ -12,9 +12,11 @@ jobs:
         with: { node-version: '22' }
       - name: 語法檢查
         run: |
-          for f in js/app.js js/ai.js js/core.js support.js worker/src/*.js; do node --check "$f"; done
+          for f in js/app.js js/ai.js js/haruki.js js/hk-deck-worker.js js/core.js support.js worker/src/*.js; do node --check "$f"; done
       - name: Worker 的 Haruki 轉換與路由
         run: node worker/test/haruki.mjs
+      - name: Haruki 專區的純函式（角色任務 EXP、目前隊伍、compact 展開）
+        run: node tests/haruki-zone.mjs
       - name: 壓縮檔與戳記是否過期（不改檔，過期就失敗）
         run: python3 tools/stamp-assets.py --check
       - name: 煙霧測試（桌機＋手機各 13 頁）

@@ -1551,6 +1551,10 @@ select option, select optgroup{
             <input type="number" value="{{ f.value }}" onInput="{{ onField }}" data-k="{{ f.k }}" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c';font-weight:700" style-focus="border-color:var(--accent)"></label>
         </sc-for>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px">
+        <button type="button" onClick="{{ onHkTeam }}" disabled="{{ hkTeamBusy }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:800;cursor:pointer">{{ hkTeamBtn }}</button>
+        <span style="font-size:11px;color:var(--text-3);line-height:1.6">{{ hkTeamMsg }}</span>
+      </div>
       <div style="display:grid;grid-template-columns:{{ twoCol }};gap:14px;margin-top:13px">
         <div>
           <span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:6px">消耗體力（ライブボーナス）</span>
@@ -4190,6 +4194,12 @@ select option, select optgroup{
         <span style="font-size:15px;font-weight:800;color:var(--ink)">Haruki 工具箱匯入</span>
         <sc-if value="{{ hkLinked }}"><span style="font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;background:color-mix(in oklab,#22c55e 18%,var(--card));color:#15803d">已連結</span></sc-if>
       </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button type="button" onClick="{{ onHkGuide }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:800;cursor:pointer">完整使用教學</button>
+        <button type="button" onClick="{{ onHkZone }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11.5px;font-weight:800;cursor:pointer">前往 Haruki 專區</button>
+        <a href="https://haruki.seiunx.com/upload-data" target="_blank" rel="noopener" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;text-decoration:none">上傳遊戲資料</a>
+        <a href="https://haruki.seiunx.com/user/game-account-bindings" target="_blank" rel="noopener" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;text-decoration:none">開啟允許公開API</a>
+      </div>
       <div style="font-size:12px;color:var(--text-2);line-height:1.75">從 Haruki 工具箱讀你的台服遊戲資料，一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。讀取經本站 Worker 轉送（Haruki 不開放其他網站直接呼叫），不會記錄或保存你的遊戲資料。遊戲資料要先在 Haruki 工具箱上傳過一次。</div>
       <!-- 方法一：工具箱公開 API，不用登入 -->
       <div style="margin-top:12px;padding:12px 15px;border-radius:13px;background:var(--card-2);border:1px solid var(--border)">
@@ -4235,6 +4245,198 @@ select option, select optgroup{
     <sc-if value="{{ acLoading }}">
       <div class="empty loading">載入中…</div>
     </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- Haruki 專區：程式在 js/haruki.js（進頁才載），組卡引擎在 js/hk-deck-worker.js。
+       上方一張「我的資料」卡決定下面能不能算；分頁：組卡推薦／角色等級／資料與資源。 -->
+  <sc-if value="{{ isHaruki }}">
+  <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ hzReady }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:12.5px;font-weight:800;color:var(--ink)">我的遊戲資料</span>
+        <sc-if value="{{ hzHas }}"><span style="font-size:12px;color:var(--text-2)">{{ hzWho }}</span></sc-if>
+        <div style="flex:1"></div>
+        <sc-if value="{{ hzHas }}">
+          <button type="button" onClick="{{ onHzSync }}" style="padding:6px 13px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">重新同步</button>
+          <button type="button" onClick="{{ onHzForget }}" style="padding:6px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">清除本機資料</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ hzHas }}"><div style="font-size:11px;color:var(--text-3);margin-top:4px">{{ hzWhen }}</div></sc-if>
+      <sc-if value="{{ hzNone }}">
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.8;margin-top:6px">組卡與角色等級要用你的卡片與任務進度：先到 Haruki 工具箱上傳一次遊戲資料，並把帳號的 Suite 設成「允許公開 API」，再在這裡填 Player ID；或用 Haruki 帳號授權（不必公開）。資料只存在這台瀏覽器。</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px">
+          <input aria-label="台服 Player ID" placeholder="台服 Player ID 或工具箱網址" value="{{ hzUidIn }}" onInput="{{ onField }}" data-k="hkUid" style="flex:1 1 200px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:40px;outline:none">
+          <button type="button" onClick="{{ onHzSync }}" style="padding:9px 16px;border:none;border-radius:12px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;min-height:40px">讀取我的資料</button>
+          <sc-if value="{{ hzCanOAuth }}"><button type="button" onClick="{{ onHzOAuth }}" style="padding:9px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;min-height:40px">用 Haruki 帳號授權</button></sc-if>
+          <button type="button" onClick="{{ onHzGuide }}" style="padding:9px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12.5px;font-weight:800;cursor:pointer;min-height:40px">第一次用？看教學</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hzImpMsg }}"><div style="font-size:11.5px;color:var(--accent-deep);margin-top:7px">{{ hzImpMsg }}</div></sc-if>
+    </div>
+
+    <div class="chips-scroll" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <sc-for list="{{ hzTabs }}" as="t" hint-placeholder-count="3">
+        <button type="button" onClick="{{ onHzTab }}" data-v="{{ t.v }}" style="padding:8px 16px;border:none;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:800;cursor:pointer">{{ t.n }}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ hzHasMsg }}"><div style="margin-bottom:10px;padding:9px 12px;border-radius:11px;background:color-mix(in oklab,#ffb86b 14%,transparent);font-size:11.5px;color:var(--text-2);line-height:1.7">{{ hzMsg }}</div></sc-if>
+
+    <!-- 組卡推薦 -->
+    <sc-if value="{{ hzIsDeck }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <div style="display:grid;gap:10px">
+        <label style="display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--text-3)">活動
+          <select aria-label="活動" value="{{ hzEv }}" onChange="{{ onField }}" data-k="hzEv" sc-options="{{ hzEvOpts }}" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;min-height:40px;outline:none"></select>
+        </label>
+        <sc-if value="{{ hzIsWl }}">
+          <label style="display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--text-3)">World Link 章節
+            <select aria-label="章節" value="{{ hzWlChar }}" onChange="{{ onField }}" data-k="hzWlChar" sc-options="{{ hzWlOpts }}" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;min-height:40px;outline:none"></select>
+          </label>
+        </sc-if>
+        <label style="display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--text-3)">歌曲
+          <select aria-label="歌曲" value="{{ hzMusic }}" onChange="{{ onField }}" data-k="hzMusic" sc-options="{{ hzSongOpts }}" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;min-height:40px;outline:none"></select>
+        </label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <div><div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">Live</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ hzLiveChips }}" as="c" hint-placeholder-count="3"><button type="button" onClick="{{ onHzPick }}" data-k="hzLive" data-v="{{ c.v }}" style="padding:6px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for></div></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">目標</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ hzTargetChips }}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{ onHzPick }}" data-k="hzTarget" data-v="{{ c.v }}" style="padding:6px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for></div></div>
+        </div>
+        <div><div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">難度</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ hzDiffChips }}" as="c" hint-placeholder-count="6"><button type="button" onClick="{{ onHzPick }}" data-k="hzDiff" data-v="{{ c.v }}" style="padding:6px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for></div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:var(--text-3)">沒練滿的卡當作</span>
+          <button type="button" onClick="{{ onHzToggle }}" data-k="hzMaxLv" style="padding:5px 11px;border:none;border-radius:999px;background:{{ hzMaxLvBg }};color:{{ hzMaxLvFg }};font-size:11px;font-weight:700;cursor:pointer">滿等＋讀完劇情</button>
+          <button type="button" onClick="{{ onHzToggle }}" data-k="hzMaxMr" style="padding:5px 11px;border:none;border-radius:999px;background:{{ hzMaxMrBg }};color:{{ hzMaxMrFg }};font-size:11px;font-weight:700;cursor:pointer">滿專精</button>
+          <button type="button" onClick="{{ onHzToggle }}" data-k="hzMaxSk" style="padding:5px 11px;border:none;border-radius:999px;background:{{ hzMaxSkBg }};color:{{ hzMaxSkFg }};font-size:11px;font-weight:700;cursor:pointer">滿技能</button>
+          <div style="flex:1"></div>
+          <button type="button" onClick="{{ onHzAdv }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ hzAdvBtn }}</button>
+        </div>
+        <sc-if value="{{ hzAdvOpen }}">
+          <div style="display:grid;gap:9px;padding:11px 12px;border-radius:13px;background:var(--card-2)">
+            <div><div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">演算法</div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ hzAlgoChips }}" as="c" hint-placeholder-count="3"><button type="button" onClick="{{ onHzPick }}" data-k="hzAlgo" data-v="{{ c.v }}" style="padding:5px 11px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for></div></div>
+            <label style="display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--text-3)">一定要放的卡（卡片 ID，最多 5 張，第一張當隊長）
+              <input aria-label="固定卡片" value="{{ hzFixed }}" onInput="{{ onField }}" data-k="hzFixed" placeholder="例如 1201 1033" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:38px;outline:none"></label>
+            <label style="display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--text-3)">不要用的卡（卡片 ID）
+              <input aria-label="排除卡片" value="{{ hzExclude }}" onInput="{{ onField }}" data-k="hzExclude" placeholder="例如 1302" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:38px;outline:none"></label>
+          </div>
+        </sc-if>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button type="button" onClick="{{ onHzRun }}" disabled="{{ hzBusy }}" style="padding:10px 22px;border:none;border-radius:14px;background:var(--ink-grad);color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;min-height:44px">{{ hzRunLabel }}</button>
+          <span style="font-size:11.5px;color:var(--text-3)">{{ hzPhase }}</span>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ hzHasCur }}">
+      <sc-for list="{{ hzCur }}" as="d" hint-placeholder-count="1">
+        <div style="border:1px dashed var(--border);border-radius:18px;padding:12px 14px;background:var(--card);margin-bottom:10px">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-size:12px;font-weight:800;color:var(--text-2)">{{ d.label }}</span><span style="font-size:18px;font-weight:800;color:var(--text-2)">{{ d.main }}</span><span style="font-size:11px;color:var(--text-3)">{{ d.sub }}</span></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><sc-for list="{{ d.cards }}" as="c" hint-placeholder-count="5"><div title="{{ c.name }}" style="width:58px;text-align:center"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="{{ c.name }}" width="128" height="128" style="width:58px;height:58px;border-radius:10px;display:block;background:var(--card-2)"><div style="font-size:9.5px;color:var(--text-3);margin-top:2px;line-height:1.3">{{ c.badge }}</div></div></sc-for></div>
+        </div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{ hzHasRes }}">
+      <sc-for list="{{ hzDecks }}" as="d" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-size:12px;font-weight:800;color:var(--ink)">{{ d.label }}</span><span style="font-size:20px;font-weight:800;color:var(--accent-deep)">{{ d.main }}</span><span style="font-size:11px;color:var(--text-3)">{{ d.sub }}</span></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><sc-for list="{{ d.cards }}" as="c" hint-placeholder-count="5"><div title="{{ c.name }}" style="width:58px;text-align:center"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="{{ c.name }}" width="128" height="128" style="width:58px;height:58px;border-radius:10px;display:block;background:var(--card-2)"><div style="font-size:9.5px;color:var(--text-3);margin-top:2px;line-height:1.3">{{ c.badge }}</div></div></sc-for></div>
+        </div>
+      </sc-for>
+      <div style="font-size:11px;color:var(--text-3);margin:2px 2px 10px">{{ hzResNote }}</div>
+      <sc-if value="{{ hzHasSongRank }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);margin-bottom:10px">
+          <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">第一名隊伍打哪首最划算</div>
+          <sc-for list="{{ hzSongRank }}" as="m" hint-placeholder-count="5"><div style="display:flex;gap:9px;align-items:baseline;padding:5px 0;border-top:1px solid var(--border);font-size:12px"><span style="width:18px;color:var(--text-3)">{{ m.i }}</span><span style="flex:1;min-width:0;color:var(--text)">{{ m.t }}</span><span style="font-size:10.5px;color:var(--text-3)">{{ m.d }}</span><span style="font-weight:800;color:var(--accent-deep)">{{ m.v }}</span></div></sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{ hzEmptyRes }}"><div style="font-size:12px;color:var(--text-3);padding:10px 4px">找不到符合條件的組合（固定卡或排除卡太多時會發生）。</div></sc-if>
+    <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:6px 2px 4px">組卡引擎：Team Haruki 維護的 <a href="https://github.com/Team-Haruki/sekai-deck-recommend-cpp" target="_blank" rel="noopener" style="color:var(--accent-deep)">sekai-deck-recommend-cpp</a>（LGPL-2.0，WebAssembly 版在你的瀏覽器裡執行）；演算法源自 <a href="https://github.com/xfl03/sekai-calculator" target="_blank" rel="noopener" style="color:var(--accent-deep)">xfl03 的 sekai-calculator</a>，C++ 最佳化版為 <a href="https://github.com/NeuraXmy/sekai-deck-recommend-cpp" target="_blank" rel="noopener" style="color:var(--accent-deep)">NeuraXmy/sekai-deck-recommend-cpp</a>。</div>
+    </sc-if>
+
+    <!-- 角色等級 -->
+    <sc-if value="{{ hzIsCrank }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:14px 16px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:7px">升級要多少 EXP</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input aria-label="目前等級" inputmode="numeric" value="{{ hzCalcFrom }}" onInput="{{ onField }}" data-k="hzCalcFrom" placeholder="目前 Lv" style="width:92px;padding:8px 11px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:38px;outline:none">
+        <span style="color:var(--text-3)">→</span>
+        <input aria-label="目標等級" inputmode="numeric" value="{{ hzCalcTo }}" onInput="{{ onField }}" data-k="hzCalcTo" placeholder="目標 Lv" style="width:92px;padding:8px 11px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:38px;outline:none">
+        <span style="font-size:12px;color:var(--accent-deep);font-weight:700">{{ hzCalcOut }}</span>
+      </div>
+    </div>
+    <sc-if value="{{ hzCrankLoading }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">讀取角色任務資料中…</div></sc-if>
+    <sc-if value="{{ hzCrankNoUser }}"><div style="font-size:11.5px;color:var(--text-3);padding:0 4px 10px">還沒有你的遊戲資料，下面只列出任務項目；讀取後會顯示各角色等級、可領的 EXP 與還差多少。</div></sc-if>
+    <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);overflow:hidden">
+      <sc-for list="{{ hzCrankRows }}" as="r" hint-placeholder-count="6">
+        <div style="padding:9px 13px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;gap:10px;align-items:center">
+            <span style="flex:none;width:74px;font-size:12.5px;font-weight:800;color:var(--ink)">{{ r.name }}</span>
+            <span style="flex:none;width:52px;font-size:12px;font-weight:800;color:var(--accent-deep)">Lv {{ r.lv }}</span>
+            <div style="flex:1;min-width:60px"><div style="height:6px;border-radius:99px;background:var(--card-2);overflow:hidden"><div style="height:100%;width:{{ r.pct }};background:var(--ink-grad)"></div></div><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">{{ r.exp }}<sc-if value="{{ r.hasPending }}">・<span style="color:var(--accent-deep);font-weight:700">{{ r.pending }}</span></sc-if></div></div>
+            <button type="button" onClick="{{ onHzCrankOpen }}" data-c="{{ r.cid }}" style="flex:none;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ r.btn }}</button>
+          </div>
+          <sc-if value="{{ r.open }}">
+            <div style="margin-top:7px">
+              <sc-for list="{{ r.missions }}" as="m" hint-placeholder-count="4"><div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;font-size:11.5px;border-top:1px dashed var(--border)"><span style="flex:1;min-width:0;color:var(--text-2);line-height:1.6">{{ m.t }}</span><span style="flex:none;color:var(--text-3)">{{ m.p }}</span><span style="flex:none;font-weight:800;color:var(--accent-deep)">{{ m.e }}</span></div></sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:8px 2px">算法照 <a href="https://github.com/Team-Haruki/Haruki-Toolbox" target="_blank" rel="noopener" style="color:var(--accent-deep)">Haruki 工具箱</a>的「角色任務」（MIT）；任務文字取自台服 master。「可領」是已達成但還沒領的任務 EXP。</div>
+    </sc-if>
+
+    <!-- 使用教學：每一步都直接連到 Haruki 工具箱對應的頁面 -->
+    <sc-if value="{{ hzIsGuide }}">
+    <div style="display:grid;gap:10px">
+      <sc-for list="{{ hzGuide }}" as="g" hint-placeholder-count="6">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card)">
+          <div style="display:flex;gap:9px;align-items:baseline"><span style="flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--ink-grad);color:#fff;font-size:11.5px;font-weight:800">{{ g.n }}</span><span style="font-size:13px;font-weight:800;color:var(--ink)">{{ g.t }}</span></div>
+          <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;margin:5px 0 8px 31px">{{ g.d }}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:31px">
+            <sc-for list="{{ g.links }}" as="l" hint-placeholder-count="2"><a href="{{ l.url }}" target="_blank" rel="noopener" style="padding:6px 13px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);color:var(--accent-deep);font-size:11.5px;font-weight:800;text-decoration:none">{{ l.n }}</a></sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:2px">連結都開在 Haruki 工具箱（haruki.seiunx.com）與其教學站；本站不經手你的工具箱帳號密碼或繼承碼。</div>
+    </div>
+    </sc-if>
+
+    <!-- 資料與資源 -->
+    <sc-if value="{{ hzIsRes }}">
+    <div style="display:grid;gap:12px">
+      <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card)">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink)">Master 資料</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:4px">{{ hzVerLine }}</div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.8;margin-top:4px">全站台服卡片、歌曲、活動等資料讀 Haruki 的台服 master（GitHub），缺的表退回 Sekai-World；組卡用的 music metas 經本站 Worker 轉送 Haruki 的 master 登錄處。</div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card)">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink)">素材源（專區的卡面縮圖）</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center">
+          <sc-for list="{{ hzAssetChips }}" as="c" hint-placeholder-count="3"><button type="button" onClick="{{ onHzAsset }}" data-v="{{ c.v }}" title="{{ c.url }}" style="padding:6px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for>
+          <img src="{{ hzAssetDemo }}" referrerpolicy="no-referrer" loading="lazy" alt="素材源測試圖" width="128" height="128" style="width:40px;height:40px;border-radius:8px;background:var(--card-2)">
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:5px;word-break:break-all">{{ hzAssetNow }}</div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card)">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink)">Haruki 帳號與 Sekai API</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:4px">{{ hzApiLine }}</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px">Sekai API 反代 token：{{ hzTokenLine }}</div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.8;margin-top:4px">Haruki 不對其他網站開 CORS，所有呼叫都經本站 Worker 轉一手；token 與 client secret 只存在 Cloudflare，不會送到瀏覽器。</div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card)">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:4px">本站用到的 Team Haruki 開源專案</div>
+        <sc-for list="{{ hzRepos }}" as="r" hint-placeholder-count="5"><div style="padding:6px 0;border-top:1px solid var(--border)"><a href="{{ r.url }}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:800;color:var(--accent-deep)">{{ r.n }}</a><div style="font-size:11px;color:var(--text-3);line-height:1.7">{{ r.d }}・本站用在：{{ r.use }}</div></div></sc-for>
+      </div>
+    </div>
+    </sc-if>
+    </sc-if>
+    <sc-if value="{{ hzLoadingPage }}"><div style="font-size:12px;color:var(--text-3);padding:14px 4px">載入 Haruki 專區…</div></sc-if>
   </div>
   </sc-if>
 
@@ -7349,7 +7551,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=88e082349b"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=560ff0cddf"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

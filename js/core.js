@@ -3933,7 +3933,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 /* 終章：支援隊與隊長加成都跟「誰當隊長」走，所以每一隊要把五個隊長人選各算一次。 */
                 const fin = isWL ? await this._wlFinale(src, this._evId, own) : null;
                 const finLimit = (fin && lim.memberLimit) ? lim.memberLimit : 4;
-                const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
+                /* 「只用我的卡」時，專精照收集率／Haruki 匯入記的 sekai-cards-lv（{卡號: [專精, 技能]}）；沒記錄的卡仍當滿專精 */
+                const lvMap = own ? (() => { try { return JSON.parse(localStorage.getItem('sekai-cards-lv') || '{}') || {}; } catch (e) { return {}; } })() : null;
+                const mk = x => ({ card: x.c, level: maxLv(x.c), trained: true, epiRead: true, mr: lvMap && lvMap[x.c.id] ? Math.max(0, Math.min(5, +lvMap[x.c.id][0] || 0)) : 5, rank: 200 });   // rank 200→取角色等級上限，額外角色等級加成滿(約5%)
                 const evalDeck = (power, bonus, skills, leaderSkill) => {
                     if (lim.powerCap && power > lim.powerCap) power = lim.powerCap;   // WL3（日服 6.4 起）總合力上限：超過的綜合力不計分，讀 eventTotalPowerLimits
                     if (!useEP) return power * (1 + bonus / 100);
