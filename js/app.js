@@ -386,6 +386,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' }
   ];
   SYSLOG = [
+    { d: '2026/09/25', t: 'Haruki 專區：MySekai 與重新整理的分頁', s: 'Haruki 專區改成五個分頁：總覽（每項一張卡片：組卡、角色等級、挑戰 Live、綜合力加成、MySekai 今日資源、大門、唱片，點一下直接前往）、組卡（照「選活動與歌曲 → 怎麼打 → 卡片假設」三步）、養成、MySekai、說明（教學與資源）。還沒匯入資料時改成三步驟上手，資料超過一天會提醒重新上傳，上次看的分頁會記住。新增 MySekai：今日資源（各採集地還沒採的資源，唱片與稀有素材排前面）、來訪角色與天氣排程、大門升級（接下來三級各要多少素材、手上夠不夠、能直接升到幾級）、唱片收集（依團體列出還沒拿到的）、家具與對話（連到家具圖鑑與豆森對話）；整理方式照 Team Haruki 的 Haruki-Cloud。地圖與天氣是上傳當下的狀態，過了 5:00／17:00 重置會提醒。', p: 'haruki' },
     { d: '2026/09/25', t: 'Haruki 專區：養成進度', s: 'Haruki 專區多一個「養成進度」分頁，算法照 Haruki 工具箱的養成頁：隊長次數（一般次數、EX 等級與累計）、羈絆（各組等級與升級還差多少）、綜合力加成（團體、屬性與角色三種，拆成區域道具、角色等級、MySekai 家具與大門）、挑戰 Live（最高分、關卡、下一個獎勵門檻與還沒領的獎勵數），以及區域道具升級建議：用組卡引擎算你目前隊伍每個道具升一級多多少綜合力，依每枚金幣換到的綜合力排序，連同金幣、不可思議的種子與祈願水滴的花費。', p: 'haruki' },
     { d: '2026/09/25', t: 'Haruki 專區：活動最佳組卡、角色等級 EXP', s: '工具類多一頁「Haruki 專區」，用你匯入的 Haruki 工具箱遊戲資料：組卡推薦用 Team Haruki 的 sekai-deck-recommend-cpp 引擎（在瀏覽器裡執行），選活動、歌曲、Live 類型與目標（活動 PT／綜合力／加成／技能）找出前五隊，並列出目前隊伍的分數與第一名隊伍最划算的歌；角色等級列出 26 位角色目前等級、升級進度、已達成未領的 EXP 與各任務下一階；另有等級 EXP 試算、master 版本、素材源切換與用到的開源專案；「使用教學」七個步驟從註冊、綁定驗證、三種上傳方式、iOS 模組與代理教學到開放公開 API 與撤銷授權，每步都有按鈕直接連到 Haruki 工具箱對應頁面（我的帳號的 Haruki 卡片也有入口）。其他頁一起接上：計算中心可「從 Haruki 帶入目前隊伍」的綜合力、加成與技能倍率；匯入時沒綁 Player ID 會自動綁、進行中活動的活動P 帶進活動試算；跑榜工作室「只用我的卡」改用每張卡的實際專精。', p: 'haruki' },
     { d: '2026/09/23', t: 'Haruki 工具箱一鍵匯入', s: '我的帳號多一張「Haruki 工具箱匯入」：在 Haruki 工具箱把帳號設成「允許公開 API」後，填 Player ID（或貼上工具箱網址）就能匯入，不必登入；站方開通後也能改用 Haruki 帳號授權。一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。讀取經本站 Worker 轉送、不保存；收集率以遊戲為準整份取代（可按「還原收集率」退回），B30 只升不降。', p: 'account' },
@@ -589,7 +590,7 @@ class Component extends DCLogic {
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
     /* Haruki 專區（程式在 js/haruki.js，進頁才載） */
-    hzReady: false, hzTab: 'deck', hzMeta: null, hzLive: 'multi', hzTarget: 'score', hzDiff: 'master', hzAlgo: 'ga', hzEv: '', hzMusic: '', hzWlChar: '',
+    hzReady: false, hzTab: 'home', hzTrainTab: 'crank', hzMysTab: 'res', hzHelpTab: 'guide', hzMeta: null, hzLive: 'multi', hzTarget: 'score', hzDiff: 'master', hzAlgo: 'ga', hzEv: '', hzMusic: '', hzWlChar: '',
     hzMaxLv: false, hzMaxMr: false, hzMaxSk: false, hzFixed: '', hzExclude: '', hzRes: null, hzCrank: null, hzCalcFrom: '', hzCalcTo: '',
     rq: '', ru: 'all', rr: 'all', rs: 'all', rMiss: false, rp: 1,
     rateFilOpen: false, rateStatOpen: false,   // 手機:篩選列/統計明細收合
@@ -2391,7 +2392,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=1074b7abc0').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=6378ecccef').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -7640,7 +7641,7 @@ class Component extends DCLogic {
     let up = +((suite && (suite.upload_time || suite.uploadTime)) || 0); if (up && up < 1e12) up *= 1000;
     const meta = { uid, at: Date.now(), name: name || '', rank: rank || 0, upload: up || 0, mys: !!mys };
     return this.hkIdb('readwrite', st => { st.put({ uid, at: meta.at, suite, mys: mys || null }, 'suite'); return st.put(meta, 'meta'); })
-      .then(() => { this.setState({ hzMeta: meta }); return meta; });
+      .then(() => { this.setState({ hzMeta: meta }); if (this.hzAfterImport) this.hzAfterImport(); return meta; });
   }
   async hkDisconnect() {
     const t = this.state.hkTok, cfg = this.state.hkCfg;
@@ -11832,7 +11833,7 @@ class Component extends DCLogic {
       presets: Object.keys(this.PRESETS).map(k => Object.assign({ v: k, n: this.PRESETS[k].n }, chip(s.preset === k, 'var(--cta)'))),
       hkTeamBusy: !!s.hkTeamBusy, hkTeamBtn: s.hkTeamBusy ? '計算中…' : '從 Haruki 帶入目前隊伍',
       hkTeamMsg: s.hkTeamMsg || '用你在 Haruki 的遊戲資料算目前隊伍的綜合力、活動加成與實效技能',
-      onHkGuide: () => { this.setState({ hzTab: 'guide' }); this.go('haruki'); },
+      onHkGuide: () => { if (this.state.hzReady && this.hzSetTab) this.hzSetTab('help', 'guide'); else this.setState({ hzTabReq: 'help', hzTabReqSub: 'guide' }); this.go('haruki'); },
       onHkZone: () => this.go('haruki'),
       onHkTeam: async () => {
         if (this.state.hkTeamBusy) return;
