@@ -98,6 +98,92 @@ export function hzBestSong(metas, diff, live) {
   return best;
 }
 
+/* ---------- 養成：照 Haruki 工具箱 training/lib 的算法（MIT，移植自 Haruki-Cloud） ---------- */
+/* 隊長次數：play_live 進度＝一般次數；EX 等級＝已領輪數＋1，EX 次數＝本輪進度＋已領輪數的門檻總和 */
+export function hzLeaders(groups, U) {
+  const exReq = (groups || []).filter(g => (g.id || g.gameId) === 101).sort((a, b) => a.seq - b.seq);
+  let maxPlay = 0; (groups || []).forEach(g => { if ((g.id || g.gameId) === 1 && g.requirement > maxPlay) maxPlay = g.requirement; });
+  const reqFor = seq => { let v = 0; for (const g of exReq) { if (g.seq > seq) break; v = g.requirement; } return seq > 0 ? v : 0; };
+  const play = new Map(), ex = new Map(), hasEx = new Set(); let hasPlay = false;
+  (U.userCharacterMissionV2s || []).forEach(r => {
+    const c = +r.characterId, t = String(r.characterMissionType || '').toLowerCase();
+    if (t === 'play_live') { play.set(c, +r.progress || 0); hasPlay = true; } else if (t === 'play_live_ex') { ex.set(c, +r.progress || 0); hasEx.add(c); }
+  });
+  if (!hasPlay) (U.userCharacterLiveUsageCounts || []).forEach(r => { if (String(r.characterLiveUsageType).toLowerCase() === 'leader') play.set(+r.characterId, +r.usageCount || 0); });
+  const lv = new Map();
+  (U.userCharacterMissionV2Statuses || []).forEach(r => {
+    if (+r.parameterGroupId !== 101) return;
+    const c = +r.characterId, seq = +r.seq || 0;
+    lv.set(c, Math.max(lv.get(c) || 0, seq)); ex.set(c, (ex.get(c) || 0) + reqFor(seq));
+  });
+  const rows = [];
+  for (let c = 1; c <= 26; c++) rows.push({ cid: c, play: play.get(c) || 0, exLv: (lv.get(c) || 0) + (hasEx.has(c) ? 1 : 0), exCount: ex.get(c) || 0 });
+  rows.sort((a, b) => (b.play + b.exCount) - (a.play + a.exCount) || a.cid - b.cid);
+  let maxEx = 0; const top = exReq.length ? exReq[exReq.length - 1].seq : 0; for (let q = 1; q < top; q++) maxEx += reqFor(q);
+  return { rows, maxPlay: maxPlay || rows.reduce((m, r) => Math.max(m, r.play), 0), maxEx };
+}
+/* 羈絆：userBonds 的 rank／exp（exp 是本級內），配 bonds 的角色對；VS 各團版本（id > 26）收回本尊 */
+export function hzBonds(M, U) {
+  const styles = new Map((M.gcu || []).map(g => [+g.id, +g.gameCharacterId || 0]));
+  const base = id => styles.get(id) > 0 ? styles.get(id) : id;
+  const byGroup = new Map((M.bonds || []).map(b => [+b.groupId, b]));
+  const tot = new Map(); let maxLv = 0;
+  (M.levels || []).forEach(l => { if (String(l.levelType).toLowerCase() === 'bonds') { tot.set(+l.level, +l.totalExp || 0); if (+l.level > maxLv) maxLv = +l.level; } });
+  const rows = [];
+  (U.userBonds || []).forEach(u => {
+    const m = byGroup.get(+u.bondsGroupId); if (!m) return;
+    const rank = +u.rank || 0, exp = +u.exp || 0, a = tot.get(rank), b = tot.get(rank + 1);
+    const span = rank > 0 && rank < maxLv && a != null && b != null ? b - a : null;
+    rows.push({ g: m.groupId, c1: +m.characterId1, c2: +m.characterId2, b1: base(+m.characterId1), b2: base(+m.characterId2), lv: rank, exp, span, need: span != null ? Math.max(span - exp, 0) : null });
+  });
+  rows.sort((x, y) => y.lv - x.lv || x.c1 - y.c1 || x.c2 - y.c2);
+  return { rows, maxLv };
+}
+/* 綜合力加成：區域道具（角色／團體／屬性）、角色等級、MySekai 家具（×0.1）與大門（各團；VS 取最高的一扇） */
+export const HZ_UNITS = ['light_sound', 'idol', 'street', 'theme_park', 'school_refusal', 'piapro'];
+export const HZ_ATTRS = ['cute', 'cool', 'pure', 'happy', 'mysterious'];
+export function hzPowerBonus(M, U) {
+  const ch = {}, un = {}, at = {};
+  for (let c = 1; c <= 26; c++) ch[c] = { area: 0, rank: 0, fix: 0 };
+  HZ_UNITS.forEach(u => { un[u] = { area: 0, gate: 0 }; }); HZ_ATTRS.forEach(a => { at[a] = 0; });
+  const own = new Map();
+  (U.userAreas || []).forEach(a => (a.areaItems || []).forEach(i => { const id = +i.areaItemId, l = +i.level || 0; if (id > 0 && l > (own.get(id) || 0)) own.set(id, l); }));
+  const ail = new Map((M.areaItemLevels || []).map(l => [l.areaItemId + ':' + l.level, l]));
+  own.forEach((l, id) => {
+    const r = ail.get(id + ':' + l); if (!r || l <= 0) return;
+    const v = +r.power1BonusRate || 0;
+    if (+r.targetGameCharacterId > 0 && ch[r.targetGameCharacterId]) ch[r.targetGameCharacterId].area += v;
+    if (un[r.targetUnit]) un[r.targetUnit].area += v;
+    if (at[r.targetCardAttr] != null) at[r.targetCardAttr] += v;
+  });
+  const cr = new Map((M.characterRanks || []).map(r => [r.characterId + ':' + r.characterRank, +r.power1BonusRate || 0]));
+  (U.userCharacters || []).forEach(c => { const v = cr.get(c.characterId + ':' + c.characterRank); if (v && ch[c.characterId]) ch[c.characterId].rank += v; });
+  (U.userMysekaiFixtureGameCharacterPerformanceBonuses || []).forEach(f => { if (ch[f.gameCharacterId]) ch[f.gameCharacterId].fix += (+f.totalBonusRate || 0) * 0.1; });
+  const gl = new Map((M.gateLevels || []).map(l => [l.mysekaiGateId + ':' + l.level, +l.powerBonusRate || 0]));
+  const GATE = { 1: 'light_sound', 2: 'idol', 3: 'street', 4: 'theme_park', 5: 'school_refusal' };
+  let maxGate = 0;
+  (U.userMysekaiGates || []).forEach(g => { const v = gl.get(g.mysekaiGateId + ':' + g.mysekaiGateLevel); if (v == null) return; if (GATE[g.mysekaiGateId]) un[GATE[g.mysekaiGateId]].gate += v; maxGate = Math.max(maxGate, v); });
+  un.piapro.gate += maxGate;
+  return {
+    chars: Object.keys(ch).map(c => Object.assign({ cid: +c, total: ch[c].area + ch[c].rank + ch[c].fix }, ch[c])),
+    units: HZ_UNITS.map(u => Object.assign({ u, total: un[u].area + un[u].gate }, un[u])),
+    attrs: HZ_ATTRS.map(a => ({ a, total: at[a] })),
+  };
+}
+/* 挑戰 Live：最高分、關卡、下一個獎勵門檻；已達到但沒領的獎勵只算個數（寶箱內容表太大，不下載） */
+export function hzChallenge(rewards, U) {
+  const score = new Map((U.userChallengeLiveSoloResults || []).map(r => [+r.characterId, +r.highScore || 0]));
+  const stage = new Map(); (U.userChallengeLiveSoloStages || []).forEach(r => { const c = +r.characterId, k = +r.rank || 0; if (k > (stage.get(c) || 0)) stage.set(c, k); });
+  const got = new Set((U.userChallengeLiveSoloHighScoreRewards || []).map(r => +r.challengeLiveHighScoreRewardId));
+  const rows = [];
+  for (let c = 1; c <= 26; c++) {
+    const hs = score.get(c) || 0, mine = (rewards || []).filter(r => +r.characterId === c).sort((a, b) => a.highScore - b.highScore);
+    const next = mine.find(r => r.highScore > hs);
+    rows.push({ cid: c, hs, stage: stage.get(c) || 0, next: next ? next.highScore : 0, unclaimed: mine.filter(r => r.highScore <= hs && !got.has(+r.id)).length });
+  }
+  return rows;
+}
+
 export function hzMembers() {
   return {
   HZ_ENGINE: 'haruki-sekai-deck-recommend-cpp@0.3.8',
@@ -174,7 +260,7 @@ export function hzMembers() {
   /* ---------- 組卡引擎（Web Worker） ---------- */
   hzWorker() {
     if (this._hzW) return this._hzW;
-    const w = new Worker('/js/hk-deck-worker.js?v=6dde1f6467', { type: 'module' });
+    const w = new Worker('/js/hk-deck-worker.js?v=0f64580d3f', { type: 'module' });
     this._hzW = w; this._hzReq = new Map(); this._hzSeq = 0; this._hzSentUser = '';
     w.onmessage = e => {
       const d = e.data || {};
@@ -286,21 +372,54 @@ export function hzMembers() {
   },
   hzLevelTotal(lv) { const l = ((this._hzCrankM || {}).levels || []).find(x => x.levelType === 'character' && x.level === lv); return l ? l.totalExp : null; },
 
+  /* ---------- 養成進度 ---------- */
+  async hzLoadTrain() {
+    if (this._hzTrainP) return this._hzTrainP;
+    this._hzTrainP = (async () => {
+      const soft = f => this.tdbJson(f + '.json').catch(() => []);
+      const [groups, bonds, levels, gcu, characterRanks, areaItemLevels, gateLevels, chal, areaItems, areas] = await Promise.all(
+        ['characterMissionV2ParameterGroups', 'bonds', 'levels', 'gameCharacterUnits', 'characterRanks', 'areaItemLevels', 'mysekaiGateLevels', 'challengeLiveHighScoreRewards', 'areaItems', 'areas'].map(soft));
+      this._hzTrainM = { groups, bonds, levels, gcu, characterRanks, areaItemLevels, gateLevels, chal, areaItems, areas };
+    })().catch(e => { this._hzTrainP = null; this.setState({ hzMsg: '養成資料載入失敗：' + ((e && e.message) || e) }); });
+    return this._hzTrainP;
+  },
+  async hzTrainBuild() {
+    await this.hzLoadTrain();
+    const M = this._hzTrainM; if (!M) return;
+    const U = (await this.hzSuite().catch(() => null)) || {};
+    this.setState({ hzTrain: { has: Array.isArray(U.userCharacters), leaders: hzLeaders(M.groups, U), bonds: hzBonds(M, U), power: hzPowerBonus(M, U), chal: hzChallenge(M.chal, U), at: Date.now() } });
+  },
+  async hzAreaRun() {
+    if (this.state.hzAreaBusy) return;
+    const suite = await this.hzSuite().catch(() => null);
+    if (!suite || !Array.isArray(suite.userCards)) { this.setState({ hzMsg: '先讀取你的遊戲資料。' }); return; }
+    const deck = hzCurrentDeck(suite);
+    if (deck.length !== 5) { this.setState({ hzMsg: '遊戲資料裡找不到目前隊伍。' }); return; }
+    this.setState({ hzAreaBusy: true, hzMsg: '' });
+    try {
+      await this.hzLoadTrain();
+      const userKey = this._hzSuiteAt + ':' + (this.state.hzMeta || {}).uid;
+      const list = await this.hzCall({ type: 'area', data: this.hzDataMsg(), userKey, suite: this._hzSentUser !== userKey ? suite : null, opts: { region: 'tw', card_ids: deck } });
+      this._hzSentUser = userKey;
+      this.setState({ hzAreaBusy: false, hzPhase: '', hzArea: list || [] });
+    } catch (e) { this.setState({ hzAreaBusy: false, hzPhase: '', hzMsg: '區域道具建議失敗：' + ((e && e.message) || e) }); }
+  },
   hzSetTab(t) {
     this.setState({ hzTab: t });
     if (t === 'crank' && !this.state.hzCrank) this.hzCrankBuild();
+    if (t === 'train' && !this.state.hzTrain) this.hzTrainBuild();
   },
 
   hzVals(s) {
     if (s.page !== 'haruki') return { hzReady: true };
     const meta = s.hzMeta, cfg = s.hkCfg || {}, tab = s.hzTab || 'deck';
     const chipOn = on => on ? { bg: 'var(--ink-grad)', fg: '#fff' } : { bg: 'var(--card-2)', fg: 'var(--text-2)' };
-    const tabs = [['deck', '組卡推薦'], ['crank', '角色等級'], ['guide', '使用教學'], ['res', '資源']].map(([v, n]) => Object.assign({ v, n }, chipOn(tab === v)));
+    const tabs = [['deck', '組卡推薦'], ['crank', '角色等級'], ['train', '養成進度'], ['guide', '使用教學'], ['res', '資源']].map(([v, n]) => Object.assign({ v, n }, chipOn(tab === v)));
     const fmtT = t => { if (!t) return ''; const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
     const cards = {}; (s.rateCards || []).forEach(c => { cards[c[0]] = c; });
     const chName = {}; (s.rateChars || []).forEach(c => { chName[c[0]] = c[1]; });
     const out = {
-      hzReady: true, hzTabs: tabs, hzIsDeck: tab === 'deck', hzIsCrank: tab === 'crank', hzIsRes: tab === 'res', hzIsGuide: tab === 'guide',
+      hzReady: true, hzTabs: tabs, hzIsDeck: tab === 'deck', hzIsCrank: tab === 'crank', hzIsTrain: tab === 'train', hzIsRes: tab === 'res', hzIsGuide: tab === 'guide',
       hzGuide: this.HZ_GUIDE.map((g, i) => ({ n: i + 1, t: g[0], d: g[1], links: g[2].map(l => ({ n: l[0], url: l[1] })) })),
       onHzGuide: () => this.hzSetTab('guide'),
       hzHas: !!meta, hzNone: !meta,
@@ -388,6 +507,49 @@ export function hzMembers() {
         onHzCrankOpen: e => { const c = e.currentTarget.dataset.c; this.setState({ hzCrankOpen: String(this.state.hzCrankOpen) === c ? null : c }); },
         onHzCrankRefresh: () => this.hzCrankBuild(),
       });
+    }
+    if (tab === 'train') {
+      const T = s.hzTrain, sub = s.hzTrainTab || 'leader', pct = v => (Math.round(v * 10) / 10) + '%';
+      const UN = { light_sound: 'Leo/need', idol: 'MORE MORE JUMP!', street: 'Vivid BAD SQUAD', theme_park: 'ワンダショ', school_refusal: '25時', piapro: 'VIRTUAL SINGER' };
+      const AT = { cute: '可愛', cool: '帥氣', pure: '純真', happy: '快樂', mysterious: '神秘' };
+      const nm = c => chName[c] || ('#' + c);
+      // 同名道具（例如各區的「音箱」）很多，後面標上所在區域
+      const zone = {}; ((this._hzTrainM || {}).areas || []).forEach(a => { zone[a.id] = a.name; });
+      const areaName = {}; ((this._hzTrainM || {}).areaItems || []).forEach(a => { areaName[a.id] = a.name + (zone[a.areaId] ? '（' + zone[a.areaId] + '）' : ''); });
+      Object.assign(out, {
+        hzTrainLoading: !T, hzTrainNoUser: !!(T && !T.has),
+        hzTrainChips: [['leader', '隊長次數'], ['bond', '羈絆'], ['power', '綜合力加成'], ['chal', '挑戰 Live'], ['area', '區域道具']].map(([v, n]) => Object.assign({ v, n }, chipOn(sub === v))),
+        onHzTrainTab: e => this.setState({ hzTrainTab: e.currentTarget.dataset.v }),
+        onHzTrainRefresh: () => this.hzTrainBuild(),
+        hzTLeader: sub === 'leader', hzTBond: sub === 'bond', hzTPower: sub === 'power', hzTChal: sub === 'chal', hzTArea: sub === 'area',
+      });
+      if (T && sub === 'leader') {
+        const L = T.leaders;
+        out.hzLeaderNote = '一般隊長次數上限 ' + L.maxPlay.toLocaleString() + '；EX 等級封頂需累計 ' + L.maxEx.toLocaleString() + ' 次';
+        out.hzLeaderRows = L.rows.map(r => ({ n: nm(r.cid), play: r.play.toLocaleString(), ex: 'EX Lv' + r.exLv + '・' + r.exCount.toLocaleString(), w: (L.maxPlay ? Math.min(100, Math.round(r.play / L.maxPlay * 100)) : 0) + '%' }));
+      }
+      if (T && sub === 'bond') {
+        out.hzBondNote = T.bonds.rows.length ? '共 ' + T.bonds.rows.length + ' 組，羈絆等級上限 ' + T.bonds.maxLv : '還沒有羈絆資料';
+        out.hzBondRows = T.bonds.rows.slice(0, 120).map(r => ({ n: nm(r.b1) + ' × ' + nm(r.b2), lv: 'Lv ' + r.lv, p: r.span != null ? r.exp + ' / ' + r.span + '（還差 ' + r.need + '）' : (r.lv >= T.bonds.maxLv ? '已滿級' : '') }));
+      }
+      if (T && sub === 'power') {
+        const P = T.power;
+        out.hzPowChars = P.chars.slice().sort((a, b) => b.total - a.total || a.cid - b.cid).map(c => ({ n: nm(c.cid), v: pct(c.total), d: '區域 ' + pct(c.area) + '・等級 ' + pct(c.rank) + (c.fix ? '・家具 ' + pct(c.fix) : '') }));
+        out.hzPowUnits = P.units.map(u => ({ n: UN[u.u] || u.u, v: pct(u.total), d: '區域 ' + pct(u.area) + (u.gate ? '・大門 ' + pct(u.gate) : '') }));
+        out.hzPowAttrs = P.attrs.map(a => ({ n: AT[a.a] || a.a, v: pct(a.total), d: '區域道具' }));
+      }
+      if (T && sub === 'chal') {
+        out.hzChalRows = T.chal.slice().sort((a, b) => b.hs - a.hs || a.cid - b.cid).map(r => ({ n: nm(r.cid), hs: r.hs ? r.hs.toLocaleString() : '—', st: r.stage ? '關卡 ' + r.stage : '', next: r.next ? '下個獎勵 ' + r.next.toLocaleString() : '獎勵已全拿', un: r.unclaimed ? '有 ' + r.unclaimed + ' 個獎勵沒領' : '', hasUn: r.unclaimed > 0 }));
+      }
+      if (sub === 'area') {
+        const A = s.hzArea;
+        out.hzAreaBusy = !!s.hzAreaBusy; out.hzAreaBtn = s.hzAreaBusy ? '計算中…' : (A ? '重新計算' : '依目前隊伍算最划算的升級');
+        out.hzAreaHas = !!(A && A.length); out.hzAreaEmpty = !!(A && !A.length);
+        out.hzAreaRows = (A || []).slice(0, 20).map((x, i) => ({ i: i + 1, n: (areaName[x.area_item_id] || ('道具 #' + x.area_item_id)) + ' → Lv' + x.next_level,
+          c: [(x.cost && x.cost.coin ? x.cost.coin.toLocaleString() + ' 金幣' : ''), (x.cost && x.cost.seed ? x.cost.seed + ' 不可思議的種子' : ''), (x.cost && x.cost.szk ? x.cost.szk + ' 祈願水滴' : '')].filter(Boolean).join('・'),
+          v: '+' + Math.round(x.power || 0).toLocaleString() + ' 綜合力' }));
+        out.onHzAreaRun = () => this.hzAreaRun();
+      }
     }
     if (tab === 'res') {
       const v = s.hzVer;

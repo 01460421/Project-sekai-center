@@ -1,7 +1,7 @@
 /* Haruki 專區的純函式測試：角色任務 EXP、目前隊伍、預設歌曲，以及 app.js 的 compact 展開。
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
-import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal } from '../js/haruki.js';
+import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge } from '../js/haruki.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -36,6 +36,35 @@ const metas = [{ music_id: 1, difficulty: 'master', event_rate: 100, base_score:
   { music_id: 2, difficulty: 'master', event_rate: 120, base_score: 1, skill_score_multi: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1], fever_score: 0 },
   { music_id: 3, difficulty: 'expert', event_rate: 200, base_score: 2, skill_score_multi: [1, 1, 1, 1, 1, 1], fever_score: 1 }];
 ok(hzBestSong(metas, 'master', 'multi') === 2 && hzBestSong(metas, 'expert', 'multi') === 3 && hzBestSong(metas, 'append', 'multi') === null, '預設歌曲依難度挑效率最高');
+
+/* 隊長次數：一般次數取 play_live；EX 次數＝本輪進度＋已領輪數的門檻總和，EX 等級＝已領輪數＋1 */
+const L = hzLeaders(groups, U);
+const l1 = L.rows.find(r => r.cid === 1);
+ok(l1.play === 25 && l1.exLv === 2 && l1.exCount === 3 + 5 && L.maxPlay === 40 && L.maxEx === 5, '隊長次數與 EX 等級');
+ok(hzLeaders(groups, { userCharacterLiveUsageCounts: [{ characterId: 4, characterLiveUsageType: 'leader', usageCount: 77 }] }).rows[0].cid === 4, '沒有任務進度時退回 userCharacterLiveUsageCounts，並依總次數排序');
+
+/* 羈絆：VS 各團版本收回本尊，本級 EXP 與還差多少 */
+const bondLv = [1, 2, 3].map((l, i) => ({ levelType: 'bonds', level: l, totalExp: [0, 10, 30][i] }));
+const B = hzBonds({ bonds: [{ groupId: 1, characterId1: 1, characterId2: 27 }, { groupId: 2, characterId1: 2, characterId2: 3 }], levels: bondLv, gcu: [{ id: 27, gameCharacterId: 21 }] },
+  { userBonds: [{ bondsGroupId: 1, rank: 2, exp: 4 }, { bondsGroupId: 2, rank: 3, exp: 0 }, { bondsGroupId: 9, rank: 1 }] });
+ok(B.rows.length === 2 && B.rows[0].lv === 3 && B.rows[0].span === null && B.maxLv === 3, '羈絆依等級排序，滿級沒有下一級');
+ok(B.rows[1].b2 === 21 && B.rows[1].span === 20 && B.rows[1].need === 16, 'VS 團體版收回本尊，本級 EXP 與還差多少');
+
+/* 綜合力加成：區域道具分到角色／團體／屬性，角色等級、家具 ×0.1、大門（VS 取最高） */
+const P = hzPowerBonus({ areaItemLevels: [{ areaItemId: 1, level: 5, targetUnit: 'any', targetCardAttr: 'any', targetGameCharacterId: 1, power1BonusRate: 10 },
+  { areaItemId: 2, level: 3, targetUnit: 'idol', targetCardAttr: 'any', targetGameCharacterId: 0, power1BonusRate: 4 }, { areaItemId: 3, level: 2, targetUnit: 'any', targetCardAttr: 'cool', targetGameCharacterId: 0, power1BonusRate: 3 }],
+  characterRanks: [{ characterId: 1, characterRank: 3, power1BonusRate: 1.5 }], gateLevels: [{ mysekaiGateId: 1, level: 20, powerBonusRate: 7 }, { mysekaiGateId: 3, level: 10, powerBonusRate: 4 }] },
+  { userAreas: [{ areaItems: [{ areaItemId: 1, level: 5 }, { areaItemId: 2, level: 3 }, { areaItemId: 3, level: 2 }] }], userCharacters: U.userCharacters,
+    userMysekaiFixtureGameCharacterPerformanceBonuses: [{ gameCharacterId: 1, totalBonusRate: 20 }], userMysekaiGates: [{ mysekaiGateId: 1, mysekaiGateLevel: 20 }, { mysekaiGateId: 3, mysekaiGateLevel: 10 }] });
+const pc1 = P.chars.find(c => c.cid === 1), pu = k => P.units.find(u => u.u === k);
+ok(pc1.area === 10 && pc1.rank === 1.5 && pc1.fix === 2 && pc1.total === 13.5, '角色：區域＋角色等級＋家具×0.1');
+ok(pu('idol').total === 4 && pu('light_sound').gate === 7 && pu('street').gate === 4 && pu('piapro').gate === 7, '團體：區域＋大門，VS 取最高的大門');
+ok(P.attrs.find(a => a.a === 'cool').total === 3, '屬性：區域道具');
+
+/* 挑戰 Live：下一個獎勵門檻與沒領的個數 */
+const C = hzChallenge([{ id: 1, characterId: 1, highScore: 100000 }, { id: 2, characterId: 1, highScore: 500000 }, { id: 3, characterId: 1, highScore: 3000000 }],
+  { userChallengeLiveSoloResults: [{ characterId: 1, highScore: 800000 }], userChallengeLiveSoloStages: [{ characterId: 1, rank: 12 }], userChallengeLiveSoloHighScoreRewards: [{ challengeLiveHighScoreRewardId: 1 }] });
+ok(C.length === 26 && C[0].hs === 800000 && C[0].stage === 12 && C[0].next === 3000000 && C[0].unclaimed === 1, '挑戰 Live：最高分、關卡、下一個門檻、沒領的個數');
 
 /* app.js 的 hkExpandCompact / hkNormalize（從原始碼抽出來測，不載整個 App） */
 const src = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');

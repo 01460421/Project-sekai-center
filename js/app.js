@@ -386,6 +386,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' }
   ];
   SYSLOG = [
+    { d: '2026/09/25', t: 'Haruki 專區：養成進度', s: 'Haruki 專區多一個「養成進度」分頁，算法照 Haruki 工具箱的養成頁：隊長次數（一般次數、EX 等級與累計）、羈絆（各組等級與升級還差多少）、綜合力加成（團體、屬性與角色三種，拆成區域道具、角色等級、MySekai 家具與大門）、挑戰 Live（最高分、關卡、下一個獎勵門檻與還沒領的獎勵數），以及區域道具升級建議：用組卡引擎算你目前隊伍每個道具升一級多多少綜合力，依每枚金幣換到的綜合力排序，連同金幣、不可思議的種子與祈願水滴的花費。', p: 'haruki' },
     { d: '2026/09/25', t: 'Haruki 專區：活動最佳組卡、角色等級 EXP', s: '工具類多一頁「Haruki 專區」，用你匯入的 Haruki 工具箱遊戲資料：組卡推薦用 Team Haruki 的 sekai-deck-recommend-cpp 引擎（在瀏覽器裡執行），選活動、歌曲、Live 類型與目標（活動 PT／綜合力／加成／技能）找出前五隊，並列出目前隊伍的分數與第一名隊伍最划算的歌；角色等級列出 26 位角色目前等級、升級進度、已達成未領的 EXP 與各任務下一階；另有等級 EXP 試算、master 版本、素材源切換與用到的開源專案；「使用教學」七個步驟從註冊、綁定驗證、三種上傳方式、iOS 模組與代理教學到開放公開 API 與撤銷授權，每步都有按鈕直接連到 Haruki 工具箱對應頁面（我的帳號的 Haruki 卡片也有入口）。其他頁一起接上：計算中心可「從 Haruki 帶入目前隊伍」的綜合力、加成與技能倍率；匯入時沒綁 Player ID 會自動綁、進行中活動的活動P 帶進活動試算；跑榜工作室「只用我的卡」改用每張卡的實際專精。', p: 'haruki' },
     { d: '2026/09/23', t: 'Haruki 工具箱一鍵匯入', s: '我的帳號多一張「Haruki 工具箱匯入」：在 Haruki 工具箱把帳號設成「允許公開 API」後，填 Player ID（或貼上工具箱網址）就能匯入，不必登入；站方開通後也能改用 Haruki 帳號授權。一次填好收集率的持有卡、每張卡的專精與技能等級、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。讀取經本站 Worker 轉送、不保存；收集率以遊戲為準整份取代（可按「還原收集率」退回），B30 只升不降。', p: 'account' },
     { d: '2026/09/23', t: '台服資料改用 Haruki 的 6.4 版，排名多一個備援', s: '卡片、歌曲、活動、豆森與應援活動改讀 Team-Haruki 的台服 master（已是 6.4：卡片 1,249 → 1,357 張、歌曲多 32 首、活動排到第 202 期），缺的表自動退回 Sekai-World。應援活動依開始時間編回數，9/24 開始的第 9 回是新的棋盤版。HiSekai 連不上時，排名、首頁、逐局追蹤與榜線快照改用 Haruki 公開 API，畫面會標出「Haruki 備援資料」。', p: 'rank' },
@@ -2390,7 +2391,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=c8fafd432e').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=1f2449863b').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
