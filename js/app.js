@@ -2391,7 +2391,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=1f2449863b').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=1074b7abc0').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -7523,8 +7523,14 @@ class Component extends DCLogic {
     }
     return rows;
   }
-  hkNormalize(suite) {
+  hkNormalize(suite, uid) {
     if (!suite || typeof suite !== 'object') return suite;
+    /* Haruki 的公開 API 與 OAuth 只回管理員允許的鍵（預設清單沒有 userGamedata：裡面有金幣、水晶等），
+       組卡引擎卻要它。補一份最小的：玩家 ID、目前隊伍（userDecks 第一隊）、userProfile 裡有的等級與暱稱。 */
+    if (!suite.userGamedata || typeof suite.userGamedata !== 'object') {
+      const pf = suite.userProfile || {}, d0 = (suite.userDecks || [])[0] || {};
+      suite.userGamedata = { userId: uid || pf.userId || 0, deck: +d0.deckId || 1, rank: +pf.rank || 0, name: pf.name || '', exp: 0, totalExp: 0, coin: 0, virtualCoin: 0, customProfileId: 0 };
+    }
     Object.keys(suite).forEach(k => {
       if (/^compact[A-Z]/.test(k)) {
         const row = k.charAt(7).toLowerCase() + k.slice(8);
@@ -7561,7 +7567,7 @@ class Component extends DCLogic {
     if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkMsg: pub ? '先填你的台服 Player ID，或貼上工具箱的網址。' : '先在上面填你的台服 Player ID（或在 Haruki 綁定台服帳號），再按匯入。' }); return; }
     this.setState({ hkBusy: true, hkMsg: '向 Haruki 讀取 ' + uid + ' 的遊戲資料…' });
     try {
-      const suite = this.hkNormalize(pub ? await this.hkPublic('suite', uid) : await this.hkGet('/api/oauth2/game-data/tw/suite/' + uid));
+      const suite = this.hkNormalize(pub ? await this.hkPublic('suite', uid) : await this.hkGet('/api/oauth2/game-data/tw/suite/' + uid), uid);
       let mys = null, bpMap = null;
       try {
         mys = pub ? await this.hkPublic('mysekai', uid) : await this.hkGet('/api/oauth2/game-data/tw/mysekai/' + uid);

@@ -4370,6 +4370,7 @@ select option, select optgroup{
       </div>
     </div>
     <sc-if value="{{ hzCrankLoading }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">讀取角色任務資料中…</div></sc-if>
+    <sc-if value="{{ hzCrankNoMission }}"><div style="margin:0 0 10px;padding:10px 12px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.8">Haruki 的公開 API／授權目前不提供角色任務進度，這裡只能顯示各角色等級；可領 EXP 與任務明細請到工具箱看。<a href="https://haruki.seiunx.com/training/missions" target="_blank" rel="noopener" style="display:inline-block;margin-left:6px;padding:3px 11px;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--accent-deep);font-weight:800;text-decoration:none">工具箱：角色任務</a></div></sc-if>
     <sc-if value="{{ hzCrankNoUser }}"><div style="font-size:11.5px;color:var(--text-3);padding:0 4px 10px">還沒有你的遊戲資料，下面只列出任務項目；讀取後會顯示各角色等級、可領的 EXP 與還差多少。</div></sc-if>
     <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);overflow:hidden">
       <sc-for list="{{ hzCrankRows }}" as="r" hint-placeholder-count="6">
@@ -4378,7 +4379,7 @@ select option, select optgroup{
             <span style="flex:none;width:74px;font-size:12.5px;font-weight:800;color:var(--ink)">{{ r.name }}</span>
             <span style="flex:none;width:52px;font-size:12px;font-weight:800;color:var(--accent-deep)">Lv {{ r.lv }}</span>
             <div style="flex:1;min-width:60px"><div style="height:6px;border-radius:99px;background:var(--card-2);overflow:hidden"><div style="height:100%;width:{{ r.pct }};background:var(--ink-grad)"></div></div><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">{{ r.exp }}<sc-if value="{{ r.hasPending }}">・<span style="color:var(--accent-deep);font-weight:700">{{ r.pending }}</span></sc-if></div></div>
-            <button type="button" onClick="{{ onHzCrankOpen }}" data-c="{{ r.cid }}" style="flex:none;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ r.btn }}</button>
+            <sc-if value="{{ r.canOpen }}"><button type="button" onClick="{{ onHzCrankOpen }}" data-c="{{ r.cid }}" style="flex:none;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">{{ r.btn }}</button></sc-if>
           </div>
           <sc-if value="{{ r.open }}">
             <div style="margin-top:7px">
@@ -4400,6 +4401,8 @@ select option, select optgroup{
     </div>
     <sc-if value="{{ hzTrainLoading }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">讀取養成資料中…</div></sc-if>
     <sc-if value="{{ hzTrainNoUser }}"><div style="font-size:11.5px;color:var(--text-3);padding:0 4px 10px">還沒有你的遊戲資料：先在上方讀取，這裡才有數字。</div></sc-if>
+    <sc-if value="{{ hzTNoLeader }}"><div style="margin:0 0 10px;padding:10px 12px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.8">Haruki 的公開 API／授權目前不提供隊長次數需要的任務進度。<a href="https://haruki.seiunx.com/training/leader" target="_blank" rel="noopener" style="display:inline-block;margin-left:6px;padding:3px 11px;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--accent-deep);font-weight:800;text-decoration:none">工具箱：隊長次數</a></div></sc-if>
+    <sc-if value="{{ hzTNoBond }}"><div style="margin:0 0 10px;padding:10px 12px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.8">Haruki 的公開 API／授權目前不提供羈絆資料。<a href="https://haruki.seiunx.com/training/bonds" target="_blank" rel="noopener" style="display:inline-block;margin-left:6px;padding:3px 11px;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--accent-deep);font-weight:800;text-decoration:none">工具箱：羈絆</a></div></sc-if>
     <sc-if value="{{ hzTLeader }}">
       <div style="font-size:11px;color:var(--text-3);margin:0 3px 6px">{{ hzLeaderNote }}</div>
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);overflow:hidden">
@@ -7603,7 +7606,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=44ab46ae1b"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f342ba0a62"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
