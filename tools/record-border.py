@@ -169,13 +169,17 @@ def main():
     if wl:
         data.setdefault('wl', {})
         for c in wl:
-            pb = c.get('player_borders') or []
+            # 2026-09 HiSekai 把章節欄位改名：player_borders → player_border_rankings、
+            # closed_at → ranking_announce_at。只認舊名的話每章都被當成「未開章」跳過，
+            # 第 179 期整期的 WL 章節榜線就是這樣一筆都沒記到。新名在前、舊名當後備。
+            pb = c.get('player_border_rankings') or c.get('player_borders') or []
             if not pb:
                 continue                      # 未開章的章節官方回空,跳過
             key = str(c.get('chapter'))
             slot = data['wl'].setdefault(key, {
                 'chapter': c.get('chapter'), 'character': c.get('character'),
-                'startAt': c.get('start_at') or '', 'aggregateAt': c.get('aggregate_at') or '',
+                'startAt': c.get('start_at') or '',
+                'aggregateAt': c.get('aggregate_at') or c.get('ranking_announce_at') or c.get('closed_at') or '',
                 'tiers': [], 'samples': []
             })
             known = list(slot['tiers'])
