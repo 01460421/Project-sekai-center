@@ -2,7 +2,7 @@
    引擎是 Team-Haruki/sekai-deck-recommend-cpp 的 WebAssembly 版（npm：haruki-sekai-deck-recommend-cpp，LGPL-2.0），
    從 jsDelivr 載入、失敗換 unpkg；master 約 17 MB，搜尋也可能跑好幾秒，所以整套放在 Worker 裡不卡畫面。
    主執行緒只傳：要載哪些 master（網址清單）、music metas 網址、玩家 suite（換帳號或重新同步才傳）、搜尋選項。 */
-let engineP = null, engineName = '', dataKey = '', dataP = null, metas = null, titles = {}, ud = null, udKey = '';
+let engineP = null, engineName = '', dataKey = '', dataP = null, metas = null, titles = {}, ud = null, udKey = '', suiteObj = null;
 
 const post = (type, text) => self.postMessage({ type, text });
 
@@ -79,14 +79,21 @@ function bestSong(diff, live) {
 self.onmessage = async ev => {
   const m = ev.data || {};
   try {
-    if (m.type !== 'recommend') throw new Error('unknown request');
+    if (m.type !== 'recommend' && m.type !== 'area') throw new Error('unknown request');
     const e = await ensureData(m.data);
     if (m.suite) {
       if (ud) { try { ud.dispose(); } catch (err) {} }
       post('progress', '讀取你的卡片…');
-      ud = e.createUserData('tw', m.suite); udKey = m.userKey;
+      ud = e.createUserData('tw', m.suite); udKey = m.userKey; suiteObj = m.suite;
     }
     if (!ud || udKey !== m.userKey) throw new Error('玩家資料還沒送進引擎，請再按一次');
+    /* 區域道具：引擎依這五張卡算每個道具升下一級加多少綜合力，連同花費回傳，照「每枚金幣換到的綜合力」排 */
+    if (m.type === 'area') {
+      post('progress', '計算區域道具…');
+      const list = e.recommendAreaItems(Object.assign({}, m.opts, { user_data: suiteObj }));
+      self.postMessage({ id: m.id, result: list });
+      return;
+    }
     const opts = Object.assign({}, m.opts);
     const liveBase = opts.live_type === 'cheerful' ? 'multi' : opts.live_type;
     if (!opts.music_id) opts.music_id = bestSong(opts.music_diff, liveBase) || 1;
