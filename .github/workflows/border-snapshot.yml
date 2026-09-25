@@ -79,15 +79,27 @@ jobs:
               sys.exit(1)
           PY
 
+      # billing.js / sekai-data.js 是長快取資源,網址帶內容雜湊;檔案一變就要重算戳記,
+      # 否則 CI 的戳記檢查會紅、瀏覽器也會黏住舊檔。戳記一路串到 js 與各 HTML。
+      - name: 壓縮 app.js 並重算版本戳
+        run: |
+          # 戳記會連鎖(ai.js → ai.min.js → app.js),一輪不一定收斂,最多跑三輪
+          for i in 1 2 3; do
+            python3 tools/build-min.py
+            python3 tools/stamp-assets.py || true
+            python3 tools/stamp-assets.py --check >/dev/null && exit 0
+          done
+          python3 tools/stamp-assets.py --check
+
       - name: 提交變更
         run: |
-          if [ -z "$(git status --porcelain data/history data/billing.js)" ]; then
+          if [ -z "$(git status --porcelain data/history data/billing.js js/app.js js/app.min.js js/ai.js js/ai.min.js js/core.js index.html app.html ep-calculator.html tutorial.html)" ]; then
             echo "沒有新資料，不提交"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/history data/billing.js
+          git add data/history data/billing.js js/app.js js/app.min.js js/ai.js js/ai.min.js js/core.js index.html app.html ep-calculator.html tutorial.html
           git commit -m "榜線快照 $(date -u '+%Y-%m-%d %H:%M') UTC [skip ci]"
           # 併發或落後時先 rebase 再推，避免整條排程卡住
           for i in 1 2 3; do

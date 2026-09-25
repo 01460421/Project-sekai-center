@@ -1731,7 +1731,7 @@ export function aiMembers() {
         let src = this.state.dolls || [];
         if (!src.length) {
           try {
-            const m = await import('./data/sekai-data.js?v=8d2812dda5');
+            const m = await import('./data/sekai-data.js?v=debc1682f8');
             src = m.DOLLS || [];
             if (src.length) this.setState({ dolls: src, gachas: (this.state.gachas || []).length ? this.state.gachas : (m.GACHAS || []) });
           } catch (e) { return { error: '豆森娃月列表載入失敗' }; }
@@ -2831,7 +2831,7 @@ export function aiMembers() {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=599927666a';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=e96f0b2f88';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -6430,7 +6430,7 @@ export function aiMembers() {
         let src = this.state.gachas || [];
         if (!src.length) {
           try {
-            const m = await import('./data/sekai-data.js?v=8d2812dda5');
+            const m = await import('./data/sekai-data.js?v=debc1682f8');
             src = m.GACHAS || [];
             if (src.length) this.setState({ gachas: src, dolls: (this.state.dolls || []).length ? this.state.dolls : (m.DOLLS || []) });
           } catch (e) { return { error: '卡池排程資料載入失敗' }; }
