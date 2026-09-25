@@ -201,5 +201,32 @@ ok(o.status === 503, '沒設 client id 時回 503');
   Date.now = realNow;
 }
 
+/* master 登錄處轉送（music metas、current） */
+{
+  const hits = [];
+  globalThis.fetch = async (u) => { const url = String(u); hits.push(url);
+    if (url === 'https://sekai-api-cdn.haruki.seiunx.com/v1/metas/tw/music_metas.json') return new Response('[{"music_id":1}]', { status: 200 });
+    if (url === 'https://sekai-api-cdn.haruki.seiunx.com/v1/master/tw/current') return new Response('{"dataVersion":"6.4.0"}', { status: 200 });
+    return new Response('nope', { status: 500 });
+  };
+  const rc = async (path, method, env) => { const u = 'https://games.test' + path; return handleHaruki(new Request(u, { method: method || 'GET' }), env || {}, new URL(u)); };
+  let r = await rc('/haruki/metas/tw/music_metas.json'); let b = await r.json();
+  ok(r.status === 200 && b[0].music_id === 1 && hits.at(-1) === 'https://sekai-api-cdn.haruki.seiunx.com/v1/metas/tw/music_metas.json', 'music metas 轉送到 sekai-api-cdn');
+  ok(r.headers.get('access-control-allow-origin') === '*' && /max-age=21600/.test(r.headers.get('cache-control')), 'music metas CORS 開放、快取 6 小時');
+  r = await rc('/haruki/master/tw/current'); b = await r.json();
+  ok(r.status === 200 && b.dataVersion === '6.4.0' && /max-age=300/.test(r.headers.get('cache-control')), 'master current 轉送、快取 5 分鐘');
+  const n = hits.length;
+  r = await rc('/haruki/metas/cn/music_metas.json');
+  ok(r.status === 404 && hits.length === n, '只轉送台服與日服');
+  r = await rc('/haruki/metas/tw/../../v1/x');
+  ok(r.status === 404 && hits.length === n, '路徑穿越不轉送');
+  r = await rc('/haruki/metas/jp/music_metas.json');
+  ok(r.status === 502, '上游 5xx 回 502');
+  r = await rc('/haruki/metas/tw/music_metas.json', 'POST');
+  ok(r.status === 405, '只收 GET');
+  await rc('/haruki/master/jp/current', 'GET', { HARUKI_REGISTRY_BASE: 'https://mirror.test/' });
+  ok(hits.at(-1) === 'https://mirror.test/v1/master/jp/current', 'HARUKI_REGISTRY_BASE 可換主機');
+}
+
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
 process.exit(fail ? 1 : 0);
