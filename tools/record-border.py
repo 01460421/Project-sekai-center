@@ -68,18 +68,30 @@ def iso_to_unix(s):
 
 def main():
     try:
-        brd = get('/event/live/border')
         top = get('/event/live/top100')
     except Exception as e:
         print(f'API 讀取失敗: {e}', file=sys.stderr)
         return 1
+    # 段位端點壞掉時照樣記前百（Haruki Event Tracker 也是這樣處理）：
+    # 2026-09 第 180 期 WL 終章，官方榜線段位端點整期出錯，HiSekai /event/live/border 回 500、
+    # Haruki 也沒有段位；前百仍正常。這時用前百第 100 名當 T100，其餘段位留空。
+    try:
+        brd = get('/event/live/border')
+    except Exception as e:
+        print(f'榜線段位讀取失敗（{e}），本次只記前百', file=sys.stderr)
+        brd = None
 
-    ev_id = brd.get('id')
+    meta = brd or top
+    ev_id = meta.get('id')
     if ev_id is None:
         print('沒有進行中的活動,跳過')
         return 0
 
-    rows = brd.get('player_border_rankings') or []
+    if brd:
+        rows = brd.get('player_border_rankings') or []
+    else:
+        t100 = [t for t in (top.get('player_top_100_rankings') or []) if t.get('rank') == 100]
+        rows = [{'rank': 100, 'score': t100[0].get('score')}] if t100 else []
     if not rows:
         print('榜線為空,跳過')
         return 0
@@ -88,7 +100,7 @@ def main():
     import time
     now = int(time.time())
 
-    end = iso_to_unix(brd.get('aggregate_at') or brd.get('closed_at'))
+    end = iso_to_unix(meta.get('aggregate_at') or meta.get('closed_at'))
     if end and now > end + 3 * 3600:
         print(f'第 {ev_id} 期已結算超過 3 小時,跳過')
         return 0
@@ -123,9 +135,9 @@ def main():
     else:
         data = {
             'eventId': ev_id,
-            'name': brd.get('name') or '',
-            'startAt': brd.get('start_at') or '',
-            'aggregateAt': brd.get('aggregate_at') or '',
+            'name': meta.get('name') or '',
+            'startAt': meta.get('start_at') or '',
+            'aggregateAt': meta.get('aggregate_at') or '',
             'tiers': tiers,
             'samples': [],
             'top1': [],
@@ -165,7 +177,7 @@ def main():
     # World Link:每章有獨立角色與榜線,分開存成 wl[章節]
     # 章節結構(角色、期程)不會變,榜線段位可能隨開章才出現,
     # 一樣採「既有順序不動、新段位往後追加」。
-    wl = brd.get('world_link_border_rankings') or []
+    wl = (brd or {}).get('world_link_border_rankings') or []
     if wl:
         data.setdefault('wl', {})
         for c in wl:
@@ -220,7 +232,8 @@ def main():
     print(f'第 {ev_id} 期:第 {len(data["samples"])} 筆快照,'
           f'榜線 {len(scores)} 段 + 前百 {len(rank_scores)} 名'
           + (f' + WL {len(data.get("wl") or {})} 章(累計 {wln} 筆)' if data.get('wl') else '')
-          + f',T100={scores[0]:,}')
+          + (f',T100={scores[0]:,}' if scores and scores[0] is not None else '')
+          + ('' if brd else '（段位端點失敗，只有前百）'))
     return 0
 
 
