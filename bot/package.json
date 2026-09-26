@@ -10,7 +10,7 @@
     "register": "node scripts/register.js",
     "features": "node scripts/list-features.js",
     "test": "node --test test/*.test.mjs",
-    "check": "for f in src/*.js src/core/*.js src/features/*.js src/content/*.js scripts/*.js; do node --check \"$f\" || exit 1; done",
+    "check": "for f in src/*.js src/core/*.js src/features/*.js src/content/*.js scripts/*.js scripts/*.mjs; do node --check \"$f\" || exit 1; done",
     "dev:workers": "wrangler dev",
     "deploy:workers": "wrangler deploy",
     "build:workers": "wrangler deploy --dry-run --outdir=dist",
