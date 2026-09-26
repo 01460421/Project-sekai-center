@@ -6,10 +6,11 @@
 
    環境變數：
      ANTHROPIC_API_KEY        必要
-     AI_MODEL                 預設 claude-opus-5
+     AI_MODEL                 預設 claude-sonnet-5（對話型工作量，便宜、夠聰明）
      AI_DAILY_PER_USER        每人每日「解讀」次數上限，預設 10（台灣時間 00:00 重置）
      AI_CHAT_DAILY_PER_USER   每人每日「對話」次數上限，預設 40
-   啟用時會加上伺服器端 fallback（安全分類器拒答時自動換備援模型續答）。 */
+   模型換成 claude-opus-5 或 Fable 系列時，會自動加上伺服器端 fallback（安全分類器拒答時換備援模型續答）；
+   Sonnet 5 不送這個參數，拒答就當一般結果處理（回一句「這個話題不方便聊」）。 */
 
 import { todayTW } from './ui.js';
 
@@ -20,12 +21,15 @@ const NARRATE_SYSTEM = `你是一位溫暖、有洞察力的占卜師與心理�
 - 結尾給一個今天就能做的小行動
 - 不要用標題、不要用條列、不要用 markdown 粗體`;
 
-const BETAS = ['server-side-fallback-2026-07-01'];
+const FALLBACK_BETAS = ['server-side-fallback-2026-07-01'];
+/* 伺服器端 fallback 目前只保證 Opus 5／Fable／Mythos 系列可用；其他模型送了可能 400 */
+export const supportsFallback = model => /^claude-(opus-5|fable|mythos)/.test(model);
 
 export function createAI(env = process.env, { store, client: injected } = {}) {
   const apiKey = (env.ANTHROPIC_API_KEY || '').trim();
   if (!apiKey && !injected) return null;
-  const model = (env.AI_MODEL || 'claude-opus-5').trim();
+  const model = (env.AI_MODEL || 'claude-sonnet-5').trim();
+  const fallback = supportsFallback(model) ? { betas: FALLBACK_BETAS, fallbacks: 'default' } : {};
   const caps = {
     narrate: Math.max(0, parseInt(env.AI_DAILY_PER_USER || '10', 10) || 0),
     chat: Math.max(0, parseInt(env.AI_CHAT_DAILY_PER_USER || '40', 10) || 0),
@@ -59,7 +63,7 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
   const textOf = res => res.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
 
   return {
-    model, caps, enabled: true, used,
+    model, caps, enabled: true, used, fallback: !!fallback.fallbacks,
     quota(kind, userId) { return { used: used(kind, userId), cap: caps[kind] }; },
 
     /* 回傳解讀文字；額度用完或出錯回空字串（呼叫端直接略過即可） */
@@ -68,7 +72,7 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
       try {
         const c = await client();
         const res = await c.beta.messages.create({
-          model, max_tokens: maxTokens, betas: BETAS, fallbacks: 'default',
+          model, max_tokens: maxTokens, ...fallback,
           output_config: { effort: 'low' },
           system: NARRATE_SYSTEM,
           messages: [{ role: 'user', content: prompt }],
@@ -92,7 +96,7 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
       try {
         const c = await client();
         for (let round = 0; round <= maxRounds; round++) {
-          const req = { model, max_tokens: maxTokens, betas: BETAS, fallbacks: 'default', output_config: { effort }, system, messages: history };
+          const req = { model, max_tokens: maxTokens, ...fallback, output_config: { effort }, system, messages: history };
           if (tools.length) req.tools = tools;
           const res = await c.beta.messages.create(req);
           if (res.stop_reason === 'refusal') return { text: '', refused: true };

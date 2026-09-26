@@ -288,7 +288,7 @@ test('/chat：先延遲再補結果、記得上一輪、系統提示認識這位
   assert.ok(r1.deferred, '要先 defer'); assert.equal(r1.edits.length, 1, '結果用 edit 補上');
   assert.match(r1.edits[0].content, /> 我叫小愛\n嗨 Alice/); assert.equal(buttonsOf(r1.edits[0]).length, 2);
   const req = claude.calls[0];
-  assert.equal(req.model, 'claude-opus-5'); assert.deepEqual(req.betas, ['server-side-fallback-2026-07-01']); assert.equal(req.fallbacks, 'default');
+  assert.equal(req.model, 'claude-sonnet-5'); assert.equal(req.betas, undefined, 'Sonnet 5 不送 fallback'); assert.equal(req.fallbacks, undefined); assert.deepEqual(req.output_config, { effort: 'low' });
   assert.equal(req.system[0].cache_control.type, 'ephemeral', '穩定的前半段要能快取');
   const sys = req.system.map(b => b.text).join('\n');
   assert.match(sys, /稱呼：Alice/); assert.match(sys, /1,234/); assert.match(sys, /INFP/); assert.match(sys, /今天還沒簽到/);
@@ -357,8 +357,13 @@ test('接著聊（表單）另開一則；@機器人 或回覆它的訊息會回
   assert.deepEqual(bot.errors, []);
 });
 
-test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立', async () => {
+test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立；換成 Opus 5 才加伺服器端 fallback', async () => {
   assert.equal(createAI({}, {}), null);
+  const opusClient = fakeClaude([aiText('ok')]);
+  const opus = createAI({ ANTHROPIC_API_KEY: 'k', AI_MODEL: 'claude-opus-5' }, { client: opusClient });
+  assert.equal(opus.fallback, true); await opus.narrate('p');
+  assert.equal(opusClient.calls[0].model, 'claude-opus-5'); assert.deepEqual(opusClient.calls[0].betas, ['server-side-fallback-2026-07-01']); assert.equal(opusClient.calls[0].fallbacks, 'default');
+  assert.equal(createAI({ ANTHROPIC_API_KEY: 'k' }, { client: fakeClaude([aiText('ok')]) }).fallback, false);
   const store = (await makeBot()).store;
   const ai = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_PER_USER: '1', AI_CHAT_DAILY_PER_USER: '2' }, { store, client: fakeClaude([aiText('ok')]) });
   assert.equal(await ai.narrate('p', { userId: 'u' }), 'ok'); assert.equal(await ai.narrate('p', { userId: 'u' }), '', '解讀額度 1 次');

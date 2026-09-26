@@ -5,7 +5,7 @@
      DISCORD_TOKEN           必要
      STATE_FILE              預設 ./state/state.json
      ANTHROPIC_API_KEY       選用，啟用 AI：占卜／測驗的解讀、/chat 對話、@機器人 回話
-     AI_MODEL                選用，預設 claude-opus-5
+     AI_MODEL                選用，預設 claude-sonnet-5
      AI_DAILY_PER_USER       選用，每人每日解讀次數，預設 10
      AI_CHAT_DAILY_PER_USER  選用，每人每日對話次數，預設 40
      DEFER_MS                選用，功能超過這麼多毫秒還沒回應就先告訴 Discord「稍等」，預設 2200
