@@ -1,0 +1,233 @@
+/* 純邏輯與流程的單元測試 */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { Rng, hashStr, seeded } from '../src/core/rng.js';
+import { FileStore, MemoryStore } from '../src/core/store.js';
+import { cid, parseCid, embed, todayTW } from '../src/core/ui.js';
+import { signOf, findSign, zodiacOf, reduceNum, parseBirthday, dailyRng, scoreOf } from '../src/core/oracle.js';
+import { levelFor, xpForLevel } from '../src/core/helpers.js';
+import { tttWinner, tttBot, c4Winner, c4Drop, c4Bot, handValue, newDeck, spinSlots, slotPayout, makeMines, reveal, neighbors, wordleScore } from '../src/features/04-games.js';
+import { parseDice } from '../src/features/05-fun.js';
+import { pullMany, RATES } from '../src/features/07-gacha.js';
+import { genSekaiQ, genSongQ, genCharaQ, genTrivia } from '../src/features/08-quiz.js';
+import { dailyAmount } from '../src/features/06-economy.js';
+import { hexByLines, HEXAGRAMS } from '../src/content/iching.js';
+import { TAROT } from '../src/content/tarot.js';
+import { makeBot, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL } from './harness.js';
+
+test('種子亂數可重現、無種子則不同', () => {
+  const a = new Rng('x'), b = new Rng('x');
+  assert.deepEqual([a.int(1, 100), a.int(1, 100), a.next()], [b.int(1, 100), b.int(1, 100), b.next()]);
+  assert.equal(hashStr('abc'), hashStr('abc'));
+  assert.notEqual(hashStr('abc'), hashStr('abd'));
+  const s = seeded('u', 'd').sample([1, 2, 3, 4, 5], 3); assert.equal(new Set(s).size, 3);
+  const w = new Rng(1); const counts = { a: 0, b: 0 }; for (let i = 0; i < 2000; i++) counts[w.weighted([['a', 9], ['b', 1]])]++; assert.ok(counts.a > 1600 && counts.b > 100);
+});
+
+test('同一人同一天同一問題結果相同，不同問題不同', () => {
+  const a = dailyRng('u1', 'tarot', '工作').int(0, 77), b = dailyRng('u1', 'tarot', '工作').int(0, 77);
+  assert.equal(a, b);
+  const many = new Set(); for (let i = 0; i < 30; i++) many.add(dailyRng('u1', 'tarot', 'q' + i).int(0, 77)); assert.ok(many.size > 10);
+  assert.equal(scoreOf('ship', 'a', 'b'), scoreOf('ship', 'a', 'b')); assert.ok(scoreOf('x') >= 0 && scoreOf('x') <= 100);
+});
+
+test('星座、生肖、靈數、生日解析', () => {
+  assert.equal(signOf(8, 31).name, '處女座'); assert.equal(signOf(12, 25).name, '摩羯座'); assert.equal(signOf(1, 5).name, '摩羯座'); assert.equal(signOf(3, 21).name, '牡羊座'); assert.equal(signOf(2, 18).name, '水瓶座');
+  assert.equal(findSign('雙魚').key, 'pisces'); assert.equal(findSign('8/31').key, 'virgo'); assert.equal(findSign('nope'), null);
+  assert.equal(['鼠', '牛', '虎', '兔', '龍', '蛇', '馬', '羊', '猴', '雞', '狗', '豬'][zodiacOf(2000)], '龍'); assert.equal(zodiacOf(1990), 6);
+  assert.equal(reduceNum(29), 11); assert.equal(reduceNum(29, false), 2); assert.equal(reduceNum('2000831'), 5);
+  assert.deepEqual(parseBirthday('2000/08/31'), { y: 2000, m: 8, d: 31 }); assert.deepEqual(parseBirthday('8-31'), { y: 0, m: 8, d: 31 }); assert.equal(parseBirthday('abc'), null);
+});
+
+test('等級曲線單調', () => { let prev = -1; for (let xp = 0; xp < 100000; xp += 137) { const l = levelFor(xp); assert.ok(l >= prev); prev = l; } assert.equal(levelFor(xpForLevel(10)), 10); assert.equal(levelFor(xpForLevel(10) - 1), 9); });
+
+test('custom_id 編解碼', () => { const id = cid('feat', 'act', 'a:b', 5); assert.deepEqual(parseCid(id), { feature: 'feat', action: 'act', data: ['a', 'b', '5'] }); assert.throws(() => cid('x', 'y', 'z'.repeat(100))); });
+
+test('embed 截斷', () => { const e = embed({ title: 'a'.repeat(300), description: 'b'.repeat(5000), fields: Array(30).fill({ name: '', value: '' }) }); assert.equal(e.title.length, 256); assert.equal(e.description.length, 4096); assert.equal(e.fields.length, 25); assert.equal(e.fields[0].name, '​'); });
+
+test('FileStore 寫入與讀回', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bot-store-')); const file = path.join(dir, 'state.json');
+  const s = new FileStore(file, { debounceMs: 1 }); s.user('g', 'u').crystals = 123; s.guild('g').settings.currency = '金幣'; s.global('reminders', () => []).push({ at: 1 });
+  await s.close();
+  const s2 = new FileStore(file); assert.equal(s2.user('g', 'u').crystals, 123); assert.equal(s2.guild('g').settings.currency, '金幣'); assert.equal(s2.global('reminders').length, 1);
+  assert.equal(s2.user('g', 'u').games.played, 0, '舊紀錄要補上預設欄位');
+  fs.rmSync(dir, { recursive: true, force: true });
+  const m = new MemoryStore(); m.user('g', 'a'); m.user('g', 'b'); m.user('h', 'c'); assert.equal(m.users('g').length, 2);
+});
+
+test('井字：勝負判定與機器人會擋', () => {
+  assert.equal(tttWinner(['X', 'X', 'X', '', '', '', '', '', '']), 'X'); assert.equal(tttWinner(['X', 'O', 'X', 'X', 'O', 'O', 'O', 'X', 'X']), 'draw'); assert.equal(tttWinner(Array(9).fill('')), null);
+  assert.equal(tttBot(['X', 'X', '', '', 'O', '', '', '', '']), 2, '要擋 X 連線'); assert.equal(tttBot(['O', 'O', '', 'X', 'X', '', '', '', '']), 2, '能贏就贏');
+});
+
+test('四子棋：落子、勝負、機器人', () => {
+  const b = Array(42).fill(''); assert.equal(c4Drop(b, 0, 'R'), 0); assert.equal(c4Drop(b, 0, 'Y'), 1); assert.equal(c4Winner(b), null);
+  for (const c of [1, 2, 3]) c4Drop(b, c, 'R'); assert.equal(c4Winner(b), 'R');
+  const b2 = Array(42).fill(''); for (const c of [0, 1, 2]) c4Drop(b2, c, 'R'); assert.equal(c4Bot(b2), 3, '要擋');
+  const b3 = Array(42).fill(''); for (let i = 0; i < 3; i++) c4Drop(b3, 5, 'Y'); assert.equal(c4Bot(b3), 5, '能贏就贏');
+});
+
+test('21 點牌值', () => { assert.equal(handValue(['A♠', 'K♥']), 21); assert.equal(handValue(['A♠', 'A♥', '9♦']), 21); assert.equal(handValue(['A♠', 'A♥', 'A♦', 'A♣', 'K♠']), 14); assert.equal(handValue(['10♠', 'J♥', '5♦']), 25); assert.equal(newDeck(new Rng(1)).length, 52); assert.equal(new Set(newDeck(new Rng(1))).size, 52); });
+
+test('拉霸賠率與期望值合理（回收率 < 100%）', () => {
+  assert.equal(slotPayout(['⭐', '⭐', '⭐'], 10), 200); assert.equal(slotPayout(['⭐', '⭐', '🍒'], 10), 10); assert.equal(slotPayout(['⭐', '🍋', '🍒'], 10), 0);
+  const rng = new Rng(7); let paid = 0; const N = 20000; for (let i = 0; i < N; i++) paid += slotPayout(spinSlots(rng), 10); const rtp = paid / (N * 10); assert.ok(rtp > 0.6 && rtp < 1.0, `RTP ${rtp}`);
+});
+
+test('踩地雷：地雷數、第一步安全、連鎖展開', () => {
+  const rng = new Rng(3); const mines = makeMines(rng, 12); assert.equal(mines.size, 4); assert.ok(!mines.has(12));
+  assert.equal(neighbors(0).length, 3); assert.equal(neighbors(12).length, 8);
+  const s = { mines: new Set([24]), open: new Set() }; reveal(s, 0); assert.ok(s.open.size >= 20, '幾乎全開');
+});
+
+test('Wordle 評分（含重複字母）', () => { assert.equal(wordleScore('crane', 'crane'), '🟩🟩🟩🟩🟩'); assert.equal(wordleScore('abbey', 'bbbbb'), '⬛🟩🟩⬛⬛'); assert.equal(wordleScore('crane', 'nacre'), '🟨🟨🟨🟨🟩'); });
+
+test('骰子表達式', () => { assert.deepEqual(parseDice('2d6+3'), { n: 2, sides: 6, mod: 3 }); assert.deepEqual(parseDice('d20'), { n: 1, sides: 20, mod: 0 }); assert.equal(parseDice('abc'), null); assert.equal(parseDice('999d9999').n, 100); });
+
+test('轉蛋機率接近設定值、十連保底', () => {
+  const rng = new Rng(11); const N = 3000; const cards = pullMany(rng, N); const c4 = cards.filter(c => c.rarity === 4).length / N, c3 = cards.filter(c => c.rarity === 3).length / N;
+  assert.ok(Math.abs(c4 - RATES[4]) < 0.012, `4★ ${c4}`); assert.ok(Math.abs(c3 - RATES[3]) < 0.02, `3★ ${c3}`);
+  for (let i = 0; i < 200; i++) assert.ok(pullMany(new Rng(i), 10).some(c => c.rarity >= 3), '十連要保底 3★');
+});
+
+test('題目產生器：四個選項、答案在裡面且不重複', () => {
+  const rng = new Rng(5);
+  for (let i = 0; i < 200; i++) for (const q of [genSekaiQ(rng), genSongQ(rng), genCharaQ(rng), genTrivia(rng)]) { assert.equal(q.opts.length, 4); assert.equal(new Set(q.opts).size, 4, q.q); assert.ok(q.ans >= 0 && q.ans < 4); }
+});
+
+test('易經 64 卦、塔羅 78 張', () => { assert.equal(HEXAGRAMS.length, 64); assert.equal(hexByLines('111111').name, '乾為天'); assert.equal(hexByLines('000000').name, '坤為地'); assert.equal(TAROT.length, 78); assert.equal(new Set(TAROT.map(t => t.name)).size, 78); });
+
+test('簽到金額與連續天數', () => { assert.equal(dailyAmount(1), 110); assert.equal(dailyAmount(100), 300); });
+
+/* ---------- 流程測試 ---------- */
+test('經濟流程：簽到 → 轉帳 → 存款 → 富豪榜', async () => {
+  const bot = await makeBot();
+  const r1 = await runCmd(bot, 'daily'); assert.match(textOf(r1.last), /簽到成功/);
+  const r2 = await runCmd(bot, 'daily'); assert.match(textOf(r2.last), /簽過了/);
+  const bal = bot.store.user(GUILD, USERS.alice.id).crystals; assert.ok(bal >= 110);
+  const r3 = await runCmd(bot, 'pay', { options: { user: USERS.bob, amount: 50 } }); assert.match(textOf(r3.last), /轉了/);
+  assert.equal(bot.store.user(GUILD, USERS.bob.id).crystals, 50);
+  const r4 = await runCmd(bot, 'pay', { options: { user: USERS.bob, amount: 999999 } }); assert.match(textOf(r4.last), /只有/);
+  await runCmd(bot, 'bank', { sub: 'deposit', options: { amount: 30 } }); assert.equal(bot.store.user(GUILD, USERS.alice.id).bank, 30);
+  const r5 = await runCmd(bot, 'richlist'); assert.match(textOf(r5.last), /Alice|100000000000000001/);
+  assert.deepEqual(bot.errors, []);
+});
+
+test('井字對機器人可以下到結束', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'tictactoe'); let msg = r.last; let guard = 0;
+  while (buttonsOf(msg).some(b => !b.disabled) && guard++ < 10) { const b = buttonsOf(msg).find(x => !x.disabled); msg = (await press(bot, b.id, { message: msg })).last; }
+  assert.match(textOf(msg), /獲勝|平手/); assert.deepEqual(bot.errors, []);
+  // 別人不能亂按
+  const r2 = await runCmd(bot, 'tictactoe', { options: { opponent: USERS.bob } });
+  const nope = await press(bot, buttonsOf(r2.last)[0].id, { user: USERS.carol }); assert.match(textOf(nope.last), /還沒輪到你/);
+});
+
+test('21 點：押注會扣款或加錢', async () => {
+  const bot = await makeBot(); bot.store.user(GUILD, USERS.alice.id).crystals = 100;
+  const r = await runCmd(bot, 'blackjack', { options: { bet: 10 } }); let msg = r.last; let guard = 0;
+  while (buttonsOf(msg).some(b => b.id.includes(':hit:')) && guard++ < 6) msg = (await press(bot, buttonsOf(msg).find(b => b.id.includes(':stand:')).id, { message: msg })).last;
+  const c = bot.store.user(GUILD, USERS.alice.id).crystals; assert.ok([85, 90, 100, 110, 115].includes(c), `餘額 ${c}`); assert.deepEqual(bot.errors, []);
+});
+
+test('Wordle 透過表單猜到答案', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'wordle'); const sid = buttonsOf(r.last)[0].id.split(':')[2];
+  const answer = bot.sessions.get('wordle', sid).answer;
+  const m = await press(bot, buttonsOf(r.last)[0].id); assert.equal(m.modals.length, 1);
+  const bad = await press(bot, m.modals[0].custom_id, { fields: { g: 'abc' } }); assert.match(textOf(bad.last), /五個/);
+  const ok = await press(bot, m.modals[0].custom_id, { fields: { g: answer } }); assert.match(textOf(ok.last), /猜中/);
+  assert.ok(bot.store.user(GUILD, USERS.alice.id).crystals > 0);
+});
+
+test('MBTI 十六題答完會得到型別並存檔', async () => {
+  const bot = await makeBot();
+  let msg = (await runCmd(bot, 'mbti', { sub: 'test' })).last;
+  for (let i = 0; i < 16; i++) { const b = buttonsOf(msg)[0]; assert.ok(b, `第 ${i} 題沒有按鈕`); msg = (await press(bot, b.id, { message: msg })).last; }
+  assert.match(textOf(msg), /你是 [EI][SN][TF][JP]/); assert.match(bot.store.user(GUILD, USERS.alice.id).mbti, /^[EI][SN][TF][JP]$/);
+  assert.equal(buttonsOf(msg).length, 0);
+});
+
+test('投票：投票、改票、只有發起人能結束', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'poll', { options: { question: '晚餐？', options: '拉麵|咖哩' } }); const [b1, b2, end] = buttonsOf(r.last);
+  await press(bot, b1.id, { user: USERS.bob }); let m = (await press(bot, b2.id, { user: USERS.bob })).last; assert.match(textOf(m), /1 人投票/);
+  const denied = await press(bot, end.id, { user: USERS.bob }); assert.match(textOf(denied.last), /發起人/);
+  m = (await press(bot, end.id, { user: USERS.alice })).last; assert.match(textOf(m), /已結束/); assert.equal(buttonsOf(m).length, 0);
+});
+
+test('結婚：求婚 → 對方接受 → 雙方紀錄 → 離婚', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'marry', { sub: 'propose', options: { user: USERS.bob } }); const [yes] = buttonsOf(r.last);
+  const wrong = await press(bot, yes.id, { user: USERS.carol }); assert.match(textOf(wrong.last), /不是向你/);
+  const ok = await press(bot, yes.id, { user: USERS.bob }); assert.match(textOf(ok.last), /結婚了/);
+  assert.equal(bot.store.user(GUILD, USERS.alice.id).marriedTo, USERS.bob.id); assert.equal(bot.store.user(GUILD, USERS.bob.id).marriedTo, USERS.alice.id);
+  await runCmd(bot, 'marry', { sub: 'divorce', user: USERS.bob }); assert.equal(bot.store.user(GUILD, USERS.alice.id).marriedTo, null);
+});
+
+test('搶答：答錯的人不能再答，答對的人得分', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'speedquiz', { options: { kind: 'trivia' } }); const sid = buttonsOf(r.last)[0].id.split(':')[2];
+  const ans = bot.sessions.get('speedquiz', sid).q.ans; const wrong = (ans + 1) % 4;
+  const w = await press(bot, buttonsOf(r.last)[wrong].id, { user: USERS.bob }); assert.match(textOf(w.last), /不對/);
+  const again = await press(bot, buttonsOf(r.last)[ans].id, { user: USERS.bob }); assert.match(textOf(again.last), /答過/);
+  const ok = await press(bot, buttonsOf(r.last)[ans].id, { user: USERS.carol }); assert.match(textOf(ok.last), /答對/);
+  assert.equal(bot.store.user(GUILD, USERS.carol.id).quiz.right, 1);
+});
+
+test('提醒與倒數：tick 到期會送到頻道', async () => {
+  const bot = await makeBot();
+  await runCmd(bot, 'remind', { sub: 'set', options: { minutes: 1, text: '喝水' } });
+  await runCmd(bot, 'countdown', { options: { seconds: 10, label: '開播' } });
+  await bot.tick(Date.now()); assert.equal(bot.sent.length, 0);
+  await bot.tick(Date.now() + 61e3); assert.equal(bot.sent.length, 2); assert.match(bot.sent[0].msg.content + bot.sent[1].msg.content, /喝水/);
+});
+
+test('抽獎：參加、重複參加、時間到自動開獎', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'raffle', { options: { prize: '一杯手搖', winners: 1, minutes: 1 } }); const [join] = buttonsOf(r.last);
+  await press(bot, join.id, { user: USERS.bob }); const dup = await press(bot, join.id, { user: USERS.bob }); assert.match(textOf(dup.last), /已經參加/);
+  await bot.tick(Date.now() + 61e3); assert.equal(bot.sent.length, 1); assert.match(bot.sent[0].msg.content, /Bob|100000000000000002/);
+});
+
+test('聊天經驗值與 AFK 被動事件', async () => {
+  const bot = await makeBot();
+  await sendMessage(bot, { content: 'hi' }); assert.ok(bot.store.user(GUILD, USERS.alice.id).xp >= 15); assert.equal(bot.store.user(GUILD, USERS.alice.id).messages, 1);
+  await sendMessage(bot, { content: 'again' }); assert.ok(bot.store.user(GUILD, USERS.alice.id).xp <= 25, '一分鐘內不重複加');
+  await runCmd(bot, 'afk', { user: USERS.bob, options: { reason: '吃飯' } });
+  const r = await sendMessage(bot, { content: '@Bob 在嗎', mentions: [USERS.bob.id] }); assert.ok(r.replies.some(t => /吃飯/.test(t)));
+  const back = await sendMessage(bot, { user: USERS.bob, content: '回來了' }); assert.ok(back.replies.some(t => /歡迎回來/.test(t))); assert.equal(bot.store.user(GUILD, USERS.bob.id).afk, null);
+  await runCmd(bot, 'settings', { sub: 'xp', options: { enabled: false }, admin: true });
+  const before = bot.store.user(GUILD, USERS.carol.id).xp; await sendMessage(bot, { user: USERS.carol, content: 'x' }); assert.equal(bot.store.user(GUILD, USERS.carol.id).xp, before);
+});
+
+test('自動反應與歡迎訊息', async () => {
+  const bot = await makeBot();
+  const denied = await runCmd(bot, 'autoreact', { sub: 'add', options: { keyword: '早安', emoji: '☀️' } }); assert.match(textOf(denied.last), /權限/);
+  await runCmd(bot, 'autoreact', { sub: 'add', options: { keyword: '早安', emoji: '☀️' }, admin: true });
+  const r = await sendMessage(bot, { content: '大家早安' }); assert.deepEqual(r.reacts, ['☀️']);
+  await runCmd(bot, 'welcome', { sub: 'set', options: { channel: { id: CHANNEL }, text: '歡迎 {user} 來到 {server}' }, admin: true });
+  await bot.emit('memberJoin', { guildId: GUILD, userId: USERS.carol.id, guildName: 'G' }); assert.equal(bot.sent.length, 1); assert.match(bot.sent[0].msg.content, /Carol|100000000000000003/);
+});
+
+test('冷卻與權限', async () => {
+  const bot = await makeBot();
+  await runCmd(bot, 'confess', { options: { text: '嗨' } }); const r = await runCmd(bot, 'confess', { options: { text: '嗨' } }); assert.match(textOf(r.last), /冷卻/);
+  const dm = await runCmd(bot, 'daily', { guildId: 'dm' }); assert.match(textOf(dm.last), /伺服器/);
+  const help = await runCmd(bot, 'help', { guildId: 'dm' }); assert.match(textOf(help.last), /100 個功能/);
+  const unknown = await runCmd(bot, 'nope'); assert.match(textOf(unknown.last), /找不到/);
+});
+
+test('占卜每天固定、AI 未啟用時不出現解讀欄', async () => {
+  const bot = await makeBot();
+  const a = await runCmd(bot, 'tarot', { options: { spread: 'three', question: '工作' } }); const b = await runCmd(bot, 'tarot', { options: { spread: 'three', question: '工作' } });
+  assert.equal(a.last.embeds[0].description, b.last.embeds[0].description); assert.ok(!a.last.embeds[0].fields);
+  const redraw = await press(bot, buttonsOf(a.last)[0].id, { message: a.last }); assert.match(textOf(redraw.last), /重抽/);
+  const h = await runCmd(bot, 'horoscope', { options: { sign: 'leo' } }); assert.match(textOf(h.last), /獅子座/);
+  const s = await press(bot, selectsOf(h.last)[0].id, { values: ['pisces'], message: h.last }); assert.match(textOf(s.last), /雙魚座/);
+  const none = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(none.last), /birthday/);
+  await runCmd(bot, 'birthday', { sub: 'set', options: { date: '1999/02/17' }, user: USERS.carol }); const auto = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(auto.last), /水瓶座/);
+});

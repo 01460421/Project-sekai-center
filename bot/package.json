@@ -1,0 +1,21 @@
+{
+  "name": "sekai-center-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SEKAI 資源中心 伺服器機器人：100 個娛樂與互動功能（占卜、性格測驗、小遊戲、社交、經濟、轉蛋、問答、社群工具）",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/index.js",
+    "register": "node scripts/register.js",
+    "features": "node scripts/list-features.js",
+    "test": "node --test test/*.test.mjs",
+    "check": "for f in src/*.js src/core/*.js src/features/*.js src/content/*.js scripts/*.js; do node --check \"$f\" || exit 1; done"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.128.0"
+  }
+}

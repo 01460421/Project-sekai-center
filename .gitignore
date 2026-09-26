@@ -6,3 +6,8 @@ worker/node_modules/
 # Python 快取
 __pycache__/
 *.pyc
+
+# 伺服器機器人（bot/）
+bot/node_modules/
+bot/state/
+bot/.env
