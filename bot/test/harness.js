@@ -5,6 +5,7 @@ import { Bot } from '../src/core/bot.js';
 import { MemoryStore } from '../src/core/store.js';
 import { Rng } from '../src/core/rng.js';
 import { Timers } from '../src/core/sessions.js';
+import { createAI } from '../src/core/ai.js';
 
 let registry = null;
 export async function loadRegistry() { if (!registry) registry = Bot.defaultRegistry(); return registry; }
@@ -17,10 +18,22 @@ export const USERS = {
 };
 export const GUILD = '900000000000000001', CHANNEL = '800000000000000001';
 
-export async function makeBot({ seed = 42 } = {}) {
+/* 假的 Claude client：script 是回應陣列（用完就重複最後一個）或 (params, i) => 回應 的函式。呼叫參數都記在 calls */
+export function fakeClaude(script) {
+  const calls = [];
+  return { calls, beta: { messages: { create: async params => { calls.push(params); const i = calls.length - 1; let r = typeof script === 'function' ? script(params, i) : script[Math.min(i, script.length - 1)]; if (typeof r === 'function') r = r(params, i); if (r instanceof Error) throw r; return r; } } } };
+}
+export const aiText = t => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: t }] });
+export const aiTool = (name, input, id = 'tu_1', lead = '我查一下') => ({ stop_reason: 'tool_use', content: [{ type: 'text', text: lead }, { type: 'tool_use', id, name, input }] });
+export const aiRefusal = () => ({ stop_reason: 'refusal', stop_details: { type: 'refusal', category: null }, content: [] });
+
+/* claude：給 fakeClaude() 的回傳值就會啟用 AI；aiEnv 可覆寫 AI_* 環境變數 */
+export async function makeBot({ seed = 42, claude = null, aiEnv = {} } = {}) {
   const registry = await loadRegistry();
   const sent = [];
-  const bot = new Bot({ registry, store: new MemoryStore(), rng: new Rng(seed), timers: new Timers(true), send: async (channelId, msg) => { validateMessage(msg); sent.push({ channelId, msg }); }, log: () => {} });
+  const store = new MemoryStore();
+  const ai = claude ? createAI({ ANTHROPIC_API_KEY: 'test', ...aiEnv }, { store, client: claude }) : null;
+  const bot = new Bot({ registry, store, ai, rng: new Rng(seed), timers: new Timers(true), send: async (channelId, msg) => { validateMessage(msg); sent.push({ channelId, msg }); }, log: () => {} });
   bot.sent = sent;
   bot.errors = [];
   bot.log = (...a) => bot.errors.push(a.map(x => x && x.stack ? x.stack : String(x)).join(' '));
@@ -60,10 +73,10 @@ export async function press(bot, customId, { user = USERS.alice, values = [], fi
   return rec;
 }
 
-export async function sendMessage(bot, { user = USERS.alice, content = 'hello', guildId = GUILD, channelId = CHANNEL, mentions = [] } = {}) {
-  const replies = [], reacts = [];
-  await bot.emit('messageCreate', { guildId, channelId, userId: user.id, userName: user.name, content, isBot: user.bot, mentions, reply: async t => replies.push(t), react: async e => reacts.push(e) });
-  return { replies, reacts };
+export async function sendMessage(bot, { user = USERS.alice, content = 'hello', guildId = GUILD, channelId = CHANNEL, mentions = [], mentionsBot = false, repliedToBot = false, text } = {}) {
+  const replies = [], reacts = []; let typed = 0;
+  await bot.emit('messageCreate', { guildId, guildName: 'Test Guild', channelId, userId: user.id, userName: user.name, content, text: text != null ? text : content, isBot: user.bot, mentions, botId: USERS.robot.id, mentionsBot, repliedToBot, typing: async () => { typed++; }, reply: async t => { if (typeof t === 'object') validateMessage(t); replies.push(t); }, react: async e => reacts.push(e) });
+  return { replies, reacts, typed, texts: replies.map(t => typeof t === 'string' ? t : t.content || '') };
 }
 
 /* 訊息裡所有的按鈕／選單 custom_id */

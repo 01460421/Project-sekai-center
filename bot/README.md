@@ -1,32 +1,36 @@
 # SEKAI 資源中心 伺服器機器人
 
-Discord 伺服器機器人，**100 個娛樂與互動功能**：占卜算命、性格測驗、社交配對、小遊戲、趣味工具、經濟系統、模擬轉蛋、問答與音樂、等級社群、伺服器管理。不只世界計畫，是給任何社群用的大眾向娛樂機器人；世界計畫的曲庫、卡片、卡池資料直接讀 repo 根目錄的 `data/`，跟網站同一份。
+Discord 伺服器機器人，**101 個娛樂與互動功能**：占卜算命、性格測驗、社交配對、小遊戲、趣味工具、經濟系統、模擬轉蛋、問答與音樂、等級社群、伺服器管理，以及接上 Claude 的 **AI 對話**（有記憶、認識你、會替你查資料與執行指令）。不只世界計畫，是給任何社群用的大眾向娛樂機器人；世界計畫的曲庫、卡片、卡池資料直接讀 repo 根目錄的 `data/`，跟網站同一份。
 
 ```
 /tarot spread:三張牌陣 question:這份工作該不該接
 /mbti test          /iching question:搬家好嗎        /dream text:夢到掉牙
 /blackjack bet:50   /minesweeper                    /wordle
 /gacha mode:十連     /speedquiz                      /raffle prize:一杯手搖 minutes:10
+/chat text:今天活動打到哪了？順便幫我簽到          @機器人 幫我抽一張塔羅（容器版）
 ```
 
 ## 設計重點
 
 - **決定性占卜引擎**：塔羅、易經、星座、御神籤、盧恩……都以「使用者 + 台灣日期 + 主題 + 問題」當亂數種子。同一個人同一天問同一件事，答案不會變；換一天、換問題才會不同。像真的占卜，不是按一下就重抽。配對、評分、八號球也一樣是固定結果。
-- **選用的 AI 解讀層**：設了 `ANTHROPIC_API_KEY` 之後，塔羅、易經、解夢、MBTI 的結果會多一段個人化解讀（預設 `claude-opus-5`，啟用伺服器端 fallback，每人每日次數有上限）。**沒設金鑰時整層關閉，其他 99.9% 的功能完全不受影響。**
+- **選用的 AI 層（Claude API）**：設了 `ANTHROPIC_API_KEY` 之後有兩件事：
+  - **人性化的對話與互動**（`/chat`，容器版另外會回應 @機器人 或回覆它的訊息）：Claude 以這個伺服器的機器人夥伴身分回話。系統提示裡有**人設**（管理員用 `/settings ai` 選風格：活潑／溫暖／傲嬌／毒舌／正經，可改名字、加一段自訂人設）、**正在說話的這位使用者的資料**（稱呼、等級、餘額、連續簽到、推し、MBTI、戰績……所以它會說「你今天還沒簽到喔」）、以及 **101 個指令的清單**（會順手推薦）。每人每伺服器一份**對話記憶**（最近 10 個來回，6 小時沒聊就當新話題，可按「忘掉這段對話」）。模型可以用 `run_command` 工具**以使用者的身分執行指令**：查歌曲等級、活動與卡池、餘額與圖鑑、今日運勢，或替他簽到、打工、轉蛋、設提醒——工具的輸出（含卡片）會一起顯示，模型再用自己的話講重點。只准跑白名單裡的指令（不能轉帳、押注、改設定），會改資料的只在使用者明確要求時執行。
+  - **占卜／測驗的個人化解讀**：塔羅、易經、解夢、MBTI 的結果多一段解讀（結果本身仍由決定性引擎產生）。
+  - 預設 `claude-sonnet-5`（對話型工作量，便宜又夠聰明；`AI_MODEL` 可換），`effort: low`；換成 `claude-opus-5` 或 Fable 系列時自動啟用伺服器端 fallback（安全分類器拒答時換備援模型），Sonnet 5 拒答則回一句「這個話題不方便聊」。系統提示的穩定部分標了 `cache_control` 可快取。每人每日對話 40 次、解讀 10 次（可調）。**沒設金鑰時整層關閉，其他功能完全不受影響**；`/chat` 會說明怎麼開啟。
 - **核心與平台分離**：功能模組只認得 `Ctx`（`reply / update / showModal / u() / g() / rng / sessions`），不 import discord.js；`src/index.js` 是唯一的 Discord 介接層。測試直接呼叫核心，不需要 token、不需要裝 discord.js；之後要接 QQ 或網頁只要再寫一個介接層。
-- **一個 JSON 檔的持久化**：`state/state.json`，延遲寫入、原子換檔。玩家紀錄以伺服器為單位（每個伺服器各自一套經濟與等級）。介面上百個伺服器都還撐得住，要再大再換 SQLite，功能模組不用改。
-- **測試覆蓋每一個功能**：煙霧測試把 100 個指令（含每個子指令）都跑一遍，回應裡每個按鈕、每個選單都按過一次（本人和別人各按一次），並檢查 Discord 的硬限制（embed 長度、每列五個按鈕、custom_id 100 字…）。另有 30 幾個純邏輯與流程測試（21 點牌值、四子棋勝負、轉蛋機率、Wordle 評分、簽到轉帳、投票、結婚、搶答、提醒排程…）。
+- **一個 JSON 檔的持久化**：`state/state.json`，延遲寫入、原子換檔。玩家紀錄以伺服器為單位（每個伺服器各自一套經濟與等級）。介面上百個伺服器都還撐得住，要再大再換 SQLite，功能模組不用改。進行中的遊戲（`bot.sessions`）在容器版放記憶體，在 Workers 版則跟著寫進 Durable Object storage，兩邊功能模組寫法相同。
+- **測試覆蓋每一個功能**：煙霧測試把 101 個指令（含每個子指令）都跑一遍，回應裡每個按鈕、每個選單都按過一次（本人和別人各按一次），並檢查 Discord 的硬限制（embed 長度、每列五個按鈕、custom_id 100 字…）。另有 30 幾個純邏輯與流程測試（21 點牌值、四子棋勝負、轉蛋機率、Wordle 評分、簽到轉帳、投票、結婚、搶答、提醒排程…）。
 
 ## 兩種執行方式
 
-同一份核心與 100 個功能，兩個介接層：
+同一份核心與 101 個功能，兩個介接層：
 
 | | ☁️ Cloudflare Workers 版（`src/worker.js`） | 🐳 容器版（`src/index.js`） |
 |---|---|---|
 | 原理 | Discord **HTTP 互動**：Discord 把互動 POST 到 Worker，不用常駐程序 | Discord **Gateway**：長連線，跟一般機器人一樣 |
 | 主機 | 無。跟本站的 `worker/` 一樣用 wrangler 部署，狀態放 Durable Object | 任何能跑容器的地方：Fly.io、Railway、Render、VPS、家裡的 NAS |
 | 費用 | Workers 免費額度就夠一般社群用（付費方案 US$5／月更寬裕） | 看主機，最小 256 MB 記憶體即可 |
-| 功能 | 100 個指令全部可用；但**沒有 Gateway 就收不到聊天訊息**：`/afk` 的自動回覆、`/autoreact`、`/welcome` 這三個被動功能不會動作，`/team` 拿不到語音頻道名單；聊天經驗值改由使用指令累積 | 100 個全部 |
+| 功能 | 101 個指令全部可用；但**沒有 Gateway 就收不到聊天訊息**：`/afk` 的自動回覆、`/autoreact`、`/welcome`、@機器人 就回話這四個被動功能不會動作（`/chat` 可以），`/team` 拿不到語音頻道名單；聊天經驗值改由使用指令累積 | 101 個全部 |
 | 自動部署 | `.github/workflows/bot-deploy.yml` 的 `workers` job | 同一支的 `image` job 會把映像推到 GHCR |
 
 ### ☁️ 部署到 Cloudflare Workers（全自動，只要一個 token）
@@ -36,13 +40,13 @@ repo 已經有 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`（`worker/` 就�
 1. **建 Discord 應用程式**：<https://discord.com/developers/applications> → New Application → Bot 分頁 → **Reset Token**，複製 token。
    （同一頁往下，Privileged Gateway Intents 開 **Server Members Intent**，`/someone`、`/team` 列成員才有資料。）
 2. **把 token 放進 GitHub**：repo → Settings → Secrets and variables → Actions → New repository secret → 名稱 `DISCORD_TOKEN`。
-   想要 AI 解讀就再加 `ANTHROPIC_API_KEY`。
-3. **合併這個 PR 到 main**（或 Actions 頁手動跑 `bot-deploy`）。工作流程會自己：部署 Worker → 向 Discord 取 Application ID 與 Public Key → 寫進 Worker 機密 → 把 **Interactions Endpoint URL** 設回 Discord → 註冊 100 個斜線指令。
+   想要 AI 對話與解讀就再加 `ANTHROPIC_API_KEY`。
+3. **合併這個 PR 到 main**（或 Actions 頁手動跑 `bot-deploy`）。工作流程會自己：部署 Worker → 向 Discord 取 Application ID 與 Public Key → 寫進 Worker 機密 → 把 **Interactions Endpoint URL** 設回 Discord → 註冊 101 個斜線指令。
 4. **邀請機器人**：OAuth2 → URL Generator，scopes 勾 `bot` 與 `applications.commands`，權限勾 `Send Messages`、`Embed Links`、`Add Reactions`、`Read Message History` → 開產生的連結選伺服器。
 
 之後每次 main 上動到 `bot/`（或曲庫資料每日更新）都會自動重新部署。檢查：`https://pjsk-bot.<你的子網域>.workers.dev/health` 會回功能數、玩家數與統計（網址在 Actions 的 deploy 步驟會印出來）。
 
-**不想把 token 放進 GitHub？** 合併後 Worker 已部署，開 `https://pjsk-bot.<你的子網域>.workers.dev/setup`，貼上 Bot token 按一下：Worker 會向 Discord 驗明正身、把設定存進自己的儲存空間、設好 Interactions Endpoint、註冊 100 個指令，並給你邀請連結。這條路完全不需要 Cloudflare 金鑰，換 token 時重貼一次即可（只接受同一個應用程式的 token）。命令列版：`curl -X POST https://…/bootstrap -H 'content-type: application/json' -d '{"token":"<Bot token>"}'`。
+**不想把 token 放進 GitHub？** 合併後 Worker 已部署，開 `https://pjsk-bot.<你的子網域>.workers.dev/setup`，貼上 Bot token 按一下：Worker 會向 Discord 驗明正身、把設定存進自己的儲存空間、設好 Interactions Endpoint、註冊 101 個指令，並給你邀請連結。這條路完全不需要 Cloudflare 金鑰，換 token 時重貼一次即可（只接受同一個應用程式的 token）。命令列版：`curl -X POST https://…/bootstrap -H 'content-type: application/json' -d '{"token":"<Bot token>"}'`。
 
 手動做也行（在 `bot/`，第一次會開瀏覽器登入 Cloudflare）：
 ```bash
@@ -54,7 +58,7 @@ DISCORD_TOKEN=… WORKER_URL=https://pjsk-bot.xxx.workers.dev node scripts/setup
 
 本機驗證（不需要任何帳號，會啟動真的 workerd 執行環境，模擬 Discord 簽過名的互動打進來）：`node scripts/probe-workers.mjs`。
 
-Workers 版的內部設計：單例 Durable Object 收所有互動、狀態放它的 SQLite storage（每個玩家、每個伺服器各一個鍵，只寫回這次碰到的鍵），所有互動排隊處理所以經濟系統沒有競態；功能跑超過 2.2 秒（例如 AI 解讀）會先回「延遲」再用 REST 補上結果；每分鐘的 Cron 打 `/tick` 處理提醒、倒數、抽獎。
+Workers 版的內部設計：單例 Durable Object 收所有互動、狀態放它的 SQLite storage（每個玩家、每個伺服器各一個鍵，只寫回這次碰到的鍵），所有互動排隊處理所以經濟系統沒有競態；進行中的遊戲／測驗與指令冷卻也一起落地（Durable Object 閒置 10 秒就會休眠、記憶體清空，所以不能只放記憶體），玩家在兩次按鈕之間停多久都沒關係；功能跑超過 2.2 秒（例如 AI 解讀）會先回「延遲」再用 REST 補上結果；每分鐘的 Cron 打 `/tick` 處理提醒、倒數、抽獎。
 
 ### 🐳 部署成容器（完整功能）
 
@@ -141,9 +145,11 @@ WantedBy=multi-user.target
 | `REGISTER_SECRET` | Workers 版（選用） | `POST /register` 的密鑰 |
 | `GUILD_ID` | 否 | 設了就只註冊到這個伺服器（開發用） |
 | `STATE_FILE` | 否 | 容器版狀態檔路徑，預設 `bot/state/state.json`（Docker 映像預設 `/data/state.json`） |
-| `ANTHROPIC_API_KEY` | 否 | 啟用 AI 解讀 |
-| `AI_MODEL` | 否 | 預設 `claude-opus-5` |
+| `ANTHROPIC_API_KEY` | 否 | 啟用 AI：`/chat` 對話、@機器人 回話（容器版）、占卜／測驗解讀 |
+| `AI_MODEL` | 否 | 預設 `claude-sonnet-5`；`claude-opus-5` 也可以（會自動加伺服器端 fallback） |
 | `AI_DAILY_PER_USER` | 否 | 每人每日 AI 解讀次數上限，預設 10 |
+| `AI_CHAT_DAILY_PER_USER` | 否 | 每人每日 AI 對話次數上限，預設 40 |
+| `DEFER_MS` | 否 | 功能超過這麼多毫秒還沒回應就先告訴 Discord「稍等」，預設 2200（兩版皆是） |
 
 ### 套件
 
@@ -153,7 +159,7 @@ WantedBy=multi-user.target
 | `@anthropic-ai/sdk` | AI 解讀（動態載入，沒設金鑰不會碰） | 兩版皆選用 |
 | `wrangler` ^4（dev） | Workers 打包／部署／本機 workerd | Workers 版 |
 
-核心、100 個功能、註冊腳本與測試不依賴任何套件，`npm test` 不需要 `npm install`。`package-lock.json` 已提交，`npm ci` 可重現。
+核心、101 個功能、註冊腳本與測試不依賴任何套件，`npm test` 不需要 `npm install`。`package-lock.json` 已提交，`npm ci` 可重現。
 
 ## 測試
 
@@ -163,10 +169,10 @@ npm test                      # node --test；不需要 token 也不需要 npm i
 npm run check                 # 全部檔案 node --check
 npm run build:workers         # wrangler 打包檢查（不上傳）
 node scripts/probe-workers.mjs  # 真的 workerd 上跑 Workers 版，模擬簽過名的 Discord 互動
-npm run features              # 印出 100 個功能的 Markdown 表格（README 下方那份）
+npm run features              # 印出 101 個功能的 Markdown 表格（README 下方那份）
 ```
 
-測試分四支：`registry`（恰好 100、指令 JSON 合法）、`smoke`（每個指令與每個按鈕／選單）、`logic`（純邏輯與流程）、`worker`（Workers 版端對端：真的產 Ed25519 金鑰簽請求，走完驗簽 → Durable Object → 互動回應 → 持久化 → cron → 延遲回應）。
+測試分四支：`registry`（恰好 101、指令 JSON 合法）、`smoke`（每個指令與每個按鈕／選單）、`logic`（純邏輯與流程；AI 對話用假的 Claude client 測：延遲→補結果、記憶、系統提示內容、工具呼叫與白名單、額度、拒答、@機器人）、`worker`（Workers 版端對端：真的產 Ed25519 金鑰簽請求，走完驗簽 → Durable Object → 互動回應 → 持久化 → cron → 延遲回應 → 模擬 DO 休眠後重建、進行中的遊戲照樣接著玩）。
 
 CI（`.github/workflows/ci.yml` 的 `bot` job）每次 PR 都會跑檢查與測試；`bot-deploy.yml` 在 main 上部署。
 
@@ -190,11 +196,11 @@ bot/
     sessions.js         進行中的遊戲（記憶體、TTL）、冷卻、計時器
     helpers.js          發錢、任務、成就、等級換算
     sekai.js            世界計畫資料存取（讀 ../../data/*.js）
-    ai.js               選用的 AI 解讀（@anthropic-ai/sdk，動態載入）
+    ai.js               選用的 AI 層（@anthropic-ai/sdk，動態載入）：narrate() 解讀、chat() 對話（含 tool loop、每日額度、拒答處理）
     rng.js              可種子化的亂數
   src/content/          塔羅 78、易經 64、盧恩 24、星座／生肖文案、MBTI／五大／九型／心理測驗題庫、
                         解夢字典、籤詩、宜忌、幸運餅乾、Wordle／猜單字詞庫、真心話大冒險、話題、題庫…
-  src/features/         100 個功能，10 個分類檔，每檔 default export 一個功能陣列
+  src/features/         101 個功能，11 個分類檔，每檔 default export 一個功能陣列（11-ai.js 是 /chat：人設、記憶、run_command 工具、@機器人 回話）
   scripts/register.js   註冊斜線指令（純 fetch，不需要 discord.js）
   scripts/setup-discord.mjs  只憑 token 把 Discord 接好：取 App ID／Public Key、寫 Worker 機密、設 Endpoint、註冊指令
   scripts/list-features.js
@@ -224,7 +230,7 @@ const hello = {
 
 寫完跑 `npm test`：煙霧測試會自動把新功能跑一遍並按過每個按鈕。
 
-## 100 個功能
+## 101 個功能
 
 ### 🔮 占卜算命（12）
 
@@ -373,8 +379,14 @@ const hello = {
 | 96 | `/welcome` | 設定新成員歡迎訊息（{user} 會換成 @ 對方，{server} 換成伺服器名） | 被動事件 |
 | 97 | `/autoreact` | 關鍵字自動反應：訊息包含某個詞時機器人加上表情 | 被動事件 |
 | 98 | `/help` | 指令清單：依分類查看全部功能 | 選單 |
-| 99 | `/settings` | 伺服器設定：經驗值開關、貨幣名稱、問答獎勵 | — |
+| 99 | `/settings` | 伺服器設定：經驗值開關、貨幣名稱、問答獎勵、AI 對話的個性 | — |
 | 100 | `/botstats` | 機器人統計：上線時間、用量、最熱門的指令 | — |
+
+### 🤖 AI 對話（1）
+
+| # | 指令 | 說明 | 互動 |
+|---|---|---|---|
+| 101 | `/chat` | 跟機器人聊天：記得你說過的、認識你，還能幫你查歌、看活動、簽到、抽塔羅 | 按鈕、表單、被動事件 |
 
 ## 資料來源與致謝
 

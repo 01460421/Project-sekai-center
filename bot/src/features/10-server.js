@@ -3,6 +3,7 @@
 import { str, sub, channel as channelOpt, bool } from '../core/opts.js';
 import { embed, select, cid, COLORS, mention, num, clean, ts } from '../core/ui.js';
 import { CATEGORIES } from '../core/registry.js';
+import { STYLES, DEFAULT_NAME } from './11-ai.js';
 
 /* ---------- 歡迎訊息 ---------- */
 const welcome = {
@@ -66,14 +67,26 @@ const help = {
 
 /* ---------- 設定 ---------- */
 const settings = {
-  name: 'settings', description: '伺服器設定：經驗值開關、貨幣名稱、問答獎勵', category: 'server', admin: true,
-  options: [sub('show', '顯示目前設定'), sub('xp', '聊天經驗值開關', [bool('enabled', '開啟或關閉', { required: true })]), sub('currency', '貨幣名稱', [str('name', '例如 水晶、金幣、貓罐頭', { required: true, maxLen: 8 })]), sub('quizreward', '答對一題的獎勵', [str('amount', '數字', { required: true, maxLen: 5 })])],
+  name: 'settings', description: '伺服器設定：經驗值開關、貨幣名稱、問答獎勵、AI 對話的個性', category: 'server', admin: true,
+  options: [sub('show', '顯示目前設定'), sub('xp', '聊天經驗值開關', [bool('enabled', '開啟或關閉', { required: true })]), sub('currency', '貨幣名稱', [str('name', '例如 水晶、金幣、貓罐頭', { required: true, maxLen: 8 })]), sub('quizreward', '答對一題的獎勵', [str('amount', '數字', { required: true, maxLen: 5 })]),
+    sub('ai', 'AI 對話（/chat、@機器人）：開關、個性風格、名字、額外人設', [bool('enabled', '開啟或關閉'), str('style', '個性風格', { choices: Object.entries(STYLES).map(([k, v]) => [v[0], k]) }), str('name', `機器人自稱的名字（預設 ${DEFAULT_NAME}）`, { maxLen: 12 }), str('persona', '額外人設，例如「是這個伺服器的吉祥物，最愛珍奶」；輸入 清除 移除', { maxLen: 300 })])],
   async run(ctx) {
     const s = ctx.settings;
+    if (ctx.sub === 'ai') {
+      const a = s.ai = { enabled: true, style: 'lively', persona: '', name: '', ...(s.ai || {}) };
+      const changed = [];
+      if (ctx.opt('enabled') != null) { a.enabled = !!ctx.opt('enabled'); changed.push(`AI 對話 ${a.enabled ? '開啟' : '關閉'}`); }
+      if (ctx.opt('style') && STYLES[ctx.opt('style')]) { a.style = ctx.opt('style'); changed.push(`風格「${STYLES[a.style][0]}」`); }
+      if (ctx.opt('name') != null) { a.name = String(ctx.opt('name')).trim().slice(0, 12); changed.push(`名字「${a.name || DEFAULT_NAME}」`); }
+      if (ctx.opt('persona') != null) { const p = String(ctx.opt('persona')).trim(); a.persona = p === '清除' ? '' : p.slice(0, 300); changed.push(a.persona ? '額外人設已更新' : '額外人設已清除'); }
+      ctx.store.touch();
+      const status = `AI 對話：${a.enabled ? '開啟' : '關閉'}${ctx.bot.ai ? '' : '（主機尚未設定 ANTHROPIC_API_KEY，開了也不會回話）'}\n名字：${clean(a.name || DEFAULT_NAME)}　風格：${STYLES[a.style] ? STYLES[a.style][0] : a.style}\n額外人設：${a.persona ? clean(a.persona) : '（無）'}`;
+      return ctx.reply({ content: (changed.length ? `已更新：${changed.join('、')}\n\n` : '') + status, ephemeral: true });
+    }
     if (ctx.sub === 'xp') { s.xp = !!ctx.opt('enabled'); ctx.store.touch(); return ctx.reply({ content: `聊天經驗值：${s.xp ? '開啟' : '關閉'}`, ephemeral: true }); }
     if (ctx.sub === 'currency') { s.currency = String(ctx.opt('name')).slice(0, 8); ctx.store.touch(); return ctx.reply({ content: `貨幣名稱改為「${clean(s.currency)}」`, ephemeral: true }); }
     if (ctx.sub === 'quizreward') { const n = parseInt(ctx.opt('amount'), 10); if (!(n >= 0 && n <= 1000)) return ctx.reply({ content: '請輸入 0～1000 的數字。', ephemeral: true }); s.quizReward = n; ctx.store.touch(); return ctx.reply({ content: `問答獎勵改為 ${n}`, ephemeral: true }); }
-    await ctx.reply({ embeds: [embed({ title: '⚙️ 伺服器設定', color: COLORS.grey, fields: [{ name: '聊天經驗值', value: s.xp ? '開啟' : '關閉', inline: true }, { name: '貨幣', value: s.currency, inline: true }, { name: '問答獎勵', value: String(s.quizReward), inline: true }, { name: '歡迎訊息', value: s.welcomeChannel ? `<#${s.welcomeChannel}>` : '關閉', inline: true }, { name: '自動反應', value: `${Object.keys(s.autoreact || {}).length} 個`, inline: true }] })], ephemeral: true });
+    await ctx.reply({ embeds: [embed({ title: '⚙️ 伺服器設定', color: COLORS.grey, fields: [{ name: '聊天經驗值', value: s.xp ? '開啟' : '關閉', inline: true }, { name: '貨幣', value: s.currency, inline: true }, { name: '問答獎勵', value: String(s.quizReward), inline: true }, { name: '歡迎訊息', value: s.welcomeChannel ? `<#${s.welcomeChannel}>` : '關閉', inline: true }, { name: '自動反應', value: `${Object.keys(s.autoreact || {}).length} 個`, inline: true }, { name: 'AI 對話', value: `${s.ai && s.ai.enabled === false ? '關閉' : '開啟'}・${(s.ai && s.ai.name) || DEFAULT_NAME}・${STYLES[(s.ai && s.ai.style) || 'lively'] ? STYLES[(s.ai && s.ai.style) || 'lively'][0] : s.ai.style}`, inline: true }] })], ephemeral: true });
   },
 };
 

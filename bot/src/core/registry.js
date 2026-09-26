@@ -12,6 +12,7 @@ export const CATEGORIES = {
   quiz: { name: '問答與音樂', emoji: '🎵' },
   community: { name: '等級與社群', emoji: '🏆' },
   server: { name: '伺服器', emoji: '⚙️' },
+  ai: { name: 'AI 對話', emoji: '🤖' },
 };
 
 const NAME_RE = /^[a-z0-9_-]{1,32}$/;

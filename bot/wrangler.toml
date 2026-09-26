@@ -27,10 +27,11 @@ crons = ["* * * * *"]
 #   DISCORD_PUBLIC_KEY   開發者後台 General Information 的 Public Key（驗簽用，沒有它所有請求都會被拒）
 #   APP_ID               Application ID
 #   REGISTER_SECRET      自訂一串隨機字，POST /register 註冊指令時當 Bearer token
-#   ANTHROPIC_API_KEY    選用，占卜／測驗的 AI 解讀
+#   ANTHROPIC_API_KEY    選用，AI：占卜／測驗的解讀與 /chat 對話
 [vars]
-AI_MODEL = "claude-opus-5"
+AI_MODEL = "claude-sonnet-5"
 AI_DAILY_PER_USER = "10"
+AI_CHAT_DAILY_PER_USER = "40"
 
 [observability]
 enabled = true

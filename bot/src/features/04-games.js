@@ -5,26 +5,27 @@ import { embed, button, row, grid, modal, cid, COLORS, Style, mention, num, clea
 import { award, gameResult, achievementLine } from '../core/helpers.js';
 import { HANGMAN_WORDS, WORDLE_WORDS } from '../content/words.js';
 
-const S = () => null;
 const done = (ctx, uid, won) => achievementLine(gameResult(ctx, won, uid));
+/* 對手是機器人時 players 裡放 'bot'，顯示時不能套 mention */
+const who = id => id === 'bot' ? '機器人' : mention(id);
 
 /* ---------- 猜數字 ---------- */
-const guessGames = new Map();   // guild:user → { n, max, tries }
+/* 進行中的那一局放在玩家紀錄 u.guess（不放模組變數：Workers 版的 DO 休眠後記憶體會清空） */
 const guess = {
   name: 'guess', description: '猜數字：機器人想一個數字，你來猜（會提示大小）', category: 'games',
   options: [sub('start', '開始新的一局', [int('max', '範圍上限（預設 100）', { min: 10, max: 10000 })]), sub('try', '猜一個數字', [int('number', '你的猜測', { required: true })]), sub('giveup', '放棄')],
   async run(ctx) {
-    const key = `${ctx.guildId}:${ctx.user.id}`;
-    if (ctx.sub === 'giveup') { const g = guessGames.get(key); guessGames.delete(key); return ctx.reply({ content: g ? `答案是 ${g.n}。下次再來。` : '你沒有進行中的猜數字。' }); }
+    const u = ctx.u();
+    if (ctx.sub === 'giveup') { const g = u.guess; u.guess = null; ctx.store.touch(); return ctx.reply({ content: g ? `答案是 ${g.n}。下次再來。` : '你沒有進行中的猜數字。' }); }
     if (ctx.sub === 'try') {
-      const g = guessGames.get(key);
+      const g = u.guess;
       if (!g) return ctx.reply({ content: '先用 /guess start 開始一局。', ephemeral: true });
-      const n = ctx.opt('number'); g.tries++;
-      if (n === g.n) { guessGames.delete(key); const r = Math.max(5, 40 - g.tries * 3); award(ctx, r); return ctx.reply({ content: `🎯 答對了！就是 ${g.n}，你猜了 ${g.tries} 次，獲得 ${r} ${ctx.currency}。${done(ctx, ctx.user.id, true)}` }); }
+      const n = ctx.opt('number'); g.tries++; ctx.store.touch();
+      if (n === g.n) { u.guess = null; const r = Math.max(5, 40 - g.tries * 3); award(ctx, r); return ctx.reply({ content: `🎯 答對了！就是 ${g.n}，你猜了 ${g.tries} 次，獲得 ${r} ${ctx.currency}。${done(ctx, ctx.user.id, true)}` }); }
       return ctx.reply({ content: `${n < g.n ? '📈 再大一點' : '📉 再小一點'}（第 ${g.tries} 次，範圍 1～${g.max}）` });
     }
     const max = ctx.opt('max') || 100;
-    guessGames.set(key, { n: ctx.rng.int(1, max), max, tries: 0 });
+    u.guess = { n: ctx.rng.int(1, max), max, tries: 0 }; ctx.store.touch();
     await ctx.reply({ content: `我想好了一個 1～${max} 的數字，用 /guess try 來猜！` });
   },
 };
@@ -84,12 +85,12 @@ export function tttBot(b, me = 'O', op = 'X') {
   const corners = [0, 2, 6, 8].filter(i => !b[i]);
   return corners.length ? corners[Math.floor(Math.random() * corners.length)] : empty[Math.floor(Math.random() * empty.length)];
 }
-function tttMsg(sid, s, over) {
+export function tttMsg(sid, s, over) {
   const mark = { X: '❌', O: '⭕' };
   const w = tttWinner(s.board);
-  const header = over ? (w === 'draw' ? '🤝 平手！' : `🏆 ${mention(s.players[w])} 獲勝！`) : `輪到 ${mention(s.players[s.turn])}（${mark[s.turn]}）`;
+  const header = over ? (w === 'draw' ? '🤝 平手！' : `🏆 ${who(s.players[w])} 獲勝！`) : `輪到 ${who(s.players[s.turn])}（${mark[s.turn]}）`;
   const rows = grid(s.board.map((v, i) => button({ id: cid('tictactoe', 'mv', sid, i), label: v ? mark[v] : '　', style: v === 'X' ? Style.danger : v === 'O' ? Style.success : Style.secondary, disabled: over || !!v })), 3);
-  return { content: `⭕❌ 井字遊戲　${mention(s.players.X)} vs ${s.players.O === 'bot' ? '機器人' : mention(s.players.O)}\n${header}`, components: rows };
+  return { content: `⭕❌ 井字遊戲　${who(s.players.X)} vs ${who(s.players.O)}\n${header}`, components: rows };
 }
 const tictactoe = {
   name: 'tictactoe', description: '井字遊戲：跟機器人或指定的人下', category: 'games',
@@ -139,15 +140,15 @@ export function c4Bot(b, me = 'Y', op = 'R') {
   const pref = [3, 2, 4, 1, 5, 0, 6].filter(c => cols.includes(c));
   return pref[Math.floor(Math.random() * Math.min(3, pref.length))];
 }
-function c4Msg(sid, s, over) {
+export function c4Msg(sid, s, over) {
   const w = c4Winner(s.board);
   const cell = { R: '🔴', Y: '🟡', '': '⚪' };
   let text = '';
   for (let r = C4H - 1; r >= 0; r--) { for (let c = 0; c < C4W; c++) text += cell[s.board[r * C4W + c]]; text += '\n'; }
   text += '1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣7️⃣';
-  const header = over ? (w === 'draw' ? '🤝 平手！' : `🏆 ${mention(s.players[w])} 獲勝！`) : `輪到 ${mention(s.players[s.turn])}（${cell[s.turn]}）`;
+  const header = over ? (w === 'draw' ? '🤝 平手！' : `🏆 ${who(s.players[w])} 獲勝！`) : `輪到 ${who(s.players[s.turn])}（${cell[s.turn]}）`;
   const buttons = [...Array(C4W).keys()].map(c => button({ id: cid('connect4', 'drop', sid, c), label: String(c + 1), style: Style.secondary, disabled: over || !!s.board[(C4H - 1) * C4W + c] }));
-  return { content: `🔴🟡 四子棋　${mention(s.players.R)} vs ${s.players.Y === 'bot' ? '機器人' : mention(s.players.Y)}\n${header}\n${text}`, components: [row(...buttons.slice(0, 4)), row(...buttons.slice(4))] };
+  return { content: `🔴🟡 四子棋　${who(s.players.R)} vs ${who(s.players.Y)}\n${header}\n${text}`, components: [row(...buttons.slice(0, 4)), row(...buttons.slice(4))] };
 }
 const connect4 = {
   name: 'connect4', description: '四子棋：跟機器人或指定的人對戰', category: 'games',
