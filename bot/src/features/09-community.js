@@ -1,4 +1,4 @@
-/* 等級與社群（10）：等級、排行、成就、每日任務、簽到紀錄、抽獎、隨機分組、提醒、倒數、計數器 */
+/* 等級與社群（10）：等級、排行（含歐洲人 4★ 率）、成就、每日任務、簽到紀錄、抽獎、隨機分組、提醒、倒數、計數器 */
 
 import { str, int, sub, user as userOpt } from '../core/opts.js';
 import { embed, button, row, cid, COLORS, Style, mention, num, clean, ts, bar, todayTW, weekTW } from '../core/ui.js';
@@ -41,10 +41,14 @@ const rank = {
 
 /* ---------- 排行 ---------- */
 const leaderboard = {
-  name: 'leaderboard', description: '等級排行榜（本伺服器）', category: 'community',
-  options: [str('by', '排序依據', { choices: [['等級', 'xp'], ['發言', 'messages'], ['聲望', 'rep'], ['遊戲勝場', 'wins'], ['本週發言', 'weekly']] })],
+  name: 'leaderboard', description: '排行榜（本伺服器）：等級、發言、聲望、遊戲勝場、本週發言、歐洲人（4★ 率）', category: 'community',
+  options: [str('by', '排序依據', { choices: [['等級', 'xp'], ['發言', 'messages'], ['聲望', 'rep'], ['遊戲勝場', 'wins'], ['本週發言', 'weekly'], ['歐洲人（4★ 率，至少 50 抽）', 'luck']] })],
   async run(ctx) {
     const by = ctx.opt('by') || 'xp'; const wk = weekTW();
+    if (by === 'luck') {
+      const rows = ctx.store.users(ctx.guildId).filter(x => x.rec.pulls >= 50).map(x => ({ uid: x.uid, r: x.rec.pulls4 / x.rec.pulls, n: x.rec.pulls, k: x.rec.pulls4 })).sort((a, b) => b.r - a.r);
+      return ctx.reply({ embeds: [embed({ title: '🇪🇺 排行榜・歐洲人（4★ 率）', color: COLORS.gold, description: rows.length ? rows.slice(0, 10).map((r, i) => `${['🥇', '🥈', '🥉'][i] || `${i + 1}.`} ${mention(r.uid)}　${(r.r * 100).toFixed(2)}%（${r.k}/${num(r.n)}）`).join('\n') + (rows.length > 3 ? `\n\n🇦🇫 最非：${mention(rows[rows.length - 1].uid)}（${(rows[rows.length - 1].r * 100).toFixed(2)}%）` : '') : '還沒有人抽滿 50 抽。', footer: '至少 50 抽才列入' })] });
+    }
     const val = r => by === 'xp' ? r.xp : by === 'messages' ? r.messages : by === 'rep' ? r.rep : by === 'wins' ? r.games.won : (r.weekly.week === wk ? r.weekly.msgs : 0);
     const label = { xp: 'XP', messages: '則', rep: '聲望', wins: '勝', weekly: '則（本週）' }[by];
     const rows = ctx.store.users(ctx.guildId).map(x => ({ uid: x.uid, v: val(x.rec), lv: levelFor(x.rec.xp) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 10);

@@ -1,4 +1,4 @@
-/* 轉蛋收藏（8）：轉蛋、圖鑑、天井、統計、歐洲人排行、交換、願望單、卡池情報
+/* 轉蛋收藏（7）：轉蛋、圖鑑、天井、統計、交換、願望單、卡池情報（歐洲人排行在 /leaderboard by:luck）
    卡片資料來自 repo 根目錄 data/cards-index.js（與網站同一份）。 */
 
 import { str, int, sub, user as userOpt } from '../core/opts.js';
@@ -101,15 +101,6 @@ const gachastats = {
   },
 };
 
-/* ---------- 歐洲人排行 ---------- */
-const luckrank = {
-  name: 'luckrank', description: '歐洲人排行：本伺服器 4★ 率最高的人（至少 50 抽）', category: 'gacha',
-  async run(ctx) {
-    const rows = ctx.store.users(ctx.guildId).filter(x => x.rec.pulls >= 50).map(x => ({ uid: x.uid, r: x.rec.pulls4 / x.rec.pulls, n: x.rec.pulls, k: x.rec.pulls4 })).sort((a, b) => b.r - a.r);
-    await ctx.reply({ embeds: [embed({ title: '🇪🇺 歐洲人排行', color: COLORS.gold, description: rows.length ? rows.slice(0, 10).map((r, i) => `${['🥇', '🥈', '🥉'][i] || `${i + 1}.`} ${mention(r.uid)}　${(r.r * 100).toFixed(2)}%（${r.k}/${num(r.n)}）`).join('\n') + (rows.length > 3 ? `\n\n🇦🇫 最非：${mention(rows[rows.length - 1].uid)}（${(rows[rows.length - 1].r * 100).toFixed(2)}%）` : '') : '還沒有人抽滿 50 抽。' })] });
-  },
-};
-
 /* ---------- 交換 ---------- */
 const trade = {
   name: 'trade', description: '把你的重複卡送給別人（對方要按接受）', category: 'gacha',
@@ -160,4 +151,4 @@ const gachalist = {
   },
 };
 
-export default [gacha, collection, pity, gachastats, luckrank, trade, wishlist, gachalist];
+export default [gacha, collection, pity, gachastats, trade, wishlist, gachalist];

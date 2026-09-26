@@ -221,7 +221,7 @@ test('冷卻與權限', async () => {
   const bot = await makeBot();
   await runCmd(bot, 'confess', { options: { text: '嗨' } }); const r = await runCmd(bot, 'confess', { options: { text: '嗨' } }); assert.match(textOf(r.last), /冷卻/);
   const dm = await runCmd(bot, 'daily', { guildId: 'dm' }); assert.match(textOf(dm.last), /伺服器/);
-  const help = await runCmd(bot, 'help', { guildId: 'dm' }); assert.match(textOf(help.last), /101 個功能/);
+  const help = await runCmd(bot, 'help', { guildId: 'dm' }); assert.match(textOf(help.last), /100 個功能/);
   const unknown = await runCmd(bot, 'nope'); assert.match(textOf(unknown.last), /找不到/);
 });
 
@@ -257,6 +257,16 @@ test('Sessions／Cooldowns 的持久化介面：drain 取出動到與刪掉的�
   const cd = new Cooldowns(); assert.equal(cd.hit('k', 60), 0); assert.ok(cd.hit('k', 60) > 0);
   const out = cd.drain(); assert.ok(out.k > Date.now()); assert.equal(cd.drain(), null, '沒變動回 null');
   const cd2 = new Cooldowns(); cd2.load(out); assert.ok(cd2.hit('k', 60) > 0, '載回來的冷卻仍生效');
+});
+
+test('排行榜的歐洲人排序（原 /luckrank）：至少 50 抽、依 4★ 率排', async () => {
+  const bot = await makeBot();
+  const a = bot.store.user(GUILD, USERS.alice.id); a.pulls = 100; a.pulls4 = 10;
+  const b = bot.store.user(GUILD, USERS.bob.id); b.pulls = 200; b.pulls4 = 4;
+  bot.store.user(GUILD, USERS.carol.id).pulls = 10;
+  const r = await runCmd(bot, 'leaderboard', { options: { by: 'luck' } }); const t = textOf(r.last);
+  assert.match(t, /🥇 <@100000000000000001>　10\.00%（10\/100）/); assert.match(t, /🥈 <@100000000000000002>　2\.00%/); assert.doesNotMatch(t, /100000000000000003/);
+  const none = await runCmd(await makeBot(), 'leaderboard', { options: { by: 'luck' } }); assert.match(textOf(none.last), /還沒有人抽滿 50 抽/);
 });
 
 test('猜數字：狀態放在玩家紀錄裡，猜對得獎並清掉', async () => {

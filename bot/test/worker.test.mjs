@@ -96,7 +96,7 @@ test('cron tick：到期的提醒用 REST 送到頻道；health 有統計', asyn
   await new Promise(r => setTimeout(r, 20));
   const sent = env.calls.find(c => c.method === 'POST' && c.url.includes(`/channels/${CHANNEL}/messages`));
   assert.ok(sent, '應該送出提醒'); assert.match(sent.body.content, /喝水/);
-  const h = await worker.fetch(new Request('https://bot.example/health'), env); const hb = await h.json(); assert.equal(hb.features, 101); assert.ok(hb.users >= 1);
+  const h = await worker.fetch(new Request('https://bot.example/health'), env); const hb = await h.json(); assert.equal(hb.features, 100); assert.ok(hb.users >= 1);
 });
 
 test('/register 需要密鑰，成功時 PUT 100 個指令', async () => {
@@ -104,7 +104,7 @@ test('/register 需要密鑰，成功時 PUT 100 個指令', async () => {
   assert.equal((await worker.fetch(new Request('https://bot.example/register', { method: 'POST' }), env)).status, 401);
   const r = await worker.fetch(new Request('https://bot.example/register?guild=' + GUILD, { method: 'POST', headers: { authorization: 'Bearer sekret' } }), env);
   assert.deepEqual(await r.json(), { registered: 100, guild: GUILD });
-  const put = env.calls.find(c => c.method === 'PUT'); assert.ok(put.url.endsWith(`/guilds/${GUILD}/commands`)); assert.equal(put.body.length, 101); assert.ok(put.body.every(c => Array.isArray(c.contexts)));
+  const put = env.calls.find(c => c.method === 'PUT'); assert.ok(put.url.endsWith(`/guilds/${GUILD}/commands`)); assert.equal(put.body.length, 100); assert.ok(put.body.every(c => Array.isArray(c.contexts)));
 });
 
 test('功能跑太久：先回延遲（type 5），結果之後 PATCH @original', async () => {
