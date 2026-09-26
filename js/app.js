@@ -2193,7 +2193,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=5811ce4bde';
+      s.src = 'data/billing.js?v=6f0affa17f';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2407,7 +2407,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=69520b98d2').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=3cbe0a1262').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -7355,7 +7355,7 @@ class Component extends DCLogic {
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
   loadSupportEvents() {
-    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=68dbf5d6f3'); return m.SUPPORT_EVENTS || []; });
+    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=b42b133022'); return m.SUPPORT_EVENTS || []; });
   }
   /* 第幾回用 n（依開始時間排序）：Haruki 的 6.4 master 重新編號，id 已經不等於回數。v2 是 6.4 新增的棋盤版 */
   supEventName(x) { return '第 ' + (x.n || x.id) + ' 回應援活動' + (x.v === 'v2' ? '（棋盤版）' : ''); }
@@ -7682,7 +7682,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = import('./data/data-built.js?v=123592e476').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = import('./data/data-built.js?v=7a63124190').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
