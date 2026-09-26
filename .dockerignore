@@ -2,6 +2,7 @@
 *
 !bot/
 !data/cards-index.js
+!data/cards-extra.js
 !data/ep-songs.js
 !data/sekai-data.js
 !data/song-bpm.js
