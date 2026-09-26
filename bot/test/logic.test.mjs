@@ -18,7 +18,9 @@ import { genSekaiQ, genSongQ, genCharaQ, genTrivia } from '../src/features/08-qu
 import { dailyAmount } from '../src/features/06-economy.js';
 import { hexByLines, HEXAGRAMS } from '../src/content/iching.js';
 import { TAROT } from '../src/content/tarot.js';
-import { makeBot, loadRegistry, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL, fakeClaude, aiText, aiTool, aiRefusal } from './harness.js';
+import { makeBot, loadRegistry, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL, fakeClaude, aiText, aiTool, aiRefusal, mockLive, resetFetch } from './harness.js';
+import { normalizeLive, trend, fetchLive, parseSafe, clearCache, useFetch } from '../src/core/live.js';
+import { searchCards, cardExtra, skillText } from '../src/core/sekai.js';
 import { createAI } from '../src/core/ai.js';
 import { runFeature, buildSystem, STYLES } from '../src/features/11-ai.js';
 import { ZH, validName, localizeHints, toEnCommand, toEnSub, toEnOpt } from '../src/core/i18n.js';
@@ -433,5 +435,69 @@ test('固定頻道：只在指定頻道回應，管理員設定不受限，被�
   const hi = await sendMessage(bot, { content: '<@bot> 嗨', text: '嗨', mentionsBot: true }); assert.equal(hi.replies.length, 1);
   await runCmd(bot, 'settings', { sub: 'channel', options: { action: 'clear' }, admin: true });
   const again = await runCmd(bot, 'daily', { channelId: other, user: USERS.bob }); assert.match(textOf(again.last), /簽到成功/);
+  assert.deepEqual(bot.errors, []);
+});
+
+/* ---------- 網站資料：即時榜線、前百、歷史榜線、卡片 ---------- */
+test('live：HiSekai 直連失敗退到網站代理再退到 Haruki 備援；兩種回應形狀都能正規化', async () => {
+  const calls = [];
+  useFetch(async url => {
+    calls.push(String(url));
+    if (String(url).startsWith('https://api.hisekai.org')) return new Response('', { status: 500 });
+    if (String(url).includes('/proxy/hisekai')) return new Response('', { status: 502 });
+    if (String(url).includes('/haruki/event/live/border')) return new Response(JSON.stringify({ id: 180, name: 'Wishes in Bloom!', start_at: '2026-09-25T12:00:00Z', aggregate_at: '2026-09-28T11:59:59Z', source: 'haruki', player_border_rankings: [{ rank: 100, score: 2000000 }, { rank: 1000, score: 800000 }], world_link_border_rankings: [{ chapter: 1, character: 21, player_border_rankings: [{ rank: 100, score: 1500000 }] }] }), { status: 200 });
+    return new Response('nf', { status: 404 });
+  });
+  const live = await fetchLive('border');
+  assert.equal(live.event.id, 180); assert.equal(live.event.name, 'Wishes in Bloom!'); assert.equal(live.rows[1].score, 800000); assert.equal(live.wl[0].character, 21); assert.equal(live.source, 'haruki'); assert.equal(calls.length, 3, '三段式來源');
+  assert.equal((await fetchLive('border')).event.id, 180); assert.equal(calls.length, 3, '一分鐘內走快取');
+  const n = normalizeLive('top100', parseSafe('{"event":{"id":181,"name":"X","aggregate_at":"2026-10-01T00:00:00Z"},"player_top_100_rankings":[{"rank":1,"score":9,"name":"a","user_id":7090528553812679426,"last_1h_stats":{"speed":12345}}]}'));
+  assert.equal(n.event.id, 181); assert.equal(n.rows[0].userId, '7090528553812679426', '19 位 userId 不失精'); assert.equal(n.rows[0].speed, 12345); assert.ok(n.event.end > 0);
+  resetFetch();
+});
+
+test('trend：最新一筆與一小時前那一筆的差', () => {
+  const h = { tiers: [100, 1000], samples: [[1000, 10, 5], [2800, 20, 8], [4700, 35, 9]], top1: [[4700, 99]] };
+  const t = trend(h, 1); assert.equal(t.lines[0].score, 35); assert.equal(t.lines[0].delta, 25); assert.equal(t.lines[1].delta, 4); assert.equal(t.top1, 99);
+  assert.equal(trend({ samples: [] }), null);
+});
+
+test('/event：日曆照舊；榜線／前百／歷史從網站來源抓，失敗有友善訊息', async () => {
+  const bot = await makeBot();
+  const now = await runCmd(bot, 'event', { sub: 'now' }); assert.match(textOf(now.last), /活動與卡池/); assert.match(textOf(now.last), /\/活動 榜線/, '提示換成中文名');
+  const hist = { eventId: 180, tiers: [100, 1000], samples: [[1790340000, 1000000, 500000], [1790343600, 1100000, 520000]], top1: [[1790343600, 5000000]] };
+  const db = { source: 'good果汁', events: [{ id: 179, name: 'Link', start: '2026/09/06', end: '2026/09/18', attr: 'WL全屬性' }], tiers: [1, 100, 1000], borders: [{ id: 179, name: 'Link the Beats!', chara: 'World Link', unit: 'VS', days: 12, type: 'World Link', t: [90000000, 9000000, 900000] }], wlTiers: [1, 100], wl: [{ id: '179.1', name: '未來', round: 'WL3', bonus: 6.7, t: [10000000, 1000000] }] };
+  mockLive({
+    'api.hisekai.org/tw/event/live/border': { event: { id: 180, name: 'Wishes in Bloom!', aggregate_at: '2026-09-28T11:59:59Z' }, player_border_rankings: [{ rank: 100, score: 1100000 }, { rank: 1000, score: 520000 }] },
+    'api.hisekai.org/tw/event/live/top100': { event: { id: 180, name: 'Wishes in Bloom!' }, player_top_100_rankings: [{ rank: 1, score: 5000000, name: 'A*B', last_1h_stats: { speed: 300000 } }, { rank: 2, score: 4000000, name: 'bob' }] },
+    '/data/history/index.json': [179, 180], '/data/history/180.json': hist,
+    '/data/borders-db.js': '// 註解\nwindow.BORDERS_DB=' + JSON.stringify(db) + ';',
+  });
+  const b = await runCmd(bot, 'event', { sub: 'border' }); assert.ok(b.deferred, '要先 defer'); const bt = textOf(b.edits[0]);
+  assert.match(bt, /第 180 期 Wishes in Bloom!/); assert.match(bt, /T100　\*\*1,100,000\*\*（\+100,000／時）/); assert.match(bt, /T1,000　\*\*520,000\*\*（\+20,000／時）/); assert.match(bt, /第 1 名 5,000,000/);
+  const t = await runCmd(bot, 'event', { sub: 'top', options: { count: 5 } }); const tt = textOf(t.edits[0]);
+  assert.match(tt, /🥇 A\\\*B　\*\*5,000,000\*\*　⏱ 300,000／時/); assert.match(tt, /🥈 bob　\*\*4,000,000\*\*/);
+  const h = await runCmd(bot, 'event', { sub: 'history' }); const ht = textOf(h.edits[0]);
+  assert.match(ht, /第 179 期 Link the Beats!/); assert.match(ht, /T1　\*\*90,000,000\*\*/); assert.match(ht, /WL全屬性/); assert.match(ht, /未來・WL3・加成 6\.7/); assert.match(ht, /T100　1,000,000/);
+  const miss = await runCmd(bot, 'event', { sub: 'history', options: { event: 5 } }); assert.match(textOf(miss.edits[0]), /沒有第 5 期/);
+  resetFetch();
+  const fail = await runCmd(bot, 'event', { sub: 'border' }); assert.match(textOf(fail.edits[0]), /暫時抓不到榜線資料/);
+  assert.deepEqual(bot.errors, []);
+});
+
+test('/card：自動完成、依 id 查、模糊查多張、技能敘述有數值；/gachastats 含天井（原 /pity）', async () => {
+  const bot = await makeBot();
+  const ac = await bot.runAutocomplete({ name: 'card', focused: '一歌', user: USERS.alice, guildId: GUILD, channelId: CHANNEL, io: {} }); assert.ok(ac.length >= 1 && ac.length <= 25); assert.match(ac[0].name, /一歌/); assert.match(ac[0].value, /^\d+$/);
+  const one = await runCmd(bot, 'card', { options: { name: '4' } }); const e = one.last.embeds[0];
+  assert.match(e.title, /★+ 星乃一歌「/); assert.ok(e.thumbnail && e.thumbnail.url); assert.ok(e.fields.some(f => f.name === '滿等綜合力' && /\d/.test(f.value)));
+  const sk = e.fields.find(f => f.name.startsWith('技能・')); assert.ok(sk, '要有技能欄'); assert.match(sk.value, /Lv\.1：.*\d/); assert.match(sk.value, /Lv\.4：/);
+  const many = await runCmd(bot, 'card', { options: { name: '一歌' } }); assert.match(textOf(many.last), /找到多張/);
+  const none = await runCmd(bot, 'card', { options: { name: 'zzzzzz' } }); assert.match(textOf(none.last), /找不到/);
+  assert.equal(searchCards('4')[0].id, 4); assert.ok(cardExtra(4) && cardExtra(4).skill); assert.match(skillText(cardExtra(4).skill, 4, '一歌'), /\d/);
+  assert.equal(skillText(['{{9;v}}%{{9;c}}', {}], 1, '一歌'), '…%一歌（「…」的數值依編組或狀態而定）');
+  const u = bot.store.user(GUILD, USERS.alice.id); u.pulls = 120; u.pulls4 = 2; u.sinceLast4 = 30;
+  const gs = await runCmd(bot, 'gachastats'); assert.match(textOf(gs.last), /距上次 4★/); assert.match(textOf(gs.last), /還差 180 抽/);
+  // AI 的 run_command 也能用這些
+  const rf = await runFeature(one.ctx, { name: 'card', sub: '', options: '{"name":"4"}' }); assert.match(rf.text, /技能/); assert.equal(rf.extra.embeds.length, 1);
   assert.deepEqual(bot.errors, []);
 });

@@ -6,6 +6,13 @@ import { MemoryStore } from '../src/core/store.js';
 import { Rng } from '../src/core/rng.js';
 import { Timers } from '../src/core/sessions.js';
 import { createAI } from '../src/core/ai.js';
+import { useFetch, clearCache } from '../src/core/live.js';
+
+/* 測試不打真的網路：core/live.js 的 fetch 預設回 404；mockLive({ 網址片段: 物件或字串 }) 餵假資料，resetFetch() 還原 */
+const notFound = async () => new Response('not found', { status: 404 });
+export function mockLive(map) { useFetch(async url => { for (const [k, v] of Object.entries(map)) if (String(url).includes(k)) return new Response(typeof v === 'string' ? v : JSON.stringify(v), { status: 200, headers: { 'content-type': 'application/json' } }); return notFound(); }); }
+export function resetFetch() { useFetch(notFound); clearCache(); }
+resetFetch();
 
 let registry = null;
 export async function loadRegistry() { if (!registry) registry = Bot.defaultRegistry(); return registry; }

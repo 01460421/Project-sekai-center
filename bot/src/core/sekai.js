@@ -4,6 +4,7 @@ import { CARDS, CHARAS as RAW_CHARAS } from '../../../data/cards-index.js';
 import { EP_SONGS, DIFF_NAMES } from '../../../data/ep-songs.js';
 import { SONG_BPM } from '../../../data/song-bpm.js';
 import { GACHAS } from '../../../data/sekai-data.js';
+import { CARD_EXTRA, SKILLS } from '../../../data/cards-extra.js';
 
 export const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
 
@@ -50,6 +51,44 @@ export const cardById = id => ALL_CARDS.find(c => c.id === id);
 export const cardThumb = c => `${ASSET}/thumbnail/chara/${c.asset}_${c.rarity >= 3 ? 'after_training' : 'normal'}.webp`;
 export const cardArt = c => `${ASSET}/character/member/${c.asset}/card_normal.png`;
 export const rarityStr = r => r === 9 ? '🎂 生日' : '★'.repeat(r);
+
+/* 卡片詳情（data/cards-extra.js）：技能、釋出、滿等三圍、特訓加成、招募台詞 */
+export function cardExtra(id) {
+  const r = CARD_EXTRA[String(id)];
+  if (!r) return null;
+  return { skillId: r[0], release: r[1] ? r[1] * 1000 : 0, perf: r[2] || 0, tech: r[3] || 0, stam: r[4] || 0, bonus: (r[5] || 0) + (r[6] || 0) + (r[7] || 0), quote: r[8] && r[8] !== '-' ? r[8] : '', skillName: r[9] || '', skill: SKILLS[String(r[0])] || null };
+}
+/* 技能敘述：master 的樣板長 {{效果id;欄位}}，d=秒數、v=數值、e=同團加成、m=加成上限、c=角色名（搬自網站 app.js 的 skillText） */
+export function skillText(skill, lv = 4, charName = '') {
+  const tpl = (skill && skill[0]) || '', eff = (skill && skill[1]) || {};
+  let unresolved = false;
+  const txt = String(tpl).replace(/\{\{([\d,]+);(\w+)\}\}/g, (m, ids, k) => {
+    if (k === 'c') return charName || '角色';
+    const e = eff[ids.split(',')[0]];
+    if (!e) { unresolved = true; return '…'; }
+    const row = (e.lv || [])[lv - 1] || {};
+    if (k === 'd' && row.d != null) return String(row.d);
+    if (k === 'v' && row.v != null) return String(row.v);
+    if (k === 'e' && e.e != null) return String(e.e);
+    if (k === 'm' && e.m != null) return String(e.m);
+    unresolved = true; return '…';
+  }).replace(/\n/g, ' ');
+  return txt + (unresolved ? '（「…」的數值依編組或狀態而定）' : '');
+}
+/* 卡名／角色名模糊搜尋：高稀有度、新卡優先 */
+export function searchCards(q, n = 10) {
+  const t = String(q || '').trim().toLowerCase();
+  const sorted = ALL_CARDS.slice().sort((a, b) => b.rarity - a.rarity || b.id - a.id);
+  if (!t) return sorted.slice(0, n);
+  if (/^\d+$/.test(t)) { const c = cardById(+t); return c ? [c] : []; }
+  const out = [];
+  for (const c of sorted) {
+    const ch = charaById(c.chara); const name = c.name.toLowerCase();
+    if (name === t) return [c];
+    if (name.includes(t) || (ch && (ch.name.toLowerCase().includes(t) || ch.short.toLowerCase() === t))) out.push(c);
+  }
+  return out.slice(0, n);
+}
 
 /* 歌曲 */
 export { DIFF_NAMES };

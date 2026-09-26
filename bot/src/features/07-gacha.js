@@ -1,10 +1,10 @@
-/* 轉蛋收藏（7）：轉蛋、圖鑑、天井、統計、交換、願望單、卡池情報（歐洲人排行在 /leaderboard by:luck）
+/* 轉蛋收藏（7）：轉蛋、圖鑑、統計（含天井）、卡片查詢、交換、願望單、卡池情報（歐洲人排行在 /leaderboard by:luck）
    卡片資料來自 repo 根目錄 data/cards-index.js（與網站同一份）。 */
 
 import { str, int, sub, user as userOpt } from '../core/opts.js';
 import { embed, button, row, select, cid, COLORS, Style, mention, num, pct, clean, ts } from '../core/ui.js';
 import { award, quest, checkAchievements, achievementLine, consume } from '../core/helpers.js';
-import { CHARAS, charaById, findChara, GACHA_POOL, cardById, cardThumb, rarityStr, ATTR_EMOJI, gachasAround } from '../core/sekai.js';
+import { CHARAS, charaById, findChara, GACHA_POOL, cardById, cardThumb, rarityStr, ATTR_EMOJI, ATTR_NAMES, gachasAround, cardExtra, skillText, searchCards } from '../core/sekai.js';
 
 export const RATES = { 4: 0.03, 3: 0.085 };   // 其餘 2★；十連保底至少一張 3★
 export function pullOne(rng, lucky = false) {
@@ -73,18 +73,9 @@ const collection = {
   },
 };
 
-/* ---------- 天井 ---------- */
-const pity = {
-  name: 'pity', description: '天井進度：距離上次 4★ 幾抽、離 300 抽交換還有多遠', category: 'gacha',
-  async run(ctx) {
-    const u = ctx.u(); const toSpark = 300 - (u.pulls % 300);
-    await ctx.reply({ embeds: [embed({ title: '🌈 天井進度', color: COLORS.purple, description: `距上次 4★：**${u.sinceLast4}** 抽\n本輪 300 抽交換還差：**${toSpark}** 抽（${'█'.repeat(Math.floor((300 - toSpark) / 30))}${'░'.repeat(10 - Math.floor((300 - toSpark) / 30))}）\n累計 ${num(u.pulls)} 抽・${u.pulls4} 張 4★`, footer: '這只是模擬，真的抽卡請量力而為' })] });
-  },
-};
-
 /* ---------- 統計 ---------- */
 const gachastats = {
-  name: 'gachastats', description: '抽卡統計：4★ 率、期望值比較、最愛角色', category: 'gacha',
+  name: 'gachastats', description: '抽卡統計：4★ 率、期望值、天井進度（距上次 4★、300 抽交換）、最愛角色', category: 'gacha',
   options: [userOpt('user', '看誰的')],
   async run(ctx) {
     const t = ctx.opt('user') || ctx.user; const u = ctx.u(t.id);
@@ -93,11 +84,13 @@ const gachastats = {
     const luck = rate >= 0.05 ? '🇪🇺 歐洲人' : rate >= 0.03 ? '😐 平均' : rate >= 0.015 ? '🌑 有點非' : '🇦🇫 非洲酋長';
     const owned = Object.entries(u.cards).map(([id, n]) => ({ c: cardById(+id), n })).filter(x => x.c);
     const fav = CHARAS.map(c => ({ c, n: owned.filter(x => x.c.chara === c.id).reduce((s, x) => s + x.n, 0) })).sort((a, b) => b.n - a.n)[0];
+    const toSpark = 300 - (u.pulls % 300);
     await ctx.reply({ embeds: [embed({ title: `📈 ${clean(t.name)} 的抽卡統計`, color: COLORS.gold, fields: [
       { name: '總抽數', value: num(u.pulls), inline: true }, { name: '4★', value: `${u.pulls4} 張（${pct(u.pulls4, u.pulls)}）`, inline: true }, { name: '運氣', value: luck, inline: true },
       { name: '理論期望', value: `${(u.pulls * RATES[4]).toFixed(1)} 張 4★`, inline: true }, { name: '相對期望', value: `${u.pulls4 - u.pulls * RATES[4] >= 0 ? '+' : ''}${(u.pulls4 - u.pulls * RATES[4]).toFixed(1)} 張`, inline: true }, { name: '換算', value: `約 ${num(u.pulls * 300)} 水晶`, inline: true },
+      { name: '距上次 4★', value: `${u.sinceLast4} 抽`, inline: true }, { name: '300 抽交換', value: `還差 ${toSpark} 抽 ${'█'.repeat(Math.floor((300 - toSpark) / 30))}${'░'.repeat(10 - Math.floor((300 - toSpark) / 30))}`, inline: true },
       { name: '最常抽到', value: fav && fav.n ? `${fav.c.name}（${fav.n} 張）` : '—', inline: true },
-    ] })] });
+    ], footer: '這只是模擬，真的抽卡請量力而為' })] });
   },
 };
 
@@ -142,6 +135,33 @@ const wishlist = {
   },
 };
 
+/* ---------- 卡片查詢（讀網站的 cards-index / cards-extra，跟卡片圖鑑同一份） ---------- */
+export function cardEmbed(c) {
+  const ch = charaById(c.chara); const x = cardExtra(c.id);
+  const fields = [
+    { name: '角色', value: `${ch.name}（${ch.unit.key}）`, inline: true }, { name: '屬性', value: `${ATTR_EMOJI[c.attr]} ${ATTR_NAMES[c.attr]}`, inline: true }, { name: '稀有度', value: rarityStr(c.rarity), inline: true },
+  ];
+  if (x) {
+    fields.push({ name: '釋出', value: x.release ? new Date(x.release + 8 * 3600e3).toISOString().slice(0, 10) : '—', inline: true });
+    fields.push({ name: '滿等綜合力', value: `${num(x.perf + x.tech + x.stam)}（表演 ${num(x.perf)}／技巧 ${num(x.tech)}／體力 ${num(x.stam)}）${x.bonus ? `\n特訓後再 +${num(x.bonus)}` : ''}`, inline: true });
+    if (x.skill) fields.push({ name: `技能・${x.skillName || '—'}`, value: `Lv.1：${skillText(x.skill, 1, ch.name)}\nLv.4：${skillText(x.skill, 4, ch.name)}`.slice(0, 1024) });
+    if (x.quote) fields.push({ name: '招募台詞', value: x.quote.slice(0, 1024) });
+  }
+  return embed({ title: `${rarityStr(c.rarity)} ${ch.name}「${c.name}」`, color: ch.color, thumbnail: cardThumb(c), fields, footer: `卡片 id ${c.id}・${c.gacha ? '常駐卡池可得' : '非常駐卡池'}・資料同 SEKAI 資源中心卡片圖鑑` });
+}
+const card = {
+  name: 'card', description: '卡片查詢：稀有度、屬性、滿等綜合力、技能敘述、招募台詞（支援自動完成）', category: 'gacha',
+  options: [str('name', '卡名、角色名或卡片 id（支援自動完成）', { required: true, autocomplete: true, maxLen: 60 })],
+  async autocomplete(ctx, focused) { return searchCards(focused, 25).map(c => ({ name: `${rarityStr(c.rarity)} ${charaById(c.chara).name}「${c.name}」`.slice(0, 100), value: String(c.id) })); },
+  async run(ctx) {
+    const q = String(ctx.opt('name') || '').trim();
+    const list = searchCards(q, 6);
+    if (!list.length) return ctx.reply({ content: '找不到這張卡，試試卡名的一部分或角色名。', ephemeral: true });
+    if (list.length > 1) return ctx.reply({ content: `找到多張，請更精確（或直接輸入 id）：\n${list.map(c => `・${cardLine(c)}　id ${c.id}`).join('\n')}`, ephemeral: true });
+    await ctx.reply({ embeds: [cardEmbed(list[0])] });
+  },
+};
+
 /* ---------- 卡池情報 ---------- */
 const gachalist = {
   name: 'gachalist', description: '台服卡池情報：進行中與兩週內的卡池', category: 'gacha',
@@ -151,4 +171,4 @@ const gachalist = {
   },
 };
 
-export default [gacha, collection, pity, gachastats, trade, wishlist, gachalist];
+export default [gacha, collection, gachastats, card, trade, wishlist, gachalist];

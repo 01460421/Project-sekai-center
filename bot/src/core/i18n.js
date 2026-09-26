@@ -83,8 +83,8 @@ export const ZH = {
   // 🎰 轉蛋收藏
   gacha: ['轉蛋', { mode: '模式' }],
   collection: ['圖鑑', { chara: '角色', user: '對象' }],
-  pity: ['天井'],
   gachastats: ['抽卡統計', { user: '對象' }],
+  card: ['卡片', { name: '名稱' }],
   trade: ['交換', { user: '對象', card: '卡片' }],
   wishlist: ['願望單', { chara: '角色', oshi: '設為推し' }],
   gachalist: ['卡池情報'],
@@ -98,7 +98,7 @@ export const ZH = {
   randomsong: ['隨機選曲', { diff: '難度', min: '最低等級', max: '最高等級' }],
   setlist: ['歌單', { count: '首數', diff: '難度', min: '最低等級', max: '最高等級' }],
   songbattle: ['歌曲對決'],
-  event: ['活動'],
+  event: ['活動', { now: ['日曆'], border: ['榜線'], top: ['前百', { count: '人數' }], history: ['歷史', { event: '期數' }] }],
   // 🏆 等級與社群
   rank: ['等級', { user: '對象' }],
   leaderboard: ['排行榜', { by: '依據' }],
