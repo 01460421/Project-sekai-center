@@ -1,0 +1,23 @@
+# Fly.io（容器版）。從 repo 根目錄執行，建置上下文才會包含 data/：
+#   fly launch --no-deploy --copy-config --config bot/fly.toml   # 第一次：建立 app（改下面的 app 名稱）
+#   fly volumes create bot_data --size 1 --region nrt --config bot/fly.toml
+#   fly secrets set DISCORD_TOKEN=… APP_ID=… --config bot/fly.toml   # ANTHROPIC_API_KEY 選用
+#   fly deploy . --config bot/fly.toml
+app = "sekai-center-bot"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "bot/Dockerfile"
+
+[env]
+  STATE_FILE = "/data/state.json"
+
+# Gateway 機器人不對外開 port，不需要 [http_service]
+
+[mounts]
+  source = "bot_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

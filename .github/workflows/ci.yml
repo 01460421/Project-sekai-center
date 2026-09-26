@@ -26,3 +26,16 @@ jobs:
           python3 -m http.server 8765 >/dev/null 2>&1 &
           sleep 1
           node tests/smoke.mjs
+  # 伺服器機器人（bot/）：核心與功能不依賴 discord.js，測試不必 npm install、不需要 token
+  bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: 語法檢查
+        working-directory: bot
+        run: npm run check
+      - name: 註冊表、煙霧（100 個指令＋每個按鈕）、邏輯與流程測試
+        working-directory: bot
+        run: npm test

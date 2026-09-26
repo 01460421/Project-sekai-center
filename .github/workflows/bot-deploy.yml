@@ -1,0 +1,109 @@
+name: bot-deploy
+
+# 伺服器機器人（bot/）的雲端部署，全自動：
+#   workers → 部署到 Cloudflare Workers（HTTP 互動版，pjsk-bot），然後只憑 DISCORD_TOKEN 把 Discord 端接好：
+#             取 Application ID／Public Key → 寫進 Worker 機密 → 設 Interactions Endpoint URL → 註冊 100 個斜線指令
+#   image   → 建 Docker 映像推到 GHCR（容器版：Fly.io／Railway／Render／任何 VPS 直接拉）
+# 觸發：main 上 bot/ 或機器人用到的四個資料檔有變動（曲庫每天更新，Workers 版的內建資料也跟著每天更新）；也可手動。
+#
+# 需要的 secrets（repo → Settings → Secrets and variables → Actions）：
+#   CLOUDFLARE_API_TOKEN、CLOUDFLARE_ACCOUNT_ID   跟 worker-deploy.yml 同一組（已有）；沒設就略過 Workers 部署
+#   DISCORD_TOKEN                                  Discord 開發者後台 → Bot → Reset Token；沒設就只部署、不接 Discord
+#   ANTHROPIC_API_KEY（選用）                      占卜／測驗的 AI 解讀
+#   REGISTER_SECRET（選用）                        想用 curl 打 /register 才需要
+# 可選的 variable：WORKER_URL（自訂網域時填，例如 https://discord.project-sekai-center.com；不填就用 wrangler 印出的 workers.dev 網址）
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['bot/**', 'data/cards-index.js', 'data/ep-songs.js', 'data/sekai-data.js', 'data/song-bpm.js']
+
+concurrency:
+  group: bot-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: 語法檢查與測試（不需要 token、不需要安裝套件）
+        working-directory: bot
+        run: npm run check && npm test
+
+  workers:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      REGISTER_SECRET: ${{ secrets.REGISTER_SECRET }}
+      WORKER_URL: ${{ vars.WORKER_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm, cache-dependency-path: bot/package-lock.json }
+      - name: 安裝套件（含 wrangler）
+        working-directory: bot
+        run: npm ci
+      - name: 打包檢查（不上傳）
+        working-directory: bot
+        run: npm run build:workers
+      - name: 部署到 Cloudflare Workers
+        id: deploy
+        working-directory: bot
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::還沒設定 CLOUDFLARE_API_TOKEN／CLOUDFLARE_ACCOUNT_ID，略過 Workers 部署（見本檔開頭）。"
+            echo "deployed=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          npx wrangler deploy 2>&1 | tee deploy.log
+          url="$WORKER_URL"
+          if [ -z "$url" ]; then url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1); fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "deployed=yes" >> "$GITHUB_OUTPUT"
+          echo "::notice::Worker 網址：$url"
+      - name: 接上 Discord（機密、Interactions Endpoint、註冊指令）
+        if: steps.deploy.outputs.deployed == 'yes'
+        working-directory: bot
+        env:
+          WORKER_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          if [ -z "$DISCORD_TOKEN" ]; then
+            echo "::notice::還沒設定 DISCORD_TOKEN，Worker 已部署但尚未接上 Discord。到 repo Settings → Secrets 加 DISCORD_TOKEN 後重跑這個 workflow 即可。"
+            exit 0
+          fi
+          if [ -z "$WORKER_URL" ]; then echo "::error::抓不到 Worker 網址，請在 repo Variables 設定 WORKER_URL。"; exit 1; fi
+          # 機密寫入後 Worker 需要一點時間生效，Discord 設定 endpoint 時會 PING 驗證；失敗就等 20 秒重試
+          for i in 1 2 3 4; do node scripts/setup-discord.mjs && exit 0; echo "第 $i 次失敗，20 秒後重試"; sleep 20; done
+          exit 1
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 建置並推送映像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: bot/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/sekai-center-bot:latest
+            ghcr.io/${{ github.repository_owner }}/sekai-center-bot:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

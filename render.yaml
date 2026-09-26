@@ -1,0 +1,23 @@
+# Render Blueprint：伺服器機器人的容器版（Gateway 完整功能）。網站本體仍在 Vercel，這個檔案只描述 bot/。
+# 用法：Render 後台 → New → Blueprint → 選這個 repo；之後在 Environment 填 DISCORD_TOKEN、APP_ID（ANTHROPIC_API_KEY 選用）。
+services:
+  - type: worker
+    name: sekai-center-bot
+    runtime: docker
+    dockerfilePath: ./bot/Dockerfile
+    dockerContext: .
+    plan: starter
+    autoDeploy: true
+    disk:
+      name: bot-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: STATE_FILE
+        value: /data/state.json
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: APP_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
