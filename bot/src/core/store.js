@@ -24,7 +24,7 @@ export const USER_DEFAULTS = () => ({
 });
 
 export const GUILD_DEFAULTS = () => ({
-  settings: { xp: true, currency: '水晶', quizReward: 15, welcomeChannel: '', welcomeText: '', autoreact: {}, starboard: { channel: '', min: 3 }, ai: { enabled: true, style: 'lively', persona: '', name: '' } },
+  settings: { xp: true, currency: '水晶', quizReward: 15, welcomeChannel: '', welcomeText: '', autoreact: {}, starboard: { channel: '', min: 3 }, ai: { enabled: true, style: 'lively', persona: '', name: '' }, channels: [] },
   polls: {}, raffles: {}, counters: {}, stories: {}, chains: {}, lottery: { pot: 0, tickets: {}, round: 1 }, lfg: {},
   stats: { commands: 0, byCommand: {} },
 });

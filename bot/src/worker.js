@@ -151,7 +151,7 @@ export class BotDO {
         if (!this.env.REGISTER_SECRET || req.headers.get('authorization') !== `Bearer ${this.env.REGISTER_SECRET}`) return new Response('unauthorized', { status: 401 });
         if (!this.configured) return json({ error: '尚未設定 Discord（POST /bootstrap 或 wrangler secret put）' }, 409);
         const guild = new URLSearchParams(req.headers.get('x-query') || '').get('guild') || '';
-        const list = await this.rest.registerCommands(registrationJSON(this.bot.registry), guild);
+        const list = await this.rest.registerCommands(registrationJSON(this.bot.registry, { lang: this.env.COMMAND_LANG === 'en' ? 'en' : 'zh' }), guild);
         return json({ registered: (list || []).length, guild: guild || 'global' });
       }
       if (url.pathname === '/tick') {
@@ -199,7 +199,7 @@ export class BotDO {
       }
     }
     try {
-      const list = await this.rest.registerCommands(registrationJSON(this.bot.registry), String(body.guild || ''));
+      const list = await this.rest.registerCommands(registrationJSON(this.bot.registry, { lang: this.env.COMMAND_LANG === 'en' ? 'en' : 'zh' }), String(body.guild || ''));
       result.commands = (list || []).length;
     } catch (e) { result.commandsError = e.message.slice(0, 300); result.ok = false; }
     result.invite = `https://discord.com/oauth2/authorize?client_id=${app.id}&scope=bot%20applications.commands&permissions=277025508416`;

@@ -1,3 +1,5 @@
+import { toEnCommand, toEnSub, toEnOpt } from './i18n.js';
+
 /* Discord「HTTP 互動」（不經 Gateway）的共用工具：Ed25519 驗簽、REST 呼叫、互動 payload → 核心輸入。
    只用 fetch 與 WebCrypto，Node 22 與 Cloudflare Workers 都能跑，不需要 discord.js。 */
 
@@ -70,17 +72,18 @@ export function parseInteraction(i) {
     return u ? { id, name: (m && m.nick) || u.global_name || u.username, avatar: avatarUrl(u), bot: !!u.bot } : { id, name: id, bot: false };
   };
   if (i.type === 2 || i.type === 4) {
+    const name = toEnCommand(i.data.name);   // 註冊的是中文名，內部一律英文 id
     const options = {}; let sub = ''; let focused = null;
     const walk = list => { for (const o of list || []) {
-      if (o.type === 1) { sub = o.name; walk(o.options); }
+      if (o.type === 1) { sub = toEnSub(name, o.name); walk(o.options); }
       else if (o.type === 2) walk(o.options);
       else {
         if (o.focused) focused = o.value;
-        options[o.name] = o.type === 6 ? resolveUser(o.value) : o.type === 7 ? { id: o.value, name: (resolved.channels && resolved.channels[o.value] && resolved.channels[o.value].name) || '' } : o.value;
+        options[toEnOpt(name, sub, o.name)] = o.type === 6 ? resolveUser(o.value) : o.type === 7 ? { id: o.value, name: (resolved.channels && resolved.channels[o.value] && resolved.channels[o.value].name) || '' } : o.value;
       }
     } };
     walk(i.data.options);
-    return { kind: i.type === 4 ? 'autocomplete' : 'command', input: { ...base, name: i.data.name, options, sub, focused: focused == null ? '' : String(focused) } };
+    return { kind: i.type === 4 ? 'autocomplete' : 'command', input: { ...base, name, options, sub, focused: focused == null ? '' : String(focused) } };
   }
   if (i.type === 3) {
     const isSelect = i.data.component_type === 3;

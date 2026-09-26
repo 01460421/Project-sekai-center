@@ -1,3 +1,5 @@
+import { localizeCommand } from './i18n.js';
+
 /* 功能註冊表：每個功能是一個物件（見 bot/README.md「新增功能」），這裡負責驗證、彙整成 Discord 指令 JSON、
    以及提供分類清單給 /help。不碰檔案系統，Node 與 Cloudflare Workers 都能用。 */
 
@@ -69,10 +71,11 @@ export class Registry {
   }
 }
 
-/* 送給 Discord 的最終格式：dm_permission 改成 contexts（0 伺服器、1 機器人私訊、2 群組私訊） */
-export function registrationJSON(reg) {
+/* 送給 Discord 的最終格式：dm_permission 改成 contexts（0 伺服器、1 機器人私訊、2 群組私訊）；
+   lang 預設 zh：指令／子指令／參數名稱換成中文（core/i18n.js），英文 id 放 name_localizations；lang = 'en' 則照英文 id 註冊 */
+export function registrationJSON(reg, { lang = 'zh' } = {}) {
   return reg.commandJSON().map(c => {
-    const o = { ...c };
+    const o = lang === 'en' ? { ...c } : localizeCommand(c);
     if (o.dm_permission === false) { delete o.dm_permission; o.contexts = [0]; } else o.contexts = [0, 1, 2];
     o.integration_types = [0];
     return o;

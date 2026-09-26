@@ -67,11 +67,24 @@ const help = {
 
 /* ---------- 設定 ---------- */
 const settings = {
-  name: 'settings', description: '伺服器設定：經驗值開關、貨幣名稱、問答獎勵、AI 對話的個性', category: 'server', admin: true,
+  name: 'settings', description: '伺服器設定：經驗值開關、貨幣名稱、問答獎勵、AI 對話的個性、固定頻道', category: 'server', admin: true,
   options: [sub('show', '顯示目前設定'), sub('xp', '聊天經驗值開關', [bool('enabled', '開啟或關閉', { required: true })]), sub('currency', '貨幣名稱', [str('name', '例如 水晶、金幣、貓罐頭', { required: true, maxLen: 8 })]), sub('quizreward', '答對一題的獎勵', [str('amount', '數字', { required: true, maxLen: 5 })]),
-    sub('ai', 'AI 對話（/chat、@機器人）：開關、個性風格、名字、額外人設', [bool('enabled', '開啟或關閉'), str('style', '個性風格', { choices: Object.entries(STYLES).map(([k, v]) => [v[0], k]) }), str('name', `機器人自稱的名字（預設 ${DEFAULT_NAME}）`, { maxLen: 12 }), str('persona', '額外人設，例如「是這個伺服器的吉祥物，最愛珍奶」；輸入 清除 移除', { maxLen: 300 })])],
+    sub('ai', 'AI 對話（/chat、@機器人）：開關、個性風格、名字、額外人設', [bool('enabled', '開啟或關閉'), str('style', '個性風格', { choices: Object.entries(STYLES).map(([k, v]) => [v[0], k]) }), str('name', `機器人自稱的名字（預設 ${DEFAULT_NAME}）`, { maxLen: 12 }), str('persona', '額外人設，例如「是這個伺服器的吉祥物，最愛珍奶」；輸入 清除 移除', { maxLen: 300 })]),
+    sub('channel', '固定頻道：限制機器人只在指定頻道回應（管理員指令不受限）', [str('action', '動作', { required: true, choices: [['新增頻道', 'add'], ['移除頻道', 'remove'], ['清除限制（所有頻道都能用）', 'clear'], ['查看', 'list']] }), channelOpt('channel', '頻道（新增／移除時要選）')])],
   async run(ctx) {
     const s = ctx.settings;
+    if (ctx.sub === 'channel') {
+      s.channels = Array.isArray(s.channels) ? s.channels : [];
+      const act = ctx.opt('action'); const ch = ctx.opt('channel');
+      if (act === 'clear') { s.channels = []; ctx.store.touch(); return ctx.reply({ content: '已清除限制，所有頻道都能使用機器人。', ephemeral: true }); }
+      if (act === 'add' || act === 'remove') {
+        if (!ch) return ctx.reply({ content: '請選一個頻道。', ephemeral: true });
+        if (act === 'add') { if (!s.channels.includes(ch.id)) s.channels.push(ch.id); if (s.channels.length > 25) s.channels.length = 25; }
+        else s.channels = s.channels.filter(id => id !== ch.id);
+        ctx.store.touch();
+      }
+      return ctx.reply({ content: s.channels.length ? `機器人只在這些頻道回應：${s.channels.map(id => `<#${id}>`).join('、')}\n（管理員的設定指令不受限；其他頻道用指令會收到提示）` : '目前沒有限制，所有頻道都能使用機器人。', ephemeral: true });
+    }
     if (ctx.sub === 'ai') {
       const a = s.ai = { enabled: true, style: 'lively', persona: '', name: '', ...(s.ai || {}) };
       const changed = [];
@@ -86,7 +99,7 @@ const settings = {
     if (ctx.sub === 'xp') { s.xp = !!ctx.opt('enabled'); ctx.store.touch(); return ctx.reply({ content: `聊天經驗值：${s.xp ? '開啟' : '關閉'}`, ephemeral: true }); }
     if (ctx.sub === 'currency') { s.currency = String(ctx.opt('name')).slice(0, 8); ctx.store.touch(); return ctx.reply({ content: `貨幣名稱改為「${clean(s.currency)}」`, ephemeral: true }); }
     if (ctx.sub === 'quizreward') { const n = parseInt(ctx.opt('amount'), 10); if (!(n >= 0 && n <= 1000)) return ctx.reply({ content: '請輸入 0～1000 的數字。', ephemeral: true }); s.quizReward = n; ctx.store.touch(); return ctx.reply({ content: `問答獎勵改為 ${n}`, ephemeral: true }); }
-    await ctx.reply({ embeds: [embed({ title: '⚙️ 伺服器設定', color: COLORS.grey, fields: [{ name: '聊天經驗值', value: s.xp ? '開啟' : '關閉', inline: true }, { name: '貨幣', value: s.currency, inline: true }, { name: '問答獎勵', value: String(s.quizReward), inline: true }, { name: '歡迎訊息', value: s.welcomeChannel ? `<#${s.welcomeChannel}>` : '關閉', inline: true }, { name: '自動反應', value: `${Object.keys(s.autoreact || {}).length} 個`, inline: true }, { name: 'AI 對話', value: `${s.ai && s.ai.enabled === false ? '關閉' : '開啟'}・${(s.ai && s.ai.name) || DEFAULT_NAME}・${STYLES[(s.ai && s.ai.style) || 'lively'] ? STYLES[(s.ai && s.ai.style) || 'lively'][0] : s.ai.style}`, inline: true }] })], ephemeral: true });
+    await ctx.reply({ embeds: [embed({ title: '⚙️ 伺服器設定', color: COLORS.grey, fields: [{ name: '聊天經驗值', value: s.xp ? '開啟' : '關閉', inline: true }, { name: '貨幣', value: s.currency, inline: true }, { name: '問答獎勵', value: String(s.quizReward), inline: true }, { name: '歡迎訊息', value: s.welcomeChannel ? `<#${s.welcomeChannel}>` : '關閉', inline: true }, { name: '自動反應', value: `${Object.keys(s.autoreact || {}).length} 個`, inline: true }, { name: 'AI 對話', value: `${s.ai && s.ai.enabled === false ? '關閉' : '開啟'}・${(s.ai && s.ai.name) || DEFAULT_NAME}・${STYLES[(s.ai && s.ai.style) || 'lively'] ? STYLES[(s.ai && s.ai.style) || 'lively'][0] : s.ai.style}`, inline: true }, { name: '固定頻道', value: s.channels && s.channels.length ? s.channels.map(id => `<#${id}>`).join('、') : '不限', inline: true }] })], ephemeral: true });
   },
 };
 

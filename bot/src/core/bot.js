@@ -36,6 +36,7 @@ export class Bot {
     const ctx = new Ctx({ ...input, bot: this });
     if (f.guildOnly !== false && ctx.guildId === 'dm') return ctx.reply({ content: '這個功能只能在伺服器裡使用。', ephemeral: true });
     if (f.admin && !ctx.member.admin) return ctx.reply({ content: '需要「管理伺服器」權限。', ephemeral: true });
+    if (!f.admin && !this.channelAllowed(ctx.guildId, ctx.channelId)) return ctx.reply({ content: this.channelHint(ctx.guildId), ephemeral: true });
     if (f.cooldown) {
       const left = this.cooldowns.hit(`${f.name}:${ctx.guildId}:${ctx.user.id}`, f.cooldown);
       if (left) return ctx.reply({ content: `冷卻中，還要 ${left} 秒。`, ephemeral: true });
@@ -66,6 +67,7 @@ export class Bot {
     const handler = table && table[action];
     const ctx = new Ctx({ ...input, bot: this, action, data });
     if (!handler) return ctx.reply({ content: '這個按鈕已經失效了。', ephemeral: true });
+    if (!f.admin && !this.channelAllowed(ctx.guildId, ctx.channelId)) return ctx.reply({ content: this.channelHint(ctx.guildId), ephemeral: true });
     this.stats.components++;
     try {
       await handler(ctx);
@@ -88,8 +90,17 @@ export class Bot {
     } catch (e) { this.log('autocomplete 出錯:', e); return []; }
   }
 
+  /* ---- 固定頻道：管理員用 /settings channel 限制機器人只在哪些頻道回應（管理員指令不受限） ---- */
+  allowedChannels(gid) { return gid === 'dm' ? [] : (this.store.guild(gid).settings.channels || []); }
+  channelAllowed(gid, cid) { const list = this.allowedChannels(gid); return !list.length || list.includes(String(cid)); }
+  channelHint(gid) { return `這個機器人只在 ${this.allowedChannels(gid).map(id => `<#${id}>`).join('、')} 回應。`; }
+
   /* ---- 被動事件：功能模組可提供 events.messageCreate / memberJoin / reactionAdd ---- */
   async emit(event, payload) {
+    if (event === 'messageCreate' && payload && payload.guildId && !this.channelAllowed(payload.guildId, payload.channelId)) {
+      // 不在固定頻道：經驗值照算，但機器人不說話、不加反應（/chat 的被動回話會自己看 allowed）
+      payload.allowed = false; payload.reply = async () => {}; payload.react = async () => {};
+    }
     for (const f of this.registry.features) {
       const h = f.events && f.events[event];
       if (!h) continue;
