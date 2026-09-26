@@ -6,6 +6,7 @@ export class Ctx {
     this.bot = o.bot;
     this.user = o.user;                       // { id, name, avatar }
     this.guildId = o.guildId || 'dm';
+    this.guildName = o.guildName || '';
     this.channelId = o.channelId || '';
     this.member = o.member || { roles: [], admin: false, voiceMembers: [] };
     this.interactionId = o.interactionId || String(Date.now());
@@ -35,7 +36,8 @@ export class Ctx {
   async update(msg) { this.replied = true; return this._io.update(norm(msg)); }
   async followUp(msg) { return this._io.followUp(norm(msg)); }
   async edit(msg) { return this._io.edit(norm(msg)); }
-  async defer(ephemeral = false) { return this._io.defer(ephemeral); }
+  /* 先告訴 Discord「稍等」（要花超過 3 秒時用），之後用 edit() 補結果 */
+  async defer(ephemeral = false) { this.replied = true; return this._io.defer(ephemeral); }
   async showModal(m) { this.replied = true; return this._io.showModal(m); }
   /* 之後（例如倒數結束）主動送訊息到頻道 */
   async send(channelId, msg) { return this.bot.send(channelId, norm(msg)); }

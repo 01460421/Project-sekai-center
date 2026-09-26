@@ -20,10 +20,11 @@ export const USER_DEFAULTS = () => ({
   interact: {}, mbti: '', enneagram: 0, bloodType: '',
   tickets: 0, lastSeen: 0, created: Date.now(),
   guess: null,   // 進行中的猜數字 { n, max, tries }（放紀錄裡，Workers 版才不會因 DO 休眠而消失）
+  chat: null,    // /chat 的對話記憶 { log: [{ r:'u'|'a', t, at }], at }
 });
 
 export const GUILD_DEFAULTS = () => ({
-  settings: { xp: true, currency: '水晶', quizReward: 15, welcomeChannel: '', welcomeText: '', autoreact: {}, starboard: { channel: '', min: 3 } },
+  settings: { xp: true, currency: '水晶', quizReward: 15, welcomeChannel: '', welcomeText: '', autoreact: {}, starboard: { channel: '', min: 3 }, ai: { enabled: true, style: 'lively', persona: '', name: '' } },
   polls: {}, raffles: {}, counters: {}, stories: {}, chains: {}, lottery: { pot: 0, tickets: {}, round: 1 }, lfg: {},
   stats: { commands: 0, byCommand: {} },
 });

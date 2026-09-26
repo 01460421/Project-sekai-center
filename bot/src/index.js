@@ -2,11 +2,16 @@
    功能模組完全不碰 discord.js；要接 QQ 或其他平台時只需要再寫一個這樣的檔案。
 
    環境變數（可放 bot/.env）：
-     DISCORD_TOKEN       必要
-     STATE_FILE          預設 ./state/state.json
-     ANTHROPIC_API_KEY   選用，啟用占卜／測驗的 AI 解讀
-     AI_MODEL            選用，預設 claude-opus-5
-     AI_DAILY_PER_USER   選用，預設 10 */
+     DISCORD_TOKEN           必要
+     STATE_FILE              預設 ./state/state.json
+     ANTHROPIC_API_KEY       選用，啟用 AI：占卜／測驗的解讀、/chat 對話、@機器人 回話
+     AI_MODEL                選用，預設 claude-opus-5
+     AI_DAILY_PER_USER       選用，每人每日解讀次數，預設 10
+     AI_CHAT_DAILY_PER_USER  選用，每人每日對話次數，預設 40
+     DEFER_MS                選用，功能超過這麼多毫秒還沒回應就先告訴 Discord「稍等」，預設 2200
+
+   Discord 要求互動 3 秒內回應。功能（尤其是要等 Claude 的）跑太久時，這裡會自動先「延遲」，
+   之後第一次 reply 就變成把佔位訊息改成結果，跟 Workers 版（src/worker.js）的行為一致。 */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,6 +28,7 @@ const token = (process.env.DISCORD_TOKEN || '').trim();
 if (!token) { console.error('缺 DISCORD_TOKEN（放在 bot/.env 或環境變數）。'); process.exit(1); }
 
 const store = new FileStore(process.env.STATE_FILE || path.join(here, '..', 'state', 'state.json'));
+const DEFER_MS = Number(process.env.DEFER_MS) || 2200;
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates],
   partials: [Partials.Channel],
@@ -68,7 +74,22 @@ function memberInfo(interaction) {
   return { admin, roles: m && m.roles && m.roles.cache ? [...m.roles.cache.keys()] : [], voiceMembers: voice };
 }
 
+/* 元件（按鈕／選單／來自訊息的表單）可以「延遲更新」原訊息；指令與獨立表單只能「延遲回覆」 */
+const canDeferUpdate = interaction => typeof interaction.deferUpdate === 'function' && (!interaction.isModalSubmit() || interaction.isFromMessage());
+
+/* 先告訴 Discord「稍等」。st 記錄延遲的種類：reply → 之後第一次 reply 要改佔位訊息；update → reply 另開一則 */
+async function deferNow(interaction, st, ephemeral = false) {
+  if (interaction.deferred || interaction.replied || st.acking) return st.pending;
+  st.acking = true;
+  if (canDeferUpdate(interaction)) { st.deferKind = 'update'; st.pending = interaction.deferUpdate(); }
+  else { st.deferKind = 'reply'; st.pending = interaction.deferReply(ephemeral ? { flags: MessageFlags.Ephemeral } : {}); }
+  return st.pending;
+}
+/* 逾時計時器送出的延遲可能還在路上：功能這時要回應的話，先等它落地，才知道該改佔位訊息還是另開一則 */
+const settled = st => (st.pending ? st.pending.catch(() => {}) : Promise.resolve());
+
 function baseInput(interaction) {
+  const st = { deferKind: '', edited: false, acking: false, pending: null };   // acking：正在送第一個回應，逾時計時器不要再插隊
   return {
     user: userOf(interaction.user, interaction.member),
     guildId: interaction.guildId || 'dm',
@@ -77,20 +98,25 @@ function baseInput(interaction) {
     interactionId: interaction.id,
     member: memberInfo(interaction),
     locale: interaction.locale,
+    _st: st,
     io: {
-      reply: async msg => { if (interaction.deferred || interaction.replied) return interaction.followUp(toDiscord(msg)); return interaction.reply(toDiscord(msg)); },
+      reply: async msg => {
+        await settled(st);
+        if (interaction.deferred && st.deferKind === 'reply' && !st.edited) { st.edited = true; return interaction.editReply(toDiscord(msg)); }
+        if (interaction.deferred || interaction.replied) return interaction.followUp(toDiscord(msg));
+        st.acking = true; return interaction.reply(toDiscord(msg));
+      },
       update: async msg => {
-        if (typeof interaction.update === 'function' && (!interaction.isModalSubmit || !interaction.isModalSubmit() || interaction.isFromMessage())) return interaction.update(toDiscord(msg));
+        await settled(st);
+        if (interaction.deferred || interaction.replied) { st.edited = true; return interaction.editReply(toDiscord(msg)); }
+        st.acking = true;
+        if (typeof interaction.update === 'function' && (!interaction.isModalSubmit() || interaction.isFromMessage())) return interaction.update(toDiscord(msg));
         return interaction.reply(toDiscord(msg));
       },
       followUp: async msg => interaction.followUp(toDiscord(msg)),
-      edit: async msg => interaction.editReply(toDiscord(msg)),
-      defer: async ephemeral => {
-        if (interaction.deferred || interaction.replied) return;
-        if (typeof interaction.deferUpdate === 'function') return interaction.deferUpdate();
-        return interaction.deferReply(ephemeral ? { flags: MessageFlags.Ephemeral } : {});
-      },
-      showModal: async m => interaction.showModal(m),
+      edit: async msg => { await settled(st); st.edited = true; return interaction.editReply(toDiscord(msg)); },
+      defer: async ephemeral => deferNow(interaction, st, ephemeral),
+      showModal: async m => { st.acking = true; return interaction.showModal(m); },
       members: async () => {
         const g = interaction.guild; if (!g) return [];
         // 小伺服器一次把成員抓齊（快取不一定完整）；大伺服器就用快取裡有的
@@ -107,31 +133,42 @@ function messageSnapshot(msg) {
 }
 
 client.on(Events.InteractionCreate, async interaction => {
+  const input = baseInput(interaction);
+  // 功能跑超過 DEFER_MS 還沒回應（例如在等 Claude）就先延遲，避免 Discord 顯示「互動失敗」
+  const timer = interaction.isAutocomplete() ? null : setTimeout(() => { deferNow(interaction, input._st).catch(() => {}); }, DEFER_MS);
   try {
     if (interaction.isChatInputCommand()) {
       const { options, sub } = flattenOptions(interaction);
-      await bot.runCommand({ ...baseInput(interaction), name: interaction.commandName, options, sub });
+      await bot.runCommand({ ...input, name: interaction.commandName, options, sub });
     } else if (interaction.isAutocomplete()) {
       const f = interaction.options.getFocused(true);
-      const list = await bot.runAutocomplete({ ...baseInput(interaction), name: interaction.commandName, focused: f.value });
+      const list = await bot.runAutocomplete({ ...input, name: interaction.commandName, focused: f.value });
       await interaction.respond(list).catch(() => {});
     } else if (interaction.isButton()) {
-      await bot.runComponent('button', { ...baseInput(interaction), customId: interaction.customId, message: messageSnapshot(interaction.message) });
+      await bot.runComponent('button', { ...input, customId: interaction.customId, message: messageSnapshot(interaction.message) });
     } else if (interaction.isStringSelectMenu()) {
-      await bot.runComponent('select', { ...baseInput(interaction), customId: interaction.customId, values: interaction.values, message: messageSnapshot(interaction.message) });
+      await bot.runComponent('select', { ...input, customId: interaction.customId, values: interaction.values, message: messageSnapshot(interaction.message) });
     } else if (interaction.isModalSubmit()) {
       const fields = {};
       for (const row of interaction.components) for (const c of row.components) fields[c.customId] = c.value;
-      await bot.runComponent('modal', { ...baseInput(interaction), customId: interaction.customId, fields, message: interaction.isFromMessage() ? messageSnapshot(interaction.message) : null });
+      await bot.runComponent('modal', { ...input, customId: interaction.customId, fields, message: interaction.isFromMessage() ? messageSnapshot(interaction.message) : null });
     }
   } catch (e) { console.error('[interaction]', e); }
+  finally { if (timer) clearTimeout(timer); }
 });
 
 client.on(Events.MessageCreate, async message => {
   if (!message.guildId || message.author.bot) return;
+  const me = client.user;
+  const mentionsBot = !!(me && message.mentions.users.has(me.id));
+  const repliedToBot = !!(me && message.mentions.repliedUser && message.mentions.repliedUser.id === me.id);
   await bot.emit('messageCreate', {
-    guildId: message.guildId, channelId: message.channelId, userId: message.author.id, userName: message.member ? message.member.displayName : message.author.username,
+    guildId: message.guildId, guildName: message.guild ? message.guild.name : '', channelId: message.channelId, userId: message.author.id, userName: message.member ? message.member.displayName : message.author.username,
     content: message.content || '', isBot: message.author.bot, mentions: [...message.mentions.users.keys()],
+    // 給 /chat 的被動回話用：有沒有 @機器人、是不是在回覆機器人的訊息、拿掉 @機器人 之後的內文
+    botId: me ? me.id : '', mentionsBot, repliedToBot,
+    text: me ? (message.content || '').replace(new RegExp(`<@!?${me.id}>`, 'g'), '').trim() : (message.content || ''),
+    typing: () => message.channel.sendTyping(),
     reply: text => message.reply(typeof text === 'string' ? { content: text, allowedMentions: { repliedUser: false, users: [] } } : text),
     react: emoji => message.react(emoji),
   });

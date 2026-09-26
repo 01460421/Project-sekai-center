@@ -65,7 +65,7 @@ try {
   const press = await interaction(base({ type: 3, data: { custom_id: cell, component_type: 2 }, message: { content: '', embeds: [], components: [] } })); ok(press.body.type === 7 && /井字/.test(press.body.data.content), '井字按鈕 → type 7');
   const ac = await interaction(base({ type: 4, data: { name: 'song', options: [{ type: 3, name: 'title', value: 'tell', focused: true }] } })); ok(ac.body.type === 8 && ac.body.data.choices.length > 0, '自動完成 → type 8');
   const mbti = await interaction(base({ type: 2, data: { name: 'mbti', options: [{ type: 1, name: 'type', options: [{ type: 3, name: 'type', value: 'INFP' }] }] } })); ok(mbti.body.type === 4 && /INFP/.test(mbti.body.data.embeds[0].title), '/mbti type INFP（子指令）');
-  const health = await (await fetch(`http://127.0.0.1:${PORT}/health`)).json(); ok(health.ok && health.features === 100 && health.users >= 1, '/health', JSON.stringify(health).slice(0, 160));
+  const health = await (await fetch(`http://127.0.0.1:${PORT}/health`)).json(); ok(health.ok && health.features === 101 && health.users >= 1, '/health', JSON.stringify(health).slice(0, 160));
   const cron = await fetch(`http://127.0.0.1:${PORT}/__scheduled?cron=*+*+*+*+*`); ok(cron.status === 200, 'cron tick');
   const reg = await fetch(`http://127.0.0.1:${PORT}/register`, { method: 'POST' }); ok(reg.status === 401, '/register 無密鑰 → 401');
   const setup = await fetch(`http://127.0.0.1:${PORT}/setup`); ok(setup.status === 200 && /Bot token/.test(await setup.text()), '/setup 設定頁');

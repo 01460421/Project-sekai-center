@@ -96,7 +96,7 @@ test('cron tick：到期的提醒用 REST 送到頻道；health 有統計', asyn
   await new Promise(r => setTimeout(r, 20));
   const sent = env.calls.find(c => c.method === 'POST' && c.url.includes(`/channels/${CHANNEL}/messages`));
   assert.ok(sent, '應該送出提醒'); assert.match(sent.body.content, /喝水/);
-  const h = await worker.fetch(new Request('https://bot.example/health'), env); const hb = await h.json(); assert.equal(hb.features, 100); assert.ok(hb.users >= 1);
+  const h = await worker.fetch(new Request('https://bot.example/health'), env); const hb = await h.json(); assert.equal(hb.features, 101); assert.ok(hb.users >= 1);
 });
 
 test('/register 需要密鑰，成功時 PUT 100 個指令', async () => {
@@ -104,7 +104,7 @@ test('/register 需要密鑰，成功時 PUT 100 個指令', async () => {
   assert.equal((await worker.fetch(new Request('https://bot.example/register', { method: 'POST' }), env)).status, 401);
   const r = await worker.fetch(new Request('https://bot.example/register?guild=' + GUILD, { method: 'POST', headers: { authorization: 'Bearer sekret' } }), env);
   assert.deepEqual(await r.json(), { registered: 100, guild: GUILD });
-  const put = env.calls.find(c => c.method === 'PUT'); assert.ok(put.url.endsWith(`/guilds/${GUILD}/commands`)); assert.equal(put.body.length, 100); assert.ok(put.body.every(c => Array.isArray(c.contexts)));
+  const put = env.calls.find(c => c.method === 'PUT'); assert.ok(put.url.endsWith(`/guilds/${GUILD}/commands`)); assert.equal(put.body.length, 101); assert.ok(put.body.every(c => Array.isArray(c.contexts)));
 });
 
 test('功能跑太久：先回延遲（type 5），結果之後 PATCH @original', async () => {
@@ -208,4 +208,20 @@ test('元件逾時：先回 type 6，之後的 reply 另開訊息（followUp）�
   const fu = env.calls.find(c => c.method === 'POST' && c.url.endsWith('/webhooks/123/itoken'));
   assert.ok(fu, '要用 followUp 另開訊息'); assert.equal(fu.body.content, '這不是你的按鈕'); assert.equal(fu.body.flags, 64);
   assert.ok(!env.calls.some(c => c.method === 'PATCH' && c.url.includes('@original')), '不能改掉按鈕所在的原訊息');
+});
+
+test('Workers 版 /chat：先回 type 5，Claude 回完再 PATCH @original；記憶寫進 storage', async () => {
+  const { createAI } = await import('../src/core/ai.js');
+  const storage = fakeStorage(); const env = makeEnv({ storage, deferMs: 150 });
+  await send(env, { type: 1 });
+  await new Promise(r => setTimeout(r, 20));
+  const inst = env.instance();
+  const client = { calls: [], beta: { messages: { create: async p => { client.calls.push(p); await new Promise(r => setTimeout(r, 250)); return { stop_reason: 'end_turn', content: [{ type: 'text', text: '嗨嗨' }] }; } } } };
+  inst.bot.ai = createAI({ ANTHROPIC_API_KEY: 'x' }, { store: inst.store, client });
+  const r = await send(env, command('chat', [{ type: 3, name: 'text', value: '哈囉' }]));
+  assert.equal(r.body.type, 5, '要先延遲');
+  await new Promise(r => setTimeout(r, 500));
+  const patch = env.calls.find(c => c.method === 'PATCH' && c.url.endsWith('/messages/@original'));
+  assert.ok(patch, '結果要 PATCH @original'); assert.match(patch.body.content, /> 哈囉\n嗨嗨/); assert.equal(patch.body.components.length, 1);
+  assert.equal(storage.map.get(`u:${GUILD}:${USER.id}`).chat.log.length, 2, '記憶要落地');
 });

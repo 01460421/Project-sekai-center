@@ -11,7 +11,7 @@
 
 ## 伺服器機器人（bot/）
 
-`bot/` 是獨立的 Discord 機器人專案，**100 個娛樂與互動功能**：塔羅／易經／星座／御神籤等占卜、MBTI／五大／九型等性格測驗、配對與結婚等社交、21 點／踩地雷／Wordle 等小遊戲、投票與真心話等趣味、簽到／商店／樂透的經濟系統、讀本站資料的模擬轉蛋與歌曲問答、等級成就與抽獎提醒、歡迎訊息等伺服器工具。核心與 Discord 分離、每個功能都有測試。可以部署到 **Cloudflare Workers**（HTTP 互動模式，跟 `worker/` 一樣用 wrangler，`bot-deploy.yml` 自動部署）或跑成 **Docker 容器**（GHCR 映像；Fly.io／Railway／Render 設定檔都附了）。安裝、部署與完整功能清單見 [bot/README.md](bot/README.md)。
+`bot/` 是獨立的 Discord 機器人專案，**101 個娛樂與互動功能**：塔羅／易經／星座／御神籤等占卜、MBTI／五大／九型等性格測驗、配對與結婚等社交、21 點／踩地雷／Wordle 等小遊戲、投票與真心話等趣味、簽到／商店／樂透的經濟系統、讀本站資料的模擬轉蛋與歌曲問答、等級成就與抽獎提醒、歡迎訊息等伺服器工具，以及接上 Claude 的 `/chat` **AI 對話**（有人設與記憶、認識使用者、能替他查資料或執行指令；容器版 @機器人 就會回話）。核心與 Discord 分離、每個功能都有測試。可以部署到 **Cloudflare Workers**（HTTP 互動模式，跟 `worker/` 一樣用 wrangler，`bot-deploy.yml` 自動部署）或跑成 **Docker 容器**（GHCR 映像；Fly.io／Railway／Render 設定檔都附了）。安裝、部署與完整功能清單見 [bot/README.md](bot/README.md)。
 
 ## 檔案結構
 

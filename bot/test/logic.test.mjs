@@ -18,7 +18,9 @@ import { genSekaiQ, genSongQ, genCharaQ, genTrivia } from '../src/features/08-qu
 import { dailyAmount } from '../src/features/06-economy.js';
 import { hexByLines, HEXAGRAMS } from '../src/content/iching.js';
 import { TAROT } from '../src/content/tarot.js';
-import { makeBot, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL } from './harness.js';
+import { makeBot, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL, fakeClaude, aiText, aiTool, aiRefusal } from './harness.js';
+import { createAI } from '../src/core/ai.js';
+import { runFeature, buildSystem, STYLES } from '../src/features/11-ai.js';
 
 test('種子亂數可重現、無種子則不同', () => {
   const a = new Rng('x'), b = new Rng('x');
@@ -219,7 +221,7 @@ test('冷卻與權限', async () => {
   const bot = await makeBot();
   await runCmd(bot, 'confess', { options: { text: '嗨' } }); const r = await runCmd(bot, 'confess', { options: { text: '嗨' } }); assert.match(textOf(r.last), /冷卻/);
   const dm = await runCmd(bot, 'daily', { guildId: 'dm' }); assert.match(textOf(dm.last), /伺服器/);
-  const help = await runCmd(bot, 'help', { guildId: 'dm' }); assert.match(textOf(help.last), /100 個功能/);
+  const help = await runCmd(bot, 'help', { guildId: 'dm' }); assert.match(textOf(help.last), /101 個功能/);
   const unknown = await runCmd(bot, 'nope'); assert.match(textOf(unknown.last), /找不到/);
 });
 
@@ -265,4 +267,103 @@ test('猜數字：狀態放在玩家紀錄裡，猜對得獎並清掉', async ()
   const wrong = await runCmd(bot, 'guess', { sub: 'try', options: { number: u.guess.n === 10 ? 1 : 10 } }); assert.match(textOf(wrong.last), /再大|再小/);
   const right = await runCmd(bot, 'guess', { sub: 'try', options: { number: u.guess.n } }); assert.match(textOf(right.last), /答對/);
   assert.equal(u.guess, null); assert.ok(u.crystals > 0); assert.deepEqual(bot.errors, []);
+});
+
+/* ---------- AI 對話 ---------- */
+test('/chat：沒設金鑰會說明怎麼開啟；伺服器關閉時也不聊', async () => {
+  const bot = await makeBot();
+  const r = await runCmd(bot, 'chat', { options: { text: '嗨' } }); assert.match(textOf(r.last), /ANTHROPIC_API_KEY/); assert.ok(r.last.ephemeral); assert.ok(!r.deferred);
+  const bot2 = await makeBot({ claude: fakeClaude([aiText('哈囉')]) });
+  await runCmd(bot2, 'settings', { sub: 'ai', options: { enabled: false }, admin: true });
+  const off = await runCmd(bot2, 'chat', { options: { text: '嗨' } }); assert.match(textOf(off.last), /關閉了 AI 對話/);
+  assert.deepEqual(bot2.errors, []);
+});
+
+test('/chat：先延遲再補結果、記得上一輪、系統提示認識這位使用者與人設', async () => {
+  const claude = fakeClaude([aiText('嗨 Alice，今天還沒簽到喔！'), aiText('剛才你說你叫小愛。')]);
+  const bot = await makeBot({ claude });
+  const u = bot.store.user(GUILD, USERS.alice.id); u.crystals = 1234; u.mbti = 'INFP';
+  await runCmd(bot, 'settings', { sub: 'ai', options: { style: 'tsundere', name: '阿世', persona: '最愛珍奶' }, admin: true });
+  const r1 = await runCmd(bot, 'chat', { options: { text: '我叫小愛' } });
+  assert.ok(r1.deferred, '要先 defer'); assert.equal(r1.edits.length, 1, '結果用 edit 補上');
+  assert.match(r1.edits[0].content, /> 我叫小愛\n嗨 Alice/); assert.equal(buttonsOf(r1.edits[0]).length, 2);
+  const req = claude.calls[0];
+  assert.equal(req.model, 'claude-opus-5'); assert.deepEqual(req.betas, ['server-side-fallback-2026-07-01']); assert.equal(req.fallbacks, 'default');
+  assert.equal(req.system[0].cache_control.type, 'ephemeral', '穩定的前半段要能快取');
+  const sys = req.system.map(b => b.text).join('\n');
+  assert.match(sys, /稱呼：Alice/); assert.match(sys, /1,234/); assert.match(sys, /INFP/); assert.match(sys, /今天還沒簽到/);
+  assert.match(sys, /「阿世」/); assert.match(sys, new RegExp(STYLES.tsundere[0])); assert.match(sys, /最愛珍奶/); assert.match(sys, /\/daily/);
+  assert.ok(req.tools && req.tools[0].name === 'run_command' && req.tools[0].strict === true);
+  assert.equal(req.messages.length, 1); assert.equal(req.messages[0].content, '我叫小愛');
+  // 第二輪帶著歷史
+  const r2 = await runCmd(bot, 'chat', { options: { text: '我叫什麼？' } });
+  assert.match(r2.edits[0].content, /小愛/);
+  assert.equal(claude.calls[1].messages.length, 3); assert.equal(claude.calls[1].messages[1].role, 'assistant');
+  assert.equal(u.chat.log.length, 4);
+  // 忘掉：記憶清空；別人不能按
+  const [, forget] = buttonsOf(r2.edits[0]);
+  const nope = await press(bot, forget.id, { user: USERS.bob, message: r2.edits[0] }); assert.match(textOf(nope.last), /別人的對話/);
+  const ok = await press(bot, forget.id, { message: r2.edits[0] }); assert.equal(u.chat, null); assert.match(ok.followUps[0].content, /忘掉/);
+  assert.deepEqual(bot.errors, []);
+});
+
+test('/chat：模型用 run_command 查歌，工具結果回給模型，卡片一起顯示；不准的指令回 is_error', async () => {
+  const claude = fakeClaude([
+    aiTool('run_command', { name: 'song', sub: '', options: '{"title":"Tell Your World"}' }),
+    (params) => { const last = params.messages[params.messages.length - 1]; const tr = last.content[0]; assert.equal(tr.type, 'tool_result'); assert.equal(tr.tool_use_id, 'tu_1'); assert.match(tr.content, /Tell Your World/); assert.match(tr.content, /BPM/); return aiText('Tell Your World 的 MASTER 是 26 級喔。'); },
+  ]);
+  const bot = await makeBot({ claude });
+  const r = await runCmd(bot, 'chat', { options: { text: 'Tell Your World 幾級？' } });
+  assert.match(r.edits[0].content, /26 級/); assert.equal(r.edits[0].embeds.length, 1); assert.match(r.edits[0].embeds[0].title, /Tell Your World/);
+  assert.equal(claude.calls.length, 2); assert.equal(claude.calls[1].messages[1].role, 'assistant');
+  // 直接測工具：清單外、子指令限制、缺必填、選項名對應
+  const ctx = r.ctx;
+  await assert.rejects(runFeature(ctx, { name: 'pay', sub: '', options: '{}' }), /不能執行 pay/);
+  await assert.rejects(runFeature(ctx, { name: 'marry', sub: 'divorce', options: '{}' }), /不能執行 marry divorce/);
+  await assert.rejects(runFeature(ctx, { name: 'dream', sub: '', options: '{}' }), /缺少必要參數 text/);
+  await assert.rejects(runFeature(ctx, { name: 'song', sub: '', options: 'nope' }), /JSON/);
+  const h = await runFeature(ctx, { name: 'horoscope', sub: '', options: '{"sign":"獅子座"}' }); assert.match(h.text, /獅子座/); assert.equal(h.extra.embeds.length, 1);
+  const bank = await runFeature(ctx, { name: 'bank', sub: '', options: '{}' }); assert.match(bank.text, /銀行/);
+  // 模型呼叫不准的指令：is_error 回去，模型再回話
+  const claude2 = fakeClaude([aiTool('run_command', { name: 'pay', sub: '', options: '{"amount":5}' }), (p) => { const tr = p.messages[p.messages.length - 1].content[0]; assert.equal(tr.is_error, true); assert.match(tr.content, /不能執行/); return aiText('轉帳要你自己用 /pay 喔。'); }]);
+  const bot2 = await makeBot({ claude: claude2 });
+  const r2 = await runCmd(bot2, 'chat', { options: { text: '幫我轉 5 給 Bob' } }); assert.match(r2.edits[0].content, /\/pay/);
+  assert.deepEqual(bot.errors, []); assert.deepEqual(bot2.errors, []);
+});
+
+test('/chat：額度、拒答、API 出錯都有人話的回應；工具跑太多輪會停', async () => {
+  const bot = await makeBot({ claude: fakeClaude([aiText('第一句')]), aiEnv: { AI_CHAT_DAILY_PER_USER: '1' } });
+  await runCmd(bot, 'chat', { options: { text: '1' } });
+  const over = await runCmd(bot, 'chat', { options: { text: '2' } }); assert.match(textOf(over.last), /額度/);
+  const refused = await runCmd(await makeBot({ claude: fakeClaude([aiRefusal()]) }), 'chat', { options: { text: 'x' } }); assert.match(refused.edits[0].content, /不太方便聊/); assert.equal(buttonsOf(refused.edits[0]).length, 0);
+  const broken = await runCmd(await makeBot({ claude: fakeClaude([new Error('boom')]) }), 'chat', { options: { text: 'x' } }); assert.match(broken.edits[0].content, /出了點狀況/);
+  const loopy = fakeClaude(() => aiTool('run_command', { name: 'coin', sub: '', options: '{}' }));
+  const r = await runCmd(await makeBot({ claude: loopy }), 'chat', { options: { text: '一直擲' } }); assert.ok(loopy.calls.length <= 5, `工具輪數要有上限（${loopy.calls.length}）`); assert.ok(r.edits.length === 1);
+});
+
+test('接著聊（表單）另開一則；@機器人 或回覆它的訊息會回話並共用記憶（容器版）', async () => {
+  const claude = fakeClaude([aiText('你好呀'), aiText('剛剛你打招呼了'), aiText('回覆也行')]);
+  const bot = await makeBot({ claude });
+  const r = await runCmd(bot, 'chat', { options: { text: '你好' } });
+  const [more] = buttonsOf(r.edits[0]);
+  const m = await press(bot, more.id, { message: r.edits[0] }); assert.equal(m.modals.length, 1);
+  const say = await press(bot, m.modals[0].custom_id, { fields: { t: '剛剛我做了什麼？' }, message: r.edits[0] });
+  assert.ok(say.deferred); assert.equal(say.replies.length, 1); assert.match(say.replies[0].content, /剛剛你打招呼了/);
+  assert.equal(claude.calls[1].messages.length, 3);
+  const quiet = await sendMessage(bot, { content: '大家好' }); assert.equal(quiet.replies.length, 0, '沒 @ 機器人不回');
+  const hi = await sendMessage(bot, { content: `<@${USERS.robot.id}> 剛剛聊到哪`, text: '剛剛聊到哪', mentionsBot: true });
+  assert.equal(hi.texts[0], '回覆也行'); assert.equal(hi.typed, 1); assert.equal(claude.calls[2].messages.length, 5, '@ 的對話跟 /chat 共用記憶'); assert.equal(claude.calls[2].messages[4].content, '剛剛聊到哪');
+  assert.match(claude.calls[2].system[1].text, /@ 了你/);
+  assert.deepEqual(bot.errors, []);
+});
+
+test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立', async () => {
+  assert.equal(createAI({}, {}), null);
+  const store = (await makeBot()).store;
+  const ai = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_PER_USER: '1', AI_CHAT_DAILY_PER_USER: '2' }, { store, client: fakeClaude([aiText('ok')]) });
+  assert.equal(await ai.narrate('p', { userId: 'u' }), 'ok'); assert.equal(await ai.narrate('p', { userId: 'u' }), '', '解讀額度 1 次');
+  assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).text, 'ok');
+  assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).text, 'ok');
+  assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).quota, false, '對話額度 2 次');
+  assert.deepEqual(ai.quota('chat', 'u'), { used: 2, cap: 2 });
 });
