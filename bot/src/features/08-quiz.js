@@ -1,9 +1,10 @@
-/* 問答與音樂（10）：綜合問答、猜歌、猜角色、搶答、問答排行、歌曲查詢、隨機選曲、歌單、歌曲對決、活動與卡池日曆 */
+/* 問答與音樂（10）：綜合問答、猜歌、猜角色、搶答、問答排行、歌曲查詢、隨機選曲、歌單、歌曲對決、活動（日曆／榜線／前百／歷史） */
 
 import { str, int, sub } from '../core/opts.js';
 import { embed, button, row, cid, COLORS, Style, mention, num, clean, ts, bar, LETTER_EMOJI } from '../core/ui.js';
 import { award, quest, checkAchievements, achievementLine } from '../core/helpers.js';
 import { CHARAS, charaById, UNITS, SONGS, songById, songLevel, songNotes, fmtLen, searchSongs, DIFF_NAMES, eventsAround, gachasAround } from '../core/sekai.js';
+import { fetchLive, fetchHistoryIndex, fetchHistory, trend, fetchBordersDb } from '../core/live.js';
 import { TRIVIA } from '../content/trivia.js';
 import { Rng } from '../core/rng.js';
 
@@ -162,15 +163,59 @@ const songbattle = {
   },
 };
 
-/* ---------- 活動與卡池日曆 ---------- */
+/* ---------- 活動：日曆、即時榜線、前百、歷史榜線（跟網站排名頁同一套來源，見 core/live.js） ---------- */
+const chapterName = c => { const ch = c.character ? charaById(c.character) : null; return `第 ${c.chapter} 章${ch ? `・${ch.name}` : ''}`; };
+const medal = r => (r <= 3 ? ['🥇', '🥈', '🥉'][r - 1] : `${r}.`);
+const deltaStr = d => (d == null ? '' : `（${d >= 0 ? '+' : ''}${num(d)}／時）`);
+const LIVE_FAIL = '暫時抓不到榜線資料（HiSekai 與網站備援都沒回應），稍後再試。';
+
+function calendarMsg() {
+  const now = Date.now(); const evs = eventsAround(now, 21); const gs = gachasAround(now, 7).slice(0, 8);
+  const fields = [];
+  if (evs.length) fields.push({ name: '活動（依伴生卡池推算）', value: evs.map(g => `${g.start <= now && g.end >= now ? '🟢' : '🕒'} 第 ${g.eid} 期${g.et ? `・${g.et}` : ''}${g.ech ? `・${g.ech}` : ''}　${ts(g.start, 'd')}～${ts(g.end, 'd')}${g.start > now ? `（${ts(g.start)}）` : `（${ts(g.end)} 結束）`}`).join('\n') });
+  if (gs.length) fields.push({ name: '一週內的卡池', value: gs.map(g => `${g.start <= now && g.end >= now ? '🟢' : '🕒'} ${g.n}　${ts(g.start, 'd')}～${ts(g.end, 'd')}`).join('\n') });
+  return { embeds: [embed({ title: '📅 活動與卡池', color: COLORS.green, description: fields.length ? '想看榜線用 /event border、前百 /event top、歷史榜線 /event history。' : '資料範圍內沒有活動或卡池。', fields, footer: '時間依 Discord 時區顯示・資料來源 SEKAI 資源中心' })] };
+}
+async function borderMsg() {
+  const live = await fetchLive('border');
+  let tr = null;
+  try { const idx = await fetchHistoryIndex(); if (live.event.id && Array.isArray(idx) && idx.includes(live.event.id)) tr = trend(await fetchHistory(live.event.id), 1); } catch {}
+  const delta = new Map(((tr && tr.lines) || []).map(l => [l.tier, l.delta]));
+  const main = live.rows.map(r => `T${num(r.rank)}　**${num(r.score)}**${deltaStr(delta.get(r.rank))}`).join('\n');
+  const fields = live.wl.map(c => ({ name: chapterName(c), value: c.rows.map(r => `T${num(r.rank)}　${num(r.score)}`).join('\n') || '—', inline: true }));
+  const head = `${live.event.end ? `結束 ${ts(live.event.end, 'f')}（${ts(live.event.end)}）` : ''}${tr && tr.top1 != null ? `　第 1 名 ${num(tr.top1)}` : ''}`;
+  return { embeds: [embed({ title: `📈 榜線・第 ${live.event.id ?? '?'} 期 ${live.event.name}`, color: COLORS.blue, description: `${head}\n\n${main || '（目前沒有段位資料）'}${live.partial ? '\n-# 段位端點暫時只有前百換算的 T100' : ''}`, fields, footer: `來源 ${live.source}${tr && tr.prevAt ? '・括號為近一小時增量（網站榜線快照）' : ''}・網站排名頁同一套資料` })] };
+}
+async function topMsg(count) {
+  const live = await fetchLive('top100'); const n = Math.max(5, Math.min(50, count || 10));
+  const line = r => `${medal(r.rank)} ${clean(r.name) || '（無名）'}　**${num(r.score)}**${r.speed != null ? `　⏱ ${num(r.speed)}／時` : ''}`;
+  const fields = live.wl.map(c => ({ name: chapterName(c), value: c.rows.slice(0, 3).map(line).join('\n') || '—', inline: true }));
+  return { embeds: [embed({ title: `🏁 前百・第 ${live.event.id ?? '?'} 期 ${live.event.name}`, color: COLORS.gold, description: (live.event.end ? `結束 ${ts(live.event.end)}\n\n` : '') + (live.rows.slice(0, n).map(line).join('\n') || '（目前沒有資料）'), fields, footer: `來源 ${live.source}・⏱ 為近一小時時速・網站排名頁同一套資料` })] };
+}
+async function historyMsg(eventId) {
+  const db = await fetchBordersDb(); const list = db.borders || [];
+  const target = eventId ? list.find(b => b.id === eventId) : list[list.length - 1];
+  if (!target) return { content: eventId ? `歷史榜線紀錄裡沒有第 ${eventId} 期（目前有第 ${list[0] ? list[0].id : '?'}～${list.length ? list[list.length - 1].id : '?'} 期）。` : '目前沒有歷史榜線資料。', ephemeral: true };
+  const meta = (db.events || []).find(e => e.id === target.id) || {};
+  const tiers = db.tiers || [];
+  const pick = [1, 10, 50, 100, 500, 1000, 2000, 5000].map(t => { const i = tiers.indexOf(t); const v = i >= 0 ? target.t[i] : null; return v != null ? `T${num(t)}　**${num(v)}**` : null; }).filter(Boolean);
+  const wl = (db.wl || []).filter(w => String(w.id).split('.')[0] === String(target.id));
+  const wt = db.wlTiers || [];
+  const fields = wl.map(w => ({ name: `${w.name}${w.round ? `・${w.round}` : ''}${w.bonus ? `・加成 ${w.bonus}` : ''}`, value: [1, 100, 1000, 5000].map(t => { const i = wt.indexOf(t); const v = i >= 0 ? w.t[i] : null; return v != null ? `T${num(t)}　${num(v)}` : null; }).filter(Boolean).join('\n') || '—', inline: true }));
+  return { embeds: [embed({ title: `📚 歷史榜線・第 ${target.id} 期 ${target.name}`, color: COLORS.purple, description: `${meta.start || ''}～${meta.end || ''}・${target.days} 天・${target.type}${meta.attr ? `・${meta.attr}` : ''}・${target.chara}（${target.unit}）\n\n${pick.join('\n') || '（沒有段位資料）'}`, fields, footer: `${db.source || ''}・用 /event history event:期數 看其他期` })] };
+}
 const event = {
-  name: 'event', description: '台服活動與卡池日曆：進行中與即將開始', category: 'quiz',
+  name: 'event', description: '台服活動：日曆、即時榜線與前百（同網站排名頁）、歷史榜線', category: 'quiz',
+  options: [sub('now', '進行中與即將開始的活動、卡池'), sub('border', '目前榜線：各段位分數與近一小時增量'), sub('top', '目前前百', [int('count', '顯示幾名（5～50，預設 10）', { min: 5, max: 50 })]), sub('history', '某一期的最終榜線（不填就是最近一期）', [int('event', '期數', { min: 1, max: 999 })])],
   async run(ctx) {
-    const now = Date.now(); const evs = eventsAround(now, 21); const gs = gachasAround(now, 7).slice(0, 8);
-    const fields = [];
-    if (evs.length) fields.push({ name: '活動（依伴生卡池推算）', value: evs.map(g => `${g.start <= now && g.end >= now ? '🟢' : '🕒'} 第 ${g.eid} 期${g.et ? `・${g.et}` : ''}${g.ech ? `・${g.ech}` : ''}　${ts(g.start, 'd')}～${ts(g.end, 'd')}${g.start > now ? `（${ts(g.start)}）` : `（${ts(g.end)} 結束）`}`).join('\n') });
-    if (gs.length) fields.push({ name: '一週內的卡池', value: gs.map(g => `${g.start <= now && g.end >= now ? '🟢' : '🕒'} ${g.n}　${ts(g.start, 'd')}～${ts(g.end, 'd')}`).join('\n') });
-    await ctx.reply({ embeds: [embed({ title: '📅 活動與卡池', color: COLORS.green, description: fields.length ? undefined : '資料範圍內沒有活動或卡池。', fields, footer: '時間依 Discord 時區顯示・資料來源 SEKAI 資源中心' })] });
+    if (!ctx.sub || ctx.sub === 'now') return ctx.reply(calendarMsg());
+    await ctx.defer();   // 要打外部來源，先讓 Discord 等
+    try {
+      const msg = ctx.sub === 'border' ? await borderMsg() : ctx.sub === 'top' ? await topMsg(ctx.opt('count')) : await historyMsg(ctx.opt('event'));
+      await ctx.edit(msg);
+    } catch (e) {
+      await ctx.edit({ content: `${LIVE_FAIL}\n-# ${String((e && e.message) || e).slice(0, 120)}`, embeds: [], components: [] });
+    }
   },
 };
 
