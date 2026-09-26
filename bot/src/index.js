@@ -20,6 +20,7 @@ import { Client, GatewayIntentBits, Partials, Events, MessageFlags, PermissionFl
 import { Bot } from './core/bot.js';
 import { FileStore } from './core/store-file.js';
 import { createAI } from './core/ai.js';
+import { toEnCommand, toEnSub, toEnOpt } from './core/i18n.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 loadEnv(path.join(here, '..', '.env'));
@@ -54,17 +55,20 @@ function userOf(u, member) {
   return { id: u.id, name: (member && member.displayName) || u.globalName || u.username, avatar: u.displayAvatarURL ? u.displayAvatarURL({ size: 128 }) : undefined, bot: !!u.bot };
 }
 
+/* 註冊的是中文名，內部一律英文 id（core/i18n.js） */
 function flattenOptions(interaction) {
+  const name = toEnCommand(interaction.commandName);
   const out = {}; let sub = '';
   const walk = list => { for (const o of list || []) {
-    if (o.type === 1) { sub = o.name; walk(o.options); continue; }
+    if (o.type === 1) { sub = toEnSub(name, o.name); walk(o.options); continue; }
     if (o.type === 2) { walk(o.options); continue; }
-    if (o.type === 6) out[o.name] = userOf(o.user, o.member);
-    else if (o.type === 7) out[o.name] = { id: o.channel.id, name: o.channel.name };
-    else out[o.name] = o.value;
+    const k = toEnOpt(name, sub, o.name);
+    if (o.type === 6) out[k] = userOf(o.user, o.member);
+    else if (o.type === 7) out[k] = { id: o.channel.id, name: o.channel.name };
+    else out[k] = o.value;
   } };
   walk(interaction.options.data);
-  return { options: out, sub };
+  return { name, options: out, sub };
 }
 
 function memberInfo(interaction) {
@@ -138,11 +142,11 @@ client.on(Events.InteractionCreate, async interaction => {
   const timer = interaction.isAutocomplete() ? null : setTimeout(() => { deferNow(interaction, input._st).catch(() => {}); }, DEFER_MS);
   try {
     if (interaction.isChatInputCommand()) {
-      const { options, sub } = flattenOptions(interaction);
-      await bot.runCommand({ ...input, name: interaction.commandName, options, sub });
+      const { name, options, sub } = flattenOptions(interaction);
+      await bot.runCommand({ ...input, name, options, sub });
     } else if (interaction.isAutocomplete()) {
       const f = interaction.options.getFocused(true);
-      const list = await bot.runAutocomplete({ ...input, name: interaction.commandName, focused: f.value });
+      const list = await bot.runAutocomplete({ ...input, name: toEnCommand(interaction.commandName), focused: f.value });
       await interaction.respond(list).catch(() => {});
     } else if (interaction.isButton()) {
       await bot.runComponent('button', { ...input, customId: interaction.customId, message: messageSnapshot(interaction.message) });

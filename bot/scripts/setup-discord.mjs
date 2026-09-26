@@ -60,5 +60,5 @@ if (workerUrl) {
 }
 
 /* 4. 斜線指令 */
-const list = await rest.registerCommands(registrationJSON(Bot.defaultRegistry()), guildId);
+const list = await rest.registerCommands(registrationJSON(Bot.defaultRegistry(), { lang: process.env.COMMAND_LANG === 'en' ? 'en' : 'zh' }), guildId);
 console.log(`已註冊 ${list.length} 個指令到 ${guildId ? `伺服器 ${guildId}` : '全域（最多一小時生效）'}。`);

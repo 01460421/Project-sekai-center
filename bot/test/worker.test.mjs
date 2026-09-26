@@ -105,6 +105,7 @@ test('/register 需要密鑰，成功時 PUT 100 個指令', async () => {
   const r = await worker.fetch(new Request('https://bot.example/register?guild=' + GUILD, { method: 'POST', headers: { authorization: 'Bearer sekret' } }), env);
   assert.deepEqual(await r.json(), { registered: 100, guild: GUILD });
   const put = env.calls.find(c => c.method === 'PUT'); assert.ok(put.url.endsWith(`/guilds/${GUILD}/commands`)); assert.equal(put.body.length, 100); assert.ok(put.body.every(c => Array.isArray(c.contexts)));
+  const tarot = put.body.find(c => c.name === '塔羅'); assert.ok(tarot, '註冊的是中文名'); assert.equal(tarot.name_localizations['en-US'], 'tarot');
 });
 
 test('功能跑太久：先回延遲（type 5），結果之後 PATCH @original', async () => {

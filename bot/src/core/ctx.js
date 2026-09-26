@@ -1,3 +1,5 @@
+import { localizeMessage } from './i18n.js';
+
 /* 功能模組看到的世界。介接層（Discord、測試用假物件）各自實作 reply/update/followUp 等方法，
    功能本身不知道底下是誰。 */
 
@@ -49,7 +51,7 @@ export class Ctx {
   async members() { return this._io.members ? this._io.members() : []; }
 }
 
+/* 字串 → 物件；訊息裡「/guess start」這類英文指令提示換成使用者看到的中文名 */
 export function norm(msg) {
-  if (typeof msg === 'string') return { content: msg };
-  return msg || {};
+  return localizeMessage(typeof msg === 'string' ? { content: msg } : (msg || {}));
 }

@@ -18,9 +18,12 @@ import { genSekaiQ, genSongQ, genCharaQ, genTrivia } from '../src/features/08-qu
 import { dailyAmount } from '../src/features/06-economy.js';
 import { hexByLines, HEXAGRAMS } from '../src/content/iching.js';
 import { TAROT } from '../src/content/tarot.js';
-import { makeBot, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL, fakeClaude, aiText, aiTool, aiRefusal } from './harness.js';
+import { makeBot, loadRegistry, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL, fakeClaude, aiText, aiTool, aiRefusal } from './harness.js';
 import { createAI } from '../src/core/ai.js';
 import { runFeature, buildSystem, STYLES } from '../src/features/11-ai.js';
+import { ZH, validName, localizeHints, toEnCommand, toEnSub, toEnOpt } from '../src/core/i18n.js';
+import { registrationJSON } from '../src/core/registry.js';
+import { parseInteraction } from '../src/core/discord-http.js';
 
 test('種子亂數可重現、無種子則不同', () => {
   const a = new Rng('x'), b = new Rng('x');
@@ -232,7 +235,7 @@ test('占卜每天固定、AI 未啟用時不出現解讀欄', async () => {
   const redraw = await press(bot, buttonsOf(a.last)[0].id, { message: a.last }); assert.match(textOf(redraw.last), /重抽/);
   const h = await runCmd(bot, 'horoscope', { options: { sign: 'leo' } }); assert.match(textOf(h.last), /獅子座/);
   const s = await press(bot, selectsOf(h.last)[0].id, { values: ['pisces'], message: h.last }); assert.match(textOf(s.last), /雙魚座/);
-  const none = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(none.last), /birthday/);
+  const none = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(none.last), /先用 \/生日 登記/);
   await runCmd(bot, 'birthday', { sub: 'set', options: { date: '1999/02/17' }, user: USERS.carol }); const auto = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(auto.last), /水瓶座/);
 });
 
@@ -337,7 +340,7 @@ test('/chat：模型用 run_command 查歌，工具結果回給模型，卡片�
   // 模型呼叫不准的指令：is_error 回去，模型再回話
   const claude2 = fakeClaude([aiTool('run_command', { name: 'pay', sub: '', options: '{"amount":5}' }), (p) => { const tr = p.messages[p.messages.length - 1].content[0]; assert.equal(tr.is_error, true); assert.match(tr.content, /不能執行/); return aiText('轉帳要你自己用 /pay 喔。'); }]);
   const bot2 = await makeBot({ claude: claude2 });
-  const r2 = await runCmd(bot2, 'chat', { options: { text: '幫我轉 5 給 Bob' } }); assert.match(r2.edits[0].content, /\/pay/);
+  const r2 = await runCmd(bot2, 'chat', { options: { text: '幫我轉 5 給 Bob' } }); assert.match(r2.edits[0].content, /\/轉帳/, '模型回的英文指令提示也會換成中文名');
   assert.deepEqual(bot.errors, []); assert.deepEqual(bot2.errors, []);
 });
 
@@ -381,4 +384,54 @@ test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立
   assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).text, 'ok');
   assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).quota, false, '對話額度 2 次');
   assert.deepEqual(ai.quota('chat', 'u'), { used: 2, cap: 2 });
+});
+
+/* ---------- 中文指令名與固定頻道 ---------- */
+test('中文指令名：100 個都有對照、合法且唯一；註冊 JSON 用中文名並附英文 localization', async () => {
+  const reg = await loadRegistry();
+  for (const f of reg.features) assert.ok(ZH[f.name], `缺 ${f.name} 的中文名（core/i18n.js）`);
+  const json = registrationJSON(reg);
+  const names = json.map(c => c.name); assert.equal(new Set(names).size, names.length, '中文指令名不能重複');
+  const check = (o, where) => { assert.ok(validName(o.name), `${where}: ${o.name}`); if (o.name_localizations) assert.ok(validName(o.name_localizations['en-US']), where); for (const s of o.options || []) check(s, `${where}.${s.name}`); };
+  for (const c of json) check(c, c.name);
+  const tarot = json.find(c => c.name === '塔羅'); assert.equal(tarot.name_localizations['en-US'], 'tarot'); assert.equal(tarot.options[0].name, '牌陣'); assert.equal(tarot.options[0].name_localizations['en-US'], 'spread');
+  const bank = json.find(c => c.name === '銀行'); assert.equal(bank.options[0].name, '存款'); assert.equal(bank.options[0].name_localizations['en-US'], 'deposit'); assert.equal(bank.options[0].options[0].name, '金額');
+  for (const c of json) { const subs = (c.options || []).filter(o => o.type === 1); assert.equal(new Set(subs.map(s => s.name)).size, subs.length, c.name); for (const s of subs) { const on = (s.options || []).map(o => o.name); assert.equal(new Set(on).size, on.length, `${c.name} ${s.name}`); } const on = (c.options || []).filter(o => o.type !== 1).map(o => o.name); assert.equal(new Set(on).size, on.length, c.name); }
+  assert.equal(registrationJSON(reg, { lang: 'en' })[0].name, 'tarot', 'COMMAND_LANG=en 照英文註冊');
+});
+
+test('收到中文名的互動會換回英文 id（指令、子指令、參數）；英文名也照收', () => {
+  const U = { id: '1', username: 'a' };
+  const p = parseInteraction({ type: 2, id: '1', guild_id: 'g', channel_id: 'c', member: { user: U, permissions: '0' }, data: { name: '銀行', options: [{ type: 1, name: '存款', options: [{ type: 4, name: '金額', value: 30 }] }] } });
+  assert.equal(p.input.name, 'bank'); assert.equal(p.input.sub, 'deposit'); assert.equal(p.input.options.amount, 30);
+  const q = parseInteraction({ type: 2, id: '1', user: U, data: { name: '塔羅', options: [{ type: 3, name: '牌陣', value: 'three' }] } });
+  assert.equal(q.input.name, 'tarot'); assert.equal(q.input.options.spread, 'three');
+  assert.equal(toEnCommand('tarot'), 'tarot'); assert.equal(toEnSub('bank', 'deposit'), 'deposit'); assert.equal(toEnOpt('bank', 'deposit', 'amount'), 'amount'); assert.equal(toEnOpt('settings', 'ai', '風格'), 'style');
+});
+
+test('訊息裡的英文指令提示會換成中文名（網址、路徑、分數不動）', () => {
+  assert.equal(localizeHints('先用 /guess start 開始一局。'), '先用 /猜數字 開始 開始一局。');
+  assert.equal(localizeHints('管理員可以用 /settings ai enabled:true 打開。'), '管理員可以用 /設定 ai 開啟:true 打開。');
+  assert.equal(localizeHints('看 https://x.workers.dev/setup、bot/README.md、1/2 或 /health'), '看 https://x.workers.dev/setup、bot/README.md、1/2 或 /health');
+  assert.equal(localizeHints('**/tarot**　塔羅；/collection chara:角色名 看單一角色'), '**/塔羅**　塔羅；/圖鑑 角色:角色名 看單一角色');
+});
+
+test('固定頻道：只在指定頻道回應，管理員設定不受限，被動回話也安靜', async () => {
+  const claude = fakeClaude([aiText('嗨')]);
+  const bot = await makeBot({ claude });
+  const other = '800000000000000002';
+  const set = await runCmd(bot, 'settings', { sub: 'channel', options: { action: 'add', channel: { id: CHANNEL, name: 'bot' } }, admin: true }); assert.match(textOf(set.last), new RegExp(`<#${CHANNEL}>`));
+  const ok = await runCmd(bot, 'daily'); assert.match(textOf(ok.last), /簽到成功/);
+  const no = await runCmd(bot, 'daily', { channelId: other, user: USERS.bob }); assert.match(textOf(no.last), new RegExp(`只在 <#${CHANNEL}> 回應`)); assert.ok(no.last.ephemeral);
+  const adm = await runCmd(bot, 'settings', { sub: 'show', channelId: other, admin: true }); assert.match(textOf(adm.last), /固定頻道/);
+  const t = await runCmd(bot, 'tictactoe'); const b = buttonsOf(t.last)[0];
+  const press2 = await press(bot, b.id, { channelId: other, message: t.last }); assert.match(textOf(press2.last), /只在/);
+  const quiet = await sendMessage(bot, { channelId: other, content: '<@bot> 嗨', text: '嗨', mentionsBot: true }); assert.equal(quiet.replies.length, 0); assert.equal(claude.calls.length, 0, '不在固定頻道就不呼叫 Claude');
+  await runCmd(bot, 'afk', { user: USERS.bob, options: { reason: '吃飯' } });
+  const afk = await sendMessage(bot, { channelId: other, content: '@Bob', mentions: [USERS.bob.id] }); assert.equal(afk.replies.length, 0, '其他頻道不代答 AFK');
+  assert.ok(bot.store.user(GUILD, USERS.alice.id).xp > 0, '經驗值照算');
+  const hi = await sendMessage(bot, { content: '<@bot> 嗨', text: '嗨', mentionsBot: true }); assert.equal(hi.replies.length, 1);
+  await runCmd(bot, 'settings', { sub: 'channel', options: { action: 'clear' }, admin: true });
+  const again = await runCmd(bot, 'daily', { channelId: other, user: USERS.bob }); assert.match(textOf(again.last), /簽到成功/);
+  assert.deepEqual(bot.errors, []);
 });

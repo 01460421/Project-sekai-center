@@ -9,6 +9,7 @@ import { Ctx } from '../core/ctx.js';
 import { levelFor } from '../core/helpers.js';
 import { charaById } from '../core/sekai.js';
 import { CATEGORIES } from '../core/registry.js';
+import { zhName, toEnCommand, toEnSub, toEnOpt } from '../core/i18n.js';
 
 /* ---------- 人設 ---------- */
 export const STYLES = {
@@ -64,7 +65,7 @@ let specCache = null;
 function specs(reg) {
   if (specCache && specCache.reg === reg) return specCache;
   const byCat = reg.byCategory();
-  const overview = Object.entries(CATEGORIES).map(([k, c]) => `${c.emoji} ${c.name}：${byCat[k].map(f => `/${f.name}（${f.description}）`).join('、')}`).join('\n');
+  const overview = Object.entries(CATEGORIES).map(([k, c]) => `${c.emoji} ${c.name}：${byCat[k].map(f => `/${zhName(f.name)}［id ${f.name}］（${f.description}）`).join('、')}`).join('\n');
   const optLine = o => `${o.name}${o.required ? '*' : ''}(${o.choices ? o.choices.map(c => c.value).join('|') : TYPE_NAME[o.type] || o.type}${o.min_value != null || o.max_value != null ? ` ${o.min_value ?? ''}～${o.max_value ?? ''}` : ''}：${o.description})`;
   const tools = Object.keys(ALLOW).map(name => {
     const f = reg.get(name); if (!f) return null;
@@ -96,6 +97,7 @@ ${STABLE_RULES}
 指令總覽：
 ${overview}
 
+使用者看到的指令名稱是中文（例如 /塔羅），推薦指令時用中文名；run_command 的 name／sub／options 鍵要用英文 id。
 run_command 可用的指令與參數（* 為必填；sub 是子指令名，沒有子指令就給空字串；參數用 JSON 物件字串）：
 ${tools}`;
   const u = ctx.u(); const lv = levelFor(u.xp); const today = todayTW();
@@ -120,14 +122,14 @@ ${who}`;
 const msgText = m => [m.content, ...((m.embeds || []).flatMap(e => [e.title, e.description, ...(e.fields || []).map(f => `${f.name}：${f.value}`), e.footer && e.footer.text]))].filter(Boolean).join('\n');
 
 export async function runFeature(ctx, input) {
-  const name = String(input.name || '').replace(/^\//, '').toLowerCase();
+  const name = toEnCommand(String(input.name || '').replace(/^\//, '').trim()).toLowerCase();   // 也接受中文名
   const f = ctx.bot.registry.get(name); const allow = ALLOW[name];
   if (!f || allow === undefined) throw new Error(`不能執行 ${name || '（空）'}：只能用清單裡的指令`);
   let raw = {};
   try { raw = JSON.parse(input.options || '{}') || {}; } catch { throw new Error('options 必須是 JSON 物件字串'); }
   if (typeof raw !== 'object' || Array.isArray(raw)) throw new Error('options 必須是 JSON 物件');
   const subs = (f.options || []).filter(o => o.type === 1);
-  let sub = String(input.sub || '').trim();
+  let sub = toEnSub(name, String(input.sub || '').trim());
   let defs = f.options || [];
   if (subs.length) {
     if (!sub) sub = (allow ? subs.find(x => allow.includes(x.name)) || subs[0] : subs[0]).name;   // 沒指定就用第一個可用的子指令
@@ -137,6 +139,7 @@ export async function runFeature(ctx, input) {
     defs = sd.options || [];
   } else if (sub) sub = '';
   const options = {};
+  for (const k of Object.keys(raw)) { const en = toEnOpt(name, sub, k); if (en !== k && raw[en] === undefined) raw[en] = raw[k]; }   // 中文參數名也接受
   for (const d of defs) {
     let v = raw[d.name];
     if (v === undefined || v === null || v === '') continue;
@@ -227,7 +230,7 @@ const chat = {
   /* 容器版：有人 @機器人 或回覆它的訊息 */
   events: {
     async messageCreate(bot, m) {
-      if (m.isBot || m.guildId === 'dm' || !(m.mentionsBot || m.repliedToBot) || !bot.ai) return;
+      if (m.isBot || m.guildId === 'dm' || m.allowed === false || !(m.mentionsBot || m.repliedToBot) || !bot.ai) return;
       const g = bot.store.guild(m.guildId);
       if (g.settings.ai && g.settings.ai.enabled === false) return;
       const text = String(m.text != null ? m.text : m.content || '').trim() || '嗨';

@@ -24,6 +24,6 @@ if (!token || !appId) { console.error('需要 DISCORD_TOKEN 與 APP_ID。'); pro
 
 const rest = createRest({ token, appId });
 try {
-  const list = await rest.registerCommands(registrationJSON(Bot.defaultRegistry()), guildId);
+  const list = await rest.registerCommands(registrationJSON(Bot.defaultRegistry(), { lang: process.env.COMMAND_LANG === 'en' ? 'en' : 'zh' }), guildId);
   console.log(`已註冊 ${list.length} 個指令到 ${guildId ? `伺服器 ${guildId}` : '全域'}。`);
 } catch (e) { console.error('註冊失敗:', e.message); process.exit(1); }
