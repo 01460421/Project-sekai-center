@@ -16,16 +16,21 @@ function fakeStorage(map = new Map()) {
   return { map, async list() { return new Map(map); }, async put(k, v) { if (typeof k === 'object') for (const [kk, vv] of Object.entries(k)) map.set(kk, structuredClone(vv)); else map.set(k, structuredClone(v)); }, async get(k) { return map.get(k); }, async delete(k) { map.delete(k); } };
 }
 /* 假的環境：一個 DO 實例、記錄所有 REST 呼叫 */
-function makeEnv({ storage = fakeStorage(), deferMs = 2200 } = {}) {
+function makeEnv({ storage = fakeStorage(), deferMs = 2200, noSecrets = false } = {}) {
   const calls = [];
   const FETCH = async (url, init) => {
-    calls.push({ url, method: init.method, body: init.body ? JSON.parse(init.body) : null });
+    calls.push({ url, method: init.method, body: init.body ? JSON.parse(init.body) : null, auth: init.headers.Authorization });
     if (url.includes('/commands')) return new Response(JSON.stringify(Array(100).fill({})), { status: 200 });
     if (url.includes('/members')) return new Response(JSON.stringify([{ user: USER }, { user: { id: '2', username: 'bob' } }]), { status: 200 });
     if (url.includes('/users/@me/guilds')) return new Response(JSON.stringify([{ id: GUILD }]), { status: 200 });
+    if (url.endsWith('/applications/@me') && init.method === 'GET') {
+      if (init.headers.Authorization === 'Bot other-app') return new Response(JSON.stringify({ id: '999', name: 'Other', verify_key: PUBLIC_KEY }), { status: 200 });
+      if (init.headers.Authorization !== 'Bot good-token') return new Response('{"message":"401: Unauthorized"}', { status: 401 });
+      return new Response(JSON.stringify({ id: '123', name: 'SEKAI Bot', verify_key: PUBLIC_KEY, interactions_endpoint_url: null }), { status: 200 });
+    }
     return new Response('{}', { status: 200 });
   };
-  const env = { DISCORD_PUBLIC_KEY: PUBLIC_KEY, DISCORD_TOKEN: 'tok', APP_ID: '123', REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH };
+  const env = noSecrets ? { REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH } : { DISCORD_PUBLIC_KEY: PUBLIC_KEY, DISCORD_TOKEN: 'tok', APP_ID: '123', REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH };
   let instance = null;
   env.BOT = { idFromName: n => n, get: () => ({ fetch: (url, init) => { if (!instance) instance = new BotDO({ storage }, env); return instance.fetch(new Request(url, init)); } }) };
   env.calls = calls; env.storage = storage; env.instance = () => instance;
@@ -87,8 +92,6 @@ test('cron tick：到期的提醒用 REST 送到頻道；health 有統計', asyn
   await send(env, command('remind', [{ type: 4, name: 'minutes', value: 1 }, { type: 3, name: 'text', value: '喝水' }], 'set'));
   await new Promise(r => setTimeout(r, 20));
   env.instance().store.global('reminders')[0].at = Date.now() - 1;
-  const t = await worker.fetch(new Request('https://bot.example/tick', { method: 'POST' }), env);   // 走 stub 的 /tick 需要 scheduled；這裡直接打 DO
-  assert.equal(t.status, 200);
   await worker.scheduled({}, env, { waitUntil: p => p });
   await new Promise(r => setTimeout(r, 20));
   const sent = env.calls.find(c => c.method === 'POST' && c.url.includes(`/channels/${CHANNEL}/messages`));
@@ -100,7 +103,7 @@ test('/register 需要密鑰，成功時 PUT 100 個指令', async () => {
   const env = makeEnv();
   assert.equal((await worker.fetch(new Request('https://bot.example/register', { method: 'POST' }), env)).status, 401);
   const r = await worker.fetch(new Request('https://bot.example/register?guild=' + GUILD, { method: 'POST', headers: { authorization: 'Bearer sekret' } }), env);
-  assert.deepEqual(await r.json(), { registered: 100 });
+  assert.deepEqual(await r.json(), { registered: 100, guild: GUILD });
   const put = env.calls.find(c => c.method === 'PUT'); assert.ok(put.url.endsWith(`/guilds/${GUILD}/commands`)); assert.equal(put.body.length, 100); assert.ok(put.body.every(c => Array.isArray(c.contexts)));
 });
 
@@ -115,6 +118,32 @@ test('功能跑太久：先回延遲（type 5），結果之後 PATCH @original'
   await new Promise(r => setTimeout(r, 400));
   const patch = env.calls.find(c => c.method === 'PATCH' && c.url.endsWith('/webhooks/123/itoken/messages/@original'));
   assert.ok(patch, '要用 REST 補上結果'); assert.equal(patch.body.content, '晚到的結果');
+});
+
+test('/bootstrap：只憑 Bot token 完成設定，之後互動可驗簽；壞 token 拒絕；不接受別的應用程式', async () => {
+  const storage = fakeStorage();
+  const env = makeEnv({ storage, noSecrets: true });
+  const before = await send(env, { type: 1 }); assert.equal(before.status, 401); assert.match(before.body, /bootstrap/);
+  const bad = await worker.fetch(new Request('https://pjsk-bot.example.workers.dev/bootstrap', { method: 'POST', body: JSON.stringify({ token: 'nope' }) }), env); assert.equal(bad.status, 401);
+  const r = await worker.fetch(new Request('https://pjsk-bot.example.workers.dev/bootstrap', { method: 'POST', body: JSON.stringify({ token: 'good-token' }) }), env);
+  const rb = await r.json(); assert.equal(r.status, 200, JSON.stringify(rb));
+  assert.deepEqual(rb.app, { id: '123', name: 'SEKAI Bot' }); assert.equal(rb.commands, 100); assert.deepEqual(rb.endpoint, { url: 'https://pjsk-bot.example.workers.dev/', changed: true }); assert.match(rb.invite, /client_id=123/);
+  const patch = env.calls.find(c => c.method === 'PATCH' && c.url.endsWith('/applications/@me')); assert.equal(patch.body.interactions_endpoint_url, 'https://pjsk-bot.example.workers.dev/'); assert.equal(patch.auth, 'Bot good-token');
+  assert.equal(storage.map.get('cfg').appId, '123');
+  const ping = await send(env, { type: 1 }); assert.deepEqual(ping.body, { type: 1 });
+  const coin = await send(env, command('coin')); assert.equal(coin.body.type, 4);
+  const other = await worker.fetch(new Request('https://pjsk-bot.example.workers.dev/bootstrap', { method: 'POST', body: JSON.stringify({ token: 'other-app' }) }), env); assert.equal(other.status, 403);
+  // 重新建立 DO：設定從 storage 讀回
+  const env2 = makeEnv({ storage, noSecrets: true });
+  const h = await (await worker.fetch(new Request('https://bot.example/health'), env2)).json(); assert.equal(h.configured, true); assert.equal(h.app.id, '123');
+  const again = await send(env2, command('coin')); assert.equal(again.body.type, 4);
+});
+
+test('/setup 是一個可以貼 token 的網頁', async () => {
+  const env = makeEnv({ noSecrets: true });
+  const r = await worker.fetch(new Request('https://bot.example/setup'), env);
+  assert.equal(r.status, 200); assert.match(r.headers.get('content-type'), /text\/html/);
+  const html = await r.text(); assert.match(html, /Bot token/); assert.match(html, /\/bootstrap/);
 });
 
 test('parseInteraction：使用者、權限、選項、resolved 使用者與頻道', () => {

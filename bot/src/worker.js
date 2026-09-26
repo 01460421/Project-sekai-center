@@ -1,6 +1,6 @@
 /* Cloudflare Workers 介接層：Discord「HTTP 互動」模式，不用 Gateway、不用常駐程序。
 
-   請求流程：Discord → POST / → 驗 Ed25519 簽章 → 轉給單例 Durable Object（BotDO）→ 核心跑功能 →
+   請求流程：Discord → POST / → 轉給單例 Durable Object（BotDO）→ 驗 Ed25519 簽章 → 核心跑功能 →
    第一個 reply/update/showModal 直接當 HTTP 回應（Discord 要求 3 秒內），之後的 followUp/edit 走 REST。
    功能跑太久（例如 AI 解讀）會先回「延遲」，結果稍後用 REST 補上。
 
@@ -8,10 +8,15 @@
    單例 DO 表示所有互動都排隊處理，經濟系統不會有競態。
    Cron（每分鐘）打 /tick 做提醒、倒數、抽獎開獎。
 
-   限制（沒有 Gateway）：聊天經驗值改由使用指令累積；/afk 的自動回覆、/autoreact、/welcome 這三個被動功能
-   與 /team 的語音頻道名單在這個版本不會動作。要完整功能請用容器版（src/index.js）。
+   Discord 設定有兩種來源，擇一即可：
+     1. wrangler secret put DISCORD_TOKEN / DISCORD_PUBLIC_KEY / APP_ID
+     2. 部署後 POST /bootstrap {"token":"<Bot token>"}：Worker 拿 token 向 Discord 驗明正身，把 token、App ID、Public Key
+        存進自己的 storage，順手把 Interactions Endpoint URL 設回 Discord 並註冊 100 個指令。不需要任何 Cloudflare 金鑰。
+        綁定後只接受同一個應用程式的 token（換 token 用同一支重打一次即可）。
+   選用：ANTHROPIC_API_KEY（AI 解讀）、REGISTER_SECRET（POST /register 用）。
 
-   機密（wrangler secret put …）：DISCORD_TOKEN、DISCORD_PUBLIC_KEY、APP_ID、REGISTER_SECRET；ANTHROPIC_API_KEY 選用。 */
+   限制（沒有 Gateway）：聊天經驗值改由使用指令累積；/afk 的自動回覆、/autoreact、/welcome 這三個被動功能
+   與 /team 的語音頻道名單在這個版本不會動作。要完整功能請用容器版（src/index.js）。 */
 
 import { Bot } from './core/bot.js';
 import { MemoryStore } from './core/store.js';
@@ -23,26 +28,36 @@ import { verifyDiscordRequest, createRest, parseInteraction, toApi } from './cor
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
 const stub = env => env.BOT.get(env.BOT.idFromName('main'));
 
+/* 瀏覽器版的 /bootstrap：開 https://<worker>/setup，貼 Bot token，按一下就設定完成 */
+const SETUP_PAGE = `<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>機器人設定</title>
+<style>body{font:16px/1.6 system-ui,-apple-system,"Noto Sans TC",sans-serif;max-width:640px;margin:40px auto;padding:0 16px;color:#222;background:#fafafa}h1{font-size:22px}label{display:block;margin:16px 0 4px;font-weight:600}input{width:100%;box-sizing:border-box;padding:10px;font-size:15px;border:1px solid #bbb;border-radius:8px}button{margin-top:16px;padding:10px 18px;font-size:16px;border:0;border-radius:8px;background:#33ccbb;color:#fff;cursor:pointer}button:disabled{opacity:.5}pre{white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px}small{color:#666}a{color:#0077dd}</style>
+<h1>SEKAI 資源中心 機器人・第一次設定</h1>
+<p>貼上 Discord 開發者後台 <b>Bot → Token</b>。Worker 會用它向 Discord 驗明正身，把設定存起來、把 Interactions Endpoint URL 設成這個網址、註冊 100 個斜線指令。token 只會送到這個 Worker 與 Discord，不會出現在其他地方。</p>
+<label for="t">Bot token</label><input id="t" type="password" autocomplete="off" placeholder="MTU1…">
+<label for="g">只註冊到某個伺服器（選填，伺服器 ID；留空＝全域，最多一小時生效）</label><input id="g" placeholder="123456789012345678">
+<button id="b">開始設定</button>
+<pre id="o" hidden></pre>
+<p><small>已經設定過想換 token？同樣在這裡重貼即可（只接受同一個應用程式的 token）。狀態：<a href="/health">/health</a></small></p>
+<script>
+const $=s=>document.querySelector(s);$('#b').onclick=async()=>{const token=$('#t').value.trim();if(!token)return alert('請貼上 token');$('#b').disabled=true;$('#o').hidden=false;$('#o').textContent='設定中…';
+try{const r=await fetch('/bootstrap',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token,guild:$('#g').value.trim()})});const j=await r.json();
+if(j.ok){$('#o').textContent='✅ 完成！應用程式 '+j.app.name+'（'+j.app.id+'）\\nInteractions Endpoint：'+(j.endpoint?j.endpoint.url:'未設定')+'\\n已註冊指令：'+j.commands+' 個\\n\\n邀請機器人進伺服器：\\n'+j.invite;$('#o').innerHTML+='\\n\\n<a href="'+j.invite+'" target="_blank">👉 開啟邀請連結</a>';}
+else $('#o').textContent='❌ '+JSON.stringify(j,null,2);}catch(e){$('#o').textContent='❌ '+e.message}$('#b').disabled=false;};
+</script></html>`;
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (req.method === 'POST' && url.pathname === '/') {
-      const sig = req.headers.get('x-signature-ed25519') || '', ts = req.headers.get('x-signature-timestamp') || '';
-      const body = await req.text();
-      if (!(await verifyDiscordRequest(env.DISCORD_PUBLIC_KEY, ts, body, sig))) return new Response('invalid request signature', { status: 401 });
-      let i; try { i = JSON.parse(body); } catch { return new Response('bad json', { status: 400 }); }
-      if (i.type === 1) return json({ type: 1 });   // Discord 驗證端點用的 PING
-      return stub(env).fetch('https://bot/interaction', { method: 'POST', body, headers: { 'content-type': 'application/json' } });
-    }
+    const forward = async path => stub(env).fetch('https://bot' + path, {
+      method: 'POST', body: await req.text(),
+      headers: { 'content-type': 'application/json', 'x-signature-ed25519': req.headers.get('x-signature-ed25519') || '', 'x-signature-timestamp': req.headers.get('x-signature-timestamp') || '', 'x-origin': url.origin, 'authorization': req.headers.get('authorization') || '', 'x-query': url.search },
+    });
+    if (req.method === 'POST' && url.pathname === '/') return forward('/interaction');
+    if (req.method === 'POST' && url.pathname === '/bootstrap') return forward('/bootstrap');
+    if (req.method === 'POST' && url.pathname === '/register') return forward('/register');
     if (url.pathname === '/health') return stub(env).fetch('https://bot/health');
-    if (req.method === 'POST' && url.pathname === '/register') {
-      // 不想在本機裝東西也能註冊指令：curl -X POST -H "Authorization: Bearer $REGISTER_SECRET" https://…/register[?guild=ID]
-      if (!env.REGISTER_SECRET || req.headers.get('authorization') !== `Bearer ${env.REGISTER_SECRET}`) return new Response('unauthorized', { status: 401 });
-      const rest = createRest({ token: env.DISCORD_TOKEN, appId: env.APP_ID, fetchImpl: env.FETCH });
-      const list = await rest.registerCommands(registrationJSON(Bot.defaultRegistry()), url.searchParams.get('guild') || '');
-      return json({ registered: (list || []).length });
-    }
-    return new Response('SEKAI 資源中心 機器人：這是 Discord Interactions Endpoint，請把此網址填進 Discord 開發者後台。', { status: 200, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    if (url.pathname === '/setup') return new Response(SETUP_PAGE, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    return new Response('SEKAI 資源中心 機器人：這是 Discord Interactions Endpoint。第一次設定請開 /setup；說明見 bot/README.md。', { status: 200, headers: { 'content-type': 'text/plain; charset=utf-8' } });
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(stub(env).fetch('https://bot/tick', { method: 'POST' }));
@@ -84,7 +99,8 @@ export class BotDO {
     if (!this.ready) this.ready = (async () => {
       this.store = new DOStore(this.state.storage);
       await this.store.load();
-      this.rest = createRest({ token: this.env.DISCORD_TOKEN, appId: this.env.APP_ID, fetchImpl: this.env.FETCH });
+      this.cfg = (await this.state.storage.get('cfg')) || {};
+      this.applyConfig();
       this.bot = await Bot.create({
         store: this.store, timers: new Timers(), ai: createAI(this.env, { store: this.store }),
         send: (channelId, msg) => this.rest.send(channelId, msg), log: (...a) => console.error('[bot]', ...a),
@@ -93,20 +109,79 @@ export class BotDO {
     })();
     return this.ready;
   }
+  /* 環境變數優先，其次是 /bootstrap 存下來的設定 */
+  applyConfig() {
+    const e = this.env, c = this.cfg;
+    this.token = (e.DISCORD_TOKEN || c.token || '').trim();
+    this.publicKey = (e.DISCORD_PUBLIC_KEY || c.publicKey || '').trim();
+    this.appId = (e.APP_ID || c.appId || '').trim();
+    this.rest = createRest({ token: this.token, appId: this.appId, fetchImpl: this.env.FETCH });
+  }
+  get configured() { return !!(this.token && this.publicKey && this.appId); }
+
   async fetch(req) {
     await this.init();
     const url = new URL(req.url);
     try {
-      if (url.pathname === '/interaction') return json(await this.handle(await req.json()));
+      if (url.pathname === '/interaction') return this.interaction(req);
+      if (url.pathname === '/bootstrap') return this.bootstrap(req);
+      if (url.pathname === '/register') {
+        if (!this.env.REGISTER_SECRET || req.headers.get('authorization') !== `Bearer ${this.env.REGISTER_SECRET}`) return new Response('unauthorized', { status: 401 });
+        if (!this.configured) return json({ error: '尚未設定 Discord（POST /bootstrap 或 wrangler secret put）' }, 409);
+        const guild = new URLSearchParams(req.headers.get('x-query') || '').get('guild') || '';
+        const list = await this.rest.registerCommands(registrationJSON(this.bot.registry), guild);
+        return json({ registered: (list || []).length, guild: guild || 'global' });
+      }
       if (url.pathname === '/tick') {
         await this.bot.tick();
-        if (this.ticks++ % 30 === 0) this.bot.guildCount = await this.rest.guildCount().catch(() => this.bot.guildCount);
+        if (this.configured && this.ticks++ % 30 === 0) this.bot.guildCount = await this.rest.guildCount().catch(() => this.bot.guildCount);
         await this.store.flush();
         return json({ ok: true, ticks: this.ticks });
       }
-      if (url.pathname === '/health') return json({ ok: true, features: this.bot.registry.size, stats: this.bot.stats, users: Object.keys(this.store.data.users).length, guilds: Object.keys(this.store.data.guilds).length, ai: !!this.bot.ai });
+      if (url.pathname === '/health') return json({ ok: true, configured: this.configured, app: this.appId ? { id: this.appId, name: this.cfg.name || '' } : null, features: this.bot.registry.size, stats: this.bot.stats, users: Object.keys(this.store.data.users).length, guilds: Object.keys(this.store.data.guilds).length, ai: !!this.bot.ai });
       return new Response('not found', { status: 404 });
     } catch (e) { console.error('[do]', e); return json({ error: String((e && e.message) || e) }, 500); }
+  }
+
+  async interaction(req) {
+    const body = await req.text();
+    if (!this.publicKey) return new Response('not configured: POST /bootstrap with the bot token first', { status: 401 });
+    if (!(await verifyDiscordRequest(this.publicKey, req.headers.get('x-signature-timestamp'), body, req.headers.get('x-signature-ed25519')))) return new Response('invalid request signature', { status: 401 });
+    let i; try { i = JSON.parse(body); } catch { return new Response('bad json', { status: 400 }); }
+    if (i.type === 1) return json({ type: 1 });   // Discord 驗證端點用的 PING
+    return json(await this.handle(i));
+  }
+
+  /* 只憑 Bot token 完成設定：驗證 token → 存設定 → 設 Interactions Endpoint → 註冊指令 */
+  async bootstrap(req) {
+    let body = {}; try { body = JSON.parse(await req.text()); } catch {}
+    const token = String(body.token || '').trim();
+    if (!token) return json({ error: '請帶 {"token": "<Bot token>"}' }, 400);
+    const probe = createRest({ token, appId: '', fetchImpl: this.env.FETCH });
+    let app;
+    try { app = await probe.call('GET', '/applications/@me'); } catch (e) { return json({ error: 'token 無效或 Discord 拒絕：' + e.message.slice(0, 200) }, 401); }
+    if (!app || !app.id || !app.verify_key) return json({ error: 'Discord 回應不完整' }, 502);
+    const bound = this.env.APP_ID || this.cfg.appId;
+    if (bound && bound !== app.id) return json({ error: `這個 Worker 已綁定應用程式 ${bound}，不接受其他應用程式的 token` }, 403);
+    this.cfg = { token, appId: app.id, publicKey: app.verify_key, name: app.name, at: Date.now() };
+    await this.state.storage.put('cfg', this.cfg);
+    this.applyConfig();
+    const origin = String(body.url || req.headers.get('x-origin') || '').replace(/\/+$/, '');
+    const result = { ok: true, app: { id: app.id, name: app.name }, endpoint: null, commands: 0 };
+    if (origin) {
+      const endpoint = origin + '/';
+      if (app.interactions_endpoint_url === endpoint) result.endpoint = { url: endpoint, changed: false };
+      else {
+        try { await this.rest.call('PATCH', '/applications/@me', { interactions_endpoint_url: endpoint }); result.endpoint = { url: endpoint, changed: true }; }
+        catch (e) { result.endpoint = { url: endpoint, error: e.message.slice(0, 300) }; result.ok = false; }
+      }
+    }
+    try {
+      const list = await this.rest.registerCommands(registrationJSON(this.bot.registry), String(body.guild || ''));
+      result.commands = (list || []).length;
+    } catch (e) { result.commandsError = e.message.slice(0, 300); result.ok = false; }
+    result.invite = `https://discord.com/oauth2/authorize?client_id=${app.id}&scope=bot%20applications.commands&permissions=277025508416`;
+    return json(result, result.ok ? 200 : 502);
   }
 
   /* 回傳要給 Discord 的互動回應物件（type 4/5/6/7/8/9） */

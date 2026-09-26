@@ -68,6 +68,8 @@ try {
   const health = await (await fetch(`http://127.0.0.1:${PORT}/health`)).json(); ok(health.ok && health.features === 100 && health.users >= 1, '/health', JSON.stringify(health).slice(0, 160));
   const cron = await fetch(`http://127.0.0.1:${PORT}/__scheduled?cron=*+*+*+*+*`); ok(cron.status === 200, 'cron tick');
   const reg = await fetch(`http://127.0.0.1:${PORT}/register`, { method: 'POST' }); ok(reg.status === 401, '/register 無密鑰 → 401');
+  const setup = await fetch(`http://127.0.0.1:${PORT}/setup`); ok(setup.status === 200 && /Bot token/.test(await setup.text()), '/setup 設定頁');
+  const boot = await fetch(`http://127.0.0.1:${PORT}/bootstrap`, { method: 'POST', body: '{}' }); ok(boot.status === 400, '/bootstrap 缺 token → 400');
 } catch (e) { ok(false, '流程中斷', e.message); }
 kill();
 await new Promise(r => setTimeout(r, 500));

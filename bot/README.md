@@ -42,6 +42,8 @@ repo 已經有 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`（`worker/` 就�
 
 之後每次 main 上動到 `bot/`（或曲庫資料每日更新）都會自動重新部署。檢查：`https://pjsk-bot.<你的子網域>.workers.dev/health` 會回功能數、玩家數與統計（網址在 Actions 的 deploy 步驟會印出來）。
 
+**不想把 token 放進 GitHub？** 合併後 Worker 已部署，開 `https://pjsk-bot.<你的子網域>.workers.dev/setup`，貼上 Bot token 按一下：Worker 會向 Discord 驗明正身、把設定存進自己的儲存空間、設好 Interactions Endpoint、註冊 100 個指令，並給你邀請連結。這條路完全不需要 Cloudflare 金鑰，換 token 時重貼一次即可（只接受同一個應用程式的 token）。命令列版：`curl -X POST https://…/bootstrap -H 'content-type: application/json' -d '{"token":"<Bot token>"}'`。
+
 手動做也行（在 `bot/`，第一次會開瀏覽器登入 Cloudflare）：
 ```bash
 npm install
