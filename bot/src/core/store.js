@@ -19,6 +19,7 @@ export const USER_DEFAULTS = () => ({
   weekly: { week: '', msgs: 0, games: 0 },
   interact: {}, mbti: '', enneagram: 0, bloodType: '',
   tickets: 0, lastSeen: 0, created: Date.now(),
+  guess: null,   // 進行中的猜數字 { n, max, tries }（放紀錄裡，Workers 版才不會因 DO 休眠而消失）
 });
 
 export const GUILD_DEFAULTS = () => ({

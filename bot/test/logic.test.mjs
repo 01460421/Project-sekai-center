@@ -10,7 +10,8 @@ import { FileStore } from '../src/core/store-file.js';
 import { cid, parseCid, embed, todayTW } from '../src/core/ui.js';
 import { signOf, findSign, zodiacOf, reduceNum, parseBirthday, dailyRng, scoreOf } from '../src/core/oracle.js';
 import { levelFor, xpForLevel } from '../src/core/helpers.js';
-import { tttWinner, tttBot, c4Winner, c4Drop, c4Bot, handValue, newDeck, spinSlots, slotPayout, makeMines, reveal, neighbors, wordleScore } from '../src/features/04-games.js';
+import { tttWinner, tttBot, tttMsg, c4Winner, c4Drop, c4Bot, c4Msg, handValue, newDeck, spinSlots, slotPayout, makeMines, reveal, neighbors, wordleScore } from '../src/features/04-games.js';
+import { Sessions, Cooldowns } from '../src/core/sessions.js';
 import { parseDice } from '../src/features/05-fun.js';
 import { pullMany, RATES } from '../src/features/07-gacha.js';
 import { genSekaiQ, genSongQ, genCharaQ, genTrivia } from '../src/features/08-quiz.js';
@@ -231,4 +232,37 @@ test('占卜每天固定、AI 未啟用時不出現解讀欄', async () => {
   const s = await press(bot, selectsOf(h.last)[0].id, { values: ['pisces'], message: h.last }); assert.match(textOf(s.last), /雙魚座/);
   const none = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(none.last), /birthday/);
   await runCmd(bot, 'birthday', { sub: 'set', options: { date: '1999/02/17' }, user: USERS.carol }); const auto = await runCmd(bot, 'horoscope', { user: USERS.carol }); assert.match(textOf(auto.last), /水瓶座/);
+});
+
+test('對機器人的棋局：機器人獲勝時顯示「機器人」，不是壞掉的 mention', () => {
+  const t = tttMsg('sid', { board: ['O', 'O', 'O', 'X', 'X', '', '', '', ''], players: { X: 'u1', O: 'bot' }, turn: 'X' }, true);
+  assert.match(t.content, /機器人 獲勝/); assert.doesNotMatch(t.content, /<@bot>/);
+  const b = Array(42).fill(''); for (const c of [0, 1, 2, 3]) c4Drop(b, c, 'Y');
+  const c4 = c4Msg('sid', { board: b, players: { R: 'u1', Y: 'bot' }, turn: 'R' }, true);
+  assert.match(c4.content, /機器人 獲勝/); assert.doesNotMatch(c4.content, /<@bot>/);
+  const live = tttMsg('sid', { board: Array(9).fill(''), players: { X: 'u1', O: 'u2' }, turn: 'X' }, false); assert.match(live.content, /<@u1> vs <@u2>/);
+});
+
+test('Sessions／Cooldowns 的持久化介面：drain 取出動到與刪掉的、load 跳過已過期', () => {
+  const s = new Sessions();
+  const id = s.create('f', { n: 1 }); s.get('f', id).n = 2;
+  const id2 = s.create('f', { n: 9 }); s.del('f', id2);
+  const d = s.drain();
+  assert.deepEqual(Object.keys(d.put), [`f:${id}`]); assert.equal(d.put[`f:${id}`].data.n, 2); assert.deepEqual(d.del, [`f:${id2}`]);
+  assert.deepEqual(s.drain(), { put: {}, del: [] }, '沒動到就沒東西');
+  const s2 = new Sessions(); s2.load([[`f:${id}`, d.put[`f:${id}`]], ['f:old', { data: {}, exp: Date.now() - 1, ttl: 1 }]]);
+  assert.equal(s2.get('f', id).n, 2); assert.equal(s2.get('f', 'old'), null); assert.deepEqual(s2.drain().del, ['f:old'], '過期的要從 storage 刪掉');
+  const cd = new Cooldowns(); assert.equal(cd.hit('k', 60), 0); assert.ok(cd.hit('k', 60) > 0);
+  const out = cd.drain(); assert.ok(out.k > Date.now()); assert.equal(cd.drain(), null, '沒變動回 null');
+  const cd2 = new Cooldowns(); cd2.load(out); assert.ok(cd2.hit('k', 60) > 0, '載回來的冷卻仍生效');
+});
+
+test('猜數字：狀態放在玩家紀錄裡，猜對得獎並清掉', async () => {
+  const bot = await makeBot();
+  const none = await runCmd(bot, 'guess', { sub: 'try', options: { number: 1 } }); assert.match(textOf(none.last), /先用/);
+  await runCmd(bot, 'guess', { sub: 'start', options: { max: 10 } });
+  const u = bot.store.user(GUILD, USERS.alice.id); assert.ok(u.guess && u.guess.n >= 1 && u.guess.n <= 10);
+  const wrong = await runCmd(bot, 'guess', { sub: 'try', options: { number: u.guess.n === 10 ? 1 : 10 } }); assert.match(textOf(wrong.last), /再大|再小/);
+  const right = await runCmd(bot, 'guess', { sub: 'try', options: { number: u.guess.n } }); assert.match(textOf(right.last), /答對/);
+  assert.equal(u.guess, null); assert.ok(u.crystals > 0); assert.deepEqual(bot.errors, []);
 });

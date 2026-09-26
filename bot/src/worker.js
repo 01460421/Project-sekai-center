@@ -5,6 +5,8 @@
    功能跑太久（例如 AI 解讀）會先回「延遲」，結果稍後用 REST 補上。
 
    狀態存在 Durable Object 的 SQLite storage：每個玩家、每個伺服器各一個鍵，只寫回這次有碰到的鍵。
+   進行中的遊戲／測驗（sessions）與指令冷卻也一樣落地（s:… 與 cd 鍵）：DO 閒置 10 秒就會休眠、記憶體全部清空，
+   若只放記憶體，玩家在兩次按鈕之間停 10 秒以上這局就會「過期」。
    單例 DO 表示所有互動都排隊處理，經濟系統不會有競態。
    Cron（每分鐘）打 /tick 做提醒、倒數、抽獎開獎。
 
@@ -64,16 +66,28 @@ export default {
   },
 };
 
-/* Durable Object storage 版的 store：全部讀進記憶體，只寫回這次互動碰到的鍵 */
+/* Durable Object storage 版的 store：全部讀進記憶體，只寫回這次互動碰到的鍵。
+   鍵：u:gid:uid 玩家、g:gid 伺服器、x:key 跨伺服器、s:feature:id 進行中的遊戲、cd 指令冷卻、cfg /bootstrap 的設定 */
 export class DOStore extends MemoryStore {
-  constructor(storage) { super(); this.storage = storage; this.touched = new Set(); }
+  constructor(storage) { super(); this.storage = storage; this.touched = new Set(); this.sessions = []; this.cooldowns = null; }
   async load() {
     const all = await this.storage.list();
     for (const [k, v] of all) {
       if (k.startsWith('u:')) this.data.users[k.slice(2)] = v;
       else if (k.startsWith('g:')) this.data.guilds[k.slice(2)] = v;
       else if (k.startsWith('x:')) this.data.global[k.slice(2)] = v;
+      else if (k.startsWith('s:')) this.sessions.push([k.slice(2), v]);
+      else if (k === 'cd') this.cooldowns = v;
     }
+  }
+  /* 進行中的遊戲與冷卻：寫回這次動到的、刪掉結束或過期的 */
+  async saveTransient(bot) {
+    const { put, del } = bot.sessions.drain();
+    const keys = Object.keys(put);
+    for (let i = 0; i < keys.length; i += 100) { const batch = {}; for (const k of keys.slice(i, i + 100)) batch['s:' + k] = put[k]; await this.storage.put(batch); }
+    for (let i = 0; i < del.length; i += 100) await this.storage.delete(del.slice(i, i + 100).map(k => 's:' + k));
+    const cd = bot.cooldowns.drain();
+    if (cd) await this.storage.put('cd', cd);
   }
   user(gid, uid) { const u = super.user(gid, uid); this.touched.add(`u:${gid}:${uid}`); return u; }
   guild(gid) { const g = super.guild(gid); this.touched.add(`g:${gid}`); return g; }
@@ -105,9 +119,17 @@ export class BotDO {
         store: this.store, timers: new Timers(), ai: createAI(this.env, { store: this.store }),
         send: (channelId, msg) => this.rest.send(channelId, msg), log: (...a) => console.error('[bot]', ...a),
       });
+      // DO 重建（休眠後醒來）：把進行中的遊戲與冷卻讀回來
+      this.bot.sessions.load(this.store.sessions); this.store.sessions = [];
+      this.bot.cooldowns.load(this.store.cooldowns);
       this.deferMs = Number(this.env.DEFER_MS) || 2200;
     })();
     return this.ready;
+  }
+  /* 每次互動／tick 結束後：玩家與伺服器資料、進行中的遊戲、冷卻全部落地 */
+  async persist() {
+    try { await this.store.flush(); await this.store.saveTransient(this.bot); }
+    catch (e) { console.error('[do] 寫入 storage 失敗:', e); }
   }
   /* 環境變數優先，其次是 /bootstrap 存下來的設定 */
   applyConfig() {
@@ -135,10 +157,10 @@ export class BotDO {
       if (url.pathname === '/tick') {
         await this.bot.tick();
         if (this.configured && this.ticks++ % 30 === 0) this.bot.guildCount = await this.rest.guildCount().catch(() => this.bot.guildCount);
-        await this.store.flush();
+        await this.persist();
         return json({ ok: true, ticks: this.ticks });
       }
-      if (url.pathname === '/health') return json({ ok: true, configured: this.configured, app: this.appId ? { id: this.appId, name: this.cfg.name || '' } : null, features: this.bot.registry.size, stats: this.bot.stats, users: Object.keys(this.store.data.users).length, guilds: Object.keys(this.store.data.guilds).length, ai: !!this.bot.ai });
+      if (url.pathname === '/health') return json({ ok: true, configured: this.configured, app: this.appId ? { id: this.appId, name: this.cfg.name || '' } : null, features: this.bot.registry.size, stats: this.bot.stats, users: Object.keys(this.store.data.users).length, guilds: Object.keys(this.store.data.guilds).length, sessions: this.bot.sessions.size, ai: !!this.bot.ai });
       return new Response('not found', { status: 404 });
     } catch (e) { console.error('[do]', e); return json({ error: String((e && e.message) || e) }, 500); }
   }
@@ -191,30 +213,33 @@ export class BotDO {
     const { kind, input } = parsed;
     if (kind === 'autocomplete') return { type: 8, data: { choices: await this.bot.runAutocomplete(input) } };
     const token = i.token, rest = this.rest, isComponent = kind !== 'command';
-    let responded = false, deferred = false, editedOriginal = false, resolveResp;
+    let responded = false, deferType = 0, editedOriginal = false, resolveResp;
     const respP = new Promise(r => { resolveResp = r; });
     const first = (type, data) => { if (responded) return false; responded = true; resolveResp(data === undefined ? { type } : { type, data }); return true; };
+    const defer = ephemeral => { const t = isComponent ? 6 : 5; if (first(t, ephemeral ? { flags: 64 } : undefined)) deferType = t; };
     const io = {
       reply: async msg => {
         if (first(4, toApi(msg))) return;
-        if (deferred && !editedOriginal) { editedOriginal = true; return rest.editOriginal(token, msg); }
+        // 指令先回了「延遲」（type 5）：第一次 reply 就是把那則佔位訊息改成結果。
+        // 元件先回了「延遲更新」（type 6）：reply 要另開一則訊息，不能蓋掉按鈕所在的那則（例如「這不是你的按鈕」）。
+        if (deferType === 5 && !editedOriginal) { editedOriginal = true; return rest.editOriginal(token, msg); }
         return rest.followUp(token, msg);
       },
       update: async msg => { if (first(7, toApi(msg))) return; editedOriginal = true; return rest.editOriginal(token, msg); },
       followUp: async msg => rest.followUp(token, msg),
       edit: async msg => { editedOriginal = true; return rest.editOriginal(token, msg); },
-      defer: async ephemeral => { if (first(isComponent ? 6 : 5, ephemeral ? { flags: 64 } : undefined)) deferred = true; },
+      defer: async ephemeral => defer(ephemeral),
       showModal: async m => { first(9, m); },
       members: async () => input.guildId === 'dm' ? [] : rest.members(input.guildId).catch(() => []),
     };
     const run = (kind === 'command' ? this.bot.runCommand({ ...input, io }) : this.bot.runComponent(kind, { ...input, io }))
       .catch(e => console.error('[handle]', e))
-      .then(() => this.store.flush());
+      .then(() => this.persist());
     let timer;
     const timeout = new Promise(r => { timer = setTimeout(() => r('timeout'), this.deferMs); });
     await Promise.race([respP, run, timeout]);
     clearTimeout(timer);
-    if (!responded) { first(isComponent ? 6 : 5); deferred = true; }   // 逾時：先回延遲，功能跑完再用 REST 補結果
+    if (!responded) defer(false);   // 逾時：先回延遲，功能跑完再用 REST 補結果
     return respP;
   }
 }

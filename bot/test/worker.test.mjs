@@ -13,7 +13,7 @@ const GUILD = '900000000000000001', CHANNEL = '800000000000000001';
 
 /* 假的 DO storage（Map） */
 function fakeStorage(map = new Map()) {
-  return { map, async list() { return new Map(map); }, async put(k, v) { if (typeof k === 'object') for (const [kk, vv] of Object.entries(k)) map.set(kk, structuredClone(vv)); else map.set(k, structuredClone(v)); }, async get(k) { return map.get(k); }, async delete(k) { map.delete(k); } };
+  return { map, async list() { return new Map(map); }, async put(k, v) { if (typeof k === 'object') for (const [kk, vv] of Object.entries(k)) map.set(kk, structuredClone(vv)); else map.set(k, structuredClone(v)); }, async get(k) { return map.get(k); }, async delete(k) { for (const kk of Array.isArray(k) ? k : [k]) map.delete(kk); } };
 }
 /* 假的環境：一個 DO 實例、記錄所有 REST 呼叫 */
 function makeEnv({ storage = fakeStorage(), deferMs = 2200, noSecrets = false } = {}) {
@@ -159,4 +159,53 @@ test('DOStore 只寫回碰到的鍵', async () => {
   s.user('g', 'a').crystals = 5; s.guild('g'); await s.flush();
   assert.deepEqual([...storage.map.keys()].sort(), ['g:g', 'u:g:a']);
   s.data.users['g:zzz'] = { crystals: 1 }; await s.flush(); assert.ok(!storage.map.has('u:g:zzz'), '沒透過 user() 碰到的不寫');
+});
+
+test('進行中的遊戲、測驗、猜數字與冷卻在 DO 重建（休眠醒來）後都還在；玩完的從 storage 刪掉', async () => {
+  const storage = fakeStorage();
+  const env1 = makeEnv({ storage });
+  const t = await send(env1, command('tictactoe'));
+  const p1 = await send(env1, button(buttonsOf(t.body.data)[0])); assert.equal(p1.body.type, 7);
+  const m = await send(env1, command('mbti', [], 'test'));
+  const a1 = await send(env1, button(buttonsOf(m.body.data)[0])); assert.match(a1.body.data.embeds[0].title, /2\/16/);
+  await send(env1, command('guess', [{ type: 4, name: 'max', value: 10 }], 'start'));
+  const c1 = await send(env1, command('confess', [{ type: 3, name: 'text', value: '嗨' }])); assert.match(c1.body.data.content, /已匿名送出/);
+  await new Promise(r => setTimeout(r, 30));   // persist 在回應後才完成
+  const skeys = [...storage.map.keys()].filter(k => k.startsWith('s:'));
+  assert.ok(skeys.some(k => k.startsWith('s:tictactoe:')) && skeys.some(k => k.startsWith('s:mbti:')), `進行中的 session 要寫進 storage：${skeys}`);
+  assert.ok(storage.map.has('cd'), '冷卻要寫進 storage');
+  assert.ok(storage.map.get(`u:${GUILD}:${USER.id}`).guess, '猜數字的那一局要在玩家紀錄裡');
+
+  // 模擬 DO 休眠後醒來：全新的實例、同一份 storage
+  const env2 = makeEnv({ storage });
+  const enabled = p1.body.data.components.flatMap(r => r.components).filter(c => c.type === 2 && !c.disabled).map(c => c.custom_id);
+  const p2 = await send(env2, button(enabled[0])); assert.equal(p2.body.type, 7); assert.match(p2.body.data.content, /井字/); assert.doesNotMatch(p2.body.data.content, /過期/);
+  const a2 = await send(env2, button(buttonsOf(a1.body.data)[0])); assert.match(a2.body.data.embeds[0].title, /3\/16/);
+  const g = await send(env2, command('guess', [{ type: 4, name: 'number', value: 5 }], 'try')); assert.match(g.body.data.content, /再大|再小|答對/);
+  const c2 = await send(env2, command('confess', [{ type: 3, name: 'text', value: '嗨' }])); assert.match(c2.body.data.content, /冷卻中/);
+
+  // 井字玩到結束：session 從 storage 移除
+  let msg = p2.body.data, guard = 0;
+  while (guard++ < 10) { const btns = msg.components.flatMap(r => r.components).filter(c => c.type === 2 && !c.disabled); if (!btns.length) break; msg = (await send(env2, button(btns[0].custom_id))).body.data; }
+  assert.match(msg.content, /獲勝|平手/); assert.doesNotMatch(msg.content, /<@bot>/);
+  await new Promise(r => setTimeout(r, 30));
+  assert.ok(![...storage.map.keys()].some(k => k.startsWith('s:tictactoe:')), '結束的遊戲要從 storage 刪掉');
+  assert.ok([...storage.map.keys()].some(k => k.startsWith('s:mbti:')), '還沒答完的測驗要留著');
+  const h = await (await worker.fetch(new Request('https://bot.example/health'), env2)).json(); assert.ok(h.sessions >= 1);
+});
+
+test('元件逾時：先回 type 6，之後的 reply 另開訊息（followUp），不蓋掉按鈕所在的訊息', async () => {
+  const env = makeEnv({ deferMs: 150 });
+  await send(env, { type: 1 });
+  await new Promise(r => setTimeout(r, 20));
+  env.instance().bot.registry.add({
+    name: 'slowbtn', description: 'slow', category: 'fun', guildOnly: false,
+    async run(ctx) { await ctx.reply({ content: 'x', components: [{ type: 1, components: [{ type: 2, style: 1, label: 'go', custom_id: 'slowbtn:go' }] }] }); },
+    buttons: { async go(ctx) { await new Promise(r => setTimeout(r, 300)); await ctx.reply({ content: '這不是你的按鈕', ephemeral: true }); } },
+  });
+  const r = await send(env, button('slowbtn:go')); assert.equal(r.body.type, 6);
+  await new Promise(r => setTimeout(r, 400));
+  const fu = env.calls.find(c => c.method === 'POST' && c.url.endsWith('/webhooks/123/itoken'));
+  assert.ok(fu, '要用 followUp 另開訊息'); assert.equal(fu.body.content, '這不是你的按鈕'); assert.equal(fu.body.flags, 64);
+  assert.ok(!env.calls.some(c => c.method === 'PATCH' && c.url.includes('@original')), '不能改掉按鈕所在的原訊息');
 });

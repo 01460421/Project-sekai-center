@@ -14,7 +14,7 @@ Discord 伺服器機器人，**100 個娛樂與互動功能**：占卜算命、�
 - **決定性占卜引擎**：塔羅、易經、星座、御神籤、盧恩……都以「使用者 + 台灣日期 + 主題 + 問題」當亂數種子。同一個人同一天問同一件事，答案不會變；換一天、換問題才會不同。像真的占卜，不是按一下就重抽。配對、評分、八號球也一樣是固定結果。
 - **選用的 AI 解讀層**：設了 `ANTHROPIC_API_KEY` 之後，塔羅、易經、解夢、MBTI 的結果會多一段個人化解讀（預設 `claude-opus-5`，啟用伺服器端 fallback，每人每日次數有上限）。**沒設金鑰時整層關閉，其他 99.9% 的功能完全不受影響。**
 - **核心與平台分離**：功能模組只認得 `Ctx`（`reply / update / showModal / u() / g() / rng / sessions`），不 import discord.js；`src/index.js` 是唯一的 Discord 介接層。測試直接呼叫核心，不需要 token、不需要裝 discord.js；之後要接 QQ 或網頁只要再寫一個介接層。
-- **一個 JSON 檔的持久化**：`state/state.json`，延遲寫入、原子換檔。玩家紀錄以伺服器為單位（每個伺服器各自一套經濟與等級）。介面上百個伺服器都還撐得住，要再大再換 SQLite，功能模組不用改。
+- **一個 JSON 檔的持久化**：`state/state.json`，延遲寫入、原子換檔。玩家紀錄以伺服器為單位（每個伺服器各自一套經濟與等級）。介面上百個伺服器都還撐得住，要再大再換 SQLite，功能模組不用改。進行中的遊戲（`bot.sessions`）在容器版放記憶體，在 Workers 版則跟著寫進 Durable Object storage，兩邊功能模組寫法相同。
 - **測試覆蓋每一個功能**：煙霧測試把 100 個指令（含每個子指令）都跑一遍，回應裡每個按鈕、每個選單都按過一次（本人和別人各按一次），並檢查 Discord 的硬限制（embed 長度、每列五個按鈕、custom_id 100 字…）。另有 30 幾個純邏輯與流程測試（21 點牌值、四子棋勝負、轉蛋機率、Wordle 評分、簽到轉帳、投票、結婚、搶答、提醒排程…）。
 
 ## 兩種執行方式
@@ -54,7 +54,7 @@ DISCORD_TOKEN=… WORKER_URL=https://pjsk-bot.xxx.workers.dev node scripts/setup
 
 本機驗證（不需要任何帳號，會啟動真的 workerd 執行環境，模擬 Discord 簽過名的互動打進來）：`node scripts/probe-workers.mjs`。
 
-Workers 版的內部設計：單例 Durable Object 收所有互動、狀態放它的 SQLite storage（每個玩家、每個伺服器各一個鍵，只寫回這次碰到的鍵），所有互動排隊處理所以經濟系統沒有競態；功能跑超過 2.2 秒（例如 AI 解讀）會先回「延遲」再用 REST 補上結果；每分鐘的 Cron 打 `/tick` 處理提醒、倒數、抽獎。
+Workers 版的內部設計：單例 Durable Object 收所有互動、狀態放它的 SQLite storage（每個玩家、每個伺服器各一個鍵，只寫回這次碰到的鍵），所有互動排隊處理所以經濟系統沒有競態；進行中的遊戲／測驗與指令冷卻也一起落地（Durable Object 閒置 10 秒就會休眠、記憶體清空，所以不能只放記憶體），玩家在兩次按鈕之間停多久都沒關係；功能跑超過 2.2 秒（例如 AI 解讀）會先回「延遲」再用 REST 補上結果；每分鐘的 Cron 打 `/tick` 處理提醒、倒數、抽獎。
 
 ### 🐳 部署成容器（完整功能）
 
@@ -166,7 +166,7 @@ node scripts/probe-workers.mjs  # 真的 workerd 上跑 Workers 版，模擬簽�
 npm run features              # 印出 100 個功能的 Markdown 表格（README 下方那份）
 ```
 
-測試分四支：`registry`（恰好 100、指令 JSON 合法）、`smoke`（每個指令與每個按鈕／選單）、`logic`（純邏輯與流程）、`worker`（Workers 版端對端：真的產 Ed25519 金鑰簽請求，走完驗簽 → Durable Object → 互動回應 → 持久化 → cron → 延遲回應）。
+測試分四支：`registry`（恰好 100、指令 JSON 合法）、`smoke`（每個指令與每個按鈕／選單）、`logic`（純邏輯與流程）、`worker`（Workers 版端對端：真的產 Ed25519 金鑰簽請求，走完驗簽 → Durable Object → 互動回應 → 持久化 → cron → 延遲回應 → 模擬 DO 休眠後重建、進行中的遊戲照樣接著玩）。
 
 CI（`.github/workflows/ci.yml` 的 `bot` job）每次 PR 都會跑檢查與測試；`bot-deploy.yml` 在 main 上部署。
 
