@@ -11,3 +11,8 @@ __pycache__/
 bot/node_modules/
 bot/state/
 bot/.env
+
+# Workers 打包產物
+bot/dist/
+bot/.wrangler/
+bot/.dev.vars

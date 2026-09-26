@@ -117,8 +117,9 @@ const raffle = {
     async draw(ctx) { const r = ctx.g().raffles[ctx.data[0]]; if (!r || r.closed) return ctx.reply({ content: '這個抽獎已結束。', ephemeral: true }); if (!ctx.isOwner(r.owner) && !ctx.member.admin) return ctx.reply({ content: '只有發起人或管理員能開獎。', ephemeral: true }); drawRaffle(ctx, r); await ctx.update(raffleMsg(ctx.data[0], r)); },
   },
   async tick(bot, now) {
-    for (const [gid, g] of Object.entries(bot.store.data.guilds)) for (const [rid, r] of Object.entries(g.raffles || {})) {
+    for (const gid of Object.keys(bot.store.data.guilds)) for (const r of Object.values(bot.store.data.guilds[gid].raffles || {})) {
       if (r.closed || !r.endAt || r.endAt > now) continue;
+      bot.store.guild(gid);   // 標記這個伺服器有變動（Workers 版靠這個決定要寫回哪些鍵）
       r.closed = true; r.winners = bot.rng.sample(r.entries, Math.min(r.n, r.entries.length)); bot.store.touch();
       await bot.send(r.channelId, { content: r.winners.length ? `🎁 抽獎「${r.prize}」開獎！得獎者：${r.winners.map(mention).join('、')}` : `🎁 抽獎「${r.prize}」時間到，但沒有人參加。` });
     }

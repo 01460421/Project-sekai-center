@@ -17,7 +17,68 @@ Discord 伺服器機器人，**100 個娛樂與互動功能**：占卜算命、�
 - **一個 JSON 檔的持久化**：`state/state.json`，延遲寫入、原子換檔。玩家紀錄以伺服器為單位（每個伺服器各自一套經濟與等級）。介面上百個伺服器都還撐得住，要再大再換 SQLite，功能模組不用改。
 - **測試覆蓋每一個功能**：煙霧測試把 100 個指令（含每個子指令）都跑一遍，回應裡每個按鈕、每個選單都按過一次（本人和別人各按一次），並檢查 Discord 的硬限制（embed 長度、每列五個按鈕、custom_id 100 字…）。另有 30 幾個純邏輯與流程測試（21 點牌值、四子棋勝負、轉蛋機率、Wordle 評分、簽到轉帳、投票、結婚、搶答、提醒排程…）。
 
-## 安裝與啟動
+## 兩種執行方式
+
+同一份核心與 100 個功能，兩個介接層：
+
+| | ☁️ Cloudflare Workers 版（`src/worker.js`） | 🐳 容器版（`src/index.js`） |
+|---|---|---|
+| 原理 | Discord **HTTP 互動**：Discord 把互動 POST 到 Worker，不用常駐程序 | Discord **Gateway**：長連線，跟一般機器人一樣 |
+| 主機 | 無。跟本站的 `worker/` 一樣用 wrangler 部署，狀態放 Durable Object | 任何能跑容器的地方：Fly.io、Railway、Render、VPS、家裡的 NAS |
+| 費用 | Workers 免費額度就夠一般社群用（付費方案 US$5／月更寬裕） | 看主機，最小 256 MB 記憶體即可 |
+| 功能 | 100 個指令全部可用；但**沒有 Gateway 就收不到聊天訊息**：`/afk` 的自動回覆、`/autoreact`、`/welcome` 這三個被動功能不會動作，`/team` 拿不到語音頻道名單；聊天經驗值改由使用指令累積 | 100 個全部 |
+| 自動部署 | `.github/workflows/bot-deploy.yml` 的 `workers` job | 同一支的 `image` job 會把映像推到 GHCR |
+
+### ☁️ 部署到 Cloudflare Workers（全自動，只要一個 token）
+
+repo 已經有 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`（`worker/` 就是用它們部署的），所以你只需要：
+
+1. **建 Discord 應用程式**：<https://discord.com/developers/applications> → New Application → Bot 分頁 → **Reset Token**，複製 token。
+   （同一頁往下，Privileged Gateway Intents 開 **Server Members Intent**，`/someone`、`/team` 列成員才有資料。）
+2. **把 token 放進 GitHub**：repo → Settings → Secrets and variables → Actions → New repository secret → 名稱 `DISCORD_TOKEN`。
+   想要 AI 解讀就再加 `ANTHROPIC_API_KEY`。
+3. **合併這個 PR 到 main**（或 Actions 頁手動跑 `bot-deploy`）。工作流程會自己：部署 Worker → 向 Discord 取 Application ID 與 Public Key → 寫進 Worker 機密 → 把 **Interactions Endpoint URL** 設回 Discord → 註冊 100 個斜線指令。
+4. **邀請機器人**：OAuth2 → URL Generator，scopes 勾 `bot` 與 `applications.commands`，權限勾 `Send Messages`、`Embed Links`、`Add Reactions`、`Read Message History` → 開產生的連結選伺服器。
+
+之後每次 main 上動到 `bot/`（或曲庫資料每日更新）都會自動重新部署。檢查：`https://pjsk-bot.<你的子網域>.workers.dev/health` 會回功能數、玩家數與統計（網址在 Actions 的 deploy 步驟會印出來）。
+
+手動做也行（在 `bot/`，第一次會開瀏覽器登入 Cloudflare）：
+```bash
+npm install
+npm run deploy:workers                                         # 印出 Worker 網址
+DISCORD_TOKEN=… WORKER_URL=https://pjsk-bot.xxx.workers.dev node scripts/setup-discord.mjs   # 機密＋Endpoint＋註冊指令一次做完
+```
+自訂網域：把 `wrangler.toml` 的 `[[routes]]` 打開，並在 repo Variables 設 `WORKER_URL`。
+
+本機驗證（不需要任何帳號，會啟動真的 workerd 執行環境，模擬 Discord 簽過名的互動打進來）：`node scripts/probe-workers.mjs`。
+
+Workers 版的內部設計：單例 Durable Object 收所有互動、狀態放它的 SQLite storage（每個玩家、每個伺服器各一個鍵，只寫回這次碰到的鍵），所有互動排隊處理所以經濟系統沒有競態；功能跑超過 2.2 秒（例如 AI 解讀）會先回「延遲」再用 REST 補上結果；每分鐘的 Cron 打 `/tick` 處理提醒、倒數、抽獎。
+
+### 🐳 部署成容器（完整功能）
+
+映像由 GitHub Actions 自動建好：`ghcr.io/01460421/sekai-center-bot:latest`（建置上下文是 repo 根目錄，因為要帶上 `data/` 的四個資料檔）。
+
+```bash
+# 任何有 Docker 的機器
+docker run -d --name sekai-bot --restart unless-stopped \
+  -e DISCORD_TOKEN=… -e APP_ID=… \
+  -v sekai-bot-data:/data ghcr.io/01460421/sekai-center-bot:latest
+# 自己建：在 repo 根目錄
+docker build -f bot/Dockerfile -t sekai-center-bot .
+```
+
+| 平台 | 設定檔 | 做法 |
+|---|---|---|
+| **Fly.io** | `bot/fly.toml` | 在 repo 根目錄：`fly launch --no-deploy --copy-config --config bot/fly.toml`（改 app 名）→ `fly volumes create bot_data --size 1 --region nrt --config bot/fly.toml` → `fly secrets set DISCORD_TOKEN=… APP_ID=… --config bot/fly.toml` → `fly deploy . --config bot/fly.toml` |
+| **Railway** | `bot/railway.json` | New Project → Deploy from GitHub → 服務設定 Root Directory 留根目錄、Config-as-code 填 `bot/railway.json`；Variables 加 `DISCORD_TOKEN`、`APP_ID`；Volumes 掛到 `/data` |
+| **Render** | `render.yaml`（repo 根目錄） | New → Blueprint → 選 repo；Environment 填 `DISCORD_TOKEN`、`APP_ID` |
+| **VPS／NAS** | `bot/Dockerfile` | 上面的 `docker run`；或不用 Docker：`git clone` → `cd bot && npm ci --omit=dev` → pm2／systemd（見下方） |
+
+註冊斜線指令一次即可（任一台有 `.env` 的機器）：`npm run register`，或 `node scripts/setup-discord.mjs --skip-secrets`（不用手抄 Application ID）。
+
+容器版與 Workers 版**不要同時接同一個 Discord 應用程式**：設了 Interactions Endpoint URL 之後 Discord 會把互動送去 Worker，Gateway 那邊就收不到斜線指令。要換回容器版，把 Discord 後台的 Interactions Endpoint URL 清空即可。
+
+## 本機開發
 
 需要 Node.js 22 以上。
 
@@ -74,33 +135,53 @@ WantedBy=multi-user.target
 |---|---|---|
 | `DISCORD_TOKEN` | 是 | Bot token |
 | `APP_ID` | 註冊指令時 | Application ID |
+| `DISCORD_PUBLIC_KEY` | Workers 版 | 驗證 Discord 請求簽章 |
+| `REGISTER_SECRET` | Workers 版（選用） | `POST /register` 的密鑰 |
 | `GUILD_ID` | 否 | 設了就只註冊到這個伺服器（開發用） |
-| `STATE_FILE` | 否 | 狀態檔路徑，預設 `bot/state/state.json` |
+| `STATE_FILE` | 否 | 容器版狀態檔路徑，預設 `bot/state/state.json`（Docker 映像預設 `/data/state.json`） |
 | `ANTHROPIC_API_KEY` | 否 | 啟用 AI 解讀 |
 | `AI_MODEL` | 否 | 預設 `claude-opus-5` |
 | `AI_DAILY_PER_USER` | 否 | 每人每日 AI 解讀次數上限，預設 10 |
+
+### 套件
+
+| 套件 | 用途 | 誰需要 |
+|---|---|---|
+| `discord.js` ^14 | Gateway 介接層 | 容器版 |
+| `@anthropic-ai/sdk` | AI 解讀（動態載入，沒設金鑰不會碰） | 兩版皆選用 |
+| `wrangler` ^4（dev） | Workers 打包／部署／本機 workerd | Workers 版 |
+
+核心、100 個功能、註冊腳本與測試不依賴任何套件，`npm test` 不需要 `npm install`。`package-lock.json` 已提交，`npm ci` 可重現。
 
 ## 測試
 
 ```bash
 cd bot
-npm test          # node --test；不需要 token 也不需要 discord.js
-npm run check     # 全部檔案 node --check
-npm run features  # 印出 100 個功能的 Markdown 表格（README 下方那份）
+npm test                      # node --test；不需要 token 也不需要 npm install
+npm run check                 # 全部檔案 node --check
+npm run build:workers         # wrangler 打包檢查（不上傳）
+node scripts/probe-workers.mjs  # 真的 workerd 上跑 Workers 版，模擬簽過名的 Discord 互動
+npm run features              # 印出 100 個功能的 Markdown 表格（README 下方那份）
 ```
 
-CI（`.github/workflows/ci.yml` 的 `bot` job）每次 PR 都會跑上面的檢查與測試。
+測試分四支：`registry`（恰好 100、指令 JSON 合法）、`smoke`（每個指令與每個按鈕／選單）、`logic`（純邏輯與流程）、`worker`（Workers 版端對端：真的產 Ed25519 金鑰簽請求，走完驗簽 → Durable Object → 互動回應 → 持久化 → cron → 延遲回應）。
+
+CI（`.github/workflows/ci.yml` 的 `bot` job）每次 PR 都會跑檢查與測試；`bot-deploy.yml` 在 main 上部署。
 
 ## 目錄結構
 
 ```
 bot/
-  src/index.js          Discord 介接層（discord.js v14）：唯一碰 Discord 的地方
+  src/index.js          容器版介接層（discord.js v14 Gateway）
+  src/worker.js         Cloudflare Workers 版介接層（HTTP 互動 + Durable Object 儲存 + Cron）
+  wrangler.toml         Workers 設定；Dockerfile / fly.toml / railway.json 容器版設定（render.yaml 在 repo 根目錄）
   src/core/
+    discord-http.js     HTTP 互動共用：Ed25519 驗簽、REST、互動 payload → 核心輸入（Node 與 Workers 通用）
+    store-file.js       FileStore：容器版的 JSON 檔持久化
     bot.js              核心：指令／按鈕／選單／表單分派、冷卻、權限、被動事件、排程 tick
     ctx.js              功能看到的世界（reply/update/showModal/u()/g()/rng/ai）
     registry.js         功能註冊表：驗證、彙整成 Discord 指令 JSON、分類
-    store.js            MemoryStore / FileStore（JSON、延遲寫入、原子換檔）
+    store.js            MemoryStore（記憶體層；FileStore 與 Workers 的 DOStore 都繼承它）
     ui.js               embed／按鈕／選單／modal 的原生 JSON 建構、custom_id 編解碼
     opts.js             斜線指令參數簡寫
     oracle.js           占卜引擎：日期種子、星座、生肖、靈數、問卷流程
@@ -113,8 +194,10 @@ bot/
                         解夢字典、籤詩、宜忌、幸運餅乾、Wordle／猜單字詞庫、真心話大冒險、話題、題庫…
   src/features/         100 個功能，10 個分類檔，每檔 default export 一個功能陣列
   scripts/register.js   註冊斜線指令（純 fetch，不需要 discord.js）
+  scripts/setup-discord.mjs  只憑 token 把 Discord 接好：取 App ID／Public Key、寫 Worker 機密、設 Endpoint、註冊指令
   scripts/list-features.js
-  test/                 harness（假介接層）、registry／smoke／logic 測試
+  scripts/probe-workers.mjs  本機 workerd 上跑 Workers 版並模擬 Discord 互動
+  test/                 harness（假介接層）、registry／smoke／logic／worker 測試
 ```
 
 ## 新增功能

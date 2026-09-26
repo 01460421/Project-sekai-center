@@ -6,6 +6,7 @@ import { Sessions, Cooldowns, Timers } from './sessions.js';
 import { MemoryStore } from './store.js';
 import { Rng } from './rng.js';
 import { parseCid, todayTW, weekTW } from './ui.js';
+import FEATURES from '../features/index.js';
 
 export class Bot {
   constructor({ registry, store, rng, timers, ai, send, log } = {}) {
@@ -22,9 +23,9 @@ export class Bot {
     this.guildCount = 0;
     this.userCount = 0;
   }
+  static defaultRegistry() { return Registry.fromList(FEATURES); }
   static async create(opts = {}) {
-    const registry = opts.registry || await Registry.loadDir(Registry.defaultDir());
-    return new Bot({ ...opts, registry });
+    return new Bot({ ...opts, registry: opts.registry || Bot.defaultRegistry() });
   }
   async send(channelId, msg) { return this._send(channelId, msg); }
 
@@ -104,10 +105,13 @@ export class Bot {
     this.sessions.sweep();
   }
 
-  /* 每次使用指令都順手記錄活躍度（每週統計、每日任務用） */
+  /* 每次使用指令都順手記錄活躍度（每週統計、每日任務用），並給一點經驗值：
+     Workers 版沒有 Gateway、收不到聊天訊息，等級就靠這個累積。 */
   trackActivity(ctx) {
     const u = ctx.u();
-    u.lastSeen = Date.now();
+    const now = Date.now();
+    if (now - (u.lastCmdXp || 0) > 60e3 && ctx.settings.xp !== false) { u.lastCmdXp = now; u.xp += u.xpBoostUntil > now ? 16 : 8; }
+    u.lastSeen = now;
     const wk = weekTW();
     if (u.weekly.week !== wk) u.weekly = { week: wk, msgs: 0, games: 0 };
     const today = todayTW();

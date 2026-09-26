@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "_comment": "Railway（容器版）：服務設定的 Root Directory 留 repo 根目錄、Config-as-code 路徑填 bot/railway.json；Variables 加 DISCORD_TOKEN、APP_ID（ANTHROPIC_API_KEY 選用）；Volumes 掛一個到 /data。",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "bot/Dockerfile"
+  },
+  "deploy": {
+    "restartPolicyType": "ALWAYS",
+    "numReplicas": 1
+  }
+}

@@ -1,0 +1,13 @@
+# 給 bot/Dockerfile 用（建置上下文是 repo 根目錄）：只送機器人需要的檔案進去
+*
+!bot/
+!data/cards-index.js
+!data/ep-songs.js
+!data/sekai-data.js
+!data/song-bpm.js
+bot/node_modules
+bot/state
+bot/dist
+bot/.env
+bot/test
+bot/.wrangler

@@ -1,9 +1,5 @@
-/* 功能註冊表：每個功能是一個物件（見 features/README 段落），這裡負責驗證、彙整成 Discord 指令 JSON、
-   以及提供分類清單給 /help。 */
-
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+/* 功能註冊表：每個功能是一個物件（見 bot/README.md「新增功能」），這裡負責驗證、彙整成 Discord 指令 JSON、
+   以及提供分類清單給 /help。不碰檔案系統，Node 與 Cloudflare Workers 都能用。 */
 
 export const CATEGORIES = {
   divination: { name: '占卜算命', emoji: '🔮' },
@@ -51,6 +47,7 @@ export class Registry {
     this.byName.set(f.name, f);
     return f;
   }
+  static fromList(list) { const reg = new Registry(); for (const f of list) reg.add(f); return reg; }
   get(name) { return this.byName.get(name); }
   get size() { return this.features.length; }
   byCategory() {
@@ -59,7 +56,7 @@ export class Registry {
     for (const f of this.features) out[f.category].push(f);
     return out;
   }
-  /* Discord 註冊用 JSON */
+  /* Discord 指令 JSON（未含 contexts；註冊時用 registrationJSON） */
   commandJSON() {
     return this.features.map(f => {
       const c = { name: f.name, description: f.description, type: 1, options: f.options || [] };
@@ -69,17 +66,14 @@ export class Registry {
       return c;
     });
   }
-  /* 讀 features/ 目錄下所有檔案（依檔名排序），每個檔案 default export 是功能陣列 */
-  static async loadDir(dir) {
-    const reg = new Registry();
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.js')).sort();
-    for (const file of files) {
-      const mod = await import(pathToFileURL(path.join(dir, file)).href);
-      const list = mod.default;
-      if (!Array.isArray(list)) throw new Error(`${file}: default export 要是功能陣列`);
-      for (const f of list) { f.file = file; reg.add(f); }
-    }
-    return reg;
-  }
-  static defaultDir() { return path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'features'); }
+}
+
+/* 送給 Discord 的最終格式：dm_permission 改成 contexts（0 伺服器、1 機器人私訊、2 群組私訊） */
+export function registrationJSON(reg) {
+  return reg.commandJSON().map(c => {
+    const o = { ...c };
+    if (o.dm_permission === false) { delete o.dm_permission; o.contexts = [0]; } else o.contexts = [0, 1, 2];
+    o.integration_types = [0];
+    return o;
+  });
 }

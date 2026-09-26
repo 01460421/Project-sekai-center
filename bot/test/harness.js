@@ -2,13 +2,12 @@
 
 import assert from 'node:assert/strict';
 import { Bot } from '../src/core/bot.js';
-import { Registry } from '../src/core/registry.js';
 import { MemoryStore } from '../src/core/store.js';
 import { Rng } from '../src/core/rng.js';
 import { Timers } from '../src/core/sessions.js';
 
-let registryPromise = null;
-export function loadRegistry() { if (!registryPromise) registryPromise = Registry.loadDir(Registry.defaultDir()); return registryPromise; }
+let registry = null;
+export async function loadRegistry() { if (!registry) registry = Bot.defaultRegistry(); return registry; }
 
 export const USERS = {
   alice: { id: '100000000000000001', name: 'Alice', bot: false },

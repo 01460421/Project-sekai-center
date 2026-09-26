@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client, GatewayIntentBits, Partials, Events, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { Bot } from './core/bot.js';
-import { FileStore } from './core/store.js';
+import { FileStore } from './core/store-file.js';
 import { createAI } from './core/ai.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));

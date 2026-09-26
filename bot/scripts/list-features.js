@@ -1,7 +1,8 @@
 /* 列出全部功能（Markdown 表格），README 的功能清單就是用這個產生的：node scripts/list-features.js */
-import { Registry, CATEGORIES } from '../src/core/registry.js';
+import { Bot } from '../src/core/bot.js';
+import { CATEGORIES } from '../src/core/registry.js';
 
-const reg = await Registry.loadDir(Registry.defaultDir());
+const reg = Bot.defaultRegistry();
 const byCat = reg.byCategory();
 let n = 0;
 for (const [key, c] of Object.entries(CATEGORIES)) {
