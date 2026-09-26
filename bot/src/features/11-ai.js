@@ -35,7 +35,7 @@ function remember(u, role, text) {
 /* ---------- run_command 工具：只准跑這些指令（null = 所有子指令都可以） ---------- */
 export const ALLOW = {
   song: null, randomsong: null, setlist: null, event: null, gachalist: null, help: null, botstats: null,
-  profile: null, balance: null, bank: ['info'], rank: null, leaderboard: null, richlist: null, quizrank: null, luckrank: null,
+  profile: null, balance: null, bank: ['info'], rank: null, leaderboard: null, richlist: null, quizrank: null,
   achievements: null, quest: null, streak: null, collection: null, pity: null, gachastats: null, wishlist: null,
   horoscope: null, zodiac: null, birthchart: null, numerology: null, almanac: null, fortunecookie: null, astrodice: null,
   tarot: null, iching: null, runes: null, omikuji: null, dream: null,
