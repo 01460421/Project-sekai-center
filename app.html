@@ -415,6 +415,40 @@ select option, select optgroup{
 .car-out{border:1.5px dashed var(--border-2);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--text-3);margin-bottom:10px}
 .car-in{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:42px;outline:none;font-family:inherit;box-sizing:border-box}
 .car-in:focus{border-color:var(--accent)}
+/* 色段監控：設定面板＋即時預覽（統計 → 色段監控） */
+.sei-ed{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start}
+.sei-pv{position:sticky;top:calc(var(--head-h,58px) + 10px);min-width:0}
+.sei-form{min-width:0}
+@media (max-width:1000px){.sei-ed{grid-template-columns:minmax(0,1fr)}.sei-pv{position:static}}
+.sei-gt{font-size:15px;font-weight:800;color:var(--ink)}
+.sei-gd{font-size:11.5px;color:var(--text-3);line-height:1.7;margin:3px 0 10px}
+.sei-fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:9px}
+.sei-f{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:14px;background:var(--card-2);min-width:0}
+.sei-fl{font-size:12px;font-weight:800;color:var(--text-2)}
+.sei-def{font-size:11px;color:var(--text-3);line-height:1.5}
+.sei-u{flex:none;font-size:11.5px;color:var(--text-3);font-weight:700;white-space:nowrap}
+.sei-err{font-size:11.5px;font-weight:700;color:color-mix(in oklab,#d64533 60%,var(--car-fg))}
+.sei-dirty{font-size:11px;font-weight:800;color:var(--accent-deep)}
+.sei-save{position:sticky;bottom:12px;z-index:5;display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:16px;background:color-mix(in oklab,var(--card) 90%,transparent);backdrop-filter:blur(14px);box-shadow:var(--sh-sm)}
+@media (max-width:900px){.sei-save{bottom:calc(82px + env(safe-area-inset-bottom,0px))}}
+.sei-st{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:800;max-width:100%;overflow-wrap:anywhere}
+.sei-st b{font-size:10.5px;color:var(--text-3);font-weight:800;white-space:nowrap}
+.sei-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11px;color:var(--text-3);align-items:center}
+.sei-leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.sei-leg s{display:inline-block;width:14px;height:0;border-top:2px dashed;margin-right:4px;vertical-align:3px;text-decoration:none}
+.sei-sub{font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--text-3);margin:14px 0 6px}
+.sei-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-2);line-height:1.55}
+.sei-t{flex:none;font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;color:var(--text-3);width:40px}
+.sei-evs{max-height:280px;overflow-y:auto}
+.sei-chip{display:inline-flex;align-items:center;gap:2px;padding:3px 3px 3px 10px;border-radius:999px;background:color-mix(in oklab,var(--accent) 12%,var(--card));color:var(--accent-deep);font-size:12px;font-weight:800;max-width:100%}
+.sei-chip button{border:none;background:transparent;color:inherit;cursor:pointer;font-size:11px;padding:3px 7px;border-radius:999px;font-family:inherit}
+.sei-lb{display:flex;flex-direction:column;gap:5px;min-width:0}
+.sei-lb>span{font-size:11.5px;font-weight:800;color:var(--text-2)}
+.sei-yl{position:absolute;left:0;transform:translateY(-50%);text-align:right;font-size:10px;line-height:1;color:var(--text-3);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;white-space:nowrap;pointer-events:none}
+.sei-xl{position:absolute;top:calc(100% - 22px);transform:translateX(-50%);font-size:10px;line-height:1;color:var(--text-3);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;white-space:nowrap;pointer-events:none}
+.sei-thl{position:absolute;right:10px;transform:translateY(-50%);font-size:10.5px;font-weight:800;line-height:1;color:var(--accent-deep);background:color-mix(in oklab,var(--card) 80%,transparent);padding:2px 5px;border-radius:6px;pointer-events:none}
+.sei-empty{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-3);pointer-events:none}
+.sei-ro{min-height:18px;margin-top:4px;font-size:12px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
 .car-pop{position:fixed;z-index:77;width:290px;max-height:80vh;overflow-y:auto;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-lg);font-size:12.5px;color:var(--text);animation:fadeIn .18s ease;box-sizing:border-box}
 @media (max-width:1100px){.car-wrap{flex-direction:column;align-items:stretch}.car-side{width:auto;flex-direction:row;flex-wrap:wrap}.car-side>*{flex:1 1 260px}}
 @media (max-width:640px){
@@ -2948,18 +2982,38 @@ select option, select optgroup{
                   <div style="font-size:15px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ carSeiHead }}</div>
                   <sc-if value="{{ carSeiLiveShow }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:{{ carSeiLiveBg }};color:{{ carSeiLiveFg }}">{{ carSeiLive }}</span></sc-if>
                   <sc-if value="{{ carSeiLiveRetry }}"><button type="button" class="car-mini" onClick="{{ onCarSeiLive }}">重讀即時排名</button></sc-if>
+                  <sc-if value="{{ carSeiCanAdd }}"><button type="button" class="car-btn" onClick="{{ onCarSeiAdd }}" aria-expanded="{{ carSeiAddShow }}" style="margin-left:auto;background:var(--card)">{{ carSeiAddBtn }}</button></sc-if>
                 </div>
+                <sc-if value="{{ carSeiAddShow }}">
+                  <div class="car-card" data-sei-add="1" style="padding:15px 18px 16px;margin-bottom:14px;border-color:color-mix(in oklab,var(--accent) 45%,var(--border))">
+                    <div class="sei-gt">新增色段監控</div>
+                    <div class="sei-gd">玩家要在目前活動的前 100 名或榜線上。可以輸入玩家 ID、目前名次（例如 1），或完整的遊戲名稱；機器人會換成真正的玩家 ID 存起來。已經在監控的玩家會直接重新啟用。</div>
+                    <div class="sei-fg">
+                      <label class="sei-lb"><span>玩家 ID／名次／遊戲名稱</span><input class="car-in" type="text" maxlength="40" value="{{ carSeiAddPlayer }}" onInput="{{ onCarSeiAddIn }}" onKeyDown="{{ onCarSeiAddKey }}" data-k="player" placeholder="例如 1 或 5823749102938475" style="background:var(--card)"></label>
+                      <label class="sei-lb"><span>通知頻道（警報發在這裡）</span><select class="car-in" sc-options="{{ carSeiAddChOpts }}" value="{{ carSeiAddCh }}" onChange="{{ onCarSeiAddIn }}" data-k="ch" style="background:var(--card);cursor:pointer"></select></label>
+                      <label class="sei-lb"><span>暱稱（選填）</span><input class="car-in" type="text" maxlength="30" value="{{ carSeiAddNick }}" onInput="{{ onCarSeiAddIn }}" onKeyDown="{{ onCarSeiAddKey }}" data-k="nick" placeholder="留空＝遊戲名稱" style="background:var(--card)"></label>
+                      <label class="sei-lb"><span>判定門檻（選填，預設 60000）</span><input class="car-in" type="text" inputmode="numeric" maxlength="10" value="{{ carSeiAddThresh }}" onInput="{{ onCarSeiAddIn }}" onKeyDown="{{ onCarSeiAddKey }}" data-k="thresh" placeholder="60000" style="background:var(--card)"></label>
+                      <label class="sei-lb"><span>異常時 @ 的身分組</span><select class="car-in" sc-options="{{ carSeiAddRoleOpts }}" value="{{ carSeiAddRole }}" onChange="{{ onCarSeiAddIn }}" data-k="role" style="background:var(--card);cursor:pointer"></select></label>
+                    </div>
+                    <sc-if value="{{ carSeiAddMetaErr }}"><div class="sei-err" style="margin-top:8px">{{ carSeiAddMetaErr }}</div></sc-if>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                      <button type="button" class="car-btn" onClick="{{ onCarSeiAddGo }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ carSeiAddGoTxt }}</button>
+                      <button type="button" class="car-btn" onClick="{{ onCarSeiAdd }}" style="background:var(--card)">取消</button>
+                    </div>
+                  </div>
+                </sc-if>
                 <sc-if value="{{ carSeiEmpty }}">
-                  <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">尚未設定色段監控。<br>管理員可以在 Discord 用 /色段 監控 新增要追蹤的玩家，這裡就會列出他的分數、時速與警報。</div>
+                  <div class="car-card" style="padding:26px 20px;text-align:center;font-size:13px;color:var(--text-3);line-height:1.8">尚未設定色段監控。<br>{{ carSeiEmptyTxt }}</div>
                 </sc-if>
                 <div style="display:flex;flex-direction:column;gap:14px">
                   <sc-for list="{{ carSeiPlayers }}" as="p">
-                    <div class="car-card" style="padding:15px 18px 16px;min-width:0;border-color:{{ p.bd }}">
+                    <div class="car-card" data-sei-card="{{ p.pid }}" style="padding:15px 18px 16px;min-width:0;border-color:{{ p.bd }}">
                       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                         <div style="font-size:16px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ p.name }}</div>
                         <sc-if value="{{ p.hasRank }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep)">{{ p.rankTxt }}</span></sc-if>
                         <sc-if value="{{ p.stopped }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,#ee6644 15%,var(--card));color:color-mix(in oklab,#ee6644 55%,var(--car-fg))">{{ p.stopTxt }}</span></sc-if>
                         <sc-if value="{{ p.off }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-3)">停用</span></sc-if>
+                        <sc-if value="{{ p.isDef }}"><span title="Discord 的 /色段 指令省略玩家 ID 時用這位" style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-2)">預設</span></sc-if>
                         <sc-if value="{{ p.modeTxt }}"><span style="font-size:11.5px;color:var(--text-3)">{{ p.modeTxt }}</span></sc-if>
                         <sc-if value="{{ p.hasSpark }}"><span title="最近 30 場的單場分數" style="margin-left:auto;display:inline-flex;gap:1px;align-items:flex-end;height:18px"><sc-for list="{{ p.spark }}" as="b"><i style="display:block;width:3px;height:{{ b }}px;border-radius:1px;background:var(--accent);opacity:.8"></i></sc-for></span></sc-if>
                       </div>
@@ -3000,40 +3054,160 @@ select option, select optgroup{
                         <button type="button" class="car-btn" onClick="{{ onCarSeiOpen }}" data-pid="{{ p.pid }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">完整紀錄</button>
                         <sc-if value="{{ p.admin }}">
                           <button type="button" class="car-btn" onClick="{{ onCarSeiToggle }}" data-pid="{{ p.pid }}">{{ p.togTxt }}</button>
-                          <button type="button" class="car-btn" onClick="{{ onCarSeiCfg }}" data-pid="{{ p.pid }}" aria-expanded="{{ p.cfgOpen }}">{{ p.cfgTxt }}</button>
+                          <button type="button" class="car-btn" onClick="{{ onCarSeiEd }}" data-pid="{{ p.pid }}">設定與預覽</button>
                           <button type="button" class="car-btn" onClick="{{ onCarSeiClear }}" data-pid="{{ p.pid }}">重置警報</button>
                         </sc-if>
                       </div>
-                      <sc-if value="{{ p.cfgOpen }}">
-                        <div style="margin-top:12px;padding:14px;border-radius:16px;background:var(--card-2)">
-                          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px">
-                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">暱稱（留空＝遊戲名稱）</span><input class="car-in" type="text" maxlength="32" value="{{ p.fNick }}" placeholder="{{ p.fNickPh }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="nick" style="background:var(--card)"></label>
-                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">判定門檻（單場分數）</span><input class="car-in" type="text" inputmode="numeric" maxlength="10" value="{{ p.fThresh }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="thresh" style="background:var(--card)"></label>
-                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">手感門檻（%）</span><input class="car-in" type="text" inputmode="decimal" maxlength="6" value="{{ p.fRatio }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="ratio" style="background:var(--card)"></label>
-                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">手感觀察時數（1～24）</span><input class="car-in" type="text" inputmode="numeric" maxlength="2" value="{{ p.fHours }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="hours" style="background:var(--card)"></label>
-                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">斷 auto 觸發（分鐘）</span><input class="car-in" type="text" inputmode="numeric" maxlength="2" value="{{ p.fTrig }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="trig" style="background:var(--card)"></label>
-                            <label style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:11.5px;font-weight:800;color:var(--text-2)">斷 auto 重複（分鐘）</span><input class="car-in" type="text" inputmode="numeric" maxlength="2" value="{{ p.fRep }}" onInput="{{ onCarSeiIn }}" onKeyDown="{{ onCarSeiKey }}" data-k="rep" style="background:var(--card)"></label>
-                          </div>
-                          <div style="display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin-top:12px">
-                            <span style="font-size:11.5px;font-weight:800;color:var(--text-2)">狀態不佳警報</span>
-                            <div class="car-seg" role="group" aria-label="私訊玩家">
-                              <sc-for list="{{ p.dmSeg }}" as="o"><button type="button" onClick="{{ onCarSeiBool }}" data-k="{{ o.k }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};padding:6px 13px;font-size:12.5px">{{ o.n }}</button></sc-for>
-                            </div>
-                            <div class="car-seg" role="group" aria-label="頻道公開">
-                              <sc-for list="{{ p.pubSeg }}" as="o"><button type="button" onClick="{{ onCarSeiBool }}" data-k="{{ o.k }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};padding:6px 13px;font-size:12.5px">{{ o.n }}</button></sc-for>
-                            </div>
-                          </div>
-                          <div style="font-size:11.5px;color:var(--text-3);line-height:1.75;margin-top:10px">判定門檻：單場分數達到門檻算多人場，低於算 Auto。手感門檻：近幾小時內單場低於最佳的這個百分比就發「狀態不佳」警報。斷 auto：連續幾分鐘沒上分就提醒，重複填 0＝只提醒一次；提醒本身要先在 Discord 用 /色段 斷auto設定 開啟。{{ p.dmNote }}</div>
-                          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button type="button" class="car-btn" onClick="{{ onCarSeiSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ p.saveBtn }}</button>
-                            <button type="button" class="car-btn" onClick="{{ onCarSeiCfg }}" data-pid="{{ p.pid }}" style="background:var(--card)">取消</button>
-                          </div>
-                        </div>
-                      </sc-if>
                     </div>
                   </sc-for>
                 </div>
               </sc-if>
+            </sc-if>
+
+            <!-- 色段監控：設定面板＋即時預覽（管理員） -->
+            <sc-if value="{{ carSeiEdit }}">
+              <div style="display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin-bottom:6px">
+                <button type="button" class="car-btn" onClick="{{ onCarSpvBack }}" style="background:var(--card)">← 返回列表</button>
+                <div style="font-size:16px;font-weight:800;color:var(--ink);min-width:0;overflow-wrap:anywhere">{{ carSpvName }}</div>
+                <sc-if value="{{ carSpvHasRank }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep)">{{ carSpvRank }}</span></sc-if>
+                <sc-if value="{{ carSpvIsDef }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-2)">預設</span></sc-if>
+                <sc-if value="{{ carSpvOff }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--card-2);color:var(--text-3)">停用</span></sc-if>
+                <sc-if value="{{ carSpvDirty }}"><span data-sei-dirty="1" style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep)">{{ carSpvDirtyTxt }}</span></sc-if>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-3);margin:0 2px 12px;overflow-wrap:anywhere">{{ carSpvSub }}</div>
+              <sc-if value="{{ carSpvNote }}"><div class="car-card" style="padding:12px 16px;margin-bottom:12px;font-size:12.5px;color:var(--text-2)">{{ carSpvNote }}</div></sc-if>
+              <div class="sei-ed">
+                <div class="sei-pv">
+                  <div class="car-card" data-sei-pv="1" style="padding:15px 16px 14px">
+                    <div style="display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin-bottom:10px">
+                      <div style="font-size:15px;font-weight:800;color:var(--ink)">即時預覽</div>
+                      <div class="car-seg" role="tablist" aria-label="預覽時間範圍"><sc-for list="{{ carSpvHours }}" as="h"><button type="button" role="tab" onClick="{{ onCarSpvHours }}" data-v="{{ h.v }}" style="background:{{ h.bg }};color:{{ h.fg }};box-shadow:{{ h.sh }};padding:5px 11px;font-size:12px">{{ h.n }}</button></sc-for></div>
+                      <span data-sei-stamp="1" style="font-size:11.5px;color:var(--text-3)">{{ carSpvStamp }}</span>
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin:-4px 0 10px">改右邊（手機是下面）的參數，停手 0.4 秒就用新參數把紀錄重播一次；畫面停著時每 60 秒也會用最新紀錄重算。跟機器人真正發警報用的是同一套判定。</div>
+                    <sc-if value="{{ carSpvLoading }}"><div class="skel" style="height:240px;border-radius:14px"></div></sc-if>
+                    <sc-if value="{{ carSpvHasErr }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.8">預覽讀不到：{{ carSpvErr }}<br><button type="button" class="car-btn" onClick="{{ onCarSpvRetry }}" style="margin-top:8px">重試</button></div></sc-if>
+                    <sc-if value="{{ carSpvReady }}">
+                      <sc-if value="{{ carSpvInvalid }}"><div class="sei-err" style="margin-bottom:8px">{{ carSpvInvalid }}</div></sc-if>
+                      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+                        <sc-for list="{{ carSan.chips }}" as="x"><span class="sei-st" style="background:{{ x.bg }}"><b>{{ x.k }}</b><span style="color:{{ x.fg }}">{{ x.v }}</span></span></sc-for>
+                      </div>
+                      <div style="position:relative;padding-bottom:4px;max-width:980px">
+                        <svg data-sei-chart="1" viewBox="0 0 {{ carSch.W }} {{ carSch.H }}" role="img" aria-label="{{ carSch.aria }}" style="width:100%;height:auto;display:block;overflow:visible;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent">
+                          <sc-for list="{{ carSch.bands }}" as="b"><rect x="{{ b.x }}" y="{{ carSch.T }}" width="{{ b.w }}" height="{{ carSch.ph }}" style="fill:{{ b.fill }}"></rect></sc-for>
+                          <sc-for list="{{ carSch.yt }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 4"></line></sc-for>
+                          <sc-for list="{{ carSch.hyL }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="1 4" opacity=".55"></line></sc-for>
+                          <sc-for list="{{ carSch.thL }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--accent-deep)" stroke-width="1.4" stroke-dasharray="6 4"></line></sc-for>
+                          <sc-for list="{{ carSch.pfL }}" as="t"><path d="{{ t.d }}" fill="none" stroke="#d64533" stroke-width="1.6" stroke-dasharray="3 3" opacity=".85"></path></sc-for>
+                          <sc-for list="{{ carSch.dots }}" as="d"><circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="{{ d.r }}" data-t="{{ d.t }}" onMouseEnter="{{ onCarSchHi }}" onClick="{{ onCarSchHi }}" style="fill:{{ d.fill }};cursor:pointer"></circle></sc-for>
+                          <sc-for list="{{ carSch.marks }}" as="m"><path d="{{ m.d }}" style="fill:{{ m.c }};pointer-events:none"></path></sc-for>
+                          <sc-for list="{{ carSch.stale }}" as="m"><path d="{{ m.d }}" style="fill:#ee6644"></path></sc-for>
+                          <sc-for list="{{ carSch.hiL }}" as="h"><circle cx="{{ h.cx }}" cy="{{ h.cy }}" r="7" fill="none" stroke="var(--ink)" stroke-width="1.6" style="pointer-events:none"></circle></sc-for>
+                          <line x1="{{ carSch.L }}" y1="{{ carSch.base }}" x2="{{ carSch.Rx }}" y2="{{ carSch.base }}" stroke="var(--border-2)" stroke-width="1"></line>
+                        </svg>
+                        <sc-for list="{{ carSch.yt }}" as="t"><span class="sei-yl" style="top:{{ t.top }};width:{{ carSch.lw }}">{{ t.l }}</span></sc-for>
+                        <sc-for list="{{ carSch.xt }}" as="t"><span class="sei-xl" style="left:{{ t.left }}">{{ t.l }}</span></sc-for>
+                        <sc-for list="{{ carSch.thL }}" as="t"><span class="sei-thl" style="top:{{ t.top }}">{{ t.l }}</span></sc-for>
+                        <sc-for list="{{ carSch.emptyL }}" as="t"><span class="sei-empty">{{ t.l }}</span></sc-for>
+                      </div>
+                      <div class="sei-ro" data-sei-ro="1" style="color:{{ carSch.roFg }}">{{ carSch.hiTxt }}</div>
+                      <div class="sei-leg">
+                        <span><i style="background:var(--accent)"></i>多人場</span><span><i style="background:#d99a1e"></i>Auto 場</span><span><s style="color:var(--accent-deep)"></s>判定門檻</span><span><s style="color:#d64533"></s>狀態不佳線</span><span><i style="background:#7b5cd6;border-radius:2px;width:8px;height:8px"></i>三角形＝警報（游標停在點上看細節）</span>
+                      </div>
+                      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                        <sc-for list="{{ carSan.cnt }}" as="x"><span class="car-tag" style="cursor:default;background:{{ x.bg }};color:{{ x.fg }}">{{ x.n }}{{ x.d }}</span></sc-for>
+                      </div>
+                      <sc-if value="{{ carSan.hasPend }}">
+                        <div class="sei-sub">接下來</div>
+                        <sc-for list="{{ carSan.pend }}" as="x"><div class="sei-row"><span class="car-tag" style="cursor:default;flex:none;background:{{ x.bg }};color:{{ x.fg }}">{{ x.lbl }}</span><span style="min-width:0;overflow-wrap:anywhere">{{ x.text }}</span></div></sc-for>
+                      </sc-if>
+                      <div class="sei-sub">{{ carSan.evHead }}</div>
+                      <sc-if value="{{ carSan.noEvs }}"><div style="font-size:12px;color:var(--text-3);padding:2px 0">這段時間用這組參數不會發任何警報。</div></sc-if>
+                      <sc-if value="{{ carSan.hasEvs }}"><div class="sei-evs"><sc-for list="{{ carSan.evs }}" as="x"><div class="sei-row"><span class="sei-t" title="{{ x.day }}">{{ x.t }}</span><span class="car-tag" style="cursor:default;flex:none;background:{{ x.bg }};color:{{ x.fg }}">{{ x.lbl }}</span><span style="min-width:0;overflow-wrap:anywhere">{{ x.text }}</span></div></sc-for></div></sc-if>
+                      <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ carSan.foot }}</div>
+                    </sc-if>
+                  </div>
+                </div>
+                <div class="sei-form">
+                  <sc-for list="{{ carSpvGroups }}" as="g">
+                    <div class="car-card" data-sei-group="{{ g.k }}" style="padding:14px 16px 15px;margin-bottom:12px">
+                      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><div class="sei-gt">{{ g.n }}</div><span class="sei-dirty">{{ g.dirtyN }}</span></div>
+                      <div class="sei-gd">{{ g.desc }}</div>
+                      <div class="sei-fg">
+                        <sc-for list="{{ g.flds }}" as="x">
+                          <div class="sei-f" style="border-color:{{ x.bd }}">
+                            <sc-if value="{{ x.isBool }}">
+                              <div style="display:flex;align-items:center;gap:10px">
+                                <button type="button" role="switch" aria-checked="{{ x.on }}" aria-label="{{ x.label }}" onClick="{{ onCarSpvBool }}" data-k="{{ x.k }}" style="position:relative;flex:none;width:46px;height:28px;padding:0;border-radius:999px;border:1px solid {{ x.swBd }};background:{{ x.swBg }};cursor:pointer;transition:background .2s"><span style="position:absolute;top:2px;left:{{ x.swL }};width:22px;height:22px;border-radius:999px;background:{{ x.swK }};box-shadow:var(--sh-xs);transition:left .18s ease"></span></button>
+                                <span class="sei-fl">{{ x.label }}</span>
+                              </div>
+                              <span class="sei-def">{{ x.def }}</span>
+                            </sc-if>
+                            <sc-if value="{{ x.isNum }}">
+                              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px"><span class="sei-fl">{{ x.label }}</span><span class="sei-def" style="white-space:nowrap">{{ x.def }}</span></div>
+                              <div style="display:flex;align-items:center;gap:6px"><input class="car-in" type="text" inputmode="{{ x.mode }}" maxlength="10" value="{{ x.v }}" onInput="{{ onCarSpvNum }}" onKeyDown="{{ onCarSpvKey }}" data-k="{{ x.k }}" aria-label="{{ x.label }}" style="background:var(--card);min-height:36px;padding:6px 10px;font-weight:700;font-family:'M PLUS Rounded 1c',sans-serif"><span class="sei-u">{{ x.unit }}</span></div>
+                              <sc-if value="{{ x.hasSl }}"><input type="range" min="{{ x.smin }}" max="{{ x.smax }}" step="{{ x.step }}" value="{{ x.sv }}" onInput="{{ onCarSpvNum }}" data-k="{{ x.k }}" aria-label="{{ x.label }}（拉桿）" style="width:100%;margin:0;accent-color:var(--accent)"></sc-if>
+                              <sc-if value="{{ x.hasErr }}"><span class="sei-err">{{ x.err }}</span></sc-if>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <div class="car-card" data-sei-group="notify" style="padding:14px 16px 15px;margin-bottom:12px">
+                    <div class="sei-gt">通知</div>
+                    <div class="sei-gd">警報發在通知頻道並 @ 身分組（沒指定就 @ 前 3 位管理員；模式切換不 @ 人）。跑者通知：狀態不佳、多人切回 Auto 時，另外私訊或用語音通知名單上的人，同一種警報在冷卻時間內只通知一次。</div>
+                    <sc-if value="{{ carSpvMetaErr }}"><div class="sei-err" style="margin-bottom:8px">{{ carSpvMetaErr }}</div></sc-if>
+                    <div class="sei-fg">
+                      <label class="sei-f"><span class="sei-fl">通知頻道</span><select class="car-in" sc-options="{{ carSpvChOpts }}" value="{{ carSpvCh }}" onChange="{{ onCarSpvSel }}" data-k="channel_id" style="background:var(--card);cursor:pointer"></select><sc-if value="{{ carSpvChErr }}"><span class="sei-err">{{ carSpvChErr }}</span></sc-if></label>
+                      <label class="sei-f"><span class="sei-fl">異常時 @ 的身分組</span><select class="car-in" sc-options="{{ carSpvRoleOpts }}" value="{{ carSpvRole }}" onChange="{{ onCarSpvSel }}" data-k="admin_role_id" style="background:var(--card);cursor:pointer"></select><sc-if value="{{ carSpvRoleErr }}"><span class="sei-err">{{ carSpvRoleErr }}</span></sc-if></label>
+                    </div>
+                    <div class="sei-fl" style="margin-top:12px">跑者通知方式</div>
+                    <div class="car-seg" role="group" aria-label="跑者通知方式" style="margin-top:6px;flex-wrap:wrap"><sc-for list="{{ carSpvRun }}" as="o"><button type="button" onClick="{{ onCarSpvRun }}" data-v="{{ o.v }}" aria-pressed="{{ o.on }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};padding:6px 13px;font-size:12.5px">{{ o.n }}</button></sc-for></div>
+                    <div class="sei-fl" style="margin-top:12px">通知名單（最多 25 人）</div>
+                    <div data-sei-targets="1" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+                      <sc-for list="{{ carSpvTargets }}" as="t"><span class="sei-chip">{{ t.n }}<button type="button" onClick="{{ onCarSpvRmTg }}" data-u="{{ t.u }}" aria-label="移除 {{ t.n }}">✕</button></span></sc-for>
+                      <sc-if value="{{ carSpvNoTargets }}"><span style="font-size:12px;color:var(--text-3)">還沒有人（跑者通知不會發）</span></sc-if>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                      <select class="car-in" sc-options="{{ carSpvAddOpts }}" value="{{ carSpvPick }}" onChange="{{ onCarSpvAddTg }}" aria-label="加入通知對象" style="flex:1 1 200px;width:auto;background:var(--card);cursor:pointer"></select>
+                      <input class="car-in" type="text" inputmode="numeric" maxlength="21" placeholder="或輸入 Discord 使用者 ID 按 Enter" onKeyDown="{{ onCarSpvTgId }}" aria-label="Discord 使用者 ID" style="flex:1 1 200px;width:auto;background:var(--card)">
+                    </div>
+                    <sc-if value="{{ carSpvTgErr }}"><div class="sei-err" style="margin-top:6px">{{ carSpvTgErr }}</div></sc-if>
+                    <div class="sei-fg" style="margin-top:12px">
+                      <label class="sei-f"><span class="sei-fl">狀態不佳私訊對象</span><select class="car-in" sc-options="{{ carSpvDmOpts }}" value="{{ carSpvDm }}" onChange="{{ onCarSpvSel }}" data-k="poor_form_dm_uid" style="background:var(--card);cursor:pointer"></select><span class="sei-def">「狀態不佳」開了私訊才會用；這個人也會一起收到跑者通知。</span><sc-if value="{{ carSpvDmErr }}"><span class="sei-err">{{ carSpvDmErr }}</span></sc-if></label>
+                      <div class="sei-f" style="border-color:{{ carSpvCool.bd }}">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px"><span class="sei-fl">{{ carSpvCool.label }}</span><span class="sei-def" style="white-space:nowrap">{{ carSpvCool.def }}</span></div>
+                        <div style="display:flex;align-items:center;gap:6px"><input class="car-in" type="text" inputmode="numeric" maxlength="4" value="{{ carSpvCool.v }}" onInput="{{ onCarSpvNum }}" onKeyDown="{{ onCarSpvKey }}" data-k="runner_alert_cooldown_sec" aria-label="{{ carSpvCool.label }}" style="background:var(--card);min-height:36px;padding:6px 10px;font-weight:700;font-family:'M PLUS Rounded 1c',sans-serif"><span class="sei-u">秒</span></div>
+                        <sc-if value="{{ carSpvCool.hasErr }}"><span class="sei-err">{{ carSpvCool.err }}</span></sc-if>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="car-card" data-sei-group="manage" style="padding:14px 16px 15px;margin-bottom:12px">
+                    <div class="sei-gt">監控</div>
+                    <div class="sei-fg" style="margin-top:10px">
+                      <label class="sei-f"><span class="sei-fl">暱稱（留空＝遊戲名稱）</span><input class="car-in" type="text" maxlength="30" value="{{ carSpvNick }}" placeholder="{{ carSpvNickPh }}" onInput="{{ onCarSpvNick }}" onKeyDown="{{ onCarSpvKey }}" style="background:var(--card);min-height:36px;padding:6px 10px"><sc-if value="{{ carSpvNickErr }}"><span class="sei-err">{{ carSpvNickErr }}</span></sc-if></label>
+                      <div class="sei-f">
+                        <div style="display:flex;align-items:center;gap:10px">
+                          <button type="button" role="switch" aria-checked="{{ carSpvEn.on }}" aria-label="啟用監控" onClick="{{ onCarSpvBool }}" data-k="enabled" style="position:relative;flex:none;width:46px;height:28px;padding:0;border-radius:999px;border:1px solid {{ carSpvEn.swBd }};background:{{ carSpvEn.swBg }};cursor:pointer;transition:background .2s"><span style="position:absolute;top:2px;left:{{ carSpvEn.swL }};width:22px;height:22px;border-radius:999px;background:{{ carSpvEn.swK }};box-shadow:var(--sh-xs);transition:left .18s ease"></span></button>
+                          <span class="sei-fl">啟用監控</span>
+                        </div>
+                        <span class="sei-def">關掉就不追蹤分數、不發警報，紀錄保留。</span>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                      <button type="button" class="car-btn" onClick="{{ onCarSpvDef }}" style="background:var(--card)">{{ carSpvDefBtn }}</button>
+                      <button type="button" class="car-btn" onClick="{{ onCarSpvDel }}" style="background:var(--card);color:color-mix(in oklab,#d64533 60%,var(--car-fg));border-color:color-mix(in oklab,#d64533 35%,var(--border))">刪除監控</button>
+                    </div>
+                  </div>
+                  <div class="sei-save">
+                    <sc-if value="{{ carSpvMini }}"><div data-sei-mini="1" style="flex:1 1 100%;font-size:11.5px;font-weight:700;color:var(--text-2);line-height:1.5">{{ carSpvMini }}</div></sc-if>
+                    <button type="button" class="car-btn" onClick="{{ onCarSpvSave }}" disabled="{{ !carSpvSaveOk }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)" style-disabled="opacity:.5;cursor:default">{{ carSpvSaveBtn }}</button>
+                    <button type="button" class="car-btn" onClick="{{ onCarSpvRevert }}" disabled="{{ !carSpvDirty }}" style="background:var(--card)" style-disabled="opacity:.5;cursor:default">放棄變更</button>
+                    <button type="button" class="car-btn" onClick="{{ onCarSpvDefaults }}" style="background:var(--card)">判定參數還原預設</button>
+                  </div>
+                </div>
+              </div>
             </sc-if>
 
             <!-- 色段監控：單一玩家完整紀錄 -->
@@ -3067,6 +3241,55 @@ select option, select optgroup{
                       <sc-for list="{{ carSdHours }}" as="b"><div style="flex:1;min-width:0;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';white-space:nowrap">{{ b.lb }}</div></sc-for>
                     </div>
                     <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">{{ carSdHourNote }}</div>
+                  </sc-if>
+                </div>
+                <div class="car-card" data-sei-an="1" style="padding:15px 18px 16px;margin-bottom:14px">
+                  <div style="display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin-bottom:10px">
+                    <div style="font-size:15px;font-weight:800;color:var(--ink)">判定分析</div>
+                    <div class="car-seg" role="tablist" aria-label="分析時間範圍"><sc-for list="{{ carSdAnHours }}" as="h"><button type="button" role="tab" onClick="{{ onCarSdAnHours }}" data-v="{{ h.v }}" style="background:{{ h.bg }};color:{{ h.fg }};box-shadow:{{ h.sh }};padding:5px 11px;font-size:12px">{{ h.n }}</button></sc-for></div>
+                    <span style="font-size:11.5px;color:var(--text-3)">{{ carSdAnStamp }}</span>
+                    <div style="flex:1"></div>
+                    <sc-if value="{{ carSdCanEd }}"><button type="button" class="car-mini pri" onClick="{{ onCarSdEd }}">設定與預覽</button></sc-if>
+                  </div>
+                  <sc-if value="{{ carSdAnLoading }}"><div class="skel" style="height:220px;border-radius:14px"></div></sc-if>
+                  <sc-if value="{{ carSdAnErr }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.8">判定分析讀不到：{{ carSdAnErr }}</div></sc-if>
+                  <sc-if value="{{ carSdAnReady }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+                      <sc-for list="{{ carSan.chips }}" as="x"><span class="sei-st" style="background:{{ x.bg }}"><b>{{ x.k }}</b><span style="color:{{ x.fg }}">{{ x.v }}</span></span></sc-for>
+                    </div>
+                    <div style="position:relative;padding-bottom:4px;max-width:980px">
+                      <svg data-sei-chart="1" viewBox="0 0 {{ carSch.W }} {{ carSch.H }}" role="img" aria-label="{{ carSch.aria }}" style="width:100%;height:auto;display:block;overflow:visible;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent">
+                        <sc-for list="{{ carSch.bands }}" as="b"><rect x="{{ b.x }}" y="{{ carSch.T }}" width="{{ b.w }}" height="{{ carSch.ph }}" style="fill:{{ b.fill }}"></rect></sc-for>
+                        <sc-for list="{{ carSch.yt }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 4"></line></sc-for>
+                        <sc-for list="{{ carSch.hyL }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="1 4" opacity=".55"></line></sc-for>
+                        <sc-for list="{{ carSch.thL }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--accent-deep)" stroke-width="1.4" stroke-dasharray="6 4"></line></sc-for>
+                        <sc-for list="{{ carSch.pfL }}" as="t"><path d="{{ t.d }}" fill="none" stroke="#d64533" stroke-width="1.6" stroke-dasharray="3 3" opacity=".85"></path></sc-for>
+                        <sc-for list="{{ carSch.dots }}" as="d"><circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="{{ d.r }}" data-t="{{ d.t }}" onMouseEnter="{{ onCarSchHi }}" onClick="{{ onCarSchHi }}" style="fill:{{ d.fill }};cursor:pointer"></circle></sc-for>
+                        <sc-for list="{{ carSch.marks }}" as="m"><path d="{{ m.d }}" style="fill:{{ m.c }};pointer-events:none"></path></sc-for>
+                        <sc-for list="{{ carSch.stale }}" as="m"><path d="{{ m.d }}" style="fill:#ee6644"></path></sc-for>
+                        <sc-for list="{{ carSch.hiL }}" as="h"><circle cx="{{ h.cx }}" cy="{{ h.cy }}" r="7" fill="none" stroke="var(--ink)" stroke-width="1.6" style="pointer-events:none"></circle></sc-for>
+                        <line x1="{{ carSch.L }}" y1="{{ carSch.base }}" x2="{{ carSch.Rx }}" y2="{{ carSch.base }}" stroke="var(--border-2)" stroke-width="1"></line>
+                      </svg>
+                      <sc-for list="{{ carSch.yt }}" as="t"><span class="sei-yl" style="top:{{ t.top }};width:{{ carSch.lw }}">{{ t.l }}</span></sc-for>
+                      <sc-for list="{{ carSch.xt }}" as="t"><span class="sei-xl" style="left:{{ t.left }}">{{ t.l }}</span></sc-for>
+                      <sc-for list="{{ carSch.thL }}" as="t"><span class="sei-thl" style="top:{{ t.top }}">{{ t.l }}</span></sc-for>
+                      <sc-for list="{{ carSch.emptyL }}" as="t"><span class="sei-empty">{{ t.l }}</span></sc-for>
+                    </div>
+                    <div class="sei-ro" data-sei-ro="1" style="color:{{ carSch.roFg }}">{{ carSch.hiTxt }}</div>
+                    <div class="sei-leg">
+                      <span><i style="background:var(--accent)"></i>多人場</span><span><i style="background:#d99a1e"></i>Auto 場</span><span><s style="color:var(--accent-deep)"></s>判定門檻</span><span><s style="color:#d64533"></s>狀態不佳線</span><span><i style="background:#7b5cd6;border-radius:2px;width:8px;height:8px"></i>三角形＝警報（游標停在點上看細節）</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                      <sc-for list="{{ carSan.cnt }}" as="x"><span class="car-tag" style="cursor:default;background:{{ x.bg }};color:{{ x.fg }}">{{ x.n }}{{ x.d }}</span></sc-for>
+                    </div>
+                    <sc-if value="{{ carSan.hasPend }}">
+                      <div class="sei-sub">接下來</div>
+                      <sc-for list="{{ carSan.pend }}" as="x"><div class="sei-row"><span class="car-tag" style="cursor:default;flex:none;background:{{ x.bg }};color:{{ x.fg }}">{{ x.lbl }}</span><span style="min-width:0;overflow-wrap:anywhere">{{ x.text }}</span></div></sc-for>
+                    </sc-if>
+                    <div class="sei-sub">{{ carSan.evHead }}</div>
+                    <sc-if value="{{ carSan.noEvs }}"><div style="font-size:12px;color:var(--text-3);padding:2px 0">這段時間用這組參數不會發任何警報。</div></sc-if>
+                    <sc-if value="{{ carSan.hasEvs }}"><div class="sei-evs"><sc-for list="{{ carSan.evs }}" as="x"><div class="sei-row"><span class="sei-t" title="{{ x.day }}">{{ x.t }}</span><span class="car-tag" style="cursor:default;flex:none;background:{{ x.bg }};color:{{ x.fg }}">{{ x.lbl }}</span><span style="min-width:0;overflow-wrap:anywhere">{{ x.text }}</span></div></sc-for></div></sc-if>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ carSan.foot }}</div>
                   </sc-if>
                 </div>
                 <sc-if value="{{ carSdHasNb }}">
@@ -7805,7 +8028,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=20c558cc91"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ec6268d43b"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -285,7 +285,7 @@ export function install(BASE, mode0) {
         const has = k => f.split(',').indexOf(k) >= 0;
         return { state: has('state'), members: has('members'), auto: has('auto'), pending: has('pending'), cars: {} };
       })());
-      const AG = ['/me', '/switch', '/status', '/qqcode', '/music', '/members', '/member', '/tags', '/bridge', '/log', '/seidan', '/seidan/detail'];
+      const AG = ['/me', '/switch', '/status', '/qqcode', '/music', '/members', '/member', '/tags', '/bridge', '/log', '/seidan', '/seidan/detail', '/seidan/analysis'];
       const ne = A.cars && +A.cars[gid];
       if (ne && no > ne && AG.indexOf(rest) < 0) return J({ error: '這個車隊目前只開 ' + ne + ' 台車（car=' + no + ' 不存在）', cars_enabled: ne }, 400);
       const POS = ['p2', 'p3', 'p4', 'p5'];
@@ -614,23 +614,142 @@ export function install(BASE, mode0) {
           return row; });
         return J({ date: d, rows, src, readonly: true, past: d < today });
       }
-      /* 色段監控：bot_data.seidan[gid]，'111' 有三位（一位停用、一位不在前百），'222' 沒設定 */
-      if (rest === '/seidan' || rest === '/seidan/detail') {
+      /* 色段監控：bot_data.seidan[gid]，'111' 有三位（一位停用、一位不在前百），'222' 沒設定。
+         POST action：toggle／field／clear_alerts（舊）＋ meta／config／preview／add／delete／default；GET /seidan/analysis（成員也能看）
+         __mockC.slowAdd = true：新增時回 {pending:true}（模擬 HiSekai 慢、機器人背景完成） */
+      if (rest === '/seidan' || rest === '/seidan/detail' || rest === '/seidan/analysis') {
         const now = Date.now();
+        /* ---- 色段判定核心（照 seidan_core.py 移植；只給假後端用，讓設定面板的即時預覽看起來像真的） ---- */
+        const SDEF = { thresh: 60000, auto_stale_enabled: false, auto_stale_trigger: 3, auto_stale_repeat: 5, poor_form_hours: 3, poor_form_ratio: 0.95, poor_form_dm: false, poor_form_public: true, runner_alert_mode: 'off', runner_alert_cooldown_sec: 180 };
+        const TDEF = { multi_window_min: 20, multi_min_rounds: 10, doosen_sec: 30, doosen_rate: 1.8, pt_outlier: 2.5, mode_vote_ratio: 0.6, hyst_up: 1.2, hyst_down: 0.8, snapshot_every: 10, auto_disable_days: 7 };
+        const SPEC = { thresh: ['int', 0, 999999999, '判定門檻'], auto_stale_enabled: ['bool', 0, 0, '斷 auto 提醒'], auto_stale_trigger: ['int', 1, 60, '斷 auto 觸發分鐘'], auto_stale_repeat: ['int', 0, 60, '斷 auto 重複分鐘'],
+          poor_form_hours: ['int', 1, 24, '狀態不佳觀察時數'], poor_form_ratio: ['float', 0.5, 1, '狀態不佳門檻'], poor_form_dm: ['bool', 0, 0, '狀態不佳私訊'], poor_form_public: ['bool', 0, 0, '狀態不佳頻道公開'],
+          runner_alert_mode: ['enum', ['off', 'dm', 'voice', 'both'], 0, '跑者通知方式'], runner_alert_cooldown_sec: ['int', 10, 3600, '跑者通知冷卻秒數'], multi_window_min: ['int', 5, 180, '多人效率視窗'],
+          multi_min_rounds: ['int', 1, 200, '視窗最少場數'], doosen_sec: ['int', 0, 300, '豆森間隔秒數'], doosen_rate: ['float', 1.1, 10, '豆森倍數'], pt_outlier: ['float', 1.2, 20, 'Pt 異常倍差'],
+          mode_vote_ratio: ['float', 0.3, 1, '多人判定比例'], hyst_up: ['float', 1, 3, '切多人倍數'], hyst_down: ['float', 0.1, 1, '切 Auto 倍數'], snapshot_every: ['int', 1, 120, '快照間隔'], auto_disable_days: ['int', 1, 60, '自動停用天數'] };
+        const EVL = { poor_form: '狀態不佳', mode: '模式切換', doosen: '豆森偵測', pt: 'Pt 異常', slow: '多人周回偏低', stale: 'Auto 分數停止' };
+        const ML = { auto: 'Auto', multi: '多人', unknown: '偵測中' };
+        const paramsOf = (s, draft) => {
+          const tune = s.tune && typeof s.tune === 'object' ? s.tune : {}, P = {};
+          Object.keys(SDEF).forEach(k => { P[k] = s[k] !== undefined && s[k] !== null ? s[k] : SDEF[k]; });
+          Object.keys(TDEF).forEach(k => { P[k] = tune[k] !== undefined ? tune[k] : TDEF[k]; });
+          Object.keys(SPEC).forEach(k => { if (SPEC[k][0] === 'bool') P[k] = !!P[k]; });
+          return Object.assign(P, draft || {});
+        };
+        const cleanVal = (k, v) => {
+          const [kind, lo, hi, label] = SPEC[k];
+          if (kind === 'bool') { if (typeof v === 'boolean') return [true, v]; const x = String(v).trim().toLowerCase(); if (['true', '1', 'on', 'yes'].includes(x)) return [true, true]; if (['false', '0', 'off', 'no', ''].includes(x)) return [true, false]; return [false, label + '要是開或關']; }
+          if (kind === 'enum') { const x = String(v).trim().toLowerCase(); return lo.includes(x) ? [true, x] : [false, label + '只能是 ' + lo.join('／')]; }
+          if (typeof v === 'boolean' || v == null) return [false, label + '要是數字'];
+          let n = typeof v === 'string' ? Number(v.trim().replace(/,/g, '')) : v;
+          if (typeof n !== 'number' || !isFinite(n) || (typeof v === 'string' && !v.trim())) return [false, label + '要是數字'];
+          if (kind === 'int') { if (n !== Math.trunc(n)) return [false, label + '要是整數']; } else n = Math.round(n * 10000) / 10000;
+          if (n < lo || n > hi) return [false, label + '要在 ' + lo + '～' + hi + ' 之間'];
+          return [true, n];
+        };
+        const cleanCfg = raw => { const out = {}, errs = {}; Object.keys(raw && typeof raw === 'object' ? raw : {}).forEach(k => { if (!SPEC[k]) return; const [ok, v] = cleanVal(k, raw[k]); if (ok) out[k] = v; else errs[k] = v; }); return { out, errs }; };
+        const tOf = t => { const mm = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/.exec(String(t || '')); return mm ? new Date(+mm[1], +mm[2] - 1, +mm[3], +mm[4], +mm[5], +mm[6]).getTime() : NaN; };
+        const med = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? x[Math.floor(x.length / 2)] : 0; };
+        const decideRound = (st, P, nowMs, ep, diff, gap, log) => {
+          const up = {}, ev = [], cond = { poor_form: false, doosen: false, pt: false }, cut = nowMs - P.poor_form_hours * 3600e3;
+          const win = log.filter(r => r.ms >= cut && r.diff > 0).map(r => r.diff), peak = win.length ? Math.max.apply(null, win) : 0;
+          if (ep > (st.peak_round_ep || 0)) up.peak_round_ep = ep;
+          const line = peak > 0 ? peak * P.poor_form_ratio : 0;
+          if (peak > 0 && ep >= peak) up.alerted_poor_form = false;
+          else if (peak > 0) { cond.poor_form = ep < line; if (!st.alerted_poor_form && ep < line) { up.alerted_poor_form = true; ev.push({ type: 'poor_form', round_ep: ep, peak, drop_pct: ep / peak * 100, hours: P.poor_form_hours, ratio: P.poor_form_ratio }); } }
+          const rec = log.slice(-5).map(r => r.diff).filter(d => d > 0);
+          let nm;
+          if (rec.length >= 3) nm = rec.filter(e => e >= P.thresh).length >= rec.length * P.mode_vote_ratio ? 'multi' : 'auto';
+          else { const cur = st.mode || 'unknown'; nm = cur === 'auto' ? (ep >= P.thresh * P.hyst_up ? 'multi' : 'auto') : cur === 'multi' ? (ep < P.thresh * P.hyst_down ? 'auto' : 'multi') : (ep >= P.thresh ? 'multi' : 'auto'); }
+          if (st.mode !== nm) { const old = st.mode || 'unknown'; up.mode = nm; if (old !== 'unknown') ev.push({ type: 'mode', old, new: nm, round_ep: ep, avg: rec.length ? Math.floor(rec.reduce((a, b) => a + b, 0) / rec.length) : ep, n: rec.length, runner: old === 'multi' && nm === 'auto' }); }
+          if (ep > 0 && diff > 0) { const est = diff / ep, trad = gap > 0 && gap <= P.doosen_sec, mr = est >= P.doosen_rate; cond.doosen = trad || mr; if (cond.doosen && !st.alerted_doosen) { up.alerted_doosen = true; ev.push({ type: 'doosen', multi_rd: mr, est, gap_sec: gap, diff, round_ep: ep }); } }
+          if (log.length >= 6) { const prev = log.slice(-11, -1).map(r => r.diff).filter(d => d > 0); if (prev.length >= 4) { const m = med(prev); if (m > 0 && ep > 0) { const ra = ep >= m ? ep / m : m / ep; cond.pt = ra >= P.pt_outlier; if (cond.pt && !st.alerted_pt) { up.alerted_pt = true; ev.push({ type: 'pt', dir: ep > m ? '暴漲' : '驟降', med: m, ratio: ra, round_ep: ep }); } } } }
+          if (nm === 'multi') {
+            up.alerted_stale = false; up.last_stale_alert_time = ''; const wr = (+st.window_rounds || 0) + 1; up.window_rounds = wr;
+            const ws = tOf(st.window_start);
+            if (isFinite(ws) && nowMs - ws >= P.multi_window_min * 60000) { if (wr < P.multi_min_rounds && !st.alerted_slow) ev.push({ type: 'slow', rounds: wr, window: P.multi_window_min, min: P.multi_min_rounds }); up.window_start = iso(nowMs); up.window_rounds = 0; up.alerted_slow = false; }
+          } else if (nm === 'auto') { up.alerted_stale = false; up.last_stale_alert_time = ''; }
+          return { up, ev, mode: nm, cond, pf: line };
+        };
+        const decideIdle = (st, P, nowMs) => {
+          if (!(st.mode === 'auto' && P.auto_stale_enabled)) return null;
+          const lc = tOf(st.last_change_time); if (!isFinite(lc)) return null;
+          const sm = (nowMs - lc) / 60000; if (sm < P.auto_stale_trigger) return null;
+          const la = tOf(st.last_stale_alert_time);
+          if (st.last_stale_alert_time && (P.auto_stale_repeat <= 0 || (isFinite(la) && (nowMs - la) / 60000 < P.auto_stale_repeat))) return null;
+          return { stale_min: sm };
+        };
+        const describe = (e, P) => {
+          const N = v => Math.round(v).toLocaleString('en-US');
+          if (e.type === 'poor_form') return '本場 ' + N(e.round_ep) + '，近 ' + e.hours + 'h 最高 ' + N(e.peak) + ' 的 ' + e.drop_pct.toFixed(1) + '%（門檻 ' + Math.round(e.ratio * 100) + '%）';
+          if (e.type === 'mode') return ML[e.old] + ' → ' + ML[e.new] + '：本場 ' + N(e.round_ep) + '，近 ' + e.n + ' 場均 ' + N(e.avg) + (e.runner ? (P.runner_alert_mode !== 'off' ? '（斷 auto，會觸發跑者通知）' : '（斷 auto）') : '');
+          if (e.type === 'doosen') return e.multi_rd ? '一次輪詢約 ' + e.est.toFixed(1) + ' 場（增量 ' + N(e.diff) + '／單場 ' + N(e.round_ep) + '）' : '兩局時間差 ' + e.gap_sec + ' 秒';
+          if (e.type === 'pt') return 'Pt ' + e.dir + '：本場 ' + N(e.round_ep) + '，近 10 場中位數 ' + N(e.med) + '（' + e.ratio.toFixed(1) + 'x）';
+          if (e.type === 'slow') return e.window + ' 分鐘內 ' + e.rounds + ' 場（最低 ' + e.min + ' 場）';
+          if (e.type === 'stale') return Math.floor(e.stale_min) + ' 分鐘沒有上分';
+          return EVL[e.type] || e.type;
+        };
+        const analyze = (s, P, hours) => {
+          hours = Math.max(1, Math.min(48, parseInt(hours, 10) || 6));
+          const nowMs = now, since = nowMs - hours * 3600e3, log = (s.round_log || []).map(r => Object.assign({ ms: tOf(r.time) }, r)).filter(r => isFinite(r.ms));
+          const st = { mode: 'unknown', window_rounds: 0, window_start: log.length ? iso(log[0].ms - (log[0].gap_sec || 0) * 1000) : '', last_stale_alert_time: '' };
+          const rounds = [], events = [], hist = []; let prevScore = null, prevMs = null;
+          const sim = (from, to) => { if (!(st.mode === 'auto' && P.auto_stale_enabled)) return; for (let k = 1, n = 0; n < 2000; k++, n++) { const t = from + k * 60000; if (t >= to) return; const d = decideIdle(st, P, t); if (d) { st.alerted_stale = true; st.last_stale_alert_time = iso(t); if (t >= since) events.push({ t: iso(t), type: 'stale', stale_min: d.stale_min }); if (P.auto_stale_repeat <= 0) return; } } };
+          log.forEach(r => {
+            if (prevMs != null && r.ms >= since) sim(prevMs, r.ms);
+            let diff = prevScore != null ? r.score - prevScore : 0; if (diff <= 0) diff = r.diff;
+            hist.push(r);
+            const dec = decideRound(st, P, r.ms, r.diff, diff, r.gap_sec || 0, hist);
+            Object.assign(st, dec.up); st.last_change_time = r.time;
+            if (r.ms >= since) { rounds.push({ t: r.time, ep: r.diff, g: r.gap_sec || 0, m: dec.mode, pf: Math.floor(dec.pf), e: dec.ev.map(e => e.type), c: Object.keys(dec.cond).filter(k => dec.cond[k]) }); dec.ev.forEach(e => events.push(Object.assign({ t: r.time }, e))); }
+            prevScore = r.score; prevMs = r.ms;
+          });
+          if (prevMs != null) sim(prevMs, nowMs + 1000);
+          events.sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
+          const counts = {}; Object.keys(EVL).forEach(k => { counts[k] = 0; }); events.forEach(e => { counts[e.type]++; });
+          const h1 = log.filter(r => nowMs - r.ms <= 3600e3), eps = log.map(r => r.diff).filter(d => d > 0), last = log[log.length - 1];
+          const cut = nowMs - P.poor_form_hours * 3600e3, wv = log.filter(r => r.ms >= cut && r.diff > 0).map(r => r.diff), peak = wv.length ? Math.max.apply(null, wv) : 0, pfl = Math.floor(peak * P.poor_form_ratio);
+          const ml = s.mode || 'unknown', pending = [], watch = [];
+          if (ml === 'auto' && P.auto_stale_enabled) {
+            const lst = { mode: ml, last_change_time: s.last_change_time, last_stale_alert_time: s.last_stale_alert_time || '' };
+            for (let k = 0; k <= 240; k++) { if (decideIdle(lst, P, nowMs + k * 60000)) { pending.push({ type: 'stale', label: EVL.stale, in_min: k, text: k <= 1 ? '下一次輪詢就會提醒' : '約 ' + k + ' 分鐘後提醒（仍沒上分的話）' }); break; } }
+          }
+          let win = null;
+          if (ml === 'multi') { const ws = tOf(s.window_start), el = isFinite(ws) ? (nowMs - ws) / 60000 : null; win = { start: s.window_start || '', rounds: +s.window_rounds || 0, elapsed_min: el == null ? null : Math.round(el * 10) / 10, window_min: P.multi_window_min, min_rounds: P.multi_min_rounds, closes: el != null && el >= P.multi_window_min };
+            if (win.closes && win.rounds + 1 < P.multi_min_rounds && !s.alerted_slow) pending.push({ type: 'slow', label: EVL.slow, in_min: null, text: '視窗已滿 ' + P.multi_window_min + ' 分鐘、只有 ' + win.rounds + ' 場：下一場上分時會發' }); }
+          if (pfl && !s.alerted_poor_form) watch.push({ type: 'poor_form', label: EVL.poor_form, text: '下一場低於 ' + pfl.toLocaleString('en-US') + ' 就會發' });
+          if (ml === 'multi') watch.push({ type: 'mode', label: '斷 auto', text: '近 5 場有 ' + Math.ceil(5 * P.mode_vote_ratio - 1e-9) + ' 場以上 ≥ ' + Number(P.thresh).toLocaleString('en-US') + ' 才維持多人' });
+          else if (ml === 'auto' && !P.auto_stale_enabled) watch.push({ type: 'stale', label: EVL.stale, text: '斷 auto 提醒沒開：Auto 模式停下來不會提醒' });
+          const g10 = log.map(r => r.gap_sec).filter(Boolean).slice(-10), lc = tOf(s.last_change_time);
+          return { now: iso(nowMs), since: iso(since), hours, params: P, rounds: rounds.slice(-400), rounds_truncated: rounds.length > 400, total_rounds: log.length,
+            events: events.slice(-80).reverse().map(e => ({ t: e.t, type: e.type, label: EVL[e.type], text: describe(e, P) })), counts, sim_truncated: false,
+            status: { rounds: log.length, rounds_1h: h1.length, speed_1h: h1.reduce((a, r) => a + r.diff, 0), avg10: eps.length ? Math.round(eps.slice(-10).reduce((a, b) => a + b, 0) / eps.slice(-10).length) : 0,
+              gap_avg: g10.length ? Math.round(g10.reduce((a, b) => a + b, 0) / g10.length) : 0, idle_sec: last ? Math.floor((nowMs - last.ms) / 1000) : null, last_ep: last ? last.diff : 0, last_time: last ? last.time : '',
+              mode_live: ml, mode_draft: st.mode, peak, pf_line: pfl, pf_below: !!(pfl && last && last.diff < pfl), stale_min: isFinite(lc) ? Math.round((nowMs - lc) / 6000) / 10 : null, window: win,
+              flags: { alerted_doosen: !!s.alerted_doosen, alerted_slow: !!s.alerted_slow, alerted_stale: !!s.alerted_stale, alerted_pt: !!s.alerted_pt, alerted_poor_form: !!s.alerted_poor_form }, enabled: !!s.enabled },
+            pending, watch };
+        };
+        const targetsOf = s => { const out = []; (s.notify_targets || []).concat([s.runner_dm_uid || '']).forEach(u => { u = String(u || ''); if (/^\d+$/.test(u) && out.indexOf(u) < 0) out.push(u); }); return out; };
+        const cfgView = (s, slim) => { const P = paramsOf(s), o = {}; Object.keys(SDEF).forEach(k => { o[k] = P[k]; });
+          return Object.assign(o, { enabled: !!s.enabled, nickname: s.nickname || '', cfg: P, tune: Object.assign({}, s.tune || {}), channel_id: slim ? '' : String(s.channel_id || ''), admin_role_id: slim ? '' : String(s.admin_role_id || ''),
+            poor_form_dm_uid: slim ? '' : String(s.poor_form_dm_uid || ''), notify_targets: slim ? [] : targetsOf(s) }); };
+        const MCH = [{ id: '1100000000000000001', name: '色段通知' }, { id: '1100000000000000002', name: '跑者頻道' }, { id: '1100000000000000003', name: '閒聊' }];
+        const MROLE = [{ id: '1200000000000000002', name: '色段管理' }, { id: '1200000000000000003', name: '跑者' }];
+
         if (!MC.board) {           /* 假的活動前百榜 */
           MC.board = Array.from({ length: 100 }, (_, i) => ({ rank: i + 1, name: i === 34 ? '<i>路人</i>' : '玩家' + (i + 1), score: 52000000 - i * 185000 - (i * 7919 % 50000),
             last_score: 0, speed_1h: 1500000 - i * 9000, count_1h: 22 - (i % 7), speed_3h: 1400000 - i * 8000, speed_24h: 1100000 - i * 6000, last_played_at: iso(now - (i % 9) * 60000), player_id: 'x' + i }));
           MC.board.forEach(r => { r.last_score = r.score - 70000; });
         }
-        if (!MC.sei['111']) {
-          const mk = (pid, o) => {
+        const mk = (pid, o) => {                            // 假的監控資料（round_log 照機器人的形狀；新增監控也用這個）
             const rl = [], snaps = [], tLast = now - o.idle * 1000;
-            const gaps = Array.from({ length: o.n }, (_, i) => (i ? o.gap + (i * 37 % 23) - 11 : 0));
+            const seg = i => (o.segs ? o.segs(i) : 1);           // 單場倍率：< 0.7 的段落當 Auto（場次間隔也拉長）
+            const gaps = Array.from({ length: o.n }, (_, i) => (i ? Math.round((o.gap + (i * 37 % 23) - 11) * (seg(i) < 0.7 ? 1.45 : 1)) : 0));
             let t = tLast - gaps.reduce((a, b) => a + b, 0) * 1000, score = 0;
             for (let i = 0; i < o.n; i++) {
-              const gap = gaps[i], diff = o.ep + (i * 7919 % 9000) - 4500;
+              const gap = gaps[i], diff = Math.round((o.ep + (i * 7919 % 9000) - 4500) * seg(i));
               t += gap * 1000; score += diff;
-              rl.push({ ms: t, time: iso(t), score, diff, gap_sec: gap });
+              rl.push({ ms: t, time: iso(t) + '.' + String(123456 + i * 7 % 800000).padStart(6, '0'), score, diff, gap_sec: gap });   // 機器人寫的是 isoformat()（有微秒）
               if (i % 4 === 0) snaps.push({ time: iso(t), score });
             }
             const row = o.rank ? MC.board[o.rank - 1] : null, target = row ? row.score : 9000000 + o.n * 1000;
@@ -642,10 +761,12 @@ export function install(BASE, mode0) {
               last_stale_alert_time: '', peak_round_ep: Math.max.apply(null, rl.map(r => r.diff).concat([0])), poor_form_hours: 3, poor_form_ratio: 0.95, poor_form_dm: false, poor_form_public: true, poor_form_dm_uid: '',
               auto_stale_trigger: 3, auto_stale_repeat: 5, source: 'hisekai' }, o.cfg || {});
           };
+        if (!MC.sei['111']) {
           MC.sei['111'] = {
             _default_pid: '5823749102938475',
-            '5823749102938475': mk('5823749102938475', { n: 420, gap: 110, ep: 72000, idle: 45, rank: 37, cfg: { nickname: '跑者A', player_name: 'Runner_A', mode: 'multi' } }),
-            '7300000000000000001': mk('7300000000000000001', { n: 60, gap: 130, ep: 41000, idle: 1500, rank: 52, cfg: { player_name: '<b>小夫</b>', mode: 'auto', alerted_stale: true, alerted_poor_form: true, poor_form_dm: true, poor_form_dm_uid: '998877665544332211' } }),
+            '5823749102938475': mk('5823749102938475', { n: 420, gap: 110, ep: 72000, idle: 45, rank: 37, segs: i => (i === 405 ? 2.7 : i === 380 ? 0.2 : i % 95 >= 78 ? 0.52 : i % 31 === 7 ? 0.9 : 1),
+              cfg: { nickname: '跑者A', player_name: 'Runner_A', mode: 'multi', notify_targets: ['998877665544332211'], runner_dm_uid: '998877665544332299', runner_alert_mode: 'dm', auto_stale_enabled: true } }),
+            '7300000000000000001': mk('7300000000000000001', { n: 60, gap: 130, ep: 41000, idle: 1500, rank: 52, cfg: { player_name: '<b>小夫</b>', mode: 'auto', alerted_stale: true, alerted_poor_form: true, poor_form_dm: true, poor_form_dm_uid: '998877665544332211', auto_stale_enabled: true, tune: { doosen_rate: 2.2 } } }),
             '1234567890': mk('1234567890', { n: 5, gap: 200, ep: 30000, idle: 7200, rank: 0, cfg: { nickname: '三號', player_name: 'Player3', enabled: false, auto_stale_trigger: 0, auto_stale_repeat: 0 } }),
           };
         }
@@ -666,7 +787,7 @@ export function install(BASE, mode0) {
         const nbOf = (rank, span) => { const i = MC.board.findIndex(r => r.rank === rank); if (i < 0) return [];
           const me = MC.board[i].score; return MC.board.slice(Math.max(0, i - span), i + span + 1).map(r => ({ rank: r.rank, name: r.name, score: r.score, speed_1h: r.speed_1h, diff: r.score - me, me: r.rank === rank })); };
         const lvOf = pid => MC.board.find(r => r.player_id === pid) || null;
-        const wantLive = rest === '/seidan/detail' || q.get('live') !== '0';
+        const wantLive = rest !== '/seidan/analysis' && (rest === '/seidan/detail' || q.get('live') !== '0');
         if (m === 'GET' && wantLive) {
           await new Promise(r => setTimeout(r, rest === '/seidan' ? 900 : 500));      // 機器人要先抓 HiSekai 前百（最多 15 秒）
           if (MC.liveErr) return J({ error: 'bot_unreachable', message: '車隊機器人目前連不上，請稍後再試' }, 504);
@@ -684,13 +805,13 @@ export function install(BASE, mode0) {
               poor_form_dm_uid: String(s.poor_form_dm_uid || ''), last_score: s.last_score || 0, peak_round_ep: s.peak_round_ep || 0,
               last_fetch_time: s.last_fetch_time || '', last_change_time: s.last_change_time || '', last_stale_alert_time: s.last_stale_alert_time || '',
               alerts: { alerted_doosen: !!s.alerted_doosen, alerted_slow: !!s.alerted_slow, alerted_stale: !!s.alerted_stale, alerted_pt: !!s.alerted_pt, alerted_poor_form: !!s.alerted_poor_form },
-              snapshots: (s.snapshot_log || []).length }, statsOf(s));
+              snapshots: (s.snapshot_log || []).length }, statsOf(s), cfgView(s, !admin), { is_default: String(sd._default_pid || '') === pid });
             it.live = lv ? { rank: lv.rank, score: lv.score, last_score: lv.last_score, speed_1h: lv.speed_1h, count_1h: lv.count_1h, speed_3h: lv.speed_3h, speed_24h: lv.speed_24h, last_played_at: lv.last_played_at, neighbors: nbOf(lv.rank, 3) } : null;
             if (!admin) { delete it.channel_id; delete it.admin_role_id; delete it.poor_form_dm_uid; }    // 合約 C5：成員看不到 Discord id
             return it;
           });
           players.sort((a, b) => ((a.live ? -a.live.score : 0) - (b.live ? -b.live.score : 0)) || ((b.last_score || 0) - (a.last_score || 0)));
-          return J({ players, event: liveOk ? '第 142 期 · 夏日祭典' : '', live_ok: liveOk, top: liveOk ? MC.board.slice(0, 20) : [] });
+          return J({ players, event: liveOk ? '第 142 期 · 夏日祭典' : '', live_ok: liveOk, top: liveOk ? MC.board.slice(0, 20) : [], default_pid: String(sd._default_pid || '') });
         }
         if (rest === '/seidan/detail' && m === 'GET') {
           const pid = q.get('pid') || '', s = sd[pid];
@@ -707,11 +828,71 @@ export function install(BASE, mode0) {
           if (admin) { const raw = {}; Object.keys(s).forEach(k => { if (k !== 'round_log' && k !== 'snapshot_log') raw[k] = s[k]; }); out.raw = raw; }   // 合約 C5
           return J(out);
         }
+        if (rest === '/seidan/analysis' && m === 'GET') {
+          const pid = q.get('pid') || '', s = sd[pid];
+          if (!s || typeof s !== 'object' || pid[0] === '_') return J({ error: '找不到監控對象' }, 404);
+          await new Promise(r => setTimeout(r, 150));
+          return J(Object.assign(analyze(s, paramsOf(s), q.get('hours')), { ok: true, pid, name: nameOf(pid, s), draft: false }));
+        }
         if (rest === '/seidan' && m === 'POST') {
           if (!admin) return J({ error: '此功能僅限管理員', role, need: 'admin' }, 403);
+          if (body.action === 'meta') {
+            const people = MEMBERS.map((x, i) => ({ uid: '99887766554433' + String(2200 + i), name: x.name })).concat([{ uid: '998877665544332211', name: '跑者本人' }, { uid: '998877665544332299', name: '舊跑者' }]);
+            return J({ ok: true, defaults: Object.assign({}, SDEF, TDEF), spec: {}, channels: MCH, roles: MROLE, people, dc: gid !== 'qq1', default_pid: String(sd._default_pid || ''), poll_sec: 60 });
+          }
+          if (body.action === 'add') {
+            const want = String(body.player || '').trim(), ch = String(body.channel_id || '');
+            if (!want) return J({ error: '請輸入玩家 ID、名次或遊戲名稱' }, 400);
+            if (!MCH.some(x => x.id === ch)) return J({ error: '要選一個通知頻道（機器人沒有頻道就不會追蹤這位玩家）', errors: { channel_id: 'x' } }, 400);
+            await new Promise(r => setTimeout(r, 600));
+            const row = /^\d{1,3}$/.test(want) ? MC.board[+want - 1] : MC.board.find(r => r.player_id === want || r.name.toLowerCase() === want.toLowerCase());
+            if (!row) return J({ error: '找不到「' + want + '」：要在目前活動的前 100 名或榜線上（可以輸入玩家 ID、名次或完整遊戲名稱）' }, 404);
+            let real = row.player_id; if (/^x\d+$/.test(real)) real = row.player_id = String(8100000000000000000 + row.rank).slice(0, 19);
+            const created = !sd[real];
+            if (created) sd[real] = mk(real, { n: 30, gap: 120, ep: 65000, idle: 70, rank: row.rank, cfg: { player_name: row.name, nickname: String(body.nickname || '') || row.name, thresh: +body.thresh || 60000, source: 'web', mode: 'multi' } });
+            else sd[real].enabled = true;
+            sd[real].channel_id = ch; sd[real].admin_role_id = String(body.admin_role_id || '') || null;
+            if (MC.slowAdd) return J({ ok: true, pending: true, msg: 'HiSekai 回應比較慢，機器人會在背景完成新增；稍後重新整理列表' });
+            return J({ ok: true, pid: real, created, name: nameOf(real, sd[real]), rank: row.rank });
+          }
+          if (body.action === 'default') {
+            const pid = String(body.pid || '');
+            if (pid && (pid[0] === '_' || !sd[pid])) return J({ error: '找不到監控對象' }, 404);
+            sd._default_pid = pid; return J({ ok: true, default_pid: pid });
+          }
           const pid = String(body.pid || ''), s = sd[pid];
           if (!s || typeof s !== 'object' || pid[0] === '_') return J({ error: '找不到監控對象' }, 404);
           if (body.action === 'toggle') { s.enabled = !s.enabled; return J({ ok: true, enabled: s.enabled }); }
+          if (body.action === 'delete') { delete sd[pid]; if (sd._default_pid === pid) sd._default_pid = ''; return J({ ok: true, pid }); }
+          if (body.action === 'preview') {
+            const { out, errs } = cleanCfg(body.params);
+            await new Promise(r => setTimeout(r, 180));
+            const cur = paramsOf(s), diff = Object.keys(out).filter(k => cur[k] !== out[k]);
+            const an = analyze(s, paramsOf(s, out), body.hours);
+            if (diff.length) an.base_counts = analyze(s, cur, body.hours).counts;
+            return J(Object.assign(an, { ok: true, pid, name: nameOf(pid, s), draft: diff.length > 0, invalid: errs }));
+          }
+          if (body.action === 'config') {
+            const raw = body.cfg && typeof body.cfg === 'object' ? body.cfg : null;
+            if (!raw || !Object.keys(raw).length) return J({ error: '沒有要儲存的設定' }, 400);
+            const { out, errs } = cleanCfg(raw);
+            if ('nickname' in raw && String(raw.nickname || '').length > 30) errs.nickname = '暱稱最多 30 字';
+            if ('channel_id' in raw && !MCH.some(x => x.id === String(raw.channel_id))) errs.channel_id = '頻道 ' + String(raw.channel_id) + ' 不在這個伺服器裡';
+            if ('admin_role_id' in raw && raw.admin_role_id && !MROLE.some(x => x.id === String(raw.admin_role_id))) errs.admin_role_id = '這個身分組不在伺服器裡';
+            if ('notify_targets' in raw && (!Array.isArray(raw.notify_targets) || raw.notify_targets.some(u => !/^\d{15,21}$/.test(String(u))))) errs.notify_targets = '通知名單格式不對';
+            if ('poor_form_dm_uid' in raw && raw.poor_form_dm_uid && !/^\d{15,21}$/.test(String(raw.poor_form_dm_uid))) errs.poor_form_dm_uid = '私訊對象要是 Discord 使用者 id';
+            const ek = Object.keys(errs);
+            if (ek.length) return J({ error: errs[ek[0]], errors: errs }, 400);
+            const before = paramsOf(s), changed = [];
+            Object.keys(out).forEach(k => {
+              if (before[k] !== out[k]) changed.push(k);
+              if (k in TDEF) { s.tune = Object.assign({}, s.tune || {}); if (out[k] === TDEF[k]) delete s.tune[k]; else s.tune[k] = out[k]; if (!Object.keys(s.tune).length) delete s.tune; }
+              else s[k] = out[k];
+            });
+            ['nickname', 'channel_id', 'admin_role_id', 'poor_form_dm_uid', 'enabled'].forEach(k => { if (k in raw) { const v = k === 'enabled' ? !!raw[k] : k === 'admin_role_id' ? (String(raw[k] || '') || null) : String(raw[k] == null ? '' : raw[k]).trim(); if (s[k] !== v) changed.push(k); s[k] = v; } });
+            if ('notify_targets' in raw) { const v = Array.from(new Set(raw.notify_targets.map(String))); if (JSON.stringify(targetsOf(s)) !== JSON.stringify(v)) changed.push('notify_targets'); s.notify_targets = v; delete s.runner_dm_uid; }
+            return J({ ok: true, pid, changed, player: cfgView(s, false) });
+          }
           if (body.action === 'field') {
             const kind = { thresh: 'int', window_rounds: 'int', auto_stale_trigger: 'int', auto_stale_repeat: 'int', poor_form_hours: 'int', poor_form_ratio: 'float', poor_form_dm: 'bool', poor_form_public: 'bool', nickname: 'str', mode: 'str' }[body.key];
             if (!kind) return J({ error: '不可修改的欄位' }, 400);
@@ -721,11 +902,11 @@ export function install(BASE, mode0) {
               const okN = typeof str === 'number' || typeof str === 'boolean' || (typeof str === 'string' && (kind === 'int' ? /^[+-]?\d+$/ : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/).test(str));
               if (!okN || (typeof str === 'number' && !isFinite(str))) return J({ error: '值的格式不對' }, 400);
               v = kind === 'int' ? Math.trunc(Number(str)) : Number(str);
-            } else if (kind === 'bool') v = !!v && v !== 0 && v !== '';
+            } else if (kind === 'bool') { const b = cleanVal('poor_form_dm', v); if (!b[0]) return J({ error: '值的格式不對' }, 400); v = b[1]; }
             else v = v == null ? 'None' : String(v);
             if (body.key === 'poor_form_ratio') v = Math.max(0, Math.min(2, v));
             else if (kind === 'int') v = Math.max(0, v);
-            else if (body.key === 'mode' && v !== 'single' && v !== 'multi') return J({ error: '模式只能是 single 或 multi' }, 400);
+            else if (body.key === 'mode') { v = v === 'single' ? 'auto' : v; if (['auto', 'multi', 'unknown'].indexOf(v) < 0) return J({ error: '模式只能是 auto、multi 或 unknown' }, 400); }
             s[body.key] = v;
             return J({ ok: true, key: body.key, value: v });
           }

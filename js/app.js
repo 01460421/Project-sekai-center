@@ -3463,7 +3463,9 @@ class Component extends DCLogic {
        insight 缺額分析（每車）GET /insight            → 未來 7 天填充率、缺額時段（缺 S6、候補可補）、出勤排行；停在這頁每 20 秒自動更新
        hist    歷史班表（每車，唯讀）GET /history?dates=1 → 日期索引（含封存期數）；GET /history?date= → 那天的班表
        seidan  色段監控（整個車隊）GET /seidan           → 先 live=0 秒回，再抓即時排名（機器人要等 HiSekai 最多 15 秒）；停在這頁每 60 秒更新
-               完整紀錄 GET /seidan/detail?pid=&limit=&offset=；管理員 POST /seidan {pid, action: toggle|field|clear_alerts}
+               完整紀錄 GET /seidan/detail?pid=&limit=&offset=＋判定分析 GET /seidan/analysis?pid=&hours=（成員也能看）
+               管理員 POST /seidan {pid, action: toggle|field|clear_alerts|config|preview|meta|add|delete|default}
+               設定面板＋即時預覽（state.carSeiEd）：改參數停手 0.4 秒就用草稿重播 round_log，停著時每 60 秒重算
      玩家名、暱稱、活動名、周邊玩家名都是外部字串：只走 {{ }}；pid／player_id 一律當字串（19 位數會失去精度）。 */
   CAR_ST_VIEWS = [['insight', '缺額分析'], ['hist', '歷史班表'], ['seidan', '色段監控']];
   CAR_SEI_ALERTS = [['alerted_stale', 'Auto 停止'], ['alerted_slow', '多人周回偏低'], ['alerted_doosen', '豆森偵測'], ['alerted_pt', 'Pt 異常'], ['alerted_poor_form', '狀態不佳']];
@@ -3488,9 +3490,18 @@ class Component extends DCLogic {
       const g0 = String(s.g || '');
       this.carSecPut(key, { at: now });
       this.carApi('/insight', {}).then(d => { if (String(this.state.g || '') === g0 && d) this.carSecPut(key, { data: d, err: '', at: Date.now() }); }, () => {});
-    } else if (v === 'seidan' && !this.carSeiCur() && !s.carSeiCfg) {
-      const cur = this.carSecOf(this.carSecKey('seidan'));
-      if (cur && cur.data && !cur.busy && cur.live !== 'busy' && now - (cur.at || 0) >= 60000) this.carStSeiLoad(true);
+    } else if (v === 'seidan') {
+      const ed = this.carSeiEdCur(), det = this.carSeiCur();
+      if (ed) {                                   // 設定面板：草稿不動也每 60 秒重算一次（機器人那邊一直有新的場次）
+        const pv = this.carSecOf(this.carSecKey('seipv') + ':' + ed.pid);
+        if (pv && !pv.busy && now - (pv.at || 0) >= 60000) this.carSeiPv(true);
+      } else if (det) {                           // 完整紀錄頁：判定分析每 60 秒更新
+        const an = this.carSecOf(this.carSeiAnKey(det.pid));
+        if (an && an.data && !an.busy && now - (an.at || 0) >= 60000) this.carSeiAnLoad(det.pid, true);
+      } else {
+        const cur = this.carSecOf(this.carSecKey('seidan'));
+        if (cur && cur.data && !cur.busy && cur.live !== 'busy' && now - (cur.at || 0) >= 60000) this.carStSeiLoad(true);
+      }
     }
   }
   /* 要看哪一天：使用者選過（清單或日期欄，任何 YYYY-MM-DD 都收——清單裡沒有的日期機器人一樣會去現用班表與封存裡找）
@@ -3517,7 +3528,8 @@ class Component extends DCLogic {
   /* 色段總覽：第一次先 live=0（馬上有畫面），再補即時排名；已經有資料時（重新整理、背景更新）只抓即時版 */
   async carStSeiLoad(force) {
     const det = this.carSeiCur();
-    if (det) return this.carStSeiDetail(det.pid, force);
+    if (det) { this.carSeiAnLoad(det.pid, force); return this.carStSeiDetail(det.pid, force); }
+    if (this.carSeiEdCur()) { this.carSeiPv(!!force); this.carSeiMetaLoad(!!force); }
     const key = this.carSecKey('seidan'), cur = this.carSecOf(key), g0 = String(this.state.g || '');
     if (cur && (cur.busy || cur.live === 'busy')) return null;
     if (cur && cur.data && !force && Date.now() - (cur.at || 0) < 15000) return null;
@@ -3584,46 +3596,410 @@ class Component extends DCLogic {
     const d = await this.carAct('/seidan', { pid: String(pid), action: 'clear_alerts' }, '已重置「' + nm + '」的警報');
     if (d) { const a = {}; this.CAR_SEI_ALERTS.forEach(([k]) => { a[k] = false; }); this.carStSeiPatch(pid, { alerts: a }); }
   }
-  /* 監控設定表單：開啟時把目前值抄一份成字串，儲存時只送有改的欄位（一次一欄，機器人逐欄驗證） */
-  carStSeiCfgOf(p) {
-    const n = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : String(+v);
-    return { nick: String(p.nickname || ''), thresh: n(p.thresh), ratio: p.poor_form_ratio == null || isNaN(+p.poor_form_ratio) ? '' : String(Math.round(+p.poor_form_ratio * 1000) / 10),
-      hours: n(p.poor_form_hours), trig: n(p.auto_stale_trigger), rep: n(p.auto_stale_repeat), dm: !!p.poor_form_dm, pub: !!p.poor_form_public };
+  /* ===== 色段監控：設定面板＋即時預覽（管理員）、判定分析（所有人） =====
+     POST /seidan {action:'meta'}                        下拉選單（頻道／身分組／成員）、預設值（快取 carSecKey('seimeta')）
+     POST /seidan {action:'preview', pid, params, hours} 用草稿參數重播 round_log（改完停 0.4 秒才送；畫面停著時每 60 秒重算）
+     POST /seidan {action:'config', pid, cfg}            一次存多個設定（只送有改的欄位；機器人全部驗證過才寫入）
+     POST /seidan {action:'add'|'delete'|'default'}      新增／刪除監控、預設玩家
+     GET  /seidan/analysis?pid&hours                     完整紀錄頁的判定分析（成員也能看；用目前存的參數）
+     state.carSeiEd  = {g, pid, f:{欄位: 字串／布林／陣列}, base:{開啟或存檔時的 f}, hours, errs}（null＝沒開）
+     state.carSeiAdd = {g, player, ch, nick, thresh, role}（新增表單；null＝收起）
+     預覽跟真的警報用同一組判定函式（機器人 seidan_core.py），這裡只負責畫。 */
+  CAR_SEI_GROUPS = [
+    ['judge', '判定', '單場分數達門檻算多人場。近 5 場有幾成達門檻就判多人；有效場數不到 3 場時，改用上下兩條線防止模式來回跳。'],
+    ['stale', '斷 auto', 'Auto 模式連續幾分鐘沒上分，就在通知頻道提醒並 @ 身分組；之後每隔幾分鐘重複一次，重複填 0＝只提醒一次。'],
+    ['pf', '狀態不佳', '單場低於近幾小時最高分的這個比例，就發「狀態不佳」；打回最高分以上之後，下次再掉才會再發。'],
+    ['doo', '豆森／Pt 異常', '豆森：一次輪詢（約 1 分鐘）內分數增加超過單場的幾倍，或兩局間隔很短。Pt 異常：單場跟前 10 場中位數差太多倍。兩種都只發一次，重置警報後才會再發。'],
+    ['multi', '多人效率', '多人模式時每個視窗結算一次（視窗到期後的下一場上分時），場數低於最低場數就警報。'],
+    ['misc', '紀錄與停用', '分數快照給控分預估與時速用；太久抓不到分數（不在前百或榜線上）會自動停用監控。'],
+  ];
+  /* [key, 群組, 名稱, 型別（int／pct＝存 0～1 顯示 %／x＝倍數／bool）, 單位, 拉桿最小, 最大, 間隔, 還原預設時保留（通知類）] */
+  CAR_SEI_FIELDS = [
+    ['thresh', 'judge', '判定門檻（單場分數）', 'int', '分', 20000, 200000, 1000],
+    ['mode_vote_ratio', 'judge', '近 5 場判多人的比例', 'pct', '%', 30, 100, 5],
+    ['hyst_up', 'judge', 'Auto → 多人（門檻 ×）', 'x', '倍', 1, 2, 0.05],
+    ['hyst_down', 'judge', '多人 → Auto（門檻 ×）', 'x', '倍', 0.3, 1, 0.05],
+    ['auto_stale_enabled', 'stale', '斷 auto 提醒', 'bool'],
+    ['auto_stale_trigger', 'stale', '沒上分幾分鐘提醒', 'int', '分鐘', 1, 60, 1],
+    ['auto_stale_repeat', 'stale', '之後每隔幾分鐘重複', 'int', '分鐘', 0, 60, 1],
+    ['poor_form_hours', 'pf', '看近幾小時的最高分', 'int', '小時', 1, 24, 1],
+    ['poor_form_ratio', 'pf', '低於最高分的', 'pct', '%', 50, 100, 1],
+    ['poor_form_public', 'pf', '在通知頻道公開', 'bool', '', 0, 0, 0, 1],
+    ['poor_form_dm', 'pf', '私訊指定對象', 'bool', '', 0, 0, 0, 1],
+    ['doosen_rate', 'doo', '一次輪詢增加 ≥ 單場的', 'x', '倍', 1.1, 5, 0.1],
+    ['doosen_sec', 'doo', '或兩局間隔 ≤', 'int', '秒', 0, 120, 5],
+    ['pt_outlier', 'doo', 'Pt 異常：對中位數倍差 ≥', 'x', '倍', 1.2, 6, 0.1],
+    ['multi_window_min', 'multi', '視窗長度', 'int', '分鐘', 5, 120, 5],
+    ['multi_min_rounds', 'multi', '視窗內最少場數', 'int', '場', 1, 60, 1],
+    ['snapshot_every', 'misc', '每幾次輪詢記一筆快照', 'int', '次', 1, 60, 1],
+    ['auto_disable_days', 'misc', '幾天抓不到分數自動停用', 'int', '天', 1, 60, 1],
+    ['runner_alert_cooldown_sec', 'notify', '跑者通知冷卻', 'int', '秒', 10, 3600, 10, 1],
+  ];
+  CAR_SEI_DEF = { thresh: 60000, auto_stale_enabled: false, auto_stale_trigger: 3, auto_stale_repeat: 5, poor_form_hours: 3, poor_form_ratio: 0.95, poor_form_dm: false,
+    poor_form_public: true, runner_alert_mode: 'off', runner_alert_cooldown_sec: 180, multi_window_min: 20, multi_min_rounds: 10, doosen_sec: 30, doosen_rate: 1.8,
+    pt_outlier: 2.5, mode_vote_ratio: 0.6, hyst_up: 1.2, hyst_down: 0.8, snapshot_every: 10, auto_disable_days: 7 };
+  CAR_SEI_RANGE = { thresh: [0, 999999999], auto_stale_trigger: [1, 60], auto_stale_repeat: [0, 60], poor_form_hours: [1, 24], poor_form_ratio: [0.5, 1],
+    runner_alert_cooldown_sec: [10, 3600], multi_window_min: [5, 180], multi_min_rounds: [1, 200], doosen_sec: [0, 300], doosen_rate: [1.1, 10], pt_outlier: [1.2, 20],
+    mode_vote_ratio: [0.3, 1], hyst_up: [1, 3], hyst_down: [0.1, 1], snapshot_every: [1, 120], auto_disable_days: [1, 60] };
+  CAR_SEI_RUNNER = [['off', '關閉'], ['dm', '私訊'], ['voice', '語音'], ['both', '私訊＋語音']];
+  CAR_SEI_EVC = { poor_form: '#d64533', mode: '#7b5cd6', doosen: '#e07b00', pt: '#c2185b', slow: '#2f7fd1', stale: '#ee6644' };
+  CAR_SEI_EVN = { poor_form: '狀態不佳', mode: '模式切換', doosen: '豆森偵測', pt: 'Pt 異常', slow: '多人周回偏低', stale: 'Auto 分數停止' };
+  CAR_SEI_HOURS = [1, 3, 6, 12, 24];
+  carSeiDefs() { const m = this.carSecOf(this.carSecKey('seimeta')), d = m && m.data && m.data.defaults; return d && typeof d === 'object' ? Object.assign({}, this.CAR_SEI_DEF, d) : this.CAR_SEI_DEF; }
+  carSeiFmt(kind, v) {
+    if (v === null || v === undefined || v === '' || isNaN(+v)) return '';
+    if (kind === 'pct') return String(Math.round(+v * 1000) / 10);
+    if (kind === 'x') return String(Math.round(+v * 100) / 100);
+    return String(Math.round(+v));
   }
-  async carStSeiSave() {
-    const cfg = this.state.carSeiCfg;
-    if (!cfg || String(cfg.g) !== String(this.state.g || '')) return;
-    const p = this.carStSeiFind(cfg.pid);
-    if (!p) { this._toast('找不到這位玩家，請重新整理'); return; }
-    const f = cfg.f || {}, o = this.carStSeiCfgOf(p), ch = [];
-    const int = (k, key, lo, hi, label) => {
-      const v = String(f[k] == null ? '' : f[k]).trim();
-      if (v === o[k]) return true;
-      if (!/^\d+$/.test(v) || +v < lo || +v > hi) { this._toast(label + '要是 ' + lo + '～' + hi + ' 的整數'); return false; }
-      ch.push([key, +v]); return true;
+  /* 玩家資料（GET /seidan 的一筆，或 config 回來的 player）→ 表單字串 */
+  carSeiEdOf(p) {
+    p = p && typeof p === 'object' ? p : {};
+    const cfg = p.cfg && typeof p.cfg === 'object' ? p.cfg : {}, defs = this.carSeiDefs();
+    const val = k => cfg[k] !== undefined ? cfg[k] : (p[k] !== undefined ? p[k] : defs[k]);
+    const f = {};
+    this.CAR_SEI_FIELDS.forEach(([k, , , kind]) => { f[k] = kind === 'bool' ? !!val(k) : this.carSeiFmt(kind, val(k)); });
+    const rm = String(val('runner_alert_mode') || 'off');
+    f.runner_alert_mode = this.CAR_SEI_RUNNER.some(x => x[0] === rm) ? rm : 'off';
+    f.enabled = !!p.enabled; f.nickname = String(p.nickname || '');
+    f.channel_id = String(p.channel_id || ''); f.admin_role_id = String(p.admin_role_id || ''); f.poor_form_dm_uid = String(p.poor_form_dm_uid || '');
+    f.notify_targets = (Array.isArray(p.notify_targets) ? p.notify_targets : []).map(String).filter(x => /^\d{15,21}$/.test(x));
+    return f;
+  }
+  /* 表單 → 判定參數（只放合法的；機器人會再驗一次） */
+  carSeiEdParams(f) {
+    const params = {}, errs = {};
+    this.CAR_SEI_FIELDS.forEach(([k, , label, kind]) => {
+      if (kind === 'bool') { params[k] = !!f[k]; return; }
+      const sv = String(f[k] == null ? '' : f[k]).trim().replace(/,/g, '');
+      if (!/^\d+(\.\d+)?$/.test(sv)) { errs[k] = label + '要填數字'; return; }
+      if (kind === 'int' && sv.indexOf('.') >= 0) { errs[k] = label + '要是整數'; return; }
+      const n = kind === 'pct' ? Math.round(+sv * 10) / 1000 : +sv, rg = this.CAR_SEI_RANGE[k] || [-Infinity, Infinity];
+      if (n < rg[0] || n > rg[1]) { errs[k] = label + '要在 ' + (kind === 'pct' ? Math.round(rg[0] * 100) + '～' + Math.round(rg[1] * 100) + '%' : rg[0] + '～' + rg[1]) + ' 之間'; return; }
+      params[k] = n;
+    });
+    params.runner_alert_mode = this.CAR_SEI_RUNNER.some(x => x[0] === f.runner_alert_mode) ? f.runner_alert_mode : 'off';
+    return { params, errs };
+  }
+  carSeiEdCur() { const e = this.state.carSeiEd; return e && e.pid && e.f && String(e.g) === String(this.state.g || '') ? e : null; }
+  carSeiDirty(ed) {
+    if (!ed) return [];
+    return Object.keys(ed.f).filter(k => JSON.stringify(ed.f[k]) !== JSON.stringify(ed.base[k]));
+  }
+  carSeiEdOpen(pid) {
+    const p = this.carStSeiFind(pid); if (!p) return;
+    const f = this.carSeiEdOf(p);
+    this.setState({ carSeiEd: { g: String(this.state.g || ''), pid: String(pid), f, base: JSON.parse(JSON.stringify(f)), hours: 6, errs: {} }, carSeiDet: null, carSeiAdd: null, carSeiEdPick: '' });
+    this.carSeiMetaLoad(false);
+    setTimeout(() => this.carSeiPv(true), 0);
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
+  }
+  carSeiEdClose() {
+    const ed = this.carSeiEdCur();
+    if (ed && this.carSeiDirty(ed).length && !window.confirm('有 ' + this.carSeiDirty(ed).length + ' 項設定還沒儲存，確定離開？')) return;
+    clearTimeout(this._carSeiPvT);
+    this.setState({ carSeiEd: null });
+    setTimeout(() => this.carStSeiLoad(false), 0);
+  }
+  /* 改表單：馬上更新畫面，停手 0.4 秒才送預覽 */
+  carSeiEdSet(patch) {
+    this.setState(st => st.carSeiEd ? { carSeiEd: Object.assign({}, st.carSeiEd, { f: Object.assign({}, st.carSeiEd.f, patch), errs: {} }) } : {});
+    clearTimeout(this._carSeiPvT);
+    this._carSeiPvT = setTimeout(() => this.carSeiPv(false), 400);
+  }
+  carSeiMetaLoad(force) { return this.carSecFetch(this.carSecKey('seimeta'), '/seidan', { body: { action: 'meta' } }, force); }
+  /* 預覽：同樣的草稿不重送；新的請求出去後，舊的回來一律丟掉 */
+  async carSeiPv(force) {
+    const ed = this.carSeiEdCur(); if (!ed) return;
+    const params = this.carSeiEdParams(ed.f).params, hours = +ed.hours || 6;
+    const key = this.carSecKey('seipv') + ':' + ed.pid, sig = JSON.stringify([params, hours]), cur = this.carSecOf(key);
+    if (!force && cur && cur.sig === sig && cur.data) return;
+    const seq = (this._carSeiPvSeq = (this._carSeiPvSeq || 0) + 1), g0 = String(this.state.g || '');
+    this.carSecPut(key, { busy: true, sig });
+    try {
+      const d = await this.carApi('/seidan', { body: { action: 'preview', pid: ed.pid, params, hours } });
+      if (seq !== this._carSeiPvSeq || String(this.state.g || '') !== g0) return;
+      this.carSecPut(key, { data: d, err: '', busy: false, at: Date.now(), sig });
+    } catch (e) {
+      if (seq !== this._carSeiPvSeq) return;
+      this.carSecPut(key, { err: (e && e.code === 'not_found') ? '機器人版本不支援預覽，請更新機器人' : ((e && e.message) || '預覽失敗'), busy: false, at: Date.now() });
+    }
+  }
+  async carSeiEdSave() {
+    const ed = this.carSeiEdCur(); if (!ed) return;
+    const { params, errs } = this.carSeiEdParams(ed.f);
+    if (Object.keys(errs).length) { this.setState(st => st.carSeiEd ? { carSeiEd: Object.assign({}, st.carSeiEd, { errs }) } : {}); this._toast(errs[Object.keys(errs)[0]]); return; }
+    const dirty = this.carSeiDirty(ed), cfg = {};
+    dirty.forEach(k => { if (Object.prototype.hasOwnProperty.call(params, k)) cfg[k] = params[k]; else cfg[k] = ed.f[k]; });
+    if (!dirty.length) { this._toast('沒有要變更的設定'); return; }
+    if (cfg.nickname !== undefined) cfg.nickname = String(cfg.nickname).trim().slice(0, 30);
+    if (cfg.channel_id !== undefined && !cfg.channel_id) { this._toast('要選一個通知頻道'); return; }
+    const d = await this.carAct('/seidan', { action: 'config', pid: ed.pid, cfg }, r => '已儲存 ' + ((r && Array.isArray(r.changed) && r.changed.length) || dirty.length) + ' 項設定', null, e => {
+      const er = e && e.data && e.data.errors;
+      if (er && typeof er === 'object') this.setState(st => st.carSeiEd ? { carSeiEd: Object.assign({}, st.carSeiEd, { errs: er }) } : {});
+      return null;
+    });
+    if (!d || !d.player || typeof d.player !== 'object') return;
+    this.carStSeiPatch(ed.pid, d.player);
+    const nf = this.carSeiEdOf(Object.assign({}, this.carStSeiFind(ed.pid) || {}, d.player));
+    this.setState(st => st.carSeiEd && st.carSeiEd.pid === ed.pid ? { carSeiEd: Object.assign({}, st.carSeiEd, { f: nf, base: JSON.parse(JSON.stringify(nf)), errs: {} }) } : {});
+    this.carSeiPv(true);
+  }
+  /* 還原預設：判定類參數填回機器人的預設值（通知方式、頻道、名單不動），還沒存 */
+  carSeiEdDefaults() {
+    const ed = this.carSeiEdCur(); if (!ed) return;
+    const defs = this.carSeiDefs(), patch = {};
+    this.CAR_SEI_FIELDS.forEach(([k, , , kind, , , , , keep]) => { if (!keep) patch[k] = kind === 'bool' ? !!defs[k] : this.carSeiFmt(kind, defs[k]); });
+    this.carSeiEdSet(patch);
+    this._toast('已填入預設值，按「儲存變更」才會生效');
+  }
+  carSeiEdRevert() { const ed = this.carSeiEdCur(); if (!ed) return; this.carSeiEdSet(JSON.parse(JSON.stringify(ed.base))); }
+  async carSeiDelete(pid) {
+    const p = this.carStSeiFind(pid), nm = String((p && p.name) || pid);
+    if (!window.confirm('確定刪除「' + nm + '」的色段監控？\n\n會連同所有上分紀錄與快照一起刪掉，無法復原。只想暫停的話請改用「停用監控」。')) return;
+    const d = await this.carAct('/seidan', { action: 'delete', pid: String(pid) }, '已刪除「' + nm + '」');
+    if (!d) return;
+    const key = this.carSecKey('seidan'), sec = this.carSecOf(key);
+    if (sec && sec.data && Array.isArray(sec.data.players)) this.carSecPut(key, { data: Object.assign({}, sec.data, { players: sec.data.players.filter(x => x && String(x.pid) !== String(pid)) }) });
+    clearTimeout(this._carSeiPvT);
+    this.setState({ carSeiEd: null });
+  }
+  async carSeiSetDefault(pid) {
+    const d = await this.carAct('/seidan', { action: 'default', pid: String(pid || '') }, pid ? '已設為預設玩家（Discord 的 /色段 指令可以省略玩家 ID）' : '已取消預設玩家');
+    if (!d) return;
+    const dp = String(d.default_pid || ''), key = this.carSecKey('seidan'), sec = this.carSecOf(key);
+    if (sec && sec.data && Array.isArray(sec.data.players))
+      this.carSecPut(key, { data: Object.assign({}, sec.data, { default_pid: dp, players: sec.data.players.map(x => x && typeof x === 'object' ? Object.assign({}, x, { is_default: !!dp && String(x.pid) === dp }) : x) }) });
+  }
+  /* 新增監控：頻道預設用目前最多人用的那個 */
+  carSeiAddToggle() {
+    const a = this.state.carSeiAdd;
+    if (a && String(a.g) === String(this.state.g || '')) { this.setState({ carSeiAdd: null }); return; }
+    const sec = this.carSecOf(this.carSecKey('seidan')), ps = sec && sec.data && Array.isArray(sec.data.players) ? sec.data.players : [], cnt = {};
+    ps.forEach(p => { const c = String((p && p.channel_id) || ''); if (c) cnt[c] = (cnt[c] || 0) + 1; });
+    const ch = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])[0] || '';
+    this.setState({ carSeiAdd: { g: String(this.state.g || ''), player: '', ch, nick: '', thresh: '', role: '' } });
+    this.carSeiMetaLoad(false);
+  }
+  async carSeiAddSubmit() {
+    const a = this.state.carSeiAdd; if (!a || String(a.g) !== String(this.state.g || '')) return;
+    const player = String(a.player || '').trim(), th = String(a.thresh || '').trim().replace(/,/g, '');
+    if (!player) { this._toast('輸入玩家 ID、名次或遊戲名稱'); return; }
+    if (!a.ch) { this._toast('要選一個通知頻道（警報會發在這裡）'); return; }
+    if (th && (!/^\d+$/.test(th) || +th < 1)) { this._toast('判定門檻要是正整數（留空＝60000）'); return; }
+    const body = { action: 'add', player, channel_id: String(a.ch), nickname: String(a.nick || '').trim().slice(0, 30), admin_role_id: String(a.role || '') };
+    if (th) body.thresh = +th;
+    const d = await this.carAct('/seidan', body, r => r && r.pending ? String(r.msg || '機器人在背景新增中') : (r && r.created ? '已新增「' + String(r.name || player) + '」' : '「' + String((r && r.name) || player) + '」原本就在監控清單，已重新啟用'));
+    if (!d) return;
+    this.setState({ carSeiAdd: null });
+    const reload = async () => { await this.carSecFetch(this.carSecKey('seidan'), '/seidan', { query: { live: '0' } }, true); this.carStSeiLoad(true); };
+    if (d.pending) setTimeout(reload, 8000); else reload();
+  }
+  /* 完整紀錄頁的判定分析（GET，成員也能看） */
+  carSeiAnKey(pid) { return this.carSecKey('seian') + ':' + pid + ':' + (+this.state.carSeiAnH || 6); }
+  carSeiAnLoad(pid, force) {
+    if (!pid) return null;
+    return this.carSecFetch(this.carSeiAnKey(pid), '/seidan/analysis', { query: { pid: String(pid), hours: String(+this.state.carSeiAnH || 6) } }, force);
+  }
+  /* ---------- 圖表與狀態（設定面板與完整紀錄頁共用） ---------- */
+  carSeiMs(s) { const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/.exec(String(s || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : NaN; }
+  carSeiHm(ms) { const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  /* SVG 圖：dc-runtime 會把 {{ }} 包成 <span>，放在 <svg><text> 裡畫不出來 → 軸標籤、門檻標籤改用疊在圖上的 HTML（位置用百分比）。
+     hi＝游標停著（手機點一下）的那一場的時間字串（state.carSchHi），圖下面顯示那一場的細節。 */
+  carSeiChart(an, hi) {
+    const W = 720, H = 300, L = 54, R = 10, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
+    const P = an && an.params && typeof an.params === 'object' ? an.params : {};
+    const rs = (an && Array.isArray(an.rounds) ? an.rounds : []).filter(r => r && typeof r === 'object').map(r => Object.assign({ ms: this.carSeiMs(r.t) }, r)).filter(r => isFinite(r.ms));
+    let t1 = this.carSeiMs(an && an.now), t0 = this.carSeiMs(an && an.since);
+    if (!isFinite(t1)) t1 = rs.length ? rs[rs.length - 1].ms : Date.now();
+    if (!isFinite(t0) || t0 >= t1) t0 = t1 - 6 * 3600e3;
+    const th = Math.max(0, +P.thresh || 0), up = th * (+P.hyst_up || 1.2), dn = th * (+P.hyst_down || 0.8);
+    const top = Math.max.apply(null, rs.map(r => +r.ep || 0).concat([up, 1000])) * 1.08;
+    const x = ms => L + Math.max(0, Math.min(1, (ms - t0) / (t1 - t0))) * pw;
+    const y = v => T + (1 - Math.max(0, Math.min(1, v / top))) * ph;
+    const f1 = v => String(Math.round(v * 10) / 10), pctX = v => (Math.round(v / W * 10000) / 100) + '%', pctY = v => (Math.round(v / H * 10000) / 100) + '%';
+    const MC = { multi: 'var(--accent)', auto: '#d99a1e', unknown: 'var(--text-3)' };
+    const bands = [];
+    rs.forEach((r, i) => {
+      const x0 = x(r.ms), x1 = i + 1 < rs.length ? x(rs[i + 1].ms) : x(t1), last = bands[bands.length - 1];
+      if (last && last.m === r.m) last.x1 = x1; else bands.push({ m: r.m, x0, x1 });
+    });
+    let pf = '';
+    rs.forEach((r, i) => { const v = +r.pf || 0; if (v > 0) pf += 'M' + f1(x(r.ms)) + ' ' + f1(y(v)) + 'H' + f1(i + 1 < rs.length ? x(rs[i + 1].ms) : x(t1)); });
+    const evn = k => this.CAR_SEI_EVN[k] || String(k);
+    const tipOf = r => {
+      const ev = (Array.isArray(r.e) ? r.e : []).map(evn), cd = (Array.isArray(r.c) ? r.c : []).filter(k => (r.e || []).indexOf(k) < 0).map(evn);
+      return this.carSeiHm(r.ms) + ' · 單場 ' + this.carStN(r.ep) + (+r.g ? ' · 間隔 ' + (+r.g) + 's' : '') + ' · ' + (this.CAR_SEI_MODES[r.m] || String(r.m || '')) +
+        (+r.pf ? ' · 狀態不佳線 ' + this.carStN(r.pf) : '') + (ev.length ? ' · 發出：' + ev.join('、') : '') + (cd.length ? ' · 條件成立但已觸發過：' + cd.join('、') : '');
     };
-    if (!int('thresh', 'thresh', 0, 999999999, '判定門檻')) return;
-    const rv = String(f.ratio == null ? '' : f.ratio).trim();
-    if (rv !== o.ratio) {
-      if (!/^\d+(\.\d+)?$/.test(rv) || +rv < 1 || +rv > 200) { this._toast('手感門檻要是 1～200 的百分比'); return; }
-      ch.push(['poor_form_ratio', Math.round(+rv * 10) / 1000]);
-    }
-    if (!int('hours', 'poor_form_hours', 1, 24, '手感觀察時數')) return;
-    if (!int('trig', 'auto_stale_trigger', 1, 60, '斷 auto 觸發分鐘')) return;
-    if (!int('rep', 'auto_stale_repeat', 0, 60, '斷 auto 重複分鐘')) return;
-    const nk = String(f.nick == null ? '' : f.nick).trim().slice(0, 32);
-    if (nk !== o.nick) ch.push(['nickname', nk]);
-    if (!!f.dm !== o.dm) ch.push(['poor_form_dm', !!f.dm]);
-    if (!!f.pub !== o.pub) ch.push(['poor_form_public', !!f.pub]);
-    if (!ch.length) { this._toast('沒有要變更的設定'); return; }
-    let n = 0;
-    for (const [key, value] of ch) {
-      const d = await this.carAct('/seidan', { pid: String(p.pid), action: 'field', key, value }, null);
-      if (!d) break;                                  // 錯誤已由 carAct 浮出；表單留著讓使用者修正
-      n++;
-      this.carStSeiPatch(p.pid, { [String(d.key || key)]: d.value !== undefined ? d.value : value });
-    }
-    if (n === ch.length) { this._toast('已儲存 ' + n + ' 項設定'); this.setState({ carSeiCfg: null }); }
+    const dots = rs.map(r => {
+      const ev = Array.isArray(r.e) && r.e.length > 0;
+      return { t: String(r.t), cx: f1(x(r.ms)), cy: f1(y(+r.ep || 0)), r: ev ? '4' : '2.8', fill: MC[r.m] || MC.unknown, tip: tipOf(r) };
+    });
+    const marks = [];
+    rs.forEach(r => (Array.isArray(r.e) ? r.e : []).forEach((k, j) => {
+      const cx = x(r.ms), cy = Math.max(T + 6, y(+r.ep || 0) - 11 - j * 9);
+      marks.push({ d: 'M' + f1(cx) + ' ' + f1(cy + 5) + 'L' + f1(cx - 5) + ' ' + f1(cy - 4) + 'L' + f1(cx + 5) + ' ' + f1(cy - 4) + 'Z', c: this.CAR_SEI_EVC[k] || '#d64533', tip: this.carSeiHm(r.ms) + ' ' + evn(k) });
+    }));
+    const stale = (an && Array.isArray(an.events) ? an.events : []).filter(e => e && e.type === 'stale').map(e => {
+      const ms = this.carSeiMs(e.t); if (!isFinite(ms)) return null;
+      const cx = x(ms), by = T + ph;
+      return { d: 'M' + f1(cx) + ' ' + f1(by - 1) + 'L' + f1(cx - 5) + ' ' + f1(by - 10) + 'L' + f1(cx + 5) + ' ' + f1(by - 10) + 'Z', tip: this.carSeiHm(ms) + ' ' + evn('stale') };
+    }).filter(Boolean);
+    const stepOf = v => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(1, v)))); return [1, 2, 2.5, 5, 10].map(m => m * p).find(s => v / s <= 4) || p * 10; };
+    const ys = stepOf(top), yt = [];
+    for (let v = ys; v <= top; v += ys) yt.push({ y: f1(y(v)), top: pctY(y(v)), l: this.carStN(v) });      // 0 不標（跟時間軸擠在一起）
+    const span = (t1 - t0) / 60000, sm = [15, 30, 60, 120, 180, 360, 720].find(m => span / m <= 6) || 1440, xt = [];
+    let tt = new Date(t0).setSeconds(0, 0);
+    while (tt < t0 || (new Date(tt).getHours() * 60 + new Date(tt).getMinutes()) % sm) tt += 60000;
+    for (let n = 0; tt <= t1 && n < 12; tt += sm * 60000, n++) if (x(tt) > L + 16 && x(tt) < W - 18) xt.push({ x: f1(x(tt)), left: pctX(x(tt)), l: this.carSeiHm(tt) });
+    const ep = rs.map(r => +r.ep || 0);
+    const hd = hi ? dots.find(d => d.t === String(hi)) : null;
+    return {
+      W: String(W), H: String(H), L: String(L), Rx: f1(L + pw), T: String(T), ph: f1(ph), base: f1(T + ph), lw: pctX(L - 6),
+      bands: bands.filter(b => b.m === 'multi' || b.m === 'auto').map(b => ({ x: f1(b.x0), w: f1(Math.max(0.6, b.x1 - b.x0)), fill: 'color-mix(in oklab,' + MC[b.m] + ' 11%,transparent)' })),
+      /* 在 <svg> 裡不用 sc-if（外來內容）：可有可無的圖層一律給 0 或 1 筆的陣列走 sc-for */
+      thL: th > 0 ? [{ y: f1(y(th)), top: pctY(y(th) - 9), l: '門檻 ' + this.carStN(th) }] : [], hyL: th > 0 ? [{ y: f1(y(up)) }, { y: f1(y(dn)) }] : [],
+      pfL: pf ? [{ d: pf }] : [], hiL: hd ? [{ cx: hd.cx, cy: hd.cy }] : [],
+      emptyL: rs.length ? [] : [{ l: '這段時間沒有上分紀錄' }],
+      dots, marks, stale, yt, xt,
+      hiTxt: hd ? hd.tip : (rs.length ? '游標停在點上（手機點一下）看那一場的細節' : ''), roFg: hd ? 'var(--ink)' : 'var(--text-3)',
+      aria: rs.length ? '近 ' + (+an.hours || 6) + ' 小時 ' + rs.length + ' 場，單場 ' + this.carStN(Math.min.apply(null, ep)) + '～' + this.carStN(Math.max.apply(null, ep)) + '，門檻 ' + this.carStN(th) : '這段時間沒有上分',
+    };
+  }
+  /* 分析結果 → 狀態膠囊、接下來會發的警報、警報清單（base＝目前存的參數的次數，用來跟草稿比） */
+  carSeiAnVals(an, base, draft) {
+    const tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))', tbg = h => 'color-mix(in oklab,' + h + ' 14%,var(--card))';
+    const st = an && an.status && typeof an.status === 'object' ? an.status : {}, P = an && an.params && typeof an.params === 'object' ? an.params : {};
+    const ML = m => this.CAR_SEI_MODES[m] || String(m || '—');
+    const chips = [];
+    const ml = String(st.mode_live || 'unknown'), md = String(st.mode_draft || 'unknown');
+    chips.push({ k: '目前模式', v: ML(ml) + (md !== ml ? (draft ? ' → 新參數判 ' : ' → 依目前設定重算是 ') + ML(md) : ''), fg: md !== ml ? tfg('#7b5cd6') : 'var(--ink)', bg: md !== ml ? tbg('#7b5cd6') : 'var(--card-2)' });
+    chips.push({ k: '近 1 小時', v: (+st.rounds_1h || 0) + ' 場 · ' + this.carStN(st.speed_1h), fg: 'var(--ink)', bg: 'var(--card-2)' });
+    chips.push({ k: '場均（10）', v: this.carStN(st.avg10), fg: 'var(--ink)', bg: 'var(--card-2)' });
+    chips.push({ k: '最後上分', v: st.idle_sec == null ? '—' : this.carStIdle(st.idle_sec) + '前', fg: 'var(--ink)', bg: 'var(--card-2)' });
+    if (+st.pf_line) chips.push({ k: '狀態不佳線', v: this.carStN(st.pf_line) + '（近 ' + (+P.poor_form_hours || 0) + 'h 最高 ' + this.carStN(st.peak) + '）', fg: st.pf_below ? tfg('#d64533') : 'var(--ink)', bg: st.pf_below ? tbg('#d64533') : 'var(--card-2)' });
+    const w = st.window && typeof st.window === 'object' ? st.window : null;
+    if (w) chips.push({ k: '多人視窗', v: (+w.rounds || 0) + '／' + (+w.min_rounds || 0) + ' 場 · ' + (w.elapsed_min == null ? '—' : Math.floor(+w.elapsed_min)) + '／' + (+w.window_min || 0) + ' 分', fg: 'var(--ink)', bg: 'var(--card-2)' });
+    const fl = st.flags && typeof st.flags === 'object' ? st.flags : {};
+    const on = this.CAR_SEI_ALERTS.filter(([k]) => fl[k]).map(([, n]) => n);
+    if (on.length) chips.push({ k: '已觸發（等重置）', v: on.join('、'), fg: tfg('#ee6644'), bg: tbg('#ee6644') });
+    const counts = an && an.counts && typeof an.counts === 'object' ? an.counts : {}, bc = base && typeof base === 'object' ? base : null;
+    const cnt = Object.keys(this.CAR_SEI_EVN).map(k => {
+      const n = +counts[k] || 0, b = bc ? (+bc[k] || 0) : n, diff = n - b;
+      return { k, n: this.CAR_SEI_EVN[k] + ' ' + n, d: bc && diff ? '（目前 ' + b + '）' : '', c: this.CAR_SEI_EVC[k], op: n ? '1' : '.45', fg: n ? tfg(this.CAR_SEI_EVC[k]) : 'var(--text-3)', bg: n ? tbg(this.CAR_SEI_EVC[k]) : 'var(--card-2)' };
+    });
+    const hm = t => { const ms = this.carSeiMs(t); return isFinite(ms) ? this.carSeiHm(ms) : ''; };
+    const evs = (an && Array.isArray(an.events) ? an.events : []).filter(e => e && typeof e === 'object').slice(0, 40).map(e => ({
+      t: hm(e.t), day: String(e.t || '').slice(5, 10).replace('-', '/'), lbl: String(e.label || this.CAR_SEI_EVN[e.type] || e.type || ''), text: String(e.text || ''),
+      c: this.CAR_SEI_EVC[e.type] || '#d64533', fg: tfg(this.CAR_SEI_EVC[e.type] || '#d64533'), bg: tbg(this.CAR_SEI_EVC[e.type] || '#d64533') }));
+    const pend = (an && Array.isArray(an.pending) ? an.pending : []).concat(an && Array.isArray(an.watch) ? an.watch.map(x => Object.assign({ watch: 1 }, x)) : [])
+      .filter(x => x && typeof x === 'object').map(x => ({ lbl: String(x.label || this.CAR_SEI_EVN[x.type] || ''), text: String(x.text || ''), hot: !x.watch,
+        fg: x.watch ? 'var(--text-2)' : tfg(this.CAR_SEI_EVC[x.type] || '#d64533'), bg: x.watch ? 'var(--card-2)' : tbg(this.CAR_SEI_EVC[x.type] || '#d64533') }));
+    const total = Object.keys(counts).reduce((a, k) => a + (+counts[k] || 0), 0);
+    return { chips, cnt, evs, hasEvs: evs.length > 0, noEvs: !evs.length, pend, hasPend: pend.length > 0,
+      evHead: '這段時間會發出的警報（' + total + ' 則' + (an && an.sim_truncated ? '，停太久的時段只模擬前 2000 次輪詢' : '') + '）',
+      foot: (an && an.rounds_truncated ? '只畫最新 400 場。' : '') + '斷 auto 提醒以每 60 秒輪詢一次估算；抓不到分數的那幾次輪詢預覽看不到，實際提醒可能晚一點。' };
+  }
+  carSeiSw(on) { return { on: on ? 'true' : 'false', swBg: on ? 'var(--ink-grad)' : 'var(--card-2)', swBd: on ? 'transparent' : 'var(--border)', swL: on ? '20px' : '2px', swK: on ? '#fff' : 'var(--text-3)' }; }
+  /* 設定面板＋即時預覽的畫面資料 */
+  carStSpvVals(c) {
+    const ed = this.carSeiEdCur(), pid = ed ? ed.pid : '', p = this.carStSeiFind(pid) || {};
+    const f = ed.f, base = ed.base, tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))';
+    const pv = this.carSecOf(this.carSecKey('seipv') + ':' + pid), an = pv && pv.data && typeof pv.data === 'object' ? pv.data : null;
+    const meta = this.carSecOf(this.carSecKey('seimeta')), md = meta && meta.data && typeof meta.data === 'object' ? meta.data : null;
+    const loc = this.carSeiEdParams(f).errs, errs = Object.assign({}, loc, ed.errs || {}), defs = this.carSeiDefs();
+    const dirty = this.carSeiDirty(ed), isDirty = k => dirty.indexOf(k) >= 0;
+    const fld = ([k, , label, kind, unit, smin, smax, step]) => {
+      const isB = kind === 'bool', e = errs[k] || '';
+      const o = { k, label, isBool: isB, isNum: !isB, unit: kind === 'pct' ? '%' : (unit || ''), err: e, hasErr: !!e, dirty: isDirty(k),
+        def: '預設 ' + (isB ? (defs[k] ? '開' : '關') : this.carSeiFmt(kind, defs[k]) + (kind === 'pct' ? '%' : kind === 'x' ? ' 倍' : '')),
+        bd: e ? '#d64533' : isDirty(k) ? 'color-mix(in oklab,var(--accent) 60%,var(--border))' : 'var(--border)' };
+      if (isB) return Object.assign(o, this.carSeiSw(!!f[k]));
+      const n = parseFloat(String(f[k] || '').replace(/,/g, ''));
+      return Object.assign(o, { v: String(f[k] == null ? '' : f[k]), smin: String(smin), smax: String(smax), step: String(step), sv: String(isFinite(n) ? Math.max(smin, Math.min(smax, n)) : smin),
+        mode: kind === 'int' ? 'numeric' : 'decimal', hasSl: +smax > +smin });
+    };
+    const groups = this.CAR_SEI_GROUPS.map(([gk, gn, desc]) => {
+      const flds = this.CAR_SEI_FIELDS.filter(x => x[1] === gk).map(fld);
+      return { k: gk, n: gn, desc, flds, dirtyN: flds.filter(x => x.dirty).length ? '已改 ' + flds.filter(x => x.dirty).length + ' 項' : '' };
+    });
+    const cool = fld(this.CAR_SEI_FIELDS.find(x => x[0] === 'runner_alert_cooldown_sec'));
+    /* 下拉選單 */
+    const chans = md && Array.isArray(md.channels) ? md.channels.filter(x => x && /^\d{5,25}$/.test(String(x.id))) : [];
+    const roles = md && Array.isArray(md.roles) ? md.roles.filter(x => x && /^\d{5,25}$/.test(String(x.id))) : [];
+    const people = md && Array.isArray(md.people) ? md.people.filter(x => x && /^\d{15,21}$/.test(String(x.uid))) : [];
+    const pname = u => { const q = people.find(x => String(x.uid) === String(u)); return q ? String(q.name) : 'ID ' + String(u); };
+    const chOpts = [{ v: '', n: '（請選通知頻道）' }].concat(chans.map(x => ({ v: String(x.id), n: '#' + String(x.name || x.id) })));
+    if (f.channel_id && !chOpts.some(o => o.v === f.channel_id)) chOpts.push({ v: f.channel_id, n: '頻道 ' + f.channel_id + (md ? '（伺服器裡找不到）' : '') });
+    const roleOpts = [{ v: '', n: '不指定（改 @ 前 3 位管理員）' }].concat(roles.map(x => ({ v: String(x.id), n: '@' + String(x.name || x.id) })));
+    if (f.admin_role_id && !roleOpts.some(o => o.v === f.admin_role_id)) roleOpts.push({ v: f.admin_role_id, n: '身分組 ' + f.admin_role_id });
+    const dmOpts = [{ v: '', n: '（沒有指定）' }].concat(people.map(x => ({ v: String(x.uid), n: String(x.name) })));
+    if (f.poor_form_dm_uid && !dmOpts.some(o => o.v === f.poor_form_dm_uid)) dmOpts.push({ v: f.poor_form_dm_uid, n: 'ID ' + f.poor_form_dm_uid });
+    const tg = Array.isArray(f.notify_targets) ? f.notify_targets : [];
+    const addOpts = [{ v: '', n: tg.length >= 25 ? '名單已滿 25 人' : '＋ 加入通知對象…' }].concat(tg.length >= 25 ? [] : people.filter(x => tg.indexOf(String(x.uid)) < 0).map(x => ({ v: String(x.uid), n: String(x.name) })));
+    const pvBusy = !!(pv && pv.busy), pvErr = pv && pv.err ? String(pv.err) : '';
+    const ch = this.carSeiChart(an, c.s.carSchHi);
+    const av = this.carSeiAnVals(an, an && an.base_counts, true);
+    const sumOf = o => Object.keys(o && typeof o === 'object' ? o : {}).reduce((a, k) => a + (+o[k] || 0), 0);
+    const mini = !an ? (pvBusy ? '預覽計算中…' : '') : (pvBusy ? '預覽計算中… ' : '') + '預覽：近 ' + (+an.hours || 6) + ' 小時會發 ' + sumOf(an.counts) + ' 則警報'
+      + (an.base_counts ? '（目前設定 ' + sumOf(an.base_counts) + ' 則）' : '') + ' · 最新判定 ' + (this.CAR_SEI_MODES[(an.status || {}).mode_draft] || '—');
+    const lv = p.live && typeof p.live === 'object' ? p.live : null;
+    const inv = an && an.invalid && typeof an.invalid === 'object' ? Object.keys(an.invalid) : [];
+    return {
+      carSeiList: false, carSeiDetail: false, carSeiEdit: true,
+      carSpvName: String(p.name == null ? pid : p.name), carSpvSub: [p.nickname && p.player_name ? '遊戲名稱 ' + String(p.player_name) : '', 'ID ' + String(p.player_id || pid)].filter(Boolean).join(' · '),
+      carSpvHasRank: !!(lv && lv.rank), carSpvRank: lv && lv.rank ? '第 ' + (+lv.rank) + ' 名' : '', carSpvIsDef: !!p.is_default, carSpvOff: !f.enabled,
+      carSpvDirty: dirty.length > 0, carSpvDirtyTxt: dirty.length + ' 項還沒儲存',
+      carSpvHours: this.CAR_SEI_HOURS.map(h => Object.assign({ v: String(h), n: h + 'h' }, c.segOn(h === (+ed.hours || 6)))),
+      carSpvBusy: pvBusy, carSpvStamp: pvBusy ? '計算中…' : (pv && pv.at ? '更新於 ' + this.carSeiHm(pv.at) + (an && an.draft ? ' · 草稿參數' : ' · 目前設定') : ''),
+      carSpvErr: pvErr, carSpvHasErr: !!pvErr && !an, carSpvLoading: !an && !pvErr, carSpvReady: !!an,
+      carSpvInvalid: inv.length ? '這幾項草稿不合法，預覽先用目前的值：' + inv.join('、') : '',
+      carSch: ch, carSan: av, carSpvMini: mini, onCarSchHi: e => { const t = String(e.currentTarget.dataset.t || ''); if (t && t !== this.state.carSchHi) this.setState({ carSchHi: t }); },
+      carSpvGroups: groups,
+      carSpvChOpts: chOpts, carSpvCh: f.channel_id, carSpvChErr: errs.channel_id || '', carSpvChDirty: isDirty('channel_id'),
+      carSpvRoleOpts: roleOpts, carSpvRole: f.admin_role_id, carSpvRoleErr: errs.admin_role_id || '',
+      carSpvRun: this.CAR_SEI_RUNNER.map(([v, n]) => Object.assign({ v, n, on: v === f.runner_alert_mode ? 'true' : 'false' }, c.segOn(v === f.runner_alert_mode))),
+      carSpvCool: cool,
+      carSpvTargets: tg.map(u => ({ u, n: pname(u) })), carSpvHasTargets: tg.length > 0, carSpvNoTargets: !tg.length,
+      carSpvAddOpts: addOpts, carSpvPick: String(c.s.carSeiEdPick || ''), carSpvTgErr: errs.notify_targets || '',
+      carSpvDmOpts: dmOpts, carSpvDm: f.poor_form_dm_uid, carSpvDmErr: errs.poor_form_dm_uid || '',
+      carSpvMetaErr: meta && meta.err && !md ? '頻道／身分組清單讀不到：' + String(meta.err) : '',
+      carSpvNick: String(f.nickname || ''), carSpvNickPh: String(p.player_name || p.player_id || pid), carSpvNickErr: errs.nickname || '',
+      carSpvEn: this.carSeiSw(!!f.enabled),
+      carSpvDefBtn: p.is_default ? '取消預設玩家' : '設為預設玩家',
+      carSpvSaveBtn: c.s.carActBusy ? '處理中…' : (dirty.length ? '儲存變更（' + dirty.length + ' 項）' : '儲存變更'),
+      carSpvSaveOk: dirty.length > 0 && !c.s.carActBusy,
+      carSpvNote: md && md.dc === false ? 'QQ 車隊沒有 Discord 頻道，色段監控不會發警報。' : '',
+      onCarSpvBack: () => this.carSeiEdClose(),
+      onCarSpvHours: e => {
+        const h = +e.currentTarget.dataset.v || 6;
+        this.setState(st => st.carSeiEd ? { carSeiEd: Object.assign({}, st.carSeiEd, { hours: h }) } : {});
+        setTimeout(() => this.carSeiPv(false), 0);
+      },
+      onCarSpvNum: e => { const k = String(e.currentTarget.dataset.k || ''); if (!this.CAR_SEI_FIELDS.some(x => x[0] === k)) return; this.carSeiEdSet({ [k]: String(e.currentTarget.value) }); },
+      onCarSpvBool: e => { const k = String(e.currentTarget.dataset.k || ''); const cur = this.carSeiEdCur(); if (!cur || (k !== 'enabled' && !this.CAR_SEI_FIELDS.some(x => x[0] === k && x[3] === 'bool'))) return; this.carSeiEdSet({ [k]: !cur.f[k] }); },
+      onCarSpvSel: e => { const k = String(e.currentTarget.dataset.k || ''); if (['channel_id', 'admin_role_id', 'poor_form_dm_uid'].indexOf(k) < 0) return; this.carSeiEdSet({ [k]: String(e.currentTarget.value || '') }); },
+      onCarSpvRun: e => { const v = String(e.currentTarget.dataset.v || ''); if (this.CAR_SEI_RUNNER.some(x => x[0] === v)) this.carSeiEdSet({ runner_alert_mode: v }); },
+      onCarSpvNick: e => this.carSeiEdSet({ nickname: String(e.currentTarget.value).slice(0, 30) }),
+      onCarSpvAddTg: e => {
+        const u = String(e.currentTarget.value || ''), cur = this.carSeiEdCur();
+        if (!cur || !/^\d{15,21}$/.test(u)) return;
+        const lst = (cur.f.notify_targets || []).slice(); if (lst.indexOf(u) < 0 && lst.length < 25) lst.push(u);
+        this.setState({ carSeiEdPick: '' }); this.carSeiEdSet({ notify_targets: lst });
+      },
+      onCarSpvTgId: e => { if (e.key !== 'Enter') return; e.preventDefault(); const u = String(e.currentTarget.value || '').trim(), cur = this.carSeiEdCur(); if (!cur) return;
+        if (!/^\d{15,21}$/.test(u)) { this._toast('Discord 使用者 ID 是 15～21 位數字'); return; }
+        const lst = (cur.f.notify_targets || []).slice(); if (lst.indexOf(u) < 0 && lst.length < 25) lst.push(u); e.currentTarget.value = ''; this.carSeiEdSet({ notify_targets: lst }); },
+      onCarSpvRmTg: e => { const u = String(e.currentTarget.dataset.u || ''), cur = this.carSeiEdCur(); if (!cur) return; this.carSeiEdSet({ notify_targets: (cur.f.notify_targets || []).filter(x => x !== u) }); },
+      onCarSpvSave: () => this.carSeiEdSave(),
+      onCarSpvRevert: () => this.carSeiEdRevert(),
+      onCarSpvDefaults: () => this.carSeiEdDefaults(),
+      onCarSpvDef: () => this.carSeiSetDefault(p.is_default ? '' : pid),
+      onCarSpvDel: () => this.carSeiDelete(pid),
+      onCarSpvRetry: () => this.carSeiPv(true),
+      onCarSpvKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carSeiEdSave(); } },
+    };
   }
   /* 數字：億／萬（跟舊控制台一樣），負數保留正負號 */
   carStN(v) {
@@ -3649,7 +4025,7 @@ class Component extends DCLogic {
       onCarStView: e => {
         const v = String(e.currentTarget.dataset.v || '');
         if (!this.CAR_ST_VIEWS.some(x => x[0] === v)) return;
-        this.setState({ carStView: v, carSeiDet: null, carSeiCfg: null });
+        this.setState({ carStView: v, carSeiDet: null, carSeiEd: null, carSeiAdd: null });
         setTimeout(() => this.carSec_stats(false), 0);
       },
       onCarStRetry: () => this.carSec_stats(true),
@@ -3657,7 +4033,7 @@ class Component extends DCLogic {
     const carName = (cars.find(x => x.no === c.carNo) || {}).name || this.CAR_NAMES[c.carNo] || '';
     if (view === 'insight') return Object.assign(out, this.carStInsVals(ins, carName));
     if (view === 'hist') return Object.assign(out, this.carStHistVals(carName));
-    return Object.assign(out, this.carSeiCur() ? this.carStSdVals(c) : this.carStSeiVals(c));
+    return Object.assign(out, this.carSeiCur() ? this.carStSdVals(c) : this.carSeiEdCur() && c.admin ? this.carStSpvVals(c) : this.carStSeiVals(c));
   }
   carStInsVals(sec, carName) {
     const d = sec && sec.data && typeof sec.data === 'object' ? sec.data : null;
@@ -3781,7 +4157,6 @@ class Component extends DCLogic {
     const key = this.carSecKey('seidan'), sec = this.carSecOf(key), d = sec && sec.data && typeof sec.data === 'object' ? sec.data : null;
     const tfg = h => 'color-mix(in oklab,' + h + ' 55%,var(--car-fg))', tbg = h => 'color-mix(in oklab,' + h + ' 15%,var(--card))';
     const ps = d && Array.isArray(d.players) ? d.players.filter(p => p && typeof p === 'object' && p.pid != null) : [];
-    const cfg = c.s.carSeiCfg && String(c.s.carSeiCfg.g) === String(c.s.g || '') ? c.s.carSeiCfg : null;
     const live = sec && sec.live;
     let lt = '', lbg = 'var(--card-2)', lfg = 'var(--text-3)';
     if (ps.length) {
@@ -3795,7 +4170,6 @@ class Component extends DCLogic {
       const tr = (Array.isArray(p.trend) ? p.trend : []).map(v => +v || 0), mx = Math.max.apply(null, tr.concat([1]));
       const al = p.alerts && typeof p.alerts === 'object' ? p.alerts : {};
       const alerts = this.CAR_SEI_ALERTS.filter(([k]) => al[k]).map(([, n]) => n);
-      const open = !!(cfg && cfg.pid === pid && c.admin);
       const stats = [
         { k: '總分', v: this.carStN(lv ? lv.score : p.last_score), fg: 'var(--ink)' },
         { k: '1h 時速', v: this.carStN(lv ? lv.speed_1h : p.speed_log_1h), fg: 'var(--accent-deep)' },
@@ -3809,7 +4183,6 @@ class Component extends DCLogic {
       if (lv) stats.push({ k: '3h 時速', v: this.carStN(lv.speed_3h), fg: 'var(--ink)' }, { k: '24h 時速', v: this.carStN(lv.speed_24h), fg: 'var(--ink)' }, { k: '近 1h 場數', v: String(+lv.count_1h || 0), fg: 'var(--ink)' });
       const nb = lv ? this.carStSeiNb(lv.neighbors) : [];
       const ratio = +p.poor_form_ratio || 0;
-      const f = open ? (cfg.f || {}) : {};
       return {
         pid, name: String(p.name == null ? pid : p.name), sub: p.nickname && p.player_name ? '遊戲名稱 ' + String(p.player_name) : '',
         hasRank: !!(lv && lv.rank), rankTxt: lv && lv.rank ? '第 ' + (+lv.rank) + ' 名' : '',
@@ -3818,23 +4191,28 @@ class Component extends DCLogic {
         spark: tr.map(v => Math.max(2, Math.round(Math.max(0, v) / mx * 18))), hasSpark: tr.length > 0,
         stats, hasNb: nb.length > 0, nb,
         foot: ['門檻 ' + this.carStN(p.thresh), '視窗 ' + (+p.window_rounds || 0) + ' 場', '手感 近 ' + (+p.poor_form_hours || 0) + ' 小時低於 ' + Math.round(ratio * 100) + '%',
-          '快照 ' + (+p.snapshots || 0), '最後上分 ' + this.carStTime(p.last_time, false)].join(' · '),
+          '斷 auto ' + (p.auto_stale_enabled ? (+p.auto_stale_trigger || 0) + ' 分提醒' : '關'), '快照 ' + (+p.snapshots || 0), '最後上分 ' + this.carStTime(p.last_time, false)].join(' · '),
+        isDef: !!p.is_default,
         hasAlert: alerts.length > 0, alerts: alerts.map(n => ({ n, bg: tbg('#ee6644'), fg: tfg('#ee6644') })),
-        admin: !!c.admin, togTxt: p.enabled ? '停用監控' : '啟用監控', cfgTxt: open ? '收起設定' : '監控設定',
-        cfgOpen: open, bd: open ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
-        fNick: String(f.nick == null ? '' : f.nick), fThresh: String(f.thresh == null ? '' : f.thresh), fRatio: String(f.ratio == null ? '' : f.ratio),
-        fHours: String(f.hours == null ? '' : f.hours), fTrig: String(f.trig == null ? '' : f.trig), fRep: String(f.rep == null ? '' : f.rep),
-        fNickPh: String(p.player_name || p.player_id || pid),
-        dmSeg: [['1', '私訊'], ['0', '不私訊']].map(([v, n]) => Object.assign({ k: 'dm', v, n }, c.segOn((v === '1') === !!f.dm))),
-        pubSeg: [['1', '頻道公開'], ['0', '不公開']].map(([v, n]) => Object.assign({ k: 'pub', v, n }, c.segOn((v === '1') === !!f.pub))),
-        dmNote: p.poor_form_dm_uid ? '私訊對象已設定。' : '還沒指定私訊對象，開了也只會發在頻道；對象要在 Discord 用 /色段 狀態不佳設定 指定。',
-        saveBtn: c.s.carActBusy ? '處理中…' : '儲存變更',
+        admin: !!c.admin, togTxt: p.enabled ? '停用監控' : '啟用監控', bd: 'var(--border)',
       };
     });
+    /* 新增監控表單（管理員） */
+    const add = c.admin && c.s.carSeiAdd && String(c.s.carSeiAdd.g) === String(c.s.g || '') ? c.s.carSeiAdd : null;
+    const meta = this.carSecOf(this.carSecKey('seimeta')), md = meta && meta.data && typeof meta.data === 'object' ? meta.data : null;
+    const chOpts = [{ v: '', n: meta && meta.busy && !md ? '讀取頻道清單中…' : '（請選通知頻道）' }].concat((md && Array.isArray(md.channels) ? md.channels : []).filter(x => x && /^\d{5,25}$/.test(String(x.id))).map(x => ({ v: String(x.id), n: '#' + String(x.name || x.id) })));
+    if (add && add.ch && !chOpts.some(o => o.v === String(add.ch))) chOpts.push({ v: String(add.ch), n: '頻道 ' + String(add.ch) });
+    const roleOpts = [{ v: '', n: '不指定（@ 前 3 位管理員）' }].concat((md && Array.isArray(md.roles) ? md.roles : []).filter(x => x && /^\d{5,25}$/.test(String(x.id))).map(x => ({ v: String(x.id), n: '@' + String(x.name || x.id) })));
     return {
       carSeiList: true, carSeiDetail: false,
       carSeiLoading: !d && !(sec && sec.err), carSeiErr: !d && sec && sec.err ? String(sec.err) : '', carSeiReady: !!d,
-      carSeiEmpty: !!d && !ps.length, carSeiHas: ps.length > 0,
+      carSeiEmpty: !!d && !ps.length, carSeiHas: ps.length > 0, carSeiEdit: false,
+      carSeiCanAdd: !!c.admin && !!d, carSeiAddBtn: add ? '收起' : '＋ 新增監控', carSeiAddShow: !!add,
+      carSeiAddPlayer: add ? String(add.player || '') : '', carSeiAddNick: add ? String(add.nick || '') : '', carSeiAddThresh: add ? String(add.thresh || '') : '',
+      carSeiAddCh: add ? String(add.ch || '') : '', carSeiAddChOpts: chOpts, carSeiAddRole: add ? String(add.role || '') : '', carSeiAddRoleOpts: roleOpts,
+      carSeiAddGoTxt: c.s.carActBusy ? '查詢 HiSekai 中…' : '開始監控',
+      carSeiAddMetaErr: meta && meta.err && !md ? '頻道清單讀不到：' + String(meta.err) : '',
+      carSeiEmptyTxt: c.admin ? '按上面的「＋ 新增監控」輸入玩家 ID、名次或遊戲名稱，機器人就會開始追蹤分數、判斷 Auto／多人並在頻道發警報。' : '管理員可以在這裡或 Discord 的 /色段 開始 新增要追蹤的玩家，這裡就會列出他的分數、時速與警報。',
       carSeiHead: ps.length + ' 位監控中' + (d && d.event ? ' · ' + String(d.event) : ''),
       carSeiLive: lt, carSeiLiveShow: !!lt, carSeiLiveBg: lbg, carSeiLiveFg: lfg,
       carSeiLiveRetry: ps.length > 0 && live !== 'busy' && (live === 'fail' || (!!d && !d.live_ok)),
@@ -3842,30 +4220,21 @@ class Component extends DCLogic {
       carSeiPlayers: players,
       onCarSeiOpen: e => {
         const pid = String(e.currentTarget.dataset.pid || ''); if (!pid) return;
-        this.setState({ carSeiDet: { g: String(this.state.g || ''), pid }, carSeiCfg: null });
-        setTimeout(() => this.carStSeiDetail(pid, false), 0);
+        this.setState({ carSeiDet: { g: String(this.state.g || ''), pid }, carSeiEd: null, carSeiAdd: null });
+        setTimeout(() => this.carStSeiLoad(false), 0);
         try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
       },
       onCarSeiToggle: e => this.carStSeiToggle(String(e.currentTarget.dataset.pid || '')),
       onCarSeiClear: e => this.carStSeiClear(String(e.currentTarget.dataset.pid || '')),
-      onCarSeiCfg: e => {
-        const pid = String(e.currentTarget.dataset.pid || ''), cur = this.state.carSeiCfg;
-        if (cur && cur.pid === pid && String(cur.g) === String(this.state.g || '')) { this.setState({ carSeiCfg: null }); return; }
-        const p = this.carStSeiFind(pid); if (!p) return;
-        this.setState({ carSeiCfg: { g: String(this.state.g || ''), pid, f: this.carStSeiCfgOf(p) } });
-      },
-      onCarSeiIn: e => {
+      onCarSeiEd: e => this.carSeiEdOpen(String(e.currentTarget.dataset.pid || '')),
+      onCarSeiAdd: () => this.carSeiAddToggle(),
+      onCarSeiAddIn: e => {
         const k = String(e.currentTarget.dataset.k || ''), v = String(e.currentTarget.value);
-        if (['nick', 'thresh', 'ratio', 'hours', 'trig', 'rep'].indexOf(k) < 0) return;
-        this.setState(st => st.carSeiCfg ? { carSeiCfg: Object.assign({}, st.carSeiCfg, { f: Object.assign({}, st.carSeiCfg.f, { [k]: v }) }) } : {});
+        if (['player', 'nick', 'thresh', 'ch', 'role'].indexOf(k) < 0) return;
+        this.setState(st => st.carSeiAdd ? { carSeiAdd: Object.assign({}, st.carSeiAdd, { [k]: v }) } : {});
       },
-      onCarSeiBool: e => {
-        const k = String(e.currentTarget.dataset.k || ''), v = e.currentTarget.dataset.v === '1';
-        if (k !== 'dm' && k !== 'pub') return;
-        this.setState(st => st.carSeiCfg ? { carSeiCfg: Object.assign({}, st.carSeiCfg, { f: Object.assign({}, st.carSeiCfg.f, { [k]: v }) }) } : {});
-      },
-      onCarSeiSave: () => this.carStSeiSave(),
-      onCarSeiKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carStSeiSave(); } },
+      onCarSeiAddGo: () => this.carSeiAddSubmit(),
+      onCarSeiAddKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carSeiAddSubmit(); } },
     };
   }
   /* 單一玩家完整紀錄 */
@@ -3896,8 +4265,18 @@ class Component extends DCLogic {
     if (lv) stats.unshift({ k: '總分', v: this.carStN(lv.score), fg: 'var(--ink)' }, { k: '1h 時速', v: this.carStN(lv.speed_1h), fg: 'var(--accent-deep)' },
       { k: '3h 時速', v: this.carStN(lv.speed_3h), fg: 'var(--ink)' }, { k: '24h 時速', v: this.carStN(lv.speed_24h), fg: 'var(--ink)' });
     const nb = lv ? this.carStSeiNb(lv.neighbors) : [];
+    /* 判定分析（目前存的參數；成員也看得到） */
+    const anSec = this.carSecOf(this.carSeiAnKey(pid)), an = anSec && anSec.data && typeof anSec.data === 'object' ? anSec.data : null, anH = +c.s.carSeiAnH || 6;
+    const anErr = !an && anSec && anSec.err ? String(anSec.err) : '';
     return {
-      carSeiList: false, carSeiDetail: true,
+      carSeiList: false, carSeiDetail: true, carSeiEdit: false,
+      carSdAnReady: !!an, carSdAnLoading: !an && !anErr, carSdAnErr: anErr, carSch: this.carSeiChart(an, c.s.carSchHi), carSan: this.carSeiAnVals(an, null, false),
+      onCarSchHi: e => { const t = String(e.currentTarget.dataset.t || ''); if (t && t !== this.state.carSchHi) this.setState({ carSchHi: t }); },
+      carSdAnHours: this.CAR_SEI_HOURS.map(h => Object.assign({ v: String(h), n: h + 'h' }, c.segOn(h === anH))),
+      carSdAnStamp: anSec && anSec.busy ? '更新中…' : (anSec && anSec.at ? '更新於 ' + this.carSeiHm(anSec.at) + ' · 每 60 秒自動更新' : ''),
+      carSdCanEd: !!c.admin && !!this.carStSeiFind(pid),
+      onCarSdAnHours: e => { const h = +e.currentTarget.dataset.v || 6; this.setState({ carSeiAnH: h }); setTimeout(() => this.carSeiAnLoad(pid, false), 0); },
+      onCarSdEd: () => this.carSeiEdOpen(pid),
       carSdLoading: !d && !(sec && sec.err), carSdErr: !d && sec && sec.err ? String(sec.err) : '', carSdReady: !!d,
       carSdName: d ? String(d.name == null ? pid : d.name) : '', carSdHasRank: !!(lv && lv.rank), carSdRank: lv && lv.rank ? '第 ' + (+lv.rank) + ' 名' : '',
       carSdSub: [d && d.event ? String(d.event) : '', st.first_time ? '紀錄 ' + this.carStTime(st.first_time, false) + ' 起' : '', st.last_time ? '最後上分 ' + this.carStTime(st.last_time, false) : ''].filter(Boolean).join(' · '),
