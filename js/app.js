@@ -2797,8 +2797,10 @@ class Component extends DCLogic {
     const role = s.carASignRole === 's6' ? 's6' : 'pusher';
     const r = await this.carABulk(x.rg.groups, g => this.carAct('/signup', { date: g.date, hours: g.hours, action: act === 'cancel' ? 'cancel' : 'add', role }, null, no));
     const sum = k => r ? r.out.reduce((n, d) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0) : 0;
+    /* 報班限制／取消期限擋下的原因（機器人回 why）優先顯示，比「沒開班或已鎖班」準 */
+    const why = r ? r.out.reduce((a, d) => a.concat(Array.isArray(d && d.why) ? d.why : []), []).map(t => this.carFTxt(t)).filter((t, i, a) => t && a.indexOf(t) === i).join('；') : '';
     this.carABulkEnd(r, r && (act === 'cancel' ? '已取消 ' : '已報班 ') + sum('done') + ' 個時段'
-      + (sum('skip') ? '（跳過 ' + sum('skip') + '：' + (act === 'cancel' ? '這些時段沒有你的報班' : '沒開班或已鎖班') + '）' : ''), no, x.rg.groups[0].date);
+      + (sum('skip') ? '（跳過 ' + sum('skip') + '：' + (why || (act === 'cancel' ? '這些時段沒有你的報班' : '沒開班或已鎖班')) + '）' : ''), no, x.rg.groups[0].date);
   }
   /* 複製班表（同一台車）：只複製開班時段／連人員一起 */
   async carACopy(withPeople) {
@@ -4508,7 +4510,10 @@ class Component extends DCLogic {
   CAR_F_CARKEYS = new Set(('schedule_open schedule_auto_confirm s6_over_bonus schedule_never_lock signup_lock_enabled signup_lock_trigger_time '
     + 'signup_lock_target_day signup_lock_target_range signup_lock_allow_shortage shortage_open_all shortage_open_hours support_slots_display '
     + 'schedule_hidden_mode runner_hidden_mode auto_expand_alert last_expand_alert schedule_board_channel schedule_board_message '
-    + 'schedule_board_date gsheet_id gsheet_auto gsheet_last_push').split(' '));
+    + 'schedule_board_date gsheet_id gsheet_auto gsheet_last_push '
+    /* 排班參數（機器人 sched_rules.CAR_KEYS）：排位規則、當天截止、每格人數上限、滿班自動鎖 */
+    + 'seat_order bonus_tie_step multi_open_policy min_bonus_pusher min_bonus_s6 signup_close_hours signup_close_s6_hours '
+    + 'slot_applicant_cap auto_lock_full').split(' '));
   CAR_F_GENRE = { v: 'Vocaloid', a: '動漫曲', c: '中文抒情', e: '英文流行', j: '日文流行' };
   carFAdm() {
     const gd = this.carGuild(), st = (this.state.carStates || {})[this.carNo()];
@@ -4656,6 +4661,9 @@ class Component extends DCLogic {
     const d = await this.carAct('/setting', { key, value }, okMsg, no);
     if (!d || String(this.state.g || '') !== gid) { this.setState(st => ({ carFSetPend: dropPend(st) })); return null; }
     const perCar = !!m.car_label || this.CAR_F_CARKEYS.has(key);
+    /* 文字欄以機器人整理過的值為準（例：鎖班時間 0:30 → 00:30、留空 → 預設 23:00）；草稿比對用送出的值 */
+    const sent = value;
+    if (m.type === 'text' && typeof d.value === 'string') value = d.value;
     this.setState(st => {
       const sts = Object.assign({}, st.carStates);
       Object.keys(sts).forEach(n => {
@@ -4665,7 +4673,7 @@ class Component extends DCLogic {
         sts[n] = Object.assign({}, x, { settings: Object.assign({}, x.settings, { [key]: value }) }, key === 'team_mode' ? { team_mode: !!value } : {});
       });
       const dr = Object.assign({}, st.carFSetDraft);
-      if (dr[dk] != null && (m.type === 'range' || String(dr[dk]).trim() === String(value).trim())) delete dr[dk];
+      if (dr[dk] != null && (m.type === 'range' || String(dr[dk]).trim() === String(value).trim() || String(dr[dk]).trim() === String(sent).trim())) delete dr[dk];
       return { carStates: sts, carFSetPend: dropPend(st), carFSetDraft: dr };
     });
     if (key === 'cars_enabled' || /^car_name_\d$/.test(key)) this.carLoad();      // 車的數量／名稱來自 /car/me：重抓，分頁才會跟著變
@@ -4748,6 +4756,44 @@ class Component extends DCLogic {
     this.carFSheetInfo(true);
     if (d.pending) this.carFLater(() => { this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true); if (act === 'pull') this.carLoadStates(no); });
   }
+  /* 「排班規則」分區最上面的白話摘要：用目前的設定值（含還在送出中的值）說明座位怎麼排。
+     cur(k)＝這一車目前的值；機器人 /state 對排班參數一律回「生效中的值」（沒設＝預設），所以這裡不用再猜預設。 */
+  carFSchedSum(cur, has) {
+    const str = k => { const v = cur(k); return v == null ? '' : String(v); };
+    const num = k => { const n = parseFloat(str(k)); return isFinite(n) ? n : 0; };
+    const hTxt = h => h < 1 ? Math.round(h * 60) + ' 分鐘' : h + ' 小時';
+    const L = [];
+    const order = str('seat_order') || 'bonus', step = str('bonus_tie_step') || '0.02';
+    const cmp = order === 'first' ? '報班先後' : order === 'power' ? '綜合力' : 'S6 倍率';
+    if (has('schedule_auto_confirm')) L.push(cur('schedule_auto_confirm') ? '報班後直接排進座位，不用管理員確認。' : '成員在 Discord／網頁報班後先是「待確認」，管理員確認後才排進座位（QQ 報班直接排）。');
+    if (order === 'first') L.push('P2～P5 依報班先後坐：先報先上。');
+    else if (order === 'power') L.push('P2～P5 依綜合力由高到低坐；一樣時先報的先坐。');
+    else L.push('P2～P5 依倍率由高到低坐；倍率四捨五入到 ' + step + ' 後一樣時，先報的先坐。');
+    L.push('P2 是 S6 位：有人報 S6 就給 S6（多人報 S6 時比 ' + cmp + '，其餘改當推手）；沒人報 S6 時，P2 給排第一的推手。');
+    const mp = num('min_bonus_pusher'), ms = num('min_bonus_s6');
+    if (mp || ms) L.push([mp ? '推手倍率未滿 ' + mp : '', ms ? 'S6 倍率未滿 ' + ms : ''].filter(Boolean).join('、') + ' 的不會自動上車，只排在候補最後（管理員仍可手動排）。');
+    const mo = str('multi_open_policy') || 'after';
+    L.push(mo === 'bonus' ? '雙開／三開：第 2、3 開用二開、三開倍率跟其他人一起比。' : mo === 'none' ? '不排多開：每人只坐一個位置，多報的開不上車也不候補。' : '雙開／三開：先讓不同的人坐滿，第 2、3 開只補剩下的空位。');
+    L.push('坐不下的人照同樣順序排候補；有人取消時，候補第一位自動補上。');
+    if (cur('schedule_never_lock')) L.push('完全不鎖班：坐滿也照樣收報班。');
+    else {
+      L.push(cur('auto_lock_full') === false ? '坐滿不會自動鎖，照樣收報班（排不上的進候補）。' : 'P2～P5 都坐滿就自動鎖住，不再收報班。');
+      if (cur('signup_lock_enabled')) L.push('每天 ' + (str('signup_lock_trigger_time') || '23:00') + ' 自動鎖定' + (str('signup_lock_target_day') === 'today' ? '今天' : '明天') + ' ' + (str('signup_lock_target_range') || '8-32') + ' 的時段'
+        + (cur('signup_lock_allow_shortage') === false ? '，鎖定後不再收報班。' : '，鎖定後缺人的位置仍可報。'));
+    }
+    const c1 = str('signup_close_hours') === '' ? 1 : num('signup_close_hours'), c2 = str('signup_close_s6_hours') === '' ? 2 : num('signup_close_s6_hours');
+    L.push('當天的班' + (c1 > 0 ? '在開跑前 ' + hTxt(c1) + '停止收報班' : '開跑後才停止收報班') + (c2 > c1 ? '；P2 已經有人時提早到開跑前 ' + hTxt(c2) : '') + '。');
+    const lim = [];
+    if (num('max_hours_per_day')) lim.push('每人每天最多 ' + num('max_hours_per_day') + ' 小時');
+    if (num('max_consecutive_hours')) lim.push('連續最多 ' + num('max_consecutive_hours') + ' 小時');
+    if (str('signup_days_ahead') !== '') lim.push(num('signup_days_ahead') ? '最多報 ' + num('signup_days_ahead') + ' 天內的班' : '只能報今天的班');
+    if (num('slot_applicant_cap')) lim.push('每個時段最多 ' + num('slot_applicant_cap') + ' 人報名');
+    if (cur('one_car_per_hour')) lim.push('同一時段只能報一台車');
+    if (num('cancel_lock_hours')) lim.push('已排上的人開跑前 ' + hTxt(num('cancel_lock_hours')) + '內不能自己取消');
+    if (lim.length) L.push('報班限制：' + lim.join('、') + '（管理員與排班身份組不受限）。');
+    if (cur('signup_admin_only')) L.push('只有管理員能排班：成員不能自己在網頁或 QQ 報班、取消。');
+    return L;
+  }
   carSecVals_settings(c) {
     const { s, st, carNo, segOn } = c, no = carNo;
     const stErr = (s.carStErr || {})[no] || '';
@@ -4814,7 +4860,10 @@ class Component extends DCLogic {
       if (!items.length) return null;
       shown += items.length;
       const open = !!q || !!openMap[sec], nCar = items.filter(m => m.car_label).length;
-      return { sec, n: items.length + ' 項' + (nCar ? ' · ' + nCar + ' 項分車' : ''), arrow: open ? '▲' : '▼', open, exp: open ? 'true' : 'false', rows: open ? items.map(row) : [] };
+      /* 「排班規則」最上面放白話摘要（搜尋時不放，免得擋住搜尋結果） */
+      const sum = sec === '排班規則' && open && !q ? this.carFSchedSum(cur, k => meta.some(m => m.key === k)).map((t, i) => ({ i: String(i), t })) : [];
+      return { sec, n: items.length + ' 項' + (nCar ? ' · ' + nCar + ' 項分車' : ''), arrow: open ? '▲' : '▼', open, exp: open ? 'true' : 'false', rows: open ? items.map(row) : [],
+        hasSum: sum.length > 0, sum, sumTag: this.carFCarName(no) };
     }).filter(Boolean);
     const allOpen = secs.length > 0 && secs.every(x => x.open);
 
@@ -5255,8 +5304,10 @@ class Component extends DCLogic {
     const d = await this.carAct('/signup', { date, hours: [hour], action: act === 'cancel' ? 'cancel' : 'add', role: role === 's6' ? 's6' : 'pusher' }, null, no);
     if (!d) return;
     const ok = (d.done || []).indexOf(hour) >= 0;
+    /* 機器人的報班限制／取消期限擋下時會回 why（例：超過每人每天 6 小時上限：20-21）→ 直接講原因 */
+    const why = Array.isArray(d.why) ? d.why.map(x => this.carFTxt(x)).filter(Boolean).join('；') : '';
     this._toast(ok ? ((act === 'cancel' ? '已取消 ' : '已報班 ') + this.carSlot(hour))
-      : (act === 'cancel' ? '這個時段沒有你的報班' : '這個時段目前不能報班（可能已鎖班或還沒開放）'));
+      : (why || (act === 'cancel' ? '這個時段沒有你的報班' : '這個時段目前不能報班（可能已鎖班或還沒開放）')), why ? 5000 : undefined);
     this.setState({ carPop: null });
     this.carLoadStates(no);
   }

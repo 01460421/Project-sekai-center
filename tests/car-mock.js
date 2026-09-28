@@ -982,8 +982,17 @@ export function install(BASE, mode0) {
       if (!CAT.some(r => r[0] === 'art_p1')) CAT.push(['art_p1', '車隊模式：每個時段顯示 P1 跑者？（美圖班表多一欄；私車模式不顯示）', 'bool', '班表表格', 'display']);
       if (!CAT.some(r => r[0] === 'scheduler_role_on')) CAT.push(['scheduler_role_on', '排班身份組：有這個身分組的成員可以排班（開班、換人、鎖班、確認、指定跑者…），但不能改設定', 'bool', '權限', 'settings']);
       if (!CAT.some(r => r[0] === 'scheduler_role')) CAT.push(['scheduler_role', '排班身份組（選一個 Discord 身分組；QQ 車隊用不到）', 'role1', '權限', 'settings']);
+      /* 排班參數（機器人 sched_rules.SPECS 原樣）：排班規則／報班限制插在「報班鎖定」前面，鎖班的幾項併進「報班鎖定」。
+         SRD＝沒設時 /state 回的值（機器人對這些鍵一律回生效中的值；S6 優先／缺額仍可報沒設＝開） */
+      const SRROWS = [["seat_order","排位順序：P2～P5 由誰先坐（候補也照這個順序）","select","排班規則","settings",[["倍率高者優先，同倍率比報班先後（預設）","bonus"],["先報先上（只看報班時間）","first"],["綜合力高者優先，同綜合力比報班先後","power"]]],["bonus_tie_step","倍率比較的級距：倍率先四捨五入到這個單位，一樣就改比報班先後（只在「倍率高者優先」時有用）","select","排班規則","settings",[["0.01（倍率要完全一樣才比報班先後）","0.01"],["0.02（預設）","0.02"],["0.05","0.05"],["0.1","0.1"]]],["multi_open_policy","雙開／三開怎麼排","select","排班規則","settings",[["不同人優先：第 2、3 開只補剩下的空位（預設）","after"],["多開跟其他人一起比：第 2、3 開用二開／三開倍率排","bonus"],["不排多開：每人只排 1 個位置，多報的開不上車也不候補","none"]]],["min_bonus_pusher","推手最低上車倍率：低於的只進候補、不會自動排上位置（管理員仍可手動排）","select","排班規則","settings",[["不限（預設）",""],["1.5 以上","1.5"],["1.6 以上","1.6"],["1.7 以上","1.7"],["1.8 以上","1.8"],["1.9 以上","1.9"],["2.0 以上","2.0"],["2.1 以上","2.1"],["2.2 以上","2.2"],["2.3 以上","2.3"],["2.4 以上","2.4"],["2.5 以上","2.5"],["2.6 以上","2.6"],["2.7 以上","2.7"],["2.8 以上","2.8"],["2.9 以上","2.9"],["3.0 以上","3.0"],["3.1 以上","3.1"],["3.2 以上","3.2"],["3.3 以上","3.3"],["3.4 以上","3.4"],["3.5 以上","3.5"],["3.6 以上","3.6"],["3.7 以上","3.7"],["3.8 以上","3.8"]]],["min_bonus_s6","S6 最低上車倍率（看 S6 倍率）：低於的 S6 報班改當推手比（再低於推手門檻就進候補）","select","排班規則","settings",[["不限（預設）",""],["1.5 以上","1.5"],["1.6 以上","1.6"],["1.7 以上","1.7"],["1.8 以上","1.8"],["1.9 以上","1.9"],["2.0 以上","2.0"],["2.1 以上","2.1"],["2.2 以上","2.2"],["2.3 以上","2.3"],["2.4 以上","2.4"],["2.5 以上","2.5"],["2.6 以上","2.6"],["2.7 以上","2.7"],["2.8 以上","2.8"],["2.9 以上","2.9"],["3.0 以上","3.0"],["3.1 以上","3.1"],["3.2 以上","3.2"],["3.3 以上","3.3"],["3.4 以上","3.4"],["3.5 以上","3.5"],["3.6 以上","3.6"],["3.7 以上","3.7"],["3.8 以上","3.8"]]],["signup_close_hours","當天報班截止：開跑前多久停止收報班（只管今天的時段）","select","報班限制","settings",[["開跑前都能報（開跑後才截止）","0"],["開跑前 30 分鐘","0.5"],["開跑前 1 小時（預設）","1"],["開跑前 2 小時","2"],["開跑前 3 小時","3"],["開跑前 6 小時","6"]]],["signup_close_s6_hours","P2（S6 位）已經有人時，提早到開跑前多久截止","select","報班限制","settings",[["不提早（跟一般截止一樣）","0"],["開跑前 1 小時","1"],["開跑前 2 小時（預設）","2"],["開跑前 3 小時","3"],["開跑前 4 小時","4"],["開跑前 6 小時","6"]]],["slot_applicant_cap","每個時段最多收幾人報名（含候補；管理員與排班身份組不受限）","select","報班限制","settings",[["不限（預設）",""],["4 人（只收正選，不收候補）","4"],["5 人（正選 4＋候補 1）","5"],["6 人（候補 2）","6"],["7 人（候補 3）","7"],["8 人（候補 4）","8"],["10 人（候補 6）","10"],["12 人（候補 8）","12"]]],["signup_days_ahead","成員最多可以報幾天後的班（管理員與排班身份組不受限）","select","報班限制","settings",[["不限（預設）",""],["只能報今天","0"],["最多報到明天","1"],["2 天內","2"],["3 天內","3"],["5 天內","5"],["7 天內","7"],["14 天內","14"]]],["max_hours_per_day","每人每天最多報幾小時（所有車合計；管理員與排班身份組不受限）","select","報班限制","settings",[["不限（預設）",""],["1 小時","1"],["2 小時","2"],["3 小時","3"],["4 小時","4"],["5 小時","5"],["6 小時","6"],["8 小時","8"],["10 小時","10"],["12 小時","12"],["16 小時","16"]]],["max_consecutive_hours","每人最多連續報幾小時（所有車合計，23 點接 0 點也算連續；管理員與排班身份組不受限）","select","報班限制","settings",[["不限（預設）",""],["1 小時","1"],["2 小時","2"],["3 小時","3"],["4 小時","4"],["5 小時","5"],["6 小時","6"],["8 小時","8"],["10 小時","10"],["12 小時","12"]]],["one_car_per_hour","同一時段只能報一台車（多車時才有用：報了一車 20 點就不能再報二車 20 點）","bool","報班限制","settings"],["cancel_lock_hours","已排上位置的人，開跑前多久內不能自己取消（候補／待確認的不受限；管理員與排班身份組不受限）","select","報班限制","settings",[["不限（預設，開跑前都能取消）",""],["開跑前 30 分鐘內","0.5"],["開跑前 1 小時內","1"],["開跑前 2 小時內","2"],["開跑前 3 小時內","3"],["開跑前 6 小時內","6"],["開跑前 12 小時內","12"],["開跑前 24 小時內","24"]]],["signup_admin_only","只有管理員能排班：成員不能自己在網頁或 QQ 報班、取消（Discord 快捷不受這項影響）","bool","報班限制","settings"],["auto_lock_full","滿班自動鎖定：P2～P5 都有人就鎖住、不再收報班（關掉＝滿了照樣收，排不上的進候補）","bool","報班鎖定","settings"],["signup_lock_trigger_time","自動鎖定：每天幾點鎖（HH:MM，留空＝23:00）","text","報班鎖定","settings"],["signup_lock_target_day","自動鎖定：鎖哪一天的班","select","報班鎖定","settings",[["明天（預設）","tomorrow"],["今天","today"]]],["signup_lock_target_range","自動鎖定：鎖哪些時段（a-b，可跨日寫到 48；8-32＝早上 8 點到隔天早上 8 點；留空＝8-32）","text","報班鎖定","settings"]];
+      const SRD = {"seat_order":"bonus","bonus_tie_step":"0.02","multi_open_policy":"after","min_bonus_pusher":"","min_bonus_s6":"","signup_close_hours":"1","signup_close_s6_hours":"2","slot_applicant_cap":"","signup_days_ahead":"","max_hours_per_day":"","max_consecutive_hours":"","one_car_per_hour":false,"cancel_lock_hours":"","signup_admin_only":false,"auto_lock_full":true,"signup_lock_trigger_time":"23:00","signup_lock_target_day":"tomorrow","signup_lock_target_range":"8-32","s6_over_bonus":true,"signup_lock_allow_shortage":true};
+      if (!CAT.some(r => r[0] === 'seat_order')) {
+        const at = CAT.findIndex(r => r[0] === 'signup_lock_enabled');
+        CAT.splice(at < 0 ? CAT.length : at, 0, ...SRROWS.filter(r => r[3] !== '報班鎖定'));
+        CAT.push(...SRROWS.filter(r => r[3] === '報班鎖定'));
+      }
       const ROLES = gid === '111' ? [{ id: '900000000000000001', name: '排班員' }, { id: '900000000000000002', name: '跑者' }] : [];      // R 組：新的設定鍵照樣從 settings_meta 進來
-      const CARK = F.cark || (F.cark = new Set(['schedule_open', 'schedule_auto_confirm', 's6_over_bonus', 'schedule_never_lock', 'signup_lock_enabled', 'signup_lock_allow_shortage', 'shortage_open_all', 'schedule_hidden_mode', 'schedule_board_channel', 'gsheet_id', 'gsheet_auto', 'gsheet_last_push']));
+      const CARK = F.cark || (F.cark = new Set(['schedule_open', 'schedule_auto_confirm', 's6_over_bonus', 'schedule_never_lock', 'signup_lock_enabled', 'signup_lock_allow_shortage', 'shortage_open_all', 'schedule_hidden_mode', 'schedule_board_channel', 'gsheet_id', 'gsheet_auto', 'gsheet_last_push', 'auto_lock_full', 'bonus_tie_step', 'min_bonus_pusher', 'min_bonus_s6', 'multi_open_policy', 'seat_order', 'signup_close_hours', 'signup_close_s6_hours', 'signup_lock_target_day', 'signup_lock_target_range', 'signup_lock_trigger_time', 'slot_applicant_cap']));
       const CH = gid === '111' ? [['1234567890123456789', '排班公告'], ['1234567890123456790', '報班區'], ['1234567890123456791', '聊天室'], ['1234567890123456792', '<b>小夫</b>的頻道'], ['1234567890123456793', '機器人指令']].map(([id, name]) => ({ id, name })) : [];
       const VCH = gid === '111' ? [['2234567890123456789', '語音大廳'], ['2234567890123456790', '車房一']].map(([id, name]) => ({ id, name })) : [];
       const ts = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); };
@@ -1015,7 +1024,7 @@ export function install(BASE, mode0) {
           const x = { key, label, type, section, target, options: type === 'select' ? opts.map(([a, b]) => ({ label: a, value: b })) : null };
           if (lbl && target === 'settings' && CARK.has(key)) x.car_label = lbl;
           meta.push(x);
-          const v = getV(key);
+          const v0 = getV(key), v = (v0 == null || v0 === '') && Object.prototype.hasOwnProperty.call(SRD, key) ? SRD[key] : v0;
           vals[key] = type === 'bool' ? !!v : type === 'channels' ? (v || []).map(String) : (type === 'channel1' || type === 'voice1' || type === 'role1') ? (v ? String(v) : '') : key === 'voice_volume_pct' ? (+v || 100) : (v != null ? v : '');
         });
         const full = Object.assign(o, { settings: vals, settings_meta: meta, sections: meta.map(x => x.section).filter((s, i, a) => a.indexOf(s) === i), channels: CH, vchannels: VCH, roles: ROLES,
@@ -1041,6 +1050,17 @@ export function install(BASE, mode0) {
         else if (type === 'note') return J({ error: 'read only' }, 400);
         else val = String(raw || '').slice(0, 200);
         if (/^car_name_/.test(key)) val = String(val).trim().slice(0, 12);
+        /* 鎖班時間／範圍：跟機器人 sched_rules.web_clean 一樣驗證，留空＝存預設 */
+        if (key === 'signup_lock_trigger_time') {
+          const t = String(val).trim().replace('：', ':'), mt = /^(\d{1,2}):?(\d{2})$/.exec(t);
+          if (t && (!mt || +mt[1] > 23 || +mt[2] > 59)) return J({ error: '時間格式要是 HH:MM（例：23:00、00:30）' }, 400);
+          val = mt ? mt[1].padStart(2, '0') + ':' + mt[2] : '23:00';
+        }
+        if (key === 'signup_lock_target_range') {
+          const t = String(val).replace(/[～~\s]/g, (x) => x.trim() ? '-' : ''), mr = /^(\d{1,2})-(\d{1,2})$/.exec(t);
+          if (t && (!mr || +mr[1] >= 48 || +mr[2] > 48 || +mr[1] >= +mr[2])) return J({ error: '範圍格式要是 a-b（0～48，a < b；例：8-32、20-28）' }, 400);
+          val = mr ? (+mr[1]) + '-' + (+mr[2]) : '8-32';
+        }
         if (key === 'schedule_open') c.open = val; else if (CARK.has(key)) cF[key] = val; else gF.set[key] = val;
         if (key !== 'voice_volume_pct') logF('改設定', label + ' = ' + (Array.isArray(val) ? '[' + val.join(', ') + ']' : val) + (CARK.has(key) ? sfx() : ''));
         else gF.st.vol = val;
