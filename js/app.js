@@ -8108,7 +8108,7 @@ class Component extends DCLogic {
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
   loadSupportEvents() {
-    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=b42b133022'); return m.SUPPORT_EVENTS || []; });
+    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=68dbf5d6f3'); return m.SUPPORT_EVENTS || []; });
   }
   /* 第幾回用 n（依開始時間排序）：Haruki 的 6.4 master 重新編號，id 已經不等於回數。v2 是 6.4 新增的棋盤版 */
   supEventName(x) { return '第 ' + (x.n || x.id) + ' 回應援活動' + (x.v === 'v2' ? '（棋盤版）' : ''); }
@@ -8435,7 +8435,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = import('./data/data-built.js?v=7a63124190').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = import('./data/data-built.js?v=9e0375bb78').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
