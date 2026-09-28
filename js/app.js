@@ -2193,7 +2193,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=e28e08f49c';
+      s.src = 'data/billing.js?v=f57679779e';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2267,7 +2267,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=a954e326c5';
+      s.src = 'data/borders-db.js?v=68d3681c94';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -2407,7 +2407,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=d65870fb6a').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=7fb63ced07').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -8122,7 +8122,7 @@ class Component extends DCLogic {
   /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
   loadConsts() {
     if (this.state.consts || this._constsP) return;
-    this._constsP = fetch('./data/b30-consts.js?v=ef4cb24d3f').then(r => r.text()).then(txt => {
+    this._constsP = fetch('./data/b30-consts.js?v=a984fa63a2').then(r => r.text()).then(txt => {
       const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
       ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
       this.setState({ consts: map });
