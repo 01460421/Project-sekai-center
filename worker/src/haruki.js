@@ -112,8 +112,13 @@ export function trackerRows(ov) {
       last_1h_stats: speed != null ? { speed } : null };
   }).filter(x => x.rank);
 }
+/* 官方段位端點出錯時（2026-09 第 180 期 WL 終章整期如此，Tracker 只存得到前百），
+   borderLines 會是空的：退一步用前百第 100 名當 T100，至少榜線頁與快照還有東西。 */
 export function trackerBorders(ov) {
-  return ((ov && ov.borderLines) || []).filter(b => b && b.rank).map(b => ({ rank: b.rank, score: b.score, name: '', user_id: '' }));
+  const lines = ((ov && ov.borderLines) || []).filter(b => b && b.rank).map(b => ({ rank: b.rank, score: b.score, name: '', user_id: '' }));
+  if (lines.length) return lines;
+  const r100 = ((ov && ov.topRankings) || []).map(it => (it && it.rankData) || {}).find(r => r.rank === 100);
+  return r100 && r100.score != null ? [{ rank: 100, score: r100.score, name: '', user_id: '', partial: true }] : [];
 }
 async function trackerGet(env, eventId, charId) {
   const base = ((env && env.HARUKI_TRACKER_BASE) || HARUKI_TRACKER_DEFAULT).replace(/\/+$/, '');
@@ -245,16 +250,49 @@ async function handleHarukiPublic(req, env, url) {
   return json({ error: 'upstream', message: 'Haruki 工具箱暫時連不上' + (last && last.status ? '（HTTP ' + last.status + '）' : '') }, 502);
 }
 
+/* ---------- Haruki master 登錄處（sekai-api-cdn） ----------
+   工具箱的組卡引擎要 music_metas.json（每首歌每個難度的基礎分、技能時間點），master 版本清單 current 也在這台。
+   對方沒開 CORS，所以經 Worker 轉一手並快取：metas 內容只在新歌上架時變，快取 6 小時；current 5 分鐘。 */
+export const HARUKI_REGISTRY_DEFAULT = 'https://sekai-api-cdn.haruki.seiunx.com';
+const REGISTRY_OK = /^\/haruki\/(metas\/(jp|tw)\/music_metas\.json|master\/(jp|tw)\/current)$/;
+async function handleHarukiRegistry(req, env, url) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+  if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const m = REGISTRY_OK.exec(url.pathname);
+  if (!m) return json({ error: 'not_found' }, 404);
+  const ttl = m[2] ? 21600 : 300;
+  const cache = (typeof caches !== 'undefined' && caches.default) || null;
+  const key = new Request('https://haruki.local' + url.pathname, { method: 'GET' });
+  if (cache) { const hit = await cache.match(key); if (hit) return hit; }
+  const base = ((env && env.HARUKI_REGISTRY_BASE) || HARUKI_REGISTRY_DEFAULT).replace(/\/+$/, '');
+  let r;
+  try {
+    r = await fetch(base + '/v1/' + m[1], { headers: { accept: 'application/json', 'user-agent': UA }, cf: { cacheTtl: ttl, cacheEverything: true }, signal: AbortSignal.timeout(30000) });
+  } catch (e) { return json({ error: 'upstream', message: 'Haruki master 登錄處連不上' }, 502); }
+  if (!r.ok) return json({ error: 'upstream', message: 'Haruki master 登錄處回 HTTP ' + r.status }, r.status === 404 ? 404 : 502);
+  const hd = new Headers(CORS);
+  hd.set('content-type', 'application/json; charset=utf-8');
+  hd.set('cache-control', 'public, max-age=' + ttl);
+  const res = new Response(r.body, { status: 200, headers: hd });
+  if (cache) { try { await cache.put(key, res.clone()); } catch (e) {} }
+  return res;
+}
+
 export async function handleHaruki(req, env, url) {
   if (url.pathname.startsWith('/haruki/oauth/')) return handleHarukiOAuth(req, env, url);
   if (url.pathname.startsWith('/haruki/public/')) return handleHarukiPublic(req, env, url);
+  if (/^\/haruki\/(metas|master)\//.test(url.pathname)) return handleHarukiRegistry(req, env, url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
   const m = PATH_OK.exec(url.pathname);
   if (!m) return json({ error: 'not_found' }, 404);
   if (m[1] === 'config') {
     return json({
-      oauth: { base: (env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT, clientId: (env && env.HARUKI_OAUTH_CLIENT_ID) || '',
+      /* 保密客戶端要等 Cloudflare 上的 HARUKI_OAUTH_CLIENT_SECRET 真的存好才對外公布 client id（前端沒 id 就不顯示連結按鈕），
+         否則玩家按下去換 token 一定失敗；HARUKI_OAUTH_PUBLIC="1" 表示申請的是公開客戶端，不需要 secret。 */
+      oauth: { base: (env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT,
+        clientId: (env && env.HARUKI_OAUTH_CLIENT_ID && (env.HARUKI_OAUTH_CLIENT_SECRET || env.HARUKI_OAUTH_PUBLIC === '1')) ? env.HARUKI_OAUTH_CLIENT_ID : '',
+        confidential: !!(env && env.HARUKI_OAUTH_CLIENT_SECRET),
         scopes: ((env && env.HARUKI_OAUTH_SCOPES) || 'offline_access game-data:read').split(/\s+/).filter(Boolean) },
       api: { token: !!(env && env.HARUKI_API_TOKEN) },
     }, 200, { 'cache-control': 'public, max-age=300' });

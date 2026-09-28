@@ -53,7 +53,7 @@ globalThis.fetch = async (u, init) => {
   return J({}, 404);
 };
 const realNow = Date.now; Date.now = () => now;
-const env = { HARUKI_API_TOKEN: 'tok', HARUKI_OAUTH_CLIENT_ID: 'pjsk-center' };
+const env = { HARUKI_API_TOKEN: 'tok', HARUKI_OAUTH_CLIENT_ID: 'pjsk-center', HARUKI_OAUTH_CLIENT_SECRET: 'sec' };
 const call = async p => handleHaruki(new Request('https://games.test' + p), env, new URL('https://games.test' + p));
 let res = await call('/haruki/event/live/top100'); let body = await res.json();
 ok(res.status === 200 && body.id === 180 && body.player_top_100_rankings.length === 1, '/haruki/event/live/top100 取當期');
@@ -66,6 +66,11 @@ res = await call('/haruki/event/list'); body = await res.json();
 ok(Array.isArray(body) && body[0].id === 181, '/haruki/event/list');
 res = await call('/haruki/config'); body = await res.json();
 ok(body.oauth.clientId === 'pjsk-center' && body.oauth.scopes.includes('game-data:read') && body.api.token === true, '/haruki/config 回 OAuth 設定');
+ok(body.oauth.confidential === true && !JSON.stringify(body).includes('sec"'), '/haruki/config 標出保密客戶端，但不外洩 secret');
+{ const r0 = await handleHaruki(new Request('https://games.test/haruki/config'), { HARUKI_OAUTH_CLIENT_ID: 'pjsk-center' }, new URL('https://games.test/haruki/config'));
+  const b0 = await r0.json(); ok(b0.oauth.clientId === '' && b0.oauth.confidential === false, 'secret 還沒存好時不公布 client id（前端不顯示連結按鈕）');
+  const r1 = await handleHaruki(new Request('https://games.test/haruki/config'), { HARUKI_OAUTH_CLIENT_ID: 'pjsk-center', HARUKI_OAUTH_PUBLIC: '1' }, new URL('https://games.test/haruki/config'));
+  ok((await r1.json()).oauth.clientId === 'pjsk-center', '公開客戶端不需要 secret 就公布 client id'); }
 res = await call('/haruki/user/1/profile');
 ok(res.status === 404, '白名單以外的路徑回 404');
 res = await handleHaruki(new Request('https://games.test/haruki/config', { method: 'POST' }), env, new URL('https://games.test/haruki/config'));
@@ -168,6 +173,10 @@ ok(o.status === 503, '沒設 client id 時回 503');
   ok(rows.length === 2 && rows[0].rank === 1 && rows[0].name === '甲' && rows[0].last_player_info.profile.id === 'u_abc' && rows[0].last_player_info.card.id === 1201, 'tracker 前百：名次、名字、匿名 ID、隊長卡');
   ok(rows[0].last_1h_stats.speed === 2400000 && rows[1].last_1h_stats === null, 'tracker 增量換算成時速（30 分鐘 120 萬 → 時速 240 萬）');
   ok(trackerBorders(ov).map(b => b.rank).join() === '100,1000', 'tracker 榜線');
+  const noLines = { topRankings: Array.from({ length: 100 }, (_, i) => ({ rankData: { rank: i + 1, score: 5000000 - i * 1000, userId: 'u' + i }, userData: {} })) };
+  const t100 = trackerBorders(noLines);
+  ok(t100.length === 1 && t100[0].rank === 100 && t100[0].score === 4901000 && t100[0].partial, 'tracker 沒有段位（官方段位端點出錯）時以第 100 名當 T100');
+  ok(trackerBorders({ topRankings: [] }).length === 0, '前百也沒有就回空，照舊退到公開 API');
   const seen2 = [];
   globalThis.fetch = async (u) => { const url = String(u); seen2.push(url);
     if (url.endsWith('/events.json')) return new Response(JSON.stringify(events), { status: 200 });
@@ -194,6 +203,33 @@ ok(o.status === 503, '沒設 client id 時回 503');
   const fb = await harukiLive({}, 'top100');
   ok(!fb.via && fb.player_top_100_rankings[0].user_id === '7482960281734567890', 'tracker 沒這一期資料就退到公開 API');
   Date.now = realNow;
+}
+
+/* master 登錄處轉送（music metas、current） */
+{
+  const hits = [];
+  globalThis.fetch = async (u) => { const url = String(u); hits.push(url);
+    if (url === 'https://sekai-api-cdn.haruki.seiunx.com/v1/metas/tw/music_metas.json') return new Response('[{"music_id":1}]', { status: 200 });
+    if (url === 'https://sekai-api-cdn.haruki.seiunx.com/v1/master/tw/current') return new Response('{"dataVersion":"6.4.0"}', { status: 200 });
+    return new Response('nope', { status: 500 });
+  };
+  const rc = async (path, method, env) => { const u = 'https://games.test' + path; return handleHaruki(new Request(u, { method: method || 'GET' }), env || {}, new URL(u)); };
+  let r = await rc('/haruki/metas/tw/music_metas.json'); let b = await r.json();
+  ok(r.status === 200 && b[0].music_id === 1 && hits.at(-1) === 'https://sekai-api-cdn.haruki.seiunx.com/v1/metas/tw/music_metas.json', 'music metas 轉送到 sekai-api-cdn');
+  ok(r.headers.get('access-control-allow-origin') === '*' && /max-age=21600/.test(r.headers.get('cache-control')), 'music metas CORS 開放、快取 6 小時');
+  r = await rc('/haruki/master/tw/current'); b = await r.json();
+  ok(r.status === 200 && b.dataVersion === '6.4.0' && /max-age=300/.test(r.headers.get('cache-control')), 'master current 轉送、快取 5 分鐘');
+  const n = hits.length;
+  r = await rc('/haruki/metas/cn/music_metas.json');
+  ok(r.status === 404 && hits.length === n, '只轉送台服與日服');
+  r = await rc('/haruki/metas/tw/../../v1/x');
+  ok(r.status === 404 && hits.length === n, '路徑穿越不轉送');
+  r = await rc('/haruki/metas/jp/music_metas.json');
+  ok(r.status === 502, '上游 5xx 回 502');
+  r = await rc('/haruki/metas/tw/music_metas.json', 'POST');
+  ok(r.status === 405, '只收 GET');
+  await rc('/haruki/master/jp/current', 'GET', { HARUKI_REGISTRY_BASE: 'https://mirror.test/' });
+  ok(hits.at(-1) === 'https://mirror.test/v1/master/jp/current', 'HARUKI_REGISTRY_BASE 可換主機');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');

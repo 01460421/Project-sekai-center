@@ -42,19 +42,7 @@ jobs:
           python3 -c 'import numpy' 2>/dev/null || pip3 install --quiet numpy
           python3 tools/build-border-model.py || echo "榜線模型重擬失敗,本輪略過"
 
+      # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
+      # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
-        run: |
-          if [ -z "$(git status --porcelain data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json)" ]; then
-            echo "沒有新資料，不提交"
-            exit 0
-          fi
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json
-          git commit -m "商城/定數資料 $(date -u '+%Y-%m-%d') [skip ci]"
-          # 與榜線快照同款:落後就先 rebase 再推
-          for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
-            sleep 5
-          done
-          exit 1
+        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json

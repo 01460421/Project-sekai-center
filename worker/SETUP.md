@@ -98,10 +98,14 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
    （自動部署）。前端讀 `/haruki/config`，快取五分鐘。
    工具箱不對其他網站開 CORS，所以前端換 token、撤銷、讀資料都走 `/haruki/oauth/*` 由 Worker 原樣轉送
    （只放行固定路徑、只給本站網域、client_id 必須相符，不記錄也不保存）；只有授權頁是整頁跳轉到 Haruki。
-3. 檢查：
+3. **Haruki 專區的組卡推薦**：引擎在瀏覽器裡跑（jsDelivr 上的 haruki-sekai-deck-recommend-cpp），
+   Worker 只轉送 Haruki master 登錄處（`HARUKI_REGISTRY_BASE`，預設 sekai-api-cdn.haruki.seiunx.com）的
+   `/haruki/metas/{jp|tw}/music_metas.json`（快取 6 小時）與 `/haruki/master/{jp|tw}/current`（快取 5 分鐘），不需要任何金鑰。
+4. 檢查：
    ```
    curl https://games.project-sekai-center.com/haruki/config
    curl https://games.project-sekai-center.com/haruki/event/live/border | head -c 300
+   curl https://games.project-sekai-center.com/haruki/master/tw/current
    ```
 
 ## 每次改完 Worker 都要
