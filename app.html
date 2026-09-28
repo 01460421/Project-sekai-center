@@ -11,11 +11,8 @@ var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.document
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
 <script src="./support.js?v=f07edc7399"></script>
-</head>
-<body>
-<x-dc><template>
-<helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- 分享預覽（og／twitter）與標題要放在真正的 <head>：連結預覽的爬蟲不跑 JS，也不讀 <template> 內容。
+     各頁的標題與預覽圖由 js/app.js 進頁後改寫這幾個標籤。 -->
 <title>SEKAI 資源中心 — App</title>
 <meta name="description" content="Project SEKAI 台服資源中心：活動日曆、卡池、歌曲、活動 P 計算、B30、排名追蹤與各種圖鑑。">
 <meta property="og:site_name" content="SEKAI 資源中心">
@@ -28,6 +25,11 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://project-sekai-center.com/og/home.jpg">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1428" media="(prefers-color-scheme: dark)">
