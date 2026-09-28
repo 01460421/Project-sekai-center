@@ -3511,54 +3511,175 @@ select option, select optgroup{
                     <sc-if value="{{ carFShLoading }}"><div class="skel" style="height:96px;border-radius:14px;margin-top:12px"></div></sc-if>
                     <sc-if value="{{ carFShErr }}"><div style="margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到試算表設定：{{ carFShErr }} <button type="button" class="car-mini" onClick="{{ onCarFShReload }}">重試</button></div></sc-if>
                     <sc-if value="{{ carFShHas }}">
-                      <div style="margin-top:12px;font-size:12.5px;line-height:1.8"><span style="font-weight:800;color:{{ carFShCredFg }}">{{ carFShCred }}</span><sc-if value="{{ carFShOneWay }}"><span style="color:var(--text-3)">　{{ carFShLast }}</span></sc-if></div>
-                      <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">連接設定</div>
-                      <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <input class="car-in" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="300" placeholder="貼上試算表網址或 ID" value="{{ carFShId }}" onInput="{{ onCarFShId }}" onKeyDown="{{ onCarFShIdKey }}" aria-label="試算表網址或 ID" style="flex:1 1 220px;min-width:0;min-height:40px">
-                        <button type="button" class="car-btn" onClick="{{ onCarFShSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">儲存</button>
-                        <sc-if value="{{ carFShHasUrl }}"><a href="{{ carFShUrl }}" target="_blank" rel="noopener noreferrer" class="car-btn" data-sheet-link="1" style="background:var(--card);text-decoration:none;display:inline-flex;align-items:center;line-height:normal">開啟試算表</a></sc-if>
-                      </div>
-                      <sc-if value="{{ carFShNoId }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">還沒連接試算表：先把試算表共用給下面的服務帳號（編輯者），再貼上網址儲存。</div></sc-if>
+                      <!-- 舊機器人（只有單向推送／回讀）：憑證＋連接設定 -->
+                      <sc-if value="{{ carFShOneWay }}">
+                        <div style="margin-top:12px;font-size:12.5px;line-height:1.8"><span style="font-weight:800;color:{{ carFShCredFg }}">{{ carFShCred }}</span><span style="color:var(--text-3)">　{{ carFShLast }}</span></div>
+                        <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">連接設定</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                          <input class="car-in" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="300" placeholder="貼上試算表網址或 ID" value="{{ carFShId }}" onInput="{{ onCarFShId }}" onKeyDown="{{ onCarFShIdKey }}" aria-label="試算表網址或 ID" style="flex:1 1 220px;min-width:0;min-height:40px">
+                          <button type="button" class="car-btn" onClick="{{ onCarFShSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">儲存</button>
+                        </div>
+                        <sc-if value="{{ carFShNoId }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">還沒連接試算表：先把試算表共用給下面的服務帳號（編輯者），再貼上網址儲存。</div></sc-if>
+                        <div style="margin-top:12px;padding:10px 14px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
+                          <sc-if value="{{ carFShEmail }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>服務帳號：</span><span data-sheet-email="1" style="user-select:all;-webkit-user-select:all;font-weight:700;color:var(--accent-deep);overflow-wrap:anywhere;min-width:0">{{ carFShEmail }}</span><button type="button" class="car-mini" onClick="{{ onCarFShCopy }}">複製</button></div></sc-if>
+                          <sc-if value="{{ carFShNoEmail }}"><div style="color:var(--text-3)">（讀不到服務帳號 email）</div></sc-if>
+                        </div>
+                      </sc-if>
 
-                      <!-- 雙向同步（表為準）：狀態、立即同步、自動同步開關、規則說明 -->
+                      <!-- 雙向同步（表為準）：狀態列 → 設定步驟 → 目前狀態（變更紀錄、沒套用的列）→ 規則 → 進階 -->
                       <sc-if value="{{ carFShTwo }}">
                         <div data-sheet-two="1">
-                          <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:14px 0 6px">雙向同步</div>
+                          <div data-sheet-banner="{{ carFShBan.kind }}" role="{{ carFShBan.role }}" style="margin-top:12px;padding:11px 14px;border-radius:14px;border:1px solid {{ carFShBan.bd }};background:{{ carFShBan.bg }};font-size:12.5px;line-height:1.7;overflow-wrap:anywhere">
+                            <div style="font-weight:800;color:{{ carFShBan.fg }}">{{ carFShBan.t }}</div>
+                            <sc-if value="{{ carFShBan.hasSub }}"><div style="color:var(--text-2)">{{ carFShBan.sub }}</div></sc-if>
+                            <sc-if value="{{ carFShBan.hasHint }}"><div data-sheet-hint="1" style="margin-top:2px;color:var(--text)"><b>怎麼修：</b>{{ carFShBan.hint }}</div></sc-if>
+                          </div>
+
+                          <sc-if value="{{ carFShStepsHead }}"><div style="font-size:12px;font-weight:800;color:var(--text-2);margin:14px 0 0">設定步驟</div></sc-if>
+                          <sc-if value="{{ carFShStepsAll }}"><button type="button" onClick="{{ onCarFSetSec }}" data-sec="__sheetSteps" aria-expanded="{{ carFShStepsExp }}" data-sheet-steps-tgl="1" style="display:block;margin:12px 0 0;padding:4px 0;border:none;background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;font-size:12px;font-weight:800;text-align:left">{{ carFShStepsTgl }}</button></sc-if>
+                          <sc-if value="{{ carFShStepsOpen }}">
+                          <ol data-sheet-steps="1" style="list-style:none;margin:0;padding:0">
+                            <li data-sheet-step="creds" aria-current="{{ carFShS1.cur }}" style="display:flex;gap:10px;padding:11px 0;border-bottom:1px dashed var(--border);opacity:{{ carFShS1.op }}">
+                              <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:{{ carFShS1.bg }};color:{{ carFShS1.fg }}">{{ carFShS1.badge }}</span>
+                              <div style="flex:1;min-width:0;font-size:12.5px;line-height:1.75">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--ink)">主機的 Google 服務帳號</b><span style="font-size:11px;font-weight:800;color:{{ carFShS1.tagFg }}">{{ carFShS1.tag }}</span></div>
+                                <div style="font-weight:700;color:{{ carFShCredFg }}">{{ carFShCred }}</div>
+                                <sc-if value="{{ carFShCredHint }}"><div class="car-note" style="color:var(--text-3)">{{ carFShCredHint }}</div></sc-if>
+                              </div>
+                            </li>
+                            <li data-sheet-step="share" aria-current="{{ carFShS2.cur }}" style="display:flex;gap:10px;padding:11px 0;border-bottom:1px dashed var(--border);opacity:{{ carFShS2.op }}">
+                              <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:{{ carFShS2.bg }};color:{{ carFShS2.fg }}">{{ carFShS2.badge }}</span>
+                              <div style="flex:1;min-width:0;font-size:12.5px;line-height:1.75">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--ink)">把試算表共用給機器人</b><span style="font-size:11px;font-weight:800;color:{{ carFShS2.tagFg }}">{{ carFShS2.tag }}</span></div>
+                                <div style="color:var(--text-2)">打開試算表 → 右上角「共用」→ 貼上這個信箱 → 權限選「編輯者」→ 傳送（可以取消勾選「通知」）。</div>
+                                <sc-if value="{{ carFShEmail }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;padding:7px 12px;border-radius:12px;background:var(--card-2)"><span data-sheet-email="1" style="flex:1 1 200px;user-select:all;-webkit-user-select:all;font-weight:800;color:var(--accent-deep);overflow-wrap:anywhere;min-width:0">{{ carFShEmail }}</span><button type="button" class="car-mini" onClick="{{ onCarFShCopy }}" data-sheet-copy="1">複製信箱</button></div></sc-if>
+                                <sc-if value="{{ carFShNoEmail }}"><div style="color:var(--text-3)">（讀不到服務帳號信箱：主機還沒設定憑證，先完成第 1 步）</div></sc-if>
+                              </div>
+                            </li>
+                            <li data-sheet-step="link" aria-current="{{ carFShS3.cur }}" style="display:flex;gap:10px;padding:11px 0;border-bottom:1px dashed var(--border);opacity:{{ carFShS3.op }}">
+                              <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:{{ carFShS3.bg }};color:{{ carFShS3.fg }}">{{ carFShS3.badge }}</span>
+                              <div style="flex:1;min-width:0;font-size:12.5px;line-height:1.75">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--ink)">貼上試算表網址</b><span style="font-size:11px;font-weight:800;color:{{ carFShS3.tagFg }}">{{ carFShS3.tag }}</span></div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                                  <input class="car-in" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="300" placeholder="貼上試算表網址或 ID" value="{{ carFShId }}" onInput="{{ onCarFShId }}" onKeyDown="{{ onCarFShIdKey }}" aria-label="試算表網址或 ID" style="flex:1 1 220px;min-width:0;min-height:40px">
+                                  <button type="button" class="car-btn" onClick="{{ onCarFShSave }}" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">儲存</button>
+                                  <sc-if value="{{ carFShHasUrl }}"><a href="{{ carFShUrl }}" target="_blank" rel="noopener noreferrer" class="car-btn" data-sheet-link="1" style="background:var(--card);text-decoration:none;display:inline-flex;align-items:center;line-height:normal">開啟試算表</a></sc-if>
+                                </div>
+                                <div class="car-note" style="margin-top:4px;color:var(--text-3)">直接貼瀏覽器網址列的整條網址就可以。一張試算表只能給一個車隊用；同車隊的幾台車可以共用同一張（各自一個班表分頁）。</div>
+                              </div>
+                            </li>
+                            <sc-if value="{{ carFShV2 }}">
+                              <li data-sheet-step="check" aria-current="{{ carFShS4.cur }}" style="display:flex;gap:10px;padding:11px 0;border-bottom:1px dashed var(--border);opacity:{{ carFShS4.op }}">
+                                <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:{{ carFShS4.bg }};color:{{ carFShS4.fg }}">{{ carFShS4.badge }}</span>
+                                <div style="flex:1;min-width:0;font-size:12.5px;line-height:1.75">
+                                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--ink)">檢查連線</b><span style="font-size:11px;font-weight:800;color:{{ carFShS4.tagFg }}">{{ carFShS4.tag }}</span></div>
+                                  <div style="color:var(--text-2)">確認機器人讀得到、也寫得進這張表（不會改動任何班表）。</div>
+                                  <div style="margin-top:4px"><button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="check" data-sheet-check="1">{{ carFShChkBtn }}</button></div>
+                                  <sc-if value="{{ carFShHasChk }}">
+                                    <div data-sheet-check-res="1" style="margin-top:6px;padding:8px 12px;border-radius:12px;background:var(--card-2);overflow-wrap:anywhere">
+                                      <div style="font-weight:800;color:{{ carFShChk.fg }}">{{ carFShChk.t }}</div>
+                                      <sc-if value="{{ carFShChk.hasHint }}"><div style="color:var(--text)"><b>怎麼修：</b>{{ carFShChk.hint }}</div></sc-if>
+                                      <sc-if value="{{ carFShChk.hasTabs }}"><div style="font-size:11.5px;color:var(--text-3)">{{ carFShChk.tabs }}</div></sc-if>
+                                      <div style="font-size:11.5px;color:var(--text-3)">{{ carFShChk.at }}</div>
+                                    </div>
+                                  </sc-if>
+                                </div>
+                              </li>
+                            </sc-if>
+                            <li data-sheet-step="first" aria-current="{{ carFShS5.cur }}" style="display:flex;gap:10px;padding:11px 0;border-bottom:1px dashed var(--border);opacity:{{ carFShS5.op }}">
+                              <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:{{ carFShS5.bg }};color:{{ carFShS5.fg }}">{{ carFShS5.badge }}</span>
+                              <div style="flex:1;min-width:0;font-size:12.5px;line-height:1.75">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--ink)">第一次同步</b><span style="font-size:11px;font-weight:800;color:{{ carFShS5.tagFg }}">{{ carFShS5.tag }}</span></div>
+                                <sc-if value="{{ carFShNeed }}">
+                                  <div data-sheet-need="1" style="color:var(--text)">{{ carFShNeedTxt }}要以哪邊為準？</div>
+                                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+                                    <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="bot" data-sheet-choose="bot" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">以機器人為準（先備份表上內容）</button>
+                                    <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="sheet" data-sheet-choose="sheet">以試算表為準</button>
+                                  </div>
+                                  <div class="car-note" style="margin-top:4px;color:var(--text-3)">以機器人為準：表上原本的內容會先複製到「備份」分頁，再換成機器人的班表。以試算表為準：表上跟機器人不一樣的格子照表改進機器人，機器人有、表上沒有的班不會被砍。</div>
+                                </sc-if>
+                                <sc-if value="{{ carFShNoNeed }}">
+                                  <div style="color:var(--text-2)">{{ carFShFirstNote }}</div>
+                                  <div style="margin-top:4px"><button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="sync" data-sheet-sync="1" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ carFShSyncBtn }}</button></div>
+                                </sc-if>
+                              </div>
+                            </li>
+                            <li data-sheet-step="auto" aria-current="{{ carFShS6.cur }}" style="display:flex;gap:10px;padding:11px 0;opacity:{{ carFShS6.op }}">
+                              <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:{{ carFShS6.bg }};color:{{ carFShS6.fg }}">{{ carFShS6.badge }}</span>
+                              <div style="flex:1;min-width:0;font-size:12.5px;line-height:1.75">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--ink)">開啟自動同步</b><span style="font-size:11px;font-weight:800;color:{{ carFShS6.tagFg }}">{{ carFShS6.tag }}</span></div>
+                                <span style="display:inline-flex;align-items:center;gap:9px;min-width:0;margin-top:4px">
+                                  <button type="button" role="switch" aria-checked="{{ carFShAuto.on }}" aria-label="{{ carFShAutoLbl }}" onClick="{{ onCarFSheet }}" data-a="auto" data-sheet-auto="1" style="position:relative;flex:none;width:46px;height:28px;padding:0;border-radius:999px;border:1px solid {{ carFShAuto.swBd }};background:{{ carFShAuto.swBg }};cursor:pointer;transition:background .2s"><span style="position:absolute;top:2px;left:{{ carFShAuto.swL }};width:22px;height:22px;border-radius:999px;background:{{ carFShAuto.swK }};box-shadow:var(--sh-xs);transition:left .18s ease"></span></button>
+                                  <span style="font-size:12.5px;font-weight:700;color:var(--text);min-width:0">{{ carFShAutoLbl }}</span>
+                                </span>
+                              </div>
+                            </li>
+                          </ol>
+                          </sc-if>
+
+                          <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">目前狀態</div>
                           <div style="display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12.5px;line-height:1.7">
                             <span style="color:var(--text-3)">同步狀態</span>
                             <span data-sheet-synced="1" style="font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ carFShSyncFg }}">{{ carFShSyncAt }}</span>
+                            <sc-if value="{{ carFShSyncTop }}"><button type="button" class="car-mini" onClick="{{ onCarFSheet }}" data-a="sync" data-sheet-sync="1">{{ carFShSyncBtn }}</button></sc-if>
+                            <sc-if value="{{ carFShV2 }}"><button type="button" class="car-mini" onClick="{{ onCarFShReload }}">重新整理</button></sc-if>
                           </div>
-                          <sc-if value="{{ carFShHasErr }}">
-                            <div role="alert" data-sheet-err="1" style="margin-top:8px;padding:9px 13px;border-radius:14px;border:1px solid color-mix(in oklab,#ee6644 35%,var(--border));background:color-mix(in oklab,#ee6644 10%,var(--card));font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShLastErr }}</div>
-                          </sc-if>
-                          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px">
+                          <sc-if value="{{ carFShHasLastSum }}"><div data-sheet-last="1" style="font-size:12px;color:var(--text-2);line-height:1.7;overflow-wrap:anywhere">{{ carFShLastSum }}</div></sc-if>
+                          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px">
                             <span style="font-size:12px;color:var(--text-3)">分頁</span>
                             <sc-for list="{{ carFShTabs }}" as="x"><span data-sheet-tab="1" title="{{ x.sub }}" style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:{{ x.bg }};color:{{ x.fg }};font-size:12px;font-weight:800;max-width:100%;overflow-wrap:anywhere">{{ x.t }}<span style="font-size:10.5px;font-weight:700;color:var(--text-3)">{{ x.sub }}</span></span></sc-for>
                           </div>
-                          <div style="display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:12px">
-                            <button type="button" class="car-btn" onClick="{{ onCarFSheet }}" data-a="sync" style="background:var(--ink-grad);color:#fff;border-color:transparent;box-shadow:var(--sh-xs)">{{ carFShSyncBtn }}</button>
-                            <span style="display:inline-flex;align-items:center;gap:9px;min-width:0;flex:1 1 230px">
-                              <button type="button" role="switch" aria-checked="{{ carFShAuto.on }}" aria-label="{{ carFShAutoLbl }}" onClick="{{ onCarFSheet }}" data-a="auto" style="position:relative;flex:none;width:46px;height:28px;padding:0;border-radius:999px;border:1px solid {{ carFShAuto.swBd }};background:{{ carFShAuto.swBg }};cursor:pointer;transition:background .2s"><span style="position:absolute;top:2px;left:{{ carFShAuto.swL }};width:22px;height:22px;border-radius:999px;background:{{ carFShAuto.swK }};box-shadow:var(--sh-xs);transition:left .18s ease"></span></button>
-                              <span style="font-size:12.5px;font-weight:700;color:var(--text);min-width:0">{{ carFShAutoLbl }}</span>
-                            </span>
-                          </div>
+                          <sc-if value="{{ carFShMultiNote }}"><div class="car-note" style="margin-top:4px;color:var(--text-3)">每台車各自一個班表分頁（車改名時分頁會跟著改名）；「時數」「成員」兩個分頁全車隊共用。</div></sc-if>
                           <sc-if value="{{ carFShSyncResShow }}">
                             <div data-sheet-res="1" style="margin-top:10px;padding:10px 13px;border-radius:14px;border:1px solid {{ carFShSyncResBd }};background:{{ carFShSyncResBg }};font-size:12.5px;color:var(--text);line-height:1.7;overflow-wrap:anywhere">{{ carFShResMsg }}
                               <sc-if value="{{ carFShHasMiss }}"><div style="margin-top:4px;font-size:12px;color:var(--text-2)">表上對不到成員的名字（照樣排上去，但沒有倍率）：<sc-for list="{{ carFShMiss }}" as="x"><span style="display:inline-block;margin:2px 6px 0 0;padding:1px 9px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11.5px;font-weight:700">{{ x.t }}</span></sc-for></div></sc-if>
                             </div>
                           </sc-if>
-                          <ul style="margin:12px 0 0;padding:12px 14px 12px 30px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
+                          <sc-if value="{{ carFShHasLog }}">
+                            <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">最近從試算表套用的變更</div>
+                            <div data-sheet-log="1" style="display:flex;flex-direction:column;gap:8px">
+                              <sc-for list="{{ carFShLog }}" as="lg">
+                                <div data-sheet-log-item="{{ lg.id }}" style="padding:9px 13px;border-radius:14px;border:1px solid var(--border);background:var(--card);font-size:12.5px;line-height:1.7;overflow-wrap:anywhere">
+                                  <div style="display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap">
+                                    <span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ lg.at }}</span>
+                                    <span style="font-weight:800;color:var(--text)">{{ lg.head }}</span>
+                                    <sc-if value="{{ lg.hasWho }}"><span style="font-size:11.5px;color:var(--text-3)">{{ lg.who }}</span></sc-if>
+                                    <span style="flex:1"></span>
+                                    <sc-if value="{{ lg.undo }}"><button type="button" class="car-mini" onClick="{{ onCarFShUndo }}" data-id="{{ lg.id }}" data-h="{{ lg.head }}" data-sheet-undo="1">復原</button></sc-if>
+                                    <sc-if value="{{ lg.undone }}"><span style="font-size:11.5px;font-weight:800;color:var(--text-3)">已復原</span></sc-if>
+                                  </div>
+                                  <ul style="margin:4px 0 0;padding-left:18px;color:var(--text-2);font-size:12px"><sc-for list="{{ lg.items }}" as="it"><li>{{ it.t }}</li></sc-for></ul>
+                                  <sc-if value="{{ lg.more }}"><div style="font-size:11.5px;color:var(--text-3)">{{ lg.moreTxt }}</div></sc-if>
+                                </div>
+                              </sc-for>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{ carFShNoLog }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">最近沒有人從試算表改過班表。</div></sc-if>
+                          <sc-if value="{{ carFShHasIssues }}">
+                            <div data-sheet-issues="1" style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                              <sc-for list="{{ carFShIssues }}" as="g">
+                                <div data-sheet-issue="{{ g.k }}" style="padding:9px 13px;border-radius:14px;border:1px solid color-mix(in oklab,#d08a00 30%,var(--border));background:color-mix(in oklab,#d08a00 7%,var(--card));font-size:12px;line-height:1.7;overflow-wrap:anywhere">
+                                  <div style="font-weight:800;color:var(--text)">{{ g.title }}</div>
+                                  <ul style="margin:2px 0 0;padding-left:18px;color:var(--text-2)"><sc-for list="{{ g.items }}" as="it"><li>{{ it.t }}</li></sc-for></ul>
+                                  <sc-if value="{{ g.more }}"><div style="font-size:11.5px;color:var(--text-3)">{{ g.moreTxt }}</div></sc-if>
+                                </div>
+                              </sc-for>
+                            </div>
+                          </sc-if>
+
+                          <div style="font-size:12px;font-weight:800;color:var(--text-2);margin:12px 0 6px">規則</div>
+                          <ul style="margin:0;padding:12px 14px 12px 30px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
                             <sc-for list="{{ carFShRules }}" as="x"><li>{{ x.t }}</li></sc-for>
                           </ul>
+                          <sc-if value="{{ carFShAdv }}">
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+                              <span style="font-size:12px;font-weight:800;color:var(--text-2)">進階</span>
+                              <button type="button" class="car-mini" onClick="{{ onCarFSheet }}" data-a="bot" data-sheet-rewrite="1">以機器人為準重寫（先備份）</button>
+                              <button type="button" class="car-mini" onClick="{{ onCarFSheet }}" data-a="format" data-sheet-format="1">重新套用表格格式</button>
+                            </div>
+                          </sc-if>
                         </div>
                       </sc-if>
-
-                      <!-- 服務帳號（兩種同步都要先共用給它） -->
-                      <div style="margin-top:12px;padding:10px 14px;border-radius:14px;background:var(--card-2);font-size:12px;color:var(--text-2);line-height:1.85">
-                        <sc-if value="{{ carFShEmail }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>服務帳號：</span><span data-sheet-email="1" style="user-select:all;-webkit-user-select:all;font-weight:700;color:var(--accent-deep);overflow-wrap:anywhere;min-width:0">{{ carFShEmail }}</span><button type="button" class="car-mini" onClick="{{ onCarFShCopy }}">複製</button></div></sc-if>
-                        <sc-if value="{{ carFShNoEmail }}"><div style="color:var(--text-3)">（讀不到服務帳號 email）</div></sc-if>
-                      </div>
-
                       <!-- 舊版：每天一個分頁的推送／回讀（有雙向同步時收起來，免得搞混） -->
                       <div style="margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:hidden">
                         <sc-if value="{{ carFShOldToggle }}">
@@ -7805,7 +7926,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=20c558cc91"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=004b18aa5b"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
