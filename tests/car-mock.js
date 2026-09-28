@@ -1088,6 +1088,34 @@ export function install(BASE, mode0) {
         if (a === 'reseat') { const n = Object.keys(c.sched).filter(d => d >= today).length; logF('重排補位', n + ' 個日期' + sfx()); return J({ ok: true, msg: '已重排 ' + n + ' 個日期（含卡住的報班補位）' }); }
         return J({ error: 'unknown action' }, 400);
       }
+      /* 班表插畫圖庫（整個車隊共用）：GET 列表；POST chunk／remove／mode／style／preview。縮圖直接用上傳的圖 */
+      if (rest === '/schedbg') {
+        if (!admin) return deny();
+        const B = (window.__mockBg = window.__mockBg || { items: [], mode: 'daily', fixed: '', style: 'classic', up: {} });
+        const MODES = { daily: '每天換一張', random: '每次隨機', fixed: '固定一張' };
+        const st = () => ({ items: B.items.map(x => Object.assign({}, x)), mode: B.mode, modes: MODES, fixed: B.fixed,
+          today: B.mode === 'fixed' ? B.fixed : (B.items[0] || {}).id || '', style: B.style, legacy: false, max: 8 });
+        if (m === 'GET') return J(st());
+        const a = body.action;
+        if (a === 'chunk') {
+          if (typeof body.data !== 'string' || body.data.length > 200000) return J({ error: 'bad chunk' }, 400);
+          const u = B.up[body.up] = B.up[body.up] || { parts: {}, n: body.n };
+          u.parts[body.i] = body.data;
+          if (Object.keys(u.parts).length < u.n) return J({ ok: true, got: Object.keys(u.parts).length, n: u.n });
+          delete B.up[body.up];
+          if (B.items.length >= 8) return J({ error: '圖庫最多 8 張，請先刪掉一張' }, 400);
+          const b64 = Array.from({ length: u.n }, (_, i) => u.parts[i]).join('');
+          const id = 'm' + (B.items.length + 1) + Math.random().toString(36).slice(2, 8);
+          B.items.push({ id, name: body.name || '插畫', w: 1920, h: 1080, by: '管理', at: today + ' 12:00', thumb: 'data:image/jpeg;base64,' + b64, missing: false });
+          logF('班表插畫', '新增 ' + (body.name || '插畫'));
+          return J(Object.assign({ ok: true, added: id }, st()));
+        }
+        if (a === 'remove') { const n0 = B.items.length; B.items = B.items.filter(x => x.id !== body.id); if (B.items.length === n0) return J({ error: '找不到這張圖' }, 404); if (B.fixed === body.id) B.fixed = ''; return J(Object.assign({ ok: true }, st())); }
+        if (a === 'mode') { if (!MODES[body.mode]) return J({ error: 'bad mode' }, 400); B.mode = body.mode; if (body.mode === 'fixed') B.fixed = body.id || B.fixed || (B.items[0] || {}).id || ''; return J(Object.assign({ ok: true }, st())); }
+        if (a === 'style') { if (body.style !== 'classic' && body.style !== 'sheet') return J({ error: 'bad style' }, 400); B.style = body.style; return J(Object.assign({ ok: true }, st())); }
+        if (a === 'preview') { const it = B.items.find(x => x.id === body.id) || B.items[0]; return J({ ok: true, preview: it ? it.thumb : '' }); }
+        return J({ error: 'bad action' }, 400);
+      }
       if (rest === '/sheet' && m === 'POST') {
         if (!admin) return deny();
         const act = body.action || 'info';

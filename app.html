@@ -3426,6 +3426,74 @@ select option, select optgroup{
               </div>
             </sc-if>
 
+            <sc-if value="{{ carFBgShow }}">
+              <div class="car-card" style="margin-bottom:12px;overflow:hidden">
+                <button type="button" onClick="{{ onCarFSetSec }}" data-sec="__bgimg" aria-expanded="{{ carFBgExp }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 18px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-family:inherit;text-align:left">
+                  <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14.5px;font-weight:800">班表插畫</span><span style="padding:1px 9px;border-radius:999px;background:color-mix(in oklab,var(--accent) 12%,var(--card));color:var(--accent-deep);font-size:11px;font-weight:800;white-space:nowrap">美圖背景・多張輪換</span></span>
+                  <span style="flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">{{ carFBgSum }} {{ carFBgArrow }}</span>
+                </button>
+                <sc-if value="{{ carFBgOpen }}">
+                  <div style="padding:2px 18px 16px;border-top:1px solid var(--border)">
+                    <sc-if value="{{ carFBgLoading }}"><div class="skel" style="height:96px;border-radius:14px;margin-top:12px"></div></sc-if>
+                    <sc-if value="{{ carFBgErr }}"><div style="margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到圖庫：{{ carFBgErr }} <button type="button" class="car-mini" onClick="{{ onCarFBgReload }}">重試</button></div></sc-if>
+                    <sc-if value="{{ carFBgHas }}">
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+                        <span style="flex:none;width:66px;font-size:12.5px;font-weight:800;color:var(--text-2)">版型</span>
+                        <div class="car-seg" role="radiogroup" aria-label="美圖班表版型">
+                          <sc-for list="{{ carFBgStyleSeg }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarFBgStyle }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+                        <span style="flex:none;width:66px;font-size:12.5px;font-weight:800;color:var(--text-2)">輪換</span>
+                        <div class="car-seg" role="radiogroup" aria-label="多張插畫怎麼輪換">
+                          <sc-for list="{{ carFBgModeSeg }}" as="o"><button type="button" role="radio" aria-checked="{{ o.sel }}" onClick="{{ onCarFBgMode }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for>
+                        </div>
+                      </div>
+                      <div class="car-note" style="margin-top:8px;color:var(--text-3)">「清單風」把插畫放在班表上方當主視覺，配色跟著插畫走；「每天換一張」同一天固定同一張，看板不會一直換圖。</div>
+                      <sc-if value="{{ carFBgLegacy }}"><div class="car-note" style="margin-top:6px">目前用的是 Discord「/班表 背景」設的單張背景；上傳第一張時會自動把它搬進圖庫。</div></sc-if>
+                      <sc-if value="{{ carFBgEmpty }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">圖庫還是空的：美圖班表會用純色背景。</div></sc-if>
+                      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px">
+                        <sc-for list="{{ carFBgItems }}" as="it">
+                          <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card);display:flex;flex-direction:column">
+                            <div style="position:relative;aspect-ratio:16/9;background:var(--card-2)">
+                              <sc-if value="{{ it.hasThumb }}"><img src="{{ it.thumb }}" alt="{{ it.name }}" loading="lazy" style="display:block;width:100%;height:100%;object-fit:cover"></sc-if>
+                              <sc-if value="{{ it.hasTag }}"><span style="position:absolute;left:8px;top:8px;padding:1px 9px;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:11px;font-weight:800">{{ it.tag }}</span></sc-if>
+                              <span style="position:absolute;right:8px;top:8px;padding:0 7px;border-radius:999px;background:color-mix(in oklab,var(--card) 88%,transparent);color:var(--text-2);font-size:11px;font-weight:800">{{ it.no }}</span>
+                            </div>
+                            <div style="padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px">
+                              <div style="font-size:12.5px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ it.name }}">{{ it.name }}</div>
+                              <sc-if value="{{ it.missing }}"><div style="font-size:11.5px;color:color-mix(in oklab,#ee6644 60%,var(--car-fg))">主機上找不到這個檔，請刪掉重傳</div></sc-if>
+                              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                <button type="button" class="car-mini" onClick="{{ onCarFBgPreview }}" data-id="{{ it.id }}">預覽</button>
+                                <sc-if value="{{ it.canFix }}"><button type="button" class="car-mini" onClick="{{ onCarFBgFix }}" data-id="{{ it.id }}">固定用</button></sc-if>
+                                <button type="button" class="car-mini" onClick="{{ onCarFBgDel }}" data-id="{{ it.id }}" data-n="{{ it.name }}">刪除</button>
+                              </div>
+                            </div>
+                          </div>
+                        </sc-for>
+                        <sc-if value="{{ carFBgCanAdd }}">
+                          <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:150px;border:1.5px dashed var(--border-2);border-radius:14px;text-align:center;cursor:pointer;color:var(--text-2);font-size:13px;font-weight:800;background:var(--card-2);padding:12px">
+                            <span style="font-size:22px;line-height:1">＋</span><span>上傳插畫</span><span style="font-size:11.5px;font-weight:600;color:var(--text-3)">可一次選多張</span>
+                            <input type="file" accept="image/*" multiple="multiple" onChange="{{ onCarFBgPick }}" style="display:none">
+                          </label>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ carFBgUpTxt }}"><div style="margin-top:10px;font-size:12.5px;font-weight:700;color:var(--accent-deep)">{{ carFBgUpTxt }}</div></sc-if>
+                      <sc-if value="{{ carFBgFull }}"><div class="car-note" style="margin-top:8px;color:var(--text-3)">圖庫滿了（{{ carFBgMax }} 張），要換圖請先刪掉一張。</div></sc-if>
+                      <div class="car-note" style="margin-top:8px;color:var(--text-3)">JPG／PNG／WebP 都可以，上傳前會自動縮到長邊 1920 px；最多 {{ carFBgMax }} 張，整個車隊（含合班／橋接的隊）共用。Discord 也能用「/班表 背景」加圖。</div>
+                      <sc-if value="{{ carFBgPvBusy }}"><div class="skel" style="height:220px;border-radius:14px;margin-top:12px"></div></sc-if>
+                      <sc-if value="{{ carFBgPv }}">
+                        <div style="margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card-2)">
+                          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:12.5px;font-weight:800;color:var(--text-2)"><span>清單風預覽（今天的班表）</span><button type="button" class="car-mini" onClick="{{ onCarFBgPvClose }}">關閉</button></div>
+                          <img src="{{ carFBgPv }}" alt="班表預覽" style="display:block;width:100%;height:auto">
+                        </div>
+                      </sc-if>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
             <sc-if value="{{ carFShShow }}">
               <div class="car-card" style="margin-bottom:12px;overflow:hidden">
                 <button type="button" onClick="{{ onCarFSetSec }}" data-sec="__sheet" aria-expanded="{{ carFShExp }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 18px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-family:inherit;text-align:left">
@@ -7349,7 +7417,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=7d8ac4a617"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=7fc15b9c76"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

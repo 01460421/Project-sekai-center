@@ -4520,6 +4520,79 @@ class Component extends DCLogic {
     this.carFSheetInfo(force);
   }
   carFSheetInfo(force) { return this.carSecFetch(this.carSecKey('sheet', true), '/sheet', { body: { action: 'info' } }, force); }
+  /* 班表插畫圖庫（整個車隊共用）：GET /schedbg 列表＋縮圖（data URL）；POST /schedbg
+       chunk（分段上傳：Worker 一次只收 256 KB，所以瀏覽器先縮到長邊 1920 的 JPEG、再切 18 萬字一段依序送，
+       最後一段到齊機器人才組起來加進圖庫）／remove／mode（daily random fixed）／style（classic sheet）／preview */
+  carFBgInfo(force) { return this.carSecFetch(this.carSecKey('bgimg', false), '/schedbg', {}, force); }
+  async carFBgAct(body, okMsg) {
+    const d = await this.carAct('/schedbg', body, okMsg);
+    if (d && Array.isArray(d.items)) this.carSecPut(this.carSecKey('bgimg', false), { data: d, err: '', at: Date.now() });
+    return d;
+  }
+  async carFBgPreview(id) {
+    const g0 = String(this.state.g || '');
+    this.setState({ carFBgPv: { busy: true } });
+    try {
+      const d = await this.carApi('/schedbg', { body: { action: 'preview', id: String(id || '') } });
+      if (String(this.state.g || '') !== g0) return;
+      const u = d && String(d.preview || '');
+      this.setState({ carFBgPv: /^data:image\/jpeg;base64,/.test(u) ? { url: u } : null });
+      if (!/^data:image\/jpeg;base64,/.test(u)) this._toast('預覽失敗');
+    } catch (e) { this.setState({ carFBgPv: null }); this._toast(e.message || '預覽失敗'); }
+  }
+  carFBgShrink(file) {
+    /* 圖片 → 長邊 ≤1920 的 JPEG（base64，不含 data: 前綴）。透明背景鋪白。 */
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        try {
+          const k = Math.min(1, 1920 / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+          const w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+          const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          const du = cv.toDataURL('image/jpeg', 0.88);
+          if (!/^data:image\/jpeg;base64,/.test(du)) { reject(new Error('encode')); return; }
+          resolve(du.slice(du.indexOf(',') + 1));
+        } catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+      img.src = url;
+    });
+  }
+  async carFBgUpload(files) {
+    files = (files || []).filter(f => f && (/^image\//.test(f.type || '') || /\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(f.name || '')));
+    if (!files.length) { this._toast('請選圖片檔（JPG／PNG／WebP）'); return; }
+    if (this.state.carFBgUp) { this._toast('上一批還在上傳'); return; }
+    const key = this.carSecKey('bgimg', false), g0 = String(this.state.g || '');
+    const cur = (this.carSecOf(key) || {}).data || {};
+    const room = Math.max(0, (+cur.max || 8) - (Array.isArray(cur.items) ? cur.items.length : 0));
+    if (!room) { this._toast('圖庫滿了，請先刪掉一張'); return; }
+    if (files.length > room) { this._toast('圖庫只剩 ' + room + ' 個位置，只傳前 ' + room + ' 張'); files = files.slice(0, room); }
+    let ok = 0;
+    try {
+      for (const f of files) {
+        const name = String(f.name || '插畫').replace(/\.[^.]+$/, '').slice(0, 40);
+        if (f.size > 30e6) { this._toast('「' + name + '」太大了（上限 30 MB）'); continue; }
+        this.setState({ carFBgUp: { name, i: 0, n: 1 } });
+        let b64;
+        try { b64 = await this.carFBgShrink(f); } catch (e) { this._toast('讀不到「' + name + '」，請換成 JPG／PNG'); continue; }
+        const parts = [];
+        for (let i = 0; i < b64.length; i += 180000) parts.push(b64.slice(i, i + 180000));
+        const up = 'up' + Array.from(crypto.getRandomValues(new Uint8Array(10)), b => (b % 36).toString(36)).join('');
+        let d = null;
+        try {
+          for (let i = 0; i < parts.length; i++) {
+            if (String(this.state.g || '') !== g0) return;
+            this.setState({ carFBgUp: { name, i: i + 1, n: parts.length } });
+            d = await this.carApi('/schedbg', { body: { action: 'chunk', up, i, n: parts.length, data: parts[i], name } });
+          }
+        } catch (e) { this._toast('「' + name + '」上傳失敗：' + (e.message || '')); continue; }
+        if (d && Array.isArray(d.items)) { this.carSecPut(key, { data: d, err: '', at: Date.now() }); ok++; }
+      }
+    } finally { this.setState({ carFBgUp: null }); }
+    if (ok) this._toast('已上傳 ' + ok + ' 張插畫');
+  }
   carFMeta(key) {
     const st = (this.state.carStates || {})[this.carNo()] || {};
     const m = (Array.isArray(st.settings_meta) ? st.settings_meta : []).find(x => x && x.key === key) || null;
@@ -4728,7 +4801,34 @@ class Component extends DCLogic {
     const shTab = two ? String(info.tab || shTabs[0] || '班表') : '班表';
     const shLegacy = !two || !!openMap.__sheetOld;
 
+    /* 班表插畫圖庫（整個車隊共用） */
+    const bgKey = this.carSecKey('bgimg', false), bgS = this.carSecOf(bgKey), bg = bgS && bgS.data;
+    const bgOpen = !!openMap.__bgimg, bgUp = s.carFBgUp || null, bgPv = s.carFBgPv || null;
+    const bgModes = (bg && bg.modes && typeof bg.modes === 'object') ? bg.modes : { daily: '每天換一張', random: '每次隨機', fixed: '固定一張' };
+    const bgMode = bg && bgModes[bg.mode] ? String(bg.mode) : 'daily', bgStyle = bg && bg.style === 'sheet' ? 'sheet' : 'classic';
+    const bgItems = bg && Array.isArray(bg.items) ? bg.items.filter(x => x && x.id) : [], bgMax = (bg && +bg.max) || 8;
+
     return Object.assign(base, {
+      carFBgShow: !q,
+      carFBgOpen: bgOpen, carFBgExp: bgOpen ? 'true' : 'false', carFBgArrow: bgOpen ? '▲' : '▼',
+      carFBgSum: !bg ? (bgS && bgS.err ? '讀取失敗' : '') : (bgItems.length ? bgItems.length + '/' + bgMax + ' 張 · ' + String(bgModes[bgMode]) : (bg.legacy ? '使用舊背景' : '還沒有圖')),
+      carFBgLoading: bgOpen && !bg && !(bgS && bgS.err), carFBgErr: bgOpen && !bg && bgS && bgS.err ? String(bgS.err) : '',
+      carFBgHas: bgOpen && !!bg,
+      carFBgStyleSeg: [['classic', '經典'], ['sheet', '清單風']].map(([v, n]) => Object.assign({ v, n, sel: v === bgStyle ? 'true' : 'false' }, segOn(v === bgStyle))),
+      carFBgModeSeg: Object.keys(bgModes).map(v => Object.assign({ v, n: String(bgModes[v]), sel: v === bgMode ? 'true' : 'false' }, segOn(v === bgMode))),
+      carFBgItems: bgItems.map((x, i) => {
+        const today = !!bg && x.id === bg.today, fixed = bgMode === 'fixed' && !!bg && x.id === bg.fixed;
+        return { id: String(x.id), no: String(i + 1), name: String(x.name || '插畫'), size: (x.w && x.h) ? x.w + '×' + x.h : '',
+          thumb: /^data:image\/jpeg;base64,/.test(String(x.thumb || '')) ? String(x.thumb) : '',
+          hasThumb: /^data:image\/jpeg;base64,/.test(String(x.thumb || '')), today, fixed, missing: !!x.missing, canFix: !fixed,
+          tag: fixed ? '固定' : today ? '今天' : '', hasTag: fixed || today };
+      }),
+      carFBgHasItems: bgItems.length > 0, carFBgEmpty: !!bg && !bgItems.length && !bg.legacy,
+      carFBgLegacy: !!(bg && bg.legacy),
+      carFBgCanAdd: !!bg && bgItems.length < bgMax && !bgUp, carFBgFull: !!bg && bgItems.length >= bgMax,
+      carFBgUpTxt: bgUp ? '上傳中：' + bgUp.name + (bgUp.n > 1 ? '（' + bgUp.i + '/' + bgUp.n + ' 段）' : '…') : '',
+      carFBgPv: bgPv && bgPv.url ? String(bgPv.url) : '', carFBgPvBusy: !!(bgPv && bgPv.busy),
+      carFBgMax: String(bgMax),
       carFSetReady: true,
       carFSetNoMeta: !meta.length,
       carFSetCount: q ? '符合 ' + shown + ' 項' : meta.length + ' 項設定',
@@ -4778,7 +4878,19 @@ class Component extends DCLogic {
       ].map((t, i) => ({ i: String(i), t })) : [],
       carFShOldOpen: shLegacy, carFShOldExp: shLegacy ? 'true' : 'false', carFShOldArrow: shLegacy ? '▲' : '▼', carFShOldToggle: two,
       carFBusyTxt: busy ? '處理中…' : '',
-      onCarFSetSec: e => { const k = String(e.currentTarget.dataset.sec || ''); if (!k) return; this.setState(st2 => ({ carFSetOpen: Object.assign({}, st2.carFSetOpen, { [k]: !(st2.carFSetOpen || {})[k] }) })); if (k === '__sheet') this.carFSheetInfo(false); },
+      onCarFSetSec: e => { const k = String(e.currentTarget.dataset.sec || ''); if (!k) return; this.setState(st2 => ({ carFSetOpen: Object.assign({}, st2.carFSetOpen, { [k]: !(st2.carFSetOpen || {})[k] }) })); if (k === '__sheet') this.carFSheetInfo(false); if (k === '__bgimg') this.carFBgInfo(false); },
+      onCarFBgReload: () => this.carFBgInfo(true),
+      onCarFBgStyle: e => { const v = String(e.currentTarget.dataset.v || ''); if (v !== 'classic' && v !== 'sheet') return; this.carFBgAct({ action: 'style', style: v }, v === 'sheet' ? '美圖班表改成清單風' : '美圖班表改回經典版型'); },
+      onCarFBgMode: e => { const v = String(e.currentTarget.dataset.v || ''); if (!bgModes[v]) return; this.carFBgAct({ action: 'mode', mode: v }, '輪換：' + String(bgModes[v])); },
+      onCarFBgFix: e => { const id = String(e.currentTarget.dataset.id || ''); if (id) this.carFBgAct({ action: 'mode', mode: 'fixed', id }, '已固定用這張'); },
+      onCarFBgDel: e => {
+        const id = String(e.currentTarget.dataset.id || ''), nm = String(e.currentTarget.dataset.n || '這張');
+        if (!id || !window.confirm('刪掉「' + nm + '」？')) return;
+        this.carFBgAct({ action: 'remove', id }, '已刪除');
+      },
+      onCarFBgPick: e => { const fl = Array.from((e.target && e.target.files) || []); try { e.target.value = ''; } catch (er) {} this.carFBgUpload(fl); },
+      onCarFBgPreview: e => { this.carFBgPreview(String(e.currentTarget.dataset.id || '')); },
+      onCarFBgPvClose: () => this.setState({ carFBgPv: null }),
       onCarFSetAll: () => { const o = Object.assign({}, s.carFSetOpen); secs.forEach(x => { o[x.sec] = !allOpen; }); this.setState({ carFSetOpen: o }); },
       onCarFSetBool: e => {
         const k = String(e.currentTarget.dataset.k || ''), { m } = this.carFMeta(k); if (!m) return;
