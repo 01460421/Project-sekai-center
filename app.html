@@ -417,9 +417,10 @@ select option, select optgroup{
 .car-in:focus{border-color:var(--accent)}
 /* 色段監控：設定面板＋即時預覽（統計 → 色段監控） */
 .sei-ed{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start}
-.sei-pv{position:sticky;top:calc(var(--head-h,58px) + 10px);min-width:0}
+/* 預覽欄比視窗高時自己捲（不然黏住的時候下面的警報清單永遠看不到）；padding＋負 margin 留位置給卡片陰影 */
+.sei-pv{position:sticky;top:calc(var(--head-h,58px) + 6px);min-width:0;max-height:calc(100vh - var(--head-h,58px) - 12px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:4px;margin:-4px}
 .sei-form{min-width:0}
-@media (max-width:1000px){.sei-ed{grid-template-columns:minmax(0,1fr)}.sei-pv{position:static}}
+@media (max-width:1000px){.sei-ed{grid-template-columns:minmax(0,1fr)}.sei-pv{position:static;max-height:none;overflow:visible;padding:0;margin:0}}
 .sei-gt{font-size:15px;font-weight:800;color:var(--ink)}
 .sei-gd{font-size:11.5px;color:var(--text-3);line-height:1.7;margin:3px 0 10px}
 .sei-fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:9px}
@@ -444,7 +445,8 @@ select option, select optgroup{
 .sei-chip button{border:none;background:transparent;color:inherit;cursor:pointer;font-size:11px;padding:3px 7px;border-radius:999px;font-family:inherit}
 .sei-lb{display:flex;flex-direction:column;gap:5px;min-width:0}
 .sei-lb>span{font-size:11.5px;font-weight:800;color:var(--text-2)}
-.sei-yl{position:absolute;left:0;transform:translateY(-50%);text-align:right;font-size:10px;line-height:1;color:var(--text-3);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;white-space:nowrap;pointer-events:none}
+/* 軸標籤：y 標籤右緣對齊繪圖區左邊（窄的時候字不會蓋進圖裡）；x 標籤放在基準線下方 3px（位置由 carSeiChart 算，跟圖一起縮放） */
+.sei-yl{position:absolute;left:0;transform:translate(-100%,-50%);text-align:right;font-size:10px;line-height:1;color:var(--text-3);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;white-space:nowrap;pointer-events:none}
 .sei-xl{position:absolute;top:calc(100% - 22px);transform:translateX(-50%);font-size:10px;line-height:1;color:var(--text-3);font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;white-space:nowrap;pointer-events:none}
 .sei-thl{position:absolute;right:10px;transform:translateY(-50%);font-size:10.5px;font-weight:800;line-height:1;color:var(--accent-deep);background:color-mix(in oklab,var(--card) 80%,transparent);padding:2px 5px;border-radius:6px;pointer-events:none}
 .sei-empty{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);font-size:12px;color:var(--text-3);pointer-events:none}
@@ -3088,12 +3090,13 @@ select option, select optgroup{
                     <sc-if value="{{ carSpvLoading }}"><div class="skel" style="height:240px;border-radius:14px"></div></sc-if>
                     <sc-if value="{{ carSpvHasErr }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.8">預覽讀不到：{{ carSpvErr }}<br><button type="button" class="car-btn" onClick="{{ onCarSpvRetry }}" style="margin-top:8px">重試</button></div></sc-if>
                     <sc-if value="{{ carSpvReady }}">
+                      <sc-if value="{{ carSpvStaleErr }}"><div class="sei-err" data-sei-pverr="1" role="alert" style="margin-bottom:8px;line-height:1.7">{{ carSpvStaleErr }} <button type="button" class="car-btn" onClick="{{ onCarSpvRetry }}" style="margin-left:4px;padding:4px 12px;font-size:12px;min-height:0">重試</button></div></sc-if>
                       <sc-if value="{{ carSpvInvalid }}"><div class="sei-err" style="margin-bottom:8px">{{ carSpvInvalid }}</div></sc-if>
                       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
                         <sc-for list="{{ carSan.chips }}" as="x"><span class="sei-st" style="background:{{ x.bg }}"><b>{{ x.k }}</b><span style="color:{{ x.fg }}">{{ x.v }}</span></span></sc-for>
                       </div>
                       <div style="position:relative;padding-bottom:4px;max-width:980px">
-                        <svg data-sei-chart="1" viewBox="0 0 {{ carSch.W }} {{ carSch.H }}" role="img" aria-label="{{ carSch.aria }}" style="width:100%;height:auto;display:block;overflow:visible;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent">
+                        <svg data-sei-chart="1" viewBox="0 0 {{ carSch.W }} {{ carSch.H }}" role="img" aria-label="{{ carSch.aria }}" onClick="{{ onCarSchTap }}" style="width:100%;height:auto;display:block;overflow:visible;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent">
                           <sc-for list="{{ carSch.bands }}" as="b"><rect x="{{ b.x }}" y="{{ carSch.T }}" width="{{ b.w }}" height="{{ carSch.ph }}" style="fill:{{ b.fill }}"></rect></sc-for>
                           <sc-for list="{{ carSch.yt }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 4"></line></sc-for>
                           <sc-for list="{{ carSch.hyL }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="1 4" opacity=".55"></line></sc-for>
@@ -3105,8 +3108,8 @@ select option, select optgroup{
                           <sc-for list="{{ carSch.hiL }}" as="h"><circle cx="{{ h.cx }}" cy="{{ h.cy }}" r="7" fill="none" stroke="var(--ink)" stroke-width="1.6" style="pointer-events:none"></circle></sc-for>
                           <line x1="{{ carSch.L }}" y1="{{ carSch.base }}" x2="{{ carSch.Rx }}" y2="{{ carSch.base }}" stroke="var(--border-2)" stroke-width="1"></line>
                         </svg>
-                        <sc-for list="{{ carSch.yt }}" as="t"><span class="sei-yl" style="top:{{ t.top }};width:{{ carSch.lw }}">{{ t.l }}</span></sc-for>
-                        <sc-for list="{{ carSch.xt }}" as="t"><span class="sei-xl" style="left:{{ t.left }}">{{ t.l }}</span></sc-for>
+                        <sc-for list="{{ carSch.yt }}" as="t"><span class="sei-yl" style="top:{{ t.top }};left:{{ carSch.lw }}">{{ t.l }}</span></sc-for>
+                        <sc-for list="{{ carSch.xt }}" as="t"><span class="sei-xl" style="left:{{ t.left }};top:{{ carSch.xtop }}">{{ t.l }}</span></sc-for>
                         <sc-for list="{{ carSch.thL }}" as="t"><span class="sei-thl" style="top:{{ t.top }}">{{ t.l }}</span></sc-for>
                         <sc-for list="{{ carSch.emptyL }}" as="t"><span class="sei-empty">{{ t.l }}</span></sc-for>
                       </div>
@@ -3171,7 +3174,10 @@ select option, select optgroup{
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
                       <select class="car-in" sc-options="{{ carSpvAddOpts }}" value="{{ carSpvPick }}" onChange="{{ onCarSpvAddTg }}" aria-label="加入通知對象" style="flex:1 1 200px;width:auto;background:var(--card);cursor:pointer"></select>
-                      <input class="car-in" type="text" inputmode="numeric" maxlength="21" placeholder="或輸入 Discord 使用者 ID 按 Enter" onKeyDown="{{ onCarSpvTgId }}" aria-label="Discord 使用者 ID" style="flex:1 1 200px;width:auto;background:var(--card)">
+                      <span style="display:flex;gap:6px;flex:1 1 200px;min-width:0">
+                        <input class="car-in" data-sei-tgid="1" type="text" inputmode="numeric" enterkeyhint="done" maxlength="21" placeholder="或輸入 Discord 使用者 ID" onKeyDown="{{ onCarSpvTgId }}" aria-label="Discord 使用者 ID" style="flex:1 1 auto;width:auto;min-width:0;background:var(--card)">
+                        <button type="button" class="car-btn" data-sei-tgadd="1" onClick="{{ onCarSpvTgAdd }}" style="flex:none">加入</button>
+                      </span>
                     </div>
                     <sc-if value="{{ carSpvTgErr }}"><div class="sei-err" style="margin-top:6px">{{ carSpvTgErr }}</div></sc-if>
                     <div class="sei-fg" style="margin-top:12px">
@@ -3258,7 +3264,7 @@ select option, select optgroup{
                       <sc-for list="{{ carSan.chips }}" as="x"><span class="sei-st" style="background:{{ x.bg }}"><b>{{ x.k }}</b><span style="color:{{ x.fg }}">{{ x.v }}</span></span></sc-for>
                     </div>
                     <div style="position:relative;padding-bottom:4px;max-width:980px">
-                      <svg data-sei-chart="1" viewBox="0 0 {{ carSch.W }} {{ carSch.H }}" role="img" aria-label="{{ carSch.aria }}" style="width:100%;height:auto;display:block;overflow:visible;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent">
+                      <svg data-sei-chart="1" viewBox="0 0 {{ carSch.W }} {{ carSch.H }}" role="img" aria-label="{{ carSch.aria }}" onClick="{{ onCarSchTap }}" style="width:100%;height:auto;display:block;overflow:visible;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent">
                         <sc-for list="{{ carSch.bands }}" as="b"><rect x="{{ b.x }}" y="{{ carSch.T }}" width="{{ b.w }}" height="{{ carSch.ph }}" style="fill:{{ b.fill }}"></rect></sc-for>
                         <sc-for list="{{ carSch.yt }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 4"></line></sc-for>
                         <sc-for list="{{ carSch.hyL }}" as="t"><line x1="{{ carSch.L }}" y1="{{ t.y }}" x2="{{ carSch.Rx }}" y2="{{ t.y }}" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="1 4" opacity=".55"></line></sc-for>
@@ -3270,8 +3276,8 @@ select option, select optgroup{
                         <sc-for list="{{ carSch.hiL }}" as="h"><circle cx="{{ h.cx }}" cy="{{ h.cy }}" r="7" fill="none" stroke="var(--ink)" stroke-width="1.6" style="pointer-events:none"></circle></sc-for>
                         <line x1="{{ carSch.L }}" y1="{{ carSch.base }}" x2="{{ carSch.Rx }}" y2="{{ carSch.base }}" stroke="var(--border-2)" stroke-width="1"></line>
                       </svg>
-                      <sc-for list="{{ carSch.yt }}" as="t"><span class="sei-yl" style="top:{{ t.top }};width:{{ carSch.lw }}">{{ t.l }}</span></sc-for>
-                      <sc-for list="{{ carSch.xt }}" as="t"><span class="sei-xl" style="left:{{ t.left }}">{{ t.l }}</span></sc-for>
+                      <sc-for list="{{ carSch.yt }}" as="t"><span class="sei-yl" style="top:{{ t.top }};left:{{ carSch.lw }}">{{ t.l }}</span></sc-for>
+                      <sc-for list="{{ carSch.xt }}" as="t"><span class="sei-xl" style="left:{{ t.left }};top:{{ carSch.xtop }}">{{ t.l }}</span></sc-for>
                       <sc-for list="{{ carSch.thL }}" as="t"><span class="sei-thl" style="top:{{ t.top }}">{{ t.l }}</span></sc-for>
                       <sc-for list="{{ carSch.emptyL }}" as="t"><span class="sei-empty">{{ t.l }}</span></sc-for>
                     </div>
@@ -8158,7 +8164,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=87e68fe7b2"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=9885a69f28"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

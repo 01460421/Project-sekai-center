@@ -1343,7 +1343,8 @@ export function install(BASE, mode0) {
             creds_ok: !RS.sheetnocreds, creds_code: RS.sheetnocreds ? 'no_creds' : '', creds_msg: RS.sheetnocreds ? '主機還沒設定 Google 服務帳號（GDRIVE_CREDS）' : '已設定 Google 服務帳號',
             creds_hint: RS.sheetnocreds ? '請機器人主機的管理者把服務帳號 JSON 金鑰的「內容」放進環境變數 GDRIVE_CREDS，再重開機器人。' : '',
             err_code: gs.code, err_hint: gs.code && ERR[gs.code] ? ERR[gs.code][1] : '', need_choice: !!gs.need, need: gs.need, paused: gs.paused, fails: gs.fails,
-            next_retry: gs.code ? '23:59:00' : '', check: gs.check && gs.check.sid === cF.gsheet_id ? gs.check : null,
+            /* 機器人：只有開了自動同步、沒暫停才會自己重試；busy＝網站按的同步／檢查還在背景跑 */
+            next_retry: gs.code && cF.gsheet_auto && !gs.paused ? '23:59:00' : '', busy: gs.busy || '', check: gs.check && gs.check.sid === cF.gsheet_id ? gs.check : null,
             log: gs.log.slice(0, 10), skip: gs.skip, miss: gs.miss, warn: gs.warn, last: gs.last, tracked: gs.base ? botRows() : 0 });
           return J(o);
         }
@@ -1358,6 +1359,7 @@ export function install(BASE, mode0) {
             ck.msg = '連線正常：可以讀寫「' + ck.title + '」';
             if (ck.need_choice) ck.hint = '在網站的試算表同步卡片選「以機器人為準」（表上原本的內容會先備份到另一個分頁）或「以試算表為準」。';
             gs.paused = ''; gs.fails = 0;
+            if (/^(forbidden|read_only|not_found)$/.test(gs.code)) { gs.code = ''; delete cF.gsheet_last_err; }   // 機器人：檢查通過＝權限類錯誤已修好
           }
           gs.check = ck; logF('試算表檢查連線', (ck.ok ? '正常' : ck.msg) + sfx());
           return J({ ok: true, check: ck, msg: ck.msg });
@@ -1391,8 +1393,9 @@ export function install(BASE, mode0) {
             if (v2) { gs.code = 'forbidden'; gs.fails++; if (gs.fails >= 3 && cF.gsheet_auto) gs.paused = 'forbidden'; }
             return J(v2 ? { error: why, code: 'forbidden', hint: ERR.forbidden[1] } : { error: why }, 500);
           }
-          const fin = () => { cF.gsheet_synced_at = ts(); cF.gsheet_last_push = ts().slice(0, 11); delete cF.gsheet_last_err; if (v2) { gs.code = ''; gs.fails = 0; gs.paused = ''; gs.need = null; gs.base = true; } };
-          if (RS.sheet === 'pending') { setTimeout(fin, 2500); logF('試算表同步', '背景處理中' + sfx()); return J({ ok: true, pending: true, msg: '正在跟試算表雙向同步，完成後狀態會更新' }); }
+          const fin = () => { cF.gsheet_synced_at = ts(); cF.gsheet_last_push = ts().slice(0, 11); delete cF.gsheet_last_err; gs.busy = '';
+            if (v2) { gs.code = ''; gs.fails = 0; gs.paused = ''; gs.need = null; gs.base = true; if (gs.check && !gs.check.ok) gs.check = null; } };   // 同步成功＝之前檢查失敗的結果過時
+          if (RS.sheet === 'pending') { gs.busy = 'sync'; setTimeout(fin, 2500); logF('試算表同步', '背景處理中' + sfx()); return J({ ok: true, pending: true, msg: '正在跟試算表雙向同步，完成後狀態會更新' }); }
           if (v2 && RS.sheetpre && !gs.base && !mode) {
             gs.need = { sheet_rows: 3, bot_rows: botRows(), at: ts().slice(0, 11) };
             return J({ ok: true, need_choice: true, need: gs.need, pulled: 0, created: 0, pushed: [], miss: [], err: '', code: 'need_choice',

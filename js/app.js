@@ -3495,8 +3495,8 @@ class Component extends DCLogic {
     } else if (v === 'seidan') {
       const ed = this.carSeiEdCur(), det = this.carSeiCur();
       if (ed) {                                   // 設定面板：草稿不動也每 60 秒重算一次（機器人那邊一直有新的場次）
-        const pv = this.carSecOf(this.carSecKey('seipv') + ':' + ed.pid);
-        if (pv && !pv.busy && now - (pv.at || 0) >= 60000) this.carSeiPv(true);
+        const pv = this.carSecOf(this.carSecKey('seipv') + ':' + ed.pid);   // 預覽失敗過：15 秒後自動重試
+        if (pv && !pv.busy && now - Math.max(pv.at || 0, pv.errAt || 0) >= (pv.err ? 15000 : 60000)) this.carSeiPv(true);
       } else if (det) {                           // 完整紀錄頁：判定分析每 60 秒更新
         const an = this.carSecOf(this.carSeiAnKey(det.pid));
         if (an && an.data && !an.busy && now - (an.at || 0) >= 60000) this.carSeiAnLoad(det.pid, true);
@@ -3650,8 +3650,10 @@ class Component extends DCLogic {
   carSeiDefs() { const m = this.carSecOf(this.carSecKey('seimeta')), d = m && m.data && m.data.defaults; return d && typeof d === 'object' ? Object.assign({}, this.CAR_SEI_DEF, d) : this.CAR_SEI_DEF; }
   carSeiFmt(kind, v) {
     if (v === null || v === undefined || v === '' || isNaN(+v)) return '';
-    if (kind === 'pct') return String(Math.round(+v * 1000) / 10);
-    if (kind === 'x') return String(Math.round(+v * 100) / 100);
+    /* 位數要夠把機器人存的值原樣帶回去（機器人小數存到 4 位：0.9225＝92.25%、1.125 倍），
+       不然沒改的參數也會被預覽當成「草稿」、用跟機器人不一樣的值算 */
+    if (kind === 'pct') return String(Math.round(+v * 10000) / 100);
+    if (kind === 'x') return String(Math.round(+v * 10000) / 10000);
     return String(Math.round(+v));
   }
   /* 玩家資料（GET /seidan 的一筆，或 config 回來的 player）→ 表單字串 */
@@ -3676,7 +3678,7 @@ class Component extends DCLogic {
       const sv = String(f[k] == null ? '' : f[k]).trim().replace(/,/g, '');
       if (!/^\d+(\.\d+)?$/.test(sv)) { errs[k] = label + '要填數字'; return; }
       if (kind === 'int' && sv.indexOf('.') >= 0) { errs[k] = label + '要是整數'; return; }
-      const n = kind === 'pct' ? Math.round(+sv * 10) / 1000 : +sv, rg = this.CAR_SEI_RANGE[k] || [-Infinity, Infinity];
+      const n = kind === 'pct' ? Math.round(+sv * 100) / 10000 : +sv, rg = this.CAR_SEI_RANGE[k] || [-Infinity, Infinity];
       if (n < rg[0] || n > rg[1]) { errs[k] = label + '要在 ' + (kind === 'pct' ? Math.round(rg[0] * 100) + '～' + Math.round(rg[1] * 100) + '%' : rg[0] + '～' + rg[1]) + ' 之間'; return; }
       params[k] = n;
     });
@@ -3715,16 +3717,20 @@ class Component extends DCLogic {
     const ed = this.carSeiEdCur(); if (!ed) return;
     const params = this.carSeiEdParams(ed.f).params, hours = +ed.hours || 6;
     const key = this.carSecKey('seipv') + ':' + ed.pid, sig = JSON.stringify([params, hours]), cur = this.carSecOf(key);
-    if (!force && cur && cur.sig === sig && cur.data) return;
+    if (!force && cur && cur.sig === sig && cur.data && !cur.err) return;
     const seq = (this._carSeiPvSeq = (this._carSeiPvSeq || 0) + 1), g0 = String(this.state.g || '');
     this.carSecPut(key, { busy: true, sig });
     try {
       const d = await this.carApi('/seidan', { body: { action: 'preview', pid: ed.pid, params, hours } });
       if (seq !== this._carSeiPvSeq || String(this.state.g || '') !== g0) return;
-      this.carSecPut(key, { data: d, err: '', busy: false, at: Date.now(), sig });
+      this.carSecPut(key, { data: d, err: '', busy: false, at: Date.now(), sig, dsig: sig, errAt: 0 });
     } catch (e) {
       if (seq !== this._carSeiPvSeq) return;
-      this.carSecPut(key, { err: (e && e.code === 'not_found') ? '機器人版本不支援預覽，請更新機器人' : ((e && e.message) || '預覽失敗'), busy: false, at: Date.now() });
+      /* 失敗：sig 退回畫面上那份結果的參數（同一份草稿之後會重送），「更新於」不跟著變；
+         畫面上留著的是上一組參數的結果 → 錯誤一定要顯示（carSpvStale） */
+      const had = this.carSecOf(key) || {};
+      this.carSecPut(key, { err: (e && e.code === 'not_found') ? '機器人版本不支援預覽，請更新機器人' : ((e && e.message) || '預覽失敗'),
+        busy: false, sig: had.dsig || '', errAt: Date.now() });
     }
   }
   async carSeiEdSave() {
@@ -3859,6 +3865,7 @@ class Component extends DCLogic {
     const hd = hi ? dots.find(d => d.t === String(hi)) : null;
     return {
       W: String(W), H: String(H), L: String(L), Rx: f1(L + pw), T: String(T), ph: f1(ph), base: f1(T + ph), lw: pctX(L - 6),
+      xtop: 'calc((100% - 4px) * ' + (Math.round((T + ph) / H * 10000) / 10000) + ' + 3px)',      // 外框 padding-bottom 4px；基準線下方 3px
       bands: bands.filter(b => b.m === 'multi' || b.m === 'auto').map(b => ({ x: f1(b.x0), w: f1(Math.max(0.6, b.x1 - b.x0)), fill: 'color-mix(in oklab,' + MC[b.m] + ' 11%,transparent)' })),
       /* 在 <svg> 裡不用 sc-if（外來內容）：可有可無的圖層一律給 0 或 1 筆的陣列走 sc-for */
       thL: th > 0 ? [{ y: f1(y(th)), top: pctY(y(th) - 9), l: '門檻 ' + this.carStN(th) }] : [], hyL: th > 0 ? [{ y: f1(y(up)) }, { y: f1(y(dn)) }] : [],
@@ -3876,6 +3883,8 @@ class Component extends DCLogic {
     const ML = m => this.CAR_SEI_MODES[m] || String(m || '—');
     const chips = [];
     const ml = String(st.mode_live || 'unknown'), md = String(st.mode_draft || 'unknown');
+    /* 停用中機器人不輪詢、什麼都不發（詳細頁與設定面板都要看得到；「接下來」是重新啟用後才會發的） */
+    if (st.enabled === false) chips.push({ k: '監控', v: '已停用：機器人現在不會發任何警報' + (st.disabled_at ? '（' + this.carStTime(st.disabled_at) + ' 起）' : ''), fg: 'var(--text-2)', bg: 'color-mix(in oklab,var(--text-3) 16%,var(--card))' });
     chips.push({ k: '目前模式', v: ML(ml) + (md !== ml ? (draft ? ' → 新參數判 ' : ' → 依目前設定重算是 ') + ML(md) : ''), fg: md !== ml ? tfg('#7b5cd6') : 'var(--ink)', bg: md !== ml ? tbg('#7b5cd6') : 'var(--card-2)' });
     chips.push({ k: '近 1 小時', v: (+st.rounds_1h || 0) + ' 場 · ' + this.carStN(st.speed_1h), fg: 'var(--ink)', bg: 'var(--card-2)' });
     chips.push({ k: '場均（10）', v: this.carStN(st.avg10), fg: 'var(--ink)', bg: 'var(--card-2)' });
@@ -3902,6 +3911,26 @@ class Component extends DCLogic {
     return { chips, cnt, evs, hasEvs: evs.length > 0, noEvs: !evs.length, pend, hasPend: pend.length > 0,
       evHead: '這段時間會發出的警報（' + total + ' 則' + (an && an.sim_truncated ? '，停太久的時段只模擬前 2000 次輪詢' : '') + '）',
       foot: (an && an.rounds_truncated ? '只畫最新 400 場。' : '') + '斷 auto 提醒以每 60 秒輪詢一次估算；抓不到分數的那幾次輪詢預覽看不到，實際提醒可能晚一點。' };
+  }
+  /* 手機上點圖：點本身只有 2～3 px，點不準 → 點在圖上任何地方，就選橫向最近的那一場（±24 個圖座標單位內） */
+  carSchTap(e) {
+    const tg = e && e.target, svg = e && e.currentTarget;
+    if (!svg || (tg && String(tg.tagName || '').toLowerCase() === 'circle' && tg.getAttribute('data-t'))) return;   // 點到點本身：原本的處理
+    const r = svg.getBoundingClientRect ? svg.getBoundingClientRect() : null;
+    if (!r || !r.width || !isFinite(+e.clientX)) return;
+    const vx = (e.clientX - r.left) / r.width * 720;
+    let best = null, bd = Infinity;
+    Array.prototype.forEach.call(svg.querySelectorAll('circle[data-t]'), c => { const d = Math.abs(+c.getAttribute('cx') - vx); if (d < bd) { bd = d; best = c; } });
+    const t = best && bd <= 24 ? String(best.getAttribute('data-t') || '') : '';
+    if (t && t !== this.state.carSchHi) this.setState({ carSchHi: t });
+  }
+  carSeiTgAddId(inp) {
+    const u = String((inp && inp.value) || '').trim(), cur = this.carSeiEdCur(); if (!cur) return;
+    if (!/^\d{15,21}$/.test(u)) { this._toast('Discord 使用者 ID 是 15～21 位數字'); return; }
+    const lst = (cur.f.notify_targets || []).slice();
+    if (lst.length >= 25 && lst.indexOf(u) < 0) { this._toast('通知名單最多 25 人'); return; }
+    if (lst.indexOf(u) < 0) lst.push(u);
+    inp.value = ''; this.carSeiEdSet({ notify_targets: lst });
   }
   carSeiSw(on) { return { on: on ? 'true' : 'false', swBg: on ? 'var(--ink-grad)' : 'var(--card-2)', swBd: on ? 'transparent' : 'var(--border)', swL: on ? '20px' : '2px', swK: on ? '#fff' : 'var(--text-3)' }; }
   /* 設定面板＋即時預覽的畫面資料 */
@@ -3956,8 +3985,11 @@ class Component extends DCLogic {
       carSpvHours: this.CAR_SEI_HOURS.map(h => Object.assign({ v: String(h), n: h + 'h' }, c.segOn(h === (+ed.hours || 6)))),
       carSpvBusy: pvBusy, carSpvStamp: pvBusy ? '計算中…' : (pv && pv.at ? '更新於 ' + this.carSeiHm(pv.at) + (an && an.draft ? ' · 草稿參數' : ' · 目前設定') : ''),
       carSpvErr: pvErr, carSpvHasErr: !!pvErr && !an, carSpvLoading: !an && !pvErr, carSpvReady: !!an,
+      /* 預覽失敗但畫面上還有上一次的結果：一定要講清楚，不然會以為新參數算出來就是這樣 */
+      carSpvStaleErr: !!pvErr && !!an && !pvBusy ? '預覽更新失敗：' + pvErr + '。下面還是「' + (an.draft ? '上一組草稿參數' : '目前設定') + '」的結果，不是你剛改的參數。' : '',
       carSpvInvalid: inv.length ? '這幾項草稿不合法，預覽先用目前的值：' + inv.join('、') : '',
       carSch: ch, carSan: av, carSpvMini: mini, onCarSchHi: e => { const t = String(e.currentTarget.dataset.t || ''); if (t && t !== this.state.carSchHi) this.setState({ carSchHi: t }); },
+      onCarSchTap: e => this.carSchTap(e),
       carSpvGroups: groups,
       carSpvChOpts: chOpts, carSpvCh: f.channel_id, carSpvChErr: errs.channel_id || '', carSpvChDirty: isDirty('channel_id'),
       carSpvRoleOpts: roleOpts, carSpvRole: f.admin_role_id, carSpvRoleErr: errs.admin_role_id || '',
@@ -3990,9 +4022,9 @@ class Component extends DCLogic {
         const lst = (cur.f.notify_targets || []).slice(); if (lst.indexOf(u) < 0 && lst.length < 25) lst.push(u);
         this.setState({ carSeiEdPick: '' }); this.carSeiEdSet({ notify_targets: lst });
       },
-      onCarSpvTgId: e => { if (e.key !== 'Enter') return; e.preventDefault(); const u = String(e.currentTarget.value || '').trim(), cur = this.carSeiEdCur(); if (!cur) return;
-        if (!/^\d{15,21}$/.test(u)) { this._toast('Discord 使用者 ID 是 15～21 位數字'); return; }
-        const lst = (cur.f.notify_targets || []).slice(); if (lst.indexOf(u) < 0 && lst.length < 25) lst.push(u); e.currentTarget.value = ''; this.carSeiEdSet({ notify_targets: lst }); },
+      onCarSpvTgId: e => { if (e.key !== 'Enter') return; e.preventDefault(); this.carSeiTgAddId(e.currentTarget); },
+      /* iPhone 的數字鍵盤沒有 Enter：旁邊的「加入」按鈕做一樣的事 */
+      onCarSpvTgAdd: e => { const box = e.currentTarget.parentNode, inp = box && box.querySelector('input[data-sei-tgid]'); if (inp) this.carSeiTgAddId(inp); },
       onCarSpvRmTg: e => { const u = String(e.currentTarget.dataset.u || ''), cur = this.carSeiEdCur(); if (!cur) return; this.carSeiEdSet({ notify_targets: (cur.f.notify_targets || []).filter(x => x !== u) }); },
       onCarSpvSave: () => this.carSeiEdSave(),
       onCarSpvRevert: () => this.carSeiEdRevert(),
@@ -4027,6 +4059,10 @@ class Component extends DCLogic {
       onCarStView: e => {
         const v = String(e.currentTarget.dataset.v || '');
         if (!this.CAR_ST_VIEWS.some(x => x[0] === v)) return;
+        /* 色段設定還有沒存的變更：跟「← 返回列表」一樣先問（點「色段監控」分頁回列表也會丟掉草稿） */
+        const ed = this.carSeiEdCur(), nd = ed ? this.carSeiDirty(ed).length : 0;
+        if (nd && !window.confirm('有 ' + nd + ' 項設定還沒儲存，確定離開？')) return;
+        clearTimeout(this._carSeiPvT);
         this.setState({ carStView: v, carSeiDet: null, carSeiEd: null, carSeiAdd: null });
         setTimeout(() => this.carSec_stats(false), 0);
       },
@@ -4274,6 +4310,7 @@ class Component extends DCLogic {
       carSeiList: false, carSeiDetail: true, carSeiEdit: false,
       carSdAnReady: !!an, carSdAnLoading: !an && !anErr, carSdAnErr: anErr, carSch: this.carSeiChart(an, c.s.carSchHi), carSan: this.carSeiAnVals(an, null, false),
       onCarSchHi: e => { const t = String(e.currentTarget.dataset.t || ''); if (t && t !== this.state.carSchHi) this.setState({ carSchHi: t }); },
+      onCarSchTap: e => this.carSchTap(e),
       carSdAnHours: this.CAR_SEI_HOURS.map(h => Object.assign({ v: String(h), n: h + 'h' }, c.segOn(h === anH))),
       carSdAnStamp: anSec && anSec.busy ? '更新中…' : (anSec && anSec.at ? '更新於 ' + this.carSeiHm(anSec.at) + ' · 每 60 秒自動更新' : ''),
       carSdCanEd: !!c.admin && !!this.carStSeiFind(pid),
@@ -5096,14 +5133,15 @@ class Component extends DCLogic {
     /* v2：檢查連線（讀得到、寫得進去、班表分頁的狀況；不改班表）。結果也會存在 info.check */
     if (act === 'check') {
       this._toast('檢查連線中…', 20000);
+      const before = info;
       const d = await this.carAct('/sheet', { action: 'check' }, null, no);
       if (!d) return;
       const ck = d.check && typeof d.check === 'object' ? d.check : null;
       this._toast(ck ? (ck.ok ? '連線正常' : '連線失敗：' + this.carFTxt(ck.msg)) : this.carFMsg(d, '已送出'), 4000);
       const cur = (this.carSecOf(key) || {}).data;
       if (ck && cur) this.carSecPut(key, { data: Object.assign({}, cur, { check: ck }) });
+      if (d.pending) { this.carFShPoll(key, no, 'check', before); return; }
       reInfo();
-      if (d.pending) this.carFLater(reInfo);
       return;
     }
     /* v2：第一次同步選方向，或之後手動「以機器人為準重寫」（表上原本的內容先備份到另一個分頁） */
@@ -5192,6 +5230,7 @@ class Component extends DCLogic {
   async carFSheetSync(mode) {
     const no = this.carNo(), key = this.carSecKey('sheet', true);
     const reInfo = () => this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
+    const before = (this.carSecOf(key) || {}).data || null;                               // 背景跑的時候拿來比「有沒有變」
     this._toast('同步中…', 25000);
     let why = '';
     const d = await this.carAct('/sheet', mode ? { action: 'sync', mode } : { action: 'sync' }, null, no, e => { why = String((e && e.message) || '同步失敗'); return null; });
@@ -5202,10 +5241,40 @@ class Component extends DCLogic {
     }
     const msg = this.carFMsg(d, '已同步');
     this._toast(msg, 4000);
-    this.setState({ carFShRes: { k: key, msg, miss: (Array.isArray(d.miss) ? d.miss : []).slice(0, 12).map(x => String(x)), sync: true, warn: !!d.need_choice } });
+    this.setState({ carFShRes: { k: key, msg, miss: (Array.isArray(d.miss) ? d.miss : []).slice(0, 12).map(x => String(x)), sync: true, warn: !!d.need_choice, pend: !!d.pending } });
     if (+d.pulled > 0 || mode) this.carLoadStates(no);                                    // 表上的修改寫回機器人了：班表跟著更新
+    if (d.pending) { this.carFShPoll(key, no, 'sync', before); return; }
     reInfo();
-    if (d.pending) this.carFLater(() => { reInfo(); this.carLoadStates(no); });
+  }
+  /* 同步／檢查超過 12 秒，機器人先回 {pending}、在背景跑完。每 4 秒重抓狀態，直到機器人說做完了（info.busy 不見；
+     舊機器人沒有 busy → 看同步時間、錯誤、要選方向、檢查時間有沒有變），最多 90 秒；
+     停下來時把「正在同步…完成後狀態會更新」那句換成結果，不會一直掛著 */
+  carFShPoll(key, no, kind, before) {
+    const g0 = String(this.state.g || ''), t0 = Date.now();
+    const sig = i => i ? [i.synced_at, i.last_err, i.need_choice ? 1 : 0, (i.check && i.check.at) || ''].join('|') : '';
+    const s0 = sig(before);
+    clearTimeout(this._carFShPollT);
+    const tick = async () => {
+      this._carFShPollT = null;
+      if (String(this.state.g || '') !== g0 || this.carNo() !== no) return;
+      const d = await this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
+      if (String(this.state.g || '') !== g0) return;
+      const fin = !!d && (d.busy != null ? !d.busy : sig(d) !== s0), late = Date.now() - t0 > 90000;
+      if (!fin && !late) { this._carFShPollT = setTimeout(tick, 4000); return; }
+      if (kind === 'check') {
+        const ck = fin && d && d.check && typeof d.check === 'object' ? d.check : null;
+        if (ck) this._toast(ck.ok ? '連線正常' : '連線失敗：' + this.carFTxt(ck.msg), 4000);
+        return;
+      }
+      if (fin) this.carLoadStates(no);
+      const r = !fin ? { msg: '同步還在背景進行（超過 90 秒）；稍後按「重新整理」看結果。', warn: true }
+        : d.need_choice ? { msg: '同步完成：表上和機器人都有班表而且不一樣，要先選以哪邊為準（這次什麼都沒改）。', warn: true }
+        : d.last_err ? { msg: '同步失敗：' + this.carFTxt(d.last_err), bad: true }
+        : { msg: '同步完成' + (d.synced_at ? '（' + String(d.synced_at) + '）' : '') + '。' };
+      this.setState(st => (st.carFShRes && st.carFShRes.k === key && st.carFShRes.pend
+        ? { carFShRes: Object.assign({ k: key, miss: [], sync: true, pend: false }, r) } : null));
+    };
+    this._carFShPollT = setTimeout(tick, 3000);
   }
   /* 復原一筆「從試算表套用的變更」：只還原之後沒再被改過的時段；下一輪同步會把還原後的內容寫回表上 */
   async carFShUndo(id, head) {
@@ -5313,21 +5382,32 @@ class Component extends DCLogic {
     const shTabs = two ? (Array.isArray(info.tabs) ? info.tabs : []).map(x => String(x == null ? '' : x)).filter(Boolean).slice(0, 6) : [];
     const shTab = two ? String(info.tab || shTabs[0] || '班表') : '班表';
     const shLegacy = !two || !!openMap.__sheetOld;
-    const shErrCode = v2 ? String(info.err_code || '') : '';
-    const shChk = v2 && info.check && typeof info.check === 'object' && String(info.check.sid || '') === shSaved ? info.check : null;
+    /* 「檢查連線」的結果跟「上次同步失敗」是兩個各自留著的訊號：只信比較新的那個（時間都是 MM-DD HH:MM 開頭，可以直接比字串）。
+       檢查失敗之後又同步成功 → 那次檢查已經過時；檢查通過而且比權限類的同步錯誤新 → 那個錯誤已經修好 */
+    const shChk0 = v2 && info.check && typeof info.check === 'object' && String(info.check.sid || '') === shSaved ? info.check : null;
+    const shChkAt = shChk0 ? String(shChk0.at || '').slice(0, 11) : '', shSynAt = two && info.synced_at ? String(info.synced_at).slice(0, 11) : '';
+    const shErrAt = two && info.last_err ? String(info.last_err).slice(0, 11) : '';
+    /* 只到「分」：同一分鐘內分不出先後 → 不猜（新版機器人自己會清掉過時的那個，這裡只是舊機器人的保險） */
+    const shChk = shChk0 && !shChk0.ok && shSynAt && shSynAt > shChkAt && !shErrAt ? null : shChk0;
+    const shErrFixed = !!(shChk && shChk.ok && shErrAt && shChkAt > shErrAt && /^(forbidden|read_only|not_found|no_creds|bad_creds|no_lib)$/.test(String(info.err_code || '')));
+    const shErrCode = v2 && !shErrFixed ? String(info.err_code || '') : '';
     const shCredOk = !!(info && (info.creds_ok != null ? info.creds_ok : info.has_creds));
     const shHasId = !!shSaved, shSynced = !!(two && info.synced_at), shChkOk = !!(shChk && shChk.ok);
     const shNeedI = v2 && info.need_choice && info.need && typeof info.need === 'object' ? info.need : null;
     const shNeed = !!(v2 && info.need_choice) || (!!(shChk && shChk.need_choice) && !shSynced);
     const shAutoOn = !!(info && info.auto), shPaused = v2 ? String(info.paused || '') : '';
-    const shLastErr = two && info.last_err ? this.carFTxt(info.last_err) : '';
-    const shRetry = v2 && info.next_retry ? '下次自動重試 ' + String(info.next_retry) : '';
+    const shLastErr = two && info.last_err && !shErrFixed ? this.carFTxt(info.last_err) : '';
+    /* 只有開了自動同步（而且沒暫停）才會自己重試；沒開時舊機器人的說明還是寫「會自動重試」→ 換成按立即同步 */
+    const shRetry = v2 && info.next_retry && shAutoOn && !shPaused ? '下次自動重試 ' + String(info.next_retry) : '';
+    const shErrHint = v2 ? (!shAutoOn && /^(network|quota)$/.test(shErrCode) && /自動/.test(String(info.err_hint || ''))
+      ? '自動同步沒開，機器人不會自己重試；過一下再按「立即同步」就好。' : String(info.err_hint || '')) : '';
     /* 設定步驟：完成／下一步／要處理（錯誤指向的那一步）／還沒到。舊機器人沒有「檢查連線」那一步 */
     const chkCode = shChk ? String(shChk.code || '') : '';
     const stBad = { 1: !!info && !shCredOk, 2: /^(forbidden|read_only)$/.test(shErrCode) || /^(forbidden|read_only)$/.test(chkCode),
       3: shErrCode === 'not_found' || chkCode === 'not_found', 4: !!shChk && !shChk.ok && !/^(forbidden|read_only|not_found|no_creds|bad_creds|no_lib)$/.test(chkCode),
       5: shNeed || shErrCode === 'header', 6: !!shPaused };
-    const stDone = { 1: shCredOk, 2: shChkOk || (shSynced && !shLastErr), 3: shHasId, 4: shChkOk || (shSynced && !shLastErr), 5: shSynced && !shNeed, 6: shAutoOn && !shPaused };
+    const shChkBad = !!shChk && !shChk.ok;                // 檢查沒過：第 2、4 步不能算完成（不然「✓ 完成」下面接著「✕ 沒有權限」）
+    const stDone = { 1: shCredOk, 2: !shChkBad && (shChkOk || (shSynced && !shLastErr)), 3: shHasId, 4: !shChkBad && (shChkOk || (shSynced && !shLastErr)), 5: shSynced && !shNeed, 6: shAutoOn && !shPaused };
     const stOrder = v2 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 5, 6];
     const stCur = stOrder.find(n => stBad[n] || !stDone[n]) || 0;
     const stAll = !!info && stCur === 0, stOpen = !stAll || !!openMap.__sheetSteps;     // 全部完成就收成一行（可以再展開）
@@ -5339,13 +5419,13 @@ class Component extends DCLogic {
         tag: b ? '要處理' : d ? '完成' : cu ? '下一步' : '', tagFg: b ? badFg : d ? okFg : 'var(--accent-deep)' };
     };
     /* 最上面的狀態列 */
-    const shNeedTxt = shNeedI ? '表上有 ' + (+shNeedI.sheet_rows || 0) + ' 列、機器人有 ' + (+shNeedI.bot_rows || 0) + ' 個時段，而且內容不一樣。'
+    const shNeedTxt = shNeedI ? (shNeedI.why ? this.carFTxt(shNeedI.why) + '。' : '') + '表上有 ' + (+shNeedI.sheet_rows || 0) + ' 列、機器人有 ' + (+shNeedI.bot_rows || 0) + ' 個時段，而且內容不一樣。'
       : (shChk && shChk.need_choice ? '表上已經有 ' + (+shChk.sched_rows || 0) + ' 列、機器人有 ' + (+shChk.bot_rows || 0) + ' 個時段。' : '');
     let ban;
     if (!shHasId) ban = { kind: 'idle', t: '還沒連接試算表', sub: '照下面的步驟做，大約三分鐘。', hint: '' };
-    else if (shPaused) ban = { kind: 'bad', t: '自動同步已暫停', sub: shLastErr ? '原因：' + shLastErr : '', hint: String(info.err_hint || '') + ' 修好之後按「檢查連線」或「立即同步」就會恢復。' };
+    else if (shPaused) ban = { kind: 'bad', t: '自動同步已暫停', sub: shLastErr ? '原因：' + shLastErr : '', hint: shErrHint + ' 修好之後按「檢查連線」或「立即同步」就會恢復。' };
     else if (shNeed) ban = { kind: 'warn', t: '第一次同步：要先選以哪邊為準', sub: shNeedTxt + '選好之前機器人不會動試算表。', hint: '' };
-    else if (shLastErr) ban = { kind: 'bad', t: '上次同步失敗', sub: shLastErr + (shRetry ? '（' + shRetry + '）' : ''), hint: v2 ? String(info.err_hint || '') : '' };
+    else if (shLastErr) ban = { kind: 'bad', t: '上次同步失敗', sub: shLastErr + (shRetry ? '（' + shRetry + '）' : ''), hint: shErrHint };
     else if (shSynced) ban = { kind: 'ok', t: '同步正常', sub: '上次同步 ' + String(info.synced_at) + (shAutoOn ? ' · 每 ' + shSec + ' 秒自動同步' : ' · 自動同步還沒開'), hint: '' };
     else ban = { kind: 'idle', t: '還沒同步過', sub: shAutoOn ? '自動同步已開，第一輪會在 ' + shSec + ' 秒內跑。' : '完成下面的步驟後按「立即同步」。', hint: '' };
     const banC = { ok: [okFg, '#2f9e57'], bad: [badFg, '#ee6644'], warn: [warnFg, '#d08a00'], idle: ['var(--ink)', '#6c7bd8'] }[ban.kind];
@@ -5358,11 +5438,12 @@ class Component extends DCLogic {
       return a.length ? { k, title: t + '（' + a.length + '）', items: a.slice(0, 8).map((x, i) => ({ i: String(i), t: x })), more: a.length > 8, moreTxt: '還有 ' + (a.length - 8) + ' 筆' } : null;
     }).filter(Boolean) : [];
     const shLast = v2 && info.last && typeof info.last === 'object' ? info.last : null;
-    const shLastSum = shLast ? '上次同步（' + String(shLast.at || '') + '）：' + [
+    const shLastParts = shLast ? [
       +shLast.pulled ? '從表上套用 ' + (+shLast.pulled) + ' 個時段' : '',
       Array.isArray(shLast.pushed) && shLast.pushed.length ? '更新分頁 ' + shLast.pushed.map(String).join('、') : '',
       shLast.deferred ? '有人正在改表，這次先不寫回' : '',
-      shLast.backup ? '已備份到「' + String(shLast.backup) + '」' : ''].filter(Boolean).join('；') : '';
+      shLast.backup ? '已備份到「' + String(shLast.backup) + '」' : ''].filter(Boolean) : [];
+    const shLastSum = shLast ? '上次同步（' + String(shLast.at || '') + '）：' + (shLastParts.length ? shLastParts.join('；') : '沒有變更（表跟機器人一致）') : '';
 
     /* 班表插畫圖庫（整個車隊共用） */
     const bgKey = this.carSecKey('bgimg', false), bgS = this.carSecOf(bgKey), bg = bgS && bgS.data;
