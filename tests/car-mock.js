@@ -58,7 +58,10 @@ const carOf = (gid, no) => { const k = gid + ':' + no; if (!DB[k]) DB[k] = mkCar
    測試開關：sessionStorage 'sekai-carmockR'（逗號分隔）或執行中改 globalThis.__mockR：
      oldbot   /state 不帶每一列的 p1 與 team_mode（舊機器人）；/runner 回 404 bot_not_updated
      oldsheet /sheet info 不帶雙向同步的欄位（舊機器人）
-   __mockR.sheet = 'err'｜'pending'｜''：下一次 /sheet sync 回 500 {error}／{ok, pending, msg}／正常
+     sheetv1  /sheet 有雙向同步但沒有 v2（沒有檢查連線、變更紀錄、選方向）
+     sheetpre 綁上的試算表本來就有資料：第一次同步要先選以哪邊為準（need_choice）
+     sheetnocreds 主機沒有設定 Google 服務帳號（creds_ok=false）
+   __mockR.sheet = 'err'｜'pending'｜'readonly'｜'notfound'｜''：/sheet sync、check 回 權限錯誤／{ok, pending, msg}／只有檢視權限／找不到／正常
    __mockR.runPending = true：下一次 /runner 回 {ok, pending, msg} */
 const TEAM = { '111': true, '222': false };
 const mockR = () => globalThis.__mockR || (globalThis.__mockR = (() => {
@@ -66,7 +69,7 @@ const mockR = () => globalThis.__mockR || (globalThis.__mockR = (() => {
   const has = k => f.split(',').indexOf(k) >= 0;
   /* 跑者自行報跑（S 組）：selfrun＝一開始就開放；notrunner＝登入的人沒登記跑者倍率（預設有）；
      oldself＝機器人還沒有這個功能（/state 不帶 runner_self_signup、/runself 回 404） */
-  return { oldbot: has('oldbot'), oldsheet: has('oldsheet'), sheet: '', runPending: false,
+  return { oldbot: has('oldbot'), oldsheet: has('oldsheet'), sheetv1: has('sheetv1'), sheetpre: has('sheetpre'), sheetnocreds: has('sheetnocreds'), sheet: '', runPending: false,
     selfrun: has('selfrun'), notrunner: has('notrunner'), oldself: has('oldself') };
 })());
 const RUNSELF = {};
@@ -1321,35 +1324,113 @@ export function install(BASE, mode0) {
         if (!admin) return deny();
         const act = body.action || 'info';
         /* R 組：雙向同步（表為準）。info 多回 two_way／tab／tabs／synced_at／last_err／interval／url；action:'sync' 馬上對一次。
-           __mockR.sheet = 'err' → 500 {error}（也會記到 last_err）；'pending' → {ok, pending, msg}，約 2.5 秒後才更新 synced_at */
-        const RS = mockR(), tabNm = no === 1 ? '班表' : '班表-' + carNm(no);
-        if (act === 'info') return J(Object.assign({ sheet_id: cF.gsheet_id || '', service_email: 'caibot-sheet@caibot-sync.iam.gserviceaccount.com', has_creds: true, last_push: cF.gsheet_last_push || '', auto: !!cF.gsheet_auto },
-          RS.oldsheet ? {} : { two_way: true, tab: tabNm, tabs: [tabNm, '時數', '成員'], synced_at: cF.gsheet_synced_at || '', last_err: cF.gsheet_last_err || '', interval: 60,
-            url: cF.gsheet_id ? 'https://docs.google.com/spreadsheets/d/' + cF.gsheet_id + '/edit' : '' }));
+           v2（gsheet_sync v2）：info 再多 v／features／creds_ok／err_code／err_hint／need_choice／need／paused／check／log／skip／miss／warn／last；
+           action：check（檢查連線）、sync {mode: bot|sheet}（第一次同步選方向）、undo {id}、format。
+           __mockR.sheet = 'err' → 權限錯誤（500 {error, code, hint}，也記到 last_err；開著自動同步連錯 3 次就暫停）；'pending' → {ok, pending, msg}；
+           'readonly'／'notfound' → 檢查連線回只有檢視權限／找不到 */
+        const RS = mockR(), tabNm = no === 1 ? '班表' : '班表-' + carNm(no), v2 = !RS.oldsheet && !RS.sheetv1;
+        const gs = cF.gsV2 || (cF.gsV2 = { base: false, check: null, log: [], need: null, paused: '', code: '', fails: 0, skip: [], miss: [], warn: [], last: null, undoT: null });
+        const ERR = { forbidden: ['機器人沒有這張試算表的權限：把試算表共用給服務帳號信箱（編輯者）', '打開試算表 → 右上角「共用」→ 貼上服務帳號信箱 → 權限選「編輯者」→ 傳送。'],
+          read_only: ['服務帳號只有檢視權限，沒辦法寫入', '在試算表的「共用」裡把服務帳號的權限從「檢視者」改成「編輯者」。'],
+          not_found: ['找不到這張試算表（ID 打錯、或試算表被刪了）', '確認貼的網址或 ID 沒有少字，試算表也沒有被移到垃圾桶。'],
+          no_sheet: ['還沒設定試算表', '貼上試算表網址並儲存。'] };
+        const botRows = () => Object.keys(c.sched).filter(d => d >= today).reduce((n, d) => n + Object.keys(c.sched[d] || {}).length, 0);
+        if (act === 'info') {
+          const o = { sheet_id: cF.gsheet_id || '', service_email: RS.sheetnocreds ? '' : 'caibot-sheet@caibot-sync.iam.gserviceaccount.com', has_creds: !RS.sheetnocreds, last_push: cF.gsheet_last_push || '', auto: !!cF.gsheet_auto };
+          if (!RS.oldsheet) Object.assign(o, { two_way: true, tab: tabNm, tabs: [tabNm, '時數', '成員'], synced_at: cF.gsheet_synced_at || '', last_err: cF.gsheet_last_err || '', interval: 60,
+            url: cF.gsheet_id ? 'https://docs.google.com/spreadsheets/d/' + cF.gsheet_id + '/edit' : '' });
+          if (v2) Object.assign(o, { v: 2, features: ['check', 'mode', 'undo', 'format', 'log'], multi: carsN() > 1, max_ahead: 60,
+            creds_ok: !RS.sheetnocreds, creds_code: RS.sheetnocreds ? 'no_creds' : '', creds_msg: RS.sheetnocreds ? '主機還沒設定 Google 服務帳號（GDRIVE_CREDS）' : '已設定 Google 服務帳號',
+            creds_hint: RS.sheetnocreds ? '請機器人主機的管理者把服務帳號 JSON 金鑰的「內容」放進環境變數 GDRIVE_CREDS，再重開機器人。' : '',
+            err_code: gs.code, err_hint: gs.code && ERR[gs.code] ? ERR[gs.code][1] : '', need_choice: !!gs.need, need: gs.need, paused: gs.paused, fails: gs.fails,
+            next_retry: gs.code ? '23:59:00' : '', check: gs.check && gs.check.sid === cF.gsheet_id ? gs.check : null,
+            log: gs.log.slice(0, 10), skip: gs.skip, miss: gs.miss, warn: gs.warn, last: gs.last, tracked: gs.base ? botRows() : 0 });
+          return J(o);
+        }
+        if (act === 'check') {
+          if (!v2) return J({ error: 'unknown action' }, 400);
+          const ck = { at: ts().slice(0, 11), sid: cF.gsheet_id || '', ok: false, code: '', msg: '', hint: '', title: '', tabs: [], can_write: null, sched_rows: 0, head_ok: true, bot_rows: botRows(), need_choice: false };
+          const bad = !cF.gsheet_id ? 'no_sheet' : RS.sheet === 'err' ? 'forbidden' : RS.sheet === 'readonly' ? 'read_only' : RS.sheet === 'notfound' ? 'not_found' : '';
+          if (bad) Object.assign(ck, { code: bad, msg: ERR[bad][0], hint: ERR[bad][1] });
+          else {
+            Object.assign(ck, { ok: true, title: '菜根<b>車隊</b>排班表', tabs: RS.sheetpre ? ['工作表1', tabNm] : ['工作表1'], can_write: true, sched_rows: RS.sheetpre ? 3 : 0 });
+            ck.need_choice = !!(RS.sheetpre && !gs.base && ck.bot_rows);
+            ck.msg = '連線正常：可以讀寫「' + ck.title + '」';
+            if (ck.need_choice) ck.hint = '在網站的試算表同步卡片選「以機器人為準」（表上原本的內容會先備份到另一個分頁）或「以試算表為準」。';
+            gs.paused = ''; gs.fails = 0;
+          }
+          gs.check = ck; logF('試算表檢查連線', (ck.ok ? '正常' : ck.msg) + sfx());
+          return J({ ok: true, check: ck, msg: ck.msg });
+        }
+        if (act === 'undo') {
+          if (!v2) return J({ error: 'unknown action' }, 400);
+          const e = gs.log.find(x => x.id === String(body.id || ''));
+          if (!e) return J({ error: '找不到這筆紀錄（可能已經太舊）' }, 400);
+          if (e.undone || !e.undo) return J({ error: '這筆已經復原過了' }, 400);
+          const u = gs.undoT && gs.undoT.id === e.id ? gs.undoT : null, sh = u ? (c.sched[u.d] || {})[u.h] : null;
+          if (sh && sh.p5 && sh.p5.name === '阿華') { sh.p5 = null; if (!u.mo) delete sh.manual_override; }
+          e.undo = false; e.undone = true;
+          gs.log.unshift({ id: 'u' + Date.now().toString(16).slice(-7), at: ts().slice(0, 11), who: '菜根', n: 1, kind: 'undo', items: ['復原 ' + (u ? u.label : '')], more: 0, undo: false, undone: false });
+          logF('試算表變更復原', '還原 1 個時段' + sfx());
+          return J({ ok: true, restored: [u ? u.label : ''], skipped: [], msg: '已還原 1 個時段' });
+        }
+        if (act === 'format') {
+          if (!v2) return J({ error: 'unknown action' }, 400);
+          if (!cF.gsheet_id) return J({ error: '尚未設定試算表 ID' }, 400);
+          logF('試算表套用格式', '標題列、下拉選單、提示色' + sfx());
+          return J({ ok: true, msg: '已重新套用表格格式：標題列、車種與成員下拉選單、缺人提示色' });
+        }
         if (act === 'sync') {
           if (RS.oldsheet) return J({ error: 'unknown action' }, 400);
           if (!cF.gsheet_id) return J({ error: '尚未設定試算表 ID' }, 400);
+          const mode = String(body.mode || '');
+          if (mode && (!v2 || (mode !== 'bot' && mode !== 'sheet'))) return J({ error: 'mode 只能是 bot 或 sheet' }, 400);
           if (RS.sheet === 'err') {
-            const why = '機器人沒有這張試算表的權限：把試算表共用給服務帳號信箱（編輯者）';
+            const why = ERR.forbidden[0];
             cF.gsheet_last_err = ts().slice(0, 11) + ' ' + why;
-            return J({ error: why }, 500);
+            if (v2) { gs.code = 'forbidden'; gs.fails++; if (gs.fails >= 3 && cF.gsheet_auto) gs.paused = 'forbidden'; }
+            return J(v2 ? { error: why, code: 'forbidden', hint: ERR.forbidden[1] } : { error: why }, 500);
           }
-          const fin = () => { cF.gsheet_synced_at = ts(); cF.gsheet_last_push = ts().slice(0, 11); delete cF.gsheet_last_err; };
+          const fin = () => { cF.gsheet_synced_at = ts(); cF.gsheet_last_push = ts().slice(0, 11); delete cF.gsheet_last_err; if (v2) { gs.code = ''; gs.fails = 0; gs.paused = ''; gs.need = null; gs.base = true; } };
           if (RS.sheet === 'pending') { setTimeout(fin, 2500); logF('試算表同步', '背景處理中' + sfx()); return J({ ok: true, pending: true, msg: '正在跟試算表雙向同步，完成後狀態會更新' }); }
-          /* 假裝有人在表上把今天第一個時段的 P5 填了「阿華」、又填了一個名冊裡沒有的名字 */
-          const day0 = c.sched[today] || {}, h0 = Object.keys(day0).sort()[0], sh0 = h0 ? day0[h0] : null, ah = MEMBERS.find(x => x.name === '阿華');
-          let pulled = 0; const miss = [];
-          if (sh0 && !cF.gsheet_synced_at) { if (!sh0.p5 && ah) { sh0.p5 = { user_id: ah.uid, name: ah.name, role: 'pusher', bonus: ah.bonus }; } sh0.manual_override = true; pulled = 1; miss.push(h0 + ' P4:<b>路人甲</b>'); }
+          if (v2 && RS.sheetpre && !gs.base && !mode) {
+            gs.need = { sheet_rows: 3, bot_rows: botRows(), at: ts().slice(0, 11) };
+            return J({ ok: true, need_choice: true, need: gs.need, pulled: 0, created: 0, pushed: [], miss: [], err: '', code: 'need_choice',
+              msg: '表上有 3 列、機器人有 ' + botRows() + ' 個時段，而且內容不一樣：請選以哪邊為準（這次什麼都沒改）' });
+          }
+          /* 假裝有人在表上把今天第一個時段的 P5 填了「阿華」、又填了一個名冊裡沒有的名字（以機器人為準重寫時不會） */
+          const day0 = c.sched[today] || {}, hs0 = Object.keys(day0).sort(), h0 = hs0.find(h => day0[h] && !day0[h].p5) || hs0[0], sh0 = h0 ? day0[h0] : null, ah = MEMBERS.find(x => x.name === '阿華');
+          let pulled = 0; const miss = [], items = [];
+          if (sh0 && !cF.gsheet_synced_at && mode !== 'bot') {
+            const mo = !!sh0.manual_override;
+            if (!sh0.p5 && ah) { sh0.p5 = { user_id: ah.uid, name: ah.name, role: 'pusher', bonus: ah.bonus }; items.push(today.slice(5).replace('-', '/') + ' ' + h0 + ' P5：（空）→ 阿華'); }
+            sh0.manual_override = true; pulled = 1; miss.push(today.slice(5).replace('-', '/') + ' ' + h0 + ' P4：<b>路人甲</b>（是不是「<b>小夫</b>」？）');
+            if (v2 && items.length) {
+              const id = Date.now().toString(16).slice(-8);
+              gs.log.unshift({ id, at: ts().slice(0, 11), who: '自動同步', n: 1, kind: 'sheet', items, more: 0, undo: true, undone: false });
+              gs.undoT = { id, d: today, h: h0, mo, label: today.slice(5).replace('-', '/') + ' ' + h0 };
+            }
+          }
+          const backup = mode === 'bot' && RS.sheetpre ? tabNm + '-備份' + ts().slice(0, 5).replace('-', '') + '-' + ts().slice(6, 11).replace(':', '') : '';
           fin(); logF('試算表同步', (pulled ? '以表為準套用 ' + pulled + ' 個時段' : '沒有變更') + sfx());
-          const pushed = pulled ? [tabNm, '時數'] : [], bits = [];
+          const pushed = pulled || mode ? [tabNm, '時數'] : [], bits = [];
+          if (backup) bits.push('表上原本的內容已備份到分頁「' + backup + '」');
           if (pulled) bits.push('以表為準套用 ' + pulled + ' 個時段');
           if (pushed.length) bits.push('已更新分頁：' + pushed.join('、'));
           if (miss.length) bits.push('表上有 ' + miss.length + ' 個名字對不到成員（照樣排上去，但沒有倍率）');
-          return J({ ok: true, msg: bits.join('；') || '表跟機器人一致，沒有要更新的', pulled, created: 0, pushed, miss, err: '' });
+          if (v2) {
+            gs.miss = miss; gs.skip = pulled ? ['第 7 列：日期空白', '第 9 列：看不懂時段「晚班」（寫成 20 或 20:00）'] : []; gs.warn = pulled ? [today.slice(5).replace('-', '/') + ' 23:00 在表上被刪掉了：刪列不會砍班，已經寫回去（要砍班請用網站或指令）'] : [];
+            gs.last = { at: ts(), pulled, created: 0, pushed, deferred: false, backup, mode };
+            if (gs.skip.length) bits.push(gs.skip.length + ' 列沒有套用（原因列在下方；看不懂的列留在表上最下面，「狀態」欄寫了原因）');
+          }
+          return J({ ok: true, msg: bits.join('；') || '表跟機器人一致，沒有要更新的', pulled, created: 0, pushed, miss, err: '', backup, skip: v2 ? gs.skip : [], warn: v2 ? gs.warn : [], items });
         }
         if (act === 'config') {
           const raw = String(body.sheet_id || '').trim(), mm = /\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/.exec(raw);
-          cF.gsheet_id = mm ? mm[1] : raw; if (body.auto != null) cF.gsheet_auto = !!body.auto;
+          const old = cF.gsheet_id || '';
+          if ('sheet_id' in body) cF.gsheet_id = mm ? mm[1] : raw;
+          if (body.auto != null) { cF.gsheet_auto = !!body.auto; if (cF.gsheet_auto) { gs.paused = ''; gs.fails = 0; } }
+          if (cF.gsheet_id !== old) { delete cF.gsheet_synced_at; delete cF.gsheet_last_err; cF.gsV2 = null; }
           logF('試算表設定', (cF.gsheet_id ? '已連接' : '已清除') + sfx());
           return J({ ok: true, sheet_id: cF.gsheet_id });
         }

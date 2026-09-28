@@ -319,7 +319,7 @@ class Component extends DCLogic {
     { t: '班表圖顯示 P1', d: '車隊模式下可以選擇讓班表圖每個時段多一欄 P1（誰開車），有指定的跑者用主色標示；私車模式維持原樣。', isNew: true },
     { t: '網頁排班', d: '看板拖拉換人、推手標記、鎖班與開放報班，手機也能用。成員只看得到自己所在的車隊。' },
     { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。', isNew: true },
-    { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；在表上改座位或跑者會寫回機器人，兩邊不同時以試算表為準。', isNew: true },
+    { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；表上被改的格子寫回機器人，沒人動的格子以機器人為準（Discord 剛報的班不會被舊表蓋掉）。設定卡片有步驟引導、檢查連線、變更紀錄與一鍵復原。', isNew: true },
     { t: '查榜', d: '即時名次、時速、分段榜線與角色章節榜，算出到目標分數還差幾場。過往期數的最終榜線也查得到：Discord 打 140b，QQ 打 /榜线 140。' },
     { t: 'Haruki 抓包', d: '成員用 Haruki 工具箱上傳自己的存檔、打開公開 API 後，機器人就讀得到完整隊伍與技能等級，倍率一模一樣。Discord 打 /查詢 抓包 看教學，QQ 打 /抓包。', isNew: true },
     { t: '時數統計', d: '推車、S6、支援與開車時數分開計算，試算表的「時數」分頁也會跟著同步。' },
@@ -5092,6 +5092,34 @@ class Component extends DCLogic {
     }
     if (!info) { this._toast('試算表狀態還沒讀到，請稍候再試'); return; }
     if (!info.sheet_id) { this._toast('先貼上試算表網址或 ID 並儲存'); return; }
+    const reInfo = () => this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
+    /* v2：檢查連線（讀得到、寫得進去、班表分頁的狀況；不改班表）。結果也會存在 info.check */
+    if (act === 'check') {
+      this._toast('檢查連線中…', 20000);
+      const d = await this.carAct('/sheet', { action: 'check' }, null, no);
+      if (!d) return;
+      const ck = d.check && typeof d.check === 'object' ? d.check : null;
+      this._toast(ck ? (ck.ok ? '連線正常' : '連線失敗：' + this.carFTxt(ck.msg)) : this.carFMsg(d, '已送出'), 4000);
+      const cur = (this.carSecOf(key) || {}).data;
+      if (ck && cur) this.carSecPut(key, { data: Object.assign({}, cur, { check: ck }) });
+      reInfo();
+      if (d.pending) this.carFLater(reInfo);
+      return;
+    }
+    /* v2：第一次同步選方向，或之後手動「以機器人為準重寫」（表上原本的內容先備份到另一個分頁） */
+    if (act === 'bot' || act === 'sheet') {
+      const tab = String(info.tab || '班表'), nm = this.carFCarName(no);
+      const q = act === 'bot'
+        ? '以機器人為準：試算表的「' + tab + '」分頁會改成「' + nm + '」現在的班表；表上原本的內容會先備份到另一個分頁。確定？'
+        : '以試算表為準：「' + tab + '」分頁上跟機器人不一樣的格子，都會照表改進機器人（那些時段會標成手動）；機器人有、表上沒有的班不會被砍。確定？';
+      if (!window.confirm(q)) return;
+      return this.carFSheetSync(act);
+    }
+    if (act === 'format') {
+      const d = await this.carAct('/sheet', { action: 'format' }, r => this.carFMsg(r, '已重新套用表格格式'), no);
+      if (d && d.pending) this.carFLater(reInfo);
+      return;
+    }
     /* 雙向同步（表為準）：自動同步開關＝既有的 auto（config 的 auto 欄位）。注意：機器人的 config 一定會改寫 sheet_id，
        所以要把「已儲存的那個 ID」一起送回去（不是輸入框裡還沒存的草稿），否則會把試算表清掉 */
     if (act === 'auto') {
@@ -5103,24 +5131,7 @@ class Component extends DCLogic {
       this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
       return;
     }
-    /* 立即同步：對一次表。慢的時候機器人先回 {pending}（約 5 秒後重抓狀態與班表）；失敗回 500 {error: 看得懂的原因} */
-    if (act === 'sync') {
-      this._toast('同步中…', 25000);
-      let why = '';
-      const d = await this.carAct('/sheet', { action: 'sync' }, null, no, e => { why = String((e && e.message) || '同步失敗'); return null; });
-      if (!d) {
-        if (why) this.setState({ carFShRes: { k: key, msg: '同步失敗：' + this.carFTxt(why), miss: [], bad: true, sync: true } });
-        this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);      // 機器人會把失敗原因記在 last_err
-        return;
-      }
-      const msg = this.carFMsg(d, '已同步');
-      this._toast(msg, 4000);
-      this.setState({ carFShRes: { k: key, msg, miss: (Array.isArray(d.miss) ? d.miss : []).slice(0, 12).map(x => String(x)), sync: true } });
-      if (+d.pulled > 0) this.carLoadStates(no);                                           // 表上的修改寫回機器人了：班表跟著更新
-      this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
-      if (d.pending) this.carFLater(() => { this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true); this.carLoadStates(no); });
-      return;
-    }
+    if (act === 'sync') return this.carFSheetSync('');
     const today = this.carFToday(), dates = [0, 1, 2, 3, 4, 5, 6].map(i => this.carFAddDay(today, i));
     const date = dates.indexOf(s.carFShDate) >= 0 ? s.carFShDate : today;
     if (act === 'pull' && !window.confirm('從試算表套用「' + this.carFCarName(no) + '」' + date + '：分頁上 P2～P5 的名字會覆蓋網頁上這一天的班表（查無成員的名字不會套用，會列出來）。確定？')) return;
@@ -5172,6 +5183,37 @@ class Component extends DCLogic {
     if (lim.length) L.push('報班限制：' + lim.join('、') + '（管理員與排班身份組不受限）。');
     if (cur('signup_admin_only')) L.push('只有管理員能排班：成員不能自己在網頁或 QQ 報班、取消。');
     return L;
+  }
+  /* 立即同步（mode：''＝三方合併；'bot'／'sheet'＝第一次同步選方向或以機器人為準重寫）。
+     慢的時候機器人先回 {pending}（約 5 秒後重抓狀態與班表）；失敗回 500 {error: 看得懂的原因, hint}；
+     兩邊都有資料又還沒選方向 → 200 {need_choice}（什麼都沒改，卡片會顯示兩個選項） */
+  async carFSheetSync(mode) {
+    const no = this.carNo(), key = this.carSecKey('sheet', true);
+    const reInfo = () => this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
+    this._toast('同步中…', 25000);
+    let why = '';
+    const d = await this.carAct('/sheet', mode ? { action: 'sync', mode } : { action: 'sync' }, null, no, e => { why = String((e && e.message) || '同步失敗'); return null; });
+    if (!d) {
+      if (why) this.setState({ carFShRes: { k: key, msg: '同步失敗：' + this.carFTxt(why), miss: [], bad: true, sync: true } });
+      reInfo();                                                                           // 機器人會把失敗原因記在 last_err
+      return;
+    }
+    const msg = this.carFMsg(d, '已同步');
+    this._toast(msg, 4000);
+    this.setState({ carFShRes: { k: key, msg, miss: (Array.isArray(d.miss) ? d.miss : []).slice(0, 12).map(x => String(x)), sync: true, warn: !!d.need_choice } });
+    if (+d.pulled > 0 || mode) this.carLoadStates(no);                                    // 表上的修改寫回機器人了：班表跟著更新
+    reInfo();
+    if (d.pending) this.carFLater(() => { reInfo(); this.carLoadStates(no); });
+  }
+  /* 復原一筆「從試算表套用的變更」：只還原之後沒再被改過的時段；下一輪同步會把還原後的內容寫回表上 */
+  async carFShUndo(id, head) {
+    const no = this.carNo(), key = this.carSecKey('sheet', true);
+    if (!/^[0-9a-f]{4,16}$/.test(id)) return;
+    if (!window.confirm('還原這次從試算表套用的變更？（' + head + '）\n之後又被改過的時段不會動；還原後的內容下一輪會寫回試算表。')) return;
+    const d = await this.carAct('/sheet', { action: 'undo', id }, r => this.carFMsg(r, '已還原'), no);
+    if (!d) return;
+    this.carLoadStates(no);
+    this.carSecFetch(key, '/sheet', { body: { action: 'info' }, car: no }, true);
   }
   carSecVals_settings(c) {
     const { s, st, carNo, segOn } = c, no = carNo;
@@ -5260,14 +5302,65 @@ class Component extends DCLogic {
     const shDates = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = this.carFAddDay(today, i); return { v: d, n: this.carDayLabel(d, today) }; });
     const shDraft = dr[no + ':__sheet'], shSaved = info ? String(info.sheet_id || '') : '';
     const shRes = s.carFShRes && s.carFShRes.k === shKey ? s.carFShRes : null;
-    const okFg = 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))', badFg = 'color-mix(in oklab,#ee6644 55%,var(--car-fg))';
-    /* 雙向同步（表為準）：info.two_way 才有（舊機器人沒有 → 只顯示舊版的推送／回讀） */
-    const two = !!(info && info.two_way);
+    const okFg = 'color-mix(in oklab,#2f9e57 55%,var(--car-fg))', badFg = 'color-mix(in oklab,#ee6644 55%,var(--car-fg))', warnFg = 'color-mix(in oklab,#d08a00 62%,var(--car-fg))';
+    /* 雙向同步（表為準）：info.two_way 才有（舊機器人沒有 → 只顯示舊版的推送／回讀）。
+       v2（info.v >= 2）：逐格三方合併、檢查連線、第一次同步選方向、變更紀錄與復原、錯誤的「怎麼修」、自動暫停 */
+    const two = !!(info && info.two_way), v2 = two && +info.v >= 2;
     const shUrl = two && /^https:\/\/docs\.google\.com\//.test(String(info.url || '')) ? String(info.url) : '';
     const shSec = two && +info.interval > 0 ? Math.round(+info.interval) : 60;
     const shTabs = two ? (Array.isArray(info.tabs) ? info.tabs : []).map(x => String(x == null ? '' : x)).filter(Boolean).slice(0, 6) : [];
     const shTab = two ? String(info.tab || shTabs[0] || '班表') : '班表';
     const shLegacy = !two || !!openMap.__sheetOld;
+    const shErrCode = v2 ? String(info.err_code || '') : '';
+    const shChk = v2 && info.check && typeof info.check === 'object' && String(info.check.sid || '') === shSaved ? info.check : null;
+    const shCredOk = !!(info && (info.creds_ok != null ? info.creds_ok : info.has_creds));
+    const shHasId = !!shSaved, shSynced = !!(two && info.synced_at), shChkOk = !!(shChk && shChk.ok);
+    const shNeedI = v2 && info.need_choice && info.need && typeof info.need === 'object' ? info.need : null;
+    const shNeed = !!(v2 && info.need_choice) || (!!(shChk && shChk.need_choice) && !shSynced);
+    const shAutoOn = !!(info && info.auto), shPaused = v2 ? String(info.paused || '') : '';
+    const shLastErr = two && info.last_err ? this.carFTxt(info.last_err) : '';
+    const shRetry = v2 && info.next_retry ? '下次自動重試 ' + String(info.next_retry) : '';
+    /* 設定步驟：完成／下一步／要處理（錯誤指向的那一步）／還沒到。舊機器人沒有「檢查連線」那一步 */
+    const chkCode = shChk ? String(shChk.code || '') : '';
+    const stBad = { 1: !!info && !shCredOk, 2: /^(forbidden|read_only)$/.test(shErrCode) || /^(forbidden|read_only)$/.test(chkCode),
+      3: shErrCode === 'not_found' || chkCode === 'not_found', 4: !!shChk && !shChk.ok && !/^(forbidden|read_only|not_found|no_creds|bad_creds|no_lib)$/.test(chkCode),
+      5: shNeed || shErrCode === 'header', 6: !!shPaused };
+    const stDone = { 1: shCredOk, 2: shChkOk || (shSynced && !shLastErr), 3: shHasId, 4: shChkOk || (shSynced && !shLastErr), 5: shSynced && !shNeed, 6: shAutoOn && !shPaused };
+    const stOrder = v2 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 5, 6];
+    const stCur = stOrder.find(n => stBad[n] || !stDone[n]) || 0;
+    const stAll = !!info && stCur === 0, stOpen = !stAll || !!openMap.__sheetSteps;     // 全部完成就收成一行（可以再展開）
+    const step = n => {
+      const b = !!stBad[n], d = !!stDone[n] && !b, cu = n === stCur, i = String(stOrder.indexOf(n) + 1);
+      return { badge: d ? '✓' : i, cur: cu ? 'true' : 'false', op: d && !cu ? '0.8' : '1',
+        bg: b ? 'color-mix(in oklab,#ee6644 20%,var(--card))' : d ? 'color-mix(in oklab,#2f9e57 18%,var(--card))' : cu ? 'var(--ink-grad)' : 'var(--card-2)',
+        fg: b ? badFg : d ? okFg : cu ? '#fff' : 'var(--text-3)',
+        tag: b ? '要處理' : d ? '完成' : cu ? '下一步' : '', tagFg: b ? badFg : d ? okFg : 'var(--accent-deep)' };
+    };
+    /* 最上面的狀態列 */
+    const shNeedTxt = shNeedI ? '表上有 ' + (+shNeedI.sheet_rows || 0) + ' 列、機器人有 ' + (+shNeedI.bot_rows || 0) + ' 個時段，而且內容不一樣。'
+      : (shChk && shChk.need_choice ? '表上已經有 ' + (+shChk.sched_rows || 0) + ' 列、機器人有 ' + (+shChk.bot_rows || 0) + ' 個時段。' : '');
+    let ban;
+    if (!shHasId) ban = { kind: 'idle', t: '還沒連接試算表', sub: '照下面的步驟做，大約三分鐘。', hint: '' };
+    else if (shPaused) ban = { kind: 'bad', t: '自動同步已暫停', sub: shLastErr ? '原因：' + shLastErr : '', hint: String(info.err_hint || '') + ' 修好之後按「檢查連線」或「立即同步」就會恢復。' };
+    else if (shNeed) ban = { kind: 'warn', t: '第一次同步：要先選以哪邊為準', sub: shNeedTxt + '選好之前機器人不會動試算表。', hint: '' };
+    else if (shLastErr) ban = { kind: 'bad', t: '上次同步失敗', sub: shLastErr + (shRetry ? '（' + shRetry + '）' : ''), hint: v2 ? String(info.err_hint || '') : '' };
+    else if (shSynced) ban = { kind: 'ok', t: '同步正常', sub: '上次同步 ' + String(info.synced_at) + (shAutoOn ? ' · 每 ' + shSec + ' 秒自動同步' : ' · 自動同步還沒開'), hint: '' };
+    else ban = { kind: 'idle', t: '還沒同步過', sub: shAutoOn ? '自動同步已開，第一輪會在 ' + shSec + ' 秒內跑。' : '完成下面的步驟後按「立即同步」。', hint: '' };
+    const banC = { ok: [okFg, '#2f9e57'], bad: [badFg, '#ee6644'], warn: [warnFg, '#d08a00'], idle: ['var(--ink)', '#6c7bd8'] }[ban.kind];
+    Object.assign(ban, { fg: banC[0], bd: 'color-mix(in oklab,' + banC[1] + ' 35%,var(--border))', bg: 'color-mix(in oklab,' + banC[1] + ' 9%,var(--card))',
+      role: ban.kind === 'bad' ? 'alert' : 'status', hasSub: !!ban.sub, hasHint: !!String(ban.hint || '').trim(), hint: String(ban.hint || '').trim() });
+    /* 變更紀錄（新的在前）與上次同步沒套用的列／對不到的名字／注意事項 */
+    const shLogs = v2 && Array.isArray(info.log) ? info.log.filter(x => x && x.id).slice(0, 8) : [];
+    const shIss = v2 ? [['skip', '沒有套用的列'], ['miss', '對不到成員的名字（照樣排上去，但沒有倍率）'], ['warn', '注意']].map(([k, t]) => {
+      const a = (Array.isArray(info[k]) ? info[k] : []).map(x => this.carFTxt(x)).filter(Boolean);
+      return a.length ? { k, title: t + '（' + a.length + '）', items: a.slice(0, 8).map((x, i) => ({ i: String(i), t: x })), more: a.length > 8, moreTxt: '還有 ' + (a.length - 8) + ' 筆' } : null;
+    }).filter(Boolean) : [];
+    const shLast = v2 && info.last && typeof info.last === 'object' ? info.last : null;
+    const shLastSum = shLast ? '上次同步（' + String(shLast.at || '') + '）：' + [
+      +shLast.pulled ? '從表上套用 ' + (+shLast.pulled) + ' 個時段' : '',
+      Array.isArray(shLast.pushed) && shLast.pushed.length ? '更新分頁 ' + shLast.pushed.map(String).join('、') : '',
+      shLast.deferred ? '有人正在改表，這次先不寫回' : '',
+      shLast.backup ? '已備份到「' + String(shLast.backup) + '」' : ''].filter(Boolean).join('；') : '';
 
     /* 班表插畫圖庫（整個車隊共用） */
     const bgKey = this.carSecKey('bgimg', false), bgS = this.carSecOf(bgKey), bg = bgS && bgS.data;
@@ -5310,19 +5403,20 @@ class Component extends DCLogic {
       carFShShow: !q,
       carFShOpen: shOpen, carFShExp: shOpen ? 'true' : 'false', carFShArrow: shOpen ? '▲' : '▼',
       carFShTag: this.carFCarName(no),
-      carFShSum: !info ? (sh && sh.err ? '讀取失敗' : '') : (!info.sheet_id ? '尚未連接' : two ? (info.last_err ? '同步失敗' : info.synced_at ? '上次同步 ' + String(info.synced_at).slice(0, 11) : (info.auto ? '自動同步已開' : '尚未同步'))
+      carFShSum: !info ? (sh && sh.err ? '讀取失敗' : '') : (!info.sheet_id ? '尚未連接' : two ? (shPaused ? '已暫停' : shNeed ? '等你選方向' : info.last_err ? '同步失敗' : info.synced_at ? '上次同步 ' + String(info.synced_at).slice(0, 11) : (info.auto ? '自動同步已開' : '尚未同步'))
         : (info.last_push ? '上次推送 ' + String(info.last_push) : '已連接')),
       carFShLoading: shOpen && !info && !(sh && sh.err), carFShErr: shOpen && !info && sh && sh.err ? String(sh.err) : '',
       carFShHas: shOpen && !!info,
-      carFShCred: info ? (info.has_creds ? '✓ 已設定 Google 服務帳號' : '✕ 主機沒有設定 Google 服務帳號（GDRIVE_CREDS），暫時無法同步') : '',
-      carFShCredFg: info && info.has_creds ? okFg : badFg,
+      carFShCred: info ? (shCredOk ? '✓ 已設定 Google 服務帳號' : '✕ ' + (v2 && info.creds_msg ? this.carFTxt(info.creds_msg) : '主機沒有設定 Google 服務帳號（GDRIVE_CREDS）') + '，暫時無法同步') : '',
+      carFShCredFg: shCredOk ? okFg : badFg,
+      carFShCredHint: v2 && !shCredOk && info.creds_hint ? this.carFTxt(info.creds_hint) : (!shCredOk && info ? '這一步要請機器人主機的管理者處理（車隊管理員沒辦法在網站上設定）。' : ''),
       carFShLast: info ? (info.last_push ? '上次推送 ' + String(info.last_push) : '還沒推送過') : '',
       carFShId: shDraft != null ? String(shDraft) : shSaved,
       carFShDirty: shDraft != null && String(shDraft).trim() !== shSaved,
       carFShNoId: !!info && !info.sheet_id,
       carFShEmail: info && info.service_email ? String(info.service_email) : '', carFShNoEmail: !!info && !info.service_email,
       carFShDates: shDates, carFShDate: shDates.some(x => x.v === s.carFShDate) ? s.carFShDate : today,
-      carFShResShow: !!shRes && !shRes.sync, carFShResMsg: shRes ? shRes.msg : '', carFShMiss: shRes ? shRes.miss.map((x, i) => ({ i: String(i), t: x })) : [], carFShHasMiss: !!(shRes && shRes.miss.length),
+      carFShResShow: !!shRes && !shRes.sync, carFShResMsg: shRes ? shRes.msg : '', carFShMiss: shRes ? shRes.miss.map((x, i) => ({ i: String(i), t: x })) : [], carFShHasMiss: !!(shRes && shRes.miss.length) && !(v2 && shRes.sync),   /* v2：對不到的名字另外列在下面 */
       /* 雙向同步 */
       carFShTwo: shOpen && two, carFShOneWay: shOpen && !!info && !two,
       carFShSyncAt: two ? (info.synced_at ? '上次同步 ' + String(info.synced_at) : '尚未同步') : '',
@@ -5336,7 +5430,40 @@ class Component extends DCLogic {
       carFShSyncResShow: !!shRes && !!shRes.sync,
       carFShSyncResBd: shRes && shRes.bad ? 'color-mix(in oklab,#ee6644 35%,var(--border))' : 'color-mix(in oklab,var(--accent) 30%,var(--border))',
       carFShSyncResBg: shRes && shRes.bad ? 'color-mix(in oklab,#ee6644 10%,var(--card))' : 'color-mix(in oklab,var(--accent) 10%,var(--card))',
-      carFShRules: two ? [
+      carFShV2: shOpen && v2, carFShBan: ban,
+      carFShStepsOpen: stOpen, carFShStepsAll: stAll, carFShStepsHead: !stAll,
+      carFShStepsTgl: '設定步驟：全部完成 ' + (stOpen ? '▾' : '▸'), carFShStepsExp: stOpen ? 'true' : 'false',
+      carFShSyncTop: v2 && stAll && !stOpen,
+      carFShS1: step(1), carFShS2: step(2), carFShS3: step(3), carFShS4: step(4), carFShS5: step(5), carFShS6: step(6),
+      carFShNo2: String(stOrder.indexOf(2) + 1),
+      carFShChkBtn: busy ? '處理中…' : '檢查連線',
+      carFShHasChk: !!shChk,
+      carFShChk: shChk ? { t: (shChk.ok ? '✓ ' : '✕ ') + this.carFTxt(shChk.msg || (shChk.ok ? '連線正常' : '連線失敗')), fg: shChk.ok ? okFg : badFg,
+        hint: this.carFTxt(shChk.hint || ''), hasHint: !!shChk.hint, at: '檢查時間 ' + String(shChk.at || ''),
+        tabs: Array.isArray(shChk.tabs) && shChk.tabs.length ? '試算表現有分頁：' + shChk.tabs.slice(0, 8).map(String).join('、') : '', hasTabs: Array.isArray(shChk.tabs) && shChk.tabs.length > 0 } : null,
+      carFShNeed: shNeed && shHasId, carFShNoNeed: !shNeed, carFShNeedTxt: shNeedTxt,
+      carFShFirstNote: shSynced ? '已經同步過了；之後有變動按「立即同步」或等自動同步。' : '表上的「' + shTab + '」分頁還沒有資料時，會把機器人的班表推上去；兩邊都有資料時會先問你以哪邊為準。',
+      carFShLog: shLogs.map(x => {
+        const items = (Array.isArray(x.items) ? x.items : []).slice(0, 12).map((t, i) => ({ i: String(i), t: this.carFTxt(t) }));
+        const isU = x.kind === 'undo', head = (isU ? '還原 ' : '從表上套用 ') + (+x.n || 0) + ' 個時段';
+        return { id: String(x.id), at: String(x.at || ''), head, who: x.who ? this.carFTxt(x.who) : '', hasWho: !!x.who, items,
+          more: +x.more > 0, moreTxt: '還有 ' + (+x.more || 0) + ' 筆', undo: !!x.undo && !isU, undone: !!x.undone };
+      }),
+      carFShHasLog: shLogs.length > 0, carFShNoLog: v2 && !shLogs.length && shSynced,
+      carFShIssues: shIss, carFShHasIssues: shIss.length > 0,
+      carFShLastSum: shLastSum, carFShHasLastSum: !!shLastSum,
+      carFShMultiNote: v2 && !!info.multi,
+      carFShAdv: v2 && shHasId,
+      carFShRules: v2 ? [
+        '雙向同步：機器人每 ' + shSec + ' 秒跟試算表對一次，逐格比對「上次寫上去的內容」。',
+        '有人在「' + shTab + '」分頁改了某一格（車種、跑者、P2～P5、替補），就照表改進機器人；那個時段標成「手動」，之後自動排位不會重排它。沒被改過的格子以機器人為準，Discord 上剛報的班、剛砍的班不會被舊表蓋回去。',
+        '表上新增一列＝開一個班；刪掉一列不會砍班（下一輪會寫回去）；改日期或時段＝另開一個班，原本的不會砍。',
+        '名字要跟成員名字或別名完全一樣；S6 寫「S6 名字」，P2 會自動當 S6。對不到的名字照樣排上去，但沒有倍率。',
+        '看不懂的列（日期空白、時段打錯、同一時段兩列、超過 ' + (+info.max_ahead || 60) + ' 天後）不套用，會留在分頁最下面，「狀態」欄寫原因；改好下一輪就會套用。',
+        '只同步今天以後的日期；今天已經結束的時段不從表上改。',
+        '「時數」「成員」兩個分頁由機器人維護（唯讀）' + (info.multi ? '，而且全車隊共用' : '') + '，改了也會被蓋回去。',
+        '能編輯這張試算表的人，等於有排班權限（不受鎖班、報班規則限制），只共用給信任的人。',
+      ].map((t, i) => ({ i: String(i), t })) : two ? [
         '雙向同步、試算表為準：機器人每 ' + shSec + ' 秒跟試算表對一次。',
         '有人在「' + shTab + '」分頁改了座位、跑者、車種或替補，就照表改回機器人；那個時段會標成「手動」，之後自動排位不會重排它。',
         '表上新增一列＝開一個班；刪掉一列不會砍班（下一輪會再寫回去），砍班請用班表分頁或指令。',
@@ -5422,6 +5549,7 @@ class Component extends DCLogic {
         } catch (er) { old(); }
       },
       onCarFShOld: () => this.setState(st2 => ({ carFSetOpen: Object.assign({}, st2.carFSetOpen, { __sheetOld: !(st2.carFSetOpen || {}).__sheetOld }) })),
+      onCarFShUndo: e => this.carFShUndo(String(e.currentTarget.dataset.id || ''), String(e.currentTarget.dataset.h || '')),
     });
   }
 
