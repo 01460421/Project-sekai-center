@@ -601,6 +601,7 @@ class Component extends DCLogic {
     anaMoreB: false, sysMore: false,   // 手機:榜線段位/系統更新漸進展開
     /* 逐局紀錄(Cloudflare Worker 每 15 秒採樣,只有前 100 名有) */
     gamesUid: '', gamesRows: null, gamesLoad: false, gamesErr: '',
+    gsxEv: '', gsxQ: '', gsxBusy: '', gsxErr: '', gsxUsers: null, gsxPick: null, gsxRows: null, gsxGaps: [], gsxStart: 0, gsxEvName: '',
     gamesEv: null, gamesGaps: [], gamesRange: 'all', gamesPick: -1,
     dollOpen: false,   // 手機:豆森娃月列表預設收合
     /* 榜線資料庫(good果汁的表格轉成的靜態資料) */
@@ -7138,6 +7139,70 @@ class Component extends DCLogic {
         admStats: (st && st.stats) || st || null });
     } catch (e) { this.setState({ admStats: { error: e.message } }); }
   }
+  /* ---------- 逐局紀錄查詢（名字或 ID） ----------
+     排名頁點玩家才打得開逐局面板；被移出排名、或已經掉出前百的玩家就點不到。
+     這裡直接問追蹤器：/games?ev=&uidx=-1 只回該期的玩家名單（games 是空的，很輕），
+     找到人再用 uid 抓他這期的每一場。追蹤器只記當時在前 100 名的場次。 */
+  async gsxSearch(qIn, evIn) {
+    const q = String(qIn != null ? qIn : (this.state.gsxQ || '')).trim();
+    const ev = +(String(evIn != null ? evIn : (this.state.gsxEv || '')).trim() || ((this.state.live || {}).id) || 0);
+    if (!q) { this.setState({ gsxErr: '請輸入玩家名字或 ID' }); return; }
+    if (!ev) { this.setState({ gsxErr: '請輸入期數' }); return; }
+    this.setState({ gsxBusy: 'search', gsxErr: '', gsxUsers: null, gsxPick: null, gsxRows: null });
+    try {
+      const r = await fetch(this.GAMES_API + '/games?ev=' + ev + '&uidx=-1');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      const lq = q.toLowerCase(), digits = /^\d+$/.test(q);
+      const users = (d.users || []).map(u => ({ uid: String(u[1] || ''), name: String(u[2] || '') }))
+        .filter(u => digits ? u.uid.includes(q) : u.name.toLowerCase().includes(lq)).slice(0, 30);
+      const list = await this.loadEvList();
+      const e = (list || []).find(x => +x.id === ev);
+      this.setState({ gsxBusy: '', gsxUsers: users, gsxStart: e ? new Date(e.start_at).getTime() : 0,
+        gsxEvName: e ? e.name + '（第 ' + ev + ' 期）' : '第 ' + ev + ' 期', gsxEvUsed: ev,
+        gsxErr: users.length ? '' : '追蹤器第 ' + ev + ' 期的紀錄裡找不到「' + q + '」（只記得到曾進前 100 名的玩家）' });
+    } catch (e) {
+      this.setState({ gsxBusy: '', gsxErr: '查詢失敗，請稍後再試（' + e.message + '）' });
+    }
+  }
+  async gsxOpen(uid) {
+    const ev = this.state.gsxEvUsed, u = (this.state.gsxUsers || []).find(x => x.uid === uid);
+    if (!ev || !u) return;
+    this.setState({ gsxBusy: 'games', gsxErr: '', gsxPick: u, gsxRows: null });
+    try {
+      const r = await fetch(this.GAMES_API + '/games?ev=' + ev + '&uid=' + encodeURIComponent(uid));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      this.setState({ gsxBusy: '', gsxRows: (d.games || []).map(g => ({ t: g[1], delta: g[2], rank: g[3] })), gsxGaps: d.gaps || [] });
+    } catch (e) {
+      this.setState({ gsxBusy: '', gsxErr: '逐局紀錄載入失敗（' + e.message + '）' });
+    }
+  }
+  /* t 是距開活的秒數；開活時間拿不到時只能給相對時間 */
+  gsxTime(t) {
+    const st = this.state.gsxStart;
+    if (!st) return '開活後 ' + (t / 3600).toFixed(2) + ' 小時';
+    return new Date(st + t * 1000 + 8 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
+  }
+  gsxCsv() {
+    const rows = this.state.gsxRows || [], u = this.state.gsxPick || {};
+    if (!rows.length) return;
+    const q = v => { const x = String(v == null ? '' : v); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
+    let sum = 0;
+    const out = [['場次', '時間（台灣）', '開活後（分）', '加分', '累計（追蹤到的場次）', '當時名次'].join(',')];
+    rows.forEach((g, i) => { sum += g.delta; out.push([i + 1, this.gsxTime(g.t), (g.t / 60).toFixed(1), g.delta, sum, g.rank].map(q).join(',')); });
+    out.push('');
+    out.push(q('玩家：' + u.name + '（' + u.uid + '）　' + (this.state.gsxEvName || '')));
+    out.push(q('追蹤器只記錄當時在前 100 名的場次；累計是追蹤到的場次加總，不等於官方分數。'));
+    (this.state.gsxGaps || []).filter(g => g[0] >= 0).forEach(g => out.push(q('追蹤中斷：' + this.gsxTime(g[0]) + ' ～ ' + this.gsxTime(g[1]))));
+    const blob = new Blob(['﻿' + out.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    // 檔名只用數字 ID：有些瀏覽器遇到非 ASCII 檔名會退回成「download」
+    a.download = 'games-' + (this.state.gsxEvUsed || '') + '-' + u.uid + '.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 5000);
+  }
   async loadGames(uid) {
     if (!uid || this.state.gamesUid === uid) return;
     this.setState({ gamesUid: uid, gamesLoad: true, gamesErr: '', gamesRows: null, gamesPick: -1 });
@@ -10735,7 +10800,24 @@ class Component extends DCLogic {
       isDesktop, isMobile: s.mobile,
       isHome: s.page === 'home', isEvent: s.page === 'event', isFavs: s.page === 'favs', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isHub: !!this.HUBS[s.page], hubStatus, hubCards, hubCols: s.mobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(200px,1fr))',
-      isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
+      isSongs: s.page === 'songs', isRank: s.page === 'rank',
+      gsxEv: s.gsxEv, gsxEvPh: '期數（預設 ' + (((s.live || {}).id) || '當期') + '）', gsxQ: s.gsxQ, gsxErr: s.gsxErr,
+      gsxSearching: s.gsxBusy === 'search', gsxLoadingGames: s.gsxBusy === 'games',
+      gsxUserList: (s.gsxUsers || []).map(u => ({ uid: u.uid, name: u.name || '（無名字）', on: !!(s.gsxPick && s.gsxPick.uid === u.uid) })),
+      gsxHasUsers: !!(s.gsxUsers && s.gsxUsers.length),
+      gsxHasRows: !!(s.gsxRows && s.gsxPick),
+      gsxPickTitle: s.gsxPick ? s.gsxPick.name + '（' + s.gsxPick.uid + '）' : '',
+      gsxSummary: (() => {
+        const r = s.gsxRows || []; if (!r.length) return s.gsxRows ? '這期沒有追蹤到他的場次' : '';
+        const sum = r.reduce((a, g) => a + g.delta, 0);
+        return s.gsxEvName + '：追蹤到 ' + r.length + ' 場、合計 ' + this.n(sum) + ' P；' + this.gsxTime(r[0].t) + ' ～ ' + this.gsxTime(r[r.length - 1].t);
+      })(),
+      gsxLast: (() => {
+        const r = s.gsxRows || []; let sum = 0;
+        const acc = r.map((g, i) => { sum += g.delta; const tm = this.gsxTime(g.t); return { i: i + 1, time: /^\d{4}-/.test(tm) ? tm.slice(5) : tm, delta: this.n(g.delta), sum: this.n(sum), rank: g.rank }; });
+        return acc.slice(-30).reverse();
+      })(),
+      gsxMore: (s.gsxRows || []).length > 30, isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
       isShop: s.page === 'shop',
       isB30: s.page === 'b30',
@@ -12926,6 +13008,11 @@ class Component extends DCLogic {
         }
       },
       onDetailClose: () => this.setState({ detail: null }),
+      onGsxSearch: () => this.gsxSearch(),
+      // Enter 可能比 onInput 的 setState 先到，直接拿輸入框當下的值
+      onGsxKey: e => { if (e.key !== 'Enter') return; const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.setState({ [k]: v }); this.gsxSearch(k === 'gsxQ' ? v : null, k === 'gsxEv' ? v : null); },
+      onGsxPick: e => this.gsxOpen(e.currentTarget.dataset.uid),
+      onGsxCsv: () => this.gsxCsv(),
       /* 榜線資料庫 */
       // 切換一般/WL 要把篩選全部重置 —— 兩邊的團體、活動長度值域完全不同,
       // 留著舊條件會篩出 0 筆,看起來像壞掉
