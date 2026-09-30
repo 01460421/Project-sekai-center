@@ -1545,6 +1545,45 @@ select option, select optgroup{
       </a>
     </sc-if>
 
+    <!-- 逐局紀錄查詢：被移出排名、或掉出前百的玩家在列表上點不到，這裡用名字或 ID 直接問追蹤器 -->
+    <div style="margin-top:14px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
+      <div style="font-size:14px;font-weight:800;color:var(--ink)">逐局紀錄查詢</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">用名字或玩家 ID 找本站追蹤器記到的每一場，已被移出排名的玩家也查得到；只記當時在前 100 名的場次。</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+        <input type="text" inputmode="numeric" placeholder="{{ gsxEvPh }}" aria-label="期數" value="{{ gsxEv }}" onInput="{{ onField }}" data-k="gsxEv" onKeyDown="{{ onGsxKey }}" style="width:150px;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:40px;outline:none" style-focus="border-color:var(--accent)">
+        <input type="search" enterkeyhint="search" placeholder="玩家名字或 ID" aria-label="玩家名字或 ID" value="{{ gsxQ }}" onInput="{{ onField }}" data-k="gsxQ" onKeyDown="{{ onGsxKey }}" style="flex:1;min-width:160px;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:40px;outline:none" style-focus="border-color:var(--accent)">
+        <button type="button" onClick="{{ onGsxSearch }}" style="padding:9px 18px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:800;min-height:40px;cursor:pointer">查詢</button>
+      </div>
+      <sc-if value="{{ gsxSearching }}"><div style="font-size:12px;color:var(--text-3);margin-top:9px">查詢中…</div></sc-if>
+      <sc-if value="{{ gsxErr }}"><div style="font-size:12px;color:var(--warn,#b45309);margin-top:9px;line-height:1.6">{{ gsxErr }}</div></sc-if>
+      <sc-if value="{{ gsxHasUsers }}">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+          <sc-for list="{{ gsxUserList }}" as="u" hint-placeholder-count="3">
+            <button type="button" onClick="{{ onGsxPick }}" data-uid="{{ u.uid }}" data-on="{{ u.on }}" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:12.5px;cursor:pointer;text-align:left" style-hover="border-color:var(--accent)">
+              <span style="font-weight:800">{{ u.name }}</span> <span style="color:var(--text-3);font-family:'M PLUS Rounded 1c';font-size:11px">{{ u.uid }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ gsxLoadingGames }}"><div style="font-size:12px;color:var(--text-3);margin-top:9px">載入逐局紀錄…</div></sc-if>
+      <sc-if value="{{ gsxHasRows }}">
+        <div style="margin-top:12px;padding-top:11px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:800;color:var(--ink)">{{ gsxPickTitle }}</span>
+            <button type="button" onClick="{{ onGsxCsv }}" style="padding:7px 14px;border:1.5px solid var(--accent);border-radius:11px;background:transparent;color:var(--accent-deep);font-size:12.5px;font-weight:800;cursor:pointer">下載 CSV（Excel 可開）</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;line-height:1.6">{{ gsxSummary }}</div>
+          <div style="margin-top:8px;font-size:12px;font-family:'M PLUS Rounded 1c'">
+            <div style="display:grid;grid-template-columns:34px minmax(0,1fr) 72px 92px 40px;gap:4px;padding:4px 2px;color:var(--text-3);font-weight:700;text-align:right"><span style="text-align:left">#</span><span style="text-align:left">時間（台灣）</span><span>加分</span><span>累計</span><span>名次</span></div>
+            <sc-for list="{{ gsxLast }}" as="g" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:34px minmax(0,1fr) 72px 92px 40px;gap:4px;padding:4px 2px;border-top:1px solid var(--border);text-align:right"><span style="text-align:left;color:var(--text-3)">{{ g.i }}</span><span style="text-align:left">{{ g.time }}</span><span>{{ g.delta }}</span><span>{{ g.sum }}</span><span>{{ g.rank }}</span></div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ gsxMore }}"><div style="font-size:11px;color:var(--text-3);margin-top:6px">這裡只列最近 30 場，完整紀錄請下載 CSV。</div></sc-if>
+        </div>
+      </sc-if>
+    </div>
+
     <div style="font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.7">資料來源：HiSekai API（台服），掛掉時改用 Haruki 公開 API 備援；連線被瀏覽器阻擋時會再改走公開代理重試。</div><sc-if value="{{ liveSrcNote }}"><div style="font-size:11.5px;color:var(--warn,#b45309);margin-top:4px;line-height:1.6">{{ liveSrcNote }}</div></sc-if>
   </div>
   </sc-if>
@@ -8164,7 +8203,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=77c2c96810"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=1ba98adb63"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -601,6 +601,7 @@ class Component extends DCLogic {
     anaMoreB: false, sysMore: false,   // 手機:榜線段位/系統更新漸進展開
     /* 逐局紀錄(Cloudflare Worker 每 15 秒採樣,只有前 100 名有) */
     gamesUid: '', gamesRows: null, gamesLoad: false, gamesErr: '',
+    gsxEv: '', gsxQ: '', gsxBusy: '', gsxErr: '', gsxUsers: null, gsxPick: null, gsxRows: null, gsxGaps: [], gsxStart: 0, gsxEvName: '',
     gamesEv: null, gamesGaps: [], gamesRange: 'all', gamesPick: -1,
     dollOpen: false,   // 手機:豆森娃月列表預設收合
     /* 榜線資料庫(good果汁的表格轉成的靜態資料) */
@@ -2193,7 +2194,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=4000855130';
+      s.src = 'data/billing.js?v=7f6b392fb1';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2267,7 +2268,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=a954e326c5';
+      s.src = 'data/borders-db.js?v=68d3681c94';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -2407,7 +2408,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=6f2d4943e0').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=27a4092314').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -7139,6 +7140,70 @@ class Component extends DCLogic {
         admStats: (st && st.stats) || st || null });
     } catch (e) { this.setState({ admStats: { error: e.message } }); }
   }
+  /* ---------- 逐局紀錄查詢（名字或 ID） ----------
+     排名頁點玩家才打得開逐局面板；被移出排名、或已經掉出前百的玩家就點不到。
+     這裡直接問追蹤器：/games?ev=&uidx=-1 只回該期的玩家名單（games 是空的，很輕），
+     找到人再用 uid 抓他這期的每一場。追蹤器只記當時在前 100 名的場次。 */
+  async gsxSearch(qIn, evIn) {
+    const q = String(qIn != null ? qIn : (this.state.gsxQ || '')).trim();
+    const ev = +(String(evIn != null ? evIn : (this.state.gsxEv || '')).trim() || ((this.state.live || {}).id) || 0);
+    if (!q) { this.setState({ gsxErr: '請輸入玩家名字或 ID' }); return; }
+    if (!ev) { this.setState({ gsxErr: '請輸入期數' }); return; }
+    this.setState({ gsxBusy: 'search', gsxErr: '', gsxUsers: null, gsxPick: null, gsxRows: null });
+    try {
+      const r = await fetch(this.GAMES_API + '/games?ev=' + ev + '&uidx=-1');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      const lq = q.toLowerCase(), digits = /^\d+$/.test(q);
+      const users = (d.users || []).map(u => ({ uid: String(u[1] || ''), name: String(u[2] || '') }))
+        .filter(u => digits ? u.uid.includes(q) : u.name.toLowerCase().includes(lq)).slice(0, 30);
+      const list = await this.loadEvList();
+      const e = (list || []).find(x => +x.id === ev);
+      this.setState({ gsxBusy: '', gsxUsers: users, gsxStart: e ? new Date(e.start_at).getTime() : 0,
+        gsxEvName: e ? e.name + '（第 ' + ev + ' 期）' : '第 ' + ev + ' 期', gsxEvUsed: ev,
+        gsxErr: users.length ? '' : '追蹤器第 ' + ev + ' 期的紀錄裡找不到「' + q + '」（只記得到曾進前 100 名的玩家）' });
+    } catch (e) {
+      this.setState({ gsxBusy: '', gsxErr: '查詢失敗，請稍後再試（' + e.message + '）' });
+    }
+  }
+  async gsxOpen(uid) {
+    const ev = this.state.gsxEvUsed, u = (this.state.gsxUsers || []).find(x => x.uid === uid);
+    if (!ev || !u) return;
+    this.setState({ gsxBusy: 'games', gsxErr: '', gsxPick: u, gsxRows: null });
+    try {
+      const r = await fetch(this.GAMES_API + '/games?ev=' + ev + '&uid=' + encodeURIComponent(uid));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      this.setState({ gsxBusy: '', gsxRows: (d.games || []).map(g => ({ t: g[1], delta: g[2], rank: g[3] })), gsxGaps: d.gaps || [] });
+    } catch (e) {
+      this.setState({ gsxBusy: '', gsxErr: '逐局紀錄載入失敗（' + e.message + '）' });
+    }
+  }
+  /* t 是距開活的秒數；開活時間拿不到時只能給相對時間 */
+  gsxTime(t) {
+    const st = this.state.gsxStart;
+    if (!st) return '開活後 ' + (t / 3600).toFixed(2) + ' 小時';
+    return new Date(st + t * 1000 + 8 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
+  }
+  gsxCsv() {
+    const rows = this.state.gsxRows || [], u = this.state.gsxPick || {};
+    if (!rows.length) return;
+    const q = v => { const x = String(v == null ? '' : v); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
+    let sum = 0;
+    const out = [['場次', '時間（台灣）', '開活後（分）', '加分', '累計（追蹤到的場次）', '當時名次'].join(',')];
+    rows.forEach((g, i) => { sum += g.delta; out.push([i + 1, this.gsxTime(g.t), (g.t / 60).toFixed(1), g.delta, sum, g.rank].map(q).join(',')); });
+    out.push('');
+    out.push(q('玩家：' + u.name + '（' + u.uid + '）　' + (this.state.gsxEvName || '')));
+    out.push(q('追蹤器只記錄當時在前 100 名的場次；累計是追蹤到的場次加總，不等於官方分數。'));
+    (this.state.gsxGaps || []).filter(g => g[0] >= 0).forEach(g => out.push(q('追蹤中斷：' + this.gsxTime(g[0]) + ' ～ ' + this.gsxTime(g[1]))));
+    const blob = new Blob(['﻿' + out.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    // 檔名只用數字 ID：有些瀏覽器遇到非 ASCII 檔名會退回成「download」
+    a.download = 'games-' + (this.state.gsxEvUsed || '') + '-' + u.uid + '.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 5000);
+  }
   async loadGames(uid) {
     if (!uid || this.state.gamesUid === uid) return;
     this.setState({ gamesUid: uid, gamesLoad: true, gamesErr: '', gamesRows: null, gamesPick: -1 });
@@ -8123,7 +8188,7 @@ class Component extends DCLogic {
   /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
   loadConsts() {
     if (this.state.consts || this._constsP) return;
-    this._constsP = fetch('./data/b30-consts.js?v=ef4cb24d3f').then(r => r.text()).then(txt => {
+    this._constsP = fetch('./data/b30-consts.js?v=a984fa63a2').then(r => r.text()).then(txt => {
       const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
       ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
       this.setState({ consts: map });
@@ -9316,11 +9381,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=bf2e0a79aa')
+    fetch('./data/ep-songs.js?v=6455a3438f')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=bf2e0a79aa')
+        import('./data/ep-songs.js?v=6455a3438f')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
@@ -10736,7 +10801,24 @@ class Component extends DCLogic {
       isDesktop, isMobile: s.mobile,
       isHome: s.page === 'home', isEvent: s.page === 'event', isFavs: s.page === 'favs', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isHub: !!this.HUBS[s.page], hubStatus, hubCards, hubCols: s.mobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(200px,1fr))',
-      isSongs: s.page === 'songs', isRank: s.page === 'rank', isCalc: s.page === 'calc',
+      isSongs: s.page === 'songs', isRank: s.page === 'rank',
+      gsxEv: s.gsxEv, gsxEvPh: '期數（預設 ' + (((s.live || {}).id) || '當期') + '）', gsxQ: s.gsxQ, gsxErr: s.gsxErr,
+      gsxSearching: s.gsxBusy === 'search', gsxLoadingGames: s.gsxBusy === 'games',
+      gsxUserList: (s.gsxUsers || []).map(u => ({ uid: u.uid, name: u.name || '（無名字）', on: !!(s.gsxPick && s.gsxPick.uid === u.uid) })),
+      gsxHasUsers: !!(s.gsxUsers && s.gsxUsers.length),
+      gsxHasRows: !!(s.gsxRows && s.gsxPick),
+      gsxPickTitle: s.gsxPick ? s.gsxPick.name + '（' + s.gsxPick.uid + '）' : '',
+      gsxSummary: (() => {
+        const r = s.gsxRows || []; if (!r.length) return s.gsxRows ? '這期沒有追蹤到他的場次' : '';
+        const sum = r.reduce((a, g) => a + g.delta, 0);
+        return s.gsxEvName + '：追蹤到 ' + r.length + ' 場、合計 ' + this.n(sum) + ' P；' + this.gsxTime(r[0].t) + ' ～ ' + this.gsxTime(r[r.length - 1].t);
+      })(),
+      gsxLast: (() => {
+        const r = s.gsxRows || []; let sum = 0;
+        const acc = r.map((g, i) => { sum += g.delta; const tm = this.gsxTime(g.t); return { i: i + 1, time: /^\d{4}-/.test(tm) ? tm.slice(5) : tm, delta: this.n(g.delta), sum: this.n(sum), rank: g.rank }; });
+        return acc.slice(-30).reverse();
+      })(),
+      gsxMore: (s.gsxRows || []).length > 30, isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
       isShop: s.page === 'shop',
       isB30: s.page === 'b30',
@@ -12927,6 +13009,11 @@ class Component extends DCLogic {
         }
       },
       onDetailClose: () => this.setState({ detail: null }),
+      onGsxSearch: () => this.gsxSearch(),
+      // Enter 可能比 onInput 的 setState 先到，直接拿輸入框當下的值
+      onGsxKey: e => { if (e.key !== 'Enter') return; const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.setState({ [k]: v }); this.gsxSearch(k === 'gsxQ' ? v : null, k === 'gsxEv' ? v : null); },
+      onGsxPick: e => this.gsxOpen(e.currentTarget.dataset.uid),
+      onGsxCsv: () => this.gsxCsv(),
       /* 榜線資料庫 */
       // 切換一般/WL 要把篩選全部重置 —— 兩邊的團體、活動長度值域完全不同,
       // 留著舊條件會篩出 0 筆,看起來像壞掉
