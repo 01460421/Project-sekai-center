@@ -3815,7 +3815,7 @@ class Component extends DCLogic {
   /* SVG 圖：dc-runtime 會把 {{ }} 包成 <span>，放在 <svg><text> 裡畫不出來 → 軸標籤、門檻標籤改用疊在圖上的 HTML（位置用百分比）。
      hi＝游標停著（手機點一下）的那一場的時間字串（state.carSchHi），圖下面顯示那一場的細節。 */
   carSeiChart(an, hi) {
-    const W = 720, H = 300, L = 54, R = 10, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
+    const W = 720, H = 300, L = 66, R = 10, T = 14, B = 26, pw = W - L - R, ph = H - T - B;   // L：縱軸標籤是完整數字（200,000），留寬一點
     const P = an && an.params && typeof an.params === 'object' ? an.params : {};
     const rs = (an && Array.isArray(an.rounds) ? an.rounds : []).filter(r => r && typeof r === 'object').map(r => Object.assign({ ms: this.carSeiMs(r.t) }, r)).filter(r => isFinite(r.ms));
     let t1 = this.carSeiMs(an && an.now), t0 = this.carSeiMs(an && an.since);
@@ -4035,10 +4035,11 @@ class Component extends DCLogic {
       onCarSpvKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carSeiEdSave(); } },
     };
   }
-  /* 數字：億／萬（跟舊控制台一樣），負數保留正負號 */
+  /* 數字：一律顯示精確整數（千分位），不縮成「7.1萬」——色段在比的就是單場幾分，
+     69,665 跟 71,204 縮寫後都是 7.0／7.1 萬，看不出差多少。負數保留正負號 */
   carStN(v) {
-    const n = +v || 0, a = Math.abs(n), sg = n < 0 ? '-' : '';
-    return sg + (a >= 1e8 ? (a / 1e8).toFixed(2) + '億' : a >= 1e4 ? (a / 1e4).toFixed(1) + '萬' : String(Math.round(a)));
+    const n = +v || 0, a = Math.round(Math.abs(n)), sg = n < 0 && a ? '-' : '';
+    return sg + String(a).replace(/\B(?=(\d{3})+$)/g, ',');
   }
   carStIdle(s) {
     if (s === null || s === undefined || s === '' || isNaN(+s)) return '—';
