@@ -3816,7 +3816,7 @@ class Component extends DCLogic {
   /* SVG 圖：dc-runtime 會把 {{ }} 包成 <span>，放在 <svg><text> 裡畫不出來 → 軸標籤、門檻標籤改用疊在圖上的 HTML（位置用百分比）。
      hi＝游標停著（手機點一下）的那一場的時間字串（state.carSchHi），圖下面顯示那一場的細節。 */
   carSeiChart(an, hi) {
-    const W = 720, H = 300, L = 66, R = 10, T = 14, B = 26, pw = W - L - R, ph = H - T - B;   // L：縱軸標籤是完整數字（200,000），留寬一點
+    const W = 720, H = 300, L = 54, R = 10, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
     const P = an && an.params && typeof an.params === 'object' ? an.params : {};
     const rs = (an && Array.isArray(an.rounds) ? an.rounds : []).filter(r => r && typeof r === 'object').map(r => Object.assign({ ms: this.carSeiMs(r.t) }, r)).filter(r => isFinite(r.ms));
     let t1 = this.carSeiMs(an && an.now), t0 = this.carSeiMs(an && an.since);
@@ -3838,8 +3838,8 @@ class Component extends DCLogic {
     const evn = k => this.CAR_SEI_EVN[k] || String(k);
     const tipOf = r => {
       const ev = (Array.isArray(r.e) ? r.e : []).map(evn), cd = (Array.isArray(r.c) ? r.c : []).filter(k => (r.e || []).indexOf(k) < 0).map(evn);
-      return this.carSeiHm(r.ms) + ' · 單場 ' + this.carStN(r.ep) + (+r.g ? ' · 間隔 ' + (+r.g) + 's' : '') + ' · ' + (this.CAR_SEI_MODES[r.m] || String(r.m || '')) +
-        (+r.pf ? ' · 狀態不佳線 ' + this.carStN(r.pf) : '') + (ev.length ? ' · 發出：' + ev.join('、') : '') + (cd.length ? ' · 條件成立但已觸發過：' + cd.join('、') : '');
+      return this.carSeiHm(r.ms) + ' · 單場 ' + this.carStX(r.ep) + (+r.g ? ' · 間隔 ' + (+r.g) + 's' : '') + ' · ' + (this.CAR_SEI_MODES[r.m] || String(r.m || '')) +
+        (+r.pf ? ' · 狀態不佳線 ' + this.carStX(r.pf) : '') + (ev.length ? ' · 發出：' + ev.join('、') : '') + (cd.length ? ' · 條件成立但已觸發過：' + cd.join('、') : '');
     };
     const dots = rs.map(r => {
       const ev = Array.isArray(r.e) && r.e.length > 0;
@@ -3869,12 +3869,12 @@ class Component extends DCLogic {
       xtop: 'calc((100% - 4px) * ' + (Math.round((T + ph) / H * 10000) / 10000) + ' + 3px)',      // 外框 padding-bottom 4px；基準線下方 3px
       bands: bands.filter(b => b.m === 'multi' || b.m === 'auto').map(b => ({ x: f1(b.x0), w: f1(Math.max(0.6, b.x1 - b.x0)), fill: 'color-mix(in oklab,' + MC[b.m] + ' 11%,transparent)' })),
       /* 在 <svg> 裡不用 sc-if（外來內容）：可有可無的圖層一律給 0 或 1 筆的陣列走 sc-for */
-      thL: th > 0 ? [{ y: f1(y(th)), top: pctY(y(th) - 9), l: '門檻 ' + this.carStN(th) }] : [], hyL: th > 0 ? [{ y: f1(y(up)) }, { y: f1(y(dn)) }] : [],
+      thL: th > 0 ? [{ y: f1(y(th)), top: pctY(y(th) - 9), l: '門檻 ' + this.carStX(th) }] : [], hyL: th > 0 ? [{ y: f1(y(up)) }, { y: f1(y(dn)) }] : [],
       pfL: pf ? [{ d: pf }] : [], hiL: hd ? [{ cx: hd.cx, cy: hd.cy }] : [],
       emptyL: rs.length ? [] : [{ l: '這段時間沒有上分紀錄' }],
       dots, marks, stale, yt, xt,
       hiTxt: hd ? hd.tip : (rs.length ? '游標停在點上（手機點一下）看那一場的細節' : ''), roFg: hd ? 'var(--ink)' : 'var(--text-3)',
-      aria: rs.length ? '近 ' + (+an.hours || 6) + ' 小時 ' + rs.length + ' 場，單場 ' + this.carStN(Math.min.apply(null, ep)) + '～' + this.carStN(Math.max.apply(null, ep)) + '，門檻 ' + this.carStN(th) : '這段時間沒有上分',
+      aria: rs.length ? '近 ' + (+an.hours || 6) + ' 小時 ' + rs.length + ' 場，單場 ' + this.carStX(Math.min.apply(null, ep)) + '～' + this.carStX(Math.max.apply(null, ep)) + '，門檻 ' + this.carStX(th) : '這段時間沒有上分',
     };
   }
   /* 分析結果 → 狀態膠囊、接下來會發的警報、警報清單（base＝目前存的參數的次數，用來跟草稿比） */
@@ -3888,9 +3888,9 @@ class Component extends DCLogic {
     if (st.enabled === false) chips.push({ k: '監控', v: '已停用：機器人現在不會發任何警報' + (st.disabled_at ? '（' + this.carStTime(st.disabled_at) + ' 起）' : ''), fg: 'var(--text-2)', bg: 'color-mix(in oklab,var(--text-3) 16%,var(--card))' });
     chips.push({ k: '目前模式', v: ML(ml) + (md !== ml ? (draft ? ' → 新參數判 ' : ' → 依目前設定重算是 ') + ML(md) : ''), fg: md !== ml ? tfg('#7b5cd6') : 'var(--ink)', bg: md !== ml ? tbg('#7b5cd6') : 'var(--card-2)' });
     chips.push({ k: '近 1 小時', v: (+st.rounds_1h || 0) + ' 場 · ' + this.carStN(st.speed_1h), fg: 'var(--ink)', bg: 'var(--card-2)' });
-    chips.push({ k: '場均（10）', v: this.carStN(st.avg10), fg: 'var(--ink)', bg: 'var(--card-2)' });
+    chips.push({ k: '場均（10）', v: this.carStX(st.avg10), fg: 'var(--ink)', bg: 'var(--card-2)' });
     chips.push({ k: '最後上分', v: st.idle_sec == null ? '—' : this.carStIdle(st.idle_sec) + '前', fg: 'var(--ink)', bg: 'var(--card-2)' });
-    if (+st.pf_line) chips.push({ k: '狀態不佳線', v: this.carStN(st.pf_line) + '（近 ' + (+P.poor_form_hours || 0) + 'h 最高 ' + this.carStN(st.peak) + '）', fg: st.pf_below ? tfg('#d64533') : 'var(--ink)', bg: st.pf_below ? tbg('#d64533') : 'var(--card-2)' });
+    if (+st.pf_line) chips.push({ k: '狀態不佳線', v: this.carStX(st.pf_line) + '（近 ' + (+P.poor_form_hours || 0) + 'h 最高 ' + this.carStX(st.peak) + '）', fg: st.pf_below ? tfg('#d64533') : 'var(--ink)', bg: st.pf_below ? tbg('#d64533') : 'var(--card-2)' });
     const w = st.window && typeof st.window === 'object' ? st.window : null;
     if (w) chips.push({ k: '多人視窗', v: (+w.rounds || 0) + '／' + (+w.min_rounds || 0) + ' 場 · ' + (w.elapsed_min == null ? '—' : Math.floor(+w.elapsed_min)) + '／' + (+w.window_min || 0) + ' 分', fg: 'var(--ink)', bg: 'var(--card-2)' });
     const fl = st.flags && typeof st.flags === 'object' ? st.flags : {};
@@ -4036,9 +4036,15 @@ class Component extends DCLogic {
       onCarSpvKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carSeiEdSave(); } },
     };
   }
-  /* 數字：一律顯示精確整數（千分位），不縮成「7.1萬」——色段在比的就是單場幾分，
-     69,665 跟 71,204 縮寫後都是 7.0／7.1 萬，看不出差多少。負數保留正負號 */
+  /* 數字兩種：
+       carStN 簡化（億／萬）——總分、時速、每小時合計這類「看大小就好」的數字；
+       carStX 精確整數（千分位）——每場相關的數字（單場分數、場均、最佳／最差、門檻、狀態不佳線）：
+         色段在比的就是單場幾分，69,665 跟 71,204 縮成 7.0／7.1 萬看不出差多少。負數保留正負號 */
   carStN(v) {
+    const n = +v || 0, a = Math.abs(n), sg = n < 0 ? '-' : '';
+    return sg + (a >= 1e8 ? (a / 1e8).toFixed(2) + '億' : a >= 1e4 ? (a / 1e4).toFixed(1) + '萬' : String(Math.round(a)));
+  }
+  carStX(v) {
     const n = +v || 0, a = Math.round(Math.abs(n)), sg = n < 0 && a ? '-' : '';
     return sg + String(a).replace(/\B(?=(\d{3})+$)/g, ',');
   }
@@ -4213,9 +4219,9 @@ class Component extends DCLogic {
       const stats = [
         { k: '總分', v: this.carStN(lv ? lv.score : p.last_score), fg: 'var(--ink)' },
         { k: '1h 時速', v: this.carStN(lv ? lv.speed_1h : p.speed_log_1h), fg: 'var(--accent-deep)' },
-        { k: '場均（10）', v: this.carStN(p.avg10), fg: 'var(--ink)' },
-        { k: '最佳', v: this.carStN(p.best), fg: tfg('#2f9e57') },
-        { k: '峰值', v: this.carStN(p.peak_round_ep), fg: 'var(--ink)' },
+        { k: '場均（10）', v: this.carStX(p.avg10), fg: 'var(--ink)' },
+        { k: '最佳', v: this.carStX(p.best), fg: tfg('#2f9e57') },
+        { k: '峰值', v: this.carStX(p.peak_round_ep), fg: 'var(--ink)' },
         { k: '場數', v: String(+p.rounds || 0), fg: 'var(--ink)' },
         { k: '間隔', v: +p.gap_avg ? (+p.gap_avg) + 's' : '—', fg: 'var(--ink)' },
         { k: '閒置', v: this.carStIdle(p.idle), fg: p.stopped ? tfg('#d64533') : 'var(--ink)' },
@@ -4230,7 +4236,7 @@ class Component extends DCLogic {
         modeTxt: p.mode ? '模式 ' + (this.CAR_SEI_MODES[p.mode] || String(p.mode)) : '',
         spark: tr.map(v => Math.max(2, Math.round(Math.max(0, v) / mx * 18))), hasSpark: tr.length > 0,
         stats, hasNb: nb.length > 0, nb,
-        foot: ['門檻 ' + this.carStN(p.thresh), '視窗 ' + (+p.window_rounds || 0) + ' 場', '手感 近 ' + (+p.poor_form_hours || 0) + ' 小時低於 ' + Math.round(ratio * 100) + '%',
+        foot: ['門檻 ' + this.carStX(p.thresh), '視窗 ' + (+p.window_rounds || 0) + ' 場', '手感 近 ' + (+p.poor_form_hours || 0) + ' 小時低於 ' + Math.round(ratio * 100) + '%',
           '斷 auto ' + (p.auto_stale_enabled ? (+p.auto_stale_trigger || 0) + ' 分提醒' : '關'), '快照 ' + (+p.snapshots || 0), '最後上分 ' + this.carStTime(p.last_time, false)].join(' · '),
         isDef: !!p.is_default,
         hasAlert: alerts.length > 0, alerts: alerts.map(n => ({ n, bg: tbg('#ee6644'), fg: tfg('#ee6644') })),
@@ -4295,10 +4301,10 @@ class Component extends DCLogic {
     const stats = [
       { k: '總場數', v: String(+st.rounds || 0), fg: 'var(--ink)' },
       { k: '近 1h', v: String(+st.recent_1h || 0) + ' 場', fg: 'var(--accent-deep)' },
-      { k: '場均（10）', v: this.carStN(st.avg10), fg: 'var(--ink)' },
-      { k: '全場均', v: this.carStN(st.avg_all), fg: 'var(--ink)' },
-      { k: '最佳', v: this.carStN(st.best), fg: tfg('#2f9e57') },
-      { k: '最差', v: this.carStN(st.worst), fg: tfg('#d64533') },
+      { k: '場均（10）', v: this.carStX(st.avg10), fg: 'var(--ink)' },
+      { k: '全場均', v: this.carStX(st.avg_all), fg: 'var(--ink)' },
+      { k: '最佳', v: this.carStX(st.best), fg: tfg('#2f9e57') },
+      { k: '最差', v: this.carStX(st.worst), fg: tfg('#d64533') },
       { k: '平均間隔', v: +st.gap_avg ? (+st.gap_avg) + 's' : '—', fg: 'var(--ink)' },
       { k: '快照', v: String(+(d && d.total_snapshots) || 0), fg: 'var(--ink)' },
     ];
@@ -4326,7 +4332,7 @@ class Component extends DCLogic {
       carSdHourNote: best !== undefined ? '最近 24 小時上分最多的是 ' + String(best).padStart(2, '0') + ' 時（' + this.carStN(hv[best]) + '）' : '',
       carSdHasNb: nb.length > 0, carSdNb: nb,
       carSdRoundsTitle: '上分紀錄（最新 ' + rounds.length + ' / 共 ' + total + '）',
-      carSdRounds: rounds.map(r => ({ t: this.carStTime(r.time, true), score: this.carStN(r.score), diff: this.carStN(r.diff), gap: +r.gap_sec ? (+r.gap_sec) + 's' : '—',
+      carSdRounds: rounds.map(r => ({ t: this.carStTime(r.time, true), score: this.carStN(r.score), diff: this.carStX(r.diff), gap: +r.gap_sec ? (+r.gap_sec) + 's' : '—',
         dfg: (+r.diff || 0) < 0 ? tfg('#d64533') : 'var(--accent-deep)' })),
       carSdHasRounds: rounds.length > 0, carSdNoRounds: !!d && !rounds.length,
       carSdMore: !!d && rounds.length < total, carSdMoreBtn: sec && sec.more ? '讀取中…' : '載入更多（還有 ' + Math.max(0, total - rounds.length) + ' 筆）',
