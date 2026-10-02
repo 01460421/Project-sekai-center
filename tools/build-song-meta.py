@@ -115,6 +115,13 @@ def main():
     except Exception as e:
         print(f'Sekai-World musicVocals 抓取失敗（{e}），只用 Haruki 的')
     jm, jv = get(JDB + '/musics.json'), get(JDB + '/musicVocals.json')
+    # 日服 master 的 musics.json 沒有 categories（分類另放 musicCategories.json）：日服限定曲的 MV 從那張補
+    jcat = {}
+    try:
+        for row in get(JDB + '/musicCategories.json'):
+            jcat.setdefault(row.get('musicId'), []).append(row.get('musicCategoryName'))
+    except Exception as e:
+        print(f'日服 musicCategories 抓取失敗（{e}），日服限定曲不帶 MV 分類')
     # 每個來源各自把關：台服縮水或變空的話，所有歌都會被當成日服限定、發行日也會換成日服的，寧可中止
     for name, rows, floor in (('台服 musics', tm, 500), ('台服 musicVocals', tv, 800), ('日服 musics', jm, 600), ('日服 musicVocals', jv, 1000)):
         if not isinstance(rows, list) or len(rows) < floor:
@@ -145,7 +152,8 @@ def main():
         creator = ((m.get('infos') or [{}])[0].get('creator') or '')
         if creator == (m.get('composer') or ''):
             creator = ''
-        out[mid] = [title, ','.join(units_for(vocals)), day(m.get('publishedAt'), 9 if is_jp else 8), m.get('composer') or '', m.get('lyricist') or '', m.get('arranger') or '', flags, mv_level(m.get('categories')), jkt, creator] + vocal_abns(vocals)
+        cats = m.get('categories') or (jcat.get(mid) if is_jp else None)
+        out[mid] = [title, ','.join(units_for(vocals)), day(m.get('publishedAt'), 9 if is_jp else 8), m.get('composer') or '', m.get('lyricist') or '', m.get('arranger') or '', flags, mv_level(cats), jkt, creator] + vocal_abns(vocals)
     if len(out) < 500:
         sys.exit(f'只湊到 {len(out)} 首，來源可能有問題，中止')
     tw_n = sum(1 for r in out.values() if 'j' not in r[6])

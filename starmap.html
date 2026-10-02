@@ -45,7 +45,7 @@ if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))
   --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#6b6355;
   --gold:#7f6220; --gold-2:#5e4714; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
   --glass:rgba(249,245,236,.76); --glass-2:rgba(249,245,236,.94);
-  --ln:#3d50c8; --mmj:#5c9b22; --vbs:#d2502c; --wxs:#b98f12; --n25:#8750b6; --vs:#1b9c97; --other:#6d6656;
+  --ln:#3d50c8; --mmj:#477a18; --vbs:#c8472a; --wxs:#8a6a08; --n25:#7f48ad; --vs:#137a76; --other:#6d6656;
   --shadow:0 18px 50px rgba(60,45,20,.16);
   --halo:.45; --grain:.1; --vig:rgba(80,60,20,.2);
 }
@@ -420,7 +420,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 <script type="module">
 import { EP_SONGS } from './data/ep-songs.js?v=6455a3438f';
 import { SONG_BPM } from './data/song-bpm.js?v=a8b8d13a28';
-import { SONG_META } from './data/song-meta.js?v=01bb1878a4';
+import { SONG_META } from './data/song-meta.js?v=dcc2efde16';
 
 /* ========== 常數與工具 ========== */
 const $ = s => document.querySelector(s);
@@ -1054,6 +1054,7 @@ $('#help').addEventListener('click', e => { if (e.target === e.currentTarget) cl
 document.addEventListener('keydown', e => {
   const typing = /^(input|select|textarea)$/i.test((e.target && e.target.tagName) || '');
   if (e.key === '/' && !typing) { e.preventDefault(); q.focus(); q.select(); }
+  else if (e.key === 'Tab' && $('#help').classList.contains('on')) { e.preventDefault(); $('#helpX').focus(); }   // 對話框開著時焦點留在裡面
   else if (e.key === 'Escape') { if ($('#help').classList.contains('on')) closeHelp(); else if (menu.classList.contains('on')) closeMenu(); else if (!typing && S.sel) select(null); }
   else if (e.key === '?' && !typing) { if ($('#help').classList.contains('on')) closeHelp(); else openHelp(); }
   else if (e.key === ' ' && !typing && P.star && !(e.target && /^button$/i.test(e.target.tagName || ''))) { e.preventDefault(); togglePlay(); }
