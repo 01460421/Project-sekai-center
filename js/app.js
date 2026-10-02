@@ -901,7 +901,7 @@ class Component extends DCLogic {
     this._key = e => {
       /* 彩蛋：上上下下左右左右 B A → 流星劃過、進入星圖 */
       const KONAMI = 'ArrowUp,ArrowUp,ArrowDown,ArrowDown,ArrowLeft,ArrowRight,ArrowLeft,ArrowRight,b,a';
-      this._egg = ((this._egg || []).concat(e.key.length === 1 ? e.key.toLowerCase() : e.key)).slice(-10);
+      if (!/^(Shift|Control|Alt|Meta|CapsLock)$/.test(e.key)) this._egg = ((this._egg || []).concat(e.key.length === 1 ? e.key.toLowerCase() : e.key)).slice(-10);   // 修飾鍵不算，Shift+B／A 也能對上
       if (this._egg.join(',') === KONAMI) { this._egg = []; e.preventDefault(); this.openStarmap(true); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
       if (e.key === 'Escape') this._closeAll();
@@ -9919,7 +9919,7 @@ class Component extends DCLogic {
     });
     if (q) {
       // 彩蛋：只有打到相關的字才會浮出來
-      if (/星圖|星空|星座|天文|彩蛋|starmap|songscape|stars?$/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
+      if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
       });
