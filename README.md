@@ -8,6 +8,7 @@
 -  卡池列表 - 台服卡池時間表
 -  歌曲資料庫 - 完整樂曲清單
 -  EP 計算器 - 精確 EP 計算、活動試算、控分工具
+-  SEKAI 星圖（`starmap.html`）- 全曲庫化成一片可互動的星空：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮、可分享的星星連結
 
 ## 伺服器機器人（bot/）
 
@@ -18,9 +19,11 @@
 | 路徑 | 說明 | 快取 |
 |---|---|---|
 | `*.html` | 頁面。`app.html` 是首頁 SPA，`index.html` 同時是經典版與五個內嵌面板的來源 | 每次重新驗證 |
+| `starmap.html` | 獨立頁：全曲庫星圖。只吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`，沒有其他依賴 | 每次重新驗證 |
 | `js/core.js` | `index.html` 抽出的共用邏輯，五個 embed 共享同一份 | 一年 immutable |
 | `css/core.css` | 同上，共用樣式 | 一年 immutable |
 | `data/*.js` | 曲庫、貼圖稱號、卡片對照等靜態資料 | 一年 immutable |
+| `data/song-meta.js` | 星圖用的歌曲詮釋資料（團體、發行日、作曲／作詞／編曲、書き下ろし）。`python3 tools/build-song-meta.py` 自 Sekai-World master 重建 | 一年 immutable |
 | `vendor/*.js` | React | 一年 immutable |
 
 ## ⚠️ data/history/ 只能增加，不能刪改

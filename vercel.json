@@ -86,6 +86,28 @@
       }
     },
     {
+      "src": "/starmap.html",
+      "dest": "/starmap.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/starmap",
+      "dest": "/starmap.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
       "src": "/classic",
       "dest": "/index.html",
       "headers": {
