@@ -29,7 +29,7 @@ if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))
 <style>
 :root{
   color-scheme:dark;
-  --bg:#05070e; --bg-2:#0a0e1b; --ink:#ebe4d3; --ink-2:#b3ab98; --ink-3:#7a7569;
+  --bg:#05070e; --bg-2:#0a0e1b; --ink:#ebe4d3; --ink-2:#b3ab98; --ink-3:#87826f;
   --gold:#d4b673; --gold-2:#ecdcaa; --line:rgba(212,182,115,.17); --line-2:rgba(212,182,115,.38); --hair:rgba(235,228,211,.07);
   --glass:rgba(6,9,19,.6); --glass-2:rgba(8,11,23,.86);
   --ln:#7081f2; --mmj:#a6d564; --vbs:#f49474; --wxs:#f0c862; --n25:#c198ec; --vs:#6edbd6; --other:#d6cfbe;
@@ -41,8 +41,8 @@ if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))
 }
 :root.light{
   color-scheme:light;
-  --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#8a8170;
-  --gold:#9a7a30; --gold-2:#74591c; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
+  --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#6b6355;
+  --gold:#7f6220; --gold-2:#5e4714; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
   --glass:rgba(249,245,236,.76); --glass-2:rgba(249,245,236,.94);
   --ln:#3d50c8; --mmj:#5c9b22; --vbs:#d2502c; --wxs:#b98f12; --n25:#8750b6; --vs:#1b9c97; --other:#6d6656;
   --shadow:0 18px 50px rgba(60,45,20,.16);
@@ -52,6 +52,8 @@ if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--serif);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 button{font:inherit;color:inherit}
+:focus-visible{outline:1.5px solid var(--gold);outline-offset:2px}
+#sky:focus-visible{outline-offset:-3px}
 a{color:var(--gold-2)}
 /* 星雲：六團顏色的雲氣，極慢地飄 */
 body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;opacity:var(--halo);filter:blur(34px);
@@ -113,7 +115,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .chip{display:inline-flex;align-items:center;gap:8px;padding:0 13px 0 11px;height:32px;border-radius:999px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .25s,color .25s,border-color .25s,filter .25s;box-shadow:var(--shadow);white-space:nowrap}
 .chip:hover{color:var(--ink);border-color:var(--line-2)}
 .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c),0 0 2px #fff inset;flex:none}
-.chip[aria-pressed=false]{opacity:.38;filter:saturate(.15)}
+.chip[aria-pressed=false]{opacity:.48;filter:saturate(.15)}
 .chip .k{color:var(--ink-3);font-weight:500;font-size:12px;letter-spacing:.5px}
 .chip.zh{font-family:var(--serif);font-weight:500;letter-spacing:.6px;text-transform:none;font-size:12.5px}
 .chip svg{width:13px;height:13px;fill:var(--wxs);filter:drop-shadow(0 0 4px var(--wxs))}
@@ -129,8 +131,8 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .hud .ib svg{width:15px;height:15px}
 
 /* ===== 詳情面板：標本卡 ===== */
-.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:364px;max-height:calc(100dvh - var(--bar-h,56px) - 36px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
-.panel.on{transform:none;opacity:1;pointer-events:auto}
+.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:364px;max-height:calc(100vh - var(--bar-h,56px) - 76px);max-height:calc(100dvh - var(--bar-h,56px) - 76px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.panel.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 .panel .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:color .2s,border-color .2s}
 .panel .close:hover{color:var(--gold-2);border-color:var(--line-2)}
 .ph{display:flex;gap:15px;align-items:flex-start;padding-right:28px}
@@ -176,14 +178,14 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .pf{margin-top:12px;font-size:11px;color:var(--ink-3);line-height:1.7;letter-spacing:.3px}
 
 /* ===== 提示泡泡 ===== */
-.tip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:4px;background:var(--glass-2);backdrop-filter:blur(14px);border:1px solid var(--line-2);font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
+.tip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:4px;background:var(--glass-2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line-2);font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
 .tip.on{opacity:1;transform:none}
 .tip small{display:block;font-family:var(--display);font-size:12px;color:var(--gold);font-weight:600;margin-top:1px;letter-spacing:.8px}
 .tip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:7px;vertical-align:1px}
 
 /* ===== 星表（左側抽屜） ===== */
-.catalog{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:16px;width:372px;max-height:calc(100dvh - var(--bar-h,56px) - 162px);z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
-.catalog.on{transform:none;opacity:1;pointer-events:auto}
+.catalog{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:16px;width:372px;max-height:calc(100vh - var(--bar-h,56px) - 162px);max-height:calc(100dvh - var(--bar-h,56px) - 162px);z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
+.catalog.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 .catalog header{display:flex;align-items:center;gap:8px;padding:14px 14px 11px 18px;border-bottom:1px solid var(--line-2)}
 .catalog header b{font-size:14.5px;flex:1;font-weight:600;letter-spacing:1.5px}
 .catalog header b small{font-family:var(--display);color:var(--gold);font-weight:600;margin-left:8px;font-size:12.5px;letter-spacing:.5px}
@@ -205,9 +207,9 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .menu button svg{width:15px;height:15px;fill:none;stroke:var(--gold);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 /* ===== 說明 ===== */
-.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 60%,transparent);backdrop-filter:blur(8px)}
+.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .help.on{display:flex}
-.help .card{width:min(580px,100%);max-height:90dvh;overflow:auto;padding:30px 34px 26px;border-radius:8px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);position:relative;outline:1px solid var(--line);outline-offset:5px}
+.help .card{width:min(580px,100%);max-height:90vh;max-height:90dvh;overflow:auto;padding:30px 34px 26px;border-radius:8px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);position:relative;outline:1px solid var(--line);outline-offset:5px}
 .help .sub{font-family:var(--display);font-style:italic;font-weight:500;font-size:15px;letter-spacing:4px;color:var(--gold);text-transform:uppercase}
 .help h3{font-family:var(--serif);font-size:26px;font-weight:600;margin-top:4px;letter-spacing:3px}
 .help p{margin-top:13px;font-size:14px;color:var(--ink-2);line-height:1.9;letter-spacing:.3px}
@@ -218,7 +220,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .help .src{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.8;letter-spacing:.3px}
 
 /* ===== 提示訊息 ===== */
-.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 18px;border-radius:3px;background:var(--glass-2);border:1px solid var(--line-2);color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.8px;opacity:0;transition:.3s var(--ease);pointer-events:none;box-shadow:var(--shadow)}
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 18px;border-radius:3px;max-width:min(92vw,560px);white-space:normal;overflow-wrap:anywhere;text-align:center;background:var(--glass-2);border:1px solid var(--line-2);color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.8px;opacity:0;transition:.3s var(--ease);pointer-events:none;box-shadow:var(--shadow)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* ===== 開場：標題浮現、金線展開，然後退場 ===== */
@@ -263,10 +265,13 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
   .chip{height:30px;font-size:12px}
   .hud{right:10px;bottom:calc(92px + env(safe-area-inset-bottom))}
   .hud .st i{display:none}
-  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:66dvh;border-radius:12px 12px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(24px);outline:none}
+  .search input{font-size:16px}
+  .catalog header select{font-size:16px}
+  .catalog ol{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:min(66vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(66dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(24px);outline:none}
   .panel::before{content:'';display:block;width:36px;height:2px;background:var(--line-2);margin:0 auto 12px}
   .panel.on{transform:none}
-  .catalog{top:auto;left:0;right:0;bottom:0;width:auto;max-height:70dvh;border-radius:12px 12px 0 0;transform:translateY(24px);outline:none}
+  .catalog{top:auto;left:0;right:0;bottom:0;width:auto;max-height:min(70vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(70dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;transform:translateY(24px);outline:none}
   .catalog.on{transform:none}
   .tip{display:none}
   .ogtitle{left:24px;bottom:24px}
@@ -291,19 +296,19 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
     <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#d4b673" stroke-opacity=".55" stroke-width=".8"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#d4b673" stroke-opacity=".35" stroke-width=".6" stroke-dasharray="1.2 2.2"/><path d="M16 3.5 17.6 14.4 28.5 16 17.6 17.6 16 28.5 14.4 17.6 3.5 16 14.4 14.4Z" fill="#ecdcaa"/><path d="M16 9.5 17 15 22.5 16 17 17 16 22.5 15 17 9.5 16 15 15Z" fill="#fff" fill-opacity=".9"/></svg>
     <span><b>SEKAI 星圖</b><small>Songscape · Celestial Atlas</small></span>
   </a>
-  <label class="search glass">
+  <div class="search glass">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input id="q" type="search" placeholder="搜尋歌名、作曲、作詞、創作者" autocomplete="off" spellcheck="false" aria-label="搜尋歌曲">
     <span class="n" id="qn"></span><kbd>/</kbd>
     <button class="x" id="qx" type="button" aria-label="清除搜尋"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-  </label>
+  </div>
   <div class="seg glass" role="group" aria-label="投影方式" id="proj">
     <button type="button" data-p="tempo" aria-pressed="true">節奏 × 難度</button>
     <button type="button" data-p="era" aria-pressed="false">年代 × 難度</button>
     <button type="button" data-p="dens" aria-pressed="false">曲長 × 密度</button>
   </div>
   <span class="spacer"></span>
-  <button class="ib" id="tourBtn" type="button" title="導覽：帶我去看" aria-haspopup="menu"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="5.5"/><path d="m12 9 .9 2.1L15 12l-2.1.9L12 15l-.9-2.1L9 12l2.1-.9z"/></svg></button>
+  <button class="ib" id="tourBtn" type="button" title="導覽：帶我去看" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="5.5"/><path d="m12 9 .9 2.1L15 12l-2.1.9L12 15l-.9-2.1L9 12l2.1-.9z"/></svg></button>
   <button class="ib" id="catBtn" type="button" title="星表" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
   <button class="ib" id="themeBtn" type="button" title="切換夜空／象牙"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg></button>
   <button class="ib" id="helpBtn" type="button" title="這是什麼？"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
@@ -335,14 +340,14 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 </aside>
 <div class="tip" id="tip"></div>
 <div class="menu" id="tour" role="menu">
-  <button type="button" data-t="fast"><svg viewBox="0 0 24 24"><path d="M4 12h10M10 7l5 5-5 5M17 5v14"/></svg>最快的歌</button>
-  <button type="button" data-t="slow"><svg viewBox="0 0 24 24"><path d="M20 12H10M14 7l-5 5 5 5M7 5v14"/></svg>最慢的歌</button>
-  <button type="button" data-t="hard"><svg viewBox="0 0 24 24"><path d="M4 20 10 8l3 6 2-3 5 9z"/><path d="M8 13l2-4"/></svg>最難的譜面</button>
-  <button type="button" data-t="long"><svg viewBox="0 0 24 24"><path d="M12 4v8l4 2"/><circle cx="12" cy="12" r="9"/></svg>最長的歌</button>
-  <button type="button" data-t="dense"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 10h14M5 14h14M5 18h14"/></svg>音符最密</button>
-  <button type="button" data-t="new"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>最新上架</button>
-  <button type="button" data-t="old"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>最早的歌</button>
-  <button type="button" data-t="rand"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h.01M15 15h.01M12 12h.01M15 9h.01M9 15h.01"/></svg>隨機一顆</button>
+  <button type="button" role="menuitem" data-t="fast"><svg viewBox="0 0 24 24"><path d="M4 12h10M10 7l5 5-5 5M17 5v14"/></svg>最快的歌</button>
+  <button type="button" role="menuitem" data-t="slow"><svg viewBox="0 0 24 24"><path d="M20 12H10M14 7l-5 5 5 5M7 5v14"/></svg>最慢的歌</button>
+  <button type="button" role="menuitem" data-t="hard"><svg viewBox="0 0 24 24"><path d="M4 20 10 8l3 6 2-3 5 9z"/><path d="M8 13l2-4"/></svg>最難的譜面</button>
+  <button type="button" role="menuitem" data-t="long"><svg viewBox="0 0 24 24"><path d="M12 4v8l4 2"/><circle cx="12" cy="12" r="9"/></svg>最長的歌</button>
+  <button type="button" role="menuitem" data-t="dense"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 10h14M5 14h14M5 18h14"/></svg>音符最密</button>
+  <button type="button" role="menuitem" data-t="new"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>最新上架</button>
+  <button type="button" role="menuitem" data-t="old"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>最早的歌</button>
+  <button type="button" role="menuitem" data-t="rand"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h.01M15 15h.01M12 12h.01M15 9h.01M9 15h.01"/></svg>隨機一顆</button>
 </div>
 <div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT">
   <div class="card">
@@ -379,7 +384,8 @@ const UNIT_NAME = { ln: 'Leo/need', mmj: 'MORE MORE JUMP!', vbs: 'Vivid BAD SQUA
 const UNIT_SHORT = { ln: 'L/n', mmj: 'MMJ', vbs: 'VBS', wxs: 'WxS', n25: 'N25', vs: 'VS', other: '其他' };
 const DIFFS = ['E', 'N', 'H', 'X', 'M', 'A'];
 const DIFF_NAME = { E: 'EASY', N: 'NORMAL', H: 'HARD', X: 'EXPERT', M: 'MASTER', A: 'APPEND' };
-const DIFF_COLOR = { E: '#6fd49b', N: '#6fb0ff', H: '#f3bd5a', X: '#f07a86', M: '#c79cff', A: '#f09ad4' };
+const DIFF_COLORS = { dark: { E: '#6fd49b', N: '#6fb0ff', H: '#f3bd5a', X: '#f07a86', M: '#c79cff', A: '#f09ad4' }, light: { E: '#238c52', N: '#2a63c9', H: '#b4770f', X: '#c53a47', M: '#7d44c4', A: '#b5367f' } };
+const diffColor = d => DIFF_COLORS[root.classList.contains('light') ? 'light' : 'dark'][d];
 const JP_ASSET = 'https://storage.sekai.best/sekai-jp-assets/thumbnail/music_jacket/';
 const TC_ASSET = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jacket/';
 const PAD_DESK = { l: 58, r: 26, t: 80, b: 128 };
@@ -387,7 +393,7 @@ const PAD_MOBILE = { l: 42, r: 16, t: 160, b: 136 };
 const barH = () => { const b = document.querySelector('.bar'); return b ? Math.max(56, b.offsetHeight) : 56; };
 const PAD_OG = { l: 44, r: 44, t: 44, b: 44 };
 const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
-const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+const fmtTime = s => { const t = Math.round(s); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
 const norm = s => String(s || '').normalize('NFKC').toLowerCase();
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hex2rgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h.trim()); if (!m) return [200, 200, 200]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
@@ -536,6 +542,7 @@ function layout(animate = true) {
     s.r = 1.4 + 3 * Math.sqrt(n / maxNotes);
     if (!animate || REDUCED) { s.cx = s.px; s.cy = s.py; s.ca = s.ta; }
   });
+  if (S.sel && !visible(S.sel)) { S.sel = null; S.cons = null; panel.classList.remove('on'); }   // 選中的星被篩掉：收起面板
   $('#stN').textContent = shown.filter(s => !S.matches || S.matches.has(s.id)).length;
   $('#stAxis').textContent = '橫軸 ' + PROJ[S.proj].xl + '　縱軸 ' + PROJ[S.proj].yl;
   if (S.catOn) renderCatalog();
@@ -642,7 +649,7 @@ function draw(time = 0) {
     const [sx, sy] = toScreen(s.cx, s.cy, r);
     if (sx < r.x - 40 || sx > r.x + r.w + 40 || sy < r.y - 40 || sy > r.y + r.h + 40) continue;
     const inCons = cons && s.composer === S.cons;
-    const dim = S.cons && !inCons ? .16 : 1;
+    const dim = cons && cons.length && !inCons ? .16 : 1;   // 星座成員全被濾掉時不要把整片天空調暗
     const sc = 1 - tw * .1 + tw * .1 * Math.sin(time * s.tw * 2.4 + s.ph) + tw * .04 * Math.sin(time * 7.1 + s.ph * 3);
     const a = s.ca * dim * sc;
     const rr = s.r * zs * (inCons ? 1.25 : 1);
@@ -695,7 +702,7 @@ const pointers = new Map();
 let drag = null, pinch = null, lastTap = 0;
 function hit(mx, my) {
   const r = rect(); let best = null, bd = 1e9; const zs = Math.pow(view.k, .3);
-  for (const s of stars) { if (s.ca < .4) continue; const [sx, sy] = toScreen(s.cx, s.cy, r); const dx = sx - mx, dy = sy - my, lim = s.r * zs + 9; const dd = dx * dx + dy * dy; if (dd < lim * lim && dd < bd) { bd = dd; best = s; } }
+  for (const s of stars) { if (s.ca < .4 || s.ta < .5) continue; const [sx, sy] = toScreen(s.cx, s.cy, r); if (sx < r.x || sx > r.x + r.w || sy < r.y || sy > r.y + r.h) continue; const dx = sx - mx, dy = sy - my, lim = s.r * zs + 9; const dd = dx * dx + dy * dy; if (dd < lim * lim && dd < bd) { bd = dd; best = s; } }
   return best;
 }
 function zoomAt(mx, my, f) {
@@ -768,7 +775,7 @@ function renderPanel(s) {
   const c = colors[s.u];
   const by = [s.creator && s.creator !== s.composer ? `<b>創作</b>${esc(s.creator)}` : '', s.composer ? `<b>作曲</b>${esc(s.composer)}` : '', s.lyricist && s.lyricist !== s.composer ? `<b>作詞</b>${esc(s.lyricist)}` : '', s.arranger && s.arranger !== s.composer ? `<b>編曲</b>${esc(s.arranger)}` : ''].filter(Boolean).join('　');
   const tags = s.units.map(u => `<span class="tag" style="--c:${colors[u]}">${esc(UNIT_NAME[u])}</span>`).join('') + (s.jp ? '<span class="tag zh jp">台服未實裝</span>' : '') + (s.nw ? '<span class="tag zh" style="--c:var(--wxs)">書き下ろし</span>' : '') + (s.mv === 3 ? '<span class="tag mono">3D MV</span>' : s.mv === 2 ? '<span class="tag mono">2D MV</span>' : '');
-  const lvs = DIFFS.map(d => { const lv = s.lv[d]; if (lv == null) return `<div class="lv none" style="--d:${DIFF_COLOR[d]}"><i>${d}</i><b>–</b><small>&nbsp;</small></div>`; const cc = (d === 'M' || d === 'A') && s.hasC[d] ? s.c[d].toFixed(1) : '&nbsp;'; return `<div class="lv${(d === S.diff) ? ' on' : ''}" style="--d:${DIFF_COLOR[d]}" title="${DIFF_NAME[d]}${s.notes[d] ? '・' + s.notes[d] + ' 音符' : ''}"><i>${d}</i><b>${lv}</b><small>${cc}</small></div>`; }).join('');
+  const lvs = DIFFS.map(d => { const lv = s.lv[d]; if (lv == null) return `<div class="lv none" style="--d:${diffColor(d)}"><i>${d}</i><b>–</b><small>&nbsp;</small></div>`; const cc = (d === 'M' || d === 'A') && s.hasC[d] ? s.c[d].toFixed(1) : '&nbsp;'; return `<div class="lv${(d === S.diff) ? ' on' : ''}" style="--d:${diffColor(d)}" title="${DIFF_NAME[d]}${s.notes[d] ? '・' + s.notes[d] + ' 音符' : ''}"><i>${d}</i><b>${lv}</b><small>${cc}</small></div>`; }).join('');
   const n = composers[s.composer] ? composers[s.composer].length : 0;
   const dens = s.notes[S.diff] && s.len ? (s.notes[S.diff] / s.len).toFixed(2) : '–';
   panel.innerHTML = `
@@ -841,10 +848,10 @@ $('#nwChip').addEventListener('click', e => { S.nw = !S.nw; e.currentTarget.setA
 
 /* ========== 導覽 ========== */
 const menu = $('#tour');
-function closeMenu() { menu.classList.remove('on'); }
+function closeMenu() { menu.classList.remove('on'); $('#tourBtn').setAttribute('aria-expanded', 'false'); }
 $('#tourBtn').addEventListener('click', e => {
   e.stopPropagation(); const b = e.currentTarget.getBoundingClientRect();
-  menu.classList.toggle('on'); menu.style.top = (b.bottom + 10) + 'px'; menu.style.left = Math.max(10, Math.min(W - menu.offsetWidth - 10, b.right - menu.offsetWidth)) + 'px';
+  menu.classList.toggle('on'); e.currentTarget.setAttribute('aria-expanded', menu.classList.contains('on')); menu.style.top = (b.bottom + 10) + 'px'; menu.style.left = Math.max(10, Math.min(W - menu.offsetWidth - 10, b.right - menu.offsetWidth)) + 'px';
 });
 document.addEventListener('click', e => { if (!menu.contains(e.target)) closeMenu(); });
 menu.addEventListener('click', e => {
@@ -873,20 +880,24 @@ function renderCatalog() {
   const m = catSort.value;
   list.sort((a, b) => m === 't' ? (a.tc || a.t).localeCompare(b.tc || b.t, 'zh-Hant') : m === 'new' ? (b.ts || 0) - (a.ts || 0) : m === 'x' ? xOf(b) - xOf(a) : yOf(b) - yOf(a));
   $('#catN').textContent = list.length + ' 首';
-  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>書</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
+  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" tabindex="0" role="button" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>書</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
 }
+catList.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-id]')) { e.preventDefault(); e.target.closest('[data-id]').click(); } });
 catList.addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (!li) return; select(byId[+li.dataset.id], true); if (mobile()) { S.catOn = false; catalog.classList.remove('on'); $('#catBtn').setAttribute('aria-pressed', 'false'); } });
 function markCatalog() { catList.querySelectorAll('li').forEach(li => li.classList.toggle('on', S.sel && +li.dataset.id === S.sel.id)); }
 
 /* ========== 主題、說明、鍵盤、網址 ========== */
 $('#themeBtn').addEventListener('click', () => { root.classList.toggle('light'); try { localStorage.setItem('sekai-starmap-theme', root.classList.contains('light') ? 'light' : 'dark'); } catch (e) {} makeSprites(); makeField(); renderUnits(); if (S.sel) renderPanel(S.sel); if (S.catOn) renderCatalog(); dirty = true; kick(); });
-$('#helpBtn').addEventListener('click', () => $('#help').classList.add('on'));
-$('#helpX').addEventListener('click', () => $('#help').classList.remove('on'));
-$('#help').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('on'); });
+function openHelp() { $('#help').classList.add('on'); $('#helpX').focus(); }
+function closeHelp() { $('#help').classList.remove('on'); $('#helpBtn').focus(); }
+$('#helpBtn').addEventListener('click', openHelp);
+$('#helpX').addEventListener('click', closeHelp);
+$('#help').addEventListener('click', e => { if (e.target === e.currentTarget) closeHelp(); });
 document.addEventListener('keydown', e => {
-  if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); q.select(); }
-  else if (e.key === 'Escape') { if ($('#help').classList.contains('on')) $('#help').classList.remove('on'); else if (menu.classList.contains('on')) closeMenu(); else if (S.sel) select(null); }
-  else if (e.key === '?') $('#help').classList.toggle('on');
+  const typing = /^(input|select|textarea)$/i.test((e.target && e.target.tagName) || '');
+  if (e.key === '/' && !typing) { e.preventDefault(); q.focus(); q.select(); }
+  else if (e.key === 'Escape') { if ($('#help').classList.contains('on')) closeHelp(); else if (menu.classList.contains('on')) closeMenu(); else if (!typing && S.sel) select(null); }
+  else if (e.key === '?' && !typing) { if ($('#help').classList.contains('on')) closeHelp(); else openHelp(); }
 });
 let toastT = 0;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
@@ -908,7 +919,7 @@ function readUrl() {
   if (p.get('c') && composers[p.get('c')]) S.cons = p.get('c');
   const s = byId[+p.get('s')];
   layout(false);
-  if (s && visible(s)) { select(s, true); view.k = view.gk; view.tx = view.gtx; view.ty = view.gty; }
+  if (s && visible(s)) { select(s, true); view.k = view.gk; view.tx = view.gtx; view.ty = view.gty; } else syncUrl();
 }
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
