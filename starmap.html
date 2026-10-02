@@ -129,7 +129,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .hud .ib svg{width:15px;height:15px}
 
 /* ===== 詳情面板：標本卡 ===== */
-.panel{position:fixed;top:calc(70px + env(safe-area-inset-top));right:16px;width:364px;max-height:calc(100dvh - 92px - env(safe-area-inset-top));overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:364px;max-height:calc(100dvh - var(--bar-h,56px) - 36px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
 .panel.on{transform:none;opacity:1;pointer-events:auto}
 .panel .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:color .2s,border-color .2s}
 .panel .close:hover{color:var(--gold-2);border-color:var(--line-2)}
@@ -182,7 +182,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .tip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:7px;vertical-align:1px}
 
 /* ===== 星表（左側抽屜） ===== */
-.catalog{position:fixed;top:calc(70px + env(safe-area-inset-top));left:16px;width:372px;max-height:calc(100dvh - 218px - env(safe-area-inset-top));z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
+.catalog{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:16px;width:372px;max-height:calc(100dvh - var(--bar-h,56px) - 162px);z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
 .catalog.on{transform:none;opacity:1;pointer-events:auto}
 .catalog header{display:flex;align-items:center;gap:8px;padding:14px 14px 11px 18px;border-bottom:1px solid var(--line-2)}
 .catalog header b{font-size:14.5px;flex:1;font-weight:600;letter-spacing:1.5px}
@@ -272,6 +272,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
   .ogtitle{left:24px;bottom:24px}
   .opening b{letter-spacing:3px}
 }
+@media (max-width:1180px) and (min-width:761px){.brand small{display:none}.brand{padding-right:14px}.search{flex-basis:150px}.seg button{padding:0 10px;font-size:12.5px}}
 @media (hover:none){.search kbd{display:none}}
 @media (prefers-reduced-motion:reduce){
   body::before{animation:none}
@@ -383,6 +384,7 @@ const JP_ASSET = 'https://storage.sekai.best/sekai-jp-assets/thumbnail/music_jac
 const TC_ASSET = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jacket/';
 const PAD_DESK = { l: 58, r: 26, t: 80, b: 128 };
 const PAD_MOBILE = { l: 42, r: 16, t: 160, b: 136 };
+const barH = () => { const b = document.querySelector('.bar'); return b ? Math.max(56, b.offsetHeight) : 56; };
 const PAD_OG = { l: 44, r: 44, t: 44, b: 44 };
 const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
 const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
@@ -451,7 +453,8 @@ function resize() {
   W = window.innerWidth; H = window.innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
-  PAD = OG ? PAD_OG : mobile() ? PAD_MOBILE : PAD_DESK;
+  const bh = barH(); root.style.setProperty('--bar-h', bh + 'px');
+  PAD = OG ? PAD_OG : mobile() ? Object.assign({}, PAD_MOBILE, { t: bh + 16 }) : Object.assign({}, PAD_DESK, { t: bh + 22 });
   makeField(); layout(false); draw();
 }
 const rect = () => ({ x: PAD.l, y: PAD.t, w: Math.max(50, W - PAD.l - PAD.r), h: Math.max(50, H - PAD.t - PAD.b) });
@@ -846,8 +849,8 @@ $('#tourBtn').addEventListener('click', e => {
 document.addEventListener('click', e => { if (!menu.contains(e.target)) closeMenu(); });
 menu.addEventListener('click', e => {
   const b = e.target.closest('[data-t]'); if (!b) return; closeMenu();
-  const pool = shown.filter(s => !S.matches || S.matches.has(s.id)); if (!pool.length) return;
-  const pick = (f, hi) => pool.filter(s => f(s) != null).sort((a, b) => hi ? f(b) - f(a) : f(a) - f(b))[0];
+  const pool = () => shown.filter(s => !S.matches || S.matches.has(s.id));   // 要在切完投影之後才取，setProj 會同步重排 shown
+  const pick = (f, hi) => pool().filter(s => f(s) != null).sort((a, b) => hi ? f(b) - f(a) : f(a) - f(b))[0];
   const map = {
     fast: () => { if (S.proj !== 'tempo') setProj('tempo'); return pick(s => s.bpm || null, true); },
     slow: () => { if (S.proj !== 'tempo') setProj('tempo'); return pick(s => s.bpm || null, false); },
@@ -856,7 +859,7 @@ menu.addEventListener('click', e => {
     dense: () => { if (S.proj !== 'dens') setProj('dens'); return pick(s => s.notes[S.diff] && s.len ? s.notes[S.diff] / s.len : null, true); },
     new: () => { if (S.proj !== 'era') setProj('era'); return pick(s => s.ts || null, true); },
     old: () => { if (S.proj !== 'era') setProj('era'); return pick(s => s.ts || null, false); },
-    rand: () => pool[Math.floor(Math.random() * pool.length)]
+    rand: () => { const p = pool(); return p[Math.floor(Math.random() * p.length)]; }
   };
   const s = map[b.dataset.t](); if (s) select(s, true);
 });
@@ -910,7 +913,7 @@ function readUrl() {
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
 /* 畫布上的字不會自己觸發網頁字型載入：先把要用的字型請進來，到了再重畫一次 */
-if (document.fonts && document.fonts.load) Promise.all(['600 12px "Cormorant Garamond"', '500 12px "Noto Serif TC"', '600 13px "Noto Serif TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { dirty = true; kick(); });
+if (document.fonts && document.fonts.load) Promise.all(['600 12px "Cormorant Garamond"', '500 12px "Noto Serif TC"', '600 13px "Noto Serif TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { resize(); });
 
 /* ========== 開場 ========== */
 makeSprites(); renderUnits(); resize();
