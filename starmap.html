@@ -821,9 +821,9 @@ function applySearch() {
 q.addEventListener('input', applySearch);
 q.addEventListener('keydown', e => {
   if (e.key === 'Enter' && S.matches && S.matches.size) { const first = shown.filter(s => S.matches.has(s.id)).sort((a, b) => a.py - b.py)[0]; if (first) select(first, true); q.blur(); }
-  if (e.key === 'Escape') { q.value = ''; applySearch(); q.blur(); }
+  if (e.key === 'Escape') { q.value = ''; applySearch(); refocus(); q.blur(); }
 });
-$('#qx').addEventListener('click', () => { q.value = ''; applySearch(); q.focus(); });
+$('#qx').addEventListener('click', () => { q.value = ''; applySearch(); refocus(); q.focus(); });
 
 /* ========== 篩選 ========== */
 const unitsBox = $('#units');
@@ -837,15 +837,15 @@ unitsBox.addEventListener('click', e => {
   else if (S.units.size === UNIT_KEYS.length && !e.shiftKey) { S.units = new Set([k]); }                       // 全開時點一團 → 只看它
   else if (S.units.has(k)) S.units.delete(k); else S.units.add(k);
   unitsBox.querySelectorAll('[data-u]').forEach(x => x.setAttribute('aria-pressed', S.units.has(x.dataset.u)));
-  layout(); syncUrl();
+  layout(); refocus(); syncUrl();
 });
 $('#proj').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; setProj(b.dataset.p); });
 function refocus() { if (S.sel && visible(S.sel)) flyTo(S.sel, Math.max(1.6, view.gk)); else resetView(); }
 function setProj(p) { if (!PROJ[p]) return; S.proj = p; $('#proj').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.p === p)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
 $('#diff').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (!b) return; setDiff(b.dataset.d); });
 function setDiff(d) { S.diff = d; $('#diff').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.d === d)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
-$('#twChip').addEventListener('click', e => { S.tw = !S.tw; e.currentTarget.setAttribute('aria-pressed', S.tw); layout(); syncUrl(); });
-$('#nwChip').addEventListener('click', e => { S.nw = !S.nw; e.currentTarget.setAttribute('aria-pressed', S.nw); layout(); syncUrl(); });
+$('#twChip').addEventListener('click', e => { S.tw = !S.tw; e.currentTarget.setAttribute('aria-pressed', S.tw); layout(); refocus(); syncUrl(); });
+$('#nwChip').addEventListener('click', e => { S.nw = !S.nw; e.currentTarget.setAttribute('aria-pressed', S.nw); layout(); refocus(); syncUrl(); });
 
 /* ========== 導覽 ========== */
 const menu = $('#tour');
@@ -937,6 +937,7 @@ if (!REDUCED && !OG) {   // 星從中心綻開，依橫軸位置錯開一點點�
   let seen = false; try { seen = sessionStorage.getItem('sekai-starmap-opened') === '1'; sessionStorage.setItem('sekai-starmap-opened', '1'); } catch (e) {}
   if (!seen && !S.sel) { const o = $('#opening'); o.hidden = false; setTimeout(() => o.remove(), 3400); } else $('#opening').remove();
 } else $('#opening').remove();
+window.__starmap = { view, S };   // 給煙霧測試讀視角與狀態用
 kick();
 </script>
 </body>
