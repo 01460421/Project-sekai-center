@@ -899,6 +899,10 @@ class Component extends DCLogic {
     }, 1000);
     this.wireCharts();
     this._key = e => {
+      /* 彩蛋：上上下下左右左右 B A → 流星劃過、進入星圖 */
+      const KONAMI = 'ArrowUp,ArrowUp,ArrowDown,ArrowDown,ArrowLeft,ArrowRight,ArrowLeft,ArrowRight,b,a';
+      this._egg = ((this._egg || []).concat(e.key.length === 1 ? e.key.toLowerCase() : e.key)).slice(-10);
+      if (this._egg.join(',') === KONAMI) { this._egg = []; e.preventDefault(); this.openStarmap(true); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.openCmd(); return; }
       if (e.key === 'Escape') this._closeAll();
       if (e.key === '?' && !/^(input|select|textarea)$/i.test((e.target.tagName || ''))) { e.preventDefault(); this.setState(st => ({ kbHelp: !st.kbHelp })); }
@@ -9525,6 +9529,25 @@ class Component extends DCLogic {
     } catch (e) {}
     return patch;
   }
+  /* 彩蛋：通往 starmap.html（SEKAI 星圖）。首頁右上角的小星、指令面板打「星圖」、任何頁面輸入 Konami 密碼都會走這裡。
+     shoot=true 先讓一道流星劃過、畫面漸暗成夜空，再換頁；偏好減少動態的人直接過去。 */
+  openStarmap(shoot) {
+    const url = 'starmap.html';
+    if (!shoot || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { location.href = url; return; }
+    if (!document.getElementById('egg-shoot-css')) {
+      const st = document.createElement('style'); st.id = 'egg-shoot-css';
+      st.textContent = '.egg-shoot{position:fixed;inset:0;z-index:99999;pointer-events:none;animation:eggFade 1.45s ease-in forwards}' +
+        '.egg-shoot i{position:absolute;left:-14%;top:16%;width:300px;height:2.5px;border-radius:3px;background:linear-gradient(90deg,rgba(255,255,255,0),#fff 60%,#ecdcaa);box-shadow:0 0 16px 4px rgba(236,220,170,.7);transform:rotate(17deg);animation:eggStreak 1.35s cubic-bezier(.3,.6,.4,1) forwards}' +
+        '.egg-shoot i::after{content:"";position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 16px 6px rgba(255,255,255,.8)}' +
+        '@keyframes eggStreak{0%{transform:translate(0,0) rotate(17deg);opacity:0}8%{opacity:1}100%{transform:translate(135vw,44vh) rotate(17deg);opacity:0}}' +
+        '@keyframes eggFade{0%,50%{background:transparent}100%{background:var(--egg-bg)}}';
+      document.head.appendChild(st);
+    }
+    let light = false; try { light = (localStorage.getItem('sekai-starmap-theme') || localStorage.getItem('sekai-theme') || localStorage.getItem('sekai-app-theme')) === 'light'; } catch (e) {}
+    const el = document.createElement('div'); el.className = 'egg-shoot'; el.style.setProperty('--egg-bg', light ? '#f1ebdf' : '#05070e'); el.innerHTML = '<i></i>';
+    document.body.appendChild(el);
+    setTimeout(() => { location.href = url; }, 1400);
+  }
   openCmd() {
     this.setState({ cmdk: true, cmdq: '', cmdi: 0 });
     setTimeout(() => { if (this._cmdEl) this._cmdEl.focus(); }, 60);
@@ -9895,6 +9918,8 @@ class Component extends DCLogic {
       out.push({ tag: '預設', tagBg: '#22c3d6', main: '套用情境：' + p.n, sub: '加成 ' + p.bonus + '% · 體力 ' + p.energy, run: () => { this.applyPreset(k); this.setState({ page: 'calc', cmdk: false }); } });
     });
     if (q) {
+      // 彩蛋：只有打到相關的字才會浮出來
+      if (/星圖|星空|星座|天文|彩蛋|starmap|songscape|stars?$/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
       });
@@ -12896,6 +12921,7 @@ class Component extends DCLogic {
           { name: 'WL 交換所規劃表', url: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link', sub: 'good果汁・World Link 交換所資源規劃' }
         ]},
         { label: '本站工具', items: [
+          { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
@@ -12914,6 +12940,7 @@ class Component extends DCLogic {
 
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      onStarEgg: () => this.openStarmap(true),   // 首頁右上角那顆會閃的小星（彩蛋）
       onBotSheets: () => { const el = document.getElementById('bot-sheets'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
       /* 私車排班 */
       onCarGuildToggle: () => this.setState({ carGuildOpen: !this.state.carGuildOpen, carPop: null }),

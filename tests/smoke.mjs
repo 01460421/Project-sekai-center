@@ -53,6 +53,29 @@ for (const mobile of [false, true]) {
   await ctx.close();
 }
 
+// 獨立頁：星圖（starmap.html）桌機與手機各開一次，要長出星星數、不能有 JS 錯誤、手機不能橫向溢出
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/starmap.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => +((document.querySelector('#stN') || {}).textContent || 0) > 500, null, { timeout: 45000 });
+      await page.fill('#q', 'Tell Your World'); await page.press('#q', 'Enter'); await page.waitForTimeout(600);
+      const sel = await page.evaluate(() => (document.querySelector('#panel.on h2') || {}).textContent || '');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /Tell Your World/.test(sel) && !(mobile && overflow);
+      why = errors[0] || (!/Tell Your World/.test(sel) ? '搜尋後沒選到星（' + sel + '）' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' starmap' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
