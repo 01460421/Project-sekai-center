@@ -4,13 +4,15 @@
 來源：Sekai-World 的 master 資料（台服 sekai-master-db-tc-diff 為主、日服 sekai-master-db-diff 補台服未實裝曲）
       musics.json：台服標題、發行日、作曲／作詞／編曲、是否書き下ろし、MV 分類
       musicVocals.json：各版本演唱角色 → 所屬團體（星圖用團體上色）
-輸出：export const SONG_META = { id: [台服標題, 團體, 發行日, 作曲, 作詞, 編曲, 旗標, MV, 封面素材名, 創作者] }
+輸出：export const SONG_META = { id: [台服標題, 團體, 發行日, 作曲, 作詞, 編曲, 旗標, MV, 封面素材名, 創作者, 虛擬歌手版音源, SEKAI 版音源] }
       團體：以逗號相連的 ln／mmj／vbs／wxs／n25／vs／other，依 SEKAI ver. 的演唱者順序；只有虛擬歌手的歌是 vs
       發行日：YYYY-MM-DD（台服；日服限定曲用日服日期並在旗標標 j）
       旗標：j＝台服尚未實裝（日服限定）、w＝書き下ろし（為本作新寫的歌）、f＝完整版
       MV：3＝3D MV、2＝2D MV、1＝只有靜態圖、0＝無
       封面素材名：master 的 assetbundleName，等於預設的 jacket_s_{id 三位} 時留空
       創作者：infos[0].creator（如 livetune、DECO*27），與作曲者相同時留空
+      音源：musicVocals 的 assetbundleName（星圖試聽用，網址 storage.sekai.best/.../music/long/{名}/{名}.mp3）；
+            虛擬歌手版＝virtual_singer／original_song（都沒有就取任一版本），SEKAI 版＝sekai，沒有則留空
       台服標題與 data/ep-songs.js 的日文標題相同時留空字串，省體積。
 內容沒變就不寫檔。重跑：python3 tools/build-song-meta.py && python3 tools/stamp-assets.py
 """
@@ -58,6 +60,23 @@ def units_for(vocals):
     return out
 
 
+def vocal_abns(vocals):
+    """[虛擬歌手版, SEKAI 版] 的音源名；虛擬歌手版缺的話退回任一版本（例如只有 another_vocal 的歌）。"""
+    v_abn = s_abn = any_abn = ''
+    for v in sorted(vocals, key=lambda v: v.get('seq') or 0):
+        abn = v.get('assetbundleName') or ''
+        if not abn:
+            continue
+        t = v.get('musicVocalType')
+        if not any_abn:
+            any_abn = abn
+        if t in ('virtual_singer', 'original_song') and not v_abn:
+            v_abn = abn
+        if t == 'sekai' and not s_abn:
+            s_abn = abn
+    return [v_abn or any_abn, s_abn]
+
+
 def day(ms):
     if not ms:
         return ''
@@ -102,13 +121,13 @@ def main():
         creator = ((m.get('infos') or [{}])[0].get('creator') or '')
         if creator == (m.get('composer') or ''):
             creator = ''
-        out[mid] = [title, ','.join(units_for(vocals)), day(m.get('publishedAt')), m.get('composer') or '', m.get('lyricist') or '', m.get('arranger') or '', flags, mv_level(m.get('categories')), jkt, creator]
+        out[mid] = [title, ','.join(units_for(vocals)), day(m.get('publishedAt')), m.get('composer') or '', m.get('lyricist') or '', m.get('arranger') or '', flags, mv_level(m.get('categories')), jkt, creator] + vocal_abns(vocals)
     if len(out) < 500:
         sys.exit(f'只湊到 {len(out)} 首，來源可能有問題，中止')
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
     text = ('// 歌曲詮釋資料（由 tools/build-song-meta.py 產生，勿手改）。星圖頁 starmap.html 用。\n'
             '// 來源：Sekai-World master（台服 tc-diff 為主、日服 diff 補台服未實裝曲）的 musics.json 與 musicVocals.json\n'
-            '// SONG_META[id] = [台服標題（同日文標題時為空）, 團體（ln,mmj,vbs,wxs,n25,vs,other，逗號相連）, 發行日 YYYY-MM-DD, 作曲, 作詞, 編曲, 旗標（j 日服限定／w 書き下ろし／f 完整版）, MV（3=3D 2=2D 1=靜態圖 0=無）, 封面素材名（預設 jacket_s_{id 三位} 時為空）, 創作者（同作曲時為空）]\n'
+            '// SONG_META[id] = [台服標題（同日文標題時為空）, 團體（ln,mmj,vbs,wxs,n25,vs,other，逗號相連）, 發行日 YYYY-MM-DD, 作曲, 作詞, 編曲, 旗標（j 日服限定／w 書き下ろし／f 完整版）, MV（3=3D 2=2D 1=靜態圖 0=無）, 封面素材名（預設 jacket_s_{id 三位} 時為空）, 創作者（同作曲時為空）, 虛擬歌手版音源名, SEKAI 版音源名（無則空）]\n'
             f'export const SONG_META = {body};\n')
     if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
         print(f'內容無變化，不更新 {OUT.name}（{len(out)} 首）')
