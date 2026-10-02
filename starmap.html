@@ -360,7 +360,7 @@ const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return `rgba(${r},${g},${
 /* ========== 建星 ========== */
 const CONST = {};
 ((window.B30_CONSTS && window.B30_CONSTS.charts) || []).forEach(c => { (CONST[c.id] = CONST[c.id] || {})[c.d] = c.c; });
-const FUTURE = Date.now() + 45 * 86400e3;   // 日服 master 給還沒上的歌一個遠期佔位日期（幾個月後）：當作未定；幾天內的是真的預告
+const FUTURE = Date.now() + 3 * 365 * 86400e3;   // master 帶著未來幾個月的排程，那是預定發行日照畫；只有幾年後的佔位日期才當未定
 let seed = 7;
 const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
 const stars = EP_SONGS.map((s, i) => {
@@ -374,7 +374,7 @@ const stars = EP_SONGS.map((s, i) => {
   const tbd = ts > FUTURE; if (tbd) ts = 0;
   return {
     id: s.id, i, t: s.t, tc: m[0], units, u: units.find(u => u !== 'vs') || units[0], bpm: +b[0] || 0, bpmLo: +b[1] || 0, bpmHi: +b[2] || 0, len,
-    date: tbd ? '' : m[2], ts, composer: m[3], lyricist: m[4], arranger: m[5], jp: m[6].includes('j'), nw: m[6].includes('w'), mv: m[7],
+    date: tbd ? '' : m[2], ts, future: ts > Date.now(), composer: m[3], lyricist: m[4], arranger: m[5], jp: m[6].includes('j'), nw: m[6].includes('w'), mv: m[7],
     jkt: m[8] || ('jacket_s_' + String(s.id).padStart(3, '0')), creator: m[9], rate: s.rate, lv, notes,
     c: { M: cc.master != null ? cc.master : (lv.M != null ? lv.M : null), A: cc.append != null ? cc.append : (lv.A != null ? lv.A : null) },
     hasC: { M: cc.master != null, A: cc.append != null },
@@ -652,7 +652,7 @@ const tip = $('#tip');
 function showTip(s, x, y) {
   if (mobile()) return;
   const y0 = yOf(s), xv = xOf(s);
-  tip.innerHTML = `<span class="dot" style="--c:${colors[s.u]}"></span>${esc(s.tc || s.t)}<small>${S.proj === 'dens' ? fmtTime(xv) + ' · ' + y0.toFixed(2) + ' 音符／秒' : (S.proj === 'era' ? (s.date || '未定') : s.bpm + ' BPM') + ' · ' + DIFF_NAME[S.diff] + ' ' + (s.hasC[S.diff] ? y0.toFixed(1) : 'Lv.' + y0)}</small>`;
+  tip.innerHTML = `<span class="dot" style="--c:${colors[s.u]}"></span>${esc(s.tc || s.t)}<small>${S.proj === 'dens' ? fmtTime(xv) + ' · ' + y0.toFixed(2) + ' 音符／秒' : (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + ' · ' + DIFF_NAME[S.diff] + ' ' + (s.hasC[S.diff] ? y0.toFixed(1) : 'Lv.' + y0)}</small>`;
   tip.classList.add('on');
   const w = tip.offsetWidth, h = tip.offsetHeight; let L = x + 16, T = y + 16;
   if (L + w > W - 10) L = x - w - 12; if (T + h > H - 10) T = y - h - 12;
@@ -682,7 +682,7 @@ function renderPanel(s) {
     <div class="grid">
       <div class="cell"><i>BPM</i><b>${s.bpm || '–'}</b>${s.bpm && s.bpmLo !== s.bpmHi ? `<small>${s.bpmLo}–${s.bpmHi}</small>` : ''}</div>
       <div class="cell"><i>曲長</i><b>${s.len ? fmtTime(s.len) : '–'}</b></div>
-      <div class="cell"><i>${s.jp ? '日服發行' : '台服發行'}</i><b style="font-size:13px;margin-top:5px">${esc(s.date || '未定')}</b></div>
+      <div class="cell"><i>${s.jp ? '日服' : '台服'}${s.future ? '預定' : '發行'}</i><b style="font-size:13px;margin-top:5px">${esc(s.date || '未定')}</b></div>
       <div class="cell"><i>音符／秒</i><b>${dens}</b><small>${DIFF_NAME[S.diff]}</small></div>
       <div class="cell"><i>活動倍率</i><b>${s.rate || '–'}</b></div>
       <div class="cell"><i>曲目 ID</i><b>${s.id}</b></div>
@@ -776,7 +776,7 @@ function renderCatalog() {
   const m = catSort.value;
   list.sort((a, b) => m === 't' ? (a.tc || a.t).localeCompare(b.tc || b.t, 'zh-Hant') : m === 'new' ? (b.ts || 0) - (a.ts || 0) : m === 'x' ? xOf(b) - xOf(a) : yOf(b) - yOf(a));
   $('#catN').textContent = list.length + ' 首';
-  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>✦</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date || '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
+  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>✦</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
 }
 catList.addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (!li) return; select(byId[+li.dataset.id], true); if (mobile()) { S.catOn = false; catalog.classList.remove('on'); $('#catBtn').setAttribute('aria-pressed', 'false'); } });
 function markCatalog() { catList.querySelectorAll('li').forEach(li => li.classList.toggle('on', S.sel && +li.dataset.id === S.sel.id)); }
