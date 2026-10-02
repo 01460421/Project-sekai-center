@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#070a18">
-<title>SEKAI 星圖 — 把全曲庫化成一片星空 | Project SEKAI 資源中心</title>
+<meta name="theme-color" content="#05070e">
+<title>SEKAI 星圖 — 全曲庫的天文圖鑑 | Project SEKAI 資源中心</title>
 <meta name="description" content="Project SEKAI 全曲庫 700 多首歌化成一片可互動的星空：依 BPM、難度定數、發行年代、曲長與音符密度投影，團體上色、作曲者星座、搜尋高亮與可分享的星星連結。">
 <meta property="og:site_name" content="SEKAI 資源中心">
 <meta property="og:type" content="website">
-<meta property="og:title" content="SEKAI 星圖 — 把全曲庫化成一片星空">
+<meta property="og:title" content="SEKAI 星圖 — 全曲庫的天文圖鑑">
 <meta property="og:description" content="700 多首歌、每一首是一顆星：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮。">
 <meta property="og:url" content="https://project-sekai-center.com/starmap.html">
 <meta property="og:image" content="https://project-sekai-center.com/og/starmap.jpg">
@@ -22,246 +22,279 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://storage.sekai.best" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<script>/* 主題：這一頁預設是夜空；只有站上明確選了淺色才用「晨光」版。畫面繪製前套用，避免閃爍。 */
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>/* 主題：這一頁預設是夜空；只有站上明確選了淺色才用「象牙」版。畫面繪製前套用，避免閃爍。 */
 try{var _q=new URLSearchParams(location.search);var _t=localStorage.getItem('sekai-starmap-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
 if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))document.documentElement.classList.add('og');}catch(e){}</script>
 <style>
 :root{
   color-scheme:dark;
-  --bg:#070a18; --bg-2:#0d1226; --ink:#e9edfb; --ink-2:#aeb6d4; --ink-3:#737c9e;
-  --line:rgba(170,180,225,.14); --line-2:rgba(170,180,225,.28);
-  --glass:rgba(12,17,38,.66); --glass-2:rgba(16,22,46,.84);
-  --accent:#7cd8ff;
-  --ln:#6b7dff; --mmj:#9fdd55; --vbs:#ff8a6a; --wxs:#ffcc4d; --n25:#c78cea; --vs:#5fe2e2; --other:#c9cfe6;
-  --font:'Noto Sans TC','M PLUS Rounded 1c',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;
-  --font-num:'M PLUS Rounded 1c','Noto Sans TC',sans-serif;
-  --shadow:0 10px 40px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.4);
-  --ease:cubic-bezier(.32,.72,.24,1); --spring:cubic-bezier(.34,1.45,.44,1);
-  --halo:.9;
+  --bg:#05070e; --bg-2:#0a0e1b; --ink:#ebe4d3; --ink-2:#b3ab98; --ink-3:#7a7569;
+  --gold:#d4b673; --gold-2:#ecdcaa; --line:rgba(212,182,115,.17); --line-2:rgba(212,182,115,.38); --hair:rgba(235,228,211,.07);
+  --glass:rgba(6,9,19,.6); --glass-2:rgba(8,11,23,.86);
+  --ln:#7081f2; --mmj:#a6d564; --vbs:#f49474; --wxs:#f0c862; --n25:#c198ec; --vs:#6edbd6; --other:#d6cfbe;
+  --serif:'Noto Serif TC','Cormorant Garamond',Georgia,'Songti TC','PMingLiU',serif;
+  --display:'Cormorant Garamond','Noto Serif TC',Georgia,'Times New Roman',serif;
+  --shadow:0 18px 50px rgba(0,0,0,.55);
+  --ease:cubic-bezier(.32,.72,.24,1);
+  --halo:.85; --grain:.07; --vig:rgba(0,0,0,.6);
 }
 :root.light{
   color-scheme:light;
-  --bg:#f3f5fc; --bg-2:#ffffff; --ink:#1c2340; --ink-2:#4a537a; --ink-3:#8790ae;
-  --line:rgba(60,72,125,.14); --line-2:rgba(60,72,125,.3);
-  --glass:rgba(255,255,255,.74); --glass-2:rgba(255,255,255,.9);
-  --accent:#0f8fb9;
-  --ln:#4455dd; --mmj:#6cb128; --vbs:#e85a3a; --wxs:#dc9f00; --n25:#9a55c4; --vs:#1aafaf; --other:#6b7493;
-  --shadow:0 10px 40px rgba(40,50,90,.16),0 1px 2px rgba(40,50,90,.1);
-  --halo:.55;
+  --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#8a8170;
+  --gold:#9a7a30; --gold-2:#74591c; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
+  --glass:rgba(249,245,236,.76); --glass-2:rgba(249,245,236,.94);
+  --ln:#3d50c8; --mmj:#5c9b22; --vbs:#d2502c; --wxs:#b98f12; --n25:#8750b6; --vs:#1b9c97; --other:#6d6656;
+  --shadow:0 18px 50px rgba(60,45,20,.16);
+  --halo:.45; --grain:.1; --vig:rgba(80,60,20,.2);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+body{font-family:var(--serif);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 button{font:inherit;color:inherit}
-a{color:var(--accent)}
-/* 星雲：六團顏色的四朵雲，慢慢飄 */
-body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;opacity:var(--halo);filter:blur(28px);
+a{color:var(--gold-2)}
+/* 星雲：六團顏色的雲氣，極慢地飄 */
+body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;opacity:var(--halo);filter:blur(34px);
   background:
-    radial-gradient(38% 34% at 16% 24%,color-mix(in oklab,var(--ln) 30%,transparent),transparent 70%),
-    radial-gradient(34% 32% at 84% 16%,color-mix(in oklab,var(--n25) 26%,transparent),transparent 70%),
-    radial-gradient(44% 38% at 72% 88%,color-mix(in oklab,var(--vs) 20%,transparent),transparent 70%),
-    radial-gradient(30% 30% at 20% 86%,color-mix(in oklab,var(--vbs) 18%,transparent),transparent 70%),
-    radial-gradient(26% 24% at 50% 50%,color-mix(in oklab,var(--wxs) 10%,transparent),transparent 70%);
-  animation:drift 70s ease-in-out infinite alternate}
-@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.08)}}
+    radial-gradient(40% 36% at 14% 26%,color-mix(in oklab,var(--ln) 26%,transparent),transparent 70%),
+    radial-gradient(34% 32% at 86% 14%,color-mix(in oklab,var(--n25) 22%,transparent),transparent 70%),
+    radial-gradient(46% 40% at 74% 90%,color-mix(in oklab,var(--vs) 16%,transparent),transparent 70%),
+    radial-gradient(30% 30% at 18% 88%,color-mix(in oklab,var(--vbs) 14%,transparent),transparent 70%),
+    radial-gradient(28% 26% at 52% 48%,color-mix(in oklab,var(--wxs) 9%,transparent),transparent 70%);
+  animation:drift 90s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.07)}}
 #sky{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none;cursor:crosshair;outline:none}
 #sky.grab{cursor:grabbing}
 #sky.pick{cursor:pointer}
+/* 膠片顆粒與暗角：讓畫面有紙與鏡頭的質地 */
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;background-size:240px 240px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+:root.light .grain{mix-blend-mode:multiply}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(115% 88% at 50% 46%,transparent 56%,var(--vig) 100%)}
 
-/* ===== 玻璃元件 ===== */
-.glass{background:var(--glass);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);border:1px solid var(--line);box-shadow:var(--shadow)}
-.ib{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);cursor:pointer;color:var(--ink-2);box-shadow:var(--shadow);transition:transform .2s var(--spring),color .2s;flex:none}
-.ib:hover{color:var(--ink);transform:translateY(-1px)}
-.ib:active{transform:scale(.94)}
-.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.ib[aria-pressed=true]{color:var(--bg);background:var(--ink);border-color:transparent}
+/* ===== 玻璃與髮絲線 ===== */
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);cursor:pointer;color:var(--ink-2);box-shadow:var(--shadow);transition:color .25s,border-color .25s,background .25s;flex:none}
+.ib:hover{color:var(--gold-2);border-color:var(--line-2)}
+.ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ib[aria-pressed=true]{color:var(--gold-2);border-color:var(--gold);background:color-mix(in oklab,var(--gold) 14%,var(--glass))}
+.sc{font-family:var(--display);font-weight:600;letter-spacing:2.5px;text-transform:uppercase}
 
 /* ===== 頂欄 ===== */
-.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 14px 0;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;flex-wrap:wrap}
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px 0;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;flex-wrap:wrap}
 .bar>*{pointer-events:auto}
-.brand{display:flex;align-items:center;gap:10px;height:44px;padding:0 16px 0 8px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
-.brand .logo{width:30px;height:30px;border-radius:50%;position:relative;flex:none;
-  background:conic-gradient(from 210deg,var(--ln),var(--mmj),var(--vbs),var(--wxs),var(--n25),var(--vs),var(--ln));box-shadow:0 0 14px color-mix(in oklab,var(--vs) 50%,transparent)}
-.brand .logo::after{content:'';position:absolute;inset:8px;border-radius:50%;background:var(--bg-2)}
-.brand .logo::before{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;z-index:1;box-shadow:0 0 8px #fff}
-.brand b{font-family:var(--font-num);font-weight:800;font-size:16px;letter-spacing:.4px;line-height:1.05;display:block}
-.brand small{display:block;font-size:9px;letter-spacing:3.2px;color:var(--ink-3);font-weight:700;line-height:1;margin-top:3px;font-family:var(--font-num)}
-.search{flex:1 1 220px;max-width:460px;display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;height:44px;border-radius:999px}
-.search svg{width:18px;height:18px;fill:none;stroke:var(--ink-3);stroke-width:2;stroke-linecap:round;flex:none}
-.search input{flex:1;background:none;border:0;outline:0;color:var(--ink);font:inherit;font-size:14px;min-width:0}
+.brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand b{font-family:var(--serif);font-weight:600;font-size:16.5px;letter-spacing:1.5px;line-height:1.05;display:block}
+.brand small{display:block;font-size:8.5px;letter-spacing:3.4px;color:var(--gold);font-weight:600;line-height:1;margin-top:4px;font-family:var(--display);text-transform:uppercase}
+.search{flex:1 1 220px;max-width:470px;display:flex;align-items:center;gap:9px;padding:0 8px 0 16px;height:44px;border-radius:999px}
+.search svg{width:17px;height:17px;fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-linecap:round;flex:none}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--ink);font:inherit;font-size:14px;min-width:0;letter-spacing:.3px}
 .search input::placeholder{color:var(--ink-3)}
-.search .n{font-family:var(--font-num);font-size:12px;font-weight:700;color:var(--ink-3);white-space:nowrap}
-.search kbd{font-family:var(--font-num);font-size:11px;color:var(--ink-3);border:1px solid var(--line-2);border-radius:6px;padding:1px 6px;line-height:1.4}
-.search .x{display:none;width:28px;height:28px;border-radius:50%;border:0;background:var(--line);color:var(--ink-2);cursor:pointer;align-items:center;justify-content:center}
+.search .n{font-family:var(--display);font-size:13px;font-weight:600;color:var(--gold);white-space:nowrap;letter-spacing:.5px}
+.search kbd{font-family:var(--display);font-size:12px;font-weight:600;color:var(--ink-3);border:1px solid var(--line-2);border-radius:3px;padding:0 6px;line-height:1.5}
+.search .x{display:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;align-items:center;justify-content:center}
 .search.has .x{display:inline-flex}
 .search.has kbd{display:none}
-.seg{display:flex;padding:4px;border-radius:999px;gap:2px;flex:none}
-.seg button{border:0;background:none;color:var(--ink-2);font-weight:700;font-size:12.5px;padding:0 13px;height:34px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .2s,color .2s}
+.seg{display:flex;padding:4px 6px;border-radius:999px;gap:2px;flex:none}
+.seg button{border:0;background:none;color:var(--ink-2);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.8px;padding:0 13px;height:34px;border-radius:999px;cursor:pointer;white-space:nowrap;position:relative;transition:color .25s}
+.seg button::after{content:'';position:absolute;left:14px;right:14px;bottom:6px;height:1px;background:var(--gold);transform:scaleX(0);transition:transform .3s var(--ease)}
 .seg button:hover{color:var(--ink)}
-.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
-.seg.sm button{font-size:12px;padding:0 10px;height:30px;font-family:var(--font-num)}
+.seg button[aria-pressed=true]{color:var(--gold-2)}
+.seg button[aria-pressed=true]::after{transform:scaleX(1)}
+.seg.sm button{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:2px;text-transform:uppercase;padding:0 11px;height:30px}
+.seg.sm button::after{bottom:5px;left:12px;right:12px}
 .spacer{flex:1}
 
 /* ===== 左下：圖例與篩選 ===== */
-.legend{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:20;display:flex;flex-direction:column;gap:8px;max-width:min(800px,calc(100vw - 28px));pointer-events:none}
+.legend{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;display:flex;flex-direction:column;gap:8px;max-width:min(820px,calc(100vw - 32px));pointer-events:none}
 .legend>*{pointer-events:auto}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:7px;padding:0 12px 0 10px;height:32px;border-radius:999px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);color:var(--ink-2);font-weight:700;font-size:12px;cursor:pointer;transition:opacity .25s,transform .2s var(--spring),filter .25s;box-shadow:var(--shadow);white-space:nowrap}
-.chip:hover{transform:translateY(-1px);color:var(--ink)}
-.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 9px var(--c);flex:none}
-.chip[aria-pressed=false]{opacity:.38;filter:saturate(.2)}
-.chip .k{font-family:var(--font-num);color:var(--ink-3);font-weight:700;font-size:11px}
-.chip.star::before{content:'✦';color:var(--wxs);font-size:13px;text-shadow:0 0 8px var(--wxs)}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:0 13px 0 11px;height:32px;border-radius:999px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .25s,color .25s,border-color .25s,filter .25s;box-shadow:var(--shadow);white-space:nowrap}
+.chip:hover{color:var(--ink);border-color:var(--line-2)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c),0 0 2px #fff inset;flex:none}
+.chip[aria-pressed=false]{opacity:.38;filter:saturate(.15)}
+.chip .k{color:var(--ink-3);font-weight:500;font-size:12px;letter-spacing:.5px}
+.chip.zh{font-family:var(--serif);font-weight:500;letter-spacing:.6px;text-transform:none;font-size:12.5px}
+.chip svg{width:13px;height:13px;fill:var(--wxs);filter:drop-shadow(0 0 4px var(--wxs))}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* ===== 右下：狀態列 ===== */
-.hud{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:19;display:flex;align-items:center;gap:8px;pointer-events:none}
+.hud{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:19;display:flex;align-items:center;gap:8px;pointer-events:none}
 .hud>*{pointer-events:auto}
-.hud .st{height:32px;display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:999px;font-family:var(--font-num);font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
-.hud .st b{color:var(--ink);font-size:13px}
-.hud .st i{font-style:normal;color:var(--ink-3)}
+.hud .st{height:32px;display:flex;align-items:center;gap:9px;padding:0 15px;border-radius:999px;font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;letter-spacing:.6px}
+.hud .st b{color:var(--gold-2);font-size:15px;letter-spacing:.5px}
+.hud .st i{font-style:normal;color:var(--ink-3);font-family:var(--serif);font-weight:400;font-size:12px;letter-spacing:.5px}
 .hud .ib{width:32px;height:32px}
-.hud .ib svg{width:16px;height:16px}
+.hud .ib svg{width:15px;height:15px}
 
-/* ===== 詳情面板 ===== */
-.panel{position:fixed;top:calc(70px + env(safe-area-inset-top));right:14px;width:348px;max-height:calc(100dvh - 90px - env(safe-area-inset-top));overflow:auto;z-index:25;border-radius:24px;background:var(--glass-2);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;transform:translateX(18px);opacity:0;pointer-events:none;transition:transform .4s var(--ease),opacity .3s;scrollbar-width:thin}
+/* ===== 詳情面板：標本卡 ===== */
+.panel{position:fixed;top:calc(70px + env(safe-area-inset-top));right:16px;width:364px;max-height:calc(100dvh - 92px - env(safe-area-inset-top));overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
 .panel.on{transform:none;opacity:1;pointer-events:auto}
-.panel .close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:0;background:var(--line);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
-.panel .close:hover{color:var(--ink)}
-.ph{display:flex;gap:14px;align-items:flex-start;padding-right:30px}
-.jk{width:84px;height:84px;border-radius:18px;flex:none;background:var(--bg-2);position:relative;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 10px 28px color-mix(in oklab,var(--c) 45%,transparent)}
-.jk img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .4s;position:relative;z-index:1}
+.panel .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:color .2s,border-color .2s}
+.panel .close:hover{color:var(--gold-2);border-color:var(--line-2)}
+.ph{display:flex;gap:15px;align-items:flex-start;padding-right:28px}
+.jk{width:92px;height:92px;flex:none;padding:4px;border:1px solid var(--line-2);background:var(--bg-2);position:relative;box-shadow:0 14px 30px color-mix(in oklab,var(--c) 32%,transparent)}
+.jk::before{content:'';position:absolute;inset:-5px;border:1px solid var(--line);pointer-events:none}
+.jk .in{position:relative;width:100%;height:100%;overflow:hidden;background:var(--bg-2)}
+.jk img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s;position:relative;z-index:1}
 .jk img.ok{opacity:1}
-.jk::after{content:'♪';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--ink-3);z-index:0;font-family:var(--font-num)}
-.pt{min-width:0}
-.pt h2{font-size:17px;line-height:1.3;font-weight:700;letter-spacing:.2px;word-break:break-word}
-.pt .jp{font-size:12px;color:var(--ink-3);margin-top:2px;word-break:break-word}
-.pt .by{font-size:12px;color:var(--ink-2);margin-top:6px;line-height:1.55}
-.pt .by b{font-weight:500;color:var(--ink-3)}
-.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
-.tag{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;font-size:11px;font-weight:700;background:color-mix(in oklab,var(--c) 18%,transparent);color:var(--c);border:1px solid color-mix(in oklab,var(--c) 35%,transparent)}
+.jk .in::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,var(--line-2) 0,transparent 1.5px) 50% 50%/6px 6px;opacity:.5}
+.pt{min-width:0;padding-top:2px}
+.pt h2{font-family:var(--serif);font-size:18px;line-height:1.35;font-weight:600;letter-spacing:.6px;word-break:break-word}
+.pt .jp{font-size:12px;color:var(--ink-3);margin-top:3px;word-break:break-word;letter-spacing:.3px}
+.pt .by{font-size:12px;color:var(--ink-2);margin-top:8px;line-height:1.7}
+.pt .by b{font-weight:500;color:var(--gold);font-size:11px;letter-spacing:1px;margin-right:2px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.tag{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 9px;border-radius:2px;font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in oklab,var(--c) 45%,transparent);background:color-mix(in oklab,var(--c) 9%,transparent)}
+.tag.zh{font-family:var(--serif);font-weight:500;letter-spacing:.5px;text-transform:none;font-size:11px}
 .tag.mono{--c:var(--ink-2)}
 .tag.jp{--c:var(--wxs)}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-.cell{padding:9px 10px;border-radius:14px;background:color-mix(in oklab,var(--ink) 6%,transparent);border:1px solid var(--line)}
-.cell i{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);font-weight:700;letter-spacing:.3px}
-.cell b{display:block;font-family:var(--font-num);font-size:16px;font-weight:800;line-height:1.25;margin-top:2px;color:var(--ink)}
-.cell small{font-family:var(--font-num);font-size:10.5px;color:var(--ink-3);font-weight:700}
-.lvs{display:flex;gap:4px;margin-top:12px}
-.lv{flex:1;text-align:center;padding:7px 2px 6px;border-radius:12px;background:color-mix(in oklab,var(--ink) 5%,transparent);border:1px solid var(--line);position:relative}
-.lv i{display:block;font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--d)}
-.lv b{display:block;font-family:var(--font-num);font-size:16px;font-weight:800;line-height:1.2;margin-top:1px}
-.lv small{display:block;font-family:var(--font-num);font-size:10px;font-weight:700;color:var(--ink-3);line-height:1.2}
-.lv.on{background:color-mix(in oklab,var(--d) 16%,transparent);border-color:color-mix(in oklab,var(--d) 40%,transparent)}
+.rule{height:1px;background:var(--line-2);position:relative;margin:16px 0 12px}
+.rule::after{content:'';position:absolute;left:50%;top:-2.5px;width:5px;height:5px;background:var(--gold);transform:translateX(-50%) rotate(45deg)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.cell{padding:8px 10px 9px;border-top:1px solid var(--hair);border-left:1px solid var(--hair)}
+.cell:nth-child(3n+1){border-left:0}
+.cell:nth-child(-n+3){border-top:0}
+.cell i{display:block;font-style:normal;font-family:var(--display);font-size:10px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.cell b{display:block;font-family:var(--display);font-size:20px;font-weight:600;line-height:1.2;margin-top:3px;color:var(--ink);letter-spacing:.3px}
+.cell b.zh{font-family:var(--serif);font-size:13.5px;margin-top:6px;font-weight:500}
+.cell small{font-family:var(--display);font-size:11.5px;color:var(--ink-3);font-weight:500;letter-spacing:.5px}
+.lvs{display:flex;margin-top:14px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.lv{flex:1;text-align:center;padding:8px 2px 7px;border-left:1px solid var(--hair);position:relative}
+.lv:first-child{border-left:0}
+.lv i{display:block;font-style:normal;font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--d)}
+.lv b{display:block;font-family:var(--display);font-size:19px;font-weight:600;line-height:1.15;margin-top:2px}
+.lv small{display:block;font-family:var(--display);font-size:11px;font-weight:500;color:var(--ink-3);line-height:1.3}
+.lv.on::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:1px;background:var(--gold)}
 .lv.none{opacity:.3}
 .acts{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:color-mix(in oklab,var(--ink) 7%,transparent);color:var(--ink);font-weight:700;font-size:12.5px;cursor:pointer;text-decoration:none;transition:transform .2s var(--spring),background .2s}
-.btn:hover{transform:translateY(-1px);background:color-mix(in oklab,var(--ink) 12%,transparent)}
-.btn:active{transform:scale(.96)}
-.btn.pri{background:var(--c,var(--accent));color:#0a0f22;border-color:transparent;box-shadow:0 6px 18px color-mix(in oklab,var(--c,var(--accent)) 40%,transparent)}
-.btn[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:transparent}
-.btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.pf{margin-top:12px;font-size:11px;color:var(--ink-3);line-height:1.6}
+.btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:3px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font-family:var(--serif);font-weight:500;font-size:12.5px;letter-spacing:.8px;cursor:pointer;text-decoration:none;transition:background .25s,color .25s,border-color .25s}
+.btn:hover{background:color-mix(in oklab,var(--gold) 12%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn[aria-pressed=true]{background:color-mix(in oklab,var(--gold) 18%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.pf{margin-top:12px;font-size:11px;color:var(--ink-3);line-height:1.7;letter-spacing:.3px}
 
 /* ===== 提示泡泡 ===== */
-.tip{position:fixed;z-index:30;pointer-events:none;padding:7px 11px;border-radius:12px;background:var(--glass-2);backdrop-filter:blur(12px);border:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--ink);box-shadow:var(--shadow);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:4px;background:var(--glass-2);backdrop-filter:blur(14px);border:1px solid var(--line-2);font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
 .tip.on{opacity:1;transform:none}
-.tip small{display:block;font-family:var(--font-num);font-size:11px;color:var(--ink-3);font-weight:700;margin-top:1px}
-.tip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:6px;vertical-align:1px}
+.tip small{display:block;font-family:var(--display);font-size:12px;color:var(--gold);font-weight:600;margin-top:1px;letter-spacing:.8px}
+.tip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:7px;vertical-align:1px}
 
 /* ===== 星表（左側抽屜） ===== */
-.catalog{position:fixed;top:calc(70px + env(safe-area-inset-top));left:14px;width:360px;max-height:calc(100dvh - 215px - env(safe-area-inset-top));z-index:24;border-radius:24px;background:var(--glass-2);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;pointer-events:none;transition:transform .4s var(--ease),opacity .3s;overflow:hidden}
+.catalog{position:fixed;top:calc(70px + env(safe-area-inset-top));left:16px;width:372px;max-height:calc(100dvh - 218px - env(safe-area-inset-top));z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;pointer-events:none;transition:transform .45s var(--ease),opacity .35s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
 .catalog.on{transform:none;opacity:1;pointer-events:auto}
-.catalog header{display:flex;align-items:center;gap:8px;padding:14px 14px 10px 18px;border-bottom:1px solid var(--line)}
-.catalog header b{font-size:14px;flex:1}
-.catalog header b small{font-family:var(--font-num);color:var(--ink-3);font-weight:700;margin-left:6px}
-.catalog header select{font:inherit;font-size:12px;font-weight:700;background:var(--line);color:var(--ink);border:0;border-radius:999px;padding:5px 10px;outline:0}
-.catalog ol{list-style:none;overflow:auto;flex:1;scrollbar-width:thin;padding:6px}
-.catalog li{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;cursor:pointer;font-size:13px}
-.catalog li:hover,.catalog li.on{background:color-mix(in oklab,var(--ink) 8%,transparent)}
-.catalog li .dot{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
-.catalog li .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-.catalog li .t small{color:var(--ink-3);font-size:11px;margin-left:5px}
-.catalog li .v{font-family:var(--font-num);font-size:12px;font-weight:800;color:var(--ink-2);text-align:right;white-space:nowrap}
-.catalog li .v small{color:var(--ink-3);font-weight:700;margin-left:4px}
+.catalog header{display:flex;align-items:center;gap:8px;padding:14px 14px 11px 18px;border-bottom:1px solid var(--line-2)}
+.catalog header b{font-size:14.5px;flex:1;font-weight:600;letter-spacing:1.5px}
+.catalog header b small{font-family:var(--display);color:var(--gold);font-weight:600;margin-left:8px;font-size:12.5px;letter-spacing:.5px}
+.catalog header select{font-family:var(--serif);font-size:12px;font-weight:500;background:transparent;color:var(--ink-2);border:1px solid var(--line);border-radius:3px;padding:4px 8px;outline:0;letter-spacing:.5px}
+.catalog ol{list-style:none;overflow:auto;flex:1;scrollbar-width:thin;padding:4px 8px 8px}
+.catalog li{display:grid;grid-template-columns:9px 1fr auto;gap:11px;align-items:center;padding:8px 8px;border-bottom:1px solid var(--hair);cursor:pointer;font-size:13px;transition:background .2s}
+.catalog li:hover,.catalog li.on{background:color-mix(in oklab,var(--gold) 9%,transparent)}
+.catalog li .dot{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 7px var(--c)}
+.catalog li .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;letter-spacing:.3px}
+.catalog li .t small{color:var(--gold);font-size:10px;margin-left:6px;border:1px solid var(--line);padding:0 4px;border-radius:2px;vertical-align:1px;letter-spacing:1px}
+.catalog li .v{font-family:var(--display);font-size:14px;font-weight:600;color:var(--ink);text-align:right;white-space:nowrap;letter-spacing:.3px}
+.catalog li .v small{color:var(--ink-3);font-weight:500;margin-left:6px;font-size:12px}
 
 /* ===== 導覽選單 ===== */
-.menu{position:fixed;z-index:26;min-width:190px;padding:6px;border-radius:16px;background:var(--glass-2);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);box-shadow:var(--shadow);display:none}
+.menu{position:fixed;z-index:26;min-width:206px;padding:6px;border-radius:6px;background:var(--glass-2);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line-2);box-shadow:var(--shadow);display:none;outline:1px solid var(--line);outline-offset:3px}
 .menu.on{display:block}
-.menu button{display:flex;width:100%;align-items:center;gap:9px;padding:9px 12px;border:0;background:none;border-radius:10px;cursor:pointer;color:var(--ink);font-weight:700;font-size:13px;text-align:left}
-.menu button:hover{background:color-mix(in oklab,var(--ink) 8%,transparent)}
-.menu button span{color:var(--wxs);width:14px;text-align:center}
+.menu button{display:flex;width:100%;align-items:center;gap:11px;padding:9px 12px;border:0;background:none;border-radius:3px;cursor:pointer;color:var(--ink);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.8px;text-align:left;transition:background .2s,color .2s}
+.menu button:hover{background:color-mix(in oklab,var(--gold) 12%,transparent);color:var(--gold-2)}
+.menu button svg{width:15px;height:15px;fill:none;stroke:var(--gold);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 /* ===== 說明 ===== */
-.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 55%,transparent);backdrop-filter:blur(6px)}
+.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 60%,transparent);backdrop-filter:blur(8px)}
 .help.on{display:flex}
-.help .card{width:min(560px,100%);max-height:90dvh;overflow:auto;padding:26px 28px;border-radius:26px;background:var(--glass-2);border:1px solid var(--line);box-shadow:var(--shadow);position:relative}
-.help h3{font-family:var(--font-num);font-size:20px;font-weight:800;margin-bottom:4px}
-.help .sub{font-size:11px;letter-spacing:3px;color:var(--ink-3);font-weight:700;font-family:var(--font-num)}
-.help p{margin-top:12px;font-size:13.5px;color:var(--ink-2);line-height:1.75}
-.help p b{color:var(--ink);font-weight:700}
-.help ul{margin:10px 0 0 18px;font-size:13px;color:var(--ink-2);line-height:1.8}
-.help .close{position:absolute;top:14px;right:14px}
-.help .src{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.7}
+.help .card{width:min(580px,100%);max-height:90dvh;overflow:auto;padding:30px 34px 26px;border-radius:8px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);position:relative;outline:1px solid var(--line);outline-offset:5px}
+.help .sub{font-family:var(--display);font-style:italic;font-weight:500;font-size:15px;letter-spacing:4px;color:var(--gold);text-transform:uppercase}
+.help h3{font-family:var(--serif);font-size:26px;font-weight:600;margin-top:4px;letter-spacing:3px}
+.help p{margin-top:13px;font-size:14px;color:var(--ink-2);line-height:1.9;letter-spacing:.3px}
+.help p b{color:var(--ink);font-weight:600}
+.help ul{margin:10px 0 0 18px;font-size:13.5px;color:var(--ink-2);line-height:1.95;letter-spacing:.3px}
+.help ul b{color:var(--gold-2);font-weight:600}
+.help .close{position:absolute;top:16px;right:16px}
+.help .src{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.8;letter-spacing:.3px}
 
 /* ===== 提示訊息 ===== */
-.toast{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 16px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;font-size:13px;opacity:0;transition:.25s var(--ease);pointer-events:none;box-shadow:var(--shadow)}
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 18px;border-radius:3px;background:var(--glass-2);border:1px solid var(--line-2);color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.8px;opacity:0;transition:.3s var(--ease);pointer-events:none;box-shadow:var(--shadow)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
+/* ===== 開場：標題浮現、金線展開，然後退場 ===== */
+.opening{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:20px;
+  background:radial-gradient(60% 55% at 50% 50%,color-mix(in oklab,var(--bg) 78%,transparent),transparent);animation:openOut 1s var(--ease) 2.1s forwards}
+.opening[hidden]{display:none}
+.opening small{display:block;font-family:var(--display);font-weight:600;letter-spacing:7px;color:var(--gold);font-size:13px;text-transform:uppercase;animation:rise 1s var(--ease) both}
+.opening b{display:block;font-family:var(--serif);font-weight:600;font-size:clamp(42px,7vw,78px);line-height:1.15;letter-spacing:6px;margin:12px 0 16px;animation:rise 1s var(--ease) .12s both}
+.opening i{display:block;width:180px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto 16px;transform:scaleX(0);animation:line 1.1s var(--ease) .4s forwards}
+.opening span{display:block;font-family:var(--serif);color:var(--ink-2);letter-spacing:3px;font-size:15px;animation:rise 1s var(--ease) .35s both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes line{to{transform:scaleX(1)}}
+@keyframes openOut{to{opacity:0;visibility:hidden}}
+
 /* ===== 分享圖模式：只留星空與大標題 ===== */
-:root.og .bar,:root.og .legend,:root.og .hud,:root.og .panel,:root.og .catalog{display:none!important}
+:root.og .bar,:root.og .legend,:root.og .hud,:root.og .panel,:root.og .catalog,:root.og .opening{display:none!important}
 .ogtitle{display:none}
-:root.og .ogtitle{display:block;position:fixed;left:0;bottom:0;padding:120px 160px 58px 64px;z-index:30;pointer-events:none;background:linear-gradient(90deg,color-mix(in oklab,var(--bg) 88%,transparent) 0%,color-mix(in oklab,var(--bg) 70%,transparent) 55%,transparent 100%)}
-.ogtitle b{display:block;font-family:var(--font-num);font-size:68px;font-weight:800;line-height:1.1;letter-spacing:1px;text-shadow:0 4px 30px rgba(0,0,0,.5)}
-.ogtitle span{display:block;font-size:24px;color:var(--ink-2);margin-top:10px;font-weight:500;text-shadow:0 2px 14px rgba(0,0,0,.5)}
-.ogtitle small{display:block;font-family:var(--font-num);font-size:16px;letter-spacing:5px;color:var(--ink-3);font-weight:700;margin-bottom:12px}
+:root.og .ogtitle{display:block;position:fixed;left:0;bottom:0;padding:130px 180px 60px 68px;z-index:30;pointer-events:none;background:linear-gradient(90deg,color-mix(in oklab,var(--bg) 90%,transparent) 0%,color-mix(in oklab,var(--bg) 72%,transparent) 55%,transparent 100%)}
+.ogtitle small{display:block;font-family:var(--display);font-size:17px;letter-spacing:7px;color:var(--gold);font-weight:600;margin-bottom:14px;text-transform:uppercase}
+.ogtitle b{display:block;font-family:var(--serif);font-size:70px;font-weight:600;line-height:1.1;letter-spacing:6px}
+.ogtitle i{display:block;width:140px;height:1px;background:var(--gold);margin:18px 0 16px}
+.ogtitle span{display:block;font-family:var(--serif);font-size:23px;color:var(--ink-2);font-weight:400;letter-spacing:3px}
 
 /* ===== 手機 ===== */
 @media (max-width:760px){
   .bar{gap:8px;padding:10px 10px 0;padding-top:calc(10px + env(safe-area-inset-top))}
-  .brand{padding:0 12px 0 7px;height:40px}
-  .brand b{font-size:14px}
+  .brand{padding:0 13px 0 8px;height:40px;gap:9px}
+  .brand svg{width:24px;height:24px}
+  .brand b{font-size:14.5px;letter-spacing:1px}
   .brand small{display:none}
   .search{flex:1 1 100%;order:3;height:40px;max-width:none}
   .bar .ib{order:2;width:38px;height:38px}
   .bar .spacer{order:1}
   .bar .seg{order:4;width:100%;justify-content:center}
-  .seg button{height:30px;padding:0 10px;font-size:12px;flex:1}
-  .ib{width:40px;height:40px}
+  .seg button{height:30px;padding:0 10px;font-size:12.5px;flex:1}
   .legend{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:none}
   .legend .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;-webkit-overflow-scrolling:touch}
   .legend .chips::-webkit-scrollbar{display:none}
-  .chip{height:30px;font-size:11.5px}
+  .legend .row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .legend .row::-webkit-scrollbar{display:none}
+  .legend .row>*{flex:none}
+  .chip{height:30px;font-size:12px}
   .hud{right:10px;bottom:calc(92px + env(safe-area-inset-bottom))}
   .hud .st i{display:none}
-  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:66dvh;border-radius:24px 24px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(24px)}
-  .panel::before{content:'';display:block;width:38px;height:4px;border-radius:2px;background:var(--line-2);margin:0 auto 12px}
+  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:66dvh;border-radius:12px 12px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(24px);outline:none}
+  .panel::before{content:'';display:block;width:36px;height:2px;background:var(--line-2);margin:0 auto 12px}
   .panel.on{transform:none}
-  .catalog{top:auto;left:0;right:0;bottom:0;width:auto;max-height:70dvh;border-radius:24px 24px 0 0;transform:translateY(24px)}
+  .catalog{top:auto;left:0;right:0;bottom:0;width:auto;max-height:70dvh;border-radius:12px 12px 0 0;transform:translateY(24px);outline:none}
   .catalog.on{transform:none}
-  .grid{grid-template-columns:repeat(3,1fr)}
   .tip{display:none}
   .ogtitle{left:24px;bottom:24px}
+  .opening b{letter-spacing:3px}
 }
 @media (hover:none){.search kbd{display:none}}
 @media (prefers-reduced-motion:reduce){
   body::before{animation:none}
-  .panel,.catalog,.chip,.ib,.btn,.tip,.toast{transition:none}
+  .panel,.catalog,.chip,.ib,.btn,.tip,.toast,.seg button::after{transition:none}
 }
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </head>
 <body>
 <canvas id="sky" tabindex="0" aria-label="歌曲星圖：每一顆星是一首歌，用搜尋框或星表鍵盤操作"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
 
 <header class="bar">
-  <a class="brand glass" href="./app.html" title="回 SEKAI 資源中心"><span class="logo" aria-hidden="true"></span><span><b>SEKAI 星圖</b><small>SONGSCAPE</small></span></a>
+  <a class="brand glass" href="./app.html" title="回 SEKAI 資源中心">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#d4b673" stroke-opacity=".55" stroke-width=".8"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#d4b673" stroke-opacity=".35" stroke-width=".6" stroke-dasharray="1.2 2.2"/><path d="M16 3.5 17.6 14.4 28.5 16 17.6 17.6 16 28.5 14.4 17.6 3.5 16 14.4 14.4Z" fill="#ecdcaa"/><path d="M16 9.5 17 15 22.5 16 17 17 16 22.5 15 17 9.5 16 15 15Z" fill="#fff" fill-opacity=".9"/></svg>
+    <span><b>SEKAI 星圖</b><small>Songscape · Celestial Atlas</small></span>
+  </a>
   <label class="search glass">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="搜尋歌名、作曲、作詞、創作者…" autocomplete="off" spellcheck="false" aria-label="搜尋歌曲">
+    <input id="q" type="search" placeholder="搜尋歌名、作曲、作詞、創作者" autocomplete="off" spellcheck="false" aria-label="搜尋歌曲">
     <span class="n" id="qn"></span><kbd>/</kbd>
-    <button class="x" id="qx" type="button" aria-label="清除搜尋"><svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <button class="x" id="qx" type="button" aria-label="清除搜尋"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </label>
   <div class="seg glass" role="group" aria-label="投影方式" id="proj">
     <button type="button" data-p="tempo" aria-pressed="true">節奏 × 難度</button>
@@ -269,21 +302,21 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
     <button type="button" data-p="dens" aria-pressed="false">曲長 × 密度</button>
   </div>
   <span class="spacer"></span>
-  <button class="ib" id="tourBtn" type="button" title="導覽：帶我去看" aria-haspopup="menu"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/></svg></button>
-  <button class="ib" id="catBtn" type="button" title="星表" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
-  <button class="ib" id="themeBtn" type="button" title="切換夜空／晨光"><svg viewBox="0 0 24 24"><path d="M21 13.5A8.5 8.5 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5z"/></svg></button>
-  <button class="ib" id="helpBtn" type="button" title="這是什麼？"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
+  <button class="ib" id="tourBtn" type="button" title="導覽：帶我去看" aria-haspopup="menu"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="5.5"/><path d="m12 9 .9 2.1L15 12l-2.1.9L12 15l-.9-2.1L9 12l2.1-.9z"/></svg></button>
+  <button class="ib" id="catBtn" type="button" title="星表" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+  <button class="ib" id="themeBtn" type="button" title="切換夜空／象牙"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg></button>
+  <button class="ib" id="helpBtn" type="button" title="這是什麼？"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
 </header>
 
 <aside class="legend" aria-label="圖例與篩選">
   <div class="chips" id="units"></div>
   <div class="row">
     <div class="seg sm glass" role="group" aria-label="難度" id="diff">
-      <button type="button" data-d="M" aria-pressed="true">MASTER</button>
-      <button type="button" data-d="A" aria-pressed="false">APPEND</button>
+      <button type="button" data-d="M" aria-pressed="true">Master</button>
+      <button type="button" data-d="A" aria-pressed="false">Append</button>
     </div>
-    <button class="chip" id="twChip" type="button" aria-pressed="false" title="只顯示台服已實裝的歌">僅台服已實裝</button>
-    <button class="chip star" id="nwChip" type="button" aria-pressed="false" title="只顯示為本作書き下ろし的新曲">書き下ろし</button>
+    <button class="chip zh" id="twChip" type="button" aria-pressed="false" title="只顯示台服已實裝的歌">僅台服已實裝</button>
+    <button class="chip zh" id="nwChip" type="button" aria-pressed="false" title="只顯示為本作書き下ろし的新曲"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0.5 9.4 6.6 15.5 8 9.4 9.4 8 15.5 6.6 9.4 0.5 8 6.6 6.6Z"/></svg>書き下ろし</button>
   </div>
 </aside>
 
@@ -301,32 +334,33 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 </aside>
 <div class="tip" id="tip"></div>
 <div class="menu" id="tour" role="menu">
-  <button type="button" data-t="fast"><span>⚡</span>最快的歌</button>
-  <button type="button" data-t="slow"><span>🌙</span>最慢的歌</button>
-  <button type="button" data-t="hard"><span>🔥</span>最難的譜面</button>
-  <button type="button" data-t="long"><span>⏳</span>最長的歌</button>
-  <button type="button" data-t="dense"><span>🌧</span>音符最密</button>
-  <button type="button" data-t="new"><span>🆕</span>最新上架</button>
-  <button type="button" data-t="old"><span>📜</span>最早的歌</button>
-  <button type="button" data-t="rand"><span>🎲</span>隨機一顆</button>
+  <button type="button" data-t="fast"><svg viewBox="0 0 24 24"><path d="M4 12h10M10 7l5 5-5 5M17 5v14"/></svg>最快的歌</button>
+  <button type="button" data-t="slow"><svg viewBox="0 0 24 24"><path d="M20 12H10M14 7l-5 5 5 5M7 5v14"/></svg>最慢的歌</button>
+  <button type="button" data-t="hard"><svg viewBox="0 0 24 24"><path d="M4 20 10 8l3 6 2-3 5 9z"/><path d="M8 13l2-4"/></svg>最難的譜面</button>
+  <button type="button" data-t="long"><svg viewBox="0 0 24 24"><path d="M12 4v8l4 2"/><circle cx="12" cy="12" r="9"/></svg>最長的歌</button>
+  <button type="button" data-t="dense"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 10h14M5 14h14M5 18h14"/></svg>音符最密</button>
+  <button type="button" data-t="new"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>最新上架</button>
+  <button type="button" data-t="old"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>最早的歌</button>
+  <button type="button" data-t="rand"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h.01M15 15h.01M12 12h.01M15 9h.01M9 15h.01"/></svg>隨機一顆</button>
 </div>
 <div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT">
   <div class="card">
     <button class="ib close" id="helpX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    <div class="sub">SONGSCAPE</div>
+    <div class="sub">Songscape</div>
     <h3 id="helpT">SEKAI 星圖</h3>
-    <p>每一顆星是一首歌。<b>大小</b>是音符數，<b>顏色</b>是演唱團體，帶星芒的是為本作書き下ろし的新曲，外圈多一道虛線的是台服尚未實裝的日服曲。</p>
+    <p>每一顆星是一首歌。<b>大小</b>是音符數，<b>顏色</b>是演唱團體；明亮的星會帶四道衍射星芒，為本作書き下ろし的新曲多一對斜向星芒，外圈多一道虛線的是台服尚未實裝的日服曲。</p>
     <ul>
       <li><b>節奏 × 難度</b>：橫軸主 BPM、縱軸該難度的定數（譜面難度常數）。</li>
       <li><b>年代 × 難度</b>：橫軸台服發行日（日服限定曲用日服日期）、縱軸定數。</li>
       <li><b>曲長 × 密度</b>：橫軸歌長、縱軸每秒音符數。</li>
     </ul>
-    <p>滾輪／雙指縮放，拖曳平移，雙擊回到全景。點一顆星看詳情；再按「同作曲者」，同一位作曲者的歌會依發行順序連成一座<b>星座</b>。搜尋會讓符合的星亮起、其餘退到背景；網址會記住你看的那顆星，複製就能分享。</p>
+    <p>滾輪或雙指縮放，拖曳平移，雙擊回到全景。點一顆星看詳情；再按「同作曲者」，同一位作曲者的歌會依發行順序連成一座<b>星座</b>。搜尋會讓符合的星亮起、其餘退到背景；網址會記住你看的那顆星，複製就能分享。</p>
     <div class="src">定數：pentatonic プロセカ難易度表（AP 基準，非官方）・BPM 與曲長：社長 bot（t-wy）公開資料・曲目、團體、作曲與發行日：Sekai-World master 資料。星圖只是另一種看曲庫的方式，數值以遊戲內為準。</div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="ogtitle"><small>SONGSCAPE</small><b>SEKAI 星圖</b><span>700 多首歌，每一首是一顆星</span></div>
+<div class="opening" id="opening" hidden><div><small>Songscape · Celestial Atlas</small><b>SEKAI 星圖</b><i></i><span id="openSub">七百三十二首歌，每一首是一顆星</span></div></div>
+<div class="ogtitle"><small>Songscape · Celestial Atlas</small><b>SEKAI 星圖</b><i></i><span>七百多首歌，每一首是一顆星</span></div>
 
 <script src="./data/b30-consts.js?v=a984fa63a2"></script>
 <script type="module">
@@ -344,18 +378,19 @@ const UNIT_NAME = { ln: 'Leo/need', mmj: 'MORE MORE JUMP!', vbs: 'Vivid BAD SQUA
 const UNIT_SHORT = { ln: 'L/n', mmj: 'MMJ', vbs: 'VBS', wxs: 'WxS', n25: 'N25', vs: 'VS', other: '其他' };
 const DIFFS = ['E', 'N', 'H', 'X', 'M', 'A'];
 const DIFF_NAME = { E: 'EASY', N: 'NORMAL', H: 'HARD', X: 'EXPERT', M: 'MASTER', A: 'APPEND' };
-const DIFF_COLOR = { E: '#5bd98c', N: '#5aa8ff', H: '#ffb648', X: '#ff6b7a', M: '#c58cff', A: '#ff8ad0' };
+const DIFF_COLOR = { E: '#6fd49b', N: '#6fb0ff', H: '#f3bd5a', X: '#f07a86', M: '#c79cff', A: '#f09ad4' };
 const JP_ASSET = 'https://storage.sekai.best/sekai-jp-assets/thumbnail/music_jacket/';
 const TC_ASSET = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jacket/';
-const PAD_DESK = { l: 56, r: 24, t: 78, b: 126 };
-const PAD_MOBILE = { l: 40, r: 14, t: 158, b: 134 };
-const PAD_OG = { l: 40, r: 40, t: 40, b: 40 };
+const PAD_DESK = { l: 58, r: 26, t: 80, b: 128 };
+const PAD_MOBILE = { l: 42, r: 16, t: 160, b: 136 };
+const PAD_OG = { l: 44, r: 44, t: 44, b: 44 };
 const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
 const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
 const norm = s => String(s || '').normalize('NFKC').toLowerCase();
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hex2rgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h.trim()); if (!m) return [200, 200, 200]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return `rgba(${r},${g},${b},${a})`; };
+const ZH_NUM = n => { const d = '零一二三四五六七八九'; if (n < 10) return d[n]; if (n < 100) return (n >= 20 ? d[Math.floor(n / 10)] : '') + '十' + (n % 10 ? d[n % 10] : ''); return d[Math.floor(n / 100)] + '百' + (n % 100 ? (n % 100 < 10 ? '零' + d[n % 100] : ZH_NUM(n % 100)) : ''); };
 
 /* ========== 建星 ========== */
 const CONST = {};
@@ -379,12 +414,13 @@ const stars = EP_SONGS.map((s, i) => {
     c: { M: cc.master != null ? cc.master : (lv.M != null ? lv.M : null), A: cc.append != null ? cc.append : (lv.A != null ? lv.A : null) },
     hasC: { M: cc.master != null, A: cc.append != null },
     key: norm([s.t, m[0], m[3], m[4], m[5], m[9]].filter(Boolean).join(' ')),
-    px: .5, py: .5, cx: .5, cy: .5, ca: 0, ta: 1, r: 2, ph: rnd() * 6.283, tw: .5 + rnd() * .9, delay: 0
+    px: .5, py: .5, cx: .5, cy: .5, ca: 0, ta: 1, r: 2, ph: rnd() * 6.283, tw: .45 + rnd() * .9, warm: rnd(), delay: 0
   };
 });
 const byId = {}; stars.forEach(s => { byId[s.id] = s; });
 const maxNotes = Math.max(...stars.map(s => s.notes.M || 0));
 const composers = {}; stars.forEach(s => { if (s.composer) (composers[s.composer] = composers[s.composer] || []).push(s); });
+$('#openSub').textContent = ZH_NUM(stars.length) + '首歌，每一首是一顆星';
 
 /* ========== 狀態 ========== */
 const S = { proj: 'tempo', diff: 'M', units: new Set(UNIT_KEYS), tw: false, nw: false, q: '', sel: null, hover: null, cons: null, matches: null, catOn: false };
@@ -416,25 +452,63 @@ function resize() {
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   PAD = OG ? PAD_OG : mobile() ? PAD_MOBILE : PAD_DESK;
-  layout(false); draw();
+  makeField(); layout(false); draw();
 }
 const rect = () => ({ x: PAD.l, y: PAD.t, w: Math.max(50, W - PAD.l - PAD.r), h: Math.max(50, H - PAD.t - PAD.b) });
 const toScreen = (px, py, r = rect()) => [r.x + px * r.w * view.k + view.tx, r.y + py * r.h * view.k + view.ty];
 const toWorld = (sx, sy, r = rect()) => [(sx - r.x - view.tx) / (r.w * view.k), (sy - r.y - view.ty) / (r.h * view.k)];
 
-/* 星的光暈先畫成貼圖，每幀只 drawImage，手機也不吃力 */
-const sprites = {};
+/* 背景星場：幾千顆極細的遠星與一道銀河帶，畫一次存成底圖；指標移動時有一點點視差 */
+let field = null, fieldSeed = 0;
+function makeField() {
+  field = document.createElement('canvas'); field.width = Math.round((W + 40) * DPR); field.height = Math.round((H + 40) * DPR);
+  const g = field.getContext('2d'); g.scale(DPR, DPR);
+  const light = root.classList.contains('light');
+  let sd = 20250928; const rr = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+  const gauss = () => (rr() + rr() + rr() + rr() - 2) / 2;
+  const FW = W + 40, FH = H + 40;
+  const n = light ? 900 : Math.min(3400, Math.round(FW * FH / 420));
+  const ang = -0.52, cx0 = FW * .5, cy0 = FH * .5;   // 銀河帶：穿過畫面的斜向密集區
+  for (let i = 0; i < n; i++) {
+    let x, y;
+    if (!light && rr() < .42) { const t = (rr() - .5) * FW * 1.6, d = gauss() * FH * .11; x = cx0 + t * Math.cos(ang) - d * Math.sin(ang); y = cy0 + t * Math.sin(ang) + d * Math.cos(ang); }
+    else { x = rr() * FW; y = rr() * FH; }
+    const big = rr();
+    const size = big > .985 ? 1.1 + rr() * .9 : big > .9 ? .7 + rr() * .5 : .3 + rr() * .45;
+    const warm = rr();
+    const col = light ? [35, 30, 22] : warm < .18 ? [255, 236, 205] : warm < .3 ? [205, 220, 255] : [240, 243, 252];
+    const a = light ? .05 + rr() * .1 : (size > 1 ? .55 + rr() * .4 : .12 + rr() * .45);
+    g.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+    g.beginPath(); g.arc(x, y, size, 0, 6.283); g.fill();
+    if (!light && size > 1.2) { const h = g.createRadialGradient(x, y, 0, x, y, size * 5); h.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},.35)`); h.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = h; g.beginPath(); g.arc(x, y, size * 5, 0, 6.283); g.fill(); }
+  }
+  if (!light) {   // 銀河帶本身的霧
+    g.save(); g.translate(cx0, cy0); g.rotate(ang);
+    const band = g.createLinearGradient(0, -FH * .22, 0, FH * .22);
+    band.addColorStop(0, 'rgba(180,195,235,0)'); band.addColorStop(.5, 'rgba(190,200,240,.055)'); band.addColorStop(1, 'rgba(180,195,235,0)');
+    g.fillStyle = band; g.fillRect(-FW, -FH * .22, FW * 2, FH * .44); g.restore();
+  }
+}
+
+/* 星的光暈與星芒先畫成貼圖，每幀只 drawImage */
+const sprites = {}, spikes = {};
 let colors = {};
 function makeSprites() {
   colors = {}; UNIT_KEYS.forEach(k => { colors[k] = cssVar(k) || '#ccc'; });
-  colors.ink = cssVar('ink'); colors.bg = cssVar('bg'); colors.ink3 = cssVar('ink-3'); colors.ink2 = cssVar('ink-2');
+  ['ink', 'ink-2', 'ink-3', 'bg', 'gold', 'gold-2'].forEach(k => { colors[k] = cssVar(k); });
   const light = root.classList.contains('light');
   UNIT_KEYS.forEach(k => {
-    const c = document.createElement('canvas'); c.width = c.height = 96;
-    const g = c.getContext('2d'), grd = g.createRadialGradient(48, 48, 0, 48, 48, 48);
-    if (light) { grd.addColorStop(0, rgba(colors[k], .95)); grd.addColorStop(.2, rgba(colors[k], .55)); grd.addColorStop(.5, rgba(colors[k], .14)); grd.addColorStop(1, rgba(colors[k], 0)); }
-    else { grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(.14, rgba(colors[k], .95)); grd.addColorStop(.38, rgba(colors[k], .32)); grd.addColorStop(1, rgba(colors[k], 0)); }
-    g.fillStyle = grd; g.fillRect(0, 0, 96, 96); sprites[k] = c;
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    if (light) { grd.addColorStop(0, rgba(colors[k], 1)); grd.addColorStop(.12, rgba(colors[k], .8)); grd.addColorStop(.3, rgba(colors[k], .22)); grd.addColorStop(.6, rgba(colors[k], .05)); grd.addColorStop(1, rgba(colors[k], 0)); }
+    else { grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(.07, 'rgba(255,255,255,.95)'); grd.addColorStop(.16, rgba(colors[k], .85)); grd.addColorStop(.32, rgba(colors[k], .3)); grd.addColorStop(.6, rgba(colors[k], .07)); grd.addColorStop(1, rgba(colors[k], 0)); }
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128); sprites[k] = c;
+    // 衍射星芒：四道細長、往外淡出的光；書き下ろし另有一對斜向的
+    const mk = diag => { const s = document.createElement('canvas'); s.width = s.height = 256; const q = s.getContext('2d'); q.translate(128, 128); if (diag) q.rotate(Math.PI / 4);
+      const col = light ? colors[k] : '#ffffff';
+      for (let i = 0; i < 2; i++) { const L = diag ? 70 : 118; const lg = q.createLinearGradient(-L, 0, L, 0); lg.addColorStop(0, rgba(col, 0)); lg.addColorStop(.5, rgba(col, light ? .55 : .85)); lg.addColorStop(1, rgba(col, 0)); q.fillStyle = lg; q.fillRect(-L, -.7, L * 2, 1.4); q.rotate(Math.PI / 2); }
+      return s; };
+    spikes[k] = mk(false); spikes[k + '8'] = mk(true);
   });
 }
 
@@ -453,14 +527,14 @@ function layout(animate = true) {
     const x = xOf(s), y = yOf(s), vis = visible(s);
     if (x != null && y != null) { s.px = (x - d.x0) / (d.x1 - d.x0); s.py = 1 - (y - d.y0) / (d.y1 - d.y0); }
     const match = S.matches ? S.matches.has(s.id) : true;
-    s.ta = !vis ? 0 : match ? 1 : .13;
+    s.ta = !vis ? 0 : match ? 1 : .12;
     if (vis) shown.push(s);
     const n = s.notes[S.diff] || s.notes.M || 300;
-    s.r = 1.5 + 2.9 * Math.sqrt(n / maxNotes);
+    s.r = 1.4 + 3 * Math.sqrt(n / maxNotes);
     if (!animate || REDUCED) { s.cx = s.px; s.cy = s.py; s.ca = s.ta; }
   });
   $('#stN').textContent = shown.filter(s => !S.matches || S.matches.has(s.id)).length;
-  $('#stAxis').textContent = '· 橫軸 ' + PROJ[S.proj].xl + '　縱軸 ' + PROJ[S.proj].yl;
+  $('#stAxis').textContent = '橫軸 ' + PROJ[S.proj].xl + '　縱軸 ' + PROJ[S.proj].yl;
   if (S.catOn) renderCatalog();
   dirty = true;
 }
@@ -476,18 +550,18 @@ function niceTicks(lo, hi, n) {
 function yearTicks(lo, hi, wpx) {
   const out = []; const a = new Date(lo), b = new Date(hi);
   const months = (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + b.getUTCMonth() - a.getUTCMonth();
-  const stepM = months / (wpx / 90) > 6 ? 12 : months / (wpx / 90) > 2 ? 3 : 1;
+  const stepM = months / (wpx / 96) > 6 ? 12 : months / (wpx / 96) > 2 ? 3 : 1;
   let y = a.getUTCFullYear(), m = stepM === 12 ? 0 : Math.floor(a.getUTCMonth() / stepM) * stepM;
   for (let i = 0; i < 400; i++) {
     const t = Date.UTC(y, m, 1); if (t > hi) break;
-    if (t >= lo) out.push({ v: t, l: stepM === 12 ? String(y) : y + '/' + (m + 1) });
+    if (t >= lo) out.push({ v: t, l: stepM === 12 ? String(y) : y + '·' + (m + 1) });
     m += stepM; if (m >= 12) { m -= 12; y++; }
   }
   return out;
 }
 
 /* ========== 畫 ========== */
-let dirty = true, lastT = 0, raf = 0, introAt = 0;
+let dirty = true, lastT = 0, raf = 0, introAt = 0, par = { x: 0, y: 0, tx: 0, ty: 0 };
 function frame(t) {
   raf = 0;
   const dt = Math.min(.05, (t - lastT) / 1000 || .016); lastT = t;
@@ -504,68 +578,80 @@ function frame(t) {
   if (Math.abs(view.gk - view.k) > 1e-3 || Math.abs(view.gtx - view.tx) > .2 || Math.abs(view.gty - view.ty) > .2) {
     view.k += (view.gk - view.k) * ev; view.tx += (view.gtx - view.tx) * ev; view.ty += (view.gty - view.ty) * ev; moving = true;
   } else { view.k = view.gk; view.tx = view.gtx; view.ty = view.gty; }
+  if (Math.abs(par.tx - par.x) > .05 || Math.abs(par.ty - par.y) > .05) { par.x += (par.tx - par.x) * ev; par.y += (par.ty - par.y) * ev; moving = true; }
   draw(t / 1000);
   dirty = false;
   if (moving || (!REDUCED && document.visibilityState === 'visible')) raf = requestAnimationFrame(frame);
 }
 function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+const serifFont = () => cssVar('serif'), displayFont = () => cssVar('display');
 
 function draw(time = 0) {
   const r = rect();
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
+  if (field) ctx.drawImage(field, -20 + par.x, -20 + par.y, W + 40, H + 40);
   const d = domain(), P = PROJ[S.proj];
-  /* 經緯網：依目前視野算刻度，線淡、字小 */
+  const light = root.classList.contains('light');
+  const gold = colors.gold, ink = colors.ink;
+  /* 經緯網：髮絲金線，刻度字用襯線小型大寫；外圍一道細框與四角記號，像一張圖版 */
   const [wx0, wy0] = toWorld(r.x, r.y, r), [wx1, wy1] = toWorld(r.x + r.w, r.y + r.h, r);
   const dx0 = d.x0 + wx0 * (d.x1 - d.x0), dx1 = d.x0 + wx1 * (d.x1 - d.x0);
   const dy1 = d.y0 + (1 - wy0) * (d.y1 - d.y0), dy0 = d.y0 + (1 - wy1) * (d.y1 - d.y0);
+  ctx.lineWidth = 1; ctx.strokeStyle = rgba(gold, light ? .5 : .32);
+  ctx.strokeRect(r.x + .5, r.y + .5, r.w - 1, r.h - 1);
+  ctx.strokeStyle = rgba(gold, light ? .7 : .55);
+  [[r.x, r.y, 1, 1], [r.x + r.w, r.y, -1, 1], [r.x, r.y + r.h, 1, -1], [r.x + r.w, r.y + r.h, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x + sx * 14 + .5, y + .5); ctx.lineTo(x + .5, y + .5); ctx.lineTo(x + .5, y + sy * 14 + .5); ctx.stroke(); });
   ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
-  ctx.lineWidth = 1; ctx.strokeStyle = rgba(colors.ink, .07); ctx.fillStyle = rgba(colors.ink, .42);
-  ctx.font = '700 11px ' + cssVar('font-num'); ctx.textBaseline = 'bottom';
-  const xt = P.xtick === 'year' ? yearTicks(dx0, dx1, r.w) : niceTicks(dx0, dx1, Math.max(3, Math.round(r.w / 110))).map(v => ({ v, l: P.xfmt(v) }));
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+  ctx.strokeStyle = rgba(gold, light ? .22 : .11); ctx.fillStyle = rgba(gold, light ? .85 : .62);
+  ctx.font = '600 12px ' + displayFont(); ctx.textBaseline = 'bottom';
+  const xt = P.xtick === 'year' ? yearTicks(dx0, dx1, r.w) : niceTicks(dx0, dx1, Math.max(3, Math.round(r.w / 110))).map(v => ({ v, l: String(P.xfmt(v)) }));
   ctx.textAlign = 'center';
-  xt.forEach(({ v, l }) => { const sx = toScreen((v - d.x0) / (d.x1 - d.x0), 0, r)[0]; ctx.beginPath(); ctx.moveTo(sx, r.y); ctx.lineTo(sx, r.y + r.h); ctx.stroke(); if (sx > r.x + 22 && sx < r.x + r.w - 22) ctx.fillText(l, sx, r.y + r.h - 4); });
+  xt.forEach(({ v, l }) => { const sx = toScreen((v - d.x0) / (d.x1 - d.x0), 0, r)[0]; ctx.beginPath(); ctx.moveTo(sx, r.y); ctx.lineTo(sx, r.y + r.h); ctx.stroke(); if (sx > r.x + 24 && sx < r.x + r.w - 24) { ctx.fillText(l, sx, r.y + r.h - 7); ctx.beginPath(); ctx.strokeStyle = rgba(gold, light ? .6 : .4); ctx.moveTo(sx + .5, r.y + r.h - 1); ctx.lineTo(sx + .5, r.y + r.h - 5); ctx.stroke(); ctx.strokeStyle = rgba(gold, light ? .22 : .11); } });
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  niceTicks(dy0, dy1, Math.max(3, Math.round(r.h / 70))).forEach(v => { const sy = toScreen(0, 1 - (v - d.y0) / (d.y1 - d.y0), r)[1]; ctx.beginPath(); ctx.moveTo(r.x, sy); ctx.lineTo(r.x + r.w, sy); ctx.stroke(); if (sy > r.y + 42) ctx.fillText(S.proj === 'dens' ? v.toFixed(1).replace(/\.0$/, '') : String(v), r.x + 6, sy - 7); });
-  /* 軸名 */
-  ctx.fillStyle = rgba(colors.ink, .55); ctx.font = '800 11px ' + cssVar('font-num');
-  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(P.xl + ' →', r.x + r.w - 8, r.y + r.h - 18);
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('↑ ' + P.yl + (S.proj !== 'dens' ? '（' + DIFF_NAME[S.diff] + '）' : '（' + DIFF_NAME[S.diff] + '）'), r.x + 8, r.y + 8);
+  niceTicks(dy0, dy1, Math.max(3, Math.round(r.h / 70))).forEach(v => { const sy = toScreen(0, 1 - (v - d.y0) / (d.y1 - d.y0), r)[1]; ctx.beginPath(); ctx.moveTo(r.x, sy); ctx.lineTo(r.x + r.w, sy); ctx.stroke(); if (sy > r.y + 44 && sy < r.y + r.h - 30) ctx.fillText(S.proj === 'dens' ? v.toFixed(1).replace(/\.0$/, '') : String(v), r.x + 9, sy - 8); });
+  /* 軸名：小型大寫＋短金線 */
+  ctx.fillStyle = rgba(gold, light ? .95 : .8); ctx.font = '600 12px ' + displayFont();
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '2.5px';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  const xl = P.xl.toUpperCase(); ctx.fillText(xl, r.x + r.w - 12, r.y + r.h - 22);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const yl = (S.proj === 'dens' ? '音符／秒' : '定數') + '  ' + DIFF_NAME[S.diff];
+  ctx.font = '500 12px ' + serifFont(); ctx.fillText(yl, r.x + 12, r.y + 11);
+  ctx.strokeStyle = rgba(gold, .6); ctx.beginPath(); ctx.moveTo(r.x + 12, r.y + 30.5); ctx.lineTo(r.x + 40, r.y + 30.5); ctx.stroke();
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
 
-  /* 星座線：同作曲者依發行日連線 */
+  /* 星座線：同作曲者依發行日連線，髮絲金線 */
   const cons = S.cons && composers[S.cons] ? composers[S.cons].filter(s => s.ca > .5).sort((a, b) => (a.ts || 9e15) - (b.ts || 9e15)) : null;
   if (cons && cons.length > 1) {
-    const c0 = colors[cons[0].u];
-    ctx.strokeStyle = rgba(c0, .55); ctx.lineWidth = 1.2; ctx.setLineDash([]); ctx.beginPath();
+    ctx.strokeStyle = rgba(gold, light ? .75 : .6); ctx.lineWidth = .9; ctx.setLineDash([]); ctx.beginPath();
     cons.forEach((s, i) => { const [sx, sy] = toScreen(s.cx, s.cy, r); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
     ctx.stroke();
+    cons.forEach(s => { const [sx, sy] = toScreen(s.cx, s.cy, r); ctx.strokeStyle = rgba(gold, .9); ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(sx, sy, s.r * Math.pow(view.k, .3) + 4, 0, 6.283); ctx.stroke(); });
   }
 
-  /* 星：先暈再核。縮放時星略放大但不跟著等比例膨脹 */
+  /* 星：暈、星芒、白熱星核。縮放時星略放大但不等比例膨脹 */
   const zs = Math.pow(view.k, .3);
   const tw = REDUCED ? 0 : 1;
-  const hasHi = !!S.matches || !!S.cons;
   for (const s of stars) {
     if (s.ca < .01) continue;
     const [sx, sy] = toScreen(s.cx, s.cy, r);
-    if (sx < r.x - 30 || sx > r.x + r.w + 30 || sy < r.y - 30 || sy > r.y + r.h + 30) continue;
+    if (sx < r.x - 40 || sx > r.x + r.w + 40 || sy < r.y - 40 || sy > r.y + r.h + 40) continue;
     const inCons = cons && s.composer === S.cons;
-    const dim = hasHi && !inCons && S.cons ? .18 : 1;
-    const a = s.ca * dim * (1 - tw * .12 + tw * .12 * Math.sin(time * s.tw * 2.2 + s.ph));
-    const rr = s.r * zs * (inCons ? 1.3 : 1);
-    const R = rr * 3.4;
+    const dim = S.cons && !inCons ? .16 : 1;
+    const sc = 1 - tw * .1 + tw * .1 * Math.sin(time * s.tw * 2.4 + s.ph) + tw * .04 * Math.sin(time * 7.1 + s.ph * 3);
+    const a = s.ca * dim * sc;
+    const rr = s.r * zs * (inCons ? 1.25 : 1);
+    const R = rr * 4.2;
     ctx.globalAlpha = a;
     ctx.drawImage(sprites[s.u], sx - R, sy - R, R * 2, R * 2);
-    ctx.fillStyle = root.classList.contains('light') ? colors[s.u] : '#fff';
-    ctx.beginPath(); ctx.arc(sx, sy, Math.max(.8, rr * .55), 0, 6.283); ctx.fill();
-    if (s.nw) {   // 書き下ろし：星芒
-      ctx.strokeStyle = rgba(colors[s.u], .55); ctx.lineWidth = .8; const L = rr * 3.2;
-      ctx.beginPath(); ctx.moveTo(sx - L, sy); ctx.lineTo(sx + L, sy); ctx.moveTo(sx, sy - L); ctx.lineTo(sx, sy + L); ctx.stroke();
-    }
-    if (s.jp) {   // 台服未實裝：虛線外圈
-      ctx.strokeStyle = rgba(colors[s.u], .6); ctx.lineWidth = .8; ctx.setLineDash([2, 2.5]);
-      ctx.beginPath(); ctx.arc(sx, sy, rr * 1.9, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
-    }
+    if (rr > 2.7 || inCons) { const L = rr * (light ? 4.2 : 5.6); ctx.globalAlpha = a * Math.min(1, (rr - 2.2) / 2.2) * (light ? .7 : .9); ctx.drawImage(spikes[s.u], sx - L, sy - L, L * 2, L * 2); }
+    if (s.nw) { const L = rr * 4; ctx.globalAlpha = a * .8; ctx.drawImage(spikes[s.u + '8'], sx - L, sy - L, L * 2, L * 2); }
+    ctx.globalAlpha = a;
+    ctx.fillStyle = light ? colors[s.u] : (s.warm < .25 ? '#fff6e6' : '#ffffff');
+    ctx.beginPath(); ctx.arc(sx, sy, Math.max(.7, rr * .48), 0, 6.283); ctx.fill();
+    if (s.jp) { ctx.strokeStyle = rgba(colors[s.u], .7); ctx.lineWidth = .7; ctx.setLineDash([1.6, 2.4]); ctx.beginPath(); ctx.arc(sx, sy, rr * 2, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); }
   }
   ctx.globalAlpha = 1;
 
@@ -577,21 +663,27 @@ function draw(time = 0) {
   if (S.hover) labels.set(S.hover.id, 2);
   if (S.sel) labels.set(S.sel.id, 3);
   labels.forEach((lvl, id) => { const s = byId[id]; const [sx, sy] = toScreen(s.cx, s.cy, r); if (sx < r.x || sx > r.x + r.w || sy < r.y || sy > r.y + r.h) return; label(sx, sy, s, lvl); });
-  if (cons && cons.length) { const s = cons[0]; const [sx, sy] = toScreen(s.cx, s.cy, r); ctx.font = '800 12px ' + cssVar('font-num'); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.lineWidth = 4; ctx.strokeStyle = rgba(colors.bg, .9); ctx.fillStyle = colors[s.u]; const total = composers[S.cons].length; const txt = '✦ ' + S.cons + ' 的星座 · ' + cons.length + (cons.length < total ? '／' + total : '') + ' 首'; ctx.strokeText(txt, sx + 10, sy - 14); ctx.fillText(txt, sx + 10, sy - 14); }
+  if (cons && cons.length) {
+    const s = cons[0]; const [sx, sy] = toScreen(s.cx, s.cy, r); const total = composers[S.cons].length;
+    ctx.font = '600 13px ' + displayFont(); if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+    const right = sx > r.x + r.w * .62; ctx.textAlign = right ? 'right' : 'left'; ctx.textBaseline = 'bottom'; ctx.lineWidth = 4; ctx.strokeStyle = rgba(colors.bg, .9); ctx.fillStyle = colors['gold-2'];
+    const txt = S.cons + '  —  星座 ' + cons.length + (cons.length < total ? ' / ' + total : '') + ' 首'; const lx = right ? sx - 12 : sx + 12;
+    ctx.strokeText(txt, lx, sy - 16); ctx.fillText(txt, lx, sy - 16); if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  }
 
-  /* 選中／懸停的光環 */
-  const ring = (s, w, dash, pulse) => { const [sx, sy] = toScreen(s.cx, s.cy, r); const rr = s.r * zs; ctx.strokeStyle = rgba(colors[s.u], .9); ctx.lineWidth = w; ctx.setLineDash(dash); ctx.beginPath(); ctx.arc(sx, sy, rr + 6 + pulse, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); };
-  if (S.hover && S.hover !== S.sel) ring(S.hover, 1.2, [3, 3], 0);
-  if (S.sel && S.sel.ca > .5) ring(S.sel, 1.6, [], REDUCED ? 0 : 1.5 + 1.5 * Math.sin(time * 3));
+  /* 選中／懸停的光環：細金環與一圈呼吸 */
+  const ring = (s, w, dash, pulse, col) => { const [sx, sy] = toScreen(s.cx, s.cy, r); const rr = s.r * zs; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.setLineDash(dash); ctx.beginPath(); ctx.arc(sx, sy, rr + 7 + pulse, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); };
+  if (S.hover && S.hover !== S.sel) ring(S.hover, .9, [2.5, 3], 0, rgba(ink, .7));
+  if (S.sel && S.sel.ca > .5) { ring(S.sel, 1, [], 0, rgba(gold, .95)); ring(S.sel, .7, [], 6 + (REDUCED ? 0 : 2.5 * Math.sin(time * 2.2)), rgba(gold, .35)); }
   ctx.restore();
 }
 function label(sx, sy, s, lvl) {
   const txt = s.tc || s.t;
-  ctx.font = (lvl >= 2 ? '800 12.5px ' : '700 11px ') + cssVar('font');
+  ctx.font = (lvl >= 2 ? '600 13px ' : '500 11.5px ') + serifFont();
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.lineWidth = 3.5; ctx.strokeStyle = rgba(colors.bg, .85); ctx.lineJoin = 'round';
-  ctx.fillStyle = lvl >= 2 ? colors.ink : lvl === 1 ? colors[s.u] : rgba(colors.ink, .75);
-  const x = sx + s.r * Math.pow(view.k, .3) + 7;
+  ctx.lineWidth = 3.5; ctx.strokeStyle = rgba(colors.bg, .88); ctx.lineJoin = 'round';
+  ctx.fillStyle = lvl >= 2 ? colors.ink : lvl === 1 ? colors['gold-2'] : rgba(colors.ink, .72);
+  const x = sx + s.r * Math.pow(view.k, .3) + 9;
   ctx.strokeText(txt, x, sy); ctx.fillText(txt, x, sy);
 }
 
@@ -610,7 +702,7 @@ function zoomAt(mx, my, f) {
 function resetView() { view.gk = 1; view.gtx = 0; view.gty = 0; kick(); }
 function flyTo(s, k) {
   const r = rect(); const kk = k || Math.max(view.gk, 2.6);
-  const offX = !mobile() && !OG ? -150 : 0, offY = mobile() && S.sel ? -r.h * .18 : 0;   // 桌機把星讓給右側面板、手機讓給下方面板
+  const offX = !mobile() && !OG ? -160 : 0, offY = mobile() && S.sel ? -r.h * .18 : 0;   // 桌機把星讓給右側面板、手機讓給下方面板
   view.gk = kk; view.gtx = r.w / 2 + offX - s.px * r.w * kk; view.gty = r.h / 2 + offY - s.py * r.h * kk; kick();
 }
 cv.addEventListener('pointerdown', e => {
@@ -621,6 +713,7 @@ cv.addEventListener('pointerdown', e => {
 });
 cv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType === 'mouse' && !REDUCED) { par.tx = (e.clientX / W - .5) * -7; par.ty = (e.clientY / H - .5) * -5; kick(); }
   if (pinch && pointers.size === 2) {
     const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     zoomAt(pinch.mx, pinch.my, d / pinch.d); view.gtx += mx - pinch.mx; view.gty += my - pinch.my; view.k = view.gk; view.tx = view.gtx; view.ty = view.gty;
@@ -654,8 +747,8 @@ function showTip(s, x, y) {
   const y0 = yOf(s), xv = xOf(s);
   tip.innerHTML = `<span class="dot" style="--c:${colors[s.u]}"></span>${esc(s.tc || s.t)}<small>${S.proj === 'dens' ? fmtTime(xv) + ' · ' + y0.toFixed(2) + ' 音符／秒' : (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + ' · ' + DIFF_NAME[S.diff] + ' ' + (s.hasC[S.diff] ? y0.toFixed(1) : 'Lv.' + y0)}</small>`;
   tip.classList.add('on');
-  const w = tip.offsetWidth, h = tip.offsetHeight; let L = x + 16, T = y + 16;
-  if (L + w > W - 10) L = x - w - 12; if (T + h > H - 10) T = y - h - 12;
+  const w = tip.offsetWidth, h = tip.offsetHeight; let L = x + 18, T = y + 18;
+  if (L + w > W - 10) L = x - w - 14; if (T + h > H - 10) T = y - h - 14;
   tip.style.left = L + 'px'; tip.style.top = T + 'px';
 }
 function hideTip() { tip.classList.remove('on'); }
@@ -670,33 +763,34 @@ function select(s, fly) {
 }
 function renderPanel(s) {
   const c = colors[s.u];
-  const by = [s.creator && s.creator !== s.composer ? `<b>創作</b> ${esc(s.creator)}` : '', s.composer ? `<b>作曲</b> ${esc(s.composer)}` : '', s.lyricist && s.lyricist !== s.composer ? `<b>作詞</b> ${esc(s.lyricist)}` : '', s.arranger && s.arranger !== s.composer ? `<b>編曲</b> ${esc(s.arranger)}` : ''].filter(Boolean).join('　');
-  const tags = s.units.map(u => `<span class="tag" style="--c:${colors[u]}">${esc(UNIT_NAME[u])}</span>`).join('') + (s.jp ? '<span class="tag jp">台服未實裝</span>' : '') + (s.nw ? '<span class="tag" style="--c:var(--wxs)">✦ 書き下ろし</span>' : '') + (s.mv === 3 ? '<span class="tag mono">3D MV</span>' : s.mv === 2 ? '<span class="tag mono">2D MV</span>' : '');
+  const by = [s.creator && s.creator !== s.composer ? `<b>創作</b>${esc(s.creator)}` : '', s.composer ? `<b>作曲</b>${esc(s.composer)}` : '', s.lyricist && s.lyricist !== s.composer ? `<b>作詞</b>${esc(s.lyricist)}` : '', s.arranger && s.arranger !== s.composer ? `<b>編曲</b>${esc(s.arranger)}` : ''].filter(Boolean).join('　');
+  const tags = s.units.map(u => `<span class="tag" style="--c:${colors[u]}">${esc(UNIT_NAME[u])}</span>`).join('') + (s.jp ? '<span class="tag zh jp">台服未實裝</span>' : '') + (s.nw ? '<span class="tag zh" style="--c:var(--wxs)">書き下ろし</span>' : '') + (s.mv === 3 ? '<span class="tag mono">3D MV</span>' : s.mv === 2 ? '<span class="tag mono">2D MV</span>' : '');
   const lvs = DIFFS.map(d => { const lv = s.lv[d]; if (lv == null) return `<div class="lv none" style="--d:${DIFF_COLOR[d]}"><i>${d}</i><b>–</b><small>&nbsp;</small></div>`; const cc = (d === 'M' || d === 'A') && s.hasC[d] ? s.c[d].toFixed(1) : '&nbsp;'; return `<div class="lv${(d === S.diff) ? ' on' : ''}" style="--d:${DIFF_COLOR[d]}" title="${DIFF_NAME[d]}${s.notes[d] ? '・' + s.notes[d] + ' 音符' : ''}"><i>${d}</i><b>${lv}</b><small>${cc}</small></div>`; }).join('');
   const n = composers[s.composer] ? composers[s.composer].length : 0;
   const dens = s.notes[S.diff] && s.len ? (s.notes[S.diff] / s.len).toFixed(2) : '–';
   panel.innerHTML = `
-    <button class="close" type="button" aria-label="關閉" id="pX"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    <div class="ph"><div class="jk" style="--c:${c}"><img alt="" id="pJk" src="${JP_ASSET + esc(s.jkt)}.webp" data-alt="${TC_ASSET + esc(s.jkt)}.webp"></div>
+    <button class="close" type="button" aria-label="關閉" id="pX"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="ph"><div class="jk" style="--c:${c}"><div class="in"><img alt="" id="pJk" src="${JP_ASSET + esc(s.jkt)}.webp" data-alt="${TC_ASSET + esc(s.jkt)}.webp"></div></div>
       <div class="pt"><h2>${esc(s.tc || s.t)}</h2>${s.tc && s.tc !== s.t ? `<div class="jp">${esc(s.t)}</div>` : ''}${by ? `<div class="by">${by}</div>` : ''}<div class="tags">${tags}</div></div></div>
+    <div class="rule"></div>
     <div class="grid">
       <div class="cell"><i>BPM</i><b>${s.bpm || '–'}</b>${s.bpm && s.bpmLo !== s.bpmHi ? `<small>${s.bpmLo}–${s.bpmHi}</small>` : ''}</div>
-      <div class="cell"><i>曲長</i><b>${s.len ? fmtTime(s.len) : '–'}</b></div>
-      <div class="cell"><i>${s.jp ? '日服' : '台服'}${s.future ? '預定' : '發行'}</i><b style="font-size:13px;margin-top:5px">${esc(s.date || '未定')}</b></div>
-      <div class="cell"><i>音符／秒</i><b>${dens}</b><small>${DIFF_NAME[S.diff]}</small></div>
+      <div class="cell"><i>Length</i><b>${s.len ? fmtTime(s.len) : '–'}</b></div>
+      <div class="cell"><i>${s.jp ? '日服' : '台服'}${s.future ? '預定' : '發行'}</i><b class="zh">${esc(s.date || '未定')}</b></div>
+      <div class="cell"><i>Notes / s</i><b>${dens}</b><small>${DIFF_NAME[S.diff]}</small></div>
       <div class="cell"><i>活動倍率</i><b>${s.rate || '–'}</b></div>
-      <div class="cell"><i>曲目 ID</i><b>${s.id}</b></div>
+      <div class="cell"><i>No.</i><b>${s.id}</b></div>
     </div>
     <div class="lvs">${lvs}</div>
     <div class="acts">
-      ${n > 1 ? `<button class="btn" type="button" id="pCons" aria-pressed="${S.cons === s.composer}"><svg viewBox="0 0 24 24"><path d="M5 19l5-9 4 5 5-10"/><circle cx="5" cy="19" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="14" cy="15" r="1.6"/><circle cx="19" cy="5" r="1.6"/></svg>同作曲者 ${n} 首</button>` : ''}
+      ${n > 1 ? `<button class="btn" type="button" id="pCons" aria-pressed="${S.cons === s.composer}"><svg viewBox="0 0 24 24"><path d="M5 19l5-9 4 5 5-10"/><circle cx="5" cy="19" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="14" cy="15" r="1.4"/><circle cx="19" cy="5" r="1.4"/></svg>同作曲者 ${n} 首</button>` : ''}
       <a class="btn" href="./app.html?page=songs&q=${encodeURIComponent(s.tc || s.t)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>在曲庫打開</a>
       <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1.5 1.5M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1.5-1.5"/></svg>複製連結</button>
     </div>
     <div class="pf">${S.proj === 'dens' ? '縱軸是每秒音符數：' + DIFF_NAME[S.diff] + ' 的音符數除以曲長。' : s.hasC[S.diff] ? '定數來自 pentatonic 難易度表（非官方）。' : '這張譜還沒有定數，暫以等級代替。'}</div>`;
   const img = $('#pJk'); img.onload = () => img.classList.add('ok'); img.onerror = () => { if (img.dataset.alt) { img.src = img.dataset.alt; img.dataset.alt = ''; } else img.remove(); };
   $('#pX').onclick = () => select(null);
-  const pc = $('#pCons'); if (pc) pc.onclick = () => { S.cons = S.cons === s.composer ? null : s.composer; pc.setAttribute('aria-pressed', S.cons === s.composer); if (S.cons) { const r = rect(); if (view.gk > 1.6) resetView(); } dirty = true; kick(); };
+  const pc = $('#pCons'); if (pc) pc.onclick = () => { S.cons = S.cons === s.composer ? null : s.composer; pc.setAttribute('aria-pressed', S.cons === s.composer); if (S.cons && view.gk > 1.6) resetView(); dirty = true; kick(); };
   $('#pShare').onclick = () => { syncUrl(); const u = location.href; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('已複製這顆星的連結'), () => toast(u)); };
 }
 
@@ -724,7 +818,7 @@ $('#qx').addEventListener('click', () => { q.value = ''; applySearch(); q.focus(
 const unitsBox = $('#units');
 function renderUnits() {
   const cnt = {}; stars.forEach(s => { cnt[s.u] = (cnt[s.u] || 0) + 1; });
-  unitsBox.innerHTML = UNIT_KEYS.map(k => `<button class="chip" type="button" data-u="${k}" aria-pressed="${S.units.has(k)}" style="--c:${colors[k]}" title="${esc(UNIT_NAME[k])}"><span class="dot"></span>${UNIT_SHORT[k]}<span class="k">${cnt[k] || 0}</span></button>`).join('');
+  unitsBox.innerHTML = UNIT_KEYS.map(k => `<button class="chip${k === 'other' ? ' zh' : ''}" type="button" data-u="${k}" aria-pressed="${S.units.has(k)}" style="--c:${colors[k]}" title="${esc(UNIT_NAME[k])}"><span class="dot"></span>${UNIT_SHORT[k]}<span class="k">${cnt[k] || 0}</span></button>`).join('');
 }
 unitsBox.addEventListener('click', e => {
   const b = e.target.closest('[data-u]'); if (!b) return; const k = b.dataset.u;
@@ -747,7 +841,7 @@ const menu = $('#tour');
 function closeMenu() { menu.classList.remove('on'); }
 $('#tourBtn').addEventListener('click', e => {
   e.stopPropagation(); const b = e.currentTarget.getBoundingClientRect();
-  menu.classList.toggle('on'); menu.style.top = (b.bottom + 8) + 'px'; menu.style.left = Math.max(10, Math.min(W - menu.offsetWidth - 10, b.right - menu.offsetWidth)) + 'px';
+  menu.classList.toggle('on'); menu.style.top = (b.bottom + 10) + 'px'; menu.style.left = Math.max(10, Math.min(W - menu.offsetWidth - 10, b.right - menu.offsetWidth)) + 'px';
 });
 document.addEventListener('click', e => { if (!menu.contains(e.target)) closeMenu(); });
 menu.addEventListener('click', e => {
@@ -776,20 +870,20 @@ function renderCatalog() {
   const m = catSort.value;
   list.sort((a, b) => m === 't' ? (a.tc || a.t).localeCompare(b.tc || b.t, 'zh-Hant') : m === 'new' ? (b.ts || 0) - (a.ts || 0) : m === 'x' ? xOf(b) - xOf(a) : yOf(b) - yOf(a));
   $('#catN').textContent = list.length + ' 首';
-  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>✦</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
+  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>書</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
 }
 catList.addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (!li) return; select(byId[+li.dataset.id], true); if (mobile()) { S.catOn = false; catalog.classList.remove('on'); $('#catBtn').setAttribute('aria-pressed', 'false'); } });
 function markCatalog() { catList.querySelectorAll('li').forEach(li => li.classList.toggle('on', S.sel && +li.dataset.id === S.sel.id)); }
 
 /* ========== 主題、說明、鍵盤、網址 ========== */
-$('#themeBtn').addEventListener('click', () => { root.classList.toggle('light'); try { localStorage.setItem('sekai-starmap-theme', root.classList.contains('light') ? 'light' : 'dark'); } catch (e) {} makeSprites(); renderUnits(); if (S.sel) renderPanel(S.sel); if (S.catOn) renderCatalog(); dirty = true; kick(); });
+$('#themeBtn').addEventListener('click', () => { root.classList.toggle('light'); try { localStorage.setItem('sekai-starmap-theme', root.classList.contains('light') ? 'light' : 'dark'); } catch (e) {} makeSprites(); makeField(); renderUnits(); if (S.sel) renderPanel(S.sel); if (S.catOn) renderCatalog(); dirty = true; kick(); });
 $('#helpBtn').addEventListener('click', () => $('#help').classList.add('on'));
 $('#helpX').addEventListener('click', () => $('#help').classList.remove('on'));
 $('#help').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('on'); });
 document.addEventListener('keydown', e => {
   if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); q.select(); }
   else if (e.key === 'Escape') { if ($('#help').classList.contains('on')) $('#help').classList.remove('on'); else if (menu.classList.contains('on')) closeMenu(); else if (S.sel) select(null); }
-  else if (e.key === '?' ) $('#help').classList.toggle('on');
+  else if (e.key === '?') $('#help').classList.toggle('on');
 });
 let toastT = 0;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
@@ -815,16 +909,19 @@ function readUrl() {
 }
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
+/* 畫布上的字不會自己觸發網頁字型載入：先把要用的字型請進來，到了再重畫一次 */
+if (document.fonts && document.fonts.load) Promise.all(['600 12px "Cormorant Garamond"', '500 12px "Noto Serif TC"', '600 13px "Noto Serif TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { dirty = true; kick(); });
 
 /* ========== 開場 ========== */
 makeSprites(); renderUnits(); resize();
 readUrl();
-if (!REDUCED && !OG) {   // 星從中心綻開，依橫軸位置錯開一點點
-  const r = rect();
-  stars.forEach(s => { if (s.ca >= 1 && s !== S.sel) { s.cx = .5 + (s.px - .5) * .08; s.cy = .5 + (s.py - .5) * .08; s.ca = 0; s.delay = s.px * 420 + Math.random() * 160; } });
+if (!REDUCED && !OG) {   // 星從中心綻開，依橫軸位置錯開一點點；第一次進來另有標題開場
+  stars.forEach(s => { if (s.ca >= 1 && s !== S.sel) { s.cx = .5 + (s.px - .5) * .08; s.cy = .5 + (s.py - .5) * .08; s.ca = 0; s.delay = 500 + s.px * 520 + Math.random() * 180; } });
   introAt = performance.now();
-  setTimeout(() => { introAt = 0; }, 1400);
-}
+  setTimeout(() => { introAt = 0; }, 1800);
+  let seen = false; try { seen = sessionStorage.getItem('sekai-starmap-opened') === '1'; sessionStorage.setItem('sekai-starmap-opened', '1'); } catch (e) {}
+  if (!seen && !S.sel) { const o = $('#opening'); o.hidden = false; setTimeout(() => o.remove(), 3400); } else $('#opening').remove();
+} else $('#opening').remove();
 kick();
 </script>
 </body>
