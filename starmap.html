@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#05070e">
 <title>SEKAI 星圖 — 全曲庫的天文圖鑑 | Project SEKAI 資源中心</title>
@@ -780,7 +781,7 @@ function renderPanel(s) {
   const dens = s.notes[S.diff] && s.len ? (s.notes[S.diff] / s.len).toFixed(2) : '–';
   panel.innerHTML = `
     <button class="close" type="button" aria-label="關閉" id="pX"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    <div class="ph"><div class="jk" style="--c:${c}"><div class="in"><img alt="" id="pJk" src="${JP_ASSET + esc(s.jkt)}.webp" data-alt="${TC_ASSET + esc(s.jkt)}.webp"></div></div>
+    <div class="ph"><div class="jk" style="--c:${c}"><div class="in"><img alt="" id="pJk" referrerpolicy="no-referrer" decoding="async" src="${JP_ASSET + esc(s.jkt)}.webp" data-alt="${TC_ASSET + esc(s.jkt)}.webp"></div></div>
       <div class="pt"><h2>${esc(s.tc || s.t)}</h2>${s.tc && s.tc !== s.t ? `<div class="jp">${esc(s.t)}</div>` : ''}${by ? `<div class="by">${by}</div>` : ''}<div class="tags">${tags}</div></div></div>
     <div class="rule"></div>
     <div class="grid">
