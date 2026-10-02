@@ -22,7 +22,7 @@
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://storage.sekai.best" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>/* 主題：這一頁預設是夜空；只有站上明確選了淺色才用「象牙」版。畫面繪製前套用，避免閃爍。 */
 try{var _q=new URLSearchParams(location.search);var _t=localStorage.getItem('sekai-starmap-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
@@ -359,7 +359,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
       <button type="button" data-d="M" aria-pressed="true">Master</button>
       <button type="button" data-d="A" aria-pressed="false">Append</button>
     </div>
-    <button class="chip zh" id="twChip" type="button" aria-pressed="false" title="只顯示台服已實裝的歌">僅台服已實裝</button>
+    <button class="chip zh" id="twChip" type="button" aria-pressed="false" title="只顯示台服已實裝的歌（不含預定中的）">僅台服已實裝</button>
     <button class="chip zh" id="nwChip" type="button" aria-pressed="false" title="只顯示為本作書き下ろし的新曲"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0.5 9.4 6.6 15.5 8 9.4 9.4 8 15.5 6.6 9.4 0.5 8 6.6 6.6Z"/></svg>書き下ろし</button>
   </div>
 </aside>
@@ -420,7 +420,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 <script type="module">
 import { EP_SONGS } from './data/ep-songs.js?v=6455a3438f';
 import { SONG_BPM } from './data/song-bpm.js?v=a8b8d13a28';
-import { SONG_META } from './data/song-meta.js?v=1d6e3ee4ce';
+import { SONG_META } from './data/song-meta.js?v=01bb1878a4';
 
 /* ========== 常數與工具 ========== */
 const $ = s => document.querySelector(s);
@@ -441,6 +441,7 @@ const PAD_MOBILE = { l: 42, r: 16, t: 160, b: 136 };
 const barH = () => { const b = document.querySelector('.bar'); return b ? Math.max(56, b.offsetHeight) : 56; };
 const PAD_OG = { l: 44, r: 44, t: 44, b: 44 };
 const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
+const own = (o, k) => k != null && Object.prototype.hasOwnProperty.call(o, k);
 const fmtTime = s => { const t = Math.round(s); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
 const norm = s => String(s || '').normalize('NFKC').toLowerCase();
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -475,7 +476,7 @@ const stars = EP_SONGS.map((s, i) => {
 });
 const byId = {}; stars.forEach(s => { byId[s.id] = s; });
 const maxNotes = Math.max(...stars.map(s => s.notes.M || 0));
-const composers = {}; stars.forEach(s => { if (s.composer) (composers[s.composer] = composers[s.composer] || []).push(s); });
+const composers = Object.create(null); stars.forEach(s => { if (s.composer) (composers[s.composer] = composers[s.composer] || []).push(s); });
 $('#openSub').textContent = ZH_NUM(stars.length) + '首歌，每一首是一顆星';
 
 /* ========== 狀態 ========== */
@@ -502,8 +503,12 @@ function domain() {
 const cv = $('#sky'), ctx = cv.getContext('2d');
 let W = 0, H = 0, DPR = 1, PAD = PAD_DESK;
 const mobile = () => matchMedia('(max-width:760px)').matches;
+let resizeRaf = 0;
+function scheduleResize() { if (!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; resize(); }); }
 function resize() {
-  DPR = Math.min(2.5, window.devicePixelRatio || 1);
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  if (W === window.innerWidth && H === window.innerHeight && DPR === dpr && field && barH() + (OG ? 0 : mobile() ? 16 : 22) === PAD.t) return;   // 鍵盤、網址列抖動：什麼都沒變就不重建
+  DPR = dpr;
   W = window.innerWidth; H = window.innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -552,6 +557,7 @@ const sprites = {}, spikes = {};
 let colors = {};
 function makeSprites() {
   colors = {}; UNIT_KEYS.forEach(k => { colors[k] = cssVar(k) || '#ccc'; });
+  FONT_SERIF = cssVar('serif') || 'serif'; FONT_DISPLAY = cssVar('display') || 'serif';
   ['ink', 'ink-2', 'ink-3', 'bg', 'gold', 'gold-2'].forEach(k => { colors[k] = cssVar(k); });
   const light = root.classList.contains('light');
   UNIT_KEYS.forEach(k => {
@@ -572,7 +578,7 @@ function makeSprites() {
 /* ========== 版面：算每顆星的目標位置與目標透明度 ========== */
 function visible(s) {
   if (!S.units.has(s.u)) return false;
-  if (S.tw && s.jp) return false;
+  if (S.tw && (s.jp || s.future)) return false;   // 日服限定與台服預定（未來日期）都不算已實裝
   if (S.nw && !s.nw) return false;
   return xOf(s) != null && yOf(s) != null;
 }
@@ -640,10 +646,12 @@ function frame(t) {
   if (P.state === 'playing' || P.state === 'ending') moving = true;
   draw(t / 1000);
   dirty = false;
-  if (moving || (!REDUCED && document.visibilityState === 'visible')) raf = requestAnimationFrame(frame);
+  if (moving) raf = requestAnimationFrame(frame);
+  else if (!REDUCED && document.visibilityState === 'visible') raf = setTimeout(() => { raf = 0; kick(); }, 48);   // 靜止時只為閃爍重畫，放慢到約 20 幀
 }
 function kick() { if (!raf) raf = requestAnimationFrame(frame); }
-const serifFont = () => cssVar('serif'), displayFont = () => cssVar('display');
+let FONT_SERIF = 'serif', FONT_DISPLAY = 'serif';
+const serifFont = () => FONT_SERIF, displayFont = () => FONT_DISPLAY;
 
 function draw(time = 0) {
   const r = rect();
@@ -664,7 +672,7 @@ function draw(time = 0) {
   ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
   if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
   ctx.strokeStyle = rgba(gold, light ? .22 : .11); ctx.fillStyle = rgba(gold, light ? .85 : .62);
-  ctx.font = '600 12px ' + displayFont(); ctx.textBaseline = 'bottom';
+  ctx.font = '600 12px ' + FONT_DISPLAY; ctx.textBaseline = 'bottom';
   const xt = P.xtick === 'year' ? yearTicks(dx0, dx1, r.w) : niceTicks(dx0, dx1, Math.max(3, Math.round(r.w / 110))).map(v => ({ v, l: String(P.xfmt(v)) }));
   ctx.textAlign = 'center';
   xt.forEach(({ v, l }) => { const sx = toScreen((v - d.x0) / (d.x1 - d.x0), 0, r)[0]; ctx.beginPath(); ctx.moveTo(sx, r.y); ctx.lineTo(sx, r.y + r.h); ctx.stroke(); if (sx > r.x + 24 && sx < r.x + r.w - 24) { ctx.fillText(l, sx, r.y + r.h - 7); ctx.beginPath(); ctx.strokeStyle = rgba(gold, light ? .6 : .4); ctx.moveTo(sx + .5, r.y + r.h - 1); ctx.lineTo(sx + .5, r.y + r.h - 5); ctx.stroke(); ctx.strokeStyle = rgba(gold, light ? .22 : .11); } });
@@ -682,7 +690,7 @@ function draw(time = 0) {
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
 
   /* 星座線：同作曲者依發行日連線，髮絲金線 */
-  const cons = S.cons && composers[S.cons] ? composers[S.cons].filter(s => s.ca > .5).sort((a, b) => (a.ts || 9e15) - (b.ts || 9e15)) : null;
+  const cons = own(composers, S.cons) ? composers[S.cons].filter(s => s.ca > .5).sort((a, b) => (a.ts || 9e15) - (b.ts || 9e15)) : null;
   if (cons && cons.length > 1) {
     ctx.strokeStyle = rgba(gold, light ? .75 : .6); ctx.lineWidth = .9; ctx.setLineDash([]); ctx.beginPath();
     cons.forEach((s, i) => { const [sx, sy] = toScreen(s.cx, s.cy, r); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
@@ -793,7 +801,7 @@ cv.addEventListener('pointermove', e => {
     if (drag.moved || Math.hypot(dx, dy) > 4) { drag.moved = true; view.gtx = drag.tx + dx; view.gty = drag.ty + dy; view.tx = view.gtx; view.ty = view.gty; cv.classList.add('grab'); hideTip(); kick(); }
     return;
   }
-  if (e.pointerType === 'mouse') { const h = hit(e.clientX, e.clientY); if (h !== S.hover) { S.hover = h; cv.classList.toggle('pick', !!h); dirty = true; kick(); } if (h) showTip(h, e.clientX, e.clientY); else hideTip(); }
+  if (e.pointerType === 'mouse') { const h = hit(e.clientX, e.clientY); const changed = h !== S.hover; if (changed) { S.hover = h; cv.classList.toggle('pick', !!h); dirty = true; kick(); } if (h) showTip(h, e.clientX, e.clientY, !changed); else hideTip(); }
 });
 const endPointer = e => {
   pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null;
@@ -811,11 +819,11 @@ $('#resetBtn').addEventListener('click', resetView);
 
 /* ========== 提示 ========== */
 const tip = $('#tip');
-function showTip(s, x, y) {
+function showTip(s, x, y, moveOnly) {
   if (mobile()) return;
-  const y0 = yOf(s), xv = xOf(s);
+  if (!moveOnly || !tip.classList.contains('on')) { const y0 = yOf(s), xv = xOf(s);
   tip.innerHTML = `<span class="dot" style="--c:${colors[s.u]}"></span>${esc(s.tc || s.t)}<small>${S.proj === 'dens' ? fmtTime(xv) + ' · ' + y0.toFixed(2) + ' 音符／秒' : (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + ' · ' + DIFF_NAME[S.diff] + ' ' + (s.hasC[S.diff] ? y0.toFixed(1) : 'Lv.' + y0)}</small>`;
-  tip.classList.add('on');
+  tip.classList.add('on'); }
   const w = tip.offsetWidth, h = tip.offsetHeight; let L = x + 18, T = y + 18;
   if (L + w > W - 10) L = x - w - 14; if (T + h > H - 10) T = y - h - 14;
   tip.style.left = L + 'px'; tip.style.top = T + 'px';
@@ -835,7 +843,7 @@ function renderPanel(s) {
   const by = [s.creator && s.creator !== s.composer ? `<b>創作</b>${esc(s.creator)}` : '', s.composer ? `<b>作曲</b>${esc(s.composer)}` : '', s.lyricist && s.lyricist !== s.composer ? `<b>作詞</b>${esc(s.lyricist)}` : '', s.arranger && s.arranger !== s.composer ? `<b>編曲</b>${esc(s.arranger)}` : ''].filter(Boolean).join('　');
   const tags = s.units.map(u => `<span class="tag" style="--c:${colors[u]}">${esc(UNIT_NAME[u])}</span>`).join('') + (s.jp ? '<span class="tag zh jp">台服未實裝</span>' : '') + (s.nw ? '<span class="tag zh" style="--c:var(--wxs)">書き下ろし</span>' : '') + (s.mv === 3 ? '<span class="tag mono">3D MV</span>' : s.mv === 2 ? '<span class="tag mono">2D MV</span>' : '');
   const lvs = DIFFS.map(d => { const lv = s.lv[d]; if (lv == null) return `<div class="lv none" style="--d:${diffColor(d)}"><i>${d}</i><b>–</b><small>&nbsp;</small></div>`; const cc = (d === 'M' || d === 'A') && s.hasC[d] ? s.c[d].toFixed(1) : '&nbsp;'; return `<div class="lv${(d === S.diff) ? ' on' : ''}" style="--d:${diffColor(d)}" title="${DIFF_NAME[d]}${s.notes[d] ? '・' + s.notes[d] + ' 音符' : ''}"><i>${d}</i><b>${lv}</b><small>${cc}</small></div>`; }).join('');
-  const n = composers[s.composer] ? composers[s.composer].length : 0;
+  const n = own(composers, s.composer) ? composers[s.composer].length : 0;
   const dens = s.notes[S.diff] && s.len ? (s.notes[S.diff] / s.len).toFixed(2) : '–';
   panel.innerHTML = `
     <button class="close" type="button" aria-label="關閉" id="pX"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
@@ -990,7 +998,7 @@ unitsBox.addEventListener('click', e => {
 });
 $('#proj').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; setProj(b.dataset.p); });
 function refocus() { if (S.sel && visible(S.sel)) flyTo(S.sel, Math.max(1.6, view.gk)); else resetView(); }
-function setProj(p) { if (!PROJ[p]) return; S.proj = p; $('#proj').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.p === p)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
+function setProj(p) { if (!own(PROJ, p)) return; S.proj = p; $('#proj').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.p === p)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
 $('#diff').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (!b) return; setDiff(b.dataset.d); });
 function setDiff(d) { S.diff = d; $('#diff').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.d === d)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
 $('#twChip').addEventListener('click', e => { S.tw = !S.tw; e.currentTarget.setAttribute('aria-pressed', S.tw); layout(); refocus(); syncUrl(); });
@@ -1062,17 +1070,17 @@ function syncUrl() {
 }
 function readUrl() {
   const p = new URLSearchParams(location.search);
-  if (PROJ[p.get('p')]) setProj(p.get('p'));
+  if (own(PROJ, p.get('p'))) setProj(p.get('p'));
   if (p.get('d') === 'A') setDiff('A');
   if (p.get('u')) { const u = new Set(p.get('u').split(',').filter(k => UNIT_KEYS.includes(k))); if (u.size) { S.units = u; unitsBox.querySelectorAll('[data-u]').forEach(x => x.setAttribute('aria-pressed', S.units.has(x.dataset.u))); } }
   if (p.get('tw') === '1') { S.tw = true; $('#twChip').setAttribute('aria-pressed', 'true'); }
   if (p.get('nw') === '1') { S.nw = true; $('#nwChip').setAttribute('aria-pressed', 'true'); }
-  if (p.get('c') && composers[p.get('c')]) S.cons = p.get('c');
+  if (own(composers, p.get('c'))) S.cons = p.get('c');
   const s = byId[+p.get('s')];
   layout(false);
   if (s && visible(s)) { select(s, true); view.k = view.gk; view.tx = view.gtx; view.ty = view.gty; } else syncUrl();
 }
-addEventListener('resize', resize);
+addEventListener('resize', scheduleResize);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
 /* 畫布上的字不會自己觸發網頁字型載入：先把要用的字型請進來，到了再重畫一次 */
 if (document.fonts && document.fonts.load) Promise.all(['600 12px "Cormorant Garamond"', '500 12px "Noto Serif TC"', '600 13px "Noto Serif TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { resize(); });
