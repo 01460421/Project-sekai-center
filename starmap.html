@@ -360,7 +360,7 @@ const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return `rgba(${r},${g},${
 /* ========== 建星 ========== */
 const CONST = {};
 ((window.B30_CONSTS && window.B30_CONSTS.charts) || []).forEach(c => { (CONST[c.id] = CONST[c.id] || {})[c.d] = c.c; });
-const FUTURE = Date.now() + 400 * 86400e3;   // 日服 master 給還沒上的歌一個很遠的佔位日期：當作未定
+const FUTURE = Date.now() + 45 * 86400e3;   // 日服 master 給還沒上的歌一個遠期佔位日期（幾個月後）：當作未定；幾天內的是真的預告
 let seed = 7;
 const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
 const stars = EP_SONGS.map((s, i) => {
