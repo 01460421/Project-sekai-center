@@ -113,7 +113,7 @@ for (const mobile of [false, true]) {
       await page.goto(ORIGIN + '/soundprint.html?s=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForFunction(() => window.__soundprint && window.__soundprint.S.cur && !window.__soundprint.S.loading, null, { timeout: 120000 });
       await page.waitForTimeout(600);
-      const txt = await page.evaluate(() => document.querySelector('#panel').innerText);
+      const txt = await page.evaluate(() => document.querySelector('#panel').textContent);   // 手機版分析卡預設收起（visibility:hidden），innerText 會是空的
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       ok = !errors.length && /調性/.test(txt) && !(mobile && overflow);
       why = errors[0] || (!/調性/.test(txt) ? '分析卡沒有讀數' : overflow ? '橫向溢出' : '');
