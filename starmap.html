@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070e">
+<title>SEKAI 星圖 — 全曲庫的天文圖鑑 | Project SEKAI 資源中心</title>
+<meta name="description" content="Project SEKAI 全曲庫 700 多首歌化成一片可互動的星空：依 BPM、難度定數、發行年代、曲長與音符密度投影，團體上色、作曲者星座、搜尋高亮與可分享的星星連結。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SEKAI 星圖 — 全曲庫的天文圖鑑">
+<meta property="og:description" content="700 多首歌、每一首是一顆星：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮。">
+<meta property="og:url" content="https://project-sekai-center.com/starmap.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/starmap.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/starmap.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>/* 主題：這一頁預設是夜空；只有站上明確選了淺色才用「象牙」版。畫面繪製前套用，避免閃爍。 */
+try{var _q=new URLSearchParams(location.search);var _t=localStorage.getItem('sekai-starmap-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
+if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))document.documentElement.classList.add('og');}catch(e){}</script>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#05070e; --bg-2:#0a0e1b; --ink:#ebe4d3; --ink-2:#b3ab98; --ink-3:#87826f;
+  --gold:#d4b673; --gold-2:#ecdcaa; --line:rgba(212,182,115,.17); --line-2:rgba(212,182,115,.38); --hair:rgba(235,228,211,.07);
+  --glass:rgba(6,9,19,.6); --glass-2:rgba(8,11,23,.86);
+  --ln:#7081f2; --mmj:#a6d564; --vbs:#f49474; --wxs:#f0c862; --n25:#c198ec; --vs:#6edbd6; --other:#d6cfbe;
+  --serif:'Noto Serif TC','Cormorant Garamond',Georgia,'Songti TC','PMingLiU',serif;
+  --display:'Cormorant Garamond','Noto Serif TC',Georgia,'Times New Roman',serif;
+  --shadow:0 18px 50px rgba(0,0,0,.55);
+  --ease:cubic-bezier(.32,.72,.24,1);
+  --halo:.85; --grain:.07; --vig:rgba(0,0,0,.6);
+}
+:root.light{
+  color-scheme:light;
+  --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#6b6355;
+  --gold:#7f6220; --gold-2:#5e4714; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
+  --glass:rgba(249,245,236,.76); --glass-2:rgba(249,245,236,.94);
+  --ln:#3d50c8; --mmj:#477a18; --vbs:#c8472a; --wxs:#8a6a08; --n25:#7f48ad; --vs:#137a76; --other:#6d6656;
+  --shadow:0 18px 50px rgba(60,45,20,.16);
+  --halo:.45; --grain:.1; --vig:rgba(80,60,20,.2);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--serif);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:1.5px solid var(--gold);outline-offset:2px}
+#sky:focus-visible{outline-offset:-3px}
+a{color:var(--gold-2)}
+/* 星雲：六團顏色的雲氣，極慢地飄 */
+body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;opacity:var(--halo);filter:blur(34px);
+  background:
+    radial-gradient(40% 36% at 14% 26%,color-mix(in oklab,var(--ln) 26%,transparent),transparent 70%),
+    radial-gradient(34% 32% at 86% 14%,color-mix(in oklab,var(--n25) 22%,transparent),transparent 70%),
+    radial-gradient(46% 40% at 74% 90%,color-mix(in oklab,var(--vs) 16%,transparent),transparent 70%),
+    radial-gradient(30% 30% at 18% 88%,color-mix(in oklab,var(--vbs) 14%,transparent),transparent 70%),
+    radial-gradient(28% 26% at 52% 48%,color-mix(in oklab,var(--wxs) 9%,transparent),transparent 70%);
+  animation:drift 90s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.07)}}
+#sky{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none;cursor:crosshair;outline:none}
+#sky.grab{cursor:grabbing}
+#sky.pick{cursor:pointer}
+/* 膠片顆粒與暗角：讓畫面有紙與鏡頭的質地 */
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;background-size:240px 240px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+:root.light .grain{mix-blend-mode:multiply}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(115% 88% at 50% 46%,transparent 56%,var(--vig) 100%)}
+
+/* ===== 玻璃與髮絲線 ===== */
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);cursor:pointer;color:var(--ink-2);box-shadow:var(--shadow);transition:color .25s,border-color .25s,background .25s;flex:none}
+.ib:hover{color:var(--gold-2);border-color:var(--line-2)}
+.ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ib[aria-pressed=true]{color:var(--gold-2);border-color:var(--gold);background:color-mix(in oklab,var(--gold) 14%,var(--glass))}
+.sc{font-family:var(--display);font-weight:600;letter-spacing:2.5px;text-transform:uppercase}
+
+/* ===== 頂欄 ===== */
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px 0;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;flex-wrap:wrap}
+.bar>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand b{font-family:var(--serif);font-weight:600;font-size:16.5px;letter-spacing:1.5px;line-height:1.05;display:block}
+.brand small{display:block;font-size:8.5px;letter-spacing:3.4px;color:var(--gold);font-weight:600;line-height:1;margin-top:4px;font-family:var(--display);text-transform:uppercase}
+.search{flex:1 1 220px;max-width:470px;display:flex;align-items:center;gap:9px;padding:0 8px 0 16px;height:44px;border-radius:999px}
+.search svg{width:17px;height:17px;fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-linecap:round;flex:none}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--ink);font:inherit;font-size:14px;min-width:0;letter-spacing:.3px}
+.search input::placeholder{color:var(--ink-3)}
+.search .n{font-family:var(--display);font-size:13px;font-weight:600;color:var(--gold);white-space:nowrap;letter-spacing:.5px}
+.search kbd{font-family:var(--display);font-size:12px;font-weight:600;color:var(--ink-3);border:1px solid var(--line-2);border-radius:3px;padding:0 6px;line-height:1.5}
+.search .x{display:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;align-items:center;justify-content:center}
+.search.has .x{display:inline-flex}
+.search.has kbd{display:none}
+.seg{display:flex;padding:4px 6px;border-radius:999px;gap:2px;flex:none}
+.seg button{border:0;background:none;color:var(--ink-2);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.8px;padding:0 13px;height:34px;border-radius:999px;cursor:pointer;white-space:nowrap;position:relative;transition:color .25s}
+.seg button::after{content:'';position:absolute;left:14px;right:14px;bottom:6px;height:1px;background:var(--gold);transform:scaleX(0);transition:transform .3s var(--ease)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{color:var(--gold-2)}
+.seg button[aria-pressed=true]::after{transform:scaleX(1)}
+.seg.sm button{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:2px;text-transform:uppercase;padding:0 11px;height:30px}
+.seg.sm button::after{bottom:5px;left:12px;right:12px}
+.spacer{flex:1}
+
+/* ===== 左下：圖例與篩選 ===== */
+.legend{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;display:flex;flex-direction:column;gap:8px;max-width:min(820px,calc(100vw - 32px));pointer-events:none}
+.legend>*{pointer-events:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:0 13px 0 11px;height:32px;border-radius:999px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .25s,color .25s,border-color .25s,filter .25s;box-shadow:var(--shadow);white-space:nowrap}
+.chip:hover{color:var(--ink);border-color:var(--line-2)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c),0 0 2px #fff inset;flex:none}
+.chip[aria-pressed=false]{opacity:.48;filter:saturate(.15)}
+.chip .k{color:var(--ink-3);font-weight:500;font-size:12px;letter-spacing:.5px}
+.chip.zh{font-family:var(--serif);font-weight:500;letter-spacing:.6px;text-transform:none;font-size:12.5px}
+.chip svg{width:13px;height:13px;fill:var(--wxs);filter:drop-shadow(0 0 4px var(--wxs))}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ===== 右下：狀態列 ===== */
+.hud{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:19;display:flex;align-items:center;gap:8px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud .st{height:32px;display:flex;align-items:center;gap:9px;padding:0 15px;border-radius:999px;font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;letter-spacing:.6px}
+.hud .st b{color:var(--gold-2);font-size:15px;letter-spacing:.5px}
+.hud .st i{font-style:normal;color:var(--ink-3);font-family:var(--serif);font-weight:400;font-size:12px;letter-spacing:.5px}
+.hud .ib{width:32px;height:32px}
+.hud .ib svg{width:15px;height:15px}
+
+/* ===== 詳情面板：標本卡 ===== */
+.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:364px;max-height:calc(100vh - var(--bar-h,56px) - 76px);max-height:calc(100dvh - var(--bar-h,56px) - 76px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.panel.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+.panel .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:color .2s,border-color .2s}
+.panel .close:hover{color:var(--gold-2);border-color:var(--line-2)}
+.ph{display:flex;gap:15px;align-items:flex-start;padding-right:28px}
+.jk{width:92px;height:92px;flex:none;padding:4px;border:1px solid var(--line-2);background:var(--bg-2);position:relative;box-shadow:0 14px 30px color-mix(in oklab,var(--c) 32%,transparent)}
+.jk::before{content:'';position:absolute;inset:-5px;border:1px solid var(--line);pointer-events:none}
+.jk .in{position:relative;width:100%;height:100%;overflow:hidden;background:var(--bg-2)}
+.jk img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s;position:relative;z-index:1}
+.jk img.ok{opacity:1}
+.jk .in::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,var(--line-2) 0,transparent 1.5px) 50% 50%/6px 6px;opacity:.5}
+.pt{min-width:0;padding-top:2px}
+.pt h2{font-family:var(--serif);font-size:18px;line-height:1.35;font-weight:600;letter-spacing:.6px;word-break:break-word}
+.pt .jp{font-size:12px;color:var(--ink-3);margin-top:3px;word-break:break-word;letter-spacing:.3px}
+.pt .by{font-size:12px;color:var(--ink-2);margin-top:8px;line-height:1.7}
+.pt .by b{font-weight:500;color:var(--gold);font-size:11px;letter-spacing:1px;margin-right:2px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.tag{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 9px;border-radius:2px;font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in oklab,var(--c) 45%,transparent);background:color-mix(in oklab,var(--c) 9%,transparent)}
+.tag.zh{font-family:var(--serif);font-weight:500;letter-spacing:.5px;text-transform:none;font-size:11px}
+.tag.mono{--c:var(--ink-2)}
+.tag.jp{--c:var(--wxs)}
+.rule{height:1px;background:var(--line-2);position:relative;margin:16px 0 12px}
+.rule::after{content:'';position:absolute;left:50%;top:-2.5px;width:5px;height:5px;background:var(--gold);transform:translateX(-50%) rotate(45deg)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.cell{padding:8px 10px 9px;border-top:1px solid var(--hair);border-left:1px solid var(--hair)}
+.cell:nth-child(3n+1){border-left:0}
+.cell:nth-child(-n+3){border-top:0}
+.cell i{display:block;font-style:normal;font-family:var(--display);font-size:10px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.cell b{display:block;font-family:var(--display);font-size:20px;font-weight:600;line-height:1.2;margin-top:3px;color:var(--ink);letter-spacing:.3px}
+.cell b.zh{font-family:var(--serif);font-size:13.5px;margin-top:6px;font-weight:500}
+.cell small{font-family:var(--display);font-size:11.5px;color:var(--ink-3);font-weight:500;letter-spacing:.5px}
+.lvs{display:flex;margin-top:14px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.lv{flex:1;text-align:center;padding:8px 2px 7px;border-left:1px solid var(--hair);position:relative}
+.lv:first-child{border-left:0}
+.lv i{display:block;font-style:normal;font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--d)}
+.lv b{display:block;font-family:var(--display);font-size:19px;font-weight:600;line-height:1.15;margin-top:2px}
+.lv small{display:block;font-family:var(--display);font-size:11px;font-weight:500;color:var(--ink-3);line-height:1.3}
+.lv.on::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:1px;background:var(--gold)}
+.lv.none{opacity:.3}
+.acts{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:3px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font-family:var(--serif);font-weight:500;font-size:12.5px;letter-spacing:.8px;cursor:pointer;text-decoration:none;transition:background .25s,color .25s,border-color .25s}
+.btn:hover{background:color-mix(in oklab,var(--gold) 12%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn[aria-pressed=true]{background:color-mix(in oklab,var(--gold) 18%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.pf{margin-top:12px;font-size:11px;color:var(--ink-3);line-height:1.7;letter-spacing:.3px}
+
+/* ===== 播放列：正在試聽的那首歌 ===== */
+.np{position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom));transform:translate(-50%,12px);z-index:22;display:flex;align-items:center;gap:10px;height:56px;padding:0 8px 0 8px;border-radius:999px;background:var(--glass-2);backdrop-filter:blur(20px) saturate(1.15);-webkit-backdrop-filter:blur(20px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);opacity:0;visibility:hidden;pointer-events:none;transition:transform .4s var(--ease),opacity .3s,visibility 0s .4s;width:min(560px,calc(100vw - 32px));overflow:hidden}
+.np.on{opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0);transition-delay:0s}
+.np .jk2{width:40px;height:40px;flex:none;border:1px solid var(--line-2);padding:2px;background:var(--bg-2)}
+.np .jk2 img{width:100%;height:100%;object-fit:cover;display:block}
+.np .t{min-width:0;flex:1;cursor:pointer;padding:4px 0}
+.np .t b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px;line-height:1.3}
+.np .t small{display:block;font-family:var(--display);font-size:11px;color:var(--gold);font-weight:600;letter-spacing:1.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;margin-top:2px}
+.np .ib{width:36px;height:36px;box-shadow:none;background:transparent;border-color:transparent}
+.np .ib:hover{border-color:var(--line-2)}
+.np .ib svg{width:15px;height:15px}
+.np .ib .pause{display:none}
+.np .ib.playing .play{display:none}
+.np .ib.playing .pause{display:block}
+.np .bar2{position:absolute;left:0;right:0;bottom:0;height:1.5px;background:var(--hair)}
+.np .bar2 i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s linear}
+.np .eq{display:flex;align-items:flex-end;gap:2px;height:14px;flex:none;margin:0 2px}
+.np .eq i{width:2px;background:var(--gold);height:30%;animation:eq 1.1s ease-in-out infinite}
+.np .eq i:nth-child(2){animation-delay:.25s}.np .eq i:nth-child(3){animation-delay:.5s}
+.np.paused .eq i{animation-play-state:paused;height:30%}
+@keyframes eq{0%,100%{height:25%}50%{height:100%}}
+.pr{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pr .seg{box-shadow:none;background:transparent;border:1px solid var(--line);padding:3px 4px}
+.pr .seg button{height:26px;font-size:11.5px;letter-spacing:1.5px}
+.btn .pause{display:none}
+.btn[aria-pressed=true] .play{display:none}
+.btn[aria-pressed=true] .pause{display:block}
+
+/* ===== 提示泡泡 ===== */
+.tip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:4px;background:var(--glass-2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line-2);font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
+.tip.on{opacity:1;transform:none}
+.tip small{display:block;font-family:var(--display);font-size:12px;color:var(--gold);font-weight:600;margin-top:1px;letter-spacing:.8px}
+.tip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:7px;vertical-align:1px}
+
+/* ===== 星表（左側抽屜） ===== */
+.catalog{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:16px;width:372px;max-height:calc(100vh - var(--bar-h,56px) - 162px);max-height:calc(100dvh - var(--bar-h,56px) - 162px);z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
+.catalog.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+.catalog header{display:flex;align-items:center;gap:8px;padding:14px 14px 11px 18px;border-bottom:1px solid var(--line-2)}
+.catalog header b{font-size:14.5px;flex:1;font-weight:600;letter-spacing:1.5px}
+.catalog header b small{font-family:var(--display);color:var(--gold);font-weight:600;margin-left:8px;font-size:12.5px;letter-spacing:.5px}
+.catalog header select{font-family:var(--serif);font-size:12px;font-weight:500;background:transparent;color:var(--ink-2);border:1px solid var(--line);border-radius:3px;padding:4px 8px;outline:0;letter-spacing:.5px}
+.catalog ol{list-style:none;overflow:auto;flex:1;scrollbar-width:thin;padding:4px 8px 8px}
+.catalog li{display:grid;grid-template-columns:9px 1fr auto;gap:11px;align-items:center;padding:8px 8px;border-bottom:1px solid var(--hair);cursor:pointer;font-size:13px;transition:background .2s}
+.catalog li:hover,.catalog li.on{background:color-mix(in oklab,var(--gold) 9%,transparent)}
+.catalog li .dot{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 7px var(--c)}
+.catalog li .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;letter-spacing:.3px}
+.catalog li .t small{color:var(--gold);font-size:10px;margin-left:6px;border:1px solid var(--line);padding:0 4px;border-radius:2px;vertical-align:1px;letter-spacing:1px}
+.catalog li .v{font-family:var(--display);font-size:14px;font-weight:600;color:var(--ink);text-align:right;white-space:nowrap;letter-spacing:.3px}
+.catalog li .v small{color:var(--ink-3);font-weight:500;margin-left:6px;font-size:12px}
+
+/* ===== 導覽選單 ===== */
+.menu{position:fixed;z-index:26;min-width:206px;padding:6px;border-radius:6px;background:var(--glass-2);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line-2);box-shadow:var(--shadow);display:none;outline:1px solid var(--line);outline-offset:3px}
+.menu.on{display:block}
+.menu button{display:flex;width:100%;align-items:center;gap:11px;padding:9px 12px;border:0;background:none;border-radius:3px;cursor:pointer;color:var(--ink);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.8px;text-align:left;transition:background .2s,color .2s}
+.menu button:hover{background:color-mix(in oklab,var(--gold) 12%,transparent);color:var(--gold-2)}
+.menu button svg{width:15px;height:15px;fill:none;stroke:var(--gold);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ===== 說明 ===== */
+.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.help.on{display:flex}
+.help .card{width:min(580px,100%);max-height:90vh;max-height:90dvh;overflow:auto;padding:30px 34px 26px;border-radius:8px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);position:relative;outline:1px solid var(--line);outline-offset:5px}
+.help .sub{font-family:var(--display);font-style:italic;font-weight:500;font-size:15px;letter-spacing:4px;color:var(--gold);text-transform:uppercase}
+.help h3{font-family:var(--serif);font-size:26px;font-weight:600;margin-top:4px;letter-spacing:3px}
+.help p{margin-top:13px;font-size:14px;color:var(--ink-2);line-height:1.9;letter-spacing:.3px}
+.help p b{color:var(--ink);font-weight:600}
+.help ul{margin:10px 0 0 18px;font-size:13.5px;color:var(--ink-2);line-height:1.95;letter-spacing:.3px}
+.help ul b{color:var(--gold-2);font-weight:600}
+.help .close{position:absolute;top:16px;right:16px}
+.help .src{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.8;letter-spacing:.3px}
+
+/* ===== 提示訊息 ===== */
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 18px;border-radius:3px;max-width:min(92vw,560px);white-space:normal;overflow-wrap:anywhere;text-align:center;background:var(--glass-2);border:1px solid var(--line-2);color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.8px;opacity:0;transition:.3s var(--ease);pointer-events:none;box-shadow:var(--shadow)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ===== 開場：標題浮現、金線展開，然後退場 ===== */
+.opening{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:20px;
+  background:radial-gradient(60% 55% at 50% 50%,color-mix(in oklab,var(--bg) 78%,transparent),transparent);animation:openOut 1s var(--ease) 2.1s forwards}
+.opening[hidden]{display:none}
+.opening small{display:block;font-family:var(--display);font-weight:600;letter-spacing:7px;color:var(--gold);font-size:13px;text-transform:uppercase;animation:rise 1s var(--ease) both}
+.opening b{display:block;font-family:var(--serif);font-weight:600;font-size:clamp(42px,7vw,78px);line-height:1.15;letter-spacing:6px;margin:12px 0 16px;animation:rise 1s var(--ease) .12s both}
+.opening i{display:block;width:180px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto 16px;transform:scaleX(0);animation:line 1.1s var(--ease) .4s forwards}
+.opening span{display:block;font-family:var(--serif);color:var(--ink-2);letter-spacing:3px;font-size:15px;animation:rise 1s var(--ease) .35s both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes line{to{transform:scaleX(1)}}
+@keyframes openOut{to{opacity:0;visibility:hidden}}
+
+/* ===== 分享圖模式：只留星空與大標題 ===== */
+:root.og .bar,:root.og .legend,:root.og .hud,:root.og .panel,:root.og .catalog,:root.og .opening,:root.og .np{display:none!important}
+.ogtitle{display:none}
+:root.og .ogtitle{display:block;position:fixed;left:0;bottom:0;padding:130px 180px 60px 68px;z-index:30;pointer-events:none;background:linear-gradient(90deg,color-mix(in oklab,var(--bg) 90%,transparent) 0%,color-mix(in oklab,var(--bg) 72%,transparent) 55%,transparent 100%)}
+.ogtitle small{display:block;font-family:var(--display);font-size:17px;letter-spacing:7px;color:var(--gold);font-weight:600;margin-bottom:14px;text-transform:uppercase}
+.ogtitle b{display:block;font-family:var(--serif);font-size:70px;font-weight:600;line-height:1.1;letter-spacing:6px}
+.ogtitle i{display:block;width:140px;height:1px;background:var(--gold);margin:18px 0 16px}
+.ogtitle span{display:block;font-family:var(--serif);font-size:23px;color:var(--ink-2);font-weight:400;letter-spacing:3px}
+
+/* ===== 手機 ===== */
+@media (max-width:760px){
+  .bar{gap:8px;padding:10px 10px 0;padding-top:calc(10px + env(safe-area-inset-top))}
+  .brand{padding:0 13px 0 8px;height:40px;gap:9px}
+  .brand svg{width:24px;height:24px}
+  .brand b{font-size:14.5px;letter-spacing:1px}
+  .brand small{display:none}
+  .search{flex:1 1 100%;order:3;height:40px;max-width:none}
+  .bar{gap:6px}
+  .brand{padding:0 10px 0 6px;gap:7px}
+  .brand b{font-size:14px}
+  .bar .ib{order:2;width:34px;height:34px}
+  .bar .ib svg{width:16px;height:16px}
+  .bar .spacer{order:1}
+  .bar .seg{order:4;width:100%;justify-content:center}
+  .seg button{height:30px;padding:0 10px;font-size:12.5px;flex:1}
+  .legend{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:none}
+  .legend .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .legend .chips::-webkit-scrollbar{display:none}
+  .legend .row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .legend .row::-webkit-scrollbar{display:none}
+  .legend .row>*{flex:none}
+  .chip{height:30px;font-size:12px}
+  .hud{right:10px;bottom:calc(92px + env(safe-area-inset-bottom))}
+  .hud .st i{display:none}
+  .search input{font-size:16px}
+  .catalog header select{font-size:16px}
+  .catalog ol{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:min(66vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(66dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(24px);outline:none}
+  .panel::before{content:'';display:block;width:36px;height:2px;background:var(--line-2);margin:0 auto 12px}
+  .panel.on{transform:none}
+  .catalog{top:auto;left:0;right:0;bottom:0;width:auto;max-height:min(70vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(70dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;transform:translateY(24px);outline:none}
+  .catalog.on{transform:none}
+  .tip{display:none}
+  .ogtitle{left:24px;bottom:24px}
+  .np{left:10px;right:64px;width:auto;transform:translateY(12px);bottom:calc(100px + env(safe-area-inset-bottom));height:52px;gap:8px}
+  .np.on{transform:none}
+  .np .eq{display:none}
+  .opening b{letter-spacing:3px}
+}
+@media (max-width:1180px) and (min-width:761px){.brand small{display:none}.brand{padding-right:14px}.search{flex-basis:150px}.seg button{padding:0 10px;font-size:12.5px}}
+@media (hover:none){.search kbd{display:none}}
+@media (prefers-reduced-motion:reduce){
+  body::before{animation:none}
+  .np .eq i{animation:none;height:50%}
+  .panel,.catalog,.chip,.ib,.btn,.tip,.toast,.seg button::after{transition:none}
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<canvas id="sky" tabindex="0" aria-label="歌曲星圖：每一顆星是一首歌，用搜尋框或星表鍵盤操作"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand glass" href="./app.html" title="回 SEKAI 資源中心">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#d4b673" stroke-opacity=".55" stroke-width=".8"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#d4b673" stroke-opacity=".35" stroke-width=".6" stroke-dasharray="1.2 2.2"/><path d="M16 3.5 17.6 14.4 28.5 16 17.6 17.6 16 28.5 14.4 17.6 3.5 16 14.4 14.4Z" fill="#ecdcaa"/><path d="M16 9.5 17 15 22.5 16 17 17 16 22.5 15 17 9.5 16 15 15Z" fill="#fff" fill-opacity=".9"/></svg>
+    <span><b>SEKAI 星圖</b><small>Songscape · Celestial Atlas</small></span>
+  </a>
+  <div class="search glass">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="搜尋歌名、作曲、作詞、創作者" autocomplete="off" spellcheck="false" aria-label="搜尋歌曲">
+    <span class="n" id="qn"></span><kbd>/</kbd>
+    <button class="x" id="qx" type="button" aria-label="清除搜尋"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="seg glass" role="group" aria-label="投影方式" id="proj">
+    <button type="button" data-p="tempo" aria-pressed="true">節奏 × 難度</button>
+    <button type="button" data-p="era" aria-pressed="false">年代 × 難度</button>
+    <button type="button" data-p="dens" aria-pressed="false">曲長 × 密度</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="ib" id="radioBtn" type="button" title="星空電台：在看得見的星之間隨機漫遊播放" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg></button>
+  <button class="ib" id="tourBtn" type="button" title="導覽：帶我去看" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="5.5"/><path d="m12 9 .9 2.1L15 12l-2.1.9L12 15l-.9-2.1L9 12l2.1-.9z"/></svg></button>
+  <button class="ib" id="catBtn" type="button" title="星表" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+  <button class="ib" id="themeBtn" type="button" title="切換夜空／象牙"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg></button>
+  <button class="ib" id="helpBtn" type="button" title="這是什麼？"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
+</header>
+
+<aside class="legend" aria-label="圖例與篩選">
+  <div class="chips" id="units"></div>
+  <div class="row">
+    <div class="seg sm glass" role="group" aria-label="難度" id="diff">
+      <button type="button" data-d="M" aria-pressed="true">Master</button>
+      <button type="button" data-d="A" aria-pressed="false">Append</button>
+    </div>
+    <button class="chip zh" id="twChip" type="button" aria-pressed="false" title="只顯示台服已實裝的歌（不含預定中的）">僅台服已實裝</button>
+    <button class="chip zh" id="nwChip" type="button" aria-pressed="false" title="只顯示為本作書き下ろし的新曲"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0.5 9.4 6.6 15.5 8 9.4 9.4 8 15.5 6.6 9.4 0.5 8 6.6 6.6Z"/></svg>書き下ろし</button>
+  </div>
+</aside>
+
+<div class="hud">
+  <div class="st glass" id="st"><b id="stN">0</b><i>顆星</i><i id="stAxis"></i></div>
+  <button class="ib" id="resetBtn" type="button" title="重置視角"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg></button>
+</div>
+
+<aside class="panel" id="panel" aria-live="polite"></aside>
+<aside class="catalog" id="catalog" aria-label="星表">
+  <header><b>星表<small id="catN"></small></b>
+    <select id="catSort" aria-label="排序"><option value="y">依縱軸</option><option value="x">依橫軸</option><option value="t">依歌名</option><option value="new">最新</option></select>
+  </header>
+  <ol id="catList"></ol>
+</aside>
+<div class="tip" id="tip"></div>
+<div class="menu" id="tour" role="menu">
+  <button type="button" role="menuitem" data-t="fast"><svg viewBox="0 0 24 24"><path d="M4 12h10M10 7l5 5-5 5M17 5v14"/></svg>最快的歌</button>
+  <button type="button" role="menuitem" data-t="slow"><svg viewBox="0 0 24 24"><path d="M20 12H10M14 7l-5 5 5 5M7 5v14"/></svg>最慢的歌</button>
+  <button type="button" role="menuitem" data-t="hard"><svg viewBox="0 0 24 24"><path d="M4 20 10 8l3 6 2-3 5 9z"/><path d="M8 13l2-4"/></svg>最難的譜面</button>
+  <button type="button" role="menuitem" data-t="long"><svg viewBox="0 0 24 24"><path d="M12 4v8l4 2"/><circle cx="12" cy="12" r="9"/></svg>最長的歌</button>
+  <button type="button" role="menuitem" data-t="dense"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 10h14M5 14h14M5 18h14"/></svg>音符最密</button>
+  <button type="button" role="menuitem" data-t="new"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>最新上架</button>
+  <button type="button" role="menuitem" data-t="old"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>最早的歌</button>
+  <button type="button" role="menuitem" data-t="rand"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h.01M15 15h.01M12 12h.01M15 9h.01M9 15h.01"/></svg>隨機一顆</button>
+</div>
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+  <div class="card">
+    <button class="ib close" id="helpX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="sub">Songscape</div>
+    <h3 id="helpT">SEKAI 星圖</h3>
+    <p>每一顆星是一首歌。<b>大小</b>是音符數，<b>顏色</b>是演唱團體；明亮的星會帶四道衍射星芒，為本作書き下ろし的新曲多一對斜向星芒，外圈多一道虛線的是台服尚未實裝的日服曲。</p>
+    <ul>
+      <li><b>節奏 × 難度</b>：橫軸主 BPM、縱軸該難度的定數（譜面難度常數）。</li>
+      <li><b>年代 × 難度</b>：橫軸台服發行日（日服限定曲用日服日期）、縱軸定數。</li>
+      <li><b>曲長 × 密度</b>：橫軸歌長、縱軸每秒音符數。</li>
+    </ul>
+    <p>滾輪或雙指縮放，拖曳平移，雙擊回到全景。點一顆星看詳情；再按「同作曲者」，同一位作曲者的歌會依發行順序連成一座<b>星座</b>。搜尋會讓符合的星亮起、其餘退到背景；網址會記住你看的那顆星，複製就能分享。</p>
+    <p>詳情裡的「試聽」會播放全曲版的第 10 秒起 60 秒，淡入淡出各 3 秒，正在播放的星會隨著節拍呼吸；頂欄的<b>星空電台</b>則在看得見的星之間隨機漫遊，一首接一首，鏡頭跟著飛過去。空白鍵可暫停與繼續。</p>
+    <div class="src">定數：pentatonic プロセカ難易度表（AP 基準，非官方）・BPM 與曲長：社長 bot（t-wy）公開資料・曲目、團體、作曲與發行日：Sekai-World master 資料。星圖只是另一種看曲庫的方式，數值以遊戲內為準。</div>
+  </div>
+</div>
+<div class="np" id="np" aria-live="polite">
+  <div class="jk2"><img id="npJk" alt="" referrerpolicy="no-referrer" decoding="async"></div>
+  <div class="t" id="npT" role="button" tabindex="0" title="打開這顆星"><b id="npTitle"></b><small id="npSub"></small></div>
+  <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+  <button class="ib" id="npPlay" type="button" aria-label="播放／暫停"><svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button>
+  <button class="ib" id="npNext" type="button" title="下一顆（隨機）"><svg viewBox="0 0 24 24"><path d="M6 5v14l9-7zM18 5v14"/></svg></button>
+  <button class="ib" id="npX" type="button" aria-label="停止"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  <div class="bar2"><i id="npBar"></i></div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="opening" id="opening" hidden><div><small>Songscape · Celestial Atlas</small><b>SEKAI 星圖</b><i></i><span id="openSub">七百三十二首歌，每一首是一顆星</span></div></div>
+<div class="ogtitle"><small>Songscape · Celestial Atlas</small><b>SEKAI 星圖</b><i></i><span>七百多首歌，每一首是一顆星</span></div>
+
+<script src="./data/b30-consts.js?v=eb79088ab7"></script>
+<script type="module">
+import { EP_SONGS } from './data/ep-songs.js?v=5b4d841288';
+import { SONG_BPM } from './data/song-bpm.js?v=e8b9364172';
+import { SONG_META } from './data/song-meta.js?v=dcc2efde16';
+
+/* ========== 常數與工具 ========== */
+const $ = s => document.querySelector(s);
+const root = document.documentElement;
+const OG = root.classList.contains('og');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches && !OG;
+const UNIT_KEYS = ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs', 'other'];
+const UNIT_NAME = { ln: 'Leo/need', mmj: 'MORE MORE JUMP!', vbs: 'Vivid BAD SQUAD', wxs: 'ワンダーランズ×ショウタイム', n25: '25時、ナイトコードで。', vs: 'VIRTUAL SINGER', other: '其他' };
+const UNIT_SHORT = { ln: 'L/n', mmj: 'MMJ', vbs: 'VBS', wxs: 'WxS', n25: 'N25', vs: 'VS', other: '其他' };
+const DIFFS = ['E', 'N', 'H', 'X', 'M', 'A'];
+const DIFF_NAME = { E: 'EASY', N: 'NORMAL', H: 'HARD', X: 'EXPERT', M: 'MASTER', A: 'APPEND' };
+const DIFF_COLORS = { dark: { E: '#6fd49b', N: '#6fb0ff', H: '#f3bd5a', X: '#f07a86', M: '#c79cff', A: '#f09ad4' }, light: { E: '#238c52', N: '#2a63c9', H: '#b4770f', X: '#c53a47', M: '#7d44c4', A: '#b5367f' } };
+const diffColor = d => DIFF_COLORS[root.classList.contains('light') ? 'light' : 'dark'][d];
+const JP_ASSET = 'https://storage.sekai.best/sekai-jp-assets/thumbnail/music_jacket/';
+const TC_ASSET = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jacket/';
+const PAD_DESK = { l: 58, r: 26, t: 80, b: 128 };
+const PAD_MOBILE = { l: 42, r: 16, t: 160, b: 136 };
+const barH = () => { const b = document.querySelector('.bar'); return b ? Math.max(56, b.offsetHeight) : 56; };
+const PAD_OG = { l: 44, r: 44, t: 44, b: 44 };
+const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
+const own = (o, k) => k != null && Object.prototype.hasOwnProperty.call(o, k);
+const fmtTime = s => { const t = Math.round(s); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+const norm = s => String(s || '').normalize('NFKC').toLowerCase();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hex2rgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h.trim()); if (!m) return [200, 200, 200]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return `rgba(${r},${g},${b},${a})`; };
+const ZH_NUM = n => { const d = '零一二三四五六七八九'; if (n < 10) return d[n]; if (n < 100) return (n >= 20 ? d[Math.floor(n / 10)] : '') + '十' + (n % 10 ? d[n % 10] : ''); return d[Math.floor(n / 100)] + '百' + (n % 100 ? (n % 100 < 10 ? '零' + d[n % 100] : ZH_NUM(n % 100)) : ''); };
+
+/* ========== 建星 ========== */
+const CONST = {};
+((window.B30_CONSTS && window.B30_CONSTS.charts) || []).forEach(c => { (CONST[c.id] = CONST[c.id] || {})[c.d] = c.c; });
+const FUTURE = Date.now() + 3 * 365 * 86400e3;   // master 帶著未來幾個月的排程，那是預定發行日照畫；只有幾年後的佔位日期才當未定
+let seed = 7;
+const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+const stars = EP_SONGS.map((s, i) => {
+  const b = SONG_BPM[s.id] || [0, 0, 0, 0], m = SONG_META[s.id] || ['', '', '', '', '', '', '', 0, '', ''];
+  const units = m[1] ? m[1].split(',') : ['other'];
+  const lv = {}, notes = {};
+  DIFFS.forEach(d => { if (s.d[d]) { lv[d] = s.d[d][0]; notes[d] = s.d[d][1]; } });
+  const cc = CONST[s.id] || {};
+  const len = b[3] || Math.round(s.time) || 0;
+  let ts = m[2] ? Date.parse(m[2] + 'T00:00:00Z') : 0;
+  const tbd = ts > FUTURE; if (tbd) ts = 0;
+  return {
+    id: s.id, i, t: s.t, tc: m[0], units, u: units.find(u => u !== 'vs') || units[0], bpm: +b[0] || 0, bpmLo: +b[1] || 0, bpmHi: +b[2] || 0, len,
+    date: tbd ? '' : m[2], ts, future: ts > Date.now(), composer: m[3], lyricist: m[4], arranger: m[5], jp: m[6].includes('j'), nw: m[6].includes('w'), mv: m[7],
+    jkt: m[8] || ('jacket_s_' + String(s.id).padStart(3, '0')), creator: m[9], abnV: m[10] || '', abnS: m[11] || '', rate: s.rate, lv, notes,
+    c: { M: cc.master != null ? cc.master : (lv.M != null ? lv.M : null), A: cc.append != null ? cc.append : (lv.A != null ? lv.A : null) },
+    hasC: { M: cc.master != null, A: cc.append != null },
+    key: norm([s.t, m[0], m[3], m[4], m[5], m[9]].filter(Boolean).join(' ')),
+    px: .5, py: .5, cx: .5, cy: .5, ca: 0, ta: 1, r: 2, ph: rnd() * 6.283, tw: .45 + rnd() * .9, warm: rnd(), delay: 0
+  };
+});
+const byId = {}; stars.forEach(s => { byId[s.id] = s; });
+const maxNotes = Math.max(...stars.map(s => s.notes.M || 0));
+const composers = Object.create(null); stars.forEach(s => { if (s.composer) (composers[s.composer] = composers[s.composer] || []).push(s); });
+$('#openSub').textContent = ZH_NUM(stars.length) + '首歌，每一首是一顆星';
+
+/* ========== 狀態 ========== */
+const S = { proj: 'tempo', diff: 'M', units: new Set(UNIT_KEYS), tw: false, nw: false, q: '', sel: null, hover: null, cons: null, matches: null, catOn: false };
+const view = { k: 1, tx: 0, ty: 0, gk: 1, gtx: 0, gty: 0 };
+const PROJ = {
+  tempo: { x: s => s.bpm > 0 ? s.bpm : null, xl: 'BPM', yl: '定數', xfmt: v => Math.round(v), xtick: 'nice' },
+  era:   { x: s => s.ts || null, xl: '發行', yl: '定數', xfmt: v => new Date(v).getUTCFullYear(), xtick: 'year' },
+  dens:  { x: s => s.len > 0 ? s.len : null, xl: '曲長', yl: '音符／秒', xfmt: v => fmtTime(v), xtick: 'nice' }
+};
+const yOf = s => S.proj === 'dens' ? (s.notes[S.diff] && s.len ? s.notes[S.diff] / s.len : null) : s.c[S.diff];
+const xOf = s => PROJ[S.proj].x(s);
+const domCache = {};
+function domain() {
+  const k = S.proj + S.diff;
+  if (domCache[k]) return domCache[k];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  stars.forEach(s => { const x = xOf(s), y = yOf(s); if (x == null || y == null) return; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  const px = (x1 - x0) * .05 || 1, py = (y1 - y0) * .07 || 1;
+  return domCache[k] = { x0: x0 - px, x1: x1 + px, y0: y0 - py, y1: y1 + py };
+}
+
+/* ========== 畫布 ========== */
+const cv = $('#sky'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, PAD = PAD_DESK;
+const mobile = () => matchMedia('(max-width:760px)').matches;
+let resizeRaf = 0;
+function scheduleResize() { if (!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; resize(); }); }
+function resize() {
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  if (W === window.innerWidth && H === window.innerHeight && DPR === dpr && field && barH() + (OG ? 0 : mobile() ? 16 : 22) === PAD.t) return;   // 鍵盤、網址列抖動：什麼都沒變就不重建
+  DPR = dpr;
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const bh = barH(); root.style.setProperty('--bar-h', bh + 'px');
+  PAD = OG ? PAD_OG : mobile() ? Object.assign({}, PAD_MOBILE, { t: bh + 16 }) : Object.assign({}, PAD_DESK, { t: bh + 22 });
+  makeField(); layout(false); draw();
+}
+const rect = () => ({ x: PAD.l, y: PAD.t, w: Math.max(50, W - PAD.l - PAD.r), h: Math.max(50, H - PAD.t - PAD.b) });
+const toScreen = (px, py, r = rect()) => [r.x + px * r.w * view.k + view.tx, r.y + py * r.h * view.k + view.ty];
+const toWorld = (sx, sy, r = rect()) => [(sx - r.x - view.tx) / (r.w * view.k), (sy - r.y - view.ty) / (r.h * view.k)];
+
+/* 背景星場：幾千顆極細的遠星與一道銀河帶，畫一次存成底圖；指標移動時有一點點視差 */
+let field = null, fieldSeed = 0;
+function makeField() {
+  field = document.createElement('canvas'); field.width = Math.round((W + 40) * DPR); field.height = Math.round((H + 40) * DPR);
+  const g = field.getContext('2d'); g.scale(DPR, DPR);
+  const light = root.classList.contains('light');
+  let sd = 20250928; const rr = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+  const gauss = () => (rr() + rr() + rr() + rr() - 2) / 2;
+  const FW = W + 40, FH = H + 40;
+  const n = light ? 900 : Math.min(3400, Math.round(FW * FH / 420));
+  const ang = -0.52, cx0 = FW * .5, cy0 = FH * .5;   // 銀河帶：穿過畫面的斜向密集區
+  for (let i = 0; i < n; i++) {
+    let x, y;
+    if (!light && rr() < .42) { const t = (rr() - .5) * FW * 1.6, d = gauss() * FH * .11; x = cx0 + t * Math.cos(ang) - d * Math.sin(ang); y = cy0 + t * Math.sin(ang) + d * Math.cos(ang); }
+    else { x = rr() * FW; y = rr() * FH; }
+    const big = rr();
+    const size = big > .985 ? 1.1 + rr() * .9 : big > .9 ? .7 + rr() * .5 : .3 + rr() * .45;
+    const warm = rr();
+    const col = light ? [35, 30, 22] : warm < .18 ? [255, 236, 205] : warm < .3 ? [205, 220, 255] : [240, 243, 252];
+    const a = light ? .05 + rr() * .1 : (size > 1 ? .55 + rr() * .4 : .12 + rr() * .45);
+    g.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+    g.beginPath(); g.arc(x, y, size, 0, 6.283); g.fill();
+    if (!light && size > 1.2) { const h = g.createRadialGradient(x, y, 0, x, y, size * 5); h.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},.35)`); h.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = h; g.beginPath(); g.arc(x, y, size * 5, 0, 6.283); g.fill(); }
+  }
+  if (!light) {   // 銀河帶本身的霧
+    g.save(); g.translate(cx0, cy0); g.rotate(ang);
+    const band = g.createLinearGradient(0, -FH * .22, 0, FH * .22);
+    band.addColorStop(0, 'rgba(180,195,235,0)'); band.addColorStop(.5, 'rgba(190,200,240,.055)'); band.addColorStop(1, 'rgba(180,195,235,0)');
+    g.fillStyle = band; g.fillRect(-FW, -FH * .22, FW * 2, FH * .44); g.restore();
+  }
+}
+
+/* 星的光暈與星芒先畫成貼圖，每幀只 drawImage */
+const sprites = {}, spikes = {};
+let colors = {};
+function makeSprites() {
+  colors = {}; UNIT_KEYS.forEach(k => { colors[k] = cssVar(k) || '#ccc'; });
+  FONT_SERIF = cssVar('serif') || 'serif'; FONT_DISPLAY = cssVar('display') || 'serif';
+  ['ink', 'ink-2', 'ink-3', 'bg', 'gold', 'gold-2'].forEach(k => { colors[k] = cssVar(k); });
+  const light = root.classList.contains('light');
+  UNIT_KEYS.forEach(k => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    if (light) { grd.addColorStop(0, rgba(colors[k], 1)); grd.addColorStop(.12, rgba(colors[k], .8)); grd.addColorStop(.3, rgba(colors[k], .22)); grd.addColorStop(.6, rgba(colors[k], .05)); grd.addColorStop(1, rgba(colors[k], 0)); }
+    else { grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(.07, 'rgba(255,255,255,.95)'); grd.addColorStop(.16, rgba(colors[k], .85)); grd.addColorStop(.32, rgba(colors[k], .3)); grd.addColorStop(.6, rgba(colors[k], .07)); grd.addColorStop(1, rgba(colors[k], 0)); }
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128); sprites[k] = c;
+    // 衍射星芒：四道細長、往外淡出的光；書き下ろし另有一對斜向的
+    const mk = diag => { const s = document.createElement('canvas'); s.width = s.height = 256; const q = s.getContext('2d'); q.translate(128, 128); if (diag) q.rotate(Math.PI / 4);
+      const col = light ? colors[k] : '#ffffff';
+      for (let i = 0; i < 2; i++) { const L = diag ? 70 : 118; const lg = q.createLinearGradient(-L, 0, L, 0); lg.addColorStop(0, rgba(col, 0)); lg.addColorStop(.5, rgba(col, light ? .55 : .85)); lg.addColorStop(1, rgba(col, 0)); q.fillStyle = lg; q.fillRect(-L, -.7, L * 2, 1.4); q.rotate(Math.PI / 2); }
+      return s; };
+    spikes[k] = mk(false); spikes[k + '8'] = mk(true);
+  });
+}
+
+/* ========== 版面：算每顆星的目標位置與目標透明度 ========== */
+function visible(s) {
+  if (!S.units.has(s.u)) return false;
+  if (S.tw && (s.jp || s.future)) return false;   // 日服限定與台服預定（未來日期）都不算已實裝
+  if (S.nw && !s.nw) return false;
+  return xOf(s) != null && yOf(s) != null;
+}
+let shown = [];
+function layout(animate = true) {
+  const d = domain();
+  shown = [];
+  stars.forEach(s => {
+    const x = xOf(s), y = yOf(s), vis = visible(s);
+    if (x != null && y != null) { s.px = (x - d.x0) / (d.x1 - d.x0); s.py = 1 - (y - d.y0) / (d.y1 - d.y0); }
+    const match = S.matches ? S.matches.has(s.id) : true;
+    s.ta = !vis ? 0 : match ? 1 : .12;
+    if (vis) shown.push(s);
+    const n = s.notes[S.diff] || s.notes.M || 300;
+    s.r = 1.4 + 3 * Math.sqrt(n / maxNotes);
+    if (!animate || REDUCED) { s.cx = s.px; s.cy = s.py; s.ca = s.ta; }
+  });
+  if (S.sel && !visible(S.sel)) { S.sel = null; S.cons = null; panel.classList.remove('on'); }   // 選中的星被篩掉：收起面板
+  $('#stN').textContent = shown.filter(s => !S.matches || S.matches.has(s.id)).length;
+  $('#stAxis').textContent = '橫軸 ' + PROJ[S.proj].xl + '　縱軸 ' + PROJ[S.proj].yl;
+  if (S.catOn) renderCatalog();
+  dirty = true;
+}
+
+/* ========== 刻度 ========== */
+function niceTicks(lo, hi, n) {
+  const span = hi - lo; if (!(span > 0)) return [];
+  const step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), r = step0 / mag;
+  const step = (r >= 5 ? 5 : r >= 2 ? 2 : 1) * mag, out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+function yearTicks(lo, hi, wpx) {
+  const out = []; const a = new Date(lo), b = new Date(hi);
+  const months = (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + b.getUTCMonth() - a.getUTCMonth();
+  const stepM = months / (wpx / 96) > 6 ? 12 : months / (wpx / 96) > 2 ? 3 : 1;
+  let y = a.getUTCFullYear(), m = stepM === 12 ? 0 : Math.floor(a.getUTCMonth() / stepM) * stepM;
+  for (let i = 0; i < 400; i++) {
+    const t = Date.UTC(y, m, 1); if (t > hi) break;
+    if (t >= lo) out.push({ v: t, l: stepM === 12 ? String(y) : y + '·' + (m + 1) });
+    m += stepM; if (m >= 12) { m -= 12; y++; }
+  }
+  return out;
+}
+
+/* ========== 畫 ========== */
+let dirty = true, lastT = 0, raf = 0, introAt = 0, par = { x: 0, y: 0, tx: 0, ty: 0 };
+function frame(t) {
+  raf = 0;
+  const dt = Math.min(.05, (t - lastT) / 1000 || .016); lastT = t;
+  let moving = false;
+  const e = REDUCED ? 1 : 1 - Math.exp(-dt * 7.5);
+  const now = performance.now();
+  for (const s of stars) {
+    if (introAt && now < introAt + s.delay) { moving = true; continue; }
+    const dx = s.px - s.cx, dy = s.py - s.cy, da = s.ta - s.ca;
+    if (Math.abs(dx) > 1e-4 || Math.abs(dy) > 1e-4 || Math.abs(da) > 1e-3) { s.cx += dx * e; s.cy += dy * e; s.ca += da * e; moving = true; }
+    else { s.cx = s.px; s.cy = s.py; s.ca = s.ta; }
+  }
+  const ev = REDUCED ? 1 : 1 - Math.exp(-dt * 9);
+  if (Math.abs(view.gk - view.k) > 1e-3 || Math.abs(view.gtx - view.tx) > .2 || Math.abs(view.gty - view.ty) > .2) {
+    view.k += (view.gk - view.k) * ev; view.tx += (view.gtx - view.tx) * ev; view.ty += (view.gty - view.ty) * ev; moving = true;
+  } else { view.k = view.gk; view.tx = view.gtx; view.ty = view.gty; }
+  if (Math.abs(par.tx - par.x) > .05 || Math.abs(par.ty - par.y) > .05) { par.x += (par.tx - par.x) * ev; par.y += (par.ty - par.y) * ev; moving = true; }
+  if (P.state === 'playing' || P.state === 'ending') moving = true;
+  draw(t / 1000);
+  dirty = false;
+  if (moving) raf = requestAnimationFrame(frame);
+  else if (!REDUCED && document.visibilityState === 'visible') raf = setTimeout(() => { raf = 0; kick(); }, 48);   // 靜止時只為閃爍重畫，放慢到約 20 幀
+}
+function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+let FONT_SERIF = 'serif', FONT_DISPLAY = 'serif';
+const serifFont = () => FONT_SERIF, displayFont = () => FONT_DISPLAY;
+
+function draw(time = 0) {
+  const r = rect();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (field) ctx.drawImage(field, -20 + par.x, -20 + par.y, W + 40, H + 40);
+  const d = domain(), P = PROJ[S.proj];
+  const light = root.classList.contains('light');
+  const gold = colors.gold, ink = colors.ink;
+  /* 經緯網：髮絲金線，刻度字用襯線小型大寫；外圍一道細框與四角記號，像一張圖版 */
+  const [wx0, wy0] = toWorld(r.x, r.y, r), [wx1, wy1] = toWorld(r.x + r.w, r.y + r.h, r);
+  const dx0 = d.x0 + wx0 * (d.x1 - d.x0), dx1 = d.x0 + wx1 * (d.x1 - d.x0);
+  const dy1 = d.y0 + (1 - wy0) * (d.y1 - d.y0), dy0 = d.y0 + (1 - wy1) * (d.y1 - d.y0);
+  ctx.lineWidth = 1; ctx.strokeStyle = rgba(gold, light ? .5 : .32);
+  ctx.strokeRect(r.x + .5, r.y + .5, r.w - 1, r.h - 1);
+  ctx.strokeStyle = rgba(gold, light ? .7 : .55);
+  [[r.x, r.y, 1, 1], [r.x + r.w, r.y, -1, 1], [r.x, r.y + r.h, 1, -1], [r.x + r.w, r.y + r.h, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x + sx * 14 + .5, y + .5); ctx.lineTo(x + .5, y + .5); ctx.lineTo(x + .5, y + sy * 14 + .5); ctx.stroke(); });
+  ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+  ctx.strokeStyle = rgba(gold, light ? .22 : .11); ctx.fillStyle = rgba(gold, light ? .85 : .62);
+  ctx.font = '600 12px ' + FONT_DISPLAY; ctx.textBaseline = 'bottom';
+  const xt = P.xtick === 'year' ? yearTicks(dx0, dx1, r.w) : niceTicks(dx0, dx1, Math.max(3, Math.round(r.w / 110))).map(v => ({ v, l: String(P.xfmt(v)) }));
+  ctx.textAlign = 'center';
+  xt.forEach(({ v, l }) => { const sx = toScreen((v - d.x0) / (d.x1 - d.x0), 0, r)[0]; ctx.beginPath(); ctx.moveTo(sx, r.y); ctx.lineTo(sx, r.y + r.h); ctx.stroke(); if (sx > r.x + 24 && sx < r.x + r.w - 24) { ctx.fillText(l, sx, r.y + r.h - 7); ctx.beginPath(); ctx.strokeStyle = rgba(gold, light ? .6 : .4); ctx.moveTo(sx + .5, r.y + r.h - 1); ctx.lineTo(sx + .5, r.y + r.h - 5); ctx.stroke(); ctx.strokeStyle = rgba(gold, light ? .22 : .11); } });
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  niceTicks(dy0, dy1, Math.max(3, Math.round(r.h / 70))).forEach(v => { const sy = toScreen(0, 1 - (v - d.y0) / (d.y1 - d.y0), r)[1]; ctx.beginPath(); ctx.moveTo(r.x, sy); ctx.lineTo(r.x + r.w, sy); ctx.stroke(); if (sy > r.y + 44 && sy < r.y + r.h - 30) ctx.fillText(S.proj === 'dens' ? v.toFixed(1).replace(/\.0$/, '') : String(v), r.x + 9, sy - 8); });
+  /* 軸名：小型大寫＋短金線 */
+  ctx.fillStyle = rgba(gold, light ? .95 : .8); ctx.font = '600 12px ' + displayFont();
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '2.5px';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  const xl = P.xl.toUpperCase(); ctx.fillText(xl, r.x + r.w - 12, r.y + r.h - 22);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const yl = (S.proj === 'dens' ? '音符／秒' : '定數') + '  ' + DIFF_NAME[S.diff];
+  ctx.font = '500 12px ' + serifFont(); ctx.fillText(yl, r.x + 12, r.y + 11);
+  ctx.strokeStyle = rgba(gold, .6); ctx.beginPath(); ctx.moveTo(r.x + 12, r.y + 30.5); ctx.lineTo(r.x + 40, r.y + 30.5); ctx.stroke();
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+
+  /* 星座線：同作曲者依發行日連線，髮絲金線 */
+  const cons = own(composers, S.cons) ? composers[S.cons].filter(s => s.ca > .5).sort((a, b) => (a.ts || 9e15) - (b.ts || 9e15)) : null;
+  if (cons && cons.length > 1) {
+    ctx.strokeStyle = rgba(gold, light ? .75 : .6); ctx.lineWidth = .9; ctx.setLineDash([]); ctx.beginPath();
+    cons.forEach((s, i) => { const [sx, sy] = toScreen(s.cx, s.cy, r); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
+    ctx.stroke();
+    cons.forEach(s => { const [sx, sy] = toScreen(s.cx, s.cy, r); ctx.strokeStyle = rgba(gold, .9); ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(sx, sy, s.r * Math.pow(view.k, .3) + 4, 0, 6.283); ctx.stroke(); });
+  }
+
+  /* 星：暈、星芒、白熱星核。縮放時星略放大但不等比例膨脹 */
+  const zs = Math.pow(view.k, .3);
+  const tw = REDUCED ? 0 : 1;
+  for (const s of stars) {
+    if (s.ca < .01) continue;
+    const [sx, sy] = toScreen(s.cx, s.cy, r);
+    if (sx < r.x - 40 || sx > r.x + r.w + 40 || sy < r.y - 40 || sy > r.y + r.h + 40) continue;
+    const inCons = cons && s.composer === S.cons;
+    const dim = cons && cons.length && !inCons ? .16 : 1;   // 星座成員全被濾掉時不要把整片天空調暗
+    const sc = 1 - tw * .1 + tw * .1 * Math.sin(time * s.tw * 2.4 + s.ph) + tw * .04 * Math.sin(time * 7.1 + s.ph * 3);
+    const a = s.ca * dim * sc;
+    const rr = s.r * zs * (inCons ? 1.25 : 1);
+    const R = rr * 4.2;
+    ctx.globalAlpha = a;
+    ctx.drawImage(sprites[s.u], sx - R, sy - R, R * 2, R * 2);
+    if (rr > 2.7 || inCons) { const L = rr * (light ? 4.2 : 5.6); ctx.globalAlpha = a * Math.min(1, (rr - 2.2) / 2.2) * (light ? .7 : .9); ctx.drawImage(spikes[s.u], sx - L, sy - L, L * 2, L * 2); }
+    if (s.nw) { const L = rr * 4; ctx.globalAlpha = a * .8; ctx.drawImage(spikes[s.u + '8'], sx - L, sy - L, L * 2, L * 2); }
+    ctx.globalAlpha = a;
+    ctx.fillStyle = light ? colors[s.u] : (s.warm < .25 ? '#fff6e6' : '#ffffff');
+    ctx.beginPath(); ctx.arc(sx, sy, Math.max(.7, rr * .48), 0, 6.283); ctx.fill();
+    if (s.jp) { ctx.strokeStyle = rgba(colors[s.u], .7); ctx.lineWidth = .7; ctx.setLineDash([1.6, 2.4]); ctx.beginPath(); ctx.arc(sx, sy, rr * 2, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); }
+  }
+  ctx.globalAlpha = 1;
+
+  /* 標籤：選中、懸停、星座成員、搜尋符合（最多 40 顆）、放很大時全部 */
+  const labels = new Map();
+  if (view.k > 3.2) shown.forEach(s => { if (s.ca > .5 && (!S.matches || S.matches.has(s.id))) labels.set(s.id, 0); });
+  if (S.matches && S.matches.size <= 40) S.matches.forEach(id => { if (byId[id].ca > .5) labels.set(id, 1); });
+  if (cons) cons.forEach(s => labels.set(s.id, 1));
+  if (S.hover) labels.set(S.hover.id, 2);
+  if (S.sel) labels.set(S.sel.id, 3);
+  labels.forEach((lvl, id) => { const s = byId[id]; const [sx, sy] = toScreen(s.cx, s.cy, r); if (sx < r.x || sx > r.x + r.w || sy < r.y || sy > r.y + r.h) return; label(sx, sy, s, lvl); });
+  if (cons && cons.length) {
+    const s = cons[0]; const [sx, sy] = toScreen(s.cx, s.cy, r); const total = composers[S.cons].length;
+    ctx.font = '600 13px ' + displayFont(); if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+    const right = sx > r.x + r.w * .62; ctx.textAlign = right ? 'right' : 'left'; ctx.textBaseline = 'bottom'; ctx.lineWidth = 4; ctx.strokeStyle = rgba(colors.bg, .9); ctx.fillStyle = colors['gold-2'];
+    const txt = S.cons + '  —  星座 ' + cons.length + (cons.length < total ? ' / ' + total : '') + ' 首'; const lx = right ? sx - 12 : sx + 12;
+    ctx.strokeText(txt, lx, sy - 16); ctx.fillText(txt, lx, sy - 16); if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  }
+
+  /* 正在播放的星：三圈金環隨節拍與音量呼吸 */
+  if (P.star && P.a && P.state !== 'idle' && P.star.ca > .5) {
+    const s = P.star; const [sx, sy] = toScreen(s.cx, s.cy, r); const rr = s.r * zs;
+    let lv = 0; if (P.an && P.state === 'playing') { P.an.getByteFrequencyData(P.buf); let sum = 0; for (let i = 2; i < 24; i++) sum += P.buf[i]; lv = sum / (22 * 255); }
+    P.level += (lv - P.level) * .25;
+    const tt = P.a.currentTime || 0, bpm = s.bpm || 120, beat = ((tt * bpm / 60) % 1 + 1) % 1;
+    const env = REDUCED ? .5 : P.state === 'playing' ? Math.exp(-beat * 3.2) : .25;
+    const amp = (P.an ? (.25 + P.level * 1.3) : .65) * env;
+    for (let i = 0; i < 3; i++) { ctx.strokeStyle = rgba(gold, Math.max(0, (.55 - i * .15) * (.35 + amp))); ctx.lineWidth = i ? .8 : 1.1; ctx.beginPath(); ctx.arc(sx, sy, rr + 10 + i * 9 + amp * 14, 0, 6.283); ctx.stroke(); }
+  }
+  /* 選中／懸停的光環：細金環與一圈呼吸 */
+  const ring = (s, w, dash, pulse, col) => { const [sx, sy] = toScreen(s.cx, s.cy, r); const rr = s.r * zs; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.setLineDash(dash); ctx.beginPath(); ctx.arc(sx, sy, rr + 7 + pulse, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); };
+  if (S.hover && S.hover !== S.sel) ring(S.hover, .9, [2.5, 3], 0, rgba(ink, .7));
+  if (S.sel && S.sel.ca > .5) { ring(S.sel, 1, [], 0, rgba(gold, .95)); ring(S.sel, .7, [], 6 + (REDUCED ? 0 : 2.5 * Math.sin(time * 2.2)), rgba(gold, .35)); }
+  ctx.restore();
+}
+function label(sx, sy, s, lvl) {
+  const txt = s.tc || s.t;
+  ctx.font = (lvl >= 2 ? '600 13px ' : '500 11.5px ') + serifFont();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3.5; ctx.strokeStyle = rgba(colors.bg, .88); ctx.lineJoin = 'round';
+  ctx.fillStyle = lvl >= 2 ? colors.ink : lvl === 1 ? colors['gold-2'] : rgba(colors.ink, .72);
+  const x = sx + s.r * Math.pow(view.k, .3) + 9;
+  ctx.strokeText(txt, x, sy); ctx.fillText(txt, x, sy);
+}
+
+/* ========== 互動：滑鼠、觸控、滾輪 ========== */
+const pointers = new Map();
+let drag = null, pinch = null, lastTap = 0;
+function hit(mx, my) {
+  const r = rect(); let best = null, bd = 1e9; const zs = Math.pow(view.k, .3);
+  for (const s of stars) { if (s.ca < .4 || s.ta < .5) continue; const [sx, sy] = toScreen(s.cx, s.cy, r); if (sx < r.x || sx > r.x + r.w || sy < r.y || sy > r.y + r.h) continue; const dx = sx - mx, dy = sy - my, lim = s.r * zs + 9; const dd = dx * dx + dy * dy; if (dd < lim * lim && dd < bd) { bd = dd; best = s; } }
+  return best;
+}
+function zoomAt(mx, my, f) {
+  const r = rect(); const k = Math.min(14, Math.max(.55, view.gk * f)); f = k / view.gk;
+  view.gk = k; view.gtx = mx - r.x - (mx - r.x - view.gtx) * f; view.gty = my - r.y - (my - r.y - view.gty) * f; kick();
+}
+function resetView() { view.gk = 1; view.gtx = 0; view.gty = 0; kick(); }
+function flyTo(s, k) {
+  const r = rect(); const kk = k || Math.max(view.gk, 2.6);
+  const offX = !mobile() && !OG ? -160 : 0, offY = mobile() && S.sel ? -r.h * .18 : 0;   // 桌機把星讓給右側面板、手機讓給下方面板
+  view.gk = kk; view.gtx = r.w / 2 + offX - s.px * r.w * kk; view.gty = r.h / 2 + offY - s.py * r.h * kk; kick();
+}
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  closeMenu();
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; drag = null; return; }
+  drag = { x: e.clientX, y: e.clientY, tx: view.gtx, ty: view.gty, moved: false, t: e.pointerType };
+});
+cv.addEventListener('pointermove', e => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType === 'mouse' && !REDUCED) { par.tx = (e.clientX / W - .5) * -7; par.ty = (e.clientY / H - .5) * -5; kick(); }
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    zoomAt(pinch.mx, pinch.my, d / pinch.d); view.gtx += mx - pinch.mx; view.gty += my - pinch.my; view.k = view.gk; view.tx = view.gtx; view.ty = view.gty;
+    pinch = { d, mx, my }; return;
+  }
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (drag.moved || Math.hypot(dx, dy) > 4) { drag.moved = true; view.gtx = drag.tx + dx; view.gty = drag.ty + dy; view.tx = view.gtx; view.ty = view.gty; cv.classList.add('grab'); hideTip(); kick(); }
+    return;
+  }
+  if (e.pointerType === 'mouse') { const h = hit(e.clientX, e.clientY); const changed = h !== S.hover; if (changed) { S.hover = h; cv.classList.toggle('pick', !!h); dirty = true; kick(); } if (h) showTip(h, e.clientX, e.clientY, !changed); else hideTip(); }
+});
+const endPointer = e => {
+  pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null;
+  if (drag && !drag.moved && e.type === 'pointerup') {
+    const h = hit(e.clientX, e.clientY); const now = performance.now();
+    if (!h && now - lastTap < 320) { resetView(); lastTap = 0; } else { lastTap = now; select(h, true); }
+  }
+  drag = null; cv.classList.remove('grab');
+};
+cv.addEventListener('pointerup', endPointer); cv.addEventListener('pointercancel', endPointer);
+cv.addEventListener('pointerleave', () => { if (S.hover) { S.hover = null; cv.classList.remove('pick'); dirty = true; kick(); } hideTip(); });
+cv.addEventListener('wheel', e => { e.preventDefault(); const f = Math.exp(-(e.deltaMode ? e.deltaY * 20 : e.deltaY) * .0016); zoomAt(e.clientX, e.clientY, f); hideTip(); }, { passive: false });
+cv.addEventListener('dblclick', e => { e.preventDefault(); });
+$('#resetBtn').addEventListener('click', resetView);
+
+/* ========== 提示 ========== */
+const tip = $('#tip');
+function showTip(s, x, y, moveOnly) {
+  if (mobile()) return;
+  if (!moveOnly || !tip.classList.contains('on')) { const y0 = yOf(s), xv = xOf(s);
+  tip.innerHTML = `<span class="dot" style="--c:${colors[s.u]}"></span>${esc(s.tc || s.t)}<small>${S.proj === 'dens' ? fmtTime(xv) + ' · ' + y0.toFixed(2) + ' 音符／秒' : (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + ' · ' + DIFF_NAME[S.diff] + ' ' + (s.hasC[S.diff] ? y0.toFixed(1) : 'Lv.' + y0)}</small>`;
+  tip.classList.add('on'); }
+  const w = tip.offsetWidth, h = tip.offsetHeight; let L = x + 18, T = y + 18;
+  if (L + w > W - 10) L = x - w - 14; if (T + h > H - 10) T = y - h - 14;
+  tip.style.left = L + 'px'; tip.style.top = T + 'px';
+}
+function hideTip() { tip.classList.remove('on'); }
+
+/* ========== 選取與面板 ========== */
+const panel = $('#panel');
+function select(s, fly) {
+  S.sel = s || null;
+  if (!s) { panel.classList.remove('on'); S.cons = null; } else { renderPanel(s); panel.classList.add('on'); if (S.cons && s.composer !== S.cons) S.cons = null; if (fly) flyTo(s); }
+  if (S.catOn) markCatalog();
+  syncUrl(); dirty = true; kick();
+}
+function renderPanel(s) {
+  const c = colors[s.u];
+  const by = [s.creator && s.creator !== s.composer ? `<b>創作</b>${esc(s.creator)}` : '', s.composer ? `<b>作曲</b>${esc(s.composer)}` : '', s.lyricist && s.lyricist !== s.composer ? `<b>作詞</b>${esc(s.lyricist)}` : '', s.arranger && s.arranger !== s.composer ? `<b>編曲</b>${esc(s.arranger)}` : ''].filter(Boolean).join('　');
+  const tags = s.units.map(u => `<span class="tag" style="--c:${colors[u]}">${esc(UNIT_NAME[u])}</span>`).join('') + (s.jp ? '<span class="tag zh jp">台服未實裝</span>' : '') + (s.nw ? '<span class="tag zh" style="--c:var(--wxs)">書き下ろし</span>' : '') + (s.mv === 3 ? '<span class="tag mono">3D MV</span>' : s.mv === 2 ? '<span class="tag mono">2D MV</span>' : '');
+  const lvs = DIFFS.map(d => { const lv = s.lv[d]; if (lv == null) return `<div class="lv none" style="--d:${diffColor(d)}"><i>${d}</i><b>–</b><small>&nbsp;</small></div>`; const cc = (d === 'M' || d === 'A') && s.hasC[d] ? s.c[d].toFixed(1) : '&nbsp;'; return `<div class="lv${(d === S.diff) ? ' on' : ''}" style="--d:${diffColor(d)}" title="${DIFF_NAME[d]}${s.notes[d] ? '・' + s.notes[d] + ' 音符' : ''}"><i>${d}</i><b>${lv}</b><small>${cc}</small></div>`; }).join('');
+  const n = own(composers, s.composer) ? composers[s.composer].length : 0;
+  const dens = s.notes[S.diff] && s.len ? (s.notes[S.diff] / s.len).toFixed(2) : '–';
+  panel.innerHTML = `
+    <button class="close" type="button" aria-label="關閉" id="pX"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="ph"><div class="jk" style="--c:${c}"><div class="in"><img alt="" id="pJk" referrerpolicy="no-referrer" decoding="async" src="${JP_ASSET + esc(s.jkt)}.webp" data-alt="${TC_ASSET + esc(s.jkt)}.webp"></div></div>
+      <div class="pt"><h2>${esc(s.tc || s.t)}</h2>${s.tc && s.tc !== s.t ? `<div class="jp">${esc(s.t)}</div>` : ''}${by ? `<div class="by">${by}</div>` : ''}<div class="tags">${tags}</div></div></div>
+    <div class="rule"></div>
+    <div class="grid">
+      <div class="cell"><i>BPM</i><b>${s.bpm || '–'}</b>${s.bpm && s.bpmLo !== s.bpmHi ? `<small>${s.bpmLo}–${s.bpmHi}</small>` : ''}</div>
+      <div class="cell"><i>Length</i><b>${s.len ? fmtTime(s.len) : '–'}</b></div>
+      <div class="cell"><i>${s.jp ? '日服' : '台服'}${s.future ? '預定' : '發行'}</i><b class="zh">${esc(s.date || '未定')}</b></div>
+      <div class="cell"><i>Notes / s</i><b>${dens}</b><small>${DIFF_NAME[S.diff]}</small></div>
+      <div class="cell"><i>活動倍率</i><b>${s.rate || '–'}</b></div>
+      <div class="cell"><i>No.</i><b>${s.id}</b></div>
+    </div>
+    <div class="lvs">${lvs}</div>
+    <div class="pr">${(s.abnV || s.abnS) ? `<button class="btn" type="button" id="pPlay" aria-pressed="false"><svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg><span>試聽 60 秒</span></button>` : '<span class="pf" style="margin:0">這首還沒有音源</span>'}${s.abnV && s.abnS && s.abnV !== s.abnS ? `<div class="seg sm glass" id="pVer" role="group" aria-label="音源版本"><button type="button" data-v="virtual" aria-pressed="${vocalPref !== 'sekai'}">VS ver.</button><button type="button" data-v="sekai" aria-pressed="${vocalPref === 'sekai'}">Sekai ver.</button></div>` : ''}</div>
+    <div class="acts">
+      ${n > 1 ? `<button class="btn" type="button" id="pCons" aria-pressed="${S.cons === s.composer}"><svg viewBox="0 0 24 24"><path d="M5 19l5-9 4 5 5-10"/><circle cx="5" cy="19" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="14" cy="15" r="1.4"/><circle cx="19" cy="5" r="1.4"/></svg>同作曲者 ${n} 首</button>` : ''}
+      <a class="btn" href="./app.html?page=songs&q=${encodeURIComponent(s.tc || s.t)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>在曲庫打開</a>
+      <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1.5 1.5M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1.5-1.5"/></svg>複製連結</button>
+    </div>
+    <div class="pf">${S.proj === 'dens' ? '縱軸是每秒音符數：' + DIFF_NAME[S.diff] + ' 的音符數除以曲長。' : s.hasC[S.diff] ? '定數來自 pentatonic 難易度表（非官方）。' : '這張譜還沒有定數，暫以等級代替。'}</div>`;
+  const img = $('#pJk'); img.onload = () => img.classList.add('ok'); img.onerror = () => { if (img.dataset.alt) { img.src = img.dataset.alt; img.dataset.alt = ''; } else img.remove(); };
+  $('#pX').onclick = () => select(null);
+  const pc = $('#pCons'); if (pc) pc.onclick = () => { S.cons = S.cons === s.composer ? null : s.composer; pc.setAttribute('aria-pressed', S.cons === s.composer); if (S.cons && view.gk > 1.6) resetView(); dirty = true; kick(); };
+  $('#pShare').onclick = () => { syncUrl(); const u = location.href; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('已複製這顆星的連結'), () => toast(u)); };
+  const pp = $('#pPlay'); if (pp) pp.onclick = () => { if (P.star === s && P.a) togglePlay(); else playStar(s); };
+  const pv = $('#pVer'); if (pv) pv.onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; vocalPref = b.dataset.v; try { localStorage.setItem('sekai-starmap-vocal', vocalPref); } catch (err) {} pv.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === vocalPref)); if (P.star === s && P.a) playStar(s); };
+  syncPanelPlay();
+}
+
+/* ========== 試聽與星空電台 ==========
+   與站上曲庫頁同一個音源（全曲版），第 10 秒起 60 秒、淡入淡出 3 秒；帶 Referer 會被擋，整頁已是 no-referrer。
+   先以 crossOrigin 載入好接分析器（正式站有 CORS 標頭），不行就退回一般載入（只少了隨音量呼吸）；日服桶沒有再試台服桶。 */
+const AUDIO = ['https://storage.sekai.best/sekai-jp-assets/music/long/', 'https://storage.sekai.best/sekai-tc-assets/music/long/'];
+const PV = { start: 10, clip: 60, fin: 3, fout: 3, vol: .88 };
+let vocalPref = 'virtual'; try { vocalPref = localStorage.getItem('sekai-starmap-vocal') || 'virtual'; } catch (e) {}
+const P = { a: null, star: null, abn: '', state: 'idle', radio: false, hist: [], actx: null, an: null, buf: null, level: 0, fade: 0, startAt: 0, endAt: 0 };
+const np = $('#np'), radioBtn = $('#radioBtn');
+const abnOf = s => vocalPref === 'sekai' ? (s.abnS || s.abnV) : (s.abnV || s.abnS);
+const verName = (s, abn) => (abn && abn === s.abnS && s.abnS !== s.abnV) ? 'SEKAI ver.' : 'VIRTUAL SINGER ver.';
+function fadeTo(a, target, dur, done) {
+  cancelAnimationFrame(P.fade); const v0 = a.volume, t0 = performance.now();
+  const step = () => { if (P.a !== a) return; const k = Math.min(1, (performance.now() - t0) / (dur * 1000)); try { a.volume = v0 + (target - v0) * k; } catch (e) {} if (k < 1) P.fade = requestAnimationFrame(step); else if (done) done(); };
+  P.fade = requestAnimationFrame(step);
+}
+function stopAudio(fade) {
+  const a = P.a; if (!a) return; P.a = null; P.an = null; cancelAnimationFrame(P.fade);
+  const kill = () => { try { a.pause(); a.removeAttribute('src'); a.load(); } catch (e) {} };
+  if (fade && !a.paused) { const t0 = performance.now(), v0 = a.volume; const step = () => { const k = Math.min(1, (performance.now() - t0) / 250); try { a.volume = v0 * (1 - k); } catch (e) {} if (k < 1) requestAnimationFrame(step); else kill(); }; requestAnimationFrame(step); } else kill();
+}
+function wireAnalyser(a) {
+  try {
+    if (!P.actx) P.actx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = P.actx.createMediaElementSource(a), an = P.actx.createAnalyser(); an.fftSize = 256; an.smoothingTimeConstant = .7;
+    src.connect(an); an.connect(P.actx.destination); P.an = an; P.buf = new Uint8Array(an.frequencyBinCount);
+    if (P.actx.state === 'suspended') P.actx.resume();
+  } catch (e) { P.an = null; }
+}
+function playStar(s, opts = {}) {
+  const abn = abnOf(s); if (!abn) { toast('這首還沒有音源'); if (P.radio) setTimeout(radioNext, 300); return; }
+  stopAudio(true);
+  P.star = s; P.abn = abn; P.state = 'loading'; P.level = 0; P.startAt = 0; P.endAt = PV.clip;
+  const a = new Audio(); P.a = a; a.preload = 'auto'; a.volume = 0;
+  let bucket = 0, cors = true;
+  const load = () => { if (cors) a.crossOrigin = 'anonymous'; else a.removeAttribute('crossorigin'); a.src = AUDIO[bucket] + abn + '/' + abn + '.mp3'; a.load(); };
+  a.onerror = () => { if (P.a !== a) return; if (cors) { cors = false; load(); return; } if (bucket === 0) { bucket = 1; cors = true; load(); return; } P.a = null; P.state = 'idle'; toast('音源載入失敗'); updateNp(); if (P.radio) setTimeout(radioNext, 600); };
+  a.onloadedmetadata = () => { if (P.a !== a) return; const st = a.duration > PV.start + PV.clip + 4 ? PV.start : 0; P.startAt = st; P.endAt = Math.min(a.duration || 1e9, st + PV.clip); try { a.currentTime = st; } catch (e) {} };
+  a.oncanplay = () => { if (P.a !== a || P.state !== 'loading') return; if (P.startAt && a.currentTime < P.startAt - 1) { try { a.currentTime = P.startAt; } catch (e) {} }
+    a.play().then(() => { if (P.a !== a) return; P.state = 'playing'; if (cors) wireAnalyser(a); fadeTo(a, PV.vol, PV.fin); updateNp(); kick(); }).catch(() => { if (P.a !== a) return; P.state = 'paused'; toast('瀏覽器擋了自動播放，請再按一次播放'); updateNp(); }); };
+  a.ontimeupdate = () => { if (P.a !== a) return; if (P.state === 'playing' && a.currentTime >= P.endAt - PV.fout) { P.state = 'ending'; fadeTo(a, 0, PV.fout, () => { if (P.a !== a) return; stopAudio(false); P.state = 'idle'; if (P.radio) radioNext(); else updateNp(); }); } updateNp(true); };
+  a.onended = () => { if (P.a !== a) return; stopAudio(false); P.state = 'idle'; if (P.radio) radioNext(); else updateNp(); };
+  load(); updateNp();
+  if (opts.fly) { if (!mobile()) select(s, true); else { if (S.sel) select(null); flyTo(s, Math.max(view.gk, 1.8)); } }
+}
+function togglePlay() {
+  const a = P.a; if (!a) { if (P.star) playStar(P.star); else if (S.sel) playStar(S.sel); return; }
+  if (P.state === 'playing' || P.state === 'ending') { a.pause(); P.state = 'paused'; }
+  else if (P.state === 'paused') { a.play().then(() => { P.state = 'playing'; if (P.actx && P.actx.state === 'suspended') P.actx.resume(); kick(); updateNp(); }).catch(() => {}); }
+  updateNp();
+}
+function radioNext() {
+  const base = shown.filter(s => (!S.matches || S.matches.has(s.id)) && (s.abnV || s.abnS));
+  let pool = base.filter(s => s !== P.star && !P.hist.includes(s.id));   // 先挑沒播過的；都播過就繞回來，但不要連播同一首
+  if (!pool.length) pool = base.filter(s => s !== P.star);
+  if (!pool.length) pool = base;
+  if (!pool.length) { P.radio = false; radioBtn.setAttribute('aria-pressed', 'false'); updateNp(); toast('這片天空沒有可播的星'); return; }
+  const s = pool[Math.floor(Math.random() * pool.length)];
+  P.hist = P.hist.concat(s.id).slice(-12);
+  playStar(s, { fly: true });
+}
+function updateNp(timeOnly) {
+  const s = P.star, a = P.a;
+  if (!s || P.state === 'idle' || !a) { np.classList.remove('on'); syncPanelPlay(); dirty = true; return; }
+  if (!timeOnly) { np.classList.add('on'); $('#npTitle').textContent = s.tc || s.t; const img = $('#npJk'); const url = JP_ASSET + s.jkt + '.webp'; if (img.dataset.src !== url) { img.dataset.src = url; img.src = url; img.onerror = () => { if (!img.dataset.alt) { img.dataset.alt = '1'; img.src = TC_ASSET + s.jkt + '.webp'; } }; } }
+  const live = P.state === 'playing' || P.state === 'ending' || P.state === 'loading';
+  np.classList.toggle('paused', !live); $('#npPlay').classList.toggle('playing', live);
+  const cur = Math.max(0, (a.currentTime || 0) - P.startAt), total = Math.max(1, (P.endAt - P.startAt) || PV.clip);
+  $('#npSub').textContent = (P.radio ? '星空電台 · ' : '') + verName(s, P.abn) + ' · ' + (P.state === 'loading' ? '載入中' : fmtTime(cur) + ' / ' + fmtTime(total));
+  $('#npBar').style.width = Math.min(100, cur / total * 100) + '%';
+  if (!timeOnly) syncPanelPlay();
+}
+function syncPanelPlay() {
+  const b = $('#pPlay'); if (!b || !S.sel) return;
+  const live = P.star === S.sel && P.a && (P.state === 'playing' || P.state === 'loading' || P.state === 'ending');
+  b.setAttribute('aria-pressed', live); b.querySelector('span').textContent = live ? '暫停' : (P.star === S.sel && P.a && P.state === 'paused' ? '繼續' : '試聽 60 秒');
+}
+$('#npPlay').addEventListener('click', togglePlay);
+$('#npNext').addEventListener('click', radioNext);
+$('#npX').addEventListener('click', () => { stopAudio(true); P.state = 'idle'; P.radio = false; radioBtn.setAttribute('aria-pressed', 'false'); updateNp(); });
+$('#npT').addEventListener('click', () => { if (P.star) select(P.star, true); });
+$('#npT').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (P.star) select(P.star, true); } });
+radioBtn.addEventListener('click', () => {
+  P.radio = !P.radio; radioBtn.setAttribute('aria-pressed', P.radio);
+  if (P.radio) { if (P.a && P.state !== 'idle') { if (P.state === 'paused') togglePlay(); else updateNp(); } else radioNext(); }
+  else updateNp();
+});
+
+/* ========== 搜尋 ========== */
+const q = $('#q'), qn = $('#qn'), qbox = q.parentElement;
+function applySearch() {
+  const t = norm(q.value.trim());
+  S.q = t;
+  if (!t) { S.matches = null; qn.textContent = ''; qbox.classList.remove('has'); }
+  else {
+    const toks = t.split(/\s+/).filter(Boolean);
+    S.matches = new Set(stars.filter(s => toks.every(k => s.key.includes(k))).map(s => s.id));
+    qn.textContent = S.matches.size + ' 顆'; qbox.classList.add('has');
+  }
+  layout();
+}
+q.addEventListener('input', applySearch);
+q.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && S.matches && S.matches.size) { const first = shown.filter(s => S.matches.has(s.id)).sort((a, b) => a.py - b.py)[0]; if (first) select(first, true); q.blur(); }
+  if (e.key === 'Escape') { q.value = ''; applySearch(); refocus(); q.blur(); }
+});
+$('#qx').addEventListener('click', () => { q.value = ''; applySearch(); refocus(); q.focus(); });
+
+/* ========== 篩選 ========== */
+const unitsBox = $('#units');
+function renderUnits() {
+  const cnt = {}; stars.forEach(s => { cnt[s.u] = (cnt[s.u] || 0) + 1; });
+  unitsBox.innerHTML = UNIT_KEYS.map(k => `<button class="chip${k === 'other' ? ' zh' : ''}" type="button" data-u="${k}" aria-pressed="${S.units.has(k)}" style="--c:${colors[k]}" title="${esc(UNIT_NAME[k])}"><span class="dot"></span>${UNIT_SHORT[k]}<span class="k">${cnt[k] || 0}</span></button>`).join('');
+}
+unitsBox.addEventListener('click', e => {
+  const b = e.target.closest('[data-u]'); if (!b) return; const k = b.dataset.u;
+  if (e.altKey || e.metaKey || (S.units.size === 1 && S.units.has(k))) { S.units = new Set(UNIT_KEYS); }   // 只剩一團時再點 → 全開
+  else if (S.units.size === UNIT_KEYS.length && !e.shiftKey) { S.units = new Set([k]); }                       // 全開時點一團 → 只看它
+  else if (S.units.has(k)) S.units.delete(k); else S.units.add(k);
+  unitsBox.querySelectorAll('[data-u]').forEach(x => x.setAttribute('aria-pressed', S.units.has(x.dataset.u)));
+  layout(); refocus(); syncUrl();
+});
+$('#proj').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; setProj(b.dataset.p); });
+function refocus() { if (S.sel && visible(S.sel)) flyTo(S.sel, Math.max(1.6, view.gk)); else resetView(); }
+function setProj(p) { if (!own(PROJ, p)) return; S.proj = p; $('#proj').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.p === p)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
+$('#diff').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (!b) return; setDiff(b.dataset.d); });
+function setDiff(d) { S.diff = d; $('#diff').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.d === d)); layout(); if (S.sel) renderPanel(S.sel); refocus(); syncUrl(); }
+$('#twChip').addEventListener('click', e => { S.tw = !S.tw; e.currentTarget.setAttribute('aria-pressed', S.tw); layout(); refocus(); syncUrl(); });
+$('#nwChip').addEventListener('click', e => { S.nw = !S.nw; e.currentTarget.setAttribute('aria-pressed', S.nw); layout(); refocus(); syncUrl(); });
+
+/* ========== 導覽 ========== */
+const menu = $('#tour');
+function closeMenu() { menu.classList.remove('on'); $('#tourBtn').setAttribute('aria-expanded', 'false'); }
+$('#tourBtn').addEventListener('click', e => {
+  e.stopPropagation(); const b = e.currentTarget.getBoundingClientRect();
+  menu.classList.toggle('on'); e.currentTarget.setAttribute('aria-expanded', menu.classList.contains('on')); menu.style.top = (b.bottom + 10) + 'px'; menu.style.left = Math.max(10, Math.min(W - menu.offsetWidth - 10, b.right - menu.offsetWidth)) + 'px';
+});
+document.addEventListener('click', e => { if (!menu.contains(e.target)) closeMenu(); });
+menu.addEventListener('click', e => {
+  const b = e.target.closest('[data-t]'); if (!b) return; closeMenu();
+  const pool = () => shown.filter(s => !S.matches || S.matches.has(s.id));   // 要在切完投影之後才取，setProj 會同步重排 shown
+  const pick = (f, hi) => pool().filter(s => f(s) != null).sort((a, b) => hi ? f(b) - f(a) : f(a) - f(b))[0];
+  const map = {
+    fast: () => { if (S.proj !== 'tempo') setProj('tempo'); return pick(s => s.bpm || null, true); },
+    slow: () => { if (S.proj !== 'tempo') setProj('tempo'); return pick(s => s.bpm || null, false); },
+    hard: () => { if (S.proj === 'dens') setProj('tempo'); return pick(s => s.c[S.diff], true); },
+    long: () => { if (S.proj !== 'dens') setProj('dens'); return pick(s => s.len || null, true); },
+    dense: () => { if (S.proj !== 'dens') setProj('dens'); return pick(s => s.notes[S.diff] && s.len ? s.notes[S.diff] / s.len : null, true); },
+    new: () => { if (S.proj !== 'era') setProj('era'); return pick(s => s.ts || null, true); },
+    old: () => { if (S.proj !== 'era') setProj('era'); return pick(s => s.ts || null, false); },
+    rand: () => { const p = pool(); return p[Math.floor(Math.random() * p.length)]; }
+  };
+  const s = map[b.dataset.t](); if (s) select(s, true);
+});
+
+/* ========== 星表 ========== */
+const catalog = $('#catalog'), catList = $('#catList'), catSort = $('#catSort');
+$('#catBtn').addEventListener('click', e => { S.catOn = !S.catOn; e.currentTarget.setAttribute('aria-pressed', S.catOn); catalog.classList.toggle('on', S.catOn); if (S.catOn) { renderCatalog(); if (mobile()) select(null); } });
+catSort.addEventListener('change', renderCatalog);
+function renderCatalog() {
+  const list = shown.filter(s => !S.matches || S.matches.has(s.id)).slice();
+  const m = catSort.value;
+  list.sort((a, b) => m === 't' ? (a.tc || a.t).localeCompare(b.tc || b.t, 'zh-Hant') : m === 'new' ? (b.ts || 0) - (a.ts || 0) : m === 'x' ? xOf(b) - xOf(a) : yOf(b) - yOf(a));
+  $('#catN').textContent = list.length + ' 首';
+  catList.innerHTML = list.map(s => { const y = yOf(s), x = xOf(s); return `<li data-id="${s.id}" tabindex="0" role="button" class="${S.sel === s ? 'on' : ''}"><span class="dot" style="--c:${colors[s.u]}"></span><span class="t">${esc(s.tc || s.t)}${s.jp ? '<small>日</small>' : ''}${s.nw ? '<small>書</small>' : ''}</span><span class="v">${S.proj === 'dens' ? y.toFixed(2) + '<small>' + fmtTime(x) + '</small>' : (s.hasC[S.diff] ? y.toFixed(1) : 'Lv.' + y) + '<small>' + (S.proj === 'era' ? (s.date ? (s.future ? '預定 ' : '') + s.date : '未定') : s.bpm + ' BPM') + '</small>'}</span></li>`; }).join('');
+}
+catList.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-id]')) { e.preventDefault(); e.target.closest('[data-id]').click(); } });
+catList.addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (!li) return; select(byId[+li.dataset.id], true); if (mobile()) { S.catOn = false; catalog.classList.remove('on'); $('#catBtn').setAttribute('aria-pressed', 'false'); } });
+function markCatalog() { catList.querySelectorAll('li').forEach(li => li.classList.toggle('on', S.sel && +li.dataset.id === S.sel.id)); }
+
+/* ========== 主題、說明、鍵盤、網址 ========== */
+$('#themeBtn').addEventListener('click', () => { root.classList.toggle('light'); try { localStorage.setItem('sekai-starmap-theme', root.classList.contains('light') ? 'light' : 'dark'); } catch (e) {} makeSprites(); makeField(); renderUnits(); if (S.sel) renderPanel(S.sel); if (S.catOn) renderCatalog(); dirty = true; kick(); });
+function openHelp() { $('#help').classList.add('on'); $('#helpX').focus(); }
+function closeHelp() { $('#help').classList.remove('on'); $('#helpBtn').focus(); }
+$('#helpBtn').addEventListener('click', openHelp);
+$('#helpX').addEventListener('click', closeHelp);
+$('#help').addEventListener('click', e => { if (e.target === e.currentTarget) closeHelp(); });
+document.addEventListener('keydown', e => {
+  const typing = /^(input|select|textarea)$/i.test((e.target && e.target.tagName) || '');
+  if (e.key === '/' && !typing) { e.preventDefault(); q.focus(); q.select(); }
+  else if (e.key === 'Tab' && $('#help').classList.contains('on')) { e.preventDefault(); $('#helpX').focus(); }   // 對話框開著時焦點留在裡面
+  else if (e.key === 'Escape') { if ($('#help').classList.contains('on')) closeHelp(); else if (menu.classList.contains('on')) closeMenu(); else if (!typing && S.sel) select(null); }
+  else if (e.key === '?' && !typing) { if ($('#help').classList.contains('on')) closeHelp(); else openHelp(); }
+  else if (e.key === ' ' && !typing && P.star && !(e.target && /^button$/i.test(e.target.tagName || ''))) { e.preventDefault(); togglePlay(); }
+});
+let toastT = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
+function syncUrl() {
+  if (OG) return;
+  const p = new URLSearchParams();
+  if (S.proj !== 'tempo') p.set('p', S.proj); if (S.diff !== 'M') p.set('d', S.diff);
+  if (S.units.size !== UNIT_KEYS.length) p.set('u', [...S.units].join(','));
+  if (S.tw) p.set('tw', '1'); if (S.nw) p.set('nw', '1'); if (S.sel) p.set('s', S.sel.id); if (S.cons) p.set('c', S.cons);
+  const qs = p.toString(); history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+}
+function readUrl() {
+  const p = new URLSearchParams(location.search);
+  if (own(PROJ, p.get('p'))) setProj(p.get('p'));
+  if (p.get('d') === 'A') setDiff('A');
+  if (p.get('u')) { const u = new Set(p.get('u').split(',').filter(k => UNIT_KEYS.includes(k))); if (u.size) { S.units = u; unitsBox.querySelectorAll('[data-u]').forEach(x => x.setAttribute('aria-pressed', S.units.has(x.dataset.u))); } }
+  if (p.get('tw') === '1') { S.tw = true; $('#twChip').setAttribute('aria-pressed', 'true'); }
+  if (p.get('nw') === '1') { S.nw = true; $('#nwChip').setAttribute('aria-pressed', 'true'); }
+  if (own(composers, p.get('c'))) S.cons = p.get('c');
+  const s = byId[+p.get('s')];
+  layout(false);
+  if (s && visible(s)) { select(s, true); view.k = view.gk; view.tx = view.gtx; view.ty = view.gty; } else syncUrl();
+}
+addEventListener('resize', scheduleResize);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
+/* 畫布上的字不會自己觸發網頁字型載入：先把要用的字型請進來，到了再重畫一次 */
+if (document.fonts && document.fonts.load) Promise.all(['600 12px "Cormorant Garamond"', '500 12px "Noto Serif TC"', '600 13px "Noto Serif TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { resize(); });
+
+/* ========== 開場 ========== */
+makeSprites(); renderUnits(); resize();
+readUrl();
+if (!REDUCED && !OG) {   // 星從中心綻開，依橫軸位置錯開一點點；第一次進來另有標題開場
+  stars.forEach(s => { if (s.ca >= 1 && s !== S.sel) { s.cx = .5 + (s.px - .5) * .08; s.cy = .5 + (s.py - .5) * .08; s.ca = 0; s.delay = 500 + s.px * 520 + Math.random() * 180; } });
+  introAt = performance.now();
+  setTimeout(() => { introAt = 0; }, 1800);
+  let seen = false; try { seen = sessionStorage.getItem('sekai-starmap-opened') === '1'; sessionStorage.setItem('sekai-starmap-opened', '1'); } catch (e) {}
+  if (!seen && !S.sel) { const o = $('#opening'); o.hidden = false; setTimeout(() => o.remove(), 3400); } else $('#opening').remove();
+} else $('#opening').remove();
+window.__starmap = { view, S, P };   // 給煙霧測試讀視角與狀態用
+kick();
+</script>
+</body>
+</html>

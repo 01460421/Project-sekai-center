@@ -12,6 +12,17 @@
 set -u
 msg="$1"; shift
 
+# 還沒產生出來的檔案（例如某支建置腳本這輪沒寫檔）不列入：git add 遇到不存在的路徑會直接失敗
+keep=()
+for f in "$@"; do
+  if [ -e "$f" ] || git ls-files --error-unmatch -- "$f" >/dev/null 2>&1; then keep+=("$f"); fi
+done
+if [ ${#keep[@]} -eq 0 ]; then
+  echo "沒有任何檔案可提交"
+  exit 0
+fi
+set -- "${keep[@]}"
+
 if [ -z "$(git status --porcelain -- "$@")" ]; then
   echo "沒有新資料，不提交"
   exit 0
