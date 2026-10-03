@@ -9404,6 +9404,7 @@ class Component extends DCLogic {
 
   /* ---------- 導航 ---------- */
   go(p, opts) {
+    if (this.EXTERNAL && this.EXTERNAL[p]) { if (p === 'x_starmap') this.openStarmap(true); else location.href = this.EXTERNAL[p]; return; }
     const changed = p !== this.state.page, silent = !!(opts && opts.silent);
     if (changed) { this._scrollPos = this._scrollPos || {}; this._scrollPos[this.state.page] = { y: window.scrollY || 0, dbN: this.state.dbN }; }   // 返回鍵時還原捲動位置
     if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
@@ -9938,7 +9939,9 @@ class Component extends DCLogic {
     }
     return out.slice(0, 24);
   }
-  NAV_OPEN_DEFAULT = ['主頁', '帳號', '即時資料'];
+  NAV_OPEN_DEFAULT = ['主頁', '帳號', '即時資料', '特別專案'];
+  /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -10062,6 +10065,8 @@ class Component extends DCLogic {
       ['計算工具', [['calc', '計算中心', '#7fb4f7'], ['haruki', 'Haruki 專區', '#f0a8d0'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
       ['遊戲', [['guesswho', '猜角色', '#ff9db4'], ['guessjacket', '猜封面', '#5ec9f2']]],
       ['說明與社群', [['tut', '教學大全', '#b8e561'], ['qa', '提問所', '#8be0d0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0'], ['credits', '製作與致謝', '#ffa8c0']]],
+      /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁） */
+      ['特別專案', [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa']]],
     ];
     const navItemOf = {}; navBase.forEach(([, items]) => items.forEach(it => { navItemOf[it[0]] = it; }));
     const visits = s.visits || {};
@@ -10074,7 +10079,7 @@ class Component extends DCLogic {
         .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
       ['車隊', [['car', '私車排班', '#9aa9ff'], ['bot', '菜根機器人', '#b8e561']]],
     ].concat(fav.length >= 3 ? [['常用 · 依使用次數', fav]] : []).concat(navBase);
-    this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
+    this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0]))).filter(id => !/^x_/.test(id));   // 外部作品頁不進自訂版面與快速清單
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
     const navHidden = this.layoutOf('nav').hidden;
     const navGroups = navSpec.map(([label, items]) => {
@@ -12923,6 +12928,7 @@ class Component extends DCLogic {
         ]},
         { label: '本站工具', items: [
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
+          { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },

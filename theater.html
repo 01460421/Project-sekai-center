@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070e">
+<title>衝榜劇場 — 前百名的每一場 | Project SEKAI 資源中心</title>
+<meta name="description" content="Project SEKAI 台服活動前百名的逐場紀錄：追蹤器每 15 秒掃一次排名，把每一局的時間、活動 P 增量與名次記下來。脈動牆、節奏熱圖、選手剖析與即時紀錄，可拖曳時間回放整期。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="衝榜劇場 — 前百名的每一場">
+<meta property="og:description" content="每 15 秒一次的心跳：前百名每一局的時間、增量與名次，拖曳時間回放整期活動。">
+<meta property="og:url" content="https://project-sekai-center.com/theater.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/theater.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/theater.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://games.project-sekai-center.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>try{var _q=new URLSearchParams(location.search);var _t=localStorage.getItem('sekai-theater-theme')||localStorage.getItem('sekai-starmap-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
+if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))document.documentElement.classList.add('og');}catch(e){}</script>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#05070e; --bg-2:#0a0e1b; --ink:#ebe4d3; --ink-2:#b3ab98; --ink-3:#87826f;
+  --gold:#d4b673; --gold-2:#ecdcaa; --line:rgba(212,182,115,.17); --line-2:rgba(212,182,115,.38); --hair:rgba(235,228,211,.07);
+  --glass:rgba(6,9,19,.6); --glass-2:rgba(8,11,23,.86);
+  --rose:#f49474; --sky:#7fb0f2; --mint:#6edbd6;
+  --serif:'Noto Serif TC','Cormorant Garamond',Georgia,'Songti TC','PMingLiU',serif;
+  --display:'Cormorant Garamond','Noto Serif TC',Georgia,'Times New Roman',serif;
+  --shadow:0 18px 50px rgba(0,0,0,.55);
+  --ease:cubic-bezier(.32,.72,.24,1);
+  --grain:.07; --vig:rgba(0,0,0,.6);
+}
+:root.light{
+  color-scheme:light;
+  --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#6b6355;
+  --gold:#7f6220; --gold-2:#5e4714; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
+  --glass:rgba(249,245,236,.76); --glass-2:rgba(249,245,236,.94);
+  --rose:#c8472a; --sky:#3d5fc8; --mint:#137a76;
+  --shadow:0 18px 50px rgba(60,45,20,.16);
+  --grain:.1; --vig:rgba(80,60,20,.2);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--serif);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:1.5px solid var(--gold);outline-offset:2px}
+#stage:focus-visible{outline-offset:-3px}
+body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;opacity:.8;filter:blur(36px);
+  background:radial-gradient(42% 36% at 12% 20%,color-mix(in oklab,var(--sky) 20%,transparent),transparent 70%),radial-gradient(36% 32% at 88% 14%,color-mix(in oklab,var(--rose) 16%,transparent),transparent 70%),radial-gradient(48% 40% at 72% 90%,color-mix(in oklab,var(--mint) 14%,transparent),transparent 70%),radial-gradient(30% 28% at 48% 55%,color-mix(in oklab,var(--gold) 8%,transparent),transparent 70%);
+  animation:drift 90s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.07)}}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none;cursor:crosshair;outline:none}
+#stage.grab{cursor:grabbing}#stage.pick{cursor:pointer}
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;background-size:240px 240px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+:root.light .grain{mix-blend-mode:multiply}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(115% 88% at 50% 46%,transparent 56%,var(--vig) 100%)}
+
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);cursor:pointer;color:var(--ink-2);box-shadow:var(--shadow);transition:color .25s,border-color .25s,background .25s;flex:none}
+.ib:hover{color:var(--gold-2);border-color:var(--line-2)}
+.ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ib[aria-pressed=true]{color:var(--gold-2);border-color:var(--gold);background:color-mix(in oklab,var(--gold) 14%,var(--glass))}
+.sc{font-family:var(--display);font-weight:600;letter-spacing:2.5px;text-transform:uppercase}
+
+/* ===== 頂欄 ===== */
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px 0;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;flex-wrap:wrap}
+.bar>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand b{font-family:var(--serif);font-weight:600;font-size:16.5px;letter-spacing:1.5px;line-height:1.05;display:block}
+.brand small{display:block;font-size:8.5px;letter-spacing:3.4px;color:var(--gold);font-weight:600;line-height:1;margin-top:4px;font-family:var(--display);text-transform:uppercase}
+.evsel{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 16px;border-radius:999px;flex:0 1 auto;min-width:0}
+.evsel select{font-family:var(--serif);font-size:13.5px;font-weight:600;letter-spacing:.5px;background:transparent;color:var(--ink);border:0;outline:0;max-width:300px;min-width:0;text-overflow:ellipsis;cursor:pointer}
+.evsel .live{display:none;align-items:center;gap:6px;font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:2.2px;color:var(--rose);text-transform:uppercase}
+.evsel .live i{width:7px;height:7px;border-radius:50%;background:var(--rose);box-shadow:0 0 10px var(--rose);animation:pulse 1.6s ease-in-out infinite}
+.evsel.on .live{display:inline-flex}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+.seg{display:flex;padding:4px 6px;border-radius:999px;gap:2px;flex:none}
+.seg button{border:0;background:none;color:var(--ink-2);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.8px;padding:0 13px;height:34px;border-radius:999px;cursor:pointer;white-space:nowrap;position:relative;transition:color .25s}
+.seg button::after{content:'';position:absolute;left:14px;right:14px;bottom:6px;height:1px;background:var(--gold);transform:scaleX(0);transition:transform .3s var(--ease)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{color:var(--gold-2)}
+.seg button[aria-pressed=true]::after{transform:scaleX(1)}
+.seg.sm button{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:2px;text-transform:uppercase;padding:0 11px;height:30px}
+.seg.sm button::after{bottom:5px;left:12px;right:12px}
+.spacer{flex:1}
+
+/* ===== 左下：圖例 ===== */
+.legend{position:fixed;left:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:20;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.legend>*{pointer-events:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:0 13px 0 11px;height:32px;border-radius:999px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .25s,color .25s,border-color .25s;box-shadow:var(--shadow);white-space:nowrap}
+.chip:hover{color:var(--ink);border-color:var(--line-2)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+.chip[aria-pressed=false]{opacity:.48;filter:saturate(.15)}
+.chip.zh{font-family:var(--serif);font-weight:500;letter-spacing:.6px;text-transform:none;font-size:12.5px}
+
+/* ===== 右側：此刻 ===== */
+.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:372px;max-height:calc(100vh - var(--bar-h,56px) - 126px);max-height:calc(100dvh - var(--bar-h,56px) - 126px);overflow:auto;z-index:18;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:16px 18px 14px;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.panel h2{font-family:var(--serif);font-size:16px;font-weight:600;letter-spacing:.6px;line-height:1.35}
+.panel .sub{font-family:var(--display);font-size:11px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.rule{height:1px;background:var(--line-2);position:relative;margin:14px 0 10px}
+.rule::after{content:'';position:absolute;left:50%;top:-2.5px;width:5px;height:5px;background:var(--gold);transform:translateX(-50%) rotate(45deg)}
+.when{display:flex;align-items:baseline;gap:10px;margin-top:10px}
+.when b{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:.5px;line-height:1}
+.when span{font-family:var(--display);font-size:12px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.prog{height:2px;background:var(--hair);margin-top:10px;position:relative}
+.prog i{position:absolute;left:0;top:0;bottom:0;background:var(--gold)}
+.prog em{position:absolute;top:-4px;width:9px;height:9px;border-radius:50%;background:var(--gold-2);transform:translateX(-50%);box-shadow:0 0 8px var(--gold)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:4px}
+.cell{padding:8px 8px 9px 0;border-top:1px solid var(--hair)}
+.cell i{display:block;font-style:normal;font-family:var(--display);font-size:10px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.cell b{display:block;font-family:var(--display);font-size:19px;font-weight:600;line-height:1.2;margin-top:3px;color:var(--ink);letter-spacing:.3px;white-space:nowrap}
+.cell small{font-family:var(--display);font-size:11px;color:var(--ink-3);font-weight:500;letter-spacing:.5px}
+.h3{font-family:var(--display);font-size:11px;color:var(--gold);font-weight:600;letter-spacing:2.4px;text-transform:uppercase;margin:12px 0 4px;display:flex;align-items:center;gap:8px}
+.h3::after{content:'';flex:1;height:1px;background:var(--hair)}
+.feed{list-style:none}
+.feed li{display:grid;grid-template-columns:44px 1fr auto auto;gap:9px;align-items:center;padding:5px 4px;border-bottom:1px solid var(--hair);cursor:pointer;font-size:12.5px;transition:background .2s}
+.feed li:hover,.feed li.on{background:color-mix(in oklab,var(--gold) 9%,transparent)}
+.feed li .t{font-family:var(--display);font-size:12px;color:var(--ink-3);font-weight:600;letter-spacing:.5px}
+.feed li .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.feed li .d{font-family:var(--display);font-weight:600;font-size:13.5px;color:var(--gold-2);letter-spacing:.3px}
+.feed li .r{font-family:var(--display);font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:1px;min-width:34px;text-align:right}
+.feed li .d.big{color:var(--rose)}
+.board{list-style:none}
+.board li{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--hair);cursor:pointer;font-size:12.5px}
+.board li:hover,.board li.on{background:color-mix(in oklab,var(--gold) 9%,transparent)}
+.board li .k{font-family:var(--display);font-size:12px;color:var(--gold);font-weight:600}
+.board li .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.board li .v{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.3px}
+.board li .v small{color:var(--ink-3);font-weight:500;margin-left:4px}
+.btn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:3px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font-family:var(--serif);font-weight:500;font-size:12.5px;letter-spacing:.8px;cursor:pointer;text-decoration:none;transition:background .25s,color .25s,border-color .25s}
+.btn:hover{background:color-mix(in oklab,var(--gold) 12%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn[aria-pressed=true]{background:color-mix(in oklab,var(--gold) 18%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.note{font-size:11px;color:var(--ink-3);line-height:1.7;letter-spacing:.3px;margin-top:10px}
+
+/* ===== 選手剖析（左側抽屜） ===== */
+.player{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:16px;width:392px;max-height:calc(100vh - var(--bar-h,56px) - 126px);max-height:calc(100dvh - var(--bar-h,56px) - 126px);overflow:auto;z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:16px 18px 14px;transform:translateX(-18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.player.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+.player .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.player .close:hover{color:var(--gold-2);border-color:var(--line-2)}
+.player h2{font-size:18px;padding-right:30px}
+.player .uid{font-family:var(--display);font-size:11px;color:var(--ink-3);letter-spacing:1.5px;margin-top:2px}
+.hist{display:flex;align-items:flex-end;gap:3px;height:54px;margin-top:6px;border-bottom:1px solid var(--line-2);padding-bottom:1px}
+.hist i{flex:1;background:linear-gradient(180deg,var(--gold-2),var(--gold));opacity:.85;min-height:1px;position:relative}
+.hist i:hover{opacity:1}
+.hist i::after{content:attr(data-l);position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-family:var(--display);font-size:9.5px;color:var(--ink-3);white-space:nowrap}
+.sess{display:block;width:100%;height:34px;margin-top:22px}
+.spark{display:block;width:100%;height:60px;margin-top:4px}
+.tiny{font-family:var(--display);font-size:11px;color:var(--ink-3);letter-spacing:1px;font-weight:600}
+
+/* ===== 底部：時間 ===== */
+.transport{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:21;display:flex;align-items:center;gap:12px;height:64px;padding:0 10px 0 8px;border-radius:999px}
+.transport .ib{width:44px;height:44px;box-shadow:none}
+.transport .ib .pause{display:none}
+.transport .ib.playing .play{display:none}
+.transport .ib.playing .pause{display:block}
+.scrub{flex:1;position:relative;height:44px;min-width:120px;cursor:pointer}
+.scrub canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.scrub .ph{position:absolute;top:2px;bottom:2px;width:1.5px;background:var(--gold-2);box-shadow:0 0 8px var(--gold);transform:translateX(-50%);pointer-events:none}
+.scrub .ph::after{content:'';position:absolute;left:50%;top:-5px;width:9px;height:9px;border-radius:50%;background:var(--gold-2);transform:translateX(-50%);box-shadow:0 0 8px var(--gold)}
+.scrub .lbl{position:absolute;left:6px;top:0;font-family:var(--display);font-size:10px;color:var(--ink-3);letter-spacing:1.5px;font-weight:600;pointer-events:none}
+.scrub .lbr{position:absolute;right:6px;top:0;font-family:var(--display);font-size:10px;color:var(--ink-3);letter-spacing:1.5px;font-weight:600;pointer-events:none}
+.tnow{flex:none;text-align:right;min-width:150px}
+.tnow b{display:block;font-family:var(--display);font-size:17px;font-weight:600;letter-spacing:.5px;line-height:1.15;white-space:nowrap}
+.tnow small{display:block;font-family:var(--display);font-size:10.5px;color:var(--gold);font-weight:600;letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
+
+/* ===== 提示、吐司、載入、說明 ===== */
+.tip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:4px;background:var(--glass-2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line-2);font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;max-width:300px;white-space:nowrap;letter-spacing:.3px}
+.tip.on{opacity:1;transform:none}
+.tip small{display:block;font-family:var(--display);font-size:12px;color:var(--gold);font-weight:600;margin-top:1px;letter-spacing:.8px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 18px;border-radius:3px;background:var(--glass-2);border:1px solid var(--line-2);color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.8px;opacity:0;transition:.3s var(--ease);pointer-events:none;box-shadow:var(--shadow);max-width:min(92vw,560px);white-space:normal;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.loading{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;pointer-events:none;text-align:center;transition:opacity .5s}
+.loading[hidden]{display:none}
+.loading .sc{color:var(--gold);font-size:12px}
+.loading b{font-family:var(--serif);font-size:clamp(28px,5vw,46px);font-weight:600;letter-spacing:5px}
+.loading i{display:block;width:160px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);position:relative;overflow:hidden}
+.loading i::after{content:'';position:absolute;left:-40%;top:0;width:40%;height:100%;background:var(--gold-2);animation:sweep 1.4s ease-in-out infinite}
+@keyframes sweep{to{left:100%}}
+.loading span{font-family:var(--serif);color:var(--ink-2);letter-spacing:2px;font-size:13px}
+.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.help.on{display:flex}
+.help .card{width:min(600px,100%);max-height:90vh;max-height:90dvh;overflow:auto;padding:30px 34px 26px;border-radius:8px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);position:relative;outline:1px solid var(--line);outline-offset:5px}
+.help .sub{font-family:var(--display);font-style:italic;font-weight:500;font-size:15px;letter-spacing:4px;color:var(--gold);text-transform:uppercase}
+.help h3{font-family:var(--serif);font-size:26px;font-weight:600;margin-top:4px;letter-spacing:3px}
+.help p{margin-top:13px;font-size:14px;color:var(--ink-2);line-height:1.9;letter-spacing:.3px}
+.help p b{color:var(--ink);font-weight:600}
+.help ul{margin:10px 0 0 18px;font-size:13.5px;color:var(--ink-2);line-height:1.95;letter-spacing:.3px}
+.help ul b{color:var(--gold-2);font-weight:600}
+.help .close{position:absolute;top:16px;right:16px}
+.help .src{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.8;letter-spacing:.3px}
+
+/* ===== 分享圖 ===== */
+:root.og .bar,:root.og .legend,:root.og .panel,:root.og .player,:root.og .transport,:root.og .loading{display:none!important}
+.ogtitle{display:none}
+:root.og .ogtitle{display:block;position:fixed;left:0;bottom:0;padding:130px 180px 60px 68px;z-index:30;pointer-events:none;background:linear-gradient(90deg,color-mix(in oklab,var(--bg) 90%,transparent) 0%,color-mix(in oklab,var(--bg) 72%,transparent) 55%,transparent 100%)}
+.ogtitle small{display:block;font-family:var(--display);font-size:17px;letter-spacing:7px;color:var(--gold);font-weight:600;margin-bottom:14px;text-transform:uppercase}
+.ogtitle b{display:block;font-family:var(--serif);font-size:70px;font-weight:600;line-height:1.1;letter-spacing:6px}
+.ogtitle i{display:block;width:140px;height:1px;background:var(--gold);margin:18px 0 16px}
+.ogtitle span{display:block;font-family:var(--serif);font-size:23px;color:var(--ink-2);font-weight:400;letter-spacing:3px}
+
+/* ===== 手機 ===== */
+@media (max-width:860px){
+  .bar{gap:6px;padding:10px 10px 0;padding-top:calc(10px + env(safe-area-inset-top))}
+  .brand{padding:0 10px 0 6px;gap:7px;height:40px}
+  .brand svg{width:24px;height:24px}
+  .brand b{font-size:14px;letter-spacing:1px}
+  .brand small{display:none}
+  .bar .ib{order:2;width:34px;height:34px}
+  .bar .ib svg{width:16px;height:16px}
+  .bar .spacer{order:1}
+  .evsel{order:3;flex:1 1 100%;height:40px}
+  .evsel select{max-width:none;flex:1}
+  .bar .seg{order:4;width:100%;justify-content:center}
+  .seg button{height:30px;padding:0 10px;font-size:12.5px;flex:1}
+  .legend{left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom))}
+  .legend .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .chip{height:30px;font-size:12px}
+  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:min(58vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(58dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;transform:translateY(100%);transition:transform .4s var(--ease);outline:none;z-index:23;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .panel.open{transform:none}
+  .panel::before{content:'';display:block;width:36px;height:2px;background:var(--line-2);margin:0 auto 12px}
+  .player{top:auto;left:0;right:0;bottom:0;width:auto;max-height:min(70vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(70dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;transform:translateY(24px);outline:none;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .player.on{transform:none}
+  .transport{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:56px;gap:8px}
+  .transport .ib{width:38px;height:38px}
+  .tnow{min-width:0}
+  .tnow b{font-size:14px}
+  .tnow small{font-size:9.5px}
+  .speed{display:none}
+  .tip{display:none}
+  .ogtitle{left:24px;bottom:24px}
+  select,input{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){body::before{animation:none}.evsel .live i{animation:none}.loading i::after{animation:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<canvas id="stage" tabindex="0" aria-label="脈動牆：橫軸是活動時間、縱軸是名次，每一點是一局"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand glass" href="./app.html" title="回 SEKAI 資源中心">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#d4b673" stroke-opacity=".55" stroke-width=".8"/><path d="M4 16h5l2-6 3 12 3-9 2 5 2-2h7" fill="none" stroke="#ecdcaa" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+    <span><b>衝榜劇場</b><small>Border Theatre · Every Game</small></span>
+  </a>
+  <label class="evsel glass" id="evsel"><span class="sc" style="font-size:10px;color:var(--gold)">Event</span><select id="ev" aria-label="活動期數"></select><span class="live"><i></i>Live</span></label>
+  <div class="seg glass" role="group" aria-label="檢視" id="mode">
+    <button type="button" data-m="wall" aria-pressed="true">脈動牆</button>
+    <button type="button" data-m="rhythm" aria-pressed="false">節奏熱圖</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="ib" id="panelBtn" type="button" title="此刻與即時紀錄" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+  <button class="ib" id="themeBtn" type="button" title="切換夜空／象牙"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg></button>
+  <button class="ib" id="helpBtn" type="button" title="這是什麼？"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
+</header>
+
+<aside class="legend" aria-label="圖例與篩選">
+  <div class="chips" id="bands">
+    <button class="chip" type="button" data-b="top" aria-pressed="true" style="--c:#ecdcaa"><span class="dot"></span>1–10</button>
+    <button class="chip" type="button" data-b="mid" aria-pressed="true" style="--c:#d4b673"><span class="dot"></span>11–50</button>
+    <button class="chip" type="button" data-b="low" aria-pressed="true" style="--c:#8f7f52"><span class="dot"></span>51–100</button>
+    <button class="chip zh" type="button" id="bigChip" aria-pressed="false" title="只顯示單場 4 萬以上的大局">只看大局</button>
+  </div>
+</aside>
+
+<aside class="panel open" id="panel" aria-live="polite"></aside>
+<aside class="player" id="player" aria-label="選手剖析"></aside>
+
+<div class="transport glass">
+  <button class="ib" id="playBtn" type="button" aria-label="播放／暫停"><svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button>
+  <div class="seg sm speed" role="group" aria-label="速度" id="speed">
+    <button type="button" data-s="900" aria-pressed="false">15 m/s</button>
+    <button type="button" data-s="3600" aria-pressed="true">1 h/s</button>
+    <button type="button" data-s="10800" aria-pressed="false">3 h/s</button>
+  </div>
+  <div class="scrub" id="scrub"><canvas id="scrubCv"></canvas><span class="lbl" id="scrubL"></span><span class="lbr" id="scrubR"></span><div class="ph" id="ph"></div></div>
+  <div class="tnow"><b id="tnow">—</b><small id="tday"></small></div>
+  <button class="ib" id="liveBtn" type="button" title="跟著現在" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg></button>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<div class="loading" id="loading"><div class="sc">Border Theatre</div><b>衝榜劇場</b><i></i><span id="loadMsg">正在尋找進行中的活動</span></div>
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+  <div class="card">
+    <button class="ib close" id="helpX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="sub">Border Theatre</div>
+    <h3 id="helpT">衝榜劇場</h3>
+    <p>本站的追蹤器每 15 秒掃一次前百名的排行，分數一變就記成一局：時間、活動 P 增量、當時的名次。這一頁把一整期的每一局攤開來看。</p>
+    <ul>
+      <li><b>脈動牆</b>：橫軸是活動時間、縱軸是名次，每一點是一局，點越大增量越高。滾輪或雙指縮放時間、拖曳平移；拖動下方的時間軸可以回放整期，播放鍵會讓局一局一局落下。</li>
+      <li><b>節奏熱圖</b>：以日為列、小時為欄，看整個前百名（或你選的選手）在一天裡什麼時候最拚。</li>
+      <li><b>選手剖析</b>：點任何一點、名單上的名字或即時紀錄，看那位選手的每一局：場次、總量、每局分布、作息分段、最長連打與最長休息、名次軌跡。</li>
+      <li><b>此刻</b>：右側是時間軸所在時刻的統計與最新幾局；活動進行中時每 15 秒更新，按「跟著現在」會自動跟到最新。</li>
+    </ul>
+    <p>追蹤器只記得當時在前 100 名的局；追蹤中斷的區段會以斜線標示，中斷後第一筆增量會是多局合併。名字是追蹤當下排行上顯示的名字。</p>
+    <div class="src">資料：本站 Cloudflare Worker 的逐局追蹤器（來源 HiSekai 即時排名，Haruki 備援）・活動資料：HiSekai 與 good果汁的榜線紀錄。數值以遊戲內為準。</div>
+  </div>
+</div>
+<div class="ogtitle"><small>Border Theatre · Every Game</small><b>衝榜劇場</b><i></i><span>前百名的每一場，每十五秒一次的心跳</span></div>
+
+<script src="./data/borders-db.js?v=68d3681c94"></script>
+<script type="module">
+/* ========== 常數與工具 ========== */
+const $ = s => document.querySelector(s);
+const root = document.documentElement;
+const OG = root.classList.contains('og');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches && !OG;
+const GAMES = 'https://games.project-sekai-center.com';
+const HISEKAI = 'https://api.hisekai.org/tw';
+const TW = 8 * 3600;   // 台灣時間位移（秒）
+const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
+const own = (o, k) => k != null && Object.prototype.hasOwnProperty.call(o, k);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hex2rgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h).trim()); if (!m) return [200, 200, 200]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return `rgba(${r},${g},${b},${a})`; };
+const num = n => Math.round(n).toLocaleString('en-US');
+const wan = n => n >= 1e8 ? (n / 1e8).toFixed(2) + ' 億' : n >= 1e4 ? (n / 1e4).toFixed(n >= 1e6 ? 0 : 1) + ' 萬' : num(n);
+const pad2 = n => String(n).padStart(2, '0');
+const twDate = sec => { const d = new Date((sec + TW) * 1000); return { y: d.getUTCFullYear(), mo: d.getUTCMonth() + 1, d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes(), s: d.getUTCSeconds(), day: d.getUTCDay() }; };
+const fmtClock = sec => { const d = twDate(sec); return pad2(d.h) + ':' + pad2(d.mi); };
+const fmtDate = sec => { const d = twDate(sec); return d.mo + '/' + d.d; };
+const twMidnight = sec => { const d = twDate(sec); return sec - (d.h * 3600 + d.mi * 60 + d.s); };
+const dayIndex = abs => Math.floor((twMidnight(abs) - twMidnight(S.meta.start)) / 86400) + 1;
+const fmtDur = s => s >= 3600 ? Math.floor(s / 3600) + ' 小時 ' + Math.round((s % 3600) / 60) + ' 分' : Math.round(s / 60) + ' 分';
+const mobile = () => matchMedia('(max-width:860px)').matches;
+const BAND = { top: '#ecdcaa', mid: '#d4b673', low: '#8f7f52' };
+const bandOf = r => r <= 10 ? 'top' : r <= 50 ? 'mid' : 'low';
+const BIG = 40000;
+
+/* ========== 狀態 ========== */
+const S = { ev: 0, meta: null, live: false, T: 0, follow: false, playing: false, speed: 3600, mode: 'wall', sel: null, hover: -1, bands: new Set(['top', 'mid', 'low']), big: false, panelOpen: true };
+const G = { n: 0, u: null, t: null, d: null, r: null, users: [], gaps: [], byUser: new Map(), lastT: 0, hourHist: null };
+const view = { k: 1, tx: 0, gk: 1, gtx: 0 };
+const EVENTS = new Map();   // id → { name, start, end, chara, unit, type }
+
+/* ========== 畫布 ========== */
+const cv = $('#stage'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, PAD = { l: 54, r: 24, t: 80, b: 110 };
+let FONT_SERIF = 'serif', FONT_DISPLAY = 'serif', colors = {};
+const barH = () => { const b = document.querySelector('.bar'); return b ? Math.max(56, b.offsetHeight) : 56; };
+function readTheme() {
+  ['ink', 'ink-2', 'ink-3', 'bg', 'bg-2', 'gold', 'gold-2', 'rose', 'sky', 'mint'].forEach(k => { colors[k] = cssVar(k); });
+  FONT_SERIF = cssVar('serif') || 'serif'; FONT_DISPLAY = cssVar('display') || 'serif';
+}
+let resizeRaf = 0;
+function scheduleResize() { if (!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; resize(); }); }
+function resize() {
+  DPR = Math.min(2.5, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const bh = barH(); root.style.setProperty('--bar-h', bh + 'px');
+  const m = mobile();
+  PAD = OG ? { l: 46, r: 30, t: 44, b: 44 } : { l: m ? 40 : 54, r: m ? 14 : (S.panelOpen ? 412 : 24), t: bh + 22, b: m ? 150 : 128 };
+  drawScrub(); draw();
+}
+const rect = () => ({ x: PAD.l, y: PAD.t, w: Math.max(60, W - PAD.l - PAD.r), h: Math.max(60, H - PAD.t - PAD.b) });
+const span = () => Math.max(1, (S.meta ? (S.meta.end - S.meta.start) : 86400));
+const xOf = (t, r) => r.x + (t / span()) * r.w * view.k + view.tx;
+const tOf = (x, r) => ((x - r.x - view.tx) / (r.w * view.k)) * span();
+const yOf = (rank, r) => r.y + (rank - .5) / 100 * r.h;
+
+/* ========== 活動清單與資料 ========== */
+async function fetchJson(u, opt) { const r = await fetch(u, opt); if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + u); return r.json(); }
+function dbEvent(id) { const db = window.BORDERS_DB; const e = db && (db.events || []).find(x => +x.id === +id); return e || null; }
+async function loadEventList() {
+  let list = [];
+  try { list = await fetchJson(HISEKAI + '/event/list'); } catch (e) {}
+  (list || []).forEach(e => { EVENTS.set(+e.id, { id: +e.id, name: e.name, start: Date.parse(e.start_at) / 1000, end: Date.parse(e.aggregate_at) / 1000, wl: (e.chapters || []).length > 0 }); });
+  (window.BORDERS_DB && window.BORDERS_DB.events || []).forEach(e => {   // 沒有 HiSekai 時用榜線資料庫的日期（當地 15:00 開、21:00 結）
+    const cur = EVENTS.get(+e.id) || {}; const st = cur.start || (Date.parse(String(e.start).replace(/\//g, '-') + 'T07:00:00Z') / 1000); const en = cur.end || (Date.parse(String(e.end).replace(/\//g, '-') + 'T12:59:59Z') / 1000);
+    EVENTS.set(+e.id, Object.assign({ id: +e.id, name: e.name }, cur, { start: st, end: en, chara: e.chara, unit: e.unit, type: e.type, attr: e.attr }));
+  });
+}
+async function loadStatus() { try { return await fetchJson(GAMES + '/status'); } catch (e) { return null; } }
+function loadingMsg(m) { $('#loadMsg').textContent = m; }
+async function loadGames(id) {
+  loadingMsg('正在載入第 ' + id + ' 期的逐場紀錄');
+  const d = await fetchJson(GAMES + '/games?ev=' + id);
+  ingest(d, true);
+}
+function ingest(d, reset) {
+  const rows = d.games || [];
+  if (reset) {
+    G.n = rows.length; G.u = new Int32Array(G.n); G.t = new Int32Array(G.n); G.d = new Int32Array(G.n); G.r = new Uint8Array(G.n);
+    rows.forEach((g, i) => { G.u[i] = g[0]; G.t[i] = g[1]; G.d[i] = g[2]; G.r[i] = Math.max(1, Math.min(100, g[3])); });
+    G.users = d.users || []; G.gaps = (d.gaps || []).filter(g => g[1] > 0); G.byUser = new Map();
+  } else if (rows.length) {
+    const n0 = G.n, n = n0 + rows.length;
+    const u = new Int32Array(n), t = new Int32Array(n), dd = new Int32Array(n), r = new Uint8Array(n);
+    u.set(G.u); t.set(G.t); dd.set(G.d); r.set(G.r);
+    rows.forEach((g, i) => { u[n0 + i] = g[0]; t[n0 + i] = g[1]; dd[n0 + i] = g[2]; r[n0 + i] = Math.max(1, Math.min(100, g[3])); });
+    G.u = u; G.t = t; G.d = dd; G.r = r; G.n = n;
+    if (d.users && d.users.length > G.users.length) G.users = d.users;
+    if (d.gaps) G.gaps = d.gaps.filter(g => g[1] > 0);
+    G.byUser = new Map();
+  } else return;
+  G.lastT = G.n ? G.t[G.n - 1] : 0;
+  for (let i = 0; i < G.n; i++) { let a = G.byUser.get(G.u[i]); if (!a) { a = []; G.byUser.set(G.u[i], a); } a.push(i); }
+  G.hourHist = null; statsCache.key = '';
+}
+const userName = ui => { const u = G.users[ui]; return u && u[2] ? u[2] : (u ? '選手 ' + String(u[1] || '').slice(-4) : '—'); };
+const userTail = ui => { const u = G.users[ui]; return u ? String(u[1] || '').slice(0, 10) : ''; };
+/* 二分搜尋：第一個 t > x 的索引 */
+function upper(x) { let lo = 0, hi = G.n; while (lo < hi) { const m = (lo + hi) >> 1; if (G.t[m] <= x) lo = m + 1; else hi = m; } return lo; }
+function lower(x) { let lo = 0, hi = G.n; while (lo < hi) { const m = (lo + hi) >> 1; if (G.t[m] < x) lo = m + 1; else hi = m; } return lo; }
+
+/* ========== 統計 ========== */
+const statsCache = { key: '', v: null };
+function statsAt(T) {
+  const key = T + ':' + G.n; if (statsCache.key === key) return statsCache.v;
+  const end = upper(T), from5 = lower(T - 300), from1h = lower(T - 3600), from24 = lower(T - 86400);
+  let ep = 0; const seen = new Set(); for (let i = 0; i < end; i++) { ep += G.d[i]; seen.add(G.u[i]); }
+  const active = new Set(); for (let i = from5; i < end; i++) active.add(G.u[i]);
+  const cnt24 = new Map(), ep24 = new Map(); let big = -1;
+  for (let i = from24; i < end; i++) { cnt24.set(G.u[i], (cnt24.get(G.u[i]) || 0) + 1); ep24.set(G.u[i], (ep24.get(G.u[i]) || 0) + G.d[i]); if (big < 0 || G.d[i] > G.d[big]) big = i; }
+  const top = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const v = { games: end, players: seen.size, ep, avg: end ? ep / end : 0, active: active.size, g1h: end - from1h, busiest: top(cnt24), strongest: top(ep24), big };
+  statsCache.key = key; statsCache.v = v; return v;
+}
+/* 選手剖析：分段（間隔 > 30 分鐘就是新的一段） */
+function profile(ui, T) {
+  const idx = (G.byUser.get(ui) || []).filter(i => G.t[i] <= T);
+  if (!idx.length) return null;
+  const games = idx.length; let ep = 0, mx = 0; idx.forEach(i => { ep += G.d[i]; if (G.d[i] > mx) mx = G.d[i]; });
+  const gaps = []; for (let k = 1; k < idx.length; k++) gaps.push(G.t[idx[k]] - G.t[idx[k - 1]]);
+  const sorted = gaps.slice().sort((a, b) => a - b); const med = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+  const sessions = []; let cur = { a: G.t[idx[0]], b: G.t[idx[0]], n: 1, ep: G.d[idx[0]] };
+  for (let k = 1; k < idx.length; k++) { const t = G.t[idx[k]]; if (t - cur.b > 1800) { sessions.push(cur); cur = { a: t, b: t, n: 1, ep: G.d[idx[k]] }; } else { cur.b = t; cur.n++; cur.ep += G.d[idx[k]]; } }
+  sessions.push(cur);
+  const longest = sessions.reduce((a, s) => (s.b - s.a) > (a.b - a.a) ? s : a, sessions[0]);
+  let rest = 0, restAt = 0; for (let k = 1; k < sessions.length; k++) { const g = sessions[k].a - sessions[k - 1].b; if (g > rest) { rest = g; restAt = sessions[k - 1].b; } }
+  const byHour = new Array(24).fill(0); idx.forEach(i => { byHour[twDate(S.meta.start + G.t[i]).h] += G.d[i]; });
+  const bestHour = byHour.indexOf(Math.max(...byHour));
+  const bins = new Array(10).fill(0); idx.forEach(i => { bins[Math.min(9, Math.floor(G.d[i] / 7000))]++; });
+  const first = idx[0], last = idx[idx.length - 1];
+  return { ui, games, ep, avg: ep / games, mx, med, sessions, longest, rest, restAt, bestHour, bins, rankNow: G.r[last], rankBest: Math.min(...idx.map(i => G.r[i])), first, last, idx };
+}
+
+/* ========== 版面與繪製 ========== */
+let dirty = true, raf = 0, lastFrame = 0;
+function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+function frame(ts) {
+  raf = 0; const dt = Math.min(.05, (ts - lastFrame) / 1000 || .016); lastFrame = ts; let moving = false;
+  const e = REDUCED ? 1 : 1 - Math.exp(-dt * 10);
+  if (Math.abs(view.gk - view.k) > 1e-3 || Math.abs(view.gtx - view.tx) > .2) { view.k += (view.gk - view.k) * e; view.tx += (view.gtx - view.tx) * e; moving = true; } else { view.k = view.gk; view.tx = view.gtx; }
+  if (S.playing && S.meta) { const maxT = S.live ? liveT() : span(); S.T = Math.min(maxT, S.T + S.speed * dt); if (S.T >= maxT) { S.playing = false; updatePlay(); if (S.live) { S.follow = true; $('#liveBtn').setAttribute('aria-pressed', 'true'); } } moving = true; onTimeChanged(true); }
+  draw(ts / 1000);
+  if (moving) raf = requestAnimationFrame(frame);
+}
+const liveT = () => Math.max(0, Math.min(span(), Date.now() / 1000 - S.meta.start));
+function draw(time = 0) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  if (!S.meta || !G.t) return;
+  if (S.mode === 'wall') drawWall(time); else drawRhythm();
+}
+function drawFrame(r) {
+  const gold = colors.gold, light = root.classList.contains('light');
+  ctx.lineWidth = 1; ctx.strokeStyle = rgba(gold, light ? .5 : .32); ctx.strokeRect(r.x + .5, r.y + .5, r.w - 1, r.h - 1);
+  ctx.strokeStyle = rgba(gold, light ? .7 : .55);
+  [[r.x, r.y, 1, 1], [r.x + r.w, r.y, -1, 1], [r.x, r.y + r.h, 1, -1], [r.x + r.w, r.y + r.h, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x + sx * 14 + .5, y + .5); ctx.lineTo(x + .5, y + .5); ctx.lineTo(x + .5, y + sy * 14 + .5); ctx.stroke(); });
+}
+function drawTimeAxis(r, t0, t1, labelsOnly) {
+  /* 台灣時間：午夜一條線與 Day N，夜半（00–06）淡淡一層；放大時加 6 小時、1 小時的刻度 */
+  const gold = colors.gold, light = root.classList.contains('light'), st = S.meta.start;
+  const pxPerH = r.w * view.k / (span() / 3600);
+  const stepH = pxPerH > 90 ? 1 : pxPerH > 26 ? 6 : 24;
+  const d0 = twDate(st + t0); let cursor = st + t0 - (d0.h * 3600 + d0.mi * 60 + d0.s);   // 當天 00:00（台灣）
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+  ctx.font = '600 11.5px ' + FONT_DISPLAY; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  for (let i = 0; i < 400 && cursor <= st + t1; i++, cursor += 86400) {
+    const dayStart = cursor - st; const x0 = xOf(dayStart, r), x6 = xOf(dayStart + 6 * 3600, r);
+    if (!labelsOnly && x6 > r.x && x0 < r.x + r.w) { ctx.fillStyle = rgba(light ? '#3d4a7a' : '#8aa0ff', light ? .05 : .06); ctx.fillRect(Math.max(r.x, x0), r.y, Math.min(r.x + r.w, x6) - Math.max(r.x, x0), r.h); }
+    for (let h = 0; h < 24; h += stepH) {
+      const tt = dayStart + h * 3600; if (tt < t0 - 3600 || tt > t1 + 3600) continue; const x = xOf(tt, r); if (x < r.x || x > r.x + r.w) continue;
+      if (!labelsOnly) { ctx.strokeStyle = rgba(gold, h === 0 ? (light ? .45 : .3) : (light ? .16 : .09)); ctx.lineWidth = h === 0 ? 1 : .8; ctx.beginPath(); ctx.moveTo(Math.round(x) + .5, r.y); ctx.lineTo(Math.round(x) + .5, r.y + r.h); ctx.stroke(); }
+      if (labelsOnly && x > r.x + 4 && x < r.x + r.w - 40) { ctx.fillStyle = rgba(gold, h === 0 ? (light ? .95 : .8) : (light ? .7 : .5)); const pxDay = pxPerH * 24; const lab = h === 0 ? (pxDay >= 110 ? 'DAY ' + dayIndex(cursor) + '  ' + fmtDate(cursor) : pxDay >= 48 ? 'D' + dayIndex(cursor) : (dayIndex(cursor) % 2 ? 'D' + dayIndex(cursor) : '')) : pad2(h) + ':00'; if (lab) { ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.strokeStyle = rgba(colors.bg, .85); ctx.strokeText(lab, x + 6, r.y + 8); ctx.fillText(lab, x + 6, r.y + 8); } }
+    }
+  }
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+}
+function drawWall(time) {
+  const r = rect(); const light = root.classList.contains('light'); const gold = colors.gold, ink = colors.ink;
+  ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+  const t0 = Math.max(0, tOf(r.x, r)), t1 = Math.min(span(), tOf(r.x + r.w, r));
+  drawTimeAxis(r, t0, t1);
+  /* 名次刻度：每 10 名一條髮絲線 */
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+  ctx.font = '600 11px ' + FONT_DISPLAY; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let k = 10; k <= 100; k += 10) { const y = r.y + k / 100 * r.h; ctx.strokeStyle = rgba(gold, light ? .2 : .1); ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(r.x, Math.round(y) + .5); ctx.lineTo(r.x + r.w, Math.round(y) + .5); ctx.stroke(); }
+  ctx.restore();
+  ctx.fillStyle = rgba(gold, light ? .85 : .62); [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].forEach(k => { ctx.fillText(String(k), r.x - 8, yOf(k === 1 ? 1 : k, r)); });
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+  /* 追蹤中斷：斜線 */
+  G.gaps.forEach(([a, b]) => { const xa = xOf(Math.max(0, a), r), xb = xOf(b, r); if (xb < r.x || xa > r.x + r.w) return; ctx.save(); ctx.beginPath(); ctx.rect(xa, r.y, Math.max(2, xb - xa), r.h); ctx.clip(); ctx.strokeStyle = rgba(colors.rose, .35); ctx.lineWidth = 1; for (let x = xa - r.h; x < xb + r.h; x += 9) { ctx.beginPath(); ctx.moveTo(x, r.y + r.h); ctx.lineTo(x + r.h, r.y); ctx.stroke(); } ctx.restore(); });
+  /* 局：依名次帶分三批畫，每批只設一次顏色 */
+  const i0 = lower(t0 - 1), i1 = Math.min(upper(t1 + 1), upper(S.T));
+  const zs = Math.pow(view.k, .25);
+  const selOn = S.sel != null;
+  const batches = { top: [], mid: [], low: [] };
+  for (let i = i0; i < i1; i++) { const b = bandOf(G.r[i]); if (!S.bands.has(b)) continue; if (S.big && G.d[i] < BIG) continue; if (selOn && G.u[i] === S.sel) continue; batches[b].push(i); }
+  const dimA = selOn ? .22 : 1;
+  for (const b of ['low', 'mid', 'top']) {
+    const col = BAND[b]; const arr = batches[b]; if (!arr.length) continue;
+    ctx.fillStyle = rgba(light ? (b === 'top' ? '#7f6220' : b === 'mid' ? '#9a7a30' : '#8a8170') : col, (light ? .55 : (b === 'top' ? .62 : b === 'mid' ? .5 : .4)) * dimA);
+    for (const i of arr) { const x = xOf(G.t[i], r), y = yOf(G.r[i], r); const s = (1.1 + 2.4 * Math.sqrt(G.d[i] / 70000)) * zs; ctx.fillRect(x - s / 2, y - s / 2, s, s); }
+    if (!light) { ctx.fillStyle = rgba('#ffffff', .35 * dimA); for (const i of arr) { if (G.d[i] < BIG) continue; const x = xOf(G.t[i], r), y = yOf(G.r[i], r); ctx.fillRect(x - .6, y - .6, 1.2, 1.2); } }
+  }
+  /* 選中的選手：名次軌跡與自己的局 */
+  if (selOn) {
+    const idx = G.byUser.get(S.sel) || []; ctx.strokeStyle = rgba(colors['gold-2'], .7); ctx.lineWidth = 1; ctx.beginPath(); let started = false;
+    for (const i of idx) { if (G.t[i] > S.T) break; const x = xOf(G.t[i], r), y = yOf(G.r[i], r); if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y); }
+    ctx.stroke();
+    ctx.fillStyle = colors['gold-2'];
+    for (const i of idx) { if (G.t[i] > S.T) break; const x = xOf(G.t[i], r), y = yOf(G.r[i], r); if (x < r.x - 10 || x > r.x + r.w + 10) continue; const s = (1.6 + 3 * Math.sqrt(G.d[i] / 70000)) * zs; ctx.beginPath(); ctx.arc(x, y, s / 2 + .6, 0, 6.283); ctx.fill(); }
+    ctx.shadowColor = colors.gold; ctx.shadowBlur = 0;
+  }
+  /* 時間軸所在：一條金線；進行中另有一條淡淡的「現在」 */
+  const xT = xOf(S.T, r); ctx.strokeStyle = rgba(colors['gold-2'], .9); ctx.lineWidth = 1; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(Math.round(xT) + .5, r.y); ctx.lineTo(Math.round(xT) + .5, r.y + r.h); ctx.stroke();
+  if (S.live) { const xn = xOf(liveT(), r); ctx.strokeStyle = rgba(colors.rose, .55); ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.moveTo(Math.round(xn) + .5, r.y); ctx.lineTo(Math.round(xn) + .5, r.y + r.h); ctx.stroke(); ctx.setLineDash([]); }
+  drawTimeAxis(r, t0, t1, true);
+  /* 懸停的局 */
+  if (S.hover >= 0 && S.hover < G.n) { const i = S.hover; const x = xOf(G.t[i], r), y = yOf(G.r[i], r); ctx.strokeStyle = rgba(ink, .85); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 7, 0, 6.283); ctx.stroke(); }
+  ctx.restore();
+  drawFrame(r);
+  /* 軸名 */
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '2.5px';
+  ctx.fillStyle = rgba(gold, light ? .95 : .8); ctx.font = '600 12px ' + FONT_DISPLAY; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('TIME', r.x + r.w - 12, r.y + r.h - 10);
+  ctx.save(); ctx.translate(r.x - 40, r.y + r.h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 11px ' + FONT_DISPLAY; ctx.fillText('RANK', 0, 0); ctx.restore();
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+}
+/* 節奏熱圖：日 × 小時，整個前百名或選中的選手，時間軸之前的局 */
+function rhythmGrid() {
+  const T = S.T, st = S.meta.start, days = Math.ceil(span() / 86400) + 1;
+  const dayStart0 = twMidnight(st);   // Day 1（開活那天）的台灣 00:00
+  const cnt = [], ep = []; for (let d = 0; d < days + 1; d++) { cnt.push(new Array(24).fill(0)); ep.push(new Array(24).fill(0)); }
+  const idx = S.sel != null ? (G.byUser.get(S.sel) || []) : null;
+  const n = upper(T); let mx = 0;
+  const add = i => { const abs = st + G.t[i]; const d = Math.floor((abs - dayStart0) / 86400); if (d < 0 || d >= cnt.length) return; const h = twDate(abs).h; cnt[d][h]++; ep[d][h] += G.d[i]; if (ep[d][h] > mx) mx = ep[d][h]; };
+  if (idx) { for (const i of idx) { if (G.t[i] > T) break; add(i); } } else { for (let i = 0; i < n; i++) add(i); }
+  while (cnt.length && cnt[cnt.length - 1].every(v => !v) && cnt.length > 1) { cnt.pop(); ep.pop(); }
+  return { cnt, ep, mx, dayStart0 };
+}
+let rhythmCell = null;
+function drawRhythm() {
+  const r = rect(); const light = root.classList.contains('light'); const gold = colors.gold;
+  const g = rhythmGrid(); const rows = g.cnt.length, cols = 24;
+  const cw = (r.w - 40) / cols, ch = Math.min(46, (r.h - 24) / rows); const ox = r.x + 40, oy = r.y + 24;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '1px';
+  ctx.font = '600 11px ' + FONT_DISPLAY; ctx.fillStyle = rgba(gold, light ? .85 : .62); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  for (let h = 0; h < 24; h += 2) ctx.fillText(pad2(h), ox + (h + .5) * cw, oy - 6);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let d = 0; d < rows; d++) { ctx.fillText('D' + (d + 1), ox - 8, oy + (d + .5) * ch); }
+  for (let d = 0; d < rows; d++) for (let h = 0; h < 24; h++) {
+    const v = g.ep[d][h]; const a = g.mx ? Math.pow(v / g.mx, .6) : 0;
+    const x = ox + h * cw, y = oy + d * ch;
+    ctx.fillStyle = rgba(gold, light ? .04 : .05); ctx.fillRect(x + 1, y + 1, cw - 2, ch - 2);
+    if (v) { ctx.fillStyle = rgba(light ? '#9a7a30' : '#ecdcaa', .08 + a * (light ? .85 : .9)); ctx.fillRect(x + 1, y + 1, cw - 2, ch - 2); }
+    if (rhythmCell && rhythmCell.d === d && rhythmCell.h === h) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, cw - 3, ch - 3); }
+  }
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  drawFrame(r);
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '2.5px';
+  ctx.fillStyle = rgba(gold, light ? .95 : .8); ctx.font = '600 12px ' + FONT_DISPLAY; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('HOUR OF DAY  (TAIPEI)', r.x + r.w - 12, r.y + r.h - 10);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = '500 12px ' + FONT_SERIF; if ('letterSpacing' in ctx) ctx.letterSpacing = '1px'; ctx.fillText(S.sel != null ? userName(S.sel) + ' 的節奏' : '前百名的節奏（活動 P）', r.x + 8, r.y + 4);
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  rhythmGeom = { ox, oy, cw, ch, rows, g };
+}
+let rhythmGeom = null;
+
+/* ========== 時間軸（底部） ========== */
+const scrubCv = $('#scrubCv'), sctx = scrubCv.getContext('2d');
+function drawScrub() {
+  const box = $('#scrub').getBoundingClientRect(); const w = Math.max(10, box.width), h = Math.max(10, box.height);
+  scrubCv.width = Math.round(w * DPR); scrubCv.height = Math.round(h * DPR); sctx.setTransform(DPR, 0, 0, DPR, 0, 0); sctx.clearRect(0, 0, w, h);
+  if (!S.meta || !G.t) return;
+  if (!G.hourHist) { const n = Math.ceil(span() / 3600) + 1; const a = new Float64Array(n); for (let i = 0; i < G.n; i++) a[Math.min(n - 1, Math.floor(G.t[i] / 3600))] += G.d[i]; G.hourHist = a; }
+  const a = G.hourHist; let mx = 0; for (let i = 0; i < a.length; i++) if (a[i] > mx) mx = a[i];
+  const bw = w / a.length; const light = root.classList.contains('light');
+  for (let i = 0; i < a.length; i++) { const v = mx ? a[i] / mx : 0; const bh = Math.max(1, v * (h - 14)); const done = (i + 1) * 3600 <= S.T; sctx.fillStyle = rgba(done ? colors['gold-2'] : colors.gold, (done ? .85 : .3) * (light ? .9 : 1)); sctx.fillRect(i * bw + .3, h - 2 - bh, Math.max(.8, bw - .6), bh); }
+  $('#scrubL').textContent = fmtDate(S.meta.start); $('#scrubR').textContent = fmtDate(S.meta.end);
+  $('#ph').style.left = (S.T / span() * 100) + '%';
+}
+
+/* ========== 面板 ========== */
+const panel = $('#panel');
+function renderPanel() {
+  if (!S.meta) return;
+  const st = statsAt(S.T); const e = S.meta; const abs = e.start + S.T; const d = twDate(abs);
+  const day = dayIndex(abs); const pct = Math.min(100, S.T / span() * 100);
+  const feedN = Math.min(14, upper(S.T)); const end = upper(S.T); const feed = [];
+  for (let i = end - 1; i >= Math.max(0, end - feedN); i--) feed.push(i);
+  const dbE = dbEvent(e.id);
+  panel.innerHTML = `
+    <h2>${esc(e.name || '第 ' + e.id + ' 期')}</h2>
+    <div class="sub">第 ${e.id} 期${dbE ? ' · ' + esc(dbE.type || '') + (dbE.chara ? ' · ' + esc(dbE.chara) : '') : ''}${S.live ? ' · Live' : ''}</div>
+    <div class="when"><b>${pad2(d.h)}:${pad2(d.mi)}</b><span>Day ${day} · ${d.mo}/${d.d}</span></div>
+    <div class="prog"><i style="width:${pct}%"></i><em style="left:${pct}%"></em></div>
+    <div class="rule"></div>
+    <div class="grid">
+      <div class="cell"><i>局數</i><b>${num(st.games)}</b></div>
+      <div class="cell"><i>選手</i><b>${num(st.players)}</b><small>曾進前百</small></div>
+      <div class="cell"><i>活動 P</i><b>${wan(st.ep)}</b></div>
+      <div class="cell"><i>每局平均</i><b>${num(st.avg)}</b></div>
+      <div class="cell"><i>五分鐘內在打</i><b>${num(st.active)}</b><small>人</small></div>
+      <div class="cell"><i>近一小時</i><b>${num(st.g1h)}</b><small>局</small></div>
+    </div>
+    <div class="h3">最新幾局</div>
+    <ul class="feed">${feed.map(i => `<li data-u="${G.u[i]}" class="${S.sel === G.u[i] ? 'on' : ''}"><span class="t">${fmtClock(e.start + G.t[i])}</span><span class="n">${esc(userName(G.u[i]))}</span><span class="d${G.d[i] >= BIG ? ' big' : ''}">+${num(G.d[i])}</span><span class="r">#${G.r[i]}</span></li>`).join('') || '<li><span class="t">—</span><span class="n">還沒有紀錄</span></li>'}</ul>
+    <div class="h3">近 24 小時最勤</div>
+    <ul class="board">${st.busiest.map(([u, n], k) => `<li data-u="${u}" class="${S.sel === u ? 'on' : ''}"><span class="k">${k + 1}</span><span class="n">${esc(userName(u))}</span><span class="v">${num(n)}<small>局</small></span></li>`).join('')}</ul>
+    <div class="h3">近 24 小時最猛</div>
+    <ul class="board">${st.strongest.map(([u, v], k) => `<li data-u="${u}" class="${S.sel === u ? 'on' : ''}"><span class="k">${k + 1}</span><span class="n">${esc(userName(u))}</span><span class="v">${wan(v)}</span></li>`).join('')}</ul>
+    ${st.big >= 0 ? `<div class="note">近 24 小時最大的一局：${esc(userName(G.u[st.big]))} 在 ${fmtClock(e.start + G.t[st.big])} 的 +${num(G.d[st.big])}（當時第 ${G.r[st.big]} 名）。</div>` : ''}`;
+}
+panel.addEventListener('click', e => { const li = e.target.closest('[data-u]'); if (!li) return; selectPlayer(+li.dataset.u); });
+
+/* ========== 選手剖析 ========== */
+const playerBox = $('#player');
+function selectPlayer(ui, opts = {}) {
+  if (ui == null || ui === S.sel && !opts.force) { S.sel = null; playerBox.classList.remove('on'); } else { S.sel = ui; renderPlayer(); playerBox.classList.add('on'); if (mobile()) { S.panelOpen = false; panel.classList.remove('open'); $('#panelBtn').setAttribute('aria-pressed', 'false'); } }
+  if (!mobile() || S.panelOpen) renderPanel(); syncUrl(); dirty = true; kick();
+}
+function renderPlayer() {
+  const p = profile(S.sel, S.T); if (!p) { playerBox.innerHTML = `<button class="close" id="pX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>${esc(userName(S.sel))}</h2><div class="note">時間軸所在的時刻之前，這位選手還沒有紀錄。</div>`; $('#pX').onclick = () => selectPlayer(null); return; }
+  const e = S.meta; const mxBin = Math.max(1, ...p.bins);
+  const sessW = 100; const first = G.t[p.first], last = G.t[p.last]; const spanP = Math.max(1, last - first);
+  const sess = p.sessions.map(s => `<rect x="${((s.a - first) / spanP * sessW).toFixed(2)}" y="8" width="${Math.max(.6, (s.b - s.a) / spanP * sessW).toFixed(2)}" height="12" rx=".5" fill="${s === p.longest ? colors['gold-2'] : colors.gold}" opacity="${s === p.longest ? 1 : .7}"><title>${fmtDate(e.start + s.a)} ${fmtClock(e.start + s.a)}–${fmtClock(e.start + s.b)} · ${s.n} 局 · ${wan(s.ep)}</title></rect>`).join('');
+  const idx = p.idx; const step = Math.max(1, Math.floor(idx.length / 240));
+  const pts = []; for (let k = 0; k < idx.length; k += step) { const i = idx[k]; pts.push([(G.t[i] - first) / spanP * 100, (G.r[i] - 1) / 99 * 100]); } const li = idx[idx.length - 1]; pts.push([100, (G.r[li] - 1) / 99 * 100]);
+  const path = pts.map((q, k) => (k ? 'L' : 'M') + q[0].toFixed(2) + ' ' + q[1].toFixed(2)).join(' ');
+  playerBox.innerHTML = `
+    <button class="close" id="pX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h2>${esc(userName(S.sel))}</h2>
+    <div class="uid">${esc(userTail(S.sel))} · 現在第 ${p.rankNow} 名 · 最高第 ${p.rankBest} 名</div>
+    <div class="rule"></div>
+    <div class="grid">
+      <div class="cell"><i>局數</i><b>${num(p.games)}</b></div>
+      <div class="cell"><i>活動 P</i><b>${wan(p.ep)}</b></div>
+      <div class="cell"><i>每局平均</i><b>${num(p.avg)}</b></div>
+      <div class="cell"><i>最大一局</i><b>${num(p.mx)}</b></div>
+      <div class="cell"><i>局間中位</i><b>${Math.round(p.med / 60)}<small> 分</small></b></div>
+      <div class="cell"><i>最拚的時段</i><b>${pad2(p.bestHour)}:00</b></div>
+    </div>
+    <div class="h3">每局增量分布</div>
+    <div class="hist">${p.bins.map((v, k) => `<i style="height:${Math.max(2, v / mxBin * 100)}%" data-l="${k === 9 ? '6.3萬+' : (k * .7).toFixed(1) + '萬'}" title="${v} 局"></i>`).join('')}</div>
+    <div class="h3" style="margin-top:26px">作息分段 <span class="tiny" style="margin-left:auto">${p.sessions.length} 段 · 間隔逾 30 分鐘即分段</span></div>
+    <svg class="sess" viewBox="0 0 100 28" preserveAspectRatio="none">${sess}</svg>
+    <div class="note">最長連打 ${fmtDur(p.longest.b - p.longest.a)}（${p.longest.n} 局、${wan(p.longest.ep)}）${p.rest ? '，最長休息 ' + fmtDur(p.rest) + '（' + fmtDate(e.start + p.restAt) + ' ' + fmtClock(e.start + p.restAt) + ' 起）' : ''}。</div>
+    <div class="h3">名次軌跡</div>
+    <svg class="spark" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0H100M0 50H100M0 100H100" stroke="${rgba(colors.gold, .25)}" stroke-width=".4" fill="none"/><path d="${path}" fill="none" stroke="${colors['gold-2']}" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg>
+    <div class="tiny" style="display:flex;justify-content:space-between;margin-top:4px"><span>${fmtDate(e.start + first)} ${fmtClock(e.start + first)}</span><span>第 1 名在上</span><span>${fmtDate(e.start + last)} ${fmtClock(e.start + last)}</span></div>
+    <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn" type="button" id="pJump"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>跳到最後一局</button>
+      <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1.5 1.5M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1.5-1.5"/></svg>複製連結</button>
+    </div>`;
+  $('#pX').onclick = () => selectPlayer(null);
+  $('#pJump').onclick = () => { setT(G.t[p.last], true); centerOn(G.t[p.last]); };
+  $('#pShare').onclick = () => { syncUrl(); const u = location.href; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('已複製連結'), () => toast(u)); };
+}
+
+/* ========== 時間控制 ========== */
+function setT(t, silent) { S.T = Math.max(0, Math.min(S.live ? liveT() : span(), t)); onTimeChanged(silent); dirty = true; kick(); }
+let panelTimer = 0;
+function onTimeChanged(throttle) {
+  const upd = () => { $('#tnow').textContent = S.meta ? fmtDate(S.meta.start + S.T) + ' ' + fmtClock(S.meta.start + S.T) : '—'; $('#tday').textContent = 'Day ' + dayIndex(S.meta.start + S.T) + (S.live && Math.abs(S.T - liveT()) < 30 ? ' · now' : ''); $('#ph').style.left = (S.T / span() * 100) + '%'; drawScrub(); if (!mobile() || S.panelOpen) renderPanel(); if (S.sel != null && playerBox.classList.contains('on')) renderPlayer(); };
+  if (!throttle) { upd(); return; }
+  if (!panelTimer) panelTimer = setTimeout(() => { panelTimer = 0; upd(); }, 180);
+}
+function updatePlay() { $('#playBtn').classList.toggle('playing', S.playing); }
+function fitTo(t1) { const r = rect(); const k = Math.max(1, span() / Math.max(3600 * 6, Math.min(span(), t1))); view.gk = view.k = k; view.gtx = view.tx = 0; clampView(); view.tx = view.gtx; kick(); }
+function ensureVisible(t) { const r = rect(); const x = xOf(t, r); if (x > r.x + r.w * .9 || x < r.x + r.w * .1) { view.gtx = r.w * .86 - (t / span()) * r.w * view.gk; clampView(); kick(); } }
+function centerOn(t) { const r = rect(); const k = Math.max(view.gk, 4); view.gk = k; view.gtx = r.w / 2 - (t / span()) * r.w * k; kick(); }
+$('#playBtn').addEventListener('click', () => { if (!S.meta) return; if (!S.playing && S.T >= (S.live ? liveT() : span()) - 1) S.T = 0; S.playing = !S.playing; if (S.playing) { S.follow = false; $('#liveBtn').setAttribute('aria-pressed', 'false'); } updatePlay(); kick(); });
+$('#speed').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; S.speed = +b.dataset.s; $('#speed').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+$('#liveBtn').addEventListener('click', () => { if (!S.live) { toast('這一期已經結束，沒有「現在」可以跟'); return; } S.follow = !S.follow; $('#liveBtn').setAttribute('aria-pressed', S.follow); if (S.follow) { S.playing = false; updatePlay(); setT(liveT()); } });
+/* 拖曳時間軸 */
+const scrub = $('#scrub'); let scrubbing = false;
+const scrubTo = x => { const b = scrub.getBoundingClientRect(); setT(Math.max(0, Math.min(1, (x - b.left) / b.width)) * span()); };
+scrub.addEventListener('pointerdown', e => { scrubbing = true; scrub.setPointerCapture(e.pointerId); S.playing = false; updatePlay(); S.follow = false; $('#liveBtn').setAttribute('aria-pressed', 'false'); scrubTo(e.clientX); });
+scrub.addEventListener('pointermove', e => { if (scrubbing) scrubTo(e.clientX); });
+scrub.addEventListener('pointerup', () => { scrubbing = false; onTimeChanged(false); }); scrub.addEventListener('pointercancel', () => { scrubbing = false; });
+
+/* ========== 畫布互動 ========== */
+const pointers = new Map(); let drag = null, pinch = null, clickTimer = 0;
+function hit(mx, my) {
+  if (S.mode !== 'wall' || !G.n) return -1;
+  const r = rect(); if (mx < r.x || mx > r.x + r.w || my < r.y || my > r.y + r.h) return -1;
+  const tC = tOf(mx, r); const secPerPx = span() / (r.w * view.k); const tw = secPerPx * 8;
+  const i0 = lower(tC - tw), i1 = Math.min(upper(tC + tw), upper(S.T)); let best = -1, bd = 1e9;
+  for (let i = i0; i < i1; i++) { if (!S.bands.has(bandOf(G.r[i])) || (S.big && G.d[i] < BIG)) continue; const dx = xOf(G.t[i], r) - mx, dy = yOf(G.r[i], r) - my; const dd = dx * dx + dy * dy; if (dd < 64 && dd < bd) { bd = dd; best = i; } }
+  return best;
+}
+function zoomAt(mx, f) { const r = rect(); const k = Math.min(400, Math.max(1, view.gk * f)); f = k / view.gk; view.gk = k; view.gtx = mx - r.x - (mx - r.x - view.gtx) * f; clampView(); kick(); }
+function clampView() { const r = rect(); const minTx = r.w - r.w * view.gk; view.gtx = Math.min(0, Math.max(minTx, view.gtx)); }
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.abs(a.x - b.x) || 1, mx: (a.x + b.x) / 2 }; drag = null; return; }
+  drag = { x: e.clientX, tx: view.gtx, moved: false };
+});
+cv.addEventListener('pointermove', e => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && pointers.size === 2) { const [a, b] = [...pointers.values()]; const d = Math.abs(a.x - b.x) || 1, mx = (a.x + b.x) / 2; zoomAt(pinch.mx, d / pinch.d); view.gtx += mx - pinch.mx; clampView(); view.k = view.gk; view.tx = view.gtx; pinch = { d, mx }; return; }
+  if (drag) { const dx = e.clientX - drag.x; if (drag.moved || Math.abs(dx) > 4) { drag.moved = true; view.gtx = drag.tx + dx; clampView(); view.tx = view.gtx; cv.classList.add('grab'); hideTip(); kick(); } return; }
+  if (e.pointerType !== 'mouse') return;
+  if (S.mode === 'rhythm') { const c = rhythmHit(e.clientX, e.clientY); const ch = !c !== !rhythmCell || (c && rhythmCell && (c.d !== rhythmCell.d || c.h !== rhythmCell.h)); if (ch) { rhythmCell = c; dirty = true; kick(); } if (c) showTipRhythm(c, e.clientX, e.clientY); else hideTip(); return; }
+  const h = hit(e.clientX, e.clientY); if (h !== S.hover) { S.hover = h; cv.classList.toggle('pick', h >= 0); dirty = true; kick(); } if (h >= 0) showTip(h, e.clientX, e.clientY); else hideTip();
+});
+const endPointer = e => {
+  pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null;
+  if (drag && !drag.moved && e.type === 'pointerup') {
+    if (S.mode === 'wall') { const h = hit(e.clientX, e.clientY); clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickTimer = 0; if (h >= 0) selectPlayer(G.u[h], { force: true }); else if (S.sel != null) selectPlayer(null); }, 230); }   // 等 230 毫秒確定不是雙擊
+    else { const c = rhythmHit(e.clientX, e.clientY); if (c) { setT(Math.min(S.live ? liveT() : span(), (c.g.dayStart0 - S.meta.start) + c.d * 86400 + (c.h + 1) * 3600)); } }
+  }
+  drag = null; cv.classList.remove('grab');
+};
+cv.addEventListener('pointerup', endPointer); cv.addEventListener('pointercancel', endPointer);
+cv.addEventListener('pointerleave', () => { if (S.hover >= 0) { S.hover = -1; cv.classList.remove('pick'); dirty = true; kick(); } rhythmCell = null; hideTip(); });
+cv.addEventListener('wheel', e => { e.preventDefault(); if (S.mode !== 'wall') return; const f = Math.exp(-(e.deltaMode ? e.deltaY * 20 : e.deltaY) * .0016); zoomAt(e.clientX, f); hideTip(); }, { passive: false });
+cv.addEventListener('dblclick', e => { e.preventDefault(); clearTimeout(clickTimer); clickTimer = 0; view.gk = 1; view.gtx = 0; kick(); });
+function rhythmHit(mx, my) { const gm = rhythmGeom; if (!gm) return null; const h = Math.floor((mx - gm.ox) / gm.cw), d = Math.floor((my - gm.oy) / gm.ch); if (h < 0 || h >= 24 || d < 0 || d >= gm.rows) return null; return { d, h, g: gm.g }; }
+const tip = $('#tip');
+function placeTip(x, y) { const w = tip.offsetWidth, h = tip.offsetHeight; let L = x + 18, T = y + 18; if (L + w > W - 10) L = x - w - 14; if (T + h > H - 10) T = y - h - 14; tip.style.left = L + 'px'; tip.style.top = T + 'px'; }
+function showTip(i, x, y) { if (mobile()) return; tip.innerHTML = `${esc(userName(G.u[i]))}<small>${fmtDate(S.meta.start + G.t[i])} ${fmtClock(S.meta.start + G.t[i])} · +${num(G.d[i])} · 第 ${G.r[i]} 名</small>`; tip.classList.add('on'); placeTip(x, y); }
+function showTipRhythm(c, x, y) { if (mobile()) return; const n = c.g.cnt[c.d][c.h], v = c.g.ep[c.d][c.h]; tip.innerHTML = `Day ${c.d + 1} · ${pad2(c.h)}:00–${pad2((c.h + 1) % 24)}:00<small>${num(n)} 局 · ${wan(v)}${n ? ' · 每局 ' + num(v / n) : ''}</small>`; tip.classList.add('on'); placeTip(x, y); }
+function hideTip() { tip.classList.remove('on'); }
+
+/* ========== 篩選、模式、主題、說明、鍵盤、網址 ========== */
+$('#bands').addEventListener('click', e => {
+  const b = e.target.closest('[data-b]'); if (b) { const k = b.dataset.b; if (S.bands.has(k) && S.bands.size > 1) S.bands.delete(k); else S.bands.add(k); b.setAttribute('aria-pressed', S.bands.has(k)); dirty = true; kick(); return; }
+  if (e.target.closest('#bigChip')) { S.big = !S.big; $('#bigChip').setAttribute('aria-pressed', S.big); dirty = true; kick(); }
+});
+$('#mode').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; setMode(b.dataset.m); });
+function setMode(m) { S.mode = m; $('#mode').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.m === m)); cv.setAttribute('aria-label', m === 'wall' ? '脈動牆：橫軸是活動時間、縱軸是名次，每一點是一局' : '節奏熱圖：日為列、小時為欄'); hideTip(); syncUrl(); dirty = true; kick(); }
+$('#panelBtn').addEventListener('click', () => { S.panelOpen = !S.panelOpen; panel.classList.toggle('open', S.panelOpen); $('#panelBtn').setAttribute('aria-pressed', S.panelOpen); if (S.panelOpen) renderPanel(); if (!mobile()) { panel.style.display = S.panelOpen ? '' : 'none'; resize(); } });
+$('#themeBtn').addEventListener('click', () => { root.classList.toggle('light'); try { localStorage.setItem('sekai-theater-theme', root.classList.contains('light') ? 'light' : 'dark'); } catch (e) {} readTheme(); drawScrub(); if (S.sel != null) renderPlayer(); dirty = true; kick(); });
+function openHelp() { $('#help').classList.add('on'); $('#helpX').focus(); }
+function closeHelp() { $('#help').classList.remove('on'); $('#helpBtn').focus(); }
+$('#helpBtn').addEventListener('click', openHelp); $('#helpX').addEventListener('click', closeHelp);
+$('#help').addEventListener('click', e => { if (e.target === e.currentTarget) closeHelp(); });
+document.addEventListener('keydown', e => {
+  const typing = /^(input|select|textarea)$/i.test((e.target && e.target.tagName) || '');
+  if (e.key === 'Tab' && $('#help').classList.contains('on')) { e.preventDefault(); $('#helpX').focus(); return; }
+  if (e.key === 'Escape') { if ($('#help').classList.contains('on')) closeHelp(); else if (S.sel != null) selectPlayer(null); return; }
+  if (typing || !S.meta) return;
+  if (e.key === ' ' && !(e.target && /^button$/i.test(e.target.tagName || ''))) { e.preventDefault(); $('#playBtn').click(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); const step = (e.shiftKey ? 6 * 3600 : 900) * (e.key === 'ArrowLeft' ? -1 : 1); S.follow = false; $('#liveBtn').setAttribute('aria-pressed', 'false'); setT(S.T + step); }
+  else if (e.key === 'Home') setT(0); else if (e.key === 'End') setT(S.live ? liveT() : span());
+  else if (e.key === '?') { if ($('#help').classList.contains('on')) closeHelp(); else openHelp(); }
+});
+let toastT = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2400); }
+function syncUrl() {
+  if (OG || !S.meta) return;
+  const p = new URLSearchParams(); p.set('e', S.ev); if (S.mode !== 'wall') p.set('m', S.mode); if (S.sel != null) p.set('p', S.sel); if (!S.follow && Math.abs(S.T - (S.live ? liveT() : span())) > 60) p.set('t', Math.round(S.T));
+  history.replaceState(null, '', location.pathname + '?' + p.toString());
+}
+
+/* ========== 活動切換與即時更新 ========== */
+let liveTimer = 0;
+async function openEvent(id, q) {
+  S.ev = id; S.meta = EVENTS.get(id) || { id, name: '第 ' + id + ' 期', start: 0, end: 86400 }; S.sel = null; S.hover = -1; playerBox.classList.remove('on');
+  S.live = Date.now() / 1000 < S.meta.end && Date.now() / 1000 >= S.meta.start; $('#evsel').classList.toggle('on', S.live);
+  $('#loading').hidden = false;
+  try { await loadGames(id); } catch (e) { loadingMsg('逐場紀錄載入失敗：' + e.message); return; }
+  if (!G.n) { loadingMsg('追蹤器沒有第 ' + id + ' 期的紀錄'); }
+  else $('#loading').hidden = true;
+  const qt = q && q.get('t') != null ? +q.get('t') : null;
+  S.follow = S.live && qt == null; $('#liveBtn').setAttribute('aria-pressed', S.follow);
+  S.T = qt != null ? Math.max(0, Math.min(span(), qt)) : (S.live ? liveT() : span());
+  fitTo(S.live ? liveT() + 2 * 3600 : span());
+  if (q && q.get('p') != null && G.byUser.has(+q.get('p'))) { S.sel = +q.get('p'); renderPlayer(); playerBox.classList.add('on'); }
+  onTimeChanged(false); drawScrub(); syncUrl(); dirty = true; kick();
+  clearInterval(liveTimer);
+  if (S.live && !OG) liveTimer = setInterval(pollLive, 15000);
+  document.title = (S.meta.name || '第 ' + id + ' 期') + ' — 衝榜劇場 | Project SEKAI 資源中心';
+}
+async function pollLive() {
+  if (!S.live || document.visibilityState !== 'visible') return;
+  try {
+    const d = await fetchJson(GAMES + '/games?ev=' + S.ev + '&since=' + (G.lastT + 1));
+    const had = G.n; ingest(d, false);
+    if (Date.now() / 1000 >= S.meta.end) { S.live = false; $('#evsel').classList.remove('on'); clearInterval(liveTimer); }
+    if (S.follow) { setT(liveT()); ensureVisible(S.T); } else if (G.n !== had) { if (!mobile() || S.panelOpen) renderPanel(); drawScrub(); dirty = true; kick(); }
+  } catch (e) {}
+}
+$('#ev').addEventListener('change', e => { openEvent(+e.target.value); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.live) pollLive(); });
+addEventListener('resize', scheduleResize);
+if (document.fonts && document.fonts.load) Promise.all(['600 12px "Cormorant Garamond"', '500 12px "Noto Serif TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { readTheme(); resize(); });
+
+/* ========== 開場 ========== */
+(async () => {
+  readTheme(); resize();
+  const q = new URLSearchParams(location.search);
+  await loadEventList();
+  const st = await loadStatus(); const curId = st && st.event ? +st.event.id : 0;
+  if (st && st.event) { const cur = EVENTS.get(curId) || { id: curId }; EVENTS.set(curId, Object.assign({}, cur, { id: curId, name: cur.name || st.event.name, start: cur.start || st.event.startAt / 1000, end: cur.end || st.event.aggregateAt / 1000 })); }
+  /* 追蹤器從第 176 期起有紀錄：列出有資料的期數（問一次每期的名單，很輕） */
+  const ids = []; for (let id = Math.max(176, curId - 8); id <= curId; id++) ids.push(id);
+  const avail = await Promise.all(ids.map(id => fetchJson(GAMES + '/games?ev=' + id + '&uidx=-1').then(d => (d.users || []).length > 0).catch(() => false)));
+  const list = ids.filter((id, i) => avail[i]);
+  const sel = $('#ev'); sel.innerHTML = list.slice().reverse().map(id => { const e = EVENTS.get(id) || {}; return `<option value="${id}">第 ${id} 期 · ${esc(e.name || '')}${id === curId ? '（進行中）' : ''}</option>`; }).join('');
+  if (!list.length) { loadingMsg('追蹤器目前沒有任何逐場紀錄'); return; }
+  const want = +q.get('e'); const id = list.includes(want) ? want : list[list.length - 1]; sel.value = id;
+  if (q.get('m') === 'rhythm') setMode('rhythm');
+  await openEvent(id, q);
+  window.__theater = { S, G, view, hit, rect, xOf, yOf, tOf };   // 給煙霧測試用
+})();
+</script>
+</body>
+</html>
