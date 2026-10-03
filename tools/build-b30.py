@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""從「プロセカ難易度表」(pentatonic,線上試算表＋repo 內釘選版 tools/src/pentatonic-pin.json 取較新者)產生 data/b30-consts.js(B30 產生器用定數表)。
+"""從「プロセカAP難易度表」(EMERALD;v32 以前叫 PENTATONIC,v33 起作者改名並搬到新試算表。線上試算表＋repo 內釘選版 tools/src/pentatonic-pin.json 取較新者)產生 data/b30-consts.js(B30 產生器用定數表)。
 
 資料源:
   - 難易度表試算表(公開 Google Sheet,xlsx 匯出):難易度表(MAS)/難易度表(APD) 兩分頁
@@ -25,7 +25,8 @@ import urllib.request
 import zipfile
 import io
 
-SHEET = 'https://docs.google.com/spreadsheets/d/18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU/export?format=xlsx'
+# v33 起的新試算表(EMERALD)。舊表 18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU(PENTATONIC)停在 V32,不會再更新。
+SHEET = 'https://docs.google.com/spreadsheets/d/1MU1FlzTZ8mX91kjyHBFTIIP7s3oFSRGpvgLjZLP1BUw/export?format=xlsx'
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
 # 台服官方不翻譯曲名(master title=日文原名);中文譯名採 Sekai Viewer 社群翻譯(非官方)
@@ -34,7 +35,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'b30-consts.js'
 # 釘選版:作者釋出新版 xlsx 時線上試算表往往還停在舊版(V32 時線上仍是 V31),
 # 把本機 xlsx 解析成小 JSON 釘在 repo 裡,線上版追上(含所有釘選曲目)前以釘選版為準。
-# 更新方式:python3 tools/build-b30.py --pin '/path/to/スプシ用難易度表PENTATONIC v33.xlsx'
+# 更新方式:python3 tools/build-b30.py --pin '/path/to/スプシ用AP難易度表EMERALD v34.xlsx'
+# (檔名沿用 pentatonic-pin.json,內容是 EMERALD 版;版號取檔名裡的 v 加數字)
 PIN = ROOT / 'tools' / 'src' / 'pentatonic-pin.json'
 
 
@@ -143,13 +145,13 @@ def merge_pin(sheet, pin):
     """線上版已涵蓋釘選版全部曲目 → 線上版較新或相同,用線上版;
     否則線上版還是舊版 → 以線上版為底、釘選版覆蓋並補上新曲。回傳 (sheet, 來源標籤)。"""
     if not pin or not pin['version']:
-        return sheet, 'pentatonic プロセカ難易度表'
+        return sheet, 'EMERALD プロセカAP難易度表'
     ver = f"V{pin['version']}"
     online_has = {k: {norm(t) for t, _, _ in sheet.get(k, [])} for k in ('master', 'append')}
     covered = all({norm(t) for t, _, _ in pin[k]} <= online_has[k] for k in ('master', 'append'))
     if covered:
         print(f'線上版已含釘選 {ver} 全部曲目,採線上版')
-        return sheet, f'pentatonic {ver}+ プロセカ難易度表'
+        return sheet, f'EMERALD {ver}+ プロセカAP難易度表'
     merged = {}
     n_over = n_add = 0
     for k in ('master', 'append'):
@@ -164,7 +166,7 @@ def merge_pin(sheet, pin):
             by[key] = (t, c, p)
         merged[k] = list(by.values())
     print(f'線上版落後釘選 {ver}:覆蓋 {n_over} 筆定數、新增 {n_add} 譜面')
-    return merged, f'pentatonic {ver} プロセカ難易度表'
+    return merged, f'EMERALD {ver} プロセカAP難易度表'
 
 
 def main():
@@ -239,7 +241,7 @@ def main():
                 row['tc'] = tr.strip()   # 社群中文譯名(顯示用;搜尋中日皆可)
             charts.append(row)
 
-    # EXPERT 高難度(Lv28~32):pentatonic 的難易度表只收 MASTER/APPEND,沒有 EXPERT 定數。
+    # EXPERT 高難度(Lv28~32):EMERALD 難易度表只收 MASTER/APPEND,沒有 EXPERT 定數。
     # 本站規則「定數用 .0」—— 直接拿遊戲內等級當定數(Lv29 → 29.0),不做任何推估,
     # 所以不標 e=1(那是「推估」的意思,這裡是明確規則)。
     tc_by_id = {mu['id']: mu for mu in tc_musics}
@@ -264,7 +266,7 @@ def main():
         charts.append(row)
         exp_n += 1
 
-    # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,pentatonic 表自然不會收)
+    # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,EMERALD 表自然不會收)
     # → 用遊戲內等級 +0.5 當中位推估,標 e=1 讓前端顯示「推估」並可排除
     have = {(c['id'], c['d']) for c in charts}
     est = []

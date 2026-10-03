@@ -6815,13 +6815,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 };
                 // builtAt 是 unix 毫秒(例:1787888107618),不是日期字串,要轉過再截
                 const built = (() => { try { const b = this.D() && this.D().builtAt; if (!b) return ''; const d = new Date(typeof b === 'number' ? b : +b); return isFinite(+d) ? d.toISOString().slice(0, 10) : ''; } catch (e) { return ''; } })();
-                // 版號寫在 data 的 source 欄(例:'pentatonic V32 プロセカ難易度表'),別寫死在這裡:
-                // 難易度表改版時只有 build 腳本知道,圖上的署名跟著資料走才不會過期
-                const tbl = (() => { try { const m = /\bv\d+\+?/i.exec((this.D() || {}).source || ''); return m ? 'pentatonic ' + m[0] : 'pentatonic 最新版'; } catch (e) { return 'pentatonic'; } })();
+                // 表名與版號都寫在 data 的 source 欄(例:'EMERALD V33 プロセカAP難易度表';v32 以前是 'pentatonic V32 プロセカ難易度表'),別寫死在這裡:
+                // 難易度表改版、改名時只有 build 腳本知道,圖上的署名跟著資料走才不會過期
+                const tbl = (() => { try { const src = String((this.D() || {}).source || ''); const m = /^\s*(\S+)\s+(v\d+\+?)/i.exec(src); if (m) return m[1] + ' ' + m[2]; const v = /\bv\d+\+?/i.exec(src); return (src.split(/\s+/)[0] || 'EMERALD') + ' ' + (v ? v[0] : '最新版'); } catch (e) { return 'EMERALD'; } })();
 
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 12.5px ' + FB;
                 foot([
-                    '定數:腐食氏「プロセカ難易度表」' + tbl + '(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
+                    '定數:腐食氏「プロセカAP難易度表」' + tbl + '(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
                     '曲目/譜面:Sekai-World sekai-master-db-diff(日)、Team-Haruki haruki-sekai-tc-master(台);中文譯名:Sekai Viewer 社群 i18n',
                     '封面/頭像:storage.sekai.best・版面還原自 Unibot(MIT / Watagashi_uni)',
                     '実効值:AP=定數、FC=定數−1,分母固定 30。非官方算法,僅供參考娛樂。'

@@ -238,7 +238,7 @@ class Component extends DCLogic {
     ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
     ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
-    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|pentatonic|Unibot 風格|AP=定數、FC=定數−1'],
+    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|EMERALD|pentatonic|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
     ['抽卡模擬', '', 'gachasim', '模擬抽卡|抽卡模擬器|模擬十連|gachasim'],
     ['收集室（貼圖與稱號圖鑑）', '', 'collect', '收集室|貼圖|稱號|1,073 張貼圖|1,883 種稱號|取得條件'],
@@ -386,6 +386,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' }
   ];
   SYSLOG = [
+    { d: '2026/10/03', t: '定數表更新至 EMERALD V33（原 PENTATONIC）', s: '難易度表作者把「プロセカ難易度表」改名 EMERALD 並搬到新的試算表，站上的定數來源跟著換到新表並釘住 V33：新增 9 張譜面（こわれちゃった！！ MASTER／APPEND、正解、エメラルド MASTER／APPEND、ヘレディティ、shake it!、敗走、きのせい，目前都還是日服先行曲）、修正 34 筆定數（APPEND 37 帶整體上修：MarbleBlue. 37.8、おぎゃりないざー 37.6、0.0000034 37.5、ネクラチューンサーカス與メモリア 37.2；MASTER 32 帶重排 24 筆、29 帶 5 筆，含「+」細分調整）。曲庫共 911 張譜面（台服 803、日服限定 108），並補上 334 張譜面的社群中文譯名。B30 圖卡的署名改為依資料來源顯示表名與版號，之後改版、改名都不必再改程式。' },
     { d: '2026/09/25', t: 'Haruki 專區：MySekai 與重新整理的分頁', s: 'Haruki 專區改成五個分頁：總覽（每項一張卡片：組卡、角色等級、挑戰 Live、綜合力加成、MySekai 今日資源、大門、唱片，點一下直接前往）、組卡（照「選活動與歌曲 → 怎麼打 → 卡片假設」三步）、養成、MySekai、說明（教學與資源）。還沒匯入資料時改成三步驟上手，資料超過一天會提醒重新上傳，上次看的分頁會記住。新增 MySekai：今日資源（各採集地還沒採的資源，唱片與稀有素材排前面）、來訪角色與天氣排程、大門升級（接下來三級各要多少素材、手上夠不夠、能直接升到幾級）、唱片收集（依團體列出還沒拿到的）、家具與對話（連到家具圖鑑與豆森對話）；整理方式照 Team Haruki 的 Haruki-Cloud。地圖與天氣是上傳當下的狀態，過了 5:00／17:00 重置會提醒。', p: 'haruki' },
     { d: '2026/09/25', t: 'Haruki 專區：養成進度', s: 'Haruki 專區多一個「養成進度」分頁，算法照 Haruki 工具箱的養成頁：隊長次數（一般次數、EX 等級與累計）、羈絆（各組等級與升級還差多少）、綜合力加成（團體、屬性與角色三種，拆成區域道具、角色等級、MySekai 家具與大門）、挑戰 Live（最高分、關卡、下一個獎勵門檻與還沒領的獎勵數），以及區域道具升級建議：用組卡引擎算你目前隊伍每個道具升一級多多少綜合力，依每枚金幣換到的綜合力排序，連同金幣、不可思議的種子與祈願水滴的花費。', p: 'haruki' },
     { d: '2026/09/25', t: 'Haruki 專區：活動最佳組卡、角色等級 EXP', s: '工具類多一頁「Haruki 專區」，用你匯入的 Haruki 工具箱遊戲資料：組卡推薦用 Team Haruki 的 sekai-deck-recommend-cpp 引擎（在瀏覽器裡執行），選活動、歌曲、Live 類型與目標（活動 PT／綜合力／加成／技能）找出前五隊，並列出目前隊伍的分數與第一名隊伍最划算的歌；角色等級列出 26 位角色目前等級、升級進度、已達成未領的 EXP 與各任務下一階；另有等級 EXP 試算、master 版本、素材源切換與用到的開源專案；「使用教學」七個步驟從註冊、綁定驗證、三種上傳方式、iOS 模組與代理教學到開放公開 API 與撤銷授權，每步都有按鈕直接連到 Haruki 工具箱對應頁面（我的帳號的 Haruki 卡片也有入口）。其他頁一起接上：計算中心可「從 Haruki 帶入目前隊伍」的綜合力、加成與技能倍率；匯入時沒綁 Player ID 會自動綁、進行中活動的活動P 帶進活動試算；跑榜工作室「只用我的卡」改用每張卡的實際專精。', p: 'haruki' },
@@ -2160,7 +2161,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=0131ead783';
+      el.src = './js/core.js?v=9afd538e88';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2407,7 +2408,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=e2705419bd').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=db2141658e').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -7369,7 +7370,7 @@ class Component extends DCLogic {
   /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
   loadConsts() {
     if (this.state.consts || this._constsP) return;
-    this._constsP = fetch('./data/b30-consts.js?v=ef4cb24d3f').then(r => r.text()).then(txt => {
+    this._constsP = fetch('./data/b30-consts.js?v=c6675f2d4a').then(r => r.text()).then(txt => {
       const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
       ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
       this.setState({ consts: map });
