@@ -427,7 +427,7 @@ export function aiMembers() {
         window_hours: { type: 'number', description: '「近期時速」的窗口小時數，預設 6、上限 72；跨距不足半小時會自動退回整段' } },
         required: ['tier'] } },
     { name: 'get_chart_consts',
-      description: '查譜面「定數」（非官方難易度表 pentatonic V32，AP 基準，MASTER／APPEND／EXPERT 共 897 張譜、715 首曲）。定數不是遊戲內等級：level 是遊戲給的整數 Lv，const_value／const_label 是社群把同一 Lv 再細分到小數的難度排名（如 32.9+），兩者不可互相當成對方講。使用者問「某某歌定數多少」「32.5 有哪些譜面」「33 以上的 APPEND」「台服最硬的譜面」時用。只查定數表本身、不看使用者成績；算他自己的 B30 或「下一張該打哪首」用 get_b30。',
+      description: '查譜面「定數」（非官方難易度表 EMERALD V33（v32 以前叫 pentatonic），AP 基準，MASTER／APPEND／EXPERT 共 911 張譜、726 首曲）。定數不是遊戲內等級：level 是遊戲給的整數 Lv，const_value／const_label 是社群把同一 Lv 再細分到小數的難度排名（如 32.9+），兩者不可互相當成對方講。使用者問「某某歌定數多少」「32.5 有哪些譜面」「33 以上的 APPEND」「台服最硬的譜面」時用。只查定數表本身、不看使用者成績；算他自己的 B30 或「下一張該打哪首」用 get_b30。',
       input_schema: { type: 'object', properties: {
         q: { type: 'string', description: '曲名關鍵字，用日文原名（ヒバナ）或中文譯名（火花），羅馬拼音查不到。一首歌會回它的各難度列' },
         song_id: { type: 'integer', description: '曲目 id（同 get_songs），比曲名精準' },
@@ -1387,7 +1387,7 @@ export function aiMembers() {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=a984fa63a2';
+              s.src = 'data/b30-consts.js?v=eb79088ab7';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -2831,7 +2831,7 @@ export function aiMembers() {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=7b26ef334a';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=22e81c75fc';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -5182,7 +5182,7 @@ export function aiMembers() {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=a984fa63a2';
+              s.src = 'data/b30-consts.js?v=eb79088ab7';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
