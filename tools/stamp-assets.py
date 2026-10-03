@@ -16,7 +16,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-HTML = ['index.html', 'app.html', 'ep-calculator.html', 'tutorial.html', 'starmap.html', 'theater.html']
+HTML = ['index.html', 'app.html', 'ep-calculator.html', 'tutorial.html', 'starmap.html', 'theater.html', 'soundprint.html']
 ASSET_DIRS = ['js', 'css', 'data', 'vendor']
 ASSET_FILES = ['support.js']
 # js/*.js 內部也會用 import('./data/xxx.js?v=…') 動態載入資料檔,那些戳記

@@ -10,6 +10,7 @@
 -  EP 計算器 - 精確 EP 計算、活動試算、控分工具
 -  SEKAI 星圖（`starmap.html`）- 全曲庫化成一片可互動的星空：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮、可分享的星星連結；詳情可試聽（與曲庫頁同音源：第 10 秒起 60 秒、淡入淡出），「星空電台」在看得見的星之間隨機漫遊播放
 -  衝榜劇場（`theater.html`）- 前百名的每一場：Worker 每 15 秒記一次的逐場紀錄攤成脈動牆（時間×名次）、節奏熱圖、選手剖析（場次、分布、作息分段、名次軌跡）、此刻統計與即時紀錄，拖曳時間可回放整期
+-  SEKAI 聲紋（`soundprint.html`）- 每一首歌的傅立葉肖像：在瀏覽器裡對全曲音訊做短時傅立葉轉換（Hann 2048／跳距 512／128 對數頻帶），畫成時間繞一圈、頻率由內而外的極座標聲紋；另有攤平頻譜與自相似矩陣的結構圖，推算調性（Krumhansl）、速度（自相關，與官方 BPM 對照）、亮度、動態、低中高頻與段落；可試聽任一刻、輸出海報
 
 ## 伺服器機器人（bot/）
 
@@ -22,6 +23,7 @@
 | `*.html` | 頁面。`app.html` 是首頁 SPA，`index.html` 同時是經典版與五個內嵌面板的來源 | 每次重新驗證 |
 | `starmap.html` | 獨立頁：全曲庫星圖。只吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`，沒有其他依賴 | 每次重新驗證 |
 | `theater.html` | 獨立頁：衝榜劇場。資料直接向 `games.project-sekai-center.com/games?ev=` 拉逐局紀錄（gzip，一期約 5 MB），活動進行中每 15 秒增量更新；活動資料用 HiSekai `/event/list` 與 `data/borders-db.js` | 每次重新驗證 |
+| `soundprint.html` | 獨立頁：SEKAI 聲紋。曲庫吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`；音源直接向 sekai.best 資產鏡像拉全曲 mp3（約 2 MB），全部在瀏覽器的 Worker 裡做 FFT，不經本站伺服器 | 每次重新驗證 |
 | `js/core.js` | `index.html` 抽出的共用邏輯，五個 embed 共享同一份 | 一年 immutable |
 | `css/core.css` | 同上，共用樣式 | 一年 immutable |
 | `data/*.js` | 曲庫、貼圖稱號、卡片對照等靜態資料 | 一年 immutable |

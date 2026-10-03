@@ -863,7 +863,7 @@ function renderPanel(s) {
     <div class="acts">
       ${n > 1 ? `<button class="btn" type="button" id="pCons" aria-pressed="${S.cons === s.composer}"><svg viewBox="0 0 24 24"><path d="M5 19l5-9 4 5 5-10"/><circle cx="5" cy="19" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="14" cy="15" r="1.4"/><circle cx="19" cy="5" r="1.4"/></svg>同作曲者 ${n} 首</button>` : ''}
       <a class="btn" href="./app.html?page=songs&q=${encodeURIComponent(s.tc || s.t)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>在曲庫打開</a>
-      <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1.5 1.5M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1.5-1.5"/></svg>複製連結</button>
+      <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1.5 1.5M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1.5-1.5"/></svg>複製連結</button>${(s.abnV || s.abnS) ? `<a class="btn" href="./soundprint.html?s=${s.id}" title="這首歌的傅立葉肖像"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"/></svg>聲紋</a>` : ''}
     </div>
     <div class="pf">${S.proj === 'dens' ? '縱軸是每秒音符數：' + DIFF_NAME[S.diff] + ' 的音符數除以曲長。' : s.hasC[S.diff] ? '定數來自 pentatonic 難易度表（非官方）。' : '這張譜還沒有定數，暫以等級代替。'}</div>`;
   const img = $('#pJk'); img.onload = () => img.classList.add('ok'); img.onerror = () => { if (img.dataset.alt) { img.src = img.dataset.alt; img.dataset.alt = ''; } else img.remove(); };

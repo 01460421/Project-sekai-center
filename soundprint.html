@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070e">
+<title>SEKAI 聲紋 — 每一首歌的傅立葉肖像 | Project SEKAI 資源中心</title>
+<meta name="description" content="把 Project SEKAI 每一首歌的音訊真正做短時傅立葉轉換：時間繞成一圈、頻率由內而外、亮度是能量，畫成一張極座標的聲紋肖像；再從頻譜推算調性、速度、亮度、動態與段落結構，與官方 BPM 對照，可試聽、可輸出海報。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SEKAI 聲紋 — 每一首歌的傅立葉肖像">
+<meta property="og:description" content="每一首歌的音訊做短時傅立葉轉換，時間繞成一圈、頻率由內而外，畫成一張聲紋肖像；調性、速度、亮度、動態、段落結構一次看清。">
+<meta property="og:url" content="https://project-sekai-center.com/soundprint.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/soundprint.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/soundprint.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>/* 主題：預設夜空；站上明確選了淺色才用「象牙」版。畫面繪製前套用，避免閃爍。 */
+try{var _q=new URLSearchParams(location.search);var _t=localStorage.getItem('sekai-soundprint-theme')||localStorage.getItem('sekai-starmap-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
+if(_t==='light')document.documentElement.classList.add('light');if(_q.get('og'))document.documentElement.classList.add('og');}catch(e){}</script>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#05070e; --bg-2:#0a0e1b; --ink:#ebe4d3; --ink-2:#b3ab98; --ink-3:#87826f;
+  --gold:#d4b673; --gold-2:#ecdcaa; --line:rgba(212,182,115,.17); --line-2:rgba(212,182,115,.38); --hair:rgba(235,228,211,.07);
+  --glass:rgba(6,9,19,.6); --glass-2:rgba(8,11,23,.86);
+  --ln:#7081f2; --mmj:#a6d564; --vbs:#f49474; --wxs:#f0c862; --n25:#c198ec; --vs:#6edbd6; --other:#d6cfbe;
+  --serif:'Noto Serif TC','Cormorant Garamond',Georgia,'Songti TC','PMingLiU',serif;
+  --display:'Cormorant Garamond','Noto Serif TC',Georgia,'Times New Roman',serif;
+  --shadow:0 18px 50px rgba(0,0,0,.55);
+  --ease:cubic-bezier(.32,.72,.24,1);
+  --halo:.8; --grain:.07; --vig:rgba(0,0,0,.62);
+}
+:root.light{
+  color-scheme:light;
+  --bg:#f1ebdf; --bg-2:#f9f5ec; --ink:#231e16; --ink-2:#564e42; --ink-3:#6b6355;
+  --gold:#7f6220; --gold-2:#5e4714; --line:rgba(122,96,44,.24); --line-2:rgba(122,96,44,.46); --hair:rgba(35,30,22,.08);
+  --glass:rgba(249,245,236,.76); --glass-2:rgba(249,245,236,.94);
+  --ln:#3d50c8; --mmj:#477a18; --vbs:#c8472a; --wxs:#8a6a08; --n25:#7f48ad; --vs:#137a76; --other:#6d6656;
+  --shadow:0 18px 50px rgba(60,45,20,.16);
+  --halo:.42; --grain:.1; --vig:rgba(80,60,20,.2);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--serif);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:1.5px solid var(--gold);outline-offset:2px}
+#stage:focus-visible{outline-offset:-3px}
+a{color:var(--gold-2)}
+/* 底色：一團極慢飄動的雲氣，顏色跟著現在這首歌的團體 */
+body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;opacity:var(--halo);filter:blur(40px);
+  background:
+    radial-gradient(42% 38% at 50% 48%,color-mix(in oklab,var(--cur,var(--gold)) 16%,transparent),transparent 70%),
+    radial-gradient(34% 32% at 12% 18%,color-mix(in oklab,var(--ln) 14%,transparent),transparent 70%),
+    radial-gradient(34% 30% at 88% 14%,color-mix(in oklab,var(--n25) 12%,transparent),transparent 70%),
+    radial-gradient(40% 36% at 80% 90%,color-mix(in oklab,var(--vs) 10%,transparent),transparent 70%),
+    radial-gradient(28% 28% at 16% 88%,color-mix(in oklab,var(--vbs) 10%,transparent),transparent 70%);
+  animation:drift 100s ease-in-out infinite alternate;transition:background 1.2s}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.06)}}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none;cursor:default;outline:none}
+#stage.pick{cursor:pointer}
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;background-size:240px 240px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+:root.light .grain{mix-blend-mode:multiply}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(115% 88% at 50% 46%,transparent 56%,var(--vig) 100%)}
+
+/* ===== 玻璃與髮絲線 ===== */
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);cursor:pointer;color:var(--ink-2);box-shadow:var(--shadow);transition:color .25s,border-color .25s,background .25s;flex:none}
+.ib:hover{color:var(--gold-2);border-color:var(--line-2)}
+.ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ib[aria-pressed=true]{color:var(--gold-2);border-color:var(--gold);background:color-mix(in oklab,var(--gold) 14%,var(--glass))}
+.sc{font-family:var(--display);font-weight:600;letter-spacing:2.5px;text-transform:uppercase}
+
+/* ===== 頂欄 ===== */
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px 0;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;flex-wrap:wrap}
+.bar>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand b{font-family:var(--serif);font-weight:600;font-size:16.5px;letter-spacing:1.5px;line-height:1.05;display:block}
+.brand small{display:block;font-size:8.5px;letter-spacing:3.4px;color:var(--gold);font-weight:600;line-height:1;margin-top:4px;font-family:var(--display);text-transform:uppercase}
+.search{flex:1 1 220px;max-width:470px;display:flex;align-items:center;gap:9px;padding:0 8px 0 16px;height:44px;border-radius:999px;position:relative}
+.search svg{width:17px;height:17px;fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-linecap:round;flex:none}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--ink);font:inherit;font-size:14px;min-width:0;letter-spacing:.3px}
+.search input::placeholder{color:var(--ink-3)}
+.search kbd{font-family:var(--display);font-size:12px;font-weight:600;color:var(--ink-3);border:1px solid var(--line-2);border-radius:3px;padding:0 6px;line-height:1.5}
+.search .x{display:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;align-items:center;justify-content:center}
+.search.has .x{display:inline-flex}
+.search.has kbd{display:none}
+.results{position:absolute;top:52px;left:0;right:0;border-radius:10px;padding:6px;display:none;max-height:min(60vh,520px);overflow:auto;scrollbar-width:thin;background:var(--glass-2)}
+.results.on{display:block}
+.results button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:6px 8px;border:0;background:none;border-radius:6px;cursor:pointer;color:var(--ink)}
+.results button:hover,.results button[aria-selected=true]{background:color-mix(in oklab,var(--gold) 12%,transparent)}
+.results img{width:38px;height:38px;object-fit:cover;flex:none;border:1px solid var(--line);background:var(--bg-2)}
+.results .t{font-size:13.5px;font-weight:500;letter-spacing:.3px;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results .s{font-size:11px;color:var(--ink-3);margin-top:2px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.results .dot{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);flex:none;margin-left:auto}
+.results .mute{color:var(--ink-3)}
+.results .mute .t{color:var(--ink-3)}
+.seg{display:flex;padding:4px 6px;border-radius:999px;gap:2px;flex:none}
+.seg button{border:0;background:none;color:var(--ink-2);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.8px;padding:0 13px;height:34px;border-radius:999px;cursor:pointer;white-space:nowrap;position:relative;transition:color .25s}
+.seg button::after{content:'';position:absolute;left:14px;right:14px;bottom:6px;height:1px;background:var(--gold);transform:scaleX(0);transition:transform .3s var(--ease)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{color:var(--gold-2)}
+.seg button[aria-pressed=true]::after{transform:scaleX(1)}
+.spacer{flex:1}
+
+/* ===== 左下：這一回合畫過的聲紋 ===== */
+.shelf{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:flex-end;gap:8px;max-width:calc(100vw - 32px);pointer-events:none}
+.shelf>*{pointer-events:auto}
+.shelf .lbl{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);writing-mode:vertical-rl;transform:rotate(180deg);height:54px;display:none;align-items:center}
+.shelf.has .lbl{display:flex}
+.shelf .list{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 2px 2px}
+.shelf .list::-webkit-scrollbar{display:none}
+.sh{width:54px;height:54px;border-radius:50%;padding:0;border:1px solid var(--line);background:var(--glass);overflow:hidden;cursor:pointer;box-shadow:var(--shadow);position:relative;flex:none;transition:transform .3s var(--ease),border-color .25s}
+.sh canvas{width:100%;height:100%;display:block;border-radius:50%}
+.sh:hover{transform:translateY(-3px);border-color:var(--line-2)}
+.sh[aria-current=true]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 18px color-mix(in oklab,var(--gold) 40%,transparent),var(--shadow)}
+.sh.busy::after{content:'';position:absolute;inset:16px;border-radius:50%;border:1px solid var(--line-2);border-top-color:var(--gold-2);animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== 右下：狀態列 ===== */
+.hud{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:19;display:flex;align-items:center;gap:8px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud .st{height:32px;display:flex;align-items:center;gap:9px;padding:0 15px;border-radius:999px;font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;letter-spacing:.6px}
+.hud .st b{color:var(--gold-2);font-size:14px;letter-spacing:.5px}
+.hud .st i{font-style:normal;color:var(--ink-3);font-family:var(--serif);font-weight:400;font-size:12px;letter-spacing:.5px}
+.hud .ib{width:32px;height:32px}
+.hud .ib svg{width:15px;height:15px}
+
+/* ===== 右側：分析卡 ===== */
+.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:376px;max-height:calc(100vh - var(--bar-h,56px) - 76px);max-height:calc(100dvh - var(--bar-h,56px) - 76px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.panel.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+.panel .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:color .2s,border-color .2s}
+.panel .close:hover{color:var(--gold-2);border-color:var(--line-2)}
+.panel .close svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+.ph{display:flex;gap:15px;align-items:flex-start;padding-right:28px}
+.jk{width:84px;height:84px;flex:none;padding:4px;border:1px solid var(--line-2);background:var(--bg-2);position:relative;box-shadow:0 14px 30px color-mix(in oklab,var(--c) 32%,transparent)}
+.jk::before{content:'';position:absolute;inset:-5px;border:1px solid var(--line);pointer-events:none}
+.jk .in{position:relative;width:100%;height:100%;overflow:hidden;background:var(--bg-2)}
+.jk img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s;position:relative;z-index:1}
+.jk img.ok{opacity:1}
+.pt{min-width:0;padding-top:2px}
+.pt .sc{font-size:10px;color:var(--gold)}
+.pt h2{font-family:var(--serif);font-size:18px;line-height:1.35;font-weight:600;letter-spacing:.6px;word-break:break-word;margin-top:3px}
+.pt .jp{font-size:12px;color:var(--ink-3);margin-top:3px;word-break:break-word;letter-spacing:.3px}
+.pt .by{font-size:12px;color:var(--ink-2);margin-top:7px;line-height:1.7}
+.pt .by b{font-weight:500;color:var(--gold);font-size:11px;letter-spacing:1px;margin-right:2px}
+.units{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.units span{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-2)}
+.units i{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.facts div{padding:8px 4px 7px;border:1px solid var(--line);text-align:center;background:color-mix(in oklab,var(--bg-2) 40%,transparent)}
+.facts small{display:block;font-family:var(--display);font-size:9.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-3)}
+.facts b{display:block;font-family:var(--display);font-size:17px;font-weight:600;color:var(--gold-2);letter-spacing:.3px;margin-top:2px;line-height:1.1}
+.facts b.zh{font-family:var(--serif);font-size:14px;margin-top:4px}
+.ttl{display:flex;align-items:center;gap:10px;margin-top:16px;font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold)}
+.ttl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)}
+.an{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+.an .r{display:flex;flex-direction:column;padding:6px 0;border-bottom:1px solid var(--hair)}
+.an .k{font-family:var(--display);font-size:9.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink-3)}
+.an b{font-family:var(--serif);font-weight:600;font-size:15px;color:var(--ink);letter-spacing:.3px;line-height:1.3;margin-top:2px}
+.an b em{font-family:var(--display);font-style:normal;font-size:16px;color:var(--gold-2)}
+.an small{font-size:11px;color:var(--ink-2);letter-spacing:.3px;line-height:1.5}
+.viz{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.viz figure{position:relative}
+.viz canvas{width:100%;display:block}
+.viz figcaption{position:absolute;left:0;right:0;bottom:-2px;text-align:center;font-family:var(--display);font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+.bands{margin-top:12px;display:grid;grid-template-columns:auto 1fr auto;gap:5px 10px;align-items:center;font-size:11.5px}
+.bands .k{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink-3)}
+.bands .bar2{height:4px;background:var(--hair);position:relative}
+.bands .bar2 i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--c),var(--gold-2));box-shadow:0 0 8px color-mix(in oklab,var(--gold) 40%,transparent)}
+.bands b{font-family:var(--display);font-weight:600;color:var(--ink-2);font-size:12px;min-width:34px;text-align:right}
+.secs{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--ink-2)}
+.secs span{display:inline-flex;align-items:baseline;gap:5px;cursor:pointer;border-bottom:1px dotted transparent}
+.secs span:hover{border-bottom-color:var(--gold)}
+.secs b{font-family:var(--display);font-weight:600;color:var(--gold-2);font-size:12.5px;letter-spacing:1px}
+.secs i{font-style:normal;font-family:var(--display);color:var(--ink-3);font-size:12px}
+.btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:3px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font-family:var(--serif);font-weight:500;font-size:12.5px;letter-spacing:.8px;cursor:pointer;text-decoration:none;transition:background .25s,color .25s,border-color .25s;white-space:nowrap}
+.btn:hover{background:color-mix(in oklab,var(--gold) 12%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn[aria-pressed=true]{background:color-mix(in oklab,var(--gold) 18%,transparent);color:var(--gold-2);border-color:var(--gold)}
+.btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.btn .pause{display:none}
+.btn[aria-pressed=true] .play{display:none}
+.btn[aria-pressed=true] .pause{display:block}
+.pr{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pf{margin-top:12px;font-size:11px;color:var(--ink-3);line-height:1.7;letter-spacing:.3px}
+
+/* ===== 中央：開場、進度 ===== */
+.center{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;text-align:center;pointer-events:none;width:min(560px,92vw);transition:opacity .6s}
+.center.off{opacity:0;visibility:hidden}
+.center.card{padding:26px 36px 24px;border-radius:10px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);width:auto;min-width:300px}
+.center>*{pointer-events:auto}
+.center .sc{color:var(--gold);font-size:12px}
+.center h1{font-family:var(--serif);font-size:clamp(34px,6vw,58px);font-weight:600;letter-spacing:8px;line-height:1.1;margin-top:6px}
+.center .rule{display:block;width:160px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto 0;position:relative;overflow:hidden}
+.center .rule.live::after{content:'';position:absolute;left:-40%;top:0;width:40%;height:100%;background:var(--gold-2);animation:sweep 1.4s ease-in-out infinite}
+@keyframes sweep{from{left:-40%}to{left:100%}}
+.center p{font-size:14px;color:var(--ink-2);letter-spacing:1px;line-height:1.9;margin:14px auto 0;max-width:460px}
+.center .pct{font-family:var(--display);font-size:46px;font-weight:500;letter-spacing:2px;color:var(--gold-2);line-height:1;margin-top:10px}
+.center .pct small{font-size:16px;letter-spacing:3px;color:var(--ink-3);margin-left:4px}
+.center .msg{font-size:13px;color:var(--ink-2);letter-spacing:2px;margin-top:10px}
+.center .acts{display:flex;justify-content:center;gap:10px;margin-top:20px;flex-wrap:wrap}
+.center canvas{display:block;width:min(420px,80vw);height:90px;margin:10px auto 0}
+.intro .acts .btn{height:38px;padding:0 20px;font-size:13px}
+
+/* ===== 提示、吐司、說明 ===== */
+.tip{position:fixed;z-index:30;pointer-events:none;padding:6px 11px;border-radius:3px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:.8px;color:var(--ink);opacity:0;transition:opacity .15s;white-space:nowrap}
+.tip.on{opacity:1}
+.tip i{font-style:normal;color:var(--ink-3);font-family:var(--serif);font-weight:400;font-size:11.5px;margin-left:6px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;padding:9px 18px;border-radius:3px;background:var(--glass-2);border:1px solid var(--line-2);color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.8px;opacity:0;transition:.3s var(--ease);pointer-events:none;box-shadow:var(--shadow);max-width:min(92vw,560px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.help{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;background:color-mix(in oklab,var(--bg) 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.help.on{display:flex}
+.help .card{width:min(640px,100%);max-height:90vh;max-height:90dvh;overflow:auto;padding:30px 34px 26px;border-radius:8px;background:var(--glass-2);border:1px solid var(--line-2);box-shadow:var(--shadow);position:relative;outline:1px solid var(--line);outline-offset:5px}
+.help .sub{font-family:var(--display);font-style:italic;font-weight:500;font-size:15px;letter-spacing:4px;color:var(--gold);text-transform:uppercase}
+.help h3{font-family:var(--serif);font-size:26px;font-weight:600;margin-top:4px;letter-spacing:3px}
+.help p{margin-top:13px;font-size:14px;color:var(--ink-2);line-height:1.9;letter-spacing:.3px}
+.help p b{color:var(--ink);font-weight:600}
+.help ul{margin:10px 0 0 18px;font-size:13.5px;color:var(--ink-2);line-height:1.95;letter-spacing:.3px}
+.help ul b{color:var(--gold-2);font-weight:600}
+.help .close{position:absolute;top:16px;right:16px}
+.help .src{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.8;letter-spacing:.3px}
+.help canvas{display:block;width:100%;height:120px;margin-top:14px;border:1px solid var(--line);background:color-mix(in oklab,var(--bg) 40%,transparent)}
+.help .kbd{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-top:12px;font-size:12.5px;color:var(--ink-2)}
+.help .kbd kbd{font-family:var(--display);font-weight:600;font-size:12px;border:1px solid var(--line-2);border-radius:3px;padding:0 7px;color:var(--ink)}
+.ogtitle{display:none;position:fixed;left:40px;bottom:40px;z-index:30}
+.ogtitle small{display:block;font-family:var(--display);font-style:italic;letter-spacing:5px;color:var(--gold);font-size:18px;text-transform:uppercase}
+.ogtitle b{display:block;font-family:var(--serif);font-size:58px;font-weight:600;letter-spacing:10px;line-height:1.1}
+.ogtitle i{display:block;width:120px;height:1px;background:linear-gradient(90deg,var(--gold),transparent);margin:12px 0}
+.ogtitle span{font-size:17px;color:var(--ink-2);letter-spacing:3px}
+:root.og .bar,:root.og .panel,:root.og .shelf,:root.og .hud,:root.og .center,:root.og .tip{display:none!important}
+:root.og .ogtitle{display:block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:860px){
+  .bar{gap:8px;padding:10px 10px 0;padding-top:calc(10px + env(safe-area-inset-top))}
+  .brand{padding:0 13px 0 8px;height:40px;gap:9px}
+  .brand svg{width:24px;height:24px}
+  .brand b{font-size:14.5px;letter-spacing:1px}
+  .brand small{display:none}
+  .search{flex:1 1 100%;order:3;height:40px;max-width:none}
+  .search input{font-size:16px}
+  .bar .ib{order:2;width:34px;height:34px}
+  .bar .ib svg{width:16px;height:16px}
+  .bar .spacer{order:1}
+  .bar .seg{order:4;width:100%;justify-content:center}
+  .seg button{height:30px;padding:0 10px;font-size:12.5px;flex:1}
+  .results{top:46px}
+  .shelf{left:10px;right:76px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:none}
+  .shelf .lbl{display:none!important}
+  .sh{width:44px;height:44px}
+  .hud{right:10px;bottom:calc(10px + env(safe-area-inset-bottom))}
+  .hud .st{display:none}
+  .panel{top:auto;right:0;left:0;bottom:0;width:auto;max-height:min(62vh,calc(100vh - var(--bar-h,56px) - 16px));max-height:min(62dvh,calc(100dvh - var(--bar-h,56px) - 16px));border-radius:12px 12px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(24px);outline:none}
+  .panel::before{content:'';display:block;width:36px;height:2px;background:var(--line-2);margin:0 auto 12px}
+  .panel.on{transform:none}
+  .tip{display:none}
+  .ogtitle{left:24px;bottom:24px}
+  .center h1{letter-spacing:5px}
+}
+@media (max-width:1180px) and (min-width:861px){.brand small{display:none}.brand{padding-right:14px}.search{flex-basis:150px}.seg button{padding:0 10px;font-size:12.5px}}
+@media (hover:none){.search kbd{display:none}}
+@media (prefers-reduced-motion:reduce){
+  body::before{animation:none}
+  .panel,.sh,.ib,.btn,.tip,.toast,.seg button::after,.center{transition:none}
+}
+</style>
+</head>
+<body>
+<canvas id="stage" tabindex="0" aria-label="聲紋肖像：時間繞成一圈、頻率由內而外；點環上任一處可聽那一刻"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand glass" href="./app.html" title="回 SEKAI 資源中心">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#d4b673" stroke-opacity=".55" stroke-width=".8"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="#d4b673" stroke-opacity=".45" stroke-width=".7"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="#ecdcaa" stroke-width=".9"/><path d="M16 1.5v4M16 26.5v4M1.5 16h4M26.5 16h4" stroke="#ecdcaa" stroke-width=".9" stroke-linecap="round"/></svg>
+    <span><b>SEKAI 聲紋</b><small>Fourier Portraits</small></span>
+  </a>
+  <label class="search glass" id="qbox">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="搜尋曲名、作曲者…" autocomplete="off" spellcheck="false" aria-label="搜尋歌曲" role="combobox" aria-expanded="false" aria-controls="results" aria-autocomplete="list">
+    <kbd aria-hidden="true">/</kbd>
+    <button class="x" id="qx" type="button" aria-label="清除搜尋"><svg viewBox="0 0 24 24" style="stroke:currentColor"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="results glass" id="results" role="listbox" aria-label="搜尋結果"></div>
+  </label>
+  <div class="seg glass" role="group" aria-label="檢視" id="mode">
+    <button type="button" data-m="portrait" aria-pressed="true">肖像</button>
+    <button type="button" data-m="spectrum" aria-pressed="false">頻譜</button>
+    <button type="button" data-m="structure" aria-pressed="false">結構</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="ib" id="randBtn" type="button" title="隨機一首（R）"><svg viewBox="0 0 24 24"><path d="M4 7h3.5c2.5 0 3.5 1.5 5 5s2.5 5 5 5H20M4 17h3.5c1.4 0 2.3-.5 3-1.3M13.5 8.3c.7-.8 1.6-1.3 3-1.3H20"/><path d="m18 4.5 2.5 2.5L18 9.5M18 14.5l2.5 2.5-2.5 2.5"/></svg></button>
+  <button class="ib" id="panelBtn" type="button" title="分析卡" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+  <button class="ib" id="themeBtn" type="button" title="切換夜空／象牙"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg></button>
+  <button class="ib" id="helpBtn" type="button" title="這是什麼？（?）"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
+</header>
+
+<aside class="panel" id="panel" aria-live="polite"></aside>
+
+<aside class="shelf" id="shelf" aria-label="這一回合畫過的聲紋"><span class="lbl">Session</span><div class="list" id="shelfList"></div></aside>
+
+<div class="hud">
+  <div class="st glass" id="hud"><span id="hudT">—</span></div>
+</div>
+
+<div class="center intro" id="intro">
+  <div class="sc">Fourier Portraits</div>
+  <h1>SEKAI 聲紋</h1>
+  <span class="rule"></span>
+  <p>每一首歌的音訊真正做一次短時傅立葉轉換：時間繞成一圈、頻率由內而外、亮度是能量，畫成一張只屬於它的肖像。</p>
+  <canvas id="sines" aria-hidden="true"></canvas>
+  <div class="acts"><button class="btn" id="introRand" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h3.5c2.5 0 3.5 1.5 5 5s2.5 5 5 5H20M4 17h3.5c1.4 0 2.3-.5 3-1.3M13.5 8.3c.7-.8 1.6-1.3 3-1.3H20"/></svg>隨機一首</button><button class="btn" id="introSearch" type="button">搜尋一首</button></div>
+</div>
+<div class="center card off" id="prog" aria-live="polite" hidden>
+  <div class="sc" id="progSc">Analysing</div>
+  <div class="pct"><span id="progPct">0</span><small>%</small></div>
+  <span class="rule live"></span>
+  <div class="msg" id="progMsg">下載音源</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+  <div class="card">
+    <button class="ib close" id="helpX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="sub">Fourier Portraits</div>
+    <h3>SEKAI 聲紋</h3>
+    <p>任何聲音都能拆成許多正弦波的總和，這是傅立葉的洞見。短時傅立葉轉換（STFT）把一首歌切成幾千個 93 毫秒的小窗，每一窗各拆一次，於是我們得到「每一刻有哪些頻率在響、響多大聲」。這一頁把這張表畫成肖像。</p>
+    <canvas id="helpSines" aria-hidden="true"></canvas>
+    <ul>
+      <li><b>肖像</b>：時間從正上方順時針繞一圈，頻率由內（低音）到外（高音）、按八度等距，亮度是能量。環上的髮絲線是八度，外圈刻度是分鐘，羅馬數字是推算出的段落；點環上任一處可以聽那一刻的 20 秒。</li>
+      <li><b>頻譜</b>：同一份資料攤平成時間 × 頻率，底下是響度曲線與擊點。</li>
+      <li><b>結構</b>：自相似矩陣。把每半秒的音色與和聲拿去和整首歌的每半秒比對，相似的地方亮；對角線旁的方塊就是重複的段落（副歌一眼可見）。</li>
+      <li><b>分析卡</b>：從頻譜推算調性（Krumhansl 音級輪廓比對）、速度（擊點強度的自相關，與官方 BPM 對照）、亮度（頻譜重心）、動態（響度的第 95 與第 10 百分位差）、低中高頻的能量分配、節奏密度與段落。</li>
+    </ul>
+    <div class="kbd"><kbd>Space</kbd><span>試聽／暫停</span><kbd>R</kbd><span>隨機一首</span><kbd>1 2 3</kbd><span>肖像／頻譜／結構</span><kbd>/</kbd><span>搜尋</span><kbd>E</kbd><span>輸出海報</span><kbd>Esc</kbd><span>關閉</span></div>
+    <div class="src">分析參數：單聲道 22.05 kHz、Hann 窗 2048 點、跳距 512 點、128 個對數頻帶（38 Hz 至 10.8 kHz）；全部在你的瀏覽器裡算，音源不經本站伺服器。推算的調性與速度是「耳朵的讀法」，以遊戲內與官方資料為準。音源與封面：sekai.best 資產鏡像。</div>
+  </div>
+</div>
+<div class="ogtitle"><small>Fourier Portraits</small><b>SEKAI 聲紋</b><i></i><span>每一首歌的傅立葉肖像</span></div>
+
+<script src="./data/b30-consts.js?v=eb79088ab7"></script>
+<script type="module">
+import { EP_SONGS } from './data/ep-songs.js?v=5b4d841288';
+import { SONG_BPM } from './data/song-bpm.js?v=e8b9364172';
+import { SONG_META } from './data/song-meta.js?v=dcc2efde16';
+
+/* ========== 常數與工具 ========== */
+const $ = s => document.querySelector(s);
+const root = document.documentElement;
+const OG = root.classList.contains('og');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches && !OG;
+const UNIT_KEYS = ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs', 'other'];
+const UNIT_NAME = { ln: 'Leo/need', mmj: 'MORE MORE JUMP!', vbs: 'Vivid BAD SQUAD', wxs: 'ワンダーランズ×ショウタイム', n25: '25時、ナイトコードで。', vs: 'VIRTUAL SINGER', other: '其他' };
+const UNIT_SHORT = { ln: 'L/n', mmj: 'MMJ', vbs: 'VBS', wxs: 'WxS', n25: 'N25', vs: 'VS', other: '其他' };
+const JP_THUMB = 'https://storage.sekai.best/sekai-jp-assets/thumbnail/music_jacket/';
+const TC_THUMB = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jacket/';
+const JP_JACKET = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/';
+const TC_JACKET = 'https://storage.sekai.best/sekai-tc-assets/music/jacket/';
+const AUDIO = ['https://storage.sekai.best/sekai-jp-assets/music/long/', 'https://storage.sekai.best/sekai-tc-assets/music/long/'];
+const PV = { start: 10, clip: 60, fin: 3, fout: 3, vol: .88, tap: 20 };   // 試聽：與曲庫頁同規格；點環上一處：20 秒
+const NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX'];
+const OCTAVES = [55, 110, 220, 440, 880, 1760, 3520, 7040];
+const SR = 22050, NFFT = 2048, HOP = 512, NB = 128, F_LO = 38, F_HI = 10800;
+const cssVar = k => getComputedStyle(root).getPropertyValue('--' + k).trim();
+const own = (o, k) => k != null && Object.prototype.hasOwnProperty.call(o, k);
+const fmtTime = s => { const t = Math.max(0, Math.round(s)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+const norm = s => String(s || '').normalize('NFKC').toLowerCase();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hex2rgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h).trim()); if (!m) return [200, 200, 200]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return `rgba(${r},${g},${b},${a})`; };
+const mobile = () => innerWidth <= 860;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const fmtHz = f => f >= 1000 ? (f / 1000).toFixed(f >= 10000 ? 0 : 1) + ' kHz' : Math.round(f) + ' Hz';
+let toastT = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2400); }
+
+/* ========== 曲庫 ========== */
+const CONST = {};
+((window.B30_CONSTS && window.B30_CONSTS.charts) || []).forEach(c => { (CONST[c.id] = CONST[c.id] || {})[c.d] = c.c; });
+const FUTURE = Date.now() + 3 * 365 * 86400e3;
+const songs = EP_SONGS.map(s => {
+  const b = SONG_BPM[s.id] || [0, 0, 0, 0], m = SONG_META[s.id] || ['', '', '', '', '', '', '', 0, '', '', '', ''];
+  const units = m[1] ? m[1].split(',') : ['other'];
+  const cc = CONST[s.id] || {};
+  let ts = m[2] ? Date.parse(m[2] + 'T00:00:00Z') : 0; if (ts > FUTURE) ts = 0;
+  return {
+    id: s.id, t: s.t, tc: m[0], units, u: units.find(u => u !== 'vs') || units[0], bpm: +b[0] || 0, len: b[3] || Math.round(s.time) || 0,
+    date: ts ? m[2] : '', composer: m[3], lyricist: m[4], arranger: m[5], creator: m[9], jp: m[6].includes('j'),
+    jkt: m[8] || ('jacket_s_' + String(s.id).padStart(3, '0')), abnV: m[10] || '', abnS: m[11] || '',
+    lvM: s.d.M ? s.d.M[0] : null, cM: cc.master != null ? cc.master : null,
+    key: norm([s.t, m[0], m[3], m[4], m[5], m[9]].filter(Boolean).join(' '))
+  };
+});
+songs.sort((a, b) => a.id - b.id);
+const byId = {}; songs.forEach(s => { byId[s.id] = s; });
+const playable = songs.filter(s => s.abnV || s.abnS);
+const abnOf = s => s.abnV || s.abnS;
+const colors = {};
+function readTheme() { UNIT_KEYS.forEach(k => { colors[k] = cssVar(k); }); }
+readTheme();
+
+/* ========== 狀態 ========== */
+const S = { mode: 'portrait', cur: null, hover: null, panelOn: !mobile(), job: 0, loading: null, theme: root.classList.contains('light') ? 'light' : 'dark' };
+const CACHE = new Map();   // id → { song, res, pc, lc, sc, lutKey }
+const stage = $('#stage'), ctx = stage.getContext('2d');
+let W = 0, H = 0, DPR = 1, dirty = true, raf = 0;
+
+/* ========== 分析工作者：FFT、頻帶、調性、速度、段落、肖像像素 ==========
+   全在 Worker 裡算，主執行緒只負責上色與描線。 */
+const WORKER_SRC = `
+'use strict';
+var N = 0, COS, SIN, REV, BITS;
+function prep(n) { N = n; BITS = Math.round(Math.log(n) / Math.LN2); COS = new Float64Array(n / 2); SIN = new Float64Array(n / 2);
+  for (var i = 0; i < n / 2; i++) { COS[i] = Math.cos(2 * Math.PI * i / n); SIN[i] = -Math.sin(2 * Math.PI * i / n); }
+  REV = new Uint32Array(n); for (var j = 0; j < n; j++) { var r = 0, x = j; for (var b = 0; b < BITS; b++) { r = (r << 1) | (x & 1); x >>= 1; } REV[j] = r; } }
+function fft(re, im) { var n = N, i, j, k, size, half, step, tr, ti, a, bb;
+  for (i = 0; i < n; i++) { j = REV[i]; if (j > i) { tr = re[i]; re[i] = re[j]; re[j] = tr; ti = im[i]; im[i] = im[j]; im[j] = ti; } }
+  for (size = 2; size <= n; size <<= 1) { half = size >> 1; step = n / size;
+    for (i = 0; i < n; i += size) { for (j = 0, k = 0; j < half; j++, k += step) { a = i + j; bb = a + half;
+      tr = re[bb] * COS[k] - im[bb] * SIN[k]; ti = re[bb] * SIN[k] + im[bb] * COS[k];
+      re[bb] = re[a] - tr; im[bb] = im[a] - ti; re[a] += tr; im[a] += ti; } } } }
+function pct(arr, p) { var a = Float32Array.from(arr).sort(); return a[Math.min(a.length - 1, Math.max(0, Math.round((a.length - 1) * p)))]; }
+function NOTE_REL(i, m) { return { idx: i, mode: m }; }
+var KK_MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88], KK_MIN = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+function corr(a, b) { var n = a.length, ma = 0, mb = 0, i; for (i = 0; i < n; i++) { ma += a[i]; mb += b[i]; } ma /= n; mb /= n; var sab = 0, saa = 0, sbb = 0; for (i = 0; i < n; i++) { var da = a[i] - ma, db = b[i] - mb; sab += da * db; saa += da * da; sbb += db * db; } return sab / (Math.sqrt(saa * sbb) + 1e-12); }
+onmessage = function (e) {
+  var m = e.data; if (m.type !== 'analyze') return;
+  try { analyze(m); } catch (err) { postMessage({ type: 'error', job: m.job, msg: String(err && err.stack || err) }); }
+};
+function analyze(m) {
+  var pcm = m.pcm, sr = m.sr, NF = m.nfft, HOP = m.hop, NB = m.nb, fLo = m.fLo, fHi = m.fHi, job = m.job;
+  prep(NF);
+  var frames = Math.max(2, Math.floor((pcm.length - NF) / HOP) + 1), fps = sr / HOP, duration = pcm.length / sr;
+  var win = new Float32Array(NF); for (var i = 0; i < NF; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (NF - 1));
+  var binHz = sr / NF, half = NF / 2;
+  var e0 = new Float32Array(NB), e1 = new Float32Array(NB), lr = Math.log(fHi / fLo);
+  for (var b = 0; b < NB; b++) { e0[b] = fLo * Math.exp(lr * b / NB) / binHz; e1[b] = fLo * Math.exp(lr * (b + 1) / NB) / binHz; }
+  var pcOf = new Int8Array(half + 1); for (var k = 1; k <= half; k++) { var f = k * binHz; pcOf[k] = (f >= 55 && f <= 4200) ? (((Math.round(12 * Math.log(f / 440) / Math.LN2) + 9) % 12) + 12) % 12 : -1; }
+  var re = new Float64Array(NF), im = new Float64Array(NF), P = new Float64Array(half + 1);
+  var db = new Float32Array(frames * NB), chroma = new Float32Array(frames * 12), rms = new Float32Array(frames), cent = new Float32Array(frames), flux = new Float32Array(frames), lin = new Float64Array(NB);
+  var prev = new Float32Array(NB).fill(-80), lowE = 0, midE = 0, hiE = 0;
+  for (var fr = 0; fr < frames; fr++) {
+    var off = fr * HOP, s2 = 0;
+    for (i = 0; i < NF; i++) { var v = pcm[off + i]; s2 += v * v; re[i] = v * win[i]; im[i] = 0; }
+    rms[fr] = Math.sqrt(s2 / NF);
+    fft(re, im);
+    var sumP = 0, sumFP = 0;
+    for (k = 1; k <= half; k++) { var p = re[k] * re[k] + im[k] * im[k]; P[k] = p; var mag = Math.sqrt(p); sumP += mag; sumFP += mag * k; var pc = pcOf[k]; if (pc >= 0) chroma[fr * 12 + pc] += mag; }
+    cent[fr] = sumP > 0 ? sumFP / sumP * binHz : 0;
+    var fl = 0;
+    for (b = 0; b < NB; b++) { var a0 = e0[b], a1 = e1[b], val;
+      if (a1 - a0 < 1) { var kk = (a0 + a1) / 2, k0 = Math.floor(kk), w = kk - k0; val = P[k0] * (1 - w) + P[Math.min(half, k0 + 1)] * w; }
+      else { var ka = Math.ceil(a0), kb = Math.min(half, Math.floor(a1)), acc = 0, n = 0; for (k = ka; k <= kb; k++) { acc += P[k]; n++; } val = n ? acc / n : P[Math.min(half, Math.round(a0))]; }
+      lin[b] += val; var d = 10 * Math.log(val + 1e-10) / Math.LN10; db[fr * NB + b] = d; var dc = d < -80 ? -80 : d; var diff = dc - prev[b]; if (diff > 0) fl += diff; prev[b] = dc; }
+    flux[fr] = fl / NB;
+    if ((fr & 511) === 0) postMessage({ type: 'progress', job: job, phase: 'stft', p: fr / frames });
+  }
+  /* 頻帶能量分配（振幅尺度） */
+  var nLow = 0, nMid = 0, nHi = 0;
+  for (b = 0; b < NB; b++) { var fc = fLo * Math.exp(lr * (b + 0.5) / NB), pw = lin[b] / frames; if (fc < 250) { lowE += pw; nLow++; } else if (fc < 4000) { midE += pw; nMid++; } else { hiE += pw; nHi++; } }
+  var tilt = { low: 10 * Math.log(lowE / (nLow || 1) + 1e-10) / Math.LN10, mid: 10 * Math.log(midE / (nMid || 1) + 1e-10) / Math.LN10, high: 10 * Math.log(hiE / (nHi || 1) + 1e-10) / Math.LN10 };
+  /* 正規化：每帶的第 95 百分位與全曲第 99 百分位混合，低音不吃掉高音 */
+  var g = new Float32Array(Math.ceil(frames * NB / 7)); for (i = 0, k = 0; i < frames * NB; i += 7) g[k++] = db[i];
+  var G99 = pct(g, 0.99), col = new Float32Array(frames), top = new Float32Array(NB);
+  for (b = 0; b < NB; b++) { for (fr = 0; fr < frames; fr++) col[fr] = db[fr * NB + b]; top[b] = pct(col, 0.95); }
+  var I = new Uint8Array(frames * NB);
+  for (fr = 0; fr < frames; fr++) for (b = 0; b < NB; b++) { var dv = db[fr * NB + b]; var v1 = (dv - (top[b] - 60)) / 60, v2 = (dv - (G99 - 70)) / 70; var vv = 0.5 * v1 + 0.5 * v2; if (vv < 0) vv = 0; if (vv > 1) vv = 1; I[fr * NB + b] = Math.round(Math.pow(vv, 1.8) * 255); }
+  postMessage({ type: 'progress', job: job, phase: 'analyse', p: 0 });
+  /* 調性：以響度加權的平均色度，與 Krumhansl 輪廓比對 */
+  var ca = new Float64Array(12), wsum = 0;
+  for (fr = 0; fr < frames; fr++) { var wr = rms[fr]; wsum += wr; for (i = 0; i < 12; i++) ca[i] += chroma[fr * 12 + i] * wr; }
+  var cmax = 0; for (i = 0; i < 12; i++) if (ca[i] > cmax) cmax = ca[i]; for (i = 0; i < 12; i++) ca[i] = cmax ? ca[i] / cmax : 0;
+  var keys = [];
+  for (var tonic = 0; tonic < 12; tonic++) { var pm = [], pn = []; for (i = 0; i < 12; i++) { pm.push(KK_MAJ[((i - tonic) % 12 + 12) % 12]); pn.push(KK_MIN[((i - tonic) % 12 + 12) % 12]); }
+    keys.push({ idx: tonic, mode: 'major', c: corr(ca, pm) }); keys.push({ idx: tonic, mode: 'minor', c: corr(ca, pn) }); }
+  keys.sort(function (a, b) { return b.c - a.c; });
+  var bk = keys[0], bestIdx = bk.idx, bestMode = bk.mode, best = bk.c, second = -2;
+  var relIdx = bestMode === 'major' ? (bestIdx + 9) % 12 : (bestIdx + 3) % 12, relMode = bestMode === 'major' ? 'minor' : 'major';
+  for (i = 1; i < keys.length; i++) if (!(keys[i].idx === relIdx && keys[i].mode === relMode)) { second = keys[i].c; break; }
+  var relGap = best - keys[1].c;
+  /* 速度：擊點強度的自相關 */
+  var o = new Float32Array(frames), ma = 0, mw = Math.round(fps);
+  for (fr = 0; fr < frames; fr++) { var lo = Math.max(0, fr - mw), hi = Math.min(frames - 1, fr + mw), acc2 = 0; for (i = lo; i <= hi; i++) acc2 += flux[i]; var mean = acc2 / (hi - lo + 1); var x = flux[fr] - mean; o[fr] = x > 0 ? x : 0; }
+  var Lmin = Math.max(4, Math.round(fps * 60 / 260)), Lmax = Math.min(frames >> 2, Math.round(fps * 60 / 50)), oo = 0, L;
+  for (fr = 0; fr < frames; fr++) oo += o[fr] * o[fr]; oo = oo || 1;
+  var ac2 = new Float64Array(2 * Lmax + 2); for (L = 1; L <= Math.min(frames - 1, 2 * Lmax); L++) { var s3 = 0; for (fr = 0; fr + L < frames; fr++) s3 += o[fr] * o[fr + L]; ac2[L] = s3 / oo; }
+  var cands = [], scores = new Float64Array(Lmax + 1), sMean = 0, sN = 0;
+  for (L = Lmin; L <= Lmax; L++) { var bpmL = 60 * fps / L, wgt = Math.exp(-0.5 * Math.pow(Math.log(bpmL / 125) / Math.LN2 / 0.95, 2)); var sc = wgt * (ac2[L] + 0.5 * (2 * L < ac2.length ? ac2[2 * L] : 0)); scores[L] = sc; sMean += sc; sN++; }
+  sMean /= sN || 1;
+  for (L = Lmin + 1; L < Lmax; L++) if (scores[L] > scores[L - 1] && scores[L] >= scores[L + 1]) { var d1 = scores[L - 1], d2 = scores[L], d3 = scores[L + 1], den = (d1 - 2 * d2 + d3), shift = den ? 0.5 * (d1 - d3) / den : 0; var Lr = L + shift; cands.push({ bpm: 60 * fps / Lr, score: d2 }); }
+  cands.sort(function (a, b) { return b.score - a.score; });
+  var picked = []; for (i = 0; i < cands.length && picked.length < 3; i++) { var okc = true; for (var jj = 0; jj < picked.length; jj++) if (Math.abs(picked[jj].bpm / cands[i].bpm - 1) < 0.04) okc = false; if (okc) picked.push(cands[i]); }
+  var tempo = picked.length ? { bpm: picked[0].bpm, conf: sMean ? picked[0].score / sMean : 0, cands: picked.map(function (c) { return Math.round(c.bpm * 10) / 10; }) } : { bpm: 0, conf: 0, cands: [] };
+  /* 擊點密度 */
+  var om = 0, os = 0; for (fr = 0; fr < frames; fr++) om += o[fr]; om /= frames; for (fr = 0; fr < frames; fr++) os += (o[fr] - om) * (o[fr] - om); os = Math.sqrt(os / frames);
+  var thr = om + os, onsets = 0, last = -99, onsetT = [];
+  for (fr = 2; fr < frames - 2; fr++) if (o[fr] > thr && o[fr] >= o[fr - 1] && o[fr] >= o[fr - 2] && o[fr] > o[fr + 1] && o[fr] > o[fr + 2] && fr - last >= 3) { onsets++; last = fr; onsetT.push(fr); }
+  /* 動態 */
+  var rdb = new Float32Array(frames), loud = []; for (fr = 0; fr < frames; fr++) { rdb[fr] = 20 * Math.log(rms[fr] + 1e-9) / Math.LN10; if (rdb[fr] > -60) loud.push(rdb[fr]); }
+  var la = Float32Array.from(loud); var p95 = loud.length ? pct(la, 0.95) : 0, p10 = loud.length ? pct(la, 0.10) : 0, lmean = 0; for (i = 0; i < loud.length; i++) lmean += loud[i]; lmean = loud.length ? lmean / loud.length : -60;
+  /* 亮度（以響度加權） */
+  var cw = 0, cs = 0; for (fr = 0; fr < frames; fr++) { cw += rms[fr]; cs += cent[fr] * rms[fr]; } var centroid = cw ? cs / cw : 0;
+  /* 結構：每半秒一格的色度＋粗頻帶，自相似矩陣與新奇度 */
+  var K = Math.max(1, Math.round(fps * 0.5)), nC = Math.max(2, Math.floor(frames / K)), DIM = 12 + 16, F = new Float32Array(nC * DIM);
+  for (var c = 0; c < nC; c++) { var base = c * DIM, cn2 = 0, bn2 = 0;
+    for (fr = c * K; fr < (c + 1) * K; fr++) { for (i = 0; i < 12; i++) F[base + i] += chroma[fr * 12 + i]; for (b = 0; b < NB; b++) F[base + 12 + ((b * 16 / NB) | 0)] += I[fr * NB + b]; }
+    for (i = 0; i < 12; i++) cn2 += F[base + i] * F[base + i]; for (i = 12; i < DIM; i++) bn2 += F[base + i] * F[base + i];
+    cn2 = Math.sqrt(cn2) || 1; bn2 = Math.sqrt(bn2) || 1; for (i = 0; i < 12; i++) F[base + i] /= cn2; for (i = 12; i < DIM; i++) F[base + i] = F[base + i] / bn2 * 0.8; }
+  var mu = new Float64Array(DIM); for (c = 0; c < nC; c++) for (k = 0; k < DIM; k++) mu[k] += F[c * DIM + k] / nC;
+  var nrm = new Float64Array(nC); for (c = 0; c < nC; c++) { var nn = 0; for (k = 0; k < DIM; k++) { F[c * DIM + k] -= mu[k]; nn += F[c * DIM + k] * F[c * DIM + k]; } nrm[c] = Math.sqrt(nn) || 1; }
+  var SS = new Float32Array(nC * nC), offd = [];
+  for (i = 0; i < nC; i++) for (var j = i; j < nC; j++) { var dot = 0, bi = i * DIM, bj = j * DIM; for (k = 0; k < DIM; k++) dot += F[bi + k] * F[bj + k]; dot /= nrm[i] * nrm[j]; SS[i * nC + j] = dot; SS[j * nC + i] = dot; if (j > i + 2 && ((i + j) % 5 === 0)) offd.push(dot); }
+  var oa = Float32Array.from(offd.length ? offd : [0, 1]), smin = pct(oa, 0.05), smax = pct(oa, 0.97);
+  var ssm = new Uint8Array(nC * nC), srng = (smax - smin) || 1;
+  for (i = 0; i < nC * nC; i++) { var t = (SS[i] - smin) / srng; if (t < 0) t = 0; if (t > 1) t = 1; ssm[i] = Math.round(Math.pow(t, 1.3) * 255); }
+  var KN = Math.min(16, nC >> 2), nov = new Float32Array(nC), nmax = 0, GW = new Float64Array(2 * KN);
+  for (var u = -KN; u < KN; u++) GW[u + KN] = Math.exp(-(u + 0.5) * (u + 0.5) / (2 * KN * KN * 0.25));
+  for (c = 0; c < nC; c++) { var sum = 0, wsum2 = 0; for (u = -KN; u < KN; u++) { if (c + u < 0 || c + u >= nC) continue; for (var v2 = -KN; v2 < KN; v2++) { if (c + v2 < 0 || c + v2 >= nC) continue; var sign = (u < 0) === (v2 < 0) ? 1 : -1; var gw = GW[u + KN] * GW[v2 + KN]; sum += sign * gw * SS[(c + u) * nC + (c + v2)]; wsum2 += gw; } } nov[c] = wsum2 && sum > 0 ? sum / wsum2 : 0; if (nov[c] > nmax) nmax = nov[c]; }
+  for (c = 0; c < nC; c++) nov[c] = nmax ? nov[c] / nmax : 0;
+  var nm = 0, ns = 0; for (c = 0; c < nC; c++) nm += nov[c]; nm /= nC; for (c = 0; c < nC; c++) ns += (nov[c] - nm) * (nov[c] - nm); ns = Math.sqrt(ns / nC);
+  var nthr = Math.max(0.12, nm + 0.7 * ns), bounds = [], lastB = -99, minGap = Math.max(4, KN >> 1);
+  for (c = Math.ceil(4 / (K / fps)); c < nC - 1; c++) if (nov[c] > nthr && nov[c] >= nov[c - 1] && nov[c] > nov[c + 1]) { var okb = true; for (i = Math.max(0, c - minGap); i <= Math.min(nC - 1, c + minGap); i++) if (nov[i] > nov[c]) okb = false; if (okb && c - lastB >= minGap) { bounds.push({ t: c * K / fps, s: nov[c] }); lastB = c; } }
+  bounds.sort(function (a, b) { return b.s - a.s; }); bounds = bounds.slice(0, 12).map(function (x) { return x.t; }).sort(function (a, b) { return a - b; });
+  if (!bounds.length || bounds[0] > 4) bounds.unshift(0); else bounds[0] = 0;
+  postMessage({ type: 'progress', job: job, phase: 'render', p: 0 });
+  /* 肖像：極座標反向取樣 */
+  var R = m.size, cx = R / 2, cy = R / 2, rI = R * 0.165, rO = R * 0.47, portrait = new Uint8Array(R * R), TWO_PI = 2 * Math.PI, span = rO - rI;
+  for (var y = 0; y < R; y++) { var dy = y + 0.5 - cy;
+    for (var x = 0; x < R; x++) { var dx = x + 0.5 - cx, r = Math.sqrt(dx * dx + dy * dy); if (r < rI - 1 || r > rO + 1) continue;
+      var th = Math.atan2(dx, -dy); if (th < 0) th += TWO_PI; var fpos = th / TWO_PI * frames, dF = frames / (TWO_PI * r), kk2 = Math.min(24, Math.max(1, Math.ceil(dF)));
+      var bp = (r - rI) / span * (NB - 1); if (bp < 0) bp = 0; if (bp > NB - 1) bp = NB - 1; var b0 = bp | 0, bw = bp - b0, b1 = b0 + 1 < NB ? b0 + 1 : b0;
+      var mx = 0, mean = 0, f0 = fpos - dF / 2;
+      for (i = 0; i < kk2; i++) { var fi = Math.round(f0 + (i + 0.5) * dF / kk2); if (fi < 0) fi += frames; if (fi >= frames) fi -= frames; var vq = I[fi * NB + b0] * (1 - bw) + I[fi * NB + b1] * bw; if (vq > mx) mx = vq; mean += vq; }
+      mean /= kk2; var val = 0.6 * mx + 0.4 * mean; var aI = (r - rI + 1) / 2, aO = (rO + 1 - r) / 2, al = aI < aO ? aI : aO; if (al > 1) al = 1; if (al < 0) al = 0;
+      portrait[y * R + x] = Math.round(val * al); }
+    if ((y & 127) === 0) postMessage({ type: 'progress', job: job, phase: 'render', p: y / R * 0.8 }); }
+  /* 攤平的頻譜 */
+  var LW = m.linW, LH = m.linH, linear = new Uint8Array(LW * LH);
+  for (x = 0; x < LW; x++) { var fa = x / LW * frames, fb = (x + 1) / LW * frames, nk = Math.min(24, Math.max(1, Math.ceil(fb - fa)));
+    for (y = 0; y < LH; y++) { var bpl = (1 - (y + 0.5) / LH) * (NB - 1), bl0 = bpl | 0, blw = bpl - bl0, bl1 = bl0 + 1 < NB ? bl0 + 1 : bl0, mx2 = 0, mn2 = 0;
+      for (i = 0; i < nk; i++) { var fi2 = Math.min(frames - 1, Math.floor(fa + (i + 0.5) * (fb - fa) / nk)); var vq2 = I[fi2 * NB + bl0] * (1 - blw) + I[fi2 * NB + bl1] * blw; if (vq2 > mx2) mx2 = vq2; mn2 += vq2; }
+      linear[y * LW + x] = Math.round(0.6 * mx2 + 0.4 * mn2 / nk); } }
+  postMessage({ type: 'done', job: job, frames: frames, fps: fps, duration: duration, nb: NB, fLo: fLo, fHi: fHi,
+    rms: rdb, flux: o, cent: cent, chroma: Float32Array.from(ca), onsets: Int32Array.from(onsetT),
+    key: { idx: bestIdx, mode: bestMode, conf: best - second, corr: best, rel: NOTE_REL(relIdx, relMode), relGap: relGap },
+    tempo: tempo, onsetRate: onsets / duration, dyn: { range: p95 - p10, mean: lmean, p95: p95 }, centroid: centroid,
+    tilt: tilt, sections: bounds, nov: nov, ssm: ssm, ssmN: nC, ssmStep: K / fps,
+    portrait: portrait, size: R, rI: rI, rO: rO, linear: linear, linW: LW, linH: LH },
+    [rdb.buffer, o.buffer, cent.buffer, ssm.buffer, portrait.buffer, linear.buffer, nov.buffer]);
+}`;
+let worker = null;
+function getWorker() {
+  if (worker) return worker;
+  worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+  worker.onmessage = e => { const m = e.data; S.lastMsg = m.type + ' ' + (m.phase || '') + ' ' + (m.p != null ? m.p.toFixed(2) : ''); if (m.job !== S.job) return; if (m.type === 'progress') setProgress(m.phase, m.p); else if (m.type === 'done') { try { onAnalysed(m); } catch (err) { S.err = String(err && err.stack || err); console.error(err); fail('畫不出這張聲紋'); } } else if (m.type === 'error') { console.error(m.msg); fail('分析時出了錯'); } };
+  worker.onerror = e => { console.error(e); fail('分析時出了錯'); };
+  return worker;
+}
+
+/* ========== 載入與分析 ========== */
+const intro = $('#intro'), prog = $('#prog');
+let pending = null;   // { song, ctrl }
+function setProgress(phase, p) {
+  if (!S.loading) return;
+  const base = { fetch: [0, .5], decode: [.5, .62], stft: [.62, .86], analyse: [.86, .9], render: [.9, 1] }[phase] || [0, 1];
+  const v = base[0] + (base[1] - base[0]) * clamp(p, 0, 1);
+  S.loading.p = v; S.loading.phase = phase;
+  $('#progPct').textContent = Math.round(v * 100);
+  $('#progMsg').textContent = { fetch: '下載音源', decode: '解碼', stft: '短時傅立葉轉換', analyse: '推算調性、速度與段落', render: '描繪肖像' }[phase] || '';
+  dirty = true; kick();
+}
+function fail(msg) { S.loading = null; pending = null; prog.classList.add('off'); setTimeout(() => { if (!S.loading) prog.hidden = true; }, 600); if (!S.cur) intro.classList.remove('off'); toast(msg); shelfBusy(null); dirty = true; kick(); }
+async function openSong(song, opts = {}) {
+  if (!song) return;
+  if (CACHE.has(song.id)) { setCurrent(CACHE.get(song.id)); if (!opts.quiet) syncUrl(); return; }
+  const abn = abnOf(song); if (!abn) { toast('這首還沒有音源，畫不了聲紋'); return; }
+  if (pending) { try { pending.ctrl.abort(); } catch (e) {} }
+  const job = ++S.job, ctrl = new AbortController(); pending = { song, ctrl };
+  S.loading = { song, phase: 'fetch', p: 0 };
+  intro.classList.add('off'); prog.hidden = false; requestAnimationFrame(() => prog.classList.remove('off'));
+  $('#progSc').textContent = (song.tc || song.t);
+  setProgress('fetch', 0); shelfBusy(song); setAccent(song); if (!opts.quiet) syncUrl(song);
+  stopAudio(true); P.state = 'idle'; syncPlayBtn();
+  let buf = null;
+  for (let bucket = 0; bucket < AUDIO.length && !buf; bucket++) {
+    try {
+      const res = await fetch(AUDIO[bucket] + abn + '/' + abn + '.mp3', { mode: 'cors', signal: ctrl.signal });
+      if (!res.ok) throw new Error('http ' + res.status);
+      const total = +res.headers.get('content-length') || 0;
+      if (res.body && total) {
+        const reader = res.body.getReader(), chunks = []; let got = 0;
+        for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; if (job === S.job) setProgress('fetch', got / total); }
+        const out = new Uint8Array(got); let o = 0; chunks.forEach(c => { out.set(c, o); o += c.length; }); buf = out.buffer;
+      } else buf = await res.arrayBuffer();
+    } catch (e) { if (e && e.name === 'AbortError') return; buf = null; }
+  }
+  if (job !== S.job) return;
+  if (!buf) { fail('音源拿不到，換一首試試'); return; }
+  setProgress('decode', 0);
+  let pcm;
+  try {
+    const octx = new OfflineAudioContext(1, 1, SR);
+    const ab = await new Promise((res, rej) => { const p = octx.decodeAudioData(buf, res, rej); if (p && p.then) p.then(res, rej); });
+    if (job !== S.job) return;
+    const n = ab.length, ch = ab.numberOfChannels; pcm = new Float32Array(n);
+    for (let c = 0; c < ch; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) pcm[i] += d[i] / ch; }
+    /* 遊戲的全曲音源前面有好幾秒的數位靜音（配合譜面的起拍），尾巴也常留白：修掉，畫面與讀數才乾淨。
+       記下前置的秒數，播放時再加回去。 */
+    let i0 = 0, i1 = n - 1; while (i0 < n && Math.abs(pcm[i0]) < 1e-3) i0++; while (i1 > i0 && Math.abs(pcm[i1]) < 1e-3) i1--;
+    i0 = Math.max(0, i0 - Math.round(SR * .05)); i1 = Math.min(n - 1, i1 + Math.round(SR * .2));
+    if (i1 - i0 < SR * 5) { i0 = 0; i1 = n - 1; }
+    pending.offset = i0 / SR; pcm = pcm.slice(i0, i1 + 1);
+  } catch (e) { console.error(e); fail('瀏覽器解不開這個音源'); return; }
+  setProgress('stft', 0);
+  const size = Math.min(1400, Math.max(900, Math.round(Math.min(innerWidth, innerHeight) * Math.min(2, devicePixelRatio || 1) * 1.1)));
+  getWorker().postMessage({ type: 'analyze', job, pcm, sr: SR, nfft: NFFT, hop: HOP, nb: NB, fLo: F_LO, fHi: F_HI, size, linW: 1800, linH: 384 }, [pcm.buffer]);
+}
+function onAnalysed(res) {
+  const pend = pending, song = pend && pend.song; if (!song) return;
+  pending = null;
+  const entry = { song, res, offset: pend.offset || 0, pc: null, lc: null, sc: null, lutKey: '', jacket: null, jacketCors: null, thumb: null };
+  CACHE.set(song.id, entry);
+  loadJacket(entry);
+  S.loading = null; prog.classList.add('off'); setTimeout(() => { if (!S.loading) prog.hidden = true; }, 600);
+  addShelf(entry); setCurrent(entry);
+}
+function setCurrent(entry) {
+  S.cur = entry; shelfBusy(null); setAccent(entry.song); ensureImages(entry);
+  document.title = (entry.song.tc || entry.song.t) + ' 的聲紋 — SEKAI 聲紋 | Project SEKAI 資源中心';
+  renderPanel(entry); updateShelf(); updateHud(); dirty = true; kick();
+}
+function setAccent(song) { root.style.setProperty('--cur', colors[song.u] || colors.other); }
+
+/* ========== 上色 ========== */
+function mixc(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+function buildLut(unit) {
+  const light = root.classList.contains('light'), uc = hex2rgb(colors[unit] || colors.other);
+  const stops = light
+    ? [[0, [241, 235, 223], 0], [.14, mixc(uc, [241, 235, 223], .55), .45], [.42, uc, .9], [.72, mixc(uc, [95, 70, 20], .6), 1], [.9, [70, 50, 18], 1], [1, [28, 22, 16], 1]]
+    : [[0, [5, 7, 14], 0], [.12, mixc(uc, [5, 7, 14], .62), .55], [.4, uc, .92], [.66, [212, 182, 115], 1], [.85, [236, 220, 170], 1], [1, [255, 250, 236], 1]];
+  const lut = new Uint8ClampedArray(256 * 4);
+  for (let i = 0; i < 256; i++) { const t = i / 255; let k = 0; while (k < stops.length - 2 && t > stops[k + 1][0]) k++;
+    const [t0, c0, a0] = stops[k], [t1, c1, a1] = stops[k + 1], u = (t - t0) / (t1 - t0 || 1), c = mixc(c0, c1, u), a = a0 + (a1 - a0) * u;
+    lut[i * 4] = c[0]; lut[i * 4 + 1] = c[1]; lut[i * 4 + 2] = c[2]; lut[i * 4 + 3] = Math.round(a * 255); }
+  return lut;
+}
+function colorize(u8, w, h, lut) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const c2 = cv.getContext('2d');
+  const img = c2.createImageData(w, h), d = img.data;
+  for (let i = 0, n = w * h; i < n; i++) { const v = u8[i] << 2; d[i * 4] = lut[v]; d[i * 4 + 1] = lut[v + 1]; d[i * 4 + 2] = lut[v + 2]; d[i * 4 + 3] = lut[v + 3]; }
+  c2.putImageData(img, 0, 0); return cv;
+}
+function ssmCanvas(res) {
+  const n = res.ssmN, cv = document.createElement('canvas'); cv.width = n; cv.height = n; const c2 = cv.getContext('2d');
+  const light = root.classList.contains('light'), img = c2.createImageData(n, n), d = img.data;
+  const lo = light ? [241, 235, 223] : [5, 7, 14], mid = light ? [150, 120, 60] : [120, 98, 52], hi = light ? [40, 30, 12] : [236, 220, 170];
+  for (let i = 0; i < n * n; i++) { const t = res.ssm[i] / 255; const c = t < .5 ? mixc(lo, mid, t * 2) : mixc(mid, hi, (t - .5) * 2); d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255; }
+  c2.putImageData(img, 0, 0); return cv;
+}
+function ensureImages(entry) {
+  const key = S.theme + ':' + entry.song.u;
+  if (entry.lutKey === key && entry.pc) return;
+  const lut = buildLut(entry.song.u), r = entry.res;
+  entry.pc = colorize(r.portrait, r.size, r.size, lut);
+  entry.lc = colorize(r.linear, r.linW, r.linH, lut);
+  entry.sc = ssmCanvas(r);
+  entry.lutKey = key;
+  if (entry.thumb) drawThumb(entry);
+}
+function loadJacket(entry) {
+  const s = entry.song, tryLoad = (base, cors) => new Promise((res, rej) => { const img = new Image(); if (cors) img.crossOrigin = 'anonymous'; img.onload = () => res(img); img.onerror = rej; img.src = base + s.jkt + '/' + s.jkt + '.webp'; });
+  tryLoad(JP_JACKET, true).then(img => { entry.jacket = img; entry.jacketCors = true; }, () => tryLoad(TC_JACKET, true).then(img => { entry.jacket = img; entry.jacketCors = true; }, () => tryLoad(JP_JACKET, false).then(img => { entry.jacket = img; entry.jacketCors = false; }, () => {}))).then(() => { dirty = true; kick(); });
+}
+
+/* ========== 畫架 ========== */
+const barH = () => { const b = document.querySelector('.bar'); return b ? Math.max(56, b.offsetHeight) : 56; };
+function resize() {
+  DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  stage.width = Math.round(W * DPR); stage.height = Math.round(H * DPR);
+  root.style.setProperty('--bar-h', barH() + 'px'); dirty = true; kick();
+}
+function area() {
+  if (OG) return { x: 0, y: 0, w: W, h: H };
+  const top = barH() + 10, panel = $('#panel');
+  if (mobile()) { const open = S.panelOn && S.cur; const sheet = open ? panel.getBoundingClientRect().top : H - 72; return { x: 0, y: top, w: W, h: Math.max(120, sheet - top - 6) }; }
+  const right = S.panelOn && S.cur ? 376 + 32 : 0;
+  return { x: 0, y: top, w: W - right, h: H - top - 90 };
+}
+function geom() {
+  const a = area(), rad = Math.min(a.w, a.h) / 2 - (OG ? 30 : 34);
+  return { cx: a.x + a.w / 2, cy: a.y + a.h / 2, rad: Math.max(60, rad), a };
+}
+/* 頻率對應到半徑（與 Worker 的頻帶位置一致） */
+function rOfFreq(f, rI, rO) { const pos = Math.log(f / F_LO) / Math.log(F_HI / F_LO) * NB - .5; return rI + (rO - rI) * clamp(pos / (NB - 1), 0, 1); }
+function freqOfR(r, rI, rO) { const pos = (r - rI) / (rO - rI) * (NB - 1) + .5; return F_LO * Math.exp(Math.log(F_HI / F_LO) * pos / NB); }
+function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+function frame(now) {
+  raf = 0;
+  const live = (P.a && (P.state === 'playing' || P.state === 'ending' || P.state === 'loading')) || !!S.loading;
+  if (dirty || live) { draw(now); dirty = false; }
+  if (live && !REDUCED) kick();
+}
+function draw(now) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  const light = root.classList.contains('light'), gold = cssVar('gold'), gold2 = cssVar('gold-2'), ink = cssVar('ink'), ink3 = cssVar('ink-3');
+  const th = { light, gold, gold2, ink, ink3, hair: light ? 'rgba(35,30,22,.14)' : 'rgba(235,228,211,.1)' };
+  if (S.loading && !S.cur) { drawProgressRing(th); return; }
+  if (!S.cur) { if (!OG) drawIdleRing(th, now); return; }
+  const e = S.cur;
+  if (S.mode === 'portrait') drawPortraitView(e, th, now);
+  else if (S.mode === 'spectrum') drawSpectrumView(e, th, now);
+  else drawStructureView(e, th, now);
+  if (S.loading) drawProgressRing(th, true);
+}
+function drawIdleRing(th, now) {
+  const g = geom(), t = (now || 0) / 1000;
+  ctx.save(); ctx.translate(g.cx, g.cy); ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) { const r = g.rad * (.3 + i * .16); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.strokeStyle = rgba(th.gold, .07 + (REDUCED ? 0 : .04 * Math.sin(t * .6 + i))); ctx.stroke(); }
+  ctx.restore();
+}
+function drawProgressRing(th, small) {
+  const g = geom(), p = S.loading ? S.loading.p : 0, r = small ? 26 : Math.min(150, g.rad * .42), cx = small ? g.a.x + 40 : g.cx, cy = small ? g.a.y + g.a.h - 40 : g.cy;
+  ctx.save(); ctx.lineWidth = small ? 1.5 : 1; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.strokeStyle = rgba(th.gold, .18); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p); ctx.strokeStyle = th.gold2; ctx.lineWidth = small ? 2 : 1.5; ctx.shadowColor = rgba(th.gold, .7); ctx.shadowBlur = 10; ctx.stroke();
+  if (!small) { for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2 - Math.PI / 2, inner = r + 10, outer = r + (i % 5 ? 14 : 20); ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner); ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer); ctx.strokeStyle = rgba(th.gold, i / 60 < p ? .7 : .18); ctx.lineWidth = 1; ctx.shadowBlur = 0; ctx.stroke(); } }
+  ctx.restore();
+}
+/* 與曲庫頁同一段試聽：檔案的第 10 秒起；換算成肖像（修掉前置靜音後）的時間 */
+function previewStart(e) { const off = e.offset || 0, dur = e.res.duration; const fileStart = dur + off > PV.start + PV.clip + 4 ? PV.start : 0; return clamp(fileStart - off, 0, dur); }
+function sectionAt(res, t) { let k = 0; for (let i = 0; i < res.sections.length; i++) if (t >= res.sections[i]) k = i; return k; }
+/* 肖像：可同時給畫架與海報用 */
+function paintPortrait(c, e, cx, cy, rad, th, opts = {}) {
+  const r = e.res, K = rad / (r.size / 2), rI = r.rI * K, rO = r.rO * K, dur = r.duration, light = th.light;
+  const font = (px, it) => `${it ? 'italic ' : ''}600 ${px}px 'Cormorant Garamond','Noto Serif TC',serif`;
+  c.save(); c.translate(cx, cy);
+  /* 底盤與影子 */
+  c.beginPath(); c.arc(0, 0, rO + 2, 0, Math.PI * 2); c.fillStyle = light ? 'rgba(249,245,236,.55)' : 'rgba(3,5,10,.72)'; c.shadowColor = light ? 'rgba(60,45,20,.25)' : 'rgba(0,0,0,.7)'; c.shadowBlur = rad * .16; c.shadowOffsetY = rad * .03; c.fill(); c.shadowBlur = 0; c.shadowOffsetY = 0;
+  c.drawImage(e.pc, -rad, -rad, rad * 2, rad * 2);
+  /* 八度髮絲線與標示 */
+  c.lineWidth = 1; c.textBaseline = 'middle';
+  OCTAVES.forEach(f => { const rr = rOfFreq(f, rI, rO); if (rr <= rI + 2 || rr >= rO - 2) return; c.beginPath(); c.arc(0, 0, rr, 0, Math.PI * 2); c.strokeStyle = light ? 'rgba(35,30,22,.16)' : 'rgba(236,220,170,.14)'; c.stroke();
+    if (rad > 150) { c.font = font(Math.max(9, rad * .026)); c.textAlign = 'left'; c.save(); c.lineJoin = 'round'; c.lineWidth = 3.5; c.strokeStyle = light ? 'rgba(249,245,236,.92)' : 'rgba(3,5,10,.92)'; c.strokeText(fmtHz(f), 5, -rr + 1); c.fillStyle = light ? 'rgba(35,30,22,.85)' : 'rgba(236,220,170,.95)'; c.fillText(fmtHz(f), 5, -rr + 1); c.restore(); } });
+  /* 外框、分鐘刻度 */
+  c.beginPath(); c.arc(0, 0, rO + 1, 0, Math.PI * 2); c.strokeStyle = rgba(th.gold, .55); c.stroke();
+  c.beginPath(); c.arc(0, 0, rO + 7, 0, Math.PI * 2); c.strokeStyle = rgba(th.gold, .22); c.stroke();
+  const nTick = Math.floor(dur / 10);
+  for (let i = 0; i <= nTick; i++) { const t = i * 10, a = t / dur * Math.PI * 2 - Math.PI / 2, major = i % 6 === 0, mid = i % 3 === 0; const r0 = rO + 7, r1 = rO + (major ? 17 : mid ? 13 : 10);
+    c.beginPath(); c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); c.strokeStyle = rgba(th.gold, major ? .8 : .4); c.lineWidth = major ? 1.2 : .8; c.stroke();
+    if (major && rad > 120 && i < nTick) { c.font = font(Math.max(10, rad * .036)); c.fillStyle = rgba(th.gold2, .9); c.textAlign = 'center'; const rl = rO + 28 + (rad * .02); c.save(); c.translate(Math.cos(a) * rl, Math.sin(a) * rl); c.fillText(fmtTime(t), 0, 0); c.restore(); } }
+  c.lineWidth = 1;
+  /* 試聽的 60 秒 */
+  const off = e.offset || 0, pst = previewStart(e), pa0 = pst / dur * Math.PI * 2 - Math.PI / 2, pa1 = clamp(pst + PV.clip, 0, dur) / dur * Math.PI * 2 - Math.PI / 2;
+  c.beginPath(); c.arc(0, 0, rO + 4, pa0, pa1); c.strokeStyle = rgba(th.gold2, .55); c.lineWidth = 1.5; c.stroke(); c.lineWidth = 1;
+  /* 段落 */
+  if (r.sections.length > 1) r.sections.forEach((t, i) => { const a = t / dur * Math.PI * 2 - Math.PI / 2; if (i > 0) { c.beginPath(); c.moveTo(Math.cos(a) * rI, Math.sin(a) * rI); c.lineTo(Math.cos(a) * (rO + 7), Math.sin(a) * (rO + 7)); c.strokeStyle = light ? 'rgba(35,30,22,.35)' : 'rgba(236,220,170,.42)'; c.stroke(); }
+    const t1 = r.sections[i + 1] != null ? r.sections[i + 1] : dur, am = (t + t1) / 2 / dur * Math.PI * 2 - Math.PI / 2; if (t1 - t < dur * .035 || rad < 150) return;
+    c.font = font(Math.max(10, rad * .042), true); c.fillStyle = rgba(th.ink, .75); c.textAlign = 'center'; const rl = rI + (rO - rI) * .5; let ox = 0; const dTop = Math.abs(((am + Math.PI / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)); if (Math.min(dTop, Math.PI * 2 - dTop) < .14) ox = (dTop < Math.PI ? 1 : -1) * Math.max(16, rad * .07); c.save(); c.translate(Math.cos(am) * rl + ox, Math.sin(am) * rl); c.shadowColor = light ? 'rgba(249,245,236,.9)' : 'rgba(0,0,0,.9)'; c.shadowBlur = 6; c.fillText(ROMAN[i] || String(i + 1), 0, 0); c.restore(); });
+  /* 中央封面 */
+  const jr = rI * .86;
+  c.beginPath(); c.arc(0, 0, jr + 3, 0, Math.PI * 2); c.fillStyle = light ? 'rgba(249,245,236,.9)' : 'rgba(5,7,14,.9)'; c.fill();
+  if (e.jacket && (opts.allowTaint || e.jacketCors !== false)) { c.save(); c.beginPath(); c.arc(0, 0, jr, 0, Math.PI * 2); c.clip(); c.drawImage(e.jacket, -jr, -jr, jr * 2, jr * 2); c.restore(); }
+  else { c.font = font(jr * .7); c.textAlign = 'center'; c.fillStyle = rgba(th.gold, .7); c.fillText((e.song.tc || e.song.t).slice(0, 1), 0, 2); }
+  c.beginPath(); c.arc(0, 0, jr + 1, 0, Math.PI * 2); c.strokeStyle = rgba(th.gold, .85); c.lineWidth = 1.2; c.stroke();
+  c.beginPath(); c.arc(0, 0, jr + 6, 0, Math.PI * 2); c.strokeStyle = rgba(th.gold, .3); c.lineWidth = 1; c.stroke();
+  c.restore();
+  return { rI, rO };
+}
+function drawPortraitView(e, th, now) {
+  const g = geom(), r = e.res, dur = r.duration;
+  const { rI, rO } = paintPortrait(ctx, e, g.cx, g.cy, g.rad, th);
+  /* 指針、此刻的頻譜、呼吸環 */
+  const t = curTime();
+  if (t != null) {
+    const a = t / dur * Math.PI * 2 - Math.PI / 2, ca = Math.cos(a), sa = Math.sin(a);
+    ctx.save(); ctx.translate(g.cx, g.cy);
+    ctx.beginPath(); ctx.moveTo(ca * (rI - 8), sa * (rI - 8)); ctx.lineTo(ca * (rO + 24), sa * (rO + 24)); ctx.strokeStyle = rgba(th.gold2, .9); ctx.lineWidth = 1.2; ctx.shadowColor = rgba(th.gold2, .9); ctx.shadowBlur = 10; ctx.stroke();
+    const spec = liveSpectrum();
+    if (spec) { ctx.shadowBlur = 8; for (let i = 0; i < spec.length; i++) { const v = spec[i][1]; if (v < .05) continue; const rr = rOfFreq(spec[i][0], rI, rO), sz = .8 + v * 3.2; ctx.beginPath(); ctx.arc(ca * rr, sa * rr, sz, 0, Math.PI * 2); ctx.fillStyle = `rgba(255,250,236,${.25 + v * .7})`; ctx.fill(); } }
+    const lv = liveLevel(); ctx.shadowBlur = 0; ctx.beginPath(); ctx.arc(0, 0, rI * .86 + 10 + lv * 10, 0, Math.PI * 2); ctx.strokeStyle = rgba(th.gold2, .15 + lv * .5); ctx.lineWidth = 1 + lv * 2; ctx.stroke();
+    ctx.restore();
+  }
+  /* 懸停：那一刻與那個頻率 */
+  if (S.hover && S.hover.view === 'portrait') { const hv = S.hover, a = hv.t / dur * Math.PI * 2 - Math.PI / 2; ctx.save(); ctx.translate(g.cx, g.cy); ctx.beginPath(); ctx.moveTo(Math.cos(a) * rI, Math.sin(a) * rI); ctx.lineTo(Math.cos(a) * (rO + 7), Math.sin(a) * (rO + 7)); ctx.strokeStyle = rgba(th.ink, .4); ctx.lineWidth = 1; ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, hv.r, 0, Math.PI * 2); ctx.strokeStyle = rgba(th.ink, .22); ctx.stroke(); ctx.restore(); }
+  /* 右上角題字（OG 才需要大字；平常只在頁面夠寬時放一行小引） */
+  if (OG) { const fx = g.cx + g.rad + 60, avail = W - fx - 28; ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.fillStyle = th.gold; ctx.font = `italic 600 20px 'Cormorant Garamond',serif`; ctx.fillText('Fourier Portrait', fx, g.cy - 60); ctx.fillStyle = th.ink; let fs = 38; const title = e.song.tc || e.song.t; do { ctx.font = `600 ${fs}px 'Noto Serif TC',serif`; fs -= 2; } while (fs > 16 && ctx.measureText(title).width > avail); ctx.fillText(title, fx, g.cy - 12); ctx.fillStyle = th.ink3; ctx.font = `500 17px 'Noto Serif TC',serif`; ctx.fillText(e.song.composer || '', fx, g.cy + 22); ctx.restore(); }
+}
+function drawSpectrumView(e, th, now) {
+  const a = area(), r = e.res, dur = r.duration, light = th.light;
+  const x0 = a.x + 66, x1 = a.x + a.w - 22, y0 = a.y + 34, y1 = a.y + a.h - 112, w = x1 - x0, h = y1 - y0;
+  if (w < 60 || h < 60) return;
+  const xOf = t => x0 + t / dur * w;
+  ctx.save();
+  ctx.fillStyle = light ? 'rgba(249,245,236,.5)' : 'rgba(3,5,10,.7)'; ctx.fillRect(x0, y0, w, h);
+  ctx.drawImage(e.lc, x0, y0, w, h);
+  ctx.strokeStyle = rgba(th.gold, .5); ctx.lineWidth = 1; ctx.strokeRect(x0 - .5, y0 - .5, w + 1, h + 1);
+  ctx.font = `600 11px 'Cormorant Garamond',serif`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+  OCTAVES.forEach(f => { const yy = y0 + (1 - clamp((Math.log(f / F_LO) / Math.log(F_HI / F_LO) * NB - .5) / (NB - 1), 0, 1)) * h; ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x1, yy); ctx.strokeStyle = th.hair; ctx.stroke(); ctx.fillStyle = rgba(th.gold2, .8); ctx.fillText(fmtHz(f), x0 - 8, yy); });
+  /* 段落 */
+  ctx.textAlign = 'center'; ctx.font = `italic 600 13px 'Cormorant Garamond',serif`;
+  r.sections.forEach((t, i) => { const xx = xOf(t); if (i > 0) { ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y1 + 70); ctx.strokeStyle = rgba(th.gold2, .45); ctx.stroke(); } const t1 = r.sections[i + 1] != null ? r.sections[i + 1] : dur; if ((t1 - t) / dur * w > 22) { ctx.fillStyle = rgba(th.ink, .8); ctx.fillText(ROMAN[i] || String(i + 1), xOf((t + t1) / 2), y0 - 14); } });
+  /* 時間軸 */
+  ctx.font = `600 11px 'Cormorant Garamond',serif`; ctx.textAlign = 'center';
+  for (let t = 0; t <= dur; t += 10) { const xx = xOf(t), major = t % 60 === 0; ctx.beginPath(); ctx.moveTo(xx, y1 + 1); ctx.lineTo(xx, y1 + (major ? 9 : 5)); ctx.strokeStyle = rgba(th.gold, major ? .8 : .4); ctx.stroke(); if (major && w / (dur / 60) > 46) { ctx.fillStyle = rgba(th.gold2, .85); ctx.fillText(fmtTime(t), xx, y1 + 18); } }
+  /* 響度緞帶與擊點 */
+  const ry0 = y1 + 30, rh = 58, n = r.frames;
+  ctx.beginPath(); ctx.moveTo(x0, ry0 + rh);
+  const step = Math.max(1, Math.floor(n / w / 2));
+  for (let i = 0; i < n; i += step) { const v = clamp((r.rms[i] + 50) / 50, 0, 1); ctx.lineTo(x0 + i / n * w, ry0 + rh - v * rh); }
+  ctx.lineTo(x1, ry0 + rh); ctx.closePath(); ctx.fillStyle = rgba(th.gold, .22); ctx.fill(); ctx.strokeStyle = rgba(th.gold2, .8); ctx.lineWidth = 1; ctx.stroke();
+  ctx.strokeStyle = light ? 'rgba(35,30,22,.25)' : 'rgba(236,220,170,.22)';
+  for (let i = 0; i < r.onsets.length; i++) { const xx = x0 + r.onsets[i] / n * w; ctx.beginPath(); ctx.moveTo(xx, ry0 + rh + 4); ctx.lineTo(xx, ry0 + rh + 10); ctx.stroke(); }
+  ctx.textAlign = 'right'; ctx.fillStyle = rgba(th.ink3, 1); ctx.font = `600 10px 'Cormorant Garamond',serif`; ctx.fillText('LOUDNESS', x0 - 8, ry0 + rh / 2); ctx.fillText('ONSETS', x0 - 8, ry0 + rh + 7);
+  /* 指針 */
+  const t = curTime();
+  if (t != null) { const xx = xOf(t); ctx.beginPath(); ctx.moveTo(xx, y0 - 6); ctx.lineTo(xx, ry0 + rh + 10); ctx.strokeStyle = rgba(th.gold2, .95); ctx.lineWidth = 1.2; ctx.shadowColor = rgba(th.gold2, .9); ctx.shadowBlur = 10; ctx.stroke();
+    const spec = liveSpectrum(); if (spec) { ctx.shadowBlur = 8; spec.forEach(([f, v]) => { if (v < .05) return; const yy = y0 + (1 - clamp((Math.log(f / F_LO) / Math.log(F_HI / F_LO) * NB - .5) / (NB - 1), 0, 1)) * h; ctx.beginPath(); ctx.arc(xx, yy, .8 + v * 3.2, 0, Math.PI * 2); ctx.fillStyle = `rgba(255,250,236,${.25 + v * .7})`; ctx.fill(); }); } ctx.shadowBlur = 0; }
+  if (S.hover && S.hover.view === 'spectrum') { const xx = xOf(S.hover.t); ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y1); ctx.strokeStyle = rgba(th.ink, .35); ctx.lineWidth = 1; ctx.stroke(); }
+  ctx.restore();
+}
+function drawStructureView(e, th, now) {
+  const a = area(), r = e.res, dur = r.duration, light = th.light;
+  const side = Math.min(a.w - 90, a.h - 120), x0 = a.x + (a.w - side) / 2 + 20, y0 = a.y + 34, x1 = x0 + side, y1 = y0 + side;
+  if (side < 80) return;
+  const pOf = t => t / dur * side;
+  ctx.save();
+  ctx.fillStyle = light ? 'rgba(249,245,236,.5)' : 'rgba(3,5,10,.7)'; ctx.fillRect(x0, y0, side, side);
+  ctx.imageSmoothingEnabled = side > r.ssmN * 1.5; ctx.drawImage(e.sc, x0, y0, side, side); ctx.imageSmoothingEnabled = true;
+  ctx.strokeStyle = rgba(th.gold, .5); ctx.lineWidth = 1; ctx.strokeRect(x0 - .5, y0 - .5, side + 1, side + 1);
+  ctx.font = `italic 600 13px 'Cormorant Garamond',serif`; ctx.textBaseline = 'middle';
+  r.sections.forEach((t, i) => { const p = pOf(t); if (i > 0) { ctx.strokeStyle = rgba(th.gold2, .4); ctx.beginPath(); ctx.moveTo(x0 + p, y0); ctx.lineTo(x0 + p, y1); ctx.moveTo(x0, y0 + p); ctx.lineTo(x1, y0 + p); ctx.stroke(); }
+    const t1 = r.sections[i + 1] != null ? r.sections[i + 1] : dur, pm = pOf((t + t1) / 2); if (pOf(t1 - t) < 20) return; ctx.fillStyle = rgba(th.ink, .85); ctx.textAlign = 'center'; ctx.fillText(ROMAN[i] || String(i + 1), x0 + pm, y0 - 13); ctx.textAlign = 'right'; ctx.fillText(ROMAN[i] || String(i + 1), x0 - 9, y0 + pm); });
+  ctx.font = `600 11px 'Cormorant Garamond',serif`; ctx.fillStyle = rgba(th.gold2, .85); ctx.textAlign = 'left'; ctx.fillText('0:00', x0, y1 + 14); ctx.textAlign = 'right'; ctx.fillText(fmtTime(dur), x1, y1 + 14);
+  /* 新奇度 */
+  const ny = y1 + 30, nh = 44, n = r.ssmN;
+  ctx.beginPath(); ctx.moveTo(x0, ny + nh); for (let i = 0; i < n; i++) ctx.lineTo(x0 + (i + .5) / n * side, ny + nh - r.nov[i] * nh); ctx.lineTo(x1, ny + nh); ctx.closePath(); ctx.fillStyle = rgba(th.gold, .22); ctx.fill(); ctx.strokeStyle = rgba(th.gold2, .8); ctx.stroke();
+  ctx.textAlign = 'right'; ctx.fillStyle = th.ink3; ctx.font = `600 10px 'Cormorant Garamond',serif`; ctx.fillText('NOVELTY', x0 - 8, ny + nh / 2);
+  const t = curTime();
+  if (t != null) { const p = pOf(t); ctx.strokeStyle = rgba(th.gold2, .95); ctx.lineWidth = 1.2; ctx.shadowColor = rgba(th.gold2, .9); ctx.shadowBlur = 8; ctx.beginPath(); ctx.moveTo(x0 + p, y0); ctx.lineTo(x0 + p, ny + nh); ctx.moveTo(x0, y0 + p); ctx.lineTo(x1, y0 + p); ctx.stroke(); ctx.shadowBlur = 0; }
+  if (S.hover && S.hover.view === 'structure') { const p = pOf(S.hover.t), p2 = pOf(S.hover.t2); ctx.strokeStyle = rgba(th.ink, .3); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0 + p, y0); ctx.lineTo(x0 + p, y1); ctx.moveTo(x0, y0 + p2); ctx.lineTo(x1, y0 + p2); ctx.stroke(); }
+  ctx.restore();
+}
+
+/* ========== 指向：哪一刻、哪個頻率 ========== */
+function hit(x, y) {
+  const e = S.cur; if (!e) return null; const r = e.res, dur = r.duration, a = area();
+  if (S.mode === 'portrait') { const g = geom(), K = g.rad / (r.size / 2), rI = r.rI * K, rO = r.rO * K, dx = x - g.cx, dy = y - g.cy, rr = Math.hypot(dx, dy); if (rr < rI - 4 || rr > rO + 24) return null; let th = Math.atan2(dx, -dy); if (th < 0) th += Math.PI * 2; return { view: 'portrait', t: th / (Math.PI * 2) * dur, f: rr <= rO ? freqOfR(rr, rI, rO) : null, r: clamp(rr, rI, rO) }; }
+  if (S.mode === 'spectrum') { const x0 = a.x + 66, x1 = a.x + a.w - 22, y0 = a.y + 34, y1 = a.y + a.h - 112; if (x < x0 || x > x1 || y < y0 || y > y1 + 90) return null; const t = (x - x0) / (x1 - x0) * dur; const f = y <= y1 ? F_LO * Math.exp(Math.log(F_HI / F_LO) * ((1 - (y - y0) / (y1 - y0)) * (NB - 1) + .5) / NB) : null; return { view: 'spectrum', t, f }; }
+  const side = Math.min(a.w - 90, a.h - 120), x0 = a.x + (a.w - side) / 2 + 20, y0 = a.y + 34; if (x < x0 || x > x0 + side || y < y0 || y > y0 + side) return null;
+  return { view: 'structure', t: (x - x0) / side * dur, t2: (y - y0) / side * dur, f: null };
+}
+const tip = $('#tip');
+function showTip(h, x, y) {
+  const e = S.cur; if (!h || !e) { tip.classList.remove('on'); return; }
+  const sec = ROMAN[sectionAt(e.res, h.t)] || '';
+  let txt = fmtTime(h.t) + (h.f ? ' · ' + fmtHz(h.f) : '') + (h.view === 'structure' ? ' × ' + fmtTime(h.t2) : '');
+  tip.innerHTML = esc(txt) + '<i>' + (h.view === 'structure' ? (Math.abs(h.t - h.t2) < 1 ? '對角線' : '相似度 ' + Math.round(ssmAt(e.res, h.t, h.t2) * 100) + '%') : '第 ' + sec + ' 段 · 點一下聽這 20 秒') + '</i>';
+  tip.style.left = Math.min(W - 230, x + 16) + 'px'; tip.style.top = Math.max(8, y - 36) + 'px'; tip.classList.add('on');
+}
+function ssmAt(r, t, t2) { const i = clamp(Math.floor(t / r.ssmStep), 0, r.ssmN - 1), j = clamp(Math.floor(t2 / r.ssmStep), 0, r.ssmN - 1); return r.ssm[i * r.ssmN + j] / 255; }
+stage.addEventListener('pointermove', e => { const h = hit(e.clientX, e.clientY); S.hover = h; stage.classList.toggle('pick', !!h); showTip(h, e.clientX, e.clientY); dirty = true; kick(); });
+stage.addEventListener('pointerleave', () => { S.hover = null; stage.classList.remove('pick'); tip.classList.remove('on'); dirty = true; kick(); });
+stage.addEventListener('click', e => { const h = hit(e.clientX, e.clientY); if (!h) return; playAt(h.t, PV.tap); });
+stage.addEventListener('keydown', e => { if (e.key === 'Enter' && S.hover) playAt(S.hover.t, PV.tap); });
+
+/* ========== 試聽 ==========
+   與星圖頁同一套：先以 crossOrigin 載入好接分析器，不行就退回一般載入；日服桶沒有再試台服桶。 */
+const P = { a: null, song: null, state: 'idle', actx: null, an: null, buf: null, fade: 0, startAt: 0, endAt: 0, cors: false, lv: 0 };
+function fadeTo(a, target, dur, done) {
+  cancelAnimationFrame(P.fade); const v0 = a.volume, t0 = performance.now();
+  const step = () => { if (P.a !== a) return; const k = Math.min(1, (performance.now() - t0) / (dur * 1000)); try { a.volume = v0 + (target - v0) * k; } catch (e) {} if (k < 1) P.fade = requestAnimationFrame(step); else if (done) done(); };
+  P.fade = requestAnimationFrame(step);
+}
+function stopAudio(fade) {
+  const a = P.a; if (!a) return; P.a = null; P.an = null; cancelAnimationFrame(P.fade);
+  const kill = () => { try { a.pause(); a.removeAttribute('src'); a.load(); } catch (e) {} };
+  if (fade && !a.paused) { const t0 = performance.now(), v0 = a.volume; const step = () => { const k = Math.min(1, (performance.now() - t0) / 250); try { a.volume = v0 * (1 - k); } catch (e) {} if (k < 1) requestAnimationFrame(step); else kill(); }; requestAnimationFrame(step); } else kill();
+}
+function wireAnalyser(a) {
+  try {
+    if (!P.actx) P.actx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = P.actx.createMediaElementSource(a), an = P.actx.createAnalyser(); an.fftSize = 2048; an.smoothingTimeConstant = .6;
+    src.connect(an); an.connect(P.actx.destination); P.an = an; P.buf = new Uint8Array(an.frequencyBinCount);
+    if (P.actx.state === 'suspended') P.actx.resume();
+  } catch (e) { P.an = null; }
+}
+function playAt(start, clip) {
+  const e = S.cur; if (!e) return; const song = e.song, abn = abnOf(song); if (!abn) return;
+  stopAudio(true);
+  const off = e.offset || 0; P.song = song; P.state = 'loading'; P.startAt = start + off; P.endAt = start + off + clip;
+  const a = new Audio(); P.a = a; a.preload = 'auto'; a.volume = 0;
+  let bucket = 0, cors = true;
+  const load = () => { if (cors) a.crossOrigin = 'anonymous'; else a.removeAttribute('crossorigin'); P.cors = cors; a.src = AUDIO[bucket] + abn + '/' + abn + '.mp3'; a.load(); };
+  a.onerror = () => { if (P.a !== a) return; if (cors) { cors = false; load(); return; } if (bucket === 0) { bucket = 1; cors = true; load(); return; } P.a = null; P.state = 'idle'; toast('音源載入失敗'); syncPlayBtn(); };
+  a.onloadedmetadata = () => { if (P.a !== a) return; P.endAt = Math.min(a.duration || 1e9, P.endAt); try { a.currentTime = P.startAt; } catch (e) {} };
+  a.oncanplay = () => { if (P.a !== a || P.state !== 'loading') return; if (P.startAt && a.currentTime < P.startAt - 1) { try { a.currentTime = P.startAt; } catch (e) {} }
+    a.play().then(() => { if (P.a !== a) return; P.state = 'playing'; if (cors) wireAnalyser(a); fadeTo(a, PV.vol, Math.min(PV.fin, clip / 4)); syncPlayBtn(); kick(); }).catch(() => { if (P.a !== a) return; P.state = 'paused'; toast('瀏覽器擋了自動播放，請再按一次播放'); syncPlayBtn(); }); };
+  a.ontimeupdate = () => { if (P.a !== a) return; if (P.state === 'playing' && a.currentTime >= P.endAt - PV.fout) { P.state = 'ending'; fadeTo(a, 0, PV.fout, () => { if (P.a !== a) return; stopAudio(false); P.state = 'idle'; syncPlayBtn(); dirty = true; kick(); }); } };
+  a.onended = () => { if (P.a !== a) return; stopAudio(false); P.state = 'idle'; syncPlayBtn(); dirty = true; kick(); };
+  load(); syncPlayBtn(); kick();
+}
+function togglePlay() {
+  const a = P.a;
+  if (!a || (P.song !== (S.cur && S.cur.song))) { if (!S.cur) return; playAt(previewStart(S.cur), PV.clip); return; }
+  if (P.state === 'playing' || P.state === 'ending') { a.pause(); P.state = 'paused'; }
+  else if (P.state === 'paused') { a.play().then(() => { P.state = 'playing'; if (P.actx && P.actx.state === 'suspended') P.actx.resume(); kick(); syncPlayBtn(); }).catch(() => {}); }
+  syncPlayBtn(); dirty = true; kick();
+}
+function curTime() { const a = P.a; if (!a || P.state === 'idle' || !S.cur || P.song !== S.cur.song) return null; return clamp((a.currentTime || P.startAt) - (S.cur.offset || 0), 0, S.cur.res.duration); }
+function liveSpectrum() {
+  if (!P.an || !P.actx) return null;
+  P.an.getByteFrequencyData(P.buf); const binHz = P.actx.sampleRate / P.an.fftSize, out = [], n = 72;
+  for (let i = 0; i < n; i++) { const f = F_LO * Math.exp(Math.log(F_HI / F_LO) * (i + .5) / n), k = f / binHz, k0 = Math.floor(k), w = k - k0; const v = (P.buf[k0] * (1 - w) + (P.buf[k0 + 1] || 0) * w) / 255; out.push([f, clamp((v - .25) / .7, 0, 1)]); }
+  return out;
+}
+function liveLevel() { if (!P.an) { P.lv += (0 - P.lv) * .1; return P.lv; } let s = 0; for (let i = 0; i < 64; i++) s += P.buf[i]; const v = clamp((s / 64 / 255 - .3) / .5, 0, 1); P.lv += (v - P.lv) * .25; return P.lv; }
+function syncPlayBtn() {
+  const b = $('#pPlay'); if (!b) return;
+  const live = P.a && S.cur && P.song === S.cur.song && (P.state === 'playing' || P.state === 'loading' || P.state === 'ending');
+  b.setAttribute('aria-pressed', live); b.querySelector('span').textContent = live ? '暫停' : (P.a && S.cur && P.song === S.cur.song && P.state === 'paused' ? '繼續' : '試聽 60 秒');
+}
+
+/* ========== 分析卡 ========== */
+const panel = $('#panel');
+function keyName(k) { return NOTE[k.idx] + ' ' + (k.mode === 'major' ? '大調' : '小調'); }
+function confWord(c) { return c > .14 ? '高' : c > .06 ? '中' : '低'; }
+function tempoWord(est, off) {
+  if (!off) return '官方未載 BPM'; if (!est) return '聽不出穩定的拍';
+  const r = est / off; if (Math.abs(r - 1) < .045) return '與官方 BPM 一致'; if (Math.abs(r - 2) < .09) return '聽感是官方的二倍'; if (Math.abs(r - .5) < .023) return '聽感是官方的一半'; if (Math.abs(r - 1.5) < .07) return '與官方成三比二'; if (Math.abs(r - .75) < .035) return '與官方成四分之三'; if (Math.abs(r - 4 / 3) < .06) return '與官方成四比三'; if (Math.abs(r - 2 / 3) < .03) return '與官方成二比三'; return '與官方不同';
+}
+function brightWord(hz) { return hz < 1500 ? '深沉' : hz < 2200 ? '溫潤' : hz < 3000 ? '明亮' : '清亮'; }
+function dynWord(db) { return db < 5 ? '平穩' : db < 8 ? '起伏' : db < 12 ? '鮮明' : '戲劇'; }
+/* 自相關常在拍的層級間猶豫（二倍、一半）；官方 BPM 在的話，候選裡有吻合的就取它 */
+function estBpm(r, official) { const c = r.tempo.cands; if (!c.length) return 0; if (official) { for (let i = 0; i < c.length; i++) if (Math.abs(c[i] / official - 1) < .045) return c[i]; } return c[0]; }
+function tiltRows(t) { const mx = Math.max(t.low, t.mid, t.high); return [['低 < 250 Hz', t.low - mx], ['中', t.mid - mx], ['高 > 4 kHz', t.high - mx]]; }
+function renderPanel(e) {
+  const s = e.song, r = e.res, c = colors[s.u] || colors.other;
+  const by = [s.composer && `<b>曲</b>${esc(s.composer)}`, s.lyricist && s.lyricist !== '-' && `<b>詞</b>${esc(s.lyricist)}`, s.arranger && s.arranger !== '-' && s.arranger !== s.composer && `<b>編</b>${esc(s.arranger)}`, s.creator && `<b>創</b>${esc(s.creator)}`].filter(Boolean).join('　');
+  const bpmE = estBpm(r, s.bpm), est = bpmE ? Math.round(bpmE) : 0, others = r.tempo.cands.filter(x => Math.round(x) !== est).map(Math.round);
+  panel.innerHTML = `
+    <button class="close" type="button" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="ph">
+      <div class="jk" style="--c:${c}"><div class="in"><img alt="" referrerpolicy="no-referrer"></div></div>
+      <div class="pt"><div class="sc">Fourier Portrait · No. ${s.id}</div><h2>${esc(s.tc || s.t)}</h2>${s.tc && s.tc !== s.t ? `<div class="jp">${esc(s.t)}</div>` : ''}<div class="by">${by}</div>
+        <div class="units">${s.units.map(u => `<span style="--c:${colors[u] || colors.other}"><i></i>${UNIT_SHORT[u] || u}</span>`).join('')}</div></div>
+    </div>
+    <div class="facts">
+      <div><small>官方 BPM</small><b>${s.bpm || '—'}</b></div>
+      <div><small>曲長</small><b>${fmtTime(r.duration)}</b></div>
+      <div><small>發行</small><b class="zh">${s.date ? s.date.slice(0, 4) + '.' + s.date.slice(5, 7) : '—'}</b></div>
+      <div><small>Master</small><b>${s.cM != null ? s.cM.toFixed(1) : (s.lvM != null ? s.lvM : '—')}</b></div>
+    </div>
+    <div class="ttl">Spectral Reading</div>
+    <div class="an">
+      <div class="r"><span class="k">調性 Key</span><b>${keyName(r.key)}</b><small>信心 ${confWord(r.key.conf)} · 相關 ${r.key.corr.toFixed(2)}${r.key.relGap < .03 ? ' · 或 ' + keyName(r.key.rel) : ''}</small></div>
+      <div class="r"><span class="k">速度 Tempo</span><b>${est ? `<em>${est}</em> BPM` : '—'}</b><small>${esc(tempoWord(bpmE, s.bpm))}${others.length ? ' · 另見 ' + others.join(' / ') : ''}</small></div>
+      <div class="r"><span class="k">亮度 Centroid</span><b><em>${(r.centroid / 1000).toFixed(2)}</em> kHz</b><small>頻譜重心 · ${brightWord(r.centroid)}</small></div>
+      <div class="r"><span class="k">動態 Dynamics</span><b><em>${r.dyn.range.toFixed(1)}</em> dB</b><small>響度第 95 與第 10 百分位差 · ${dynWord(r.dyn.range)}</small></div>
+      <div class="r"><span class="k">節奏密度 Onsets</span><b><em>${r.onsetRate.toFixed(1)}</em> 擊／秒</b><small>共 ${r.onsets.length} 個擊點</small></div>
+      <div class="r"><span class="k">段落 Sections</span><b><em>${r.sections.length}</em> 段</b><small>自相似矩陣的新奇度峰</small></div>
+    </div>
+    <div class="viz">
+      <figure><canvas id="radar" width="320" height="320"></canvas><figcaption>Profile</figcaption></figure>
+      <figure><canvas id="wheel" width="320" height="320"></canvas><figcaption>Chroma</figcaption></figure>
+    </div>
+    <div class="bands" style="--c:${c}">${tiltRows(r.tilt).map(([k, v]) => `<span class="k">${esc(k)}</span><span class="bar2"><i style="width:${Math.round(clamp((v + 36) / 36, 0, 1) * 100)}%"></i></span><b>${v > -.05 ? '0' : v.toFixed(0)} dB</b>`).join('')}</div>
+    <div class="secs" id="secs">${r.sections.map((t, i) => `<span data-t="${t}" role="button" tabindex="0" title="聽這一段"><b>${ROMAN[i] || i + 1}</b><i>${fmtTime(t)}</i></span>`).join('')}</div>
+    <div class="pr">
+      <button class="btn" type="button" id="pPlay" aria-pressed="false"><svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg><span>試聽 60 秒</span></button>
+      <button class="btn" type="button" id="pPoster"><svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg>輸出海報</button>
+      <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>複製連結</button>
+      <a class="btn" href="./starmap.html?s=${s.id}" title="在星圖上看這顆星"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6 6.1.5-4.6 4 1.4 6-5.3-3.2L6.7 19l1.4-6-4.6-4 6.1-.5z"/></svg>星圖</a>
+    </div>
+    <div class="pf">分析：單聲道 22.05 kHz · Hann 2048 · 跳距 512 · 128 對數頻帶 · ${r.frames.toLocaleString()} 幀。推算值是耳朵的讀法，以官方與遊戲內為準。</div>`;
+  const img = panel.querySelector('.jk img'); img.src = JP_THUMB + s.jkt + '.webp'; img.onload = () => img.classList.add('ok'); img.onerror = () => { if (!img.dataset.alt) { img.dataset.alt = '1'; img.src = TC_THUMB + s.jkt + '.webp'; } };
+  panel.querySelector('.close').onclick = () => togglePanel(false);
+  $('#pPlay').onclick = togglePlay;
+  $('#pPoster').onclick = () => exportPoster(e);
+  $('#pShare').onclick = () => { syncUrl(); const u = location.href; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('已複製這張聲紋的連結'), () => toast(u)); };
+  $('#secs').addEventListener('click', ev => { const sp = ev.target.closest('[data-t]'); if (sp) playAt(+sp.dataset.t, PV.tap); });
+  $('#secs').addEventListener('keydown', ev => { const sp = ev.target.closest('[data-t]'); if (sp && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); playAt(+sp.dataset.t, PV.tap); } });
+  drawRadar(e); drawWheel(e); syncPlayBtn();
+  panel.classList.toggle('on', S.panelOn); $('#panelBtn').setAttribute('aria-pressed', S.panelOn);
+}
+function drawRadar(e) {
+  const cv = $('#radar'); if (!cv) return; const c = cv.getContext('2d'), r = e.res, s = e.song, W2 = cv.width, cx = W2 / 2, cy = W2 / 2, R = W2 * .34, light = root.classList.contains('light');
+  const axes = [['速度', clamp(((estBpm(r, s.bpm) || s.bpm) - 70) / 130, 0, 1)], ['節奏', clamp(r.onsetRate / 7, 0, 1)], ['亮度', clamp((r.centroid - 1000) / 3000, 0, 1)], ['動態', clamp(r.dyn.range / 15, 0, 1)], ['低頻', clamp((r.tilt.low - r.tilt.mid + 4) / 14, 0, 1)], ['和聲', clamp(r.key.conf / .25, 0, 1)]];
+  const gold = cssVar('gold'), gold2 = cssVar('gold-2'), uc = colors[s.u] || colors.other;
+  c.clearRect(0, 0, W2, W2); c.lineWidth = 1;
+  for (let k = 1; k <= 4; k++) { c.beginPath(); for (let i = 0; i <= 6; i++) { const a = i / 6 * Math.PI * 2 - Math.PI / 2, rr = R * k / 4; c[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } c.strokeStyle = rgba(gold, k === 4 ? .5 : .18); c.stroke(); }
+  axes.forEach((ax, i) => { const a = i / 6 * Math.PI * 2 - Math.PI / 2; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.strokeStyle = rgba(gold, .18); c.stroke();
+    c.font = `500 15px 'Noto Serif TC',serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = light ? '#564e42' : '#b3ab98'; c.fillText(ax[0], cx + Math.cos(a) * (R + 24), cy + Math.sin(a) * (R + 24)); });
+  c.beginPath(); axes.forEach((ax, i) => { const a = i / 6 * Math.PI * 2 - Math.PI / 2, rr = R * (.08 + ax[1] * .92); c[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }); c.closePath();
+  c.fillStyle = rgba(uc, .28); c.fill(); c.strokeStyle = gold2; c.lineWidth = 1.5; c.shadowColor = rgba(gold, .6); c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0;
+  axes.forEach((ax, i) => { const a = i / 6 * Math.PI * 2 - Math.PI / 2, rr = R * (.08 + ax[1] * .92); c.beginPath(); c.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 3, 0, Math.PI * 2); c.fillStyle = gold2; c.fill(); });
+}
+function drawWheel(e) {
+  const cv = $('#wheel'); if (!cv) return; const c = cv.getContext('2d'), r = e.res, s = e.song, W2 = cv.width, cx = W2 / 2, cy = W2 / 2, R = W2 * .34, light = root.classList.contains('light');
+  const gold = cssVar('gold'), gold2 = cssVar('gold-2'), uc = colors[s.u] || colors.other;
+  c.clearRect(0, 0, W2, W2); c.lineWidth = 1;
+  c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.strokeStyle = rgba(gold, .45); c.stroke();
+  c.beginPath(); c.arc(cx, cy, R * .3, 0, Math.PI * 2); c.strokeStyle = rgba(gold, .25); c.stroke();
+  for (let i = 0; i < 12; i++) { const v = r.chroma[i], a0 = (i - .5) / 12 * Math.PI * 2 - Math.PI / 2, a1 = (i + .5) / 12 * Math.PI * 2 - Math.PI / 2, rr = R * (.3 + v * .7), tonic = i === r.key.idx;
+    c.beginPath(); c.arc(cx, cy, rr, a0 + .02, a1 - .02); c.arc(cx, cy, R * .3, a1 - .02, a0 + .02, true); c.closePath(); c.fillStyle = tonic ? rgba(gold2, .85) : rgba(uc, .25 + v * .5); c.fill(); c.strokeStyle = tonic ? gold2 : rgba(gold, .35); c.stroke();
+    const am = i / 12 * Math.PI * 2 - Math.PI / 2; c.font = `${tonic ? 600 : 500} ${tonic ? 16 : 14}px 'Cormorant Garamond',serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = tonic ? gold2 : (light ? '#564e42' : '#b3ab98'); c.fillText(NOTE[i], cx + Math.cos(am) * (R + 20), cy + Math.sin(am) * (R + 20)); }
+  c.font = `italic 600 15px 'Cormorant Garamond',serif`; c.fillStyle = gold2; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.key.mode === 'major' ? 'MAJ' : 'MIN', cx, cy);
+}
+function togglePanel(on) { S.panelOn = on == null ? !S.panelOn : on; panel.classList.toggle('on', S.panelOn && !!S.cur); $('#panelBtn').setAttribute('aria-pressed', S.panelOn); setTimeout(() => { dirty = true; kick(); }, mobile() ? 480 : 0); dirty = true; kick(); }
+$('#panelBtn').addEventListener('click', () => togglePanel());
+
+/* ========== 架上的聲紋 ========== */
+const shelf = $('#shelf'), shelfList = $('#shelfList');
+function drawThumb(e) {
+  const cv = e.thumb, c = cv.getContext('2d'), n = cv.width; c.clearRect(0, 0, n, n);
+  const r = e.res, K = (n / 2) / (r.size / 2) * 1.06;   // 稍放大，讓環撐滿圓
+  c.drawImage(e.pc, n / 2 - (r.size / 2) * K, n / 2 - (r.size / 2) * K, r.size * K, r.size * K);
+}
+function addShelf(e) {
+  const b = document.createElement('button'); b.className = 'sh'; b.type = 'button'; b.title = e.song.tc || e.song.t; b.dataset.id = e.song.id; b.setAttribute('aria-label', (e.song.tc || e.song.t) + ' 的聲紋');
+  const cv = document.createElement('canvas'); cv.width = cv.height = 108; b.appendChild(cv); e.thumb = cv; ensureImages(e); drawThumb(e);
+  b.addEventListener('click', () => openSong(e.song));
+  shelfList.appendChild(b); shelf.classList.add('has'); shelfList.scrollLeft = shelfList.scrollWidth;
+}
+function updateShelf() { shelfList.querySelectorAll('.sh').forEach(b => { b.setAttribute('aria-current', S.cur && +b.dataset.id === S.cur.song.id); }); }
+function shelfBusy(song) { shelfList.querySelectorAll('.sh').forEach(b => b.classList.remove('busy')); if (song && !CACHE.has(song.id)) { let b = shelfList.querySelector(`[data-id="${song.id}"]`); if (!b) { b = document.createElement('button'); b.className = 'sh busy'; b.type = 'button'; b.dataset.id = song.id; b.title = song.tc || song.t; b.setAttribute('aria-label', '正在分析 ' + (song.tc || song.t)); const cv = document.createElement('canvas'); cv.width = cv.height = 108; b.appendChild(cv); shelfList.appendChild(b); shelf.classList.add('has'); } } else { shelfList.querySelectorAll('.sh').forEach(b => { if (!CACHE.has(+b.dataset.id)) b.remove(); }); } }
+/* 分析完成後，忙碌佔位要換成真正的縮圖 */
+const _addShelf = addShelf;
+addShelf = function (e) { const old = shelfList.querySelector(`[data-id="${e.song.id}"]`); if (old) old.remove(); _addShelf(e); };
+
+/* ========== 狀態列 ========== */
+function updateHud() { const e = S.cur; $('#hudT').innerHTML = e ? `<b>${e.res.frames.toLocaleString()}</b> <i>幀 · ${NB} 頻帶 · ${fmtTime(e.res.duration)}</i>` : '—'; }
+
+/* ========== 搜尋 ========== */
+const q = $('#q'), qbox = $('#qbox'), results = $('#results');
+let resList = [], resIdx = -1;
+function searchSongs(t) { const toks = norm(t).split(/\s+/).filter(Boolean); if (!toks.length) return []; return songs.filter(s => toks.every(k => s.key.includes(k))).sort((a, b) => (b.abnV || b.abnS ? 1 : 0) - (a.abnV || a.abnS ? 1 : 0) || a.id - b.id).slice(0, 12); }
+function renderResults() {
+  results.innerHTML = resList.map((s, i) => `<button type="button" role="option" data-id="${s.id}" aria-selected="${i === resIdx}" class="${abnOf(s) ? '' : 'mute'}"><img alt="" referrerpolicy="no-referrer" loading="lazy" src="${JP_THUMB + s.jkt}.webp"><span style="min-width:0"><span class="t">${esc(s.tc || s.t)}</span><span class="s">${esc(s.composer || '')}${abnOf(s) ? '' : ' · 沒有音源'}</span></span><i class="dot" style="--c:${colors[s.u] || colors.other}"></i></button>`).join('');
+  results.classList.toggle('on', resList.length > 0); q.setAttribute('aria-expanded', resList.length > 0);
+}
+function closeResults() { resList = []; resIdx = -1; renderResults(); }
+q.addEventListener('input', () => { qbox.classList.toggle('has', !!q.value); resList = searchSongs(q.value); resIdx = resList.length ? 0 : -1; renderResults(); });
+q.addEventListener('focus', () => { if (q.value) { resList = searchSongs(q.value); renderResults(); } });
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { if (!resList.length) return; e.preventDefault(); resIdx = (resIdx + (e.key === 'ArrowDown' ? 1 : resList.length - 1)) % resList.length; renderResults(); }
+  else if (e.key === 'Enter') { const s = resList[Math.max(0, resIdx)]; if (s) { openSong(s); closeResults(); q.blur(); } }
+  else if (e.key === 'Escape') { q.value = ''; qbox.classList.remove('has'); closeResults(); q.blur(); }
+});
+results.addEventListener('mousedown', e => e.preventDefault());
+results.addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (!b) return; openSong(byId[+b.dataset.id]); closeResults(); q.blur(); });
+$('#qx').addEventListener('click', () => { q.value = ''; qbox.classList.remove('has'); closeResults(); q.focus(); });
+document.addEventListener('click', e => { if (!qbox.contains(e.target)) closeResults(); });
+
+/* ========== 檢視、隨機、主題、說明 ========== */
+function setMode(m) { if (!['portrait', 'spectrum', 'structure'].includes(m)) return; S.mode = m; $('#mode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m)); S.hover = null; tip.classList.remove('on'); syncUrl(); dirty = true; kick(); }
+$('#mode').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) setMode(b.dataset.m); });
+function randomSong() { const pool = playable.filter(s => !S.cur || s.id !== S.cur.song.id); const s = pool[Math.floor(Math.random() * pool.length)]; if (s) openSong(s); }
+$('#randBtn').addEventListener('click', randomSong);
+$('#introRand').addEventListener('click', randomSong);
+$('#introSearch').addEventListener('click', () => q.focus());
+$('#themeBtn').addEventListener('click', () => { root.classList.toggle('light'); S.theme = root.classList.contains('light') ? 'light' : 'dark'; try { localStorage.setItem('sekai-soundprint-theme', S.theme); } catch (e) {} readTheme(); CACHE.forEach(en => { en.lutKey = ''; }); if (S.cur) { ensureImages(S.cur); setAccent(S.cur.song); renderPanel(S.cur); } CACHE.forEach(en => { if (en.thumb) { ensureImages(en); drawThumb(en); } }); dirty = true; kick(); });
+const help = $('#help'); let helpRaf = 0, lastFocus = null;
+function openHelp() { lastFocus = document.activeElement; help.classList.add('on'); $('#helpX').focus(); animateSines($('#helpSines'), true); }
+function closeHelp() { help.classList.remove('on'); cancelAnimationFrame(helpRaf); helpRaf = 0; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+$('#helpBtn').addEventListener('click', openHelp); $('#helpX').addEventListener('click', closeHelp);
+help.addEventListener('click', e => { if (e.target === help) closeHelp(); });
+help.addEventListener('keydown', e => { if (e.key !== 'Tab') return; const f = [...help.querySelectorAll('button,a[href]')].filter(x => x.offsetParent); if (!f.length) return; const first = f[0], last = f[f.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } });
+/* 正弦相加的小動畫：傅立葉的第一課 */
+let introRaf = 0;
+function animateSines(cv, loop) {
+  if (!cv) return; const c = cv.getContext('2d');
+  const step = now => {
+    const dpr = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight; if (!w) { if (loop) helpRaf = requestAnimationFrame(step); return; }
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    const t = REDUCED ? 0 : now / 1000, gold = cssVar('gold'), gold2 = cssVar('gold-2'), comps = [[1, 1], [2, .5], [3, .33], [4, .25]];
+    c.lineWidth = 1;
+    comps.forEach(([k, amp], i) => { c.beginPath(); for (let x = 0; x <= w; x += 2) { const y = h / 2 + amp * Math.sin((x / w) * Math.PI * 2 * 2 * k - t * (1 + k * .15)) * h * .18; c[x ? 'lineTo' : 'moveTo'](x, y); } c.strokeStyle = rgba(gold, .22); c.stroke(); });
+    c.beginPath(); for (let x = 0; x <= w; x += 2) { let y = 0; comps.forEach(([k, amp]) => { y += amp * Math.sin((x / w) * Math.PI * 2 * 2 * k - t * (1 + k * .15)); }); c[x ? 'lineTo' : 'moveTo'](x, h / 2 + y * h * .18); } c.strokeStyle = gold2; c.lineWidth = 1.4; c.shadowColor = rgba(gold, .7); c.shadowBlur = 6; c.stroke(); c.shadowBlur = 0;
+    c.font = `600 10px 'Cormorant Garamond',serif`; c.fillStyle = rgba(gold, .9); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText('sin x + ½ sin 2x + ⅓ sin 3x + ¼ sin 4x', 8, 6);
+    if (loop && !REDUCED) helpRaf = requestAnimationFrame(step); else if (!loop && !REDUCED && !intro.classList.contains('off')) introRaf = requestAnimationFrame(step);
+  };
+  if (loop) helpRaf = requestAnimationFrame(step); else introRaf = requestAnimationFrame(step);
+}
+
+/* ========== 海報 ========== */
+async function exportPoster(e) {
+  const btn = $('#pPoster'); if (btn) btn.disabled = true;
+  try {
+    try { await Promise.all([document.fonts.load("600 40px 'Noto Serif TC'"), document.fonts.load("italic 600 24px 'Cormorant Garamond'"), document.fonts.load("600 24px 'Cormorant Garamond'")]); } catch (err) {}
+    const light = root.classList.contains('light'), Wp = 1600, Hp = 2200, cv = document.createElement('canvas'); cv.width = Wp; cv.height = Hp; const c = cv.getContext('2d');
+    const gold = cssVar('gold'), gold2 = cssVar('gold-2'), ink = cssVar('ink'), ink2 = cssVar('ink-2'), ink3 = cssVar('ink-3'), uc = colors[e.song.u] || colors.other;
+    c.fillStyle = light ? '#f1ebdf' : '#05070e'; c.fillRect(0, 0, Wp, Hp);
+    const gr = c.createRadialGradient(Wp / 2, Hp * .42, 100, Wp / 2, Hp * .42, Hp * .7); gr.addColorStop(0, rgba(uc, light ? .12 : .2)); gr.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gr; c.fillRect(0, 0, Wp, Hp);
+    c.strokeStyle = rgba(gold, .7); c.lineWidth = 2; c.strokeRect(60, 60, Wp - 120, Hp - 120); c.strokeStyle = rgba(gold, .3); c.lineWidth = 1; c.strokeRect(76, 76, Wp - 152, Hp - 152);
+    const th = { light, gold, gold2, ink, ink3 };
+    paintPortrait(c, e, Wp / 2, 940, 640, th, { allowTaint: false });
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    c.fillStyle = gold; c.font = "italic 600 30px 'Cormorant Garamond',serif"; c.fillText('F O U R I E R   P O R T R A I T', Wp / 2, 190);
+    c.fillStyle = ink; c.font = "600 64px 'Noto Serif TC','Cormorant Garamond',serif"; c.fillText(e.song.tc || e.song.t, Wp / 2, 1740);
+    if (e.song.tc && e.song.tc !== e.song.t) { c.fillStyle = ink3; c.font = "500 26px 'Noto Serif TC',serif"; c.fillText(e.song.t, Wp / 2, 1786); }
+    c.fillStyle = ink2; c.font = "500 28px 'Noto Serif TC',serif"; c.fillText([e.song.composer, e.song.units.map(u => UNIT_NAME[u]).join(' · ')].filter(Boolean).join('　'), Wp / 2, 1840);
+    const r = e.res, est = Math.round(estBpm(r, e.song.bpm));
+    const facts = [[keyName(r.key), 'KEY'], [(est || e.song.bpm || '—') + ' BPM', est ? 'TEMPO · EST.' : 'TEMPO'], [(r.centroid / 1000).toFixed(2) + ' kHz', 'CENTROID'], [r.dyn.range.toFixed(1) + ' dB', 'DYNAMICS'], [fmtTime(r.duration), 'LENGTH']];
+    const fw = (Wp - 240) / facts.length;
+    facts.forEach(([v, k], i) => { const x = 120 + fw * (i + .5); c.fillStyle = gold2; c.font = "600 40px 'Cormorant Garamond','Noto Serif TC',serif"; c.fillText(v, x, 1960); c.fillStyle = ink3; c.font = "600 18px 'Cormorant Garamond',serif"; c.fillText(k.split('').join(' '), x, 1996); if (i) { c.strokeStyle = rgba(gold, .35); c.beginPath(); c.moveTo(120 + fw * i, 1925); c.lineTo(120 + fw * i, 2005); c.stroke(); } });
+    c.strokeStyle = rgba(gold, .5); c.beginPath(); c.moveTo(Wp / 2 - 120, 1900); c.lineTo(Wp / 2 + 120, 1900); c.stroke();
+    c.fillStyle = ink3; c.font = "600 20px 'Cormorant Garamond',serif"; c.fillText('S E K A I   聲 紋   ·   P R O J E C T - S E K A I - C E N T E R . C O M', Wp / 2, 2080);
+    const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('blob');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sekai-soundprint-${e.song.id}.png`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    toast('海報已輸出');
+  } catch (err) { console.error(err); toast('海報輸出失敗（封面沒有跨域授權時會這樣）'); }
+  if (btn) btn.disabled = false;
+}
+
+/* ========== 網址 ========== */
+function syncUrl(song) {
+  const s = song || (S.cur && S.cur.song), p = new URLSearchParams();
+  if (s) p.set('s', s.id); if (S.mode !== 'portrait') p.set('m', S.mode); if (OG) p.set('og', '1');
+  const qs = p.toString(); history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+}
+function readUrl() {
+  const p = new URLSearchParams(location.search), m = p.get('m'); if (m) setMode(m);
+  const s = byId[+p.get('s')]; return s || null;
+}
+
+/* ========== 鍵盤 ========== */
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (e.key === 'Escape') { if (help.classList.contains('on')) { closeHelp(); return; } if (resList.length) { closeResults(); return; } if (mobile() && S.panelOn) togglePanel(false); return; }
+  if (typing) return;
+  if (e.key === '/' ) { e.preventDefault(); q.focus(); q.select(); }
+  else if (e.key === '?') openHelp();
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+  else if (e.key === 'r' || e.key === 'R') randomSong();
+  else if (e.key === 'e' || e.key === 'E') { if (S.cur) exportPoster(S.cur); }
+  else if (e.key === '1') setMode('portrait'); else if (e.key === '2') setMode('spectrum'); else if (e.key === '3') setMode('structure');
+  else if ((e.key === '[' || e.key === ']') && CACHE.size > 1) { const ids = [...CACHE.keys()], i = ids.indexOf(S.cur ? S.cur.song.id : -1), j = (i + (e.key === ']' ? 1 : ids.length - 1)) % ids.length; openSong(byId[ids[j]]); }
+});
+
+/* ========== 啟動 ========== */
+let rsz = 0;
+addEventListener('resize', () => { cancelAnimationFrame(rsz); rsz = requestAnimationFrame(resize); });
+resize(); animateSines($('#sines'), false);
+if (!REDUCED) { requestAnimationFrame(frame); }
+const first = readUrl();
+if (first) openSong(first, { quiet: true });
+else if (OG) { openSong(byId[1] || playable[0], { quiet: true }); }
+else if (!mobile() && !REDUCED) randomSong();
+window.__soundprint = { S, CACHE, songs, playable, byId, openSong, hit, geom, area };   // 給煙霧測試用
+</script>
+</body>
+</html>
