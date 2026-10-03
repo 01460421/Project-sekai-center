@@ -76,6 +76,30 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：衝榜劇場（theater.html）。資料來自 games.project-sekai-center.com 的逐局追蹤器；
+// 桌機＋手機各開一次，要載到局數、面板要長出統計、不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/theater.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__theater && window.__theater.G.n > 0 && document.querySelector('#loading').hidden, null, { timeout: 90000 });
+      await page.waitForTimeout(600);
+      const txt = await page.evaluate(() => document.querySelector('#panel').innerText);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /局數/.test(txt) && !(mobile && overflow);
+      why = errors[0] || (!/局數/.test(txt) ? '面板沒有統計' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' theater' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });

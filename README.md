@@ -9,6 +9,7 @@
 -  歌曲資料庫 - 完整樂曲清單
 -  EP 計算器 - 精確 EP 計算、活動試算、控分工具
 -  SEKAI 星圖（`starmap.html`）- 全曲庫化成一片可互動的星空：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮、可分享的星星連結；詳情可試聽（與曲庫頁同音源：第 10 秒起 60 秒、淡入淡出），「星空電台」在看得見的星之間隨機漫遊播放
+-  衝榜劇場（`theater.html`）- 前百名的每一場：Worker 每 15 秒記一次的逐場紀錄攤成脈動牆（時間×名次）、節奏熱圖、選手剖析（場次、分布、作息分段、名次軌跡）、此刻統計與即時紀錄，拖曳時間可回放整期
 
 ## 伺服器機器人（bot/）
 
@@ -20,6 +21,7 @@
 |---|---|---|
 | `*.html` | 頁面。`app.html` 是首頁 SPA，`index.html` 同時是經典版與五個內嵌面板的來源 | 每次重新驗證 |
 | `starmap.html` | 獨立頁：全曲庫星圖。只吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`，沒有其他依賴 | 每次重新驗證 |
+| `theater.html` | 獨立頁：衝榜劇場。資料直接向 `games.project-sekai-center.com/games?ev=` 拉逐局紀錄（gzip，一期約 5 MB），活動進行中每 15 秒增量更新；活動資料用 HiSekai `/event/list` 與 `data/borders-db.js` | 每次重新驗證 |
 | `js/core.js` | `index.html` 抽出的共用邏輯，五個 embed 共享同一份 | 一年 immutable |
 | `css/core.css` | 同上，共用樣式 | 一年 immutable |
 | `data/*.js` | 曲庫、貼圖稱號、卡片對照等靜態資料 | 一年 immutable |
@@ -66,5 +68,6 @@ python3 -m http.server 8899
 ## 開發備忘（2026-09）
 - `app.html` 只剩模板；邏輯在 `js/app.js`（由 `tools/split-app.py` 從內嵌 script 抽出）。**改邏輯請改 `js/app.js`**，改完跑 `python3 tools/build-min.py && python3 tools/stamp-assets.py`（`app.html` 載的是壓縮後的 `js/app.min.js`；AI 助手在 `js/ai.js`，登入核准後才動態載入 `js/ai.min.js`；stamp-assets 會核對兩個壓縮檔是不是由目前的來源壓出來的，過期會直接失敗）。語法檢查：`node --check js/app.js`。
 - `support.js` 的 `boot()` 看到 `data-dc-script` 有 `src` 而內容為空時會先 fetch 再啟動。
+- 側邊欄「特別專案」群組列出星圖與劇場：項目 id 以 `x_` 開頭、網址在 `EXTERNAL` 表，`go()` 看到就直接換頁，不進 PAGES、sitemap、OG 與自訂版面。
 - 星圖的彩蛋入口有三個，都走 `openStarmap()`（先一道流星、畫面漸暗再換頁）：首頁右上角那顆會閃的小星（`.egg-star`）、指令面板打「星圖／星空／星座」、任何頁面輸入 Konami 密碼（上上下下左右左右 B A）。
 - 私車排班（`?page=car`）呼叫 Worker 的 `/car/api/*`（代理到菜根機器人）與 `/auth/*`。本機開發可用假後端：`python3 -m http.server 8765` 後開 `http://127.0.0.1:8765/app.html?page=car&carmock=admin`（模式：`out`／`admin`／`member`／`qq`／`noid`／`down`，`carmock=off` 關閉；帳密 `demo`/`password1`）。假後端在 `tests/car-mock.js`，只有主機名是 localhost／127.0.0.1 才會載入，`tests/` 也不在 Vercel 部署範圍內。
