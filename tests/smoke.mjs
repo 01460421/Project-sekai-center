@@ -100,6 +100,30 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：SEKAI 聲紋（soundprint.html）。指定一首歌（?s=1），音源來自 sekai.best 鏡像、全曲 FFT 在瀏覽器的 Worker 裡算；
+// 桌機＋手機各開一次，要算完（S.cur 長出來）、分析卡要有調性、不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/soundprint.html?s=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__soundprint && window.__soundprint.S.cur && !window.__soundprint.S.loading, null, { timeout: 120000 });
+      await page.waitForTimeout(600);
+      const txt = await page.evaluate(() => document.querySelector('#panel').innerText);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /調性/.test(txt) && !(mobile && overflow);
+      why = errors[0] || (!/調性/.test(txt) ? '分析卡沒有讀數' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' soundprint' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
