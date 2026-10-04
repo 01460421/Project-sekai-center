@@ -114,6 +114,10 @@ color-scheme:dark;
 .modal-acts{display:flex;align-items:center;gap:6px;flex:none}
 .modal-x{width:30px;height:30px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer;line-height:1}
 .modal-related{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+/* ===== 功能家族的分頁籤：同一個側欄入口底下的頁面在頁首切換 ===== */
+.subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 16px}
+.subtab{padding:7px 14px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2;font-family:inherit;transition:transform .15s,box-shadow .15s}
+.subtab:hover{transform:translateY(-1px);box-shadow:var(--sh-xs)}
 /* ===== 團體主題色：只覆蓋強調色，與配色風格互斥（後者被 unit-* 蓋掉） ===== */
 :root.unit-ln{--accent:#4455dd;--accent-deep:#3344bb;--cta:linear-gradient(135deg,#5b6cf0 0%,#3344bb 100%);--rainbow:linear-gradient(90deg,#8b97ff,#5b6cf0,#4455dd,#33aaee,#7fb4f7,#b8c2ff,#8b97ff)}
 :root.unit-mmj{--accent:#6fb52e;--accent-deep:#558f22;--cta:linear-gradient(135deg,#a5e05e 0%,#6fb52e 100%);--rainbow:linear-gradient(90deg,#d5f0b0,#a5e05e,#88cc44,#6fb52e,#b8e561,#e3f5c8,#d5f0b0)}
@@ -505,6 +509,9 @@ select option, select optgroup{
   </sc-for>
 
   <div style="margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);line-height:1.7">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:8px"><span style="font-weight:800">特別專案</span>
+      <sc-for list="{{ navExtra }}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{ onGo }}" data-p="{{ x.id }}" style="border:none;background:transparent;padding:0;color:var(--text-2);font-size:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:{{ x.dot }}"></span>{{ x.name }} ↗</button></sc-for>
+    </div>
     <a href="index.html">經典長頁版 ↗</a><br>
     <a href="ep-calculator.html">EP 計算器 ↗</a> · <a href="tutorial.html">教學大全 ↗</a>
   </div>
@@ -549,6 +556,15 @@ select option, select optgroup{
   </div>
 
   <div style="flex:1;padding:22px clamp(14px,3vw,32px) 110px;max-width:1160px;width:100%;margin:0 auto">
+
+  <!-- 功能家族的分頁籤：同一個側欄入口底下的頁面在這裡切換（哪些頁算一家見 NAV_SECTIONS） -->
+  <sc-if value="{{ hasSubTabs }}">
+  <div class="subtabs" role="tablist">
+    <sc-for list="{{ subTabs }}" as="t" hint-placeholder-count="4">
+      <button type="button" class="subtab" role="tab" aria-selected="{{ t.on }}" onClick="{{ onGo }}" data-p="{{ t.id }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.name }}</button>
+    </sc-for>
+  </div>
+  </sc-if>
 
   <!-- ========== 首頁 ========== -->
   <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
@@ -7543,6 +7559,9 @@ select option, select optgroup{
     </div>
   </sc-for>
   <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3);line-height:1.9">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:8px"><span style="font-weight:800">特別專案</span>
+      <sc-for list="{{ navExtra }}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{ onGo }}" data-p="{{ x.id }}" style="border:none;background:transparent;padding:0;color:var(--text-2);font-size:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:{{ x.dot }}"></span>{{ x.name }} ↗</button></sc-for>
+    </div>
     <a href="index.html">經典長頁版 ↗</a> · <a href="ep-calculator.html">EP 計算器 ↗</a> · <a href="tutorial.html">教學大全 ↗</a>
   </div>
 </div>
@@ -8210,7 +8229,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3c6b01acef"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=0e1b1dec5d"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
