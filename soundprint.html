@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#05070e">
 <title>SEKAI 聲紋 — 每一首歌的傅立葉肖像 | Project SEKAI 資源中心</title>
-<meta name="description" content="把 Project SEKAI 每一首歌的音訊真正做短時傅立葉轉換：時間繞成一圈、頻率由內而外、亮度是能量，畫成一張極座標的聲紋肖像；再從頻譜推算調性、速度、亮度、動態與段落結構，與官方 BPM 對照，可試聽、可輸出海報。">
+<meta name="description" content="把 Project SEKAI 每一首歌的音訊真正做短時傅立葉轉換：時間繞成一圈、頻率由內而外、亮度是能量，畫成一張極座標的聲紋肖像；再從頻譜推算調性、速度、亮度、動態與段落結構，與官方 BPM 對照，可整首播放、可輸出海報。">
 <meta property="og:site_name" content="SEKAI 資源中心">
 <meta property="og:type" content="website">
 <meta property="og:title" content="SEKAI 聲紋 — 每一首歌的傅立葉肖像">
@@ -343,7 +343,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
       <li><b>結構</b>：自相似矩陣。把每半秒的音色與和聲拿去和整首歌的每半秒比對，相似的地方亮；對角線旁的方塊就是重複的段落（副歌一眼可見）。</li>
       <li><b>分析卡</b>：從頻譜推算調性（Krumhansl 音級輪廓比對）、速度（擊點強度的自相關，與官方 BPM 對照）、亮度（頻譜重心）、動態（響度的第 95 與第 10 百分位差）、低中高頻的能量分配、節奏密度與段落。</li>
     </ul>
-    <div class="kbd"><kbd>Space</kbd><span>試聽／暫停</span><kbd>R</kbd><span>隨機一首</span><kbd>1 2 3</kbd><span>肖像／頻譜／結構</span><kbd>/</kbd><span>搜尋</span><kbd>E</kbd><span>輸出海報</span><kbd>Esc</kbd><span>關閉</span></div>
+    <div class="kbd"><kbd>Space</kbd><span>播放／暫停</span><kbd>R</kbd><span>隨機一首</span><kbd>1 2 3</kbd><span>肖像／頻譜／結構</span><kbd>/</kbd><span>搜尋</span><kbd>E</kbd><span>輸出海報</span><kbd>Esc</kbd><span>關閉</span></div>
     <div class="src">分析參數：單聲道 22.05 kHz、Hann 窗 2048 點、跳距 512 點、128 個對數頻帶（38 Hz 至 10.8 kHz）；全部在你的瀏覽器裡算，音源不經本站伺服器。推算的調性與速度是「耳朵的讀法」，以遊戲內與官方資料為準。音源與封面：sekai.best 資產鏡像。</div>
   </div>
 </div>
@@ -368,7 +368,7 @@ const TC_THUMB = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jac
 const JP_JACKET = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/';
 const TC_JACKET = 'https://storage.sekai.best/sekai-tc-assets/music/jacket/';
 const AUDIO = ['https://storage.sekai.best/sekai-jp-assets/music/long/', 'https://storage.sekai.best/sekai-tc-assets/music/long/'];
-const PV = { start: 10, clip: 60, fin: 3, fout: 3, vol: .88, tap: 20 };   // 試聽：與曲庫頁同規格；點環上一處：20 秒
+const PV = { fin: 3, fout: 3, vol: .88 };   // 整首播放：淡入淡出各 3 秒；點環上一處或段落就從那裡一路播到底
 const NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX'];
 const OCTAVES = [55, 110, 220, 440, 880, 1760, 3520, 7040];
@@ -737,8 +737,6 @@ function drawProgressRing(th, small) {
   if (!small) { for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2 - Math.PI / 2, inner = r + 10, outer = r + (i % 5 ? 14 : 20); ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner); ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer); ctx.strokeStyle = rgba(th.gold, i / 60 < p ? .7 : .18); ctx.lineWidth = 1; ctx.shadowBlur = 0; ctx.stroke(); } }
   ctx.restore();
 }
-/* 與曲庫頁同一段試聽：檔案的第 10 秒起；換算成肖像（修掉前置靜音後）的時間 */
-function previewStart(e) { const off = e.offset || 0, dur = e.res.duration; const fileStart = dur + off > PV.start + PV.clip + 4 ? PV.start : 0; return clamp(fileStart - off, 0, dur); }
 function sectionAt(res, t) { let k = 0; for (let i = 0; i < res.sections.length; i++) if (t >= res.sections[i]) k = i; return k; }
 /* 肖像：可同時給畫架與海報用 */
 function paintPortrait(c, e, cx, cy, rad, th, opts = {}) {
@@ -760,9 +758,7 @@ function paintPortrait(c, e, cx, cy, rad, th, opts = {}) {
     c.beginPath(); c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); c.strokeStyle = rgba(th.gold, major ? .8 : .4); c.lineWidth = major ? 1.2 : .8; c.stroke();
     if (major && rad > 120 && i < nTick) { c.font = font(Math.max(10, rad * .036)); c.fillStyle = rgba(th.gold2, .9); c.textAlign = 'center'; const rl = rO + 28 + (rad * .02); c.save(); c.translate(Math.cos(a) * rl, Math.sin(a) * rl); c.fillText(fmtTime(t), 0, 0); c.restore(); } }
   c.lineWidth = 1;
-  /* 試聽的 60 秒 */
-  const off = e.offset || 0, pst = previewStart(e), pa0 = pst / dur * Math.PI * 2 - Math.PI / 2, pa1 = clamp(pst + PV.clip, 0, dur) / dur * Math.PI * 2 - Math.PI / 2;
-  c.beginPath(); c.arc(0, 0, rO + 4, pa0, pa1); c.strokeStyle = rgba(th.gold2, .55); c.lineWidth = 1.5; c.stroke(); c.lineWidth = 1;
+  /* 整首播放，環外不再另畫 60 秒的段 */
   /* 段落 */
   if (r.sections.length > 1) r.sections.forEach((t, i) => { const a = t / dur * Math.PI * 2 - Math.PI / 2; if (i > 0) { c.beginPath(); c.moveTo(Math.cos(a) * rI, Math.sin(a) * rI); c.lineTo(Math.cos(a) * (rO + 7), Math.sin(a) * (rO + 7)); c.strokeStyle = light ? 'rgba(35,30,22,.35)' : 'rgba(236,220,170,.42)'; c.stroke(); }
     const t1 = r.sections[i + 1] != null ? r.sections[i + 1] : dur, am = (t + t1) / 2 / dur * Math.PI * 2 - Math.PI / 2; if (t1 - t < dur * .035 || rad < 150) return;
@@ -871,10 +867,10 @@ function showTip(h, x, y) {
 function ssmAt(r, t, t2) { const i = clamp(Math.floor(t / r.ssmStep), 0, r.ssmN - 1), j = clamp(Math.floor(t2 / r.ssmStep), 0, r.ssmN - 1); return r.ssm[i * r.ssmN + j] / 255; }
 stage.addEventListener('pointermove', e => { const h = hit(e.clientX, e.clientY); S.hover = h; stage.classList.toggle('pick', !!h); showTip(h, e.clientX, e.clientY); dirty = true; kick(); });
 stage.addEventListener('pointerleave', () => { S.hover = null; stage.classList.remove('pick'); tip.classList.remove('on'); dirty = true; kick(); });
-stage.addEventListener('click', e => { const h = hit(e.clientX, e.clientY); if (!h) return; playAt(h.t, PV.tap); });
-stage.addEventListener('keydown', e => { if (e.key === 'Enter' && S.hover) playAt(S.hover.t, PV.tap); });
+stage.addEventListener('click', e => { const h = hit(e.clientX, e.clientY); if (!h) return; playAt(h.t); });
+stage.addEventListener('keydown', e => { if (e.key === 'Enter' && S.hover) playAt(S.hover.t); });
 
-/* ========== 試聽 ==========
+/* ========== 整首播放 ==========
    與星圖頁同一套：先以 crossOrigin 載入好接分析器，不行就退回一般載入；日服桶沒有再試台服桶。 */
 const P = { a: null, song: null, state: 'idle', actx: null, an: null, buf: null, fade: 0, startAt: 0, endAt: 0, cors: false, lv: 0 };
 function fadeTo(a, target, dur, done) {
@@ -897,6 +893,8 @@ function wireAnalyser(a) {
 }
 function playAt(start, clip) {
   const e = S.cur; if (!e) return; const song = e.song, abn = abnOf(song); if (!abn) return;
+  start = clamp(start || 0, 0, e.res.duration);
+  if (clip == null || !isFinite(clip)) clip = e.res.duration - start;   // 沒指定長度就從這裡播到整首結束
   stopAudio(true);
   const off = e.offset || 0; P.song = song; P.state = 'loading'; P.startAt = start + off; P.endAt = start + off + clip;
   const a = new Audio(); P.a = a; a.preload = 'auto'; a.volume = 0;
@@ -912,7 +910,7 @@ function playAt(start, clip) {
 }
 function togglePlay() {
   const a = P.a;
-  if (!a || (P.song !== (S.cur && S.cur.song))) { if (!S.cur) return; playAt(previewStart(S.cur), PV.clip); return; }
+  if (!a || (P.song !== (S.cur && S.cur.song))) { if (!S.cur) return; playAt(0); return; }
   if (P.state === 'playing' || P.state === 'ending') { a.pause(); P.state = 'paused'; }
   else if (P.state === 'paused') { a.play().then(() => { P.state = 'playing'; if (P.actx && P.actx.state === 'suspended') P.actx.resume(); kick(); syncPlayBtn(); }).catch(() => {}); }
   syncPlayBtn(); dirty = true; kick();
@@ -928,7 +926,7 @@ function liveLevel() { if (!P.an) { P.lv += (0 - P.lv) * .1; return P.lv; } let 
 function syncPlayBtn() {
   const b = $('#pPlay'); if (!b) return;
   const live = P.a && S.cur && P.song === S.cur.song && (P.state === 'playing' || P.state === 'loading' || P.state === 'ending');
-  b.setAttribute('aria-pressed', live); b.querySelector('span').textContent = live ? '暫停' : (P.a && S.cur && P.song === S.cur.song && P.state === 'paused' ? '繼續' : '試聽 60 秒');
+  b.setAttribute('aria-pressed', live); b.querySelector('span').textContent = live ? '暫停' : (P.a && S.cur && P.song === S.cur.song && P.state === 'paused' ? '繼續' : '播放整首');
 }
 
 /* ========== 分析卡 ========== */
@@ -975,9 +973,9 @@ function renderPanel(e) {
       <figure><canvas id="wheel" width="320" height="320"></canvas><figcaption>Chroma</figcaption></figure>
     </div>
     <div class="bands" style="--c:${c}">${tiltRows(r.tilt).map(([k, v]) => `<span class="k">${esc(k)}</span><span class="bar2"><i style="width:${Math.round(clamp((v + 36) / 36, 0, 1) * 100)}%"></i></span><b>${v > -.05 ? '0' : v.toFixed(0)} dB</b>`).join('')}</div>
-    <div class="secs" id="secs">${r.sections.map((t, i) => `<span data-t="${t}" role="button" tabindex="0" title="聽這一段"><b>${ROMAN[i] || i + 1}</b><i>${fmtTime(t)}</i></span>`).join('')}</div>
+    <div class="secs" id="secs">${r.sections.map((t, i) => `<span data-t="${t}" role="button" tabindex="0" title="從這一段開始播"><b>${ROMAN[i] || i + 1}</b><i>${fmtTime(t)}</i></span>`).join('')}</div>
     <div class="pr">
-      <button class="btn" type="button" id="pPlay" aria-pressed="false"><svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg><span>試聽 60 秒</span></button>
+      <button class="btn" type="button" id="pPlay" aria-pressed="false"><svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg><span>播放整首</span></button>
       <button class="btn" type="button" id="pPoster"><svg viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19h14"/></svg>輸出海報</button>
       <button class="btn" type="button" id="pShare"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>複製連結</button>
       <a class="btn" href="./starmap.html?s=${s.id}" title="在星圖上看這顆星"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6 6.1.5-4.6 4 1.4 6-5.3-3.2L6.7 19l1.4-6-4.6-4 6.1-.5z"/></svg>星圖</a>
@@ -988,8 +986,8 @@ function renderPanel(e) {
   $('#pPlay').onclick = togglePlay;
   $('#pPoster').onclick = () => exportPoster(e);
   $('#pShare').onclick = () => { syncUrl(); const u = location.href; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('已複製這張聲紋的連結'), () => toast(u)); };
-  $('#secs').addEventListener('click', ev => { const sp = ev.target.closest('[data-t]'); if (sp) playAt(+sp.dataset.t, PV.tap); });
-  $('#secs').addEventListener('keydown', ev => { const sp = ev.target.closest('[data-t]'); if (sp && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); playAt(+sp.dataset.t, PV.tap); } });
+  $('#secs').addEventListener('click', ev => { const sp = ev.target.closest('[data-t]'); if (sp) playAt(+sp.dataset.t); });
+  $('#secs').addEventListener('keydown', ev => { const sp = ev.target.closest('[data-t]'); if (sp && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); playAt(+sp.dataset.t); } });
   drawRadar(e); drawWheel(e); syncPlayBtn();
   panel.classList.toggle('on', S.panelOn); $('#panelBtn').setAttribute('aria-pressed', S.panelOn);
 }
