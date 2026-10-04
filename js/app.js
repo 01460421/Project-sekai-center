@@ -153,19 +153,40 @@ class Component extends DCLogic {
     guesswho: ['猜角色', '看一小塊卡面猜是誰：十題一局，猜得越快分數越高'],
     guessjacket:['猜封面', '看一小塊曲繪猜歌名：十題一局，可調選項數與難度'],
     stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製'],
-    hubEvent: ['追活動', '活動總覽、排名、榜線、分析、跑榜與玩家查詢，一頁進入'],
-    hubDb:    ['圖鑑', '卡片、角色、歌曲、家具、劇情、Live、公告與日曆'],
-    hubTool:  ['工具', '計算中心、進階計算、抽卡、儲值、B30 與小遊戲'],
-    hubCom:   ['社群', '車隊、提問所、機器人、教學與資源連結']
+    hubEvent: ['追活動', '活動總覽，以及排名與榜線（即時排名、榜線資料庫、分析中心、活動分布、玩家查詢）'],
+    hubDb:    ['圖鑑', '日程與公告、卡片、角色與收集、歌曲、劇情與漫畫、豆森'],
+    hubTool:  ['工具', '計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與貼圖'],
+    hubCom:   ['社群', '車隊、教學與社群、收藏與待辦、帳號與通知']
   };
   /* 手機底部五個入口：每個入口是一頁「樞紐」，上面一句今天的狀態、下面是子頁卡片 */
   HUBS = {
-    hubEvent: ['event', 'rank', 'analysis', 'borderdb', 'lookup', 'distrib', 'deckpro', 'news'],
-    hubDb:    ['calendar', 'gacha', 'songs', 'cards', 'chars', 'lives', 'story', 'fixtures', 'mstalk', 'materials', 'comics', 'ost', 'collect', 'rate', 'art', 'cardlib', 'bonuscards', 'dolls'],
-    hubTool:  ['calc', 'haruki', 'wlsup', 'gachasim', 'shop', 'b30', 'stickers', 'guesswho', 'guessjacket'],
-    hubCom:   ['car', 'bot', 'qa', 'tut', 'res', 'whatsnew', 'credits', 'account', 'notices', 'assistant']
+    hubEvent: ['event', 'rank'],
+    hubDb:    ['calendar', 'cards', 'chars', 'songs', 'story', 'fixtures'],
+    hubTool:  ['calc', 'haruki', 'gachasim', 'b30', 'guesswho'],
+    hubCom:   ['car', 'tut', 'favs', 'account']
   };
-  hubOf(p) { for (const k in this.HUBS) if (this.HUBS[k].includes(p)) return k; return null; }
+  /* 功能列整併：側欄只放 18 個入口，每個入口是一個「功能家族」[入口頁 id, 側欄名稱, 顏色, 子頁 id…]。
+     點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
+  NAV_SECTIONS = [
+    ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']]]],
+    ['追活動', [['event', '活動總覽', '#ff9db4', []], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
+    ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
+                   ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與貼圖', '#ffd94d', ['guessjacket', 'stickers']]]],
+    ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
+  ];
+  /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
+  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e']];
+  _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
+  famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
+  famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
+  /* 家族內的分頁籤：入口頁＋子頁。帳號家族的通知、助手要登入後才列，後台要管理員 */
+  famTabs(p) {
+    const f = this._famIndex()[p]; if (!f) return [];
+    const me = this.state.me;
+    return [f[0]].concat(f[3]).filter(id => this.PAGES[id] && !((id === 'notices' || id === 'assistant') && !me) && !(id === 'admin' && !(me && me.is_admin)));
+  }
+  hubOf(p) { const f = this.famOf(p) || p; for (const k in this.HUBS) if (this.HUBS[k].includes(f)) return k; return null; }
   /* 卡片查詢語法：搜尋框可以直接打「mmj 藍 限定 2025」這種組合，認得出的字當篩選、其餘當卡名關鍵字。
      團體：ln／mmj／vbs／ws／25／vs（含中日文別名）；角色：站內短名與常見羅馬拼音／縮寫；
      屬性：紅藍綠黃紫或 cute／cool／pure／happy／mysterious；稀有度：4／四星／★4／生日；
@@ -386,6 +407,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' }
   ];
   SYSLOG = [
+    { d: '2026/10/04', t: '功能列整併：側欄從五十多項收成 18 個入口', s: '側欄重整為五區 18 個入口：主頁（首頁、收藏與待辦、我的帳號）、追活動（活動總覽、排名與榜線）、圖鑑與資料（日程與公告、卡片圖鑑、角色與收集、歌曲、劇情與漫畫、豆森）、計算工具（計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與貼圖）、社群與說明（車隊、教學與社群）。同一類的頁面併成一個入口，進去後在頁首的分頁籤切換，例如「排名與榜線」底下是即時排名、榜線資料庫、分析中心、活動分布、玩家查詢；「日程與公告」底下是活動日曆、卡池列表、虛擬 Live、遊戲公告。所有頁面的網址與 ⌘K 搜尋都沒變，手機的五個入口與「更多」清單、功能介紹頁的分類、首頁快速入口也跟著用同一份結構；特別專案三個作品頁改放側欄底部一列。' },
     { d: '2026/10/04', t: 'B30：紅譜（EXPERT）定數可自選 39s 定數表', s: 'B30 產生器多一個「紅譜(EXPERT)定數」開關：預設維持只用腐食的 EMERALD 表（EXPERT 以遊戲等級 .0 計）；切到「採用 39s 定數表」後，EXPERT 改用英語圈社群「39s Chart Constants」（Unibot、pjskb30 這類 B30 工具用的那張）的紅譜定數，例如 ヤミナベ!!!! 紅譜 31.8、人生 31.5、嬢王 31.2。曲庫同時補進 39s 表上日服先行的 Lv28～32 紅譜 8 張（含新 31 的 初音狂奏曲第01番「彗惺」31.4、0.0000034 31.1，與 怪獣になりたい 32.0），標為日服限定、可在曲庫範圍切換顯示。開關會記住，也納入備份與雲端同步；圖卡上有採用時會另外署名出處。' },
     { d: '2026/10/03', t: '定數表更新至 EMERALD V33（原 PENTATONIC）', s: '難易度表作者把「プロセカ難易度表」改名 EMERALD 並搬到新的試算表，站上的定數來源跟著換到新表並釘住 V33：新增 9 張譜面（こわれちゃった！！ MASTER／APPEND、正解、エメラルド MASTER／APPEND、ヘレディティ、shake it!、敗走、きのせい，目前都還是日服先行曲）、修正 34 筆定數（APPEND 37 帶整體上修：MarbleBlue. 37.8、おぎゃりないざー 37.6、0.0000034 37.5、ネクラチューンサーカス與メモリア 37.2；MASTER 32 帶重排 24 筆、29 帶 5 筆，含「+」細分調整）。曲庫共 911 張譜面（台服 803、日服限定 108），並補上 334 張譜面的社群中文譯名。B30 圖卡的署名改為依資料來源顯示表名與版號，之後改版、改名都不必再改程式。' },
     { d: '2026/09/25', t: 'Haruki 專區：MySekai 與重新整理的分頁', s: 'Haruki 專區改成五個分頁：總覽（每項一張卡片：組卡、角色等級、挑戰 Live、綜合力加成、MySekai 今日資源、大門、唱片，點一下直接前往）、組卡（照「選活動與歌曲 → 怎麼打 → 卡片假設」三步）、養成、MySekai、說明（教學與資源）。還沒匯入資料時改成三步驟上手，資料超過一天會提醒重新上傳，上次看的分頁會記住。新增 MySekai：今日資源（各採集地還沒採的資源，唱片與稀有素材排前面）、來訪角色與天氣排程、大門升級（接下來三級各要多少素材、手上夠不夠、能直接升到幾級）、唱片收集（依團體列出還沒拿到的）、家具與對話（連到家具圖鑑與豆森對話）；整理方式照 Team Haruki 的 Haruki-Cloud。地圖與天氣是上傳當下的狀態，過了 5:00／17:00 重置會提醒。', p: 'haruki' },
@@ -2167,7 +2189,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=3e55478da4';
+      el.src = './js/core.js?v=f87c2ed7c6';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -6568,7 +6590,7 @@ class Component extends DCLogic {
   /* 首頁「我的排名」的八格數字與「快速前往」的項目也走同一套 layout（scope=stats／quick），
      所以跟版面一樣會存本機並跟著帳號同步。快速前往預設六個，其餘頁面預設隱藏：
      第一次改動時先把「預設之外的全部」寫進 hidden，之後才是單純的切換。 */
-  QUICK_DEFAULT = ['calc', 'rank', 'gacha', 'songs', 'calendar', 'res'];
+  QUICK_DEFAULT = ['event', 'rank', 'calendar', 'calc', 'cards', 'songs'];   // 只能是側欄入口（家族入口頁）
   QUICK_SUB = { calc: '一套設定通吃所有計算', rank: 'T100 與分段榜線', gacha: '235 筆台服預測', songs: '難度與團體篩選', calendar: '本月卡池一目瞭然', res: '官方・社群・工具' };
   quickAll() { return (this._navSpecIds || []).filter(id => !['home', 'account', 'notices', 'assistant', 'admin'].includes(id)); }
   quickShown() {
@@ -6589,7 +6611,7 @@ class Component extends DCLogic {
   GUIDE = [
     { t: '歡迎來到 SEKAI 資源中心', b: '這裡把世界計畫台服的活動、卡池、歌曲、計算工具與圖鑑都收在一起。接下來三步帶你認識最常用的入口，隨時可以按「略過」。', k: '' },
     { t: '搜尋什麼都從這裡開始', b: '按 ⌘K（Windows 用 Ctrl K）或鍵盤上的「/」打開指令面板：找歌、找卡池、跳到任何功能，也能直接輸入「ep 1500000」這種算式。', k: '⌘ K' },
-    { t: '側欄分成六組', b: '資料（日曆、卡池、歌曲、劇情）、圖鑑（卡片、角色、家具…）、追蹤（排名、榜線、分析）、工具（計算中心、B30、貼圖製作器）、遊戲（猜角色、猜封面）與學習。手機版在下方「更多」裡。', k: '' },
+    { t: '側欄只有 18 個入口', b: '分成主頁、追活動、圖鑑與資料、計算工具、社群與說明五區。同一類的頁面併成一個入口，點進去後在頁首的分頁籤切換，例如「排名與榜線」裡有即時排名、榜線資料庫、分析中心、活動分布與玩家查詢；手機的「更多」也是同一份清單。', k: '' },
     { t: '把首頁變成你的', b: '綁定 Player ID 之後首頁會顯示你的名次、時速與周回；右上角的「自訂首頁」可以調整區塊順序、選要顯示哪些數字與快速入口，也能備份或清除本機資料。', k: '' },
   ];
   guideStep(dir) {
@@ -9941,7 +9963,7 @@ class Component extends DCLogic {
     }
     return out.slice(0, 24);
   }
-  NAV_OPEN_DEFAULT = ['主頁', '帳號', '即時資料', '特別專案'];
+  NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 18 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
   EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html' };
   navOpen(label) {
@@ -10059,29 +10081,18 @@ class Component extends DCLogic {
 
     /* 導覽 */
     this._navSpecIds = null;
-    /* 側欄分組用客觀依據：資料從哪裡來（即時 API／遊戲 master 資料／本站計算／小遊戲／說明），
-       再加一組「常用」由本機使用次數自動排（至少三頁各用過兩次才出現）。自訂順序與隱藏照舊套在 id 上。 */
-    const navBase = [
-      ['即時資料', [['event', '活動總覽', '#ff9db4'], ['rank', '活動排名', '#ff9db4'], ['analysis', '分析中心', '#7ee0c0'], ['borderdb', '榜線資料庫', '#ffc46b'], ['lookup', '玩家查詢', '#b8e561'], ['distrib', '活動分布', '#8be0d0'], ['news', '遊戲公告', '#ffb86b']]],
-      ['遊戲資料', [['calendar', '活動日曆', '#3ee0a8'], ['gacha', '卡池列表', '#ffd94d'], ['songs', '歌曲清單', '#c39df2'], ['lives', '虛擬 Live', '#9aa9ff'], ['story', '劇情閱讀器', '#c39df2'], ['cards', '卡片圖鑑', '#7fb4f7'], ['chars', '角色圖鑑', '#ff9db4'], ['fixtures', '家具圖鑑', '#b8e561'], ['mstalk', '豆森對話', '#8be0d0'], ['materials', '素材圖鑑', '#ffd94d'], ['comics', '一格漫畫', '#5ec9f2'], ['ost', '原聲帶', '#c39df2'], ['cardlib', '卡片技能庫', '#7fb4f7'], ['art', '卡面下載', '#ffa8c0'], ['dolls', '月卡玩偶', '#f0a8d0'], ['bonuscards', '加分卡參考', '#ffd94d'], ['collect', '收集室', '#f0a8d0'], ['rate', '收集率', '#ff8fb0']]],
-      ['計算工具', [['calc', '計算中心', '#7fb4f7'], ['haruki', 'Haruki 專區', '#f0a8d0'], ['deckpro', '進階計算', '#f0619e'], ['wlsup', 'WL 後排加成', '#9aa9ff'], ['gachasim', '抽卡模擬', '#c39df2'], ['shop', '儲值分析', '#ffb86b'], ['b30', 'B30 產生器', '#5ec9f2'], ['stickers', '貼圖製作器', '#f0a8d0']]],
-      ['遊戲', [['guesswho', '猜角色', '#ff9db4'], ['guessjacket', '猜封面', '#5ec9f2']]],
-      ['說明與社群', [['tut', '教學大全', '#b8e561'], ['qa', '提問所', '#8be0d0'], ['res', '資源連結', '#ffd94d'], ['whatsnew', '功能介紹', '#8be0d0'], ['credits', '製作與致謝', '#ffa8c0']]],
-      /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁） */
-      ['特別專案', [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e']]],
-    ];
-    const navItemOf = {}; navBase.forEach(([, items]) => items.forEach(it => { navItemOf[it[0]] = it; }));
-    const visits = s.visits || {};
-    const fav = Object.keys(visits).filter(k => navItemOf[k] && visits[k] >= 2).sort((a, b) => visits[b] - visits[a]).slice(0, 6).map(k => navItemOf[k]);
-    const navSpec = [
-      ['主頁', [['home', '首頁', '#4ad1e8'], ['favs', '收藏與待辦', '#ffd94d']]],
-      ['帳號', [['account', s.me ? '我的帳號' : '登入', '#8be0d0']]
-        .concat(s.me ? [['notices', '通知' + (s.unread ? '（' + s.unread + '）' : ''), '#ffd94d']] : [])
-        .concat(s.me ? [['assistant', '站內助手', '#c39df2']] : [])
-        .concat((s.me && s.me.is_admin) ? [['admin', '管理後台', '#ff9db4']] : [])],
-      ['車隊', [['car', '私車排班', '#9aa9ff'], ['bot', '菜根機器人', '#b8e561']]],
-    ].concat(fav.length >= 3 ? [['常用 · 依使用次數', fav]] : []).concat(navBase);
-    this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0]))).filter(id => !/^x_/.test(id));   // 外部作品頁不進自訂版面與快速清單
+    /* 側欄固定 18 個入口（NAV_SECTIONS），家族內的子頁靠頁首分頁籤切換；自訂順序與隱藏照舊套在入口 id 上。
+       以前的來源分組與「常用」自動群組都併掉了：入口少到不需要再自動排常用。 */
+    const navItemOf = {};
+    const navSpec = this.NAV_SECTIONS.map(([label, fams]) => [label, fams.map(([id, name, dot]) => {
+      const it = [id, id === 'account' ? (s.me ? '我的帳號' + (s.unread ? '（' + s.unread + '）' : '') : '登入') : name, dot];
+      navItemOf[id] = it; return it;
+    })]);
+    this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
+    const navCur = this.famOf(s.page) || s.page;   // 在子頁時側欄點亮所屬入口
+    const navExtra = this.EXTRA_LINKS.map(([id, name, dot]) => ({ id, name, dot }));
+    const subTabs = this.famTabs(s.page).map(id => ({ id, name: this.PAGES[id][0] + (id === 'notices' && s.unread ? '（' + s.unread + '）' : ''), on: id === s.page ? 'true' : 'false',
+      bg: id === s.page ? 'var(--cta)' : 'var(--card)', fg: id === s.page ? '#fff' : 'var(--text-2)', bd: id === s.page ? 'transparent' : 'var(--border)' }));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
     const navHidden = this.layoutOf('nav').hidden;
     const navGroups = navSpec.map(([label, items]) => {
@@ -10095,10 +10106,10 @@ class Component extends DCLogic {
       const open = this.navOpen(label);
       const all = items.map(([id, name, dot]) => ({
         id, name, dot,
-        bg: s.page === id ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
-        fg: s.page === id ? 'var(--accent-deep)' : 'var(--text)'
+        bg: navCur === id ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
+        fg: navCur === id ? 'var(--accent-deep)' : 'var(--text)'
       }));
-      return { label, open, arrow: open ? '▾' : '▸', count: open ? '' : String(all.length), items: open ? all : all.filter(it => it.id === s.page) };
+      return { label, open, arrow: open ? '▾' : '▸', count: open ? '' : String(all.length), items: open ? all : all.filter(it => it.id === navCur) };
     });
     const dockSpec = [['home', '首頁', '#4ad1e8'], ['hubEvent', '追活動', '#ff9db4'], ['hubDb', '圖鑑', '#7fb4f7'], ['hubTool', '工具', '#3ee0a8'], ['more', '更多', '#ffd94d']];
     const dockHub = this.hubOf(s.page) || s.page;   // 在子頁時也把所屬入口點亮
@@ -10115,7 +10126,9 @@ class Component extends DCLogic {
       if (s.page === 'hubCom') return s.me ? ((s.unread ? '有 ' + s.unread + ' 則未讀通知' : '沒有未讀通知') + (s.me.is_admin ? '　·　管理員' : '')) : '登入後可用車隊排班、提問所與站內助手';
       return '';
     })();
-    const hubCards = (this.HUBS[s.page] || []).filter(id => this.PAGES[id] && !(id === 'admin')).map(id => { const it = navItemOf[id] || (navSpec.flatMap(g => g[1]).find(x => x[0] === id)) || [id, this.PAGES[id][0], '#8b93ac']; return { id, name: this.PAGES[id][0], desc: this.PAGES[id][1], dot: it[2] || '#8b93ac' }; });
+    const hubCards = (this.HUBS[s.page] || []).filter(id => this.PAGES[id] && !(id === 'admin')).map(id => { const it = navItemOf[id] || (navSpec.flatMap(g => g[1]).find(x => x[0] === id)) || [id, this.PAGES[id][0], '#8b93ac']; const fam = this._famIndex()[id]; const subs = fam && fam[0] === id ? this.famTabs(id).map(x => this.PAGES[x][0]) : [];
+      // 樞紐卡片：有子頁的家族列出成員頁名（比入口頁自己的描述更能看出裡面有什麼），單頁家族沿用頁面描述
+      return { id, name: this.famLabel(id) || this.PAGES[id][0], desc: subs.length > 1 ? subs.join('・') : this.PAGES[id][1], dot: it[2] || '#8b93ac' }; });
 
     /* 首頁：活動 */
     const ev = this.eventOf(s.live);
@@ -10865,7 +10878,7 @@ class Component extends DCLogic {
       bkRows: this.BK_KEYS.map(([k, n]) => { let has = false; try { has = localStorage.getItem(k) != null; } catch (e) {}
         return { n, has, mark: has ? '✓' : '—', fg: has ? 'var(--accent-deep)' : 'var(--text-3)' }; }),
       bkCount: (() => { const c = Object.keys(this.bkCollect()).length; return c + ' / ' + this.BK_KEYS.length + ' 項有資料'; })(),
-      isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG,
+      isTut: s.page === 'tut', isRes: s.page === 'res', isWhatsNew: s.page === 'whatsnew', changelog: this.CHANGELOG.map(c => Object.assign({}, c, { date: this.famLabel(c.to) || c.date })),
       /* 豆森娃月列表（資料整理：瑞憶春希）。當月那列標色，一眼看到現在輪到誰。 */
       ...(() => {
         const now = new Date();
@@ -12277,6 +12290,7 @@ class Component extends DCLogic {
         fg: (s.vmode || '') === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
+      subTabs, hasSubTabs: subTabs.length > 1, navExtra,
       navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
