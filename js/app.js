@@ -15,7 +15,7 @@ class Component extends DCLogic {
     ['sekai-fav', '收藏與待辦'], ['sekai-calc-presets', '計算中心:我的設定'], ['sekai-rs-presets', '跑榜工作室:儲存設定'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
     ['sekai-b30-zh', 'B30:曲名語言'], ['sekai-b30-fmt', 'B30:定數格式'],
-    ['sekai-b30-dec', 'B30:小數位數'], ['sekai-ai-dual', 'AI:雙路並行'],
+    ['sekai-b30-dec', 'B30:小數位數'], ['sekai-b30-ex', 'B30:紅譜定數來源'], ['sekai-ai-dual', 'AI:雙路並行'],
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
     ['sekai-base-ep', 'EP 計算器設定'], ['sekai-cards-lv', '收集率:專精與技能等級'], ['sekai-hk-asset', 'Haruki 專區:素材節點'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式'], ['sekai-unit', '團體主題色']
@@ -238,7 +238,7 @@ class Component extends DCLogic {
     ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
     ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
-    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|EMERALD|pentatonic|Unibot 風格|AP=定數、FC=定數−1'],
+    ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|EMERALD|pentatonic|39s|紅譜定數|EXPERT 定數|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
     ['抽卡模擬', '', 'gachasim', '模擬抽卡|抽卡模擬器|模擬十連|gachasim'],
     ['收集室（貼圖與稱號圖鑑）', '', 'collect', '收集室|貼圖|稱號|1,073 張貼圖|1,883 種稱號|取得條件'],
@@ -386,6 +386,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' }
   ];
   SYSLOG = [
+    { d: '2026/10/04', t: 'B30：紅譜（EXPERT）定數可自選 39s 定數表', s: 'B30 產生器多一個「紅譜(EXPERT)定數」開關：預設維持只用腐食的 EMERALD 表（EXPERT 以遊戲等級 .0 計）；切到「採用 39s 定數表」後，EXPERT 改用英語圈社群「39s Chart Constants」（Unibot、pjskb30 這類 B30 工具用的那張）的紅譜定數，例如 ヤミナベ!!!! 紅譜 31.8、人生 31.5、嬢王 31.2。曲庫同時補進 39s 表上日服先行的 Lv28～32 紅譜 8 張（含新 31 的 初音狂奏曲第01番「彗惺」31.4、0.0000034 31.1，與 怪獣になりたい 32.0），標為日服限定、可在曲庫範圍切換顯示。開關會記住，也納入備份與雲端同步；圖卡上有採用時會另外署名出處。' },
     { d: '2026/10/03', t: '定數表更新至 EMERALD V33（原 PENTATONIC）', s: '難易度表作者把「プロセカ難易度表」改名 EMERALD 並搬到新的試算表，站上的定數來源跟著換到新表並釘住 V33：新增 9 張譜面（こわれちゃった！！ MASTER／APPEND、正解、エメラルド MASTER／APPEND、ヘレディティ、shake it!、敗走、きのせい，目前都還是日服先行曲）、修正 34 筆定數（APPEND 37 帶整體上修：MarbleBlue. 37.8、おぎゃりないざー 37.6、0.0000034 37.5、ネクラチューンサーカス與メモリア 37.2；MASTER 32 帶重排 24 筆、29 帶 5 筆，含「+」細分調整）。曲庫共 911 張譜面（台服 803、日服限定 108），並補上 334 張譜面的社群中文譯名。B30 圖卡的署名改為依資料來源顯示表名與版號，之後改版、改名都不必再改程式。' },
     { d: '2026/09/25', t: 'Haruki 專區：MySekai 與重新整理的分頁', s: 'Haruki 專區改成五個分頁：總覽（每項一張卡片：組卡、角色等級、挑戰 Live、綜合力加成、MySekai 今日資源、大門、唱片，點一下直接前往）、組卡（照「選活動與歌曲 → 怎麼打 → 卡片假設」三步）、養成、MySekai、說明（教學與資源）。還沒匯入資料時改成三步驟上手，資料超過一天會提醒重新上傳，上次看的分頁會記住。新增 MySekai：今日資源（各採集地還沒採的資源，唱片與稀有素材排前面）、來訪角色與天氣排程、大門升級（接下來三級各要多少素材、手上夠不夠、能直接升到幾級）、唱片收集（依團體列出還沒拿到的）、家具與對話（連到家具圖鑑與豆森對話）；整理方式照 Team Haruki 的 Haruki-Cloud。地圖與天氣是上傳當下的狀態，過了 5:00／17:00 重置會提醒。', p: 'haruki' },
     { d: '2026/09/25', t: 'Haruki 專區：養成進度', s: 'Haruki 專區多一個「養成進度」分頁，算法照 Haruki 工具箱的養成頁：隊長次數（一般次數、EX 等級與累計）、羈絆（各組等級與升級還差多少）、綜合力加成（團體、屬性與角色三種，拆成區域道具、角色等級、MySekai 家具與大門）、挑戰 Live（最高分、關卡、下一個獎勵門檻與還沒領的獎勵數），以及區域道具升級建議：用組卡引擎算你目前隊伍每個道具升一級多多少綜合力，依每枚金幣換到的綜合力排序，連同金幣、不可思議的種子與祈願水滴的花費。', p: 'haruki' },
@@ -2166,7 +2167,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=9afd538e88';
+      el.src = './js/core.js?v=3e55478da4';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2413,7 +2414,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=4e0d6ff4b7').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=c3ddbc6994').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -8199,7 +8200,7 @@ class Component extends DCLogic {
   /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
   loadConsts() {
     if (this.state.consts || this._constsP) return;
-    this._constsP = fetch('./data/b30-consts.js?v=eb79088ab7').then(r => r.text()).then(txt => {
+    this._constsP = fetch('./data/b30-consts.js?v=7121d0b975').then(r => r.text()).then(txt => {
       const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
       ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
       this.setState({ consts: map });
