@@ -2482,7 +2482,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     MasterDB.get('masterLessons.json'), MasterDB.get('areaItemLevels.json'), MasterDB.get('gameCharacterUnits.json'),
                     fetchJSONproxied('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/areaItemLevels.json').catch(() => null)
                 ]).then(([cards, ranks, epi, ml, areaLvTW, gcu, areaLvJP]) => {
-                    // 台服 area Lv1-15;日服補 Lv16-20(5週年)。合併,areaMaxLv=20
+                    // 台服 5 週年(2026/9/30)起區域道具也到 Lv20;日服那份只拿來補台服 master 萬一還缺的 Lv16-20。合併,areaMaxLv=20
                     const areaLv = (areaLvJP && areaLvJP.length) ? areaLvTW.concat(areaLvJP.filter(a => a.level > 15)) : areaLvTW;
                     this.cards = cards;
                     cards.forEach(c => { this.cardById[c.id] = c; (this.cardsByChar[c.characterId] = this.cardsByChar[c.characterId] || []).push(c); });
@@ -3135,7 +3135,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const b = document.getElementById('pwBreak');
                 if (b) b.textContent = `基礎表現力 ${sumBase.toLocaleString()}（每張≈${Math.round(sumBase / (per.length || 5)).toLocaleString()}，含前後篇 ${sumEpi.toLocaleString()}、畫布 ${sumCanvas.toLocaleString()}） ＋ 角色等級 ${sumChar.toLocaleString()} ＋ area item ${sumArea.toLocaleString()} ＋ 豆森 ${sumMy.toLocaleString()}`;
                 const note = document.getElementById('pwNote');
-                if (note) note.textContent = `area item 可選到 Lv20(日服已到 Lv20;台服 6.0 仍是 Lv15);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
+                if (note) note.textContent = `area item 可選到 Lv20(台服 5 週年起開放 Lv16-20);豆森=大門(滿4%)+玩偶(一套1%);全隊同團或同色時 area 道具 allMatch 翻倍。滿編最高約 39-42 萬。`;
             },
             powerToScore() {
                 const e = document.getElementById('scPower'); if (e) e.value = this._lastPower || 0;
@@ -4264,7 +4264,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 let src, r;
                 try {
                     src = await this._src(this._evId);   // 當期為台服，不觸發日服 master
-                    r = await this._computeBest(src, src.type, { areaLv: 15, charRank: 100, songId: this._miniSong(), diff: this._miniDiff(), boostN: 0 });
+                    r = await this._computeBest(src, src.type, { areaLv: PowerEngine.areaMaxLv || 20, charRank: 100, songId: this._miniSong(), diff: this._miniDiff(), boostN: 0 });
                 } catch (e) { card.innerHTML = '<div class="ms-msg">計算失敗，稍後再試。</div>'; return; }
                 this._renderMiniCard(card, src, r, this._miniSong());
             },
@@ -4293,7 +4293,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 card.innerHTML = `
                     <div class="ms-top">
                         <div class="ms-ev"><span class="ms-type">${typeName}</span><span class="ms-evname">${evName}</span></div>
-                        <div class="ms-sub">最佳化活動P・區域道具 Lv15・角色等級滿(+5%)・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級・協力隊友倍率取我方平均（混團/混色 area 不翻倍）</div>
+                        <div class="ms-sub">最佳化活動P・區域道具 Lv${r.areaLv || PowerEngine.areaMaxLv || 20}・角色等級滿(+5%)・MySekai +7%（門4＋數套娃）・全卡 MR5 滿級・協力隊友倍率取我方平均（混團/混色 area 不翻倍）</div>
                     </div>
                     <div class="ms-thumbs">${chosen.map(x => `<div class="ms-th"><img loading="lazy" referrerpolicy="no-referrer" src="${thumb(x.c)}" onerror="this.style.opacity=.15"><span>${EC_cidName(x.c.characterId)}</span><i>＋${x.bonus}%</i></div>`).join('')}</div>
                     <div class="ms-kvs">

@@ -136,6 +136,7 @@ class Component extends DCLogic {
     cardlib:  ['卡片技能庫', '逐張卡的技能敘述與各等級數值（官方 master 資料）'],
     art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
     wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合；終章另有主隊與總加成試算'],
+    skillmult:['理論技能倍率表', '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列；另有同團不限色、同色不限團'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
@@ -172,7 +173,7 @@ class Component extends DCLogic {
     ['追活動', [['event', '活動總覽', '#ff9db4', []], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與貼圖', '#ffd94d', ['guessjacket', 'stickers']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與貼圖', '#ffd94d', ['guessjacket', 'stickers']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
@@ -265,6 +266,7 @@ class Component extends DCLogic {
     ['收集室（貼圖與稱號圖鑑）', '', 'collect', '收集室|貼圖|稱號|1,073 張貼圖|1,883 種稱號|取得條件'],
     ['活動分布甘特圖', '', 'distrib', '活動分布|甘特圖|團推分析|推角分析|團體曲數占比|各團活動分布'],
     ['加分卡參考', '', 'bonuscards', '加分卡|加成卡|加分卡組合建議|團分1／團分2／團分3|普限輪1～4|書下|Banner 主角色卡'],
+    ['理論技能倍率表', '', 'skillmult', '理論倍率|技能倍率|理論技能倍率|倍率表|編成表|同團同色|同團|同色|推隊倍率|最佳技能隊|技能隊|日服新卡倍率|skill multiplier'],
     ['月卡玩偶列表（豆森娃）', '', 'dolls', '月卡玩偶|豆森娃|豆森娃月列表|娃月列表|MySekai 玩偶|月卡娃|玩偶排程'],
     ['活動日曆', '', 'calendar', '日曆|行事曆|看日曆|當日活動'],
     ['綜合力', 'calc_event_points', 'deckpro／rank', '総合力|総合|綜合|戰力|power|隊伍總綜合力|跑隊綜合|36.2w|基礎三維|白值'],
@@ -404,9 +406,12 @@ class Component extends DCLogic {
     { date: '遊戲', title: '猜角色', desc: '看一小塊卡面猜是誰，十題一局；難度、團體、稀有度、限時可調。', to: 'guesswho', cta: '來玩猜角色' },
     { date: '遊戲', title: '猜封面', desc: '看一小塊曲繪猜歌名，十題一局；選項數與難度可調。', to: 'guessjacket', cta: '來玩猜封面' },
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' },
-    { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' }
+    { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' },
+    { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/04', t: '新頁：理論技能倍率表（台服當前 vs 日服最新）', s: '計算中心底下多一頁「理論技能倍率表」：六團 × 五色，每格是該團該色「同團同色」最佳五人隊的推隊倍率（技能全 SL4、角色等級 100、特訓後技能，公式照計算中心：隊長 + 100 + 其餘四人合計 ÷ 5），上排是台服當前已實裝的卡、下排是日服最新進度，日服比台服高就標紅並寫出差多少；點任一格看兩服各自的五張卡（隊長、技能值與型別，台服還沒有的卡標「台服未實裝」）。下面另有「同團不限色」與「同色不限團」兩張表。資料由每天的資料更新流程從兩服 master 重算。', p: 'skillmult' },
+    { d: '2026/10/04', t: '區域道具開放到 Lv20', s: '台服 5 週年起區域道具可升到 Lv20，站上原本「台服最高 Lv15」的假設全部拿掉：計算中心綜合力的區域道具等級選單、跑榜工作室的區域道具等級（預設 20）與首頁小窗的最佳化都改用 Lv20。' },
     { d: '2026/10/04', t: 'SEKAI 聲紋可以播整首', s: '聲紋頁的播放鍵從「試聽 60 秒」改成「播放整首」：按下去從頭播到尾，淡入淡出各 3 秒；點環上任一處或分析卡的段落，就從那個時間點一路播到底，不再只播 20 秒。環外原本標示 60 秒試聽段的金色弧線拿掉了。' },
     { d: '2026/10/04', t: '功能列整併：側欄從五十多項收成 18 個入口', s: '側欄重整為五區 18 個入口：主頁（首頁、收藏與待辦、我的帳號）、追活動（活動總覽、排名與榜線）、圖鑑與資料（日程與公告、卡片圖鑑、角色與收集、歌曲、劇情與漫畫、豆森）、計算工具（計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與貼圖）、社群與說明（車隊、教學與社群）。同一類的頁面併成一個入口，進去後在頁首的分頁籤切換，例如「排名與榜線」底下是即時排名、榜線資料庫、分析中心、活動分布、玩家查詢；「日程與公告」底下是活動日曆、卡池列表、虛擬 Live、遊戲公告。所有頁面的網址與 ⌘K 搜尋都沒變，手機的五個入口與「更多」清單、功能介紹頁的分類、首頁快速入口也跟著用同一份結構；特別專案三個作品頁改放側欄底部一列。' },
     { d: '2026/10/04', t: 'B30：紅譜（EXPERT）定數可自選 39s 定數表', s: 'B30 產生器多一個「紅譜(EXPERT)定數」開關：預設維持只用腐食的 EMERALD 表（EXPERT 以遊戲等級 .0 計）；切到「採用 39s 定數表」後，EXPERT 改用英語圈社群「39s Chart Constants」（Unibot、pjskb30 這類 B30 工具用的那張）的紅譜定數，例如 ヤミナベ!!!! 紅譜 31.8、人生 31.5、嬢王 31.2。曲庫同時補進 39s 表上日服先行的 Lv28～32 紅譜 8 張（含新 31 的 初音狂奏曲第01番「彗惺」31.4、0.0000034 31.1，與 怪獣になりたい 32.0），標為日服限定、可在曲庫範圍切換顯示。開關會記住，也納入備份與雲端同步；圖卡上有採用時會另外署名出處。' },
@@ -614,6 +619,7 @@ class Component extends DCLogic {
     cardChara: null, // cardId → characterId（排名頭像用）
     /* 收集率 */
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
+    smPick: '',   // 理論技能倍率表：選中的格（'團:色'、'u:團'、'a:色'）
     /* Haruki 專區（程式在 js/haruki.js，進頁才載） */
     hzReady: false, hzTab: 'home', hzTrainTab: 'crank', hzMysTab: 'res', hzHelpTab: 'guide', hzMeta: null, hzLive: 'multi', hzTarget: 'score', hzDiff: 'master', hzAlgo: 'ga', hzEv: '', hzMusic: '', hzWlChar: '',
     hzMaxLv: false, hzMaxMr: false, hzMaxSk: false, hzFixed: '', hzExclude: '', hzRes: null, hzCrank: null, hzCalcFrom: '', hzCalcTo: '',
@@ -2190,7 +2196,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=f87c2ed7c6';
+      el.src = './js/core.js?v=b05e8d5dfc';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -9081,6 +9087,60 @@ class Component extends DCLogic {
   QZ_ROUNDS = 10;
   charUnit(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? this.UNIT_OF[c[2]] : ''; }
   charName(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? c[1] : ('#' + cid); }
+
+  /* ===== 理論技能倍率表 =====
+     數字在建置時就算好（tools/build-skill-table.py → data/skill-table.js）：日服 cards master 有 34 MB，
+     不可能在瀏覽器裡算；這裡只負責把兩服的結果排成表、把選中的格攤成兩排卡。 */
+  SM_ATTR = { cute: ['可愛', '#ff6ba0'], cool: ['帥氣', '#4d8ef5'], pure: ['純真', '#7fcf3f'], happy: ['快樂', '#ffaa1c'], mysterious: ['神秘', '#9d62d8'] };
+  SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
+  loadSkillTable() {
+    return this.dbRun('skillTable', async () => {
+      const m = await import('./data/skill-table.js?v=e0787fa5af');
+      return m.SKILL_TABLE;
+    });
+  }
+  smView() {
+    const s = this.state, T = s.skillTable;
+    const out = { isSkillMult: true, smReady: !!T, smLoading: !T && !s.dbErr, smErr: T ? '' : (s.dbErr || '') };
+    if (!T) return out;
+    const uKey = u => this.UNIT_OF[T.units.indexOf(u)];
+    const uName = u => (this.UNITS[uKey(u)] || {}).n || u;
+    const uColor = u => (this.UNITS[uKey(u)] || {}).c || '#8b93ac';
+    const aName = a => (this.SM_ATTR[a] || [a])[0], aColor = a => (this.SM_ATTR[a] || [a, '#8b93ac'])[1];
+    const nmOf = {}; (s.rateCards || []).forEach(x => { nmOf[x[0]] = x[7]; });   // 日服那排盡量用台服卡名
+    const fmt = m => m == null ? '—' : m.toFixed(2);
+    const cell = (k, tw, jp) => {
+      const a = tw ? tw.m : null, b = jp ? jp.m : null;
+      const d = (a != null && b != null) ? Math.round((b - a) * 100) / 100 : 0;
+      const on = s.smPick === k;
+      return { k, tw: fmt(a), jp: fmt(b), delta: d > 0 ? '+' + d.toFixed(2) : '', jpColor: d > 0 ? '#e0533a' : 'var(--text-3)',
+        bg: on ? 'color-mix(in oklab,var(--accent) 14%,transparent)' : 'transparent', ring: on ? 'inset 0 0 0 2px var(--accent)' : 'none' };
+    };
+    out.smAttrs = T.attrs.map(a => ({ name: aName(a), color: aColor(a) }));
+    out.smRows = T.units.map(u => ({ name: uName(u), color: uColor(u), cells: T.attrs.map(a => cell(u + ':' + a, T.tw.cells[u + ':' + a], T.jp.cells[u + ':' + a])) }));
+    out.smUnitRows = T.units.map(u => Object.assign({ name: uName(u), color: uColor(u) }, cell('u:' + u, T.tw.unit[u], T.jp.unit[u])));
+    out.smAttrRows = T.attrs.map(a => Object.assign({ name: aName(a), color: aColor(a) }, cell('a:' + a, T.tw.attr[a], T.jp.attr[a])));
+    const built = T.builtAt ? new Date(T.builtAt) : null;
+    out.smMeta = '台服 ' + T.tw.cards + ' 張・日服 ' + T.jp.cards + ' 張（領先 ' + Math.max(0, T.jp.cards - T.tw.cards) + ' 張）' +
+      (built ? '・資料 ' + built.getFullYear() + '/' + String(built.getMonth() + 1).padStart(2, '0') + '/' + String(built.getDate()).padStart(2, '0') : '');
+    out.smAssume = '技能全 SL' + (T.sl || 4) + '、角色等級 ' + (T.charRank || 100) + '、特訓後技能；倍率 ＝（隊長 ＋ 100 ＋ 其餘四人合計 ÷ 5）÷ 100，與計算中心的推隊倍率同一條公式。團分卡依同團人數加成、角色等級型取等級 ' + (T.charRank || 100) + ' 的檔、吸技卡取隊友最高技能的比例（有上限），都照隊伍實際組成算。';
+    const k = s.smPick;
+    if (k) {
+      let tw, jp, title;
+      if (k.startsWith('u:')) { const u = k.slice(2); tw = T.tw.unit[u]; jp = T.jp.unit[u]; title = uName(u) + '・不限屬性'; }
+      else if (k.startsWith('a:')) { const at = k.slice(2); tw = T.tw.attr[at]; jp = T.jp.attr[at]; title = aName(at) + '・不限團體'; }
+      else { const [u, at] = k.split(':'); tw = T.tw.cells[k]; jp = T.jp.cells[k]; title = uName(u) + '・' + aName(at) + '（同團同色）'; }
+      const deck = (c, isJp) => !c ? [] : c.deck.map((d, i) => ({
+        lead: i === 0, name: nmOf[d.id] || d.n, ch: this.charName(d.ch), img: this.cardImg(d.jkt, d.r), v: d.v + '%',
+        type: this.SM_SKT[d.sk] || '', isNew: !!(isJp && d.new), rar: d.r === 9 ? '生日' : '★' + d.r, color: this.CHARA_COLOR[d.ch] || 'var(--border)'
+      }));
+      const pool = c => (c && c.n4 != null) ? ('可用 ★4 ' + c.n4 + ' 張・' + c.chars + ' 位角色') : '';
+      out.smPick = { title, twM: fmt(tw && tw.m), jpM: fmt(jp && jp.m), twDeck: deck(tw, false), jpDeck: deck(jp, true), twPool: pool(tw), jpPool: pool(jp),
+        twEmpty: !tw, jpEmpty: !jp, jpNew: jp ? jp.deck.filter(d => d.new).length : 0 };
+    }
+    out.smHasPick = !!out.smPick;
+    return out;
+  }
   qzPool(kind) {
     const s = this.state, units = s.qzUnits || [];
     if (kind === 'who') {
@@ -9454,6 +9514,7 @@ class Component extends DCLogic {
     if (p === 'stickers') { this.loadCollect(); try { document.fonts.load('800 40px Huninn').then(() => this.stkDraw()); } catch (e) {} }
     if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
+    if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); this.loadBorderModel(); }
@@ -11329,6 +11390,7 @@ class Component extends DCLogic {
         };
       })(),
       isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
+      ...(s.page === 'skillmult' ? this.smView() : { isSkillMult: false }),
       ...(() => {
         /* 卡面下載。直連官方素材庫,本站不轉存 —— 所以這裡做的只有「把 1,249 張卡
            對到它們在資料庫裡的路徑」,加上篩選與分頁。
@@ -12965,6 +13027,8 @@ class Component extends DCLogic {
 
       /* 事件 */
       onGo: e => { const p = e.currentTarget.dataset.p; if (p) this.go(p); },
+      onSmPick: e => { const k = e.currentTarget.dataset.k || ''; this.setState({ smPick: this.state.smPick === k ? '' : k }); },
+      onSmReload: () => this.setState({ dbErr: '', skillTable: null }, () => this.loadSkillTable()),
       onStarEgg: () => this.openStarmap(true),   // 首頁右上角那顆會閃的小星（彩蛋）
       onBotSheets: () => { const el = document.getElementById('bot-sheets'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
       /* 私車排班 */
