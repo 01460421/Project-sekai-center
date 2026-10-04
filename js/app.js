@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/04', t: '理論技能倍率表：同倍率替代卡', s: '每支隊伍下面多列「同倍率替代卡」：把隊上某一張換成池裡另一張（角色不能跟其他四人重複）、整隊重算後倍率不變的卡，並標出它能頂替的位子（對應隊伍卡右上角的編號）；沒有那張卡的人可以看自己手上哪張頂得上。台服未實裝的卡一樣標出，兩服各算各的。', p: 'skillmult' },
     { d: '2026/10/04', t: '新頁：理論技能倍率表（台服當前 vs 日服最新）', s: '計算中心底下多一頁「理論技能倍率表」：六團 × 五色，每格是該團該色「同團同色」最佳五人隊的推隊倍率（技能全 SL4、角色等級 100、特訓後技能，公式照計算中心：隊長 + 100 + 其餘四人合計 ÷ 5），上排是台服當前已實裝的卡、下排是日服最新進度，日服比台服高就標紅並寫出差多少；點任一格看兩服各自的五張卡（隊長、技能值與型別，台服還沒有的卡標「台服未實裝」）。下面另有「同團不限色」與「同色不限團」兩張表。資料由每天的資料更新流程從兩服 master 重算。', p: 'skillmult' },
     { d: '2026/10/04', t: '區域道具開放到 Lv20', s: '台服 5 週年起區域道具可升到 Lv20，站上原本「台服最高 Lv15」的假設全部拿掉：計算中心綜合力的區域道具等級選單、跑榜工作室的區域道具等級（預設 20）與首頁小窗的最佳化都改用 Lv20。' },
     { d: '2026/10/04', t: 'SEKAI 聲紋可以播整首', s: '聲紋頁的播放鍵從「試聽 60 秒」改成「播放整首」：按下去從頭播到尾，淡入淡出各 3 秒；點環上任一處或分析卡的段落，就從那個時間點一路播到底，不再只播 20 秒。環外原本標示 60 秒試聽段的金色弧線拿掉了。' },
@@ -9095,7 +9096,7 @@ class Component extends DCLogic {
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
-      const m = await import('./data/skill-table.js?v=e0787fa5af');
+      const m = await import('./data/skill-table.js?v=e20e4585a4');
       return m.SKILL_TABLE;
     });
   }
@@ -9130,13 +9131,19 @@ class Component extends DCLogic {
       if (k.startsWith('u:')) { const u = k.slice(2); tw = T.tw.unit[u]; jp = T.jp.unit[u]; title = uName(u) + '・不限屬性'; }
       else if (k.startsWith('a:')) { const at = k.slice(2); tw = T.tw.attr[at]; jp = T.jp.attr[at]; title = aName(at) + '・不限團體'; }
       else { const [u, at] = k.split(':'); tw = T.tw.cells[k]; jp = T.jp.cells[k]; title = uName(u) + '・' + aName(at) + '（同團同色）'; }
-      const deck = (c, isJp) => !c ? [] : c.deck.map((d, i) => ({
-        lead: i === 0, name: nmOf[d.id] || d.n, ch: this.charName(d.ch), img: this.cardImg(d.jkt, d.r), v: d.v + '%',
+      const card = (d, isJp) => ({
+        name: nmOf[d.id] || d.n, ch: this.charName(d.ch), img: this.cardImg(d.jkt, d.r), v: d.v + '%',
         type: this.SM_SKT[d.sk] || '', isNew: !!(isJp && d.new), rar: d.r === 9 ? '生日' : '★' + d.r, color: this.CHARA_COLOR[d.ch] || 'var(--border)'
-      }));
+      });
+      const deck = (c, isJp) => !c ? [] : c.deck.map((d, i) => Object.assign(card(d, isJp), { lead: i === 0, idx: i + 1 }));
+      /* 同倍率替代卡：建置時已算好「換上去整隊倍率不變」的卡與它能頂的位子（s = 隊伍索引） */
+      const alts = (c, isJp) => (!c || !c.alts) ? [] : c.alts.map(x => Object.assign(card(x, isJp), { slots: '可換第 ' + x.s.map(i => i + 1).join('、') + ' 張' }));
       const pool = c => (c && c.n4 != null) ? ('可用 ★4 ' + c.n4 + ' 張・' + c.chars + ' 位角色') : '';
+      const twA = alts(tw, false), jpA = alts(jp, true);
       out.smPick = { title, twM: fmt(tw && tw.m), jpM: fmt(jp && jp.m), twDeck: deck(tw, false), jpDeck: deck(jp, true), twPool: pool(tw), jpPool: pool(jp),
-        twEmpty: !tw, jpEmpty: !jp, jpNew: jp ? jp.deck.filter(d => d.new).length : 0 };
+        twEmpty: !tw, jpEmpty: !jp, jpNew: jp ? jp.deck.filter(d => d.new).length : 0,
+        twAlts: twA, jpAlts: jpA, twAltN: twA.length, jpAltN: jpA.length, twHasAlts: twA.length > 0, jpHasAlts: jpA.length > 0,
+        twNoAlts: !!tw && twA.length === 0, jpNoAlts: !!jp && jpA.length === 0 };
     }
     out.smHasPick = !!out.smPick;
     return out;
