@@ -5872,6 +5872,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             prof: null,   // {name, rank, leaderAb, leaderTrained, apM, fcM, apA, fcA}
             F: { q: '', d: 'all', band: 'all', sv: 'all' },   // sv:曲庫範圍 all/tw/jp(日服限定曲 jp=1)
             shown: 80,
+            // EXPERT(紅譜)定數來源:lv=遊戲等級 .0(只用腐食表,本站規則) / 39s=資料 x 欄(39s Chart Constants,Unibot/pjskb30 系 B30 用)
+            ex: 'lv',
             ASSET: 'https://storage.sekai.best/sekai-jp-assets',
             COLOR: { master: '#BB33EE', append: '#000000', expert: '#EE4466' },
             // 定數「+」記號的兩種用法(使用者指定):plus=保留符號、num=數值化計算
@@ -5884,11 +5886,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             PLUS_ADD: [0, 0.05, 0.09999999],
             // 「+」一律計入運算(單一真相),兩種模式只差在「怎麼寫」——符號模式沿用 34.9+ 寫法,
             // 且 FC 減值後仍保留符號(34.9+ 的 FC = 33.9+),不會把 + 吃掉
-            cval(c) { return c.c + this.PLUS_ADD[c.p || 0]; },
-            cTxt(c) { return this.fmt === 'num' ? this.cval(c).toFixed(this.dec) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
+            // 紅譜開關開著、而且這張譜有 x(39s 表定數)才用 x;x 本身就是一位小數、沒有「+」
+            xon(c) { return this.ex === '39s' && c.d === 'expert' && c.x != null; },
+            cval(c) { return this.xon(c) ? c.x : c.c + this.PLUS_ADD[c.p || 0]; },
+            cTxt(c) { if (this.xon(c)) return c.x.toFixed(this.fmt === 'num' ? this.dec : 1); return this.fmt === 'num' ? this.cval(c).toFixed(this.dec) : c.c.toFixed(1) + '+'.repeat(c.p || 0); },
             vTxt(v, c) {
                 if (this.fmt === 'num') return v.toFixed(this.dec);
-                const p = (c && c.p) || 0;
+                const p = (c && c.p && !this.xon(c)) ? c.p : 0;
                 return (v - this.PLUS_ADD[p]).toFixed(1) + '+'.repeat(p);
             },
             bTxt(v) { return v.toFixed(this.dec); },
@@ -5898,6 +5902,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this.renderStats(); this.renderList();
                 const msg = document.getElementById('b30GenMsg');
                 if (msg) msg.textContent = '定數格式已切換,重按「產生」即可套用到圖片。';
+            },
+            setEx(v) {
+                this.ex = v === '39s' ? '39s' : 'lv';
+                try { localStorage.setItem('sekai-b30-ex', this.ex); } catch (e) {}
+                this.renderStats(); this.renderList();
+                const msg = document.getElementById('b30GenMsg');
+                if (msg) msg.textContent = this.ex === '39s' ? 'EXPERT 改用 39s 定數表(含日服先行的紅譜),重按「產生」即可套用到圖片。' : 'EXPERT 改回遊戲等級 .0(只用腐食表),重按「產生」即可套用到圖片。';
             },
             setDec(v) {
                 const n = parseInt(v, 10);
@@ -6232,6 +6243,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try { this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus'; } catch (e) {}
                 try { this.zh = localStorage.getItem('sekai-b30-zh') !== '0'; } catch (e) {}
                 try { const d = parseInt(localStorage.getItem('sekai-b30-dec'), 10); if (d >= 0 && d <= 4) this.dec = d; } catch (e) {}
+                try { this.ex = localStorage.getItem('sekai-b30-ex') === '39s' ? '39s' : 'lv'; } catch (e) {}
                 const s = document.createElement('script');
                 // 這支已在 vercel.json 設 must-revalidate(見該檔 /data/(billing|b30-consts) 規則),
                 // 舊版時間桶會讓瀏覽器黏著改版前的檔案,改用固定 URL 交給 HTTP 驗證
@@ -6296,6 +6308,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                 <option value="2"${this.dec === 2 ? ' selected' : ''}>2 位(35.12)</option>
                                 <option value="3"${this.dec === 3 ? ' selected' : ''}>3 位(35.123)</option>
                                 <option value="4"${this.dec === 4 ? ' selected' : ''}>4 位(35.1234)</option>
+                            </select></div>
+                            <div class="calc-row"><label>紅譜(EXPERT)定數</label><select id="b30Ex" onchange="B30Maker.setEx(this.value)">
+                                <option value="lv"${this.ex !== '39s' ? ' selected' : ''}>只用腐食表(EXPERT 以遊戲等級 .0 計)</option>
+                                <option value="39s"${this.ex === '39s' ? ' selected' : ''}>採用 39s 定數表(Unibot／pjskb30 系 B30 用)</option>
                             </select></div>
                             <div class="sa-chiprow" style="margin-top:8px;">
                                 <span style="font-size:11px;color:var(--text-light);">換裝置備份(含收集率/儲值設定):</span>
@@ -6368,18 +6384,21 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             setF(k, v) { this.F[k] = v; this.shown = 80; this.renderFilters(); this.renderList(); },
             filtered() {
                 const F = this.F, q = F.q.toLowerCase();
-                return this.D().charts.filter(c => {
+                const rows = this.D().charts.filter(c => {
                     if (F.d !== 'all' && c.d !== F.d) return false;
                     if (F.sv === 'tw' && c.jp) return false;
                     if (F.sv === 'jp' && !c.jp) return false;
                     if (F.band !== 'all') {
-                        const b = Math.floor(c.c);
+                        const b = Math.floor(this.cval(c));
                         if (F.band === '低') { if (b > 28) return false; }
                         else if (b !== +F.band) return false;
                     }
                     if (q && (c.t + ' ' + (c.tc || '')).toLowerCase().indexOf(q) < 0) return false;   // 中日文都能搜
                     return true;
                 });
+                // 資料檔是照 c 排的;紅譜開關開著時 EXPERT 的實際定數是 x,重排一次才不會 31.8 夾在 31.0 中間(穩定排序,其餘順序不變)
+                if (this.ex === '39s') rows.sort((a, b) => this.cval(b) - this.cval(a));
+                return rows;
             },
             renderList() {
                 const el = document.getElementById('b30List'); if (!el) return;
@@ -6392,7 +6411,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             rowHtml(c) {
                 const k = this.key(c), m = this.marks[k] | 0;
                 return `<button type="button" class="b30-row st${m}" id="b30r_${k}" onclick="B30Maker.cycle('${k}')">
-                    <span class="b30-const${c.e ? ' est' : ''}"${c.e ? ' title="難易度表未收錄(日服未實裝),以遊戲內等級+0.5 推估"' : ''}>${this.cTxt(c)}${c.e ? '<i>推估</i>' : ''}</span>
+                    <span class="b30-const${c.e ? ' est' : this.xon(c) ? ' x39' : ''}"${c.e ? ' title="難易度表未收錄(日服未實裝),以遊戲內等級+0.5 推估"' : this.xon(c) ? ' title="39s 定數表的紅譜定數(非官方);關掉開關就以遊戲等級 .0 計"' : ''}>${this.cTxt(c)}${c.e ? '<i>推估</i>' : this.xon(c) ? '<i>39s</i>' : ''}</span>
                     <span class="b30-diff ${c.d}">${{ master: 'MAS', append: 'APD', expert: 'EXP' }[c.d] || c.d} ${c.lv}</span>
                     ${c.jp ? '<span class="b30-jp" title="日服限定,台服未實裝">日服</span>' : ''}
                     <span class="b30-title" title="${(c.tc ? c.tc + ' / ' : '') + c.t}">${this.name(c)}</span>
@@ -6430,6 +6449,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 'sekai-b30-marks': 'B30 成績', 'sekai-cards-own': '收集率持有卡', 'sekai-shop-owned': '儲值已買過',
                 'sekai-shop-price-ov': '儲值自填售價', 'sekai-shop-webcart': '官網選購清單', 'sekai-app-pid': '玩家 ID',
                 'sekai-app-goal': '目標活動P', 'sekai-app-cur': '目前活動P', 'sekai-b30-name': 'B30 顯示名稱',
+                'sekai-b30-ex': 'B30 紅譜定數來源',
             },
             _bkCollect() {
                 const out = {};
@@ -6519,6 +6539,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         this.pid = localStorage.getItem('sekai-app-pid') || this.pid;
                         this.custName = localStorage.getItem('sekai-b30-name') || this.custName;
                         this.fmt = localStorage.getItem('sekai-b30-fmt') === 'num' ? 'num' : 'plus';
+                        this.ex = localStorage.getItem('sekai-b30-ex') === '39s' ? '39s' : 'lv';
                         const pe = document.getElementById('b30Pid'); if (pe) pe.value = this.pid;
                         const ne = document.getElementById('b30Name'); if (ne) ne.value = this.custName;
                         this.renderStats(); this.renderList();
@@ -6820,12 +6841,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const tbl = (() => { try { const src = String((this.D() || {}).source || ''); const m = /^\s*(\S+)\s+(v\d+\+?)/i.exec(src); if (m) return m[1] + ' ' + m[2]; const v = /\bv\d+\+?/i.exec(src); return (src.split(/\s+/)[0] || 'EMERALD') + ' ' + (v ? v[0] : '最新版'); } catch (e) { return 'EMERALD'; } })();
 
                 ctx.fillStyle = '#8b93ac'; ctx.font = '600 12.5px ' + FB;
+                // 紅譜開關開著才多一行署名(第五行 y=1810,畫布高 1900 放得下);關著時 EXPERT 是本站的「等級 .0」規則,不另外署名
+                const xline = this.ex === '39s' && (this.D() || {}).xsource ? ['EXPERT 定數:' + this.D().xsource + '(英語圈社群表,Unibot／pjskb30 系 B30 採用,非官方)'] : [];
                 foot([
                     '定數:腐食氏「プロセカAP難易度表」' + tbl + '(非官方,可能變動)' + (built ? '・取得於 ' + built : ''),
                     '曲目/譜面:Sekai-World sekai-master-db-diff(日)、Team-Haruki haruki-sekai-tc-master(台);中文譯名:Sekai Viewer 社群 i18n',
                     '封面/頭像:storage.sekai.best・版面還原自 Unibot(MIT / Watagashi_uni)',
                     '実効值:AP=定數、FC=定數−1,分母固定 30。非官方算法,僅供參考娛樂。'
-                ], 53, 1726, 21, 'left');
+                ].concat(xline), 53, 1726, 21, 'left');
 
                 ctx.fillStyle = '#0eb3c5'; ctx.font = '700 15px ' + FB;
                 foot(['Generated by SEKAI 資源中心', 'project-sekai-center.vercel.app'], 1047, 1726, 21, 'right');

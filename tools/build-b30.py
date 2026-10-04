@@ -38,6 +38,10 @@ OUT = ROOT / 'data' / 'b30-consts.js'
 # 更新方式:python3 tools/build-b30.py --pin '/path/to/スプシ用AP難易度表EMERALD v34.xlsx'
 # (檔名沿用 pentatonic-pin.json,內容是 EMERALD 版;版號取檔名裡的 v 加數字)
 PIN = ROOT / 'tools' / 'src' / 'pentatonic-pin.json'
+# EXPERT(紅譜)定數:英語圈社群的「39s Chart Constants」試算表(JP 分頁),pjskb30、Unibot 系的 B30 都用這張。
+# 本站的 EXPERT 定數規則仍是「遊戲等級 .0」(c 欄);這張表的值另外放在 x 欄,前端給使用者自選要不要採用。
+X_SHEET = 'https://docs.google.com/spreadsheets/d/1B8tX9VL2PcSJKyuHFVd2UT_8kYlY4ZdwHwg9MfWOPug/export?format=csv&gid=1855810409'
+X_SOURCE = '39s Chart Constants (JP)'
 
 
 def get(url, binary=False):
@@ -113,6 +117,39 @@ def parse_sheet(xlsx_bytes):
         res[key] = lst
         print(f'{sheet_name}:{len(lst)} 譜面')
     return res
+
+
+def load_x_consts():
+    """39s 表的 EXPERT 定數:回傳 {日服 musicId: 定數}。
+    抓不到或格式變了就沿用上一版 data 檔裡的 x,連上一版都沒有才回空表(前端的開關會顯示沒資料)。"""
+    try:
+        import csv
+        raw = get(X_SHEET, binary=True).decode('utf-8-sig')
+        out = {}
+        for r in csv.DictReader(io.StringIO(raw)):
+            if (r.get('Difficulty') or '').strip() != 'Expert':
+                continue
+            try:
+                out[int(float(r['Song ID']))] = round(float(r['Constant']), 1)
+            except (KeyError, ValueError, TypeError):
+                continue
+        if len(out) < 300:
+            raise ValueError(f'Expert 列只有 {len(out)} 筆,欄位可能變了')
+        print(f'39s 定數表:EXPERT {len(out)} 筆')
+        return out
+    except Exception as ex:
+        print(f'39s 定數表抓取失敗({ex}),沿用上一版的 x')
+        old = {}
+        if OUT.exists():
+            m = re.search(r'window\.B30_CONSTS\s*=\s*(\{.*\});?\s*$', OUT.read_text(encoding='utf-8'), re.S)
+            if m:
+                try:
+                    for c in json.loads(m.group(1)).get('charts', []):
+                        if c.get('d') == 'expert' and c.get('x') is not None:
+                            old[c['id']] = c['x']
+                except Exception:
+                    pass
+        return old
 
 
 def write_pin(xlsx_path):
@@ -244,9 +281,11 @@ def main():
     # EXPERT 高難度(Lv28~32):EMERALD 難易度表只收 MASTER/APPEND,沒有 EXPERT 定數。
     # 本站規則「定數用 .0」—— 直接拿遊戲內等級當定數(Lv29 → 29.0),不做任何推估,
     # 所以不標 e=1(那是「推估」的意思,這裡是明確規則)。
+    # x 欄＝39s 表的 EXPERT 定數(有就放),前端開關決定 B30 用 c 還是 x。
     tc_by_id = {mu['id']: mu for mu in tc_musics}
+    xmap = load_x_consts()
     EXP_MIN, EXP_MAX = 28, 32
-    exp_n = 0
+    exp_n = exp_x = 0
     for d in tc_diffs:
         if d['musicDifficulty'] != 'expert':
             continue
@@ -260,11 +299,36 @@ def main():
             'c': float(d['playLevel']),           # 定數＝等級，整數 .0
             'jkt': mu['assetbundleName'], 't': mu['title'],
         }
+        if mu['id'] in xmap:
+            row['x'] = xmap[mu['id']]
+            exp_x += 1
         tr = zh.get(mu['id'])
         if tr and tr.strip() and tr.strip() != mu['title']:
             row['tc'] = tr.strip()
         charts.append(row)
         exp_n += 1
+
+    # 39s 表有、台服還沒實裝的 EXPERT(日服新 31 等):Lv28~32 也收進來,標 jp=1。
+    # 台服先行曲在台服是另一組 id,先用曲名查台服曲池,查得到就不算日服限定。
+    jp_by_id = {mu['id']: mu for mu in jp_musics}
+    exp_jp = 0
+    for mid, xv in xmap.items():
+        mu = jp_by_id.get(mid)
+        if not mu or mid in tc_ids or tc_by_norm.get(norm(mu['title'])):
+            continue
+        lvl = jp_lv.get((mid, 'expert'))
+        if lvl is None or not (EXP_MIN <= lvl <= EXP_MAX):
+            continue
+        row = {
+            'id': mu['id'], 'd': 'expert', 'lv': lvl, 'c': float(lvl),
+            'jkt': mu['assetbundleName'], 't': mu['title'], 'jp': 1, 'x': xv,
+        }
+        tr = zh.get(mu['id'])
+        if tr and tr.strip() and tr.strip() != mu['title']:
+            row['tc'] = tr.strip()
+        charts.append(row)
+        exp_jp += 1
+    print(f'EXPERT{EXP_MIN}-{EXP_MAX}:台服 {exp_n} 張(39s 有定數 {exp_x})、日服限定 {exp_jp} 張')
 
     # 台服有、但難易度表沒有的譜面(英服來源曲等:日服未實裝,EMERALD 表自然不會收)
     # → 用遊戲內等級 +0.5 當中位推估,標 e=1 讓前端顯示「推估」並可排除
@@ -290,12 +354,14 @@ def main():
 
     PLUS_ADD = [0, 0.05, 0.09999999]
     charts.sort(key=lambda x: (-(x['c'] + PLUS_ADD[x.get('p', 0)]), x.get('e', 0)))
-    print(f'共 {len(charts)} 譜面(含日服限定 {jp_only}、EXPERT{EXP_MIN}-{EXP_MAX} {exp_n})、曲名比對失敗 {len(unmatched)}')
+    print(f'共 {len(charts)} 譜面(含日服限定 {jp_only + exp_jp}、EXPERT{EXP_MIN}-{EXP_MAX} {exp_n + exp_jp})、曲名比對失敗 {len(unmatched)}')
     print(f'難易度表未收錄、以等級+0.5 推估: {len(est)} 譜面 {est}')
     if unmatched:
         print('比對失敗(前 15):', unmatched[:15])
 
     data = {'source': source, 'charts': charts}
+    if xmap:
+        data['xsource'] = X_SOURCE   # x 欄的出處(前端署名用)
     if OUT.exists():
         m = re.search(r'window\.B30_CONSTS\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
         if m:
