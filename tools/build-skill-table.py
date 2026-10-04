@@ -13,6 +13,8 @@
 推隊倍率照計算中心的公式:(隊長 + 100 + 其餘四人合計 ÷ 5) ÷ 100。
 
 三種編法都算:同團同色(主表)、同團不限色、同色不限團(全角色最佳卡做組合搜尋)。
+每支隊伍另附「同倍率替代卡」:把某一張換成池裡另一張(角色不能跟其他四人重複)、整隊重算後倍率不變的卡,
+給沒有那張卡的人看自己手上哪張可以頂上。
 輸出 data/skill-table.js(ES module,export const SKILL_TABLE)。內容沒變就不寫檔(builtAt 除外)。
 
     python3 tools/build-skill-table.py
@@ -145,18 +147,44 @@ def best_per_char(cands, unit_of, assume_unit):
     return list(best.values())
 
 
-def pack(team, values, unit_of, tw_ids):
+def row_of(c, p, v, tw_ids):
+    row = {'id': c['id'], 'ch': c['characterId'], 'n': c.get('prefix', ''), 'r': RAR.get(c['cardRarityType'], 0),
+           'v': v, 'jkt': c['assetbundleName'], 'sk': p['sid']}
+    if c['characterId'] > 20 and c.get('supportUnit') and c['supportUnit'] != 'none':
+        row['su'] = c['supportUnit']
+    if tw_ids is not None and c['id'] not in tw_ids:
+        row['new'] = 1   # 台服還沒有這張
+    return row
+
+
+def pack(team, values, unit_of, tw_ids, cands):
+    """隊伍依技能值排好(隊長第一),並算每個位子的同倍率替代卡。
+    替代卡 = 池裡不在隊上、角色不跟其他四人重複、換上去整隊重算後倍率相同的卡;
+    同一張卡能頂好幾個位子就合併成一筆(s = 可替換的位子索引)。"""
     vs = sorted(zip(values, team), key=lambda x: -x[0])
-    rows = []
-    for v, (c, p) in vs:
-        row = {'id': c['id'], 'ch': c['characterId'], 'n': c.get('prefix', ''), 'r': RAR.get(c['cardRarityType'], 0),
-               'v': v, 'jkt': c['assetbundleName'], 'sk': p['sid']}
-        if c['characterId'] > 20 and c.get('supportUnit') and c['supportUnit'] != 'none':
-            row['su'] = c['supportUnit']
-        if tw_ids is not None and c['id'] not in tw_ids:
-            row['new'] = 1   # 台服還沒有這張
-        rows.append(row)
-    return rows
+    team = [tp for _, tp in vs]
+    m = mult_of(values)
+    rows = [row_of(c, p, v, tw_ids) for v, (c, p) in vs]
+    in_team = {c['id'] for c, _ in team}
+    alts = {}
+    for i, (ci, pi) in enumerate(team):
+        others = {c['characterId'] for j, (c, _) in enumerate(team) if j != i}
+        for c, p in cands:
+            if c['id'] in in_team or c['characterId'] in others:
+                continue
+            trial = team[:i] + [(c, p)] + team[i + 1:]
+            tv = team_values(trial, unit_of)
+            if abs(mult_of(tv) - m) > 1e-9:
+                continue
+            a = alts.get(c['id'])
+            if a is None:
+                a = alts[c['id']] = row_of(c, p, tv[i], tw_ids)
+                a['s'] = []
+            a['s'].append(i)
+    out = {'deck': rows}
+    if alts:
+        out['alts'] = sorted(alts.values(), key=lambda a: (-a['v'], -a['r'], a['id']))
+    return out
 
 
 def solve_same_unit(cands, unit, unit_of, tw_ids):
@@ -167,7 +195,7 @@ def solve_same_unit(cands, unit, unit_of, tw_ids):
     if not team:
         return None
     values = team_values(team, unit_of)
-    return {'m': mult_of(values), 'deck': pack(team, values, unit_of, tw_ids), 'chars': len(per)}
+    return dict(m=mult_of(values), chars=len(per), **pack(team, values, unit_of, tw_ids, cands))
 
 
 def solve_same_attr(cands, unit_of, tw_ids):
@@ -195,7 +223,7 @@ def solve_same_attr(cands, unit_of, tw_ids):
             best = (m, team, values)
     if not best:
         return None
-    return {'m': best[0], 'deck': pack(best[1], best[2], unit_of, tw_ids)}
+    return dict(m=best[0], **pack(best[1], best[2], unit_of, tw_ids, cands))
 
 
 def build(server, tw_ids):
