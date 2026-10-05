@@ -46,7 +46,11 @@ jobs:
       # 日服 cards.json 有 34 MB：以上游 HEAD commit 當 key 快取，commit 沒變的日子不重抓。
       - name: 日服 master 版本
         id: jprev
-        run: echo "sha=$(curl -sS -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' https://api.github.com/repos/Sekai-World/sekai-master-db-diff/commits/main | python3 -c 'import json,sys; print((json.load(sys.stdin).get("sha") or "none")[:12])')" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=$(curl -sS -H "authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/Sekai-World/sekai-master-db-diff/commits/main | python3 -c 'import json,sys; print((json.load(sys.stdin).get("sha") or "none")[:12])' || echo none)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
         with:
           path: tools/.cache/jp-master
