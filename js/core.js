@@ -6870,7 +6870,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     out.innerHTML = `<div class="sa-chiprow" style="margin-bottom:8px;">
                         <a class="sa-cart-go" href="${url}" download="${fn}">下載 PNG(${(blob.size / 1048576).toFixed(1)} MB)</a>
                         <span style="font-size:11px;color:var(--text-light);">手機也可長按圖片存檔;圖為 ${W * S}×${H * S}</span></div>
-                        <img src="${url}" alt="B30" style="width:100%;max-width:760px;border:1px solid var(--border);border-radius:14px;display:block;">`;
+                        <img src="${url}" alt="B30" referrerpolicy="no-referrer" style="width:100%;max-width:760px;border:1px solid var(--border);border-radius:14px;display:block;">`;
                     if (msg) msg.textContent = '完成!';
                     out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }, 'image/png');

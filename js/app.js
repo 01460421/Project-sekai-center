@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/05', t: '理論技能倍率表：接上你的持有卡', s: '在「收集率」勾選過持有卡的話，理論技能倍率表每格會多一行「我 x.xx」：用你手上符合那格條件的卡、同一套規則（SL4、角色等級 100）算出的最佳五人隊倍率；點開格子多一欄「我的卡」列出那支隊伍，理論隊伍裡你沒有的卡標「缺」，同倍率替代卡裡你有的標「有」，一眼看出差哪張、哪張可以頂。還沒勾過持有卡會引導到收集率頁。', p: 'skillmult' },
     { d: '2026/10/04', t: '理論技能倍率表：同倍率替代卡', s: '每支隊伍下面多列「同倍率替代卡」：把隊上某一張換成池裡另一張（角色不能跟其他四人重複）、整隊重算後倍率不變的卡，並標出它能頂替的位子（對應隊伍卡右上角的編號）；沒有那張卡的人可以看自己手上哪張頂得上。台服未實裝的卡一樣標出，兩服各算各的。', p: 'skillmult' },
     { d: '2026/10/04', t: '新頁：理論技能倍率表（台服當前 vs 日服最新）', s: '計算中心底下多一頁「理論技能倍率表」：六團 × 五色，每格是該團該色「同團同色」最佳五人隊的推隊倍率（技能全 SL4、角色等級 100、特訓後技能，公式照計算中心：隊長 + 100 + 其餘四人合計 ÷ 5），上排是台服當前已實裝的卡、下排是日服最新進度，日服比台服高就標紅並寫出差多少；點任一格看兩服各自的五張卡（隊長、技能值與型別，台服還沒有的卡標「台服未實裝」）。下面另有「同團不限色」與「同色不限團」兩張表。資料由每天的資料更新流程從兩服 master 重算。', p: 'skillmult' },
     { d: '2026/10/04', t: '區域道具開放到 Lv20', s: '台服 5 週年起區域道具可升到 Lv20，站上原本「台服最高 Lv15」的假設全部拿掉：計算中心綜合力的區域道具等級選單、跑榜工作室的區域道具等級（預設 20）與首頁小窗的最佳化都改用 Lv20。' },
@@ -2197,7 +2198,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=b05e8d5dfc';
+      el.src = './js/core.js?v=e9dfc57942';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -9096,14 +9097,91 @@ class Component extends DCLogic {
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
-      const m = await import('./data/skill-table.js?v=e20e4585a4');
+      const m = await import('./data/skill-table.js?v=98470f0fe4');
       return m.SKILL_TABLE;
     });
+  }
+  /* ===== 我的卡：用建置時同一套規則，算使用者手上（收集率頁勾選的）卡在每一格能組到多少 =====
+     pool 一列 = [id, 角色, 本團, 屬性, 稀有度, VS 支援團, basic, 團分每人, 團分條件團, 吸技比例, 吸技上限, 混團表]，
+     規則與 tools/build-skill-table.py 的 team_values／mult_of 逐行對應，改一邊要改另一邊。 */
+  smUnitsOf(r) { return r[1] <= 20 ? [r[2]] : (r[5] >= 0 ? [5, r[5]] : [5]); }
+  smRound(x) { const f = Math.floor(x), d = x - f; return d > 0.5 ? f + 1 : d < 0.5 ? f : (f % 2 === 0 ? f : f + 1); }   // Python round：五成雙
+  smTeamValues(team) {
+    const units = team.map(r => this.smUnitsOf(r));
+    const base = team.map((r, i) => {
+      let v = r[6];
+      if (r[7]) {
+        let others = 0, all = team.length === 5;
+        units.forEach((u, j) => { const has = u.includes(r[8]); if (j !== i && has) others++; if (!has) all = false; });
+        v += r[7] * others + (all ? r[7] : 0);
+      }
+      if (r[11]) {
+        const own = r[1] <= 20 ? r[2] : 5, d = new Set();
+        units.forEach(us => us.forEach(u => { if (u !== own) d.add(u); }));
+        let add = 0; r[11].forEach(([n, val]) => { if (n <= d.size && val > add) add = val; });
+        v += add;
+      }
+      return v;
+    });
+    return team.map((r, i) => {
+      let v = base[i];
+      if (r[9]) { let best = 0; base.forEach((b, j) => { if (j !== i && b > best) best = b; }); v += Math.min(r[10], this.smRound(best * r[9] / 100)); }
+      return v;
+    });
+  }
+  smMult(values) {
+    if (!values.length) return 0;
+    const vs = values.slice().sort((a, b) => b - a);
+    return Math.round((vs[0] + 100 + vs.slice(1).reduce((x, y) => x + y, 0) / 5) / 100 * 1000) / 1000;
+  }
+  smMine(T, key) {
+    const own = this.ownSet(); if (!own.size || !T.tw.pool) return null;
+    let unit = -1, attr = -1;
+    if (key.startsWith('u:')) unit = T.units.indexOf(key.slice(2));
+    else if (key.startsWith('a:')) attr = T.attrs.indexOf(key.slice(2));
+    else { const [u, at] = key.split(':'); unit = T.units.indexOf(u); attr = T.attrs.indexOf(at); }
+    const pool = T.tw.pool.filter(r => own.has(r[0]) && (attr < 0 || r[3] === attr) && (unit < 0 || this.smUnitsOf(r).includes(unit)));
+    const est = r => r[6] + ((r[7] && (unit < 0 || r[8] === unit)) ? r[7] * 5 : 0) + r[10];   // 與建置相同的粗估：團分當滿隊、吸技當滿
+    const byChar = new Map();
+    pool.forEach(r => { const v = est(r); const lst = byChar.get(r[1]) || []; lst.push([v, r]); byChar.set(r[1], lst); });
+    let team;
+    if (unit >= 0) {   // 同團：每人最佳 → 取前五 → 實際重算（同 solve_same_unit）
+      const per = Array.from(byChar.values()).map(lst => lst.sort((x, y) => y[0] - x[0] || y[1][4] - x[1][4])[0]).sort((x, y) => y[0] - x[0]);
+      team = per.slice(0, 5).map(x => x[1]);
+    } else {           // 同色不限團：每人留兩張、取前 16 做五人組合（同 solve_same_attr）
+      const picks = [];
+      byChar.forEach(lst => { lst.sort((x, y) => y[0] - x[0]); picks.push(...lst.slice(0, 2)); });
+      picks.sort((x, y) => y[0] - x[0]);
+      const top = picks.slice(0, 16).map(x => x[1]);
+      if (top.length <= 5) team = top;
+      else {
+        let best = null;
+        const n = top.length, idx = [0, 1, 2, 3, 4];
+        for (;;) {
+          const t = idx.map(i => top[i]);
+          if (new Set(t.map(r => r[1])).size === 5) { const m = this.smMult(this.smTeamValues(t)); if (!best || m > best.m) best = { m, t }; }
+          let k = 4; while (k >= 0 && idx[k] === n - 5 + k) k--;
+          if (k < 0) break;
+          idx[k]++; for (let j = k + 1; j < 5; j++) idx[j] = idx[j - 1] + 1;
+        }
+        team = best ? best.t : top.slice(0, 5);
+      }
+    }
+    if (!team.length) return { m: 0, cards: [], values: [], n: pool.length, chars: byChar.size };
+    const values = this.smTeamValues(team);
+    const order = values.map((v, i) => i).sort((i, j) => values[j] - values[i]);
+    return { m: this.smMult(values), cards: order.map(i => team[i]), values: order.map(i => values[i]), n: pool.length, chars: byChar.size };
   }
   smView() {
     const s = this.state, T = s.skillTable;
     const out = { isSkillMult: true, smReady: !!T, smLoading: !T && !s.dbErr, smErr: T ? '' : (s.dbErr || '') };
     if (!T) return out;
+    const own = this.ownSet(), hasOwn = own.size > 0 && !!T.tw.pool;
+    /* 「我的」倍率每格都要算，但只有持有清單或資料換了才需要重算 */
+    const mk = (s.rOwnV || 0) + '|' + (T.builtAt || 0) + '|' + own.size;
+    if (!this._smMine || this._smMine.k !== mk) this._smMine = { k: mk, c: {} };
+    const mine = key => { if (!hasOwn) return null; const c = this._smMine.c; if (!(key in c)) c[key] = this.smMine(T, key); return c[key]; };
+    out.smHasOwn = hasOwn;
     const uKey = u => this.UNIT_OF[T.units.indexOf(u)];
     const uName = u => (this.UNITS[uKey(u)] || {}).n || u;
     const uColor = u => (this.UNITS[uKey(u)] || {}).c || '#8b93ac';
@@ -9113,8 +9191,9 @@ class Component extends DCLogic {
     const cell = (k, tw, jp) => {
       const a = tw ? tw.m : null, b = jp ? jp.m : null;
       const d = (a != null && b != null) ? Math.round((b - a) * 100) / 100 : 0;
-      const on = s.smPick === k;
+      const on = s.smPick === k, me = mine(k);
       return { k, tw: fmt(a), jp: fmt(b), delta: d > 0 ? '+' + d.toFixed(2) : '', jpColor: d > 0 ? '#e0533a' : 'var(--text-3)',
+        mine: hasOwn ? (me && me.cards.length === 5 ? '我 ' + fmt(me.m) : '我 —') : '',
         bg: on ? 'color-mix(in oklab,var(--accent) 14%,transparent)' : 'transparent', ring: on ? 'inset 0 0 0 2px var(--accent)' : 'none' };
     };
     out.smAttrs = T.attrs.map(a => ({ name: aName(a), color: aColor(a) }));
@@ -9133,17 +9212,33 @@ class Component extends DCLogic {
       else { const [u, at] = k.split(':'); tw = T.tw.cells[k]; jp = T.jp.cells[k]; title = uName(u) + '・' + aName(at) + '（同團同色）'; }
       const card = (d, isJp) => ({
         name: nmOf[d.id] || d.n, ch: this.charName(d.ch), img: this.cardImg(d.jkt, d.r), v: d.v + '%',
-        type: this.SM_SKT[d.sk] || '', isNew: !!(isJp && d.new), rar: d.r === 9 ? '生日' : '★' + d.r, color: this.CHARA_COLOR[d.ch] || 'var(--border)'
+        type: this.SM_SKT[d.sk] || '', isNew: !!(isJp && d.new), rar: d.r === 9 ? '生日' : '★' + d.r, color: this.CHARA_COLOR[d.ch] || 'var(--border)',
+        owned: hasOwn && own.has(d.id), missing: hasOwn && !own.has(d.id) && !(isJp && d.new)
       });
       const deck = (c, isJp) => !c ? [] : c.deck.map((d, i) => Object.assign(card(d, isJp), { lead: i === 0, idx: i + 1 }));
       /* 同倍率替代卡：建置時已算好「換上去整隊倍率不變」的卡與它能頂的位子（s = 隊伍索引） */
       const alts = (c, isJp) => (!c || !c.alts) ? [] : c.alts.map(x => Object.assign(card(x, isJp), { slots: '可換第 ' + x.s.map(i => i + 1).join('、') + ' 張' }));
       const pool = c => (c && c.n4 != null) ? ('可用 ★4 ' + c.n4 + ' 張・' + c.chars + ' 位角色') : '';
       const twA = alts(tw, false), jpA = alts(jp, true);
+      /* 我的卡：持有清單裡符合這格條件的卡組出的最佳隊（卡名、圖從 cards-index 拿） */
+      const rowOf = {}; (s.rateCards || []).forEach(x => { rowOf[x[0]] = x; });
+      let my = null;
+      const me = mine(k);
+      if (me) {
+        const full = me.cards.length === 5;
+        my = {
+          m: full ? fmt(me.m) : '—', full, short: !full, shortText: full ? '' : ('持有的卡只有 ' + me.n + ' 張符合這格（' + me.chars + ' 位角色），湊不到五人'),
+          pool: '持有 ' + me.n + ' 張符合・' + me.chars + ' 位角色', empty: me.cards.length === 0,
+          deck: me.cards.map((r, i) => { const x = rowOf[r[0]]; return {
+            lead: i === 0, idx: i + 1, name: x ? x[7] : ('#' + r[0]), ch: this.charName(r[1]), img: x ? this.cardImg(x[8], r[4]) : '', v: me.values[i] + '%',
+            type: r[7] ? '團分' : (r[9] ? '吸技' : (r[11] ? '混團' : '')), rar: r[4] === 9 ? '生日' : '★' + r[4], color: this.CHARA_COLOR[r[1]] || 'var(--border)', owned: true, missing: false }; })
+        };
+      }
       out.smPick = { title, twM: fmt(tw && tw.m), jpM: fmt(jp && jp.m), twDeck: deck(tw, false), jpDeck: deck(jp, true), twPool: pool(tw), jpPool: pool(jp),
         twEmpty: !tw, jpEmpty: !jp, jpNew: jp ? jp.deck.filter(d => d.new).length : 0,
         twAlts: twA, jpAlts: jpA, twAltN: twA.length, jpAltN: jpA.length, twHasAlts: twA.length > 0, jpHasAlts: jpA.length > 0,
-        twNoAlts: !!tw && twA.length === 0, jpNoAlts: !!jp && jpA.length === 0 };
+        twNoAlts: !!tw && twA.length === 0, jpNoAlts: !!jp && jpA.length === 0,
+        mine: my, noOwn: !hasOwn };
     }
     out.smHasPick = !!out.smPick;
     return out;

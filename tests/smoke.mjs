@@ -14,6 +14,7 @@ const routeMdb = async ctx => { if (!MDB) return; await ctx.route(/raw\.githubus
 const CASES = [
   ['home', /首頁|近期卡池/], ['calendar', /活動日曆/], ['gacha', /卡池/], ['songs', /共 \d+ 首/], ['calc', /共用設定|活動 P/],
   ['cards', /共 [\d,]+ 項/], ['chars', /角色圖鑑/], ['fixtures', /共 [\d,]+ 項/], ['mstalk', /已看過 \d/], ['story', /活動劇情/], ['news', /遊戲公告/], ['b30', /B30/], ['account', /登入|我的帳號/], ['event', /活動總覽/], ['favs', /收藏與待辦/], ['car', /私車排班/],
+  ['skillmult', /同團同色/], ['wlsup', /WL 後排加成/], ['rank', /活動排名|排名與榜線/], ['haruki', /Haruki 專區/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {

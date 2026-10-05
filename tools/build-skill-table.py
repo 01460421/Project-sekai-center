@@ -15,6 +15,7 @@
 三種編法都算:同團同色(主表)、同團不限色、同色不限團(全角色最佳卡做組合搜尋)。
 每支隊伍另附「同倍率替代卡」:把某一張換成池裡另一張(角色不能跟其他四人重複)、整隊重算後倍率不變的卡,
 給沒有那張卡的人看自己手上哪張可以頂上。
+台服那份另外附每張卡的技能拆解(pool),讓網頁能用同一套規則算「使用者手上的卡」能組到多少。
 輸出 data/skill-table.js(ES module,export const SKILL_TABLE)。內容沒變就不寫檔(builtAt 除外)。
 
     python3 tools/build-skill-table.py
@@ -22,6 +23,7 @@
 """
 import itertools
 import json
+import os
 import pathlib
 import re
 import time
@@ -38,10 +40,45 @@ RAR = {'rarity_1': 1, 'rarity_2': 2, 'rarity_3': 3, 'rarity_4': 4, 'rarity_birth
 SL, CHAR_RANK = 4, 100
 
 
+CACHE = pathlib.Path(os.environ.get('JP_MASTER_CACHE') or (pathlib.Path(__file__).resolve().parent / '.cache' / 'jp-master'))
+_jp_rev = None
+
+
+def jp_rev():
+    """上游 sekai-master-db-diff 的 HEAD commit:同一個 commit 的檔案內容不會變,拿它當快取鍵。
+    查不到(離線、API 額度)就回 None,照舊直接抓。"""
+    global _jp_rev
+    if _jp_rev is None:
+        _jp_rev = ''
+        try:
+            headers = {'user-agent': 'pjsk-center-build/1.0', 'accept': 'application/vnd.github+json'}
+            if os.environ.get('GITHUB_TOKEN'):
+                headers['authorization'] = 'Bearer ' + os.environ['GITHUB_TOKEN']
+            req = urllib.request.Request('https://api.github.com/repos/Sekai-World/sekai-master-db-diff/commits/main', headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                _jp_rev = (json.loads(r.read()).get('sha') or '')[:12]
+        except Exception:
+            _jp_rev = ''
+    return _jp_rev or None
+
+
 def get_jp(name):
+    """日服 master。cards.json 有 34 MB,每天抓一次很浪費:上游 commit 沒變就讀本機快取
+    (CI 用 actions/cache 以 commit 當 key 保存 tools/.cache/jp-master)。"""
+    rev = jp_rev()
+    f = CACHE / rev / name if rev else None
+    if f and f.exists():
+        return json.loads(f.read_text(encoding='utf-8'))
     req = urllib.request.Request(f'{JP}/{name}', headers={'user-agent': 'pjsk-center-build/1.0'})
     with urllib.request.urlopen(req, timeout=300) as r:
-        return json.loads(r.read())
+        raw = r.read()
+    if f:
+        try:
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(raw)
+        except OSError:
+            pass
+    return json.loads(raw)
 
 
 def load(server):
@@ -226,6 +263,25 @@ def solve_same_attr(cands, unit_of, tw_ids):
     return dict(m=best[0], **pack(best[1], best[2], unit_of, tw_ids, cands))
 
 
+def pool_rows(live, unit_of):
+    """給網頁算「我的卡」用的逐卡技能拆解,一張一列(順序固定,網頁照索引讀):
+    [id, 角色, 角色本團索引, 屬性索引, 稀有度, VS 支援團索引(-1 無), basic(含角色等級型),
+     團分每人加值, 團分條件團索引(-1 無), 吸技比例, 吸技上限, 混團[[異團數, 加值]…](0 無)]"""
+    rows = []
+    for c, p in live:
+        ch = c['characterId']
+        u = UNITS.index(unit_of.get(ch, 'piapro')) if unit_of.get(ch, 'piapro') in UNITS else 5
+        su = -1
+        if ch > 20 and c.get('supportUnit') and c['supportUnit'] in UNITS:
+            su = UNITS.index(c['supportUnit'])
+        enh_per, enh_u = (p['enh'][0], UNITS.index(p['enh'][1])) if p['enh'] and p['enh'][1] in UNITS else (0, -1)
+        ab_rate, ab_cap = p['absorb'] if p['absorb'] else (0, 0)
+        uc = sorted([[int(n), v] for n, v in p['unit_cnt'].items()]) if p['unit_cnt'] else 0
+        rows.append([c['id'], ch, u, ATTRS.index(c['attr']) if c['attr'] in ATTRS else -1, RAR.get(c['cardRarityType'], 0), su,
+                     p['basic'], enh_per, enh_u, ab_rate, ab_cap, uc])
+    return rows
+
+
 def build(server, tw_ids):
     cards, skills, unit_of = load(server)
     now = time.time() * 1000
@@ -237,6 +293,8 @@ def build(server, tw_ids):
         if p:
             live.append((c, p))
     out = {'cards': len(live), 'cells': {}, 'unit': {}, 'attr': {}}
+    if server == 'tw':
+        out['pool'] = pool_rows(live, unit_of)
     for u in UNITS:
         same_u = [(c, p) for c, p in live if u in units_of(c, unit_of)]
         out['unit'][u] = solve_same_unit(same_u, u, unit_of, tw_ids)
