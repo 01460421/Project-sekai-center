@@ -3,7 +3,8 @@ name: worker-push-setup
 # 金鑰不會印在 log、也不會進 git；順便套用 sql/015_push.sql（可重複跑）。
 # 用法：Actions 頁 → worker-push-setup → Run workflow；這個檔案第一次合進 main 時也會自動跑一次。
 # 已經設過就會跳過（不會換掉金鑰，否則所有裝置的訂閱都會失效）；真的要換一組金鑰才手動跑並勾 rotate。
-# 需要跟 worker-deploy 同一組 repo secrets：CLOUDFLARE_API_TOKEN（範本「Edit Cloudflare Workers」要含 D1 編輯）、CLOUDFLARE_ACCOUNT_ID。
+# 需要跟 worker-deploy 同一組 repo secrets：CLOUDFLARE_API_TOKEN、CLOUDFLARE_ACCOUNT_ID（不必有 D1 權限：
+# 沒有的話資料表那步會跳過，由 Worker 第一次用到推播時自己建，見 worker/src/push.js 的 ensurePushSchema）。
 on:
   push:
     branches: [main]
@@ -53,10 +54,13 @@ jobs:
           else
             echo "have=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: 套用資料表（sql/015_push.sql，可重複跑）
+      - name: 套用資料表（sql/015_push.sql，可重複跑；token 沒 D1 權限就交給 Worker 自己建）
         run: |
           # CREATE … IF NOT EXISTS 本來就可重跑；ALTER TABLE 加欄位只有欄位還不在時才跑，不然 D1 會報 duplicate column
-          npx --yes wrangler d1 execute pjsk-users --remote -y --command "CREATE TABLE IF NOT EXISTS push_subs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, endpoint TEXT NOT NULL UNIQUE, p256dh TEXT, auth TEXT, ua TEXT, created_at INTEGER NOT NULL, fail_n INTEGER NOT NULL DEFAULT 0); CREATE INDEX IF NOT EXISTS idx_push_user ON push_subs(user_id);"
+          if ! npx --yes wrangler d1 execute pjsk-users --remote -y --command "CREATE TABLE IF NOT EXISTS push_subs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, endpoint TEXT NOT NULL UNIQUE, p256dh TEXT, auth TEXT, ua TEXT, created_at INTEGER NOT NULL, fail_n INTEGER NOT NULL DEFAULT 0); CREATE INDEX IF NOT EXISTS idx_push_user ON push_subs(user_id);"; then
+            echo "::notice::這把 CLOUDFLARE_API_TOKEN 動不了 D1（通常是沒勾 D1 權限），跳過；Worker 第一次用到推播時會自己建表（worker/src/push.js ensurePushSchema）。"
+            exit 0
+          fi
           if npx --yes wrangler d1 execute pjsk-users --remote -y --json --command "PRAGMA table_info(events)" | grep -q '"pushed_at"'; then
             echo "events.pushed_at 已存在"
           else

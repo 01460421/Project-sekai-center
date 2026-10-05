@@ -57,7 +57,8 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 **最簡單：GitHub Actions 一鍵設定。** repo 的 Actions 頁 → `worker-push-setup` → Run workflow
 （這個 workflow 檔第一次合進 main 時也會自動跑一次）。它會在 runner 裡產一組 VAPID 金鑰、直接 `wrangler secret put` 進 Worker（金鑰不印在 log、不進 git）、
 套用 `sql/015_push.sql`，最後確認 `/api/watch-kinds` 回 `push:true`。用的是跟 `worker-deploy`
-同一組 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`（token 要含 D1 編輯權限）。
+同一組 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`（token 沒有 D1 權限也行：資料表那步會跳過，
+Worker 第一次用到推播時會自己建，見 `src/push.js` 的 `ensurePushSchema`）。
 已經設過會自動跳過，不會換掉金鑰；真的要換才勾 `rotate`（現有裝置的訂閱會全部失效）。
 
 手動做法（任何有 Node 的機器）：

@@ -11,6 +11,24 @@ const enc = new TextEncoder();
 
 export const pushEnabled = env => !!(env && env.VAPID_PUBLIC && env.VAPID_PRIVATE);
 
+/* sql/015_push.sql 的內容由 Worker 自己套用：Worker 本來就有 D1 綁定，部署用的 API token 不一定有 D1 權限
+   （worker-push-setup 遇到 7403 就會跳過交給這裡）。一個 isolate 只跑一次；CREATE … IF NOT EXISTS 可重跑，
+   events.pushed_at 先查 PRAGMA 再加，不會撞 duplicate column。失敗就清掉快取讓下一次再試。 */
+let _schema = null;
+export function ensurePushSchema(db) {
+  if (!_schema) {
+    _schema = (async () => {
+      await db.batch([
+        db.prepare('CREATE TABLE IF NOT EXISTS push_subs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, endpoint TEXT NOT NULL UNIQUE, p256dh TEXT, auth TEXT, ua TEXT, created_at INTEGER NOT NULL, fail_n INTEGER NOT NULL DEFAULT 0)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_push_user ON push_subs(user_id)'),
+      ]);
+      const cols = (await db.prepare('PRAGMA table_info(events)').all()).results || [];
+      if (!cols.some(c => c && c.name === 'pushed_at')) await db.prepare('ALTER TABLE events ADD COLUMN pushed_at INTEGER').run();
+    })().catch(e => { _schema = null; throw e; });
+  }
+  return _schema;
+}
+
 let _key = null, _keyFor = '';
 async function signingKey(env) {
   if (_key && _keyFor === env.VAPID_PUBLIC) return _key;
@@ -40,6 +58,7 @@ export async function sendTickle(env, sub) {
 /* 給 cron：把還沒推過的事件依使用者合併，一人一輪只叮一次（同一分鐘多筆事件不會連響）。
    沒有訂閱的人也標成已推，否則每分鐘都會再撈到。 */
 export async function flushPush(env) {
+  await ensurePushSchema(env.DB);
   const rows = await pendingPushEvents(env.DB, 50);
   if (!rows.length) return { events: 0, sent: 0 };
   const byUser = {}; rows.forEach(e => { byUser[e.user_id] = 1; });
