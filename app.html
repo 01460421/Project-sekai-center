@@ -504,6 +504,54 @@ select option, select optgroup{
 .u-ffc20{font-size:13.5px !important;font-weight:800 !important;color:var(--ink) !important}
 .u-fcml21{font-size:11.5px !important;color:var(--text-3) !important;margin-top:10px !important;line-height:1.7 !important}
 .u-pfcl22{padding:20px !important;font-size:12.5px !important;color:var(--text-2) !important;line-height:1.8 !important}
+/* 玩家查詢／卡片技能庫：原生頁（原本是 iframe 嵌經典版） */
+.lu-in{flex:1;min-width:200px;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
+.lu-go{padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
+.lu-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:16px 18px}
+.lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
+.lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
+.lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+.lu-stat{padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);display:flex;flex-direction:column;gap:2px}
+.lu-stat span{font-size:11px;font-weight:700;color:var(--text-3)}
+.lu-stat b{font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--accent-deep)}
+.lu-chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.lu-char{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--bg-soft);font-size:12px;color:var(--text-2)}
+.lu-char b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cl-search{width:100%;padding:10px 15px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
+.cl-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-width:0}
+.cl-lbl{flex:none;width:40px;font-size:11.5px;font-weight:800;color:var(--text-3)}
+.cl-chips{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;min-width:0;scrollbar-width:thin}
+.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px}
+.cl-card{display:flex;flex-direction:column;gap:3px;padding:0 0 10px;border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;text-align:left;font:inherit;color:var(--text-2);cursor:pointer;min-width:0}
+.cl-im{position:relative;aspect-ratio:1;background:var(--card-2)}
+.cl-im img{width:100%;height:100%;object-fit:cover;display:block}
+.cl-rar{position:absolute;top:5px;left:5px;padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:800}
+.cl-attr{position:absolute;top:5px;right:5px;padding:2px 6px;border-radius:999px;color:#fff;font-size:9.5px;font-weight:800}
+.cl-nm{padding:8px 10px 0;font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cl-ch{padding:0 10px;font-size:11px;color:var(--text-3)}
+.cl-sk{padding:4px 10px 0;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--ink);min-width:0}
+.cl-skn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-sk4{padding:2px 10px 0;font-size:10.5px;color:var(--text-3);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cl-detail{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;margin-bottom:14px;padding:14px 16px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm)}
+.cl-arts{display:grid;grid-template-columns:1fr;gap:8px;align-content:start}
+.cl-arts img{width:100%;aspect-ratio:1.78;object-fit:cover;border-radius:12px;background:var(--card-2);display:block}
+.cl-info{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cl-title{font-size:17px;font-weight:900;color:var(--ink);line-height:1.3}
+.cl-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cl-stats div{padding:8px 6px;border-radius:12px;background:var(--bg-soft);text-align:center;display:flex;flex-direction:column;gap:2px}
+.cl-stats span{font-size:10.5px;font-weight:700;color:var(--text-3)}
+.cl-stats b{font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800;color:var(--accent-deep)}
+.cl-quote{padding-left:10px;border-left:3px solid var(--border);font-size:12.5px;color:var(--text-3);font-style:italic;line-height:1.6}
+.cl-skh{font-size:13px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cl-lv{display:grid;grid-template-columns:38px 1fr;gap:8px;font-size:12px;line-height:1.55;color:var(--text-2)}
+.cl-lv b{color:var(--accent-deep)}
+.cl-info .sm-btn{align-self:flex-start}
+@media (max-width:640px){
+  .cl-detail{grid-template-columns:1fr;gap:12px}
+  .cl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cl-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lu-chars{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 /* 月卡玩偶／加分卡參考／活動分布：原生頁（原本是 iframe 嵌經典版） */
 .dl-wrap{border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
 .dl-row{display:grid;grid-template-columns:110px 96px 120px 64px 1fr;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-2);line-height:1.5}
@@ -5536,10 +5584,46 @@ select option, select optgroup{
 
   <sc-if value="{{ isCardlib }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="cardlibFrame" data-src="./index.html?embed=cardlib" title="卡片技能庫" scrolling="no" style="width:100%;height:1400px;border:none;background:transparent;display:block"></iframe>
-    </div>
-    <div class="u-fcml21">逐張卡的技能敘述與各等級數值，資料取自官方 master（skills.json）。助手查技能時用的也是同一份。</div>
+    <div class="u-fcml21" style="margin:0 0 10px">台服全卡片的技能資料：依稀有度、屬性、技能類型、角色篩選與搜尋，點卡片看特訓前後卡面、滿等三維與 Lv.1–4 技能效果。資料：官方 master（cards／skills），每天同步；數值是各等級的技能效果值。</div>
+    <input type="search" class="cl-search" placeholder="搜尋卡名、角色、技能名、招募語…" value="{{ clQ }}" onInput="{{ onClField }}" data-k="clQ">
+    <sc-if value="{{ clReady }}">
+      <div class="cl-row"><span class="cl-lbl">稀有度</span><div class="chips-scroll cl-chips"><sc-for list="{{ clRarChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">屬性</span><div class="chips-scroll cl-chips"><sc-for list="{{ clAttrChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">技能</span><div class="chips-scroll cl-chips"><sc-for list="{{ clSkChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">角色</span><div class="chips-scroll cl-chips"><sc-for list="{{ clCharChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">排序</span><div class="chips-scroll cl-chips"><sc-for list="{{ clSortChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="u-fc2" style="margin:8px 0">{{ clCount }}</div>
+      <sc-if value="{{ clHasDetail }}">
+      <div class="cl-detail">
+        <div class="cl-arts"><img src="{{ clDetail.artN }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="特訓前卡面" onError="{{ onImgErr }}" data-fb="opacity"><sc-if value="{{ clDetail.hasT }}"><img src="{{ clDetail.artT }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="特訓後卡面" onError="{{ onImgErr }}" data-fb="opacity"></sc-if></div>
+        <div class="cl-info">
+          <div class="cl-title">{{ clDetail.name }} <span class="sm-tag">{{ clDetail.rar }}</span> <span class="sm-tag" style="background:color-mix(in oklab,{{ clDetail.attrColor }} 16%,transparent);color:{{ clDetail.attrColor }}">{{ clDetail.attr }}</span></div>
+          <div class="u-fc2">{{ clDetail.ch }}・{{ clDetail.supply }}・{{ clDetail.gacha }}・釋出 {{ clDetail.rel }}</div>
+          <div class="cl-stats"><div><span>表演</span><b>{{ clDetail.perf }}</b></div><div><span>技巧</span><b>{{ clDetail.tech }}</b></div><div><span>體力</span><b>{{ clDetail.stam }}</b></div><div><span>合計</span><b>{{ clDetail.total }}</b></div></div>
+          <sc-if value="{{ clDetail.bonus }}"><div class="u-fc2">{{ clDetail.bonus }}（滿等含特訓）</div></sc-if>
+          <sc-if value="{{ clDetail.quote }}"><div class="cl-quote">「{{ clDetail.quote }}」</div></sc-if>
+          <div class="cl-skh"><span class="sm-tag" style="background:color-mix(in oklab,{{ clDetail.groupColor }} 16%,transparent);color:{{ clDetail.groupColor }}">{{ clDetail.group }}</span> {{ clDetail.skName }}</div>
+          <sc-for list="{{ clDetail.lv }}" as="l" hint-placeholder-count="4"><div class="cl-lv"><b>{{ l.l }}</b><span>{{ l.t }}</span></div></sc-for>
+          <button type="button" class="sm-btn" onClick="{{ onClClose }}">收合</button>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clEmpty }}"><div class="empty">沒有符合條件的卡片。</div></sc-if>
+      <div class="cl-grid">
+        <sc-for list="{{ clRows }}" as="c" hint-placeholder-count="12">
+          <button type="button" class="cl-card" onClick="{{ onClPick }}" data-id="{{ c.id }}" style="box-shadow:{{ c.ring }}">
+            <div class="cl-im"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity"><span class="cl-rar">{{ c.rar }}</span><span class="cl-attr" style="background:{{ c.attrColor }}">{{ c.attr }}</span></div>
+            <div class="cl-nm">{{ c.name }}</div>
+            <div class="cl-ch">{{ c.ch }}</div>
+            <div class="cl-sk"><span class="sm-tag" style="background:color-mix(in oklab,{{ c.groupColor }} 16%,transparent);color:{{ c.groupColor }}">{{ c.group }}</span><span class="cl-skn">{{ c.skName }}</span></div>
+            <div class="cl-sk4">{{ c.sk4 }}</div>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ clMore }}"><button type="button" class="sm-btn" style="width:100%;margin-top:12px" onClick="{{ onClMore }}">再顯示 48 張</button></sc-if>
+    </sc-if>
+    <sc-if value="{{ clLoading }}"><div class="empty loading">卡片資料載入中…</div></sc-if>
+    <sc-if value="{{ clErr }}"><div class="empty">{{ clErr }}</div></sc-if>
   </div>
   </sc-if>
 
@@ -5600,10 +5684,27 @@ select option, select optgroup{
 
   <sc-if value="{{ isLookup }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="lookupFrame" data-src="./index.html?embed=lookup" title="玩家查詢" scrolling="no" style="width:100%;height:1000px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 10px">輸入遊戲內的 Player ID（純數字）查任一玩家的公開資料：名稱、等級、遊玩統計與角色等級；再一鍵看他的編組與加成，或掃過去各期前百找生涯紀錄。資料：HiSekai API；玩家沒公開個人檔案就查不到。</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <input type="text" inputmode="numeric" class="lu-in" placeholder="Player ID（數字）" value="{{ luId }}" onInput="{{ onField }}" data-k="luId" onKeyDown="{{ onLuKey }}">
+      <button type="button" class="lu-go" onClick="{{ onLuGo }}">查詢</button>
     </div>
-    <div class="u-fcml21">輸入遊戲 ID 查任一玩家的公開資料與編組。</div>
+    <sc-if value="{{ luLoad }}"><div class="empty loading">查詢中…</div></sc-if>
+    <sc-if value="{{ luErr }}"><div class="empty">{{ luErr }}</div></sc-if>
+    <sc-if value="{{ luHas }}">
+      <div class="lu-card">
+        <div class="lu-name">{{ lu.name }}</div>
+        <div class="u-fc2">ID {{ lu.id }}<sc-if value="{{ lu.twitter }}">・{{ lu.twitter }}</sc-if></div>
+        <sc-if value="{{ lu.word }}"><div class="lu-word">{{ lu.word }}</div></sc-if>
+        <sc-if value="{{ lu.hasStats }}"><div class="lu-stats"><sc-for list="{{ lu.stats }}" as="x" hint-placeholder-count="4"><div class="lu-stat"><span>{{ x.l }}</span><b>{{ x.v }}</b></div></sc-for></div></sc-if>
+        <sc-if value="{{ lu.noStats }}"><div class="u-fc2" style="margin-top:8px">此玩家未公開詳細統計資料。</div></sc-if>
+        <sc-if value="{{ lu.hasChars }}"><div class="bc-h">角色等級</div><div class="lu-chars"><sc-for list="{{ lu.chars }}" as="c" hint-placeholder-count="26"><div class="lu-char" style="border-left:3px solid {{ c.color }}"><span>{{ c.name }}</span><b>{{ c.rank }}</b></div></sc-for></div></sc-if>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <button type="button" class="lu-go" onClick="{{ onLuDeck }}">查看編組與加成</button>
+          <button type="button" class="sm-btn" style="margin:0" onClick="{{ onLuHistory }}">生涯紀錄（掃各期前百）</button>
+        </div>
+      </div>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -8468,7 +8569,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=d48c18b906"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=24d048fae1"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

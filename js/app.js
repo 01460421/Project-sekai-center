@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/05', t: '玩家查詢、卡片技能庫改為原生頁面', s: '第二批收掉 iframe：玩家查詢輸入 Player ID 看名稱、等級、遊玩統計與 26 位角色等級，一鍵接到「查看編組與加成」與「生涯紀錄」（掃各期前百），查詢結果可以分享網址；卡片技能庫改用卡片圖鑑同一份資料，稀有度、屬性、技能類型、角色、排序都是籌碼式篩選，點卡片展開特訓前後卡面、滿等三維、特訓加成、招募語與 Lv.1–4 技能效果，篩選條件也會寫進網址。兩頁都不再載經典版程式，手機不再固定高度。', p: 'cardlib' },
     { d: '2026/10/05', t: '月卡玩偶、加分卡參考、活動分布改為原生頁面', s: '這三頁原本是把經典長頁版用 iframe 嵌進來：進頁要多載一份 560 KB 的經典版程式、高度固定、手機裡捲不順、深連結進不到裡面的狀態。現在都是 App 原生頁面：月卡玩偶有同樣的 CFES／普限／輪數篩選並標出本月；加分卡參考照舊是各活動類型的組成說明；活動分布甘特圖改成由卡池資料自動決定時間範圍、重疊的卡池自動分行、跟著深色模式、手機可橫向捲動。其餘內嵌頁（計算中心、儲值、B30、卡片技能庫、玩家查詢、抽卡）之後逐頁搬。' },
     { d: '2026/10/05', t: '理論技能倍率表：接上你的持有卡', s: '在「收集率」勾選過持有卡的話，理論技能倍率表每格會多一行「我 x.xx」：用你手上符合那格條件的卡、同一套規則（SL4、角色等級 100）算出的最佳五人隊倍率；點開格子多一欄「我的卡」列出那支隊伍，理論隊伍裡你沒有的卡標「缺」，同倍率替代卡裡你有的標「有」，一眼看出差哪張、哪張可以頂。還沒勾過持有卡會引導到收集率頁。', p: 'skillmult' },
     { d: '2026/10/04', t: '理論技能倍率表：同倍率替代卡', s: '每支隊伍下面多列「同倍率替代卡」：把隊上某一張換成池裡另一張（角色不能跟其他四人重複）、整隊重算後倍率不變的卡，並標出它能頂替的位子（對應隊伍卡右上角的編號）；沒有那張卡的人可以看自己手上哪張頂得上。台服未實裝的卡一樣標出，兩服各算各的。', p: 'skillmult' },
@@ -597,6 +598,8 @@ class Component extends DCLogic {
     page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, songBpm: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     dollF: 'all', dvUnit: 'all',   // 月卡玩偶篩選、活動分布的團體篩選（原生頁，取代 iframe）
+    luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
+    clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sv: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
@@ -887,6 +890,8 @@ class Component extends DCLogic {
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
     window.addEventListener('resize', () => { if (this.state.page === 'distrib') { clearTimeout(this._dvT); this._dvT = setTimeout(() => this.dvDraw(), 80); } });
+    // 開站就在玩家查詢頁且網址帶了 ID（分享連結）：go() 的進頁鉤子不會跑，這裡補查一次
+    if (this.state.page === 'lookup' && /^\d+$/.test(String(this.state.luId || ''))) this.luLookup();
 
     import('./data/sekai-data.js?v=debc1682f8')
       .then(m => this.setState({ gachas: (m.GACHAS || []).map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] }))
@@ -951,7 +956,7 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame', 'cardlibFrame', 'lookupFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame'].forEach(id => {
         const f = document.getElementById(id);
         if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : id === 'gachaCalcFrame' ? 600 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
@@ -9109,6 +9114,98 @@ class Component extends DCLogic {
     };
   }
 
+  /* ===== 玩家查詢（原生頁；HiSekai /user/{id}/profile，各版本欄位名不一，逐一試） ===== */
+  async luLookup() {
+    const id = String(this.state.luId || '').trim();
+    if (!/^\d+$/.test(id)) { this.setState({ luErr: 'Player ID 應為純數字', luData: null }); return; }
+    if (this.state.luLoad) return;
+    this.setState({ luLoad: true, luErr: '', luData: null });
+    try {
+      const data = await this.apiFetch('/user/' + id + '/profile');
+      const u = data.user || data.userProfile || data.user_data || data.profile || data || {};
+      const gd = data.userGamedata || data.user_gamedata || u.gamedata || u;
+      const pick = (...ks) => { for (const k of ks) { if (u[k] != null) return u[k]; if (gd[k] != null) return gd[k]; if (data[k] != null) return data[k]; } return null; };
+      const name = gd.name || u.name || u.user_name || u.nickname || ('玩家 ' + id);
+      const rank = pick('rank', 'user_rank');
+      const word = pick('word', 'bio', 'profile_word', 'userProfileWord');
+      const twitter = pick('twitter_id', 'twitterId', 'twitter');
+      const power = pick('total_power', 'totalPower', 'deck_total_power', 'power') || (data.userDeck && (data.userDeck.total_power || data.userDeck.totalPower)) || null;
+      const fmt = v => typeof v === 'number' ? v.toLocaleString() : String(v);
+      const stats = [
+        ['總綜合力', power], ['玩家等級', rank != null ? 'Rank ' + rank : null], ['遊玩次數', pick('played_live_count', 'liveCount', 'total_live_count', 'playCount')],
+        ['通關次數', pick('clear_live_count', 'clearCount')], ['Full Combo', pick('full_combo_count', 'fullComboCount', 'fc_count')],
+        ['All Perfect', pick('all_perfect_count', 'allPerfectCount', 'ap_count')], ['MVP 次數', pick('mvp_count', 'mvpCount')]
+      ].filter(x => x[1] != null).map(([l, v]) => ({ l, v: fmt(v) }));
+      let chars = u.character_ranks || u.characterRanks || data.userCharacters || u.user_characters || data.characters || [];
+      if (!Array.isArray(chars)) chars = [];
+      chars = chars.map(c => ({ id: c.character_id ?? c.characterId ?? c.game_character_id ?? c.gameCharacterId ?? c.id, rank: c.character_rank ?? c.characterRank ?? c.rank ?? c.level }))
+        .filter(c => c.id != null && c.rank != null).sort((x, y) => x.id - y.id);
+      this.setState({ luLoad: false, luData: { id, name: String(name), word: word ? String(word) : '', twitter: twitter ? String(twitter) : '', stats, chars } });
+    } catch (e) {
+      this.setState({ luLoad: false, luErr: '查詢失敗：ID 不存在、玩家未公開個人檔案，或 API 暫時連不上。' + (e && e.message ? '（' + String(e.message).slice(0, 60) + '）' : '') });
+    }
+  }
+  luView() {
+    const s = this.state, d = s.luData;
+    return { luId: s.luId, luLoad: s.luLoad, luErr: s.luErr, luHas: !!d,
+      lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
+        chars: d.chars.map(c => ({ name: this.charName(c.id), rank: 'Rank ' + c.rank, color: this.CHARA_COLOR[c.id] || 'var(--border)' })), hasChars: d.chars.length > 0 } : null };
+  }
+
+  /* ===== 卡片技能庫（原生頁；資料用卡片圖鑑同一份 cards-index ＋ cards-extra，技能文字走 skillText 同一套樣板）
+     技能分類照經典版 CardModule.SKILL_CAT（以 skillId 對照官方技能表）。 */
+  CL_CAT = { 1: 'score', 2: 'score', 3: 'score', 4: 'score', 5: 'judge', 6: 'judge', 7: 'judge', 8: 'heal', 9: 'heal', 10: 'heal', 11: 'perfect', 12: 'cfes_life', 13: 'good', 14: 'birthday',
+    15: 'unit', 16: 'unit', 17: 'unit', 18: 'unit', 19: 'unit', 22: 'bfes_char', 23: 'bfes_ref', 24: 'bfes_vs' };
+  CL_GROUP = { score: ['分數提升', '#4d8ef5'], judge: ['判定強化', '#1565c0'], heal: ['體力回復', '#00897b'], perfect: ['P分', '#2e7d32'], cfes_life: ['七彩血分', '#6a1b9a'], good: ['七彩good以上', '#8e24aa'],
+    birthday: ['生日', '#d81b60'], unit: ['團分', '#00838f'], bfes_char: ['絢爛角色', '#c62828'], bfes_ref: ['絢爛吸技', '#ad1457'], bfes_vs: ['絢爛虛擬', '#e65100'] };
+  clView() {
+    const s = this.state, cards = s.rateCards || [], chars = s.rateChars || [], X = s.cardX;
+    const ready = cards.length > 0 && !!X;
+    const out = { clReady: ready, clLoading: !ready && !s.dbErr && !s.rateErr, clErr: ready ? '' : (s.dbErr || s.rateErr || ''), clQ: s.clQ || '' };
+    if (!ready) return out;
+    const ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure'];   // cards-index 的順序
+    const nmOf = {}; chars.forEach(c => { nmOf[c[0]] = c[1]; });
+    const ex = X.extra || {}, sk = X.skills || {};
+    const grp = sid => this.CL_GROUP[this.CL_CAT[sid]] || ['其他', '#8b93ac'], gkey = sid => this.CL_CAT[sid] || '';
+    const q = String(s.clQ || '').trim().toLowerCase();
+    let rows = cards.filter(c => c[9] !== 0);
+    if (s.clRar !== 'all') rows = rows.filter(c => String(c[2]) === String(s.clRar));
+    if (s.clAttr !== 'all') rows = rows.filter(c => ATTRS[c[3]] === s.clAttr);
+    if (s.clChar !== 'all') rows = rows.filter(c => String(c[1]) === String(s.clChar));
+    if (s.clSk !== 'all') rows = rows.filter(c => { const e = ex[c[0]]; return e && gkey(e[0]) === s.clSk; });
+    if (q) rows = rows.filter(c => { const e = ex[c[0]] || []; return [c[7], nmOf[c[1]], e[9], e[8]].some(t => t && String(t).toLowerCase().includes(q)); });
+    const rel = c => (ex[c[0]] || [])[1] || 0, pow = c => { const e = ex[c[0]] || []; return (e[2] || 0) + (e[3] || 0) + (e[4] || 0); };
+    const sort = s.clSort;
+    rows.sort((x, y) => sort === 'old' ? (rel(x) - rel(y) || x[0] - y[0]) : sort === 'power' ? (pow(y) - pow(x) || y[0] - x[0]) : sort === 'char' ? (x[1] - y[1] || rel(y) - rel(x)) : (rel(y) - rel(x) || y[0] - x[0]));
+    const total = rows.length, shown = rows.slice(0, s.clN || 48);
+    const rarLabel = r => r === 9 ? '生日' : '★' + r;
+    out.clRows = shown.map(c => { const e = ex[c[0]] || [], g = grp(e[0]), skill = sk[e[0]]; return {
+      id: c[0], name: c[7], ch: nmOf[c[1]] || ('#' + c[1]), img: this.cardImg(c[8], c[2]), rar: rarLabel(c[2]), attr: this.ATTR_ZH[ATTRS[c[3]]] || '', attrColor: (this.SM_ATTR[ATTRS[c[3]]] || ['', '#8b93ac'])[1],
+      group: g[0], groupColor: g[1], skName: e[9] || '', sk4: skill ? this.skillText(skill, 4, nmOf[c[1]]) : '', ring: s.clPick === c[0] ? 'inset 0 0 0 2px var(--accent)' : 'none' }; });
+    out.clCount = '共 ' + total.toLocaleString() + ' 張' + (shown.length < total ? '，顯示前 ' + shown.length + ' 張' : '');
+    out.clMore = shown.length < total; out.clEmpty = total === 0;
+    const chips = (k, list, sel) => list.map(([v, n]) => Object.assign(this._chip(v, n, sel), { k }));
+    out.clRarChips = chips('clRar', [['all', '全部'], ['4', '★4'], ['3', '★3'], ['2', '★2'], ['1', '★1'], ['9', '生日']], String(s.clRar));
+    out.clAttrChips = chips('clAttr', [['all', '全部']].concat(ATTRS.map(x => [x, this.ATTR_ZH[x]])), s.clAttr);
+    out.clSkChips = chips('clSk', [['all', '全部']].concat(Object.keys(this.CL_GROUP).map(k => [k, this.CL_GROUP[k][0]])), s.clSk);
+    out.clCharChips = chips('clChar', [['all', '全部']].concat(chars.map(c => [String(c[0]), c[1]])), String(s.clChar));
+    out.clSortChips = chips('clSort', [['new', '新→舊'], ['old', '舊→新'], ['power', '綜合力高→低'], ['char', '依角色']], s.clSort);
+    const pc = s.clPick != null ? cards.find(c => c[0] === s.clPick) : null;
+    if (pc) {
+      const e = ex[pc[0]] || [], skill = sk[e[0]], g = grp(e[0]), trained = pc[2] === 3 || pc[2] === 4;
+      const art = t => this.ASSET + '/character/member/' + pc[8] + '/card_' + (t ? 'after_training' : 'normal') + '.webp';
+      const rd = e[1] ? new Date(e[1] * 1000) : null, n = v => (v || 0).toLocaleString();
+      out.clDetail = { id: pc[0], name: pc[7], ch: nmOf[pc[1]] || '', rar: rarLabel(pc[2]), attr: this.ATTR_ZH[ATTRS[pc[3]]] || '', attrColor: (this.SM_ATTR[ATTRS[pc[3]]] || ['', '#8b93ac'])[1],
+        supply: this.SUPPLYN[pc[4]] || '', gacha: pc[6] ? '卡池可得' : '非卡池取得',
+        rel: rd ? rd.getFullYear() + '/' + String(rd.getMonth() + 1).padStart(2, '0') + '/' + String(rd.getDate()).padStart(2, '0') : '—',
+        artN: art(false), artT: trained ? art(true) : '', hasT: trained, perf: n(e[2]), tech: n(e[3]), stam: n(e[4]), total: n((e[2] || 0) + (e[3] || 0) + (e[4] || 0)),
+        bonus: e[5] ? '特訓後三維各 +' + e[5] + '／+' + e[6] + '／+' + e[7] : '', quote: e[8] && e[8] !== '-' ? e[8] : '', skName: e[9] || '', group: g[0], groupColor: g[1],
+        lv: skill ? [1, 2, 3, 4].map(l => ({ l: 'Lv.' + l, t: this.skillText(skill, l, nmOf[pc[1]]) })) : [] };
+    }
+    out.clHasDetail = !!out.clDetail;
+    return out;
+  }
+
   /* ===== 活動分布甘特圖（原生頁；照經典版 DistribModule 的取法：普限、常駐、FES、WL 池，依團體分列）
      與經典版不同的地方：時間範圍由資料決定、重疊的卡池自動分行、顏色讀 CSS 變數所以跟著深色模式。 */
   DV_UNITS = [['LN', 'ln'], ['MMJ', 'mmj'], ['VBS', 'vbs'], ['WS', 'wxs'], ['25時', 'n25'], ['VS', 'vs']];
@@ -9710,6 +9807,8 @@ class Component extends DCLogic {
     if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
+    if (p === 'cardlib') { this.loadCards(); this.loadCardX(); }
+    if (p === 'lookup') { this.loadCards(); if (/^\d+$/.test(String(this.state.luId || '')) && !this.state.luData && !this.state.luLoad) this.luLookup(); }
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); this.loadBorderModel(); }
@@ -9754,7 +9853,8 @@ class Component extends DCLogic {
   URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
-    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'] };
+    guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'],
+    lookup: ['luId'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'] };
   _urlOf(s) {
     const q = new URLSearchParams(); q.set('page', s.page);
     if (s.dbPick && this.DB_PAGES.includes(s.page)) q.set('pick', s.dbPick.kind + ':' + s.dbPick.id);   // 圖鑑詳情也能分享
@@ -11374,6 +11474,7 @@ class Component extends DCLogic {
       })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       ...(s.page === 'dolls' ? this.dollsView() : {}), ...(s.page === 'distrib' ? this.dvView() : {}),
+      ...(s.page === 'lookup' ? this.luView() : {}), ...(s.page === 'cardlib' ? this.clView() : {}),
       isArt: s.page === 'art',
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
@@ -13364,6 +13465,15 @@ class Component extends DCLogic {
       onDollF: e => this.setState({ dollF: e.currentTarget.dataset.v || 'all' }),
       onDvUnit: e => this.setState({ dvUnit: e.currentTarget.dataset.v || 'all' }),
       dvRef: el => { if (el) { this._dvCanvas = el; this.dvDraw(); } },
+      onLuGo: () => this.luLookup(),
+      onLuKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.luLookup(); } },
+      onLuDeck: () => { const d = this.state.luData; if (d) this.setState({ deckPid: d.id }); },
+      onLuHistory: () => { const d = this.state.luData; if (!d) return; this.setState({ hisInput: d.id, anaTab: 'history', hisOnly: '' }, () => { this.go('analysis'); this.loadHistory(d.id, this.state.hisSpan); }); },
+      onClField: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: e.target.value, clN: 48 }); },
+      onClChip: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: d.v, clN: 48 }); },
+      onClPick: e => { const id = +e.currentTarget.dataset.id; this.setState({ clPick: this.state.clPick === id ? null : id }); },
+      onClClose: () => this.setState({ clPick: null }),
+      onClMore: () => this.setState({ clN: (this.state.clN || 48) + 48 }),
       onMyDetail: () => {
         // WL 個榜的排名走勢圖是另一套資料源（wlSnap/wlChart，不是主榜的 rankChart），
         // 詳情面板的走勢圖只認得主榜資料，硬套會顯示錯的圖——直接導去榜線頁的 WL 個榜分頁，

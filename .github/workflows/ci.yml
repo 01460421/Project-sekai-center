@@ -21,7 +21,7 @@ jobs:
         run: python3 tools/stamp-assets.py --check
       - name: 外站圖片都要帶 referrerpolicy（素材庫對帶 Referer 的請求回 403）
         run: node tests/img-referrer.mjs
-      - name: 煙霧測試（桌機＋手機各 23 頁）
+      - name: 煙霧測試（桌機＋手機各 25 頁）
         run: |
           npm i --no-save --silent playwright@1.48.2
           npx playwright install --with-deps chromium
