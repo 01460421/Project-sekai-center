@@ -504,6 +504,35 @@ select option, select optgroup{
 .u-ffc20{font-size:13.5px !important;font-weight:800 !important;color:var(--ink) !important}
 .u-fcml21{font-size:11.5px !important;color:var(--text-3) !important;margin-top:10px !important;line-height:1.7 !important}
 .u-pfcl22{padding:20px !important;font-size:12.5px !important;color:var(--text-2) !important;line-height:1.8 !important}
+/* 月卡玩偶／加分卡參考／活動分布：原生頁（原本是 iframe 嵌經典版） */
+.dl-wrap{border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.dl-row{display:grid;grid-template-columns:110px 96px 120px 64px 1fr;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-2);line-height:1.5}
+.dl-row:last-child{border-bottom:none}
+.dl-row.head{font-size:11.5px;font-weight:800;color:var(--text-3);background:color-mix(in oklab,var(--card) 90%,var(--ink))}
+.dl-row b{color:var(--ink);font-size:14px}
+.dl-now{margin-left:6px;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--cta);color:#fff;vertical-align:middle}
+.dl-type{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.dl-ch{color:var(--ink)}
+.bc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.bc-item{padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm)}
+.bc-item h4{margin:0 0 8px;font-size:14px;font-weight:800;color:var(--ink)}
+.bc-item ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
+.bc-h{margin:18px 0 8px;font-size:14px;font-weight:800;color:var(--ink)}
+.bc-tbl{border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.bc-row{display:grid;grid-template-columns:90px 1fr 1fr;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-2);line-height:1.5}
+.bc-row:last-child{border-bottom:none}
+.bc-row b{color:var(--ink)}
+.bc-row.head{font-size:11.5px;font-weight:800;color:var(--text-3);background:color-mix(in oklab,var(--card) 90%,var(--ink))}
+.bc-row.head b{color:var(--text-3)}
+.dv-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);padding:8px}
+.dv-canvas{display:block}
+@media (max-width:640px){
+  .dl-row{grid-template-columns:1fr auto;grid-template-areas:"tw ty" "jp rd" "ch ch";gap:4px 10px;padding:10px 14px}
+  .dl-row.head{display:none}
+  .dl-tw{grid-area:tw}.dl-jp{grid-area:jp;font-size:12px;color:var(--text-3)}.dl-ty{grid-area:ty;justify-self:end}.dl-rd{grid-area:rd;justify-self:end;font-size:12px;color:var(--text-3)}.dl-ch{grid-area:ch;font-size:12.5px}
+  .bc-row{grid-template-columns:1fr;gap:2px}
+  .bc-row.head{display:none}
+}
 /* 理論技能倍率表：表格用 div 格線（模板引擎的 sc-for 不能放進 <table>） */
 .sm-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm)}
 .sm-row{display:grid;grid-template-columns:112px repeat(5,minmax(84px,1fr));align-items:stretch;border-bottom:1px solid var(--border)}
@@ -5516,19 +5545,41 @@ select option, select optgroup{
 
   <sc-if value="{{ isDolls }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="dollsFrame" data-src="./index.html?embed=dolls" title="月卡玩偶" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 10px">月卡附贈玩偶的角色輪替表（台服月份）。CFES ＝ 彩色祭、普限 ＝ 普通限定。資料來源：瑞憶春希的「豆森娃月列表」，每天自動同步。</div>
+    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+      <sc-for list="{{ dollChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onDollF }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
     </div>
-    <div class="u-fcml21">豆森娃的月列表與輪替時程。</div>
+    <sc-if value="{{ dollEmpty }}"><div class="empty loading">玩偶列表載入中…</div></sc-if>
+    <div class="dl-wrap">
+      <div class="dl-row head"><div class="dl-tw">台服月份</div><div class="dl-jp">日服月份</div><div class="dl-ty">卡池類型</div><div class="dl-rd">輪數</div><div class="dl-ch">本月角色</div></div>
+      <sc-for list="{{ dollRows }}" as="d" hint-placeholder-count="6">
+        <div class="dl-row" style="background:{{ d.bg }}"><div class="dl-tw"><b>{{ d.tw }}</b><sc-if value="{{ d.now }}"><span class="dl-now">本月</span></sc-if></div><div class="dl-jp">日服 {{ d.jp }}</div><div class="dl-ty"><span class="dl-type" style="background:{{ d.typeBg }};color:{{ d.typeFg }}">{{ d.type }}</span></div><div class="dl-rd">{{ d.round }}</div><div class="dl-ch">{{ d.chars }}</div></div>
+      </sc-for>
+    </div>
   </div>
   </sc-if>
 
   <sc-if value="{{ isBonusCards }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="bonuscardsFrame" data-src="./index.html?embed=bonuscards" title="加分卡參考" scrolling="no" style="width:100%;height:1100px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 12px">各活動類型的加分卡組成說明；每期活動的實際加分卡以官方公告為準，當期的可到「活動總覽」看該期詳情。</div>
+    <div class="bc-grid">
+      <div class="bc-item"><h4>BFES（Bloom FES）活動</h4><ul><li>主角色 BFES 卡（Bloom FES 限定）</li><li>主角色 CFES 卡（彩色祭限定）</li><li>主角色相關 V 家 CFES 卡</li><li>通常為 5 張加分卡</li></ul></div>
+      <div class="bc-item"><h4>CFES（彩色祭）活動</h4><ul><li>本期主推角色 CFES 卡</li><li>主推角色歷代 CFES 卡</li><li>對應 V 家 CFES 卡</li><li>通常為 6–8 張加分卡</li></ul></div>
+      <div class="bc-item"><h4>箱活（團體活動）</h4><ul><li>團分 1：該團最早期普限卡</li><li>團分 2：該團中期普限卡</li><li>團分 3：本期普限新卡</li><li>V 家：對應副團 CFES/BFES 卡</li></ul></div>
+      <div class="bc-item"><h4>混活（混合活動）</h4><ul><li>Banner 主角色相關普限卡</li><li>Banner 主角色 CFES/BFES 卡</li><li>對應 V 家卡</li><li>跨團體組合，共 5–7 張</li></ul></div>
+      <div class="bc-item"><h4>World Link 活動</h4><ul><li>WL 限定卡（各章節對應角色）</li><li>WL 支援池卡面</li><li>章節角色的常駐卡</li><li>終章：全員 WL 卡均加分</li></ul></div>
+      <div class="bc-item"><h4>加分卡組合建議</h4><ul><li>核心：3 張最新普限 + 2 張 V 家</li><li>FES 期：換入對應 FES 卡</li><li>WL 期：優先 WL 限定卡</li><li>備用：BFES / CFES 補滿 5 張</li></ul></div>
     </div>
-    <div class="u-fcml21">各活動的加成卡一覽。</div>
+    <div class="bc-h">特殊技能編組說明</div>
+    <div class="bc-tbl">
+      <div class="bc-row head"><b>類型</b><span>說明</span><span>備註</span></div>
+      <div class="bc-row"><b>BFES</b><span>Bloom FES 限定，每角色一張</span><span class="u-fc2">適用於該角色所有活動</span></div>
+      <div class="bc-row"><b>CFES</b><span>Colorful FES 限定，混合各團</span><span class="u-fc2">適用 CFES 活動及對應箱活</span></div>
+      <div class="bc-row"><b>團分 1</b><span>各團最舊一批普通限定卡</span><span class="u-fc2">依活動期數輪替</span></div>
+      <div class="bc-row"><b>團分 2</b><span>各團中期普通限定卡</span><span class="u-fc2">依活動期數輪替</span></div>
+      <div class="bc-row"><b>團分 3</b><span>各團最新普通限定卡（本期）</span><span class="u-fc2">每期更換</span></div>
+    </div>
+    <div class="u-fcml21">具體各期加分卡名稱請參閱 <a href="https://sekai.best/card" target="_blank" rel="noopener">Sekai.best 卡牌資料庫</a>。</div>
   </div>
   </sc-if>
 
@@ -5558,10 +5609,14 @@ select option, select optgroup{
 
   <sc-if value="{{ isDistrib }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="distribFrame" data-src="./index.html?embed=distribution" title="活動分布" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 10px">依卡池資料看各團體的普限、常駐、FES 與 WL 卡池分布（台服預測時間）：橫軸是月份，每條橫線是一期卡池，重疊的會自動分行；紅線是今天。手機可左右捲動。</div>
+    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+      <sc-for list="{{ dvChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onDvUnit }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
     </div>
-    <div class="u-fcml21">歷屆活動的時間分布甘特圖。</div>
+    <sc-if value="{{ dvEmpty }}"><div class="empty loading">卡池資料載入中…</div></sc-if>
+    <sc-if value="{{ dvNone }}"><div class="empty">卡池資料裡沒有可畫的期數。</div></sc-if>
+    <div class="dv-wrap"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas></div>
+    <div class="u-fcml21">{{ dvMeta }}</div>
   </div>
   </sc-if>
 
@@ -8413,7 +8468,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=7ecb50df15"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=d48c18b906"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

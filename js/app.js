@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/05', t: '月卡玩偶、加分卡參考、活動分布改為原生頁面', s: '這三頁原本是把經典長頁版用 iframe 嵌進來：進頁要多載一份 560 KB 的經典版程式、高度固定、手機裡捲不順、深連結進不到裡面的狀態。現在都是 App 原生頁面：月卡玩偶有同樣的 CFES／普限／輪數篩選並標出本月；加分卡參考照舊是各活動類型的組成說明；活動分布甘特圖改成由卡池資料自動決定時間範圍、重疊的卡池自動分行、跟著深色模式、手機可橫向捲動。其餘內嵌頁（計算中心、儲值、B30、卡片技能庫、玩家查詢、抽卡）之後逐頁搬。' },
     { d: '2026/10/05', t: '理論技能倍率表：接上你的持有卡', s: '在「收集率」勾選過持有卡的話，理論技能倍率表每格會多一行「我 x.xx」：用你手上符合那格條件的卡、同一套規則（SL4、角色等級 100）算出的最佳五人隊倍率；點開格子多一欄「我的卡」列出那支隊伍，理論隊伍裡你沒有的卡標「缺」，同倍率替代卡裡你有的標「有」，一眼看出差哪張、哪張可以頂。還沒勾過持有卡會引導到收集率頁。', p: 'skillmult' },
     { d: '2026/10/04', t: '理論技能倍率表：同倍率替代卡', s: '每支隊伍下面多列「同倍率替代卡」：把隊上某一張換成池裡另一張（角色不能跟其他四人重複）、整隊重算後倍率不變的卡，並標出它能頂替的位子（對應隊伍卡右上角的編號）；沒有那張卡的人可以看自己手上哪張頂得上。台服未實裝的卡一樣標出，兩服各算各的。', p: 'skillmult' },
     { d: '2026/10/04', t: '新頁：理論技能倍率表（台服當前 vs 日服最新）', s: '計算中心底下多一頁「理論技能倍率表」：六團 × 五色，每格是該團該色「同團同色」最佳五人隊的推隊倍率（技能全 SL4、角色等級 100、特訓後技能，公式照計算中心：隊長 + 100 + 其餘四人合計 ÷ 5），上排是台服當前已實裝的卡、下排是日服最新進度，日服比台服高就標紅並寫出差多少；點任一格看兩服各自的五張卡（隊長、技能值與型別，台服還沒有的卡標「台服未實裝」）。下面另有「同團不限色」與「同色不限團」兩張表。資料由每天的資料更新流程從兩服 master 重算。', p: 'skillmult' },
@@ -595,6 +596,7 @@ class Component extends DCLogic {
   state = {
     page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, songBpm: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
+    dollF: 'all', dvUnit: 'all',   // 月卡玩偶篩選、活動分布的團體篩選（原生頁，取代 iframe）
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sv: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
@@ -884,6 +886,7 @@ class Component extends DCLogic {
     this._matTimer = setInterval(() => this.setState(st => ({ matIdx: (st.matIdx + 1) % this.MATS.length })), 8000);
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
+    window.addEventListener('resize', () => { if (this.state.page === 'distrib') { clearTimeout(this._dvT); this._dvT = setTimeout(() => this.dvDraw(), 80); } });
 
     import('./data/sekai-data.js?v=debc1682f8')
       .then(m => this.setState({ gachas: (m.GACHAS || []).map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] }))
@@ -948,14 +951,14 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame', 'cardlibFrame', 'dollsFrame', 'bonuscardsFrame', 'lookupFrame', 'distribFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame', 'cardlibFrame', 'lookupFrame'].forEach(id => {
         const f = document.getElementById(id);
         if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : id === 'gachaCalcFrame' ? 600 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); if (this.state.page === 'distrib') this.dvDraw(); }
   /* 視窗開著時鎖住背景捲動（手機上滑視窗不會連底下頁面一起捲）；「顯示更多」捲到底自動按 */
   _modalSide() {
     const s = this.state;
@@ -9090,6 +9093,96 @@ class Component extends DCLogic {
   charUnit(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? this.UNIT_OF[c[2]] : ''; }
   charName(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? c[1] : ('#' + cid); }
 
+  /* ===== 月卡玩偶（原生頁；資料是 sekai-data.js 的 DOLLS，每天由 tools/sync-dolls.py 同步） ===== */
+  _chip(v, n, sel) { const on = v === sel; return { v, n, on, bd: on ? 'var(--accent)' : 'var(--border)', bg: on ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card)', fg: on ? 'var(--accent-deep)' : 'var(--text-2)' }; }
+  dollsView() {
+    const s = this.state, f = s.dollF || 'all', all = s.dolls || [];
+    const now = new Date(), cur = now.getFullYear() + '/' + String(now.getMonth() + 1).padStart(2, '0');
+    const rows = all.filter(d => f === 'all' ? true : f === 'CFES' ? (d.type === 'CFES' || d.type === '初始衣裝') : f === '普限' ? d.type === '普限' : d.round === +f);
+    const TYPE = { CFES: ['CFES 彩色祭', '#9d62d8'], '初始衣裝': ['初始衣裝', '#4d8ef5'], '普限': ['普通限定', '#ff6ba0'] };
+    const chips = [['all', '全部'], ['CFES', 'CFES'], ['普限', '普限'], ['1', '普限 輪 1'], ['2', '普限 輪 2'], ['3', '普限 輪 3'], ['4', '普限 輪 4']].map(([v, n]) => this._chip(v, n, f));
+    return {
+      dollChips: chips, dollEmpty: !all.length, dollN: rows.length,
+      dollRows: rows.map(d => { const t = TYPE[d.type] || [d.type || '—', '#8b93ac']; const isNow = d.tw === cur; return {
+        tw: d.tw, jp: d.jp, now: isNow, type: t[0], typeBg: 'color-mix(in oklab,' + t[1] + ' 16%,transparent)', typeFg: t[1],
+        round: d.round ? '輪 ' + d.round : '—', chars: d.chars || '—', bg: isNow ? 'color-mix(in oklab,var(--accent) 9%,transparent)' : 'transparent' }; })
+    };
+  }
+
+  /* ===== 活動分布甘特圖（原生頁；照經典版 DistribModule 的取法：普限、常駐、FES、WL 池，依團體分列）
+     與經典版不同的地方：時間範圍由資料決定、重疊的卡池自動分行、顏色讀 CSS 變數所以跟著深色模式。 */
+  DV_UNITS = [['LN', 'ln'], ['MMJ', 'mmj'], ['VBS', 'vbs'], ['WS', 'wxs'], ['25時', 'n25'], ['VS', 'vs']];
+  dvData() {
+    const gs = (this.state.gachas || []).filter(g => /普通限定池|常駐池|FES池|World Link池/.test(g.t || '') && g.s && g.e);
+    if (!gs.length) return null;
+    const far = new Date('2090/01/01');
+    let min = null, max = null;
+    gs.forEach(g => { const s = new Date(g.s), e = new Date(g.e); if (!min || s < min) min = s; if (e < far && (!max || e > max)) max = e; });
+    if (!max) max = new Date(min.getFullYear(), min.getMonth() + 12, 1);
+    const start = new Date(min.getFullYear(), min.getMonth(), 1);
+    let end = new Date(max.getFullYear(), max.getMonth() + 1, 1);
+    const cap = new Date(start.getFullYear(), start.getMonth() + 24, 1); if (end > cap) end = cap;
+    const bars = this.DV_UNITS.map(([u, k]) => {
+      const items = gs.filter(g => (g.u || '').includes(u)).map(g => ({ s: new Date(g.s), e: new Date(g.e), n: (g.n || '').replace(/\[.*?\]/g, '').trim(), t: g.t }))
+        .filter(g => g.e > start && g.s < end).sort((x, y) => x.s - y.s);
+      const lanes = [];   // 區間打包：放進第一條「上一期已結束」的行，沒有就開新行
+      items.forEach(g => { let l = lanes.find(L => L[L.length - 1].e <= g.s); if (!l) { l = []; lanes.push(l); } l.push(g); });
+      return { u, name: this.UNITS[k].n, color: this.UNITS[k].c, lanes: lanes.length ? lanes : [[]], n: items.length };
+    });
+    return { start, end, bars };
+  }
+  dvView() {
+    const s = this.state, sel = s.dvUnit || 'all', d = this.dvData();
+    const chips = [this._chip('all', '全部', sel)].concat(this.DV_UNITS.map(([u, k]) => this._chip(u, this.UNITS[k].n, sel)));
+    const f = t => t.getFullYear() + '/' + String(t.getMonth() + 1).padStart(2, '0');
+    return { dvChips: chips, dvEmpty: !d && !(s.gachas || []).length, dvNone: !d && !!(s.gachas || []).length,
+      dvMeta: d ? ('範圍 ' + f(d.start) + ' 至 ' + f(new Date(d.end - 1)) + '・' + d.bars.reduce((x, b) => x + b.n, 0) + ' 期卡池（普限、常駐、FES、WL 池）・資料：台服預測卡池列表') : '' };
+  }
+  dvDraw() {
+    const c = this._dvCanvas; if (!c || !c.isConnected) return;
+    const d = this.dvData(); if (!d) return;
+    const sel = this.state.dvUnit || 'all';
+    const rows = d.bars.filter(b => sel === 'all' || b.u === sel);
+    const css = getComputedStyle(document.documentElement), cv = (v, fb) => (css.getPropertyValue(v) || '').trim() || fb;
+    const ink = cv('--ink', '#1b2140'), muted = cv('--text-3', '#8b93ac'), grid = cv('--border', '#e3e6ef');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const wrap = c.parentElement, W = Math.max(860, wrap ? wrap.clientWidth - 16 : 860);
+    const padL = 100, padT = 34, padR = 14, laneH = 24, gap = 12;
+    const H = padT + rows.reduce((x, r) => x + r.lanes.length * laneH + gap, 0) + 6;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px';
+    const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    const cw = W - padL - padR, span = d.end - d.start, X = t => padL + (t - d.start) / span * cw;
+    const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    ctx.font = '11px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    for (let m = new Date(d.start); m < d.end; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+      const nx = new Date(m.getFullYear(), m.getMonth() + 1, 1), x = X(m);
+      ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, padT - 8); ctx.lineTo(x, H); ctx.stroke();
+      ctx.fillStyle = muted; ctx.fillText((m.getMonth() === 0 || m.getTime() === d.start.getTime() ? String(m.getFullYear()).slice(2) + '年' : '') + (m.getMonth() + 1) + '月', (x + Math.min(X(nx), W - padR)) / 2, padT - 12);
+    }
+    const now = new Date();
+    if (now > d.start && now < d.end) { const x = X(now); ctx.strokeStyle = '#e0533a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, padT - 8); ctx.lineTo(x, H); ctx.stroke(); ctx.fillStyle = '#e0533a'; ctx.font = 'bold 10px system-ui, -apple-system, sans-serif'; ctx.fillText('今天', x, padT - 22); }
+    let y = padT;
+    rows.forEach(r => {
+      const rh = r.lanes.length * laneH;
+      ctx.fillStyle = r.color; rr(padL - 8, y, 3, Math.max(4, rh - 5), 1.5); ctx.fill();
+      ctx.fillStyle = ink; ctx.font = 'bold 12px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(r.name, padL - 14, y + 15);
+      /* 一期卡池只有幾天，照實際長度畫在 18 個月的軸上只剩一條細線，所以條至少 12px 寬；
+         名字寫在條的右邊（到下一期開始之前的空間），放不下就不寫。 */
+      ctx.font = '10px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'left';
+      r.lanes.forEach((lane, li) => lane.forEach((g, gi) => {
+        const x1 = Math.max(padL, X(g.s)), x2 = Math.min(W - padR, X(g.e)), w = Math.max(12, x2 - x1), yy = y + li * laneH;
+        ctx.fillStyle = r.color; ctx.globalAlpha = .85; rr(x1, yy, w, laneH - 6, 4); ctx.fill(); ctx.globalAlpha = 1;
+        const nx = lane[gi + 1] ? X(lane[gi + 1].s) : W - padR, room = nx - (x1 + w) - 8;
+        if (room > 24) {
+          let t = g.n; while (t.length > 1 && ctx.measureText(t).width > room) t = t.slice(0, -1);
+          if (t.length < g.n.length) t = t.slice(0, -1) + '…';
+          ctx.fillStyle = ink; ctx.fillText(t, x1 + w + 4, yy + 12);
+        }
+      }));
+      y += rh + gap;
+    });
+  }
+
   /* ===== 理論技能倍率表 =====
      數字在建置時就算好（tools/build-skill-table.py → data/skill-table.js）：日服 cards master 有 34 MB，
      不可能在瀏覽器裡算；這裡只負責把兩服的結果排成表、把選中的格攤成兩排卡。 */
@@ -11280,6 +11373,7 @@ class Component extends DCLogic {
         };
       })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
+      ...(s.page === 'dolls' ? this.dollsView() : {}), ...(s.page === 'distrib' ? this.dvView() : {}),
       isArt: s.page === 'art',
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
@@ -13267,6 +13361,9 @@ class Component extends DCLogic {
       // 從排名詳情開啟該玩家的編組（重用 ?embed=deck 的完整引擎：真實隊伍＋綜合力＋逐卡加成）
       onRankDeck: e => { const uid = e.currentTarget.dataset.uid; if (uid) this.setState({ deckPid: uid, detail: null }); },
       onHomeBoard: e => { const v = e.currentTarget.dataset.v; this.setState({ homeBoard: v }); },
+      onDollF: e => this.setState({ dollF: e.currentTarget.dataset.v || 'all' }),
+      onDvUnit: e => this.setState({ dvUnit: e.currentTarget.dataset.v || 'all' }),
+      dvRef: el => { if (el) { this._dvCanvas = el; this.dvDraw(); } },
       onMyDetail: () => {
         // WL 個榜的排名走勢圖是另一套資料源（wlSnap/wlChart，不是主榜的 rankChart），
         // 詳情面板的走勢圖只認得主榜資料，硬套會顯示錯的圖——直接導去榜線頁的 WL 個榜分頁，
