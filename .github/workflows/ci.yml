@@ -12,7 +12,7 @@ jobs:
         with: { node-version: '22' }
       - name: 語法檢查
         run: |
-          for f in js/app.js js/ai.js js/haruki.js js/hk-deck-worker.js js/core.js support.js worker/src/*.js; do node --check "$f"; done
+          for f in js/app.js js/ai.js js/car.js js/haruki.js js/hk-deck-worker.js js/core.js support.js worker/src/*.js; do node --check "$f"; done
       - name: Worker 的 Haruki 轉換與路由
         run: node worker/test/haruki.mjs
       - name: Haruki 專區的純函式（角色任務 EXP、目前隊伍、compact 展開）
@@ -21,7 +21,7 @@ jobs:
         run: python3 tools/stamp-assets.py --check
       - name: 外站圖片都要帶 referrerpolicy（素材庫對帶 Referer 的請求回 403）
         run: node tests/img-referrer.mjs
-      - name: 煙霧測試（桌機＋手機各 20 頁）
+      - name: 煙霧測試（桌機＋手機各 26 頁）
         run: |
           npm i --no-save --silent playwright@1.48.2
           npx playwright install --with-deps chromium

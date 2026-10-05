@@ -504,6 +504,155 @@ select option, select optgroup{
 .u-ffc20{font-size:13.5px !important;font-weight:800 !important;color:var(--ink) !important}
 .u-fcml21{font-size:11.5px !important;color:var(--text-3) !important;margin-top:10px !important;line-height:1.7 !important}
 .u-pfcl22{padding:20px !important;font-size:12.5px !important;color:var(--text-2) !important;line-height:1.8 !important}
+/* 抽卡模擬：原生頁（原本是 iframe 嵌經典版；卡片樣式照經典版 .gs-*，動畫 keyframes 做兩套輪流用才會每次重播） */
+.gs-wrap{display:flex;flex-direction:column;gap:12px}
+.gs-hero{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm)}
+.gs-logo{width:150px;max-width:40%;height:auto;flex:none}
+.gs-title{font-size:16px;font-weight:900;color:var(--ink);line-height:1.3}
+.gs-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.gs-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid var(--border);border-radius:999px;font-size:11px;font-weight:800;color:var(--text-2);background:var(--bg-soft)}
+.gs-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.gs-acts{display:flex;gap:8px;flex-wrap:wrap}
+.gs-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid var(--border);border-radius:999px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sh-xs)}
+.gs-btn.gs-ghost{background:var(--card);color:var(--ink)}
+.gs-cost{font-size:10.5px;font-weight:700;opacity:.85;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.22)}
+.gs-ghost .gs-cost{background:var(--bg-soft);color:var(--text-3)}
+.gs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.gs-kpi{padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card);display:flex;flex-direction:column;gap:2px}
+.gs-kpi span{font-size:10.5px;font-weight:700;color:var(--text-3)}
+.gs-kpi b{font-family:'M PLUS Rounded 1c';font-size:17px;font-weight:800;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.gs-ceil{height:8px;border-radius:999px;background:var(--card-2);overflow:hidden;border:1px solid var(--border)}
+.gs-ceil i{display:block;height:100%;background:var(--cta);transition:width .5s}
+.gs-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;max-width:960px}
+.gs-slot{text-align:center;min-width:0}
+.gs-card{position:relative;display:block;width:100%;padding:0;border-radius:11px;overflow:hidden;cursor:pointer;border:2px solid var(--gs-c);background:var(--card-2);box-shadow:0 2px 8px rgba(0,0,0,.14);transform-origin:center;font:inherit}
+.gs-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.gs-card.gs-mini{width:72px;flex:none}
+.gs-shine{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.8) 50%,transparent 65%)}
+.gs-pu{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 0;background:#f0619e;color:#fff}
+.gs-rar{font-size:11px;font-weight:800;margin-top:5px}
+.gs-nm{font-size:10.5px;color:var(--text-3);line-height:1.35;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-stat{padding:13px 15px;border-radius:16px;background:var(--card);border:1px solid var(--border)}
+.gs-h{font-size:12.5px;font-weight:800;color:var(--ink)}
+.gs-row{display:grid;grid-template-columns:46px 1fr 54px 92px;gap:9px;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-2)}
+.gs-bar{position:relative;height:8px;border-radius:999px;background:var(--bg-soft);overflow:hidden}
+.gs-bar i{position:absolute;left:0;top:0;height:100%;border-radius:999px;transition:width .5s}
+.gs-bar u{position:absolute;top:-2px;width:2px;height:12px;background:var(--text-3);opacity:.65;text-decoration:none}
+@keyframes gsFlipA{0%{transform:rotateY(90deg) scale(.86);opacity:0}55%{transform:rotateY(0) scale(1.06);opacity:1}100%{transform:rotateY(0) scale(1)}}
+@keyframes gsFlipB{0%{transform:rotateY(90deg) scale(.86);opacity:0}55%{transform:rotateY(0) scale(1.06);opacity:1}100%{transform:rotateY(0) scale(1)}}
+@keyframes gsGlowA{0%{box-shadow:0 0 0 0 var(--gs-c)}45%{box-shadow:0 0 20px 6px var(--gs-c)}100%{box-shadow:0 2px 8px rgba(0,0,0,.14)}}
+@keyframes gsGlowB{0%{box-shadow:0 0 0 0 var(--gs-c)}45%{box-shadow:0 0 20px 6px var(--gs-c)}100%{box-shadow:0 2px 8px rgba(0,0,0,.14)}}
+@keyframes gsShine{0%{transform:translateX(-120%) skewX(-18deg)}100%{transform:translateX(240%) skewX(-18deg)}}
+@media (max-width:900px){.gs-grid{gap:9px}}
+@media (max-width:520px){.gs-grid{gap:5px}.gs-nm{display:none}.gs-row{grid-template-columns:38px 1fr 40px 80px;gap:6px}}
+@media (prefers-reduced-motion:reduce){.gs-card,.gs-shine{animation:none!important}}
+/* 卡池詳情疊層／抽卡期望與招募點數：原生（原本是 iframe 嵌經典版） */
+.gi-name{font-size:15px;font-weight:900;color:var(--ink);line-height:1.35}
+.gi-list{display:flex;flex-direction:column;gap:8px}
+.gi-card{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);text-align:left;font:inherit;color:var(--text-2);cursor:pointer;min-width:0}
+.gi-card img{width:56px;height:56px;flex:none;border-radius:12px;object-fit:cover;background:var(--card)}
+.gi-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gi-nm{font-size:13px;font-weight:800;color:var(--ink);line-height:1.35}
+.gi-sk{font-size:11.5px;color:var(--text-2)}
+.gc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.gc-box{padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px}
+.gc-h{font-size:13px;font-weight:800;color:var(--ink)}
+.gc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-2)}
+.gc-row input{width:130px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--ink);font:inherit;font-size:13px;text-align:right}
+.gc-kv{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-3);padding:4px 0;border-bottom:1px dashed var(--border)}
+.gc-kv b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+.gc-kv .gc-big{font-family:'M PLUS Rounded 1c';font-size:18px;color:var(--accent-deep)}
+.gc-chart{display:flex;align-items:flex-end;gap:2px;height:120px;margin-top:12px;padding:8px 10px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+.gc-bar{flex:1;height:100%;display:flex;align-items:flex-end;min-width:0}
+.gc-bar>div{width:100%;border-radius:3px 3px 0 0;background:color-mix(in oklab,var(--accent) 70%,transparent);transition:height .2s}
+.gc-bar:last-child>div{background:#e0533a}
+.gb-tbl{margin-top:12px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.gb-row{display:grid;grid-template-columns:56px 1.2fr 1fr 1.4fr;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-2);line-height:1.5;align-items:center}
+.gb-row:last-child{border-bottom:none}
+.gb-row b{color:var(--ink);text-align:center;font-size:14px}
+.gb-row.head{font-size:11.5px;font-weight:800;color:var(--text-3);background:color-mix(in oklab,var(--card) 90%,var(--ink))}
+@media (max-width:640px){
+  .gb-row{grid-template-columns:48px 1fr;gap:4px 10px}
+  .gb-row.head{display:none}
+  .gb-row span:nth-child(3),.gb-row span:nth-child(4){grid-column:2}
+}
+/* 玩家查詢／卡片技能庫：原生頁（原本是 iframe 嵌經典版） */
+.lu-in{flex:1;min-width:200px;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
+.lu-go{padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
+.lu-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:16px 18px}
+.lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
+.lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
+.lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+.lu-stat{padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);display:flex;flex-direction:column;gap:2px}
+.lu-stat span{font-size:11px;font-weight:700;color:var(--text-3)}
+.lu-stat b{font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--accent-deep)}
+.lu-chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.lu-char{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--bg-soft);font-size:12px;color:var(--text-2)}
+.lu-char b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cl-search{width:100%;padding:10px 15px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
+.cl-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-width:0}
+.cl-lbl{flex:none;width:40px;font-size:11.5px;font-weight:800;color:var(--text-3)}
+.cl-chips{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;min-width:0;scrollbar-width:thin}
+.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px}
+.cl-card{display:flex;flex-direction:column;gap:3px;padding:0 0 10px;border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;text-align:left;font:inherit;color:var(--text-2);cursor:pointer;min-width:0}
+.cl-im{position:relative;aspect-ratio:1;background:var(--card-2)}
+.cl-im img{width:100%;height:100%;object-fit:cover;display:block}
+.cl-rar{position:absolute;top:5px;left:5px;padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:800}
+.cl-attr{position:absolute;top:5px;right:5px;padding:2px 6px;border-radius:999px;color:#fff;font-size:9.5px;font-weight:800}
+.cl-nm{padding:8px 10px 0;font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cl-ch{padding:0 10px;font-size:11px;color:var(--text-3)}
+.cl-sk{padding:4px 10px 0;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--ink);min-width:0}
+.cl-skn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-sk4{padding:2px 10px 0;font-size:10.5px;color:var(--text-3);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cl-detail{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;margin-bottom:14px;padding:14px 16px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm)}
+.cl-arts{display:grid;grid-template-columns:1fr;gap:8px;align-content:start}
+.cl-arts img{width:100%;aspect-ratio:1.78;object-fit:cover;border-radius:12px;background:var(--card-2);display:block}
+.cl-info{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cl-title{font-size:17px;font-weight:900;color:var(--ink);line-height:1.3}
+.cl-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cl-stats div{padding:8px 6px;border-radius:12px;background:var(--bg-soft);text-align:center;display:flex;flex-direction:column;gap:2px}
+.cl-stats span{font-size:10.5px;font-weight:700;color:var(--text-3)}
+.cl-stats b{font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800;color:var(--accent-deep)}
+.cl-quote{padding-left:10px;border-left:3px solid var(--border);font-size:12.5px;color:var(--text-3);font-style:italic;line-height:1.6}
+.cl-skh{font-size:13px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cl-lv{display:grid;grid-template-columns:38px 1fr;gap:8px;font-size:12px;line-height:1.55;color:var(--text-2)}
+.cl-lv b{color:var(--accent-deep)}
+.cl-info .sm-btn{align-self:flex-start}
+@media (max-width:640px){
+  .cl-detail{grid-template-columns:1fr;gap:12px}
+  .cl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cl-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lu-chars{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* 月卡玩偶／加分卡參考／活動分布：原生頁（原本是 iframe 嵌經典版） */
+.dl-wrap{border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.dl-row{display:grid;grid-template-columns:110px 96px 120px 64px 1fr;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-2);line-height:1.5}
+.dl-row:last-child{border-bottom:none}
+.dl-row.head{font-size:11.5px;font-weight:800;color:var(--text-3);background:color-mix(in oklab,var(--card) 90%,var(--ink))}
+.dl-row b{color:var(--ink);font-size:14px}
+.dl-now{margin-left:6px;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--cta);color:#fff;vertical-align:middle}
+.dl-type{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.dl-ch{color:var(--ink)}
+.bc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.bc-item{padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm)}
+.bc-item h4{margin:0 0 8px;font-size:14px;font-weight:800;color:var(--ink)}
+.bc-item ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
+.bc-h{margin:18px 0 8px;font-size:14px;font-weight:800;color:var(--ink)}
+.bc-tbl{border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.bc-row{display:grid;grid-template-columns:90px 1fr 1fr;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-2);line-height:1.5}
+.bc-row:last-child{border-bottom:none}
+.bc-row b{color:var(--ink)}
+.bc-row.head{font-size:11.5px;font-weight:800;color:var(--text-3);background:color-mix(in oklab,var(--card) 90%,var(--ink))}
+.bc-row.head b{color:var(--text-3)}
+.dv-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);padding:8px}
+.dv-canvas{display:block}
+@media (max-width:640px){
+  .dl-row{grid-template-columns:1fr auto;grid-template-areas:"tw ty" "jp rd" "ch ch";gap:4px 10px;padding:10px 14px}
+  .dl-row.head{display:none}
+  .dl-tw{grid-area:tw}.dl-jp{grid-area:jp;font-size:12px;color:var(--text-3)}.dl-ty{grid-area:ty;justify-self:end}.dl-rd{grid-area:rd;justify-self:end;font-size:12px;color:var(--text-3)}.dl-ch{grid-area:ch;font-size:12.5px}
+  .bc-row{grid-template-columns:1fr;gap:2px}
+  .bc-row.head{display:none}
+}
 /* 理論技能倍率表：表格用 div 格線（模板引擎的 sc-for 不能放進 <table>） */
 .sm-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm)}
 .sm-row{display:grid;grid-template-columns:112px repeat(5,minmax(84px,1fr));align-items:stretch;border-bottom:1px solid var(--border)}
@@ -2335,6 +2484,16 @@ select option, select optgroup{
 
   <!-- ========== 私車排班 ========== -->
   <sc-if value="{{ isCar }}">
+  <!-- 車隊程式（js/car.js）進頁才載：載入中先給骨架，失敗可重試；本體要等 carCodeOk -->
+  <sc-if value="{{ carCodeWait }}"><div class="u-a3"><div class="car-card skel" style="height:220px;border-radius:20px"></div></div></sc-if>
+  <sc-if value="{{ carCodeErr }}">
+    <div class="u-a3"><div class="car-card" style="max-width:560px;margin:10px auto 0;padding:22px">
+      <div style="font-size:15px;font-weight:800;color:var(--ink);margin-bottom:6px">車隊程式載入失敗</div>
+      <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin-bottom:12px">{{ carCodeErr }}</div>
+      <button type="button" onClick="{{ onCarReload }}" class="car-btn">重試</button>
+    </div></div>
+  </sc-if>
+  <sc-if value="{{ carCodeOk }}">
   <div class="u-a3">
     <sc-if value="{{ carLoading }}">
       <div class="car-card skel" style="height:220px;border-radius:20px"></div>
@@ -4273,6 +4432,7 @@ select option, select optgroup{
     </sc-if>
   </div>
   </sc-if>
+  </sc-if>
 
   <!-- 菜根機器人：介紹與指令清單圖 -->
   <sc-if value="{{ isBot }}">
@@ -5507,28 +5667,86 @@ select option, select optgroup{
 
   <sc-if value="{{ isCardlib }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="cardlibFrame" data-src="./index.html?embed=cardlib" title="卡片技能庫" scrolling="no" style="width:100%;height:1400px;border:none;background:transparent;display:block"></iframe>
-    </div>
-    <div class="u-fcml21">逐張卡的技能敘述與各等級數值，資料取自官方 master（skills.json）。助手查技能時用的也是同一份。</div>
+    <div class="u-fcml21" style="margin:0 0 10px">台服全卡片的技能資料：依稀有度、屬性、技能類型、角色篩選與搜尋，點卡片看特訓前後卡面、滿等三維與 Lv.1–4 技能效果。資料：官方 master（cards／skills），每天同步；數值是各等級的技能效果值。</div>
+    <input type="search" class="cl-search" placeholder="搜尋卡名、角色、技能名、招募語…" value="{{ clQ }}" onInput="{{ onClField }}" data-k="clQ">
+    <sc-if value="{{ clReady }}">
+      <div class="cl-row"><span class="cl-lbl">稀有度</span><div class="chips-scroll cl-chips"><sc-for list="{{ clRarChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">屬性</span><div class="chips-scroll cl-chips"><sc-for list="{{ clAttrChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">技能</span><div class="chips-scroll cl-chips"><sc-for list="{{ clSkChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">角色</span><div class="chips-scroll cl-chips"><sc-for list="{{ clCharChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="cl-row"><span class="cl-lbl">排序</span><div class="chips-scroll cl-chips"><sc-for list="{{ clSortChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onClChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div></div>
+      <div class="u-fc2" style="margin:8px 0">{{ clCount }}</div>
+      <sc-if value="{{ clHasDetail }}">
+      <div class="cl-detail">
+        <div class="cl-arts"><img src="{{ clDetail.artN }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="特訓前卡面" onError="{{ onImgErr }}" data-fb="opacity"><sc-if value="{{ clDetail.hasT }}"><img src="{{ clDetail.artT }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="特訓後卡面" onError="{{ onImgErr }}" data-fb="opacity"></sc-if></div>
+        <div class="cl-info">
+          <div class="cl-title">{{ clDetail.name }} <span class="sm-tag">{{ clDetail.rar }}</span> <span class="sm-tag" style="background:color-mix(in oklab,{{ clDetail.attrColor }} 16%,transparent);color:{{ clDetail.attrColor }}">{{ clDetail.attr }}</span></div>
+          <div class="u-fc2">{{ clDetail.ch }}・{{ clDetail.supply }}・{{ clDetail.gacha }}・釋出 {{ clDetail.rel }}</div>
+          <div class="cl-stats"><div><span>表演</span><b>{{ clDetail.perf }}</b></div><div><span>技巧</span><b>{{ clDetail.tech }}</b></div><div><span>體力</span><b>{{ clDetail.stam }}</b></div><div><span>合計</span><b>{{ clDetail.total }}</b></div></div>
+          <sc-if value="{{ clDetail.bonus }}"><div class="u-fc2">{{ clDetail.bonus }}（滿等含特訓）</div></sc-if>
+          <sc-if value="{{ clDetail.quote }}"><div class="cl-quote">「{{ clDetail.quote }}」</div></sc-if>
+          <div class="cl-skh"><span class="sm-tag" style="background:color-mix(in oklab,{{ clDetail.groupColor }} 16%,transparent);color:{{ clDetail.groupColor }}">{{ clDetail.group }}</span> {{ clDetail.skName }}</div>
+          <sc-for list="{{ clDetail.lv }}" as="l" hint-placeholder-count="4"><div class="cl-lv"><b>{{ l.l }}</b><span>{{ l.t }}</span></div></sc-for>
+          <button type="button" class="sm-btn" onClick="{{ onClClose }}">收合</button>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clEmpty }}"><div class="empty">沒有符合條件的卡片。</div></sc-if>
+      <div class="cl-grid">
+        <sc-for list="{{ clRows }}" as="c" hint-placeholder-count="12">
+          <button type="button" class="cl-card" onClick="{{ onClPick }}" data-id="{{ c.id }}" style="box-shadow:{{ c.ring }}">
+            <div class="cl-im"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity"><span class="cl-rar">{{ c.rar }}</span><span class="cl-attr" style="background:{{ c.attrColor }}">{{ c.attr }}</span></div>
+            <div class="cl-nm">{{ c.name }}</div>
+            <div class="cl-ch">{{ c.ch }}</div>
+            <div class="cl-sk"><span class="sm-tag" style="background:color-mix(in oklab,{{ c.groupColor }} 16%,transparent);color:{{ c.groupColor }}">{{ c.group }}</span><span class="cl-skn">{{ c.skName }}</span></div>
+            <div class="cl-sk4">{{ c.sk4 }}</div>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ clMore }}"><button type="button" class="sm-btn" style="width:100%;margin-top:12px" onClick="{{ onClMore }}">再顯示 48 張</button></sc-if>
+    </sc-if>
+    <sc-if value="{{ clLoading }}"><div class="empty loading">卡片資料載入中…</div></sc-if>
+    <sc-if value="{{ clErr }}"><div class="empty">{{ clErr }}</div></sc-if>
   </div>
   </sc-if>
 
   <sc-if value="{{ isDolls }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="dollsFrame" data-src="./index.html?embed=dolls" title="月卡玩偶" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 10px">月卡附贈玩偶的角色輪替表（台服月份）。CFES ＝ 彩色祭、普限 ＝ 普通限定。資料來源：瑞憶春希的「豆森娃月列表」，每天自動同步。</div>
+    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+      <sc-for list="{{ dollChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onDollF }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
     </div>
-    <div class="u-fcml21">豆森娃的月列表與輪替時程。</div>
+    <sc-if value="{{ dollEmpty }}"><div class="empty loading">玩偶列表載入中…</div></sc-if>
+    <div class="dl-wrap">
+      <div class="dl-row head"><div class="dl-tw">台服月份</div><div class="dl-jp">日服月份</div><div class="dl-ty">卡池類型</div><div class="dl-rd">輪數</div><div class="dl-ch">本月角色</div></div>
+      <sc-for list="{{ dollRows }}" as="d" hint-placeholder-count="6">
+        <div class="dl-row" style="background:{{ d.bg }}"><div class="dl-tw"><b>{{ d.tw }}</b><sc-if value="{{ d.now }}"><span class="dl-now">本月</span></sc-if></div><div class="dl-jp">日服 {{ d.jp }}</div><div class="dl-ty"><span class="dl-type" style="background:{{ d.typeBg }};color:{{ d.typeFg }}">{{ d.type }}</span></div><div class="dl-rd">{{ d.round }}</div><div class="dl-ch">{{ d.chars }}</div></div>
+      </sc-for>
+    </div>
   </div>
   </sc-if>
 
   <sc-if value="{{ isBonusCards }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="bonuscardsFrame" data-src="./index.html?embed=bonuscards" title="加分卡參考" scrolling="no" style="width:100%;height:1100px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 12px">各活動類型的加分卡組成說明；每期活動的實際加分卡以官方公告為準，當期的可到「活動總覽」看該期詳情。</div>
+    <div class="bc-grid">
+      <div class="bc-item"><h4>BFES（Bloom FES）活動</h4><ul><li>主角色 BFES 卡（Bloom FES 限定）</li><li>主角色 CFES 卡（彩色祭限定）</li><li>主角色相關 V 家 CFES 卡</li><li>通常為 5 張加分卡</li></ul></div>
+      <div class="bc-item"><h4>CFES（彩色祭）活動</h4><ul><li>本期主推角色 CFES 卡</li><li>主推角色歷代 CFES 卡</li><li>對應 V 家 CFES 卡</li><li>通常為 6–8 張加分卡</li></ul></div>
+      <div class="bc-item"><h4>箱活（團體活動）</h4><ul><li>團分 1：該團最早期普限卡</li><li>團分 2：該團中期普限卡</li><li>團分 3：本期普限新卡</li><li>V 家：對應副團 CFES/BFES 卡</li></ul></div>
+      <div class="bc-item"><h4>混活（混合活動）</h4><ul><li>Banner 主角色相關普限卡</li><li>Banner 主角色 CFES/BFES 卡</li><li>對應 V 家卡</li><li>跨團體組合，共 5–7 張</li></ul></div>
+      <div class="bc-item"><h4>World Link 活動</h4><ul><li>WL 限定卡（各章節對應角色）</li><li>WL 支援池卡面</li><li>章節角色的常駐卡</li><li>終章：全員 WL 卡均加分</li></ul></div>
+      <div class="bc-item"><h4>加分卡組合建議</h4><ul><li>核心：3 張最新普限 + 2 張 V 家</li><li>FES 期：換入對應 FES 卡</li><li>WL 期：優先 WL 限定卡</li><li>備用：BFES / CFES 補滿 5 張</li></ul></div>
     </div>
-    <div class="u-fcml21">各活動的加成卡一覽。</div>
+    <div class="bc-h">特殊技能編組說明</div>
+    <div class="bc-tbl">
+      <div class="bc-row head"><b>類型</b><span>說明</span><span>備註</span></div>
+      <div class="bc-row"><b>BFES</b><span>Bloom FES 限定，每角色一張</span><span class="u-fc2">適用於該角色所有活動</span></div>
+      <div class="bc-row"><b>CFES</b><span>Colorful FES 限定，混合各團</span><span class="u-fc2">適用 CFES 活動及對應箱活</span></div>
+      <div class="bc-row"><b>團分 1</b><span>各團最舊一批普通限定卡</span><span class="u-fc2">依活動期數輪替</span></div>
+      <div class="bc-row"><b>團分 2</b><span>各團中期普通限定卡</span><span class="u-fc2">依活動期數輪替</span></div>
+      <div class="bc-row"><b>團分 3</b><span>各團最新普通限定卡（本期）</span><span class="u-fc2">每期更換</span></div>
+    </div>
+    <div class="u-fcml21">具體各期加分卡名稱請參閱 <a href="https://sekai.best/card" target="_blank" rel="noopener">Sekai.best 卡牌資料庫</a>。</div>
   </div>
   </sc-if>
 
@@ -5549,19 +5767,40 @@ select option, select optgroup{
 
   <sc-if value="{{ isLookup }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="lookupFrame" data-src="./index.html?embed=lookup" title="玩家查詢" scrolling="no" style="width:100%;height:1000px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 10px">輸入遊戲內的 Player ID（純數字）查任一玩家的公開資料：名稱、等級、遊玩統計與角色等級；再一鍵看他的編組與加成，或掃過去各期前百找生涯紀錄。資料：HiSekai API；玩家沒公開個人檔案就查不到。</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <input type="text" inputmode="numeric" class="lu-in" placeholder="Player ID（數字）" value="{{ luId }}" onInput="{{ onField }}" data-k="luId" onKeyDown="{{ onLuKey }}">
+      <button type="button" class="lu-go" onClick="{{ onLuGo }}">查詢</button>
     </div>
-    <div class="u-fcml21">輸入遊戲 ID 查任一玩家的公開資料與編組。</div>
+    <sc-if value="{{ luLoad }}"><div class="empty loading">查詢中…</div></sc-if>
+    <sc-if value="{{ luErr }}"><div class="empty">{{ luErr }}</div></sc-if>
+    <sc-if value="{{ luHas }}">
+      <div class="lu-card">
+        <div class="lu-name">{{ lu.name }}</div>
+        <div class="u-fc2">ID {{ lu.id }}<sc-if value="{{ lu.twitter }}">・{{ lu.twitter }}</sc-if></div>
+        <sc-if value="{{ lu.word }}"><div class="lu-word">{{ lu.word }}</div></sc-if>
+        <sc-if value="{{ lu.hasStats }}"><div class="lu-stats"><sc-for list="{{ lu.stats }}" as="x" hint-placeholder-count="4"><div class="lu-stat"><span>{{ x.l }}</span><b>{{ x.v }}</b></div></sc-for></div></sc-if>
+        <sc-if value="{{ lu.noStats }}"><div class="u-fc2" style="margin-top:8px">此玩家未公開詳細統計資料。</div></sc-if>
+        <sc-if value="{{ lu.hasChars }}"><div class="bc-h">角色等級</div><div class="lu-chars"><sc-for list="{{ lu.chars }}" as="c" hint-placeholder-count="26"><div class="lu-char" style="border-left:3px solid {{ c.color }}"><span>{{ c.name }}</span><b>{{ c.rank }}</b></div></sc-for></div></sc-if>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <button type="button" class="lu-go" onClick="{{ onLuDeck }}">查看編組與加成</button>
+          <button type="button" class="sm-btn" style="margin:0" onClick="{{ onLuHistory }}">生涯紀錄（掃各期前百）</button>
+        </div>
+      </div>
+    </sc-if>
   </div>
   </sc-if>
 
   <sc-if value="{{ isDistrib }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="distribFrame" data-src="./index.html?embed=distribution" title="活動分布" scrolling="no" style="width:100%;height:900px;border:none;background:transparent;display:block"></iframe>
+    <div class="u-fcml21" style="margin:0 0 10px">依卡池資料看各團體的普限、常駐、FES 與 WL 卡池分布（台服預測時間）：橫軸是月份，每條橫線是一期卡池，重疊的會自動分行；紅線是今天。手機可左右捲動。</div>
+    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+      <sc-for list="{{ dvChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onDvUnit }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
     </div>
-    <div class="u-fcml21">歷屆活動的時間分布甘特圖。</div>
+    <sc-if value="{{ dvEmpty }}"><div class="empty loading">卡池資料載入中…</div></sc-if>
+    <sc-if value="{{ dvNone }}"><div class="empty">卡池資料裡沒有可畫的期數。</div></sc-if>
+    <div class="dv-wrap"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas></div>
+    <div class="u-fcml21">{{ dvMeta }}</div>
   </div>
   </sc-if>
 
@@ -6263,16 +6502,67 @@ select option, select optgroup{
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="gachaSimFrame" data-src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
+    <sc-if value="{{ gsLoading }}"><div class="empty loading">載入台服卡池 master…</div></sc-if>
+    <sc-if value="{{ gsErr }}"><div class="empty">{{ gsErr }}</div></sc-if>
+    <sc-if value="{{ gsReady }}">
+    <div class="gs-wrap">
+      <div class="gs-hero"><sc-if value="{{ gsLogo }}"><img class="gs-logo" src="{{ gsLogo }}" referrerpolicy="no-referrer" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="hidden"></sc-if>
+        <div style="flex:1;min-width:180px"><div class="gs-title">{{ gsName }}</div><div class="u-fc2">{{ gsId }}・{{ gsPeriod }}・機率與卡池皆取自台服官方 master</div>
+          <div class="gs-pills"><sc-for list="{{ gsRates }}" as="r" hint-placeholder-count="3"><span class="gs-pill"><i class="gs-dot" style="background:{{ r.c }}"></i>{{ r.n }} {{ r.rate }}</span></sc-for><sc-if value="{{ gsHasPu }}"><span class="gs-pill" style="border-color:#f0619e;color:#f0619e"><i class="gs-dot" style="background:#f0619e"></i>PU {{ gsPuN }} 張・每張 {{ gsPuEach }}</span></sc-if></div>
+        </div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input class="lu-in" list="gsPoolList" placeholder="輸入卡池編號或名稱，按 Enter 前往（台服 master 內的池）" value="{{ gsQ }}" onInput="{{ onField }}" data-k="gsQ" onKeyDown="{{ onGsKey }}">
+        <datalist id="gsPoolList"><sc-for list="{{ gsOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
+        <button type="button" class="sm-btn" style="margin:0" onClick="{{ onGsGo }}">前往</button>
+      </div>
+      <sc-if value="{{ gsHasPu }}"><div><div class="u-fc2" style="font-weight:800;margin-bottom:6px">本期 PICK UP（點卡片到卡片技能庫看技能）</div><div style="display:flex;gap:7px;flex-wrap:wrap"><sc-for list="{{ gsPu }}" as="c" hint-placeholder-count="4"><button type="button" class="gs-card gs-mini" style="--gs-c:#f0619e" onClick="{{ onGsCard }}" data-id="{{ c.id }}" title="{{ c.name }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity"></button></sc-for></div></div></sc-if>
+      <div class="gs-acts"><sc-for list="{{ gsBtns }}" as="b" hint-placeholder-count="2"><button type="button" class="gs-btn" style="background:{{ b.bg }};color:{{ b.fg }}" onClick="{{ onGsSpin }}" data-n="{{ b.n }}" data-guard="{{ b.guard }}" data-cost="{{ b.cost }}" data-ct="{{ b.ct }}">{{ b.label }}<sc-if value="{{ b.guardLabel }}"><span class="gs-cost">{{ b.guardLabel }}</span></sc-if><span class="gs-cost">{{ b.costLabel }}</span></button></sc-for><button type="button" class="gs-btn gs-ghost" onClick="{{ onGsReset }}">重置</button></div>
+      <div class="gs-kpis"><div class="gs-kpi"><span>已抽</span><b>{{ gsPulls }}</b></div><div class="gs-kpi"><span>消耗石</span><b>{{ gsSpent }}</b></div><div class="gs-kpi"><span>★4 種類</span><b>{{ gsGot4 }}</b></div><div class="gs-kpi"><span>PU 入手</span><b>{{ gsGotPk }}</b></div><div class="gs-kpi"><span>距天井</span><b>{{ gsCeilLeft }}</b></div><div class="gs-kpi"><span>招募點數</span><b>{{ gsBpt }}</b></div></div>
+      <div class="gs-ceil"><i style="width:{{ gsCeilPct }}"></i></div>
+      <div class="u-fc2">{{ gsBptLine }}<sc-if value="{{ gsBptGot }}"><br>已領保底：{{ gsBptGot }}</sc-if></div>
+      <sc-if value="{{ gsHasHist }}"><div class="gs-grid"><sc-for list="{{ gsCells }}" as="c" hint-placeholder-count="10"><div class="gs-slot"><button type="button" class="gs-card" style="--gs-c:{{ c.col }};animation:{{ c.anim }}" onClick="{{ onGsCard }}" data-id="{{ c.id }}" title="{{ c.name }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity"><sc-if value="{{ c.pu }}"><span class="gs-pu">PICK UP</span></sc-if><sc-if value="{{ c.hi }}"><span class="gs-shine" style="animation:{{ c.shine }}"></span></sc-if></button><div class="gs-rar" style="color:{{ c.col }}">{{ c.rar }}</div><div class="gs-nm">{{ c.name }}</div></div></sc-for></div></sc-if>
+      <sc-if value="{{ gsNoHist }}"><div class="u-fc2">選好卡池後按上面的按鈕開抽。每次都是即時亂數，與遊戲同一套機率模型。</div></sc-if>
+      <sc-if value="{{ gsHasStat }}"><div class="gs-stat"><div class="gs-h">抽卡統計・累計 {{ gsTot }} 抽</div><div class="u-fc2" style="margin:2px 0 4px">長條為實際出現率，直線刻度為官方公告機率</div>
+        <sc-for list="{{ gsStat }}" as="r" hint-placeholder-count="3"><div class="gs-row"><span style="font-weight:800;color:{{ r.c }}">{{ r.n }}</span><span class="gs-bar"><i style="width:{{ r.w }};background:{{ r.c }}"></i><u style="left:{{ r.mark }}"></u></span><span class="u-t4">{{ r.got }}</span><span class="u-t4 u-fc2">{{ r.pct }} / {{ r.rate }}</span></div></sc-for>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--text-3)"><span>PU 抽中 <b>{{ gsPkHits }}</b> 次</span><span>平均 <b>{{ gsAvgGap }}</b> 抽出一張 ★4</span><span>已連續 <b>{{ gsSince4 }}</b> 抽沒 ★4</span></div></div></sc-if>
+      <div class="u-fc2">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；十連保底照 gachaBehaviors 的 over_rarity_3_once。天井以 300 抽計；招募點數付費 1 點、免費與券 0.5 點，50 點保底未持有常駐 ★4、100 點保底該池 PU（模擬器不知道你的倉庫，以本次沒抽到的代替）。只能模擬台服已實裝的池，台服還沒開的預測卡池不行。</div>
     </div>
-    <div class="u-fcml21">機率、卡池內容與保底規則全部取自官方 master 資料，不是估算值。模擬結果僅供參考。</div>
+    </sc-if>
 
-    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">抽卡期望 · 天井 · 招募點數保底</span></div>
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="gachaCalcFrame" data-src="./index.html?embed=gachacalc" title="抽卡期望與保底計算" scrolling="no" style="width:100%;height:1180px;border:none;background:transparent;display:block"></iframe>
+    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">抽卡期望 · 天井</span></div>
+    <div class="u-fcml21" style="margin:0 0 10px">機率與天井依台服現行值：★4 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶、300 貼紙天井（交換券最多抵 10 張）、生日池 100 抽。</div>
+    <div class="gc-grid">
+      <div class="gc-box"><div class="gc-h">目標</div><div class="chips-scroll cl-chips" style="margin-bottom:8px"><sc-for list="{{ gcTargets }}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{ onGcChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div><label class="gc-row"><span>持有水晶</span><input type="number" min="0" value="{{ gcCrystal }}" onInput="{{ onField }}" data-k="gcCrystal" data-num="1"></label><label class="gc-row"><span>已抽次數（貼紙）</span><input type="number" min="0" value="{{ gcPulled }}" onInput="{{ onField }}" data-k="gcPulled" data-num="1"></label><label class="gc-row"><span>持有交換券</span><input type="number" min="0" value="{{ gcVoucher }}" onInput="{{ onField }}" data-k="gcVoucher" data-num="1"></label></div>
+      <div class="gc-box"><div class="gc-h">估算結果</div>
+        <div class="gc-kv"><span>可抽次數（現有水晶）</span><b>{{ gcAfford }} 抽</b></div>
+        <div class="gc-kv"><span>預算內至少中 1 張</span><b class="gc-big">{{ gcPAff }}</b></div>
+        <div class="gc-kv"><span>期望抽數（無天井）</span><b>{{ gcENo }} 抽 ≈ {{ gcENoCry }} 水晶</b></div>
+        <div class="gc-kv"><span>期望抽數（抽到即停・天井 {{ gcCeil }}）</span><b>{{ gcECeil }} 抽</b></div>
+        <div class="gc-kv"><span>目前貼紙</span><b>{{ gcStickers }} 張（可換 {{ gcVouchers }} 券）</b></div>
+        <div class="gc-kv"><span>距天井保底</span><b class="gc-big">{{ gcToCeil }} 水晶</b></div>
+        <div class="u-fc2">{{ gcNote }}</div>
+      </div>
     </div>
-    <div class="u-fcml21">招募點數與 300 抽天井是兩套獨立的保底：天井靠貼紙換卡，招募點數則是抽卡累積點數到門檻直接發卡。付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點。</div>
+    <div class="gc-chart"><sc-for list="{{ gcBars }}" as="b" hint-placeholder-count="20"><div class="gc-bar" title="{{ b.t }}"><div style="height:{{ b.h }}%"></div></div></sc-for></div>
+    <div class="u-fcml21" style="margin-top:6px">曲線：抽數（0 → 天井 {{ gcCeil }}）對「至少中 1 張目標卡」的機率 P(N) = 1 − (1 − p)^N，滑過看數值。指定 PU 就算抽滿 300 仍約三成摃龜，靠的是天井。</div>
+
+    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">招募點數保底</span></div>
+    <div class="u-fcml21" style="margin:0 0 10px">抽卡累積「招募點數」，到門檻直接保底發卡，與 300 抽天井各自獨立。付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點（官方 master 資料）。常駐池只有 50／100 兩檔、沒有自選；四檔含自選的是 Recollection Festival 型；限定自選池的自選範圍含常駐 ★4。</div>
+    <div class="gc-grid">
+      <div class="gc-box"><div class="gc-h">卡池類型</div><div class="chips-scroll cl-chips" style="margin-bottom:8px"><sc-for list="{{ gbModes }}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{ onGcChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div><label class="gc-row"><span>目前點數</span><input type="number" min="0" value="{{ gbHave }}" onInput="{{ onField }}" data-k="gbHave" data-num="1"></label><label class="gc-row"><span>持有付費水晶</span><input type="number" min="0" value="{{ gbPaid }}" onInput="{{ onField }}" data-k="gbPaid" data-num="1"></label><label class="gc-row"><span>持有免費水晶</span><input type="number" min="0" value="{{ gbFree }}" onInput="{{ onField }}" data-k="gbFree" data-num="1"></label><label class="gc-row"><span>持有招募券</span><input type="number" min="0" value="{{ gbTicket }}" onInput="{{ onField }}" data-k="gbTicket" data-num="1"></label></div>
+      <div class="gc-box"><div class="gc-h">保底進度</div>
+        <div class="gc-kv"><span>目前點數</span><b>{{ gbHaveF }} 點</b></div>
+        <div class="gc-kv"><span>現有資源可再得</span><b>{{ gbGain }} 點</b></div>
+        <div class="u-fc2" style="margin-top:-4px">{{ gbGainNote }}</div>
+        <div class="gc-kv"><span>抽完後累計</span><b class="gc-big">{{ gbTotal }} 點</b></div>
+      </div>
+    </div>
+    <div class="gb-tbl">
+      <div class="gb-row head"><span>點數</span><span>保底獎勵</span><span>狀態</span><span>還需抽數</span></div>
+      <sc-for list="{{ gbRows }}" as="r" hint-placeholder-count="4">
+        <div class="gb-row"><b>{{ r.need }}</b><span>{{ r.rew }}</span><span style="color:{{ r.color }};font-weight:700">{{ r.state }}</span><span class="u-fc2">{{ r.way }}</span></div>
+      </sc-for>
+    </div>
   </div>
   </sc-if>
 
@@ -8079,7 +8369,26 @@ select option, select optgroup{
     <button type="button" onClick="{{ onFav }}" data-fav="{{ gachaFavData }}" title="{{ gachaFavTitle }}" aria-label="{{ gachaFavTitle }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:{{ gachaFavFg }};font-size:15px;cursor:pointer;line-height:1">{{ gachaFavMark }}</button>
     <button type="button" onClick="{{ onGachaClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
-  <iframe id="gachaInfoFrame" data-src="{{ gachaSrc }}" title="卡池詳情" scrolling="no" style="width:100%;height:400px;border:none;background:transparent;display:block"></iframe>
+  <div class="gi-name">{{ gachaInfo.name }}</div>
+  <div class="u-fc2">{{ gachaInfo.sub }}</div>
+  <sc-if value="{{ gachaInfo.mname }}"><div class="u-fc2">master 名稱：{{ gachaInfo.mname }}</div></sc-if>
+  <sc-if value="{{ gachaInfo.loading }}"><div class="empty loading">載入 PU 卡…</div></sc-if>
+  <sc-if value="{{ gachaInfo.err }}"><div class="empty">{{ gachaInfo.err }}</div></sc-if>
+  <sc-if value="{{ gachaInfo.none }}"><div class="empty">查無這期卡池的 master 資料（可能太新，等每天的資料更新）。</div></sc-if>
+  <sc-if value="{{ gachaInfo.has }}">
+    <div class="u-fc2" style="margin:10px 0 6px">PU {{ gachaInfo.n }} 張・點卡片到卡片技能庫看 Lv.1–4 技能</div>
+    <div class="gi-list">
+      <sc-for list="{{ gachaInfo.cards }}" as="c" hint-placeholder-count="4">
+        <button type="button" class="gi-card" onClick="{{ onGachaCard }}" data-id="{{ c.id }}">
+          <img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity" style="border:2px solid {{ c.color }}">
+          <div class="gi-t"><div class="gi-nm">{{ c.name }}<sc-if value="{{ c.isNew }}"> <span class="sm-tag" style="background:#e0533a;color:#fff">台服未實裝</span></sc-if></div>
+            <div class="u-fc2">{{ c.ch }}・{{ c.rar }}・<span style="color:{{ c.attrColor }};font-weight:800">{{ c.attr }}</span></div>
+            <div class="gi-sk">{{ c.skill }}</div></div>
+        </button>
+      </sc-for>
+    </div>
+    <div class="u-fc2" style="margin-top:8px">PU ＝ 當期 rate-up 卡；技能為特訓後滿等摘要。資料：兩服 master，每天更新。</div>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -8413,7 +8722,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=7ecb50df15"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a300b898af"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
