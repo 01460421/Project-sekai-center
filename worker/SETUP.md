@@ -54,7 +54,15 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 
 沒設定時「我的帳號」會顯示「站方尚未設定推播金鑰」，其他功能不受影響。
 
-1. 產一組 VAPID 金鑰（任何有 Node 的機器）：
+**最簡單：GitHub Actions 一鍵設定。** repo 的 Actions 頁 → `worker-push-setup` → Run workflow。
+它會在 runner 裡產一組 VAPID 金鑰、直接 `wrangler secret put` 進 Worker（金鑰不印在 log、不進 git）、
+套用 `sql/015_push.sql`，最後確認 `/api/watch-kinds` 回 `push:true`。用的是跟 `worker-deploy`
+同一組 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`（token 要含 D1 編輯權限）。
+已經設過會自動跳過，不會換掉金鑰；真的要換才勾 `rotate`（現有裝置的訂閱會全部失效）。
+
+手動做法（任何有 Node 的機器）：
+
+1. 產一組 VAPID 金鑰：
    ```bash
    npx web-push generate-vapid-keys
    ```
