@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/05', t: '抽卡模擬改為原生', s: '抽卡模擬不再嵌經典版：同一套官方機率模型（先依稀有度機率、再依池內 weight 加權；十連最後一抽保底 ★3；招募點數 50／100 點保底），池子直接讀台服 master，單抽與十連的按鈕照該池的 gachaBehaviors 產生，PU 每張機率、天井進度、招募點數、實際出現率對官方機率的統計都在頁上；點抽到的卡直接跳到卡片技能庫。只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。抽卡頁至此全部原生。', p: 'gachasim' },
     { d: '2026/10/05', t: '卡池詳情與抽卡期望改為原生', s: '第三批收掉 iframe：點卡池看 PU 卡面與技能的疊層改成原生——PU 卡由每天的資料更新流程從兩服 master 算好（台服還沒有的卡標出），開起來不必再等經典版程式與 34 MB 的日服卡片資料；點任一張可直接跳到卡片技能庫看 Lv.1–4 技能。抽卡頁的「抽卡期望・天井」與「招募點數保底」兩個計算器也改成原生，輸入立即重算、曲線直接畫在頁上。抽卡模擬本體還是經典版，之後再搬。', p: 'gachasim' },
     { d: '2026/10/05', t: '玩家查詢、卡片技能庫改為原生頁面', s: '第二批收掉 iframe：玩家查詢輸入 Player ID 看名稱、等級、遊玩統計與 26 位角色等級，一鍵接到「查看編組與加成」與「生涯紀錄」（掃各期前百），查詢結果可以分享網址；卡片技能庫改用卡片圖鑑同一份資料，稀有度、屬性、技能類型、角色、排序都是籌碼式篩選，點卡片展開特訓前後卡面、滿等三維、特訓加成、招募語與 Lv.1–4 技能效果，篩選條件也會寫進網址。兩頁都不再載經典版程式，手機不再固定高度。', p: 'cardlib' },
     { d: '2026/10/05', t: '月卡玩偶、加分卡參考、活動分布改為原生頁面', s: '這三頁原本是把經典長頁版用 iframe 嵌進來：進頁要多載一份 560 KB 的經典版程式、高度固定、手機裡捲不順、深連結進不到裡面的狀態。現在都是 App 原生頁面：月卡玩偶有同樣的 CFES／普限／輪數篩選並標出本月；加分卡參考照舊是各活動類型的組成說明；活動分布甘特圖改成由卡池資料自動決定時間範圍、重疊的卡池自動分行、跟著深色模式、手機可橫向捲動。其餘內嵌頁（計算中心、儲值、B30、卡片技能庫、玩家查詢、抽卡）之後逐頁搬。' },
@@ -602,6 +603,7 @@ class Component extends DCLogic {
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
+    gsList: null, gsErr: '', gsGid: '', gsQ: '', gsV: 0,   // 抽卡模擬（原生頁；池子與統計放 this._gs，gsV 只用來觸發重繪）
     gcTarget: '0.004', gcCrystal: 30000, gcPulled: 0, gcVoucher: 0, gbMode: 'normal', gbHave: 0, gbPaid: 0, gbFree: 30000, gbTicket: 0,   // 抽卡期望・天井・招募點數（原生）
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
@@ -959,9 +961,9 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'shopFrame', 'b30Frame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
@@ -1285,7 +1287,7 @@ class Component extends DCLogic {
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
     const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora', sekaiVisual: this.state.vmode || '' };
-    ['miniStudioFrame', 'deckInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+    ['miniStudioFrame', 'deckInfoFrame', 'deckProFrame', 'shopFrame', 'b30Frame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
     });
@@ -9227,6 +9229,130 @@ class Component extends DCLogic {
       loading: !s.gachaPk && !s.gachaPkErr, err: s.gachaPkErr ? '卡池資料載入失敗，請稍後再試。' : '', none: !!s.gachaPk && !pk, cards, n: cards.length, has: cards.length > 0, newN: cards.filter(c => c.isNew).length };
   }
 
+  /* ===== 抽卡模擬（原生頁；模型照經典版 GachaSim）=====
+     1. 先依 gachaCardRarityRates 抽稀有度；2. 再在該稀有度的池內依 gachaDetails 的 weight 加權抽一張（PU 的 weight 官方調成每張 0.4%）；
+     3. 十連照 gachaBehaviors 的 over_rarity_3_once：最後一抽保底 ≥★3。招募點數照 master gachaBonusPoints：付費 1 點、免費與券 0.5 點。
+     池子資料是台服 master 的 gachas.json（2.6 MB，進頁才抓），稀有度與卡名用卡片圖鑑同一份 cards-index；
+     所以只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。池子與統計放 this._gs，不進 state（十連一次只重繪一回）。 */
+  GS_RAR = { 1: ['★1', '#9aa5c5'], 2: ['★2', '#5bb8e8'], 3: ['★3', '#f0a020'], 4: ['★4', '#f0619e'], 9: ['生日', '#c07ae8'] };
+  GS_RART = { rarity_1: 1, rarity_2: 2, rarity_3: 3, rarity_4: 4, rarity_birthday: 9 };
+  GS_BPT = [[50, '未持有的常駐 ★4'], [100, '該池 PU ★4']];
+  loadGachaSim() {
+    if (this._gsP) return this._gsP;
+    this._gsP = this.tdbJson('gachas.json').then(list => {
+      const ok = (list || []).filter(g => (g.gachaDetails || []).length && (g.gachaCardRarityRates || []).length).sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
+      this.setState({ gsList: ok, gsErr: ok.length ? '' : '台服 master 裡沒有可模擬的卡池。' });
+    }).catch(() => { this._gsP = null; this.setState({ gsErr: '卡池資料載入失敗，請稍後再試。' }); });
+    return this._gsP;
+  }
+  gsCurrent() { const s = this.state, L = s.gsList || []; if (!L.length) return null; return L.find(g => String(g.id) === String(s.gsGid)) || L[0]; }
+  gsRank(r) { return r === 9 ? 4 : r; }
+  gsReset(g) {
+    g = g || this.gsCurrent(); if (!g) return null;
+    const cards = this.state.rateCards || [], rarOf = {}; cards.forEach(c => { rarOf[c[0]] = c[2]; });
+    const byRar = {};
+    (g.gachaDetails || []).forEach(d => { const r = rarOf[d.cardId]; if (!r) return; const grp = byRar[r] = byRar[r] || { items: [], total: 0 }; const w = d.weight || 1; grp.total += w; grp.items.push({ id: d.cardId, w, acc: grp.total }); });
+    const rates = (g.gachaCardRarityRates || []).filter(r => r.rate > 0).map(r => ({ r: this.GS_RART[r.cardRarityType] || 0, rate: r.rate }));
+    const pick = new Set((g.gachaPickups || []).map(p => p.cardId));
+    const std = cards.filter(c => c[4] === 0 && c[2] === 4).map(c => c[0]);   // 常駐 ★4：招募點數 50 點保底從這裡發
+    this._gs = { gid: g.id, cardsN: cards.length, byRar, rates, pick, std, hist: [], spent: 0, pulls: 0, got: {}, tally: {}, pkHits: 0, since4: 0, gaps: [], bpt: 0, bptGot: [], spinN: 0 };
+    return this._gs;
+  }
+  gsEnsure() {
+    const g = this.gsCurrent(); if (!g) return null;
+    const n = (this.state.rateCards || []).length;
+    if (!this._gs || this._gs.gid !== g.id || this._gs.cardsN !== n) this.gsReset(g);   // 換池或卡片資料剛載進來就重建
+    return this._gs;
+  }
+  gsGo() {
+    const q = String(this.state.gsQ || '').trim(), L = this.state.gsList || []; if (!q) return;
+    const hit = /^\d+$/.test(q) ? L.find(g => String(g.id) === q) : L.find(g => (g.name || '').toLowerCase().includes(q.toLowerCase()));
+    if (hit) this.setState({ gsGid: String(hit.id), gsQ: '' }); else this._toast('找不到符合的卡池（只能選台服 master 裡的池）');
+  }
+  gsRollRarity(minRank) {
+    const P = this._gs, pool = minRank ? P.rates.filter(x => this.gsRank(x.r) >= minRank) : P.rates, tot = pool.reduce((a, x) => a + x.rate, 0);
+    if (!tot) return (P.rates[P.rates.length - 1] || {}).r;
+    let x = Math.random() * tot; for (const rt of pool) { x -= rt.rate; if (x <= 0) return rt.r; } return pool[pool.length - 1].r;
+  }
+  gsDrawOne(minRank) {
+    const P = this._gs; let r = this.gsRollRarity(minRank), grp = P.byRar[r];
+    if (!grp || !grp.items.length) { const avail = P.rates.map(x => x.r).filter(k => P.byRar[k] && P.byRar[k].items.length); r = avail[avail.length - 1]; grp = P.byRar[r]; }
+    if (!grp) return null;
+    const x = Math.random() * grp.total; let lo = 0, hi = grp.items.length - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (grp.items[mid].acc < x) lo = mid + 1; else hi = mid; }
+    return { id: grp.items[lo].id, r, pu: P.pick.has(grp.items[lo].id) };
+  }
+  gsSpin(n, guard) { const out = []; for (let i = 0; i < n; i++) { const last = i === n - 1; const d = this.gsDrawOne(last && guard && !out.some(o => this.gsRank(o.r) >= guard) ? guard : 0); if (d) out.push(d); } return out; }
+  gsBptAward(tier, exclude) {
+    const P = this._gs, rarOf = {}; (this.state.rateCards || []).forEach(c => { rarOf[c[0]] = c[2]; });
+    const pool = tier >= 100 ? [...P.pick].filter(id => rarOf[id] && this.gsRank(rarOf[id]) >= 4) : P.std;
+    if (!pool.length) return null;
+    const fresh = pool.filter(id => !P.got[id] && !(exclude && exclude.has(id))), src = fresh.length ? fresh : pool, id = src[Math.floor(Math.random() * src.length)];
+    return { id, r: rarOf[id] };
+  }
+  gsDoSpin(n, guard, cost, ct) {
+    const P = this.gsEnsure(); if (!P) return;
+    const res = this.gsSpin(n, guard ? 3 : 0);
+    P.pulls += n; P.spent += cost || 0;
+    const per = /paid_jewel/.test(ct) ? 1 : /jewel|gacha_ticket/.test(ct) ? 0.5 : 0;
+    if (per > 0) {   // 招募點數保底是「包含在這 n 抽裡」，跨門檻就取代最後幾張（十連永遠 10 張）
+      const before = P.bpt; P.bpt = Math.round((P.bpt + per * n) * 10) / 10;
+      const drawn = new Set(res.map(x => x.id)); let slot = res.length - 1;
+      this.GS_BPT.forEach(([need, label]) => {
+        if (before >= need || P.bpt < need || slot < 0) return;
+        const c = this.gsBptAward(need, drawn); if (!c) return;
+        res[slot] = { id: c.id, r: c.r, pu: P.pick.has(c.id), bonus: need }; drawn.add(c.id); P.bptGot.push({ need, label, id: c.id }); slot--;
+      });
+    }
+    res.forEach(x => { P.got[x.id] = (P.got[x.id] || 0) + 1; P.tally[x.r] = (P.tally[x.r] || 0) + 1; if (x.pu) P.pkHits++; P.since4++; if (this.gsRank(x.r) >= 4) { P.gaps.push(P.since4); P.since4 = 0; } });
+    P.hist = res; P.spinN++;
+    this.setState({ gsV: (this.state.gsV || 0) + 1 });
+  }
+  gsView() {
+    const s = this.state, L = s.gsList, cards = s.rateCards || [];
+    const out = { gsLoading: !L && !s.gsErr, gsErr: s.gsErr || '', gsReady: !!(L && L.length) && cards.length > 0 && !s.gsErr, gsQ: s.gsQ || '' };
+    if (!out.gsReady) return out;
+    const g = this.gsCurrent(), P = this.gsEnsure(); if (!g || !P) { out.gsReady = false; return out; }
+    const cardOf = {}; cards.forEach(c => { cardOf[c[0]] = c; });
+    const nmOf = {}; (s.rateChars || []).forEach(c => { nmOf[c[0]] = c[1]; });
+    const RAR = this.GS_RAR;
+    const r4 = (P.rates.find(x => x.r === 4) || { rate: 0 }).rate;
+    const puW = P.byRar[4] ? P.byRar[4].items.filter(i => P.pick.has(i.id)).map(i => i.w) : [];
+    const puEach = (puW.length && P.byRar[4] && P.byRar[4].total) ? (puW.reduce((a, b) => a + b, 0) / puW.length / P.byRar[4].total * r4) : 0;
+    const pk = [...P.pick].map(id => cardOf[id]).filter(Boolean);
+    const seen = new Set(), btns = [];
+    (g.gachaBehaviors || []).filter(b => b.spinCount).forEach(b => {
+      const key = [b.spinCount, b.costResourceType, b.costResourceQuantity, b.gachaBehaviorType].join(':'); if (seen.has(key)) return; seen.add(key);
+      const guard = /over_rarity_3/.test(b.gachaBehaviorType || ''), ct = b.costResourceType || '', qty = b.costResourceQuantity, bt = b.gachaBehaviorType || '', isJewel = /jewel/.test(ct);
+      const cost = (!ct || qty == null) ? (/once_a_week/.test(bt) ? '通行證每週免費' : /once_a_day/.test(bt) ? '通行證每日免費' : '免費') : /paid_jewel/.test(ct) ? ('付費 ' + qty + ' 石') : isJewel ? (qty + ' 石') : (qty + ' 券');
+      btns.push({ n: b.spinCount, guard: guard ? '1' : '0', cost: isJewel && qty != null ? qty : 0, ct, label: b.spinCount === 1 ? '單抽' : b.spinCount + ' 連', costLabel: cost, guardLabel: guard ? '保底★3↑' : '', bg: b.spinCount === 1 ? 'var(--card)' : 'var(--cta)', fg: b.spinCount === 1 ? 'var(--ink)' : '#fff' });
+    });
+    const got4 = Object.keys(P.got).filter(id => { const c = cardOf[id]; return c && this.gsRank(c[2]) >= 4; }).length;
+    const gotPk = Object.keys(P.got).filter(id => P.pick.has(+id)).length;
+    const ceil = 300, ceilLeft = Math.max(0, ceil - P.pulls), ceilPct = Math.min(100, P.pulls / ceil * 100);
+    const flip = P.spinN % 2 ? 'gsFlipA' : 'gsFlipB', glow = P.spinN % 2 ? 'gsGlowA' : 'gsGlowB';   // 兩套同樣的 keyframes 輪流用，每次開抽動畫才會重播
+    const cells = P.hist.map((x, i) => { const c = cardOf[x.id] || [], ri = RAR[x.r] || ['?', '#888'], hi = this.gsRank(x.r) >= 4, col = x.pu ? '#f0619e' : ri[1], dly = (i * 0.07).toFixed(2) + 's';
+      return { id: x.id, img: c[8] ? this.cardImg(c[8], c[2]) : '', name: c[7] || '', rar: ri[0] + (x.bonus ? '・' + x.bonus + ' 點保底' : ''), col, pu: x.pu, hi,
+        anim: flip + ' .5s cubic-bezier(.3,1.4,.5,1) ' + dly + ' both,' + glow + ' 1.2s ease-out ' + dly + ' both', shine: hi ? ('gsShine 1s ease-out ' + (i * 0.07 + 0.35).toFixed(2) + 's both') : 'none' }; });
+    const tot = P.pulls;
+    const stat = P.rates.map(rt => { const ri = RAR[rt.r] || [rt.r, '#888'], got = P.tally[rt.r] || 0, pct = tot ? got / tot * 100 : 0, scale = Math.max(rt.rate * 2, pct * 1.15, 1);
+      return { n: ri[0], c: ri[1], got, pct: pct.toFixed(2) + '%', rate: rt.rate + '%', w: Math.min(100, pct / scale * 100).toFixed(1) + '%', mark: Math.min(100, rt.rate / scale * 100).toFixed(1) + '%' }; });
+    const nx = this.GS_BPT.find(t => P.bpt < t[0]);
+    const ms = t => { const d = new Date(t); return d.getFullYear() + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0'); };
+    Object.assign(out, {
+      gsName: g.name || ('#' + g.id), gsId: '#' + g.id, gsPeriod: g.startAt ? ms(g.startAt) + (g.endAt && g.endAt < 4e12 ? ' ～ ' + ms(g.endAt) : ' 起') : '',
+      gsLogo: g.assetbundleName ? this.ASSET + '/gacha/' + g.assetbundleName + '/logo/logo.webp' : '',
+      gsRates: P.rates.map(rt => ({ n: (RAR[rt.r] || [rt.r])[0], c: (RAR[rt.r] || ['', '#888'])[1], rate: rt.rate + '%' })),
+      gsHasPu: pk.length > 0, gsPuN: pk.length, gsPuEach: puEach.toFixed(2) + '%', gsPu: pk.map(c => ({ id: c[0], img: this.cardImg(c[8], c[2]), name: c[7] })),
+      gsBtns: btns, gsOpts: L.slice(0, 60).map(x => ({ v: String(x.id), n: '#' + x.id + ' ' + (x.name || '') })),
+      gsPulls: P.pulls.toLocaleString(), gsSpent: P.spent.toLocaleString(), gsGot4: got4, gsGotPk: gotPk + '/' + pk.length, gsCeilLeft: ceilLeft, gsBpt: P.bpt, gsCeilPct: ceilPct.toFixed(1) + '%',
+      gsBptLine: nx ? ('招募點數 ' + P.bpt + '，距 ' + nx[0] + ' 點（' + nx[1] + '）還差 ' + (Math.round((nx[0] - P.bpt) * 10) / 10) + ' 點') : ('招募點數 ' + P.bpt + '，兩檔保底都已達成'),
+      gsBptGot: P.bptGot.map(b => b.need + ' 點 → ' + ((cardOf[b.id] || [])[7] || '★4')).join('　'),
+      gsCells: cells, gsHasHist: cells.length > 0, gsNoHist: cells.length === 0, gsTot: tot, gsHasStat: tot > 0, gsStat: stat, gsPkHits: P.pkHits, gsAvgGap: P.gaps.length ? (P.gaps.reduce((a, b) => a + b, 0) / P.gaps.length).toFixed(1) : '—', gsSince4: P.since4
+    });
+    return out;
+  }
+
   /* ===== 抽卡期望・天井＋招募點數保底（原生；公式照經典版 GachaCalc／GachaBonus） =====
      機率與天井依台服現行值：★4 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶、300 貼紙天井（交換券最多抵 10 張＝100 貼紙）、生日池 100 抽。
      招募點數：付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點（master gachaBonusPoints）；門檻依池型。 */
@@ -9867,6 +9993,7 @@ class Component extends DCLogic {
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
     if (p === 'cardlib') { this.loadCards(); this.loadCardX(); }
+    if (p === 'gachasim') { this.loadGachaSim(); this.loadCards(); }
     if (p === 'lookup') { this.loadCards(); if (/^\d+$/.test(String(this.state.luId || '')) && !this.state.luData && !this.state.luLoad) this.luLookup(); }
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
@@ -9913,7 +10040,7 @@ class Component extends DCLogic {
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
     guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'],
-    lookup: ['luId'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'] };
+    lookup: ['luId'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'], gachasim: ['gsGid'] };
   _urlOf(s) {
     const q = new URLSearchParams(); q.set('page', s.page);
     if (s.dbPick && this.DB_PAGES.includes(s.page)) q.set('pick', s.dbPick.kind + ':' + s.dbPick.id);   // 圖鑑詳情也能分享
@@ -11533,7 +11660,7 @@ class Component extends DCLogic {
       })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       ...(s.page === 'dolls' ? this.dollsView() : {}), ...(s.page === 'distrib' ? this.dvView() : {}),
-      ...(s.page === 'lookup' ? this.luView() : {}), ...(s.page === 'cardlib' ? this.clView() : {}), ...(s.page === 'gachasim' ? this.gcView() : {}),
+      ...(s.page === 'lookup' ? this.luView() : {}), ...(s.page === 'cardlib' ? this.clView() : {}), ...(s.page === 'gachasim' ? Object.assign(this.gcView(), this.gsView()) : {}),
       isArt: s.page === 'art',
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
@@ -13534,6 +13661,11 @@ class Component extends DCLogic {
       onClClose: () => this.setState({ clPick: null }),
       onClMore: () => this.setState({ clN: (this.state.clN || 48) + 48 }),
       onGcChip: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: d.v }); },
+      onGsSpin: e => { const d = e.currentTarget.dataset; this.gsDoSpin(+d.n || 1, d.guard === '1', +d.cost || 0, d.ct || ''); },
+      onGsReset: () => { this.gsReset(); this.setState({ gsV: (this.state.gsV || 0) + 1 }); },
+      onGsGo: () => this.gsGo(),
+      onGsKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.gsGo(); } },
+      onGsCard: e => { const id = +e.currentTarget.dataset.id; if (id) this.setState({ clPick: id, clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clN: 48 }, () => this.go('cardlib')); },
       onGachaCard: e => { const id = +e.currentTarget.dataset.id; if (!id) return; this.setState({ gachaGid: null, clPick: id, clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clN: 48 }, () => this.go('cardlib')); },
       onMyDetail: () => {
         // WL 個榜的排名走勢圖是另一套資料源（wlSnap/wlChart，不是主榜的 rankChart），

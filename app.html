@@ -504,6 +504,48 @@ select option, select optgroup{
 .u-ffc20{font-size:13.5px !important;font-weight:800 !important;color:var(--ink) !important}
 .u-fcml21{font-size:11.5px !important;color:var(--text-3) !important;margin-top:10px !important;line-height:1.7 !important}
 .u-pfcl22{padding:20px !important;font-size:12.5px !important;color:var(--text-2) !important;line-height:1.8 !important}
+/* 抽卡模擬：原生頁（原本是 iframe 嵌經典版；卡片樣式照經典版 .gs-*，動畫 keyframes 做兩套輪流用才會每次重播） */
+.gs-wrap{display:flex;flex-direction:column;gap:12px}
+.gs-hero{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm)}
+.gs-logo{width:150px;max-width:40%;height:auto;flex:none}
+.gs-title{font-size:16px;font-weight:900;color:var(--ink);line-height:1.3}
+.gs-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.gs-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid var(--border);border-radius:999px;font-size:11px;font-weight:800;color:var(--text-2);background:var(--bg-soft)}
+.gs-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.gs-acts{display:flex;gap:8px;flex-wrap:wrap}
+.gs-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid var(--border);border-radius:999px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sh-xs)}
+.gs-btn.gs-ghost{background:var(--card);color:var(--ink)}
+.gs-cost{font-size:10.5px;font-weight:700;opacity:.85;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.22)}
+.gs-ghost .gs-cost{background:var(--bg-soft);color:var(--text-3)}
+.gs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.gs-kpi{padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card);display:flex;flex-direction:column;gap:2px}
+.gs-kpi span{font-size:10.5px;font-weight:700;color:var(--text-3)}
+.gs-kpi b{font-family:'M PLUS Rounded 1c';font-size:17px;font-weight:800;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.gs-ceil{height:8px;border-radius:999px;background:var(--card-2);overflow:hidden;border:1px solid var(--border)}
+.gs-ceil i{display:block;height:100%;background:var(--cta);transition:width .5s}
+.gs-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;max-width:960px}
+.gs-slot{text-align:center;min-width:0}
+.gs-card{position:relative;display:block;width:100%;padding:0;border-radius:11px;overflow:hidden;cursor:pointer;border:2px solid var(--gs-c);background:var(--card-2);box-shadow:0 2px 8px rgba(0,0,0,.14);transform-origin:center;font:inherit}
+.gs-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.gs-card.gs-mini{width:72px;flex:none}
+.gs-shine{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.8) 50%,transparent 65%)}
+.gs-pu{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 0;background:#f0619e;color:#fff}
+.gs-rar{font-size:11px;font-weight:800;margin-top:5px}
+.gs-nm{font-size:10.5px;color:var(--text-3);line-height:1.35;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-stat{padding:13px 15px;border-radius:16px;background:var(--card);border:1px solid var(--border)}
+.gs-h{font-size:12.5px;font-weight:800;color:var(--ink)}
+.gs-row{display:grid;grid-template-columns:46px 1fr 54px 92px;gap:9px;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-2)}
+.gs-bar{position:relative;height:8px;border-radius:999px;background:var(--bg-soft);overflow:hidden}
+.gs-bar i{position:absolute;left:0;top:0;height:100%;border-radius:999px;transition:width .5s}
+.gs-bar u{position:absolute;top:-2px;width:2px;height:12px;background:var(--text-3);opacity:.65;text-decoration:none}
+@keyframes gsFlipA{0%{transform:rotateY(90deg) scale(.86);opacity:0}55%{transform:rotateY(0) scale(1.06);opacity:1}100%{transform:rotateY(0) scale(1)}}
+@keyframes gsFlipB{0%{transform:rotateY(90deg) scale(.86);opacity:0}55%{transform:rotateY(0) scale(1.06);opacity:1}100%{transform:rotateY(0) scale(1)}}
+@keyframes gsGlowA{0%{box-shadow:0 0 0 0 var(--gs-c)}45%{box-shadow:0 0 20px 6px var(--gs-c)}100%{box-shadow:0 2px 8px rgba(0,0,0,.14)}}
+@keyframes gsGlowB{0%{box-shadow:0 0 0 0 var(--gs-c)}45%{box-shadow:0 0 20px 6px var(--gs-c)}100%{box-shadow:0 2px 8px rgba(0,0,0,.14)}}
+@keyframes gsShine{0%{transform:translateX(-120%) skewX(-18deg)}100%{transform:translateX(240%) skewX(-18deg)}}
+@media (max-width:900px){.gs-grid{gap:9px}}
+@media (max-width:520px){.gs-grid{gap:5px}.gs-nm{display:none}.gs-row{grid-template-columns:38px 1fr 40px 80px;gap:6px}}
+@media (prefers-reduced-motion:reduce){.gs-card,.gs-shine{animation:none!important}}
 /* 卡池詳情疊層／抽卡期望與招募點數：原生（原本是 iframe 嵌經典版） */
 .gi-name{font-size:15px;font-weight:900;color:var(--ink);line-height:1.35}
 .gi-list{display:flex;flex-direction:column;gap:8px}
@@ -6449,10 +6491,32 @@ select option, select optgroup{
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
   <div class="u-a3">
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="gachaSimFrame" data-src="./index.html?embed=gachasim" title="抽卡模擬" scrolling="no" style="width:100%;height:760px;border:none;background:transparent;display:block"></iframe>
+    <sc-if value="{{ gsLoading }}"><div class="empty loading">載入台服卡池 master…</div></sc-if>
+    <sc-if value="{{ gsErr }}"><div class="empty">{{ gsErr }}</div></sc-if>
+    <sc-if value="{{ gsReady }}">
+    <div class="gs-wrap">
+      <div class="gs-hero"><sc-if value="{{ gsLogo }}"><img class="gs-logo" src="{{ gsLogo }}" referrerpolicy="no-referrer" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="hidden"></sc-if>
+        <div style="flex:1;min-width:180px"><div class="gs-title">{{ gsName }}</div><div class="u-fc2">{{ gsId }}・{{ gsPeriod }}・機率與卡池皆取自台服官方 master</div>
+          <div class="gs-pills"><sc-for list="{{ gsRates }}" as="r" hint-placeholder-count="3"><span class="gs-pill"><i class="gs-dot" style="background:{{ r.c }}"></i>{{ r.n }} {{ r.rate }}</span></sc-for><sc-if value="{{ gsHasPu }}"><span class="gs-pill" style="border-color:#f0619e;color:#f0619e"><i class="gs-dot" style="background:#f0619e"></i>PU {{ gsPuN }} 張・每張 {{ gsPuEach }}</span></sc-if></div>
+        </div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input class="lu-in" list="gsPoolList" placeholder="輸入卡池編號或名稱，按 Enter 前往（台服 master 內的池）" value="{{ gsQ }}" onInput="{{ onField }}" data-k="gsQ" onKeyDown="{{ onGsKey }}">
+        <datalist id="gsPoolList"><sc-for list="{{ gsOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
+        <button type="button" class="sm-btn" style="margin:0" onClick="{{ onGsGo }}">前往</button>
+      </div>
+      <sc-if value="{{ gsHasPu }}"><div><div class="u-fc2" style="font-weight:800;margin-bottom:6px">本期 PICK UP（點卡片到卡片技能庫看技能）</div><div style="display:flex;gap:7px;flex-wrap:wrap"><sc-for list="{{ gsPu }}" as="c" hint-placeholder-count="4"><button type="button" class="gs-card gs-mini" style="--gs-c:#f0619e" onClick="{{ onGsCard }}" data-id="{{ c.id }}" title="{{ c.name }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity"></button></sc-for></div></div></sc-if>
+      <div class="gs-acts"><sc-for list="{{ gsBtns }}" as="b" hint-placeholder-count="2"><button type="button" class="gs-btn" style="background:{{ b.bg }};color:{{ b.fg }}" onClick="{{ onGsSpin }}" data-n="{{ b.n }}" data-guard="{{ b.guard }}" data-cost="{{ b.cost }}" data-ct="{{ b.ct }}">{{ b.label }}<sc-if value="{{ b.guardLabel }}"><span class="gs-cost">{{ b.guardLabel }}</span></sc-if><span class="gs-cost">{{ b.costLabel }}</span></button></sc-for><button type="button" class="gs-btn gs-ghost" onClick="{{ onGsReset }}">重置</button></div>
+      <div class="gs-kpis"><div class="gs-kpi"><span>已抽</span><b>{{ gsPulls }}</b></div><div class="gs-kpi"><span>消耗石</span><b>{{ gsSpent }}</b></div><div class="gs-kpi"><span>★4 種類</span><b>{{ gsGot4 }}</b></div><div class="gs-kpi"><span>PU 入手</span><b>{{ gsGotPk }}</b></div><div class="gs-kpi"><span>距天井</span><b>{{ gsCeilLeft }}</b></div><div class="gs-kpi"><span>招募點數</span><b>{{ gsBpt }}</b></div></div>
+      <div class="gs-ceil"><i style="width:{{ gsCeilPct }}"></i></div>
+      <div class="u-fc2">{{ gsBptLine }}<sc-if value="{{ gsBptGot }}"><br>已領保底：{{ gsBptGot }}</sc-if></div>
+      <sc-if value="{{ gsHasHist }}"><div class="gs-grid"><sc-for list="{{ gsCells }}" as="c" hint-placeholder-count="10"><div class="gs-slot"><button type="button" class="gs-card" style="--gs-c:{{ c.col }};animation:{{ c.anim }}" onClick="{{ onGsCard }}" data-id="{{ c.id }}" title="{{ c.name }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity"><sc-if value="{{ c.pu }}"><span class="gs-pu">PICK UP</span></sc-if><sc-if value="{{ c.hi }}"><span class="gs-shine" style="animation:{{ c.shine }}"></span></sc-if></button><div class="gs-rar" style="color:{{ c.col }}">{{ c.rar }}</div><div class="gs-nm">{{ c.name }}</div></div></sc-for></div></sc-if>
+      <sc-if value="{{ gsNoHist }}"><div class="u-fc2">選好卡池後按上面的按鈕開抽。每次都是即時亂數，與遊戲同一套機率模型。</div></sc-if>
+      <sc-if value="{{ gsHasStat }}"><div class="gs-stat"><div class="gs-h">抽卡統計・累計 {{ gsTot }} 抽</div><div class="u-fc2" style="margin:2px 0 4px">長條為實際出現率，直線刻度為官方公告機率</div>
+        <sc-for list="{{ gsStat }}" as="r" hint-placeholder-count="3"><div class="gs-row"><span style="font-weight:800;color:{{ r.c }}">{{ r.n }}</span><span class="gs-bar"><i style="width:{{ r.w }};background:{{ r.c }}"></i><u style="left:{{ r.mark }}"></u></span><span class="u-t4">{{ r.got }}</span><span class="u-t4 u-fc2">{{ r.pct }} / {{ r.rate }}</span></div></sc-for>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--text-3)"><span>PU 抽中 <b>{{ gsPkHits }}</b> 次</span><span>平均 <b>{{ gsAvgGap }}</b> 抽出一張 ★4</span><span>已連續 <b>{{ gsSince4 }}</b> 抽沒 ★4</span></div></div></sc-if>
+      <div class="u-fc2">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；十連保底照 gachaBehaviors 的 over_rarity_3_once。天井以 300 抽計；招募點數付費 1 點、免費與券 0.5 點，50 點保底未持有常駐 ★4、100 點保底該池 PU（模擬器不知道你的倉庫，以本次沒抽到的代替）。只能模擬台服已實裝的池，台服還沒開的預測卡池不行。</div>
     </div>
-    <div class="u-fcml21">機率、卡池內容與保底規則全部取自官方 master 資料，不是估算值。模擬結果僅供參考。</div>
+    </sc-if>
 
     <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">抽卡期望 · 天井</span></div>
     <div class="u-fcml21" style="margin:0 0 10px">機率與天井依台服現行值：★4 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶、300 貼紙天井（交換券最多抵 10 張）、生日池 100 抽。</div>
@@ -8647,7 +8711,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ae7e7d54f3"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a23868d86f"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
