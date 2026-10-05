@@ -23,62 +23,20 @@
 """
 import itertools
 import json
-import os
 import pathlib
 import re
 import time
-import urllib.request
 
 from tc_source import TC, tc_json
 
-JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
+from jp_master import get_jp
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'skill-table.js'
 UNITS = ['light_sound', 'idol', 'street', 'theme_park', 'school_refusal', 'piapro']
 ATTRS = ['cute', 'cool', 'pure', 'happy', 'mysterious']
 RAR = {'rarity_1': 1, 'rarity_2': 2, 'rarity_3': 3, 'rarity_4': 4, 'rarity_birthday': 9}
 SL, CHAR_RANK = 4, 100
-
-
-CACHE = pathlib.Path(os.environ.get('JP_MASTER_CACHE') or (pathlib.Path(__file__).resolve().parent / '.cache' / 'jp-master'))
-_jp_rev = None
-
-
-def jp_rev():
-    """上游 sekai-master-db-diff 的 HEAD commit:同一個 commit 的檔案內容不會變,拿它當快取鍵。
-    查不到(離線、API 額度)就回 None,照舊直接抓。"""
-    global _jp_rev
-    if _jp_rev is None:
-        _jp_rev = ''
-        try:
-            headers = {'user-agent': 'pjsk-center-build/1.0', 'accept': 'application/vnd.github+json'}
-            if os.environ.get('GITHUB_TOKEN'):
-                headers['authorization'] = 'Bearer ' + os.environ['GITHUB_TOKEN']
-            req = urllib.request.Request('https://api.github.com/repos/Sekai-World/sekai-master-db-diff/commits/main', headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as r:
-                _jp_rev = (json.loads(r.read()).get('sha') or '')[:12]
-        except Exception:
-            _jp_rev = ''
-    return _jp_rev or None
-
-
-def get_jp(name):
-    """日服 master。cards.json 有 34 MB,每天抓一次很浪費:上游 commit 沒變就讀本機快取
-    (CI 用 actions/cache 以 commit 當 key 保存 tools/.cache/jp-master)。"""
-    rev = jp_rev()
-    f = CACHE / rev / name if rev else None
-    if f and f.exists():
-        return json.loads(f.read_text(encoding='utf-8'))
-    req = urllib.request.Request(f'{JP}/{name}', headers={'user-agent': 'pjsk-center-build/1.0'})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        raw = r.read()
-    if f:
-        try:
-            f.parent.mkdir(parents=True, exist_ok=True)
-            f.write_bytes(raw)
-        except OSError:
-            pass
-    return json.loads(raw)
 
 
 def load(server):

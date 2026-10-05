@@ -60,7 +60,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/build-skill-table.py || echo "理論技能倍率表重算失敗,本輪略過"
 
+      # 卡池詳情的 PU 卡：同樣讀日服 master（gachas.json 49 MB 也走上面的快取），內容沒變就不寫檔。
+      - name: 重算卡池 PU 卡(data/gacha-pickups.js)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/build-gacha-pickups.py || echo "卡池 PU 卡重算失敗,本輪略過"
+
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
       # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
-        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js
+        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js

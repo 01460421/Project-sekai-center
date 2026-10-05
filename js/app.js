@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/05', t: '卡池詳情與抽卡期望改為原生', s: '第三批收掉 iframe：點卡池看 PU 卡面與技能的疊層改成原生——PU 卡由每天的資料更新流程從兩服 master 算好（台服還沒有的卡標出），開起來不必再等經典版程式與 34 MB 的日服卡片資料；點任一張可直接跳到卡片技能庫看 Lv.1–4 技能。抽卡頁的「抽卡期望・天井」與「招募點數保底」兩個計算器也改成原生，輸入立即重算、曲線直接畫在頁上。抽卡模擬本體還是經典版，之後再搬。', p: 'gachasim' },
     { d: '2026/10/05', t: '玩家查詢、卡片技能庫改為原生頁面', s: '第二批收掉 iframe：玩家查詢輸入 Player ID 看名稱、等級、遊玩統計與 26 位角色等級，一鍵接到「查看編組與加成」與「生涯紀錄」（掃各期前百），查詢結果可以分享網址；卡片技能庫改用卡片圖鑑同一份資料，稀有度、屬性、技能類型、角色、排序都是籌碼式篩選，點卡片展開特訓前後卡面、滿等三維、特訓加成、招募語與 Lv.1–4 技能效果，篩選條件也會寫進網址。兩頁都不再載經典版程式，手機不再固定高度。', p: 'cardlib' },
     { d: '2026/10/05', t: '月卡玩偶、加分卡參考、活動分布改為原生頁面', s: '這三頁原本是把經典長頁版用 iframe 嵌進來：進頁要多載一份 560 KB 的經典版程式、高度固定、手機裡捲不順、深連結進不到裡面的狀態。現在都是 App 原生頁面：月卡玩偶有同樣的 CFES／普限／輪數篩選並標出本月；加分卡參考照舊是各活動類型的組成說明；活動分布甘特圖改成由卡池資料自動決定時間範圍、重疊的卡池自動分行、跟著深色模式、手機可橫向捲動。其餘內嵌頁（計算中心、儲值、B30、卡片技能庫、玩家查詢、抽卡）之後逐頁搬。' },
     { d: '2026/10/05', t: '理論技能倍率表：接上你的持有卡', s: '在「收集率」勾選過持有卡的話，理論技能倍率表每格會多一行「我 x.xx」：用你手上符合那格條件的卡、同一套規則（SL4、角色等級 100）算出的最佳五人隊倍率；點開格子多一欄「我的卡」列出那支隊伍，理論隊伍裡你沒有的卡標「缺」，同倍率替代卡裡你有的標「有」，一眼看出差哪張、哪張可以頂。還沒勾過持有卡會引導到收集率頁。', p: 'skillmult' },
@@ -600,6 +601,8 @@ class Component extends DCLogic {
     dollF: 'all', dvUnit: 'all',   // 月卡玩偶篩選、活動分布的團體篩選（原生頁，取代 iframe）
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
+    gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
+    gcTarget: '0.004', gcCrystal: 30000, gcPulled: 0, gcVoucher: 0, gbMode: 'normal', gbHave: 0, gbPaid: 0, gbFree: 30000, gbTicket: 0,   // 抽卡期望・天井・招募點數（原生）
     calY: new Date().getFullYear(), calM: new Date().getMonth(), daySel: null,
     gq: '', gu: 'all', gt: '', gp: 1, gLive: 'all',
     songs: [], songLoad: false, songErr: '', sq: '', su: 'all', sv: 'all', sp: 1, ssort: 'id', songView: 'list', vocalPref: 'virtual',
@@ -956,14 +959,14 @@ class Component extends DCLogic {
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'gachaSimFrame', 'gachaCalcFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : id === 'gachaCalcFrame' ? 600 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : id === 'gachaSimFrame' ? 640 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); if (this.state.page === 'distrib') this.dvDraw(); }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); if (this.state.page === 'distrib') this.dvDraw(); if (this.state.gachaGid && !this.state.gachaPk) { this.loadGachaPk(); this.loadCards(); } }
   /* 視窗開著時鎖住背景捲動（手機上滑視窗不會連底下頁面一起捲）；「顯示更多」捲到底自動按 */
   _modalSide() {
     const s = this.state;
@@ -1282,7 +1285,7 @@ class Component extends DCLogic {
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
     const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora', sekaiVisual: this.state.vmode || '' };
-    ['miniStudioFrame', 'deckInfoFrame', 'gachaInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+    ['miniStudioFrame', 'deckInfoFrame', 'deckProFrame', 'gachaSimFrame', 'shopFrame', 'b30Frame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
     });
@@ -9206,6 +9209,62 @@ class Component extends DCLogic {
     return out;
   }
 
+  /* ===== 卡池詳情（原生疊層；PU 卡由 tools/build-gacha-pickups.py 建置時從兩服 master 算好） ===== */
+  loadGachaPk() {
+    if (this._gpk) return this._gpk;
+    this._gpk = import('./data/gacha-pickups.js?v=cf26df1134').then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
+      .catch(() => { this._gpk = null; this.setState({ gachaPkErr: true }); });
+    return this._gpk;
+  }
+  gachaInfoView() {
+    const s = this.state, gid = s.gachaGid; if (!gid) return null;
+    const g = (s.gachas || []).find(x => String(x.id) === String(gid)) || null;
+    const pk = s.gachaPk ? s.gachaPk[String(gid)] : null;
+    const ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+    const cards = pk ? pk.cards.map(c => ({ id: c[0], ch: this.charName(c[1]), name: c[5] || ('#' + c[0]), rar: c[2] === 9 ? '生日' : '★' + c[2], attr: this.ATTR_ZH[ATTRS[c[3]]] || '',
+      attrColor: (this.SM_ATTR[ATTRS[c[3]]] || ['', '#8b93ac'])[1], img: this.cardImg(c[4], c[2]), skill: c[6] || '', isNew: !!c[7], color: this.CHARA_COLOR[c[1]] || 'var(--border)' })) : [];
+    return { name: g ? g.n : ('卡池 #' + gid), sub: g ? [g.s + ' ～ ' + g.e, g.t, g.note].filter(Boolean).join('・') : '', mname: pk && pk.n && (!g || pk.n !== g.n) ? pk.n : '',
+      loading: !s.gachaPk && !s.gachaPkErr, err: s.gachaPkErr ? '卡池資料載入失敗，請稍後再試。' : '', none: !!s.gachaPk && !pk, cards, n: cards.length, has: cards.length > 0, newN: cards.filter(c => c.isNew).length };
+  }
+
+  /* ===== 抽卡期望・天井＋招募點數保底（原生；公式照經典版 GachaCalc／GachaBonus） =====
+     機率與天井依台服現行值：★4 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶、300 貼紙天井（交換券最多抵 10 張＝100 貼紙）、生日池 100 抽。
+     招募點數：付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點（master gachaBonusPoints）；門檻依池型。 */
+  GB_MODES = {
+    normal: [[50, '未持有的常駐 ★4（隨機）'], [100, '該池 PU ★4']],
+    rf: [[50, '未持有的常駐 ★4（隨機）'], [100, '未持有的 ★4（含期間限定／彩 FES）'], [150, '自選常駐 ★4'], [200, '自選 ★4（常駐／期間限定／彩 FES 皆可）']],
+    fes: [[50, '未持有的常駐 ★4（隨機）'], [100, '該池 PU ★4'], [200, '自選 ★4（常駐／期間限定／彩 FES 皆可）']]
+  };
+  gcView() {
+    const s = this.state, tv = String(s.gcTarget || '0.004'), bday = tv === '0.03b', p = bday ? 0.03 : (parseFloat(tv) || 0.004), ceil = bday ? 100 : 300;
+    const crystal = Math.max(0, +s.gcCrystal || 0), pulled = Math.max(0, +s.gcPulled || 0), voucher = Math.max(0, +s.gcVoucher || 0);
+    const afford = Math.floor(crystal / 300), pAff = 1 - Math.pow(1 - p, afford), eNo = 1 / p, eCeil = (1 - Math.pow(1 - p, ceil)) / p;
+    let toCeil, note;
+    if (bday) { toCeil = Math.max(0, ceil - pulled) * 300; note = '生日池天井 100 抽，不可使用交換券。'; }
+    else { const usable = Math.min(voucher, 10), need = Math.max(0, 300 - pulled - usable * 10); toCeil = need * 300; note = '用 ' + usable + ' 張券（抵 ' + usable * 10 + ' 貼紙）後尚需 ' + need + ' 抽。'; }
+    const step = Math.max(1, Math.round(ceil / 60)), bars = [];
+    for (let n = 0; n <= ceil; n += step) { const v = (1 - Math.pow(1 - p, n)) * 100; bars.push({ h: v.toFixed(1), t: n + ' 抽：至少中 1 張 ' + v.toFixed(1) + '%' }); }
+    const chip = (k, lst, sel) => lst.map(([v, n]) => Object.assign(this._chip(v, n, sel), { k }));
+    const mode = this.GB_MODES[s.gbMode] ? s.gbMode : 'normal';
+    const have = Math.max(0, +s.gbHave || 0), paid = Math.max(0, +s.gbPaid || 0), free = Math.max(0, +s.gbFree || 0), tk = Math.max(0, +s.gbTicket || 0);
+    const paidP = Math.floor(paid / 300), freeP = Math.floor(free / 300), gain = paidP + freeP * 0.5 + tk * 0.5, total = have + gain;
+    const f1 = n => (Math.round(n * 10) / 10).toLocaleString();
+    const rows = this.GB_MODES[mode].map(([need, rew]) => {
+      const doneNow = have >= need, doneAfter = total >= need, d = Math.max(0, need - have), nPaid = Math.ceil(d), nFree = Math.ceil(d / 0.5);
+      return { need, rew, ok: doneNow, soon: !doneNow && doneAfter, color: doneNow ? '#2fa84f' : doneAfter ? 'var(--accent-deep)' : 'var(--text-2)',
+        state: doneNow ? '已達成' : doneAfter ? '資源足夠，尚差 ' + f1(d) + ' 點' : '尚差 ' + f1(d) + ' 點，資源還不足 ' + f1(need - total) + ' 點',
+        way: doneNow ? '—' : '付費 ' + nPaid + ' 抽（' + (nPaid * 300).toLocaleString() + ' 付費水晶）或免費 ' + nFree + ' 抽（' + (nFree * 300).toLocaleString() + ' 水晶）或 ' + nFree + ' 張券' };
+    });
+    return {
+      gcTargets: chip('gcTarget', [['0.004', '指定 PU ★4（0.4%）'], ['0.03', '任一 ★4・一般池（3%）'], ['0.06', '任一 ★4・Fes 池（6%）'], ['0.03b', '生日限定卡（3%）']], tv),
+      gcCrystal: crystal, gcPulled: pulled, gcVoucher: voucher, gcBday: bday, gcCeil: ceil,
+      gcAfford: afford.toLocaleString(), gcPAff: (pAff * 100).toFixed(1) + '%', gcENo: eNo.toFixed(0), gcENoCry: Math.round(eNo * 300).toLocaleString(), gcECeil: eCeil.toFixed(1),
+      gcStickers: pulled.toLocaleString(), gcVouchers: Math.floor(pulled / 10), gcToCeil: toCeil.toLocaleString(), gcNote: note, gcBars: bars,
+      gbModes: chip('gbMode', [['normal', '常駐池（50／100 兩檔）'], ['rf', 'Recollection Festival 型（四檔含自選）'], ['fes', '限定自選池／夢幻選秀（自選含常駐）']], mode),
+      gbHave: have, gbPaid: paid, gbFree: free, gbTicket: tk, gbHaveF: f1(have), gbGain: f1(gain), gbGainNote: '付費 ' + paidP + ' 抽＋免費 ' + freeP + ' 抽＋券 ' + tk + ' 張', gbTotal: f1(total), gbRows: rows
+    };
+  }
+
   /* ===== 活動分布甘特圖（原生頁；照經典版 DistribModule 的取法：普限、常駐、FES、WL 池，依團體分列）
      與經典版不同的地方：時間範圍由資料決定、重疊的卡池自動分行、顏色讀 CSS 變數所以跟著深色模式。 */
   DV_UNITS = [['LN', 'ln'], ['MMJ', 'mmj'], ['VBS', 'vbs'], ['WS', 'wxs'], ['25時', 'n25'], ['VS', 'vs']];
@@ -11474,7 +11533,7 @@ class Component extends DCLogic {
       })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
       isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
       ...(s.page === 'dolls' ? this.dollsView() : {}), ...(s.page === 'distrib' ? this.dvView() : {}),
-      ...(s.page === 'lookup' ? this.luView() : {}), ...(s.page === 'cardlib' ? this.clView() : {}),
+      ...(s.page === 'lookup' ? this.luView() : {}), ...(s.page === 'cardlib' ? this.clView() : {}), ...(s.page === 'gachasim' ? this.gcView() : {}),
       isArt: s.page === 'art',
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
       isDbPage: this.DB_PAGES.includes(s.page),
@@ -12651,7 +12710,7 @@ class Component extends DCLogic {
         ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
       subTabs, hasSubTabs: subTabs.length > 1, navExtra,
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaSrc: s.gachaGid ? './index.html?embed=gacha&gid=' + s.gachaGid : '',
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
       playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,
@@ -13474,6 +13533,8 @@ class Component extends DCLogic {
       onClPick: e => { const id = +e.currentTarget.dataset.id; this.setState({ clPick: this.state.clPick === id ? null : id }); },
       onClClose: () => this.setState({ clPick: null }),
       onClMore: () => this.setState({ clN: (this.state.clN || 48) + 48 }),
+      onGcChip: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: d.v }); },
+      onGachaCard: e => { const id = +e.currentTarget.dataset.id; if (!id) return; this.setState({ gachaGid: null, clPick: id, clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clN: 48 }, () => this.go('cardlib')); },
       onMyDetail: () => {
         // WL 個榜的排名走勢圖是另一套資料源（wlSnap/wlChart，不是主榜的 rankChart），
         // 詳情面板的走勢圖只認得主榜資料，硬套會顯示錯的圖——直接導去榜線頁的 WL 個榜分頁，

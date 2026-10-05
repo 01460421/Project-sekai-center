@@ -504,6 +504,36 @@ select option, select optgroup{
 .u-ffc20{font-size:13.5px !important;font-weight:800 !important;color:var(--ink) !important}
 .u-fcml21{font-size:11.5px !important;color:var(--text-3) !important;margin-top:10px !important;line-height:1.7 !important}
 .u-pfcl22{padding:20px !important;font-size:12.5px !important;color:var(--text-2) !important;line-height:1.8 !important}
+/* 卡池詳情疊層／抽卡期望與招募點數：原生（原本是 iframe 嵌經典版） */
+.gi-name{font-size:15px;font-weight:900;color:var(--ink);line-height:1.35}
+.gi-list{display:flex;flex-direction:column;gap:8px}
+.gi-card{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);text-align:left;font:inherit;color:var(--text-2);cursor:pointer;min-width:0}
+.gi-card img{width:56px;height:56px;flex:none;border-radius:12px;object-fit:cover;background:var(--card)}
+.gi-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gi-nm{font-size:13px;font-weight:800;color:var(--ink);line-height:1.35}
+.gi-sk{font-size:11.5px;color:var(--text-2)}
+.gc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.gc-box{padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px}
+.gc-h{font-size:13px;font-weight:800;color:var(--ink)}
+.gc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-2)}
+.gc-row input{width:130px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--ink);font:inherit;font-size:13px;text-align:right}
+.gc-kv{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-3);padding:4px 0;border-bottom:1px dashed var(--border)}
+.gc-kv b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+.gc-kv .gc-big{font-family:'M PLUS Rounded 1c';font-size:18px;color:var(--accent-deep)}
+.gc-chart{display:flex;align-items:flex-end;gap:2px;height:120px;margin-top:12px;padding:8px 10px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+.gc-bar{flex:1;height:100%;display:flex;align-items:flex-end;min-width:0}
+.gc-bar>div{width:100%;border-radius:3px 3px 0 0;background:color-mix(in oklab,var(--accent) 70%,transparent);transition:height .2s}
+.gc-bar:last-child>div{background:#e0533a}
+.gb-tbl{margin-top:12px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.gb-row{display:grid;grid-template-columns:56px 1.2fr 1fr 1.4fr;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-2);line-height:1.5;align-items:center}
+.gb-row:last-child{border-bottom:none}
+.gb-row b{color:var(--ink);text-align:center;font-size:14px}
+.gb-row.head{font-size:11.5px;font-weight:800;color:var(--text-3);background:color-mix(in oklab,var(--card) 90%,var(--ink))}
+@media (max-width:640px){
+  .gb-row{grid-template-columns:48px 1fr;gap:4px 10px}
+  .gb-row.head{display:none}
+  .gb-row span:nth-child(3),.gb-row span:nth-child(4){grid-column:2}
+}
 /* 玩家查詢／卡片技能庫：原生頁（原本是 iframe 嵌經典版） */
 .lu-in{flex:1;min-width:200px;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
 .lu-go{padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
@@ -6424,11 +6454,40 @@ select option, select optgroup{
     </div>
     <div class="u-fcml21">機率、卡池內容與保底規則全部取自官方 master 資料，不是估算值。模擬結果僅供參考。</div>
 
-    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">抽卡期望 · 天井 · 招募點數保底</span></div>
-    <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);overflow:hidden">
-      <iframe id="gachaCalcFrame" data-src="./index.html?embed=gachacalc" title="抽卡期望與保底計算" scrolling="no" style="width:100%;height:1180px;border:none;background:transparent;display:block"></iframe>
+    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">抽卡期望 · 天井</span></div>
+    <div class="u-fcml21" style="margin:0 0 10px">機率與天井依台服現行值：★4 3%、Fes 6%、指定 PU 每張 0.4%；單抽 300 水晶、300 貼紙天井（交換券最多抵 10 張）、生日池 100 抽。</div>
+    <div class="gc-grid">
+      <div class="gc-box"><div class="gc-h">目標</div><div class="chips-scroll cl-chips" style="margin-bottom:8px"><sc-for list="{{ gcTargets }}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{ onGcChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div><label class="gc-row"><span>持有水晶</span><input type="number" min="0" value="{{ gcCrystal }}" onInput="{{ onField }}" data-k="gcCrystal" data-num="1"></label><label class="gc-row"><span>已抽次數（貼紙）</span><input type="number" min="0" value="{{ gcPulled }}" onInput="{{ onField }}" data-k="gcPulled" data-num="1"></label><label class="gc-row"><span>持有交換券</span><input type="number" min="0" value="{{ gcVoucher }}" onInput="{{ onField }}" data-k="gcVoucher" data-num="1"></label></div>
+      <div class="gc-box"><div class="gc-h">估算結果</div>
+        <div class="gc-kv"><span>可抽次數（現有水晶）</span><b>{{ gcAfford }} 抽</b></div>
+        <div class="gc-kv"><span>預算內至少中 1 張</span><b class="gc-big">{{ gcPAff }}</b></div>
+        <div class="gc-kv"><span>期望抽數（無天井）</span><b>{{ gcENo }} 抽 ≈ {{ gcENoCry }} 水晶</b></div>
+        <div class="gc-kv"><span>期望抽數（抽到即停・天井 {{ gcCeil }}）</span><b>{{ gcECeil }} 抽</b></div>
+        <div class="gc-kv"><span>目前貼紙</span><b>{{ gcStickers }} 張（可換 {{ gcVouchers }} 券）</b></div>
+        <div class="gc-kv"><span>距天井保底</span><b class="gc-big">{{ gcToCeil }} 水晶</b></div>
+        <div class="u-fc2">{{ gcNote }}</div>
+      </div>
     </div>
-    <div class="u-fcml21">招募點數與 300 抽天井是兩套獨立的保底：天井靠貼紙換卡，招募點數則是抽卡累積點數到門檻直接發卡。付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點。</div>
+    <div class="gc-chart"><sc-for list="{{ gcBars }}" as="b" hint-placeholder-count="20"><div class="gc-bar" title="{{ b.t }}"><div style="height:{{ b.h }}%"></div></div></sc-for></div>
+    <div class="u-fcml21" style="margin-top:6px">曲線：抽數（0 → 天井 {{ gcCeil }}）對「至少中 1 張目標卡」的機率 P(N) = 1 − (1 − p)^N，滑過看數值。指定 PU 就算抽滿 300 仍約三成摃龜，靠的是天井。</div>
+
+    <div style="display:flex;align-items:center;gap:9px;margin:22px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">招募點數保底</span></div>
+    <div class="u-fcml21" style="margin:0 0 10px">抽卡累積「招募點數」，到門檻直接保底發卡，與 300 抽天井各自獨立。付費水晶一抽 1 點、免費水晶與招募券一抽 0.5 點（官方 master 資料）。常駐池只有 50／100 兩檔、沒有自選；四檔含自選的是 Recollection Festival 型；限定自選池的自選範圍含常駐 ★4。</div>
+    <div class="gc-grid">
+      <div class="gc-box"><div class="gc-h">卡池類型</div><div class="chips-scroll cl-chips" style="margin-bottom:8px"><sc-for list="{{ gbModes }}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{ onGcChip }}" data-k="{{ c.k }}" data-v="{{ c.v }}" style="padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">{{ c.n }}</button></sc-for></div><label class="gc-row"><span>目前點數</span><input type="number" min="0" value="{{ gbHave }}" onInput="{{ onField }}" data-k="gbHave" data-num="1"></label><label class="gc-row"><span>持有付費水晶</span><input type="number" min="0" value="{{ gbPaid }}" onInput="{{ onField }}" data-k="gbPaid" data-num="1"></label><label class="gc-row"><span>持有免費水晶</span><input type="number" min="0" value="{{ gbFree }}" onInput="{{ onField }}" data-k="gbFree" data-num="1"></label><label class="gc-row"><span>持有招募券</span><input type="number" min="0" value="{{ gbTicket }}" onInput="{{ onField }}" data-k="gbTicket" data-num="1"></label></div>
+      <div class="gc-box"><div class="gc-h">保底進度</div>
+        <div class="gc-kv"><span>目前點數</span><b>{{ gbHaveF }} 點</b></div>
+        <div class="gc-kv"><span>現有資源可再得</span><b>{{ gbGain }} 點</b></div>
+        <div class="u-fc2" style="margin-top:-4px">{{ gbGainNote }}</div>
+        <div class="gc-kv"><span>抽完後累計</span><b class="gc-big">{{ gbTotal }} 點</b></div>
+      </div>
+    </div>
+    <div class="gb-tbl">
+      <div class="gb-row head"><span>點數</span><span>保底獎勵</span><span>狀態</span><span>還需抽數</span></div>
+      <sc-for list="{{ gbRows }}" as="r" hint-placeholder-count="4">
+        <div class="gb-row"><b>{{ r.need }}</b><span>{{ r.rew }}</span><span style="color:{{ r.color }};font-weight:700">{{ r.state }}</span><span class="u-fc2">{{ r.way }}</span></div>
+      </sc-for>
+    </div>
   </div>
   </sc-if>
 
@@ -8235,7 +8294,26 @@ select option, select optgroup{
     <button type="button" onClick="{{ onFav }}" data-fav="{{ gachaFavData }}" title="{{ gachaFavTitle }}" aria-label="{{ gachaFavTitle }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:{{ gachaFavFg }};font-size:15px;cursor:pointer;line-height:1">{{ gachaFavMark }}</button>
     <button type="button" onClick="{{ onGachaClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
-  <iframe id="gachaInfoFrame" data-src="{{ gachaSrc }}" title="卡池詳情" scrolling="no" style="width:100%;height:400px;border:none;background:transparent;display:block"></iframe>
+  <div class="gi-name">{{ gachaInfo.name }}</div>
+  <div class="u-fc2">{{ gachaInfo.sub }}</div>
+  <sc-if value="{{ gachaInfo.mname }}"><div class="u-fc2">master 名稱：{{ gachaInfo.mname }}</div></sc-if>
+  <sc-if value="{{ gachaInfo.loading }}"><div class="empty loading">載入 PU 卡…</div></sc-if>
+  <sc-if value="{{ gachaInfo.err }}"><div class="empty">{{ gachaInfo.err }}</div></sc-if>
+  <sc-if value="{{ gachaInfo.none }}"><div class="empty">查無這期卡池的 master 資料（可能太新，等每天的資料更新）。</div></sc-if>
+  <sc-if value="{{ gachaInfo.has }}">
+    <div class="u-fc2" style="margin:10px 0 6px">PU {{ gachaInfo.n }} 張・點卡片到卡片技能庫看 Lv.1–4 技能</div>
+    <div class="gi-list">
+      <sc-for list="{{ gachaInfo.cards }}" as="c" hint-placeholder-count="4">
+        <button type="button" class="gi-card" onClick="{{ onGachaCard }}" data-id="{{ c.id }}">
+          <img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="opacity" style="border:2px solid {{ c.color }}">
+          <div class="gi-t"><div class="gi-nm">{{ c.name }}<sc-if value="{{ c.isNew }}"> <span class="sm-tag" style="background:#e0533a;color:#fff">台服未實裝</span></sc-if></div>
+            <div class="u-fc2">{{ c.ch }}・{{ c.rar }}・<span style="color:{{ c.attrColor }};font-weight:800">{{ c.attr }}</span></div>
+            <div class="gi-sk">{{ c.skill }}</div></div>
+        </button>
+      </sc-for>
+    </div>
+    <div class="u-fc2" style="margin-top:8px">PU ＝ 當期 rate-up 卡；技能為特訓後滿等摘要。資料：兩服 master，每天更新。</div>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -8569,7 +8647,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=24d048fae1"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ae7e7d54f3"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
