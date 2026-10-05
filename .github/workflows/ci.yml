@@ -12,7 +12,7 @@ jobs:
         with: { node-version: '22' }
       - name: 語法檢查
         run: |
-          for f in js/app.js js/ai.js js/haruki.js js/hk-deck-worker.js js/core.js support.js worker/src/*.js; do node --check "$f"; done
+          for f in js/app.js js/ai.js js/car.js js/haruki.js js/hk-deck-worker.js js/core.js support.js worker/src/*.js; do node --check "$f"; done
       - name: Worker 的 Haruki 轉換與路由
         run: node worker/test/haruki.mjs
       - name: Haruki 專區的純函式（角色任務 EXP、目前隊伍、compact 展開）

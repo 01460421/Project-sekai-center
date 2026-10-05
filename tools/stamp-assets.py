@@ -22,7 +22,7 @@ ASSET_FILES = ['support.js']
 # js/*.js 內部也會用 import('./data/xxx.js?v=…') 動態載入資料檔,那些戳記
 # 以前是手改的,改完資料忘記改戳記,瀏覽器就會用一年期 immutable 快取黏住舊資料。
 # 這些檔案要先被改寫,改完之後它們自己的雜湊才算得準,所以分兩輪。
-CODE = ['js/haruki.js', 'js/app.js', 'js/app.min.js', 'js/ai.js', 'js/ai.min.js', 'js/core.js', 'support.js']
+CODE = ['js/haruki.js', 'js/car.js', 'js/car.min.js', 'js/app.js', 'js/app.min.js', 'js/ai.js', 'js/ai.min.js', 'js/core.js', 'support.js']
 
 
 def digest(path):
@@ -74,9 +74,9 @@ def restamp(path, assets, only_existing=False, dry=False):
 
 
 def check_min():
-    """app.html 載 js/app.min.js、app.js 動態載 js/ai.min.js；兩個壓縮檔的檔頭都記著來源的雜湊
+    """app.html 載 js/app.min.js、app.js 動態載 js/ai.min.js 與 js/car.min.js；每個壓縮檔的檔頭都記著來源的雜湊
     （去掉 ?v= 戳記算的）。對不上代表改了來源沒重新壓縮 —— 直接失敗，別讓舊程式碼上線。"""
-    for name in ('app', 'ai'):
+    for name in ('app', 'ai', 'car'):
         src, out = ROOT / 'js' / f'{name}.js', ROOT / 'js' / f'{name}.min.js'
         if not out.is_file():
             continue
