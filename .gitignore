@@ -16,3 +16,5 @@ bot/.env
 bot/dist/
 bot/.wrangler/
 bot/.dev.vars
+# 建置腳本的下載快取（日服 master 等）
+tools/.cache/

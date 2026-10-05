@@ -19,13 +19,17 @@ jobs:
         run: node tests/haruki-zone.mjs
       - name: 壓縮檔與戳記是否過期（不改檔，過期就失敗）
         run: python3 tools/stamp-assets.py --check
-      - name: 煙霧測試（桌機＋手機各 13 頁）
+      - name: 外站圖片都要帶 referrerpolicy（素材庫對帶 Referer 的請求回 403）
+        run: node tests/img-referrer.mjs
+      - name: 煙霧測試（桌機＋手機各 20 頁）
         run: |
           npm i --no-save --silent playwright@1.48.2
           npx playwright install --with-deps chromium
           python3 -m http.server 8765 >/dev/null 2>&1 &
           sleep 1
           node tests/smoke.mjs
+      - name: 理論技能倍率表「我的卡」解算器與建置結果一致
+        run: node tests/skill-mine.mjs
   # 伺服器機器人（bot/）：核心與功能不依賴 discord.js，測試不必 npm install、不需要 token
   bot:
     runs-on: ubuntu-latest

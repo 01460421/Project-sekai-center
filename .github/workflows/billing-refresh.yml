@@ -42,8 +42,22 @@ jobs:
           python3 -c 'import numpy' 2>/dev/null || pip3 install --quiet numpy
           python3 tools/build-border-model.py || echo "榜線模型重擬失敗,本輪略過"
 
-      # 理論技能倍率表：兩服 master 有新卡就會變（日服 cards.json 34 MB，只在這裡抓），一樣「內容沒變就不寫檔」。
+      # 理論技能倍率表：兩服 master 有新卡就會變，一樣「內容沒變就不寫檔」。
+      # 日服 cards.json 有 34 MB：以上游 HEAD commit 當 key 快取，commit 沒變的日子不重抓。
+      - name: 日服 master 版本
+        id: jprev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=$(curl -sS -H "authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/Sekai-World/sekai-master-db-diff/commits/main | python3 -c 'import json,sys; print((json.load(sys.stdin).get("sha") or "none")[:12])' || echo none)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: tools/.cache/jp-master
+          key: jp-master-${{ steps.jprev.outputs.sha }}
       - name: 重算理論技能倍率表(data/skill-table.js)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/build-skill-table.py || echo "理論技能倍率表重算失敗,本輪略過"
 
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
