@@ -1,10 +1,13 @@
 name: worker-push-setup
 # 一鍵設定瀏覽器推播（Web Push）的 VAPID 金鑰：在 runner 裡產一組金鑰、直接放進 Cloudflare Worker 的機密，
 # 金鑰不會印在 log、也不會進 git；順便套用 sql/015_push.sql（可重複跑）。
-# 用法：Actions 頁 → worker-push-setup → Run workflow。已經設過就會跳過（不會換掉金鑰，否則所有裝置的訂閱都會失效）；
-# 真的要換一組金鑰才勾 rotate。
+# 用法：Actions 頁 → worker-push-setup → Run workflow；這個檔案第一次合進 main 時也會自動跑一次。
+# 已經設過就會跳過（不會換掉金鑰，否則所有裝置的訂閱都會失效）；真的要換一組金鑰才手動跑並勾 rotate。
 # 需要跟 worker-deploy 同一組 repo secrets：CLOUDFLARE_API_TOKEN（範本「Edit Cloudflare Workers」要含 D1 編輯）、CLOUDFLARE_ACCOUNT_ID。
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/worker-push-setup.yml']
   workflow_dispatch:
     inputs:
       rotate:
