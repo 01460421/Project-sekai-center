@@ -410,6 +410,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/06', t: 'Haruki 專區加「養成策略」', s: '養成分頁新增養成策略：挑一位或多位角色，把 22 種角色任務分成卡面、專精與技能、隊長與休息室、貼圖、對話、娃與家具、服裝與聲音、區域道具八個面向，列出每項的進度與下一個門檻，排出最省力的下一步並算出「做完幾件就升級」；下一步會把素材算進去（專精花費讀 masterLessons、卡片故事為固定表、家具讀家具索引，挑最便宜的卡與家具），有庫存就標出缺多少、素材不夠的往後排；建議會帶入接下來有該角色新卡的卡池、該角色是加成角色的活動（活動組卡把他當隊長）、月卡玩偶的月份與挑戰 Live 的分數獎勵。Haruki 公開 API 沒給任務進度時，持卡、專精、技能、隊長次數、區域道具與家具會從原始資料推算（標「推算」），其餘標「未知」。「先練誰」列出領任務就升級、做最少件就升級的角色。', p: 'haruki' },
     { d: '2026/10/05', t: '車隊程式拆成獨立模組，首頁少載四分之一程式', s: '私車排班（班表、成員、統計、點歌、標籤、色段監測）的程式從主程式拆到 js/car.js，進車隊頁才載；其他頁開站少抓約 270 KB 原始碼（壓縮後約 70 KB）。登入卡、帳號頁不受影響；車隊頁載入中會先顯示骨架，載入失敗可按「重試」。', p: 'car' },
     { d: '2026/10/05', t: '抽卡模擬改為原生', s: '抽卡模擬不再嵌經典版：同一套官方機率模型（先依稀有度機率、再依池內 weight 加權；十連最後一抽保底 ★3；招募點數 50／100 點保底），池子直接讀台服 master，單抽與十連的按鈕照該池的 gachaBehaviors 產生，PU 每張機率、天井進度、招募點數、實際出現率對官方機率的統計都在頁上；點抽到的卡直接跳到卡片技能庫。只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。抽卡頁至此全部原生。', p: 'gachasim' },
     { d: '2026/10/05', t: '卡池詳情與抽卡期望改為原生', s: '第三批收掉 iframe：點卡池看 PU 卡面與技能的疊層改成原生——PU 卡由每天的資料更新流程從兩服 master 算好（台服還沒有的卡標出），開起來不必再等經典版程式與 34 MB 的日服卡片資料；點任一張可直接跳到卡片技能庫看 Lv.1–4 技能。抽卡頁的「抽卡期望・天井」與「招募點數保底」兩個計算器也改成原生，輸入立即重算、曲線直接畫在頁上。抽卡模擬本體還是經典版，之後再搬。', p: 'gachasim' },
@@ -2478,7 +2479,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=205b87fa32').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=d460a1f11d').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;

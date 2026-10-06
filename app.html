@@ -5154,6 +5154,60 @@ select option, select optgroup{
     <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:8px 2px">算法照 <a class="u-c18" href="https://github.com/Team-Haruki/Haruki-Toolbox" target="_blank" rel="noopener">Haruki 工具箱</a>的「角色任務」（MIT）；任務文字取自台服 master。「可領」是已達成但還沒領的任務 EXP。</div>
     </sc-if>
 
+    <!-- 養成策略：每位角色各面向的門檻、脈絡（卡池、活動加成、月卡玩偶、挑戰）與最省力的下一步 -->
+    <sc-if value="{{ hzIsPlan }}">
+    <div style="border:1px solid var(--border);border-radius:20px;padding:14px 16px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink)">挑角色</div>
+        <span class="u-fc5">{{ hzPlanN }}</span>
+        <div class="u-f1"></div>
+        <button type="button" onClick="{{ onHzPlanAuto }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-size:11px;font-weight:800;cursor:pointer">自動挑最快升級的 3 位</button>
+        <button type="button" onClick="{{ onHzPlanAll }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-3);font-size:11px;font-weight:700;cursor:pointer">全選</button>
+        <button type="button" onClick="{{ onHzPlanNone }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-3);font-size:11px;font-weight:700;cursor:pointer">清除</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ hzPlanChips }}" as="c" hint-placeholder-count="26"><button type="button" onClick="{{ onHzPlanPick }}" data-v="{{ c.v }}" style="padding:5px 10px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for></div>
+    </div>
+    <sc-if value="{{ hzPlanLoading }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">整理各角色的任務、卡池與活動資料中…</div></sc-if>
+    <sc-if value="{{ hzPlanNoUser }}"><div style="font-size:11.5px;color:var(--text-3);padding:0 4px 10px">還沒有你的遊戲資料：先在上方讀取，才會有你的進度與「做幾件就升級」；下面先列門檻與建議。</div></sc-if>
+    <sc-if value="{{ hzPlanHasRank }}">
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);padding:10px 13px;margin-bottom:13px">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:4px">先練誰</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <sc-for list="{{ hzPlanRank }}" as="r" hint-placeholder-count="6"><button type="button" onClick="{{ onHzPlanPick }}" data-v="{{ r.cid }}" style="display:flex;gap:6px;align-items:baseline;padding:6px 11px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:11.5px;cursor:pointer;text-align:left"><span style="color:var(--text-3)">{{ r.i }}</span><span style="font-weight:800;color:var(--ink)">{{ r.n }}</span><span style="color:var(--text-3)">{{ r.lv }}</span><span style="font-weight:700;color:var(--accent-deep)">{{ r.d }}</span></button></sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ hzPlanEmpty }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">上面挑一位或多位角色，就會列出各面向的建議。</div></sc-if>
+    <sc-for list="{{ hzPlanCards }}" as="p" hint-placeholder-count="3">
+      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px;overflow:hidden">
+        <div style="padding:12px 15px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:15px;font-weight:800;color:var(--ink)">{{ p.name }}</span>
+            <span style="font-size:12.5px;font-weight:800;color:var(--accent-deep)">Lv {{ p.lv }}</span>
+            <div style="flex:1;min-width:120px"><div style="height:6px;border-radius:99px;background:var(--card-2);overflow:hidden"><div style="height:100%;width:{{ p.pct }};background:var(--ink-grad)"></div></div><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">{{ p.exp }}<sc-if value="{{ p.hasPending }}">・<span class="u-cf13">{{ p.pending }}</span></sc-if></div></div>
+          </div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--ink);margin-top:8px;line-height:1.7">{{ p.headline }}</div>
+          <sc-if value="{{ p.hasChal }}"><div style="font-size:11.5px;color:var(--text-2);margin-top:3px;line-height:1.7">{{ p.chal }}</div></sc-if>
+          <sc-if value="{{ p.hasUnknown }}"><div style="font-size:10.5px;color:var(--text-3);margin-top:3px;line-height:1.7">{{ p.unknown }}</div></sc-if>
+        </div>
+        <sc-if value="{{ p.hasSteps }}">
+          <div style="padding:9px 15px;border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--accent) 6%,transparent)">
+            <div style="font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:3px">最省力的下一步</div>
+            <sc-for list="{{ p.steps }}" as="st" hint-placeholder-count="6"><div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;font-size:11.5px;border-top:1px dashed var(--border)"><span style="flex:none;width:14px;color:var(--text-3)">{{ st.i }}</span><span style="flex:1;min-width:0;color:var(--text-2);line-height:1.6"><span style="display:inline-block;padding:0 6px;border-radius:999px;background:var(--card-2);font-size:10px;color:var(--text-3);margin-right:4px">{{ st.a }}</span>{{ st.t }}<sc-if value="{{ st.hasSrc }}"><span style="font-size:10px;color:var(--text-3)">（{{ st.src }}）</span></sc-if><sc-if value="{{ st.hasM }}"><br><span style="font-size:10.5px;color:{{ st.mFg }}">{{ st.m }}</span></sc-if></span><span style="flex:none;font-size:10.5px;color:var(--text-3)">{{ st.p }}</span><span style="flex:none;font-weight:800;color:var(--accent-deep)">{{ st.e }}</span></div></sc-for>
+          </div>
+        </sc-if>
+        <sc-for list="{{ p.aspects }}" as="a" hint-placeholder-count="8">
+          <div style="padding:9px 15px;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:3px">{{ a.n }}</div>
+            <sc-for list="{{ a.rows }}" as="r" hint-placeholder-count="3"><div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:11.5px"><span style="flex:1;min-width:0;color:{{ r.fg }};line-height:1.6">{{ r.t }}<sc-if value="{{ r.hasSrc }}"><span style="font-size:10px;color:var(--text-3)">（{{ r.src }}）</span></sc-if><sc-if value="{{ r.hasM }}"><br><span style="font-size:10.5px;color:{{ r.mFg }}">{{ r.m }}</span></sc-if></span><span style="flex:none;font-size:10.5px;color:var(--text-3)">{{ r.p }}</span><span style="flex:none;font-weight:800;color:var(--accent-deep)">{{ r.e }}</span></div></sc-for>
+            <sc-for list="{{ a.tips }}" as="tp" hint-placeholder-count="2"><div style="font-size:11px;color:var(--text-2);line-height:1.7;padding:2px 0 0 10px;border-left:2px solid var(--border);margin-top:4px">{{ tp.t }}</div></sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:8px 2px">任務門檻與 EXP 取自台服 master；進度優先用 Haruki 的任務資料，沒有的話從持卡、區域道具、家具推算（標「推算」）。專精花費讀 masterLessons、卡片故事花費為固定表、家具花費讀家具索引；有素材庫存時標出缺多少，素材不夠的往後排。卡池與活動來自本站的卡池預測、月卡玩偶來自月卡玩偶頁，實際以遊戲公告為準。</div>
+    </sc-if>
+
     <!-- 養成進度：隊長次數、羈絆、綜合力加成、挑戰 Live、區域道具（算法照 Haruki 工具箱 training） -->
     <sc-if value="{{ hzIsTrain }}">
     <sc-if value="{{ hzTrainLoading }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">讀取養成資料中…</div></sc-if>
@@ -8722,7 +8776,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a300b898af"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=5e120cae3e"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

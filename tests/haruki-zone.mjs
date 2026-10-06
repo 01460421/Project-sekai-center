@@ -2,6 +2,7 @@
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
+  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST,
   hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
 
 let fail = 0;
@@ -113,6 +114,75 @@ ok(su.userMusicAchievements[0].musicId === 3 && su.userCards[0].cardId === 1, '�
 const pub = obj.hkNormalize({ userDecks: [{ deckId: 3, member1: 1 }], userProfile: { userId: 9 } }, '7482960281734567890');
 ok(pub.userGamedata && pub.userGamedata.userId === '7482960281734567890' && pub.userGamedata.deck === 3, '公開 API 沒給 userGamedata 時補一份（引擎必需），目前隊伍取 userDecks 第一隊');
 ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').userGamedata.deck === 5, '有 userGamedata 就不動');
+
+/* 養成策略：推算進度、下一步排序、做幾件升級、先練誰 */
+{
+  const PG = [];
+  const grp = (id, reqs, exp) => reqs.forEach((r, i) => PG.push({ id, seq: i + 1, requirement: r, exp: exp || 1 }));
+  grp(14, [2, 4, 6, 8], 2); grp(6, [1, 2, 3]); grp(7, [1, 2, 3]); grp(18, [1, 2, 3, 5]); grp(17, [1, 2]); grp(16, [1, 2]); grp(15, [1, 2]); grp(1, [10, 20, 40]); grp(9, [1, 2, 3]); grp(11, [2, 4]); grp(13, [5, 10]); grp(20, [1, 2]); grp(4, [2, 3]);
+  const mk = (id, type, pg) => ({ id, characterId: 1, characterMissionType: type, parameterGroupId: pg, sentence: type + '{requirement}', isAchievementMission: false });
+  const PM = { missions: [mk(1, 'collect_member', 14), mk(2, 'read_card_episode_first', 6), mk(3, 'read_card_episode_second', 7), mk(4, 'master_rank_up_standard', 18), mk(5, 'master_rank_up_rare', 17),
+    mk(6, 'skill_level_up_standard', 16), mk(7, 'skill_level_up_rare', 15), mk(8, 'play_live', 1), mk(9, 'area_item_level_up_character', 9), mk(10, 'area_item_level_up_unit', 11), mk(11, 'area_item_level_up_reality_world', 13),
+    mk(12, 'collect_mysekai_fixture', 20), mk(13, 'collect_stamp', 4)], groups: PG,
+    levels: [1, 2, 3, 4, 5, 6].map((lv, i) => ({ levelType: 'character', level: lv, totalExp: [0, 1, 2, 4, 7, 10][i] })) };
+  const cardChar = { 101: { ch: 1, rar: 4, name: 'A' }, 102: { ch: 1, rar: 2, name: 'B' }, 103: { ch: 1, rar: 3, name: 'C' }, 201: { ch: 2, rar: 4, name: 'Z' } };
+  const PU = { userCharacters: [{ characterId: 1, characterRank: 3, exp: 1, totalExp: 3 }],
+    userCards: [{ cardId: 101, masterRank: 2, skillLevel: 3, episodes: [{ cardEpisodeId: 1001, scenarioStatus: 'already_read' }, { cardEpisodeId: 1002, scenarioStatus: 'unread' }] },
+      { cardId: 102, masterRank: 1, skillLevel: 1, episodes: [{ cardEpisodeId: 1003, scenarioStatus: 'already_read' }, { cardEpisodeId: 1004, scenarioStatus: 'already_read' }] }, { cardId: 103, masterRank: 0, skillLevel: 2 }, { cardId: 201, masterRank: 5 }],
+    userCharacterLiveUsageCounts: [{ characterId: 1, characterLiveUsageType: 'leader', usageCount: 25 }],
+    userAreas: [{ areaItems: [{ areaItemId: 1, level: 3 }, { areaItemId: 2, level: 2 }, { areaItemId: 3, level: 4 }, { areaItemId: 4, level: 1 }] }] };
+  const ctx = { cardChar, unitOf: { 1: 'light_sound' },
+    areaItemLevels: [{ areaItemId: 1, level: 1, targetGameCharacterId: 1, targetUnit: 'any' }, { areaItemId: 2, level: 1, targetGameCharacterId: 0, targetUnit: 'light_sound' }, { areaItemId: 3, level: 1, targetGameCharacterId: 0, targetUnit: 'any', targetCardAttr: 'cool' }, { areaItemId: 4, level: 1, targetGameCharacterId: 2, targetUnit: 'any' }],
+    areaItems: [{ id: 1, areaId: 5 }, { id: 2, areaId: 11 }, { id: 3, areaId: 1 }, { id: 4, areaId: 5 }], areas: [{ id: 5, areaType: 'spirit_world' }, { id: 11, areaType: 'reality_world' }, { id: 1, areaType: 'reality_world' }],
+    fixRows: [[10, 'ichika doll', 1, 1, [1, 7]], [11, 'saki doll', 1, 1, [2]], [12, 'lamp', 1, 1, []]], tagChar: { 1: 1, 2: 2 }, mysFix: [10, 11, 12] };
+  const d = hzPlanDerive(1, Object.assign({ U: PU }, ctx));
+  ok(d.collect_member === 3 && d.master_rank_up_rare === 2 && d.master_rank_up_standard === 1 && d.skill_level_up_rare === 2 && d.skill_level_up_standard === 1, '推算：持卡 3 張、★4 專精 2 次、★1～3 專精 1 次、技能升級 2／1 次');
+  ok(d.read_card_episode_first === 2 && d.read_card_episode_second === 1, '推算：卡片故事前篇 2、後篇 1（依 episode id 排序）');
+  ok(d.play_live === 25 && d.area_item_level_up_character === 3 && d.area_item_level_up_unit === 2 && d.area_item_level_up_reality_world === 6, '推算：隊長 25 場、角色道具 3、團體道具 2、現實世界道具 6（不含角色道具）');
+  ok(d.collect_mysekai_fixture === 1, '推算：帶角色標籤的持有家具 1 件');
+  ok(hzPlanDerive(1, { U: {} }).collect_member === undefined, '沒有 userCards 就不回持卡相關的推算');
+  const p = hzPlanFor(1, PM, PU, ctx);
+  ok(p && !p.hasMission && p.rows.find(r => r.type === 'collect_member').cur === 3 && p.rows.find(r => r.type === 'collect_member').nextNeed === 4 && p.rows.find(r => r.type === 'collect_member').src === 'derived', '沒有任務進度時用推算值算下一個門檻（持卡 3 → 下個 4）');
+  ok(p.rows.find(r => r.type === 'collect_stamp').known === false && p.unknown === 1, '推算不到的任務標未知');
+  ok(/^read_card_episode_/.test(p.steps[0].type) && p.steps[0].remain === 1 && p.steps[0].cost === 1 && p.steps.find(x => x.type === 'play_live').cost === 4.5, '最省力的第一步是讀 1 篇卡片故事；隊長 15 場的成本 4.5 排後面');
+  ok(p.toLevel && p.toLevel.left === 1 && p.toLevel.k === 1 && p.toLevel.exp === 1, 'Lv3 → Lv4 還差 1 EXP，做 1 件就升級');
+  const PU2 = Object.assign({}, PU, { userCharacterMissionV2s: [{ characterId: 1, characterMissionType: 'collect_member', progress: 7 }, { characterId: 1, characterMissionType: 'collect_stamp', progress: 2 }] });
+  const p2 = hzPlanFor(1, PM, PU2, ctx);
+  ok(p2.hasMission && p2.rows.find(r => r.type === 'collect_member').cur === 7 && p2.rows.find(r => r.type === 'collect_member').src === 'mission' && p2.rows.find(r => r.type === 'collect_stamp').known, '有任務進度就全用任務進度（持卡 7、貼圖 2），不再推算');
+  const rank = hzPlanRank([Object.assign({}, p, { cid: 1 }), { cid: 2, lv: 5, toLevel: { left: 0, k: 0, exp: 0 }, steps: [] }, { cid: 3, lv: 2, toLevel: { left: 9, k: 0, exp: 0 }, steps: [] }]);
+  ok(rank.map(r => r.cid).join(',') === '2,1,3', '先練誰：領任務就升級的最前，再來做最少件就升級的，升不了的最後');
+  ok(HZ_PLAN_ASPECTS.reduce((a, x) => a + x.types.length, 0) === 22, '22 種角色任務都分到面向');
+}
+
+/* 素材花費：專精挑最便宜的卡、故事挑沒讀的低星卡、家具挑素材夠的；庫存不夠就往後排 */
+{
+  const lessons = [{ cardRarityType: 'rarity_1', masterRank: 1, costs: [{ resourceId: 15, quantity: 1 }, { resourceId: 101, characterId: 1, quantity: 1 }, { resourceId: 127, quantity: 1 }] },
+    { cardRarityType: 'rarity_2', masterRank: 1, costs: [{ resourceId: 15, quantity: 5 }] }, { cardRarityType: 'rarity_2', masterRank: 2, costs: [{ resourceId: 15, quantity: 5 }] },
+    { cardRarityType: 'rarity_4', masterRank: 1, costs: [{ resourceId: 15, quantity: 2000 }, { resourceId: 16, quantity: 1 }, { resourceId: 159, quantity: 1 }] }];
+  const mr = hzMrCosts(lessons);
+  ok(mr[1].length === 1 && mr[1][0].n === 1 && mr[2][0].n === 5 && mr[4].length === 2 && mr[4][1].id === 16, 'masterLessons → 各稀有度每級通用花費（忽略角色／團體專用碎片）');
+  const cc = { 11: { ch: 1, rar: 1, attr: 'cool', name: 'r1' }, 12: { ch: 1, rar: 2, attr: 'cute', name: 'r2' }, 13: { ch: 1, rar: 4, attr: 'pure', name: 'r4' } };
+  const U = { userCards: [{ cardId: 11, masterRank: 4, episodes: [{ cardEpisodeId: 1, scenarioStatus: 'already_read' }, { cardEpisodeId: 2, scenarioStatus: 'unread' }] }, { cardId: 12, masterRank: 3, episodes: [{ cardEpisodeId: 3, scenarioStatus: 'unread' }, { cardEpisodeId: 4, scenarioStatus: 'unread' }] }, { cardId: 13, masterRank: 0, episodes: [{ cardEpisodeId: 5, scenarioStatus: 'unread' }, { cardEpisodeId: 6, scenarioStatus: 'unread' }] }],
+    userMaterials: [{ materialId: 15, quantity: 5 }, { materialId: 1, quantity: 1000 }] };
+  const rows = [{ type: 'master_rank_up_standard', known: true, nextNeed: 10, cur: 7, remain: 3, cost: 9 }, { type: 'read_card_episode_second', known: true, nextNeed: 2, cur: 1, remain: 1, cost: 1 },
+    { type: 'read_card_episode_first', known: true, nextNeed: 3, cur: 1, remain: 2, cost: 2 }, { type: 'collect_mysekai_fixture', known: true, nextNeed: 2, cur: 1, remain: 1, cost: 3 }, { type: 'collect_stamp', known: false, nextNeed: 2, cur: 0, remain: 0, cost: Infinity }];
+  const ctx = { U, cardChar: cc, mrCost: mr, fixRows: [[342, '一歌的玩偶/S', 29, 1, [1], [1, 1, 1], '', '', '', [], [[35, 3], [22, 2]], 'any', 1, 0, 0], [343, '一歌的玩偶/M', 29, 1, [1], [1, 1, 1], '', '', '', [], [[35, 8]], 'any', 1, 0, 0], [12, 'lamp', 1, 1, [], [1, 1, 1], '', '', '', [], [[1, 1]], 'any', 1, 0, 0]],
+    tagChar: { 1: 1 }, mysFix: [], mysMats: [{ mysekaiMaterialId: 35, quantity: 8 }, { mysekaiMaterialId: 22, quantity: 0 }] };
+  hzPlanMats(rows, 1, ctx);
+  const m = rows[0];
+  ok(m.mats.length === 1 && m.mats[0].id === 15 && m.mats[0].n === 11 && m.lack === 6 && m.afford === false && m.cost === 22.5 && m.picks.length === 2, '專精 3 級：★1 MR4→5（1 顆）＋★2 MR3→5（10 顆）＝11 顆心願碎片，庫存 5 → 缺 6，成本 ×2.5');
+  const e2 = rows[1];
+  ok(e2.mats.some(x => x.id === 2 && x.n === 50) && e2.afford === false && e2.picks[0] === '★1 r1', '後篇 1 篇：挑沒讀過的 ★1（帥氣碎片 50，庫存沒有 → 缺）');
+  const e1 = rows[2];
+  ok(e1.mats.some(x => x.id === 1 && x.n === 200) && e1.mats.some(x => x.id === 3 && x.n === 1000) && e1.short === 0, '前篇 2 篇：沒讀過的 ★2 可愛 200 ＋ ★4 純真 1000（★1 前篇已讀）');
+  const f = rows[3];
+  ok(f.mys && f.picks[0] === '一歌的玩偶/M' && f.afford === true, '家具 1 件：素材夠的玩偶/M 先於較便宜但缺素材的玩偶/S');
+  ok(rows[4].mats === undefined, '進度未知的列不算素材');
+  const rowsShort = [{ type: 'master_rank_up_rare', known: true, nextNeed: 10, cur: 0, remain: 10, cost: 60 }];
+  hzPlanMats(rowsShort, 1, ctx);
+  ok(rowsShort[0].short === 5 && rowsShort[0].cost === Infinity && rowsShort[0].mats[0].n === 10000, '★4 只有一張（5 級）不夠 10 級：標 short、成本無限大（不列入下一步）');
+  ok(HZ_EP_COST[3][1][2] === 80 && HZ_EP_COST[4][1][0] === 4000, '故事花費表：★3 後篇 80 奇蹟寶石、★4 後篇 4000 屬性碎片');
+}
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
 process.exit(fail ? 1 : 0);
