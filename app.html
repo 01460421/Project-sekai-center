@@ -5202,6 +5202,13 @@ select option, select optgroup{
             <sc-for list="{{ p.route }}" as="st" hint-placeholder-count="8"><div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;font-size:11.5px;border-top:1px dashed var(--border)"><span style="flex:none;width:14px;color:var(--text-3)">{{ st.i }}</span><span style="flex:1;min-width:0;color:var(--text-2);line-height:1.6"><span style="display:inline-block;padding:0 6px;border-radius:999px;background:var(--card-2);font-size:10px;color:var(--text-3);margin-right:4px">{{ st.a }}</span>{{ st.t }}<sc-if value="{{ st.hasSrc }}"><span style="font-size:10px;color:var(--text-3)">（{{ st.src }}）</span></sc-if><sc-if value="{{ st.hasM }}"><br><span style="font-size:10.5px;color:{{ st.mFg }}">{{ st.m }}</span></sc-if></span><span style="flex:none;font-size:10.5px;color:var(--text-3)">{{ st.p }}</span><span style="flex:none;font-weight:800;color:var(--accent-deep)">{{ st.e }}</span></div></sc-for>
           </div>
         </sc-if>
+        <sc-if value="{{ p.hasGacha }}">
+          <div style="padding:9px 15px;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:3px">抽卡選項</div>
+            <sc-for list="{{ p.gachaRows }}" as="g" hint-placeholder-count="3"><div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:11.5px"><span style="flex:1;min-width:0;color:var(--text-2);line-height:1.6"><sc-if value="{{ g.bfes }}"><span style="display:inline-block;padding:0 7px;border-radius:999px;background:color-mix(in oklab,#9d62d8 18%,transparent);color:#9d62d8;font-size:10px;font-weight:800;margin-right:4px">BFES 優先</span></sc-if>{{ g.when }} {{ g.n }}（{{ g.t }}）：{{ g.cards }}</span><span style="flex:none;font-weight:800;color:var(--accent-deep)">{{ g.v }}</span></div></sc-for>
+            <div style="font-size:11px;color:var(--text-2);line-height:1.7;padding:2px 0 0 10px;border-left:2px solid var(--border);margin-top:4px">{{ p.gachaNote }}</div>
+          </div>
+        </sc-if>
         <sc-for list="{{ p.aspects }}" as="a" hint-placeholder-count="8">
           <div style="padding:9px 15px;border-bottom:1px solid var(--border)">
             <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:3px">{{ a.n }}</div>
@@ -5209,6 +5216,14 @@ select option, select optgroup{
             <sc-for list="{{ a.tips }}" as="tp" hint-placeholder-count="2"><div style="font-size:11px;color:var(--text-2);line-height:1.7;padding:2px 0 0 10px;border-left:2px solid var(--border);margin-top:4px">{{ tp.t }}</div></sc-for>
           </div>
         </sc-for>
+        <div style="padding:10px 15px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button type="button" onClick="{{ onHzPlanAi }}" data-v="{{ p.cid }}" disabled="{{ p.aiBusy }}" style="padding:8px 16px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12px;font-weight:800;cursor:pointer">{{ p.aiBtn }}</button>
+            <span class="u-fc5">{{ p.aiNote }}</span>
+          </div>
+          <sc-if value="{{ p.aiHas }}"><div style="margin-top:8px;padding:10px 13px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);font-size:12.5px;line-height:1.8;color:var(--text);overflow-wrap:break-word">{{ p.aiHtml }}</div></sc-if>
+          <sc-if value="{{ p.aiErr }}"><div style="font-size:11.5px;color:var(--accent-deep);margin-top:5px;line-height:1.7">{{ p.aiErr }}</div></sc-if>
+        </div>
       </div>
     </sc-for>
     <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:8px 2px">目標預設 Lv100：BFES 卡技能的角色等級加成在 Lv100 封頂，理論技能倍率表也以 Lv100 計；路線不含抽卡（持有張數靠卡池）。任務門檻與 EXP 取自台服 master；進度優先用 Haruki 的任務資料，沒有的話從持卡、區域道具、家具推算（標「推算」）。專精花費讀 masterLessons、卡片故事花費為固定表、家具花費讀家具索引；有素材庫存時標出缺多少，素材不夠的往後排。卡池與活動來自本站的卡池預測、月卡玩偶來自月卡玩偶頁，實際以遊戲公告為準。</div>
@@ -8782,7 +8797,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=be856a65fe"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a748ba1d23"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

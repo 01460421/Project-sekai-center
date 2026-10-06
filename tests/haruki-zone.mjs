@@ -2,7 +2,7 @@
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
-  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute,
+  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP,
   hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
 
 let fail = 0;
@@ -220,6 +220,21 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   ok(far.reach === false && far.reachLv >= 5 && far.reachLv < 8 && far.exp > 0, '目標太高：撿完所有可做的也到不了，回報能到幾級');
   const done = hzPlanRoute(Object.assign({}, p, { lv: 6 }), M, Object.assign({ U }, ctx), 5);
   ok(done.done === true && done.left === 0, '已達目標');
+}
+
+/* 給助手的提問：抽卡、素材、活動、路線都要在裡面 */
+{
+  const p = { lv: 37, curExp: 3, need: 10, pending: 0, rows: [{ type: 'collect_stamp', known: false, sentence: '持有{requirement}套貼圖', nextNeed: 2 }],
+    route: { target: 100, left: 539, reach: false, done: false, exp: 20, reachLv: 46, items: 30, rows: [{ type: 'master_rank_up_standard', sentence: '專精{requirement}次', from: 0, to: 5, exp: 5, mats: [{ id: 15, n: 11, lack: 6 }] }] },
+    extra: { cards: { own: 3, total: 50 }, bfes: ['取回過往回憶'], theory: ['Leo/need×可愛'], gachas: [{ s: '2026/10/11', e: '2026/10/21', n: 'Follow my heart', t: '常駐池', on: false, bfes: false, cards: [{ n: 'Be with you', r: 4, jp: false }] }, { s: '2026/12/31', e: '2027/01/04', n: '[2027新春] 絢爛慶典招募', t: 'FES池', on: false, bfes: true, cards: [] }],
+      evNow: { n: 'Follow my heart', on: false, boosted: true }, events: [], dolls: [{ tw: '2027/02', type: '普限', round: 3 }], chal: { hs: 1234567, stage: 12, next: 1240000, unclaimed: 2 }, inv: [{ n: '心願碎片', q: 5 }] } };
+  const q = hzPlanPrompt(p, '宵崎奏', { 15: '心願碎片' });
+  ok(/抽卡/.test(q) && /BFES/.test(q) && /Lv100/.test(q) && /還差 539 EXP/.test(q), '提問含抽卡、BFES、目標與差距');
+  ok(/專精5次：0→5（\+5 EXP，素材 心願碎片×11（缺 6））/.test(q), '提問含路線與素材缺口');
+  ok(/Follow my heart（常駐池）：★4 Be with you/.test(q) && /絢爛慶典招募（FES池，BFES）/.test(q), '提問列出卡池與 PU 卡，BFES 池標出');
+  ok(/他是加成角色/.test(q) && /2027\/02 普限 輪 3/.test(q) && /最高分 1234567/.test(q) && /心願碎片×5/.test(q), '提問含活動加成、月卡玩偶、挑戰 Live、素材庫存');
+  ok(/進度未知/.test(q) && /貼圖/.test(q), '提問含進度未知的任務');
+  ok(HZ_NEW_CARD_EXP[4].cheap === 4 && HZ_NEW_CARD_EXP[3].full === 11, '新卡 EXP 價值表');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');

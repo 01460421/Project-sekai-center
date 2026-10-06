@@ -524,6 +524,32 @@ export function hzPlanRoute(p, M, ctx, target) {
   rows.forEach(r => (r.mats || []).forEach(m => { const k = (r.mys ? 'm' : 'c') + m.id, x = mats.get(k) || { id: m.id, mys: !!r.mys, n: 0, have: m.have, lack: 0 }; x.n += m.n; x.lack += m.lack; mats.set(k, x); }));
   return { target, left, done: false, reach, rows, exp, cost, items, reachLv: reach ? target : reachLv, mats: Array.from(mats.values()) };
 }
+/* 一張新卡值多少角色 EXP：持卡每 2 張 +2（平均 1）、卡片故事前後篇 +2、★4 附服裝 +1 是便宜的部分；
+   再把專精升滿（+5）、技能升滿（+3）是全養。抽卡不列進路線，但要讓玩家知道差多少張卡。 */
+export const HZ_NEW_CARD_EXP = { 4: { cheap: 4, full: 12 }, 9: { cheap: 4, full: 12 }, 3: { cheap: 3, full: 11 }, 2: { cheap: 3, full: 11 }, 1: { cheap: 3, full: 11 } };
+/* 給站內助手的提問：把站上算好的東西整理成文字，請它連抽卡、素材、活動、每日動作一起規劃。純函式，方便測試。 */
+export function hzPlanPrompt(p, name, matName) {
+  const R = p.route || {}, x = p.extra || {}, T = R.target || 100, nm = matName || {};
+  const L = [];
+  L.push('你是 Project SEKAI 台服的養成顧問。下面是本站「養成策略」替玩家算好的資料，請給「' + name + '」到角色等級 Lv' + T + ' 的完整養成計畫。');
+  L.push('要求：1) 一定要把抽卡納入考量：哪些卡池值得為這位角色抽（BFES 池優先，因為 BFES 卡技能的角色等級加成在 Lv100 封頂；復刻池、常駐池、生日池各自的價值），每張新卡大約值多少 EXP、要花多少水晶或天井、值不值得。'
+    + ' 2) 考慮素材花費與庫存缺口、活動加成（活動期間把他放隊長刷隊長次數）、每天固定能做的事（休息室、區域對話、挑戰 Live）。'
+    + ' 3) 用條列分「現在就做」「這兩週」「等卡池再做」三段，每項附 EXP 與成本；最後一句估到 Lv' + T + ' 大概要多久。講重點、不客套。可以用工具查卡池排程與活動。');
+  L.push('【角色】' + name + '：Lv' + (p.lv || 0) + '，本級 ' + p.curExp + '/' + (p.need || '—') + ' EXP，可領未領 ' + (p.pending || 0) + '；到 Lv' + T + ' 還差 ' + (R.left || 0) + ' EXP'
+    + (R.done ? '（已達）' : R.reach ? '；站上算的路線做完 ' + R.rows.length + ' 類任務（共 ' + R.items + ' 單位）就到' : '；已知任務全做完只到 Lv' + R.reachLv + '，還差 ' + Math.max(0, (R.left || 0) - (R.exp || 0)) + ' EXP 要靠新卡等'));
+  if (R.rows && R.rows.length) L.push('【路線（最省力的先）】' + R.rows.map(r => (r.sentence || r.type).replace('{requirement}', String(r.to)) + '：' + r.from + '→' + r.to + '（+' + r.exp + ' EXP' + (r.mats && r.mats.length ? '，素材 ' + r.mats.map(m => (nm[m.id] || ('#' + m.id)) + '×' + m.n + (m.lack ? '（缺 ' + m.lack + '）' : '')).join('、') : '') + '）').join('；'));
+  const unk = (p.rows || []).filter(r => !r.known).map(r => (r.sentence || r.type).replace('{requirement}', String(r.nextNeed || r.upper)));
+  if (unk.length) L.push('【進度未知（公開 API 沒給）】' + unk.join('；'));
+  if (x.cards) L.push('【持卡】台服已出 ' + x.cards.total + ' 張，持有 ' + x.cards.own + ' 張' + ((x.bfes || []).length ? '；BFES 持卡：' + x.bfes.join('、') : '；沒有 BFES 卡') + ((x.theory || []).length ? '；理論組卡用到：' + x.theory.join('、') : ''));
+  if (x.gachas && x.gachas.length) L.push('【接下來有他的卡池】' + x.gachas.map(g => (g.on ? '進行中' : g.s + '～' + g.e) + ' ' + g.n + '（' + g.t + (g.bfes ? '，BFES' : '') + '）' + (g.cards && g.cards.length ? '：' + g.cards.map(c => '★' + (c.r === 9 ? '生日' : c.r) + ' ' + c.n + (c.jp ? '（台服未實裝）' : '')).join('、') : '')).join('；'));
+  else L.push('【接下來有他的卡池】近期預測裡沒有');
+  if (x.evNow) L.push('【活動】' + (x.evNow.on ? '本期' : '下期') + '「' + x.evNow.n + '」' + (x.evNow.boosted ? '他是加成角色' : '他不是加成角色') + ((x.events || []).length ? '；之後：' + x.events.map(e => e.s + ' ' + e.n + '（' + e.role + '）').join('、') : ''));
+  if (x.dolls && x.dolls.length) L.push('【月卡玩偶】' + x.dolls.map(d => d.tw + ' ' + d.type + (d.round ? ' 輪 ' + d.round : '')).join('、'));
+  if (x.chal) L.push('【挑戰 Live】最高分 ' + (x.chal.hs || 0) + (x.chal.stage ? '，關卡 ' + x.chal.stage : '') + (x.chal.next ? '，下個獎勵 ' + x.chal.next + ' 分' : '') + (x.chal.unclaimed ? '，' + x.chal.unclaimed + ' 個獎勵沒領' : ''));
+  if (x.inv && x.inv.length) L.push('【素材庫存】' + x.inv.map(m => m.n + '×' + m.q).join('、'));
+  L.push('【每張新卡的 EXP】便宜的部分（持卡、故事前後篇、服裝）★4 約 +4、★3 以下約 +3；養到專精滿、技能滿 ★4 約 +12、★3 以下約 +11。');
+  return L.join('\n');
+}
 /* 先練誰：領任務就升級的最前；再來是做最少件、成本最低就能升級的；升不了的照還差多少排 */
 export function hzPlanRank(plans) {
   const rows = (plans || []).filter(p => p && p.route).map(p => {
@@ -846,6 +872,7 @@ export function hzMembers() {
       if (!this._hzEdbP) this._hzEdbP = this.tdbJson('eventDeckBonuses.json').catch(() => []);
       if (!this._hzLessonP) this._hzLessonP = Promise.all([this.tdbJson('masterLessons.json').catch(() => []), this.tdbJson('materials.json').catch(() => []), this.loadSkillTable().catch(() => null)]);
       if (!(this.state.rateCards || []).length) await this.loadCards().catch(() => {});
+      if (!this.state.gachaPk) await this.loadGachaPk().catch(() => {});
       const [U0, edb, fx, mysRec, lesson] = await Promise.all([this.hzSuite().catch(() => null), this._hzEdbP, this.loadFixtures().catch(() => null), this.hzMysData().catch(() => ({ mys: null })), this._hzLessonP]);
       const U = U0 || {};
       const cardChar = {}; (this.state.rateCards || []).forEach(c => { cardChar[c[0]] = { ch: +c[1], rar: +c[2], name: c[7], attr: HZ_CARD_ATTRS[+c[3]] || '', su: +c[4] }; });
@@ -862,7 +889,7 @@ export function hzMembers() {
       this._hzPlanMr = ctx.mrCost;
       const chal = hzChallenge(T.chal, U);
       const plans = {};
-      for (let c = 1; c <= 26; c++) { const p = hzPlanFor(c, M, U, ctx); if (p) { p.extra = this.hzPlanExtra(c, U, edb, chal, cardChar, unitOf); Object.assign(p.extra, this.hzPlanTheory(c, U, cardChar, ST)); p.route = hzPlanRoute(p, M, ctx, target); plans[c] = p; } }
+      for (let c = 1; c <= 26; c++) { const p = hzPlanFor(c, M, U, ctx); if (p) { p.extra = this.hzPlanExtra(c, U, edb, chal, cardChar, unitOf, matName); Object.assign(p.extra, this.hzPlanTheory(c, U, cardChar, ST)); p.route = hzPlanRoute(p, M, ctx, target); plans[c] = p; } }
       const has = Array.isArray(U.userCharacters);
       this.setState({ hzPlan: { has, plans, target, rank: has ? hzPlanRank(Object.values(plans)) : [], at: Date.now() } });
     } catch (e) { this.setState({ hzMsg: '養成策略計算失敗：' + ((e && e.message) || e) }); }
@@ -889,13 +916,17 @@ export function hzMembers() {
     return { bfes, theory };
   },
   /* 一位角色的外部脈絡：接下來有他的卡池、他是加成角色的活動、月卡玩偶的月份、挑戰 Live、持卡與最便宜的專精對象 */
-  hzPlanExtra(cid, U, edb, chal, cardChar, unitOf) {
+  hzPlanExtra(cid, U, edb, chal, cardChar, unitOf, matName) {
     const names = this.hzPlanNames(cid);
     const has = s => { const str = String(s || ''); return names.some(n => str.split(/[,，、\s]+/).includes(n)); };
     const d = new Date(), pad = n => String(n).padStart(2, '0'), today = d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()), month = today.slice(0, 7);
     const G = this.state.gachas || [], unit = unitOf[cid] || '';
-    const gachas = G.filter(g => g.e >= today && has(g.ch)).sort((a, b) => (a.s < b.s ? -1 : 1)).slice(0, 3)
-      .map(g => ({ id: g.id, n: g.n, t: g.t, s: g.s, e: g.e, on: g.s <= today }));
+    const PK = this.state.gachaPk || {};
+    const pkCards = g => (((PK[String(g.id)] || {}).cards) || []).filter(c => +c[1] === cid).map(c => ({ id: c[0], n: c[5], r: +c[2], jp: !!c[7] }));
+    const gachas = G.filter(g => g.e >= today && (has(g.ch) || pkCards(g).length)).sort((a, b) => (a.s < b.s ? -1 : 1)).slice(0, 4)
+      .map(g => ({ id: g.id, n: g.n, t: g.t, s: g.s, e: g.e, on: g.s <= today, bfes: /絢爛/.test(g.n) || /bloom/i.test(g.n), cards: pkCards(g) }));
+    const INV = [15, 16, 100 + cid, 132 + cid, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14];
+    const inv = Array.isArray(U.userMaterials) ? INV.map(id => { const m = U.userMaterials.find(x => +x.materialId === id); return m ? { id, n: (matName || {})[id] || ('素材 #' + id), q: +m.quantity || 0 } : null; }).filter(Boolean) : [];
     const seen = new Set();
     const events = G.filter(g => g.eid && g.e >= today && !seen.has(g.eid) && (seen.add(g.eid), true))
       .filter(g => has(g.ech) || has(g.ch) || (g.et === '箱活' && this.HZ_UNIT_TAG[g.u] === unit))
@@ -913,8 +944,22 @@ export function hzMembers() {
     const cheap = mine.filter(c => { const x = cardChar[+c.cardId]; return x.rar <= 3 && (+c.masterRank || 0) < 5; })
       .sort((a, b) => cardChar[+a.cardId].rar - cardChar[+b.cardId].rar || (+a.masterRank || 0) - (+b.masterRank || 0)).slice(0, 3)
       .map(c => '★' + cardChar[+c.cardId].rar + ' ' + cardChar[+c.cardId].name + '（MR' + (+c.masterRank || 0) + '）');
-    return { gachas, events, evNow, dolls, chal: (chal || []).find(r => r.cid === cid) || null,
+    return { gachas, events, evNow, dolls, inv, chal: (chal || []).find(r => r.cid === cid) || null,
       cards: { own: new Set(mine.map(c => +c.cardId)).size, total: Object.keys(cardChar).filter(id => cardChar[id].ch === cid).length, cheap } };
+  },
+  /* 問站內助手：把站上算好的資料整理成提問（含抽卡、素材、活動），答案存在 hzPlanAi（一次一位角色）。要登入且帳號已核准，用掉一次 AI 額度 */
+  async hzPlanAi(cid) {
+    const P = this.state.hzPlan, p = P && P.plans && P.plans[cid]; if (!p) return;
+    if (this.state.hzPlanAi && this.state.hzPlanAi.busy) return;
+    const me = this.state.me;
+    if (!(me && me.status === 'approved')) { this.setState({ hzPlanAi: { cid, busy: false, text: '', err: 'AI 建議要登入而且帳號已核准（我的帳號）才能用。' } }); return; }
+    const chName = {}; (this.state.rateChars || []).forEach(c => { chName[c[0]] = c[1]; });
+    this.setState({ hzPlanAi: { cid, busy: true, text: '', err: '' } });
+    try {
+      await this.loadAi();
+      const ans = await this.aiAsk(hzPlanPrompt(p, chName[cid] || ('#' + cid), (this._hzPlanNames || {}).mat || {}));
+      this.setState({ hzPlanAi: { cid, busy: false, text: ans || '', err: ans ? '' : '助手沒有給出回答，請稍後再試。' } });
+    } catch (e) { this.setState({ hzPlanAi: { cid, busy: false, text: '', err: (e && e.message) || 'AI 呼叫失敗' } }); }
   },
   /* 各面向的建議句：通用做法＋這位角色的脈絡 */
   hzPlanTips(k, p, x, name) {
@@ -922,8 +967,8 @@ export function hzMembers() {
     const row = t => p.rows.find(r => r.type === t) || {};
     if (k === 'card') {
       if (x.cards && x.cards.total) tips.push('台服已出 ' + x.cards.total + ' 張' + name + '的卡' + (p.hasMission || x.cards.own ? '，你有 ' + x.cards.own + ' 張' : '') + '；每多 2 張 +2 EXP。卡片故事前後篇各 +1：★1 只要 10／50 顆屬性碎片、★2 200／1,000、★3 500／2,000＋寶石，★4 與生日卡前篇 1,000、後篇 4,000＋寶石＋奇蹟寶石，先讀低星的。');
-      if (x.gachas && x.gachas.length) tips.push('接下來有' + name + '新卡的卡池：' + x.gachas.map(g => (g.on ? '進行中 ' : when(g) + ' ') + g.n + '（' + g.t + '）').join('；') + '。');
-      else tips.push('近期卡池預測裡沒有' + name + '的新卡，先把故事讀完、等復刻或生日池。');
+      tips.push('每張新卡便宜的部分（持卡、前後篇故事、★4 服裝）就 +3～4 EXP，養到專精滿、技能滿約 +11～12；抽卡選項列在下面，BFES 池優先（技能的角色等級加成在 Lv100 封頂）。');
+      if (!(x.gachas && x.gachas.length)) tips.push('近期卡池預測裡沒有' + name + '的新卡，先把故事讀完、等復刻或生日池。');
     }
     if (k === 'master') {
       const mr = this._hzPlanMr || {}, NM = (this._hzPlanNames || {}).mat || {}, cost = r => (mr[r] || []).map(m => (NM[m.id] || '素材') + '×' + m.n.toLocaleString()).join('＋');
@@ -1100,12 +1145,21 @@ export function hzMembers() {
           : R.done ? '已達目標 Lv' + T + '。'
           : R.reach ? '到 Lv' + T + ' 還差 ' + R.left + ' EXP' + (p.pending ? '（含可領 ' + p.pending + '）' : '') + '：做完下面 ' + R.rows.length + ' 類任務、共 ' + R.items.toLocaleString() + ' 單位（+' + R.exp + ' EXP）就到了。'
           : '已知任務全做完也只到 Lv' + R.reachLv + '（到 Lv' + T + ' 還差 ' + (R.left - R.exp) + ' EXP）：剩下要靠新卡（看卡池）、新貼圖、新對話、新家具。';
+        const gachaRows = (x.gachas || []).map(g => ({ when: g.on ? '進行中' : g.s.slice(5) + '～' + g.e.slice(5), n: g.n, t: g.t, bfes: !!g.bfes,
+          cards: g.cards && g.cards.length ? g.cards.map(c => '★' + (c.r === 9 ? '生日' : c.r) + ' ' + c.n + (c.jp ? '（台服未實裝）' : '')).join('、') : '（PU 卡未知）',
+          v: g.cards && g.cards.length ? '每張約 +' + Math.min(...g.cards.map(c => (HZ_NEW_CARD_EXP[c.r] || HZ_NEW_CARD_EXP[4]).cheap)) + '～' + Math.max(...g.cards.map(c => (HZ_NEW_CARD_EXP[c.r] || HZ_NEW_CARD_EXP[4]).full)) + ' EXP' : '' }));
+        const short = !R.done && !R.reach ? Math.max(0, (R.left || 0) - (R.exp || 0)) : 0;
+        const gachaNote = short ? '還差的 ' + short + ' EXP 相當於再拿約 ' + Math.ceil(short / 12) + '～' + Math.ceil(short / 4) + ' 張新卡（每張全養 +12、只做便宜部分 +4）；BFES 池優先，復刻與生日池次之。' : '路線已經夠到目標；抽卡是加速，BFES 池優先。';
+        const A = s.hzPlanAi && String(s.hzPlanAi.cid) === String(p.cid) ? s.hzPlanAi : null, meOk = !!(s.me && s.me.status === 'approved');
         const route = (R.rows || []).map((st, i) => ({ i: String(i + 1), t: fill(st), a: aspectName[st.aspect] || '', p: (st.ex ? '累計 ' : '') + st.from + ' → ' + st.to + '（做 ' + st.remain.toLocaleString() + '）', e: '+' + st.exp + ' EXP', src: SRC[st.src] || '', hasSrc: !!SRC[st.src], m: matTxt(st), hasM: !!matTxt(st), mFg: st.afford === false ? 'var(--accent-deep)' : 'var(--text-3)' }));
         const badges = [].concat((x.bfes || []).length ? [{ t: 'BFES ×' + x.bfes.length, bg: 'color-mix(in oklab,#9d62d8 18%,transparent)', fg: '#9d62d8' }] : [], (x.theory || []).length ? [{ t: '理論組卡 ×' + x.theory.length, bg: 'color-mix(in oklab,#4d8ef5 16%,transparent)', fg: '#4d8ef5' }] : []);
         const why = (x.bfes || []).length ? 'BFES 持卡：' + x.bfes.join('、') + '（技能的角色等級加成在 Lv100 封頂）' + ((x.theory || []).length ? '；理論組卡用到：' + x.theory.slice(0, 6).join('、') + (x.theory.length > 6 ? '…' : '') : '') : (x.theory || []).length ? '理論組卡用到：' + x.theory.slice(0, 6).join('、') + (x.theory.length > 6 ? '…' : '') : '';
         return { cid: String(p.cid), name, lv: p.lv || '—', pct: pct + '%', exp: p.need ? p.curExp + ' / ' + p.need + ' EXP' : (p.lv >= p.maxLv ? '已達上限' : ''),
           pending: p.pending > 0 ? '可領 ' + p.pending + ' EXP' : '', hasPending: p.pending > 0, headline, nextLine, hasNext: !!nextLine && !!(P && P.has) && !R.done, steps, hasSteps: steps.length > 0, aspects,
           route, hasRoute: route.length > 0, routeTitle: '到 Lv' + T + ' 的路線（最省力的先）', matsTotal, hasMats: !!matsTotal, badges, hasBadges: badges.length > 0, why, hasWhy: !!why,
+          gachaRows, hasGacha: gachaRows.length > 0, gachaNote,
+          aiBusy: !!(A && A.busy), aiBtn: A && A.busy ? '助手思考中…（約 20～60 秒）' : '問 AI 完整策略（含抽卡）', aiNote: meOk ? '用掉一次 AI 額度；會把上面的資料和卡池、活動一起交給站內助手' : 'AI 建議要登入且帳號已核准才能用',
+          aiHas: !!(A && A.text), aiHtml: A && A.text ? React.createElement('div', { dangerouslySetInnerHTML: { __html: this.mdLite(A.text) } }) : null, aiErr: (A && A.err) || '',
           chal: c ? ('挑戰 Live：' + (c.hs ? '最高分 ' + c.hs.toLocaleString() : '還沒打過') + (c.stage ? '・關卡 ' + c.stage : '') + (c.next ? '・下個獎勵 ' + c.next.toLocaleString() + ' 分' : '・獎勵已全拿') + (c.unclaimed ? '・' + c.unclaimed + ' 個獎勵沒領' : '')) : '',
           hasChal: !!c, unknown: P && P.has && !p.hasMission && p.unknown ? p.unknown + ' 項任務的進度公開 API 沒給（標「未知」），數字請到工具箱看；標「推算」的是從持卡、區域道具、家具算的。' : '', hasUnknown: !!(P && P.has && !p.hasMission && p.unknown) };
       });
@@ -1119,6 +1173,7 @@ export function hzMembers() {
         onHzPlanAll: () => this.hzPlanSelSet(Array.from({ length: 26 }, (_, i) => i + 1)),
         onHzPlanNone: () => this.hzPlanSelSet([]),
         onHzPlanAuto: () => { const rk = ((this.state.hzPlan || {}).rank || []).filter(r => !r.done).slice(0, 3).map(r => r.cid); this.hzPlanSelSet(rk.length ? rk : [1]); },
+        onHzPlanAi: e => this.hzPlanAi(+e.currentTarget.dataset.v),
         onHzPlanRefresh: () => this.hzPlanBuild() });
     }
     if (tab === 'train' && tsub !== 'crank') {
