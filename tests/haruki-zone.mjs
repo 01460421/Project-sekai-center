@@ -2,7 +2,7 @@
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
-  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST,
+  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute,
   hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
 
 let fail = 0;
@@ -149,8 +149,14 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   const PU2 = Object.assign({}, PU, { userCharacterMissionV2s: [{ characterId: 1, characterMissionType: 'collect_member', progress: 7 }, { characterId: 1, characterMissionType: 'collect_stamp', progress: 2 }] });
   const p2 = hzPlanFor(1, PM, PU2, ctx);
   ok(p2.hasMission && p2.rows.find(r => r.type === 'collect_member').cur === 7 && p2.rows.find(r => r.type === 'collect_member').src === 'mission' && p2.rows.find(r => r.type === 'collect_stamp').known, '有任務進度就全用任務進度（持卡 7、貼圖 2），不再推算');
-  const rank = hzPlanRank([Object.assign({}, p, { cid: 1 }), { cid: 2, lv: 5, toLevel: { left: 0, k: 0, exp: 0 }, steps: [] }, { cid: 3, lv: 2, toLevel: { left: 9, k: 0, exp: 0 }, steps: [] }]);
-  ok(rank.map(r => r.cid).join(',') === '2,1,3', '先練誰：領任務就升級的最前，再來做最少件就升級的，升不了的最後');
+  const rank = hzPlanRank([
+    { cid: 1, lv: 50, extra: { bfes: [], theory: ['Leo/need×可愛'] }, route: { done: false, reach: true, left: 300, cost: 900 } },
+    { cid: 2, lv: 80, extra: { bfes: ['x'], theory: [] }, route: { done: false, reach: true, left: 120, cost: 500 } },
+    { cid: 3, lv: 100, extra: { bfes: ['y'], theory: [] }, route: { done: true, reach: true, left: 0, cost: 0 } },
+    { cid: 4, lv: 30, extra: { bfes: [], theory: [] }, route: { done: false, reach: false, left: 600, cost: 100 } },
+    { cid: 5, lv: 60, extra: { bfes: ['z'], theory: [] }, route: { done: false, reach: true, left: 200, cost: 100 } }]);
+  ok(rank.map(r => r.cid).join(',') === '2,5,1,4,3', '先練誰：BFES 持卡者先（離目標近的優先）、再理論組卡、再其他；已達目標最後');
+  ok(HZ_PLAN_ASPECTS.length === 8, '八個面向');
   ok(HZ_PLAN_ASPECTS.reduce((a, x) => a + x.types.length, 0) === 22, '22 種角色任務都分到面向');
 }
 
@@ -182,6 +188,38 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   hzPlanMats(rowsShort, 1, ctx);
   ok(rowsShort[0].short === 5 && rowsShort[0].cost === Infinity && rowsShort[0].mats[0].n === 10000, '★4 只有一張（5 級）不夠 10 級：標 short、成本無限大（不列入下一步）');
   ok(HZ_EP_COST[3][1][2] === 80 && HZ_EP_COST[4][1][0] === 4000, '故事花費表：★3 後篇 80 奇蹟寶石、★4 後篇 4000 屬性碎片');
+}
+
+/* 到目標等級的路線：上限、每 EXP 成本排序、同一任務前段先、素材合計、撿不夠回報能到幾級 */
+{
+  const PG = [];
+  const grp = (id, reqs, exp) => reqs.forEach((r, i) => PG.push({ id, seq: i + 1, requirement: r, exp: exp || 1 }));
+  grp(14, [2, 4, 6], 2); grp(6, [1, 2, 3, 4]); grp(18, [1, 2, 3, 5, 8]); grp(1, [10, 20, 40, 80]); grp(101, [500, 600]);
+  const mk = (id, type, pg, ach) => ({ id, characterId: 1, characterMissionType: type, parameterGroupId: pg, sentence: type + '{requirement}', isAchievementMission: !!ach });
+  const M = { missions: [mk(1, 'collect_member', 14), mk(2, 'read_card_episode_first', 6), mk(4, 'master_rank_up_standard', 18), mk(8, 'play_live', 1, true), mk(9, 'play_live_ex', 101, true)], groups: PG,
+    levels: [1, 2, 3, 4, 5, 6, 7, 8].map((lv, i) => ({ levelType: 'character', level: lv, totalExp: [0, 1, 2, 4, 7, 10, 14, 18][i] })) };
+  const cc = { 11: { ch: 1, rar: 1, attr: 'cool', name: 'r1' }, 12: { ch: 1, rar: 2, attr: 'cute', name: 'r2' } };
+  const U = { userCharacters: [{ characterId: 1, characterRank: 2, exp: 0, totalExp: 1 }],
+    userCards: [{ cardId: 11, masterRank: 4, episodes: [{ cardEpisodeId: 1, scenarioStatus: 'unread' }, { cardEpisodeId: 2, scenarioStatus: 'unread' }] }, { cardId: 12, masterRank: 3, episodes: [{ cardEpisodeId: 3, scenarioStatus: 'already_read' }, { cardEpisodeId: 4, scenarioStatus: 'unread' }] }],
+    userMaterials: [{ materialId: 15, quantity: 100 }, { materialId: 2, quantity: 0 }], userCharacterLiveUsageCounts: [{ characterId: 1, characterLiveUsageType: 'leader', usageCount: 5 }] };
+  const ctx = { cardChar: cc, mrCost: { 1: [{ id: 15, n: 1 }], 2: [{ id: 15, n: 5 }] } };
+  const p = hzPlanFor(1, M, U, ctx);
+  const caps = hzPlanCaps(p, Object.assign({ U }, ctx));
+  ok(caps.master_rank_up_standard === 10 && caps.read_card_episode_first === 2 && caps.collect_member === 2, '上限：專精已 7 級（推算）還能升 3 級→10、前篇已讀 1 還有 1 篇→2、持有張數不靠任務');
+  const r = hzPlanRoute(p, M, Object.assign({ U }, ctx), 5);
+  ok(r.target === 5 && r.left === 6 && r.reach === true, 'Lv2（總 1）到 Lv5（總 7）差 6 EXP，撿得到');
+  const types = r.rows.map(x => x.type);
+  ok(!types.includes('collect_member'), '路線不含持有張數（靠抽卡）');
+  const mr = r.rows.find(x => x.type === 'master_rank_up_standard'), ep = r.rows.find(x => x.type === 'read_card_episode_first');
+  ok(ep && ep.from === 1 && ep.to === 2 && ep.exp === 1, '前篇 1 → 2（只剩 1 篇沒讀，上限 2）');
+  ok(mr && mr.from === 7 && mr.to === 8 && mr.exp === 1 && mr.mats[0].n === 1 && mr.afford === true && /★1/.test(mr.picks[0]), '專精 7 → 8 級：挑 ★1 升一級＝1 顆心願碎片，庫存夠');
+  ok(r.exp >= 6 && r.items === 77 && r.mats.some(m => m.id === 15 && m.n === 1), '路線總 EXP 夠（故事 1＋專精 1＋隊長 4 段）、共 77 單位、素材合計 1 顆心願碎片');
+  const pl = r.rows.find(x => x.type === 'play_live');
+  ok(pl && pl.from === 5 && pl.to === 80 && pl.n === 4 && pl.exp === 4, '隊長次數 5 → 80：四段都撿、前段先');
+  const far = hzPlanRoute(p, M, Object.assign({ U }, ctx), 8);
+  ok(far.reach === false && far.reachLv >= 5 && far.reachLv < 8 && far.exp > 0, '目標太高：撿完所有可做的也到不了，回報能到幾級');
+  const done = hzPlanRoute(Object.assign({}, p, { lv: 6 }), M, Object.assign({ U }, ctx), 5);
+  ok(done.done === true && done.left === 0, '已達目標');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
