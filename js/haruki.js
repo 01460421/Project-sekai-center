@@ -308,20 +308,24 @@ export function hzMysWeather(mys, snap) {
    任務進度優先用 userCharacterMissionV2s；公開 API 沒給的話，能從持卡、區域道具、家具推算的就推算（畫面標「推算」），
    其他標「進度未知」。角色等級 EXP 很小（一步任務 1～2 EXP、Lv175 共 1595），所以「做完幾件就升級」算得出來。 */
 export const HZ_PLAN_ASPECTS = [
-  { k: 'card', n: '卡面', types: ['collect_member', 'read_card_episode_first', 'read_card_episode_second'] },
-  { k: 'master', n: '專精與技能', types: ['master_rank_up_standard', 'master_rank_up_rare', 'skill_level_up_standard', 'skill_level_up_rare'] },
-  { k: 'leader', n: '隊長與休息室', types: ['play_live', 'play_live_ex', 'waiting_room', 'waiting_room_ex'] },
-  { k: 'stamp', n: '貼圖', types: ['collect_stamp'] },
-  { k: 'talk', n: '對話', types: ['read_area_talk', 'read_mysekai_fixture_unique_character_talk'] },
-  { k: 'mys', n: '娃與家具', types: ['collect_mysekai_fixture', 'collect_mysekai_canvas'] },
-  { k: 'wear', n: '服裝與聲音', types: ['collect_costume_3d', 'collect_character_archive_voice', 'collect_another_vocal'] },
-  { k: 'area', n: '區域道具', types: ['area_item_level_up_character', 'area_item_level_up_unit', 'area_item_level_up_reality_world'] },
+  { k: 'leader', n: '刷隊長', note: '最大的來源：把他放隊長打 Live，活動期間順便就刷到', types: ['play_live', 'play_live_ex'] },
+  { k: 'talk', n: '對話', note: '免費：每場 Live 後送回休息室、各區域的對話、豆森家具對話', types: ['waiting_room', 'waiting_room_ex', 'read_area_talk', 'read_mysekai_fixture_unique_character_talk'] },
+  { k: 'card', n: '卡面', note: '抽到卡就有：持卡張數、卡片故事前後篇', types: ['collect_member', 'read_card_episode_first', 'read_card_episode_second'] },
+  { k: 'master', n: '專精', note: '★1～3 用心願碎片就能升；★4 要 2000 顆＋純結晶，慢慢來', types: ['master_rank_up_standard', 'master_rank_up_rare'] },
+  { k: 'skill', n: '技能', note: '技能升級譜靠活動與商店，先補 ★1～3', types: ['skill_level_up_standard', 'skill_level_up_rare'] },
+  { k: 'misc', n: '其他', note: '貼圖、服裝、台詞、Another Vocal、區域道具、家具、無框畫：零碎來源，實務上加起來大概只值 1～2 級，排最後',
+    types: ['collect_stamp', 'collect_costume_3d', 'collect_character_archive_voice', 'collect_another_vocal', 'area_item_level_up_character', 'area_item_level_up_unit', 'area_item_level_up_reality_world', 'collect_mysekai_fixture', 'collect_mysekai_canvas'] },
 ];
-/* 每種任務「做 1 單位」的相對成本（讀劇情最便宜、抽新卡最貴），乘上還差的數量就是排序用的成本 */
-export const HZ_PLAN_EFFORT = { read_card_episode_first: 1, read_card_episode_second: 1, read_area_talk: 1, waiting_room: 2, waiting_room_ex: 2,
-  read_mysekai_fixture_unique_character_talk: 2, play_live: 0.3, play_live_ex: 0.3, area_item_level_up_reality_world: 2, area_item_level_up_character: 3,
-  area_item_level_up_unit: 3, master_rank_up_standard: 3, skill_level_up_standard: 3, collect_mysekai_fixture: 3, collect_mysekai_canvas: 4,
-  collect_character_archive_voice: 4, skill_level_up_rare: 5, collect_stamp: 5, collect_another_vocal: 5, master_rank_up_rare: 6, collect_costume_3d: 6, collect_member: 8 };
+/* 每種任務「做 1 單位」的相對成本，乘上還差的數量就是排序用的成本。
+   照玩家實際的難易排：刷隊長最便宜（打 Live 本來就要打）→ 對話（免費，但數量有限）→ 卡片故事（屬性碎片好拿，寶石與奇蹟寶石難）
+   → 專精（★1～3 便宜、★4 要 2000 顆心願碎片＋純結晶）→ 技能（技能升級譜靠活動）→ 其他零碎（貼圖、服裝、區域道具的金幣與種子、家具、無框畫）
+   表面上數字小但很難拿的素材，另外在 HZ_MAT_WEIGHT 加權。 */
+export const HZ_PLAN_EFFORT = { play_live: 0.05, play_live_ex: 0.05, waiting_room: 0.3, waiting_room_ex: 0.3, read_area_talk: 0.3, read_mysekai_fixture_unique_character_talk: 0.5,
+  read_card_episode_first: 1.6, read_card_episode_second: 2, master_rank_up_standard: 2.5, skill_level_up_standard: 3.5, skill_level_up_rare: 5, master_rank_up_rare: 6,
+  collect_mysekai_fixture: 6, collect_character_archive_voice: 7, collect_mysekai_canvas: 8, area_item_level_up_character: 8, area_item_level_up_unit: 8, area_item_level_up_reality_world: 8,
+  collect_stamp: 8, collect_member: 8, collect_another_vocal: 9, collect_costume_3d: 10 };
+/* 難拿的素材：心願純結晶（通用 16、角色 133～158、團體 159～164）、奇蹟寶石 14、屬性寶石 6～10。一列用到就把成本乘上去（取最大的一個） */
+export const HZ_MAT_WEIGHT = id => (id === 16 || (id >= 133 && id <= 164)) ? 3 : id === 14 ? 1.8 : (id >= 6 && id <= 10) ? 1.3 : 1;
 /* 從原始資料推算任務進度。ctx：U 玩家資料、cardChar（卡 id → {ch, rar}）、unitOf（角色 → 團體）、areaItemLevels／areaItems／areas、
    fixRows（fixtures-index 的列，第 5 欄是標籤 id）、tagChar（標籤 id → 角色）、mysFix（持有家具 id）。拿不到的鍵就不回（畫面標未知）。 */
 export function hzPlanDerive(cid, ctx) {
@@ -426,7 +430,10 @@ export function hzPlanMats(rows, cid, ctx) {
     r.lack = mats.reduce((a, m) => a + m.lack, 0);
     r.afford = H ? r.lack === 0 : null;
     if (short > 0) r.cost = Infinity;             // 持有的卡／可做的家具不夠做到門檻
-    else if (r.afford === false) r.cost *= 2.5;   // 素材不夠：往後排
+    else {
+      if (!mys) r.cost *= mats.reduce((w, m) => Math.max(w, HZ_MAT_WEIGHT(m.id)), 1);   // 難拿的素材：純結晶、奇蹟寶石、寶石
+      if (r.afford === false) r.cost *= 2.5;   // 素材不夠：往後排
+    }
   });
   return rows;
 }
@@ -548,6 +555,7 @@ export function hzPlanPrompt(p, name, matName) {
   if (x.chal) L.push('【挑戰 Live】最高分 ' + (x.chal.hs || 0) + (x.chal.stage ? '，關卡 ' + x.chal.stage : '') + (x.chal.next ? '，下個獎勵 ' + x.chal.next + ' 分' : '') + (x.chal.unclaimed ? '，' + x.chal.unclaimed + ' 個獎勵沒領' : ''));
   if (x.inv && x.inv.length) L.push('【素材庫存】' + x.inv.map(m => m.n + '×' + m.q).join('、'));
   L.push('【每張新卡的 EXP】便宜的部分（持卡、故事前後篇、服裝）★4 約 +4、★3 以下約 +3；養到專精滿、技能滿 ★4 約 +12、★3 以下約 +11。');
+  L.push('【實務順位，請照這個排】刷隊長（放隊長打 Live，一般次數共 140 EXP、EX 每輪再加）→ 對話（休息室、區域對話、豆森對話，免費但數量有限）→ 卡面（抽卡與卡片故事）→ 專精（★1～3 便宜，★4 要 2000 顆心願碎片＋純結晶）→ 技能（技能升級譜靠活動）→ 其他零碎（貼圖、服裝、台詞、Another Vocal、區域道具、家具、無框畫）實務上加起來只值 1～2 級。表面上數量小但很難拿的素材：心願純結晶、奇蹟寶石、屬性寶石、技能升級譜、不可思議的種子與區域道具的金幣；不要為了零碎任務花這些。');
   return L.join('\n');
 }
 /* 先練誰：領任務就升級的最前；再來是做最少件、成本最低就能升級的；升不了的照還差多少排 */
@@ -963,42 +971,35 @@ export function hzMembers() {
   },
   /* 各面向的建議句：通用做法＋這位角色的脈絡 */
   hzPlanTips(k, p, x, name) {
-    const tips = [], when = g => g.s.slice(5) + '～' + g.e.slice(5);
+    const tips = [];
     const row = t => p.rows.find(r => r.type === t) || {};
-    if (k === 'card') {
-      if (x.cards && x.cards.total) tips.push('台服已出 ' + x.cards.total + ' 張' + name + '的卡' + (p.hasMission || x.cards.own ? '，你有 ' + x.cards.own + ' 張' : '') + '；每多 2 張 +2 EXP。卡片故事前後篇各 +1：★1 只要 10／50 顆屬性碎片、★2 200／1,000、★3 500／2,000＋寶石，★4 與生日卡前篇 1,000、後篇 4,000＋寶石＋奇蹟寶石，先讀低星的。');
-      tips.push('每張新卡便宜的部分（持卡、前後篇故事、★4 服裝）就 +3～4 EXP，養到專精滿、技能滿約 +11～12；抽卡選項列在下面，BFES 池優先（技能的角色等級加成在 Lv100 封頂）。');
-      if (!(x.gachas && x.gachas.length)) tips.push('近期卡池預測裡沒有' + name + '的新卡，先把故事讀完、等復刻或生日池。');
-    }
-    if (k === 'master') {
-      const mr = this._hzPlanMr || {}, NM = (this._hzPlanNames || {}).mat || {}, cost = r => (mr[r] || []).map(m => (NM[m.id] || '素材') + '×' + m.n.toLocaleString()).join('＋');
-      tips.push('專精每升 1 級：★1 ' + (cost(1) || '1 顆心願碎片') + '、★2 ' + (cost(2) || '5') + '、★3 ' + (cost(3) || '50') + '、生日卡 ' + (cost(9) || '1000') + '、★4 ' + (cost(4) || '2000＋心願純結晶×1') + '（角色／團體專用碎片也能代替心願碎片）。先升 ★1、★2 最划算。' + (x.cards && x.cards.cheap.length ? '最便宜的對象：' + x.cards.cheap.join('、') + '。' : ''));
-      tips.push('技能升級用技能升級譜（活動、商店取得）；★1～3 需要的技能 EXP 少，先補標準類的次數。');
-    }
     if (k === 'leader') {
       const ev = (x.events || [])[0];
       if (x.evNow && x.evNow.boosted) tips.push((x.evNow.on ? '本期活動' : '下期活動') + '「' + x.evNow.n + '」的加成角色含' + name + '：活動組卡時把' + name + '放隊長（組卡分頁的「固定卡片」填他的活動加成卡），刷活動的每一場都算隊長次數。');
       else if (ev) tips.push((ev.on ? '進行中的' : ev.s.slice(5) + ' 起的') + '活動「' + ev.n + '」' + name + '是' + ev.role + '：那期把他當隊長，活動 PT 和隊長次數一起賺。');
       else tips.push('隊長次數任何 Live 都算；不是加成角色時，多人 Live 放他當隊長對分數影響最小。');
-      const pl = row('play_live'); if (pl.known && pl.remain > 0) tips.push('一般隊長次數再 ' + pl.remain + ' 場到下一個門檻（+' + pl.nextExp + ' EXP）。');
-      tips.push('休息室：每場 Live 結束後可以把一位角色送回休息室，固定選' + name + '。');
-    }
-    if (k === 'stamp') {
-      tips.push('貼圖來源：角色等級獎勵、挑戰 Live 的分數獎勵、活動兌換所、虛擬 Live 商店與活動加碼；同一張不重複計。');
-      if (x.chal) tips.push('挑戰 Live：' + (x.chal.hs ? '最高分 ' + x.chal.hs.toLocaleString() : '還沒打過') + (x.chal.stage ? '・關卡 ' + x.chal.stage : '') + (x.chal.next ? '・下個分數獎勵 ' + x.chal.next.toLocaleString() + ' 分' : '・分數獎勵已全拿') + (x.chal.unclaimed ? '・有 ' + x.chal.unclaimed + ' 個獎勵還沒領' : '') + '。');
+      const pl = row('play_live'); if (pl.known && pl.remain > 0) tips.push('一般隊長次數再 ' + pl.remain + ' 場到下一個門檻（+' + pl.nextExp + ' EXP）；一般次數共 140 EXP、EX 每輪再加，是單一最大的來源。');
     }
     if (k === 'talk') {
+      tips.push('休息室：每場 Live 結束後可以把一位角色送回休息室，固定選' + name + '，跟刷隊長一起累積。');
       tips.push('區域對話：新卡與新活動後各區域會多新對話，進遊戲到各區域把' + name + '的對話點完（免費、一段 1 EXP）。');
       tips.push('豆森家具對話：做出會觸發' + name + '對話的家具再去看；缺哪些家具看「豆森 → 家具與對話」。');
     }
-    if (k === 'mys') {
-      if (x.dolls && x.dolls.length) tips.push('月卡玩偶：' + x.dolls.map(dl => dl.tw + ' ' + dl.type + (dl.round ? ' 輪 ' + dl.round : '') + (dl.now ? '（本月）' : '')).join('、') + ' 有' + name + '的玩偶；玩偶帶角色標籤，算一件家具，也會觸發專屬對話。');
-      else tips.push('接下來幾個月的月卡玩偶沒有' + name + '；帶他標籤的家具靠藍圖製作。');
-      tips.push('玩偶 S／M／L 各算一件帶' + name + '標籤的家具，藍圖來自月卡，材料主要是布料與線；上面「家具」那列列出最便宜、素材夠的做法。');
-      tips.push('無框畫要有那張卡＋素材才能做；每 5 張 +1 EXP，先做已經持有的卡。');
+    if (k === 'card') {
+      if (x.cards && x.cards.total) tips.push('台服已出 ' + x.cards.total + ' 張' + name + '的卡' + (p.hasMission || x.cards.own ? '，你有 ' + x.cards.own + ' 張' : '') + '；每多 2 張 +2 EXP，前後篇故事各 +1。故事的屬性碎片好拿，★3／★4 後篇要的寶石與奇蹟寶石難拿，先讀低星的。');
+      tips.push('每張新卡便宜的部分（持卡、前後篇故事、★4 服裝）+3～4 EXP，養到專精滿、技能滿約 +11～12；抽卡選項列在上面，BFES 池優先（技能的角色等級加成在 Lv100 封頂）。');
+      if (!(x.gachas && x.gachas.length)) tips.push('近期卡池預測裡沒有' + name + '的新卡，先把故事讀完、等復刻或生日池。');
     }
-    if (k === 'wear') tips.push('3D 服裝：活動兌換所、卡池附贈與商店；LIVE／招募台詞靠多抽、多用；Another Vocal 在虛擬 Live 商店用虛擬幣換。');
-    if (k === 'area') tips.push('升' + name + '的區域道具同時加綜合力；哪個最划算看「養成 → 區域道具」。團體與「世界」道具的次數全團共用。');
+    if (k === 'master') {
+      const mr = this._hzPlanMr || {}, NM = (this._hzPlanNames || {}).mat || {}, cost = r => (mr[r] || []).map(m => (NM[m.id] || '素材') + '×' + m.n.toLocaleString()).join('＋');
+      tips.push('每升 1 級：★1 ' + (cost(1) || '1 顆心願碎片') + '、★2 ' + (cost(2) || '5') + '、★3 ' + (cost(3) || '50') + '、生日卡 ' + (cost(9) || '1000') + '、★4 ' + (cost(4) || '2000＋心願純結晶×1') + '（角色／團體專用碎片也能代替心願碎片）。先升 ★1、★2；★4 的純結晶很難拿，排在技能之後慢慢補。' + (x.cards && x.cards.cheap.length ? '最便宜的對象：' + x.cards.cheap.join('、') + '。' : ''));
+    }
+    if (k === 'skill') tips.push('技能升級用技能升級譜（活動兌換所、商店），數量有限；★1～3 需要的技能 EXP 少，先補標準類的次數，★4 的留給組卡真的會用到的卡。');
+    if (k === 'misc') {
+      tips.push('這一群加起來實務上大概只值 1～2 級：貼圖靠角色等級與挑戰 Live 獎勵、服裝靠活動與卡池附贈、台詞靠多抽多用、Another Vocal 用虛擬幣換、區域道具要大量金幣與不可思議的種子、家具與無框畫要豆森素材。順手做就好，不要為了它們花資源。');
+      if (x.chal) tips.push('挑戰 Live：' + (x.chal.hs ? '最高分 ' + x.chal.hs.toLocaleString() : '還沒打過') + (x.chal.stage ? '・關卡 ' + x.chal.stage : '') + (x.chal.next ? '・下個分數獎勵 ' + x.chal.next.toLocaleString() + ' 分' : '・分數獎勵已全拿') + (x.chal.unclaimed ? '・有 ' + x.chal.unclaimed + ' 個獎勵還沒領' : '') + '。');
+      if (x.dolls && x.dolls.length) tips.push('月卡玩偶：' + x.dolls.map(dl => dl.tw + ' ' + dl.type + (dl.round ? ' 輪 ' + dl.round : '') + (dl.now ? '（本月）' : '')).join('、') + ' 有' + name + '的玩偶（S／M／L 各算一件帶標籤的家具，也會觸發專屬對話）。');
+    }
     return tips;
   },
 
@@ -1134,7 +1135,7 @@ export function hzMembers() {
       const cards = sel.map(cid => plans[cid]).filter(Boolean).map(p => {
         const x = p.extra || {}, name = chName[p.cid] || ('#' + p.cid), pct = p.need > 0 ? Math.min(100, Math.round(p.curExp / p.need * 100)) : 100;
         const steps = p.steps.slice(0, 6).map((st, i) => ({ i: String(i + 1), t: fill(st), a: aspectName[st.aspect] || '', p: (st.ex ? '累計 ' : '') + st.cur + ' / ' + st.nextNeed + '，還差 ' + st.remain, e: '+' + st.nextExp + ' EXP', src: SRC[st.src] || '', hasSrc: !!SRC[st.src], m: matTxt(st), hasM: !!matTxt(st), mFg: st.afford === false ? 'var(--accent-deep)' : 'var(--text-3)' }));
-        const aspects = HZ_PLAN_ASPECTS.map(a => ({ k: a.k, n: a.n,
+        const aspects = HZ_PLAN_ASPECTS.map(a => ({ k: a.k, n: a.n, note: a.note || '', hasNote: !!a.note,
           rows: p.rows.filter(r => a.types.includes(r.type)).map(r => ({ t: fill(r), p: r.known ? ((r.ex ? '累計 ' : '') + r.cur + (r.nextNeed > 0 ? ' / ' + r.nextNeed : '・已做完')) : '進度未知', e: r.nextNeed > 0 ? '+' + r.nextExp + ' EXP' : '', src: SRC[r.src] || '', hasSrc: !!SRC[r.src], fg: r.known ? 'var(--text-2)' : 'var(--text-3)', m: matTxt(r), hasM: !!matTxt(r), mFg: r.afford === false ? 'var(--accent-deep)' : 'var(--text-3)' })),
           tips: this.hzPlanTips(a.k, p, x, name).map(t => ({ t })) }));
         const c = x.chal, R = p.route || {}, T = R.target || target;
@@ -1168,7 +1169,7 @@ export function hzMembers() {
         d: r.done ? '已達 Lv' + target : r.reach ? '差 ' + r.left + ' EXP，' + r.items.toLocaleString() + ' 單位可到' : '全做完到 Lv' + ((plans[r.cid] || {}).route || {}).reachLv, on: selSet.has(r.cid) }));
       Object.assign(out, { hzPlanLoading: !P, hzPlanChips: chips, hzPlanCards: cards, hzPlanEmpty: !!(P && !cards.length), hzPlanRank: rank, hzPlanHasRank: rank.length > 0,
         hzPlanNoUser: !!(P && !P.has), hzPlanN: cards.length ? '已選 ' + cards.length + ' 位' : '', hzPlanTarget: String(s.hzPlanTarget || target),
-        hzPlanRankNote: '目標 Lv' + target + '；持有 BFES 卡的角色排最前（技能的角色等級加成在 Lv100 封頂），再來是理論組卡用到的角色，各自依離目標的 EXP 排。',
+        hzPlanRankNote: '目標 Lv' + target + '；持有 BFES 卡的角色排最前（技能的角色等級加成在 Lv100 封頂），再來是理論組卡用到的角色，各自依離目標的 EXP 排。路線的順位照實務難易：刷隊長 → 對話 → 卡面 → 專精 → 技能 → 其他零碎。',
         onHzPlanPick: e => { const c = +e.currentTarget.dataset.v, cur = this.hzPlanSelGet(); this.hzPlanSelSet(cur.includes(c) ? cur.filter(v => v !== c) : cur.concat(c)); },
         onHzPlanAll: () => this.hzPlanSelSet(Array.from({ length: 26 }, (_, i) => i + 1)),
         onHzPlanNone: () => this.hzPlanSelSet([]),

@@ -2,7 +2,7 @@
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
-  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP,
+  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP, HZ_PLAN_EFFORT, HZ_MAT_WEIGHT,
   hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
 
 let fail = 0;
@@ -144,7 +144,7 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   const p = hzPlanFor(1, PM, PU, ctx);
   ok(p && !p.hasMission && p.rows.find(r => r.type === 'collect_member').cur === 3 && p.rows.find(r => r.type === 'collect_member').nextNeed === 4 && p.rows.find(r => r.type === 'collect_member').src === 'derived', '沒有任務進度時用推算值算下一個門檻（持卡 3 → 下個 4）');
   ok(p.rows.find(r => r.type === 'collect_stamp').known === false && p.unknown === 1, '推算不到的任務標未知');
-  ok(/^read_card_episode_/.test(p.steps[0].type) && p.steps[0].remain === 1 && p.steps[0].cost === 1 && p.steps.find(x => x.type === 'play_live').cost === 4.5, '最省力的第一步是讀 1 篇卡片故事；隊長 15 場的成本 4.5 排後面');
+  ok(p.steps[0].type === 'play_live' && p.steps[0].remain === 15 && Math.abs(p.steps[0].cost - 0.75) < 1e-9 && p.steps[1].type === 'master_rank_up_standard' && p.steps[1].cost === 2.5 && !p.steps.some(x => x.type === 'read_card_episode_first'), '最省力的第一步是刷隊長（15 場成本 0.75），再來是 ★1～3 專精；前篇沒有可讀的卡就不列');
   ok(p.toLevel && p.toLevel.left === 1 && p.toLevel.k === 1 && p.toLevel.exp === 1, 'Lv3 → Lv4 還差 1 EXP，做 1 件就升級');
   const PU2 = Object.assign({}, PU, { userCharacterMissionV2s: [{ characterId: 1, characterMissionType: 'collect_member', progress: 7 }, { characterId: 1, characterMissionType: 'collect_stamp', progress: 2 }] });
   const p2 = hzPlanFor(1, PM, PU2, ctx);
@@ -156,7 +156,7 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
     { cid: 4, lv: 30, extra: { bfes: [], theory: [] }, route: { done: false, reach: false, left: 600, cost: 100 } },
     { cid: 5, lv: 60, extra: { bfes: ['z'], theory: [] }, route: { done: false, reach: true, left: 200, cost: 100 } }]);
   ok(rank.map(r => r.cid).join(',') === '2,5,1,4,3', '先練誰：BFES 持卡者先（離目標近的優先）、再理論組卡、再其他；已達目標最後');
-  ok(HZ_PLAN_ASPECTS.length === 8, '八個面向');
+  ok(HZ_PLAN_ASPECTS.length === 6 && HZ_PLAN_ASPECTS.map(a => a.k).join(',') === 'leader,talk,card,master,skill,misc', '六個面向，照實務順位：刷隊長、對話、卡面、專精、技能、其他');
   ok(HZ_PLAN_ASPECTS.reduce((a, x) => a + x.types.length, 0) === 22, '22 種角色任務都分到面向');
 }
 
@@ -235,6 +235,19 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   ok(/他是加成角色/.test(q) && /2027\/02 普限 輪 3/.test(q) && /最高分 1234567/.test(q) && /心願碎片×5/.test(q), '提問含活動加成、月卡玩偶、挑戰 Live、素材庫存');
   ok(/進度未知/.test(q) && /貼圖/.test(q), '提問含進度未知的任務');
   ok(HZ_NEW_CARD_EXP[4].cheap === 4 && HZ_NEW_CARD_EXP[3].full === 11, '新卡 EXP 價值表');
+}
+
+/* 順位照實務難易：第一個門檻的每 EXP 成本 刷隊長 < 休息室 < 區域對話 < 故事 < 專精（標準）< 技能（標準）< 其他；難拿的素材加權 */
+{
+  const first = { play_live: 10, waiting_room: 3, read_area_talk: 5, read_card_episode_first: 1, master_rank_up_standard: 1, skill_level_up_standard: 1, collect_stamp: 2, area_item_level_up_reality_world: 5 };
+  const cpe = t => HZ_PLAN_EFFORT[t] * first[t];
+  const order = ['play_live', 'waiting_room', 'read_area_talk', 'read_card_episode_first', 'master_rank_up_standard', 'skill_level_up_standard', 'collect_stamp', 'area_item_level_up_reality_world'];
+  ok(order.every((t, i) => i === 0 || cpe(t) > cpe(order[i - 1])), '第一個門檻的每 EXP 成本：' + order.map(t => t + '=' + cpe(t)).join(' < '));
+  ok(HZ_MAT_WEIGHT(16) === 3 && HZ_MAT_WEIGHT(140) === 3 && HZ_MAT_WEIGHT(14) === 1.8 && HZ_MAT_WEIGHT(7) === 1.3 && HZ_MAT_WEIGHT(15) === 1 && HZ_MAT_WEIGHT(2) === 1, '難拿的素材：純結晶 ×3、奇蹟寶石 ×1.8、屬性寶石 ×1.3，碎片不加權');
+  const cc = { 21: { ch: 1, rar: 4, attr: 'cool', name: 'r4' } };
+  const rows = [{ type: 'master_rank_up_rare', known: true, nextNeed: 1, cur: 0, remain: 1, cost: 6 }, { type: 'read_card_episode_second', known: true, nextNeed: 1, cur: 0, remain: 1, cost: 2 }];
+  hzPlanMats(rows, 1, { U: { userCards: [{ cardId: 21, masterRank: 0, episodes: [{ cardEpisodeId: 1, scenarioStatus: 'already_read' }, { cardEpisodeId: 2, scenarioStatus: 'unread' }] }] }, cardChar: cc, mrCost: { 4: [{ id: 15, n: 2000 }, { id: 16, n: 1 }] } });
+  ok(rows[0].cost === 18 && rows[1].cost === 3.6, '★4 專精要純結晶 → 成本 ×3；★4 後篇要奇蹟寶石 → ×1.8（沒有庫存資料就不再罰）');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
