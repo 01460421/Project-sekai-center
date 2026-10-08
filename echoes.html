@@ -2124,7 +2124,7 @@ const Exp = {
   unmount() { this.mounted = false; cancelAnimationFrame(this.raf); this.ro?.disconnect(); if (this.battle) { this.battle.abort = true; this.battle = null; } this.busy = false; },
   size() { if (!this.cv) return; const d = Math.min(devicePixelRatio || 1, 2); this.W = this.cv.clientWidth; this.H = this.cv.clientHeight; this.cv.width = this.W * d; this.cv.height = this.H * d; this.g.setTransform(d, 0, 0, d, 0, 0); },
   newStream(init) { const a = Math.random() * TAU; return { a, r: init ? rnd(10, 400) : rnd(4, 30), v: rnd(.6, 2.2), l: rnd(4, 18) }; },
-  phase(t = performance.now()) { return ((t - this.t0) % this.period) / this.period; },
+  phase(t = performance.now()) { const P = this.period; return (((t - this.t0) % P) + P) % P / P; },
   side() {
     const el = $('#side'); if (!el || !S.run) return; const r = S.run, c = calc();
     const augs = r.augs.map(id => AUGS.find(a => a.id === id)).filter(Boolean);
@@ -2517,7 +2517,7 @@ const Gather = {
       for (let i = 0; i < this.nodes.length; i++) for (let j = i + 1; j < this.nodes.length; j++) { const a = this.nodes[i], b = this.nodes[j]; if (a.k !== b.k) continue; const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < 190) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.strokeStyle = hexA(matColor(this.kinds[a.k]), (1 - d / 190) * .18); g.lineWidth = 1; g.stroke(); } }
       for (const n of this.nodes) {
         n.x += n.vx; n.y += n.vy; if (n.x < 20 || n.x > W - 20) n.vx *= -1; if (n.y < 40 || n.y > H - 20) n.vy *= -1;
-        const c = matColor(this.kinds[n.k]), born = Math.min(1, (t - n.born) / 400), inC = this.chain.includes(n);
+        const c = matColor(this.kinds[n.k]), born = clamp((t - n.born) / 400, 0, 1), inC = this.chain.includes(n);
         const rr = n.r * born * (1 + .08 * Math.sin(t / 300 + n.ph)) * (inC ? 1.25 : 1);
         g.beginPath(); g.arc(n.x, n.y, rr * 1.9, 0, TAU); g.fillStyle = hexA(c, n.glow ? .22 + .12 * Math.sin(t / 150) : .08); g.fill();
         g.beginPath(); g.arc(n.x, n.y, rr, 0, TAU); g.fillStyle = hexA(c, inC ? .9 : .55); g.fill();
@@ -2580,7 +2580,7 @@ Forge.mount = function () {
     if (!cv.isConnected) return; const tt = t / 1000, cx = W / 2, cy = H / 2, R = Math.min(W, H) * .36;
     g.clearRect(0, 0, W, H);
     for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(cx, cy, R * (.55 + i * .25), 0, TAU); g.strokeStyle = hexA(css('--acc') || '#8fa3ff', .1 + i * .04); g.setLineDash(i === 1 ? [3, 6] : []); g.lineWidth = 1; g.stroke(); } g.setLineDash([]);
-    const k = this.anim ? Math.min(1, (t - this.anim) / 1600) : 0, e = k * k * k;
+    const k = this.anim ? clamp((t - this.anim) / 1600, 0, 1) : 0, e = k * k * k;
     this.mats.forEach((id, i) => {
       const a = tt * (.5 + i * .07) + i / this.mats.length * TAU, rr = R * (.8 - .15 * Math.sin(tt + i)) * (1 - e);
       const x = cx + Math.cos(a + e * 8) * rr, y = cy + Math.sin(a + e * 8) * rr * .85, c = matColor(id);
@@ -2679,7 +2679,7 @@ const Stir = {
       g.beginPath(); g.arc(cx, cy, R * 1.12, 0, TAU); g.strokeStyle = css('--line-3'); g.lineWidth = 2; g.stroke();
       const col = '#ffcf6a'; const grd = g.createRadialGradient(cx, cy, 0, cx, cy, R); grd.addColorStop(0, hexA(col, .35)); grd.addColorStop(1, hexA(col, .08)); g.fillStyle = grd; g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fill();
       trail = trail.filter(p => t - p.t < 900);
-      trail.forEach((p, i) => { const k = 1 - (t - p.t) / 900; g.beginPath(); g.arc(cx + Math.cos(p.a) * R * .6, cy + Math.sin(p.a) * R * .6, 6 * k, 0, TAU); g.fillStyle = hexA('#ffffff', k * .6); g.fill(); });
+      trail.forEach((p, i) => { const k = clamp(1 - (t - p.t) / 900, 0, 1); g.beginPath(); g.arc(cx + Math.cos(p.a) * R * .6, cy + Math.sin(p.a) * R * .6, 6 * k, 0, TAU); g.fillStyle = hexA('#ffffff', k * .6); g.fill(); });
       for (let i = 0; i < 9; i++) { const a = ang * .6 + i * .7 + t / 2000, r = R * (.2 + (i % 4) * .17); g.beginPath(); g.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 3 + (i % 3), 0, TAU); g.fillStyle = hexA(['#7fe0b4', '#ff9ac1', '#ffd36a'][i % 3], .8); g.fill(); }
       const p = Math.min(1, total / (TAU * 3)); g.beginPath(); g.arc(cx, cy, R * 1.12, -Math.PI / 2, -Math.PI / 2 + p * TAU); g.strokeStyle = col; g.lineWidth = 3; g.stroke();
       const pt = $('#pot-t'); if (pt && !done) pt.textContent = `${(p * 3).toFixed(1)} / 3 圈`;
