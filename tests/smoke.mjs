@@ -127,6 +127,40 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：迴響之境（echoes.html）。純前端小遊戲，不連任何外部資料；開場輸入名字後要長出 HUD，
+// 再開一趟遠征、踩幾步、把每一頁都切過一次，不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/echoes.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForSelector('#intro-go', { timeout: 15000 });
+      await page.click('#intro-go');
+      await page.waitForFunction(() => window.__echoes && /LV 1/.test(document.querySelector('#hud').innerText), null, { timeout: 15000 });
+      await page.evaluate(() => { const S = window.__echoes.S(); S.loc = 'ln'; S.set.calm = true; window.__echoes.go('exp'); });
+      await page.waitForSelector('[data-act=runStart]', { timeout: 10000 });
+      await page.click('[data-act=runStart]');
+      await page.waitForSelector('#tunnel', { timeout: 10000 });
+      for (let i = 0; i < 6; i++) { await page.evaluate(() => { const E = window.__echoes.Exp; if (!E.battle && !document.querySelector('#modal.on')) E.fwd(); }); await page.waitForTimeout(150); }
+      let overflow = false;
+      for (const v of ['core', 'map', 'gather', 'work', 'bag', 'market', 'press', 'rec', 'sys']) {
+        await page.evaluate(v => { document.querySelector('#modal').classList.remove('on'); window.__echoes.go(v); }, v); await page.waitForTimeout(350);
+        overflow = overflow || await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      }
+      const st = await page.evaluate(() => window.__echoes.S().st.steps);
+      ok = !errors.length && st > 0 && !(mobile && overflow);
+      why = errors[0] || (!(st > 0) ? '沒有走出任何一步' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' echoes' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
