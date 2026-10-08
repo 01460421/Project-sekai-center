@@ -177,7 +177,7 @@ class Component extends DCLogic {
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e']];
+  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -6901,6 +6901,7 @@ class Component extends DCLogic {
     if (q) {
       // 彩蛋：只有打到相關的字才會浮出來
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
+      if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
       if (/聲紋|傅立葉|頻譜|soundprint|fourier|spectr/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: 'SEKAI 聲紋', sub: '每一首歌的傅立葉肖像：真正的短時傅立葉轉換畫成極座標聲紋', run: () => { location.href = 'soundprint.html'; } });
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
@@ -6921,7 +6922,7 @@ class Component extends DCLogic {
   }
   NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 18 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
-  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html' };
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -9905,6 +9906,7 @@ class Component extends DCLogic {
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
+          { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
