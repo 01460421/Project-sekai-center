@@ -23,6 +23,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 TARGETS = [
     (ROOT / 'js' / 'app.js', ROOT / 'js' / 'app.min.js', False),
     (ROOT / 'js' / 'ai.js', ROOT / 'js' / 'ai.min.js', True),
+    (ROOT / 'js' / 'car.js', ROOT / 'js' / 'car.min.js', True),
 ]
 
 

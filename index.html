@@ -28,7 +28,7 @@
     var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
-    <link rel="stylesheet" href="css/core.css?v=423821ee6a">
+    <link rel="stylesheet" href="css/core.css?v=0992ae7e3c">
 </head>
 <body>
     <script>try{var _e=new URLSearchParams(location.search).get('embed');if(_e==='calc')document.body.classList.add('embed-calc');else if(_e==='ministudio')document.body.classList.add('embed-ministudio');else if(_e==='deck')document.body.classList.add('embed-deck');else if(_e==='gacha')document.body.classList.add('embed-gacha');else if(_e==='gachasim')document.body.classList.add('embed-gachasim');else if(_e==='gachacalc')document.body.classList.add('embed-gachacalc');else if(_e==='cardlib')document.body.classList.add('embed-cardlib');else if(_e==='dolls')document.body.classList.add('embed-dolls');else if(_e==='bonuscards')document.body.classList.add('embed-bonuscards');else if(_e==='lookup')document.body.classList.add('embed-lookup');else if(_e==='distribution')document.body.classList.add('embed-distribution');else if(_e==='shop')document.body.classList.add('embed-shop');else if(_e==='b30')document.body.classList.add('embed-b30');}catch(e){}</script>
@@ -777,7 +777,7 @@
                         <tr><td><a href="https://pjsk.moe/zh-tw/" target="_blank" class="external">pjsk.moe</a></td><td class="description">繁中全功能站（圖鑑、玩家 profile、樂曲、劇情）</td></tr>
                         <tr><td><a href="https://haruki.seiunx.com/friend-links" target="_blank" class="external">Haruki 友情連結</a></td><td class="description">台服工具/社群友站集合</td></tr>
                         <tr><td><a href="https://hisekai.org/tw" target="_blank" class="external">HiSekai (台服)</a></td><td class="description">台服即時排名、歷史數據</td></tr>
-                        <tr><td><a href="https://project-sekai-center.vercel.app/" target="_blank" class="external">SEKAI 資源中心</a></td><td class="description">本站</td></tr>
+                        <tr><td><a href="https://project-sekai-center.com/" target="_blank" class="external">SEKAI 資源中心</a></td><td class="description">本站</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1226,7 +1226,7 @@
                         <h4>場均參數(協力)</h4>
                         <div class="calc-row"><label>隊伍綜合力</label><input type="number" id="rsPower" value="280000" min="0" oninput="RunStudio.calc()"></div>
                         <div class="calc-row"><label>活動加成 %</label><input type="number" id="rsBonus" value="0" min="0" oninput="RunStudio.calc()"></div>
-                        <div class="calc-row"><label>區域道具等級 <span style="font-weight:400;font-size:11px;color:var(--text-light);">最佳化用・台服現 Lv15、5週年 Lv20</span></label><input type="number" id="rsAreaLv" value="15" min="1" max="20" oninput="RunStudio.onEvent()"></div>
+                        <div class="calc-row"><label>區域道具等級 <span style="font-weight:400;font-size:11px;color:var(--text-light);">最佳化用・台服 5 週年起開放到 Lv20</span></label><input type="number" id="rsAreaLv" value="20" min="1" max="20" oninput="RunStudio.onEvent()"></div>
                         <div class="calc-row" style="align-items:flex-start;"><label>選歌(曲庫)</label>
                             <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
                                 <input id="rsSongSearch" placeholder="搜尋歌名/作曲…" oninput="RunStudio.filterSongs()" style="padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;max-width:100%;">
@@ -1305,7 +1305,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=4bc5392806"></script>
+    <script src="js/core.js?v=104d39ecc0"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){

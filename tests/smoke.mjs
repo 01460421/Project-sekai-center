@@ -14,6 +14,9 @@ const routeMdb = async ctx => { if (!MDB) return; await ctx.route(/raw\.githubus
 const CASES = [
   ['home', /首頁|近期卡池/], ['calendar', /活動日曆/], ['gacha', /卡池/], ['songs', /共 \d+ 首/], ['calc', /共用設定|活動 P/],
   ['cards', /共 [\d,]+ 項/], ['chars', /角色圖鑑/], ['fixtures', /共 [\d,]+ 項/], ['mstalk', /已看過 \d/], ['story', /活動劇情/], ['news', /遊戲公告/], ['b30', /B30/], ['account', /登入|我的帳號/], ['event', /活動總覽/], ['favs', /收藏與待辦/], ['car', /私車排班/],
+  ['skillmult', /同團同色/], ['wlsup', /WL 後排加成/], ['rank', /活動排名|排名與榜線/], ['haruki', /Haruki 專區/],
+  ['dolls', /本月角色|台服月份/], ['bonuscards', /加分卡組合建議/], ['distrib', /期卡池/],
+  ['lookup', /Player ID/], ['cardlib', /共 [\d,]+ 張/], ['gachasim', /招募點數保底/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {
@@ -51,6 +54,111 @@ for (const mobile of [false, true]) {
     await page.close();
   }
   await ctx.close();
+}
+
+// 獨立頁：星圖（starmap.html）桌機與手機各開一次，要長出星星數、不能有 JS 錯誤、手機不能橫向溢出
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/starmap.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => +((document.querySelector('#stN') || {}).textContent || 0) > 500, null, { timeout: 45000 });
+      await page.fill('#q', 'Tell Your World'); await page.press('#q', 'Enter'); await page.waitForTimeout(600);
+      const sel = await page.evaluate(() => (document.querySelector('#panel.on h2') || {}).textContent || '');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /Tell Your World/.test(sel) && !(mobile && overflow);
+      why = errors[0] || (!/Tell Your World/.test(sel) ? '搜尋後沒選到星（' + sel + '）' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' starmap' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
+// 獨立頁：衝榜劇場（theater.html）。資料來自 games.project-sekai-center.com 的逐局追蹤器；
+// 桌機＋手機各開一次，要載到局數、面板要長出統計、不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/theater.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__theater && window.__theater.G.n > 0 && document.querySelector('#loading').hidden, null, { timeout: 90000 });
+      await page.waitForTimeout(600);
+      const txt = await page.evaluate(() => document.querySelector('#panel').innerText);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /局數/.test(txt) && !(mobile && overflow);
+      why = errors[0] || (!/局數/.test(txt) ? '面板沒有統計' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' theater' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
+// 獨立頁：SEKAI 聲紋（soundprint.html）。指定一首歌（?s=1），音源來自 sekai.best 鏡像、全曲 FFT 在瀏覽器的 Worker 裡算；
+// 桌機＋手機各開一次，要算完（S.cur 長出來）、分析卡要有調性、不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/soundprint.html?s=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__soundprint && window.__soundprint.S.cur && !window.__soundprint.S.loading, null, { timeout: 120000 });
+      await page.waitForTimeout(600);
+      const txt = await page.evaluate(() => document.querySelector('#panel').textContent);   // 手機版分析卡預設收起（visibility:hidden），innerText 會是空的
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /調性/.test(txt) && !(mobile && overflow);
+      why = errors[0] || (!/調性/.test(txt) ? '分析卡沒有讀數' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' soundprint' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
+// 獨立頁：迴響之境（echoes.html）。純前端小遊戲，不連任何外部資料；開場輸入名字後要長出 HUD，
+// 再開一趟遠征、踩幾步、把每一頁都切過一次，不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/echoes.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForSelector('#intro-go', { timeout: 15000 });
+      await page.click('#intro-go');
+      await page.waitForFunction(() => window.__echoes && /LV 1/.test(document.querySelector('#hud').innerText), null, { timeout: 15000 });
+      await page.evaluate(() => { const S = window.__echoes.S(); S.loc = 'ln'; S.set.calm = true; window.__echoes.go('exp'); });
+      await page.waitForSelector('[data-act=runStart]', { timeout: 10000 });
+      await page.click('[data-act=runStart]');
+      await page.waitForSelector('#tunnel', { timeout: 10000 });
+      for (let i = 0; i < 6; i++) { await page.evaluate(() => { const E = window.__echoes.Exp; if (!E.battle && !document.querySelector('#modal.on')) E.fwd(); }); await page.waitForTimeout(150); }
+      let overflow = false;
+      for (const v of ['core', 'map', 'gather', 'work', 'bag', 'market', 'press', 'rec', 'sys']) {
+        await page.evaluate(v => { document.querySelector('#modal').classList.remove('on'); window.__echoes.go(v); }, v); await page.waitForTimeout(350);
+        overflow = overflow || await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      }
+      const st = await page.evaluate(() => window.__echoes.S().st.steps);
+      ok = !errors.length && st > 0 && !(mobile && overflow);
+      why = errors[0] || (!(st > 0) ? '沒有走出任何一步' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' echoes' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
 }
 
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）

@@ -31,7 +31,7 @@ import {
   listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
   addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart,
   addPushSub, deletePushSub, countPushSubs } from './db.js';
-import { pushEnabled } from './push.js';
+import { pushEnabled, ensurePushSchema } from './push.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce, approveOnExists } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
@@ -835,6 +835,7 @@ export async function handleApi(req, env, url, user) {
     if (p === '/api/push') {
       if (!user) return out({ error: 'not_signed_in', message: '請先登入' }, 401);
       const on = pushEnabled(env);
+      if (on) await ensurePushSchema(env.DB);   // 表不在就先建（見 push.js）
       if (m === 'GET') return out({ enabled: on, key: on ? env.VAPID_PUBLIC : '', subs: on ? await countPushSubs(env.DB, user.id) : 0 });
       if (m === 'POST') {
         if (!on) return out({ error: 'push_disabled', message: '站方尚未設定推播金鑰' }, 503);
