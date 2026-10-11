@@ -4951,9 +4951,23 @@ export function aiMembers() {
         for (let i = 0; i < need.length; i += 8) {
           await Promise.all(need.slice(i, i + 8).map(async e => {
             try {
-              const rows = this.bordersOf(await this.apiFetch('/event/' + e.id + '/border'));
+              // 進行中的那期 T100 取前百第 100 名（榜線端點更新比前百慢）。頁面每分鐘輪詢的 live 前百就是同一期、
+              // 而且比 /event/<期數>/top100（上游快取最長 1 小時的快照）新，有就直接重用、不多打；
+              // 沒有才並行抓一次，最多等 5 秒（apiFetch 沒有逾時，前百卡住不能拖住榜線）。拿不到就照舊用榜線端點的值。
+              // 已結算的期數兩邊相同，不多打。
+              const fin = isFinal(e);
+              const lv = this.state.live;
+              const lvOk = !fin && lv && String(lv.id) === String(e.id);
+              const [b, t] = await Promise.all([
+                this.apiFetch('/event/' + e.id + '/border'),
+                fin ? null : lvOk ? lv : Promise.race([
+                  this.apiFetch('/event/' + e.id + '/top100').catch(() => null),
+                  new Promise(r => setTimeout(() => r(null), 5000))
+                ])
+              ]);
+              const rows = this.bordersOf(fin ? b : this.t100Merge(b, t));
               if (!rows.length) throw new Error('empty');
-              if (isFinal(e)) cache[e.id] = rows; else live[e.id] = rows;
+              if (fin) cache[e.id] = rows; else live[e.id] = rows;
             } catch (err) { failed.push(+e.id); }
           }));
         }
@@ -5070,7 +5084,8 @@ export function aiMembers() {
           const ci = avail.indexOf(tier);
           if (ci < 0) return { error: '第 ' + evId + ' 期沒有 T' + tier + ' 這一段', available_tiers: avail };
           // 一樣要先修單調：WL 期間 API 會把別的榜的值串進來，站上各處都吃修過的資料
-          pts = this.fixMono(d.samples, avail.length)
+          // T100 欄與當期同一套：對齊成前百第 100 名（histT100），終值相同、過程不再偏低
+          pts = this.fixMono(this.histT100(d), avail.length)
             .map(s => (s[ci + 1] != null ? [s[0] * 1000, s[ci + 1]] : null)).filter(Boolean);
           evName = d.name || null;
           stMs = new Date(d.startAt || 0).getTime() || 0;

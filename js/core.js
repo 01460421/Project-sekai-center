@@ -711,7 +711,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     ]);
                     if (topR.status !== 'fulfilled') throw topR.reason;
                     const top = topR.value;
-                    const brd = brdR.status === 'fulfilled' && brdR.value ? brdR.value : this.bordersFromTop(top);
+                    // 榜線的 T100 直接取前百第 100 名（同一輪已抓到前百，不多打請求）
+                    const brd = brdR.status === 'fulfilled' && brdR.value ? this.t100Merge(brdR.value, top) : this.bordersFromTop(top);
                     this.liveData = top;
                     this.borderData = brd;
                     this.renderLive(top, brd);
@@ -722,7 +723,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
 
             bordersFromTop(top) {
                 if (!top) return null;
-                const t100 = rows => (rows || []).filter(r => r && r.rank === 100).map(r => ({ rank: 100, score: r.score }));
+                const t100 = rows => (rows || []).filter(r => r && Number(r.rank) === 100).map(r => ({ rank: 100, score: r.score }));
                 const out = Object.assign({}, top, { player_border_rankings: t100(top.player_top_100_rankings), partial: true });
                 delete out.player_top_100_rankings;
                 if (Array.isArray(top.world_link_top_100_rankings)) {
@@ -734,6 +735,89 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     delete out.world_link_top_100_rankings;
                 }
                 return out;
+            },
+
+            // 榜線的「第 100 名」那一階直接取前百榜的第 100 名，其他段位照舊（與 app.js 的 t100Merge 同一套規則；
+            // 這支是獨立的經典版腳本，呼叫不到 app.js，所以各留一份）。
+            // HiSekai 的榜線端點更新比前百慢，兩邊的第 100 名對不上；已結算的期數兩邊相同，套了等於沒變。
+            // 前百拿不到、不足 100 人、兩邊期數對不上 → 原樣回傳；任何意外都退回原本的榜線。回傳新物件，不改動 API 回應。
+            // 即時形狀（player_border_rankings／world_link_border_rankings，章節用 chapter 對）與用期數查的形狀
+            // （borderRankings／userWorldBloomChapterRankingBorders，章節用 gameCharacterId 對）都認；
+            // Haruki 備援的章節同時帶 player_border_rankings 與 player_borders 指向同一個陣列，認得的鍵全部都換。
+            // 換進來的那筆拿掉前百才有的時速／周回欄位，分段榜線的列維持原本的樣子。
+            t100Merge(brd, top) {
+                try {
+                    if (!brd || !top || typeof brd !== 'object' || typeof top !== 'object' || brd.partial) return brd;
+                    const idOf = d => { const e = this.extractEventInfo(d); return e.eventId != null ? e.eventId : e.id; };
+                    const be = idOf(brd), te = idOf(top);
+                    if (be != null && te != null && String(be) !== String(te)) return brd;   // 用期數查的前百沒有期數欄位，兩邊都有值才比
+                    const TOPK = ['player_top_100_rankings', 'top_100_player_rankings', 'player_rankings', 'rankings', 'ranking', 'aggregated_rankings'];
+                    const BRDK = ['player_border_rankings', 'player_borders', 'border_player_rankings', 'borderRankings', 'borders', 'border_rankings', 'aggregated_borders'];
+                    const pick = t => {
+                        if (!t || typeof t !== 'object') return null;
+                        const a = TOPK.map(k => t[k]).find(Array.isArray);
+                        const r = (a || []).find(x => x && Number(x.rank) === 100 && x.score != null && isFinite(Number(x.score)));
+                        if (!r) return null;
+                        const o = Object.assign({}, r, { rank: 100 });
+                        ['last_score', 'last_1h_stats', 'last_3h_stats', 'last_24h_stats', 'last_played_at'].forEach(k => { delete o[k]; });
+                        return o;
+                    };
+                    const patch = (holder, row) => {
+                        if (!row) return holder;
+                        let out = holder;
+                        const done = new Map();   // 同一個陣列掛在兩個鍵上時只換一次
+                        BRDK.forEach(k => {
+                            const a = holder[k];
+                            if (!Array.isArray(a)) return;
+                            let b = done.get(a);
+                            if (!b) {
+                                b = a.slice();
+                                const i = b.findIndex(x => x && Number(x.rank) === 100);
+                                // 前百第 100 名比榜線原值還低＝前百那份比較舊（分數線只會往上）→ 這個陣列不換
+                                if (i >= 0 && Number(b[i].score) > Number(row.score)) b = a;
+                                else if (i >= 0) b[i] = row;
+                                else {
+                                    // 本來沒有 100 這一階：照陣列自己的方向插進去（即時是 100→大、用期數查是大→100）
+                                    const rk = b.map(x => Number(x && x.rank));
+                                    const desc = rk.length > 1 && rk[0] > rk[rk.length - 1];
+                                    let j = rk.findIndex(v => desc ? v < 100 : v > 100);
+                                    if (j < 0) j = b.length;
+                                    b.splice(j, 0, row);
+                                }
+                                done.set(a, b);
+                            }
+                            if (b === a) return;
+                            if (out === holder) out = Object.assign({}, holder);
+                            out[k] = b;
+                        });
+                        return out;
+                    };
+                    let out = patch(brd, pick(top));
+                    // World Link：每一章用「同一章」前百的第 100 名
+                    const topCh = [].concat(Array.isArray(top.world_link_top_100_rankings) ? top.world_link_top_100_rankings : [],
+                        Array.isArray(top.userWorldBloomChapterRankings) ? top.userWorldBloomChapterRankings : []).filter(c => c && typeof c === 'object');
+                    if (topCh.length) {
+                        const chOf = c => (c.chapter != null ? Number(c.chapter) : null);
+                        const gcOf = c => { const v = c.character != null ? c.character : c.gameCharacterId; return v != null ? Number(v) : null; };
+                        const findTop = c => {
+                            const a = chOf(c), g = gcOf(c);
+                            if (a != null) { const hit = topCh.find(t => chOf(t) === a); if (hit) return hit; }
+                            return g != null ? (topCh.find(t => (a == null || chOf(t) == null) && gcOf(t) === g) || null) : null;
+                        };
+                        ['world_link_border_rankings', 'userWorldBloomChapterRankingBorders'].forEach(k => {
+                            if (!Array.isArray(brd[k]) || !brd[k].length) return;
+                            let changed = false;
+                            const arr = brd[k].map(c => {
+                                if (!c || typeof c !== 'object') return c;
+                                const n = patch(c, pick(findTop(c)));
+                                if (n !== c) changed = true;
+                                return n;
+                            });
+                            if (changed) { if (out === brd) out = Object.assign({}, brd); out[k] = arr; }
+                        });
+                    }
+                    return out;
+                } catch (e) { return brd; }
             },
 
             extractEventInfo(data) {
@@ -1056,17 +1140,49 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 }).join('');
             },
 
+            /* 用期數抓榜線（榜線趨勢／雙活動比較／推角分析共用）。還在跑的那一期 T100 取 live 前百第 100 名：
+               /event/<期數>/top100 是上游快取最長 1 小時的快照，所以用 live 的；已結算的期數不多抓。
+               前百最多等 5 秒，拿不到就照舊用榜線端點的值。 */
+            async borderById(id) {
+                const brdP = apiFetch(`/event/${id}/border`);
+                let top = null;
+                try {
+                    await EventScan.loadList();
+                    const e = EventScan.evInfo(id), now = Date.now();
+                    const end = e && new Date(e.aggregate_at || e.closed_at).getTime();
+                    if (e && new Date(e.start_at).getTime() <= now && end > now) {
+                        top = this.liveData || await Promise.race([
+                            apiFetch('/event/live/top100').then(t => t, () => null),
+                            new Promise(r => setTimeout(() => r(null), 5000))
+                        ]);
+                    }
+                } catch (e) { top = null; }
+                const brd = await brdP;
+                return top ? this.t100Merge(brd, top) : brd;
+            },
+
             async loadBorderData() {
                 const infoEl = document.getElementById('borderEventInfo');
                 const bodyEl = document.getElementById('borderBody');
                 if (this.borderData) { this.renderBorder(this.borderData); return; }
                 try {
-                    let brd;
-                    try { brd = await apiFetch('/event/live/border'); }
-                    catch (e) { brd = this.bordersFromTop(this.liveData || await apiFetch('/event/live/top100')); }
+                    // T100 取前百第 100 名：前百跟榜線並行抓、只抓一輪。榜線先回來就先畫（照舊，不等前百），
+                    // 前百回來再補一次合併重畫；前百抓不到只是不合併。榜線失敗才等前百換算 T100。
+                    const topP = apiFetch('/event/live/top100').then(t => t, () => null);
+                    let raw = null;
+                    try { raw = await apiFetch('/event/live/border'); } catch (e) { raw = null; }
+                    if (raw) {
+                        if (!this.borderData) { this.borderData = raw; this.renderBorder(raw); }
+                        topP.then(top => {
+                            if (!top || this.borderData !== raw) return;
+                            const brd = this.t100Merge(raw, top);
+                            if (brd !== raw) { this.borderData = brd; this.renderBorder(brd); }
+                        });
+                        return;
+                    }
+                    const brd = this.bordersFromTop(await topP);
                     if (!brd) throw new Error('no data');
-                    this.borderData = brd;
-                    this.renderBorder(brd);
+                    if (!this.borderData) { this.borderData = brd; this.renderBorder(brd); }
                 } catch(e) {
                     infoEl.innerHTML = '<div class="event-error">載入失敗</div>';
                 }
@@ -1249,13 +1365,15 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 modal.classList.add('show');
                 content.innerHTML = '<div class="modal-header"><h3>載入中...</h3></div><div class="modal-body"><div class="event-loading">取得排名資料中...</div></div>';
                 try {
-                    const [top, brd] = await Promise.all([
+                    const [top, brd0] = await Promise.all([
                         apiFetch(`/event/${eventId}/top100`).catch(()=>null),
                         apiFetch(`/event/${eventId}/border`).catch(()=>null),
                         this.loadEventTypes(),
                         this.loadCharNames(),
                         this.loadWorldBlooms()
                     ]);
+                    // 輸入的期數可能是進行中的那一期：T100 取前百第 100 名（已結算的期數兩邊相同）
+                    const brd = this.t100Merge(brd0, top);
                     const info = this.extractEventInfo(top||brd);
                     const name = info.name||info.event_name||`第 ${eventId} 期活動`;
                     const rankings = this.extractRankings(top);
@@ -1377,7 +1495,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     document.getElementById('trendProgressBar').style.width=pct+'%';
                     document.getElementById('trendProgressText').textContent=`載入第 ${id} 期中... (${pct}%)`;
                     try {
-                        const data = await apiFetch(`/event/${id}/border`);
+                        const data = await EventModule.borderById(id);
                         const borders = EventModule.extractBorders(data);
                         const entry = borders.find(b=>Number(b.rank)===rank);
                         ids.push(id); labels.push(`#${id}`);
@@ -1431,8 +1549,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 el.innerHTML = '<div class="event-loading">載入中...</div>';
                 try {
                     const [da,db] = await Promise.all([
-                        apiFetch(`/event/${a}/border`).catch(()=>null),
-                        apiFetch(`/event/${b}/border`).catch(()=>null)
+                        EventModule.borderById(a).catch(()=>null),
+                        EventModule.borderById(b).catch(()=>null)
                     ]);
                     const ba = EventModule.extractBorders(da);
                     const bb = EventModule.extractBorders(db);
@@ -1479,7 +1597,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const scores=[]; const labels=[]; const eventInfos=[];
                 for (const id of eventIds) {
                     try {
-                        const data = await apiFetch(`/event/${id}/border`);
+                        const data = await EventModule.borderById(id);
                         const info = EventModule.extractEventInfo(data);
                         const borders = EventModule.extractBorders(data);
                         const entry = borders.find(b=>Number(b.rank)===rank);

@@ -1451,7 +1451,7 @@ class Component extends DCLogic {
      從前百補一份只有 T100 的榜線，WL 各章同樣取該章第 100 名。標 partial，畫面照常顯示前百。 */
   bordersFromTop(top) {
     if (!top) return null;
-    const t100 = rows => (rows || []).filter(r => r && r.rank === 100).map(r => ({ rank: 100, score: r.score }));
+    const t100 = rows => (rows || []).filter(r => r && Number(r.rank) === 100).map(r => ({ rank: 100, score: r.score }));
     const out = {};
     ['id', 'name', 'start_at', 'closed_at', 'aggregate_at', 'ranking_announce_at', 'source', 'via'].forEach(k => { if (top[k] != null) out[k] = top[k]; });
     out.player_border_rankings = t100(top.player_top_100_rankings);
@@ -1466,13 +1466,104 @@ class Component extends DCLogic {
     return out;
   }
 
+  /* 榜線的「第 100 名」那一階直接取前百榜的第 100 名，其他段位照舊。
+     HiSekai 的榜線端點更新比前百慢（2026-09-30 第 181 期：前百第 100 名 1,490,668、榜線 T100 還停在 1,484,280），
+     同一頁兩個「第 100 名」對不上。已結算的期數兩邊相同，套了等於沒變。
+
+     - 前百拿不到、不足 100 人、兩邊期數對不上 → 原樣回傳；整段包 try，任何意外都退回原本的榜線，
+       絕不因為多看一眼前百而讓原本查得到的榜線壞掉。
+     - 回傳新物件，不改動 API 回應本身。
+     - 兩種形狀都認：即時（player_border_rankings／world_link_border_rankings，章節用 chapter 對）
+       與用期數查（borderRankings／userWorldBloomChapterRankingBorders，章節用 gameCharacterId 對）。
+       自家 Worker 的 Haruki 備援連「用期數查」都回即時形狀，而且章節同時帶 player_border_rankings 與
+       player_borders 兩個鍵指向同一個陣列，所以每個認得的鍵都要換。
+     - 換進來的那筆拿掉前百才有的時速／周回欄位：分段榜線的列沒有這些資料（顯示 —、不能點開詳情），
+       只有 T100 多出來版面就變了。名字、分數、頭像照常換成前百第 100 名。 */
+  t100Merge(brd, top) {
+    try {
+      if (!brd || !top || typeof brd !== 'object' || typeof top !== 'object' || brd.partial) return brd;
+      // 用期數查的前百回應沒有期數欄位，兩邊都有值才比
+      const idOf = d => { const e = this.eventOf(d); return e.eventId != null ? e.eventId : e.id; };
+      const be = idOf(brd), te = idOf(top);
+      if (be != null && te != null && String(be) !== String(te)) return brd;
+      const TOPK = ['player_top_100_rankings', 'top_100_player_rankings', 'player_rankings', 'rankings', 'ranking'];
+      const BRDK = ['player_border_rankings', 'borderRankings', 'player_borders', 'border_rankings', 'borders'];
+      const pick = t => {
+        if (!t || typeof t !== 'object') return null;
+        const a = TOPK.map(k => t[k]).find(Array.isArray);
+        const r = (a || []).find(x => x && Number(x.rank) === 100 && x.score != null && isFinite(Number(x.score)));
+        if (!r) return null;
+        const o = Object.assign({}, r, { rank: 100 });
+        ['last_score', 'last_1h_stats', 'last_3h_stats', 'last_24h_stats', 'last_played_at'].forEach(k => { delete o[k]; });
+        return o;
+      };
+      const patch = (holder, row) => {
+        if (!row) return holder;
+        let out = holder;
+        const done = new Map();          // 同一個陣列掛在兩個鍵上時只換一次，換完兩個鍵仍指向同一份
+        BRDK.forEach(k => {
+          const a = holder[k];
+          if (!Array.isArray(a)) return;
+          let b = done.get(a);
+          if (!b) {
+            b = a.slice();
+            const i = b.findIndex(x => x && Number(x.rank) === 100);
+            // 前百第 100 名比榜線原值還低＝前百那份比較舊（第 100 名的分數線只會往上；用期數查的前百與榜線
+            // 在上游各自快取 1 小時）→ 這個陣列不換
+            if (i >= 0 && Number(b[i].score) > Number(row.score)) b = a;
+            else if (i >= 0) b[i] = row;
+            else {
+              // 本來沒有 100 這一階：照陣列自己的方向插進去（即時是 100→大、用期數查是大→100）
+              const rk = b.map(x => Number(x && x.rank));
+              const desc = rk.length > 1 && rk[0] > rk[rk.length - 1];
+              let j = rk.findIndex(v => desc ? v < 100 : v > 100);
+              if (j < 0) j = b.length;
+              b.splice(j, 0, row);
+            }
+            done.set(a, b);
+          }
+          if (b === a) return;
+          if (out === holder) out = Object.assign({}, holder);
+          out[k] = b;
+        });
+        return out;
+      };
+      let out = patch(brd, pick(top));
+      // World Link：每一章用「同一章」前百的第 100 名
+      const topCh = [].concat(Array.isArray(top.world_link_top_100_rankings) ? top.world_link_top_100_rankings : [],
+        Array.isArray(top.userWorldBloomChapterRankings) ? top.userWorldBloomChapterRankings : []).filter(c => c && typeof c === 'object');
+      if (topCh.length) {
+        const chOf = c => (c.chapter != null ? Number(c.chapter) : null);
+        const gcOf = c => { const v = c.character != null ? c.character : c.gameCharacterId; return v != null ? Number(v) : null; };
+        const findTop = c => {
+          const a = chOf(c), g = gcOf(c);
+          if (a != null) { const hit = topCh.find(t => chOf(t) === a); if (hit) return hit; }
+          return g != null ? (topCh.find(t => (a == null || chOf(t) == null) && gcOf(t) === g) || null) : null;
+        };
+        ['world_link_border_rankings', 'userWorldBloomChapterRankingBorders'].forEach(k => {
+          if (!Array.isArray(brd[k]) || !brd[k].length) return;
+          let changed = false;
+          const arr = brd[k].map(c => {
+            if (!c || typeof c !== 'object') return c;
+            const n = patch(c, pick(findTop(c)));
+            if (n !== c) changed = true;
+            return n;
+          });
+          if (changed) { if (out === brd) out = Object.assign({}, brd); out[k] = arr; }
+        });
+      }
+      return out;
+    } catch (e) { return brd; }
+  }
+
   async loadLive() {
     try {
       // 前百與榜線分開抓：以前 Promise.all 一起等，榜線端點一壞連前百都顯示「無法載入」
       const [topR, brdR] = await Promise.allSettled([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
       if (topR.status !== 'fulfilled') throw topR.reason;
       const top = topR.value;
-      const brd = brdR.status === 'fulfilled' && brdR.value ? brdR.value : this.bordersFromTop(top);
+      // 榜線的 T100 直接取前百第 100 名（同一輪已經抓到前百，不多打請求）；下游的顯示、快照、分析、預測都吃合併後的這份
+      const brd = brdR.status === 'fulfilled' && brdR.value ? this.t100Merge(brdR.value, top) : this.bordersFromTop(top);
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.via === 'tracker') ? 'tracker' : ((top && top.source === 'haruki') || (brd && brd.source === 'haruki')) ? 'haruki' : 'hisekai' });
       if (this.state.pid) this.matchMyRank(top);
       this.snapPush(top, brd);
@@ -1529,7 +1620,8 @@ class Component extends DCLogic {
         this.apiFetch('/event/' + id + '/border').catch(() => null)
       ]);
       if (this._pastKey !== id) return;   // 期間又切了別期
-      this.setState({ pastTop: t, pastBrd: b, pastLoad: false, pastErr: (t || b) ? '' : '這一期查不到資料' });
+      // 預設期數就是當期，所以這裡也會查到進行中的活動：T100 同樣取前百第 100 名（已結算的期數兩邊相同）
+      this.setState({ pastTop: t, pastBrd: this.t100Merge(b, t), pastLoad: false, pastErr: (t || b) ? '' : '這一期查不到資料' });
     } catch (e) {
       if (this._pastKey === id) this.setState({ pastLoad: false, pastErr: '歷代資料載入失敗' });
     }
@@ -1560,9 +1652,25 @@ class Component extends DCLogic {
     // snapList 會把這份跟本機快照合併,所以圖表與實測速度都吃得到修好的資料。
     if (this._histFixId !== evId) {
       this._histFixId = evId;
-      this._histFix = this.fixMono(h.samples, tiers.length);
+      this._histFix = this.fixMono(this.histT100(h), tiers.length);
     }
     return this._histFix.map(s => [s[0] * 1000, tiers.map((r, i) => [r, s[i + 1]]), null]);
+  }
+  /* 公用時序的 T100 欄也對齊「前百第 100 名」：同一份檔的 ranks 是 [秒, 第1名…第100名]，與 samples 同一次取樣、
+     同一個時間戳寫入。不對齊的話，本機快照（已是前百版）與公用時序（榜線端點版，偏低）合併後 T100 走勢會出現鋸齒。
+     那一筆沒有第 100 名（前百不足 100 人、或沒有對應的 ranks 列）就保留原值。回傳新陣列，不改動 hist。 */
+  histT100(h) {
+    const samples = (h && h.samples) || [];
+    try {
+      const ci = (h.tiers || []).findIndex(t => Number(t) === 100);
+      if (ci < 0 || !Array.isArray(h.ranks) || !h.ranks.length) return samples;
+      const at = {}; h.ranks.forEach(r => { if (Array.isArray(r)) at[r[0]] = r; });
+      return samples.map(s => {
+        const r = Array.isArray(s) ? at[s[0]] : null;
+        if (!r || r.length <= 100 || r[100] == null || s.length <= ci + 1) return s;
+        const c = s.slice(); c[ci + 1] = r[100]; return c;
+      });
+    } catch (e) { return samples; }
   }
   snapKey(evId) { return 'sekai-snap-' + evId; }
   snapPush(top, brd) {
@@ -2161,7 +2269,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=0131ead783';
+      el.src = './js/core.js?v=4bc5392806';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2408,7 +2516,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=27a4092314').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=7ab6a73196').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -3010,10 +3118,12 @@ class Component extends DCLogic {
     const d = await this.carAct('/setting', { key: 'runner_self_signup', value: !!on }, on ? '已開放跑者自行報跑' : '已關閉跑者自行報跑', no);
     if (d) this.carLoadStates();
   }
-  async carRunSelf(groups, act, no) {
+  async carRunSelf(groups, act, no, mode) {
     let done = 0, last = null;
     for (const g of groups) {
-      const d = await this.carAct('/runself', { date: g.date, hours: g.hours, action: act }, null, no);
+      const body = { date: g.date, hours: g.hours, action: act };
+      if (act === 'open' && (mode === 'same' || mode === 'multi')) body.mode = mode;     // 同時段已有跑者：同車／多開；不給＝車隊預設
+      const d = await this.carAct('/runself', body, null, no);
       if (!d) break;
       last = d; done += (d.done || []).length;
     }
@@ -3023,15 +3133,16 @@ class Component extends DCLogic {
   }
   async carRunSelfRow(el) {
     const d = el.dataset, act = d.act === 'cancel' ? 'cancel' : 'open';
+    const mode = d.act === 'same' || d.act === 'multi' ? d.act : (this.state.carRsMode || '');
     if (!d.d || !d.h) return;
     if (act === 'cancel' && !window.confirm('取消 ' + this.carSlot(d.h) + ' 的報跑？\n這個時段已經報班的推手會一起清掉，時段也會關閉。')) return;
-    await this.carRunSelf([{ date: d.d, hours: [d.h] }], act, this.carNo());
+    await this.carRunSelf([{ date: d.d, hours: [d.h] }], act, this.carNo(), mode);
   }
   async carRunSelfTool() {
     const st = this.carAState(); if (!st) return;
     const date = this.state.carDate || st.today, rg = this.carARange(date, this.state.carRsHours);
     if (!rg) { this._toast('時段格式：20-24（跨午夜寫 22-26，單一小時寫 20）'); return; }
-    await this.carRunSelf(rg.groups, 'open', this.carNo());
+    await this.carRunSelf(rg.groups, 'open', this.carNo(), this.state.carRsMode || '');
     this.setState({ carRsHours: '' });
   }
   async carSetMode(team) {
@@ -6270,10 +6381,11 @@ class Component extends DCLogic {
       if (wl.length) noteParts.push('候補 ' + wl.join('、'));
       if (r.applicants) noteParts.push('報班 ' + r.applicants);
       const rMine = !!(rp && rp.mine === true);
-      let rsShow = false, rsTxt = '', rsAct = '';
+      let rsShow = false, rsTxt = '', rsAct = '', rs2Show = false;
       if (runSelf) {
         if (rMine) { rsShow = true; rsAct = 'cancel'; rsTxt = '取消報跑'; }
         else if (!rCustom && !my) { rsShow = true; rsAct = 'open'; rsTxt = '我來開車'; }
+        else if (rCustom && !my) { rs2Show = true; }        // 已經有別的跑者：同車（第二跑者）或多開（另一台車）
       }
       let signShow = false, signTxt = '', signAct = '';
       if (!admin && !xd) {
@@ -6290,7 +6402,7 @@ class Component extends DCLogic {
         locked: !!r.locked, manual: !!r.manual, cells, filled,
         note: noteParts.join(' · ') || (myTxt ? '' : '—'), myTxt, hasMy: !!myTxt,
         signShow: signShow && !rMine, signTxt, signAct,
-        rsShow, rsTxt, rsAct, rMine,
+        rsShow, rsTxt, rsAct, rMine, rs2Show,
         lockShow: admin && !xd, lockTxt: r.locked ? '解鎖' : '鎖班', lockV: r.locked ? '0' : '1',
         unmarkShow: admin && !xd,
         wl: wl.map(n => ({ nm: n, drag: admin && !xd ? 'true' : 'false', h: '', d: day.date })), hasWl: wl.length > 0,
@@ -6452,7 +6564,12 @@ class Component extends DCLogic {
       carRsAdmBg: selfOn ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'var(--card-2)', carRsAdmFg: selfOn ? 'var(--accent-deep)' : 'var(--text-2)',
       carRsAdmBd: selfOn ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)',
       carRsToolShow: runSelf, carRsHours: s.carRsHours || '',
-      carRsToolNote: '在下面選的日期開班，跑者就是你；跨午夜寫 22-26。已經開班、還沒有人開車的時段，直接按那一列的「我來開車」。',
+      carRsToolNote: '在下面選的日期開班，跑者就是你；跨午夜寫 22-26。已經開班、還沒有人開車的時段，直接按那一列的「我來開車」；已經有跑者的時段按「同車」或「多開」。',
+      carRsModes: [['', '已有跑者時：依車隊預設（' + ({ same: '同車', multi: '多開' }[st && st.runner_same_slot] || '問我') + '）'], ['same', '同車'], ['multi', '多開']].map(([v, n]) => {
+        const on = (s.carRsMode || '') === v;
+        return { v, n, on: on ? 'true' : 'false', bg: on ? 'color-mix(in oklab,var(--accent) 14%,var(--card))' : 'var(--card-2)', fg: on ? 'var(--accent-deep)' : 'var(--text-2)',
+                 bd: on ? 'color-mix(in oklab,var(--accent) 45%,var(--border))' : 'var(--border)' };
+      }),
       carRsHintShow: !admin && selfOn && !meRunner && !xd,
       carRsHint: '這個車隊開放跑者自行報跑。想開車先登記跑者倍率：Discord 打 %名字 r3.40，QQ 打 /登记 名字 r3.40，登記完重新整理就會出現「我來開車」。',
       /* 成員：工具列右邊再寫一次目前的模式（手機上最上面那一行會被截斷，看不到最後面的模式） */
@@ -12942,6 +13059,7 @@ class Component extends DCLogic {
       onCarMode: e => this.carSetMode(e.currentTarget.dataset.v === 'team'),
       onCarRunSelfAdm: e => this.carSetRunSelf(e.currentTarget.dataset.v === '1'),
       onCarRunSelfRow: e => this.carRunSelfRow(e.currentTarget),
+      onCarRsMode: e => this.setState({ carRsMode: String(e.currentTarget.dataset.v || '') }),
       onCarRunSelfTool: () => this.carRunSelfTool(),
       onCarRunSelfKey: e => { if (e.key === 'Enter') this.carRunSelfTool(); },
       onCarLockDay: e => { const st = (this.state.carStates || {})[this.carNo()], day = this.carDayOf(st, this.state.carDate); const v = e.currentTarget.dataset.v === '1';
