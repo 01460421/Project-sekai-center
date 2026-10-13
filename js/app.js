@@ -6474,11 +6474,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=e76f921fd0')
+    fetch('./data/ep-songs.js?v=32694762d7')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=e76f921fd0')
+        import('./data/ep-songs.js?v=32694762d7')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
