@@ -2355,7 +2355,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=5acf1c2caa';
+      s.src = 'data/billing.js?v=bc03ac7c00';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2569,7 +2569,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=0ecb714185').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=e3cb25abeb').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -5993,7 +5993,7 @@ class Component extends DCLogic {
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
-      const m = await import('./data/skill-table.js?v=925cd7ab0f');
+      const m = await import('./data/skill-table.js?v=b3d1ac89e9');
       return m.SKILL_TABLE;
     });
   }
