@@ -373,6 +373,77 @@ select option, select optgroup{
 .bot-shot-cap span{font-size:11px;font-weight:700;color:var(--text-3)}
 .bot-step-n{font-size:26px;font-weight:900;line-height:1;color:var(--accent-deep)}
 .bot-step-t{font-size:14px;font-weight:800;color:var(--ink);margin:8px 0 6px}
+/* 指令導覽：左邊情境分類＋清單、右邊模擬聊天視窗；底下「試打看看」 */
+.bt-wrap{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:14px;margin-top:14px}
+.bt-left{min-width:0}
+.bt-cats{display:flex;flex-direction:column;gap:3px}
+.bt-cat{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text-2);font-size:12.5px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit;min-width:0}
+.bt-cat[aria-pressed="true"]{background:color-mix(in oklab,var(--accent) 12%,var(--card));border-color:color-mix(in oklab,var(--accent) 35%,var(--border));color:var(--accent-deep)}
+.bt-cat b{margin-left:auto;font-size:10.5px;font-weight:800;padding:0 7px;border-radius:999px;background:var(--card-2);color:var(--text-3)}
+.bt-list{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.bt-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 9px;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;text-align:left;font-family:inherit;min-width:0;width:100%}
+.bt-item[aria-pressed="true"]{background:var(--card-2);border-color:var(--border)}
+.bt-item .bot-code{font-size:11px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.bt-item>span{font-size:12px;color:var(--text-2);min-width:0;flex:1 1 auto;white-space:normal}
+.bt-chat{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--card-2);display:flex;flex-direction:column;min-width:0}
+.bt-chat-h{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;color:var(--ink);background:var(--card);flex-wrap:wrap}
+.bt-chat-h i{width:9px;height:9px;border-radius:50%;flex:none}
+.bt-chat-h>span{font-size:11px;font-weight:600;color:var(--text-3)}
+.bt-seg{margin-left:auto;display:inline-flex;padding:3px;border-radius:999px;background:var(--card-2);gap:2px}
+.bt-seg button{padding:4px 11px;border:none;border-radius:999px;background:transparent;color:var(--text-3);font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit}
+.bt-seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:var(--sh-xs)}
+.bt-body{padding:14px 12px 6px;min-height:200px;display:flex;flex-direction:column;gap:10px;justify-content:flex-end}
+.bt-msg{display:flex;gap:8px;align-items:flex-start;animation:btIn .25s ease-out}
+.bt-msg.me{justify-content:flex-end}
+.bt-av{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:var(--accent-deep)}
+.bt-bub{max-width:min(100%,420px);padding:8px 12px;border-radius:14px 14px 4px 14px;background:var(--accent-deep);color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;font-weight:700;overflow-wrap:anywhere}
+.bt-rc{max-width:min(100%,460px);min-width:0;padding:9px 13px 10px;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px 14px 14px 14px;background:var(--card)}
+.bt-rc-n{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:3px}
+.bt-rc-n b{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:0 5px;border-radius:5px;background:var(--accent-deep);color:#fff}
+.bt-rc-l{font-size:12px;color:var(--text-2);line-height:1.7;overflow-wrap:anywhere}
+.bt-rc-l:first-of-type{color:var(--ink);font-weight:700}
+.bt-in{display:flex;align-items:center;gap:8px;margin:8px 12px 12px;padding:7px 8px 7px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);min-height:40px}
+.bt-in-t{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;font-weight:700;color:var(--text);overflow-wrap:anywhere}
+.bt-in-t[data-ph="1"]{color:var(--text-3);font-weight:500;font-family:inherit}
+.bt-caret{display:inline-block;width:2px;height:14px;background:var(--accent-deep);vertical-align:-2px;margin-left:1px;animation:btCaret .9s steps(1) infinite}
+.bt-send{flex:none;padding:5px 12px;border:none;border-radius:8px;background:var(--card-2);color:var(--text-3);font-size:11.5px;font-weight:800;transition:background .2s,color .2s}
+.bt-send[data-on="1"]{background:var(--accent-deep);color:#fff}
+.bt-uibtn{display:inline-flex;align-items:center;padding:5px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:800;transition:transform .2s,background .2s,color .2s}
+.bt-uibtn[aria-pressed="true"]{background:var(--accent-deep);color:#fff;border-color:transparent;transform:scale(.96)}
+.bt-ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.bt-btn{padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bt-btn.pri{background:var(--accent-deep);color:#fff;border-color:transparent}
+.bt-btn[aria-pressed="true"]{background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}
+.bt-btn:disabled{opacity:.45;cursor:default}
+.bt-ctl>span{margin-left:auto;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'}
+.bt-ex{margin-top:10px;padding:11px 13px;border:1px dashed color-mix(in oklab,var(--accent) 40%,var(--border));border-radius:12px;background:color-mix(in oklab,var(--accent) 6%,var(--card));animation:btIn .25s ease-out}
+.bt-ex-t{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--accent-deep)}
+.bt-ex-d{font-size:12.5px;color:var(--text-2);line-height:1.75;margin-top:3px}
+.bt-vars{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:8px}
+.bt-var{display:inline-flex;align-items:baseline;gap:6px;font-size:11.5px;color:var(--text-3);max-width:100%;min-width:0}
+.bt-var .bot-code{font-size:11px;white-space:normal;overflow-wrap:anywhere}
+.bt-note{padding:6px 12px;border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--accent) 8%,var(--card-2));font-size:12.5px;color:var(--text-2);line-height:1.6}
+.bt-note::before{content:"★ ";color:var(--accent-deep);font-weight:800}
+.bt-try{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.bt-try input{flex:1 1 220px;min-width:0;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bt-try input:focus{border-color:var(--accent)}
+.bt-exs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bt-exs button{padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--accent-deep);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;font-weight:700;cursor:pointer}
+.bt-out{margin-top:10px;padding:11px 13px;border-radius:12px;border:1px solid color-mix(in oklab,#2f9e57 40%,var(--border));background:color-mix(in oklab,#2f9e57 7%,var(--card))}
+.bt-out[data-ok="0"]{border-color:color-mix(in oklab,#ee6644 40%,var(--border));background:color-mix(in oklab,#ee6644 7%,var(--card))}
+.bt-out-t{font-size:13px;font-weight:800;color:var(--ink);overflow-wrap:anywhere}
+.bt-out-l{font-size:12.5px;color:var(--text-2);line-height:1.75;margin-top:3px;overflow-wrap:anywhere}
+@keyframes btIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes btCaret{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.bt-msg,.bt-ex,.bt-caret{animation:none}.bt-uibtn,.bt-send{transition:none}}
+@media (max-width:760px){
+  .bt-wrap{grid-template-columns:1fr}
+  .bt-cats{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .bt-cats::-webkit-scrollbar{display:none}
+  .bt-cat{flex:none;white-space:nowrap;padding:7px 11px}
+  .bt-body{min-height:150px}
+  .bt-ctl>span{margin-left:0;width:100%}
+}
 @media (max-width:760px){
   .bot-hero{grid-template-columns:1fr}
   .bot-hero-art{order:-1;min-height:190px}
@@ -413,6 +484,13 @@ select option, select optgroup{
 .car-rp{display:inline-block;flex:none;padding:0 7px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,var(--card));color:var(--accent-deep);font-size:10.5px;font-weight:800;line-height:1.6;white-space:nowrap}
 .car-rbtn{border:none;background:none;margin:0;padding:4px 0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .car-mode-note{font-size:11.5px;color:var(--text-3);line-height:1.7;margin:-6px 2px 12px;text-align:right}
+/* 設定引導：遮罩挖洞（洞的位置／大小由程式算，滑到下一個目標靠 transition）＋說明卡；prefers-reduced-motion 時直接切換 */
+.car-gd-catch{position:fixed;inset:0;z-index:95}
+.car-gd-hole{position:fixed;z-index:96;border-radius:14px;pointer-events:none}
+.car-gd-card{position:fixed;z-index:97;padding:18px 20px 16px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-md);max-width:calc(100vw - 24px);animation:popIn .3s ease}
+.car-gd-t{font-size:17px;font-weight:800;color:var(--ink);line-height:1.35}
+.car-gd-b{font-size:13px;color:var(--text-2);line-height:1.75;margin-top:8px}
+@media (prefers-reduced-motion:reduce){.car-gd-hole,.car-gd-card{transition:none!important;animation:none!important}}
 .car-m-only{display:none}
 .car-seat[draggable="true"] .car-name{cursor:grab}
 .car-over{outline:2px dashed var(--accent);outline-offset:-3px;background:color-mix(in oklab,var(--accent) 10%,transparent)!important}
@@ -2543,6 +2621,7 @@ select option, select optgroup{
         <sc-if value="{{ carMultiGuild }}">
           <button type="button" onClick="{{ onCarGuildToggle }}" class="car-btn" aria-haspopup="listbox" aria-expanded="{{ carGuildOpen }}" style="background:var(--card);line-height:normal">切換車隊 {{ carGuildArrow }}</button>
         </sc-if>
+        <button type="button" onClick="{{ onCarGuideOpen }}" class="car-btn" data-car-guide="btn" style="background:var(--card)">{{ carGdBtn }}</button>
         <button type="button" onClick="{{ onCarReload }}" class="car-btn u-b17">{{ carBusyTxt }}</button>
         <a href="{{ carLogoutUrl }}" class="car-btn" style="background:var(--card);text-decoration:none;display:inline-block;line-height:normal">登出</a>
       </div>
@@ -2590,7 +2669,7 @@ select option, select optgroup{
             <sc-if value="{{ carRsAdmShow }}"><button type="button" class="car-btn" aria-pressed="{{ carRsAdmPressed }}" onClick="{{ onCarRunSelfAdm }}" data-v="{{ carRsAdmV }}" data-car-runself="adm" style="background:{{ carRsAdmBg }};color:{{ carRsAdmFg }};border-color:{{ carRsAdmBd }}">{{ carRsAdmTxt }}</button></sc-if>
             <sc-if value="{{ carTagMgrBtn }}"><button type="button" onClick="{{ onCarTagMgr }}" class="car-btn">標記管理</button></sc-if>
             <sc-if value="{{ carLockShow }}"><button type="button" onClick="{{ onCarLockDay }}" data-v="{{ carLockV }}" class="car-btn">{{ carLockBtn }}</button></sc-if>
-            <button type="button" onClick="{{ onCarOpen }}" class="car-btn" style="background:{{ carOpenBg }};color:{{ carOpenFg }};border-color:{{ carOpenBd }};box-shadow:var(--sh-xs)">{{ carOpenBtn }}</button>
+            <button type="button" onClick="{{ onCarOpen }}" class="car-btn" data-car-guide="open" style="background:{{ carOpenBg }};color:{{ carOpenFg }};border-color:{{ carOpenBd }};box-shadow:var(--sh-xs)">{{ carOpenBtn }}</button>
           </div>
         </sc-if>
       </div>
@@ -2784,7 +2863,7 @@ select option, select optgroup{
         </div>
 
         <div class="car-side">
-          <div class="car-card" style="padding:17px 19px">
+          <div class="car-card" data-car-guide="mine" style="padding:17px 19px">
             <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:6px">我的班</div>
             <sc-for list="{{ carMine }}" as="m">
               <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--border);font-size:12.5px">
@@ -2795,7 +2874,7 @@ select option, select optgroup{
           </div>
           <!-- 成員：一次報一段時間（可選 S6）／取消 -->
           <sc-if value="{{ carASelfShow }}">
-            <div class="car-card" style="padding:17px 19px">
+            <div class="car-card" data-car-guide="self" style="padding:17px 19px">
               <div style="font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:9px">我要報班</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
                 <select aria-label="日期" value="{{ carAD }}" onChange="{{ onField }}" data-k="carAD" sc-options="{{ carADateOpts }}" style="flex:1 1 130px;min-width:0;padding:8px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font-size:13px;min-height:40px;outline:none;font-family:inherit"></select>
@@ -2843,7 +2922,7 @@ select option, select optgroup{
           <sc-if value="{{ carRunListOn }}"><datalist id="carRunList"><sc-for list="{{ carRunOpts }}" as="o"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist></sc-if>
           <!-- 排班工具（管理員）：開班／砍班、指定跑者（車隊模式）、代報班、複製班表、整段處理。日期與時段欄各工具共用 -->
           <sc-if value="{{ carAToolsShow }}">
-            <div class="car-card" style="padding:16px 18px;margin-top:14px;min-width:0">
+            <div class="car-card" data-car-guide="tools" style="padding:16px 18px;margin-top:14px;min-width:0">
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
                 <div class="u-ffc0">排班工具</div>
                 <div class="u-f1"></div>
@@ -4257,7 +4336,7 @@ select option, select optgroup{
                 </button>
                 <sc-if value="{{ g.open }}">
                   <sc-if value="{{ g.hasSum }}">
-                    <div class="car-srsum" style="margin:0 18px 14px;padding:12px 15px;border-radius:14px;background:color-mix(in oklab,var(--accent) 8%,var(--card));border:1px solid color-mix(in oklab,var(--accent) 24%,var(--border))">
+                    <div class="car-srsum" data-car-guide="rules" style="margin:0 18px 14px;padding:12px 15px;border-radius:14px;background:color-mix(in oklab,var(--accent) 8%,var(--card));border:1px solid color-mix(in oklab,var(--accent) 24%,var(--border))">
                       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
                         <span style="font-size:13px;font-weight:800;color:var(--accent-deep)">排班規則摘要</span>
                         <span style="font-size:11px;font-weight:700;color:var(--text-3)">依目前設定 · {{ g.sumTag }}</span>
@@ -4461,7 +4540,7 @@ select option, select optgroup{
 
     <div class="bot-card">
       <div class="bot-h2">能做什麼</div>
-      <div class="bot-sub">從報班到結算時數，車隊管理會用到的事都在裡面。標 NEW 的是 2026 年 9 月新加的。</div>
+      <div class="bot-sub">從報班到結算時數，車隊管理會用到的事都在裡面。標 NEW 的是 {{ botNewNote }}新加的。</div>
       <div class="bot-grid">
         <sc-for list="{{ botFeatures }}" as="f" hint-placeholder-count="12">
           <div class="bot-feat">
@@ -4484,6 +4563,84 @@ select option, select optgroup{
             </sc-for>
           </div>
         </sc-for>
+      </div>
+    </div>
+
+    <div class="bot-card" id="bot-tour-bt" data-bt="1">
+      <div class="bot-h2">指令導覽</div>
+      <div class="bot-sub">左邊挑情境，右邊看機器人會怎麼回。按「播放」會把指令一個字一個字打進去；Discord 與 QQ 的寫法可以切換，清單裡任一條都能直接點。回覆是示意，不會真的送到機器人。</div>
+      <div class="bt-wrap">
+        <div class="bt-left">
+          <div class="bt-cats" role="tablist" aria-label="情境分類">
+            <sc-for list="{{ btCats }}" as="g" hint-placeholder-count="7">
+              <button type="button" class="bt-cat" role="tab" aria-pressed="{{ g.on }}" onClick="{{ onBtCat }}" data-v="{{ g.v }}">{{ g.n }}<b>{{ g.k }}</b></button>
+            </sc-for>
+          </div>
+          <div class="bt-list" aria-label="{{ btCatName }}的指令">
+            <sc-for list="{{ btList }}" as="it" hint-placeholder-count="6">
+              <button type="button" class="bt-item" aria-pressed="{{ it.on }}" onClick="{{ onBtPick }}" data-c="{{ it.c }}" data-i="{{ it.i }}"><code class="bot-code">{{ it.code }}</code><span>{{ it.t }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="min-width:0">
+          <div class="bt-chat" data-side="{{ btSideDc }}">
+            <div class="bt-chat-h"><i style="background:{{ btRoomDot }}"></i>{{ btRoom }}<span>{{ btTitle }}</span>
+              <span class="bt-seg" role="group" aria-label="Discord 或 QQ">
+                <button type="button" aria-pressed="{{ btSideDc }}" onClick="{{ onBtSide }}" data-v="dc">Discord</button>
+                <button type="button" aria-pressed="{{ btSideQq }}" onClick="{{ onBtSide }}" data-v="qq">QQ</button>
+              </span>
+            </div>
+            <sc-if value="{{ btSideNote }}"><div class="bt-note">{{ btSideNote }}</div></sc-if>
+            <div class="bt-body" aria-live="polite">
+              <sc-if value="{{ btShowSent }}"><div class="bt-msg me"><div class="bt-bub" data-bt-sent="1">{{ btSentText }}</div></div></sc-if>
+              <sc-if value="{{ btShowReply }}">
+                <div class="bt-msg"><div class="bt-av">菜</div>
+                  <div class="bt-rc" data-bt-reply="1">
+                    <div class="bt-rc-n">{{ btBotName }}<b>{{ btBotTag }}</b></div>
+                    <sc-for list="{{ btReplyLines }}" as="l" hint-placeholder-count="3"><div class="bt-rc-l">{{ l.t }}</div></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ btIsUi }}">
+              <div class="bt-in" style="border-style:dashed"><span style="font-size:11.5px;color:var(--text-3)">{{ btUiWhere }}</span><span class="bt-uibtn" aria-pressed="{{ btUiOn }}" data-bt-ui="1">{{ btUiBtn }}</span></div>
+            </sc-if>
+            <sc-if value="{{ btNotUi }}">
+              <div class="bt-in"><span class="bt-in-t" data-bt-input="1" data-ph="{{ btInPh }}">{{ btInText }}<sc-if value="{{ btCaret }}"><i class="bt-caret"></i></sc-if></span><span class="bt-send" data-on="{{ btSendOn }}">送出</span></div>
+            </sc-if>
+          </div>
+          <div class="bt-ctl">
+            <button type="button" class="bt-btn pri" onClick="{{ onBtPlay }}" data-bt-play="1">{{ btPlayLabel }}</button>
+            <button type="button" class="bt-btn" onClick="{{ onBtPrev }}" disabled="{{ btPrevDis }}">← 上一條</button>
+            <button type="button" class="bt-btn" onClick="{{ onBtNext }}" disabled="{{ btNextDis }}">下一條 →</button>
+            <button type="button" class="bt-btn" onClick="{{ onBtAuto }}" aria-pressed="{{ btAutoOn }}" data-bt-auto="1">{{ btAutoLabel }}</button>
+            <span>{{ btPosLabel }}</span>
+          </div>
+          <sc-if value="{{ btShowExplain }}">
+            <div class="bt-ex" data-bt-explain="1">
+              <div class="bt-ex-t">這條做了什麼</div>
+              <div class="bt-ex-d">{{ btExplain }}</div>
+              <sc-if value="{{ btHasVars }}">
+                <div class="bt-ex-t" style="margin-top:8px">常見變化</div>
+                <div class="bt-vars"><sc-for list="{{ btVars }}" as="v" hint-placeholder-count="4"><span class="bt-var"><code class="bot-code">{{ v.k }}</code>{{ v.d }}</span></sc-for></div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="bot-h2" style="font-size:14px">試打看看</div>
+        <div class="bot-sub">打一條指令，這裡直接告訴你它會做什麼。只在你的瀏覽器裡解析，不會送出去。</div>
+        <div class="bt-try">
+          <input type="text" placeholder="例如 h20-24、e50、140b、%小明 h3.80" aria-label="試打指令" value="{{ btTry }}" onInput="{{ onField }}" data-k="btTry" onKeyDown="{{ onBtTryKey }}" data-bt-try="1" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="bt-exs"><sc-for list="{{ btTryEx }}" as="x" hint-placeholder-count="12"><button type="button" onClick="{{ onBtTryEx }}" data-k="{{ x.k }}">{{ x.k }}</button></sc-for></div>
+        <sc-if value="{{ btTryShow }}">
+          <div class="bt-out" data-ok="{{ btTryOk }}" data-bt-out="1">
+            <div class="bt-out-t">{{ btTryTitle }}</div>
+            <sc-for list="{{ btTryLines }}" as="l" hint-placeholder-count="2"><div class="bt-out-l">{{ l.t }}</div></sc-for>
+          </div>
+        </sc-if>
       </div>
     </div>
 
@@ -8745,6 +8902,29 @@ select option, select optgroup{
 </div>
 </sc-if>
 
+<!-- ========== 車隊頁設定引導（聚光燈逐步導覽；js/car.js carGuide*）==========
+     放在全站層而不是車隊頁容器裡：頁面容器有自己的堆疊層，fixed 的遮罩放在裡面會被手機底部的 dock 蓋住 -->
+<sc-if value="{{ carGdOpen }}">
+  <div class="car-gd-catch" aria-hidden="true"></div>
+  <div class="car-gd-hole" aria-hidden="true" style="{{ carGdHole }}"></div>
+  <div id="carGuideCard" class="car-gd-card" role="dialog" aria-modal="true" aria-label="設定引導" tabindex="-1" data-car-guide="card" data-step="{{ carGdIdx }}" data-pending="{{ carGdPending }}" style="{{ carGdCard }}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <sc-for list="{{ carGdDots }}" as="d" hint-placeholder-count="6"><span style="width:{{ d.w }};height:8px;border-radius:999px;background:{{ d.bg }};transition:width .25s,background .25s"></span></sc-for>
+      <span class="u-f1"></span>
+      <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ carGdStep }}</span>
+      <button type="button" onClick="{{ onCarGuideClose }}" data-car-guide="skip" style="padding:3px 10px;border:none;background:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">略過</button>
+    </div>
+    <div class="car-gd-t">{{ carGdTitle }}</div>
+    <div class="car-gd-b">{{ carGdBody }}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px">
+      <button type="button" onClick="{{ onCarGuideHide }}" data-car-guide="hide" style="padding:7px 12px;border:none;background:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:underline dotted;text-underline-offset:3px">不再顯示</button>
+      <span class="u-f1"></span>
+      <button type="button" onClick="{{ onCarGuidePrev }}" data-car-guide="prev" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;opacity:{{ carGdPrevOpacity }}">← 上一步</button>
+      <button type="button" onClick="{{ onCarGuideNext }}" data-car-guide="next" style="padding:8px 20px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:var(--sh-xs)">{{ carGdNextLabel }}</button>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ========== 全站提示 ========== -->
 <sc-if value="{{ errBar }}">
 <div role="alert" style="position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);padding:10px 12px 10px 16px;border-radius:14px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;box-shadow:var(--sh-md)">
@@ -8800,7 +8980,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=b0eb843aad"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4d760023b6"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

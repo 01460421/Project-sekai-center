@@ -122,6 +122,7 @@ export function carMembers() {
       this.setState({ carMe: { guilds }, carNeed: '', g });
       if (g) await this.carLoadStates();
       if (g) this.carLoadSec(this.state.carTab, true);
+      if (g) this.carGuideAuto();   // 第一次進車隊頁：跳設定引導（看 sekai-car-guide-hide；同一分頁只跳一次）
     } catch (e) {
       const need = e.code === 'need_identity' ? 'identity' : e.code === 'need_login' ? 'login' : '';
       this.setState({ carMe: null, carNeed: need, carErr: need ? '' : e.message });
@@ -166,6 +167,9 @@ export function carMembers() {
   },
 
   CAR_TABS: [['sched', '班表'], ['members', '成員'], ['stats', '統計'], ['music', '點歌'], ['bridge', '合班'], ['settings', '設定', 1], ['log', '紀錄', 1], ['system', '系統', 1]],
+
+  /* 這個人看得到的分頁：設定／紀錄／系統只給能改設定的管理員（排班身份組沒有）。carPageVals 與設定引導共用這條規則 */
+  carSecTabs(st, gd) { const secAdm = !!(st && st.role === 'admin') || !!(gd && gd.role === 'admin'); return this.CAR_TABS.filter(t => !t[2] || secAdm); },
 
   carSecKey(name, perCar) { return name + ':' + String(this.state.g || '') + (perCar ? ':' + this.carNo() : ''); },
 
@@ -3564,6 +3568,167 @@ export function carMembers() {
     }
   },
 
+  /* ===== 設定引導（聚光燈逐步導覽） =====
+     管理員第一次進車隊頁自動跳一次（localStorage 'sekai-car-guide-hide' 沒設、這個分頁還沒看過）；工具列的「設定引導」隨時重看；
+     成員看到的是精簡版（怎麼報班、怎麼看自己的班）。文案全在 CAR_GUIDE：
+       t／b＝標題／內文　sel＝要框住的元素（找不到就置中卡片）　tab＝先切到哪個分頁　prep＝進這一步前先做的事（回 state patch）
+       adm＝只給管理員（含排班身份組）　mem＝只給成員　full＝只給能改設定的管理員（排班身份組沒有設定分頁，這些步驟不給）　opt＝目標不存在就跳過這一步
+     state 用 carGuide（避免跟首頁的 guide 撞）：{ step, rect, pending, tr, ch, vw, vh, mobile }；
+     rect 是目標在視窗裡的位置（遮罩挖洞用），tr＝這次要不要滑過去（捲動／改視窗大小時直接跟著，不滑）。 */
+  CAR_GUIDE: [
+    { t: '歡迎來到車隊頁', b: '這裡是菜根機器人的網頁控制台：班表、成員、設定都在同一頁。接下來帶你走一遍第一次設定車隊的順序，每一步都會框出畫面上對應的位置；隨時可以按「略過」，之後按工具列的「設定引導」能再看一次。', adm: 1 },
+    { t: '歡迎來到車隊頁', b: '這裡可以看車隊的班表、報自己的班、查成員倍率。接下來幾步帶你認識怎麼報班、怎麼看自己的班；隨時可以按「略過」，之後按工具列的「使用引導」能再看一次。', mem: 1 },
+    { t: '先認識分頁籤', sel: '[aria-label="車隊功能"]', tab: 'sched', b: '班表是每天的時段與座位，成員是倍率與名單，設定是機器人的所有開關（設定、紀錄、系統三個分頁只有管理員看得到）。接下來的步驟會自動切到對應的分頁。', adm: 1 },
+    { t: '先認識分頁籤', sel: '[aria-label="車隊功能"]', tab: 'sched', b: '班表是每天的時段與座位，成員是倍率與名單，統計看車隊的跑分與時速，點歌與合班依車隊有沒有開放而定。', mem: 1 },
+    { t: '私車還是車隊', sel: '[aria-label="排班模式"]', tab: 'sched', b: '私車＝整隊固定一位跑者；車隊＝每個時段可以各自指定跑者。這是整個車隊共用的開關，決定了班表上有沒有「跑者」這一欄，建議第一步先選好。', adm: 1, full: 1 },
+    { t: '跑者自行報跑', sel: '[data-car-runself="adm"]', tab: 'sched', b: '車隊模式底下的選項。打開後，登記過跑者倍率的成員可以自己開班：Discord 打 r20-24、QQ 打 /r 20-24、網頁按「我來開車」。同一時段已經有跑者時可以「同車」（第二跑者佔 P2，班表標「跑」）或「多開」（另開一台車）；預設怎麼處理在設定分頁的「同一時段已有跑者時」。', adm: 1, full: 1 },
+    { t: '開放報班', sel: '[data-car-guide="open"]', tab: 'sched', b: '開放之後成員才能自己報班（網頁、Discord 快捷 h20-24、QQ /h 20-24）。報班截止時間、每人每日上限這些規則在設定分頁的「排班規則」調整。', adm: 1 },
+    { t: '排班工具', sel: '[data-car-guide="tools"]', tab: 'sched', b: '開班、砍班、指定跑者、代報班、複製班表、整段處理都在這裡。開班先選日期、填時段（例如 20-22），車隊模式還可以順便填跑者。', adm: 1 },
+    { t: '怎麼報班', sel: '[data-car-guide="self"]', tab: 'sched', b: '在「我要報班」選日期、填時段（例如 20-22），可勾 S6；報完會出現在左邊的表格。也可以在 Discord 打 h20-24、QQ 打 /h 20-24（/s 是 S6）。', mem: 1 },
+    { t: '我的班', sel: '[data-car-guide="mine"]', tab: 'sched', b: '「我的班」列出這幾天你排到的時段與倍率；想取消就用下面的「取消報班」。', mem: 1 },
+    { t: '跑者報跑', sel: '[data-car-runself="tool"]', tab: 'sched', opt: 1, b: '車隊開放跑者自行報跑、而且你登記過跑者倍率，就會看到這一列：填時段按「我要開車」；已經有跑者的時段可以選「同車」或「多開」。', mem: 1 },
+    { t: '成員分頁', sel: '[data-sec="members"]', tab: 'members', b: '成員的倍率、S6 倍率、別名與標記都在這裡；按名字可以看細節，管理員可以直接改倍率、登記新成員。', adm: 1 },
+    { t: '排班規則摘要', sel: '[data-car-guide="rules"]', tab: 'settings', adm: 1, full: 1, prep: st => ({ carFSetOpen: Object.assign({}, st.carFSetOpen, { '排班規則': true }), carFSetQ: '' }),
+      b: '設定分頁的「排班規則」最上面有白話摘要，依目前設定寫出排位順序、報班截止、每日上限、取消鎖定等規則；改了下面的選項，摘要會跟著變。多車的話每一車可以不同。' },
+    { t: '遊戲情報推播', adm: 1, full: 1, b: '這項只在 Discord 設定，網頁設定分頁沒有對應區塊：在 Discord 打 /公告 遊戲情報，機器人會自動推播遊戲公告、Virtual Live、活動與卡池，並附一個通知身份組面板讓成員自己領。Live 走私訊、附「看過了」按鈕；「操作:排期」可以先預覽接下來的排程。' },
+    { t: '班表圖與插畫背景', sel: '[data-sec="__bgimg"]', tab: 'settings', adm: 1, full: 1, b: '機器人貼的清單風班表圖可以換背景：在這裡上傳插畫到圖庫（會自動輪換），Discord 也能用 /班表 背景 切換。色段監控的門檻等參數不在這裡，在統計分頁的「色段監控」調，改了會即時預覽。' },
+    { t: 'Google 試算表同步', sel: '[data-sec="__sheet"]', tab: 'settings', adm: 1, full: 1, b: '綁一張試算表之後，網頁、機器人、試算表三邊的改動會合併同步；可以在這裡檢查連線、看變更紀錄、選同步方向。' },
+    { t: '設定告一段落', sel: '[data-car-guide="btn"]', b: '之後想再看一次，按工具列的這顆按鈕；不想每次自動跳出來，按「不再顯示」。', adm: 1 },
+    { t: '就這些', sel: '[data-car-guide="btn"]', b: '之後想再看一次，按工具列的這顆按鈕；不想每次自動跳出來，按「不再顯示」。', mem: 1 },
+  ],
+  /* 能改設定的管理員（排班身份組不算）：決定有沒有設定分頁、引導走不走設定類步驟、工具列按鈕叫什麼 */
+  carGuideFull() { const gd = this.carGuild(), st = this.carAState(); return !!(st && st.role === 'admin') || !!(gd && gd.role === 'admin'); },
+  carGuideSteps() {
+    const gd = this.carGuild(), st = this.carAState();
+    const adm = this.carIsSched(st, gd) || !!(gd && gd.role === 'admin');
+    const full = this.carGuideFull();
+    return this.CAR_GUIDE.filter(x => (adm ? !x.mem : !x.adm) && (!x.full || full));
+  },
+  /* 進頁自動跳：只看車隊頁自己的鍵（跟首頁的 sekai-guide-hide 無關） */
+  carGuideAuto() {
+    try { if (localStorage.getItem('sekai-car-guide-hide') || sessionStorage.getItem('sekai-car-guide-seen')) return; } catch (e) { return; }
+    setTimeout(() => {
+      if (this.state.page !== 'car' || !this.carGuild() || this.state.carGuide) return;
+      try { sessionStorage.setItem('sekai-car-guide-seen', '1'); } catch (e) {}
+      this.carGuideOpen();
+    }, 700);
+  },
+  carGuideOpen() {
+    if (!this._carGdRe) {
+      // 捲動／改視窗大小：目標位置變了，遮罩的洞直接跟著（不滑）；自己 scrollBy 的那一下不算
+      this._carGdRe = () => {
+        const g = this.state.carGuide;
+        if (!g || g.pending || this._carGdRaf || Date.now() < (this._carGdQuiet || 0)) return;
+        this._carGdRaf = requestAnimationFrame(() => { this._carGdRaf = 0; this.carGuideMeasure(0, false, 0, this._carGdSeq); });
+      };
+      window.addEventListener('resize', this._carGdRe);
+      window.addEventListener('scroll', this._carGdRe, { passive: true });
+    }
+    this.setState({ carGuide: { step: 0, rect: null, pending: true, tr: true, ch: 0 }, carPop: null, carTagMgr: false, carGuildOpen: false });
+    this.carGuideGo(0, 1);
+  },
+  carGuideGo(n, dir) {
+    const g = this.state.carGuide; if (!g) return;
+    const steps = this.carGuideSteps();
+    if (n < 0) n = 0;
+    if (n >= steps.length) { this.carGuideClose(false); return; }
+    const sp = steps[n], patch = { carGuide: Object.assign({}, g, { step: n, pending: true, tr: true }) };
+    // 要換分頁：上一個目標馬上就不在畫面上了，洞先縮回中央，找到新目標再長出來（同一分頁才從上一個目標滑過去）
+    const allowed = this.carSecTabs(this.carAState(), this.carGuild()).map(t => t[0]);
+    if (sp.tab && this.state.carTab !== sp.tab && allowed.includes(sp.tab)) { patch.carGuide.rect = null; Object.assign(patch, { carTab: sp.tab, carPop: null, carTagMgr: false, carGuildOpen: false }); }
+    if (sp.prep) { try { Object.assign(patch, sp.prep.call(this, this.state) || {}); } catch (e) {} }
+    this.setState(patch);
+    if (patch.carTab) setTimeout(() => this.carLoadSec(patch.carTab), 0);
+    this._carGdSeq = (this._carGdSeq || 0) + 1;
+    this.carGuideMeasure(sp.sel ? 12 : 0, true, dir || 1, this._carGdSeq);
+  },
+  /* 量目標的位置：找得到就捲到畫面上半再量（手機卡片貼底，目標留在上面）；找不到就再等一下（分頁剛切、資料還在載），
+     等過頭就置中卡片（opt 的步驟直接跳過）。seq 擋掉上一步還沒量完就換步的情況。 */
+  carGuideMeasure(tries, scroll, dir, seq) {
+    const g = this.state.carGuide;
+    if (!g || seq !== this._carGdSeq) return;
+    if (this.state.page !== 'car') { this.carGuideClose(false); return; }
+    const sp = this.carGuideSteps()[g.step]; if (!sp) { this.carGuideClose(false); return; }
+    const vw = window.innerWidth, vh = window.innerHeight, mobile = vw < 640;
+    let el = null;
+    if (sp.sel) { try { el = document.querySelector(sp.sel); } catch (e) {} }
+    if (el && !(el.offsetWidth || el.offsetHeight)) el = null;
+    if (!el && tries > 0) { setTimeout(() => this.carGuideMeasure(tries - 1, scroll, dir, seq), 160); return; }
+    if (!el && sp.opt && dir) { this.carGuideGo(g.step + dir, dir); return; }
+    let rect = null;
+    if (el) {
+      if (scroll) {
+        // 目標已經好好地在畫面裡（手機還要在貼底的卡片上面）就不捲，洞直接從上一個目標滑過去；否則捲到畫面上半再量
+        const r0 = el.getBoundingClientRect(), limit = mobile ? vh - (g.ch || 240) - 36 : vh - 72;
+        const want = mobile ? vh * 0.3 : vh * 0.42, hid = Math.min(r0.height, vh * 0.4);
+        if (r0.top < 72 || r0.top + hid > limit) {
+          const dy = r0.top + hid / 2 - want;
+          if (Math.abs(dy) > 8) { this._carGdQuiet = Date.now() + 900; try { window.scrollBy({ top: dy, left: 0, behavior: 'auto' }); } catch (e) { window.scrollBy(0, dy); } }
+        }
+      }
+      // 洞不超出畫面；手機的卡片貼底，太高的目標（整個成員分頁）只框卡片上面那一段
+      const r = el.getBoundingClientRect(), pad = 6, maxB = mobile ? vh - (g.ch || 240) - 24 : vh;
+      const x = Math.max(0, r.left - pad), y = Math.max(0, r.top - pad);
+      rect = { x, y, w: Math.min(vw, r.right + pad) - x, h: Math.min(maxB, r.bottom + pad) - y };
+      if (rect.w <= 0 || rect.h <= 0) rect = null;
+    }
+    this.setState({ carGuide: Object.assign({}, g, { rect, vw, vh, mobile, tr: !!scroll, pending: false }) });
+    // 卡片高度決定放目標上面還是下面：畫出來量一次，變了才再畫一次
+    setTimeout(() => {
+      const c = document.getElementById('carGuideCard'), g2 = this.state.carGuide;
+      if (!c || !g2 || seq !== this._carGdSeq) return;
+      const ch = c.offsetHeight;
+      if (ch && Math.abs(ch - (g2.ch || 0)) > 2) this.setState({ carGuide: Object.assign({}, g2, { ch }) });
+      try { if (!c.contains(document.activeElement)) c.focus({ preventScroll: true }); } catch (e) {}
+    }, 0);
+  },
+  carGuideClose(hide) {
+    if (hide) { try { localStorage.setItem('sekai-car-guide-hide', '1'); } catch (e) {} }
+    if (this._carGdRe) { window.removeEventListener('resize', this._carGdRe); window.removeEventListener('scroll', this._carGdRe); this._carGdRe = null; }
+    if (this._carGdRaf) { cancelAnimationFrame(this._carGdRaf); this._carGdRaf = 0; }
+    this._carGdSeq = (this._carGdSeq || 0) + 1;
+    if (this.state.carGuide) this.setState({ carGuide: null });
+    try { const b = document.querySelector('[data-car-guide="btn"]'); if (b) b.focus({ preventScroll: true }); } catch (e) {}   // 焦點還給工具列的按鈕
+  },
+  /* 模板用的值：遮罩的洞（沒目標＝縮成畫面中央的一點，遮罩蓋滿）、卡片位置（桌機放目標下面、放不下放上面；手機貼底） */
+  carGuideVals(s) {
+    const g = s.page === 'car' ? s.carGuide : null;
+    const steps = g ? this.carGuideSteps() : [], sp = g ? steps[g.step] : null;
+    if (!sp) return { carGdOpen: false };
+    const n = steps.length, i = g.step, vw = g.vw || window.innerWidth, vh = g.vh || window.innerHeight;
+    const r = g.rect, mobile = !!g.mobile, ch = g.ch || 240, cw = Math.min(380, vw - 24);
+    const full = this.carGuideFull(), btn = full ? '設定引導' : '使用引導';   // 工具列按鈕的實際名字（carGdBtn 同一條規則）
+    const title = (!full && sp.t === '設定告一段落') ? '就這些' : sp.t, body = String(sp.b || '').replace(/「設定引導」/g, '「' + btn + '」');
+    const ease = 'cubic-bezier(.2,.7,.2,1)', tr = g.tr ? ['left', 'top', 'width', 'height'].map(p => p + ' .45s ' + ease).join(',') : 'none';
+    const hole = r || { x: vw / 2, y: vh / 2, w: 0, h: 0 };
+    const ring = r ? ',0 0 0 2px color-mix(in oklab,var(--accent) 75%,transparent)' : '';
+    let card;
+    if (mobile) card = 'left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px))';
+    else if (!r) card = 'left:' + Math.round((vw - cw) / 2) + 'px;top:' + Math.round(Math.max(12, (vh - ch) / 2)) + 'px;width:' + cw + 'px';
+    else {
+      // 目標下面放得下就放下面，不然放上面；上下都放不下（目標很高）就放旁邊，最後才退回畫面底部
+      const below = r.y + r.h + 14, above = r.y - 14 - ch;
+      let top, left = Math.max(12, Math.min(r.x, vw - cw - 12));
+      if (below + ch + 12 <= vh) top = below;
+      else if (above >= 12) top = above;
+      else {
+        top = Math.max(12, Math.min(r.y, vh - ch - 12));
+        if (r.x + r.w + 14 + cw <= vw - 12) left = r.x + r.w + 14;
+        else if (r.x - 14 - cw >= 12) left = r.x - 14 - cw;
+        else top = Math.max(12, vh - ch - 12);
+      }
+      card = 'left:' + Math.round(left) + 'px;top:' + Math.round(top) + 'px;width:' + cw + 'px';
+    }
+    return {
+      carGdOpen: true, carGdIdx: String(i), carGdPending: g.pending ? '1' : '0', carGdTitle: title, carGdBody: body, carGdStep: (i + 1) + ' / ' + n,
+      carGdDots: steps.map((_, k) => ({ bg: k === i ? 'var(--accent)' : 'var(--border-2)', w: k === i ? '22px' : '8px' })),
+      carGdPrevOpacity: i === 0 ? '.35' : '1', carGdNextLabel: i === n - 1 ? '完成' : '下一步 →',
+      carGdHole: 'left:' + Math.round(hole.x) + 'px;top:' + Math.round(hole.y) + 'px;width:' + Math.round(hole.w) + 'px;height:' + Math.round(hole.h) + 'px;transition:' + tr + ';box-shadow:0 0 0 9999px rgba(10,14,28,.55)' + ring,
+      carGdCard: card + ';transition:' + (g.tr && !mobile ? 'left .45s ' + ease + ',top .45s ' + ease : 'none'),
+      carGdCentered: !r,
+    };
+  },
+
   carPageVals(s, out) {
     const isCar = s.page === 'car', isAcc = s.page === 'account', me = s.me, api = this.GAMES_API;
     const back = isCar ? ('/app.html?page=car' + (s.g ? '&g=' + encodeURIComponent(s.g) : '')) : '/app.html?page=account';
@@ -3782,7 +3947,7 @@ export function carMembers() {
 
     /* 子分頁：只算目前分頁的值（carSecVals_<id>）；分頁程式出錯只影響該分頁 */
     const secAdm = fullAdmin || !!(gd && gd.role === 'admin');   // 設定／紀錄／系統分頁只給管理員（排班身份組沒有）
-    const secTabs = this.CAR_TABS.filter(t => !t[2] || secAdm);
+    const secTabs = this.carSecTabs(st, gd);
     const secTab = secTabs.some(t => t[0] === s.carTab) ? s.carTab : 'sched';
     const secIs = {}; secTabs.forEach(t => { secIs[t[0]] = t[0] === secTab; });
     let secV = {};
@@ -3856,7 +4021,8 @@ export function carMembers() {
       carPalNote: admin ? '點名字旁的 ＋ 貼標記；可選「只這一班」或「這個人長期」。標籤盤裡設成「僅管理員」的標記，成員看不到。' : '管理員貼在座位上的標記；點標記可以看細節。',
       carTagMgrShow: tmOpen,
       carBusyTxt: s.carBusy ? '更新中…' : '重新整理',
-    }, pv, tmv, secOut, secV);
+      carGdBtn: fullAdmin ? '設定引導' : '使用引導',   // 工具列：隨時重看引導（排班身份組與成員沒有設定分頁，名字也不一樣）
+    }, pv, tmv, secOut, secV, this.carGuideVals(s));
   },
   };
 }
