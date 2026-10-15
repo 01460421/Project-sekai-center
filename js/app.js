@@ -2578,7 +2578,7 @@ class Component extends DCLogic {
   loadCar() {
     if (this._carMod === true) return Promise.resolve(true);
     if (this._carMod) return this._carMod;
-    this._carMod = import('./js/car.min.js?v=bd89c6db8a').then(m => { Object.assign(this, m.carMembers.call(this)); this._carMod = true; this.setState({ carMod: true, carModErr: '' }); return true; })
+    this._carMod = import('./js/car.min.js?v=d61928d692').then(m => { Object.assign(this, m.carMembers.call(this)); this._carMod = true; this.setState({ carMod: true, carModErr: '' }); return true; })
       .catch(() => { this._carMod = null; this.setState({ carModErr: '車隊程式載入失敗，請檢查網路後按「重試」。' }); return false; });
     return this._carMod;
   }

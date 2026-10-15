@@ -2663,7 +2663,7 @@ select option, select optgroup{
                       <sc-if value="{{ c.has }}">
                         <div class="car-nm">
                           <span class="car-p car-m-only">{{ c.P }}</span>
-                          <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if>
+                          <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if><sc-if value="{{ c.runner }}"><span class="car-s6" title="同車第二跑者">跑</span></sc-if>
                           <button type="button" class="car-name" onClick="{{ onCarSeat }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}">{{ c.name }}</button>
                           <sc-for list="{{ c.tags }}" as="t">
                             <button type="button" class="car-tag" onClick="{{ onCarTag }}" data-h="{{ t.h }}" data-pos="{{ t.pos }}" data-d="{{ t.d }}" data-i="{{ t.i }}" title="{{ t.title }}" style="background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
@@ -2745,7 +2745,7 @@ select option, select optgroup{
                           <sc-if value="{{ c.has }}">
                             <div class="car-nm">
                               <span class="car-p">{{ c.P }}</span>
-                              <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if>
+                              <sc-if value="{{ c.s6 }}"><span class="car-s6">S6</span></sc-if><sc-if value="{{ c.runner }}"><span class="car-s6" title="同車第二跑者">跑</span></sc-if>
                               <button type="button" class="car-name" onClick="{{ onCarASeat }}" data-h="{{ c.h }}" data-pos="{{ c.pos }}" data-d="{{ c.d }}" data-nm="{{ c.nm }}">{{ c.name }}</button>
                               <span class="car-bn" style="margin-left:auto">{{ c.bonus }}</span>
                             </div>
@@ -3057,7 +3057,7 @@ select option, select optgroup{
                       <sc-for list="{{ d.rows }}" as="r">
                         <div style="display:grid;grid-template-columns:{{ d.cols }};gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--border)">
                           <span class="car-p" style="font-size:11.5px">{{ r.pos }}</span>
-                          <span class="car-nm" style="font-size:13.5px;flex-wrap:nowrap"><sc-if value="{{ r.s6 }}"><span class="car-s6" style="flex:none">S6</span></sc-if><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ r.nameFg }}">{{ r.name }}</span></span>
+                          <span class="car-nm" style="font-size:13.5px;flex-wrap:nowrap"><sc-if value="{{ r.s6 }}"><span class="car-s6" style="flex:none">S6</span></sc-if><sc-if value="{{ r.runner }}"><span class="car-s6" style="flex:none" title="同車第二跑者">跑</span></sc-if><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ r.nameFg }}">{{ r.name }}</span></span>
                           <sc-if value="{{ r.vShow }}"><span style="justify-self:end;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:{{ r.vBg }};color:{{ r.vFg }}">{{ r.vTxt }}</span></sc-if>
                           <sc-if value="{{ r.cShow }}"><span style="grid-column:-2;justify-self:end;white-space:nowrap;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:{{ r.cBg }};color:{{ r.cFg }}">{{ r.cTxt }}</span></sc-if>
                         </div>
@@ -3243,7 +3243,7 @@ select option, select optgroup{
                       <sc-for list="{{ r.cells }}" as="x">
                         <div class="car-cell car-seat">
                           <sc-if value="{{ x.has }}">
-                            <div class="car-nm"><span class="car-p car-m-only">{{ x.P }}</span><sc-if value="{{ x.s6 }}"><span class="car-s6">S6</span></sc-if><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.name }}</span></div>
+                            <div class="car-nm"><span class="car-p car-m-only">{{ x.P }}</span><sc-if value="{{ x.s6 }}"><span class="car-s6">S6</span></sc-if><sc-if value="{{ x.runner }}"><span class="car-s6" title="同車第二跑者">跑</span></sc-if><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ x.name }}</span></div>
                             <div class="car-bn">{{ x.bonus }}</div>
                           </sc-if>
                           <sc-if value="{{ x.empty }}"><span style="font-size:12.5px;color:var(--text-3)"><span class="car-m-only">{{ x.P }} </span>—</span></sc-if>
@@ -8800,7 +8800,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=86c83e98b5"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ef82706170"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -931,7 +931,7 @@ export function carMembers() {
       const rows = planned && Array.isArray(dd.onduty) ? dd.onduty.map(x => {
         x = x && typeof x === 'object' ? x : {};
         const has = !!x.name, v = has ? (x.voice ? OK : WARN) : NEU, k = has ? (x.checked ? OK : BAD) : NEU;
-        return { pos: String(x.pos || ''), has, name: has ? String(x.name) : '空', nameFg: has ? 'var(--ink)' : 'var(--text-3)', s6: has && x.role === 's6',
+        return { pos: String(x.pos || ''), has, name: has ? String(x.name) : '空', nameFg: has ? 'var(--ink)' : 'var(--text-3)', s6: has && x.role === 's6', runner: has && x.role === 'runner',
           vShow: isDc && has, vTxt: has ? (x.voice ? '#' + String(x.voice) : '未進語音') : '', vBg: v.bg, vFg: v.fg,
           cShow: has, cTxt: has ? (x.checked ? '已簽到' : '未簽到') : '', cBg: k.bg, cFg: k.fg };
       }) : [];
@@ -1668,7 +1668,7 @@ export function carMembers() {
       const cells = ['p2', 'p3', 'p4', 'p5'].map(pos => {
         const se = (Array.isArray(r.seats) ? r.seats : []).find(x => x && x.pos === pos) || {};
         const has = se.name != null && String(se.name) !== '';
-        return { P: pos.toUpperCase(), has, empty: !has, name: has ? String(se.name) : '', s6: se.role === 's6', bonus: fmt(se.bonus) };
+        return { P: pos.toUpperCase(), has, empty: !has, name: has ? String(se.name) : '', s6: se.role === 's6', runner: se.role === 'runner', bonus: fmt(se.bonus) };
       });
       const wl = (Array.isArray(r.waitlist) ? r.waitlist : []).filter(v => v != null && v !== '').map(String);
       const note = [];
@@ -3615,7 +3615,7 @@ export function carMembers() {
         });
         return {
           pos, P: pos.toUpperCase(), h: r.hour, d: day.date, has, empty: !has,
-          name: String(se.name || ''), nm: String(se.name || ''), s6: se.role === 's6', bonus: fmt(se.bonus),
+          name: String(se.name || ''), nm: String(se.name || ''), s6: se.role === 's6', runner: se.role === 'runner', bonus: fmt(se.bonus),
           tags: tags.slice(0, 3), hasMore: tags.length > 3, tagMore: '+' + Math.max(0, tags.length - 3),
           canTag: admin && has && !!se.fp,
           drag: admin && has && !xd ? 'true' : 'false',

@@ -265,7 +265,9 @@ export function install(BASE, mode0) {
           if (sh && sh.run_planned) {
             const r = slotRunner(c, sh);
             if (r.mine || (sh.p1_co || []).indexOf('me') >= 0) { msgs.push('本來就是你：' + h); return; }
-            if (r.custom && mode === 'same') { sh.p1_co = (sh.p1_co || []).concat('me'); sh.p1 = Object.assign({}, sh.p1, { name: sh.p1.name + '／我自己' }); joined.push(h); msgs.push(h + ' 跟 ' + r.name + ' 同車，你是第二跑者'); return; }
+            if (r.custom && mode === 'same') {           // 跟機器人一樣：第二跑者佔 P2（原本的人往後挪），不併進 P1 名字
+              const prev = ['p2', 'p3', 'p4'].map(k => sh[k]); sh.p2 = Object.assign({}, meEnt, { role: 'runner' }); sh.p3 = prev[0] || null; sh.p4 = prev[1] || null; sh.p5 = prev[2] || sh.p5 || null;
+              sh.p1_co = (sh.p1_co || []).concat('me'); joined.push(h); msgs.push(h + ' 跟 ' + r.name + ' 同車，你是第二跑者（佔 P2，班表上有「跑」標記）'); return; }
             if (r.custom && mode === 'multi') { moved.push([h, 2]); msgs.push(h + ' 這台車已經有跑者，改由你在二車開車'); return; }
             if (r.custom) { choose = true; msgs.push(h + ' 已經有跑者 ' + r.name + '，沒有動'); return; }
             if (['p2', 'p3', 'p4', 'p5'].some(k => sh[k] && sh[k].user_id === 'me') || (sh.applicants || []).some(a => a.user_id === 'me')) { msgs.push(h + ' 你已經報了推手班'); return; }
