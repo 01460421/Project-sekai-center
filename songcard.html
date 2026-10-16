@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3f4c6e">
+<title>樂曲追加圖產生器 | Project SEKAI 資源中心</title>
+<meta name="description" content="做一張官方風格的「樂曲追加決定」圖：上傳曲圖或直接從曲庫選曲，填曲名、作詞／作曲／編曲、3D／2D MV、APPEND、原唱（虛擬歌手 ver.）與 SEKAI ver. 的演唱成員，一鍵下載 PNG 或複製到剪貼簿。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="樂曲追加圖產生器 — 官方風格的樂曲追加決定圖">
+<meta property="og:description" content="上傳曲圖或從曲庫選曲，填曲名、創作者、MV、APPEND、原唱與 SEKAI ver. 演唱成員，一鍵產出 1920×1080 的追加圖。">
+<meta property="og:url" content="https://project-sekai-center.com/songcard.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/songcard.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/songcard.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&family=Noto+Sans+JP:wght@700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#1c1a33; --bg-2:#242147; --ink:#f1eefb; --ink-2:#bdb8d6; --ink-3:#8f8aab;
+  --pink:#f4a6d2; --pink-2:#ff7fc0; --cyan:#8ff0ee; --cyan-2:#4fd6d2; --line:rgba(244,166,210,.22); --line-2:rgba(244,166,210,.42); --hair:rgba(241,238,251,.08);
+  --glass:rgba(28,26,52,.72); --glass-2:rgba(36,33,71,.92);
+  --sans:'Noto Sans TC','Noto Sans JP','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
+  --round:'M PLUS Rounded 1c','Noto Sans JP','Noto Sans TC',sans-serif;
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+  --ease:cubic-bezier(.32,.72,.24,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100%}
+body::before{content:'';position:fixed;inset:-20%;z-index:0;pointer-events:none;opacity:.7;filter:blur(50px);
+  background:radial-gradient(40% 36% at 78% 12%,rgba(244,166,210,.22),transparent 70%),radial-gradient(38% 34% at 10% 90%,rgba(143,240,238,.18),transparent 70%),radial-gradient(44% 40% at 50% 50%,rgba(104,86,170,.28),transparent 70%)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:1.5px solid var(--pink);outline-offset:2px}
+a{color:var(--pink)}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);box-shadow:var(--shadow)}
+
+/* ===== 頂欄 ===== */
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));flex-wrap:wrap;background:linear-gradient(var(--bg),color-mix(in oklab,var(--bg) 70%,transparent))}
+.brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand b{font-weight:700;font-size:15.5px;letter-spacing:1px;line-height:1.05;display:block}
+.brand small{display:block;font-size:9px;letter-spacing:3px;color:var(--pink);font-weight:700;line-height:1;margin-top:4px;text-transform:uppercase}
+.bar h1{font-family:var(--round);font-weight:800;font-size:18px;letter-spacing:1px;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar h1 small{font-family:var(--sans);font-weight:500;font-size:12px;color:var(--ink-3);margin-left:8px;letter-spacing:.3px}
+.seg{display:flex;padding:4px 6px;border-radius:999px;gap:2px;flex:none}
+.seg button{border:0;background:none;color:var(--ink-2);font-weight:500;font-size:13px;letter-spacing:.8px;padding:0 13px;height:32px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{color:#1c1a33;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+
+/* ===== 版面 ===== */
+.wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:18px;padding:6px 16px 32px;max-width:1700px;margin:0 auto;align-items:start}
+.form{display:flex;flex-direction:column;gap:12px}
+.card{border-radius:14px;padding:14px 16px}
+.card h2{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--pink);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 span{font-family:var(--round);font-weight:800;font-size:14px;letter-spacing:.5px;text-transform:none;color:var(--ink)}
+.card h2 .hint{margin-left:auto;font-size:11px;letter-spacing:.3px;text-transform:none;color:var(--ink-3);font-weight:400}
+.f{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.f:last-child{margin-bottom:0}
+.f label{font-size:12px;color:var(--ink-2);letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.f label .hint{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.in{width:100%;height:38px;border-radius:9px;border:1px solid var(--line);background:rgba(10,9,24,.5);color:var(--ink);padding:0 12px;font:inherit;font-size:14px;outline:0}
+.in:focus{border-color:var(--pink)}
+textarea.in{height:auto;min-height:56px;padding:8px 12px;resize:vertical;line-height:1.5}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:rgba(10,9,24,.45);color:var(--ink-2);border-radius:999px;padding:0 11px;height:30px;font-size:13px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.chip:hover{border-color:var(--line-2);color:var(--ink)}
+.chip[aria-pressed=true]{background:color-mix(in oklab,var(--c,var(--pink)) 28%,rgba(10,9,24,.5));border-color:var(--c,var(--pink));color:var(--ink)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--pink))}
+.chip.sm{height:26px;font-size:12px;padding:0 9px}
+.btn{border:1px solid var(--line-2);background:rgba(10,9,24,.5);color:var(--ink);border-radius:10px;height:38px;padding:0 14px;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;transition:all .15s}
+.btn:hover{border-color:var(--pink);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(90deg,var(--cyan),var(--pink));color:#1c1a33;border-color:transparent}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.drop{border:1.5px dashed var(--line-2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;background:rgba(10,9,24,.3)}
+.drop:hover,.drop.over{border-color:var(--pink);background:color-mix(in oklab,var(--pink) 10%,rgba(10,9,24,.3))}
+.drop .th{width:64px;height:64px;border-radius:8px;background:var(--bg-2);flex:none;object-fit:cover;display:block;border:1px solid var(--line)}
+.drop .th.logo{object-fit:contain;background:#fff}
+.drop .t{font-size:13px;color:var(--ink-2);line-height:1.45;min-width:0}
+.drop .t b{display:block;color:var(--ink);font-size:13.5px}
+.drop input{display:none}
+.note{font-size:11.5px;color:var(--ink-3);line-height:1.5;margin-top:6px}
+.note b{color:var(--ink-2);font-weight:500}
+.warn{display:none;font-size:12px;color:#ffd1a3;background:rgba(255,160,80,.12);border:1px solid rgba(255,160,80,.3);border-radius:9px;padding:7px 10px;margin-top:8px;line-height:1.5}
+.warn.on{display:block}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;height:34px}
+.toggle input{appearance:none;width:40px;height:22px;border-radius:999px;background:rgba(10,9,24,.6);border:1px solid var(--line-2);position:relative;cursor:pointer;flex:none;transition:all .2s}
+.toggle input::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink-2);transition:all .2s var(--ease)}
+.toggle input:checked{background:linear-gradient(90deg,var(--cyan-2),var(--pink-2));border-color:transparent}
+.toggle input:checked::after{left:20px;background:#fff}
+/* 選曲 */
+.pick{position:relative}
+.results{position:absolute;top:42px;left:0;right:0;z-index:5;border-radius:12px;padding:6px;display:none;max-height:min(50vh,420px);overflow:auto;scrollbar-width:thin;background:var(--glass-2);border:1px solid var(--line);box-shadow:var(--shadow)}
+.results.on{display:block}
+.results button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:6px 8px;border:0;background:none;border-radius:8px;cursor:pointer;color:var(--ink)}
+.results button:hover,.results button[aria-selected=true]{background:color-mix(in oklab,var(--pink) 14%,transparent)}
+.results img{width:40px;height:40px;object-fit:cover;flex:none;border-radius:6px;border:1px solid var(--line);background:var(--bg-2)}
+.results .t{font-size:13.5px;font-weight:500;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results .s{font-size:11px;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.results .tag{margin-left:auto;font-size:10.5px;color:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:0 7px;flex:none}
+.results .empty{padding:10px 12px;color:var(--ink-3);font-size:12.5px}
+
+/* ===== 預覽 ===== */
+.preview{position:sticky;top:72px;display:flex;flex-direction:column;gap:12px}
+.stage{border-radius:14px;overflow:hidden;position:relative;background:#3f4c6e;box-shadow:var(--shadow);border:1px solid var(--line);aspect-ratio:16/9}
+.stage canvas{width:100%;height:100%;display:block}
+.stage.over::after{content:'放開以使用這張圖當曲圖';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--round);font-weight:800;font-size:22px;color:#fff;background:rgba(244,166,210,.35);backdrop-filter:blur(4px)}
+.stage .busy{position:absolute;right:12px;top:12px;font-size:11px;letter-spacing:1px;color:#fff;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 10px;display:none}
+.stage.loading .busy{display:block}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.actions .sp{flex:1}
+.actions .msg{font-size:12px;color:var(--ink-3)}
+.tips{font-size:12px;color:var(--ink-3);line-height:1.6}
+.tips b{color:var(--ink-2);font-weight:500}
+@media (max-width:980px){
+  .wrap{grid-template-columns:1fr;padding:6px 12px 28px}
+  .preview{position:relative;top:auto;order:-1}
+  .bar h1 small{display:none}
+}
+@media (max-width:520px){ .row{flex-direction:column} .bar{gap:6px} .bar h1{font-size:16px} }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="brand glass" href="./app.html" aria-label="回到 SEKAI 資源中心首頁">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ff0ee"/><stop offset="1" stop-color="#f4a6d2"/></linearGradient></defs><circle cx="16" cy="16" r="14" fill="url(#g1)"/><path d="M13 22.5V11l8-2v11.5" fill="none" stroke="#1c1a33" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="22.5" r="2.4" fill="#1c1a33"/><circle cx="19" cy="20.5" r="2.4" fill="#1c1a33"/></svg>
+    <span><b>SEKAI 資源中心</b><small>Project SEKAI</small></span>
+  </a>
+  <h1>樂曲追加圖產生器<small>官方風格的「樂曲追加決定」圖，1920×1080</small></h1>
+  <div class="seg glass" role="group" aria-label="圖上的文字語言">
+    <button type="button" data-lang="jp" aria-pressed="true">日文</button>
+    <button type="button" data-lang="tw" aria-pressed="false">繁中</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="form">
+    <div class="card glass">
+      <h2>01 <span>選曲（可選）</span><em class="hint">自動帶入曲圖、曲名、創作者、MV、APPEND、原唱與 SEKAI ver.</em></h2>
+      <div class="pick">
+        <input class="in" id="q" type="search" placeholder="輸入曲名搜尋（台服＋日服曲庫）…" autocomplete="off" aria-label="搜尋曲名">
+        <div class="results" id="results" role="listbox"></div>
+      </div>
+      <div class="note" id="dbNote">曲庫載入中…</div>
+    </div>
+
+    <div class="card glass">
+      <h2>02 <span>曲圖</span><em class="hint">可拖進預覽圖，或直接 Ctrl+V 貼上</em></h2>
+      <label class="drop" id="jacketDrop">
+        <img class="th" id="jacketThumb" alt="" referrerpolicy="no-referrer">
+        <span class="t"><b id="jacketName">點這裡選擇圖片</b>建議正方形，會自動裁成正方形填滿。</span>
+        <input type="file" id="jacketFile" accept="image/*">
+      </label>
+      <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="jacketClear">清除曲圖</button></div>
+      <div class="warn" id="taintWarn">這張曲圖來自外站而且瀏覽器拿不到跨網域授權，畫得出來但無法下載／複製。改成上傳圖片檔就可以。</div>
+    </div>
+
+    <div class="card glass">
+      <h2>03 <span>曲名與創作者</span></h2>
+      <div class="f"><label for="title">曲名</label><input class="in" id="title" type="text" placeholder="FIRE BIRD" maxlength="80"></div>
+      <div class="f"><label for="lyr">作詞</label><input class="in" id="lyr" type="text" placeholder="上松範康（Elements Garden）" maxlength="80"></div>
+      <div class="f"><label for="comp">作曲</label><input class="in" id="comp" type="text" placeholder="上松範康（Elements Garden）" maxlength="80"></div>
+      <div class="f"><label for="arr">編曲</label><input class="in" id="arr" type="text" placeholder="藤永龍太郎（Elements Garden）" maxlength="80"></div>
+    </div>
+
+    <div class="card glass">
+      <h2>04 <span>MV 與 APPEND</span></h2>
+      <div class="f"><label>MV</label>
+        <div class="chips" id="mvChips">
+          <button type="button" class="chip" data-mv="3d" style="--c:#ff7fc0">3D MV</button>
+          <button type="button" class="chip" data-mv="2d" style="--c:#8ff0ee">2D MV</button>
+          <button type="button" class="chip" data-mv="none" style="--c:#9a97b8">沒有 MV</button>
+        </div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="append"><span>有 APPEND 譜面</span></label>
+    </div>
+
+    <div class="card glass">
+      <h2>05 <span>原唱（虛擬歌手 ver.）</span></h2>
+      <div class="f"><label for="vs">演唱者<em class="hint">多位用「／」分隔，一位一行也可以</em></label><textarea class="in" id="vs" rows="2" placeholder="夢ノ結唱 ROSE"></textarea></div>
+      <div class="chips" id="vsChips"></div>
+    </div>
+
+    <div class="card glass">
+      <h2>06 <span>SEKAI ver.</span><em class="hint">沒有就留空，原唱格會放寬</em></h2>
+      <div class="f"><label>團體</label><div class="chips" id="unitChips"></div></div>
+      <div class="f"><label>演唱成員<em class="hint">點選順序不影響，照角色編號排</em></label><div class="chips" id="charChips"></div></div>
+      <div class="f"><label for="extra">其他演唱者<em class="hint">客串、合作的名字，接在成員後面</em></label><input class="in" id="extra" type="text" placeholder="例：DI:Verse" maxlength="80"></div>
+      <div class="f"><label>團體標誌<em class="hint">沒上傳就用團體色的文字標</em></label>
+        <label class="drop" id="logoDrop" style="padding:10px 12px">
+          <img class="th logo" id="logoThumb" alt="" referrerpolicy="no-referrer" style="width:48px;height:48px">
+          <span class="t"><b id="logoName">上傳團體標誌（可選）</b>透明背景的 PNG 最好。</span>
+          <input type="file" id="logoFile" accept="image/*">
+        </label>
+        <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="logoClear">清除標誌</button></div>
+      </div>
+    </div>
+
+    <div class="card glass">
+      <h2>07 <span>其他</span></h2>
+      <div class="f"><label for="foot">底部聲明</label><input class="in" id="foot" type="text" maxlength="160"></div>
+      <div class="row"><button class="btn ghost" type="button" id="shuffle">換一組背景花紋</button><button class="btn ghost" type="button" id="sample">填入範例</button><button class="btn ghost" type="button" id="reset">全部清除</button></div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="stage glass" id="stage">
+      <canvas id="cv" width="1920" height="1080" aria-label="樂曲追加圖預覽"></canvas>
+      <span class="busy">載入中…</span>
+    </div>
+    <div class="actions">
+      <button class="btn primary" type="button" id="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M4 20h16"/></svg>下載 PNG</button>
+      <button class="btn" type="button" id="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>複製圖片</button>
+      <span class="sp"></span>
+      <span class="msg" id="msg"></span>
+    </div>
+    <p class="tips"><b>怎麼用：</b>上面選曲會把能查到的都帶入（曲圖從素材鏡像抓、創作者與演唱者讀台服／日服 master），再手動修；也可以什麼都不選，全部自己填。<b>日文／繁中</b>只影響圖上的固定文字、角色名與選曲帶入的曲名；自己打的字不會被改。</p>
+  </section>
+</main>
+
+<script type="module">
+import { SONG_META } from './data/song-meta.js?v=bcb73ae7e9';
+/* ===================== 資料 ===================== */
+const CH = [
+  [1,'星乃一歌','星乃一歌','ln'],[2,'天馬咲希','天馬咲希','ln'],[3,'望月穂波','望月穗波','ln'],[4,'日野森志歩','日野森志步','ln'],
+  [5,'花里みのり','花里實乃理','mmj'],[6,'桐谷遥','桐谷遙','mmj'],[7,'桃井愛莉','桃井愛莉','mmj'],[8,'日野森雫','日野森雫','mmj'],
+  [9,'小豆沢こはね','小豆澤心羽','vbs'],[10,'白石杏','白石杏','vbs'],[11,'東雲彰人','東雲彰人','vbs'],[12,'青柳冬弥','青柳冬彌','vbs'],
+  [13,'天馬司','天馬司','wxs'],[14,'鳳えむ','鳳笑夢','wxs'],[15,'草薙寧々','草薙寧寧','wxs'],[16,'神代類','神代類','wxs'],
+  [17,'宵崎奏','宵崎奏','n25'],[18,'朝比奈まふゆ','朝比奈真冬','n25'],[19,'東雲絵名','東雲繪名','n25'],[20,'暁山瑞希','曉山瑞希','n25'],
+  [21,'初音ミク','初音未來','vs'],[22,'鏡音リン','鏡音鈴','vs'],[23,'鏡音レン','鏡音連','vs'],[24,'巡音ルカ','巡音流歌','vs'],[25,'MEIKO','MEIKO','vs'],[26,'KAITO','KAITO','vs'],
+];
+const UNITS = {
+  ln:  { jp: 'Leo/need', tw: 'Leo/need', c: '#4455dd', c2: '#7f8cf5', logo: 'unit-img/ln.webp' },
+  mmj: { jp: 'MORE MORE JUMP！', tw: 'MORE MORE JUMP！', c: '#88dd44', c2: '#a9ef73', logo: 'unit-img/mmj.webp' },
+  vbs: { jp: 'Vivid BAD SQUAD', tw: 'Vivid BAD SQUAD', c: '#ee1166', c2: '#ff5c95', logo: 'unit-img/vbs.webp' },
+  wxs: { jp: 'ワンダーランズ×ショウタイム', tw: 'Wonderlands×Showtime', c: '#ff9900', c2: '#ffc04d', logo: 'unit-img/wxs.webp' },
+  n25: { jp: '25時、ナイトコードで。', tw: '25點，Nightcord見。', c: '#884499', c2: '#b574c9', logo: 'unit-img/n25.webp' },
+  vs:  { jp: 'バーチャル・シンガー', tw: '虛擬歌手', c: '#33ccbb', c2: '#6ee6d9', logo: 'unit-img/vs.webp' },
+};
+const UNIT_ORDER = ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'];
+// 官方團體標誌（同源檔案，畫上 canvas 不會污染、可直接匯出）；載入完成就重畫
+const UNIT_IMG = {};
+function unitLogo(k) {
+  const u = UNITS[k]; if (!u || !u.logo) return null;
+  let im = UNIT_IMG[k];
+  if (!im) { im = UNIT_IMG[k] = new Image(); im.onload = () => { if (S.unit === k) draw(); }; im.src = u.logo; }
+  return im.complete && im.naturalWidth ? im : null;
+}
+const LBL = {
+  jp: { head: '楽曲追加決定!', vs: 'バーチャル・シンガーver.', sk: 'セカイver.', lyr: '作詞', comp: '作曲', arr: '編曲' },
+  tw: { head: '樂曲追加決定!', vs: '虛擬歌手ver.', sk: 'SEKAI ver.', lyr: '作詞', comp: '作曲', arr: '編曲' },
+};
+const FOOT = 'This is an independent fan creation. Any depicted trademarks remain property of their respective owners.';
+const TDB = 'https://raw.githubusercontent.com/Team-Haruki/haruki-sekai-tc-master/main/master';
+const TDB_SW = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+const JDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
+const JACKET = abn => 'https://storage.sekai.best/sekai-jp-assets/music/jacket/' + abn + '/' + abn + '.png';
+const JACKET_TC = abn => 'https://storage.sekai.best/sekai-tc-assets/music/jacket/' + abn + '/' + abn + '.png';
+const chName = (id, lang) => { const c = CH[id - 1]; return c ? (lang === 'tw' ? c[2] : c[1]) : ''; };
+const unitOfChar = id => (CH[id - 1] || [])[3] || '';
+
+/* ===================== 狀態 ===================== */
+const S = {
+  lang: 'jp', title: '', lyr: '', comp: '', arr: '', mv: '3d', append: true,
+  vs: '', unit: '', chars: [], extra: '', foot: FOOT, seed: 7,
+  jacket: null, jacketTainted: false, jacketLabel: '', logo: null, logoLabel: '', song: null,
+};
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let drawn = 0, ready = false, fontsOk = false;
+
+/* ===================== 繪圖 ===================== */
+function rr(x, y, w, h, r) {   // 圓角矩形路徑（r 可為 [tl,tr,br,bl]）
+  const R = Array.isArray(r) ? r : [r, r, r, r];
+  ctx.beginPath();
+  ctx.moveTo(x + R[0], y); ctx.lineTo(x + w - R[1], y); ctx.arcTo(x + w, y, x + w, y + R[1], R[1]);
+  ctx.lineTo(x + w, y + h - R[2]); ctx.arcTo(x + w, y + h, x + w - R[2], y + h, R[2]);
+  ctx.lineTo(x + R[3], y + h); ctx.arcTo(x, y + h, x, y + h - R[3], R[3]);
+  ctx.lineTo(x, y + R[0]); ctx.arcTo(x, y, x + R[0], y, R[0]); ctx.closePath();
+}
+const F_ROUND = '"M PLUS Rounded 1c","Noto Sans JP","Noto Sans TC",sans-serif';
+const F_SANS = '"Noto Sans JP","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+function font(w, px, fam) { return w + ' ' + px + 'px ' + (fam || F_SANS); }
+/* 字太長就縮到塞得下 */
+function fit(text, maxW, px, min, w, fam) {
+  for (let s = px; s >= min; s -= 2) { ctx.font = font(w, s, fam); if (ctx.measureText(text).width <= maxW) return s; }
+  ctx.font = font(w, min, fam); return min;
+}
+/* 用分隔符把多個名字排成最多 maxLines 行；塞不下就縮字 */
+function wrapNames(items, sep, maxW, px, min, w, fam, maxLines) {
+  for (let s = px; s >= min; s -= 2) {
+    ctx.font = font(w, s, fam);
+    const lines = []; let cur = '';
+    for (const it of items) {
+      const t = cur ? cur + sep + it : it;
+      if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = it; }
+    }
+    if (cur) lines.push(cur);
+    if (lines.length <= maxLines && lines.every(l => ctx.measureText(l).width <= maxW)) return { lines, size: s };
+    if (s === min) return { lines: lines.slice(0, maxLines), size: s };
+  }
+  return { lines: [items.join(sep)], size: min };
+}
+function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function background() {
+  // 底：鋼藍灰的斜向漸層（官方圖是偏灰的靛藍），左下偏長春花紫、右下偏紫
+  const g = ctx.createLinearGradient(0, 0, 1920, 1080);
+  g.addColorStop(0, '#5d6189'); g.addColorStop(.32, '#414e70'); g.addColorStop(.68, '#3c4a6f'); g.addColorStop(1, '#5b5a90');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 1920, 1080);
+  const glow = (x, y, r, col) => { const gg = ctx.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, col); gg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gg; ctx.fillRect(0, 0, 1920, 1080); };
+  glow(60, 1040, 980, 'rgba(150,160,232,.42)'); glow(1920, 1080, 560, 'rgba(150,115,210,.36)'); glow(0, 0, 460, 'rgba(140,118,176,.34)'); glow(1920, 100, 420, 'rgba(60,110,150,.28)');
+  const rnd = mulberry(S.seed * 7919 + 13);
+  const tri = (x, y, sz, rot) => { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath(); ctx.moveTo(0, -sz * .62); ctx.lineTo(sz * .56, sz * .38); ctx.lineTo(-sz * .56, sz * .38); ctx.closePath(); ctx.restore(); };
+  // 大片毛玻璃：幾塊淡色大三角與斜板，像磨砂玻璃疊在底色上
+  ctx.save(); try { ctx.filter = 'blur(22px)'; } catch (e) {}
+  const glass = [[-60, 420, 760, .55, .09], [300, 1180, 900, -2.3, .1], [1400, -80, 760, 2.4, .07], [1780, 760, 620, .9, .08], [1120, 980, 520, -.6, .06]];
+  glass.forEach(([x, y, sz, rot, a]) => { tri(x, y, sz, rot); ctx.fillStyle = 'rgba(255,255,255,' + a + ')'; ctx.fill(); });
+  ctx.restore();
+  // 固定的幾個記號：右上虛線、圓圈、旋轉方框——官方圖固定有的元素
+  const dots = (x0, y, x1) => { ctx.fillStyle = 'rgba(255,255,255,.28)'; for (let x = x0; x < x1; x += 11) ctx.fillRect(x, y, 5, 2); };
+  dots(1270, 96, 1900); dots(1430, 1004, 1900); dots(60, 1040, 420);
+  ctx.lineWidth = 3;
+  [[1702, 100, 46, .32], [1622, 648, 42, .26], [1120, 500, 70, .13], [1870, 940, 36, .2]].forEach(([x, y, r, a]) => { ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.strokeStyle = 'rgba(255,255,255,' + a + ')'; ctx.stroke(); });
+  [[1892, 24, 54, .35, .28], [1250, 650, 44, .6, .16], [1830, 560, 30, .4, .22]].forEach(([x, y, sz, rot, a]) => { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.strokeStyle = 'rgba(255,255,255,' + a + ')'; ctx.strokeRect(-sz / 2, -sz / 2, sz, sz); ctx.restore(); });
+  // 散落的幾何：青與粉的小三角、白色三角與方塊，半透明；換背景只換這些
+  const cols = ['140,232,240', '240,130,205', '255,255,255', '255,255,255', '190,170,255'];
+  for (let i = 0; i < 30; i++) {
+    const x = rnd() * 1920, y = rnd() * 1080, sz = 22 + rnd() * 120, col = cols[(rnd() * cols.length) | 0], a = .07 + rnd() * .16, kind = rnd();
+    if (kind < .62) tri(x, y, sz, rnd() * 6.28);
+    else if (kind < .8) { ctx.beginPath(); ctx.arc(x, y, sz * .4, 0, 6.3); }
+    else { ctx.save(); ctx.translate(x, y); ctx.rotate(rnd() * 6.28); ctx.beginPath(); ctx.rect(-sz * .35, -sz * .35, sz * .7, sz * .7); ctx.restore(); }
+    if (rnd() < .4) { ctx.strokeStyle = 'rgba(' + col + ',' + (a + .1) + ')'; ctx.lineWidth = 3; ctx.stroke(); }
+    else { ctx.fillStyle = 'rgba(' + col + ',' + a + ')'; ctx.fill(); }
+  }
+  // 細小的亮點與幾道斜線
+  for (let i = 0; i < 70; i++) { const x = rnd() * 1920, y = rnd() * 1080, r = 1 + rnd() * 2.2; ctx.fillStyle = 'rgba(255,255,255,' + (.1 + rnd() * .25) + ')'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 2;
+  for (let i = 0; i < 6; i++) { const x = 200 + rnd() * 1700; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x - 560, 1080); ctx.stroke(); }
+}
+function drawJacket() {
+  const x = 65, y = 55, w = 680;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 14; ctx.fillStyle = '#1b1a30'; ctx.fillRect(x, y, w, w); ctx.restore();
+  if (S.jacket) {
+    const im = S.jacket, s = Math.max(w / im.naturalWidth, w / im.naturalHeight), sw = im.naturalWidth * s, sh = im.naturalHeight * s;
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, w); ctx.clip(); ctx.drawImage(im, x + (w - sw) / 2, y + (w - sh) / 2, sw, sh); ctx.restore();
+  } else {
+    const g = ctx.createLinearGradient(x, y, x + w, y + w); g.addColorStop(0, '#5a4f8f'); g.addColorStop(1, '#2e2b55');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, w);
+    ctx.save(); ctx.setLineDash([16, 12]); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4; ctx.strokeRect(x + 22, y + 22, w - 44, w - 44); ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = font('800', 54, F_ROUND); ctx.fillText('曲圖', x + w / 2, y + w / 2 - 28);
+    ctx.font = font('500', 26); ctx.fillText('上傳、拖進來或 Ctrl+V 貼上', x + w / 2, y + w / 2 + 34);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+}
+function drawHeader(L) {
+  // 圓盤音符
+  const cx = 835, cy = 97;
+  const g = ctx.createLinearGradient(cx - 32, cy - 32, cx + 32, cy + 32); g.addColorStop(0, '#8ff0ee'); g.addColorStop(1, '#f4a6d2');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 32, 0, 6.3); ctx.fill();
+  ctx.fillStyle = '#2a2850'; ctx.beginPath(); ctx.arc(cx, cy, 24, 0, 6.3); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = font('800', 34, F_ROUND); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('♪', cx + 1, cy + 1);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  // 漸層標題
+  const size = fit(L.head, 980, 74, 48, '800', F_ROUND);
+  ctx.font = font('800', size, F_ROUND);
+  const tg = ctx.createLinearGradient(885, 0, 885 + ctx.measureText(L.head).width, 0); tg.addColorStop(0, '#a7f5f2'); tg.addColorStop(1, '#ffc3e4');
+  ctx.save(); ctx.lineJoin = 'round'; ctx.strokeStyle = '#262349'; ctx.lineWidth = 10; ctx.strokeText(L.head, 885, 122);
+  ctx.fillStyle = tg; ctx.fillText(L.head, 885, 122); ctx.restore();
+}
+function drawTitle() {
+  rr(760, 150, 1120, 170, 8); ctx.fillStyle = 'rgba(50,50,74,.86)'; ctx.fill();
+  const t = S.title || '曲名';
+  const size = fit(t, 1040, 92, 44, '900');
+  ctx.font = font('900', size); ctx.fillStyle = S.title ? '#fff' : 'rgba(255,255,255,.35)'; ctx.textBaseline = 'middle'; ctx.fillText(t, 812, 237); ctx.textBaseline = 'alphabetic';
+}
+function drawCredits(L) {
+  rr(760, 335, 1120, 255, 8); ctx.fillStyle = 'rgba(88,90,140,.55)'; ctx.fill();
+  const rows = [[L.lyr, S.lyr], [L.comp, S.comp], [L.arr, S.arr]];
+  rows.forEach(([k, v], i) => {
+    const y = 390 + i * 74;
+    ctx.textBaseline = 'middle';
+    ctx.font = font('900', 46); ctx.fillStyle = '#fff'; ctx.fillText(k, 808, y);
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(928, y - 26, 3, 52);
+    const txt = v || '—';
+    const size = fit(txt, 900, 46, 26, '700');
+    ctx.font = font('700', size); ctx.fillStyle = v ? '#fff' : 'rgba(255,255,255,.35)'; ctx.fillText(txt, 952, y);
+    ctx.textBaseline = 'alphabetic';
+  });
+}
+function filmGlyph(x, y, w, h, col) {   // 底片格
+  ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 4;
+  rr(x, y, w, h, 4); ctx.stroke();
+  const n = 4, cw = (w - 8) / n;
+  for (let i = 0; i < n; i++) { ctx.fillRect(x + 4 + i * cw + 2, y + 4, cw - 4, 6); ctx.fillRect(x + 4 + i * cw + 2, y + h - 10, cw - 4, 6); }
+  ctx.restore();
+}
+function drawBadges() {
+  // MV
+  const on = S.mv !== 'none', col = S.mv === '2d' ? '#1fb5c9' : '#f0518c', grey = '#b9b7cb';
+  rr(808, 618, 120, 110, 12); ctx.fillStyle = on ? '#fff' : 'rgba(255,255,255,.55)'; ctx.fill();
+  ctx.strokeStyle = on ? col : grey; ctx.lineWidth = 5; ctx.stroke();
+  if (on) {
+    ctx.fillStyle = col; ctx.font = font('800', 50, F_ROUND); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(S.mv.toUpperCase(), 868, 655); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    filmGlyph(838, 684, 60, 30, col);
+  } else {
+    filmGlyph(838, 650, 60, 46, grey);
+    ctx.save(); ctx.strokeStyle = grey; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(830, 710); ctx.lineTo(906, 636); ctx.stroke(); ctx.restore();
+  }
+  // APPEND
+  if (S.append) {
+    const cx = 1008, cy = 673, r = 56;
+    const g = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r); g.addColorStop(0, '#7d6bf2'); g.addColorStop(1, '#f582cf');
+    ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, 6.3); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.3); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.font = font('900', 27); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tg = ctx.createLinearGradient(cx - 46, 0, cx + 46, 0); tg.addColorStop(0, '#6c5de8'); tg.addColorStop(1, '#e864c0');
+    ctx.fillStyle = tg; ctx.fillText('APPEND', cx, cy + 1); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+}
+function tab(x, w, text, noteCol) {
+  rr(x, 760, w, 70, [10, 10, 0, 0]); ctx.fillStyle = 'rgba(50,50,78,.94)'; ctx.fill();
+  ctx.fillStyle = noteCol; ctx.font = font('800', 38, F_ROUND); ctx.textBaseline = 'middle'; ctx.fillText('♪', x + 32, 797);
+  const size = fit(text, w - 110, 34, 22, '800', F_ROUND);
+  ctx.font = font('800', size, F_ROUND); ctx.fillStyle = '#fff'; ctx.fillText(text, x + 80, 796); ctx.textBaseline = 'alphabetic';
+}
+function vsLines() { return S.vs.split(/[\n／/]+/).map(s => s.trim()).filter(Boolean); }
+function sekaiNames() {
+  const ids = S.chars.slice().sort((a, b) => a - b).map(id => chName(id, S.lang));
+  const extra = S.extra.split(/[\n／/]+/).map(s => s.trim()).filter(Boolean);
+  return ids.concat(extra);
+}
+function drawUnitBadge(cx, cy) {
+  const im = S.logo || unitLogo(S.unit);
+  if (im) {
+    const bw = 320, bh = 124, sc = Math.min(bw / im.naturalWidth, bh / im.naturalHeight), w = im.naturalWidth * sc, h = im.naturalHeight * sc;
+    ctx.drawImage(im, cx - w / 2, cy - h / 2, w, h); return;
+  }
+  const u = UNITS[S.unit]; if (!u) return;
+  const name = S.lang === 'tw' ? u.tw : u.jp;
+  const g = ctx.createLinearGradient(cx - 70, cy - 40, cx + 70, cy + 40); g.addColorStop(0, u.c); g.addColorStop(1, u.c2);
+  const { lines, size } = wrapNames(name.split(/(?<=[、，・×])|(?=[、，・×])/).filter(Boolean), '', 128, 30, 16, '800', F_ROUND, 3);
+  const lh = size * 1.15, h = lines.length * lh + 26;
+  rr(cx - 78, cy - h / 2, 156, h, 14); ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.lineJoin = 'round'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font('800', size, F_ROUND);
+  lines.forEach((l, i) => { const y = cy - ((lines.length - 1) * lh) / 2 + i * lh; ctx.strokeStyle = 'rgba(0,0,0,.28)'; ctx.lineWidth = 5; ctx.strokeText(l, cx, y); ctx.fillStyle = '#fff'; ctx.fillText(l, cx, y); });
+  ctx.restore(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+function drawBoxes(L) {
+  const vs = vsLines(), sk = sekaiNames(), hasSk = sk.length > 0 || !!S.unit || !!S.logo;
+  // 虛擬歌手 ver.
+  const vw = hasSk ? 775 : 1815;
+  tab(65, 495, L.vs, '#8ff0ee');
+  rr(65, 830, vw, 195, [0, 10, 10, 10]); ctx.fillStyle = '#74e1d5'; ctx.fill();
+  const items = vs.length ? vs : ['—'];
+  const w1 = wrapNames(items, ' / ', vw - 80, 42, 24, '700', F_SANS, 3);
+  ctx.fillStyle = vs.length ? '#1f3548' : 'rgba(31,53,72,.5)'; ctx.font = font('700', w1.size); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const lh1 = w1.size * 1.3, y0 = 927 - ((w1.lines.length - 1) * lh1) / 2;
+  w1.lines.forEach((l, i) => ctx.fillText(l, 65 + vw / 2, y0 + i * lh1));
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  if (!hasSk) return;
+  // セカイ ver.
+  tab(865, 485, L.sk, '#f4a6d2');
+  rr(865, 830, 1015, 195, [0, 10, 10, 10]); ctx.fillStyle = '#ee74a6'; ctx.fill();
+  const hasLogo = !!(S.logo || S.unit), tx = hasLogo ? 1245 : 905, maxW = 1880 - tx - 30;
+  if (hasLogo) drawUnitBadge(1058, 927);
+  const w2 = wrapNames(sk.length ? sk : ['—'], ' / ', maxW, 36, 22, '700', F_SANS, 3);
+  ctx.fillStyle = sk.length ? '#2b2140' : 'rgba(43,33,64,.5)'; ctx.font = font('700', w2.size); ctx.textBaseline = 'middle';
+  const lh2 = w2.size * 1.4, y1 = 927 - ((w2.lines.length - 1) * lh2) / 2;
+  w2.lines.forEach((l, i) => ctx.fillText(l, tx, y1 + i * lh2));
+  ctx.textBaseline = 'alphabetic';
+}
+function drawFooter() {
+  ctx.save(); ctx.font = font('700', 44, F_ROUND); ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fillText('P J : S E K A I', 65, 1064); ctx.restore();
+  if (S.foot) { ctx.font = font('700', 20); ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.textAlign = 'right'; ctx.fillText(S.foot, 1880, 1066); ctx.textAlign = 'left'; }
+}
+function draw() {
+  const L = LBL[S.lang] || LBL.jp;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 1920, 1080);
+  background(); drawJacket(); drawHeader(L); drawTitle(); drawCredits(L); drawBadges(); drawBoxes(L); drawFooter();
+  drawn++;
+}
+let raf = 0; const redraw = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; draw(); }); };
+
+/* ===================== 表單 ===================== */
+const msg = (t, keep) => { const el = $('#msg'); el.textContent = t; clearTimeout(msg._t); if (!keep) msg._t = setTimeout(() => { if (el.textContent === t) el.textContent = ''; }, 3200); };
+function save() {
+  try { localStorage.setItem('sekai-songcard-v1', JSON.stringify({ lang: S.lang, title: S.title, lyr: S.lyr, comp: S.comp, arr: S.arr, mv: S.mv, append: S.append, vs: S.vs, unit: S.unit, chars: S.chars, extra: S.extra, foot: S.foot, seed: S.seed })); } catch (e) {}
+}
+function syncForm() {
+  $('#title').value = S.title; $('#lyr').value = S.lyr; $('#comp').value = S.comp; $('#arr').value = S.arr; $('#vs').value = S.vs; $('#extra').value = S.extra; $('#foot').value = S.foot; $('#append').checked = S.append;
+  document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
+  document.querySelectorAll('#mvChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mv === S.mv)));
+  document.querySelectorAll('#unitChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.unit === S.unit)));
+  document.querySelectorAll('#charChips .chip').forEach(b => { b.setAttribute('aria-pressed', String(S.chars.includes(+b.dataset.id))); b.textContent = chName(+b.dataset.id, S.lang); });
+  document.querySelectorAll('#vsChips .chip').forEach(b => { b.textContent = chName(+b.dataset.id, S.lang); });
+  document.querySelectorAll('#unitChips .chip').forEach(b => { const u = UNITS[b.dataset.unit]; if (u) b.lastChild.textContent = S.lang === 'tw' ? u.tw : u.jp; });
+  $('#jacketName').textContent = S.jacketLabel || '點這裡選擇圖片'; $('#jacketThumb').style.visibility = S.jacket ? 'visible' : 'hidden';
+  $('#logoName').textContent = S.logoLabel || '上傳團體標誌（可選）'; $('#logoThumb').style.visibility = S.logo ? 'visible' : 'hidden';
+  $('#taintWarn').classList.toggle('on', S.jacketTainted); $('#dl').disabled = S.jacketTainted; $('#copy').disabled = S.jacketTainted;
+}
+function set(patch) { Object.assign(S, patch); syncForm(); save(); redraw(); }
+function buildChips() {
+  const uc = $('#unitChips');
+  uc.innerHTML = '';
+  const none = document.createElement('button'); none.type = 'button'; none.className = 'chip'; none.dataset.unit = ''; none.style.setProperty('--c', '#9a97b8'); none.append(document.createTextNode('無'));
+  none.onclick = () => set({ unit: '' }); uc.appendChild(none);
+  UNIT_ORDER.forEach(k => {
+    const u = UNITS[k], b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.unit = k; b.style.setProperty('--c', u.c2);
+    const d = document.createElement('span'); d.className = 'dot'; b.appendChild(d); b.appendChild(document.createTextNode(u.jp));
+    b.onclick = () => {   // 選團體順便把整團成員勾起來（25 時那種帶虛擬歌手的，自己再點）
+      const members = CH.filter(c => c[3] === k).map(c => c[0]);
+      const keep = S.chars.filter(id => unitOfChar(id) === 'vs' && k !== 'vs');
+      set({ unit: k, chars: S.unit === k ? S.chars : Array.from(new Set(members.concat(keep))) });
+    };
+    uc.appendChild(b);
+  });
+  const cc = $('#charChips'); cc.innerHTML = '';
+  CH.forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip sm'; b.dataset.id = c[0]; b.style.setProperty('--c', UNITS[c[3]].c2); b.textContent = c[1];
+    b.onclick = () => { const on = S.chars.includes(c[0]); set({ chars: on ? S.chars.filter(x => x !== c[0]) : S.chars.concat(c[0]) }); }; cc.appendChild(b); });
+  const vc = $('#vsChips'); vc.innerHTML = '';
+  CH.filter(c => c[3] === 'vs').forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip sm'; b.dataset.id = c[0]; b.style.setProperty('--c', UNITS.vs.c2); b.textContent = c[1];
+    b.onclick = () => { const n = chName(c[0], S.lang), cur = vsLines(); if (cur.includes(n)) return; set({ vs: cur.concat(n).join('／') }); }; vc.appendChild(b); });
+}
+function bindForm() {
+  const txt = (id, key) => $('#' + id).addEventListener('input', e => { S[key] = e.target.value; save(); redraw(); });
+  txt('title', 'title'); txt('lyr', 'lyr'); txt('comp', 'comp'); txt('arr', 'arr'); txt('vs', 'vs'); txt('extra', 'extra'); txt('foot', 'foot');
+  $('#append').addEventListener('change', e => set({ append: e.target.checked }));
+  document.querySelectorAll('#mvChips .chip').forEach(b => b.onclick = () => set({ mv: b.dataset.mv }));
+  document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => set({ lang: b.dataset.lang, title: S.song ? (b.dataset.lang === 'tw' ? (S.song.tTw || S.song.tJp) : (S.song.tJp || S.song.tTw)) : S.title }));
+  $('#shuffle').onclick = () => set({ seed: (S.seed * 31 + 7) % 100000 });
+  $('#reset').onclick = () => { set({ title: '', lyr: '', comp: '', arr: '', mv: '3d', append: true, vs: '', unit: '', chars: [], extra: '', foot: FOOT, jacket: null, jacketTainted: false, jacketLabel: '', logo: null, logoLabel: '', song: null }); $('#q').value = ''; };
+  $('#sample').onclick = sample;
+  // 圖片：檔案、拖放、貼上
+  const readFile = (file, key) => { if (!file || !/^image\//.test(file.type)) return; const url = URL.createObjectURL(file); const im = new Image(); im.onload = () => { if (key === 'jacket') set({ jacket: im, jacketTainted: false, jacketLabel: file.name || '貼上的圖片', song: S.song }); else set({ logo: im, logoLabel: file.name || '貼上的圖片' }); (key === 'jacket' ? $('#jacketThumb') : $('#logoThumb')).src = url; }; im.src = url; };
+  $('#jacketFile').addEventListener('change', e => readFile(e.target.files[0], 'jacket'));
+  $('#logoFile').addEventListener('change', e => readFile(e.target.files[0], 'logo'));
+  $('#jacketClear').onclick = () => set({ jacket: null, jacketTainted: false, jacketLabel: '' });
+  $('#logoClear').onclick = () => set({ logo: null, logoLabel: '' });
+  const dropOn = (el, key) => {
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('over'); });
+    el.addEventListener('dragleave', () => el.classList.remove('over'));
+    el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('over'); readFile(e.dataTransfer.files[0], key); });
+  };
+  dropOn($('#stage'), 'jacket'); dropOn($('#jacketDrop'), 'jacket'); dropOn($('#logoDrop'), 'logo');
+  document.addEventListener('paste', e => { const it = Array.from(e.clipboardData.items || []).find(i => /^image\//.test(i.type)); if (it) { e.preventDefault(); readFile(it.getAsFile(), 'jacket'); } });
+  // 匯出
+  $('#dl').onclick = () => { try { cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (S.title ? S.title.replace(/[\\/:*?"<>|]+/g, '_') : 'songcard') + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); msg('已下載'); }, 'image/png'); } catch (e) { msg('匯出失敗：' + e.message, true); } };
+  $('#copy').onclick = async () => { try { const b = await new Promise(r => cv.toBlob(r, 'image/png')); await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); msg('已複製到剪貼簿'); } catch (e) { msg('這個瀏覽器不能直接複製圖片，請用下載', true); } };
+}
+function sample() {
+  set({ lang: 'jp', title: 'FIRE BIRD', lyr: '上松範康（Elements Garden）', comp: '上松範康（Elements Garden）', arr: '藤永龍太郎（Elements Garden）', mv: '3d', append: true,
+    vs: '夢ノ結唱 ROSE', unit: 'n25', chars: [17, 18, 19, 20, 21], extra: '', song: null });
+}
+
+/* ===================== 曲庫：台服＋日服 master ===================== */
+const DB = { songs: [], ready: false, err: '' };
+const jget = u => fetch(u).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+const tget = f => jget(TDB + '/' + f).then(d => (Array.isArray(d) && !d.length) ? jget(TDB_SW + '/' + f) : d).catch(() => jget(TDB_SW + '/' + f));
+async function loadDb() {
+  try {
+    const soft = p => p.catch(() => []);
+    const [ms, mv, md, oc, jms, jmv, jmd, joc] = await Promise.all([
+      soft(tget('musics.json')), soft(tget('musicVocals.json')), soft(tget('musicDifficulties.json')), soft(tget('outsideCharacters.json')),
+      soft(jget(JDB + '/musics.json')), soft(jget(JDB + '/musicVocals.json')), soft(jget(JDB + '/musicDifficulties.json')), soft(jget(JDB + '/outsideCharacters.json')),
+    ]);
+    const ocTw = {}, ocJp = {}; oc.forEach(o => { ocTw[o.id] = o.name; }); joc.forEach(o => { ocJp[o.id] = o.name; });
+    const jpTitle = {}; jms.forEach(m => { jpTitle[m.id] = m.title; });
+    const appendTw = new Set(md.filter(d => d.musicDifficulty === 'append').map(d => d.musicId)), appendJp = new Set(jmd.filter(d => d.musicDifficulty === 'append').map(d => d.musicId));
+    const vocals = (list, src) => { const by = {}; list.forEach(v => { (by[v.musicId] = by[v.musicId] || []).push(Object.assign({ src }, v)); }); return by; };
+    const vTw = vocals(mv, 'tw'), vJp = vocals(jmv, 'jp');
+    const mk = (m, jp) => {
+      const vl = (jp ? vJp[m.id] : (vTw[m.id] || vJp[m.id])) || [];
+      const names = (v, lang) => (v.characters || []).map(c => c.characterType === 'game_character' ? chName(c.characterId, lang)
+        : (lang === 'tw' ? (ocTw[c.characterId] || ocJp[c.characterId]) : (ocJp[c.characterId] || ocTw[c.characterId])) || '').filter(Boolean);
+      const vsEntries = vl.filter(v => v.musicVocalType === 'virtual_singer'), orig = vl.filter(v => v.musicVocalType === 'original_song'), sk = vl.filter(v => v.musicVocalType === 'sekai');
+      const vsPick = vsEntries.length ? vsEntries : orig;
+      const vs = { jp: [], tw: [] };
+      vsPick.forEach(v => { names(v, 'jp').forEach(n => { if (!vs.jp.includes(n)) vs.jp.push(n); }); names(v, 'tw').forEach(n => { if (!vs.tw.includes(n)) vs.tw.push(n); }); });
+      const sekai = sk.map(v => {
+        const ids = (v.characters || []).filter(c => c.characterType === 'game_character').map(c => c.characterId);
+        const cnt = {}; ids.forEach(id => { const u = unitOfChar(id); if (u && u !== 'vs') cnt[u] = (cnt[u] || 0) + 1; });
+        const unit = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || (ids.length ? 'vs' : '');
+        const out = (v.characters || []).filter(c => c.characterType === 'outside_character').map(c => c.characterId);
+        return { unit, ids, extraJp: out.map(id => ocJp[id] || ocTw[id] || '').filter(Boolean), extraTw: out.map(id => ocTw[id] || ocJp[id] || '').filter(Boolean) };
+      });
+      const meta = SONG_META[m.id];
+      return { id: m.id, tJp: jp ? m.title : (jpTitle[m.id] || m.title), tTw: jp ? '' : m.title, lyr: m.lyricist || '', comp: m.composer || '', arr: m.arranger || '',
+        abn: m.assetbundleName || ('jacket_s_' + String(m.id).padStart(3, '0')), append: appendTw.has(m.id) || appendJp.has(m.id),
+        mv: meta ? (meta[7] === 3 ? '3d' : meta[7] === 2 ? '2d' : 'none') : null, vs, sekai, jp };
+    };
+    const tw = ms.map(m => mk(m, false)), have = new Set(tw.map(x => x.id));
+    DB.songs = tw.concat(jms.filter(m => !have.has(m.id)).map(m => mk(m, true)));
+    DB.ready = DB.songs.length > 0; DB.err = DB.ready ? '' : '曲庫沒有回應';
+  } catch (e) { DB.err = '曲庫載入失敗：' + ((e && e.message) || e); }
+  $('#dbNote').textContent = DB.ready ? '曲庫共 ' + DB.songs.length + ' 首（台服 master 為主，日服補台服未實裝曲）。選一首就帶入；帶入後仍可逐項修改。' : (DB.err || '曲庫沒有回應') + '。可以略過，直接手動填。';
+}
+function search(q) {
+  const box = $('#results'); q = q.trim().toLowerCase();
+  if (!q) { box.classList.remove('on'); box.innerHTML = ''; return; }
+  if (!DB.ready) { box.innerHTML = '<div class="empty">' + (DB.err || '曲庫載入中…') + '</div>'; box.classList.add('on'); return; }
+  const hit = DB.songs.filter(s => (s.tJp || '').toLowerCase().includes(q) || (s.tTw || '').toLowerCase().includes(q) || String(s.id) === q).slice(0, 14);
+  box.innerHTML = '';
+  if (!hit.length) { box.innerHTML = '<div class="empty">沒有符合的曲名</div>'; box.classList.add('on'); return; }
+  hit.forEach(s => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option');
+    const im = document.createElement('img'); im.src = JACKET(s.abn); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy'; im.onerror = () => { im.onerror = null; im.src = JACKET_TC(s.abn); };
+    const t = document.createElement('div'); t.style.minWidth = '0';
+    const t1 = document.createElement('div'); t1.className = 't'; t1.textContent = s.tJp || s.tTw;
+    const t2 = document.createElement('div'); t2.className = 's'; t2.textContent = (s.tTw && s.tTw !== s.tJp ? s.tTw + '・' : '') + '#' + s.id + (s.comp ? '・' + s.comp : '');
+    t.append(t1, t2); b.append(im, t);
+    if (s.jp) { const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = '台服未實裝'; b.appendChild(tg); }
+    b.onclick = () => { applySong(s); box.classList.remove('on'); $('#q').value = s.tJp || s.tTw; };
+    box.appendChild(b);
+  });
+  box.classList.add('on');
+}
+function applySong(s) {
+  const lang = S.lang, sk = s.sekai[0];
+  const patch = { song: s, title: lang === 'tw' ? (s.tTw || s.tJp) : (s.tJp || s.tTw), lyr: s.lyr, comp: s.comp, arr: s.arr, append: s.append,
+    vs: (lang === 'tw' ? s.vs.tw : s.vs.jp).join('／'), unit: sk ? sk.unit : '', chars: sk ? sk.ids.slice() : [], extra: sk ? (lang === 'tw' ? sk.extraTw : sk.extraJp).join('／') : '', logo: null, logoLabel: '' };
+  if (s.mv) patch.mv = s.mv;
+  set(patch);
+  loadJacket(s);
+}
+function loadJacket(s) {
+  const stage = $('#stage'); stage.classList.add('loading');
+  const tryUrl = (url, cors) => new Promise((res, rej) => { const im = new Image(); if (cors) im.crossOrigin = 'anonymous'; im.referrerPolicy = 'no-referrer'; im.onload = () => res(im); im.onerror = rej; im.src = url; });
+  const urls = [JACKET(s.abn), JACKET_TC(s.abn)];
+  (async () => {
+    let im = null, tainted = false;
+    for (const u of urls) { try { im = await tryUrl(u, true); break; } catch (e) {} }
+    if (!im) for (const u of urls) { try { im = await tryUrl(u, false); tainted = true; break; } catch (e) {} }
+    stage.classList.remove('loading');
+    if (!im) { msg('曲圖抓不到，請自己上傳', true); return; }
+    if (S.song !== s) return;   // 使用者已經換了
+    $('#jacketThumb').src = im.src;
+    set({ jacket: im, jacketTainted: tainted, jacketLabel: s.abn + '.png（素材鏡像）' });
+  })();
+}
+
+/* ===================== 啟動 ===================== */
+function restore() {
+  try { const d = JSON.parse(localStorage.getItem('sekai-songcard-v1') || 'null'); if (d && typeof d === 'object') { ['lang', 'title', 'lyr', 'comp', 'arr', 'mv', 'vs', 'unit', 'extra', 'foot'].forEach(k => { if (typeof d[k] === 'string') S[k] = d[k]; }); if (typeof d.append === 'boolean') S.append = d.append; if (Array.isArray(d.chars)) S.chars = d.chars.filter(x => Number.isInteger(x) && x >= 1 && x <= 26); if (Number.isFinite(d.seed)) S.seed = d.seed; } } catch (e) {}
+  if (!LBL[S.lang]) S.lang = 'jp'; if (!['3d', '2d', 'none'].includes(S.mv)) S.mv = '3d'; if (S.unit && !UNITS[S.unit]) S.unit = '';
+}
+buildChips(); restore(); bindForm(); syncForm(); draw();
+$('#q').addEventListener('input', e => search(e.target.value));
+$('#q').addEventListener('focus', e => { if (e.target.value) search(e.target.value); });
+document.addEventListener('click', e => { if (!e.target.closest('.pick')) $('#results').classList.remove('on'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#results').classList.remove('on'); });
+Promise.all(['800 72px "M PLUS Rounded 1c"', '900 92px "Noto Sans JP"', '700 46px "Noto Sans JP"', '700 40px "Noto Sans TC"', '900 40px "Noto Sans TC"'].map(f => document.fonts.load(f).catch(() => null)))
+  .then(() => { fontsOk = true; draw(); ready = true; });
+document.fonts.ready.then(() => { draw(); ready = true; });
+loadDb();
+window.__songcard = { S, DB, draw, set, sample, applySong, get drawn() { return drawn; }, get ready() { return ready; }, get fontsOk() { return fontsOk; }, canvas: cv };
+</script>
+</body>
+</html>

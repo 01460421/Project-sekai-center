@@ -177,7 +177,7 @@ class Component extends DCLogic {
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
+  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff'], ['x_songcard', '追加圖產生器', '#f4a6d2']];
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -521,6 +521,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/16', t: '樂曲追加圖產生器', s: '新獨立頁 songcard.html：做一張官方風格的「樂曲追加決定」圖。從曲庫選曲（讀台服／日服 master 的 musics、musicVocals、musicDifficulties、outsideCharacters 與站內 song-meta）自動帶入曲圖、曲名、作詞／作曲／編曲、3D／2D MV、有沒有 APPEND、虛擬歌手 ver. 的原唱與 SEKAI ver. 的團體與演唱成員；每一格都能手改，曲圖可上傳、拖進來或貼上，SEKAI ver. 框放官方團體標誌（也能換成自己上傳的）。背景照官方圖的鋼藍灰底加毛玻璃與幾何散件，可換一組。日文／繁中兩套固定文字，1920×1080 PNG 下載或複製到剪貼簿。首頁側欄「追加圖產生器」、指令面板打「追加圖」都能進。', p: 'x_songcard' },
     { d: '2026/10/06', t: 'Haruki 專區加「養成策略」', s: '養成分頁新增養成策略：挑一位或多位角色，把 22 種角色任務分成卡面、專精與技能、隊長與休息室、貼圖、對話、娃與家具、服裝與聲音、區域道具八個面向，列出每項的進度與下一個門檻，排出最省力的下一步並算出「做完幾件就升級」；下一步會把素材算進去（專精花費讀 masterLessons、卡片故事為固定表、家具讀家具索引，挑最便宜的卡與家具），有庫存就標出缺多少、素材不夠的往後排；建議會帶入接下來有該角色新卡的卡池、該角色是加成角色的活動（活動組卡把他當隊長）、月卡玩偶的月份與挑戰 Live 的分數獎勵。Haruki 公開 API 沒給任務進度時，持卡、專精、技能、隊長次數、區域道具與家具會從原始資料推算（標「推算」），其餘標「未知」。目標預設 Lv100（BFES 卡技能的角色等級加成在 Lv100 封頂，理論技能倍率表也以 Lv100 計），可改；每位角色算出到目標的最省力路線（各任務要做到哪個門檻、素材合計、缺多少），做不到就說全做完能到幾級。「先練誰」把持有 BFES 卡的角色排最前、再來是理論組卡用到的角色，各依離目標的 EXP 排。抽卡也算進去：每位角色列接下來有他卡的卡池與 PU 卡（BFES 池標「優先」）、每張新卡值多少 EXP、差的 EXP 相當於幾張新卡；再加一顆「問 AI 完整策略」，把站上算好的路線、素材庫存、卡池、活動加成、玩偶與挑戰 Live 交給站內助手（要登入且帳號已核准，用一次額度），由它連抽卡與時程一起規劃。順位改照實務難易：刷隊長 → 對話 → 卡面 → 專精 → 技能 → 其他零碎（實務上加起來約 1～2 級），表面上數量小但難拿的素材（心願純結晶、奇蹟寶石、寶石）會把那一項往後排。區域道具 Lv10→11 解鎖要的祈願水滴（角色道具 5、團體／類型 15、虛擬歌手 6、初音未來 1）列進路線的素材與缺口並加重，Lv16 起要夢想水晶球的再往後排。', p: 'haruki' },
     { d: '2026/10/05', t: '車隊程式拆成獨立模組，首頁少載四分之一程式', s: '私車排班（班表、成員、統計、點歌、標籤、色段監測）的程式從主程式拆到 js/car.js，進車隊頁才載；其他頁開站少抓約 270 KB 原始碼（壓縮後約 70 KB）。登入卡、帳號頁不受影響；車隊頁載入中會先顯示骨架，載入失敗可按「重試」。', p: 'car' },
     { d: '2026/10/05', t: '抽卡模擬改為原生', s: '抽卡模擬不再嵌經典版：同一套官方機率模型（先依稀有度機率、再依池內 weight 加權；十連最後一抽保底 ★3；招募點數 50／100 點保底），池子直接讀台服 master，單抽與十連的按鈕照該池的 gachaBehaviors 產生，PU 每張機率、天井進度、招募點數、實際出現率對官方機率的統計都在頁上；點抽到的卡直接跳到卡片技能庫。只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。抽卡頁至此全部原生。', p: 'gachasim' },
@@ -7390,6 +7391,7 @@ class Component extends DCLogic {
       // 彩蛋：只有打到相關的字才會浮出來
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
+      if (/追加圖|追加決定|楽曲追加|樂曲追加|songcard|宣傳圖|公告圖|產生器/i.test(q)) out.unshift({ tag: '本站工具', tagBg: '#d26a9c', main: '樂曲追加圖產生器', sub: '做一張官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、作詞曲編、MV、APPEND 與翻唱陣容', run: () => { location.href = 'songcard.html'; } });
       if (/聲紋|傅立葉|頻譜|soundprint|fourier|spectr/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: 'SEKAI 聲紋', sub: '每一首歌的傅立葉肖像：真正的短時傅立葉轉換畫成極座標聲紋', run: () => { location.href = 'soundprint.html'; } });
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
@@ -7410,7 +7412,7 @@ class Component extends DCLogic {
   }
   NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 18 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
-  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html' };
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html', x_songcard: 'songcard.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -10397,6 +10399,7 @@ class Component extends DCLogic {
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
           { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
+          { name: '樂曲追加圖產生器', url: 'songcard.html', sub: '官方風格「樂曲追加決定」圖：選曲自動帶入、可上傳曲圖與團體 Logo、PNG 下載' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },

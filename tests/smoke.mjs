@@ -161,6 +161,32 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：樂曲追加圖產生器（songcard.html）。純前端畫 canvas，曲庫抓不到也要能用；字型備妥、按「填入範例」後要重畫出曲名，
+// 不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/songcard.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__songcard && window.__songcard.ready, null, { timeout: 30000 });
+      const before = await page.evaluate(() => window.__songcard.drawn);
+      await page.click('#sample');
+      await page.waitForFunction(b => window.__songcard.drawn > b && document.querySelector('#title').value === 'FIRE BIRD', before, { timeout: 10000 });
+      const lit = await page.evaluate(() => { const d = window.__songcard.canvas.getContext('2d').getImageData(812, 237, 520, 1).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 225 && d[i + 2] > 225) n++; return n; });   // 曲名那一列要有白色的字
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && lit > 20 && !(mobile && overflow);
+      why = errors[0] || (!(lit > 20) ? '預覽圖沒畫出曲名' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' songcard' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
