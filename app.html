@@ -43,7 +43,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
 --bg:#eef1f9;--bg-soft:#f6f8fd;--card:#fff;--card-2:#f1f4fb;
@@ -485,6 +485,43 @@ select option, select optgroup{
 .u-f1{flex:1 !important}
 .u-fc2{font-size:11px !important;color:var(--text-3) !important}
 .u-a3{animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1) !important}
+/* 製作工具（追加圖、譜面預覽）：左表單右預覽，窄螢幕疊成一欄、預覽在上 */
+.mk-grid{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:14px;align-items:start}
+.mk-form{display:grid;gap:12px;min-width:0}
+.mk-side{position:sticky;top:70px;display:grid;gap:10px;min-width:0}
+@media (max-width:980px){.mk-grid{grid-template-columns:1fr}.mk-side{position:static;order:-1}}
+.mk-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:14px}
+.mk-h{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:2px;color:var(--text-3);font-weight:700;margin-bottom:10px}
+.mk-h b{font-size:14px;letter-spacing:.3px;color:var(--text)}
+.mk-h i{margin-left:auto;font-style:normal;font-size:11px;letter-spacing:0;color:var(--text-3);font-weight:400;text-align:right}
+.mk-lbl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);margin:8px 0 4px}
+.mk-lbl i{margin-left:auto;font-style:normal;font-size:11px;color:var(--text-3)}
+.mk-in{width:100%;box-sizing:border-box;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font:inherit;font-size:13.5px;outline:0}
+.mk-in:focus{border-color:var(--accent)}
+textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
+.mk-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mk-chip{padding:5px 11px;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.mk-chip:disabled{opacity:.35;cursor:not-allowed}
+.mk-chip small{font-weight:500;opacity:.8}
+.mk-btn{padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.mk-btn.p{background:var(--ink-grad);color:#fff;border-color:transparent}
+.mk-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mk-drop{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px dashed var(--border-2);border-radius:14px;background:var(--card-2);cursor:pointer;font-size:12.5px;color:var(--text-2);line-height:1.45}
+.mk-drop b{display:block;color:var(--text);font-size:13px}
+.mk-note{font-size:11.5px;color:var(--text-3);line-height:1.55;margin-top:6px}
+.mk-warn{font-size:12px;color:#b85c00;background:rgba(255,160,80,.14);border:1px solid rgba(255,160,80,.35);border-radius:10px;padding:7px 10px;margin-top:8px;line-height:1.5}
+.mk-results{display:grid;gap:2px;margin-top:6px;max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card-2);padding:4px}
+.mk-results button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 8px;border:0;background:none;border-radius:8px;cursor:pointer;color:var(--text)}
+.mk-results button:hover{background:color-mix(in oklab,var(--accent) 14%,transparent)}
+.mk-results img{width:36px;height:36px;object-fit:cover;flex:none;border-radius:6px;background:var(--card)}
+.mk-results .t{font-size:13px;font-weight:700;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk-results .s{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-stage{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#3f4c6e}
+.mk-stage canvas{width:100%;height:auto;display:block}
+.mk-scroll{border:1px solid var(--border);border-radius:16px;overflow:auto;background:#171a2b;max-height:calc(100vh - 170px);scrollbar-width:thin}
+.mk-scroll canvas{display:block}
+.mk-kana{font-family:'Noto Sans JP','M PLUS Rounded 1c',sans-serif;font-size:18px;font-weight:700;padding:10px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);min-height:44px;word-break:break-all;user-select:all}
+
 .u-t4{text-align:right !important}
 .u-fc5{font-size:11.5px !important;color:var(--text-3) !important}
 .u-cf6{color:var(--ink) !important;font-family:'M PLUS Rounded 1c' !important}
@@ -7416,6 +7453,160 @@ select option, select optgroup{
   </div>
   </sc-if>
 
+  <!-- 樂曲追加圖產生器（程式在 js/maker.js，進頁才載） -->
+  <sc-if value="{{ isSongcard }}">
+  <div class="u-a3">
+    <sc-if value="{{ mkWait }}"><div class="mk-card" style="text-align:center;color:var(--text-3);padding:40px 16px">製作工具載入中…</div></sc-if>
+    <sc-if value="{{ mkErrHas }}"><div class="mk-card" style="text-align:center;padding:30px 16px"><div style="color:var(--text-2);margin-bottom:10px">{{ mkErr }}</div><button type="button" class="mk-btn p" onClick="{{ onMkRetry }}">重試</button></div></sc-if>
+    <sc-if value="{{ mkReady }}">
+    <div class="mk-grid">
+      <div class="mk-form">
+        <div class="mk-card">
+          <div class="mk-h">01 <b>選曲（可選）</b><i>自動帶入曲圖、曲名、創作者、MV、APPEND、原唱與 SEKAI ver.</i></div>
+          <div class="mk-chips" style="margin-bottom:8px">
+            <sc-for list="{{ scLangs }}" as="t" hint-placeholder-count="2"><button type="button" class="mk-chip" onClick="{{ onScLang }}" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.n }}</button></sc-for>
+            <span class="mk-note" style="margin:0;align-self:center">圖上的固定文字語言</span>
+          </div>
+          <input class="mk-in" type="search" enterkeyhint="search" placeholder="輸入曲名搜尋（台服＋日服曲庫）…" value="{{ scQ }}" onInput="{{ onScQ }}" aria-label="搜尋曲名">
+          <sc-if value="{{ scHasResults }}">
+            <div class="mk-results">
+              <sc-for list="{{ scResults }}" as="r" hint-placeholder-count="4"><button type="button" onClick="{{ onScPickSong }}" data-id="{{ r.id }}"><img src="{{ r.img }}" alt="" loading="lazy" referrerpolicy="no-referrer"><span style="min-width:0"><span class="t">{{ r.t }}</span><span class="s">{{ r.sub }}</span></span></button></sc-for>
+            </div>
+          </sc-if>
+          <div class="mk-note">{{ scDbNote }}</div>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">02 <b>曲圖</b><i>可拖進預覽圖，或直接 Ctrl+V 貼上</i></div>
+          <label class="mk-drop"><span><b>{{ scJacketName }}</b>建議正方形，會自動裁成正方形填滿。</span><input type="file" accept="image/*" onChange="{{ onScJacket }}" style="display:none"></label>
+          <div class="mk-row" style="margin-top:8px"><button type="button" class="mk-btn" onClick="{{ onScJacketClear }}">清除曲圖</button></div>
+          <sc-if value="{{ scTaint }}"><div class="mk-warn">這張曲圖來自外站而且瀏覽器拿不到跨網域授權，畫得出來但無法下載／複製。改成上傳圖片檔就可以。</div></sc-if>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">03 <b>曲名與創作者</b></div>
+          <div class="mk-lbl">曲名</div><input class="mk-in" type="text" maxlength="80" placeholder="FIRE BIRD" value="{{ scTitle }}" onInput="{{ onScField }}" data-k="title">
+          <div class="mk-lbl">作詞</div><input class="mk-in" type="text" maxlength="80" placeholder="上松範康（Elements Garden）" value="{{ scLyr }}" onInput="{{ onScField }}" data-k="lyr">
+          <div class="mk-lbl">作曲</div><input class="mk-in" type="text" maxlength="80" placeholder="上松範康（Elements Garden）" value="{{ scComp }}" onInput="{{ onScField }}" data-k="comp">
+          <div class="mk-lbl">編曲</div><input class="mk-in" type="text" maxlength="80" placeholder="藤永龍太郎（Elements Garden）" value="{{ scArr }}" onInput="{{ onScField }}" data-k="arr">
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">04 <b>MV 與 APPEND</b></div>
+          <div class="mk-chips"><sc-for list="{{ scMv }}" as="t" hint-placeholder-count="3"><button type="button" class="mk-chip" onClick="{{ onScChip }}" data-k="mv" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.n }}</button></sc-for></div>
+          <label class="mk-lbl" style="cursor:pointer;margin-top:10px"><input type="checkbox" checked="{{ scAppend }}" onChange="{{ onScAppend }}" style="accent-color:var(--accent);width:16px;height:16px">有 APPEND 譜面</label>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">05 <b>原唱（虛擬歌手 ver.）</b></div>
+          <div class="mk-lbl">演唱者<i>多位用「／」分隔，一位一行也可以</i></div>
+          <textarea class="mk-in" rows="2" placeholder="夢ノ結唱 ROSE" onInput="{{ onScField }}" data-k="vs" value="{{ scVs }}"></textarea>
+          <div class="mk-chips" style="margin-top:8px"><sc-for list="{{ scVsChips }}" as="t" hint-placeholder-count="2"><button type="button" class="mk-chip" onClick="{{ onScVsChip }}" data-n="{{ t.n }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.n }}</button></sc-for></div>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">06 <b>SEKAI ver.</b><i>沒有就留空，原唱格會放寬</i></div>
+          <div class="mk-lbl">團體</div>
+          <div class="mk-chips"><sc-for list="{{ scUnits }}" as="t" hint-placeholder-count="7"><button type="button" class="mk-chip" onClick="{{ onScChip }}" data-k="unit" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.n }}</button></sc-for></div>
+          <div class="mk-lbl">演唱成員<i>點選順序不影響，照角色編號排</i></div>
+          <div class="mk-chips"><sc-for list="{{ scChars }}" as="t" hint-placeholder-count="26"><button type="button" class="mk-chip" onClick="{{ onScChar }}" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ t.col }}"></span>{{ t.n }}</button></sc-for></div>
+          <div class="mk-lbl">其他演唱者<i>客串、合作的名字，接在成員後面</i></div>
+          <input class="mk-in" type="text" maxlength="80" placeholder="例：DI:Verse" value="{{ scExtra }}" onInput="{{ onScField }}" data-k="extra">
+          <div class="mk-lbl">團體標誌<i>預設用官方標誌，也能換成自己上傳的</i></div>
+          <label class="mk-drop" style="padding:9px 12px"><span><b>{{ scLogoName }}</b>透明背景的 PNG 最好。</span><input type="file" accept="image/*" onChange="{{ onScLogo }}" style="display:none"></label>
+          <div class="mk-row" style="margin-top:8px"><button type="button" class="mk-btn" onClick="{{ onScLogoClear }}">清除標誌（改回官方）</button></div>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">07 <b>片假名轉換器</b><i>羅馬拼音／平假名 → 片假名</i></div>
+          <input class="mk-in" type="text" maxlength="120" placeholder="輸入羅馬拼音或平假名，例：hatsune miku、ふぁいあ" value="{{ scKanaIn }}" onInput="{{ onScKanaIn }}">
+          <div class="mk-kana" style="margin-top:8px">{{ scKanaOut }}</div>
+          <div class="mk-row" style="margin-top:8px">
+            <button type="button" class="mk-btn" onClick="{{ onScKanaCopy }}">複製</button>
+            <button type="button" class="mk-btn" onClick="{{ onScKanaApply }}" data-k="title">填到曲名</button>
+            <button type="button" class="mk-btn" onClick="{{ onScKanaApply }}" data-k="vs">加到原唱</button>
+            <button type="button" class="mk-btn" onClick="{{ onScKanaApply }}" data-k="extra">加到其他演唱者</button>
+          </div>
+          <div class="mk-note">平文式與訓令式拼法都認得（shi／si、tsu／tu、ja／zya…）；促音重複子音、長音同母音連寫或 ou、ン可寫 n 或 nn、連字號是長音。英文字只是近似音（firebird → フィレビルド），要正式寫法請自己修。</div>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">08 <b>其他</b></div>
+          <div class="mk-lbl">底部聲明</div><input class="mk-in" type="text" maxlength="160" value="{{ scFoot }}" onInput="{{ onScField }}" data-k="foot">
+          <div class="mk-row" style="margin-top:10px">
+            <button type="button" class="mk-btn" onClick="{{ onScBgImg }}">原圖背景</button>
+            <button type="button" class="mk-btn" onClick="{{ onScShuffle }}">自繪背景換一組</button>
+            <button type="button" class="mk-btn" id="mk-sc-sample" onClick="{{ onScSample }}">填入範例</button>
+            <button type="button" class="mk-btn" onClick="{{ onScReset }}">清除全部</button>
+          </div>
+        </div>
+      </div>
+      <div class="mk-side">
+        <div class="mk-stage" onDragOver="{{ onScDragOver }}" onDragLeave="{{ onScDragLeave }}" onDrop="{{ onScDrop }}"><canvas ref="{{ scRef }}" id="mk-sc-cv" width="1920" height="1080" aria-label="樂曲追加圖預覽"></canvas></div>
+        <div class="mk-row">
+          <button type="button" class="mk-btn p" onClick="{{ onScSave }}">下載 PNG</button>
+          <button type="button" class="mk-btn" onClick="{{ onScCopy }}">複製圖片</button>
+        </div>
+        <div class="mk-note"><b style="color:var(--text-2)">怎麼用：</b>選曲會把能查到的都帶入（曲圖從素材鏡像抓、作詞曲編與演唱者讀台服／日服 master），再手動修；也可以什麼都不選、全部自己填。圖是 1920×1080，日文／繁中兩套固定文字。</div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- 譜面預覽產生器（程式在 js/maker.js，進頁才載） -->
+  <sc-if value="{{ isChart }}">
+  <div class="u-a3">
+    <sc-if value="{{ mkWait }}"><div class="mk-card" style="text-align:center;color:var(--text-3);padding:40px 16px">製作工具載入中…</div></sc-if>
+    <sc-if value="{{ mkErrHas }}"><div class="mk-card" style="text-align:center;padding:30px 16px"><div style="color:var(--text-2);margin-bottom:10px">{{ mkErr }}</div><button type="button" class="mk-btn p" onClick="{{ onMkRetry }}">重試</button></div></sc-if>
+    <sc-if value="{{ mkReady }}">
+    <div class="mk-grid">
+      <div class="mk-form">
+        <div class="mk-card">
+          <div class="mk-h">01 <b>選曲</b><i>官方譜面檔從素材鏡像抓</i></div>
+          <div class="mk-chips" style="margin-bottom:8px">
+            <sc-for list="{{ cpLangs }}" as="t" hint-placeholder-count="2"><button type="button" class="mk-chip" onClick="{{ onCpLang }}" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.n }}</button></sc-for>
+            <span class="mk-note" style="margin:0;align-self:center">曲名語言</span>
+          </div>
+          <input class="mk-in" type="search" enterkeyhint="search" placeholder="輸入曲名搜尋（台服＋日服曲庫）…" value="{{ cpQ }}" onInput="{{ onCpQ }}" aria-label="搜尋曲名">
+          <sc-if value="{{ cpHasResults }}">
+            <div class="mk-results">
+              <sc-for list="{{ cpResults }}" as="r" hint-placeholder-count="4"><button type="button" onClick="{{ onCpPickSong }}" data-id="{{ r.id }}"><img src="{{ r.img }}" alt="" loading="lazy" referrerpolicy="no-referrer"><span style="min-width:0"><span class="t">{{ r.t }}</span><span class="s">{{ r.sub }}</span></span></button></sc-for>
+            </div>
+          </sc-if>
+          <div class="mk-note">{{ cpDbNote }}</div>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">02 <b>難度</b><i>{{ cpDiffHint }}</i></div>
+          <div class="mk-chips"><sc-for list="{{ cpDiffs }}" as="t" hint-placeholder-count="6"><button type="button" class="mk-chip" onClick="{{ onCpDiff }}" data-v="{{ t.v }}" disabled="{{ t.dis }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ t.col }}"></span>{{ t.n }} <small>{{ t.sub }}</small></button></sc-for></div>
+          <sc-if value="{{ cpHasWarn }}"><div class="mk-warn">{{ cpWarn }}</div></sc-if>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">03 <b>版面</b></div>
+          <div class="mk-lbl">每欄小節數</div>
+          <div class="mk-chips"><sc-for list="{{ cpMpc }}" as="t" hint-placeholder-count="6"><button type="button" class="mk-chip" onClick="{{ onCpMpc }}" data-v="{{ t.v }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.n }}</button></sc-for></div>
+          <label class="mk-lbl" style="cursor:pointer;margin-top:10px"><input type="checkbox" checked="{{ cpCombo }}" onChange="{{ onCpToggle }}" data-k="combo" style="accent-color:var(--accent);width:16px;height:16px">每小節左邊標小節數、右邊標累計 combo</label>
+          <label class="mk-lbl" style="cursor:pointer"><input type="checkbox" checked="{{ cpBpm }}" onChange="{{ onCpToggle }}" data-k="bpm" style="accent-color:var(--accent);width:16px;height:16px">標 BPM 與變速點</label>
+          <label class="mk-lbl" style="cursor:pointer"><input type="checkbox" checked="{{ cpSkill }}" onChange="{{ onCpToggle }}" data-k="skill" style="accent-color:var(--accent);width:16px;height:16px">標技能發動點（SKILL）</label>
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">04 <b>自己的譜面檔</b><i>Ched／MikuMikuWorld 匯出的 .sus</i></div>
+          <label class="mk-drop"><span><b>{{ cpSusName }}</b>也可以把檔案拖到預覽圖上。畫面上的曲名用下面這格。</span><input type="file" accept=".sus,.txt,text/plain" onChange="{{ onCpSus }}" style="display:none"></label>
+          <input class="mk-in" type="text" maxlength="80" placeholder="自訂標題（上傳譜面時用）" value="{{ cpCustomTitle }}" onInput="{{ onCpCustomTitle }}" style="margin-top:8px">
+        </div>
+        <div class="mk-card">
+          <div class="mk-h">05 <b>其他</b></div>
+          <div class="mk-row"><button type="button" class="mk-btn" id="mk-cp-demo" onClick="{{ onCpDemo }}">看範例譜面</button><button type="button" class="mk-btn" onClick="{{ onCpReset }}">清除</button></div>
+        </div>
+      </div>
+      <div class="mk-side">
+        <div class="mk-scroll" onDragOver="{{ onCpDragOver }}" onDragLeave="{{ onCpDragLeave }}" onDrop="{{ onCpDrop }}"><canvas ref="{{ cpRef }}" id="mk-cp-cv" width="1200" height="500" style="{{ cpCanvasStyle }}" aria-label="譜面預覽"></canvas></div>
+        <div class="mk-row">
+          <button type="button" class="mk-btn p" onClick="{{ onCpPng }}">下載 PNG</button>
+          <button type="button" class="mk-btn" onClick="{{ onCpJpg }}">下載 JPG（較小）</button>
+          <button type="button" class="mk-btn" onClick="{{ onCpZoom }}">{{ cpZoomLabel }}</button>
+          <sc-if value="{{ cpBusy }}"><span class="mk-note" style="margin:0">抓譜面中…</span></sc-if>
+        </div>
+        <div class="mk-note"><b style="color:var(--text-2)">怎麼看：</b>時間由下往上、一欄接一欄；藍色是點擊、黃色是關鍵（critical）、粉紅帶箭頭是滑鍵、細條是軌跡（trace）、綠色帶狀是長條（黃色帶狀是關鍵長條）、淡藍帶狀是引導線（guide）。小節線左邊是小節編號、右邊是打到那條線為止的累計 combo（含長條隱藏判定點，與官方 Notes 數一致）。</div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 分析中心 ========== -->
   <sc-if value="{{ isAnalysis }}">
   <div class="u-a3">
@@ -8797,7 +8988,7 @@ select option, select optgroup{
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=cf305792e6"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=083b48622e"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

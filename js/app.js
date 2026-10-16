@@ -154,6 +154,8 @@ class Component extends DCLogic {
     guesswho: ['猜角色', '看一小塊卡面猜是誰：十題一局，猜得越快分數越高'],
     guessjacket:['猜封面', '看一小塊曲繪猜歌名：十題一局，可調選項數與難度'],
     stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製'],
+    songcard: ['樂曲追加圖產生器', '官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、創作者、MV、APPEND 與演唱陣容，附片假名轉換器'],
+    chart:    ['譜面預覽產生器', '整首譜面攤成一張直欄式的圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點'],
     hubEvent: ['追活動', '活動總覽，以及排名與榜線（即時排名、榜線資料庫、分析中心、活動分布、玩家查詢）'],
     hubDb:    ['圖鑑', '日程與公告、卡片、角色與收集、歌曲、劇情與漫畫、豆森'],
     hubTool:  ['工具', '計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與製作'],
@@ -173,13 +175,11 @@ class Component extends DCLogic {
     ['追活動', [['event', '活動總覽', '#ff9db4', []], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'x_songcard', 'x_chart']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
   EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
-  /* 放在家族分頁籤裡的獨立頁（不在 PAGES 表裡）：id → 分頁籤名稱 */
-  EXTRA_NAMES = { x_songcard: '追加圖產生器', x_chart: '譜面預覽' };
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -187,7 +187,7 @@ class Component extends DCLogic {
   famTabs(p) {
     const f = this._famIndex()[p]; if (!f) return [];
     const me = this.state.me;
-    return [f[0]].concat(f[3]).filter(id => (this.PAGES[id] || this.EXTRA_NAMES[id]) && !((id === 'notices' || id === 'assistant') && !me) && !(id === 'admin' && !(me && me.is_admin)));
+    return [f[0]].concat(f[3]).filter(id => this.PAGES[id] && !((id === 'notices' || id === 'assistant') && !me) && !(id === 'admin' && !(me && me.is_admin)));
   }
   hubOf(p) { const f = this.famOf(p) || p; for (const k in this.HUBS) if (this.HUBS[k].includes(f)) return k; return null; }
   /* 卡片查詢語法：搜尋框可以直接打「mmj 藍 限定 2025」這種組合，認得出的字當篩選、其餘當卡名關鍵字。
@@ -261,6 +261,8 @@ class Component extends DCLogic {
     ['猜角色', '', 'guesswho', '猜角色|猜卡面|猜猜看|猜謎|小遊戲|遊戲|guess who|看圖猜角色|卡面猜謎'],
     ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
     ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
+    ['樂曲追加圖產生器', '', 'songcard', '追加圖|追加決定|楽曲追加|樂曲追加|songcard|宣傳圖|公告圖|追加圖產生器|片假名|片假名轉換|katakana'],
+    ['譜面預覽產生器', '', 'chart', '譜面|譜面預覽|譜面圖|看譜|chart|sus|譜面產生器|combo'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
     ['B30 產生器', '', 'b30', 'B30|Best 30|best30|実効值|B30 圖卡|難易度表|EMERALD|pentatonic|39s|紅譜定數|EXPERT 定數|Unibot 風格|AP=定數、FC=定數−1'],
     ['儲值分析', '', 'shop', '儲值商品分析|商城|商品總覽|CP 值排行|石/元|智慧推薦|最省錢的購買組合|月卡通行證攤提|官網儲值|GamePay|限購'],
@@ -519,12 +521,13 @@ class Component extends DCLogic {
     { date: '遊戲', title: '猜角色', desc: '看一小塊卡面猜是誰，十題一局；難度、團體、稀有度、限時可調。', to: 'guesswho', cta: '來玩猜角色' },
     { date: '遊戲', title: '猜封面', desc: '看一小塊曲繪猜歌名，十題一局；選項數與難度可調。', to: 'guessjacket', cta: '來玩猜封面' },
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' },
-    { date: '工具', title: '樂曲追加圖產生器', desc: '官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、作詞曲編、MV、APPEND 與演唱陣容，1920×1080 PNG。', to: 'x_songcard', cta: '前往追加圖產生器' },
-    { date: '工具', title: '譜面預覽產生器', desc: '整首譜面攤成一張直欄式的圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點，也能上傳自己的 SUS。', to: 'x_chart', cta: '前往譜面預覽' },
+    { date: '工具', title: '樂曲追加圖產生器', desc: '官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、作詞曲編、MV、APPEND 與演唱陣容，1920×1080 PNG。', to: 'songcard', cta: '前往追加圖產生器' },
+    { date: '工具', title: '譜面預覽產生器', desc: '整首譜面攤成一張直欄式的圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點，也能上傳自己的 SUS。', to: 'chart', cta: '前往譜面預覽' },
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' },
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/16', t: '追加圖與譜面預覽做進站內，追加圖多了片假名轉換器', s: '樂曲追加圖產生器與譜面預覽產生器不再是外接的獨立頁，改成站內頁面：側欄「小遊戲與製作」的分頁籤直接切，跟貼圖製作器並排，不會跳出站外；舊網址 /songcard、/chart 會轉過來。程式在 js/maker.js，進這兩頁才載。追加圖多了片假名轉換器：輸入羅馬拼音（平文式、訓令式都認得）或平假名就出片假名，促音、長音、撥音照一般規則；英文字給近似音。轉好的字一鍵填到曲名、原唱或其他演唱者。', p: 'songcard' },
     { d: '2026/10/16', t: '譜面預覽產生器', s: '新獨立頁 chart.html：把整首譜面攤成一張直欄式的圖，時間由下往上、一欄接一欄。選曲、選難度就從素材鏡像抓官方的 SUS 譜面檔來畫：點擊、關鍵、滑鍵（帶方向箭頭）、軌跡、長條（含進緩／出緩曲線、可見中繼菱形與附著菱形）與引導線，關鍵長條與引導線用黃色。每條小節線左邊標小節數、右邊標打到那裡的累計 combo，含長條每半拍一個的隱藏判定點，算法照 pjsekai 引擎的 SUS→USC 規則，用五張官方譜面對過官方 Notes 數全部一致；BPM 變速點與技能發動點也標在圖上，可各自關掉。每欄小節數可調，圖太大時整張縮到 iOS canvas 面積上限以內；PNG／JPG 下載、原尺寸檢視。也能上傳 Ched／MikuMikuWorld 匯出的 .sus 畫自己的譜面。入口在側欄「小遊戲與製作」的分頁籤（貼圖製作器旁邊）、工具卡片與指令面板「譜面」。', p: 'x_chart' },
     { d: '2026/10/16', t: '樂曲追加圖產生器', s: '新獨立頁 songcard.html：做一張官方風格的「樂曲追加決定」圖。從曲庫選曲（讀台服／日服 master 的 musics、musicVocals、musicDifficulties、outsideCharacters 與站內 song-meta）自動帶入曲圖、曲名、作詞／作曲／編曲、3D／2D MV、有沒有 APPEND、虛擬歌手 ver. 的原唱與 SEKAI ver. 的團體與演唱成員；每一格都能手改，曲圖可上傳、拖進來或貼上，SEKAI ver. 框放官方團體標誌（也能換成自己上傳的）。底圖用官方公告圖的原檔壓成鋼藍灰，也能切回自繪背景。日文／繁中兩套固定文字，1920×1080 PNG 下載或複製到剪貼簿。入口在側欄「小遊戲與製作」的分頁籤（貼圖製作器旁邊）、工具卡片與指令面板「追加圖」。', p: 'x_songcard' },
     { d: '2026/10/06', t: 'Haruki 專區加「養成策略」', s: '養成分頁新增養成策略：挑一位或多位角色，把 22 種角色任務分成卡面、專精與技能、隊長與休息室、貼圖、對話、娃與家具、服裝與聲音、區域道具八個面向，列出每項的進度與下一個門檻，排出最省力的下一步並算出「做完幾件就升級」；下一步會把素材算進去（專精花費讀 masterLessons、卡片故事為固定表、家具讀家具索引，挑最便宜的卡與家具），有庫存就標出缺多少、素材不夠的往後排；建議會帶入接下來有該角色新卡的卡池、該角色是加成角色的活動（活動組卡把他當隊長）、月卡玩偶的月份與挑戰 Live 的分數獎勵。Haruki 公開 API 沒給任務進度時，持卡、專精、技能、隊長次數、區域道具與家具會從原始資料推算（標「推算」），其餘標「未知」。目標預設 Lv100（BFES 卡技能的角色等級加成在 Lv100 封頂，理論技能倍率表也以 Lv100 計），可改；每位角色算出到目標的最省力路線（各任務要做到哪個門檻、素材合計、缺多少），做不到就說全做完能到幾級。「先練誰」把持有 BFES 卡的角色排最前、再來是理論組卡用到的角色，各依離目標的 EXP 排。抽卡也算進去：每位角色列接下來有他卡的卡池與 PU 卡（BFES 池標「優先」）、每張新卡值多少 EXP、差的 EXP 相當於幾張新卡；再加一顆「問 AI 完整策略」，把站上算好的路線、素材庫存、卡池、活動加成、玩偶與挑戰 Live 交給站內助手（要登入且帳號已核准，用一次額度），由它連抽卡與時程一起規劃。順位改照實務難易：刷隊長 → 對話 → 卡面 → 專精 → 技能 → 其他零碎（實務上加起來約 1～2 級），表面上數量小但難拿的素材（心願純結晶、奇蹟寶石、寶石）會把那一項往後排。區域道具 Lv10→11 解鎖要的祈願水滴（角色道具 5、團體／類型 15、虛擬歌手 6、初音未來 1）列進路線的素材與缺口並加重，Lv16 起要夢想水晶球的再往後排。', p: 'haruki' },
@@ -753,6 +756,7 @@ class Component extends DCLogic {
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
     smPick: '',   // 理論技能倍率表：選中的格（'團:色'、'u:團'、'a:色'）
     /* Haruki 專區（程式在 js/haruki.js，進頁才載） */
+    mkReady: false, mkErr: '', mkDb: 0, sc: null, cp: null,   // 製作工具（js/maker.js）：追加圖與譜面預覽的表單狀態
     hzReady: false, hzTab: 'home', hzTrainTab: 'crank', hzMysTab: 'res', hzHelpTab: 'guide', hzMeta: null, hzLive: 'multi', hzTarget: 'score', hzDiff: 'master', hzAlgo: 'ga', hzEv: '', hzMusic: '', hzWlChar: '',
     hzMaxLv: false, hzMaxMr: false, hzMaxSk: false, hzFixed: '', hzExclude: '', hzRes: null, hzCrank: null, hzCalcFrom: '', hzCalcTo: '',
     rq: '', ru: 'all', rr: 'all', rs: 'all', rMiss: false, rp: 1,
@@ -2711,6 +2715,14 @@ class Component extends DCLogic {
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
+  }
+
+  /* ---------- 製作工具：追加圖與譜面預覽（延後載入，程式在 js/maker.js） ---------- */
+  mkLoad() {
+    if (this._mkReady) return this._mkReady;
+    this._mkReady = import('./js/maker.js?v=aebe703c70').then(m => { Object.assign(this, m.makerMembers.call(this)); this.mkInit(); return true; })
+      .catch(() => { this._mkReady = null; this.setState({ mkErr: '製作工具載入失敗，請檢查網路後按「重試」。' }); return false; });
+    return this._mkReady;
   }
 
   /* ---------- 帳號 ----------
@@ -6896,6 +6908,7 @@ class Component extends DCLogic {
     if (p === 'guesswho' || p === 'stickers') this.loadCards();
     if (p === 'guessjacket') this.loadSongs();
     if (p === 'stickers') { this.loadCollect(); try { document.fonts.load('800 40px Huninn').then(() => this.stkDraw()); } catch (e) {} }
+    if (p === 'songcard' || p === 'chart') { this.loadSongs(); this.mkLoad(); }
     if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
@@ -7396,8 +7409,6 @@ class Component extends DCLogic {
       // 彩蛋：只有打到相關的字才會浮出來
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
-      if (/譜面|譜面預覽|譜面圖|看譜|chart|sus|preview/i.test(q)) out.unshift({ tag: '本站工具', tagBg: '#4aa8ff', main: '譜面預覽產生器', sub: '整首譜面攤成一張圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點', run: () => { location.href = 'chart.html'; } });
-      if (/追加圖|追加決定|楽曲追加|樂曲追加|songcard|宣傳圖|公告圖|產生器/i.test(q)) out.unshift({ tag: '本站工具', tagBg: '#d26a9c', main: '樂曲追加圖產生器', sub: '做一張官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、作詞曲編、MV、APPEND 與翻唱陣容', run: () => { location.href = 'songcard.html'; } });
       if (/聲紋|傅立葉|頻譜|soundprint|fourier|spectr/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: 'SEKAI 聲紋', sub: '每一首歌的傅立葉肖像：真正的短時傅立葉轉換畫成極座標聲紋', run: () => { location.href = 'soundprint.html'; } });
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
@@ -7418,7 +7429,7 @@ class Component extends DCLogic {
   }
   NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 18 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
-  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html', x_songcard: 'songcard.html', x_chart: 'chart.html' };
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -7544,7 +7555,7 @@ class Component extends DCLogic {
     this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
     const navCur = this.famOf(s.page) || s.page;   // 在子頁時側欄點亮所屬入口
     const navExtra = this.EXTRA_LINKS.map(([id, name, dot]) => ({ id, name, dot }));
-    const subTabs = this.famTabs(s.page).map(id => ({ id, name: (this.PAGES[id] ? this.PAGES[id][0] : this.EXTRA_NAMES[id]) + (id === 'notices' && s.unread ? '（' + s.unread + '）' : ''), on: id === s.page ? 'true' : 'false',
+    const subTabs = this.famTabs(s.page).map(id => ({ id, name: this.PAGES[id][0] + (id === 'notices' && s.unread ? '（' + s.unread + '）' : ''), on: id === s.page ? 'true' : 'false',
       bg: id === s.page ? 'var(--cta)' : 'var(--card)', fg: id === s.page ? '#fff' : 'var(--text-2)', bd: id === s.page ? 'transparent' : 'var(--border)' }));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
     const navHidden = this.layoutOf('nav').hidden;
@@ -7579,7 +7590,7 @@ class Component extends DCLogic {
       if (s.page === 'hubCom') return s.me ? ((s.unread ? '有 ' + s.unread + ' 則未讀通知' : '沒有未讀通知') + (s.me.is_admin ? '　·　管理員' : '')) : '登入後可用車隊排班、提問所與站內助手';
       return '';
     })();
-    const hubCards = (this.HUBS[s.page] || []).filter(id => this.PAGES[id] && !(id === 'admin')).map(id => { const it = navItemOf[id] || (navSpec.flatMap(g => g[1]).find(x => x[0] === id)) || [id, this.PAGES[id][0], '#8b93ac']; const fam = this._famIndex()[id]; const subs = fam && fam[0] === id ? this.famTabs(id).map(x => this.PAGES[x] ? this.PAGES[x][0] : this.EXTRA_NAMES[x]) : [];
+    const hubCards = (this.HUBS[s.page] || []).filter(id => this.PAGES[id] && !(id === 'admin')).map(id => { const it = navItemOf[id] || (navSpec.flatMap(g => g[1]).find(x => x[0] === id)) || [id, this.PAGES[id][0], '#8b93ac']; const fam = this._famIndex()[id]; const subs = fam && fam[0] === id ? this.famTabs(id).map(x => this.PAGES[x][0]) : [];
       // 樞紐卡片：有子頁的家族列出成員頁名（比入口頁自己的描述更能看出裡面有什麼），單頁家族沿用頁面描述
       return { id, name: this.famLabel(id) || this.PAGES[id][0], desc: subs.length > 1 ? subs.join('・') : this.PAGES[id][1], dot: it[2] || '#8b93ac' }; });
 
@@ -8586,6 +8597,9 @@ class Component extends DCLogic {
       isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
       ...this.qzVals(s),
       ...this.stkVals(s),
+      /* 製作工具（追加圖、譜面預覽）：程式在 js/maker.js，載好前模板只顯示載入中 */
+      isSongcard: s.page === 'songcard', isChart: s.page === 'chart', mkReady: !!s.mkReady, mkWait: (s.page === 'songcard' || s.page === 'chart') && !s.mkReady && !s.mkErr, mkErrHas: !!s.mkErr, mkErr: s.mkErr || '', onMkRetry: () => this.mkLoad(),
+      ...(s.mkReady && this.mkVals ? this.mkVals(s) : {}),
       isWlsup: s.page === 'wlsup',
       isHaruki: s.page === 'haruki', hzLoadingPage: s.page === 'haruki' && !s.hzReady, ...(s.hzReady && this.hzVals ? this.hzVals(s) : { hzReady: false }),
       ...(() => {
@@ -10405,8 +10419,6 @@ class Component extends DCLogic {
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
           { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
-          { name: '樂曲追加圖產生器', url: 'songcard.html', sub: '官方風格「樂曲追加決定」圖：選曲自動帶入、可上傳曲圖與團體 Logo、PNG 下載' },
-          { name: '譜面預覽產生器', url: 'chart.html', sub: '整首譜面攤成一張直欄式的圖：官方 SUS 直接畫，附 combo、BPM、技能點' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },

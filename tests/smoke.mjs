@@ -17,6 +17,7 @@ const CASES = [
   ['skillmult', /同團同色/], ['wlsup', /WL 後排加成/], ['rank', /活動排名|排名與榜線/], ['haruki', /Haruki 專區/],
   ['dolls', /本月角色|台服月份/], ['bonuscards', /加分卡組合建議/], ['distrib', /期卡池/],
   ['lookup', /Player ID/], ['cardlib', /共 [\d,]+ 張/], ['gachasim', /招募點數保底/],
+  ['songcard', /片假名轉換器|樂曲追加圖/], ['chart', /譜面預覽|每欄小節數/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {
@@ -161,57 +162,45 @@ for (const mobile of [false, true]) {
   }
 }
 
-// 獨立頁：樂曲追加圖產生器（songcard.html）。純前端畫 canvas，曲庫抓不到也要能用；字型備妥、按「填入範例」後要重畫出曲名，
-// 不能有 JS 錯誤、手機不能橫向溢出。
+// 站內製作工具：追加圖（?page=songcard）與譜面預覽（?page=chart），程式在 js/maker.js 進頁才載。
+// 追加圖按「填入範例」後曲名那一列要出現白字；譜面按「看範例譜面」要畫出點擊（藍）、長條（綠）、滑鍵（粉）三種顏色；
+// 重畫走 requestAnimationFrame、字型載完還會再畫，所以直接等像素，不數重畫次數。不能有 JS 錯誤、手機不能橫向溢出。
 {
-  const ORIGIN = new URL(BASE).origin;
   for (const mobile of [false, true]) {
     const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
-    const page = await ctx.newPage(); const errors = [];
-    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
-    let ok = false, why = '';
-    try {
-      await page.goto(ORIGIN + '/songcard.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForFunction(() => window.__songcard && window.__songcard.ready, null, { timeout: 30000 });
-      await page.click('#sample');
-      // 重畫走 requestAnimationFrame，字型載完也會再畫一次，所以不數 drawn，直接等曲名那一列出現白色的字
-      const litPx = () => { const d = window.__songcard.canvas.getContext('2d').getImageData(812, 237, 520, 1).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 225 && d[i + 2] > 225) n++; return n; };
-      await page.waitForFunction(fn => document.querySelector('#title').value === 'FIRE BIRD' && (0, eval)(fn)() > 20, litPx.toString(), { timeout: 15000 }).catch(() => {});
-      const lit = await page.evaluate(fn => (0, eval)(fn)(), litPx.toString());
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-      ok = !errors.length && lit > 20 && !(mobile && overflow);
-      why = errors[0] || (!(lit > 20) ? '預覽圖沒畫出曲名' : overflow ? '橫向溢出' : '');
-    } catch (e) { why = e.message.slice(0, 120); }
-    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' songcard' + (why ? ' — ' + why : ''));
-    if (!ok) fail++;
-    await ctx.close();
-  }
-}
-
-// 獨立頁：譜面預覽產生器（chart.html）。純前端解析 SUS 畫 canvas；按「看範例譜面」要畫出點擊（藍）、長條（綠）與滑鍵（粉）三種顏色，
-// 範例的 Notes 數固定 49；不能有 JS 錯誤、手機不能橫向溢出。
-{
-  const ORIGIN = new URL(BASE).origin;
-  for (const mobile of [false, true]) {
-    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
-    const page = await ctx.newPage(); const errors = [];
-    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
-    let ok = false, why = '';
-    try {
-      await page.goto(ORIGIN + '/chart.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForFunction(() => window.__chart && window.__chart.ready, null, { timeout: 30000 });
-      await page.click('#demo');
-      // 同上：不數 drawn，等三種音符的顏色真的出現在 canvas 上
-      const countPx = () => { const c = window.__chart.canvas, img = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let tap = 0, slide = 0, flick = 0; for (let i = 0; i < img.length; i += 16) { const r = img[i], g = img[i + 1], b = img[i + 2]; if (Math.abs(r - 63) < 25 && Math.abs(g - 200) < 25 && Math.abs(b - 255) < 25) tap++; if (Math.abs(r - 91) < 25 && Math.abs(g - 227) < 25 && Math.abs(b - 139) < 25) slide++; if (Math.abs(r - 255) < 20 && Math.abs(g - 107) < 25 && Math.abs(b - 157) < 25) flick++; } return { tap, slide, flick }; };
-      await page.waitForFunction(fn => { const C = window.__chart.CUR; if (!C.chart || C.chart.total !== 49) return false; const d = (0, eval)(fn)(); return d.tap > 30 && d.slide > 30 && d.flick > 10; }, countPx.toString(), { timeout: 15000 }).catch(() => {});
-      const d = await page.evaluate(fn => (0, eval)(fn)(), countPx.toString());
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-      const painted = d.tap > 30 && d.slide > 30 && d.flick > 10;
-      ok = !errors.length && painted && !(mobile && overflow);
-      why = errors[0] || (!painted ? '範例譜面沒畫出三種音符 ' + JSON.stringify(d) : overflow ? '橫向溢出' : '');
-    } catch (e) { why = e.message.slice(0, 120); }
-    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' chart' + (why ? ' — ' + why : ''));
-    if (!ok) fail++;
+    await ctx.addInitScript(() => { try { localStorage.setItem('sekai-guide-hide', '1'); } catch (e) {} });
+    await routeMdb(ctx);
+    for (const which of ['songcard', 'chart']) {
+      const page = await ctx.newPage(); const errors = [];
+      page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+      let ok = false, why = '';
+      try {
+        await page.goto(BASE + '?page=' + which, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        if (which === 'songcard') {
+          await page.waitForSelector('#mk-sc-sample', { timeout: 30000 });
+          await page.click('#mk-sc-sample');
+          const litPx = () => { const c = document.getElementById('mk-sc-cv'); if (!c) return 0; const d = c.getContext('2d').getImageData(812, 237, 520, 1).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 225 && d[i + 2] > 225) n++; return n; };
+          await page.waitForFunction(fn => (0, eval)(fn)() > 20, litPx.toString(), { timeout: 20000 }).catch(() => {});
+          const lit = await page.evaluate(fn => (0, eval)(fn)(), litPx.toString());
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+          ok = !errors.length && lit > 20 && !(mobile && overflow);
+          why = errors[0] || (!(lit > 20) ? '預覽圖沒畫出曲名' : overflow ? '橫向溢出' : '');
+        } else {
+          await page.waitForSelector('#mk-cp-demo', { timeout: 30000 });
+          await page.click('#mk-cp-demo');
+          const countPx = () => { const c = document.getElementById('mk-cp-cv'); if (!c) return { tap: 0, slide: 0, flick: 0 }; const img = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let tap = 0, slide = 0, flick = 0; for (let i = 0; i < img.length; i += 16) { const r = img[i], g = img[i + 1], b = img[i + 2]; if (Math.abs(r - 63) < 25 && Math.abs(g - 200) < 25 && Math.abs(b - 255) < 25) tap++; if (Math.abs(r - 91) < 25 && Math.abs(g - 227) < 25 && Math.abs(b - 139) < 25) slide++; if (Math.abs(r - 255) < 20 && Math.abs(g - 107) < 25 && Math.abs(b - 157) < 25) flick++; } return { tap, slide, flick }; };
+          await page.waitForFunction(fn => { const d = (0, eval)(fn)(); return d.tap > 30 && d.slide > 30 && d.flick > 10; }, countPx.toString(), { timeout: 20000 }).catch(() => {});
+          const d = await page.evaluate(fn => (0, eval)(fn)(), countPx.toString());
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+          const painted = d.tap > 30 && d.slide > 30 && d.flick > 10;
+          ok = !errors.length && painted && !(mobile && overflow);
+          why = errors[0] || (!painted ? '範例譜面沒畫出三種音符 ' + JSON.stringify(d) : overflow ? '橫向溢出' : '');
+        }
+      } catch (e) { why = e.message.slice(0, 120); }
+      console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' ' + which + ' (in-app)' + (why ? ' — ' + why : ''));
+      if (!ok) fail++;
+      await page.close();
+    }
     await ctx.close();
   }
 }

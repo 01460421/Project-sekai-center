@@ -16,13 +16,13 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-HTML = ['index.html', 'app.html', 'ep-calculator.html', 'tutorial.html', 'starmap.html', 'theater.html', 'soundprint.html', 'echoes.html', 'songcard.html', 'chart.html']
+HTML = ['index.html', 'app.html', 'ep-calculator.html', 'tutorial.html', 'starmap.html', 'theater.html', 'soundprint.html', 'echoes.html']
 ASSET_DIRS = ['js', 'css', 'data', 'vendor']
 ASSET_FILES = ['support.js']
 # js/*.js 內部也會用 import('./data/xxx.js?v=…') 動態載入資料檔,那些戳記
 # 以前是手改的,改完資料忘記改戳記,瀏覽器就會用一年期 immutable 快取黏住舊資料。
 # 這些檔案要先被改寫,改完之後它們自己的雜湊才算得準,所以分兩輪。
-CODE = ['js/haruki.js', 'js/car.js', 'js/car.min.js', 'js/app.js', 'js/app.min.js', 'js/ai.js', 'js/ai.min.js', 'js/core.js', 'support.js']
+CODE = ['js/haruki.js', 'js/maker.js', 'js/car.js', 'js/car.min.js', 'js/app.js', 'js/app.min.js', 'js/ai.js', 'js/ai.min.js', 'js/core.js', 'support.js']
 
 
 def digest(path):
