@@ -173,10 +173,11 @@ for (const mobile of [false, true]) {
     try {
       await page.goto(ORIGIN + '/songcard.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForFunction(() => window.__songcard && window.__songcard.ready, null, { timeout: 30000 });
-      const before = await page.evaluate(() => window.__songcard.drawn);
       await page.click('#sample');
-      await page.waitForFunction(b => window.__songcard.drawn > b && document.querySelector('#title').value === 'FIRE BIRD', before, { timeout: 10000 });
-      const lit = await page.evaluate(() => { const d = window.__songcard.canvas.getContext('2d').getImageData(812, 237, 520, 1).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 225 && d[i + 2] > 225) n++; return n; });   // 曲名那一列要有白色的字
+      // 重畫走 requestAnimationFrame，字型載完也會再畫一次，所以不數 drawn，直接等曲名那一列出現白色的字
+      const litPx = () => { const d = window.__songcard.canvas.getContext('2d').getImageData(812, 237, 520, 1).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 225 && d[i + 2] > 225) n++; return n; };
+      await page.waitForFunction(fn => document.querySelector('#title').value === 'FIRE BIRD' && (0, eval)(fn)() > 20, litPx.toString(), { timeout: 15000 }).catch(() => {});
+      const lit = await page.evaluate(fn => (0, eval)(fn)(), litPx.toString());
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       ok = !errors.length && lit > 20 && !(mobile && overflow);
       why = errors[0] || (!(lit > 20) ? '預覽圖沒畫出曲名' : overflow ? '橫向溢出' : '');
@@ -199,10 +200,11 @@ for (const mobile of [false, true]) {
     try {
       await page.goto(ORIGIN + '/chart.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForFunction(() => window.__chart && window.__chart.ready, null, { timeout: 30000 });
-      const before = await page.evaluate(() => window.__chart.drawn);
       await page.click('#demo');
-      await page.waitForFunction(b => window.__chart.drawn > b && window.__chart.CUR.chart && window.__chart.CUR.chart.total === 49, before, { timeout: 10000 });
-      const d = await page.evaluate(() => { const c = window.__chart.canvas, img = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let tap = 0, slide = 0, flick = 0; for (let i = 0; i < img.length; i += 16) { const r = img[i], g = img[i + 1], b = img[i + 2]; if (Math.abs(r - 63) < 25 && Math.abs(g - 200) < 25 && Math.abs(b - 255) < 25) tap++; if (Math.abs(r - 91) < 25 && Math.abs(g - 227) < 25 && Math.abs(b - 139) < 25) slide++; if (Math.abs(r - 255) < 20 && Math.abs(g - 107) < 25 && Math.abs(b - 157) < 25) flick++; } return { tap, slide, flick }; });
+      // 同上：不數 drawn，等三種音符的顏色真的出現在 canvas 上
+      const countPx = () => { const c = window.__chart.canvas, img = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let tap = 0, slide = 0, flick = 0; for (let i = 0; i < img.length; i += 16) { const r = img[i], g = img[i + 1], b = img[i + 2]; if (Math.abs(r - 63) < 25 && Math.abs(g - 200) < 25 && Math.abs(b - 255) < 25) tap++; if (Math.abs(r - 91) < 25 && Math.abs(g - 227) < 25 && Math.abs(b - 139) < 25) slide++; if (Math.abs(r - 255) < 20 && Math.abs(g - 107) < 25 && Math.abs(b - 157) < 25) flick++; } return { tap, slide, flick }; };
+      await page.waitForFunction(fn => { const C = window.__chart.CUR; if (!C.chart || C.chart.total !== 49) return false; const d = (0, eval)(fn)(); return d.tap > 30 && d.slide > 30 && d.flick > 10; }, countPx.toString(), { timeout: 15000 }).catch(() => {});
+      const d = await page.evaluate(fn => (0, eval)(fn)(), countPx.toString());
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       const painted = d.tap > 30 && d.slide > 30 && d.flick > 10;
       ok = !errors.length && painted && !(mobile && overflow);
