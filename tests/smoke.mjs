@@ -161,6 +161,59 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：樂曲追加圖產生器（songcard.html）。純前端畫 canvas，曲庫抓不到也要能用；字型備妥、按「填入範例」後要重畫出曲名，
+// 不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/songcard.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__songcard && window.__songcard.ready, null, { timeout: 30000 });
+      const before = await page.evaluate(() => window.__songcard.drawn);
+      await page.click('#sample');
+      await page.waitForFunction(b => window.__songcard.drawn > b && document.querySelector('#title').value === 'FIRE BIRD', before, { timeout: 10000 });
+      const lit = await page.evaluate(() => { const d = window.__songcard.canvas.getContext('2d').getImageData(812, 237, 520, 1).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 225 && d[i + 2] > 225) n++; return n; });   // 曲名那一列要有白色的字
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && lit > 20 && !(mobile && overflow);
+      why = errors[0] || (!(lit > 20) ? '預覽圖沒畫出曲名' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' songcard' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
+// 獨立頁：譜面預覽產生器（chart.html）。純前端解析 SUS 畫 canvas；按「看範例譜面」要畫出點擊（藍）、長條（綠）與滑鍵（粉）三種顏色，
+// 範例的 Notes 數固定 49；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/chart.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__chart && window.__chart.ready, null, { timeout: 30000 });
+      const before = await page.evaluate(() => window.__chart.drawn);
+      await page.click('#demo');
+      await page.waitForFunction(b => window.__chart.drawn > b && window.__chart.CUR.chart && window.__chart.CUR.chart.total === 49, before, { timeout: 10000 });
+      const d = await page.evaluate(() => { const c = window.__chart.canvas, img = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let tap = 0, slide = 0, flick = 0; for (let i = 0; i < img.length; i += 16) { const r = img[i], g = img[i + 1], b = img[i + 2]; if (Math.abs(r - 63) < 25 && Math.abs(g - 200) < 25 && Math.abs(b - 255) < 25) tap++; if (Math.abs(r - 91) < 25 && Math.abs(g - 227) < 25 && Math.abs(b - 139) < 25) slide++; if (Math.abs(r - 255) < 20 && Math.abs(g - 107) < 25 && Math.abs(b - 157) < 25) flick++; } return { tap, slide, flick }; });
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      const painted = d.tap > 30 && d.slide > 30 && d.flick > 10;
+      ok = !errors.length && painted && !(mobile && overflow);
+      why = errors[0] || (!painted ? '範例譜面沒畫出三種音符 ' + JSON.stringify(d) : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' chart' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 私車／登入回歸（用 ?carmock= 本機假後端；只在 localhost／127.0.0.1 生效）
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });

@@ -313,19 +313,43 @@ export const HZ_PLAN_ASPECTS = [
   { k: 'card', n: '卡面', note: '抽到卡就有：持卡張數、卡片故事前後篇', types: ['collect_member', 'read_card_episode_first', 'read_card_episode_second'] },
   { k: 'master', n: '專精', note: '★1～3 用心願碎片就能升；★4 要 2000 顆＋純結晶，慢慢來', types: ['master_rank_up_standard', 'master_rank_up_rare'] },
   { k: 'skill', n: '技能', note: '技能升級譜靠活動與商店，先補 ★1～3', types: ['skill_level_up_standard', 'skill_level_up_rare'] },
-  { k: 'misc', n: '其他', note: '貼圖、服裝、台詞、Another Vocal、區域道具、家具、無框畫：零碎來源，實務上加起來大概只值 1～2 級，排最後',
+  { k: 'misc', n: '其他', note: '貼圖、服裝、台詞、Another Vocal、區域道具、家具、無框畫：零碎來源，實務上加起來大概只值 1～2 級，排最後（區域道具 Lv10→11 還要祈願水滴解鎖，Lv16 起要夢想水晶球）',
     types: ['collect_stamp', 'collect_costume_3d', 'collect_character_archive_voice', 'collect_another_vocal', 'area_item_level_up_character', 'area_item_level_up_unit', 'area_item_level_up_reality_world', 'collect_mysekai_fixture', 'collect_mysekai_canvas'] },
 ];
 /* 每種任務「做 1 單位」的相對成本，乘上還差的數量就是排序用的成本。
    照玩家實際的難易排：刷隊長最便宜（打 Live 本來就要打）→ 對話（免費，但數量有限）→ 卡片故事（屬性碎片好拿，寶石與奇蹟寶石難）
-   → 專精（★1～3 便宜、★4 要 2000 顆心願碎片＋純結晶）→ 技能（技能升級譜靠活動）→ 其他零碎（貼圖、服裝、區域道具的金幣與種子、家具、無框畫）
+   → 專精（★1～3 便宜、★4 要 2000 顆心願碎片＋純結晶）→ 技能（技能升級譜靠活動）→ 其他零碎（貼圖、服裝、區域道具的金幣、種子與祈願水滴、家具、無框畫）
    表面上數字小但很難拿的素材，另外在 HZ_MAT_WEIGHT 加權。 */
 export const HZ_PLAN_EFFORT = { play_live: 0.05, play_live_ex: 0.05, waiting_room: 0.3, waiting_room_ex: 0.3, read_area_talk: 0.3, read_mysekai_fixture_unique_character_talk: 0.5,
   read_card_episode_first: 1.6, read_card_episode_second: 2, master_rank_up_standard: 2.5, skill_level_up_standard: 3.5, skill_level_up_rare: 5, master_rank_up_rare: 6,
   collect_mysekai_fixture: 6, collect_character_archive_voice: 7, collect_mysekai_canvas: 8, area_item_level_up_character: 8, area_item_level_up_unit: 8, area_item_level_up_reality_world: 8,
   collect_stamp: 8, collect_member: 8, collect_another_vocal: 9, collect_costume_3d: 10 };
-/* 難拿的素材：心願純結晶（通用 16、角色 133～158、團體 159～164）、奇蹟寶石 14、屬性寶石 6～10。一列用到就把成本乘上去（取最大的一個） */
-export const HZ_MAT_WEIGHT = id => (id === 16 || (id >= 133 && id <= 164)) ? 3 : id === 14 ? 1.8 : (id >= 6 && id <= 10) ? 1.3 : 1;
+/* 難拿的素材：心願純結晶（通用 16、角色 133～158、團體 159～164）×3、祈願水滴 57 ×4（有月卡每月也只有約 33 顆）、夢想水晶球 205～210 ×6、
+   奇蹟寶石 14 ×1.8、屬性寶石 6～10 ×1.3。一列用到就把成本乘上去（取最大的一個） */
+export const HZ_MAT_WEIGHT = id => (id === 16 || (id >= 133 && id <= 164)) ? 3 : id === 57 ? 4 : (id >= 205 && id <= 210) ? 6 : id === 14 ? 1.8 : (id >= 6 && id <= 10) ? 1.3 : 1;
+/* 區域道具：Lv10 → 11 要用祈願水滴解鎖上限（教學頁：角色道具 5、團體／類型道具 15、虛擬歌手團體道具 6、初音未來的每個世界 1），Lv16 起要夢想水晶球（活動前 10,000 名，
+   或轉換機：祈願水滴 15＋硬幣 100 萬換白 1 顆；每級要幾顆沒有公開資料，只標出來並往後排）。上限 Lv20。 */
+export const HZ_AREA_UNLOCK = { dropLv: 10, ballLv: 15, maxLv: 20, drop: 57, ball: 205 };
+/* 哪些道具算進這個任務（同 hzPlanDerive 的規則：角色＝他的道具；團體＝他團的道具；現實世界＝現實世界區域裡沒有角色對象的道具），目前等級與解鎖要幾顆水滴 */
+export function hzPlanAreaItems(cid, type, ctx) {
+  const U = (ctx && ctx.U) || {}; if (!ctx || !Array.isArray(ctx.areaItemLevels)) return null;
+  const lvOf = new Map();
+  (U.userAreas || []).forEach(a => (a.areaItems || []).forEach(i => { const id = +i.areaItemId, l = +i.level || 0; if (id && l > (lvOf.get(id) || 0)) lvOf.set(id, l); }));
+  const areaType = new Map((ctx.areas || []).map(a => [+a.id, a.areaType])), areaName = new Map((ctx.areas || []).map(a => [+a.id, a.name]));
+  const item = new Map((ctx.areaItems || []).map(i => [+i.id, i])), unit = (ctx.unitOf || {})[cid] || '', out = [];
+  ctx.areaItemLevels.forEach(m => {
+    if (+m.level !== 1) return;
+    const id = +m.areaItemId, it = item.get(id) || {}, isChar = +m.targetGameCharacterId > 0;
+    let ok = false;
+    if (type === 'area_item_level_up_character') ok = +m.targetGameCharacterId === cid;
+    else if (type === 'area_item_level_up_unit') ok = !isChar && !!unit && m.targetUnit === unit && m.targetUnit !== 'any';
+    else if (type === 'area_item_level_up_reality_world') ok = !isChar && areaType.get(+it.areaId) === 'reality_world';
+    if (!ok) return;
+    const drops = isChar ? (cid === 21 ? 1 : 5) : (m.targetUnit === 'piapro' ? 6 : 15);
+    out.push({ id, n: (it.name || ('道具 #' + id)) + (areaName.get(+it.areaId) ? '（' + areaName.get(+it.areaId) + '）' : ''), lv: lvOf.get(id) || 0, drops });
+  });
+  return out;
+}
 /* 從原始資料推算任務進度。ctx：U 玩家資料、cardChar（卡 id → {ch, rar}）、unitOf（角色 → 團體）、areaItemLevels／areaItems／areas、
    fixRows（fixtures-index 的列，第 5 欄是標籤 id）、tagChar（標籤 id → 角色）、mysFix（持有家具 id）。拿不到的鍵就不回（畫面標未知）。 */
 export function hzPlanDerive(cid, ctx) {
@@ -423,6 +447,20 @@ export function hzPlanMats(rows, cid, ctx) {
       let need = r.remain; const picks = [];
       for (const f of cands) { if (need <= 0) break; f.mats.forEach(m => add(acc, +m[0], +m[1])); picks.push(f.n); need--; }
       short = need; mys = true; r.picks = picks;
+    } else if (/^area_item_level_up_/.test(t)) {
+      // 區域道具：每次升最低等的那件（每級金幣一樣，解鎖最晚碰到）；碰到 Lv10→11 就把祈願水滴列進素材，Lv16 起標夢想水晶球
+      const items = hzPlanAreaItems(cid, t, ctx); if (!items || !items.length) return;
+      const A = HZ_AREA_UNLOCK, now = items.reduce((a, i) => a + i.lv, 0);
+      const next = () => { items.sort((a, b) => a.lv - b.lv || a.id - b.id); const it = items[0]; return it && it.lv < A.maxLv ? it : null; };
+      for (let skip = Math.max(0, (+r.cur || 0) - now); skip > 0; skip--) { const it = next(); if (!it) break; it.lv++; }   // 任務進度比等級總和高：先把差的補掉，不算素材
+      let need = r.remain, balls = 0; const picks = [];
+      while (need > 0) {
+        const it = next(); if (!it) break;
+        if (it.lv === A.dropLv) { add(acc, A.drop, it.drops); picks.push(it.n + ' Lv' + A.dropLv + '→' + (A.dropLv + 1) + ' 解鎖要祈願水滴×' + it.drops); }
+        if (it.lv >= A.ballLv) { balls++; if (it.lv === A.ballLv) picks.push(it.n + ' Lv' + (A.ballLv + 1) + ' 起要夢想水晶球'); }
+        it.lv++; need--;
+      }
+      short = need; r.picks = picks; r.balls = balls;
     } else return;
     const H = mys ? haveMys : have;
     const mats = Array.from(acc, ([id, n]) => ({ id, n, have: H ? (H.get(id) || 0) : null, lack: H ? Math.max(0, n - (H.get(id) || 0)) : 0 }));
@@ -432,6 +470,7 @@ export function hzPlanMats(rows, cid, ctx) {
     if (short > 0) r.cost = Infinity;             // 持有的卡／可做的家具不夠做到門檻
     else {
       if (!mys) r.cost *= mats.reduce((w, m) => Math.max(w, HZ_MAT_WEIGHT(m.id)), 1);   // 難拿的素材：純結晶、奇蹟寶石、寶石
+      if (r.balls) r.cost *= HZ_MAT_WEIGHT(HZ_AREA_UNLOCK.ball);   // 區域道具 Lv16 起要夢想水晶球：比祈願水滴更難拿
       if (r.afford === false) r.cost *= 2.5;   // 素材不夠：往後排
     }
   });
@@ -555,7 +594,7 @@ export function hzPlanPrompt(p, name, matName) {
   if (x.chal) L.push('【挑戰 Live】最高分 ' + (x.chal.hs || 0) + (x.chal.stage ? '，關卡 ' + x.chal.stage : '') + (x.chal.next ? '，下個獎勵 ' + x.chal.next + ' 分' : '') + (x.chal.unclaimed ? '，' + x.chal.unclaimed + ' 個獎勵沒領' : ''));
   if (x.inv && x.inv.length) L.push('【素材庫存】' + x.inv.map(m => m.n + '×' + m.q).join('、'));
   L.push('【每張新卡的 EXP】便宜的部分（持卡、故事前後篇、服裝）★4 約 +4、★3 以下約 +3；養到專精滿、技能滿 ★4 約 +12、★3 以下約 +11。');
-  L.push('【實務順位，請照這個排】刷隊長（放隊長打 Live，一般次數共 140 EXP、EX 每輪再加）→ 對話（休息室、區域對話、豆森對話，免費但數量有限）→ 卡面（抽卡與卡片故事）→ 專精（★1～3 便宜，★4 要 2000 顆心願碎片＋純結晶）→ 技能（技能升級譜靠活動）→ 其他零碎（貼圖、服裝、台詞、Another Vocal、區域道具、家具、無框畫）實務上加起來只值 1～2 級。表面上數量小但很難拿的素材：心願純結晶、奇蹟寶石、屬性寶石、技能升級譜、不可思議的種子與區域道具的金幣；不要為了零碎任務花這些。');
+  L.push('【實務順位，請照這個排】刷隊長（放隊長打 Live，一般次數共 140 EXP、EX 每輪再加）→ 對話（休息室、區域對話、豆森對話，免費但數量有限）→ 卡面（抽卡與卡片故事）→ 專精（★1～3 便宜，★4 要 2000 顆心願碎片＋純結晶）→ 技能（技能升級譜靠活動）→ 其他零碎（貼圖、服裝、台詞、Another Vocal、區域道具、家具、無框畫）實務上加起來只值 1～2 級。表面上數量小但很難拿的素材：心願純結晶、奇蹟寶石、屬性寶石、技能升級譜、不可思議的種子、祈願水滴（區域道具 Lv10→11 解鎖用，有月卡每月也只有約 33 顆）、夢想水晶球（區域道具 Lv16 起）與區域道具的金幣；不要為了零碎任務花這些。');
   return L.join('\n');
 }
 /* 先練誰：領任務就升級的最前；再來是做最少件、成本最低就能升級的；升不了的照還差多少排 */
@@ -933,7 +972,7 @@ export function hzMembers() {
     const pkCards = g => (((PK[String(g.id)] || {}).cards) || []).filter(c => +c[1] === cid).map(c => ({ id: c[0], n: c[5], r: +c[2], jp: !!c[7] }));
     const gachas = G.filter(g => g.e >= today && (has(g.ch) || pkCards(g).length)).sort((a, b) => (a.s < b.s ? -1 : 1)).slice(0, 4)
       .map(g => ({ id: g.id, n: g.n, t: g.t, s: g.s, e: g.e, on: g.s <= today, bfes: /絢爛/.test(g.n) || /bloom/i.test(g.n), cards: pkCards(g) }));
-    const INV = [15, 16, 100 + cid, 132 + cid, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14];
+    const INV = [15, 16, 100 + cid, 132 + cid, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 57, 205];
     const inv = Array.isArray(U.userMaterials) ? INV.map(id => { const m = U.userMaterials.find(x => +x.materialId === id); return m ? { id, n: (matName || {})[id] || ('素材 #' + id), q: +m.quantity || 0 } : null; }).filter(Boolean) : [];
     const seen = new Set();
     const events = G.filter(g => g.eid && g.e >= today && !seen.has(g.eid) && (seen.add(g.eid), true))
@@ -996,7 +1035,7 @@ export function hzMembers() {
     }
     if (k === 'skill') tips.push('技能升級用技能升級譜（活動兌換所、商店），數量有限；★1～3 需要的技能 EXP 少，先補標準類的次數，★4 的留給組卡真的會用到的卡。');
     if (k === 'misc') {
-      tips.push('這一群加起來實務上大概只值 1～2 級：貼圖靠角色等級與挑戰 Live 獎勵、服裝靠活動與卡池附贈、台詞靠多抽多用、Another Vocal 用虛擬幣換、區域道具要大量金幣與不可思議的種子、家具與無框畫要豆森素材。順手做就好，不要為了它們花資源。');
+      tips.push('這一群加起來實務上大概只值 1～2 級：貼圖靠角色等級與挑戰 Live 獎勵、服裝靠活動與卡池附贈、台詞靠多抽多用、Another Vocal 用虛擬幣換、區域道具要大量金幣與不可思議的種子，Lv10→11 還要祈願水滴解鎖上限（角色道具 5、團體／類型道具 15、虛擬歌手 6、初音未來每個世界 1；有月卡每月最多約 33 顆），Lv16 起要夢想水晶球（活動前 10,000 名，或轉換機祈願水滴 15＋硬幣 100 萬換 1 顆）、家具與無框畫要豆森素材。順手做就好，不要為了它們花資源。');
       if (x.chal) tips.push('挑戰 Live：' + (x.chal.hs ? '最高分 ' + x.chal.hs.toLocaleString() : '還沒打過') + (x.chal.stage ? '・關卡 ' + x.chal.stage : '') + (x.chal.next ? '・下個分數獎勵 ' + x.chal.next.toLocaleString() + ' 分' : '・分數獎勵已全拿') + (x.chal.unclaimed ? '・有 ' + x.chal.unclaimed + ' 個獎勵還沒領' : '') + '。');
       if (x.dolls && x.dolls.length) tips.push('月卡玩偶：' + x.dolls.map(dl => dl.tw + ' ' + dl.type + (dl.round ? ' 輪 ' + dl.round : '') + (dl.now ? '（本月）' : '')).join('、') + ' 有' + name + '的玩偶（S／M／L 各算一件帶標籤的家具，也會觸發專屬對話）。');
     }

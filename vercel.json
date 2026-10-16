@@ -34,6 +34,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "unit-img/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "favicon.ico",
       "use": "@vercel/static"
     },
@@ -174,6 +178,50 @@
       }
     },
     {
+      "src": "/songcard.html",
+      "dest": "/songcard.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/songcard",
+      "dest": "/songcard.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/chart.html",
+      "dest": "/chart.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/chart",
+      "dest": "/chart.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
       "src": "/classic",
       "dest": "/index.html",
       "headers": {
@@ -257,6 +305,13 @@
       "dest": "/bot-img/$1",
       "headers": {
         "cache-control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/unit-img/(.*)",
+      "dest": "/unit-img/$1",
+      "headers": {
+        "cache-control": "public, max-age=604800"
       }
     },
     {

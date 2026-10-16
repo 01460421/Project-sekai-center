@@ -2,7 +2,7 @@
    用法：node tests/haruki-zone.mjs   任何一項失敗就 exit 1。 */
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
-  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP, HZ_PLAN_EFFORT, HZ_MAT_WEIGHT,
+  hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP, HZ_PLAN_EFFORT, HZ_MAT_WEIGHT, hzPlanAreaItems, HZ_AREA_UNLOCK,
   hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
 
 let fail = 0;
@@ -243,11 +243,38 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   const cpe = t => HZ_PLAN_EFFORT[t] * first[t];
   const order = ['play_live', 'waiting_room', 'read_area_talk', 'read_card_episode_first', 'master_rank_up_standard', 'skill_level_up_standard', 'collect_stamp', 'area_item_level_up_reality_world'];
   ok(order.every((t, i) => i === 0 || cpe(t) > cpe(order[i - 1])), '第一個門檻的每 EXP 成本：' + order.map(t => t + '=' + cpe(t)).join(' < '));
-  ok(HZ_MAT_WEIGHT(16) === 3 && HZ_MAT_WEIGHT(140) === 3 && HZ_MAT_WEIGHT(14) === 1.8 && HZ_MAT_WEIGHT(7) === 1.3 && HZ_MAT_WEIGHT(15) === 1 && HZ_MAT_WEIGHT(2) === 1, '難拿的素材：純結晶 ×3、奇蹟寶石 ×1.8、屬性寶石 ×1.3，碎片不加權');
+  ok(HZ_MAT_WEIGHT(16) === 3 && HZ_MAT_WEIGHT(140) === 3 && HZ_MAT_WEIGHT(57) === 4 && HZ_MAT_WEIGHT(205) === 6 && HZ_MAT_WEIGHT(14) === 1.8 && HZ_MAT_WEIGHT(7) === 1.3 && HZ_MAT_WEIGHT(15) === 1 && HZ_MAT_WEIGHT(2) === 1, '難拿的素材：純結晶 ×3、祈願水滴 ×4、夢想水晶球 ×6、奇蹟寶石 ×1.8、屬性寶石 ×1.3，碎片不加權');
   const cc = { 21: { ch: 1, rar: 4, attr: 'cool', name: 'r4' } };
   const rows = [{ type: 'master_rank_up_rare', known: true, nextNeed: 1, cur: 0, remain: 1, cost: 6 }, { type: 'read_card_episode_second', known: true, nextNeed: 1, cur: 0, remain: 1, cost: 2 }];
   hzPlanMats(rows, 1, { U: { userCards: [{ cardId: 21, masterRank: 0, episodes: [{ cardEpisodeId: 1, scenarioStatus: 'already_read' }, { cardEpisodeId: 2, scenarioStatus: 'unread' }] }] }, cardChar: cc, mrCost: { 4: [{ id: 15, n: 2000 }, { id: 16, n: 1 }] } });
   ok(rows[0].cost === 18 && rows[1].cost === 3.6, '★4 專精要純結晶 → 成本 ×3；★4 後篇要奇蹟寶石 → ×1.8（沒有庫存資料就不再罰）');
+}
+
+/* 區域道具：Lv10→11 解鎖要祈願水滴（角色 5、團體／類型 15、虛擬歌手 6、初音未來 1）列進素材與缺口；Lv16 起要夢想水晶球 → 再往後排；全滿級做不到門檻 */
+{
+  const ctx = {
+    areaItemLevels: [{ areaItemId: 1, level: 1, targetGameCharacterId: 1, targetUnit: 'any' }, { areaItemId: 2, level: 1, targetGameCharacterId: 21, targetUnit: 'any' }, { areaItemId: 3, level: 1, targetUnit: 'light_sound' }, { areaItemId: 4, level: 1, targetUnit: 'piapro' }, { areaItemId: 5, level: 1, targetUnit: 'any', targetCardAttr: 'cool' }, { areaItemId: 1, level: 2, targetGameCharacterId: 1 }],
+    areaItems: [{ id: 1, areaId: 5, name: '鋼琴' }, { id: 2, areaId: 5, name: '未來的燈' }, { id: 3, areaId: 1, name: '團體招牌' }, { id: 4, areaId: 5, name: 'VS 看板' }, { id: 5, areaId: 1, name: '植物' }],
+    areas: [{ id: 5, areaType: 'spirit_world', name: '教室' }, { id: 1, areaType: 'reality_world', name: '街道' }],
+    unitOf: { 1: 'light_sound', 21: 'piapro' },
+    U: { userAreas: [{ areaId: 5, areaItems: [{ areaItemId: 1, level: 10 }, { areaItemId: 2, level: 10 }, { areaItemId: 4, level: 15 }] }, { areaId: 1, areaItems: [{ areaItemId: 3, level: 9 }, { areaItemId: 5, level: 10 }] }], userMaterials: [{ materialId: 57, quantity: 3 }] },
+  };
+  const ch = hzPlanAreaItems(1, 'area_item_level_up_character', ctx);
+  ok(ch.length === 1 && ch[0].lv === 10 && ch[0].drops === 5 && ch[0].n === '鋼琴（教室）', '角色道具：一歌 1 件 Lv10，解鎖要 5 顆');
+  ok(hzPlanAreaItems(21, 'area_item_level_up_character', ctx)[0].drops === 1 && hzPlanAreaItems(21, 'area_item_level_up_unit', ctx)[0].drops === 6, '初音未來的道具 1 顆、虛擬歌手團體道具 6 顆');
+  const rw = hzPlanAreaItems(1, 'area_item_level_up_reality_world', ctx);
+  ok(rw.length === 2 && rw.every(i => i.drops === 15) && hzPlanAreaItems(1, 'area_item_level_up_unit', ctx).length === 1, '現實世界：團體與植物各 15 顆；團體道具只算他團的');
+  const rows = [{ type: 'area_item_level_up_character', known: true, nextNeed: 12, cur: 10, remain: 2, cost: 16 }, { type: 'area_item_level_up_unit', known: true, nextNeed: 11, cur: 9, remain: 2, cost: 16 }, { type: 'area_item_level_up_character', known: true, nextNeed: 12, cur: 11, remain: 1, cost: 8 }];
+  hzPlanMats(rows, 1, ctx);
+  ok(rows[0].mats.length === 1 && rows[0].mats[0].id === 57 && rows[0].mats[0].n === 5 && rows[0].mats[0].lack === 2 && rows[0].cost === 16 * 4 * 2.5 && /鋼琴（教室） Lv10→11 解鎖要祈願水滴×5/.test(rows[0].picks[0]), '角色道具 10→12：祈願水滴 5、缺 2 → ×4 再 ×2.5');
+  ok(rows[1].mats[0].n === 15 && rows[1].mats[0].lack === 12 && rows[1].cost === 160, '團體道具 9→11：第二級碰到解鎖，15 顆');
+  ok(rows[2].mats.length === 0 && rows[2].cost === 8 && !rows[2].picks.length, '任務進度比等級總和高：先補掉差的，11→12 不用水滴');
+  const vs = [{ type: 'area_item_level_up_unit', known: true, nextNeed: 16, cur: 15, remain: 1, cost: 8 }];
+  hzPlanMats(vs, 21, ctx);
+  ok(vs[0].balls === 1 && vs[0].mats.length === 0 && vs[0].cost === 48 && /Lv16 起要夢想水晶球/.test(vs[0].picks[0]), 'Lv15→16：標夢想水晶球、成本 ×6、不列數量');
+  const full = [{ type: 'area_item_level_up_unit', known: true, nextNeed: 21, cur: 20, remain: 1, cost: 8 }];
+  hzPlanMats(full, 21, Object.assign({}, ctx, { U: { userAreas: [{ areaId: 5, areaItems: [{ areaItemId: 4, level: 20 }] }] } }));
+  ok(full[0].short === 1 && full[0].cost === Infinity, '全部滿級：做不到門檻 → 排到最後');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
