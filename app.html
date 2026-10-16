@@ -5335,6 +5335,31 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
     </sc-if>
 
     <sc-if value="{{ hzMysRes }}">
+      <sc-if value="{{ hzMysHasMaps }}">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 9px">
+          <span class="u-ffc14">實際地圖</span>
+          <span class="u-f1"></span>
+          <button type="button" onClick="{{ onHzMapAll }}" aria-pressed="{{ hzMapAll }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">顯示已採完的點</button>
+          <button type="button" onClick="{{ onHzMapRare }}" aria-pressed="{{ hzMapRare }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">只看稀有</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;margin-bottom:10px">
+          <sc-for list="{{ hzMysMaps }}" as="mp" hint-placeholder-count="4">
+            <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px"><img src="{{ mp.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="64" height="36" style="width:64px;height:36px;object-fit:cover;border-radius:8px;background:var(--card-2)"><span><span class="u-ffc14" style="display:block">{{ mp.n }}</span><span style="font-size:11px;color:var(--text-3)">{{ mp.cnt }}</span></span></div>
+              <div style="position:relative;width:100%;aspect-ratio:{{ mp.ar }};min-height:160px;background:{{ mp.bg }};background-image:linear-gradient(rgba(255,255,255,.25) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.25) 1px,transparent 1px);background-size:10% 10%">
+                <sc-for list="{{ mp.marks }}" as="mk" hint-placeholder-count="20">
+                  <div title="{{ mk.tip }}" tabindex="0" style="position:absolute;left:{{ mk.l }}%;top:{{ mk.t }}%;transform:translate(-50%,-50%);z-index:{{ mk.z }};opacity:{{ mk.op }};display:flex;flex-direction:column;align-items:center;cursor:help">
+                    <span style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:{{ mk.ring }};display:grid;place-items:center;font-size:14px;line-height:1">{{ mk.g }}</span>
+                    <sc-if value="{{ mk.hasIcons }}"><span style="display:flex;gap:1px;margin-top:-4px;padding:1px 2px;border-radius:6px;background:rgba(255,255,255,.85)"><sc-for list="{{ mk.icons }}" as="ic" hint-placeholder-count="2"><img src="{{ ic.img }}" referrerpolicy="no-referrer" loading="lazy" alt="{{ ic.n }}" width="14" height="14" style="width:14px;height:14px"></sc-for><sc-if value="{{ mk.more }}"><b style="font-size:9px;color:#333">{{ mk.more }}</b></sc-if></span></sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ mp.empty }}"><div style="position:absolute;inset:0;display:grid;place-items:center;font-size:12px;color:var(--text-3)">這個場所沒有符合條件的採集點</div></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:0 3px 10px">依遊戲裡的座標畫，🌳 樹・🪨 礦石・🌸 花・🧰 工具箱・🎁 寶箱・🍂 堆積物・🛢️ 漂流物；紅圈＝那一點還有稀有資源、紫圈＝稀有採集點，淡掉的是已採完；下面的小圖是那一點還沒採的東西，滑過或點一下看清單。</div>
+      </sc-if>
       <sc-for list="{{ hzMysSites }}" as="st" hint-placeholder-count="4">
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:7px"><span class="u-ffc14">{{ st.n }}</span><span class="u-fc2">{{ st.cnt }}</span></div>
@@ -5903,15 +5928,131 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
   </div>
   </sc-if>
 
+  <!-- 活動資料：任一期活動的時程、加成、活動卡、排名獎勵（data/event-info.js） -->
+  <sc-if value="{{ isEvinfo }}">
+  <div class="u-a3">
+    <sc-if value="{{ eiLoading }}"><div class="empty loading">活動資料載入中…</div></sc-if>
+    <sc-if value="{{ eiHasErr }}"><button type="button" onClick="{{ onEiRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ eiErr }}</button></sc-if>
+    <sc-if value="{{ eiHas }}">
+    <div class="mk-row" style="margin-bottom:10px;align-items:center">
+      <sc-for list="{{ eiChips }}" as="c" hint-placeholder-count="3"><button type="button" class="mk-chip" onClick="{{ onEiChip }}" data-v="{{ c.v }}" disabled="{{ c.dis }}" style="background:{{ c.bg }};color:{{ c.fg }};border-color:{{ c.bd }}">{{ c.n }}</button></sc-for>
+      <div style="position:relative;flex:1;min-width:200px">
+        <input class="mk-in" type="search" enterkeyhint="search" placeholder="搜活動名稱或期數…" value="{{ eiQ }}" onInput="{{ onEiQ }}" aria-label="搜尋活動">
+        <sc-if value="{{ eiHasResults }}"><div class="mk-results" style="position:absolute;left:0;right:0;top:44px;z-index:5;margin:0"><sc-for list="{{ eiResults }}" as="r" hint-placeholder-count="5"><button type="button" onClick="{{ onEiPick }}" data-id="{{ r.id }}"><span style="min-width:0"><span class="t">{{ r.n }}</span><span class="s">{{ r.sub }}</span></span></button></sc-for></div></sc-if>
+      </div>
+    </div>
+    <div class="se-hero" style="position:relative;overflow:hidden;border-radius:24px;padding:20px 22px 18px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px">
+      <span class="se-flow" style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
+      <div style="position:relative;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+        <div style="min-width:220px;flex:1">
+          <div style="font-size:11px;font-weight:800;letter-spacing:2px;opacity:.85">{{ eiNo }}</div>
+          <sc-if value="{{ eiHasLogo }}"><img src="{{ eiLogo }}" referrerpolicy="no-referrer" decoding="async" alt="{{ eiName }}" style="display:block;width:min(260px,70%);max-height:66px;object-fit:contain;object-position:left;margin-top:8px"></sc-if>
+          <div class="se-title" style="font-size:clamp(19px,2.8vw,26px);font-weight:800;line-height:1.3;margin-top:6px">{{ eiName }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
+            <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:{{ eiTypeColor }}">{{ eiType }}</span>
+            <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ eiUnit }}</span>
+            <span style="font-size:11.5px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-family:'M PLUS Rounded 1c'">{{ eiRange }}</span>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:140px">
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;opacity:.75">狀態</div>
+          <div style="font-family:'M PLUS Rounded 1c';font-size:clamp(20px,3vw,28px);font-weight:800">{{ eiPhase }}</div>
+          <div style="font-size:11px;opacity:.8;font-family:'M PLUS Rounded 1c'">{{ eiPhaseSub }}</div>
+        </div>
+      </div>
+      <div style="position:relative;margin-top:14px;height:7px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden"><div class="se-flow" style="height:100%;border-radius:999px;background:var(--rainbow);width:{{ eiProg }}"></div></div>
+    </div>
+    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      <button type="button" onClick="{{ onGo }}" data-p="event" class="mk-chip">活動總覽</button>
+      <button type="button" onClick="{{ onDbRelated }}" data-p="borderdb" data-patch="{{ eiBorderPatch }}" class="mk-chip">這期榜線</button>
+      <button type="button" onClick="{{ onDbRelated }}" data-p="story" data-patch="{{ eiStoryPatch }}" class="mk-chip">活動劇情</button>
+      <button type="button" onClick="{{ onGo }}" data-p="bonuscards" class="mk-chip">加分卡參考</button>
+      <button type="button" onClick="{{ onGo }}" data-p="distrib" class="mk-chip">活動分布圖</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">
+      <div class="mk-card">
+        <div class="mk-h"><b>時程</b><i>台灣時間</i></div>
+        <sc-for list="{{ eiTimeline }}" as="t" hint-placeholder-count="7">
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--border)">
+            <span style="flex:none;width:12px;height:12px;border-radius:50%;background:{{ t.dot }};margin-top:4px;box-shadow:0 0 0 3px color-mix(in oklab,{{ t.dot }} 25%,transparent)"></span>
+            <span style="flex:none;width:92px;font-family:'M PLUS Rounded 1c';font-size:12.5px;font-weight:800;color:{{ t.fg }}" title="{{ t.full }}">{{ t.t }}</span>
+            <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:800;color:{{ t.fg }}">{{ t.n }}</span><span style="display:block;font-size:11.5px;color:var(--text-3);line-height:1.5">{{ t.d }}</span></span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ eiIsWl }}">
+          <div class="mk-lbl" style="margin-top:10px">World Link 章節</div>
+          <sc-for list="{{ eiWl }}" as="w" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px"><img src="{{ w.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="36" height="36" style="width:36px;height:36px;border-radius:50%;background:var(--card-2)"><b style="flex:none">{{ w.no }}</b><span style="font-weight:700">{{ w.n }}</span><span style="color:var(--text-3);font-size:11px;margin-left:auto;text-align:right">{{ w.t }}</span></div></sc-for>
+        </sc-if>
+        <sc-if value="{{ eiIsCc }}">
+          <div class="mk-lbl" style="margin-top:10px">嘉年華隊伍<i>{{ eiTheme }}</i></div>
+          <div class="mk-chips"><sc-for list="{{ eiTeams }}" as="t" hint-placeholder-count="2"><span class="mk-chip" style="background:var(--card-2);color:var(--text);cursor:default">{{ t.n }}</span></sc-for></div>
+        </sc-if>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>加成</b><i>屬性＋角色各 +25%</i></div>
+        <sc-if value="{{ eiHasAttr }}"><div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:color-mix(in oklab,{{ eiAttrColor }} 18%,transparent);color:var(--ink);font-weight:800;font-size:13px"><span style="width:10px;height:10px;border-radius:50%;background:{{ eiAttrColor }}"></span>{{ eiAttr }}屬性</div></sc-if>
+        <sc-if value="{{ eiHasChars }}"><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><sc-for list="{{ eiChars }}" as="c" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--card-2);border:1px solid {{ c.col }};font-size:12px;font-weight:700"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%">{{ c.n }}</div></sc-for></div></sc-if>
+        <div class="mk-note">{{ eiBonusNote }}</div>
+        <sc-if value="{{ eiHasGachas }}">
+          <div class="mk-lbl" style="margin-top:12px">當期卡池<i>點開看 PU 卡與技能</i></div>
+          <sc-for list="{{ eiGachas }}" as="g" hint-placeholder-count="2">
+            <button type="button" onClick="{{ onEiGacha }}" data-gid="{{ g.gid }}" style="display:block;width:100%;text-align:left;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);cursor:pointer;margin-top:6px;color:var(--text)">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span><span style="font-size:12.5px;font-weight:800">{{ g.n }}</span><span style="font-size:11px;color:var(--text-3);margin-left:auto">{{ g.range }}</span></div>
+              <sc-if value="{{ g.hasPu }}"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px"><sc-for list="{{ g.pu }}" as="c" hint-placeholder-count="3"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}（{{ c.ch }}）" width="44" height="44" style="width:44px;height:44px;border-radius:8px;background:var(--card)"></sc-for></div></sc-if>
+            </button>
+          </sc-for>
+        </sc-if>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>活動卡</b><i>當期卡的加成</i></div>
+        <sc-if value="{{ eiHasGachaCards }}"><div class="mk-lbl">抽卡取得</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px"><sc-for list="{{ eiGachaCards }}" as="c" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2);border-left:3px solid {{ c.col }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:8px;background:var(--card)"><span style="min-width:0"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ c.rar }}・{{ c.ch }}・<b style="color:{{ c.attrColor }}">{{ c.bonus }}</b></span></span></div></sc-for></div></sc-if>
+        <sc-if value="{{ eiHasShopCards }}"><div class="mk-lbl" style="margin-top:10px">活動商店（活動 P 兌換）</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px"><sc-for list="{{ eiShopCards }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2);border-left:3px solid {{ c.col }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:8px;background:var(--card)"><span style="min-width:0"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ c.rar }}・{{ c.ch }}・{{ c.bonus }}</span></span></div></sc-for></div></sc-if>
+        <div class="mk-note">{{ eiCardsNote }}</div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>排名獎勵</b><i>依名次區間</i></div>
+        <sc-if value="{{ eiHasRewards }}">
+          <div style="max-height:520px;overflow:auto;scrollbar-width:thin">
+          <sc-for list="{{ eiRewards }}" as="r" hint-placeholder-count="12">
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border)">
+              <span style="flex:none;width:112px;font-family:'M PLUS Rounded 1c';font-size:12.5px;font-weight:800;color:var(--ink)">{{ r.rank }}</span>
+              <span style="display:flex;flex-wrap:wrap;gap:4px 10px;min-width:0;font-size:12px;color:var(--text-2)"><sc-for list="{{ r.items }}" as="i" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:4px"><sc-if value="{{ i.img }}"><img src="{{ i.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="18" height="18" style="width:18px;height:18px"></sc-if><sc-if value="{{ i.icon }}"><span>{{ i.icon }}</span></sc-if>{{ i.n }}<b>{{ i.q }}</b></span></sc-for></span>
+            </div>
+          </sc-for>
+          </div>
+        </sc-if>
+        <div class="mk-note">{{ eiRewardNote }}</div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ isDistrib }}">
   <div class="u-a3">
-    <div class="u-fcml21" style="margin:0 0 10px">依卡池資料看各團體的普限、常駐、FES 與 WL 卡池分布（台服預測時間）：橫軸是月份，每條橫線是一期卡池，重疊的會自動分行；紅線是今天。手機可左右捲動。</div>
-    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
-      <sc-for list="{{ dvChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onDvUnit }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
+    <div class="u-fcml21" style="margin:0 0 10px">卡池模式：各團體的普限、常駐、FES 與 WL 卡池（台服預測時間）；活動模式：每期活動依團體分列，混活與 WL 各一列（台服 master，含還沒開的）。橫軸是月份、每條橫線一期、重疊的自動分行；滑過看說明，點一條就開卡池詳情或活動資料。</div>
+    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+      <sc-for list="{{ dvModes }}" as="c" hint-placeholder-count="2"><button type="button" onClick="{{ onDvMode }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
+      <span style="width:1px;height:18px;background:var(--border);margin:0 2px"></span>
+      <sc-for list="{{ dvRanges }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onDvRange }}" data-v="{{ c.v }}" style="padding:5px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for>
+      <span class="u-f1"></span>
+      <button type="button" onClick="{{ onDvExport }}" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11.5px;font-weight:700;cursor:pointer">匯出 PNG</button>
     </div>
-    <sc-if value="{{ dvEmpty }}"><div class="empty loading">卡池資料載入中…</div></sc-if>
-    <sc-if value="{{ dvNone }}"><div class="empty">卡池資料裡沒有可畫的期數。</div></sc-if>
-    <div class="dv-wrap"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas></div>
+    <div class="chips-scroll" style="display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap">
+      <sc-for list="{{ dvChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onDvUnit }}" data-v="{{ c.v }}" style="padding:6px 14px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer">{{ c.n }}</button></sc-for>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11.5px;color:var(--text-2)">
+      <sc-for list="{{ dvLegend }}" as="l" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:9px;border-radius:3px;background:{{ l.c }}"></span>{{ l.n }}</span></sc-for>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:0;border-top:2px dashed #e0533a"></span>今天</span>
+    </div>
+    <sc-if value="{{ dvEmpty }}"><div class="empty loading">資料載入中…</div></sc-if>
+    <sc-if value="{{ dvHasErr }}"><button type="button" onClick="{{ onDvRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">{{ dvErr }}</button></sc-if>
+    <sc-if value="{{ dvNone }}"><div class="empty">資料裡沒有可畫的期數。</div></sc-if>
+    <div class="dv-wrap" style="position:relative"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas>
+      <sc-if value="{{ dvTipOn }}"><div style="position:absolute;left:{{ dvTipX }};top:{{ dvTipY }};z-index:3;pointer-events:none;max-width:240px;padding:7px 10px;border-radius:10px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-sm);font-size:12px;line-height:1.5"><div style="font-weight:800;color:var(--ink);display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{ dvTipColor }};flex:none"></span>{{ dvTipN }}</div><div style="color:var(--text-3);font-size:11px">{{ dvTipSub }}</div></div></sc-if>
+    </div>
     <div class="u-fcml21">{{ dvMeta }}</div>
   </div>
   </sc-if>
@@ -8988,7 +9129,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=083b48622e"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=477a65fd79"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

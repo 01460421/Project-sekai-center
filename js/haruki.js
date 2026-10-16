@@ -239,6 +239,37 @@ export function hzMysResources(mys, rarityOf) {
     }),
   }));
 }
+/* 採集地圖：userMysekaiHarvestMaps 每個場所的採集點（userMysekaiSiteHarvestFixtures：樹、礦、花、工具箱、寶箱、漂流物…，有座標、血量與
+   採過沒）與各點的資源掉落（userMysekaiSiteHarvestResourceDrops：同座標＝同一個採集點，before_drop＝還沒採）。
+   回每個場所的點：{ x, z, fid, type, rarity, harvested, drops: [{ key, type, id, qty, left, rare }] } 與座標範圍，給地圖畫標記用。 */
+export const HZ_MAP_CFG = { 5: { dx: -1, dz: -1, rev: true }, 6: { dx: 1, dz: -1, rev: false }, 7: { dx: -1, dz: -1, rev: true }, 8: { dx: 1, dz: -1, rev: false } };   // 方向照 Haruki-Cloud 的場所設定
+export function hzMysMaps(mys, harvestFixtures, rarityOf) {
+  const maps = hzMysGet(mys, 'userMysekaiHarvestMaps') || [];
+  const fx = {}; (harvestFixtures || []).forEach(f => { fx[+f.id] = f; });
+  const out = [];
+  maps.forEach(m => {
+    const site = +m.mysekaiSiteId; if (!site) return;
+    const pts = {};
+    const at = (x, z) => { const k = x + ',' + z; return pts[k] || (pts[k] = { x, z, fid: 0, type: '', rarity: 1, harvested: false, hp: 0, drops: {} }); };
+    (m.userMysekaiSiteHarvestFixtures || []).forEach(f => {
+      const p = at(+f.positionX || 0, +f.positionZ || 0), d = fx[+f.mysekaiSiteHarvestFixtureId] || {};
+      p.fid = +f.mysekaiSiteHarvestFixtureId || 0; p.type = d.mysekaiSiteHarvestFixtureType || ''; p.rarity = +String(d.mysekaiSiteHarvestFixtureRarityType || '').replace(/\D/g, '') || 1;
+      p.harvested = (f.userMysekaiSiteHarvestFixtureStatus || f.status) === 'harvested'; p.hp = +f.hp || 0;
+    });
+    (m.userMysekaiSiteHarvestResourceDrops || []).forEach(d => {
+      const p = at(+d.positionX || 0, +d.positionZ || 0);
+      const type = HZ_MYS_TYPE[d.resourceType || d.type] || (d.resourceType || d.type), id = +(d.resourceId || d.id); if (!type || !id) return;
+      const k = type + '_' + id, q = Math.max(1, +d.quantity || 1);
+      const r = p.drops[k] || (p.drops[k] = { key: k, type, id, qty: 0, left: 0, rare: hzMysRarity(k, rarityOf) });
+      r.qty += q; if ((d.mysekaiSiteHarvestResourceDropStatus || d.status) === 'before_drop') r.left += q;
+    });
+    const points = Object.values(pts).map(p => Object.assign({}, p, { drops: Object.values(p.drops).sort((a, b) => b.rare - a.rare || b.left - a.left), left: Object.values(p.drops).reduce((x, r) => x + r.left, 0) }));
+    if (!points.length) return;
+    const xs = points.map(p => p.x), zs = points.map(p => p.z);
+    out.push({ site, points, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) });
+  });
+  return HZ_MYS_SITES.map(site => out.find(o => o.site === site)).filter(Boolean).concat(out.filter(o => !HZ_MYS_SITES.includes(o.site)));
+}
 /* 今天來訪的角色（最多 6 位；組合角色不算），isReservation＝用邀請函約來的 */
 export function hzMysVisitors(mys, groups) {
   const visit = (mys && (mys.userMysekaiGateCharacterVisit || hzMysGet(mys, 'userMysekaiGateCharacterVisit'))) || {};
@@ -845,7 +876,7 @@ export function hzMembers() {
     if (this._hzMysP) return this._hzMysP;
     this._hzMysP = (async () => {
       const soft = f => this.tdbJson(f + '.json').catch(() => []);
-      const names = ['mysekaiSites', 'mysekaiMaterials', 'mysekaiItems', 'mysekaiMusicRecords', 'mysekaiGateMaterialGroups', 'mysekaiGates', 'mysekaiGameCharacterUnitGroups', 'gameCharacterUnits', 'mysekaiPhenomenas', 'materials', 'musics', 'limitedTimeMusics', 'musicTags'];
+      const names = ['mysekaiSiteHarvestFixtures', 'mysekaiSites', 'mysekaiMaterials', 'mysekaiItems', 'mysekaiMusicRecords', 'mysekaiGateMaterialGroups', 'mysekaiGates', 'mysekaiGameCharacterUnitGroups', 'gameCharacterUnits', 'mysekaiPhenomenas', 'materials', 'musics', 'limitedTimeMusics', 'musicTags'];
       const got = await Promise.all(names.map(soft));
       const M = {}; names.forEach((n, i) => { M[n] = got[i] || []; });
       // 家具名稱表由 loadFixtures() 放進 this.state.fixtures（它本身不回傳資料），畫面上直接讀那裡，載好就會重繪
@@ -864,7 +895,7 @@ export function hzMembers() {
     // 大門：正在升的（等級高、沒滿）排前面，滿級的放最後；每扇只列接下來 3 級，免得一長串
     const gates = hzMysGates(hzMysGet(mys, 'userMysekaiGates') || (suite || {}).userMysekaiGates, hzMysGet(mys, 'userMysekaiMaterials') || (suite || {}).userMysekaiMaterials, M.mysekaiGateMaterialGroups, 3)
       .sort((a, b) => (a.max ? 1 : 0) - (b.max ? 1 : 0) || b.lv - a.lv || a.gate - b.gate);
-    this.setState({ hzMys: { has: true, snap, stale: !!snap && snap < hzMysLastReset(now), res: hzMysResources(mys, rarityOf),
+    this.setState({ hzMys: { has: true, snap, stale: !!snap && snap < hzMysLastReset(now), res: hzMysResources(mys, rarityOf), maps: hzMysMaps(mys, M.mysekaiSiteHarvestFixtures, rarityOf),
       visitors: hzMysVisitors(mys, M.mysekaiGameCharacterUnitGroups), gates,
       records: hzMysRecords(hzMysGet(mys, 'userMysekaiMusicRecords'), M.mysekaiMusicRecords, M.musics, M.limitedTimeMusics, M.musicTags, now),
       weather: hzMysWeather(mys, snap || now),
@@ -1312,6 +1343,30 @@ export function hzMembers() {
           out.hzMysSites = Y.res.map(x => ({ n: (site[x.site] || {}).name || ('場所 ' + x.site), cnt: x.items.length + ' 種',
             items: x.items.map(it => { const [n, img] = resOf(it); return { n, img, q: '×' + it.qty, c: RC[it.rare], w: it.rare ? 800 : 600 }; }) }));
           out.hzMysResEmpty = !Y.res.length;
+          /* 實際地圖：每個場所依遊戲座標畫採集點與各點還沒採的資源；方向照 Haruki-Cloud 的設定，座標範圍外留 6% 邊 */
+          const GLYPH = { wood: ['🌳', '樹'], mineral: ['🪨', '礦石'], plant: ['🌸', '花'], birthday_plant: ['🌱', '生日植物'], toolbox: ['🧰', '工具箱'], treasure_box_transport: ['🎁', '寶箱'], treasure_box_fixed: ['🎁', '寶箱'], other: ['🍂', '堆積物'], driftage: ['🛢️', '漂流物'], tone: ['🎵', '音符'] };
+          const SITE_BG = { 5: 'linear-gradient(160deg,#dff3c8,#b9e39a)', 6: 'linear-gradient(160deg,#fff1c9 0%,#f6e3a9 45%,#9fd8ef 100%)', 7: 'linear-gradient(160deg,#ffe3f0,#d9f0c8)', 8: 'linear-gradient(160deg,#e6e2d6,#c9c4b6)' };
+          const showAll = !!s.hzMapAll, rareOnly = !!s.hzMapRare;
+          out.hzMapAll = showAll; out.hzMapRare = rareOnly;
+          out.hzMysMaps = (Y.maps || []).map(mp => {
+            const cfg = HZ_MAP_CFG[mp.site] || { dx: 1, dz: -1, rev: false };
+            const sx = p => (cfg.rev ? p.z * cfg.dz : p.x * cfg.dx), sy = p => (cfg.rev ? p.x * cfg.dx : p.z * cfg.dz);
+            const xs = mp.points.map(sx), ys = mp.points.map(sy), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+            const w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0), pad = .06;
+            const marks = mp.points.filter(p => (showAll || !p.harvested || p.left > 0) && (!rareOnly || p.drops.some(d => d.rare && d.left > 0))).map(p => {
+              const g = GLYPH[p.type] || ['📍', p.type || '採集點'];
+              const rareLeft = p.drops.some(d => d.rare && d.left > 0), gone = p.left === 0;
+              const icons = p.drops.filter(d => d.left > 0).slice(0, 3).map(d => { const [n, img] = resOf(d); return { img, n }; });
+              const tip = g[1] + (p.rarity > 1 ? '（稀有）' : '') + ' @(' + p.x + ', ' + p.z + ')' + (gone ? '：已採完' : '') + '\n' + p.drops.map(d => { const [n] = resOf(d); return (d.rare === 2 ? '★★ ' : d.rare === 1 ? '★ ' : '') + n + ' ×' + d.left + (d.left < d.qty ? '（共 ' + d.qty + '）' : ''); }).join('\n');
+              return { l: (pad + (sx(p) - x0) / w * (1 - pad * 2)) * 100, t: (pad + (sy(p) - y0) / h * (1 - pad * 2)) * 100, g: g[0], tip, icons, hasIcons: icons.length > 0,
+                ring: rareLeft ? '0 0 0 2px #dc2626, 0 0 10px rgba(220,38,38,.55)' : (p.rarity > 1 ? '0 0 0 2px #7c3aed' : '0 0 0 1px rgba(0,0,0,.18)'), op: gone ? .35 : 1, z: rareLeft ? 3 : (gone ? 1 : 2), more: p.drops.filter(d => d.left > 0).length > 3 ? '+' + (p.drops.filter(d => d.left > 0).length - 3) : '' };
+            });
+            return { n: (site[mp.site] || {}).name || ('場所 ' + mp.site), img: this.ASSET + '/mysekai/site/sitemap/texture/img_harvest_site_' + mp.site + '.webp', ar: (w / h).toFixed(3), bg: SITE_BG[mp.site] || 'var(--card-2)',
+              cnt: mp.points.length + ' 個採集點・' + mp.points.filter(p => p.left > 0).length + ' 個還有資源', marks, empty: !marks.length };
+          });
+          out.hzMysHasMaps = out.hzMysMaps.length > 0;
+          out.onHzMapAll = () => this.setState({ hzMapAll: !this.state.hzMapAll });
+          out.onHzMapRare = () => this.setState({ hzMapRare: !this.state.hzMapRare });
         }
         if (msub === 'visit') {
           out.hzMysVisitors = Y.visitors.map(v => { const u = gcu[v.unit] || {}, cid = +u.gameCharacterId || v.unit; return { n: (chName[cid] || '#' + cid) + (v.unit > 26 && u.unit ? '（' + (UNIT_TAG[u.unit] || u.unit) + '）' : ''), img: this.charaSd(v.unit), inv: v.invited ? '邀請函' : '' }; });

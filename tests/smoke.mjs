@@ -18,6 +18,7 @@ const CASES = [
   ['dolls', /本月角色|台服月份/], ['bonuscards', /加分卡組合建議/], ['distrib', /期卡池/],
   ['lookup', /Player ID/], ['cardlib', /共 [\d,]+ 張/], ['gachasim', /招募點數保底/],
   ['songcard', /片假名轉換器|樂曲追加圖/], ['chart', /譜面預覽|每欄小節數/],
+  ['evinfo', /活動資料|排名獎勵|時程/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {
