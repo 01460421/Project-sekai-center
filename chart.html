@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#171a2b">
+<title>譜面預覽產生器 | Project SEKAI 資源中心</title>
+<meta name="description" content="把整首譜面攤成一張圖：選曲、選難度，從官方譜面檔畫出點擊、關鍵、滑鍵、軌跡、長條與引導線，附每小節 combo、BPM 與技能點，PNG 下載；也能上傳自己的 SUS 譜面檔。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="譜面預覽產生器 — 整首譜面攤成一張圖">
+<meta property="og:description" content="選曲選難度，官方譜面檔直接畫成直欄式譜面圖：點擊、關鍵、滑鍵、軌跡、長條、引導線，附每小節 combo 與 BPM。">
+<meta property="og:url" content="https://project-sekai-center.com/chart.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/chart.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/chart.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&family=Noto+Sans+JP:wght@700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#1c1a33; --bg-2:#242147; --ink:#f1eefb; --ink-2:#bdb8d6; --ink-3:#8f8aab;
+  --pink:#f4a6d2; --pink-2:#ff7fc0; --cyan:#8ff0ee; --cyan-2:#4fd6d2; --line:rgba(244,166,210,.22); --line-2:rgba(244,166,210,.42); --hair:rgba(241,238,251,.08);
+  --glass:rgba(28,26,52,.72); --glass-2:rgba(36,33,71,.92);
+  --sans:'Noto Sans TC','Noto Sans JP','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
+  --round:'M PLUS Rounded 1c','Noto Sans JP','Noto Sans TC',sans-serif;
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+  --ease:cubic-bezier(.32,.72,.24,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100%}
+body::before{content:'';position:fixed;inset:-20%;z-index:0;pointer-events:none;opacity:.7;filter:blur(50px);
+  background:radial-gradient(40% 36% at 78% 12%,rgba(143,240,238,.2),transparent 70%),radial-gradient(38% 34% at 10% 90%,rgba(244,166,210,.16),transparent 70%),radial-gradient(44% 40% at 50% 50%,rgba(90,120,220,.14),transparent 70%)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:1.5px solid var(--pink);outline-offset:2px}
+a{color:var(--pink)}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);box-shadow:var(--shadow)}
+
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));flex-wrap:wrap;background:linear-gradient(var(--bg),color-mix(in oklab,var(--bg) 82%,transparent))}
+.brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand b{font-weight:700;font-size:15.5px;letter-spacing:1px;line-height:1.05;display:block}
+.brand small{display:block;font-size:9px;letter-spacing:3px;color:var(--pink);font-weight:700;line-height:1;margin-top:4px;text-transform:uppercase}
+.bar h1{font-family:var(--round);font-weight:800;font-size:18px;letter-spacing:1px;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar h1 small{font-family:var(--sans);font-weight:500;font-size:12px;color:var(--ink-3);margin-left:8px;letter-spacing:.3px}
+.seg{display:flex;padding:4px 6px;border-radius:999px;gap:2px;flex:none}
+.seg button{border:0;background:none;color:var(--ink-2);font-weight:500;font-size:13px;letter-spacing:.8px;padding:0 13px;height:32px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{color:#1c1a33;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+
+.wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(290px,380px) minmax(0,1fr);gap:18px;padding:6px 16px 32px;max-width:1900px;margin:0 auto;align-items:start}
+.form{display:flex;flex-direction:column;gap:12px}
+.card{border-radius:14px;padding:14px 16px}
+.card h2{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--pink);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 span{font-family:var(--round);font-weight:800;font-size:14px;letter-spacing:.5px;text-transform:none;color:var(--ink)}
+.card h2 .hint{margin-left:auto;font-size:11px;letter-spacing:.3px;text-transform:none;color:var(--ink-3);font-weight:400}
+.f{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.f:last-child{margin-bottom:0}
+.f label{font-size:12px;color:var(--ink-2);letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.f label .hint{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.in{width:100%;height:38px;border-radius:9px;border:1px solid var(--line);background:rgba(10,9,24,.5);color:var(--ink);padding:0 12px;font:inherit;font-size:14px;outline:0}
+.in:focus{border-color:var(--pink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:rgba(10,9,24,.45);color:var(--ink-2);border-radius:999px;padding:0 11px;height:30px;font-size:13px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.chip:hover{border-color:var(--line-2);color:var(--ink)}
+.chip[aria-pressed=true]{background:color-mix(in oklab,var(--c,var(--pink)) 30%,rgba(10,9,24,.5));border-color:var(--c,var(--pink));color:var(--ink)}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--pink))}
+.chip small{font-size:11px;color:var(--ink-3)}
+.btn{border:1px solid var(--line-2);background:rgba(10,9,24,.5);color:var(--ink);border-radius:10px;height:38px;padding:0 14px;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;transition:all .15s}
+.btn:hover{border-color:var(--pink);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(90deg,var(--cyan),var(--pink));color:#1c1a33;border-color:transparent}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.drop{border:1.5px dashed var(--line-2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;background:rgba(10,9,24,.3)}
+.drop:hover,.drop.over{border-color:var(--pink);background:color-mix(in oklab,var(--pink) 10%,rgba(10,9,24,.3))}
+.drop .t{font-size:13px;color:var(--ink-2);line-height:1.45;min-width:0}
+.drop .t b{display:block;color:var(--ink);font-size:13.5px}
+.drop input{display:none}
+.note{font-size:11.5px;color:var(--ink-3);line-height:1.5;margin-top:6px}
+.note b{color:var(--ink-2);font-weight:500}
+.warn{display:none;font-size:12px;color:#ffd1a3;background:rgba(255,160,80,.12);border:1px solid rgba(255,160,80,.3);border-radius:9px;padding:7px 10px;margin-top:8px;line-height:1.5}
+.warn.on{display:block}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;height:34px}
+.toggle input{appearance:none;width:40px;height:22px;border-radius:999px;background:rgba(10,9,24,.6);border:1px solid var(--line-2);position:relative;cursor:pointer;flex:none;transition:all .2s}
+.toggle input::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink-2);transition:all .2s var(--ease)}
+.toggle input:checked{background:linear-gradient(90deg,var(--cyan-2),var(--pink-2));border-color:transparent}
+.toggle input:checked::after{left:20px;background:#fff}
+.pick{position:relative}
+.results{position:absolute;top:42px;left:0;right:0;z-index:5;border-radius:12px;padding:6px;display:none;max-height:min(50vh,420px);overflow:auto;scrollbar-width:thin;background:var(--glass-2);border:1px solid var(--line);box-shadow:var(--shadow)}
+.results.on{display:block}
+.results button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:6px 8px;border:0;background:none;border-radius:8px;cursor:pointer;color:var(--ink)}
+.results button:hover{background:color-mix(in oklab,var(--pink) 14%,transparent)}
+.results img{width:40px;height:40px;object-fit:cover;flex:none;border-radius:6px;border:1px solid var(--line);background:var(--bg-2)}
+.results .t{font-size:13.5px;font-weight:500;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results .s{font-size:11px;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.results .tag{margin-left:auto;font-size:10.5px;color:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:0 7px;flex:none}
+.results .empty{padding:10px 12px;color:var(--ink-3);font-size:12.5px}
+
+.preview{position:sticky;top:72px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.stage{border-radius:14px;overflow:auto;position:relative;background:#171a2b;box-shadow:var(--shadow);border:1px solid var(--line);max-height:calc(100vh - 160px);min-height:220px;scrollbar-width:thin}
+.stage canvas{display:block}
+.stage.fit canvas{width:100%;height:auto}
+.stage.zoom canvas{width:auto;height:auto;max-width:none}
+.stage .busy{position:absolute;right:12px;top:12px;font-size:11px;letter-spacing:1px;color:#fff;background:rgba(0,0,0,.55);border-radius:999px;padding:3px 10px;display:none;z-index:2}
+.stage.loading .busy{display:block}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.actions .sp{flex:1}
+.actions .msg{font-size:12px;color:var(--ink-3)}
+.tips{font-size:12px;color:var(--ink-3);line-height:1.6}
+.tips b{color:var(--ink-2);font-weight:500}
+@media (max-width:980px){
+  .wrap{grid-template-columns:1fr;padding:6px 12px 28px}
+  .preview{position:relative;top:auto;order:-1}
+  .stage{max-height:60vh}
+  .bar h1 small{display:none}
+}
+@media (max-width:520px){ .bar{gap:6px} .bar h1{font-size:16px} }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="brand glass" href="./app.html" aria-label="回到 SEKAI 資源中心首頁">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ff0ee"/><stop offset="1" stop-color="#f4a6d2"/></linearGradient></defs><circle cx="16" cy="16" r="14" fill="url(#g1)"/><path d="M11 21V10l10 4-10 4" fill="#1c1a33"/></svg>
+    <span><b>SEKAI 資源中心</b><small>Project SEKAI</small></span>
+  </a>
+  <h1>譜面預覽產生器<small>整首譜面攤成一張圖，直欄式、附 combo 與 BPM</small></h1>
+  <div class="seg glass" role="group" aria-label="曲名語言">
+    <button type="button" data-lang="jp" aria-pressed="true">日文</button>
+    <button type="button" data-lang="tw" aria-pressed="false">繁中</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="form">
+    <div class="card glass">
+      <h2>01 <span>選曲</span><em class="hint">官方譜面檔從素材鏡像抓</em></h2>
+      <div class="pick">
+        <input class="in" id="q" type="search" placeholder="輸入曲名搜尋（台服＋日服曲庫）…" autocomplete="off" aria-label="搜尋曲名">
+        <div class="results" id="results" role="listbox"></div>
+      </div>
+      <div class="note" id="dbNote">曲庫載入中…</div>
+    </div>
+
+    <div class="card glass">
+      <h2>02 <span>難度</span><em class="hint" id="diffHint">先選一首歌</em></h2>
+      <div class="chips" id="diffChips"></div>
+      <div class="warn" id="scoreWarn"></div>
+    </div>
+
+    <div class="card glass">
+      <h2>03 <span>版面</span></h2>
+      <div class="f"><label>每欄小節數</label><div class="chips" id="mpcChips"></div></div>
+      <label class="toggle"><input type="checkbox" id="optCombo"><span>每小節左邊標小節數、右邊標累計 combo</span></label>
+      <label class="toggle"><input type="checkbox" id="optBpm"><span>標 BPM 與變速點</span></label>
+      <label class="toggle"><input type="checkbox" id="optSkill"><span>標技能發動點（SKILL）</span></label>
+    </div>
+
+    <div class="card glass">
+      <h2>04 <span>自己的譜面檔</span><em class="hint">Ched／MikuMikuWorld 匯出的 .sus</em></h2>
+      <label class="drop" id="susDrop">
+        <span class="t"><b id="susName">選擇 .sus 或 .txt 譜面檔</b>也可以把檔案拖到預覽圖上。畫面上的曲名用下面這格。</span>
+        <input type="file" id="susFile" accept=".sus,.txt,text/plain">
+      </label>
+      <div class="row" style="margin-top:8px"><input class="in" id="customTitle" type="text" placeholder="自訂標題（上傳譜面時用）" maxlength="80"></div>
+    </div>
+
+    <div class="card glass">
+      <h2>05 <span>其他</span></h2>
+      <div class="row"><button class="btn ghost" type="button" id="demo">看範例譜面</button><button class="btn ghost" type="button" id="reset">清除</button></div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="stage glass fit" id="stage">
+      <canvas id="cv" width="1200" height="500" aria-label="譜面預覽"></canvas>
+      <span class="busy">載入中…</span>
+    </div>
+    <div class="actions">
+      <button class="btn primary" type="button" id="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M4 20h16"/></svg>下載 PNG</button>
+      <button class="btn" type="button" id="dlJpg">下載 JPG（較小）</button>
+      <button class="btn" type="button" id="zoom">原尺寸檢視</button>
+      <span class="sp"></span>
+      <span class="msg" id="msg"></span>
+    </div>
+    <p class="tips"><b>怎麼看：</b>時間由下往上、一欄接一欄；藍色是點擊、黃色是關鍵（critical）、粉紅帶箭頭是滑鍵、細條是軌跡（trace）、綠色帶狀是長條（黃色帶狀是關鍵長條）、淡藍帶狀是引導線（guide）。小節線左邊是小節編號、右邊是打到那條線為止的累計 combo（含長條隱藏判定點，與官方 Notes 數一致）。</p>
+  </section>
+</main>
+
+<script type="module">
+/* ===================== 資料來源 ===================== */
+const TDB = 'https://raw.githubusercontent.com/Team-Haruki/haruki-sekai-tc-master/main/master';
+const TDB_SW = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-tc-diff/main';
+const JDB = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
+const JACKET = abn => 'https://storage.sekai.best/sekai-jp-assets/music/jacket/' + abn + '/' + abn + '.png';
+const JACKET_TC = abn => 'https://storage.sekai.best/sekai-tc-assets/music/jacket/' + abn + '/' + abn + '.png';
+const SCORE = (id, diff) => 'https://storage.sekai.best/sekai-jp-assets/music/music_score/' + String(id).padStart(4, '0') + '_01/' + diff + '.txt';
+const DIFFS = ['easy', 'normal', 'hard', 'expert', 'master', 'append'];
+const DIFF_COL = { easy: '#5bd15b', normal: '#4aa8ff', hard: '#ffb340', expert: '#ff5a7a', master: '#c95cff', append: '#ff7fc0' };
+const MPC = [4, 6, 8, 10, 12, 16];
+
+/* ===================== 狀態 ===================== */
+const S = { lang: 'jp', mpc: 8, combo: true, bpm: true, skill: true, zoom: 'fit', songId: 0, diff: 'master' };
+const CUR = { score: null, chart: null, song: null, diff: '', level: 0, title: '', artist: '', jacket: null, custom: false, officialNotes: 0 };
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let drawn = 0, ready = false, fontsOk = false, req = 0;
+const F_ROUND = '"M PLUS Rounded 1c","Noto Sans JP","Noto Sans TC",sans-serif';
+const F_SANS = '"Noto Sans JP","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+const font = (w, px, fam) => w + ' ' + px + 'px ' + (fam || F_SANS);
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+const msg = (t, keep) => { const el = $('#msg'); el.textContent = t; clearTimeout(msg._t); if (!keep) msg._t = setTimeout(() => { if (el.textContent === t) el.textContent = ''; }, 4000); };
+
+/* ===================== SUS 解析（照 Ched／Sekai 的慣例） =====================
+   #mmm02: 小節拍數；#BPMzz: 速度定義、#mmm08: 變速點；#mmm1x: 單點（x=軌道 hex，資料兩字一組＝種類＋寬度）；
+   #mmm3xy: 長條（y=頻道；1 起點、2 終點、3 可見中繼、5 隱形中繼）；#mmm9xy: 引導線；#mmm5x: 方向（1 上、3 左、4 右＝滑鍵；2 進緩、5/6 出緩）。 */
+function parseSus(text) {
+  let tpb = 480; const meta = {}, barLen = [], bpmDef = {}, bpmRaw = [], taps = [], airs = [], streams = new Map();
+  for (const ln of String(text).split(/\r?\n/)) {
+    const l = ln.trim(); if (!l.startsWith('#')) continue;
+    const m = l.match(/^#(\w+)\s*:\s*(.*)$/);
+    if (!m) {
+      const mm = l.match(/^#(\w+)\s+(.*)$/);
+      if (mm) { const k = mm[1].toUpperCase(), v = mm[2].trim().replace(/^"|"$/g, ''); if (k === 'REQUEST') { const r = v.match(/ticks_per_beat\s+(\d+)/); if (r) tpb = +r[1]; } else meta[k] = v; }
+      continue;
+    }
+    const h = m[1], data = m[2].trim();
+    if (/^BPM\w\w$/i.test(h)) { bpmDef[h.slice(3)] = parseFloat(data) || 0; continue; }
+    if (!/^\d{3}/.test(h)) continue;
+    const meas = +h.slice(0, 3), ch = h.slice(3);
+    if (ch === '02') { barLen.push({ measure: meas, length: parseFloat(data) || 4 }); continue; }
+    const ps = data.match(/.{2}/g) || []; if (!ps.length) continue;
+    const put = (list, lane) => ps.forEach((v, i) => { if (v !== '00') list.push({ meas, i, n: ps.length, lane, type: parseInt(v[0], 36), width: parseInt(v[1], 36), v }); });
+    if (ch === '08') { ps.forEach((v, i) => { if (v !== '00') bpmRaw.push({ meas, i, n: ps.length, v }); }); continue; }
+    if (ch.length === 2 && ch[0] === '1') put(taps, parseInt(ch[1], 36));
+    else if (ch.length === 2 && ch[0] === '5') put(airs, parseInt(ch[1], 36));
+    else if (ch.length === 3 && (ch[0] === '3' || ch[0] === '9')) { const k = ch[2] + '-' + ch[0]; if (!streams.has(k)) streams.set(k, { type: +ch[0], notes: [] }); put(streams.get(k).notes, parseInt(ch[1], 36)); }
+  }
+  barLen.sort((a, b) => a.measure - b.measure);
+  if (!barLen.length || barLen[0].measure > 0) barLen.unshift({ measure: 0, length: 4 });
+  let acc = 0;
+  const bars = barLen.map((b, i, arr) => { if (i) { const p = arr[i - 1]; acc += (b.measure - p.measure) * p.length * tpb; } return { measure: b.measure, len: b.length, tpm: b.length * tpb, ticks: acc }; });
+  const barOf = m => { let bar = bars[0]; for (const b of bars) if (m >= b.measure) bar = b; return bar; };
+  const toTick = (m, p, q) => { const bar = barOf(m); return bar.ticks + (m - bar.measure) * bar.tpm + p * bar.tpm / q; };
+  const fix = n => { n.tick = toTick(n.meas, n.i, n.n); return n; };
+  taps.forEach(fix); airs.forEach(fix);
+  const bpms = bpmRaw.map(fix).map(r => ({ tick: r.tick, bpm: bpmDef[r.v] || 0 })).filter(b => b.bpm > 0).sort((a, b) => a.tick - b.tick);
+  if (!bpms.length) bpms.push({ tick: 0, bpm: parseFloat(Object.values(bpmDef)[0]) || 120 });
+  const slides = [];
+  for (const st of streams.values()) {
+    st.notes.forEach(fix); st.notes.sort((a, b) => a.tick - b.tick);
+    let cur = null;
+    for (const n of st.notes) { if (!cur) { cur = { type: st.type, notes: [] }; slides.push(cur); } cur.notes.push(n); if (n.type === 2) cur = null; }
+  }
+  let maxTick = 0;
+  taps.forEach(n => { maxTick = Math.max(maxTick, n.tick); }); slides.forEach(s => s.notes.forEach(n => { maxTick = Math.max(maxTick, n.tick); }));
+  const measures = []; let m = 0, start = 0;
+  while (start <= maxTick || measures.length < 1) { const len = barOf(m).tpm; measures.push({ m, start, len }); start += len; m++; if (m > 2000) break; }
+  return { tpb, meta, bpms, taps, airs, slides, measures, maxTick };
+}
+
+/* ===================== 譜面模型（照 pjsekai 引擎的 SUS→USC 規則） =====================
+   單點與長條點重疊（同軌道同 tick）時單點只當修飾：2＝關鍵、5／6＝軌跡、3＝中繼改附著、7／8＝起終點不判定。
+   長條每半拍一個隱藏判定點（起終點之間），可見中繼、附著中繼與起終點都算 combo，隱形中繼不算；這樣算出來與官方 Notes 數一致。 */
+function buildChart(sc) {
+  const key = n => n.lane + '-' + Math.round(n.tick);
+  const prevent = new Set();
+  for (const sl of sc.slides) if (sl.type === 3) for (const n of sl.notes) if (n.type === 1 || n.type === 2 || n.type === 3 || n.type === 5) prevent.add(key(n));
+  const flick = new Map(), ease = new Map();
+  for (const a of sc.airs) { const k = key(a); if (a.type === 1) flick.set(k, 'up'); else if (a.type === 3) flick.set(k, 'left'); else if (a.type === 4) flick.set(k, 'right'); else if (a.type === 2) ease.set(k, 'in'); else if (a.type === 5 || a.type === 6) ease.set(k, 'out'); }
+  const crit = new Set(), trace = new Set(), tickRemove = new Set(), endRemove = new Set();
+  for (const t of sc.taps) { const k = key(t); if (t.type === 2) crit.add(k); else if (t.type === 5) trace.add(k); else if (t.type === 6) { trace.add(k); crit.add(k); } else if (t.type === 3) tickRemove.add(k); else if (t.type === 7) endRemove.add(k); else if (t.type === 8) { crit.add(k); endRemove.add(k); } }
+  const singles = [], skills = [], seen = new Set();
+  for (const t of sc.taps) {
+    if (t.type === 4 && t.lane === 0) { skills.push(t.tick); continue; }
+    if (t.lane <= 1 || t.lane >= 14 || !(t.type === 1 || t.type === 2 || t.type === 5 || t.type === 6)) continue;
+    const k = key(t); if (prevent.has(k) || seen.has(k)) continue; seen.add(k);
+    singles.push({ tick: t.tick, lane: t.lane, width: t.width, critical: t.type === 2 || t.type === 6, trace: t.type === 5 || t.type === 6, flick: flick.get(k) || null });
+  }
+  const slides = [], dedupe = new Map();
+  for (const sl of sc.slides) {
+    const start = sl.notes.find(n => n.type === 1 || n.type === 2); if (!start) continue;
+    const active = sl.type === 3, critical = crit.has(key(start));
+    const o = { active, critical, conns: [] };
+    for (const n of sl.notes) {
+      const k = key(n), e = ease.get(k) || 'linear', base = { tick: n.tick, lane: n.lane, width: n.width, ease: e };
+      if (n.type === 1) o.conns.push(Object.assign(base, (!active || endRemove.has(k)) ? { type: 'ignore' } : { type: 'start', trace: trace.has(k), critical: critical || crit.has(k) }));
+      else if (n.type === 2) o.conns.push(Object.assign(base, (!active || endRemove.has(k)) ? { type: 'ignore' } : { type: 'end', trace: trace.has(k), critical: critical || crit.has(k), flick: flick.get(k) || null }));
+      else if (n.type === 3) { if (tickRemove.has(k)) o.conns.push({ type: 'attach', tick: n.tick, critical: critical || crit.has(k) }); else o.conns.push(Object.assign(base, { type: 'tick', trace: trace.has(k), critical: critical || crit.has(k) })); }
+      else if (n.type === 5) { if (!tickRemove.has(k)) o.conns.push(Object.assign(base, { type: 'ignore' })); }
+    }
+    o.conns.sort((a, b) => a.tick - b.tick);
+    o.joints = o.conns.filter(c => c.type !== 'attach');
+    if (o.joints.length < 2) continue;
+    o.t0 = o.joints[0].tick; o.t1 = o.joints[o.joints.length - 1].tick;
+    o.hidden = [];
+    if (active) { const half = sc.tpb / 2, b0 = o.t0 / half; for (let i = Math.max(Math.ceil(b0), Math.floor(b0 + 1)); i * half < o.t1 - 1e-6; i++) o.hidden.push(i * half); }
+    slides.push(o);
+    if (active) { const k = key(start), d = dedupe.get(k); if (d) slides.splice(slides.indexOf(d), 1); dedupe.set(k, o); }
+  }
+  const judged = singles.map(s => s.tick);
+  for (const o of slides) { for (const c of o.conns) if (c.type === 'start' || c.type === 'end' || c.type === 'tick' || c.type === 'attach') judged.push(c.tick); for (const h of o.hidden) judged.push(h); }
+  judged.sort((a, b) => a - b);
+  return { singles, slides, skills: skills.sort((a, b) => a - b), judged, total: judged.length };
+}
+const comboBefore = (judged, tick) => { let lo = 0, hi = judged.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (judged[mid] < tick - 1e-6) lo = mid + 1; else hi = mid; } return lo; };
+function secondsAt(sc, tick) {   // 從變速表積分出秒數
+  let t = 0, prev = { tick: 0, bpm: sc.bpms[0].bpm };
+  for (const b of sc.bpms) { if (b.tick >= tick) break; if (b.tick > prev.tick) t += (b.tick - prev.tick) / sc.tpb * 60 / prev.bpm; prev = { tick: Math.max(prev.tick, b.tick), bpm: b.bpm }; }
+  t += Math.max(0, tick - prev.tick) / sc.tpb * 60 / prev.bpm; return t;
+}
+
+/* ===================== 版面與繪製 ===================== */
+const LW = 24, NL = 12, GL = 46, GR = 56, BH = 48, NH = 14, GAP = 22, PAD = 28, HEAD = 178, FOOT = 48;
+const COL = { tap: '#3fc8ff', crit: '#ffd43b', flick: '#ff6b9d', slide: '#5be38b', traceTap: '#8fe8ff', traceCrit: '#ffe066', traceFlick: '#ff8fb3' };
+const BAND = { slide: ['rgba(90,230,140,.32)', 'rgba(140,255,185,.65)'], crit: ['rgba(255,214,80,.32)', 'rgba(255,232,130,.65)'], guide: ['rgba(120,170,255,.2)', 'rgba(165,200,255,.45)'], guideCrit: ['rgba(255,214,80,.16)', 'rgba(255,230,140,.4)'] };
+const EASE = { linear: p => p, in: p => p * p, out: p => 1 - (1 - p) * (1 - p) };
+function layout(sc) {
+  const cols = []; const ms = sc.measures;
+  for (let i = 0; i < ms.length; i += S.mpc) { const part = ms.slice(i, i + S.mpc); cols.push({ ms: part, t0: part[0].start, t1: part[part.length - 1].start + part[part.length - 1].len }); }
+  const span = Math.max(...cols.map(c => c.t1 - c.t0));
+  const colH = span * BH / sc.tpb, CW = GL + NL * LW + GR;
+  return { cols, colH, CW, laneW: NL * LW, W: PAD * 2 + cols.length * CW + (cols.length - 1) * GAP, H: HEAD + 18 + colH + 30 + FOOT, k: BH / sc.tpb };
+}
+function render() {
+  const sc = CUR.score, ch = CUR.chart;
+  if (!sc) { drawEmpty(); return; }
+  const L = layout(sc);
+  const SC = Math.min(1, Math.sqrt(16e6 / (L.W * L.H)));   // iOS canvas 面積上限附近就整張縮小
+  cv.width = Math.round(L.W * SC); cv.height = Math.round(L.H * SC);
+  ctx.setTransform(SC, 0, 0, SC, 0, 0);
+  const g = ctx.createLinearGradient(0, 0, L.W, L.H); g.addColorStop(0, '#191c30'); g.addColorStop(1, '#141726');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, L.W, L.H);
+  drawHeader(L, sc, ch); drawFooter(L);
+  L.cols.forEach((col, i) => drawColumn(col, i, L, sc, ch));
+  drawn++;
+}
+function drawEmpty() {
+  cv.width = 1200; cv.height = 500; ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#171a2b'; ctx.fillRect(0, 0, 1200, 500);
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = font('800', 34, F_ROUND); ctx.fillText('選一首歌與難度，或上傳 SUS 譜面檔', 600, 230);
+  ctx.font = font('500', 18); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillText('也可以先按「看範例譜面」看看長什麼樣', 600, 280);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; drawn++;
+}
+function fitText(t, maxW, px, min, w, fam) { for (let s = px; s >= min; s--) { ctx.font = font(w, s, fam); if (ctx.measureText(t).width <= maxW) return s; } return min; }
+function drawHeader(L, sc, ch) {
+  const jx = PAD, jy = 22, js = 130;
+  rr(jx, jy, js, js, 12); ctx.fillStyle = '#2a2f4a'; ctx.fill();
+  if (CUR.jacket) { ctx.save(); rr(jx, jy, js, js, 12); ctx.clip(); ctx.drawImage(CUR.jacket, jx, jy, js, js); ctx.restore(); }
+  else { ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.font = font('800', 40, F_ROUND); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('♪', jx + js / 2, jy + js / 2); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; }
+  const tx = jx + js + 26;
+  // 圖例（右上）
+  const legend = [['點擊', COL.tap], ['關鍵', COL.crit], ['滑鍵', COL.flick], ['軌跡', COL.traceTap], ['長條', COL.slide], ['引導線', 'rgba(165,200,255,.8)']];
+  ctx.font = font('500', 15); let lw = 0; legend.forEach(([t]) => { lw += ctx.measureText(t).width + 26 + 18; });
+  let lx = L.W - PAD - lw; const ly = 44;
+  legend.forEach(([t, c]) => { rr(lx, ly - 7, 26, 14, 5); ctx.fillStyle = c; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.fillStyle = '#c9cde0'; ctx.textBaseline = 'middle'; ctx.fillText(t, lx + 32, ly + 1); lx += ctx.measureText(t).width + 26 + 18; });
+  ctx.textBaseline = 'alphabetic';
+  // 難度標
+  const diff = CUR.diff || 'custom', label = (DIFFS.includes(diff) ? diff.toUpperCase() : 'CUSTOM') + (CUR.level ? ' ' + CUR.level : '');
+  ctx.font = font('800', 24, F_ROUND); const bw = ctx.measureText(label).width + 34;
+  rr(tx, 30, bw, 42, 21); ctx.fillStyle = DIFF_COL[diff] || '#8b93ac'; ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(label, tx + 17, 52); ctx.textBaseline = 'alphabetic';
+  // 曲名
+  const title = (CUR.title || '（未命名）') + (CUR.artist ? ' - ' + CUR.artist : '');
+  const maxW = Math.max(300, L.W - tx - PAD - (L.W > 1400 ? lw + 30 : 0));
+  const ts = fitText(title, maxW, 44, 22, '900', F_SANS);
+  ctx.font = font('900', ts, F_SANS); ctx.fillStyle = '#fff'; ctx.fillText(title, tx, 121);
+  // 統計
+  const bpmList = []; sc.bpms.forEach(b => { if (!bpmList.includes(b.bpm)) bpmList.push(b.bpm); });
+  const bpmText = bpmList.length > 1 ? Math.min(...bpmList) + '–' + Math.max(...bpmList) : String(bpmList[0] || '—');
+  const last = ch.judged.length ? ch.judged[ch.judged.length - 1] : 0, sec = Math.round(secondsAt(sc, last));
+  const dur = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  const parts = ['Notes ' + ch.total + (CUR.officialNotes && CUR.officialNotes !== ch.total ? '（官方 ' + CUR.officialNotes + '）' : ''), 'BPM ' + bpmText, sc.measures.length + ' 小節', '長度 ' + dur, '每欄 ' + S.mpc + ' 小節'];
+  ctx.font = font('500', 19); ctx.fillStyle = '#aab0cc'; ctx.fillText(parts.join('　·　'), tx, 158);
+}
+function drawFooter(L) {
+  const y = L.H - 18, a = 'project-sekai-center.com／譜面預覽產生器　·　版面參考 pjsekai.moe', b = '譜面資料 © SEGA / Colorful Palette / Crypton Future Media　·　僅供學習與交流';
+  ctx.font = font('500', 15); ctx.fillStyle = '#7f86a6';
+  const twoLines = ctx.measureText(a).width + ctx.measureText(b).width + 40 > L.W - PAD * 2;   // 窄圖就分兩行
+  ctx.fillText(a, PAD, twoLines ? y - 20 : y);
+  ctx.textAlign = 'right'; ctx.fillText(b, L.W - PAD, y); ctx.textAlign = 'left';
+}
+function drawColumn(col, i, L, sc, ch) {
+  const x = PAD + i * (L.CW + GAP), lx = x + GL, top = HEAD + 18, bottom = top + L.colH, k = L.k;
+  const y = t => bottom - (t - col.t0) * k, colTop = y(col.t1), laneW = L.laneW;
+  ctx.fillStyle = '#0c0f1e'; ctx.fillRect(lx, colTop, laneW, bottom - colTop);
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,.07)';
+  for (let l = 1; l < NL; l++) { ctx.beginPath(); ctx.moveTo(lx + l * LW + .5, colTop); ctx.lineTo(lx + l * LW + .5, bottom); ctx.stroke(); }
+  ctx.font = font('700', 13); ctx.textBaseline = 'alphabetic';
+  for (const m of col.ms) {
+    const beats = Math.max(1, Math.round(m.len / sc.tpb));
+    for (let b = 0; b < beats; b++) {
+      const ty = Math.round(y(m.start + b * sc.tpb)) + .5;
+      ctx.beginPath(); ctx.moveTo(lx, ty); ctx.lineTo(lx + laneW, ty);
+      if (b === 0) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1;
+        if (S.combo) { ctx.fillStyle = '#dfe3f5'; ctx.textAlign = 'right'; ctx.fillText(String(m.m + 1), lx - 8, ty - 4); const c = comboBefore(ch.judged, m.start); if (c > 0) { ctx.fillStyle = '#aab0cc'; ctx.textAlign = 'left'; ctx.fillText(String(c), lx + laneW + 8, ty - 4); } ctx.textAlign = 'left'; }
+      } else { ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.stroke(); }
+    }
+  }
+  if (S.combo && i === L.cols.length - 1) { const ty = Math.round(colTop) + .5; ctx.fillStyle = '#ffd166'; ctx.textAlign = 'left'; ctx.fillText(String(ch.total), lx + laneW + 8, ty + 15); ctx.textAlign = 'left'; }
+  ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1; ctx.strokeRect(lx + .5, Math.round(colTop) + .5, laneW - 1, Math.round(bottom - colTop) - 1);
+  const inCol = t => t >= col.t0 && t < col.t1;
+  if (S.bpm) { ctx.font = font('700', 12); sc.bpms.forEach((b, bi) => { if (!inCol(b.tick) && !(bi === 0 && i === 0)) return; const ty = Math.round(y(Math.max(b.tick, col.t0))) + .5; ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = 'rgba(255,209,102,.7)'; ctx.beginPath(); ctx.moveTo(lx, ty); ctx.lineTo(lx + laneW, ty); ctx.stroke(); ctx.restore(); ctx.fillStyle = '#ffd166'; ctx.fillText('BPM ' + b.bpm, lx + laneW + 8, ty + 14); }); }
+  if (S.skill) { ctx.font = font('700', 12); ch.skills.forEach(t => { if (!inCol(t)) return; const ty = Math.round(y(t)) + .5; ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(140,240,238,.75)'; ctx.beginPath(); ctx.moveTo(lx, ty); ctx.lineTo(lx + laneW, ty); ctx.stroke(); ctx.restore(); ctx.fillStyle = '#8ff0ee'; ctx.textAlign = 'right'; ctx.fillText('SKILL', lx - 8, ty + 14); ctx.textAlign = 'left'; }); }
+  // 音符：裁到本欄（上下留一點，讓壓在欄界上的音符畫完整）
+  ctx.save(); ctx.beginPath(); ctx.rect(lx - 3, colTop - 26, laneW + 6, bottom - colTop + 52); ctx.clip();
+  const slack = sc.tpb, overlaps = o => o.t1 >= col.t0 - slack && o.t0 <= col.t1 + slack;
+  const xl = c => lx + (c.lane - 2) * LW, xr = c => lx + (c.lane - 2 + c.width) * LW;
+  const band = (o, kind) => {
+    const J = o.joints, seg = (a, b, side, rev) => {
+      const f = EASE[a.ease] || EASE.linear, ya = y(a.tick), yb = y(b.tick), n = Math.max(2, Math.ceil(Math.abs(yb - ya) / 6));
+      const xa = side === 'l' ? xl(a) + 1 : xr(a) - 1, xb = side === 'l' ? xl(b) + 1 : xr(b) - 1;
+      for (let s = 0; s <= n; s++) { const p = (rev ? n - s : s) / n, e = f(p); ctx.lineTo(xa + (xb - xa) * e, ya + (yb - ya) * p); }
+    };
+    ctx.beginPath(); ctx.moveTo(xl(J[0]) + 1, y(J[0].tick));
+    for (let j = 0; j < J.length - 1; j++) seg(J[j], J[j + 1], 'l', false);
+    for (let j = J.length - 1; j > 0; j--) seg(J[j - 1], J[j], 'r', true);
+    ctx.closePath(); ctx.fillStyle = BAND[kind][0]; ctx.fill(); ctx.strokeStyle = BAND[kind][1]; ctx.lineWidth = 1.5; ctx.stroke();
+  };
+  const posAt = (o, t) => { const J = o.joints; for (let j = 0; j < J.length - 1; j++) { const a = J[j], b = J[j + 1]; if (t >= a.tick - 1e-6 && t <= b.tick + 1e-6) { const p = b.tick > a.tick ? (t - a.tick) / (b.tick - a.tick) : 0, e = (EASE[a.ease] || EASE.linear)(p); return [xl(a) + (xl(b) - xl(a)) * e, xr(a) + (xr(b) - xr(a)) * e]; } } const a = J[J.length - 1]; return [xl(a), xr(a)]; };
+  const note = (x0, x1, yc, color, thin) => { const h = thin ? 7 : NH; rr(x0 + 1.5, yc - h / 2, x1 - x0 - 3, h, thin ? 3 : 5); ctx.fillStyle = color; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = thin ? 1.2 : 2; ctx.stroke(); if (thin) diamond((x0 + x1) / 2, yc, 4.5, '#fff', color); };
+  const diamond = (cx, cy, r, color, border) => { ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); ctx.fillStyle = color; ctx.fill(); ctx.strokeStyle = border || 'rgba(255,255,255,.95)'; ctx.lineWidth = 1.5; ctx.stroke(); };
+  const arrow = (cx, yc, dir, color) => { ctx.save(); ctx.translate(cx, yc - NH / 2 - 7); ctx.rotate(dir === 'left' ? -.55 : dir === 'right' ? .55 : 0); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(-9, 5); ctx.lineTo(0, -5); ctx.lineTo(9, 5); ctx.stroke(); ctx.restore(); };
+  // 引導線最底、長條帶狀、再來是長條的點與起終點、最後單點
+  ch.slides.forEach(o => { if (!o.active && overlaps(o)) band(o, o.critical ? 'guideCrit' : 'guide'); });
+  ch.slides.forEach(o => { if (o.active && overlaps(o)) band(o, o.critical ? 'crit' : 'slide'); });
+  ch.slides.forEach(o => {
+    if (!o.active || !overlaps(o)) return;
+    const base = o.critical ? COL.crit : COL.slide;
+    o.conns.forEach(c => {
+      if (c.tick < col.t0 - slack || c.tick > col.t1 + slack) return;
+      const yc = y(c.tick);
+      if (c.type === 'tick') { const cx = (xl(c) + xr(c)) / 2; diamond(cx, yc, 7, c.critical ? COL.crit : COL.slide); if (c.trace) diamond(cx, yc, 3, '#fff', c.critical ? COL.crit : COL.slide); }
+      else if (c.type === 'attach') { const [a, b] = posAt(o, c.tick); diamond((a + b) / 2, yc, 5.5, c.critical ? COL.crit : COL.slide); }
+      else if (c.type === 'start') note(xl(c), xr(c), yc, c.critical ? COL.crit : base, c.trace);
+      else if (c.type === 'end') { const color = c.flick ? (c.critical ? COL.crit : COL.flick) : (c.critical ? COL.crit : base); note(xl(c), xr(c), yc, color, c.trace); if (c.flick) arrow((xl(c) + xr(c)) / 2, yc, c.flick, c.critical ? COL.crit : COL.flick); }
+    });
+  });
+  ch.singles.forEach(n => {
+    if (n.tick < col.t0 - slack || n.tick > col.t1 + slack) return;
+    const yc = y(n.tick), x0 = xl(n), x1 = xr(n);
+    const color = n.trace ? (n.flick ? COL.traceFlick : n.critical ? COL.traceCrit : COL.traceTap) : (n.flick ? (n.critical ? COL.crit : COL.flick) : n.critical ? COL.crit : COL.tap);
+    note(x0, x1, yc, color, n.trace);
+    if (n.flick) arrow((x0 + x1) / 2, yc, n.flick, n.critical ? COL.crit : COL.flick);
+  });
+  ctx.restore();
+}
+let raf = 0; const redraw = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+
+/* ===================== 曲庫 ===================== */
+const DB = { songs: [], ready: false, err: '' };
+const jget = u => fetch(u).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+const tget = f => jget(TDB + '/' + f).then(d => (Array.isArray(d) && !d.length) ? jget(TDB_SW + '/' + f) : d).catch(() => jget(TDB_SW + '/' + f));
+async function loadDb() {
+  try {
+    const soft = p => p.catch(() => []);
+    const [ms, md, jms, jmd] = await Promise.all([soft(tget('musics.json')), soft(tget('musicDifficulties.json')), soft(jget(JDB + '/musics.json')), soft(jget(JDB + '/musicDifficulties.json'))]);
+    const jpTitle = {}; jms.forEach(m => { jpTitle[m.id] = m.title; });
+    const diffs = {}; const add = list => list.forEach(d => { const o = diffs[d.musicId] = diffs[d.musicId] || {}; if (!o[d.musicDifficulty]) o[d.musicDifficulty] = { lv: d.playLevel, notes: d.totalNoteCount }; });
+    add(jmd); add(md);
+    const mk = (m, jp) => ({ id: m.id, tJp: jp ? m.title : (jpTitle[m.id] || m.title), tTw: jp ? '' : m.title, comp: m.composer || '', abn: m.assetbundleName || ('jacket_s_' + String(m.id).padStart(3, '0')), diffs: diffs[m.id] || {}, jp });
+    const tw = ms.map(m => mk(m, false)), have = new Set(tw.map(x => x.id));
+    DB.songs = tw.concat(jms.filter(m => !have.has(m.id)).map(m => mk(m, true)));
+    DB.ready = DB.songs.length > 0; DB.err = DB.ready ? '' : '曲庫沒有回應';
+  } catch (e) { DB.err = '曲庫載入失敗：' + ((e && e.message) || e); }
+  $('#dbNote').textContent = DB.ready ? '曲庫共 ' + DB.songs.length + ' 首（台服 master 為主，日服補台服未實裝曲）。譜面檔來自素材鏡像的官方 SUS。' : (DB.err || '曲庫沒有回應') + '。可以改上傳自己的譜面檔。';
+  if (DB.ready && S.songId && !CUR.score) { const s = DB.songs.find(x => x.id === S.songId); if (s) { $('#q').value = s.tJp || s.tTw; applySong(s, S.diff); } }
+}
+function search(q) {
+  const box = $('#results'); q = q.trim().toLowerCase();
+  if (!q) { box.classList.remove('on'); box.innerHTML = ''; return; }
+  if (!DB.ready) { box.innerHTML = '<div class="empty">' + (DB.err || '曲庫載入中…') + '</div>'; box.classList.add('on'); return; }
+  const hit = DB.songs.filter(s => (s.tJp || '').toLowerCase().includes(q) || (s.tTw || '').toLowerCase().includes(q) || String(s.id) === q).slice(0, 14);
+  box.innerHTML = '';
+  if (!hit.length) { box.innerHTML = '<div class="empty">沒有符合的曲名</div>'; box.classList.add('on'); return; }
+  hit.forEach(s => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option');
+    const im = document.createElement('img'); im.src = JACKET(s.abn); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy'; im.onerror = () => { im.onerror = null; im.src = JACKET_TC(s.abn); };
+    const t = document.createElement('div'); t.style.minWidth = '0';
+    const t1 = document.createElement('div'); t1.className = 't'; t1.textContent = s.tJp || s.tTw;
+    const lv = DIFFS.filter(d => s.diffs[d]).map(d => d[0].toUpperCase() + (s.diffs[d].lv || '')).join(' ');
+    const t2 = document.createElement('div'); t2.className = 's'; t2.textContent = (s.tTw && s.tTw !== s.tJp ? s.tTw + '・' : '') + '#' + s.id + (lv ? '・' + lv : '');
+    t.append(t1, t2); b.append(im, t);
+    if (s.jp) { const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = '台服未實裝'; b.appendChild(tg); }
+    b.onclick = () => { applySong(s, S.diff); box.classList.remove('on'); $('#q').value = s.tJp || s.tTw; };
+    box.appendChild(b);
+  });
+  box.classList.add('on');
+}
+function buildDiffChips() {
+  const box = $('#diffChips'); box.innerHTML = '';
+  const s = CUR.song;
+  DIFFS.forEach(d => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.style.setProperty('--c', DIFF_COL[d]); b.dataset.diff = d;
+    const info = s && s.diffs[d];
+    b.innerHTML = '<span class="dot"></span>' + d.toUpperCase() + (info ? ' <small>Lv.' + info.lv + '・' + info.notes + '</small>' : '');
+    b.disabled = !!s && !info; b.setAttribute('aria-pressed', String(!!s && d === CUR.diff));
+    b.onclick = () => { if (CUR.song) applySong(CUR.song, d); else { S.diff = d; save(); buildDiffChips(); } };
+    box.appendChild(b);
+  });
+  $('#diffHint').textContent = s ? (s.tJp || s.tTw) : '先選一首歌';
+}
+async function applySong(s, diff) {
+  const avail = DIFFS.filter(d => s.diffs[d]);
+  if (!avail.length) { msg('這首沒有難度資料', true); return; }
+  if (!s.diffs[diff]) diff = avail.includes('master') ? 'master' : avail[avail.length - 1];
+  const my = ++req; const stage = $('#stage'); stage.classList.add('loading'); $('#scoreWarn').classList.remove('on');
+  CUR.song = s; CUR.diff = diff; CUR.level = s.diffs[diff].lv; CUR.officialNotes = s.diffs[diff].notes; CUR.custom = false;
+  CUR.title = S.lang === 'tw' ? (s.tTw || s.tJp) : (s.tJp || s.tTw); CUR.artist = s.comp;
+  S.songId = s.id; S.diff = diff; save(); buildDiffChips();
+  let text = '';
+  try { const r = await fetch(SCORE(s.id, diff)); if (!r.ok) throw new Error('HTTP ' + r.status); text = await r.text(); }
+  catch (e) { if (my !== req) return; stage.classList.remove('loading'); const w = $('#scoreWarn'); w.textContent = '抓不到這首的 ' + diff.toUpperCase() + ' 譜面檔（' + ((e && e.message) || e) + '）。可能還沒上素材鏡像，或瀏覽器擋了跨網域請求。'; w.classList.add('on'); return; }
+  if (my !== req) return;
+  loadSus(text, { keepSong: true });
+  stage.classList.remove('loading');
+  loadJacket(s, my);
+}
+function loadJacket(s, my) {
+  const tryUrl = url => new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.referrerPolicy = 'no-referrer'; im.onload = () => res(im); im.onerror = rej; im.src = url; });
+  (async () => { let im = null; for (const u of [JACKET(s.abn), JACKET_TC(s.abn)]) { try { im = await tryUrl(u); break; } catch (e) {} } if (my !== req) return; CUR.jacket = im; redraw(); })();
+}
+function loadSus(text, opt) {
+  opt = opt || {};
+  let sc; try { sc = parseSus(text); } catch (e) { msg('譜面檔讀不懂：' + ((e && e.message) || e), true); return false; }
+  if (!sc.taps.length && !sc.slides.length) { msg('這個檔裡沒有音符', true); return false; }
+  CUR.score = sc; CUR.chart = buildChart(sc);
+  if (!opt.keepSong) {
+    CUR.song = null; CUR.custom = true; CUR.diff = opt.diff || ''; CUR.level = 0; CUR.officialNotes = 0; CUR.jacket = null;
+    CUR.title = opt.title || $('#customTitle').value.trim() || sc.meta.TITLE || '自訂譜面'; CUR.artist = opt.artist || sc.meta.ARTIST || '';
+    buildDiffChips();
+  }
+  redraw(); return true;
+}
+
+/* ===================== 範例譜面（手寫的小段 SUS） ===================== */
+const DEMO = [
+  '#TITLE "範例譜面"', '#ARTIST "SEKAI 資源中心"', '#REQUEST "ticks_per_beat 480"', '#00002: 4', '#BPM01: 150', '#BPM02: 174', '#00008: 01', '#00508: 02',
+  '#00110: 41', '#00112: 13000013', '#00117: 23000000', '#0011b: 00130000', '#0015b: 00100000', '#00118: 00001300', '#00158: 00003000',
+  '#00214: 53000053', '#00218: 00630000', '#0021c: 00001300', '#0025c: 00004000', '#00210: 41',
+  '#00332a: 13003300', '#00436a: 53000023', '#00416: 13000000', '#00456: 23000013', '#00314: 00001300',
+  '#00539b: 13003300', '#00519: 23000000', '#00639b: 23000000', '#00512: 13000013', '#00510: 41',
+  '#00692c: 13000000', '#00796c: 00230000', '#00612: 00001313', '#00714: 13131313', '#00718: 00002300',
+  '#00812: 13000000', '#00817: 00530000', '#00916: 00000013', '#00956: 00000010', '#0091a: 23000000', '#00910: 41',
+].join('\n');
+function demo() { CUR.song = null; S.songId = 0; save(); loadSus(DEMO, { title: '範例譜面', artist: 'SEKAI 資源中心', diff: 'master' }); CUR.level = 0; $('#q').value = ''; msg('這是手寫的小段範例，各種音符都有一個'); }
+
+/* ===================== 表單 ===================== */
+function save() { try { localStorage.setItem('sekai-chart-v1', JSON.stringify({ lang: S.lang, mpc: S.mpc, combo: S.combo, bpm: S.bpm, skill: S.skill, zoom: S.zoom, songId: S.songId, diff: S.diff })); } catch (e) {} }
+function restore() {
+  try { const d = JSON.parse(localStorage.getItem('sekai-chart-v1') || 'null'); if (d && typeof d === 'object') { if (d.lang === 'tw' || d.lang === 'jp') S.lang = d.lang; if (MPC.includes(d.mpc)) S.mpc = d.mpc; ['combo', 'bpm', 'skill'].forEach(k => { if (typeof d[k] === 'boolean') S[k] = d[k]; }); if (d.zoom === 'zoom') S.zoom = 'zoom'; if (Number.isInteger(d.songId)) S.songId = d.songId; if (DIFFS.includes(d.diff)) S.diff = d.diff; } } catch (e) {}
+}
+function syncForm() {
+  document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
+  document.querySelectorAll('#mpcChips .chip').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.mpc === S.mpc)));
+  $('#optCombo').checked = S.combo; $('#optBpm').checked = S.bpm; $('#optSkill').checked = S.skill;
+  $('#stage').classList.toggle('fit', S.zoom !== 'zoom'); $('#stage').classList.toggle('zoom', S.zoom === 'zoom');
+  $('#zoom').textContent = S.zoom === 'zoom' ? '符合視窗寬度' : '原尺寸檢視';
+}
+function set(patch) { Object.assign(S, patch); syncForm(); save(); redraw(); }
+function bindForm() {
+  const mb = $('#mpcChips'); MPC.forEach(n => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.mpc = n; b.textContent = n; b.style.setProperty('--c', '#8ff0ee'); b.onclick = () => set({ mpc: n }); mb.appendChild(b); });
+  document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => { S.lang = b.dataset.lang; if (CUR.song) CUR.title = S.lang === 'tw' ? (CUR.song.tTw || CUR.song.tJp) : (CUR.song.tJp || CUR.song.tTw); set({}); });
+  $('#optCombo').onchange = e => set({ combo: e.target.checked }); $('#optBpm').onchange = e => set({ bpm: e.target.checked }); $('#optSkill').onchange = e => set({ skill: e.target.checked });
+  $('#zoom').onclick = () => set({ zoom: S.zoom === 'zoom' ? 'fit' : 'zoom' });
+  $('#demo').onclick = demo;
+  $('#reset').onclick = () => { CUR.score = null; CUR.chart = null; CUR.song = null; CUR.jacket = null; CUR.custom = false; S.songId = 0; save(); $('#q').value = ''; $('#scoreWarn').classList.remove('on'); buildDiffChips(); redraw(); };
+  $('#customTitle').addEventListener('input', e => { if (CUR.custom) { CUR.title = e.target.value.trim() || (CUR.score && CUR.score.meta.TITLE) || '自訂譜面'; redraw(); } });
+  const readSus = f => { if (!f) return; const rd = new FileReader(); rd.onload = () => { $('#susName').textContent = f.name; if (loadSus(String(rd.result))) msg('已載入 ' + f.name); }; rd.readAsText(f); };
+  $('#susFile').addEventListener('change', e => readSus(e.target.files[0]));
+  const stage = $('#stage');
+  ['dragenter', 'dragover'].forEach(ev => stage.addEventListener(ev, e => { e.preventDefault(); stage.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => stage.addEventListener(ev, e => { e.preventDefault(); stage.classList.remove('over'); }));
+  stage.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) readSus(f); });
+  const fname = ext => (CUR.song ? 'chart-' + CUR.song.id + '-' + CUR.diff : 'chart-' + (CUR.title || 'custom').replace(/[\\/:*?"<>|\s]+/g, '_')) + '.' + ext;
+  const dl = (type, q) => { if (!CUR.score) { msg('還沒有譜面'); return; } cv.toBlob(b => { if (!b) { msg('匯出失敗'); return; } const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = fname(type === 'image/jpeg' ? 'jpg' : 'png'); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); msg('已下載 ' + a.download); }, type, q); };
+  $('#dl').onclick = () => dl('image/png');
+  $('#dlJpg').onclick = () => dl('image/jpeg', .92);
+  $('#q').addEventListener('input', e => search(e.target.value));
+  $('#q').addEventListener('focus', e => { if (e.target.value) search(e.target.value); });
+  document.addEventListener('click', e => { if (!e.target.closest('.pick')) $('#results').classList.remove('on'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#results').classList.remove('on'); });
+}
+
+/* ===================== 啟動 ===================== */
+restore(); bindForm(); syncForm(); buildDiffChips(); drawEmpty();
+Promise.all(['800 24px "M PLUS Rounded 1c"', '900 44px "Noto Sans JP"', '700 13px "Noto Sans TC"', '500 19px "Noto Sans TC"'].map(f => document.fonts.load(f).catch(() => null)))
+  .then(() => { fontsOk = true; redraw(); ready = true; });
+document.fonts.ready.then(() => { redraw(); ready = true; });
+loadDb();
+window.__chart = { S, CUR, DB, render, parseSus, buildChart, loadSus, demo, applySong, get drawn() { return drawn; }, get ready() { return ready; }, get fontsOk() { return fontsOk; }, canvas: cv };
+</script>
+</body>
+</html>
