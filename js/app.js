@@ -156,7 +156,7 @@ class Component extends DCLogic {
     stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製'],
     hubEvent: ['追活動', '活動總覽，以及排名與榜線（即時排名、榜線資料庫、分析中心、活動分布、玩家查詢）'],
     hubDb:    ['圖鑑', '日程與公告、卡片、角色與收集、歌曲、劇情與漫畫、豆森'],
-    hubTool:  ['工具', '計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與貼圖'],
+    hubTool:  ['工具', '計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與製作'],
     hubCom:   ['社群', '車隊、教學與社群、收藏與待辦、帳號與通知']
   };
   /* 手機底部五個入口：每個入口是一頁「樞紐」，上面一句今天的狀態、下面是子頁卡片 */
@@ -173,11 +173,13 @@ class Component extends DCLogic {
     ['追活動', [['event', '活動總覽', '#ff9db4', []], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與貼圖', '#ffd94d', ['guessjacket', 'stickers']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'x_songcard']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff'], ['x_songcard', '追加圖產生器', '#f4a6d2']];
+  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
+  /* 放在家族分頁籤裡的獨立頁（不在 PAGES 表裡）：id → 分頁籤名稱 */
+  EXTRA_NAMES = { x_songcard: '追加圖產生器' };
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -185,7 +187,7 @@ class Component extends DCLogic {
   famTabs(p) {
     const f = this._famIndex()[p]; if (!f) return [];
     const me = this.state.me;
-    return [f[0]].concat(f[3]).filter(id => this.PAGES[id] && !((id === 'notices' || id === 'assistant') && !me) && !(id === 'admin' && !(me && me.is_admin)));
+    return [f[0]].concat(f[3]).filter(id => (this.PAGES[id] || this.EXTRA_NAMES[id]) && !((id === 'notices' || id === 'assistant') && !me) && !(id === 'admin' && !(me && me.is_admin)));
   }
   hubOf(p) { const f = this.famOf(p) || p; for (const k in this.HUBS) if (this.HUBS[k].includes(f)) return k; return null; }
   /* 卡片查詢語法：搜尋框可以直接打「mmj 藍 限定 2025」這種組合，認得出的字當篩選、其餘當卡名關鍵字。
@@ -517,11 +519,12 @@ class Component extends DCLogic {
     { date: '遊戲', title: '猜角色', desc: '看一小塊卡面猜是誰，十題一局；難度、團體、稀有度、限時可調。', to: 'guesswho', cta: '來玩猜角色' },
     { date: '遊戲', title: '猜封面', desc: '看一小塊曲繪猜歌名，十題一局；選項數與難度可調。', to: 'guessjacket', cta: '來玩猜封面' },
     { date: '工具', title: '貼圖製作器', desc: '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製。', to: 'stickers', cta: '前往貼圖製作器' },
+    { date: '工具', title: '樂曲追加圖產生器', desc: '官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、作詞曲編、MV、APPEND 與演唱陣容，1920×1080 PNG。', to: 'x_songcard', cta: '前往追加圖產生器' },
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' },
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
-    { d: '2026/10/16', t: '樂曲追加圖產生器', s: '新獨立頁 songcard.html：做一張官方風格的「樂曲追加決定」圖。從曲庫選曲（讀台服／日服 master 的 musics、musicVocals、musicDifficulties、outsideCharacters 與站內 song-meta）自動帶入曲圖、曲名、作詞／作曲／編曲、3D／2D MV、有沒有 APPEND、虛擬歌手 ver. 的原唱與 SEKAI ver. 的團體與演唱成員；每一格都能手改，曲圖可上傳、拖進來或貼上，SEKAI ver. 框放官方團體標誌（也能換成自己上傳的）。底圖用官方公告圖的原檔壓成鋼藍灰，也能切回自繪背景。日文／繁中兩套固定文字，1920×1080 PNG 下載或複製到剪貼簿。首頁側欄「追加圖產生器」、指令面板打「追加圖」都能進。', p: 'x_songcard' },
+    { d: '2026/10/16', t: '樂曲追加圖產生器', s: '新獨立頁 songcard.html：做一張官方風格的「樂曲追加決定」圖。從曲庫選曲（讀台服／日服 master 的 musics、musicVocals、musicDifficulties、outsideCharacters 與站內 song-meta）自動帶入曲圖、曲名、作詞／作曲／編曲、3D／2D MV、有沒有 APPEND、虛擬歌手 ver. 的原唱與 SEKAI ver. 的團體與演唱成員；每一格都能手改，曲圖可上傳、拖進來或貼上，SEKAI ver. 框放官方團體標誌（也能換成自己上傳的）。底圖用官方公告圖的原檔壓成鋼藍灰，也能切回自繪背景。日文／繁中兩套固定文字，1920×1080 PNG 下載或複製到剪貼簿。入口在側欄「小遊戲與製作」的分頁籤（貼圖製作器旁邊）、工具卡片與指令面板「追加圖」。', p: 'x_songcard' },
     { d: '2026/10/06', t: 'Haruki 專區加「養成策略」', s: '養成分頁新增養成策略：挑一位或多位角色，把 22 種角色任務分成卡面、專精與技能、隊長與休息室、貼圖、對話、娃與家具、服裝與聲音、區域道具八個面向，列出每項的進度與下一個門檻，排出最省力的下一步並算出「做完幾件就升級」；下一步會把素材算進去（專精花費讀 masterLessons、卡片故事為固定表、家具讀家具索引，挑最便宜的卡與家具），有庫存就標出缺多少、素材不夠的往後排；建議會帶入接下來有該角色新卡的卡池、該角色是加成角色的活動（活動組卡把他當隊長）、月卡玩偶的月份與挑戰 Live 的分數獎勵。Haruki 公開 API 沒給任務進度時，持卡、專精、技能、隊長次數、區域道具與家具會從原始資料推算（標「推算」），其餘標「未知」。目標預設 Lv100（BFES 卡技能的角色等級加成在 Lv100 封頂，理論技能倍率表也以 Lv100 計），可改；每位角色算出到目標的最省力路線（各任務要做到哪個門檻、素材合計、缺多少），做不到就說全做完能到幾級。「先練誰」把持有 BFES 卡的角色排最前、再來是理論組卡用到的角色，各依離目標的 EXP 排。抽卡也算進去：每位角色列接下來有他卡的卡池與 PU 卡（BFES 池標「優先」）、每張新卡值多少 EXP、差的 EXP 相當於幾張新卡；再加一顆「問 AI 完整策略」，把站上算好的路線、素材庫存、卡池、活動加成、玩偶與挑戰 Live 交給站內助手（要登入且帳號已核准，用一次額度），由它連抽卡與時程一起規劃。順位改照實務難易：刷隊長 → 對話 → 卡面 → 專精 → 技能 → 其他零碎（實務上加起來約 1～2 級），表面上數量小但難拿的素材（心願純結晶、奇蹟寶石、寶石）會把那一項往後排。區域道具 Lv10→11 解鎖要的祈願水滴（角色道具 5、團體／類型 15、虛擬歌手 6、初音未來 1）列進路線的素材與缺口並加重，Lv16 起要夢想水晶球的再往後排。', p: 'haruki' },
     { d: '2026/10/05', t: '車隊程式拆成獨立模組，首頁少載四分之一程式', s: '私車排班（班表、成員、統計、點歌、標籤、色段監測）的程式從主程式拆到 js/car.js，進車隊頁才載；其他頁開站少抓約 270 KB 原始碼（壓縮後約 70 KB）。登入卡、帳號頁不受影響；車隊頁載入中會先顯示骨架，載入失敗可按「重試」。', p: 'car' },
     { d: '2026/10/05', t: '抽卡模擬改為原生', s: '抽卡模擬不再嵌經典版：同一套官方機率模型（先依稀有度機率、再依池內 weight 加權；十連最後一抽保底 ★3；招募點數 50／100 點保底），池子直接讀台服 master，單抽與十連的按鈕照該池的 gachaBehaviors 產生，PU 每張機率、天井進度、招募點數、實際出現率對官方機率的統計都在頁上；點抽到的卡直接跳到卡片技能庫。只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。抽卡頁至此全部原生。', p: 'gachasim' },
@@ -7538,7 +7541,7 @@ class Component extends DCLogic {
     this._navSpecIds = [].concat.apply([], navSpec.map(([, items]) => items.map(it => it[0])));
     const navCur = this.famOf(s.page) || s.page;   // 在子頁時側欄點亮所屬入口
     const navExtra = this.EXTRA_LINKS.map(([id, name, dot]) => ({ id, name, dot }));
-    const subTabs = this.famTabs(s.page).map(id => ({ id, name: this.PAGES[id][0] + (id === 'notices' && s.unread ? '（' + s.unread + '）' : ''), on: id === s.page ? 'true' : 'false',
+    const subTabs = this.famTabs(s.page).map(id => ({ id, name: (this.PAGES[id] ? this.PAGES[id][0] : this.EXTRA_NAMES[id]) + (id === 'notices' && s.unread ? '（' + s.unread + '）' : ''), on: id === s.page ? 'true' : 'false',
       bg: id === s.page ? 'var(--cta)' : 'var(--card)', fg: id === s.page ? '#fff' : 'var(--text-2)', bd: id === s.page ? 'transparent' : 'var(--border)' }));
     /* 使用者的自訂順序與隱藏：在群組內排序（群組本身不動），首頁與帳號永遠留著 */
     const navHidden = this.layoutOf('nav').hidden;
@@ -7573,7 +7576,7 @@ class Component extends DCLogic {
       if (s.page === 'hubCom') return s.me ? ((s.unread ? '有 ' + s.unread + ' 則未讀通知' : '沒有未讀通知') + (s.me.is_admin ? '　·　管理員' : '')) : '登入後可用車隊排班、提問所與站內助手';
       return '';
     })();
-    const hubCards = (this.HUBS[s.page] || []).filter(id => this.PAGES[id] && !(id === 'admin')).map(id => { const it = navItemOf[id] || (navSpec.flatMap(g => g[1]).find(x => x[0] === id)) || [id, this.PAGES[id][0], '#8b93ac']; const fam = this._famIndex()[id]; const subs = fam && fam[0] === id ? this.famTabs(id).map(x => this.PAGES[x][0]) : [];
+    const hubCards = (this.HUBS[s.page] || []).filter(id => this.PAGES[id] && !(id === 'admin')).map(id => { const it = navItemOf[id] || (navSpec.flatMap(g => g[1]).find(x => x[0] === id)) || [id, this.PAGES[id][0], '#8b93ac']; const fam = this._famIndex()[id]; const subs = fam && fam[0] === id ? this.famTabs(id).map(x => this.PAGES[x] ? this.PAGES[x][0] : this.EXTRA_NAMES[x]) : [];
       // 樞紐卡片：有子頁的家族列出成員頁名（比入口頁自己的描述更能看出裡面有什麼），單頁家族沿用頁面描述
       return { id, name: this.famLabel(id) || this.PAGES[id][0], desc: subs.length > 1 ? subs.join('・') : this.PAGES[id][1], dot: it[2] || '#8b93ac' }; });
 
