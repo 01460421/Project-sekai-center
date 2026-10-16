@@ -177,7 +177,7 @@ class Component extends DCLogic {
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e']];
+  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -329,28 +329,34 @@ class Component extends DCLogic {
   ];
 
   /* 菜根機器人介紹頁（page=bot）。圖在 /bot-img/，換圖時把 BOT_IMG_VER 一起改掉才會破快取。 */
-  BOT_IMG_VER = '20260923e';
-  BOT_SHEET_DATE = '2026.09.23';
+  BOT_IMG_VER = '20261016b';
+  BOT_SHEET_DATE = '2026.10.16';
   BOT_SHEETS = [['淺藍', '淺色'], ['粉紫', '淺色'], ['灰藍', '淺色'], ['暖橘', '淺色'], ['草綠', '淺色'], ['糖果粉', '淺色'], ['薰衣草', '淺色'], ['夜色', '深色']];
   BOT_STATS = [{ k: '三邊', v: 'Discord、QQ、網頁同一張班表' }, { k: '三車', v: '同一群平行排班' }, { k: '快捷', v: '打 h20-24 就報班' }, { k: '手機', v: '網頁排班手機也能用' }];
   BOT_FEATURES = [
     { t: '報班與自動排位', d: '打 h20-24 就報進去，S6、雙開、外援各有寫法。依倍率自動排位，滿了進候補，有人砍班自動遞補。' },
     { t: '三車平行', d: '同一個群開到三台車，各車分開排班、分開鎖班；指令後面加車號，或在綁定的頻道直接報。橋接／合班的隊也能多車，整組共用。' },
-    { t: '車隊模式與指定跑者', d: '多位跑者輪流開車：每個時段的 P1 各自指定，可從成員池挑，也能直接打外援的名字。', isNew: true },
-    { t: '跑者自行報跑', d: '管理員開放之後，登記過跑者倍率的成員可以自己開班：Discord 打 r20-24、QQ 打 /r 20-24，網頁按「我來開車」。別人報跑的時段不能搶。', isNew: true },
-    { t: '排班身份組', d: '管理員指定一個 Discord 身分組，有它的人可以開班、換人、鎖班、確認、指定跑者，網頁的班表分頁跟管理員一樣；但不能改任何設定。', isNew: true },
-    { t: '班表圖顯示 P1', d: '車隊模式下可以選擇讓班表圖每個時段多一欄 P1（誰開車），有指定的跑者用主色標示；私車模式維持原樣。', isNew: true },
+    { t: '遊戲情報推播', d: '遊戲公告、Virtual Live、活動、卡池自動發到頻道，啟用時自動建通知身份組與領取面板。Live 開演前私訊領了身份組的人，按「看過了」就不再提醒；活動、卡池結束前 @ 提醒。打 /公告 遊戲情報 操作:排期 先看接下來會發什麼。', isNew: true },
+    { t: '同車與多開', d: '時段已經有跑者時，跑者可以打 r20-24 同車（掛成第二跑者，佔 P2、班表標「跑」）或 r20-24 多開（另開一台車，沒開就自動多開）；QQ 打 /r 20-24 同车／多开，網頁按「同車」「多開」。車隊預設可設成問我、同車或多開。', isNew: true },
+    { t: '排班規則', d: '排位順序、倍率級距、雙開三開怎麼排、最低上車倍率、當天截止時間、每時段收幾人、每人每天上限與連續時數、取消期限、滿班自動鎖，全部在網頁「設定」調，每台車可以不一樣；報班被擋時機器人直接講原因。', isNew: true },
+    { t: '清單風班表與插畫圖庫', d: '美圖班表多了清單風版型：角色插畫加霧面卡片。插畫可以上傳多張輪換（每天換、隨機、固定），Discord 打 /班表 背景，網頁「設定 › 班表插畫」也能傳；主色跟著插畫或 /班表 配色。', isNew: true },
+    { t: 'Google 試算表三方合併', d: '班表、時數、成員各一個分頁；逐格比對：表上被改的格子寫回機器人，沒人動的格子以機器人為準（Discord 剛報的班不會被舊表蓋掉）。第一次同步選方向，設定卡片有步驟引導、檢查連線、變更紀錄與一鍵復原。', isNew: true },
+    { t: '色段參數與即時預覽', d: '色段監控的門檻與各項參數在網頁「統計 › 色段監控」調，改了會即時預覽警報結果，不用再回 Discord 打指令。', isNew: true },
+    { t: '一鍵建設與教學', d: '/系統 建設 一鍵建好頻道、身份組與各頻道的教學；內容改版後重跑一次，教學原地更新不重貼。建了 #遊戲情報 頻道會順便啟用推播。', isNew: true },
+    { t: '車隊模式與指定跑者', d: '多位跑者輪流開車：每個時段的 P1 各自指定，可從成員池挑，也能直接打外援的名字。' },
+    { t: '跑者自行報跑', d: '管理員開放之後，登記過跑者倍率的成員可以自己開班：Discord 打 r20-24、QQ 打 /r 20-24，網頁按「我來開車」。' },
+    { t: '排班身份組', d: '管理員指定一個 Discord 身分組，有它的人可以開班、換人、鎖班、確認、指定跑者，網頁的班表分頁跟管理員一樣；但不能改任何設定。' },
+    { t: '班表圖顯示 P1', d: '車隊模式下可以選擇讓班表圖每個時段多一欄 P1（誰開車），有指定的跑者用主色標示；私車模式維持原樣。' },
     { t: '網頁排班', d: '看板拖拉換人、推手標記、鎖班與開放報班，手機也能用。成員只看得到自己所在的車隊。' },
-    { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。', isNew: true },
-    { t: 'Google 試算表雙向同步', d: '班表、時數、成員各一個分頁；表上被改的格子寫回機器人，沒人動的格子以機器人為準（Discord 剛報的班不會被舊表蓋掉）。設定卡片有步驟引導、檢查連線、變更紀錄與一鍵復原。', isNew: true },
-    { t: '查榜', d: '即時名次、時速、分段榜線與角色章節榜，算出到目標分數還差幾場。過往期數的最終榜線也查得到：Discord 打 140b，QQ 打 /榜线 140。' },
-    { t: 'Haruki 抓包', d: '成員用 Haruki 工具箱上傳自己的存檔、打開公開 API 後，機器人就讀得到完整隊伍與技能等級，倍率一模一樣。Discord 打 /查詢 抓包 看教學，QQ 打 /抓包。', isNew: true },
+    { t: '過往班表', d: '換期之後舊班表照樣查得到：Discord、QQ、網頁都能指定日期，連當時是誰開車都留著。' },
+    { t: '查榜', d: '即時名次、時速、分段榜線與角色章節榜，算出到目標分數還差幾場；T100 直接取前百榜的第 100 名。過往期數的最終榜線也查得到：Discord 打 140b，QQ 打 /榜线 140。' },
+    { t: 'Haruki 抓包', d: '成員用 Haruki 工具箱上傳自己的存檔、打開公開 API 後，機器人就讀得到完整隊伍與技能等級，倍率一模一樣。Discord 打 /查詢 抓包 看教學，QQ 打 /抓包。' },
     { t: '時數統計', d: '推車、S6、支援與開車時數分開計算，試算表的「時數」分頁也會跟著同步。' },
     { t: 'Discord 與 QQ 互通', d: '兩邊共用一張班表，群訊息可以互通，Discord 端會顯示發言者的 QQ 頭像。QQ 每小時 :55 提醒下一班的人。' },
-    { t: 'QQ 小號', d: '一般 QQ 帳號進群當第二隻機器人：不用 @，裸打 h20-24 就報班；提醒真的 @ 到 QQ 號；管理員直接打房號，群名就改成「房號-原名」。跟官方機器人共用同一份名冊與班表，任何人 @ 官方機器人一次就自動對上。', isNew: true },
+    { t: 'QQ 小號', d: '一般 QQ 帳號進群當第二隻機器人：不用 @，裸打 h20-24 就報班；提醒真的 @ 到 QQ 號；管理員直接打房號，群名就改成「房號-原名」。跟官方機器人共用同一份名冊與班表，任何人 @ 官方機器人一次就自動對上。' },
     { t: '點歌與語音播報', d: 'YouTube 網址或關鍵字點歌，網頁也能排隊、跳過、調音量；音質上限可調，網路不穩時調低比較不會斷。' },
-    { t: '語音錄音', d: '管理員可以錄下語音頻道的對話。開始時一定會公告、機器人暱稱也會標示，不提供安靜錄音。實驗功能。', isNew: true },
-    { t: '伺服器事件記錄', d: '訊息刪改、成員進出、語音動態、頻道與身分組變更，回報到指定頻道；各類別可以分開開關。', isNew: true },
+    { t: '語音錄音', d: '管理員可以錄下語音頻道的對話。開始時一定會公告、機器人暱稱也會標示，不提供安靜錄音。實驗功能。' },
+    { t: '伺服器事件記錄', d: '訊息刪改、成員進出、語音動態、頻道與身分組變更，回報到指定頻道；各類別可以分開開關。' },
   ];
   BOT_SIDES = [
     { n: 'Discord', s: '頻道直接打字，或用斜線指令', c: '#5865f2', rows: [
@@ -368,6 +374,111 @@ class Component extends DCLogic {
     { n: '2', t: '綁定遊戲 ID', rows: [{ c: 'myid 12345678', d: 'Discord' }, { c: '/绑定 12345678', d: 'QQ' }], note: '綁了之後查排名、查自己才找得到你。' },
     { n: '3', t: '等跑者先報跑', rows: [{ c: 'bgn20-24', d: 'Discord 管理員' }, { c: '/报跑 20-24', d: 'QQ 管理員' }], note: '時段還沒人報跑，推手報不進去。「報班沒反應」多半就是這個。' },
   ];
+  /* 介紹頁的「指令導覽」：左邊情境分類、右邊模擬聊天視窗。
+     每條：t 標題、dc Discord 寫法、qq QQ 寫法（沒有就留空，畫面會退到另一邊並註明 qn）、
+     r 模擬回覆（繁體，Discord）、rq QQ 的簡體回覆（沒有就用 r）、x 解說、v 常見變化 [[寫法, 說明]]。
+     網頁那一類沒有打字：ui 是要按的按鈕、w 是在哪裡。QQ 小號裸打的那條 noAt＝使用者泡泡不帶 @。
+     回覆全是假資料，只示意機器人會回什麼，不打任何 API。 */
+  CMD_TOUR = [
+    { id: 'first', n: '第一次用', items: [
+      { t: '登記名字與倍率', dc: '%小明 h3.88', qq: '/登记 小明 h3.88', r: ['已登記：小明', '推手倍率 3.88', '之後報班會用這個倍率排位'], rq: ['已登记：小明', '推手倍率 3.88', '之后报班会用这个倍率排位'],
+        x: '把名字和推手倍率登記進名冊。沒登記的人報班一定會被擋，所以這是第一步。', v: [['%小明 s3.95', 'S6 倍率'], ['%小明 d3.60', '雙開倍率'], ['%小明 r3.40', '跑者倍率（要自己報跑才需要）'], ['/登记 小明 s3.95', 'QQ 登記 S6']] },
+      { t: '綁定遊戲 ID', dc: 'myid 12345678', qq: '/绑定 12345678', r: ['已綁定 Player ID 12345678', '查排名、查自己（m）會直接找到你'], rq: ['已绑定 Player ID 12345678', '查排名、查自己会直接找到你'],
+        x: '把 Discord／QQ 帳號跟遊戲 Player ID 綁在一起，之後 m、/我的 才知道要查誰。', v: [['myid2 12345678', '綁第二個帳號'], ['m', '綁好之後查自己的名次']] },
+      { t: '等跑者先報跑', dc: 'bgn20-24', qq: '/报跑 20-24', r: ['已開班：今天 20-24', '跑者：跑者A', '推手現在可以報班了'], rq: ['已开班：今天 20-24', '跑者：跑者A', '推手现在可以报班了'],
+        x: '管理員（或跑者）先宣告這段要跑，推手才報得進去。「報班沒反應」多半是這一步還沒做。', v: [['bgn20-24 明天', '開明天的班'], ['r20-24', '跑者自己報跑（要管理員先開放）'], ['/报跑 20-24 小明', 'QQ 報跑順便指定跑者']] },
+    ] },
+    { id: 'apply', n: '報班', items: [
+      { t: '報推手班', dc: 'h20-24', qq: '/h 20-24', r: ['已報班：今天 20-24 推手', '20-21 P2　21-22 P2　22-23 P3　23-24 P3', '倍率 3.88，依倍率自動排位；滿了會進候補'], rq: ['已报班：今天 20-24 推手', '20-21 P2　21-22 P2　22-23 P3　23-24 P3', '倍率 3.88，依倍率自动排位；满了会进候补'],
+        x: 'h＝推手，20-24＝20 點到 24 點，一次報四個小時。位置依倍率自動排，不用自己挑。', v: [['h20-22,23-24', '兩段分開報'], ['h20-24 明天', '報別天，也認 4/12、+1'], ['h20-24 21點才上', '後面接的字是備註'], ['h20-24 2車', '報進二車'], ['s20-24', 'S6 班'], ['d20-24', '雙開']] },
+      { t: '報 S6 班', dc: 's20-24', qq: '/s 20-24', r: ['已報班：今天 20-24 S6', '用你登記的 S6 倍率 3.95', 'S6 一個時段只排一位'], rq: ['已报班：今天 20-24 S6', '用你登记的 S6 倍率 3.95', 'S6 一个时段只排一位'],
+        x: 's 開頭就是 S6 班；要先登記過 S6 倍率（%名字 s3.95）才報得進去。', v: [['s20-22', '只報兩小時'], ['%小明 s3.95', '先登記 S6 倍率'], ['/s 20-24', 'QQ 寫法']] },
+      { t: '報雙開', dc: 'd20-24', qq: '/d 20-24', r: ['已報班：今天 20-24 雙開', '你一個人佔兩格：小明、小明(2開)', '用二開倍率 3.60 排位'], rq: ['已报班：今天 20-24 双开', '你一个人占两格：小明、小明(2开)', '用二开倍率 3.60 排位'],
+        x: 'd＝雙開，一個人同時佔兩個位置；要先登記雙開倍率。', v: [['%小明 d3.60', '先登記雙開倍率'], ['d20-24 明天', '報明天']] },
+      { t: '報別天', dc: 'h20-24 明天', qq: '/h 20-24 明天', r: ['已報班：明天 20-24 推手', '20-21 P2　21-22 P2　22-23 P2　23-24 P2'], rq: ['已报班：明天 20-24 推手', '20-21 P2　21-22 P2　22-23 P2　23-24 P2'],
+        x: '時段後面接日期就是報那一天；不寫就是今天。', v: [['h20-24 4/12', '月／日'], ['h20-24 +2', '後天'], ['h20-24 2026-04-25', '完整日期'], ['/h 20-24 5/11 晚点到', 'QQ 日期＋備註']] },
+      { t: '報進二車', dc: 'h20-24 2車', qq: '/h 20-24 2车', r: ['已報班：二車 今天 20-24 推手', '20-21 P2　21-22 P3　22-23 P3　23-24 P3'], rq: ['已报班：二车 今天 20-24 推手', '20-21 P2　21-22 P3　22-23 P3　23-24 P3'],
+        x: '同一個群可以開到三台車，指令後面加車號就報進那台；在綁定的頻道報班就不用加。', v: [['二車 h20-24', '車號寫前面也行'], ['/班表 二车', 'QQ 看二車班表'], ['/缺 车3', 'QQ 看三車缺額']] },
+      { t: '跑者自己報跑', dc: 'r20-24', qq: '/r 20-24', r: ['已報跑：今天 20-24 由你開車', '跑者倍率 3.40', '推手現在可以報班了'], rq: ['已报跑：今天 20-24 由你开车', '跑者倍率 3.40', '推手现在可以报班了'],
+        x: 'r＝跑者。要先登記跑者倍率，而且管理員要在網頁打開「跑者自行報跑」。別人已經報跑的時段不能搶，除非加「同車」或「多開」。', v: [['r20-24 明天', '帶日期'], ['r22-2', '跨午夜'], ['r20-24 同車', '那段已有跑者：當第二跑者（佔 P2）'], ['r20-24 多開', '那段已有跑者：另開一台車'], ['x20-24', '取消報跑']] },
+      { t: '同一時段兩位跑者（同車）', dc: 'r20-24 同車', qq: '/r 20-24 同车', r: ['已報跑：今天 20-24 同車', '你是第二跑者，佔 P2；班表上標「跑」', '原跑者：跑者A'], rq: ['已报跑：今天 20-24 同车', '你是第二跑者，占 P2；班表上标「跑」', '原跑者：跑者A'],
+        x: '那段已經有人報跑時，加「同車」就一起跑同一台：你佔 P2，班表有「跑」標記。', v: [['r20-24 多開', '改成另開一台車'], ['網頁 › 設定 › 同一時段已有跑者時', '車隊預設是問我、同車還是多開']] },
+      { t: '同一時段另開一台（多開）', dc: 'r20-24 多開', qq: '/r 20-24 多开', r: ['已報跑：二車 今天 20-24 由你開車', '一車仍由跑者A 開', '推手報班時加 2車 就報到你這台'], rq: ['已报跑：二车 今天 20-24 由你开车', '一车仍由跑者A 开', '推手报班时加 2车 就报到你这台'],
+        x: '那段已經有人報跑時，加「多開」就另開一台車，推手各自排。', v: [['h20-24 2車', '推手報進你這台'], ['r20-24 同車', '改成同車']] },
+    ] },
+    { id: 'cancel', n: '取消與換班', items: [
+      { t: '取消自己的班', dc: 'x20-24', qq: '/砍 20-24', r: ['已取消：今天 20-24 的班', '候補的胖虎自動遞補 22-23'], rq: ['已取消：今天 20-24 的班', '候补的胖虎自动递补 22-23'],
+        x: 'x＝取消，只砍自己的班；有人在候補就自動遞補。跑者打 x 是取消報跑，已報的推手會收到私訊。', v: [['x20-22', '只砍前兩小時'], ['x20-24 明天', '砍明天的'], ['/x 20-24', 'QQ 同義']] },
+      { t: '換人（管理員）', dc: '20-22 小明補小華', qq: '', qn: 'QQ 群沒有換人指令，請到網頁的看板拖拉。', r: ['已換人：今天 20-22', '小華 → 小明（P3）', '已私訊通知小華'],
+        x: '管理員或排班員用「時段 新人補舊人」直接換人；網頁看板拖拉是同一件事。', v: [['P3 小明 20-22', '指定位置'], ['看板 › 拖拉', '網頁換人']] },
+      { t: '取消開班（管理員）', dc: 'ccl20-24', qq: '/砍跑 20-24', r: ['已取消開班：今天 20-24', '已報的 4 位推手一起清掉，並私訊通知'], rq: ['已取消开班：今天 20-24', '已报的 4 位推手一起清掉，并私信通知'],
+        x: '整段不跑了就用 ccl；那段已報的人會一起清掉並收到私訊。', v: [['ccl20-24 明天', '取消明天的'], ['/砍跑 20-24', 'QQ 寫法']] },
+    ] },
+    { id: 'rank', n: '查榜與查分', items: [
+      { t: '第 100 名現在幾分', dc: 't100', qq: '/排名 100', r: ['T100　12,345,678 分', '時速 +85,000／小時', '3 分鐘前更新'], rq: ['Top 100', 'T1. 小明 · 25,100,000', 'T2. 小华 · 24,800,000', '…', 'T100. 小美 · 12,345,678'],
+        x: 't＋名次＝那個名次現在的分數與時速（名次只收 10、30、50、100）；榜線 T100 取的是前百的第 100 名。QQ 的 /排名 100 回的是前 100 名的名單。', v: [['t50', '第 50 名現在幾分'], ['b', '各檔榜線（T100…T1000…）；QQ /榜线'], ['e50', '第 50 名是誰'], ['140t100', '第 140 期的 T100']] },
+      { t: '前 10 名圖', dc: 'e1-10', qq: '/e 1-10', r: ['（出一張前 10 名排行圖）', '#1 ○○○ 45,678,900', '#2 △△△ 44,120,000', '…'], rq: ['（出一张前 10 名排行图）', '#1 ○○○ 45,678,900', '#2 △△△ 44,120,000', '…'],
+        x: 'e＋區間就出一張排行圖；e 後面只寫一個數字是單一名次的詳情。', v: [['e', '前 10 名'], ['e50', '第 50 名詳情'], ['140e50', '第 140 期的第 50 名'], ['/e 20-30', 'QQ 區間']] },
+      { t: '過往期數榜線', dc: '140b', qq: '/榜线 140', r: ['第 140 期最終榜線', 'T100 25,100,000　T500 12,300,000', 'T1000 8,900,000　T5000 3,400,000'], rq: ['第 140 期最终榜线', 'T100 25,100,000　T500 12,300,000', 'T1000 8,900,000　T5000 3,400,000'],
+        x: '期數＋b＝那一期的最終榜線；只打 b 是這期目前的各檔榜線。', v: [['b', '這期目前榜線'], ['/榜线 上期', 'QQ 上一期'], ['/榜线 179.6', 'QQ World Link 章節']] },
+      { t: '查自己', dc: 'm', qq: '/我的', r: ['小明　#1,234　9,876,543 分', '時速 +120,000／小時'], rq: ['小明　#1,234　9,876,543 分', '时速 +120,000／小时'],
+        x: 'm＝我的名次與分數；要先用 myid 綁定 Player ID。', v: [['myid 12345678', '先綁定'], ['m2', '第二個帳號']] },
+      { t: '角色章節榜', dc: 'c21', qq: '/c 21', r: ['角色 21 章節榜　前 10', '#1 ○○○ 3,456,000', '#2 △△△ 3,210,000', '…'], rq: ['角色 21 章节榜　前 10', '#1 ○○○ 3,456,000', '#2 △△△ 3,210,000', '…'],
+        x: 'c＋角色編號＝World Link 那位角色的章節榜。', v: [['c21b', '那章的榜線'], ['c21m', '我在那章的名次'], ['wl21', '這期 WL 第 21 章'], ['wl21b', '章節榜線'], ['/c 21 榜线', 'QQ 那章的榜線'], ['/c 21 我的', 'QQ 我在那章的名次'], ['/wl 179 21', 'QQ 指定期數']] },
+      { t: '色段分析', dc: 'pt1', qq: '/色段 12345678', r: ['（出一張 Top 1 的色段圖）', '每小時跑了幾場、場均多少'], rq: ['（出一张 Top 1 的色段图）', '每小时跑了几场、场均多少'],
+        x: 'pt＋名次＝那個名次的色段紀錄（每小時幾場、場均）。QQ 要直接給玩家 ID。', v: [['pt2', 'Top 2'], ['pt3', 'Top 3']] },
+      { t: '算到目標還差幾場', dc: 'pc 9876543 15000000', qq: '/pc 9876543 15000000', r: ['目前 9,876,543 → 目標 15,000,000', '還差 5,123,457 分', '場均 25,000 的話還要 205 場，約 17 小時'], rq: ['目前 9,876,543 → 目标 15,000,000', '还差 5,123,457 分', '场均 25,000 的话还要 205 场，约 17 小时'],
+        x: 'pc 當前分數 目標分數＝算還差幾場；pcm 只寫目標，當前用你綁定帳號的即時分數。', v: [['pcm 15000000', '用自己的即時分數'], ['m', '先看自己現在幾分'], ['/pcm 15000000', 'QQ 自動讀綁定帳號的分數'], ['/控分 当前 目标', 'QQ 同義，後面可接 综合力 加成% 火']] },
+    ] },
+    { id: 'admin', n: '管理員', items: [
+      { t: '開班（報跑）', dc: 'bgn20-24', qq: '/报跑 20-24', r: ['已開班：今天 20-24', '跑者：跑者A', '推手現在可以報班了'], rq: ['已开班：今天 20-24', '跑者：跑者A', '推手现在可以报班了'],
+        x: '宣告這段要跑並開放報班。車隊模式下後面加名字就順便指定跑者。', v: [['bgn20-24 明天', '開明天'], ['/报跑 20-24 小明', 'QQ 指定跑者'], ['/班表 跑者', 'Discord 斜線指定跑者']] },
+      { t: '取消開班', dc: 'ccl20-24', qq: '/砍跑 20-24', r: ['已取消開班：今天 20-24', '已報的推手一起清掉，並私訊通知'], rq: ['已取消开班：今天 20-24', '已报的推手一起清掉，并私信通知'],
+        x: '整段不跑了就用 ccl；已報的人一起清掉並收到私訊。', v: [['ccl20-24 明天', '取消明天的']] },
+      { t: '指定位置', dc: 'P3 小明 20-22', qq: '', qn: 'QQ 群沒有指定位置指令，請到網頁的看板拖拉。', r: ['已指定：今天 20-22 P3 → 小明', '原本的 P3 阿華移到 P4'],
+        x: '手動把某人放到指定位置，自動排位會讓路。', v: [['20-22 小明補小華', '換人'], ['看板 › 拖拉', '網頁']] },
+      { t: '開放／停止報班', dc: '/班表 開放', qq: '/开班', r: ['已開放報班', '成員現在可以用 h20-24 報班'], rq: ['已开放报班', '成员现在可以用 /h 20-24 报班'],
+        x: '整個班表的總開關；鎖班是單一時段的開關。', v: [['/班表 停止', '停止報班'], ['/关班', 'QQ 停止'], ['/锁报班', 'QQ 鎖班'], ['/不锁班', 'QQ 滿員也不自動鎖']] },
+      { t: '排班身份組', dc: '/設定 排班身份組 身分組:@排班員', qq: '', qn: '這是 Discord 身分組的功能，QQ 群用不到。', r: ['排班身份組：@排班員　已開啟', '有這個身分組的人可以開班、換人、鎖班、確認、指定跑者', '不能改任何設定'],
+        x: '指定一個 Discord 身分組當排班員：有管理員的排班工具，但不能改設定。', v: [['/設定 排班身份組 關閉:True', '關掉但保留設定']] },
+      { t: '遊戲情報推播', dc: '/公告 遊戲情報', qq: '', qn: '遊戲情報推播目前只有 Discord 有。', r: ['遊戲情報推播已設定到 #公告', '會自動推：遊戲公告、Virtual Live、活動、卡池', 'Live 用私訊通知，附「看過了」按鈕'],
+        x: '自動把台服公告、Virtual Live、活動與卡池推到指定頻道；底下附通知身份組面板，成員自己領。', v: [['/公告 遊戲情報 操作:排期', '預覽接下來的排期'], ['看過了', 'Live 私訊上的按鈕']] },
+      { t: '班表圖背景', dc: '/班表 背景', qq: '', qn: '背景要在網頁上傳，QQ 的 /班表 出的是同一張圖。', r: ['班表圖已換成清單風＋插畫背景', '背景從插畫圖庫輪換'],
+        x: '把班表圖換成清單風美圖；背景可以在網站分段上傳插畫，會輪換。', v: [['網頁 › 設定 › 班表插畫', '上傳背景']] },
+    ] },
+    { id: 'qq', n: 'QQ 群', items: [
+      { t: '@官方機器人報班', dc: '', qq: '/h 20-24', qn: '', rq: ['已报班：今天 20-24 推手', '20-21 P2　21-22 P2　22-23 P3　23-24 P3'],
+        x: '官方機器人要 @ 才收得到（從指令選單點會自動帶 @）；指令用簡體。', v: [['/s 20-24', 'S6'], ['/d 20-24', '雙開'], ['/外援 20-24', '外援，不檢查倍率'], ['/h 20-24 5/11 晚点到', '日期＋備註']] },
+      { t: '小號免 @ 裸打', dc: '', qq: 'h20-24', noAt: true, rq: ['已报班：今天 20-24 推手', '（小号收到，不用 @）'],
+        x: '群裡有小號時，裸打 h20-24、20-24、td、bgn 20-24 都收，不用 @。跟官方機器人共用同一份班表。', v: [['20-24', '純時段也收'], ['/网页 验证码', '打給小號也能綁網站帳號']] },
+      { t: '出班表圖', dc: '明天', qq: '/班表 明天', r: ['（出一張明天的班表圖）', '20-24 跑者A　菜根 小明 阿華 小美'], rq: ['（出一张明天的班表图）', '20-24 跑者A　菜根 小明 阿华 小美'],
+        x: '/班表 不接參數是今天；接 明天、+2、5-11 都行，過去的日期也查得到。', v: [['/班表 +2', '後天（別打簡體「后天」）'], ['/缺', '還缺人的時段'], ['/班表 二车', '二車']] },
+      { t: '查排名', dc: 't100', qq: '/排名 100', r: ['T100　12,345,678 分', '時速 +85,000／小時'], rq: ['Top 100', 'T1. 小明 · 25,100,000', 'T2. 小华 · 24,800,000', '…', 'T100. 小美 · 12,345,678'],
+        x: '/排名 後面接 10、30、50 或 100，回前 N 名的名單；/e 看詳情、/榜线 看各檔榜線。', v: [['/e 50', '詳情'], ['/榜线', '各檔榜線'], ['/我的', '自己的排名'], ['/活动', '活動資訊']] },
+      { t: '每小時提醒', dc: '', qq: '/开提醒', rq: ['已开启提醒', '每小时 :55 @ 下一个时段的人'],
+        x: '群主或群管理員設定。官方機器人要群設定開「主動發言」才送得出去；有小號就不用，直接 @ 到 QQ 號。', v: [['/关提醒', '關掉'], ['/开感谢', '每小時 :58 感謝下班的人'], ['/提醒状态', '上次提醒有沒有送出'], ['/at测试', '實測哪種 @ 會通知']] },
+      { t: '用 Discord 的快捷寫法', dc: '', qq: '/快捷 h20-24', rq: ['已报班：今天 20-24 推手'],
+        x: '/快捷 後面直接接 Discord 的快捷寫法，兩邊指令不用記兩套。', v: [['/快捷 x20-24', '取消'], ['/快捷 t100', '查榜']] },
+      { t: '綁網站帳號', dc: '/我的 網頁', qq: '/网页 123456', r: ['你的網站連結：project-sekai-center.com/app.html?page=car', '用 Discord 登入就直接進'], rq: ['收到验证码 123456', '确认码：ABCD，本人再打一次 /网页 ABCD 完成绑定'],
+        x: '網站「我的帳號」給你 6 位碼，打給機器人；它回確認碼，本人再打一次就綁好。', v: [['/网页', '拿網站連結'], ['/网页 解绑', '解除綁定']] },
+    ] },
+    { id: 'web', n: '網頁', items: [
+      { t: '一鍵報班', ui: '報班', w: '班表分頁 › 每一列右邊', r: ['已報班：今天 20-21 推手', '按鈕變成「砍班」'],
+        x: '登入後在班表每一列右邊按一下就報進去；已經報的列會變成「砍班」或「取消報班」。', v: [['我的班', '右側列出你未來所有的班'], ['切換車隊 ▾', '右上角換車隊']] },
+      { t: '跑者自己開車', ui: '我來開車', w: '班表分頁 › 每一列', r: ['已報跑：今天 20-21 由你開車', '已有跑者的列會多出「同車」「多開」'],
+        x: '跟 Discord 的 r20-24 一樣；那段已有跑者時，列上多出「同車」與「多開」兩顆。', v: [['跑者報跑', '工具列輸入時段一次開一整段'], ['設定 › 同一時段已有跑者時', '車隊預設：問我／同車／多開']] },
+      { t: '看板拖拉換人', ui: '看板', w: '班表分頁 › 表格｜看板', r: ['把小明拖到 21-22 P3', '原本的小華移到候補'],
+        x: '管理員或排班員把成員從成員池拖到格子裡就是換人；拖到 P1 就是指定跑者。', v: [['標記管理', '自訂推手標記的顏色'], ['鎖班', '單一時段鎖起來']] },
+      { t: '排班規則', ui: '設定 › 排班規則', w: '設定分頁（管理員）', r: ['截止時間 19:30　每日上限 2 段', '過了截止時間成員不能再自己報班'],
+        x: '截止時間、每日上限這些規則都在網頁設定；Discord 和 QQ 報班也照同一套規則擋。', v: [['設定 › 權限', '排班身份組'], ['設定 › Google 試算表', '三方合併同步']] },
+      { t: '班表圖與色段', ui: '設定 › 班表插畫', w: '設定分頁（管理員）', r: ['清單風班表圖　背景：插畫輪換', '色段參數在「統計 › 色段監控」調，改完右邊即時預覽'],
+        x: '班表圖背景可以在這裡分段上傳插畫，會輪換；色段監控的參數在「統計 › 色段監控」調，改完立刻看到預覽。', v: [['統計 › 歷史班表', '任一天都能翻'], ['統計 › 色段監控', '色段參數與紀錄']] },
+      { t: 'Google 試算表同步', ui: '設定 › Google 試算表', w: '設定分頁（管理員）', r: ['已連線：菜根車隊班表', '班表、時數、成員三個分頁', '表上改的、機器人改的、Discord 剛報的三方合併'],
+        x: '貼上試算表網址、共用給服務帳號就能雙向同步；三方合併不互蓋。', v: [['立即同步', '手動跑一次'], ['自動同步', '每 60 秒一次']] },
+    ] },
+  ];
+  /* 試打看看的範例籌碼 */
+  CMD_TRY_EX = ['h20-24', 'h20-22,23-24 明天', 'r20-24 同車', 'x20-24', 't100', 'e1-10', '140b', 'c21', 'pc 9876543 15000000', '%小明 h3.80', 'myid 12345678', '/h 20-24 2车'];
   CHANGELOG = [
     { date: '首頁', title: '首頁儀表板', desc: '當期活動倒數與進度、跑榜工作室小窗（預設滿等區域道具＋一套娃、最佳化活動 P）、近期卡池一覽。', to: 'home', cta: '前往首頁' },
     { date: '日曆', title: '活動日曆', desc: '卡池與活動開放期間（台服預測時間），點日期可看當日活動。', to: 'calendar', cta: '前往活動日曆' },
@@ -1025,7 +1136,10 @@ class Component extends DCLogic {
   _measureHead() {
     try { const h = document.querySelector('.app-head'); if (h) document.documentElement.style.setProperty('--head-h', Math.round(h.getBoundingClientRect().height) + 'px'); } catch (e) {}
   }
-  _closeAll() { this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null, carPop: null, carTagMgr: false }); }
+  _closeAll() {
+    if (this.state.carGuide && typeof this.carGuideClose === 'function') this.carGuideClose(false);   // 要走 carGuideClose：它還會拆監聽、擋掉還在飛的量測
+    this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null, carPop: null, carTagMgr: false });
+  }
   /* 手機手勢：底部抽屜下滑關閉、左右滑切上下一筆；排行榜頁頂端下拉重新載入；螢幕鍵盤打開時收起 Dock。
      全部掛在 document 上一次，靠 e.target 判斷落在哪裡，不用逐個元素綁。 */
   _mobileGestures() {
@@ -1504,7 +1618,7 @@ class Component extends DCLogic {
      從前百補一份只有 T100 的榜線，WL 各章同樣取該章第 100 名。標 partial，畫面照常顯示前百。 */
   bordersFromTop(top) {
     if (!top) return null;
-    const t100 = rows => (rows || []).filter(r => r && r.rank === 100).map(r => ({ rank: 100, score: r.score }));
+    const t100 = rows => (rows || []).filter(r => r && Number(r.rank) === 100).map(r => ({ rank: 100, score: r.score }));
     const out = {};
     ['id', 'name', 'start_at', 'closed_at', 'aggregate_at', 'ranking_announce_at', 'source', 'via'].forEach(k => { if (top[k] != null) out[k] = top[k]; });
     out.player_border_rankings = t100(top.player_top_100_rankings);
@@ -1519,13 +1633,104 @@ class Component extends DCLogic {
     return out;
   }
 
+  /* 榜線的「第 100 名」那一階直接取前百榜的第 100 名，其他段位照舊。
+     HiSekai 的榜線端點更新比前百慢（2026-09-30 第 181 期：前百第 100 名 1,490,668、榜線 T100 還停在 1,484,280），
+     同一頁兩個「第 100 名」對不上。已結算的期數兩邊相同，套了等於沒變。
+
+     - 前百拿不到、不足 100 人、兩邊期數對不上 → 原樣回傳；整段包 try，任何意外都退回原本的榜線，
+       絕不因為多看一眼前百而讓原本查得到的榜線壞掉。
+     - 回傳新物件，不改動 API 回應本身。
+     - 兩種形狀都認：即時（player_border_rankings／world_link_border_rankings，章節用 chapter 對）
+       與用期數查（borderRankings／userWorldBloomChapterRankingBorders，章節用 gameCharacterId 對）。
+       自家 Worker 的 Haruki 備援連「用期數查」都回即時形狀，而且章節同時帶 player_border_rankings 與
+       player_borders 兩個鍵指向同一個陣列，所以每個認得的鍵都要換。
+     - 換進來的那筆拿掉前百才有的時速／周回欄位：分段榜線的列沒有這些資料（顯示 —、不能點開詳情），
+       只有 T100 多出來版面就變了。名字、分數、頭像照常換成前百第 100 名。 */
+  t100Merge(brd, top) {
+    try {
+      if (!brd || !top || typeof brd !== 'object' || typeof top !== 'object' || brd.partial) return brd;
+      // 用期數查的前百回應沒有期數欄位，兩邊都有值才比
+      const idOf = d => { const e = this.eventOf(d); return e.eventId != null ? e.eventId : e.id; };
+      const be = idOf(brd), te = idOf(top);
+      if (be != null && te != null && String(be) !== String(te)) return brd;
+      const TOPK = ['player_top_100_rankings', 'top_100_player_rankings', 'player_rankings', 'rankings', 'ranking'];
+      const BRDK = ['player_border_rankings', 'borderRankings', 'player_borders', 'border_rankings', 'borders'];
+      const pick = t => {
+        if (!t || typeof t !== 'object') return null;
+        const a = TOPK.map(k => t[k]).find(Array.isArray);
+        const r = (a || []).find(x => x && Number(x.rank) === 100 && x.score != null && isFinite(Number(x.score)));
+        if (!r) return null;
+        const o = Object.assign({}, r, { rank: 100 });
+        ['last_score', 'last_1h_stats', 'last_3h_stats', 'last_24h_stats', 'last_played_at'].forEach(k => { delete o[k]; });
+        return o;
+      };
+      const patch = (holder, row) => {
+        if (!row) return holder;
+        let out = holder;
+        const done = new Map();          // 同一個陣列掛在兩個鍵上時只換一次，換完兩個鍵仍指向同一份
+        BRDK.forEach(k => {
+          const a = holder[k];
+          if (!Array.isArray(a)) return;
+          let b = done.get(a);
+          if (!b) {
+            b = a.slice();
+            const i = b.findIndex(x => x && Number(x.rank) === 100);
+            // 前百第 100 名比榜線原值還低＝前百那份比較舊（第 100 名的分數線只會往上；用期數查的前百與榜線
+            // 在上游各自快取 1 小時）→ 這個陣列不換
+            if (i >= 0 && Number(b[i].score) > Number(row.score)) b = a;
+            else if (i >= 0) b[i] = row;
+            else {
+              // 本來沒有 100 這一階：照陣列自己的方向插進去（即時是 100→大、用期數查是大→100）
+              const rk = b.map(x => Number(x && x.rank));
+              const desc = rk.length > 1 && rk[0] > rk[rk.length - 1];
+              let j = rk.findIndex(v => desc ? v < 100 : v > 100);
+              if (j < 0) j = b.length;
+              b.splice(j, 0, row);
+            }
+            done.set(a, b);
+          }
+          if (b === a) return;
+          if (out === holder) out = Object.assign({}, holder);
+          out[k] = b;
+        });
+        return out;
+      };
+      let out = patch(brd, pick(top));
+      // World Link：每一章用「同一章」前百的第 100 名
+      const topCh = [].concat(Array.isArray(top.world_link_top_100_rankings) ? top.world_link_top_100_rankings : [],
+        Array.isArray(top.userWorldBloomChapterRankings) ? top.userWorldBloomChapterRankings : []).filter(c => c && typeof c === 'object');
+      if (topCh.length) {
+        const chOf = c => (c.chapter != null ? Number(c.chapter) : null);
+        const gcOf = c => { const v = c.character != null ? c.character : c.gameCharacterId; return v != null ? Number(v) : null; };
+        const findTop = c => {
+          const a = chOf(c), g = gcOf(c);
+          if (a != null) { const hit = topCh.find(t => chOf(t) === a); if (hit) return hit; }
+          return g != null ? (topCh.find(t => (a == null || chOf(t) == null) && gcOf(t) === g) || null) : null;
+        };
+        ['world_link_border_rankings', 'userWorldBloomChapterRankingBorders'].forEach(k => {
+          if (!Array.isArray(brd[k]) || !brd[k].length) return;
+          let changed = false;
+          const arr = brd[k].map(c => {
+            if (!c || typeof c !== 'object') return c;
+            const n = patch(c, pick(findTop(c)));
+            if (n !== c) changed = true;
+            return n;
+          });
+          if (changed) { if (out === brd) out = Object.assign({}, brd); out[k] = arr; }
+        });
+      }
+      return out;
+    } catch (e) { return brd; }
+  }
+
   async loadLive() {
     try {
       // 前百與榜線分開抓：以前 Promise.all 一起等，榜線端點一壞連前百都顯示「無法載入」
       const [topR, brdR] = await Promise.allSettled([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
       if (topR.status !== 'fulfilled') throw topR.reason;
       const top = topR.value;
-      const brd = brdR.status === 'fulfilled' && brdR.value ? brdR.value : this.bordersFromTop(top);
+      // 榜線的 T100 直接取前百第 100 名（同一輪已經抓到前百，不多打請求）；下游的顯示、快照、分析、預測都吃合併後的這份
+      const brd = brdR.status === 'fulfilled' && brdR.value ? this.t100Merge(brdR.value, top) : this.bordersFromTop(top);
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.via === 'tracker') ? 'tracker' : ((top && top.source === 'haruki') || (brd && brd.source === 'haruki')) ? 'haruki' : 'hisekai' });
       if (this.state.pid) this.matchMyRank(top);
       this.snapPush(top, brd);
@@ -1582,7 +1787,8 @@ class Component extends DCLogic {
         this.apiFetch('/event/' + id + '/border').catch(() => null)
       ]);
       if (this._pastKey !== id) return;   // 期間又切了別期
-      this.setState({ pastTop: t, pastBrd: b, pastLoad: false, pastErr: (t || b) ? '' : '這一期查不到資料' });
+      // 預設期數就是當期，所以這裡也會查到進行中的活動：T100 同樣取前百第 100 名（已結算的期數兩邊相同）
+      this.setState({ pastTop: t, pastBrd: this.t100Merge(b, t), pastLoad: false, pastErr: (t || b) ? '' : '這一期查不到資料' });
     } catch (e) {
       if (this._pastKey === id) this.setState({ pastLoad: false, pastErr: '歷代資料載入失敗' });
     }
@@ -1613,9 +1819,25 @@ class Component extends DCLogic {
     // snapList 會把這份跟本機快照合併,所以圖表與實測速度都吃得到修好的資料。
     if (this._histFixId !== evId) {
       this._histFixId = evId;
-      this._histFix = this.fixMono(h.samples, tiers.length);
+      this._histFix = this.fixMono(this.histT100(h), tiers.length);
     }
     return this._histFix.map(s => [s[0] * 1000, tiers.map((r, i) => [r, s[i + 1]]), null]);
+  }
+  /* 公用時序的 T100 欄也對齊「前百第 100 名」：同一份檔的 ranks 是 [秒, 第1名…第100名]，與 samples 同一次取樣、
+     同一個時間戳寫入。不對齊的話，本機快照（已是前百版）與公用時序（榜線端點版，偏低）合併後 T100 走勢會出現鋸齒。
+     那一筆沒有第 100 名（前百不足 100 人、或沒有對應的 ranks 列）就保留原值。回傳新陣列，不改動 hist。 */
+  histT100(h) {
+    const samples = (h && h.samples) || [];
+    try {
+      const ci = (h.tiers || []).findIndex(t => Number(t) === 100);
+      if (ci < 0 || !Array.isArray(h.ranks) || !h.ranks.length) return samples;
+      const at = {}; h.ranks.forEach(r => { if (Array.isArray(r)) at[r[0]] = r; });
+      return samples.map(s => {
+        const r = Array.isArray(s) ? at[s[0]] : null;
+        if (!r || r.length <= 100 || r[100] == null || s.length <= ci + 1) return s;
+        const c = s.slice(); c[ci + 1] = r[100]; return c;
+      });
+    } catch (e) { return samples; }
   }
   snapKey(evId) { return 'sekai-snap-' + evId; }
   snapPush(top, brd) {
@@ -2214,7 +2436,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=e9dfc57942';
+      el.src = './js/core.js?v=104d39ecc0';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2247,7 +2469,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=fea26e3d77';
+      s.src = 'data/billing.js?v=55758feea4';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2312,7 +2534,7 @@ class Component extends DCLogic {
   /* 歌曲 BPM（社長 bot／t-wy 的公開資料庫），只有打開歌曲詳情才載，~10 KB。 */
   loadSongBpm() {
     if (this._bpmP) return;
-    this._bpmP = import('./data/song-bpm.js?v=b334bb6b5a').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
+    this._bpmP = import('./data/song-bpm.js?v=9ba20496e5').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
   }
   async loadBorderDB() {
     if (this.state.bdbReady || this._bdbLoading) return;
@@ -2321,7 +2543,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=fc21304c9f';
+      s.src = 'data/borders-db.js?v=7ae8d7defb';
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -2461,7 +2683,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=be00c23b38').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=067c2b5d86').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -2470,7 +2692,7 @@ class Component extends DCLogic {
   loadCar() {
     if (this._carMod === true) return Promise.resolve(true);
     if (this._carMod) return this._carMod;
-    this._carMod = import('./js/car.min.js?v=db659eed7f').then(m => { Object.assign(this, m.carMembers.call(this)); this._carMod = true; this.setState({ carMod: true, carModErr: '' }); return true; })
+    this._carMod = import('./js/car.min.js?v=9879c015be').then(m => { Object.assign(this, m.carMembers.call(this)); this._carMod = true; this.setState({ carMod: true, carModErr: '' }); return true; })
       .catch(() => { this._carMod = null; this.setState({ carModErr: '車隊程式載入失敗，請檢查網路後按「重試」。' }); return false; });
     return this._carMod;
   }
@@ -3058,6 +3280,272 @@ class Component extends DCLogic {
   guideClose() {
     if (this.state.guideHide) { try { localStorage.setItem('sekai-guide-hide', '1'); } catch (e) {} }
     this.setState({ guide: null });
+  }
+
+  /* ── 介紹頁「指令導覽」（CMD_TOUR）──
+     狀態：btCat／btIdx 現在在哪一條、btSide dc|qq、btPhase idle→typing→sent→reply→done、
+     btTyped 已打進輸入框的字、btAuto 自動播放、btTry 試打看看的輸入。
+     計時器只有一支（_btT），換條、換邊、離開頁面都先清掉；prefers-reduced-motion 不逐字打，直接顯示。 */
+  btPos() {
+    const s = this.state, cats = this.CMD_TOUR;
+    const c = Math.min(Math.max(s.btCat == null ? 1 : +s.btCat, 0), cats.length - 1);
+    const i = Math.min(Math.max(+s.btIdx || 0, 0), cats[c].items.length - 1);
+    return { c, i, cat: cats[c], it: cats[c].items[i] };
+  }
+  btSideOf() { return this.state.btSide === 'qq' ? 'qq' : 'dc'; }
+  /* 這一條在目前這一邊的寫法；那一邊沒有就退到另一邊（畫面會註明） */
+  btCmdOf(it, side) {
+    if (!it) return '';
+    if (it.ui) return it.ui;
+    const sd = side || this.btSideOf();
+    return (sd === 'qq' ? (it.qq || it.dc) : (it.dc || it.qq)) || '';
+  }
+  btRM() { try { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
+  btTimer(fn, ms) {
+    this.btStopTimer();
+    this._btT = setTimeout(() => { this._btT = null; if (this.state.page !== 'bot') return; fn(); }, ms);
+  }
+  btStopTimer() { if (this._btT) { clearTimeout(this._btT); this._btT = null; } }
+  btGoto(c, i, play) {
+    this.btStopTimer();
+    const cats = this.CMD_TOUR;
+    c = Math.min(Math.max(+c || 0, 0), cats.length - 1);
+    i = Math.min(Math.max(+i || 0, 0), cats[c].items.length - 1);
+    const patch = { btCat: c, btIdx: i, btTyped: '', btPhase: 'idle' };
+    if (cats[c].id === 'qq') patch.btSide = 'qq';   // QQ 群那一類本來就是 QQ 寫法
+    this.setState(patch);
+    if (play) this.btPlay();
+  }
+  /* 往前／往後一條，跨分類；到頭回 false（自動播放靠這個停） */
+  btStep(dir) {
+    const { c, i } = this.btPos(), cats = this.CMD_TOUR;
+    let nc = c, ni = i + dir;
+    if (ni < 0) { if (c === 0) return false; nc = c - 1; ni = cats[nc].items.length - 1; }
+    else if (ni >= cats[c].items.length) { if (c >= cats.length - 1) return false; nc = c + 1; ni = 0; }
+    this.btGoto(nc, ni, true);
+    return true;
+  }
+  btPlay() {
+    this.btStopTimer();
+    const { it } = this.btPos();
+    const cmd = this.btCmdOf(it);
+    if (!cmd) return;
+    const finish = () => { this.setState({ btTyped: cmd, btPhase: 'done' }); this.btAfterDone(); };
+    if (this.btRM() || it.ui) { finish(); return; }   // 減少動態：不逐字打；網頁那類是按鈕，沒有打字
+    this.setState({ btTyped: '', btPhase: 'typing' });
+    const step = () => {
+      const cur = this.state.btTyped || '';
+      if (cur.length >= cmd.length) {
+        this.btTimer(() => { this.setState({ btPhase: 'sent' });
+          this.btTimer(() => { this.setState({ btPhase: 'reply' });
+            this.btTimer(finish, 420); }, 520); }, 340);
+        return;
+      }
+      this.setState({ btTyped: cmd.slice(0, cur.length + 1) });
+      this.btTimer(step, /[　-鿿＀-￯]/.test(cmd[cur.length]) ? 105 : 65);
+    };
+    this.btTimer(step, 180);
+  }
+  btAfterDone() {
+    if (!this.state.btAuto) return;
+    this.btTimer(() => { if (!this.btStep(1)) this.setState({ btAuto: false }); }, this.btRM() ? 2200 : 3000);
+  }
+  btSetSide(sd) {
+    this.btStopTimer();
+    const ph = this.state.btPhase || 'idle';
+    const { it } = this.btPos();
+    const patch = { btSide: sd === 'qq' ? 'qq' : 'dc' };
+    // 已經播過的就直接換成那一邊的寫法，不用重播；打到一半就直接打完
+    if (ph !== 'idle') { patch.btTyped = this.btCmdOf(it, patch.btSide); patch.btPhase = 'done'; }
+    this.setState(patch);
+  }
+  btAutoToggle() {
+    const on = !this.state.btAuto;
+    this.setState({ btAuto: on });
+    const ph = this.state.btPhase || 'idle';
+    // 關掉：正在打字就讓它打完（btAfterDone 會看 btAuto 不再往下走）；已經播完就只取消「換下一條」的計時
+    if (!on) { if (ph === 'done' || ph === 'idle') this.btStopTimer(); return; }
+    if (ph === 'done') { if (!this.btStep(1)) this.setState({ btAuto: false }); }
+    else if (ph !== 'typing') this.btPlay();
+  }
+  /* 「試打看看」：本機解析快捷寫法，只認得清單上那幾種格式，不打任何 API。
+     回 { ok, title, lines }；ok=false 時 lines 是「怎麼寫」的提示。 */
+  btParse(raw) {
+    let s = String(raw || '').trim().replace(/\s+/g, ' ');
+    if (!s) return null;
+    const bad = (why) => ({ ok: false, title: why || '認不得這一條', lines: [
+      '快捷寫法是「字母＋時段」：h20-24 推手、s20-24 S6、d20-24 雙開、r20-24 跑者報跑、x20-24 取消；兩段用逗號分開 h20-22,23-24；後面可接 明天、4/12、+1、2車、同車、多開或備註。',
+      '查榜：t100、e、e50、e1-10、140e50、b、140b、c21、wl21、m、pt1、pc 當前 目標、pcm 目標。',
+      '登記與綁定：%小明 h3.80（s／d／r 換倍率種類）、myid 12345678。',
+      'QQ 的寫法前面加斜線、字母後空一格：/h 20-24、/砍 20-24、/登记 小明 h3.80、/绑定 12345678、/c 21、/wl 179 21、/控分（/pc）當前 目標、/pcm 目標。',
+    ] });
+    const n = v => Number(String(v).replace(/,/g, '')).toLocaleString('en-US');
+    const isQQ = /^\//.test(s);
+    let m;
+    // QQ 斜線：先翻成 Discord 的快捷寫法再解析，說明裡註明這是 QQ 寫法
+    if (isQQ) {
+      const q = s.slice(1).trim();
+      // 每條回 Discord 寫法（接著用 Discord 的解析）、'/xx'（QQ 專屬指令，查 desc 表）或直接回結果物件（QQ 才有、沒有 Discord 對應的）
+      const map = [[/^(h|s|d|r|x)\s+(.*)$/i, (a) => a[1].toLowerCase() + a[2]], [/^砍\s+(.*)$/, a => 'x' + a[1]], [/^外援\s+(.*)$/, a => 'h' + a[1] + ' 外援'],
+        [/^登记\s+(.*)$/, a => '%' + a[1]], [/^绑定\s*(\d+)$/, a => 'myid ' + a[1]],
+        [/^排名\s*(\d+)?$/, a => ({ ok: true, title: 'QQ：前 ' + (a[1] || '100') + ' 名', lines: ['回前 N 名的純文字名單（T1. 名字 · 分數…），N 只收 10、30、50、100；單一名次的分數與時速用 /e 名次。'] })],
+        [/^e(?:\s+(.*))?$/i, a => 'e' + (a[1] || '')],
+        [/^榜线\s*(?:(\d+)\.(\d+)|(\d+)|第(\d+)期|(上期))?$/, a => a[5] ? { ok: true, title: 'QQ：上一期的最終榜線', lines: ['最近結束的那一期；World Link 期會列出各章節，接著可打 /榜线 期數.章節。'] } : (a[1] ? a[1] + 'wl' + a[2] + 'b' : (a[3] || a[4] || '') + 'b')],
+        [/^我的$/, () => 'm'], [/^报跑\s+(.*)$/, a => 'bgn' + a[1]], [/^砍跑\s+(.*)$/, a => 'ccl' + a[1]], [/^快捷\s+(.*)$/, a => a[1]],
+        [/^c\s+(\d{1,2})\s*(榜线|我的)?$/, a => 'c' + a[1] + (a[2] === '榜线' ? 'b' : a[2] === '我的' ? 'm' : '')],
+        [/^c\s+(\d{1,2})\s+(\d{1,3})(?:\s*[-~]\s*(\d{1,3}))?$/, a => 'c' + a[1] + 'e' + a[2] + (a[3] ? '-' + a[3] : '')],
+        [/^wl\s+(?:(\d{1,4})\s+)?(\d{1,2})$/, a => (a[1] || '') + 'wl' + a[2]],
+        [/^(?:控分|pc)\s+([\d,]+)\s+([\d,]+)/, a => 'pc ' + a[1] + ' ' + a[2]], [/^pcm\s+([\d,]+)/, a => 'pcm ' + a[1]],
+        [/^色段\s*(\d+)?$/, a => ({ ok: true, title: 'QQ：色段分析' + (a[1] ? ' 玩家 ' + a[1] : ''), lines: ['出那位玩家的色段圖：每小時幾場、場均多少；Discord 用 pt1～pt3 看 Top 名次。'] })],
+        [/^班表\s*(今天|明天|后天|後天|\+\d{1,2}|\d{1,2}[-\/]\d{1,2}|\d{4}-\d{2}-\d{2}|[一二三123]?[车車]|车[23])?$/, a => 'sch' + (a[1] || '今天')], [/^缺\s*(.*)$/, () => 'sch今天'],
+        // 中文指令名後面不能用 \b（JS 的 \b 只認英數），改成「後面是結尾或空白」
+        [/^(开班|关班|锁报班|不锁班|开提醒|关提醒|开感谢|提醒状态|at测试|网页|抓包|队伍|活动|合班|桥接)(?=\s|$).*$/, a => '/' + a[1]]];
+      let t = '';
+      for (const [re, fn] of map) { const a = q.match(re); if (a) { t = fn(a); break; } }
+      if (t && typeof t === 'object') return t;
+      if (!t) {
+        // Discord 的斜線指令群組（/班表 開放、/公告 遊戲情報、/我的 網頁、/設定 …）：不是 QQ 指令，也不是這裡能解析的
+        const dcGroup = q.match(/^(班表|公告|我的|設定|设定|查詢|查询|系統|系统)(?=\s|$)/);
+        if (dcGroup) return { ok: true, title: 'Discord 斜線指令：/' + q, lines: ['這是 Discord 的斜線指令，在 Discord 輸入框打 / 從選單選，參數由選單帶；QQ 群與這裡的試打不解析它。'] };
+        return bad('認不得這條 QQ 指令');
+      }
+      if (t.charAt(0) === '/') {
+        const desc = { '开班': '開放報班（管理員）', '关班': '停止報班（管理員）', '锁报班': '鎖班（管理員）', '不锁班': '滿員也不自動鎖（管理員）', '开提醒': '每小時 :55 @ 下一個時段的人（群管理員）', '关提醒': '關掉每小時提醒', '开感谢': '每小時 :58 感謝下班的人', '提醒状态': '上次提醒有沒有送出、為什麼失敗', 'at测试': '實測哪一種 @ 真的會通知', '网页': '拿網站連結；接 6 位碼是綁網站帳號', '抓包': 'Haruki 抓包教學', '队伍': '用存檔算倍率', '活动': '活動資訊', '合班': '兩個群共用一張班表', '桥接': '跑者群與推手群分開時用' }[t.slice(1)];
+        return { ok: true, title: 'QQ：' + desc, lines: ['這是 QQ 群的斜線指令，官方機器人要 @ 才收得到；群裡有小號就不用 @。'] };
+      }
+      const r = this.btParse(t);
+      if (!r) return bad('認不得這條 QQ 指令');
+      if (r.ok) r.lines = r.lines.concat(['這是 QQ 的寫法，等同 Discord 的 ' + t + '；官方機器人要 @，小號免 @。']);
+      return r;
+    }
+    const low = s.toLowerCase();
+    const seg = '(\\d{1,2})\\s*[-~]\\s*(\\d{1,2})';
+    const segs = seg + '(?:\\s*[,，]\\s*' + seg + ')*';
+    const hoursOf = (a, b) => { a = +a; b = +b; if (a > 24 || b > 24) return 0; return b > a ? b - a : (b === a ? 0 : 24 - a + b); };
+    const segList = str => { const out = []; String(str).replace(/(\d{1,2})\s*[-~]\s*(\d{1,2})/g, (x, a, b) => { out.push([+a, +b]); return x; }); return out; };
+    const segText = list => list.map(([a, b]) => a + '-' + b).join('、') + '（' + list.map(([a, b]) => { const h = hoursOf(a, b); return h ? h + ' 小時' + (b <= a ? '，跨午夜' : '') : '時段不對'; }).join('；') + '）';
+    const tail = rest => {   // 時段後面的字：日期、車號、同車／多開、其餘當備註
+      const out = { date: '今天', car: '', mode: '', note: [] };
+      String(rest || '').split(' ').filter(Boolean).forEach(w => {
+        if (/^(明天|今天|後天|后天|td|tm)$/.test(w)) out.date = w === 'td' ? '今天' : (w === 'tm' ? '明天' : w);
+        else if (/^\+\d{1,2}$/.test(w)) out.date = w.slice(1) + ' 天後';
+        else if (/^\d{1,2}\/\d{1,2}$/.test(w) || /^\d{4}-\d{2}-\d{2}$/.test(w)) out.date = w;
+        else if (/^([1-3]|[一二三])\s*[車车]$/.test(w)) out.car = w.replace(/\s*[車车]$/, '').replace(/1/, '一').replace(/2/, '二').replace(/3/, '三') + '車';
+        else if (/^同[車车]$/.test(w)) out.mode = 'same';
+        else if (/^多[開开]$/.test(w)) out.mode = 'multi';
+        else if (/^外援$/.test(w)) out.mode = 'guest';
+        else out.note.push(w);
+      });
+      return out;
+    };
+    // 報班家族：h/s/d/r/x ＋ 時段 ＋ 尾巴；也認 bgn／ccl（管理員）與車號寫前面
+    m = low.match(new RegExp('^(?:([一二三1-3])[車车]\\s*)?(h|s|d|r|x|bgn|ccl)\\s*(' + segs + ')\\s*(.*)$'));
+    if (m) {
+      const kind = m[2], list = segList(m[3]), t = tail(m[6] || ''), orig = s.slice(s.toLowerCase().indexOf(m[3]) + m[3].length).trim();
+      const tt = tail(orig); if (m[1]) tt.car = m[1].replace(/1/, '一').replace(/2/, '二').replace(/3/, '三') + '車';
+      if (list.some(([a, b]) => !hoursOf(a, b))) return bad('時段不對：要寫成 20-24 這種「開始-結束」，小時 0 到 24');
+      const where = tt.date + (tt.car ? '　' + tt.car : '');
+      const name = { h: '報推手班', s: '報 S6 班', d: '報雙開', r: '跑者報跑', x: kind === 'x' ? '取消' : '', bgn: '開班（管理員／排班員）', ccl: '取消開班（管理員／排班員）' }[kind];
+      const lines = [];
+      if (kind === 'h') lines.push('h＝推手。位置依你登記的倍率自動排，滿了進候補；要先 %名字 h倍率 登記過。');
+      if (kind === 's') lines.push('s＝S6 班，一個時段只排一位；要先登記 S6 倍率（%名字 s倍率）。');
+      if (kind === 'd') lines.push('d＝雙開，一個人佔兩格；要先登記雙開倍率（%名字 d倍率）。');
+      if (kind === 'r') lines.push('r＝跑者自己報跑：要先登記跑者倍率，而且管理員要在網頁打開「跑者自行報跑」；開了之後推手才能報這段。');
+      if (kind === 'x') lines.push('x＝取消自己這段的班（跑者打的話是取消報跑，已報的推手會收到私訊）；有人候補就自動遞補。');
+      if (kind === 'bgn') lines.push('宣告這段要跑並開放報班；車隊模式下後面加名字就順便指定跑者。');
+      if (kind === 'ccl') lines.push('整段不跑了：已報的人一起清掉並私訊通知。');
+      lines.push('時段：' + segText(list) + '，日期：' + tt.date + (tt.car ? '，車：' + tt.car : '，車：一車（沒寫車號；在綁定的頻道報就是那台車）'));
+      if (tt.mode === 'same') lines.push(kind === 'r' ? '同車：那段已經有人報跑，你當第二跑者，佔 P2，班表會標「跑」。' : '「同車」只對跑者報跑（r）有意義，推手報班會當成備註。');
+      if (tt.mode === 'multi') lines.push(kind === 'r' ? '多開：那段已經有人報跑，另開一台車由你開，推手各自排。' : '「多開」只對跑者報跑（r）有意義，推手報班會當成備註。');
+      if (tt.mode === 'guest') lines.push('外援：不檢查倍率，直接排進去。');
+      if (tt.note.length) lines.push('備註：' + tt.note.join(' ') + '（時段後面不是日期、車號的字都當備註存起來）');
+      return { ok: true, title: name + '：' + where + ' ' + list.map(([a, b]) => a + '-' + b).join('、'), lines };
+    }
+    // 換人／指定位置（管理員）
+    m = s.match(new RegExp('^' + seg + '\\s+(\\S+)補(\\S+)$'));
+    if (m) return { ok: true, title: '換人（管理員／排班員）：' + m[1] + '-' + m[2] + ' ' + m[3] + ' 補 ' + m[4], lines: ['把 ' + m[4] + ' 這段的位置換成 ' + m[3] + '，被換掉的人會收到私訊。網頁看板拖拉是同一件事。'] };
+    m = low.match(new RegExp('^p([1-5])\\s+(\\S+)\\s+' + seg + '$'));
+    if (m) return { ok: true, title: '指定位置（管理員／排班員）：' + m[3] + '-' + m[4] + ' P' + m[1] + ' → ' + s.split(' ')[1], lines: ['手動把這個人放到 P' + m[1] + '，自動排位會讓路。'] };
+    // 登記與綁定
+    m = s.match(/^[%％]\s*(\S+)\s+([hsdrHSDR])\s*(\d+(?:\.\d+)?)$/);
+    if (m) { const k = m[2].toLowerCase(); return { ok: true, title: '登記倍率：' + m[1] + ' ' + ({ h: '推手', s: 'S6', d: '雙開', r: '跑者' }[k]) + ' ' + m[3], lines: ['把名字「' + m[1] + '」和' + ({ h: '推手', s: 'S6', d: '雙開', r: '跑者' }[k]) + '倍率 ' + m[3] + ' 登記進名冊；報班時用這個倍率排位。', k === 'h' ? '第一次用一定要先做這一步，否則報班會被擋。' : (k === 'r' ? '登記了跑者倍率才能自己報跑（r20-24）。' : '報 ' + (k === 's' ? 'S6（s20-24）' : '雙開（d20-24）') + ' 之前要先登記這個。')] }; }
+    m = low.match(/^myid([123])?\s*(\d+)$/);
+    if (m) return { ok: true, title: '綁定 Player ID ' + m[2] + (m[1] ? '（第 ' + m[1] + ' 個帳號）' : ''), lines: ['把你的帳號跟遊戲 Player ID 綁在一起；之後 m 查自己、排名查詢才找得到你。', 'QQ 寫法：/绑定 ' + m[2]] };
+    // 查榜家族
+    m = low.match(/^c\s*(\d{1,2})\s*m$/);
+    if (m) return { ok: true, title: '角色 ' + m[1] + ' 章節榜：我的名次', lines: ['World Link 角色 ' + m[1] + ' 那章的榜上我排第幾（要先 myid 綁定）。'] };
+    m = low.match(/^c\s*(\d{1,2})?\s*(?:(e)\s*(\d{0,3})(?:\s*[-~]\s*(\d{1,3}))?|(b))?$/);
+    if (m && m[1]) {
+      if (m[5]) return { ok: true, title: '角色 ' + m[1] + ' 章節榜線', lines: ['World Link 角色 ' + m[1] + ' 那一章目前的各檔榜線。'] };
+      if (m[2]) return { ok: true, title: '角色 ' + m[1] + ' 章節榜：' + (m[4] ? '第 ' + (m[3] || 1) + ' 到 ' + m[4] + ' 名' : (m[3] ? '第 ' + m[3] + ' 名詳情' : '前 10 名')), lines: ['World Link 角色 ' + m[1] + ' 的章節排行。'] };
+      return { ok: true, title: '角色 ' + m[1] + ' 章節榜（前 10 名）', lines: ['c＋角色編號＝World Link 那位角色的章節榜。c' + m[1] + 'b 看榜線、c' + m[1] + 'm 看自己的名次。'] };
+    }
+    m = low.match(/^(\d{0,4})\s*wl\s*(\d{1,2})\s*(b)?$/);
+    if (m) return { ok: true, title: (m[1] ? '第 ' + m[1] + ' 期 ' : '這期 ') + 'World Link 第 ' + m[2] + ' 章' + (m[3] ? '榜線' : '章節榜'), lines: [m[3] ? '那一章的各檔榜線。' : '那一章的前 10 名；加 e50 看單一名次，加 b 看榜線。'] };
+    m = low.match(/^(\d{0,4})\s*wl\s*(\d{1,2})\s*([et])\s*(\d{0,3})(?:\s*[-~]\s*(\d{1,3}))?$/);
+    if (m) return { ok: true, title: (m[1] ? '第 ' + m[1] + ' 期 ' : '這期 ') + 'World Link 第 ' + m[2] + ' 章：' + (m[3] === 't' ? 'T' + (m[4] || 100) + ' 的分數' : (m[5] ? '第 ' + (m[4] || 1) + ' 到 ' + m[5] + ' 名' : (m[4] ? '第 ' + m[4] + ' 名詳情' : '前 10 名'))), lines: ['章節榜的查法跟當期一樣：e 排行、t 分數。'] };
+    m = low.match(/^(\d{0,4})\s*([et])\s*(\d{0,3})(?:\s*[-~]\s*(\d{1,3}))?$/);
+    if (m) {
+      const ev = m[1] ? '第 ' + m[1] + ' 期' : '這期';
+      if (m[2] === 't') return { ok: true, title: ev + ' T' + (m[3] || 100) + ' 現在幾分', lines: ['t＋名次＝那個名次的分數與時速；T100 取的是前百的第 100 名。', '也可以：e' + (m[3] || 100) + ' 看那一名是誰、b 看各檔榜線。'] };
+      if (m[4]) return { ok: true, title: ev + ' 第 ' + (m[3] || 1) + ' 到 ' + m[4] + ' 名排行圖', lines: ['e＋區間出一張排行圖，含名次、分數、時速。'] };
+      if (m[3]) return { ok: true, title: ev + ' 第 ' + m[3] + ' 名詳情', lines: ['單一名次：是誰、分數、時速、周回與場均。', '想看一整段用 e1-10 這種區間。'] };
+      return { ok: true, title: ev + ' 前 10 名', lines: ['只打 e 就是這期前 10 名的排行圖。', '裸打 e 容易誤觸，捷徑頻道以外請打 e1 或 e1-10。'] };
+    }
+    m = low.match(/^(\d{0,4})\s*b$/);
+    if (m) return { ok: true, title: m[1] ? '第 ' + m[1] + ' 期最終榜線' : '這期目前的各檔榜線', lines: [m[1] ? '過往期數的最終榜線：T100、T500、T1000…各檔分數。QQ 寫法：/榜线 ' + m[1] : '各檔榜線的現在分數與時速；期數＋b（例如 140b）看過往期數。'] };
+    m = low.match(/^m\s*(\d{1,2})?$/);
+    if (m) return { ok: true, title: '查自己' + (m[1] ? '（第 ' + m[1] + ' 個帳號）' : ''), lines: ['你綁定帳號的名次、分數與時速；要先 myid 綁定 Player ID。', 'QQ 寫法：/我的'] };
+    m = low.match(/^pt\s*([123])$/);
+    if (m) return { ok: true, title: 'Top ' + m[1] + ' 的色段分析', lines: ['出一張色段圖：那位玩家每小時跑了幾場、場均多少。', 'QQ 要直接給玩家 ID：/色段 玩家ID'] };
+    m = low.match(/^pcm([123])?\s+([\d,]+)$/);
+    if (m) return { ok: true, title: '控分：用自己的即時分數算到 ' + n(m[2]) + ' 還差幾場', lines: ['當前分數用你' + (m[1] ? '第 ' + m[1] + ' 個' : '') + '綁定帳號的即時分數，回還差多少分、照場均要幾場、大約幾小時。'] };
+    m = low.match(/^pc\s+([\d,]+)\s+([\d,]+)$/);
+    if (m) { const a = +m[1].replace(/,/g, ''), b = +m[2].replace(/,/g, ''); return { ok: true, title: '控分：' + n(a) + ' → ' + n(b), lines: [b > a ? '還差 ' + n(b - a) + ' 分；機器人會接著問你場均，算出還要幾場、大約幾小時。' : '目標沒有比當前高，機器人會請你重打。', '只寫目標用 pcm 目標，當前分數自動抓你綁定的帳號。'] }; }
+    // 查班
+    m = low.match(/^sch\s*(.*)$/) || low.match(/^(今天|明天|本週|本周|我的|td|tm)$/);
+    if (m) { const w = (m[1] || m[0]).replace(/^sch/, '') || '今天'; return { ok: true, title: '查班：' + ({ '本週': '七天概覽', '本周': '七天概覽', '我的': '自己的班', td: '今天', tm: '明天' }[w] || w + ' 的班表'), lines: ['出那一天的班表圖：誰報了、還缺誰、你排到哪；過去的日期也查得到。', 'QQ 寫法：/班表 ' + w] }; }
+    m = low.match(/^\?\s*(\d{1,2})$/);
+    if (m) return { ok: true, title: '今天 ' + m[1] + ' 點誰報了', lines: ['列出那個時段的人與倍率。'] };
+    if (/^\d{1,2}\s*[-~]\s*\d{1,2}$/.test(low)) return bad('純時段 20-24 只在捷徑頻道或 QQ 小號有效，請在前面加字母：h20-24');
+    return bad();
+  }
+  /* 指令導覽要給模板的值，只在介紹頁算 */
+  btVals(s) {
+    const { c, i, cat, it } = this.btPos();
+    const side = this.btSideOf(), ph = s.btPhase || 'idle';
+    const cmd = this.btCmdOf(it);
+    const ui = !!it.ui;
+    const fellBack = !ui && (side === 'qq' ? !it.qq : !it.dc);
+    const eff = fellBack ? (side === 'qq' ? 'dc' : 'qq') : side;   // 實際示範的那一邊（退回時聊天視窗照另一邊的樣子演）
+    const typed = ph === 'idle' ? '' : (s.btTyped || '');
+    const shown = ph === 'sent' || ph === 'reply' || ph === 'done';
+    const lines = (eff === 'qq' && it.rq) ? it.rq : (it.r || it.rq || []);
+    const flat = []; this.CMD_TOUR.forEach((g, gi) => g.items.forEach((x, xi) => flat.push([gi, xi])));
+    const pos = flat.findIndex(([a, b]) => a === c && b === i);
+    const tryOut = this.btParse(s.btTry);
+    return {
+      btCats: this.CMD_TOUR.map((g, gi) => ({ v: gi, n: g.n, k: g.items.length, on: gi === c ? 'true' : 'false' })),
+      btCatName: cat.n,
+      btList: cat.items.map((x, xi) => ({ c, i: xi, t: x.t, code: this.btCmdOf(x), on: xi === i ? 'true' : 'false' })),
+      btSideDc: side === 'dc' ? 'true' : 'false', btSideQq: side === 'qq' ? 'true' : 'false', btIsQq: side === 'qq',
+      btRoom: eff === 'qq' ? '菜根車隊 QQ 群' : '# 車隊頻道', btRoomDot: eff === 'qq' ? '#12a9c2' : '#5865f2',
+      btTitle: it.t, btPosLabel: (pos + 1) + ' / ' + flat.length,
+      btIsUi: ui, btUiBtn: it.ui || '', btUiWhere: it.w || '', btUiOn: ui && ph !== 'idle' ? 'true' : 'false',
+      btInText: typed || (ui ? '' : (eff === 'qq' ? '在群裡打…' : '在頻道裡打…')), btInPh: typed ? '0' : '1',
+      btCaret: ph === 'typing', btSendOn: ph === 'typing' && typed.length > 0 ? '1' : '0',
+      btShowSent: shown, btSentText: ui ? '（按下「' + it.ui + '」）' : ((eff === 'qq' && !it.noAt) ? '@菜根机器人 ' + cmd : cmd),
+      btShowReply: ph === 'reply' || ph === 'done', btReplyLines: lines.map(t => ({ t })),
+      btBotName: eff === 'qq' ? '菜根机器人' : '菜根機器人', btBotTag: eff === 'qq' ? '机器人' : 'BOT',
+      btShowExplain: ph === 'done', btExplain: it.x, btVars: (it.v || []).map(([k, d]) => ({ k, d })),
+      btSideNote: fellBack ? ((side === 'qq' ? '這條 QQ 沒有對應寫法，下面示範的是 Discord 的' : '這條只有 QQ 有，下面示範的是 QQ 的') + (it.qn ? '：' + it.qn : '。')) : '',
+      btPlayLabel: ph === 'idle' ? '播放' : (ph === 'done' ? '再播一次' : '播放中…'),
+      btPrevDis: pos <= 0, btNextDis: pos >= flat.length - 1,
+      btNotUi: !ui, btHasVars: !!(it.v && it.v.length),
+      btAutoOn: s.btAuto ? 'true' : 'false', btAutoLabel: s.btAuto ? '自動播放中（按一下停）' : '自動播放',
+      btTry: s.btTry || '', btTryEx: this.CMD_TRY_EX.map(k => ({ k })),
+      btTryShow: !!tryOut, btTryOk: tryOut && tryOut.ok ? '1' : '0', btTryTitle: tryOut ? tryOut.title : '', btTryLines: tryOut ? tryOut.lines.map(t => ({ t })) : [],
+    };
   }
   /* 首頁通知膠囊：更新紀錄裡「比上次看過的日期新」的那幾則 */
   newLog() {
@@ -5627,7 +6115,7 @@ class Component extends DCLogic {
   /* ===== 卡池詳情（原生疊層；PU 卡由 tools/build-gacha-pickups.py 建置時從兩服 master 算好） ===== */
   loadGachaPk() {
     if (this._gpk) return this._gpk;
-    this._gpk = import('./data/gacha-pickups.js?v=cf26df1134').then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
+    this._gpk = import('./data/gacha-pickups.js?v=6a48ae0d9d').then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
       .catch(() => { this._gpk = null; this.setState({ gachaPkErr: true }); });
     return this._gpk;
   }
@@ -5885,7 +6373,7 @@ class Component extends DCLogic {
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
-      const m = await import('./data/skill-table.js?v=98470f0fe4');
+      const m = await import('./data/skill-table.js?v=b3d1ac89e9');
       return m.SKILL_TABLE;
     });
   }
@@ -6366,11 +6854,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=0344184c4e')
+    fetch('./data/ep-songs.js?v=32694762d7')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=0344184c4e')
+        import('./data/ep-songs.js?v=32694762d7')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
@@ -6901,6 +7389,7 @@ class Component extends DCLogic {
     if (q) {
       // 彩蛋：只有打到相關的字才會浮出來
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
+      if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
       if (/聲紋|傅立葉|頻譜|soundprint|fourier|spectr/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: 'SEKAI 聲紋', sub: '每一首歌的傅立葉肖像：真正的短時傅立葉轉換畫成極座標聲紋', run: () => { location.href = 'soundprint.html'; } });
       (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
@@ -6921,7 +7410,7 @@ class Component extends DCLogic {
   }
   NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 18 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
-  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html' };
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -8015,12 +8504,14 @@ class Component extends DCLogic {
       isBot: s.page === 'bot',
       botHeroImg: './bot-img/hero.webp?v=' + this.BOT_IMG_VER,
       botStats: this.BOT_STATS, botFeatures: this.BOT_FEATURES, botSides: this.BOT_SIDES, botSteps: this.BOT_STEPS,
-      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上排班身份組、班表圖顯示 P1、跑者自行報跑、試算表同步、點歌與錄音。',
+      botSheetNote: '最近更新：' + this.BOT_SHEET_DATE + '，補上遊戲情報推播、同車／多開、排班規則、班表插畫圖庫、試算表三方合併。',
+      botNewNote: this.BOT_SHEET_DATE.replace(/^(\d{4})\.(\d{2})\.\d{2}$/, (m, y, mo) => y + ' 年 ' + Number(mo) + ' 月'),   // 「標 NEW 的是 2026 年 10 月新加的」，只改 BOT_SHEET_DATE 就一起走
       botSheets: this.BOT_SHEETS.map((g, i) => ({
         n: '卡面 ' + (i + 1), tone: g[1], alt: '菜根機器人指令清單，卡面 ' + (i + 1) + '（' + g[0] + '）',
         full: './bot-img/cmd-' + (i + 1) + '.webp?v=' + this.BOT_IMG_VER,
         thumb: './bot-img/cmd-' + (i + 1) + '-thumb.webp?v=' + this.BOT_IMG_VER,
       })),
+      ...(s.page === 'bot' ? this.btVals(s) : {}),   // 指令導覽（模擬聊天視窗＋試打看看）
       /* 製作與致謝 */
       isCredits: s.page === 'credits',
       creditEditors: this.CREDIT_EDITORS,
@@ -9905,6 +10396,7 @@ class Component extends DCLogic {
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
+          { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
@@ -9927,6 +10419,16 @@ class Component extends DCLogic {
       onSmReload: () => this.setState({ dbErr: '', skillTable: null }, () => this.loadSkillTable()),
       onStarEgg: () => this.openStarmap(true),   // 首頁右上角那顆會閃的小星（彩蛋）
       onBotSheets: () => { const el = document.getElementById('bot-sheets'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+      /* 介紹頁的指令導覽 */
+      onBtCat: e => this.btGoto(+e.currentTarget.dataset.v, 0, false),
+      onBtPick: e => { const d = e.currentTarget.dataset; this.btGoto(+d.c, +d.i, true); },
+      onBtPlay: () => this.btPlay(),
+      onBtPrev: () => this.btStep(-1),
+      onBtNext: () => this.btStep(1),
+      onBtAuto: () => this.btAutoToggle(),
+      onBtSide: e => this.btSetSide(e.currentTarget.dataset.v),
+      onBtTryEx: e => this.setState({ btTry: e.currentTarget.dataset.k || '' }),
+      onBtTryKey: e => { if (e.key === 'Escape') this.setState({ btTry: '' }); },
       /* 私車排班 */
       onCarGuildToggle: () => this.setState({ carGuildOpen: !this.state.carGuildOpen, carPop: null }),
       onCarGuildPick: e => { const v = String(e.currentTarget.dataset.v || ''); if (!v || v === String(this.state.g)) { this.setState({ carGuildOpen: false }); return; } this.setState({ g: v, carGuildOpen: false, carStates: {}, carStErr: {}, carSec: {}, carDate: '', carPop: null, carTags: null, carMembers: null, carTagMgr: false }); setTimeout(() => { this.carLoadStates(); this.carLoadSec(this.state.carTab); }, 0); },
@@ -9935,6 +10437,12 @@ class Component extends DCLogic {
       onCarView: e => this.setState({ carView: e.currentTarget.dataset.v === 'board' ? 'board' : 'table', carPop: null }),
       onCarDate: e => this.setState({ carDate: e.currentTarget.dataset.v || '', carPop: null }),
       onCarReload: () => { this.setState({ carPop: null }); this.carLoad(); },
+      /* 設定引導（聚光燈逐步導覽；本體在 js/car.js 的 carGuide*） */
+      onCarGuideOpen: () => { if (typeof this.carGuideOpen === 'function') this.carGuideOpen(); },
+      onCarGuideNext: () => { const g = this.state.carGuide; if (g) this.carGuideGo(g.step + 1, 1); },
+      onCarGuidePrev: () => { const g = this.state.carGuide; if (g) this.carGuideGo(g.step - 1, -1); },
+      onCarGuideClose: () => { if (this.carGuideClose) this.carGuideClose(false); },
+      onCarGuideHide: () => { if (this.carGuideClose) this.carGuideClose(true); },
       onCarSeat: e => this.carOpenPop('seat', e.currentTarget),
       onCarTag: e => { e.stopPropagation(); this.carOpenPop('tag', e.currentTarget); },
       onCarAddTag: e => { e.stopPropagation(); this.carOpenPop('addtag', e.currentTarget); },
@@ -9954,6 +10462,8 @@ class Component extends DCLogic {
       onCarMode: e => this.carSetMode(e.currentTarget.dataset.v === 'team'),
       onCarRunSelfAdm: e => this.carSetRunSelf(e.currentTarget.dataset.v === '1'),
       onCarRunSelfRow: e => this.carRunSelfRow(e.currentTarget),
+      onCarRsMode: e => this.setState({ carRsMode: String(e.currentTarget.dataset.v || '') }),
+      onCarRsMode: e => this.setState({ carRsMode: String(e.currentTarget.dataset.v || '') }),
       onCarRunSelfTool: () => this.carRunSelfTool(),
       onCarRunSelfKey: e => { if (e.key === 'Enter') this.carRunSelfTool(); },
       onCarLockDay: e => { const st = (this.state.carStates || {})[this.carNo()], day = this.carDayOf(st, this.state.carDate); const v = e.currentTarget.dataset.v === '1';
