@@ -11,9 +11,8 @@
 -  SEKAI 星圖（`starmap.html`）- 全曲庫化成一片可互動的星空：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮、可分享的星星連結；詳情可試聽（與曲庫頁同音源：第 10 秒起 60 秒、淡入淡出），「星空電台」在看得見的星之間隨機漫遊播放
 -  衝榜劇場（`theater.html`）- 前百名的每一場：Worker 每 15 秒記一次的逐場紀錄攤成脈動牆（時間×名次）、節奏熱圖、選手剖析（場次、分布、作息分段、名次軌跡）、此刻統計與即時紀錄，拖曳時間可回放整期
 -  SEKAI 聲紋（`soundprint.html`）- 每一首歌的傅立葉肖像：在瀏覽器裡對全曲音訊做短時傅立葉轉換（Hann 2048／跳距 512／128 對數頻帶），畫成時間繞一圈、頻率由內而外的極座標聲紋；另有攤平頻譜與自相似矩陣的結構圖，推算調性（Krumhansl）、速度（自相關，與官方 BPM 對照）、亮度、動態、低中高頻與段落；可試聽任一刻、輸出海報
--  樂曲追加圖產生器（`songcard.html`）- 做一張官方風格的「樂曲追加決定」圖：從曲庫選曲自動帶入曲圖、曲名、作詞／作曲／編曲、3D／2D MV、APPEND、原唱與 SEKAI ver. 演唱成員（讀台服／日服 master 與 song-meta），或全部手填、上傳曲圖，底圖用官方公告圖原檔（也能切回自繪背景），SEKAI ver. 框放官方團體標誌（`unit-img/`，可換成自己上傳的），1920×1080 PNG 下載或複製；日文／繁中兩套固定文字
--  譜面預覽產生器（`chart.html`）- 把整首譜面攤成一張直欄式的圖：選曲選難度就從素材鏡像抓官方 SUS 譜面檔，畫出點擊、關鍵、滑鍵、軌跡、長條（含緩動曲線與中繼菱形）與引導線，每小節標小節數與累計 combo（含長條隱藏判定點，與官方 Notes 數一致）、BPM 變速點與技能發動點；也能上傳自己的 .sus，PNG／JPG 下載
 -  迴響之境（`echoes.html`）- 在六個 SEKAI 之間漂流的抽象網頁冒險：跟著每個世界的 BPM 踩拍前進（Perfect 累積順暢度）、ATB 戰鬥與共鳴爆發、每 5 層三選一的和弦強化、會出事的選擇事件、按住調音的鍛造、煉金、攪拌料理、擦唱片打工、一筆連線的礦脈採集、天賦星圖、扭蛋機與成就；另有致敬《災難公關》的「危機記者會」填詞派對（和三位口味不同的 NPC 輪流當評審）。存檔在 localStorage，聲音全用 WebAudio 即時合成
+-  製作工具（站內頁，側欄「小遊戲與製作」）：**樂曲追加圖產生器** 做官方風格的「樂曲追加決定」圖，選曲自動帶入曲圖、作詞／作曲／編曲、MV、APPEND、原唱與 SEKAI ver. 成員，底圖用官方原檔、SEKAI ver. 框放官方團體標誌，附片假名轉換器（羅馬拼音／平假名 → 片假名），1920×1080 PNG；**譜面預覽產生器** 把整首官方譜面攤成直欄式的圖（點擊、關鍵、滑鍵、軌跡、長條、引導線），每小節標 combo、BPM 與技能點，也能上傳自己的 .sus
 
 ## 伺服器機器人（bot/）
 
@@ -27,9 +26,8 @@
 | `starmap.html` | 獨立頁：全曲庫星圖。只吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`，沒有其他依賴 | 每次重新驗證 |
 | `theater.html` | 獨立頁：衝榜劇場。資料直接向 `games.project-sekai-center.com/games?ev=` 拉逐局紀錄（gzip，一期約 5 MB），活動進行中每 15 秒增量更新；活動資料用 HiSekai `/event/list` 與 `data/borders-db.js` | 每次重新驗證 |
 | `soundprint.html` | 獨立頁：SEKAI 聲紋。曲庫吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`；音源直接向 sekai.best 資產鏡像拉全曲 mp3（約 2 MB），全部在瀏覽器的 Worker 裡做 FFT，不經本站伺服器 | 每次重新驗證 |
-| `songcard.html` | 獨立頁：樂曲追加圖產生器。選曲時向台服／日服 master 拉 `musics`／`musicVocals`／`musicDifficulties`／`outsideCharacters`，MV 旗標讀 `data/song-meta.js`，曲圖向 sekai.best 鏡像抓（有 CORS 才能匯出）；表單存 `localStorage` 的 `sekai-songcard-v1`；`window.__songcard` 給煙霧測試用 | 每次重新驗證 |
+| `js/maker.js` | 製作工具（進「小遊戲與製作」的追加圖或譜面頁才載）：樂曲追加圖產生器（選曲自動帶入、官方底圖與團體標誌、片假名轉換器、1920×1080 PNG）與譜面預覽產生器（官方 SUS 解析照 pjsekai 引擎規則、直欄式 canvas、combo／BPM／技能點）。模板在 app.html 的 isSongcard／isChart 兩段 |
 | `unit-img/` | 追加圖產生器的圖片素材：六個團體的官方標誌（webp，取自官方網站）與公告圖底圖 `songcard-bg.webp`；同源檔案所以 canvas 不會被污染、能直接匯出 |
-| `chart.html` | 獨立頁：譜面預覽產生器。曲庫讀台服／日服 master 的 `musics`／`musicDifficulties`，譜面檔抓 `storage.sekai.best` 的 `music/music_score/{id}_01/{難度}.txt`（Ched SUS）；解析規則照 pjsekai 引擎的 SUS→USC（單點與長條點重疊時只當修飾、長條每半拍一個隱藏判定點），canvas 直欄式畫圖，iOS 面積上限附近會整張縮小 |
 | `echoes.html` | 獨立頁：迴響之境。單一檔案、沒有外部依賴（只有 Google Fonts），存檔在 `localStorage` 的 `sekai-echoes-v1`；`window.__echoes` 給煙霧測試用 | 每次重新驗證 |
 | `js/core.js` | `index.html` 抽出的共用邏輯，五個 embed 共享同一份 | 一年 immutable |
 | `css/core.css` | 同上，共用樣式 | 一年 immutable |

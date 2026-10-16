@@ -167,52 +167,18 @@
       }
     },
     {
+      "src": "/songcard(\\.html)?",
+      "status": 308,
+      "headers": { "Location": "/app.html?page=songcard" }
+    },
+    {
+      "src": "/chart(\\.html)?",
+      "status": 308,
+      "headers": { "Location": "/app.html?page=chart" }
+    },
+    {
       "src": "/echoes",
       "dest": "/echoes.html",
-      "headers": {
-        "cache-control": "public, max-age=0, must-revalidate",
-        "x-content-type-options": "nosniff",
-        "referrer-policy": "strict-origin-when-cross-origin",
-        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
-        "x-frame-options": "SAMEORIGIN"
-      }
-    },
-    {
-      "src": "/songcard.html",
-      "dest": "/songcard.html",
-      "headers": {
-        "cache-control": "public, max-age=0, must-revalidate",
-        "x-content-type-options": "nosniff",
-        "referrer-policy": "strict-origin-when-cross-origin",
-        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
-        "x-frame-options": "SAMEORIGIN"
-      }
-    },
-    {
-      "src": "/songcard",
-      "dest": "/songcard.html",
-      "headers": {
-        "cache-control": "public, max-age=0, must-revalidate",
-        "x-content-type-options": "nosniff",
-        "referrer-policy": "strict-origin-when-cross-origin",
-        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
-        "x-frame-options": "SAMEORIGIN"
-      }
-    },
-    {
-      "src": "/chart.html",
-      "dest": "/chart.html",
-      "headers": {
-        "cache-control": "public, max-age=0, must-revalidate",
-        "x-content-type-options": "nosniff",
-        "referrer-policy": "strict-origin-when-cross-origin",
-        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
-        "x-frame-options": "SAMEORIGIN"
-      }
-    },
-    {
-      "src": "/chart",
-      "dest": "/chart.html",
       "headers": {
         "cache-control": "public, max-age=0, must-revalidate",
         "x-content-type-options": "nosniff",
