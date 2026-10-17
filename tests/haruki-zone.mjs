@@ -3,7 +3,8 @@
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
   hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP, HZ_PLAN_EFFORT, HZ_MAT_WEIGHT, hzPlanAreaItems, HZ_AREA_UNLOCK,
-  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather, hzMysMaps, HZ_MAP_CFG, HZ_MAP_CAL, hzMapPos } from '../js/haruki.js';
+  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather, hzMysMaps, HZ_MAP_CFG, HZ_MAP_CAL, hzMapPos,
+  hzBagHonor, hzBagProfile, hzBagHonors, hzBagResources, hzBagEvents, hzBagMusic, hzBagStats, hzBagRaw, HZ_BAG_TABS } from '../js/haruki.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -302,6 +303,72 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   ok(p8.l > hzMapPos(8, 0, 0).l && p8.t < hzMapPos(8, 0, 0).t, '遺忘之地 x 往右、z 往上');
   const far = hzMapPos(6, 9999, 9999);
   ok(far.out && far.l === 99 && far.t === 1, '超出底圖的點夾在 1–99%');
+}
+
+/* ---------- 查背包：用一份縮小的 suite 與 master 表驗每個區塊 ---------- */
+{
+  const M = {
+    honors: [{ id: 1, groupId: 1, honorRarity: 'low', name: '一歌粉絲', assetbundleName: 'honor_0001', levels: [{ level: 1 }, { level: 2 }, { level: 3 }] },
+             { id: 7008, groupId: 626, honorRarity: 'highest', name: '第1名', assetbundleName: 'honor_top_000001', levels: [{ level: 1 }] },
+             { id: 7721, groupId: 626, honorRarity: 'low', name: 'TOP40000', assetbundleName: 'honor_top_040000', levels: [{ level: 1 }] }],
+    honorGroups: [{ id: 1, name: '一歌粉絲', honorType: 'character' }, { id: 626, name: '約定的Passerelle 綜合', honorType: 'event', backgroundAssetbundleName: 'honor_bg_event_wl_3rd_part1' }],
+    bondsHonors: [{ id: 1010201, bondsGroupId: 10102, name: '一歌和咲希', honorRarity: 'low', levels: [{ level: 1 }, { level: 2 }] }],
+    bondsHonorWords: [{ id: 1010201, bondsGroupId: 10102, name: 'Leo/need的起點' }],
+    bonds: [{ id: 1, groupId: 10102, characterId1: 1, characterId2: 2 }],
+    materials: [{ id: 1, name: '金幣袋', materialType: 'common', seq: 1 }, { id: 91, name: '夢想水晶球（藍）', materialType: 'master_lesson', seq: 10 }],
+    mysekaiMaterials: [{ id: 1, name: '心願木材', iconAssetbundleName: 'item_wood_1', mysekaiMaterialRarityType: 'rarity_1', mysekaiMaterialType: 'wood', seq: 1 }, { id: 5, name: '鑽石', iconAssetbundleName: 'item_diamond', mysekaiMaterialRarityType: 'rarity_3', mysekaiMaterialType: 'mineral', seq: 5 }],
+    rankMatchTiers: [{ id: 17, rankMatchGradeId: 5, tier: 9 }], rankMatchGrades: [{ id: 5, name: '白金' }], rankMatchSeasons: [{ id: 1002, name: '2026 SPRING' }],
+    playerFrames: [{ id: 10028, playerFrameGroupId: 1, gameCharacterId: 2 }], playerFrameGroups: [{ id: 1, name: '[邊框]活動「Wishes in Bloom！」' }],
+    musics: [{ id: 1, title: 'Tell Your World', publishedAt: 1 }, { id: 2, title: 'セカイ', publishedAt: 1 }, { id: 3, title: '未來曲', publishedAt: 9e15 }],
+    musicDifficulties: [{ musicId: 1, musicDifficulty: 'master' }, { musicId: 2, musicDifficulty: 'master' }, { musicId: 3, musicDifficulty: 'master' }, { musicId: 1, musicDifficulty: 'append' }, { musicId: 1, musicDifficulty: 'expert' }, { musicId: 2, musicDifficulty: 'expert' }],
+    events: [{ id: 176, name: '約定的Passerelle', eventType: 'world_bloom', startAt: 1786000000000, aggregateAt: 1787000000000 }, { id: 182, name: '與你相繫的Heart Beat', eventType: 'marathon', startAt: 1791000000000, aggregateAt: 1792000000000 }],
+    gameCharacters: [{ id: 1, firstName: '星乃', givenName: '一歌' }, { id: 2, firstName: '天馬', givenName: '咲希' }, { id: 5, firstName: '花里', givenName: 'みのり' }],
+  };
+  const suite = {
+    upload_time: 1792165865,
+    userProfile: { userId: 7014020401261239041, word: '你好', twitterId: 'abc', profileImageType: 'leader' },
+    userProfileHonors: [{ honorId: 7008, honorLevel: 1, seq: 2, profileHonorType: 'normal' }, { honorId: 1010201, honorLevel: 2, seq: 1, profileHonorType: 'bonds', bondsHonorWordId: 1010201 }],
+    userPlayerFrames: [{ playerFrameId: 10028, playerFrameAttachStatus: 'first' }],
+    userDecks: [{ deckId: 1, leader: 622, name: '團體01' }], userCards: [{ cardId: 622 }, { cardId: 1 }], userCharacters: [{ characterId: 1, characterRank: 110 }, { characterId: 2, characterRank: 130 }],
+    userCustomProfiles: [{ customProfileId: 1, name: '143' }],
+    userHonors: [{ honorId: 1, level: 3, obtainedAt: 1662875005919 }, { honorId: 7008, level: 1, obtainedAt: 1792000000000 }, { honorId: 7721, level: 1, obtainedAt: 1791000000000 }, { honorId: 99999, level: 1, obtainedAt: 1 }],
+    userBondsHonors: [{ bondsHonorId: 1010201, level: 2, obtainedAt: 1668517783512 }],
+    userMaterials: [{ materialId: 91, quantity: 12 }, { materialId: 1, quantity: 2742599 }, { materialId: 999, quantity: 3 }],
+    userMysekaiMaterials: [{ mysekaiMaterialId: 5, quantity: 7 }, { mysekaiMaterialId: 1, quantity: 19512 }],
+    userEvents: [{ eventId: 182, eventPoint: 73518257 }],
+    userWorldBlooms: [{ gameCharacterId: 5, rank: 582, worldBloomChapterPoint: 4253596, eventId: 176 }],
+    userRankMatchSeasons: [{ rankMatchSeasonId: 1002, rankMatchTierId: 17, totalTierPoint: 97, playCount: 10, winCount: 8, loseCount: 2, drawCount: 0, maxConsecutiveWinCount: 5 }],
+    userMusicResults: [{ musicId: 1, musicDifficultyType: 'master', fullComboFlg: true, fullPerfectFlg: false, playResult: 'full_combo' }, { musicId: 1, musicDifficultyType: 'master', fullComboFlg: true, fullPerfectFlg: true }, { musicId: 2, musicDifficultyType: 'master', playResult: 'clear' }, { musicId: 1, musicDifficultyType: 'expert', playResult: 'full_combo' }],
+    userMissionStatuses: [{ missionType: 'honor_mission', missionStatus: 'received' }, { missionType: 'honor_mission', missionStatus: 'received' }, { missionType: 'live_mission', missionStatus: 'progress' }],
+    userEventEpisodeStatuses: [{ status: 'already_read' }, { status: 'already_read' }, { status: 'unreleased' }, { status: 'released' }],
+    userCostume3dStatuses: [{ costume3dId: 1 }], userMysekaiCharacterTalks: [{ isRead: true }, { isRead: false }],
+  };
+  const h = hzBagHonor({ honorId: 7008, level: 1 }, M);
+  ok(h.bg === 'honor_bg_event_wl_3rd_part1' && h.rank === 'honor_top_000001' && h.typeName === '活動' && h.group === '約定的Passerelle 綜合', '名次稱號：底圖用稱號組背景、名次圖用自己的 abn');
+  ok(hzBagHonor({ honorId: 1, level: 3 }, M).rank === '' && hzBagHonor({ honorId: 1, level: 3 }, M).max === 3, '非名次稱號沒有名次圖，最高等級照 levels 數');
+  const P = hzBagProfile(suite, M, { name: '測試', rank: 100, uid: '7014020401261239041' });
+  ok(P.name === '測試' && P.rank === 100 && P.uid === '7014020401261239041' && P.word === '你好' && P.leader === 622 && P.money === null, '名片：沒有 userGamedata 時用匯入的 meta，貨幣為 null');
+  ok(P.honors.length === 2 && P.honors[0].bonds === true && P.honors[0].c1 === 1 && P.honors[0].c2 === 2 && P.honors[0].word === 'Leo/need的起點' && P.honors[1].name === '第1名', '名片稱號照 seq 排、羈絆稱號帶兩個角色與稱號語');
+  ok(P.frames.length === 1 && P.frames[0].name.indexOf('Wishes in Bloom') > 0 && P.frames[0].chara === 2 && P.custom[0] === '143' && P.charaMax === 130, '頭像框接上邊框組名與角色，自訂名片與最高角色等級');
+  const Hs = hzBagHonors(suite, M);
+  ok(Hs.list.length === 4 && Hs.list[0].id === 7008 && Hs.list[3].name === '稱號 #99999' && Hs.byType.event === 2 && Hs.byType.character === 1 && Hs.byType.other === 1 && Hs.total === 3, '稱號清單新到舊、依類型計數、master 沒有的也不丟');
+  ok(Hs.bonds.length === 1 && Hs.bonds[0].c1 === 1 && Hs.bonds[0].c2 === 2 && Hs.bonds[0].level === 2 && Hs.bonds[0].max === 2, '羈絆稱號接上 bonds 表的兩個角色');
+  const R = hzBagResources(suite, M);
+  ok(R.mats.length === 3 && R.mats[0].type === 'common' && R.mats[1].type === 'master_lesson' && R.mats[2].type === 'other' && R.mats[2].items[0].name === '素材 #999', '素材依種類分組、順序照表、未知種類排最後');
+  ok(R.mys.length === 2 && R.mys[0].id === 1 && R.mys[1].rare === 2 && R.mys[1].icon === 'item_diamond', '豆森素材照 seq 排、稀有度換成數字');
+  const Ev = hzBagEvents(suite, M);
+  ok(Ev.events.length === 2 && Ev.events[0].id === 182 && Ev.events[0].points === 73518257 && Ev.events[0].typeName === '馬拉松' && Ev.events[1].id === 176 && Ev.events[1].wl.length === 1 && Ev.events[1].wl[0].name === '花里みのり' && Ev.events[1].wl[0].rank === 582, '跑榜：userEvents 加上只剩 WL 章節名次的那期，章節帶角色名');
+  ok(Ev.seasons.length === 1 && Ev.seasons[0].name === '2026 SPRING' && Ev.seasons[0].grade === '白金' && Ev.seasons[0].tier === 9 && Ev.seasons[0].win === 8, '排位賽季接上賽季名與段位');
+  const Mu = hzBagMusic(suite, M);
+  const master = Mu.rows.find(r => r.diff === 'master'), expert = Mu.rows.find(r => r.diff === 'expert'), append = Mu.rows.find(r => r.diff === 'append');
+  ok(master && master.total === 2 && master.played === 2 && master.fc === 1 && master.ap === 1 && master.missN === 1 && master.missing[0] === 'セカイ', 'Master：未公開的曲不算、同一首取最好、沒 FC 的列出');
+  ok(expert && expert.total === 2 && expert.fc === 1 && append && append.total === 1 && append.fc === 0, 'Expert／Append 總數照 musicDifficulties');
+  const St = hzBagStats(suite, M, 1500);
+  ok(St.cards === 2 && St.cardsTotal === 1500 && St.costumes === 1 && St.missions[0].type === 'honor_mission' && St.missions[0].n === 2 && St.missions.length === 1, '收集：卡片數、服裝數、只算 received 的任務');
+  ok(St.stories.length === 1 && St.stories[0].read === 2 && St.stories[0].total === 3 && St.stories[0].pct === 67 && St.mysTalks === 1 && St.mysTalksTotal === 2, '劇情閱讀率不算未開放的，豆森對話算已讀');
+  const Raw = hzBagRaw(suite);
+  ok(Raw.length === Object.keys(suite).length && Raw[0].key < Raw[1].key && Raw.find(r => r.key === 'userHonors').n === 4 && Raw.find(r => r.key === 'userHonors').label === '稱號' && Raw.find(r => r.key === 'userProfile').kind === 'obj', '原始資料列出每個區塊的筆數與中文標籤');
+  ok(HZ_BAG_TABS.length === 7 && HZ_BAG_TABS[0][0] === 'card', '背包有七個分頁');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');

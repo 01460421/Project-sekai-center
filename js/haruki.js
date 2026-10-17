@@ -254,6 +254,117 @@ export function hzMapPos(site, x, z) {
   const u = k.u0 + c.dx * k.g * px / 1280, v = k.v0 + c.dz * k.g * pz / 1080;
   return { l: Math.round(Math.max(1, Math.min(99, u * 100)) * 100) / 100, t: Math.round(Math.max(1, Math.min(99, v * 100)) * 100) / 100, out: u < 0 || u > 1 || v < 0 || v > 1 };
 }
+/* ===== 查背包：把匯入的整份遊戲資料攤開給人看（名片、稱號、資源、跑榜、歌曲、收集、原始資料）。
+   全是純函式：吃 suite（Haruki 的 suite 資料）與 M（要用到的 master 表），回畫面要的結構，方便測試。 ===== */
+export const HZ_BAG_TABS = [['card', '名片'], ['honor', '稱號'], ['res', '資源'], ['event', '跑榜'], ['music', '歌曲'], ['stat', '收集'], ['raw', '原始資料']];
+export const HZ_HONOR_TYPES = { event: '活動', limitevent: '限時活動', limitevent_v2: '限時活動', achievement: '成就', character: '角色', birthday: '生日', rank_match: '排位' };
+export const HZ_MAT_TYPES = { common: '一般素材', master_lesson: '專精練習', music: '樂曲', character_rank_exp_ticket: '角色經驗券', birthday_party_delivery: '生日派對', card_ticket: '卡片券', web_ticket: '網頁券', vocal_card_ticket: '歌唱卡片券', auto_exchange_music_vocal_ticket: '歌曲兌換券', costume: '服裝' };
+export const HZ_EV_TYPES = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' };
+export const HZ_DIFFS = [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['expert', 'Expert'], ['master', 'Master'], ['append', 'Append']];
+export const HZ_RAW_LABELS = { userGamedata: '基本資料', userProfile: '個人檔案', userProfileHonors: '名片稱號', userPlayerFrames: '頭像框', userCustomProfiles: '自訂名片', userCustomProfileCards: '自訂名片卡片', userCustomProfileResources: '自訂名片素材', userCustomProfileResourceUsages: '自訂名片素材使用', userCustomProfileGachas: '自訂名片轉蛋', userCards: '卡片', userDecks: '隊伍', userCharacters: '角色等級', userBonds: '羈絆', userHonors: '稱號', userBondsHonors: '羈絆稱號', userMaterials: '素材', userMysekaiMaterials: '豆森素材', userEvents: '活動分數', userWorldBlooms: 'World Link 章節', userRankMatchSeasons: '排位賽季', userMusics: '樂曲', userMusicVocals: '歌曲版本', userMusicResults: '樂曲成績', userMusicAchievements: '樂曲成就', userChallengeLiveSoloDecks: '挑戰 Live 隊伍', userChallengeLiveSoloStages: '挑戰 Live 關卡', userChallengeLiveSoloResults: '挑戰 Live 最高分', userChallengeLiveSoloHighScoreRewards: '挑戰 Live 分數獎勵', userCharacterLiveUsageCounts: '角色上場次數', userCharacterMissionV2s: '角色任務進度', userCharacterMissionV2Statuses: '角色任務狀態', userMissionStatuses: '任務', userAreas: '區域', userActionSets: '區域對話', userReleaseConditions: '解鎖條件', userCostume3dStatuses: '服裝', userCostume3dShopItems: '服裝商店', userBillingShopItems: '商城商品', userEventExchanges: '活動商店兌換', userUnitEpisodeStatuses: '團體劇情', userEventEpisodeStatuses: '活動劇情', userArchiveEventEpisodeStatuses: '過往活動劇情', userSpecialEpisodeStatuses: '特別劇情', userCharacterProfileEpisodeStatuses: '角色側寫', userMysekaiGates: '豆森大門', userMysekaiCanvases: '豆森畫布', userMysekaiCharacterTalks: '豆森對話', userMysekaiFixtureGameCharacterPerformanceBonuses: '豆森家具加成', userWorldBloomSupportDecks: 'WL 支援隊伍', userInformations: '通知', upload_time: '上傳時間', uploadTime: '上傳時間' };
+const HZ_RANKED_HONOR = /^(第\s*\d+\s*名|TOP\s*\d+)$/i;
+const hzById = (list, key) => { const m = {}; (list || []).forEach(x => { m[+x[key || 'id']] = x; }); return m; };
+const hzCharFull = M => { if (M._charFull) return M._charFull; const m = {}; (M.gameCharacters || []).forEach(c => { m[+c.id] = (c.firstName || '') + (c.givenName || ''); }); return (M._charFull = m); };
+/* 一個稱號的顯示資料：底圖是稱號組的背景（沒有就用自己的 abn），名次類（第 N 名／TOP n）另有一張名次圖疊上去 */
+export function hzBagHonor(uh, M) {
+  const H = M._honorById || (M._honorById = hzById(M.honors)), G = M._honorGroupById || (M._honorGroupById = hzById(M.honorGroups));
+  const h = H[+uh.honorId], lv = +uh.level || +uh.honorLevel || 1, at = +uh.obtainedAt || 0;
+  if (!h) return { id: +uh.honorId, name: '稱號 #' + uh.honorId, group: '', type: '', typeName: '其他', level: lv, max: 1, at, bg: '', rank: '', rarity: '' };
+  const g = G[+h.groupId] || {}, name = h.name || '';
+  return { id: +h.id, name, group: g.name || '', type: g.honorType || '', typeName: HZ_HONOR_TYPES[g.honorType] || '其他', level: lv, max: (h.levels || []).length || 1, at,
+    bg: g.backgroundAssetbundleName || h.assetbundleName || '', rank: HZ_RANKED_HONOR.test(name) ? (h.assetbundleName || '') : '', rarity: h.honorRarity || '' };
+}
+/* 名片：暱稱、等級、自我介紹、名片上的三個稱號（一般或羈絆）、頭像框、自訂名片、貨幣（公開資料沒有就 null） */
+export function hzBagProfile(suite, M, meta) {
+  const g = suite.userGamedata || {}, p = suite.userProfile || {};
+  const real = !!g && ('chargedJewel' in g || 'freeJewel' in g || +g.totalExp > 0);   // hkNormalize 補的假 userGamedata 沒有這些
+  const decks = suite.userDecks || [], d0 = decks.find(d => +d.deckId === +(g.deck || 1)) || decks[0] || {};
+  const B = M._bondsHonorById || (M._bondsHonorById = hzById(M.bondsHonors)), BG = M._bondsGroup || (M._bondsGroup = hzById(M.bonds, 'groupId'));
+  const W = M._bondsWordById || (M._bondsWordById = hzById(M.bondsHonorWords));
+  const honors = (suite.userProfileHonors || []).slice().sort((a, b) => (+a.seq || 0) - (+b.seq || 0)).map(ph => {
+    if (ph.profileHonorType === 'bonds') {
+      const bh = B[+ph.honorId] || {}, grp = BG[+bh.bondsGroupId] || {}, w = W[+ph.bondsHonorWordId] || {};
+      return { seq: +ph.seq || 0, bonds: true, name: bh.name || ('羈絆稱號 #' + ph.honorId), group: w.name || '', word: w.name || '', level: +ph.honorLevel || 1, max: (bh.levels || []).length || 1, c1: +grp.characterId1 || 0, c2: +grp.characterId2 || 0, bg: '', rank: '', type: 'bonds', typeName: '羈絆' };
+    }
+    return Object.assign({ seq: +ph.seq || 0, bonds: false, word: '', c1: 0, c2: 0 }, hzBagHonor({ honorId: ph.honorId, level: ph.honorLevel }, M));
+  });
+  const PF = hzById(M.playerFrames), PG = hzById(M.playerFrameGroups);
+  const frames = (suite.userPlayerFrames || []).map(f => { const x = PF[+f.playerFrameId] || {}, grp = PG[+x.playerFrameGroupId] || {}; return { id: +f.playerFrameId, name: grp.name || ('頭像框 #' + f.playerFrameId), chara: +x.gameCharacterId || 0, status: f.playerFrameAttachStatus || '' }; });
+  return { name: g.name || (meta && meta.name) || '', rank: +g.rank || +(meta && meta.rank) || 0, uid: String((meta && meta.uid) || g.userId || p.userId || ''), /* 19 位的 uid 進 JSON.parse 會掉精度，匯入時記的字串優先 */ word: p.word || '', twitter: p.twitterId || '', imgType: p.profileImageType || '',
+    leader: +d0.leader || 0, deckName: d0.name || '', honors, frames, custom: (suite.userCustomProfiles || []).map(c => c.name || ('#' + c.customProfileId)),
+    money: real ? { charged: +g.chargedJewel || 0, free: +g.freeJewel || 0, coin: +g.coin || 0, vcoin: +g.virtualCoin || 0 } : null,
+    cards: (suite.userCards || []).length, honorsN: (suite.userHonors || []).length, bondsN: (suite.userBondsHonors || []).length,
+    charaMax: Math.max(0, ...(suite.userCharacters || []).map(c => +c.characterRank || 0)), upload: +suite.upload_time || +suite.uploadTime || 0 };
+}
+/* 稱號：全部的一般稱號（新到舊）＋依類型計數，加上羈絆稱號 */
+export function hzBagHonors(suite, M) {
+  const list = (suite.userHonors || []).map(uh => hzBagHonor(uh, M)).sort((a, b) => b.at - a.at || b.id - a.id);
+  const byType = {}; list.forEach(h => { const t = h.type || 'other'; byType[t] = (byType[t] || 0) + 1; });
+  const B = M._bondsHonorById || (M._bondsHonorById = hzById(M.bondsHonors)), BG = M._bondsGroup || (M._bondsGroup = hzById(M.bonds, 'groupId'));
+  const bonds = (suite.userBondsHonors || []).map(ub => { const bh = B[+ub.bondsHonorId] || {}, grp = BG[+bh.bondsGroupId] || {}; return { id: +ub.bondsHonorId, name: bh.name || ('羈絆稱號 #' + ub.bondsHonorId), level: +ub.level || 1, max: (bh.levels || []).length || 1, at: +ub.obtainedAt || 0, c1: +grp.characterId1 || 0, c2: +grp.characterId2 || 0, rarity: bh.honorRarity || '' }; })
+    .sort((a, b) => b.level - a.level || b.at - a.at);
+  return { list, byType, total: (M.honors || []).length, bonds, bondsTotal: (M.bondsHonors || []).length };
+}
+/* 資源：一般素材依種類分組（順序照 HZ_MAT_TYPES），豆森素材另列 */
+export function hzBagResources(suite, M) {
+  const MT = hzById(M.materials), groups = {};
+  (suite.userMaterials || []).forEach(um => { const m = MT[+um.materialId] || {}; const t = m.materialType || 'other'; (groups[t] = groups[t] || []).push({ id: +um.materialId, name: m.name || ('素材 #' + um.materialId), q: +um.quantity || 0, seq: +m.seq || +um.materialId }); });
+  const order = Object.keys(HZ_MAT_TYPES).concat(Object.keys(groups).filter(t => !HZ_MAT_TYPES[t]));
+  const mats = order.filter(t => groups[t] && groups[t].length).map(t => ({ type: t, name: HZ_MAT_TYPES[t] || t, items: groups[t].sort((a, b) => a.seq - b.seq), n: groups[t].length }));
+  const MM = hzById(M.mysekaiMaterials);
+  const mys = (suite.userMysekaiMaterials || []).map(um => { const m = MM[+um.mysekaiMaterialId] || {}; const r = m.mysekaiMaterialRarityType || '';
+    return { id: +um.mysekaiMaterialId, name: m.name || ('豆森素材 #' + um.mysekaiMaterialId), icon: m.iconAssetbundleName || '', q: +um.quantity || 0, rare: r === 'rarity_3' || r === 'rarity_4' ? 2 : r === 'rarity_2' ? 1 : 0, type: m.mysekaiMaterialType || '', seq: +m.seq || 0, at: +um.lastObtainedAt || 0 }; })
+    .sort((a, b) => a.seq - b.seq || a.id - b.id);
+  return { mats, matN: (suite.userMaterials || []).length, mys, mysN: mys.length };
+}
+/* 跑榜：userEvents（這幾期的活動 P）＋ World Link 各章名次＋排位賽季；前百名次另外查（hzBagRanks） */
+export function hzBagEvents(suite, M) {
+  const E = hzById(M.events), CN = hzCharFull(M);
+  const wl = {}; (suite.userWorldBlooms || []).forEach(w => { (wl[+w.eventId] = wl[+w.eventId] || []).push({ chara: +w.gameCharacterId || 0, name: CN[+w.gameCharacterId] || ('#' + w.gameCharacterId), rank: +w.rank || 0, points: +w.worldBloomChapterPoint || 0, at: +w.worldBloomChapterPointUpdateAt || 0 }); });
+  const row = (id, points) => { const e = E[id] || {}; return { id, name: e.name || ('第 ' + id + ' 期'), type: e.eventType || '', typeName: HZ_EV_TYPES[e.eventType] || (wl[id] ? 'World Link' : ''), points, start: +e.startAt || 0, end: +e.aggregateAt || 0, wl: (wl[id] || []).slice().sort((a, b) => a.chara - b.chara) }; };
+  const events = (suite.userEvents || []).map(ue => row(+ue.eventId, +ue.eventPoint || 0));
+  Object.keys(wl).forEach(id => { if (!events.some(ev => ev.id === +id)) events.push(row(+id, 0)); });   // 只剩 WL 章節名次的舊期也列
+  events.sort((a, b) => b.id - a.id);
+  const T = hzById(M.rankMatchTiers), GR = hzById(M.rankMatchGrades), SE = hzById(M.rankMatchSeasons);
+  const seasons = (suite.userRankMatchSeasons || []).map(s => { const t = T[+s.rankMatchTierId] || {}, g = GR[+t.rankMatchGradeId] || {}, se = SE[+s.rankMatchSeasonId] || {};
+    return { id: +s.rankMatchSeasonId, name: se.name || ('賽季 #' + s.rankMatchSeasonId), grade: g.name || '', tier: +t.tier || 0, points: +s.totalTierPoint || 0, plays: +s.playCount || 0, win: +s.winCount || 0, lose: +s.loseCount || 0, draw: +s.drawCount || 0, streak: +s.maxConsecutiveWinCount || 0 }; })
+    .sort((a, b) => b.id - a.id);
+  return { events, seasons };
+}
+/* 歌曲：每個難度玩過／FC／AP 幾首（同一首取最好的一次），還沒 FC 的列出來（新曲在前） */
+export function hzBagMusic(suite, M) {
+  const best = {};
+  const put = (mid, diff, r) => { if (!mid || !diff) return; const k = mid + '_' + diff; const v = r.fullPerfectFlg || r.playResult === 'full_perfect' ? 2 : r.fullComboFlg || r.playResult === 'full_combo' ? 1 : 0; if (best[k] == null || v > best[k]) best[k] = v; };
+  (suite.userMusicResults || []).forEach(r => put(+r.musicId, r.musicDifficultyType || r.musicDifficulty, r));
+  (suite.userMusics || []).forEach(m => (m.userMusicDifficultyStatuses || []).forEach(st => (st.userMusicResults || []).forEach(r => put(+m.musicId, st.musicDifficulty || st.musicDifficultyType, r))));
+  const titles = {}; (M.musics || []).forEach(m => { titles[+m.id] = m.title || ('#' + m.id); });
+  const now = Date.now(), released = (M.musics || []).filter(m => !m.publishedAt || +m.publishedAt <= now).map(m => +m.id), relSet = new Set(released);
+  const have = {}; (M.musicDifficulties || []).forEach(d => { if (relSet.has(+d.musicId)) (have[d.musicDifficulty] = have[d.musicDifficulty] || []).push(+d.musicId); });
+  const rows = HZ_DIFFS.map(([d, n]) => { const ids = have[d] || (d === 'append' ? [] : released); let played = 0, fc = 0, ap = 0; const miss = [];
+    ids.forEach(id => { const v = best[id + '_' + d]; if (v != null) played++; if (v >= 1) fc++; else miss.push(id); if (v >= 2) ap++; });
+    return { diff: d, name: n, total: ids.length, played, fc, ap, pct: ids.length ? Math.round(fc / ids.length * 100) : 0, apPct: ids.length ? Math.round(ap / ids.length * 100) : 0, missN: miss.length, missing: miss.sort((a, b) => b - a).slice(0, 60).map(id => titles[id] || ('#' + id)) }; })
+    .filter(r => r.total > 0);
+  return { rows, played: Object.keys(best).length };
+}
+/* 收集：卡片、服裝、劇情閱讀率、任務完成數、豆森畫布與對話 */
+export function hzBagStats(suite, M, totalCards) {
+  const n = k => (Array.isArray(suite[k]) ? suite[k].length : 0);
+  const read = k => { const l = suite[k] || []; return { read: l.filter(x => x.status === 'already_read').length, total: l.filter(x => x.status !== 'unreleased' && x.status !== 'can_not_read').length }; };
+  const mis = {}; (suite.userMissionStatuses || []).forEach(m => { if (m.missionStatus === 'received') mis[m.missionType] = (mis[m.missionType] || 0) + 1; });
+  const MIS = { beginner_mission: '新手任務', normal_mission: '一般任務', live_mission: 'Live 任務', honor_mission: '稱號任務', panel_mission: '面板任務', panel_mission_complete: '面板全完成', event_mission: '活動任務', sekai_echo_mission: 'SEKAI 回響' };
+  return { cards: n('userCards'), cardsTotal: +totalCards || 0, costumes: n('userCostume3dStatuses'), musicsOwned: n('userMusics'), vocals: n('userMusicVocals'), achievements: n('userMusicAchievements'),
+    stories: [['unit', '團體劇情', read('userUnitEpisodeStatuses')], ['event', '活動劇情', read('userEventEpisodeStatuses')], ['archive', '過往活動劇情', read('userArchiveEventEpisodeStatuses')], ['special', '特別劇情', read('userSpecialEpisodeStatuses')], ['chara', '角色側寫', read('userCharacterProfileEpisodeStatuses')]]
+      .map(([k, name, r]) => ({ k, name, read: r.read, total: r.total, pct: r.total ? Math.round(r.read / r.total * 100) : 0 })).filter(x => x.total > 0),
+    missions: Object.keys(mis).map(t => ({ type: t, name: MIS[t] || t, n: mis[t] })).sort((a, b) => b.n - a.n),
+    mysCanvases: n('userMysekaiCanvases'), mysTalks: (suite.userMysekaiCharacterTalks || []).filter(t => t.isRead).length, mysTalksTotal: n('userMysekaiCharacterTalks'),
+    exchanges: n('userEventExchanges'), releases: n('userReleaseConditions'), areas: n('userAreas') };
+}
+/* 原始資料：suite 裡每一把鑰匙有幾筆、長什麼樣，讓人一眼知道 Haruki 給了什麼 */
+export function hzBagRaw(suite) {
+  return Object.keys(suite || {}).filter(k => !/^_/.test(k)).sort().map(k => { const v = suite[k]; const kind = Array.isArray(v) ? 'list' : v && typeof v === 'object' ? 'obj' : 'val';
+    return { key: k, label: HZ_RAW_LABELS[k] || '', n: kind === 'list' ? v.length : kind === 'obj' ? Object.keys(v).length : 1, kind,
+      sample: kind === 'val' ? String(v).slice(0, 40) : kind === 'obj' ? Object.keys(v).slice(0, 6).join(', ') : (v.length ? Object.keys(v[0] || {}).slice(0, 6).join(', ') : '') }; });
+}
 export function hzMysMaps(mys, harvestFixtures, rarityOf) {
   const maps = hzMysGet(mys, 'userMysekaiHarvestMaps') || [];
   const fx = {}; (harvestFixtures || []).forEach(f => { fx[+f.id] = f; });
@@ -692,7 +803,7 @@ export function hzMembers() {
     let asset = 'global'; try { asset = localStorage.getItem('sekai-hk-asset') || 'global'; } catch (e) {}
     this.setState({ hzAsset: this.HZ_ASSETS[asset] ? asset : 'global' });
     let saved = null; try { saved = JSON.parse(localStorage.getItem('sekai-hk-tab') || 'null'); } catch (e) {}
-    if (saved) this.setState({ hzTrainTab: saved.train || 'crank', hzMysTab: saved.mys || 'res', hzHelpTab: saved.help || 'guide' });
+    if (saved) this.setState({ hzTrainTab: saved.train || 'crank', hzMysTab: saved.mys || 'res', hzBagTab: saved.bag || 'card', hzHelpTab: saved.help || 'guide' });
     // 從別頁帶著 hzTab 進來（例如我的帳號的「完整使用教學」）就照那個；否則回到上次的分頁
     this.hzSetTab(this.state.hzTabReq || (saved && saved.t) || 'home', this.state.hzTabReqSub);
     this.setState({ hzTabReq: null, hzTabReqSub: null });
@@ -912,6 +1023,46 @@ export function hzMembers() {
       weather: hzMysWeather(mys, snap || now),
       fixOwned: new Set((hzMysGet(mys, 'userMysekaiFixtures') || []).map(f => +f.mysekaiFixtureId)).size, at: now } });
   },
+  /* ---------- 查背包：讀整份 suite，接上 master 表 ---------- */
+  async hzLoadBag() {
+    if (this._hzBagP) return this._hzBagP;
+    this._hzBagP = (async () => {
+      const soft = f => this.tdbJson(f + '.json').catch(() => []);
+      const names = ['honors', 'honorGroups', 'bondsHonors', 'bondsHonorWords', 'bonds', 'materials', 'mysekaiMaterials', 'rankMatchTiers', 'rankMatchSeasons', 'rankMatchGrades', 'playerFrames', 'playerFrameGroups', 'musics', 'musicDifficulties', 'events', 'gameCharacters'];
+      const got = await Promise.all(names.map(soft));
+      const M = {}; names.forEach((n, i) => { M[n] = got[i] || []; });
+      this._hzBagM = M;
+    })().catch(e => { this._hzBagP = null; this.setState({ hzMsg: '背包資料載入失敗：' + ((e && e.message) || e) }); });
+    return this._hzBagP;
+  },
+  async hzBagBuild() {
+    await this.hzLoadBag();
+    const M = this._hzBagM; if (!M) return;
+    const { suite } = await this.hzMysData();
+    if (!suite) { this.setState({ hzBag: { has: false, at: Date.now() } }); return; }
+    const meta = this.state.hzMeta || {};
+    this.loadCards();
+    this.setState({ hzBag: { has: true, at: Date.now(), profile: hzBagProfile(suite, M, meta), honors: hzBagHonors(suite, M), res: hzBagResources(suite, M), events: hzBagEvents(suite, M),
+      music: hzBagMusic(suite, M), stats: hzBagStats(suite, M, (this.state.rateCards || []).length), raw: hzBagRaw(suite) } });
+    this.hzBagRanks(suite, meta.uid || (suite.userGamedata || {}).userId);
+  },
+  /* 前百名次：只查 userEvents 裡那幾期（每期一個 top100 請求，同一次瀏覽重複查直接吃快取）；0 ＝ 沒進前百、-1 ＝ 查不到 */
+  async hzBagRanks(suite, uid) {
+    const ids = (suite.userEvents || []).map(e => +e.eventId).filter(Boolean).sort((a, b) => b - a).slice(0, 12);
+    if (!ids.length || !uid) return;
+    this._careerCache = this._careerCache || new Map();
+    const ranks = Object.assign({}, this.state.hzBagRanks || {});
+    for (const id of ids) {
+      if (ranks[id] != null) continue;
+      try {
+        let rows = this._careerCache.get(id);
+        if (!rows) { const d = await this.apiFetch('/event/' + id + '/top100'); rows = this.ranksOf(d).map(r => ({ uid: r.uid, rank: r.rank, score: r.score })); if (rows.length) this._careerCache.set(id, rows); }
+        const hit = rows.find(r => this.sameUid(r.uid, uid));
+        ranks[id] = hit ? hit.rank : 0;
+      } catch (e) { ranks[id] = -1; }
+      this.setState({ hzBagRanks: Object.assign({}, ranks) });
+    }
+  },
   /* 總覽：一次把各分頁的摘要算好（各自的資料只下載一次，瀏覽器會快取） */
   hzHomeBuild() {
     if (!this.state.hzCrank) this.hzCrankBuild();
@@ -921,9 +1072,9 @@ export function hzMembers() {
   /* 匯入新資料後：丟掉用舊資料算好的結果，目前這一頁重算（引擎裡的玩家資料下次搜尋時重送） */
   hzAfterImport() {
     this._hzSuite = null; this._hzSentUser = '';
-    this.setState({ hzCrank: null, hzTrain: null, hzMys: null, hzRes: null, hzArea: null, hzPlan: null }, () => { if (this.state.page === 'haruki') this.hzSetTab(this.state.hzTab); });
+    this.setState({ hzCrank: null, hzTrain: null, hzMys: null, hzBag: null, hzBagRanks: null, hzRes: null, hzArea: null, hzPlan: null }, () => { if (this.state.page === 'haruki') this.hzSetTab(this.state.hzTab); });
   },
-  HZ_TABS: { home: 1, deck: 1, train: 1, mys: 1, help: 1 },
+  HZ_TABS: { home: 1, deck: 1, train: 1, mys: 1, bag: 1, help: 1 },
   hzSetTab(t, sub) {
     // 舊的分頁名稱（角色等級、教學、資源）併進新的五大分頁
     if (t === 'crank') { t = 'train'; sub = 'crank'; } else if (t === 'guide' || t === 'res') { sub = t; t = 'help'; }
@@ -932,11 +1083,13 @@ export function hzMembers() {
     if (sub && t === 'train') patch.hzTrainTab = sub;
     if (sub && t === 'mys') patch.hzMysTab = sub;
     if (sub && t === 'help') patch.hzHelpTab = sub;
+    if (sub && t === 'bag') patch.hzBagTab = sub;
     this.setState(patch);
-    try { localStorage.setItem('sekai-hk-tab', JSON.stringify({ t, train: patch.hzTrainTab || this.state.hzTrainTab, mys: patch.hzMysTab || this.state.hzMysTab, help: patch.hzHelpTab || this.state.hzHelpTab })); } catch (e) {}
+    try { localStorage.setItem('sekai-hk-tab', JSON.stringify({ t, train: patch.hzTrainTab || this.state.hzTrainTab, mys: patch.hzMysTab || this.state.hzMysTab, bag: patch.hzBagTab || this.state.hzBagTab, help: patch.hzHelpTab || this.state.hzHelpTab })); } catch (e) {}
     if (t === 'home') this.hzHomeBuild();
     if (t === 'train') { if (!this.state.hzCrank) this.hzCrankBuild(); if (!this.state.hzTrain) this.hzTrainBuild(); if ((patch.hzTrainTab || this.state.hzTrainTab) === 'plan' && !this.state.hzPlan) this.hzPlanBuild(); }
     if (t === 'mys' && !this.state.hzMys) this.hzMysBuild();
+    if (t === 'bag' && !this.state.hzBag) this.hzBagBuild();
   },
 
   /* ---------- 養成策略 ---------- */
@@ -1090,14 +1243,14 @@ export function hzMembers() {
     const tsub = s.hzTrainTab || 'crank', msub = s.hzMysTab || 'res', hsub = s.hzHelpTab || 'guide';
     const chipOn = on => on ? { bg: 'var(--ink-grad)', fg: '#fff' } : { bg: 'var(--card-2)', fg: 'var(--text-2)' };
     /* 五大分頁：每個都附一句「這裡做什麼」，選中的那顆實心 */
-    const tabs = [['home', '總覽', '一眼看完'], ['deck', '組卡', '活動最佳隊伍'], ['train', '養成', '等級・加成・挑戰'], ['mys', 'MySekai', '資源・大門・唱片'], ['help', '說明', '教學與資源']]
+    const tabs = [['home', '總覽', '一眼看完'], ['deck', '組卡', '活動最佳隊伍'], ['train', '養成', '等級・加成・挑戰'], ['mys', 'MySekai', '資源・大門・唱片'], ['bag', '背包', '名片・稱號・資源・跑榜'], ['help', '說明', '教學與資源']]
       .map(([v, n, d]) => Object.assign({ v, n, d, on: tab === v, sub: tab === v ? 'rgba(255,255,255,.8)' : 'var(--text-3)', bd: tab === v ? 'transparent' : 'var(--border)' }, chipOn(tab === v)));
     const subChips = (list, cur) => list.map(([v, n]) => Object.assign({ v, n }, chipOn(cur === v)));
     const fmtT = t => { if (!t) return ''; const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
     const cards = {}; (s.rateCards || []).forEach(c => { cards[c[0]] = c; });
     const chName = {}; (s.rateChars || []).forEach(c => { chName[c[0]] = c[1]; });
     const out = {
-      hzReady: true, hzTabs: tabs, hzIsHome: tab === 'home', hzIsDeck: tab === 'deck', hzIsMys: tab === 'mys',
+      hzReady: true, hzTabs: tabs, hzIsHome: tab === 'home', hzIsDeck: tab === 'deck', hzIsMys: tab === 'mys', hzIsBag: tab === 'bag',
       hzTrainBar: tab === 'train', hzIsCrank: tab === 'train' && tsub === 'crank', hzIsPlan: tab === 'train' && tsub === 'plan', hzIsTrain: tab === 'train' && tsub !== 'crank' && tsub !== 'plan',
       hzHelpBar: tab === 'help', hzIsGuide: tab === 'help' && hsub === 'guide', hzIsRes: tab === 'help' && hsub === 'res',
       hzTrainChips: subChips([['plan', '養成策略'], ['crank', '角色等級'], ['leader', '隊長次數'], ['bond', '羈絆'], ['power', '綜合力加成'], ['chal', '挑戰 Live'], ['area', '區域道具']], tsub),
@@ -1398,6 +1551,74 @@ export function hzMembers() {
         if (msub === 'fix') {
           out.hzMysFixLine = Y.fixOwned ? '遊戲資料裡記錄了 ' + Y.fixOwned + ' 件家具' : '這份 MySekai 資料沒有家具清單';
           out.onHzGoPage = e => this.go(e.currentTarget.dataset.p);
+        }
+      }
+    }
+    if (tab === 'bag') {
+      const Y = s.hzBag, bsub = s.hzBagTab || 'card', A = this.ASSET;
+      out.hzBagChips = subChips(HZ_BAG_TABS, bsub);
+      out.hzBagLoading = !Y; out.hzBagNone = !!(Y && !Y.has); out.hzBagHas = !!(Y && Y.has);
+      out.onHzBagRefresh = () => { this._hzBagP = null; this.setState({ hzBag: null, hzBagRanks: null }, () => this.hzBagBuild()); };
+      if (Y && Y.has) {
+        const dt = t => { if (!t) return ''; const d = new Date(t); return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(); };
+        const honorView = h => ({ name: h.group && h.group !== h.name ? h.group + '・' + h.name : h.name, lv: 'Lv.' + h.level + (h.max > 1 ? '／' + h.max : ''), at: dt(h.at), typeName: h.typeName,
+          bg: h.bg ? A + '/honor/' + h.bg + '/degree_main.webp' : '', rk: h.rank ? A + '/honor/' + h.rank + '/rank_main.webp' : '', hasBg: !!h.bg, hasRk: !!h.rank, bonds: !!h.bonds, word: h.word || '',
+          c1: h.c1 ? this.charaSd(h.c1) : '', c2: h.c2 ? this.charaSd(h.c2) : '' });
+        ['card', 'honor', 'res', 'event', 'music', 'stat', 'raw'].forEach(k => { out['hzBagIs' + k.charAt(0).toUpperCase() + k.slice(1)] = bsub === k; });
+        const P = Y.profile, lc = cards[P.leader];
+        out.hzBagUpload = P.upload ? '資料時間 ' + fmtT(P.upload > 1e12 ? P.upload : P.upload * 1000) : '';
+        if (bsub === 'card') {
+          out.hzBagCard = { name: P.name || '（暱稱不在公開資料裡）', rank: P.rank ? 'Rank ' + P.rank : '', uid: P.uid, word: P.word || '（沒有自我介紹）', twitter: P.twitter ? '@' + P.twitter : '', img: lc ? this.cardImg(lc[8], lc[2]) : '', hasImg: !!lc, deckName: P.deckName,
+            custom: P.custom.join('、'), hasCustom: P.custom.length > 0, frames: P.frames.map(f => ({ n: f.name + (f.chara ? '・' + (chName[f.chara] || '#' + f.chara) : ''), img: f.chara ? this.charaSd(f.chara) : '', status: f.status === 'first' ? '使用中' : '' })), hasFrames: P.frames.length > 0,
+            honors: P.honors.map(honorView), hasHonors: P.honors.length > 0, hasMoney: !!P.money,
+            money: P.money ? [['付費水晶', P.money.charged], ['免費水晶', P.money.free], ['金幣', P.money.coin], ['虛擬幣', P.money.vcoin]].map(([n, v]) => ({ n, v: this.n(v) })) : [],
+            tiles: [['卡片', this.n(P.cards)], ['稱號', this.n(P.honorsN)], ['羈絆稱號', this.n(P.bondsN)], ['最高角色等級', this.n(P.charaMax)]].map(([n, v]) => ({ n, v })) };
+        }
+        if (bsub === 'honor') {
+          const Hs = Y.honors, typ = s.hzHonorType || 'all', more = +s.hzHonorMore || 80;
+          const types = [['all', '全部', Hs.list.length]].concat(Object.keys(HZ_HONOR_TYPES).filter(t => Hs.byType[t]).map(t => [t, HZ_HONOR_TYPES[t], Hs.byType[t]])).concat(Hs.byType.other ? [['other', '其他', Hs.byType.other]] : []);
+          out.hzHonorTypes = types.map(([v, n, c]) => Object.assign({ v, n: n + ' ' + c }, chipOn(typ === v)));
+          const list = Hs.list.filter(h => typ === 'all' || (h.type || 'other') === typ);
+          out.hzHonorRows = list.slice(0, more).map(honorView); out.hzHonorMoreN = list.length - more; out.hzHonorHasMore = list.length > more;
+          out.hzHonorSum = '持有 ' + this.n(Hs.list.length) + ' 個稱號（master 共 ' + this.n(Hs.total) + '）・羈絆稱號 ' + this.n(Hs.bonds.length) + '／' + this.n(Hs.bondsTotal);
+          out.hzBondRows = Hs.bonds.map(b => ({ n: b.name, lv: 'Lv.' + b.level + (b.max > 1 ? '／' + b.max : ''), at: dt(b.at), c1: b.c1 ? this.charaSd(b.c1) : '', c2: b.c2 ? this.charaSd(b.c2) : '' }));
+          out.onHzHonorType = e => this.setState({ hzHonorType: e.currentTarget.dataset.v, hzHonorMore: 80 });
+          out.onHzHonorMore = () => this.setState({ hzHonorMore: (+this.state.hzHonorMore || 80) + 120 });
+        }
+        if (bsub === 'res') {
+          const R = Y.res;
+          out.hzBagHasMoney = !!P.money; out.hzBagMoneyNote = P.money ? '' : '公開資料不含水晶與金幣；用 Haruki 帳號授權匯入、且在工具箱開放 userGamedata 才看得到。';
+          out.hzBagMoney = P.money ? [['付費水晶', P.money.charged], ['免費水晶', P.money.free], ['金幣', P.money.coin], ['虛擬幣', P.money.vcoin]].map(([n, v]) => ({ n, v: this.n(v) })) : [];
+          out.hzBagMats = R.mats.map(g => ({ n: g.name, cnt: g.n + ' 種', items: g.items.map(it => ({ n: it.name, q: '×' + this.n(it.q), img: A + '/thumbnail/material/material' + it.id + '.webp' })) }));
+          out.hzBagMys = R.mys.map(it => ({ n: it.name, q: '×' + this.n(it.q), img: it.icon ? A + '/mysekai/thumbnail/material/' + it.icon + '.webp' : '', c: it.rare === 2 ? '#7c3aed' : it.rare === 1 ? '#dc2626' : 'var(--text-2)', w: it.rare ? 800 : 600 }));
+          out.hzBagHasMys = R.mys.length > 0; out.hzBagResSum = '素材 ' + this.n(R.matN) + ' 種・豆森素材 ' + this.n(R.mysN) + ' 種';
+        }
+        if (bsub === 'event') {
+          const Ev = Y.events, RK = s.hzBagRanks || {};
+          out.hzBagEvents = Ev.events.map(e => { const r = RK[e.id]; return { no: '第 ' + e.id + ' 期', n: e.name, t: e.typeName, pts: e.points ? this.n(e.points) : '－', when: e.start ? dt(e.start) + ' – ' + dt(e.end) : '',
+            rank: r == null ? '查詢中…' : r > 0 ? '第 ' + this.n(r) + ' 名' : r === 0 ? '未入前百' : '查不到', rc: r > 0 ? '#15803d' : 'var(--text-3)', wl: e.wl.map(w => ({ n: w.name, img: w.chara ? this.charaSd(w.chara) : '', rank: w.rank ? '第 ' + this.n(w.rank) + ' 名' : '－', pts: this.n(w.points) })), hasWl: e.wl.length > 0 }; });
+          out.hzBagHasEvents = Ev.events.length > 0;
+          out.hzBagSeasons = Ev.seasons.map(x => ({ n: x.name, tier: (x.grade || '') + (x.tier ? ' ' + x.tier : ''), pts: this.n(x.points), rec: x.win + ' 勝 ' + x.lose + ' 敗' + (x.draw ? ' ' + x.draw + ' 平' : ''), plays: x.plays + ' 場', streak: x.streak ? '最高連勝 ' + x.streak : '' }));
+          out.hzBagHasSeasons = Ev.seasons.length > 0;
+          out.hzBagEventNote = '活動 P 是遊戲資料裡的數字（公開資料只留最近幾期）；前百名次查的是本站的歷期前百快照，第 101 名之後查不到，「未入前百」不代表沒打。';
+        }
+        if (bsub === 'music') {
+          const Mu = Y.music;
+          out.hzBagMusicRows = Mu.rows.map(r => ({ n: r.name, total: this.n(r.total), played: this.n(r.played), fc: this.n(r.fc), ap: this.n(r.ap), pct: r.pct + '%', apPct: r.apPct + '%', bar: r.pct, apBar: r.apPct }));
+          const show = s.hzMusicMiss || 'master', mr = Mu.rows.find(r => r.diff === show) || Mu.rows[Mu.rows.length - 1] || { missing: [], missN: 0 };
+          out.hzMusicMissChips = Mu.rows.map(r => Object.assign({ v: r.diff, n: r.name + ' 未 FC ' + r.missN }, chipOn(mr.diff === r.diff)));
+          out.hzMusicMissing = mr.missing.map(n => ({ n })); out.hzMusicMissMore = mr.missN > mr.missing.length ? '…還有 ' + this.n(mr.missN - mr.missing.length) + ' 首' : '';
+          out.onHzMusicMiss = e => this.setState({ hzMusicMiss: e.currentTarget.dataset.v });
+        }
+        if (bsub === 'stat') {
+          const St = Y.stats;
+          out.hzBagStatTiles = [['持有卡片', this.n(St.cards) + (St.cardsTotal ? '／' + this.n(St.cardsTotal) : '')], ['服裝', this.n(St.costumes)], ['樂曲', this.n(St.musicsOwned)], ['歌曲版本', this.n(St.vocals)], ['樂曲成就', this.n(St.achievements)], ['豆森畫布', this.n(St.mysCanvases)], ['豆森對話已讀', this.n(St.mysTalks) + '／' + this.n(St.mysTalksTotal)], ['活動商店兌換項', this.n(St.exchanges)]].map(([n, v]) => ({ n, v }));
+          out.hzBagStories = St.stories.map(x => ({ n: x.name, v: this.n(x.read) + '／' + this.n(x.total), pct: x.pct + '%', bar: x.pct }));
+          out.hzBagMissions = St.missions.map(m => ({ n: m.name, v: this.n(m.n) }));
+        }
+        if (bsub === 'raw') {
+          out.hzBagRaw = Y.raw.map(r => ({ key: r.key, label: r.label, n: r.kind === 'list' ? this.n(r.n) + ' 筆' : r.kind === 'obj' ? r.n + ' 個欄位' : '', sample: r.sample }));
+          out.hzBagRawSum = '這份資料共 ' + Y.raw.length + ' 個區塊';
         }
       }
     }
