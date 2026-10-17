@@ -15,7 +15,7 @@
 -  製作工具（站內頁，側欄「小遊戲與製作」）：**樂曲追加圖產生器** 做官方風格的「樂曲追加決定」圖，選曲自動帶入曲圖、作詞／作曲／編曲、MV、APPEND、原唱與 SEKAI ver. 成員，底圖用官方原檔、SEKAI ver. 框放官方團體標誌，附片假名轉換器（羅馬拼音／平假名 → 片假名），1920×1080 PNG；**譜面預覽產生器** 把整首官方譜面攤成直欄式的圖（點擊、關鍵、滑鍵、軌跡、長條、引導線），每小節標 combo、BPM 與技能點，也能上傳自己的 .sus
 -  活動資料（追活動 → 活動總覽的分頁籤）：任一期活動的時程（開始、中場發表、WL 章節、結算、排名公布、獎勵發放、結束、活動商店截止）、加成屬性與角色、活動卡分「抽卡取得」與「活動商店」、當期卡池與 PU 卡、每段名次的排名獎勵、WL 章節與嘉年華隊伍；資料由 `tools/build-event-info.py` 每天從台服 master 建成 `data/event-info.js`
 -  活動分布甘特圖：卡池／活動兩種模式、12～36 個月或全部、每月固定寬度可橫向捲動、季線與年份、今天虛線、條裡寫名稱、依池種／活動類型上色附圖例、滑過看說明、點一條開卡池詳情或活動資料、匯出 PNG
--  Haruki 專區 豆森「今日資源」的實際地圖：四個採集場所依遊戲座標畫出每個採集點（樹、礦、花、工具箱、寶箱、漂流物…）與各點還沒採的資源，稀有的紅圈、採過的淡掉，可切「顯示已採完」「只看稀有」
+-  Haruki 專區 豆森「今日資源」的實際地圖：四個採集場所鋪 Lunabot／MiddleRed 的烤森俯視底圖（`img/mysekai/site-{5,6,7,8}.webp`，對位數字照 Haruki-Cloud 的場所設定，見 `js/haruki.js` 的 `HZ_MAP_CAL`），採集點照遊戲座標放，每一點排出還沒採的素材縮圖與剩餘數量，稀有資源紅框、稀有採集點紫光、出生點紅叉、採過的淡掉，可切「顯示已採完」「只看稀有」
 
 ## 伺服器機器人（bot/）
 
@@ -30,7 +30,7 @@
 | `theater.html` | 獨立頁：衝榜劇場。資料直接向 `games.project-sekai-center.com/games?ev=` 拉逐局紀錄（gzip，一期約 5 MB），活動進行中每 15 秒增量更新；活動資料用 HiSekai `/event/list` 與 `data/borders-db.js` | 每次重新驗證 |
 | `soundprint.html` | 獨立頁：SEKAI 聲紋。曲庫吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`；音源直接向 sekai.best 資產鏡像拉全曲 mp3（約 2 MB），全部在瀏覽器的 Worker 裡做 FFT，不經本站伺服器 | 每次重新驗證 |
 | `js/maker.js` | 製作工具（進「小遊戲與製作」的追加圖或譜面頁才載）：樂曲追加圖產生器（選曲自動帶入、官方底圖與團體標誌、片假名轉換器、1920×1080 PNG）與譜面預覽產生器（官方 SUS 解析照 pjsekai 引擎規則、直欄式 canvas、combo／BPM／技能點）。模板在 app.html 的 isSongcard／isChart 兩段 |
-| `data/event-info.js` | 由 `tools/build-event-info.py` 產生：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、排名獎勵（名次區間 → 道具，稱號與素材名一起帶）、WL 章節、嘉年華隊伍；活動資料頁與甘特圖的活動模式進頁才載 |
+| `data/event-info.js` | 由 `tools/build-event-info.py` 產生：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、排名獎勵（名次區間 → 道具；稱號的名稱／稱號組／底圖與名次圖 abn、素材名、技能升級譜名、頭像框組與角色都從 master 帶來，頁面只放遊戲內圖）、WL 章節、嘉年華隊伍；活動資料頁與甘特圖的活動模式進頁才載 |
 | `unit-img/` | 追加圖產生器的圖片素材：六個團體的官方標誌（webp，取自官方網站）與公告圖底圖 `songcard-bg.webp`；同源檔案所以 canvas 不會被污染、能直接匯出 |
 | `echoes.html` | 獨立頁：迴響之境。單一檔案、沒有外部依賴（只有 Google Fonts），存檔在 `localStorage` 的 `sekai-echoes-v1`；`window.__echoes` 給煙霧測試用 | 每次重新驗證 |
 | `js/core.js` | `index.html` 抽出的共用邏輯，五個 embed 共享同一份 | 一年 immutable |
@@ -39,7 +39,7 @@
 | `data/song-meta.js` | 星圖用的歌曲詮釋資料（團體、發行日、作曲／作詞／編曲、書き下ろし）。`python3 tools/build-song-meta.py` 自 Sekai-World master 重建 | 一年 immutable |
 | `vendor/*.js` | React | 一年 immutable |
 
-## ⚠️ data/history/ 只能增加，不能刪改
+## 注意：data/history/ 只能增加，不能刪改
 
 `data/history/{期數}.json` 是由 GitHub Actions 每 30 分鐘累積的榜線時序，
 記錄了 17 段榜線與前 100 名各自的分數曲線。

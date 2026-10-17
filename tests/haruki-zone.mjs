@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
   hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP, HZ_PLAN_EFFORT, HZ_MAT_WEIGHT, hzPlanAreaItems, HZ_AREA_UNLOCK,
-  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather, hzMysMaps, HZ_MAP_CFG } from '../js/haruki.js';
+  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather, hzMysMaps, HZ_MAP_CFG, HZ_MAP_CAL, hzMapPos } from '../js/haruki.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -293,6 +293,15 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   ok(box && box.harvested && box.left === 0 && box.type === 'treasure_box_transport', '採過的寶箱：harvested、剩 0');
   ok(M[0].points[0].rarity === 2 && M[1].minX === -2 && M[1].maxZ === 2, '稀有採集點的 rarity 與座標範圍');
   ok(HZ_MAP_CFG[5].rev === true && HZ_MAP_CFG[6].dx === 1, '四個場所都有方向設定');
+  ok([5, 6, 7, 8].every(s => HZ_MAP_CAL[s] && HZ_MAP_CAL[s].g > 0), '四個場所都有底圖對位');
+  const o5 = hzMapPos(5, 0, 0);
+  ok(Math.abs(o5.l - 51.56) < 0.05 && Math.abs(o5.t - 44.44) < 0.05 && !o5.out, '草地出生點在底圖 (51.6%, 44.4%)');
+  const p5 = hzMapPos(5, 3, -6);   // rev：z 當橫向、x 當縱向，方向都是 -1
+  ok(Math.abs(p5.l - (51.5625 + 6 * 33.333 / 1280 * 100)) < 0.05 && Math.abs(p5.t - (44.444 - 3 * 33.333 / 1080 * 100)) < 0.05, '草地的 x／z 對調與方向正確');
+  const p8 = hzMapPos(8, 10, 10);  // 不對調：x 往右、z 往上
+  ok(p8.l > hzMapPos(8, 0, 0).l && p8.t < hzMapPos(8, 0, 0).t, '遺忘之地 x 往右、z 往上');
+  const far = hzMapPos(6, 9999, 9999);
+  ok(far.out && far.l === 99 && far.t === 1, '超出底圖的點夾在 1–99%');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');

@@ -3649,7 +3649,7 @@ export function aiMembers() {
         const areaLv = Math.max(1, Math.min(20, +a.area_item_level || E.PowerEngine.areaMaxLv || 15));
         const charRank = Math.max(1, Math.min(200, +a.character_rank || 100));
 
-        /* ⚠ 唯一會碰 DOM 的地方：_computeBest 內部用 this._ownedOn() 決定要不要只算持有卡,
+        /* 注意：唯一會碰 DOM 的地方：_computeBest 內部用 this._ownedOn() 決定要不要只算持有卡,
            而 _ownedOn 讀的是經典版的 #rsOwnedOnly 勾選框。本頁沒有那個節點 → 它一律回 false,
            only_my_cards 會被無聲吃掉。所以呼叫前用參數蓋掉,結束後還原(引擎是共用單例)。
            持有清單本身走 localStorage('sekai-cards-own'),與本頁「收集率」頁同一把鑰匙、
@@ -4560,7 +4560,7 @@ export function aiMembers() {
         const rare = [];
         let curGuar = 0, n = 0, rareTotal = 0;
 
-        /* ⚠ 三處覆蓋(都在同步區間內,結束一定還原;引擎是共用單例)：
+        /* 注意：三處覆蓋(都在同步區間內,結束一定還原;引擎是共用單例)：
            1. GS._render —— doSpin 收尾會呼叫它去抓 #gachaSimCard 重繪。本頁沒有那個節點
               (它在 index.html?embed=gachasim 的 iframe 裡),而且工具本來就不該動畫面。
            2. GS.spin —— doSpin 內部寫死 `this.spin(n, guard ? 3 : 0)`,吃不到

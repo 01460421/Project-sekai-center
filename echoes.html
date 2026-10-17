@@ -1618,7 +1618,7 @@ function renderHUD() {
       <div class="loc-chip"><span></span>${esc(loc)}</div>
       <div class="cur-i" title="金幣"><i>◎</i><span id="h-gold" data-v="${S.gold}">${fmt(S.gold)}</span></div>
       <div class="cur-i tok" title="星塵"><i>✦</i><span id="h-tok" data-v="${S.tok}">${fmt(S.tok)}</span></div>
-      <div class="cur-i" title="體力（每 4 分鐘回復 1）" style="--xp:var(--ok)"><i>⚡</i><span id="h-stam">${S.stam}/${STAM_MAX}</span></div>
+      <div class="cur-i" title="體力（每 4 分鐘回復 1）" style="--xp:var(--ok)"><i><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true" style="vertical-align:-1px"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" fill="currentColor"/></svg></i><span id="h-stam">${S.stam}/${STAM_MAX}</span></div>
     </div>`;
   miniCanvas($('#hud-av'), playerGlyph, .3);
 }
@@ -1811,7 +1811,7 @@ V.map = () => {
     <div class="wlist">${WORLDS.map((w, i) => `<button class="wcard${S.loc === w.id ? ' here' : ''}${unlocked(i) ? '' : ' lock'}" style="--wc:${w.c}" data-act="travel" data-arg="${w.id}">
         <svg class="sw" viewBox="-20 -20 40 40"><polygon points="${Array.from({ length: w.shape }, (_, k) => { const a = k / w.shape * TAU - Math.PI / 2; return (Math.cos(a) * 15).toFixed(1) + ',' + (Math.sin(a) * 15).toFixed(1); }).join(' ')}" fill="none" stroke="${w.c}" stroke-width="1.5"/><circle r="3" fill="${w.c}"/></svg>
         <div style="min-width:0"><b>${unlocked(i) ? w.name : '？？？'}</b><small>${unlocked(i) ? `${w.jp}・${w.unit}` : `擊敗「${WORLDS[i - 1].name}」第 10 層的 Boss 解鎖`}</small></div>
-        <div class="pr">${unlocked(i) ? `${S.best[w.id] || 0}F<br><span class="dim">♩ ${w.bpm}</span>` : '🔒'}</div></button>`).join('')}
+        <div class="pr">${unlocked(i) ? `${S.best[w.id] || 0}F<br><span class="dim">♩ ${w.bpm}</span>` : '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z" fill="currentColor"/></svg>'}</div></button>`).join('')}
       ${S.loc !== 'town' ? `<p class="flavor" style="margin-top:6px">${esc(WBY[S.loc].desc)}</p>` : ''}
     </div>
   </div>`;
@@ -1870,7 +1870,7 @@ V.bag = () => {
     cells = ids.map(id => `<button class="cell${bagSel === 'm:' + id ? ' sel' : ''}" data-act="bagSel" data-arg="m:${id}" title="${MATS[id].n}"><span class="mat-dot" style="--mc:${matColor(id)};width:40%;height:40%"></span><span style="font-size:10.5px;margin-top:4px">${MATS[id].n}</span><span class="n">${S.mats[id]}</span></button>`).join('');
   } else {
     const list = S.items.filter(x => tab === 'all' || x.slot === tab).sort((a, b) => (eqIds.includes(b.id) - eqIds.includes(a.id)) || b.q - a.q || itemScore(b) - itemScore(a));
-    cells = list.map(it => `<button class="cell q${it.q}${bagSel === 'i:' + it.id ? ' sel' : ''}${it.isNew ? ' new' : ''}" data-act="bagSel" data-arg="i:${it.id}" title="${esc(it.name)}">${itemSig(it)}${eqIds.includes(it.id) ? '<span class="eq">裝備中</span>' : ''}${it.lock ? '<span class="lk">🔒</span>' : ''}</button>`).join('');
+    cells = list.map(it => `<button class="cell q${it.q}${bagSel === 'i:' + it.id ? ' sel' : ''}${it.isNew ? ' new' : ''}" data-act="bagSel" data-arg="i:${it.id}" title="${esc(it.name)}">${itemSig(it)}${eqIds.includes(it.id) ? '<span class="eq">裝備中</span>' : ''}${it.lock ? '<span class="lk"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z" fill="currentColor"/></svg></span>' : ''}</button>`).join('');
   }
   return `${ph('Inventory', '行囊', `裝備 ${S.items.length} / 160。滿了會自動賣掉最舊的未鎖定裝備——行囊不是垃圾場，但也差不多了。`, `<button class="btn sm" data-act="sellJunk">賣掉所有未鎖定的雜音品質</button>`)}
     <div class="row" style="margin-bottom:14px">${segHTML('bag', BAG_TABS, tab)}</div>
@@ -2448,10 +2448,10 @@ V.gather = () => {
   tickStamina();
   if (S.loc === 'town' || S.travel) return `${ph('Veins', '礦脈', '礦脈只在 SEKAI 裡才聽得見。')}<div class="card"><div class="empty-s">先到某個 SEKAI 去。<div class="row" style="justify-content:center;margin-top:14px"><button class="btn pri" data-act="go" data-arg="map">打開雷達</button></div></div></div>`;
   const w = WBY[S.loc]; const kinds = [...w.mats, w.food, 'noise'];
-  return `${ph('Veins', w.name + '的礦脈', `把相同顏色的節點一筆連起來（至少 3 個）然後放開。連得越長收穫越多。每次 30 秒，消耗 ${GATHER_COST} 體力。`, `<button class="btn pri" data-act="gStart" ${S.stam < GATHER_COST ? 'disabled' : ''}>開始採集・⚡${GATHER_COST}</button>`)}
+  return `${ph('Veins', w.name + '的礦脈', `把相同顏色的節點一筆連起來（至少 3 個）然後放開。連得越長收穫越多。每次 30 秒，消耗 ${GATHER_COST} 體力。`, `<button class="btn pri" data-act="gStart" ${S.stam < GATHER_COST ? 'disabled' : ''}>開始採集・體力 ${GATHER_COST}</button>`)}
     <div class="grid g-core"><div class="mini" id="gmini" style="height:min(62vh,560px)"><canvas id="gcv"></canvas>
       <div class="ov" style="left:16px;top:12px;font-size:11px;letter-spacing:.24em" id="g-time"></div><div class="ov" style="right:16px;top:12px" id="g-chain"></div>
-      <div class="ov" style="inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center" id="g-idle"><b style="font-weight:500;font-size:16px">礦脈在睡覺</b><span class="dim2" style="font-size:12.5px">按「開始採集」叫醒它。⚡ ${S.stam}/${STAM_MAX}${S.stam < GATHER_COST ? `・下一點體力 ${dur(STAM_MS - (now() - S.stamAt))}` : ''}</span></div></div>
+      <div class="ov" style="inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center" id="g-idle"><b style="font-weight:500;font-size:16px">礦脈在睡覺</b><span class="dim2" style="font-size:12.5px">按「開始採集」叫醒它。體力 ${S.stam}/${STAM_MAX}${S.stam < GATHER_COST ? `・下一點體力 ${dur(STAM_MS - (now() - S.stamAt))}` : ''}</span></div></div>
     <div class="card"><h3>這裡的素材</h3>${kinds.map(id => `<div class="mrow" style="cursor:default"><span class="mat-dot" style="--mc:${matColor(id)}"></span><b>${MATS[id].n}<small>${esc(MATS[id].f || '')}</small></b><span class="n">${S.mats[id] || 0}</span></div>`).join('')}
       <p class="flavor" style="margin-top:12px">發光的節點值兩倍。連到 8 個以上，礦脈會唱歌給你聽。</p></div></div>`;
 };
@@ -2836,7 +2836,7 @@ function pressAward(k) {
   if (G.deck.length < 20) G.deck.unshift(...PRESS_CARDS.map((c, i) => i).filter(i => !G.players.some(p => p.hand.includes(i))).sort(() => Math.random() - .5));
   if (P.score >= G.target) {
     G.over = true; const meWin = P.me; if (meWin) { S.st.pressWins++; S.tok += 10; } else S.tok += 2;
-    G.react += `<br><br><b style="font-size:18px">${meWin ? '🏆 你贏得了這場記者會！✦ 10' : `${esc(P.n)} 贏得了這場記者會。✦ 2 出席費`}</b><br><span class="dim">${meWin ? '公關部想挖角你。' : '下次會更好的。大概。'}</span>`;
+    G.react += `<br><br><b style="font-size:18px">${meWin ? '你贏得了這場記者會！✦ 10' : `${esc(P.n)} 贏得了這場記者會。✦ 2 出席費`}</b><br><span class="dim">${meWin ? '公關部想挖角你。' : '下次會更好的。大概。'}</span>`;
     checkAch();
   }
   save(true); updateHUD(); Press.render();

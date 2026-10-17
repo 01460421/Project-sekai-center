@@ -529,6 +529,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/17', t: '豆森地圖換成俯視底圖，排名獎勵改用遊戲內圖示，全站不再用表情符號', s: 'Haruki 專區的豆森「今日資源」實際地圖改鋪 Lunabot／MiddleRed 的烤森俯視圖（四個場所），採集點照遊戲座標對到底圖上，每一點直接排出還沒採的東西：小格是素材的遊戲內縮圖、角落數字是還剩幾個、紅框是稀有資源、紫光是稀有採集點、紅叉是出生點，淡掉的是已採完的。活動資料頁的排名獎勵也改成從 master 抓：稱號用底圖加名次圖、水晶與金幣、技能升級譜、素材都用遊戲內縮圖，頭像框帶角色。順便把站內用到的表情符號全部換掉。' },
     { d: '2026/10/17', t: '活動資料頁、活動甘特圖重做、Haruki 豆森地圖標記', s: '新頁「活動資料」（追活動 → 活動總覽的分頁籤）：任一期活動都能查，本期／上一期／下一期一鍵切、也能搜名稱或期數。內容有時程（開始、嘉年華中場發表、WL 各章開始、結算、排名公布、獎勵發放、活動結束、活動商店截止，走到哪一步一眼看出）、加成屬性與加成角色、活動卡分成「抽卡取得」（當期卡池 ★4，WL 為各章角色卡）與「活動商店」（用活動 P 換的 ★3／★2），附當期卡池與 PU 卡、每一段名次的排名獎勵（稱號、水晶、技能練習券、素材）、WL 章節與嘉年華隊伍。資料由 tools/build-event-info.py 每天從台服 master 建置（排名獎勵要翻 26 MB 的 resourceBoxDetails，瀏覽器不可能自己抓）。活動分布甘特圖重做：多了「活動」模式（每期活動依團體分列，混活與 WL 各一列）、時間範圍 12／18／24／36 個月或全部、每月固定寬度太寬就橫向捲動、季線與年份、這個月打底、今天虛線、條裡直接寫名稱、顏色依池種或活動類型附圖例、滑過看說明、點一條就開卡池詳情或活動資料、可匯出 PNG。Haruki 專區的豆森「今日資源」多了實際地圖：四個採集場所依遊戲裡的座標畫出每個採集點（樹、礦、花、工具箱、寶箱、漂流物…）與各點還沒採的資源，稀有的紅圈標出、採過的淡掉，點一個點看那裡有什麼，可切「顯示已採」「只看稀有」。', p: 'evinfo' },
     { d: '2026/10/16', t: '追加圖與譜面預覽做進站內，追加圖多了片假名轉換器', s: '樂曲追加圖產生器與譜面預覽產生器不再是外接的獨立頁，改成站內頁面：側欄「小遊戲與製作」的分頁籤直接切，跟貼圖製作器並排，不會跳出站外；舊網址 /songcard、/chart 會轉過來。程式在 js/maker.js，進這兩頁才載。追加圖多了片假名轉換器：輸入羅馬拼音（平文式、訓令式都認得）或平假名就出片假名，促音、長音、撥音照一般規則；英文字給近似音。轉好的字一鍵填到曲名、原唱或其他演唱者。', p: 'songcard' },
     { d: '2026/10/16', t: '譜面預覽產生器', s: '新獨立頁 chart.html：把整首譜面攤成一張直欄式的圖，時間由下往上、一欄接一欄。選曲、選難度就從素材鏡像抓官方的 SUS 譜面檔來畫：點擊、關鍵、滑鍵（帶方向箭頭）、軌跡、長條（含進緩／出緩曲線、可見中繼菱形與附著菱形）與引導線，關鍵長條與引導線用黃色。每條小節線左邊標小節數、右邊標打到那裡的累計 combo，含長條每半拍一個的隱藏判定點，算法照 pjsekai 引擎的 SUS→USC 規則，用五張官方譜面對過官方 Notes 數全部一致；BPM 變速點與技能發動點也標在圖上，可各自關掉。每欄小節數可調，圖太大時整張縮到 iOS canvas 面積上限以內；PNG／JPG 下載、原尺寸檢視。也能上傳 Ched／MikuMikuWorld 匯出的 .sus 畫自己的譜面。入口在側欄「小遊戲與製作」的分頁籤（貼圖製作器旁邊）、工具卡片與指令面板「譜面」。', p: 'x_chart' },
@@ -2698,7 +2699,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=a6b68b6980').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=0b54944141').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -2716,7 +2717,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=ef9aeee837').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=283fc7ccd5').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -2787,7 +2788,7 @@ class Component extends DCLogic {
   /* ---------- 私車排班（菜根機器人的排班，經 Worker 的 /car/api/* 代理） ----------
      Worker 驗站內登入、簽章後轉給機器人；權限（成員／管理員）由機器人依車隊角色決定。
      每個請求都帶 gid（哪個車隊）與 car（1～3 車），三車各自一份班表、各自運作。
-     ⚠ 名字、標籤、細節、候補名單全是使用者可控字串：一律交給模板的 {{ }}（React 文字節點），
+     注意：名字、標籤、細節、候補名單全是使用者可控字串：一律交給模板的 {{ }}（React 文字節點），
        絕不拼進 innerHTML；顏色只接受 #RRGGBB，其他一律換成預設灰。 */
   CAR_USER_RE = /^[a-z0-9_]{3,20}$/;
   /* 本機開發用的假後端：只在 localhost／127.0.0.1 且網址帶 ?carmock=<模式> 才載入 tests/car-mock.js
@@ -6469,7 +6470,7 @@ class Component extends DCLogic {
   loadEvInfo() {
     if (this.state.evInfo) return Promise.resolve(this.state.evInfo);
     if (this._evInfoP) return this._evInfoP;
-    this._evInfoP = import('./data/event-info.js?v=e5cf872563').then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
+    this._evInfoP = import('./data/event-info.js?v=85df53dd03').then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
       .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
     return this._evInfoP;
   }
@@ -6532,15 +6533,17 @@ class Component extends DCLogic {
     const gs = (s.gachas || []).filter(g => String(g.eid) === String(ev.id)).map(g => { const tn = this.tone(g.t), a = this.pd(g.s), b = this.pd(g.e); const pk = (s.gachaPk || {})[String(g.id)]; return { gid: String(g.id || ''), n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, range: this.md(a) + ' – ' + this.md(b), pu: pk ? pk.cards.map(c => ({ img: this.cardImg(c[4], c[2]), n: c[5], ch: this.charName(c[1]) || '' })) : [], hasPu: !!(pk && pk.cards.length) }; });
     out.eiGachas = gs; out.eiHasGachas = gs.length > 0;
     /* 排名獎勵 */
-    const D = s.evInfo, tiers = (D.rw || {})[ev.rw] || [], items = D.it || [], hn = D.hn || {}, mn = D.mn || {};
-    const itemOf = i => { const it = items[i] || ['', 0, 0]; const [t, id, q] = it;
-      if (t === 'honor') return { n: '稱號「' + (hn[id] || '#' + id) + '」', img: '', icon: '🏅', q: '' };
-      if (t === 'jewel') return { n: '水晶', img: '', icon: '💎', q: '×' + this.n(q) };
-      if (t === 'skill_practice_ticket') return { n: '技能練習券' + (id ? '（Lv.' + id + '）' : ''), img: '', icon: '🎫', q: '×' + this.n(q) };
-      if (t === 'material') return { n: mn[id] || ('素材 #' + id), img: this.ASSET + '/thumbnail/material/material' + id + '.webp', icon: '', q: '×' + this.n(q) };
-      if (t === 'player_frame') return { n: '頭像框', img: '', icon: '🖼️', q: '' };
-      if (t === 'coin') return { n: '金幣', img: '', icon: '🪙', q: '×' + this.n(q) };
-      return { n: t + ' #' + id, img: '', icon: '📦', q: q ? '×' + this.n(q) : '' }; };
+    const D = s.evInfo, tiers = (D.rw || {})[ev.rw] || [], items = D.it || [], hn = D.hn || {}, hg = D.hg || {}, mn = D.mn || {}, tk = D.tk || {}, pf = D.pf || {}, AS = this.ASSET;
+    /* 道具的名稱與圖都從 master 來（build-event-info.py 帶過來）：稱號用底圖＋名次圖，其他用遊戲內縮圖 */
+    const itemOf = i => { const it = items[i] || ['', 0, 0]; const [t, id, q] = it, x = q ? '×' + this.n(q) : '';
+      if (t === 'honor') { const h = hn[id] || [], g = hg[h[1]] || []; const ranked = /^(第\s*\d+\s*名|TOP\s*\d+)$/i.test(h[0] || '');
+        return { n: (g[0] ? g[0] + '・' : '') + (h[0] || '稱號 #' + id), img: g[1] ? AS + '/honor/' + g[1] + '/degree_main.webp' : '', rank: ranked && h[2] ? AS + '/honor/' + h[2] + '/rank_main.webp' : '', honor: !!g[1], thumb: false, q: '' }; }
+      if (t === 'jewel') return { n: '水晶', img: AS + '/thumbnail/common_material/jewel.webp', thumb: true, q: x };
+      if (t === 'coin') return { n: '金幣', img: AS + '/thumbnail/common_material/coin.webp', thumb: true, q: x };
+      if (t === 'skill_practice_ticket') return { n: tk[id] || ('技能升級譜 #' + id), img: AS + '/thumbnail/skill_practice_ticket/ticket' + id + '.webp', thumb: true, q: x };
+      if (t === 'material') return { n: mn[id] || ('素材 #' + id), img: AS + '/thumbnail/material/material' + id + '.webp', thumb: true, q: x };
+      if (t === 'player_frame') { const f = pf[id] || []; return { n: (f[0] || '頭像框') + (f[1] ? '・' + (this.charName(f[1]) || '#' + f[1]) : ''), img: f[1] ? this.charaSd(f[1]) : '', thumb: !!f[1], q: '' }; }
+      return { n: t + ' #' + id, img: '', thumb: false, q: x }; };
     out.eiRewards = tiers.map(t => ({ rank: t[0] === t[1] ? '第 ' + this.n(t[0]) + ' 名' : this.n(t[0]) + ' – ' + this.n(t[1]) + ' 名', top: t[1] <= 10, items: t[2].map(itemOf) }));
     out.eiHasRewards = out.eiRewards.length > 0; out.eiRewardNote = out.eiRewards.length ? '依台服 master 的排名獎勵區間；稱號依名次分段，水晶與技能練習券各段不同。' : '這期還沒有排名獎勵資料。';
     /* WL 章節、嘉年華 */

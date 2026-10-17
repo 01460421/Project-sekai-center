@@ -243,6 +243,17 @@ export function hzMysResources(mys, rarityOf) {
    採過沒）與各點的資源掉落（userMysekaiSiteHarvestResourceDrops：同座標＝同一個採集點，before_drop＝還沒採）。
    回每個場所的點：{ x, z, fid, type, rarity, harvested, drops: [{ key, type, id, qty, left, rare }] } 與座標範圍，給地圖畫標記用。 */
 export const HZ_MAP_CFG = { 5: { dx: -1, dz: -1, rev: true }, 6: { dx: 1, dz: -1, rev: false }, 7: { dx: -1, dz: -1, rev: true }, 8: { dx: 1, dz: -1, rev: false } };   // 方向照 Haruki-Cloud 的場所設定
+/* 底圖對位（img/mysekai/site-{id}.webp 是 Lunabot／MiddleRed 的俯視圖，1920×1080 原圖裁成 1280×1080）：
+   g 是每個遊戲單位幾 px，u0／v0 是出生點 (0,0) 在裁好的圖上的比例位置；數字照 Haruki-Cloud 的場所設定算出來 */
+export const HZ_MAP_CAL = { 5: { u0: (960 - 300) / 1280, v0: (540 - 60) / 1080, g: 33.333 }, 6: { u0: (960 - 300) / 1280, v0: (540 + 80) / 1080, g: 20.513 },
+  7: { u0: (960 - 62.015 - 350) / 1280, v0: (540 + 20.672) / 1080, g: 24.806 }, 8: { u0: (960 - 200) / 1280, v0: (540 - 130) / 1080, g: 21.333 } };
+/* 遊戲座標 → 底圖上的百分比位置（rev 的場所先把 x、z 對調）；超出圖外的夾在 1–99% */
+export function hzMapPos(site, x, z) {
+  const c = HZ_MAP_CFG[site] || { dx: 1, dz: -1, rev: false }, k = HZ_MAP_CAL[site] || { u0: .5, v0: .5, g: 24 };
+  const px = c.rev ? z : x, pz = c.rev ? x : z;
+  const u = k.u0 + c.dx * k.g * px / 1280, v = k.v0 + c.dz * k.g * pz / 1080;
+  return { l: Math.round(Math.max(1, Math.min(99, u * 100)) * 100) / 100, t: Math.round(Math.max(1, Math.min(99, v * 100)) * 100) / 100, out: u < 0 || u > 1 || v < 0 || v > 1 };
+}
 export function hzMysMaps(mys, harvestFixtures, rarityOf) {
   const maps = hzMysGet(mys, 'userMysekaiHarvestMaps') || [];
   const fx = {}; (harvestFixtures || []).forEach(f => { fx[+f.id] = f; });
@@ -1343,25 +1354,21 @@ export function hzMembers() {
           out.hzMysSites = Y.res.map(x => ({ n: (site[x.site] || {}).name || ('場所 ' + x.site), cnt: x.items.length + ' 種',
             items: x.items.map(it => { const [n, img] = resOf(it); return { n, img, q: '×' + it.qty, c: RC[it.rare], w: it.rare ? 800 : 600 }; }) }));
           out.hzMysResEmpty = !Y.res.length;
-          /* 實際地圖：每個場所依遊戲座標畫採集點與各點還沒採的資源；方向照 Haruki-Cloud 的設定，座標範圍外留 6% 邊 */
-          const GLYPH = { wood: ['🌳', '樹'], mineral: ['🪨', '礦石'], plant: ['🌸', '花'], birthday_plant: ['🌱', '生日植物'], toolbox: ['🧰', '工具箱'], treasure_box_transport: ['🎁', '寶箱'], treasure_box_fixed: ['🎁', '寶箱'], other: ['🍂', '堆積物'], driftage: ['🛢️', '漂流物'], tone: ['🎵', '音符'] };
-          const SITE_BG = { 5: 'linear-gradient(160deg,#dff3c8,#b9e39a)', 6: 'linear-gradient(160deg,#fff1c9 0%,#f6e3a9 45%,#9fd8ef 100%)', 7: 'linear-gradient(160deg,#ffe3f0,#d9f0c8)', 8: 'linear-gradient(160deg,#e6e2d6,#c9c4b6)' };
+          /* 實際地圖：Lunabot／MiddleRed 的俯視底圖，依遊戲座標放採集點；每點列出還沒採的東西（數字＝剩幾個、紅框＝稀有），叉是出生點 */
+          const TYPE_NAME = { wood: '樹', mineral: '礦石', plant: '花草', birthday_plant: '生日植物', toolbox: '工具箱', treasure_box_transport: '寶箱', treasure_box_fixed: '寶箱', other: '堆積物', driftage: '漂流物', tone: '音符' };
           const showAll = !!s.hzMapAll, rareOnly = !!s.hzMapRare;
           out.hzMapAll = showAll; out.hzMapRare = rareOnly;
           out.hzMysMaps = (Y.maps || []).map(mp => {
-            const cfg = HZ_MAP_CFG[mp.site] || { dx: 1, dz: -1, rev: false };
-            const sx = p => (cfg.rev ? p.z * cfg.dz : p.x * cfg.dx), sy = p => (cfg.rev ? p.x * cfg.dx : p.z * cfg.dz);
-            const xs = mp.points.map(sx), ys = mp.points.map(sy), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-            const w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0), pad = .06;
-            const marks = mp.points.filter(p => (showAll || !p.harvested || p.left > 0) && (!rareOnly || p.drops.some(d => d.rare && d.left > 0))).map(p => {
-              const g = GLYPH[p.type] || ['📍', p.type || '採集點'];
-              const rareLeft = p.drops.some(d => d.rare && d.left > 0), gone = p.left === 0;
-              const icons = p.drops.filter(d => d.left > 0).slice(0, 3).map(d => { const [n, img] = resOf(d); return { img, n }; });
-              const tip = g[1] + (p.rarity > 1 ? '（稀有）' : '') + ' @(' + p.x + ', ' + p.z + ')' + (gone ? '：已採完' : '') + '\n' + p.drops.map(d => { const [n] = resOf(d); return (d.rare === 2 ? '★★ ' : d.rare === 1 ? '★ ' : '') + n + ' ×' + d.left + (d.left < d.qty ? '（共 ' + d.qty + '）' : ''); }).join('\n');
-              return { l: (pad + (sx(p) - x0) / w * (1 - pad * 2)) * 100, t: (pad + (sy(p) - y0) / h * (1 - pad * 2)) * 100, g: g[0], tip, icons, hasIcons: icons.length > 0,
-                ring: rareLeft ? '0 0 0 2px #dc2626, 0 0 10px rgba(220,38,38,.55)' : (p.rarity > 1 ? '0 0 0 2px #7c3aed' : '0 0 0 1px rgba(0,0,0,.18)'), op: gone ? .35 : 1, z: rareLeft ? 3 : (gone ? 1 : 2), more: p.drops.filter(d => d.left > 0).length > 3 ? '+' + (p.drops.filter(d => d.left > 0).length - 3) : '' };
+            const marks = mp.points.filter(p => (showAll || p.left > 0) && (!rareOnly || p.drops.some(d => d.rare && d.left > 0))).map(p => {
+              const pos = hzMapPos(mp.site, p.x, p.z), tn = TYPE_NAME[p.type] || '採集點';
+              const rareLeft = p.drops.some(d => d.rare && d.left > 0), gone = p.left === 0, live = p.drops.filter(d => d.left > 0);
+              const glow = p.rarity > 1 ? '0 0 0 2px #a78bfa, 0 0 12px 3px rgba(167,139,250,.8)' : (rareLeft ? '0 0 10px 2px rgba(239,68,68,.55)' : 'none');
+              const tiles = live.slice(0, 4).map(d => { const [n, img] = resOf(d); return { img, n, q: d.left > 9 ? '9+' : String(d.left), qbg: d.left >= 3 ? '#7c3aed' : d.left === 2 ? '#dc2626' : '#1f2937', bd: d.rare ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.9)', glow }; });
+              const tip = tn + (p.rarity > 1 ? '（稀有採集點）' : '') + ' @(' + p.x + ', ' + p.z + ')' + (gone ? '：已採完' : '') + '\n' + p.drops.map(d => { const [n] = resOf(d); return (d.rare === 2 ? '★★ ' : d.rare === 1 ? '★ ' : '') + n + ' ×' + d.left + (d.left < d.qty ? '（共 ' + d.qty + '）' : ''); }).join('\n');
+              return { l: pos.l, t: pos.t, tip, tiles, gone, tn, more: live.length > 4 ? '+' + (live.length - 4) : '', op: gone ? .45 : 1, z: rareLeft ? 3 : (gone ? 1 : 2) };
             });
-            return { n: (site[mp.site] || {}).name || ('場所 ' + mp.site), img: this.ASSET + '/mysekai/site/sitemap/texture/img_harvest_site_' + mp.site + '.webp', ar: (w / h).toFixed(3), bg: SITE_BG[mp.site] || 'var(--card-2)',
+            const sp = hzMapPos(mp.site, 0, 0);
+            return { n: (site[mp.site] || {}).name || ('場所 ' + mp.site), img: 'img/mysekai/site-' + mp.site + '.webp', spL: sp.l, spT: sp.t,
               cnt: mp.points.length + ' 個採集點・' + mp.points.filter(p => p.left > 0).length + ' 個還有資源', marks, empty: !marks.length };
           });
           out.hzMysHasMaps = out.hzMysMaps.length > 0;
