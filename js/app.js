@@ -107,6 +107,7 @@ class Component extends DCLogic {
   PAGES = {
     home:     ['首頁', '當期活動、遊戲通知、主要卡池與我的進度'],
     event:    ['活動總覽', '本期活動一頁看完：倒數、我的名次、榜線預測、當期卡池、加分卡與劇情'],
+    evinfo:   ['活動資料', '任一期活動的時程、加成屬性與角色、活動卡（抽卡／活動商店）、排名獎勵，WL 章節與嘉年華隊伍'],
     favs:     ['收藏與待辦', '星號收藏的卡片、角色、家具、歌曲與卡池，加上還沒做完的事：跑榜目標、豆森缺的家具、未讀通知'],
     calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
     gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
@@ -140,7 +141,7 @@ class Component extends DCLogic {
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
-    distrib:  ['活動分布', '歷屆活動的時間分布甘特圖'],
+    distrib:  ['活動分布', '歷屆卡池與活動的時間分布甘特圖：可切卡池／活動、範圍，滑過看說明、點條開詳情'],
     cards:    ['卡片圖鑑', '台服全部卡片：依團體、角色、屬性、稀有度、來源篩選，看滿等數值、技能與釋出日'],
     chars:    ['角色圖鑑', '26 位角色的檔案：聲優、生日、身高、學校、喜好與相關卡片'],
     fixtures: ['家具圖鑑', 'MySekai 家具：分類、標籤、尺寸、顏色與製作素材'],
@@ -172,7 +173,7 @@ class Component extends DCLogic {
      點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
   NAV_SECTIONS = [
     ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']]]],
-    ['追活動', [['event', '活動總覽', '#ff9db4', []], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
+    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
     ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
@@ -261,6 +262,7 @@ class Component extends DCLogic {
     ['猜角色', '', 'guesswho', '猜角色|猜卡面|猜猜看|猜謎|小遊戲|遊戲|guess who|看圖猜角色|卡面猜謎'],
     ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
     ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
+    ['活動資料（時程、加成、活動卡、排名獎勵）', '', 'evinfo', '活動資料|活動詳情|活動時程|排名獎勵|活動獎勵|加成角色|加成屬性|活動卡|活動商店|WL 章節|嘉年華隊伍|event info'],
     ['樂曲追加圖產生器', '', 'songcard', '追加圖|追加決定|楽曲追加|樂曲追加|songcard|宣傳圖|公告圖|追加圖產生器|片假名|片假名轉換|katakana'],
     ['譜面預覽產生器', '', 'chart', '譜面|譜面預覽|譜面圖|看譜|chart|sus|譜面產生器|combo'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
@@ -527,6 +529,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/17', t: '活動資料頁、活動甘特圖重做、Haruki 豆森地圖標記', s: '新頁「活動資料」（追活動 → 活動總覽的分頁籤）：任一期活動都能查，本期／上一期／下一期一鍵切、也能搜名稱或期數。內容有時程（開始、嘉年華中場發表、WL 各章開始、結算、排名公布、獎勵發放、活動結束、活動商店截止，走到哪一步一眼看出）、加成屬性與加成角色、活動卡分成「抽卡取得」（當期卡池 ★4，WL 為各章角色卡）與「活動商店」（用活動 P 換的 ★3／★2），附當期卡池與 PU 卡、每一段名次的排名獎勵（稱號、水晶、技能練習券、素材）、WL 章節與嘉年華隊伍。資料由 tools/build-event-info.py 每天從台服 master 建置（排名獎勵要翻 26 MB 的 resourceBoxDetails，瀏覽器不可能自己抓）。活動分布甘特圖重做：多了「活動」模式（每期活動依團體分列，混活與 WL 各一列）、時間範圍 12／18／24／36 個月或全部、每月固定寬度太寬就橫向捲動、季線與年份、這個月打底、今天虛線、條裡直接寫名稱、顏色依池種或活動類型附圖例、滑過看說明、點一條就開卡池詳情或活動資料、可匯出 PNG。Haruki 專區的豆森「今日資源」多了實際地圖：四個採集場所依遊戲裡的座標畫出每個採集點（樹、礦、花、工具箱、寶箱、漂流物…）與各點還沒採的資源，稀有的紅圈標出、採過的淡掉，點一個點看那裡有什麼，可切「顯示已採」「只看稀有」。', p: 'evinfo' },
     { d: '2026/10/16', t: '追加圖與譜面預覽做進站內，追加圖多了片假名轉換器', s: '樂曲追加圖產生器與譜面預覽產生器不再是外接的獨立頁，改成站內頁面：側欄「小遊戲與製作」的分頁籤直接切，跟貼圖製作器並排，不會跳出站外；舊網址 /songcard、/chart 會轉過來。程式在 js/maker.js，進這兩頁才載。追加圖多了片假名轉換器：輸入羅馬拼音（平文式、訓令式都認得）或平假名就出片假名，促音、長音、撥音照一般規則；英文字給近似音。轉好的字一鍵填到曲名、原唱或其他演唱者。', p: 'songcard' },
     { d: '2026/10/16', t: '譜面預覽產生器', s: '新獨立頁 chart.html：把整首譜面攤成一張直欄式的圖，時間由下往上、一欄接一欄。選曲、選難度就從素材鏡像抓官方的 SUS 譜面檔來畫：點擊、關鍵、滑鍵（帶方向箭頭）、軌跡、長條（含進緩／出緩曲線、可見中繼菱形與附著菱形）與引導線，關鍵長條與引導線用黃色。每條小節線左邊標小節數、右邊標打到那裡的累計 combo，含長條每半拍一個的隱藏判定點，算法照 pjsekai 引擎的 SUS→USC 規則，用五張官方譜面對過官方 Notes 數全部一致；BPM 變速點與技能發動點也標在圖上，可各自關掉。每欄小節數可調，圖太大時整張縮到 iOS canvas 面積上限以內；PNG／JPG 下載、原尺寸檢視。也能上傳 Ched／MikuMikuWorld 匯出的 .sus 畫自己的譜面。入口在側欄「小遊戲與製作」的分頁籤（貼圖製作器旁邊）、工具卡片與指令面板「譜面」。', p: 'x_chart' },
     { d: '2026/10/16', t: '樂曲追加圖產生器', s: '新獨立頁 songcard.html：做一張官方風格的「樂曲追加決定」圖。從曲庫選曲（讀台服／日服 master 的 musics、musicVocals、musicDifficulties、outsideCharacters 與站內 song-meta）自動帶入曲圖、曲名、作詞／作曲／編曲、3D／2D MV、有沒有 APPEND、虛擬歌手 ver. 的原唱與 SEKAI ver. 的團體與演唱成員；每一格都能手改，曲圖可上傳、拖進來或貼上，SEKAI ver. 框放官方團體標誌（也能換成自己上傳的）。底圖用官方公告圖的原檔壓成鋼藍灰，也能切回自繪背景。日文／繁中兩套固定文字，1920×1080 PNG 下載或複製到剪貼簿。入口在側欄「小遊戲與製作」的分頁籤（貼圖製作器旁邊）、工具卡片與指令面板「追加圖」。', p: 'x_songcard' },
@@ -722,6 +725,8 @@ class Component extends DCLogic {
     page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, songBpm: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     dollF: 'all', dvUnit: 'all',   // 月卡玩偶篩選、活動分布的團體篩選（原生頁，取代 iframe）
+    dvMode: 'gacha', dvRange: '24', dvTip: null,   // 甘特圖：卡池／活動、時間範圍、滑過的說明
+    evInfo: null, evInfoErr: '', eiId: 0, eiQ: '',   // 活動資料（data/event-info.js）與活動資料頁選的那期
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
@@ -2711,7 +2716,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=385c6afd62').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=ef9aeee837').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -6310,78 +6315,241 @@ class Component extends DCLogic {
     };
   }
 
-  /* ===== 活動分布甘特圖（原生頁；照經典版 DistribModule 的取法：普限、常駐、FES、WL 池，依團體分列）
-     與經典版不同的地方：時間範圍由資料決定、重疊的卡池自動分行、顏色讀 CSS 變數所以跟著深色模式。 */
+  /* ===== 活動分布甘特圖（原生頁） =====
+     兩種模式：卡池（台服預測卡池列表：普限、常駐、FES、WL 池，依團體分列）與活動（data/event-info.js：每期活動依團體分列，
+     混活與 WL 各一列）。時間範圍可選 12／18／24／36 個月或全部；橫軸每月固定寬度，太寬就橫向捲動；重疊的自動分行。
+     顏色跟著 CSS 變數所以深色模式也對；滑過有說明、點條就開那期卡池或活動資料；可匯出 PNG。 */
   DV_UNITS = [['LN', 'ln'], ['MMJ', 'mmj'], ['VBS', 'vbs'], ['WS', 'wxs'], ['25時', 'n25'], ['VS', 'vs']];
+  DV_EV_TYPES = { marathon: ['馬拉松', '#ff6f9c'], cheerful_carnival: ['嘉年華', '#f5a623'], world_bloom: ['World Link', '#3f8cff'] };
+  DV_RANGES = [['12', '12 個月'], ['18', '18 個月'], ['24', '24 個月'], ['36', '36 個月'], ['all', '全部']];
+  dvToneColor(t) {
+    const f = this.TONES.find(x => x[0] === t);
+    const css = getComputedStyle(document.documentElement), v = f ? (css.getPropertyValue('--' + f[1] + '-fg') || '').trim() : '';
+    return v || (css.getPropertyValue('--ot-fg') || '').trim() || '#5d6884';
+  }
   dvData() {
-    const gs = (this.state.gachas || []).filter(g => /普通限定池|常駐池|FES池|World Link池/.test(g.t || '') && g.s && g.e);
-    if (!gs.length) return null;
+    const s = this.state, mode = s.dvMode === 'event' ? 'event' : 'gacha';
+    let items = [];
+    if (mode === 'gacha') {
+      items = (s.gachas || []).filter(g => /普通限定池|常駐池|FES池|World Link池/.test(g.t || '') && g.s && g.e)
+        .map(g => ({ s: new Date(g.s), e: new Date(g.e), n: (g.n || '').replace(/\[.*?\]/g, '').trim(), t: g.t, tl: this.tone(g.t).label, gid: String(g.id || ''), units: this.DV_UNITS.filter(([u]) => (g.u || '').includes(u)).map(x => x[1]), kind: 'gacha' }));
+    } else {
+      items = this.eiRows().map(e => ({ s: new Date(e.s), e: new Date(e.a || e.c), n: e.name, t: e.type, tl: (this.DV_EV_TYPES[e.type] || [e.type])[0], id: e.id,
+        units: [e.type === 'world_bloom' ? 'wl' : (e.unit || 'mix')], kind: 'event' })).filter(x => x.s.getTime() && x.e.getTime());
+    }
+    if (!items.length) return null;
     const far = new Date('2090/01/01');
     let min = null, max = null;
-    gs.forEach(g => { const s = new Date(g.s), e = new Date(g.e); if (!min || s < min) min = s; if (e < far && (!max || e > max)) max = e; });
+    items.forEach(g => { if (!min || g.s < min) min = g.s; if (g.e < far && (!max || g.e > max)) max = g.e; });
     if (!max) max = new Date(min.getFullYear(), min.getMonth() + 12, 1);
-    const start = new Date(min.getFullYear(), min.getMonth(), 1);
-    let end = new Date(max.getFullYear(), max.getMonth() + 1, 1);
-    const cap = new Date(start.getFullYear(), start.getMonth() + 24, 1); if (end > cap) end = cap;
-    const bars = this.DV_UNITS.map(([u, k]) => {
-      const items = gs.filter(g => (g.u || '').includes(u)).map(g => ({ s: new Date(g.s), e: new Date(g.e), n: (g.n || '').replace(/\[.*?\]/g, '').trim(), t: g.t }))
-        .filter(g => g.e > start && g.s < end).sort((x, y) => x.s - y.s);
+    const now = new Date(), range = s.dvRange || '24';
+    let end = new Date(max.getFullYear(), max.getMonth() + 1, 1), start = new Date(min.getFullYear(), min.getMonth(), 1);
+    if (range !== 'all') {
+      const months = +range || 24;
+      // 從資料最後一個月往前數 N 個月；但至少讓現在這個月看得到
+      let st = new Date(end.getFullYear(), end.getMonth() - months, 1);
+      const nowM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      if (st > nowM) { st = nowM; end = new Date(st.getFullYear(), st.getMonth() + months, 1); }
+      if (st > start) start = st;
+    }
+    const rowDefs = mode === 'gacha' ? this.DV_UNITS.map(([u, k]) => [k, this.UNITS[k].n, this.UNITS[k].c])
+      : this.DV_UNITS.filter(x => x[1] !== 'vs').map(([u, k]) => [k, this.UNITS[k].n, this.UNITS[k].c]).concat([['mix', '混活／VS', '#8b93ac'], ['wl', 'World Link', '#3f8cff']]);
+    const bars = rowDefs.map(([k, name, color]) => {
+      const list = items.filter(g => g.units.includes(k)).filter(g => g.e > start && g.s < end).sort((x, y) => x.s - y.s);
       const lanes = [];   // 區間打包：放進第一條「上一期已結束」的行，沒有就開新行
-      items.forEach(g => { let l = lanes.find(L => L[L.length - 1].e <= g.s); if (!l) { l = []; lanes.push(l); } l.push(g); });
-      return { u, name: this.UNITS[k].n, color: this.UNITS[k].c, lanes: lanes.length ? lanes : [[]], n: items.length };
+      list.forEach(g => { let l = lanes.find(L => L[L.length - 1].e <= g.s); if (!l) { l = []; lanes.push(l); } l.push(g); });
+      return { u: k, name, color, lanes: lanes.length ? lanes : [[]], n: list.length };
     });
-    return { start, end, bars };
+    return { start, end, bars, mode, total: bars.reduce((x, b) => x + b.n, 0) };
   }
   dvView() {
-    const s = this.state, sel = s.dvUnit || 'all', d = this.dvData();
-    const chips = [this._chip('all', '全部', sel)].concat(this.DV_UNITS.map(([u, k]) => this._chip(u, this.UNITS[k].n, sel)));
+    const s = this.state, sel = s.dvUnit || 'all', mode = s.dvMode === 'event' ? 'event' : 'gacha', d = this.dvData();
+    const chips = [this._chip('all', '全部', sel)].concat((mode === 'gacha' ? this.DV_UNITS.map(x => x[1]) : this.DV_UNITS.filter(x => x[1] !== 'vs').map(x => x[1]).concat(['mix', 'wl'])).map(k => this._chip(k, k === 'mix' ? '混活／VS' : k === 'wl' ? 'World Link' : this.UNITS[k].n, sel)));
     const f = t => t.getFullYear() + '/' + String(t.getMonth() + 1).padStart(2, '0');
-    return { dvChips: chips, dvEmpty: !d && !(s.gachas || []).length, dvNone: !d && !!(s.gachas || []).length,
-      dvMeta: d ? ('範圍 ' + f(d.start) + ' 至 ' + f(new Date(d.end - 1)) + '・' + d.bars.reduce((x, b) => x + b.n, 0) + ' 期卡池（普限、常駐、FES、WL 池）・資料：台服預測卡池列表') : '' };
+    const legend = mode === 'gacha' ? ['普通限定池', '常駐池', 'FES池', 'World Link池'].map(t => ({ n: this.tone(t).label, c: this.dvToneColor(t) }))
+      : Object.keys(this.DV_EV_TYPES).map(k => ({ n: this.DV_EV_TYPES[k][0], c: this.DV_EV_TYPES[k][1] }));
+    const tip = s.dvTip;
+    return { dvChips: chips, dvModes: [['gacha', '卡池'], ['event', '活動']].map(([v, n]) => this._chip(v, n, mode)), dvRanges: this.DV_RANGES.map(([v, n]) => this._chip(v, n, s.dvRange || '24')),
+      dvLegend: legend, dvEmpty: !d && (mode === 'gacha' ? !(s.gachas || []).length : !s.evInfo && !s.evInfoErr), dvNone: !d && (mode === 'gacha' ? !!(s.gachas || []).length : !!s.evInfo),
+      dvErr: mode === 'event' ? (s.evInfoErr || '') : '', dvHasErr: mode === 'event' && !!s.evInfoErr,
+      dvTipOn: !!tip, dvTipX: tip ? tip.x + 'px' : '0', dvTipY: tip ? tip.y + 'px' : '0', dvTipN: tip ? tip.n : '', dvTipSub: tip ? tip.sub : '', dvTipColor: tip ? tip.color : 'var(--accent)',
+      dvMeta: d ? ('範圍 ' + f(d.start) + ' 至 ' + f(new Date(d.end - 1)) + '・' + d.total + (mode === 'gacha' ? ' 期卡池（普限、常駐、FES、WL 池）・資料：台服預測卡池列表' : ' 期活動（台服 master，含未開的）') + '・滑過看說明、點一條就開詳情') : '' };
   }
   dvDraw() {
     const c = this._dvCanvas; if (!c || !c.isConnected) return;
-    const d = this.dvData(); if (!d) return;
+    const d = this.dvData(); this._dvHits = []; if (!d) { c.width = 0; c.height = 0; c.style.width = '0px'; c.style.height = '0px'; return; }
     const sel = this.state.dvUnit || 'all';
     const rows = d.bars.filter(b => sel === 'all' || b.u === sel);
     const css = getComputedStyle(document.documentElement), cv = (v, fb) => (css.getPropertyValue(v) || '').trim() || fb;
-    const ink = cv('--ink', '#1b2140'), muted = cv('--text-3', '#8b93ac'), grid = cv('--border', '#e3e6ef');
+    const ink = cv('--ink', '#1b2140'), muted = cv('--text-3', '#8b93ac'), grid = cv('--border', '#e3e6ef'), card2 = cv('--card-2', '#f3f5fa'), accent = cv('--accent', '#0eb3c5');
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const wrap = c.parentElement, W = Math.max(860, wrap ? wrap.clientWidth - 16 : 860);
-    const padL = 100, padT = 34, padR = 14, laneH = 24, gap = 12;
-    const H = padT + rows.reduce((x, r) => x + r.lanes.length * laneH + gap, 0) + 6;
+    const wrap = c.parentElement, months = (d.end.getFullYear() - d.start.getFullYear()) * 12 + d.end.getMonth() - d.start.getMonth();
+    const padL = 104, padT = 40, padR = 16, laneH = 26, gap = 14, pxM = 62;
+    const W = Math.max(wrap ? wrap.clientWidth - 18 : 860, padL + padR + months * pxM);
+    const H = padT + rows.reduce((x, r) => x + r.lanes.length * laneH + gap, 0) + 8;
     c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px';
     const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     const cw = W - padL - padR, span = d.end - d.start, X = t => padL + (t - d.start) / span * cw;
-    const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    const rr = (x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    const now = new Date();
+    // 月格線：季首較深、一月寫年份；這個月整欄淡淡打底
     ctx.font = '11px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     for (let m = new Date(d.start); m < d.end; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
-      const nx = new Date(m.getFullYear(), m.getMonth() + 1, 1), x = X(m);
-      ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, padT - 8); ctx.lineTo(x, H); ctx.stroke();
-      ctx.fillStyle = muted; ctx.fillText((m.getMonth() === 0 || m.getTime() === d.start.getTime() ? String(m.getFullYear()).slice(2) + '年' : '') + (m.getMonth() + 1) + '月', (x + Math.min(X(nx), W - padR)) / 2, padT - 12);
+      const nx = new Date(m.getFullYear(), m.getMonth() + 1, 1), x = X(m), x2 = Math.min(X(nx), W - padR);
+      if (m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth()) { ctx.fillStyle = card2; ctx.fillRect(x, padT - 10, x2 - x, H - padT + 10); }
+      const q = m.getMonth() % 3 === 0;
+      ctx.strokeStyle = grid; ctx.lineWidth = q ? 1.5 : 1; ctx.globalAlpha = q ? 1 : .6; ctx.beginPath(); ctx.moveTo(x, padT - 10); ctx.lineTo(x, H); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = muted; ctx.font = (m.getMonth() === 0 ? 'bold ' : '') + '11px system-ui, -apple-system, sans-serif';
+      ctx.fillText((m.getMonth() === 0 || m.getTime() === d.start.getTime() ? String(m.getFullYear()) + '年' : '') + (m.getMonth() + 1) + '月', (x + x2) / 2, padT - 16);
     }
-    const now = new Date();
-    if (now > d.start && now < d.end) { const x = X(now); ctx.strokeStyle = '#e0533a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, padT - 8); ctx.lineTo(x, H); ctx.stroke(); ctx.fillStyle = '#e0533a'; ctx.font = 'bold 10px system-ui, -apple-system, sans-serif'; ctx.fillText('今天', x, padT - 22); }
+    if (now > d.start && now < d.end) { const x = X(now); ctx.strokeStyle = '#e0533a'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(x, padT - 10); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#e0533a'; ctx.font = 'bold 10px system-ui, -apple-system, sans-serif'; ctx.fillText('今天', x, padT - 28); }
     let y = padT;
     rows.forEach(r => {
       const rh = r.lanes.length * laneH;
-      ctx.fillStyle = r.color; rr(padL - 8, y, 3, Math.max(4, rh - 5), 1.5); ctx.fill();
-      ctx.fillStyle = ink; ctx.font = 'bold 12px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(r.name, padL - 14, y + 15);
-      /* 一期卡池只有幾天，照實際長度畫在 18 個月的軸上只剩一條細線，所以條至少 12px 寬；
-         名字寫在條的右邊（到下一期開始之前的空間），放不下就不寫。 */
-      ctx.font = '10px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'left';
+      ctx.fillStyle = r.color; rr(padL - 10, y, 3, Math.max(4, rh - 6), 1.5); ctx.fill();
+      ctx.fillStyle = ink; ctx.font = 'bold 12px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(r.name, padL - 16, y + 15);
+      ctx.font = '10.5px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'left';
       r.lanes.forEach((lane, li) => lane.forEach((g, gi) => {
-        const x1 = Math.max(padL, X(g.s)), x2 = Math.min(W - padR, X(g.e)), w = Math.max(12, x2 - x1), yy = y + li * laneH;
-        ctx.fillStyle = r.color; ctx.globalAlpha = .85; rr(x1, yy, w, laneH - 6, 4); ctx.fill(); ctx.globalAlpha = 1;
-        const nx = lane[gi + 1] ? X(lane[gi + 1].s) : W - padR, room = nx - (x1 + w) - 8;
-        if (room > 24) {
+        const x1 = Math.max(padL, X(g.s)), x2 = Math.min(W - padR, X(g.e)), w = Math.max(12, x2 - x1), yy = y + li * laneH, bh = laneH - 7;
+        const color = g.kind === 'gacha' ? this.dvToneColor(g.t) : (this.DV_EV_TYPES[g.t] || ['', r.color])[1];
+        const hot = this.state.dvTip && this.state.dvTip.key === (g.kind + ':' + (g.gid || g.id));
+        ctx.fillStyle = color; ctx.globalAlpha = hot ? 1 : (g.e < now ? .55 : .85); rr(x1, yy, w, bh, 5); ctx.fill(); ctx.globalAlpha = 1;
+        if (hot) { ctx.strokeStyle = ink; ctx.lineWidth = 1.5; rr(x1, yy, w, bh, 5); ctx.stroke(); }
+        /* 名字：條夠寬就寫在條裡（白字），不夠就寫在右邊到下一期開始之前的空間，放不下就不寫 */
+        const inside = w >= 56;
+        const room = inside ? w - 10 : (lane[gi + 1] ? X(lane[gi + 1].s) : W - padR) - (x1 + w) - 8;
+        if (room > 22) {
           let t = g.n; while (t.length > 1 && ctx.measureText(t).width > room) t = t.slice(0, -1);
           if (t.length < g.n.length) t = t.slice(0, -1) + '…';
-          ctx.fillStyle = ink; ctx.fillText(t, x1 + w + 4, yy + 12);
+          ctx.fillStyle = inside ? '#fff' : ink; ctx.fillText(t, inside ? x1 + 6 : x1 + w + 4, yy + 13);
         }
+        this._dvHits.push({ x1, y1: yy, x2: x1 + w, y2: yy + bh, g, color });
       }));
       y += rh + gap;
     });
+  }
+  /* 滑鼠／觸控：找條、更新說明；點了就開卡池詳情或活動資料 */
+  dvHit(e) {
+    const c = this._dvCanvas; if (!c) return null;
+    const b = c.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
+    const h = (this._dvHits || []).find(h => x >= h.x1 && x <= h.x2 && y >= h.y1 && y <= h.y2);
+    return h ? Object.assign({ px: x, py: y }, h) : null;
+  }
+  dvHover(e) {
+    const h = this.dvHit(e), cur = this.state.dvTip;
+    if (!h) { if (cur) this.setState({ dvTip: null }); return; }
+    const g = h.g, key = g.kind + ':' + (g.gid || g.id);
+    if (cur && cur.key === key && Math.abs(cur.x - h.px) < 40) return;
+    const f = t => (t.getMonth() + 1) + '/' + t.getDate();
+    const cvs = this._dvCanvas, left = cvs.offsetLeft + h.px;
+    this.setState({ dvTip: { key, x: Math.max(cvs.offsetLeft, Math.min(left + 12, cvs.offsetLeft + cvs.clientWidth - 240)), y: cvs.offsetTop + h.y2 + 6, n: g.n, sub: g.tl + '・' + f(g.s) + ' – ' + f(g.e) + '・' + (g.kind === 'gacha' ? '點開卡池詳情' : '點看活動資料'), color: h.color } });
+  }
+  dvClick(e) {
+    const h = this.dvHit(e); if (!h) return;
+    if (h.g.kind === 'gacha') { if (h.g.gid) this.setState({ gachaGid: h.g.gid, dvTip: null }); }
+    else { this.setState({ eiId: h.g.id, dvTip: null }); this.go('evinfo'); }
+  }
+  dvBind(el) {
+    if (!el || el === this._dvCanvas) return;
+    this._dvCanvas = el;
+    el.addEventListener('mousemove', e => this.dvHover(e));
+    el.addEventListener('mouseleave', () => { if (this.state.dvTip) this.setState({ dvTip: null }); });
+    el.addEventListener('click', e => this.dvClick(e));
+    el.style.cursor = 'pointer';
+  }
+  dvExport() {
+    const c = this._dvCanvas; if (!c || !c.width) { this._toast('還沒有圖'); return; }
+    const o = document.createElement('canvas'); o.width = c.width; o.height = c.height; const x = o.getContext('2d');
+    x.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--card') || '').trim() || '#fff'; x.fillRect(0, 0, o.width, o.height); x.drawImage(c, 0, 0);
+    o.toBlob(b => { if (!b) { this._toast('匯出失敗'); return; } const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'distrib-' + (this.state.dvMode === 'event' ? 'events' : 'gachas') + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }, 'image/png');
+  }
+
+  /* ===== 活動資料（data/event-info.js，由 tools/build-event-info.py 每天從台服 master 建置） =====
+     任一期活動的時程、加成屬性與角色、活動卡（抽卡／活動商店）、排名獎勵、WL 章節與嘉年華隊伍。甘特圖的「活動」模式也讀這份。 */
+  loadEvInfo() {
+    if (this.state.evInfo) return Promise.resolve(this.state.evInfo);
+    if (this._evInfoP) return this._evInfoP;
+    this._evInfoP = import('./data/event-info.js?v=e5cf872563').then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
+      .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
+    return this._evInfoP;
+  }
+  eiRows() {
+    const d = this.state.evInfo; if (!d) return [];
+    if (!this._eiRows || this._eiRowsSrc !== d) {
+      this._eiRowsSrc = d;
+      this._eiRows = (d.ev || []).map(r => ({ id: r[0], name: r[1], type: r[2], unit: r[3], abn: r[4], s: r[5], a: r[6], r: r[7], d: r[8], c: r[9], de: r[10], attr: r[11], chars: r[12] || [], cards: r[13] || [], rw: r[14], wl: r[15] || [], teams: r[16] || [], m1: r[17], m2: r[18], theme: r[19], vl: r[20] }));
+    }
+    return this._eiRows;
+  }
+  eiAuto(rows) {
+    const now = Date.now();
+    return rows.find(e => e.s <= now && now < e.c) || rows.filter(e => e.s > now).sort((a, b) => a.s - b.s)[0] || rows.filter(e => e.s <= now).sort((a, b) => b.s - a.s)[0] || rows[rows.length - 1];
+  }
+  eiVals(s) {
+    if (s.page !== 'evinfo') return {};
+    const rows = this.eiRows(), out = { eiLoading: !rows.length && !s.evInfoErr, eiErr: s.evInfoErr || '', eiHasErr: !!s.evInfoErr && !rows.length, eiHas: rows.length > 0 };
+    if (!rows.length) return out;
+    const now = Date.now(), cur = this.eiAuto(rows);
+    const ev = rows.find(e => e.id === +s.eiId) || cur;
+    const idx = rows.indexOf(ev), prev = rows[idx - 1], next = rows[idx + 1];
+    const f = ms => { if (!ms) return '—'; const t = new Date(ms); return (t.getMonth() + 1) + '/' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); };
+    const fd = ms => { if (!ms) return '—'; const t = new Date(ms); return t.getFullYear() + '/' + (t.getMonth() + 1) + '/' + t.getDate(); };
+    const chip = (on, c) => on ? { bg: c || 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' };
+    out.eiId = ev.id; out.eiName = ev.name; out.eiNo = '第 ' + ev.id + ' 期';
+    out.eiType = (this.DV_EV_TYPES[ev.type] || [ev.type])[0]; out.eiTypeColor = (this.DV_EV_TYPES[ev.type] || ['', '#8b93ac'])[1];
+    out.eiUnit = ev.unit ? this.UNITS[ev.unit].n : (ev.type === 'world_bloom' ? 'World Link' : '混活');
+    out.eiLogo = ev.abn ? this.ASSET + '/event/' + ev.abn + '/logo/logo.webp' : ''; out.eiHasLogo = !!ev.abn;
+    out.eiBg = ev.abn ? this.ASSET + '/event/' + ev.abn + '/screen/bg.webp' : '';
+    const phase = now < ev.s ? ['未開始', '距開始 ' + this.dur(ev.s - now), '#8b93ac'] : now < ev.a ? ['進行中', '距結算 ' + this.dur(ev.a - now), '#2f9e57'] : now < ev.r ? ['結算中', '排名公布 ' + f(ev.r), '#b07500'] : now < ev.c ? ['已結算', '活動結束 ' + f(ev.c), '#d6336c'] : ['已結束', fd(ev.s) + ' – ' + fd(ev.c), '#5d6884'];
+    out.eiPhase = phase[0]; out.eiPhaseSub = phase[1]; out.eiPhaseColor = phase[2];
+    out.eiRange = fd(ev.s) + ' – ' + fd(ev.c);
+    out.eiPrevN = prev ? '← 第 ' + prev.id + ' 期' : ''; out.eiPrevId = prev ? prev.id : 0; out.eiNextN = next ? '第 ' + next.id + ' 期 →' : ''; out.eiNextId = next ? next.id : 0;
+    out.eiCurId = cur.id; out.eiIsCur = cur.id === ev.id; out.eiCurN = cur.id === ev.id ? '' : '回到本期（第 ' + cur.id + ' 期）';
+    const q = String(s.eiQ || '').trim().toLowerCase();
+    out.eiQ = s.eiQ || ''; out.eiResults = q ? rows.filter(e => e.name.toLowerCase().includes(q) || String(e.id) === q).slice(-12).reverse().map(e => ({ id: e.id, n: '第 ' + e.id + ' 期・' + e.name, sub: fd(e.s) + '・' + (this.DV_EV_TYPES[e.type] || [e.type])[0] })) : [];
+    out.eiHasResults = out.eiResults.length > 0;
+    /* 時程 */
+    const tl = [{ t: ev.s, n: '活動開始', d: '開始累積活動 P、活動商店開放' }];
+    if (ev.type === 'cheerful_carnival') { if (ev.m1) tl.push({ t: ev.m1, n: '中場發表 ①', d: '嘉年華隊伍第一次中間結果' }); if (ev.m2) tl.push({ t: ev.m2, n: '中場發表 ②', d: '第二次中間結果' }); }
+    if (ev.type === 'world_bloom') ev.wl.forEach(ch => tl.push({ t: ch[2], n: '第 ' + ch[0] + ' 章開始', d: (this.charName(ch[1]) || '#' + ch[1]) + ' 章節，' + f(ch[3]) + ' 結算' }));
+    tl.push({ t: ev.a, n: '結算', d: '停止計分，之後的場次不算活動 P' }, { t: ev.r, n: '排名公布', d: '最終排名與榜線確定' }, { t: ev.d, n: '獎勵發放', d: '排名獎勵（稱號、水晶、素材）入帳' }, { t: ev.c, n: '活動結束', d: '活動頁面關閉' }, { t: ev.de, n: '活動商店截止', d: '活動 P 兌換到此為止，記得換完' });
+    tl.sort((a, b) => a.t - b.t);
+    let curIdx = -1; tl.forEach((x, i) => { if (x.t <= now) curIdx = i; });
+    out.eiTimeline = tl.filter(x => x.t).map((x, i) => ({ n: x.n, d: x.d, t: f(x.t), full: fd(x.t) + ' ' + f(x.t).split(' ')[1], done: x.t <= now, cur: i === curIdx, dot: x.t <= now ? (i === curIdx ? 'var(--accent)' : 'var(--text-3)') : 'var(--border-2)', fg: x.t <= now ? 'var(--text)' : 'var(--text-2)' }));
+    const total = ev.a - ev.s; out.eiProg = total > 0 ? Math.max(0, Math.min(100, Math.round((now - ev.s) / total * 100))) + '%' : '0%';
+    /* 加成 */
+    const A = this.SM_ATTR[ev.attr]; out.eiAttr = A ? A[0] : (ev.attr || '—'); out.eiAttrColor = A ? A[1] : '#8b93ac'; out.eiHasAttr = !!ev.attr;
+    out.eiChars = ev.chars.map(([cid, u]) => ({ n: (this.charName(cid) || '#' + cid) + (cid > 20 && u && u !== 'vs' ? '（' + this.UNITS[u].n + '）' : ''), img: this.charaSd(cid), col: this.CHARA_COLOR[cid] || 'var(--border)' }));
+    out.eiHasChars = out.eiChars.length > 0;
+    out.eiBonusNote = ev.attr ? '隊上每張同屬性卡 +25%、每張加成角色的卡 +25%，兩者都中 +50%；當期活動卡另外加（見下）。' : '這期沒有屬性加成資料。';
+    /* 活動卡 */
+    const rar = r => r === 9 ? '生日' : '★' + r;
+    const card = c => ({ id: c[0], img: c[4] ? this.cardImg(c[4], c[2]) : '', n: c[5] || ('#' + c[0]), ch: this.charName(c[1]) || '', rar: rar(c[2]), attrColor: (this.SM_ATTR[['cool', 'happy', 'mysterious', 'cute', 'pure'][c[3]]] || ['', '#8b93ac'])[1],
+      bonus: c[6] ? '+' + c[6] + '%' + (c[7] ? '（隊長 +' + c[7] + '%）' : '') : '—', col: this.CHARA_COLOR[c[1]] || 'var(--border)' });
+    out.eiGachaCards = ev.cards.filter(c => !c[8]).map(card); out.eiShopCards = ev.cards.filter(c => c[8]).map(card);
+    out.eiHasGachaCards = out.eiGachaCards.length > 0; out.eiHasShopCards = out.eiShopCards.length > 0;
+    out.eiCardsNote = ev.cards.length ? '抽卡取得的是當期卡池的 ★4（WL 為各章節角色卡），活動商店的 ★3／★2 用活動 P 兌換（排名獎勵不送卡）。' : '這期還沒有活動卡資料。';
+    const gs = (s.gachas || []).filter(g => String(g.eid) === String(ev.id)).map(g => { const tn = this.tone(g.t), a = this.pd(g.s), b = this.pd(g.e); const pk = (s.gachaPk || {})[String(g.id)]; return { gid: String(g.id || ''), n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, range: this.md(a) + ' – ' + this.md(b), pu: pk ? pk.cards.map(c => ({ img: this.cardImg(c[4], c[2]), n: c[5], ch: this.charName(c[1]) || '' })) : [], hasPu: !!(pk && pk.cards.length) }; });
+    out.eiGachas = gs; out.eiHasGachas = gs.length > 0;
+    /* 排名獎勵 */
+    const D = s.evInfo, tiers = (D.rw || {})[ev.rw] || [], items = D.it || [], hn = D.hn || {}, mn = D.mn || {};
+    const itemOf = i => { const it = items[i] || ['', 0, 0]; const [t, id, q] = it;
+      if (t === 'honor') return { n: '稱號「' + (hn[id] || '#' + id) + '」', img: '', icon: '🏅', q: '' };
+      if (t === 'jewel') return { n: '水晶', img: '', icon: '💎', q: '×' + this.n(q) };
+      if (t === 'skill_practice_ticket') return { n: '技能練習券' + (id ? '（Lv.' + id + '）' : ''), img: '', icon: '🎫', q: '×' + this.n(q) };
+      if (t === 'material') return { n: mn[id] || ('素材 #' + id), img: this.ASSET + '/thumbnail/material/material' + id + '.webp', icon: '', q: '×' + this.n(q) };
+      if (t === 'player_frame') return { n: '頭像框', img: '', icon: '🖼️', q: '' };
+      if (t === 'coin') return { n: '金幣', img: '', icon: '🪙', q: '×' + this.n(q) };
+      return { n: t + ' #' + id, img: '', icon: '📦', q: q ? '×' + this.n(q) : '' }; };
+    out.eiRewards = tiers.map(t => ({ rank: t[0] === t[1] ? '第 ' + this.n(t[0]) + ' 名' : this.n(t[0]) + ' – ' + this.n(t[1]) + ' 名', top: t[1] <= 10, items: t[2].map(itemOf) }));
+    out.eiHasRewards = out.eiRewards.length > 0; out.eiRewardNote = out.eiRewards.length ? '依台服 master 的排名獎勵區間；稱號依名次分段，水晶與技能練習券各段不同。' : '這期還沒有排名獎勵資料。';
+    /* WL 章節、嘉年華 */
+    out.eiIsWl = ev.type === 'world_bloom'; out.eiWl = ev.wl.map(ch => ({ no: '第 ' + ch[0] + ' 章', n: this.charName(ch[1]) || '#' + ch[1], img: this.charaSd(ch[1]), t: fd(ch[2]) + ' ' + f(ch[2]).split(' ')[1] + ' – ' + fd(ch[3]) + ' ' + f(ch[3]).split(' ')[1], cur: now >= ch[2] && now < ch[4], done: now >= ch[4] }));
+    out.eiIsCc = ev.type === 'cheerful_carnival'; out.eiTeams = ev.teams.map(t => ({ n: t[1] })); out.eiTheme = ev.theme || '';
+    out.eiStoryPatch = JSON.stringify({ stTab: 'event', stEvent: ev.id, dbq: '' });
+    out.eiBorderPatch = JSON.stringify({ pastEv: String(ev.id) });
+    out.eiChips = [['cur', '本期'], ['prev', '上一期'], ['next', '下一期']].map(([v, n]) => Object.assign({ v, n, dis: (v === 'prev' && !prev) || (v === 'next' && !next) }, chip(v === 'cur' && cur.id === ev.id)));
+    return out;
   }
 
   /* ===== 理論技能倍率表 =====
@@ -6937,6 +7105,8 @@ class Component extends DCLogic {
       this.setState({ recent, visits });
     }
     if (p === 'event') { this.loadStories(); this.loadCards(); this.loadEventCards(); }
+    if (p === 'evinfo') { this.loadEvInfo(); this.loadCards(); this.loadGachaPk(); }
+    if (p === 'distrib' && this.state.dvMode === 'event') this.loadEvInfo();
     if (p === 'favs') { this.loadMst(); this.loadFixtures(); }
     if (p === 'calendar' || p === 'home' || p === 'favs') this.loadMsEvents();
     if (p === 'calendar' || p === 'home' || p === 'favs' || p === 'calc') this.loadSupportEvents();
@@ -8597,6 +8767,7 @@ class Component extends DCLogic {
       isQuiz: s.page === 'guesswho' || s.page === 'guessjacket', isStickers: s.page === 'stickers',
       ...this.qzVals(s),
       ...this.stkVals(s),
+      isEvinfo: s.page === 'evinfo', ...this.eiVals(s),
       /* 製作工具（追加圖、譜面預覽）：程式在 js/maker.js，載好前模板只顯示載入中 */
       isSongcard: s.page === 'songcard', isChart: s.page === 'chart', mkReady: !!s.mkReady, mkWait: (s.page === 'songcard' || s.page === 'chart') && !s.mkReady && !s.mkErr, mkErrHas: !!s.mkErr, mkErr: s.mkErr || '', onMkRetry: () => this.mkLoad(),
       ...(s.mkReady && this.mkVals ? this.mkVals(s) : {}),
@@ -10594,8 +10765,18 @@ class Component extends DCLogic {
       onRankDeck: e => { const uid = e.currentTarget.dataset.uid; if (uid) this.setState({ deckPid: uid, detail: null }); },
       onHomeBoard: e => { const v = e.currentTarget.dataset.v; this.setState({ homeBoard: v }); },
       onDollF: e => this.setState({ dollF: e.currentTarget.dataset.v || 'all' }),
-      onDvUnit: e => this.setState({ dvUnit: e.currentTarget.dataset.v || 'all' }),
-      dvRef: el => { if (el) { this._dvCanvas = el; this.dvDraw(); } },
+      onDvUnit: e => this.setState({ dvUnit: e.currentTarget.dataset.v || 'all', dvTip: null }),
+      onDvMode: e => { const v = e.currentTarget.dataset.v === 'event' ? 'event' : 'gacha'; this.setState({ dvMode: v, dvUnit: 'all', dvTip: null }); if (v === 'event') this.loadEvInfo(); },
+      onDvRange: e => this.setState({ dvRange: e.currentTarget.dataset.v || '24', dvTip: null }),
+      onDvExport: () => this.dvExport(),
+      onDvRetry: () => this.loadEvInfo(),
+      dvRef: el => { if (el) { this.dvBind(el); this.dvDraw(); } },
+      /* 活動資料頁 */
+      onEiPick: e => this.setState({ eiId: +e.currentTarget.dataset.id || 0, eiQ: '' }),
+      onEiQ: e => this.setState({ eiQ: e.target.value }),
+      onEiChip: e => { const v = e.currentTarget.dataset.v, rows = this.eiRows(); if (!rows.length) return; const cur = rows.find(x => x.id === +this.state.eiId) || this.eiAuto(rows), i = rows.indexOf(cur); const t = v === 'prev' ? rows[i - 1] : v === 'next' ? rows[i + 1] : this.eiAuto(rows); if (t) this.setState({ eiId: t.id, eiQ: '' }); },
+      onEiRetry: () => this.loadEvInfo(),
+      onEiGacha: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
       onLuGo: () => this.luLookup(),
       onLuKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.luLookup(); } },
       onLuDeck: () => { const d = this.state.luData; if (d) this.setState({ deckPid: d.id }); },

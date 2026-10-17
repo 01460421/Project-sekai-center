@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import { hzCharacterMissions, hzCurrentDeck, hzBestSong, hzCurrentRound, hzClearedTotal, hzLeaders, hzBonds, hzPowerBonus, hzChallenge,
   hzPlanDerive, hzPlanFor, hzPlanRank, HZ_PLAN_ASPECTS, hzPlanMats, hzMrCosts, HZ_EP_COST, hzPlanCaps, hzPlanRoute, hzPlanPrompt, HZ_NEW_CARD_EXP, HZ_PLAN_EFFORT, HZ_MAT_WEIGHT, hzPlanAreaItems, HZ_AREA_UNLOCK,
-  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather } from '../js/haruki.js';
+  hzMysGet, hzMysTime, hzMysLastReset, hzMysRarity, hzMysResources, hzMysVisitors, hzMysGates, hzMysRecords, hzMysWeather, hzMysMaps, HZ_MAP_CFG } from '../js/haruki.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -275,6 +275,24 @@ ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').use
   const full = [{ type: 'area_item_level_up_unit', known: true, nextNeed: 21, cur: 20, remain: 1, cost: 8 }];
   hzPlanMats(full, 21, Object.assign({}, ctx, { U: { userAreas: [{ areaId: 5, areaItems: [{ areaItemId: 4, level: 20 }] }] } }));
   ok(full[0].short === 1 && full[0].cost === Infinity, '全部滿級：做不到門檻 → 排到最後');
+}
+
+/* 採集地圖：同座標的掉落併成一個採集點、只數 before_drop 的量、稀有度標記、場所順序 5 7 6 8、沒有點的場所不列 */
+{
+  const mysMap = { updatedResources: { userMysekaiHarvestMaps: [
+    { mysekaiSiteId: 6, userMysekaiSiteHarvestFixtures: [{ mysekaiSiteHarvestFixtureId: 1003, positionX: 0, positionZ: 2, hp: 90, userMysekaiSiteHarvestFixtureStatus: 'spawned' }, { mysekaiSiteHarvestFixtureId: 111, positionX: -2, positionZ: 1, hp: 0, userMysekaiSiteHarvestFixtureStatus: 'harvested' }],
+      userMysekaiSiteHarvestResourceDrops: [{ resourceType: 'mysekai_material', resourceId: 1, quantity: 1, positionX: 0, positionZ: 2, mysekaiSiteHarvestResourceDropStatus: 'before_drop' }, { resourceType: 'mysekai_material', resourceId: 1, quantity: 2, positionX: 0, positionZ: 2, mysekaiSiteHarvestResourceDropStatus: 'dropped' }, { resourceType: 'mysekai_material', resourceId: 5, quantity: 1, positionX: 0, positionZ: 2, mysekaiSiteHarvestResourceDropStatus: 'before_drop' }, { resourceType: 'mysekai_material', resourceId: 2, quantity: 3, positionX: -2, positionZ: 1, mysekaiSiteHarvestResourceDropStatus: 'dropped' }] },
+    { mysekaiSiteId: 5, userMysekaiSiteHarvestFixtures: [{ mysekaiSiteHarvestFixtureId: 1001, positionX: 2, positionZ: 2, hp: 90, userMysekaiSiteHarvestFixtureStatus: 'spawned' }], userMysekaiSiteHarvestResourceDrops: [] },
+    { mysekaiSiteId: 7, userMysekaiSiteHarvestFixtures: [], userMysekaiSiteHarvestResourceDrops: [] }] } };
+  const fixtures = [{ id: 1003, mysekaiSiteHarvestFixtureType: 'wood', mysekaiSiteHarvestFixtureRarityType: 'rarity_1' }, { id: 111, mysekaiSiteHarvestFixtureType: 'treasure_box_transport', mysekaiSiteHarvestFixtureRarityType: 'rarity_1' }, { id: 1001, mysekaiSiteHarvestFixtureType: 'wood', mysekaiSiteHarvestFixtureRarityType: 'rarity_2' }];
+  const M = hzMysMaps(mysMap, fixtures, {});
+  ok(M.map(m => m.site).join() === '5,6', '採集地圖：場所照 5 7 6 8 排、沒有點的場所不列');
+  const p6 = M[1].points.find(p => p.x === 0 && p.z === 2);
+  ok(p6 && p6.type === 'wood' && p6.drops.length === 2 && p6.left === 2 && p6.drops[0].key === 'mysekai_material_5' && p6.drops[0].rare === 2 && p6.drops[1].qty === 3 && p6.drops[1].left === 1, '同一座標的掉落併成一點、只數 before_drop、稀有排前');
+  const box = M[1].points.find(p => p.x === -2);
+  ok(box && box.harvested && box.left === 0 && box.type === 'treasure_box_transport', '採過的寶箱：harvested、剩 0');
+  ok(M[0].points[0].rarity === 2 && M[1].minX === -2 && M[1].maxZ === 2, '稀有採集點的 rarity 與座標範圍');
+  ok(HZ_MAP_CFG[5].rev === true && HZ_MAP_CFG[6].dx === 1, '四個場所都有方向設定');
 }
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
