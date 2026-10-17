@@ -5432,6 +5432,160 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
     <div style="font-size:10.5px;color:var(--text-3);line-height:1.8;margin:6px 3px 12px">MySekai 的整理方式照 <a class="u-c18" href="https://github.com/Team-Haruki/Haruki-Cloud" target="_blank" rel="noopener">Haruki-Cloud</a>（MIT）；地圖、天氣與來訪角色都是上傳當下的狀態。</div>
     </sc-if>
 
+    <sc-if value="{{ hzIsBag }}">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px;align-items:center">
+      <sc-for list="{{ hzBagChips }}" as="c" hint-placeholder-count="7"><button type="button" onClick="{{ onHzSub }}" data-t="bag" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
+      <div class="u-f1"></div>
+      <span style="font-size:10.5px;color:var(--text-3)">{{ hzBagUpload }}</span>
+      <button type="button" onClick="{{ onHzBagRefresh }}" style="padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-3);font-size:11px;font-weight:700;cursor:pointer">重新整理</button>
+    </div>
+    <sc-if value="{{ hzBagLoading }}"><div style="font-size:12px;color:var(--text-3);padding:8px 4px">讀取遊戲資料與 master 表中…</div></sc-if>
+    <sc-if value="{{ hzBagNone }}">
+      <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+        <div class="u-ffc14">還沒有你的遊戲資料</div>
+        <div style="font-size:11.5px;color:var(--text-2);line-height:1.8;margin-top:4px">先在「總覽」用 Haruki 匯入一次遊戲資料，背包就會把名片、稱號、素材、活動分數、歌曲成績全部攤開。</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px"><button type="button" onClick="{{ onHzGo }}" data-t="home" style="padding:6px 13px;border-radius:999px;background:var(--ink-grad);border:none;color:#fff;font-size:11.5px;font-weight:800;cursor:pointer">去匯入</button></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ hzBagHas }}">
+      <!-- 名片 -->
+      <sc-if value="{{ hzBagIsCard }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+            <sc-if value="{{ hzBagCard.hasImg }}"><img src="{{ hzBagCard.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="72" height="72" style="width:72px;height:72px;border-radius:14px;flex:none;background:var(--card-2)"></sc-if>
+            <div style="flex:1;min-width:200px">
+              <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span style="font-size:17px;font-weight:800;color:var(--ink)">{{ hzBagCard.name }}</span><span class="u-fc2">{{ hzBagCard.rank }}</span><span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">ID {{ hzBagCard.uid }}</span></div>
+              <div style="font-size:12px;color:var(--text-2);line-height:1.7;margin-top:4px;white-space:pre-wrap">{{ hzBagCard.word }}</div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:3px"><sc-if value="{{ hzBagCard.twitter }}">{{ hzBagCard.twitter }}・</sc-if>目前隊伍「{{ hzBagCard.deckName }}」<sc-if value="{{ hzBagCard.hasCustom }}">・自訂名片：{{ hzBagCard.custom }}</sc-if></div>
+            </div>
+          </div>
+          <sc-if value="{{ hzBagCard.hasHonors }}">
+            <div style="font-size:11px;font-weight:800;color:var(--text-3);margin:12px 0 6px">名片上的稱號</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px">
+              <sc-for list="{{ hzBagCard.honors }}" as="h" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--card-2);min-width:0">
+                <sc-if value="{{ h.bonds }}"><span style="display:inline-flex;align-items:center;flex:none"><img src="{{ h.c1 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%"><img src="{{ h.c2 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;margin-left:-8px"></span></sc-if>
+                <sc-if value="{{ h.hasBg }}"><span style="position:relative;flex:none;width:114px;height:24px"><img src="{{ h.bg }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="width:114px;height:24px;object-fit:contain;border-radius:4px"><sc-if value="{{ h.hasRk }}"><img src="{{ h.rk }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="position:absolute;left:0;top:0;width:114px;height:24px;object-fit:contain"></sc-if></span></sc-if>
+                <span style="flex:1;min-width:0"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.name }}</span><span style="display:block;font-size:10.5px;color:var(--text-3)">{{ h.typeName }}・{{ h.lv }}<sc-if value="{{ h.at }}">・{{ h.at }}</sc-if><sc-if value="{{ h.word }}">・{{ h.word }}</sc-if></span></span>
+              </div></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hzBagCard.hasFrames }}">
+            <div style="font-size:11px;font-weight:800;color:var(--text-3);margin:12px 0 6px">頭像框</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ hzBagCard.frames }}" as="f" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--card-2);font-size:11.5px;color:var(--text-2)"><sc-if value="{{ f.img }}"><img src="{{ f.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:50%"></sc-if>{{ f.n }}<sc-if value="{{ f.status }}"><b style="color:#15803d">{{ f.status }}</b></sc-if></span></sc-for></div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:12px">
+            <sc-for list="{{ hzBagCard.tiles }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for>
+            <sc-if value="{{ hzBagCard.hasMoney }}"><sc-for list="{{ hzBagCard.money }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for></sc-if>
+          </div>
+        </div>
+      </sc-if>
+      <!-- 稱號 -->
+      <sc-if value="{{ hzBagIsHonor }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-fc2" style="margin-bottom:8px">{{ hzHonorSum }}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><sc-for list="{{ hzHonorTypes }}" as="c" hint-placeholder-count="6"><button type="button" onClick="{{ onHzHonorType }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px">
+            <sc-for list="{{ hzHonorRows }}" as="h" hint-placeholder-count="20"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--card-2);min-width:0">
+                <sc-if value="{{ h.bonds }}"><span style="display:inline-flex;align-items:center;flex:none"><img src="{{ h.c1 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%"><img src="{{ h.c2 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;margin-left:-8px"></span></sc-if>
+                <sc-if value="{{ h.hasBg }}"><span style="position:relative;flex:none;width:114px;height:24px"><img src="{{ h.bg }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="width:114px;height:24px;object-fit:contain;border-radius:4px"><sc-if value="{{ h.hasRk }}"><img src="{{ h.rk }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="position:absolute;left:0;top:0;width:114px;height:24px;object-fit:contain"></sc-if></span></sc-if>
+                <span style="flex:1;min-width:0"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.name }}</span><span style="display:block;font-size:10.5px;color:var(--text-3)">{{ h.typeName }}・{{ h.lv }}<sc-if value="{{ h.at }}">・{{ h.at }}</sc-if><sc-if value="{{ h.word }}">・{{ h.word }}</sc-if></span></span>
+              </div></sc-for>
+          </div>
+          <sc-if value="{{ hzHonorHasMore }}"><button type="button" onClick="{{ onHzHonorMore }}" style="margin-top:10px;width:100%;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">再顯示更多（還有 {{ hzHonorMoreN }} 個）</button></sc-if>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">羈絆稱號</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">
+            <sc-for list="{{ hzBondRows }}" as="b" hint-placeholder-count="12"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--card-2)"><span style="display:inline-flex;flex:none"><img src="{{ b.c1 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%"><img src="{{ b.c2 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;margin-left:-8px"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--ink)">{{ b.n }}</span><span style="display:block;font-size:10.5px;color:var(--text-3)">{{ b.lv }}<sc-if value="{{ b.at }}">・{{ b.at }}</sc-if></span></span></div></sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <!-- 資源 -->
+      <sc-if value="{{ hzBagIsRes }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-fc2" style="margin-bottom:8px">{{ hzBagResSum }}</div>
+          <sc-if value="{{ hzBagHasMoney }}"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-bottom:10px"><sc-for list="{{ hzBagMoney }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for></div></sc-if>
+          <sc-if value="{{ hzBagMoneyNote }}"><div class="mk-note" style="margin-bottom:8px">{{ hzBagMoneyNote }}</div></sc-if>
+          <sc-for list="{{ hzBagMats }}" as="g" hint-placeholder-count="5">
+            <div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 6px"><span class="u-ffc14">{{ g.n }}</span><span class="u-fc2">{{ g.cnt }}</span></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2)"><img src="{{ it.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" width="64" height="64" style="flex:none;width:28px;height:28px;object-fit:contain"><span style="flex:1;min-width:0;font-size:11px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.n }}</span><b style="font-size:11.5px;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ it.q }}</b></div></sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ hzBagHasMys }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">豆森素材</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+            <sc-for list="{{ hzBagMys }}" as="it" hint-placeholder-count="10"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2)"><img src="{{ it.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" width="64" height="64" style="flex:none;width:28px;height:28px;object-fit:contain"><span style="flex:1;min-width:0;font-size:11px;color:{{ it.c }};font-weight:{{ it.w }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.n }}</span><b style="font-size:11.5px;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ it.q }}</b></div></sc-for>
+          </div>
+        </div>
+        </sc-if>
+      </sc-if>
+      <!-- 跑榜 -->
+      <sc-if value="{{ hzBagIsEvent }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">活動分數與名次</div>
+          <sc-if value="{{ hzBagHasEvents }}">
+            <sc-for list="{{ hzBagEvents }}" as="e" hint-placeholder-count="8">
+              <div style="padding:8px 0;border-top:1px solid var(--border)">
+                <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ e.no }}</span><span style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ e.n }}</span><span class="u-fc2">{{ e.t }}</span><span class="u-f1"></span><span style="font-size:12px;font-weight:800;color:{{ e.rc }}">{{ e.rank }}</span></div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px">{{ e.when }}・活動 P <b style="color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ e.pts }}</b></div>
+                <sc-if value="{{ e.hasWl }}"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><sc-for list="{{ e.wl }}" as="w" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 4px;border-radius:999px;background:var(--card-2);font-size:11px;color:var(--text-2)"><img src="{{ w.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="20" height="20" style="width:20px;height:20px;border-radius:50%">{{ w.n }} <b style="color:var(--ink)">{{ w.rank }}</b> {{ w.pts }}</span></sc-for></div></sc-if>
+              </div>
+            </sc-for>
+          </sc-if>
+          <div class="mk-note" style="margin-top:8px">{{ hzBagEventNote }}</div>
+        </div>
+        <sc-if value="{{ hzBagHasSeasons }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">排位賽季</div>
+          <sc-for list="{{ hzBagSeasons }}" as="x" hint-placeholder-count="6"><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2)"><span style="font-weight:800;color:var(--ink)">{{ x.n }}</span><span style="font-weight:800;color:var(--accent-deep)">{{ x.tier }}</span><span>{{ x.pts }} 點</span><span>{{ x.rec }}</span><span class="u-fc2">{{ x.plays }}</span><span class="u-fc2">{{ x.streak }}</span></div></sc-for>
+        </div>
+        </sc-if>
+      </sc-if>
+      <!-- 歌曲 -->
+      <sc-if value="{{ hzBagIsMusic }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">各難度成績</div>
+          <sc-for list="{{ hzBagMusicRows }}" as="r" hint-placeholder-count="6">
+            <div style="padding:7px 0;border-top:1px solid var(--border)">
+              <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:11.5px;color:var(--text-2)"><span style="font-weight:800;color:var(--ink);width:64px">{{ r.n }}</span><span>玩過 {{ r.played }}／{{ r.total }}</span><span>FC {{ r.fc }}（{{ r.pct }}）</span><span>AP {{ r.ap }}（{{ r.apPct }}）</span></div>
+              <div style="position:relative;height:6px;border-radius:3px;background:var(--card-2);margin-top:5px;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.bar }}%;background:#3f8cff;opacity:.5"></div><div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.apBar }}%;background:#7c3aed"></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><sc-for list="{{ hzMusicMissChips }}" as="c" hint-placeholder-count="6"><button type="button" onClick="{{ onHzMusicMiss }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ hzMusicMissing }}" as="m" hint-placeholder-count="20"><span style="padding:3px 9px;border-radius:999px;background:var(--card-2);font-size:11px;color:var(--text-2)">{{ m.n }}</span></sc-for></div>
+          <sc-if value="{{ hzMusicMissMore }}"><div class="u-fc2" style="margin-top:6px">{{ hzMusicMissMore }}</div></sc-if>
+        </div>
+      </sc-if>
+      <!-- 收集 -->
+      <sc-if value="{{ hzBagIsStat }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px">
+            <sc-for list="{{ hzBagStatTiles }}" as="x" hint-placeholder-count="8"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:15px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">劇情閱讀率</div>
+          <sc-for list="{{ hzBagStories }}" as="x" hint-placeholder-count="5"><div style="padding:6px 0"><div style="display:flex;gap:8px;font-size:11.5px;color:var(--text-2)"><span style="font-weight:800;color:var(--ink)">{{ x.n }}</span><span>{{ x.v }}</span><span class="u-fc2">{{ x.pct }}</span></div><div style="height:5px;border-radius:3px;background:var(--card-2);margin-top:4px;overflow:hidden"><div style="height:100%;width:{{ x.bar }}%;background:var(--accent)"></div></div></div></sc-for>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-ffc14" style="margin-bottom:8px">完成的任務</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ hzBagMissions }}" as="m" hint-placeholder-count="6"><span style="padding:4px 10px;border-radius:999px;background:var(--card-2);font-size:11.5px;color:var(--text-2)">{{ m.n }} <b style="color:var(--ink)">{{ m.v }}</b></span></sc-for></div>
+        </div>
+      </sc-if>
+      <!-- 原始資料 -->
+      <sc-if value="{{ hzBagIsRaw }}">
+        <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
+          <div class="u-fc2" style="margin-bottom:8px">{{ hzBagRawSum }}・每一列是 Haruki 給的一個區塊：筆數與第一筆的欄位名</div>
+          <sc-for list="{{ hzBagRaw }}" as="r" hint-placeholder-count="30"><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:5px 0;border-top:1px solid var(--border);font-size:11.5px"><span style="font-family:'M PLUS Rounded 1c';color:var(--accent-deep);font-weight:700">{{ r.key }}</span><span style="color:var(--ink);font-weight:700">{{ r.label }}</span><span style="color:var(--text-2)">{{ r.n }}</span><span style="color:var(--text-3);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">{{ r.sample }}</span></div></sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+    </sc-if>
     <sc-if value="{{ hzHelpBar }}">
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px;align-items:center">
       <sc-for list="{{ hzHelpChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ onHzSub }}" data-t="help" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for>
@@ -9142,7 +9296,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=02e31953f3"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=5505bf51b6"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
