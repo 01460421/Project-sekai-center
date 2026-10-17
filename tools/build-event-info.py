@@ -8,7 +8,10 @@ eventExchangeSummaries（活動商店換到的卡＝活動獲取）、resourceBo
 「名次區間 → 道具清單」，稱號名與素材名一起帶著；內容沒變就不寫檔。輸出 data/event-info.js：
 
   EVENT_INFO = { ev: [...每期一筆...], rw: { 獎勵表鍵: [[起名次, 迄名次, [道具索引…]]…] }, it: [[種類, id, 數量]…],
-                 hn: { 稱號 id: 名稱 }, mn: { 素材 id: 名稱 } }
+                 hn: { 稱號 id: [名稱, 稱號組 id, 名次圖 abn, 稀有度 l/m/h/x] }, hg: { 稱號組 id: [組名, 底圖 abn] }, mn: { 素材 id: 名稱 },
+                 tk: { 技能練習券 id: 名稱 }, pf: { 頭像框 id: [邊框組名, 角色 id] } }
+  道具的名稱與圖都從 master 來：稱號底圖 honor/{底圖 abn}/degree_main、名次圖 honor/{名次圖 abn}/rank_main，
+  技能練習券 thumbnail/skill_practice_ticket/ticket{id}，素材 thumbnail/material/material{id}，水晶／金幣 thumbnail/common_material。
   每期：[id, 名稱, 類型(marathon|cheerful_carnival|world_bloom), 團體, 素材名, 開始, 結算, 排名公布, 發放, 結束, 商店截止,
         加成屬性, [[角色 id, 團體]…（加成角色）], [[卡 id, 角色, 星級, 屬性索引, 素材名, 卡名, 加成%, 隊長加成%, 來源(0 抽卡／1 活動商店)]…],
         獎勵表鍵, [[章節, 角色 id, 開始, 結算, 結束]…（WL）], [[隊伍 id, 隊伍名]…]（嘉年華）, 中場發表 1, 中場發表 2, 嘉年華主題, 虛擬 Live id]
@@ -53,14 +56,20 @@ def main():
     honors = load('honors')
     honor_groups = load('honorGroups')
     materials = load('materials')
+    tickets = load('skillPracticeTickets')
+    frames = load('playerFrames')
+    frame_groups = load('playerFrameGroups')
     cards = load('cards')
     gcu = load('gameCharacterUnits')
 
     c_by = {c['id']: c for c in cards}
     gcu_by = {g['id']: g for g in gcu}
     mat_name = {m['id']: m.get('name', '') for m in materials}
-    hg_name = {g['id']: g.get('name', '') for g in honor_groups}
+    hg_by = {g['id']: g for g in honor_groups}
     honor_by = {h['id']: h for h in honors}
+    ticket_name = {t['id']: t.get('name', '') for t in tickets}
+    fg_name = {g['id']: g.get('name', '') for g in frame_groups}
+    frame_by = {f['id']: f for f in frames}
 
     # 排名獎勵箱：resourceBoxDetails 只留 event_ranking_reward 的箱子（6 千多箱、1.9 萬列）
     box = {}
@@ -89,7 +98,7 @@ def main():
         return item_idx[k]
 
     rewards, reward_key = {}, {}
-    used_honors, used_mats = set(), set()
+    used_honors, used_mats, used_tickets, used_frames = set(), set(), set(), set()
     def reward_table(e):
         tiers = []
         for t in sorted(e.get('eventRankingRewardRanges', []), key=lambda t: t.get('fromRank', 0)):
@@ -101,6 +110,10 @@ def main():
                         used_honors.add(i)
                     elif ty == 'material':
                         used_mats.add(i)
+                    elif ty == 'skill_practice_ticket':
+                        used_tickets.add(i)
+                    elif ty == 'player_frame':
+                        used_frames.add(i)
             tiers.append([t.get('fromRank', 0), t.get('toRank', 0), lst])
         if not tiers:
             return ''
@@ -154,22 +167,33 @@ def main():
                      e.get('closedAt') or 0, e.get('distributionEndAt') or 0, attr, chars, card_rows, reward_table(e), wl, teams,
                      cs.get('midtermAnnounce1At') or 0, cs.get('midtermAnnounce2At') or 0, cs.get('theme') or '', e.get('virtualLiveId') or 0])
 
-    hn = {}
+    hn, hg = {}, {}
+    RAR_CODE = {'low': 'l', 'middle': 'm', 'high': 'h', 'highest': 'x'}
     for hid in sorted(used_honors):
         h = honor_by.get(hid)
         if h:
-            hn[hid] = h.get('name') or ''
+            gid = h.get('groupId') or 0
+            g = hg_by.get(gid) or {}
+            hg[gid] = [g.get('name') or '', g.get('backgroundAssetbundleName') or h.get('assetbundleName') or '']
+            hn[hid] = [h.get('name') or '', gid, h.get('assetbundleName') or '', RAR_CODE.get(h.get('honorRarity') or '', '')]
     mn = {mid: mat_name.get(mid, '') for mid in sorted(used_mats)}
-    out = {'ev': rows, 'rw': rewards, 'it': items, 'hn': hn, 'mn': mn}
+    tk = {tid: ticket_name.get(tid, '') for tid in sorted(used_tickets)}
+    pf = {}
+    for fid in sorted(used_frames):
+        f = frame_by.get(fid)
+        if f:
+            pf[fid] = [fg_name.get(f.get('playerFrameGroupId'), ''), f.get('gameCharacterId') or 0]
+    out = {'ev': rows, 'rw': rewards, 'it': items, 'hn': hn, 'hg': hg, 'mn': mn, 'tk': tk, 'pf': pf}
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
     text = ('/* 由 tools/build-event-info.py 產生,勿手改。活動資料頁與活動甘特圖用：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、\n'
-            '   排名獎勵（rw 表鍵 → [起名次, 迄名次, [it 索引…]]，it 為 [種類, id, 數量]，hn 稱號 id → 名稱, mn 素材 id → 名稱）、WL 章節、嘉年華隊伍。 */\n'
+            '   排名獎勵（rw 表鍵 → [起名次, 迄名次, [it 索引…]]，it 為 [種類, id, 數量]，hn 稱號 id → [名稱, 稱號組 id, 名次圖 abn, 稀有度], hg 稱號組 → [組名, 底圖 abn],\n'
+            '   mn 素材 id → 名稱, tk 技能練習券 id → 名稱, pf 頭像框 id → [邊框組名, 角色 id]）、WL 章節、嘉年華隊伍。 */\n'
             f'export const EVENT_INFO={body};\n')
     if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
         print(f'內容無變化,不更新 {OUT.name}（{len(rows)} 期）')
         return 0
     OUT.write_text(text, encoding='utf-8')
-    print(f'寫入 {OUT.name}:{OUT.stat().st_size // 1024} KB（{len(rows)} 期活動,{len(rewards)} 套排名獎勵,{len(items)} 種道具,{len(hn)} 個稱號）')
+    print(f'寫入 {OUT.name}:{OUT.stat().st_size // 1024} KB（{len(rows)} 期活動,{len(rewards)} 套排名獎勵,{len(items)} 種道具,{len(hn)} 個稱號,{len(tk)} 種券,{len(pf)} 個頭像框）')
     return 0
 
 
