@@ -2551,7 +2551,7 @@ class Component extends DCLogic {
   /* 歌曲 BPM（社長 bot／t-wy 的公開資料庫），只有打開歌曲詳情才載，~10 KB。 */
   loadSongBpm() {
     if (this._bpmP) return;
-    this._bpmP = import('./data/song-bpm.js?v=9ba20496e5').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
+    this._bpmP = import('./data/song-bpm.js?v=41fc33ea5d').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
   }
   async loadBorderDB() {
     if (this.state.bdbReady || this._bdbLoading) return;
@@ -7044,11 +7044,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=32694762d7')
+    fetch('./data/ep-songs.js?v=38d6547769')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=32694762d7')
+        import('./data/ep-songs.js?v=38d6547769')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
