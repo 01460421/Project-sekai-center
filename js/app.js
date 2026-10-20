@@ -108,6 +108,7 @@ class Component extends DCLogic {
     home:     ['首頁', '當期活動、遊戲通知、主要卡池與我的進度'],
     event:    ['活動總覽', '本期活動一頁看完：倒數、我的名次、榜線預測、當期卡池、加分卡與劇情'],
     evinfo:   ['活動資料', '任一期活動的時程、加成屬性與角色、活動卡（抽卡／活動商店）、排名獎勵，WL 章節與嘉年華隊伍'],
+    sched:    ['排程預測', '台服照日服同一天加一年、日服照自己的年度排程：未來活動與卡池的預測時間（含日服還沒公布的），逐期回測命中率與延遲歷史'],
     favs:     ['收藏與待辦', '星號收藏的卡片、角色、家具、歌曲與卡池，加上還沒做完的事：跑榜目標、豆森缺的家具、未讀通知'],
     calendar: ['活動日曆', '卡池開放期間（台服預測時間）'],
     gacha:    ['卡池列表', '台服預測卡池 235 筆，資料至 2027/6'],
@@ -173,7 +174,7 @@ class Component extends DCLogic {
      點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
   NAV_SECTIONS = [
     ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']]]],
-    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
+    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
     ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
@@ -263,6 +264,7 @@ class Component extends DCLogic {
     ['猜封面', '', 'guessjacket', '猜封面|猜曲繪|猜歌|猜歌名|封面猜謎|guess jacket|看圖猜歌'],
     ['貼圖製作器', '', 'stickers', '貼圖製作|貼圖製作器|做貼圖|表情包|梗圖|sticker|貼圖加字|自訂貼圖|貼圖產生器'],
     ['活動資料（時程、加成、活動卡、排名獎勵）', '', 'evinfo', '活動資料|活動詳情|活動時程|排名獎勵|活動獎勵|加成角色|加成屬性|活動卡|活動商店|WL 章節|嘉年華隊伍|event info'],
+    ['排程預測（未來活動與卡池、逐期回測）', '', 'sched', '排程預測|預測|未來活動|未來卡池|卡池預測|活動預測|回測|日服 加一年|延遲|forecast|schedule'],
     ['樂曲追加圖產生器', '', 'songcard', '追加圖|追加決定|楽曲追加|樂曲追加|songcard|宣傳圖|公告圖|追加圖產生器|片假名|片假名轉換|katakana'],
     ['譜面預覽產生器', '', 'chart', '譜面|譜面預覽|譜面圖|看譜|chart|sus|譜面產生器|combo'],
     ['教學大全', 'search_tutorial', 'tut', '教學|問答|115 則問答|教學文檔|名詞解釋|怎麼玩|規則'],
@@ -529,6 +531,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/20', t: '排程預測頁：日服加一年的規律、逐期回測、未來活動與卡池', s: '追活動 → 活動總覽多一個「排程預測」分頁籤。台服的活動與卡池 id、素材都跟日服一樣，開放時間是日服同一天、同一個當地時刻再加一年（跨 2/29 那年差 366 天）；這條規律不是寫死的，每一期拿之前幾期的命中率在四條候選規則裡挑一條來預測，再跟台服 master 的實際時間比：200 期活動命中 176／181（最近 30 期 28／30），官方已排的未來 19 期全中，卡池 41／46。頁上有未來一年的活動與卡池預測（卡池附 PU 卡、所屬活動、分類與信心，並標出跟站上卡池列表差幾天）、逐期回測表（每期的日服時間、預測、實際、偏差、用的規則）、延遲歷史（哪幾期是 +365、哪幾期是 +366）與各類卡池的偏差分布。' },
     { d: '2026/10/17', t: 'Haruki 專區新增「背包」：整份遊戲資料攤開看', s: 'Haruki 專區多一個「背包」分頁，把匯入的遊戲資料全部攤開：名片（暱稱、等級、自我介紹、名片上的稱號與羈絆稱號、頭像框、自訂名片，有授權的話連水晶與金幣）、稱號（持有的全部稱號，依活動／成就／角色／生日／排位篩選，附底圖與名次圖；羈絆稱號另列）、資源（素材依種類分組、豆森素材與稀有度）、跑榜（各期活動 P、本站歷期前百查到的名次、World Link 各章名次、排位賽季的段位與勝負）、歌曲（各難度玩過／FC／AP 比例與還沒 FC 的曲目）、收集（卡片、服裝、劇情閱讀率、任務）、原始資料（Haruki 給了哪些區塊、各幾筆）。' },
     { d: '2026/10/17', t: '豆森地圖換成俯視底圖，排名獎勵改用遊戲內圖示，全站不再用表情符號', s: 'Haruki 專區的豆森「今日資源」實際地圖改鋪 Lunabot／MiddleRed 的烤森俯視圖（四個場所），採集點照遊戲座標對到底圖上，每一點直接排出還沒採的東西：小格是素材的遊戲內縮圖、角落數字是還剩幾個、紅框是稀有資源、紫光是稀有採集點、紅叉是出生點，淡掉的是已採完的。活動資料頁的排名獎勵也改成從 master 抓：稱號用底圖加名次圖、水晶與金幣、技能升級譜、素材都用遊戲內縮圖，頭像框帶角色。順便把站內用到的表情符號全部換掉。' },
     { d: '2026/10/17', t: '活動資料頁、活動甘特圖重做、Haruki 豆森地圖標記', s: '新頁「活動資料」（追活動 → 活動總覽的分頁籤）：任一期活動都能查，本期／上一期／下一期一鍵切、也能搜名稱或期數。內容有時程（開始、嘉年華中場發表、WL 各章開始、結算、排名公布、獎勵發放、活動結束、活動商店截止，走到哪一步一眼看出）、加成屬性與加成角色、活動卡分成「抽卡取得」（當期卡池 ★4，WL 為各章角色卡）與「活動商店」（用活動 P 換的 ★3／★2），附當期卡池與 PU 卡、每一段名次的排名獎勵（稱號、水晶、技能練習券、素材）、WL 章節與嘉年華隊伍。資料由 tools/build-event-info.py 每天從台服 master 建置（排名獎勵要翻 26 MB 的 resourceBoxDetails，瀏覽器不可能自己抓）。活動分布甘特圖重做：多了「活動」模式（每期活動依團體分列，混活與 WL 各一列）、時間範圍 12／18／24／36 個月或全部、每月固定寬度太寬就橫向捲動、季線與年份、這個月打底、今天虛線、條裡直接寫名稱、顏色依池種或活動類型附圖例、滑過看說明、點一條就開卡池詳情或活動資料、可匯出 PNG。Haruki 專區的豆森「今日資源」多了實際地圖：四個採集場所依遊戲裡的座標畫出每個採集點（樹、礦、花、工具箱、寶箱、漂流物…）與各點還沒採的資源，稀有的紅圈標出、採過的淡掉，點一個點看那裡有什麼，可切「顯示已採」「只看稀有」。', p: 'evinfo' },
@@ -729,6 +732,7 @@ class Component extends DCLogic {
     dollF: 'all', dvUnit: 'all',   // 月卡玩偶篩選、活動分布的團體篩選（原生頁，取代 iframe）
     dvMode: 'gacha', dvRange: '24', dvTip: null,   // 甘特圖：卡池／活動、時間範圍、滑過的說明
     evInfo: null, evInfoErr: '', eiId: 0, eiQ: '',   // 活動資料（data/event-info.js）與活動資料頁選的那期
+    sched: null, schedErr: '', schedTab: 'ev', schedCat: 'all', schedMore: 0, schedMiss: false,   // 排程預測（data/schedule-forecast.js）
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
@@ -6475,6 +6479,90 @@ class Component extends DCLogic {
       .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
     return this._evInfoP;
   }
+  /* ===== 排程預測（data/schedule-forecast.js，由 tools/build-schedule-forecast.py 從兩服 master 算好） ===== */
+  loadSched() {
+    if (this.state.sched) return Promise.resolve(this.state.sched);
+    if (this._schedP) return this._schedP;
+    this._schedP = import('./data/schedule-forecast.js?v=8d46dcfb18').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+      .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
+    return this._schedP;
+  }
+  sdVals(s) {
+    if (s.page !== 'sched') return {};
+    const D = s.sched, out = { sdLoading: !D && !s.schedErr, sdErr: s.schedErr || '', sdHasErr: !!s.schedErr && !D, sdHas: !!D };
+    if (!D) return out;
+    const R = D.rule, tab = s.schedTab || 'ev', now = Date.now(), more = +s.schedMore || 0;
+    const chip = on => on ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' };
+    const hm = t => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    const fd = t => { const d = new Date(t); return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(); };
+    const fdt = t => fd(t) + ' ' + hm(t);
+    const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '－';
+    const sg = v => (v > 0 ? '+' : '') + v;
+    const EVN = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' };
+    const RULEN = { calendar: '同一天加一年', d365: '加 365 天', d366: '加 366 天', last: '照上一期的延遲' };
+    const GTN = { ceil: '限定／PU', normal: '一般', gift: '禮物', beginner: '新手' };
+    const days = t => { const n = Math.ceil((t - now) / 86400000); return n <= 0 ? '進行中' : n + ' 天後'; };
+    const fj = t => { const d = new Date(t + 9 * 3600000); return d.getUTCFullYear() + '/' + (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); };
+    const fjt = t => { const d = new Date(t + 9 * 3600000); return fj(t) + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+    const J = D.jp || {}, UN = { none: '混活' }; ['ln', 'mmj', 'vbs', 'wxs', 'n25'].forEach(k => { UN[k] = (this.UNITS[k] || {}).n || k; });
+    const SRC = { tw: ['官方已排', '#15803d'], pred: ['模型預測', '#b45309'], jp: ['日服未公布・推估', '#6d28d9'] };
+    out.sdTabs = [['ev', '未來活動'], ['ga', '未來卡池'], ['back', '逐期回測'], ['rule', '延遲與規律']].map(([v, n]) => Object.assign({ v, n }, chip(tab === v)));
+    out.sdIsEv = tab === 'ev'; out.sdIsGa = tab === 'ga'; out.sdIsBack = tab === 'back'; out.sdIsRule = tab === 'rule';
+    out.sdRule = '台服＝日服同一天、同一個當地時刻再加一年（活動 15:00、World Link 20:00；卡池 12:00、生日池 00:00）。現在用的規則：' + (R.activeName || '') + '，延遲 ' + Math.floor(R.lagHours / 24) + ' 天 ' + Math.round(R.lagHours % 24) + ' 小時。' + (J.n ? '日服還沒公布的期數，另外用日服自己的年度規律往後推估 ' + (J.horizonDays >= 360 ? '一年' : J.horizonDays + ' 天') + '，再換成台服時間。' : '');
+    out.sdStats = [['已結算活動', R.evHit + '／' + R.evN, pct(R.evHit, R.evN)], ['最近 30 期', R.ev30Hit + '／' + R.ev30N, pct(R.ev30Hit, R.ev30N)], ['官方已排的未來活動', R.schedHit + '／' + R.schedN, pct(R.schedHit, R.schedN)], ['卡池', R.gaHit + '／' + R.gaN, pct(R.gaHit, R.gaN)]].concat(J.n ? [['日服下一期（推估）', J.hit + '／' + J.n, pct(J.hit, J.n)]] : []).map(([n, v, p]) => ({ n, v, p }));
+    out.sdBuilt = '資料時間 ' + fd(D.built) + '・日服 master 到第 ' + R.jpLatestEvent + ' 期、台服 master 到第 ' + R.twLatestEvent + ' 期';
+    if (tab === 'ev') {
+      out.sdEvents = (D.evFuture || []).map(r => ({ id: r[0], n: r[6] === 'jp' ? '（日服未公布）' + (EVN[r[2]] || r[2]) + '・推估' : r[1], t: EVN[r[2]] || r[2], when: fdt(r[3]) + ' – ' + fdt(r[4]), src: (SRC[r[6]] || SRC.pred)[0], srcC: (SRC[r[6]] || SRC.pred)[1],
+        agree: r[6] === 'tw' ? (r[8] ? '模型一致' : '與模型不同') : '', agreeC: r[8] ? 'var(--text-3)' : '#dc2626', days: days(r[3]), patch: JSON.stringify({ eiId: r[0] }), isTw: r[6] === 'tw', isJp: r[6] === 'jp', notJp: r[6] !== 'jp',
+        jpWhen: r[6] === 'jp' ? '日服推估 ' + fjt(r[9]) + '（' + (r[13] || '') + '）' : '', unit: r[6] === 'jp' ? (r[2] === 'world_bloom' ? 'World Link' + (r[10] && r[10] !== 'none' ? '・' + (UN[r[10]] || r[10]) : '・跨團') : '團體候選 ' + (UN[r[10]] || r[10]) + '、' + (UN[r[11]] || r[11]) + '（最久沒輪到的團；混活約 ' + (r[12] || 0) + '%）') : '' }));
+      out.sdEvNote = '「官方已排」是台服 master 裡已經有時間的期數（通常排到半年後），「模型預測」是台服 master 還沒有、用日服時間換算的；「日服未公布・推估」連日服都還沒排，是用日服自己的年度規律（去年同日的下一期、結算後隔兩天 15:00）往後連推的，期數是順號、名稱未知，越後面越不準（見「延遲與規律」的連鎖回測）。點前兩種開活動資料。';
+    }
+    if (tab === 'ga') {
+      const cat = s.schedCat || 'all', GF = D.gaFuture || [];
+      const cats = ['all'].concat(Object.keys(D.cats || {}).filter(c => GF.some(g => g[3] === c)));
+      out.sdCats = cats.map(c => Object.assign({ v: c, n: c === 'all' ? '全部 ' + GF.length : (D.cats[c].name || c) + ' ' + GF.filter(g => g[3] === c).length }, chip(cat === c)));
+      const gl = GF.filter(g => cat === 'all' || g[3] === cat), lim = 60 + more * 60;
+      out.sdGachas = gl.slice(0, lim).map(g => ({ id: g[0], n: g[1], t: GTN[g[2]] || g[2], cat: (D.cats[g[3]] || {}).name || g[3], when: fdt(g[4]) + ' – ' + fdt(g[5]), days: days(g[4]),
+        pu: (g[6] || []).map(c => ({ img: c[3] ? this.cardImg(c[3], c[2]) : '', n: this.charName(c[1]) || '' })).filter(c => c.img), hasPu: (g[6] || []).some(c => c[3]),
+        ev: g[7] ? '第 ' + g[7] + ' 期' : '', hasEv: !!g[7] && g[9] !== 'jp', evTxt: g[7] && g[9] === 'jp' ? '第 ' + g[7] + ' 期（推估）' : '', evPatch: JSON.stringify({ eiId: g[7] }), src: (SRC[g[9]] || SRC.pred)[0], srcC: (SRC[g[9]] || SRC.pred)[1],
+        man: g[9] === 'jp' ? '' : g[8] == null ? '站上列表沒有' : g[8] === 0 ? '站上列表一致' : '站上列表差 ' + sg(g[8]) + ' 天', manC: g[8] == null ? 'var(--text-3)' : g[8] === 0 ? '#15803d' : '#dc2626',
+        jpWhen: g[9] === 'jp' ? '日服推估 ' + fjt(g[11]) + '・規則：' + (g[12] || '') : '',
+        conf: g[9] !== 'tw' ? '信心 ' + Math.round((g[10] || 0) * 100) + '%' : '' }));
+      out.sdGaMore = gl.length > lim; out.sdGaMoreN = gl.length - lim;
+      out.sdGaNote = '卡池照日服名稱分類，每一類從過去台服實際開放時間學一個修正量（周年、新春、禮物這類台服常自己排）；「站上列表」是卡池列表頁手動維護的台服排程，差幾天就標出來給站方核對。「日服未公布・推估」是連日服都還沒開的池：每一類用回測最準的那條規律往後推（活動池跟著推估的活動、生日池照生日前 4 天、通行證每月第一個週一、周年與新春照去年同日），名稱是照格式推的，PU 卡未知。';
+    }
+    if (tab === 'back') {
+      const bl = (D.evBack || []).filter(r => !s.schedMiss || !r[8] || r[9]), lim = 60 + more * 60;
+      out.sdBack = bl.slice(0, lim).map(r => ({ no: '第 ' + r[0] + ' 期', n: r[1], t: EVN[r[2]] || '', jp: fd(r[3]), pred: fdt(r[5]), act: fdt(r[4]), rule: RULEN[r[6]] || r[6], res: r[8] ? '命中' : '偏差 ' + sg(r[7]) + ' 小時', rc: r[8] ? '#15803d' : '#dc2626', len: r[9] ? '長度差 ' + sg(r[9]) + ' 小時' : '', future: r[4] > now ? '（官方已排，尚未開始）' : '' }));
+      out.sdBackMore = bl.length > lim; out.sdBackMoreN = bl.length - lim; out.sdMissBtn = s.schedMiss ? '顯示全部' : '只看偏差'; out.sdMissOn = !!s.schedMiss;
+      out.sdBackNote = '每一期只用「它之前 ' + R.window + ' 期」的命中率挑規則（四條候選：同一天加一年、加 365 天、加 366 天、照上一期的延遲），再把日服時間換成預測，跟台服 master 的實際開始時間比；一小時內算命中。長度差是台服活動期間比日服長或短多少。';
+      out.sdGaBack = (D.gaBack || []).map(r => ({ id: r[0], n: r[1], cat: (D.cats[r[3]] || {}).name || r[3], jp: fd(r[4]), pred: fdt(r[6]), act: fdt(r[5]), res: r[8] ? '命中' : '偏差 ' + sg(r[7]) + ' 小時', rc: r[8] ? '#15803d' : '#dc2626' }));
+      const jl = (D.jpBack || []).filter(r => !s.schedMiss || !r[7] || !r[9]);
+      out.sdJpBack = jl.slice(0, lim).map(r => ({ no: '第 ' + r[0] + ' 期', n: r[1], t: EVN[r[2]] || '', act: fjt(r[3]), pred: fjt(r[4]), rule: r[5] === 'tpl' ? '去年同日的下一期' : '結算後隔兩天 15:00', res: r[7] ? '命中' : '偏差 ' + sg(Math.round(r[6] / 24 * 10) / 10) + ' 天', rc: r[7] ? '#15803d' : '#dc2626',
+        typ: r[9] ? '' : '類型猜 ' + (EVN[r[8]] || r[8]) + '，實際 ' + (EVN[r[2]] || r[2]), unit: r[2] === 'world_bloom' ? '' : !UN[r[10]] || r[10] === 'none' ? '混活' : r[8] === 'world_bloom' ? '團體 ' + UN[r[10]] + '（猜成 World Link，沒給團體候選）' : '團體 ' + UN[r[10]] + '，候選 ' + (UN[r[11]] || r[11]) + '、' + (UN[r[12]] || r[12]) + (r[10] === r[11] ? '（第一候選中）' : r[10] === r[12] ? '（第二候選中）' : '（沒中）') }));
+      out.sdJpBackMore = jl.length > lim; out.sdJpBackMoreN = jl.length - lim; out.sdHasJpBack = jl.length > 0;
+      out.sdJpBackNote = '日服自己的規律，也是逐期往前驗證：每一期只拿它之前的期數，在「去年同日的下一期」與「結算後隔兩天 15:00」兩條裡挑近 ' + (R.window || 10) + ' 期命中最多的來預測日期（差一天內算命中），類型與長度照去年同一時段的那期，團體給「最久沒輪到」的前兩名。這是推估日服未公布期數的依據。';
+    }
+    if (tab === 'rule') {
+      out.sdEras = (D.eras || []).map(e => ({ n: '第 ' + e[0] + (e[1] !== e[0] ? '–' + e[1] : '') + ' 期', lag: '+' + Math.floor(e[2] / 24) + ' 天 ' + (e[2] % 24) + ' 小時', cnt: e[3] + ' 期', from: '台服 ' + fd(e[4]) + ' 起', big: e[3] >= 10 }));
+      out.sdCatRows = Object.keys(D.cats || {}).map(c => D.cats[c]).filter(c => c.n).sort((a, b) => b.n - a.n).map(c => ({ n: c.name, s: c.hit + '／' + c.n, corr: c.corr ? sg(c.corr) + ' 小時' : '無', offs: c.offsets.map(o => sg(o[0]) + ' 小時 ×' + o[1]).join('、') }));
+      out.sdAnoms = (D.anomalies || []).map(a => ({ k: a[0] === 'event' ? '活動' : '卡池', id: a[1], n: a[2], act: fdt(a[3]), pred: fdt(a[4]), err: sg(a[5]) + ' 小時', note: a[6] || '' }));
+      out.sdHours = (R.startHours || []).map(h => (EVN[h[0]] || h[0]) + ' ' + String(h[1]).padStart(2, '0') + ':00').join('、');
+      out.sdHasJp = !!J.n;
+      if (J.n) {
+        out.sdJpLines = [
+          '日期：' + J.activeName + '（兩條候選：去年同日的下一期 ' + (J.ruleHits || {}).tpl + '／' + J.n + '、結算後隔兩天 15:00 ' + (J.ruleHits || {}).cad + '／' + J.n + '；' + J.since + ' 年起逐期回測，差一天內算命中：' + J.hit + '／' + J.n + '，最近 30 期 ' + J.hit30 + '／' + J.n30 + '）',
+          '類型：照去年同一時段那期（嘉年華已停辦就當馬拉松）：' + J.typeHit + '／' + J.n + '；World Link 季每年 4 月到 9 月，9 月底有 3 天的收尾章',
+          '團體：最久沒輪到的團，第一候選 ' + J.unit1 + '／' + J.unitN + '、前兩名 ' + J.unit2 + '／' + J.unitN + '（只算團體活動；最近 60 期有 ' + J.mixed + '% 是混活）',
+          '屬性：查過加成屬性的序列，跟前 1 到 6 期都沒有可用的循環（命中率跟亂猜一樣），所以不猜'];
+        out.sdChain = (J.chainBuckets || []).map(b => ({ k: '往後第 ' + b[0] + '–' + b[1] + ' 期', n: b[2] + ' 次', d1: pct(b[3], b[2]), d3: pct(b[5], b[2]), t: pct(b[4], b[2]) }));
+        out.sdGaRules = Object.keys(J.gaRules || {}).map(c => J.gaRules[c]).filter(r => r.n >= 3).sort((a, b) => b.n - a.n).map(r => ({ n: r.catName, rule: r.name, s: r.hit + '／' + r.n, useC: r.hit * 10 >= r.n * 3 ? '#15803d' : 'var(--text-3)', use: r.hit * 10 >= r.n * 3 ? '採用' : '太不準，不推估' }));
+        out.sdJpNote = '連鎖回測：從 2024 年起的每一期當起點，只用它之前的資料往後連推 ' + ((J.chainBuckets || []).slice(-1)[0] || [])[1] + ' 期（推估的期再當下一期的上一期），逐期跟實際比。越遠越不準是正常的：長度差一天就整條往後移一天。卡池的規則是每一類只看最近 24 個樣本挑的（排程改制過，舊規律不算數）。';
+      }
+      out.sdMethod = '做法：台服與日服的活動、卡池 id 與素材名完全相同，所以每一期都能一對一配對。對每一期，只拿它之前的期數來估延遲（四條候選規則各算一次近期命中率，挑最高的），再預測這一期並跟實際比；這樣逐期往前驗證，就不會拿未來的資料偷看。延遲歷史裡 +366 天的那幾段，正是跨過 2/29 的年份——「同一天加一年」自然吃下這個差異。卡池另依名稱分類，每一類從過去的偏差學修正量（眾數、至少兩個樣本且過半才採用）。';
+    }
+    return out;
+  }
   eiRows() {
     const d = this.state.evInfo; if (!d) return [];
     if (!this._eiRows || this._eiRowsSrc !== d) {
@@ -7110,6 +7198,7 @@ class Component extends DCLogic {
     }
     if (p === 'event') { this.loadStories(); this.loadCards(); this.loadEventCards(); }
     if (p === 'evinfo') { this.loadEvInfo(); this.loadCards(); this.loadGachaPk(); }
+    if (p === 'sched') { this.loadSched(); this.loadCards(); }
     if (p === 'distrib' && this.state.dvMode === 'event') this.loadEvInfo();
     if (p === 'favs') { this.loadMst(); this.loadFixtures(); }
     if (p === 'calendar' || p === 'home' || p === 'favs') this.loadMsEvents();
@@ -8772,6 +8861,7 @@ class Component extends DCLogic {
       ...this.qzVals(s),
       ...this.stkVals(s),
       isEvinfo: s.page === 'evinfo', ...this.eiVals(s),
+      isSched: s.page === 'sched', ...this.sdVals(s),
       /* 製作工具（追加圖、譜面預覽）：程式在 js/maker.js，載好前模板只顯示載入中 */
       isSongcard: s.page === 'songcard', isChart: s.page === 'chart', mkReady: !!s.mkReady, mkWait: (s.page === 'songcard' || s.page === 'chart') && !s.mkReady && !s.mkErr, mkErrHas: !!s.mkErr, mkErr: s.mkErr || '', onMkRetry: () => this.mkLoad(),
       ...(s.mkReady && this.mkVals ? this.mkVals(s) : {}),
@@ -10777,6 +10867,11 @@ class Component extends DCLogic {
       dvRef: el => { if (el) { this.dvBind(el); this.dvDraw(); } },
       /* 活動資料頁 */
       onEiPick: e => this.setState({ eiId: +e.currentTarget.dataset.id || 0, eiQ: '' }),
+      onSdTab: e => this.setState({ schedTab: e.currentTarget.dataset.v, schedMore: 0 }),
+      onSdCat: e => this.setState({ schedCat: e.currentTarget.dataset.v, schedMore: 0 }),
+      onSdMore: () => this.setState({ schedMore: (+this.state.schedMore || 0) + 1 }),
+      onSdMiss: () => this.setState({ schedMiss: !this.state.schedMiss, schedMore: 0 }),
+      onSdRetry: () => { this._schedP = null; this.setState({ schedErr: '' }); this.loadSched(); },
       onEiQ: e => this.setState({ eiQ: e.target.value }),
       onEiChip: e => { const v = e.currentTarget.dataset.v, rows = this.eiRows(); if (!rows.length) return; const cur = rows.find(x => x.id === +this.state.eiId) || this.eiAuto(rows), i = rows.indexOf(cur); const t = v === 'prev' ? rows[i - 1] : v === 'next' ? rows[i + 1] : this.eiAuto(rows); if (t) this.setState({ eiId: t.id, eiQ: '' }); },
       onEiRetry: () => this.loadEvInfo(),
