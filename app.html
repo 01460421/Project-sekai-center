@@ -6096,6 +6096,105 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
   </sc-if>
 
   <!-- 活動資料：任一期活動的時程、加成、活動卡、排名獎勵（data/event-info.js） -->
+  <sc-if value="{{ isSched }}">
+  <div class="u-a3">
+    <sc-if value="{{ sdLoading }}"><div class="empty loading">排程預測資料載入中…</div></sc-if>
+    <sc-if value="{{ sdHasErr }}"><button type="button" onClick="{{ onSdRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ sdErr }}</button></sc-if>
+    <sc-if value="{{ sdHas }}">
+    <div class="se-hero" style="position:relative;overflow:hidden;border-radius:24px;padding:20px 22px 18px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.75">排程預測</div>
+      <div style="font-size:14px;font-weight:700;line-height:1.7;margin-top:4px">{{ sdRule }}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px">
+        <sc-for list="{{ sdStats }}" as="x" hint-placeholder-count="4"><div style="padding:9px 11px;border-radius:14px;background:rgba(255,255,255,.12)"><div style="font-size:10.5px;opacity:.8">{{ x.n }}</div><div style="font-size:18px;font-weight:800;font-family:'M PLUS Rounded 1c'">{{ x.p }}</div><div style="font-size:11px;opacity:.85">命中 {{ x.v }}</div></div></sc-for>
+      </div>
+      <div style="font-size:10.5px;opacity:.7;margin-top:10px">{{ sdBuilt }}</div>
+    </div>
+    <div class="mk-row" style="margin-bottom:12px"><sc-for list="{{ sdTabs }}" as="c" hint-placeholder-count="4"><button type="button" class="mk-chip" style="background:{{ c.bg }};color:{{ c.fg }};border-color:{{ c.bd }}" onClick="{{ onSdTab }}" data-v="{{ c.v }}">{{ c.n }}</button></sc-for></div>
+    <sc-if value="{{ sdIsEv }}">
+      <div class="mk-card">
+        <div class="mk-h"><b>未來活動</b><i>台服時間</i></div>
+        <sc-for list="{{ sdEvents }}" as="e" hint-placeholder-count="12">
+          <div role="button" tabindex="0" onClick="{{ onDbRelated }}" data-p="evinfo" data-patch="{{ e.patch }}" style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);cursor:pointer">
+            <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';width:62px">第 {{ e.id }} 期</span>
+            <span style="font-size:12.5px;font-weight:800;color:var(--ink);flex:1;min-width:160px">{{ e.n }}</span>
+            <span class="u-fc2">{{ e.t }}</span>
+            <span style="font-size:11.5px;color:var(--text-2)">{{ e.when }}</span>
+            <span class="u-fc2">{{ e.days }}</span>
+            <span style="font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in oklab,var(--text-3) 10%,transparent);color:{{ e.srcC }}">{{ e.src }}</span>
+            <sc-if value="{{ e.agree }}"><span style="font-size:10.5px;color:{{ e.agreeC }}">{{ e.agree }}</span></sc-if>
+          </div>
+        </sc-for>
+        <div class="mk-note">{{ sdEvNote }}</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ sdIsGa }}">
+      <div class="mk-card">
+        <div class="mk-row" style="margin-bottom:8px"><sc-for list="{{ sdCats }}" as="c" hint-placeholder-count="8"><button type="button" class="mk-chip" style="background:{{ c.bg }};color:{{ c.fg }};border-color:{{ c.bd }}" onClick="{{ onSdCat }}" data-v="{{ c.v }}">{{ c.n }}</button></sc-for></div>
+        <sc-for list="{{ sdGachas }}" as="g" hint-placeholder-count="20">
+          <div style="padding:8px 0;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+              <span style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ g.n }}</span>
+              <span class="u-fc2">{{ g.t }}・{{ g.cat }}</span>
+              <sc-if value="{{ g.hasEv }}"><span role="button" tabindex="0" onClick="{{ onDbRelated }}" data-p="evinfo" data-patch="{{ g.evPatch }}" style="font-size:11px;color:var(--accent-deep);font-weight:700;cursor:pointer">{{ g.ev }}</span></sc-if>
+              <span class="u-f1"></span>
+              <span style="font-size:10.5px;font-weight:800;color:{{ g.srcC }}">{{ g.src }}</span>
+              <span style="font-size:10.5px;color:var(--text-3)">{{ g.conf }}</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:11.5px;color:var(--text-2)">
+              <span>{{ g.when }}</span><span class="u-fc2">{{ g.days }}</span>
+              <span style="font-size:10.5px;color:{{ g.manC }}">{{ g.man }}</span>
+            </div>
+            <sc-if value="{{ g.hasPu }}"><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px"><sc-for list="{{ g.pu }}" as="c" hint-placeholder-count="4"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}" width="40" height="40" style="width:40px;height:40px;border-radius:9px;background:var(--card-2)"></sc-for></div></sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ sdGaMore }}"><button type="button" onClick="{{ onSdMore }}" style="margin-top:10px;width:100%;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">再顯示更多（還有 {{ sdGaMoreN }} 個）</button></sc-if>
+        <div class="mk-note">{{ sdGaNote }}</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ sdIsBack }}">
+      <div class="mk-card">
+        <div class="mk-h"><b>活動逐期回測</b><i>新到舊</i></div>
+        <div class="mk-row" style="margin-bottom:8px"><button type="button" class="mk-chip" aria-pressed="{{ sdMissOn }}" onClick="{{ onSdMiss }}">{{ sdMissBtn }}</button></div>
+        <sc-for list="{{ sdBack }}" as="r" hint-placeholder-count="20">
+          <div style="padding:7px 0;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';width:62px">{{ r.no }}</span><span style="font-size:12.5px;font-weight:800;color:var(--ink)">{{ r.n }}</span><span class="u-fc2">{{ r.t }}</span><span class="u-f1"></span><span style="font-size:11.5px;font-weight:800;color:{{ r.rc }}">{{ r.res }}</span></div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:2px;line-height:1.7">日服 {{ r.jp }} → 預測 {{ r.pred }}・實際 {{ r.act }}・規則：{{ r.rule }}<sc-if value="{{ r.len }}">・{{ r.len }}</sc-if>{{ r.future }}</div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ sdBackMore }}"><button type="button" onClick="{{ onSdMore }}" style="margin-top:10px;width:100%;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12px;font-weight:700;cursor:pointer">再顯示更多（還有 {{ sdBackMoreN }} 期）</button></sc-if>
+        <div class="mk-note">{{ sdBackNote }}</div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>卡池回測</b><i>台服 master 裡有的卡池</i></div>
+        <sc-for list="{{ sdGaBack }}" as="r" hint-placeholder-count="12">
+          <div style="padding:6px 0;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span style="font-size:12px;font-weight:800;color:var(--ink)">{{ r.n }}</span><span class="u-fc2">{{ r.cat }}</span><span class="u-f1"></span><span style="font-size:11.5px;font-weight:800;color:{{ r.rc }}">{{ r.res }}</span></div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:2px">日服 {{ r.jp }} → 預測 {{ r.pred }}・實際 {{ r.act }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ sdIsRule }}">
+      <div class="mk-card">
+        <div class="mk-h"><b>延遲歷史</b><i>台服比日服晚多久</i></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px">
+          <sc-for list="{{ sdEras }}" as="e" hint-placeholder-count="10"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:12px;font-weight:800;color:var(--ink)">{{ e.n }} <span class="u-fc2">{{ e.cnt }}</span></div><div style="font-size:13px;font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ e.lag }}</div><div style="font-size:10.5px;color:var(--text-3)">{{ e.from }}</div></div></sc-for>
+        </div>
+        <div class="mk-note">開始時刻（台灣時間）：{{ sdHours }}。</div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>卡池分類的偏差</b><i>實際 − 基本規則</i></div>
+        <sc-for list="{{ sdCatRows }}" as="c" hint-placeholder-count="10"><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2)"><span style="font-weight:800;color:var(--ink);width:80px">{{ c.n }}</span><span>命中 {{ c.s }}</span><span>修正量 {{ c.corr }}</span><span class="u-fc2">{{ c.offs }}</span></div></sc-for>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>規律以外的期數</b><i>偏差與長度差</i></div>
+        <sc-for list="{{ sdAnoms }}" as="a" hint-placeholder-count="10"><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2)"><span class="u-fc2">{{ a.k }} #{{ a.id }}</span><span style="font-weight:800;color:var(--ink)">{{ a.n }}</span><span>預測 {{ a.pred }}・實際 {{ a.act }}</span><span style="font-weight:800;color:#dc2626">{{ a.err }}</span><span class="u-fc2">{{ a.note }}</span></div></sc-for>
+        <div class="mk-note">{{ sdMethod }}</div>
+      </div>
+    </sc-if>
+    </sc-if>
+  </div>
+  </sc-if>
   <sc-if value="{{ isEvinfo }}">
   <div class="u-a3">
     <sc-if value="{{ eiLoading }}"><div class="empty loading">活動資料載入中…</div></sc-if>
@@ -9296,7 +9395,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=5505bf51b6"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a50d5d38e4"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
