@@ -5149,7 +5149,7 @@ class Component extends DCLogic {
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
-      const m = await import('./data/fixtures-index.js?v=2ac09f543d');
+      const m = await import('./data/fixtures-index.js?v=9bcab0f8a3');
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
@@ -5221,7 +5221,7 @@ class Component extends DCLogic {
     return { ev, arr, rank, per, plays, cur, day: per * plays, personal, total, next, good, need, phase, daysLeft, board: !!(ev && ev.v === 'v2'), borrowed: !!(ev && !hasCoef && ref), refName: ref && !hasCoef ? this.supEventName(ref) : '' };
   }
   loadMst() {
-    return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=ef5d8ff8a6'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
+    return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=28945a8519'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
   }
   /* ---------- Haruki 工具箱 OAuth 匯入 ----------
      流程照 Uni PJSK Viewer 與 33Kit 的公開 client：授權碼＋PKCE，token 只存在這台瀏覽器（localStorage）。
@@ -5577,7 +5577,7 @@ class Component extends DCLogic {
     });
   }
   loadLives() {
-    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=6113642cdd'); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
+    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=37677bd377'); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
   }
   loadNews() {
     return this.dbRun('news', async () => {
@@ -7132,11 +7132,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=d3c214ddd3')
+    fetch('./data/ep-songs.js?v=501bb8fd87')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=d3c214ddd3')
+        import('./data/ep-songs.js?v=501bb8fd87')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
