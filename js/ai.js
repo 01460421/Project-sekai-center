@@ -1387,7 +1387,7 @@ export function aiMembers() {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=7121d0b975';
+              s.src = 'data/b30-consts.js?v=fde0f18f06';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -2831,7 +2831,7 @@ export function aiMembers() {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=49db7ae08b';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = 'data/billing.js?v=0458708a80';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -5197,7 +5197,7 @@ export function aiMembers() {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=7121d0b975';
+              s.src = 'data/b30-consts.js?v=fde0f18f06';
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);

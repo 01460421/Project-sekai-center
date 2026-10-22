@@ -2490,7 +2490,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=49db7ae08b';
+      s.src = 'data/billing.js?v=0458708a80';
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2704,7 +2704,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=9ff60f3784').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=93cbc550e9').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -5174,7 +5174,7 @@ class Component extends DCLogic {
   /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
   loadConsts() {
     if (this.state.consts || this._constsP) return;
-    this._constsP = fetch('./data/b30-consts.js?v=7121d0b975').then(r => r.text()).then(txt => {
+    this._constsP = fetch('./data/b30-consts.js?v=fde0f18f06').then(r => r.text()).then(txt => {
       const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
       ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
       this.setState({ consts: map });
@@ -6144,7 +6144,7 @@ class Component extends DCLogic {
   /* ===== 卡池詳情（原生疊層；PU 卡由 tools/build-gacha-pickups.py 建置時從兩服 master 算好） ===== */
   loadGachaPk() {
     if (this._gpk) return this._gpk;
-    this._gpk = import('./data/gacha-pickups.js?v=6a48ae0d9d').then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
+    this._gpk = import('./data/gacha-pickups.js?v=02e12a50aa').then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
       .catch(() => { this._gpk = null; this.setState({ gachaPkErr: true }); });
     return this._gpk;
   }
@@ -6475,7 +6475,7 @@ class Component extends DCLogic {
   loadEvInfo() {
     if (this.state.evInfo) return Promise.resolve(this.state.evInfo);
     if (this._evInfoP) return this._evInfoP;
-    this._evInfoP = import('./data/event-info.js?v=85df53dd03').then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
+    this._evInfoP = import('./data/event-info.js?v=697a88f113').then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
       .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
     return this._evInfoP;
   }
@@ -6483,7 +6483,7 @@ class Component extends DCLogic {
   loadSched() {
     if (this.state.sched) return Promise.resolve(this.state.sched);
     if (this._schedP) return this._schedP;
-    this._schedP = import('./data/schedule-forecast.js?v=ccf1b38c23').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+    this._schedP = import('./data/schedule-forecast.js?v=274e4818bc').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
       .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
     return this._schedP;
   }
@@ -6651,7 +6651,7 @@ class Component extends DCLogic {
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
-      const m = await import('./data/skill-table.js?v=b188e3bd45');
+      const m = await import('./data/skill-table.js?v=0f2de99da8');
       return m.SKILL_TABLE;
     });
   }
