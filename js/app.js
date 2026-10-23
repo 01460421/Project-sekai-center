@@ -89,7 +89,7 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=b4d439355a');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=f37374e143');
       await this._i18n.applyLang(v);
       try { const w = this._wantTitle; if (w) document.title = this._i18n.tr(w); } catch (e) {}
     } catch (e) { this._toast('翻譯模組載入失敗，請稍後再試'); }
@@ -641,6 +641,8 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給站長', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或站長；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給站長的私訊（只有你和站長看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，站長回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
+    { d: '2026/10/23', t: '全站台服／日服切換、日服現況、簡中／英文／日文介面', s: '頁首新增「伺服器・語言」按鈕。<b>切到日服</b>後首頁換成日服現況（版本、當期活動倒數與加成角色、即時榜線與前十名、開放中的卡池與 PU 卡、新曲、近期活動），活動排名改看日服即時排名（Haruki 日服追蹤器），卡片圖鑑、收集率、卡面下載、角色、素材、一格漫畫與原聲帶改用日服 master；只有台服資料的頁面會在上方提示並可一鍵切回台服，分享出去的連結也會停在日服。日服現況頁底部整理了網路上仍在更新的日服資源（官方、資料庫、Wiki、榜線、工具與社群），資源連結頁也加了一組。<b>介面語言</b>：簡體中文整站轉換（連詞彙一起轉，例如伺服器→服务器）；英文與日文目前翻譯導覽、頁名、頁首、日服現況與客服視窗，其餘內容維持中文。第一次來時瀏覽器是簡中會自動切換，英日會跳一次提示。', p: 'jpnow' },
     { d: '2026/10/23', t: '排程預測加上角色、屬性、技能', s: '未來活動每一期列出加成屬性、加成角色與活動卡（角色・屬性・技能），未來卡池的 PU 卡也標屬性與技能，分類跟卡片技能庫一樣。日服還沒公布的期數改列屬性候選（最久沒當加成屬性的排前面，逐期回測前兩名 57%）、加成角色（照團體候選）與最可能輪空 4★ 的團員；推估的生日池標出新生日卡的屬性（每個角色五年一輪、五種各一次）。回測數字都在「延遲與規律」。', p: 'sched' },
     { d: '2026/10/20', t: '排程預測頁：日服加一年的規律、逐期回測、未來活動與卡池', s: '追活動 → 活動總覽多一個「排程預測」分頁籤。台服的活動與卡池 id、素材都跟日服一樣，開放時間是日服同一天、同一個當地時刻再加一年（跨 2/29 那年差 366 天）；這條規律不是寫死的，每一期拿之前幾期的命中率在四條候選規則裡挑一條來預測，再跟台服 master 的實際時間比：200 期活動命中 176／181（最近 30 期 28／30），官方已排的未來 19 期全中，卡池 41／46。頁上有未來一年的活動與卡池預測（卡池附 PU 卡、所屬活動、分類與信心，並標出跟站上卡池列表差幾天）、逐期回測表（每期的日服時間、預測、實際、偏差、用的規則）、延遲歷史（哪幾期是 +365、哪幾期是 +366）與各類卡池的偏差分布。' },
     { d: '2026/10/17', t: 'Haruki 專區新增「背包」：整份遊戲資料攤開看', s: 'Haruki 專區多一個「背包」分頁，把匯入的遊戲資料全部攤開：名片（暱稱、等級、自我介紹、名片上的稱號與羈絆稱號、頭像框、自訂名片，有授權的話連水晶與金幣）、稱號（持有的全部稱號，依活動／成就／角色／生日／排位篩選，附底圖與名次圖；羈絆稱號另列）、資源（素材依種類分組、豆森素材與稀有度）、跑榜（各期活動 P、本站歷期前百查到的名次、World Link 各章名次、排位賽季的段位與勝負）、歌曲（各難度玩過／FC／AP 比例與還沒 FC 的曲目）、收集（卡片、服裝、劇情閱讀率、任務）、原始資料（Haruki 給了哪些區塊、各幾筆）。' },
@@ -918,6 +920,8 @@ class Component extends DCLogic {
       return j ? { wlsLeader: +j.leader || 0, wlsFm: Array.isArray(j.fm) ? j.fm : null, wlsFattr: +j.attr || 5, wlsFtitle: j.title !== false } : {}; } catch (e) { return {}; } })(),
     jpNow: null, jnErr: '', jnLive: null, jnBrd: null, jnLiveErr: '', jnLiveAt: 0,      // 日服現況（data/jp-now.js＋Worker 日服中繼）
     srvMenu: false, srvSwitching: '', lang: 'zh-TW', langHint: '',                        // 頁首的伺服器／語言切換器
+    hpReady: false, hpOpen: false, hpClosing: false, hpTab: 'bot', hpMsgs: [], hpText: '', hpTyping: false, hpTip: false,   // 線上客服（js/help.js）
+    hpAiText: '', hpThreads: null, hpThread: null, hpPosts: null, hpThInfo: null, hpMsgText: '', hpNewCat: '', hpSending: false, hpMsgErr: '', hpUnread: 0,
     artSrv: this.SRV, jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
     applyUid: '', applyLv: 0, acCheck: null, acNonce: '', acVerifyMsg: '',
     acApplyBusy: false, acVerifyBusy: false, admAuto: [],
@@ -997,7 +1001,7 @@ class Component extends DCLogic {
     b.style.cssText = 'position:fixed;right:16px;z-index:70;padding:0;border:none;background:none;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(14px) scale(.85);transition:opacity .3s ease,visibility .3s ease,transform .42s cubic-bezier(.34,1.45,.44,1)';
     b.firstChild.style.cssText = 'display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background:var(--grad-cta);color:#fff;box-shadow:var(--sh-md);border:1px solid color-mix(in oklab,var(--border) 60%,transparent);transition:transform .25s cubic-bezier(.34,1.45,.44,1),box-shadow .25s ease';
     b.querySelector('svg').style.cssText = 'width:20px;height:20px;display:block';
-    const place = () => { b.style.bottom = window.innerWidth <= 900 ? 'calc(80px + env(safe-area-inset-bottom,0px))' : 'calc(20px + env(safe-area-inset-bottom,0px))'; };
+    const place = () => { b.style.bottom = window.innerWidth <= 900 ? 'calc(146px + env(safe-area-inset-bottom,0px))' : 'calc(88px + env(safe-area-inset-bottom,0px))'; };   // 疊在右下角線上客服按鈕的上面
     place();
     document.body.appendChild(b);
     this._toTopEl = b;
@@ -1155,6 +1159,10 @@ class Component extends DCLogic {
        留到瀏覽器閒下來再載：功能照舊，只是不擋首屏。 */
     this.loadEventArt();
     const idle = window.requestIdleCallback || (fn => setTimeout(fn, 2500));
+    idle(() => setTimeout(() => this.loadHelp().then(() => {
+      let seen = true; try { seen = !!localStorage.getItem('sekai-hp-tip'); } catch (e) {}
+      if (!seen && !this.state.hpOpen) setTimeout(() => { if (!this.state.hpOpen && !this.state.guide) { this.setState({ hpTip: true }); try { localStorage.setItem('sekai-hp-tip', '1'); } catch (e) {} } }, 6000);
+    }).catch(() => {}), 2500));
     idle(() => import('./data/tutorial-data.js?v=4befc9b27b')
       .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
       .catch(() => {}));
@@ -1277,6 +1285,8 @@ class Component extends DCLogic {
     try { const h = document.querySelector('.app-head'); if (h) document.documentElement.style.setProperty('--head-h', Math.round(h.getBoundingClientRect().height) + 'px'); } catch (e) {}
   }
   _closeAll() {
+    if (this.state.hpOpen && typeof this.hpToggle === 'function') { this.hpToggle(false); return; }   // Esc 先關客服視窗，其他開著的東西下一次再關
+    if (this.state.srvMenu) this.setState({ srvMenu: false });
     if (this.state.carGuide && typeof this.carGuideClose === 'function') this.carGuideClose(false);   // 要走 carGuideClose：它還會拆監聽、擋掉還在飛的量測
     this.setState({ cmdk: false, sheet: false, dbPick: null, colPick: null, kbHelp: false, detail: null, deckPid: null, gachaGid: null, songId: null, homeCfg: false, guide: null, carPop: null, carTagMgr: false });
   }
@@ -2848,6 +2858,20 @@ class Component extends DCLogic {
   }
   /* 進頁、登入後都會叫 carLoad；模組載好之後這支會被 js/car.js 的同名方法蓋掉（Object.assign 到實例上） */
   carLoad(...a) { return this.loadCar().then(ok => ok && this.carLoad(...a)); }
+  /* ---------- 線上客服（延後載入，程式在 js/help.js）：開站閒下來就預載，第一次點開不用等 ---------- */
+  loadHelp() {
+    if (!this._hpReady) {
+      this._hpReady = import('./js/help.js?v=0945d3e061').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
+        .catch(e => { this._hpReady = null; throw e; });
+    }
+    return this._hpReady;
+  }
+  /* 模組還沒載入時的右下角按鈕：只要位置與點擊 */
+  hpBase(s) {
+    const mob = !!s.mobile;
+    const fabBottom = mob ? (s.playerOn ? 'calc(150px + env(safe-area-inset-bottom,0px))' : 'calc(84px + env(safe-area-inset-bottom,0px))') : (s.playerOn ? '100px' : '22px');
+    return { hpFabBottom: fabBottom, hpOpen: false, hpPanel: false, hpState: 'closed', hpBadgeOn: false, hpTipOn: false, hpFabLabel: '線上客服：小幫手、AI 助手與留言給站長', hpAva: this.charaSd(21) };
+  }
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
@@ -8888,7 +8912,7 @@ class Component extends DCLogic {
 
     return {
       isDesktop, isMobile: s.mobile,
-      isHome: s.page === 'home' && this.SRV !== 'jp', ...this.jnVals(s), ...this.srvVals(s), isEvent: s.page === 'event', isFavs: s.page === 'favs', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
+      isHome: s.page === 'home' && this.SRV !== 'jp', ...this.jnVals(s), ...this.srvVals(s), ...(s.hpReady && this.hpVals ? this.hpVals(s) : this.hpBase(s)), isEvent: s.page === 'event', isFavs: s.page === 'favs', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
       isHub: !!this.HUBS[s.page], hubStatus, hubCards, hubCols: s.mobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(200px,1fr))',
       isSongs: s.page === 'songs', isRank: s.page === 'rank',
       gsxEv: s.gsxEv, gsxEvPh: '期數（預設 ' + (((s.live || {}).id) || '當期') + '）', gsxQ: s.gsxQ, gsxErr: s.gsxErr,
@@ -9476,10 +9500,12 @@ class Component extends DCLogic {
       ...(() => {
         const me = s.me || null, t = s.qaThread;
         const when = ts => ts ? this.ago(ts * 1000) : '';
-        const RN = { question: '提問', discussion: '討論', recruit: '車隊招募', border: '榜線回報' };
+        const RN = { question: '提問', discussion: '討論', recruit: '車隊招募', border: '榜線回報', support: '客服留言' };
+        /* 客服留言是私訊：只有管理員在提問所看得到這一類（全部人的留言），一般人在右下角的客服視窗看自己的 */
+        const kinds = [['question', '提問'], ['discussion', '討論'], ['recruit', '車隊招募'], ['border', '榜線回報']].concat(me && me.is_admin ? [['support', '客服留言']] : []);
         return {
           qaHasTpl: !!this.QA_TPL[s.qaKind], qaTplHint: this.QA_TPL[s.qaKind] ? '這一類有固定欄位，按「套用範本」再填。' : '',
-          qaKindChips: [['question', '提問'], ['discussion', '討論'], ['recruit', '車隊招募'], ['border', '榜線回報']].map(([v, n]) => {
+          qaKindChips: kinds.map(([v, n]) => {
             const on = (s.qaKind || 'question') === v, st = chip(on, 'var(--cta)');
             return Object.assign({ v, n }, st, { fg: on ? '#fff' : 'var(--text)' });
           }),
@@ -11895,6 +11921,7 @@ class Component extends DCLogic {
       onStkSave: () => this.stkExport('save'),
       onStkCopy: () => this.stkExport('copy'),
       onTheme: () => this.cycleTheme(),
+      onHpFab: () => this.loadHelp().then(() => this.hpToggle()).catch(() => this._toast('客服視窗載入失敗，請重新整理')),
       onSrvMenu: e => { if (e) e.stopPropagation(); this.setState(st => ({ srvMenu: !st.srvMenu })); },
       onSrvClose: () => this.setState({ srvMenu: false }),
       onSrvPick: e => { const v = e.currentTarget.dataset.v; this.setSrv(v); },

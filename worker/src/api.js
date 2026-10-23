@@ -28,7 +28,7 @@ import {
   unreadCount,
   markRead,
   aiUsedTodaySite,
-  listThreads, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
+  listThreads, listMyThreads, listAdmins, getThread, listPosts, createThread, addPost, lastPostedAt, setThreadFlag, deletePost, getPost, threadParticipants,
   addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart,
   addPushSub, deletePushSub, countPushSubs } from './db.js';
 import { pushEnabled, ensurePushSchema } from './push.js';
@@ -40,7 +40,7 @@ const MAX_BODY = 32 * 1024;        // 一般請求
 const MAX_PREFS = 256 * 1024;      // 設定整包上限,避免有人拿 D1 當雲端硬碟
 const MAX_PARAMS = 8 * 1024;
 /* 提問所的主題種類（前端籤與版型同步）：提問／討論／車隊招募／榜線回報 */
-const QA_KINDS = { question: '提問', discussion: '討論', recruit: '車隊招募', border: '榜線回報' };       // 單一 watch 的 params
+const QA_KINDS = { question: '提問', discussion: '討論', recruit: '車隊招募', border: '榜線回報', support: '客服留言' };       // 單一 watch 的 params
 const MAX_PREF_KEYS = 200;
 const APPLY_COOLDOWN = 60;         // 兩次送出之間至少隔這麼久（秒）
 const APPLY_MAX = 10;              // 每個帳號累計送出上限
@@ -265,9 +265,11 @@ export async function handleApi(req, env, url, user) {
       const QA_COOLDOWN = 60, TITLE_MAX = 80, BODY_MAX = 4000;
       const seg = p.split('/').filter(Boolean);          // ['api','qa', id?, action?, pid?]
       const id = str(seg[2] || '', 64), action = str(seg[3] || '', 16), pid = str(seg[4] || '', 64);
-      const needWrite = () => {
+      /* 客服留言（support）是使用者與站長之間的私訊：只有作者與管理員看得到、回得了；
+         登入就能留言（審核中的人最需要問審核的事），被拒絕的帳號不行。 */
+      const needWrite = (support) => {
         if (!user) return out({ error: 'not_signed_in', message: '請先登入' }, 401);
-        if (user.status !== 'approved') return out({ error: 'pending_approval', status: user.status, message: '帳號尚未核准' }, 403);
+        if (support ? user.status === 'rejected' : user.status !== 'approved') return out({ error: 'pending_approval', status: user.status, message: '帳號尚未核准' }, 403);
         return null;
       };
       const shape = t => t && ({
@@ -279,14 +281,20 @@ export async function handleApi(req, env, url, user) {
         if (m === 'GET') {
           const kind = QA_KINDS[url.searchParams.get('kind')] ? url.searchParams.get('kind') : 'question';
           const before = parseInt(url.searchParams.get('before'), 10);
-          const rows = await listThreads(env.DB, kind, 30, Number.isFinite(before) ? before : null);
+          const bf = Number.isFinite(before) ? before : null;
+          if (kind === 'support') {
+            if (!user) return out({ threads: [], can_post: false });
+            const rows = user.is_admin ? await listThreads(env.DB, kind, 30, bf) : await listMyThreads(env.DB, user.id, kind, 30, bf);
+            return out({ threads: rows.map(shape), can_post: user.status !== 'rejected', is_admin: !!user.is_admin });
+          }
+          const rows = await listThreads(env.DB, kind, 30, bf);
           return out({ threads: rows.map(shape), can_post: !!(user && user.status === 'approved') });
         }
         if (m === 'POST') {
-          const deny = needWrite(); if (deny) return deny;
           const b = await readJson(req); if (b.bad) return out({ error: 'bad_json' }, 400);
           const v = b.value || {};
           const kind = QA_KINDS[v.kind] ? v.kind : 'question';
+          const deny = needWrite(kind === 'support'); if (deny) return deny;
           const title = sanitizeNote(str(v.title, TITLE_MAX)).text.trim();
           const body = sanitizeNote(str(v.body, BODY_MAX)).text.trim();
           if (title.length < 2) return out({ error: 'bad_title', message: '標題至少 2 個字' }, 400);
@@ -294,6 +302,15 @@ export async function handleApi(req, env, url, user) {
           const last = await lastPostedAt(env.DB, user.id);
           if (Date.now() / 1000 - last < QA_COOLDOWN) return out({ error: 'cooldown', message: '發文間隔至少 ' + QA_COOLDOWN + ' 秒' }, 429);
           const tid = await createThread(env.DB, user.id, kind, title, body);
+          if (kind === 'support') {          // 新的客服留言：通知每位管理員（站內通知，不寄信）
+            try {
+              for (const a of await listAdmins(env.DB)) {
+                if (a.id === user.id) continue;
+                await addEvent(env.DB, { watch_id: 'qa:' + tid, user_id: a.id, no_mail: 1,
+                  title: '新的客服留言：' + title.slice(0, 40), body: (user.name || '有人') + '：' + body.slice(0, 200) });
+              }
+            } catch (e) {}
+          }
           return out({ ok: true, id: tid });
         }
         return out({ error: 'method_not_allowed' }, 405);
@@ -302,6 +319,8 @@ export async function handleApi(req, env, url, user) {
       const t = await getThread(env.DB, id);
       if (!t) return out({ error: 'not_found' }, 404);
       const isAdmin = !!(user && user.is_admin), isOwner = !!(user && user.id === t.user_id);
+      const support = t.kind === 'support';
+      if (support && !isAdmin && !isOwner) return out({ error: 'not_found' }, 404);   // 私訊：別人連存在與否都不該知道
 
       if (!action) {
         if (m !== 'GET') return out({ error: 'method_not_allowed' }, 405);
@@ -309,14 +328,14 @@ export async function handleApi(req, env, url, user) {
         /* 被回的那則：從同一串裡找作者與前 80 字當摘要，畫面顯示「回覆 某人：…」 */
         const byId = {}; posts.forEach(x => { byId[x.id] = x; });
         const quote = x => { const q = x.reply_to && byId[x.reply_to]; return q ? { id: q.id, author: q.author, excerpt: q.deleted ? '（已刪除）' : String(q.body || '').slice(0, 80) } : null; };
-        return out({ thread: shape(t), can_post: !!(user && user.status === 'approved') && !t.locked, is_admin: isAdmin,
+        return out({ thread: shape(t), can_post: support ? ((isOwner || isAdmin) && user.status !== 'rejected' && !t.locked) : (!!(user && user.status === 'approved') && !t.locked), is_admin: isAdmin,
           posts: posts.map(x => ({ id: x.id, body: x.deleted ? '' : x.body, deleted: !!x.deleted, author: x.author,
             author_admin: !!x.author_admin, via_ai: !!x.via_ai, reply_to: quote(x), mine: !!(user && x.user_id === user.id), created_at: x.created_at })) });
       }
       if (m !== 'POST') return out({ error: 'method_not_allowed' }, 405);
 
       if (action === 'reply') {
-        const deny = needWrite(); if (deny) return deny;
+        const deny = needWrite(support); if (deny) return deny;
         if (t.locked) return out({ error: 'locked', message: '這個主題已鎖定' }, 403);
         const b = await readJson(req); if (b.bad) return out({ error: 'bad_json' }, 400);
         const body = sanitizeNote(str((b.value || {}).body, BODY_MAX)).text.trim();
@@ -335,6 +354,7 @@ export async function handleApi(req, env, url, user) {
            被指名回覆的人標題不一樣，讓他知道是回他。 */
         try {
           const who = new Set([t.user_id].concat(await threadParticipants(env.DB, id)));
+          if (support && !isAdmin) (await listAdmins(env.DB)).forEach(a => who.add(a.id));   // 使用者追問：每位管理員都要知道
           who.delete(user.id);
           const target = replyTo ? (await getPost(env.DB, replyTo)) : null;
           const kindZh = QA_KINDS[t.kind] || '討論';

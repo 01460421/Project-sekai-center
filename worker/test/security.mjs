@@ -443,6 +443,49 @@ reset();
   ok('登出沒帶 r → 回首頁', lo3.text.includes('/app.html"'));
 }
 
+/* ---------- 客服留言（kind=support）：作者與管理員之間的私訊 ---------- */
+section('客服留言是私訊：別人看不到、列不到、回不了');
+if (HTTP) console.log('  (http 模式略過)');
+else {
+  reset();
+  sq.exec('DELETE FROM threads; DELETE FROM posts; DELETE FROM events;');
+  const t = Math.floor(Date.now() / 1000);
+  sq.exec(`INSERT INTO users (id,google_sub,email,name,picture,discord_id,discord_name,is_admin,status,created_at,updated_at) VALUES
+    ('u-own','g-own','o@x','留言者','',NULL,NULL,0,'pending',${t},${t}), ('u-oth','g-oth','x@x','路人','',NULL,NULL,0,'approved',${t},${t}),
+    ('u-adm','g-adm','a@x','站長','',NULL,NULL,1,'approved',${t},${t}), ('u-rej','g-rej','r@x','被拒','',NULL,NULL,0,'rejected',${t},${t})`);
+  const ck = async u => 'sekai_session=' + await signToken('h-secret', { u, v: 0, e: t + 3600 });
+  const own = await ck('u-own'), oth = await ck('u-oth'), adm = await ck('u-adm'), rej = await ck('u-rej');
+  const c1 = await send('POST', '/api/qa', { cookie: own, body: { kind: 'support', title: '帳號還在審核', body: '想問審核要多久' } });
+  ok('審核中的帳號也能開客服留言', c1.status === 200 && c1.j.ok && !!c1.j.id, c1.status, c1.j);
+  const tid = c1.j.id;
+  const q1n = await send('POST', '/api/qa', { cookie: own, body: { kind: 'question', title: '一般提問', body: '一般提問內容' } });
+  ok('審核中的帳號照舊不能在公開區發文', q1n.status === 403, q1n.status);
+  const cr = await send('POST', '/api/qa', { cookie: rej, body: { kind: 'support', title: '被拒的人', body: '能不能留言' } });
+  ok('被拒絕的帳號不能開客服留言', cr.status === 403, cr.status);
+  const lo = await send('GET', '/api/qa?kind=support', { cookie: oth });
+  ok('別人的客服留言列表看不到這串', lo.status === 200 && Array.isArray(lo.j.threads) && lo.j.threads.length === 0, lo.j);
+  const la = await send('GET', '/api/qa?kind=support', { origin: null });
+  ok('沒登入列客服留言 → 空的', la.status === 200 && la.j.threads.length === 0 && la.j.can_post === false, la.j);
+  const lm = await send('GET', '/api/qa?kind=support', { cookie: own });
+  ok('作者列得到自己的', lm.j.threads.length === 1 && lm.j.threads[0].id === tid, lm.j);
+  const ld = await send('GET', '/api/qa?kind=support', { cookie: adm });
+  ok('管理員列得到全部', ld.j.threads.length === 1 && ld.j.is_admin === true, ld.j);
+  const ro = await send('GET', '/api/qa/' + tid, { cookie: oth });
+  ok('別人直接開這串 → 404', ro.status === 404, ro.status);
+  const rn = await send('GET', '/api/qa/' + tid, { origin: null });
+  ok('沒登入直接開這串 → 404', rn.status === 404, rn.status);
+  const rp = await send('POST', '/api/qa/' + tid + '/reply', { cookie: oth, body: { body: '路人插話' } });
+  ok('別人回不了', rp.status === 404, rp.status);
+  ok('新留言通知了管理員', !!q1(`SELECT 1 AS x FROM events WHERE user_id='u-adm' AND watch_id=?`, 'qa:' + tid));
+  const ra = await send('POST', '/api/qa/' + tid + '/reply', { cookie: adm, body: { body: '大約一天內' } });
+  ok('管理員回得了', ra.status === 200 && ra.j.ok, ra.status, ra.j);
+  ok('管理員回覆通知了作者', !!q1(`SELECT 1 AS x FROM events WHERE user_id='u-own' AND watch_id=?`, 'qa:' + tid));
+  const ow = await send('GET', '/api/qa/' + tid, { cookie: own });
+  ok('作者看得到回覆、還能再回', ow.status === 200 && ow.j.posts.length === 1 && ow.j.can_post === true, ow.j);
+  const pub = await send('GET', '/api/qa?kind=question', { origin: null });
+  ok('公開提問列表不會混進客服留言', !(pub.j.threads || []).some(x => x.id === tid));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (botServer) botServer.close();
 process.exit(fail ? 1 : 0);
