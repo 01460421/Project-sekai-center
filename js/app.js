@@ -5260,7 +5260,7 @@ class Component extends DCLogic {
         this.setState({ rateCards: (j.CARDS || []).filter(c => c[9] !== 0), rateChars: j.CHARAS || [], rateLoad: false });
         return;
       }
-      const m = await import('./data/cards-index.js?v=7bf4e29bce');
+      const m = await import('./data/cards-index.js?v=4d50ff39a7');
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -5545,12 +5545,12 @@ class Component extends DCLogic {
   }
   /* 豆森活動（生日派對、百景競賽）：日曆、今日摘要、行事曆匯出用 */
   loadMsEvents() {
-    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-events-jp.js?v=520a8021f4') : import('./data/mysekai-events.js?v=502684d845')); return m.MS_EVENTS || []; });
+    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-events-jp.js?v=520a8021f4') : import('./data/mysekai-events.js?v=9dc9226436')); return m.MS_EVENTS || []; });
   }
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
   loadSupportEvents() {
-    return this.dbRun('supEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/support-events-jp.js?v=beb4f9fc5c') : import('./data/support-events.js?v=b42b133022')); return m.SUPPORT_EVENTS || []; });
+    return this.dbRun('supEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/support-events-jp.js?v=beb4f9fc5c') : import('./data/support-events.js?v=68dbf5d6f3')); return m.SUPPORT_EVENTS || []; });
   }
   /* 第幾回用 n（依開始時間排序）：Haruki 的 6.4 master 重新編號，id 已經不等於回數。v2 是 6.4 新增的棋盤版 */
   supEventName(x) { return '第 ' + (x.n || x.id) + ' 回應援活動' + (x.v === 'v2' ? '（棋盤版）' : ''); }
@@ -5889,7 +5889,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = (this.SRV === 'jp' ? import('./data/data-built-jp.js?v=eed9706f39') : import('./data/data-built.js?v=7a63124190')).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = (this.SRV === 'jp' ? import('./data/data-built-jp.js?v=eed9706f39') : import('./data/data-built.js?v=f9220b56d3')).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
