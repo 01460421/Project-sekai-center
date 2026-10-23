@@ -13,9 +13,17 @@ resourceBoxDetails.json 原始檔 23 MB,不可能在瀏覽器端載入。
 - costume_3d 部件數量龐大,只記部件總數不展開。
 - 內容與上次相同就不改檔(builtAt 除外),CI 才不會每天空提交。
 
+日服(MASTER_SRV=jp):改吃 Sekai-World 的日服 master,輸出 data/billing-jp.js(形狀相同,價格是日圓)。
+- 日服 master 沒有 resourceBoxDetails.json,明細掛在 resourceBoxes.json(35 MB)每個箱子的 details 底下,攤平成同一種列。
+- 日服 billingProducts 沒有 9999 佔位價(1 萬、3 萬、5 萬円是真的檔位,0 円是官方商店的免費禮包),有價就是已知價。
+- 日服商品沒有 billingShopTabChildId,分頁照 billingShopTabChildren 的 billingShopItemType 對回去。
+- 台服的官網商店(GamePay)只有台服有,日服不抓;改把「只在 zenpay(日服官方 WEB 商店)上架」的商品標成 src='web'。
+  官方商店每筆另送的 zenpay 加贈(resourceBox billing_shop_item_zenpay_bonus)master 裡查不到對應哪個商品,所以不計。
+
 有新商品時重跑:
 
     python3 tools/build-billing.py
+    MASTER_SRV=jp python3 tools/build-billing.py   # 日服版
     python3 tools/stamp-assets.py      # 別忘了重新戳版本
 """
 import json
@@ -24,13 +32,13 @@ import re
 import time
 import urllib.request
 
-from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
+from tc_source import SRV, TC, TC_SW, srv_out, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
 DB = TC
 # 台服官方網頁商店(GamePay/Ariel,MyCard·信用卡通路)的公開商品 API,無需登入
 WEB_API = 'https://gamepay.ariel.com.tw/web/payment/app/5245/country/TW/all_goods_detail'
 WEB_SHOP_URL = 'https://gamepay.ariel.com.tw/topup/5245'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / 'data' / 'billing.js'
+OUT = ROOT / 'data' / srv_out('billing.js')
 
 # 官網通行證「兌換券」→ 對應遊戲內商品 id(內容照抄再加上券附贈的水晶)
 VOUCHER_MAP = {
@@ -133,8 +141,12 @@ def main():
     cards = {c['id']: c for c in get('cards.json')}
 
     # resourceBoxDetails 23 MB:只留商城相關 purpose
-    print('抓 resourceBoxDetails(23MB)…')
-    details = get('resourceBoxDetails.json')
+    if SRV == 'jp':   # 日服 master 只有 resourceBoxes(箱子底下帶 details),攤平成跟 resourceBoxDetails 一樣的列
+        print('抓 resourceBoxes(35MB)…')
+        details = [d for b in get('resourceBoxes.json') for d in (b.get('details') or [])]
+    else:
+        print('抓 resourceBoxDetails(23MB)…')
+        details = get('resourceBoxDetails.json')
     box = {}
     for d in details:
         p = d['resourceBoxPurpose']
@@ -158,6 +170,21 @@ def main():
 
     parents = {t['id']: t['name'] for t in tab_parents}
     children = {t['id']: t for t in tab_children}
+    # 日服商品沒帶 billingShopTabChildId:照子分頁的 billingShopItemType 對回去;沒有專屬分頁的型別
+    # (colorful_pass_v2、live_mission_pass_and_mysekai_mission_pass)歸到型別名是它最長前綴的那一頁
+    child_by_type = {}
+    if SRV == 'jp':
+        for t in sorted(tab_children, key=lambda t: (t.get('billingShopTabParentId') or 0, t.get('seq') or 0)):
+            child_by_type.setdefault(t.get('billingShopItemType'), t)
+
+    def child_of_type(ty):
+        k = max((k for k in child_by_type if k and ty.startswith(k)), key=len, default=None)
+        return child_by_type.get(k)
+
+    # 日服:只在 zenpay(官方 WEB 商店)上架的商品群組 = 官方商店限定,前端照台服官網商品標「官網」
+    group_platforms = {}
+    for p in products:
+        group_platforms.setdefault(p['groupId'], set()).add(p['platform'])
 
     RARE = {'rarity_1': '★1', 'rarity_2': '★2', 'rarity_3': '★3', 'rarity_4': '★4', 'rarity_birthday': '生日'}
     TYPE_LABEL = {
@@ -169,6 +196,8 @@ def main():
         'mysekai_material': '「世界」素材', 'mysekai_fixture': '「世界」家具',
         'mysekai_music_record': '「世界」唱片', 'mysekai_canvas': '畫布',
     }
+    if SRV == 'jp':   # 只補日服:台服輸出要維持原樣(台服那幾筆設計圖目前顯示原始型別名)
+        TYPE_LABEL.update({'mysekai_blueprint': '「世界」設計圖', 'mysekai_tool': '「世界」工具'})
 
     def content_name(d):
         t, rid = d['resourceType'], d.get('resourceId')
@@ -218,12 +247,19 @@ def main():
 
     rows = []
     for i in items:
+        # 日服「※※※割引用※※※」是買過另一張通行證後才換上的折扣版(同名、便宜 500 円),
+        # 兩張一起的價格已經是「ミッションパスセット」那一筆;留著會讓智慧推薦把兩張折扣版同時排進方案
+        if SRV == 'jp' and '割引用' in (i.get('description') or ''):
+            continue
+        # 日服舊版「[30日間有効]カラフルパス」master 沒有 endAt,但同價位已由 BASIC/DELUXE/PRECIOUS 取代,買不到了
+        if SRV == 'jp' and i['billingShopItemType'] == 'colorful_pass' and any(x['billingShopItemType'] == 'colorful_pass_v2' for x in items):
+            continue
         main = box.get(('billing_shop_item', i['resourceBoxId']), [])
         bonus = box.get(('billing_shop_item_bonus', i.get('bonusResourceBoxId')), []) if i.get('bonusResourceBoxId') else []
         p1, f1, t1, c1 = pack_contents(main)
         p2, f2, t2, c2 = pack_contents(bonus)
         price = price_by_group.get(i.get('billingProductGroupId'))
-        child = children.get(i.get('billingShopTabChildId'), {})
+        child = children.get(i.get('billingShopTabChildId')) or (child_of_type(i['billingShopItemType']) if SRV == 'jp' else None) or {}
         row = {
             'id': i['id'], 'seq': i.get('seq', 0), 't': i['billingShopItemType'],
             'n': i['name'], 'd': i.get('description') or '',
@@ -231,7 +267,7 @@ def main():
             'tab': (child.get('name') or '').replace('\n', ''),
             'tabP': parents.get(child.get('billingShopTabParentId'), ''),
             'price': price if price is not None else None,
-            'pk': bool(price is not None and price < 9990),   # priceKnown:9999 是佔位
+            'pk': bool(price is not None and (SRV == 'jp' or price < 9990)),   # priceKnown:台服 9999 是佔位,日服沒有佔位價
             # 有償水晶兌換價:只有 purchaseOption=exchange 才是真的用水晶買
             'exch': exch.get(i['id']) if i.get('purchaseOption') == 'exchange' else None,
             'paid': p1 + p2, 'free': f1 + f2, 'pulls': t1 + t2,
@@ -240,24 +276,28 @@ def main():
                     'r': i.get('billableLimitResetIntervalType'), 'rv': i.get('billableLimitResetIntervalValue')},
             's': i.get('startAt'), 'e': i.get('endAt'),
         }
+        if SRV == 'jp' and group_platforms.get(i.get('billingProductGroupId')) == {'zenpay'}:
+            row['src'], row['ref'] = 'web', None
         rows.append(row)
 
-    # 官網商店(GamePay):抓失敗就沿用上一版的官網資料,別讓整包資料開天窗
-    rows_by_id = {r['id']: r for r in rows}
-    web_rows = None
-    try:
-        web_rows = fetch_web(rows_by_id)
-        print(f'官網商店:{len(web_rows)} 項')
-    except Exception as ex:
-        print(f'官網商店抓取失敗({ex}),沿用舊資料')
-        if OUT.exists():
-            m = re.search(r'window\.BILLING_DATA\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
-            if m:
-                try:
-                    web_rows = [r for r in json.loads(m.group(1))['items'] if r.get('src') == 'web']
-                except Exception:
-                    web_rows = None
-    rows.extend(web_rows or [])
+    # 官網商店(GamePay)只有台服有;日服的官方商店商品已在 master 裡(上面的 zenpay 群組)
+    if SRV != 'jp':
+        # 抓失敗就沿用上一版的官網資料,別讓整包資料開天窗
+        rows_by_id = {r['id']: r for r in rows}
+        web_rows = None
+        try:
+            web_rows = fetch_web(rows_by_id)
+            print(f'官網商店:{len(web_rows)} 項')
+        except Exception as ex:
+            print(f'官網商店抓取失敗({ex}),沿用舊資料')
+            if OUT.exists():
+                m = re.search(r'window\.BILLING_DATA\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
+                if m:
+                    try:
+                        web_rows = [r for r in json.loads(m.group(1))['items'] if r.get('src') == 'web']
+                    except Exception:
+                        web_rows = None
+        rows.extend(web_rows or [])
 
     # 七彩通行證:每日無償水晶在 colorful_pass(_v2) resource box(id=tier/pass id)
     daily = {}
@@ -270,16 +310,17 @@ def main():
             daily_v1[bid] = q
     passes = {'v1': pass_v1, 'v1Daily': daily_v1, 'v2': pass_v2, 'v2Daily': daily, 'mysekai': mysekai_pass}
 
-    data = {'source': 'haruki-sekai-tc-master', 'items': rows, 'passes': passes}
+    data = {'source': 'sekai-master-db-diff' if SRV == 'jp' else 'haruki-sekai-tc-master', 'items': rows, 'passes': passes}
 
-    # 內容沒變就不寫(builtAt 除外),CI 才不會空提交
+    # 內容沒變就不寫(builtAt 除外),CI 才不會空提交。
+    # 通行證每日量的 dict 鍵在這裡是 int、讀回來的舊檔是字串,先過一次 JSON 再比,不然永遠判成有變化。
     if OUT.exists():
         m = re.search(r'window\.BILLING_DATA\s*=\s*(\{.*\});?\s*$', OUT.read_text(), re.S)
         if m:
             try:
                 old = json.loads(m.group(1))
                 old.pop('builtAt', None)
-                if old == data:
+                if old == json.loads(json.dumps(data, ensure_ascii=False)):
                     print(f'內容無變化,不更新 {OUT.name}')
                     return
             except Exception:
@@ -287,10 +328,12 @@ def main():
 
     data['builtAt'] = int(time.time() * 1000)
     body = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-    OUT.write_text('// 由 tools/build-billing.py 產生,勿手改。資料源:haruki-sekai-tc-master（缺檔退回 sekai-master-db-tc-diff）\n'
+    head = ('日服 master(Sekai-World/sekai-master-db-diff),價格為日圓' if SRV == 'jp'
+            else 'haruki-sekai-tc-master（缺檔退回 sekai-master-db-tc-diff）')
+    OUT.write_text(f'// 由 tools/build-billing.py 產生,勿手改。資料源:{head}\n'
                    f'window.BILLING_DATA={body};\n')
     known = sum(1 for r in rows if r['pk'])
-    print(f'寫入 {OUT.name}:{len(rows)} 項商品(已知台幣價 {known}、有償水晶兌換 {sum(1 for r in rows if r["exch"])})、{OUT.stat().st_size // 1024} KB')
+    print(f'寫入 {OUT.name}:{len(rows)} 項商品(已知{"日圓" if SRV == "jp" else "台幣"}價 {known}、有償水晶兌換 {sum(1 for r in rows if r["exch"])})、{OUT.stat().st_size // 1024} KB')
 
 
 if __name__ == '__main__':

@@ -622,6 +622,27 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
 .lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
 .lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+/* 日服帳號預覽（日服現況的綁定卡）與編組詳情 */
+.jn-prof{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-2px 0 8px}
+.jn-plv{font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--accent-deep);padding:2px 10px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,transparent)}
+.jn-pword{font-size:12px;color:var(--text-2);min-width:0;overflow-wrap:anywhere}
+.jn-deck{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;padding:8px 10px;margin-bottom:10px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);cursor:pointer;text-align:left;color:var(--text)}
+.jn-dk{position:relative;width:46px;height:46px;border-radius:10px;overflow:hidden;background:var(--bg-soft);flex:none}
+.jn-dk img{width:100%;height:100%;display:block}
+.jn-dk i{position:absolute;left:2px;top:2px;font-style:normal;font-size:9.5px;font-weight:800;color:#fff;background:var(--cta);border-radius:6px;padding:0 4px;line-height:15px}
+.jn-dk-t{font-size:12px;font-weight:800;color:var(--accent-deep);margin-left:4px}
+.jn-hint{font-style:normal;font-size:10.5px;color:var(--text-3)}
+.jd-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.jd-card{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:11px;color:var(--text-2)}
+.jd-card b{font-size:12px;color:var(--ink);margin-top:4px}
+.jd-img{position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--card-2)}
+.jd-img img{width:100%;height:100%;display:block}
+.jd-lead{position:absolute;left:4px;top:4px;font-size:10px;font-weight:800;color:#fff;background:var(--cta);border-radius:7px;padding:1px 6px}
+.jd-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jd-at{display:flex;align-items:center;gap:4px}.jd-at i{width:8px;height:8px;border-radius:50%;flex:none}
+.jd-meta{font-family:'M PLUS Rounded 1c';color:var(--text-3)}
+.jd-res{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+@media (max-width:520px){.jd-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .lu-stat{padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);display:flex;flex-direction:column;gap:2px}
 .lu-stat span{font-size:11px;font-weight:700;color:var(--text-3)}
 .lu-stat b{font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--accent-deep)}
@@ -2456,11 +2477,12 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <span style="width:8px;height:24px;border-radius:5px;background:var(--rainbow);background-size:400% 100%;flex:none"></span>
       <div style="flex:1;min-width:220px">
         <div class="u-ffc0">商品總覽 · CP 值排行 · 智慧推薦 · 月卡通行證</div>
-        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">台服商城 930+ 項商品的內容物與台幣定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div>
+        <sc-if value="{{ srvTw }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">台服商城 930+ 項商品的內容物與台幣定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div></sc-if>
+        <sc-if value="{{ srvJp }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">日服商城約 700 項商品（含官方 WEB 商店限定）的內容物與日圓定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div></sc-if>
       </div>
-      <a href="./index.html?embed=shop" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+      <a href="{{ shopSrc }}" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
     </div>
-    <iframe id="shopFrame" data-src="./index.html?embed=shop" title="儲值分析" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+    <iframe id="shopFrame" data-src="{{ shopSrc }}" title="儲值分析" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
   </sc-if>
 
@@ -6307,12 +6329,14 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <input type="text" inputmode="numeric" class="lu-in" placeholder="Player ID（數字）" value="{{ luId }}" onInput="{{ onField }}" data-k="luId" onKeyDown="{{ onLuKey }}">
       <button type="button" class="lu-go" onClick="{{ onLuGo }}">查詢</button>
     </div>
-    <sc-if value="{{ luJp }}"><div class="u-fc2" style="margin:-4px 0 12px;line-height:1.7">日服：輸入日服的 Player ID，看這一期活動的即時名次、與上一名的差距、近一小時打了幾場與每一場的得分（Haruki 活動追蹤器，約 10～20 秒更新；只記前百與各段位線上的玩家）。查過的 ID 會記住。</div></sc-if>
+    <sc-if value="{{ luJp }}"><div class="u-fc2" style="margin:-4px 0 12px;line-height:1.7">日服：輸入日服的 Player ID，看這一期活動的即時名次、與上一名的差距、近一小時打了幾場與每一場的得分（Haruki 活動追蹤器，約 10～20 秒更新；只記前百與各段位線上的玩家）；在 Haruki 工具箱公開資料的玩家，另外顯示等級、角色等級與目前隊伍。查過的 ID 會記住。</div></sc-if>
     <sc-if value="{{ luLoad }}"><div class="empty loading">查詢中…</div></sc-if>
     <sc-if value="{{ luErr }}"><div class="empty">{{ luErr }}</div></sc-if>
     <sc-if value="{{ luTrLoading }}"><div class="empty loading">讀取活動即時紀錄…</div></sc-if>
     <sc-if value="{{ luTrErr }}"><div class="empty">{{ luTrErr }}</div></sc-if>
     <sc-if value="{{ luTrNot }}"><div class="empty">{{ luTrNotText }}</div></sc-if>
+    <sc-if value="{{ luProfLoading }}"><div class="empty loading">讀取 Haruki 工具箱的個人檔案…</div></sc-if>
+    <sc-if value="{{ luProfNoteOn }}"><div class="u-fc2" style="margin:2px 0 12px;line-height:1.7">{{ luProfNote }}</div></sc-if>
     <sc-if value="{{ luTrHas }}">
       <div class="lu-card lu-live">
         <div style="display:flex;gap:12px;align-items:center">
@@ -6390,12 +6414,18 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
     <sc-if value="{{ jnMeOn }}">
     <div class="mk-card jn-me" style="margin-bottom:14px">
-      <div class="mk-h"><b>我的日服名次</b><i class="notranslate">{{ jnMe.name }}・ID {{ jnMe.id }}</i></div>
+      <div class="mk-h"><b>我的日服帳號</b><i class="notranslate">{{ jnMe.name }}・ID {{ jnMe.id }}</i></div>
+      <sc-if value="{{ jnMe.hasProf }}">
+        <div class="jn-prof"><span class="jn-plv">{{ jnMe.rankLv }}</span><sc-if value="{{ jnMe.word }}"><span class="jn-pword notranslate">{{ jnMe.word }}</span></sc-if></div>
+        <sc-if value="{{ jnMe.hasDeck }}"><button type="button" class="jn-deck" onClick="{{ onDeckDetail }}" title="看隊伍的五張卡，並計算綜合力與活動加成"><sc-for list="{{ jnMe.deck }}" as="c" hint-placeholder-count="5"><span class="jn-dk"><sc-if value="{{ c.hasImg }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><sc-if value="{{ c.leader }}"><i>L</i></sc-if></span></sc-for><span class="jn-dk-t"><span class="notranslate">{{ jnMe.deckName }}</span>編組詳情 →</span></button></sc-if>
+      </sc-if>
+      <sc-if value="{{ jnMe.profLoading }}"><div class="u-fc2" style="margin-bottom:8px">讀取 Haruki 工具箱的個人檔案…</div></sc-if>
       <sc-if value="{{ jnMe.loading }}"><div class="empty loading">讀取中…</div></sc-if>
       <sc-if value="{{ jnMe.not }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.7">{{ jnMe.not }}</div></sc-if>
       <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span class="lu-rank">{{ jnMe.rank }}</span><span style="font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums">{{ jnMe.score }}</span><span style="font-size:12px;color:var(--text-2)">{{ jnMe.gap }}</span></div>
-      <div class="lu-stats" style="margin-top:10px"><div class="lu-stat"><span>近一小時</span><b>{{ jnMe.h1 }}</b></div><div class="lu-stat"><span>平均每場</span><b>{{ jnMe.avg }}</b></div><div class="lu-stat"><span>近 24 小時</span><b>{{ jnMe.h24 }}</b></div><div class="lu-stat"><span>最後一場</span><b>{{ jnMe.last }}</b></div></div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="lookup">完整紀錄與走勢 →</button><button type="button" class="mk-chip" onClick="{{ onUnbind }}">解除綁定</button></div>
+      <div class="lu-stats" style="margin-top:10px"><div class="lu-stat"><span>近一小時</span><b>{{ jnMe.h1 }}</b></div><div class="lu-stat"><span>平均每場</span><b>{{ jnMe.avg }}</b></div><div class="lu-stat"><span>近 24 小時</span><b>{{ jnMe.h24 }}</b></div><div class="lu-stat"><span>最後一場</span><b>{{ jnMe.last }}</b></div><sc-if value="{{ jnMe.hasProf }}"><div class="lu-stat"><span>總綜合力</span><b>{{ jnMe.power }}</b><sc-if value="{{ jnMe.powerHint }}"><em class="jn-hint">{{ jnMe.powerHint }}</em></sc-if></div></sc-if></div>
+      <sc-if value="{{ jnMe.profNote }}"><div class="u-fc2" style="margin-top:10px;line-height:1.7">{{ jnMe.profNote }}</div></sc-if>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="lookup">完整紀錄與走勢 →</button><sc-if value="{{ jnMe.hasDeck }}"><button type="button" class="mk-chip" onClick="{{ onDeckDetail }}">編組詳情</button></sc-if><sc-if value="{{ jnMe.profGo }}"><button type="button" class="mk-chip" onClick="{{ onHkGuide }}">怎麼在 Haruki 公開資料 →</button></sc-if><button type="button" class="mk-chip" onClick="{{ onUnbind }}">解除綁定</button></div>
     </div>
     </sc-if>
 
@@ -7455,16 +7485,16 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
   <div class="u-a3">
-    <sc-if value="{{ gsLoading }}"><div class="empty loading">載入台服卡池 master…</div></sc-if>
+    <sc-if value="{{ gsLoading }}"><div class="empty loading">{{ gsLoadText }}</div></sc-if>
     <sc-if value="{{ gsErr }}"><div class="empty">{{ gsErr }}</div></sc-if>
     <sc-if value="{{ gsReady }}">
     <div class="gs-wrap">
       <div class="gs-hero"><sc-if value="{{ gsLogo }}"><img class="gs-logo" src="{{ gsLogo }}" referrerpolicy="no-referrer" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="hidden"></sc-if>
-        <div style="flex:1;min-width:180px"><div class="gs-title">{{ gsName }}</div><div class="u-fc2">{{ gsId }}・{{ gsPeriod }}・機率與卡池皆取自台服官方 master</div>
+        <div style="flex:1;min-width:180px"><div class="gs-title">{{ gsName }}</div><div class="u-fc2">{{ gsId }}・{{ gsPeriod }}・{{ gsSrcNote }}</div>
           <div class="gs-pills"><sc-for list="{{ gsRates }}" as="r" hint-placeholder-count="3"><span class="gs-pill"><i class="gs-dot" style="background:{{ r.c }}"></i>{{ r.n }} {{ r.rate }}</span></sc-for><sc-if value="{{ gsHasPu }}"><span class="gs-pill" style="border-color:#f0619e;color:#f0619e"><i class="gs-dot" style="background:#f0619e"></i>PU {{ gsPuN }} 張・每張 {{ gsPuEach }}</span></sc-if></div>
         </div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <input class="lu-in" list="gsPoolList" placeholder="輸入卡池編號或名稱，按 Enter 前往（台服 master 內的池）" value="{{ gsQ }}" onInput="{{ onField }}" data-k="gsQ" onKeyDown="{{ onGsKey }}">
+        <input class="lu-in" list="gsPoolList" placeholder="{{ gsPh }}" value="{{ gsQ }}" onInput="{{ onField }}" data-k="gsQ" onKeyDown="{{ onGsKey }}">
         <datalist id="gsPoolList"><sc-for list="{{ gsOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
         <button type="button" class="sm-btn" style="margin:0" onClick="{{ onGsGo }}">前往</button>
       </div>
@@ -7478,7 +7508,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-if value="{{ gsHasStat }}"><div class="gs-stat"><div class="gs-h">抽卡統計・累計 {{ gsTot }} 抽</div><div class="u-fc2" style="margin:2px 0 4px">長條為實際出現率，直線刻度為官方公告機率</div>
         <sc-for list="{{ gsStat }}" as="r" hint-placeholder-count="3"><div class="gs-row"><span style="font-weight:800;color:{{ r.c }}">{{ r.n }}</span><span class="gs-bar"><i style="width:{{ r.w }};background:{{ r.c }}"></i><u style="left:{{ r.mark }}"></u></span><span class="u-t4">{{ r.got }}</span><span class="u-t4 u-fc2">{{ r.pct }} / {{ r.rate }}</span></div></sc-for>
         <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--text-3)"><span>PU 抽中 <b>{{ gsPkHits }}</b> 次</span><span>平均 <b>{{ gsAvgGap }}</b> 抽出一張 ★4</span><span>已連續 <b>{{ gsSince4 }}</b> 抽沒 ★4</span></div></div></sc-if>
-      <div class="u-fc2">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；十連保底照 gachaBehaviors 的 over_rarity_3_once。天井以 300 抽計；招募點數付費 1 點、免費與券 0.5 點，50 點保底未持有常駐 ★4、100 點保底該池 PU（模擬器不知道你的倉庫，以本次沒抽到的代替）。只能模擬台服已實裝的池，台服還沒開的預測卡池不行。</div>
+      <div class="u-fc2">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；保底照 gachaBehaviors 的 over_rarity_3_once／over_rarity_4_once（最後一抽至少 ★3／★4）。天井以 300 抽計；招募點數付費 1 點、免費與券 0.5 點，50 點保底未持有常駐 ★4、100 點保底該池 PU（模擬器不知道你的倉庫，以本次沒抽到的代替）。<span>{{ gsScope }}</span></div>
     </div>
     </sc-if>
 
@@ -8655,7 +8685,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
       <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">此刻最快</div>
-        <div style="font-size:11.5px;color:var(--text-3);margin-bottom:11px">依近 1 小時時速排序</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-bottom:11px">{{ anaFastSub }}</div>
         <sc-for list="{{ anaFast }}" as="f" hint-placeholder-count="10">
           <div style="display:grid;grid-template-columns:{{ anaFastCols }};gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center">
             <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ f.rank }}</span>
@@ -8670,7 +8700,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px">
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
           <div style="font-size:13.5px;font-weight:800;color:#3ea76a;margin-bottom:3px">衝刺中</div>
-          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">近 1 小時比自己的日均快 1.2 倍以上</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">{{ anaSurgeSub }}</div>
           <sc-for list="{{ anaSurge }}" as="x" hint-placeholder-count="6">
             <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
               <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ x.rank }}</span>
@@ -8682,7 +8712,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
           <div style="font-size:13.5px;font-weight:800;color:#e0576a;margin-bottom:3px">降速中</div>
-          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">近 1 小時掉到日均的一半以下</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">{{ anaCoolSub }}</div>
           <sc-for list="{{ anaCool }}" as="x" hint-placeholder-count="6">
             <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
               <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ x.rank }}</span>
@@ -9593,7 +9623,32 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <span class="u-ffc0">{{ deckTitle }}</span>
     <button type="button" onClick="{{ onDeckClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
-  <iframe id="deckInfoFrame" data-src="{{ deckSrc }}" title="我的編組" scrolling="no" style="width:100%;height:520px;border:none;background:transparent;display:block"></iframe>
+  <sc-if value="{{ deckIsTw }}"><iframe id="deckInfoFrame" data-src="{{ deckSrc }}" title="我的編組" scrolling="no" style="width:100%;height:520px;border:none;background:transparent;display:block"></iframe></sc-if>
+  <sc-if value="{{ deckIsJp }}">
+    <sc-if value="{{ deckJp.loading }}"><div class="empty loading">讀取 Haruki 工具箱的資料…</div></sc-if>
+    <sc-if value="{{ deckJp.err }}"><div class="empty" style="line-height:1.7">{{ deckJp.err }}</div></sc-if>
+    <sc-if value="{{ deckJp.ok }}">
+      <div class="u-fc2 notranslate" style="margin-bottom:10px">{{ deckJp.sub }}</div>
+      <div class="jd-grid">
+        <sc-for list="{{ deckJp.cards }}" as="c" hint-placeholder-count="5">
+          <div class="jd-card">
+            <div class="jd-img"><sc-if value="{{ c.hasImg }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><sc-if value="{{ c.leader }}"><span class="jd-lead">隊長</span></sc-if></div>
+            <b class="notranslate">{{ c.ch }}</b>
+            <span class="jd-nm notranslate">{{ c.name }}</span>
+            <span class="jd-at"><i style="background:{{ c.attrC }}"></i>{{ c.rar }} {{ c.attr }}</span>
+            <span class="jd-meta">{{ c.meta }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div class="jd-res">
+        <sc-if value="{{ deckJp.hasRes }}"><div class="lu-stats" style="margin-top:0"><sc-for list="{{ deckJp.res }}" as="x" hint-placeholder-count="3"><div class="lu-stat"><span>{{ x.l }}</span><b>{{ x.v }}</b></div></sc-for></div><div class="u-fc2 notranslate" style="margin-top:6px">{{ deckJp.resEv }}</div></sc-if>
+        <button type="button" class="lu-go" style="margin-top:10px" onClick="{{ onJpDeckCalc }}">{{ deckJp.btn }}</button>
+        <sc-if value="{{ deckJp.msg }}"><div class="u-fc2" style="margin-top:8px">{{ deckJp.msg }}</div></sc-if>
+      </div>
+      <div class="u-fc2" style="margin-top:12px;line-height:1.7">{{ deckJp.note }}</div>
+      <div class="u-fc2" style="margin-top:4px;line-height:1.7">{{ deckJp.note2 }}</div>
+    </sc-if>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -9959,7 +10014,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=5c67ec2325"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4fe636a1b7"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

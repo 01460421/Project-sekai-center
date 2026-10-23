@@ -897,15 +897,16 @@ export function hzMembers() {
     return o;
   },
   /* 送一次搜尋；玩家資料只在換帳號或重新同步後才整份送進 Worker */
-  async hzEngine(suite, opts, current) {
-    const userKey = this._hzSuiteAt + ':' + (this.state.hzMeta || {}).uid;
+  async hzEngine(suite, opts, current, key) {
+    const userKey = key || (this._hzSuiteAt + ':' + (this.state.hzMeta || {}).uid);
     const r = await this.hzCall({ type: 'recommend', data: this.hzDataMsg(), userKey, suite: this._hzSentUser !== userKey ? suite : null, opts, current: current || null });
     this._hzSentUser = userKey;
     return r;
   },
-  /* 計算中心「從 Haruki 帶入目前隊伍」：用引擎算遊戲裡目前那一隊在進行中活動的綜合力、加成與實效技能 */
-  async hzTeamStats(live) {
-    const suite = await this.hzSuite().catch(() => null);
+  /* 計算中心「從 Haruki 帶入目前隊伍」：用引擎算遊戲裡目前那一隊在進行中活動的綜合力、加成與實效技能。
+     日服的編組詳情（別人的公開資料）也走這裡：帶 suite 與 key 進來，不碰專區匯入的那份 */
+  async hzTeamStats(live, suiteArg, key) {
+    const suite = suiteArg || await this.hzSuite().catch(() => null);
     if (!suite || !Array.isArray(suite.userCards)) throw new Error('先在 Haruki 專區或我的帳號讀取你的遊戲資料');
     const cur = hzCurrentDeck(suite);
     if (cur.length !== 5) throw new Error('遊戲資料裡找不到目前隊伍');
@@ -919,7 +920,7 @@ export function hzMembers() {
       opts.event_id = ev[0];
       if (ev[2] === 'world_bloom') { const chs = this.hzWlChapters(ev[0]); const ch = chs.find(w => w.chapterStartAt <= now && now <= w.aggregateAt) || chs.find(w => w.chapterStartAt > now) || chs[0]; if (ch) opts.world_bloom_character_id = ch.gameCharacterId; }
     }
-    const r = await this.hzEngine(suite, opts, null);
+    const r = await this.hzEngine(suite, opts, null, key);
     const d = (r.decks || [])[0];
     if (!d) throw new Error('引擎沒有算出這一隊');
     return { power: d.total_power, bonus: Math.round((d.event_bonus_rate || 0) * 10) / 10, skill: Math.round((1 + (d.multi_live_score_up || 0) / 100) * 100) / 100, ev: ev ? ev[1] : '' };
