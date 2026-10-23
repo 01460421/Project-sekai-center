@@ -124,6 +124,8 @@ const PATTERNS = [
   [/^剩 (.+)$/, '$1 left', '残り $1'], [/^(.+)後開放$/, 'opens in $1', '$1後に開始'], [/^(.+)後公開$/, 'out in $1', '$1後に公開'], [/^(.+)後開始$/, 'starts in $1', '$1後に開始'],
   [/^第 (\d+) 期・(.+)$/, 'Event $1 · $2', '第$1回・$2'], [/^第 (\d+) 期$/, 'Event $1', '第$1回'], [/^第 (\d+) 章・(.+)$/, 'Ch. $1 · $2', '第$1章・$2'],
   [/^(\d+) 個開放中・(\d+) 個即將開放$/, '$1 open · $2 coming', '開催中 $1・予定 $2'], [/^(\d+) 個開放中$/, '$1 open', '開催中 $1'],
+  [/^(.+) (\d+) 人＋虛擬歌手 (\d+) 人$/, '$1 ($2) + Virtual Singers ($3)', '$1 $2人＋バーチャル・シンガー $3人'],
+  [/^全部 (\d+) 位角色$/, 'All $1 characters', '全 $1 キャラ'],
   [/^更新於 (\d+:\d{2})・每 2 分鐘重抓（追蹤器約 10～20 秒更新一次）$/, 'Updated $1 · refetched every 2 min (tracker updates every 10–20 s)', '$1 更新・2 分ごとに再取得（トラッカーは 10～20 秒ごとに更新）'],
 ];
 
@@ -146,7 +148,7 @@ export function hashKey(s) {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return (h >>> 0).toString(36);
 }
-const NUM = /\d+(?:[.,:]\d+)*/g;
+const NUM = /\d+(?:[.,:/]\d+)*/g;            // 10/29、12:00、1,234,567 都算一個數字
 const memo = new Map();           // 同一段字重複出現（列表、倒數）不用每次重算
 /* 一整段：小詞典 → 全站詞典 → 數字換成 {n} 再查 → 固定句型 */
 function look(core) {
@@ -154,33 +156,49 @@ function look(core) {
   let hit = small.get(core);
   if (hit != null) return hit;
   if (big) { hit = big[hashKey(core)]; if (hit != null) return hit; }
-  if (/\d/.test(core)) {
-    const nums = [];
-    const tpl = core.replace(NUM, m => '{' + (nums.push(m) - 1) + '}');
+  /* 句型：數字（10/29、1,234）與「」裡的名稱換成 {n} 再查一次（程式裡 '卡池「' + 名稱 + '」今天開始' 這類串接） */
+  if (/\d|「|『/.test(core)) {
+    const vals = [];
+    const tpl = core.replace(/「([^「」]*)」|『([^『』]*)』|\d+(?:[.,:/]\d+)*/g, (m, a, b) => {
+      if (a != null) return '「{' + (vals.push(a) - 1) + '}」';
+      if (b != null) return '『{' + (vals.push(b) - 1) + '}』';
+      return '{' + (vals.push(m) - 1) + '}';
+    });
     const t = small.get(tpl) || (big && big[hashKey(tpl)]);
-    if (t != null) return t.replace(/\{(\d+)\}/g, (m, i) => nums[+i] != null ? nums[+i] : m);
+    if (t != null) return t.replace(/\{(\d+)\}/g, (m, i) => vals[+i] != null ? vals[+i] : m);
+    if (/「|『/.test(core) && /\d/.test(core)) {      // 只換數字的版本
+      const nums = [];
+      const t2k = core.replace(NUM, m => '{' + (nums.push(m) - 1) + '}');
+      const t2 = small.get(t2k) || (big && big[hashKey(t2k)]);
+      if (t2 != null) return t2.replace(/\{(\d+)\}/g, (m, i) => nums[+i] != null ? nums[+i] : m);
+    }
   }
   const i = lang === 'en' ? 1 : 2;
   for (const p of PATTERNS) if (p[0].test(core)) return core.replace(p[0], p[i]);
   return null;
 }
 /* 對不上整段時，照標點切開逐段翻；每一段有中文的都翻得到才採用，不然維持原文（不做半中半英） */
-const SEP = /(\s*[・，、：；（）／|\n]\s*|\s+[·/–-]\s+)/;
-const PUNCT_EN = { '・': ' · ', '，': ', ', '、': ', ', '：': ': ', '；': '; ', '（': ' (', '）': ')', '／': ' / ' };
+const SEP = /(\s*[・，、：；（）／|\n「」『』＋]\s*|\s+[·/–-]\s+|<[^>]+>)/;
+const PUNCT_EN = { '・': ' · ', '，': ', ', '、': ', ', '：': ': ', '；': '; ', '（': ' (', '）': ')', '／': ' / ', '「': ' “', '」': '” ', '『': ' “', '』': '” ', '＋': ' + ' };
 function bySegments(core) {
   const parts = core.split(SEP);
   if (parts.length < 3) return null;
-  let any = false;
+  let any = false, quoted = 0;
   const out = parts.map((p, k) => {
-    if (k % 2 === 1) { const c = p.trim(); return lang === 'en' && PUNCT_EN[c] != null ? PUNCT_EN[c] : p; }
+    if (k % 2 === 1) {
+      const c = p.trim();
+      if (c === '「' || c === '『') quoted++; else if ((c === '」' || c === '』') && quoted) quoted--;
+      return lang === 'en' && PUNCT_EN[c] != null ? PUNCT_EN[c] : p;
+    }
     const c = p.trim();
     if (!c || !HAN.test(c)) return p;
+    if (quoted) return p;              // 「」裡是卡池名、活動名這類遊戲原文，照原樣留著
     const t = look(c);
     if (t == null) { any = null; return p; }
     if (any !== null) any = true;
     return p.replace(c, t);
   });
-  return any ? out.join('').replace(/\s{2,}/g, ' ').replace(/\(\s+/g, '(').trim() : null;
+  return any ? out.join('').replace(/\s{2,}/g, ' ').replace(/\(\s+/g, '(').replace(/“\s+/g, '“').replace(/\s+”/g, '”').trim() : null;
 }
 
 export function tr(text) {
@@ -195,6 +213,16 @@ export function tr(text) {
   const core = text.trim();
   if (memo.has(core)) { const m = memo.get(core); return m == null ? text : text.replace(core, m); }
   let hit = look(core);
+  if (hit == null && /<[^>]+>/.test(core)) {
+    let ok = true;
+    const parts = core.split(/(<[^>]+>)/).map((p, k) => {
+      if (k % 2 === 1 || !HAN.test(p)) return p;
+      const c = p.trim(), t = look(c) || bySegments(c);
+      if (t == null) { ok = false; return p; }
+      return p.replace(c, t);
+    });
+    if (ok) hit = parts.join('');
+  }
   if (hit == null) hit = bySegments(core);
   if (memo.size > 4000) memo.clear();
   memo.set(core, hit);

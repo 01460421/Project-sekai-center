@@ -8,11 +8,15 @@ cards.json 原始檔台服 4 MB、日服 34 MB,不可能在瀏覽器端載入。
 兩個伺服器各產一份:
     data/cards-index.js      台服(繁中卡名)
     data/cards-index-jp.js   日服(日文卡名)——台服還沒實裝的卡只有這裡有
+圖鑑詳情用的補充資料(滿等數值、技能、招募台詞)也是兩服各一份:
+    data/cards-extra.js      台服
+    data/cards-extra-jp.js   日服(網站切到日服時用)
 
 有新卡時重跑:
 
     python3 tools/build-cards-index.py         # 兩服都產
     python3 tools/build-cards-index.py tw      # 只產台服
+    python3 tools/build-cards-index.py jp      # 只產日服(MASTER_SRV=jp 不帶參數也是只產日服)
     python3 tools/stamp-assets.py              # 別忘了重新戳版本
 """
 import sys
@@ -48,7 +52,7 @@ def art_exists(abn):
         return False
 
 
-from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
+from tc_source import SRV, TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World（MASTER_SRV=jp 時 TC 就是日服）
 
 SERVERS = {
     # 台服 master 以 Haruki 為主(缺檔退回 tc-diff),日服是 diff。日服永遠比台服快約一年,
@@ -178,8 +182,7 @@ def build(server):
     body.append(f'export const CHARAS = {json.dumps(ch_rows, ensure_ascii=False, separators=(",", ":"))};')
     out.write_text('\n'.join(body) + '\n', encoding='utf-8')
 
-    if server == 'tw':
-        write_extra(db, cards)
+    write_extra(db, cards, 'cards-extra.js' if server == 'tw' else 'cards-extra-jp.js')
 
     kb = out.stat().st_size / 1024
     n_ev = sum(1 for r in rows if r[6] == 0)
@@ -189,11 +192,12 @@ def build(server):
     return len(rows)
 
 
-def write_extra(db, cards):
+def write_extra(db, cards, fname='cards-extra.js'):
     """卡片圖鑑詳情用的補充資料：滿等數值、特訓加成、技能、釋出日、招募台詞。
     跟 cards-index 分開放：收集率／卡面下載頁用不到這些，不必為了圖鑑多載 100 KB。
     cardParameters 在台服 master 是壓縮格式 {param1:[逐等級], param2, param3}，
-    最後一格就是該稀有度的滿等值（★4/生日 60、★3 50、★2 40、★1 20）。"""
+    最後一格就是該稀有度的滿等值（★4/生日 60、★3 50、★2 40、★1 20）；日服 master 是逐筆的舊格式，下面兩種都吃。
+    台服寫 cards-extra.js、日服寫 cards-extra-jp.js（形狀相同）。"""
     skills = get(db, 'skills.json')
     # 樣板裡的 {{44;v}} 是「效果 id 44」不是第幾個效果，所以效果要用 id 當 key。
     # e = 同團加成（skillEnhance，每多一位同團成員 +e%）、m = 該等級的上限（v + e×5：四位同團再加全員一致）。
@@ -230,7 +234,7 @@ def write_extra(db, cards):
             c.get('specialTrainingPower1BonusFixed') or 0, c.get('specialTrainingPower2BonusFixed') or 0, c.get('specialTrainingPower3BonusFixed') or 0,
             c.get('gachaPhrase') or '', c.get('cardSkillName') or '',
         ]
-    out = ROOT / 'data' / 'cards-extra.js'
+    out = ROOT / 'data' / fname
     body = ['/* 由 tools/build-cards-index.py 產生,請勿手改。',
             '   CARD_EXTRA[id] = [技能id, 釋出(秒), 滿等表演, 滿等技巧, 滿等體力, 特訓加成×3, 招募台詞, 技能名]',
             '   SKILLS[id] = [敘述樣板({{效果id;d}}=秒數、{{效果id;v}}=數值、e=同團加成、m=上限、c=角色名), {效果id:{lv:[Lv1..Lv4 的 {d,v,m}], e}}] */',
@@ -241,7 +245,11 @@ def write_extra(db, cards):
 
 
 def main():
-    want = [a for a in sys.argv[1:] if a in SERVERS] or list(SERVERS)
+    want = [a for a in sys.argv[1:] if a in SERVERS] or (['jp'] if SRV == 'jp' else list(SERVERS))
+    if SRV == 'jp' and 'tw' in want:
+        # MASTER_SRV=jp 時 TC 指向日服 master，照跑台服會把日服資料寫進 cards-index.js
+        print('MASTER_SRV=jp 時不能產台服索引（拿掉 MASTER_SRV 再跑 tw）', file=sys.stderr)
+        return 1
     counts = {}
     for sv in want:
         counts[sv] = build(sv)

@@ -15,8 +15,11 @@ eventExchangeSummaries（活動商店換到的卡＝活動獲取）、resourceBo
   每期：[id, 名稱, 類型(marathon|cheerful_carnival|world_bloom), 團體, 素材名, 開始, 結算, 排名公布, 發放, 結束, 商店截止,
         加成屬性, [[角色 id, 團體]…（加成角色）], [[卡 id, 角色, 星級, 屬性索引, 素材名, 卡名, 加成%, 隊長加成%, 來源(0 抽卡／1 活動商店)]…],
         獎勵表鍵, [[章節, 角色 id, 開始, 結算, 結束]…（WL）], [[隊伍 id, 隊伍名]…]（嘉年華）, 中場發表 1, 中場發表 2, 嘉年華主題, 虛擬 Live id]
+  MASTER_SRV=jp 時改吃日服 master、輸出 data/event-info-jp.js（形狀相同）。日服 master 沒有 resourceBoxDetails.json，
+  同樣的明細掛在 resourceBoxes.json（35 MB）每個箱子的 details 底下，這裡攤平成同一種列。
 
     python3 tools/build-event-info.py
+    MASTER_SRV=jp python3 tools/build-event-info.py    # 日服版
     python3 tools/stamp-assets.py
 """
 import json
@@ -24,10 +27,10 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from tc_source import TC, tc_json
+from tc_source import SRV, TC, srv_out, tc_json
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / 'data' / 'event-info.js'
+OUT = ROOT / 'data' / srv_out('event-info.js')
 ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure']   # 與 cards-index.js 相同順序
 RAR = {'rarity_1': 1, 'rarity_2': 2, 'rarity_3': 3, 'rarity_4': 4, 'rarity_birthday': 9}
 UNIT_KEY = {'light_sound': 'ln', 'idol': 'mmj', 'street': 'vbs', 'theme_park': 'wxs', 'school_refusal': 'n25', 'piapro': 'vs', 'none': ''}
@@ -52,7 +55,10 @@ def main():
     cc_teams = load('cheerfulCarnivalTeams')
     cc_sum = load('cheerfulCarnivalSummaries')
     exchanges = load('eventExchangeSummaries')
-    details = load('resourceBoxDetails')
+    if SRV == 'jp':   # 日服 master 只有 resourceBoxes（箱子底下帶 details），攤平成跟 resourceBoxDetails 一樣的列
+        details = [d for b in load('resourceBoxes') for d in (b.get('details') or [])]
+    else:
+        details = load('resourceBoxDetails')
     honors = load('honors')
     honor_groups = load('honorGroups')
     materials = load('materials')
@@ -185,7 +191,7 @@ def main():
             pf[fid] = [fg_name.get(f.get('playerFrameGroupId'), ''), f.get('gameCharacterId') or 0]
     out = {'ev': rows, 'rw': rewards, 'it': items, 'hn': hn, 'hg': hg, 'mn': mn, 'tk': tk, 'pf': pf}
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
-    text = ('/* 由 tools/build-event-info.py 產生,勿手改。活動資料頁與活動甘特圖用：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、\n'
+    text = ('/* 由 tools/build-event-info.py 產生,勿手改。' + ('日服 master（MASTER_SRV=jp）。' if SRV == 'jp' else '') + '活動資料頁與活動甘特圖用：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、\n'
             '   排名獎勵（rw 表鍵 → [起名次, 迄名次, [it 索引…]]，it 為 [種類, id, 數量]，hn 稱號 id → [名稱, 稱號組 id, 名次圖 abn, 稀有度], hg 稱號組 → [組名, 底圖 abn],\n'
             '   mn 素材 id → 名稱, tk 技能練習券 id → 名稱, pf 頭像框 id → [邊框組名, 角色 id]）、WL 章節、嘉年華隊伍。 */\n'
             f'export const EVENT_INFO={body};\n')

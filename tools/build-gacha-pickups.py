@@ -6,7 +6,11 @@ data/sekai-data.js 的 GACHAS（台服預測卡池列表）每一期用 id 對�
 素材名、滿等技能摘要，台服還沒有的卡另外標。輸出 data/gacha-pickups.js，App 的卡池詳情直接用，
 不必再像經典版那樣在瀏覽器抓 34 MB 的日服 cards.json。內容沒變就不寫檔。
 
+MASTER_SRV=jp 時改照 data/gachas-jp.js（tools/build-gachas-jp.py 產生的日服卡池列表）的 id，全部吃日服 master，
+輸出 data/gacha-pickups-jp.js（形狀相同；卡名是日文，沒有「台服未實裝」那一欄）。
+
     python3 tools/build-gacha-pickups.py
+    python3 tools/build-gachas-jp.py && MASTER_SRV=jp python3 tools/build-gacha-pickups.py    # 日服版
     python3 tools/stamp-assets.py
 """
 import json
@@ -15,11 +19,12 @@ import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from tc_source import TC, tc_json
+from tc_source import SRV, TC, srv_out, tc_json
 from jp_master import get_jp
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / 'data' / 'gacha-pickups.js'
+OUT = ROOT / 'data' / srv_out('gacha-pickups.js')
+LIST = ROOT / 'data' / ('gachas-jp.js' if SRV == 'jp' else 'sekai-data.js')   # 卡池列表（GACHAS）
 ATTRS = ['cool', 'happy', 'mysterious', 'cute', 'pure']   # 與 cards-index.js 相同順序
 RAR = {'rarity_1': 1, 'rarity_2': 2, 'rarity_3': 3, 'rarity_4': 4, 'rarity_birthday': 9}
 
@@ -59,11 +64,15 @@ def skill_summary(sk):
 
 
 def main():
-    src = (ROOT / 'data' / 'sekai-data.js').read_text(encoding='utf-8')
-    m = re.search(r'export const GACHAS = (\[.*?\]);', src, re.S)
+    src = LIST.read_text(encoding='utf-8')
+    m = re.search(r'export const GACHAS\s*=\s*(\[.*?\]);', src, re.S)
     gachas = json.loads(m.group(1))
+    # 日服模式下 TC 就是日服 master：「本服」與「日服」是同一份，不必再抓一次 49 MB 的 gachas.json
     tw_g, tw_c, tw_s = tc_json(f'{TC}/gachas.json'), tc_json(f'{TC}/cards.json'), tc_json(f'{TC}/skills.json')
-    jp_g, jp_c, jp_s = get_jp('gachas.json'), get_jp('cards.json'), get_jp('skills.json')
+    if SRV == 'jp':
+        jp_g, jp_c, jp_s = tw_g, tw_c, tw_s
+    else:
+        jp_g, jp_c, jp_s = get_jp('gachas.json'), get_jp('cards.json'), get_jp('skills.json')
     g_by = {g['id']: g for g in jp_g}; g_by.update({g['id']: g for g in tw_g})
     c_tw = {c['id']: c for c in tw_c}; c_jp = {c['id']: c for c in jp_c}
     s_by = {s['id']: s for s in jp_s}; s_by.update({s['id']: s for s in tw_s})
@@ -92,8 +101,11 @@ def main():
             cards.append(row)
         out[gid] = {'n': mg.get('name', ''), 'cards': cards}
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
-    text = ('/* 由 tools/build-gacha-pickups.py 產生,勿手改。卡池 id → PU 卡:[卡id, 角色, 星級(9=生日), 屬性索引, 素材名, 卡名, 技能摘要, 台服未實裝?] */\n'
-            f'export const GACHA_PICKUPS={body};\n')
+    if SRV == 'jp':
+        head = '/* 由 tools/build-gacha-pickups.py 產生,勿手改。日服卡池（data/gachas-jp.js）id → PU 卡:[卡id, 角色, 星級(9=生日), 屬性索引, 素材名, 卡名, 技能摘要] */\n'
+    else:
+        head = '/* 由 tools/build-gacha-pickups.py 產生,勿手改。卡池 id → PU 卡:[卡id, 角色, 星級(9=生日), 屬性索引, 素材名, 卡名, 技能摘要, 台服未實裝?] */\n'
+    text = head + f'export const GACHA_PICKUPS={body};\n'
     if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
         print(f'內容無變化,不更新 {OUT.name}（{len(out)} 期）')
         return 0
