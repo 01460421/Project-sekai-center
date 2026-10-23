@@ -14,6 +14,9 @@
   gaBack 每列 [id, 名稱, 池型, 分類, 日服開始, 台服實際開始, 預測開始, 偏差小時, 命中]
   gaFuture 每列 [id, 名稱, 池型, 分類, 開始, 結束, [[卡 id, 角色, 星級, 素材名]…], 活動 id, 站上列表差幾天|null, 來源 tw|pred|jp, 信心, (jp) 日服推估開始, 規則名]
   evFuture 來源 jp（日服還沒公布、用日服自己的規律推估）的列多 [日服推估開始, 團體候選1, 候選2, 混活比例, 規則名]
+  evInfo：已知期數的活動 {id: [加成屬性, [[角色, 團]…], [[卡 id, 角色, 稀有度, 屬性, 技能分類, 素材名]…]]}；
+  gaFuture 的 PU 卡每張 [卡 id, 角色, 稀有度, 素材名, 屬性, 技能分類]；第二層卡池第 14 欄 [角色, 屬性候選, birthday|event]；
+  第二層活動列再多 [屬性候選, 4★ 可能輪空的團員]；jp.cards：屬性輪替、4★ 輪空、4★ 技能出現率、生日卡屬性的回測。
   jp：第二層的回測與規則；jpBack 每列 [日服 id, 名稱, 類型, 實際開始, 預測開始, 規則, 偏差小時, 命中, 預測類型, 類型命中, 實際團體, 候選1, 候選2]
 
 第二層（日服自己的規律，推估日服還沒公布的）：日服的排程本身一年一年很像（10/11、10/21、10/31…），所以「去年同日的下一期」是主規則，
@@ -354,7 +357,7 @@ def jp_self_gachas(jp_ga, jp_ev, future_ev, bdays, cnames, jp_cards):
         if r['n'] < 3 or r['hit'] * 10 < r['n'] * 3:
             continue   # 樣本太少、或最好的規則也只中不到三成：不推估
         conf = round(r['hit'] / r['n'], 2)
-        row = lambda name, gtype, s, e, ev_id: {'name': name, 'gtype': gtype, 'cat': cat, 'start': s, 'end': e, 'evId': ev_id, 'conf': conf, 'rule': r['name']}
+        row = lambda name, gtype, s, e, ev_id, chara=0: {'name': name, 'gtype': gtype, 'cat': cat, 'start': s, 'end': e, 'evId': ev_id, 'conf': conf, 'rule': r['name'], 'chara': chara}
         if r['rule'] in ('yearly', 'yearly7'):
             seen = {}
             for g in ga:
@@ -377,7 +380,7 @@ def jp_self_gachas(jp_ga, jp_ev, future_ev, bdays, cnames, jp_cards):
                     if s and last < s <= horizon:
                         kind = 'ANNIVERSARY' if cid > 20 else 'BIRTHDAY'
                         nm = cnames.get(cid, '#%d' % cid)
-                        future.append(row('[%s]HAPPY %s %d招募' % (nm, kind, jst(s).year + 1), 'ceil', s, s + d, 0))
+                        future.append(row('[%s]HAPPY %s %d招募' % (nm, kind, jst(s).year + 1), 'ceil', s, s + d, 0, cid))
                         future.append(row('[%s]HAPPY %s Memories招募' % (nm, kind), 'ceil', s, s + d, 0))
         elif r['rule'] == 'evday':
             for e in future_ev:
@@ -404,6 +407,126 @@ def jp_self_gachas(jp_ga, jp_ev, future_ev, bdays, cnames, jp_cards):
                         future.append(row('ワールドリンクイベント サポートガチャ', 'normal', s, s + dur(cat), e['id']))
     future.sort(key=lambda g: g['start'])
     return rules, future, last
+
+
+# ---------- 角色、屬性、技能（日服 master：活動加成、活動卡、卡片技能） ----------
+SKILL_CAT = {1: 'score', 2: 'score', 3: 'score', 4: 'score', 5: 'judge', 6: 'judge', 7: 'judge', 8: 'heal', 9: 'heal', 10: 'heal',
+             11: 'perfect', 12: 'cfes_life', 13: 'good', 14: 'birthday', 15: 'unit', 16: 'unit', 17: 'unit', 18: 'unit', 19: 'unit',
+             22: 'bfes_char', 23: 'bfes_ref', 24: 'bfes_vs'}          # 跟網站卡片技能庫（CL_CAT）同一套分類
+ATTR5 = ['cool', 'happy', 'mysterious', 'cute', 'pure']
+UNIT_MEMBERS = {'light_sound': [1, 2, 3, 4], 'idol': [5, 6, 7, 8], 'street': [9, 10, 11, 12],
+                'theme_park': [13, 14, 15, 16], 'school_refusal': [17, 18, 19, 20]}
+RARITY_CODE = {'rarity_1': 1, 'rarity_2': 2, 'rarity_3': 3, 'rarity_4': 4, 'rarity_birthday': 9}
+EV_OWN_SUPPLY = (1, 3, 6)      # 活動自己的卡（一般／期間限定／團體限定）；同期 FES 卡（5）也在活動加成名單裡，但不算這期的卡
+ATTR_SINCE = 30                # 屬性回測從第幾期開始（前面不夠當歷史）
+SKILL_WINDOW = 40              # 4★ 技能出現率看最近幾期
+
+
+def card_facts(cards):
+    """cards.json → {卡 id: [角色, 稀有度(1-4,9=生日), 屬性, 技能分類, 素材名, 取得類別]}"""
+    out = {}
+    for c in cards or []:
+        try:
+            out[int(c['id'])] = [int(c.get('characterId') or 0), RARITY_CODE.get(c.get('cardRarityType'), 0), c.get('attr') or '',
+                                 SKILL_CAT.get(c.get('skillId'), ''), c.get('assetbundleName') or '', int(c.get('cardSupplyId') or 0)]
+        except Exception:
+            continue
+    return out
+
+
+def event_facts(jp_ev, edb, ec, cf, gcu):
+    """每期活動：加成屬性、加成角色（[角色, 團]）、活動卡（[卡 id, 角色, 稀有度, 屬性, 技能, 素材名, 取得類別]，稀有度高的在前）"""
+    unit_of = {int(g['id']): (int(g.get('gameCharacterId') or 0), g.get('unit') or '') for g in gcu or []}
+    out = collections.defaultdict(lambda: {'attr': '', 'chars': set(), 'cards': []})
+    for b in edb or []:
+        f = out[b['eventId']]
+        if b.get('cardAttr') and not b.get('gameCharacterUnitId'):
+            f['attr'] = b['cardAttr']
+        if b.get('gameCharacterUnitId') and int(b['gameCharacterUnitId']) in unit_of:
+            f['chars'].add(unit_of[int(b['gameCharacterUnitId'])])
+    for x in ec or []:
+        c = cf.get(int(x['cardId']))
+        if c:
+            out[x['eventId']]['cards'].append([int(x['cardId'])] + c)
+    res = {}
+    for eid, f in out.items():
+        res[eid] = {'attr': f['attr'], 'chars': sorted([c, u] for c, u in f['chars']),
+                    'cards': sorted(f['cards'], key=lambda c: (-(4.5 if c[2] == 9 else c[2]), c[6] == 5, c[1]))}
+    return res
+
+
+def own4(info):
+    return [c for c in info.get('cards', []) if c[2] == 4 and c[6] in EV_OWN_SUPPLY]
+
+
+def attr_rank(hist):
+    """屬性輪替：最久沒當加成屬性的排前面。"""
+    last = {a: -1 for a in ATTR5}
+    for i, a in enumerate(hist):
+        if a in last:
+            last[a] = i
+    return sorted(ATTR5, key=lambda a: last[a])
+
+
+def card_rules(jp_ev, facts, cards):
+    """逐期回測（只用之前的資料）：屬性輪替、單團活動哪位團員輪空 4★、4★ 技能出現率、生日卡屬性。
+    回 (統計, 生日卡屬性預測 {角色: [候選屬性…]}, 推估要接著用的歷史狀態)。"""
+    ev = [e for e in sorted(jp_ev, key=lambda x: x['startAt']) if not is_test(e.get('name')) and e['eventType'] != 'world_bloom']
+    seq = [facts[e['id']]['attr'] for e in ev if facts.get(e['id'], {}).get('attr')]
+    a = {'n': 0, 'top1': 0, 'top2': 0, 'top3': 0}
+    for i in range(ATTR_SINCE, len(seq)):
+        r = attr_rank(seq[:i])
+        a['n'] += 1
+        for k in (1, 2, 3):
+            a['top%d' % k] += seq[i] in r[:k]
+    last4, sit = {}, {'n': 0, 'hit': 0}
+    for i, e in enumerate(ev):
+        got = {c[1] for c in own4(facts.get(e['id'], {}))}
+        mem = UNIT_MEMBERS.get(e.get('unit'))
+        if mem and got and i > 40:
+            miss = [m for m in mem if m not in got]
+            if len(miss) == 1:
+                sit['n'] += 1
+                sit['hit'] += max(mem, key=lambda m: last4.get(m, -1)) == miss[0]
+        for ch in got:
+            last4[ch] = i
+    pres, n_sk = collections.Counter(), 0
+    for e in ev[-SKILL_WINDOW:]:
+        s = {c[4] for c in own4(facts.get(e['id'], {}))}
+        if s:
+            n_sk += 1
+            pres.update(s)
+    # 生日卡：每個角色五年一輪，五種屬性各一次；第六年起照上一輪同一年
+    bd = collections.defaultdict(list)
+    for c in cards or []:
+        if c.get('cardRarityType') == 'rarity_birthday':
+            bd[int(c['characterId'])].append((c.get('releaseAt') or 0, c.get('attr')))
+    cyc = {'cycles': 0, 'ok': 0, 'repN': 0, 'repHit': 0}
+    bday_next = {}
+    for ch, v in bd.items():
+        v.sort()
+        at = [x for _, x in v]
+        for k in range(0, len(at) - 4, 5):
+            cyc['cycles'] += 1
+            cyc['ok'] += len(set(at[k:k + 5])) == 5
+        for i in range(5, len(at)):
+            cyc['repN'] += 1
+            cyc['repHit'] += at[i] == at[i - 5]
+        n = len(at)
+        if n % 5 == 0 and n >= 5:
+            bday_next[ch] = [[at[n - 5]], 'cycle']            # 新一輪第一年：照上一輪第一年
+        else:
+            used = at[(n // 5) * 5:]
+            unused = [x for x in ATTR5 if x not in used]
+            prev = at[n - 5] if n >= 5 else None
+            if prev in unused:
+                bday_next[ch] = [[prev] + [x for x in unused if x != prev], 'repeat']   # 照上一輪同一年，其他是這一輪還沒用過的
+            else:
+                bday_next[ch] = [unused, 'unused']
+    stats = {'attr': a, 'attrSince': ATTR_SINCE, 'sitOut': sit,
+             'skills': [[k, v, n_sk] for k, v in pres.most_common()], 'skillWindow': SKILL_WINDOW, 'bday': cyc}
+    state = {'attrs': seq, 'last4': last4, 'idx': len(ev)}
+    return stats, bday_next, state
 
 
 def main():
@@ -490,14 +613,26 @@ def main():
         cats.setdefault(cat, {'name': CAT_NAME[cat], 'n': 0, 'hit': 0, 'corr': 0, 'offsets': []})
 
     # ---------- 卡池：未來 ----------
-    jp_cards = {}
+    jp_cards = {}          # 卡 id → (角色, 稀有度, 素材名, 屬性, 技能分類)
+    jp_card_list, edb, ecards, gcu = [], [], [], []
     try:
-        for line in (ROOT / 'data' / 'cards-index-jp.js').read_text(encoding='utf-8').splitlines():
-            m = re.match(r'\[(\d+),(\d+),(\d+),(-?\d+),(-?\d+),(-?\d+),(-?\d+),"(?:[^"\\]|\\.)*","([^"]*)"', line)
-            if m:
-                jp_cards[int(m.group(1))] = (int(m.group(2)), int(m.group(3)), m.group(8))
+        jp_card_list = load_jp('cards') or []
+        edb, ecards, gcu = load_jp('eventDeckBonuses') or [], load_jp('eventCards') or [], load_jp('gameCharacterUnits') or []
     except Exception as e:
-        print('cards-index-jp 讀不到：' + str(e), file=sys.stderr)
+        print('日服卡片／活動加成讀不到，角色屬性技能這次略過：' + str(e), file=sys.stderr)
+    cf = card_facts(jp_card_list)
+    for cid, c in cf.items():
+        jp_cards[cid] = (c[0], c[1], c[4], c[2], c[3])
+    if not jp_cards:
+        try:
+            for line in (ROOT / 'data' / 'cards-index-jp.js').read_text(encoding='utf-8').splitlines():
+                m = re.match(r'\[(\d+),(\d+),(\d+),(-?\d+),(-?\d+),(-?\d+),(-?\d+),"(?:[^"\\]|\\.)*","([^"]*)"', line)
+                if m:
+                    at = int(m.group(4))
+                    jp_cards[int(m.group(1))] = (int(m.group(2)), int(m.group(3)), m.group(8), ATTR5[at] if 0 <= at < 5 else '', '')
+        except Exception as e:
+            print('cards-index-jp 讀不到：' + str(e), file=sys.stderr)
+    facts = event_facts(jp_ev, edb, ecards, cf, gcu) if cf and edb else {}
     manual = {}
     try:
         t = (ROOT / 'data' / 'sekai-data.js').read_text(encoding='utf-8')
@@ -531,7 +666,7 @@ def main():
         if g['startAt'] > now and g['endAt'] - g['startAt'] < 400 * D:
             j = jpg.get(g['id']) or {}
             cat = category(j.get('name') or g.get('name'), g.get('gachaType'))
-            pk = [[c, *jp_cards.get(c, (0, 0, ''))] for c in [p.get('cardId') for p in g.get('gachaPickups', [])] if c][:6]
+            pk = [[c, *jp_cards.get(c, (0, 0, '', '', ''))] for c in [p.get('cardId') for p in g.get('gachaPickups', [])] if c][:6]
             ga_future.append([g['id'], g.get('name') or '', g.get('gachaType') or '', cat, g['startAt'], g['endAt'], pk, event_of(j['startAt']) if j else 0, manual_diff(g['id'], g['startAt']), 'tw', 1.0])
     for j in sorted(jp_ga, key=lambda x: x['startAt']):
         if j['id'] in twg or (j['endAt'] - j['startAt']) >= 400 * D or is_test(j.get('name')):
@@ -542,16 +677,31 @@ def main():
         if s <= now or s > now + 400 * D:
             continue
         e = RULES[active_rule](j['endAt'], prev_lag) + corr
-        pk = [[c, *jp_cards.get(c, (0, 0, ''))] for c in [p.get('cardId') for p in j.get('gachaPickups', [])] if c][:6]
+        pk = [[c, *jp_cards.get(c, (0, 0, '', '', ''))] for c in [p.get('cardId') for p in j.get('gachaPickups', [])] if c][:6]
         conf = (cats[cat]['hit'] / cats[cat]['n']) if cats[cat]['n'] else (hit30 / max(1, len(done[-30:])))
         ga_future.append([j['id'], j.get('name') or '', j.get('gachaType') or '', cat, s, e, pk, event_of(j['startAt']), manual_diff(j['id'], s), 'pred', round(conf, 2)])
     ga_future.sort(key=lambda r: (r[4], r[0]))
 
     # ---------- 第二層：日服還沒公布的期數，用日服自己的規律推估，再照台服規則換算 ----------
     jp_back, jp_future, jp_stats = jp_self_events(jp_ev)
+    c_stats, bday_next, st = card_rules(jp_ev, facts, jp_card_list) if facts else ({}, {}, {'attrs': [], 'last4': {}, 'idx': 0})
+    key2unit = {v: k for k, v in UNIT_KEY.items()}
+    ev_pred = {}            # 推估活動 id → (屬性候選, 輪空角色)
     for f in jp_future:
+        attrs, sit = [], 0
+        if f['type'] != 'world_bloom' and st['attrs']:
+            attrs = attr_rank(st['attrs'])[:3]
+            st['attrs'].append(attrs[0])              # 接著往下推：假設這期就是第一候選
+            mem = UNIT_MEMBERS.get(key2unit.get(f['unit1'], ''))
+            if mem:
+                sit = max(mem, key=lambda m: st['last4'].get(m, -1))
+                st['idx'] += 1
+                for m in mem:
+                    if m != sit:
+                        st['last4'][m] = st['idx']
+        ev_pred[f['id']] = (attrs, sit)
         s = RULES[active_rule](f['start'], prev_lag)
-        ev_future.append([f['id'], '', f['type'], s, RULES[active_rule](f['aggregate'], prev_lag), RULES[active_rule](f['closed'], prev_lag), 'jp', 0, True, f['start'], f['unit1'], f['unit2'], f['mixed'], JP_RULE_NAME[f['rule']]])
+        ev_future.append([f['id'], '', f['type'], s, RULES[active_rule](f['aggregate'], prev_lag), RULES[active_rule](f['closed'], prev_lag), 'jp', 0, True, f['start'], f['unit1'], f['unit2'], f['mixed'], JP_RULE_NAME[f['rule']], attrs, sit])
     ev_future.sort(key=lambda r: r[3])
     bdays, cnames = {}, {}
     try:
@@ -566,10 +716,17 @@ def main():
     ga_rules, jp_ga_future, jp_ga_last = jp_self_gachas(jp_ga, jp_ev, jp_future, bdays, cnames, jp_cards)
     for f in jp_ga_future:
         corr = cats.get(f['cat'], {}).get('corr', 0) * H
-        ga_future.append([0, f['name'], f['gtype'], f['cat'], RULES[active_rule](f['start'], prev_lag) + corr, RULES[active_rule](f['end'], prev_lag) + corr, [], f['evId'], None, 'jp', f['conf'], f['start'], f['rule']])
+        hint = []
+        if f.get('chara') and 'Memories' not in f['name']:
+            bn = bday_next.get(f['chara']) or [[], 'unused']
+            hint = [f['chara'], bn[0], 'birthday', bn[1]]
+        elif f['cat'] == 'pickup' and f['evId'] in ev_pred:
+            hint = [0, ev_pred[f['evId']][0], 'event']
+        ga_future.append([0, f['name'], f['gtype'], f['cat'], RULES[active_rule](f['start'], prev_lag) + corr, RULES[active_rule](f['end'], prev_lag) + corr, [], f['evId'], None, 'jp', f['conf'], f['start'], f['rule'], hint])
     ga_future.sort(key=lambda r: (r[4], r[0]))
     jp_stats['gaRules'] = {c: dict(r, catName=CAT_NAME.get(c, c)) for c, r in ga_rules.items()}
     jp_stats['gaFutureN'] = len(jp_ga_future); jp_stats['gaLatestStart'] = jp_ga_last
+    jp_stats['cards'] = c_stats
     for cat in {f['cat'] for f in jp_ga_future}:
         cats.setdefault(cat, {'name': CAT_NAME.get(cat, cat), 'n': 0, 'hit': 0, 'corr': 0, 'offsets': []})
 
@@ -581,7 +738,9 @@ def main():
             'startHours': sorted({(e.get('eventType'), (datetime.datetime.utcfromtimestamp(e['startAt'] / 1000) + datetime.timedelta(hours=8)).hour) for e in tw_ev}),
             'jpLatestEvent': max(j['id'] for j in jp_ev), 'twLatestEvent': max(e['id'] for e in tw_ev), 'twGachaN': len(tw_ga), 'jpGachaN': len(jp_ga)}
     out = {'built': now, 'rule': rule, 'eras': eras, 'evBack': list(reversed(ev_back)), 'evFuture': ev_future, 'gaBack': list(reversed(ga_back)),
-           'gaFuture': ga_future, 'cats': cats, 'anomalies': anomalies, 'manual': len(manual), 'jp': jp_stats, 'jpBack': list(reversed(jp_back))}
+           'gaFuture': ga_future, 'cats': cats, 'anomalies': anomalies, 'manual': len(manual), 'jp': jp_stats, 'jpBack': list(reversed(jp_back)),
+           'evInfo': {str(r[0]): [facts[r[0]]['attr'], facts[r[0]]['chars'], [c[:6] for c in facts[r[0]]['cards']][:12]]
+                      for r in ev_future if r[6] != 'jp' and r[0] in facts}}
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
     text = ('/* 由 tools/build-schedule-forecast.py 產生,勿手改。排程預測頁用：台服照日服同一天加一年的規律，逐期回測與未來活動／卡池預測。 */\n'
             f'export const SCHED_FORECAST={body};\n')
