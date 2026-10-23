@@ -622,6 +622,27 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
 .lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
 .lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+/* 日服帳號預覽（日服現況的綁定卡）與編組詳情 */
+.jn-prof{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-2px 0 8px}
+.jn-plv{font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--accent-deep);padding:2px 10px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,transparent)}
+.jn-pword{font-size:12px;color:var(--text-2);min-width:0;overflow-wrap:anywhere}
+.jn-deck{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;padding:8px 10px;margin-bottom:10px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);cursor:pointer;text-align:left;color:var(--text)}
+.jn-dk{position:relative;width:46px;height:46px;border-radius:10px;overflow:hidden;background:var(--bg-soft);flex:none}
+.jn-dk img{width:100%;height:100%;display:block}
+.jn-dk i{position:absolute;left:2px;top:2px;font-style:normal;font-size:9.5px;font-weight:800;color:#fff;background:var(--cta);border-radius:6px;padding:0 4px;line-height:15px}
+.jn-dk-t{font-size:12px;font-weight:800;color:var(--accent-deep);margin-left:4px}
+.jn-hint{font-style:normal;font-size:10.5px;color:var(--text-3)}
+.jd-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.jd-card{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:11px;color:var(--text-2)}
+.jd-card b{font-size:12px;color:var(--ink);margin-top:4px}
+.jd-img{position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--card-2)}
+.jd-img img{width:100%;height:100%;display:block}
+.jd-lead{position:absolute;left:4px;top:4px;font-size:10px;font-weight:800;color:#fff;background:var(--cta);border-radius:7px;padding:1px 6px}
+.jd-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jd-at{display:flex;align-items:center;gap:4px}.jd-at i{width:8px;height:8px;border-radius:50%;flex:none}
+.jd-meta{font-family:'M PLUS Rounded 1c';color:var(--text-3)}
+.jd-res{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+@media (max-width:520px){.jd-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .lu-stat{padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);display:flex;flex-direction:column;gap:2px}
 .lu-stat span{font-size:11px;font-weight:700;color:var(--text-3)}
 .lu-stat b{font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--accent-deep)}
@@ -6307,12 +6328,14 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <input type="text" inputmode="numeric" class="lu-in" placeholder="Player ID（數字）" value="{{ luId }}" onInput="{{ onField }}" data-k="luId" onKeyDown="{{ onLuKey }}">
       <button type="button" class="lu-go" onClick="{{ onLuGo }}">查詢</button>
     </div>
-    <sc-if value="{{ luJp }}"><div class="u-fc2" style="margin:-4px 0 12px;line-height:1.7">日服：輸入日服的 Player ID，看這一期活動的即時名次、與上一名的差距、近一小時打了幾場與每一場的得分（Haruki 活動追蹤器，約 10～20 秒更新；只記前百與各段位線上的玩家）。查過的 ID 會記住。</div></sc-if>
+    <sc-if value="{{ luJp }}"><div class="u-fc2" style="margin:-4px 0 12px;line-height:1.7">日服：輸入日服的 Player ID，看這一期活動的即時名次、與上一名的差距、近一小時打了幾場與每一場的得分（Haruki 活動追蹤器，約 10～20 秒更新；只記前百與各段位線上的玩家）；在 Haruki 工具箱公開資料的玩家，另外顯示等級、角色等級與目前隊伍。查過的 ID 會記住。</div></sc-if>
     <sc-if value="{{ luLoad }}"><div class="empty loading">查詢中…</div></sc-if>
     <sc-if value="{{ luErr }}"><div class="empty">{{ luErr }}</div></sc-if>
     <sc-if value="{{ luTrLoading }}"><div class="empty loading">讀取活動即時紀錄…</div></sc-if>
     <sc-if value="{{ luTrErr }}"><div class="empty">{{ luTrErr }}</div></sc-if>
     <sc-if value="{{ luTrNot }}"><div class="empty">{{ luTrNotText }}</div></sc-if>
+    <sc-if value="{{ luProfLoading }}"><div class="empty loading">讀取 Haruki 工具箱的個人檔案…</div></sc-if>
+    <sc-if value="{{ luProfNoteOn }}"><div class="u-fc2" style="margin:2px 0 12px;line-height:1.7">{{ luProfNote }}</div></sc-if>
     <sc-if value="{{ luTrHas }}">
       <div class="lu-card lu-live">
         <div style="display:flex;gap:12px;align-items:center">
@@ -6390,12 +6413,18 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
     <sc-if value="{{ jnMeOn }}">
     <div class="mk-card jn-me" style="margin-bottom:14px">
-      <div class="mk-h"><b>我的日服名次</b><i class="notranslate">{{ jnMe.name }}・ID {{ jnMe.id }}</i></div>
+      <div class="mk-h"><b>我的日服帳號</b><i class="notranslate">{{ jnMe.name }}・ID {{ jnMe.id }}</i></div>
+      <sc-if value="{{ jnMe.hasProf }}">
+        <div class="jn-prof"><span class="jn-plv">{{ jnMe.rankLv }}</span><sc-if value="{{ jnMe.word }}"><span class="jn-pword notranslate">{{ jnMe.word }}</span></sc-if></div>
+        <sc-if value="{{ jnMe.hasDeck }}"><button type="button" class="jn-deck" onClick="{{ onDeckDetail }}" title="看隊伍的五張卡，並計算綜合力與活動加成"><sc-for list="{{ jnMe.deck }}" as="c" hint-placeholder-count="5"><span class="jn-dk"><sc-if value="{{ c.hasImg }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><sc-if value="{{ c.leader }}"><i>L</i></sc-if></span></sc-for><span class="jn-dk-t notranslate">{{ jnMe.deckLabel }} →</span></button></sc-if>
+      </sc-if>
+      <sc-if value="{{ jnMe.profLoading }}"><div class="u-fc2" style="margin-bottom:8px">讀取 Haruki 工具箱的個人檔案…</div></sc-if>
       <sc-if value="{{ jnMe.loading }}"><div class="empty loading">讀取中…</div></sc-if>
       <sc-if value="{{ jnMe.not }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.7">{{ jnMe.not }}</div></sc-if>
       <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span class="lu-rank">{{ jnMe.rank }}</span><span style="font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums">{{ jnMe.score }}</span><span style="font-size:12px;color:var(--text-2)">{{ jnMe.gap }}</span></div>
-      <div class="lu-stats" style="margin-top:10px"><div class="lu-stat"><span>近一小時</span><b>{{ jnMe.h1 }}</b></div><div class="lu-stat"><span>平均每場</span><b>{{ jnMe.avg }}</b></div><div class="lu-stat"><span>近 24 小時</span><b>{{ jnMe.h24 }}</b></div><div class="lu-stat"><span>最後一場</span><b>{{ jnMe.last }}</b></div></div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="lookup">完整紀錄與走勢 →</button><button type="button" class="mk-chip" onClick="{{ onUnbind }}">解除綁定</button></div>
+      <div class="lu-stats" style="margin-top:10px"><div class="lu-stat"><span>近一小時</span><b>{{ jnMe.h1 }}</b></div><div class="lu-stat"><span>平均每場</span><b>{{ jnMe.avg }}</b></div><div class="lu-stat"><span>近 24 小時</span><b>{{ jnMe.h24 }}</b></div><div class="lu-stat"><span>最後一場</span><b>{{ jnMe.last }}</b></div><sc-if value="{{ jnMe.hasProf }}"><div class="lu-stat"><span>總綜合力</span><b>{{ jnMe.power }}</b><sc-if value="{{ jnMe.powerHint }}"><em class="jn-hint">{{ jnMe.powerHint }}</em></sc-if></div></sc-if></div>
+      <sc-if value="{{ jnMe.profNote }}"><div class="u-fc2" style="margin-top:10px;line-height:1.7">{{ jnMe.profNote }}</div></sc-if>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="lookup">完整紀錄與走勢 →</button><sc-if value="{{ jnMe.hasDeck }}"><button type="button" class="mk-chip" onClick="{{ onDeckDetail }}">編組詳情</button></sc-if><sc-if value="{{ jnMe.profGo }}"><button type="button" class="mk-chip" onClick="{{ onHkGuide }}">怎麼在 Haruki 公開資料 →</button></sc-if><button type="button" class="mk-chip" onClick="{{ onUnbind }}">解除綁定</button></div>
     </div>
     </sc-if>
 
@@ -9593,7 +9622,31 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <span class="u-ffc0">{{ deckTitle }}</span>
     <button type="button" onClick="{{ onDeckClose }}" style="width:30px;height:30px;flex:none;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:14px;cursor:pointer">✕</button>
   </div>
-  <iframe id="deckInfoFrame" data-src="{{ deckSrc }}" title="我的編組" scrolling="no" style="width:100%;height:520px;border:none;background:transparent;display:block"></iframe>
+  <sc-if value="{{ deckIsTw }}"><iframe id="deckInfoFrame" data-src="{{ deckSrc }}" title="我的編組" scrolling="no" style="width:100%;height:520px;border:none;background:transparent;display:block"></iframe></sc-if>
+  <sc-if value="{{ deckIsJp }}">
+    <sc-if value="{{ deckJp.loading }}"><div class="empty loading">讀取 Haruki 工具箱的資料…</div></sc-if>
+    <sc-if value="{{ deckJp.err }}"><div class="empty" style="line-height:1.7">{{ deckJp.err }}</div></sc-if>
+    <sc-if value="{{ deckJp.ok }}">
+      <div class="u-fc2 notranslate" style="margin-bottom:10px">{{ deckJp.sub }}</div>
+      <div class="jd-grid">
+        <sc-for list="{{ deckJp.cards }}" as="c" hint-placeholder-count="5">
+          <div class="jd-card">
+            <div class="jd-img"><sc-if value="{{ c.hasImg }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><sc-if value="{{ c.leader }}"><span class="jd-lead">隊長</span></sc-if></div>
+            <b class="notranslate">{{ c.ch }}</b>
+            <span class="jd-nm notranslate">{{ c.name }}</span>
+            <span class="jd-at"><i style="background:{{ c.attrC }}"></i>{{ c.rar }} {{ c.attr }}</span>
+            <span class="jd-meta">{{ c.meta }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div class="jd-res">
+        <sc-if value="{{ deckJp.hasRes }}"><div class="lu-stats" style="margin-top:0"><sc-for list="{{ deckJp.res }}" as="x" hint-placeholder-count="3"><div class="lu-stat"><span>{{ x.l }}</span><b>{{ x.v }}</b></div></sc-for></div><div class="u-fc2 notranslate" style="margin-top:6px">{{ deckJp.resEv }}</div></sc-if>
+        <button type="button" class="lu-go" style="margin-top:10px" onClick="{{ onJpDeckCalc }}">{{ deckJp.btn }}</button>
+        <sc-if value="{{ deckJp.msg }}"><div class="u-fc2" style="margin-top:8px">{{ deckJp.msg }}</div></sc-if>
+      </div>
+      <div class="u-fc2" style="margin-top:12px;line-height:1.7">{{ deckJp.note }}</div>
+    </sc-if>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -9959,7 +10012,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=eafe144ee4"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f833b6d6b0"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

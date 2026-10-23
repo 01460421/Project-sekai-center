@@ -2921,7 +2921,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=8d3bbca342').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=642cb19cd1').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -4600,6 +4600,92 @@ class Component extends DCLogic {
     const games = []; for (let i = 1; i < S.length; i++) if (S[i] > S[i - 1]) games.push([T[i], S[i] - S[i - 1]]);
     return { T, S, R, games };
   }
+  /* 日服的玩家檔案（首頁綁定預覽、玩家查詢、編組詳情）：日服沒有 HiSekai 那種「填 ID 就查得到」的公開檔案 API，
+     改用 Haruki 工具箱的遊戲資料——這台裝置在 Haruki 專區匯入過同一個 ID 就用那份，否則讀工具箱的公開 API
+     （玩家要在工具箱上傳過、並把 Suite 設成「允許公開 API」）。整理成跟台服檔案一樣的欄位。 */
+  JP_DECK_M = ['member1', 'member2', 'member3', 'member4', 'member5'];
+  jpProfFrom(S) {
+    const g = (S && S.userGamedata) || {}, pf = (S && S.userProfile) || {};
+    const cards = (S && S.userCards) || [], byId = {};
+    cards.forEach(c => { if (c && c.cardId) byId[+c.cardId] = c; });
+    const decks = (S && S.userDecks) || [];
+    const dk = decks.find(x => +x.deckId === +g.deck) || decks[0] || null;
+    const deck = dk ? this.JP_DECK_M.map(m => +dk[m]).filter(Boolean).map((id, i) => {
+      const c = byId[id] || {};
+      return { id, lv: +c.level || 0, mr: +c.masterRank || 0, sk: +c.skillLevel || 0, tr: c.specialTrainingStatus === 'done', art: c.defaultImage === 'special_training', leader: i === 0 };
+    }) : [];
+    const p = this.hkParse(S, null, null), fc = { e: 0, m: 0, a: 0 }, ap = { e: 0, m: 0, a: 0 };
+    Object.keys(p.marks).forEach(k => { const d = k.charAt(0); if (p.marks[k] >= 1) fc[d]++; if (p.marks[k] >= 2) ap[d]++; });
+    const chars = ((S && S.userCharacters) || []).map(c => ({ id: +c.characterId, rank: +c.characterRank || 0 })).filter(c => c.id > 0 && c.rank > 0).sort((a, b) => a.id - b.id);
+    let up = +((S && (S.upload_time || S.uploadTime)) || 0); if (up && up < 1e12) up *= 1000;
+    return { name: g.name || pf.name || '', rank: +g.rank || +pf.rank || 0, word: pf.word || '', twitter: pf.twitterId || '',
+      deck, deckName: (dk && dk.name) || '', own: Object.keys(byId).map(Number), fc, ap, hasMusic: Object.keys(p.marks).length > 0, chars, upload: up || 0 };
+  }
+  jpDeckView(P) {
+    const rows = this.state.rateCards || [], AT = ['cool', 'happy', 'mysterious', 'cute', 'pure'];   // cards-index 的 ATTRS 順序
+    if (this._cbN !== rows.length) { this._cbN = rows.length; this._cb = {}; rows.forEach(c => { this._cb[c[0]] = c; }); }
+    return ((P && P.deck) || []).map(d => {
+      const c = this._cb[d.id], rar = c ? c[2] : 0, at = c ? AT[c[3]] : '';
+      return { id: d.id, hasImg: !!c, img: c ? this.ASSET + '/thumbnail/chara/' + c[8] + ((rar === 3 || rar === 4) && d.art ? '_after_training' : '_normal') + '.webp' : '',
+        name: c ? c[7] : '#' + d.id, ch: c ? this.charName(c[1]) : '', rar: rar === 9 ? '生日' : rar ? '★' + rar : '', attr: this.ATTR_ZH[at] || '', attrC: (this.SM_ATTR[at] || ['', '#8b93ac'])[1],
+        meta: ['Lv.' + d.lv, d.mr ? 'MR ' + d.mr : '', d.sk ? 'SLv.' + d.sk : '', d.tr ? '已特訓' : ''].filter(Boolean).join(' · '), leader: d.leader };
+    });
+  }
+  /* 編組詳情視窗（日服）的畫面資料 */
+  deckJpView(s) {
+    const k = String(s.deckPid || ''), P = (s.jpProf || {})[k];
+    const out = { loading: false, err: '', ok: false, sub: '', cards: [], hasRes: false, res: [], resEv: '', btn: '', msg: '', note: '', busy: false };
+    if (this.SRV !== 'jp' || !k) return out;
+    if (!/^\d{6,20}$/.test(k)) return Object.assign(out, { err: '日服排名裡的玩家 ID 是匿名的（追蹤器的雜湊），看不到他的編組；請改用玩家查詢輸入他的 Player ID。' });
+    if (!P) { setTimeout(() => this.loadJpProfile(k), 0); return Object.assign(out, { loading: true }); }
+    if (P.loading) return Object.assign(out, { loading: true });
+    if (!P.src) return Object.assign(out, { err: this.jpProfNote(P, String(s.pid) === k) });
+    const r = (s.jpDeckRes || {})[k];
+    return Object.assign(out, { ok: true, sub: (P.name || '玩家 ' + k) + (P.rank ? '・Rank ' + P.rank : '') + (P.deckName ? '・' + P.deckName : ''),
+      cards: this.jpDeckView(P), hasRes: !!r, res: r ? [{ l: '總綜合力', v: this.n(r.power) }, { l: '活動加成', v: r.bonus + '%' }, { l: '技能倍率', v: '×' + r.skill }] : [],
+      resEv: r && r.ev ? '以「' + r.ev + '」計算' : '', busy: !!s.jpDeckBusy, btn: s.jpDeckBusy ? '計算中…' : r ? '重新計算' : '計算綜合力與活動加成',
+      msg: s.jpDeckMsg || '', note: this.jpProfNote(P, String(s.pid) === k) + '。綜合力與加成由 Haruki 的組卡引擎在你的瀏覽器裡算（日服 master，含區域道具、角色等級、MySekai 家具與大門）。' });
+  }
+  jpProfNote(P, self) {
+    if (!P || P.loading) return '';
+    const at = P.upload ? '（' + this.dbDate(P.upload, true) + ' 上傳）' : '';
+    if (P.src === 'local') return '個人檔案來自' + (self ? '你' : '') + '在 Haruki 專區匯入的資料' + at;
+    if (P.src === 'public') return '個人檔案來自 Haruki 工具箱的公開資料' + at;
+    if (P.err === 'not_public') return '這個 ID 沒有在 Haruki 工具箱公開資料，所以只有活動名次。到 Haruki 工具箱上傳遊戲資料並把 Suite 設成「允許公開 API」（或在 Haruki 專區匯入），就會顯示等級、目前隊伍與角色等級。';
+    return 'Haruki 工具箱暫時連不上，個人檔案稍後再試。';
+  }
+  loadJpProfile(id, force) {
+    const k = String(id || ''); if (!/^\d{6,20}$/.test(k)) return Promise.resolve(null);
+    this._jpProfP = this._jpProfP || {};
+    if (this._jpProfP[k] && !force) return this._jpProfP[k];
+    const put = v => { this.setState(s => ({ jpProf: Object.assign({}, s.jpProf || {}, { [k]: v }) })); return v; };
+    put(Object.assign({}, (this.state.jpProf || {})[k] || {}, { id: k, loading: true }));
+    this._jpProfP[k] = (async () => {
+      let suite = null, src = '';
+      try { const rec = await this.hkSuiteGet(); if (rec && String(rec.uid) === k && rec.suite) { suite = this.hkNormalize(rec.suite, k); src = 'local'; } } catch (e) {}
+      if (!suite) {
+        try { suite = this.hkNormalize(await this.hkPublic('suite', k, 'jp'), k); src = 'public'; }
+        catch (e) { return put({ id: k, src: '', err: e && e.status === 404 ? 'not_public' : 'error' }); }
+      }
+      this._jpSuites = this._jpSuites || {}; this._jpSuites[k] = suite;   // 編組詳情算綜合力時整份送進組卡引擎
+      this.loadCards();
+      return put(Object.assign({ id: k, src }, this.jpProfFrom(suite)));
+    })();
+    return this._jpProfP[k];
+  }
+  /* 編組詳情（日服）：五張卡照遊戲裡的目前隊伍排；綜合力、活動加成與技能倍率按了才算（要載 Haruki 的組卡引擎與日服 master） */
+  async jpDeckCalc(id) {
+    const k = String(id || ''), suite = (this._jpSuites || {})[k];
+    if (!suite || this.state.jpDeckBusy) return;
+    this.setState({ jpDeckBusy: true, jpDeckMsg: '載入組卡引擎與日服 master（第一次比較久）…' });
+    try {
+      await this.hzLoad();
+      const t = await this.hzTeamStats(this.state.mode, suite, 'jpprof:' + k + ':' + ((this.state.jpProf || {})[k] || {}).upload);
+      const res = Object.assign({}, this.state.jpDeckRes || {}, { [k]: t });
+      this.setState({ jpDeckBusy: false, jpDeckMsg: '', jpDeckRes: res });
+      if (String(this.state.pid) === k) this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { power: t.power }) }));
+    } catch (e) { this.setState({ jpDeckBusy: false, jpDeckMsg: (e && e.message) || String(e) }); }
+  }
   /* 分析中心（日服）：日服即時前百只有近 1 小時時速，挑到哪位才抓那位的追蹤器軌跡（每一場一筆），
      算出近 1／3／24 小時的場數、得分、場均、時速，以及名次與分數走勢。一分鐘內不重抓；數字 ID 順便換成追蹤器的雜湊 ID。 */
   JP_TRACK_FROM = 202;   // Haruki 日服追蹤器從第 202 期開始有資料（2026/10 實測 201 期以前回 not found）
@@ -4640,6 +4726,11 @@ class Component extends DCLogic {
   async loadPlayerJp(id) {
     if (this._pjBusy) return;
     this._pjBusy = true;
+    this.loadJpProfile(id).then(v => {   // 個人檔案（Haruki 工具箱）只抓一次；名次每分鐘跟著即時榜線更新
+      if (!v || v.err || String(this.state.pid) !== String(id)) return;
+      this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { name: (s.pdata && s.pdata.myAt && s.pdata.name && !/^玩家 /.test(s.pdata.name)) ? s.pdata.name : (v.name || (s.pdata && s.pdata.name)),
+        rank: v.rank || null, deckName: v.deckName || null, charRanks: v.chars }) }));
+    });
     try {
       const r = await fetch(this.GAMES_API + '/haruki/jp/event/live/user/' + encodeURIComponent(id), { headers: { Accept: 'application/json' } });
       let d = null; try { d = await r.json(); } catch (e) {}
@@ -4653,7 +4744,7 @@ class Component extends DCLogic {
       const sum = a => a.reduce((x, g) => x + g[1], 0);
       const h1 = win(1);
       this.setState(s => ({ pErr: '', pdata: Object.assign({}, s.pdata || {}, {
-        name: ud.name || ('玩家 ' + id), jpNotTracked: false, jpWord: ud.profileWord || '', jpCard: ud.cardId || null,
+        name: ud.name || (s.pdata && s.pdata.name) || ('玩家 ' + id), jpNotTracked: false, jpWord: ud.profileWord || '', jpCard: ud.cardId || null,
         myRank: cur.rank || null, myScore: cur.score != null ? +cur.score : null, mySpeed: sum(h1),
         myRounds1h: h1.length, myRounds3h: win(3).length, myRounds24h: win(24).length, myAvg1h: h1.length ? sum(h1) / h1.length : null,
         myLastPlayed: games.length ? games[games.length - 1][0] * 1000 : null,
@@ -5146,7 +5237,7 @@ class Component extends DCLogic {
     if (this.state.jpLoad || this.state.jpCards.length) return;
     this.setState({ jpLoad: true, jpErr: '' });
     try {
-      const m = await import('./data/cards-index-jp.js?v=fc0aab61f5');
+      const m = await import('./data/cards-index-jp.js?v=c7a49e5767');
       this.setState({ jpCards: m.CARDS || [], jpChars: m.CHARAS || [], jpLoad: false });
     } catch (e) {
       this.setState({ jpLoad: false, jpErr: '日服卡片索引載入失敗，點此重試' });
@@ -5158,7 +5249,7 @@ class Component extends DCLogic {
     this.setState({ rateLoad: true, rateErr: '' });
     try {
       if (this.SRV === 'jp') {
-        const j = await import('./data/cards-index-jp.js?v=fc0aab61f5');
+        const j = await import('./data/cards-index-jp.js?v=c7a49e5767');
         this.ownLoad();
         this.setState({ rateCards: (j.CARDS || []).filter(c => c[9] !== 0), rateChars: j.CHARAS || [], rateLoad: false });
         return;
@@ -6415,7 +6506,19 @@ class Component extends DCLogic {
     if (this.state.luLoad) return;
     this.setState({ luTrId: id });
     this.luTrackLoad(id);
-    if (this.SRV === 'jp') { try { localStorage.setItem('sekai-app-pid-jp', id); } catch (e) {} this.setState({ luErr: '', luData: null }); return; }   // 日服沒有公開的玩家檔案 API，只查活動紀錄
+    if (this.SRV === 'jp') {   // 日服沒有 HiSekai 那種公開檔案：活動紀錄走追蹤器，個人檔案走 Haruki 工具箱（有公開才有）
+      try { localStorage.setItem('sekai-app-pid-jp', id); } catch (e) {}
+      this.setState({ luErr: '', luData: null, luProfLoad: true, luProfNote: '' });
+      const v = await this.loadJpProfile(id, true);
+      if (String(this.state.luTrId) !== id) return;
+      if (!v || !v.src) { this.setState({ luProfLoad: false, luProfNote: this.jpProfNote(v, false) }); return; }
+      const sum = v.chars.reduce((a, c) => a + c.rank, 0), fa = d => this.n(v.fc[d]) + '／' + this.n(v.ap[d]);
+      const stats = [['玩家等級', v.rank ? 'Rank ' + v.rank : null], ['持有卡片', v.own.length ? this.n(v.own.length) + ' 張' : null], ['角色等級合計', sum ? this.n(sum) : null],
+        ['MASTER FC／AP', v.hasMusic ? fa('m') : null], ['APPEND FC／AP', v.hasMusic ? fa('a') : null], ['EXPERT FC／AP', v.hasMusic ? fa('e') : null]]
+        .filter(x => x[1] != null).map(([l, x]) => ({ l, v: x }));
+      this.setState({ luProfLoad: false, luProfNote: this.jpProfNote(v, false), luData: { id, name: v.name || ('玩家 ' + id), word: v.word, twitter: v.twitter, stats, chars: v.chars } });
+      return;
+    }
     this.setState({ luLoad: true, luErr: '', luData: null });
     try {
       const data = await this.apiFetch('/user/' + id + '/profile');
@@ -6445,6 +6548,7 @@ class Component extends DCLogic {
   luView() {
     const s = this.state, d = s.luData;
     return { ...this.luTrackView(), luId: s.luId, luLoad: s.luLoad, luErr: s.luErr, luHas: !!d,
+      luProfLoading: !!s.luProfLoad, luProfNote: s.luProfNote || '', luProfNoteOn: !!s.luProfNote && !s.luProfLoad,
       lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
         chars: d.chars.map(c => ({ name: this.charName(c.id), rank: 'Rank ' + c.rank, color: this.CHARA_COLOR[c.id] || 'var(--border)' })), hasChars: d.chars.length > 0 } : null };
   }
@@ -6976,6 +7080,12 @@ class Component extends DCLogic {
         last: pd.myLastPlayed ? agoM(pd.myLastPlayed) : '—', h24: pd.myRounds24h != null ? pd.myRounds24h + ' 場' : '—',
         not: pd.jpNotTracked ? '這期的追蹤名單裡還沒有你：追蹤器只記前百與各段位線上的玩家（T200、T500、T1000…），進到這些名次就會出現。' : '',
         loading: !pd.myAt && !pd.jpNotTracked };
+      /* 跟台服首頁一樣的帳號預覽：等級、簽名、目前隊伍（點開編組詳情）、總綜合力 */
+      const P = (s.jpProf || {})[String(s.pid)] || null, deck = P && P.src ? this.jpDeckView(P) : [];
+      Object.assign(out.jnMe, { hasProf: !!(P && P.src), rankLv: P && P.rank ? 'Rank ' + P.rank : '', word: (P && P.word) || '',
+        deck, hasDeck: deck.length > 0, deckLabel: (P && P.deckName ? P.deckName + '・' : '') + '編組詳情',
+        power: pd.power != null ? this.short(pd.power) : '—', powerHint: pd.power != null ? '' : '在編組詳情計算',
+        profNote: this.jpProfNote(P, true), profGo: !!(P && P.err === 'not_public'), profLoading: !!(P && P.loading) });
     }
     out.jnRes = this.JP_RES.map(g => ({ cat: g[0], items: g[1].map(x => ({ n: x[0], u: x[1], d: x[2] })) }));
     out.jnResNote = this.JP_RES_NOTE;
@@ -10591,7 +10701,7 @@ class Component extends DCLogic {
         ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
       subTabs, hasSubTabs: subTabs.length > 1, navExtra,
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
+      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckIsJp: this.SRV === 'jp', deckIsTw: this.SRV !== 'jp', deckJp: this.deckJpView(s), deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
       playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,
@@ -11468,6 +11578,7 @@ class Component extends DCLogic {
       },
       onDeckDetail: () => { if (this.state.pid) this.setState({ deckPid: this.state.pid }); },
       onDeckClose: () => this.setState({ deckPid: null }),
+      onJpDeckCalc: () => this.jpDeckCalc(this.state.deckPid),
       onGachaClick: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
       onGachaClose: () => this.setState({ gachaGid: null }),
       onSongDetail: e => { const id = +e.currentTarget.dataset.id; if (id) { this.loadSongBpm(); this.setState({ songId: id }); } },
