@@ -407,26 +407,28 @@ export function hzMysVisitors(mys, groups) {
   }
   return out;
 }
-/* 大門升級：mysekaiGateMaterialGroups 的 groupId＝大門×1000＋等級；累計到每一級要的素材 vs 手上的 */
+/* 大門升級：mysekaiGateMaterialGroups 的 groupId＝大門×1000＋等級；累計到每一級要的素材 vs 手上的。
+   等級上限照素材表本身（台服目前 Lv40、日服已開到 Lv70），不寫死；HZ_GATE_MAX 只在素材表是空的時候當預設 */
 export const HZ_GATE_MAX = 40;
 export function hzMysGates(userGates, userMats, groupRows, levelsAhead) {
   const have = {}; (userMats || []).forEach(m => { have[+m.mysekaiMaterialId] = +m.quantity || 0; });
   const cur = {}; (userGates || []).forEach(g => { if (+g.mysekaiGateId) cur[+g.mysekaiGateId] = +g.mysekaiGateLevel || 0; });
-  const need = {};
+  const need = {}, top = {};
   (groupRows || []).forEach(r => {
     const gate = Math.floor(+r.groupId / 1000), lv = +r.groupId % 1000;
-    if (!gate || lv <= 0 || lv > HZ_GATE_MAX) return;
+    if (!gate || lv <= 0) return;
     ((need[gate] = need[gate] || {})[lv] = need[gate][lv] || []).push({ id: +r.mysekaiMaterialId, n: +r.quantity || 0 });
+    if (lv > (top[gate] || 0)) top[gate] = lv;
   });
   return Object.keys(need).map(Number).sort((a, b) => a - b).map(gate => {
-    const lv = cur[gate] || 0, sums = {}, steps = [];
-    for (let L = lv + 1; L <= Math.min(HZ_GATE_MAX, lv + (levelsAhead || 5)); L++) {
+    const lv = cur[gate] || 0, sums = {}, steps = [], cap = top[gate] || HZ_GATE_MAX;
+    for (let L = lv + 1; L <= Math.min(cap, lv + (levelsAhead || 5)); L++) {
       const mats = (need[gate][L] || []).map(m => { sums[m.id] = (sums[m.id] || 0) + m.n; return { id: m.id, n: m.n, cum: sums[m.id], have: have[m.id] || 0 }; });
       if (!mats.length) continue;
       steps.push({ lv: L, mats, ok: mats.every(m => m.have >= m.cum) });
     }
     let reach = lv; for (const st of steps) { if (st.ok) reach = st.lv; else break; }
-    return { gate, lv, max: lv >= HZ_GATE_MAX, steps, reach };
+    return { gate, lv, max: lv >= cap, cap, steps, reach };
   });
 }
 /* 唱片收集：只算現在拿得到的一般樂曲（排除 241、290、未上架與限時下架的），依團體分類 */
@@ -812,7 +814,7 @@ export function hzMembers() {
     const meta = await this.hkSuiteMeta().catch(() => null);
     this.setState({ hzMeta: meta });
     this.hzLoadLists();
-    fetch(this.GAMES_API + '/haruki/master/tw/current').then(r => r.ok ? r.json() : null).then(v => this.setState({ hzVer: v || false })).catch(() => this.setState({ hzVer: false }));
+    fetch(this.GAMES_API + '/haruki/master/' + this.SRV + '/current').then(r => r.ok ? r.json() : null).then(v => this.setState({ hzVer: v || false })).catch(() => this.setState({ hzVer: false }));
   },
   async hzSuite() {
     if (this._hzSuite && this._hzSuiteAt === (this.state.hzMeta || {}).at) return this._hzSuite;
@@ -825,7 +827,7 @@ export function hzMembers() {
   async hzLoadLists() {
     if (this._hzListsP) return this._hzListsP;
     this._hzListsP = (async () => {
-      const [events, musics, wbs] = await Promise.all([this.tdbJson('events.json'), this.tdbJson('musics.json'), this.tdbJson('worldBlooms.json').catch(() => [])]);
+      const [events, musics, wbs] = await Promise.all([this.hzJson('events.json'), this.hzJson('musics.json'), this.hzJson('worldBlooms.json').catch(() => [])]);
       const now = Date.now(), D = 86400000;
       const evs = (events || []).filter(e => e.startAt <= now + 45 * D && e.aggregateAt >= now - 60 * D).sort((a, b) => b.startAt - a.startAt);
       const cur = evs.find(e => e.startAt <= now && now <= e.aggregateAt) || evs.filter(e => e.startAt > now).pop() || evs[0];
@@ -859,14 +861,20 @@ export function hzMembers() {
     const w = this.hzWorker(), id = ++this._hzSeq;
     return new Promise((resolve, reject) => { this._hzReq.set(id, { resolve, reject }); w.postMessage(Object.assign({ id }, msg), transfer || []); });
   },
+  /* 專區用的 master：台服模式讀台服（Haruki TC，缺表退 Sekai-World），日服模式讀 Sekai-World 日服 master */
+  hzJson(f) {
+    if (this.SRV !== 'jp') return this.tdbJson(f);
+    return fetch(this.JP_MASTER + '/' + f).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  },
   hzDataMsg() {
-    return { bases: [this.TDB, this.TDB_SW], files: HZ_DECK_FILES, optional: HZ_DECK_OPTIONAL, metasUrl: this.GAMES_API + '/haruki/metas/tw/music_metas.json',
-      engine: this.HZ_ENGINE, key: 'tw:' + new Date().toISOString().slice(0, 10) };
+    const jp = this.SRV === 'jp';
+    return { bases: jp ? [this.JP_MASTER] : [this.TDB, this.TDB_SW], files: HZ_DECK_FILES, optional: HZ_DECK_OPTIONAL, metasUrl: this.GAMES_API + '/haruki/metas/' + this.SRV + '/music_metas.json',
+      engine: this.HZ_ENGINE, key: this.SRV + ':' + new Date().toISOString().slice(0, 10) };
   },
   hzOpts(suite) {
     const s = this.state, ev = (s.hzEvents || []).find(e => String(e[0]) === String(s.hzEv));
     const live = s.hzLive || 'multi';
-    const o = { region: 'tw', live_type: live, target: s.hzTarget || 'score', algorithm: s.hzAlgo || 'ga', music_diff: s.hzDiff || 'master',
+    const o = { region: this.SRV, live_type: live, target: s.hzTarget || 'score', algorithm: s.hzAlgo || 'ga', music_diff: s.hzDiff || 'master',
       limit: 5, timeout_ms: 20000, member: 5, best_skill_as_leader: true,
       skill_order_choose_strategy: 'average', skill_reference_choose_strategy: 'average' };
     if (s.hzMusic) o.music_id = +s.hzMusic;
@@ -905,7 +913,7 @@ export function hzMembers() {
     // 進行中那期；兩期之間就用下一期（正在為它準備隊伍），加成才不會變成 0
     const now = Date.now(), evs = this.state.hzEvents || [];
     const ev = evs.find(e => e[3] <= now && now <= e[4]) || evs.filter(e => e[3] > now).sort((a, b) => a[3] - b[3])[0];
-    const opts = { region: 'tw', live_type: live === 'solo' ? 'solo' : live === 'auto' ? 'auto' : 'multi', target: 'score', algorithm: 'dfs', music_diff: 'master',
+    const opts = { region: this.SRV, live_type: live === 'solo' ? 'solo' : live === 'auto' ? 'auto' : 'multi', target: 'score', algorithm: 'dfs', music_diff: 'master',
       limit: 1, member: 5, fixed_cards: cur, best_skill_as_leader: false, skill_order_choose_strategy: 'average', skill_reference_choose_strategy: 'average' };
     if (ev) {
       opts.event_id = ev[0];
@@ -939,7 +947,7 @@ export function hzMembers() {
   async hzLoadCrank() {
     if (this._hzCrankP) return this._hzCrankP;
     this._hzCrankP = (async () => {
-      const [missions, groups, levels] = await Promise.all(['characterMissionV2s', 'characterMissionV2ParameterGroups', 'levels'].map(f => this.tdbJson(f + '.json')));
+      const [missions, groups, levels] = await Promise.all(['characterMissionV2s', 'characterMissionV2ParameterGroups', 'levels'].map(f => this.hzJson(f + '.json')));
       this._hzCrankM = { missions: missions || [], groups: groups || [], levels: levels || [] };
       this.setState({ hzCrankReady: Date.now() });
     })().catch(e => { this._hzCrankP = null; this.setState({ hzMsg: '角色任務資料載入失敗：' + ((e && e.message) || e) }); });
@@ -959,7 +967,7 @@ export function hzMembers() {
   async hzLoadTrain() {
     if (this._hzTrainP) return this._hzTrainP;
     this._hzTrainP = (async () => {
-      const soft = f => this.tdbJson(f + '.json').catch(() => []);
+      const soft = f => this.hzJson(f + '.json').catch(() => []);
       const [groups, bonds, levels, gcu, characterRanks, areaItemLevels, gateLevels, chal, areaItems, areas] = await Promise.all(
         ['characterMissionV2ParameterGroups', 'bonds', 'levels', 'gameCharacterUnits', 'characterRanks', 'areaItemLevels', 'mysekaiGateLevels', 'challengeLiveHighScoreRewards', 'areaItems', 'areas'].map(soft));
       this._hzTrainM = { groups, bonds, levels, gcu, characterRanks, areaItemLevels, gateLevels, chal, areaItems, areas };
@@ -984,7 +992,7 @@ export function hzMembers() {
     try {
       await this.hzLoadTrain();
       const userKey = this._hzSuiteAt + ':' + (this.state.hzMeta || {}).uid;
-      const list = await this.hzCall({ type: 'area', data: this.hzDataMsg(), userKey, suite: this._hzSentUser !== userKey ? suite : null, opts: { region: 'tw', card_ids: deck } });
+      const list = await this.hzCall({ type: 'area', data: this.hzDataMsg(), userKey, suite: this._hzSentUser !== userKey ? suite : null, opts: { region: this.SRV, card_ids: deck } });
       this._hzSentUser = userKey;
       this.setState({ hzAreaBusy: false, hzPhase: '', hzArea: list || [] });
     } catch (e) { this.setState({ hzAreaBusy: false, hzPhase: '', hzMsg: '區域道具建議失敗：' + ((e && e.message) || e) }); }
@@ -997,7 +1005,7 @@ export function hzMembers() {
   async hzLoadMys() {
     if (this._hzMysP) return this._hzMysP;
     this._hzMysP = (async () => {
-      const soft = f => this.tdbJson(f + '.json').catch(() => []);
+      const soft = f => this.hzJson(f + '.json').catch(() => []);
       const names = ['mysekaiSiteHarvestFixtures', 'mysekaiSites', 'mysekaiMaterials', 'mysekaiItems', 'mysekaiMusicRecords', 'mysekaiGateMaterialGroups', 'mysekaiGates', 'mysekaiGameCharacterUnitGroups', 'gameCharacterUnits', 'mysekaiPhenomenas', 'materials', 'musics', 'limitedTimeMusics', 'musicTags'];
       const got = await Promise.all(names.map(soft));
       const M = {}; names.forEach((n, i) => { M[n] = got[i] || []; });
@@ -1027,7 +1035,7 @@ export function hzMembers() {
   async hzLoadBag() {
     if (this._hzBagP) return this._hzBagP;
     this._hzBagP = (async () => {
-      const soft = f => this.tdbJson(f + '.json').catch(() => []);
+      const soft = f => this.hzJson(f + '.json').catch(() => []);
       const names = ['honors', 'honorGroups', 'bondsHonors', 'bondsHonorWords', 'bonds', 'materials', 'mysekaiMaterials', 'rankMatchTiers', 'rankMatchSeasons', 'rankMatchGrades', 'playerFrames', 'playerFrameGroups', 'musics', 'musicDifficulties', 'events', 'gameCharacters'];
       const got = await Promise.all(names.map(soft));
       const M = {}; names.forEach((n, i) => { M[n] = got[i] || []; });
@@ -1048,6 +1056,7 @@ export function hzMembers() {
   },
   /* 前百名次：只查 userEvents 裡那幾期（每期一個 top100 請求，同一次瀏覽重複查直接吃快取）；0 ＝ 沒進前百、-1 ＝ 查不到 */
   async hzBagRanks(suite, uid) {
+    if (this.SRV === 'jp') return;      // 日服追蹤器的玩家 ID 是雜湊過的，比對不到本人，不查
     const ids = (suite.userEvents || []).map(e => +e.eventId).filter(Boolean).sort((a, b) => b - a).slice(0, 12);
     if (!ids.length || !uid) return;
     this._careerCache = this._careerCache || new Map();
@@ -1111,8 +1120,8 @@ export function hzMembers() {
     try {
       await Promise.all([this.hzLoadCrank(), this.hzLoadTrain(), this.hzLoadLists()]);
       const M = this._hzCrankM, T = this._hzTrainM; if (!M || !T) return;
-      if (!this._hzEdbP) this._hzEdbP = this.tdbJson('eventDeckBonuses.json').catch(() => []);
-      if (!this._hzLessonP) this._hzLessonP = Promise.all([this.tdbJson('masterLessons.json').catch(() => []), this.tdbJson('materials.json').catch(() => []), this.loadSkillTable().catch(() => null)]);
+      if (!this._hzEdbP) this._hzEdbP = this.hzJson('eventDeckBonuses.json').catch(() => []);
+      if (!this._hzLessonP) this._hzLessonP = Promise.all([this.hzJson('masterLessons.json').catch(() => []), this.hzJson('materials.json').catch(() => []), this.loadSkillTable().catch(() => null)]);
       if (!(this.state.rateCards || []).length) await this.loadCards().catch(() => {});
       if (!this.state.gachaPk) await this.loadGachaPk().catch(() => {});
       const [U0, edb, fx, mysRec, lesson] = await Promise.all([this.hzSuite().catch(() => null), this._hzEdbP, this.loadFixtures().catch(() => null), this.hzMysData().catch(() => ({ mys: null })), this._hzLessonP]);
@@ -1266,7 +1275,7 @@ export function hzMembers() {
       hzWho: meta ? ((meta.name || '玩家') + (meta.rank ? '・等級 ' + meta.rank : '') + '・ID ' + meta.uid) : '',
       hzWhen: meta ? '本機資料同步於 ' + fmtT(meta.at) + (meta.upload ? '（遊戲資料上傳於 ' + fmtT(meta.upload) + '）' : '') : '',
       hzCanOAuth: !!cfg.clientId, hzLinked: !!(s.hkTok && (s.hkTok.access || s.hkTok.refresh)),
-      hzUidIn: s.hkUid || s.pid || '', hzBusyImp: !!s.hkBusy, hzImpMsg: s.hkMsg || '',
+      hzUidIn: s.hkUid || (this.SRV === 'jp' ? '' : s.pid) || '', hzUidPh: (this.SRV === 'jp' ? '日服' : '台服') + ' Player ID 或工具箱網址', hzBusyImp: !!s.hkBusy, hzImpMsg: s.hkMsg || '',
       hzMsg: s.hzMsg || '', hzHasMsg: !!s.hzMsg,
       onHzTab: e => this.hzSetTab(e.currentTarget.dataset.v),
       /* 資料新鮮度：遊戲資料上傳超過 24 小時就提醒重新上傳 */
@@ -1535,7 +1544,7 @@ export function hzMembers() {
           out.hzMysNoWeather = !Y.weather.length;
         }
         if (msub === 'gate') {
-          out.hzMysGates = Y.gates.map(g => ({ n: (gate[g.gate] || {}).name || ('大門 #' + g.gate), lv: 'Lv ' + g.lv, max: g.max,
+          out.hzMysGates = Y.gates.map(g => ({ n: (gate[g.gate] || {}).name || ('大門 #' + g.gate), lv: 'Lv ' + g.lv + (g.cap ? '／' + g.cap : ''), max: g.max,
             sum: g.max ? '已經升滿了' : (g.reach > g.lv ? '手上的素材可以直接升到 Lv ' + g.reach : '下一級還缺素材'),
             steps: g.steps.map(st => ({ lv: 'Lv ' + st.lv, ok: st.ok, tag: st.ok ? '夠' : '不夠', tc: st.ok ? '#15803d' : '#dc2626',
               mats: st.mats.map(m => { const x = mat[m.id]; return { n: x ? x.name : '#' + m.id, img: x ? this.ASSET + '/mysekai/thumbnail/material/' + x.iconAssetbundleName + '.webp' : '', t: m.have.toLocaleString() + ' / ' + m.cum.toLocaleString(), c: m.have >= m.cum ? 'var(--text-3)' : '#dc2626' }; }) })) }));

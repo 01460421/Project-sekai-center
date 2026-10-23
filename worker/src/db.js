@@ -436,6 +436,13 @@ export const listThreads = (db, kind, limit, before) =>
            FROM threads t JOIN users u ON u.id=t.user_id
            WHERE t.deleted=0 AND t.kind=? AND t.updated_at < ?
            ORDER BY t.updated_at DESC LIMIT ?`, kind, before || 2147483647, Math.min(50, limit || 30));
+/* 客服留言（kind='support'）是私訊：一般使用者只列自己的，管理員列全部（listThreads 照舊）。 */
+export const listMyThreads = (db, userId, kind, limit, before) =>
+  all(db, `SELECT t.id,t.kind,t.title,t.user_id,t.created_at,t.updated_at,t.reply_count,t.last_reply_at,t.solved,t.locked,
+                  substr(t.body,1,140) AS preview, ${AUTHOR}
+           FROM threads t JOIN users u ON u.id=t.user_id
+           WHERE t.deleted=0 AND t.kind=? AND t.user_id=? AND t.updated_at < ?
+           ORDER BY t.updated_at DESC LIMIT ?`, kind, userId, before || 2147483647, Math.min(50, limit || 30));
 export const getThread = (db, id) =>
   one(db, `SELECT t.*, ${AUTHOR} FROM threads t JOIN users u ON u.id=t.user_id WHERE t.id=? AND t.deleted=0`, id);
 export const listPosts = (db, threadId) =>

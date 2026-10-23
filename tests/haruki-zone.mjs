@@ -93,6 +93,14 @@ const G = hzMysGates([{ mysekaiGateId: 1, mysekaiGateLevel: 2 }], [{ mysekaiMate
   [{ groupId: 1001, mysekaiMaterialId: 1, quantity: 1 }, { groupId: 1003, mysekaiMaterialId: 1, quantity: 4 }, { groupId: 1004, mysekaiMaterialId: 1, quantity: 5 }, { groupId: 1004, mysekaiMaterialId: 2, quantity: 1 }, { groupId: 1005, mysekaiMaterialId: 1, quantity: 5 }, { groupId: 2040, mysekaiMaterialId: 1, quantity: 1 }], 5);
 const g1 = G.find(g => g.gate === 1);
 ok(g1.lv === 2 && g1.steps.map(x => x.lv).join() === '3,4,5' && g1.steps[1].mats[0].cum === 9 && g1.steps[1].ok && !g1.steps[2].ok && g1.reach === 4, '大門：從目前等級往上累計素材，算出手上的能升到幾級');
+{
+  // 日服大門開到 Lv70：上限照素材表，不卡在台服的 Lv40
+  const rows = []; for (let L = 1; L <= 70; L++) rows.push({ groupId: 1000 + L, mysekaiMaterialId: 1, quantity: 1 });
+  const J = hzMysGates([{ mysekaiGateId: 1, mysekaiGateLevel: 40 }], [{ mysekaiMaterialId: 1, quantity: 2 }], rows, 3)[0];
+  ok(!J.max && J.cap === 70 && J.steps.map(x => x.lv).join() === '41,42,43' && J.reach === 42, '大門：日服 Lv40 之後照樣往上算（上限照素材表到 Lv70）');
+  const K = hzMysGates([{ mysekaiGateId: 1, mysekaiGateLevel: 70 }], [], rows, 3)[0];
+  ok(K.max && !K.steps.length, '大門：到素材表的最高級才算滿級');
+}
 ok(G.find(g => g.gate === 2).lv === 0 && G.find(g => g.gate === 2).steps.length === 0, '沒有這扇門的紀錄就從 0 開始，只列前 5 級內有素材表的');
 const REC = hzMysRecords([{ mysekaiMusicRecordId: 1 }], [{ id: 1, externalId: 10, mysekaiMusicTrackType: 'music' }, { id: 2, externalId: 11, mysekaiMusicTrackType: 'music' }, { id: 3, externalId: 241, mysekaiMusicTrackType: 'music' },
   { id: 4, externalId: 12, mysekaiMusicTrackType: 'music' }, { id: 5, externalId: 13, mysekaiMusicTrackType: 'bgm' }, { id: 6, externalId: 14, mysekaiMusicTrackType: 'music' }],

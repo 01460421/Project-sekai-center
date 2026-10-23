@@ -18,6 +18,9 @@
 -  活動分布甘特圖：卡池／活動兩種模式、12～36 個月或全部、每月固定寬度可橫向捲動、季線與年份、今天虛線、條裡寫名稱、依池種／活動類型上色附圖例、滑過看說明、點一條開卡池詳情或活動資料、匯出 PNG
 -  Haruki 專區「背包」：把匯入的整份遊戲資料攤開——名片（暱稱、等級、自我介紹、名片上的三個稱號與羈絆稱號、頭像框、自訂名片、貨幣）、稱號（全部持有稱號依活動／成就／角色／生日／排位篩選，稱號底圖與名次圖；羈絆稱號）、資源（素材依種類分組、豆森素材）、跑榜（各期活動 P 與本站歷期前百的名次、World Link 各章名次、排位賽季段位與勝負）、歌曲（各難度玩過／FC／AP 與未 FC 清單）、收集（卡片、服裝、劇情閱讀率、任務）、原始資料（Haruki 給的每個區塊有幾筆）；純函式在 `js/haruki.js` 的 `hzBag*`，`tests/haruki-zone.mjs` 有測試
 -  Haruki 專區 豆森「今日資源」的實際地圖：四個採集場所鋪 Lunabot／MiddleRed 的烤森俯視底圖（`img/mysekai/site-{5,6,7,8}.webp`，對位數字照 Haruki-Cloud 的場所設定，見 `js/haruki.js` 的 `HZ_MAP_CAL`），採集點照遊戲座標放，每一點排出還沒採的素材縮圖與剩餘數量，稀有資源紅框、稀有採集點紫光、出生點紅叉、採過的淡掉，可切「顯示已採完」「只看稀有」
+-  台服／日服切換（頁首「伺服器・語言」）：`?srv=jp` 或記住上次選擇，換伺服器整頁重載。日服模式下首頁換成**日服現況**（`data/jp-now.js`，`tools/build-jp-now.py` 每天從 Sekai-World 日服 master 算：版本、近期與未來活動含加成與活動卡、開放中的卡池含 PU 卡、新曲），活動排名走 Worker 的 `/haruki/jp/…`（Haruki 日服追蹤器），卡片、圖鑑與 Haruki 專區改讀日服 master；每頁支援到哪裡見 `js/app.js` 的 `SRV_JP`／`SRV_TW_ONLY`，只有台服資料的頁面會在頁首提示。日服現況頁底部與資源連結頁收錄網路上仍在更新的日服資源（`JP_RES`）。Haruki 匯入在日服模式另存 IndexedDB 的 `suite-jp`，不動台服的收集率與 B30
+-  介面語言（同一個按鈕）：`js/i18n.js` 在 DOM 上換字，不重畫頁面。簡中用 OpenCC（`vendor/opencc-t2cn.js`，台灣正體→大陸簡體含詞彙）整站轉換；英文、日文是介面詞典（導覽、頁名、頁首、日服現況、客服視窗），整句對得上才換，其餘維持中文。`?lang=` 或記住上次選擇
+-  線上客服（每頁右下角，`js/help.js`）：**小幫手**不用登入、不花額度，當期活動、榜線、卡池、日服與語言這類「現在」的問題直接回數字，功能與玩法從 `ALIASES`、頁面說明與教學大全找，附前往按鈕；**AI 助手**就是站內助手（同一份對話）；**留言**是提問所的 `kind=support`，只有作者與管理員看得到（`worker/src/api.js`），管理員在提問所多一個「客服留言」分類可以回覆
 
 ## 伺服器機器人（bot/）
 
@@ -33,6 +36,8 @@
 | `soundprint.html` | 獨立頁：SEKAI 聲紋。曲庫吃 `data/ep-songs.js`、`data/song-bpm.js`、`data/song-meta.js`、`data/b30-consts.js`；音源直接向 sekai.best 資產鏡像拉全曲 mp3（約 2 MB），全部在瀏覽器的 Worker 裡做 FFT，不經本站伺服器 | 每次重新驗證 |
 | `js/maker.js` | 製作工具（進「小遊戲與製作」的追加圖或譜面頁才載）：樂曲追加圖產生器（選曲自動帶入、官方底圖與團體標誌、片假名轉換器、1920×1080 PNG）與譜面預覽產生器（官方 SUS 解析照 pjsekai 引擎規則、直欄式 canvas、combo／BPM／技能點）。模板在 app.html 的 isSongcard／isChart 兩段 |
 | `data/schedule-forecast.js` | 由 `tools/build-schedule-forecast.py` 產生：排程預測頁的規則與命中率、延遲歷史、活動逐期回測、卡池回測、未來活動與卡池預測；離線跑可設 `SCHED_JP_DIR` 指向放 `jp_events.json`／`jp_gachas.json` 的資料夾 |
+| `data/jp-now.js` | 由 `tools/build-jp-now.py` 產生（每日排程）：日服版本、最近 4 期與進行中／未來活動（加成屬性、角色、活動卡、WL 章節）、開放中與 60 天內的卡池（PU 卡）、最新 24 首歌；離線跑可設 `SCHED_JP_DIR` | 一年 immutable（戳記） |
+| `js/help.js`、`js/i18n.js` | 線上客服與介面翻譯，延後載入（不壓縮，跟 `js/haruki.js` 一樣由 `stamp-assets.py` 戳記） | 一年 immutable |
 | `data/event-info.js` | 由 `tools/build-event-info.py` 產生：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、排名獎勵（名次區間 → 道具；稱號的名稱／稱號組／底圖與名次圖 abn、素材名、技能升級譜名、頭像框組與角色都從 master 帶來，頁面只放遊戲內圖）、WL 章節、嘉年華隊伍；活動資料頁與甘特圖的活動模式進頁才載 |
 | `unit-img/` | 追加圖產生器的圖片素材：六個團體的官方標誌（webp，取自官方網站）與公告圖底圖 `songcard-bg.webp`；同源檔案所以 canvas 不會被污染、能直接匯出 |
 | `echoes.html` | 獨立頁：迴響之境。單一檔案、沒有外部依賴（只有 Google Fonts），存檔在 `localStorage` 的 `sekai-echoes-v1`；`window.__echoes` 給煙霧測試用 | 每次重新驗證 |

@@ -16,6 +16,17 @@ export const HARUKI_OAUTH_DEFAULT = 'https://toolbox-api-direct.haruki.seiunx.co
    玩家 ID 會匿名化成每期固定的 unique_id，所以「用 Player ID 找自己」在這個來源對不上。 */
 export const HARUKI_TRACKER_DEFAULT = 'https://toolbox-api-direct.haruki.seiunx.com/event-tracker';
 const UA = 'project-sekai-center/1.0 (+https://project-sekai-center.com) haruki-fallback';
+/* 日服：活動期程與 WL 章節改讀 Sekai-World 的日服 master（全站的日服模式、/haruki/jp/* 用）。
+   台服的仍走 cal.js 的 getJson（Haruki 台服 master，缺檔退回 Sekai-World 台服）。 */
+export const JP_MASTER_DEFAULT = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
+export const SERVERS = ['tw', 'jp'];
+async function getJp(name, env) {
+  const base = ((env && env.JP_MASTER_BASE) || JP_MASTER_DEFAULT).replace(/\/+$/, '');
+  const r = await fetch(base + '/' + name, { cf: { cacheTtl: 3600, cacheEverything: true } });
+  if (!r.ok) throw new Error('jp ' + name + ' HTTP ' + r.status);
+  return r.json();
+}
+const masterOf = (server, env) => (name => server === 'jp' ? getJp(name, env) : getJson(name));
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, OPTIONS' };
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'content-type': 'application/json; charset=utf-8', ...extra } });
 
@@ -87,8 +98,9 @@ export function toEventList(events, now) {
     .sort((a, b) => b.id - a.id).map(eventMeta);
 }
 
-async function harukiGet(env, path) {
-  const base = (env && env.HARUKI_API_BASE) || HARUKI_API_DEFAULT;
+async function harukiGet(env, path, server = 'tw') {
+  // HARUKI_API_BASE 預設結尾是 /api/tw；日服把最後一段換成 /jp
+  const base = ((env && env.HARUKI_API_BASE) || HARUKI_API_DEFAULT).replace(/\/(tw|jp)\/?$/, '') + '/' + server;
   const headers = { 'user-agent': UA, accept: 'application/json' };
   if (env && env.HARUKI_API_TOKEN) headers['x-haruki-sekai-token'] = env.HARUKI_API_TOKEN;
   const r = await fetch(base + path, { headers, cf: { cacheTtl: 0, cacheEverything: false }, signal: AbortSignal.timeout(15000) });
@@ -120,22 +132,22 @@ export function trackerBorders(ov) {
   const r100 = ((ov && ov.topRankings) || []).map(it => (it && it.rankData) || {}).find(r => r.rank === 100);
   return r100 && r100.score != null ? [{ rank: 100, score: r100.score, name: '', user_id: '', partial: true }] : [];
 }
-async function trackerGet(env, eventId, charId) {
+async function trackerGet(env, eventId, charId, server = 'tw') {
   const base = ((env && env.HARUKI_TRACKER_BASE) || HARUKI_TRACKER_DEFAULT).replace(/\/+$/, '');
-  const path = '/api/v2/web/events/tw/' + eventId + '/leaderboards/' + (charId ? 'world-bloom/' + charId + '/overview' : 'total/overview') + '?interval=3600';
+  const path = '/api/v2/web/events/' + server + '/' + eventId + '/leaderboards/' + (charId ? 'world-bloom/' + charId + '/overview' : 'total/overview') + '?interval=3600';
   const r = await fetch(base + path, { headers: { accept: 'application/json', 'user-agent': UA }, cf: { cacheTtl: 0, cacheEverything: false }, signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error('tracker HTTP ' + r.status);
   return parseSafe(await r.text());
 }
-async function fromTracker(env, kind, ev, wbs) {
-  const ov = await trackerGet(env, ev.id);
+async function fromTracker(env, kind, ev, wbs, server = 'tw') {
+  const ov = await trackerGet(env, ev.id, 0, server);
   const main = kind === 'top100' ? trackerRows(ov) : trackerBorders(ov);
   if (!main.length) throw new Error('tracker 沒有這一期的資料');
-  const out = { ...eventMeta(ev), source: 'haruki', via: 'tracker' };
+  const out = { ...eventMeta(ev), source: 'haruki', via: 'tracker', server };
   if (kind === 'top100') out.player_top_100_rankings = main; else out.player_border_rankings = main;
   const chs = (wbs || []).filter(w => w.eventId === ev.id);
   if (chs.length) {
-    const per = await Promise.all(chs.map(w => trackerGet(env, ev.id, w.gameCharacterId).catch(() => null)));
+    const per = await Promise.all(chs.map(w => trackerGet(env, ev.id, w.gameCharacterId, server).catch(() => null)));
     const list = chs.map((w, i) => {
       if (!per[i]) return null;
       const meta = chapterMeta(wbs, ev.id, w.gameCharacterId);
@@ -150,16 +162,17 @@ async function fromTracker(env, kind, ev, wbs) {
 
 /** 逐局追蹤器與其他模組共用：直接拿 HiSekai 形狀的當期前百／榜線（不經 HTTP）。
     先問 Event Tracker（公開、不用 token、有時速），不行再問 Haruki 公開 API（要 token）。 */
-export async function harukiLive(env, kind, eventId) {
-  const events = await getJson('events.json');
+export async function harukiLive(env, kind, eventId, server = 'tw') {
+  const M = masterOf(server, env);
+  const events = await M('events.json');
   const ev = eventId ? events.find(e => String(e.id) === String(eventId)) : pickCurrent(events, Date.now());
   if (!ev) throw new Error('no event');
-  const wbs = ev.eventType === 'world_bloom' ? await getJson('worldBlooms.json').catch(() => []) : [];
-  try { return await fromTracker(env, kind, ev, wbs); }
+  const wbs = ev.eventType === 'world_bloom' ? await M('worldBlooms.json').catch(() => []) : [];
+  try { return await fromTracker(env, kind, ev, wbs, server); }
   catch (e) {
     try {
-      if (kind === 'top100') return toTop100(await harukiGet(env, '/event/' + ev.id + '/ranking-top100'), ev, wbs);
-      return toBorder(await harukiGet(env, '/event/' + ev.id + '/ranking-border'), ev, wbs);
+      if (kind === 'top100') return { ...toTop100(await harukiGet(env, '/event/' + ev.id + '/ranking-top100', server), ev, wbs), server };
+      return { ...toBorder(await harukiGet(env, '/event/' + ev.id + '/ranking-border', server), ev, wbs), server };
     } catch (e2) { throw new Error('Event Tracker：' + ((e && e.message) || e) + '；公開 API：' + ((e2 && e2.message) || e2)); }
   }
 }
@@ -173,7 +186,7 @@ const PATH_OK = /^\/haruki\/(config|event\/list|event\/(live|\d{1,4})\/(top100|b
    本站有後端，向 Haruki 申請的是保密客戶端（confidential，見對方 docs/oauth2-integration §2、§5.2）：
    有設 HARUKI_OAUTH_CLIENT_SECRET 時，換 token 與撤銷改用 client_secret_basic（Basic 認證、表單不帶 client_id），
    secret 只存在 Worker，瀏覽器看不到。沒設 secret 就照公開客戶端（PKCE）轉送。 */
-const OAUTH_GET = /^\/haruki\/oauth\/(user\/bindings|user\/profile|game-data\/tw\/(suite|mysekai)\/\d{6,20})$/;
+const OAUTH_GET = /^\/haruki\/oauth\/(user\/bindings|user\/profile|game-data\/(tw|jp)\/(suite|mysekai)\/\d{6,20})$/;
 const OAUTH_POST = /^\/haruki\/oauth\/(token|revoke)$/;
 function siteCors(env, req) {
   const site = (env && env.SITE_BASE) || 'https://project-sekai-center.com';
@@ -227,13 +240,13 @@ export async function handleHarukiOAuth(req, env, url) {
    一樣不開 CORS，所以經 Worker 轉一手；主機先打 suite-api（Uni PJSK Viewer 用的那台），失敗再打工具箱後端的 /api/public。
    回應原樣轉回（404＝沒上傳或沒公開，對方刻意不分這兩種），邊緣快取一分鐘。 */
 export const HARUKI_SUITE_DEFAULT = 'https://suite-api.haruki.seiunx.com';
-const PUBLIC_OK = /^\/haruki\/public\/tw\/(suite|mysekai)\/(\d{6,20})$/;
+const PUBLIC_OK = /^\/haruki\/public\/(tw|jp)\/(suite|mysekai)\/(\d{6,20})$/;
 async function handleHarukiPublic(req, env, url) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
   const m = PUBLIC_OK.exec(url.pathname);
   if (!m) return json({ error: 'not_found' }, 404);
-  const tail = '/tw/' + m[1] + '/' + m[2] + (url.searchParams.get('key') ? '?key=' + encodeURIComponent(url.searchParams.get('key')) : '');
+  const tail = '/' + m[1] + '/' + m[2] + '/' + m[3] + (url.searchParams.get('key') ? '?key=' + encodeURIComponent(url.searchParams.get('key')) : '');
   const hosts = [((env && env.HARUKI_SUITE_API_BASE) || HARUKI_SUITE_DEFAULT).replace(/\/+$/, '') + '/public',
     ((env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT).replace(/\/+$/, '') + '/api/public'];
   let last = null;
@@ -284,7 +297,10 @@ export async function handleHaruki(req, env, url) {
   if (/^\/haruki\/(metas|master)\//.test(url.pathname)) return handleHarukiRegistry(req, env, url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
-  const m = PATH_OK.exec(url.pathname);
+  // 日服：/haruki/jp/event/… 跟台服同一套路徑，只是活動期程讀日服 master、排名讀日服 tracker
+  const jp = url.pathname.startsWith('/haruki/jp/event/');
+  const server = jp ? 'jp' : 'tw';
+  const m = PATH_OK.exec(jp ? '/haruki' + url.pathname.slice('/haruki/jp'.length) : url.pathname);
   if (!m) return json({ error: 'not_found' }, 404);
   if (m[1] === 'config') {
     return json({
@@ -302,8 +318,8 @@ export async function handleHaruki(req, env, url) {
   if (cache) { const hit = await cache.match(key); if (hit) return hit; }
   let body;
   try {
-    if (m[1] === 'event/list') body = toEventList(await getJson('events.json'), Date.now());
-    else body = await harukiLive(env, m[3], m[2] === 'live' ? null : m[2]);
+    if (m[1] === 'event/list') body = toEventList(await masterOf(server, env)('events.json'), Date.now());
+    else body = await harukiLive(env, m[3], m[2] === 'live' ? null : m[2], server);
   } catch (e) {
     return json({ error: 'upstream', message: String((e && e.message) || e).slice(0, 160) }, 502);
   }
