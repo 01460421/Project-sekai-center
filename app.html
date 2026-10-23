@@ -737,6 +737,77 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .sm-have{background:color-mix(in oklab,#2fa84f 18%,transparent);color:#2fa84f}
 .sm-btn{margin-top:8px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent);font-weight:800;font-size:12px;cursor:pointer}
 @media (max-width:640px){.sm-row{grid-template-columns:88px repeat(5,minmax(76px,1fr))}.sm-row.one{grid-template-columns:88px minmax(120px,1fr)}.sm-h{padding:7px 8px;font-size:11px}.sm-cell{padding:6px 2px}.sm-tw{font-size:14px}.sm-jp{font-size:11px;gap:3px}.sm-dl{font-size:9.5px;padding:0 4px}.sm-deck{gap:5px}.sm-card{font-size:10px}.sm-card img{border-radius:10px}.sm-tag{font-size:9px;padding:1px 5px}}
+/* ===== 頁首的伺服器／語言切換器、日服模式提示、日服現況頁 ===== */
+.srv-wrap{position:relative;flex:none}
+.srv-btn{position:relative;z-index:62;height:38px;display:flex;align-items:center;gap:6px;padding:0 11px 0 10px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--sh-xs);font-size:12.5px;font-weight:800;transition:border-color .2s,transform .25s cubic-bezier(.34,1.45,.44,1),box-shadow .2s}
+.srv-btn:hover{border-color:var(--border-2);box-shadow:var(--sh-sm)}
+.srv-btn:active{transform:scale(.95)}
+.srv-dot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 0 3px color-mix(in oklab,currentColor 0%,transparent)}
+.srv-lang{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:999px;background:var(--card-2);color:var(--text-2)}
+.srv-scrim{position:fixed;inset:0;z-index:60;background:transparent}
+.srv-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:61;width:min(320px,calc(100vw - 28px));padding:14px;border:1px solid var(--border);border-radius:20px;background:color-mix(in oklab,var(--card) 94%,transparent);backdrop-filter:blur(18px) saturate(1.5);box-shadow:var(--sh-md);transform-origin:top right;animation:srvPop .32s cubic-bezier(.2,1.25,.35,1)}
+@media (max-width:900px){.srv-pop{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 64px);width:auto;transform-origin:top center}}
+@keyframes srvPop{from{opacity:0;transform:translateY(-6px) scale(.94)}to{opacity:1;transform:none}}
+.srv-h{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--text-3);margin:2px 2px 7px}
+.srv-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:15px;background:var(--card-2);margin-bottom:12px}
+.srv-seg4{grid-template-columns:repeat(4,1fr)}
+.srv-seg button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border:0;border-radius:11px;cursor:pointer;font-size:12.5px;font-weight:800;transition:background .25s,color .25s,box-shadow .25s,transform .2s}
+.srv-seg button:active{transform:scale(.96)}
+.srv-seg small{font-size:9.5px;font-weight:700;opacity:.75;line-height:1.3;text-align:center}
+.srv-note{font-size:10.5px;color:var(--text-3);line-height:1.55;margin:0 2px}
+.srv-switching{position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:color-mix(in oklab,var(--bg) 55%,transparent);backdrop-filter:blur(6px);animation:fadeIn .2s ease}
+.srv-sw-card{display:flex;align-items:center;gap:10px;padding:14px 20px;border-radius:18px;background:var(--card);box-shadow:var(--sh-md);font-size:13.5px;font-weight:800;color:var(--ink);animation:srvPop .3s cubic-bezier(.2,1.25,.35,1)}
+.srv-sw-spin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border);border-top-color:var(--accent);animation:spin .7s linear infinite}
+.srv-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;margin-bottom:14px;border-radius:18px;border:1px solid color-mix(in oklab,#e5484d 28%,var(--border));background:color-mix(in oklab,#e5484d 7%,var(--card));animation:popIn .35s cubic-bezier(.2,1.1,.35,1)}
+.srv-b-ic{width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center;background:#e5484d;color:#fff;font-size:11px;font-weight:900;letter-spacing:.04em}
+.srv-b-t{flex:1;min-width:200px;font-size:12px;color:var(--text-2);line-height:1.6}
+.srv-b-t b{display:block;font-size:13px;color:var(--ink)}
+.srv-b-t button{margin:3px 4px 0 0;padding:2px 9px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer}
+.srv-b-go{padding:8px 14px;border:0;border-radius:12px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
+.lang-hint{position:fixed;left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:120;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);padding:10px 12px 10px 14px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-md);font-size:12.5px;font-weight:700;color:var(--ink);animation:popIn .4s cubic-bezier(.2,1.2,.35,1)}
+.lang-hint button{padding:6px 11px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:800;cursor:pointer}
+.lang-hint button.y{border:0;background:var(--cta);color:#fff}
+@media (max-width:900px){.lang-hint{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+.jn-hero{position:relative;overflow:hidden;border-radius:26px;padding:20px 22px;background:linear-gradient(135deg,#2b1f47 0%,#3e2d6b 45%,#b0365d 100%);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px}
+.jn-hero::after{content:"";position:absolute;inset:auto -40px -60px auto;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);animation:hbFloat 9s ease-in-out infinite;pointer-events:none}
+.jn-kick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.85}
+.jn-kick i{font-style:normal;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.16);letter-spacing:0}
+.jn-ev{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.jn-logo{width:min(240px,60vw);height:auto;max-height:110px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.35))}
+.jn-evt{flex:1;min-width:220px}
+.jn-evt h3{margin:0;font-size:19px;font-weight:900;line-height:1.35}
+.jn-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.jn-meta span{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.14)}
+.jn-cd{font-family:'M PLUS Rounded 1c';font-size:28px;font-weight:800;letter-spacing:.02em;margin-top:10px;font-variant-numeric:tabular-nums}
+.jn-bar{height:7px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:8px}
+.jn-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffd94d,#ff9db4);transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.jn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;margin-bottom:14px}
+.jn-tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.jn-tier{padding:8px 10px;border-radius:13px;background:var(--card-2);animation:popIn .4s cubic-bezier(.2,1.1,.35,1) both}
+.jn-tier b{display:block;font-size:10.5px;color:var(--text-3);font-weight:800}
+.jn-tier span{font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.jn-top{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px}
+.jn-top:first-child{border-top:0}
+.jn-rk{width:26px;height:26px;flex:none;border-radius:9px;display:grid;place-items:center;font-size:11.5px;font-weight:900;font-family:'M PLUS Rounded 1c'}
+.jn-ga{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--border);animation:popIn .4s cubic-bezier(.2,1.1,.35,1) both}
+.jn-ga:first-of-type{border-top:0}
+.jn-ga img.lg{width:116px;height:58px;object-fit:contain;flex:none;border-radius:10px;background:var(--card-2)}
+.jn-songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.jn-song{min-width:0;animation:popIn .45s cubic-bezier(.2,1.1,.35,1) both}
+.jn-song img{width:100%;aspect-ratio:1;border-radius:14px;object-fit:cover;background:var(--card-2);box-shadow:var(--sh-sm);transition:transform .35s cubic-bezier(.34,1.45,.44,1)}
+.jn-song:hover img{transform:translateY(-3px) scale(1.03)}
+.jn-song b{display:block;font-size:12px;color:var(--ink);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jn-song span{display:block;font-size:10.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jn-soon{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:color-mix(in oklab,#e5484d 14%,transparent);color:#e5484d}
+.jn-wl{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.jn-wl span{display:flex;align-items:center;gap:5px;padding:3px 10px 3px 3px;border-radius:999px;font-size:11px;font-weight:800}
+.jn-wl img{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.3)}
+.jn-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}
+.jn-res a{display:block;padding:10px 12px;border-radius:14px;background:var(--card-2);text-decoration:none;transition:transform .25s cubic-bezier(.34,1.45,.44,1),box-shadow .2s}
+.jn-res a:hover{transform:translateY(-2px);box-shadow:var(--sh-sm)}
+.jn-res b{display:block;font-size:12.5px;color:var(--ink)}
+.jn-res span{display:block;font-size:11px;color:var(--text-2);line-height:1.5;margin-top:2px}
+@media (prefers-reduced-motion:reduce){.srv-pop,.srv-banner,.jn-tier,.jn-ga,.jn-song,.lang-hint,.srv-sw-card{animation:none}.jn-hero::after{animation:none}}
 </style>
 </helmet>
 
@@ -792,6 +863,22 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
         <sc-if value="{{ isDesktop }}"><span style="font-size:12.5px;font-weight:700;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerName }}</span></sc-if>
       </button>
     </sc-if>
+    <div class="srv-wrap">
+      <button type="button" class="srv-btn" onClick="{{ onSrvMenu }}" title="{{ srvTitle }}" aria-label="{{ srvTitle }}" aria-expanded="{{ srvMenu }}" aria-haspopup="dialog">
+        <span class="srv-dot" style="background:{{ srvTagC }}"></span><span>{{ srvTag }}</span><span class="srv-lang" translate="no">{{ langTag }}</span>
+      </button>
+      <sc-if value="{{ srvMenu }}">
+        <div class="srv-scrim" onClick="{{ onSrvClose }}"></div>
+        <div class="srv-pop" role="dialog" aria-label="伺服器與語言">
+          <div class="srv-h">伺服器</div>
+          <div class="srv-seg"><sc-for list="{{ srvOpts }}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{ onSrvPick }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}"><span>{{ o.n }}</span><small>{{ o.d }}</small></button></sc-for></div>
+          <div class="srv-h">語言</div>
+          <div class="srv-seg srv-seg4"><sc-for list="{{ langOpts }}" as="o" hint-placeholder-count="4"><button type="button" translate="no" onClick="{{ onLangPick }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for></div>
+          <div class="srv-note">切換伺服器會重新載入頁面；語言立即生效</div>
+          <div class="srv-note" style="margin-top:4px">英文與日文目前翻譯介面與主要頁面，其餘內容維持中文</div>
+        </div>
+      </sc-if>
+    </div>
     <button type="button" onClick="{{ onCopyLink }}" title="複製這一頁的連結（含目前的篩選）" aria-label="複製連結" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
     </button>
@@ -821,6 +908,14 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
     <sc-for list="{{ subTabs }}" as="t" hint-placeholder-count="4">
       <button type="button" class="subtab" role="tab" aria-selected="{{ t.on }}" onClick="{{ onGo }}" data-p="{{ t.id }}" style="background:{{ t.bg }};color:{{ t.fg }};border-color:{{ t.bd }}">{{ t.name }}</button>
     </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ srvTwOnly }}">
+  <div class="srv-banner" role="note">
+    <div class="srv-b-ic">JP</div>
+    <div class="srv-b-t"><b>這一頁目前只有台服資料</b><span>日服可以看：</span><sc-for list="{{ srvTwOnlyPages }}" as="p" hint-placeholder-count="6"><button type="button" onClick="{{ onGo }}" data-p="{{ p.id }}">{{ p.n }}</button></sc-for></div>
+    <button type="button" class="srv-b-go" onClick="{{ onSrvTw }}">切回台服</button>
   </div>
   </sc-if>
 
@@ -6096,6 +6191,104 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
   </sc-if>
 
   <!-- 活動資料：任一期活動的時程、加成、活動卡、排名獎勵（data/event-info.js） -->
+  <!-- ========== 日服現況（日服模式的首頁也是這一頁；資料：data/jp-now.js＋Worker 日服中繼） ========== -->
+  <sc-if value="{{ isJpNow }}">
+  <div class="u-a3" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
+    <sc-if value="{{ jnLoading }}"><div class="empty loading">日服現況載入中…</div></sc-if>
+    <sc-if value="{{ jnHasErr }}"><button type="button" onClick="{{ onJnRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ jnErr }}</button></sc-if>
+    <sc-if value="{{ jnHas }}">
+    <div class="jn-hero">
+      <div class="jn-kick"><span>日服現況</span><i>{{ jnVer }}</i><sc-if value="{{ jnIsTwMode }}"><button type="button" onClick="{{ onSrvPick }}" data-v="jp" style="padding:2px 10px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:transparent;color:#fff;font-size:11px;font-weight:800;cursor:pointer">整站切到日服 →</button></sc-if></div>
+      <sc-if value="{{ jnHasCur }}">
+      <div class="jn-ev">
+        <img class="jn-logo" src="{{ jnCur.logo }}" referrerpolicy="no-referrer" alt="{{ jnCur.name }}" decoding="async">
+        <div class="jn-evt">
+          <div style="font-size:11px;font-weight:800;opacity:.8">第 {{ jnCur.id }} 期・{{ jnCur.state }}</div>
+          <h3>{{ jnCur.name }}</h3>
+          <div class="jn-meta"><span>{{ jnCur.type }}</span><span style="background:{{ jnCur.unitC }}">{{ jnCur.unit }}</span><sc-if value="{{ jnCur.hasAt }}"><span style="background:{{ jnCur.atC }}">{{ jnCur.at }}</span></sc-if></div>
+          <div style="font-size:11px;opacity:.85;margin-top:8px">距離結算</div>
+          <div class="jn-cd" id="jnCd">{{ jnCur.left }}</div>
+          <div class="jn-bar"><i style="width:{{ jnCur.pct }}"></i></div>
+          <div style="font-size:10.5px;opacity:.75;margin-top:6px">{{ jnCur.when }}</div>
+        </div>
+      </div>
+      <sc-if value="{{ jnCur.hasWl }}"><div class="jn-wl"><sc-for list="{{ jnCur.wl }}" as="w" hint-placeholder-count="5"><span style="background:{{ w.bg }};color:{{ w.fg }}" title="{{ w.when }}"><img src="{{ w.sd }}" referrerpolicy="no-referrer" alt="" loading="lazy">{{ w.n }}</span></sc-for></div></sc-if>
+      </sc-if>
+      <sc-if value="{{ jnNoCur }}"><div style="font-size:14px;font-weight:700;margin-top:10px">目前沒有進行中的活動（活動之間的空檔）</div></sc-if>
+      <div style="font-size:10.5px;opacity:.65;margin-top:12px">{{ jnBuilt }}</div>
+    </div>
+
+    <sc-if value="{{ jnHasCur }}">
+    <div class="mk-card" style="margin-bottom:14px">
+      <div class="mk-h"><b>這期的加成</b><i>日服 master</i></div>
+      <sc-if value="{{ jnCur.hasChars }}"><div style="font-size:12px;color:var(--text-2);margin:2px 0 8px"><b style="color:var(--ink)">加成角色</b>　{{ jnCur.chars }}</div></sc-if>
+      <sc-if value="{{ jnCur.hasCards }}"><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ jnCur.cards }}" as="c" hint-placeholder-count="5"><div style="display:flex;gap:6px;align-items:center;padding:3px 9px 3px 3px;border-radius:11px;background:var(--card-2);min-width:0"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}・{{ c.at }}・{{ c.sk }}" width="34" height="34" style="width:34px;height:34px;border-radius:8px;background:var(--card);flex:none"><span style="line-height:1.3;min-width:0"><span style="display:block;font-size:11px;font-weight:800;color:var(--ink)">{{ c.n }} <span style="color:{{ c.atC }}">{{ c.at }}</span></span><span style="display:block;font-size:10.5px;font-weight:700;color:{{ c.skC }}">{{ c.line2 }}</span></span></div></sc-for></div></sc-if>
+      <sc-if value="{{ jnCur.noCards }}"><div style="font-size:12px;color:var(--text-3)">這期沒有活動新卡（回顧／特別活動）</div></sc-if>
+    </div>
+    </sc-if>
+
+    <div class="jn-grid">
+      <div class="mk-card">
+        <div class="mk-h"><b>即時榜線</b><i>{{ jnLiveAt }}</i></div>
+        <sc-if value="{{ jnLiveErr }}"><button type="button" onClick="{{ onJnLive }}" style="width:100%;padding:10px;border:1px dashed var(--border-2);border-radius:12px;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">{{ jnLiveErr }}・點此重試</button></sc-if>
+        <sc-if value="{{ jnHasLive }}"><div class="jn-tiers"><sc-for list="{{ jnTiers }}" as="t" hint-placeholder-count="8"><div class="jn-tier"><b>{{ t.r }}</b><span>{{ t.v }}</span></div></sc-for></div></sc-if>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="rank">完整排名 →</button><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="sched">看日服還沒公布的活動預測</button></div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>前十名</b><i>Haruki 日服追蹤器</i></div>
+        <sc-for list="{{ jnTop }}" as="r" hint-placeholder-count="10"><div class="jn-top"><span class="jn-rk" style="background:color-mix(in oklab,{{ r.mc }} 18%,transparent);color:{{ r.mc }}">{{ r.r }}</span><span style="flex:1;min-width:0;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" class="notranslate">{{ r.n }}</span><span style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--text-2);font-variant-numeric:tabular-nums">{{ r.v }}</span></div></sc-for>
+      </div>
+    </div>
+
+    <div class="mk-card" style="margin-bottom:14px">
+      <div class="mk-h"><b>開放中的卡池</b><i>{{ jnGaN }}</i></div>
+      <sc-for list="{{ jnGaOpen }}" as="g" hint-placeholder-count="6">
+        <div class="jn-ga"><img class="lg" src="{{ g.logo }}" referrerpolicy="no-referrer" loading="lazy" alt="">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:800;color:var(--ink);line-height:1.4" class="notranslate">{{ g.name }}</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:2px">{{ g.type }}・{{ g.when }}・<b style="color:var(--accent-deep)">{{ g.left }}</b></div>
+            <sc-if value="{{ g.hasPu }}"><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px"><sc-for list="{{ g.pu }}" as="c" hint-placeholder-count="3"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="{{ c.n }}" title="{{ c.n }}・{{ c.at }}・{{ c.line2 }}" width="36" height="36" style="width:36px;height:36px;border-radius:9px;background:var(--card-2)"></sc-for></div></sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ jnHasGaSoon }}">
+        <div style="font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.1em;margin:12px 0 2px">即將開放</div>
+        <sc-for list="{{ jnGaSoon }}" as="g" hint-placeholder-count="2">
+          <div class="jn-ga"><img class="lg" src="{{ g.logo }}" referrerpolicy="no-referrer" loading="lazy" alt="">
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--ink)" class="notranslate">{{ g.name }}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">{{ g.when }}・<span class="jn-soon">{{ g.left }}</span></div></div>
+          </div>
+        </sc-for>
+      </sc-if>
+    </div>
+
+    <div class="mk-card" style="margin-bottom:14px">
+      <div class="mk-h"><b>新曲</b><i>依公開時間</i></div>
+      <div class="jn-songs"><sc-for list="{{ jnSongs }}" as="m" hint-placeholder-count="8"><div class="jn-song"><img src="{{ m.img }}" referrerpolicy="no-referrer" loading="lazy" alt="{{ m.t }}"><b class="notranslate" title="{{ m.t }}">{{ m.t }}</b><span class="notranslate">{{ m.by }}</span><sc-if value="{{ m.soon }}"><span class="jn-soon">{{ m.when }}</span></sc-if><sc-if value="{{ m.past }}"><span>{{ m.when }}</span></sc-if></div></sc-for></div>
+    </div>
+
+    <div class="jn-grid">
+      <sc-if value="{{ jnHasNext }}">
+      <div class="mk-card"><div class="mk-h"><b>接下來的活動</b><i>日服已公布</i></div>
+        <sc-for list="{{ jnNext }}" as="e" hint-placeholder-count="2"><div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><img src="{{ e.logo }}" referrerpolicy="no-referrer" loading="lazy" alt="" style="width:84px;height:42px;object-fit:contain;flex:none"><div style="min-width:0"><div style="font-size:12.5px;font-weight:800;color:var(--ink)" class="notranslate">{{ e.name }}</div><div style="font-size:11px;color:var(--text-3)">{{ e.type }}・{{ e.unit }}・{{ e.when }}・<span class="jn-soon">{{ e.soon }}</span></div></div></div></sc-for>
+      </div>
+      </sc-if>
+      <div class="mk-card"><div class="mk-h"><b>近期活動</b><i>日服</i></div>
+        <sc-for list="{{ jnPast }}" as="e" hint-placeholder-count="4"><div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><img src="{{ e.logo }}" referrerpolicy="no-referrer" loading="lazy" alt="" style="width:84px;height:42px;object-fit:contain;flex:none"><div style="min-width:0"><div style="font-size:12.5px;font-weight:800;color:var(--ink)" class="notranslate">{{ e.name }}</div><div style="font-size:11px;color:var(--text-3)">第 {{ e.id }} 期・{{ e.type }}・{{ e.unit }}<sc-if value="{{ e.at }}">・<span style="color:{{ e.atC }};font-weight:800">{{ e.at }}</span></sc-if>・{{ e.when }}</div></div></div></sc-for>
+      </div>
+    </div>
+
+    <div class="mk-card">
+      <div class="mk-h"><b>日服資源</b><i>網路上整理好的日服工具與資料站</i></div>
+      <sc-for list="{{ jnRes }}" as="g" hint-placeholder-count="3">
+        <div style="font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.1em;margin:10px 0 6px">{{ g.cat }}</div>
+        <div class="jn-res"><sc-for list="{{ g.items }}" as="x" hint-placeholder-count="4"><a href="{{ x.u }}" target="_blank" rel="noopener noreferrer"><b>{{ x.n }} ↗</b><span>{{ x.d }}</span></a></sc-for></div>
+      </sc-for>
+      <div style="font-size:11px;color:var(--text-3);line-height:1.6;margin-top:12px;padding:9px 11px;border-radius:12px;background:var(--card-2)">{{ jnResNote }}</div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ isSched }}">
   <div class="u-a3">
     <sc-if value="{{ sdLoading }}"><div class="empty loading">排程預測資料載入中…</div></sc-if>
@@ -8638,6 +8831,9 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 
   </div>
 </main>
+<sc-if value="{{ srvSwitching }}"><div class="srv-switching" aria-live="polite"><div class="srv-sw-card"><span class="srv-sw-spin"></span>{{ srvSwitchTo }}</div></div></sc-if>
+<sc-if value="{{ langHintOn }}"><div class="lang-hint" translate="no" role="status"><span>{{ langHintText }}</span><button type="button" class="y" onClick="{{ onLangHintYes }}">{{ langHintYes }}</button><button type="button" onClick="{{ onLangHintNo }}">{{ langHintNo }}</button></div></sc-if>
+
 </div><!-- /shell：固定浮層移出 flex 容器，避免行動版網址列/視窗變動時底部欄位移 -->
 
 <!-- ========== 全局音樂播放器（收合式浮動） ========== -->
@@ -9455,7 +9651,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=96bedbb5fc"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=c10168ab57"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
