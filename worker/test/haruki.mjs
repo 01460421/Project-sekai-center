@@ -233,6 +233,23 @@ ok(o.status === 503, '沒設 client id 時回 503');
   ok(r.status === 200 && b[0].id === 220, '/haruki/jp/event/list 回日服活動清單');
   r = await call('/haruki/jp/config');
   ok(r.status === 404, '只有 event 路徑有日服版');
+  // 用 Player ID 查單一玩家的即時紀錄（追蹤器 details/user）
+  const det = { meta: { fetchedAt: 1 }, ranked: true, current: { rankData: { rank: 37, score: 1234567, userId: 'h' }, userData: { name: 'ミク', cardId: 1 } },
+    next: { rankData: { rank: 36, score: 1300000 }, userData: { name: 'ルカ' } }, playerTrace: { format: 'columns', n: 2, t0: 100, dt: [10], s0: 1000, ds: [40810], r0: 40, dr: [-3] }, profile: { name: 'ミク' } };
+  globalThis.fetch = async (u) => { const url = String(u); seen.push(url);
+    if (url.endsWith('/events.json')) return new Response(JSON.stringify(jpEvents), { status: 200 });
+    if (/events\/jp\/220\/leaderboards\/total\/details\/user\/7482960281734567890\?/.test(url) && /includeTrace=true/.test(url) && /traceFormat=columns/.test(url)) return new Response(JSON.stringify(det), { status: 200 });
+    if (url.includes('/details/user/')) return new Response('{"error":"not found"}', { status: 404 });
+    return new Response('{}', { status: 404 });
+  };
+  r = await call('/haruki/jp/event/live/user/7482960281734567890'); b = await r.json();
+  ok(r.status === 200 && b.id === 220 && b.tracked && b.current.rankData.rank === 37 && b.next.rankData.rank === 36 && b.trace.ds[0] === 40810, '用日服 Player ID 查即時名次與分數軌跡');
+  r = await call('/haruki/jp/event/live/user/1234567890123'); b = await r.json();
+  ok(r.status === 404 && b.error === 'not_tracked' && b.id === 220, '追蹤器沒記到這個 ID → 404 not_tracked');
+  r = await call('/haruki/jp/event/live/user/12ab');
+  ok(r.status === 404, 'Player ID 格式不對直接擋（不轉送）');
+  r = await call('/haruki/event/live/user/7482960281734567890');
+  ok(r.status === 404 || r.status === 200, '台服也走同一條路徑');
   globalThis.fetch = async (u) => { const url = String(u); seen.push(url);
     if (url.endsWith('/events.json')) return new Response(JSON.stringify(jpEvents), { status: 200 });
     if (url.includes('event-tracker')) return new Response(JSON.stringify({ topRankings: [] }), { status: 200 });

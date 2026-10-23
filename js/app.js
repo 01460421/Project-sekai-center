@@ -57,8 +57,8 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'rank', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
-  SRV_TW_ONLY = ['event', 'evinfo', 'calendar', 'gacha', 'lives', 'news', 'story', 'borderdb', 'analysis', 'distrib', 'lookup', 'shop',
+  SRV_JP = ['jpnow', 'rank', 'lookup', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_TW_ONLY = ['event', 'evinfo', 'calendar', 'gacha', 'lives', 'news', 'story', 'borderdb', 'analysis', 'distrib', 'shop',
                  'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'collect', 'wlsup'];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
@@ -89,14 +89,19 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=8b3c50e221');
-      await this._i18n.applyLang(v);
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=bd60023e8a');
+      /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
+      const DICTS = { en: () => import('./data/i18n-en.js?v=1f1808f0ee'), ja: () => import('./data/i18n-ja.js?v=670fdd53bf') };
+      let dict = null;
+      if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
+      await this._i18n.applyLang(v, dict);
       try { const w = this._wantTitle; if (w) document.title = this._i18n.tr(w); } catch (e) {}
     } catch (e) { this._toast('翻譯模組載入失敗，請稍後再試'); }
   }
   /* 日服模式下換掉頁首說明（原本寫的是台服來源） */
   SRV_SUB = {
-    rank: '日服即時排名與分段榜線（Haruki 日服追蹤器，約每小時一筆）',
+    rank: '日服即時排名與分段榜線（Haruki 日服追蹤器，約 10～20 秒更新一次）',
+    lookup: '用日服 Player ID 查活動的即時名次、與上一名的差距、近一小時的場數與每一場的得分（Haruki 活動追蹤器）',
     cards: '日服全部卡片（Sekai-World 日服 master）：依團體、角色、屬性、稀有度、來源篩選',
     chars: '26 位角色的檔案（日服 master）：聲優、生日、身高、學校、喜好與相關卡片',
     comics: '遊戲內小提示的一格漫畫（日服原版）',
@@ -847,6 +852,7 @@ class Component extends DCLogic {
     evInfo: null, evInfoErr: '', eiId: 0, eiQ: '',   // 活動資料（data/event-info.js）與活動資料頁選的那期
     sched: null, schedErr: '', schedTab: 'ev', schedCat: 'all', schedMore: 0, schedMiss: false,   // 排程預測（data/schedule-forecast.js）
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
+    luTr: null, luTrLoad: false, luTrErr: '', luTrId: '',   // 玩家查詢：活動即時紀錄（Haruki 追蹤器）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
     gsList: null, gsErr: '', gsGid: '', gsQ: '', gsV: 0,   // 抽卡模擬（原生頁；池子與統計放 this._gs，gsV 只用來觸發重繪）
@@ -6226,10 +6232,66 @@ class Component extends DCLogic {
   }
 
   /* ===== 玩家查詢（原生頁；HiSekai /user/{id}/profile，各版本欄位名不一，逐一試） ===== */
+  /* 活動即時紀錄：Worker 的 /haruki/(jp/)event/live/user/{id}（Haruki 活動追蹤器 details/user）。
+     追蹤器只記前百與各段位線上的玩家；分數軌跡約 10～20 秒一筆，ds 裡每一個正數就是一場。 */
+  async luTrackLoad(id) {
+    this.setState({ luTrLoad: true, luTr: null, luTrErr: '' });
+    try {
+      const r = await fetch(this.GAMES_API + '/haruki/' + (this.SRV === 'jp' ? 'jp/' : '') + 'event/live/user/' + encodeURIComponent(id), { headers: { Accept: 'application/json' } });
+      let d = null; try { d = JSON.parse((await r.text()).replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"')); } catch (e) {}
+      if (this.state.luTrId !== id) return;
+      if (r.status === 404 && d && d.error === 'not_tracked') { this.setState({ luTrLoad: false, luTr: { tracked: false, ev: d } }); return; }
+      if (!r.ok || !d) throw new Error('HTTP ' + r.status);
+      this.setState({ luTrLoad: false, luTr: d, luTrAt: Date.now() });
+    } catch (e) { if (this.state.luTrId === id) this.setState({ luTrLoad: false, luTrErr: '活動即時紀錄暫時拿不到（' + ((e && e.message) || e) + '）' }); }
+  }
+  luTrackView() {
+    const s = this.state, d = s.luTr;
+    const out = { luTrLoading: !!s.luTrLoad, luTrErr: s.luTrErr || '', luTrHas: !!(d && d.tracked), luTrNot: !!(d && d.tracked === false), luJp: this.SRV === 'jp', luTw: this.SRV !== 'jp' };
+    if (!d) return out;
+    const evName = d.name || (d.ev && d.ev.name) || '';
+    out.luTrNotText = '這個 ID 不在' + (this.SRV === 'jp' ? '日服' : '台服') + '「' + evName + '」的追蹤名單裡：追蹤器只記前百與各段位線上的玩家（T200、T500、T1000…）。';
+    if (!d.tracked) return out;
+    const cur = (d.current && d.current.rankData) || {}, ud = (d.current && d.current.userData) || d.profile || {};
+    const nx = (d.next && d.next.rankData) || null, nu = (d.next && d.next.userData) || {};
+    const tr = d.trace || {}, n = +tr.n || 0, T = [], S = [], R = [];
+    if (n > 0) {
+      let t = +tr.t0 || 0, sc = +tr.s0 || 0, rk = +tr.r0 || 0;
+      T.push(t); S.push(sc); R.push(rk);
+      for (let i = 0; i < n - 1; i++) { t += +(tr.dt || [])[i] || 0; sc += +(tr.ds || [])[i] || 0; rk += +(tr.dr || [])[i] || 0; T.push(t); S.push(sc); R.push(rk); }
+    }
+    const now = Math.floor(Date.now() / 1000), last = T.length ? T[T.length - 1] : 0;
+    const games = []; for (let i = 1; i < S.length; i++) if (S[i] > S[i - 1]) games.push([T[i], S[i] - S[i - 1]]);
+    const h1 = games.filter(g => g[0] >= now - 3600), h24 = games.filter(g => g[0] >= now - 86400);
+    const sum = a => a.reduce((x, g) => x + g[1], 0);
+    const ago = ts => { const m = Math.max(0, Math.round((now - ts) / 60)); return m < 1 ? '剛剛' : m < 60 ? m + ' 分鐘前' : Math.floor(m / 60) + ' 小時 ' + (m % 60) + ' 分前'; };
+    const hm = ts => { const x = new Date(ts * 1000); return String(x.getHours()).padStart(2, '0') + ':' + String(x.getMinutes()).padStart(2, '0'); };
+    /* 分數走勢：最近 24 小時（不足就全期），畫成 300×70 的折線 */
+    let path = '', area = '';
+    { const i0 = Math.max(0, T.findIndex(t => t >= now - 86400)); const tt = T.slice(i0), ss = S.slice(i0);
+      if (tt.length > 1) { const x0 = tt[0], x1 = tt[tt.length - 1] || x0 + 1, y0 = ss[0], y1 = ss[ss.length - 1] || y0 + 1;
+        const X = t => ((t - x0) / Math.max(1, x1 - x0) * 300).toFixed(1), Y = v => (66 - (v - y0) / Math.max(1, y1 - y0) * 62).toFixed(1);
+        path = tt.map((t, i) => (i ? 'L' : 'M') + X(t) + ' ' + Y(ss[i])).join(' '); area = path + ' L300 70 L0 70 Z'; } }
+    Object.assign(out, {
+      luTr: { ev: evName, rank: cur.rank ? '#' + this.n(cur.rank) : '—', score: this.n(cur.score), name: ud.name || '', word: ud.profileWord || '',
+        card: (() => { const c = (s.rateCards || []).find(x => x[0] === +ud.cardId); return c ? this.cardImg(c[8], c[2]) : ''; })(),
+        gap: nx && nx.score != null && cur.score != null ? '距離上一名（#' + nx.rank + (nu.name ? ' ' + nu.name : '') + '）還差 ' + this.n(nx.score - cur.score) : '已經是第 1 名',
+        h1: h1.length + ' 場・+' + this.n(sum(h1)), h1avg: h1.length ? '平均每場 ' + this.n(sum(h1) / h1.length) : '近一小時沒有打',
+        h24: h24.length + ' 場・+' + this.n(sum(h24)), lastGame: games.length ? ago(games[games.length - 1][0]) + '（+' + this.n(games[games.length - 1][1]) + '）' : '還沒有紀錄',
+        upd: last ? '追蹤器資料 ' + ago(last) : '',
+        path, area, hasChart: !!path,
+        recent: games.slice(-12).reverse().map(g => ({ t: hm(g[0]), v: '+' + this.n(g[1]) })) },
+      luTrHasRecent: games.length > 0,
+    });
+    return out;
+  }
   async luLookup() {
     const id = String(this.state.luId || '').trim();
     if (!/^\d+$/.test(id)) { this.setState({ luErr: 'Player ID 應為純數字', luData: null }); return; }
     if (this.state.luLoad) return;
+    this.setState({ luTrId: id });
+    this.luTrackLoad(id);
+    if (this.SRV === 'jp') { try { localStorage.setItem('sekai-app-pid-jp', id); } catch (e) {} this.setState({ luErr: '', luData: null }); return; }   // 日服沒有公開的玩家檔案 API，只查活動紀錄
     this.setState({ luLoad: true, luErr: '', luData: null });
     try {
       const data = await this.apiFetch('/user/' + id + '/profile');
@@ -6258,7 +6320,7 @@ class Component extends DCLogic {
   }
   luView() {
     const s = this.state, d = s.luData;
-    return { luId: s.luId, luLoad: s.luLoad, luErr: s.luErr, luHas: !!d,
+    return { ...this.luTrackView(), luId: s.luId, luLoad: s.luLoad, luErr: s.luErr, luHas: !!d,
       lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
         chars: d.chars.map(c => ({ name: this.charName(c.id), rank: 'Rank ' + c.rank, color: this.CHARA_COLOR[c.id] || 'var(--border)' })), hasChars: d.chars.length > 0 } : null };
   }
@@ -6702,7 +6764,7 @@ class Component extends DCLogic {
       langOpts: this.LANGS.map(x => Object.assign({ v: x[0], n: x[1] }, seg((s.lang || 'zh-TW') === x[0]))),
       srvTwOnly: jp && this.SRV_TW_ONLY.includes(s.page),
       srvTwOnlyPages: jpPages.slice(0, 8),
-      langHintOn: !!s.langHint, langHintText: s.langHint === 'ja' ? 'このサイトを日本語で表示しますか？（インターフェースと主要ページ）' : 'View this site in English? (interface and main pages)',
+      langHintOn: !!s.langHint, langHintText: s.langHint === 'ja' ? 'このサイトを日本語で表示しますか？' : 'View this site in English?',
       langHintYes: s.langHint === 'ja' ? '日本語にする' : 'Switch to English', langHintNo: s.langHint === 'ja' ? 'このまま' : 'Keep Chinese',
     };
   }
@@ -6758,14 +6820,14 @@ class Component extends DCLogic {
     out.jnNext = evs.filter(e => e[4] > now).map(evRow);
     out.jnHasNext = out.jnNext.length > 0;
     out.jnPast = evs.filter(e => e[6] <= now || (e[5] <= now && e !== cur)).sort((a, b) => b[4] - a[4]).map(evRow);
-    /* 即時榜線（Haruki 日服追蹤器，約每小時一筆） */
+    /* 即時榜線（Haruki 日服追蹤器，約 10～20 秒更新一次） */
     const tiers = this.bordersOf(s.jnBrd), top = this.ranksOf(s.jnLive);
     const want = [1, 2, 3, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 50000, 100000];
     out.jnTiers = want.map(r => { const x = (r <= 100 ? top.find(y => y.rank === r) : null) || tiers.find(y => y.rank === r); return x && x.score != null ? { r: 'T' + this.n(r), v: this.n(x.score), top: r <= 3 } : null; }).filter(Boolean);
     out.jnTop = top.slice(0, 10).map(x => ({ r: x.rank, n: x.name || '—', v: this.n(x.score), medal: x.rank <= 3, mc: ['', '#f5b301', '#9aa5b1', '#cd7f32'][x.rank] || 'var(--text-3)' }));
     out.jnHasLive = out.jnTiers.length > 0 || out.jnTop.length > 0;
     out.jnLiveErr = s.jnLiveErr || '';
-    out.jnLiveAt = s.jnLiveAt ? '更新於 ' + fdt(s.jnLiveAt).split(' ')[1] + '・每 2 分鐘重抓（追蹤器約每小時一筆）' : '讀取中…';
+    out.jnLiveAt = s.jnLiveAt ? '更新於 ' + fdt(s.jnLiveAt).split(' ')[1] + '・每 2 分鐘重抓（追蹤器約 10～20 秒更新一次）' : '讀取中…';
     /* 卡池：開放中與即將開放（常駐池建置時已排除） */
     const gaRow = g => ({ id: g[0], name: g[1], type: GTN[g[2]] || g[2], logo: this.ASSET + '/gacha/' + g[5] + '/logo/logo.webp',
       when: fdt(g[3]) + ' – ' + fdt(g[4]), left: g[3] > now ? left(g[3] - now) + '後開放' : '剩 ' + left(g[4] - now),
@@ -7518,7 +7580,11 @@ class Component extends DCLogic {
     if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
     if (p === 'cardlib') { this.loadCards(); this.loadCardX(); }
     if (p === 'gachasim') { this.loadGachaSim(); this.loadCards(); }
-    if (p === 'lookup') { this.loadCards(); if (/^\d+$/.test(String(this.state.luId || '')) && !this.state.luData && !this.state.luLoad) this.luLookup(); }
+    if (p === 'lookup') {
+      this.loadCards();
+      if (this.SRV === 'jp' && !this.state.luId) { let j = ''; try { j = localStorage.getItem('sekai-app-pid-jp') || ''; } catch (e) {} if (j) this.setState({ luId: j }); }   // 日服記住上次查的 ID
+      setTimeout(() => { if (/^\d+$/.test(String(this.state.luId || '')) && !this.state.luData && !this.state.luLoad && !this.state.luTrLoad && !this.state.luTr) this.luLookup(); }, 0);
+    }
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
     if (p === 'wlsup') { this.loadCards(); this.loadWLSup(); this.loadEvList(); }
     if (p === 'analysis') { this.loadLive(); this.loadEvList(); this.loadBorderHistory(); this.loadBorderDB(); this.loadBorderModel(); }
