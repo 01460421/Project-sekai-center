@@ -531,6 +531,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/23', t: '排程預測加上角色、屬性、技能', s: '未來活動每一期列出加成屬性、加成角色與活動卡（角色・屬性・技能），未來卡池的 PU 卡也標屬性與技能，分類跟卡片技能庫一樣。日服還沒公布的期數改列屬性候選（最久沒當加成屬性的排前面，逐期回測前兩名 57%）、加成角色（照團體候選）與最可能輪空 4★ 的團員；推估的生日池標出新生日卡的屬性（每個角色五年一輪、五種各一次）。回測數字都在「延遲與規律」。', p: 'sched' },
     { d: '2026/10/20', t: '排程預測頁：日服加一年的規律、逐期回測、未來活動與卡池', s: '追活動 → 活動總覽多一個「排程預測」分頁籤。台服的活動與卡池 id、素材都跟日服一樣，開放時間是日服同一天、同一個當地時刻再加一年（跨 2/29 那年差 366 天）；這條規律不是寫死的，每一期拿之前幾期的命中率在四條候選規則裡挑一條來預測，再跟台服 master 的實際時間比：200 期活動命中 176／181（最近 30 期 28／30），官方已排的未來 19 期全中，卡池 41／46。頁上有未來一年的活動與卡池預測（卡池附 PU 卡、所屬活動、分類與信心，並標出跟站上卡池列表差幾天）、逐期回測表（每期的日服時間、預測、實際、偏差、用的規則）、延遲歷史（哪幾期是 +365、哪幾期是 +366）與各類卡池的偏差分布。' },
     { d: '2026/10/17', t: 'Haruki 專區新增「背包」：整份遊戲資料攤開看', s: 'Haruki 專區多一個「背包」分頁，把匯入的遊戲資料全部攤開：名片（暱稱、等級、自我介紹、名片上的稱號與羈絆稱號、頭像框、自訂名片，有授權的話連水晶與金幣）、稱號（持有的全部稱號，依活動／成就／角色／生日／排位篩選，附底圖與名次圖；羈絆稱號另列）、資源（素材依種類分組、豆森素材與稀有度）、跑榜（各期活動 P、本站歷期前百查到的名次、World Link 各章名次、排位賽季的段位與勝負）、歌曲（各難度玩過／FC／AP 比例與還沒 FC 的曲目）、收集（卡片、服裝、劇情閱讀率、任務）、原始資料（Haruki 給了哪些區塊、各幾筆）。' },
     { d: '2026/10/17', t: '豆森地圖換成俯視底圖，排名獎勵改用遊戲內圖示，全站不再用表情符號', s: 'Haruki 專區的豆森「今日資源」實際地圖改鋪 Lunabot／MiddleRed 的烤森俯視圖（四個場所），採集點照遊戲座標對到底圖上，每一點直接排出還沒採的東西：小格是素材的遊戲內縮圖、角落數字是還剩幾個、紅框是稀有資源、紫光是稀有採集點、紅叉是出生點，淡掉的是已採完的。活動資料頁的排名獎勵也改成從 master 抓：稱號用底圖加名次圖、水晶與金幣、技能升級譜、素材都用遊戲內縮圖，頭像框帶角色。順便把站內用到的表情符號全部換掉。' },
@@ -6483,7 +6484,7 @@ class Component extends DCLogic {
   loadSched() {
     if (this.state.sched) return Promise.resolve(this.state.sched);
     if (this._schedP) return this._schedP;
-    this._schedP = import('./data/schedule-forecast.js?v=274e4818bc').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+    this._schedP = import('./data/schedule-forecast.js?v=c8c73ca639').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
       .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
     return this._schedP;
   }
@@ -6506,6 +6507,22 @@ class Component extends DCLogic {
     const fjt = t => { const d = new Date(t + 9 * 3600000); return fj(t) + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
     const J = D.jp || {}, UN = { none: '混活' }; ['ln', 'mmj', 'vbs', 'wxs', 'n25'].forEach(k => { UN[k] = (this.UNITS[k] || {}).n || k; });
     const SRC = { tw: ['官方已排', '#15803d'], pred: ['模型預測', '#b45309'], jp: ['日服未公布・推估', '#6d28d9'] };
+    /* 角色、屬性、技能：屬性用 SM_ATTR、技能分類用卡片技能庫同一套 CL_GROUP、團名用 UNITS */
+    const AT = a => this.SM_ATTR[a] || [a || '—', 'var(--text-3)'];
+    const SKG = k => this.CL_GROUP[k] || [k || '—', 'var(--text-3)'];
+    const UK = { light_sound: 'ln', idol: 'mmj', street: 'vbs', theme_park: 'wxs', school_refusal: 'n25', piapro: 'vs' };
+    const unitName = u => ((this.UNITS[UK[u] || u] || {}).n) || u;
+    const cardChip = c => ({ img: c.abn ? this.cardImg(c.abn, c.rar) : '', n: this.charName(c.ch) || '#' + c.ch, at: AT(c.at)[0], atC: AT(c.at)[1],
+      sk: SKG(c.sk)[0], skC: SKG(c.sk)[1], rar: c.rar === 9 ? '生日卡' : '★' + c.rar, line2: c.rar === 9 && c.sk === 'birthday' ? '生日卡' : (c.rar === 9 ? '生日卡' : '★' + c.rar) + '・' + SKG(c.sk)[0] });
+    const charsTxt = list => {
+      const ids = [...new Set((list || []).map(x => x[0]))];
+      if (ids.length >= 26) return '全部 26 位角色';
+      const mem = ids.filter(i => i <= 20), vs = ids.filter(i => i > 20), u = mem.length ? Math.ceil(mem[0] / 4) : 0;
+      if (mem.length === 4 && mem.every(i => Math.ceil(i / 4) === u) && vs.length === 6) return unitName(['', 'light_sound', 'idol', 'street', 'theme_park', 'school_refusal'][u]) + ' 4 人＋虛擬歌手 6 人';
+      return ids.map(i => this.charName(i) || '#' + i).join('、');
+    };
+    const unitChars = k => { const L = Object.keys(UK).find(x => UK[x] === k); return L && k !== 'vs' ? unitName(L) + ' 4 人＋虛擬歌手 6 人' : ''; };
+    const CR = J.cards || {}, CA = CR.attr || {};
     out.sdTabs = [['ev', '未來活動'], ['ga', '未來卡池'], ['back', '逐期回測'], ['rule', '延遲與規律']].map(([v, n]) => Object.assign({ v, n }, chip(tab === v)));
     out.sdIsEv = tab === 'ev'; out.sdIsGa = tab === 'ga'; out.sdIsBack = tab === 'back'; out.sdIsRule = tab === 'rule';
     out.sdRule = '台服＝日服同一天、同一個當地時刻再加一年（活動 15:00、World Link 20:00；卡池 12:00、生日池 00:00）。現在用的規則：' + (R.activeName || '') + '，延遲 ' + Math.floor(R.lagHours / 24) + ' 天 ' + Math.round(R.lagHours % 24) + ' 小時。' + (J.n ? '日服還沒公布的期數，另外用日服自己的年度規律往後推估 ' + (J.horizonDays >= 360 ? '一年' : J.horizonDays + ' 天') + '，再換成台服時間。' : '');
@@ -6514,8 +6531,24 @@ class Component extends DCLogic {
     if (tab === 'ev') {
       out.sdEvents = (D.evFuture || []).map(r => ({ id: r[0], n: r[6] === 'jp' ? '（日服未公布）' + (EVN[r[2]] || r[2]) + '・推估' : r[1], t: EVN[r[2]] || r[2], when: fdt(r[3]) + ' – ' + fdt(r[4]), src: (SRC[r[6]] || SRC.pred)[0], srcC: (SRC[r[6]] || SRC.pred)[1],
         agree: r[6] === 'tw' ? (r[8] ? '模型一致' : '與模型不同') : '', agreeC: r[8] ? 'var(--text-3)' : '#dc2626', days: days(r[3]), patch: JSON.stringify({ eiId: r[0] }), isTw: r[6] === 'tw', isJp: r[6] === 'jp', notJp: r[6] !== 'jp',
-        jpWhen: r[6] === 'jp' ? '日服推估 ' + fjt(r[9]) + '（' + (r[13] || '') + '）' : '', unit: r[6] === 'jp' ? (r[2] === 'world_bloom' ? 'World Link' + (r[10] && r[10] !== 'none' ? '・' + (UN[r[10]] || r[10]) : '・跨團') : '團體候選 ' + (UN[r[10]] || r[10]) + '、' + (UN[r[11]] || r[11]) + '（最久沒輪到的團；混活約 ' + (r[12] || 0) + '%）') : '' }));
-      out.sdEvNote = '「官方已排」是台服 master 裡已經有時間的期數（通常排到半年後），「模型預測」是台服 master 還沒有、用日服時間換算的；「日服未公布・推估」連日服都還沒排，是用日服自己的年度規律（去年同日的下一期、結算後隔兩天 15:00）往後連推的，期數是順號、名稱未知，越後面越不準（見「延遲與規律」的連鎖回測）。點前兩種開活動資料。';
+        jpWhen: r[6] === 'jp' ? '日服推估 ' + fjt(r[9]) + '（' + (r[13] || '') + '）' : '', unit: r[6] === 'jp' ? (r[2] === 'world_bloom' ? 'World Link' + (r[10] && r[10] !== 'none' ? '・' + (UN[r[10]] || r[10]) : '・跨團') : '團體候選 ' + (UN[r[10]] || r[10]) + '、' + (UN[r[11]] || r[11]) + '（最久沒輪到的團；混活約 ' + (r[12] || 0) + '%）') : '',
+        ...(() => {
+          /* 已知期數：日服 master 的加成屬性、加成角色、活動卡；推估期數：屬性候選、加成角色（照第一候選團）、4★ 可能輪空 */
+          const info = r[6] !== 'jp' ? (D.evInfo || {})[String(r[0])] : null;
+          if (info) {
+            const cards = (info[2] || []).map(c => cardChip({ ch: c[1], rar: c[2], at: c[3], sk: c[4], abn: c[5] }));
+            return { hasInfo: true, hasPred: false, atN: info[0] ? AT(info[0])[0] : '', atC: AT(info[0])[1], hasAt: !!info[0],
+              chars: charsTxt(info[1]), cards, hasCards: cards.length > 0 };
+          }
+          if (r[6] === 'jp' && r[2] !== 'world_bloom' && Array.isArray(r[14]) && r[14].length) {
+            const at = r[14].map(a => ({ n: AT(a)[0], c: AT(a)[1] }));
+            return { hasInfo: false, hasPred: true, predAt: at, predAtNote: '屬性候選（左邊最可能；單期回測前兩名 ' + pct(CA.top2, CA.n) + '）',
+              predChars: unitChars(r[10]) ? '加成角色：若是 ' + (UN[r[10]] || r[10]) + '，就是' + unitChars(r[10]) : '',
+              predSit: r[15] ? '4★ 可能輪空：' + (this.charName(r[15]) || '#' + r[15]) + '（最近剛拿過 4★；回測 ' + ((CR.sitOut || {}).hit || 0) + '／' + ((CR.sitOut || {}).n || 0) + '）' : '' };
+          }
+          return { hasInfo: false, hasPred: false };
+        })() }));
+      out.sdEvNote = '每一期的加成屬性、加成角色、活動卡（角色・屬性・技能）照日服 master；「日服未公布・推估」的期數改列屬性候選與 4★ 可能輪空的團員（回測見「延遲與規律」）。「官方已排」是台服 master 裡已經有時間的期數（通常排到半年後），「模型預測」是台服 master 還沒有、用日服時間換算的；「日服未公布・推估」連日服都還沒排，是用日服自己的年度規律（去年同日的下一期、結算後隔兩天 15:00）往後連推的，期數是順號、名稱未知，越後面越不準（見「延遲與規律」的連鎖回測）。點前兩種開活動資料。';
     }
     if (tab === 'ga') {
       const cat = s.schedCat || 'all', GF = D.gaFuture || [];
@@ -6523,7 +6556,19 @@ class Component extends DCLogic {
       out.sdCats = cats.map(c => Object.assign({ v: c, n: c === 'all' ? '全部 ' + GF.length : (D.cats[c].name || c) + ' ' + GF.filter(g => g[3] === c).length }, chip(cat === c)));
       const gl = GF.filter(g => cat === 'all' || g[3] === cat), lim = 60 + more * 60;
       out.sdGachas = gl.slice(0, lim).map(g => ({ id: g[0], n: g[1], t: GTN[g[2]] || g[2], cat: (D.cats[g[3]] || {}).name || g[3], when: fdt(g[4]) + ' – ' + fdt(g[5]), days: days(g[4]),
-        pu: (g[6] || []).map(c => ({ img: c[3] ? this.cardImg(c[3], c[2]) : '', n: this.charName(c[1]) || '' })).filter(c => c.img), hasPu: (g[6] || []).some(c => c[3]),
+        pu: (g[6] || []).filter(c => c[3]).map(c => cardChip({ ch: c[1], rar: c[2], abn: c[3], at: c[4], sk: c[5] })), hasPu: (g[6] || []).some(c => c[3]),
+        hint: (() => {
+          const h = g[9] === 'jp' && Array.isArray(g[13]) ? g[13] : null;
+          if (!h || !h.length) return '';
+          const at = (h[1] || []).map(a => AT(a)[0]);
+          if (h[2] === 'birthday') {
+            const who = '新生日卡：' + (this.charName(h[0]) || '#' + h[0]) + '・技能 生日・';
+            if (h[3] === 'cycle') return who + '屬性 ' + (at[0] || '—') + '（五年一輪，新一輪照上一輪第一年）';
+            if (h[3] === 'repeat') return who + '屬性 ' + (at[0] || '—') + '（照上一輪同一年' + (at.length > 1 ? '；這一輪還沒用過的還有 ' + at.slice(1).join('、') : '') + '）';
+            return who + (at.length === 1 ? '屬性 ' + at[0] + '（這一輪只剩這一種沒用過）' : '屬性候選 ' + at.join('、') + '（這一輪還沒用過的）');
+          }
+          return at.length ? '活動卡池：卡跟著活動的加成屬性，候選 ' + at.join(' → ') : '';
+        })(),
         ev: g[7] ? '第 ' + g[7] + ' 期' : '', hasEv: !!g[7] && g[9] !== 'jp', evTxt: g[7] && g[9] === 'jp' ? '第 ' + g[7] + ' 期（推估）' : '', evPatch: JSON.stringify({ eiId: g[7] }), src: (SRC[g[9]] || SRC.pred)[0], srcC: (SRC[g[9]] || SRC.pred)[1],
         man: g[9] === 'jp' ? '' : g[8] == null ? '站上列表沒有' : g[8] === 0 ? '站上列表一致' : '站上列表差 ' + sg(g[8]) + ' 天', manC: g[8] == null ? 'var(--text-3)' : g[8] === 0 ? '#15803d' : '#dc2626',
         jpWhen: g[9] === 'jp' ? '日服推估 ' + fjt(g[11]) + '・規則：' + (g[12] || '') : '',
@@ -6554,7 +6599,11 @@ class Component extends DCLogic {
           '日期：' + J.activeName + '（兩條候選：去年同日的下一期 ' + (J.ruleHits || {}).tpl + '／' + J.n + '、結算後隔兩天 15:00 ' + (J.ruleHits || {}).cad + '／' + J.n + '；' + J.since + ' 年起逐期回測，差一天內算命中：' + J.hit + '／' + J.n + '，最近 30 期 ' + J.hit30 + '／' + J.n30 + '）',
           '類型：照去年同一時段那期（嘉年華已停辦就當馬拉松）：' + J.typeHit + '／' + J.n + '；World Link 季每年 4 月到 9 月，9 月底有 3 天的收尾章',
           '團體：最久沒輪到的團，第一候選 ' + J.unit1 + '／' + J.unitN + '、前兩名 ' + J.unit2 + '／' + J.unitN + '（只算團體活動；最近 60 期有 ' + J.mixed + '% 是混活）',
-          '屬性：查過加成屬性的序列，跟前 1 到 6 期都沒有可用的循環（命中率跟亂猜一樣），所以不猜'];
+          '屬性：最久沒當加成屬性的排前面（World Link 沒有加成屬性不算）。' + (CA.n ? '第 ' + (CR.attrSince || 0) + ' 期起逐期回測：第一候選 ' + CA.top1 + '／' + CA.n + '、前兩名 ' + CA.top2 + '／' + CA.n + '、前三名 ' + CA.top3 + '／' + CA.n + '（亂猜 20%／40%／60%）' : ''),
+          '加成角色：單團活動一定是那團 4 人＋虛擬歌手 6 人，所以跟著團體候選走；混活是跨團 5 人、World Link 是章節角色，沒有規律可猜',
+          '4★：單團活動每期 3 張、屬性都是加成屬性。最近剛拿過 4★ 的團員最常輪空：' + ((CR.sitOut || {}).hit || 0) + '／' + ((CR.sitOut || {}).n || 0) + '（亂猜 25%）',
+          '4★ 技能（最近 ' + (CR.skillWindow || 40) + ' 期，出現的期數）：' + (CR.skills || []).map(x => SKG(x[0])[0] + ' ' + x[1]).join('、') + '；同一期很少重複，所以多半是其中三種各一張',
+          '生日卡：技能一律是生日；屬性每個角色五年一輪、五種各一次（' + ((CR.bday || {}).ok || 0) + '／' + ((CR.bday || {}).cycles || 0) + ' 輪），第六年起跟五年前同一個（' + ((CR.bday || {}).repHit || 0) + '／' + ((CR.bday || {}).repN || 0) + '）'];
         out.sdChain = (J.chainBuckets || []).map(b => ({ k: '往後第 ' + b[0] + '–' + b[1] + ' 期', n: b[2] + ' 次', d1: pct(b[3], b[2]), d3: pct(b[5], b[2]), t: pct(b[4], b[2]) }));
         out.sdGaRules = Object.keys(J.gaRules || {}).map(c => J.gaRules[c]).filter(r => r.n >= 3).sort((a, b) => b.n - a.n).map(r => ({ n: r.catName, rule: r.name, s: r.hit + '／' + r.n, useC: r.hit * 10 >= r.n * 3 ? '#15803d' : 'var(--text-3)', use: r.hit * 10 >= r.n * 3 ? '採用' : '太不準，不推估' }));
         out.sdJpNote = '連鎖回測：從 2024 年起的每一期當起點，只用它之前的資料往後連推 ' + ((J.chainBuckets || []).slice(-1)[0] || [])[1] + ' 期（推估的期再當下一期的上一期），逐期跟實際比。越遠越不準是正常的：長度差一天就整條往後移一天。卡池的規則是每一類只看最近 24 個樣本挑的（排程改制過，舊規律不算數）。';
