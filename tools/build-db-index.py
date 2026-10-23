@@ -13,25 +13,30 @@ virtualLives.json 2.7 MB、mysekaiFixtures.json 1 MB（外加 tags 170 KB、藍�
 角色／素材／一格漫畫／原聲帶／公告那幾頁的來源檔都很小（< 300 KB），
 前端直接抓 master 就好，不經過這裡。
 
+MASTER_SRV=jp 時同一套改吃日服 master，輸出 -jp 版（lives-index-jp.js、data-built-jp.js…，形狀與匯出名稱相同）。
+日服的 virtualLives.json 有 16 MB，更不可能給瀏覽器抓。日服 master 沒有 supportEvents（應援活動），
+support-events-jp.js 會是空清單，前端照樣 import 不必分支。
+
 內容沒變就不寫檔，CI 才不會空提交。重跑：
 
     python3 tools/build-db-index.py
+    MASTER_SRV=jp python3 tools/build-db-index.py    # 日服版
     python3 tools/stamp-assets.py
 """
 import json
 import pathlib
 import urllib.request
 
-from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
+from tc_source import SRV, TC, TC_SW, srv_out, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World；MASTER_SRV=jp 時是日服
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT_LIVES = ROOT / 'data' / 'lives-index.js'
-OUT_FIX = ROOT / 'data' / 'fixtures-index.js'
-OUT_ST = ROOT / 'data' / 'stories-index.js'
-OUT_MST = ROOT / 'data' / 'mysekai-talks-index.js'
-OUT_BUILT = ROOT / 'data' / 'data-built.js'
-OUT_MSEV = ROOT / 'data' / 'mysekai-events.js'
-OUT_SUP = ROOT / 'data' / 'support-events.js'
+OUT_LIVES = ROOT / 'data' / srv_out('lives-index.js')
+OUT_FIX = ROOT / 'data' / srv_out('fixtures-index.js')
+OUT_ST = ROOT / 'data' / srv_out('stories-index.js')
+OUT_MST = ROOT / 'data' / srv_out('mysekai-talks-index.js')
+OUT_BUILT = ROOT / 'data' / srv_out('data-built.js')
+OUT_MSEV = ROOT / 'data' / srv_out('mysekai-events.js')
+OUT_SUP = ROOT / 'data' / srv_out('support-events.js')
 
 
 def get(url):
@@ -194,6 +199,8 @@ def build_stories():
     # 卡片劇情的標題幾乎都是「支線劇情（前篇／後篇）」，跟前後篇欄位重複，只有不一樣時才存
     st_cards = {}
     DEFAULT_TITLE = {'first_part': '支線劇情（前篇）', 'second_part': '支線劇情（後篇）'}
+    if SRV == 'jp':   # 日服的預設標題是「サイドストーリー（前編／後編）」，一樣只存不一樣的
+        DEFAULT_TITLE = {'first_part': 'サイドストーリー（前編）', 'second_part': 'サイドストーリー（後編）'}
     for e in sorted(card_eps, key=lambda x: x['id']):
         part = e.get('cardEpisodePartType') or ''
         title = e.get('title') or ''
@@ -327,7 +334,8 @@ def build_support_events():
     sw = load(f'{TC_SW}/supportEvents.json') if TC != TC_SW else []
     if not hk and not sw:
         body = 'export const SUPPORT_EVENTS=[];\n'
-        return write_if_changed(OUT_SUP, '/* 由 tools/build-db-index.py 產生,勿手改。應援活動（台服目前沒有這張表） */\n', body)
+        why = '日服 master 沒有這張表' if SRV == 'jp' else '台服目前沒有這張表'
+        return write_if_changed(OUT_SUP, f'/* 由 tools/build-db-index.py 產生,勿手改。應援活動（{why}） */\n', body)
     names = {}
     for typ, fname in (('material', 'materials'), ('boost_item', 'boostItems'), ('gacha_ticket', 'gachaTickets'),
                        ('mysekai_material', 'mysekaiMaterials'), ('stamp', 'stamps')):

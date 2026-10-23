@@ -17,7 +17,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20   # 日服 event-info／卡池列表多抓 resourceBoxes 35 MB、gachas 49 MB（快取沒中時）
     steps:
       - uses: actions/checkout@v4
 
@@ -66,9 +66,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/build-gacha-pickups.py || echo "卡池 PU 卡重算失敗,本輪略過"
 
+      # 網站切到日服時的卡池列表（形狀同 sekai-data.js 的 GACHAS）與它的 PU 卡：日服 gachas.json 49 MB 走上面的快取。
+      # 只放在這支每日排程，不要搬進半小時一次的榜線快照。
+      - name: 日服卡池列表與 PU 卡(data/gachas-jp.js、data/gacha-pickups-jp.js)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/build-gachas-jp.py || echo "日服卡池列表重算失敗,本輪略過"
+          MASTER_SRV=jp python3 tools/build-gacha-pickups.py || echo "日服卡池 PU 卡重算失敗,本輪略過"
+
       # 活動資料頁與甘特圖的活動資料：台服 master 的活動、加成、活動卡、排名獎勵（resourceBoxDetails 26 MB 在這裡攤平），內容沒變就不寫檔。
       - name: 重算活動資料(data/event-info.js)
         run: python3 tools/build-event-info.py || echo "活動資料重算失敗,本輪略過"
+      # 日服版（MASTER_SRV=jp）：日服 master 沒有 resourceBoxDetails，改攤平 resourceBoxes.json（35 MB，走同一份快取）。
+      - name: 重算日服活動資料(data/event-info-jp.js)
+        env:
+          MASTER_SRV: jp
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/build-event-info.py || echo "日服活動資料重算失敗,本輪略過"
       - name: 排程預測（日服加一年的規律：逐期回測與未來活動／卡池）
         run: python3 tools/build-schedule-forecast.py || echo "排程預測重算失敗,本輪略過"
       # 網站切到日服時的現況（版本、近期活動、開放中的卡池、新曲）：日服 master 走同一份快取，內容沒變就不寫檔。
@@ -80,4 +95,4 @@ jobs:
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
       # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
-        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js
+        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js
