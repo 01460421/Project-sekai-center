@@ -21,7 +21,7 @@ class Component extends DCLogic {
   })();
   JP_MASTER = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
   JP_DB_FILES = ['gameCharacters', 'characterProfiles', 'unitProfiles', 'gameCharacterUnits', 'materials', 'mysekaiMaterials', 'tips',
-                 'musicSoundTracks', 'musicSoundTrackCategories', 'mobCharacters'];
+                 'musicSoundTracks', 'musicSoundTrackCategories', 'mobCharacters', 'eventCards', 'limitedLoginBonuses', 'mysekaiBlueprints'];
   /* 日服資源：日服現況頁底部與資源連結頁共用。[分類, [[名稱, 網址, 說明]…]]。
      2026/10/23 逐一確認過還在更新（研究代理實際載入或用搜尋結果、API 佐證）；已停更的不列：
      pjsek.ai（API 停用）、AppMedia（2026/8 底停更）、wikiwiki.jp/pjsekai、Chart Cyanvas、sdvx.in 的プロセカ頁。 */
@@ -57,9 +57,9 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'rank', 'lookup', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_JP = ['jpnow', 'rank', 'lookup', 'wlsup', 'collect', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
   SRV_TW_ONLY = ['event', 'evinfo', 'calendar', 'gacha', 'lives', 'news', 'story', 'borderdb', 'analysis', 'distrib', 'shop',
-                 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'collect', 'wlsup'];
+                 'bonuscards', 'fixtures', 'mstalk', 'cardlib'];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -89,9 +89,9 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=bd60023e8a');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=bf8931635a');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=1f1808f0ee'), ja: () => import('./data/i18n-ja.js?v=670fdd53bf') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=ac4d042452'), ja: () => import('./data/i18n-ja.js?v=20a2d5a50d') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -124,7 +124,7 @@ class Component extends DCLogic {
      app.html 與 index.html(經典版/B30/儲值分析)同源,共用同一份 localStorage,
      所以在這裡備份就涵蓋全站。只收使用者資料,不收可重建的快取。 */
   BK_KEYS = [
-    ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-app-cur', '活動P 目前'],
+    ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-pid-jp', '綁定的日服玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-app-cur', '活動P 目前'],
     ['sekai-cards-own', '收集率:持有卡片'], ['sekai-mst-done', '豆森對話:已看過'], ['sekai-mst-own', '豆森對話:已擁有的家具'],
     ['sekai-fav', '收藏與待辦'], ['sekai-calc-presets', '計算中心:我的設定'], ['sekai-rs-presets', '跑榜工作室:儲存設定'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
@@ -646,6 +646,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/23', t: '日服 Player ID：綁定、即時名次與每一場的紀錄', s: '切到日服後首頁可以綁定日服 Player ID（跟台服的分開存），首頁與頁首直接顯示你這期的即時名次、分數、與上一名的差距、近一小時與 24 小時的場數；玩家查詢在日服模式也能用，多了分數走勢與最近幾場的得分。資料來自 Haruki 活動追蹤器（約 10～20 秒更新，只記前百與各段位線上的玩家）。WL 後排加成與收集室也改讀日服 master。英文與日文介面加上全站詞典（六千五百多條），選了才下載。', p: 'jpnow' },
     { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給 omega', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或 omega；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給 omega 的私訊（只有你和 omega 看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，omega 回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
     { d: '2026/10/23', t: '全站台服／日服切換、日服現況、簡中／英文／日文介面', s: '頁首新增「伺服器・語言」按鈕。<b>切到日服</b>後首頁換成日服現況（版本、當期活動倒數與加成角色、即時榜線與前十名、開放中的卡池與 PU 卡、新曲、近期活動），活動排名改看日服即時排名（Haruki 日服追蹤器），卡片圖鑑、收集率、卡面下載、角色、素材、一格漫畫與原聲帶改用日服 master；只有台服資料的頁面會在上方提示並可一鍵切回台服，分享出去的連結也會停在日服。日服現況頁底部整理了網路上仍在更新的日服資源（官方、資料庫、Wiki、榜線、工具與社群），資源連結頁也加了一組。<b>介面語言</b>：簡體中文整站轉換（連詞彙一起轉，例如伺服器→服务器）；英文與日文目前翻譯導覽、頁名、頁首、日服現況與客服視窗，其餘內容維持中文。第一次來時瀏覽器是簡中會自動切換，英日會跳一次提示。', p: 'jpnow' },
     { d: '2026/10/23', t: '排程預測加上角色、屬性、技能', s: '未來活動每一期列出加成屬性、加成角色與活動卡（角色・屬性・技能），未來卡池的 PU 卡也標屬性與技能，分類跟卡片技能庫一樣。日服還沒公布的期數改列屬性候選（最久沒當加成屬性的排前面，逐期回測前兩名 57%）、加成角色（照團體候選）與最可能輪空 4★ 的團員；推估的生日池標出新生日卡的屬性（每個角色五年一輪、五種各一次）。回測數字都在「延遲與規律」。', p: 'sched' },
@@ -1187,7 +1188,7 @@ class Component extends DCLogic {
 
     try {
       try { const L = JSON.parse(localStorage.getItem('sekai-layout') || 'null'); if (L && typeof L === 'object') this.setState({ layout: L }); } catch (e) {}
-      const pid = localStorage.getItem('sekai-app-pid') || '';
+      const pid = localStorage.getItem(this.PID_KEY) || '';
       const goal = +localStorage.getItem('sekai-app-goal') || 1000000;
       const cur = +localStorage.getItem('sekai-app-cur') || 0;
       this.setState({ pid, goal, cur });
@@ -1896,7 +1897,7 @@ class Component extends DCLogic {
       // 榜線的 T100 直接取前百第 100 名（同一輪已經抓到前百，不多打請求）；下游的顯示、快照、分析、預測都吃合併後的這份
       const brd = brdR.status === 'fulfilled' && brdR.value ? this.t100Merge(brdR.value, top) : this.bordersFromTop(top);
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.via === 'tracker') ? 'tracker' : ((top && top.source === 'haruki') || (brd && brd.source === 'haruki')) ? 'haruki' : 'hisekai' });
-      if (this.state.pid) this.matchMyRank(top);
+      if (this.state.pid) { if (this.SRV === 'jp') this.loadPlayerJp(this.state.pid); else this.matchMyRank(top); }
       this.snapPush(top, brd);
       // 公用快照要等 live 出來才知道期數。切頁時 live 常常還沒回,那次的
       // loadBorderHistory 會因為拿不到 ev.id 直接放棄,所以這裡補一次;
@@ -3751,8 +3752,8 @@ class Component extends DCLogic {
   bindPid() {   // 首頁、自訂面板的綁定鈕與 Enter 都走這裡
     const id = String(this.state.pidInput || '').trim();
     if (!/^\d+$/.test(id)) { this.setState({ pErr: 'Player ID 應為純數字' }); return; }
-    this.setState({ pid: id, pErr: '', pidInput: '' });
-    try { localStorage.setItem('sekai-app-pid', id); } catch (er) {}
+    this.setState({ pid: id, pErr: '', pidInput: '', pdata: null });
+    try { localStorage.setItem(this.PID_KEY, id); } catch (er) {}
     this.loadPlayer(id);
   }
 
@@ -4547,7 +4548,48 @@ class Component extends DCLogic {
   }
   eventOf(d) { return (d && (d.event || d.event_data)) || d || {}; }
 
+  /* 綁定的 Player ID：兩服各存一格（台服 sekai-app-pid、日服 sekai-app-pid-jp），切伺服器不會互相蓋掉 */
+  get PID_KEY() { return this.SRV === 'jp' ? 'sekai-app-pid-jp' : 'sekai-app-pid'; }
+  /* 追蹤器的分數軌跡（columns：t0＋dt[]、s0＋ds[]、r0＋dr[]）→ 時間、分數、名次三條陣列，與每一場（分數往上跳一次＝一場） */
+  trDecode(tr) {
+    const T = [], S = [], R = [], n = +(tr && tr.n) || 0;
+    if (n > 0) {
+      let t = +tr.t0 || 0, sc = +tr.s0 || 0, rk = +tr.r0 || 0;
+      T.push(t); S.push(sc); R.push(rk);
+      for (let i = 0; i < n - 1; i++) { t += +(tr.dt || [])[i] || 0; sc += +(tr.ds || [])[i] || 0; rk += +(tr.dr || [])[i] || 0; T.push(t); S.push(sc); R.push(rk); }
+    }
+    const games = []; for (let i = 1; i < S.length; i++) if (S[i] > S[i - 1]) games.push([T[i], S[i] - S[i - 1]]);
+    return { T, S, R, games };
+  }
+  /* 日服的「我的狀態」：Worker 的 /haruki/jp/event/live/user/{id}（追蹤器 details/user），跟著即時榜線每分鐘更新 */
+  async loadPlayerJp(id) {
+    if (this._pjBusy) return;
+    this._pjBusy = true;
+    try {
+      const r = await fetch(this.GAMES_API + '/haruki/jp/event/live/user/' + encodeURIComponent(id), { headers: { Accept: 'application/json' } });
+      let d = null; try { d = await r.json(); } catch (e) {}
+      if (String(this.state.pid) !== String(id)) return;
+      if (r.status === 404 && d && d.error === 'not_tracked') { this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { name: (s.pdata && s.pdata.name) || ('玩家 ' + id), jpNotTracked: true, myRank: null }), pErr: '' })); return; }
+      if (!r.ok || !d) throw new Error('HTTP ' + r.status);
+      const cur = (d.current && d.current.rankData) || {}, ud = (d.current && d.current.userData) || d.profile || {};
+      const nx = (d.next && d.next.rankData) || null;
+      const { games } = this.trDecode(d.trace), now = Date.now() / 1000;
+      const win = h => games.filter(g => g[0] >= now - h * 3600);
+      const sum = a => a.reduce((x, g) => x + g[1], 0);
+      const h1 = win(1);
+      this.setState(s => ({ pErr: '', pdata: Object.assign({}, s.pdata || {}, {
+        name: ud.name || ('玩家 ' + id), jpNotTracked: false, jpWord: ud.profileWord || '', jpCard: ud.cardId || null,
+        myRank: cur.rank || null, myScore: cur.score != null ? +cur.score : null, mySpeed: sum(h1),
+        myRounds1h: h1.length, myRounds3h: win(3).length, myRounds24h: win(24).length, myAvg1h: h1.length ? sum(h1) / h1.length : null,
+        myLastPlayed: games.length ? games[games.length - 1][0] * 1000 : null,
+        myGap: nx && nx.score != null && cur.score != null ? +nx.score - +cur.score : null, myNextRank: nx ? nx.rank : null, myAt: Date.now(),
+      }) }));
+    } catch (e) {
+      this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { name: (s.pdata && s.pdata.name) || ('玩家 ' + id) }) }));
+    } finally { this._pjBusy = false; }
+  }
   matchMyRank(top) {
+    if (this.SRV === 'jp') return;      // 日服前百的玩家 ID 是雜湊，比對不到；改由 loadPlayerJp 查
     const me = this.ranksOf(top).find(r => this.sameUid(r.uid, this.state.pid));
     if (!me) return;
     const st = me.stats || {};
@@ -4560,6 +4602,7 @@ class Component extends DCLogic {
     }) }));
   }
   async loadPlayer(id) {
+    if (this.SRV === 'jp') return this.loadPlayerJp(id);
     try {
       const d = await this.apiFetch('/user/' + id + '/profile');
       const u = d.user || d.userProfile || d.profile || d || {};
@@ -5006,12 +5049,12 @@ class Component extends DCLogic {
     try {
       /* eventCards 是拿來認「哪些卡是當期活動的」—— 那些卡要放前排主隊，
          master data 沒有另一張表寫這件事，只能從活動歸屬反推。 */
-      const soft = f => this.tdbJson(f).catch(() => []);
+      const soft = f => this.srvJson(f).catch(() => []);
       const [wb, sup, lim, evc, rar, attr, hon, skl, dll, cnl] = await Promise.all([
-        this.tdbJson('worldBlooms.json'),
-        this.tdbJson('worldBloomSupportDeckBonuses.json'),
-        this.tdbJson('worldBloomSupportDeckUnitEventLimitedBonuses.json'),
-        this.tdbJson('eventCards.json'),
+        this.srvJson('worldBlooms.json'),
+        this.srvJson('worldBloomSupportDeckBonuses.json'),
+        this.srvJson('worldBloomSupportDeckUnitEventLimitedBonuses.json'),
+        this.srvJson('eventCards.json'),
         // 終章主隊用：稀有度×專精加成、隊內異色加成、稱號加成。三張都很小；抓不到就用計算端的備援常數
         soft('eventRarityBonusRates.json'), soft('worldBloomDifferentAttributeBonuses.json'), soft('eventHonorBonuses.json'),
         // 終章的三張限制表：技能上限、玩偶綜合力上限、特效卡計幾張（兩服數值不同，所以讀表不寫死）
@@ -5166,6 +5209,11 @@ class Component extends DCLogic {
      每頁各自快取在 state；失敗把錯誤放進 dbErr，畫面上給重試鈕。 */
   DB_PAGES = ['cards', 'chars', 'fixtures', 'mstalk', 'materials', 'comics', 'ost', 'lives', 'news', 'story'];
   DB_KEY = { cards: 'cardX', chars: 'chars', fixtures: 'fixtures', mstalk: 'mst', materials: 'mats', comics: 'comics', ost: 'ost', lives: 'lives', news: 'news', story: 'stories' };
+  /* 目前伺服器的 master 單檔：台服走 tdbJson（Haruki TC，缺表退 Sekai-World），日服讀 Sekai-World 日服 master */
+  srvJson(file) {
+    if (this.SRV !== 'jp') return this.tdbJson(file);
+    return fetch(this.JP_MASTER + '/' + file).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
   dbGet(name) {
     if (this.SRV === 'jp' && this.JP_DB_FILES.includes(name)) {
       return fetch(this.JP_MASTER + '/' + name + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
@@ -6840,6 +6888,19 @@ class Component extends DCLogic {
     /* 新曲：依公開時間，還沒公開的標「即將公開」 */
     out.jnSongs = (D.songs || []).slice(0, 12).map(m => ({ id: m[0], t: m[1], by: [m[2], m[3]].filter((v, i, a) => v && v !== '-' && a.indexOf(v) === i).join('／'),
       img: this.ASSET + '/music/jacket/' + m[5] + '/' + m[5] + '.webp', when: m[4] > now ? left(m[4] - now) + '後公開' : fd(m[4]), soon: m[4] > now, past: m[4] <= now }));
+    /* 我的日服名次：綁定的日服 Player ID（日服模式才有；台服模式的 pid 是台服的） */
+    const pd = s.pdata || {}, mine = this.SRV === 'jp' && !!s.pid;
+    out.jnMeBind = this.SRV === 'jp' && !s.pid; out.jnMeOn = mine; out.jnMeTw = this.SRV !== 'jp';
+    out.jnPidInput = s.pidInput || ''; out.jnPErr = s.pErr || '';
+    if (mine) {
+      const agoM = ms => { const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); return m < 1 ? '剛剛' : m < 60 ? m + ' 分鐘前' : Math.floor(m / 60) + ' 小時前'; };
+      out.jnMe = { name: pd.name || ('玩家 ' + s.pid), id: s.pid, rank: pd.myRank ? '#' + this.n(pd.myRank) : '—', score: pd.myScore != null ? this.n(pd.myScore) : '—',
+        gap: pd.myGap != null ? '距離 #' + pd.myNextRank + ' 還差 ' + this.n(pd.myGap) : (pd.myRank === 1 ? '目前第 1 名' : ''),
+        h1: pd.myRounds1h != null ? pd.myRounds1h + ' 場・+' + this.n(pd.mySpeed || 0) : '—', avg: pd.myAvg1h != null ? this.n(pd.myAvg1h) : '—',
+        last: pd.myLastPlayed ? agoM(pd.myLastPlayed) : '—', h24: pd.myRounds24h != null ? pd.myRounds24h + ' 場' : '—',
+        not: pd.jpNotTracked ? '這期的追蹤名單裡還沒有你：追蹤器只記前百與各段位線上的玩家（T200、T500、T1000…），進到這些名次就會出現。' : '',
+        loading: !pd.myAt && !pd.jpNotTracked };
+    }
     out.jnRes = this.JP_RES.map(g => ({ cat: g[0], items: g[1].map(x => ({ n: x[0], u: x[1], d: x[2] })) }));
     out.jnResNote = this.JP_RES_NOTE;
     return out;
@@ -7446,11 +7507,11 @@ class Component extends DCLogic {
     if (this.state.colLoad || this.state.stamps.length) return;
     this.setState({ colLoad: true, colErr: '' });
     try {
-      const j = n => this.tdbJson(n + '.json').catch(() => []);
+      const j = n => this.srvJson(n + '.json').catch(() => []);
       const [ok, st, ho, hg, pf, pg, cps] = await Promise.all([
         import('./data/collection-assets.js?v=73b9d40b67'),
-        this.tdbJson('stamps.json'),
-        this.tdbJson('honors.json'),
+        this.srvJson('stamps.json'),
+        this.srvJson('honors.json'),
         j('honorGroups'),
         // 6.0 起：玩家邊框（WL 結局章節 TOP100 起）與收藏 BOX 復刻商店
         j('playerFrames'), j('playerFrameGroups'), j('customProfileGachaShops')
@@ -7482,7 +7543,7 @@ class Component extends DCLogic {
   loadEventArt() {
     if (this._evArtLoading || Object.keys(this.state.evArt || {}).length) return;
     this._evArtLoading = true;
-    this.tdbJson('events.json').then(list => {
+    this.srvJson('events.json').then(list => {
       const m = {};
       const ty = {};
       (list || []).forEach(e => {
@@ -12085,7 +12146,7 @@ class Component extends DCLogic {
       onBind: () => this.bindPid(),
       onUnbind: () => {
         this.setState({ pid: '', pdata: null });
-        try { localStorage.removeItem('sekai-app-pid'); } catch (er) {}
+        try { localStorage.removeItem(this.PID_KEY); } catch (er) {}
       }
     };
   }

@@ -78,6 +78,7 @@ const DICT = [
   ['正在切到日服…', 'Switching to JP…', '日本版に切り替え中…'], ['正在切回台服…', 'Switching to TW…', '台湾版に切り替え中…'],
   ['切換伺服器會重新載入頁面；語言立即生效', 'Switching server reloads the page; language applies instantly', 'サーバー切替でページを再読み込み、言語はすぐ反映されます'],
   ['英文與日文目前翻譯介面與主要頁面，其餘內容維持中文', 'English covers the interface and main pages; other content stays in Chinese', '日本語はインターフェースと主要ページのみ対応、その他は中国語のままです'],
+  ['英文與日文已翻譯大部分介面與教學，其餘持續補齊；曲名、卡名與活動名維持遊戲原文', 'Most of the interface and guides are translated, the rest is on the way; song, card and event names stay in the original', 'インターフェースとガイドの大部分を翻訳済み（残りも順次対応）。曲名・カード名・イベント名は原文のままです'],
   ['英文與日文翻譯全站介面與教學；曲名、卡名與活動名維持遊戲原文', 'English and Japanese cover the whole interface and guides; song, card and event names stay in the original', '英語・日本語はサイト全体のインターフェースとガイドに対応。曲名・カード名・イベント名は原文のままです'],
   ['這一頁目前只有台服資料', 'This page only has TW data for now', 'このページは今のところ台湾版のデータのみです'],
   ['切回台服', 'Switch to TW', '台湾版に戻す'], ['日服可以看：', 'Available for JP:', '日本版で見られるページ：'],
