@@ -57,8 +57,8 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
-  SRV_TW_ONLY = ['borderdb', 'shop'];
+  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_TW_ONLY = ['borderdb'];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -119,6 +119,7 @@ class Component extends DCLogic {
     fixtures: 'MySekai 家具（日服 master）：分類、標籤、尺寸、顏色與製作素材',
     mstalk: 'MySekai 角色對話清單（日服）：勾選看過的對話，一眼看出還缺哪些家具',
     cardlib: '日服逐張卡的技能敘述與各等級數值',
+    shop: '日服商城全商品（日服 master，日圓定價）的 CP 值排行 · 月卡通行證攤提 · 智慧推薦最省錢購買組合',
   };
   setSrv(v) {
     v = v === 'jp' ? 'jp' : 'tw';
@@ -144,6 +145,7 @@ class Component extends DCLogic {
     ['sekai-b30-dec', 'B30:小數位數'], ['sekai-b30-ex', 'B30:紅譜定數來源'], ['sekai-ai-dual', 'AI:雙路並行'],
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
+    ['sekai-shop-owned-jp', '儲值分析:已購買（日服）'], ['sekai-shop-price-ov-jp', '儲值分析:自填價格（日服）'],
     ['sekai-base-ep', 'EP 計算器設定'], ['sekai-cards-lv', '收集率:專精與技能等級'], ['sekai-hk-asset', 'Haruki 專區:素材節點'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式'], ['sekai-unit', '團體主題色'], ['sekai-srv', '伺服器（台服／日服）'], ['sekai-lang', '介面語言']
   ];
   bkCollect() {
@@ -2642,7 +2644,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=104d39ecc0';
+      el.src = './js/core.js?v=28aaad81e7';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -9259,6 +9261,7 @@ class Component extends DCLogic {
       gsxMore: (s.gsxRows || []).length > 30, isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
       isShop: s.page === 'shop',
+      shopSrc: './index.html?embed=shop' + (this.SRV === 'jp' ? '&srv=jp' : ''),   // 日服：內嵌的儲值分析改讀 data/billing-jp.js
       isB30: s.page === 'b30',
       bkMsg: s.bkMsg, bkHasMsg: !!s.bkMsg,
       bkRows: this.BK_KEYS.map(([k, n]) => { let has = false; try { has = localStorage.getItem(k) != null; } catch (e) {}

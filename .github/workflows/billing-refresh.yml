@@ -84,6 +84,12 @@ jobs:
           MASTER_SRV: jp
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/build-event-info.py || echo "日服活動資料重算失敗,本輪略過"
+      # 儲值分析的日服版（MASTER_SRV=jp，日圓定價）：一樣攤平 resourceBoxes.json（走同一份快取）；台服的官網 GamePay 商店不抓。內容沒變就不寫檔。
+      - name: 重建日服商城資料(data/billing-jp.js)
+        env:
+          MASTER_SRV: jp
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/build-billing.py || echo "日服商城資料重建失敗,本輪略過"
       - name: 排程預測（日服加一年的規律：逐期回測與未來活動／卡池）
         run: python3 tools/build-schedule-forecast.py || echo "排程預測重算失敗,本輪略過"
       # 網站切到日服時的現況（版本、近期活動、開放中的卡池、新曲）：日服 master 走同一份快取，內容沒變就不寫檔。
@@ -95,4 +101,4 @@ jobs:
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
       # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
-        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js
+        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js data/billing-jp.js

@@ -2477,11 +2477,12 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <span style="width:8px;height:24px;border-radius:5px;background:var(--rainbow);background-size:400% 100%;flex:none"></span>
       <div style="flex:1;min-width:220px">
         <div class="u-ffc0">商品總覽 · CP 值排行 · 智慧推薦 · 月卡通行證</div>
-        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">台服商城 930+ 項商品的內容物與台幣定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div>
+        <sc-if value="{{ srvTw }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">台服商城 930+ 項商品的內容物與台幣定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div></sc-if>
+        <sc-if value="{{ srvJp }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">日服商城約 700 項商品（含官方 WEB 商店限定）的內容物與日圓定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div></sc-if>
       </div>
-      <a href="./index.html?embed=shop" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+      <a href="{{ shopSrc }}" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
     </div>
-    <iframe id="shopFrame" data-src="./index.html?embed=shop" title="儲值分析" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
+    <iframe id="shopFrame" data-src="{{ shopSrc }}" title="儲值分析" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
   </sc-if>
 
@@ -10012,7 +10013,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f833b6d6b0"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=e4d1181e7d"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
