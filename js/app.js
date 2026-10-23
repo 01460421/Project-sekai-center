@@ -57,8 +57,8 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'news', 'rank', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
-  SRV_TW_ONLY = ['borderdb', 'analysis', 'shop'];
+  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_TW_ONLY = ['borderdb', 'shop'];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -101,6 +101,7 @@ class Component extends DCLogic {
   SRV_SUB = {
     news: '日服遊戲內公告（日服 master）：活動、卡池、樂曲、企劃與維護，點開是遊戲內的公告頁',
     rank: '日服即時排名與分段榜線（Haruki 日服追蹤器，約 10～20 秒更新一次）',
+    analysis: '日服榜線預測、前百玩家的節奏與逐場紀錄、活躍度，以及第 202 期起的歷屆入榜紀錄（Haruki 日服追蹤器）',
     lookup: '用日服 Player ID 查活動的即時名次、與上一名的差距、近一小時的場數與每一場的得分（Haruki 活動追蹤器）',
     cards: '日服全部卡片（Sekai-World 日服 master）：依團體、角色、屬性、稀有度、來源篩選',
     chars: '26 位角色的檔案（日服 master）：聲優、生日、身高、學校、喜好與相關卡片',
@@ -2287,6 +2288,15 @@ class Component extends DCLogic {
      所以可以回推某位玩家在每個時間點的名次與分數。
      只涵蓋他在前百的時段;掉出前百的時間點就沒有資料。 */
   playerSeries(uid) {
+    if (this.SRV === 'jp') {   // 日服：追蹤器軌跡本身就是逐場的名次與分數（取最近 360 筆，圖才不會太密）
+      const ju = (this._jpU || {})[String(uid || '')];
+      if (!ju || !ju.T || ju.T.length < 2) return null;
+      const from = Math.max(0, ju.T.length - 360), rank = [], score = [];
+      for (let i = from; i < ju.T.length; i++) { if (ju.R[i] > 0) rank.push([ju.T[i] * 1000, ju.R[i]]); score.push([ju.T[i] * 1000, ju.S[i]]); }
+      if (rank.length < 2) return null;
+      return { rank: this.mkChart(rank, { invert: true, fmt: v => '#' + v, key: 'prank' }), score: this.mkChart(score, { key: 'pscore' }),
+        best: Math.min(...rank.map(x => x[1])), worst: Math.max(...rank.map(x => x[1])), n: rank.length };
+    }
     const hst = this.state.hist;
     const ev = this.eventOf(this.state.live);
     if (!hst || hst.eventId !== ev.id || !Array.isArray(hst.roster) || !hst.roster.length || !uid) return null;
@@ -2376,8 +2386,8 @@ class Component extends DCLogic {
     const pd = this.state.pdata || {};
     const myScore = pd.myScore != null ? pd.myScore : null;
     const mySpeed = pd.mySpeed != null ? pd.mySpeed : null;
-    const jp = this.SRV === 'jp';          // 榜線資料庫是台服的歷屆榜線，日服不拿來當先驗
-    const ref = jp ? null : this.bdbRef(ck.id);
+    const jp = this.SRV === 'jp';          // 日服載入的是日服歷屆榜線（borders-db-jp.js）：「史」對照帶照用，但模型先驗是拿台服回測的，日服不套
+    const ref = this.bdbRef(ck.id);
     const DB = (!jp && typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
     const useModel = !!(this._bmParams && typeof BorderModel !== 'undefined' && ck.leftH > 0);
     let modelN = 0;
@@ -2432,8 +2442,10 @@ class Component extends DCLogic {
   playerAnalysis(uid) {
     const list = this.ranksOf(this.state.live);
     if (!list.length) return null;
-    const me = uid ? list.find(r => this.sameUid(r.uid, uid)) : null;
+    const ju = this.SRV === 'jp' ? this.jpU(uid, this.state.page === 'analysis' && this.state.anaTab === 'player') : null;
+    let me = uid ? list.find(r => this.sameUid(r.uid, uid) || (ju && ju.hash && this.sameUid(r.uid, ju.hash))) : null;
     if (!me) return null;
+    if (ju && ju.stats) me = Object.assign({}, me, { stats: ju.stats, lastPlayed: ju.lastPlayed });   // 日服：場數／場均／3h／24h 來自這位的軌跡
     const ck = this.eventClock();
     const st = me.stats || {};
     const g = k => st[k] || {};
@@ -2481,10 +2493,13 @@ class Component extends DCLogic {
     const now = Date.now();
     const mins = r => r.lastPlayed ? (now - new Date(r.lastPlayed).getTime()) / 60000 : null;
     const cnt1 = r => (r.stats && r.stats.h1 && r.stats.h1.count) || 0;
-    const sp = (r, k) => (r.stats && r.stats[k] && r.stats[k].speed) || 0;
+    /* 日服前百只有近 1 小時時速：沒有 24h 均速，改跟自己的本期平均時速（現分 ÷ 開跑時數）比 */
+    const jp = this.SRV === 'jp', ck = jp ? this.eventClock() : null;
+    const sp = (r, k) => (jp && k === 'h24') ? (ck ? r.score / ck.elapsedH : 0)
+      : (jp && k === 'h1') ? (r.speed1h || 0) : ((r.stats && r.stats[k] && r.stats[k].speed) || 0);
     const online = list.filter(r => { const m = mins(r); return m != null && m <= 15; });
-    const grinding = list.filter(r => cnt1(r) > 0);
-    const idle = list.filter(r => { const m = mins(r); return m == null || m > 60; });
+    const grinding = list.filter(r => jp ? sp(r, 'h1') > 0 : cnt1(r) > 0);
+    const idle = list.filter(r => { if (jp) return !(sp(r, 'h1') > 0); const m = mins(r); return m == null || m > 60; });
     const rounds1h = list.reduce((a, r) => a + cnt1(r), 0);
     // 衝刺中：近 1h 時速明顯高於自己的 24h 均速
     const surging = list.map(r => ({ r, s1: sp(r, 'h1'), s24: sp(r, 'h24') }))
@@ -2494,19 +2509,27 @@ class Component extends DCLogic {
       .filter(x => x.s24 > 0 && x.s1 / x.s24 <= 0.5)
       .sort((a, b) => (a.s1 / a.s24) - (b.s1 / b.s24));
     const fastest = list.slice().sort((a, b) => sp(b, 'h1') - sp(a, 'h1')).filter(r => sp(r, 'h1') > 0);
-    return { list, online, grinding, idle, rounds1h, surging, cooling, fastest, mins, sp, cnt1 };
+    return { list, online, grinding, idle, rounds1h, surging, cooling, fastest, mins, sp, cnt1, jp, score1h: list.reduce((a, r) => a + sp(r, 'h1'), 0) };
   }
 
   /* ---------- 生涯紀錄：掃過去各期 top100 找同一位玩家 ---------- */
   async loadHistory(uid, span) {
-    const id = String(uid || '').trim();
+    let id = String(uid || '').trim();
     if (!id) { this.setState({ hisErr: '請先輸入或選擇玩家 ID' }); return; }
     if (this.state.hisLoad) return;
     this.setState({ hisLoad: true, hisErr: '', hisRows: null, hisProg: '' });
+    const jp = this.SRV === 'jp';
+    if (jp && !/^[0-9a-f]{64}$/.test(id)) {   // 日服前百名單的 ID 是追蹤器的雜湊；數字 ID 先查本期追蹤器換成雜湊
+      this.setState({ hisProg: '查詢這個 ID 在日服追蹤器的紀錄…' });
+      await this.jpUserLoad(id);
+      const ju = (this._jpU || {})[id];
+      if (!ju || !ju.hash) { this.setState({ hisLoad: false, hisProg: '', hisErr: ju && ju.err ? '日服追蹤器暫時連不上，請稍後再試' : '日服只能比對追蹤器記過的玩家（本期前百或榜線位置上的人）；這個 ID 本期沒有被記錄，查不到歷屆前百。可以改從下方前百名單挑。' }); return; }
+      id = ju.hash;
+    }
     try {
       const all = await this.loadEvList();
       const now = Date.now();
-      const done = (all || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= now);
+      const done = (all || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= now && (!jp || +e.id >= this.JP_TRACK_FROM));
       const only = String(this.state.hisOnly || '').trim();
       let pick;
       if (only) {                                  // 只查指定期數
@@ -4576,6 +4599,42 @@ class Component extends DCLogic {
     }
     const games = []; for (let i = 1; i < S.length; i++) if (S[i] > S[i - 1]) games.push([T[i], S[i] - S[i - 1]]);
     return { T, S, R, games };
+  }
+  /* 分析中心（日服）：日服即時前百只有近 1 小時時速，挑到哪位才抓那位的追蹤器軌跡（每一場一筆），
+     算出近 1／3／24 小時的場數、得分、場均、時速，以及名次與分數走勢。一分鐘內不重抓；數字 ID 順便換成追蹤器的雜湊 ID。 */
+  JP_TRACK_FROM = 202;   // Haruki 日服追蹤器從第 202 期開始有資料（2026/10 實測 201 期以前回 not found）
+  jpU(uid, kick) {
+    const k = String(uid || ''); if (!k) return null;
+    const c = (this._jpU || {})[k];
+    if (kick && (!c || (!c.p && Date.now() - c.at > 60000))) setTimeout(() => this.jpUserLoad(k), 0);
+    return c || null;
+  }
+  jpUserLoad(uid) {
+    const k = String(uid || ''); if (!k) return Promise.resolve();
+    this._jpU = this._jpU || {};
+    const c = this._jpU[k];
+    if (c && c.p) return c.p;
+    if (c && Date.now() - c.at < 60000) return Promise.resolve();
+    const p = (async () => {
+      let v;
+      try {
+        const r = await fetch(this.GAMES_API + '/haruki/jp/event/live/user/' + encodeURIComponent(k), { headers: { Accept: 'application/json' } });
+        let d = null; try { d = await r.json(); } catch (e) {}
+        if (r.status === 404 && d && d.error === 'not_tracked') v = { notTracked: true };
+        else if (!r.ok || !d) throw new Error('HTTP ' + r.status);
+        else {
+          const cur = (d.current && d.current.rankData) || {};
+          const { T, S, R, games } = this.trDecode(d.trace), now = Date.now() / 1000;
+          const st = h => { const g = games.filter(x => x[0] >= now - h * 3600), sc = g.reduce((a, x) => a + x[1], 0); return { count: g.length, score: sc, average: g.length ? sc / g.length : null, speed: sc / h }; };
+          v = { hash: String(cur.userId || (d.current && d.current.userData && d.current.userData.userId) || ''), rank: cur.rank || null,
+            stats: { h1: st(1), h3: st(3), h24: st(24) }, lastPlayed: games.length ? games[games.length - 1][0] * 1000 : null, T, S, R };
+        }
+      } catch (e) { v = { err: true }; }
+      this._jpU[k] = Object.assign({ at: Date.now() }, v);
+      this.setState({ jpUTick: Date.now() });
+    })();
+    this._jpU[k] = Object.assign({}, c || {}, { at: Date.now(), p });
+    return p;
   }
   /* 日服的「我的狀態」：Worker 的 /haruki/jp/event/live/user/{id}（追蹤器 details/user），跟著即時榜線每分鐘更新 */
   async loadPlayerJp(id) {
@@ -10275,7 +10334,8 @@ class Component extends DCLogic {
           .slice(0, 40).map(r => ({ uid: r.uid, n: '#' + r.rank + '　' + r.name,
             bg: this.sameUid(r.uid, uid) ? 'color-mix(in oklab,var(--accent) 15%,transparent)' : 'var(--card)',
             fg: this.sameUid(r.uid, uid) ? 'var(--accent-deep)' : 'var(--text)' }));
-        if (!A) return { anaPlayerOk: false, anaPSeries: false, anaPNoSeries: false, anaPSeriesMsg: '', anaPlayerMsg: uid ? '這位玩家不在本期前 100 名內，暫時沒有可分析的節奏資料。' : '請在下方挑一位前百玩家，或在首頁綁定你的玩家 ID。', anaPickRows: opts, anaSpeedRows: [], anaInsights: [], anaBorderGap: [] };
+        const jpWait = this.SRV === 'jp' && uid && !((this._jpU || {})[String(uid)] || {}).at;
+        if (!A) return { anaPlayerOk: false, anaPSeries: false, anaPNoSeries: false, anaPSeriesMsg: '', anaPlayerMsg: jpWait ? '讀取這位玩家的日服追蹤器紀錄…' : uid ? '這位玩家不在本期前 100 名內，暫時沒有可分析的節奏資料。' : '請在下方挑一位前百玩家，或在首頁綁定你的玩家 ID。', anaPickRows: opts, anaSpeedRows: [], anaInsights: [], anaBorderGap: [] };
         const hm = h => h >= 24 ? (Math.floor(h / 24) + '天' + Math.round(h % 24) + '時') : (h >= 1 ? h.toFixed(1) + '時' : Math.round(h * 60) + '分');
         const row = (l, st, sp) => ({ l, cnt: st.count != null ? this.n(st.count) + ' 回' : '—',
           score: st.score != null ? this.short(st.score) : '—',
@@ -10288,7 +10348,7 @@ class Component extends DCLogic {
           anaPickRows: opts,
           ...(() => {
             const S = this.playerSeries(uid);
-            if (!S) return { anaPSeries: false, anaPNoSeries: true, anaPSeriesMeta: '', anaPRankDelta: '', anaPRankFg: 'var(--text-3)', anaPHasScore: false, anaPSeriesMsg: '這位玩家還沒有累積到足夠的走勢資料（伺服器每 30 分鐘記一筆，需要至少 2 筆）。' };
+            if (!S) return { anaPSeries: false, anaPNoSeries: true, anaPSeriesMeta: '', anaPRankDelta: '', anaPRankFg: 'var(--text-3)', anaPHasScore: false, anaPSeriesMsg: this.SRV === 'jp' ? '還在讀取這位玩家的日服追蹤器軌跡，或追蹤器還沒有足夠的紀錄。' : '這位玩家還沒有累積到足夠的走勢資料（伺服器每 30 分鐘記一筆，需要至少 2 筆）。' };
             const g = (c, pre) => c ? {
               [pre + 'W']: c.W, [pre + 'H']: c.H, [pre + 'Line']: c.line, [pre + 'Area']: c.area,
               [pre + 'Ticks']: c.ticks, [pre + 'First']: c.first, [pre + 'Last']: c.last,
@@ -10328,35 +10388,46 @@ class Component extends DCLogic {
 
       ...(() => {
         const V = this.activeAnalysis();
-        if (!V) return { anaActiveOk: false, anaActRows: [], anaSurge: [], anaCool: [], anaFast: [] };
+        if (!V) return { anaActiveOk: false, anaActRows: [], anaSurge: [], anaCool: [], anaFast: [], anaSurgeSub: '', anaCoolSub: '', anaFastSub: '' };
         const ago = r => r.lastPlayed ? this.ago(r.lastPlayed) : '—';
+        const J = V.jp;
         const line = x => ({ rank: '#' + x.r.rank, name: x.r.name,
           s1: this.short(x.s1) + '/h', s24: this.short(x.s24) + '/h',
           ratio: (x.s1 / x.s24).toFixed(2) + '×', seen: ago(x.r) });
         return {
           anaActiveOk: true,
-          anaActRows: [
+          anaActRows: J ? [   // 日服追蹤器只給近 1 小時的分數成長：在線與場數看不到，改用時速
+            { l: '近 1 小時有在跑', v: V.grinding.length + ' / ' + V.list.length, sub: '近 1 小時分數有成長' },
+            { l: '休息中', v: V.idle.length + ' / ' + V.list.length, sub: '近 1 小時分數沒動' },
+            { l: '前百平均時速', v: this.short(V.grinding.length ? V.score1h / V.grinding.length : 0) + '/h', sub: '只算在跑的人' },
+            { l: '前百近 1 小時總得分', v: this.short(V.score1h), sub: '整體熱度' }
+          ] : [
             { l: '此刻在線', v: V.online.length + ' / 100', sub: '15 分鐘內有成績' },
             { l: '近 1 小時有周回', v: V.grinding.length + ' / 100', sub: '實際在跑的人數' },
             { l: '休息中', v: V.idle.length + ' / 100', sub: '逾 1 小時沒動' },
             { l: '前百近 1 小時總周回', v: this.n(V.rounds1h) + ' 回', sub: '整體熱度' }
           ],
+          anaSurgeSub: J ? '近 1 小時比自己的本期平均時速快 1.2 倍以上' : '近 1 小時比自己的日均快 1.2 倍以上',
+          anaCoolSub: J ? '近 1 小時掉到本期平均時速的一半以下' : '近 1 小時掉到日均的一半以下',
+          anaFastSub: J ? '依近 1 小時時速排序（日服追蹤器沒有場數與最後上線時間，點進玩家分析看單人逐場紀錄）' : '依近 1 小時時速排序',
           anaSurge: V.surging.slice(0, 8).map(line),
           anaCool: V.cooling.slice(0, 8).map(line),
           anaFast: V.fastest.slice(0, 10).map(r => ({ rank: '#' + r.rank, name: r.name,
-            s1: this.short(V.sp(r, 'h1')) + '/h', cnt: V.cnt1(r) + ' 回', seen: ago(r) })),
+            s1: this.short(V.sp(r, 'h1')) + '/h', cnt: J ? '—' : V.cnt1(r) + ' 回', seen: ago(r) })),
           anaSurgeEmpty: !V.surging.length, anaCoolEmpty: !V.cooling.length
         };
       })(),
       ...(() => {
         const rows = s.hisRows;
         const opts = this.ranksOf(s.live).slice(0, 30).map(r => ({ uid: r.uid, n: '#' + r.rank + '　' + r.name }));
-        const doneN = ((s.evList || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= Date.now())).length;
+        const jpH = this.SRV === 'jp';
+        const doneN = ((s.evList || []).filter(e => new Date(e.aggregate_at || e.closed_at || e.start_at).getTime() <= Date.now() && (!jpH || +e.id >= this.JP_TRACK_FROM))).length;
         const spanChips = [{ v: '20', n: '最近 20 期' }, { v: '50', n: '最近 50 期' }, { v: 'all', n: '全部期數' }]
           .map(c => { const on = String(s.hisSpan) === c.v && !s.hisOnly; const st = chip(on, 'var(--cta)'); return Object.assign({}, c, st, { fg: on ? '#fff' : 'var(--text)' }); });
-        const spanNote = s.hisOnly ? ('只查第 ' + s.hisOnly + ' 期')
+        const spanNote = (s.hisOnly ? ('只查第 ' + s.hisOnly + ' 期')
           : (s.hisSpan === 'all' ? ('全部 ' + (doneN || '—') + ' 期已結算活動，需要多花一點時間')
-                                 : ('最近 ' + s.hisSpan + ' 期已結算活動'));
+                                 : ('最近 ' + s.hisSpan + ' 期已結算活動')))
+          + (jpH ? '（日服追蹤器從第 ' + this.JP_TRACK_FROM + ' 期開始記錄，更早的期數查不到）' : '');
         if (!rows) return { hisOk: false, hisPickRows: opts, hisRowList: [], hisStats: [],
           hisSpanChips: spanChips, hisSpanNote: spanNote, hisOnly: s.hisOnly,
           hisMsg: s.hisLoad ? (s.hisProg || '查詢中…') : (s.hisErr || '輸入玩家 ID 或從前百挑一位，會逐期掃描過去的前百名單。'),

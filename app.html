@@ -8655,7 +8655,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
       <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">此刻最快</div>
-        <div style="font-size:11.5px;color:var(--text-3);margin-bottom:11px">依近 1 小時時速排序</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-bottom:11px">{{ anaFastSub }}</div>
         <sc-for list="{{ anaFast }}" as="f" hint-placeholder-count="10">
           <div style="display:grid;grid-template-columns:{{ anaFastCols }};gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center">
             <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ f.rank }}</span>
@@ -8670,7 +8670,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px">
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
           <div style="font-size:13.5px;font-weight:800;color:#3ea76a;margin-bottom:3px">衝刺中</div>
-          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">近 1 小時比自己的日均快 1.2 倍以上</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">{{ anaSurgeSub }}</div>
           <sc-for list="{{ anaSurge }}" as="x" hint-placeholder-count="6">
             <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
               <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ x.rank }}</span>
@@ -8682,7 +8682,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
           <div style="font-size:13.5px;font-weight:800;color:#e0576a;margin-bottom:3px">降速中</div>
-          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">近 1 小時掉到日均的一半以下</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">{{ anaCoolSub }}</div>
           <sc-for list="{{ anaCool }}" as="x" hint-placeholder-count="6">
             <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
               <span style="font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ x.rank }}</span>
@@ -9959,7 +9959,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=e57e621bac"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=eafe144ee4"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
