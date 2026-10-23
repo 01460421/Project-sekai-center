@@ -84,7 +84,7 @@ globalThis.fetch = async (u, init) => {
   const url = String(u); sent.push({ url, method: (init && init.method) || 'GET', headers: (init && init.headers) || {}, body: init && init.body });
   if (url === OB + '/api/oauth2/token') return new Response(JSON.stringify({ access_token: 'AT', refresh_token: 'RT', expires_in: 3600 }), { status: 200, headers: { 'content-type': 'application/json' } });
   if (url === OB + '/api/oauth2/revoke') return new Response('{}', { status: 200 });
-  if (url.startsWith(OB + '/api/oauth2/game-data/tw/suite/')) return new Response(JSON.stringify({ updatedData: { userCards: [{ cardId: 1 }] } }), { status: 200, headers: { 'content-type': 'application/json' } });
+  if (/^https:\/\/toolbox-api-direct\.haruki\.seiunx\.com\/api\/oauth2\/game-data\/(tw|jp)\/suite\//.test(url)) return new Response(JSON.stringify({ updatedData: { userCards: [{ cardId: 1 }] } }), { status: 200, headers: { 'content-type': 'application/json' } });
   if (url === OB + '/api/oauth2/user/bindings') return new Response(JSON.stringify({ updatedData: [] }), { status: 401 });
   return new Response('{}', { status: 404 });
 };
@@ -115,7 +115,10 @@ o = await ocall('/haruki/oauth/game-data/tw/suite/7482960281734567890', { header
 ok(o.status === 401, '沒帶授權不轉送');
 const before = sent.length;
 o = await ocall('/haruki/oauth/game-data/jp/suite/123456789', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
-ok(o.status === 404 && sent.length === before, '白名單外（日服、其他路徑）不轉送');
+ok(o.status === 200 && sent.length === before + 1 && sent.at(-1).url === OB + '/api/oauth2/game-data/jp/suite/123456789', '日服遊戲資料照樣轉送（全站日服模式用）');
+const before2 = sent.length;
+o = await ocall('/haruki/oauth/game-data/cn/suite/123456789', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
+ok(o.status === 404 && sent.length === before2, '白名單外（其他伺服器、其他路徑）不轉送');
 o = await ocall('/haruki/oauth/../admin', { headers: { ...SITE, authorization: 'Bearer AT123456' } });
 ok(o.status === 404, '路徑穿越不轉送');
 {
@@ -154,10 +157,14 @@ ok(o.status === 503, '沒設 client id 時回 503');
   r = await pcall('/haruki/public/tw/suite/7482960281734567890'); b = await r.json();
   ok(r.status === 200 && hits.length === n0 + 2 && hits.at(-1).url === 'https://toolbox-api-direct.haruki.seiunx.com/api/public/tw/suite/7482960281734567890', 'suite-api 掛掉就改打工具箱後端的 /api/public');
   const n1 = hits.length;
+  suiteDown = false;
   r = await pcall('/haruki/public/jp/suite/7482960281734567890');
-  ok(r.status === 404 && hits.length === n1, '只轉送台服');
+  ok(hits.length === n1 + 1 && hits.at(-1).url === 'https://suite-api.haruki.seiunx.com/public/jp/suite/7482960281734567890', '日服公開資料打 /public/jp/suite/{id}');
+  const n2 = hits.length;
+  r = await pcall('/haruki/public/en/suite/7482960281734567890');
+  ok(r.status === 404 && hits.length === n2, '只轉送台服與日服');
   r = await pcall('/haruki/public/tw/suite/12');
-  ok(r.status === 404 && hits.length === n1, 'ID 格式不對不轉送');
+  ok(r.status === 404 && hits.length === n2, 'ID 格式不對不轉送');
   r = await pcall('/haruki/public/tw/suite/7482960281734567890', 'POST');
   ok(r.status === 405, '公開 API 只收 GET');
 }
@@ -202,6 +209,38 @@ ok(o.status === 503, '沒設 client id 時回 503');
   };
   const fb = await harukiLive({}, 'top100');
   ok(!fb.via && fb.player_top_100_rankings[0].user_id === '7482960281734567890', 'tracker 沒這一期資料就退到公開 API');
+  Date.now = realNow;
+}
+
+/* 日服：/haruki/jp/event/… 讀日服 master 與日服 tracker，路徑跟台服同一套 */
+{
+  const seen = [];
+  const jpEvents = [{ id: 220, name: 'Stars Off Orbit', eventType: 'marathon', startAt: now - 2 * D, aggregateAt: now + 5 * D, closedAt: now + 6 * D }];
+  const ov = { topRankings: [{ rankData: { rank: 1, score: 31811102, userId: 'jp_hash' }, userData: { name: 'ミク' } }], borderLines: [{ rank: 100, score: 9000000 }] };
+  globalThis.fetch = async (u) => { const url = String(u); seen.push(url);
+    if (url === 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/events.json') return new Response(JSON.stringify(jpEvents), { status: 200 });
+    if (/event-tracker\/api\/v2\/web\/events\/jp\/220\/leaderboards\/total\/overview/.test(url)) return new Response(JSON.stringify(ov), { status: 200 });
+    return new Response('{}', { status: 404 });
+  };
+  Date.now = () => now;
+  const t = await harukiLive({}, 'top100', null, 'jp');
+  ok(t.id === 220 && t.server === 'jp' && t.player_top_100_rankings[0].name === 'ミク', '日服當期前百：日服 master 的活動＋日服 tracker');
+  ok(!seen.some(u => u.includes('haruki-sekai-tc-master') || u.includes('/events/tw/')), '日服不碰台服 master 與台服 tracker');
+  const call = async path => { const u = 'https://games.test' + path; return handleHaruki(new Request(u), {}, new URL(u)); };
+  let r = await call('/haruki/jp/event/live/border'); let b = await r.json();
+  ok(r.status === 200 && b.server === 'jp' && b.player_border_rankings[0].rank === 100, '/haruki/jp/event/live/border 回日服榜線');
+  r = await call('/haruki/jp/event/list'); b = await r.json();
+  ok(r.status === 200 && b[0].id === 220, '/haruki/jp/event/list 回日服活動清單');
+  r = await call('/haruki/jp/config');
+  ok(r.status === 404, '只有 event 路徑有日服版');
+  globalThis.fetch = async (u) => { const url = String(u); seen.push(url);
+    if (url.endsWith('/events.json')) return new Response(JSON.stringify(jpEvents), { status: 200 });
+    if (url.includes('event-tracker')) return new Response(JSON.stringify({ topRankings: [] }), { status: 200 });
+    if (url === 'https://public-api.haruki.seiunx.com/sekai-api/v5/api/jp/event/220/ranking-top100') return new Response(big, { status: 200 });
+    return new Response('{}', { status: 404 });
+  };
+  const fb = await harukiLive({}, 'top100', null, 'jp');
+  ok(fb.server === 'jp' && fb.player_top_100_rankings[0].user_id === '7482960281734567890', '日服 tracker 沒資料就退到公開 API 的 /api/jp');
   Date.now = realNow;
 }
 
