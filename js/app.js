@@ -21,7 +21,7 @@ class Component extends DCLogic {
   })();
   JP_MASTER = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
   JP_DB_FILES = ['gameCharacters', 'characterProfiles', 'unitProfiles', 'gameCharacterUnits', 'materials', 'mysekaiMaterials', 'tips',
-                 'musicSoundTracks', 'musicSoundTrackCategories', 'mobCharacters', 'eventCards', 'limitedLoginBonuses', 'mysekaiBlueprints'];
+                 'musicSoundTracks', 'musicSoundTrackCategories', 'mobCharacters', 'eventCards', 'limitedLoginBonuses', 'mysekaiBlueprints', 'userInformations'];
   /* 日服資源：日服現況頁底部與資源連結頁共用。[分類, [[名稱, 網址, 說明]…]]。
      2026/10/23 逐一確認過還在更新（研究代理實際載入或用搜尋結果、API 佐證）；已停更的不列：
      pjsek.ai（API 停用）、AppMedia（2026/8 底停更）、wikiwiki.jp/pjsekai、Chart Cyanvas、sdvx.in 的プロセカ頁。 */
@@ -57,8 +57,8 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'rank', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
-  SRV_TW_ONLY = ['news', 'borderdb', 'analysis', 'shop'];
+  SRV_JP = ['jpnow', 'news', 'rank', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_TW_ONLY = ['borderdb', 'analysis', 'shop'];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -88,9 +88,9 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=6c9a8f1a19');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=a906911139');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=87f0d082ba'), ja: () => import('./data/i18n-ja.js?v=a4e6ee491f') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=d69cb9063f'), ja: () => import('./data/i18n-ja.js?v=7bd05ac945') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -99,6 +99,7 @@ class Component extends DCLogic {
   }
   /* 日服模式下換掉頁首說明（原本寫的是台服來源） */
   SRV_SUB = {
+    news: '日服遊戲內公告（日服 master）：活動、卡池、樂曲、企劃與維護，點開是遊戲內的公告頁',
     rank: '日服即時排名與分段榜線（Haruki 日服追蹤器，約 10～20 秒更新一次）',
     lookup: '用日服 Player ID 查活動的即時名次、與上一名的差距、近一小時的場數與每一場的得分（Haruki 活動追蹤器）',
     cards: '日服全部卡片（Sekai-World 日服 master）：依團體、角色、屬性、稀有度、來源篩選',
@@ -656,7 +657,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
-    { d: '2026/10/23', t: '日服模式擴大到活動、卡池、日曆、劇情與圖鑑', s: '切到日服後，活動總覽、活動資料、卡池列表、活動日曆、活動分布、虛擬 Live、劇情閱讀器（日文原文）、家具圖鑑、豆森對話與卡片技能庫都改用日服 master 整理的資料，每天自動更新；活動總覽的即時榜線與我的名次也跟著日服。目前只剩遊戲公告、榜線資料庫、分析中心與儲值分析還是台服資料。英文與日文介面的詞典補到近一萬條，更新紀錄的標籤不再以原始碼顯示。', p: 'event' },
+    { d: '2026/10/23', t: '日服模式擴大到活動、卡池、日曆、劇情與圖鑑', s: '切到日服後，活動總覽、活動資料、卡池列表、活動日曆、活動分布、虛擬 Live、劇情閱讀器（日文原文）、家具圖鑑、豆森對話與卡片技能庫都改用日服 master 整理的資料，每天自動更新；活動總覽的即時榜線與我的名次也跟著日服。目前只剩遊戲公告、榜線資料庫、分析中心與儲值分析還是台服資料。英文與日文介面的詞典補到一萬條以上，連更新紀錄也逐句翻好；更新紀錄的標籤不再以原始碼顯示。', p: 'event' },
     { d: '2026/10/23', t: '日服 Player ID：綁定、即時名次與每一場的紀錄', s: '切到日服後首頁可以綁定日服 Player ID（跟台服的分開存），首頁與頁首直接顯示你這期的即時名次、分數、與上一名的差距、近一小時與 24 小時的場數；玩家查詢在日服模式也能用，多了分數走勢與最近幾場的得分。資料來自 Haruki 活動追蹤器（約 10～20 秒更新，只記前百與各段位線上的玩家）。WL 後排加成與收集室也改讀日服 master。英文與日文介面加上全站詞典（六千五百多條），選了才下載。', p: 'jpnow' },
     { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給 omega', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或 omega；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給 omega 的私訊（只有你和 omega 看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，omega 回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
     { d: '2026/10/23', t: '全站台服／日服切換、日服現況、簡中／英文／日文介面', s: '頁首新增「伺服器・語言」按鈕。<b>切到日服</b>後首頁換成日服現況（版本、當期活動倒數與加成角色、即時榜線與前十名、開放中的卡池與 PU 卡、新曲、近期活動），活動排名改看日服即時排名（Haruki 日服追蹤器），卡片圖鑑、收集率、卡面下載、角色、素材、一格漫畫與原聲帶改用日服 master；只有台服資料的頁面會在上方提示並可一鍵切回台服，分享出去的連結也會停在日服。日服現況頁底部整理了網路上仍在更新的日服資源（官方、資料庫、Wiki、榜線、工具與社群），資源連結頁也加了一組。<b>介面語言</b>：簡體中文整站轉換（連詞彙一起轉，例如伺服器→服务器）；英文與日文目前翻譯導覽、頁名、頁首、日服現況與客服視窗，其餘內容維持中文。第一次來時瀏覽器是簡中會自動切換，英日會跳一次提示。', p: 'jpnow' },
@@ -5828,7 +5829,8 @@ class Component extends DCLogic {
     return this.dbRun('news', async () => {
       const u = await this.dbGet('userInformations');
       return (u || []).map(x => ({ id: x.id, title: x.title || '', tag: x.informationTag || 'information', type: x.informationType || 'normal',
-        url: x.path || '', s: x.startAt || 0, e: x.endAt || 0 })).filter(x => x.title).sort((x, y) => (y.s - x.s) || (y.id - x.id));
+        url: /^https?:/.test(x.path || '') ? x.path : x.path ? 'https://production-web.sekai.colorfulpalette.org/' + x.path.replace(/^\/+/, '') : '',   // 日服 internal 是相對路徑，開遊戲內同一個公告頁
+        s: x.startAt || 0, e: x.endAt || 0 })).filter(x => x.title).sort((x, y) => (y.s - x.s) || (y.id - x.id));
     });
   }
   /* 原聲帶播放：獨立於歌曲播放器（那邊有交叉淡入淡出與佇列，BGM 不需要），同時只有一條在響 */

@@ -156,6 +156,10 @@ function look(core) {
   let hit = small.get(core);
   if (hit != null) return hit;
   if (big) { hit = big[hashKey(core)]; if (hit != null) return hit; }
+  /* 句尾「。」有沒有都認（更新紀錄照「。」切句後會拿掉句號，詞典裡收的是原句） */
+  const alt = /。$/.test(core) ? core.slice(0, -1) : core + '。';
+  hit = small.get(alt); if (hit == null && big) hit = big[hashKey(alt)];
+  if (hit != null) return /。$/.test(core) ? (/[.。!?！？]$/.test(hit) ? hit : hit + (lang === 'en' ? '.' : '。')) : hit.replace(/[.。]$/, '');
   /* 句型：數字（10/29、1,234）與「」裡的名稱換成 {n} 再查一次（程式裡 '卡池「' + 名稱 + '」今天開始' 這類串接） */
   if (/\d|「|『/.test(core)) {
     const vals = [];
