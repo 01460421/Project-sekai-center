@@ -77,14 +77,23 @@ def strings():
     for m in re.finditer(r'(?:placeholder|title|aria-label)="([^"]*)"', h):
         for seg in re.split(r'\{\{[^}]*\}\}', m.group(1)):
             add(seg)
-    for f in ['js/app.js', 'js/help.js', 'js/haruki.js', 'js/car.js', 'js/maker.js']:
-        s = (ROOT / f).read_text(encoding='utf-8')
-        s = re.sub(r'/\*[\s\S]*?\*/', '', s)
-        s = re.sub(r'(^|[^:\'"\\])//[^\n]*', r'\1', s)
-        for m in re.finditer(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\]|\\.)*)`", s):
-            t = m.group(1) or m.group(2) or m.group(3) or ''
-            for seg in re.split(r'\$\{[^}]*\}|<[^>]+>', t):
-                add(seg.replace("\\'", "'").replace('\\n', '\n'))
+    # JS 字串交給 acorn（tools/i18n-strings.mjs）：正規式遇到樣板字串會失去同步而整段漏抓
+    import subprocess, tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(['npm', 'i', '--silent', '--no-save', '--prefix', tmp, 'acorn@8', 'acorn-walk@8'], check=True)
+        out = pathlib.Path(tmp) / 'js.json'
+        subprocess.run(['node', str(ROOT / 'tools' / 'i18n-strings.mjs'), str(out)], check=True, env={**__import__('os').environ, 'ACORN_DIR': tmp})
+        for t in json.loads(out.read_text(encoding='utf-8')):
+            add(t)
+    # app.html 裡「文字 {{ 值 }} 文字」→ 帶 {n} 的句型
+    for m in re.finditer(r'>([^<>]*\{\{[^}]*\}\}[^<>]*)<', h):
+        k = [0]
+        def sub(_):
+            k[0] += 1
+            return '{%d}' % (k[0] - 1)
+        tpl = re.sub(r'\{\{[^}]*\}\}', sub, m.group(1)).strip()
+        if k[0] <= 4:
+            add(tpl)
     tut = (ROOT / 'data' / 'tutorial-data.js').read_text(encoding='utf-8')
     for m in re.finditer(r'"((?:[^"\\]|\\.)*)"', tut):
         for seg in re.split(r'<[^>]+>', json.loads('"' + m.group(1) + '"')):

@@ -57,9 +57,8 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'rank', 'lookup', 'wlsup', 'collect', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
-  SRV_TW_ONLY = ['event', 'evinfo', 'calendar', 'gacha', 'lives', 'news', 'story', 'borderdb', 'analysis', 'distrib', 'shop',
-                 'bonuscards', 'fixtures', 'mstalk', 'cardlib'];
+  SRV_JP = ['jpnow', 'rank', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_TW_ONLY = ['news', 'borderdb', 'analysis', 'shop'];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -89,9 +88,9 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=bf8931635a');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=6c9a8f1a19');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=ac4d042452'), ja: () => import('./data/i18n-ja.js?v=20a2d5a50d') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=87f0d082ba'), ja: () => import('./data/i18n-ja.js?v=a4e6ee491f') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -107,6 +106,17 @@ class Component extends DCLogic {
     comics: '遊戲內小提示的一格漫畫（日服原版）',
     rate: '日服卡片勾選，即時算出各團與各稀有度的收集進度',
     songs: '日服全曲：台服曲加上日服限定曲，BPM／歌長來自社長 bot',
+    event: '日服這一期一頁看完：倒數、我的名次（綁定日服 ID）、榜線、當期卡池、加分卡與劇情',
+    evinfo: '日服任一期活動的時程、加成屬性與角色、活動卡、排名獎勵，WL 章節與嘉年華隊伍（日服 master）',
+    calendar: '日服的卡池、活動、虛擬 Live 與豆森活動日曆（日本時間）',
+    gacha: '日服卡池列表：近兩年的卡池與 PU 卡（日服 master，日本時間）',
+    lives: '日服歷代虛擬 Live 的期間、場次、歌單與出演角色',
+    story: '活動、主線、卡片、區域對話、個人與特別劇情：日服原文，可播語音',
+    distrib: '日服卡池與活動的時間分布甘特圖',
+    bonuscards: '日服各活動的加成卡一覽',
+    fixtures: 'MySekai 家具（日服 master）：分類、標籤、尺寸、顏色與製作素材',
+    mstalk: 'MySekai 角色對話清單（日服）：勾選看過的對話，一眼看出還缺哪些家具',
+    cardlib: '日服逐張卡的技能敘述與各等級數值',
   };
   setSrv(v) {
     v = v === 'jp' ? 'jp' : 'tw';
@@ -646,6 +656,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/23', t: '日服模式擴大到活動、卡池、日曆、劇情與圖鑑', s: '切到日服後，活動總覽、活動資料、卡池列表、活動日曆、活動分布、虛擬 Live、劇情閱讀器（日文原文）、家具圖鑑、豆森對話與卡片技能庫都改用日服 master 整理的資料，每天自動更新；活動總覽的即時榜線與我的名次也跟著日服。目前只剩遊戲公告、榜線資料庫、分析中心與儲值分析還是台服資料。英文與日文介面的詞典補到近一萬條，更新紀錄的標籤不再以原始碼顯示。', p: 'event' },
     { d: '2026/10/23', t: '日服 Player ID：綁定、即時名次與每一場的紀錄', s: '切到日服後首頁可以綁定日服 Player ID（跟台服的分開存），首頁與頁首直接顯示你這期的即時名次、分數、與上一名的差距、近一小時與 24 小時的場數；玩家查詢在日服模式也能用，多了分數走勢與最近幾場的得分。資料來自 Haruki 活動追蹤器（約 10～20 秒更新，只記前百與各段位線上的玩家）。WL 後排加成與收集室也改讀日服 master。英文與日文介面加上全站詞典（六千五百多條），選了才下載。', p: 'jpnow' },
     { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給 omega', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或 omega；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給 omega 的私訊（只有你和 omega 看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，omega 回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
     { d: '2026/10/23', t: '全站台服／日服切換、日服現況、簡中／英文／日文介面', s: '頁首新增「伺服器・語言」按鈕。<b>切到日服</b>後首頁換成日服現況（版本、當期活動倒數與加成角色、即時榜線與前十名、開放中的卡池與 PU 卡、新曲、近期活動），活動排名改看日服即時排名（Haruki 日服追蹤器），卡片圖鑑、收集率、卡面下載、角色、素材、一格漫畫與原聲帶改用日服 master；只有台服資料的頁面會在上方提示並可一鍵切回台服，分享出去的連結也會停在日服。日服現況頁底部整理了網路上仍在更新的日服資源（官方、資料庫、Wiki、榜線、工具與社群），資源連結頁也加了一組。<b>介面語言</b>：簡體中文整站轉換（連詞彙一起轉，例如伺服器→服务器）；英文與日文目前翻譯導覽、頁名、頁首、日服現況與客服視窗，其餘內容維持中文。第一次來時瀏覽器是簡中會自動切換，英日會跳一次提示。', p: 'jpnow' },
@@ -1159,7 +1170,11 @@ class Component extends DCLogic {
     if (this.state.page === 'lookup' && /^\d+$/.test(String(this.state.luId || ''))) this.luLookup();
 
     import('./data/sekai-data.js?v=debc1682f8')
-      .then(m => this.setState({ gachas: (m.GACHAS || []).map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] }))
+      .then(async m => {
+        let G = m.GACHAS || [];
+        if (this.SRV === 'jp') { try { G = (await import('./data/gachas-jp.js?v=a46b79b085')).GACHAS || []; } catch (e) { G = []; } }   // 日服：日服 master 整理的卡池列表（日本時間）
+        this.setState({ gachas: G.map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] });
+      })
       .catch(() => {});
     /* ep-songs（95 KB）只有計算中心與進階計算用得到，go() 進那兩頁時會載，
        不必在首頁啟動就抓。教學資料（26 KB）只供頁面底部的提示條與教學頁，
@@ -5261,7 +5276,7 @@ class Component extends DCLogic {
     });
   }
   loadCardX() {
-    return this.dbRun('cardX', async () => { const m = await import('./data/cards-extra.js?v=560757f6c4'); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
+    return this.dbRun('cardX', async () => { const m = await (this.SRV === 'jp' ? import('./data/cards-extra-jp.js?v=9736f00446') : import('./data/cards-extra.js?v=560757f6c4')); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
   }
   /* 技能敘述：master 的樣板長 {{效果id;欄位}}，d=秒數、v=數值、e=同團加成、m=加成上限、c=角色名；
      少數技能（體力連動、角色等級連動、隨機成員）的欄位是編組時才算得出來的組合值，那些留成「…」並加註。 */
@@ -5289,12 +5304,12 @@ class Component extends DCLogic {
      角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
   loadStories() {
     return this.dbRun('stories', async () => {
-      const m = await import('./data/stories-index.js?v=0f2f5c00f1');
+      const m = await (this.SRV === 'jp' ? import('./data/stories-index-jp.js?v=b5907b89c1') : import('./data/stories-index.js?v=0f2f5c00f1'));
       return { events: m.ST_EVENTS || [], units: m.ST_UNITS || [], cards: m.ST_CARDS || {}, areas: m.ST_AREAS || [], talks: m.ST_TALKS || [], special: m.ST_SPECIAL || [], self: m.ST_SELF || {} };
     });
   }
   ST_KIND = { event: '活動劇情', unit: '主線劇情', card: '卡片劇情', talk: '區域對話', self: '個人劇情', special: '特別劇情' };
-  stUrls(path) { const tc = this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets'); return [tc + '/' + path, this.ASSET + '/' + path]; }
+  stUrls(path) { if (this.SRV === 'jp') return [this.ASSET + '/' + path]; const tc = this.ASSET.replace('sekai-jp-assets', 'sekai-tc-assets'); return [tc + '/' + path, this.ASSET + '/' + path]; }   // 日服：日文原文
   stOpen(kind, title, sub, paths, voiceDir) {
     this.stStopVoice();
     const urls = [].concat.apply([], paths.map(x => this.stUrls(x)));
@@ -5367,18 +5382,18 @@ class Component extends DCLogic {
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
-      const m = await import('./data/fixtures-index.js?v=9bcab0f8a3');
+      const m = await (this.SRV === 'jp' ? import('./data/fixtures-index-jp.js?v=5a194bd360') : import('./data/fixtures-index.js?v=9bcab0f8a3'));
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
   /* 豆森活動（生日派對、百景競賽）：日曆、今日摘要、行事曆匯出用 */
   loadMsEvents() {
-    return this.dbRun('msEvents', async () => { const m = await import('./data/mysekai-events.js?v=502684d845'); return m.MS_EVENTS || []; });
+    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-events-jp.js?v=520a8021f4') : import('./data/mysekai-events.js?v=502684d845')); return m.MS_EVENTS || []; });
   }
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
   loadSupportEvents() {
-    return this.dbRun('supEvents', async () => { const m = await import('./data/support-events.js?v=b42b133022'); return m.SUPPORT_EVENTS || []; });
+    return this.dbRun('supEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/support-events-jp.js?v=beb4f9fc5c') : import('./data/support-events.js?v=b42b133022')); return m.SUPPORT_EVENTS || []; });
   }
   /* 第幾回用 n（依開始時間排序）：Haruki 的 6.4 master 重新編號，id 已經不等於回數。v2 是 6.4 新增的棋盤版 */
   supEventName(x) { return '第 ' + (x.n || x.id) + ' 回應援活動' + (x.v === 'v2' ? '（棋盤版）' : ''); }
@@ -5439,7 +5454,7 @@ class Component extends DCLogic {
     return { ev, arr, rank, per, plays, cur, day: per * plays, personal, total, next, good, need, phase, daysLeft, board: !!(ev && ev.v === 'v2'), borrowed: !!(ev && !hasCoef && ref), refName: ref && !hasCoef ? this.supEventName(ref) : '' };
   }
   loadMst() {
-    return this.dbRun('mst', async () => { const m = await import('./data/mysekai-talks-index.js?v=28945a8519'); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
+    return this.dbRun('mst', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-talks-index-jp.js?v=b4fb483687') : import('./data/mysekai-talks-index.js?v=28945a8519')); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
   }
   /* ---------- Haruki 工具箱 OAuth 匯入 ----------
      流程照 Uni PJSK Viewer 與 33Kit 的公開 client：授權碼＋PKCE，token 只存在這台瀏覽器（localStorage）。
@@ -5717,7 +5732,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = import('./data/data-built.js?v=7a63124190').then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = (this.SRV === 'jp' ? import('./data/data-built-jp.js?v=eed9706f39') : import('./data/data-built.js?v=7a63124190')).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
@@ -5807,7 +5822,7 @@ class Component extends DCLogic {
     });
   }
   loadLives() {
-    return this.dbRun('lives', async () => { const m = await import('./data/lives-index.js?v=37677bd377'); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
+    return this.dbRun('lives', async () => { const m = await (this.SRV === 'jp' ? import('./data/lives-index-jp.js?v=c92f8fd92a') : import('./data/lives-index.js?v=37677bd377')); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
   }
   loadNews() {
     return this.dbRun('news', async () => {
@@ -6430,7 +6445,7 @@ class Component extends DCLogic {
   /* ===== 卡池詳情（原生疊層；PU 卡由 tools/build-gacha-pickups.py 建置時從兩服 master 算好） ===== */
   loadGachaPk() {
     if (this._gpk) return this._gpk;
-    this._gpk = import('./data/gacha-pickups.js?v=02e12a50aa').then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
+    this._gpk = (this.SRV === 'jp' ? import('./data/gacha-pickups-jp.js?v=856655fab9') : import('./data/gacha-pickups.js?v=02e12a50aa')).then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
       .catch(() => { this._gpk = null; this.setState({ gachaPkErr: true }); });
     return this._gpk;
   }
@@ -6761,7 +6776,7 @@ class Component extends DCLogic {
   loadEvInfo() {
     if (this.state.evInfo) return Promise.resolve(this.state.evInfo);
     if (this._evInfoP) return this._evInfoP;
-    this._evInfoP = import('./data/event-info.js?v=697a88f113').then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
+    this._evInfoP = (this.SRV === 'jp' ? import('./data/event-info-jp.js?v=c3d4d67520') : import('./data/event-info.js?v=697a88f113')).then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
       .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
     return this._evInfoP;
   }
@@ -9284,7 +9299,7 @@ class Component extends DCLogic {
          76 則加起來一萬多字,想快速看過有哪些更新反而看不到。
          細節不刪,收在展開鈕後面。 */
       syslog: this.SYSLOG.slice(0, (s.mobile && !s.sysMore) ? 10 : this.SYSLOG.length).map(u => {
-        const pts = String(u.s || '').split(/。\s*/).map(x => x.trim()).filter(Boolean);
+        const pts = String(u.s || '').replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '').split(/。\s*/).map(x => x.trim()).filter(Boolean);   // 純文字顯示：標籤拿掉，不要把 <b> 印出來
         const k = u.d + '|' + u.t;
         const open = !!(s.sysOpen || {})[k];
         return {
@@ -10611,8 +10626,8 @@ class Component extends DCLogic {
       dayH: s.mobile ? '54px' : '92px',
 
       /* 首頁 */
-      liveState: (s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動')) + ((s.liveSrc === 'haruki' || s.liveSrc === 'tracker') && !s.liveLoad ? '　·　Haruki 備援資料' : ''),
-      liveSrcNote: s.liveSrc === 'tracker' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki Event Tracker（經本站 Worker 轉換格式）。時速照常顯示；對方把玩家 ID 匿名化了，「我的排名」暫時比對不到，周回與場均也沒有。'
+      liveState: (s.liveLoad ? '載入中' : (s.liveErr ? '離線資料' : (startMs && now < startMs) ? '即將開始的活動' : (endMs && now >= endMs) ? '已結算的活動' : '進行中的活動')) + (this.SRV === 'jp' && !s.liveLoad ? '　·　Haruki 日服追蹤器' : (s.liveSrc === 'haruki' || s.liveSrc === 'tracker') && !s.liveLoad ? '　·　Haruki 備援資料' : ''),
+      liveSrcNote: this.SRV === 'jp' ? '' : s.liveSrc === 'tracker' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki Event Tracker（經本站 Worker 轉換格式）。時速照常顯示；對方把玩家 ID 匿名化了，「我的排名」暫時比對不到，周回與場均也沒有。'
         : s.liveSrc === 'haruki' ? 'HiSekai 目前連不上，這一頁的排名改用 Haruki 公開 API（經本站 Worker 轉換格式），時速等統計欄位暫時沒有。'
         : (s.borders && s.borders.partial) ? '榜線段位端點暫時取不到資料（前百正常），分段榜線先只顯示由前百換算的 T100。' : '',
       liveName: s.liveLoad ? '載入活動資訊…' : (ev.name || ev.event_name || (s.liveErr || '目前沒有進行中的活動')),
