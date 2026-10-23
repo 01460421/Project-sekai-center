@@ -177,7 +177,28 @@ export async function harukiLive(env, kind, eventId, server = 'tw') {
   }
 }
 
-const PATH_OK = /^\/haruki\/(config|event\/list|event\/(live|\d{1,4})\/(top100|border))$/;
+const PATH_OK = /^\/haruki\/(config|event\/list|event\/(live|\d{1,4})\/(top100|border|user\/(?:\d{6,20}|[0-9a-f]{64})))$/;
+
+/* ---------- 單一玩家的即時紀錄（用 Player ID 查） ----------
+   Haruki 活動追蹤器的 details/user：輸入遊戲裡的 Player ID（追蹤器內部的雜湊 ID 也收），回目前名次與分數、
+   上一名，以及約 10～20 秒一筆的分數軌跡（columns 格式：t0＋dt[] 秒、s0＋ds[] 分、r0＋dr[] 名次）。
+   追蹤器只記前百與各段位線上的玩家，查不到回 404 not_tracked。 */
+export async function harukiUser(env, eventId, uid, server = 'tw') {
+  const M = masterOf(server, env);
+  const events = await M('events.json');
+  const ev = eventId ? events.find(e => String(e.id) === String(eventId)) : pickCurrent(events, Date.now());
+  if (!ev) throw new Error('no event');
+  const base = ((env && env.HARUKI_TRACKER_BASE) || HARUKI_TRACKER_DEFAULT).replace(/\/+$/, '');
+  const path = '/api/v2/web/events/' + server + '/' + ev.id + '/leaderboards/total/details/user/' + encodeURIComponent(uid)
+    + '?interval=3600&includeTrace=true&includeProfile=true&traceFormat=columns&limit=5000';
+  const r = await fetch(base + path, { headers: { accept: 'application/json', 'user-agent': UA }, cf: { cacheTtl: 0, cacheEverything: false }, signal: AbortSignal.timeout(15000) });
+  if (r.status === 404) return { ...eventMeta(ev), server, tracked: false };
+  if (!r.ok) throw new Error('tracker HTTP ' + r.status);
+  const d = parseSafe(await r.text()) || {};
+  const pick = x => x && typeof x === 'object' ? { rankData: x.rankData || null, userData: x.userData || null } : null;
+  return { ...eventMeta(ev), server, tracked: true, ranked: !!d.ranked, fetched_at: (d.meta && d.meta.fetchedAt) || null,
+    current: pick(d.current), next: pick(d.next), trace: d.playerTrace || null, profile: d.profile || null };
+}
 
 /* ---------- 工具箱 OAuth 轉送 ----------
    Haruki 工具箱不對其他網站開 CORS，瀏覽器不能直接呼叫它（對方 2026-09 回覆），所以換 token、撤銷、
@@ -319,11 +340,14 @@ export async function handleHaruki(req, env, url) {
   let body;
   try {
     if (m[1] === 'event/list') body = toEventList(await masterOf(server, env)('events.json'), Date.now());
+    else if (m[3].startsWith('user/')) body = await harukiUser(env, m[2] === 'live' ? null : m[2], m[3].slice(5), server);
     else body = await harukiLive(env, m[3], m[2] === 'live' ? null : m[2], server);
   } catch (e) {
     return json({ error: 'upstream', message: String((e && e.message) || e).slice(0, 160) }, 502);
   }
-  const res = json(body, 200, { 'cache-control': 'public, max-age=30' });
+  if (body && body.tracked === false) return json({ error: 'not_tracked', ...body }, 404, { 'cache-control': 'public, max-age=30' });
+  // 個人紀錄追蹤器每 10～20 秒更新一次，快取短一點
+  const res = json(body, 200, { 'cache-control': 'public, max-age=' + (String(m[3] || '').startsWith('user/') ? 15 : 30) });
   if (cache) { try { await cache.put(key, res.clone()); } catch (e) {} }
   return res;
 }

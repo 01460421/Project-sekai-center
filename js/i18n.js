@@ -78,6 +78,7 @@ const DICT = [
   ['正在切到日服…', 'Switching to JP…', '日本版に切り替え中…'], ['正在切回台服…', 'Switching to TW…', '台湾版に切り替え中…'],
   ['切換伺服器會重新載入頁面；語言立即生效', 'Switching server reloads the page; language applies instantly', 'サーバー切替でページを再読み込み、言語はすぐ反映されます'],
   ['英文與日文目前翻譯介面與主要頁面，其餘內容維持中文', 'English covers the interface and main pages; other content stays in Chinese', '日本語はインターフェースと主要ページのみ対応、その他は中国語のままです'],
+  ['英文與日文翻譯全站介面與教學；曲名、卡名與活動名維持遊戲原文', 'English and Japanese cover the whole interface and guides; song, card and event names stay in the original', '英語・日本語はサイト全体のインターフェースとガイドに対応。曲名・カード名・イベント名は原文のままです'],
   ['這一頁目前只有台服資料', 'This page only has TW data for now', 'このページは今のところ台湾版のデータのみです'],
   ['切回台服', 'Switch to TW', '台湾版に戻す'], ['日服可以看：', 'Available for JP:', '日本版で見られるページ：'],
   ['複製連結', 'Copy link', 'リンクをコピー'], ['重新整理', 'Refresh', '更新'], ['載入中…', 'Loading…', '読み込み中…'], ['顯示更多', 'Show more', 'もっと見る'],
@@ -122,7 +123,7 @@ const PATTERNS = [
   [/^剩 (.+)$/, '$1 left', '残り $1'], [/^(.+)後開放$/, 'opens in $1', '$1後に開始'], [/^(.+)後公開$/, 'out in $1', '$1後に公開'], [/^(.+)後開始$/, 'starts in $1', '$1後に開始'],
   [/^第 (\d+) 期・(.+)$/, 'Event $1 · $2', '第$1回・$2'], [/^第 (\d+) 期$/, 'Event $1', '第$1回'], [/^第 (\d+) 章・(.+)$/, 'Ch. $1 · $2', '第$1章・$2'],
   [/^(\d+) 個開放中・(\d+) 個即將開放$/, '$1 open · $2 coming', '開催中 $1・予定 $2'], [/^(\d+) 個開放中$/, '$1 open', '開催中 $1'],
-  [/^更新於 (\d+:\d{2})・每 2 分鐘重抓（追蹤器約每小時一筆）$/, 'Updated $1 · refetched every 2 min (tracker samples hourly)', '$1 更新・2 分ごとに再取得（トラッカーは約 1 時間ごと）'],
+  [/^更新於 (\d+:\d{2})・每 2 分鐘重抓（追蹤器約 10～20 秒更新一次）$/, 'Updated $1 · refetched every 2 min (tracker updates every 10–20 s)', '$1 更新・2 分ごとに再取得（トラッカーは 10～20 秒ごとに更新）'],
 ];
 
 /* 簡中的補充詞：OpenCC 的 twp 詞典沒有、但大陸慣用的說法 */
@@ -136,6 +137,51 @@ function dictMap() {
   return MAP;
 }
 
+/* 全站詞典（data/i18n-en.js、data/i18n-ja.js，tools/build-i18n.py 產生）：鍵是原文的 FNV-1a 雜湊（36 進位） */
+let BIG = { en: null, ja: null };
+export function setDict(l, d) { if (l === 'en' || l === 'ja') { BIG[l] = d || null; memo.clear(); } }
+export function hashKey(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return (h >>> 0).toString(36);
+}
+const NUM = /\d+(?:[.,:]\d+)*/g;
+const memo = new Map();           // 同一段字重複出現（列表、倒數）不用每次重算
+/* 一整段：小詞典 → 全站詞典 → 數字換成 {n} 再查 → 固定句型 */
+function look(core) {
+  const small = dictMap()[lang], big = BIG[lang];
+  let hit = small.get(core);
+  if (hit != null) return hit;
+  if (big) { hit = big[hashKey(core)]; if (hit != null) return hit; }
+  if (/\d/.test(core)) {
+    const nums = [];
+    const tpl = core.replace(NUM, m => '{' + (nums.push(m) - 1) + '}');
+    const t = small.get(tpl) || (big && big[hashKey(tpl)]);
+    if (t != null) return t.replace(/\{(\d+)\}/g, (m, i) => nums[+i] != null ? nums[+i] : m);
+  }
+  const i = lang === 'en' ? 1 : 2;
+  for (const p of PATTERNS) if (p[0].test(core)) return core.replace(p[0], p[i]);
+  return null;
+}
+/* 對不上整段時，照標點切開逐段翻；每一段有中文的都翻得到才採用，不然維持原文（不做半中半英） */
+const SEP = /(\s*[・，、：；（）／|\n]\s*|\s+[·/–-]\s+)/;
+const PUNCT_EN = { '・': ' · ', '，': ', ', '、': ', ', '：': ': ', '；': '; ', '（': ' (', '）': ')', '／': ' / ' };
+function bySegments(core) {
+  const parts = core.split(SEP);
+  if (parts.length < 3) return null;
+  let any = false;
+  const out = parts.map((p, k) => {
+    if (k % 2 === 1) { const c = p.trim(); return lang === 'en' && PUNCT_EN[c] != null ? PUNCT_EN[c] : p; }
+    const c = p.trim();
+    if (!c || !HAN.test(c)) return p;
+    const t = look(c);
+    if (t == null) { any = null; return p; }
+    if (any !== null) any = true;
+    return p.replace(c, t);
+  });
+  return any ? out.join('').replace(/\s{2,}/g, ' ').replace(/\(\s+/g, '(').trim() : null;
+}
+
 export function tr(text) {
   if (lang === 'zh-TW' || !text || !HAN.test(text)) return text;
   if (lang === 'zh-CN') {
@@ -144,16 +190,14 @@ export function tr(text) {
     for (const [a, b] of CN_FIX) if (t.includes(a)) t = t.split(a).join(b);
     return t;
   }
-  const m = dictMap()[lang];
-  if (!m) return text;
+  if (!dictMap()[lang]) return text;
   const core = text.trim();
-  let hit = m.get(core);
-  if (hit == null) {
-    const i = lang === 'en' ? 1 : 2;
-    for (const p of PATTERNS) if (p[0].test(core)) { hit = core.replace(p[0], p[i]); break; }
-    if (hit == null) return text;
-  }
-  return text.replace(core, hit);
+  if (memo.has(core)) { const m = memo.get(core); return m == null ? text : text.replace(core, m); }
+  let hit = look(core);
+  if (hit == null) hit = bySegments(core);
+  if (memo.size > 4000) memo.clear();
+  memo.set(core, hit);
+  return hit == null ? text : text.replace(core, hit);
 }
 
 function skipEl(el) {
@@ -230,8 +274,10 @@ function loadOpenCC(url) {
 }
 
 /* 換語言：先把整頁從原文重算一次，再交給 observer 盯後續的變動 */
-export async function applyLang(next) {
+export async function applyLang(next, dict) {
   next = ['zh-CN', 'en', 'ja'].includes(next) ? next : 'zh-TW';
+  if (dict) setDict(next, dict);
+  memo.clear();
   if (next === 'zh-CN') await loadOpenCC('./vendor/opencc-t2cn.js?v=1801065fcd');
   lang = next;
   document.documentElement.lang = { 'zh-TW': 'zh-Hant-TW', 'zh-CN': 'zh-Hans-CN', en: 'en', ja: 'ja' }[next];

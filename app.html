@@ -43,7 +43,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
 --bg:#eef1f9;--bg-soft:#f6f8fd;--card:#fff;--card-2:#f1f4fb;
@@ -616,6 +616,8 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 /* 玩家查詢／卡片技能庫：原生頁（原本是 iframe 嵌經典版） */
 .lu-in{flex:1;min-width:200px;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
 .lu-go{padding:10px 18px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
+.lu-live{animation:popIn .35s cubic-bezier(.2,1.1,.35,1)}
+.lu-rank{font-family:'M PLUS Rounded 1c';font-size:26px;font-weight:800;color:var(--accent-deep);line-height:1.1}
 .lu-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:16px 18px}
 .lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
 .lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
@@ -737,6 +739,11 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .sm-have{background:color-mix(in oklab,#2fa84f 18%,transparent);color:#2fa84f}
 .sm-btn{margin-top:8px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent);font-weight:800;font-size:12px;cursor:pointer}
 @media (max-width:640px){.sm-row{grid-template-columns:88px repeat(5,minmax(76px,1fr))}.sm-row.one{grid-template-columns:88px minmax(120px,1fr)}.sm-h{padding:7px 8px;font-size:11px}.sm-cell{padding:6px 2px}.sm-tw{font-size:14px}.sm-jp{font-size:11px;gap:3px}.sm-dl{font-size:9.5px;padding:0 4px}.sm-deck{gap:5px}.sm-card{font-size:10px}.sm-card img{border-radius:10px}.sm-tag{font-size:9px;padding:1px 5px}}
+/* 介面語言的字型：站內字型 Huninn（粉圓）是繁中字型；日文與英文改用 M PLUS Rounded 1c（同樣圓體，假名與拉丁字母更完整），
+   簡中把常見的簡體字型排在後備。內嵌樣式寫死了 Huninn，所以用屬性選擇器加 !important 蓋過。 */
+html[lang="ja"] [style*="Huninn"],html[lang="en"] [style*="Huninn"]{font-family:'M PLUS Rounded 1c','Huninn','Hiragino Maru Gothic ProN',system-ui,sans-serif!important}
+html[lang="zh-Hans-CN"] [style*="Huninn"]{font-family:'Huninn','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif!important}
+html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 /* ===== 頁首的伺服器／語言切換器、日服模式提示、日服現況頁 ===== */
 .srv-wrap{position:relative;flex:none}
 .srv-btn{position:relative;z-index:62;height:38px;display:flex;align-items:center;gap:6px;padding:0 11px 0 10px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--sh-xs);font-size:12.5px;font-weight:800;transition:border-color .2s,transform .25s cubic-bezier(.34,1.45,.44,1),box-shadow .2s}
@@ -6300,8 +6307,31 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
       <input type="text" inputmode="numeric" class="lu-in" placeholder="Player ID（數字）" value="{{ luId }}" onInput="{{ onField }}" data-k="luId" onKeyDown="{{ onLuKey }}">
       <button type="button" class="lu-go" onClick="{{ onLuGo }}">查詢</button>
     </div>
+    <sc-if value="{{ luJp }}"><div class="u-fc2" style="margin:-4px 0 12px;line-height:1.7">日服：輸入日服的 Player ID，看這一期活動的即時名次、與上一名的差距、近一小時打了幾場與每一場的得分（Haruki 活動追蹤器，約 10～20 秒更新；只記前百與各段位線上的玩家）。查過的 ID 會記住。</div></sc-if>
     <sc-if value="{{ luLoad }}"><div class="empty loading">查詢中…</div></sc-if>
     <sc-if value="{{ luErr }}"><div class="empty">{{ luErr }}</div></sc-if>
+    <sc-if value="{{ luTrLoading }}"><div class="empty loading">讀取活動即時紀錄…</div></sc-if>
+    <sc-if value="{{ luTrErr }}"><div class="empty">{{ luTrErr }}</div></sc-if>
+    <sc-if value="{{ luTrNot }}"><div class="empty">{{ luTrNotText }}</div></sc-if>
+    <sc-if value="{{ luTrHas }}">
+      <div class="lu-card lu-live">
+        <div style="display:flex;gap:12px;align-items:center">
+          <sc-if value="{{ luTr.card }}"><img src="{{ luTr.card }}" referrerpolicy="no-referrer" alt="" width="54" height="54" style="width:54px;height:54px;border-radius:14px;flex:none;background:var(--card-2)"></sc-if>
+          <div style="min-width:0;flex:1"><div class="u-fc2">{{ luTr.ev }}・活動即時紀錄</div><div class="lu-name notranslate">{{ luTr.name }}</div><sc-if value="{{ luTr.word }}"><div class="lu-word notranslate">{{ luTr.word }}</div></sc-if></div>
+          <div style="text-align:right;flex:none"><div class="lu-rank">{{ luTr.rank }}</div><div style="font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums">{{ luTr.score }}</div></div>
+        </div>
+        <div class="u-fc2" style="margin-top:8px">{{ luTr.gap }}</div>
+        <div class="lu-stats" style="margin-top:10px">
+          <div class="lu-stat"><span>近一小時</span><b>{{ luTr.h1 }}</b></div>
+          <div class="lu-stat"><span>平均</span><b>{{ luTr.h1avg }}</b></div>
+          <div class="lu-stat"><span>近 24 小時</span><b>{{ luTr.h24 }}</b></div>
+          <div class="lu-stat"><span>最後一場</span><b>{{ luTr.lastGame }}</b></div>
+        </div>
+        <sc-if value="{{ luTr.hasChart }}"><svg viewBox="0 0 300 70" preserveAspectRatio="none" style="width:100%;height:84px;margin-top:12px;display:block" aria-label="最近 24 小時的分數走勢"><path d="{{ luTr.area }}" fill="color-mix(in oklab,var(--accent) 14%,transparent)" stroke="none"></path><path d="{{ luTr.path }}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path></svg></sc-if>
+        <sc-if value="{{ luTrHasRecent }}"><div class="bc-h">最近幾場</div><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ luTr.recent }}" as="g" hint-placeholder-count="8"><span style="padding:4px 9px;border-radius:999px;background:var(--card-2);font-size:11.5px;font-weight:700;color:var(--text-2)"><b style="color:var(--ink);font-variant-numeric:tabular-nums">{{ g.v }}</b> {{ g.t }}</span></sc-for></div></sc-if>
+        <div class="u-fc2" style="margin-top:10px">{{ luTr.upd }}・資料來源：Haruki 活動追蹤器</div>
+      </div>
+    </sc-if>
     <sc-if value="{{ luHas }}">
       <div class="lu-card">
         <div class="lu-name">{{ lu.name }}</div>
@@ -6361,7 +6391,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
         <div class="mk-h"><b>即時榜線</b><i>{{ jnLiveAt }}</i></div>
         <sc-if value="{{ jnLiveErr }}"><button type="button" onClick="{{ onJnLive }}" style="width:100%;padding:10px;border:1px dashed var(--border-2);border-radius:12px;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">{{ jnLiveErr }}・點此重試</button></sc-if>
         <sc-if value="{{ jnHasLive }}"><div class="jn-tiers"><sc-for list="{{ jnTiers }}" as="t" hint-placeholder-count="8"><div class="jn-tier"><b>{{ t.r }}</b><span>{{ t.v }}</span></div></sc-for></div></sc-if>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="rank">完整排名 →</button><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="sched">看日服還沒公布的活動預測</button></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="rank">完整排名 →</button><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="lookup">用 Player ID 查我的名次</button><button type="button" class="mk-chip" onClick="{{ onGo }}" data-p="sched">看日服還沒公布的活動預測</button></div>
       </div>
       <div class="mk-card">
         <div class="mk-h"><b>前十名</b><i>Haruki 日服追蹤器</i></div>
@@ -9907,7 +9937,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4576f77067"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ee963a28dc"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
