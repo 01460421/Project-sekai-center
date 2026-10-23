@@ -265,7 +265,7 @@ export async function handleApi(req, env, url, user) {
       const QA_COOLDOWN = 60, TITLE_MAX = 80, BODY_MAX = 4000;
       const seg = p.split('/').filter(Boolean);          // ['api','qa', id?, action?, pid?]
       const id = str(seg[2] || '', 64), action = str(seg[3] || '', 16), pid = str(seg[4] || '', 64);
-      /* 客服留言（support）是使用者與站長之間的私訊：只有作者與管理員看得到、回得了；
+      /* 客服留言（support）是使用者與 omega 之間的私訊：只有作者與管理員看得到、回得了；
          登入就能留言（審核中的人最需要問審核的事），被拒絕的帳號不行。 */
       const needWrite = (support) => {
         if (!user) return out({ error: 'not_signed_in', message: '請先登入' }, 401);

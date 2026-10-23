@@ -4789,7 +4789,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
     <div class="bot-card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="flex:1 1 260px;min-width:0">
         <div class="bot-h2">想讓自己的車隊也用？</div>
-        <div class="bot-sub">機器人目前由站長代管。想讓自己的車隊也用，可以到提問所留言，寫上車隊用 Discord 還是 QQ、大概幾個人。已經在用的車隊，直接登入私車排班就能看到自己的班表。</div>
+        <div class="bot-sub">機器人目前由 omega 代管。想讓自己的車隊也用，可以到提問所留言，寫上車隊用 Discord 還是 QQ、大概幾個人。已經在用的車隊，直接登入私車排班就能看到自己的班表。</div>
       </div>
       <div style="display:flex;gap:9px;flex-wrap:wrap">
         <button type="button" class="bot-cta" onClick="{{ onGo }}" data-p="qa">到提問所留言</button>
@@ -9118,8 +9118,8 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
     </sc-if>
     <sc-if value="{{ hpAiPending }}">
       <div class="hp-card"><div class="hp-big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg></div>
-        <b>帳號審核中</b><p>管理員核准後就能用 AI 助手。等待期間小幫手照樣能回答；有急事可以到「留言」問站長。</p>
-        <div class="hp-acts"><button type="button" class="hp-act" onClick="{{ onHpTab }}" data-v="msg">留言給站長</button></div></div>
+        <b>帳號審核中</b><p>管理員核准後就能用 AI 助手。等待期間小幫手照樣能回答；有急事可以到「留言」問 omega。</p>
+        <div class="hp-acts"><button type="button" class="hp-act" onClick="{{ onHpTab }}" data-v="msg">留言給 omega</button></div></div>
     </sc-if>
     <sc-if value="{{ hpAiOk }}">
       <div class="hp-bar"><span>{{ hpAiQuota }}</span><button type="button" onClick="{{ onHpAiNew }}">新對話</button></div>
@@ -9145,12 +9145,12 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
   </sc-if>
   </sc-if>
 
-  <!-- 留言給站長 -->
+  <!-- 留言給 omega -->
   <sc-if value="{{ hpIsMsg }}">
   <div class="hp-body" aria-live="polite">
     <sc-if value="{{ hpMsgNeedLogin }}">
       <div class="hp-card"><div class="hp-big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v10H8l-4 4z"></path></svg></div>
-        <b>登入後留言給站長</b><p>功能建議、問題回報、資料有誤都歡迎。登入是為了讓站長的回覆能送到你這裡（只有你和站長看得到）。</p>
+        <b>登入後留言給 omega</b><p>功能建議、問題回報、資料有誤都歡迎。登入是為了讓 omega 的回覆能送到你這裡（只有你和 omega 看得到）。</p>
         <div class="hp-acts"><sc-for list="{{ hpLoginActs }}" as="a" hint-placeholder-count="2"><button type="button" class="hp-act" onClick="{{ onHpAct }}" data-k="{{ a.k }}" data-a="{{ a.a }}">{{ a.l }}</button></sc-for><button type="button" class="hp-act" onClick="{{ onHpAct }}" data-k="go" data-a="qa">看公開的提問所</button></div></div>
     </sc-if>
     <sc-if value="{{ hpMsgOk }}">
@@ -9160,13 +9160,13 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
         <sc-for list="{{ hpThreadsList }}" as="t" hint-placeholder-count="3">
           <button type="button" class="hp-th" onClick="{{ onHpThOpen }}" data-id="{{ t.id }}"><span style="flex:1;min-width:0"><b>{{ t.title }}</b><small><span style="color:{{ t.stC }};font-weight:800">{{ t.st }}</span>・{{ t.ago }}<sc-if value="{{ t.by }}">・{{ t.by }}</sc-if></small></span><sc-if value="{{ t.unread }}"><i></i></sc-if></button>
         </sc-for>
-        <sc-if value="{{ hpComposeOn }}"><div class="hp-row"><div class="hp-mini"><img src="{{ hpAva }}" referrerpolicy="no-referrer" alt=""></div><div class="hp-col"><div class="hp-bub">想跟站長說什麼？先在下面選個分類，再描述一下狀況。會自動附上你在哪一頁，方便站長找問題。</div></div></div></sc-if>
+        <sc-if value="{{ hpComposeOn }}"><div class="hp-row"><div class="hp-mini"><img src="{{ hpAva }}" referrerpolicy="no-referrer" alt=""></div><div class="hp-col"><div class="hp-bub">想跟 omega 說什麼？先在下面選個分類，再描述一下狀況。會自動附上你在哪一頁，方便 omega 找問題。</div></div></div></sc-if>
       </sc-if>
       <sc-if value="{{ hpInThread }}">
         <div class="hp-back"><button type="button" onClick="{{ onHpThBack }}" aria-label="返回列表"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button><span style="min-width:0"><b>{{ hpThTitle }}</b><small>{{ hpThSub }}</small></span></div>
         <sc-if value="{{ hpPostsLoading }}"><div class="hp-row"><div class="hp-typing"><span></span><span></span><span></span></div></div></sc-if>
         <sc-for list="{{ hpPosts }}" as="p" hint-placeholder-count="2">
-          <div class="hp-row {{ p.cls }}"><div class="hp-col"><span class="hp-who">{{ p.who }}<sc-if value="{{ p.badge }}"><em>站長</em></sc-if></span><div class="hp-bub">{{ p.text }}</div><span class="hp-time">{{ p.t }}</span></div></div>
+          <div class="hp-row {{ p.cls }}"><div class="hp-col"><span class="hp-who">{{ p.who }}<sc-if value="{{ p.badge }}"><em>✓</em></sc-if></span><div class="hp-bub">{{ p.text }}</div><span class="hp-time">{{ p.t }}</span></div></div>
         </sc-for>
         <sc-if value="{{ hpWaitNote }}"><div class="hp-note">{{ hpWaitNote }}</div></sc-if>
       </sc-if>
@@ -9907,7 +9907,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=0d6b9bdc10"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4576f77067"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -89,7 +89,7 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=f37374e143');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=8b3c50e221');
       await this._i18n.applyLang(v);
       try { const w = this._wantTitle; if (w) document.title = this._i18n.tr(w); } catch (e) {}
     } catch (e) { this._toast('翻譯模組載入失敗，請稍後再試'); }
@@ -641,7 +641,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
-    { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給站長', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或站長；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給站長的私訊（只有你和站長看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，站長回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
+    { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給 omega', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或 omega；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給 omega 的私訊（只有你和 omega 看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，omega 回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
     { d: '2026/10/23', t: '全站台服／日服切換、日服現況、簡中／英文／日文介面', s: '頁首新增「伺服器・語言」按鈕。<b>切到日服</b>後首頁換成日服現況（版本、當期活動倒數與加成角色、即時榜線與前十名、開放中的卡池與 PU 卡、新曲、近期活動），活動排名改看日服即時排名（Haruki 日服追蹤器），卡片圖鑑、收集率、卡面下載、角色、素材、一格漫畫與原聲帶改用日服 master；只有台服資料的頁面會在上方提示並可一鍵切回台服，分享出去的連結也會停在日服。日服現況頁底部整理了網路上仍在更新的日服資源（官方、資料庫、Wiki、榜線、工具與社群），資源連結頁也加了一組。<b>介面語言</b>：簡體中文整站轉換（連詞彙一起轉，例如伺服器→服务器）；英文與日文目前翻譯導覽、頁名、頁首、日服現況與客服視窗，其餘內容維持中文。第一次來時瀏覽器是簡中會自動切換，英日會跳一次提示。', p: 'jpnow' },
     { d: '2026/10/23', t: '排程預測加上角色、屬性、技能', s: '未來活動每一期列出加成屬性、加成角色與活動卡（角色・屬性・技能），未來卡池的 PU 卡也標屬性與技能，分類跟卡片技能庫一樣。日服還沒公布的期數改列屬性候選（最久沒當加成屬性的排前面，逐期回測前兩名 57%）、加成角色（照團體候選）與最可能輪空 4★ 的團員；推估的生日池標出新生日卡的屬性（每個角色五年一輪、五種各一次）。回測數字都在「延遲與規律」。', p: 'sched' },
     { d: '2026/10/20', t: '排程預測頁：日服加一年的規律、逐期回測、未來活動與卡池', s: '追活動 → 活動總覽多一個「排程預測」分頁籤。台服的活動與卡池 id、素材都跟日服一樣，開放時間是日服同一天、同一個當地時刻再加一年（跨 2/29 那年差 366 天）；這條規律不是寫死的，每一期拿之前幾期的命中率在四條候選規則裡挑一條來預測，再跟台服 master 的實際時間比：200 期活動命中 176／181（最近 30 期 28／30），官方已排的未來 19 期全中，卡池 41／46。頁上有未來一年的活動與卡池預測（卡池附 PU 卡、所屬活動、分類與信心，並標出跟站上卡池列表差幾天）、逐期回測表（每期的日服時間、預測、實際、偏差、用的規則）、延遲歷史（哪幾期是 +365、哪幾期是 +366）與各類卡池的偏差分布。' },
@@ -2861,7 +2861,7 @@ class Component extends DCLogic {
   /* ---------- 線上客服（延後載入，程式在 js/help.js）：開站閒下來就預載，第一次點開不用等 ---------- */
   loadHelp() {
     if (!this._hpReady) {
-      this._hpReady = import('./js/help.js?v=8cac47aa3d').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
+      this._hpReady = import('./js/help.js?v=b5b3dab41a').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
         .catch(e => { this._hpReady = null; throw e; });
     }
     return this._hpReady;
@@ -2870,12 +2870,12 @@ class Component extends DCLogic {
   hpBase(s) {
     const mob = !!s.mobile;
     const fabBottom = mob ? (s.playerOn ? 'calc(150px + env(safe-area-inset-bottom,0px))' : 'calc(84px + env(safe-area-inset-bottom,0px))') : (s.playerOn ? '100px' : '22px');
-    return { hpFabBottom: fabBottom, hpOpen: false, hpPanel: false, hpState: 'closed', hpBadgeOn: false, hpTipOn: false, hpFabLabel: '線上客服：小幫手、AI 助手與留言給站長', hpAva: this.charaSd(21) };
+    return { hpFabBottom: fabBottom, hpOpen: false, hpPanel: false, hpState: 'closed', hpBadgeOn: false, hpTipOn: false, hpFabLabel: '線上客服：小幫手、AI 助手與留言給 omega', hpAva: this.charaSd(21) };
   }
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=dcc50b9201').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=8d3bbca342').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -7789,7 +7789,7 @@ class Component extends DCLogic {
       }
     });
     let sorted = rows.sort((a, b) => (b[key] || 0) - (a[key] || 0));
-    /* 自訂篩選（站長要的「前 n%」「≥ n」這類）：依目前排序的那個數值篩。
+    /* 自訂篩選（omega 要的「前 n%」「≥ n」這類）：依目前排序的那個數值篩。
        top ＝依排序取前 n% 列；gap ＝與第 1 名差距在 n% 以內（值 ≥ 最高×(1−n%)）；min ＝值 ≥ n。
        有篩選時把列數上限放寬到 300，不然「前 30%」會被 40 列的預設上限截掉。 */
     const fm = useFilter === false ? 'none' : (s.moyuFMode || 'none');

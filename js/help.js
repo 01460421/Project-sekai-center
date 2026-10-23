@@ -2,9 +2,9 @@
    三個分頁共用一個視窗：
    - 小幫手：站內即時回答，不花額度、不用登入。先看是不是在問「現在」的事（當期活動、榜線、卡池、日服、語言），
      再到功能別名表（ALIASES，五百多條玩家用語）、頁面說明與教學大全裡找，給答案和「前往」按鈕；沒把握就說沒把握，
-     把問題交給 AI 助手或站長，不硬湊。
+     把問題交給 AI 助手或 omega，不硬湊。
    - AI 助手：就是站內助手（js/ai.js 的 aiSend），對話與 /assistant 頁同一份 aiMsgs，「展開」直接接著聊。
-   - 留言：給站長的私訊（提問所的 kind=support，只有本人與管理員看得到），站長回覆會出現在這裡並亮紅點；
+   - 留言：給 omega 的私訊（提問所的 kind=support，只有本人與管理員看得到），omega 回覆會出現在這裡並亮紅點；
      視窗開著時每 15 秒重抓一次，關著時每 90 秒看一次有沒有新回覆。
    這個檔案延後載入：開站閒下來時預載，app.js 的 loadHelp() 用 Object.assign(app, helpMembers.call(app)) 掛上。 */
 
@@ -117,7 +117,7 @@ export function helpMembers() {
     const me = this.state.me;
     const name = me && me.name ? '，' + me.name : '';
     const where = this.state.page && this.state.page !== 'home' ? '你現在在「' + P[0] + '」。' : '';
-    this.hpPush({ who: 'bot', text: hi + name + '！我是 SEKAI 小幫手。' + where + '\n想找功能、查現在的活動與榜線、或不知道從哪裡開始，直接打字問我；要算東西、做規劃可以交給 AI 助手，想跟站長說的話可以到「留言」。',
+    this.hpPush({ who: 'bot', text: hi + name + '！我是 SEKAI 小幫手。' + where + '\n想找功能、查現在的活動與榜線、或不知道從哪裡開始，直接打字問我；要算東西、做規劃可以交給 AI 助手，想跟 omega 說的話可以到「留言」。',
       acts: this.hpCtxActs() });
   },
   /* 依目前頁面給幾個常見的問題 */
@@ -185,13 +185,13 @@ export function helpMembers() {
       return { text: '介面語言可以在右上角的「伺服器・語言」切換，也可以直接按下面：簡體中文是整站轉換；英文與日文目前翻譯介面與主要頁面。',
         acts: [['繁體中文', 'zh-TW'], ['简体中文', 'zh-CN'], ['English', 'en'], ['日本語', 'ja']].map(([l, a]) => ({ l, k: 'lang', a })) };
     }
-    if (/客服|回報|回报|建議|建议|bug|錯誤|错误|壞掉|坏掉|故障|意見|意见|反映|站長|站长|聯絡|联络|聯繫|联系/.test(n)) {
-      return { text: '收到！到「留言」分頁寫給站長，選個分類、描述一下狀況就好（附上你在哪一頁、看到什麼，會更快處理）。站長回覆會出現在這個視窗並亮紅點。', acts: [{ l: '寫留言給站長', k: 'tab', a: 'msg' }] };
+    if (/客服|回報|回报|建議|建议|bug|錯誤|错误|壞掉|坏掉|故障|意見|意见|反映|omega|站長|站长|聯絡|联络|聯繫|联系/.test(n)) {
+      return { text: '收到！到「留言」分頁寫給 omega，選個分類、描述一下狀況就好（附上你在哪一頁、看到什麼，會更快處理）。omega 回覆會出現在這個視窗並亮紅點。', acts: [{ l: '寫留言給 omega', k: 'tab', a: 'msg' }] };
     }
     if (/審核|审核|核准|帳號|账号|登入|登录|註冊|注册/.test(n)) {
       const me = this.state.me;
-      const st = !me ? '你目前沒有登入。' : me.status === 'approved' ? '你的帳號已核准，站上功能都能用。' : me.status === 'pending' ? '你的帳號正在等管理員核准，通常一天內會處理；等不及可以到「留言」問站長。' : '你的帳號目前不能使用需要核准的功能，有疑問請到「留言」問站長。';
-      return { text: st + '\n登入用 Google 或 Discord；登入後設定與持卡會雲端同步，核准後可以用偵測訂閱與 AI 助手。', acts: [{ l: '我的帳號', k: 'go', a: 'account' }].concat(me ? [{ l: '問站長', k: 'tab', a: 'msg' }] : this.hpLoginActs()) };
+      const st = !me ? '你目前沒有登入。' : me.status === 'approved' ? '你的帳號已核准，站上功能都能用。' : me.status === 'pending' ? '你的帳號正在等管理員核准，通常一天內會處理；等不及可以到「留言」問 omega。' : '你的帳號目前不能使用需要核准的功能，有疑問請到「留言」問 omega。';
+      return { text: st + '\n登入用 Google 或 Discord；登入後設定與持卡會雲端同步，核准後可以用偵測訂閱與 AI 助手。', acts: [{ l: '我的帳號', k: 'go', a: 'account' }].concat(me ? [{ l: '問 omega', k: 'tab', a: 'msg' }] : this.hpLoginActs()) };
     }
     if (/^(ai|助手|額度|额度)|ai助手|ai額度|問ai|问ai/.test(n)) {
       return { text: 'AI 助手會自己查站上的資料（榜線、卡池、你的卡、教學）再回答，也能做多步驟規劃。要登入且帳號核准，每天 20 次，台灣時間 00:00 重置。', acts: [{ l: '打開 AI 助手', k: 'tab', a: 'ai' }] };
@@ -258,8 +258,8 @@ export function helpMembers() {
       return { text: '你要找的應該是「' + (this.PAGES[f.page] || [f.title])[0] + '」' + (f.kind === 'feat' && f.title !== (this.PAGES[f.page] || [])[0] ? '裡的「' + f.title + '」' : '') + '。' + (acts.length > 1 ? '也可能是下面這幾個：' : ''), acts };
     }
     if (acts.length) return { text: '我不太確定你要的是哪一個，最接近的是這幾個：', acts: acts.concat(aiOk ? [{ l: '交給 AI 助手回答', k: 'ai', a: q }] : []) };
-    return { text: '這題我答不出來' + (aiOk ? '，交給 AI 助手吧：它會自己查站上的資料。' : '。登入並通過審核後可以問 AI 助手；或是留言給站長。'),
-      acts: (aiOk ? [{ l: '交給 AI 助手回答', k: 'ai', a: q }] : (me ? [] : this.hpLoginActs())).concat([{ l: '留言給站長', k: 'tab', a: 'msg' }]) };
+    return { text: '這題我答不出來' + (aiOk ? '，交給 AI 助手吧：它會自己查站上的資料。' : '。登入並通過審核後可以問 AI 助手；或是留言給 omega。'),
+      acts: (aiOk ? [{ l: '交給 AI 助手回答', k: 'ai', a: q }] : (me ? [] : this.hpLoginActs())).concat([{ l: '留言給 omega', k: 'tab', a: 'msg' }]) };
   },
   hpAsk(text) {
     const q = String(text || '').trim();
@@ -305,7 +305,7 @@ export function helpMembers() {
     this.hpScroll(true);
   },
 
-  /* ---------- 留言給站長（kind=support） ---------- */
+  /* ---------- 留言給 omega（kind=support） ---------- */
   async hpLoadThreads(quiet) {
     if (!this.state.me) { if (!quiet) this.setState({ hpThreads: [] }); return; }
     if (!quiet) this.setState({ hpThLoad: !this.state.hpThreads });
@@ -382,9 +382,9 @@ export function helpMembers() {
       hpFabBottom: fabBottom, hpOpen: open, hpPanel: open, hpAva: this.charaSd(21), hpScrimDisplay: mob ? 'block' : 'none', hpMobOpen: mob && open, hpState: s.hpClosing ? 'closing' : (open ? 'open' : 'closed'),
       hpBadgeOn: unread > 0 && !(open && tab === 'msg'), hpBadge: unread > 9 ? '9+' : String(unread),
       hpTipOn: !!s.hpTip && !open, hpTipText: s.hpTipText || '需要幫忙嗎？找功能、查榜線，問我就好',
-      hpFabLabel: open ? '關閉線上客服' : '線上客服：小幫手、AI 助手與留言給站長',
+      hpFabLabel: open ? '關閉線上客服' : '線上客服：小幫手、AI 助手與留言給 omega',
       hpPanelBottom: mob ? '0px' : 'calc(' + fabBottom + ' + 70px)',
-      hpStatus: tab === 'ai' ? (aiOk ? (s.admBusy ? 'AI 助手正在查資料…' : 'AI 助手待命中・會自己查站上的資料') : '登入並核准後可以使用') : tab === 'msg' ? '站長通常一天內回覆・回覆會亮紅點' : '即時回覆・不用登入、不花額度',
+      hpStatus: tab === 'ai' ? (aiOk ? (s.admBusy ? 'AI 助手正在查資料…' : 'AI 助手待命中・會自己查站上的資料') : '登入並核准後可以使用') : tab === 'msg' ? 'omega 通常一天內回覆・回覆會亮紅點' : '即時回覆・不用登入、不花額度',
       hpTabs: [['bot', '小幫手'], ['ai', 'AI 助手'], ['msg', '留言']].map(([v, n]) => ({ v, n, on: tab === v, cls: tab === v ? 'on' : '', dot: v === 'msg' && unread > 0 && tab !== 'msg' })),
       hpTabX: ({ bot: '0%', ai: '100%', msg: '200%' })[tab],
       hpIsBot: tab === 'bot', hpIsAi: tab === 'ai', hpIsMsg: tab === 'msg',
@@ -449,7 +449,7 @@ export function helpMembers() {
       }
     }
 
-    /* 留言給站長 */
+    /* 留言給 omega */
     if (tab === 'msg') {
       out.hpMsgNeedLogin = !me; out.hpMsgOk = !!me;
       out.hpLoginActs = this.hpLoginActs();
@@ -462,16 +462,16 @@ export function helpMembers() {
         st: t.solved ? '已解決' : (t.reply_count ? '有回覆' : '等待回覆'), stC: t.solved ? '#3ea76a' : (t.reply_count ? 'var(--accent-deep)' : 'var(--text-3)'), unread: (t.reply_count || 0) > (seen[t.id] || 0) }));
       out.hpHasThreads = out.hpThreadsList.length > 0;
       out.hpCats = CATS.map(([v, n]) => ({ v, n, k: 'cat', on: (s.hpNewCat || '') === v, cls: (s.hpNewCat || '') === v ? 'on' : '' }));
-      out.hpMsgPh = s.hpThread ? '回覆站長…' : ((CATS.find(c => c[0] === s.hpNewCat) || [0, ''])[1] ? '描述一下：在哪一頁、做了什麼、看到什麼' : '先選分類，再寫下想說的話');
+      out.hpMsgPh = s.hpThread ? '回覆 omega…' : ((CATS.find(c => c[0] === s.hpNewCat) || [0, ''])[1] ? '描述一下：在哪一頁、做了什麼、看到什麼' : '先選分類，再寫下想說的話');
       if (s.hpThread) {
         const T = s.hpThInfo;
         out.hpThTitle = T ? T.title : '讀取中…';
         out.hpThSub = T ? (T.solved ? '已解決' : '對話中') + '・' + this.ago(T.created_at * 1000) + '開始' : '';
-        const first = T ? [{ k: 't', mine: !!T.mine, staff: !!T.author_admin && !T.mine, who: T.mine ? '你' : (T.author || ''), text: T.body, t: this.ago(T.created_at * 1000) }] : [];
-        out.hpPosts = first.concat((s.hpPosts || []).filter(p => !p.deleted).map(p => ({ k: p.id, mine: !!p.mine, staff: !!p.author_admin && !p.mine, who: p.mine ? '你' : (p.author_admin ? '站長 ' + (p.author || '') : (p.author || '')), text: p.body, t: this.ago(p.created_at * 1000) })))
+        const first = T ? [{ k: 't', mine: !!T.mine, staff: !!T.author_admin && !T.mine, who: T.mine ? '你' : (T.author_admin ? 'omega' : (T.author || '')), text: T.body, t: this.ago(T.created_at * 1000) }] : [];
+        out.hpPosts = first.concat((s.hpPosts || []).filter(p => !p.deleted).map(p => ({ k: p.id, mine: !!p.mine, staff: !!p.author_admin && !p.mine, who: p.mine ? '你' : (p.author_admin ? 'omega' : (p.author || '')), text: p.body, t: this.ago(p.created_at * 1000) })))
           .map(p => Object.assign(p, { cls: p.mine ? 'me' : 'bot', badge: p.staff }));
         out.hpPostsLoading = !s.hpPosts;
-        out.hpWaitNote = T && !T.reply_count && !s.hpIsAdmin ? '已送達。站長回覆時這裡會即時出現，視窗關著也會亮紅點。' : '';
+        out.hpWaitNote = T && !T.reply_count && !s.hpIsAdmin ? '已送達。omega 回覆時這裡會即時出現，視窗關著也會亮紅點。' : '';
         out.hpThCan = s.hpThCan !== false;
       }
       out.onHpThOpen = e => this.hpOpenThread(e.currentTarget.dataset.id);

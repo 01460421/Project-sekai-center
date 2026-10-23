@@ -407,26 +407,28 @@ export function hzMysVisitors(mys, groups) {
   }
   return out;
 }
-/* 大門升級：mysekaiGateMaterialGroups 的 groupId＝大門×1000＋等級；累計到每一級要的素材 vs 手上的 */
+/* 大門升級：mysekaiGateMaterialGroups 的 groupId＝大門×1000＋等級；累計到每一級要的素材 vs 手上的。
+   等級上限照素材表本身（台服目前 Lv40、日服已開到 Lv70），不寫死；HZ_GATE_MAX 只在素材表是空的時候當預設 */
 export const HZ_GATE_MAX = 40;
 export function hzMysGates(userGates, userMats, groupRows, levelsAhead) {
   const have = {}; (userMats || []).forEach(m => { have[+m.mysekaiMaterialId] = +m.quantity || 0; });
   const cur = {}; (userGates || []).forEach(g => { if (+g.mysekaiGateId) cur[+g.mysekaiGateId] = +g.mysekaiGateLevel || 0; });
-  const need = {};
+  const need = {}, top = {};
   (groupRows || []).forEach(r => {
     const gate = Math.floor(+r.groupId / 1000), lv = +r.groupId % 1000;
-    if (!gate || lv <= 0 || lv > HZ_GATE_MAX) return;
+    if (!gate || lv <= 0) return;
     ((need[gate] = need[gate] || {})[lv] = need[gate][lv] || []).push({ id: +r.mysekaiMaterialId, n: +r.quantity || 0 });
+    if (lv > (top[gate] || 0)) top[gate] = lv;
   });
   return Object.keys(need).map(Number).sort((a, b) => a - b).map(gate => {
-    const lv = cur[gate] || 0, sums = {}, steps = [];
-    for (let L = lv + 1; L <= Math.min(HZ_GATE_MAX, lv + (levelsAhead || 5)); L++) {
+    const lv = cur[gate] || 0, sums = {}, steps = [], cap = top[gate] || HZ_GATE_MAX;
+    for (let L = lv + 1; L <= Math.min(cap, lv + (levelsAhead || 5)); L++) {
       const mats = (need[gate][L] || []).map(m => { sums[m.id] = (sums[m.id] || 0) + m.n; return { id: m.id, n: m.n, cum: sums[m.id], have: have[m.id] || 0 }; });
       if (!mats.length) continue;
       steps.push({ lv: L, mats, ok: mats.every(m => m.have >= m.cum) });
     }
     let reach = lv; for (const st of steps) { if (st.ok) reach = st.lv; else break; }
-    return { gate, lv, max: lv >= HZ_GATE_MAX, steps, reach };
+    return { gate, lv, max: lv >= cap, cap, steps, reach };
   });
 }
 /* 唱片收集：只算現在拿得到的一般樂曲（排除 241、290、未上架與限時下架的），依團體分類 */
@@ -1542,7 +1544,7 @@ export function hzMembers() {
           out.hzMysNoWeather = !Y.weather.length;
         }
         if (msub === 'gate') {
-          out.hzMysGates = Y.gates.map(g => ({ n: (gate[g.gate] || {}).name || ('大門 #' + g.gate), lv: 'Lv ' + g.lv, max: g.max,
+          out.hzMysGates = Y.gates.map(g => ({ n: (gate[g.gate] || {}).name || ('大門 #' + g.gate), lv: 'Lv ' + g.lv + (g.cap ? '／' + g.cap : ''), max: g.max,
             sum: g.max ? '已經升滿了' : (g.reach > g.lv ? '手上的素材可以直接升到 Lv ' + g.reach : '下一級還缺素材'),
             steps: g.steps.map(st => ({ lv: 'Lv ' + st.lv, ok: st.ok, tag: st.ok ? '夠' : '不夠', tc: st.ok ? '#15803d' : '#dc2626',
               mats: st.mats.map(m => { const x = mat[m.id]; return { n: x ? x.name : '#' + m.id, img: x ? this.ASSET + '/mysekai/thumbnail/material/' + x.iconAssetbundleName + '.webp' : '', t: m.have.toLocaleString() + ' / ' + m.cum.toLocaleString(), c: m.have >= m.cum ? 'var(--text-3)' : '#dc2626' }; }) })) }));
