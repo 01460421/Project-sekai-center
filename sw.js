@@ -5,7 +5,7 @@
 const VER = 'v1';
 const PAGES = 'pages-' + VER, STATIC = 'static-' + VER;
 const STATIC_RE = /^\/(js|css|data|vendor|icons|tut-img)\/|^\/support\.js$/;
-const NO_CACHE_RE = /^\/data\/(billing|b30-consts|borders-db)\.js$|^\/data\/border-model\.json$|^\/data\/history\//;
+const NO_CACHE_RE = /^\/data\/(billing|billing-jp|b30-consts|borders-db|borders-db-jp)\.js$|^\/data\/border-model\.json$|^\/data\/history\//;
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {

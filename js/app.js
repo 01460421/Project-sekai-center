@@ -57,8 +57,8 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
-  SRV_TW_ONLY = ['borderdb'];
+  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_TW_ONLY = [];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -101,6 +101,7 @@ class Component extends DCLogic {
   SRV_SUB = {
     news: '日服遊戲內公告（日服 master）：活動、卡池、樂曲、企劃與維護，點開是遊戲內的公告頁',
     rank: '日服即時排名與分段榜線（Haruki 日服追蹤器，約 10～20 秒更新一次）',
+    borderdb: '日服歷屆終線（Sekai Viewer 與 Haruki 日服追蹤器）：依型態、團體、天數、屬性與角色交叉篩選，看各段位排行；含 T1 萬～T10 萬',
     analysis: '日服榜線預測、前百玩家的節奏與逐場紀錄、活躍度，以及第 202 期起的歷屆入榜紀錄（Haruki 日服追蹤器）',
     lookup: '用日服 Player ID 查活動的即時名次、與上一名的差距、近一小時的場數與每一場的得分（Haruki 活動追蹤器）',
     cards: '日服全部卡片（Sekai-World 日服 master）：依團體、角色、屬性、稀有度、來源篩選',
@@ -2751,7 +2752,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = 'data/borders-db.js?v=0cfbeeec6f';
+      s.src = this.SRV === 'jp' ? 'data/borders-db-jp.js?v=386026fe71' : 'data/borders-db.js?v=0cfbeeec6f';   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -9295,7 +9296,7 @@ class Component extends DCLogic {
       /* WL 交換所規劃（good果汁）：徽章要花在哪，先看總需求再決定 */
       ...(() => {
         const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
-        const ex = DB && DB.exchange ? DB.exchange : null;
+        const ex = DB && DB.exchange && Object.keys(DB.exchange).length ? DB.exchange : null;   // 日服版沒有交換所規劃表
         if (!ex) return { exOn: false, exSecs: [], exTurnChips: [], exTotal: '', exChChips: [] };
         const turns = Object.keys(ex).sort();
         const cur = ex[s.exTurn] ? s.exTurn : turns[turns.length - 1];
@@ -9441,7 +9442,7 @@ class Component extends DCLogic {
           bdbCount: '符合 ' + hit.length + ' 期，顯示 ' + shown.length + ' 筆',
           bdbMoreBtn: sorted.length > s.bdbN,
           bdbMoreN: Math.max(0, sorted.length - s.bdbN),
-          bdbSrcNote: '資料來源：good果汁的公開表格，由本站定期同步。',
+          bdbSrcNote: this.SRV === 'jp' ? '資料來源：Sekai Viewer 的歷史排名快照（第 201 期以前）與 Haruki 日服追蹤器（第 202 期起），每天自動補上新結束的期數。第 87～123 期與 WL1／WL2 各章兩邊都沒有留下資料。' : '資料來源：good果汁的公開表格，由本站定期同步。',
         };
       })(),
       /* 菜根機器人介紹頁 */
