@@ -178,7 +178,11 @@ function look(core) {
     }
   }
   const i = lang === 'en' ? 1 : 2;
-  for (const p of PATTERNS) if (p[0].test(core)) return core.replace(p[0], p[i]);
+  /* 句型裡的 (.+) 也是一段中文（「2 天 6 小時後結束」的「2 天 6 小時」），擷取到的部分再查一次 */
+  for (const p of PATTERNS) {
+    const m = core.match(p[0]);
+    if (m) return p[i].replace(/\$(\d)/g, (x, k) => { const g = m[+k]; if (g == null) return ''; const t = HAN.test(g) && g !== core ? look(g) : null; return t != null ? t : g; });
+  }
   return null;
 }
 /* 對不上整段時，照標點切開逐段翻；每一段有中文的都翻得到才採用，不然維持原文（不做半中半英） */

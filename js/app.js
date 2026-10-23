@@ -88,9 +88,9 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=a906911139');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=c6323be814');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=96829d1996'), ja: () => import('./data/i18n-ja.js?v=ae11d27300') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=f483d78b32'), ja: () => import('./data/i18n-ja.js?v=f32a8474a3') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -662,6 +662,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/24', t: '每一頁都有日服版：公告、榜線資料庫、分析中心、儲值分析與綁定預覽', s: '切到日服後，遊戲公告改讀日服遊戲內公告；榜線資料庫收錄日服歷屆終線（Sekai Viewer 與 Haruki 追蹤器，含 T1 萬～T10 萬）；分析中心可以看日服前百玩家的逐場紀錄、活躍度與第 202 期起的生涯紀錄；儲值分析改用日服商城約 700 項商品與日圓定價。綁定的日服 Player ID 跟台服一樣有帳號預覽：等級、簽名、目前隊伍與編組詳情（可算綜合力與活動加成），資料來自 Haruki 工具箱的公開資料。日服卡片索引也補上一個月來的 30 張新卡，之後每天自動更新。', p: 'jpnow' },
     { d: '2026/10/24', t: '抽卡模擬支援日服', s: '切到日服後，抽卡模擬改用日服近 13 個月的卡池（含進行中與已排好的池）：機率、池內權重、PU 與抽法都照日服 master，期間以日本時間顯示。日服 master 的卡池檔有 49 MB，改由每天的資料更新流程壓成約 60 KB 的資料檔；卡片索引還沒收的新卡也一併補上，當期 PU 不會缺。★4 確定的十連與單抽（over_rarity_4_once）現在照保底模擬，生日池的 PU 機率也算對了，台服一樣適用。', p: 'gachasim' },
     { d: '2026/10/23', t: '日服模式擴大到活動、卡池、日曆、劇情與圖鑑', s: '切到日服後，活動總覽、活動資料、卡池列表、活動日曆、活動分布、虛擬 Live、劇情閱讀器（日文原文）、家具圖鑑、豆森對話與卡片技能庫都改用日服 master 整理的資料，每天自動更新；活動總覽的即時榜線與我的名次也跟著日服。目前只剩遊戲公告、榜線資料庫、分析中心與儲值分析還是台服資料。英文與日文介面的詞典補到一萬條以上，連更新紀錄也逐句翻好；更新紀錄的標籤不再以原始碼顯示。', p: 'event' },
     { d: '2026/10/23', t: '日服 Player ID：綁定、即時名次與每一場的紀錄', s: '切到日服後首頁可以綁定日服 Player ID（跟台服的分開存），首頁與頁首直接顯示你這期的即時名次、分數、與上一名的差距、近一小時與 24 小時的場數；玩家查詢在日服模式也能用，多了分數走勢與最近幾場的得分。資料來自 Haruki 活動追蹤器（約 10～20 秒更新，只記前百與各段位線上的玩家）。WL 後排加成與收集室也改讀日服 master。英文與日文介面加上全站詞典（六千五百多條），選了才下載。', p: 'jpnow' },
@@ -4639,7 +4640,7 @@ class Component extends DCLogic {
   /* 編組詳情視窗（日服）的畫面資料 */
   deckJpView(s) {
     const k = String(s.deckPid || ''), P = (s.jpProf || {})[k];
-    const out = { loading: false, err: '', ok: false, sub: '', cards: [], hasRes: false, res: [], resEv: '', btn: '', msg: '', note: '', busy: false };
+    const out = { loading: false, err: '', ok: false, sub: '', cards: [], hasRes: false, res: [], resEv: '', btn: '', msg: '', note: '', note2: '', busy: false };
     if (this.SRV !== 'jp' || !k) return out;
     if (!/^\d{6,20}$/.test(k)) return Object.assign(out, { err: '日服排名裡的玩家 ID 是匿名的（追蹤器的雜湊），看不到他的編組；請改用玩家查詢輸入他的 Player ID。' });
     if (!P) { setTimeout(() => this.loadJpProfile(k), 0); return Object.assign(out, { loading: true }); }
@@ -4649,7 +4650,7 @@ class Component extends DCLogic {
     return Object.assign(out, { ok: true, sub: (P.name || '玩家 ' + k) + (P.rank ? '・Rank ' + P.rank : '') + (P.deckName ? '・' + P.deckName : ''),
       cards: this.jpDeckView(P), hasRes: !!r, res: r ? [{ l: '總綜合力', v: this.n(r.power) }, { l: '活動加成', v: r.bonus + '%' }, { l: '技能倍率', v: '×' + r.skill }] : [],
       resEv: r && r.ev ? '以「' + r.ev + '」計算' : '', busy: !!s.jpDeckBusy, btn: s.jpDeckBusy ? '計算中…' : r ? '重新計算' : '計算綜合力與活動加成',
-      msg: s.jpDeckMsg || '', note: this.jpProfNote(P, String(s.pid) === k) + '。綜合力與加成由 Haruki 的組卡引擎在你的瀏覽器裡算（日服 master，含區域道具、角色等級、MySekai 家具與大門）。' });
+      msg: s.jpDeckMsg || '', note: this.jpProfNote(P, String(s.pid) === k), note2: '綜合力與加成由 Haruki 的組卡引擎在你的瀏覽器裡算（日服 master，含區域道具、角色等級、MySekai 家具與大門）。' });
   }
   jpProfNote(P, self) {
     if (!P || P.loading) return '';
@@ -7141,7 +7142,7 @@ class Component extends DCLogic {
       /* 跟台服首頁一樣的帳號預覽：等級、簽名、目前隊伍（點開編組詳情）、總綜合力 */
       const P = (s.jpProf || {})[String(s.pid)] || null, deck = P && P.src ? this.jpDeckView(P) : [];
       Object.assign(out.jnMe, { hasProf: !!(P && P.src), rankLv: P && P.rank ? 'Rank ' + P.rank : '', word: (P && P.word) || '',
-        deck, hasDeck: deck.length > 0, deckLabel: (P && P.deckName ? P.deckName + '・' : '') + '編組詳情',
+        deck, hasDeck: deck.length > 0, deckName: P && P.deckName ? P.deckName + '・' : '',
         power: pd.power != null ? this.short(pd.power) : '—', powerHint: pd.power != null ? '' : '在編組詳情計算',
         profNote: this.jpProfNote(P, true), profGo: !!(P && P.err === 'not_public'), profLoading: !!(P && P.loading) });
     }
