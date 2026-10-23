@@ -103,10 +103,12 @@ export function helpMembers() {
   hpReply(m) {
     const len = String(m.text || '').length;
     const wait = Math.max(420, Math.min(1300, 320 + len * 11));
-    this.setState({ hpTyping: true });
-    this.hpScroll();
-    clearTimeout(this._hpTypeT);
-    this._hpTypeT = setTimeout(() => { this.setState({ hpTyping: false }); this.hpPush(Object.assign({ who: 'bot' }, m)); }, wait);
+    /* 連問好幾題時一題一題回，不會後面的把前面的蓋掉 */
+    this._hpQ = (this._hpQ || Promise.resolve()).then(() => new Promise(done => {
+      this.setState({ hpTyping: true });
+      this.hpScroll();
+      setTimeout(() => { this.setState({ hpTyping: false }); this.hpPush(Object.assign({ who: 'bot' }, m)); done(); }, wait);
+    }));
   },
   hpGreet() {
     const h = new Date().getHours();
@@ -199,7 +201,8 @@ export function helpMembers() {
       return { text: toJp ? '切到日服後，首頁會變成日服現況，排名、卡片與圖鑑改用日服資料；只有台服資料的頁面會在上方提示。' : '切回台服會重新載入頁面。', acts: [{ l: toJp ? '切到日服' : '切回台服', k: 'srv', a: toJp ? 'jp' : 'tw' }].concat(toJp ? [{ l: '只看日服現況', k: 'go', a: 'jpnow' }] : []) };
     }
     const tier = (() => { const m = n.match(/t(\d{1,6})|前(\d{1,6})名?|(\d{1,6})名/); return m ? +(m[1] || m[2] || m[3]) : (/前百/.test(n) ? 100 : 0); })();
-    if (tier || /榜線|榜线|線多少|线多少|分數線|分数线|排名|名次/.test(n)) {
+    const how = /怎麼|怎么|如何|是什麼|是什么|教學|教学|預測|预测|規則|规则|意思/.test(n);   // 問「怎麼看」的交給下面的搜尋
+    if (!how && (tier || /榜線|榜线|線多少|线多少|分數線|分数线|排名|名次/.test(n))) {
       const s = this.state;
       const brd = jp ? (this.SRV === 'jp' ? s.borders : s.jnBrd) : s.borders, top = jp ? (this.SRV === 'jp' ? s.live : s.jnLive) : s.live;
       if (jp && this.SRV !== 'jp' && !s.jnLive) { this.loadJpNow(); }

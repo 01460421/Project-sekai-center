@@ -2861,7 +2861,7 @@ class Component extends DCLogic {
   /* ---------- 線上客服（延後載入，程式在 js/help.js）：開站閒下來就預載，第一次點開不用等 ---------- */
   loadHelp() {
     if (!this._hpReady) {
-      this._hpReady = import('./js/help.js?v=0945d3e061').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
+      this._hpReady = import('./js/help.js?v=8cac47aa3d').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
         .catch(e => { this._hpReady = null; throw e; });
     }
     return this._hpReady;
@@ -2875,7 +2875,7 @@ class Component extends DCLogic {
   /* ---------- Haruki 專區（延後載入，程式在 js/haruki.js；組卡引擎另在 js/hk-deck-worker.js） ---------- */
   hzLoad() {
     if (!this._hzReady) {
-      this._hzReady = import('./js/haruki.js?v=76f0421356').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
+      this._hzReady = import('./js/haruki.js?v=dcc50b9201').then(m => { Object.assign(this, m.hzMembers.call(this)); this.setState({ hzReady: true }); this.hzInit(); return true; })
         .catch(e => { this._hzReady = null; this._toast('Haruki 專區載入失敗，請重新整理'); throw e; });
     } else if (this.state.hzReady && this.hzInit) this.hkSuiteMeta().then(meta => this.setState({ hzMeta: meta })).catch(() => {});
     return this._hzReady;
@@ -5492,7 +5492,7 @@ class Component extends DCLogic {
       try {
         const list = await this.hkGet('/api/oauth2/user/bindings');
         // 工具箱只讓「已驗證」的綁定讀遊戲資料（對方文件 §7.3）：已驗證的排前面
-        const tw = (Array.isArray(list) ? list : []).filter(b => String(b.server || b.region || '').toLowerCase() === 'tw')
+        const tw = (Array.isArray(list) ? list : []).filter(b => String(b.server || b.region || '').toLowerCase() === this.SRV)
           .sort((x, y) => (y.verified ? 1 : 0) - (x.verified ? 1 : 0)).map(b => String(b.userId || b.user_id || b.gameUserId || '')).filter(Boolean);
         if (tw.length) return tw.includes(String(this.state.pid)) ? String(this.state.pid) : tw[0];
       } catch (e) {}
@@ -5556,12 +5556,22 @@ class Component extends DCLogic {
   async hkImport(mode) {
     if (this.state.hkBusy) return;
     const pub = mode === 'public';
-    const uid = pub ? this.hkUidFrom(this.state.hkUid || this.state.pid) : await this.hkTargetUid();
-    if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkMsg: pub ? '先填你的台服 Player ID，或貼上工具箱的網址。' : '先在上面填你的台服 Player ID（或在 Haruki 綁定台服帳號），再按匯入。' }); return; }
-    this.setState({ hkBusy: true, hkMsg: '向 Haruki 讀取 ' + uid + ' 的遊戲資料…' });
+    const jp = this.SRV === 'jp', sv = jp ? '日服' : '台服';
+    const uid = pub ? this.hkUidFrom(this.state.hkUid || (jp ? '' : this.state.pid)) : await this.hkTargetUid();
+    if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkMsg: pub ? '先填你的' + sv + ' Player ID，或貼上工具箱的網址。' : '先在上面填你的' + sv + ' Player ID（或在 Haruki 綁定' + sv + '帳號），再按匯入。' }); return; }
+    this.setState({ hkBusy: true, hkMsg: '向 Haruki 讀取' + sv + ' ' + uid + ' 的遊戲資料…' });
     try {
-      const suite = this.hkNormalize(pub ? await this.hkPublic('suite', uid) : await this.hkGet('/api/oauth2/game-data/tw/suite/' + uid), uid);
+      const suite = this.hkNormalize(pub ? await this.hkPublic('suite', uid, this.SRV) : await this.hkGet('/api/oauth2/game-data/' + this.SRV + '/suite/' + uid), uid);
       let mys = null, bpMap = null;
+      if (jp) {
+        /* 日服：整份只給 Haruki 專區用（另存一格，不蓋台服那份）。收集率、專精、B30、豆森與 Player ID 都是台服的紀錄，不動。 */
+        try { mys = pub ? await this.hkPublic('mysekai', uid, 'jp') : await this.hkGet('/api/oauth2/game-data/jp/mysekai/' + uid); } catch (e) {}
+        const g = suite.userGamedata || suite.user || {};
+        await this.hkSuitePut(uid, suite, mys, g.name || '', g.rank || 0);
+        this.setState({ hkBusy: false, hkMsg: '已匯入日服資料（只用在 Haruki 專區；台服的收集率、B30 與豆森紀錄不受影響）' });
+        this._toast('已從 Haruki 匯入日服帳號 ' + (g.name || uid), 3000);
+        return;
+      }
       try {
         mys = pub ? await this.hkPublic('mysekai', uid) : await this.hkGet('/api/oauth2/game-data/tw/mysekai/' + uid);
         const bp = await this.dbGet('mysekaiBlueprints').catch(() => []);
@@ -5626,13 +5636,15 @@ class Component extends DCLogic {
       };
     });
   }
-  hkSuiteMeta() { return this.hkIdb('readonly', st => st.get('meta')); }
-  hkSuiteGet() { return this.hkIdb('readonly', st => st.get('suite')); }
-  hkSuiteClear() { return this.hkIdb('readwrite', st => st.clear()); }
+  /* 日服另存在 suite-jp／meta-jp：兩服的資料各一格，切伺服器不會互相覆蓋 */
+  hkKey(k) { return this.SRV === 'jp' ? k + '-jp' : k; }
+  hkSuiteMeta() { return this.hkIdb('readonly', st => st.get(this.hkKey('meta'))); }
+  hkSuiteGet() { return this.hkIdb('readonly', st => st.get(this.hkKey('suite'))); }
+  hkSuiteClear() { return this.hkIdb('readwrite', st => { st.delete(this.hkKey('suite')); return st.delete(this.hkKey('meta')); }); }   // 只清目前伺服器那一份
   hkSuitePut(uid, suite, mys, name, rank) {
     let up = +((suite && (suite.upload_time || suite.uploadTime)) || 0); if (up && up < 1e12) up *= 1000;
     const meta = { uid, at: Date.now(), name: name || '', rank: rank || 0, upload: up || 0, mys: !!mys };
-    return this.hkIdb('readwrite', st => { st.put({ uid, at: meta.at, suite, mys: mys || null }, 'suite'); return st.put(meta, 'meta'); })
+    return this.hkIdb('readwrite', st => { st.put({ uid, at: meta.at, suite, mys: mys || null }, this.hkKey('suite')); return st.put(meta, this.hkKey('meta')); })
       .then(() => { this.setState({ hzMeta: meta }); if (this.hzAfterImport) this.hzAfterImport(); return meta; });
   }
   async hkDisconnect() {
