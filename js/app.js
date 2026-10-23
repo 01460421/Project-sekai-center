@@ -6645,7 +6645,7 @@ class Component extends DCLogic {
     if (this._gsP) return this._gsP;
     const byStart = L => L.sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
     if (this.SRV === 'jp') {
-      this._gsP = import('./data/gachasim-jp.js?v=2749288260').then(m => {
+      this._gsP = import('./data/gachasim-jp.js?v=901fb886bd').then(m => {
         const D = m.GACHASIM || {}, ok = byStart(this.gsJpDecode(D));
         this._gsXCards = D.cards || [];
         this.setState({ gsList: ok, gsErr: ok.length ? '' : '日服卡池資料裡沒有可模擬的卡池。' });
@@ -7008,7 +7008,7 @@ class Component extends DCLogic {
   loadSched() {
     if (this.state.sched) return Promise.resolve(this.state.sched);
     if (this._schedP) return this._schedP;
-    this._schedP = import('./data/schedule-forecast.js?v=c8c73ca639').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+    this._schedP = import('./data/schedule-forecast.js?v=2dc812d562').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
       .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
     return this._schedP;
   }
