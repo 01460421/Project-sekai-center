@@ -7485,16 +7485,16 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
   <div class="u-a3">
-    <sc-if value="{{ gsLoading }}"><div class="empty loading">載入台服卡池 master…</div></sc-if>
+    <sc-if value="{{ gsLoading }}"><div class="empty loading">{{ gsLoadText }}</div></sc-if>
     <sc-if value="{{ gsErr }}"><div class="empty">{{ gsErr }}</div></sc-if>
     <sc-if value="{{ gsReady }}">
     <div class="gs-wrap">
       <div class="gs-hero"><sc-if value="{{ gsLogo }}"><img class="gs-logo" src="{{ gsLogo }}" referrerpolicy="no-referrer" decoding="async" alt="" onError="{{ onImgErr }}" data-fb="hidden"></sc-if>
-        <div style="flex:1;min-width:180px"><div class="gs-title">{{ gsName }}</div><div class="u-fc2">{{ gsId }}・{{ gsPeriod }}・機率與卡池皆取自台服官方 master</div>
+        <div style="flex:1;min-width:180px"><div class="gs-title">{{ gsName }}</div><div class="u-fc2">{{ gsId }}・{{ gsPeriod }}・{{ gsSrcNote }}</div>
           <div class="gs-pills"><sc-for list="{{ gsRates }}" as="r" hint-placeholder-count="3"><span class="gs-pill"><i class="gs-dot" style="background:{{ r.c }}"></i>{{ r.n }} {{ r.rate }}</span></sc-for><sc-if value="{{ gsHasPu }}"><span class="gs-pill" style="border-color:#f0619e;color:#f0619e"><i class="gs-dot" style="background:#f0619e"></i>PU {{ gsPuN }} 張・每張 {{ gsPuEach }}</span></sc-if></div>
         </div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <input class="lu-in" list="gsPoolList" placeholder="輸入卡池編號或名稱，按 Enter 前往（台服 master 內的池）" value="{{ gsQ }}" onInput="{{ onField }}" data-k="gsQ" onKeyDown="{{ onGsKey }}">
+        <input class="lu-in" list="gsPoolList" placeholder="{{ gsPh }}" value="{{ gsQ }}" onInput="{{ onField }}" data-k="gsQ" onKeyDown="{{ onGsKey }}">
         <datalist id="gsPoolList"><sc-for list="{{ gsOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.n }}</option></sc-for></datalist>
         <button type="button" class="sm-btn" style="margin:0" onClick="{{ onGsGo }}">前往</button>
       </div>
@@ -7508,7 +7508,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-if value="{{ gsHasStat }}"><div class="gs-stat"><div class="gs-h">抽卡統計・累計 {{ gsTot }} 抽</div><div class="u-fc2" style="margin:2px 0 4px">長條為實際出現率，直線刻度為官方公告機率</div>
         <sc-for list="{{ gsStat }}" as="r" hint-placeholder-count="3"><div class="gs-row"><span style="font-weight:800;color:{{ r.c }}">{{ r.n }}</span><span class="gs-bar"><i style="width:{{ r.w }};background:{{ r.c }}"></i><u style="left:{{ r.mark }}"></u></span><span class="u-t4">{{ r.got }}</span><span class="u-t4 u-fc2">{{ r.pct }} / {{ r.rate }}</span></div></sc-for>
         <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--text-3)"><span>PU 抽中 <b>{{ gsPkHits }}</b> 次</span><span>平均 <b>{{ gsAvgGap }}</b> 抽出一張 ★4</span><span>已連續 <b>{{ gsSince4 }}</b> 抽沒 ★4</span></div></div></sc-if>
-      <div class="u-fc2">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；十連保底照 gachaBehaviors 的 over_rarity_3_once。天井以 300 抽計；招募點數付費 1 點、免費與券 0.5 點，50 點保底未持有常駐 ★4、100 點保底該池 PU（模擬器不知道你的倉庫，以本次沒抽到的代替）。只能模擬台服已實裝的池，台服還沒開的預測卡池不行。</div>
+      <div class="u-fc2">模型：先依 gachaCardRarityRates 抽稀有度，再於該稀有度內依 gachaDetails 的 weight 加權抽卡；保底照 gachaBehaviors 的 over_rarity_3_once／over_rarity_4_once（最後一抽至少 ★3／★4）。天井以 300 抽計；招募點數付費 1 點、免費與券 0.5 點，50 點保底未持有常駐 ★4、100 點保底該池 PU（模擬器不知道你的倉庫，以本次沒抽到的代替）。<span>{{ gsScope }}</span></div>
     </div>
     </sc-if>
 
@@ -10013,7 +10013,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=6e0eb58fcc"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=495c2ccbe6"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

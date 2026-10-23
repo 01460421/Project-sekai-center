@@ -57,7 +57,7 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls'];
+  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim'];
   SRV_TW_ONLY = [];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
@@ -90,7 +90,7 @@ class Component extends DCLogic {
     try {
       if (!this._i18n) this._i18n = await import('./js/i18n.js?v=a906911139');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=d69cb9063f'), ja: () => import('./data/i18n-ja.js?v=7bd05ac945') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=96829d1996'), ja: () => import('./data/i18n-ja.js?v=ae11d27300') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -121,6 +121,7 @@ class Component extends DCLogic {
     mstalk: 'MySekai 角色對話清單（日服）：勾選看過的對話，一眼看出還缺哪些家具',
     cardlib: '日服逐張卡的技能敘述與各等級數值',
     shop: '日服商城全商品（日服 master，日圓定價）的 CP 值排行 · 月卡通行證攤提 · 智慧推薦最省錢購買組合',
+    gachasim: '依日服官方機率與池內權重模擬近 13 個月的卡池（日服 master，日本時間）',
   };
   setSrv(v) {
     v = v === 'jp' ? 'jp' : 'tw';
@@ -661,6 +662,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/24', t: '抽卡模擬支援日服', s: '切到日服後，抽卡模擬改用日服近 13 個月的卡池（含進行中與已排好的池）：機率、池內權重、PU 與抽法都照日服 master，期間以日本時間顯示。日服 master 的卡池檔有 49 MB，改由每天的資料更新流程壓成約 60 KB 的資料檔；卡片索引還沒收的新卡也一併補上，當期 PU 不會缺。★4 確定的十連與單抽（over_rarity_4_once）現在照保底模擬，生日池的 PU 機率也算對了，台服一樣適用。', p: 'gachasim' },
     { d: '2026/10/23', t: '日服模式擴大到活動、卡池、日曆、劇情與圖鑑', s: '切到日服後，活動總覽、活動資料、卡池列表、活動日曆、活動分布、虛擬 Live、劇情閱讀器（日文原文）、家具圖鑑、豆森對話與卡片技能庫都改用日服 master 整理的資料，每天自動更新；活動總覽的即時榜線與我的名次也跟著日服。目前只剩遊戲公告、榜線資料庫、分析中心與儲值分析還是台服資料。英文與日文介面的詞典補到一萬條以上，連更新紀錄也逐句翻好；更新紀錄的標籤不再以原始碼顯示。', p: 'event' },
     { d: '2026/10/23', t: '日服 Player ID：綁定、即時名次與每一場的紀錄', s: '切到日服後首頁可以綁定日服 Player ID（跟台服的分開存），首頁與頁首直接顯示你這期的即時名次、分數、與上一名的差距、近一小時與 24 小時的場數；玩家查詢在日服模式也能用，多了分數走勢與最近幾場的得分。資料來自 Haruki 活動追蹤器（約 10～20 秒更新，只記前百與各段位線上的玩家）。WL 後排加成與收集室也改讀日服 master。英文與日文介面加上全站詞典（六千五百多條），選了才下載。', p: 'jpnow' },
     { d: '2026/10/23', t: '右下角的線上客服：小幫手、AI 助手與留言給 omega', s: '每一頁右下角多了一顆對話按鈕，點開是線上客服視窗，三個分頁：<b>小幫手</b>即時回答、不用登入也不花額度——問「現在 T1000 多少」「這期還剩多久」「現在有哪些卡池」會直接回現在的數字，問功能或玩法會從五百多條玩家用語、各頁說明與教學大全裡找，附「前往」按鈕一鍵帶過去，沒把握就老實說，改交給 AI 助手或 omega；<b>AI 助手</b>就是站內助手，對話跟助手頁同一份，查資料的每一步都會即時顯示；<b>留言</b>是給 omega 的私訊（只有你和 omega 看得到，審核中的帳號也能留言），選分類寫下狀況就好，會自動附上你在哪一頁，omega 回覆會即時出現並亮紅點。手機上是從底部滑上來的全螢幕視窗，Esc 可以關閉，偏好減少動態時動畫會關掉。', p: 'home' },
@@ -6630,25 +6632,73 @@ class Component extends DCLogic {
 
   /* ===== 抽卡模擬（原生頁；模型照經典版 GachaSim）=====
      1. 先依 gachaCardRarityRates 抽稀有度；2. 再在該稀有度的池內依 gachaDetails 的 weight 加權抽一張（PU 的 weight 官方調成每張 0.4%）；
-     3. 十連照 gachaBehaviors 的 over_rarity_3_once：最後一抽保底 ≥★3。招募點數照 master gachaBonusPoints：付費 1 點、免費與券 0.5 點。
-     池子資料是台服 master 的 gachas.json（2.6 MB，進頁才抓），稀有度與卡名用卡片圖鑑同一份 cards-index；
-     所以只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。池子與統計放 this._gs，不進 state（十連一次只重繪一回）。 */
+     3. 十連照 gachaBehaviors 的 over_rarity_3_once／over_rarity_4_once：最後一抽保底 ≥★3／★4。招募點數照 master gachaBonusPoints：付費 1 點、免費與券 0.5 點。
+     台服的池子資料是台服 master 的 gachas.json（2.6 MB，進頁才抓），稀有度與卡名用卡片圖鑑同一份 cards-index；
+     所以只能模擬台服已實裝的池，預測卡池列表裡台服還沒開的不行。池子與統計放 this._gs，不進 state（十連一次只重繪一回）。
+     日服的 gachas.json 有 49 MB，改讀 data/gachasim-jp.js（tools/build-gachasim-jp.py 每天壓好的近 13 個月卡池），
+     由 gsJpDecode 解回台服 master 同形狀的物件；卡片索引還沒收的新卡（通常就是 PU）由那份檔案的 cards 補上（gsCards）。 */
   GS_RAR = { 1: ['★1', '#9aa5c5'], 2: ['★2', '#5bb8e8'], 3: ['★3', '#f0a020'], 4: ['★4', '#f0619e'], 9: ['生日', '#c07ae8'] };
   GS_RART = { rarity_1: 1, rarity_2: 2, rarity_3: 3, rarity_4: 4, rarity_birthday: 9 };
   GS_BPT = [[50, '未持有的常駐 ★4'], [100, '該池 PU ★4']];
   loadGachaSim() {
     if (this._gsP) return this._gsP;
+    const byStart = L => L.sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
+    if (this.SRV === 'jp') {
+      this._gsP = import('./data/gachasim-jp.js?v=2749288260').then(m => {
+        const D = m.GACHASIM || {}, ok = byStart(this.gsJpDecode(D));
+        this._gsXCards = D.cards || [];
+        this.setState({ gsList: ok, gsErr: ok.length ? '' : '日服卡池資料裡沒有可模擬的卡池。' });
+      }).catch(() => { this._gsP = null; this.setState({ gsErr: '卡池資料載入失敗，請稍後再試。' }); });
+      return this._gsP;
+    }
     this._gsP = this.tdbJson('gachas.json').then(list => {
-      const ok = (list || []).filter(g => (g.gachaDetails || []).length && (g.gachaCardRarityRates || []).length).sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
+      const ok = byStart((list || []).filter(g => (g.gachaDetails || []).length && (g.gachaCardRarityRates || []).length));
       this.setState({ gsList: ok, gsErr: ok.length ? '' : '台服 master 裡沒有可模擬的卡池。' });
     }).catch(() => { this._gsP = null; this.setState({ gsErr: '卡池資料載入失敗，請稍後再試。' }); });
     return this._gsP;
+  }
+  /* data/gachasim-jp.js → 台服 master 形狀的卡池（格式見 tools/build-gachasim-jp.py）。
+     sets 是卡片 id 集合：「間距」或「間距+長度」的連續段，或 [基底集合, 加入段, 移除段]；gachaDetails 用到才展開（一池八九百筆）。 */
+  gsJpDecode(D) {
+    const seg = s => { const out = []; let p = 0; (s ? s.split(',') : []).forEach(t => { const k = t.indexOf('+'), a = p + +(k < 0 ? t : t.slice(0, k)), b = a + (k < 0 ? 0 : +t.slice(k + 1)); for (let i = a; i <= b; i++) out.push(i); p = b; }); return out; };
+    const sets = [];
+    (D.sets || []).forEach(x => {
+      if (typeof x === 'string') { sets.push(seg(x)); return; }
+      const rm = new Set(seg(x[2])), ids = (sets[x[0]] || []).filter(i => !rm.has(i)).concat(seg(x[1]));
+      sets.push(ids.sort((a, b) => a - b));
+    });
+    const RT = { 1: 'rarity_1', 2: 'rarity_2', 3: 'rarity_3', 4: 'rarity_4', 9: 'rarity_birthday' }, B = D.behaviors || [];
+    return (D.gachas || []).map(([id, name, s, e, abn, ri, groups, pk, bh]) => {
+      let det = null;
+      const details = () => {
+        if (det) return det;
+        det = [];
+        (groups || []).forEach(([si, w, ex]) => {
+          const W = {}; (ex || []).forEach(([ww, ...ids]) => ids.forEach(i => { W[i] = ww; }));
+          (sets[si] || []).forEach(cardId => det.push({ cardId, weight: cardId in W ? W[cardId] : w }));
+        });
+        return det;
+      };
+      const g = { id, name, startAt: s * 1000, endAt: e * 1000, assetbundleName: abn || 'ab_gacha_' + id,
+        gachaCardRarityRates: ((D.rates || [])[ri] || []).map(([r, rate]) => ({ cardRarityType: RT[r], rate })),
+        gachaPickups: (pk || []).map(cardId => ({ cardId })),
+        gachaBehaviors: (bh || []).map(i => B[i]).filter(Boolean).map(b => ({ spinCount: b[0], costResourceType: b[1], costResourceQuantity: b[2], gachaBehaviorType: b[3] })) };
+      Object.defineProperty(g, 'gachaDetails', { get: details, enumerable: true });
+      return g;
+    });
+  }
+  /* 模擬用的卡片表：卡片索引（rateCards），日服再補上 gachasim-jp.js 裡索引還沒收的卡 */
+  gsCards() {
+    const base = this.state.rateCards || [], x = this._gsXCards;
+    if (!x || !x.length || !base.length) return base;
+    if (this._gsCardsFor !== base) { const have = new Set(base.map(c => c[0])); this._gsCardsAll = base.concat(x.filter(c => !have.has(c[0]))); this._gsCardsFor = base; }
+    return this._gsCardsAll;
   }
   gsCurrent() { const s = this.state, L = s.gsList || []; if (!L.length) return null; return L.find(g => String(g.id) === String(s.gsGid)) || L[0]; }
   gsRank(r) { return r === 9 ? 4 : r; }
   gsReset(g) {
     g = g || this.gsCurrent(); if (!g) return null;
-    const cards = this.state.rateCards || [], rarOf = {}; cards.forEach(c => { rarOf[c[0]] = c[2]; });
+    const cards = this.gsCards(), rarOf = {}; cards.forEach(c => { rarOf[c[0]] = c[2]; });
     const byRar = {};
     (g.gachaDetails || []).forEach(d => { const r = rarOf[d.cardId]; if (!r) return; const grp = byRar[r] = byRar[r] || { items: [], total: 0 }; const w = d.weight || 1; grp.total += w; grp.items.push({ id: d.cardId, w, acc: grp.total }); });
     const rates = (g.gachaCardRarityRates || []).filter(r => r.rate > 0).map(r => ({ r: this.GS_RART[r.cardRarityType] || 0, rate: r.rate }));
@@ -6659,14 +6709,14 @@ class Component extends DCLogic {
   }
   gsEnsure() {
     const g = this.gsCurrent(); if (!g) return null;
-    const n = (this.state.rateCards || []).length;
+    const n = this.gsCards().length;
     if (!this._gs || this._gs.gid !== g.id || this._gs.cardsN !== n) this.gsReset(g);   // 換池或卡片資料剛載進來就重建
     return this._gs;
   }
   gsGo() {
     const q = String(this.state.gsQ || '').trim(), L = this.state.gsList || []; if (!q) return;
     const hit = /^\d+$/.test(q) ? L.find(g => String(g.id) === q) : L.find(g => (g.name || '').toLowerCase().includes(q.toLowerCase()));
-    if (hit) this.setState({ gsGid: String(hit.id), gsQ: '' }); else this._toast('找不到符合的卡池（只能選台服 master 裡的池）');
+    if (hit) this.setState({ gsGid: String(hit.id), gsQ: '' }); else this._toast(this.SRV === 'jp' ? '找不到符合的卡池（只能選日服近 13 個月的池）' : '找不到符合的卡池（只能選台服 master 裡的池）');
   }
   gsRollRarity(minRank) {
     const P = this._gs, pool = minRank ? P.rates.filter(x => this.gsRank(x.r) >= minRank) : P.rates, tot = pool.reduce((a, x) => a + x.rate, 0);
@@ -6683,7 +6733,7 @@ class Component extends DCLogic {
   }
   gsSpin(n, guard) { const out = []; for (let i = 0; i < n; i++) { const last = i === n - 1; const d = this.gsDrawOne(last && guard && !out.some(o => this.gsRank(o.r) >= guard) ? guard : 0); if (d) out.push(d); } return out; }
   gsBptAward(tier, exclude) {
-    const P = this._gs, rarOf = {}; (this.state.rateCards || []).forEach(c => { rarOf[c[0]] = c[2]; });
+    const P = this._gs, rarOf = {}; this.gsCards().forEach(c => { rarOf[c[0]] = c[2]; });
     const pool = tier >= 100 ? [...P.pick].filter(id => rarOf[id] && this.gsRank(rarOf[id]) >= 4) : P.std;
     if (!pool.length) return null;
     const fresh = pool.filter(id => !P.got[id] && !(exclude && exclude.has(id))), src = fresh.length ? fresh : pool, id = src[Math.floor(Math.random() * src.length)];
@@ -6691,7 +6741,7 @@ class Component extends DCLogic {
   }
   gsDoSpin(n, guard, cost, ct) {
     const P = this.gsEnsure(); if (!P) return;
-    const res = this.gsSpin(n, guard ? 3 : 0);
+    const res = this.gsSpin(n, +guard || 0);   // guard：最後一抽保底的最低稀有度（over_rarity_3_once → 3、over_rarity_4_once → 4，沒有保底 0）
     P.pulls += n; P.spent += cost || 0;
     const per = /paid_jewel/.test(ct) ? 1 : /jewel|gacha_ticket/.test(ct) ? 0.5 : 0;
     if (per > 0) {   // 招募點數保底是「包含在這 n 抽裡」，跨門檻就取代最後幾張（十連永遠 10 張）
@@ -6708,23 +6758,24 @@ class Component extends DCLogic {
     this.setState({ gsV: (this.state.gsV || 0) + 1 });
   }
   gsView() {
-    const s = this.state, L = s.gsList, cards = s.rateCards || [];
-    const out = { gsLoading: !L && !s.gsErr, gsErr: s.gsErr || '', gsReady: !!(L && L.length) && cards.length > 0 && !s.gsErr, gsQ: s.gsQ || '' };
+    const s = this.state, L = s.gsList, cards = this.gsCards(), jp = this.SRV === 'jp';
+    const out = { gsLoading: !L && !s.gsErr, gsErr: s.gsErr || '', gsReady: !!(L && L.length) && cards.length > 0 && !s.gsErr, gsQ: s.gsQ || '', gsLoadText: jp ? '載入日服卡池資料…' : '載入台服卡池 master…' };
     if (!out.gsReady) return out;
     const g = this.gsCurrent(), P = this.gsEnsure(); if (!g || !P) { out.gsReady = false; return out; }
     const cardOf = {}; cards.forEach(c => { cardOf[c[0]] = c; });
     const nmOf = {}; (s.rateChars || []).forEach(c => { nmOf[c[0]] = c[1]; });
     const RAR = this.GS_RAR;
-    const r4 = (P.rates.find(x => x.r === 4) || { rate: 0 }).rate;
-    const puW = P.byRar[4] ? P.byRar[4].items.filter(i => P.pick.has(i.id)).map(i => i.w) : [];
-    const puEach = (puW.length && P.byRar[4] && P.byRar[4].total) ? (puW.reduce((a, b) => a + b, 0) / puW.length / P.byRar[4].total * r4) : 0;
+    const k4 = [4, 9].find(k => P.byRar[k] && P.byRar[k].items.some(i => P.pick.has(i.id))) || 4, G4 = P.byRar[k4];   // PU 在 ★4 或生日卡那一組
+    const r4 = (P.rates.find(x => x.r === k4) || { rate: 0 }).rate;
+    const puW = G4 ? G4.items.filter(i => P.pick.has(i.id)).map(i => i.w) : [];
+    const puEach = (puW.length && G4 && G4.total) ? (puW.reduce((a, b) => a + b, 0) / puW.length / G4.total * r4) : 0;
     const pk = [...P.pick].map(id => cardOf[id]).filter(Boolean);
     const seen = new Set(), btns = [];
     (g.gachaBehaviors || []).filter(b => b.spinCount).forEach(b => {
       const key = [b.spinCount, b.costResourceType, b.costResourceQuantity, b.gachaBehaviorType].join(':'); if (seen.has(key)) return; seen.add(key);
-      const guard = /over_rarity_3/.test(b.gachaBehaviorType || ''), ct = b.costResourceType || '', qty = b.costResourceQuantity, bt = b.gachaBehaviorType || '', isJewel = /jewel/.test(ct);
+      const gm = /over_rarity_(\d)/.exec(b.gachaBehaviorType || ''), guard = gm ? +gm[1] : 0, ct = b.costResourceType || '', qty = b.costResourceQuantity, bt = b.gachaBehaviorType || '', isJewel = /jewel/.test(ct);
       const cost = (!ct || qty == null) ? (/once_a_week/.test(bt) ? '通行證每週免費' : /once_a_day/.test(bt) ? '通行證每日免費' : '免費') : /paid_jewel/.test(ct) ? ('付費 ' + qty + ' 石') : isJewel ? (qty + ' 石') : (qty + ' 券');
-      btns.push({ n: b.spinCount, guard: guard ? '1' : '0', cost: isJewel && qty != null ? qty : 0, ct, label: b.spinCount === 1 ? '單抽' : b.spinCount + ' 連', costLabel: cost, guardLabel: guard ? '保底★3↑' : '', bg: b.spinCount === 1 ? 'var(--card)' : 'var(--cta)', fg: b.spinCount === 1 ? 'var(--ink)' : '#fff' });
+      btns.push({ n: b.spinCount, guard: String(guard), cost: isJewel && qty != null ? qty : 0, ct, label: b.spinCount === 1 ? '單抽' : b.spinCount + ' 連', costLabel: cost, guardLabel: guard ? (b.spinCount === 1 ? '必出★' + guard : '保底★' + guard + '↑') : '', bg: b.spinCount === 1 ? 'var(--card)' : 'var(--cta)', fg: b.spinCount === 1 ? 'var(--ink)' : '#fff' });
     });
     const got4 = Object.keys(P.got).filter(id => { const c = cardOf[id]; return c && this.gsRank(c[2]) >= 4; }).length;
     const gotPk = Object.keys(P.got).filter(id => P.pick.has(+id)).length;
@@ -6737,12 +6788,16 @@ class Component extends DCLogic {
     const stat = P.rates.map(rt => { const ri = RAR[rt.r] || [rt.r, '#888'], got = P.tally[rt.r] || 0, pct = tot ? got / tot * 100 : 0, scale = Math.max(rt.rate * 2, pct * 1.15, 1);
       return { n: ri[0], c: ri[1], got, pct: pct.toFixed(2) + '%', rate: rt.rate + '%', w: Math.min(100, pct / scale * 100).toFixed(1) + '%', mark: Math.min(100, rt.rate / scale * 100).toFixed(1) + '%' }; });
     const nx = this.GS_BPT.find(t => P.bpt < t[0]);
-    const ms = t => { const d = new Date(t); return d.getFullYear() + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0'); };
+    // 日服的池照日服其他頁的慣例用日本時間（UTC+9）的日期，台服用裝置時區
+    const ms = t => { const d = new Date(jp ? t + 9 * 3600000 : t), f = jp ? 'getUTC' : 'get'; return d[f + 'FullYear']() + '/' + String(d[f + 'Month']() + 1).padStart(2, '0') + '/' + String(d[f + 'Date']()).padStart(2, '0'); };
     Object.assign(out, {
-      gsName: g.name || ('#' + g.id), gsId: '#' + g.id, gsPeriod: g.startAt ? ms(g.startAt) + (g.endAt && g.endAt < 4e12 ? ' ～ ' + ms(g.endAt) : ' 起') : '',
+      gsName: g.name || ('#' + g.id), gsId: '#' + g.id, gsPeriod: g.startAt ? ms(g.startAt) + (g.endAt && g.endAt < 4e12 ? ' ～ ' + ms(g.endAt) : ' 起') + (jp ? '（日本時間）' : '') : '',
+      gsSrcNote: jp ? '機率與卡池皆取自日服官方 master' : '機率與卡池皆取自台服官方 master',
+      gsPh: jp ? '輸入卡池編號或名稱，按 Enter 前往（日服近 13 個月的池）' : '輸入卡池編號或名稱，按 Enter 前往（台服 master 內的池）',
+      gsScope: jp ? '日服收錄近 13 個月內結束的池，加上進行中與已排好的池；夢幻選秀（ドリームピック）與 WL 支援池的自選不模擬，同一稀有度照池內權重抽。' : '只能模擬台服已實裝的池，台服還沒開的預測卡池不行。',
       gsLogo: g.assetbundleName ? this.ASSET + '/gacha/' + g.assetbundleName + '/logo/logo.webp' : '',
       gsRates: P.rates.map(rt => ({ n: (RAR[rt.r] || [rt.r])[0], c: (RAR[rt.r] || ['', '#888'])[1], rate: rt.rate + '%' })),
-      gsHasPu: pk.length > 0, gsPuN: pk.length, gsPuEach: puEach.toFixed(2) + '%', gsPu: pk.map(c => ({ id: c[0], img: this.cardImg(c[8], c[2]), name: c[7] })),
+      gsHasPu: pk.length > 0, gsPuN: pk.length, gsPuEach: puEach.toFixed(puEach > 0 && puEach < 0.1 ? 3 : 2) + '%', gsPu: pk.map(c => ({ id: c[0], img: this.cardImg(c[8], c[2]), name: c[7] })),
       gsBtns: btns, gsOpts: L.slice(0, 60).map(x => ({ v: String(x.id), n: '#' + x.id + ' ' + (x.name || '') })),
       gsPulls: P.pulls.toLocaleString(), gsSpent: P.spent.toLocaleString(), gsGot4: got4, gsGotPk: gotPk + '/' + pk.length, gsCeilLeft: ceilLeft, gsBpt: P.bpt, gsCeilPct: ceilPct.toFixed(1) + '%',
       gsBptLine: nx ? ('招募點數 ' + P.bpt + '，距 ' + nx[0] + ' 點（' + nx[1] + '）還差 ' + (Math.round((nx[0] - P.bpt) * 10) / 10) + ' 點') : ('招募點數 ' + P.bpt + '，兩檔保底都已達成'),
@@ -11565,7 +11620,7 @@ class Component extends DCLogic {
       onClClose: () => this.setState({ clPick: null }),
       onClMore: () => this.setState({ clN: (this.state.clN || 48) + 48 }),
       onGcChip: e => { const d = e.currentTarget.dataset; this.setState({ [d.k]: d.v }); },
-      onGsSpin: e => { const d = e.currentTarget.dataset; this.gsDoSpin(+d.n || 1, d.guard === '1', +d.cost || 0, d.ct || ''); },
+      onGsSpin: e => { const d = e.currentTarget.dataset; this.gsDoSpin(+d.n || 1, +d.guard || 0, +d.cost || 0, d.ct || ''); },
       onGsReset: () => { this.gsReset(); this.setState({ gsV: (this.state.gsV || 0) + 1 }); },
       onGsGo: () => this.gsGo(),
       onGsKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.gsGo(); } },
