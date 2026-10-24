@@ -5629,6 +5629,8 @@ class Component extends DCLogic {
     try { tok = JSON.parse(localStorage.getItem(this.HK_TOK_KEY) || 'null'); } catch (e) {}
     try { last = JSON.parse(localStorage.getItem(this.HK_LAST_KEY) || 'null'); } catch (e) {}
     this.setState({ hkTok: tok, hkLast: last });
+    // 一開站就在帳號頁且已連結：查一次「讓機器人讀取」的狀態（go('account') 若比這裡先跑會錯過）
+    if (tok && this.state.page === 'account' && !this.state.hkGrant) this.hkGrantLoad().catch(() => {});
     const q = new URLSearchParams(location.search);
     let pend = null; try { pend = JSON.parse(sessionStorage.getItem(this.HK_PEND_KEY) || 'null'); } catch (e) {}
     if (pend && (q.get('code') || q.get('error'))) {
@@ -5682,7 +5684,8 @@ class Component extends DCLogic {
     this.setState({ hkBusy: true, hkMsg: '換取授權中…' });
     const p = await this.hkTokenReq({ grant_type: 'authorization_code', code: q.get('code'), redirect_uri: this.hkRedirect(), code_verifier: pend.verifier });
     this.hkSaveTok(p, null);
-    this.setState({ hkBusy: false, hkMsg: '已連結 Haruki，開始匯入…' });
+    this.setState({ hkBusy: false, hkMsg: '已連結 Haruki，開始匯入…', hkGrant: null });
+    this.hkGrantLoad().catch(() => {});
     await this.hkImport();
   }
   async hkAccess(force) {
@@ -5842,7 +5845,60 @@ class Component extends DCLogic {
       this.setState({ hkBusy: false, hkMsg: why });
     }
   }
-  hkForget() { try { localStorage.removeItem(this.HK_TOK_KEY); } catch (e) {} this.setState({ hkTok: null }); }
+  /* ---------- 讓菜根機器人也能讀取 ----------
+     連結 Haruki 之後可再按「允許機器人讀取」：把手上的 refresh／access 交給自家 Worker 加密保存（/haruki/grant），
+     Discord 的 /豆森 與 QQ 的 烤森 就能經 Worker 讀這個玩家上傳到 Haruki 的存檔，不必在 Haruki 打開公開 API。
+     Worker 會先用同一個 token 向 Haruki 確認這個帳號真的綁著該台服 uid。Worker 回 503 = 站方沒開通，整個區塊不顯示。 */
+  hkGrantBody(tok, uid, nowMs) {
+    const t = tok || {}, now = nowMs == null ? Date.now() : nowMs;
+    const left = t.exp ? Math.floor((t.exp - now) / 1000) : 0;
+    const b = { uid: String(uid || ''), refresh_token: t.refresh || '' };
+    if (t.access && left > 60) { b.access_token = t.access; b.expires_in = left; }
+    if (t.scope) b.scope = t.scope;
+    return b;
+  }
+  async hkGrantReq(method, path, body) {
+    const go = async tok => fetch(this.GAMES_API + path, { method, headers: Object.assign({ Authorization: 'Bearer ' + tok }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+    let r = await go(await this.hkAccess());
+    if (r.status === 401 && this.state.hkTok && this.state.hkTok.refresh) r = await go(await this.hkAccess(true));
+    let p = null; try { p = await r.json(); } catch (e) {}
+    return { status: r.status, ok: r.ok, p: p || {} };
+  }
+  async hkGrantLoad() {
+    if (!this.state.hkTok || this.state.hkGrantBusy) return;
+    this.setState({ hkGrantBusy: true });
+    try {
+      const uid = await this.hkTargetUid();
+      if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkGrant: { granted: false, nouid: true }, hkGrantBusy: false }); return; }
+      const r = await this.hkGrantReq('GET', '/haruki/grant/' + uid);
+      if (r.status === 503) { this.setState({ hkGrant: { off: true }, hkGrantBusy: false }); return; }
+      this.setState({ hkGrant: r.ok ? { granted: !!r.p.granted, since: r.p.since || 0, uid } : { granted: false, uid, err: r.p.error_description || r.p.error || ('HTTP ' + r.status) }, hkGrantBusy: false });
+    } catch (e) { this.setState({ hkGrant: { granted: false, err: (e && e.message) || String(e) }, hkGrantBusy: false }); }
+  }
+  async hkGrantSet() {
+    if (!this.state.hkTok || this.state.hkGrantBusy) return;
+    this.setState({ hkGrantBusy: true, hkMsg: '' });
+    try {
+      const uid = await this.hkTargetUid();
+      if (!/^\d{6,20}$/.test(uid)) { this.setState({ hkGrantBusy: false, hkMsg: '先在上方填你的台服 Player ID（或在 Haruki 綁定台服帳號），才知道要授權哪個帳號。' }); return; }
+      await this.hkAccess();   // 先確定 token 是最新的（過期會先換），交給 Worker 的才不會馬上失效
+      const r = await this.hkGrantReq('POST', '/haruki/grant', this.hkGrantBody(this.state.hkTok, uid));
+      if (r.status === 503) { this.setState({ hkGrant: { off: true }, hkGrantBusy: false }); return; }
+      if (!r.ok) {
+        const why = r.p.error === 'uid_not_bound' ? '你的 Haruki 帳號沒有綁定（並驗證）台服 ' + uid + '，請先到 Haruki 工具箱綁定這個遊戲帳號再試。' : '授權失敗：' + (r.p.error_description || r.p.error || ('HTTP ' + r.status));
+        this.setState({ hkGrantBusy: false, hkMsg: why }); return;
+      }
+      this.setState({ hkGrant: { granted: true, since: r.p.since || Math.floor(Date.now() / 1000), uid }, hkGrantBusy: false, hkMsg: '已允許菜根機器人讀取 ' + uid + ' 的 Haruki 存檔。機器人端記得用 /成員 綁定id（Discord）或 /绑定（QQ）綁同一個遊戲 ID。' });
+    } catch (e) { this.setState({ hkGrantBusy: false, hkMsg: '授權失敗：' + ((e && e.message) || e) }); }
+  }
+  async hkGrantRevoke(quiet) {
+    const g = this.state.hkGrant;
+    if (!g || !g.granted || !g.uid) return;
+    this.setState({ hkGrantBusy: true });
+    try { await this.hkGrantReq('DELETE', '/haruki/grant/' + g.uid); } catch (e) {}
+    this.setState({ hkGrant: { granted: false, uid: g.uid }, hkGrantBusy: false, hkMsg: quiet ? this.state.hkMsg : '已撤銷，菜根機器人不再能讀取你的 Haruki 存檔。' });
+  }
+  hkForget() { try { localStorage.removeItem(this.HK_TOK_KEY); } catch (e) {} this.setState({ hkTok: null, hkGrant: null }); }
   /* 整份 suite 另存 IndexedDB（常有好幾 MB，localStorage 放不下）：Haruki 專區的組卡、角色等級，
      以及其他頁「從 Haruki 帶入」都讀這份。只存在這台瀏覽器，專區可一鍵清除。 */
   HK_IDB = 'sekai-haruki';
@@ -5875,6 +5931,7 @@ class Component extends DCLogic {
   }
   async hkDisconnect() {
     const t = this.state.hkTok, cfg = this.state.hkCfg;
+    if (this.state.hkGrant && this.state.hkGrant.granted) { try { await this.hkGrantRevoke(true); } catch (e) {} }
     if (t && cfg && cfg.clientId) { try { await fetch(this.GAMES_API + '/haruki/oauth/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: t.refresh || t.access, token_type_hint: t.refresh ? 'refresh_token' : 'access_token', client_id: cfg.clientId }).toString() }); } catch (e) {} }
     this.hkForget(); this.setState({ hkMsg: '已解除連結；匯入過的資料留在這台裝置上。' });
   }
@@ -7921,7 +7978,7 @@ class Component extends DCLogic {
     if (p === 'calendar' || p === 'home' || p === 'favs' || p === 'calc') this.loadSupportEvents();
     if (p === 'calendar' || p === 'home') { this.loadLoginBonus(); this.loadCharProfiles(); this.loadLives(); }
     if (p === 'home') this.loadEvList();
-    if (p === 'account') this.hkLoadCfg();   // 結算後要知道下期什麼時候開始
+    if (p === 'account') { this.hkLoadCfg(); if (this.state.hkTok && !this.state.hkGrant) this.hkGrantLoad().catch(() => {}); }
     if (p === 'haruki') { this.hzLoad().catch(() => {}); }
     if (p === 'calendar') this.loadSongs();
     this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
@@ -9551,6 +9608,15 @@ class Component extends DCLogic {
         return {
           hkReady: !!c, hkNoClient: !!c && !c.clientId, hkCanLink: !!(c && c.clientId && !t), hkLinked: !!t,
           hkBusy: !!s.hkBusy, hkMsg: s.hkMsg || '', hkHasMsg: !!s.hkMsg,
+          ...(() => {
+            const g = s.hkGrant;
+            if (!t || !g || g.off) return { hkGrantShow: false, hkGrantOn: false, hkGrantOff: false, hkGrantBusy: false, hkGrantSince: '', hkGrantHasNote: false, hkGrantNote: '' };
+            const d = g.since ? new Date(g.since * 1000) : null;
+            const note = g.nouid ? '還沒填 Player ID：先在上方或首頁綁定，才知道要授權哪個帳號。' : (g.err ? '目前查不到授權狀態：' + g.err : '');
+            return { hkGrantShow: true, hkGrantOn: !!g.granted, hkGrantOff: !g.granted && !g.nouid, hkGrantBusy: !!s.hkGrantBusy,
+              hkGrantSince: d ? '已允許（自 ' + d.getFullYear() + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0') + '）' : '已允許',
+              hkGrantHasNote: !!note, hkGrantNote: note };
+          })(),
           hkUidLabel: s.pid ? '會匯入 Player ID ' + s.pid + (t && /bindings:read/.test(t.scope || '') ? '（或你在 Haruki 綁定的台服帳號）' : '') : (t && /bindings:read/.test(t.scope || '') ? '會匯入你在 Haruki 綁定的台服帳號' : '還沒填 Player ID：先在上方或首頁綁定，才知道要匯入哪個帳號'),
           hkHasLast: !!L,
           hkLastText: L ? (when + ' 匯入' + (L.name ? '「' + L.name + '」' : '') + (L.rank ? '（等級 ' + L.rank + '）' : '')) : '',
@@ -11869,6 +11935,8 @@ class Component extends DCLogic {
       onHomeCfg: () => this.setState(st => ({ homeCfg: !st.homeCfg })),
       onHkStart: () => this.hkStart(), onHkImport: () => this.hkImport(), onHkUndo: () => this.hkUndoCards(), onHkPublic: () => this.hkImport('public'),
       onHkDisconnect: () => { if (confirm('解除 Haruki 連結？匯入過的資料會留在這台裝置上。')) this.hkDisconnect(); },
+      onHkGrantSet: () => this.hkGrantSet(),
+      onHkGrantRevoke: () => { if (confirm('撤銷菜根機器人的讀取權限？之後 /豆森 與 烤森 就讀不到你的 Haruki 存檔。')) this.hkGrantRevoke(); },
       onCfgTab: e => this.setState({ homeCfgTab: e.currentTarget.dataset.v }),
       onStatToggle: e => this.layoutToggle('stats', e.currentTarget.dataset.v),
       onQuickToggle: e => this.quickToggle(e.currentTarget.dataset.v),

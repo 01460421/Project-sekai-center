@@ -759,3 +759,28 @@ export async function linkQQ(db, userId, g, m, qqName) {
     throw e;
   }
 }
+
+/* ---------- Haruki 授權橋接（haruki_grants）：給菜根機器人讀玩家 Haruki 存檔 ----------
+   token 由 haruki.js 加密後才進來，這裡只存字串；since 用 created_at（第一次允許的時間，重新允許不變）。 */
+export const grantGet = (db, uid) => one(db, 'SELECT * FROM haruki_grants WHERE uid = ?', uid);
+export async function grantUpsert(db, { uid, harukiUser, refreshEnc, accessEnc, accessExp, scope }) {
+  const t = now();
+  await run(db,
+    `INSERT INTO haruki_grants (uid, haruki_user, refresh_enc, access_enc, access_exp, scope, created_at, updated_at, revoked_at, last_used_at, fail_n)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0)
+     ON CONFLICT(uid) DO UPDATE SET
+       haruki_user = COALESCE(excluded.haruki_user, haruki_grants.haruki_user),
+       refresh_enc = excluded.refresh_enc, access_enc = excluded.access_enc, access_exp = excluded.access_exp,
+       scope = COALESCE(excluded.scope, haruki_grants.scope), updated_at = excluded.updated_at, revoked_at = NULL, fail_n = 0`,
+    uid, harukiUser == null ? null : String(harukiUser), refreshEnc, accessEnc == null ? null : accessEnc, accessExp == null ? null : accessExp, scope == null ? null : scope, t, t);
+  return grantGet(db, uid);
+}
+export const grantRevoke = (db, uid) => run(db, 'UPDATE haruki_grants SET revoked_at = ?, updated_at = ? WHERE uid = ? AND revoked_at IS NULL', now(), now(), uid);
+/* refresh 成功後寫回新的 access（與輪替後的 refresh），失敗計數歸零 */
+export function grantTokens(db, uid, { refreshEnc, accessEnc, accessExp }) {
+  const t = now();
+  if (refreshEnc) return run(db, 'UPDATE haruki_grants SET refresh_enc = ?, access_enc = ?, access_exp = ?, updated_at = ?, fail_n = 0 WHERE uid = ?', refreshEnc, accessEnc, accessExp, t, uid);
+  return run(db, 'UPDATE haruki_grants SET access_enc = ?, access_exp = ?, updated_at = ?, fail_n = 0 WHERE uid = ?', accessEnc, accessExp, t, uid);
+}
+export const grantFail = (db, uid) => run(db, 'UPDATE haruki_grants SET fail_n = fail_n + 1, updated_at = ? WHERE uid = ?', now(), uid);
+export const grantUsed = (db, uid) => run(db, 'UPDATE haruki_grants SET last_used_at = ? WHERE uid = ?', now(), uid);
