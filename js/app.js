@@ -7073,7 +7073,7 @@ class Component extends DCLogic {
      台服模式也看得到（活動家族的分頁籤）；切到日服時首頁就是這一頁。 */
   loadJpNow() {
     if (!this._jnP) {
-      this._jnP = import('./data/jp-now.js?v=649caca94c').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
+      this._jnP = import('./data/jp-now.js?v=9f6231bf98').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
         .catch(() => { this._jnP = null; this.setState({ jnErr: '日服現況資料載入失敗，點此重試' }); return null; });
     }
     this.loadCards();
