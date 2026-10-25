@@ -90,7 +90,7 @@ class Component extends DCLogic {
     try {
       if (!this._i18n) this._i18n = await import('./js/i18n.js?v=c6323be814');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=9c1fede90c'), ja: () => import('./data/i18n-ja.js?v=16ac0d70e0') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=61b867abf7'), ja: () => import('./data/i18n-ja.js?v=b313cb18b5') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -665,6 +665,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/25', t: '豆森生日派對：一圖流詳細攻略、情形對照表、生日家具要喝幾罐', s: '生日派對頁多了可以存圖分享的一圖流詳細攻略（上下兩張 16:9 PNG，附遊戲畫面與實際素材圖：流程、逐日時程、機制與露水來源、加成卡、採集策略、目標規劃、累計獎勵、經驗值換算與 Q&A），以及情形對照表：沒有加成卡、往年 1 張、當年生日卡到全收，各要幾個露水、只靠自然回復能開幾朵、只做蛋糕／做齊家具／拿滿各要多少 LIVE BONUS 與大罐（已扣自然回復與獎勵小罐）。生日家具也逐件累計要喝幾罐；常見問題多了「做完全部家具要多少罐子」與「不喝罐子能拿多少」。', p: 'bdayparty' },
     { d: '2026/10/25', t: '新頁：豆森生日派對（慶典之花）', s: '豆森 MySekai 多一頁「豆森生日派對」：這場與往後每一場生日派對的時程（收集露水、生日當天、澆灌截止）、整個任務流程，以及計算機——勾選持有的生日加成卡（當年 +50%、往年各 +15%），輸入露水數量就算出能開幾朵慶典之花、目標朵數還差多少露水。累計獎勵逐階列出，並加總到目標為止的罐子（LIVE BONUS 飲料）與經驗值（練習譜、技能升級譜）；開滿 400 朵共 55 罐、練習譜 50 張（500,000 EXP）。生日家具各要幾朵花也一併列出。期間、加成、每朵 pt 與獎勵都讀自遊戲 master，每天自動更新，日服模式改用日服資料。首頁今日摘要的生日派對也直接連過來。', p: 'bdayparty' },
     { d: '2026/10/24', t: '每一頁都有日服版：公告、榜線資料庫、分析中心、儲值分析與綁定預覽', s: '切到日服後，遊戲公告改讀日服遊戲內公告；榜線資料庫收錄日服歷屆終線（Sekai Viewer 與 Haruki 追蹤器，含 T1 萬～T10 萬）；分析中心可以看日服前百玩家的逐場紀錄、活躍度與第 202 期起的生涯紀錄；儲值分析改用日服商城約 700 項商品與日圓定價。綁定的日服 Player ID 跟台服一樣有帳號預覽：等級、簽名、目前隊伍與編組詳情（可算綜合力與活動加成），資料來自 Haruki 工具箱的公開資料。日服卡片索引也補上一個月來的 30 張新卡，之後每天自動更新。', p: 'jpnow' },
     { d: '2026/10/24', t: '抽卡模擬支援日服', s: '切到日服後，抽卡模擬改用日服近 13 個月的卡池（含進行中與已排好的池）：機率、池內權重、PU 與抽法都照日服 master，期間以日本時間顯示。日服 master 的卡池檔有 49 MB，改由每天的資料更新流程壓成約 60 KB 的資料檔；卡片索引還沒收的新卡也一併補上，當期 PU 不會缺。★4 確定的十連與單抽（over_rarity_4_once）現在照保底模擬，生日池的 PU 機率也算對了，台服一樣適用。', p: 'gachasim' },
@@ -6503,6 +6504,8 @@ class Component extends DCLogic {
   BP_PT = 100;   // 每個露水的基本 pt（遊戲內顯示；master 沒有這個欄位）
   /* 雙葉（限定採集點）的社群實測（Game8、八神。的 400 輪紀錄，2026）：四區各 7 株共 28 株，一株 2.5 LIVE BONUS、約 42 個露水 */
   BP_SPROUT = { n: 28, dew: 42, lb: 2.5 };
+  /* 收集期 3 天的自然回復上限：LIVE BONUS 每 30 分鐘回 1、上限 10，每 5 小時上線清一次＝一天 48、三天 144 */
+  BP_NAT_LB = 144;
   BP_AREAS = ['最初的草地', '心願的沙灘', '繽紛的花田', '被遺忘之地'];
   /* 卡片等級的總 EXP（master levels.json 的 card），算「拿滿的練習譜夠升幾級」用 */
   BP_CARD_EXP = [0, 3000, 7000, 12000, 17400, 23200, 29400, 36000, 43000, 50400, 58200, 66400, 75000, 84000, 93400, 103200, 113400, 124000, 135000, 146400, 158200, 170400, 183000, 196000, 209400, 223200, 237400, 252000, 267000, 282400, 298200, 314400, 331000, 348000, 365400, 383200, 401400, 420000, 439000, 458400, 478200, 498400, 519000, 540000, 561400, 583200, 605400, 628000, 651000, 674400, 698200, 722400, 747000, 772000, 797400, 823200, 849400, 876000, 903000, 930400];
@@ -6520,7 +6523,10 @@ class Component extends DCLogic {
     L.push('■ 時程'); v.bpTimes.forEach(t => L.push('・' + t.k + '：' + t.v));
     L.push('', '■ 怎麼拔才不虧'); v.bpRules.forEach(r => L.push('・' + r.k + '：' + r.d));
     L.push('', '■ 日程'); v.bpPlan.forEach(x => L.push('・' + x.t + '　' + x.k + '：' + x.d));
-    L.push('', '■ ' + v.bpLbTitle); v.bpLbRows.forEach(r => L.push('・' + r.bon + '（' + r.n + '）：開滿 ' + v.bpMaxReq + ' 朵 ' + r.v400 + '；做完全部家具 ' + r.vFx));
+    L.push('', '■ 情形對照：' + v.bpScTitle);
+    v.bpScen.forEach(r => L.push('・' + r.bon + '（' + r.n + '）：一朵 ' + r.perFl + ' 個露水；只靠自然回復可開 ' + r.nat + '；只做蛋糕 ' + r.cake + ' LIVE BONUS；做齊家具 ' + r.fxLb + ' LIVE BONUS（' + r.fxCan + '）；拿滿 ' + v.bpMaxReq + ' 朵 ' + r.mxLb + ' LIVE BONUS（' + r.mxCan + '）'));
+    L.push('（' + v.bpScNote + '）');
+    if (v.bpHasFx) { L.push('', '■ 生日家具（' + v.bpFxTotal + '）'); v.bpFxRows.forEach(r => L.push('・' + r.name + ' ' + r.costT + '（累計 ' + r.cum + '：' + r.dew + ' 個露水、' + r.lb + ' LIVE BONUS、大罐 ' + r.can + '）')); }
     L.push('', '■ 開滿 ' + v.bpMaxReq + ' 朵的獎勵：LIVE BONUS 飲料 ' + v.bpCanN + ' 罐、' + v.bpExpTk + '（' + v.bpExpN + ' EXP，可把一張卡從 Lv1 升到 ' + v.bpExpLv + '）、' + v.bpSklTk);
     L.push('', '■ 常見問題'); v.bpQa.forEach(x => L.push('Q：' + x.q, 'A：' + x.a, ''));
     L.push('（雙葉掉落量為社群實測；期間、加成與獎勵讀自遊戲 master）', location.origin + '/app.html?page=bdayparty');
@@ -6532,10 +6538,12 @@ class Component extends DCLogic {
       ['要第一天拔，還是最後一天再拔？', '第一天就拔、能拔就拔。沒拔的雙葉不會累積，05:00／17:00 刷新只會補回被拔掉的位置；露水也不會貶值（每個露水的 pt 只看倒進去那一刻持有的加成卡）。真正的上限是 LIVE BONUS，拖到最後一天只會浪費自然回復與刷新。唯一要等的是：打算抽當年生日卡的話，抽到之前別大量倒（每個露水少 50 pt）。'],
       ['雙葉什麼時候重生？', '兩種：①在慶典的庭園每倒滿 10,000 pt（＝開一朵慶典之花），四個區域的雙葉全部重生；②每天 05:00 與 17:00 一般素材刷新時。收集期（生日前 3 天 00:00 到生日前一天 23:59）過了就不會再長。'],
       ['拔一株要多少 LIVE BONUS？給多少露水？', '社群實測：一株 2.5 LIVE BONUS、約 42 個露水（每 1 LIVE BONUS 約 16.8 個）。四區各 7 株共 28 株，一輪約 1,176 個露水、70 LIVE BONUS。一般採集每 1 LIVE BONUS 約 8 個、打 LIVE 約 5 個，所以 LIVE BONUS 只花在雙葉上最划算。'],
-      ['開滿 400 朵要多少 LIVE BONUS？', '全用雙葉的話：沒有加成卡 40,000 個露水 ≈ 2,381 LIVE BONUS（約 239 大罐）；有當年生日卡 26,667 個 ≈ 1,588（約 159 大罐）；當年＋往年 4 張 19,048 個 ≈ 1,134（約 114 大罐）。自然回復與卡池點數兌換可以再扣一些；獎勵只還你 55 小罐。'],
+      ['開滿 400 朵要多少 LIVE BONUS？', '全用雙葉的話：沒有加成卡 40,000 個露水 ≈ 2,381 LIVE BONUS；有當年生日卡 26,667 個 ≈ 1,588；當年＋往年 4 張 19,048 個 ≈ 1,134。扣掉收集期 3 天的自然回復（最多 144）與獎勵的 55 小罐，大約還要喝 219／139／94 大罐。'],
+      ['做完全部生日家具要多少罐子？', '蛋糕 3、花束 10、氣球 20、掛旗 50、椅子 200，全部 283 朵。全用雙葉：沒有加成卡 28,300 個露水 ≈ 1,685 LIVE BONUS；當年生日卡 18,867 個 ≈ 1,124；當年＋往年 4 張 13,477 個 ≈ 803。扣掉自然回復 144 與 283 朵前領到的 38 小罐，大約還要喝 151／95／63 大罐。只做蛋糕開派對的話 8～18 LIVE BONUS 就夠，不用喝罐。'],
+      ['不喝罐子能拿多少？', '只靠收集期 3 天的自然回復（每 5 小時上線一次，共 144 LIVE BONUS），沒有加成卡約 24 朵、當年生日卡約 36 朵、當年＋往年 4 張約 50 朵。沒有加成卡做得出蛋糕與花束，有當年生日卡連氣球也做得出來；掛旗與椅子就要喝罐。'],
       ['值得拿滿 400 朵嗎？', '推角才建議拿滿（最高階生日稱號在 400 朵）。其他角色做完想要的家具就好：蛋糕 3 朵就能開派對，全部生日家具 283 朵。中間 25、45、70、115、165、225、300 朵是大獎階段（稱號升級＋LIVE BONUS 飲料與練習譜）。'],
       ['拿滿的經驗值夠升滿一張卡嗎？', '不夠。400 朵共練習譜（中級）50 張＝500,000 EXP，可以把一張卡從 Lv1 升到 Lv42。★4 從 Lv1 到 Lv50 要 674,400 EXP（68 張中級），特訓後 50→60 再 256,000（26 張），1→60 共 930,400（94 張）；★3 從 1 到 40 要 458,400（46 張）、特訓後 40→50 再 216,000（22 張）。技能升級譜（中級）5 張＝250 技能 EXP，剛好把一張 ★3 的技能從 Lv1 升到 Lv4（★4 要 10,000、生日卡要 5,000）。'],
-      ['加成卡要放在隊伍裡嗎？', '不用，持有就算。當年的新生日卡 +50%、往年的生日卡每張 +15%（最多 4 張，合計最高 +110%）；加成算在倒進去的那一刻，所以先抽卡再倒。'],
+      ['加成卡要放在隊伍裡嗎？', '不用，持有就算。當年的新生日卡 +50%、往年的生日卡每張 +15%（台服目前往年最多 4 張、合計 +110%；日服 2026 年起往年 5 張、合計 +125%）；加成算在倒進去的那一刻，所以先抽卡再倒。'],
       ['卡池點數換露水划算嗎？', '一點換 150 個（最多 200 次），點數本來要換卡就別換；換完卡還有剩、又差一點露水才考慮。'],
       ['剩下的露水會怎樣？', '道具說明寫明只能用在當年這場生日活動，截止（生日後 2 天 23:59）之後就沒用了，記得倒完。'],
       ['什麼時候能做家具、開派對？', '活動期間用慶典之花做生日家具（截止後就不能做了）；生日當天起擺上生日蛋糕就能開生日派對。'],
@@ -6601,9 +6609,27 @@ class Component extends DCLogic {
     const SP = this.BP_SPROUT, perLb = SP.dew / SP.lb, roundDew = SP.n * SP.dew, roundLb = SP.n * SP.lb;
     const needDew = Math.max(0, dewFor(goal) - dewN), needLb = Math.ceil(needDew / perLb);
     const perFlowerDew = Math.ceil(per / pt);
-    const lbFor = (bon, n) => Math.ceil(Math.ceil(n * per / (this.BP_PT * (100 + bon) / 100)) / perLb);
-    const lbRows = [[0, '沒有加成卡'], [15, '往年生日卡 1 張'], [50, '當年生日卡'], [110, '當年＋往年 4 張（最高）']].map(([bon, n]) => ({ n, bon: '+' + bon + '%',
-      v400: this.n(lbFor(bon, maxReq)) + '（' + this.n(Math.ceil(lbFor(bon, maxReq) / 10)) + ' 大罐）', vFx: this.n(lbFor(bon, fxSum || 283)) }));
+    /* 情形對照：不同加成下，只做蛋糕／做齊家具／拿滿各要多少 LIVE BONUS；大罐＝扣掉收集期的自然回復與已領到的獎勵小罐後還要喝的 */
+    const NAT = this.BP_NAT_LB, fxAll = fxSum || 283;
+    const rewLb = n => totals.filter(([req]) => req <= n).reduce((a, [, bx]) => a + ((B.boxes || {})[bx] || []).filter(x => x[0] === 'boost_item')
+      .reduce((b, [, i, q]) => b + q * (nm('boost_item:' + i)[2] || 1), 0), 0);
+    const cost = (bon, n) => { const d = Math.ceil(n * per / (this.BP_PT * (100 + bon) / 100)), lb = Math.ceil(d / perLb);
+      return { d, lb, can: Math.ceil(Math.max(0, lb - NAT - rewLb(n)) / 10) }; };
+    const bonMax = bonus.reduce((a, b) => a + b[1], 0), pastN = bonus.filter(b => b[1] < 50).length;
+    const scBase = [[0, '沒有加成卡'], [15, '往年生日卡 1 張'], [50, '只有當年生日卡'], [65, '當年＋往年 1 張']];
+    if (bonMax > 65) scBase.push([bonMax, '當年＋往年 ' + pastN + ' 張（全收）']);
+    if (!scBase.some(x => x[0] === bonusSum)) scBase.push([bonusSum, '你勾的加成卡']);
+    const scen = scBase.sort((a, b) => a[0] - b[0]).map(([bon, n]) => {
+      const ptB = this.BP_PT * (100 + bon) / 100, c3 = cost(bon, 3), cf = cost(bon, fxAll), cm = cost(bon, maxReq), me = bon === bonusSum;
+      return { n, bon: '+' + bon + '%', me, bg: me ? 'color-mix(in oklab,var(--accent) 10%,transparent)' : 'transparent',
+        perFl: this.n(Math.ceil(per / ptB)), nat: this.n(Math.floor(NAT * perLb * ptB / per)) + ' 朵',
+        cake: this.n(c3.lb), fxLb: this.n(cf.lb), fxCan: cf.can ? '大罐 ' + this.n(cf.can) : '不用喝', mxLb: this.n(cm.lb), mxCan: cm.can ? '大罐 ' + this.n(cm.can) : '不用喝' };
+    });
+    /* 生日家具：照便宜到貴累計，用目前勾的加成算露水、LIVE BONUS 與要喝的大罐 */
+    let cum = 0;
+    const fxRows = fx.map(x => { cum += x.cost; const c = cost(bonusSum, cum);
+      return { name: x.name, img: x.img, costT: x.costT, cum: this.n(cum) + ' 朵', dew: this.n(c.d), lb: this.n(c.lb), can: c.can ? this.n(c.can) : '0' }; });
+    const fxC = cost(bonusSum, fxAll), fxC0 = cost(0, fxAll), fxCm = cost(bonMax, fxAll);
     /* 日程：收集期間每一次 05:00／17:00 刷新（伺服器時間：台服 UTC+8、日服 UTC+9；畫面顯示本機時間） */
     const refresh = [], tz = this.SRV === 'jp' ? 9 : 8;
     for (let t = Math.ceil(st / 3600000) * 3600000; t < bd; t += 3600000) { const h = (new Date(t).getUTCHours() + tz) % 24; if ((h === 5 || h === 17) && t > st) refresh.push(t); }
@@ -6628,12 +6654,14 @@ class Component extends DCLogic {
       bpDew: dew[0] || '露水', bpDewImg: dew[1] ? AS + '/' + dew[1] : '', bpFl: fl[0] || '慶典之花', bpFlImg: fl[1] ? AS + '/' + fl[1] : '',
       bpTimes: [
         { k: '收集露水', v: f(st) + ' ～ ' + f(bd - 60000), fw: phase === 'collect' ? 800 : 600 },
-        { k: '生日當天', v: f(bd) + '（新生日卡的卡池、派對開始）', fw: 600 },
+        { k: '生日當天', v: f(bd) + '（收集截止、生日派對開始）', fw: 600 },
         { k: '澆灌與做家具截止', v: f(en), fw: phase === 'pour' ? 800 : 600 },
       ],
-      bpPlan: plan, bpLbRows: lbRows, bpPerFlowerDew: this.n(perFlowerDew), bpRoundDew: this.n(roundDew), bpRoundLb: roundLb, bpPerLb: perLb.toFixed(1),
+      bpPlan: plan, bpScen: scen, bpFxRows: fxRows, bpPerFlowerDew: this.n(perFlowerDew), bpRoundDew: this.n(roundDew), bpRoundLb: roundLb, bpPerLb: perLb.toFixed(1),
       bpExpLv: 'Lv' + lvAt(expN), bpQa: this.bpQa(),
-      bpLbTitle: '要花多少 LIVE BONUS（全部用雙葉收集；一輪 28 株＝約 ' + this.n(roundDew) + ' 個露水、' + roundLb + ' LIVE BONUS）',
+      bpScTitle: '全部用雙葉收集（一輪 28 株＝約 ' + this.n(roundDew) + ' 個露水、' + roundLb + ' LIVE BONUS）',
+      bpScNote: '大罐＝LIVE BONUS 飲料（大）回 10：已扣掉收集期 3 天的自然回復（每 30 分鐘 1、上限 10，每 5 小時上線一次共 ' + NAT + '）與該朵數之前領到的獎勵小罐（做齊家具 ' + rewLb(fxAll) + '、拿滿 ' + rewLb(maxReq) + '）。卡池點數換露水另計。',
+      bpFxTotal: '做齊 ' + fx.length + ' 件共 ' + this.n(fxAll) + ' 朵：照你勾的 +' + bonusSum + '% 要 ' + this.n(fxC.d) + ' 個露水 ≈ ' + this.n(fxC.lb) + ' LIVE BONUS，扣掉自然回復與獎勵小罐約喝 ' + this.n(fxC.can) + ' 大罐（沒有加成卡 ' + this.n(fxC0.can) + ' 罐、全收 +' + bonMax + '% ' + this.n(fxCm.can) + ' 罐）',
       bpRules: [
         { k: '1. 先抽卡再倒', d: '每個露水的 pt 看「倒進去那一刻」持有的加成卡；當年生日卡（+50%）在生日前 4 天的卡池就抽得到。' },
         { k: '2. LIVE BONUS 只花在雙葉', d: '雙葉每 1 LIVE BONUS 約 ' + perLb.toFixed(1) + ' 個露水，一般採集約 8 個、打 LIVE 約 5 個。' },
