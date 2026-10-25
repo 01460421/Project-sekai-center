@@ -57,7 +57,7 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim'];
+  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim', 'bdayparty'];
   SRV_TW_ONLY = [];
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
@@ -90,7 +90,7 @@ class Component extends DCLogic {
     try {
       if (!this._i18n) this._i18n = await import('./js/i18n.js?v=c6323be814');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=f483d78b32'), ja: () => import('./data/i18n-ja.js?v=f32a8474a3') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=7db8d9d018'), ja: () => import('./data/i18n-ja.js?v=f9ac9ccd53') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -99,6 +99,7 @@ class Component extends DCLogic {
   }
   /* 日服模式下換掉頁首說明（原本寫的是台服來源） */
   SRV_SUB = {
+    bdayparty: '日服豆森生日派對（祝祭の庭園）：慶典之花的流程與時程、露水與加成卡計算、累計獎勵與生日家具（日服 master）',
     news: '日服遊戲內公告（日服 master）：活動、卡池、樂曲、企劃與維護，點開是遊戲內的公告頁',
     rank: '日服即時排名與分段榜線（Haruki 日服追蹤器，約 10～20 秒更新一次）',
     borderdb: '日服歷屆終線（Sekai Viewer 與 Haruki 日服追蹤器）：依型態、團體、天數、屬性與角色交叉篩選，看各段位排行；含 T1 萬～T10 萬',
@@ -271,6 +272,7 @@ class Component extends DCLogic {
     wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合；終章另有主隊與總加成試算'],
     skillmult:['理論技能倍率表', '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列；另有同團不限色、同色不限團'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
+    bdayparty:['豆森生日派對', '慶典之花的流程與時程、露水與加成卡計算、累計獎勵（LIVE BONUS 飲料、練習譜 EXP）與生日家具'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
     lookup:   ['玩家查詢', '用 ID 查任一玩家的公開資料與編組'],
     distrib:  ['活動分布', '歷屆卡池與活動的時間分布甘特圖：可切卡池／活動、範圍，滑過看說明、點條開詳情'],
@@ -307,7 +309,7 @@ class Component extends DCLogic {
     ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']]]],
     ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
-                   ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'materials', 'dolls']]]],
+                   ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
     ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
@@ -406,6 +408,7 @@ class Component extends DCLogic {
     ['活動分布甘特圖', '', 'distrib', '活動分布|甘特圖|團推分析|推角分析|團體曲數占比|各團活動分布'],
     ['加分卡參考', '', 'bonuscards', '加分卡|加成卡|加分卡組合建議|團分1／團分2／團分3|普限輪1～4|書下|Banner 主角色卡'],
     ['理論技能倍率表', '', 'skillmult', '理論倍率|技能倍率|理論技能倍率|倍率表|編成表|同團同色|同團|同色|推隊倍率|最佳技能隊|技能隊|日服新卡倍率|skill multiplier'],
+    ['豆森生日派對（慶典之花）', '', 'bdayparty', '生日花|慶典之花|慶典露水|露水|生日派對|豆森生日|澆花|澆水|慶典的庭園|慶典庭園|雙葉|生日家具|生日蛋糕|セレブレーションフラワー|あまつゆ|祝祭|生日罐子|生日經驗'],
     ['月卡玩偶列表（豆森娃）', '', 'dolls', '月卡玩偶|豆森娃|豆森娃月列表|娃月列表|MySekai 玩偶|月卡娃|玩偶排程'],
     ['活動日曆', '', 'calendar', '日曆|行事曆|看日曆|當日活動'],
     ['綜合力', 'calc_event_points', 'deckpro／rank', '総合力|総合|綜合|戰力|power|隊伍總綜合力|跑隊綜合|36.2w|基礎三維|白值'],
@@ -662,6 +665,7 @@ class Component extends DCLogic {
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
   ];
   SYSLOG = [
+    { d: '2026/10/25', t: '新頁：豆森生日派對（慶典之花）', s: '豆森 MySekai 多一頁「豆森生日派對」：這場與往後每一場生日派對的時程（收集露水、生日當天、澆灌截止）、整個任務流程，以及計算機——勾選持有的生日加成卡（當年 +50%、往年各 +15%），輸入露水數量就算出能開幾朵慶典之花、目標朵數還差多少露水。累計獎勵逐階列出，並加總到目標為止的罐子（LIVE BONUS 飲料）與經驗值（練習譜、技能升級譜）；開滿 400 朵共 55 罐、練習譜 50 張（500,000 EXP）。生日家具各要幾朵花也一併列出。期間、加成、每朵 pt 與獎勵都讀自遊戲 master，每天自動更新，日服模式改用日服資料。首頁今日摘要的生日派對也直接連過來。', p: 'bdayparty' },
     { d: '2026/10/24', t: '每一頁都有日服版：公告、榜線資料庫、分析中心、儲值分析與綁定預覽', s: '切到日服後，遊戲公告改讀日服遊戲內公告；榜線資料庫收錄日服歷屆終線（Sekai Viewer 與 Haruki 追蹤器，含 T1 萬～T10 萬）；分析中心可以看日服前百玩家的逐場紀錄、活躍度與第 202 期起的生涯紀錄；儲值分析改用日服商城約 700 項商品與日圓定價。綁定的日服 Player ID 跟台服一樣有帳號預覽：等級、簽名、目前隊伍與編組詳情（可算綜合力與活動加成），資料來自 Haruki 工具箱的公開資料。日服卡片索引也補上一個月來的 30 張新卡，之後每天自動更新。', p: 'jpnow' },
     { d: '2026/10/24', t: '抽卡模擬支援日服', s: '切到日服後，抽卡模擬改用日服近 13 個月的卡池（含進行中與已排好的池）：機率、池內權重、PU 與抽法都照日服 master，期間以日本時間顯示。日服 master 的卡池檔有 49 MB，改由每天的資料更新流程壓成約 60 KB 的資料檔；卡片索引還沒收的新卡也一併補上，當期 PU 不會缺。★4 確定的十連與單抽（over_rarity_4_once）現在照保底模擬，生日池的 PU 機率也算對了，台服一樣適用。', p: 'gachasim' },
     { d: '2026/10/23', t: '日服模式擴大到活動、卡池、日曆、劇情與圖鑑', s: '切到日服後，活動總覽、活動資料、卡池列表、活動日曆、活動分布、虛擬 Live、劇情閱讀器（日文原文）、家具圖鑑、豆森對話與卡片技能庫都改用日服 master 整理的資料，每天自動更新；活動總覽的即時榜線與我的名次也跟著日服。目前只剩遊戲公告、榜線資料庫、分析中心與儲值分析還是台服資料。英文與日文介面的詞典補到一萬條以上，連更新紀錄也逐句翻好；更新紀錄的標籤不再以原始碼顯示。', p: 'event' },
@@ -1638,7 +1642,7 @@ class Component extends DCLogic {
     today.slice(0, 3).forEach(g => rows.push({ ic: '卡池', t: '卡池「' + g.n + '」今天開始', s: '到 ' + this.md(this.pd(g.e)), p: 'gacha', patchJson: JSON.stringify({ gachaGid: g.id }) }));
     (s.msEvents || []).forEach(x => {
       if (!(x.s && x.e)) return;
-      if (now >= x.s && now <= x.e) rows.push({ ic: x.k === 'bday' ? '生日' : '豆森', t: this.msEventName(x) + '進行中', s: '到 ' + this.md(new Date(x.e)) + (x.k === 'bday' ? '，生日當天 ' + this.md(new Date(x.bs || x.s)) : '，投稿截止後結算'), p: 'calendar', patchJson: '{}' });
+      if (now >= x.s && now <= x.e) rows.push({ ic: x.k === 'bday' ? '生日' : '豆森', t: this.msEventName(x) + '進行中', s: '到 ' + this.md(new Date(x.e)) + (x.k === 'bday' ? '，生日當天 ' + this.md(new Date(x.bs || x.s)) + '・看慶典之花攻略' : '，投稿截止後結算'), p: x.k === 'bday' ? 'bdayparty' : 'calendar', patchJson: '{}' });
       else if (x.s > now && x.s - now <= 2 * 86400000) rows.push({ ic: x.k === 'bday' ? '生日' : '豆森', t: this.msEventName(x) + (x.s - now <= 86400000 ? '明天開始' : '後天開始'), s: this.md(new Date(x.s)) + ' – ' + this.md(new Date(x.e)), p: 'calendar', patchJson: '{}' });
     });
     (s.supEvents || []).forEach(x => {
@@ -6436,6 +6440,104 @@ class Component extends DCLogic {
   charUnit(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? this.UNIT_OF[c[2]] : ''; }
   charName(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? c[1] : ('#' + cid); }
 
+  /* ===== 豆森生日派對（慶典之花）：流程、露水計算、加成卡與累計獎勵 =====
+     資料：tools/build-bday-party.py → data/bday-party(-jp).js（期間、露水與花、加成卡、每朵 pt、累計獎勵箱都從 master 來）。
+     露水本身的掉落量（雙葉、一般採集、LIVE）伺服器才知道，頁面上標社群實測。 */
+  BP_PT = 100;   // 每個露水的基本 pt（遊戲內顯示；master 沒有這個欄位）
+  loadBday() {
+    if (this.state.bpOwn == null) { let o = {}; try { o = JSON.parse(localStorage.getItem(this.bpKey()) || '{}') || {}; } catch (e) {} this.setState({ bpOwn: o }); }
+    return this.dbRun('bday', async () => (await (this.SRV === 'jp' ? import('./data/bday-party-jp.js?v=3c02f73b2a') : import('./data/bday-party.js?v=45a7e8a2e6'))).BDAY || null);
+  }
+  bpKey() { return 'sekai-bp-own' + (this.SRV === 'jp' ? '-jp' : ''); }
+  cardById(id) {
+    const rows = this.state.rateCards || [];
+    if (this._cbN !== rows.length) { this._cbN = rows.length; this._cb = {}; rows.forEach(c => { this._cb[c[0]] = c; }); }
+    return this._cb[id] || null;
+  }
+  bpView(s) {
+    const B = s.bday;
+    if (!B || !(B.parties || []).length) return { bpReady: false, bpLoading: !B && !s.dbErr, bpErrOn: !B && !!s.dbErr, bpErr: s.dbErr || '' };
+    const now = Date.now(), P = B.parties, AS = this.ASSET, N = B.names || {};
+    const nm = k => N[k] || ['', '', 0];
+    const cur = P.find(x => x[2] <= now && now <= x[4]) || P.find(x => x[2] > now) || P[P.length - 1];
+    const p = P.find(x => String(x[0]) === String(s.bpId)) || cur;
+    const [pid, cid, st, bd, en, dewId, flId, per, bonus, totals] = p;
+    const dew = nm('material:' + dewId), fl = nm('mysekai_material:' + flId), who = this.charShort(cid) || ('#' + cid);
+    const f = ms => this.dbDate(ms, true), md = ms => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
+    const left = ms => { const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60); return d ? d + ' 天 ' + h + ' 小時' : h ? h + ' 小時 ' + (m % 60) + ' 分' : (m % 60) + ' 分'; };
+    const phase = now < st ? 'soon' : now < bd ? 'collect' : now <= en ? 'pour' : 'over';
+    const PH = { soon: ['還沒開始', left(st - now) + '後開始收集露水', '#8b93ac'], collect: ['收集露水中', '距生日當天還有 ' + left(bd - now), '#3ea76a'],
+      pour: ['澆灌與做家具中', '距結束還有 ' + left(en - now), '#e0508a'], over: ['已結束', f(en) + ' 結束', '#8b93ac'] }[phase];
+    /* 加成卡：沒手動勾過的，照收集率勾選的「持有」帶入 */
+    const ownMap = s.bpOwn || {}, owned = this.ownSet ? this.ownSet() : new Set();
+    let bonusSum = 0;
+    const cards = bonus.map(([id, rate]) => {
+      const c = this.cardById(id), on = ownMap[id] != null ? !!ownMap[id] : owned.has(id);
+      if (on) bonusSum += rate;
+      return { id, rate: '+' + rate + '%', on, onS: on ? '1' : '0', name: c ? c[7] : '#' + id, img: c ? this.cardImg(c[8], c[2]) : '', hasImg: !!c, isNew: rate >= 50,
+        bd: on ? 'var(--cta)' : 'var(--border)', bg: on ? 'color-mix(in oklab,var(--cta) 12%,var(--card))' : 'var(--card)' };
+    });
+    const pt = this.BP_PT * (100 + bonusSum) / 100;
+    const dewN = Math.max(0, Math.floor(+s.bpDew || 0)), maxReq = totals.length ? totals[totals.length - 1][0] : 0;
+    const goal = Math.max(0, Math.floor(+s.bpGoal || 0)) || maxReq;
+    const flowers = Math.floor(dewN * pt / per), rest = dewN * pt - flowers * per;
+    const dewFor = n => Math.ceil(n * per / pt);
+    /* 累計獎勵：每一階的內容＋到目標為止的總計（罐子＝LIVE BONUS 飲料、經驗值＝練習譜） */
+    const itemV = ([t, i, q]) => { const x = nm(t + ':' + i); return { n: x[0] || (t + ' #' + i), img: x[1] ? AS + '/' + x[1] : '', hasImg: !!x[1], q: t === 'honor' ? '' : '×' + this.n(q), honor: t === 'honor' }; };
+    const sum = {}, add = (t, i, q) => { const k = t + ':' + i; sum[k] = (sum[k] || 0) + q; };
+    const rows = totals.map(([req, bx]) => {
+      const items = (B.boxes || {})[bx] || [];
+      if (req <= goal) items.forEach(([t, i, q]) => add(t, i, q));
+      const big = items.some(x => x[0] === 'honor');
+      return { req: this.n(req) + ' 朵', dew: this.n(dewFor(req)), got: req <= flowers, inGoal: req <= goal, big, items: items.map(itemV),
+        bg: req <= flowers ? 'color-mix(in oklab,#3ea76a 10%,transparent)' : big ? 'color-mix(in oklab,var(--accent) 6%,transparent)' : 'transparent' };
+    });
+    const tot = (t) => Object.keys(sum).filter(k => k.startsWith(t + ':')).map(k => ({ k, n: nm(k)[0], v: nm(k)[2], q: sum[k], img: nm(k)[1] ? AS + '/' + nm(k)[1] : '' }));
+    const cans = tot('boost_item'), prac = tot('practice_ticket'), skl = tot('skill_practice_ticket');
+    const canN = cans.reduce((a, x) => a + x.q, 0), canLb = cans.reduce((a, x) => a + x.q * (x.v || 1), 0);
+    const expN = prac.reduce((a, x) => a + x.q * x.v, 0), sklN = skl.reduce((a, x) => a + x.q * x.v, 0);
+    const others = Object.keys(sum).filter(k => !/^(boost_item|practice_ticket|skill_practice_ticket|honor):/.test(k))
+      .map(k => ({ n: nm(k)[0], img: nm(k)[1] ? AS + '/' + nm(k)[1] : '', hasImg: !!nm(k)[1], q: '×' + this.n(sum[k]) }));
+    const titles = Object.keys(sum).filter(k => k.startsWith('honor:')).length;
+    const next = totals.find(([req]) => req > flowers);
+    /* 生日家具：家具圖鑑的「生日派對 id」欄＋製作素材裡的慶典之花數量 */
+    const fx = ((s.fixtures && s.fixtures.rows) || []).filter(r => r[13] === pid).map(r => {
+      const c = (r[10] || []).find(m => m[0] === flId); return { name: r[1], img: this.fixImg(r), cost: c ? c[1] : 0, costT: (c ? c[1] : 0) + ' 朵' };
+    }).sort((a, b) => a.cost - b.cost);
+    const fxSum = fx.reduce((a, x) => a + x.cost, 0);
+    const chips = P.map(x => ({ v: String(x[0]), n: (this.charShort(x[1]) || '#' + x[1]) + ' ' + md(x[3]), on: x === p, cur: x === cur,
+      bd: x === p ? 'var(--accent)' : 'var(--border)', bg: x === p ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card)', fg: x === p ? 'var(--accent-deep)' : 'var(--text-2)' }));
+    return {
+      bpReady: true, bpLoading: false, bpErrOn: false, bpChips: chips,
+      bpWho: who, bpColor: this.CHARA_COLOR[cid] || 'var(--accent)', bpSd: this.charaSd(cid), bpPhase: PH[0], bpPhaseSub: PH[1], bpPhaseC: PH[2],
+      bpDew: dew[0] || '露水', bpDewImg: dew[1] ? AS + '/' + dew[1] : '', bpFl: fl[0] || '慶典之花', bpFlImg: fl[1] ? AS + '/' + fl[1] : '',
+      bpTimes: [
+        { k: '收集露水', v: f(st) + ' ～ ' + f(bd - 60000), fw: phase === 'collect' ? 800 : 600 },
+        { k: '生日當天', v: f(bd) + '（新生日卡的卡池、派對開始）', fw: 600 },
+        { k: '澆灌與做家具截止', v: f(en), fw: phase === 'pour' ? 800 : 600 },
+      ],
+      bpPer: this.n(per), bpPt: this.n(pt), bpBonus: '+' + bonusSum + '%', bpPtTitle: '每個露水 ' + this.n(pt) + ' pt（加成 +' + bonusSum + '%）',
+      bpStep2: '：區域移動畫面右上角進去，把露水倒給慶典之樹。每個露水 100 pt，持有加成卡再往上加；每滿 ' + this.n(per) + ' pt 開一朵慶典之花，區域的雙葉也會跟著重生。',
+      bpStep3: '：依開到的慶典之花朵數（2、3、4…' + maxReq + ' 朵）領 LIVE BONUS 飲料、練習譜、技能升級譜、心願碎片、記憶與生日稱號。',
+      bpSumTitle: '開到 ' + this.n(goal) + ' 朵的累計獎勵', bpCanV: this.n(canN) + ' 罐', bpCanSub: '共回復 ' + this.n(canLb) + ' LIVE BONUS', bpTitlesV: titles + ' 個',
+      bpMaxNote: '拿滿 ' + this.n(maxReq) + ' 朵要 ' + this.n(dewFor(maxReq)) + ' 個露水（照上面勾的加成）；下表綠底是現有露水已經拿得到的階段。',
+      bpFxTitle: '全部做完要 ' + this.n(fxSum) + ' 朵（約 ' + this.n(dewFor(fxSum)) + ' 個露水）',
+      bpSrc1: '每輪全部採完約 42 個，最有效率；每倒滿 ' + this.n(per) + ' pt 與每天 05:00／17:00 一般採集點刷新時會重生', bpCards: cards, bpHasCards: cards.length > 0,
+      bpDewIn: s.bpDew || '', bpGoalIn: s.bpGoal || '', bpGoalPh: '目標朵數（預設 ' + maxReq + '）',
+      bpCalc: [
+        { l: '每個露水', v: this.n(pt) + ' pt' },
+        { l: '現有露水可開', v: this.n(flowers) + ' 朵', sub: dewN ? '再 ' + this.n(Math.ceil((per - rest) / pt)) + ' 個露水開下一朵' : '輸入露水數量' },
+        { l: '目標 ' + this.n(goal) + ' 朵要', v: this.n(dewFor(goal)) + ' 個', sub: dewN ? (dewN >= dewFor(goal) ? '已經夠了' : '還差 ' + this.n(dewFor(goal) - dewN) + ' 個') : '' },
+        { l: '下一個獎勵', v: next ? this.n(next[0]) + ' 朵' : '已全部領完', sub: next && dewN ? '還差 ' + this.n(Math.max(0, dewFor(next[0]) - dewN)) + ' 個露水' : '' },
+      ],
+      bpGoalN: this.n(goal), bpCanN: this.n(canN), bpCanLb: this.n(canLb), bpCanName: cans.length ? cans.map(x => x.n).join('、') : 'LIVE BONUS 飲料',
+      bpCanImg: cans.length ? cans[0].img : '', bpExpN: this.n(expN), bpExpTk: prac.map(x => x.n + ' ×' + this.n(x.q)).join('、') || '—', bpExpImg: prac.length ? prac[0].img : '',
+      bpSklN: this.n(sklN), bpSklTk: skl.map(x => x.n + ' ×' + this.n(x.q)).join('、') || '—', bpSklImg: skl.length ? skl[0].img : '',
+      bpOthers: others, bpTitles: titles, bpRows: rows, bpRowsN: rows.length,
+      bpFx: fx, bpHasFx: fx.length > 0, bpFxSum: this.n(fxSum), bpFxDew: this.n(dewFor(fxSum)), bpMaxDew: this.n(dewFor(maxReq)), bpMaxReq: this.n(maxReq),
+    };
+  }
+
   /* ===== 月卡玩偶（原生頁；資料是 sekai-data.js 的 DOLLS，每天由 tools/sync-dolls.py 同步） ===== */
   _chip(v, n, sel) { const on = v === sel; return { v, n, on, bd: on ? 'var(--accent)' : 'var(--border)', bg: on ? 'color-mix(in oklab,var(--accent) 16%,transparent)' : 'var(--card)', fg: on ? 'var(--accent-deep)' : 'var(--text-2)' }; }
   dollsView() {
@@ -7871,6 +7973,7 @@ class Component extends DCLogic {
     if (p === 'fixtures') this.loadFixtures();
     if (p === 'mstalk') { this.loadMst(); this.loadFixtures(); }
     if (p === 'materials') this.loadMats();
+    if (p === 'bdayparty') { this.loadBday(); this.loadCards(); this.loadFixtures(); }
     if (p === 'comics') this.loadComics();
     if (p === 'ost') this.loadOst();
     if (p === 'lives') this.loadLives();
@@ -9563,8 +9666,8 @@ class Component extends DCLogic {
           hkHasUndo: (() => { try { return localStorage.getItem('sekai-cards-own-prev') != null; } catch (e) { return false; } })(),
         };
       })(), isAdminPage: s.page === 'admin', isAssistant: s.page === 'assistant', isNotices: s.page === 'notices', isQa: s.page === 'qa',
-      isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBonusCards: s.page === 'bonuscards',
-      ...(s.page === 'dolls' ? this.dollsView() : {}), ...(s.page === 'distrib' ? this.dvView() : {}),
+      isCardlib: s.page === 'cardlib', isDolls: s.page === 'dolls', isBdayParty: s.page === 'bdayparty', isBonusCards: s.page === 'bonuscards',
+      ...(s.page === 'dolls' ? this.dollsView() : {}), ...(s.page === 'bdayparty' ? this.bpView(s) : {}), ...(s.page === 'distrib' ? this.dvView() : {}),
       ...(s.page === 'lookup' ? this.luView() : {}), ...(s.page === 'cardlib' ? this.clView() : {}), ...(s.page === 'gachasim' ? Object.assign(this.gcView(), this.gsView()) : {}),
       isArt: s.page === 'art',
       isStory: s.page === 'story', isCards: s.page === 'cards', isChars: s.page === 'chars', isFixtures: s.page === 'fixtures', isMstalk: s.page === 'mstalk', isMaterials: s.page === 'materials', isComics: s.page === 'comics', isOst: s.page === 'ost', isLives: s.page === 'lives', isNews: s.page === 'news',
@@ -11638,6 +11741,8 @@ class Component extends DCLogic {
       },
       onDeckDetail: () => { if (this.state.pid) this.setState({ deckPid: this.state.pid }); },
       onDeckClose: () => this.setState({ deckPid: null }),
+      onBpParty: e => this.setState({ bpId: e.currentTarget.dataset.v }),
+      onBpCard: e => { const id = +e.currentTarget.dataset.id, o = Object.assign({}, this.state.bpOwn || {}), was = e.currentTarget.dataset.on === '1'; o[id] = !was; try { localStorage.setItem(this.bpKey(), JSON.stringify(o)); } catch (x) {} this.setState({ bpOwn: o }); },
       onJpDeckCalc: () => this.jpDeckCalc(this.state.deckPid),
       onGachaClick: e => { const gid = e.currentTarget.dataset.gid; if (gid) this.setState({ gachaGid: gid }); },
       onGachaClose: () => this.setState({ gachaGid: null }),
