@@ -301,3 +301,18 @@ CREATE TABLE IF NOT EXISTS bridge_nonce (
   nonce  TEXT PRIMARY KEY,
   at     INTEGER NOT NULL
 );
+
+-- 018：Haruki 授權橋接給菜根機器人（token 加密存放，見 src/haruki.js 的 grant 區段）
+CREATE TABLE IF NOT EXISTS haruki_grants (
+  uid          TEXT PRIMARY KEY,
+  haruki_user  TEXT,
+  refresh_enc  TEXT NOT NULL,
+  access_enc   TEXT,
+  access_exp   INTEGER,
+  scope        TEXT,
+  created_at   INTEGER NOT NULL,
+  updated_at   INTEGER NOT NULL,
+  revoked_at   INTEGER,
+  last_used_at INTEGER,
+  fail_n       INTEGER NOT NULL DEFAULT 0
+);

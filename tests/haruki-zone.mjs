@@ -124,6 +124,19 @@ const pub = obj.hkNormalize({ userDecks: [{ deckId: 3, member1: 1 }], userProfil
 ok(pub.userGamedata && pub.userGamedata.userId === '7482960281734567890' && pub.userGamedata.deck === 3, '公開 API 沒給 userGamedata 時補一份（引擎必需），目前隊伍取 userDecks 第一隊');
 ok(obj.hkNormalize({ userGamedata: { userId: 1, deck: 5, name: 'x' } }, '2').userGamedata.deck === 5, '有 userGamedata 就不動');
 
+/* app.js 的 hkGrantBody：送給 /haruki/grant（讓菜根機器人讀取）的內容 */
+{
+  const gb = eval('({' + grab('hkGrantBody') + '})').hkGrantBody;
+  const T0 = 1_760_000_000_000;
+  const b = gb({ access: 'acc-browser-1', refresh: 'refresh-1', scope: 'offline_access game-data:read', exp: T0 + 3600 * 1000 }, '7482960281734567890', T0);
+  ok(b.uid === '7482960281734567890' && b.refresh_token === 'refresh-1' && b.access_token === 'acc-browser-1' && b.expires_in === 3600 && b.scope === 'offline_access game-data:read', 'grant body：uid、refresh、access、剩餘秒數、scope');
+  const b2 = gb({ access: 'acc-browser-1', refresh: 'refresh-1', exp: T0 + 30 * 1000 }, 123456, T0);
+  ok(b2.uid === '123456' && b2.refresh_token === 'refresh-1' && !('access_token' in b2) && !('expires_in' in b2) && !('scope' in b2), 'access 剩不到一分鐘就不送（Worker 會自己用 refresh 換），uid 轉成字串');
+  const b3 = gb(null, '', T0);
+  ok(b3.uid === '' && b3.refresh_token === '' && !('access_token' in b3), '沒有 token 時欄位是空字串，不會丟例外');
+  ok(JSON.stringify(gb({ refresh: 'r', access: 'a' }, '1', T0)) === '{"uid":"1","refresh_token":"r"}', '沒有 exp 就不送 access');
+}
+
 /* 養成策略：推算進度、下一步排序、做幾件升級、先練誰 */
 {
   const PG = [];

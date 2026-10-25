@@ -117,6 +117,37 @@ Worker 第一次用到推播時會自己建，見 `src/push.js` 的 `ensurePushS
    curl https://games.project-sekai-center.com/haruki/master/tw/current
    ```
 
+## 2026-10 遷移：Haruki 授權橋接給菜根機器人（讓機器人也能讀取）
+
+玩家在「我的帳號 → Haruki 工具箱匯入」連結 Haruki 後，可再按「允許機器人讀取」：瀏覽器把 Haruki 的 refresh／access token
+交給 Worker，Worker 先用同一個 token 問 Haruki `user/bindings` 確認這個帳號真的綁著（已驗證的）台服 uid，
+再用 AES-GCM 加密存進 `haruki_grants`；菜根機器人用橋接簽章讀 `/api/bot/haruki/{suite|mysekai}/{uid}`，
+Worker 代為換 token、讀 game-data 原樣轉回。任何回應都不含 token。
+
+1. 遷移（可重跑）：
+   ```
+   npx wrangler d1 execute pjsk-users --remote --file=sql/018_haruki_grants.sql
+   ```
+   本機 wrangler 沒登入的話，到 GitHub Actions 手動跑 `d1-migrate`（Run workflow，`file` 預設就是 `worker/sql/018_haruki_grants.sql`；
+   用的是跟 worker-deploy 同一組 `CLOUDFLARE_API_TOKEN`／`CLOUDFLARE_ACCOUNT_ID`，token 要有 D1 編輯權限）。
+2. 機密 `HARUKI_GRANT_KEY`（任意長字串，建議 `openssl rand -hex 32`；換掉它＝所有已存的授權都解不開，玩家要重新允許）：
+   ```
+   npx wrangler secret put HARUKI_GRANT_KEY
+   ```
+   另外要已經有 `HARUKI_OAUTH_CLIENT_SECRET`（換 token 用）與 `CAIBOT_BRIDGE_SECRET`（驗機器人簽章）。三者缺一，
+   瀏覽器端回 503 `not_configured`（前端整塊不顯示），機器人端也回 503。
+3. 端點：
+
+| 路徑 | 說明 |
+|---|---|
+| `POST /haruki/grant` | 瀏覽器（`Authorization: Bearer <玩家的 Haruki access>`，CORS 只給本站）。body `{uid, refresh_token, access_token?, expires_in?, scope?}`。Haruki 綁定對不上 → 403 `uid_not_bound`；成功 → `{ok:true, uid, since}`（since＝第一次允許的時間，秒） |
+| `GET /haruki/grant/{uid}` | 同上驗證 → `{granted, uid, since, last_used_at}` |
+| `DELETE /haruki/grant/{uid}` | 同上驗證 → 設 `revoked_at`，回 `{ok:true, uid}` |
+| `GET /api/bot/haruki/grant/{uid}` | 機器人（X-Caibot-* 簽章，pathq 含 query，ident 空、ip `bot`，與 `/car/qqbind` 同一套）→ `{granted:true, uid, since, last_used_at, types:["suite","mysekai"]}`；沒授權 404 `no_grant`、已撤銷 404 `revoked` |
+| `GET /api/bot/haruki/{suite\|mysekai}/{uid}` | 同上簽章 → Haruki `game-data/tw/{type}/{uid}` 的回應原樣轉回（狀態碼照對方；200 時 `cache-control: private, max-age=60`，Worker 端也以 uid＋type 快取 60 秒）。access 過期自動用 refresh 換（client_secret_basic）並寫回；refresh 回 `invalid_grant` → 設 `revoked_at`、回 404 `revoked`；換 token 其他失敗 → 502 `refresh_failed`、`fail_n`+1。簽章錯 401 `bad_signature`、nonce 重放 401 `replay` |
+
+測試：`node worker/test/haruki_grant.mjs`（Node 22.5+，D1 用 node:sqlite 模擬、Haruki 用假 fetch）。
+
 ## 每次改完 Worker 都要
 
 ```bash

@@ -8,6 +8,8 @@
    沒設 HARUKI_API_TOKEN 時照樣試一次（對方若是開放模式也能用），失敗就回 502 讓呼叫端退到下一個來源。
    活動期程與 WL 章節來自台服 master（Haruki 6.4 版，缺檔退回 Sekai-World），邊緣快取一小時。 */
 import { getJson } from './cal.js';
+import { bridgeVerify, cleanSecret } from './bridge.js';
+import { grantGet, grantUpsert, grantRevoke, grantTokens, grantFail, grantUsed, useBridgeNonce } from './db.js';
 
 export const HARUKI_API_DEFAULT = 'https://public-api.haruki.seiunx.com/sekai-api/v5/api/tw';
 export const HARUKI_OAUTH_DEFAULT = 'https://toolbox-api-direct.haruki.seiunx.com';
@@ -312,8 +314,187 @@ async function handleHarukiRegistry(req, env, url) {
   return res;
 }
 
+
+/* ---------- Haruki 授權橋接給菜根機器人 ----------
+   玩家在「我的帳號」連結 Haruki 後，可以再按「允許機器人讀取」：瀏覽器把手上的 refresh／access token
+   POST 到 /haruki/grant，Worker 先拿同一個 Bearer 問 Haruki 的 user/bindings，確認這個 Haruki 帳號真的綁著
+   （已驗證的）台服 uid，才用 AES-GCM（金鑰 = SHA-256(HARUKI_GRANT_KEY)）加密後存進 haruki_grants。
+   機器人用橋接簽章（bridge.js，與 /car/qqbind 同一套、ident 空、ip "bot"）打 /api/bot/haruki/{suite|mysekai}/{uid}：
+   Worker 解密、access 過期就用 refresh 換新（client_secret_basic，與上面 handleHarukiOAuth 同寫法）並寫回，
+   再帶 Bearer 讀 game-data 原樣轉回。任何回應都不含 token，log 也不印。
+   沒設 HARUKI_GRANT_KEY 或 HARUKI_OAUTH_CLIENT_SECRET：所有 grant 端點回 503 not_configured，前端據此不顯示區塊。 */
+
+export const grantReady = env => !!(env && env.HARUKI_GRANT_KEY && env.HARUKI_OAUTH_CLIENT_SECRET && env.HARUKI_OAUTH_CLIENT_ID);
+const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = str => { const bin = atob(String(str).replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - str.length % 4) % 4)); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
+async function grantKey(env) {
+  const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(env.HARUKI_GRANT_KEY).trim()));
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+/** 明文 → base64url(iv12 ‖ ciphertext)。每次 iv 都隨機，同一個 token 加密兩次密文不同。 */
+export async function grantEnc(env, text) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await grantKey(env), new TextEncoder().encode(String(text))));
+  const out = new Uint8Array(12 + ct.length); out.set(iv, 0); out.set(ct, 12);
+  return b64u(out);
+}
+export async function grantDec(env, b64) {
+  const bytes = unb64u(b64);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.slice(0, 12) }, await grantKey(env), bytes.slice(12));
+  return new TextDecoder().decode(pt);
+}
+const oauthBase = env => ((env && env.HARUKI_OAUTH_BASE) || HARUKI_OAUTH_DEFAULT).replace(/\/+$/, '');
+const BEARER_OK = /^Bearer [\w\-.~+/=]{8,4096}$/;
+const UID_OK = /^\d{6,20}$/;
+
+/* 這個 Bearer 的 Haruki 帳號是否綁著台服 uid（有 verified 欄位就要為真）。
+   回 { ok:true, binding } 或 { ok:false, status: 401（token 無效）| 403（沒綁）| 502（對方掛了）}。 */
+async function bindingOwns(env, auth, uid) {
+  const r = await fetch(oauthBase(env) + '/api/oauth2/user/bindings', { headers: { authorization: auth, accept: 'application/json', 'user-agent': UA }, signal: AbortSignal.timeout(20000) });
+  if (r.status === 401 || r.status === 403) return { ok: false, status: 401 };
+  if (!r.ok) return { ok: false, status: 502 };
+  let p = null;
+  try { p = parseSafe(await r.text()); } catch (e) { return { ok: false, status: 502 }; }
+  const list = Array.isArray(p) ? p : (p && (p.bindings || p.data || p.updatedData || p.items)) || [];
+  const hit = (Array.isArray(list) ? list : []).find(b => b && String(b.server || b.region || '').toLowerCase() === 'tw'
+    && String(b.userId != null ? b.userId : (b.user_id != null ? b.user_id : (b.gameUserId != null ? b.gameUserId : ''))) === uid
+    && (b.verified === undefined || b.verified === null || !!b.verified));
+  return hit ? { ok: true, binding: hit } : { ok: false, status: 403 };
+}
+
+/* 瀏覽器端：POST /haruki/grant、GET|DELETE /haruki/grant/{uid}（Bearer = 玩家自己的 Haruki access token；CORS 只給本站） */
+const GRANT_UID = /^\/haruki\/grant\/(\d{6,20})$/;
+async function handleHarukiGrant(req, env, url) {
+  const cors = { ...siteCors(env, req), 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS' };
+  const out = (obj, status) => new Response(JSON.stringify(obj), { status, headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  if (!grantReady(env) || !env.DB) return out({ error: 'not_configured', error_description: '站方尚未開通機器人授權' }, 503);
+  const auth = req.headers.get('authorization') || '';
+  if (!BEARER_OK.test(auth)) return out({ error: 'invalid_token', error_description: '缺少授權' }, 401);
+  let uid = '', body = null, refresh = '';
+  if (req.method === 'POST' && url.pathname === '/haruki/grant') {
+    if (Number(req.headers.get('content-length') || 0) > 16384) return out({ error: 'too_large' }, 413);
+    try { body = await req.json(); } catch (e) { body = null; }
+    if (!body || typeof body !== 'object') return out({ error: 'bad_json' }, 400);
+    uid = String(body.uid == null ? '' : body.uid).trim();
+    refresh = typeof body.refresh_token === 'string' ? body.refresh_token : '';
+    if (!UID_OK.test(uid)) return out({ error: 'bad_uid', error_description: 'uid 要是 6～20 位數字' }, 400);
+    if (!/^[\w\-.~+/=]{8,4096}$/.test(refresh)) return out({ error: 'bad_refresh_token' }, 400);
+  } else if ((req.method === 'GET' || req.method === 'DELETE') && GRANT_UID.test(url.pathname)) {
+    uid = GRANT_UID.exec(url.pathname)[1];
+  } else {
+    return out({ error: 'not_found' }, 404);
+  }
+  let own;
+  try { own = await bindingOwns(env, auth, uid); }
+  catch (e) { return out({ error: 'upstream', error_description: 'Haruki 工具箱連線失敗' }, 502); }
+  if (!own.ok) {
+    if (own.status === 403) return out({ error: 'uid_not_bound', error_description: '這個 Haruki 帳號沒有綁定（並驗證）台服 ' + uid }, 403);
+    if (own.status === 401) return out({ error: 'invalid_token', error_description: 'Haruki 授權無效或已過期' }, 401);
+    return out({ error: 'upstream', error_description: 'Haruki 工具箱暫時連不上' }, 502);
+  }
+  if (req.method === 'POST') {
+    const access = typeof body.access_token === 'string' && /^[\w\-.~+/=]{8,4096}$/.test(body.access_token) ? body.access_token : '';
+    const expIn = Math.floor(Number(body.expires_in));
+    const nowS = Math.floor(Date.now() / 1000);
+    const b = own.binding || {};
+    const row = await grantUpsert(env.DB, {
+      uid,
+      harukiUser: b.harukiUserId != null ? b.harukiUserId : (b.ownerId != null ? b.ownerId : (b.accountId != null ? b.accountId : null)),
+      refreshEnc: await grantEnc(env, refresh),
+      accessEnc: access && expIn > 0 ? await grantEnc(env, access) : null,
+      accessExp: access && expIn > 0 ? nowS + expIn : null,
+      scope: typeof body.scope === 'string' ? body.scope.slice(0, 200) : null,
+    });
+    return out({ ok: true, uid, since: row.created_at }, 200);
+  }
+  const row = await grantGet(env.DB, uid);
+  if (req.method === 'DELETE') {
+    if (row) await grantRevoke(env.DB, uid);
+    return out({ ok: true, uid }, 200);
+  }
+  const granted = !!(row && !row.revoked_at);
+  return out({ granted, uid, since: granted ? row.created_at : null, last_used_at: granted ? row.last_used_at : null }, 200);
+}
+
+/* 用 refresh token 換新 access（client_secret_basic）。回 { ok, p } 或 { ok:false, invalid }（invalid = 對方說 invalid_grant，授權已失效） */
+async function refreshGrant(env, refresh) {
+  const form = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh });
+  const headers = { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'user-agent': UA,
+    authorization: 'Basic ' + btoa(encodeURIComponent(env.HARUKI_OAUTH_CLIENT_ID) + ':' + encodeURIComponent(env.HARUKI_OAUTH_CLIENT_SECRET)) };
+  let r;
+  try { r = await fetch(oauthBase(env) + '/api/oauth2/token', { method: 'POST', headers, body: form.toString(), signal: AbortSignal.timeout(20000) }); }
+  catch (e) { return { ok: false, invalid: false }; }
+  let p = null; try { p = await r.json(); } catch (e) { p = null; }
+  if (r.ok && p && typeof p.access_token === 'string' && p.access_token) return { ok: true, p };
+  return { ok: false, invalid: !!(p && p.error === 'invalid_grant') };
+}
+
+/* 機器人端：GET /api/bot/haruki/grant/{uid}、GET /api/bot/haruki/{suite|mysekai}/{uid}（X-Caibot-* 簽章，pathq 含 query） */
+const BOT_OK = /^\/api\/bot\/haruki\/(grant|suite|mysekai)\/(\d{6,20})$/;
+export async function handleHarukiBot(req, env, url) {
+  const out = (obj, status, extra) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...(extra || {}) } });
+  if (req.method !== 'GET') return out({ error: 'method_not_allowed' }, 405);
+  const m = BOT_OK.exec(url.pathname);
+  if (!m) return out({ error: 'not_found' }, 404);
+  const secret = cleanSecret(env && env.CAIBOT_BRIDGE_SECRET);
+  if (!secret || !grantReady(env) || !env.DB) return out({ error: 'not_configured' }, 503);
+  const buf = await req.arrayBuffer();
+  const v = await bridgeVerify(secret, req, url.pathname + url.search, buf);
+  if (!v.ok) return out({ error: 'bad_signature', why: v.why }, 401);
+  if (v.ip !== 'bot' || v.ident !== '') return out({ error: 'bad_signature', why: 'bad_direction' }, 401);
+  if (!(await useBridgeNonce(env.DB, v.nonce))) return out({ error: 'replay' }, 401);
+  const type = m[1], uid = m[2];
+  const row = await grantGet(env.DB, uid);
+  if (!row) return out({ error: 'no_grant' }, 404);
+  if (row.revoked_at) return out({ error: 'revoked' }, 404);
+  if (type === 'grant') return out({ granted: true, uid, since: row.created_at, last_used_at: row.last_used_at, types: ['suite', 'mysekai'] }, 200);
+
+  const cache = (typeof caches !== 'undefined' && caches.default) || null;
+  const key = new Request('https://haruki.local/bot/' + type + '/' + uid, { method: 'GET' });
+  if (cache) { const hit = await cache.match(key); if (hit) return hit; }
+
+  const nowS = Math.floor(Date.now() / 1000);
+  let access = '', refreshed = false;
+  if (row.access_enc && row.access_exp && row.access_exp - 30 > nowS) { try { access = await grantDec(env, row.access_enc); } catch (e) { access = ''; } }
+  const renew = async () => {
+    let refresh;
+    try { refresh = await grantDec(env, row.refresh_enc); } catch (e) { return out({ error: 'decrypt_failed' }, 500); }
+    const t = await refreshGrant(env, refresh);
+    if (!t.ok) {
+      if (t.invalid) { await grantRevoke(env.DB, uid); return out({ error: 'revoked' }, 404); }
+      await grantFail(env.DB, uid);
+      return out({ error: 'refresh_failed', error_description: 'Haruki 換 token 失敗' }, 502);
+    }
+    access = t.p.access_token; refreshed = true;
+    const expIn = Math.floor(Number(t.p.expires_in));
+    await grantTokens(env.DB, uid, { refreshEnc: typeof t.p.refresh_token === 'string' && t.p.refresh_token ? await grantEnc(env, t.p.refresh_token) : null,
+      accessEnc: await grantEnc(env, access), accessExp: nowS + (expIn > 0 ? expIn : 600) });
+    return null;
+  };
+  if (!access) { const bad = await renew(); if (bad) return bad; }
+  const read = () => fetch(oauthBase(env) + '/api/oauth2/game-data/tw/' + type + '/' + uid, { headers: { authorization: 'Bearer ' + access, accept: 'application/json', 'user-agent': UA }, signal: AbortSignal.timeout(30000) });
+  let up;
+  try {
+    up = await read();
+    // 存起來的 access 被對方提前作廢：換一次再讀
+    if (up.status === 401 && !refreshed) { const bad = await renew(); if (bad) return bad; up = await read(); }
+  } catch (e) {
+    await grantFail(env.DB, uid);
+    return out({ error: 'upstream', error_description: 'Haruki 工具箱連線失敗' }, 502);
+  }
+  if (up.ok) await grantUsed(env.DB, uid);
+  const h = new Headers({ 'content-type': up.headers.get('content-type') || 'application/json; charset=utf-8', 'x-content-type-options': 'nosniff',
+    'cache-control': up.ok ? 'private, max-age=60' : 'no-store' });
+  const res = new Response(up.body, { status: up.status, headers: h });
+  if (cache && up.ok) { try { await cache.put(key, res.clone()); } catch (e) {} }
+  return res;
+}
+
 export async function handleHaruki(req, env, url) {
   if (url.pathname.startsWith('/haruki/oauth/')) return handleHarukiOAuth(req, env, url);
+  if (url.pathname === '/haruki/grant' || url.pathname.startsWith('/haruki/grant/')) return handleHarukiGrant(req, env, url);
+  if (url.pathname.startsWith('/api/bot/haruki/')) return handleHarukiBot(req, env, url);
   if (url.pathname.startsWith('/haruki/public/')) return handleHarukiPublic(req, env, url);
   if (/^\/haruki\/(metas|master)\//.test(url.pathname)) return handleHarukiRegistry(req, env, url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });

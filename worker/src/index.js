@@ -25,7 +25,7 @@ import { runWatches } from './watch.js';
 import { flushMail } from './mail.js';
 import { flushPush, pushEnabled } from './push.js';
 import { handleCal } from './cal.js';
-import { handleHaruki, harukiLive } from './haruki.js';
+import { handleHaruki, handleHarukiBot, harukiLive } from './haruki.js';
 import { dueTasks, finishTask, addEvent, claimTask, reclaimStaleTasks } from './db.js';
 import { runApplyReview } from './review.js';
 
@@ -286,6 +286,8 @@ export default {
     if (p.startsWith('/haruki/')) return handleHaruki(req, env, url);
     /* 行事曆訂閱源：公開、只讀、邊緣快取一小時 */
     if (p.startsWith('/cal/')) return handleCal(req, env, url);
+    /* 菜根機器人讀玩家授權過的 Haruki 存檔：橋接簽章，不看 cookie */
+    if (p.startsWith('/api/bot/haruki/')) return handleHarukiBot(req, env, url);
     if (p.startsWith('/api/') || p === '/api') {
       const user = await currentUser(req, env);
       const r = await handleApi(req, env, url, user);

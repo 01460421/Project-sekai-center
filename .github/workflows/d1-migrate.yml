@@ -1,0 +1,53 @@
+name: d1-migrate
+# 手動對遠端 D1（pjsk-users）套用一支 sql/ 遷移檔：本機 wrangler 沒登入時用這個。
+# 用法：Actions 頁 → d1-migrate → Run workflow → file 填遷移檔路徑（repo 根目錄起算，預設 018）。
+# 需要跟 worker-deploy 同一組 repo secrets：CLOUDFLARE_API_TOKEN（要有 D1 編輯權限）、CLOUDFLARE_ACCOUNT_ID。
+# 遷移檔自己要可重跑（CREATE … IF NOT EXISTS）；ALTER TABLE ADD COLUMN 那種第二次會報 duplicate column，由 wrangler 回非零結束。
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: '要套用的 SQL 檔（repo 根目錄起算）'
+        type: string
+        default: 'worker/sql/018_haruki_grants.sql'
+        required: true
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      MIGRATION_FILE: ${{ inputs.file }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: 確認已設定 Cloudflare 金鑰
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::還沒設定 CLOUDFLARE_API_TOKEN／CLOUDFLARE_ACCOUNT_ID（見 worker-deploy.yml 開頭說明）。"
+            exit 1
+          fi
+      - name: 確認遷移檔存在
+        run: |
+          case "$MIGRATION_FILE" in
+            worker/sql/*.sql) ;;
+            *) echo "::error::file 必須是 worker/sql/ 底下的 .sql 檔，收到：$MIGRATION_FILE"; exit 1 ;;
+          esac
+          if [ ! -f "../$MIGRATION_FILE" ]; then
+            echo "::error::找不到 $MIGRATION_FILE"; exit 1
+          fi
+          echo "要套用：$MIGRATION_FILE"; echo '---'; cat "../$MIGRATION_FILE"
+      - name: 套用到遠端 D1（pjsk-users，以 wrangler.toml 為準）
+        run: |
+          if ! npx --yes wrangler d1 execute pjsk-users --remote -y --file="../$MIGRATION_FILE"; then
+            echo "::error::D1 遷移失敗：若訊息是 duplicate column／already exists 表示已經套過（無害）；否則請確認 CLOUDFLARE_API_TOKEN 有 D1 編輯權限。"
+            exit 1
+          fi
+          echo "已套用 $MIGRATION_FILE"
