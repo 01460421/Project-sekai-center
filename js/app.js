@@ -5466,7 +5466,7 @@ class Component extends DCLogic {
      角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
   loadStories() {
     return this.dbRun('stories', async () => {
-      const m = await (this.SRV === 'jp' ? import('./data/stories-index-jp.js?v=b5907b89c1') : import('./data/stories-index.js?v=0f2f5c00f1'));
+      const m = await (this.SRV === 'jp' ? import('./data/stories-index-jp.js?v=e6ae0ef8ab') : import('./data/stories-index.js?v=0f2f5c00f1'));
       return { events: m.ST_EVENTS || [], units: m.ST_UNITS || [], cards: m.ST_CARDS || {}, areas: m.ST_AREAS || [], talks: m.ST_TALKS || [], special: m.ST_SPECIAL || [], self: m.ST_SELF || {} };
     });
   }
@@ -5550,7 +5550,7 @@ class Component extends DCLogic {
   }
   /* 豆森活動（生日派對、百景競賽）：日曆、今日摘要、行事曆匯出用 */
   loadMsEvents() {
-    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-events-jp.js?v=520a8021f4') : import('./data/mysekai-events.js?v=9dc9226436')); return m.MS_EVENTS || []; });
+    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-events-jp.js?v=a6ed391331') : import('./data/mysekai-events.js?v=9dc9226436')); return m.MS_EVENTS || []; });
   }
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
@@ -5951,7 +5951,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = (this.SRV === 'jp' ? import('./data/data-built-jp.js?v=eed9706f39') : import('./data/data-built.js?v=f9220b56d3')).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = (this.SRV === 'jp' ? import('./data/data-built-jp.js?v=add0d5f5a1') : import('./data/data-built.js?v=f9220b56d3')).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
@@ -8100,11 +8100,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=501bb8fd87')
+    fetch('./data/ep-songs.js?v=ee3eab25f5')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=501bb8fd87')
+        import('./data/ep-songs.js?v=ee3eab25f5')
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });
