@@ -693,16 +693,17 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .bp-scr:last-child{border-bottom:0}
 .bp-scr b{font-family:'M PLUS Rounded 1c';color:var(--ink)}
 .bp-scr em{display:block;font-style:normal;font-size:11px;color:var(--accent-deep);font-weight:700}
-.bp-guide{display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px;align-items:start}
-.bp-guide a.bp-gimg{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--border);max-height:300px;background:var(--card-2)}
-.bp-guide a.bp-gimg img{width:100%;display:block}
+.bp-guide{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.bp-guide a.bp-gimg{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--card-2);color:var(--text);text-decoration:none}
+.bp-guide a.bp-gimg img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover;object-position:top}
+.bp-guide a.bp-gimg span{padding:7px 10px;font-size:12px;font-weight:700}
 .bp-gbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .bp-qa details{border-bottom:1px solid var(--border);padding:9px 2px}
 .bp-qa summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--ink)}
 .bp-qa p{margin:7px 0 2px;font-size:12.5px;line-height:1.75;color:var(--text)}
 .bp-src div{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:var(--card-2);font-size:12px}
 .bp-src b{color:var(--ink)}
-@media (max-width:520px){.bp-tr{grid-template-columns:58px 58px minmax(0,1fr)}.bp-guide{grid-template-columns:1fr}.bp-sd{width:60px;height:60px}.bp-pl{grid-template-columns:1fr}}
+@media (max-width:520px){.bp-tr{grid-template-columns:58px 58px minmax(0,1fr)}.bp-sd{width:60px;height:60px}.bp-pl{grid-template-columns:1fr}}
 /* 日服帳號預覽（日服現況的綁定卡）與編組詳情 */
 .jn-prof{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-2px 0 8px}
 .jn-plv{font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--accent-deep);padding:2px 10px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,transparent)}
@@ -6422,14 +6423,13 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
 
     <div class="mk-card" style="margin-top:12px">
-      <div class="mk-h"><b>一圖流攻略</b><i>PNG・存圖分享</i></div>
+      <div class="mk-h"><b>一圖流詳細攻略</b><i>上下兩張 PNG・存圖分享</i></div>
       <div class="bp-guide">
-        <a class="bp-gimg" href="img/bdayparty/guide.png?v=637e49f4de" target="_blank" rel="noopener"><img src="img/bdayparty/guide-thumb.webp?v=637e49f4de" alt="豆森生日派對一圖流攻略" loading="lazy"></a>
-        <div>
-          <div style="font-size:12.5px;line-height:1.75">流程（附遊戲畫面）、時程、核心數字、怎麼拔才不虧、情形對照表、生日家具要喝幾罐、累計獎勵與常見問題整理成一張圖。每一場派對的規則與數字都相同，只有往年生日卡張數不同（台服最高 +110%、日服 2026 年起 +125%）。</div>
-          <div class="bp-gbtns"><a class="mk-chip" href="img/bdayparty/guide.png?v=637e49f4de" download="豆森生日派對一圖流攻略.png">下載 PNG</a><a class="mk-chip" href="img/bdayparty/guide.png?v=637e49f4de" target="_blank" rel="noopener">看大圖</a><button type="button" class="mk-chip" onClick="{{ onBpCopy }}">複製文字攻略</button></div>
-        </div>
+        <a class="bp-gimg" href="img/bdayparty/guide-1.png?v=e20b188250" target="_blank" rel="noopener"><img src="img/bdayparty/guide-1-thumb.webp?v=e20b188250" alt="豆森生日派對詳細攻略上篇" loading="lazy"><span>上篇：流程・時程・機制・加成卡・採集策略</span></a>
+        <a class="bp-gimg" href="img/bdayparty/guide-2.png?v=6aef9b3ff4" target="_blank" rel="noopener"><img src="img/bdayparty/guide-2-thumb.webp?v=6aef9b3ff4" alt="豆森生日派對詳細攻略下篇" loading="lazy"><span>下篇：對照表・目標規劃・家具・獎勵・經驗值・Q&amp;A</span></a>
       </div>
+      <div style="font-size:12.5px;line-height:1.75;margin-top:10px">附遊戲畫面與實際素材圖。每一場派對的規則與數字都相同，只有往年生日卡張數不同（台服最高 +110%、日服 2026 年起 +125%）。</div>
+      <div class="bp-gbtns"><a class="mk-chip" href="img/bdayparty/guide-1.png?v=e20b188250" download="豆森生日派對詳細攻略-上篇.png">下載上篇</a><a class="mk-chip" href="img/bdayparty/guide-2.png?v=6aef9b3ff4" download="豆森生日派對詳細攻略-下篇.png">下載下篇</a><button type="button" class="mk-chip" onClick="{{ onBpCopy }}">複製文字攻略</button></div>
     </div>
 
     <div class="mk-card" style="margin-top:12px">
@@ -10249,7 +10249,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=dbd01f717c"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=d33da1f0a3"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
