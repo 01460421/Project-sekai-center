@@ -676,9 +676,22 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .bp-fxi img{width:64px;height:64px;object-fit:contain}
 .bp-fxi b{color:var(--accent-deep)}
 .bp-src{display:grid;gap:6px}
+.bp-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.bp-rules div{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:14px;background:var(--bg-soft);border:1px solid var(--border);font-size:12px;line-height:1.6}
+.bp-rules b{color:var(--ink);font-size:13px}
+.bp-plan{display:grid;gap:0;border-left:2px solid color-mix(in oklab,var(--accent) 45%,var(--border));margin-left:6px}
+.bp-pl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;padding:7px 0 7px 12px;position:relative;font-size:12px}
+.bp-pl::before{content:'';position:absolute;left:-6px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.bp-pt{font-family:'M PLUS Rounded 1c';color:var(--text-2);font-weight:700}
+.bp-pl div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bp-pl b{color:var(--ink)}
+.bp-tr4{grid-template-columns:64px minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr)}
+.bp-qa details{border-bottom:1px solid var(--border);padding:9px 2px}
+.bp-qa summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--ink)}
+.bp-qa p{margin:7px 0 2px;font-size:12.5px;line-height:1.75;color:var(--text)}
 .bp-src div{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:var(--card-2);font-size:12px}
 .bp-src b{color:var(--ink)}
-@media (max-width:520px){.bp-tr{grid-template-columns:58px 58px minmax(0,1fr)}.bp-sd{width:60px;height:60px}}
+@media (max-width:520px){.bp-tr{grid-template-columns:58px 58px minmax(0,1fr)}.bp-tr4{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr) 54px}.bp-sd{width:60px;height:60px}.bp-pl{grid-template-columns:1fr}}
 /* 日服帳號預覽（日服現況的綁定卡）與編組詳情 */
 .jn-prof{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-2px 0 8px}
 .jn-plv{font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--accent-deep);padding:2px 10px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,transparent)}
@@ -6396,6 +6409,20 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
     </div>
 
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>最佳採集日程與策略</b><i><button type="button" class="mk-chip" onClick="{{ onBpCopy }}">複製文字攻略</button></i></div>
+      <div class="bp-rules"><sc-for list="{{ bpRules }}" as="r" hint-placeholder-count="5"><div><b>{{ r.k }}</b><span>{{ r.d }}</span></div></sc-for></div>
+      <div class="bp-lbl" style="margin-top:12px">這一場的日程（本機時間）</div>
+      <div class="bp-plan"><sc-for list="{{ bpPlan }}" as="x" hint-placeholder-count="8"><div class="bp-pl"><span class="bp-pt">{{ x.t }}</span><div><b>{{ x.k }}</b><span>{{ x.d }}</span></div></div></sc-for></div>
+      <div class="bp-lbl" style="margin-top:12px">{{ bpLbTitle }}</div>
+      <div class="bp-tbl">
+        <div class="bp-tr bp-th bp-tr4"><span>加成</span><span>持有</span><span>開滿 400 朵</span><span>做完全部家具</span></div>
+        <sc-for list="{{ bpLbRows }}" as="r" hint-placeholder-count="4"><div class="bp-tr bp-tr4"><span class="bp-req">{{ r.bon }}</span><span>{{ r.n }}</span><span>{{ r.v400 }}</span><span>{{ r.vFx }}</span></div></sc-for>
+      </div>
+      <div class="u-fc2" style="margin-top:6px">不含自然回復與卡池點數兌換；累計獎勵會還 55 小罐。</div>
+    </div>
+
     <div class="mk-card" style="margin-top:12px">
       <div class="mk-h"><b>計算機</b><i>{{ bpPtTitle }}</i></div>
       <sc-if value="{{ bpHasCards }}">
@@ -6450,6 +6477,11 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div><b>卡池兌換所</b><span>每次 150 個、最多 200 次（用招募點數，副獎勵少，效率最低）</span></div>
       </div>
       <div class="u-fc2" style="margin-top:8px;line-height:1.7">期間、加成卡、每朵 pt、累計獎勵與家具素材讀自遊戲 master；露水掉落量是伺服器決定的，上表取自 <a href="https://game8.jp/pjsekai/737745" target="_blank" rel="noopener">Game8 的日服實測</a>，台服可能略有不同。</div>
+    </div>
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>常見問題</b><i>Q&amp;A</i></div>
+      <div class="bp-qa"><sc-for list="{{ bpQa }}" as="x" hint-placeholder-count="8"><details><summary>{{ x.q }}</summary><p>{{ x.a }}</p></details></sc-for></div>
     </div>
     </sc-if>
   </div>
@@ -10186,7 +10218,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a9db644ca5"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=14a79e71bd"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
