@@ -622,6 +622,76 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
 .lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
 .lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+/* 豆森生日派對（慶典之花） */
+.bp-chips{display:flex;gap:7px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.bp-curdot{width:7px;height:7px;border-radius:50%;background:#3ea76a;display:inline-block}
+.bp-hero{display:flex;gap:14px;align-items:center;padding:16px 18px;border-radius:22px;background:linear-gradient(135deg,color-mix(in oklab,var(--bp) 26%,var(--card)),var(--card));border:1px solid color-mix(in oklab,var(--bp) 40%,var(--border));box-shadow:var(--sh-xs)}
+.bp-sd{width:76px;height:76px;flex:none;object-fit:contain}
+.bp-hero-t{min-width:0;flex:1}
+.bp-hero h3{margin:6px 0 2px;font-size:19px;color:var(--ink)}
+.bp-phase{display:inline-block;font-size:11px;font-weight:800;color:#fff;border-radius:999px;padding:2px 10px}
+.bp-sub{font-size:12.5px;color:var(--text-2)}
+.bp-items{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bp-item{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12.5px;font-weight:700;color:var(--ink)}
+.bp-item img{width:28px;height:28px;object-fit:contain}
+.bp-arrow{color:var(--text-3);font-weight:800}
+.bp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.bp-time{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text)}
+.bp-time b{font-size:11px;color:var(--text-3)}
+.bp-steps{margin:0;padding-left:20px;font-size:12.5px;line-height:1.75;color:var(--text)}
+.bp-steps li{margin-bottom:4px}
+.bp-lbl{font-size:11.5px;color:var(--text-3);font-weight:700;margin-bottom:6px}
+.bp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:12px}
+.bp-card{display:flex;gap:8px;align-items:center;padding:6px;border:1.5px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;color:var(--text);font:inherit}
+.bp-cimg{position:relative;width:46px;height:46px;flex:none;border-radius:10px;overflow:hidden;background:var(--card-2)}
+.bp-cimg img{width:100%;height:100%;display:block}
+.bp-cimg i{position:absolute;right:2px;bottom:2px;font-style:normal;font-size:11px;font-weight:800;color:#fff;background:var(--cta);border-radius:6px;padding:0 4px}
+.bp-ct{display:flex;flex-direction:column;min-width:0;font-size:11.5px}
+.bp-ct b{font-size:13px;color:var(--cta)}
+.bp-ct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bp-ct em{font-style:normal;font-size:10.5px;color:#e0508a;font-weight:800}
+.bp-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.bp-inputs label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-3);font-weight:700}
+.bp-inputs input{padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font:inherit;font-size:14px;min-width:0}
+.bp-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.bp-sumc{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft)}
+.bp-sumc img{width:40px;height:40px;object-fit:contain;flex:none}
+.bp-sumc div{display:flex;flex-direction:column;min-width:0}
+.bp-sumc span{font-size:11px;color:var(--text-3);font-weight:700}
+.bp-sumc b{font-family:'M PLUS Rounded 1c';font-size:18px;color:var(--ink)}
+.bp-sumc em{font-style:normal;font-size:11px;color:var(--text-2)}
+.bp-others{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.bp-o,.bp-it{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 3px;border-radius:999px;background:var(--card-2);font-size:11.5px;color:var(--text)}
+.bp-o img,.bp-it img{width:22px;height:22px;object-fit:contain}
+.bp-o b,.bp-it b{font-family:'M PLUS Rounded 1c'}
+.bp-tbl{margin-top:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.bp-tr{display:grid;grid-template-columns:72px 78px minmax(0,1fr);gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);align-items:center;font-size:12px}
+.bp-th{font-size:11px;font-weight:800;color:var(--text-3);background:var(--card-2)}
+.bp-req{font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'}
+.bp-ok{font-style:normal;color:#3ea76a;margin-left:4px}
+.bp-dew{font-family:'M PLUS Rounded 1c';color:var(--text-2)}
+.bp-its{display:flex;flex-wrap:wrap;gap:4px}
+.bp-fx{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.bp-fxi{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:1px solid var(--border);border-radius:14px;font-size:11.5px;text-align:center}
+.bp-fxi img{width:64px;height:64px;object-fit:contain}
+.bp-fxi b{color:var(--accent-deep)}
+.bp-src{display:grid;gap:6px}
+.bp-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.bp-rules div{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:14px;background:var(--bg-soft);border:1px solid var(--border);font-size:12px;line-height:1.6}
+.bp-rules b{color:var(--ink);font-size:13px}
+.bp-plan{display:grid;gap:0;border-left:2px solid color-mix(in oklab,var(--accent) 45%,var(--border));margin-left:6px}
+.bp-pl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;padding:7px 0 7px 12px;position:relative;font-size:12px}
+.bp-pl::before{content:'';position:absolute;left:-6px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.bp-pt{font-family:'M PLUS Rounded 1c';color:var(--text-2);font-weight:700}
+.bp-pl div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bp-pl b{color:var(--ink)}
+.bp-tr4{grid-template-columns:64px minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr)}
+.bp-qa details{border-bottom:1px solid var(--border);padding:9px 2px}
+.bp-qa summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--ink)}
+.bp-qa p{margin:7px 0 2px;font-size:12.5px;line-height:1.75;color:var(--text)}
+.bp-src div{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:var(--card-2);font-size:12px}
+.bp-src b{color:var(--ink)}
+@media (max-width:520px){.bp-tr{grid-template-columns:58px 58px minmax(0,1fr)}.bp-tr4{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr) 54px}.bp-sd{width:60px;height:60px}.bp-pl{grid-template-columns:1fr}}
 /* 日服帳號預覽（日服現況的綁定卡）與編組詳情 */
 .jn-prof{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-2px 0 8px}
 .jn-plv{font-family:'M PLUS Rounded 1c';font-size:13px;font-weight:800;color:var(--accent-deep);padding:2px 10px;border-radius:999px;background:color-mix(in oklab,var(--accent) 14%,transparent)}
@@ -6298,6 +6368,125 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
   </sc-if>
 
+  <!-- ========== 豆森生日派對（慶典之花） ========== -->
+  <sc-if value="{{ isBdayParty }}">
+  <div class="u-a3">
+    <sc-if value="{{ bpLoading }}"><div class="empty loading">生日派對資料載入中…</div></sc-if>
+    <sc-if value="{{ bpErrOn }}"><div class="empty">{{ bpErr }}</div></sc-if>
+    <sc-if value="{{ bpReady }}">
+    <div class="chips-scroll bp-chips">
+      <sc-for list="{{ bpChips }}" as="c" hint-placeholder-count="8"><button type="button" onClick="{{ onBpParty }}" data-v="{{ c.v }}" class="mk-chip" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}<sc-if value="{{ c.cur }}"><span class="bp-curdot"></span></sc-if></button></sc-for>
+    </div>
+
+    <div class="bp-hero" style="--bp:{{ bpColor }}">
+      <img class="bp-sd" src="{{ bpSd }}" referrerpolicy="no-referrer" alt="" loading="lazy">
+      <div class="bp-hero-t">
+        <div class="bp-phase" style="background:{{ bpPhaseC }}">{{ bpPhase }}</div>
+        <h3><span class="notranslate">{{ bpWho }}</span>的豆森生日派對</h3>
+        <div class="bp-sub">{{ bpPhaseSub }}</div>
+        <div class="bp-items">
+          <span class="bp-item"><sc-if value="{{ bpDewImg }}"><img src="{{ bpDewImg }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><span class="notranslate">{{ bpDew }}</span></span>
+          <span class="bp-arrow">→</span>
+          <span class="bp-item"><sc-if value="{{ bpFlImg }}"><img src="{{ bpFlImg }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><span class="notranslate">{{ bpFl }}</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bp-grid">
+      <div class="mk-card">
+        <div class="mk-h"><b>時程</b><i>本機時間</i></div>
+        <sc-for list="{{ bpTimes }}" as="t" hint-placeholder-count="3"><div class="bp-time" style="font-weight:{{ t.fw }}"><b>{{ t.k }}</b><span>{{ t.v }}</span></div></sc-for>
+      </div>
+      <div class="mk-card">
+        <div class="mk-h"><b>流程</b><i>任務怎麼跑</i></div>
+        <ol class="bp-steps">
+          <li><b>收集露水</b>：生日前 3 天 00:00 起，豆森各區域會長出限定的「雙葉」，採集雙葉、一般採集（樹、礦石）、打任何 LIVE 都會掉露水；卡池兌換所也換得到。</li>
+          <li><b>到「慶典的庭園」澆灌</b>{{ bpStep2 }}</li>
+          <li><b>領累計獎勵</b>{{ bpStep3 }}</li>
+          <li><b>做生日家具</b>：用慶典之花做蛋糕、花束、氣球等生日家具；生日當天起擺上蛋糕就能開生日派對。</li>
+          <li><b>小技巧</b>：當年的新生日卡（+50%）在生日當天的卡池才抽得到，抽到後再一次倒完露水最划算；收集期露水要先存著，澆灌在結束前都可以。</li>
+        </ol>
+      </div>
+    </div>
+
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>最佳採集日程與策略</b><i><button type="button" class="mk-chip" onClick="{{ onBpCopy }}">複製文字攻略</button></i></div>
+      <div class="bp-rules"><sc-for list="{{ bpRules }}" as="r" hint-placeholder-count="5"><div><b>{{ r.k }}</b><span>{{ r.d }}</span></div></sc-for></div>
+      <div class="bp-lbl" style="margin-top:12px">這一場的日程（本機時間）</div>
+      <div class="bp-plan"><sc-for list="{{ bpPlan }}" as="x" hint-placeholder-count="8"><div class="bp-pl"><span class="bp-pt">{{ x.t }}</span><div><b>{{ x.k }}</b><span>{{ x.d }}</span></div></div></sc-for></div>
+      <div class="bp-lbl" style="margin-top:12px">{{ bpLbTitle }}</div>
+      <div class="bp-tbl">
+        <div class="bp-tr bp-th bp-tr4"><span>加成</span><span>持有</span><span>開滿 400 朵</span><span>做完全部家具</span></div>
+        <sc-for list="{{ bpLbRows }}" as="r" hint-placeholder-count="4"><div class="bp-tr bp-tr4"><span class="bp-req">{{ r.bon }}</span><span>{{ r.n }}</span><span>{{ r.v400 }}</span><span>{{ r.vFx }}</span></div></sc-for>
+      </div>
+      <div class="u-fc2" style="margin-top:6px">不含自然回復與卡池點數兌換；累計獎勵會還 55 小罐。</div>
+    </div>
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>計算機</b><i>{{ bpPtTitle }}</i></div>
+      <sc-if value="{{ bpHasCards }}">
+        <div class="bp-lbl">持有的加成卡（點一下切換；沒點過的照收集率的勾選）</div>
+        <div class="bp-cards">
+          <sc-for list="{{ bpCards }}" as="c" hint-placeholder-count="5">
+            <button type="button" class="bp-card" onClick="{{ onBpCard }}" data-id="{{ c.id }}" data-on="{{ c.onS }}" style="border-color:{{ c.bd }};background:{{ c.bg }}">
+              <span class="bp-cimg"><sc-if value="{{ c.hasImg }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><sc-if value="{{ c.on }}"><i>✓</i></sc-if></span>
+              <span class="bp-ct"><b>{{ c.rate }}</b><span class="notranslate">{{ c.name }}</span><sc-if value="{{ c.isNew }}"><em>當年生日卡</em></sc-if></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div class="bp-inputs">
+        <label><span>現有露水</span><input type="number" inputmode="numeric" min="0" value="{{ bpDewIn }}" onInput="{{ onField }}" data-k="bpDew" placeholder="例如 3500"></label>
+        <label><span>目標慶典之花</span><input type="number" inputmode="numeric" min="0" value="{{ bpGoalIn }}" onInput="{{ onField }}" data-k="bpGoal" placeholder="{{ bpGoalPh }}"></label>
+      </div>
+      <div class="lu-stats"><sc-for list="{{ bpCalc }}" as="x" hint-placeholder-count="4"><div class="lu-stat"><span>{{ x.l }}</span><b>{{ x.v }}</b><sc-if value="{{ x.sub }}"><em class="jn-hint">{{ x.sub }}</em></sc-if></div></sc-for></div>
+    </div>
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>{{ bpSumTitle }}</b><i>罐子・經驗值・其他</i></div>
+      <div class="bp-sum">
+        <div class="bp-sumc"><sc-if value="{{ bpCanImg }}"><img src="{{ bpCanImg }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><div><span>罐子（LIVE BONUS 飲料）</span><b>{{ bpCanV }}</b><em>{{ bpCanSub }}</em></div></div>
+        <div class="bp-sumc"><sc-if value="{{ bpExpImg }}"><img src="{{ bpExpImg }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><div><span>經驗值（練習譜）</span><b>{{ bpExpN }} EXP</b><em class="notranslate">{{ bpExpTk }}</em></div></div>
+        <div class="bp-sumc"><sc-if value="{{ bpSklImg }}"><img src="{{ bpSklImg }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><div><span>技能經驗（技能升級譜）</span><b>{{ bpSklN }}</b><em class="notranslate">{{ bpSklTk }}</em></div></div>
+      </div>
+      <div class="bp-others"><sc-for list="{{ bpOthers }}" as="o" hint-placeholder-count="6"><span class="bp-o"><sc-if value="{{ o.hasImg }}"><img src="{{ o.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><span class="notranslate">{{ o.n }}</span><b>{{ o.q }}</b></span></sc-for><span class="bp-o"><span>生日稱號</span><b>{{ bpTitlesV }}</b></span></div>
+      <div class="u-fc2" style="margin-top:8px">{{ bpMaxNote }}</div>
+      <div class="bp-tbl">
+        <div class="bp-tr bp-th"><span>朵數</span><span>需要露水</span><span>獎勵</span></div>
+        <sc-for list="{{ bpRows }}" as="r" hint-placeholder-count="12">
+          <div class="bp-tr" style="background:{{ r.bg }}"><span class="bp-req">{{ r.req }}<sc-if value="{{ r.got }}"><i class="bp-ok">✓</i></sc-if></span><span class="bp-dew">{{ r.dew }}</span>
+            <span class="bp-its"><sc-for list="{{ r.items }}" as="it" hint-placeholder-count="3"><span class="bp-it"><sc-if value="{{ it.hasImg }}"><img src="{{ it.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"></sc-if><span class="notranslate">{{ it.n }}</span><b>{{ it.q }}</b></span></sc-for></span></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ bpHasFx }}">
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>生日家具</b><i>{{ bpFxTitle }}</i></div>
+      <div class="bp-fx"><sc-for list="{{ bpFx }}" as="x" hint-placeholder-count="5"><div class="bp-fxi"><img src="{{ x.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"><span class="notranslate">{{ x.name }}</span><b>{{ x.costT }}</b></div></sc-for></div>
+    </div>
+    </sc-if>
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>露水去哪裡拿</b><i>社群實測</i></div>
+      <div class="bp-src">
+        <div><b>雙葉（限定採集點）</b><span>{{ bpSrc1 }}</span></div>
+        <div><b>一般採集（樹、礦石）</b><span>每消耗 1 LIVE BONUS 約 8 個，看運氣</span></div>
+        <div><b>LIVE</b><span>不用 LIVE BONUS 打 1 個；用 LIVE BONUS 每 1 點約 5 個</span></div>
+        <div><b>卡池兌換所</b><span>每次 150 個、最多 200 次（用招募點數，副獎勵少，效率最低）</span></div>
+      </div>
+      <div class="u-fc2" style="margin-top:8px;line-height:1.7">期間、加成卡、每朵 pt、累計獎勵與家具素材讀自遊戲 master；露水掉落量是伺服器決定的，上表取自 <a href="https://game8.jp/pjsekai/737745" target="_blank" rel="noopener">Game8 的日服實測</a>，台服可能略有不同。</div>
+    </div>
+
+    <div class="mk-card" style="margin-top:12px">
+      <div class="mk-h"><b>常見問題</b><i>Q&amp;A</i></div>
+      <div class="bp-qa"><sc-for list="{{ bpQa }}" as="x" hint-placeholder-count="8"><details><summary>{{ x.q }}</summary><p>{{ x.a }}</p></details></sc-for></div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ isBonusCards }}">
   <div class="u-a3">
     <div class="u-fcml21" style="margin:0 0 12px">各活動類型的加分卡組成說明；每期活動的實際加分卡以官方公告為準，當期的可到「活動總覽」看該期詳情。</div>
@@ -10029,7 +10218,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3fc6bc28cd"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=14a79e71bd"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
