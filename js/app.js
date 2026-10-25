@@ -1185,7 +1185,7 @@ class Component extends DCLogic {
     import('./data/sekai-data.js?v=debc1682f8')
       .then(async m => {
         let G = m.GACHAS || [];
-        if (this.SRV === 'jp') { try { G = (await import('./data/gachas-jp.js?v=a46b79b085')).GACHAS || []; } catch (e) { G = []; } }   // 日服：日服 master 整理的卡池列表（日本時間）
+        if (this.SRV === 'jp') { try { G = (await import('./data/gachas-jp.js?v=f1c2b1dc18')).GACHAS || []; } catch (e) { G = []; } }   // 日服：日服 master 整理的卡池列表（日本時間）
         this.setState({ gachas: G.map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] });
       })
       .catch(() => {});
@@ -2760,7 +2760,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = this.SRV === 'jp' ? 'data/borders-db-jp.js?v=386026fe71' : 'data/borders-db.js?v=0cfbeeec6f';   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
+      s.src = this.SRV === 'jp' ? 'data/borders-db-jp.js?v=1c92ed6c56' : 'data/borders-db.js?v=0cfbeeec6f';   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -6873,7 +6873,7 @@ class Component extends DCLogic {
   /* ===== 卡池詳情（原生疊層；PU 卡由 tools/build-gacha-pickups.py 建置時從兩服 master 算好） ===== */
   loadGachaPk() {
     if (this._gpk) return this._gpk;
-    this._gpk = (this.SRV === 'jp' ? import('./data/gacha-pickups-jp.js?v=856655fab9') : import('./data/gacha-pickups.js?v=02e12a50aa')).then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
+    this._gpk = (this.SRV === 'jp' ? import('./data/gacha-pickups-jp.js?v=0261924599') : import('./data/gacha-pickups.js?v=02e12a50aa')).then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
       .catch(() => { this._gpk = null; this.setState({ gachaPkErr: true }); });
     return this._gpk;
   }
@@ -6902,7 +6902,7 @@ class Component extends DCLogic {
     if (this._gsP) return this._gsP;
     const byStart = L => L.sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
     if (this.SRV === 'jp') {
-      this._gsP = import('./data/gachasim-jp.js?v=901fb886bd').then(m => {
+      this._gsP = import('./data/gachasim-jp.js?v=b2d22b01da').then(m => {
         const D = m.GACHASIM || {}, ok = byStart(this.gsJpDecode(D));
         this._gsXCards = D.cards || [];
         this.setState({ gsList: ok, gsErr: ok.length ? '' : '日服卡池資料裡沒有可模擬的卡池。' });
@@ -7257,7 +7257,7 @@ class Component extends DCLogic {
   loadEvInfo() {
     if (this.state.evInfo) return Promise.resolve(this.state.evInfo);
     if (this._evInfoP) return this._evInfoP;
-    this._evInfoP = (this.SRV === 'jp' ? import('./data/event-info-jp.js?v=c3d4d67520') : import('./data/event-info.js?v=697a88f113')).then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
+    this._evInfoP = (this.SRV === 'jp' ? import('./data/event-info-jp.js?v=7971848bd8') : import('./data/event-info.js?v=697a88f113')).then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
       .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
     return this._evInfoP;
   }
@@ -7265,7 +7265,7 @@ class Component extends DCLogic {
   loadSched() {
     if (this.state.sched) return Promise.resolve(this.state.sched);
     if (this._schedP) return this._schedP;
-    this._schedP = import('./data/schedule-forecast.js?v=2dc812d562').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+    this._schedP = import('./data/schedule-forecast.js?v=8d29a2138f').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
       .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
     return this._schedP;
   }
@@ -7273,7 +7273,7 @@ class Component extends DCLogic {
      台服模式也看得到（活動家族的分頁籤）；切到日服時首頁就是這一頁。 */
   loadJpNow() {
     if (!this._jnP) {
-      this._jnP = import('./data/jp-now.js?v=9f6231bf98').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
+      this._jnP = import('./data/jp-now.js?v=0dafddade4').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
         .catch(() => { this._jnP = null; this.setState({ jnErr: '日服現況資料載入失敗，點此重試' }); return null; });
     }
     this.loadCards();
