@@ -7265,7 +7265,7 @@ class Component extends DCLogic {
   loadSched() {
     if (this.state.sched) return Promise.resolve(this.state.sched);
     if (this._schedP) return this._schedP;
-    this._schedP = import('./data/schedule-forecast.js?v=8d29a2138f').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+    this._schedP = import('./data/schedule-forecast.js?v=848197d55d').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
       .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
     return this._schedP;
   }
