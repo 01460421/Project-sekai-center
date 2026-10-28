@@ -1182,7 +1182,7 @@ class Component extends DCLogic {
     // 開站就在玩家查詢頁且網址帶了 ID（分享連結）：go() 的進頁鉤子不會跑，這裡補查一次
     if (this.state.page === 'lookup' && /^\d+$/.test(String(this.state.luId || ''))) this.luLookup();
 
-    import('./data/sekai-data.js?v=debc1682f8')
+    import('./data/sekai-data.js?v=1acca6f563')
       .then(async m => {
         let G = m.GACHAS || [];
         if (this.SRV === 'jp') { try { G = (await import('./data/gachas-jp.js?v=f1c2b1dc18')).GACHAS || []; } catch (e) { G = []; } }   // 日服：日服 master 整理的卡池列表（日本時間）
@@ -2900,7 +2900,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=3e7ab80648').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=2d02c3e5ff').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
