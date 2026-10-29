@@ -30,7 +30,7 @@ function makeEnv({ storage = fakeStorage(), deferMs = 2200, noSecrets = false } 
     }
     return new Response('{}', { status: 200 });
   };
-  const env = noSecrets ? { REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH } : { DISCORD_PUBLIC_KEY: PUBLIC_KEY, DISCORD_TOKEN: 'tok', APP_ID: '123', REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH };
+  const env = noSecrets ? { REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH, PRESENCE: '0' } : { DISCORD_PUBLIC_KEY: PUBLIC_KEY, DISCORD_TOKEN: 'tok', APP_ID: '123', REGISTER_SECRET: 'sekret', DEFER_MS: String(deferMs), FETCH, PRESENCE: '0' };
   let instance = null;
   env.BOT = { idFromName: n => n, get: () => ({ fetch: (url, init) => { if (!instance) instance = new BotDO({ storage }, env); return instance.fetch(new Request(url, init)); } }) };
   env.calls = calls; env.storage = storage; env.instance = () => instance;
@@ -225,4 +225,23 @@ test('Workers 版 /chat：先回 type 5，Claude 回完再 PATCH @original；記
   const patch = env.calls.find(c => c.method === 'PATCH' && c.url.endsWith('/messages/@original'));
   assert.ok(patch, '結果要 PATCH @original'); assert.match(patch.body.content, /> 哈囉\n嗨嗨/); assert.equal(patch.body.components.length, 1);
   assert.equal(storage.map.get(`u:${GUILD}:${USER.id}`).chat.log.length, 2, '記憶要落地');
+});
+
+test('在線保持器：設定好 token 後 DO 會連 Gateway 並 identify；/health 回報狀態；/bootstrap 後也會啟動', async () => {
+  const sockets = [];
+  const WS_CONNECT = async url => { const ws = { url, sent: [], h: {}, addEventListener(e, f) { this.h[e] = f; }, send(s) { this.sent.push(JSON.parse(s)); }, close() {} }; sockets.push(ws); return ws; };
+  const env = makeEnv(); env.PRESENCE = '1'; env.WS_CONNECT = WS_CONNECT; env.PRESENCE_TEXT = '測試中';
+  const h1 = await (await worker.fetch(new Request('https://bot.example/health'), env)).json();
+  await new Promise(r => setTimeout(r, 10));
+  assert.equal(h1.presence.enabled, true); assert.equal(sockets.length, 1, '有 token 就開 Gateway 連線');
+  sockets[0].h.message({ data: JSON.stringify({ op: 10, d: { heartbeat_interval: 41250 } }) });
+  const idf = sockets[0].sent.find(p => p.op === 2); assert.equal(idf.d.token, 'tok'); assert.equal(idf.d.intents, 0); assert.equal(idf.d.presence.activities[0].name, '測試中');
+  sockets[0].h.message({ data: JSON.stringify({ op: 0, t: 'READY', s: 1, d: { session_id: 's1', resume_gateway_url: 'wss://r.example' } }) });
+  const h2 = await (await worker.fetch(new Request('https://bot.example/health'), env)).json(); assert.equal(h2.presence.connected, true);
+  await worker.scheduled({}, env, { waitUntil: p => p }); await new Promise(r => setTimeout(r, 10)); assert.equal(sockets.length, 1, 'tick 不會重複連');
+  // 沒 token 的 DO：/bootstrap 之後才連
+  const sockets2 = []; const env2 = makeEnv({ noSecrets: true }); env2.PRESENCE = '1'; env2.WS_CONNECT = async url => { const ws = { url, sent: [], h: {}, addEventListener(e, f) { this.h[e] = f; }, send() {}, close() {} }; sockets2.push(ws); return ws; };
+  await worker.fetch(new Request('https://bot.example/health'), env2); await new Promise(r => setTimeout(r, 10)); assert.equal(sockets2.length, 0);
+  await worker.fetch(new Request('https://pjsk-bot.example.workers.dev/bootstrap', { method: 'POST', body: JSON.stringify({ token: 'good-token' }) }), env2); await new Promise(r => setTimeout(r, 10));
+  assert.equal(sockets2.length, 1, 'bootstrap 後啟動在線保持器');
 });

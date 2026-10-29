@@ -33,6 +33,7 @@ Discord 伺服器機器人，**100 個娛樂與互動功能**：占卜算命、�
 |---|---|---|
 | 原理 | Discord **HTTP 互動**：Discord 把互動 POST 到 Worker，不用常駐程序 | Discord **Gateway**：長連線，跟一般機器人一樣 |
 | 主機 | 無。跟本站的 `worker/` 一樣用 wrangler 部署，狀態放 Durable Object | 任何能跑容器的地方：Fly.io、Railway、Render、VPS、家裡的 NAS |
+| 成員列表狀態 | ✅ 顯示上線（內建「在線保持器」：Durable Object 維持一條 Gateway 連線，只為了綠點與狀態文字；`PRESENCE=0` 關閉、`PRESENCE_TEXT` 改文字） | ✅ 顯示上線 |
 | 費用 | Workers 免費額度就夠一般社群用（付費方案 US$5／月更寬裕） | 看主機，最小 256 MB 記憶體即可 |
 | 功能 | 100 個指令全部可用；但**沒有 Gateway 就收不到聊天訊息**：`/afk` 的自動回覆、`/autoreact`、`/welcome`、@機器人 就回話這四個被動功能不會動作（`/chat` 可以），`/team` 拿不到語音頻道名單；聊天經驗值改由使用指令累積 | 100 個全部 |
 | 自動部署 | `.github/workflows/bot-deploy.yml` 的 `workers` job | 同一支的 `image` job 會把映像推到 GHCR |

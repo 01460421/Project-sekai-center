@@ -17,8 +17,10 @@
         綁定後只接受同一個應用程式的 token（換 token 用同一支重打一次即可）。
    選用：ANTHROPIC_API_KEY（AI 解讀）、REGISTER_SECRET（POST /register 用）。
 
-   限制（沒有 Gateway）：聊天經驗值改由使用指令累積；/afk 的自動回覆、/autoreact、/welcome 這三個被動功能
-   與 /team 的語音頻道名單在這個版本不會動作。要完整功能請用容器版（src/index.js）。 */
+   限制（沒有 Gateway 事件）：聊天經驗值改由使用指令累積；/afk 的自動回覆、/autoreact、/welcome 這三個被動功能
+   與 /team 的語音頻道名單在這個版本不會動作。要完整功能請用容器版（src/index.js）。
+   「在線」狀態：core/gateway-presence.js 在 DO 內維持一條 Gateway 連線（intents 0，只為了顯示上線與狀態文字），
+   每 30 秒的 alarm 與每分鐘的 cron 當看門狗；DO 會因此常駐（Workers 付費方案每月內含的 GB-s 大致夠用）。PRESENCE=0 關閉。 */
 
 import { Bot } from './core/bot.js';
 import { MemoryStore } from './core/store.js';
@@ -26,6 +28,7 @@ import { Timers } from './core/sessions.js';
 import { createAI } from './core/ai.js';
 import { registrationJSON } from './core/registry.js';
 import { verifyDiscordRequest, createRest, parseInteraction, toApi } from './core/discord-http.js';
+import { GatewayPresence } from './core/gateway-presence.js';
 
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
 const stub = env => env.BOT.get(env.BOT.idFromName('main'));
@@ -123,9 +126,22 @@ export class BotDO {
       this.bot.sessions.load(this.store.sessions); this.store.sessions = [];
       this.bot.cooldowns.load(this.store.cooldowns);
       this.deferMs = Number(this.env.DEFER_MS) || 2200;
+      // 在線保持器：讓成員列表顯示上線。PRESENCE=0 關閉；PRESENCE_TEXT 改狀態文字
+      this.presence = new GatewayPresence({
+        token: this.token, storage: this.state.storage, connect: this.env.WS_CONNECT || undefined, log: (...a) => console.error('[presence]', ...a),
+        enabled: this.env.PRESENCE !== '0', activity: this.env.PRESENCE_TEXT ?? '/說明 看 100 個功能', activityType: Number(this.env.PRESENCE_TYPE) || 0,
+      });
+      this.keepAlive();
     })();
     return this.ready;
   }
+  /* 看門狗：確認 Gateway 連線還在，並排下一次 alarm（DO 被回收後 alarm 會把它叫醒重連） */
+  keepAlive() {
+    if (!this.presence || !this.presence.enabled || !this.token) return;
+    try { this.presence.ensure(); } catch (e) { console.error('[presence]', e); }
+    if (this.state.storage.setAlarm) this.state.storage.setAlarm(Date.now() + 30000).catch(() => {});
+  }
+  async alarm() { await this.init(); this.keepAlive(); }
   /* 每次互動／tick 結束後：玩家與伺服器資料、進行中的遊戲、冷卻全部落地 */
   async persist() {
     try { await this.store.flush(); await this.store.saveTransient(this.bot); }
@@ -138,6 +154,7 @@ export class BotDO {
     this.publicKey = (e.DISCORD_PUBLIC_KEY || c.publicKey || '').trim();
     this.appId = (e.APP_ID || c.appId || '').trim();
     this.rest = createRest({ token: this.token, appId: this.appId, fetchImpl: this.env.FETCH });
+    if (this.presence) { this.presence.setToken(this.token); this.keepAlive(); }
   }
   get configured() { return !!(this.token && this.publicKey && this.appId); }
 
@@ -157,10 +174,11 @@ export class BotDO {
       if (url.pathname === '/tick') {
         await this.bot.tick();
         if (this.configured && this.ticks++ % 30 === 0) this.bot.guildCount = await this.rest.guildCount().catch(() => this.bot.guildCount);
+        this.keepAlive();
         await this.persist();
         return json({ ok: true, ticks: this.ticks });
       }
-      if (url.pathname === '/health') return json({ ok: true, configured: this.configured, app: this.appId ? { id: this.appId, name: this.cfg.name || '' } : null, features: this.bot.registry.size, stats: this.bot.stats, users: Object.keys(this.store.data.users).length, guilds: Object.keys(this.store.data.guilds).length, sessions: this.bot.sessions.size, ai: !!this.bot.ai });
+      if (url.pathname === '/health') return json({ ok: true, configured: this.configured, app: this.appId ? { id: this.appId, name: this.cfg.name || '' } : null, presence: this.presence ? this.presence.status() : null, features: this.bot.registry.size, stats: this.bot.stats, users: Object.keys(this.store.data.users).length, guilds: Object.keys(this.store.data.guilds).length, sessions: this.bot.sessions.size, ai: !!this.bot.ai });
       return new Response('not found', { status: 404 });
     } catch (e) { console.error('[do]', e); return json({ error: String((e && e.message) || e) }, 500); }
   }
