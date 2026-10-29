@@ -19,7 +19,7 @@ const PORT = Number(process.env.PORT) || await freePort();
 const keys = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']);
 const pub = hex(await crypto.subtle.exportKey('raw', keys.publicKey));
 const devVars = path.join(root, '.dev.vars');
-fs.writeFileSync(devVars, `DISCORD_PUBLIC_KEY=${pub}\nDISCORD_TOKEN=dummy\nAPP_ID=123\nREGISTER_SECRET=probe\nDEFER_MS=2200\n`);
+fs.writeFileSync(devVars, `DISCORD_PUBLIC_KEY=${pub}\nDISCORD_TOKEN=dummy\nAPP_ID=123\nREGISTER_SECRET=probe\nDEFER_MS=2200\nPRESENCE=0\n`);
 
 // 直接跑 wrangler 的執行檔（不經 npx），並開成獨立 process group，結束時整組砍掉，不留 workerd 殭屍
 const bin = path.join(root, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
