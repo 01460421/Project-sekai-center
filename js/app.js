@@ -2760,7 +2760,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = this.SRV === 'jp' ? 'data/borders-db-jp.js?v=1c92ed6c56' : 'data/borders-db.js?v=0cfbeeec6f';   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
+      s.src = this.SRV === 'jp' ? 'data/borders-db-jp.js?v=1c92ed6c56' : 'data/borders-db.js?v=8d913b0468';   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -7273,7 +7273,7 @@ class Component extends DCLogic {
      台服模式也看得到（活動家族的分頁籤）；切到日服時首頁就是這一頁。 */
   loadJpNow() {
     if (!this._jnP) {
-      this._jnP = import('./data/jp-now.js?v=f95d450219').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
+      this._jnP = import('./data/jp-now.js?v=5ad0769f5a').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
         .catch(() => { this._jnP = null; this.setState({ jnErr: '日服現況資料載入失敗，點此重試' }); return null; });
     }
     this.loadCards();
