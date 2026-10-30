@@ -34,13 +34,35 @@ export function toApi(msg) {
   return out;
 }
 
-export function createRest({ token, appId, fetchImpl, base = 'https://discord.com/api/v10' }) {
+/* REST 呼叫的重試規則：429 照 Discord 給的 retry_after 等（最多等 10 秒）再試，最多 3 次；5xx 與逾時／斷線各重試一次；
+   每次最多等 15 秒。以前任何非 2xx 都直接拋錯又被吞掉，使用者就看著「思考中…」等不到結果。 */
+const REST_TIMEOUT_MS = 15000, REST_TRIES = 3, MAX_WAIT_MS = 10000;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+export function createRest({ token, appId, fetchImpl, base = 'https://discord.com/api/v10', wait = sleep }) {
   const doFetch = fetchImpl || ((...a) => globalThis.fetch(...a));
   async function call(method, path, body) {
-    const res = await doFetch(base + path, { method, headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (sekai-center-bot, 1.0)' }, body: body === undefined ? undefined : JSON.stringify(body) });
-    const text = await res.text();
-    if (!res.ok) throw new Error(`Discord ${method} ${path} → ${res.status} ${text.slice(0, 300)}`);
-    return text ? JSON.parse(text) : null;
+    let lastErr, netRetried = false, srvRetried = false, limited = 0;
+    for (;;) {
+      let res;
+      try {
+        const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(REST_TIMEOUT_MS) : undefined;
+        res = await doFetch(base + path, { method, signal, headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (sekai-center-bot, 1.0)' }, body: body === undefined ? undefined : JSON.stringify(body) });
+      } catch (e) {
+        lastErr = new Error(`Discord ${method} ${path} → ${(e && e.message) || e}`);
+        if (!netRetried) { netRetried = true; await wait(500); continue; }   // 逾時／斷線：只重試一次
+        throw lastErr;
+      }
+      const text = await res.text();
+      if (res.ok) return text ? JSON.parse(text) : null;
+      lastErr = new Error(`Discord ${method} ${path} → ${res.status} ${text.slice(0, 300)}`);
+      if (res.status === 429 && ++limited < REST_TRIES) {
+        let after = Number(res.headers && res.headers.get && res.headers.get('retry-after'));
+        try { const j = JSON.parse(text); if (j && j.retry_after != null) after = Number(j.retry_after); } catch {}
+        await wait(Math.min(MAX_WAIT_MS, Math.max(250, (Number.isFinite(after) ? after : 1) * 1000))); continue;
+      }
+      if (res.status >= 500 && !srvRetried) { srvRetried = true; await wait(500); continue; }
+      throw lastErr;
+    }
   }
   const memberOf = m => ({ id: m.user.id, name: m.nick || m.user.global_name || m.user.username, bot: !!m.user.bot });
   return {
@@ -48,6 +70,7 @@ export function createRest({ token, appId, fetchImpl, base = 'https://discord.co
     send: (channelId, msg) => call('POST', `/channels/${channelId}/messages`, toApi(msg)),
     followUp: (itoken, msg) => call('POST', `/webhooks/${appId}/${itoken}`, toApi(msg)),
     editOriginal: (itoken, msg) => call('PATCH', `/webhooks/${appId}/${itoken}/messages/@original`, toApi(msg)),
+    deleteOriginal: itoken => call('DELETE', `/webhooks/${appId}/${itoken}/messages/@original`),
     members: guildId => call('GET', `/guilds/${guildId}/members?limit=1000`).then(list => (list || []).map(memberOf)),
     guildCount: () => call('GET', '/users/@me/guilds?limit=200').then(list => (list || []).length),
     registerCommands: (json, guildId) => call('PUT', guildId ? `/applications/${appId}/guilds/${guildId}/commands` : `/applications/${appId}/commands`, json),

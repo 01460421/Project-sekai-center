@@ -154,6 +154,7 @@ WantedBy=multi-user.target
 | `AI_MODEL` | 否 | 預設 `claude-sonnet-5-5`；`claude-opus-5-5` 也可以（兩者都會自動加伺服器端 fallback） |
 | `AI_DAILY_PER_USER` | 否 | 每人每日 AI 解讀次數上限，預設 10 |
 | `AI_CHAT_DAILY_PER_USER` | 否 | 每人每日 AI 對話次數上限，預設 40 |
+| `AI_DAILY_TOTAL` | 否 | 整個機器人每天的 AI 次數總上限（解讀＋對話合計），預設 1500，`0` 不限；出錯或忙線不扣額度 |
 | `DEFER_MS` | 否 | 功能超過這麼多毫秒還沒回應就先告訴 Discord「稍等」，預設 2200（兩版皆是） |
 | `COMMAND_LANG` | 否 | 預設 `zh`：註冊中文指令名（英文 id 為英文介面的顯示名）；`en` 則照英文 id 註冊 |
 

@@ -105,3 +105,34 @@ test('未啟用或沒 token 就什麼都不做；DO 重建後從 storage 讀回 
   const r = sockets[0].sent.find(p => p.op === 6); assert.deepEqual(r.d, { token: 'tok', session_id: 'old', seq: 42 });
   gp.stop(); assert.equal(sockets[0].closed.code, 1000); assert.equal(gp.status().connected, false);
 });
+
+test('READY 後馬上斷線的循環會一路退避，撐過一分鐘才歸零；4007／4009 改成重新 identify', async () => {
+  let now = 1_000_000;
+  const { gp, sockets, timers } = make({ now: () => now });
+  gp.ensure(); await tick();
+  sockets[0].serverSend({ op: 10, d: { heartbeat_interval: 41250 } }); ready(sockets[0]); await tick();
+  sockets[0].serverClose(1006, 'flap'); assert.equal(gp.attempts, 1, '剛連上就斷：不歸零，退避累加');
+  await timers.flush(); await tick();
+  sockets[1].serverSend({ op: 10, d: { heartbeat_interval: 41250 } });
+  assert.ok(sockets[1].sent.find(p => p.op === 6), 'session 還在就 resume');
+  sockets[1].serverSend({ op: 0, t: 'RESUMED', s: 2, d: {} }); now += 61_000;
+  sockets[1].serverClose(4009, 'session timed out');
+  assert.equal(gp.attempts, 1, '撐過一分鐘才斷：歸零後重新計');
+  assert.equal(gp.sessionId, null, '4009 不能 resume，session 清掉');
+  await timers.flush(); await tick();
+  sockets[2].serverSend({ op: 10, d: { heartbeat_interval: 41250 } });
+  assert.ok(sockets[2].sent.find(p => p.op === 2), '改送 identify');
+});
+
+test('identify 一天最多 900 次：額度用完又沒有 session 可 resume 就不連，隔天（UTC）恢復', async () => {
+  let now = Date.UTC(2026, 9, 30, 12);
+  const { gp, sockets, storage } = make({ now: () => now });
+  storage.m.set('gwIdentify', { day: '2026-10-30', n: 900 });
+  gp.ensure(); await tick();
+  assert.equal(sockets.length, 0, '額度用完不開連線'); assert.match(gp.lastError, /identify/);
+  now = Date.UTC(2026, 9, 31, 0, 1);
+  gp.ensure(); await tick();
+  assert.equal(sockets.length, 1, '隔天恢復');
+  sockets[0].serverSend({ op: 10, d: { heartbeat_interval: 41250 } });
+  assert.deepEqual(storage.m.get('gwIdentify'), { day: '2026-10-31', n: 1 });
+});

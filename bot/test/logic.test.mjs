@@ -387,6 +387,22 @@ test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立
   assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).text, 'ok');
   assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).quota, false, '對話額度 2 次');
   assert.deepEqual(ai.quota('chat', 'u'), { used: 2, cap: 2 });
+  // 出錯不扣額度；整個機器人每日總量到了，所有人都停
+  const boom = { beta: { messages: { create: async () => { const e = new Error('overloaded'); e.status = 529; throw e; } } } };
+  const store2 = (await makeBot()).store;
+  const ai2 = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_TOTAL: '2' }, { store: store2, client: boom });
+  const r = await ai2.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' });
+  assert.ok(r.error && r.busy, '529 算忙線'); assert.equal(ai2.quota('chat', 'u').used, 0, '出錯退還額度');
+  const ai3 = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_TOTAL: '2' }, { store: store2, client: fakeClaude([aiText('a'), aiText('b'), aiText('c')]) });
+  await ai3.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'p' });
+  await ai3.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'q' });
+  const over = await ai3.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'r' });
+  assert.equal(over.quota, false); assert.equal(over.total, true, '總量到上限');
+  // 對話請求帶頂層 cache_control，截斷時補刪節號
+  const cut = fakeClaude([{ ...aiText('說到一半'), stop_reason: 'max_tokens' }]);
+  const ai4 = createAI({ ANTHROPIC_API_KEY: 'k' }, { client: cut });
+  const rc = await ai4.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' });
+  assert.deepEqual(cut.calls[0].cache_control, { type: 'ephemeral' }); assert.equal(rc.text, '說到一半…');
 });
 
 /* ---------- 中文指令名與固定頻道 ---------- */

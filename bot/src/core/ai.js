@@ -9,6 +9,9 @@
      AI_MODEL                 預設 claude-sonnet-5-5（對話型工作量，跟 Sonnet 5 同價、更聰明；要更強可換 claude-opus-5-5）
      AI_DAILY_PER_USER        每人每日「解讀」次數上限，預設 10（台灣時間 00:00 重置）
      AI_CHAT_DAILY_PER_USER   每人每日「對話」次數上限，預設 40
+     AI_DAILY_TOTAL           整個機器人每天的 AI 次數總上限（解讀＋對話合計），預設 1500，0 = 不限
+   每次呼叫最多等 25 秒、重試 1 次（Discord 的互動 token 有 15 分鐘，但讓人等太久不如直接說忙線）；
+   出錯或忙線不扣當日額度。
    Sonnet 5.5、Opus 5／5.5、Fable、Mythos 會自動加上伺服器端 fallback（`fallbacks: "default"`：安全分類器拒答時依類別換備援模型續答）；
    其他模型（例如舊的 Sonnet 5）不送這個參數，拒答就當一般結果處理（回一句「這個話題不方便聊」）。
    思考用預設的 adaptive（Sonnet 5.5 不接受 disabled），深淺由 effort 控制；思考也算進 max_tokens，所以上限留寬一點。 */
@@ -34,26 +37,38 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
   const caps = {
     narrate: Math.max(0, parseInt(env.AI_DAILY_PER_USER || '10', 10) || 0),
     chat: Math.max(0, parseInt(env.AI_CHAT_DAILY_PER_USER || '40', 10) || 0),
+    total: Math.max(0, parseInt(env.AI_DAILY_TOTAL ?? '1500', 10) || 0),
   };
-  let clientPromise = injected ? Promise.resolve(injected) : null;
+  let clientPromise = injected ? Promise.resolve(injected) : null, sdk = null;
+  /* 429（限流）、529（過載）、逾時：算「忙線」，請使用者等一下再試 */
+  const isBusy = e => !!e && ((sdk && (e instanceof sdk.RateLimitError || e instanceof sdk.APIConnectionTimeoutError)) || e.status === 429 || e.status === 529 || (e.error && e.error.type === 'overloaded_error'));
 
   async function client() {
-    if (!clientPromise) clientPromise = import('@anthropic-ai/sdk').then(m => new m.default({ apiKey }));
+    if (!clientPromise) clientPromise = import('@anthropic-ai/sdk').then(m => { sdk = m.default; return new m.default({ apiKey, timeout: 25_000, maxRetries: 1 }); });
     return clientPromise;
   }
 
-  /* 每人每日額度：kind = narrate | chat。回傳 true 表示可用（並已記一次）。 */
+  /* 每人每日額度：kind = narrate | chat。回傳 true 表示可用（並已記一次）；'user' 是這個人今天用完了，'total' 是整個機器人今天的總量用完了 */
   function take(kind, userId) {
-    const cap = caps[kind];
-    if (!store || !cap) return true;
+    if (!store) return true;
     const usage = store.global('ai-usage', () => ({}));
     const today = todayTW();
-    const key = `${today}:${userId}${kind === 'chat' ? ':chat' : ''}`;
-    if ((usage[key] || 0) >= cap) return false;
-    usage[key] = (usage[key] || 0) + 1;
+    const key = `${today}:${userId}${kind === 'chat' ? ':chat' : ''}`, tkey = `${today}:*total`;
+    const cap = caps[kind];
+    if (cap && (usage[key] || 0) >= cap) return 'user';
+    if (caps.total && (usage[tkey] || 0) >= caps.total) return 'total';
+    usage[key] = (usage[key] || 0) + 1; usage[tkey] = (usage[tkey] || 0) + 1;
     for (const k of Object.keys(usage)) if (!k.startsWith(today)) delete usage[k];
     store.touch();
     return true;
+  }
+  /* 出錯或忙線：把剛剛扣的那一次還回去 */
+  function refund(kind, userId) {
+    if (!store) return;
+    const usage = store.global('ai-usage', () => ({}));
+    const today = todayTW();
+    for (const k of [`${today}:${userId}${kind === 'chat' ? ':chat' : ''}`, `${today}:*total`]) if (usage[k] > 0) usage[k]--;
+    store.touch();
   }
   function used(kind, userId) {
     if (!store) return 0;
@@ -69,7 +84,7 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
 
     /* 回傳解讀文字；額度用完或出錯回空字串（呼叫端直接略過即可） */
     async narrate(prompt, { userId = '', maxTokens = 2000 } = {}) {
-      if (!take('narrate', userId)) return '';
+      if (take('narrate', userId) !== true) return '';
       try {
         const c = await client();
         const res = await c.beta.messages.create({
@@ -79,8 +94,9 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
           messages: [{ role: 'user', content: prompt }],
         });
         if (res.stop_reason === 'refusal') return '';
-        return textOf(res);
+        return textOf(res) + (res.stop_reason === 'max_tokens' ? '…' : '');
       } catch (e) {
+        refund('narrate', userId);
         console.error('[ai] 解讀失敗:', e && e.message ? e.message : e);
         return '';
       }
@@ -91,18 +107,20 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
        回傳 { text, quota:false } 額度用完、{ text:'', refused:true } 拒答、{ text, toolExtras:[...] } 正常。
        出錯回 { text:'', error }。 */
     async chat({ system, messages, tools = [], runTool, userId = '', maxTokens = 4000, maxRounds = 4, effort = 'low' }) {
-      if (!take('chat', userId)) return { text: '', quota: false };
+      const ok = take('chat', userId);
+      if (ok !== true) return { text: '', quota: false, total: ok === 'total' };
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       const extras = [];
       try {
         const c = await client();
         for (let round = 0; round <= maxRounds; round++) {
-          const req = { model, max_tokens: maxTokens, ...fallback, output_config: { effort }, system, messages: history };
+          /* 頂層 cache_control：自動快取到最後一個可快取區塊，工具迴圈的每一輪不必重付整段歷史的全價 */
+          const req = { model, max_tokens: maxTokens, ...fallback, cache_control: { type: 'ephemeral' }, output_config: { effort }, system, messages: history };
           if (tools.length) req.tools = tools;
           const res = await c.beta.messages.create(req);
           if (res.stop_reason === 'refusal') return { text: '', refused: true };
           const calls = res.content.filter(b => b.type === 'tool_use');
-          if (res.stop_reason !== 'tool_use' || !calls.length || !runTool || round === maxRounds) return { text: textOf(res), toolExtras: extras, stop: res.stop_reason };
+          if (res.stop_reason !== 'tool_use' || !calls.length || !runTool || round === maxRounds) return { text: textOf(res) + (res.stop_reason === 'max_tokens' ? '…' : ''), toolExtras: extras, stop: res.stop_reason };
           history.push({ role: 'assistant', content: res.content });
           const results = [];
           for (const call of calls) {
@@ -119,8 +137,9 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
         }
         return { text: '', toolExtras: extras };
       } catch (e) {
+        refund('chat', userId);
         console.error('[ai] 對話失敗:', e && e.message ? e.message : e);
-        return { text: '', error: String((e && e.message) || e) };
+        return { text: '', error: String((e && e.message) || e), busy: isBusy(e) };
       }
     },
   };

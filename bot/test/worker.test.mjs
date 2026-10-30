@@ -245,3 +245,37 @@ test('在線保持器：設定好 token 後 DO 會連 Gateway 並 identify；/he
   await worker.fetch(new Request('https://pjsk-bot.example.workers.dev/bootstrap', { method: 'POST', body: JSON.stringify({ token: 'good-token' }) }), env2); await new Promise(r => setTimeout(r, 10));
   assert.equal(sockets2.length, 1, 'bootstrap 後啟動在線保持器');
 });
+
+test('自動延遲（公開）之後的私人回覆：刪掉佔位訊息、改發只有本人看得到的 followUp，不會公開洩漏', async () => {
+  const env = makeEnv({ deferMs: 100 });
+  await send(env, { type: 1 }); await new Promise(r => setTimeout(r, 20));
+  env.instance().bot.registry.add({ name: 'slowpriv', description: 'slow', category: 'fun', guildOnly: false,
+    async run(ctx) { await new Promise(r => setTimeout(r, 200)); await ctx.reply({ content: '只有你看得到', ephemeral: true }); } });
+  const r = await send(env, command('slowpriv')); assert.equal(r.body.type, 5); assert.equal(r.body.data, undefined, '自動延遲是公開的');
+  await new Promise(r => setTimeout(r, 350));
+  assert.ok(env.calls.some(c => c.method === 'DELETE' && c.url.endsWith('/messages/@original')), '要刪掉公開的佔位');
+  const fu = env.calls.find(c => c.method === 'POST' && c.url.endsWith('/webhooks/123/itoken'));
+  assert.ok(fu && fu.body.flags === 64 && fu.body.content === '只有你看得到', '改發私人 followUp');
+  assert.ok(!env.calls.some(c => c.method === 'PATCH' && c.url.includes('@original')), '不能把私人內容 PATCH 到公開訊息');
+});
+
+test('冷啟動讀資料太久：期限從請求抵達算，先回延遲（type 5），讀完再用 REST 補結果', async () => {
+  const slow = fakeStorage();
+  const list = slow.list.bind(slow); slow.list = async () => { await new Promise(r => setTimeout(r, 300)); return list(); };
+  const env = makeEnv({ storage: slow, deferMs: 100 });
+  const r = await send(env, command('coin'));
+  assert.equal(r.body.type, 5, '還沒載完就先延遲');
+  await new Promise(r => setTimeout(r, 500));
+  assert.ok(env.calls.some(c => c.method === 'PATCH' && c.url.endsWith('/messages/@original')), '載完後補上結果');
+});
+
+test('Discord REST：429 照 retry_after 等了再試、5xx 重試一次、400 直接失敗', async () => {
+  const { createRest } = await import('../src/core/discord-http.js');
+  const seq = [new Response('{"retry_after":0.2}', { status: 429 }), new Response('oops', { status: 502 }), new Response('{"id":"1"}', { status: 200 })];
+  const waits = [];
+  const rest = createRest({ token: 't', appId: '1', fetchImpl: async () => seq.shift(), wait: async ms => { waits.push(ms); } });
+  assert.deepEqual(await rest.call('GET', '/x'), { id: '1' });
+  assert.deepEqual(waits, [250, 500], '429 等 retry_after（最少 250ms），502 等 500ms');
+  const bad = createRest({ token: 't', appId: '1', fetchImpl: async () => new Response('{"message":"bad"}', { status: 400 }), wait: async () => {} });
+  await assert.rejects(bad.call('POST', '/x', {}), /400/);
+});

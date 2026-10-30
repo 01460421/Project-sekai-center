@@ -8,6 +8,10 @@
 
 const DEFAULT_GATEWAY = 'wss://gateway.discord.gg/?v=10&encoding=json';
 const FATAL_CLOSE = new Set([4004, 4010, 4011, 4012, 4013, 4014]);   // 壞 token、分片／intents 問題：重連也沒用
+const FRESH_CLOSE = new Set([4007, 4009]);   // seq 錯誤、session 逾時：不能 resume，要重新 identify
+const STABLE_MS = 60000;                      // 連線撐過一分鐘才把退避歸零；READY 後馬上斷的循環會一路退避上去
+const IDENTIFY_DAILY_CAP = 900;               // Discord 一天 1000 次 identify，超過會被重設 token；留 100 次餘裕
+const dayOf = ms => new Date(ms).toISOString().slice(0, 10);
 
 /* Workers：優先用 WebSocket 建構子，沒有就用 fetch + Upgrade */
 export async function defaultConnect(url) {
@@ -28,10 +32,13 @@ export class GatewayPresence {
     this.seq = null; this.sessionId = null; this.resumeUrl = null;
     this.hbTimer = null; this.hbInterval = 0; this.awaitingAck = false; this.reconnectTimer = null;
     this.attempts = 0; this.reconnects = 0; this.lastError = ''; this.fatal = false; this.lastIdentify = 0; this.gen = 0;
+    this.idDay = ''; this.idCount = 0;
     this.loaded = false;
   }
   setToken(t) { if (t !== this.token) { this.token = t; this.fatal = false; this.lastError = ''; this.restart(); } }
-  status() { return { enabled: this.enabled, connected: this.connected, since: this.since, reconnects: this.reconnects, lastError: this.lastError, fatal: this.fatal, sessionId: this.sessionId ? '…' + String(this.sessionId).slice(-6) : null }; }
+  status() { return { enabled: this.enabled, connected: this.connected, since: this.since, reconnects: this.reconnects, lastError: this.lastError, fatal: this.fatal, sessionId: this.sessionId ? '…' + String(this.sessionId).slice(-6) : null, identifiesToday: this.idDay === dayOf(this.now()) ? this.idCount : 0 }; }
+  /* 今天的 identify 額度用完了，而且沒有可 resume 的 session：等明天（UTC）再連 */
+  identifyBlocked() { return !this.sessionId && this.idDay === dayOf(this.now()) && this.idCount >= IDENTIFY_DAILY_CAP; }
 
   /* 有需要就連線（冪等）；每次 tick／alarm 都呼叫一次當看門狗 */
   ensure() {
@@ -52,6 +59,13 @@ export class GatewayPresence {
     if (this.loaded || !this.storage) return;
     this.loaded = true;
     try { const s = await this.storage.get('gw'); if (s && s.sessionId) { this.sessionId = s.sessionId; this.resumeUrl = s.resumeUrl || null; this.seq = s.seq ?? null; } } catch {}
+    try { const c = await this.storage.get('gwIdentify'); if (c && c.day) { this.idDay = c.day; this.idCount = Number(c.n) || 0; } } catch {}
+  }
+  countIdentify() {
+    const day = dayOf(this.now());
+    if (this.idDay !== day) { this.idDay = day; this.idCount = 0; }
+    this.idCount++;
+    if (this.storage) { try { Promise.resolve(this.storage.put('gwIdentify', { day: this.idDay, n: this.idCount })).catch(() => {}); } catch {} }
   }
   async saveSession() {
     if (!this.storage) return;
@@ -62,6 +76,7 @@ export class GatewayPresence {
     this.connecting = true;
     const gen = ++this.gen;
     await this.loadSession();
+    if (this.identifyBlocked()) { this.connecting = false; this.lastError = `今天的 identify 已用 ${this.idCount} 次，明天（UTC）再連`; return; }
     const url = (this.sessionId && this.resumeUrl) ? this.resumeUrl + (this.resumeUrl.includes('?') ? '' : '/?v=10&encoding=json') : (this.gatewayUrl || DEFAULT_GATEWAY);
     const ws = await this.connect(url);
     if (gen !== this.gen) { try { ws.close(1000, 'superseded'); } catch {} return; }
@@ -103,13 +118,17 @@ export class GatewayPresence {
       default: break;
     }
   }
-  markConnected() { this.connected = true; this.since = this.now(); this.attempts = 0; this.lastError = ''; }
+  markConnected() { this.connected = true; this.since = this.now(); this.lastError = ''; }
+  /* 斷線時：撐過 STABLE_MS 的連線才把退避歸零 */
+  noteDrop() { if (this.connected && this.now() - this.since >= STABLE_MS) this.attempts = 0; }
 
   identify() {
     const now = this.now();
     const wait = Math.max(0, this.lastIdentify + 5500 - now);        // identify 每 5 秒最多一次
     const go = () => {
+      if (this.identifyBlocked()) { this.lastError = `今天的 identify 已用 ${this.idCount} 次，明天（UTC）再連`; this.stop('identify-cap'); return; }
       this.lastIdentify = this.now();
+      this.countIdentify();
       const presence = { status: 'online', since: null, afk: false, activities: this.activity ? [{ name: this.activity, type: this.activityType }] : [] };
       this.send({ op: 2, d: { token: this.token, intents: 0, properties: { os: 'cloudflare', browser: 'sekai-center-bot', device: 'sekai-center-bot' }, presence } });
     };
@@ -127,6 +146,7 @@ export class GatewayPresence {
 
   /* 關閉目前連線並排程重連；resume=true 保留 session（下次用 op 6） */
   reconnect(resume, delayMs) {
+    this.noteDrop();
     if (!resume) { this.sessionId = null; this.resumeUrl = null; this.seq = null; this.saveSession(); }
     this.stop('reconnect'); this.reconnects++;
     this.scheduleReconnect(delayMs);
@@ -140,7 +160,9 @@ export class GatewayPresence {
     const c = Number(code) || 0;
     this.lastError = `連線關閉 ${c}${reason ? ' ' + reason : ''}`;
     if (this.hbTimer) { this.timers.clear(this.hbTimer); this.hbTimer = null; }
+    this.noteDrop();
     this.ws = null; this.connected = false; this.connecting = false;
+    if (FRESH_CLOSE.has(c)) { this.sessionId = null; this.resumeUrl = null; this.seq = null; this.saveSession(); }
     if (FATAL_CLOSE.has(c)) { this.fatal = true; this.sessionId = null; this.resumeUrl = null; this.seq = null; this.saveSession(); this.log(`Gateway 致命關閉 ${c}，停止重連（換 token 後會再試）`); return; }
     this.reconnects++;
     this.scheduleReconnect();

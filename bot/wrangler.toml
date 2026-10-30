@@ -32,6 +32,7 @@ crons = ["* * * * *"]
 AI_MODEL = "claude-sonnet-5-5"
 AI_DAILY_PER_USER = "10"
 AI_CHAT_DAILY_PER_USER = "40"
+AI_DAILY_TOTAL = "1500"
 
 [observability]
 enabled = true

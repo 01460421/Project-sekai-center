@@ -4,7 +4,8 @@ name: bot-deploy
 #   workers → 部署到 Cloudflare Workers（HTTP 互動版，pjsk-bot），然後只憑 DISCORD_TOKEN 把 Discord 端接好：
 #             取 Application ID／Public Key → 寫進 Worker 機密 → 設 Interactions Endpoint URL → 註冊 100 個斜線指令
 #   image   → 建 Docker 映像推到 GHCR（容器版：Fly.io／Railway／Render／任何 VPS 直接拉）
-# 觸發：main 上 bot/ 或機器人用到的五個資料檔有變動（曲庫每天更新，Workers 版的內建資料也跟著每天更新）；也可手動。
+# 觸發：main 上 bot/ 有變動、每天資料更新之後（排程），也可手動。
+#   資料檔的提交都帶 [skip ci]、又是用 GITHUB_TOKEN 推的，不會觸發 push 事件，所以資料更新要靠每天的排程把新資料帶上去。
 #
 # 需要的 secrets（repo → Settings → Secrets and variables → Actions）：
 #   CLOUDFLARE_API_TOKEN、CLOUDFLARE_ACCOUNT_ID   跟 worker-deploy.yml 同一組（已有）；沒設就略過 Workers 部署
@@ -14,6 +15,8 @@ name: bot-deploy
 # 可選的 variable：WORKER_URL（自訂網域時填，例如 https://discord.project-sekai-center.com；不填就用 wrangler 印出的 workers.dev 網址）
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '23 20 * * *'   # 每日 20:23 UTC ≈ 台北 04:23：商城（19:17）與曲庫（19:40）更新完之後
   push:
     branches: [main]
     paths: ['bot/**', 'data/cards-index.js', 'data/cards-extra.js', 'data/ep-songs.js', 'data/sekai-data.js', 'data/song-bpm.js']

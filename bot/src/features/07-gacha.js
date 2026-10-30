@@ -31,7 +31,7 @@ const cardLine = c => `${rarityStr(c.rarity)} ${ATTR_EMOJI[c.attr]} ${charaById(
 
 /* ---------- 轉蛋 ---------- */
 const gacha = {
-  name: 'gacha', description: '模擬轉蛋：單抽、十連、百連（4★ 3%、3★ 8.5%，十連保底 3★）', category: 'gacha',
+  name: 'gacha', description: '模擬轉蛋：單抽、十連、百連（4★ 3%、3★ 8.5%，十連保底 3★）', category: 'gacha', cooldown: 5,
   options: [str('mode', '抽幾次', { choices: [['單抽', '1'], ['十連', '10'], ['百連', '100']] })],
   async run(ctx) { await ctx.reply(doGacha(ctx, +(ctx.opt('mode') || '10'))); },
   buttons: { async again(ctx) { const [owner, n] = ctx.data; if (!ctx.isOwner(owner)) return ctx.reply({ content: '想抽請自己用 /gacha。', ephemeral: true }); await ctx.update(doGacha(ctx, +n)); } },
