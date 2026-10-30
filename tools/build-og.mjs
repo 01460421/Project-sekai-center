@@ -10,7 +10,7 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const src = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
 const block = src.slice(src.indexOf('  PAGES = {'));
 const body = block.slice(0, block.indexOf('\n  };'));
-const pages = [...body.matchAll(/^\s{4}(\w+):\s+\['([^']*)',\s*'([^']*)'/gm)].map(m => ({ k: m[1], t: m[2], d: m[3] }));
+const pages = [...body.matchAll(/^\s{4}(\w+):\s*\['([^']*)',\s*'([^']*)'/gm)].map(m => ({ k: m[1], t: m[2], d: m[3] }));
 if (!pages.length) { console.error('PAGES 表解析不到任何頁面'); process.exit(1); }
 const BASE = process.env.BASE || 'http://127.0.0.1:8765';
 const launch = { headless: true, args: ['--no-sandbox'] };

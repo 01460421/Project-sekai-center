@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant-TW">
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍 */
 try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme'));if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');
 var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);
@@ -11,6 +11,24 @@ var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.document
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
 <script src="./support.js?v=f07edc7399"></script>
+<!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
+<link rel="preload" href="./js/app.min.js?v=4b4b118ca8" as="fetch" crossorigin>
+<!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1428" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SEKAI 中心">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet"></noscript>
 <!-- 分享預覽（og／twitter）與標題要放在真正的 <head>：連結預覽的爬蟲不跑 JS，也不讀 <template> 內容。
      各頁的標題與預覽圖由 js/app.js 進頁後改寫這幾個標籤。 -->
 <title>SEKAI 資源中心 — App</title>
@@ -29,26 +47,11 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 <body>
 <x-dc><template>
 <helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1428" media="(prefers-color-scheme: dark)">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SEKAI 中心">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-<link rel="icon" href="./favicon.ico" sizes="48x48">
-<link rel="apple-touch-icon" href="./icons/icon-180.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
 --bg:#eef1f9;--bg-soft:#f6f8fd;--card:#fff;--card-2:#f1f4fb;
---text:#3c455f;--text-2:#6d7691;--text-3:#8b93ac;--ink:#252e4d;
---accent:#0eb3c5;--accent-deep:#0891a2;
+--text:#3c455f;--text-2:#5b6480;--text-3:#646d88;--ink:#252e4d;
+--accent:#0eb3c5;--accent-deep:#087f8e;
 --border:rgba(72,86,133,.13);--border-2:rgba(72,86,133,.26);
 --cta:linear-gradient(135deg,#22c3d6 0%,#3f8cf3 100%);
 --ink-grad:linear-gradient(135deg,#273052 0%,#3b4878 100%);
@@ -211,7 +214,7 @@ font-family:'Huninn','M PLUS Rounded 1c','PingFang TC','Microsoft JhengHei','Not
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 background:radial-gradient(900px 520px at 88% -140px,rgba(84,190,255,.1),transparent 60%),radial-gradient(820px 480px at -8% 4%,rgba(57,197,187,.09),transparent 60%),radial-gradient(700px 520px at 60% 112%,rgba(255,151,190,.07),transparent 60%)}
 a{color:var(--accent-deep);text-decoration:none}
-a:hover{color:var(--accent);text-decoration:underline}
+a:hover{color:var(--accent-deep);text-decoration:underline}
 input,select,button,textarea{font-family:inherit}
 input::placeholder{color:var(--text-3)}
 ::selection{background:rgba(34,195,214,.28)}
@@ -840,7 +843,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .sm-me{font-size:11px;font-weight:800;color:#2fa84f;font-variant-numeric:tabular-nums;white-space:nowrap}
 .sm-miss{position:absolute;left:4px;bottom:4px;background:color-mix(in oklab,var(--text-3) 85%,transparent);color:#fff}
 .sm-have{background:color-mix(in oklab,#2fa84f 18%,transparent);color:#2fa84f}
-.sm-btn{margin-top:8px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent);font-weight:800;font-size:12px;cursor:pointer}
+.sm-btn{margin-top:8px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-weight:800;font-size:12px;cursor:pointer}
 @media (max-width:640px){.sm-row{grid-template-columns:88px repeat(5,minmax(76px,1fr))}.sm-row.one{grid-template-columns:88px minmax(120px,1fr)}.sm-h{padding:7px 8px;font-size:11px}.sm-cell{padding:6px 2px}.sm-tw{font-size:14px}.sm-jp{font-size:11px;gap:3px}.sm-dl{font-size:9.5px;padding:0 4px}.sm-deck{gap:5px}.sm-card{font-size:10px}.sm-card img{border-radius:10px}.sm-tag{font-size:9px;padding:1px 5px}}
 /* 介面語言的字型：站內字型 Huninn（粉圓）是繁中字型；日文與英文改用 M PLUS Rounded 1c（同樣圓體，假名與拉丁字母更完整），
    簡中把常見的簡體字型排在後備。內嵌樣式寫死了 Huninn，所以用屬性選擇器加 !important 蓋過。 */
@@ -1121,7 +1124,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <button type="button" onClick="{{ onCopyLink }}" title="複製這一頁的連結（含目前的篩選）" aria-label="複製連結" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
     </button>
-    <button type="button" onClick="{{ onTheme }}" title="{{ themeTitle }}" aria-label="{{ themeTitle }}" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);cursor:pointer;box-shadow:var(--sh-xs);transition:color .2s,border-color .2s" style-hover="color:var(--accent);border-color:var(--border-2)">
+    <button type="button" onClick="{{ onTheme }}" title="{{ themeTitle }}" aria-label="{{ themeTitle }}" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);cursor:pointer;box-shadow:var(--sh-xs);transition:color .2s,border-color .2s" style-hover="color:var(--accent-deep);border-color:var(--border-2)">
       <sc-if value="{{ themeIsLight }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:17px;height:17px"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.6v2.2M12 19.2v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"></path></svg>
       </sc-if>
@@ -1154,6 +1157,13 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <div class="srv-banner" role="note">
     <div class="srv-b-ic">JP</div>
     <div class="srv-b-t"><b>這一頁目前只有台服資料</b><span>日服可以看：</span><sc-for list="{{ srvTwOnlyPages }}" as="p" hint-placeholder-count="6"><button type="button" onClick="{{ onGo }}" data-p="{{ p.id }}">{{ p.n }}</button></sc-for></div>
+    <button type="button" class="srv-b-go" onClick="{{ onSrvTw }}">切回台服</button>
+  </div>
+  </sc-if>
+  <sc-if value="{{ srvTwData }}">
+  <div class="srv-banner" role="note">
+    <div class="srv-b-ic">JP</div>
+    <div class="srv-b-t"><b>這一頁用的是台服資料</b><span>{{ srvTwDataText }}</span></div>
     <button type="button" class="srv-b-go" onClick="{{ onSrvTw }}">切回台服</button>
   </div>
   </sc-if>
@@ -1802,7 +1812,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </sc-if>
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="8">
         <div class="song-row" style="display:grid;grid-template-columns:{{ songCols }};gap:{{ rowGap }};padding:{{ rowPad }};border-top:1px solid var(--border);align-items:center;transition:background .18s" style-hover="background:var(--bg-soft)">
-          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg style="display:block" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="{{ s.playPath }}"></path></svg></button><button type="button" onClick="{{ onQueueAdd }}" data-id="{{ s.id }}" title="加入播放清單" style="width:24px;height:24px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;padding:0">＋</button><span>#{{ s.id }}</span></span>
+          <span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';font-weight:700;display:flex;align-items:center;gap:6px"><button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--card-2);color:var(--accent-deep);cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg style="display:block" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="{{ s.playPath }}"></path></svg></button><button type="button" onClick="{{ onQueueAdd }}" data-id="{{ s.id }}" title="加入播放清單" style="width:24px;height:24px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--card);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;padding:0">＋</button><span>#{{ s.id }}</span></span>
           <span role="button" tabindex="0" onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情（難度/封面）" style="min-width:0;cursor:pointer"><span style="display:block;font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.4">{{ s.title }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ s.composer }}</span><sc-if value="{{ s.meta }}"><span style="display:block;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-top:1px">{{ s.meta }}</span></sc-if></span>
           <span style="display:flex;flex-wrap:wrap;gap:4px">
             <sc-if value="{{ s.jpTag }}"><span title="日服限定，台服尚未實裝" style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#3f8cf3;color:#fff">日服</span></sc-if>
@@ -1833,7 +1843,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="10">
         <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
           <div role="button" tabindex="0" onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
-            <img src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="none" style="width:100%;height:100%;object-fit:cover;display:block">
+            <img alt="" src="{{ s.jacket }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="none" style="width:100%;height:100%;object-fit:cover;display:block">
             <sc-if value="{{ s.jpTag }}"><span title="日服限定，台服尚未實裝" style="position:absolute;left:6px;top:6px;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px;background:#3f8cf3;color:#fff">日服</span></sc-if>
             <button type="button" onClick="{{ onPlaySong }}" data-abn="{{ s.abn }}" title="試聽" style="position:absolute;right:7px;bottom:7px;width:33px;height:33px;border:none;border-radius:50%;background:{{ s.gBtnBg }};color:#fff;cursor:pointer;backdrop-filter:blur(5px);box-shadow:0 2px 9px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center"><svg style="display:block" viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="{{ s.playPath }}"></path></svg></button>
           </div>
@@ -1903,7 +1913,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <div style="border:1px solid var(--border);border-radius:13px;background:var(--card-2);padding:10px 12px">
               <div style="font-size:12px;font-weight:800;color:var(--accent-deep);margin-bottom:4px">{{ r.n }}</div>
               <sc-for list="{{ r.pts }}" as="pt" hint-placeholder-count="2">
-                <div style="display:flex;gap:5px;font-size:11.5px;color:var(--text-2);line-height:1.55"><span style="flex:none;color:var(--accent)">・</span><span>{{ pt }}</span></div>
+                <div style="display:flex;gap:5px;font-size:11.5px;color:var(--text-2);line-height:1.55"><span style="flex:none;color:var(--accent-deep)">・</span><span>{{ pt }}</span></div>
               </sc-for>
             </div>
           </sc-for>
@@ -2085,7 +2095,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
     </sc-if>
       <sc-if value="{{ pastHasErr }}">
-        <button type="button" onClick="{{ onPastRetry }}" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ pastErrMsg }}</button>
+        <button type="button" onClick="{{ onPastRetry }}" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ pastErrMsg }}</button>
       </sc-if>
       <sc-if value="{{ pastBusy }}">
         <div class="empty loading">
@@ -2227,7 +2237,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">選曲 · 係數 R{{ songRate }} · {{ songTime }}s</span>
           <select value="{{ songKey }}" onChange="{{ onField }}" data-k="songKey" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:13.5px;min-height:42px;cursor:pointer;outline:none" sc-options="{{ songOptions }}"></select></label>
         <sc-if value="{{ epEmpty }}">
-          <button type="button" onClick="{{ onReloadEp }}" style="margin-top:8px;width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent);font-size:12.5px;font-weight:700;cursor:pointer">{{ epMsg }}</button>
+          <button type="button" onClick="{{ onReloadEp }}" style="margin-top:8px;width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer">{{ epMsg }}</button>
         </sc-if>
       </div>
       <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px">
@@ -4920,7 +4930,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ acPending }}">
       <div style="border:1px solid var(--border);border-radius:20px;padding:22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <img src="{{ acPic }}" referrerpolicy="no-referrer" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
+          <img alt="" src="{{ acPic }}" referrerpolicy="no-referrer" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
           <div><div class="u-ffc0">{{ acName }}</div>
             <div class="u-fc5">{{ acEmail }}</div></div>
         </div>
@@ -4990,7 +5000,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ acReady }}">
       <div style="border:1px solid var(--border);border-radius:20px;padding:20px 22px;background:var(--card);box-shadow:var(--sh-sm);margin-bottom:13px">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <img src="{{ acPic }}" referrerpolicy="no-referrer" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
+          <img alt="" src="{{ acPic }}" referrerpolicy="no-referrer" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
           <div style="flex:1;min-width:150px">
             <div style="font-size:15.5px;font-weight:800;color:var(--ink)">{{ acName }}<span style="font-size:11px;font-weight:700;color:var(--accent-deep);margin-left:8px">{{ acRole }}</span></div>
             <div class="u-fc5">{{ acEmail }}</div>
@@ -6086,7 +6096,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="margin-top:12px;padding:11px 13px;border-radius:12px;background:var(--card-2)">
         <div style="font-size:11.5px;font-weight:800;color:var(--ink);margin-bottom:4px">終章須知</div>
         <sc-for list="{{ wlsFinNotes }}" as="t" hint-placeholder-count="6">
-          <div style="display:flex;gap:6px;font-size:11px;color:var(--text-2);line-height:1.75"><span style="flex:none;color:var(--accent)">・</span><span>{{ t }}</span></div>
+          <div style="display:flex;gap:6px;font-size:11px;color:var(--text-2);line-height:1.75"><span style="flex:none;color:var(--accent-deep)">・</span><span>{{ t }}</span></div>
         </sc-for>
       </div>
     </div>
@@ -6425,8 +6435,8 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <div class="mk-card" style="margin-top:12px">
       <div class="mk-h"><b>一圖流詳細攻略</b><i>上下兩張 16:9 PNG・存圖分享</i></div>
       <div class="bp-guide">
-        <a class="bp-gimg" href="img/bdayparty/guide-1.png?v=034d5b7382" target="_blank" rel="noopener"><img src="img/bdayparty/guide-1-thumb.webp?v=034d5b7382" alt="豆森生日派對詳細攻略上篇" loading="lazy"><span>上篇：流程・時程・機制・加成卡・採集策略</span></a>
-        <a class="bp-gimg" href="img/bdayparty/guide-2.png?v=9d05256104" target="_blank" rel="noopener"><img src="img/bdayparty/guide-2-thumb.webp?v=9d05256104" alt="豆森生日派對詳細攻略下篇" loading="lazy"><span>下篇：對照表・目標規劃・家具・獎勵・經驗值・Q&amp;A</span></a>
+        <a class="bp-gimg" href="img/bdayparty/guide-1.webp?v=034d5b7382" target="_blank" rel="noopener"><img src="img/bdayparty/guide-1-thumb.webp?v=034d5b7382" alt="豆森生日派對詳細攻略上篇" loading="lazy"><span>上篇：流程・時程・機制・加成卡・採集策略</span></a>
+        <a class="bp-gimg" href="img/bdayparty/guide-2.webp?v=9d05256104" target="_blank" rel="noopener"><img src="img/bdayparty/guide-2-thumb.webp?v=9d05256104" alt="豆森生日派對詳細攻略下篇" loading="lazy"><span>下篇：對照表・目標規劃・家具・獎勵・經驗值・Q&amp;A</span></a>
       </div>
       <div style="font-size:12.5px;line-height:1.75;margin-top:10px">附遊戲畫面與實際素材圖。每一場派對的規則與數字都相同，只有往年生日卡張數不同（台服最高 +110%、日服 2026 年起 +125%）。</div>
       <div class="bp-gbtns"><a class="mk-chip" href="img/bdayparty/guide-1.png?v=034d5b7382" download="豆森生日派對詳細攻略-上篇.png">下載上篇</a><a class="mk-chip" href="img/bdayparty/guide-2.png?v=9d05256104" download="豆森生日派對詳細攻略-下篇.png">下載下篇</a><button type="button" class="mk-chip" onClick="{{ onBpCopy }}">複製文字攻略</button></div>
@@ -6613,7 +6623,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ isJpNow }}">
   <div class="u-a3" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1)">
     <sc-if value="{{ jnLoading }}"><div class="empty loading">日服現況載入中…</div></sc-if>
-    <sc-if value="{{ jnHasErr }}"><button type="button" onClick="{{ onJnRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ jnErr }}</button></sc-if>
+    <sc-if value="{{ jnHasErr }}"><button type="button" onClick="{{ onJnRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer">{{ jnErr }}</button></sc-if>
     <sc-if value="{{ jnHas }}">
     <div class="jn-hero">
       <div class="jn-kick"><span>日服現況</span><i>{{ jnVer }}</i><sc-if value="{{ jnIsTwMode }}"><button type="button" onClick="{{ onSrvPick }}" data-v="jp" style="padding:2px 10px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:transparent;color:#fff;font-size:11px;font-weight:800;cursor:pointer">整站切到日服 →</button></sc-if></div>
@@ -6738,7 +6748,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ isSched }}">
   <div class="u-a3">
     <sc-if value="{{ sdLoading }}"><div class="empty loading">排程預測資料載入中…</div></sc-if>
-    <sc-if value="{{ sdHasErr }}"><button type="button" onClick="{{ onSdRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ sdErr }}</button></sc-if>
+    <sc-if value="{{ sdHasErr }}"><button type="button" onClick="{{ onSdRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer">{{ sdErr }}</button></sc-if>
     <sc-if value="{{ sdHas }}">
     <div class="se-hero" style="position:relative;overflow:hidden;border-radius:24px;padding:20px 22px 18px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.75">排程預測</div>
@@ -6897,7 +6907,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ isEvinfo }}">
   <div class="u-a3">
     <sc-if value="{{ eiLoading }}"><div class="empty loading">活動資料載入中…</div></sc-if>
-    <sc-if value="{{ eiHasErr }}"><button type="button" onClick="{{ onEiRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ eiErr }}</button></sc-if>
+    <sc-if value="{{ eiHasErr }}"><button type="button" onClick="{{ onEiRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer">{{ eiErr }}</button></sc-if>
     <sc-if value="{{ eiHas }}">
     <div class="mk-row" style="margin-bottom:10px;align-items:center">
       <sc-for list="{{ eiChips }}" as="c" hint-placeholder-count="3"><button type="button" class="mk-chip" onClick="{{ onEiChip }}" data-v="{{ c.v }}" disabled="{{ c.dis }}" style="background:{{ c.bg }};color:{{ c.fg }};border-color:{{ c.bd }}">{{ c.n }}</button></sc-for>
@@ -7013,7 +7023,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:0;border-top:2px dashed #e0533a"></span>今天</span>
     </div>
     <sc-if value="{{ dvEmpty }}"><div class="empty loading">資料載入中…</div></sc-if>
-    <sc-if value="{{ dvHasErr }}"><button type="button" onClick="{{ onDvRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">{{ dvErr }}</button></sc-if>
+    <sc-if value="{{ dvHasErr }}"><button type="button" onClick="{{ onDvRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">{{ dvErr }}</button></sc-if>
     <sc-if value="{{ dvNone }}"><div class="empty">資料裡沒有可畫的期數。</div></sc-if>
     <div class="dv-wrap" style="position:relative"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas>
       <sc-if value="{{ dvTipOn }}"><div style="position:absolute;left:{{ dvTipX }};top:{{ dvTipY }};z-index:3;pointer-events:none;max-width:240px;padding:7px 10px;border-radius:10px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-sm);font-size:12px;line-height:1.5"><div style="font-weight:800;color:var(--ink);display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{ dvTipColor }};flex:none"></span>{{ dvTipN }}</div><div style="color:var(--text-3);font-size:11px">{{ dvTipSub }}</div></div></sc-if>
@@ -7026,7 +7036,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <div class="u-a3">
     <div style="font-size:12.5px;color:var(--text-3);line-height:1.75;margin-bottom:12px">每格上排是<b class="u-c11">台服當前</b>、下排是<b style="color:#e0533a">日服最新進度</b>的理論推隊倍率（同團同色最佳五人隊）；日服比台服高就標紅並寫出差多少。點任一格看兩服各自的五張卡。<sc-if value="{{ smHasOwn }}"><b style="color:#2fa84f">第三行「我」</b>是用你在收集率勾選的持有卡算出的最佳倍率。</sc-if></div>
     <sc-if value="{{ smLoading }}"><div class="empty loading">理論技能倍率表載入中…</div></sc-if>
-    <sc-if value="{{ smErr }}"><button type="button" onClick="{{ onSmReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">{{ smErr }}</button></sc-if>
+    <sc-if value="{{ smErr }}"><button type="button" onClick="{{ onSmReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer">{{ smErr }}</button></sc-if>
     <sc-if value="{{ smReady }}">
       <div class="sm-wrap">
         <div class="sm-row head"><div class="sm-h">同團同色</div>
@@ -7571,7 +7581,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ admNoPending }}"><div style="font-size:12.5px;color:var(--text-3);padding:8px 0">目前沒有待審核的申請。</div></sc-if>
         <sc-for list="{{ admUserRows }}" as="u" hint-placeholder-count="3">
           <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)">
-            <img src="{{ u.pic }}" referrerpolicy="no-referrer" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
+            <img alt="" src="{{ u.pic }}" referrerpolicy="no-referrer" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
             <div style="flex:1;min-width:150px">
               <div class="u-ffc14">{{ u.name }}</div>
               <div class="u-fc2">{{ u.email }}　{{ u.when }}</div>
@@ -7627,7 +7637,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
           <sc-for list="{{ admAutoRows }}" as="u" hint-placeholder-count="2">
             <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)">
-              <img src="{{ u.pic }}" referrerpolicy="no-referrer" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
+              <img alt="" src="{{ u.pic }}" referrerpolicy="no-referrer" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border)" onerror="{{ onImgErr }}" data-fb="hidden">
               <div style="flex:1;min-width:150px">
                 <div class="u-ffc12">{{ u.name }}</div>
                 <div class="u-fc2">{{ u.email }}　自動核准於 {{ u.when }}</div>
@@ -7798,7 +7808,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;font-family:'M PLUS Rounded 1c'">{{ colCount }}</div>
 
     <sc-if value="{{ colHasErr }}">
-      <button type="button" onClick="{{ onColReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ colErrMsg }}</button>
+      <button type="button" onClick="{{ onColReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ colErrMsg }}</button>
     </sc-if>
     <sc-if value="{{ colBusy }}">
       <div class="empty loading">
@@ -8014,7 +8024,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ dbHasErr }}">
-      <button type="button" onClick="{{ onDbReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ dbErrMsg }}</button>
+      <button type="button" onClick="{{ onDbReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ dbErrMsg }}</button>
     </sc-if>
     <sc-if value="{{ dbBusy }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px" aria-label="載入中">
@@ -9104,7 +9114,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="padding:10px 14px;border-radius:13px;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent-deep);font-size:12.5px;font-weight:700;margin-bottom:11px">{{ rMsg }}</div>
     </sc-if>
     <sc-if value="{{ rateHasErr }}">
-      <button type="button" onClick="{{ onRateReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ rateErrMsg }}</button>
+      <button type="button" onClick="{{ onRateReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ rateErrMsg }}</button>
     </sc-if>
     <sc-if value="{{ rateBusy }}">
       <div class="empty loading">
@@ -9224,7 +9234,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <span style="display:block;font-size:12.5px;font-weight:800;color:var(--ink)">{{ u.t }}</span>
             <span style="display:block;margin-top:3px">
               <sc-for list="{{ u.pts }}" as="pt" hint-placeholder-count="2">
-                <span style="display:flex;gap:6px;font-size:11.5px;color:var(--text-2);line-height:1.6"><span style="flex:none;color:var(--accent)">・</span><span>{{ pt }}</span></span>
+                <span style="display:flex;gap:6px;font-size:11.5px;color:var(--text-2);line-height:1.6"><span style="flex:none;color:var(--accent-deep)">・</span><span>{{ pt }}</span></span>
               </sc-for>
               <sc-if value="{{ u.hasMore }}">
                 <button type="button" onClick="{{ onSysToggle }}" data-k="{{ u.k }}" style="margin-top:2px;padding:0;border:none;background:none;color:var(--accent-deep);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">{{ u.moreText }}</button>
@@ -9289,7 +9299,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <!-- 收合：浮動唱片圓鈕 -->
   <sc-if value="{{ playerMin }}">
     <button type="button" onClick="{{ onPlayerMin }}" title="展開播放器" style="position:relative;width:60px;height:60px;border:none;border-radius:50%;padding:0;cursor:pointer;background:var(--cta);box-shadow:0 8px 26px rgba(37,125,220,.42);overflow:hidden">
-      <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="none" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;animation:{{ playerSpin }}">
+      <img alt="" src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="none" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;animation:{{ playerSpin }}">
       <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:rgba(10,14,28,.5)"></span>
       <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex"><svg viewBox="0 0 24 24" width="13" height="13" fill="#fff" style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))"><path d="{{ playIconPath }}"></path></svg></span>
     </button>
@@ -9300,7 +9310,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <div style="width:min(340px,calc(100vw - 24px));padding:12px;border-radius:22px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-lg);animation:popIn .3s cubic-bezier(.34,1.45,.44,1)">
     <div style="display:flex;align-items:center;gap:11px">
       <div style="width:46px;height:46px;flex:none;border-radius:12px;overflow:hidden;background:var(--card-2);box-shadow:var(--sh-xs)">
-        <img src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="none" style="width:100%;height:100%;object-fit:cover;display:block">
+        <img alt="" src="{{ playerJktUrl }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="none" style="width:100%;height:100%;object-fit:cover;display:block">
       </div>
       <div style="min-width:0;flex:1">
         <div style="font-size:13px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ playerCur }}</div>
@@ -9342,7 +9352,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <sc-for list="{{ plRows }}" as="p" hint-placeholder-count="4">
             <div role="button" tabindex="0" onClick="{{ onQueueJump }}" data-i="{{ p.i }}" style="display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:10px;background:{{ p.bg }};cursor:pointer">
               <span style="width:18px;font-size:10.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';text-align:right;flex:none">{{ p.no }}</span>
-              <img src="{{ p.jkt }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="hidden" style="width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none;background:var(--card-2)">
+              <img alt="" src="{{ p.jkt }}" referrerpolicy="no-referrer" loading="lazy" onerror="{{ onImgErr }}" data-fb="hidden" style="width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none;background:var(--card-2)">
               <span style="min-width:0;flex:1">
                 <span style="display:block;font-size:12px;font-weight:700;color:{{ p.fg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.title }}</span>
                 <span style="display:block;font-size:10px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.sub }}</span>
@@ -9924,7 +9934,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 <div onClick="{{ onSongClose }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div class="modal" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(500px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:color-mix(in oklab,var(--card) 96%,transparent);backdrop-filter:blur(24px);box-shadow:var(--sh-lg);animation:popCenter .3s cubic-bezier(.34,1.4,.44,1)">
   <div class="modal-head">
-    <img src="{{ songDetailData.jacket }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="opacity" style="width:88px;height:88px;flex:none;border-radius:14px;object-fit:cover;border:1px solid var(--border)">
+    <img alt="" src="{{ songDetailData.jacket }}" referrerpolicy="no-referrer" onerror="{{ onImgErr }}" data-fb="opacity" style="width:88px;height:88px;flex:none;border-radius:14px;object-fit:cover;border:1px solid var(--border)">
     <div style="min-width:0;flex:1">
       <div style="font-size:16px;font-weight:800;color:var(--ink);line-height:1.35">{{ songDetailData.title }}</div>
       <div style="font-size:12px;color:var(--text-3);margin-top:2px">{{ songDetailData.composer }}</div>
@@ -10249,7 +10259,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=25e94dc101"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4b4b118ca8"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

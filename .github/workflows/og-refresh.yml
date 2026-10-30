@@ -15,17 +15,30 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      # js/app.js 幾乎每次合併都會改，但預覽圖只跟 PAGES 表與版型有關：這三樣的雜湊跟上次一樣就整個略過（省下裝字型與瀏覽器的幾分鐘）
+      - name: PAGES 表或版型有變才重產
+        id: need
+        run: |
+          h=$( { node -e "const s=require('fs').readFileSync('js/app.js','utf8');const b=s.slice(s.indexOf('  PAGES = {'));process.stdout.write(b.slice(0,b.indexOf('\\n  };')))"; cat og.html tools/build-og.mjs; } | sha1sum | cut -c1-40)
+          echo "hash=$h" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" != workflow_dispatch ] && [ -f og/.src-hash ] && [ "$(cat og/.src-hash)" = "$h" ]; then
+            echo "skip=1" >> "$GITHUB_OUTPUT"; echo "PAGES 表與版型都沒變，不重產"
+          fi
       - name: 字型與瀏覽器
+        if: steps.need.outputs.skip != '1'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
           npm i --no-save --silent playwright@1.48.2
           npx playwright install --with-deps chromium
       - name: 產圖
+        if: steps.need.outputs.skip != '1'
         run: |
           python3 -m http.server 8765 >/dev/null 2>&1 &
           sleep 1
           node tools/build-og.mjs
+          echo "${{ steps.need.outputs.hash }}" > og/.src-hash
       - name: 提交
+        if: steps.need.outputs.skip != '1'
         run: |
           git add -- og
           git diff --cached --quiet && { echo "沒有變化"; exit 0; }

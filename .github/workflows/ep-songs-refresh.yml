@@ -77,9 +77,20 @@ jobs:
           python3 tools/build-bday-party.py || echo "台服生日派對資料更新失敗,本輪略過"
           MASTER_SRV=jp python3 tools/build-bday-party.py || echo "日服生日派對資料更新失敗,本輪略過"
 
+      # 首頁活動主視覺用的素材名稱（以前前端每次開站都抓整份 1.5 MB 的 events.json）
+      - name: 重建活動素材名稱（台服＋日服）
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/build-event-art.py || echo "台服活動素材名稱更新失敗,本輪略過"
+          MASTER_SRV=jp python3 tools/build-event-art.py || echo "日服活動素材名稱更新失敗,本輪略過"
+
+      - name: 重建 sitemap（只在分頁有增減時變動）
+        run: python3 tools/build-sitemap.py || echo "sitemap 更新失敗,本輪略過"
+
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh）。
       # 以前先在舊的 checkout 上重算戳記、再 rebase 推送，會把期間別的排程更新過的戳記蓋回舊值，
       # main 的戳記檢查因此變紅（2026-09-28 那次蓋掉了 data-built.js、support-events.js 的戳記）。
       # build-db-index.py 也寫 mysekai-events.js、support-events.js、data-built.js，以前漏在清單外（每天產生後被丟掉），一起補上。
       - name: 提交變更
-        run: bash tools/commit-data.sh "曲庫資料 $(date -u '+%Y-%m-%d')" data/ep-songs.js data/ep-song-windows.js data/song-bpm.js data/song-meta.js data/lives-index.js data/fixtures-index.js data/stories-index.js data/mysekai-talks-index.js data/mysekai-events.js data/support-events.js data/data-built.js data/lives-index-jp.js data/fixtures-index-jp.js data/stories-index-jp.js data/mysekai-talks-index-jp.js data/mysekai-events-jp.js data/support-events-jp.js data/data-built-jp.js data/cards-index.js data/cards-index-jp.js data/cards-extra.js data/cards-extra-jp.js data/bday-party.js data/bday-party-jp.js
+        run: bash tools/commit-data.sh "曲庫資料 $(date -u '+%Y-%m-%d')" data/ep-songs.js data/ep-song-windows.js data/song-bpm.js data/song-meta.js data/lives-index.js data/fixtures-index.js data/stories-index.js data/mysekai-talks-index.js data/mysekai-events.js data/support-events.js data/data-built.js data/lives-index-jp.js data/fixtures-index-jp.js data/stories-index-jp.js data/mysekai-talks-index-jp.js data/mysekai-events-jp.js data/support-events-jp.js data/data-built-jp.js data/cards-index.js data/cards-index-jp.js data/cards-extra.js data/cards-extra-jp.js data/bday-party.js data/bday-party-jp.js data/event-art.js data/event-art-jp.js sitemap.xml

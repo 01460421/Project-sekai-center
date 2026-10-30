@@ -286,6 +286,14 @@
     },
     {
       "src": "/img/(.*)",
+      "has": [{ "type": "query", "key": "v" }],
+      "dest": "/img/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/img/(.*)",
       "dest": "/img/$1",
       "headers": {
         "cache-control": "public, max-age=604800"
