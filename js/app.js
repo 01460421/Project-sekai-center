@@ -2942,7 +2942,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=8fe89cc06d').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=2713621c98').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -2960,7 +2960,7 @@ class Component extends DCLogic {
   /* ---------- 線上客服（延後載入，程式在 js/help.js）：開站閒下來就預載，第一次點開不用等 ---------- */
   loadHelp() {
     if (!this._hpReady) {
-      this._hpReady = import('./js/help.js?v=b5b3dab41a').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
+      this._hpReady = import('./js/help.js?v=58ed2e2cc5').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
         .catch(e => { this._hpReady = null; throw e; });
     }
     return this._hpReady;

@@ -502,6 +502,30 @@ test('/event：日曆照舊；榜線／前百／歷史從網站來源抓，失�
   assert.deepEqual(bot.errors, []);
 });
 
+test('/event jp：日服現況（網站的 data/jp-now.js＋Worker 的日服即時榜線），抓不到時有日服的錯誤訊息', async () => {
+  const bot = await makeBot(); const now = Date.now(), H = 3600e3;
+  const D = { built: now - 5 * H, ver: { app: '7.1.0', data: '7.1.0.35', asset: '7.1.0.35' },
+    events: [[221, 'Old', 'marathon', 'street', now - 200 * H, now - 100 * H, now - 99 * H, 'a', 'cool', [], [], []],
+      [222, 'MORE MORE JUMP！ Memories', 'marathon', 'idol', now - 90 * H, now + 9 * H, now + 10 * H, 'b', 'mysterious', [[5, 'idol']], [[1417, 5, 4, 'mysterious', 'heal', 'x']], []],
+      [223, 'Next One', 'cheerful_carnival', 'none', now + 20 * H, now + 150 * H, now + 151 * H, 'c', 'happy', [], [], []]],
+    gachas: [[4053, 'MMJ ガチャ', 'ceil', now - 90 * H, now + 30 * H, 'g', [[1417, 5, 4, 'mysterious', 'heal', 'x'], [1440, 6, 4, 'cute', 'perfect', 'y'], [9, 7, 3, 'cool', 'score', 'z']]]],
+    songs: [[700, '新しい歌', '-', '作曲者A', now + 48 * H, 's'], [699, 'ディスコティックブルー', 'Rulmry.', 'Rulmry.', now - 90 * H, 't']] };
+  mockLive({
+    '/data/jp-now.js': '/* 註解 */\nexport const JP_NOW=' + JSON.stringify(D) + ';\n',
+    '/haruki/jp/event/live/border': { id: 222, name: 'MORE MORE JUMP！ Memories', player_border_rankings: [{ rank: 100, score: 30000000 }, { rank: 1000, score: 9000000 }] },
+  });
+  const r = await runCmd(bot, 'event', { sub: 'jp' }); assert.ok(r.deferred, '要先 defer'); const t = textOf(r.edits[0]);
+  assert.match(t, /日服現況/); assert.match(t, /日服 v7\.1\.0/);
+  assert.match(t, /第 222 期「MORE MORE JUMP！ Memories」馬拉松・加成神秘/, '進行中的活動');
+  assert.match(t, /第 223 期「Next One」歡樂嘉年華・加成快樂/, '下一期'); assert.doesNotMatch(t, /第 221 期/, '結束的不列');
+  assert.match(t, /MMJ ガチャ/); assert.match(t, /PU：花里實乃理、桐谷遙/, 'PU 只列 ★4'); assert.doesNotMatch(t, /PU：[^\n]*日野森雫/);
+  assert.match(t, /新しい歌（作曲者A）/); assert.match(t, /公開/);
+  assert.match(t, /T100　\*\*30,000,000\*\*/); assert.match(t, /T1,000　\*\*9,000,000\*\*/);
+  resetFetch();
+  const fail = await runCmd(bot, 'event', { sub: 'jp' }); assert.match(textOf(fail.edits[0]), /暫時抓不到日服資料/);
+  assert.deepEqual(bot.errors, []);
+});
+
 test('/card：自動完成、依 id 查、模糊查多張、技能敘述有數值；/gachastats 含天井（原 /pity）', async () => {
   const bot = await makeBot();
   const ac = await bot.runAutocomplete({ name: 'card', focused: '一歌', user: USERS.alice, guildId: GUILD, channelId: CHANNEL, io: {} }); assert.ok(ac.length >= 1 && ac.length <= 25); assert.match(ac[0].name, /一歌/); assert.match(ac[0].value, /^\d+$/);

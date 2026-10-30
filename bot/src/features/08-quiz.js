@@ -4,7 +4,7 @@ import { str, int, sub } from '../core/opts.js';
 import { embed, button, row, cid, COLORS, Style, mention, num, clean, ts, bar, LETTER_EMOJI } from '../core/ui.js';
 import { award, quest, checkAchievements, achievementLine } from '../core/helpers.js';
 import { CHARAS, charaById, UNITS, SONGS, songById, songLevel, songNotes, fmtLen, searchSongs, DIFF_NAMES, eventsAround, gachasAround } from '../core/sekai.js';
-import { fetchLive, fetchHistoryIndex, fetchHistory, trend, fetchBordersDb } from '../core/live.js';
+import { fetchLive, fetchHistoryIndex, fetchHistory, trend, fetchBordersDb, fetchJpNow, fetchJpLive } from '../core/live.js';
 import { TRIVIA } from '../content/trivia.js';
 import { Rng } from '../core/rng.js';
 
@@ -192,6 +192,38 @@ async function topMsg(count) {
   const fields = live.wl.map(c => ({ name: chapterName(c), value: c.rows.slice(0, 3).map(line).join('\n') || '—', inline: true }));
   return { embeds: [embed({ title: `🏁 前百・第 ${live.event.id ?? '?'} 期 ${live.event.name}`, color: COLORS.gold, description: (live.event.end ? `結束 ${ts(live.event.end)}\n\n` : '') + (live.rows.slice(0, n).map(line).join('\n') || '（目前沒有資料）'), fields, footer: `來源 ${live.source}・⏱ 為近一小時時速・網站排名頁同一套資料` })] };
 }
+/* 日服現況：進行中與下一期活動、開放中的卡池（PU ★4）、新曲、即時榜線。時間用 Discord 時間戳，各人看到自己的時區 */
+const JP_EV = { marathon: '馬拉松', cheerful_carnival: '歡樂嘉年華', world_bloom: 'World Link' };
+const JP_ATTR = { cute: '可愛', cool: '酷', pure: '純潔', happy: '快樂', mysterious: '神秘' };
+async function jpMsg() {
+  const D = await fetchJpNow(); const now = Date.now();
+  const nm = id => (charaById(id) || {}).name || `#${id}`;
+  const evLine = e => `第 ${e[0]} 期「${e[1]}」${JP_EV[e[2]] || e[2]}${e[8] ? `・加成${JP_ATTR[e[8]] || e[8]}` : ''}`;
+  const evs = (D.events || []).slice().sort((a, b) => a[4] - b[4]);
+  const cur = evs.filter(e => e[4] <= now && now < e[6]).pop(); const next = evs.filter(e => e[4] > now);
+  const fields = [];
+  fields.push({ name: '活動', value: [
+    cur ? `🟢 ${evLine(cur)}
+　${now < cur[5] ? `${ts(cur[5], 'f')} 結算（${ts(cur[5])}）` : '已結算，等待公布結果'}` : '現在是活動之間的空檔',
+    ...next.slice(0, 2).map(e => `🕒 ${evLine(e)}
+　${ts(e[4], 'f')} 開始（${ts(e[4])}）`),
+    next.length ? '' : '-# 下一期日服還沒排進 master（通常活動開始前才會更新）',
+  ].filter(Boolean).join('\n') });
+  const pu = g => [...new Set((g[6] || []).filter(c => c[2] >= 4).map(c => nm(c[1]) + (c[2] === 9 ? '（生日）' : '')))].slice(0, 4).join('、');
+  const ga = (D.gachas || []).filter(g => g[3] <= now && now < g[4]).sort((a, b) => (b[2] === 'ceil') - (a[2] === 'ceil') || a[4] - b[4]).slice(0, 4);
+  const soon = (D.gachas || []).filter(g => g[3] > now).sort((a, b) => a[3] - b[3]).slice(0, 2);
+  if (ga.length || soon.length) fields.push({ name: '卡池', value: [...ga.map(g => `🟢 ${g[1]}　到 ${ts(g[4], 'f')}${pu(g) ? `\n　PU：${pu(g)}` : ''}`), ...soon.map(g => `🕒 ${g[1]}　${ts(g[3], 'f')} 開始${pu(g) ? `\n　PU：${pu(g)}` : ''}`)].join('\n').slice(0, 1024) });
+  const songs = (D.songs || []).slice(0, 4);
+  if (songs.length) fields.push({ name: '新曲', value: songs.map(m => `${m[4] > now ? '🕒' : '🎵'} ${m[1]}${m[3] && m[3] !== '-' ? `（${m[3]}）` : ''}　${ts(m[4], 'd')}${m[4] > now ? ' 公開' : ''}`).join('\n') });
+  try {
+    const live = await fetchJpLive('border');
+    const want = [100, 1000, 5000, 10000];
+    const line = live.rows.filter(r => want.includes(r.rank)).map(r => `T${num(r.rank)}　**${num(r.score)}**`).join('\n');
+    if (line) fields.push({ name: `即時榜線${live.event.name ? `・${live.event.name}` : ''}`, value: line, inline: true });
+  } catch {}
+  return { embeds: [embed({ title: '🗾 日服現況', color: COLORS.purple, description: `日服 v${(D.ver && D.ver.app) || '?'}・資料整理於 ${ts(D.built, 'd')}（每天從日服 master 重建）`, fields,
+    footer: '完整內容：網站「日服現況」頁' })] };
+}
 async function historyMsg(eventId) {
   const db = await fetchBordersDb(); const list = db.borders || [];
   const target = eventId ? list.find(b => b.id === eventId) : list[list.length - 1];
@@ -205,16 +237,16 @@ async function historyMsg(eventId) {
   return { embeds: [embed({ title: `📚 歷史榜線・第 ${target.id} 期 ${target.name}`, color: COLORS.purple, description: `${meta.start || ''}～${meta.end || ''}・${target.days} 天・${target.type}${meta.attr ? `・${meta.attr}` : ''}・${target.chara}（${target.unit}）\n\n${pick.join('\n') || '（沒有段位資料）'}`, fields, footer: `${db.source || ''}・用 /event history event:期數 看其他期` })] };
 }
 const event = {
-  name: 'event', description: '台服活動：日曆、即時榜線與前百（同網站排名頁）、歷史榜線', category: 'quiz',
-  options: [sub('now', '進行中與即將開始的活動、卡池'), sub('border', '目前榜線：各段位分數與近一小時增量'), sub('top', '目前前百', [int('count', '顯示幾名（5～50，預設 10）', { min: 5, max: 50 })]), sub('history', '某一期的最終榜線（不填就是最近一期）', [int('event', '期數', { min: 1, max: 999 })])],
+  name: 'event', description: '活動：台服日曆、即時榜線與前百（同網站排名頁）、歷史榜線，以及日服現況', category: 'quiz',
+  options: [sub('now', '進行中與即將開始的活動、卡池'), sub('jp', '日服現況：進行中與下一期活動、卡池、新曲、即時榜線'), sub('border', '目前榜線：各段位分數與近一小時增量'), sub('top', '目前前百', [int('count', '顯示幾名（5～50，預設 10）', { min: 5, max: 50 })]), sub('history', '某一期的最終榜線（不填就是最近一期）', [int('event', '期數', { min: 1, max: 999 })])],
   async run(ctx) {
     if (!ctx.sub || ctx.sub === 'now') return ctx.reply(calendarMsg());
     await ctx.defer();   // 要打外部來源，先讓 Discord 等
     try {
-      const msg = ctx.sub === 'border' ? await borderMsg() : ctx.sub === 'top' ? await topMsg(ctx.opt('count')) : await historyMsg(ctx.opt('event'));
+      const msg = ctx.sub === 'jp' ? await jpMsg() : ctx.sub === 'border' ? await borderMsg() : ctx.sub === 'top' ? await topMsg(ctx.opt('count')) : await historyMsg(ctx.opt('event'));
       await ctx.edit(msg);
     } catch (e) {
-      await ctx.edit({ content: `${LIVE_FAIL}\n-# ${String((e && e.message) || e).slice(0, 120)}`, embeds: [], components: [] });
+      await ctx.edit({ content: `${ctx.sub === 'jp' ? '暫時抓不到日服資料，稍後再試。' : LIVE_FAIL}\n-# ${String((e && e.message) || e).slice(0, 120)}`, embeds: [], components: [] });
     }
   },
 };

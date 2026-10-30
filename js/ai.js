@@ -16,10 +16,17 @@ export function aiMembers() {
       description: '目前 uid 在當期活動的狀態：分數、名次、實測時速、預測終分、距各段位還差多少分與需要幾小時。',
       input_schema: { type: 'object', properties: {} } },
     { name: 'get_current_event',
-      description: '當期活動的名稱、型態(馬拉松/嘉年華/World Link)、起訖時間、已過進度、剩餘時數。',
+      description: '台服當期活動的名稱、型態(馬拉松/嘉年華/World Link)、起訖時間、已過進度、剩餘時數。日服用 get_jp_now。',
       input_schema: { type: 'object', properties: {} } },
+    { name: 'get_jp_now',
+      description: '日服（日版／日本服）的最新情報：遊戲版本、進行中／剛結束／已排定的活動（型態、團體、加成屬性與角色、活動卡、WL 章節與時間）、開放中與即將開的卡池（PU 卡）、最新與即將公開的新曲、日服遊戲內的最新公告（標題與連結）、日服即時榜線與前十。'
+        + '問到「日服」「日版」「日本那邊」現在／最新／下一期／新卡池／新曲／公告／榜線，一律先呼叫這個，不要回答不知道。'
+        + '活動、卡池、新曲每天從日服 master 重建（built_at 是重建時間），公告與榜線是呼叫當下抓的。台服的事用其他工具。',
+      input_schema: { type: 'object', properties: {
+        parts: { type: 'array', items: { type: 'string', enum: ['version', 'events', 'gachas', 'songs', 'news', 'border'] }, description: '要哪幾部分，不給回全部' },
+        limit: { type: 'integer', description: '每個清單最多幾筆，預設 8，上限 24' } } } },
     { name: 'get_upcoming_events',
-      description: '接下來幾期活動的排程與型態。規劃「接下來兩期怎麼跑」時用。',
+      description: '台服接下來幾期活動的排程與型態。規劃「接下來兩期怎麼跑」時用。日服用 get_jp_now。',
       input_schema: { type: 'object', properties: {
         n: { type: 'integer', description: '要幾期，預設 3，上限 8' } } } },
     { name: 'get_borders',
@@ -600,6 +607,82 @@ export function aiMembers() {
                  unit: meta ? meta.unit : null, chara: meta ? meta.chara : null,
                  progress_pct: +(ck.frac * 100).toFixed(1), hours_left: +ck.leftH.toFixed(1),
                  is_world_link: this.isWL() };
+      }
+      case 'get_jp_now': {
+        const want = new Set(Array.isArray(a.parts) && a.parts.length ? a.parts : ['version', 'events', 'gachas', 'songs', 'news', 'border']);
+        const lim = Math.max(1, Math.min(24, Math.round(+a.limit || 8)));
+        const D = await this.loadJpNow();
+        if (!D) return { error: '日服現況資料（data/jp-now.js）載入失敗，稍後再試' };
+        const now = Date.now(), pad = v => String(v).padStart(2, '0');
+        /* 時間一律給台北與日本兩種（台北＝日本 −1 小時），模型不必自己換算 */
+        const at = (t, off) => { const d = new Date(t + off * 3600000); return d.getUTCFullYear() + '/' + pad(d.getUTCMonth() + 1) + '/' + pad(d.getUTCDate()) + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); };
+        const when = t => t ? { taipei: at(t, 8), japan: at(t, 9) } : null;
+        let CH = [];
+        try { CH = (await import(scData(this.SRV === 'jp' ? 'cards-index-jp.js' : 'cards-index.js'))).CHARAS || []; } catch (e) {}
+        const nm = id => { const c = CH.find(x => x[0] === id); return c ? c[1] : '#' + id; };
+        const EVN = { marathon: '馬拉松', cheerful_carnival: '歡樂嘉年華', world_bloom: 'World Link' };
+        const UNIT = { light_sound: 'Leo/need', idol: 'MORE MORE JUMP!', street: 'Vivid BAD SQUAD', theme_park: 'ワンダーランズ×ショウタイム', school_refusal: '25時、ナイトコードで。', piapro: 'VIRTUAL SINGER', none: '混活' };
+        const GTN = { ceil: '限定／PU 池', normal: '一般池', gift: '禮物池', beginner: '新手池' };
+        const attr = k => (this.SM_ATTR[k] || [k || ''])[0];
+        const skill = k => (this.CL_GROUP[k] || [k || ''])[0];
+        const card = c => ({ card_id: c[0], character: nm(c[1]), rarity: c[2] === 9 ? '生日' : '★' + c[2], attribute: attr(c[3]), skill: c[4] === 'birthday' ? '生日' : skill(c[4]) });
+        const chars = list => { const ids = [...new Set((list || []).map(x => x[0]))]; return ids.length >= 26 ? ['全部 26 位角色'] : ids.map(nm); };
+        const out = { now: when(now), built_at: when(D.built), source: '日服 master（Sekai-World／Haruki）每天重建；公告讀日服 master 的 userInformations；榜線來自 Haruki 日服追蹤器' };
+        if (want.has('version')) out.version = { app: D.ver.app, data: D.ver.data, asset: D.ver.asset };
+        if (want.has('events')) {
+          const ev = e => {
+            const st = now < e[4] ? 'upcoming' : now < e[5] ? 'running' : now < e[6] ? 'aggregated' : 'ended';
+            return { id: e[0], name: e[1], type: EVN[e[2]] || e[2], unit: UNIT[e[3]] || e[3] || '混活', status: st,
+              start: when(e[4]), aggregate: when(e[5]), end: when(e[6]),
+              hours_left: st === 'running' ? +((e[5] - now) / 3600000).toFixed(1) : null,
+              starts_in_hours: st === 'upcoming' ? +((e[4] - now) / 3600000).toFixed(1) : null,
+              bonus_attribute: e[8] ? attr(e[8]) : null, bonus_characters: chars(e[9]),
+              event_cards: (e[10] || []).map(card),
+              wl_chapters: (e[11] || []).map(w => ({ chapter: w[0], character: nm(w[1]), start: when(w[2]), end: when(w[3]), running: w[2] <= now && now < w[3] })) };
+          };
+          const evs = (D.events || []).slice().sort((x, y) => x[4] - y[4]);
+          out.events = { running: evs.filter(e => e[4] <= now && now < e[6]).map(ev),
+            upcoming: evs.filter(e => e[4] > now).slice(0, lim).map(ev),
+            recent_ended: evs.filter(e => e[6] <= now).slice(-Math.min(lim, 4)).reverse().map(ev),
+            note: 'upcoming 只到日服 master 已排好的期數（通常是下一期）；status：running 進行中、aggregated 已結算待公布、upcoming 未開始、ended 已結束' };
+        }
+        if (want.has('gachas')) {
+          const ga = g => ({ id: g[0], name: g[1], type: GTN[g[2]] || g[2], start: when(g[3]), end: when(g[4]),
+            status: now < g[3] ? 'upcoming' : now < g[4] ? 'open' : 'ended', pickups: (g[6] || []).map(card) });
+          const gs = (D.gachas || []).slice().sort((x, y) => x[3] - y[3]);
+          out.gachas = { open: gs.filter(g => g[3] <= now && now < g[4]).sort((x, y) => (y[2] === 'ceil') - (x[2] === 'ceil') || x[4] - y[4]).slice(0, lim).map(ga),
+            upcoming: gs.filter(g => g[3] > now).slice(0, lim).map(ga), note: '常駐池不列；upcoming 只含日服 master 已排好、60 天內會開的池' };
+        }
+        if (want.has('songs')) {
+          out.songs = (D.songs || []).slice(0, lim).map(m => ({ id: m[0], title: m[1], lyricist: m[2] && m[2] !== '-' ? m[2] : '', composer: m[3] && m[3] !== '-' ? m[3] : '',
+            published: when(m[4]), released: m[4] <= now }));
+          out.songs_note = '依公開時間新到舊；released=false 是已公布、還沒開放的曲子';
+        }
+        if (want.has('news')) {
+          try {
+            const u = await fetch(this.JP_MASTER + '/userInformations.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+            out.news = (u || []).filter(x => x.title && (x.startAt || 0) <= now && (!x.endAt || x.endAt > now - 30 * 86400000))
+              .sort((x, y) => (y.startAt || 0) - (x.startAt || 0) || y.id - x.id).slice(0, lim)
+              .map(x => ({ title: x.title, tag: x.informationTag || '', date: when(x.startAt),
+                url: /^https?:/.test(x.path || '') ? x.path : x.path ? 'https://production-web.sekai.colorfulpalette.org/' + String(x.path).replace(/^\/+/, '') : '' }));
+            out.news_note = '日服遊戲內公告，標題是日文原文，回答時翻成中文並附上連結';
+          } catch (e) { out.news_error = '日服公告抓不到（' + ((e && e.message) || e) + '）'; }
+        }
+        if (want.has('border')) {
+          const get = k => fetch(this.GAMES_API + '/haruki/jp/event/live/' + k, { headers: { Accept: 'application/json' } })
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+            .then(t => JSON.parse(t.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"')));
+          const [t, b] = await Promise.allSettled([get('top100'), get('border')]);
+          const top = t.status === 'fulfilled' ? t.value : null, brd = b.status === 'fulfilled' ? b.value : null;
+          const rows = this.bordersOf(brd ? this.t100Merge(brd, top) : this.bordersFromTop(top)), tops = this.ranksOf(top);
+          if (!rows.length && !tops.length) out.border_error = '日服即時榜線暫時拿不到（活動之間的空檔也會沒有）';
+          else {
+            out.border = { tiers: rows.filter(r => r.score != null).map(r => ({ tier: r.rank, score: r.score })),
+              top10: tops.slice(0, 10).map(r => ({ rank: r.rank, name: r.name || '', score: r.score })),
+              note: '即時值（追蹤器約 10～20 秒更新），不是終線預測；日服沒有站上的終線模型' };
+          }
+        }
+        return out;
       }
       case 'get_upcoming_events': {
         const list = await this.loadEvList();
@@ -7756,6 +7839,18 @@ export function aiMembers() {
 - 完全沒命中 → 才說查不到，並問那是什麼。回傳的 near_misses 只是字元層級的
   近似候選，不可以當成答案講出去。
 
+## 日服
+
+- 站上預設是台服視角，但使用者常問日服（日版、日本服、日本那邊）：現在什麼活動、下一期、新卡池、新曲、
+  版本、最新公告、日服榜線。這些都用 get_jp_now 查，查完照實回答；
+  不准回「我只有台服資料」「我不知道日服的事」——工具查得到。
+- 「日服最新消息」「日服有什麼新東西」這種籠統問法：get_jp_now 不帶 parts 拿全部，挑重點講：
+  進行中的活動（還剩多久、加成）、下一期、開放中的限定池與 PU 卡、即將公開的新曲、最近幾則公告（翻成中文、附連結）。
+- 公告標題是日文原文，翻成中文時保留活動名、歌名等專有名詞的原文。
+- 資料只到日服 master 已排定的範圍（通常是下一期活動、60 天內的卡池）；更遠的還沒公布，直接說還沒公布，不要猜。
+- 問「台服什麼時候會有」：台服大致照日服晚一年，用台服的工具（get_upcoming_events、get_gacha_schedule、predict_card_rerun）查，
+  查不到就說是推估、還沒排定。
+
 ## 其他
 
 - 講玩法、規則、名詞先 search_tutorial，引用站上既有的說法，保持一致。
@@ -7763,6 +7858,14 @@ export function aiMembers() {
   看到奇怪的值不要叫使用者去後台修改，那種頁面不存在，直接說明數字看起來異常即可。
 - 你只能呼叫工具清單裡的工具。沒有工具能做到的事就直說做不到，不要繞路猜。
 - 用繁體中文，結論先講，再用條列或表格展開。不要用 emoji。`,
+
+  /* 今天的日期接在 system 後面：模型不知道「現在」是哪天，問「最新」「這週」會亂講。
+     只精確到日，一天內 system 不變，提示快取照樣命中；要精確時間的工具自己會回 now。 */
+  aiSystem() {
+    const d = new Date(Date.now() + 8 * 3600000), W = '日一二三四五六';
+    return this.AI_SYSTEM + '\n\n## 今天\n\n今天是 ' + d.getUTCFullYear() + '/' + (d.getUTCMonth() + 1) + '/' + d.getUTCDate()
+      + '（台北時間，星期' + W[d.getUTCDay()] + '）。「現在」「最新」「這週」都以這天為準。';
+  },
 
   /* 對話存檔。原本對話只活在 state 裡,重新整理就沒了。
      存檔時只送「還沒存過的」那幾則 —— 一輪對話會產生 assistant／tool_result
@@ -7857,7 +7960,7 @@ export function aiMembers() {
       const op = await this.aiOpStart('chat');
       for (let guard = 0; guard < 12; guard++) {
         const r = await this.api('/api/chat', { method: 'POST', body: {
-          messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op,
+          messages: cur, tools: this.AI_TOOLS, system: this.aiSystem(), op,
           dual: !!this.state.aiDual } });
         if (r && r.quota) this.setState({ aiQuota: r.quota });
         const content = (r && r.content) || [];
@@ -7909,7 +8012,7 @@ export function aiMembers() {
     const op = await this.aiOpStart('qa');
     for (let guard = 0; guard < 12; guard++) {
       const r = await this.api('/api/chat', { method: 'POST', body: {
-        messages: cur, tools: this.AI_TOOLS, system: this.AI_SYSTEM, op,
+        messages: cur, tools: this.AI_TOOLS, system: this.aiSystem(), op,
         dual: !!this.state.aiDual } });
       if (r && r.quota) this.setState({ aiQuota: r.quota });
       const content = (r && r.content) || [];
