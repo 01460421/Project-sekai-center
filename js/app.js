@@ -1991,7 +1991,7 @@ class Component extends DCLogic {
      API 只給前百的 1h/3h/24h 速度，各段榜線沒有任何速度欄位，
      也沒有任何歷史/時序端點。所以自己在每次輪詢時記快照，
      累積成真的時間序列；不足時退回線性推估並標示清楚。 */
-  // 由 GitHub Actions 每 30 分鐘記一筆的公用榜線時序（見 tools/record-border.py）
+  // 公用榜線時序：GitHub Actions 的 tools/record-border.py 寫進 data/history，空檔再由 Worker 的 /snaps 補（見 loadBorderHistory）
   HIST = 'https://raw.githubusercontent.com/01460421/Project-sekai-center/main/data/history';
   async loadBorderHistory() {
     if (this.SRV === 'jp') return;      // data/history 是台服的時序，日服同一個期數是另一期活動
@@ -1999,10 +1999,39 @@ class Component extends DCLogic {
     if (ev.id == null || this._histFor === ev.id) return;
     this._histFor = ev.id;
     try {
-      const d = await fetch(this.HIST + '/' + ev.id + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+      let d = await fetch(this.HIST + '/' + ev.id + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      /* GitHub 的排程常常 4～5 小時才跑一次，git 上的時序在兩次之間是空的；
+         Worker 的追蹤器每 5 分鐘也記一筆，把最後一筆之後的補上（lite：不帶前百玩家 ID） */
+      const since = d && Array.isArray(d.samples) && d.samples.length ? d.samples[d.samples.length - 1][0] : 0;
+      const rec = await fetch(this.GAMES_API + '/snaps?lite=1&ev=' + ev.id + '&since=' + since).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (rec && Array.isArray(rec.snaps) && rec.snaps.length) {
+        if (!d || !Array.isArray(d.samples)) { const m = rec.meta || {}; d = { eventId: ev.id, name: m.name || '', startAt: m.startAt || '', aggregateAt: m.aggregateAt || '', tiers: [], samples: [], top1: [], ranks: [] }; }
+        this.mergeSnaps(d, rec.snaps);
+      }
       // 換了資料就把單調修復的快取一起清掉,否則會沿用舊快照修出來的結果
       if (d && Array.isArray(d.samples)) { this._snapCache = null; this._histFixId = null; this._wlFixKey = null; this.setState({ hist: d }); }
     } catch (e) {}
+  }
+  /* 把 Worker 的快照 [秒, [[名次,分數]…], [前百分數…], [[章,角色,開始,結算,[[名次,分數]…]]…]] 接到 data/history 的格式後面：
+     規則跟 tools/record-border.py 的 add_sample 一樣（既有段位順序不動、新段位往後加、距上一筆不足 4 分鐘就略過） */
+  mergeSnaps(h, snaps) {
+    h.tiers = h.tiers || []; h.samples = h.samples || []; h.top1 = h.top1 || []; h.ranks = h.ranks || [];
+    for (const [ts, rows, tops, wl] of snaps) {
+      const last = h.samples[h.samples.length - 1];
+      if (last && ts - last[0] < 240) continue;
+      const by = {};
+      (rows || []).forEach(([r, v]) => { by[r] = v; if (h.tiers.indexOf(r) < 0) h.tiers.push(r); });
+      h.samples.push([ts].concat(h.tiers.map(r => by[r] == null ? null : by[r])));
+      if (tops && tops.length) { if (tops[0] != null) h.top1.push([ts, tops[0]]); h.ranks.push([ts].concat(tops)); }
+      (wl || []).forEach(([ch, chara, sa, aa, pb]) => {
+        h.wl = h.wl || {};
+        const slot = h.wl[String(ch)] = h.wl[String(ch)] || { chapter: ch, character: chara, startAt: sa || '', aggregateAt: aa || '', tiers: [], samples: [] };
+        const wb = {};
+        (pb || []).forEach(([r, v]) => { wb[r] = v; if (slot.tiers.indexOf(r) < 0) slot.tiers.push(r); });
+        slot.samples.push([ts].concat(slot.tiers.map(r => wb[r] == null ? null : wb[r])));
+      });
+    }
+    return h;
   }
   /* 公用時序 + 本機快照合併成同一條時間軸；公用的通常涵蓋整期，本機的補最近幾筆 */
   histSamples(evId) {

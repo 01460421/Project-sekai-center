@@ -6,11 +6,12 @@
 
    環境變數：
      ANTHROPIC_API_KEY        必要
-     AI_MODEL                 預設 claude-sonnet-5（對話型工作量，便宜、夠聰明）
+     AI_MODEL                 預設 claude-sonnet-5-5（對話型工作量，跟 Sonnet 5 同價、更聰明；要更強可換 claude-opus-5-5）
      AI_DAILY_PER_USER        每人每日「解讀」次數上限，預設 10（台灣時間 00:00 重置）
      AI_CHAT_DAILY_PER_USER   每人每日「對話」次數上限，預設 40
-   模型換成 claude-opus-5 或 Fable 系列時，會自動加上伺服器端 fallback（安全分類器拒答時換備援模型續答）；
-   Sonnet 5 不送這個參數，拒答就當一般結果處理（回一句「這個話題不方便聊」）。 */
+   Sonnet 5.5、Opus 5／5.5、Fable、Mythos 會自動加上伺服器端 fallback（`fallbacks: "default"`：安全分類器拒答時依類別換備援模型續答）；
+   其他模型（例如舊的 Sonnet 5）不送這個參數，拒答就當一般結果處理（回一句「這個話題不方便聊」）。
+   思考用預設的 adaptive（Sonnet 5.5 不接受 disabled），深淺由 effort 控制；思考也算進 max_tokens，所以上限留寬一點。 */
 
 import { todayTW } from './ui.js';
 
@@ -22,13 +23,13 @@ const NARRATE_SYSTEM = `你是一位溫暖、有洞察力的占卜師與心理�
 - 不要用標題、不要用條列、不要用 markdown 粗體`;
 
 const FALLBACK_BETAS = ['server-side-fallback-2026-07-01'];
-/* 伺服器端 fallback 目前只保證 Opus 5／Fable／Mythos 系列可用；其他模型送了可能 400 */
-export const supportsFallback = model => /^claude-(opus-5|fable|mythos)/.test(model);
+/* 伺服器端 fallback 的 "default" 形式：Sonnet 5.5、Opus 5／5.5、Fable、Mythos 可用；其他模型送了會 400 */
+export const supportsFallback = model => /^claude-(opus-5|sonnet-5-5|fable|mythos)/.test(model);
 
 export function createAI(env = process.env, { store, client: injected } = {}) {
   const apiKey = (env.ANTHROPIC_API_KEY || '').trim();
   if (!apiKey && !injected) return null;
-  const model = (env.AI_MODEL || 'claude-sonnet-5').trim();
+  const model = (env.AI_MODEL || 'claude-sonnet-5-5').trim();
   const fallback = supportsFallback(model) ? { betas: FALLBACK_BETAS, fallbacks: 'default' } : {};
   const caps = {
     narrate: Math.max(0, parseInt(env.AI_DAILY_PER_USER || '10', 10) || 0),
@@ -67,7 +68,7 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
     quota(kind, userId) { return { used: used(kind, userId), cap: caps[kind] }; },
 
     /* 回傳解讀文字；額度用完或出錯回空字串（呼叫端直接略過即可） */
-    async narrate(prompt, { userId = '', maxTokens = 600 } = {}) {
+    async narrate(prompt, { userId = '', maxTokens = 2000 } = {}) {
       if (!take('narrate', userId)) return '';
       try {
         const c = await client();
@@ -89,7 +90,7 @@ export function createAI(env = process.env, { store, client: injected } = {}) {
        tools 是 Claude API 的工具定義陣列，runTool(name, input) 回字串（或 { text, extra }），丟例外就回 is_error。
        回傳 { text, quota:false } 額度用完、{ text:'', refused:true } 拒答、{ text, toolExtras:[...] } 正常。
        出錯回 { text:'', error }。 */
-    async chat({ system, messages, tools = [], runTool, userId = '', maxTokens = 1024, maxRounds = 4, effort = 'low' }) {
+    async chat({ system, messages, tools = [], runTool, userId = '', maxTokens = 4000, maxRounds = 4, effort = 'low' }) {
       if (!take('chat', userId)) return { text: '', quota: false };
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       const extras = [];
