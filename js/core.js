@@ -2591,7 +2591,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // 基礎三維(等級+特訓+前後篇+突破) + 角色等級加成(逐維floor) + area item(逐道具,allMatch看全隊同團/同色)
         const PowerEngine = {
             _ready: false, _loading: null, cards: null, cardById: {}, cardsByChar: {},
-            ranks: {}, epi: {}, ml: {}, areaLv: {}, areaMaxLv: 15, gcu: {}, charBands: {},
+            ranks: {}, epi: {}, ml: {}, areaLv: {}, areaMixed: {}, areaMaxLv: 15, gcu: {}, charBands: {},
             ensure() {
                 if (this._ready) return Promise.resolve(true);
                 if (this._loading) return this._loading;
@@ -2601,7 +2601,9 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     fetchJSONproxied('https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/areaItemLevels.json').catch(() => null)
                 ]).then(([cards, ranks, epi, ml, areaLvTW, gcu, areaLvJP]) => {
                     // 台服 5 週年(2026/9/30)起區域道具也到 Lv20;日服那份只拿來補台服 master 萬一還缺的 Lv16-20。合併,areaMaxLv=20
-                    const areaLv = (areaLvJP && areaLvJP.length) ? areaLvTW.concat(areaLvJP.filter(a => a.level > 15)) : areaLvTW;
+                    // 只補台服本來就有的道具:日服 6 週年的「想いの大樹」台服還沒有,以前混進來會讓台服每支隊伍憑空多 10%
+                    const twIds = new Set(areaLvTW.map(a => a.areaItemId));
+                    const areaLv = (areaLvJP && areaLvJP.length) ? areaLvTW.concat(areaLvJP.filter(a => a.level > 15 && twIds.has(a.areaItemId))) : areaLvTW;
                     this.cards = cards;
                     cards.forEach(c => { this.cardById[c.id] = c; (this.cardsByChar[c.characterId] = this.cardsByChar[c.characterId] || []).push(c); });
                     ranks.forEach(r => { (this.ranks[r.characterId] = this.ranks[r.characterId] || {})[r.characterRank] = [r.power1BonusRate, r.power2BonusRate, r.power3BonusRate]; });
@@ -2614,7 +2616,14 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         this.ml[rar] = cum;
                     });
                     let maxLv = 0;
-                    areaLv.forEach(a => { (this.areaLv[a.areaItemId] = this.areaLv[a.areaItemId] || {})[a.level] = a; if (a.level > maxLv) maxLv = a.level; });
+                    // 同一道具同一級有兩列的(想いの大樹:「全角色」一列、「2 種以上團體」一列),第二列另存,混團隊伍才加
+                    const seen = new Set();
+                    areaLv.forEach(a => {
+                        const k = a.areaItemId + ':' + a.level, mixed = /2種類以上のユニット/.test(a.sentence || '') || seen.has(k);
+                        seen.add(k);
+                        const tbl = mixed ? this.areaMixed : this.areaLv;
+                        (tbl[a.areaItemId] = tbl[a.areaItemId] || {})[a.level] = a; if (a.level > maxLv) maxLv = a.level;
+                    });
                     this.areaMaxLv = maxLv || 15;
                     gcu.forEach(g => { this.gcu[g.id] = { cid: g.gameCharacterId, unit: g.unit }; if (g.id <= 26) this.charBands[g.gameCharacterId] = g.unit; });
                     this._ready = true; return true;
@@ -2659,6 +2668,12 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     const allMatch = (it.targetUnit !== 'any' && sameUnit) || (it.targetCardAttr !== 'any' && sameAttr);
                     const rates = [allMatch ? it.power1AllMatchBonusRate : it.power1BonusRate, allMatch ? it.power2AllMatchBonusRate : it.power2BonusRate, allMatch ? it.power3AllMatchBonusRate : it.power3BonusRate];
                     rates.forEach((rate, i) => { acc[i] += (rate || 0) * 0.01 * base[i]; });
+                }
+                // 「2 種以上團體」才有的那一份(想いの大樹):全隊不同團才加,不吃 allMatch
+                if (!sameUnit) for (const levels of Object.values(this.areaMixed)) {
+                    const it = levels[Math.min(areaLevel, this.areaMaxLv)] || levels[Math.max(...Object.keys(levels).map(Number))];
+                    if (!it) continue;
+                    [it.power1BonusRate, it.power2BonusRate, it.power3BonusRate].forEach((rate, i) => { acc[i] += (rate || 0) * 0.01 * base[i]; });
                 }
                 return acc.reduce((v, x) => v + Math.floor(x), 0);
             },

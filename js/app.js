@@ -59,7 +59,7 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim', 'bdayparty'];
+  SRV_JP = ['jpnow', 'wl3pow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim', 'bdayparty'];
   SRV_TW_ONLY = [];
   /* 日服模式照樣能用、但資料是台服的頁面：頁首提示一行，不擋也不跳走（日服的曲庫係數與譜面定數還沒有自己的版本） */
   SRV_TW_DATA = { calc: '活動 P 計算用的是台服曲庫與係數：日服獨有或較新的歌可能還沒有。', b30: 'B30 的譜面定數是台服的：日服獨有或較新的譜面可能還沒有。' };
@@ -275,6 +275,7 @@ class Component extends DCLogic {
     art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
     wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合；終章另有主隊與總加成試算'],
     skillmult:['理論技能倍率表', '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列；另有同團不限色、同色不限團'],
+    wl3pow:   ['WL3 綜合力計算器', 'WL3 每期總合力上限 33.6 萬：滿配加成的隊伍要把區域道具、MySekai 大門、玩偶練到哪裡才碰得到上限，以及所有區域道具各等級的加成'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bdayparty:['豆森生日派對', '慶典之花的流程與時程、露水與加成卡計算、累計獎勵（LIVE BONUS 飲料、練習譜 EXP）與生日家具'],
     bonuscards:['加分卡參考', '各活動的加成卡一覽'],
@@ -314,7 +315,7 @@ class Component extends DCLogic {
     ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult', 'wl3pow']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
@@ -412,6 +413,7 @@ class Component extends DCLogic {
     ['活動分布甘特圖', '', 'distrib', '活動分布|甘特圖|團推分析|推角分析|團體曲數占比|各團活動分布'],
     ['加分卡參考', '', 'bonuscards', '加分卡|加成卡|加分卡組合建議|團分1／團分2／團分3|普限輪1～4|書下|Banner 主角色卡'],
     ['理論技能倍率表', '', 'skillmult', '理論倍率|技能倍率|理論技能倍率|倍率表|編成表|同團同色|同團|同色|推隊倍率|最佳技能隊|技能隊|日服新卡倍率|skill multiplier'],
+    ['WL3 綜合力計算器（33.6 萬上限）', '', 'wl3pow', 'WL3|綜合力上限|總合力上限|綜合力限制|33.6萬|336000|33萬6|區域道具|區域道具等級|大門|豆森門|MySekai 大門|玩偶|套娃|娃|綜合力計算|面板上限|power cap'],
     ['豆森生日派對（慶典之花）', '', 'bdayparty', '生日花|慶典之花|慶典露水|露水|生日派對|豆森生日|澆花|澆水|慶典的庭園|慶典庭園|雙葉|生日家具|生日蛋糕|セレブレーションフラワー|あまつゆ|祝祭|生日罐子|生日經驗'],
     ['月卡玩偶列表（豆森娃）', '', 'dolls', '月卡玩偶|豆森娃|豆森娃月列表|娃月列表|MySekai 玩偶|月卡娃|玩偶排程'],
     ['活動日曆', '', 'calendar', '日曆|行事曆|看日曆|當日活動'],
@@ -666,9 +668,12 @@ class Component extends DCLogic {
     { date: '工具', title: '樂曲追加圖產生器', desc: '官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、作詞曲編、MV、APPEND 與演唱陣容，1920×1080 PNG。', to: 'songcard', cta: '前往追加圖產生器' },
     { date: '工具', title: '譜面預覽產生器', desc: '整首譜面攤成一張直欄式的圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點，也能上傳自己的 SUS。', to: 'chart', cta: '前往譜面預覽' },
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' },
-    { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' }
+    { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' },
+    { date: '工具', title: 'WL3 綜合力計算器', desc: 'WL3 每期總合力上限 33.6 萬：滿配加成的隊伍要把區域道具、大門、玩偶練到哪裡才碰得到上限，附達標組合表與升級順序。', to: 'wl3pow', cta: '前往 WL3 綜合力計算器' }
   ];
   SYSLOG = [
+    { d: '2026/10/30', t: '新頁：WL3 綜合力計算器', s: '計算中心多一頁「WL3 綜合力計算器」。WL3 每一期的總合力上限是 33.6 萬，超過的不計分；選一期就帶出滿配加成的隊伍（該期五張活動卡），調區域道具、五扇 MySekai 大門、每位角色的玩偶、角色等級與專精，馬上看到總綜合力離上限多遠。另有<b>達標組合表</b>（區域道具統一等級 × 大門 × 玩偶，哪些碰得到上限）、<b>從現在補到上限的升級順序</b>，以及所有區域道具各等級的加成表。可以一鍵帶入 Haruki 專區匯入的遊戲資料；日服新的「想いの大樹」混團時吃兩份，也算進去了。' },
+    { d: '2026/10/30', t: '助手看得懂日服、開站更快、WL 終章技能上限修正', s: 'AI 助手與右下角小幫手可以直接回答日服的版本、活動、卡池、新曲與遊戲內公告；機器人多了 /活動 日服。首頁活動圖不再每次抓 1.5 MB 的資料，每日資料更新也不再讓主程式重新下載；淺色主題的灰字加深。日服第 218 期終章的技能上限是 +140%（之前算成 +40%）。' },
     { d: '2026/10/25', t: '豆森生日派對：一圖流詳細攻略、情形對照表、生日家具要喝幾罐', s: '生日派對頁多了可以存圖分享的一圖流詳細攻略（上下兩張 16:9 PNG，附遊戲畫面與實際素材圖：流程、逐日時程、機制與露水來源、加成卡、採集策略、目標規劃、累計獎勵、經驗值換算與 Q&A），以及情形對照表：沒有加成卡、往年 1 張、當年生日卡到全收，各要幾個露水、只靠自然回復能開幾朵、只做蛋糕／做齊家具／拿滿各要多少 LIVE BONUS 與大罐（已扣自然回復與獎勵小罐）。生日家具也逐件累計要喝幾罐；常見問題多了「做完全部家具要多少罐子」與「不喝罐子能拿多少」。', p: 'bdayparty' },
     { d: '2026/10/25', t: '新頁：豆森生日派對（慶典之花）', s: '豆森 MySekai 多一頁「豆森生日派對」：這場與往後每一場生日派對的時程（收集露水、生日當天、澆灌截止）、整個任務流程，以及計算機——勾選持有的生日加成卡（當年 +50%、往年各 +15%），輸入露水數量就算出能開幾朵慶典之花、目標朵數還差多少露水。累計獎勵逐階列出，並加總到目標為止的罐子（LIVE BONUS 飲料）與經驗值（練習譜、技能升級譜）；開滿 400 朵共 55 罐、練習譜 50 張（500,000 EXP）。生日家具各要幾朵花也一併列出。期間、加成、每朵 pt 與獎勵都讀自遊戲 master，每天自動更新，日服模式改用日服資料。首頁今日摘要的生日派對也直接連過來。', p: 'bdayparty' },
     { d: '2026/10/24', t: '每一頁都有日服版：公告、榜線資料庫、分析中心、儲值分析與綁定預覽', s: '切到日服後，遊戲公告改讀日服遊戲內公告；榜線資料庫收錄日服歷屆終線（Sekai Viewer 與 Haruki 追蹤器，含 T1 萬～T10 萬）；分析中心可以看日服前百玩家的逐場紀錄、活躍度與第 202 期起的生涯紀錄；儲值分析改用日服商城約 700 項商品與日圓定價。綁定的日服 Player ID 跟台服一樣有帳號預覽：等級、簽名、目前隊伍與編組詳情（可算綜合力與活動加成），資料來自 Haruki 工具箱的公開資料。日服卡片索引也補上一個月來的 30 張新卡，之後每天自動更新。', p: 'jpnow' },
@@ -915,7 +920,8 @@ class Component extends DCLogic {
     rateCards: [], rateChars: [], rateLoad: false, rateErr: '',
     smPick: '',   // 理論技能倍率表：選中的格（'團:色'、'u:團'、'a:色'）
     /* Haruki 專區（程式在 js/haruki.js，進頁才載） */
-    mkReady: false, mkErr: '', mkDb: 0, sc: null, cp: null,   // 製作工具（js/maker.js）：追加圖與譜面預覽的表單狀態
+    mkReady: false, mkErr: '', mkDb: 0, sc: null, cp: null,
+    wpReady: false, wpErr: '', wp: null,   // WL3 綜合力計算器（js/wl3pow.js）   // 製作工具（js/maker.js）：追加圖與譜面預覽的表單狀態
     hzReady: false, hzTab: 'home', hzTrainTab: 'crank', hzMysTab: 'res', hzHelpTab: 'guide', hzMeta: null, hzLive: 'multi', hzTarget: 'score', hzDiff: 'master', hzAlgo: 'ga', hzEv: '', hzMusic: '', hzWlChar: '',
     hzMaxLv: false, hzMaxMr: false, hzMaxSk: false, hzFixed: '', hzExclude: '', hzRes: null, hzCrank: null, hzCalcFrom: '', hzCalcTo: '',
     rq: '', ru: 'all', rr: 'all', rs: 'all', rMiss: false, rp: 1,
@@ -2697,7 +2703,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=4cdb527861';
+      el.src = './js/core.js?v=27b54cbc76';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2988,6 +2994,15 @@ class Component extends DCLogic {
     this._mkReady = import('./js/maker.js?v=aebe703c70').then(m => { Object.assign(this, m.makerMembers.call(this)); this.mkInit(); return true; })
       .catch(() => { this._mkReady = null; this.setState({ mkErr: '製作工具載入失敗，請檢查網路後按「重試」。' }); return false; });
     return this._mkReady;
+  }
+
+  /* ---------- WL3 綜合力計算器（延後載入，程式在 js/wl3pow.js，資料在 data/wl3-power.js） ---------- */
+  wpLoad() {
+    if (this._wpReady) return this._wpReady;
+    this.setState({ wpErr: '' });
+    this._wpReady = import('./js/wl3pow.js?v=aedf28668f').then(m => { Object.assign(this, m.wpMembers.call(this)); this._wpH = this.wpHandlers(); this.wpInit(); return true; })
+      .catch(() => { this._wpReady = null; this.setState({ wpErr: 'WL3 計算器載入失敗，請檢查網路後按「重試」。' }); return false; });
+    return this._wpReady;
   }
 
   /* ---------- 帳號 ----------
@@ -8196,6 +8211,7 @@ class Component extends DCLogic {
     if (p === 'guessjacket') this.loadSongs();
     if (p === 'stickers') { this.loadCollect(); try { document.fonts.load('800 40px Huninn').then(() => this.stkDraw()); } catch (e) {} }
     if (p === 'songcard' || p === 'chart') { this.loadSongs(); this.mkLoad(); }
+    if (p === 'wl3pow') this.wpLoad();
     if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
@@ -9908,6 +9924,8 @@ class Component extends DCLogic {
       /* 製作工具（追加圖、譜面預覽）：程式在 js/maker.js，載好前模板只顯示載入中 */
       isSongcard: s.page === 'songcard', isChart: s.page === 'chart', mkReady: !!s.mkReady, mkWait: (s.page === 'songcard' || s.page === 'chart') && !s.mkReady && !s.mkErr, mkErrHas: !!s.mkErr, mkErr: s.mkErr || '', onMkRetry: () => this.mkLoad(),
       ...(s.mkReady && this.mkVals ? this.mkVals(s) : {}),
+      isWl3pow: s.page === 'wl3pow', wpWait: s.page === 'wl3pow' && !s.wpReady && !s.wpErr, wpErrHas: !!s.wpErr, wpErr: s.wpErr || '', onWpRetry: () => { this._wpReady = null; this.wpLoad(); },
+      ...(s.page === 'wl3pow' && s.wpReady && this.wpVals ? Object.assign({}, this.wpVals(s), this._wpH) : { wpOn: false }),
       isWlsup: s.page === 'wlsup',
       isHaruki: s.page === 'haruki', hzLoadingPage: s.page === 'haruki' && !s.hzReady, ...(s.hzReady && this.hzVals ? this.hzVals(s) : { hzReady: false }),
       ...(() => {

@@ -14,7 +14,7 @@ const routeMdb = async ctx => { if (!MDB) return; await ctx.route(/raw\.githubus
 const CASES = [
   ['home', /首頁|近期卡池/], ['calendar', /活動日曆/], ['gacha', /卡池/], ['songs', /共 \d+ 首/], ['calc', /共用設定|活動 P/],
   ['cards', /共 [\d,]+ 項/], ['chars', /角色圖鑑/], ['fixtures', /共 [\d,]+ 項/], ['mstalk', /已看過 \d/], ['story', /活動劇情/], ['news', /遊戲公告/], ['b30', /B30/], ['account', /登入|我的帳號/], ['event', /活動總覽/], ['favs', /收藏與待辦/], ['car', /私車排班/],
-  ['skillmult', /同團同色/], ['wlsup', /WL 後排加成/], ['rank', /活動排名|排名與榜線/], ['haruki', /Haruki 專區/],
+  ['skillmult', /同團同色/], ['wl3pow', /336,000/], ['wlsup', /WL 後排加成/], ['rank', /活動排名|排名與榜線/], ['haruki', /Haruki 專區/],
   ['dolls', /本月角色|台服月份/], ['bonuscards', /加分卡組合建議/], ['distrib', /期卡池/],
   ['lookup', /Player ID/], ['cardlib', /共 [\d,]+ 張/], ['gachasim', /招募點數保底/],
   ['songcard', /片假名轉換器|樂曲追加圖/], ['chart', /譜面預覽|每欄小節數/],

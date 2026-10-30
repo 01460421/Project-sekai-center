@@ -15,7 +15,7 @@ const out = new Set();
 const addSentences = t => { if (typeof t !== 'string' || t.length < 60 || !t.includes('。')) return; t.replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '').split(/。\s*/).forEach(x => add0(x)); };
 const add0 = t => { const x = String(t).replace(/&nbsp;/g, ' ').trim(); if (x && HAN.test(x) && x.length <= 2500 && (x.match(/\|/g) || []).length < 3) out.add(x); };
 const add = t => { addSentences(t); if (typeof t !== 'string') return; for (const seg of t.split(/<[^>]+>/)) { const x = seg.replace(/&nbsp;/g, ' ').trim(); if (x && HAN.test(x) && x.length <= 2500 && (x.match(/\|/g) || []).length < 3) out.add(x); } };
-for (const f of ['js/app.js', 'js/help.js', 'js/haruki.js', 'js/car.js', 'js/maker.js']) {
+for (const f of ['js/app.js', 'js/help.js', 'js/haruki.js', 'js/car.js', 'js/maker.js', 'js/wl3pow.js']) {
   const src = readFileSync(ROOT + f, 'utf8');
   const ast = parse(src, { ecmaVersion: 'latest', sourceType: f === 'js/app.js' ? 'script' : 'module', allowHashBang: true });
   simple(ast, {
