@@ -2,6 +2,7 @@
    WL3 每一期都有總合力上限 336,000（master 的 eventTotalPowerLimits），超過的綜合力不計分。
    這頁回答「滿配加成的隊伍，區域道具、MySekai 大門、玩偶要到什麼狀態才碰得到上限」：
    資料是 tools/build-wl3-power.py 每天從日服 master 算好的 data/wl3-power.js（卡片三維、區域道具每級加成、大門、角色等級）。
+   上限用 WL3 當時的（D.lim：大門 Lv40、區域道具 Lv20、沒有想いの大樹），不是現在的日服——那些是 WL3 結束後的 7.0 改版才有的。
 
    每張卡的綜合力（跟 js/core.js PowerEngine.teamPower 同一套）：
      基礎三維 ＝ 滿級特訓三維 ＋ 前後篇 ＋ 專精 ＋ 畫布（★4 1500、生日 1200，平均攤進三維）
@@ -123,7 +124,7 @@ export function wpPlan(D, team, cfg, ids, maxSteps = 400) {
 }
 
 export function wpMembers() {
-  const KEY = 'sekai-wl3pow-' + this.SRV;
+  const KEY = 'sekai-wl3pow';
   const fmtW = v => (v / 10000).toFixed(v >= 1e6 ? 0 : 1) + ' 萬';
   const DOLL_OPTS = Array.from({ length: 21 }, (_, i) => {
     const v = Math.round(i) / 10;
@@ -135,11 +136,10 @@ export function wpMembers() {
       import(scData('wl3-power.js')).then(m => {
         this._wp = m.WL3P;
         let saved = null; try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
-        const D = this._wp, srv = this.SRV === 'jp' ? 'jp' : 'tw';
+        const D = this._wp, lim = D.lim;
         const now = Date.now(), evs = D.events;
         const cur = evs.filter(e => e[2] <= now).pop() || evs[evs.length - 1];
-        const lim = D.lim[srv];
-        const wp = Object.assign({ ev: cur[0], ti: 0, team: (cur[9][0] || []).slice(), mr: [5, 5, 5, 5, 5], srv, area: {}, gate: {}, doll: {}, rank: {}, ref: 'team', msg: '' }, saved || {});
+        const wp = Object.assign({ ev: cur[0], ti: 0, team: (cur[9][0] || []).slice(), mr: [5, 5, 5, 5, 5], area: {}, gate: {}, doll: {}, rank: {}, ref: 'team', msg: '' }, saved || {});
         if (!saved) {   // 第一次：區域道具與大門先帶滿級、玩偶 0、角色等級 50，下面的表會列出其他組合
           D.area.forEach(it => { wp.area[it[0]] = Math.min(lim.area, it[5].length); });
           WP_UNITS.forEach(u => { wp.gate[u] = lim.gate; });
@@ -154,7 +154,7 @@ export function wpMembers() {
       this.setState({ wp });
     },
     wpCfg(wp) {
-      const D = this._wp, lim = D.lim[wp.srv] || D.lim.jp, ev = D.events.find(e => e[0] === wp.ev) || D.events[0];
+      const D = this._wp, lim = D.lim, ev = D.events.find(e => e[0] === wp.ev) || D.events[0];
       return { area: wp.area, gate: wp.gate, doll: wp.doll, rank: wp.rank, mr: wp.mr, cap: ev[4], dollCap: ev[5], areaMax: lim.area, gateMax: lim.gate, tree: lim.tree };
     },
     /* Haruki 專區匯入過的遊戲資料：區域道具、大門、玩偶、角色等級，隊上有的卡帶專精 */
@@ -166,7 +166,7 @@ export function wpMembers() {
         const area = {}, gate = {}, doll = {}, rank = {};
         (U.userAreas || []).forEach(a => (a.areaItems || []).forEach(i => { const id = +i.areaItemId, l = +i.level || 0; if (id > 0 && l > (area[id] || 0)) area[id] = l; }));
         const GATE = { 1: 'light_sound', 2: 'idol', 3: 'street', 4: 'theme_park', 5: 'school_refusal' };
-        (U.userMysekaiGates || []).forEach(g => { if (GATE[g.mysekaiGateId]) gate[GATE[g.mysekaiGateId]] = +g.mysekaiGateLevel || 0; });
+        (U.userMysekaiGates || []).forEach(g => { if (GATE[g.mysekaiGateId]) gate[GATE[g.mysekaiGateId]] = Math.min(+g.mysekaiGateLevel || 0, this._wp.lim.gate); });   // 現在的日服可到 Lv70，WL3 當時只到 Lv40
         (U.userMysekaiFixtureGameCharacterPerformanceBonuses || []).forEach(f => { doll[f.gameCharacterId] = Math.round((+f.totalBonusRate || 0)) / 10; });
         (U.userCharacters || []).forEach(c => { rank[c.characterId] = +c.characterRank || 0; });
         const own = new Map((U.userCards || []).map(c => [+c.cardId, +c.masterRank || 0]));
@@ -180,7 +180,7 @@ export function wpMembers() {
       const key = (s.lang || '') + JSON.stringify(s.wp);
       if (this._wpKey === key && this._wpOut) return this._wpOut;
       const out = { wpOn: true };
-      const D = this._wp, wp = s.wp, srv = wp.srv, lim = D.lim[srv] || D.lim.jp;
+      const D = this._wp, wp = s.wp, lim = D.lim;
       /* 日文、英文介面用日服原名（[8]、[9]），中文介面用台服名 */
       const jpN = s.lang === 'ja' || s.lang === 'en', nm = it => (jpN && it[8]) || it[1], whr = it => (jpN && it[9]) || it[2];
       const ev = D.events.find(e => e[0] === wp.ev) || D.events[0];
@@ -194,9 +194,6 @@ export function wpMembers() {
       out.wpEvs = D.events.map(e => Object.assign({ v: String(e[0]), n: (e[6] ? '終章・' : '第 ' + e[0] + ' 期・') + e[1], on: e[0] === wp.ev }, chip(e[0] === wp.ev)));
       out.wpEvInfo = '日服 ' + fd(ev[2]) + ' – ' + fd(ev[3]) + '・總合力上限 ' + this.n(ev[4]) + (ev[5] != null ? '・玩偶上限 ' + ev[5] + '%' : '')
         + (ev[6] ? '・終章：WL3 限定卡加成 25%（最多計 4 張），隊長是限定卡再 +20%' : '・章節角色：' + ev[7].map(c => WP_CHARS[c[1]] || '#' + c[1]).join('、') + '；活動卡加成 30%');
-      out.wpSrvTw = srv === 'tw'; out.wpSrvJp = srv === 'jp';
-      out.wpSrvNote = srv === 'tw' ? '台服目前：區域道具到 Lv' + D.lim.tw.area + '、大門到 Lv' + D.lim.tw.gate + (D.lim.tw.tree ? '' : '、還沒有想いの大樹') + '。WL3 在台服預計晚日服一年。'
-        : '日服目前：區域道具到 Lv' + D.lim.jp.area + '、大門到 Lv' + D.lim.jp.gate + (D.lim.jp.tree ? '、有想いの大樹' : '') + '。';
       out.wpTeams = ev[9].length > 1 ? ev[9].map((t, i) => {
         const on = JSON.stringify(t) === JSON.stringify(team);
         const diff = t.filter(id => !ev[9][0].includes(id)).map(id => WP_CHARS[D.cards[String(id)][0]]);
@@ -219,10 +216,9 @@ export function wpMembers() {
       out.wpTotal = this.n(R.total); out.wpCap = this.n(R.cap); out.wpOk = R.total >= R.cap; out.wpNotOk = !out.wpOk;
       out.wpBar = Math.min(100, R.total / R.cap * 100).toFixed(1) + '%';
       out.wpBarC = out.wpOk ? '#3ec49a' : 'var(--accent)';
-      out.wpSegTw = chip(srv === 'tw'); out.wpSegJp = chip(srv === 'jp');
       out.wpShortTxt = out.wpOk ? '已達上限' : '還差 ' + this.n(R.short);
       out.wpStatus = out.wpOk ? '已碰到上限 ' + this.n(R.cap) + '，多出的 ' + this.n(R.over) + ' 不計分——再往上練綜合力也沒有用。' : '還差 ' + this.n(R.short) + '（' + (R.short / R.cap * 100).toFixed(1) + '%）才碰到上限 ' + this.n(R.cap) + '。';
-      out.wpTeamNote = (R.T.sameUnit ? '全隊同團（' + (WP_UNIT_NAME[R.T.common] || R.T.common) + '）：團體道具翻倍' : '混團：團體道具不翻倍，' + (cfg.tree ? '想いの大樹吃兩份（全角色＋2 種以上團體）' : '台服還沒有想いの大樹'))
+      out.wpTeamNote = (R.T.sameUnit ? '全隊同團（' + (WP_UNIT_NAME[R.T.common] || R.T.common) + '）：團體道具翻倍' : '混團：團體道具不翻倍' + (cfg.tree ? '，想いの大樹吃兩份（全角色＋2 種以上團體）' : ''))
         + '；' + (R.T.sameAttr ? '全隊同色：屬性道具翻倍' : '五色：屬性道具不翻倍') + '。';
       out.wpRows = R.per.map(p => ({ ch: WP_CHARS[p.card.ch], base: this.n(p.base), rank: '+' + this.n(p.rankB), rankP: p.rankPct + '%', area: '+' + this.n(p.areaB), areaP: p.areaPct + '%',
         my: '+' + this.n(p.myB), myP: (Math.round((p.gatePct + p.dollPct) * 10) / 10) + '%', total: this.n(p.total) }));
@@ -255,7 +251,7 @@ export function wpMembers() {
       out.wpMsg = wp.msg || ''; out.wpHasMsg = !!wp.msg;
 
       /* 哪些組合碰得到上限：列＝區域道具統一等級，欄＝大門 × 玩偶 */
-      const gCols = srv === 'tw' ? [0, 20, lim.gate] : [0, 40, lim.gate];
+      const gCols = [0, Math.round(lim.gate / 2), lim.gate];
       const cols = [];
       gCols.forEach(g => [0, 1, 2].forEach(d => cols.push({ g, d })));
       const withGD = (c, g, d) => Object.assign({}, c, { gate: Object.fromEntries(WP_UNITS.map(u => [u, g])), doll: Object.fromEntries(R.per.map(p => [p.card.ch, d])) });
@@ -292,7 +288,7 @@ export function wpMembers() {
             return { v: it[3] === 'tree' ? b + (m ? '+' + m : '') : hasA ? b + '／' + a : String(b) };
           }) };
       });
-      out.wpRefNote = '單位 %。團體與屬性道具：平常／全隊同團或同色；想いの大樹：全角色＋兩種以上團體。資料：日服 master 整理於 ' + fd(D.built) + '。';
+      out.wpRefNote = '單位 %。團體與屬性道具：平常／全隊同團或同色。資料：日服 master 整理於 ' + fd(D.built) + '。';
       this._wpKey = key; this._wpOut = out;
       return out;
     },
@@ -303,7 +299,6 @@ export function wpMembers() {
         onWpTeam: e => { const D = this._wp, ev = D.events.find(x => x[0] === this.state.wp.ev), i = +e.currentTarget.dataset.v; if (ev && ev[9][i]) this.wpSet({ ti: i, team: ev[9][i].slice() }); },
         onWpCard: e => { const i = +e.currentTarget.dataset.i, team = this.state.wp.team.slice(); team[i] = num(e); this.wpSet({ team }); },
         onWpMr: e => { const i = +e.currentTarget.dataset.i, mr = this.state.wp.mr.slice(); mr[i] = num(e); this.wpSet({ mr }); },
-        onWpSrv: e => this.wpSet({ srv: e.currentTarget.dataset.v === 'jp' ? 'jp' : 'tw' }),
         onWpArea: e => this.wpSet({ area: Object.assign({}, this.state.wp.area, { [e.currentTarget.dataset.id]: num(e) }) }),
         onWpGate: e => this.wpSet({ gate: Object.assign({}, this.state.wp.gate, { [e.currentTarget.dataset.u]: num(e) }) }),
         onWpDoll: e => this.wpSet({ doll: Object.assign({}, this.state.wp.doll, { [e.currentTarget.dataset.ch]: num(e) }) }),
@@ -314,7 +309,7 @@ export function wpMembers() {
         onWpRankAll: e => { if (e.currentTarget.value === '') return; const D = this._wp, rank = Object.assign({}, this.state.wp.rank); this.state.wp.team.forEach(id => { const c = wpCard(D, id); if (c) rank[c.ch] = num(e); }); this.wpSet({ rank }); },
         onWpImport: () => this.wpImport(),
         onWpRef: e => this.wpSet({ ref: e.currentTarget.dataset.v === 'all' ? 'all' : 'team' }),
-        onWpReset: () => { const D = this._wp, lim = D.lim[this.state.wp.srv], area = {}, gate = {}; D.area.forEach(it => { area[it[0]] = Math.min(lim.area, it[5].length); }); WP_UNITS.forEach(u => { gate[u] = lim.gate; }); this.wpSet({ area, gate, doll: {}, rank: {}, mr: [5, 5, 5, 5, 5], msg: '已重設：區域道具與大門滿級、玩偶 0、角色等級 50、專精 5。' }); },
+        onWpReset: () => { const D = this._wp, lim = D.lim, area = {}, gate = {}; D.area.forEach(it => { area[it[0]] = Math.min(lim.area, it[5].length); }); WP_UNITS.forEach(u => { gate[u] = lim.gate; }); this.wpSet({ area, gate, doll: {}, rank: {}, mr: [5, 5, 5, 5, 5], msg: '已重設：區域道具與大門滿級、玩偶 0、角色等級 50、專精 5。' }); },
       };
     },
   };

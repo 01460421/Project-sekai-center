@@ -7,9 +7,9 @@ WL3（日服 2026 起的 World Link）每一期都有總合力上限 336,000（e
 
   WL3P = {
     built, src,
-    lim:    { jp: {gate, area, rank, tree}, tw: {...} }      各服目前的上限：大門等級、區域道具等級、角色等級、有沒有「想いの大樹」
+    lim:    {gate, area, tree}                               WL3 當時的上限（不是現在的日服）：大門等級、區域道具等級、有沒有「想いの大樹」
     rank:   [Lv1 的 %, Lv2 的 %, …]                          角色等級加成（26 位都一樣，Lv50 以後固定 5%）
-    gate:   [Lv1 的 %, …]                                    MySekai 大門（各團一扇，VS 卡吃最高的那扇）
+    gate:   [Lv1 的 %, …, Lv40 的 %]                         MySekai 大門（各團一扇，VS 卡吃最高的那扇；只到 WL3 當時的上限）
     doll:   [S, M, L]                                        一套玩偶三種尺寸各給該角色多少 %
     area:   [[id, 名稱, 區域, 種類, 目標, [每級 %], [全隊同團／同色時每級 %], [混團時另加的每級 %], 日服原名, 日服區域名], …]（日服原名跟台服一樣就留空）
               種類 char（角色）／unit（團體）／vs（虛擬歌手團體）／attr（屬性）／tree（想いの大樹，全角色＋混團再一份）
@@ -20,7 +20,7 @@ WL3（日服 2026 起的 World Link）每一期都有總合力上限 336,000（e
               最後一欄是「滿配加成」的候選隊：五張不同角色、五種顏色、全用該期活動卡，依綜合力排序（最多 10 組）
   }
 
-用法：python3 tools/build-wl3-power.py      （日服 master 走 jp_master 快取；台服上限讀 Haruki 台服 master）
+用法：python3 tools/build-wl3-power.py      （日服 master 走 jp_master 快取；道具的台服名稱讀 Haruki 台服 master）
 """
 import itertools
 import json
@@ -37,6 +37,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'wl3-power.js'
 CANVAS = {'rarity_4': 1500, 'rarity_birthday': 1200}
 UNIT_OF = {}   # 角色 → 本團（gameCharacterUnits id 1～26）
+# WL3 全期（日服 2026/4/18～9/28）的上限。日服 7.0.0（2026/9/29，終章結算隔天）才把大門從 Lv40 開到 Lv70、加入想いの大樹，
+# 區域道具 Lv1～20 的數值與卡片三維都沒變（對過 sekai-master-db-diff 52a48f8 前後）。master 只有現在的狀態，所以寫死；
+# 台服目前也是這組上限。
+WL3_LIM = {'gate': 40, 'area': 20, 'tree': False}
+JP_V7_AT = 1790607600000   # 2026-09-29 00:00 JST：之後結算的 WL3 才可能用到新上限
 
 
 def r2(v):
@@ -160,19 +165,12 @@ def main():
     while len(rank) > 1 and rank[-1] == rank[-2]:   # 封頂之後都一樣，只留到第一次封頂
         rank.pop()
     gl = sorted([(g['level'], r2(g['powerBonusRate'])) for g in jp['mysekaiGateLevels'] if g['mysekaiGateId'] == 1])
-    gate = [v for k, v in gl]
+    gate = [v for k, v in gl][:WL3_LIM['gate']]
     doll = sorted({r2(x['bonusRate'] / 10) for x in jp['mysekaiFixtureGameCharacterGroupPerformanceBonuses']})
 
-    def lim_of(m, has_tree):
-        a = m['areaItemLevels']
-        return {'gate': max([g['level'] for g in m['mysekaiGateLevels']] or [0]),
-                'area': max([x['level'] for x in a] or [0]),
-                'rank': max([r['characterRank'] for r in m['characterRanks']] or [0]),
-                'tree': has_tree}
-    has_tree_jp = any(x[3] == 'tree' for x in area)
-    tw_ids = {x['areaItemId'] for x in tw['areaItemLevels']}
-    lim = {'jp': lim_of(jp, has_tree_jp),
-           'tw': lim_of(tw, any(x[3] == 'tree' and x[0] in tw_ids for x in area)) if tw['areaItemLevels'] else lim_of(jp, has_tree_jp)}
+    lim = dict(WL3_LIM)
+    if len(gate) < lim['gate'] or any(len(x[5]) < lim['area'] for x in area if x[3] != 'tree'):
+        raise SystemExit('master 的大門或區域道具等級比 WL3 當時的上限少，WL3_LIM 要重查')
 
     # WL3 各期：有總合力上限的 World Link
     cap = {x['eventId']: x['upperTotalPower'] for x in jp['eventTotalPowerLimits']}
@@ -196,10 +194,12 @@ def main():
                 continue
             teams.append((sum(power_sum(c) for c in combo), list(combo)))
         teams.sort(key=lambda t: -t[0])
+        if e['aggregateAt'] >= JP_V7_AT:
+            raise SystemExit(f'第 {eid} 期在日服 7.0.0 之後才結算，WL3_LIM（大門 40、沒有想いの大樹）不一定適用，要重查')
         events.append([eid, e['name'], e['startAt'], e['aggregateAt'], cap[eid], doll_lim.get(eid), finale,
                        [list(x) for x in ch], [list(x) for x in ec], [t[1] for t in teams[:10]]])
 
-    out = {'built': int(time.time() * 1000), 'src': '日服 master（Sekai-World）＋台服上限（Haruki 台服 master）',
+    out = {'built': int(time.time() * 1000), 'src': '日服 master（Sekai-World）；道具的台服名稱用 Haruki 台服 master',
            'lim': lim, 'rank': rank, 'gate': gate, 'doll': doll, 'area': area,
            'mr': {'4': mlc.get('rarity_4', [[0, 0, 0]]), '9': mlc.get('rarity_birthday', [[0, 0, 0]])},
            'cards': {str(k): v for k, v in sorted(cards.items())}, 'events': events}
@@ -213,7 +213,7 @@ def main():
         return 0
     OUT.write_text(text, encoding='utf-8')
     print(f'寫入 {OUT.name}：{OUT.stat().st_size // 1024} KB（WL3 {len(events)} 期、卡片 {len(cards)} 張、區域道具 {len(area)} 個；'
-          f'上限 日服 門{lim["jp"]["gate"]}／道具{lim["jp"]["area"]}、台服 門{lim["tw"]["gate"]}／道具{lim["tw"]["area"]}）')
+          f'WL3 當時上限 門{lim["gate"]}／道具{lim["area"]}／大樹{"有" if lim["tree"] else "無"}）')
     return 0
 
 

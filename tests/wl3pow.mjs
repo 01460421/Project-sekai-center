@@ -11,7 +11,7 @@ const baseOf = id => { const c = wpCard(D, id), mr = D.mr[String(c.rar)][5]; ret
 /* ---- 資料 ---- */
 ok(D.events.length >= 6 && D.events.every(e => e[4] === 336000), 'WL3 各期都有 336,000 的總合力上限');
 ok(D.events.every(e => e[9].length && e[9].every(t => t.length === 5 && new Set(t.map(id => D.cards[id][0])).size === 5 && new Set(t.map(id => D.cards[id][1])).size === 5)), '每期的滿配候選隊都是五個不同角色、五種顏色');
-ok(D.lim.jp.tree === true && D.lim.tw.tree === false, '想いの大樹：日服有、台服目前沒有');
+ok(D.lim.gate === 40 && D.lim.area === 20 && D.lim.tree === false && D.gate.length === 40, 'WL3 當時的上限：大門 Lv40、區域道具 Lv20、沒有想いの大樹（日服 7.0 改版才有）');
 ok(D.area.every(it => it[5].every((v, i) => i === 0 || v >= it[5][i - 1])), '區域道具每級加成不會往下掉');
 const tree = D.area.find(it => it[3] === 'tree');
 ok(tree && tree[5][19] === 10 && tree[7][19] === 10, '想いの大樹 Lv20：全角色 10%＋2 種以上團體 10%');
@@ -45,25 +45,29 @@ const lnItem = D.area.find(it => it[3] === 'unit' && it[4] === 'light_sound');
 const Lu = wpPower(D, lnTeam, zero({ area: { [lnItem[0]]: 20 } }));
 ok(Lu.total - L0.total === lnTeam.reduce((s, id) => s + baseOf(id).reduce((a, v) => a + Math.floor(0.20 * v + 1e-9), 0), 0), '全隊同團：團體道具 Lv20 翻倍成 20%，VS 卡也吃');
 
-/* 大門：人類吃本團，VS 卡吃最高那扇 */
+/* 大門：人類吃本團，VS 卡吃最高那扇；超過 WL3 當時的 Lv40 照 Lv40 算 */
 const miku = team.find(id => D.cards[id][0] === 21);
-const Rg = wpPower(D, team, zero({ gate: { street: 70 } }));
+const Rg = wpPower(D, team, zero({ gate: { street: 40 } }));
 const mikuRow = Rg.per.find(p => p.card.id === miku);
-ok(mikuRow.gatePct === 7 && Rg.per.filter(p => p.card.ch <= 20).every(p => p.gatePct === 0), 'Vivid BAD SQUAD 大門 Lv70：隊上沒有 VBS 人類，只有 VS 卡吃到 7%');
+ok(mikuRow.gatePct === 4 && Rg.per.filter(p => p.card.ch <= 20).every(p => p.gatePct === 0), 'Vivid BAD SQUAD 大門 Lv40：隊上沒有 VBS 人類，只有 VS 卡吃到 4%');
+ok(wpPower(D, team, zero({ gate: { street: 70 }, gateMax: D.lim.gate })).total === Rg.total, '大門設 Lv70（現在的日服）也只算到 WL3 當時的 Lv40');
 
 /* 玩偶：終章上限 6% */
 const fin = D.events.find(e => e[6]);
 const Rd = wpPower(D, team, zero({ doll: { 21: 8 }, dollCap: fin[5] }));
 ok(Rd.per.find(p => p.card.ch === 21).dollPct === 6, '終章玩偶上限 6%：設 8% 只算 6%');
 
-/* 最低統一等級、升級順序 */
-const cfg = zero({ rank: {}, gate: Object.fromEntries(WP_UNITS.map(u => [u, 0])) });
+/* 最低統一等級、升級順序：照 WL3 當時的上限（大門 40、沒有大樹），角色等級 50、專精 5 */
+const cfg = zero({ rank: {}, gate: Object.fromEntries(WP_UNITS.map(u => [u, 0])), gateMax: D.lim.gate, areaMax: D.lim.area, tree: D.lim.tree });
 const ids = wpRelevant(D, team, cfg);
-ok(ids.includes(tree[0]) && ids.includes(cid1), '這隊用得到的道具含大樹與章節角色的角色道具');
+ok(!ids.includes(tree[0]) && ids.includes(cid1), '這隊用得到的道具含章節角色的角色道具，不含 WL3 當時還沒有的想いの大樹');
 const L = wpMinUniform(D, team, cfg, ids);
-ok(L != null && wpPower(D, team, wpUniform(cfg, ids, L)).total >= 336000 && wpPower(D, team, wpUniform(cfg, ids, L - 1)).total < 336000, '最低統一等級 Lv' + L + '：這級達標、低一級不達標');
+ok(L === 18 && wpPower(D, team, wpUniform(cfg, ids, L)).total >= 336000 && wpPower(D, team, wpUniform(cfg, ids, L - 1)).total < 336000, '沒有大門、沒有玩偶：區域道具最低統一 Lv' + L + '（應為 Lv18）');
+const cfgMax = Object.assign({}, cfg, { gate: Object.fromEntries(WP_UNITS.map(u => [u, 40])), doll: Object.fromEntries(team.map(id => [D.cards[id][0], 2])) });
+const L2 = wpMinUniform(D, team, cfgMax, ids);
+ok(L2 === 16, '大門全 Lv40＋每人兩套玩偶：區域道具最低統一 Lv' + L2 + '（應為 Lv16）');
 const start = wpUniform(cfg, ids, 10), P = wpPlan(D, team, start, ids);
-ok(P.reached && P.final >= 336000 && P.steps[0].k === 'a' + tree[0], '從全部 Lv10 補到上限：第一步是想いの大樹，最後達標');
+ok(P.reached && P.final >= 336000 && P.steps.every(st => st.k !== 'a' + tree[0]), '從全部 Lv10 補到上限：不會叫你升想いの大樹，最後達標');
 ok(new Set(P.steps.map(s => s.k)).size === P.steps.length, '升級順序每一項只出現一次（同項合併）');
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
