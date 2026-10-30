@@ -69,6 +69,15 @@ export function trend(h, hoursAgo = 1) {
 }
 
 /* 歷史最終榜線（good果汁表）：{ events, borders:[{id,name,chara,unit,days,type,t[]}], tiers, wl:[{id:'112.1',name,round,bonus,t[]}], wlTiers } */
+/* 日服現況：網站每天從日服 master 重建的 data/jp-now.js（版本、近期活動、卡池、新曲；欄位見 tools/build-jp-now.py），
+   即時榜線走 Worker 的 Haruki 日服追蹤器（HiSekai 只有台服） */
+export const fetchJpNow = () => cached('jp-now', 30 * 60e3, async () => {
+  const text = await getText(`${SITE}/data/jp-now.js`, 15000);
+  const i = text.indexOf('{'); const j = text.lastIndexOf('}');
+  if (i < 0 || j < 0) throw new Error('jp-now 格式非預期');
+  return JSON.parse(text.slice(i, j + 1));
+});
+export const fetchJpLive = kind => cached(`jplive:${kind}`, 60e3, async () => normalizeLive(kind, parseSafe(await getText(`${GAMES_API}/haruki/jp/event/live/${kind}`))));
 export const fetchBordersDb = () => cached('borders-db', 6 * 3600e3, async () => {
   const text = await getText(`${SITE}/data/borders-db.js`, 15000);
   const i = text.indexOf('{'); const j = text.lastIndexOf('}');

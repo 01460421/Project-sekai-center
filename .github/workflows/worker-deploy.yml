@@ -36,6 +36,7 @@ jobs:
           for f in worker/src/*.js; do node --check "$f"; done
           node worker/test/haruki.mjs
           node worker/test/security.mjs
+          node worker/test/snaps.mjs
       - name: 部署
         working-directory: worker
         env:

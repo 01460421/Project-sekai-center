@@ -217,8 +217,9 @@ export function helpMembers() {
     }
     if (/現在.*活動|现在.*活动|當期|当期|這期|这期|本期|活動.*(結束|结束|倒數|倒数|剩)|倒數|倒数|還剩|还剩|什麼活動|什么活动/.test(n)) {
       if (jp) {
-        const D = this.state.jpNow;
-        if (!D) { this.loadJpNow(); return { text: '日服資料正在載入，稍等一下再問我一次，或直接看日服現況：', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] }; }
+        const D = this.hpJpData();
+        if (!D) return { text: '日服資料這次沒載到，直接看日服現況：', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
+        if (/下一期|下期|下個|下个|下一個|下一个|接下來|接下来|之後|之后|未來|未来/.test(n)) return this.hpJpAnswer('next', D);
         const now = Date.now(), cur = (D.events || []).filter(e => e[4] <= now && now < e[6]).sort((a, b) => b[4] - a[4])[0];
         if (!cur) return { text: '日服現在是活動之間的空檔。', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
         return { text: '日服第 ' + cur[0] + ' 期「' + cur[1] + '」' + (now < cur[5] ? '進行中，' + fdt(cur[5]) + ' 結算（還有 ' + this.dur(cur[5] - now) + '）。' : '已結算，等待公布結果。'), acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }, { l: '日服排名', k: 'go', a: 'rank' }] };
@@ -229,13 +230,90 @@ export function helpMembers() {
         acts: [{ l: '活動總覽', k: 'go', a: 'event' }, { l: '活動排名', k: 'go', a: 'rank' }, { l: '這期的活動資料', k: 'go', a: 'evinfo' }] };
     }
     if (/(現在|现在|目前|開放|开放|有哪些).*(卡池|池)|卡池.*(現在|现在|開放|开放|有哪些)|^卡池$/.test(n)) {
-      if (jp) return { text: '日服開放中的卡池在日服現況頁（含 PU 卡）。', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
+      if (jp) return this.hpJpGachas();
       const t = new Date(), ymd = t.getFullYear() + '/' + pad(t.getMonth() + 1) + '/' + pad(t.getDate());
       const open = (this.state.gachas || []).filter(g => g.s <= ymd && ymd <= g.e && !/常駐/.test(g.t || '')).slice(0, 6);
       if (!open.length) return { text: '卡池資料還在載入，直接看卡池列表：', acts: [{ l: '卡池列表', k: 'go', a: 'gacha' }] };
       return { text: '台服現在開放的卡池（預測時間）：\n' + open.map(g => '・' + g.n + '（到 ' + g.e.slice(5) + '）').join('\n'), acts: [{ l: '卡池列表', k: 'go', a: 'gacha' }, { l: '抽卡模擬', k: 'go', a: 'gachasim' }] };
     }
+    if (jp) {
+      const D = this.hpJpData();
+      const kind = /卡池|池子|抽卡|轉蛋|转蛋|扭蛋|ガチャ|gacha/.test(n) ? 'gacha'
+        : /新曲|新歌|歌曲|曲子|樂曲|乐曲|新譜|新谱/.test(n) ? 'songs'
+        : /下一期|下期|下個活動|下个活动|下一個活動|下一个活动|接下來|接下来|之後|之后|未來|未来|預定|预定|排程/.test(n) ? 'next'
+        : /公告|消息|新聞|新闻|news|情報|情报|お知らせ|預告|预告|直播|放送局/.test(n) ? 'news'
+        : /版本|version/.test(n) ? 'ver'
+        : /最新|消息|情報|情报|資訊|资讯|新聞|新闻|news|公告|近況|近况|現況|现况|有什麼新|有什么新|更新|總覽|总览|現在|现在|目前|如何|怎樣|怎样|^(日服|日版|日本服?)$/.test(n) ? 'all' : '';
+      if (kind) {
+        if (!D) return { text: '日服資料這次沒載到，直接看日服現況：', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
+        return kind === 'gacha' ? this.hpJpGachas() : this.hpJpAnswer(kind, D);
+      }
+    }
     return null;
+  },
+  /* ---------- 日服現況（data/jp-now.js）---------- */
+  hpJpData() { return this.state.jpNow || this._hpJp || null; },
+  hpJpName(id) { const c = (this._hpChars || this.state.rateChars || []).find(x => x[0] === id); return c ? c[1] : '#' + id; },
+  hpJpAnswer(kind, D) {
+    const now = Date.now(), pad = v => String(v).padStart(2, '0');
+    const fdt = t => { const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+    const fd = t => { const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate(); };
+    const EVN = { marathon: '馬拉松', cheerful_carnival: '嘉年華', world_bloom: 'World Link' };
+    const evs = (D.events || []).slice().sort((a, b) => a[4] - b[4]);
+    const cur = evs.filter(e => e[4] <= now && now < e[6]).pop();
+    const next = evs.filter(e => e[4] > now);
+    const attr = k => (this.SM_ATTR[k] || [k || ''])[0];
+    const evLine = e => '第 ' + e[0] + ' 期「' + e[1] + '」' + (EVN[e[2]] || e[2]) + (e[8] ? '・加成' + attr(e[8]) : '');
+    const curLine = e => evLine(e) + (now < e[5] ? '，' + fdt(e[5]) + ' 結算（還有 ' + this.dur(e[5] - now) + '）' : '，已結算、等待公布結果');
+    const songs = (D.songs || []).slice(0, 5);
+    const songLine = m => '「' + m[1] + '」' + (m[3] && m[3] !== '-' ? '（' + m[3] + '）' : '') + (m[4] > now ? '　' + fd(m[4]) + ' 公開' : '　' + fd(m[4]) + ' 已公開');
+    const built = '（日服 v' + (D.ver.app || '?') + '，資料整理於 ' + fd(D.built) + '，時間是你裝置的時區）';
+    const go = [{ l: '日服現況', k: 'go', a: 'jpnow' }];
+    const me = this.state.me, aiOk = !!(me && me.status === 'approved');
+    const ai = q => aiOk ? [{ l: '問 AI 助手（含最新公告）', k: 'ai', a: q }] : [];
+    const news = this._hpJpNews || [];
+    const TAG = { event: '活動', gacha: '卡池', music: '樂曲', campaign: '活動宣傳', information: '公告', bug: '不具合', update: '更新' };
+    const newsLine = x => fd(x.s) + (TAG[x.tag] ? '［' + TAG[x.tag] + '］' : '　') + x.t;
+    if (kind === 'news') {
+      if (!news.length) return { text: '日服的遊戲內公告這次沒抓到，看日服官方 NEWS：', acts: [{ l: '日服官方 NEWS', k: 'open', a: 'https://pjsekai.sega.jp/news/index.html' }].concat(ai('日服最新的公告有哪些？')) };
+      return { text: '日服最新的遊戲內公告（日文原文）：\n' + news.slice(0, 6).map(x => '・' + newsLine(x)).join('\n') + (aiOk ? '\n要中文翻譯與重點整理，交給 AI 助手。' : ''),
+        acts: news.slice(0, 3).filter(x => x.url).map(x => ({ l: x.t.length > 18 ? x.t.slice(0, 18) + '…' : x.t, k: 'open', a: x.url })).concat(ai('幫我翻譯整理日服最新的公告')) };
+    }
+    if (kind === 'ver') return { text: '日服現在是 v' + (D.ver.app || '?') + '（資料版本 ' + (D.ver.data || '?') + '）。', acts: go };
+    if (kind === 'songs') {
+      if (!songs.length) return { text: '日服新曲的資料是空的，直接看日服現況：', acts: go };
+      return { text: '日服最近的新曲（新到舊）：\n' + songs.map(m => '・' + songLine(m)).join('\n') + '\n' + built, acts: go.concat([{ l: '樂曲資料庫', k: 'go', a: 'songs' }]) };
+    }
+    if (kind === 'next') {
+      if (!next.length) return { text: '日服 master 裡還沒排下一期活動' + (cur ? '；目前是' + curLine(cur) : '') + '。', acts: go.concat([{ l: '排程預測', k: 'go', a: 'sched' }]) };
+      return { text: '日服接下來的活動：\n' + next.slice(0, 3).map(e => '・' + evLine(e) + '，' + fdt(e[4]) + ' 開始').join('\n') + '\n更後面的日服還沒公布。' + built,
+        acts: go.concat([{ l: '排程預測', k: 'go', a: 'sched' }]) };
+    }
+    const g = this.hpJpGachas(true);
+    const lines = [];
+    if (cur) lines.push('・活動：' + curLine(cur));
+    else lines.push('・活動：現在是活動之間的空檔');
+    if (next.length) lines.push('・下一期：' + evLine(next[0]) + '，' + fdt(next[0][4]) + ' 開始');
+    if (g) lines.push('・卡池：' + g);
+    if (songs.length) lines.push('・新曲：' + songs.slice(0, 2).map(songLine).join('、'));
+    if (news.length) lines.push('・最新公告：' + news.slice(0, 3).map(x => fd(x.s) + ' ' + x.t).join('／'));
+    return { text: '日服現在的狀況：\n' + lines.join('\n') + '\n' + built + (aiOk ? '\n遊戲內公告的原文與翻譯可以問 AI 助手。' : ''), acts: go.concat(ai('日服最新的公告有哪些？')) };
+  },
+  /* 開放中的日服卡池與 PU；short=true 回一行給總覽用 */
+  hpJpGachas(short) {
+    const D = this.hpJpData();
+    if (!D) return short ? '' : { text: '日服資料這次沒載到，直接看日服現況：', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
+    const now = Date.now(), pad = v => String(v).padStart(2, '0');
+    const fdt = t => { const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+    const pu = g => [...new Set((g[6] || []).filter(c => c[2] >= 4).map(c => this.hpJpName(c[1]) + (c[2] === 9 ? '（生日）' : '★' + c[2])))].slice(0, 4).join('、');
+    const ga = (D.gachas || []).filter(g => g[3] <= now && now < g[4]).sort((a, b) => (b[2] === 'ceil') - (a[2] === 'ceil') || a[4] - b[4]);
+    const soon = (D.gachas || []).filter(g => g[3] > now).sort((a, b) => a[3] - b[3]);
+    if (short) return ga.length ? ga.slice(0, 2).map(g => '「' + g[1] + '」到 ' + fdt(g[4])).join('、') : '';
+    if (!ga.length && !soon.length) return { text: '日服現在沒有限定池開放（常駐池不列）。', acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
+    const row = g => '・「' + g[1] + '」' + fdt(g[3]) + ' – ' + fdt(g[4]) + (pu(g) ? '\n　PU：' + pu(g) : '');
+    return { text: (ga.length ? '日服開放中的卡池：\n' + ga.slice(0, 5).map(row).join('\n') : '日服現在沒有限定池開放。')
+      + (soon.length ? '\n即將開放：\n' + soon.slice(0, 3).map(row).join('\n') : '') + '\n（時間是你裝置的時區）',
+      acts: [{ l: '日服現況', k: 'go', a: 'jpnow' }] };
   },
   hpLoginActs() {
     const back = '/app.html?page=' + (this.state.page || 'home') + (this.SRV === 'jp' ? '&srv=jp' : '');
@@ -261,11 +339,29 @@ export function helpMembers() {
     return { text: '這題我答不出來' + (aiOk ? '，交給 AI 助手吧：它會自己查站上的資料。' : '。登入並通過審核後可以問 AI 助手；或是留言給 omega。'),
       acts: (aiOk ? [{ l: '交給 AI 助手回答', k: 'ai', a: q }] : (me ? [] : this.hpLoginActs())).concat([{ l: '留言給 omega', k: 'tab', a: 'msg' }]) };
   },
-  hpAsk(text) {
+  async hpAsk(text) {
     const q = String(text || '').trim();
     if (!q) return;
     this.hpPush({ who: 'me', text: q });
     this.setState({ hpText: '' });
+    /* 問日服的事：先等日服現況與角色名載好再答（以前回「正在載入，再問一次」，看起來像不知道） */
+    if (this.SRV === 'jp' || /日服|日版|日本/.test(q)) {
+      try { if (!this.state.jpNow && !this._hpJp) this._hpJp = await this.loadJpNow(); } catch (e) {}
+      try { if (!this._hpChars) this._hpChars = (await import(scData(this.SRV === 'jp' ? 'cards-index-jp.js' : 'cards-index.js'))).CHARAS || []; } catch (e) {}
+      /* 日服遊戲內公告：下一期活動、新卡池常常先出現在這裡（master 要等更新才有）；十分鐘內不重抓 */
+      if (!this._hpJpNewsAt || Date.now() - this._hpJpNewsAt > 600000) {
+        try {
+          const u = await fetch(this.JP_MASTER + '/userInformations.json', { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : null);
+          if (u) {
+            const now = Date.now();
+            this._hpJpNews = u.filter(x => x.title && (x.startAt || 0) <= now).sort((a, b) => (b.startAt || 0) - (a.startAt || 0) || b.id - a.id).slice(0, 12)
+              .map(x => ({ t: x.title, s: x.startAt || 0, tag: x.informationTag || '',
+                url: /^https?:/.test(x.path || '') ? x.path : x.path ? 'https://production-web.sekai.colorfulpalette.org/' + String(x.path).replace(/^\/+/, '') : '' }));
+            this._hpJpNewsAt = now;
+          }
+        } catch (e) {}
+      }
+    }
     let ans;
     try { ans = this.hpAnswer(q); } catch (e) { ans = { text: '我這邊出了點狀況，再問一次看看？', acts: [] }; }
     this.hpReply(ans);
@@ -292,6 +388,7 @@ export function helpMembers() {
     if (k === 'tab') { this.hpSetTab(a); return; }
     if (k === 'ai') { this.hpSetTab('ai'); this.hpAiSend(a); return; }
     if (k === 'url') { location.href = a; return; }
+    if (k === 'open') { try { window.open(a, '_blank', 'noopener'); } catch (e) {} return; }
     if (k === 'cat') { this.setState({ hpNewCat: a }); setTimeout(() => { try { const el = document.querySelector('.hp-input'); if (el) el.focus(); } catch (e) {} }, 60); return; }
     if (k === 'clear') { this.setState({ hpMsgs: [] }); try { sessionStorage.removeItem(BOT_KEY); } catch (e) {} this.hpGreet(); }
   },

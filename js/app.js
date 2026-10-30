@@ -92,7 +92,7 @@ class Component extends DCLogic {
     try {
       if (!this._i18n) this._i18n = await import('./js/i18n.js?v=c6323be814');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=035e5ef615'), ja: () => import('./data/i18n-ja.js?v=1f97f7a2eb') };
+      const DICTS = { en: () => import(scData('i18n-en.js')), ja: () => import(scData('i18n-ja.js')) };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -1174,7 +1174,7 @@ class Component extends DCLogic {
     try { savedUnit = localStorage.getItem('sekai-unit') || ''; } catch (e) {}
     this.setState({ unit: savedUnit });
     this.applyUnit(savedUnit);
-    import('./data/card-chara.js?v=279ffc7580').then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
+    import(scData('card-chara.js')).then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
     // 站徽每 8 秒換一種常駐素材（隨機起點，避免每次都從碎片開始）
     this.setState({ matIdx: Math.floor(Math.random() * this.MATS.length) });
     this._matTimer = setInterval(() => this.setState(st => ({ matIdx: (st.matIdx + 1) % this.MATS.length })), 8000);
@@ -1184,10 +1184,10 @@ class Component extends DCLogic {
     // 開站就在玩家查詢頁且網址帶了 ID（分享連結）：go() 的進頁鉤子不會跑，這裡補查一次
     if (this.state.page === 'lookup' && /^\d+$/.test(String(this.state.luId || ''))) this.luLookup();
 
-    import('./data/sekai-data.js?v=1acca6f563')
+    import(scData('sekai-data.js'))
       .then(async m => {
         let G = m.GACHAS || [];
-        if (this.SRV === 'jp') { try { G = (await import('./data/gachas-jp.js?v=f1c2b1dc18')).GACHAS || []; } catch (e) { G = []; } }   // 日服：日服 master 整理的卡池列表（日本時間）
+        if (this.SRV === 'jp') { try { G = (await import(scData('gachas-jp.js'))).GACHAS || []; } catch (e) { G = []; } }   // 日服：日服 master 整理的卡池列表（日本時間）
         this.setState({ gachas: G.map(g => Object.assign({}, g, { t: this.gachaTone(g) })), dolls: m.DOLLS || [] });
       })
       .catch(() => {});
@@ -1200,7 +1200,7 @@ class Component extends DCLogic {
       let seen = true; try { seen = !!localStorage.getItem('sekai-hp-tip'); } catch (e) {}
       if (!seen && !this.state.hpOpen) setTimeout(() => { if (!this.state.hpOpen && !this.state.guide) { this.setState({ hpTip: true }); try { localStorage.setItem('sekai-hp-tip', '1'); } catch (e) {} } }, 6000);
     }).catch(() => {}), 2500));
-    idle(() => import('./data/tutorial-data.js?v=4befc9b27b')
+    idle(() => import(scData('tutorial-data.js'))
       .then(m => this.setState({ tutQA: m.TUT_QA || [], tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' }))
       .catch(() => {}));
     this.mountFrames();
@@ -2728,7 +2728,7 @@ class Component extends DCLogic {
       const s = document.createElement('script');
       // 這支由 CI 每 30~90 分鐘重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate);
       // ?v= 由 tools/stamp-assets.py 維護,重跑 build-billing.py 後要再跑一次 stamp-assets.py
-      s.src = 'data/billing.js?v=fa836eac59';
+      s.src = scData('billing.js');
       s.onload = () => { this.setState({ billReady: true }); res(); };
       s.onerror = () => { this._billP = null; this.setState({ billErr: '商城商品資料載入失敗，請重新整理再試' }); res(); };
       document.head.appendChild(s);
@@ -2793,7 +2793,7 @@ class Component extends DCLogic {
   /* 歌曲 BPM（社長 bot／t-wy 的公開資料庫），只有打開歌曲詳情才載，~10 KB。 */
   loadSongBpm() {
     if (this._bpmP) return;
-    this._bpmP = import('./data/song-bpm.js?v=c3acf2f1f9').then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
+    this._bpmP = import(scData('song-bpm.js')).then(m => this.setState({ songBpm: m.SONG_BPM || null })).catch(() => { this._bpmP = null; });
   }
   async loadBorderDB() {
     if (this.state.bdbReady || this._bdbLoading) return;
@@ -2802,7 +2802,7 @@ class Component extends DCLogic {
     await new Promise(res => {
       const s = document.createElement('script');
       // 這支由 CI 定期重建,不能吃 immutable 快取(vercel.json 已設 must-revalidate)
-      s.src = this.SRV === 'jp' ? 'data/borders-db-jp.js?v=1c92ed6c56' : 'data/borders-db.js?v=8d913b0468';   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
+      s.src = this.SRV === 'jp' ? scData('borders-db-jp.js') : scData('borders-db.js');   // 日服：Sekai Viewer／Haruki 終線拼的日服歷屆榜線（同一個全域 BORDERS_DB）
       s.onload = () => { this.setState({ bdbReady: true }); res(); };
       s.onerror = () => { this.setState({ bdbErr: '榜線資料庫載入失敗' }); res(); };
       document.head.appendChild(s);
@@ -2942,7 +2942,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=b891eaf6af').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=2713621c98').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -2960,7 +2960,7 @@ class Component extends DCLogic {
   /* ---------- 線上客服（延後載入，程式在 js/help.js）：開站閒下來就預載，第一次點開不用等 ---------- */
   loadHelp() {
     if (!this._hpReady) {
-      this._hpReady = import('./js/help.js?v=b5b3dab41a').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
+      this._hpReady = import('./js/help.js?v=58ed2e2cc5').then(m => { Object.assign(this, m.helpMembers.call(this)); this.setState({ hpReady: true }); this.hpInit(); return true; })
         .catch(e => { this._hpReady = null; throw e; });
     }
     return this._hpReady;
@@ -5172,7 +5172,7 @@ class Component extends DCLogic {
      左右相鄰比大小。只看梯度方向,所以截圖那層半透明白不影響。 */
   async loadCardSigs() {
     if (this._sigsP) return this._sigsP;
-    this._sigsP = import('./data/card-sigs.js?v=68b0b83226').then(m => {
+    this._sigsP = import(scData('card-sigs.js')).then(m => {
       const by = {};
       const flat = [];   // [卡片id, 指紋] 攤平一份，整庫掃描時直接跑這個
       (m.SIGS || []).forEach(([cid, tr, b64]) => {
@@ -5290,7 +5290,7 @@ class Component extends DCLogic {
     if (this.state.jpLoad || this.state.jpCards.length) return;
     this.setState({ jpLoad: true, jpErr: '' });
     try {
-      const m = await import('./data/cards-index-jp.js?v=c7a49e5767');
+      const m = await import(scData('cards-index-jp.js'));
       this.setState({ jpCards: m.CARDS || [], jpChars: m.CHARAS || [], jpLoad: false });
     } catch (e) {
       this.setState({ jpLoad: false, jpErr: '日服卡片索引載入失敗，點此重試' });
@@ -5302,12 +5302,12 @@ class Component extends DCLogic {
     this.setState({ rateLoad: true, rateErr: '' });
     try {
       if (this.SRV === 'jp') {
-        const j = await import('./data/cards-index-jp.js?v=c7a49e5767');
+        const j = await import(scData('cards-index-jp.js'));
         this.ownLoad();
         this.setState({ rateCards: (j.CARDS || []).filter(c => c[9] !== 0), rateChars: j.CHARAS || [], rateLoad: false });
         return;
       }
-      const m = await import('./data/cards-index.js?v=4d50ff39a7');
+      const m = await import(scData('cards-index.js'));
       this.ownLoad();
       this.setState({ rateCards: m.CARDS || [], rateChars: m.CHARAS || [], rateLoad: false });
     } catch (e) {
@@ -5480,7 +5480,7 @@ class Component extends DCLogic {
     });
   }
   loadCardX() {
-    return this.dbRun('cardX', async () => { const m = await (this.SRV === 'jp' ? import('./data/cards-extra-jp.js?v=9736f00446') : import('./data/cards-extra.js?v=560757f6c4')); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
+    return this.dbRun('cardX', async () => { const m = await (this.SRV === 'jp' ? import(scData('cards-extra-jp.js')) : import(scData('cards-extra.js'))); return { extra: m.CARD_EXTRA || {}, skills: m.SKILLS || {} }; });
   }
   /* 技能敘述：master 的樣板長 {{效果id;欄位}}，d=秒數、v=數值、e=同團加成、m=加成上限、c=角色名；
      少數技能（體力連動、角色等級連動、隨機成員）的欄位是編組時才算得出來的組合值，那些留成「…」並加註。 */
@@ -5508,7 +5508,7 @@ class Component extends DCLogic {
      角色名優先用劇本裡的 WindowDisplayName（已翻譯），character2ds 只拿來對角色色。 */
   loadStories() {
     return this.dbRun('stories', async () => {
-      const m = await (this.SRV === 'jp' ? import('./data/stories-index-jp.js?v=e6ae0ef8ab') : import('./data/stories-index.js?v=0f2f5c00f1'));
+      const m = await (this.SRV === 'jp' ? import(scData('stories-index-jp.js')) : import(scData('stories-index.js')));
       return { events: m.ST_EVENTS || [], units: m.ST_UNITS || [], cards: m.ST_CARDS || {}, areas: m.ST_AREAS || [], talks: m.ST_TALKS || [], special: m.ST_SPECIAL || [], self: m.ST_SELF || {} };
     });
   }
@@ -5586,18 +5586,18 @@ class Component extends DCLogic {
   }
   loadFixtures() {
     return this.dbRun('fixtures', async () => {
-      const m = await (this.SRV === 'jp' ? import('./data/fixtures-index-jp.js?v=5a194bd360') : import('./data/fixtures-index.js?v=9bcab0f8a3'));
+      const m = await (this.SRV === 'jp' ? import(scData('fixtures-index-jp.js')) : import(scData('fixtures-index.js')));
       return { rows: m.FIXTURES || [], genres: m.FIX_GENRES || [], subs: m.FIX_SUBS || [], tags: m.FIX_TAGS || {}, mats: m.FIX_MATS || {} };
     });
   }
   /* 豆森活動（生日派對、百景競賽）：日曆、今日摘要、行事曆匯出用 */
   loadMsEvents() {
-    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-events-jp.js?v=a6ed391331') : import('./data/mysekai-events.js?v=9dc9226436')); return m.MS_EVENTS || []; });
+    return this.dbRun('msEvents', async () => { const m = await (this.SRV === 'jp' ? import(scData('mysekai-events-jp.js')) : import(scData('mysekai-events.js'))); return m.MS_EVENTS || []; });
   }
   msEventName(x) { return x.k === 'bday' ? (this.charShort(x.ch) || '#' + x.ch) + '的豆森生日派對' : '百景競賽「' + x.n + '」'; }
   /* 應援活動（supportEvents）：期程、火數×評價係數、個人／全體獎勵。日曆、摘要、.ics 與計算中心「應援活動」用 */
   loadSupportEvents() {
-    return this.dbRun('supEvents', async () => { const m = await (this.SRV === 'jp' ? import('./data/support-events-jp.js?v=beb4f9fc5c') : import('./data/support-events.js?v=68dbf5d6f3')); return m.SUPPORT_EVENTS || []; });
+    return this.dbRun('supEvents', async () => { const m = await (this.SRV === 'jp' ? import(scData('support-events-jp.js')) : import(scData('support-events.js'))); return m.SUPPORT_EVENTS || []; });
   }
   /* 第幾回用 n（依開始時間排序）：Haruki 的 6.4 master 重新編號，id 已經不等於回數。v2 是 6.4 新增的棋盤版 */
   supEventName(x) { return '第 ' + (x.n || x.id) + ' 回應援活動' + (x.v === 'v2' ? '（棋盤版）' : ''); }
@@ -5611,7 +5611,7 @@ class Component extends DCLogic {
   /* B30 定數表（data/b30-consts.js 是 window 全域腳本，不是 module）：歌曲詳情各難度顯示定數 */
   loadConsts() {
     if (this.state.consts || this._constsP) return;
-    this._constsP = fetch('./data/b30-consts.js?v=fde0f18f06').then(r => r.text()).then(txt => {
+    this._constsP = fetch(scData('b30-consts.js')).then(r => r.text()).then(txt => {
       const m = /B30_CONSTS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/.exec(txt.trim()); const o = m ? JSON.parse(m[1]) : null; const map = {};
       ((o && o.charts) || []).forEach(c => { map[c.id + ':' + c.d] = c.c; });
       this.setState({ consts: map });
@@ -5658,7 +5658,7 @@ class Component extends DCLogic {
     return { ev, arr, rank, per, plays, cur, day: per * plays, personal, total, next, good, need, phase, daysLeft, board: !!(ev && ev.v === 'v2'), borrowed: !!(ev && !hasCoef && ref), refName: ref && !hasCoef ? this.supEventName(ref) : '' };
   }
   loadMst() {
-    return this.dbRun('mst', async () => { const m = await (this.SRV === 'jp' ? import('./data/mysekai-talks-index-jp.js?v=b4fb483687') : import('./data/mysekai-talks-index.js?v=28945a8519')); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
+    return this.dbRun('mst', async () => { const m = await (this.SRV === 'jp' ? import(scData('mysekai-talks-index-jp.js')) : import(scData('mysekai-talks-index.js'))); return { rows: m.MST_TALKS || [], names: m.MST_NAMES || {} }; });
   }
   /* ---------- Haruki 工具箱 OAuth 匯入 ----------
      流程照 Uni PJSK Viewer 與 33Kit 的公開 client：授權碼＋PKCE，token 只存在這台瀏覽器（localStorage）。
@@ -5993,7 +5993,7 @@ class Component extends DCLogic {
   /* 各索引檔的產生日期（data/data-built.js，排程每天寫），圖鑑頁角落顯示「資料 9/18」 */
   loadBuilt() {
     if (this.state.built || this._builtP) return;
-    this._builtP = (this.SRV === 'jp' ? import('./data/data-built-jp.js?v=add0d5f5a1') : import('./data/data-built.js?v=f9220b56d3')).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
+    this._builtP = (this.SRV === 'jp' ? import(scData('data-built-jp.js')) : import(scData('data-built.js'))).then(m => this.setState({ built: m.BUILT || {} })).catch(() => this.setState({ built: {} }));
   }
   /* 活動總覽用：master 的 eventCards（活動 id、卡片 id、加成 %），全站只抓一次 */
   loadEventCards() {
@@ -6083,7 +6083,7 @@ class Component extends DCLogic {
     });
   }
   loadLives() {
-    return this.dbRun('lives', async () => { const m = await (this.SRV === 'jp' ? import('./data/lives-index-jp.js?v=c92f8fd92a') : import('./data/lives-index.js?v=37677bd377')); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
+    return this.dbRun('lives', async () => { const m = await (this.SRV === 'jp' ? import(scData('lives-index-jp.js')) : import(scData('lives-index.js'))); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
   }
   loadNews() {
     return this.dbRun('news', async () => {
@@ -6553,7 +6553,7 @@ class Component extends DCLogic {
   BP_CARD_EXP = [0, 3000, 7000, 12000, 17400, 23200, 29400, 36000, 43000, 50400, 58200, 66400, 75000, 84000, 93400, 103200, 113400, 124000, 135000, 146400, 158200, 170400, 183000, 196000, 209400, 223200, 237400, 252000, 267000, 282400, 298200, 314400, 331000, 348000, 365400, 383200, 401400, 420000, 439000, 458400, 478200, 498400, 519000, 540000, 561400, 583200, 605400, 628000, 651000, 674400, 698200, 722400, 747000, 772000, 797400, 823200, 849400, 876000, 903000, 930400];
   loadBday() {
     if (this.state.bpOwn == null) { let o = {}; try { o = JSON.parse(localStorage.getItem(this.bpKey()) || '{}') || {}; } catch (e) {} this.setState({ bpOwn: o }); }
-    return this.dbRun('bday', async () => (await (this.SRV === 'jp' ? import('./data/bday-party-jp.js?v=3c02f73b2a') : import('./data/bday-party.js?v=45a7e8a2e6'))).BDAY || null);
+    return this.dbRun('bday', async () => (await (this.SRV === 'jp' ? import(scData('bday-party-jp.js')) : import(scData('bday-party.js')))).BDAY || null);
   }
   bpKey() { return 'sekai-bp-own' + (this.SRV === 'jp' ? '-jp' : ''); }
   /* 卡片等級總 EXP（master levels.json 的 card，Lv1～60；兩服相同） */
@@ -6915,7 +6915,7 @@ class Component extends DCLogic {
   /* ===== 卡池詳情（原生疊層；PU 卡由 tools/build-gacha-pickups.py 建置時從兩服 master 算好） ===== */
   loadGachaPk() {
     if (this._gpk) return this._gpk;
-    this._gpk = (this.SRV === 'jp' ? import('./data/gacha-pickups-jp.js?v=0261924599') : import('./data/gacha-pickups.js?v=02e12a50aa')).then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
+    this._gpk = (this.SRV === 'jp' ? import(scData('gacha-pickups-jp.js')) : import(scData('gacha-pickups.js'))).then(m => this.setState({ gachaPk: m.GACHA_PICKUPS || {}, gachaPkErr: false }))
       .catch(() => { this._gpk = null; this.setState({ gachaPkErr: true }); });
     return this._gpk;
   }
@@ -6944,7 +6944,7 @@ class Component extends DCLogic {
     if (this._gsP) return this._gsP;
     const byStart = L => L.sort((x, y) => (y.startAt || 0) - (x.startAt || 0));
     if (this.SRV === 'jp') {
-      this._gsP = import('./data/gachasim-jp.js?v=b2d22b01da').then(m => {
+      this._gsP = import(scData('gachasim-jp.js')).then(m => {
         const D = m.GACHASIM || {}, ok = byStart(this.gsJpDecode(D));
         this._gsXCards = D.cards || [];
         this.setState({ gsList: ok, gsErr: ok.length ? '' : '日服卡池資料裡沒有可模擬的卡池。' });
@@ -7299,7 +7299,7 @@ class Component extends DCLogic {
   loadEvInfo() {
     if (this.state.evInfo) return Promise.resolve(this.state.evInfo);
     if (this._evInfoP) return this._evInfoP;
-    this._evInfoP = (this.SRV === 'jp' ? import('./data/event-info-jp.js?v=7971848bd8') : import('./data/event-info.js?v=697a88f113')).then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
+    this._evInfoP = (this.SRV === 'jp' ? import(scData('event-info-jp.js')) : import(scData('event-info.js'))).then(m => { const d = m.EVENT_INFO || null; this._eiRows = null; this.setState({ evInfo: d, evInfoErr: d ? '' : '活動資料是空的' }); return d; })
       .catch(() => { this._evInfoP = null; this.setState({ evInfoErr: '活動資料載入失敗，點此重試' }); return null; });
     return this._evInfoP;
   }
@@ -7307,7 +7307,7 @@ class Component extends DCLogic {
   loadSched() {
     if (this.state.sched) return Promise.resolve(this.state.sched);
     if (this._schedP) return this._schedP;
-    this._schedP = import('./data/schedule-forecast.js?v=848197d55d').then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
+    this._schedP = import(scData('schedule-forecast.js')).then(m => { const d = m.SCHED_FORECAST || null; this.setState({ sched: d, schedErr: d ? '' : '排程預測資料是空的' }); return d; })
       .catch(() => { this._schedP = null; this.setState({ schedErr: '排程預測資料載入失敗，點此重試' }); return null; });
     return this._schedP;
   }
@@ -7315,7 +7315,7 @@ class Component extends DCLogic {
      台服模式也看得到（活動家族的分頁籤）；切到日服時首頁就是這一頁。 */
   loadJpNow() {
     if (!this._jnP) {
-      this._jnP = import('./data/jp-now.js?v=5ad0769f5a').then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
+      this._jnP = import(scData('jp-now.js')).then(m => { this.setState({ jpNow: m.JP_NOW || null, jnErr: m.JP_NOW ? '' : '日服現況資料是空的' }); return m.JP_NOW; })
         .catch(() => { this._jnP = null; this.setState({ jnErr: '日服現況資料載入失敗，點此重試' }); return null; });
     }
     this.loadCards();
@@ -7662,7 +7662,7 @@ class Component extends DCLogic {
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
-      const m = await import('./data/skill-table.js?v=0f2de99da8');
+      const m = await import(scData('skill-table.js'));
       return m.SKILL_TABLE;
     });
   }
@@ -8054,7 +8054,7 @@ class Component extends DCLogic {
     try {
       const j = n => this.srvJson(n + '.json').catch(() => []);
       const [ok, st, ho, hg, pf, pg, cps] = await Promise.all([
-        import('./data/collection-assets.js?v=73b9d40b67'),
+        import(scData('collection-assets.js')),
         this.srvJson('stamps.json'),
         this.srvJson('honors.json'),
         j('honorGroups'),
@@ -8089,7 +8089,7 @@ class Component extends DCLogic {
     if (this._evArtLoading || Object.keys(this.state.evArt || {}).length) return;
     this._evArtLoading = true;
     /* 先用每日建好的小檔（data/event-art(-jp).js，幾 KB）；以前每次開站都抓整份 master events.json（台服 1.5 MB） */
-    (this.SRV === 'jp' ? import('./data/event-art-jp.js?v=7a69294f91') : import('./data/event-art.js?v=db8de303da')).then(mod => {
+    (this.SRV === 'jp' ? import(scData('event-art-jp.js')) : import(scData('event-art.js'))).then(mod => {
       const m = {}, ty = {};
       Object.entries(mod.EVART || {}).forEach(([id, [abn, t]]) => { if (abn) m[id] = abn; if (t) ty[id] = t; });
       if (!Object.keys(m).length) throw new Error('empty');
@@ -8149,11 +8149,11 @@ class Component extends DCLogic {
       if (end < 0) throw new Error('陣列沒有結尾');
       return JSON.parse(t.slice(i, end + 1));
     };
-    fetch('./data/ep-songs.js?v=ee3eab25f5')
+    fetch(scData('ep-songs.js'))
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => done(parse(t)))
       .catch(e1 => {
-        import('./data/ep-songs.js?v=ee3eab25f5')
+        import(scData('ep-songs.js'))
           .then(m => done(m.EP_SONGS || []))
           .catch(e2 => fail(((e1 && e1.message) || 'fetch 失敗') + '；' + ((e2 && e2.message) || 'import 失敗')));
       });

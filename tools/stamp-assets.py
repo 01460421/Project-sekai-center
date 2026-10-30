@@ -9,6 +9,10 @@
     python3 tools/stamp-assets.py
 
 冪等：重複執行結果相同。內容沒變就不會動到檔案。
+
+資料檔（data/*.js）的戳記不寫進程式碼，改寫進 data/stamps.js（SC_DATA_V 對照表，走 must-revalidate）：
+程式用 scData('ep-songs.js') 組網址。每日排程重建資料只會改到這個小檔，
+js/app.min.js 與 app.html 不必跟著換戳記，回訪的人不用每天重抓 700 KB 的主程式。
 """
 import hashlib
 import pathlib
@@ -25,6 +29,18 @@ ASSET_FILES = ['support.js']
 CODE = ['js/haruki.js', 'js/i18n.js', 'js/help.js', 'js/maker.js', 'js/car.js', 'js/car.min.js', 'js/app.js', 'js/app.min.js', 'js/ai.js', 'js/ai.min.js', 'js/core.js', 'support.js']
 
 
+STAMPS = 'data/stamps.js'
+
+
+def stamps_text():
+    """data/ 底下（第一層）每個 .js 的雜湊，給前端的 scData() 查。"""
+    m = {p.name: digest(p) for p in sorted((ROOT / 'data').glob('*.js')) if p.relative_to(ROOT).as_posix() != STAMPS}
+    body = ','.join(f'"{k}":"{v}"' for k, v in m.items())
+    return ('/* 由 tools/stamp-assets.py 產生，勿手改。資料檔的內容雜湊：程式用 scData(檔名) 組出帶 ?v= 的網址。\n'
+            '   這個檔走 must-revalidate（vercel.json），每日資料更新只改這裡，主程式與 app.html 不用換戳記。 */\n'
+            f'self.SC_DATA_V={{{body}}};\n')
+
+
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
 
@@ -37,7 +53,7 @@ def collect(only=None):
         if not base.is_dir():
             continue
         for p in sorted(base.rglob('*')):
-            if p.is_file() and p.suffix in ('.js', '.css'):
+            if p.is_file() and p.suffix in ('.js', '.css') and p.relative_to(ROOT).as_posix() != STAMPS:
                 out[p.relative_to(ROOT).as_posix()] = digest(p)
     if only is None:
         for f in ASSET_FILES:
@@ -97,6 +113,10 @@ def main():
     # 這一輪會改動 js/app.js 之類的檔案,所以它們的雜湊要等這輪做完才算得準。
     # 也要含 js:js/app.js 會用 ?v= 引用 js/core.js。core.js 不反過來引用 app.js,
     # 所以先算 core.js 的雜湊再改 app.js 不會有循環。
+    st_path, st_new = ROOT / STAMPS, stamps_text()
+    stamps_changed = not st_path.is_file() or st_path.read_text(encoding='utf-8') != st_new
+    if stamps_changed and not check_only:
+        st_path.write_text(st_new, encoding='utf-8')
     data_assets = collect(['data', 'css', 'vendor', 'js'])
     code_changed = [f for f in CODE if restamp(ROOT / f, data_assets, only_existing=True, dry=check_only)]
 
@@ -112,6 +132,7 @@ def main():
         print(f'  {rel:32s} v={h}')
     print(f'更新的程式碼檔：{", ".join(code_changed) if code_changed else "無（已是最新）"}')
     print(f'更新的 HTML：{", ".join(changed) if changed else "無（已是最新）"}')
+    print(f'{STAMPS}：{"已更新" if stamps_changed else "已是最新"}')
 
     # 收尾驗證:掃過所有帶戳記的引用,對不上就讓這支失敗。
     # 戳記過期是會靜靜壞掉的那種問題 —— 使用者拿到一年期快取裡的舊檔,
@@ -133,7 +154,18 @@ def main():
         for line in sorted(set(stale)):
             print('  ' + line, file=sys.stderr)
         return 1
-    if check_only and (code_changed or changed):
+    # 資料檔不再把戳記寫死在程式碼裡（改用 scData()），寫死的會讓每日重建時主程式跟著換新，擋下來
+    for name in CODE:
+        f = ROOT / name
+        if f.is_file() and name.endswith('.js') and not name.endswith('.min.js'):
+            for m in re.finditer(r'["\'](?:\./|/)?(data/[A-Za-z0-9._-]+\.js)\?v=[0-9a-f]+["\']', f.read_text(encoding='utf-8')):
+                stale.append(f'{name}: {m.group(1)} 的戳記寫死在程式碼裡，請改用 scData(\'{m.group(1)[5:]}\')')
+    if stale:
+        print('\n資料檔戳記寫死：', file=sys.stderr)
+        for line in sorted(set(stale)):
+            print('  ' + line, file=sys.stderr)
+        return 1
+    if check_only and (code_changed or changed or stamps_changed):
         print('戳記過期（--check 模式不改檔）：請跑 python3 tools/stamp-assets.py 後再提交', file=sys.stderr)
         return 1
     print('戳記一致性檢查：通過')
