@@ -17,6 +17,8 @@ jobs:
         run: node worker/test/haruki.mjs
       - name: Worker 的 Haruki 授權橋接（給菜根機器人；D1 用 node:sqlite 模擬）
         run: node worker/test/haruki_grant.mjs
+      - name: Worker 的榜線快照（每 5 分鐘一筆、/snaps；DO 的 SQL 用 node:sqlite 模擬）
+        run: node worker/test/snaps.mjs
       - name: Haruki 專區的純函式（角色任務 EXP、目前隊伍、compact 展開）
         run: node tests/haruki-zone.mjs
       - name: 壓縮檔與戳記是否過期（不改檔，過期就失敗）

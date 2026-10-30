@@ -26,6 +26,13 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.open(PAGES).then(x => x.match(key).then(r => r || x.match(url.origin + '/app.html')).then(r => r || x.match(url.origin + '/')))));
     return;
   }
+  /* data/stamps.js（資料檔戳記表）也是網路優先：離線時拿上次那份，資料檔網址才對得上快取裡的版本 */
+  if (url.pathname === '/data/stamps.js') {
+    const key = url.origin + url.pathname;
+    e.respondWith(fetch(req).then(r => { if (r.ok) { const c = r.clone(); caches.open(PAGES).then(x => x.put(key, c)); } return r; })
+      .catch(() => caches.open(PAGES).then(x => x.match(key)).then(r => r || Response.error())));
+    return;
+  }
   if (STATIC_RE.test(url.pathname) && url.searchParams.has('v') && !NO_CACHE_RE.test(url.pathname)) {
     e.respondWith(caches.open(STATIC).then(c => c.match(req).then(r => r || fetch(req).then(res => {
       if (res.ok) { const p = c.put(req, res.clone()).then(() => prune(c, url)).catch(() => {}); try { e.waitUntil(p); } catch (err) {} }

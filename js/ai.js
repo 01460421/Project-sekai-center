@@ -657,7 +657,7 @@ export function aiMembers() {
         let src = this.state.tutQA || [];
         if (!src.length) {
           try {
-            const m = await import('./data/tutorial-data.js?v=4befc9b27b');
+            const m = await import(scData('tutorial-data.js'));
             src = m.TUT_QA || [];
             this.setState({ tutQA: src, tutCats: m.TUT_CATS || [], tutDoc: m.TUT_DOC || '' });
           } catch (e) { return { error: '教學資料載入失敗' }; }
@@ -1387,7 +1387,7 @@ export function aiMembers() {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=fde0f18f06';
+              s.src = scData('b30-consts.js');
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -1731,7 +1731,7 @@ export function aiMembers() {
         let src = this.state.dolls || [];
         if (!src.length) {
           try {
-            const m = await import('./data/sekai-data.js?v=1acca6f563');
+            const m = await import(scData('sekai-data.js'));
             src = m.DOLLS || [];
             if (src.length) this.setState({ dolls: src, gachas: (this.state.gachas || []).length ? this.state.gachas : (m.GACHAS || []) });
           } catch (e) { return { error: '豆森娃月列表載入失敗' }; }
@@ -2831,7 +2831,7 @@ export function aiMembers() {
         if (typeof BILLING_DATA === 'undefined') {
           await new Promise(res => {
             const s = document.createElement('script');
-            s.src = 'data/billing.js?v=fa836eac59';   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
+            s.src = scData('billing.js');   // CI 每 30~90 分鐘重建,vercel.json 已設 must-revalidate,不帶版本參數
             s.onload = res; s.onerror = res;
             document.head.appendChild(s);
           });
@@ -5197,7 +5197,7 @@ export function aiMembers() {
           if (!this._b30Loading) {
             this._b30Loading = new Promise(res => {
               const s = document.createElement('script');
-              s.src = 'data/b30-consts.js?v=fde0f18f06';
+              s.src = scData('b30-consts.js');
               s.onload = () => res();
               s.onerror = () => { this._b30Loading = null; res(); };   // 清掉才允許下次重試
               document.head.appendChild(s);
@@ -6446,7 +6446,7 @@ export function aiMembers() {
         let src = this.state.gachas || [];
         if (!src.length) {
           try {
-            const m = await import('./data/sekai-data.js?v=1acca6f563');
+            const m = await import(scData('sekai-data.js'));
             src = m.GACHAS || [];
             if (src.length) this.setState({ gachas: src, dolls: (this.state.dolls || []).length ? this.state.dolls : (m.DOLLS || []) });
           } catch (e) { return { error: '卡池排程資料載入失敗' }; }
@@ -6830,7 +6830,7 @@ export function aiMembers() {
            dynamic import 有模組快取，重複呼叫不會重新下載。 */
         if (!src.length) {
           try {
-            const m = await import('./data/tutorial-data.js?v=4befc9b27b');
+            const m = await import(scData('tutorial-data.js'));
             src = m.TUT_QA || []; cats0 = m.TUT_CATS || [];
           } catch (e) { return { error: '教學資料載入失敗' }; }
         }
@@ -7367,7 +7367,7 @@ export function aiMembers() {
         if (want.indexOf('tutorial') >= 0) {
           let src = this.state.tutQA || [];
           if (!src.length) {
-            try { const m = await import('./data/tutorial-data.js?v=4befc9b27b'); src = m.TUT_QA || [];
+            try { const m = await import(scData('tutorial-data.js')); src = m.TUT_QA || [];
                   this.setState({ tutQA: src }); } catch (e) {}
           }
           const ex = src.filter(x => hit(x.q) || hit(x.kw) || String(x.a || '').includes(raw));
