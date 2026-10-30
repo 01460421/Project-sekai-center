@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=2a304d0ce6" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=3f6c292644" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -838,6 +838,51 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .sm-alts-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:12px;font-weight:800;color:var(--ink);margin-bottom:8px}
 .sm-alts-h span{font-size:11px;font-weight:600;color:var(--text-3)}
 .sm-alt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.wp-intro{font-size:12.5px;color:var(--text-2);line-height:1.75;margin-bottom:10px}
+.wp-chips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;margin-bottom:6px;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.wp-chips .mk-chip{flex:none}
+.wp-sub{font-size:11.5px;color:var(--text-3);line-height:1.7;margin:4px 0 10px}
+.wp .mk-card{margin-bottom:12px}
+.wp-big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.wp-num{font-size:30px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.wp-of{font-size:13px;color:var(--text-3);font-weight:700}
+.wp-bar{height:8px;border-radius:999px;background:var(--bg-soft);overflow:hidden;margin:8px 0 6px}
+.wp-bar i{display:block;height:100%;border-radius:999px;transition:width .25s}
+.wp-st{font-size:13px;font-weight:800;line-height:1.6}
+.wp-retry{width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer}
+.wp-team{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.wp-slot{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;text-align:center;font-size:11px;color:var(--text-2)}
+.wp-slot img{width:100%;max-width:88px;aspect-ratio:1;border-radius:14px;object-fit:cover;background:var(--bg-soft)}
+.wp-slot .nm{font-weight:800;color:var(--ink)}
+.wp-slot select{width:100%}
+.wp-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.wp-pw{font-size:12.5px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.wp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.wp-grid{display:grid;min-width:max-content;font-size:12px;font-variant-numeric:tabular-nums}
+.wp-gh{padding:6px 6px;font-size:11px;font-weight:800;color:var(--text-3);text-align:right;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:flex-end}
+.wp-gh.l,.wp-gh:first-child{text-align:left;align-items:flex-start}
+.wp-gh small,.wp-gc small{font-size:10px;color:var(--text-3);font-weight:500}
+.wp-gc{padding:6px 6px;text-align:right;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:flex-end;justify-content:center;color:var(--text)}
+.wp-gc.l{text-align:left;align-items:flex-start;font-weight:700;color:var(--ink)}
+.wp-gc.b{font-weight:900;color:var(--ink)}
+.wp-gc.s{background:var(--bg-soft);border-bottom:none}
+.wp-ref .wp-gc.l{position:sticky;left:0;background:var(--card);z-index:1}
+.wp-msg{font-size:12px;line-height:1.7;padding:8px 11px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,transparent);color:var(--ink);margin-bottom:8px}
+.wp-now{font-size:12.5px;color:var(--text-2);margin:-2px 0 10px;font-variant-numeric:tabular-nums}
+.wp-now b{font-size:15px;font-weight:900}
+.wp-quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:6px 0 12px}
+.wp-grp{border-top:1px dashed var(--border);padding-top:10px;margin-top:10px}
+.wp-grp-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px}
+.wp-grp-h b{font-size:13px;color:var(--ink)}
+.wp-grp-h span{font-size:11px;color:var(--text-3)}
+.wp-item,.wp-pl{display:flex;align-items:center;gap:8px;padding:5px 0}
+.wp-item-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.wp-item-t b{font-size:12.5px;color:var(--ink);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wp-item-t span{font-size:11px;color:var(--text-3)}
+.wp-item-p{flex:none;font-size:12px;font-weight:800;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.wp-item select{flex:none;width:118px}
+.wp-pl-a{flex:none;font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums;min-width:72px;text-align:right}
+@media (max-width:560px){.wp-team{grid-template-columns:repeat(3,minmax(0,1fr))}.wp-num{font-size:26px}.wp-item select{width:104px}}
 .sm-alt{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:12px;background:var(--bg-soft);font-size:11px;line-height:1.4;color:var(--text-2);min-width:0}
 .sm-alt img{width:44px;height:44px;flex:none;border-radius:10px;object-fit:cover;background:var(--card)}
 .sm-alt-t{display:flex;flex-direction:column;min-width:0}
@@ -7159,6 +7204,136 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
   </sc-if>
 
+  <!-- ========== WL3 綜合力計算器（程式在 js/wl3pow.js，資料在 data/wl3-power.js） ========== -->
+  <sc-if value="{{ isWl3pow }}">
+  <div class="u-a3 wp">
+    <sc-if value="{{ wpWait }}"><div class="empty loading">WL3 綜合力計算器載入中…</div></sc-if>
+    <sc-if value="{{ wpErrHas }}"><button type="button" class="wp-retry" onClick="{{ onWpRetry }}">{{ wpErr }}</button></sc-if>
+    <sc-if value="{{ wpOn }}">
+      <div class="wp-intro">WL3 每一期的總合力上限是 <b>336,000</b>，超過的綜合力不計分。選一期帶出滿配加成的隊伍，調區域道具、MySekai 大門、玩偶與角色等級，看離上限還有多遠；下面有「哪些組合碰得到上限」與「升級順序」。</div>
+      <div class="chips-scroll wp-chips">
+        <sc-for list="{{ wpEvs }}" as="c" hint-placeholder-count="6"><button type="button" class="mk-chip" onClick="{{ onWpEv }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for>
+      </div>
+      <div class="wp-sub">{{ wpEvInfo }}</div>
+
+      <div class="mk-card wp-result">
+        <div class="wp-big"><span class="wp-num">{{ wpTotal }}</span><span class="wp-of">／ {{ wpCap }}</span></div>
+        <div class="wp-bar"><i style="width:{{ wpBar }};background:{{ wpBarC }}"></i></div>
+        <div class="wp-st" style="color:{{ wpBarC }}">{{ wpStatus }}</div>
+        <div class="wp-sub">{{ wpTeamNote }}</div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>滿配隊伍</b><i>五張不同角色、五種顏色；每格可換卡、改專精</i></div>
+        <sc-if value="{{ wpHasTeams }}"><div class="chips-scroll wp-chips" style="margin-bottom:10px"><sc-for list="{{ wpTeams }}" as="c" hint-placeholder-count="2"><button type="button" class="mk-chip" onClick="{{ onWpTeam }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
+        <div class="wp-team">
+          <sc-for list="{{ wpSlots }}" as="c" hint-placeholder-count="5">
+            <div class="wp-slot">
+              <img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy">
+              <div class="nm">{{ c.ch }}</div>
+              <div class="wp-tags"><span class="sm-tag" style="color:{{ c.atC }}">{{ c.at }}</span><span class="sm-tag">{{ c.tag }}</span></div>
+              <select aria-label="換卡" value="{{ c.card }}" onChange="{{ onWpCard }}" data-i="{{ c.i }}" sc-options="{{ c.cardOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+              <select aria-label="專精" value="{{ c.mr }}" onChange="{{ onWpMr }}" data-i="{{ c.i }}" sc-options="{{ c.mrOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+              <div class="wp-pw">{{ c.total }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>每張卡的綜合力</b><i>基礎＝滿級＋特訓＋前後篇＋專精＋畫布</i></div>
+        <div class="wp-scroll"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.2fr) repeat(5,minmax(64px,1fr))">
+          <div class="wp-gh">角色</div><div class="wp-gh">基礎</div><div class="wp-gh">角色等級</div><div class="wp-gh">區域道具</div><div class="wp-gh">大門＋玩偶</div><div class="wp-gh">合計</div>
+          <sc-for list="{{ wpRows }}" as="r" hint-placeholder-count="5">
+            <div class="wp-gc l">{{ r.ch }}</div><div class="wp-gc">{{ r.base }}</div><div class="wp-gc">{{ r.rank }}<small>{{ r.rankP }}</small></div><div class="wp-gc">{{ r.area }}<small>{{ r.areaP }}</small></div><div class="wp-gc">{{ r.my }}<small>{{ r.myP }}</small></div><div class="wp-gc b">{{ r.total }}</div>
+          </sc-for>
+          <div class="wp-gc l s">全隊</div><div class="wp-gc s">{{ wpSum.base }}</div><div class="wp-gc s">{{ wpSum.rank }}</div><div class="wp-gc s">{{ wpSum.area }}</div><div class="wp-gc s">{{ wpSum.my }}</div><div class="wp-gc b s">{{ wpSum.total }}</div>
+        </div></div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>你的狀態</b><i><button type="button" class="mk-chip" onClick="{{ onWpImport }}">從 Haruki 專區帶入</button> <button type="button" class="mk-chip" onClick="{{ onWpReset }}">重設</button></i></div>
+        <div class="wp-now">目前 <b style="color:{{ wpBarC }}">{{ wpTotal }}</b> ／ {{ wpCap }}・{{ wpShortTxt }}</div>
+        <sc-if value="{{ wpHasMsg }}"><div class="wp-msg">{{ wpMsg }}</div></sc-if>
+        <div class="wp-sub">上限照 WL3 當時算：區域道具 Lv20、MySekai 大門 Lv40，還沒有想いの大樹。日服是 WL3 結束後的 7.0 改版（2026/9/29）才把大門開到 Lv70、加入想いの大樹，所以這裡不算；帶入的大門超過 Lv40 也照 Lv40 算。台服目前也是這組上限。</div>
+        <div class="wp-quick">
+          <select aria-label="區域道具全部設成" value="" onChange="{{ onWpAreaAll }}" sc-options="{{ wpAreaOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+          <select aria-label="大門全部設成" value="" onChange="{{ onWpGateAll }}" sc-options="{{ wpGateOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+          <select aria-label="玩偶全部設成" value="" onChange="{{ onWpDollAll }}" sc-options="{{ wpDollAll }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+          <select aria-label="角色等級全部設成" value="" onChange="{{ onWpRankAll }}" sc-options="{{ wpRankAll }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+        </div>
+        <sc-for list="{{ wpGroups }}" as="g" hint-placeholder-count="5">
+          <div class="wp-grp"><div class="wp-grp-h"><b>{{ g.n }}</b><span>{{ g.note }}</span></div>
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+              <div class="wp-item"><div class="wp-item-t"><b>{{ r.name }}</b><span>{{ r.where }}・{{ r.tgt }}</span></div><span class="wp-item-p">{{ r.pct }}</span>
+                <select aria-label="等級" value="{{ r.lv }}" onChange="{{ onWpArea }}" data-id="{{ r.id }}" sc-options="{{ r.opts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select></div>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div class="wp-grp"><div class="wp-grp-h"><b>MySekai 大門</b><span>加該團角色；VS 卡吃五扇裡最高的那扇</span></div>
+          <sc-for list="{{ wpGates }}" as="r" hint-placeholder-count="5">
+            <div class="wp-item"><div class="wp-item-t"><b>{{ r.n }}</b><span>{{ r.use }}</span></div><select aria-label="大門等級" value="{{ r.lv }}" onChange="{{ onWpGate }}" data-u="{{ r.u }}" sc-options="{{ r.opts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select></div>
+          </sc-for>
+        </div>
+        <div class="wp-grp"><div class="wp-grp-h"><b>玩偶</b><span>{{ wpDollCapNote }}</span></div>
+          <sc-for list="{{ wpDolls }}" as="r" hint-placeholder-count="5">
+            <div class="wp-item"><div class="wp-item-t"><b>{{ r.n }}</b></div><select aria-label="玩偶加成" value="{{ r.v }}" onChange="{{ onWpDoll }}" data-ch="{{ r.ch }}" sc-options="{{ r.opts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select></div>
+          </sc-for>
+        </div>
+        <div class="wp-grp"><div class="wp-grp-h"><b>角色等級</b><span>每級 0.1%，Lv50 起固定 5%</span></div>
+          <sc-for list="{{ wpRanks }}" as="r" hint-placeholder-count="5">
+            <div class="wp-item"><div class="wp-item-t"><b>{{ r.n }}</b></div><select aria-label="角色等級" value="{{ r.v }}" onChange="{{ onWpRank }}" data-ch="{{ r.ch }}" sc-options="{{ r.opts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select></div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>哪些組合碰得到上限</b><i>綠底＝達標</i></div>
+        <div class="wp-sub">{{ wpMxNote }}</div>
+        <div class="wp-scroll"><div class="wp-grid" style="{{ wpMxGrid }}">
+          <div class="wp-gh">區域道具</div>
+          <sc-for list="{{ wpMxCols }}" as="c" hint-placeholder-count="9"><div class="wp-gh">{{ c.n }}<small>{{ c.d }}</small></div></sc-for>
+          <sc-for list="{{ wpMxRows }}" as="r" hint-placeholder-count="11">
+            <div class="wp-gc l">{{ r.L }}</div>
+            <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="9"><div class="wp-gc" style="background:{{ c.bg }};color:{{ c.fg }};font-weight:{{ c.w }}">{{ c.v }}</div></sc-for>
+          </sc-for>
+          <div class="wp-gc l s">最低等級</div>
+          <sc-for list="{{ wpMxMin }}" as="c" hint-placeholder-count="9"><div class="wp-gc b s">{{ c.v }}</div></sc-for>
+        </div></div>
+      </div>
+
+      <sc-if value="{{ wpNotOk }}">
+      <div class="mk-card">
+        <div class="mk-h"><b>從現在補到上限的升級順序</b><i>每一步挑升一級加最多的那一項</i></div>
+        <sc-if value="{{ wpHasPlan }}">
+          <div class="wp-plan">
+            <sc-for list="{{ wpPlan }}" as="p" hint-placeholder-count="6">
+              <div class="wp-pl"><div class="wp-item-t"><b>{{ p.n }}</b><span>{{ p.lv }}</span></div><span class="wp-item-p">{{ p.g }}</span><span class="wp-pl-a">→ {{ p.after }}</span></div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div class="wp-sub">{{ wpPlanNote }}</div>
+      </div>
+      </sc-if>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>區域道具各等級加成</b><i>
+          <button type="button" class="mk-chip" onClick="{{ onWpRef }}" data-v="team">這隊用得到的</button>
+          <button type="button" class="mk-chip" onClick="{{ onWpRef }}" data-v="all">全部</button></i></div>
+        <div class="wp-scroll"><div class="wp-grid wp-ref" style="{{ wpRefGrid }}">
+          <div class="wp-gh l">道具</div>
+          <sc-for list="{{ wpRefHead }}" as="h" hint-placeholder-count="20"><div class="wp-gh">{{ h.n }}</div></sc-for>
+          <sc-for list="{{ wpRef }}" as="r" hint-placeholder-count="20">
+            <div class="wp-gc l"><b>{{ r.name }}</b><small>{{ r.kind }}・{{ r.tgt }}</small></div>
+            <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="20"><div class="wp-gc">{{ c.v }}</div></sc-for>
+          </sc-for>
+        </div></div>
+        <div class="wp-sub">{{ wpRefNote }}</div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 通知 ========== -->
   <sc-if value="{{ isQa }}">
   <div class="u-a3">
@@ -10263,7 +10438,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=2a304d0ce6"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3f6c292644"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
