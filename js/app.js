@@ -21,7 +21,9 @@ class Component extends DCLogic {
   })();
   JP_MASTER = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main';
   JP_DB_FILES = ['gameCharacters', 'characterProfiles', 'unitProfiles', 'gameCharacterUnits', 'materials', 'mysekaiMaterials', 'tips',
-                 'musicSoundTracks', 'musicSoundTrackCategories', 'mobCharacters', 'eventCards', 'limitedLoginBonuses', 'mysekaiBlueprints', 'userInformations'];
+                 'musicSoundTracks', 'musicSoundTrackCategories', 'mobCharacters', 'eventCards', 'limitedLoginBonuses', 'mysekaiBlueprints', 'userInformations',
+                 // 終章與 WL3 的規則表：日服模式要讀日服自己的（技能上限、玩偶上限、特效卡張數、稱號加成、總合力上限）
+                 'eventCardBonusLimits', 'eventSkillScoreUpLimits', 'eventHonorBonuses', 'eventMysekaiFixtureGameCharacterPerformanceBonusLimits', 'eventTotalPowerLimits'];
   /* 日服資源：日服現況頁底部與資源連結頁共用。[分類, [[名稱, 網址, 說明]…]]。
      2026/10/23 逐一確認過還在更新（研究代理實際載入或用搜尋結果、API 佐證）；已停更的不列：
      pjsek.ai（API 停用）、AppMedia（2026/8 底停更）、wikiwiki.jp/pjsekai、Chart Cyanvas、sdvx.in 的プロセカ頁。 */
@@ -2695,7 +2697,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=28aaad81e7';
+      el.src = './js/core.js?v=4cdb527861';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2942,7 +2944,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=2713621c98').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=c97025d592').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -5124,8 +5126,10 @@ class Component extends DCLogic {
     const ofEv = arr => (Array.isArray(arr) ? arr : []).find(x => +x.eventId === evId) || null;
     const cnl = ofEv(D.cnl), skl = ofEv(D.skl), dll = ofEv(D.dll);
     const LIM = +ec.bonusRate || 25, LEAD = +ec.leaderBonusRate || 20, LIM_MAX = (cnl && +cnl.memberCountLimit) || 4, CHAR = 5;
-    // 技能上限：scoreUpRateLimit 是分數倍率（240＝+140%）；玩偶上限：bonusRateLimit 20＝2.0%。沒有資料＝不設限
-    const skillCap = skl && +skl.scoreUpRateLimit ? +skl.scoreUpRateLimit - 100 : null;
+    // 技能上限：scoreUpRateLimit 兩期寫法不同——大於 200 是含本體 100% 的倍率（日服第 180 期 240＝+140%），
+    // 200 以下就是技能效果本身（日服第 218 期 140＝+140%，官方「一部スコアUPスキル 効果上限が140%まで」）。
+    // 玩偶上限：bonusRateLimit 20＝2.0%。沒有資料＝不設限
+    const skillCap = this.skillCapOf(skl);
     const dollPct = dll && dll.bonusRateLimit != null ? +dll.bonusRateLimit / 10 : null;
     const hon = (D.hon || []).find(x => +x.eventId === evId);
     const TITLE = hon ? (+hon.bonusRate || 50) : 50;
@@ -6043,7 +6047,7 @@ class Component extends DCLogic {
       if (L) t.push('特效卡只計前 ' + L.memberCountLimit + ' 張');
       if (bonus.some(x => x[3])) t.push('當期卡當隊長另 +' + Math.max.apply(null, bonus.map(x => x[3] || 0)) + '%');
       if (H.length) t.push('持有指定稱號且該角色當隊長 +' + Math.max.apply(null, H.map(x => x.bonusRate || 0)) + '%（' + H.length + ' 種稱號）');
-      if (S) t.push('單張卡技能倍率上限 ' + S.scoreUpRateLimit + '%' + (S.scoreUpRateLimit >= 300 ? '（等於不設限）' : ''));
+      if (S) { const cap = this.skillCapOf(S); t.push('單張卡技能效果上限 ＋' + cap + '%' + (cap >= 160 ? '（高過任何一張卡，等於不設限）' : '')); }
       if (F) t.push('豆森玩偶加成上限 ' + (F.bonusRateLimit / 10) + '%');
       if (L || S || F || H.length || P) out.evRulesText = (P && !(L || S || F || H.length) ? 'WL3 規則：' : '結局章節規則：') + t.join('、') + '。WL 後排加成頁與進階計算已照這些規則試算。';
     }
@@ -6538,6 +6542,10 @@ class Component extends DCLogic {
   QZ_DIFF = { easy: ['簡單', 0.55, 0.8], normal: ['普通', 0.38, 1], hard: ['困難', 0.26, 1.5], extreme: ['極限', 0.17, 2.2] };
   QZ_ROUNDS = 10;
   charUnit(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? this.UNIT_OF[c[2]] : ''; }
+  /* eventSkillScoreUpLimits 的一列 → 單張卡技能效果上限（＋N%），沒有資料回 null。
+     master 兩期的寫法不同：日服第 180 期 240（含本體 100% 的倍率，＝+140%）、第 218 期 140（技能效果本身，＝+140%）。
+     現在的技能最低也有 +100%，「200 以下當倍率」會把每張卡都砍到 +100% 以下，跟官方「一部スコアUPスキル」對不上，所以 200 是分界。 */
+  skillCapOf(row) { const v = row ? +row.scoreUpRateLimit : 0; return v ? (v > 200 ? v - 100 : v) : null; }
   charName(cid) { const c = (this.state.rateChars || []).find(x => x[0] === cid); return c ? c[1] : ('#' + cid); }
 
   /* ===== 豆森生日派對（慶典之花）：流程、露水計算、加成卡與累計獎勵 =====

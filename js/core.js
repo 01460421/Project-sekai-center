@@ -2860,8 +2860,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         // 支援隊伍張數依屆數:WL1(活動id≤140)=12、WL2(≤180)=20、WL3=25(sekai-calculator 同款判定)
         const wlSupCount = evId => evId <= 140 ? 12 : evId <= 180 ? 20 : 25;
         /* 活動限制表（目前只有 WL 終章那一期有資料，全部照 master 讀、不寫死）：
-             eventSkillScoreUpLimits.scoreUpRateLimit      單張卡技能的分數倍率上限，240＝+140%（日服第 180 期）；
-                                                           台服同一期寫 300＝+200%，等於不設限 —— 兩服不同，所以一定要讀表
+             eventSkillScoreUpLimits.scoreUpRateLimit      單張卡技能效果上限。兩期寫法不同：大於 200 是含本體 100% 的倍率
+                                                           （日服第 180 期 240＝+140%），200 以下就是技能效果本身
+                                                           （日服第 218 期 140＝+140%，官方「一部スコアUPスキル 効果上限が140%まで」）；
+                                                           台服第 180 期當時寫 300＝+200%，等於不設限 —— 兩服不同，所以一定要讀表
              eventMysekaiFixtureGameCharacterPerformanceBonusLimits.bonusRateLimit   玩偶的角色綜合力加成上限，20＝2.0%（平常 100＝10%）
              eventCardBonusLimits.memberCountLimit          特效卡（WL2 限定卡）最多計幾張，4
              eventTotalPowerLimits.upperTotalPower           總合力上限（日服 6.4 起的 WL3 各期 336,000），超過不計分 */
@@ -2876,7 +2878,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     load('eventMysekaiFixtureGameCharacterPerformanceBonusLimits.json'), load('eventCardBonusLimits.json'), load('eventTotalPowerLimits.json')]);
                 const of = arr => (Array.isArray(arr) ? arr : []).find(x => +x.eventId === +evId) || null;
                 const a = of(sk), b = of(dl), c = of(cn), d = of(tp);
-                const r = { skillCap: a && a.scoreUpRateLimit ? a.scoreUpRateLimit - 100 : null,
+                const sv = a ? +a.scoreUpRateLimit : 0;
+                const r = { skillCap: sv ? (sv > 200 ? sv - 100 : sv) : null,
                             dollPct: b && b.bonusRateLimit != null ? b.bonusRateLimit / 10 : null,
                             memberLimit: c && c.memberCountLimit ? c.memberCountLimit : null,
                             powerCap: d && d.upperTotalPower ? +d.upperTotalPower : null };
