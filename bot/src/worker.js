@@ -111,13 +111,20 @@ export class DOStore extends MemoryStore {
 }
 
 export class BotDO {
-  constructor(state, env) { this.state = state; this.env = env; this.ready = null; this.ticks = 0; }
-  init() {
-    if (!this.ready) this.ready = (async () => {
-      this.store = new DOStore(this.state.storage);
-      await this.store.load();
+  constructor(state, env) { this.state = state; this.env = env; this.ready = null; this.cfgReady = null; this.ticks = 0; this.deferMs = Number(env.DEFER_MS) || 2200; }
+  /* 只讀設定（一個鍵，很快）：驗簽只需要 publicKey，不必等整個資料庫載完 */
+  initCfg() {
+    if (!this.cfgReady) this.cfgReady = (async () => {
       this.cfg = (await this.state.storage.get('cfg')) || {};
       this.applyConfig();
+    })();
+    return this.cfgReady;
+  }
+  init() {
+    if (!this.ready) this.ready = (async () => {
+      await this.initCfg();
+      this.store = new DOStore(this.state.storage);
+      await this.store.load();
       this.bot = await Bot.create({
         store: this.store, timers: new Timers(), ai: createAI(this.env, { store: this.store }),
         send: (channelId, msg) => this.rest.send(channelId, msg), log: (...a) => console.error('[bot]', ...a),
@@ -125,7 +132,6 @@ export class BotDO {
       // DO 重建（休眠後醒來）：把進行中的遊戲與冷卻讀回來
       this.bot.sessions.load(this.store.sessions); this.store.sessions = [];
       this.bot.cooldowns.load(this.store.cooldowns);
-      this.deferMs = Number(this.env.DEFER_MS) || 2200;
       // 在線保持器：讓成員列表顯示上線。PRESENCE=0 關閉；PRESENCE_TEXT 改狀態文字
       this.presence = new GatewayPresence({
         token: this.token, storage: this.state.storage, connect: this.env.WS_CONNECT || undefined, log: (...a) => console.error('[presence]', ...a),
@@ -159,10 +165,14 @@ export class BotDO {
   get configured() { return !!(this.token && this.publicKey && this.appId); }
 
   async fetch(req) {
-    await this.init();
+    const t0 = Date.now();   // Discord 的 3 秒從請求送出就開始算，延遲的期限也從這裡算（不是從資料載完才算）
     const url = new URL(req.url);
+    if (url.pathname === '/interaction') {
+      try { return await this.interaction(req, t0); }
+      catch (e) { console.error('[do]', e); return json({ error: String((e && e.message) || e) }, 500); }
+    }
+    await this.init();
     try {
-      if (url.pathname === '/interaction') return this.interaction(req);
       if (url.pathname === '/bootstrap') return this.bootstrap(req);
       if (url.pathname === '/register') {
         if (!this.env.REGISTER_SECRET || req.headers.get('authorization') !== `Bearer ${this.env.REGISTER_SECRET}`) return new Response('unauthorized', { status: 401 });
@@ -183,13 +193,27 @@ export class BotDO {
     } catch (e) { console.error('[do]', e); return json({ error: String((e && e.message) || e) }, 500); }
   }
 
-  async interaction(req) {
+  async interaction(req, t0 = Date.now()) {
     const body = await req.text();
+    await this.initCfg();
     if (!this.publicKey) return new Response('not configured: POST /bootstrap with the bot token first', { status: 401 });
     if (!(await verifyDiscordRequest(this.publicKey, req.headers.get('x-signature-timestamp'), body, req.headers.get('x-signature-ed25519')))) return new Response('invalid request signature', { status: 401 });
     let i; try { i = JSON.parse(body); } catch { return new Response('bad json', { status: 400 }); }
-    if (i.type === 1) return json({ type: 1 });   // Discord 驗證端點用的 PING
-    return json(await this.handle(i));
+    if (i.type === 1) { this.init().catch(e => console.error('[do] init', e)); return json({ type: 1 }); }   // Discord 驗證端點用的 PING；順便在背景把資料載好
+    /* 冷啟動（部署後、休眠醒來）要把整個資料庫讀進來；讀太久就先回「延遲」，讀完再用 REST 補結果。
+       自動完成（type 4）不能延遲，只能等。 */
+    const ready = this.init();
+    if (i.type !== 4) {
+      let timer;
+      const loaded = await Promise.race([ready.then(() => true), new Promise(r => { timer = setTimeout(() => r(false), Math.max(0, t0 + this.deferMs - Date.now())); })]);
+      clearTimeout(timer);
+      if (!loaded) {
+        const pre = i.type === 2 ? 5 : 6;
+        ready.then(() => this.handle(i, { t0, pre })).catch(e => console.error('[handle]', e));
+        return json({ type: pre });
+      }
+    } else await ready;
+    return json(await this.handle(i, { t0 }));
   }
 
   /* 只憑 Bot token 完成設定：驗證 token → 存設定 → 設 Interactions Endpoint → 註冊指令 */
@@ -225,22 +249,31 @@ export class BotDO {
   }
 
   /* 回傳要給 Discord 的互動回應物件（type 4/5/6/7/8/9） */
-  async handle(i) {
+  /* opts.t0：請求抵達的時間（延遲期限從這裡算）；opts.pre：冷啟動時已經先回了的延遲型別（5／6），結果全部走 REST */
+  async handle(i, { t0 = Date.now(), pre = 0 } = {}) {
     const parsed = parseInteraction(i);
     if (!parsed) return { type: 4, data: { content: '不支援的互動型別。', flags: 64 } };
     const { kind, input } = parsed;
     if (kind === 'autocomplete') return { type: 8, data: { choices: await this.bot.runAutocomplete(input) } };
     const token = i.token, rest = this.rest, isComponent = kind !== 'command';
-    let responded = false, deferType = 0, editedOriginal = false, resolveResp;
+    let responded = !!pre, deferType = pre, deferredEphemeral = false, editedOriginal = false, resolveResp;
     const respP = new Promise(r => { resolveResp = r; });
     const first = (type, data) => { if (responded) return false; responded = true; resolveResp(data === undefined ? { type } : { type, data }); return true; };
-    const defer = ephemeral => { const t = isComponent ? 6 : 5; if (first(t, ephemeral ? { flags: 64 } : undefined)) deferType = t; };
+    const defer = ephemeral => { const t = isComponent ? 6 : 5; if (first(t, ephemeral ? { flags: 64 } : undefined)) { deferType = t; deferredEphemeral = !!ephemeral; } };
     const io = {
       reply: async msg => {
         if (first(4, toApi(msg))) return;
         // 指令先回了「延遲」（type 5）：第一次 reply 就是把那則佔位訊息改成結果。
         // 元件先回了「延遲更新」（type 6）：reply 要另開一則訊息，不能蓋掉按鈕所在的那則（例如「這不是你的按鈕」）。
-        if (deferType === 5 && !editedOriginal) { editedOriginal = true; return rest.editOriginal(token, msg); }
+        if (deferType === 5 && !editedOriginal) {
+          editedOriginal = true;
+          // 自動延遲的佔位訊息是公開的，改內容改不成「只有你看得到」：私下的回覆就把佔位刪掉，改發一則私人的後續訊息
+          if (msg && typeof msg === 'object' && msg.ephemeral && !deferredEphemeral) {
+            await rest.deleteOriginal(token).catch(() => {});
+            return rest.followUp(token, msg);
+          }
+          return rest.editOriginal(token, msg);
+        }
         return rest.followUp(token, msg);
       },
       update: async msg => { if (first(7, toApi(msg))) return; editedOriginal = true; return rest.editOriginal(token, msg); },
@@ -253,8 +286,9 @@ export class BotDO {
     const run = (kind === 'command' ? this.bot.runCommand({ ...input, io }) : this.bot.runComponent(kind, { ...input, io }))
       .catch(e => console.error('[handle]', e))
       .then(() => this.persist());
+    if (pre) { await run; return null; }
     let timer;
-    const timeout = new Promise(r => { timer = setTimeout(() => r('timeout'), this.deferMs); });
+    const timeout = new Promise(r => { timer = setTimeout(() => r('timeout'), Math.max(0, t0 + this.deferMs - Date.now())); });
     await Promise.race([respP, run, timeout]);
     clearTimeout(timer);
     if (!responded) defer(false);   // 逾時：先回延遲，功能跑完再用 REST 補結果

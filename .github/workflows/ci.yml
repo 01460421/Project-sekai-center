@@ -23,6 +23,11 @@ jobs:
         run: python3 tools/stamp-assets.py --check
       - name: 外站圖片都要帶 referrerpolicy（素材庫對帶 Referer 的請求回 403）
         run: node tests/img-referrer.mjs
+      - name: 快取 Playwright 的瀏覽器
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.48.2-chromium
       - name: 煙霧測試（桌機＋手機各 26 頁）
         run: |
           npm i --no-save --silent playwright@1.48.2
@@ -45,3 +50,13 @@ jobs:
       - name: 註冊表、煙霧（100 個指令＋每個按鈕）、邏輯與流程測試
         working-directory: bot
         run: npm test
+      # Workers 版的打包（wrangler dry-run）：Workers 專屬的寫法（WebSocket、Durable Object）有錯，部署前就擋下來
+      - name: 安裝相依套件（wrangler）
+        working-directory: bot
+        run: npm ci --no-audit --no-fund
+      - name: Workers 版打包檢查
+        working-directory: bot
+        run: npx wrangler deploy --dry-run --outdir=dist
+      - name: Workers 版在真的 workerd 上跑一遍（驗簽、指令、按鈕、自動完成、cron、/health）
+        working-directory: bot
+        run: node scripts/probe-workers.mjs

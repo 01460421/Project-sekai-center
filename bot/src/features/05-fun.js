@@ -74,7 +74,7 @@ function pollMsg(pid, p) {
   };
 }
 const poll = {
-  name: 'poll', description: '發起投票（最多 5 個選項，用 | 分開）', category: 'fun',
+  name: 'poll', description: '發起投票（最多 5 個選項，用 | 分開）', category: 'fun', cooldown: 10,
   options: [str('question', '問題', { required: true, maxLen: 100 }), str('options', '選項，用 | 分開，例如 拉麵|咖哩|壽司', { required: true, maxLen: 300 })],
   async run(ctx) {
     const opts = String(ctx.opt('options') || '').split(/[|｜]/).map(s => s.trim()).filter(Boolean).slice(0, 5);
@@ -157,7 +157,7 @@ const topic = {
 
 /* ---------- 隨機點名 ---------- */
 const someone = {
-  name: 'someone', description: '隨機點一個伺服器成員', category: 'fun',
+  name: 'someone', description: '隨機點一個伺服器成員', category: 'fun', cooldown: 30,
   options: [str('text', '要對他說的話', { maxLen: 100 })],
   async run(ctx) {
     const list = (await ctx.members()).filter(m => !m.bot);

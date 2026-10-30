@@ -185,9 +185,11 @@ export async function converse(ctx, text, source) {
     runTool: (name, input) => name === 'run_command' ? runFeature(ctx, input) : Promise.reject(new Error('沒有這個工具')),
   });
   let answer;
-  if (r.quota === false) answer = `今天跟我聊天的額度用完了（每人每天 ${ctx.bot.ai.caps.chat} 次），明天再來吧。`;
+  if (r.quota === false && r.total) answer = '今天大家找我聊天的總次數已經到上限了，明天再來吧。';
+  else if (r.quota === false) answer = `今天跟我聊天的額度用完了（每人每天 ${ctx.bot.ai.caps.chat} 次），明天再來吧。`;
   else if (r.refused) answer = '這個話題我不太方便聊，換個話題吧。';
-  else if (r.error) answer = '我這邊出了點狀況，等一下再試一次。';
+  else if (r.busy) answer = 'AI 現在比較忙，等一兩分鐘再找我聊（這次不扣你的額度）。';
+  else if (r.error) answer = '我這邊出了點狀況，等一下再試一次（這次不扣你的額度）。';
   else answer = r.text || '（我一時想不到要說什麼……再說一次？）';
   if (r.text) { remember(u, 'u', text); remember(u, 'a', r.text); ctx.store.touch(); }
   return { answer: answer.slice(0, 1750), embeds: (r.toolExtras || []).flatMap(x => (x && x.embeds) || []).slice(0, 3), ok: !!r.text };

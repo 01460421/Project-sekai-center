@@ -34,6 +34,12 @@ const TOP_N = 100;   // API 就是回前 100 名,全收
 const TICK_MS = 15_000;
 const UA = 'project-sekai-center/1.0 (+https://project-sekai-center.vercel.app) per-game-tracker';
 const GAP_FACTOR = 3;          // 超過 3 個週期沒成功 → 記一段缺口
+/* 榜線快照：GitHub Actions 的排程實測 4～5 小時才跑一次（每次只取樣 55 分鐘），中間的空檔就是缺資料。
+   追蹤器本來就每 15 秒醒一次，所以順便每 5 分鐘記一筆榜線段位＋前百＋WL 各章，存在 DO 的 SQL；
+   網站與 tools/record-border.py 再用 /snaps?ev=&since= 把空檔補進 data/history。 */
+const SNAP_MS = 5 * 60_000;
+const SNAP_KEEP_S = 45 * 86400;  // 留 45 天，夠 record-border.py 補回 git 了
+const BORDER_API = 'https://api.hisekai.org/tw/event/live/border';
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, OPTIONS',
@@ -82,6 +88,10 @@ export class GameTracker {
         ev INTEGER NOT NULL, fromT INTEGER NOT NULL, toT INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS state (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS snaps (
+        ev INTEGER NOT NULL, ts INTEGER NOT NULL, rows TEXT NOT NULL, tops TEXT, wl TEXT,
+        PRIMARY KEY (ev, ts)
+      );
     `);
   }
 
@@ -127,6 +137,8 @@ export class GameTracker {
         src: this.get('src', 'hisekai'),
         nextAlarm: await this.ctx.storage.getAlarm(),
         topN: TOP_N, intervalMs: TICK_MS,
+        snaps: [...this.sql.exec('SELECT COUNT(*) AS n FROM snaps')][0].n,
+        lastSnap: this.get('lastSnap'), snapError: this.get('snapError'),
       });
     }
 
@@ -156,7 +168,56 @@ export class GameTracker {
       });
     }
 
+    /* 榜線快照：since（unix 秒）之後的每一筆。lite=1 不帶前百的玩家 ID（網站畫曲線用不到，體積小很多）。
+       回傳 { ev, meta, snaps: [[秒, [[名次,分數]…], [[分數,uid]…] 或 [分數…], [[章,角色,開始,結算,[[名次,分數]…]]…]]…] } */
+    if (p === '/snaps') {
+      const ev = Number(url.searchParams.get('ev') || (this.get('event') || {}).id || 0);
+      const since = Number(url.searchParams.get('since') || 0);
+      const lite = url.searchParams.get('lite') === '1';
+      const rows = [...this.sql.exec('SELECT ts, rows, tops, wl FROM snaps WHERE ev = ? AND ts > ? ORDER BY ts LIMIT 4000', ev, since)];
+      const snaps = rows.map(r => {
+        const tops = JSON.parse(r.tops || '[]');
+        return [r.ts, JSON.parse(r.rows), lite ? tops.map(t => t[0]) : tops, JSON.parse(r.wl || '[]')];
+      });
+      return new Response(JSON.stringify({ ev, meta: this.get('snapMeta:' + ev), snaps }), {
+        headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=60', ...CORS },
+      });
+    }
+
     return new Response('not found', { status: 404, headers: CORS });
+  }
+
+  /* 每 5 分鐘一筆榜線快照（alarm 裡呼叫；top 是這一輪剛抓到的前百）。段位端點壞掉時跟 record-border.py 一樣，
+     只用前百第 100 名當 T100。任何錯誤都只記在 state，不影響逐局追蹤。 */
+  async snapshot(ev, top, now) {
+    if (now - (this.get('lastSnap', 0) || 0) < SNAP_MS - 5000) return;
+    this.put('lastSnap', now);
+    let brd = null;
+    try {
+      const r = await fetch(BORDER_API, { headers: { 'user-agent': UA, accept: 'application/json' }, cf: { cacheTtl: 0, cacheEverything: false }, signal: AbortSignal.timeout(15000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      brd = parseSafe(await r.text());
+    } catch (e) {
+      try { brd = await harukiLive(this.env, 'border'); } catch (e2) { brd = null; }
+    }
+    const pair = r => [Number(r.rank), r.score == null ? null : Number(r.score)];
+    let rows = ((brd && brd.player_border_rankings) || []).filter(r => r && r.rank != null).map(pair);
+    const tops = (top.player_top_100_rankings || []).filter(t => t && t.rank != null).sort((a, b) => a.rank - b.rank)
+      .map(t => [t.score, String((t.last_player_info && t.last_player_info.profile && t.last_player_info.profile.id) || t.userId || t.user_id || '')]);
+    if (!rows.length) { const t100 = (top.player_top_100_rankings || []).find(t => t && t.rank === 100); if (t100) rows = [[100, t100.score]]; }
+    if (!rows.length && !tops.length) return;
+    const wl = ((brd && brd.world_link_border_rankings) || []).map(c => {
+      const pb = (c.player_border_rankings || c.player_borders || []).filter(r => r && r.rank != null).map(pair);
+      return pb.length ? [c.chapter, c.character, c.start_at || '', c.aggregate_at || c.ranking_announce_at || c.closed_at || '', pb] : null;
+    }).filter(Boolean);
+    if (!this.get('snapMeta:' + ev.id)) {
+      const m = brd || top;
+      this.put('snapMeta:' + ev.id, { name: m.name || ev.name || '', startAt: m.start_at || '', aggregateAt: m.aggregate_at || m.closed_at || '' });
+    }
+    const ts = Math.floor(now / 1000);
+    this.sql.exec('INSERT OR REPLACE INTO snaps (ev, ts, rows, tops, wl) VALUES (?, ?, ?, ?, ?)',
+      ev.id, ts, JSON.stringify(rows), JSON.stringify(tops), wl.length ? JSON.stringify(wl) : null);
+    this.sql.exec('DELETE FROM snaps WHERE ts < ?', ts - SNAP_KEEP_S);
   }
 
   json(o) {
@@ -239,6 +300,9 @@ export class GameTracker {
 
     this.put('prev', cur);
     this.put('lastOk', now);
+
+    try { await this.snapshot(ev, d, now); }
+    catch (e) { this.put('snapError', { at: now, msg: String((e && e.message) || e).slice(0, 200) }); }
   }
 }
 

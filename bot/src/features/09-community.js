@@ -100,6 +100,18 @@ const streak = {
   },
 };
 
+/* 到期的提醒／倒數：一則一則送。送失敗（頻道被刪、沒權限、Discord 一時出錯）的留下來下一分鐘再試，最多 3 次。
+   以前是先整批移除再送，第一則失敗就拋錯，後面同一批的全部跟著消失。 */
+async function deliverDue(bot, list, now, text) {
+  const due = list.filter(r => r.at <= now); if (!due.length) return;
+  const keep = list.filter(r => r.at > now);
+  for (const r of due) {
+    try { await bot.send(r.channelId, { content: text(r) }); }
+    catch (e) { r.tries = (r.tries || 0) + 1; if (r.tries < 3) keep.push(r); bot.log(`到期通知送不出去（第 ${r.tries} 次）:`, e && e.message ? e.message : e); }
+  }
+  list.length = 0; list.push(...keep); bot.store.touch();
+}
+
 /* ---------- 抽獎 ---------- */
 function raffleMsg(rid, r) {
   return { embeds: [embed({ title: `🎁 抽獎：${r.prize}`, color: r.closed ? COLORS.grey : COLORS.pink, description: r.closed ? (r.winners.length ? `🎉 得獎者：${r.winners.map(mention).join('、')}` : '沒有人參加。') : `按下方按鈕參加，抽出 ${r.n} 位。\n目前 ${r.entries.length} 人參加${r.endAt ? `\n${ts(r.endAt)} 自動開獎` : ''}`, footer: `發起人 ${r.ownerName}` })], components: r.closed ? [] : [row(button({ id: cid('raffle', 'join', rid), label: '參加', style: Style.success, emoji: '🎟️' }), button({ id: cid('raffle', 'draw', rid), label: '開獎（發起人）', style: Style.primary }))] };
@@ -108,7 +120,7 @@ function drawRaffle(ctx, r) {
   r.closed = true; r.winners = ctx.rng.sample(r.entries, Math.min(r.n, r.entries.length)); ctx.store.touch();
 }
 const raffle = {
-  name: 'raffle', description: '抽獎：大家按按鈕參加，發起人或時間到自動開獎', category: 'community',
+  name: 'raffle', description: '抽獎：大家按按鈕參加，發起人或時間到自動開獎', category: 'community', cooldown: 10,
   options: [str('prize', '獎品', { required: true, maxLen: 80 }), int('winners', '抽幾位（預設 1）', { min: 1, max: 20 }), int('minutes', '幾分鐘後自動開獎（不填就手動）', { min: 1, max: 10080 })],
   async run(ctx) {
     const g = ctx.g(); const rid = Date.now().toString(36).slice(-6);
@@ -125,7 +137,9 @@ const raffle = {
       if (r.closed || !r.endAt || r.endAt > now) continue;
       bot.store.guild(gid);   // 標記這個伺服器有變動（Workers 版靠這個決定要寫回哪些鍵）
       r.closed = true; r.winners = bot.rng.sample(r.entries, Math.min(r.n, r.entries.length)); bot.store.touch();
-      await bot.send(r.channelId, { content: r.winners.length ? `🎁 抽獎「${r.prize}」開獎！得獎者：${r.winners.map(mention).join('、')}` : `🎁 抽獎「${r.prize}」時間到，但沒有人參加。` });
+      // 一個抽獎的頻道送不出去，不能擋住其他伺服器的開獎（結果已經存好，按鈕訊息仍看得到得獎者）
+      try { await bot.send(r.channelId, { content: r.winners.length ? `🎁 抽獎「${r.prize}」開獎！得獎者：${r.winners.map(mention).join('、')}` : `🎁 抽獎「${r.prize}」時間到，但沒有人參加。` }); }
+      catch (e) { bot.log('抽獎開獎通知送不出去:', e && e.message ? e.message : e); }
     }
   },
 };
@@ -159,28 +173,23 @@ const remind = {
     await ctx.reply({ content: `⏰ 好，${ts(at)} 提醒你：${clean(ctx.opt('text'))}` });
   },
   async tick(bot, now) {
-    const list = bot.store.global('reminders', () => []);
-    const due = list.filter(r => r.at <= now); if (!due.length) return;
-    const keep = list.filter(r => r.at > now); list.length = 0; list.push(...keep); bot.store.touch();
-    for (const r of due) await bot.send(r.channelId, { content: `⏰ ${mention(r.uid)} 提醒：${clean(r.text)}` });
+    await deliverDue(bot, bot.store.global('reminders', () => []), now, r => `⏰ ${mention(r.uid)} 提醒：${clean(r.text)}`);
   },
 };
 
 /* ---------- 倒數 ---------- */
 const countdown = {
-  name: 'countdown', description: '倒數計時：顯示動態倒數，時間到會通知', category: 'community',
+  name: 'countdown', description: '倒數計時：顯示動態倒數，時間到會通知', category: 'community', cooldown: 10,
   options: [int('seconds', '秒數（10～86400）', { required: true, min: 10, max: 86400 }), str('label', '倒數什麼', { maxLen: 60 })],
   async run(ctx) {
     const sec = ctx.opt('seconds') || 60; const label = String(ctx.opt('label') || '倒數').slice(0, 60); const at = Date.now() + sec * 1000;
-    await ctx.reply({ content: `⏳ **${clean(label)}**　${ts(at)}（${ts(at, 'T')}）` });
     const list = ctx.store.global('countdowns', () => []);
+    if (list.filter(r => r.uid === ctx.user.id).length >= 5) return ctx.reply({ content: '同時最多 5 個倒數，等前面的到期再開。', ephemeral: true });
+    await ctx.reply({ content: `⏳ **${clean(label)}**　${ts(at)}（${ts(at, 'T')}）` });
     list.push({ uid: ctx.user.id, channelId: ctx.channelId, at, label }); ctx.store.touch();
   },
   async tick(bot, now) {
-    const list = bot.store.global('countdowns', () => []);
-    const due = list.filter(r => r.at <= now); if (!due.length) return;
-    const keep = list.filter(r => r.at > now); list.length = 0; list.push(...keep); bot.store.touch();
-    for (const r of due) await bot.send(r.channelId, { content: `⏰ ${mention(r.uid)}「${clean(r.label)}」時間到！` });
+    await deliverDue(bot, bot.store.global('countdowns', () => []), now, r => `⏰ ${mention(r.uid)}「${clean(r.label)}」時間到！`);
   },
 };
 

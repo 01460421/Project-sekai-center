@@ -18,7 +18,7 @@ Discord 伺服器機器人，**100 個娛樂與互動功能**：占卜算命、�
 - **選用的 AI 層（Claude API）**：設了 `ANTHROPIC_API_KEY` 之後有兩件事：
   - **人性化的對話與互動**（`/chat`，容器版另外會回應 @機器人 或回覆它的訊息）：Claude 以這個伺服器的機器人夥伴身分回話。系統提示裡有**人設**（管理員用 `/settings ai` 選風格：活潑／溫暖／傲嬌／毒舌／正經，可改名字、加一段自訂人設）、**正在說話的這位使用者的資料**（稱呼、等級、餘額、連續簽到、推し、MBTI、戰績……所以它會說「你今天還沒簽到喔」）、以及 **100 個指令的清單**（會順手推薦）。每人每伺服器一份**對話記憶**（最近 10 個來回，6 小時沒聊就當新話題，可按「忘掉這段對話」）。模型可以用 `run_command` 工具**以使用者的身分執行指令**：查歌曲等級、活動與卡池、餘額與圖鑑、今日運勢，或替他簽到、打工、轉蛋、設提醒——工具的輸出（含卡片）會一起顯示，模型再用自己的話講重點。只准跑白名單裡的指令（不能轉帳、押注、改設定），會改資料的只在使用者明確要求時執行。
   - **占卜／測驗的個人化解讀**：塔羅、易經、解夢、MBTI 的結果多一段解讀（結果本身仍由決定性引擎產生）。
-  - 預設 `claude-sonnet-5`（對話型工作量，便宜又夠聰明；`AI_MODEL` 可換），`effort: low`；換成 `claude-opus-5` 或 Fable 系列時自動啟用伺服器端 fallback（安全分類器拒答時換備援模型），Sonnet 5 拒答則回一句「這個話題不方便聊」。系統提示的穩定部分標了 `cache_control` 可快取。每人每日對話 40 次、解讀 10 次（可調）。**沒設金鑰時整層關閉，其他功能完全不受影響**；`/chat` 會說明怎麼開啟。
+  - 預設 `claude-sonnet-5-5`（對話型工作量，跟 Sonnet 5 同價但更聰明；`AI_MODEL` 可換成 `claude-opus-5-5` 等），`effort: low`，並啟用伺服器端 fallback（`fallbacks: "default"`：安全分類器拒答時依類別換備援模型續答）；整串都拒答才回一句「這個話題不方便聊」。系統提示的穩定部分標了 `cache_control` 可快取。每人每日對話 40 次、解讀 10 次（可調）。**沒設金鑰時整層關閉，其他功能完全不受影響**；`/chat` 會說明怎麼開啟。
 - **核心與平台分離**：功能模組只認得 `Ctx`（`reply / update / showModal / u() / g() / rng / sessions`），不 import discord.js；`src/index.js` 是唯一的 Discord 介接層。測試直接呼叫核心，不需要 token、不需要裝 discord.js；之後要接 QQ 或網頁只要再寫一個介接層。
 - **一個 JSON 檔的持久化**：`state/state.json`，延遲寫入、原子換檔。玩家紀錄以伺服器為單位（每個伺服器各自一套經濟與等級）。介面上百個伺服器都還撐得住，要再大再換 SQLite，功能模組不用改。進行中的遊戲（`bot.sessions`）在容器版放記憶體，在 Workers 版則跟著寫進 Durable Object storage，兩邊功能模組寫法相同。
 - **接上網站的資料**：曲庫、卡片（含 `cards-extra.js` 的技能敘述、滿等三圍、招募台詞）、卡池與活動日曆直接讀 repo 的 `data/`，網站每天更新就跟著重新部署；即時榜線與前百走**跟網站排名頁同一套來源**（HiSekai 直連 → 網站 Worker 代理 → 網站的 Haruki 備援），榜線走勢讀網站每小時的榜線快照（`data/history/`），歷史最終榜線讀 good果汁表（`data/borders-db.js`）。`/event border`、`/event top`、`/event history`、`/card`，AI 對話問「現在 T100 多少」「這張卡技能是什麼」時也會用同一組工具查。
@@ -151,9 +151,10 @@ WantedBy=multi-user.target
 | `GUILD_ID` | 否 | 設了就只註冊到這個伺服器（開發用） |
 | `STATE_FILE` | 否 | 容器版狀態檔路徑，預設 `bot/state/state.json`（Docker 映像預設 `/data/state.json`） |
 | `ANTHROPIC_API_KEY` | 否 | 啟用 AI：`/chat` 對話、@機器人 回話（容器版）、占卜／測驗解讀 |
-| `AI_MODEL` | 否 | 預設 `claude-sonnet-5`；`claude-opus-5` 也可以（會自動加伺服器端 fallback） |
+| `AI_MODEL` | 否 | 預設 `claude-sonnet-5-5`；`claude-opus-5-5` 也可以（兩者都會自動加伺服器端 fallback） |
 | `AI_DAILY_PER_USER` | 否 | 每人每日 AI 解讀次數上限，預設 10 |
 | `AI_CHAT_DAILY_PER_USER` | 否 | 每人每日 AI 對話次數上限，預設 40 |
+| `AI_DAILY_TOTAL` | 否 | 整個機器人每天的 AI 次數總上限（解讀＋對話合計），預設 1500，`0` 不限；出錯或忙線不扣額度 |
 | `DEFER_MS` | 否 | 功能超過這麼多毫秒還沒回應就先告訴 Discord「稍等」，預設 2200（兩版皆是） |
 | `COMMAND_LANG` | 否 | 預設 `zh`：註冊中文指令名（英文 id 為英文介面的顯示名）；`en` 則照英文 id 註冊 |
 

@@ -59,6 +59,8 @@ class Component extends DCLogic {
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
   SRV_JP = ['jpnow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim', 'bdayparty'];
   SRV_TW_ONLY = [];
+  /* 日服模式照樣能用、但資料是台服的頁面：頁首提示一行，不擋也不跳走（日服的曲庫係數與譜面定數還沒有自己的版本） */
+  SRV_TW_DATA = { calc: '活動 P 計算用的是台服曲庫與係數：日服獨有或較新的歌可能還沒有。', b30: 'B30 的譜面定數是台服的：日服獨有或較新的譜面可能還沒有。' };
   /* 介面語言：繁中是原文；其他三種由 js/i18n.js 在 DOM 上換字（簡中用 OpenCC 全站轉，英日用介面詞典）。
      網址 ?lang= 或上次的選擇；第一次來、瀏覽器是簡中就直接用簡中，英日只跳一次提示不自動換。 */
   LANGS = [['zh-TW', '繁體中文', '繁'], ['zh-CN', '简体中文', '简'], ['en', 'English', 'EN'], ['ja', '日本語', '日']];
@@ -90,7 +92,7 @@ class Component extends DCLogic {
     try {
       if (!this._i18n) this._i18n = await import('./js/i18n.js?v=c6323be814');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
-      const DICTS = { en: () => import('./data/i18n-en.js?v=61b867abf7'), ja: () => import('./data/i18n-ja.js?v=b313cb18b5') };
+      const DICTS = { en: () => import('./data/i18n-en.js?v=035e5ef615'), ja: () => import('./data/i18n-ja.js?v=1f97f7a2eb') };
       let dict = null;
       if (DICTS[v]) { try { dict = (await DICTS[v]()).I18N || null; } catch (e) { dict = null; } }
       await this._i18n.applyLang(v, dict);
@@ -1783,7 +1785,7 @@ class Component extends DCLogic {
     if (this.SRV === 'jp') {
       // 日服沒有 HiSekai：排名類路徑走自家 Worker 的日服中繼，其餘（玩家檔案等）日服查不到
       if (!/^\/event\/((live|\d+)\/(top100|border)|list)$/.test(path)) throw new Error('日服沒有這項資料');
-      const r = await fetch(this.GAMES_API + '/haruki/jp' + path, { headers: { Accept: 'application/json' } });
+      const r = await this.fetchT(this.GAMES_API + '/haruki/jp' + path, { headers: { Accept: 'application/json' } }, 12000);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const text = await r.text();
       return JSON.parse(text.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
@@ -1794,17 +1796,28 @@ class Component extends DCLogic {
        排在公共代理之前 —— HiSekai 本身掛掉時，公共代理也只會拿到同一個錯誤。 */
     const hk = /^\/event\/((live|\d+)\/(top100|border)|list)$/.test(path) ? [this.GAMES_API + '/haruki' + path] : [];
     const tries = [url, this.GAMES_API + '/proxy/hisekai' + path].concat(hk, ['https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)]);
+    /* 每個來源最多等 8 秒（以前沒有逾時：HiSekai 卡住不回時，後面的備援全部跟著乾等）；
+       上次成功的來源排第一個，直連被擋的人不必每次都先撞一次牆 */
+    const pref = this._apiPref || 0, order = tries.map((u, i) => i).sort((a, b) => (a === pref ? -1 : b === pref ? 1 : a - b));
     let err;
-    for (const u of tries) {
+    for (const i of order) {
       try {
-        const r = await fetch(u, { headers: { Accept: 'application/json' } });
+        const r = await this.fetchT(tries[i], { headers: { Accept: 'application/json' } }, 8000);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const text = await r.text();
+        this._apiPref = i < 2 ? i : 0;   // 只記直連與自家代理；備援來源不黏住，下次還是先試正規的
         // 19 位大整數 userId > Number.MAX_SAFE_INTEGER，直接 JSON.parse 會失精 → 名次比對比不中；先把「字串key: 16位以上整數」轉字串
         return JSON.parse(text.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
       } catch (e) { err = e; }
     }
     throw err || new Error('fetch failed');
+  }
+  /* 帶逾時的 fetch：外部 API 卡住不回時不要讓畫面一直轉圈 */
+  fetchT(url, opts = {}, ms = 8000) {
+    if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout && !opts.signal) return fetch(url, { ...opts, signal: AbortSignal.timeout(ms) });
+    if (typeof AbortController === 'undefined' || opts.signal) return fetch(url, opts);
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+    return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
   }
 
   /* 榜線段位端點壞掉時（2026-09 第 180 期 WL 終章：HiSekai /event/live/border 回 500、top100 正常），
@@ -1991,7 +2004,7 @@ class Component extends DCLogic {
      API 只給前百的 1h/3h/24h 速度，各段榜線沒有任何速度欄位，
      也沒有任何歷史/時序端點。所以自己在每次輪詢時記快照，
      累積成真的時間序列；不足時退回線性推估並標示清楚。 */
-  // 由 GitHub Actions 每 30 分鐘記一筆的公用榜線時序（見 tools/record-border.py）
+  // 公用榜線時序：GitHub Actions 的 tools/record-border.py 寫進 data/history，空檔再由 Worker 的 /snaps 補（見 loadBorderHistory）
   HIST = 'https://raw.githubusercontent.com/01460421/Project-sekai-center/main/data/history';
   async loadBorderHistory() {
     if (this.SRV === 'jp') return;      // data/history 是台服的時序，日服同一個期數是另一期活動
@@ -1999,10 +2012,39 @@ class Component extends DCLogic {
     if (ev.id == null || this._histFor === ev.id) return;
     this._histFor = ev.id;
     try {
-      const d = await fetch(this.HIST + '/' + ev.id + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null);
+      let d = await fetch(this.HIST + '/' + ev.id + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      /* GitHub 的排程常常 4～5 小時才跑一次，git 上的時序在兩次之間是空的；
+         Worker 的追蹤器每 5 分鐘也記一筆，把最後一筆之後的補上（lite：不帶前百玩家 ID） */
+      const since = d && Array.isArray(d.samples) && d.samples.length ? d.samples[d.samples.length - 1][0] : 0;
+      const rec = await fetch(this.GAMES_API + '/snaps?lite=1&ev=' + ev.id + '&since=' + since).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (rec && Array.isArray(rec.snaps) && rec.snaps.length) {
+        if (!d || !Array.isArray(d.samples)) { const m = rec.meta || {}; d = { eventId: ev.id, name: m.name || '', startAt: m.startAt || '', aggregateAt: m.aggregateAt || '', tiers: [], samples: [], top1: [], ranks: [] }; }
+        this.mergeSnaps(d, rec.snaps);
+      }
       // 換了資料就把單調修復的快取一起清掉,否則會沿用舊快照修出來的結果
       if (d && Array.isArray(d.samples)) { this._snapCache = null; this._histFixId = null; this._wlFixKey = null; this.setState({ hist: d }); }
     } catch (e) {}
+  }
+  /* 把 Worker 的快照 [秒, [[名次,分數]…], [前百分數…], [[章,角色,開始,結算,[[名次,分數]…]]…]] 接到 data/history 的格式後面：
+     規則跟 tools/record-border.py 的 add_sample 一樣（既有段位順序不動、新段位往後加、距上一筆不足 4 分鐘就略過） */
+  mergeSnaps(h, snaps) {
+    h.tiers = h.tiers || []; h.samples = h.samples || []; h.top1 = h.top1 || []; h.ranks = h.ranks || [];
+    for (const [ts, rows, tops, wl] of snaps) {
+      const last = h.samples[h.samples.length - 1];
+      if (last && ts - last[0] < 240) continue;
+      const by = {};
+      (rows || []).forEach(([r, v]) => { by[r] = v; if (h.tiers.indexOf(r) < 0) h.tiers.push(r); });
+      h.samples.push([ts].concat(h.tiers.map(r => by[r] == null ? null : by[r])));
+      if (tops && tops.length) { if (tops[0] != null) h.top1.push([ts, tops[0]]); h.ranks.push([ts].concat(tops)); }
+      (wl || []).forEach(([ch, chara, sa, aa, pb]) => {
+        h.wl = h.wl || {};
+        const slot = h.wl[String(ch)] = h.wl[String(ch)] || { chapter: ch, character: chara, startAt: sa || '', aggregateAt: aa || '', tiers: [], samples: [] };
+        const wb = {};
+        (pb || []).forEach(([r, v]) => { wb[r] = v; if (slot.tiers.indexOf(r) < 0) slot.tiers.push(r); });
+        slot.samples.push([ts].concat(slot.tiers.map(r => wb[r] == null ? null : wb[r])));
+      });
+    }
+    return h;
   }
   /* 公用時序 + 本機快照合併成同一條時間軸；公用的通常涵蓋整期，本機的補最近幾筆 */
   histSamples(evId) {
@@ -7307,6 +7349,7 @@ class Component extends DCLogic {
       srvOpts: [['tw', '台服', '繁中 · HiSekai＋Haruki'], ['jp', '日服', 'Haruki 追蹤器＋Sekai-World']].map(([v, n, d]) => Object.assign({ v, n, d }, seg((jp ? 'jp' : 'tw') === v))),
       langOpts: this.LANGS.map(x => Object.assign({ v: x[0], n: x[1] }, seg((s.lang || 'zh-TW') === x[0]))),
       srvTwOnly: jp && this.SRV_TW_ONLY.includes(s.page),
+      srvTwData: jp && !!this.SRV_TW_DATA[s.page], srvTwDataText: (jp && this.SRV_TW_DATA[s.page]) || '',
       srvTwOnlyPages: jpPages.slice(0, 8),
       langHintOn: !!s.langHint, langHintText: s.langHint === 'ja' ? 'このサイトを日本語で表示しますか？' : 'View this site in English?',
       langHintYes: s.langHint === 'ja' ? '日本語にする' : 'Switch to English', langHintNo: s.langHint === 'ja' ? 'このまま' : 'Keep Chinese',
@@ -8045,7 +8088,13 @@ class Component extends DCLogic {
   loadEventArt() {
     if (this._evArtLoading || Object.keys(this.state.evArt || {}).length) return;
     this._evArtLoading = true;
-    this.srvJson('events.json').then(list => {
+    /* 先用每日建好的小檔（data/event-art(-jp).js，幾 KB）；以前每次開站都抓整份 master events.json（台服 1.5 MB） */
+    (this.SRV === 'jp' ? import('./data/event-art-jp.js?v=7a69294f91') : import('./data/event-art.js?v=db8de303da')).then(mod => {
+      const m = {}, ty = {};
+      Object.entries(mod.EVART || {}).forEach(([id, [abn, t]]) => { if (abn) m[id] = abn; if (t) ty[id] = t; });
+      if (!Object.keys(m).length) throw new Error('empty');
+      this.setState({ evArt: m, evType: ty });
+    }).catch(() => this.srvJson('events.json').then(list => {
       const m = {};
       const ty = {};
       (list || []).forEach(e => {
@@ -8054,7 +8103,7 @@ class Component extends DCLogic {
         if (e.eventType) ty[e.id] = e.eventType;
       });
       this.setState({ evArt: m, evType: ty });
-    }).catch(() => { this._evArtLoading = false; });
+    })).catch(() => { this._evArtLoading = false; });
   }
 
   /* 計算中心共用設定曲庫（EP 係數）：進頁時載入、可重試、含 fetch 後備，避免單次失敗後永遠空白 */

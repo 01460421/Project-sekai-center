@@ -303,7 +303,7 @@ test('/chat：先延遲再補結果、記得上一輪、系統提示認識這位
   assert.ok(r1.deferred, '要先 defer'); assert.equal(r1.edits.length, 1, '結果用 edit 補上');
   assert.match(r1.edits[0].content, /> 我叫小愛\n嗨 Alice/); assert.equal(buttonsOf(r1.edits[0]).length, 2);
   const req = claude.calls[0];
-  assert.equal(req.model, 'claude-sonnet-5'); assert.equal(req.betas, undefined, 'Sonnet 5 不送 fallback'); assert.equal(req.fallbacks, undefined); assert.deepEqual(req.output_config, { effort: 'low' });
+  assert.equal(req.model, 'claude-sonnet-5-5'); assert.deepEqual(req.betas, ['server-side-fallback-2026-07-01'], 'Sonnet 5.5 送 fallback'); assert.equal(req.fallbacks, 'default'); assert.deepEqual(req.output_config, { effort: 'low' }); assert.equal(req.thinking, undefined, '不送 thinking（Sonnet 5.5 不接受 disabled）'); assert.equal(req.tool_choice, undefined, 'Sonnet 5.5 不接受強制 tool_choice');
   assert.equal(req.system[0].cache_control.type, 'ephemeral', '穩定的前半段要能快取');
   const sys = req.system.map(b => b.text).join('\n');
   assert.match(sys, /稱呼：Alice/); assert.match(sys, /1,234/); assert.match(sys, /INFP/); assert.match(sys, /今天還沒簽到/);
@@ -372,13 +372,14 @@ test('接著聊（表單）另開一則；@機器人 或回覆它的訊息會回
   assert.deepEqual(bot.errors, []);
 });
 
-test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立；換成 Opus 5 才加伺服器端 fallback', async () => {
+test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立；Sonnet 5.5／Opus 5 加伺服器端 fallback，舊 Sonnet 5 不加', async () => {
   assert.equal(createAI({}, {}), null);
   const opusClient = fakeClaude([aiText('ok')]);
   const opus = createAI({ ANTHROPIC_API_KEY: 'k', AI_MODEL: 'claude-opus-5' }, { client: opusClient });
   assert.equal(opus.fallback, true); await opus.narrate('p');
   assert.equal(opusClient.calls[0].model, 'claude-opus-5'); assert.deepEqual(opusClient.calls[0].betas, ['server-side-fallback-2026-07-01']); assert.equal(opusClient.calls[0].fallbacks, 'default');
-  assert.equal(createAI({ ANTHROPIC_API_KEY: 'k' }, { client: fakeClaude([aiText('ok')]) }).fallback, false);
+  assert.equal(createAI({ ANTHROPIC_API_KEY: 'k' }, { client: fakeClaude([aiText('ok')]) }).fallback, true, '預設 Sonnet 5.5 有 fallback');
+  assert.equal(createAI({ ANTHROPIC_API_KEY: 'k', AI_MODEL: 'claude-sonnet-5' }, { client: fakeClaude([aiText('ok')]) }).fallback, false, '舊 Sonnet 5 不送');
   const store = (await makeBot()).store;
   const ai = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_PER_USER: '1', AI_CHAT_DAILY_PER_USER: '2' }, { store, client: fakeClaude([aiText('ok')]) });
   assert.equal(await ai.narrate('p', { userId: 'u' }), 'ok'); assert.equal(await ai.narrate('p', { userId: 'u' }), '', '解讀額度 1 次');
@@ -386,6 +387,22 @@ test('createAI：沒金鑰回 null；narrate 額度；chat 的每日額度獨立
   assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).text, 'ok');
   assert.equal((await ai.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' })).quota, false, '對話額度 2 次');
   assert.deepEqual(ai.quota('chat', 'u'), { used: 2, cap: 2 });
+  // 出錯不扣額度；整個機器人每日總量到了，所有人都停
+  const boom = { beta: { messages: { create: async () => { const e = new Error('overloaded'); e.status = 529; throw e; } } } };
+  const store2 = (await makeBot()).store;
+  const ai2 = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_TOTAL: '2' }, { store: store2, client: boom });
+  const r = await ai2.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' });
+  assert.ok(r.error && r.busy, '529 算忙線'); assert.equal(ai2.quota('chat', 'u').used, 0, '出錯退還額度');
+  const ai3 = createAI({ ANTHROPIC_API_KEY: 'k', AI_DAILY_TOTAL: '2' }, { store: store2, client: fakeClaude([aiText('a'), aiText('b'), aiText('c')]) });
+  await ai3.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'p' });
+  await ai3.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'q' });
+  const over = await ai3.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'r' });
+  assert.equal(over.quota, false); assert.equal(over.total, true, '總量到上限');
+  // 對話請求帶頂層 cache_control，截斷時補刪節號
+  const cut = fakeClaude([{ ...aiText('說到一半'), stop_reason: 'max_tokens' }]);
+  const ai4 = createAI({ ANTHROPIC_API_KEY: 'k' }, { client: cut });
+  const rc = await ai4.chat({ system: 's', messages: [{ role: 'user', content: 'x' }], userId: 'u' });
+  assert.deepEqual(cut.calls[0].cache_control, { type: 'ephemeral' }); assert.equal(rc.text, '說到一半…');
 });
 
 /* ---------- 中文指令名與固定頻道 ---------- */

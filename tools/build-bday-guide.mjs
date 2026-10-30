@@ -495,16 +495,18 @@ if (process.env.TEXT_OUT) {
   fs.writeFileSync(process.env.TEXT_OUT, T.join('\n') + '\n');
 }
 
-/* 縮圖（頁面卡片用，480×270）＋把 app.html 的 ?v= 換成各張圖的雜湊；舊的單張版本一起清掉 */
+/* 縮圖（頁面卡片用，640×360）、看大圖用的全尺寸 WebP（PNG 留給下載）＋把 app.html 的 ?v= 換成各張圖的雜湊；舊的單張版本一起清掉 */
 let appHtml = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 for (const [i, png] of outs.entries()) {
   execFileSync('python3', ['-c', `
 from PIL import Image
-Image.open(${JSON.stringify(png)}).convert('RGB').resize((640, 360), Image.LANCZOS).save(${JSON.stringify(path.join(OUT, `guide-${i + 1}-thumb.webp`))}, 'WEBP', quality=82, method=6)
+im = Image.open(${JSON.stringify(png)}).convert('RGB')
+im.save(${JSON.stringify(path.join(OUT, `guide-${i + 1}.webp`))}, 'WEBP', quality=88, method=6)
+im.resize((640, 360), Image.LANCZOS).save(${JSON.stringify(path.join(OUT, `guide-${i + 1}-thumb.webp`))}, 'WEBP', quality=82, method=6)
 `]);
   const v = crypto.createHash('sha1').update(fs.readFileSync(png)).digest('hex').slice(0, 10);
-  appHtml = appHtml.replace(new RegExp(`(img/bdayparty/guide-${i + 1}(?:-thumb\\.webp|\\.png)\\?v=)\\w+`, 'g'), '$1' + v);
-  console.log(`img/bdayparty/guide-${i + 1}.png：${(fs.statSync(png).size / 1048576).toFixed(2)} MB（v=${v}）`);
+  appHtml = appHtml.replace(new RegExp(`(img/bdayparty/guide-${i + 1}(?:-thumb\\.webp|\\.webp|\\.png)\\?v=)\\w+`, 'g'), '$1' + v);
+  console.log(`img/bdayparty/guide-${i + 1}.png：${(fs.statSync(png).size / 1048576).toFixed(2)} MB，.webp：${(fs.statSync(path.join(OUT, `guide-${i + 1}.webp`)).size / 1048576).toFixed(2)} MB（v=${v}）`);
 }
 fs.writeFileSync(path.join(ROOT, 'app.html'), appHtml);
 for (const f of ['guide.png', 'guide-thumb.webp']) fs.rmSync(path.join(OUT, f), { force: true });

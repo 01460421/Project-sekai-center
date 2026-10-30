@@ -270,7 +270,7 @@ function slotsPlay(ctx, bet) {
   return { embeds: [embed({ title: '🎰 拉霸', color: win > bet ? COLORS.gold : COLORS.grey, description: `**${r.join(' │ ')}**\n\n${three ? `🎉 三個 ${r[0]}！` : win ? '兩個一樣，退回押注。' : '沒中。'} ${win > bet ? `贏得 ${num(win)}` : win ? '不賺不賠' : `損失 ${num(bet)}`} ${ctx.currency}（餘額 ${num(ctx.u().crystals)}）${done(ctx, ctx.user.id, win > bet)}`, footer: '賠率：三同 🍒5 🍋6 🔔10 ⭐20 💎50 7️⃣100 倍，兩同退回押注' })], components: [row(button({ id: cid('slots', 'spin', ctx.user.id, bet), label: `再轉（${bet}）`, style: Style.primary, emoji: '🎰' }))] };
 }
 const slots = {
-  name: 'slots', description: '拉霸機：押注轉一把', category: 'games',
+  name: 'slots', description: '拉霸機：押注轉一把', category: 'games', cooldown: 5,
   options: [int('bet', '押注（預設 10）', { min: 1, max: 10000 })],
   async run(ctx) { await ctx.reply(slotsPlay(ctx, ctx.opt('bet') || 10)); },
   buttons: { async spin(ctx) { const [owner, bet] = ctx.data; if (!ctx.isOwner(owner)) return ctx.reply({ content: '想玩請自己用 /slots。', ephemeral: true }); await ctx.update(slotsPlay(ctx, +bet || 10)); } },
