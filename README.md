@@ -80,6 +80,10 @@ python3 tools/stamp-assets.py
 immutable 快取，沒重新戳記的話使用者會拿到舊檔，出現「新 HTML 配舊 JS」的錯配。
 指令是冪等的，多跑幾次沒關係；HTML 本身每次都會重新驗證，不需要戳記。
 
+程式裡載資料檔一律寫 `import(scData('ep-songs.js'))`，不要把 `data/…?v=` 寫死：資料檔的雜湊放在
+`data/stamps.js`（每次都向伺服器確認），每日排程重建資料只改那個小檔，`js/app.min.js` 與 `app.html` 不必換新。
+寫死的戳記會讓 `stamp-assets.py --check` 失敗。
+
 本地預覽：
 
 ```bash
