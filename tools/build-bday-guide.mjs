@@ -60,9 +60,6 @@ const md = ms => { const d = new Date(ms + 8 * 3600000); return (d.getUTCMonth()
 const DAY = 86400000;
 const who = nm('mysekai_material:' + flId)[0].replace(/的慶典之花$/, '');
 const rwName = k => nm(k)[0].replace(new RegExp('^' + who + '的'), '角色的').replace(/^\S+記憶$/, '記憶（角色代表色）');
-/* 收集期的雙葉：開始時長一輪，之後每天 05:00、17:00 各刷新一次（台服 UTC+8） */
-let spawns = 1;
-for (let t = st + 3600000; t < bd; t += 3600000) { const h = new Date(t + 8 * 3600000).getUTCHours(); if (h === 5 || h === 17) spawns++; }
 
 /* 遊戲畫面：投影片原圖用 CSS 裁切（x0,y0,x1,y1 是原圖座標），寬度固定、高度照比例 */
 const SL1 = [AS + '/mysekai/rule_slide/tutorial_birthday/mysekai_tutorial_birthday_01.png', 1224, 744];
@@ -81,38 +78,38 @@ const GLOSS_D = [
   [SPROUT, '雙葉', `活動限定採集點。豆森四個區域各 ${spN / 4} 株，一株 ${spLb} LIVE BONUS、約 ${spDew} 個露水。`],
   [img('material:' + dewId), '慶典露水', '每一場專用的道具，只能倒進這一場的庭園；截止後作廢。'],
   [img('mysekai_material:' + flId), '慶典之花', `每倒滿 ${fmt(per)} pt 開一朵；做生日家具的素材，也照朵數領累計獎勵。`],
-  [SPROUT, '慶典的庭園', '倒露水的地方：區域移動畫面右上角的入口。開花時四區雙葉全部重生。'],
+  [SPROUT, '慶典的庭園', '倒露水的地方：區域移動畫面右上角的入口。每開一朵花，四區雙葉重生一大批。'],
   [AS + '/thumbnail/chara/' + abn + '_normal.webp', '加成卡', '持有就有效（不用上場）：當年生日卡 +50%、往年每張 +15%。'],
   [AS + '/thumbnail/boost_item/boost_item2.webp', 'LIVE BONUS', '豆森採集也用它當體力。自然回復 30 分鐘 1、上限 10；大罐回 10、小罐回 1。'],
 ];
 const DAYS_D = [
-  [bd - 4 * DAY, '生日前 4 天', '卡池開始', '要抽當年生日卡的話今天抽。還不能收集，先把 LIVE BONUS 存滿 10。'],
-  [st, '生日前 3 天', '收集第 1 天', '00:00 雙葉長出來：拔完 28 株 → 庭園倒到剛好開下一朵 → 雙葉重生 → 再拔。05:00、17:00 刷新前先拔完。'],
-  [st + DAY, '生日前 2 天', '收集第 2 天', '同上。每 5 小時上線把自然回復用掉；要喝罐的話照目標平均分三天喝。'],
+  [bd - 4 * DAY, '生日前 4 天', '卡池・屯體力', '要抽當年生日卡就今天抽。05:00 起把自然回復的打歌體力灌進豆森體力條、不要花，留到 00:00 一口氣拔。'],
+  [st, '生日前 3 天', '收集第 1 天', '00:00 雙葉長出來，一般採集區也刷新（多拿素材）。拔 2～3 株 → 倒露水開花 → 雙葉重生一大批 → 再拔。'],
+  [st + DAY, '生日前 2 天', '收集第 2 天', '藍色體力拔雙葉、黃色體力挖礦，活動 PT 較多。別拖到最後才卡點拔：做椅子據說要拔一小時以上。'],
   [st + 2 * DAY, '生日前 1 天', '收集最後一天', '23:59 收集截止：LIVE BONUS 在這之前花在雙葉上，之後拔不到也不掉露水。'],
-  [bd, '生日當天', '派對開始', '剩下的露水全部倒完、領累計獎勵、做生日家具，擺上蛋糕開派對。'],
+  [bd, '生日當天', '派對開始', '00:00 一般採集區再刷新。剩下的露水倒完、領累計獎勵、做生日家具，擺上蛋糕開派對。'],
   [bd + DAY, '生日後 1 天', '做家具', '還沒做的家具在這兩天做完；露水不會再增加。'],
   [en, '生日後 2 天', '全部截止', '23:59 截止：沒倒的露水作廢，也不能再做這一場的家具。'],
 ];
 const SRC_D = [
-  [SPROUT, '雙葉', `約 ${perLb.toFixed(1)}`, `一株 ${spLb} LB → 約 ${spDew} 個；倒滿 ${fmt(per)} pt 與每天 05:00／17:00 重生。最划算。`],
-  [AS + '/mysekai/thumbnail/material/item_wood_1.webp', '一般採集', '約 8', '樹、礦石，看運氣；拔完雙葉後不建議花 LIVE BONUS 在這裡。'],
+  [SPROUT, '雙葉', `約 ${perLb.toFixed(1)}`, `一株 ${spLb} LB → 約 ${spDew} 個；每開一朵花都重生一大批，拔不完。最划算。`],
+  [AS + '/mysekai/thumbnail/material/item_wood_1.webp', '一般採集', '約 8', '樹、礦石；露水少，但活動 PT 比雙葉多：黃色體力留給這裡。'],
   [AS + '/thumbnail/boost_item/boost_item1.webp', 'LIVE', '約 5', '不用 LIVE BONUS 打一場也有 1 個；效率最低。'],
   [AS + '/thumbnail/gacha_ticket/mission_gacha_ticket.webp', '卡池兌換所', '—', '招募點數一次 150 個、最多 200 次；點數要換卡就別換。'],
 ];
 const RULES_D = [
   ['先抽卡再倒', '加成看「倒進去那一刻」持有的卡；當年生日卡池生日前 4 天就開。'],
-  ['LIVE BONUS 只花在雙葉', `雙葉 1 LB ≈ ${perLb.toFixed(1)} 個露水；一般採集約 8 個、打 LIVE 約 5 個。`],
-  ['不要一次倒完', '重生不會累積，一次倒完只換一輪；每次只倒到下一朵，多的存著。'],
-  ['第一天就拔', '沒拔的不會累積、露水不會貶值；05:00／17:00 刷新前拔完。'],
-  ['生日前一天 23:59 收手', '收集期過了就拔不到；生日當天起把剩下的露水倒完、做家具。'],
+  ['雙葉拔不完', '每開一朵花都重生一大批，2～3 株就開一朵；一次全倒完也沒問題。'],
+  ['藍色體力拔雙葉', '雙葉的活動 PT 比一般採集少：藍色拔雙葉、黃色挖礦，活動 PT 較多。'],
+  ['00:00 別錯過', '生日前 3 天與當天 00:00 一般採集區也刷新；打歌體力屯到 00:00 再打 LIVE。'],
+  ['別到最後才卡點拔', '什麼時候拔都可以；想做生日椅子據說要拔一小時以上。'],
 ];
 const STEPS_D = [
-  [SPROUT, '把四個區域的雙葉全部拔完', `${spN} 株、${roundLb} LIVE BONUS、約 ${fmt(roundDew)} 個露水。`],
+  [SPROUT, '拔 2～3 株雙葉', `一株 ${spLb} LIVE BONUS、約 ${spDew} 個露水；四區共 ${spN} 株。`],
   [img('material:' + dewId), '區域移動畫面右上角進「慶典的庭園」', '露水在這裡倒，進度條滿一朵就開花。'],
-  [img('mysekai_material:' + flId), '只倒到剛好開下一朵', `沒加成 ${Math.ceil(per / BP_PT)} 個、當年卡 ${Math.ceil(per / (BP_PT * 1.5))} 個、台服全收 ${Math.ceil(per / (BP_PT * 2.1))} 個；多的先存著。`],
-  [SPROUT, '開花的瞬間，四區雙葉全部重生', '重生不會累積：一次開 10 朵也只重生一輪。'],
-  [AS + '/thumbnail/boost_item/boost_item2.webp', '回豆森再拔，重複到 LIVE BONUS 用完', '用完就等自然回復（5 小時回滿 10），或照目標喝罐。'],
+  [img('mysekai_material:' + flId), '倒露水開花', `一朵要：沒加成 ${Math.ceil(per / BP_PT)} 個、當年卡 ${Math.ceil(per / (BP_PT * 1.5))} 個、台服全收 ${Math.ceil(per / (BP_PT * 2.1))} 個；一次倒完也可以。`],
+  [SPROUT, '開花的瞬間，四區雙葉重生一大批', '雙葉數量可以當作無限，不用省著拔。'],
+  [AS + '/thumbnail/boost_item/boost_item2.webp', '回豆森再拔，重複到體力用完', '用完就等自然回復（5 小時回滿 10），或照目標喝罐。'],
 ];
 const BON = [[0, '沒有加成卡'], [15, '往年生日卡 1 張'], [50, '當年生日卡'], [65, '當年＋往年 1 張'], [110, '台服全收・當年＋往年 4 張'], [125, '日服 2026 全收・當年＋往年 5 張']];
 const GOALS = [[3, '蛋糕（可以開派對）'], [13, '＋花束'], [33, '＋氣球'], [45, '稱號第 2 階'], [83, '＋掛旗'], [165, '稱號第 3 階'], [fxAll, '全部生日家具'], [maxReq, '稱號最高階・獎勵全拿']]
@@ -127,26 +124,26 @@ const SKL = [['一星', 5], ['二星', 25], ['三星', 250], ['四星', 10000], 
 const REW_KEYS = ['boost_item:1', ...tot('practice_ticket'), ...tot('skill_practice_ticket'), ...tot('gacha_ticket'), ...tot('material'), ...tot('mysekai_item'), ...tot('mysekai_material')];
 const REW_SUB = k => k.startsWith('boost_item') ? '小罐 1 LB' : k.startsWith('practice_ticket') ? fmt(nm(k)[2]) + ' EXP／張' : k.startsWith('skill_practice_ticket') ? nm(k)[2] + ' 技能 EXP／張' : '';
 const QA_TXT = [
-  ['可以一次把露水倒完嗎？', `不要。每倒滿 ${fmt(per)} pt 雙葉才重生一輪，重生<b>不會累積</b>，一次倒完只換到一輪。拔完一輪 → 只倒到下一朵 → 再拔。`],
-  ['第一天拔，還是最後一天拔？', '<b>第一天就拔</b>。沒拔的雙葉不會累積、露水也不會貶值；真正的上限是 LIVE BONUS，拖到最後只會浪費自然回復與刷新。'],
+  ['可以一次把露水倒完嗎？', '<b>可以</b>。每開一朵花雙葉都重生一大批，2～3 株的露水就開一朵，雙葉可以當作拔不完。'],
+  ['第一天拔，還是最後一天拔？', '<b>什麼時候拔都可以</b>，但別到最後才卡點拔：想做生日椅子據說要拔一小時以上。'],
   ['值得拿滿 400 朵嗎？', `推角才拿滿（最高階稱號在 ${maxReq} 朵）；其他角色做完想要的家具就好：蛋糕 3 朵就能開派對。`],
   ['剩下的露水怎麼辦？', '只能用在這一場，生日後 2 天 23:59 截止後作廢；生日當天起記得全部倒完。'],
   ['卡池點數換露水划算嗎？', '一次 150 個、最多 200 次；點數要換卡就別換，有剩又差一點露水才換。'],
   ['錯過收集期還能補嗎？', '不行。生日前 1 天 23:59 之後雙葉消失、也不掉露水；只能把手上的露水倒完。'],
 ];
-const natNote = `只靠刷新、不倒露水：收集期只長 ${spawns} 輪（開始＋每天 05:00、17:00），最多 ${spawns * spN} 株、約 ${fmt(spawns * roundDew)} 個露水（沒加成約 ${Math.floor(spawns * roundDew * BP_PT / per)} 朵）。想要更多就靠「倒滿一朵 → 雙葉重生」。`;
-const whyNote = '為什麼不要一次倒完？手上有 3,000 個露水（沒加成＝30 朵）時，<b>一次倒完</b>只觸發一次重生；<b>拔一輪、倒一朵</b>則每一朵都換到一輪雙葉，LIVE BONUS 夠就能一直拔。';
+const natNote = '屯體力：收集前一天 05:00 讓打歌體力差 1 就回滿，地圖刷新後進豆森把它灌進豆森體力條、不要花，整天的自然回復也灌進去；00:00 一到就有<b>一整條＋19 小時的 38＋早上存的 24</b>（日服）可以馬上拔。';
+const whyNote = '玩家實測（沒有生日卡、不喝罐）：非推角體力只打歌、不拔雙葉約 <b>13 朵</b>（蛋糕＋花束）；次推只拔雙葉、體力全灌進豆森，勉強 <b>33 朵</b>（蛋糕＋花束＋氣球）。';
 
 /* ===== 16:9 版面（1920×1080，輸出 2 倍＝3840×2160）：上方標題列、中間四欄、底下一行出處 ===== */
 const sec = (no, title, sub, body, cls = '') => `<div class="sec ${cls}"><div class="sh"><span class="no">${no}</span><h2>${title}</h2>${sub ? `<em>${sub}</em>` : ''}</div>${body}</div>`;
 const ctab = c => c ? `<em>大罐 ${fmt(c)}</em>` : '<em class="ok">不用喝</em>';
 
 const FLOW = [[SL1, [42, 345, 312, 544], '拔雙葉收集露水', `豆森四區各 ${spN / 4} 株雙葉，一株 <b>${spLb} LIVE BONUS → 約 ${spDew} 個露水</b>。打 LIVE、一般採集也會掉，但效率低。`],
-  [SL1, [402, 345, 668, 544], '到慶典的庭園澆灌', `每個露水 <b>${BP_PT} pt</b>（加成卡再加），每滿 <b>${fmt(per)} pt 開一朵</b>，四區雙葉同時重生。`],
+  [SL1, [402, 345, 668, 544], '到慶典的庭園澆灌', `每個露水 <b>${BP_PT} pt</b>（加成卡再加），每滿 <b>${fmt(per)} pt 開一朵</b>，四區雙葉重生一大批。`],
   [SL1, [733, 318, 1176, 571], '做家具開派對', '用慶典之花做<b>生日家具</b>；生日當天起擺上蛋糕開派對，朵數也換<b>稱號與獎勵</b>。']]
   .map(([s, box, k, d], i) => `<div class="fr">${shot(s, box, 150)}<div><h3><i>${i + 1}</i>${k}</h3><p>${d}</p></div></div>`).join('');
 const C1a = sec('01', '活動流程', '圖為遊戲畫面', FLOW
-  + `<div class="key"><img src="${SPROUT}" alt=""><div>關鍵：每倒滿 <b>${fmt(per)} pt</b>，四區雙葉<b>全部重生</b>，回去再拔一輪。</div></div>`);
+  + `<div class="key"><img src="${SPROUT}" alt=""><div>關鍵：2～3 株雙葉的露水就開一朵，開花後雙葉重生一大批：<b>雙葉拔不完</b>。</div></div>`);
 const C1b = sec('', '名詞先看懂', '', `<div class="gls">${GLOSS_D.map(([u, k, d]) => `<div class="gl"><img src="${u}" alt=""><div><b>${k}</b><span>${d}</span></div></div>`).join('')}</div>`, 'plain');
 const C2a = sec('02', '逐日時程', `例：${who} ${md(bd)} 生日`, `<table><thead><tr><th>日期</th><th>階段</th><th>該做的事</th></tr></thead><tbody>`
   + DAYS_D.map(([t, d, k, x], i) => `<tr class="${i >= 1 && i <= 3 ? 'hot' : ''}"><td><b>${md(t)}</b><span class="dd">${d}</span></td><td class="l nw"><b class="pk">${k}</b></td><td class="l">${x}</td></tr>`).join('')
@@ -164,11 +161,11 @@ const C3a = sec('03', '機制與露水來源', 'master＋社群實測',
     <div class="st">${ic('mysekai_material:' + flId)}<div><span>一朵慶典之花</span><b>${fmt(per)} pt</b><em>沒加成＝${fmt(per / BP_PT)} 個露水</em></div></div>
     <div class="st"><img src="${AS}/thumbnail/boost_item/boost_item1.webp" alt=""><div><span>LIVE BONUS 自然回復</span><b>30 分 1</b><em>上限 10；收集期最多約 ${NAT}</em></div></div>
     <div class="st"><img src="${AS}/thumbnail/boost_item/boost_item2.webp" alt=""><div><span>大罐一罐</span><b>10 LB</b><em>小罐 1；拿滿送 ${sum['boost_item:1']} 小罐</em></div></div>
-    <div class="st"><img src="${SPROUT}" alt=""><div><span>雙葉重生</span><b>2 種</b><em>倒滿 ${fmt(per)} pt／05:00、17:00</em></div></div>
+    <div class="st"><img src="${SPROUT}" alt=""><div><span>雙葉重生</span><b>每開一朵</b><em>重生一大批，數量當無限</em></div></div>
   </div>
   <div class="areas">${[5, 6, 7, 8].map((s, i) => `<div class="ar"><img src="${local('img/mysekai/site-' + s + '.webp')}" alt=""><span>${AREAS[i]}<b>×${spN / 4}</b></span></div>`).join('')}</div>
   <table><thead><tr><th>來源</th><th>每 1 LB</th><th>說明</th></tr></thead><tbody>${SRC_D.map(([u, k, v, d], i) => `<tr class="${i ? '' : 'hot'}"><td class="l nw"><img class="ti" src="${u}" alt="">${k}</td><td><b>${v}</b></td><td class="l">${d}</td></tr>`).join('')}</tbody></table>
-  <div class="callout">${natNote.replace(/(\d+ 輪|約 [\d,]+ 個露水)/g, '<b>$1</b>')}</div>`);
+  <div class="callout">${natNote}</div>`);
 const C3b = `<div class="scr">${shot(SLN, [506, 160, 804, 329], 460)}<span>生日當天的派對（遊戲畫面）</span></div>`;
 const C4a = sec('05', '最佳採集策略', '怎麼拔才不虧',
   `<div class="loopw"><div class="loop">
@@ -180,13 +177,13 @@ const C4a = sec('05', '最佳採集策略', '怎麼拔才不虧',
       <img class="lni" style="left:138px;top:48px" src="${SPROUT}" alt="">
       <img class="lni" style="left:233px;top:213px" src="${img('material:' + dewId)}" alt="">
       <img class="lni" style="left:43px;top:213px" src="${img('mysekai_material:' + flId)}" alt="">
-      <div class="ln" style="left:95px;top:0">拔完 ${spN} 株<em>${roundLb} LB・${fmt(roundDew)} 露水</em></div>
-      <div class="ln" style="left:190px;top:281px">只倒到下一朵<em>剛好滿 ${fmt(per)} pt</em></div>
-      <div class="ln" style="left:0;top:281px">雙葉全部重生<em>回去再拔一輪</em></div>
-      <div class="lc">重複到<br>LIVE BONUS<br>用完</div>
+      <div class="ln" style="left:95px;top:0">① 拔 2～3 株<em>一株約 ${spDew} 個露水</em></div>
+      <div class="ln" style="left:190px;top:281px">② 倒露水<em>每 ${fmt(per)} pt 一朵</em></div>
+      <div class="ln" style="left:0;top:281px">③ 開花<em>雙葉重生一大批</em></div>
+      <div class="lc">重複到<br>體力用完<br><small>雙葉拔不完</small></div>
     </div>
     <div class="rules">${RULES_D.map(([k, d], i) => `<div class="ru"><i>${i + 1}</i><div><b>${k}</b><span>${d}</span></div></div>`).join('')}</div></div>
-  <div class="sub">一輪的實際操作</div>
+  <div class="sub">實際操作（一直循環）</div>
   <div class="sps">${STEPS_D.map(([u, k, d], i) => `<div class="sp"><i>${i + 1}</i><img src="${u}" alt=""><div><b>${k}</b><span>${d}</span></div></div>`).join('')}</div>
   <div class="callout">${whyNote}</div>`);
 
@@ -270,11 +267,11 @@ body{width:1920px;height:1080px;font-family:'Noto Sans TC','Noto Sans CJK TC','M
 table{width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;border:1.5px solid var(--line);background:#fff}
 th{background:linear-gradient(90deg,#ffe0ee,#ece6ff);font-size:11.5px;font-weight:900;padding:5px 4px;text-align:center;line-height:1.25}
 td{padding:4px 5px;border-top:1px solid var(--line);text-align:center;font-size:13px;font-family:'M PLUS Rounded 1c';font-weight:700;white-space:nowrap}
-td.l{text-align:left;font-family:'Noto Sans TC';font-size:12px;font-weight:700;line-height:1.4;white-space:normal}
+td.l{text-align:left;font-family:'Noto Sans TC','Noto Sans CJK TC',sans-serif;font-size:12px;font-weight:700;line-height:1.4;white-space:normal}
 td.nw{white-space:nowrap}
-td b{font-size:14.5px} td em{display:block;font-style:normal;font-size:11px;color:var(--pk);font-family:'Noto Sans TC';font-weight:900;line-height:1.2}
+td b{font-size:14.5px} td em{display:block;font-style:normal;font-size:11px;color:var(--pk);font-family:'Noto Sans TC','Noto Sans CJK TC',sans-serif;font-weight:900;line-height:1.2}
 td em.ok{color:#16927f}
-td .dd{display:block;font-family:'Noto Sans TC';font-size:10.5px;color:var(--sub)}
+td .dd{display:block;font-family:'Noto Sans TC','Noto Sans CJK TC',sans-serif;font-size:10.5px;color:var(--sub)}
 .bon{color:var(--lv);font-size:15px}
 tr.hot td{background:#fff3f8}
 .tag{font-style:normal;display:inline-block;margin-left:5px;padding:0 6px;border-radius:999px;background:var(--pk);color:#fff;font-size:10.5px;vertical-align:1px}
@@ -316,6 +313,7 @@ table.mini td,table.mini th{padding:3px 2px}
 .ln{position:absolute;width:150px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;font-weight:900;font-size:19px;line-height:1.3}
 .ln em{font-style:normal;font-weight:700;font-size:15px;color:var(--sub)}
 .lc{position:absolute;left:170px;top:190px;transform:translate(-50%,-50%);text-align:center;font-weight:900;font-size:21px;color:var(--pk);line-height:1.3}
+.lc small{display:block;margin-top:4px;font-size:15px;color:var(--sub)}
 .rules{display:grid;gap:5px}
 .ru,.sp{display:flex;gap:7px;align-items:flex-start;padding:5px 8px;border-radius:11px;background:#fff;border:1.5px solid var(--line)}
 .ru i,.sp i{font-style:normal;font-family:'M PLUS Rounded 1c';font-weight:800;min-width:21px;height:21px;border-radius:7px;background:linear-gradient(135deg,var(--pk),var(--lv));color:#fff;display:grid;place-items:center;font-size:12.5px;margin-top:1px}
@@ -345,7 +343,7 @@ table.mini td,table.mini th{padding:3px 2px}
 .chip{display:inline-flex;align-items:center;gap:1px;padding:1px 6px 1px 2px;border-radius:999px;background:#f6f1ff;font-family:'M PLUS Rounded 1c';font-size:12px;font-weight:800;color:var(--pk)}
 .chip img{width:20px;height:20px}
 table.tiers td{padding:2px 5px}
-.yes,.no{display:inline-block;padding:0 8px;border-radius:999px;font-family:'Noto Sans TC';font-weight:900;font-size:11.5px}
+.yes,.no{display:inline-block;padding:0 8px;border-radius:999px;font-family:'Noto Sans TC','Noto Sans CJK TC',sans-serif;font-weight:900;font-size:11.5px}
 .yes{background:#dff7f1;color:#16927f}.no{background:#ffe3ec;color:#d63a74}
 .qas{display:grid;gap:5px}
 .qas2{grid-template-columns:1fr 1fr}
@@ -456,23 +454,23 @@ if (process.env.TEXT_OUT) {
     '＝＝＝ 上篇｜機制與策略 ＝＝＝', '',
     '■ 01 活動流程',
     `1. 拔雙葉收集露水：豆森四個區域各 ${spN / 4} 株雙葉（共 ${spN} 株），一株 ${spLb} LIVE BONUS → 約 ${spDew} 個露水。打 LIVE、一般採集也會掉，但效率低。`,
-    `2. 到慶典的庭園澆灌：每個露水 ${BP_PT} pt（持有加成卡再加），每滿 ${fmt(per)} pt 開一朵慶典之花，四區雙葉同時重生。`,
+    `2. 到慶典的庭園澆灌：每個露水 ${BP_PT} pt（持有加成卡再加），每滿 ${fmt(per)} pt 開一朵慶典之花，四區雙葉重生一大批。`,
     '3. 做家具開派對：用慶典之花做生日家具；生日當天起擺上蛋糕開派對，朵數也換稱號與獎勵。',
-    `重點：每倒滿 ${fmt(per)} pt，雙葉就全部重生 → 回去再拔一輪。`, '',
+    '重點：2～3 株雙葉的露水就開一朵，開花後雙葉重生一大批，雙葉拔不完；一次倒完也沒問題。', '',
     '■ 名詞', ...GLOSS_D.map(([, k, d]) => `・${k}：${d}`), '',
     `■ 02 逐日時程（例：${who} ${md(bd)} 生日；台服時間）`, ...DAYS_D.map(([t, d, k, x]) => `・${md(t)}（${d}）${k}：${x}`), '',
     '■ 03 機制與露水來源',
     `・雙葉一輪 ${spN} 株＝約 ${fmt(roundDew)} 個露水、${roundLb} LIVE BONUS（1 LB ≈ ${perLb.toFixed(1)} 個）`,
     `・一朵慶典之花 ${fmt(per)} pt（沒加成＝${fmt(per / BP_PT)} 個露水）`,
     `・LIVE BONUS 自然回復 30 分鐘 1、上限 10；收集期 3 天最多約 ${NAT}。大罐回 10、小罐回 1；拿滿送 ${sum['boost_item:1']} 小罐`,
-    ...SRC_D.map(([, k, v, d]) => `・${k}：每 1 LB ${v} 個；${d}`), '・' + natNote, '',
+    ...SRC_D.map(([, k, v, d]) => `・${k}：每 1 LB ${v} 個；${d}`), '・' + strip(natNote), '',
     '■ 04 加成卡',
     `・例：${who}這一場：` + bcards.map(c => `${c.name} +${c.rate}%`).join('、'),
     '・持有就算、不用上場；送進控え室的卡不算。當年 +50%、往年每張 +15%（台服最多 +110%、日服 2026 起 +125%）',
     `・加成算在倒進去那一刻；每個露水 pt ＝ ${BP_PT} ×（1 ＋ 加成）`,
     '・一朵要幾個露水：' + [0, 15, 50, 65, 110, 125].map(b => `+${b}% ${Math.ceil(per / (BP_PT * (100 + b) / 100))} 個`).join('、'), '',
     '■ 05 最佳採集策略', ...RULES_D.map(([k, d], i) => `${i + 1}. ${k}：${d}`),
-    '一輪的實際操作：', ...STEPS_D.map(([, k, d], i) => `${i + 1}) ${k}：${d}`), strip(whyNote), '',
+    '實際操作（一直循環）：', ...STEPS_D.map(([, k, d], i) => `${i + 1}) ${k}：${d}`), strip(whyNote), '',
     '＝＝＝ 下篇｜數字與獎勵 ＝＝＝', '',
     `■ 06 情形對照表（全用雙葉；大罐＝扣掉自然回復 ${NAT} 與獎勵小罐後還要喝的）`,
     ...BON.map(([bon, n]) => { const pt = BP_PT * (100 + bon) / 100, c3 = cost(bon, 3), cf = cost(bon, fxAll), cm = cost(bon, maxReq);
@@ -510,4 +508,4 @@ im.resize((640, 360), Image.LANCZOS).save(${JSON.stringify(path.join(OUT, `guide
 }
 fs.writeFileSync(path.join(ROOT, 'app.html'), appHtml);
 for (const f of ['guide.png', 'guide-thumb.webp']) fs.rmSync(path.join(OUT, f), { force: true });
-console.log(`範例：${who}，家具 ${fx.length} 件 ${fxAll} 朵，收集期雙葉 ${spawns} 輪`);
+console.log(`範例：${who}，家具 ${fx.length} 件 ${fxAll} 朵`);
