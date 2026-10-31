@@ -109,7 +109,7 @@ const STEPS_D = [
   [img('material:' + dewId), '區域移動畫面右上角進「慶典的庭園」', '露水在這裡倒，進度條滿一朵就開花。'],
   [img('mysekai_material:' + flId), '倒露水開花', `一朵要：沒加成 ${Math.ceil(per / BP_PT)} 個、當年卡 ${Math.ceil(per / (BP_PT * 1.5))} 個、台服全收 ${Math.ceil(per / (BP_PT * 2.1))} 個；一次倒完也可以。`],
   [SPROUT, '開花的瞬間，四區雙葉重生一大批', '雙葉數量可以當作無限，不用省著拔。'],
-  [AS + '/thumbnail/boost_item/boost_item2.webp', '回豆森再拔，重複到 LIVE BONUS 用完', '用完就等自然回復（5 小時回滿 10），或照目標喝罐。'],
+  [AS + '/thumbnail/boost_item/boost_item2.webp', '回豆森再拔，重複到體力用完', '用完就等自然回復（5 小時回滿 10），或照目標喝罐。'],
 ];
 const BON = [[0, '沒有加成卡'], [15, '往年生日卡 1 張'], [50, '當年生日卡'], [65, '當年＋往年 1 張'], [110, '台服全收・當年＋往年 4 張'], [125, '日服 2026 全收・當年＋往年 5 張']];
 const GOALS = [[3, '蛋糕（可以開派對）'], [13, '＋花束'], [33, '＋氣球'], [45, '稱號第 2 階'], [83, '＋掛旗'], [165, '稱號第 3 階'], [fxAll, '全部生日家具'], [maxReq, '稱號最高階・獎勵全拿']]
@@ -177,13 +177,13 @@ const C4a = sec('05', '最佳採集策略', '怎麼拔才不虧',
       <img class="lni" style="left:138px;top:48px" src="${SPROUT}" alt="">
       <img class="lni" style="left:233px;top:213px" src="${img('material:' + dewId)}" alt="">
       <img class="lni" style="left:43px;top:213px" src="${img('mysekai_material:' + flId)}" alt="">
-      <div class="ln" style="left:95px;top:0">拔 2～3 株<em>一株 ${spLb} LB・約 ${spDew} 露水</em></div>
-      <div class="ln" style="left:190px;top:281px">倒露水開花<em>每 ${fmt(per)} pt 一朵</em></div>
-      <div class="ln" style="left:0;top:281px">雙葉重生一大批<em>回去再拔</em></div>
-      <div class="lc">重複到<br>LIVE BONUS<br>用完</div>
+      <div class="ln" style="left:95px;top:0">① 拔 2～3 株<em>一株約 ${spDew} 個露水</em></div>
+      <div class="ln" style="left:190px;top:281px">② 倒露水<em>每 ${fmt(per)} pt 一朵</em></div>
+      <div class="ln" style="left:0;top:281px">③ 開花<em>雙葉重生一大批</em></div>
+      <div class="lc">重複到<br>體力用完<br><small>雙葉拔不完</small></div>
     </div>
     <div class="rules">${RULES_D.map(([k, d], i) => `<div class="ru"><i>${i + 1}</i><div><b>${k}</b><span>${d}</span></div></div>`).join('')}</div></div>
-  <div class="sub">一輪的實際操作</div>
+  <div class="sub">實際操作（一直循環）</div>
   <div class="sps">${STEPS_D.map(([u, k, d], i) => `<div class="sp"><i>${i + 1}</i><img src="${u}" alt=""><div><b>${k}</b><span>${d}</span></div></div>`).join('')}</div>
   <div class="callout">${whyNote}</div>`);
 
@@ -313,6 +313,7 @@ table.mini td,table.mini th{padding:3px 2px}
 .ln{position:absolute;width:150px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;font-weight:900;font-size:19px;line-height:1.3}
 .ln em{font-style:normal;font-weight:700;font-size:15px;color:var(--sub)}
 .lc{position:absolute;left:170px;top:190px;transform:translate(-50%,-50%);text-align:center;font-weight:900;font-size:21px;color:var(--pk);line-height:1.3}
+.lc small{display:block;margin-top:4px;font-size:15px;color:var(--sub)}
 .rules{display:grid;gap:5px}
 .ru,.sp{display:flex;gap:7px;align-items:flex-start;padding:5px 8px;border-radius:11px;background:#fff;border:1.5px solid var(--line)}
 .ru i,.sp i{font-style:normal;font-family:'M PLUS Rounded 1c';font-weight:800;min-width:21px;height:21px;border-radius:7px;background:linear-gradient(135deg,var(--pk),var(--lv));color:#fff;display:grid;place-items:center;font-size:12.5px;margin-top:1px}
@@ -469,7 +470,7 @@ if (process.env.TEXT_OUT) {
     `・加成算在倒進去那一刻；每個露水 pt ＝ ${BP_PT} ×（1 ＋ 加成）`,
     '・一朵要幾個露水：' + [0, 15, 50, 65, 110, 125].map(b => `+${b}% ${Math.ceil(per / (BP_PT * (100 + b) / 100))} 個`).join('、'), '',
     '■ 05 最佳採集策略', ...RULES_D.map(([k, d], i) => `${i + 1}. ${k}：${d}`),
-    '一輪的實際操作：', ...STEPS_D.map(([, k, d], i) => `${i + 1}) ${k}：${d}`), strip(whyNote), '',
+    '實際操作（一直循環）：', ...STEPS_D.map(([, k, d], i) => `${i + 1}) ${k}：${d}`), strip(whyNote), '',
     '＝＝＝ 下篇｜數字與獎勵 ＝＝＝', '',
     `■ 06 情形對照表（全用雙葉；大罐＝扣掉自然回復 ${NAT} 與獎勵小罐後還要喝的）`,
     ...BON.map(([bon, n]) => { const pt = BP_PT * (100 + bon) / 100, c3 = cost(bon, 3), cf = cost(bon, fxAll), cm = cost(bon, maxReq);
