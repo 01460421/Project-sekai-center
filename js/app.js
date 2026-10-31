@@ -672,7 +672,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 綜合力計算器', desc: 'WL3 每期總合力上限 33.6 萬：滿配加成的隊伍要把區域道具、大門、玩偶練到哪裡才碰得到上限，附達標組合表與升級順序。', to: 'wl3pow', cta: '前往 WL3 綜合力計算器' }
   ];
   SYSLOG = [
-    { d: '2026/10/31', t: '排名頭像補齊、手機版分數不再進位', s: '排名列表的 Q 版頭像是用玩家代表卡的卡號查角色，這張對照表一直停在 #1271，之後的新卡（尤其是活動卡）全部沒有頭像、顯示成破圖；現在改成每天從日服 master 自動更新，台服前百與日服前百都補齊了。手機版的分數用「萬」顯示時以前會四捨五入（4,737,561 顯示成 474W），現在改成無條件捨去（473W），跟遊戲內對得上。' },
+    { d: '2026/10/31', t: '玩家詳情不再出現負幾千萬分、排名頭像補齊', s: '點進玩家詳情時，逐局紀錄出現「-1310 萬」一局、名次走勢從 1.5 億掉下來：這期開跑那一秒，排名 API 已經換成新的期數，前百卻還是上一期的分數，追蹤器把它當成這期的起點。現在開跑沒多久就出現不可能的分數會整輪略過、分數變少不算一局，已經記到的錯誤資料也不再顯示。排名列表的 Q 版頭像是用玩家代表卡的卡號查角色，這張對照表一直停在 #1271，之後的新卡（尤其是活動卡）全部沒有頭像、顯示成破圖；現在改成每天從日服 master 自動更新，台服前百與日服前百都補齊了。手機版的分數用「萬」顯示時以前會四捨五入（4,737,561 顯示成 474W），現在改成無條件捨去（473W），跟遊戲內對得上。' },
     { d: '2026/10/30', t: '新頁：WL3 綜合力計算器', s: '計算中心多一頁「WL3 綜合力計算器」。WL3 每一期的總合力上限是 33.6 萬，超過的不計分；選一期就帶出滿配加成的隊伍（該期五張活動卡），調區域道具、五扇 MySekai 大門、每位角色的玩偶、角色等級與專精，馬上看到總綜合力離上限多遠。另有<b>達標組合表</b>（區域道具統一等級 × 大門 × 玩偶，哪些碰得到上限）、<b>從現在補到上限的升級順序</b>，以及所有區域道具各等級的加成表。可以一鍵帶入 Haruki 專區匯入的遊戲資料。上限照 WL3 當時算：區域道具 Lv20、大門 Lv40、沒有想いの大樹（日服 WL3 結束後的 7.0 改版才有）。另外修正組卡的綜合力：台服不再憑空多算想いの大樹的 10%，日服混團隊伍會多吃的那一份也算進去了。' },
     { d: '2026/10/30', t: '助手看得懂日服、開站更快、WL 終章技能上限修正', s: 'AI 助手與右下角小幫手可以直接回答日服的版本、活動、卡池、新曲與遊戲內公告；機器人多了 /活動 日服。首頁活動圖不再每次抓 1.5 MB 的資料，每日資料更新也不再讓主程式重新下載；淺色主題的灰字加深。日服第 218 期終章的技能上限是 +140%（之前算成 +40%）。' },
     { d: '2026/10/25', t: '豆森生日派對：一圖流詳細攻略、情形對照表、生日家具要喝幾罐', s: '生日派對頁多了可以存圖分享的一圖流詳細攻略（上下兩張 16:9 PNG，附遊戲畫面與實際素材圖：流程、逐日時程、機制與露水來源、加成卡、採集策略、目標規劃、累計獎勵、經驗值換算與 Q&A），以及情形對照表：沒有加成卡、往年 1 張、當年生日卡到全收，各要幾個露水、只靠自然回復能開幾朵、只做蛋糕／做齊家具／拿滿各要多少 LIVE BONUS 與大罐（已扣自然回復與獎勵小罐）。生日家具也逐件累計要喝幾罐；常見問題多了「做完全部家具要多少罐子」與「不喝罐子能拿多少」。', p: 'bdayparty' },
@@ -2039,7 +2039,16 @@ class Component extends DCLogic {
      規則跟 tools/record-border.py 的 add_sample 一樣（既有段位順序不動、新段位往後加、距上一筆不足 4 分鐘就略過） */
   mergeSnaps(h, snaps) {
     h.tiers = h.tiers || []; h.samples = h.samples || []; h.top1 = h.top1 || []; h.ranks = h.ranks || [];
-    for (const [ts, rows, tops, wl] of snaps) {
+    /* 同一期的第 1 名分數只會增加。比之後任何一筆還高的快照，是換期瞬間 API 已換新期數、前百卻還是上一期的資料
+       （台服 #184 開跑第 1 秒記到第 1 名 1.5 億），整筆丟掉，不然名次走勢會從上一期的分數「掉」下來。Worker 也會擋，這裡防舊快取。 */
+    let lo = Infinity;
+    const keep = snaps.slice().reverse().filter(([, , tops]) => {
+      const v = tops && tops.length ? +(Array.isArray(tops[0]) ? tops[0][0] : tops[0]) : NaN;
+      if (!Number.isFinite(v)) return true;
+      if (v > lo) return false;
+      lo = v; return true;
+    }).reverse();
+    for (const [ts, rows, tops, wl] of keep) {
       const last = h.samples[h.samples.length - 1];
       if (last && ts - last[0] < 240) continue;
       const by = {};
@@ -2331,7 +2340,7 @@ class Component extends DCLogic {
       area: line + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - PB) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - PB) + ' Z',
       ticks: [0, 0.5, 1].map(f => ({ x: PL + f * (W - PL - PR), l: md(t0 + (t1 - t0) * f) })),
       first: fmt(list[0][1]), last: fmt(list[list.length - 1][1]),
-      gain: this.short(list[list.length - 1][1] - list[0][1]),
+      gain: ((list[list.length - 1][1] - list[0][1]) >= 0 ? '+' : '') + this.short(list[list.length - 1][1] - list[0][1]),   // 帶正負號；呼叫端不要再加 '+'（以前變成「+-1.4 億」）
       delta: list[list.length - 1][1] - list[0][1],
       // 縱軸不是從 0 起，把實際範圍標出來，並畫上下兩條參考線
       key,
@@ -4470,7 +4479,7 @@ class Component extends DCLogic {
       const d = await r.json();
       // 這位玩家不在追蹤範圍(第 51 名之後)時 games 會是空陣列,不是錯誤
       this.setState({
-        gamesRows: (d.games || []).map(g => ({ t: g[1], delta: g[2], rank: g[3] })),
+        gamesRows: (d.games || []).filter(g => g[2] > 0).map(g => ({ t: g[1], delta: g[2], rank: g[3] })),   // 分數只會增加；負的是換期瞬間拿上一期分數當基準算出來的（Worker 已不再記，這裡防舊資料）
         gamesEv: d.event || null, gamesGaps: d.gaps || [], gamesLoad: false,
       });
     } catch (e) {
@@ -9492,7 +9501,7 @@ class Component extends DCLogic {
         return { hasChart: true, chartNo: false, chartMsg: '',
           chartW: c.W, chartH: c.H, chartLine: c.line, chartArea: c.area, chartTicks: c.ticks,
           chartMeta: '第 ' + dt.rank + ' 名 · ' + c.n + ' 筆 · 橫跨 ' + c.spanLabel,
-          chartFirst: c.first, chartLast: c.last, chartGain: '+' + c.gain,
+          chartFirst: c.first, chartLast: c.last, chartGain: c.gain,
           chartPct: c.pct, chartAxis: c.axisNote, chartGHi: c.gHi, chartGLo: c.gLo, chartGX1: c.gX1, chartGX2: c.gX2 };
       })(),
       ...(() => {
@@ -10808,7 +10817,7 @@ class Component extends DCLogic {
               anaChartOk: true, anaChartNo: false, anaChartMsg: '', anaTierChips: chips,
               anaChartW: c.W, anaChartH: c.H, anaChartLine: c.line, anaChartArea: c.area,
               anaChartTicks: c.ticks, anaChartN: c.n + ' 筆 · 橫跨 ' + c.spanLabel,
-              anaChartFirst: c.first, anaChartLast: c.last, anaChartGain: '+' + c.gain,
+              anaChartFirst: c.first, anaChartLast: c.last, anaChartGain: c.gain,
               anaChartPct: c.pct, anaChartAxis: c.axisNote, anaChartGHi: c.gHi, anaChartGLo: c.gLo, anaChartGX1: c.gX1, anaChartGX2: c.gX2,
               anaChartTitle: 'T' + this.n(rk) + ' 榜線走勢'
             };
@@ -10878,7 +10887,7 @@ class Component extends DCLogic {
               anaPRankDelta: (() => { const d = S.rank.delta; return d < 0 ? ('↑ 進步 ' + (-d) + ' 名') : d > 0 ? ('↓ 退步 ' + d + ' 名') : '名次持平'; })(),
               anaPRankFg: S.rank.delta < 0 ? '#3ea76a' : S.rank.delta > 0 ? '#e0576a' : 'var(--text-2)',
               anaPHasScore: !!S.score,
-              anaPScoreGain: S.score ? ('+' + S.score.gain) : '—',
+              anaPScoreGain: S.score ? S.score.gain : '—',
               ...g(S.rank, 'anaPRk'), ...g(S.score, 'anaPSc')
             };
           })(),
@@ -11432,7 +11441,7 @@ class Component extends DCLogic {
             return { wlChartOk: true, wlChartNo: false, wlChartHas: true, wlTierChips: chips,
               wlChartW: c.W, wlChartH: c.H, wlChartLine: c.line, wlChartArea: c.area,
               wlChartTicks: c.ticks, wlChartN: c.n + ' 筆 · 橫跨 ' + c.spanLabel,
-              wlChartFirst: c.first, wlChartLast: c.last, wlChartGain: '+' + c.gain,
+              wlChartFirst: c.first, wlChartLast: c.last, wlChartGain: c.gain,
               wlChartPct: c.pct, wlChartAxis: c.axisNote, wlChartMsg: '',
               wlChartGHi: c.gHi, wlChartGLo: c.gLo, wlChartGX1: c.gX1, wlChartGX2: c.gX2,
               wlChartTitle: 'T' + this.n(rk) + ' 章節走勢' };

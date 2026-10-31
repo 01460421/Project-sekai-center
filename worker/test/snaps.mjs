@@ -82,5 +82,40 @@ ok(d.snaps.length === 1 && d.snaps[0][2].length === 10, '各期分開存');
 const r = await tr.fetch(new Request('https://do/snaps?ev=201&lite=1'));
 ok(r.headers.get('access-control-allow-origin') != null && /max-age=60/.test(r.headers.get('cache-control') || ''), 'CORS 與 60 秒快取');
 
+/* 8. 換期瞬間的過期資料（2026-10-31 台服 #184：開跑第 1 秒 API 已是新期數，前百卻是上一期的 1.5 億） */
+// 8a. 寫入時：比新快照第 1 名還高的舊快照被刪掉
+await tr.snapshot({ id: 300, name: '換期' }, top(100), T0 + 50 * 86400_000);           // 第 1 名 2000 萬（上一期的）
+const fresh = { player_top_100_rankings: Array.from({ length: 100 }, (_, i) => ({ rank: i + 1, score: 300000 - i * 1000, userId: 'u' + (i + 1) })) };
+await tr.snapshot({ id: 300, name: '換期' }, fresh, T0 + 50 * 86400_000 + 5 * 60_000);
+d = await get('/snaps?ev=300');
+ok(d.snaps.length === 1 && d.snaps[0][2][0][0] === 300000, '換期瞬間的過期快照（第 1 名比之後高）寫入下一筆時被刪掉');
+// 8b. 讀取時：還沒刪到的過期快照也不回
+sql.exec('INSERT INTO snaps (ev, ts, rows, tops, wl) VALUES (?, ?, ?, ?, ?)', 301, 1000, '[[100,9000000]]', '[[152501206,"x"]]', null);
+sql.exec('INSERT INTO snaps (ev, ts, rows, tops, wl) VALUES (?, ?, ?, ?, ?)', 301, 1300, '[[100,27500]]', '[[348750,"y"]]', null);
+d = await get('/snaps?ev=301');
+ok(d.snaps.length === 1 && d.snaps[0][2][0][0] === 348750, '/snaps 不回第 1 名比之後還高的舊快照');
+// 8c. /games 不回負的局（舊版拿過期分數當基準記下的 -1310 萬）
+sql.exec('INSERT INTO users (ev, uidx, uid, name) VALUES (?, ?, ?, ?)', 301, 0, '7151722833545239298', 'a');
+sql.exec('INSERT INTO games (ev, uidx, t, delta, rank) VALUES (?, ?, ?, ?, ?)', 301, 0, 15, -13100363, 1);
+sql.exec('INSERT INTO games (ev, uidx, t, delta, rank) VALUES (?, ?, ?, ?, ?)', 301, 0, 30, 26550, 1);
+d = await get('/games?ev=301&uid=7151722833545239298');
+ok(d.games.length === 1 && d.games[0][2] === 26550, '/games 不回負的局');
+
+// 8d. 追蹤器：開跑沒多久第 1 名就上億 → 整輪略過；之後分數變少不算一局
+const tr2 = new GameTracker({ storage }, {});
+let live = null;
+globalThis.fetch = async (u) => (String(u).includes('/event/live/top100') && live
+  ? new Response(JSON.stringify(live), { status: 200 }) : new Response('down', { status: 503 }));
+const mk = (id, scores) => ({ id, name: '新期', start_at: new Date(Date.now() - 1000).toISOString(), aggregate_at: new Date(Date.now() + 86400_000).toISOString(),
+  player_top_100_rankings: scores.map((v, i) => ({ rank: i + 1, score: v, name: 'p' + i, last_player_info: { profile: { id: String(7000000000000000000n + BigInt(i)) } } })) });
+live = mk(400, [152501206, 141401206]);
+await tr2.alarm();
+ok(tr2.get('stale') && tr2.get('stale').top1 === 152501206 && (tr2.get('event') || {}).id !== 400, '開跑第 1 秒第 1 名 1.5 億：當過期資料略過，不換期、不當基準');
+live = mk(400, [26550, 21150]); await tr2.alarm();
+live = mk(400, [52000, 21150]); await tr2.alarm();
+live = mk(400, [51000, 40000]); await tr2.alarm();     // 第 1 位變少（不該發生）→ 不算一局
+const g4 = [...sql.exec('SELECT uidx, delta FROM games WHERE ev = 400 ORDER BY t, uidx')].map(r => r.delta);
+ok(JSON.stringify(g4) === JSON.stringify([25450, 18850]), '基準從新期開始；分數變少不算一局（只記 +25450、+18850）');
+
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
 process.exit(fail ? 1 : 0);
