@@ -39,6 +39,10 @@ const GAP_FACTOR = 3;          // 超過 3 個週期沒成功 → 記一段缺�
    網站與 tools/record-border.py 再用 /snaps?ev=&since= 把空檔補進 data/history。 */
 const SNAP_MS = 5 * 60_000;
 const SNAP_KEEP_S = 45 * 86400;  // 留 45 天，夠 record-border.py 補回 git 了
+/* 換期那一刻 API 可能已經換成新期數、前百卻還是上一期的（2026-10-31 台服 #184 開跑第 1 秒：第 1 名 1.5 億）。
+   開跑 t 小時的第 1 名不可能超過 STALE_BASE ＋ t × STALE_PER_H（實際最快約每小時 250 萬），超過就當過期資料整輪略過。 */
+const STALE_BASE = 3_000_000;
+const STALE_PER_H = 8_000_000;
 const BORDER_API = 'https://api.hisekai.org/tw/event/live/border';
 const CORS = {
   'access-control-allow-origin': '*',
@@ -154,8 +158,9 @@ export class GameTracker {
         uidx = hit.length ? String(hit[0].uidx) : '-1';   // 查無此人 → 回空集合而不是全部
       }
       const rows = uidx === null
-        ? [...this.sql.exec('SELECT uidx,t,delta,rank FROM games WHERE ev = ? AND t >= ? ORDER BY t', ev, since)]
-        : [...this.sql.exec('SELECT uidx,t,delta,rank FROM games WHERE ev = ? AND uidx = ? AND t >= ? ORDER BY t', ev, Number(uidx), since)];
+        ? [...this.sql.exec('SELECT uidx,t,delta,rank FROM games WHERE ev = ? AND t >= ? AND delta > 0 ORDER BY t', ev, since)]
+        : [...this.sql.exec('SELECT uidx,t,delta,rank FROM games WHERE ev = ? AND uidx = ? AND t >= ? AND delta > 0 ORDER BY t', ev, Number(uidx), since)];
+      // delta > 0：舊版會把換期瞬間的過期分數當基準，記下「-1310 萬」這種局；分數只會增加，負的一律不給
       return this.json({
         ev,
         // 精簡成陣列，1.6MB 級別的資料不該用物件鍵名把體積灌大
@@ -174,7 +179,15 @@ export class GameTracker {
       const ev = Number(url.searchParams.get('ev') || (this.get('event') || {}).id || 0);
       const since = Number(url.searchParams.get('since') || 0);
       const lite = url.searchParams.get('lite') === '1';
-      const rows = [...this.sql.exec('SELECT ts, rows, tops, wl FROM snaps WHERE ev = ? AND ts > ? ORDER BY ts LIMIT 4000', ev, since)];
+      let rows = [...this.sql.exec('SELECT ts, rows, tops, wl FROM snaps WHERE ev = ? AND ts > ? ORDER BY ts LIMIT 4000', ev, since)];
+      // 第 1 名只會增加：比之後任何一筆還高的是換期瞬間的上一期資料（寫入時也會刪，這裡防還沒刪到的）
+      let lo = Infinity;
+      rows = rows.reverse().filter(r => {
+        const m = /^\[\[(-?\d+)/.exec(r.tops || ''), v = m ? Number(m[1]) : NaN;
+        if (!Number.isFinite(v)) return true;
+        if (v > lo) return false;
+        lo = v; return true;
+      }).reverse();
       const snaps = rows.map(r => {
         const tops = JSON.parse(r.tops || '[]');
         return [r.ts, JSON.parse(r.rows), lite ? tops.map(t => t[0]) : tops, JSON.parse(r.wl || '[]')];
@@ -217,6 +230,10 @@ export class GameTracker {
     const ts = Math.floor(now / 1000);
     this.sql.exec('INSERT OR REPLACE INTO snaps (ev, ts, rows, tops, wl) VALUES (?, ?, ?, ?, ?)',
       ev.id, ts, JSON.stringify(rows), JSON.stringify(tops), wl.length ? JSON.stringify(wl) : null);
+    // 同一期第 1 名只會增加：比這筆還高的舊快照是換期瞬間抓到的上一期前百，刪掉
+    if (tops.length && tops[0][0] != null) {
+      this.sql.exec("DELETE FROM snaps WHERE ev = ? AND ts < ? AND json_extract(tops, '$[0][0]') > ?", ev.id, ts, Number(tops[0][0]));
+    }
     this.sql.exec('DELETE FROM snaps WHERE ts < ?', ts - SNAP_KEEP_S);
   }
 
@@ -257,6 +274,12 @@ export class GameTracker {
       return;
     }
 
+    const top1 = Math.max(0, ...(d.player_top_100_rankings || []).map(r => Number(r && r.score) || 0));
+    if (top1 > STALE_BASE + (now - startAt) / 3600_000 * STALE_PER_H) {
+      this.put('stale', { at: now, ev: d.id, top1 });   // 不當基準、不寫快照，下一輪再抓
+      return;
+    }
+
     const ev = { id: d.id, name: d.name, startAt, aggregateAt: endAt };
     const prevEv = this.get('event');
     if (!prevEv || prevEv.id !== ev.id) {
@@ -291,8 +314,9 @@ export class GameTracker {
           ev.id, ui, uid, r.name ?? null);
       }
       const old = prev[uid];
-      // 第一輪、或玩家剛進榜：沒有基準值，這筆不能當成一局
-      if (old !== undefined && r.score !== old) {
+      // 第一輪、或玩家剛進榜：沒有基準值，這筆不能當成一局。
+      // 同一期分數只會增加；變少代表上一輪是過期資料（換期瞬間），不算一局，直接換基準
+      if (old !== undefined && r.score > old) {
         this.sql.exec('INSERT INTO games (ev, uidx, t, delta, rank) VALUES (?, ?, ?, ?, ?)',
           ev.id, ui, t, r.score - old, r.rank);
       }
