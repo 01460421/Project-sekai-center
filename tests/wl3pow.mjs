@@ -1,7 +1,7 @@
 /* WL3 綜合力計算器（js/wl3pow.js）的純函式與 data/wl3-power.js 的資料檢查。
    用法：node tests/wl3pow.mjs   任何一項失敗就 exit 1。 */
 import { WL3P as D } from '../data/wl3-power.js';
-import { wpPower, wpRelevant, wpUniform, wpMinUniform, wpPlan, wpTeamInfo, wpCard, WP_UNITS } from '../js/wl3pow.js';
+import { wpPower, wpRelevant, wpUniform, wpMinUniform, wpPlan, wpTeamInfo, wpCard, WP_UNITS, wpSupport, wpFinaleMain, wpUnitOf, WP_SUP_N } from '../js/wl3pow.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -69,6 +69,38 @@ ok(L2 === 16, '大門全 Lv40＋每人兩套玩偶：區域道具最低統一 Lv
 const start = wpUniform(cfg, ids, 10), P = wpPlan(D, team, start, ids);
 ok(P.reached && P.final >= 336000 && P.steps.every(st => st.k !== 'a' + tree[0]), '從全部 Lv10 補到上限：不會叫你升想いの大樹，最後達標');
 ok(new Set(P.steps.map(s => s.k)).size === P.steps.length, '升級順序每一項只出現一次（同項合併）');
+
+/* ---- 後排（支援隊）與終章主隊：規則跟 app.js 的 wlSupCalc／wlsFinaleMain 一樣 ---- */
+const T = D.sup['4'];
+ok(T[0] === 12 && T[1] === 7 && T[2][5] === 2.5 && T[3][3] === 2.5, '★4 後排加成表：本章角色 12、其他 7、MR5 +2.5、SLv4 +2.5');
+let allOk = true;
+for (const e of D.events.filter(e => !e[6])) for (const [, c] of e[7]) {
+  const S = wpSupport(D, e, c, { mr: 5, sl: 4 });
+  if (S.use.length !== WP_SUP_N || S.total !== 465) allOk = false;
+  if (S.use.some(r => e[10].includes(r.id))) allOk = false;                                  // 當期活動卡不能放後排
+  if (S.use.some(r => wpUnitOf(r.ch) !== wpUnitOf(c) && r.ch <= 20)) allOk = false;          // 人類卡只收本章同團
+}
+ok(allOk, '每一期每一章的理論後排都是 25 張、+465%（2 張限定卡 37＋23 張本章角色 ★4 各 17），不含當期活動卡、不收別團');
+const e202 = D.events.find(e => e[0] === 202), ch1 = e202[7][0][1];
+const S0 = wpSupport(D, e202, ch1, { mr: 0, sl: 1 });
+ok(S0.use.every(r => r.mr === 0 && r.sl === 1) && S0.total < 465, '專精 0、技能 Lv1 時後排加成變少（' + S0.total + '%）');
+ok(S0.use.slice(0, 2).every(r => r.lim), '前幾屆 WL 限定卡（本章角色 +20）排在最前面');
+const late = Object.entries(D.cards).filter(([, c]) => c[9] > e202[3] && wpUnitOf(c[0]) === wpUnitOf(ch1)).map(([id]) => +id);
+ok(late.length > 0 && !wpSupport(D, e202, ch1).use.some(r => late.includes(r.id)), '第 202 期結算後才推出的卡（' + late.length + ' 張同團卡）不算進後排');
+const mine = Object.fromEntries(wpSupport(D, e202, ch1).use.slice(0, 3).map(r => [r.id, [2, 3]]));
+const So = wpSupport(D, e202, ch1, { own: mine });
+ok(So.use.length === 3 && So.short === 22 && So.use.every(r => r.mr === 2 && r.sl === 3), '我的卡：只用持有的卡、各自的專精與技能等級，不夠 25 張就空著');
+const okVs = Object.entries(D.cards).find(([id, c]) => c[0] > 20 && c[3] === wpUnitOf(ch1) && c[9] <= e202[3] && !e202[10].includes(+id));
+const noVs = Object.entries(D.cards).find(([id, c]) => c[0] > 20 && c[3] && c[3] !== wpUnitOf(ch1) && c[9] <= e202[3] && !e202[10].includes(+id));
+ok(okVs && noVs && wpSupport(D, e202, ch1, { own: { [okVs[0]]: [5, 4] } }).use.length === 1 && wpSupport(D, e202, ch1, { own: { [noVs[0]]: [5, 4] } }).use.length === 0,
+  '支援本章團的 VS 卡可以放後排，支援別團的不行');
+const finEv = D.events.find(e => e[6]), ft = finEv[9][0];
+const M = wpFinaleMain(D, finEv, ft, [5, 5, 5, 5, 5], 0, true);
+ok(M && M.charSum === 25 && M.limSum === 100 && M.rarSum === 125 && M.attrB === 125 && M.leaderB === 20 && M.titleB === 50 && M.main === 445,
+  '終章主隊滿配：角色 25＋限定卡 4 張 100＋稀有度專精 125＋五色 125＋隊長 20＋稱號 50＝445%');
+ok(wpFinaleMain(D, finEv, ft, [0, 0, 0, 0, 0], 0, false).main === 25 + 100 + 50 + 125 + 20, '終章主隊：專精 0、沒有稱號時＝角色 25＋限定 100＋稀有度 50＋五色 125＋隊長 20');
+const Sf = wpSupport(D, finEv, wpCard(D, ft[0]).ch, { mr: 5, sl: 4 });
+ok(Sf.finale && Sf.use.length === WP_SUP_N && Sf.total === 465, '終章後排不限團體，照隊長角色算：+465%');
 
 console.log(fail ? `\n${fail} 項失敗` : '\n全部通過');
 process.exit(fail ? 1 : 0);

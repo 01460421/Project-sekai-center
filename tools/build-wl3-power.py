@@ -13,11 +13,16 @@ WL3（日服 2026 起的 World Link）每一期都有總合力上限 336,000（e
     doll:   [S, M, L]                                        一套玩偶三種尺寸各給該角色多少 %
     area:   [[id, 名稱, 區域, 種類, 目標, [每級 %], [全隊同團／同色時每級 %], [混團時另加的每級 %], 日服原名, 日服區域名], …]（日服原名跟台服一樣就留空）
               種類 char（角色）／unit（團體）／vs（虛擬歌手團體）／attr（屬性）／tree（想いの大樹，全角色＋混團再一份）
-    cards:  {卡號: [角色, 屬性, 稀有度(4／9＝生日), 支援團, 表現力, 技術力, 體力, 名稱, 素材名]}
+    cards:  {卡號: [角色, 屬性, 稀有度(4／9＝生日), 支援團, 表現力, 技術力, 體力, 名稱, 素材名, 推出時間]}
               三維＝滿級、特訓後、前後篇已讀，不含專精與畫布（專精照 mr、畫布照稀有度由前端加）
     mr:     {'4': [[MR0 三維], [MR1 累計], …, [MR5]], '9': […]}
-    events: [[期數, 名稱, 開始, 結算, 總合力上限, 玩偶上限 %|null, 終章?, [[章, 角色]…], [[卡號, 加成 %]…], [[5 張卡號]…]]]
-              最後一欄是「滿配加成」的候選隊：五張不同角色、五種顏色、全用該期活動卡，依綜合力排序（最多 10 組）
+    events: [[期數, 名稱, 開始, 結算, 總合力上限, 玩偶上限 %|null, 終章?, [[章, 角色]…], [[卡號, 加成 %]…], [[5 張卡號]…],
+              [該期全部活動卡號（各稀有度，不能放後排）], {角色: [[卡號, 後排限定加成 %]…]}, 終章主隊規則|null]]
+              [9] 是「滿配加成」的候選隊：五張不同角色、五種顏色、全用該期活動卡，依綜合力排序（最多 10 組）
+              [12] 終章主隊規則 {char 每張角色加成, lim 限定卡加成, lead 隊長是限定卡再加, limMax 限定卡最多計幾張, title 稱號加成}
+    sup:    {'1'|'2'|'3'|'4'|'9': [本章角色, 其他角色, [MR0…MR5], [SLv1…SLv4]]}   WL 後排（支援隊）每張卡的加成 %
+    low:    {卡號: [角色, 稀有度 1～3, 支援團, 名稱, 素材名, 推出時間]}   後排「我的卡」模式用（★4／生日卡在 cards）
+    evb:    {rar: {'4': [MR0…MR5 的 %], '9': […]}, attr: [1～5 色的 %]}   終章主隊的稀有度×專精、隊內異色加成
   }
 
 用法：python3 tools/build-wl3-power.py      （日服 master 走 jp_master 快取；道具的台服名稱讀 Haruki 台服 master）
@@ -79,7 +84,9 @@ def main():
     jp = {n: get_jp(n + '.json') for n in (
         'cards', 'cardEpisodes', 'masterLessons', 'areaItems', 'areaItemLevels', 'areas', 'mysekaiGateLevels',
         'characterRanks', 'gameCharacterUnits', 'events', 'worldBlooms', 'eventCards', 'eventTotalPowerLimits',
-        'eventMysekaiFixtureGameCharacterPerformanceBonusLimits', 'mysekaiFixtureGameCharacterGroupPerformanceBonuses')}
+        'eventMysekaiFixtureGameCharacterPerformanceBonusLimits', 'mysekaiFixtureGameCharacterGroupPerformanceBonuses',
+        'worldBloomSupportDeckBonuses', 'worldBloomSupportDeckUnitEventLimitedBonuses', 'eventDeckBonuses',
+        'eventHonorBonuses', 'eventRarityBonusRates', 'worldBloomDifferentAttributeBonuses', 'eventCardBonusLimits')}
     tw = {}
     for n in ('areaItems', 'areaItemLevels', 'areas', 'mysekaiGateLevels', 'characterRanks'):
         try:
@@ -117,7 +124,8 @@ def main():
             continue
         sup = c.get('supportUnit') or 'none'
         cards[c['id']] = [c['characterId'], c['attr'], 9 if c['cardRarityType'] == 'rarity_birthday' else 4,
-                          '' if sup == 'none' else sup, b[0], b[1], b[2], c.get('prefix') or '', c.get('assetbundleName') or '']
+                          '' if sup == 'none' else sup, b[0], b[1], b[2], c.get('prefix') or '', c.get('assetbundleName') or '',
+                          c.get('releaseAt') or 0]
 
     # 區域道具：每級的 %（三維相同，只存 power1）；想いの大樹同一級有兩列（全角色、混團），分開存
     tw_names = {a['id']: a['name'] for a in tw['areaItems']}
@@ -196,13 +204,59 @@ def main():
         teams.sort(key=lambda t: -t[0])
         if e['aggregateAt'] >= JP_V7_AT:
             raise SystemExit(f'第 {eid} 期在日服 7.0.0 之後才結算，WL3_LIM（大門 40、沒有想いの大樹）不一定適用，要重查')
+        # 後排（支援隊）：當期活動卡（各稀有度）放前排、不能進後排；前幾屆 WL 限定卡對本期各章角色另有固定加成
+        allec = sorted({x['cardId'] for x in jp['eventCards'] if x['eventId'] == eid})
+        slim = {}
+        for x in jp['worldBloomSupportDeckUnitEventLimitedBonuses']:
+            if x['eventId'] == eid:
+                slim.setdefault(str(x['gameCharacterId']), []).append([x['cardId'], r2(x['bonusRate'])])
+        fin = None
+        if finale:   # 終章主隊：每張角色加成（master 全是同一個值）、WL3 限定卡加成與隊長加成、稱號加成
+            cb = {r2(x['bonusRate']) for x in jp['eventDeckBonuses'] if x['eventId'] == eid and x.get('bonusRate') is not None}
+            if len(cb) != 1:
+                raise SystemExit(f'第 {eid} 期終章的角色加成不只一種（{cb}），主隊試算要改')
+            evc = [x for x in jp['eventCards'] if x['eventId'] == eid]
+            lm = [x['memberCountLimit'] for x in jp['eventCardBonusLimits'] if x['eventId'] == eid]
+            hon = [x['bonusRate'] for x in jp['eventHonorBonuses'] if x['eventId'] == eid]
+            fin = {'char': cb.pop(), 'lim': max(r2(x['bonusRate']) for x in evc), 'lead': max(r2(x.get('leaderBonusRate') or 0) for x in evc),
+                   'limMax': lm[0] if lm else 4, 'title': max(hon) if hon else 50}
         events.append([eid, e['name'], e['startAt'], e['aggregateAt'], cap[eid], doll_lim.get(eid), finale,
-                       [list(x) for x in ch], [list(x) for x in ec], [t[1] for t in teams[:10]]])
+                       [list(x) for x in ch], [list(x) for x in ec], [t[1] for t in teams[:10]],
+                       allec, {k: sorted(v) for k, v in sorted(slim.items())}, fin])
+
+    # 後排每張卡的加成表（依稀有度）：本章角色／其他角色、專精、技能等級
+    RK = {'rarity_1': '1', 'rarity_2': '2', 'rarity_3': '3', 'rarity_4': '4', 'rarity_birthday': '9'}
+    sup = {}
+    for r in jp['worldBloomSupportDeckBonuses']:
+        k = RK.get(r['cardRarityType'])
+        if not k:
+            continue
+        cb = {x['worldBloomSupportDeckCharacterType']: r2(x['bonusRate']) for x in r['worldBloomSupportDeckCharacterBonuses']}
+        mrb = {x['masterRank']: r2(x['bonusRate']) for x in r['worldBloomSupportDeckMasterRankBonuses']}
+        slb = {x['skillLevel']: r2(x['bonusRate']) for x in r['worldBloomSupportDeckSkillLevelBonuses']}
+        sup[k] = [cb.get('specific', 0), cb.get('others', 0), [mrb.get(i, 0) for i in range(6)], [slb.get(i, 0) for i in range(1, 5)]]
+    low = {}
+    for c in jp['cards']:
+        k = RK.get(c['cardRarityType'])
+        if k in ('1', '2', '3'):
+            sp = c.get('supportUnit') or 'none'
+            low[str(c['id'])] = [c['characterId'], int(k), '' if sp == 'none' else sp, c.get('prefix') or '', c.get('assetbundleName') or '',
+                                 c.get('releaseAt') or 0]
+    rart = {}
+    for x in jp['eventRarityBonusRates']:
+        k = RK.get(x['cardRarityType'])
+        if k in ('4', '9'):
+            a = rart.setdefault(k, [0] * 6)
+            a[x['masterRank']] = r2(x['bonusRate'])
+    attrt = [0] * 6
+    for x in jp['worldBloomDifferentAttributeBonuses']:
+        attrt[x['attributeCount']] = r2(x['bonusRate'])
 
     out = {'built': int(time.time() * 1000), 'src': '日服 master（Sekai-World）；道具的台服名稱用 Haruki 台服 master',
            'lim': lim, 'rank': rank, 'gate': gate, 'doll': doll, 'area': area,
            'mr': {'4': mlc.get('rarity_4', [[0, 0, 0]]), '9': mlc.get('rarity_birthday', [[0, 0, 0]])},
-           'cards': {str(k): v for k, v in sorted(cards.items())}, 'events': events}
+           'cards': {str(k): v for k, v in sorted(cards.items())}, 'events': events,
+           'sup': sup, 'low': low, 'evb': {'rar': rart, 'attr': attrt[1:]}}
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
     text = ('/* 由 tools/build-wl3-power.py 產生，勿手改。WL3 綜合力計算器：各期總合力上限、滿配候選隊、卡片三維、'
             '區域道具每級加成、大門、角色等級與玩偶。 */\n' f'export const WL3P={body};\n')
