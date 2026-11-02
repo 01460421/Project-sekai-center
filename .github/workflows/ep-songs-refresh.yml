@@ -69,6 +69,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/build-cards-index.py || echo "卡片索引更新失敗,本輪略過"
 
+      # 截圖辨識用的卡面指紋（WL 後排加成的「截圖辨識」靠它認出是哪一張卡）。要在卡片索引之後跑：
+      # 以前是手動產生、停在 #1271，之後的新卡全部被硬湊成某張舊卡、連角色都被改掉。已有的指紋沿用，只抓新卡縮圖；失敗只略過。
+      - name: 重建卡面指紋（截圖辨識）
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check pillow
+          python3 tools/build-card-sigs.py || echo "卡面指紋更新失敗,本輪略過"
+
       # 豆森生日派對（慶典之花）：期間、加成卡、每朵 pt 與累計獎勵，兩服各一份。內容沒變就不寫檔；失敗只略過。
       - name: 重建豆森生日派對資料（台服＋日服）
         env:
@@ -93,4 +100,4 @@ jobs:
       # main 的戳記檢查因此變紅（2026-09-28 那次蓋掉了 data-built.js、support-events.js 的戳記）。
       # build-db-index.py 也寫 mysekai-events.js、support-events.js、data-built.js，以前漏在清單外（每天產生後被丟掉），一起補上。
       - name: 提交變更
-        run: bash tools/commit-data.sh "曲庫資料 $(date -u '+%Y-%m-%d')" data/ep-songs.js data/ep-song-windows.js data/song-bpm.js data/song-meta.js data/lives-index.js data/fixtures-index.js data/stories-index.js data/mysekai-talks-index.js data/mysekai-events.js data/support-events.js data/data-built.js data/lives-index-jp.js data/fixtures-index-jp.js data/stories-index-jp.js data/mysekai-talks-index-jp.js data/mysekai-events-jp.js data/support-events-jp.js data/data-built-jp.js data/cards-index.js data/cards-index-jp.js data/cards-extra.js data/cards-extra-jp.js data/bday-party.js data/bday-party-jp.js data/event-art.js data/event-art-jp.js sitemap.xml
+        run: bash tools/commit-data.sh "曲庫資料 $(date -u '+%Y-%m-%d')" data/ep-songs.js data/ep-song-windows.js data/song-bpm.js data/song-meta.js data/lives-index.js data/fixtures-index.js data/stories-index.js data/mysekai-talks-index.js data/mysekai-events.js data/support-events.js data/data-built.js data/lives-index-jp.js data/fixtures-index-jp.js data/stories-index-jp.js data/mysekai-talks-index-jp.js data/mysekai-events-jp.js data/support-events-jp.js data/data-built-jp.js data/cards-index.js data/cards-index-jp.js data/card-sigs.js data/cards-extra.js data/cards-extra-jp.js data/bday-party.js data/bday-party-jp.js data/event-art.js data/event-art-jp.js sitemap.xml

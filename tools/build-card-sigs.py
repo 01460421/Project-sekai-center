@@ -15,10 +15,17 @@
 
 ★3/★4 要存兩份：卡庫顯示特訓前還是特訓後，取決於玩家練了沒。
 
-有新卡時重跑：
+卡片範圍：台服與日服卡號是同一套，讀 data/cards-index.js 與 data/cards-index-jp.js 的聯集
+（日服卡最多，台服模式辨識的卡也一定在裡面）。以前只讀台服索引、又是手動跑的，
+停在 #1271 之後新卡全都認不出來 —— 而比對時一定會挑「最近的一張」，認不出來的新卡
+就被硬湊成某張舊卡，連角色都被改掉，後排加成整批算錯。現在由每日排程（ep-songs-refresh.yml）
+在卡片索引更新之後接著跑；已經有指紋的卡沿用，只抓新卡的縮圖。
+
+手動重跑：
 
     python3 tools/build-cards-index.py
-    python3 tools/build-card-sigs.py
+    python3 tools/build-card-sigs.py            # 只補新卡
+    python3 tools/build-card-sigs.py --all      # 全部重抓
     python3 tools/stamp-assets.py
 """
 import base64
@@ -27,6 +34,7 @@ import io
 import json
 import pathlib
 import re
+import sys
 import urllib.request
 
 from PIL import Image
@@ -80,27 +88,46 @@ def fetch(args):
         return None
 
 
+ROW = re.compile(r'\[(\d+),(\d+),(\d+),(\d+),(\d+),(-?\d+),(\d+),"([^"]*)","([^"]*)"(?:,[^\]]*)?\]')
+OUT = ROOT / 'data' / 'card-sigs.js'
+
+
 def main():
-    src = (ROOT / 'data' / 'cards-index.js').read_text(encoding='utf-8')
-    rows = re.findall(r'\[(\d+),(\d+),(\d+),(\d+),(\d+),(-?\d+),(\d+),"([^"]*)","([^"]*)"\]', src)
+    rows = {}
+    for name in ('cards-index.js', 'cards-index-jp.js'):
+        f = ROOT / 'data' / name
+        if f.exists():
+            for r in ROW.findall(f.read_text(encoding='utf-8')):
+                rows.setdefault(int(r[0]), r)
     if not rows:
-        print('讀不到 data/cards-index.js，先跑 build-cards-index.py')
+        print('讀不到 data/cards-index.js／cards-index-jp.js，先跑 build-cards-index.py')
         return 1
 
+    # 已經有的指紋沿用（縮圖不會變），只抓還沒有的；--all 全部重抓
+    have = {}
+    if '--all' not in sys.argv and OUT.exists():
+        for cid, tr, sig in re.findall(r'^\[(\d+),(\d),"([^"]+)"\],$', OUT.read_text(encoding='utf-8'), re.M):
+            have[(int(cid), int(tr))] = sig
+
     jobs = []
-    for r in rows:
-        cid, rar, abn = int(r[0]), int(r[2]), r[8]
+    for cid, r in sorted(rows.items()):
+        rar, abn = int(r[2]), r[8]
         for suf in (['normal', 'after_training'] if rar in (3, 4) else ['normal']):
-            jobs.append((cid, abn, suf))
-    print(f'要抓 {len(jobs)} 張縮圖（{len(rows)} 張卡，★3/★4 各含特訓前後）…')
+            if (cid, 1 if suf == 'after_training' else 0) not in have:
+                jobs.append((cid, abn, suf))
+    print(f'{len(rows)} 張卡（到 #{max(rows)}）；沿用 {len(have)} 枚指紋，要抓 {len(jobs)} 張縮圖…')
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=24) as ex:
         res = [x for x in ex.map(fetch, jobs) if x]
     print(f'成功 {len(res)} / {len(jobs)}')
+    if jobs and len(res) < len(jobs) * 0.5 and len(jobs) > 20:
+        raise SystemExit('一半以上的縮圖抓不到，素材站可能有狀況，不覆寫')
 
     # [卡片id, 0=特訓前 1=特訓後, 指紋]
-    out = [[cid, 1 if suf == 'after_training' else 0, sig] for cid, suf, sig in res]
-    out.sort(key=lambda x: (x[0], x[1]))
+    got = dict(have)
+    for cid, suf, sig in res:
+        got[(cid, 1 if suf == 'after_training' else 0)] = sig
+    out = [[cid, tr, sig] for (cid, tr), sig in sorted(got.items()) if cid in rows]
 
     body = [
         '/* 由 tools/build-card-sigs.py 產生,請勿手改 */',
@@ -113,9 +140,12 @@ def main():
     ]
     body += [json.dumps(r, ensure_ascii=False, separators=(',', ':')) + ',' for r in out]
     body.append('];')
-    p = ROOT / 'data' / 'card-sigs.js'
-    p.write_text('\n'.join(body) + '\n', encoding='utf-8')
-    print(f'寫出 {p.relative_to(ROOT)}  {p.stat().st_size / 1024:.0f} KB')
+    text = '\n'.join(body) + '\n'
+    if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
+        print('內容無變化，不更新 card-sigs.js')
+        return 0
+    OUT.write_text(text, encoding='utf-8')
+    print(f'寫出 {OUT.relative_to(ROOT)}  {OUT.stat().st_size / 1024:.0f} KB，{len({r[0] for r in out})} 張卡到 #{max(r[0] for r in out)}')
     return 0
 
 
