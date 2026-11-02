@@ -59,7 +59,7 @@ class Component extends DCLogic {
               ['Team-Haruki', 'https://github.com/Team-Haruki', '日服 master 收集、API 代理與劇情播放器等開源專案']]],
   ];
   JP_RES_NOTE = '要讀帳號資料的個人化功能（Haruki、Moesekai 的「我的卡」等）需要透過代理或抓包模組上傳，使用前請先看遊戲使用條款。官方 2026/4/27 公告：5/5 起使用非官方製譜 App 可能被禁止參加官方大賽與活動。';
-  SRV_JP = ['jpnow', 'wl3pow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim', 'bdayparty'];
+  SRV_JP = ['jpnow', 'wl3', 'wl3pow', 'news', 'rank', 'analysis', 'shop', 'borderdb', 'lookup', 'wlsup', 'collect', 'event', 'evinfo', 'calendar', 'gacha', 'lives', 'story', 'distrib', 'bonuscards', 'fixtures', 'mstalk', 'cardlib', 'cards', 'chars', 'materials', 'comics', 'ost', 'songs', 'sched', 'haruki', 'rate', 'art', 'skillmult', 'dolls', 'gachasim', 'bdayparty'];
   SRV_TW_ONLY = [];
   /* 日服模式照樣能用、但資料是台服的頁面：頁首提示一行，不擋也不跳走（日服的曲庫係數與譜面定數還沒有自己的版本） */
   SRV_TW_DATA = { calc: '活動 P 計算用的是台服曲庫與係數：日服獨有或較新的歌可能還沒有。', b30: 'B30 的譜面定數是台服的：日服獨有或較新的譜面可能還沒有。' };
@@ -275,6 +275,7 @@ class Component extends DCLogic {
     art:      ['卡面下載', '超高清原圖直連（特訓前後與去背立繪，官方素材庫）'],
     wlsup:    ['WL 後排加成', 'World Link 支援隊伍加成試算與最佳組合；終章另有主隊與總加成試算'],
     skillmult:['理論技能倍率表', '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列；另有同團不限色、同色不限團'],
+    wl3:      ['WL3 專區', 'World Link 3 一頁看完：台服開跑倒數與每一章的時程、規則變化與滿配加成、日服每一章的最終榜線、26 張 WL3 限定卡與相關卡池，以及 WL 工具的入口'],
     wl3pow:   ['WL3 計算器', 'WL3 全部期數：綜合力怎麼碰到 33.6 萬上限（區域道具、MySekai 大門、玩偶），加上每一章的後排支援隊加成與終章主隊加成'],
     dolls:    ['月卡玩偶', '豆森娃月列表與輪替'],
     bdayparty:['豆森生日派對', '慶典之花的流程與時程、露水與加成卡計算、累計獎勵（LIVE BONUS 飲料、練習譜 EXP）與生日家具'],
@@ -296,14 +297,14 @@ class Component extends DCLogic {
     stickers: ['貼圖製作器', '官方貼圖或自己的圖加上文字，匯出 PNG 或直接複製'],
     songcard: ['樂曲追加圖產生器', '官方風格的「樂曲追加決定」圖：選曲自動帶入曲圖、創作者、MV、APPEND 與演唱陣容，附片假名轉換器'],
     chart:    ['譜面預覽產生器', '整首譜面攤成一張直欄式的圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點'],
-    hubEvent: ['追活動', '活動總覽，以及排名與榜線（即時排名、榜線資料庫、分析中心、活動分布、玩家查詢）'],
+    hubEvent: ['追活動', '活動總覽、排名與榜線（即時排名、榜線資料庫、分析中心、活動分布、玩家查詢），以及 WL3 專區'],
     hubDb:    ['圖鑑', '日程與公告、卡片、角色與收集、歌曲、劇情與漫畫、豆森'],
     hubTool:  ['工具', '計算中心、Haruki 專區、抽卡與儲值、B30、小遊戲與製作'],
     hubCom:   ['社群', '車隊、教學與社群、收藏與待辦、帳號與通知']
   };
   /* 手機底部五個入口：每個入口是一頁「樞紐」，上面一句今天的狀態、下面是子頁卡片 */
   HUBS = {
-    hubEvent: ['event', 'rank'],
+    hubEvent: ['event', 'rank', 'wl3'],
     hubDb:    ['calendar', 'cards', 'chars', 'songs', 'story', 'fixtures'],
     hubTool:  ['calc', 'haruki', 'gachasim', 'b30', 'guesswho'],
     hubCom:   ['car', 'tut', 'favs', 'account']
@@ -312,10 +313,10 @@ class Component extends DCLogic {
      點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
   NAV_SECTIONS = [
     ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']]]],
-    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']]]],
+    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'wlsup', 'skillmult', 'wl3pow']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
@@ -413,6 +414,7 @@ class Component extends DCLogic {
     ['活動分布甘特圖', '', 'distrib', '活動分布|甘特圖|團推分析|推角分析|團體曲數占比|各團活動分布'],
     ['加分卡參考', '', 'bonuscards', '加分卡|加成卡|加分卡組合建議|團分1／團分2／團分3|普限輪1～4|書下|Banner 主角色卡'],
     ['理論技能倍率表', '', 'skillmult', '理論倍率|技能倍率|理論技能倍率|倍率表|編成表|同團同色|同團|同色|推隊倍率|最佳技能隊|技能隊|日服新卡倍率|skill multiplier'],
+    ['WL3 專區（時程、倒數、榜線、限定卡）', '', 'wl3', 'WL3 專區|WL3|World Link 3|WL3 什麼時候|台服 WL3|WL3 時程|WL3 倒數|WL3 章節|WL3 角色|WL3 榜線|日服 WL3 榜線|WL3 限定卡|WL3 卡池|WL3 規則|ワールドリンク|ワーリン'],
     ['WL3 計算器（33.6 萬上限・後排加成）', '', 'wl3pow', 'WL3|綜合力上限|總合力上限|綜合力限制|33.6萬|336000|33萬6|區域道具|區域道具等級|大門|豆森門|MySekai 大門|玩偶|套娃|娃|綜合力計算|面板上限|power cap|WL3 後排|WL3 支援隊|後排加成|支援隊|終章主隊|活動加成'],
     ['豆森生日派對（慶典之花）', '', 'bdayparty', '生日花|慶典之花|慶典露水|露水|生日派對|豆森生日|澆花|澆水|慶典的庭園|慶典庭園|雙葉|生日家具|生日蛋糕|セレブレーションフラワー|あまつゆ|祝祭|生日罐子|生日經驗'],
     ['月卡玩偶列表（豆森娃）', '', 'dolls', '月卡玩偶|豆森娃|豆森娃月列表|娃月列表|MySekai 玩偶|月卡娃|玩偶排程'],
@@ -669,9 +671,11 @@ class Component extends DCLogic {
     { date: '工具', title: '譜面預覽產生器', desc: '整首譜面攤成一張直欄式的圖：官方譜面檔直接畫，附每小節 combo、BPM 與技能點，也能上傳自己的 SUS。', to: 'chart', cta: '前往譜面預覽' },
     { date: '工具', title: 'Haruki 專區', desc: '用你在 Haruki 工具箱的遊戲資料算活動最佳組卡與角色等級 EXP；也整理 master、素材源與開源專案。', to: 'haruki', cta: '前往 Haruki 專區' },
     { date: '工具', title: '理論技能倍率表', desc: '各團各色「同團同色」最佳五人隊的推隊倍率，台服當前與日服最新進度並列，點格子看兩服的隊伍。', to: 'skillmult', cta: '前往理論技能倍率表' },
+    { date: '活動', title: 'WL3 專區', desc: 'World Link 3 一頁看完：台服開跑倒數、六期 26 章的角色與日期、規則變化與滿配加成（章節 990%、終章 985%）、日服每一章的最終榜線、26 張 WL3 限定卡與相關卡池，WL 工具也都從這裡進。', to: 'wl3', cta: '前往 WL3 專區' },
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/02', t: 'WL3 專區上線', s: 'World Link 3 的東西集中到一頁：台服開跑倒數（第一期「約定的Passerelle」台服已公布 2027/4/18，其他期照日服加一年推估）、六期 26 章的角色與日期、規則變化與滿配加成（章節 990%、終章 985%）、日服每一章與每一期的最終榜線、26 張 WL3 限定卡，以及台服預測卡池裡的 WL3 卡池。WL3 計算器與 WL 後排加成移到「WL3 專區」底下，跟跑榜工作室、WL 個榜、WL 榜線資料庫、配隊教學一起從專區進入。專區資料每天跟著活動資料與榜線資料庫更新，台服公布新的一期隔天就改用正式時間。' },
     { d: '2026/11/02', t: '修正：WL 後排加成的截圖辨識把新卡認成別的卡', s: '截圖辨識靠卡面指紋認出是哪一張卡，這份指紋一直停在 #1271，之後推出的卡（台服 100 多張、日服 200 多張，包含 WL2、WL3 的活動卡）都認不出來，會被硬湊成某張舊卡，連角色都被改掉，後排加成因此整批算錯。指紋已補到最新（#1494），之後每天跟著卡片索引自動更新；之前辨識過的結果請按「清除辨識結果」後重新上傳截圖。' },
     { d: '2026/11/02', t: 'WL3 計算器：活動加成照 WL3 規則，主隊與後排一頁算完', s: '「WL3 綜合力計算器」改名「WL3 計算器」，綜合力上限、主隊加成與後排支援隊加成一頁算完，WL3 全部 6 期、每一章都能選，台服模式也能用。主隊每張卡列出活動卡、角色、稀有度×專精，再加異色、混團、隊長與主稱號：章節期是本章角色 +25%、本期活動卡 +30%，滿配 525%；終章的 WL3 限定卡五張都算（「最多計 4 張」是 WL2 終章的規則），另外新增混團加成，隊內 3／4／5 個團體 +10／30／50%（VS 卡算 VIRTUAL SINGER），滿配 520%。隊伍每一格可以直接換角色，同一位角色放兩張會提醒。後排支援隊照 WL 後排加成頁同一套規則，可以算全部卡的理論值，或用 Haruki 匯入、收集率勾選的卡與各自的專精、技能等級，每張卡都列出加成怎麼來的；只算該期結算前已推出的卡。WL 後排加成頁的終章試算與跑榜工作室的終章最佳化也一起修正：限定卡不再只算 4 張，並加上混團加成。' },
     { d: '2026/10/31', t: '豆森生日派對攻略更正：雙葉拔不完、屯體力與 00:00 刷新', s: '雙葉每次慶典之花盛開都會重生一大批，2～3 株的露水就開一朵，數量可以當作無限，一次把露水倒完也沒問題（以前寫「不要一次倒完」是錯的）。新增玩家整理的技巧：生日前 3 天與生日當天 00:00 一般採集區域也會刷新、打歌體力可以屯到 00:00 再用、收集前一天 05:00 起把體力灌進豆森存著、藍色體力拔雙葉黃色體力挖礦活動 PT 比較多、想做生日椅子別拖到最後，以及不抽生日卡、不喝罐的實測（非推角約 13 朵、次推約 33 朵）。一圖流攻略同步更新。' },
@@ -925,6 +929,7 @@ class Component extends DCLogic {
     smPick: '',   // 理論技能倍率表：選中的格（'團:色'、'u:團'、'a:色'）
     /* Haruki 專區（程式在 js/haruki.js，進頁才載） */
     mkReady: false, mkErr: '', mkDb: 0, sc: null, cp: null,
+    wzReady: false, wzErr: '', wz: null,   // WL3 專區（js/wl3zone.js）
     wpReady: false, wpErr: '', wp: null,   // WL3 綜合力計算器（js/wl3pow.js）   // 製作工具（js/maker.js）：追加圖與譜面預覽的表單狀態
     hzReady: false, hzTab: 'home', hzTrainTab: 'crank', hzMysTab: 'res', hzHelpTab: 'guide', hzMeta: null, hzLive: 'multi', hzTarget: 'score', hzDiff: 'master', hzAlgo: 'ga', hzEv: '', hzMusic: '', hzWlChar: '',
     hzMaxLv: false, hzMaxMr: false, hzMaxSk: false, hzFixed: '', hzExclude: '', hzRes: null, hzCrank: null, hzCalcFrom: '', hzCalcTo: '',
@@ -3008,6 +3013,15 @@ class Component extends DCLogic {
     this._mkReady = import('./js/maker.js?v=aebe703c70').then(m => { Object.assign(this, m.makerMembers.call(this)); this.mkInit(); return true; })
       .catch(() => { this._mkReady = null; this.setState({ mkErr: '製作工具載入失敗，請檢查網路後按「重試」。' }); return false; });
     return this._mkReady;
+  }
+
+  /* ---------- WL3 專區（延後載入，程式在 js/wl3zone.js，資料在 data/wl3-zone.js） ---------- */
+  wzLoad() {
+    if (this._wzReady) return this._wzReady;
+    this.setState({ wzErr: '' });
+    this._wzReady = import('./js/wl3zone.js?v=89e7a76d79').then(m => { Object.assign(this, m.wzMembers.call(this)); this._wzH = this.wzHandlers(); this.wzInit(); return true; })
+      .catch(() => { this._wzReady = null; this.setState({ wzErr: 'WL3 專區載入失敗，請檢查網路後按「重試」。' }); return false; });
+    return this._wzReady;
   }
 
   /* ---------- WL3 綜合力計算器（延後載入，程式在 js/wl3pow.js，資料在 data/wl3-power.js） ---------- */
@@ -8243,6 +8257,7 @@ class Component extends DCLogic {
     if (p === 'stickers') { this.loadCollect(); try { document.fonts.load('800 40px Huninn').then(() => this.stkDraw()); } catch (e) {} }
     if (p === 'songcard' || p === 'chart') { this.loadSongs(); this.mkLoad(); }
     if (p === 'wl3pow') this.wpLoad();
+    if (p === 'wl3') this.wzLoad();
     if ((p === 'guesswho' || p === 'guessjacket') && p !== this.state.page) this.qzQuit();
     if (p === 'rate' || p === 'art') this.loadCards();
     if (p === 'skillmult') { this.loadSkillTable(); this.loadCards(); }
@@ -9958,6 +9973,8 @@ class Component extends DCLogic {
       /* 製作工具（追加圖、譜面預覽）：程式在 js/maker.js，載好前模板只顯示載入中 */
       isSongcard: s.page === 'songcard', isChart: s.page === 'chart', mkReady: !!s.mkReady, mkWait: (s.page === 'songcard' || s.page === 'chart') && !s.mkReady && !s.mkErr, mkErrHas: !!s.mkErr, mkErr: s.mkErr || '', onMkRetry: () => this.mkLoad(),
       ...(s.mkReady && this.mkVals ? this.mkVals(s) : {}),
+      isWl3: s.page === 'wl3', wzWait: s.page === 'wl3' && !s.wzReady && !s.wzErr, wzErrHas: !!s.wzErr, wzErr: s.wzErr || '', onWzRetry: () => { this._wzReady = null; this.wzLoad(); },
+      ...(s.page === 'wl3' && s.wzReady && this.wzVals ? Object.assign({}, this.wzVals(s), this._wzH) : { wzOn: false }),
       isWl3pow: s.page === 'wl3pow', wpWait: s.page === 'wl3pow' && !s.wpReady && !s.wpErr, wpErrHas: !!s.wpErr, wpErr: s.wpErr || '', onWpRetry: () => { this._wpReady = null; this.wpLoad(); },
       ...(s.page === 'wl3pow' && s.wpReady && this.wpVals ? Object.assign({}, this.wpVals(s), this._wpH) : { wpOn: false }),
       isWlsup: s.page === 'wlsup',
