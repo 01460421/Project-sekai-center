@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=2bb526f44a" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=023439871f" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -7479,6 +7479,15 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
 
       <div class="mk-card">
+        <div class="mk-h"><b>一圖流攻略</b><i>上下兩張 16:9・存圖分享</i></div>
+        <div class="bp-guide">
+          <a class="bp-gimg" href="img/wl3/guide-1.webp?v=7c6c14d47e" target="_blank" rel="noopener"><img src="img/wl3/guide-1-thumb.webp?v=7c6c14d47e" alt="WL3 攻略上篇" loading="lazy"><span>上篇：時程・跟 WL2 的差別・章節主隊・後排・終章・綜合力上限・開跑前準備</span></a>
+          <a class="bp-gimg" href="img/wl3/guide-2.webp?v=a85a6b85be" target="_blank" rel="noopener"><img src="img/wl3/guide-2-thumb.webp?v=a85a6b85be" alt="WL3 攻略下篇" loading="lazy"><span>下篇：日服每一章的最終榜線・26 張限定卡・WL3 卡池・Q&amp;A</span></a>
+        </div>
+        <div class="bp-gbtns"><a class="mk-chip" href="img/wl3/guide.jpg?v=0b06033ac5" download="WL3攻略-一頁式.jpg">下載一頁式（上下合併）</a><a class="mk-chip" href="img/wl3/guide-1.png?v=7c6c14d47e" download="WL3攻略-上篇.png">下載上篇</a><a class="mk-chip" href="img/wl3/guide-2.png?v=a85a6b85be" download="WL3攻略-下篇.png">下載下篇</a></div>
+      </div>
+
+      <div class="mk-card">
         <div class="mk-h"><b>WL 工具</b><i>WL3 會用到的都在這裡</i></div>
         <div class="wz-tools">
           <button type="button" class="wz-tool" onClick="{{ onGo }}" data-p="wl3pow"><b>WL3 計算器</b><span>綜合力怎麼碰到上限；每一章的主隊、後排與合計加成</span></button>
@@ -10669,7 +10678,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=2bb526f44a"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=023439871f"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
