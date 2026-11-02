@@ -143,7 +143,8 @@ export function wpSupport(D, ev, special, opt = {}) {
     const t = D.sup[String(rar)]; if (!t) return;
     const ex = lim.get(id) || 0;
     const bonus = Math.round(((ch === special ? t[0] : t[1]) + t[2][mr] + t[3][sl - 1] + ex) * 10) / 10;
-    list.push({ id, ch, rar, mr, sl, name, abn, bonus, spec: ch === special, lim: ex > 0 });
+    list.push({ id, ch, rar, mr, sl, name, abn, bonus, spec: ch === special, lim: ex > 0,
+      parts: { base: t[1], chap: ch === special ? Math.round((t[0] - t[1]) * 10) / 10 : 0, mr: t[2][mr], sl: t[3][sl - 1], lim: ex } });
   };
   for (const [id, c] of Object.entries(D.cards)) add(+id, c[0], c[2], c[3], c[7], c[8], c[9]);
   for (const [id, c] of Object.entries(D.low || {})) add(+id, c[0], c[1], c[2], c[3], c[4], c[5]);
@@ -151,23 +152,30 @@ export function wpSupport(D, ev, special, opt = {}) {
   const use = list.slice(0, WP_SUP_N);
   return { use, total: Math.round(use.reduce((s, r) => s + r.bonus, 0) * 10) / 10, pool: list.length, short: Math.max(0, WP_SUP_N - use.length), finale };
 }
-/* 終章主隊：每張角色加成＋WL3 限定卡（照順序最多計 limMax 張）＋稀有度×專精，加隊內異色；隊長是限定卡、主稱號另計 */
-export function wpFinaleMain(D, ev, team, mr, lead, title) {
-  const F = ev[12]; if (!F) return null;
-  const limSet = new Set((ev[8] || []).map(x => x[0])), E = D.evb || { rar: {}, attr: [] };
+/* 主隊活動加成（章節與終章同一套，數值全部照 master 的 events[i][12]）：
+   每張卡 ＝ 活動卡加成（章節 30／終章 WL3 限定卡 25）＋角色加成（角色×團體：章節角色 25／終章全角色 5；純 VS 卡不分團）＋稀有度×專精；
+   全隊另加：異色（3／4／5 色 75／100／125）、團體數（WL3 終章新增：3／4／5 團 10／30／50）、隊長是活動卡（終章 20）、主稱號（終章 50）。
+   活動卡最多計幾張看 eventCardBonusLimits：WL2 終章 4 張；WL3 沒有這筆＝五張都算 */
+export const wpShuffleUnit = c => (c.ch <= 20 ? wpBand(c.ch) : 'piapro');
+export function wpMain(D, ev, team, mr, lead, title) {
+  const R = ev[12]; if (!R) return null;
+  const E = D.evb || { rar: {}, attr: [] }, r1 = v => Math.round(v * 10) / 10;
   let used = 0;
-  const slots = team.map((id, i) => {
-    const c = wpCard(D, id) || {}, isLim = limSet.has(id), counted = isLim && used < F.limMax;
+  const cards = team.map(id => wpCard(D, id) || {});
+  const slots = cards.map((c, i) => {
+    const m = clamp(Math.round(mr && mr[i] != null ? +mr[i] : 5), 0, 5);
+    const ecB = R.ec[String(c.id)] || 0, counted = ecB > 0 && (R.limMax == null || used < R.limMax);
     if (counted) used++;
-    const rarB = ((E.rar[String(c.rar)] || [])[clamp(Math.round(mr && mr[i] != null ? +mr[i] : 5), 0, 5)]) || 0;
-    return { lim: isLim, counted, rarB, sum: F.char + (counted ? F.lim : 0) + rarB };
+    const row = R.cb[String(c.ch)] || {};
+    const charB = c.ch > 20 && !c.sup ? Math.max(0, ...Object.values(row)) : (row[c.ch <= 20 ? wpBand(c.ch) : c.sup] || 0);
+    const rarB = (E.rar[String(c.rar)] || [])[m] || 0, featB = counted ? ecB : 0;
+    return { id: c.id, ch: c.ch, ev: ecB > 0, capped: ecB > 0 && !counted, featB, charB, rarB, mr: m, sum: r1(featB + charB + rarB) };
   });
-  const attrN = new Set(team.map(id => (wpCard(D, id) || {}).attr)).size;
-  const r1 = v => Math.round(v * 10) / 10;
-  const charSum = slots.length * F.char, limSum = slots.reduce((a, x) => a + (x.counted ? F.lim : 0), 0), rarSum = r1(slots.reduce((a, x) => a + x.rarB, 0));
-  const attrB = E.attr[attrN - 1] || 0, leaderB = slots[lead] && slots[lead].lim ? F.lead : 0, titleB = title ? F.title : 0;
-  const deck = r1(charSum + limSum + rarSum + attrB);
-  return { charSum, limSum, rarSum, attrN, attrB, leaderB, titleB, deck, main: r1(deck + leaderB + titleB), limUsed: used, F };
+  const attrN = new Set(cards.map(c => c.attr)).size, unitN = new Set(cards.map(wpShuffleUnit)).size;
+  const cardSum = r1(slots.reduce((a, x) => a + x.sum, 0)), attrB = E.attr[attrN - 1] || 0;
+  const hasShuffle = Object.keys(R.shuffle || {}).length > 0, unitB = hasShuffle ? (R.shuffle[String(unitN)] || 0) : 0;
+  const leaderB = R.lead && slots[lead] && slots[lead].ev ? R.lead : 0, titleB = title && R.title ? R.title : 0;
+  return { slots, cardSum, attrN, attrB, unitN, unitB, hasShuffle, leaderB, titleB, main: r1(cardSum + attrB + unitB + leaderB + titleB), limUsed: used, R };
 }
 
 export function wpMembers() {
@@ -228,7 +236,7 @@ export function wpMembers() {
     wpVals(s) {
       if (!s.wpReady || !this._wp) return { wpOn: false };
       /* 表格、最低等級與升級順序要跑上千次 wpPower，設定沒變就沿用上一次的結果（整站任何 setState 都會重算畫面） */
-      const key = (s.lang || '') + JSON.stringify(s.wp);
+      const key = (s.lang || '') + (s.rOwnV || 0) + JSON.stringify(s.wp);
       if (this._wpKey === key && this._wpOut) return this._wpOut;
       const out = { wpOn: true };
       const D = this._wp, wp = s.wp, lim = D.lim;
@@ -241,10 +249,18 @@ export function wpMembers() {
       const AT = a => this.SM_ATTR[a] || [a, 'var(--text-3)'];
       const lvOpts = mx => [{ v: '0', n: '沒有／未升' }].concat(Array.from({ length: mx }, (_, i) => ({ v: String(i + 1), n: 'Lv' + (i + 1) })));
       const fd = t => { const d = new Date(t); return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(); };
+      /* 這一期的主隊加成規則，數字全部取自 master（ev[12]） */
+      const evRule = e => {
+        const R0 = e[12] || {}, ecV = [...new Set(Object.values(R0.ec || {}))].join('／'), cbV = Math.max(0, ...Object.values(R0.cb || {}).flatMap(o => Object.values(o)));
+        const sh = Object.entries(R0.shuffle || {}).sort((a, b) => a[0] - b[0]);
+        if (e[6]) return '・終章：WL3 限定卡每張 +' + ecV + '%（' + (R0.limMax == null ? '五張都算' : '最多計 ' + R0.limMax + ' 張') + '）、全角色 +' + cbV + '%、隊長是限定卡 +' + R0.lead + '%'
+          + (sh.length ? '、隊內 ' + sh.map(x => x[0]).join('／') + ' 個團體 +' + sh.map(x => x[1]).join('／') + '%' : '');
+        return '・章節角色：' + e[7].map(c => WP_CHARS[c[1]] || '#' + c[1]).join('、') + '（+' + cbV + '%）；本期活動卡 +' + ecV + '%';
+      };
 
       out.wpEvs = D.events.map(e => Object.assign({ v: String(e[0]), n: (e[6] ? '終章・' : '第 ' + e[0] + ' 期・') + e[1], on: e[0] === wp.ev }, chip(e[0] === wp.ev)));
       out.wpEvInfo = '日服 ' + fd(ev[2]) + ' – ' + fd(ev[3]) + '・總合力上限 ' + this.n(ev[4]) + (ev[5] != null ? '・玩偶上限 ' + ev[5] + '%' : '')
-        + (ev[6] ? '・終章：WL3 限定卡加成 25%（最多計 4 張），隊長是限定卡再 +20%' : '・章節角色：' + ev[7].map(c => WP_CHARS[c[1]] || '#' + c[1]).join('、') + '；活動卡加成 30%');
+        + evRule(ev);
       out.wpTeams = ev[9].length > 1 ? ev[9].map((t, i) => {
         const on = JSON.stringify(t) === JSON.stringify(team);
         const diff = t.filter(id => !ev[9][0].includes(id)).map(id => WP_CHARS[D.cards[String(id)][0]]);
@@ -252,56 +268,78 @@ export function wpMembers() {
       }) : [];
       out.wpHasTeams = out.wpTeams.length > 0;
 
-      /* 後排（支援隊）：章節選本章角色；終章選主隊隊長（決定後排的「本章角色」與隊長加成） */
+      /* 活動加成 ＝ 主隊（每張卡＋全隊加成）＋後排（支援隊 25 張）。後排章節選本章角色；終章選主隊隊長（決定後排的加成角色與隊長加成） */
       const fin = !!ev[6], chs = ev[7] || [], ownMode = wp.spool === 'own', hasOwn = !!(wp.own && Object.keys(wp.own).length);
       const chI = clamp(+wp.ch || 0, 0, Math.max(0, chs.length - 1)), lead = clamp(+wp.lead || 0, 0, Math.max(0, team.length - 1));
       const special = fin ? (wpCard(D, team[lead]) || {}).ch : (chs[chI] || [])[1];
-      const S = special ? wpSupport(D, ev, special, { mr: wp.smr ?? 5, sl: wp.ssl ?? 4, own: ownMode ? (wp.own || {}) : null }) : null;
-      const M = fin ? wpFinaleMain(D, ev, team, cfg.mr, lead, wp.title !== false) : null;
-      const pct = v => (Math.round(v * 10) / 10) + '%';
+      /* 我的卡：這頁從 Haruki 帶入的優先；沒有就用收集率勾的持有卡（專精、技能等級照收集率記的，沒記的照上面兩個選單） */
+      let own = null, ownSrc = '';
+      if (ownMode) {
+        if (hasOwn) { own = wp.own; ownSrc = 'haruki'; }
+        else {
+          try { if (!this._own && this.ownLoad) this.ownLoad(); } catch (e) {}
+          const set = this.ownSet ? this.ownSet() : new Set(), lv = this.lvAll ? this.lvAll() : {};
+          if (set.size) { own = {}; set.forEach(id => { const l = lv[id]; own[id] = l ? [+l[0] || 0, +l[1] || 1] : [wp.smr ?? 5, wp.ssl ?? 4]; }); ownSrc = 'rate'; }
+        }
+      }
+      const S = special && (!ownMode || own) ? wpSupport(D, ev, special, { mr: wp.smr ?? 5, sl: wp.ssl ?? 4, own }) : null;
+      const M = wpMain(D, ev, team, cfg.mr, lead, wp.title !== false);
+      const pct = v => (Math.round(v * 10) / 10) + '%', pl = v => (v ? '+' + pct(v) : '—');
       const RAR = { 1: '★1', 2: '★2', 3: '★3', 4: '★4', 9: '生日' };
       out.wpIsFin = fin; out.wpHasChs = !fin && chs.length > 0;
       out.wpChs = fin ? [] : chs.map(([no, c], i) => Object.assign({ v: String(i), n: '第 ' + no + ' 章・' + (WP_CHARS[c] || '#' + c), on: i === chI }, chip(i === chI)));
       out.wpLeads = fin ? team.map((id, i) => Object.assign({ v: String(i), n: WP_CHARS[(wpCard(D, id) || {}).ch] || '#' + id, on: i === lead }, chip(i === lead))) : [];
-      out.wpSpAll = chip(!ownMode); out.wpSpOwn = chip(ownMode); out.wpSupOwn = ownMode; out.wpNotOwn = !ownMode;
+      out.wpSpAll = chip(!ownMode); out.wpSpOwn = chip(ownMode); out.wpSupOwn = ownMode;
+      out.wpShowLv = !ownMode || ownSrc === 'rate';
       out.wpSmr = String(wp.smr ?? 5); out.wpSsl = String(wp.ssl ?? 4);
-      out.wpSmrOpts = [5, 4, 3, 2, 1, 0].map(v => ({ v: String(v), n: '後排全部專精 ' + v }));
-      out.wpSslOpts = [4, 3, 2, 1].map(v => ({ v: String(v), n: '後排全部技能 Lv' + v }));
-      out.wpSupMsg = ownMode && !hasOwn ? '還沒帶入你的卡：按下面「你的狀態」的「從 Haruki 專區帶入」，後排就會用你實際持有的卡與各自的專精、技能等級來排。' : '';
+      out.wpSmrOpts = [5, 4, 3, 2, 1, 0].map(v => ({ v: String(v), n: (ownMode ? '沒記錄的卡當成專精 ' : '後排全部專精 ') + v }));
+      out.wpSslOpts = [4, 3, 2, 1].map(v => ({ v: String(v), n: (ownMode ? '沒記錄的卡當成技能 Lv' : '後排全部技能 Lv') + v }));
+      out.wpSupMsg = ownMode && !own ? '還沒有你的卡：按下面「你的狀態」的「從 Haruki 專區帶入」，或到「收集率」勾選持有的卡（專精、技能等級也記在那裡）。'
+        : ownMode && ownSrc === 'rate' ? '用「收集率」勾選的持有卡；按下面「從 Haruki 專區帶入」可以改用遊戲裡實際的卡、專精與技能等級。' : '';
       out.wpSupHasMsg = !!out.wpSupMsg;
       out.wpSupOn = !!S;
       out.wpSupTotal = S ? '+' + pct(S.total) : '—';
       out.wpSupWho = special ? (fin ? '隊長：' : '本章角色：') + (WP_CHARS[special] || '#' + special) : '';
       out.wpSupSub = S ? (S.use.length + ' 張' + (S.short ? '（符合條件的卡只有 ' + S.use.length + ' 張，還空 ' + S.short + ' 格）' : '') + '・' + (ownMode ? '用你的卡與各自的專精、技能等級' : '全部卡都當成持有')) : '';
       out.wpSupList = S ? S.use.map((r, i) => ({ n: String(i + 1), img: this.cardImg(r.abn, r.rar), name: r.name || '#' + r.id, ch: WP_CHARS[r.ch] || '#' + r.ch, rar: RAR[r.rar] || '',
-        b: '+' + pct(r.bonus), mark: r.lim ? '限定卡 +20' : r.spec ? (fin ? '隊長角色' : '本章角色') : '', hasMark: r.lim || r.spec, mrsl: ownMode ? '專精 ' + r.mr + '・技能 Lv' + r.sl : '' })) : [];
-      out.wpSupNote = fin ? '終章後排不限團體；跟隊長同角色的卡多 5%。當期活動卡要放主隊，不能放後排；只算這期結算前已推出的卡。'
+        b: '+' + pct(r.bonus), mark: r.lim ? '限定卡 +20' : r.spec ? (fin ? '隊長角色' : '本章角色') : '', hasMark: r.lim || r.spec,
+        parts: '基礎 ' + r.parts.base + (r.parts.chap ? '・' + (fin ? '隊長角色' : '本章') + ' +' + r.parts.chap : '') + '・專精 ' + r.parts.mr + '・技能 ' + r.parts.sl + (r.parts.lim ? '・限定 +' + r.parts.lim : ''),
+        mrsl: ownMode ? '專精 ' + r.mr + '・技能 Lv' + r.sl : '' })) : [];
+      out.wpSupNote = fin ? '終章後排不限團體；跟隊長同角色的卡多 5%，前幾屆的 WL 限定卡另加 +20%。當期活動卡要放主隊，不能放後排；只算這期結算前已推出的卡。'
         : '只收本章角色同團的卡，VS 卡要支援這團才算；本章角色的卡多 5%，前幾屆的 WL 限定卡另加 +20%。當期活動卡要放主隊，不能放後排；只算這期結算前已推出的卡。';
-      out.wpFinOn = !!M;
+      /* 主隊 */
+      out.wpMainOn = !!M;
       if (M) {
-        out.wpTitleOn = chip(wp.title !== false); out.wpTitleOff = chip(wp.title === false);
-        out.wpFinRows = [
-          { k: '角色加成（每張 ' + M.F.char + '%）', v: '+' + pct(M.charSum) },
-          { k: 'WL3 限定卡（每張 ' + M.F.lim + '%，最多計 ' + M.F.limMax + ' 張）', v: '+' + pct(M.limSum) },
-          { k: '稀有度×專精', v: '+' + pct(M.rarSum) },
-          { k: '隊內 ' + M.attrN + ' 種屬性', v: '+' + pct(M.attrB) },
-          { k: '隊長是 WL3 限定卡', v: '+' + pct(M.leaderB) },
-          { k: '主稱號（隊長角色那一章的排名稱號）', v: '+' + pct(M.titleB) },
-        ];
-        out.wpFinMain = '+' + pct(M.main); out.wpFinSup = S ? '+' + pct(S.total) : '—';
-        out.wpFinTotal = '+' + pct(M.main + (S ? S.total : 0));
+        const R12 = M.R;
+        out.wpTitleOn = chip(wp.title !== false); out.wpTitleOff = chip(wp.title === false); out.wpHasTitle = !!R12.title;
+        out.wpMainRows = M.slots.map((x, i) => ({ ch: (WP_CHARS[x.ch] || '#' + x.ch) + (fin && i === lead ? '（隊長）' : ''), feat: x.capped ? '超過張數' : pl(x.featB), char: pl(x.charB), rar: pl(x.rarB), mr: '專精 ' + x.mr, sum: '+' + pct(x.sum) }));
+        out.wpMainTeam = [{ k: '隊內 ' + M.attrN + ' 種屬性', v: pl(M.attrB) }]
+          .concat(M.hasShuffle ? [{ k: '隊內 ' + M.unitN + ' 個團體', v: pl(M.unitB) }] : [])
+          .concat(R12.lead ? [{ k: '隊長是 WL3 限定卡', v: pl(M.leaderB) }] : [])
+          .concat(R12.title ? [{ k: '主稱號（隊長角色那一章 T1000 以內）', v: pl(M.titleB) }] : []);
+        out.wpMainTotal = '+' + pct(M.main);
+        out.wpAllSup = S ? '+' + pct(S.total) : '—';
+        out.wpAllTotal = '+' + pct(M.main + (S ? S.total : 0));
+        const ecVals = [...new Set(Object.values(R12.ec))];
+        out.wpMainNote = fin
+          ? '終章：每張卡角色加成 ' + (Object.values(R12.cb)[0] ? Object.values(Object.values(R12.cb)[0])[0] : 5) + '%、WL3 限定卡 +' + ecVals.join('／') + '%（' + (R12.limMax == null ? '五張都算' : '最多計 ' + R12.limMax + ' 張') + '）；全隊另有異色、團體數、隊長是限定卡 +' + R12.lead + '%、主稱號 +' + R12.title + '%。'
+          : '章節：本期章節角色的卡 +' + Math.max(0, ...Object.values(R12.cb).flatMap(o => Object.values(o))) + '%、本期活動卡 +' + ecVals.join('／') + '%，加稀有度×專精；全隊另有異色加成。';
       }
-      out.wpBonusLine = !S ? '' : fin && M ? '活動加成 ' + pct(M.main + S.total) + '（主隊 ' + pct(M.main) + '＋後排 ' + pct(S.total) + '）'
-        : '後排加成 +' + pct(S.total) + '（' + out.wpSupWho + '）';
+      out.wpBonusLine = M ? '活動加成 ' + pct(M.main + (S ? S.total : 0)) + '（主隊 ' + pct(M.main) + '＋後排 ' + (S ? pct(S.total) : '0%') + '）' : '';
+      out.wpBonusOn = !!M;
+      const dupCh = team.map(id => (wpCard(D, id) || {}).ch).filter((c, i, a) => a.indexOf(c) !== i);
+      out.wpDupNote = dupCh.length ? '同一位角色不能放兩張：' + [...new Set(dupCh)].map(c => WP_CHARS[c]).join('、') : '';
+      out.wpHasDup = !!out.wpDupNote;
 
+      const until = ev[3] || Infinity, evIds = new Set(Object.keys((ev[12] || {}).ec || {}).map(Number));
       out.wpSlots = R.per.map((p, i) => {
         const c = p.card, at = AT(c.attr);
-        const same = Object.entries(D.cards).filter(([, x]) => x[0] === c.ch).map(([id, x]) => ({ id: +id, s: x[4] + x[5] + x[6] + (WP_CANVAS[x[2]] || 0), x }))
-          .sort((a, b) => b.s - a.s).slice(0, 40);
-        const evIds = new Set(ev[8].map(x => x[0]));
+        const same = Object.entries(D.cards).filter(([, x]) => x[0] === c.ch && (!x[9] || x[9] <= until)).map(([id, x]) => ({ id: +id, s: x[4] + x[5] + x[6] + (WP_CANVAS[x[2]] || 0), x }))
+          .sort((a, b) => (evIds.has(b.id) - evIds.has(a.id)) || b.s - a.s).slice(0, 40);
         return { i: String(i), img: this.cardImg(c.abn, c.rar), ch: WP_CHARS[c.ch] || '#' + c.ch, at: at[0], atC: at[1], tag: c.rar === 9 ? '生日' : '★4', name: c.name,
           ev: evIds.has(c.id), mr: String(cfg.mr[i] != null ? cfg.mr[i] : 5), base: this.n(p.base), total: this.n(p.total),
           mrOpts: [0, 1, 2, 3, 4, 5].map(v => ({ v: String(v), n: '專精 ' + v })),
+          chv: String(c.ch), chOpts: WP_CHARS.slice(1).map((n, k) => ({ v: String(k + 1), n })),
           card: String(c.id), cardOpts: same.map(o => ({ v: String(o.id), n: (evIds.has(o.id) ? '【活動卡】' : '') + o.x[7] + '・' + this.n(o.s) + '・' + AT(o.x[1])[0] })) };
       });
 
@@ -391,6 +429,16 @@ export function wpMembers() {
         onWpEv: e => { const D = this._wp, id = +e.currentTarget.dataset.v, ev = D.events.find(x => x[0] === id); if (ev) this.wpSet({ ev: id, ti: 0, team: (ev[9][0] || []).slice(), mr: [5, 5, 5, 5, 5], ch: 0, lead: 0, msg: '' }); },
         onWpTeam: e => { const D = this._wp, ev = D.events.find(x => x[0] === this.state.wp.ev), i = +e.currentTarget.dataset.v; if (ev && ev[9][i]) this.wpSet({ ti: i, team: ev[9][i].slice() }); },
         onWpCard: e => { const i = +e.currentTarget.dataset.i, team = this.state.wp.team.slice(); team[i] = num(e); this.wpSet({ team }); },
+        /* 換角色：帶這位角色的本期活動卡，沒有就帶這期結算前推出、綜合力最高的那張 */
+        onWpChar: e => {
+          const D = this._wp, wp = this.state.wp, i = +e.currentTarget.dataset.i, ch = num(e), ev = D.events.find(x => x[0] === wp.ev) || D.events[0];
+          const ec = (ev[12] || {}).ec || {}, until = ev[3] || Infinity;
+          const best = Object.entries(D.cards).filter(([, x]) => x[0] === ch && (!x[9] || x[9] <= until))
+            .map(([id, x]) => ({ id: +id, ev: ec[id] ? 1 : 0, s: x[4] + x[5] + x[6] + (WP_CANVAS[x[2]] || 0) }))
+            .sort((a, b) => b.ev - a.ev || b.s - a.s)[0];
+          if (!best) return;
+          const team = wp.team.slice(); team[i] = best.id; this.wpSet({ team });
+        },
         onWpMr: e => { const i = +e.currentTarget.dataset.i, mr = this.state.wp.mr.slice(); mr[i] = num(e); this.wpSet({ mr }); },
         onWpArea: e => this.wpSet({ area: Object.assign({}, this.state.wp.area, { [e.currentTarget.dataset.id]: num(e) }) }),
         onWpGate: e => this.wpSet({ gate: Object.assign({}, this.state.wp.gate, { [e.currentTarget.dataset.u]: num(e) }) }),

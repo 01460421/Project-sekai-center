@@ -1,7 +1,7 @@
 /* WL3 綜合力計算器（js/wl3pow.js）的純函式與 data/wl3-power.js 的資料檢查。
    用法：node tests/wl3pow.mjs   任何一項失敗就 exit 1。 */
 import { WL3P as D } from '../data/wl3-power.js';
-import { wpPower, wpRelevant, wpUniform, wpMinUniform, wpPlan, wpTeamInfo, wpCard, WP_UNITS, wpSupport, wpFinaleMain, wpUnitOf, WP_SUP_N } from '../js/wl3pow.js';
+import { wpPower, wpRelevant, wpUniform, wpMinUniform, wpPlan, wpTeamInfo, wpCard, WP_UNITS, wpSupport, wpMain, wpShuffleUnit, wpUnitOf, WP_SUP_N } from '../js/wl3pow.js';
 
 let fail = 0;
 const ok = (cond, name) => { console.log((cond ? 'ok   ' : 'FAIL ') + name); if (!cond) fail++; };
@@ -95,10 +95,35 @@ const noVs = Object.entries(D.cards).find(([id, c]) => c[0] > 20 && c[3] && c[3]
 ok(okVs && noVs && wpSupport(D, e202, ch1, { own: { [okVs[0]]: [5, 4] } }).use.length === 1 && wpSupport(D, e202, ch1, { own: { [noVs[0]]: [5, 4] } }).use.length === 0,
   '支援本章團的 VS 卡可以放後排，支援別團的不行');
 const finEv = D.events.find(e => e[6]), ft = finEv[9][0];
-const M = wpFinaleMain(D, finEv, ft, [5, 5, 5, 5, 5], 0, true);
-ok(M && M.charSum === 25 && M.limSum === 100 && M.rarSum === 125 && M.attrB === 125 && M.leaderB === 20 && M.titleB === 50 && M.main === 445,
-  '終章主隊滿配：角色 25＋限定卡 4 張 100＋稀有度專精 125＋五色 125＋隊長 20＋稱號 50＝445%');
-ok(wpFinaleMain(D, finEv, ft, [0, 0, 0, 0, 0], 0, false).main === 25 + 100 + 50 + 125 + 20, '終章主隊：專精 0、沒有稱號時＝角色 25＋限定 100＋稀有度 50＋五色 125＋隊長 20');
+const R12 = finEv[12];
+ok(R12 && R12.limMax == null && Object.keys(R12.ec).length === 26 && Object.values(R12.ec).every(v => v === 25) && R12.lead === 20 && R12.title === 50,
+  '終章規則照 master：26 張 WL3 限定卡各 25%、沒有張數上限（eventCardBonusLimits 只有 WL2 終章的 4 張）、隊長 20、主稱號 50');
+ok(R12.shuffle['3'] === 10 && R12.shuffle['4'] === 30 && R12.shuffle['5'] === 50 && !Object.keys(D.events.find(e => e[0] === 202)[12].shuffle).length,
+  'WL3 終章新增混團加成：3／4／5 團 +10／30／50%（章節活動沒有）');
+const M = wpMain(D, finEv, ft, [5, 5, 5, 5, 5], 0, true);
+const sumK = k => Math.round(M.slots.reduce((a, x) => a + x[k], 0) * 10) / 10;
+ok(M && M.limUsed === 5 && sumK('featB') === 125 && sumK('charB') === 25 && sumK('rarB') === 125 && M.attrB === 125 && M.unitN === 5 && M.unitB === 50 && M.leaderB === 20 && M.titleB === 50 && M.main === 520,
+  '終章主隊滿配：限定卡五張都算 125＋角色 25＋稀有度專精 125＋五色 125＋五團 50＋隊長 20＋稱號 50＝520%（實得 ' + (M && M.main) + '）');
+ok(wpMain(D, finEv, ft, [0, 0, 0, 0, 0], 0, false).main === 125 + 25 + 50 + 125 + 50 + 20, '終章主隊：專精 0、沒有稱號時＝限定 125＋角色 25＋稀有度 50＋五色 125＋五團 50＋隊長 20');
+/* 換掉一張限定卡：同一位角色、不是限定卡的 ★4 → 少 25%；隊長換成非限定卡 → 少隊長 20 */
+const notLim = Object.keys(D.cards).find(id => D.cards[id][0] === wpCard(D, ft[1]).ch && D.cards[id][1] === wpCard(D, ft[1]).attr && D.cards[id][2] === 4 && !R12.ec[id]);
+const ft2 = ft.slice(); ft2[1] = +notLim;
+const M2 = wpMain(D, finEv, ft2, [5, 5, 5, 5, 5], 0, true), M3 = wpMain(D, finEv, ft2, [5, 5, 5, 5, 5], 1, true);
+ok(M2.main === 495 && M2.limUsed === 4 && M3.leaderB === 0 && M3.main === 475, '終章：換掉一張限定卡少 25%（495）；隊長不是限定卡再少 20%（475）；實得 ' + M2.main + '／' + M3.main);
+/* 混團：同團隊只有 1 團 → 沒有混團加成；VS 卡算 VIRTUAL SINGER 一團（跟 prsk.cc 一樣） */
+const ln = [1, 2, 3, 4].map(ch => +Object.keys(D.cards).find(id => D.cards[id][0] === ch && D.cards[id][2] === 4));
+const ln1 = wpMain(D, finEv, ln, [5, 5, 5, 5], 0, true);
+ok(ln1.unitN === 1 && ln1.unitB === 0, '終章：四位 Leo/need 同團 → 混團加成 0');
+ok(wpShuffleUnit(wpCard(D, lnVs)) === 'piapro' && wpMain(D, finEv, ln.concat([+lnVs]), [5, 5, 5, 5, 5], 0, true).unitN === 2, 'VS 卡（就算支援 Leo/need）算 VIRTUAL SINGER：一歌團＋VS＝2 團');
+/* 章節：本章角色 25%、本期活動卡 30%、五色 125 → 頂配主隊 525% */
+const c202 = D.events.find(e => e[0] === 202), Mc = wpMain(D, c202, c202[9][0], [5, 5, 5, 5, 5], 0, true);
+ok(Mc.main === 525 && Mc.slots.every(x => x.featB === 30 && x.charB === 25) && Mc.unitB === 0 && Mc.leaderB === 0 && Mc.titleB === 0,
+  '章節主隊（第 202 期）：每張 活動卡 30＋本章角色 25＋稀有度專精 25，加五色 125＝525%（實得 ' + Mc.main + '）');
+const outCh = +Object.keys(D.cards).find(id => D.cards[id][0] === 2 && D.cards[id][2] === 4 && !c202[12].ec[id]);
+const Mo = wpMain(D, c202, [outCh].concat(c202[9][0].slice(1)), [5, 5, 5, 5, 5], 0, true);
+ok(Mo.slots[0].featB === 0 && Mo.slots[0].charB === 0 && Mo.slots[0].rarB === 25, '章節：不是本章角色、也不是活動卡的 ★4 只剩稀有度專精 25%');
+const vsCh = c202[12].cb['21'];
+ok(vsCh && Object.keys(vsCh).length === 6, '章節的 VS 角色（初音未來）六種團體的卡都吃 25%');
 const Sf = wpSupport(D, finEv, wpCard(D, ft[0]).ch, { mr: 5, sl: 4 });
 ok(Sf.finale && Sf.use.length === WP_SUP_N && Sf.total === 465, '終章後排不限團體，照隊長角色算：+465%');
 

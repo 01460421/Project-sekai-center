@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=4f963ffc8e" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=4c4a1822c4" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -6146,6 +6146,14 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             </sc-for>
           </div>
         </div>
+        <sc-if value="{{ wlsFunitOn }}"><div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">隊內有幾個團體（VS 卡算 VIRTUAL SINGER）</div>
+          <div class="chips-scroll" style="display:flex;gap:5px;flex-wrap:wrap">
+            <sc-for list="{{ wlsFunitChips }}" as="c" hint-placeholder-count="5">
+              <button type="button" onClick="{{ onWlsFin }}" data-k="wlsFunit" data-v="{{ c.v }}" style="padding:6px 12px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+            </sc-for>
+          </div>
+        </div></sc-if>
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:5px">隊長角色的章節排名稱號</div>
           <button type="button" onClick="{{ onWlsFtitle }}" style="padding:6px 14px;border:none;border-radius:999px;background:{{ wlsFtitleBg }};color:{{ wlsFtitleFg }};font-size:11.5px;font-weight:700;cursor:pointer">{{ wlsFtitleBtn }}</button>
@@ -7230,7 +7238,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ wpWait }}"><div class="empty loading">WL3 計算器載入中…</div></sc-if>
     <sc-if value="{{ wpErrHas }}"><button type="button" class="wp-retry" onClick="{{ onWpRetry }}">{{ wpErr }}</button></sc-if>
     <sc-if value="{{ wpOn }}">
-      <div class="wp-intro">WL3 每一期的總合力上限是 <b>336,000</b>，超過的綜合力不計分。選一期帶出滿配加成的隊伍，調區域道具、MySekai 大門、玩偶與角色等級，看離上限還有多遠；下面有「哪些組合碰得到上限」與「升級順序」。每一章的<b>後排支援隊加成</b>與終章的主隊加成也在這頁一起算。</div>
+      <div class="wp-intro">WL3 每一期的總合力上限是 <b>336,000</b>，超過的綜合力不計分。選一期帶出滿配加成的隊伍，調區域道具、MySekai 大門、玩偶與角色等級，看離上限還有多遠；下面有「哪些組合碰得到上限」與「升級順序」。每一章的<b>後排支援隊加成</b>與主隊加成（章節與終章規則不同，都照 master）也在這頁一起算。</div>
       <div class="chips-scroll wp-chips">
         <sc-for list="{{ wpEvs }}" as="c" hint-placeholder-count="6"><button type="button" class="mk-chip" onClick="{{ onWpEv }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for>
       </div>
@@ -7241,11 +7249,11 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="wp-bar"><i style="width:{{ wpBar }};background:{{ wpBarC }}"></i></div>
         <div class="wp-st" style="color:{{ wpBarC }}">{{ wpStatus }}</div>
         <div class="wp-sub">{{ wpTeamNote }}</div>
-        <sc-if value="{{ wpSupOn }}"><div class="wp-bline">{{ wpBonusLine }}</div></sc-if>
+        <sc-if value="{{ wpBonusOn }}"><div class="wp-bline">{{ wpBonusLine }}</div></sc-if>
       </div>
 
       <div class="mk-card">
-        <div class="mk-h"><b>滿配隊伍</b><i>五張不同角色、五種顏色；每格可換卡、改專精</i></div>
+        <div class="mk-h"><b>滿配隊伍</b><i>五張不同角色、五種顏色；每格可換角色、換卡、改專精</i></div>
         <sc-if value="{{ wpHasTeams }}"><div class="chips-scroll wp-chips" style="margin-bottom:10px"><sc-for list="{{ wpTeams }}" as="c" hint-placeholder-count="2"><button type="button" class="mk-chip" onClick="{{ onWpTeam }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
         <div class="wp-team">
           <sc-for list="{{ wpSlots }}" as="c" hint-placeholder-count="5">
@@ -7253,39 +7261,51 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
               <img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy">
               <div class="nm">{{ c.ch }}</div>
               <div class="wp-tags"><span class="sm-tag" style="color:{{ c.atC }}">{{ c.at }}</span><span class="sm-tag">{{ c.tag }}</span></div>
+              <select aria-label="換角色" value="{{ c.chv }}" onChange="{{ onWpChar }}" data-i="{{ c.i }}" sc-options="{{ c.chOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
               <select aria-label="換卡" value="{{ c.card }}" onChange="{{ onWpCard }}" data-i="{{ c.i }}" sc-options="{{ c.cardOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
               <select aria-label="專精" value="{{ c.mr }}" onChange="{{ onWpMr }}" data-i="{{ c.i }}" sc-options="{{ c.mrOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
               <div class="wp-pw">{{ c.total }}</div>
             </div>
           </sc-for>
         </div>
+        <sc-if value="{{ wpHasDup }}"><div class="wp-msg" style="margin:10px 0 0">{{ wpDupNote }}</div></sc-if>
       </div>
 
       <div class="mk-card">
-        <div class="mk-h"><b>活動加成：後排支援隊</b><i>WL3 後排收 25 張</i></div>
-        <sc-if value="{{ wpHasChs }}"><div class="chips-scroll wp-chips"><sc-for list="{{ wpChs }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpCh }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
-        <sc-if value="{{ wpIsFin }}"><div class="wp-sub" style="margin-bottom:4px">隊長（決定後排的加成角色與隊長加成）</div><div class="chips-scroll wp-chips"><sc-for list="{{ wpLeads }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpLead }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
+        <div class="mk-h"><b>活動加成</b><i>主隊每張卡＋全隊加成＋後排支援隊 25 張</i></div>
+        <sc-if value="{{ wpHasChs }}"><div class="wp-sub" style="margin-bottom:4px">本章角色（決定後排收哪些卡）</div><div class="chips-scroll wp-chips"><sc-for list="{{ wpChs }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpCh }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
+        <sc-if value="{{ wpIsFin }}"><div class="wp-sub" style="margin-bottom:4px">隊長（決定後排的加成角色、隊長加成與主稱號）</div><div class="chips-scroll wp-chips"><sc-for list="{{ wpLeads }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpLead }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
+        <sc-if value="{{ wpBonusOn }}">
+          <div class="wp-big"><span class="wp-num">{{ wpAllTotal }}</span><span class="wp-of">活動加成合計</span></div>
+          <div class="wp-scroll"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.3fr) repeat(4,minmax(50px,1fr))">
+            <div class="wp-gh">主隊</div><div class="wp-gh">活動卡</div><div class="wp-gh">角色</div><div class="wp-gh">稀有度×專精</div><div class="wp-gh">小計</div>
+            <sc-for list="{{ wpMainRows }}" as="r" hint-placeholder-count="5">
+              <div class="wp-gc l">{{ r.ch }}</div><div class="wp-gc">{{ r.feat }}</div><div class="wp-gc">{{ r.char }}</div><div class="wp-gc">{{ r.rar }}<small>{{ r.mr }}</small></div><div class="wp-gc b">{{ r.sum }}</div>
+            </sc-for>
+          </div></div>
+          <div class="wp-fin">
+            <sc-for list="{{ wpMainTeam }}" as="r" hint-placeholder-count="4"><div class="wp-fr"><span>{{ r.k }}</span><b>{{ r.v }}</b></div></sc-for>
+            <div class="wp-fr s"><span>主隊</span><b>{{ wpMainTotal }}</b></div>
+            <div class="wp-fr s"><span>後排</span><b>{{ wpAllSup }}</b></div>
+            <div class="wp-fr t"><span>活動加成合計</span><b>{{ wpAllTotal }}</b></div>
+          </div>
+          <sc-if value="{{ wpHasTitle }}"><div class="wp-seg2" style="margin:2px 0 8px"><button type="button" class="mk-chip" onClick="{{ onWpTitle }}" data-v="on" style="border-color:{{ wpTitleOn.bd }};background:{{ wpTitleOn.bg }};color:{{ wpTitleOn.fg }}">有主稱號</button><button type="button" class="mk-chip" onClick="{{ onWpTitle }}" data-v="off" style="border-color:{{ wpTitleOff.bd }};background:{{ wpTitleOff.bg }};color:{{ wpTitleOff.fg }}">沒有主稱號</button></div></sc-if>
+          <div class="wp-sub">{{ wpMainNote }}</div>
+        </sc-if>
+
+        <div class="mk-h" style="margin-top:14px"><b>後排支援隊</b><i>WL3 後排收 25 張</i></div>
         <div class="wp-quick">
-          <div class="wp-seg2"><button type="button" class="mk-chip" onClick="{{ onWpSpool }}" data-v="all" style="border-color:{{ wpSpAll.bd }};background:{{ wpSpAll.bg }};color:{{ wpSpAll.fg }}">全部卡（理論值）</button><button type="button" class="mk-chip" onClick="{{ onWpSpool }}" data-v="own" style="border-color:{{ wpSpOwn.bd }};background:{{ wpSpOwn.bg }};color:{{ wpSpOwn.fg }}">我的卡（Haruki 匯入）</button></div>
-          <sc-if value="{{ wpNotOwn }}"><select aria-label="後排專精" value="{{ wpSmr }}" onChange="{{ onWpSmr }}" sc-options="{{ wpSmrOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
+          <div class="wp-seg2"><button type="button" class="mk-chip" onClick="{{ onWpSpool }}" data-v="all" style="border-color:{{ wpSpAll.bd }};background:{{ wpSpAll.bg }};color:{{ wpSpAll.fg }}">全部卡（理論值）</button><button type="button" class="mk-chip" onClick="{{ onWpSpool }}" data-v="own" style="border-color:{{ wpSpOwn.bd }};background:{{ wpSpOwn.bg }};color:{{ wpSpOwn.fg }}">我的卡</button></div>
+          <sc-if value="{{ wpShowLv }}"><select aria-label="後排專精" value="{{ wpSmr }}" onChange="{{ onWpSmr }}" sc-options="{{ wpSmrOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select>
           <select aria-label="後排技能等級" value="{{ wpSsl }}" onChange="{{ onWpSsl }}" sc-options="{{ wpSslOpts }}" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;min-height:36px;cursor:pointer;outline:none;max-width:100%"></select></sc-if>
         </div>
         <sc-if value="{{ wpSupHasMsg }}"><div class="wp-msg">{{ wpSupMsg }}</div></sc-if>
         <sc-if value="{{ wpSupOn }}">
           <div class="wp-big"><span class="wp-num">{{ wpSupTotal }}</span><span class="wp-of">後排加成</span></div>
           <div class="wp-sub"><span>{{ wpSupSub }}</span>・<span>{{ wpSupWho }}</span></div>
-          <sc-if value="{{ wpFinOn }}">
-            <div class="wp-fin">
-              <sc-for list="{{ wpFinRows }}" as="r" hint-placeholder-count="6"><div class="wp-fr"><span>{{ r.k }}</span><b>{{ r.v }}</b></div></sc-for>
-              <div class="wp-fr s"><span>主隊</span><b>{{ wpFinMain }}</b></div>
-              <div class="wp-fr s"><span>後排</span><b>{{ wpFinSup }}</b></div>
-              <div class="wp-fr t"><span>活動加成合計</span><b>{{ wpFinTotal }}</b></div>
-            </div>
-            <div class="wp-seg2" style="margin:2px 0 10px"><button type="button" class="mk-chip" onClick="{{ onWpTitle }}" data-v="on" style="border-color:{{ wpTitleOn.bd }};background:{{ wpTitleOn.bg }};color:{{ wpTitleOn.fg }}">有主稱號</button><button type="button" class="mk-chip" onClick="{{ onWpTitle }}" data-v="off" style="border-color:{{ wpTitleOff.bd }};background:{{ wpTitleOff.bg }};color:{{ wpTitleOff.fg }}">沒有主稱號</button></div>
-          </sc-if>
           <div class="wp-sup">
             <sc-for list="{{ wpSupList }}" as="r" hint-placeholder-count="25">
-              <div class="wp-sc"><i>{{ r.n }}</i><img src="{{ r.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"><div class="wp-sc-t"><b class="notranslate">{{ r.name }}</b><span>{{ r.ch }}・{{ r.rar }}<sc-if value="{{ r.hasMark }}">・<em>{{ r.mark }}</em></sc-if></span><sc-if value="{{ wpSupOwn }}"><span>{{ r.mrsl }}</span></sc-if></div><b class="wp-sc-b">{{ r.b }}</b></div>
+              <div class="wp-sc"><i>{{ r.n }}</i><img src="{{ r.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"><div class="wp-sc-t"><b class="notranslate">{{ r.name }}</b><span>{{ r.ch }}・{{ r.rar }}<sc-if value="{{ r.hasMark }}">・<em>{{ r.mark }}</em></sc-if></span><span>{{ r.parts }}</span><sc-if value="{{ wpSupOwn }}"><span>{{ r.mrsl }}</span></sc-if></div><b class="wp-sc-b">{{ r.b }}</b></div>
             </sc-for>
           </div>
           <div class="wp-sub" style="margin-top:8px">{{ wpSupNote }}</div>
@@ -10490,7 +10510,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4f963ffc8e"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4c4a1822c4"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

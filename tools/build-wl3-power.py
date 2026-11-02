@@ -19,10 +19,11 @@ WL3（日服 2026 起的 World Link）每一期都有總合力上限 336,000（e
     events: [[期數, 名稱, 開始, 結算, 總合力上限, 玩偶上限 %|null, 終章?, [[章, 角色]…], [[卡號, 加成 %]…], [[5 張卡號]…],
               [該期全部活動卡號（各稀有度，不能放後排）], {角色: [[卡號, 後排限定加成 %]…]}, 終章主隊規則|null]]
               [9] 是「滿配加成」的候選隊：五張不同角色、五種顏色、全用該期活動卡，依綜合力排序（最多 10 組）
-              [12] 終章主隊規則 {char 每張角色加成, lim 限定卡加成, lead 隊長是限定卡再加, limMax 限定卡最多計幾張, title 稱號加成}
+              [12] 主隊加成規則 {ec {卡號: 活動卡加成}, cb {角色: {團體: 角色加成}}, lead 隊長是活動卡再加, limMax 活動卡最多計幾張|null（不設限）,
+                   title 主稱號加成（只有終章）, shuffle {團體數: 加成}（WL3 終章新增）}
     sup:    {'1'|'2'|'3'|'4'|'9': [本章角色, 其他角色, [MR0…MR5], [SLv1…SLv4]]}   WL 後排（支援隊）每張卡的加成 %
     low:    {卡號: [角色, 稀有度 1～3, 支援團, 名稱, 素材名, 推出時間]}   後排「我的卡」模式用（★4／生日卡在 cards）
-    evb:    {rar: {'4': [MR0…MR5 的 %], '9': […]}, attr: [1～5 色的 %]}   終章主隊的稀有度×專精、隊內異色加成
+    evb:    {rar: {'1'…'4'|'9': [MR0…MR5 的 %]}, attr: [1～5 色的 %]}   主隊的稀有度×專精、隊內異色加成
   }
 
 用法：python3 tools/build-wl3-power.py      （日服 master 走 jp_master 快取；道具的台服名稱讀 Haruki 台服 master）
@@ -42,6 +43,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'wl3-power.js'
 CANVAS = {'rarity_4': 1500, 'rarity_birthday': 1200}
 UNIT_OF = {}   # 角色 → 本團（gameCharacterUnits id 1～26）
+GCU = {}       # gameCharacterUnits id → (角色, 團體)；VS 每個團體各一筆
 # WL3 全期（日服 2026/4/18～9/28）的上限。日服 7.0.0（2026/9/29，終章結算隔天）才把大門從 Lv40 開到 Lv70、加入想いの大樹，
 # 區域道具 Lv1～20 的數值與卡片三維都沒變（對過 sekai-master-db-diff 52a48f8 前後）。master 只有現在的狀態，所以寫死；
 # 台服目前也是這組上限。
@@ -86,7 +88,8 @@ def main():
         'characterRanks', 'gameCharacterUnits', 'events', 'worldBlooms', 'eventCards', 'eventTotalPowerLimits',
         'eventMysekaiFixtureGameCharacterPerformanceBonusLimits', 'mysekaiFixtureGameCharacterGroupPerformanceBonuses',
         'worldBloomSupportDeckBonuses', 'worldBloomSupportDeckUnitEventLimitedBonuses', 'eventDeckBonuses',
-        'eventHonorBonuses', 'eventRarityBonusRates', 'worldBloomDifferentAttributeBonuses', 'eventCardBonusLimits')}
+        'eventHonorBonuses', 'eventRarityBonusRates', 'worldBloomDifferentAttributeBonuses', 'eventCardBonusLimits',
+        'eventShuffleUnitBonuses')}
     tw = {}
     for n in ('areaItems', 'areaItemLevels', 'areas', 'mysekaiGateLevels', 'characterRanks'):
         try:
@@ -96,6 +99,7 @@ def main():
             tw[n] = []
 
     for g in jp['gameCharacterUnits']:
+        GCU[g['id']] = (g['gameCharacterId'], g['unit'])
         if g['id'] <= 26:
             UNIT_OF[g['gameCharacterId']] = g['unit']
 
@@ -210,19 +214,25 @@ def main():
         for x in jp['worldBloomSupportDeckUnitEventLimitedBonuses']:
             if x['eventId'] == eid:
                 slim.setdefault(str(x['gameCharacterId']), []).append([x['cardId'], r2(x['bonusRate'])])
-        fin = None
-        if finale:   # 終章主隊：每張角色加成（master 全是同一個值）、WL3 限定卡加成與隊長加成、稱號加成
-            cb = {r2(x['bonusRate']) for x in jp['eventDeckBonuses'] if x['eventId'] == eid and x.get('bonusRate') is not None}
-            if len(cb) != 1:
-                raise SystemExit(f'第 {eid} 期終章的角色加成不只一種（{cb}），主隊試算要改')
-            evc = [x for x in jp['eventCards'] if x['eventId'] == eid]
-            lm = [x['memberCountLimit'] for x in jp['eventCardBonusLimits'] if x['eventId'] == eid]
-            hon = [x['bonusRate'] for x in jp['eventHonorBonuses'] if x['eventId'] == eid]
-            fin = {'char': cb.pop(), 'lim': max(r2(x['bonusRate']) for x in evc), 'lead': max(r2(x.get('leaderBonusRate') or 0) for x in evc),
-                   'limMax': lm[0] if lm else 4, 'title': max(hon) if hon else 50}
+        # 主隊加成規則（章節與終章同一套，數值照 master）：每張卡＝活動卡加成＋角色加成（角色×團體）＋稀有度×專精；
+        # 全隊另有異色加成（worldBloomDifferentAttributeBonuses）、團體數加成（eventShuffleUnitBonuses，WL3 終章新增）、
+        # 隊長是活動卡的加成（leaderBonusRate）與主稱號（eventHonorBonuses）。活動卡最多計幾張看 eventCardBonusLimits，沒有就不設限
+        evc = [x for x in jp['eventCards'] if x['eventId'] == eid]
+        cb = {}
+        for x in jp['eventDeckBonuses']:
+            if x['eventId'] != eid or x.get('bonusRate') is None or x.get('gameCharacterUnitId') is None or x.get('cardAttr'):
+                continue
+            g = GCU.get(x['gameCharacterUnitId'])
+            if g:
+                cb.setdefault(str(g[0]), {})[g[1]] = max(cb.get(str(g[0]), {}).get(g[1], 0), r2(x['bonusRate']))
+        lm = [x['memberCountLimit'] for x in jp['eventCardBonusLimits'] if x['eventId'] == eid]
+        hon = [x['bonusRate'] for x in jp['eventHonorBonuses'] if x['eventId'] == eid]
+        rule = {'ec': {str(x['cardId']): r2(x['bonusRate']) for x in evc}, 'lead': max([r2(x.get('leaderBonusRate') or 0) for x in evc] or [0]),
+                'cb': cb, 'limMax': lm[0] if lm else None, 'title': max(hon) if hon else 0,
+                'shuffle': {str(x['unitCount']): r2(x['bonusRate']) for x in jp['eventShuffleUnitBonuses'] if x['eventId'] == eid}}
         events.append([eid, e['name'], e['startAt'], e['aggregateAt'], cap[eid], doll_lim.get(eid), finale,
                        [list(x) for x in ch], [list(x) for x in ec], [t[1] for t in teams[:10]],
-                       allec, {k: sorted(v) for k, v in sorted(slim.items())}, fin])
+                       allec, {k: sorted(v) for k, v in sorted(slim.items())}, rule])
 
     # 後排每張卡的加成表（依稀有度）：本章角色／其他角色、專精、技能等級
     RK = {'rarity_1': '1', 'rarity_2': '2', 'rarity_3': '3', 'rarity_4': '4', 'rarity_birthday': '9'}
@@ -245,7 +255,7 @@ def main():
     rart = {}
     for x in jp['eventRarityBonusRates']:
         k = RK.get(x['cardRarityType'])
-        if k in ('4', '9'):
+        if k:
             a = rart.setdefault(k, [0] * 6)
             a[x['masterRank']] = r2(x['bonusRate'])
     attrt = [0] * 6

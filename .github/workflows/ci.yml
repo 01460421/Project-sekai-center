@@ -39,7 +39,7 @@ jobs:
           node tests/smoke.mjs
       - name: 理論技能倍率表「我的卡」解算器與建置結果一致
         run: node tests/skill-mine.mjs
-      - name: WL3 計算器（綜合力算式、想いの大樹混團兩份、大門與玩偶上限、達標等級、升級順序、後排支援隊與終章主隊）
+      - name: WL3 計算器（綜合力算式、想いの大樹混團兩份、大門與玩偶上限、達標等級、升級順序、後排支援隊、章節與終章主隊加成＋混團）
         run: node tests/wl3pow.mjs
   # 伺服器機器人（bot/）：核心與功能不依賴 discord.js，測試不必 npm install、不需要 token
   bot:
