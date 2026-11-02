@@ -118,8 +118,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/build-borders-db-jp.py || echo "日服榜線資料庫重算失敗,本輪略過"
+      # WL3 專區：從上面建好的活動資料（兩服）、日服榜線資料庫與 WL3 計算器規則表挑出 WL3 那幾期（約 7 KB）。
+      # 台服 master 多了 WL3 的期數，隔天專區就改用台服正式時間；內容沒變就不寫檔。
+      - name: WL3 專區(data/wl3-zone.js)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/build-wl3-zone.py || echo "WL3 專區資料重算失敗,本輪略過"
 
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
       # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
-        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js data/billing-jp.js data/borders-db-jp.js tools/border_model/jp-finals.json data/gachasim-jp.js data/wl3-power.js data/card-chara.js
+        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js data/billing-jp.js data/borders-db-jp.js tools/border_model/jp-finals.json data/gachasim-jp.js data/wl3-power.js data/wl3-zone.js data/card-chara.js

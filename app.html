@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=19d4a52d4b" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=2bb526f44a" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -899,6 +899,61 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .wp-sc-t span{font-size:10.5px;color:var(--text-3)}
 .wp-sc-t em{font-style:normal;color:var(--accent-deep);font-weight:700}
 .wp-sc-b{flex:none;font-size:12.5px;font-weight:900;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.wz-hero{background:linear-gradient(135deg,color-mix(in oklab,#3f8cff 14%,var(--card)),color-mix(in oklab,#ff9db4 12%,var(--card)))}
+.wz-k{font-size:11px;font-weight:900;letter-spacing:.18em;color:var(--accent-deep)}
+.wz-st{font-size:15px;font-weight:900;color:var(--ink);line-height:1.55;margin-top:4px}
+.wz-cd{font-size:28px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:2px}
+.wz-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.wz-stat{display:flex;flex-direction:column;padding:7px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border);min-width:0}
+.wz-stat span{font-size:10.5px;color:var(--text-3);font-weight:700}
+.wz-stat b{font-size:15px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.wz-stat small{font-size:10px;color:var(--text-3)}
+.wz-live,.wz-more{margin-top:10px;padding:8px 14px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
+.wz-more{background:var(--card-2);color:var(--accent-deep);border:1px solid var(--border);font-size:11.5px;padding:6px 12px;margin-top:8px}
+.wz-tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.wz-tool,.wz-rule,.wz-pool{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--border);border-radius:14px;background:var(--card);cursor:pointer;min-width:0;font-family:inherit}
+.wz-tool b,.wz-pool b{font-size:13px;color:var(--ink);font-weight:800}
+.wz-tool span,.wz-pool span{font-size:11px;color:var(--text-3);line-height:1.5}
+.wz-pool em{font-style:normal;font-size:11px;color:var(--accent-deep);font-weight:700}
+.wz-evs{display:grid;gap:10px}
+.wz-ev{border:1px solid var(--border);border-radius:14px;padding:10px 12px}
+.wz-ev-h{display:flex;align-items:flex-start;gap:10px}
+.wz-ev-h img{flex:none;width:96px;height:48px;object-fit:contain}
+.wz-ev-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.wz-ev-t b{font-size:14px;color:var(--ink);font-weight:900}
+.wz-ev-t small{font-size:11px;color:var(--text-3)}
+.wz-tag{align-self:flex-start;font-size:10.5px;font-weight:800;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 12%,transparent);border-radius:999px;padding:1px 8px}
+.wz-when{font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.wz-when em{font-style:normal;font-weight:800;color:var(--ink)}
+.wz-ev-st{flex:none;font-size:11.5px;font-weight:800}
+.wz-chs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;margin-top:8px}
+.wz-ch{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 4px;border-radius:12px;text-align:center;min-width:0}
+.wz-ch img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+.wz-ch b{font-size:12px;color:var(--ink)}
+.wz-ch span{font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.wz-rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.wz-rule-k{font-size:11px;font-weight:800;color:var(--text-3)}
+.wz-rule b{font-size:18px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.wz-rule-n{font-size:11.5px;color:var(--text-2);line-height:1.6}
+.wz-bds{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.wz-bd{border:1px solid var(--border);border-radius:14px;padding:8px 10px}
+.wz-bd-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.wz-bd-h b{font-size:12.5px;color:var(--ink);flex:1 1 auto;min-width:0}
+.wz-bd-m{font-size:12.5px;font-weight:900;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.wz-bd-m small{font-size:10px;color:var(--text-3);font-weight:700;margin-right:4px}
+.wz-bd-r{display:flex;align-items:center;gap:8px;padding:3px 0;border-top:1px dashed var(--border);font-size:12px}
+.wz-bd-r img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--bg-soft)}
+.wz-bd-r span{flex:1 1 auto;color:var(--text-2)}
+.wz-bd-r b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.wz-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.wz-card{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--border);border-radius:12px;min-width:0}
+.wz-card img{flex:none;width:44px;height:44px;border-radius:9px;object-fit:cover;background:var(--bg-soft)}
+.wz-card-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.wz-card-t b{font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wz-card-t span{font-size:10.5px;color:var(--text-3)}
+.wz-card-t em{font-style:normal;font-weight:700}
+.wz-pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+@media (max-width:560px){.wz-ev-h img{width:72px;height:36px}.wz-cd{font-size:24px}.wz-chs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .wls-wl3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 13px;margin-bottom:12px;border-radius:14px;background:color-mix(in oklab,var(--cta) 10%,transparent);font-size:12.5px;line-height:1.6;color:var(--ink)}
 .wls-wl3 span{flex:1 1 260px}
 @media (max-width:560px){.wp-team{grid-template-columns:repeat(3,minmax(0,1fr))}.wp-num{font-size:26px}.wp-item select{width:104px}}
@@ -7406,6 +7461,110 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
   </sc-if>
 
+  <!-- ========== WL3 專區（程式在 js/wl3zone.js，資料在 data/wl3-zone.js） ========== -->
+  <sc-if value="{{ isWl3 }}">
+  <div class="u-a3 wp wz">
+    <sc-if value="{{ wzWait }}"><div class="empty loading">WL3 專區載入中…</div></sc-if>
+    <sc-if value="{{ wzErrHas }}"><button type="button" class="wp-retry" onClick="{{ onWzRetry }}">{{ wzErr }}</button></sc-if>
+    <sc-if value="{{ wzOn }}">
+      <div class="mk-card wz-hero">
+        <div class="wz-k">WORLD LINK 3</div>
+        <div class="wz-st">{{ wzState }}</div>
+        <sc-if value="{{ wzHasCount }}"><div class="wz-cd">{{ wzCount }}</div></sc-if>
+        <div class="wp-sub" style="margin-bottom:8px">{{ wzRange }}</div>
+        <div class="wz-stats">
+          <sc-for list="{{ wzStats }}" as="x" hint-placeholder-count="4"><div class="wz-stat"><span>{{ x.k }}</span><b>{{ x.v }}</b><sc-if value="{{ x.n }}"><small>{{ x.n }}</small></sc-if></div></sc-for>
+        </div>
+        <sc-if value="{{ wzLive }}"><button type="button" class="wz-live" onClick="{{ onWzGo }}" data-p="rank" data-patch="{{ wzPRank }}">看即時的 WL 個榜</button></sc-if>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>WL 工具</b><i>WL3 會用到的都在這裡</i></div>
+        <div class="wz-tools">
+          <button type="button" class="wz-tool" onClick="{{ onGo }}" data-p="wl3pow"><b>WL3 計算器</b><span>綜合力怎麼碰到上限；每一章的主隊、後排與合計加成</span></button>
+          <button type="button" class="wz-tool" onClick="{{ onGo }}" data-p="wlsup"><b>WL 後排加成</b><span>用你的卡算後排、截圖辨識卡庫、終章主隊試算</span></button>
+          <button type="button" class="wz-tool" onClick="{{ onGo }}" data-p="deckpro"><b>跑榜工作室</b><span>照 WL 規則找最佳隊伍與場均活動 PT</span></button>
+          <button type="button" class="wz-tool" onClick="{{ onWzGo }}" data-p="rank" data-patch="{{ wzPRank }}"><b>WL 個榜</b><span>開跑後每一章的即時排名、榜線與配隊建議</span></button>
+          <button type="button" class="wz-tool" onClick="{{ onWzGo }}" data-p="borderdb" data-patch="{{ wzPBdb }}"><b>WL 榜線資料庫</b><span>歷屆每一章的最終榜線，附交換所規劃</span></button>
+          <button type="button" class="wz-tool" onClick="{{ onWzGo }}" data-p="tut" data-patch="{{ wzPTut }}"><b>WL 配隊教學</b><span>四位同團＋五色、終章怎麼配</span></button>
+          <button type="button" class="wz-tool" onClick="{{ onGo }}" data-p="sched"><b>排程預測</b><span>台服未來活動與卡池的推估時間與命中率</span></button>
+        </div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>時程</b><i>{{ wzTzNote }}</i></div>
+        <div class="wz-evs">
+          <sc-for list="{{ wzEvents }}" as="e" hint-placeholder-count="6">
+            <div class="wz-ev">
+              <div class="wz-ev-h">
+                <img src="{{ e.logo }}" referrerpolicy="no-referrer" alt="" loading="lazy">
+                <div class="wz-ev-t">
+                  <span class="wz-tag">{{ e.tag }}</span><b>{{ e.name }}</b>
+                  <sc-if value="{{ e.hasSub }}"><small class="notranslate">{{ e.sub }}</small></sc-if>
+                  <span class="wz-when"><em>{{ e.whenTag }}</em> {{ e.when }}</span>
+                  <sc-if value="{{ e.other }}"><span class="wz-when">{{ e.other }}</span></sc-if>
+                </div>
+                <span class="wz-ev-st" style="color:{{ e.stC }}">{{ e.st }}</span>
+              </div>
+              <sc-if value="{{ e.hasChs }}"><div class="wz-chs">
+                <sc-for list="{{ e.chs }}" as="c" hint-placeholder-count="5"><div class="wz-ch" style="border:{{ c.bd }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy" style="background:color-mix(in oklab,{{ c.c }} 22%,var(--card))"><b>{{ c.n }}</b><span>{{ c.no }}</span><span>{{ c.d }}</span></div></sc-for>
+              </div></sc-if>
+              <sc-if value="{{ e.isFin }}"><div class="wp-sub" style="margin:6px 0 0">{{ e.finNote }}</div></sc-if>
+              <sc-if value="{{ e.hasInfo }}"><button type="button" class="wz-more" onClick="{{ onWzGo }}" data-p="evinfo" data-patch="{{ e.infoPatch }}">活動資料：時程、活動卡、排名獎勵</button></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>規則與滿配加成</b><i>數字取自日服 master</i></div>
+        <div class="wz-rules">
+          <sc-for list="{{ wzRules }}" as="r" hint-placeholder-count="6">
+            <button type="button" class="wz-rule" onClick="{{ onGo }}" data-p="{{ r.p }}"><span class="wz-rule-k">{{ r.k }}</span><b>{{ r.v }}</b><span class="wz-rule-n">{{ r.n }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>日服最終榜線</b><i>{{ wzTierN }}</i></div>
+        <div class="chips-scroll wp-chips"><sc-for list="{{ wzTiers }}" as="c" hint-placeholder-count="6"><button type="button" class="mk-chip" onClick="{{ onWzTier }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div>
+        <div class="wz-bds">
+          <sc-for list="{{ wzBorders }}" as="g" hint-placeholder-count="6">
+            <div class="wz-bd">
+              <div class="wz-bd-h"><span class="wz-tag">{{ g.tag }}</span><b>{{ g.name }}</b><span class="wz-bd-m"><small>總榜</small>{{ g.main }}</span></div>
+              <sc-if value="{{ g.hasRows }}"><div class="wz-bd-rows">
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="5"><div class="wz-bd-r"><img src="{{ r.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"><span>{{ r.n }}</span><b>{{ r.v }}</b></div></sc-for>
+              </div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div class="wp-sub" style="margin-top:8px">{{ wzBorderNote }}</div>
+      </div>
+
+      <div class="mk-card">
+        <div class="mk-h"><b>WL3 限定卡</b><i>26 張</i></div>
+        <div class="wz-cards">
+          <sc-for list="{{ wzCards }}" as="c" hint-placeholder-count="26">
+            <div class="wz-card"><img src="{{ c.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"><div class="wz-card-t"><b class="notranslate">{{ c.name }}</b><span>{{ c.ch }}・<em style="color:{{ c.atC }}">{{ c.at }}</em></span><span>{{ c.ev }}</span></div></div>
+          </sc-for>
+        </div>
+        <div class="wp-sub" style="margin-top:8px">{{ wzCardNote }}</div>
+      </div>
+
+      <sc-if value="{{ wzHasPools }}">
+      <div class="mk-card">
+        <div class="mk-h"><b>WL3 卡池</b><i>{{ wzPoolNote }}</i></div>
+        <div class="wz-pools">
+          <sc-for list="{{ wzPools }}" as="g" hint-placeholder-count="4">
+            <button type="button" class="wz-pool" onClick="{{ onWzGo }}" data-p="gacha" data-patch="{{ g.patch }}"><b>{{ g.n }}</b><span>{{ g.t }}・{{ g.d }}</span><span>{{ g.ch }}</span><sc-if value="{{ g.hasNote }}"><em>{{ g.note }}</em></sc-if></button>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 通知 ========== -->
   <sc-if value="{{ isQa }}">
   <div class="u-a3">
@@ -10510,7 +10669,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=19d4a52d4b"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=2bb526f44a"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
