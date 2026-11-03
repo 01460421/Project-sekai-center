@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/03', t: '介面更順手：按壓回饋、滑動導覽、圖片淡入、主題圓形切換', s: '按鈕與可點的卡片按下去會微微一縮，手機上點了有確實按到的感覺。手機底部導覽列的選取底色會從上一個分頁滑過去；分頁籤選到的那一顆會彈一下長出來。圖片載完才淡入，不再一格一格突然冒出來；圖鑑格子滑鼠移上去圖片會微微放大。切換淺色／深色或配色時，新的畫面從按下的按鈕位置圓形擴散開。系統設定「減少動態效果」時一律不播。' },
     { d: '2026/11/03', t: '動畫更流暢：新的載入畫面與換頁轉場', s: '開站的載入畫面換成六色外環旋轉、圓點波浪的動畫，只動 GPU 合成的部分，主程式忙著載入時也不會卡住；載完後淡出、內容輕輕浮現。換頁改成交叉淡化，新頁微微上浮（Chrome、Edge、Safari 18 以上），換頁時直接回到頂端，不再邊淡入邊捲動。頁內「載入中」改用同一套彩色細環，骨架閃光也改成不卡頓的寫法。系統設定「減少動態效果」時一律不播。' },
     { d: '2026/11/03', t: '開站更快：先出現載入畫面，字型不再擋住第一次顯示', s: '手機第一次開站時，以前要等 React、整包程式與 Google 字型都載完才看得到東西，慢速網路下白畫面約 4 秒。現在一打開就先顯示站名與載入條（約 0.7 秒），字型改在畫面出來之後才載，內容出現也從約 4.2 秒縮短到約 3.4 秒。載入超過 20 秒會出現「重新整理」的按鈕。' },
     { d: '2026/11/03', t: '英文與日文介面更完整', s: '英文與日文介面補上約 450 句沒翻到的字：活動與卡池時程預測、排名頁的倒數與統計、家具分類、技能說明、WL 後排加成的終章說明、說明標籤等。卡名、活動名與家具名改用日服原名（用 id 對照台服與日服 master，每天跟著資料更新），「遙, 杏, 彰人」這類名單與多句串在一起的說明也能逐段翻譯。' },
@@ -1130,7 +1131,7 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
-    this._bootDone();
+    this._bootDone(); this._imgFade();
     this._mockReady = this._carMockInit();   // 只有本機開發（localhost）帶 ?carmock= 才有值；要在任何 API 呼叫之前
     this.applyProps();
     this._initToTop();
@@ -1419,6 +1420,7 @@ class Component extends DCLogic {
     window.removeEventListener('popstate', this._pop);
     if (this._frameMO) { try { this._frameMO.disconnect(); } catch (e) {} }
     clearInterval(this._live); clearInterval(this._tick);
+    if (this._imgMo) { this._imgMo.disconnect(); this._imgMo = null; }
     document.removeEventListener('keydown', this._key);
     window.removeEventListener('message', this._frameMsg);
   }
@@ -1775,10 +1777,26 @@ class Component extends DCLogic {
     try { if (!v) localStorage.removeItem('sekai-visual'); else localStorage.setItem('sekai-visual', v); } catch (e) {}
     this.syncFrames();
   }
-  cycleTheme() {   // 淺色 → 深色 → 跟隨系統 → 淺色…
+  cycleTheme(e) {   // 淺色 → 深色 → 跟隨系統 → 淺色…
     const next = { light: 'dark', dark: 'auto', auto: 'light' }[this.state.theme] || 'light';
-    this.setState({ theme: next });
-    this.applyTheme(next);
+    this._reveal(e, () => { this.setState({ theme: next }); this.applyTheme(next); });
+  }
+  /* 換主題／配色：新畫面從按下的按鈕位置圓形擴散開（View Transitions 拍下舊畫面、新畫面用 clip-path 圓形展開）。
+     不支援、減少動態效果、motion=subtle 時直接換。 */
+  _reveal(e, run) {
+    if (!this._vtOk()) { run(); return; }
+    let x = window.innerWidth - 40, y = 30;
+    try { const r = e && e.currentTarget && e.currentTarget.getBoundingClientRect(); if (r && r.width) { x = r.left + r.width / 2; y = r.top + r.height / 2; } } catch (err) {}
+    const R = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const de = document.documentElement;
+    let t = null;
+    de.classList.add('vt-reveal');
+    try { t = document.startViewTransition(() => window.ReactDOM.flushSync(run)); } catch (err) { t = null; }
+    if (!t) { de.classList.remove('vt-reveal'); run(); return; }
+    t.ready.then(() => de.animate({ clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + Math.ceil(R) + 'px at ' + x + 'px ' + y + 'px)'] },
+      { duration: 560, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+    const done = () => de.classList.remove('vt-reveal');
+    t.finished.then(done, done);
   }
   _shuffleList(list) {   // 洗牌 → 建立連播佇列（存歌曲物件，音源版本於播放時解析）並播放
     if (!list || !list.length) return;
@@ -3023,6 +3041,28 @@ class Component extends DCLogic {
 
   /* 第一次畫面出來：收掉 app.html 的開機畫面（#boot），再開始抓字型。
      字型以前跟主程式同時下載，慢速網路下兩邊搶頻寬，主程式晚一秒到；現在等畫面出來才抓，display=swap 先用系統字型。 */
+  /* 圖片載完才淡入：插進畫面時還沒載完的 <img> 先透明，load／error 後 0.4 秒淡入；已經在快取裡的照常直接顯示。
+     src 換掉（詳細視窗換卡）也一樣。只加 class，不碰 inline style（onImgErr 設的 opacity 仍然優先）。 */
+  _imgFade() {
+    if (this._imgMo || typeof MutationObserver === 'undefined') return;
+    try { if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+    const done = ev => { const i = ev.currentTarget; i.removeEventListener('load', done); i.removeEventListener('error', done); i.classList.remove('if-0'); i.classList.add('if-1'); };
+    const hook = i => {
+      if (i.complete || i.closest('#boot')) return;
+      i.classList.remove('if-1'); i.classList.add('if-0');
+      i.addEventListener('load', done); i.addEventListener('error', done);
+    };
+    this._imgMo = new MutationObserver(list => {
+      for (const m of list) {
+        if (m.type === 'attributes') { if (m.target.tagName === 'IMG') hook(m.target); continue; }
+        for (const n of m.addedNodes) {
+          if (n.nodeType !== 1) continue;
+          if (n.tagName === 'IMG') hook(n); else if (n.firstElementChild) n.querySelectorAll('img').forEach(hook);
+        }
+      }
+    });
+    this._imgMo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  }
   _bootDone() {
     // 等第一次畫面真的上了螢幕（兩個 rAF）才淡出，才不會露出還沒畫完的頁面；淡出時內容稍微放大，像是「打開」進站
     const b = document.getElementById('boot');
@@ -8336,7 +8376,7 @@ class Component extends DCLogic {
        換頁一律直接回到頂端：以前是邊淡入邊平滑捲動，長頁捲回頂端那段會一路掃過新內容。同一頁重按才平滑捲回頂端。 */
     if (changed && this._vtOk()) {
       const R = document.documentElement.classList, rise = (window.scrollY || 0) < 120;
-      if (rise) R.add('vt-rise');
+      R.add('vt-on'); if (rise) R.add('vt-rise');
       let t = null;
       try {
         t = document.startViewTransition(() => {
@@ -8346,11 +8386,11 @@ class Component extends DCLogic {
       } catch (e) { t = null; }
       if (t) {
         if (t.ready) t.ready.catch(() => {});   // 連點換頁時前一段轉場被跳過會 reject，不要變成錯誤訊息
-        const done = () => R.remove('vt-rise');
+        const done = () => R.remove('vt-on', 'vt-rise');
         t.finished.then(done, done);
         return;
       }
-      R.remove('vt-rise');
+      R.remove('vt-on', 'vt-rise');
     }
     show();
     if (!keep) try { window.scrollTo(changed ? { top: 0 } : { top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -8991,9 +9031,10 @@ class Component extends DCLogic {
     const dockHub = this.hubOf(s.page) || s.page;   // 在子頁時也把所屬入口點亮
     const dockItems = dockSpec.map(([id, name, dot]) => ({
       id, name, dot,
-      bg: dockHub === id ? 'color-mix(in oklab,var(--accent) 15%,transparent)' : 'transparent',
+      bg: 'transparent',    // 選取底色改由 .dock-bar::before 的滑動膠囊畫（見 app.html），換分頁時從舊位置滑過去
       fg: dockHub === id ? 'var(--accent-deep)' : 'var(--text-2)'
     }));
+    const dockIdx = dockSpec.findIndex(d => d[0] === dockHub);
     /* 樞紐頁：狀態一句話＋子頁卡片 */
     const hubStatus = (() => {
       if (s.page === 'hubEvent') { const e = this.eventOf(s.live); const pd = s.pdata || {}; if (!e.id) return s.liveLoad ? '讀取活動資料…' : '目前沒有進行中的活動'; return (e.name || '') + (pd.myRank ? '　·　我的名次 #' + this.n(pd.myRank) : '') + (pd.myScore != null ? '　·　' + this.short(pd.myScore) + ' P' : ''); }
@@ -11212,7 +11253,7 @@ class Component extends DCLogic {
         ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
       subTabs, hasSubTabs: subTabs.length > 1, navExtra,
-      navGroups, dockItems, sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckIsJp: this.SRV === 'jp', deckIsTw: this.SRV !== 'jp', deckJp: this.deckJpView(s), deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
+      navGroups, dockItems, dockI: String(Math.max(0, dockIdx)), dockOn: dockIdx >= 0 ? '1' : '0', sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckIsJp: this.SRV === 'jp', deckIsTw: this.SRV !== 'jp', deckJp: this.deckJpView(s), deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
       playIconPath: s.playAbn ? 'M6 5h4v14H6z M14 5h4v14h-4z' : 'M8 5v14l11-7z',
       playerMin: s.playerMin, playerExpanded: !s.playerMin, playerPlaying: !!s.playAbn,
@@ -12778,7 +12819,7 @@ class Component extends DCLogic {
       onStkBg: () => this.setState({ stk: Object.assign({}, this.state.stk, { bg: this.state.stk.bg === 'white' ? 'transparent' : 'white' }) }),
       onStkSave: () => this.stkExport('save'),
       onStkCopy: () => this.stkExport('copy'),
-      onTheme: () => this.cycleTheme(),
+      onTheme: e => this.cycleTheme(e),
       onHpFab: () => this.loadHelp().then(() => this.hpToggle()).catch(() => this._toast('客服視窗載入失敗，請重新整理')),
       onSrvMenu: e => { if (e) e.stopPropagation(); this.setState(st => ({ srvMenu: !st.srvMenu })); },
       onSrvClose: () => this.setState({ srvMenu: false }),
@@ -12790,7 +12831,7 @@ class Component extends DCLogic {
       onJnRetry: () => { this.setState({ jnErr: '' }); this.loadJpNow(); },
       onJnLive: () => this.jnLoadLive(),
       onAiDual: () => this.loadAi().then(() => this.setAiDual(!this.state.aiDual)).catch(() => {}),
-      onTone: e => { const v = e.currentTarget.dataset.v; this.setState({ tone: v }); this.applyTone(v); },
+      onTone: e => { const v = e.currentTarget.dataset.v; this._reveal(e, () => { this.setState({ tone: v }); this.applyTone(v); }); },
       onPushToggle: async () => {
         const s = this.state; if (s.pushBusy) return;
         this.setState({ pushBusy: true });

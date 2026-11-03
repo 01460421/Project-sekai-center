@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=216e0e9df4" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=27efa38295" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -155,7 +155,7 @@ color-scheme:dark;
 .modal-related{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
 /* ===== 功能家族的分頁籤：同一個側欄入口底下的頁面在頁首切換 ===== */
 .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 16px}
-.subtab{padding:7px 14px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2;font-family:inherit;transition:transform .15s,box-shadow .15s}
+.subtab{padding:7px 14px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2;font-family:inherit;transition:transform .15s,box-shadow .15s,color .25s,scale .18s cubic-bezier(.3,.7,.4,1)}
 .subtab:hover{transform:translateY(-1px);box-shadow:var(--sh-xs)}
 /* ===== 團體主題色：只覆蓋強調色，與配色風格互斥（後者被 unit-* 蓋掉） ===== */
 :root.unit-ln{--accent:#4455dd;--accent-deep:#3344bb;--cta:linear-gradient(135deg,#5b6cf0 0%,#3344bb 100%);--rainbow:linear-gradient(90deg,#8b97ff,#5b6cf0,#4455dd,#33aaee,#7fb4f7,#b8c2ff,#8b97ff)}
@@ -335,6 +335,35 @@ select option, select optgroup{
 ::view-transition-new(sc-page){animation:vtIn .36s cubic-bezier(.22,.8,.26,1) both}
 @keyframes vtOut{to{opacity:0}}
 @keyframes vtIn{from{opacity:0;transform:translateY(14px)}}
+/* 底部導覽列在換頁轉場時獨立成一塊、直接顯示即時畫面：選取膠囊照常滑動，不跟整頁交叉淡化成兩個殘影 */
+:root.vt-on .dock-bar{view-transition-name:sc-dock}
+::view-transition-group(sc-dock){animation:none}
+::view-transition-old(sc-dock){display:none}
+::view-transition-new(sc-dock){animation:none}
+/* 換主題／配色：新畫面從按鈕位置圓形擴散（clip-path 動畫由 js/app.js 的 _reveal() 下），舊畫面不淡出 */
+:root.vt-reveal::view-transition-old(root),:root.vt-reveal::view-transition-new(root){animation:none;mix-blend-mode:normal}
+/* ---------- 互動回饋 ----------
+   按下：按鈕、可點的卡片微縮（用獨立的 scale 屬性，不會蓋掉元素本身的 transform）；:where() 權重 0，元素自己有 transition 的照舊 */
+:where(button,[role="button"]){transition:scale .18s cubic-bezier(.3,.7,.4,1)}
+:where(button):not(:disabled):active{scale:.96}
+:where([role="button"]):active{scale:.985}
+.dock-bar button:active{scale:1}
+/* 底部導覽列：選取底色是一顆會滑動的膠囊（按鈕 62px＋間距 2px，--dock-i 由 js/app.js 給） */
+.dock-bar{position:relative;isolation:isolate}
+.dock-bar::before{content:"";position:absolute;z-index:-1;top:5px;left:5px;width:62px;height:50px;border-radius:999px;background:color-mix(in oklab,var(--accent) 15%,transparent);transform:translateX(calc(var(--dock-i,0) * 64px));opacity:var(--dock-on,0);transition:transform .5s cubic-bezier(.34,1.32,.44,1),opacity .25s}
+/* 分頁籤：選到的那一顆底色用彈一下的方式長出來 */
+.subtab[aria-selected="true"]{position:relative;isolation:isolate;background:transparent!important}
+.subtab[aria-selected="true"]::before{content:"";position:absolute;inset:-1px;z-index:-1;border-radius:inherit;background:var(--cta);box-shadow:0 6px 16px -8px color-mix(in oklab,var(--accent) 80%,transparent);animation:pillIn .42s cubic-bezier(.34,1.45,.5,1) both}
+@keyframes pillIn{from{opacity:.3;transform:scale(.72)}}
+/* 圖片載完才淡入（class 由 js/app.js 的 _imgFade() 加） */
+img.if-0{opacity:0}
+img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
+/* 圖鑑格子：滑鼠移上去圖片微微放大 */
+@media (hover:hover){
+  [role="button"][data-kind] > div:first-child:has(> img){overflow:hidden}
+  [role="button"][data-kind] > div:first-child > img{transition:scale .45s cubic-bezier(.2,.7,.3,1),opacity .4s cubic-bezier(.4,0,.2,1)}
+  [role="button"][data-kind]:hover > div:first-child > img{scale:1.06}
+}
 /* 手機上 26 顆角色籤會把畫面撐高一大截,改成單列橫向滑動 */
 @media (max-width:640px){
   .chips-scroll{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -9981,7 +10010,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
      這三個在 iOS Safari 上會把 fixed 元素變成合成層，動量捲動或
      網址列收合時就會脫鉤亂飄。視覺效果全部下放到內層。 -->
 <div class="dock" style="position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;justify-content:center;pointer-events:none">
-  <div style="display:flex;gap:2px;padding:5px;border-radius:999px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-md);pointer-events:auto">
+  <div class="dock-bar" style="display:flex;gap:2px;padding:5px;border-radius:999px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-md);pointer-events:auto;--dock-i:{{ dockI }};--dock-on:{{ dockOn }}">
     <sc-for list="{{ dockItems }}" as="d" hint-placeholder-count="5">
       <button type="button" onClick="{{ onDock }}" data-p="{{ d.id }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:62px;height:50px;border:none;border-radius:999px;background:{{ d.bg }};color:{{ d.fg }};font-size:10px;font-weight:800;letter-spacing:.6px;cursor:pointer;transition:background .25s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.9)">
         <span style="width:8px;height:8px;border-radius:50%;background:{{ d.dot }}"></span>{{ d.name }}
@@ -10721,7 +10750,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=216e0e9df4"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=27efa38295"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
