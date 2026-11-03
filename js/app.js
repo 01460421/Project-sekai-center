@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/03', t: '動畫更流暢：新的載入畫面與換頁轉場', s: '開站的載入畫面換成六色外環旋轉、圓點波浪的動畫，只動 GPU 合成的部分，主程式忙著載入時也不會卡住；載完後淡出、內容輕輕浮現。換頁改成交叉淡化，新頁微微上浮（Chrome、Edge、Safari 18 以上），換頁時直接回到頂端，不再邊淡入邊捲動。頁內「載入中」改用同一套彩色細環，骨架閃光也改成不卡頓的寫法。系統設定「減少動態效果」時一律不播。' },
     { d: '2026/11/03', t: '開站更快：先出現載入畫面，字型不再擋住第一次顯示', s: '手機第一次開站時，以前要等 React、整包程式與 Google 字型都載完才看得到東西，慢速網路下白畫面約 4 秒。現在一打開就先顯示站名與載入條（約 0.7 秒），字型改在畫面出來之後才載，內容出現也從約 4.2 秒縮短到約 3.4 秒。載入超過 20 秒會出現「重新整理」的按鈕。' },
     { d: '2026/11/03', t: '英文與日文介面更完整', s: '英文與日文介面補上約 450 句沒翻到的字：活動與卡池時程預測、排名頁的倒數與統計、家具分類、技能說明、WL 後排加成的終章說明、說明標籤等。卡名、活動名與家具名改用日服原名（用 id 對照台服與日服 master，每天跟著資料更新），「遙, 杏, 彰人」這類名單與多句串在一起的說明也能逐段翻譯。' },
     { d: '2026/11/03', t: '修正：跑榜工作室把混團隊伍的綜合力算得太高', s: '台服 master 9/30 起區域道具到 Lv20 之後，跑榜工作室又把日服同一級的資料併了一次，多出來的那一列被誤當成「2 種以上團體」的加成：WL、混活這類混團隊伍，每張卡憑空多吃一輪全部區域道具，綜合力被算成 280 多萬，活動 PT 估算也跟著灌水。現在只補台服沒有的等級，WL3 終章滿配隊伍回到約 37 萬，同團隊伍不受影響。' },
@@ -3023,8 +3024,13 @@ class Component extends DCLogic {
   /* 第一次畫面出來：收掉 app.html 的開機畫面（#boot），再開始抓字型。
      字型以前跟主程式同時下載，慢速網路下兩邊搶頻寬，主程式晚一秒到；現在等畫面出來才抓，display=swap 先用系統字型。 */
   _bootDone() {
+    // 等第一次畫面真的上了螢幕（兩個 rAF）才淡出，才不會露出還沒畫完的頁面；淡出時內容稍微放大，像是「打開」進站
     const b = document.getElementById('boot');
-    if (b) { b.style.opacity = '0'; setTimeout(() => b.remove(), 260); }
+    if (b) {
+      const out = () => { b.classList.add('out'); setTimeout(() => b.remove(), 400); };
+      try { requestAnimationFrame(() => requestAnimationFrame(out)); } catch (e) { out(); }
+      setTimeout(() => { if (b.isConnected && !b.classList.contains('out')) out(); }, 600);   // 背景分頁不跑 rAF：保底
+    }
     if (!document.getElementById('sc-fonts')) {
       const l = document.createElement('link');
       l.id = 'sc-fonts'; l.rel = 'stylesheet';
@@ -8319,13 +8325,43 @@ class Component extends DCLogic {
     if (p === 'account') { this.hkLoadCfg(); if (this.state.hkTok && !this.state.hkGrant) this.hkGrantLoad().catch(() => {}); }
     if (p === 'haruki') { this.hzLoad().catch(() => {}); }
     if (p === 'calendar') this.loadSongs();
-    this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
+    const show = () => this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
       // 聚焦要等資料載完再做：載入中→載完那次重繪會把輸入框換掉，太早聚焦會被吃掉（在 _modalSide 裡完成）
       this._focusPage = (changed && !this.state.mobile && this.DB_PAGES.includes(p) && p !== 'story') ? p : null;
     });
-    if (!(opts && opts.keepScroll)) try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+    const keep = !!(opts && opts.keepScroll);
+    /* 換頁轉場：支援 View Transitions 的瀏覽器先拍下舊畫面，同步畫好新頁再交叉淡化（新頁微微上浮，見 app.html 的 ::view-transition）。
+       換頁一律直接回到頂端：以前是邊淡入邊平滑捲動，長頁捲回頂端那段會一路掃過新內容。同一頁重按才平滑捲回頂端。 */
+    if (changed && this._vtOk()) {
+      const R = document.documentElement.classList, rise = (window.scrollY || 0) < 120;
+      if (rise) R.add('vt-rise');
+      let t = null;
+      try {
+        t = document.startViewTransition(() => {
+          window.ReactDOM.flushSync(show);
+          if (!keep) window.scrollTo(0, 0);
+        });
+      } catch (e) { t = null; }
+      if (t) {
+        if (t.ready) t.ready.catch(() => {});   // 連點換頁時前一段轉場被跳過會 reject，不要變成錯誤訊息
+        const done = () => R.remove('vt-rise');
+        t.finished.then(done, done);
+        return;
+      }
+      R.remove('vt-rise');
+    }
+    show();
+    if (!keep) try { window.scrollTo(changed ? { top: 0 } : { top: 0, behavior: 'smooth' }); } catch (e) {}
+  }
+  /* 換頁轉場的條件：瀏覽器支援、使用者沒選「減少動態效果」、動畫不是「精簡」、分頁在前景、載入畫面已經收掉 */
+  _vtOk() {
+    try {
+      return typeof document.startViewTransition === 'function' && !!(window.ReactDOM && window.ReactDOM.flushSync)
+        && this.props.motion !== 'subtle' && !document.hidden && !document.getElementById('boot')   // 開站那次（深連結）在載入畫面底下，不用轉場
+        && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (e) { return false; }
   }
   /* ---------- 網址同步 ----------
      分頁、子分頁與篩選寫進網址：連結可以分享（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），
