@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=a5b2e28b9b" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=866401a381" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -31,7 +31,7 @@ window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<!-- 字型（約 200 KB）改由 js/app.js 在第一次畫面出來之後才載：慢速網路下不跟主程式搶頻寬（display=swap，先用系統字型） -->
 <noscript><link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet"></noscript>
 <!-- 分享預覽（og／twitter）與標題要放在真正的 <head>：連結預覽的爬蟲不跑 JS，也不讀 <template> 內容。
      各頁的標題與預覽圖由 js/app.js 進頁後改寫這幾個標籤。 -->
@@ -49,6 +49,22 @@ window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?
 <meta name="twitter:image" content="https://project-sekai-center.com/og/home.jpg">
 </head>
 <body>
+<!-- 開機畫面：1 MB 的頁面模板與主程式下載、執行完之前，畫面不再是一片空白；js/app.js 第一次畫完就移除。
+     20 秒還沒移除（主程式沒載到）就改成提示重新整理。只用系統字型與站內圖示，不額外抓東西；
+     存過的主題（深／淺色）與介面語言在這裡先套上，開機畫面才不會一律淺色、一律中文。 -->
+<div id="boot" role="status" aria-live="polite"><style>
+#boot{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#eef1f9;color:#252e4d;font:700 15px/1.5 system-ui,-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;transition:opacity .25s}
+:root.theme-dark #boot{background:#0c0f1d;color:#e8ebf7}
+@media (prefers-color-scheme:dark){:root:not(.theme-light) #boot{background:#0c0f1d;color:#e8ebf7}}
+#boot img{width:64px;height:64px;border-radius:16px}
+#boot i{position:relative;display:block;width:132px;height:4px;border-radius:2px;background:rgba(72,86,133,.18);overflow:hidden}
+#boot i::after{content:"";position:absolute;top:0;bottom:0;left:-45%;width:45%;border-radius:2px;background:linear-gradient(90deg,#22c3d6,#3f8cf3);animation:bootbar 1.1s ease-in-out infinite}
+@keyframes bootbar{to{left:100%}}
+#boot a{display:none;font-size:13px;color:#087f8e}
+#boot.slow a{display:block}
+@media (prefers-reduced-motion:reduce){#boot i::after{animation:none;left:0;width:100%;opacity:.5}}
+</style><img src="./icons/icon.svg" alt=""><span>SEKAI 資源中心</span><i></i><a href="" onclick="location.reload();return false">載入太久？點這裡重新整理</a></div>
+<script>(function(){var b=document.getElementById('boot');try{var t=localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(t==='dark'||t==='light')document.documentElement.classList.add('theme-'+t);var T={en:['SEKAI Resource Center','Taking too long? Tap here to reload'],ja:['SEKAI リソースセンター','読み込みに時間がかかる場合はここをタップして再読み込み'],'zh-CN':['SEKAI 资源中心','加载太久？点这里刷新']}[localStorage.getItem('sekai-lang')];if(T){b.querySelector('span').textContent=T[0];b.querySelector('a').textContent=T[1];}}catch(e){}setTimeout(function(){if(b.isConnected)b.className='slow';},20000);})();</script>
 <x-dc><template>
 <helmet>
 <style>
@@ -10678,7 +10694,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=a5b2e28b9b"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=866401a381"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

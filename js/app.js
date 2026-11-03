@@ -92,7 +92,7 @@ class Component extends DCLogic {
     this.setState({ lang: v, langHint: '' });
     if (v === 'zh-TW' && !this._i18n) return;
     try {
-      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=c6323be814');
+      if (!this._i18n) this._i18n = await import('./js/i18n.js?v=a89835eb5d');
       /* 英文、日文的全站詞典（各約一兩百 KB）只有選了那個語言才下載 */
       const DICTS = { en: () => import(scData('i18n-en.js')), ja: () => import(scData('i18n-ja.js')) };
       let dict = null;
@@ -675,6 +675,8 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/03', t: '開站更快：先出現載入畫面，字型不再擋住第一次顯示', s: '手機第一次開站時，以前要等 React、整包程式與 Google 字型都載完才看得到東西，慢速網路下白畫面約 4 秒。現在一打開就先顯示站名與載入條（約 0.7 秒），字型改在畫面出來之後才載，內容出現也從約 4.2 秒縮短到約 3.4 秒。載入超過 20 秒會出現「重新整理」的按鈕。' },
+    { d: '2026/11/03', t: '英文與日文介面更完整', s: '英文與日文介面補上約 450 句沒翻到的字：活動與卡池時程預測、排名頁的倒數與統計、家具分類、技能說明、WL 後排加成的終章說明、說明標籤等。卡名、活動名與家具名改用日服原名（用 id 對照台服與日服 master，每天跟著資料更新），「遙, 杏, 彰人」這類名單與多句串在一起的說明也能逐段翻譯。' },
     { d: '2026/11/03', t: '修正：跑榜工作室把混團隊伍的綜合力算得太高', s: '台服 master 9/30 起區域道具到 Lv20 之後，跑榜工作室又把日服同一級的資料併了一次，多出來的那一列被誤當成「2 種以上團體」的加成：WL、混活這類混團隊伍，每張卡憑空多吃一輪全部區域道具，綜合力被算成 280 多萬，活動 PT 估算也跟著灌水。現在只補台服沒有的等級，WL3 終章滿配隊伍回到約 37 萬，同團隊伍不受影響。' },
     { d: '2026/11/02', t: 'WL3 一圖流攻略', s: 'WL3 專區新增一圖流攻略：上篇是台服時程、跟 WL2 的差別、章節主隊、後排支援隊、終章、綜合力上限與開跑前準備，下篇是日服每一章的最終榜線、26 張 WL3 限定卡、WL3 卡池與常見 Q&A。可以下載上下兩張 16:9，或合併成一張的一頁式；數字都跟專區與 WL3 計算器同一份資料。' },
     { d: '2026/11/02', t: 'WL3 專區上線', s: 'World Link 3 的東西集中到一頁：台服開跑倒數（第一期「約定的Passerelle」台服已公布 2027/4/18，其他期照日服加一年推估）、六期 26 章的角色與日期、規則變化與滿配加成（章節 990%、終章 985%）、日服每一章與每一期的最終榜線、26 張 WL3 限定卡，以及台服預測卡池裡的 WL3 卡池。WL3 計算器與 WL 後排加成移到「WL3 專區」底下，跟跑榜工作室、WL 個榜、WL 榜線資料庫、配隊教學一起從專區進入。專區資料每天跟著活動資料與榜線資料庫更新，台服公布新的一期隔天就改用正式時間。' },
@@ -1127,6 +1129,7 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
+    this._bootDone();
     this._mockReady = this._carMockInit();   // 只有本機開發（localhost）帶 ?carmock= 才有值；要在任何 API 呼叫之前
     this.applyProps();
     this._initToTop();
@@ -3015,6 +3018,19 @@ class Component extends DCLogic {
     this._mkReady = import('./js/maker.js?v=aebe703c70').then(m => { Object.assign(this, m.makerMembers.call(this)); this.mkInit(); return true; })
       .catch(() => { this._mkReady = null; this.setState({ mkErr: '製作工具載入失敗，請檢查網路後按「重試」。' }); return false; });
     return this._mkReady;
+  }
+
+  /* 第一次畫面出來：收掉 app.html 的開機畫面（#boot），再開始抓字型。
+     字型以前跟主程式同時下載，慢速網路下兩邊搶頻寬，主程式晚一秒到；現在等畫面出來才抓，display=swap 先用系統字型。 */
+  _bootDone() {
+    const b = document.getElementById('boot');
+    if (b) { b.style.opacity = '0'; setTimeout(() => b.remove(), 260); }
+    if (!document.getElementById('sc-fonts')) {
+      const l = document.createElement('link');
+      l.id = 'sc-fonts'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap';
+      document.head.appendChild(l);
+    }
   }
 
   /* ---------- WL3 專區（延後載入，程式在 js/wl3zone.js，資料在 data/wl3-zone.js） ---------- */
@@ -7563,7 +7579,7 @@ class Component extends DCLogic {
     if (tab === 'ev') {
       out.sdEvents = (D.evFuture || []).map(r => ({ id: r[0], n: r[6] === 'jp' ? '（日服未公布）' + (EVN[r[2]] || r[2]) + '・推估' : r[1], t: EVN[r[2]] || r[2], when: fdt(r[3]) + ' – ' + fdt(r[4]), src: (SRC[r[6]] || SRC.pred)[0], srcC: (SRC[r[6]] || SRC.pred)[1],
         agree: r[6] === 'tw' ? (r[8] ? '模型一致' : '與模型不同') : '', agreeC: r[8] ? 'var(--text-3)' : '#dc2626', days: days(r[3]), patch: JSON.stringify({ eiId: r[0] }), isTw: r[6] === 'tw', isJp: r[6] === 'jp', notJp: r[6] !== 'jp',
-        jpWhen: r[6] === 'jp' ? '日服推估 ' + fjt(r[9]) + '（' + (r[13] || '') + '）' : '', unit: r[6] === 'jp' ? (r[2] === 'world_bloom' ? 'World Link' + (r[10] && r[10] !== 'none' ? '・' + (UN[r[10]] || r[10]) : '・跨團') : '團體候選 ' + (UN[r[10]] || r[10]) + '、' + (UN[r[11]] || r[11]) + '（最久沒輪到的團；混活約 ' + (r[12] || 0) + '%）') : '',
+        jpWhen: r[6] === 'jp' ? '日服推估 ' + fjt(r[9]) + '（' + (r[13] || '') + '）' : '', unit: r[6] === 'jp' ? (r[2] === 'world_bloom' ? 'World Link' + (r[10] && r[10] !== 'none' ? '・' + (UN[r[10]] || r[10]) : '・跨團') : '團體候選：' + (UN[r[10]] || r[10]) + '、' + (UN[r[11]] || r[11]) + '（最久沒輪到的團；混活約 ' + (r[12] || 0) + '%）') : '',
         ...(() => {
           /* 已知期數：日服 master 的加成屬性、加成角色、活動卡；推估期數：屬性候選、加成角色（照第一候選團）、4★ 可能輪空 */
           const info = r[6] !== 'jp' ? (D.evInfo || {})[String(r[0])] : null;
@@ -7575,7 +7591,7 @@ class Component extends DCLogic {
           if (r[6] === 'jp' && r[2] !== 'world_bloom' && Array.isArray(r[14]) && r[14].length) {
             const at = r[14].map(a => ({ n: AT(a)[0], c: AT(a)[1] }));
             return { hasInfo: false, hasPred: true, predAt: at, predAtNote: '屬性候選（左邊最可能；單期回測前兩名 ' + pct(CA.top2, CA.n) + '）',
-              predChars: unitChars(r[10]) ? '加成角色：若是 ' + (UN[r[10]] || r[10]) + '，就是' + unitChars(r[10]) : '',
+              predChars: unitChars(r[10]) ? '加成角色（' + (UN[r[10]] || r[10]) + '）：' + unitChars(r[10]) : '',   // 團名放括號：英日介面才能逐段翻
               predSit: r[15] ? '4★ 可能輪空：' + (this.charName(r[15]) || '#' + r[15]) + '（最近剛拿過 4★；回測 ' + ((CR.sitOut || {}).hit || 0) + '／' + ((CR.sitOut || {}).n || 0) + '）' : '' };
           }
           return { hasInfo: false, hasPred: false };
@@ -10094,7 +10110,7 @@ class Component extends DCLogic {
             };
           }),
           wlsAssume: '（假設每張後排卡都是 MR' + W.mr + '／SLv.' + W.sl + '）',
-          wlsChLabel: W.finale ? ('終章（隊長 ' + (nOf[W.leader] || '') + '）')
+          wlsChLabel: W.finale ? ('終章（隊長：' + (nOf[W.leader] || '') + '）')
             : ('第' + W.cur.chapterNo + '章 ' + (W.special != null ? (nOf[W.special] || '') : '')),
           wlsTotal: W.total.toFixed(1),
           wlsSummary: (W.finale ? '終章不限團體；與隊長同角色的卡多 5%，WL1 限定 +20% 也只認隊長那一位。' : '')

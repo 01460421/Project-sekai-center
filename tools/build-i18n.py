@@ -50,9 +50,22 @@ def build(lang):
             raise SystemExit(f'雜湊碰撞：{seen[key]!r} 與 {k!r}，請改寫其中一條')
         seen[key] = k
         out[key] = str(tr).strip()
+    # 遊戲內容名稱（卡、活動、家具）：台服名 → 日服原名，由 tools/build-i18n-names.py 產生。
+    # 人手寫的翻譯優先；雜湊撞到別條就略過這個名稱（名稱少一條沒關係，不能蓋掉介面翻譯）
+    names = SRC / 'names.json'
+    if names.exists():
+        for zh, jp in json.loads(names.read_text(encoding='utf-8')).items():
+            k = zh.strip()
+            if not k or not jp or k in src:
+                continue
+            key = b36(fnv(k))
+            if key in seen:
+                continue
+            seen[key] = k
+            out[key] = jp
     body = json.dumps(out, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
     path = ROOT / 'data' / f'i18n-{lang}.js'
-    text = (f'/* 由 tools/build-i18n.py 從 tools/i18n/{lang}.json 產生，勿手改。鍵是原文的 FNV-1a 雜湊（36 進位）。 */\n'
+    text = (f'/* 由 tools/build-i18n.py 從 tools/i18n/{lang}.json（與 names.json 的遊戲名稱）產生，勿手改。鍵是原文的 FNV-1a 雜湊（36 進位）。 */\n'
             f'export const I18N={body};\n')
     if path.exists() and path.read_text(encoding='utf-8') == text:
         print(f'{path.name} 沒有變化')

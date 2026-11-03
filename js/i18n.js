@@ -125,6 +125,8 @@ const PATTERNS = [
   [/^第 (\d+) 期・(.+)$/, 'Event $1 · $2', '第$1回・$2'], [/^第 (\d+) 期$/, 'Event $1', '第$1回'], [/^第 (\d+) 章・(.+)$/, 'Ch. $1 · $2', '第$1章・$2'],
   [/^(\d+) 個開放中・(\d+) 個即將開放$/, '$1 open · $2 coming', '開催中 $1・予定 $2'], [/^(\d+) 個開放中$/, '$1 open', '開催中 $1'],
   [/^(.+) (\d+) 人＋虛擬歌手 (\d+) 人$/, '$1 ($2) + Virtual Singers ($3)', '$1 $2人＋バーチャル・シンガー $3人'],
+  [/^第(\d+)章 ([^\s，。]{1,12})$/, 'Ch. $1 $2', '第$1章 $2'],          // WL 章節選單：「第3章 天馬司」
+  [/^([^\s\d]{1,5}) (\d{1,2}\/\d{1,2})$/, '$1 $2', '$1 $2'],
   [/^全部 (\d+) 位角色$/, 'All $1 characters', '全 $1 キャラ'],
   [/^更新於 (\d+:\d{2})・每 2 分鐘重抓（追蹤器約 10～20 秒更新一次）$/, 'Updated $1 · refetched every 2 min (tracker updates every 10–20 s)', '$1 更新・2 分ごとに再取得（トラッカーは 10～20 秒ごとに更新）'],
 ];
@@ -151,6 +153,11 @@ export function hashKey(s) {
 const NUM = /\d+(?:[.,:/]\d+)*/g;            // 10/29、12:00、1,234,567 都算一個數字
 const memo = new Map();           // 同一段字重複出現（列表、倒數）不用每次重算
 /* 一整段：小詞典 → 全站詞典 → 數字換成 {n} 再查 → 固定句型 */
+function exact(c) {
+  const small = dictMap()[lang], big = BIG[lang];
+  const h = small.get(c);
+  return h != null ? h : (big ? big[hashKey(c)] : undefined);
+}
 function look(core) {
   const small = dictMap()[lang], big = BIG[lang];
   let hit = small.get(core);
@@ -169,7 +176,8 @@ function look(core) {
       return '{' + (vals.push(m) - 1) + '}';
     });
     const t = small.get(tpl) || (big && big[hashKey(tpl)]);
-    if (t != null) return t.replace(/\{(\d+)\}/g, (m, i) => vals[+i] != null ? vals[+i] : m);
+    /* 「」裡的值（團名、活動名）若剛好是詞典裡的完整詞條就一起換（「25點，Nightcord見。」→ 25-ji, Nightcord de.），其餘維持原文 */
+    if (t != null) return t.replace(/\{(\d+)\}/g, (m, i) => { const x = vals[+i]; if (x == null) return m; return HAN.test(x) ? (exact(x) ?? x) : x; });
     if (/「|『/.test(core) && /\d/.test(core)) {      // 只換數字的版本
       const nums = [];
       const t2k = core.replace(NUM, m => '{' + (nums.push(m) - 1) + '}');
@@ -178,15 +186,15 @@ function look(core) {
     }
   }
   const i = lang === 'en' ? 1 : 2;
-  /* 句型裡的 (.+) 也是一段中文（「2 天 6 小時後結束」的「2 天 6 小時」），擷取到的部分再查一次 */
+  /* 句型裡的 (.+) 也是一段中文（「2 天 6 小時後結束」的「2 天 6 小時」），擷取到的部分再查一次；整段查不到就照標點逐段翻（「加成角色（MMJ）：MMJ」） */
   for (const p of PATTERNS) {
     const m = core.match(p[0]);
-    if (m) return p[i].replace(/\$(\d)/g, (x, k) => { const g = m[+k]; if (g == null) return ''; const t = HAN.test(g) && g !== core ? look(g) : null; return t != null ? t : g; });
+    if (m) return p[i].replace(/\$(\d)/g, (x, k) => { const g = m[+k]; if (g == null) return ''; const t = HAN.test(g) && g !== core ? (look(g) ?? bySegments(g)) : null; return t != null ? t : g; });
   }
   return null;
 }
 /* 對不上整段時，照標點切開逐段翻；每一段有中文的都翻得到才採用，不然維持原文（不做半中半英） */
-const SEP = /(\s*[・，、：；（）／|\n「」『』＋]\s*|\s+[·/–-]\s+|<[^>]+>)/;
+const SEP = /(\s*[・，、：；（）／|\n「」『』＋　]\s*|\s+[·/–-]\s+|,\s+|<[^>]+>)/;   // 「遙, 杏, 彰人」這種名單用半形逗號＋空白分隔、「WL2　第180期」用全形空白分隔，也逐段翻
 const PUNCT_EN = { '・': ' · ', '，': ', ', '、': ', ', '：': ': ', '；': '; ', '（': ' (', '）': ')', '／': ' / ', '「': ' “', '」': '” ', '『': ' “', '』': '” ', '＋': ' + ' };
 function bySegments(core) {
   const parts = core.split(SEP);
@@ -207,6 +215,21 @@ function bySegments(core) {
     return p.replace(c, t);
   });
   return any ? out.join('').replace(/\s{2,}/g, ' ').replace(/\(\s+/g, '(').replace(/“\s+/g, '“').replace(/\s+”/g, '”').trim() : null;
+}
+
+/* 好幾句串成一段（說明、註解）：照「。」切句逐句翻，每一句都翻得到才採用 */
+function bySentences(core) {
+  const ss = core.split(/(?<=[。！？])/).filter(x => x.trim());
+  if (ss.length < 2) return null;
+  const out = [];
+  for (const x of ss) {
+    const c = x.trim();
+    if (!HAN.test(c)) { out.push(c); continue; }
+    const t = look(c) ?? bySegments(c);
+    if (t == null) return null;
+    out.push(t);
+  }
+  return out.join(lang === 'en' ? ' ' : '');
 }
 
 export function tr(text) {
@@ -231,6 +254,7 @@ export function tr(text) {
     });
     if (ok) hit = parts.join('');
   }
+  if (hit == null) hit = bySentences(core);
   if (hit == null) hit = bySegments(core);
   if (memo.size > 4000) memo.clear();
   memo.set(core, hit);
