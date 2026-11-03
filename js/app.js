@@ -320,7 +320,7 @@ class Component extends DCLogic {
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
+  EXTRA_LINKS = [['x_intro', '開場動畫專場', '#ff9db4'], ['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/03', t: '開場動畫專場', s: '新的開場動畫：夜空裡六道團色流星匯聚、炸開成上千顆角色代表色的光粒子，旋轉後排出「SEKAI 資源中心」，一道光澤掃過，再從中央圓形展開進站。畫面會跟著今天變：角色生日那天換成壽星的代表色，活動期間帶出活動名稱與剩餘時間。每天第一次從首頁進站時自動播一次，約 6 秒，右上角可以「略過」或「不再自動播放」。「特別專案」或功能一覽的「開場動畫專場」可以一看再看：點畫面讓粒子炸開、重組成下一個字，拖曳可以攪動粒子，每次配色與路徑都不一樣。系統開了「減少動態效果」、或從分享連結直接進到其他頁時不會自動播。' },
     { d: '2026/11/03', t: '介面更順手：按壓回饋、滑動導覽、圖片淡入、主題圓形切換', s: '按鈕與可點的卡片按下去會微微一縮，手機上點了有確實按到的感覺。手機底部導覽列的選取底色會從上一個分頁滑過去；分頁籤選到的那一顆會彈一下長出來。圖片載完才淡入，不再一格一格突然冒出來；圖鑑格子滑鼠移上去圖片會微微放大。切換淺色／深色或配色時，新的畫面從按下的按鈕位置圓形擴散開。系統設定「減少動態效果」時一律不播。' },
     { d: '2026/11/03', t: '動畫更流暢：新的載入畫面與換頁轉場', s: '開站的載入畫面換成六色外環旋轉、圓點波浪的動畫，只動 GPU 合成的部分，主程式忙著載入時也不會卡住；載完後淡出、內容輕輕浮現。換頁改成交叉淡化，新頁微微上浮（Chrome、Edge、Safari 18 以上），換頁時直接回到頂端，不再邊淡入邊捲動。頁內「載入中」改用同一套彩色細環，骨架閃光也改成不卡頓的寫法。系統設定「減少動態效果」時一律不播。' },
     { d: '2026/11/03', t: '開站更快：先出現載入畫面，字型不再擋住第一次顯示', s: '手機第一次開站時，以前要等 React、整包程式與 Google 字型都載完才看得到東西，慢速網路下白畫面約 4 秒。現在一打開就先顯示站名與載入條（約 0.7 秒），字型改在畫面出來之後才載，內容出現也從約 4.2 秒縮短到約 3.4 秒。載入超過 20 秒會出現「重新整理」的按鈕。' },
@@ -975,7 +976,8 @@ class Component extends DCLogic {
     ...(() => { try { const j = JSON.parse(localStorage.getItem('sekai-wls-finale') || 'null');
       return j ? { wlsLeader: +j.leader || 0, wlsFm: Array.isArray(j.fm) ? j.fm : null, wlsFattr: +j.attr || 5, wlsFunit: +j.unit || 5, wlsFtitle: j.title !== false } : {}; } catch (e) { return {}; } })(),
     jpNow: null, jnErr: '', jnLive: null, jnBrd: null, jnLiveErr: '', jnLiveAt: 0,      // 日服現況（data/jp-now.js＋Worker 日服中繼）
-    srvMenu: false, srvSwitching: '', lang: 'zh-TW', langHint: '',                        // 頁首的伺服器／語言切換器
+    srvMenu: false, srvSwitching: '', lang: 'zh-TW', langHint: '',
+    introOff: (() => { try { return localStorage.getItem('sekai-intro') === 'off'; } catch (e) { return false; } })(),   // 開場動畫自動播放關掉了沒                        // 頁首的伺服器／語言切換器
     hpReady: false, hpOpen: false, hpClosing: false, hpTab: 'bot', hpMsgs: [], hpText: '', hpTyping: false, hpTip: false,   // 線上客服（js/help.js）
     hpAiText: '', hpThreads: null, hpThread: null, hpPosts: null, hpThInfo: null, hpMsgText: '', hpNewCat: '', hpSending: false, hpMsgErr: '', hpUnread: 0,
     artSrv: this.SRV, jpCards: [], jpChars: [], jpLoad: false, jpErr: '',
@@ -3063,11 +3065,64 @@ class Component extends DCLogic {
     });
     this._imgMo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
   }
+  /* ---------- 開場動畫（動畫專場；程式在 js/intro.js，要播才載） ----------
+     自動播放：每天第一次「從首頁進站」播一次（約 6 秒，隨時可略過、可關）。
+     不自動播：設定關閉、系統減少動態效果、自動化瀏覽器（測試與爬蟲）、背景分頁、帶了其他頁或參數的深連結。
+     ?intro=1 或「特別專案」「⌘K」可以手動進專場模式：點畫面換字、拖曳攪動粒子，不會自己結束。 */
+  _introAuto() {
+    try {
+      const u = new URL(location.href);
+      if (u.searchParams.get('intro') === '1') return 'show';
+      if (navigator.webdriver || document.hidden) return '';
+      if (localStorage.getItem('sekai-intro') === 'off') return '';
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return '';
+      const keys = [...u.searchParams.keys()];
+      if (keys.some(k => k !== 'page') || (u.searchParams.get('page') || 'home') !== 'home') return '';
+      if (localStorage.getItem('sekai-intro-day') === new Date().toDateString()) return '';
+      return 'auto';
+    } catch (e) { return ''; }
+  }
+  _introTr(x) { try { return this._i18n && this.state.lang !== 'zh-TW' ? this._i18n.tr(x) : x; } catch (e) { return x; } }
+  /* 今天的一句話：角色生日（用壽星的代表色）＞ 進行中的活動與剩餘時間 ＞ 日期 */
+  _introCtx() {
+    const tr = x => this._introTr(x), s = this.state, d = new Date(), out = {};
+    const bd = (s.charProfiles || []).find(b => b.m === d.getMonth() + 1 && b.d === d.getDate());
+    if (bd) { const nm = this.charShort(bd.ch) || ''; out.line = tr('今天是 ' + nm + ' 的生日'); out.accent = this.CHARA_COLOR[bd.ch]; out.words = [tr(nm), 'HAPPY BIRTHDAY']; }
+    const ev = this.eventOf(s.live);
+    if (ev && ev.name && this._endMs && this._endMs > Date.now()) {
+      const l = tr('「' + ev.name + '」進行中・剩 ' + this.dur(this._endMs - Date.now()));   // 名稱放「」：英日介面照句型翻、活動名換成日服原名
+      if (out.line) out.sub = l; else { out.line = l; out.words = [ev.name, tr('活動進行中')]; }
+    }
+    if (!out.line) out.line = d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + tr('（' + '日一二三四五六'[d.getDay()] + '）');
+    if (!out.sub) out.sub = tr('Project SEKAI 台服資源站・資料每日自動更新');
+    return out;
+  }
+  playIntro(mode) {
+    if (this._introBusy) return Promise.resolve(null);
+    this._introBusy = true;
+    const tr = x => this._introTr(x);
+    return import('./js/intro.js?v=12eb98e2aa').then(m => {
+      const h = m.playIntro({
+        mode, colors: Object.values(this.CHARA_COLOR), title: ['SEKAI', tr('資源中心')],
+        labels: { skip: tr('略過 ✕'), off: tr('不再自動播放'), hint: tr('點一下畫面換下一個・拖曳攪動粒子'), label: tr('開場動畫'), close: tr('離開 ✕') },
+        ctx: () => this._introCtx(),
+        onOff: () => { try { localStorage.setItem('sekai-intro', 'off'); } catch (e) {} this.setState({ introOff: true }); this._toast(tr('已關閉自動播放；「特別專案」裡隨時可以再看')); },
+        onClose: () => { this._introBusy = false; },
+      });
+      if (!h) this._introBusy = false;
+      return h;
+    }).catch(() => { this._introBusy = false; return null; });
+  }
   _bootDone() {
     // 等第一次畫面真的上了螢幕（兩個 rAF）才淡出，才不會露出還沒畫完的頁面；淡出時內容稍微放大，像是「打開」進站
-    const b = document.getElementById('boot');
-    if (b) {
-      const out = () => { b.classList.add('out'); setTimeout(() => b.remove(), 400); };
+    const b = document.getElementById('boot'), intro = this._introAuto();
+    const out = () => { if (!b || b.classList.contains('out')) return; b.classList.add('out'); setTimeout(() => b.remove(), 400); };
+    if (intro) {
+      if (intro === 'auto') { try { localStorage.setItem('sekai-intro-day', new Date().toDateString()); } catch (e) {} }
+      // 開場動畫蓋上來（0.35 秒淡入）之後才收掉開機畫面；載不到就照常淡出
+      this.playIntro(intro).then(h => { if (h) setTimeout(() => { if (b) b.remove(); }, 400); else out(); });
+      setTimeout(() => { if (!document.getElementById('sc-intro')) out(); }, 2500);
+    } else if (b) {
       try { requestAnimationFrame(() => requestAnimationFrame(out)); } catch (e) { out(); }
       setTimeout(() => { if (b.isConnected && !b.classList.contains('out')) out(); }, 600);   // 背景分頁不跑 rAF：保底
     }
@@ -8293,6 +8348,7 @@ class Component extends DCLogic {
 
   /* ---------- 導航 ---------- */
   go(p, opts) {
+    if (p === 'x_intro') { this.setState({ sheet: false, cmdk: false }); this.playIntro('show'); return; }   // 開場動畫專場：疊在目前頁面上播，不換頁（先收掉「更多」選單）
     if (this.EXTERNAL && this.EXTERNAL[p]) { if (p === 'x_starmap') this.openStarmap(true); else location.href = this.EXTERNAL[p]; return; }
     const changed = p !== this.state.page, silent = !!(opts && opts.silent);
     if (changed) { this._scrollPos = this._scrollPos || {}; this._scrollPos[this.state.page] = { y: window.scrollY || 0, dbN: this.state.dbN }; }   // 返回鍵時還原捲動位置
@@ -8846,6 +8902,7 @@ class Component extends DCLogic {
       out.push({ tag: '指令', tagBg: '#f0619e', main: '設定' + label + ' = ' + v.toLocaleString('en-US'), sub: '前往 EP 精算', run: () => this.setState(patch) });
     }
     if (!q) (s.recent || []).forEach(p => { if (this.PAGES[p]) out.push({ tag: '最近', tagBg: '#8b93ac', main: this.PAGES[p][0], sub: this.PAGES[p][1], run: () => this.go(p) }); });
+    if (q && /開場|動畫|專場|粒子|intro|anim/i.test(q)) out.push({ tag: '動畫', tagBg: '#ff9db4', main: '開場動畫專場', sub: '六色流星與上千顆光粒子；點畫面換下一個字', run: () => this.playIntro('show') });
     Object.keys(this.PAGES).forEach(p => {
       const [n, sub] = this.PAGES[p];
       if (!q && (s.recent || []).includes(p)) return;
@@ -12832,6 +12889,9 @@ class Component extends DCLogic {
       onJnLive: () => this.jnLoadLive(),
       onAiDual: () => this.loadAi().then(() => this.setAiDual(!this.state.aiDual)).catch(() => {}),
       onTone: e => { const v = e.currentTarget.dataset.v; this._reveal(e, () => { this.setState({ tone: v }); this.applyTone(v); }); },
+      onIntroPlay: () => this.playIntro('show'),
+      onIntroAuto: () => { const off = !this.state.introOff; try { if (off) localStorage.setItem('sekai-intro', 'off'); else { localStorage.removeItem('sekai-intro'); localStorage.removeItem('sekai-intro-day'); } } catch (e) {} this.setState({ introOff: off }); },
+      introAutoLabel: s.introOff ? '每天自動播放：關' : '每天自動播放：開', introAutoOn: !s.introOff,
       onPushToggle: async () => {
         const s = this.state; if (s.pushBusy) return;
         this.setState({ pushBusy: true });

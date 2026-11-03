@@ -16,7 +16,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=27efa38295" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=4c08577fcb" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -355,6 +355,9 @@ select option, select optgroup{
 .subtab[aria-selected="true"]{position:relative;isolation:isolate;background:transparent!important}
 .subtab[aria-selected="true"]::before{content:"";position:absolute;inset:-1px;z-index:-1;border-radius:inherit;background:var(--cta);box-shadow:0 6px 16px -8px color-mix(in oklab,var(--accent) 80%,transparent);animation:pillIn .42s cubic-bezier(.34,1.45,.5,1) both}
 @keyframes pillIn{from{opacity:.3;transform:scale(.72)}}
+/* 開場動畫專場的設定卡：幾顆團色小星點閃爍 */
+.intro-card::before,.intro-card::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(2px 2px at 12% 30%,#33ccbb,transparent),radial-gradient(2px 2px at 78% 22%,#ff9900,transparent),radial-gradient(1.6px 1.6px at 62% 70%,#ee1166,transparent),radial-gradient(1.6px 1.6px at 30% 82%,#88dd44,transparent),radial-gradient(2px 2px at 90% 64%,#4455dd,transparent),radial-gradient(1.4px 1.4px at 45% 16%,#ffffff,transparent);animation:eggTwinkle 4.5s ease-in-out infinite}
+.intro-card::after{transform:scale(-1,1);animation-delay:-2.2s}
 /* 圖片載完才淡入（class 由 js/app.js 的 _imgFade() 加） */
 img.if-0{opacity:0}
 img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
@@ -9693,6 +9696,14 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div class="u-ffc0">所有功能一覽</div>
       <div style="font-size:12px;color:var(--text-3);margin-top:4px;line-height:1.6">本站 App 版的完整功能列表，點各卡片按鈕可直接前往該功能。</div>
     </div>
+    <div class="intro-card" style="position:relative;overflow:hidden;padding:18px;border:1px solid var(--border);border-radius:18px;background:radial-gradient(120% 140% at 85% 0%,#25307a 0%,#0e1336 55%,#070a18 100%);color:#eef2ff;box-shadow:var(--sh-sm)">
+      <div style="position:relative;font-size:15px;font-weight:800;letter-spacing:.04em">開場動畫專場</div>
+      <div style="position:relative;font-size:12px;color:rgba(238,242,255,.72);margin-top:4px;margin-bottom:13px;line-height:1.7">六色流星匯聚、上千顆角色代表色的光粒子排出站名；角色生日那天換成壽星的顏色，活動期間帶出活動名稱與剩餘時間。每天第一次從首頁進站時自動播一次，隨時可以略過。專場模式可以一看再看：點畫面讓粒子炸開換下一個字、拖曳攪動粒子。</div>
+      <div style="position:relative;display:flex;flex-wrap:wrap;gap:9px">
+        <button type="button" onClick="{{ onIntroPlay }}" style="padding:9px 18px;border:none;border-radius:999px;background:linear-gradient(135deg,#4455dd,#ee1166 55%,#ff9900);color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px -10px #ee1166">▶ 播放動畫專場</button>
+        <button type="button" onClick="{{ onIntroAuto }}" aria-pressed="{{ introAutoOn }}" style="padding:9px 16px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">{{ introAutoLabel }}</button>
+      </div>
+    </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div class="u-ffc16">配色風格</div>
       <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">六種色調，深色與淺色模式都適用；選擇會記在這台裝置。</div>
@@ -10750,7 +10761,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=27efa38295"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4c08577fcb"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
