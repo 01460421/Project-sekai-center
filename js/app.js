@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/04', t: '定數表更新至 EMERALD V34，支援難易度表新表記', s: 'B30 產生器與定數查詢的定數表更新到 EMERALD V34：新增 17 張譜面（共 936 張），13 張譜面的定數調整，例如おどりゃんせ 32.4→32.3、一億年恋してる 31.4+→31.6。官方加入「XX+」等級之後，難易度表會改用新表記：原本的細分記號「+」改寫成「#」，XX+羅馬數字 N 代表原本的 XX.(N−1)，例如 32+VI# 就是 32.5+。本站讀表時會自動換算成原本的寫法，B30 的顯示與計算方式不變。' },
     { d: '2026/11/03', t: '開場動畫專場', s: '新的開場動畫：夜空裡六道團色流星匯聚、炸開成上千顆角色代表色的光粒子，旋轉後排出「SEKAI 資源中心」，一道光澤掃過，再從中央圓形展開進站。畫面會跟著今天變：角色生日那天換成壽星的代表色，活動期間帶出活動名稱與剩餘時間。每天第一次從首頁進站時自動播一次，約 6 秒，右上角可以「略過」或「不再自動播放」。「特別專案」或功能一覽的「開場動畫專場」可以一看再看：點畫面讓粒子炸開、重組成下一個字，拖曳可以攪動粒子，每次配色與路徑都不一樣。系統開了「減少動態效果」、或從分享連結直接進到其他頁時不會自動播。' },
     { d: '2026/11/03', t: '介面更順手：按壓回饋、滑動導覽、圖片淡入、主題圓形切換', s: '按鈕與可點的卡片按下去會微微一縮，手機上點了有確實按到的感覺。手機底部導覽列的選取底色會從上一個分頁滑過去；分頁籤選到的那一顆會彈一下長出來。圖片載完才淡入，不再一格一格突然冒出來；圖鑑格子滑鼠移上去圖片會微微放大。切換淺色／深色或配色時，新的畫面從按下的按鈕位置圓形擴散開。系統設定「減少動態效果」時一律不播。' },
     { d: '2026/11/03', t: '動畫更流暢：新的載入畫面與換頁轉場', s: '開站的載入畫面換成六色外環旋轉、圓點波浪的動畫，只動 GPU 合成的部分，主程式忙著載入時也不會卡住；載完後淡出、內容輕輕浮現。換頁改成交叉淡化，新頁微微上浮（Chrome、Edge、Safari 18 以上），換頁時直接回到頂端，不再邊淡入邊捲動。頁內「載入中」改用同一套彩色細環，骨架閃光也改成不卡頓的寫法。系統設定「減少動態效果」時一律不播。' },
@@ -2748,7 +2749,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=9899646d83';
+      el.src = './js/core.js?v=d384367b22';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -2995,7 +2996,7 @@ class Component extends DCLogic {
      用到 AI 成員之前先 await this.loadAi()；renderVals 讀 AI_TEMPLATES 之類的要加 || []。 */
   async loadAi() {
     if (!this._aiReady) {
-      this._aiReady = import('./js/ai.min.js?v=c97025d592').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=0c045eca25').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;

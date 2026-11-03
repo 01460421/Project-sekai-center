@@ -6475,6 +6475,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                                 <option value="plus"${this.fmt !== 'num' ? ' selected' : ''}>符號表示(34.9+、34.9++)</option>
                                 <option value="num"${this.fmt === 'num' ? ' selected' : ''}>數值計算(+=+0.05、++≈+0.1)</option>
                             </select></div>
+                            <div style="font-size:.8em;opacity:.72;margin:-2px 0 8px;line-height:1.6">難易度表新表記會自動換算:官方加入「XX+」等級後,表上的細分記號「+」改寫成「#」,XX+羅馬數字 N＝XX.(N−1)。例:32+VI#＝32.5+、32+VI＝32.5、32+X##＝32.9++。</div>
                             <div class="calc-row"><label>小數位數</label><select id="b30Dec" onchange="B30Maker.setDec(this.value)">
                                 <option value="0"${this.dec === 0 ? ' selected' : ''}>0 位(35)</option>
                                 <option value="1"${this.dec === 1 ? ' selected' : ''}>1 位(35.1)</option>
