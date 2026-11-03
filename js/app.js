@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/04', t: '修正：iPhone 收鍵盤後底部導覽列浮在半空中', s: 'iPhone 打字時 iOS 會把畫面往上推，收起鍵盤後有時候沒推回原位，底部導覽列、回頂鈕、小幫手按鈕整排浮在畫面中間，頂端標題列也被推出畫面。現在偵測到畫面沒歸位時會自動捲回去；捲不回去就把這些按鈕補回正確位置，不用再重新整理。' },
     { d: '2026/11/04', t: '定數表更新至 EMERALD V34，支援難易度表新表記', s: 'B30 產生器與定數查詢的定數表更新到 EMERALD V34：新增 17 張譜面（共 936 張），13 張譜面的定數調整，例如おどりゃんせ 32.4→32.3、一億年恋してる 31.4+→31.6。官方加入「XX+」等級之後，難易度表會改用新表記：原本的細分記號「+」改寫成「#」，XX+羅馬數字 N 代表原本的 XX.(N−1)，例如 32+VI# 就是 32.5+。本站讀表時會自動換算成原本的寫法，B30 的顯示與計算方式不變。' },
     { d: '2026/11/03', t: '開場動畫專場', s: '新的開場動畫：夜空裡六道團色流星匯聚、炸開成上千顆角色代表色的光粒子，旋轉後排出「SEKAI 資源中心」，一道光澤掃過，再從中央圓形展開進站。畫面會跟著今天變：角色生日那天換成壽星的代表色，活動期間帶出活動名稱與剩餘時間。每天第一次從首頁進站時自動播一次，約 6 秒，右上角可以「略過」或「不再自動播放」。「特別專案」或功能一覽的「開場動畫專場」可以一看再看：點畫面讓粒子炸開、重組成下一個字，拖曳可以攪動粒子，每次配色與路徑都不一樣。系統開了「減少動態效果」、或從分享連結直接進到其他頁時不會自動播。' },
     { d: '2026/11/03', t: '介面更順手：按壓回饋、滑動導覽、圖片淡入、主題圓形切換', s: '按鈕與可點的卡片按下去會微微一縮，手機上點了有確實按到的感覺。手機底部導覽列的選取底色會從上一個分頁滑過去；分頁籤選到的那一顆會彈一下長出來。圖片載完才淡入，不再一格一格突然冒出來；圖鑑格子滑鼠移上去圖片會微微放大。切換淺色／深色或配色時，新的畫面從按下的按鈕位置圓形擴散開。系統設定「減少動態效果」時一律不播。' },
@@ -1134,7 +1135,7 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
-    this._bootDone(); this._imgFade();
+    this._bootDone(); this._imgFade(); this._vvGuard();
     this._mockReady = this._carMockInit();   // 只有本機開發（localhost）帶 ?carmock= 才有值；要在任何 API 呼叫之前
     this.applyProps();
     this._initToTop();
@@ -3113,6 +3114,42 @@ class Component extends DCLogic {
       if (!h) this._introBusy = false;
       return h;
     }).catch(() => { this._introBusy = false; return null; });
+  }
+  /* iPhone：鍵盤收起後畫面沒歸位 —— iOS 打字時會把「看得到的畫面」（visual viewport）往下平移讓輸入框露出來，
+     收鍵盤後有時候沒移回去（visualViewport.offsetTop 還留著幾百 px）。結果底部導覽列、回頂鈕、小幫手這些
+     position:fixed 的東西全部浮在半空中，頂端黏著的標題列被推出畫面，要重新整理才會好。
+     沒放大、沒在打字、卻偵測到平移時：先把版面捲到眼睛看到的位置（通常這樣就歸位）；
+     WebKit 不理的話，改用 --vv-fix／--vv-top 把底部的固定元件往下、標題列往上補回去（app.html）。 */
+  _vvGuard() {
+    const vv = window.visualViewport;
+    if (!vv || this._vvG) return;
+    this._vvG = true;
+    const de = document.documentElement;
+    let timer = 0, tries = 0;
+    const typing = () => { const a = document.activeElement; return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || !!a.isContentEditable); };
+    const clear = () => { if (!de.classList.contains('vv-fix')) return; de.classList.remove('vv-fix'); de.style.removeProperty('--vv-fix'); de.style.removeProperty('--vv-top'); };
+    const check = () => {
+      timer = 0;
+      if (vv.scale > 1.02 || typing()) { tries = 0; return; }          // 使用者自己放大、或鍵盤開著：iOS 本來就會平移
+      const off = vv.offsetTop;
+      if (off < 2) { tries = 0; clear(); return; }
+      if (tries < 2) {                                                  // 第一次原地捲一下、第二次捲到看得到的位置
+        tries++;
+        try { window.scrollTo(window.scrollX, window.scrollY + (tries === 1 ? 0 : Math.round(off))); } catch (e) {}
+        timer = setTimeout(check, 180);
+        return;
+      }
+      de.style.setProperty('--vv-fix', Math.max(0, Math.round(off + vv.height - window.innerHeight)) + 'px');
+      de.style.setProperty('--vv-top', Math.round(off) + 'px');
+      de.classList.add('vv-fix');
+    };
+    const soon = ms => { clearTimeout(timer); timer = setTimeout(check, ms || 140); };
+    vv.addEventListener('resize', () => soon());
+    vv.addEventListener('scroll', () => soon());
+    document.addEventListener('focusout', () => soon(350));
+    window.addEventListener('pageshow', () => soon());
+    window.addEventListener('orientationchange', () => soon(500));
+    soon(800);
   }
   _bootDone() {
     // 等第一次畫面真的上了螢幕（兩個 rAF）才淡出，才不會露出還沒畫完的頁面；淡出時內容稍微放大，像是「打開」進站
