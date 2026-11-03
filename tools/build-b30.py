@@ -25,8 +25,14 @@ import urllib.request
 import zipfile
 import io
 
-# v33 起的新試算表(EMERALD)。舊表 18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU(PENTATONIC)停在 V32,不會再更新。
-SHEET = 'https://docs.google.com/spreadsheets/d/1MU1FlzTZ8mX91kjyHBFTIIP7s3oFSRGpvgLjZLP1BUw/export?format=xlsx'
+# 作者每出一版就開一張新試算表(EMERALD v33 → v34 …)。由新到舊依序試,抓到第一張能用的就用;
+# 版號從試算表標題(「スプシ用AP難易度表EMERALD v34」)讀。舊表 18HtlXNRxPrTMFMGfUnrLAiF3k1UjjkedSmlRX2GmLzU(PENTATONIC)停在 V32。
+SHEET_IDS = [
+    '1SJTwjOtlwrXkF2DfVuefgnWLPl7HW6ak6VTEEfzJAck',   # EMERALD v34(2026/11)
+    '1MU1FlzTZ8mX91kjyHBFTIIP7s3oFSRGpvgLjZLP1BUw',   # EMERALD v33
+]
+SHEET_URL = 'https://docs.google.com/spreadsheets/d/{}/export?format=xlsx'
+SHEET = SHEET_URL.format(SHEET_IDS[0])
 JP = 'https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main'
 from tc_source import TC, TC_SW, tc_json  # 台服 master：Haruki 為主，缺檔退回 Sekai-World
 # 台服官方不翻譯曲名(master title=日文原名);中文譯名採 Sekai Viewer 社群翻譯(非官方)
@@ -63,6 +69,33 @@ def norm(t):
                  ('=', ''), ('＝', ''), ('-', ''), ('－', ''), ('—', ''), ('ー', 'ー')]:
         t = t.replace(a, b)
     return t
+
+
+ROMAN = {'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10}
+
+
+def parse_const(raw):
+    """定數欄 → (定數, 細分記號數) 或 None(看不懂)。
+    舊表記:32.5、32.5+、32.5++(+ 是同一個 0.1 帶內的細分,++ 更難),後面可能帶 (↑)(↓)、- 之類註記。
+    新表記(官方加入「XX+」等級之後,作者的說明):
+      ・原本的細分記號「+」改成「#」(因為 + 被官方等級用掉了)
+      ・官方 XX+ 等級的定數寫成「XX+羅馬數字N」,代表原本的 XX.(N-1)
+      例:32+VI# = 32.5+、32+VI = 32.5、32+X## = 32.9++、32+I = 32.0
+    羅馬數字收半形 I/V/X 與全形 Ⅰ～Ⅹ(NFKC 會轉成半形);全形「＋」「＃」也一樣。
+    「32+」這種只有官方等級、沒有羅馬數字的寫法無法換算成定數,回 None(跳過)。"""
+    s = unicodedata.normalize('NFKC', str(raw or '')).strip()
+    m = re.match(r'^(\d{1,2})\s*\+?\s*([IVX]+)(?![A-Za-z])\s*([#+]*)', s, re.I)
+    if m:
+        n = ROMAN.get(m.group(2).upper())
+        if not n:
+            return None
+        return round(int(m.group(1)) + (n - 1) / 10, 1), min(2, len(m.group(3)))
+    if re.match(r'^\d+\s*\+', s):          # 「32+」:新表記的官方等級本身,沒有細分數字
+        return None
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*([#+]*)', s)
+    if not m:
+        return None
+    return float(m.group(1)), min(2, len(m.group(2)))
 
 
 def parse_sheet(xlsx_bytes):
@@ -103,9 +136,11 @@ def parse_sheet(xlsx_bytes):
         for r in rows_of(sheet_name):
             title = (r.get('C') or '').strip()
             raw = str(r.get('H') or '')
-            # 定數欄是文字:可能帶「+」「++」(同 0.1 帶內的三階細分)與「(↑)」等註記
-            m = re.match(r'^(\d+(?:\.\d+)?)\s*(\++)?', raw)
-            if not title or not m or title == '曲名':
+            # 定數欄是文字:舊表記 32.5+/32.5++,新表記 32+VI#(見 parse_const)
+            pc = parse_const(raw)
+            if not title or not pc or title == '曲名':
+                if title and title != '曲名' and raw.strip():
+                    print(f'  看不懂的定數:{title} {raw!r}')
                 continue
             # 數字曲名被 xlsx 存成浮點:「39」→39.0、「0.0000034」→3.4E-6,還原成原字串
             if re.match(r'^\d+\.0$', title):
@@ -113,7 +148,7 @@ def parse_sheet(xlsx_bytes):
             elif re.match(r'^[\d.]+E-?\d+$', title, re.I):
                 from decimal import Decimal
                 title = format(Decimal(title), 'f')
-            lst.append((title, float(m.group(1)), len(m.group(2) or '')))
+            lst.append((title, pc[0], pc[1]))
         res[key] = lst
         print(f'{sheet_name}:{len(lst)} 譜面')
     return res
@@ -178,16 +213,43 @@ def load_pin():
         return None
 
 
-def merge_pin(sheet, pin):
+def load_online():
+    """由新到舊試 SHEET_IDS,回傳 (難易度表, 版號或 0)。版號讀試算表標題,讀不到就是 0。"""
+    last = None
+    for sid in SHEET_IDS:
+        try:
+            sheet = parse_sheet(get(SHEET_URL.format(sid), binary=True))
+            if len(sheet.get('master', [])) < 300:
+                raise ValueError(f"MAS 只有 {len(sheet.get('master', []))} 譜面")
+        except Exception as ex:
+            print(f'試算表 {sid[:10]}… 讀取失敗({ex}),改試下一張')
+            last = ex
+            continue
+        ver = 0
+        try:
+            req = urllib.request.Request(f'https://docs.google.com/spreadsheets/d/{sid}/htmlview', headers={'user-agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                m = re.search(r'EMERALD\s*[vV](\d+)', r.read(200000).decode('utf-8', 'ignore'))
+            ver = int(m.group(1)) if m else 0
+        except Exception:
+            pass
+        print(f'線上難易度表:EMERALD v{ver or "?"}({sid[:10]}…)')
+        return sheet, ver
+    raise SystemExit(f'所有難易度表都讀不到:{last}')
+
+
+def merge_pin(sheet, pin, online_ver=0):
     """線上版已涵蓋釘選版全部曲目 → 線上版較新或相同,用線上版;
     否則線上版還是舊版 → 以線上版為底、釘選版覆蓋並補上新曲。回傳 (sheet, 來源標籤)。"""
     if not pin or not pin['version']:
-        return sheet, 'EMERALD プロセカAP難易度表'
+        return sheet, (f'EMERALD V{online_ver} プロセカAP難易度表' if online_ver else 'EMERALD プロセカAP難易度表')
     ver = f"V{pin['version']}"
     online_has = {k: {norm(t) for t, _, _ in sheet.get(k, [])} for k in ('master', 'append')}
     covered = all({norm(t) for t, _, _ in pin[k]} <= online_has[k] for k in ('master', 'append'))
     if covered:
         print(f'線上版已含釘選 {ver} 全部曲目,採線上版')
+        if online_ver >= pin['version']:
+            return sheet, f'EMERALD V{online_ver} プロセカAP難易度表'
         return sheet, f'EMERALD {ver}+ プロセカAP難易度表'
     merged = {}
     n_over = n_add = 0
@@ -207,8 +269,8 @@ def merge_pin(sheet, pin):
 
 
 def main():
-    sheet = parse_sheet(get(SHEET, binary=True))
-    sheet, source = merge_pin(sheet, load_pin())
+    sheet, online_ver = load_online()
+    sheet, source = merge_pin(sheet, load_pin(), online_ver)
     jp_musics = get(f'{JP}/musics.json')
     jp_diffs = get(f'{JP}/musicDifficulties.json')
     tc_musics = get(f'{TC}/musics.json')
