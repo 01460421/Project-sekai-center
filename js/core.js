@@ -2602,8 +2602,11 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 ]).then(([cards, ranks, epi, ml, areaLvTW, gcu, areaLvJP]) => {
                     // 台服 5 週年(2026/9/30)起區域道具也到 Lv20;日服那份只拿來補台服 master 萬一還缺的 Lv16-20。合併,areaMaxLv=20
                     // 只補台服本來就有的道具:日服 6 週年的「想いの大樹」台服還沒有,以前混進來會讓台服每支隊伍憑空多 10%
-                    const twIds = new Set(areaLvTW.map(a => a.areaItemId));
-                    const areaLv = (areaLvJP && areaLvJP.length) ? areaLvTW.concat(areaLvJP.filter(a => a.level > 15 && twIds.has(a.areaItemId))) : areaLvTW;
+                    // 也只補台服「沒有的那一級」:台服 master 已經有 Lv16-20 時,日服同一級再併進來會變成同一道具同一級兩列,
+                    // 下面會把第二列當成想いの大樹的「2 種以上團體」那一份 —— 混團隊伍（WL、混活）每張卡憑空多吃一輪全部道具，
+                    // 實測 WL 隊伍綜合力被算成 281 萬（2026/11 修正）
+                    const twIds = new Set(areaLvTW.map(a => a.areaItemId)), twKeys = new Set(areaLvTW.map(a => a.areaItemId + ':' + a.level));
+                    const areaLv = (areaLvJP && areaLvJP.length) ? areaLvTW.concat(areaLvJP.filter(a => a.level > 15 && twIds.has(a.areaItemId) && !twKeys.has(a.areaItemId + ':' + a.level))) : areaLvTW;
                     this.cards = cards;
                     cards.forEach(c => { this.cardById[c.id] = c; (this.cardsByChar[c.characterId] = this.cardsByChar[c.characterId] || []).push(c); });
                     ranks.forEach(r => { (this.ranks[r.characterId] = this.ranks[r.characterId] || {})[r.characterRank] = [r.power1BonusRate, r.power2BonusRate, r.power3BonusRate]; });
