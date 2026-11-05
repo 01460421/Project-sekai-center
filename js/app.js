@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/06', t: '新的顯示版本：舞台版', s: '參考 Awwwards 近年得獎網站做的第三種外觀，整個網站變成一座演唱會舞台：側欄是五幕的節目單（ACT I–V），每一頁頂端是這一頁的演目大標，區塊標題前是曲目編號（M01、M02…）；首頁主視覺是譜面軌道與發光的判定線，倒數是 LED 點陣看板、進度條一格一格亮起，最上面有當期活動與今日摘要的跑馬燈；捲動時區塊依序進場，換頁像布幕升起，電腦上的滑鼠帶著一圈追光。燈色預設是訊號橘，選了「團體主題色」就換成那一團的應援色。網站 icon 也換成黑底白色點陣「世」。在「自訂首頁 → 資料設定」或「功能介紹」頁切換；系統設定「減少動態效果」時不播動畫。' },
     { d: '2026/11/05', t: '新的顯示版本：文青版', s: '在原本的版面上換一套深藍 × 香檳金的外觀：標題改用襯線字，卡片與按鈕改成直角細框，倒數與數字用古典字體，網站 icon 也換成金色的「世」字章（分頁與加到主畫面的 icon 一起換）。第一次進站的引導第一步就能挑，之後在「自訂首頁 → 資料設定」或「功能介紹」頁隨時切換，選擇記在這台裝置。文青版用固定配色，配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。' },
     { d: '2026/11/04', t: '修正：iPhone 收鍵盤後底部導覽列浮在半空中', s: 'iPhone 打字時 iOS 會把畫面往上推，收起鍵盤後有時候沒推回原位，底部導覽列、回頂鈕、小幫手按鈕整排浮在畫面中間，頂端標題列也被推出畫面。現在偵測到畫面沒歸位時會自動捲回去；捲不回去就把這些按鈕補回正確位置，不用再重新整理。' },
     { d: '2026/11/04', t: '定數表更新至 EMERALD V34，支援難易度表新表記', s: 'B30 產生器與定數查詢的定數表更新到 EMERALD V34：新增 17 張譜面（共 936 張），13 張譜面的定數調整，例如おどりゃんせ 32.4→32.3、一億年恋してる 31.4+→31.6。官方加入「XX+」等級之後，難易度表會改用新表記：原本的細分記號「+」改寫成「#」，XX+羅馬數字 N 代表原本的 XX.(N−1)，例如 32+VI# 就是 32.5+。本站讀表時會自動換算成原本的寫法，B30 的顯示與計算方式不變。' },
@@ -916,7 +917,7 @@ class Component extends DCLogic {
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
     vmode: '',       // 視覺模式：''(經典) / 'ensemble'(合鳴，六團色環境光暈＋首頁旗艦動效)
-    skin: (() => { try { return localStorage.getItem('sekai-skin') === 'literary' ? 'literary' : ''; } catch (e) { return ''; } })(),   // 顯示版本：''(原版) / 'literary'(文青版)
+    skin: (() => { try { const v = localStorage.getItem('sekai-skin'); return v === 'literary' || v === 'stage' ? v : ''; } catch (e) { return ''; } })(),   // 顯示版本：''(原版) / 'literary'(文青版) / 'stage'(舞台版)
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     evType: {},
     homeBoard: 'main',   // 首頁「我的排名」切換：main=主榜 / wl=WL 個榜（只在當期是 WL 活動時可切）
@@ -1189,9 +1190,11 @@ class Component extends DCLogic {
     // 主題:讀取已存偏好(無=跟隨系統);系統色變更時,auto 模式要跟著更新 theme-color
     this.mqDark = window.matchMedia('(prefers-color-scheme: dark)');
     let savedSkin = '';
-    try { savedSkin = localStorage.getItem('sekai-skin') === 'literary' ? 'literary' : ''; } catch (e) {}
-    document.documentElement.classList.toggle('skin-literary', !!savedSkin);
+    try { const v = localStorage.getItem('sekai-skin'); savedSkin = v === 'literary' || v === 'stage' ? v : ''; } catch (e) {}
+    document.documentElement.classList.toggle('skin-literary', savedSkin === 'literary');
+    document.documentElement.classList.toggle('skin-stage', savedSkin === 'stage');
     this.setState({ skin: savedSkin });
+    setTimeout(() => this._stageFx(), 0);
     let savedTheme = 'auto';
     try { savedTheme = (localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme')) || 'auto'; } catch (e) {}
     this.setState({ theme: savedTheme });
@@ -1619,15 +1622,16 @@ class Component extends DCLogic {
     if (t === 'dark') c.add('theme-dark'); else if (t === 'light') c.add('theme-light');
     const dark = t === 'dark' || (t === 'auto' && this.mqDark && this.mqDark.matches);
     const m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = this.isLit() ? (dark ? '#0c0f1b' : '#eceef2') : (dark ? '#0c0f1d' : '#eef1f9');
+    const sk = this.skinNow();
+    if (m) m.content = sk === 'literary' ? (dark ? '#0c0f1b' : '#eceef2') : sk === 'stage' ? (dark ? '#0a0b0d' : '#eceef1') : (dark ? '#0c0f1d' : '#eef1f9');
     try { if (t === 'auto') localStorage.removeItem('sekai-theme'); else localStorage.setItem('sekai-theme', t); } catch (e) {}
     this.syncFrames();
   }
   // 內嵌的經典版 iframe（跑榜小窗／編組／卡池／進階）不會自己知道 App 換了主題，
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
-    const lit = this.isLit();
-    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: lit ? 'ink' : (this.state.tone || 'aurora'), sekaiVisual: lit ? '' : (this.state.vmode || '') };
+    const lit = this.skinFixed();
+    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: lit ? 'ink' : (this.state.tone || 'aurora'), sekaiVisual: lit ? '' : (this.state.vmode || ''), sekaiSkin: this.skinNow() };
     ['miniStudioFrame', 'deckInfoFrame', 'deckProFrame', 'shopFrame', 'b30Frame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
@@ -1642,7 +1646,7 @@ class Component extends DCLogic {
   applyTone(t) {
     const c = document.documentElement.classList;
     this.SKINS.forEach(x => c.remove('tone-' + x.v));
-    if (t && t !== 'aurora' && !this.isLit()) c.add('tone-' + t);
+    if (t && t !== 'aurora' && !this.skinFixed()) c.add('tone-' + t);
     try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
     this.syncFrames();
   }
@@ -1651,7 +1655,7 @@ class Component extends DCLogic {
   applyUnit(u) {
     const c = document.documentElement.classList;
     this.UNIT_OF.forEach(x => c.remove('unit-' + x));
-    if (u && this.UNITS[u] && !this.isLit()) c.add('unit-' + u);
+    if (u && this.UNITS[u] && this.skinNow() !== 'literary') c.add('unit-' + u);   // 舞台版：團體主題色就是舞台燈色（應援色）
     try { if (!u) localStorage.removeItem('sekai-unit'); else localStorage.setItem('sekai-unit', u); } catch (e) {}
     this.syncFrames();
   }
@@ -1701,7 +1705,11 @@ class Component extends DCLogic {
     if (hint) rows.push({ ic: '跑榜', t: hint.replace(/ →$/, ''), s: '到計算中心調整目標', p: 'calc', patchJson: JSON.stringify({ ctab: 'plan' }) });
     const lack = this.mstLack();
     if (lack && lack.n) rows.push({ ic: '豆森', t: '豆森還缺 ' + this.n(lack.n) + ' 件家具', s: '可解鎖 ' + this.n(lack.talks) + ' 則對話', p: 'mstalk', patchJson: JSON.stringify({ mstView: 'fix', mstOwnF: 'no', mstStat: 'todo' }) });
-    return { digestRows: rows, digestEmpty: !rows.length, digestDate: (d.getMonth() + 1) + '/' + d.getDate() + '（' + W[d.getDay()] + '）' };
+    const ticker = [];
+    if (ev.id != null && ev.name) ticker.push('Now on stage　第 ' + ev.id + ' 期「' + ev.name + '」');   // 名稱放在「」裡：英日文的句型才對得上
+    rows.forEach(r => { if (r.t && r.ic !== '活動' && ticker.indexOf(r.t) < 0) ticker.push(r.t); });
+    ticker.push('SEKAI 資源中心　project-sekai-center.com');
+    return { digestRows: rows, digestEmpty: !rows.length, digestDate: (d.getMonth() + 1) + '/' + d.getDate() + '（' + W[d.getDay()] + '）', stageTicker: ticker };
   }
   /* ===== .ics 匯出：活動與卡池丟進手機／桌面行事曆 ===== */
   icsText(items) {
@@ -1784,45 +1792,94 @@ class Component extends DCLogic {
   applyVisualMode(v) {
     const c = document.documentElement.classList;
     this.VMODES.forEach(x => c.remove('style-' + x.v));
-    if (v && !this.isLit()) c.add('style-' + v);
+    if (v && !this.skinFixed()) c.add('style-' + v);
     try { if (!v) localStorage.removeItem('sekai-visual'); else localStorage.setItem('sekai-visual', v); } catch (e) {}
     this.syncFrames();
   }
-  /* 顯示版本（原版／文青版）：跟主題、配色、合鳴不同，它是整套外觀——文青版有固定的深藍 × 香檳金、襯線標題與直角細框，
-     所以選了文青版時上面三軸只記住、不套用。樣式全在 app.html 的 :root.skin-literary 區塊；
+  /* 顯示版本（原版／文青版／舞台版）：跟主題、配色、合鳴不同，它是整套外觀。
+     文青版：深藍 × 香檳金、襯線標題與直角細框；舞台版：參考 Awwwards 得獎站——超大頁名、等寬標註、LED 點陣數字、訊號橘與捲動進場。
+     這兩版都是固定配色，所以選了之後 tone／unit／合鳴只記住、不套用。樣式在 app.html 的 :root.skin-literary／:root.skin-stage；
      頁首小腳本在第一次繪製前就掛 class、換好 icon，不會先閃一下原版。 */
   SKIN_VERS = [
     { v: '', n: '原版', d: '彩色漸層與圓角卡片，原本的樣子' },
-    { v: 'literary', n: '文青版', d: '深藍 × 香檳金、襯線標題與直角細框' }
+    { v: 'literary', n: '文青版', d: '深藍 × 香檳金、襯線標題與直角細框' },
+    { v: 'stage', n: '舞台版', d: '黑白舞台、LED 點陣與譜面軌道，燈色跟著應援色' }
   ];
-  isLit() { return document.documentElement.classList.contains('skin-literary'); }
+  skinNow() { const c = document.documentElement.classList; return c.contains('skin-literary') ? 'literary' : c.contains('skin-stage') ? 'stage' : ''; }
+  skinFixed() { return !!this.skinNow(); }
   applySkin(v) {
-    const lit = v === 'literary';
-    document.documentElement.classList.toggle('skin-literary', lit);
-    try { if (lit) localStorage.setItem('sekai-skin', 'literary'); else localStorage.removeItem('sekai-skin'); } catch (e) {}
-    // 另外三軸照原本的選擇重套一次：它們看 skin-literary 決定要不要掛 class
+    v = v === 'literary' || v === 'stage' ? v : '';
+    const c = document.documentElement.classList;
+    c.toggle('skin-literary', v === 'literary'); c.toggle('skin-stage', v === 'stage');
+    try { if (v) localStorage.setItem('sekai-skin', v); else localStorage.removeItem('sekai-skin'); } catch (e) {}
+    // 另外三軸照原本的選擇重套一次：它們看目前是不是固定配色的版本決定要不要掛 class
     this.applyTone(this.state.tone || 'aurora');
     this.applyUnit(this.state.unit || '');
     this.applyVisualMode(this.state.vmode || '');
     this.applyTheme(this.state.theme || 'auto');
-    this._skinIcons(lit);
-    if (lit) this._litFonts();
+    this._skinIcons(v);
+    this._skinFonts(v);
+    this._stageFx();
   }
   // 分頁 icon、主畫面 icon 與 PWA manifest 跟著版本（開站時由 app.html 頁首的小腳本先換一次）
-  _skinIcons(lit) {
+  SKIN_ICONS = {
+    '': ['./icons/icon.svg', './favicon.ico', './icons/icon-180.png', './manifest.webmanifest'],
+    literary: ['./icons/icon-literary.svg', './icons/icon-literary-48.png', './icons/icon-literary-180.png', './manifest-literary.webmanifest'],
+    stage: ['./icons/icon-stage.svg', './icons/icon-stage-48.png', './icons/icon-stage-180.png', './manifest-stage.webmanifest']
+  };
+  _skinIcons(v) {
+    const I = this.SKIN_ICONS[v || ''] || this.SKIN_ICONS[''];
     const set = (sel, href) => { const el = document.querySelector(sel); if (el && el.getAttribute('href') !== href) el.setAttribute('href', href); };
-    set('link[rel="icon"][type="image/svg+xml"]', lit ? './icons/icon-literary.svg' : './icons/icon.svg');
-    set('link[rel="icon"][sizes="48x48"]', lit ? './icons/icon-literary-48.png' : './favicon.ico');
-    set('link[rel="apple-touch-icon"]', lit ? './icons/icon-literary-180.png' : './icons/icon-180.png');
-    set('link[rel="manifest"]', lit ? './manifest-literary.webmanifest' : './manifest.webmanifest');
+    set('link[rel="icon"][type="image/svg+xml"]', I[0]);
+    set('link[rel="icon"][sizes="48x48"]', I[1]);
+    set('link[rel="apple-touch-icon"]', I[2]);
+    set('link[rel="manifest"]', I[3]);
   }
-  // 文青版的字：標題 Noto Serif TC、數字與英文 Cormorant Garamond；只有選了文青版才下載
-  _litFonts() {
-    if (document.getElementById('sc-fonts-lit')) return;
-    const l = document.createElement('link');
-    l.id = 'sc-fonts-lit'; l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Noto+Serif+TC:wght@600;700&display=swap';
-    document.head.appendChild(l);
+  /* 各版本自己的字，只有選了那一版才下載。舞台版每個字族分開一個 link：Google Fonts 只要一個字族參數錯，整份 CSS 就 400 */
+  SKIN_FONTS = {
+    literary: ['family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Noto+Serif+TC:wght@600;700'],
+    stage: ['family=Archivo:wdth,wght@62..125,100..900', 'family=Doto:wght@100..900', 'family=JetBrains+Mono:wght@400;500;600;700', 'family=Noto+Sans+TC:wght@700;900']
+  };
+  _skinFonts(v) {
+    (this.SKIN_FONTS[v] || []).forEach((q, i) => {
+      const id = 'sc-fonts-' + v + '-' + i;
+      if (document.getElementById(id)) return;
+      const l = document.createElement('link');
+      l.id = id; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?' + q + '&display=swap';
+      document.head.appendChild(l);
+    });
+  }
+  /* 舞台版的游標光圈：跟著滑鼠、移到可點的東西上會放大。只在舞台版、有滑鼠（pointer: fine）、
+     沒開「減少動態效果」、動畫不是「精簡」時建立；換回其他版本就拆掉。原生游標照常顯示，光圈只是裝飾。 */
+  _stageFx() {
+    let want = false;
+    try { want = this.skinNow() === 'stage' && this.props.motion !== 'subtle' && !!window.matchMedia && matchMedia('(pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    if (want && !this._stCur) {
+      const el = document.createElement('div'); el.className = 'st-cursor'; el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+      const st = { el, x: -100, y: -100, tx: -100, ty: -100, raf: 0 };
+      const tick = () => {
+        st.x += (st.tx - st.x) * .24; st.y += (st.ty - st.y) * .24;
+        el.style.transform = 'translate3d(' + st.x.toFixed(1) + 'px,' + st.y.toFixed(1) + 'px,0)';
+        st.raf = Math.abs(st.tx - st.x) + Math.abs(st.ty - st.y) > .4 ? requestAnimationFrame(tick) : 0;
+      };
+      st.move = e => {
+        if (e.pointerType && e.pointerType !== 'mouse') return;
+        st.tx = e.clientX; st.ty = e.clientY; el.classList.add('vis');
+        const t = e.target; el.classList.toggle('on', !!(t && t.closest && t.closest('a,button,[role="button"],input,select,textarea,label,summary')));
+        if (!st.raf) st.raf = requestAnimationFrame(tick);
+      };
+      st.out = e => { if (!e.relatedTarget) el.classList.remove('vis'); };
+      st.down = () => el.classList.add('down'); st.up = () => el.classList.remove('down');
+      document.addEventListener('pointermove', st.move, { passive: true }); document.addEventListener('mouseout', st.out);
+      document.addEventListener('pointerdown', st.down); document.addEventListener('pointerup', st.up);
+      this._stCur = st;
+    } else if (!want && this._stCur) {
+      const st = this._stCur;
+      document.removeEventListener('pointermove', st.move); document.removeEventListener('mouseout', st.out);
+      document.removeEventListener('pointerdown', st.down); document.removeEventListener('pointerup', st.up);
+      if (st.raf) cancelAnimationFrame(st.raf); st.el.remove(); this._stCur = null;
+    }
   }
   cycleTheme(e) {   // 淺色 → 深色 → 跟隨系統 → 淺色…
     const next = { light: 'dark', dark: 'auto', auto: 'light' }[this.state.theme] || 'light';
@@ -2793,7 +2850,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=d384367b22';
+      el.src = './js/core.js?v=e859210dd2';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -3213,7 +3270,7 @@ class Component extends DCLogic {
       l.href = 'https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap';
       document.head.appendChild(l);
     }
-    if (this.isLit()) this._litFonts();
+    this._skinFonts(this.skinNow());
   }
 
   /* ---------- WL3 專區（延後載入，程式在 js/wl3zone.js，資料在 data/wl3-zone.js） ---------- */
@@ -11375,8 +11432,8 @@ class Component extends DCLogic {
                                         : (this.ASSET + '/honor/' + s.colPick.abn + '/degree_main.webp'),
         rarityLabel: { low: '普通', middle: '罕見', high: '稀有', highest: '最高' }[s.colPick.rarity] || (s.colPick.rarity || '—')
       }) : null,
-      logoMat: s.skin === 'literary' ? './icons/icon-literary.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
-      logoMatName: s.skin === 'literary' ? 'SEKAI 資源中心' : (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
+      logoMat: s.skin === 'literary' ? './icons/icon-literary.svg' : s.skin === 'stage' ? './icons/icon-stage.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
+      logoMatName: s.skin ? 'SEKAI 資源中心' : (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
@@ -11386,7 +11443,7 @@ class Component extends DCLogic {
         bg: s.tone === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
         fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
-      skinLit: s.skin === 'literary',
+      skinIsLit: s.skin === 'literary', skinIsStage: s.skin === 'stage',
       skinChips: this.SKIN_VERS.map(x => {
         const on = (s.skin || '') === x.v;
         return { v: x.v, n: x.n, d: x.d, key: x.v || 'classic', on: on ? 'true' : 'false', mark: on ? '✓ 使用中' : '',
@@ -11398,6 +11455,9 @@ class Component extends DCLogic {
         fg: (s.vmode || '') === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
+      stageHeadOn: s.page !== 'home',
+      ...(() => { const hub = { hubEvent: 1, hubDb: 2, hubTool: 3, hubCom: 4 }[s.page]; const gi = hub != null ? hub : this.NAV_SECTIONS.findIndex(([, fams]) => fams.some(f => f[0] === navCur)); return { stageAct: gi >= 0 ? 'Act ' + ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][gi] : 'Encore', stageGroup: gi >= 0 ? this.NAV_SECTIONS[gi][0] : 'SEKAI' }; })(),
+      stagePath: '/ ' + String(s.page || 'home').replace(/[A-Z]/g, c => '-' + c.toLowerCase()).toUpperCase(),
       subTabs, hasSubTabs: subTabs.length > 1, navExtra,
       navGroups, dockItems, dockI: String(Math.max(0, dockIdx)), dockOn: dockIdx >= 0 ? '1' : '0', sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckIsJp: this.SRV === 'jp', deckIsTw: this.SRV !== 'jp', deckJp: this.deckJpView(s), deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
       playerOn: s.playerOn, playerCur: s.playerCur || '播放中', playerIcon: s.playAbn ? '⏸' : '▶',
@@ -13022,7 +13082,7 @@ class Component extends DCLogic {
         this.icsDownload('sekai-' + y + '-' + String(m + 1).padStart(2, '0'), items); },
       onCalTone: e => { const v = e.currentTarget.dataset.v; const o = Object.assign({}, this.state.calOff || {}); if (o[v]) delete o[v]; else o[v] = 1; this.setState({ calOff: o }); try { localStorage.setItem('sekai-cal-off', JSON.stringify(o)); } catch (e2) {} },
       onQaTpl: () => { const t = this.QA_TPL[this.state.qaKind]; if (!t) return; if (this.state.qaBody && !window.confirm('內容會被範本取代，確定？')) return; this.setState({ qaBody: t }); },
-      onSkin: e => { const v = e.currentTarget.dataset.v === 'literary' ? 'literary' : ''; if (v === (this.state.skin || '')) return; this._reveal(e, () => { this.setState({ skin: v }); this.applySkin(v); }); },
+      onSkin: e => { const d = e.currentTarget.dataset.v, v = d === 'literary' || d === 'stage' ? d : ''; if (v === (this.state.skin || '')) return; this._reveal(e, () => { this.setState({ skin: v }); this.applySkin(v); }); },
       onVisualMode: e => { const v = e.currentTarget.dataset.v; const next = this.state.vmode === v ? '' : v; this.setState({ vmode: next }); this.applyVisualMode(next); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;

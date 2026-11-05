@@ -1,0 +1,18 @@
+{
+  "name": "SEKAI 資源中心",
+  "short_name": "SEKAI 中心",
+  "description": "Project SEKAI 台服：活動、卡池、歌曲、計算工具與圖鑑",
+  "start_url": "/?src=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "zh-TW",
+  "background_color": "#eceef1",
+  "theme_color": "#eceef1",
+  "icons": [
+    { "src": "/icons/icon-stage.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icons/icon-stage-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-stage-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-stage-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

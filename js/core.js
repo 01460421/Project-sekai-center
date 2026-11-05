@@ -54,10 +54,28 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this.VISUAL_KEYS.forEach(k => c.remove('style-' + k));
                 if (v) c.add('style-' + v);
             },
-            // 被 App 以 iframe 內嵌時，主題/色調/視覺模式由母頁指定，否則深色 App 裡會出現白色面板
+            // App 的顯示版本（文青版／舞台版）：只有被 App 內嵌（?embed=）時才跟著換，經典長頁版本身維持原樣。
+            // 樣式在 css/core.css 最後的 :root.skin-literary／:root.skin-stage（只換變數、字型與圓角）
+            SKIN_FONTS: {
+                literary: ['family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Noto+Serif+TC:wght@600;700'],
+                stage: ['family=Archivo:wdth,wght@62..125,100..900', 'family=JetBrains+Mono:wght@400;500;600;700', 'family=Noto+Sans+TC:wght@700;900']
+            },
+            applySkin(v) {
+                v = v === 'literary' || v === 'stage' ? v : '';
+                const c = document.documentElement.classList;
+                c.toggle('skin-literary', v === 'literary'); c.toggle('skin-stage', v === 'stage');
+                (this.SKIN_FONTS[v] || []).forEach((q, i) => {
+                    const id = 'sc-fonts-' + v + '-' + i; if (document.getElementById(id)) return;
+                    const l = document.createElement('link'); l.id = id; l.rel = 'stylesheet';
+                    l.href = 'https://fonts.googleapis.com/css2?' + q + '&display=swap'; document.head.appendChild(l);
+                });
+            },
+            // 被 App 以 iframe 內嵌時，主題/色調/視覺模式/顯示版本由母頁指定，否則深色 App 裡會出現白色面板
             initEmbedSync() {
+                const embedded = /[?&]embed=/.test(location.search);
                 try { this.applyTone(localStorage.getItem('sekai-tone') || 'aurora'); } catch (e) {}
                 try { this.applyVisual(localStorage.getItem('sekai-visual') || ''); } catch (e) {}
+                if (embedded) { try { this.applySkin(localStorage.getItem('sekai-skin') || ''); } catch (e) {} }
                 window.addEventListener('message', e => {
                     const d = e && e.data; if (!d || typeof d !== 'object') return;
                     if (d.sekaiTheme) {
@@ -66,6 +84,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                     }
                     if (d.sekaiTone) this.applyTone(d.sekaiTone);
                     if (d.sekaiVisual !== undefined) this.applyVisual(d.sekaiVisual);
+                    if (embedded && d.sekaiSkin !== undefined) this.applySkin(d.sekaiSkin);
                 });
             }
         };

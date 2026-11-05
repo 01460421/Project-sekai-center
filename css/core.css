@@ -998,3 +998,28 @@ body.embed-distribution .container > section#distribution > h2{ display:none !im
    而看不見文字。這裡寫死,與 app.html 的處理一致。 */
 select{ color:var(--text); background-color:var(--card); }
 select option, select optgroup{ color:var(--text); background-color:var(--card); }
+
+/* ===== App 的顯示版本：被 App 以 iframe 內嵌時（js/core.js 的 applySkin，只在 ?embed= 時掛 class） =====
+   只換變數、字型與圓角，版面不動；外層 App 的樣式在 app.html 的 :root.skin-literary／:root.skin-stage */
+:root.skin-literary{--bg:#eceef2;--bg-soft:#f2f3f5;--card:#fafaf8;--card-2:#f2f3f5;--text:#2b3149;--text-light:#5f667e;--primary:#1f2742;--secondary:#4a516b;
+  --accent:#b0915a;--accent-deep:#7d6129;--link:#7d6129;--border:#d8dbe3;--border-strong:#c3c8d4;
+  --grad-cta:linear-gradient(135deg,#1f2742 0%,#2d3860 100%);--grad-ink:linear-gradient(135deg,#1b2340 0%,#2b355d 100%);--rainbow:linear-gradient(90deg,#a98a52,#d4b673 50%,#a98a52);
+  --shadow-xs:0 1px 0 rgba(31,39,66,.04);--shadow-sm:0 1px 2px rgba(31,39,66,.05);--shadow-md:0 18px 40px -22px rgba(31,39,66,.32);--shadow-lg:0 30px 70px -26px rgba(31,39,66,.42);
+  --r-lg:2px;--r-md:2px;--r-sm:2px;--font-num:'Cormorant Garamond','Noto Serif TC','Noto Serif CJK TC',serif}
+:root.skin-literary.dark{--bg:#0c0f1b;--bg-soft:#10142a;--card:#141a2c;--card-2:#1a2136;--text:#d9d6cf;--text-light:#9a9890;--primary:#efe9dc;--secondary:#b2b0aa;
+  --accent:#d4b673;--accent-deep:#d4b673;--link:#d4b673;--border:rgba(212,182,115,.16);--border-strong:rgba(212,182,115,.3);
+  --grad-cta:linear-gradient(135deg,#8a6a2e 0%,#6b5122 100%);--grad-ink:linear-gradient(135deg,#1d2547 0%,#2b3563 100%)}
+:root.skin-literary body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif}
+:root.skin-literary :is(h1,h2,h3,h4){font-family:'Noto Serif TC','Noto Serif CJK TC','Songti TC',serif;letter-spacing:.06em}
+:root.skin-literary :where(*:not(img)){border-radius:2px!important}
+:root.skin-stage{--bg:#eceef1;--bg-soft:#f4f5f7;--card:#ffffff;--card-2:#f4f5f7;--text:#1d1f25;--text-light:#575b66;--primary:#0c0d10;--secondary:#454954;
+  --accent:#ff4f1f;--accent-deep:#bf380c;--link:#bf380c;--border:#dcdfe5;--border-strong:#c2c6ce;
+  --grad-cta:linear-gradient(0deg,#0c0d10,#0c0d10);--grad-ink:linear-gradient(0deg,#0c0d10,#0c0d10);--rainbow:linear-gradient(90deg,#ff4f1f,#ff4f1f);
+  --shadow-xs:none;--shadow-sm:none;--shadow-md:0 24px 60px -32px rgba(12,13,16,.4);--shadow-lg:0 40px 90px -40px rgba(12,13,16,.5);
+  --r-lg:6px;--r-md:6px;--r-sm:4px;--font-num:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+:root.skin-stage.dark{--bg:#0a0b0d;--bg-soft:#101115;--card:#131418;--card-2:#1a1c21;--text:#e4e5e8;--text-light:#8f939c;--primary:#f4f4f2;--secondary:#b5b8c0;
+  --accent:#ff5a2a;--accent-deep:#ff7a52;--link:#ff7a52;--border:rgba(255,255,255,.09);--border-strong:rgba(255,255,255,.18);
+  --grad-cta:linear-gradient(0deg,#c43d12,#c43d12);--grad-ink:linear-gradient(0deg,#25272e,#25272e);--rainbow:linear-gradient(90deg,#ff5a2a,#ff5a2a)}
+:root.skin-stage body{font-family:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif}
+:root.skin-stage :is(h1,h2,h3,h4){font-family:'Archivo','Noto Sans TC','Noto Sans CJK TC',sans-serif;font-weight:900;letter-spacing:-.01em}
+:root.skin-stage :where(*:not(img)){border-radius:6px!important}

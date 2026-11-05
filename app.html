@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍。顯示版本選了文青版（sekai-skin=literary）就掛 skin-literary，它有固定配色，不掛 tone／合鳴 */
 try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme'));if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');
-var _s=localStorage.getItem('sekai-skin')==='literary';if(_s)document.documentElement.classList.add('skin-literary');
+var _k=localStorage.getItem('sekai-skin'),_s=_k==='literary'||_k==='stage';if(_s)document.documentElement.classList.add('skin-'+_k);
 var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora'&&!_s)document.documentElement.classList.add('tone-'+_c);
 var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble'&&!_s)document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=23c226289c" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=2f755ee1b2" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -29,8 +29,8 @@ window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="./favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
-<script>/* 文青版的 icon 與 manifest：這幾個 link 解析完就換，瀏覽器真正要用時拿到的已經是新的 */
-try{if(document.documentElement.classList.contains('skin-literary')){var _q=function(s,h){var e=document.querySelector(s);if(e)e.setAttribute('href',h);};_q('link[rel="icon"][type="image/svg+xml"]','./icons/icon-literary.svg');_q('link[rel="icon"][sizes="48x48"]','./icons/icon-literary-48.png');_q('link[rel="apple-touch-icon"]','./icons/icon-literary-180.png');_q('link[rel="manifest"]','./manifest-literary.webmanifest');var _m=document.querySelectorAll('meta[name="theme-color"]');if(_m[0])_m[0].content='#eceef2';if(_m[1])_m[1].content='#0c0f1b';}}catch(e){}</script>
+<script>/* 文青版、舞台版的 icon 與 manifest：這幾個 link 解析完就換，瀏覽器真正要用時拿到的已經是新的 */
+try{var _c=document.documentElement.classList,_v=_c.contains('skin-literary')?'literary':_c.contains('skin-stage')?'stage':'';if(_v){var _q=function(s,h){var e=document.querySelector(s);if(e)e.setAttribute('href',h);};_q('link[rel="icon"][type="image/svg+xml"]','./icons/icon-'+_v+'.svg');_q('link[rel="icon"][sizes="48x48"]','./icons/icon-'+_v+'-48.png');_q('link[rel="apple-touch-icon"]','./icons/icon-'+_v+'-180.png');_q('link[rel="manifest"]','./manifest-'+_v+'.webmanifest');var _m=document.querySelectorAll('meta[name="theme-color"]'),_tc=_v==='literary'?['#eceef2','#0c0f1b']:['#eceef1','#0a0b0d'];if(_m[0])_m[0].content=_tc[0];if(_m[1])_m[1].content=_tc[1];}}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,8 +88,16 @@ try{if(document.documentElement.classList.contains('skin-literary')){var _q=func
 :root.skin-literary #boot img{border-radius:7px}
 :root.skin-literary #boot u i{--c:#b0915a;border-radius:1px}
 :root.skin-literary #boot a{color:#7d6129}
+:root.skin-stage #boot{background:#eceef1;color:#0c0d10;letter-spacing:.04em}
+:root.skin-stage.theme-dark #boot{background:#0a0b0d;color:#f4f4f2}
+@media (prefers-color-scheme:dark){:root.skin-stage:not(.theme-light) #boot{background:#0a0b0d;color:#f4f4f2}}
+:root.skin-stage #boot b::before{background:conic-gradient(from 0deg,rgba(255,79,31,0),rgba(255,79,31,.25) 40%,#ff4f1f 85%,rgba(255,79,31,0))}
+:root.skin-stage #boot b::after{background:radial-gradient(closest-side,rgba(255,79,31,.22),rgba(255,79,31,0))}
+:root.skin-stage #boot img{border-radius:13px}
+:root.skin-stage #boot u i{--c:#ff4f1f}
+:root.skin-stage #boot a{color:#bf380c}
 </style><div><b><img src="./icons/icon.svg" alt=""></b><span>SEKAI 資源中心</span><u aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></u><a href="" onclick="location.reload();return false">載入太久？點這裡重新整理</a></div></div>
-<script>(function(){var b=document.getElementById('boot');try{if(document.documentElement.classList.contains('skin-literary')){var _bi=b.querySelector('img');if(_bi)_bi.src='./icons/icon-literary.svg';}var t=localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(t==='dark'||t==='light')document.documentElement.classList.add('theme-'+t);var T={en:['SEKAI Resource Center','Taking too long? Tap here to reload'],ja:['SEKAI リソースセンター','読み込みに時間がかかる場合はここをタップして再読み込み'],'zh-CN':['SEKAI 资源中心','加载太久？点这里刷新']}[localStorage.getItem('sekai-lang')];if(T){b.querySelector('span').textContent=T[0];b.querySelector('a').textContent=T[1];}}catch(e){}setTimeout(function(){if(b.isConnected)b.classList.add('slow');},20000);})();</script>
+<script>(function(){var b=document.getElementById('boot');try{var _bc=document.documentElement.classList,_bv=_bc.contains('skin-literary')?'literary':_bc.contains('skin-stage')?'stage':'';if(_bv){var _bi=b.querySelector('img');if(_bi)_bi.src='./icons/icon-'+_bv+'.svg';}var t=localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(t==='dark'||t==='light')document.documentElement.classList.add('theme-'+t);var T={en:['SEKAI Resource Center','Taking too long? Tap here to reload'],ja:['SEKAI リソースセンター','読み込みに時間がかかる場合はここをタップして再読み込み'],'zh-CN':['SEKAI 资源中心','加载太久？点这里刷新']}[localStorage.getItem('sekai-lang')];if(T){b.querySelector('span').textContent=T[0];b.querySelector('a').textContent=T[1];}}catch(e){}setTimeout(function(){if(b.isConnected)b.classList.add('slow');},20000);})();</script>
 <x-dc><template>
 <helmet>
 <style>
@@ -1442,6 +1450,276 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 :root.skin-literary .hp-tabs{background:rgba(212,182,115,.16)!important}
 :root.skin-literary .hp-ava{box-shadow:0 0 0 1px rgba(212,182,115,.6)!important}
 :root.skin-literary .hp-send{background:var(--ink-grad)!important;box-shadow:var(--sh-sm)!important}
+/* ===== 顯示版本：舞台版（<html class="skin-stage">）=====
+   概念：整個網站是一座演唱會舞台。側欄是五幕的節目單（ACT I–V），每一頁是一個演目（內容區頂端的超大頁名），
+   區塊標題是曲目編號（M01、M02…），首頁主視覺是譜面軌道與判定線、倒數是 LED 看板，滑鼠是追光燈，換頁像布幕升起；
+   舞台燈色（--sig）預設是訊號橘，選了「團體主題色」就換成那團的應援色。
+   手法參考 Awwwards 近年得獎站：超大字級、等寬標註與細線（說明書式介面）、單一強色、捲動進場與換頁轉場。
+   只在選了舞台版時生效；tone／合鳴只記住不套用（團體主題色在這一版變成燈色）。所有動態都尊重「減少動態效果」。 */
+.stage-head,.stage-ticker{display:none}
+:root.skin-stage{
+--st-sans:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',system-ui,sans-serif;
+--st-disp:'Archivo','Noto Sans TC','Noto Sans CJK TC','PingFang TC','Microsoft JhengHei',sans-serif;
+--st-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,'Noto Sans TC','Noto Sans CJK TC',monospace;
+--st-led:'Doto','JetBrains Mono',ui-monospace,monospace;
+--sig:#ff4f1f;--sig-btn:var(--accent-deep);--st-panel:#0c0d10;--st-on:#f4f4f2;--st-dot:rgba(12,13,16,.13);
+--bg:#eceef1;--bg-soft:#f4f5f7;--card:#ffffff;--card-2:#f4f5f7;
+--text:#1d1f25;--text-2:#454954;--text-3:#575b66;--ink:#0c0d10;
+--accent:var(--sig);--accent-deep:#bf380c;
+--border:#dcdfe5;--border-2:#c2c6ce;
+--cta:linear-gradient(0deg,#0c0d10,#0c0d10);
+--grad-cta:linear-gradient(0deg,#0c0d10,#0c0d10);
+--ink-grad:linear-gradient(0deg,#0c0d10,#0c0d10);
+--rainbow:linear-gradient(90deg,var(--sig),var(--sig));
+--sh-xs:none;--sh-sm:0 1px 0 rgba(12,13,16,.04);
+--sh-md:0 24px 60px -32px rgba(12,13,16,.4);--sh-lg:0 40px 90px -40px rgba(12,13,16,.5);
+--fes-bg:#fff0e8;--fes-fg:#a8360a;--lim-bg:#fdecef;--lim-fg:#ad2146;--free-bg:#e8f5ec;--free-fg:#156b3c;--gift-bg:#fcebf3;--gift-fg:#a2215b;--nb-bg:#e9eefc;--nb-fg:#2446a3;--ms-bg:#eaf5e7;--ms-fg:#2c661d;--sup-bg:#fdefe2;--sup-fg:#934706;--sel-bg:#f0ebfc;--sel-fg:#5631ab;--song-bg:#e5f3f9;--song-fg:#0c5b7e;--live-bg:#f0eafc;--live-fg:#572dad;--login-bg:#fcf4dc;--login-fg:#745100;--cb-bg:#fdede7;--cb-fg:#9c3815;
+--paid-bg:#faf4db;--paid-fg:#695500;--bd-bg:#f3e9fb;--bd-fg:#7434aa;
+--rr-bg:#fdebe9;--rr-fg:#a72d1e;--wl-bg:#e7f0fc;--wl-fg:#1d5899;
+--nm-bg:#e8f5ec;--nm-fg:#156b3c;--ot-bg:#eef0f4;--ot-fg:#4b546b;
+}
+:root.skin-stage.theme-dark{
+--st-panel:#141519;--st-dot:rgba(255,255,255,.07);
+--bg:#0a0b0d;--bg-soft:#101115;--card:#131418;--card-2:#1a1c21;
+--text:#e4e5e8;--text-2:#b5b8c0;--text-3:#8f939c;--ink:#f4f4f2;
+--sig:#ff5a2a;--sig-btn:#c43d12;--accent:var(--sig);--accent-deep:#ff7a52;
+--border:rgba(255,255,255,.09);--border-2:rgba(255,255,255,.18);
+--cta:linear-gradient(0deg,#c43d12,#c43d12);
+--grad-cta:linear-gradient(0deg,#c43d12,#c43d12);
+--ink-grad:linear-gradient(0deg,#25272e,#25272e);
+--rainbow:linear-gradient(90deg,var(--sig),var(--sig));
+--sh-xs:none;--sh-sm:none;
+--sh-md:0 24px 60px -30px rgba(0,0,0,.8);--sh-lg:0 40px 90px -40px rgba(0,0,0,.9);
+--fes-bg:#2a1a10;--fes-fg:#ffab80;--lim-bg:#2b1419;--lim-fg:#ff9cb4;--free-bg:#10241a;--free-fg:#7fdca6;--gift-bg:#2a1422;--gift-fg:#ff9cca;--nb-bg:#141c33;--nb-fg:#9cb8ff;--ms-bg:#132313;--ms-fg:#9be08a;--sup-bg:#2a1d10;--sup-fg:#ffbb7a;--sel-bg:#1d1633;--sel-fg:#c9b3ff;--song-bg:#0e2130;--song-fg:#86d2f5;--live-bg:#1f1633;--live-fg:#c8a8ff;--login-bg:#272010;--login-fg:#ffd96e;--cb-bg:#2a1712;--cb-fg:#ffaa8c;
+--paid-bg:#262010;--paid-fg:#f2dc78;--bd-bg:#221633;--bd-fg:#d8acff;
+--rr-bg:#2a1512;--rr-fg:#ffa092;--wl-bg:#111d33;--wl-fg:#93c2ff;
+--nm-bg:#10241a;--nm-fg:#86e2ac;--ot-bg:#191c27;--ot-fg:#a9b1c7;
+}
+@media (prefers-color-scheme:dark){:root.skin-stage:not(.theme-light){
+--st-panel:#141519;--st-dot:rgba(255,255,255,.07);
+--bg:#0a0b0d;--bg-soft:#101115;--card:#131418;--card-2:#1a1c21;
+--text:#e4e5e8;--text-2:#b5b8c0;--text-3:#8f939c;--ink:#f4f4f2;
+--sig:#ff5a2a;--sig-btn:#c43d12;--accent:var(--sig);--accent-deep:#ff7a52;
+--border:rgba(255,255,255,.09);--border-2:rgba(255,255,255,.18);
+--cta:linear-gradient(0deg,#c43d12,#c43d12);
+--grad-cta:linear-gradient(0deg,#c43d12,#c43d12);
+--ink-grad:linear-gradient(0deg,#25272e,#25272e);
+--rainbow:linear-gradient(90deg,var(--sig),var(--sig));
+--sh-xs:none;--sh-sm:none;
+--sh-md:0 24px 60px -30px rgba(0,0,0,.8);--sh-lg:0 40px 90px -40px rgba(0,0,0,.9);
+--fes-bg:#2a1a10;--fes-fg:#ffab80;--lim-bg:#2b1419;--lim-fg:#ff9cb4;--free-bg:#10241a;--free-fg:#7fdca6;--gift-bg:#2a1422;--gift-fg:#ff9cca;--nb-bg:#141c33;--nb-fg:#9cb8ff;--ms-bg:#132313;--ms-fg:#9be08a;--sup-bg:#2a1d10;--sup-fg:#ffbb7a;--sel-bg:#1d1633;--sel-fg:#c9b3ff;--song-bg:#0e2130;--song-fg:#86d2f5;--live-bg:#1f1633;--live-fg:#c8a8ff;--login-bg:#272010;--login-fg:#ffd96e;--cb-bg:#2a1712;--cb-fg:#ffaa8c;
+--paid-bg:#262010;--paid-fg:#f2dc78;--bd-bg:#221633;--bd-fg:#d8acff;
+--rr-bg:#2a1512;--rr-fg:#ffa092;--wl-bg:#111d33;--wl-fg:#93c2ff;
+--nm-bg:#10241a;--nm-fg:#86e2ac;--ot-bg:#191c27;--ot-fg:#a9b1c7;
+}}
+
+/* ---- 底：點陣格紙、選取色、本文字型 ---- */
+:root.skin-stage body::before{background:radial-gradient(circle at 1px 1px,var(--st-dot) 1px,transparent 1.3px) 0 0/24px 24px}
+:root.skin-stage ::selection{background:color-mix(in oklab,var(--sig) 28%,transparent)}
+:root.skin-stage body,:root.skin-stage [style*="Huninn"]{font-family:var(--st-sans)!important}
+:root.skin-stage[lang="zh-Hans-CN"] [style*="Huninn"]{font-family:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif!important}
+:root.skin-stage :is(input,select,textarea):focus-visible,:root.skin-stage :is(button,a,[role="button"]):focus-visible{outline:2px solid var(--sig)!important;outline-offset:2px}
+
+/* ---- 形狀：卡片 6px、膠囊照舊、圓形照舊；class 寫的膠囊控制項也收成膠囊 ---- */
+:root.skin-stage :where(:not([style*="border-radius: 50%"],[style*="border-radius: 999px"],.lit-keep,.lit-keep *)){border-radius:6px!important}
+:root.skin-stage :is(.subtab,.srv-btn,.srv-lang,.car-btn,.car-mini,.car-seg>button,.car-tag,.sei-chip button){border-radius:999px!important}
+:root.skin-stage :is(.bot-side-h i,.sei-leg i,.gs-dot,.bp-curdot,.jd-at i,.wz-ch img,.wz-bd-r img,.srv-dot,.srv-sw-spin,.jn-wl img,.hp-tip button,.hp-ava,.hp-ava img,.hp-ava i,.hp-tab i,.hp-mini,.hp-typing span,.hp-tool .spin,.hp-send,.hp-send .spin,.hp-th i,.hp-fab,.st-cursor){border-radius:50%!important}
+:root.skin-stage .dock-bar::before{border-radius:999px}
+
+/* ---- 字：數字與標註用等寬，標題用 Archivo／黑體 900 ---- */
+:root.skin-stage :is([style*='font-family: "M PLUS Rounded'],.car-slot,.car-bn,.sei-t,.sei-yl,.sei-xl,.u-cf6,.gs-kpi b,.gc-kv .gc-big,.lu-rank,.bp-sumc b,.bp-o b,.bp-it b,.bp-req,.bp-dew,.bp-pt,.bp-scr b,.jn-plv,.jd-meta,.lu-stat b,.cl-stats b,.jn-cd,.jn-tier span,.jn-rk){font-family:var(--st-mono)!important;font-variant-numeric:tabular-nums;letter-spacing:-.01em!important}
+:root.skin-stage :is(.u-ffc0,.u-ffc12,.u-ffc14,.u-ffc16,.u-ffc20,h1,h2,h3){font-family:var(--st-disp)!important;font-weight:800!important;letter-spacing:-.005em}
+:root.skin-stage .u-ffc0{font-size:17px!important}
+/* 區塊標題：前面一顆訊號燈＋本頁第幾個區塊（說明書式編號） */
+:root.skin-stage .sc-page{counter-reset:stsec}
+:root.skin-stage .u-whbbb7{width:8px!important;height:8px!important;border-radius:50%!important;background:var(--sig)!important;box-shadow:0 0 0 3px color-mix(in oklab,var(--sig) 20%,transparent)!important}
+:root.skin-stage .sc-page .u-ffc0::before{counter-increment:stsec;content:'M' counter(stsec,decimal-leading-zero);display:inline-block;margin-right:9px;padding:3px 5px 2px;border:1px solid var(--border-2);border-radius:3px;font:600 10px/1 var(--st-mono);letter-spacing:.04em;color:var(--text-2);vertical-align:3px}
+
+/* ---- 頁首：細線、緊湊；頁名交給內容區的大標 ---- */
+:root.skin-stage .app-head{background:color-mix(in oklab,var(--bg) 84%,transparent)!important}
+:root.skin-stage .app-head>span:first-child{height:1px!important;background:var(--border)!important;opacity:1!important;animation:none!important}
+:root.skin-stage .app-head div:has(+.page-sub){font-family:var(--st-disp);font-weight:800!important;font-size:17px!important;letter-spacing:-.01em!important}
+:root.skin-stage .app-head .page-sub{font-family:var(--st-mono);font-size:10.5px!important;letter-spacing:.02em}
+:root.skin-stage .srv-btn,:root.skin-stage .app-head>button{box-shadow:none!important}
+
+/* ---- 內容區頂端的超大頁名（首頁不顯示） ---- */
+:root.skin-stage .stage-head{display:block;margin:2px 0 24px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+:root.skin-stage .stage-kick{display:flex;align-items:center;gap:10px;font:500 11px/1.4 var(--st-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)}
+:root.skin-stage .stage-kick::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sig);flex:none}
+:root.skin-stage .stage-kick b{font-weight:600;color:var(--text-2);letter-spacing:.08em}
+:root.skin-stage .stage-kick i{font-style:normal}
+:root.skin-stage .stage-kick i:first-child{color:var(--accent-deep);font-weight:600}
+:root.skin-stage .stage-title{display:block;margin-top:12px;font-family:var(--st-disp);font-weight:900;font-size:clamp(42px,6.2vw,96px);line-height:.98;letter-spacing:-.035em;color:var(--ink);text-wrap:balance}
+:root.skin-stage .stage-sub{display:block;margin-top:14px;max-width:64ch;font-size:13.5px;line-height:1.7;color:var(--text-2)}
+
+/* ---- 側欄：白底、等寬分組、編號、目前頁黑色膠囊＋橘燈 ---- */
+:root.skin-stage .side-nav{background:var(--card)!important;backdrop-filter:none!important;counter-reset:stgrp stnav}
+:root.skin-stage .side-nav>div:first-child>span:first-child{width:34px!important;height:34px!important;background:none!important}
+:root.skin-stage .side-nav>div:first-child img{width:34px!important;height:34px!important;filter:none!important}
+:root.skin-stage .side-nav>div:first-child>span:last-child{font-family:var(--st-disp);font-size:12.5px!important;font-weight:700!important;letter-spacing:.06em!important;color:var(--text-2)!important}
+:root.skin-stage .side-nav>div:first-child em{font-family:var(--st-disp)!important;font-style:normal!important;font-weight:900;font-stretch:118%;font-size:21px;letter-spacing:-.02em;margin-right:4px;background:none!important;color:var(--ink)!important;-webkit-text-fill-color:currentColor;animation:none!important}
+:root.skin-stage .side-nav>button{box-shadow:none!important;background:var(--card-2)!important}
+:root.skin-stage .side-nav button[data-g]{font-family:var(--st-mono);font-size:10px!important;letter-spacing:.14em!important;color:var(--text-3)!important}
+:root.skin-stage .side-nav button[data-g]::before{counter-increment:stgrp;content:'ACT ' counter(stgrp,upper-roman);margin-right:9px;color:var(--accent-deep);letter-spacing:.06em}
+:root.skin-stage .side-nav button[data-p]{font-weight:600!important;position:relative}
+:root.skin-stage .side-nav button[data-p]::after{counter-increment:stnav;content:counter(stnav,decimal-leading-zero);margin-left:auto;font:500 10px/1 var(--st-mono);color:var(--text-3);opacity:.7}
+:root.skin-stage .side-nav button[data-p]>span:first-child{width:6px!important;height:6px!important;background:var(--border-2)!important}
+:root.skin-stage .side-nav button[aria-current="page"]{background:var(--ink)!important;color:var(--card)!important;font-weight:700!important;border-radius:999px!important}
+:root.skin-stage .side-nav button[aria-current="page"]>span:first-child{background:var(--sig)!important;box-shadow:0 0 8px var(--sig)}
+:root.skin-stage .side-nav button[aria-current="page"]::after{color:var(--card);opacity:.6}
+:root.skin-stage .side-nav button[data-p]:not([aria-current="page"]):hover{background:var(--card-2)!important}
+
+/* ---- 首頁跑馬燈 ---- */
+:root.skin-stage .stage-ticker{display:block;overflow:hidden;margin:0 0 -4px;padding:11px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--border);-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+:root.skin-stage .stage-ticker-track{display:flex;width:max-content;animation:stTick 70s linear infinite}
+:root.skin-stage .stage-ticker:hover .stage-ticker-track{animation-play-state:paused}
+:root.skin-stage .stage-ticker span{display:inline-flex;align-items:center;gap:26px;padding-right:26px;font:600 12.5px/1.2 var(--st-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+:root.skin-stage .stage-ticker span::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--sig)}
+@keyframes stTick{to{transform:translateX(-50%)}}
+
+/* ---- 首頁主視覺（各頁 .se-hero 共用）：黑色舞台、橘色聚光、LED 點陣倒數、分段進度條 ---- */
+:root.skin-stage .se-hero{background:var(--st-panel)!important;color:var(--st-on)!important;box-shadow:none!important;outline:1px solid rgba(255,255,255,.06);outline-offset:-1px}
+:root.skin-stage .se-hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(560px 320px at 92% -12%,color-mix(in oklab,var(--sig) 36%,transparent),transparent 70%),radial-gradient(circle at 1px 1px,rgba(255,255,255,.08) 1px,transparent 1.4px) 0 0/16px 16px}
+:root.skin-stage .se-hero>.se-flow,:root.skin-stage .se-hero>span[style*="radial-gradient"]{display:none!important}
+:root.skin-stage .se-hero::after{content:'';position:absolute;left:-30%;right:-30%;bottom:-1px;height:78%;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(244,244,242,.11) 0 1px,transparent 1px calc(100%/12)),linear-gradient(0deg,color-mix(in oklab,var(--sig) 30%,transparent),transparent 42%);transform:perspective(300px) rotateX(62deg);transform-origin:50% 100%;box-shadow:inset 0 -3px 0 var(--sig);-webkit-mask-image:linear-gradient(0deg,#000 10%,transparent 96%);mask-image:linear-gradient(0deg,#000 10%,transparent 96%)}
+:root.skin-stage .se-hero>div{z-index:1}
+:root.skin-stage .se-hero div[style*="letter-spacing: 2.2px"],:root.skin-stage .se-hero div[style*="letter-spacing: 2px"]{font-family:var(--st-mono);letter-spacing:.14em!important;text-transform:uppercase;opacity:.8!important}
+:root.skin-stage .se-hero i[style*="border-radius: 50%"]{background:var(--sig)!important;box-shadow:0 0 10px var(--sig)}
+:root.skin-stage .se-title{font-family:var(--st-disp)!important;font-weight:900!important;font-stretch:112%;font-size:clamp(30px,5vw,62px)!important;line-height:1!important;letter-spacing:-.03em;text-transform:uppercase;color:var(--st-on)}
+:root.skin-stage .se-hero span[style*="padding: 3px 11px"]{background:transparent!important;box-shadow:inset 0 0 0 1px rgba(244,244,242,.3);font-family:var(--st-mono)!important;font-size:11px!important;letter-spacing:.04em;color:rgba(244,244,242,.9)}
+:root.skin-stage .se-hero [style*="rgb(255, 92, 122)"]{background:var(--sig)!important;font-family:var(--st-mono)}
+:root.skin-stage #liveCd{font-family:var(--st-led)!important;font-weight:800!important;font-size:clamp(40px,6vw,78px)!important;line-height:1;letter-spacing:.02em!important;color:var(--sig)!important;text-shadow:0 0 22px color-mix(in oklab,var(--sig) 50%,transparent)}
+:root.skin-stage .se-hero button[data-p]{border-color:rgba(244,244,242,.5)!important;background:transparent!important;color:var(--st-on)!important;font-family:var(--st-mono);letter-spacing:.04em;transition:background .25s,color .25s,border-color .25s}
+:root.skin-stage .se-hero button[data-p]:hover{background:var(--sig-btn)!important;border-color:var(--sig)!important;color:#fff!important}
+:root.skin-stage .se-hero div:has(>.se-flow){height:12px!important;margin-top:20px!important;background:rgba(244,244,242,.09)!important;border-radius:2px!important;position:relative}
+:root.skin-stage .se-hero div>.se-flow{background:var(--sig)!important;border-radius:0!important;box-shadow:0 0 16px color-mix(in oklab,var(--sig) 55%,transparent)}
+:root.skin-stage .se-hero div:has(>.se-flow)::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100%/36 - 3px),var(--st-panel) calc(100%/36 - 3px),var(--st-panel) calc(100%/36))}
+
+/* ---- 現在該做什麼：細左線、階段標籤是黑色膠囊 ---- */
+:root.skin-stage [style*="border-left: 5px solid"]{border-left:1px solid var(--border)!important;box-shadow:inset 3px 0 0 var(--sig)!important}
+:root.skin-stage [style*="border-left: 5px solid"] span[style*="padding: 3px 10px"]{background:var(--ink)!important;color:var(--card)!important;border-radius:999px!important;font-family:var(--st-mono);letter-spacing:.06em!important}
+
+/* ---- 首頁通知膠囊 ---- */
+:root.skin-stage .sc-page button[style*="color-mix(in oklab,var(--accent) 12%,var(--card))"]{background:var(--card)!important;border-color:var(--border)!important}
+
+/* ---- 團體：頂端團色條、等寬日文名、粗體團名；滑過整塊上色 ---- */
+:root.skin-stage .home-units>button{background:var(--card)!important;box-shadow:none!important;transition:transform .3s cubic-bezier(.34,1.45,.44,1),background-color .3s,color .3s}
+:root.skin-stage .home-units>button>span:nth-child(1){left:0!important;right:0!important;top:0!important;bottom:auto!important;width:auto!important;height:4px!important}
+:root.skin-stage .home-units>button>span:nth-child(2){display:none}
+:root.skin-stage .home-units>button>span:nth-child(3){font-family:var(--st-mono)!important;letter-spacing:.04em!important;margin-top:6px}
+:root.skin-stage .home-units>button>span:nth-child(4){font-family:var(--st-disp);font-weight:900!important;font-size:16px!important;letter-spacing:-.01em}
+:root.skin-stage .home-units>button>span:nth-child(5){font-family:var(--st-mono);font-size:10.5px!important;letter-spacing:.04em;text-transform:uppercase}
+/* ---- 快速前往：01–06 編號、右上箭頭 ---- */
+:root.skin-stage .home-quick{counter-reset:stq}
+:root.skin-stage .home-quick>button{position:relative;box-shadow:none!important}
+:root.skin-stage .home-quick>button>span:first-child{width:auto!important;height:auto!important;margin-bottom:8px!important;border-radius:0!important;background:none!important;font:600 12px/1 var(--st-mono);color:var(--accent-deep)}
+:root.skin-stage .home-quick>button>span:first-child::before{counter-increment:stq;content:counter(stq,decimal-leading-zero)}
+:root.skin-stage .home-quick>button::after{content:'↗';position:absolute;top:13px;right:15px;font:600 16px/1 var(--st-mono);color:var(--text-3);transition:transform .3s cubic-bezier(.34,1.45,.44,1),color .3s}
+:root.skin-stage .home-quick>button:hover::after{transform:translate(3px,-3px);color:var(--sig)}
+:root.skin-stage .home-quick .u-ffc20{font-family:var(--st-disp)!important;font-weight:900!important;font-size:15px!important}
+
+/* ---- 按鈕：主要按鈕滑過變訊號橘；一般膠囊滑過描黑框 ---- */
+:root.skin-stage button[style*="background: var(--cta)"],:root.skin-stage button[style*="background: var(--ink-grad)"]{transition:background-color .2s,box-shadow .2s}
+:root.skin-stage button[style*="background: var(--cta)"]:hover,:root.skin-stage button[style*="background: var(--ink-grad)"]:hover{background:var(--sig-btn)!important;color:#fff!important;box-shadow:0 0 0 3px color-mix(in oklab,var(--sig) 30%,transparent),0 10px 26px -12px var(--sig)!important}
+:root.skin-stage .subtab{font-family:var(--st-mono);font-size:12px!important;letter-spacing:.01em}
+:root.skin-stage .subtab[aria-selected="true"]{background:var(--ink)!important;color:var(--card)!important;border-color:var(--ink)!important}
+:root.skin-stage .subtab[aria-selected="true"]::before{background:var(--ink)!important;box-shadow:none!important}
+:root.skin-stage .empty{border-style:solid!important;background:var(--card)!important}
+:root.skin-stage .empty.loading::before{background:conic-gradient(from 0deg,transparent,var(--sig) 82%,transparent)}
+
+/* ---- 手機底部導覽：黑色膠囊、橘燈 ---- */
+:root.skin-stage .dock-bar{background:var(--st-panel)!important;border-color:transparent!important;box-shadow:0 18px 40px -16px rgba(0,0,0,.55)!important}
+:root.skin-stage .dock-bar button{color:rgba(244,244,242,.62)!important;font-family:var(--st-mono)}
+:root.skin-stage .dock-bar button[style*="color: var(--accent-deep)"]{color:var(--st-on)!important}
+:root.skin-stage .dock-bar button>span:first-child{width:6px!important;height:6px!important;margin-bottom:2px;background:rgba(244,244,242,.3)!important}
+:root.skin-stage .dock-bar button[style*="color: var(--accent-deep)"]>span:first-child{background:var(--sig)!important;box-shadow:0 0 8px var(--sig)}
+:root.skin-stage .dock-bar::before{background:rgba(244,244,242,.1)!important}
+
+/* ---- 線上客服 ---- */
+:root.skin-stage .hp-fab{background:var(--st-panel)!important;box-shadow:0 0 0 2px var(--sig),0 16px 36px -14px rgba(0,0,0,.6)!important}
+:root.skin-stage .hp-fab::before{display:none}
+:root.skin-stage .hp-head{background:var(--st-panel)!important;color:var(--st-on)}
+:root.skin-stage .hp-head::before,:root.skin-stage .hp-head::after{display:none}
+:root.skin-stage .hp-tabs{background:rgba(244,244,242,.1)!important}
+:root.skin-stage .hp-send{background:var(--sig-btn)!important;box-shadow:none!important}
+
+/* ---- 功能引導標題 ---- */
+:root.skin-stage div[style*="z-index: 96"]>div[style*="font-size: 18px"]{font-family:var(--st-disp);font-weight:900!important;letter-spacing:-.01em}
+:root.skin-stage .lit-off:not(.st-on){opacity:.5}
+:root.skin-stage .lit-off:not(.st-on):hover{opacity:.8}
+
+/* ---- 游標光圈（js/app.js 的 _stageFx 只在舞台版、有滑鼠、沒開減少動態時建立） ---- */
+.st-cursor{position:fixed;left:0;top:0;z-index:2147483000;width:30px;height:30px;margin:-15px 0 0 -15px;border:1.5px solid var(--sig);border-radius:50%;pointer-events:none;opacity:0;box-shadow:0 0 26px color-mix(in oklab,var(--sig) 38%,transparent);transition:width .28s cubic-bezier(.34,1.45,.44,1),height .28s cubic-bezier(.34,1.45,.44,1),margin .28s cubic-bezier(.34,1.45,.44,1),background-color .25s,border-color .25s,opacity .25s}
+.st-cursor.vis{opacity:1}
+.st-cursor.on{width:54px;height:54px;margin:-27px 0 0 -27px;border-color:transparent;background:color-mix(in oklab,var(--sig) 18%,transparent)}
+.st-cursor.down{width:22px;height:22px;margin:-11px 0 0 -11px}
+
+/* ---- 捲動進場、換頁幕簾（不支援的瀏覽器照舊、減少動態效果時不動） ---- */
+@media (prefers-reduced-motion:no-preference){
+  @supports (animation-timeline:view()){
+    :root.skin-stage .sc-page>div>:is(div,section):not(.stage-head):not(.subtabs):not(.stage-ticker){animation:stRise linear both;animation-timeline:view();animation-range:entry 0% entry 55%}
+  }
+  :root.skin-stage .stage-title{animation:stTitle .9s cubic-bezier(.16,1,.3,1) both}
+  :root.skin-stage::view-transition-old(sc-page){animation:stOut .2s cubic-bezier(.4,0,1,1) both}
+  :root.skin-stage::view-transition-new(sc-page){animation:stIn .7s cubic-bezier(.76,0,.24,1) both}
+}
+@media (prefers-reduced-motion:reduce){:root.skin-stage .stage-ticker-track{animation:none}}
+@keyframes stRise{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes stTitle{from{opacity:0;transform:translateY(.35em);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0 0 -10% 0)}}
+@keyframes stOut{to{opacity:0;transform:translateY(-16px)}}
+@keyframes stIn{from{clip-path:inset(100% 0 0 0);transform:translateY(70px)}to{clip-path:inset(0 0 0 0);transform:none}}
+
+/* ---- 顯示版本選擇卡：三個選項；窄螢幕改成一列一個（預覽在左） ---- */
+.skin-pick{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:560px){
+  .skin-pick{grid-template-columns:1fr;gap:8px}
+  .skin-opt{display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:2px;align-items:center}
+  .skin-opt .skin-prev{grid-row:1/3;height:56px}
+}
+.skin-prev-stage{border-radius:6px;background:radial-gradient(circle at 1px 1px,rgba(12,13,16,.18) 1px,transparent 1.3px) 0 0/8px 8px,#eceef1;border:1px solid #dcdfe5}
+.skin-prev-stage::before{content:'';position:absolute;left:7px;right:7px;top:7px;height:23px;border-radius:4px;background:radial-gradient(90px 40px at 92% 0,rgba(255,79,31,.5),transparent 70%),#0c0d10}
+.skin-prev-stage::after{content:'';position:absolute;right:15px;top:15px;width:6px;height:6px;border-radius:50%;background:#ff4f1f;box-shadow:0 0 6px #ff4f1f}
+.skin-prev-stage i{left:7px;width:42%;border-radius:999px;background:#0c0d10}
+.skin-prev-stage b{right:7px;width:36%;border-radius:4px;background:#fff;border:1px solid #dcdfe5;border-top:3px solid #ff4f1f}
+
+/* ---- 應援色：選了團體主題色，整座舞台的燈換成那一團的顏色 ---- */
+:root.skin-stage.unit-ln{--sig:#4455dd;--accent:#4455dd;--accent-deep:#3343c4}
+:root.skin-stage.unit-mmj{--sig:#7cc23c;--accent:#7cc23c;--accent-deep:#3f7d14}
+:root.skin-stage.unit-vbs{--sig:#ee6644;--accent:#ee6644;--accent-deep:#b8391f}
+:root.skin-stage.unit-wxs{--sig:#ffb52e;--accent:#ffb52e;--accent-deep:#8a5c00}
+:root.skin-stage.unit-n25{--sig:#a660d2;--accent:#a660d2;--accent-deep:#7d3fa8}
+:root.skin-stage.unit-vs{--sig:#33ccbb;--accent:#33ccbb;--accent-deep:#0f6d67}
+:root.skin-stage.theme-dark.unit-ln{--sig-btn:#3343c4;--accent-deep:#9aa6ff;--cta:linear-gradient(0deg,#3343c4,#3343c4);--grad-cta:linear-gradient(0deg,#3343c4,#3343c4)}
+:root.skin-stage.theme-dark.unit-mmj{--sig-btn:#3f7d14;--accent-deep:#a9e070;--cta:linear-gradient(0deg,#3f7d14,#3f7d14);--grad-cta:linear-gradient(0deg,#3f7d14,#3f7d14)}
+:root.skin-stage.theme-dark.unit-vbs{--sig-btn:#b8391f;--accent-deep:#ff8a72;--cta:linear-gradient(0deg,#b8391f,#b8391f);--grad-cta:linear-gradient(0deg,#b8391f,#b8391f)}
+:root.skin-stage.theme-dark.unit-wxs{--sig-btn:#8a5c00;--accent-deep:#ffcc5c;--cta:linear-gradient(0deg,#8a5c00,#8a5c00);--grad-cta:linear-gradient(0deg,#8a5c00,#8a5c00)}
+:root.skin-stage.theme-dark.unit-n25{--sig-btn:#7d3fa8;--accent-deep:#cf9bf0;--cta:linear-gradient(0deg,#7d3fa8,#7d3fa8);--grad-cta:linear-gradient(0deg,#7d3fa8,#7d3fa8)}
+:root.skin-stage.theme-dark.unit-vs{--sig-btn:#0f6d67;--accent-deep:#6ee0d6;--cta:linear-gradient(0deg,#0f6d67,#0f6d67);--grad-cta:linear-gradient(0deg,#0f6d67,#0f6d67)}
+@media (prefers-color-scheme:dark){
+:root.skin-stage:not(.theme-light).unit-ln{--sig-btn:#3343c4;--accent-deep:#9aa6ff;--cta:linear-gradient(0deg,#3343c4,#3343c4);--grad-cta:linear-gradient(0deg,#3343c4,#3343c4)}
+:root.skin-stage:not(.theme-light).unit-mmj{--sig-btn:#3f7d14;--accent-deep:#a9e070;--cta:linear-gradient(0deg,#3f7d14,#3f7d14);--grad-cta:linear-gradient(0deg,#3f7d14,#3f7d14)}
+:root.skin-stage:not(.theme-light).unit-vbs{--sig-btn:#b8391f;--accent-deep:#ff8a72;--cta:linear-gradient(0deg,#b8391f,#b8391f);--grad-cta:linear-gradient(0deg,#b8391f,#b8391f)}
+:root.skin-stage:not(.theme-light).unit-wxs{--sig-btn:#8a5c00;--accent-deep:#ffcc5c;--cta:linear-gradient(0deg,#8a5c00,#8a5c00);--grad-cta:linear-gradient(0deg,#8a5c00,#8a5c00)}
+:root.skin-stage:not(.theme-light).unit-n25{--sig-btn:#7d3fa8;--accent-deep:#cf9bf0;--cta:linear-gradient(0deg,#7d3fa8,#7d3fa8);--grad-cta:linear-gradient(0deg,#7d3fa8,#7d3fa8)}
+:root.skin-stage:not(.theme-light).unit-vs{--sig-btn:#0f6d67;--accent-deep:#6ee0d6;--cta:linear-gradient(0deg,#0f6d67,#0f6d67);--grad-cta:linear-gradient(0deg,#0f6d67,#0f6d67)}
+}
+
+/* ---- 各功能自己的主視覺：日服現況、WL3、豆森生日派對、機器人、開場動畫專場 ---- */
+:root.skin-stage .jn-hero{background:var(--st-panel)!important;box-shadow:none!important;outline:1px solid rgba(255,255,255,.06);outline-offset:-1px}
+:root.skin-stage .jn-hero::after{display:none}
+:root.skin-stage .jn-hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(520px 300px at 92% -14%,color-mix(in oklab,var(--sig) 34%,transparent),transparent 70%),radial-gradient(circle at 1px 1px,rgba(255,255,255,.08) 1px,transparent 1.4px) 0 0/16px 16px}
+:root.skin-stage .jn-hero>*{position:relative}
+:root.skin-stage .jn-kick{font-family:var(--st-mono);letter-spacing:.12em!important;text-transform:uppercase}
+:root.skin-stage .jn-evt h3{font-family:var(--st-disp);font-weight:900;font-size:clamp(20px,3vw,30px);letter-spacing:-.02em}
+:root.skin-stage .jn-cd{font-family:var(--st-led)!important;font-weight:800;font-size:clamp(30px,4.4vw,52px)!important;color:var(--sig);text-shadow:0 0 18px color-mix(in oklab,var(--sig) 45%,transparent)}
+:root.skin-stage .wz-hero{background:var(--card)!important;box-shadow:inset 0 3px 0 var(--sig)!important}
+:root.skin-stage .wz-k{font-family:var(--st-mono);letter-spacing:.16em}
+:root.skin-stage .wz-st{font-family:var(--st-disp);font-weight:900}
+:root.skin-stage .wz-cd{font-family:var(--st-led)!important;font-weight:800;font-size:40px!important;color:var(--accent-deep)!important}
+:root.skin-stage .bp-phase{border-radius:3px!important;font-family:var(--st-mono);letter-spacing:.04em;padding:3px 8px!important}
+:root.skin-stage .bp-hero{background:var(--card)!important;border-color:var(--border)!important;box-shadow:inset 4px 0 0 var(--bp)!important}
+:root.skin-stage .bot-hero{background:radial-gradient(circle at 1px 1px,var(--st-dot) 1px,transparent 1.3px) 0 0/18px 18px,var(--card)!important;box-shadow:none!important}
+:root.skin-stage .intro-card{background:var(--st-panel)!important}
 </style>
 </helmet>
 
@@ -1535,6 +1813,9 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
 
   <div class="sc-page" style="flex:1;padding:22px clamp(14px,3vw,32px) 110px;max-width:1160px;width:100%;margin:0 auto">
+  <sc-if value="{{ stageHeadOn }}">
+  <div class="stage-head" aria-hidden="true"><span class="stage-kick"><i>{{ stageAct }}</i><b>{{ stageGroup }}</b><i>{{ stagePath }}</i></span><span class="stage-title">{{ pageTitle }}</span><span class="stage-sub">{{ pageSub }}</span></div>
+  </sc-if>
 
   <!-- 功能家族的分頁籤：同一個側欄入口底下的頁面在這裡切換（哪些頁算一家見 NAV_SECTIONS） -->
   <sc-if value="{{ hasSubTabs }}">
@@ -1564,6 +1845,8 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
   <div style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:16px">
 
+    <!-- 舞台版的跑馬燈：當期活動與今日摘要；同一串排兩次，捲到一半剛好接上（其他版本 display:none） -->
+    <div class="stage-ticker" aria-hidden="true" style="order:-2"><div class="stage-ticker-track"><sc-for list="{{ stageTicker }}" as="x" hint-placeholder-count="4"><span>{{ x }}</span></sc-for><sc-for list="{{ stageTicker }}" as="x" hint-placeholder-count="4"><span>{{ x }}</span></sc-for></div></div>
     <!-- 頂列：新功能通知膠囊（有未讀才出現）＋ 自訂首頁 -->
     <div style="order:-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:-6px">
       <sc-if value="{{ noticeOpen }}">
@@ -9900,7 +10183,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div class="u-ffc16">顯示版本</div>
-      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">原版是彩色漸層與圓角卡片；文青版換成深藍 × 香檳金、襯線標題與直角細框，網站 icon 也一起換。選擇記在這台裝置。</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">原版是彩色漸層與圓角卡片；文青版換成深藍 × 香檳金、襯線標題與直角細框；舞台版把網站變成一座演唱會舞台：LED 點陣、譜面軌道、追光與布幕轉場。網站 icon 也跟著換，選擇記在這台裝置。</div>
       <div class="skin-pick" role="radiogroup" aria-label="顯示版本">
         <sc-for list="{{ skinChips }}" as="k" hint-placeholder-count="2">
           <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
@@ -9910,7 +10193,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </button>
         </sc-for>
       </div>
-      <sc-if value="{{ skinLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if>
+      <sc-if value="{{ skinIsLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if><sc-if value="{{ skinIsStage }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">舞台版的燈色跟著「團體主題色」走，就像換上那一團的應援色；配色風格與合鳴只在原版生效。</div></sc-if>
     </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div class="u-ffc16">配色風格</div>
@@ -10869,7 +11152,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </button>
       </sc-for>
     </div>
-    <sc-if value="{{ skinLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if>
+    <sc-if value="{{ skinIsLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if><sc-if value="{{ skinIsStage }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">舞台版的燈色跟著「團體主題色」走，就像換上那一團的應援色；配色風格與合鳴只在原版生效。</div></sc-if>
     <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">主題與配色</div>
     <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
       <button type="button" onClick="{{ onTheme }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">主題：{{ themeLabel }}（點擊切換）</button>
@@ -10883,7 +11166,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:10px 0 6px">團體主題色</div>
     <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
       <sc-for list="{{ unitChips }}" as="c" hint-placeholder-count="7">
-        <button type="button" class="lit-off" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+        <button type="button" class="lit-off st-on" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
       </sc-for>
     </div>
 
@@ -10991,7 +11274,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=23c226289c"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=2f755ee1b2"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
