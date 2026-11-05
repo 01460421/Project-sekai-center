@@ -153,7 +153,7 @@ class Component extends DCLogic {
     ['sekai-shop-owned', '儲值分析:已購買'], ['sekai-shop-price-ov', '儲值分析:自填價格'],
     ['sekai-shop-roleid', '儲值分析:官網 role_id'], ['sekai-shop-webcart', '儲值分析:選購清單'],
     ['sekai-shop-owned-jp', '儲值分析:已購買（日服）'], ['sekai-shop-price-ov-jp', '儲值分析:自填價格（日服）'],
-    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-cards-lv', '收集率:專精與技能等級'], ['sekai-hk-asset', 'Haruki 專區:素材節點'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式'], ['sekai-unit', '團體主題色'], ['sekai-srv', '伺服器（台服／日服）'], ['sekai-lang', '介面語言']
+    ['sekai-base-ep', 'EP 計算器設定'], ['sekai-cards-lv', '收集率:專精與技能等級'], ['sekai-hk-asset', 'Haruki 專區:素材節點'], ['sekai-theme', '主題'], ['sekai-tone', '配色風格'], ['sekai-visual', '視覺模式'], ['sekai-skin', '顯示版本'], ['sekai-unit', '團體主題色'], ['sekai-srv', '伺服器（台服／日服）'], ['sekai-lang', '介面語言']
   ];
   bkCollect() {
     const d = {};
@@ -675,6 +675,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/05', t: '新的顯示版本：文青版', s: '在原本的版面上換一套深藍 × 香檳金的外觀：標題改用襯線字，卡片與按鈕改成直角細框，倒數與數字用古典字體，網站 icon 也換成金色的「世」字章（分頁與加到主畫面的 icon 一起換）。第一次進站的引導第一步就能挑，之後在「自訂首頁 → 資料設定」或「功能介紹」頁隨時切換，選擇記在這台裝置。文青版用固定配色，配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。' },
     { d: '2026/11/04', t: '修正：iPhone 收鍵盤後底部導覽列浮在半空中', s: 'iPhone 打字時 iOS 會把畫面往上推，收起鍵盤後有時候沒推回原位，底部導覽列、回頂鈕、小幫手按鈕整排浮在畫面中間，頂端標題列也被推出畫面。現在偵測到畫面沒歸位時會自動捲回去；捲不回去就把這些按鈕補回正確位置，不用再重新整理。' },
     { d: '2026/11/04', t: '定數表更新至 EMERALD V34，支援難易度表新表記', s: 'B30 產生器與定數查詢的定數表更新到 EMERALD V34：新增 17 張譜面（共 936 張），13 張譜面的定數調整，例如おどりゃんせ 32.4→32.3、一億年恋してる 31.4+→31.6。官方加入「XX+」等級之後，難易度表會改用新表記：原本的細分記號「+」改寫成「#」，XX+羅馬數字 N 代表原本的 XX.(N−1)，例如 32+VI# 就是 32.5+。本站讀表時會自動換算成原本的寫法，B30 的顯示與計算方式不變。' },
     { d: '2026/11/03', t: '開場動畫專場', s: '新的開場動畫：夜空裡六道團色流星匯聚、炸開成上千顆角色代表色的光粒子，旋轉後排出「SEKAI 資源中心」，一道光澤掃過，再從中央圓形展開進站。畫面會跟著今天變：角色生日那天換成壽星的代表色，活動期間帶出活動名稱與剩餘時間。每天第一次從首頁進站時自動播一次，約 6 秒，右上角可以「略過」或「不再自動播放」。「特別專案」或功能一覽的「開場動畫專場」可以一看再看：點畫面讓粒子炸開、重組成下一個字，拖曳可以攪動粒子，每次配色與路徑都不一樣。系統開了「減少動態效果」、或從分享連結直接進到其他頁時不會自動播。' },
@@ -915,6 +916,7 @@ class Component extends DCLogic {
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
     vmode: '',       // 視覺模式：''(經典) / 'ensemble'(合鳴，六團色環境光暈＋首頁旗艦動效)
+    skin: (() => { try { return localStorage.getItem('sekai-skin') === 'literary' ? 'literary' : ''; } catch (e) { return ''; } })(),   // 顯示版本：''(原版) / 'literary'(文青版)
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     evType: {},
     homeBoard: 'main',   // 首頁「我的排名」切換：main=主榜 / wl=WL 個榜（只在當期是 WL 活動時可切）
@@ -1186,6 +1188,10 @@ class Component extends DCLogic {
 
     // 主題:讀取已存偏好(無=跟隨系統);系統色變更時,auto 模式要跟著更新 theme-color
     this.mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+    let savedSkin = '';
+    try { savedSkin = localStorage.getItem('sekai-skin') === 'literary' ? 'literary' : ''; } catch (e) {}
+    document.documentElement.classList.toggle('skin-literary', !!savedSkin);
+    this.setState({ skin: savedSkin });
     let savedTheme = 'auto';
     try { savedTheme = (localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme')) || 'auto'; } catch (e) {}
     this.setState({ theme: savedTheme });
@@ -1613,14 +1619,15 @@ class Component extends DCLogic {
     if (t === 'dark') c.add('theme-dark'); else if (t === 'light') c.add('theme-light');
     const dark = t === 'dark' || (t === 'auto' && this.mqDark && this.mqDark.matches);
     const m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = dark ? '#0c0f1d' : '#eef1f9';
+    if (m) m.content = this.isLit() ? (dark ? '#0c0f1b' : '#eceef2') : (dark ? '#0c0f1d' : '#eef1f9');
     try { if (t === 'auto') localStorage.removeItem('sekai-theme'); else localStorage.setItem('sekai-theme', t); } catch (e) {}
     this.syncFrames();
   }
   // 內嵌的經典版 iframe（跑榜小窗／編組／卡池／進階）不會自己知道 App 換了主題，
   // 不同步就會在深色 App 裡出現白色面板
   syncFrames() {
-    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: this.state.tone || 'aurora', sekaiVisual: this.state.vmode || '' };
+    const lit = this.isLit();
+    const msg = { sekaiTheme: this.state.theme || 'auto', sekaiTone: lit ? 'ink' : (this.state.tone || 'aurora'), sekaiVisual: lit ? '' : (this.state.vmode || '') };
     ['miniStudioFrame', 'deckInfoFrame', 'deckProFrame', 'shopFrame', 'b30Frame'].forEach(id => {
       const f = document.getElementById(id);
       if (f && f.contentWindow) { try { f.contentWindow.postMessage(msg, '*'); } catch (e) {} }
@@ -1635,7 +1642,7 @@ class Component extends DCLogic {
   applyTone(t) {
     const c = document.documentElement.classList;
     this.SKINS.forEach(x => c.remove('tone-' + x.v));
-    if (t && t !== 'aurora') c.add('tone-' + t);
+    if (t && t !== 'aurora' && !this.isLit()) c.add('tone-' + t);
     try { if (!t || t === 'aurora') localStorage.removeItem('sekai-tone'); else localStorage.setItem('sekai-tone', t); } catch (e) {}
     this.syncFrames();
   }
@@ -1644,7 +1651,7 @@ class Component extends DCLogic {
   applyUnit(u) {
     const c = document.documentElement.classList;
     this.UNIT_OF.forEach(x => c.remove('unit-' + x));
-    if (u && this.UNITS[u]) c.add('unit-' + u);
+    if (u && this.UNITS[u] && !this.isLit()) c.add('unit-' + u);
     try { if (!u) localStorage.removeItem('sekai-unit'); else localStorage.setItem('sekai-unit', u); } catch (e) {}
     this.syncFrames();
   }
@@ -1777,9 +1784,45 @@ class Component extends DCLogic {
   applyVisualMode(v) {
     const c = document.documentElement.classList;
     this.VMODES.forEach(x => c.remove('style-' + x.v));
-    if (v) c.add('style-' + v);
+    if (v && !this.isLit()) c.add('style-' + v);
     try { if (!v) localStorage.removeItem('sekai-visual'); else localStorage.setItem('sekai-visual', v); } catch (e) {}
     this.syncFrames();
+  }
+  /* 顯示版本（原版／文青版）：跟主題、配色、合鳴不同，它是整套外觀——文青版有固定的深藍 × 香檳金、襯線標題與直角細框，
+     所以選了文青版時上面三軸只記住、不套用。樣式全在 app.html 的 :root.skin-literary 區塊；
+     頁首小腳本在第一次繪製前就掛 class、換好 icon，不會先閃一下原版。 */
+  SKIN_VERS = [
+    { v: '', n: '原版', d: '彩色漸層與圓角卡片，原本的樣子' },
+    { v: 'literary', n: '文青版', d: '深藍 × 香檳金、襯線標題與直角細框' }
+  ];
+  isLit() { return document.documentElement.classList.contains('skin-literary'); }
+  applySkin(v) {
+    const lit = v === 'literary';
+    document.documentElement.classList.toggle('skin-literary', lit);
+    try { if (lit) localStorage.setItem('sekai-skin', 'literary'); else localStorage.removeItem('sekai-skin'); } catch (e) {}
+    // 另外三軸照原本的選擇重套一次：它們看 skin-literary 決定要不要掛 class
+    this.applyTone(this.state.tone || 'aurora');
+    this.applyUnit(this.state.unit || '');
+    this.applyVisualMode(this.state.vmode || '');
+    this.applyTheme(this.state.theme || 'auto');
+    this._skinIcons(lit);
+    if (lit) this._litFonts();
+  }
+  // 分頁 icon、主畫面 icon 與 PWA manifest 跟著版本（開站時由 app.html 頁首的小腳本先換一次）
+  _skinIcons(lit) {
+    const set = (sel, href) => { const el = document.querySelector(sel); if (el && el.getAttribute('href') !== href) el.setAttribute('href', href); };
+    set('link[rel="icon"][type="image/svg+xml"]', lit ? './icons/icon-literary.svg' : './icons/icon.svg');
+    set('link[rel="icon"][sizes="48x48"]', lit ? './icons/icon-literary-48.png' : './favicon.ico');
+    set('link[rel="apple-touch-icon"]', lit ? './icons/icon-literary-180.png' : './icons/icon-180.png');
+    set('link[rel="manifest"]', lit ? './manifest-literary.webmanifest' : './manifest.webmanifest');
+  }
+  // 文青版的字：標題 Noto Serif TC、數字與英文 Cormorant Garamond；只有選了文青版才下載
+  _litFonts() {
+    if (document.getElementById('sc-fonts-lit')) return;
+    const l = document.createElement('link');
+    l.id = 'sc-fonts-lit'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Noto+Serif+TC:wght@600;700&display=swap';
+    document.head.appendChild(l);
   }
   cycleTheme(e) {   // 淺色 → 深色 → 跟隨系統 → 淺色…
     const next = { light: 'dark', dark: 'auto', auto: 'light' }[this.state.theme] || 'light';
@@ -3170,6 +3213,7 @@ class Component extends DCLogic {
       l.href = 'https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap';
       document.head.appendChild(l);
     }
+    if (this.isLit()) this._litFonts();
   }
 
   /* ---------- WL3 專區（延後載入，程式在 js/wl3zone.js，資料在 data/wl3-zone.js） ---------- */
@@ -3749,7 +3793,7 @@ class Component extends DCLogic {
   }
   /* 功能引導的四步：文案放這裡，畫面只負責翻頁 */
   GUIDE = [
-    { t: '歡迎來到 SEKAI 資源中心', b: '這裡把世界計畫台服的活動、卡池、歌曲、計算工具與圖鑑都收在一起。接下來三步帶你認識最常用的入口，隨時可以按「略過」。', k: '' },
+    { t: '歡迎來到 SEKAI 資源中心', b: '這裡把世界計畫台服的活動、卡池、歌曲、計算工具與圖鑑都收在一起。先挑一個喜歡的顯示版本，點了馬上換給你看；之後在「自訂首頁 → 資料設定」也能隨時切換。', k: '', pick: 'skin' },
     { t: '搜尋什麼都從這裡開始', b: '按 ⌘K（Windows 用 Ctrl K）或鍵盤上的「/」打開指令面板：找歌、找卡池、跳到任何功能，也能直接輸入「ep 1500000」這種算式。', k: '⌘ K' },
     { t: '側欄只有 18 個入口', b: '分成主頁、追活動、圖鑑與資料、計算工具、社群與說明五區。同一類的頁面併成一個入口，點進去後在頁首的分頁籤切換，例如「排名與榜線」裡有即時排名、榜線資料庫、分析中心、活動分布與玩家查詢；手機的「更多」也是同一份清單。', k: '' },
     { t: '把首頁變成你的', b: '綁定 Player ID 之後首頁會顯示你的名次、時速與周回；右上角的「自訂首頁」可以調整區塊順序、選要顯示哪些數字與快速入口，也能備份或清除本機資料。', k: '' },
@@ -4054,7 +4098,7 @@ class Component extends DCLogic {
   /* 本機 → 雲端。只送站上自己的鍵，不要把整個 localStorage 倒上去。 */
   /* 同步的鍵直接沿用備份清單（BK_KEYS），主題三個是裝置偏好不上雲。
      以前這裡列的是 sekai-owned／sekai-b30 這種站上根本沒寫過的鍵，等於什麼都沒同步到。 */
-  CLOUD_KEYS = this.BK_KEYS.map(k => k[0]).filter(k => ['sekai-theme', 'sekai-tone', 'sekai-visual', 'sekai-unit', 'sekai-srv', 'sekai-lang'].indexOf(k) < 0);
+  CLOUD_KEYS = this.BK_KEYS.map(k => k[0]).filter(k => ['sekai-theme', 'sekai-tone', 'sekai-visual', 'sekai-skin', 'sekai-unit', 'sekai-srv', 'sekai-lang'].indexOf(k) < 0);
   async pushCloud() {
     const obj = {};
     this.CLOUD_KEYS.forEach(k => {
@@ -9118,7 +9162,8 @@ class Component extends DCLogic {
       const all = items.map(([id, name, dot]) => ({
         id, name, dot,
         bg: navCur === id ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
-        fg: navCur === id ? 'var(--accent-deep)' : 'var(--text)'
+        fg: navCur === id ? 'var(--accent-deep)' : 'var(--text)',
+        cur: navCur === id ? 'page' : 'false'
       }));
       return { label, open, arrow: open ? '▾' : '▸', count: open ? '' : String(all.length), items: open ? all : all.filter(it => it.id === navCur) };
     });
@@ -11330,8 +11375,8 @@ class Component extends DCLogic {
                                         : (this.ASSET + '/honor/' + s.colPick.abn + '/degree_main.webp'),
         rarityLabel: { low: '普通', middle: '罕見', high: '稀有', highest: '最高' }[s.colPick.rarity] || (s.colPick.rarity || '—')
       }) : null,
-      logoMat: this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
-      logoMatName: (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
+      logoMat: s.skin === 'literary' ? './icons/icon-literary.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
+      logoMatName: s.skin === 'literary' ? 'SEKAI 資源中心' : (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
@@ -11341,6 +11386,12 @@ class Component extends DCLogic {
         bg: s.tone === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
         fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
+      skinLit: s.skin === 'literary',
+      skinChips: this.SKIN_VERS.map(x => {
+        const on = (s.skin || '') === x.v;
+        return { v: x.v, n: x.n, d: x.d, key: x.v || 'classic', on: on ? 'true' : 'false', mark: on ? '✓ 使用中' : '',
+          bd: on ? 'var(--accent)' : 'var(--border)', ring: on ? '0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)' : 'none' };
+      }),
       vmChips: [{ v: '', n: '經典', c: 'var(--text-3)' }].concat(this.VMODES).map(x => ({ v: x.v, n: x.n, c: x.c,
         bd: (s.vmode || '') === x.v ? x.c : 'var(--border)',
         bg: (s.vmode || '') === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
@@ -11441,6 +11492,7 @@ class Component extends DCLogic {
           guidePrevOpacity: g && g.step === 0 ? '.35' : '1',
           guideNextLabel: g && g.step === this.GUIDE.length - 1 ? '開始使用' : '下一步 →',
           guideHideChecked: !!s.guideHide,
+          guideIsPick: !!(gs && gs.pick === 'skin'),
           layoutHomeRows: ord.map(id => row(id, nameOf[id], '', !homeShow[id], false)),
           layoutNavRows: navOrd.map(id => navById[id]).filter(Boolean)
             .map(x => row(x.id, x.name, x.group, navHid.indexOf(x.id) >= 0, x.id === 'home' || x.id === 'account')),
@@ -12970,6 +13022,7 @@ class Component extends DCLogic {
         this.icsDownload('sekai-' + y + '-' + String(m + 1).padStart(2, '0'), items); },
       onCalTone: e => { const v = e.currentTarget.dataset.v; const o = Object.assign({}, this.state.calOff || {}); if (o[v]) delete o[v]; else o[v] = 1; this.setState({ calOff: o }); try { localStorage.setItem('sekai-cal-off', JSON.stringify(o)); } catch (e2) {} },
       onQaTpl: () => { const t = this.QA_TPL[this.state.qaKind]; if (!t) return; if (this.state.qaBody && !window.confirm('內容會被範本取代，確定？')) return; this.setState({ qaBody: t }); },
+      onSkin: e => { const v = e.currentTarget.dataset.v === 'literary' ? 'literary' : ''; if (v === (this.state.skin || '')) return; this._reveal(e, () => { this.setState({ skin: v }); this.applySkin(v); }); },
       onVisualMode: e => { const v = e.currentTarget.dataset.v; const next = this.state.vmode === v ? '' : v; this.setState({ vmode: next }); this.applyVisualMode(next); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;

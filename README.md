@@ -20,6 +20,7 @@
 -  Haruki 專區 豆森「今日資源」的實際地圖：四個採集場所鋪 Lunabot／MiddleRed 的烤森俯視底圖（`img/mysekai/site-{5,6,7,8}.webp`，對位數字照 Haruki-Cloud 的場所設定，見 `js/haruki.js` 的 `HZ_MAP_CAL`），採集點照遊戲座標放，每一點排出還沒採的素材縮圖與剩餘數量，稀有資源紅框、稀有採集點紫光、出生點紅叉、採過的淡掉，可切「顯示已採完」「只看稀有」
 -  台服／日服切換（頁首「伺服器・語言」）：`?srv=jp` 或記住上次選擇，換伺服器整頁重載。日服模式下首頁換成**日服現況**（`data/jp-now.js`，`tools/build-jp-now.py` 每天從 Sekai-World 日服 master 算：版本、近期與未來活動含加成與活動卡、開放中的卡池含 PU 卡、新曲），活動排名走 Worker 的 `/haruki/jp/…`（Haruki 日服追蹤器），卡片、圖鑑與 Haruki 專區改讀日服 master；每頁支援到哪裡見 `js/app.js` 的 `SRV_JP`／`SRV_TW_ONLY`，只有台服資料的頁面會在頁首提示。日服現況頁底部與資源連結頁收錄網路上仍在更新的日服資源（`JP_RES`）。Haruki 匯入在日服模式另存 IndexedDB 的 `suite-jp`，不動台服的收集率與 B30
 -  介面語言（同一個按鈕）：`js/i18n.js` 在 DOM 上換字，不重畫頁面。簡中用 OpenCC（`vendor/opencc-t2cn.js`，台灣正體→大陸簡體含詞彙）整站轉換；英文、日文是介面詞典（導覽、頁名、頁首、日服現況、客服視窗），整句對得上才換，其餘維持中文。`?lang=` 或記住上次選擇
+-  顯示版本（`sekai-skin`）：原版／文青版。文青版在同一套版面上換成深藍 × 香檳金、襯線標題（Noto Serif TC）、Cormorant Garamond 數字與直角細框，網站 icon、分頁與主畫面 icon、PWA manifest（`manifest-literary.webmanifest`）一起換成「世」字章（`icons/icon-literary*`）。樣式全在 `app.html` 的 `:root.skin-literary` 區塊：色票走變數，inline style 的圓角與字型用 `!important` 統一改寫（50% 的圓形照舊，`.lit-keep` 保留原樣）；頁首小腳本在第一次繪製前掛 class、換 icon。第一次進站的功能引導第一步、「自訂首頁 → 資料設定」與功能介紹頁都能切換；選了文青版時配色風格（tone）、團體主題色（unit）與合鳴只記住、不套用，切回原版就恢復
 -  線上客服（每頁右下角，`js/help.js`）：**小幫手**不用登入、不花額度，當期活動、榜線、卡池、日服與語言這類「現在」的問題直接回數字，功能與玩法從 `ALIASES`、頁面說明與教學大全找，附前往按鈕；**AI 助手**就是站內助手（同一份對話）；**留言**是提問所的 `kind=support`，只有作者與管理員看得到（`worker/src/api.js`），管理員在提問所多一個「客服留言」分類可以回覆
 
 ## 伺服器機器人（bot/）

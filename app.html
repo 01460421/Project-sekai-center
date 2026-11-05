@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍 */
+<script>/* 主題:在畫面繪製前套用已存的偏好,避免深/淺色閃爍。顯示版本選了文青版（sekai-skin=literary）就掛 skin-literary，它有固定配色，不掛 tone／合鳴 */
 try{var _t=(localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme'));if(_t==='dark')document.documentElement.classList.add('theme-dark');else if(_t==='light')document.documentElement.classList.add('theme-light');
-var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora')document.documentElement.classList.add('tone-'+_c);
-var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble')document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
+var _s=localStorage.getItem('sekai-skin')==='literary';if(_s)document.documentElement.classList.add('skin-literary');
+var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora'&&!_s)document.documentElement.classList.add('tone-'+_c);
+var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble'&&!_s)document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
 <script src="./support.js?v=f07edc7399"></script>
@@ -16,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=2d82d2de44" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=23c226289c" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -28,6 +29,8 @@ window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="./favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
+<script>/* 文青版的 icon 與 manifest：這幾個 link 解析完就換，瀏覽器真正要用時拿到的已經是新的 */
+try{if(document.documentElement.classList.contains('skin-literary')){var _q=function(s,h){var e=document.querySelector(s);if(e)e.setAttribute('href',h);};_q('link[rel="icon"][type="image/svg+xml"]','./icons/icon-literary.svg');_q('link[rel="icon"][sizes="48x48"]','./icons/icon-literary-48.png');_q('link[rel="apple-touch-icon"]','./icons/icon-literary-180.png');_q('link[rel="manifest"]','./manifest-literary.webmanifest');var _m=document.querySelectorAll('meta[name="theme-color"]');if(_m[0])_m[0].content='#eceef2';if(_m[1])_m[1].content='#0c0f1b';}}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,8 +80,16 @@ window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?
 @keyframes bootFloat{50%{transform:translateY(-3px)}}
 @keyframes bootWave{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-8px);opacity:1}}
 @media (prefers-reduced-motion:reduce){#boot *,#boot *::before,#boot *::after{animation:none!important}#boot>div{transition:none}}
+:root.skin-literary #boot{background:#eceef2;color:#1f2742;letter-spacing:.12em}
+:root.skin-literary.theme-dark #boot{background:#0c0f1b;color:#efe9dc}
+@media (prefers-color-scheme:dark){:root.skin-literary:not(.theme-light) #boot{background:#0c0f1b;color:#efe9dc}}
+:root.skin-literary #boot b::before{background:conic-gradient(from 0deg,rgba(212,182,115,0),rgba(212,182,115,.2) 40%,#d4b673 82%,#f3e2b4 92%,rgba(212,182,115,0))}
+:root.skin-literary #boot b::after{background:radial-gradient(closest-side,rgba(212,182,115,.2),rgba(212,182,115,0))}
+:root.skin-literary #boot img{border-radius:7px}
+:root.skin-literary #boot u i{--c:#b0915a;border-radius:1px}
+:root.skin-literary #boot a{color:#7d6129}
 </style><div><b><img src="./icons/icon.svg" alt=""></b><span>SEKAI 資源中心</span><u aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></u><a href="" onclick="location.reload();return false">載入太久？點這裡重新整理</a></div></div>
-<script>(function(){var b=document.getElementById('boot');try{var t=localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(t==='dark'||t==='light')document.documentElement.classList.add('theme-'+t);var T={en:['SEKAI Resource Center','Taking too long? Tap here to reload'],ja:['SEKAI リソースセンター','読み込みに時間がかかる場合はここをタップして再読み込み'],'zh-CN':['SEKAI 资源中心','加载太久？点这里刷新']}[localStorage.getItem('sekai-lang')];if(T){b.querySelector('span').textContent=T[0];b.querySelector('a').textContent=T[1];}}catch(e){}setTimeout(function(){if(b.isConnected)b.classList.add('slow');},20000);})();</script>
+<script>(function(){var b=document.getElementById('boot');try{if(document.documentElement.classList.contains('skin-literary')){var _bi=b.querySelector('img');if(_bi)_bi.src='./icons/icon-literary.svg';}var t=localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(t==='dark'||t==='light')document.documentElement.classList.add('theme-'+t);var T={en:['SEKAI Resource Center','Taking too long? Tap here to reload'],ja:['SEKAI リソースセンター','読み込みに時間がかかる場合はここをタップして再読み込み'],'zh-CN':['SEKAI 资源中心','加载太久？点这里刷新']}[localStorage.getItem('sekai-lang')];if(T){b.querySelector('span').textContent=T[0];b.querySelector('a').textContent=T[1];}}catch(e){}setTimeout(function(){if(b.isConnected)b.classList.add('slow');},20000);})();</script>
 <x-dc><template>
 <helmet>
 <style>
@@ -1252,6 +1263,179 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 .hp-new{width:100%;padding:12px;margin-bottom:12px;border:1.5px dashed color-mix(in oklab,var(--accent) 45%,var(--border));border-radius:16px;background:color-mix(in oklab,var(--accent) 5%,transparent);color:var(--accent-deep);font-size:13px;font-weight:900;cursor:pointer;transition:background .2s,transform .3s cubic-bezier(.34,1.56,.44,1)}
 .hp-new:hover{background:color-mix(in oklab,var(--accent) 10%,transparent);transform:translateY(-1px)}
 @media (prefers-reduced-motion:reduce){.hp-fab,.hp-fab::before,.hp-panel,.hp-row,.hp-act,.hp-tip,.hp-th,.hp-card,.hp-ava,.hp-big,.hp-head::before,.hp-head::after,.hp-typing span,.hp-fab .hp-i-chat .hp-dots circle{animation:none!important}.hp-tabs .ind{transition:none}}
+/* ===== 顯示版本選擇卡（設定與功能引導共用；兩個版本都用得到） ===== */
+.skin-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.skin-opt{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;padding:10px;border:1.5px solid var(--border);border-radius:16px;background:var(--card);color:var(--ink);cursor:pointer;text-align:left;font:inherit;transition:border-color .2s,box-shadow .2s,transform .25s cubic-bezier(.34,1.45,.44,1)}
+.skin-opt:active{transform:scale(.97)}
+.skin-opt-n{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 7px;font-size:13.5px;font-weight:800;line-height:1.3}
+.skin-opt-n small{font-size:10.5px;font-weight:700;color:var(--accent-deep)}
+.skin-opt-d{font-size:11px;color:var(--text-3);line-height:1.5}
+/* 小預覽：純 CSS 畫兩個版本的縮圖，不吃主題變數，兩邊看到的都是各自真正的樣子 */
+.skin-prev{position:relative;display:block;height:58px;overflow:hidden}
+.skin-prev i,.skin-prev b{position:absolute;bottom:8px;height:13px}
+.skin-prev-classic{border-radius:12px;background:linear-gradient(135deg,#f6f8fd,#e8eef9);border:1px solid rgba(72,86,133,.16)}
+.skin-prev-classic::before{content:'';position:absolute;left:7px;right:7px;top:7px;height:23px;border-radius:9px;background:linear-gradient(135deg,#273052,#3b4878)}
+.skin-prev-classic::after{content:'';position:absolute;left:7px;right:7px;top:7px;height:3px;border-radius:9px 9px 0 0;background:linear-gradient(90deg,#4ad1e8,#3ee0a8,#b8e561,#ffd94d,#ff9db4,#c39df2,#7fb4f7)}
+.skin-prev-classic i{left:7px;width:42%;border-radius:999px;background:linear-gradient(135deg,#22c3d6,#3f8cf3)}
+.skin-prev-classic b{right:7px;width:36%;border-radius:7px;background:#fff;box-shadow:0 1px 4px rgba(31,42,80,.12)}
+.skin-prev-literary{border-radius:2px;background:#eceef2;border:1px solid #d8dbe3}
+.skin-prev-literary::before{content:'';position:absolute;left:7px;right:7px;top:7px;height:23px;background:linear-gradient(135deg,#1b2340,#2b355d);box-shadow:inset 0 0 0 3px #1f2742,inset 0 0 0 4px rgba(212,182,115,.75)}
+.skin-prev-literary::after{content:'';position:absolute;right:16px;top:15px;width:5px;height:5px;background:#e6cf98;transform:rotate(45deg)}
+.skin-prev-literary i{left:7px;width:42%;background:#1f2742}
+.skin-prev-literary b{right:7px;width:36%;background:#fafaf8;border:1px solid #d8dbe3;border-left:2px solid #b0915a}
+
+/* ===== 顯示版本：文青版（<html class="skin-literary">）=====
+   深藍 × 香檳金、襯線標題、直角細框。只在選了文青版時生效，原版不受任何影響。
+   選了文青版時 app.js 不掛 tone-*／unit-*／style-ensemble，所以這裡只要蓋過 :root 與兩組深色預設。
+   模板幾乎都是 inline style：色票全走變數；圓角與字型用 !important 統一改寫（50% 的圓形照舊），
+   所以全站幾十頁不用逐頁改。 */
+:root.skin-literary{
+--lit-serif:'Noto Serif TC','Noto Serif CJK TC','Source Han Serif TC','Songti TC','PMingLiU',serif;
+--lit-latin:'Cormorant Garamond','Noto Serif TC','Noto Serif CJK TC','Songti TC','PMingLiU',serif;
+--lit-sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei',system-ui,sans-serif;
+--gold:#b0915a;--gold-hi:#d4b673;--seal-bg:#1f2742;--seal-fg:#e6cf98;
+--bg:#eceef2;--bg-soft:#f2f3f5;--card:#fafaf8;--card-2:#f2f3f5;
+--text:#2b3149;--text-2:#4a516b;--text-3:#5f667e;--ink:#1f2742;
+--accent:#b0915a;--accent-deep:#7d6129;
+--border:#d8dbe3;--border-2:#c3c8d4;
+--cta:linear-gradient(135deg,#1f2742 0%,#2d3860 100%);
+--grad-cta:linear-gradient(135deg,#1f2742 0%,#2d3860 100%);
+--ink-grad:linear-gradient(135deg,#1b2340 0%,#2b355d 100%);
+--rainbow:linear-gradient(90deg,#a98a52,#d4b673 50%,#a98a52);
+--ln-color:#3d4ea8;--mmj-color:#4d8a2b;--vbs-color:#b4452f;--wxs-color:#a8781a;--n25-color:#7a4aa6;--vs-color:#1f8585;--mix-color:#b04a70;
+--sh-xs:0 1px 0 rgba(31,39,66,.04);
+--sh-sm:0 1px 2px rgba(31,39,66,.05),0 8px 20px -14px rgba(31,39,66,.18);
+--sh-md:0 1px 2px rgba(31,39,66,.06),0 18px 40px -22px rgba(31,39,66,.32);
+--sh-lg:0 2px 6px rgba(31,39,66,.08),0 30px 70px -26px rgba(31,39,66,.42);
+--fes-bg:#f4eddc;--fes-fg:#6f5522;--lim-bg:#f6ecee;--lim-fg:#8e3b4f;--free-bg:#e9f1eb;--free-fg:#2c6446;--gift-bg:#f5ecf1;--gift-fg:#873a5e;--nb-bg:#eaedf6;--nb-fg:#2f4a8a;--ms-bg:#ebf1e8;--ms-fg:#3b652c;--sup-bg:#f5eee4;--sup-fg:#7f521b;--sel-bg:#eeebf6;--sel-fg:#573d8a;--song-bg:#e8f0f4;--song-fg:#1d5a74;--live-bg:#eeeaf6;--live-fg:#57388a;--login-bg:#f3eedd;--login-fg:#6b530e;--cb-bg:#f5ebe6;--cb-fg:#853c20;
+--paid-bg:#f2eedd;--paid-fg:#635010;--bd-bg:#efeaf6;--bd-fg:#683d92;
+--rr-bg:#f6ebe8;--rr-fg:#8f3828;--wl-bg:#e8eef6;--wl-fg:#295687;
+--nm-bg:#e9f1eb;--nm-fg:#2c6446;--ot-bg:#eef0f4;--ot-fg:#545e78;
+}
+:root.skin-literary.theme-dark{
+--gold:#d4b673;--gold-hi:#e6cf98;--seal-bg:#d4b673;--seal-fg:#0c0f1b;
+--bg:#0c0f1b;--bg-soft:#10142a;--card:#141a2c;--card-2:#1a2136;
+--text:#d9d6cf;--text-2:#b2b0aa;--text-3:#9a9890;--ink:#efe9dc;
+--accent:#d4b673;--accent-deep:#d4b673;
+--border:rgba(212,182,115,.16);--border-2:rgba(212,182,115,.3);
+--cta:linear-gradient(135deg,#8a6a2e 0%,#6b5122 100%);
+--grad-cta:linear-gradient(135deg,#8a6a2e 0%,#6b5122 100%);
+--ink-grad:linear-gradient(135deg,#1d2547 0%,#2b3563 100%);
+--rainbow:linear-gradient(90deg,#a98a52,#e6cf98 50%,#a98a52);
+--ln-color:#8e9bea;--mmj-color:#a3cf7a;--vbs-color:#e8907e;--wxs-color:#e3bd6a;--n25-color:#bf9ae0;--vs-color:#7fcfcf;--mix-color:#e898b6;
+--sh-xs:0 1px 0 rgba(0,0,0,.3);
+--sh-sm:0 1px 2px rgba(0,0,0,.3),0 10px 24px -14px rgba(0,0,0,.6);
+--sh-md:0 2px 6px rgba(0,0,0,.3),0 22px 48px -22px rgba(0,0,0,.7);
+--sh-lg:0 8px 20px rgba(0,0,0,.35),0 34px 80px -26px rgba(0,0,0,.8);
+--fes-bg:#231e12;--fes-fg:#e6cf98;--lim-bg:#2a1a20;--lim-fg:#e8a6b6;--free-bg:#14261d;--free-fg:#93d1ac;--gift-bg:#2a1a24;--gift-fg:#e5a6c8;--nb-bg:#161f36;--nb-fg:#a9bfea;--ms-bg:#172414;--ms-fg:#a9d49a;--sup-bg:#2a2014;--sup-fg:#e9b884;--sel-bg:#1f1a33;--sel-fg:#c9b8ee;--song-bg:#13222b;--song-fg:#94cbe6;--live-bg:#211a33;--live-fg:#c9adee;--login-bg:#272111;--login-fg:#e8cf7c;--cb-bg:#2a1a14;--cb-fg:#eeab90;
+--paid-bg:#262110;--paid-fg:#e4d384;--bd-bg:#231a33;--bd-fg:#d3afee;
+--rr-bg:#2a1814;--rr-fg:#eea596;--wl-bg:#15203a;--wl-fg:#9cc3ee;
+--nm-bg:#14261d;--nm-fg:#93d8ad;--ot-bg:#1a2034;--ot-fg:#a8b0c8;
+}
+@media (prefers-color-scheme:dark){:root.skin-literary:not(.theme-light){
+--gold:#d4b673;--gold-hi:#e6cf98;--seal-bg:#d4b673;--seal-fg:#0c0f1b;
+--bg:#0c0f1b;--bg-soft:#10142a;--card:#141a2c;--card-2:#1a2136;
+--text:#d9d6cf;--text-2:#b2b0aa;--text-3:#9a9890;--ink:#efe9dc;
+--accent:#d4b673;--accent-deep:#d4b673;
+--border:rgba(212,182,115,.16);--border-2:rgba(212,182,115,.3);
+--cta:linear-gradient(135deg,#8a6a2e 0%,#6b5122 100%);
+--grad-cta:linear-gradient(135deg,#8a6a2e 0%,#6b5122 100%);
+--ink-grad:linear-gradient(135deg,#1d2547 0%,#2b3563 100%);
+--rainbow:linear-gradient(90deg,#a98a52,#e6cf98 50%,#a98a52);
+--ln-color:#8e9bea;--mmj-color:#a3cf7a;--vbs-color:#e8907e;--wxs-color:#e3bd6a;--n25-color:#bf9ae0;--vs-color:#7fcfcf;--mix-color:#e898b6;
+--sh-xs:0 1px 0 rgba(0,0,0,.3);
+--sh-sm:0 1px 2px rgba(0,0,0,.3),0 10px 24px -14px rgba(0,0,0,.6);
+--sh-md:0 2px 6px rgba(0,0,0,.3),0 22px 48px -22px rgba(0,0,0,.7);
+--sh-lg:0 8px 20px rgba(0,0,0,.35),0 34px 80px -26px rgba(0,0,0,.8);
+--fes-bg:#231e12;--fes-fg:#e6cf98;--lim-bg:#2a1a20;--lim-fg:#e8a6b6;--free-bg:#14261d;--free-fg:#93d1ac;--gift-bg:#2a1a24;--gift-fg:#e5a6c8;--nb-bg:#161f36;--nb-fg:#a9bfea;--ms-bg:#172414;--ms-fg:#a9d49a;--sup-bg:#2a2014;--sup-fg:#e9b884;--sel-bg:#1f1a33;--sel-fg:#c9b8ee;--song-bg:#13222b;--song-fg:#94cbe6;--live-bg:#211a33;--live-fg:#c9adee;--login-bg:#272111;--login-fg:#e8cf7c;--cb-bg:#2a1a14;--cb-fg:#eeab90;
+--paid-bg:#262110;--paid-fg:#e4d384;--bd-bg:#231a33;--bd-fg:#d3afee;
+--rr-bg:#2a1814;--rr-fg:#eea596;--wl-bg:#15203a;--wl-fg:#9cc3ee;
+--nm-bg:#14261d;--nm-fg:#93d8ad;--ot-bg:#1a2034;--ot-fg:#a8b0c8;
+}}
+/* 底：拿掉彩色光暈，只留一抹淡金；選取色、本文字型 */
+:root.skin-literary body::before{background:radial-gradient(1100px 620px at 92% -240px,rgba(176,145,90,.1),transparent 62%),radial-gradient(900px 560px at -12% 108%,rgba(31,39,66,.05),transparent 60%)}
+:root.skin-literary.theme-dark body::before{background:radial-gradient(1100px 620px at 92% -240px,rgba(212,182,115,.07),transparent 62%)}
+@media (prefers-color-scheme:dark){:root.skin-literary:not(.theme-light) body::before{background:radial-gradient(1100px 620px at 92% -240px,rgba(212,182,115,.07),transparent 62%)}}
+:root.skin-literary ::selection{background:rgba(176,145,90,.3)}
+:root.skin-literary body,:root.skin-literary [style*="Huninn"]{font-family:var(--lit-sans)!important}
+:root.skin-literary[lang="zh-Hans-CN"] [style*="Huninn"]{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif!important}
+/* 形狀：全站直角（2px），圓形（50%）照舊；.lit-keep 是刻意保留原樣的預覽圖 */
+:root.skin-literary :where(:not([style*="border-radius: 50%"],.lit-keep,.lit-keep *)){border-radius:2px!important}
+:root.skin-literary :is(.bot-side-h i,.sei-leg i,.gs-dot,.bp-curdot,.jd-at i,.wz-ch img,.wz-bd-r img,.srv-dot,.srv-sw-spin,.jn-wl img,.hp-tip button,.hp-ava,.hp-ava img,.hp-ava i,.hp-tab i,.hp-mini,.hp-typing span,.hp-tool .spin,.hp-send,.hp-send .spin,.hp-th i){border-radius:50%!important}
+:root.skin-literary .dock-bar::before{border-radius:2px}
+/* 字：數字與英文用 Cormorant Garamond（古典、等寬齊線數字），標題用 Noto Serif TC */
+:root.skin-literary :is([style*='font-family: "M PLUS Rounded'],.car-slot,.car-bn,.sei-t,.sei-yl,.sei-xl,.u-cf6,.gs-kpi b,.gc-kv .gc-big,.lu-rank,.bp-sumc b,.bp-o b,.bp-it b,.bp-req,.bp-dew,.bp-pt,.bp-scr b,.jn-plv,.jd-meta,.lu-stat b,.cl-stats b,.jn-cd,.jn-tier span,.jn-rk){font-family:var(--lit-latin)!important;font-variant-numeric:lining-nums tabular-nums}
+:root.skin-literary :is(.u-ffc0,.u-ffc12,.u-ffc14,.u-ffc16,.u-ffc20,h1,h2,h3){font-family:var(--lit-serif)!important;font-weight:700!important;letter-spacing:.06em}
+:root.skin-literary .u-ffc0{font-size:16px!important}
+:root.skin-literary .u-whbbb7{width:2px!important;height:16px!important;border-radius:0!important;background:var(--accent)!important}
+/* 頁首：彩虹線換成一道淡金細線，標題換襯線 */
+:root.skin-literary .app-head{background:color-mix(in oklab,var(--bg) 88%,transparent)!important}
+:root.skin-literary .app-head>span:first-child{height:1px!important;bottom:-1px!important;background:linear-gradient(90deg,transparent,var(--accent) 16%,var(--accent) 84%,transparent)!important;opacity:.6!important;animation:none!important}
+:root.skin-literary .app-head div:has(+.page-sub){font-family:var(--lit-serif);font-size:18px!important;font-weight:700!important;letter-spacing:.14em!important}
+:root.skin-literary .app-head .page-sub{letter-spacing:.04em}
+:root.skin-literary .srv-btn,:root.skin-literary .app-head>button{box-shadow:none!important}
+/* 側欄：字章站徽、Cormorant 站名、壹貳參肆伍分組、菱形項目點，目前頁左側一道金線 */
+:root.skin-literary .side-nav{background:color-mix(in oklab,var(--card) 82%,transparent)!important;counter-reset:litgrp}
+:root.skin-literary .side-nav>div:first-child>span:first-child{width:34px!important;height:34px!important;background:none!important}
+:root.skin-literary .side-nav>div:first-child img{width:34px!important;height:34px!important;filter:none!important}
+:root.skin-literary .side-nav>div:first-child>span:last-child{font-family:var(--lit-serif);font-size:13.5px!important;font-weight:700!important;letter-spacing:.12em!important}
+:root.skin-literary .side-nav>div:first-child em{font-family:var(--lit-latin)!important;font-style:italic!important;font-weight:600;font-size:23px;letter-spacing:.01em;margin-right:3px;background:none!important;color:var(--ink)!important;-webkit-text-fill-color:currentColor;animation:none!important}
+:root.skin-literary .side-nav>button{box-shadow:none!important}
+:root.skin-literary .side-nav button[data-g]{font-family:var(--lit-serif);letter-spacing:.3em!important;color:var(--text-3)!important}
+:root.skin-literary .side-nav button[data-g]::before{counter-increment:litgrp;content:counter(litgrp,trad-chinese-formal);margin-right:5px;font-size:11px;letter-spacing:0;color:var(--accent-deep)}
+:root.skin-literary .side-nav button[data-p]{font-weight:500!important}
+:root.skin-literary .side-nav button[data-p]>span:first-child{width:5px!important;height:5px!important;margin:0 1px;border-radius:0!important;transform:rotate(45deg);background:var(--border-2)!important}
+:root.skin-literary .side-nav button[aria-current="page"]{background:var(--card-2)!important;color:var(--ink)!important;font-weight:700!important;box-shadow:inset 2px 0 0 var(--accent)}
+:root.skin-literary .side-nav button[aria-current="page"]>span:first-child{background:var(--accent)!important}
+:root.skin-literary .side-nav>div:last-child span[style*="border-radius: 50%"]{border-radius:0!important;transform:rotate(45deg);background:var(--accent)!important;width:5px!important;height:5px!important}
+/* 首頁主視覺（各頁的 .se-hero 共用）：深藍底＋金色內框、Cormorant 斜體標題、金色倒數、細金進度線 */
+:root.skin-literary .se-hero{background:radial-gradient(140% 130% at 86% 0%,#2b3563 0%,#1b2340 55%,#141a33 100%)!important;color:#f3efe6!important}
+:root.skin-literary .se-hero::after{content:'';position:absolute;inset:9px;z-index:1;border:1px solid rgba(212,182,115,.36);pointer-events:none}
+:root.skin-literary .se-hero>.se-flow{display:none!important}
+:root.skin-literary .se-hero>span[style*="radial-gradient"]{background:radial-gradient(460px 220px at 86% -40%,rgba(212,182,115,.16),transparent 70%)!important}
+:root.skin-literary .se-title{font-family:var(--lit-latin)!important;font-style:italic;font-synthesis:none;font-weight:600!important;font-size:clamp(26px,4.2vw,42px)!important;line-height:1.14!important;letter-spacing:.005em;color:#f6f1e4}
+:root.skin-literary .se-hero i[style*="border-radius: 50%"]{width:6px!important;height:6px!important;border-radius:0!important;transform:rotate(45deg);background:#d4b673!important;animation:none!important}
+:root.skin-literary .se-hero span[style*="padding: 3px 11px"]{background:transparent!important;box-shadow:inset 0 0 0 1px rgba(212,182,115,.5);color:#efe3c4}
+:root.skin-literary .se-hero [style*="rgb(255, 92, 122)"]{background:#8e3b4f!important;animation:none!important}
+:root.skin-literary #liveCd{font-family:var(--lit-latin)!important;font-weight:600!important;font-size:clamp(32px,5vw,50px)!important;line-height:1.05;letter-spacing:.01em!important;color:#e6cf98!important;font-variant-numeric:lining-nums tabular-nums}
+:root.skin-literary .se-hero button[data-p]{border-color:rgba(212,182,115,.6)!important;background:transparent!important;color:#f3e7c9!important;letter-spacing:.12em}
+:root.skin-literary .se-hero div:has(>.se-flow){height:1px!important;background:rgba(212,182,115,.25)!important;overflow:visible!important}
+:root.skin-literary .se-hero div>.se-flow{position:relative;background:linear-gradient(90deg,#a98a52,#e6cf98)!important}
+:root.skin-literary .se-hero div>.se-flow::after{content:'';position:absolute;right:-4px;top:50%;width:7px;height:7px;margin-top:-3.5px;background:#e6cf98;transform:rotate(45deg)}
+/* 「現在該做什麼」：左側細金線，階段標籤做成印章 */
+:root.skin-literary [style*="border-left: 5px solid"]{border-left:2px solid var(--accent)!important}
+:root.skin-literary [style*="border-left: 5px solid"] span[style*="padding: 3px 10px"]{background:var(--seal-bg)!important;color:var(--seal-fg)!important;font-family:var(--lit-serif);letter-spacing:.2em!important}
+/* 線上客服按鈕：深藍方章 */
+:root.skin-literary .hp-fab{background:var(--ink-grad)!important;box-shadow:var(--sh-md)!important;border:1px solid rgba(212,182,115,.45)!important}
+:root.skin-literary .hp-fab::before{display:none}
+/* 功能引導標題、手機底部導覽（菱形點，目前頁金色）、載入中細環 */
+:root.skin-literary div[style*="z-index: 96"]>div[style*="font-size: 18px"]{font-family:var(--lit-serif);font-weight:700!important;letter-spacing:.06em}
+:root.skin-literary .dock-bar button>span:first-child{width:6px!important;height:6px!important;margin-bottom:2px;border-radius:0!important;transform:rotate(45deg);background:var(--border-2)!important}
+:root.skin-literary .dock-bar button[style*="color: var(--accent-deep)"]>span:first-child{background:var(--accent)!important}
+:root.skin-literary .empty.loading::before{background:conic-gradient(from 0deg,rgba(176,145,90,0),var(--accent) 82%,rgba(176,145,90,0))}
+/* 文青版不套用的外觀選項（配色風格、合鳴、團體主題色）淡一點，還是可以點來改原版的設定 */
+:root.skin-literary .lit-off{opacity:.5}
+:root.skin-literary .lit-off:hover{opacity:.8}
+@media (max-width:900px){:root.skin-literary .app-head div:has(+.page-sub){font-size:16.5px!important;letter-spacing:.06em!important}}
+/* 首頁「團體」：寶石色滿版方塊、金色日文名、象牙白團名、內框細線 */
+:root.skin-literary .home-units>button{--lit-u:#1f2742;background:var(--lit-u)!important;border-color:transparent!important;box-shadow:var(--sh-sm)!important}
+:root.skin-literary .home-units>button[data-u="vs"]{--lit-u:#185052}
+:root.skin-literary .home-units>button[data-u="ln"]{--lit-u:#2f3d94}
+:root.skin-literary .home-units>button[data-u="mmj"]{--lit-u:#2c5218}
+:root.skin-literary .home-units>button[data-u="vbs"]{--lit-u:#7e2e20}
+:root.skin-literary .home-units>button[data-u="wxs"]{--lit-u:#61430e}
+:root.skin-literary .home-units>button[data-u="n25"]{--lit-u:#5b3480}
+:root.skin-literary .home-units>button::after{content:'';position:absolute;inset:5px;border:1px solid rgba(230,207,152,.26);pointer-events:none}
+:root.skin-literary .home-units>button>span:nth-child(-n+2){display:none}
+:root.skin-literary .home-units>button>span:nth-child(3){color:#e6cf98!important;letter-spacing:.06em!important;font-family:var(--lit-sans)!important;font-weight:700!important}
+:root.skin-literary .home-units>button>span:nth-child(4){color:#f6f1e4!important;font-family:var(--lit-serif);font-weight:700!important;letter-spacing:.02em}
+:root.skin-literary .home-units>button>span:nth-child(5){color:rgba(243,239,230,.74)!important}
+/* 首頁「快速前往」：彩色圓點換成 i. ii. iii. 的 Cormorant 斜體編號 */
+:root.skin-literary .home-quick{counter-reset:litq}
+:root.skin-literary .home-quick>button>span:first-child{width:auto!important;height:auto!important;margin-bottom:3px!important;border-radius:0!important;background:none!important;font:italic 600 18px/1 var(--lit-latin);color:var(--accent-deep)}
+:root.skin-literary .home-quick>button>span:first-child::before{counter-increment:litq;content:counter(litq,lower-roman) '.'}
+/* 「關於這一頁」等處的彩虹短條 → 細金線 */
+:root.skin-literary span[style*="width: 7px; height: 18px"]{width:2px!important;height:16px!important}
 </style>
 </helmet>
 
@@ -1274,7 +1458,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <div style="margin-top:4px">
       <button type="button" onClick="{{ onNavFold }}" data-g="{{ grp.label }}" aria-expanded="{{ grp.open }}" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 10px 6px;border:none;background:transparent;color:var(--text-3);font-size:10px;font-weight:800;letter-spacing:2.4px;cursor:pointer;text-align:left"><span class="u-f1">{{ grp.label }}</span><span style="letter-spacing:0;font-family:'M PLUS Rounded 1c';opacity:.8">{{ grp.count }}</span><span style="letter-spacing:0;width:12px;text-align:center">{{ grp.arrow }}</span></button>
       <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="3">
-        <button type="button" onClick="{{ onGo }}" data-p="{{ it.id }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;margin-bottom:2px;border:none;border-radius:12px;background:{{ it.bg }};color:{{ it.fg }};font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;transition:background .2s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.97)">
+        <button type="button" onClick="{{ onGo }}" data-p="{{ it.id }}" aria-current="{{ it.cur }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;margin-bottom:2px;border:none;border-radius:12px;background:{{ it.bg }};color:{{ it.fg }};font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;transition:background .2s,color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.97)">
           <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ it.dot }}"></span>{{ it.name }}
         </button>
       </sc-for>
@@ -1604,7 +1788,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ homeShow.units }}">
     <div style="order:{{ homeOrd.units }}">
       <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">團體</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px">
+      <div class="home-units" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px">
         <sc-for list="{{ unitTiles }}" as="u" hint-placeholder-count="6">
           <button type="button" onClick="{{ onUnitGo }}" data-u="{{ u.v }}" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.34,1.45,.44,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)" style-active="transform:scale(.97)">
             <span style="position:absolute;left:0;top:0;bottom:0;width:5px;background:{{ u.c }}"></span>
@@ -1621,7 +1805,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ homeShow.quick }}">
     <div style="order:{{ homeOrd.quick }}">
       <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">快速前往</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px">
+      <div class="home-quick" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px">
         <sc-for list="{{ quickLinks }}" as="q" hint-placeholder-count="6">
           <button type="button" onClick="{{ onGo }}" data-p="{{ q.id }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.34,1.45,.44,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm);border-color:var(--border-2)" style-active="transform:scale(.97)">
             <span style="width:9px;height:9px;border-radius:50%;background:{{ q.dot }};margin-bottom:5px"></span>
@@ -9709,11 +9893,25 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
     </div>
     <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
+      <div class="u-ffc16">顯示版本</div>
+      <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">原版是彩色漸層與圓角卡片；文青版換成深藍 × 香檳金、襯線標題與直角細框，網站 icon 也一起換。選擇記在這台裝置。</div>
+      <div class="skin-pick" role="radiogroup" aria-label="顯示版本">
+        <sc-for list="{{ skinChips }}" as="k" hint-placeholder-count="2">
+          <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
+            <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
+            <span class="skin-opt-n">{{ k.n }}<small>{{ k.mark }}</small></span>
+            <span class="skin-opt-d">{{ k.d }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ skinLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if>
+    </div>
+    <div style="padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs)">
       <div class="u-ffc16">配色風格</div>
       <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">六種色調，深色與淺色模式都適用；選擇會記在這台裝置。</div>
       <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:9px">
         <sc-for list="{{ toneChips }}" as="t" hint-placeholder-count="6">
-          <button type="button" onClick="{{ onTone }}" data-v="{{ t.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ t.bd }};border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ t.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+          <button type="button" class="lit-off" onClick="{{ onTone }}" data-v="{{ t.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ t.bd }};border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ t.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
             <span style="width:15px;height:15px;border-radius:50%;flex:none;background:{{ t.c }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)"></span>{{ t.n }}
           </button>
         </sc-for>
@@ -9724,7 +9922,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;margin-bottom:11px;line-height:1.6">合鳴：把世界計畫六個角色團體的代表色做成會呼吸的環境光暈，首頁標題與強調條會跟著流動；預設關閉，不影響其他人看到的畫面。</div>
       <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:9px">
         <sc-for list="{{ vmChips }}" as="v" hint-placeholder-count="2">
-          <button type="button" onClick="{{ onVisualMode }}" data-v="{{ v.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ v.bd }};border-radius:999px;background:{{ v.bg }};color:{{ v.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ v.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
+          <button type="button" class="lit-off" onClick="{{ onVisualMode }}" data-v="{{ v.v }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid {{ v.bd }};border-radius:999px;background:{{ v.bg }};color:{{ v.fg }};font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:{{ v.ring }};transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
             <span style="width:15px;height:15px;border-radius:50%;flex:none;background:{{ v.c }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)"></span>{{ v.n }}
           </button>
         </sc-for>
@@ -10044,7 +10242,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <button type="button" onClick="{{ onNavFold }}" data-g="{{ grp.label }}" aria-expanded="{{ grp.open }}" style="display:flex;align-items:center;gap:6px;width:100%;margin:12px 0 6px;padding:6px 4px;border:none;background:transparent;color:var(--text-3);font-size:10.5px;font-weight:800;letter-spacing:2.4px;cursor:pointer;text-align:left"><span class="u-f1">{{ grp.label }}</span><span style="letter-spacing:0;font-family:'M PLUS Rounded 1c'">{{ grp.count }}</span><span style="letter-spacing:0;width:14px;text-align:center">{{ grp.arrow }}</span></button>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="3">
-        <button type="button" onClick="{{ onGo }}" data-p="{{ it.id }}" style="display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 15px;border:1px solid var(--border);border-radius:15px;background:{{ it.bg }};color:{{ it.fg }};font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .2s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.96)">
+        <button type="button" onClick="{{ onGo }}" data-p="{{ it.id }}" aria-current="{{ it.cur }}" style="display:flex;align-items:center;gap:9px;min-height:48px;padding:10px 15px;border:1px solid var(--border);border-radius:15px;background:{{ it.bg }};color:{{ it.fg }};font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .2s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.96)">
           <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ it.dot }}"></span>{{ it.name }}
         </button>
       </sc-for>
@@ -10655,20 +10853,31 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <button type="button" onClick="{{ onVocalPref }}" data-v="sekai" style="padding:6px 14px;border:none;border-radius:999px;background:{{ vpSBg }};color:{{ vpSFg }};font-size:12px;font-weight:800;cursor:pointer">世界 ver.</button>
     </div>
 
+    <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">顯示版本</div>
+    <div class="skin-pick" role="radiogroup" aria-label="顯示版本">
+      <sc-for list="{{ skinChips }}" as="k" hint-placeholder-count="2">
+        <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
+          <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
+          <span class="skin-opt-n">{{ k.n }}<small>{{ k.mark }}</small></span>
+          <span class="skin-opt-d">{{ k.d }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ skinLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if>
     <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">主題與配色</div>
     <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
       <button type="button" onClick="{{ onTheme }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">主題：{{ themeLabel }}（點擊切換）</button>
       <sc-for list="{{ toneChips }}" as="c" hint-placeholder-count="6">
-        <button type="button" onClick="{{ onTone }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+        <button type="button" class="lit-off" onClick="{{ onTone }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
       </sc-for>
       <sc-for list="{{ vmChips }}" as="c" hint-placeholder-count="2">
-        <button type="button" onClick="{{ onVisualMode }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+        <button type="button" class="lit-off" onClick="{{ onVisualMode }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
       </sc-for>
     </div>
     <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:10px 0 6px">團體主題色</div>
     <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
       <sc-for list="{{ unitChips }}" as="c" hint-placeholder-count="7">
-        <button type="button" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+        <button type="button" class="lit-off" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
       </sc-for>
     </div>
 
@@ -10702,6 +10911,17 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ guideHasKey }}"><div style="display:inline-block;margin-bottom:10px;padding:6px 14px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--ink);font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800">{{ guideKey }}</div></sc-if>
   <div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1.35">{{ guideTitle }}</div>
   <div style="font-size:13.5px;color:var(--text-2);line-height:1.8;margin-top:10px;min-height:88px">{{ guideBody }}</div>
+  <sc-if value="{{ guideIsPick }}">
+  <div class="skin-pick" role="radiogroup" aria-label="顯示版本" style="margin-top:2px">
+    <sc-for list="{{ skinChips }}" as="k" hint-placeholder-count="2">
+      <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
+        <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
+        <span class="skin-opt-n">{{ k.n }}<small>{{ k.mark }}</small></span>
+        <span class="skin-opt-d">{{ k.d }}</span>
+      </button>
+    </sc-for>
+  </div>
+  </sc-if>
   <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--text-3);cursor:pointer"><input type="checkbox" checked="{{ guideHideChecked }}" onChange="{{ onGuideHide }}" style="accent-color:var(--accent)">不再於此瀏覽器顯示</label>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
     <button type="button" onClick="{{ onGuidePrev }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;opacity:{{ guidePrevOpacity }}">← 上一步</button>
@@ -10765,7 +10985,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=2d82d2de44"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=23c226289c"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

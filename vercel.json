@@ -54,6 +54,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "manifest-literary.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
       "src": "icons/**",
       "use": "@vercel/static"
     },
@@ -346,6 +350,14 @@
     {
       "src": "/manifest.webmanifest",
       "dest": "/manifest.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-literary.webmanifest",
+      "dest": "/manifest-literary.webmanifest",
       "headers": {
         "cache-control": "public, max-age=3600",
         "content-type": "application/manifest+json"

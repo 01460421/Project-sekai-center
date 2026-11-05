@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<!-- SEKAI 資源中心・文青版 icon：深藍底、香檳金內框、「世」（Noto Serif CJK TC Black 轉 path），右上一顆四芒星 -->
+<defs>
+<radialGradient id="bg" cx="72%" cy="18%" r="100%"><stop offset="0" stop-color="#2f3a64"/><stop offset=".6" stop-color="#1f2742"/><stop offset="1" stop-color="#161c31"/></radialGradient>
+<linearGradient id="gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ecd9a8"/><stop offset=".5" stop-color="#d4b673"/><stop offset="1" stop-color="#a98a52"/></linearGradient>
+</defs>
+<rect width="512" height="512" rx="60" fill="url(#bg)"/>
+<rect x="36" y="36" width="440" height="440" rx="26" fill="none" stroke="#d4b673" stroke-opacity=".6" stroke-width="7"/>
+<path d="M845 818 663 834V548H557V805C585 809 592 820 594 834L415 850V548H313V782C338 786 346 796 349 811L168 828V548H24L32 520H168V29C156 19 144 7 136 -4L279 -83L320 -13H927C942 -13 954 -8 957 3C906 50 820 121 820 121L743 15H313V520H415V140H441C496 140 557 169 557 181V244H663V165H689C745 165 808 194 808 205V520H962C977 520 988 525 990 536C946 579 870 643 870 643L808 556V789C836 793 843 804 845 818ZM557 272V520H663V272Z" fill="url(#gd)" transform="translate(110.29 375.19) scale(0.27950 -0.27950)"/>
+<path d="M0 -1 L.16 -.16 L1 0 L.16 .16 L0 1 L-.16 .16 L-1 0 L-.16 -.16 Z" fill="#e6cf98" transform="translate(392 118) scale(34)"/>
+</svg>
