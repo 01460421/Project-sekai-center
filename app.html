@@ -1436,6 +1436,12 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 :root.skin-literary .home-quick>button>span:first-child::before{counter-increment:litq;content:counter(litq,lower-roman) '.'}
 /* 「關於這一頁」等處的彩虹短條 → 細金線 */
 :root.skin-literary span[style*="width: 7px; height: 18px"]{width:2px!important;height:16px!important}
+/* 線上客服面板：標頭換成深藍漸層（拿掉彩色光暈），分頁底與送出鈕跟著走 */
+:root.skin-literary .hp-head{background:radial-gradient(140% 140% at 86% 0%,#2b3563 0%,#1b2340 60%,#141a33 100%)!important;color:#f3efe6}
+:root.skin-literary .hp-head::before,:root.skin-literary .hp-head::after{display:none}
+:root.skin-literary .hp-tabs{background:rgba(212,182,115,.16)!important}
+:root.skin-literary .hp-ava{box-shadow:0 0 0 1px rgba(212,182,115,.6)!important}
+:root.skin-literary .hp-send{background:var(--ink-grad)!important;box-shadow:var(--sh-sm)!important}
 </style>
 </helmet>
 
