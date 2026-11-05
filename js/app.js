@@ -200,6 +200,22 @@ class Component extends DCLogic {
   RARITY = [[4, '★4'], [9, '生日'], [3, '★3'], [2, '★2'], [1, '★1']];
   SUPPLYN = ['常駐', '生日限定', '期間限定', '彩FES限定', 'BLOOMFES限定', '團體活動限定', '聯動限定'];
 
+  /* 顯示版本：原版（''）以外的八個。後六個是各團體的セカイ（<html> 另外掛 skin-sekai），預設記號色 = 那一團的顏色，
+     選了「團體主題色」就換成那一團（unit-* 在這六版照常掛） */
+  SKIN_KEYS = ['literary', 'stage', 'notebook', 'idol', 'street', 'park', 'void', 'track'];
+  SKIN_SEKAI = { notebook: 'ln', idol: 'mmj', street: 'vbs', park: 'wxs', void: 'n25', track: 'vs' };
+  // 瀏覽器頂列顏色 [淺, 深]（app.html 頁首的小腳本有同一份）
+  SKIN_TC = { literary: ['#eceef2', '#0c0f1b'], stage: ['#eceef1', '#0a0b0d'], notebook: ['#f4f1e8', '#1c2622'], idol: ['#fbf5fa', '#140f24'],
+    street: ['#e8e5de', '#0e0e10'], park: ['#f3e8d0', '#1a1320'], void: ['#f1f1f3', '#111114'], track: ['#e9edef', '#14181b'] };
+  SKIN_NOTE = {
+    notebook: '筆記本版的螢光筆跟著「團體主題色」走，沒選就是 Leo/need 的藍；配色風格與合鳴只在原版生效。',
+    idol: '偶像版的應援棒跟著「團體主題色」走，沒選就是 MMJ 的綠；配色風格與合鳴只在原版生效。',
+    street: '街頭版的噴漆跟著「團體主題色」走，沒選就是 VBS 的紅；配色風格與合鳴只在原版生效。',
+    park: '樂園版的燈泡跟著「團體主題色」走，沒選就是ワンダショ的黃；配色風格與合鳴只在原版生效。',
+    void: '留白版唯一的顏色跟著「團體主題色」走，沒選就是ニーゴ的紫；配色風格與合鳴只在原版生效。',
+    track: '音軌版的音符方塊跟著「團體主題色」走，沒選就是虛擬歌手的青綠；配色風格與合鳴只在原版生效。'
+  };
+
   UNITS = {
     ln:  { n:'Leo/need', c:'#4455dd', t:'#fff', keys:['LN'] },
     mmj: { n:'MMJ', c:'#88cc44', t:'#1d2610', keys:['MMJ'] },
@@ -675,6 +691,7 @@ class Component extends DCLogic {
     { date: '工具', title: 'WL3 計算器', desc: 'WL3 全部期數一頁算完：總合力上限 33.6 萬要把區域道具、大門、玩偶練到哪裡，每一章的後排支援隊加成，以及終章主隊＋後排的活動加成合計。', to: 'wl3pow', cta: '前往 WL3 計算器' }
   ];
   SYSLOG = [
+    { d: '2026/11/06', t: '新的顯示版本：六個團體的セカイ', s: '每個團體一個版本，各自取材自那一團的セカイ：筆記本版是 Leo/need 的教室（橫線筆記本、藍色原子筆與紙膠帶，深色是黑板與粉筆），偶像版是 MMJ 的舞台（雷射膜小卡、粉彩與星星閃粉），街頭版是 VBS 的街頭（孔版海報、網點、貼紙與噴漆），樂園版是ワンダショ的樂園（馬戲團海報、條紋帳篷、跑馬燈泡與票根），留白版是ニーゴ的「誰もいないセカイ」（近乎全白的虛空、髮絲線與極細大字），音軌版是虛擬歌手的 VOCALOID 編輯器（鋼琴捲簾、音符方塊與播放頭）。每一版預設是那一團的代表色，選了「團體主題色」就換成那一團：筆記本版是螢光筆、偶像版是應援棒、街頭版是噴漆、樂園版是燈泡、留白版是唯一的顏色、音軌版是音符方塊。網站 icon 也一版一個。版本選擇改成「基本三版＋六個團體的セカイ」，在第一次進站的引導、「自訂首頁 → 資料設定」或「功能介紹」頁切換。' },
     { d: '2026/11/06', t: '新的顯示版本：舞台版', s: '參考 Awwwards 近年得獎網站做的第三種外觀，整個網站變成一座演唱會舞台：側欄是五幕的節目單（ACT I–V），每一頁頂端是這一頁的演目大標，區塊標題前是曲目編號（M01、M02…）；首頁主視覺是譜面軌道與發光的判定線，倒數是 LED 點陣看板、進度條一格一格亮起，最上面有當期活動與今日摘要的跑馬燈；捲動時區塊依序進場，換頁像布幕升起，電腦上的滑鼠帶著一圈追光。燈色預設是訊號橘，選了「團體主題色」就換成那一團的應援色。網站 icon 也換成黑底白色點陣「世」。在「自訂首頁 → 資料設定」或「功能介紹」頁切換；系統設定「減少動態效果」時不播動畫。' },
     { d: '2026/11/05', t: '新的顯示版本：文青版', s: '在原本的版面上換一套深藍 × 香檳金的外觀：標題改用襯線字，卡片與按鈕改成直角細框，倒數與數字用古典字體，網站 icon 也換成金色的「世」字章（分頁與加到主畫面的 icon 一起換）。第一次進站的引導第一步就能挑，之後在「自訂首頁 → 資料設定」或「功能介紹」頁隨時切換，選擇記在這台裝置。文青版用固定配色，配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。' },
     { d: '2026/11/04', t: '修正：iPhone 收鍵盤後底部導覽列浮在半空中', s: 'iPhone 打字時 iOS 會把畫面往上推，收起鍵盤後有時候沒推回原位，底部導覽列、回頂鈕、小幫手按鈕整排浮在畫面中間，頂端標題列也被推出畫面。現在偵測到畫面沒歸位時會自動捲回去；捲不回去就把這些按鈕補回正確位置，不用再重新整理。' },
@@ -917,7 +934,7 @@ class Component extends DCLogic {
     theme: 'auto',   // auto=跟隨系統 / light / dark
     tone: 'aurora',  // 配色風格：aurora(全彩)/sakura/jade/wisteria/amber/ink
     vmode: '',       // 視覺模式：''(經典) / 'ensemble'(合鳴，六團色環境光暈＋首頁旗艦動效)
-    skin: (() => { try { const v = localStorage.getItem('sekai-skin'); return v === 'literary' || v === 'stage' ? v : ''; } catch (e) { return ''; } })(),   // 顯示版本：''(原版) / 'literary'(文青版) / 'stage'(舞台版)
+    skin: (() => { try { const v = localStorage.getItem('sekai-skin'); return this.SKIN_KEYS.includes(v) ? v : ''; } catch (e) { return ''; } })(),   // 顯示版本：''(原版) 或 SKIN_KEYS 之一
     matIdx: 0,       // 站徽輪換到第幾個常駐素材
     evType: {},
     homeBoard: 'main',   // 首頁「我的排名」切換：main=主榜 / wl=WL 個榜（只在當期是 WL 活動時可切）
@@ -1190,9 +1207,8 @@ class Component extends DCLogic {
     // 主題:讀取已存偏好(無=跟隨系統);系統色變更時,auto 模式要跟著更新 theme-color
     this.mqDark = window.matchMedia('(prefers-color-scheme: dark)');
     let savedSkin = '';
-    try { const v = localStorage.getItem('sekai-skin'); savedSkin = v === 'literary' || v === 'stage' ? v : ''; } catch (e) {}
-    document.documentElement.classList.toggle('skin-literary', savedSkin === 'literary');
-    document.documentElement.classList.toggle('skin-stage', savedSkin === 'stage');
+    try { const v = localStorage.getItem('sekai-skin'); savedSkin = this.SKIN_KEYS.includes(v) ? v : ''; } catch (e) {}
+    this._skinClass(savedSkin);
     this.setState({ skin: savedSkin });
     setTimeout(() => this._stageFx(), 0);
     let savedTheme = 'auto';
@@ -1623,7 +1639,8 @@ class Component extends DCLogic {
     const dark = t === 'dark' || (t === 'auto' && this.mqDark && this.mqDark.matches);
     const m = document.querySelector('meta[name="theme-color"]');
     const sk = this.skinNow();
-    if (m) m.content = sk === 'literary' ? (dark ? '#0c0f1b' : '#eceef2') : sk === 'stage' ? (dark ? '#0a0b0d' : '#eceef1') : (dark ? '#0c0f1d' : '#eef1f9');
+    const tc = this.SKIN_TC[sk] || ['#eef1f9', '#0c0f1d'];
+    if (m) m.content = tc[dark ? 1 : 0];
     try { if (t === 'auto') localStorage.removeItem('sekai-theme'); else localStorage.setItem('sekai-theme', t); } catch (e) {}
     this.syncFrames();
   }
@@ -1803,14 +1820,19 @@ class Component extends DCLogic {
   SKIN_VERS = [
     { v: '', n: '原版', d: '彩色漸層與圓角卡片，原本的樣子' },
     { v: 'literary', n: '文青版', d: '深藍 × 香檳金、襯線標題與直角細框' },
-    { v: 'stage', n: '舞台版', d: '黑白舞台、LED 點陣與譜面軌道，燈色跟著應援色' }
+    { v: 'stage', n: '舞台版', d: '黑白舞台、LED 點陣與譜面軌道，燈色跟著應援色' },
+    { v: 'notebook', n: '筆記本版', d: '教室のセカイ：橫線筆記本與藍色原子筆，深色是黑板與粉筆' },
+    { v: 'idol', n: '偶像版', d: 'ステージのセカイ：雷射膜小卡、粉彩與星星閃粉' },
+    { v: 'street', n: '街頭版', d: 'ストリートのセカイ：孔版海報、網點、貼紙與噴漆' },
+    { v: 'park', n: '樂園版', d: 'ワンダーランドのセカイ：馬戲團海報、條紋帳篷與跑馬燈泡' },
+    { v: 'void', n: '留白版', d: '誰もいないセカイ：近乎全白的虛空、髮絲線與極細大字' },
+    { v: 'track', n: '音軌版', d: '虛擬歌手：VOCALOID 編輯器的鋼琴捲簾與音符方塊' }
   ];
-  skinNow() { const c = document.documentElement.classList; return c.contains('skin-literary') ? 'literary' : c.contains('skin-stage') ? 'stage' : ''; }
+  skinNow() { const c = document.documentElement.classList; return this.SKIN_KEYS.find(k => c.contains('skin-' + k)) || ''; }
   skinFixed() { return !!this.skinNow(); }
   applySkin(v) {
-    v = v === 'literary' || v === 'stage' ? v : '';
-    const c = document.documentElement.classList;
-    c.toggle('skin-literary', v === 'literary'); c.toggle('skin-stage', v === 'stage');
+    v = this.SKIN_KEYS.includes(v) ? v : '';
+    this._skinClass(v);
     try { if (v) localStorage.setItem('sekai-skin', v); else localStorage.removeItem('sekai-skin'); } catch (e) {}
     // 另外三軸照原本的選擇重套一次：它們看目前是不是固定配色的版本決定要不要掛 class
     this.applyTone(this.state.tone || 'aurora');
@@ -1821,14 +1843,15 @@ class Component extends DCLogic {
     this._skinFonts(v);
     this._stageFx();
   }
-  // 分頁 icon、主畫面 icon 與 PWA manifest 跟著版本（開站時由 app.html 頁首的小腳本先換一次）
-  SKIN_ICONS = {
-    '': ['./icons/icon.svg', './favicon.ico', './icons/icon-180.png', './manifest.webmanifest'],
-    literary: ['./icons/icon-literary.svg', './icons/icon-literary-48.png', './icons/icon-literary-180.png', './manifest-literary.webmanifest'],
-    stage: ['./icons/icon-stage.svg', './icons/icon-stage-48.png', './icons/icon-stage-180.png', './manifest-stage.webmanifest']
-  };
+  _skinClass(v) {
+    const c = document.documentElement.classList;
+    this.SKIN_KEYS.forEach(k => c.toggle('skin-' + k, v === k));
+    c.toggle('skin-sekai', !!this.SKIN_SEKAI[v]);
+  }
+  // 分頁 icon、主畫面 icon 與 PWA manifest 跟著版本（開站時由 app.html 頁首的小腳本先換一次）；各版的檔名都是 icon-<版本>…
+  SKIN_ICONS = { '': ['./icons/icon.svg', './favicon.ico', './icons/icon-180.png', './manifest.webmanifest'] };
   _skinIcons(v) {
-    const I = this.SKIN_ICONS[v || ''] || this.SKIN_ICONS[''];
+    const I = v ? ['./icons/icon-' + v + '.svg', './icons/icon-' + v + '-48.png', './icons/icon-' + v + '-180.png', './manifest-' + v + '.webmanifest'] : this.SKIN_ICONS[''];
     const set = (sel, href) => { const el = document.querySelector(sel); if (el && el.getAttribute('href') !== href) el.setAttribute('href', href); };
     set('link[rel="icon"][type="image/svg+xml"]', I[0]);
     set('link[rel="icon"][sizes="48x48"]', I[1]);
@@ -1838,7 +1861,13 @@ class Component extends DCLogic {
   /* 各版本自己的字，只有選了那一版才下載。舞台版每個字族分開一個 link：Google Fonts 只要一個字族參數錯，整份 CSS 就 400 */
   SKIN_FONTS = {
     literary: ['family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Noto+Serif+TC:wght@600;700'],
-    stage: ['family=Archivo:wdth,wght@62..125,100..900', 'family=Doto:wght@100..900', 'family=JetBrains+Mono:wght@400;500;600;700', 'family=Noto+Sans+TC:wght@700;900']
+    stage: ['family=Archivo:wdth,wght@62..125,100..900', 'family=Doto:wght@100..900', 'family=JetBrains+Mono:wght@400;500;600;700', 'family=Noto+Sans+TC:wght@700;900'],
+    notebook: ['family=LXGW+WenKai+TC:wght@300;400;700', 'family=Caveat:wght@500;700'],
+    idol: ['family=Chiron+GoRound+TC:wght@400;600;800', 'family=Fredoka:wght@500;600;700'],
+    street: ['family=Anton', 'family=Permanent+Marker', 'family=Noto+Sans+TC:wght@700;900'],
+    park: ['family=Rye', 'family=Noto+Serif+TC:wght@700;900'],
+    void: ['family=Noto+Sans+TC:wght@200;300;400', 'family=Inter+Tight:wght@200;300;400;500'],
+    track: ['family=Chakra+Petch:wght@500;600;700', 'family=Noto+Sans+TC:wght@700;900']
   };
   _skinFonts(v) {
     (this.SKIN_FONTS[v] || []).forEach((q, i) => {
@@ -2850,7 +2879,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=e859210dd2';
+      el.src = './js/core.js?v=d9abec2ded';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -11432,7 +11461,7 @@ class Component extends DCLogic {
                                         : (this.ASSET + '/honor/' + s.colPick.abn + '/degree_main.webp'),
         rarityLabel: { low: '普通', middle: '罕見', high: '稀有', highest: '最高' }[s.colPick.rarity] || (s.colPick.rarity || '—')
       }) : null,
-      logoMat: s.skin === 'literary' ? './icons/icon-literary.svg' : s.skin === 'stage' ? './icons/icon-stage.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
+      logoMat: s.skin ? './icons/icon-' + s.skin + '.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
       logoMatName: s.skin ? 'SEKAI 資源中心' : (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
@@ -11444,11 +11473,16 @@ class Component extends DCLogic {
         fg: s.tone === x.v ? 'var(--accent-deep)' : 'var(--text-2)',
         ring: s.tone === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       skinIsLit: s.skin === 'literary', skinIsStage: s.skin === 'stage',
-      skinChips: this.SKIN_VERS.map(x => {
-        const on = (s.skin || '') === x.v;
-        return { v: x.v, n: x.n, d: x.d, key: x.v || 'classic', on: on ? 'true' : 'false', mark: on ? '✓ 使用中' : '',
-          bd: on ? 'var(--accent)' : 'var(--border)', ring: on ? '0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)' : 'none' };
-      }),
+      skinSekaiOn: !!this.SKIN_SEKAI[s.skin], skinSekaiNote: this.SKIN_NOTE[s.skin] || '',
+      skinDesc: (this.SKIN_VERS.find(x => x.v === (s.skin || '')) || this.SKIN_VERS[0]).d,
+      ...(() => {
+        const all = this.SKIN_VERS.map(x => {
+          const on = (s.skin || '') === x.v, u = this.UNITS[this.SKIN_SEKAI[x.v]];
+          return { v: x.v, n: x.n, d: x.d, key: x.v || 'classic', on: on ? 'true' : 'false', mark: on ? '✓ 使用中' : '', dot: u ? u.c : 'transparent',
+            bd: on ? 'var(--accent)' : 'var(--border)', ring: on ? '0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)' : 'none' };
+        });
+        return { skinChips: all, skinChipsBase: all.filter(x => !this.SKIN_SEKAI[x.v]), skinChipsSekai: all.filter(x => this.SKIN_SEKAI[x.v]) };
+      })(),
       vmChips: [{ v: '', n: '經典', c: 'var(--text-3)' }].concat(this.VMODES).map(x => ({ v: x.v, n: x.n, c: x.c,
         bd: (s.vmode || '') === x.v ? x.c : 'var(--border)',
         bg: (s.vmode || '') === x.v ? 'color-mix(in oklab,' + x.c + ' 16%,transparent)' : 'var(--card)',
@@ -11456,7 +11490,8 @@ class Component extends DCLogic {
         ring: (s.vmode || '') === x.v ? '0 0 0 2px color-mix(in oklab,' + x.c + ' 45%,transparent)' : 'none' })),
       pageTitle: P[0], pageSub: P[1],
       stageHeadOn: s.page !== 'home',
-      ...(() => { const hub = { hubEvent: 1, hubDb: 2, hubTool: 3, hubCom: 4 }[s.page]; const gi = hub != null ? hub : this.NAV_SECTIONS.findIndex(([, fams]) => fams.some(f => f[0] === navCur)); return { stageAct: gi >= 0 ? 'Act ' + ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][gi] : 'Encore', stageGroup: gi >= 0 ? this.NAV_SECTIONS[gi][0] : 'SEKAI' }; })(),
+      ...(() => { const hub = { hubEvent: 1, hubDb: 2, hubTool: 3, hubCom: 4 }[s.page]; const gi = hub != null ? hub : this.NAV_SECTIONS.findIndex(([, fams]) => fams.some(f => f[0] === navCur)); const flat = [].concat(...this.NAV_SECTIONS.map(([, fams]) => fams.map(f => f[0]))), ni = flat.indexOf(navCur); return { stageAct: gi >= 0 ? 'Act ' + ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][gi] : 'Encore', stageGroup: gi >= 0 ? this.NAV_SECTIONS[gi][0] : 'SEKAI', pageNo: String(ni >= 0 ? ni + 1 : Math.max(gi + 1, 0)).padStart(2, '0') }; })(),
+      pageDate: (() => { const d = new Date(); return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); })(),
       stagePath: '/ ' + String(s.page || 'home').replace(/[A-Z]/g, c => '-' + c.toLowerCase()).toUpperCase(),
       subTabs, hasSubTabs: subTabs.length > 1, navExtra,
       navGroups, dockItems, dockI: String(Math.max(0, dockIdx)), dockOn: dockIdx >= 0 ? '1' : '0', sheetOpen: s.sheet, cmdkOpen: s.cmdk, detailOpen: !!s.detail, detailData, deckOpen: !!s.deckPid, deckIsJp: this.SRV === 'jp', deckIsTw: this.SRV !== 'jp', deckJp: this.deckJpView(s), deckTitle: (String(s.deckPid||'')===String(s.pid||'') ? '我的編組' : '玩家編組') + ' · 自動計算加成', deckSrc: s.deckPid ? './index.html?embed=deck&pid=' + s.deckPid : '', gachaOpen: !!s.gachaGid, gachaInfo: this.gachaInfoView(),
@@ -13082,7 +13117,7 @@ class Component extends DCLogic {
         this.icsDownload('sekai-' + y + '-' + String(m + 1).padStart(2, '0'), items); },
       onCalTone: e => { const v = e.currentTarget.dataset.v; const o = Object.assign({}, this.state.calOff || {}); if (o[v]) delete o[v]; else o[v] = 1; this.setState({ calOff: o }); try { localStorage.setItem('sekai-cal-off', JSON.stringify(o)); } catch (e2) {} },
       onQaTpl: () => { const t = this.QA_TPL[this.state.qaKind]; if (!t) return; if (this.state.qaBody && !window.confirm('內容會被範本取代，確定？')) return; this.setState({ qaBody: t }); },
-      onSkin: e => { const d = e.currentTarget.dataset.v, v = d === 'literary' || d === 'stage' ? d : ''; if (v === (this.state.skin || '')) return; this._reveal(e, () => { this.setState({ skin: v }); this.applySkin(v); }); },
+      onSkin: e => { const d = e.currentTarget.dataset.v, v = this.SKIN_KEYS.includes(d) ? d : ''; if (v === (this.state.skin || '')) return; this._reveal(e, () => { this.setState({ skin: v }); this.applySkin(v); }); },
       onVisualMode: e => { const v = e.currentTarget.dataset.v; const next = this.state.vmode === v ? '' : v; this.setState({ vmode: next }); this.applyVisualMode(next); },
       onTut: e => {
         const k = e.currentTarget.dataset.i;

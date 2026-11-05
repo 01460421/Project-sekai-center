@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<!-- SEKAI 資源中心・留白版 icon：霧白虛空、細線「世」、ニーゴ紫與青色的訊號干擾錯位、碎晶 -->
+<defs><clipPath id="rr"><rect width="512" height="512" rx="96"/></clipPath><radialGradient id="fog" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e6eb"/></radialGradient></defs>
+<g clip-path="url(#rr)">
+<rect width="512" height="512" fill="url(#fog)"/>
+<g transform="translate(9 -4)"><path d="M457 835V590H275V813H197V590H51V517H197V-15H922V58H275V517H457V200H801V517H950V590H801V824H723V590H532V835ZM723 517V269H532V517Z" fill="none" stroke="#aa66cc" stroke-opacity=".75" stroke-width="20.98" transform="translate(88.98 394.82) scale(0.33370 -0.33370)"/></g><g transform="translate(-7 5)"><path d="M457 835V590H275V813H197V590H51V517H197V-15H922V58H275V517H457V200H801V517H950V590H801V824H723V590H532V835ZM723 517V269H532V517Z" fill="none" stroke="#44cccc" stroke-opacity=".55" stroke-width="20.98" transform="translate(88.98 394.82) scale(0.33370 -0.33370)"/></g><path d="M457 835V590H275V813H197V590H51V517H197V-15H922V58H275V517H457V200H801V517H950V590H801V824H723V590H532V835ZM723 517V269H532V517Z" fill="#2c2c34" fill-opacity=".1" stroke="#2c2c34" stroke-width="20.98" transform="translate(88.98 394.82) scale(0.33370 -0.33370)"/><path d="M70 120 L118 84 L104 150 Z" fill="none" stroke="#9a9aa4" stroke-width="3"/><path d="M420 400 L456 452 L398 446 Z" fill="none" stroke="#9a9aa4" stroke-width="3"/><path d="M430 96 L452 120 L424 132 Z" fill="#aa66cc" fill-opacity=".55"/>
+</g>
+</svg>

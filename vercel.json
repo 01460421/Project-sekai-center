@@ -62,6 +62,30 @@
       "use": "@vercel/static"
     },
     {
+      "src": "manifest-notebook.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest-idol.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest-street.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest-park.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest-void.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest-track.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
       "src": "icons/**",
       "use": "@vercel/static"
     },
@@ -370,6 +394,54 @@
     {
       "src": "/manifest-stage.webmanifest",
       "dest": "/manifest-stage.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-notebook.webmanifest",
+      "dest": "/manifest-notebook.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-idol.webmanifest",
+      "dest": "/manifest-idol.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-street.webmanifest",
+      "dest": "/manifest-street.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-park.webmanifest",
+      "dest": "/manifest-park.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-void.webmanifest",
+      "dest": "/manifest-void.webmanifest",
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/manifest-track.webmanifest",
+      "dest": "/manifest-track.webmanifest",
       "headers": {
         "cache-control": "public, max-age=3600",
         "content-type": "application/manifest+json"

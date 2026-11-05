@@ -54,16 +54,24 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this.VISUAL_KEYS.forEach(k => c.remove('style-' + k));
                 if (v) c.add('style-' + v);
             },
-            // App 的顯示版本（文青版／舞台版）：只有被 App 內嵌（?embed=）時才跟著換，經典長頁版本身維持原樣。
-            // 樣式在 css/core.css 最後的 :root.skin-literary／:root.skin-stage（只換變數、字型與圓角）
+            // App 的顯示版本（文青版、舞台版與六個團體版）：只有被 App 內嵌（?embed=）時才跟著換，經典長頁版本身維持原樣。
+            // 樣式在 css/core.css 最後的 :root.skin-*（只換變數、字型與圓角）；六個團體版另外掛 skin-sekai
+            SKIN_KEYS: ['literary', 'stage', 'notebook', 'idol', 'street', 'park', 'void', 'track'],
+            SKIN_SEKAI: ['notebook', 'idol', 'street', 'park', 'void', 'track'],
             SKIN_FONTS: {
                 literary: ['family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Noto+Serif+TC:wght@600;700'],
-                stage: ['family=Archivo:wdth,wght@62..125,100..900', 'family=JetBrains+Mono:wght@400;500;600;700', 'family=Noto+Sans+TC:wght@700;900']
+                stage: ['family=Archivo:wdth,wght@62..125,100..900', 'family=JetBrains+Mono:wght@400;500;600;700', 'family=Noto+Sans+TC:wght@700;900'],
+                notebook: ['family=LXGW+WenKai+TC:wght@300;400;700'],
+                idol: ['family=Chiron+GoRound+TC:wght@400;600;800', 'family=Fredoka:wght@500;600;700'],
+                street: ['family=Anton', 'family=Noto+Sans+TC:wght@700;900'],
+                park: ['family=Rye', 'family=Noto+Serif+TC:wght@700;900'],
+                void: ['family=Noto+Sans+TC:wght@200;300;400', 'family=Inter+Tight:wght@200;300;400;500'],
+                track: ['family=Chakra+Petch:wght@500;600;700', 'family=Noto+Sans+TC:wght@700;900']
             },
             applySkin(v) {
-                v = v === 'literary' || v === 'stage' ? v : '';
+                v = this.SKIN_KEYS.includes(v) ? v : '';
                 const c = document.documentElement.classList;
-                c.toggle('skin-literary', v === 'literary'); c.toggle('skin-stage', v === 'stage');
+                this.SKIN_KEYS.forEach(k => c.toggle('skin-' + k, v === k)); c.toggle('skin-sekai', this.SKIN_SEKAI.includes(v));
                 (this.SKIN_FONTS[v] || []).forEach((q, i) => {
                     const id = 'sc-fonts-' + v + '-' + i; if (document.getElementById(id)) return;
                     const l = document.createElement('link'); l.id = id; l.rel = 'stylesheet';
