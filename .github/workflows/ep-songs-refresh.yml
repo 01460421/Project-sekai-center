@@ -39,6 +39,14 @@ jobs:
       - name: 重建星圖詮釋資料
         run: python3 tools/build-song-meta.py || echo "星圖詮釋資料更新失敗,本輪略過"
 
+      # 歌曲清單的預先整理版（js/app.js 的 loadSongs 先用它畫清單，進歌曲頁閒下來再即時對一次 master）。失敗不影響曲庫。
+      - name: 重建歌曲清單索引
+        run: python3 tools/build-songs-index.py || echo "歌曲清單索引更新失敗,本輪略過"
+
+      # 全站字型的 @font-face 表（css/fonts.css）。Google 字型有更新才會變；抓不到或內容不對就保留舊檔。
+      - name: 更新字型表
+        run: python3 tools/build-fonts.py || echo "字型表更新失敗,本輪略過"
+
       # 虛擬 Live、MySekai 家具與劇情目錄的索引（原檔各 1~3 MB，壓成小檔）。內容沒變就不寫檔。
       - name: 重建圖鑑索引（虛擬 Live／家具／劇情目錄）
         run: python3 tools/build-db-index.py || echo "圖鑑索引更新失敗,本輪略過"
@@ -106,4 +114,4 @@ jobs:
       # main 的戳記檢查因此變紅（2026-09-28 那次蓋掉了 data-built.js、support-events.js 的戳記）。
       # build-db-index.py 也寫 mysekai-events.js、support-events.js、data-built.js，以前漏在清單外（每天產生後被丟掉），一起補上。
       - name: 提交變更
-        run: bash tools/commit-data.sh "曲庫資料 $(date -u '+%Y-%m-%d')" data/ep-songs.js data/ep-song-windows.js data/song-bpm.js data/song-meta.js data/lives-index.js data/fixtures-index.js data/stories-index.js data/mysekai-talks-index.js data/mysekai-events.js data/support-events.js data/data-built.js data/lives-index-jp.js data/fixtures-index-jp.js data/stories-index-jp.js data/mysekai-talks-index-jp.js data/mysekai-events-jp.js data/support-events-jp.js data/data-built-jp.js data/cards-index.js data/cards-index-jp.js data/card-sigs.js data/cards-extra.js data/cards-extra-jp.js data/bday-party.js data/bday-party-jp.js data/event-art.js data/event-art-jp.js tools/i18n/names.json data/i18n-en.js data/i18n-ja.js sitemap.xml
+        run: bash tools/commit-data.sh "曲庫資料 $(date -u '+%Y-%m-%d')" data/ep-songs.js data/ep-song-windows.js data/song-bpm.js data/song-meta.js data/songs-index.js css/fonts.css data/lives-index.js data/fixtures-index.js data/stories-index.js data/mysekai-talks-index.js data/mysekai-events.js data/support-events.js data/data-built.js data/lives-index-jp.js data/fixtures-index-jp.js data/stories-index-jp.js data/mysekai-talks-index-jp.js data/mysekai-events-jp.js data/support-events-jp.js data/data-built-jp.js data/cards-index.js data/cards-index-jp.js data/card-sigs.js data/cards-extra.js data/cards-extra-jp.js data/bday-party.js data/bday-party-jp.js data/event-art.js data/event-art-jp.js tools/i18n/names.json data/i18n-en.js data/i18n-ja.js sitemap.xml
