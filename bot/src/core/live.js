@@ -58,9 +58,25 @@ export function fetchLive(kind) {
 /* 榜線快照：samples[i] = [秒, T100, T200, …]（對齊 tiers），top1[i] = [秒, 分數]，wl[章] = { tiers, samples } */
 export const fetchHistoryIndex = () => cached('hist:index', 5 * 60e3, async () => parseSafe(await getText(`${SITE}/data/history/index.json`)));
 export const fetchHistory = id => cached(`hist:${id}`, 5 * 60e3, async () => parseSafe(await getText(`${SITE}/data/history/${Number(id)}.json`)));
-/* 最新一筆與約 hoursAgo 小時前那一筆，各段位的差 */
+/* 公用時序的 T100 欄對齊「前百第 100 名」（與網站 app.js histT100 同一招）：榜線端點的 T100 會凍住好幾個小時
+   （T1000 同時還在漲），同一份檔的 ranks 是 [秒, 第1名…第100名]、與 samples 同一次取樣寫入，直接拿第 100 名蓋過去。
+   那一筆沒有第 100 名（前百不足 100 人、或沒有對應的 ranks 列）就保留原值。回傳新陣列，不改動 h。 */
+export function histT100(h) {
+  const samples = (h && h.samples) || [];
+  try {
+    const ci = (h.tiers || []).findIndex(t => Number(t) === 100);
+    if (ci < 0 || !Array.isArray(h.ranks) || !h.ranks.length) return samples;
+    const at = {}; h.ranks.forEach(r => { if (Array.isArray(r)) at[r[0]] = r; });
+    return samples.map(s => {
+      const r = Array.isArray(s) ? at[s[0]] : null;
+      if (!r || r.length <= 100 || r[100] == null || s.length <= ci + 1) return s;
+      const c = s.slice(); c[ci + 1] = r[100]; return c;
+    });
+  } catch (e) { return samples; }
+}
+/* 最新一筆與約 hoursAgo 小時前那一筆，各段位的差（T100 先對齊前百第 100 名，不然 T100 凍住時增量會顯示 +0） */
 export function trend(h, hoursAgo = 1) {
-  const s = (h && h.samples) || []; if (!s.length) return null;
+  const s = histT100(h); if (!s.length) return null;
   const last = s[s.length - 1]; const target = last[0] - hoursAgo * 3600;
   let prev = null; for (const x of s) { if (x[0] <= target) prev = x; else break; }
   const tiers = (h.tiers || []);

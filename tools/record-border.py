@@ -26,6 +26,7 @@ import json
 import os
 import pathlib
 import sys
+import time
 import urllib.request
 
 API = 'https://api.hisekai.org/tw'
@@ -46,6 +47,23 @@ HARUKI_FALLBACK = 'https://games.project-sekai-center.com/haruki'
 # 自家 Worker 的追蹤器每 5 分鐘也記一筆快照（GitHub 排程實測 4～5 小時才跑一次，中間全靠它）；
 # 每次執行先把上一筆之後的快照補進來，再記當下這一筆
 SNAPS = 'https://games.project-sekai-center.com/snaps'
+# 給 workflow 判斷「Worker 有沒有在記」用：設了 BORDER_STATUS 就把這次的狀態寫成一小份 JSON（路徑由 workflow 給）。
+#   event   進行中的期數（抓不到 API 時 None）
+#   live    活動是否還在進行（結算前）；抓不到 API 時 None（workflow 當成「不知道」處理）
+#   latest  backfill 之後、記自己這一筆之前，檔案裡最新一筆的 unix 秒。Worker 連得上但回空的 200（STALE／上游失敗）
+#           也不會補進任何東西，所以這個值自然就會落後，不必另外判斷連線成功與否
+#   merged  這次從 Worker 補進幾筆；added 這次自己有沒有記到一筆（1／0）
+STATUS_PATH = os.environ.get('BORDER_STATUS')
+STATUS = {'event': None, 'live': None, 'latest': None, 'merged': 0, 'added': 0}
+
+
+def write_status(rc):
+    if not STATUS_PATH:
+        return
+    try:
+        pathlib.Path(STATUS_PATH).write_text(json.dumps({**STATUS, 'now': int(time.time()), 'rc': rc}) + '\n', encoding='utf-8')
+    except Exception as e:
+        print(f'取樣狀態寫入失敗（{e}）', file=sys.stderr)
 
 
 def _get(url):
@@ -178,7 +196,12 @@ def main():
     ev_id = meta.get('id')
     if ev_id is None:
         print('沒有進行中的活動,跳過')
+        STATUS['live'] = False
         return 0
+    STATUS['event'] = ev_id
+    now = int(time.time())
+    end = iso_to_unix(meta.get('aggregate_at') or meta.get('closed_at'))
+    STATUS['live'] = end is None or now < end       # 結算後分數不再變，workflow 不必再連續取樣
 
     if brd:
         rows = brd.get('player_border_rankings') or []
@@ -189,11 +212,6 @@ def main():
         print('榜線為空,跳過')
         return 0
 
-    now = iso_to_unix(None)
-    import time
-    now = int(time.time())
-
-    end = iso_to_unix(meta.get('aggregate_at') or meta.get('closed_at'))
     if end and now > end + 3 * 3600:
         print(f'第 {ev_id} 期已結算超過 3 小時,跳過')
         return 0
@@ -246,13 +264,17 @@ def main():
     merged = backfill(data, ev_id)
     if merged:
         print(f'從 Worker 補進 {merged} 筆快照')
+    STATUS['merged'] = merged
+    STATUS['latest'] = data['samples'][-1][0] if data['samples'] else None
 
     by_rank = {r['rank']: r.get('score') for r in rows}
     absent = [r for r in (data.get('tiers') or []) if r not in by_rank]
     if absent:
         print(f'這次沒回傳的段位 {absent},該欄位留空')
     wl = (brd or {}).get('world_link_border_rankings') or []
-    if not add_sample(data, now, tiers, by_rank, rank_scores, rank_uids, wl):
+    if add_sample(data, now, tiers, by_rank, rank_scores, rank_uids, wl):
+        STATUS['added'] = 1
+    else:
         print('距上一筆不足 4 分鐘,跳過')
         if not merged:
             return 0
@@ -278,4 +300,9 @@ def main():
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    rc = 1
+    try:
+        rc = main()
+    finally:
+        write_status(rc)     # 中途炸掉也要留下狀態（event／live 會是 None，workflow 當「不知道」處理）
+    raise SystemExit(rc)

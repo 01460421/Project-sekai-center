@@ -1,9 +1,12 @@
 name: 榜線快照
 
 # 台服沒有現成的榜線時序來源，只能自己定時記。
-# GitHub 的排程觸發極不準時（實測 */30 實際間隔 1.5～3.5 小時），
-# 所以不靠排程密度，改成一次觸發後在同一個 job 內自己連續取樣 55 分鐘，
-# 每 5 分鐘記一筆，最後一次提交。這樣不管排程延遲多久，資料密度都固定。
+# GitHub 的排程觸發極不準時（實測 */30 實際間隔 1.5～3.5 小時）。以前是一次觸發後在同一個 job 內
+# 連續取樣 55 分鐘（12 輪 × 5 分鐘）；2026-10-30 起自家 Worker（games.project-sekai-center.com）
+# 每 5 分鐘自己記一筆、保留 45 天，record-border.py 先從 /snaps 把上一筆之後的補回來再記當下這筆，
+# runner 那 11 輪實測已經一筆都貢獻不了（每輪「補進 1 筆」＋「距上一筆不足 4 分鐘，跳過」）。
+# 所以現在平常只跑一次就提交；只有 Worker 沒在記（連不上、或連得上但 STALE／上游失敗回空的 200）
+# 才退回連續取樣 55 分鐘。job 從 56 分鐘縮到 1 分鐘，也縮短了跟每日排程 rebase 重疊的窗口。
 on:
   schedule:
     - cron: '*/30 * * * *'
@@ -23,22 +26,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 連續取樣 55 分鐘（每 5 分鐘一筆）
+      # 要不要退回連續取樣，看 record-border.py 寫的狀態檔（BORDER_STATUS）：活動進行中、而且 backfill 之後
+      # 最新一筆仍距今超過 15 分鐘，就代表 Worker 這段時間沒在記。Worker 回空的 200 也補不進任何東西，
+      # 最新一筆的時間自然就會落後，所以不另外判斷連線成功與否。抓不到活動資訊（API 全掛、狀態檔沒寫出來）
+      # 就保守地照舊連續取樣。
+      - name: 取樣（Worker 沒在記才退回連續取樣 55 分鐘）
         run: |
-          # 注意：GitHub 用 bash -e 跑，步驟最後一個指令的結束碼就是步驟結果。
-          # 原本寫 [ "$i" -lt 12 ] && sleep 300，最後一圈條件為假就回 1，
-          # 明明資料寫成功卻整步失敗。改用 if，並在最後明確 exit 0。
+          # 注意：GitHub 用 bash -e 跑，步驟最後一個指令的結束碼就是步驟結果。取樣失敗不該讓 job 失敗，
+          # 真正該擋的是下一步的資料缺損檢查，所以每次呼叫都用 if 接住，最後明確 exit 0。
+          status="$RUNNER_TEMP/border-status.json"
+          rm -f "$status"
           ok=0
-          for i in $(seq 1 12); do
-            if python3 tools/record-border.py; then
-              ok=$((ok+1))
-            else
-              echo "第 $i 次取樣失敗，繼續下一次"
-            fi
-            if [ "$i" -lt 12 ]; then sleep 300; fi
-          done
-          echo "本輪成功 $ok / 12 次"
-          # 取樣失敗不該讓 job 失敗；真正該擋的是下一步的資料缺損檢查
+          if BORDER_STATUS="$status" python3 tools/record-border.py; then ok=1; else echo "第 1 次取樣失敗"; fi
+          more=$(python3 - "$status" <<'PY'
+          import json, sys, time
+          say = lambda m: print(m, file=sys.stderr)
+          try:
+              s = json.load(open(sys.argv[1], encoding='utf-8'))
+          except Exception as e:
+              say(f'讀不到取樣狀態（{e}），保守起見退回連續取樣'); print('yes'); sys.exit()
+          live, latest = s.get('live'), s.get('latest')
+          if live is None:
+              say('抓不到活動資訊，保守起見退回連續取樣'); print('yes'); sys.exit()
+          if not live:
+              say('沒有進行中的活動（或已結算），這次只跑一輪'); print('no'); sys.exit()
+          age = (s.get('now') or time.time()) - latest if latest else None
+          desc = f'從 Worker 補進 {s.get("merged", 0)} 筆後，最新一筆距今 {age / 60:.0f} 分鐘' if age is not None else '檔案裡還沒有任何樣本'
+          if age is None or age > 15 * 60:
+              say(f'{desc}：Worker 沒在記，退回連續取樣'); print('yes')
+          else:
+              say(f'{desc}：Worker 有在記，這次只跑一輪'); print('no')
+          PY
+          )
+          if [ "$more" = "yes" ]; then
+            for i in $(seq 2 12); do
+              sleep 300
+              if python3 tools/record-border.py; then ok=$((ok+1)); else echo "第 $i 次取樣失敗，繼續下一次"; fi
+            done
+            echo "本輪成功 $ok / 12 次"
+          else
+            echo "本輪成功 $ok / 1 次"
+          fi
           exit 0
 
       # 順帶重建儲值商品資料(活動限時商品才能近即時上架;前端從 raw 直接吃這份)。

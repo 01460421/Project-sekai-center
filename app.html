@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=f37412b2cf" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=6e34b71de5" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -326,7 +326,11 @@ input::placeholder{color:var(--text-3)}
 :focus-visible{outline:3px solid rgba(14,179,197,.45);outline-offset:2px;border-radius:10px}
 @keyframes pageIn{from{opacity:0}to{opacity:1}}
 @keyframes riseIn{from{opacity:0}to{opacity:1}}
-@keyframes rainbowPan{to{background-position:220% 0}}
+/* 頁首底線的彩虹：以前動 background-position（只能主執行緒逐幀重繪整個 sticky 頁首，手機靜置時佔主執行緒兩成），
+   改成 300% 寬的 ::before 用 transform 滑動，由合成器處理。文青／舞台／セカイ版把底線換成細線、::before 不顯示（見各版本區） */
+.head-rb{position:absolute;left:0;right:0;bottom:-1px;height:2.5px;opacity:.75;overflow:hidden;pointer-events:none;background:var(--rainbow);background-size:300% 100%}
+.head-rb::before{content:"";position:absolute;top:0;bottom:0;left:0;width:300%;background:var(--rainbow);background-size:33.3334% 100%;background-repeat:repeat-x;animation:rbSlide 9.5s linear infinite;will-change:transform}
+@keyframes rbSlide{to{transform:translateX(-66.6667%)}}
 @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes popIn{from{opacity:0;transform:scale(.95) translateY(12px)}to{opacity:1;transform:none}}
@@ -339,12 +343,14 @@ input::placeholder{color:var(--text-3)}
 .egg-star svg{width:15px;height:15px;fill:currentColor;display:block}
 @keyframes eggTwinkle{0%,100%{opacity:.3;transform:scale(.9)}45%{opacity:.8;transform:scale(1.06)}60%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.egg-star{animation:none}}
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* 減少動態：動畫縮到一瞬間、而且只跑一次（以前沒設 iteration-count，無限循環的動畫會以 .01ms 每秒閃 60 次，比原本更糟）；fill-mode 預設 none 的會回到基礎狀態，進場動畫是 forwards 停在最後一格正好是要的 */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media (max-width:900px){main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 
 /* 圖表容器整塊關閉選取與長按選單：長按跳出的複製／查詢選單
    來自圖表周圍的文字（起迄、縱軸說明），不只 SVG 本身。 */
-*:has(> svg[data-chart]),*:has(> svg[data-chart]) *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* 圖表容器：拖曳讀值時不要選到文字。以前是 *:has(> svg[data-chart])，通用選擇器＋:has 讓任何 DOM 變動都重算樣式（圖鑑「顯示更多」一次 453 次失效） */
+.chart-wrap,.chart-wrap *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
 /* 側欄項目變多後會超出畫面，給它自己的捲軸；細一點免得太搶眼 */
 .side-nav{scrollbar-width:thin;scrollbar-color:var(--border-2) transparent}
@@ -433,7 +439,7 @@ img.if-0{opacity:0}
 img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
 /* 圖鑑格子：滑鼠移上去圖片微微放大 */
 @media (hover:hover){
-  [role="button"][data-kind] > div:first-child:has(> img){overflow:hidden}
+  [role="button"][data-kind] > div:first-child{overflow:hidden}
   [role="button"][data-kind] > div:first-child > img{transition:scale .45s cubic-bezier(.2,.7,.3,1),opacity .4s cubic-bezier(.4,0,.2,1)}
   [role="button"][data-kind]:hover > div:first-child > img{scale:1.06}
 }
@@ -647,6 +653,8 @@ img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
    只套在確定沒有浮出元素（下拉選單、提示框、position:fixed）的列表列與區塊上：content-visibility 會裁掉超出邊界的子元素 */
 .cv-row{content-visibility:auto;contain-intrinsic-size:auto 200px}
 .cv-sec{content-visibility:auto;contain-intrinsic-size:auto 900px}
+.cv-card{content-visibility:auto;contain-intrinsic-size:auto 246px}   /* 圖鑑卡片（手機兩欄實高；桌機約 198） */
+.cv-brow{content-visibility:auto;contain-intrinsic-size:auto 63px}    /* 榜線列（桌機約 55） */
 /* 設定頁：每一區一張卡片，左邊說明、右邊控制項；手機改成上下排 */
 .set-toc{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:calc(var(--head-h,56px) + 6px);z-index:5;padding:6px 0}
 .set-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;scroll-margin-top:calc(var(--head-h,56px) + 56px)}
@@ -1231,9 +1239,10 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 .hp-fab .hp-i-x{opacity:0;transform:rotate(-90deg) scale(.5)}
 .hp-fab[data-state="open"] .hp-i-chat{opacity:0;transform:rotate(90deg) scale(.5)}
 .hp-fab[data-state="open"] .hp-i-x{opacity:1;transform:none}
-.hp-fab .hp-i-chat .hp-dots circle{animation:hpDot 1.8s ease-in-out infinite}
-.hp-fab .hp-i-chat .hp-dots circle:nth-child(2){animation-delay:.18s}
-.hp-fab .hp-i-chat .hp-dots circle:nth-child(3){animation-delay:.36s}
+.hp-fab .hp-dots{position:absolute;width:26px;height:26px;pointer-events:none;transition:transform .45s cubic-bezier(.34,1.56,.44,1),opacity .25s}
+.hp-fab[data-state="open"] .hp-dots{opacity:0;transform:rotate(90deg) scale(.5)}
+.hp-fab .hp-dots i{position:absolute;top:10.55px;width:2.7px;height:2.7px;border-radius:50%;background:#3f8cf3;animation:hpDot 1.8s ease-in-out infinite;will-change:transform}
+.hp-fab .hp-dots i:nth-child(1){left:7.65px}.hp-fab .hp-dots i:nth-child(2){left:11.65px;animation-delay:.18s}.hp-fab .hp-dots i:nth-child(3){left:15.65px;animation-delay:.36s}
 .hp-badge{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#ef4458;color:#fff;font-size:11px;font-weight:900;display:grid;place-items:center;border:2px solid var(--bg);animation:hpPop .5s cubic-bezier(.34,1.8,.44,1)}
 @keyframes hpFabIn{from{opacity:0;transform:scale(.3) rotate(-30deg)}to{opacity:1;transform:none}}
 @keyframes hpRing{0%{transform:scale(1);opacity:.45}70%,100%{transform:scale(1.55);opacity:0}}
@@ -1349,7 +1358,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 .hp-err{flex:none;margin:0 12px;padding:7px 10px;border-radius:10px;background:color-mix(in oklab,#ef4458 10%,transparent);color:#d33;font-size:12px;font-weight:700;animation:hpMsgIn .3s ease both}
 .hp-new{width:100%;padding:12px;margin-bottom:12px;border:1.5px dashed color-mix(in oklab,var(--accent) 45%,var(--border));border-radius:16px;background:color-mix(in oklab,var(--accent) 5%,transparent);color:var(--accent-deep);font-size:13px;font-weight:900;cursor:pointer;transition:background .2s,transform .3s cubic-bezier(.34,1.56,.44,1)}
 .hp-new:hover{background:color-mix(in oklab,var(--accent) 10%,transparent);transform:translateY(-1px)}
-@media (prefers-reduced-motion:reduce){.hp-fab,.hp-fab::before,.hp-panel,.hp-row,.hp-act,.hp-tip,.hp-th,.hp-card,.hp-ava,.hp-big,.hp-head::before,.hp-head::after,.hp-typing span,.hp-fab .hp-i-chat .hp-dots circle{animation:none!important}.hp-tabs .ind{transition:none}}
+@media (prefers-reduced-motion:reduce){.hp-fab,.hp-fab::before,.hp-panel,.hp-row,.hp-act,.hp-tip,.hp-th,.hp-card,.hp-ava,.hp-big,.hp-head::before,.hp-head::after,.hp-typing span,.hp-fab .hp-dots i{animation:none!important}.hp-tabs .ind{transition:none}}
 /* ===== 顯示版本選擇卡（設定與功能引導共用；兩個版本都用得到） ===== */
 .skin-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .skin-opt{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;padding:10px;border:1.5px solid var(--border);border-radius:16px;background:var(--card);color:var(--ink);cursor:pointer;text-align:left;font:inherit;transition:border-color .2s,box-shadow .2s,transform .25s cubic-bezier(.34,1.45,.44,1)}
@@ -1458,6 +1467,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 /* 頁首：彩虹線換成一道淡金細線，標題換襯線 */
 :root.skin-literary .app-head{background:color-mix(in oklab,var(--bg) 88%,transparent)!important}
 :root.skin-literary .app-head>span:first-child{height:1px!important;bottom:-1px!important;background:linear-gradient(90deg,transparent,var(--accent) 16%,var(--accent) 84%,transparent)!important;opacity:.6!important;animation:none!important}
+:root.skin-literary .head-rb::before{display:none}
 :root.skin-literary .app-head div:has(+.page-sub){font-family:var(--lit-serif);font-size:18px!important;font-weight:700!important;letter-spacing:.14em!important}
 :root.skin-literary .app-head .page-sub{letter-spacing:.04em}
 :root.skin-literary .srv-btn,:root.skin-literary .app-head>button{box-shadow:none!important}
@@ -1617,6 +1627,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 /* ---- 頁首：細線、緊湊；頁名交給內容區的大標 ---- */
 :root.skin-stage .app-head{background:color-mix(in oklab,var(--bg) 84%,transparent)!important}
 :root.skin-stage .app-head>span:first-child{height:1px!important;background:var(--border)!important;opacity:1!important;animation:none!important}
+:root.skin-stage .head-rb::before{display:none}
 :root.skin-stage .app-head div:has(+.page-sub){font-family:var(--st-disp);font-weight:800!important;font-size:17px!important;letter-spacing:-.01em!important}
 :root.skin-stage .app-head .page-sub{font-family:var(--st-mono);font-size:10.5px!important;letter-spacing:.02em}
 :root.skin-stage .srv-btn,:root.skin-stage .app-head>button{box-shadow:none!important}
@@ -1878,6 +1889,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 /* ---- 頁首 ---- */
 :root.skin-sekai .app-head{background:color-mix(in oklab,var(--bg) 86%,transparent)!important}
 :root.skin-sekai .app-head>span:first-child{height:1px!important;background:var(--border)!important;opacity:1!important;animation:none!important}
+:root.skin-sekai .head-rb::before{display:none}
 :root.skin-sekai .app-head div:has(+.page-sub){font-family:var(--sk-head);font-weight:var(--sk-head-w)!important}
 :root.skin-sekai .srv-btn,:root.skin-sekai .app-head>button{box-shadow:none!important}
 
@@ -2755,8 +2767,8 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
 <aside class="side-nav" style="flex:0 0 238px;width:238px;position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:20px 14px;overflow-y:auto;overscroll-behavior:contain;border-right:1px solid var(--border);background:color-mix(in oklab,var(--card) 62%,transparent);backdrop-filter:blur(20px)">
   <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 16px">
-    <span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:color-mix(in oklab,var(--accent) 12%,transparent)"><img src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;object-fit:contain;display:block;filter:drop-shadow(0 1px 3px rgba(47,124,220,.35))"></span>
-    <span style="font-size:15px;font-weight:800;color:var(--ink);letter-spacing:.3px"><em style="font-style:normal;font-family:'M PLUS Rounded 1c';background:var(--rainbow);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbowPan 9s linear infinite">SEKAI</em> 中心</span>
+    <span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:color-mix(in oklab,var(--accent) 12%,transparent)"><img data-logo-mat src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;object-fit:contain;display:block;filter:drop-shadow(0 1px 3px rgba(47,124,220,.35))"></span>
+    <span style="font-size:15px;font-weight:800;color:var(--ink);letter-spacing:.3px"><em style="font-style:normal;font-family:'M PLUS Rounded 1c';background:var(--rainbow);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent">SEKAI</em> 中心</span>
   </div>
 
   <button type="button" onClick="{{ onCmdOpen }}" style="display:flex;align-items:center;gap:9px;width:100%;margin-bottom:12px;padding:10px 13px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-3);font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-xs);transition:border-color .2s,transform .25s cubic-bezier(.34,1.45,.44,1)" style-hover="border-color:var(--border-2);color:var(--text)" style-active="transform:scale(.97)">
@@ -2788,9 +2800,9 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
 <main style="flex:1;min-width:0;display:flex;flex-direction:column">
   <div class="app-head" style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:11px clamp(14px,3vw,32px);border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--bg) 78%,transparent);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 -3px 0 -0.5px transparent">
-    <span style="position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--rainbow);background-size:300% 100%;opacity:.75;animation:rainbowPan 14s linear infinite"></span>
+    <span class="head-rb" aria-hidden="true"></span>
     <sc-if value="{{ isMobile }}">
-      <img src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;flex:none;object-fit:contain;display:block">
+      <img data-logo-mat src="{{ logoMat }}" referrerpolicy="no-referrer" decoding="async" alt="{{ logoMatName }}" title="{{ logoMatName }}" width="128" height="128" style="width:27px;height:27px;flex:none;object-fit:contain;display:block">
     </sc-if>
     <div style="min-width:0;flex:1">
       <div style="font-size:16.5px;font-weight:800;color:var(--ink);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pageTitle }}</div>
@@ -3671,7 +3683,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </sc-if>
 
       <sc-if value="{{ wlChartHas }}">
-        <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
+        <div class="chart-wrap" style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
           <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
             <span class="u-ffc14">{{ wlChartTitle }}</span>
             <span class="u-fc2">{{ wlChartN }}</span>
@@ -3722,7 +3734,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ isDesktop }}"><span class="u-t4">近1h周回</span><span class="u-t4">最後更新</span></sc-if>
       </div>
       <sc-for list="{{ boardRows }}" as="r" hint-placeholder-count="10">
-        <div role="button" tabindex="0" onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:{{ rankGap }};padding:10px {{ rankPad }};border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
+        <div class="cv-brow" role="button" tabindex="0" onClick="{{ onRankClick }}" data-i="{{ r.i }}" style="display:grid;grid-template-columns:{{ rankCols }};gap:{{ rankGap }};padding:10px {{ rankPad }};border-top:1px solid var(--border);align-items:center;background:{{ r.rowBg }};transition:background .18s;cursor:pointer" style-hover="background:var(--bg-soft)">
           <span style="font-family:'M PLUS Rounded 1c';font-size:13.5px;font-weight:800;color:{{ r.rankColor }}">{{ r.rank }}</span>
           <span style="min-width:0;display:flex;align-items:center;gap:9px">
             <span style="position:relative;width:{{ rankAv }};height:{{ rankAv }};flex:none;border-radius:50%;background:{{ r.avatarBg }};display:grid;place-items:center;overflow:hidden">
@@ -10189,7 +10201,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ isCards }}">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px">
         <sc-for list="{{ cdRows }}" as="c" hint-placeholder-count="12">
-          <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="card" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;border-bottom:3px solid {{ c.color }}">
+          <div class="cv-card" role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="card" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;border-bottom:3px solid {{ c.color }}">
             <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
               <img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
               <span style="position:absolute;left:6px;top:6px;padding:2px 7px;border-radius:999px;background:{{ c.attrBg }};color:{{ c.attrFg }};font-size:10px;font-weight:800">{{ c.attr }}</span>
@@ -10888,7 +10900,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="font-size:12px;color:var(--text-3);margin-bottom:9px;font-family:'M PLUS Rounded 1c'">{{ anaMeta }}</div>
       <div style="padding:10px 14px;border-radius:13px;background:var(--card-2);color:var(--text-2);font-size:11.5px;line-height:1.6;margin-bottom:8px">{{ anaMethod }}</div>
       <div style="padding:9px 14px;border-radius:13px;background:color-mix(in oklab,#e0576a 8%,transparent);color:var(--text-2);font-size:11px;line-height:1.6;margin-bottom:12px">{{ anaBias }}</div>
-      <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
+      <div class="chart-wrap" style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;margin-bottom:13px">
         <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
           <span class="u-ffc20">{{ anaChartTitle }}</span>
           <span class="u-fc2">{{ anaChartN }}</span>
@@ -10988,7 +11000,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
         </div>
         <!-- 這位玩家的名次與分數走勢 -->
-        <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
+        <div class="chart-wrap" style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
           <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:11px">
             <span class="u-ffc20">名次走勢</span>
             <span class="u-fc2">{{ anaPSeriesMeta }}</span>
@@ -11578,7 +11590,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 <div class="hp-tip" style="bottom:calc({{ hpFabBottom }} + 6px)" onClick="{{ onHpFab }}" role="status"><b>SEKAI 小幫手</b>{{ hpTipText }}<button type="button" onClick="{{ onHpTipClose }}" aria-label="關閉">×</button></div>
 </sc-if>
 <button type="button" class="hp-fab" data-state="{{ hpState }}" style="bottom:{{ hpFabBottom }}" onClick="{{ onHpFab }}" aria-label="{{ hpFabLabel }}" title="{{ hpFabLabel }}" aria-expanded="{{ hpOpen }}">
-  <svg class="hp-i-chat" viewBox="0 0 24 24" fill="none"><path d="M12 3.5c-4.97 0-9 3.36-9 7.5 0 2.2 1.14 4.18 2.96 5.55L5.4 20.2c-.1.42.34.75.72.55l3.9-2.1c.63.12 1.29.2 1.98.2 4.97 0 9-3.36 9-7.5S16.97 3.5 12 3.5z" fill="currentColor"></path><g class="hp-dots" fill="#3f8cf3"><circle cx="8.3" cy="11" r="1.25"></circle><circle cx="12" cy="11" r="1.25"></circle><circle cx="15.7" cy="11" r="1.25"></circle></g></svg>
+  <svg class="hp-i-chat" viewBox="0 0 24 24" fill="none"><path d="M12 3.5c-4.97 0-9 3.36-9 7.5 0 2.2 1.14 4.18 2.96 5.55L5.4 20.2c-.1.42.34.75.72.55l3.9-2.1c.63.12 1.29.2 1.98.2 4.97 0 9-3.36 9-7.5S16.97 3.5 12 3.5z" fill="currentColor"></path></svg><span class="hp-dots" aria-hidden="true"><i></i><i></i><i></i></span>
   <svg class="hp-i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
   <sc-if value="{{ hpBadgeOn }}"><span class="hp-badge">{{ hpBadge }}</span></sc-if>
 </button>
@@ -11772,7 +11784,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div></div>
 
   <!-- 名次走勢，直接接在詳情下方 -->
-  <div style="margin-top:15px;padding-top:14px;border-top:1px solid var(--border)">
+  <div class="chart-wrap" style="margin-top:15px;padding-top:14px;border-top:1px solid var(--border)">
     <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:9px">
       <span class="u-ffc14">名次走勢</span>
       <span class="u-fc2">{{ detailData.chartMeta }}</span>
@@ -12421,7 +12433,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f37412b2cf"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=6e34b71de5"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
