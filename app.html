@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=3a1140825f" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=f37412b2cf" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -647,6 +647,34 @@ img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
    只套在確定沒有浮出元素（下拉選單、提示框、position:fixed）的列表列與區塊上：content-visibility 會裁掉超出邊界的子元素 */
 .cv-row{content-visibility:auto;contain-intrinsic-size:auto 200px}
 .cv-sec{content-visibility:auto;contain-intrinsic-size:auto 900px}
+/* 設定頁：每一區一張卡片，左邊說明、右邊控制項；手機改成上下排 */
+.set-toc{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:calc(var(--head-h,56px) + 6px);z-index:5;padding:6px 0}
+.set-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:16px 18px;scroll-margin-top:calc(var(--head-h,56px) + 56px)}
+.set-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.set-h b{font-size:15px;font-weight:800;color:var(--ink)}
+.set-h span{flex:1;min-width:160px;font-size:11.5px;color:var(--text-3)}
+.set-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:13px 0;border-top:1px solid var(--border)}
+.set-row-col{flex-direction:column;align-items:stretch}
+.set-k{flex:0 0 220px;font-size:13px;font-weight:800;color:var(--ink);line-height:1.5}
+.set-k small{display:block;font-size:11px;font-weight:500;color:var(--text-3);line-height:1.6;margin-top:2px}
+.set-row-col .set-k{flex:none}
+.set-v{flex:1;min-width:200px}
+.set-seg{flex:1;min-width:220px;max-width:460px}
+.set-note{font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px}
+.set-sub{font-size:11.5px;font-weight:800;color:var(--text-2);margin:14px 0 4px}
+.set-lrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+.set-btn{display:inline-flex;align-items:center;padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.set-btn-p{border-color:transparent;background:var(--cta);color:#fff}
+.set-btn-s{padding:4px 12px;font-size:11px}
+.set-mv{padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer}
+.set-tg{min-width:52px;font-weight:700}
+@media (max-width:700px){.set-k{flex:1 1 100%}.set-v,.set-seg{min-width:0;flex:1 1 100%;max-width:none}.set-card{padding:14px 15px}}
+/* 首頁的全站搜尋列（點了開 ⌘K） */
+.home-search{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-3);font-size:13px;cursor:text;box-shadow:var(--sh-xs);text-align:left}
+.home-search svg{width:15px;height:15px;flex:none}
+.home-search span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-search kbd{flex:none;font:600 10.5px/1 system-ui,sans-serif;padding:3px 6px;border:1px solid var(--border);border-radius:6px;color:var(--text-3);background:var(--card-2)}
+@media (max-width:900px){.home-search kbd{display:none}}
 .mk-h{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:2px;color:var(--text-3);font-weight:700;margin-bottom:10px}
 .mk-h b{font-size:14px;letter-spacing:.3px;color:var(--text)}
 .mk-h i{margin-left:auto;font-style:normal;font-size:11px;letter-spacing:0;color:var(--text-3);font-weight:400;text-align:right}
@@ -2856,14 +2884,15 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <span role="button" tabindex="0" onClick="{{ onNoticeDismiss }}" role="button" aria-label="標為已讀" title="標為已讀" style="flex:none;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--text-3);font-size:11px">✕</span>
         </button>
       </sc-if>
-      <div class="u-f1"></div>
+      <!-- 全站搜尋入口：頁首的放大鏡很小、新來的人常常沒注意到；首頁直接擺一條，點了開 ⌘K 搜尋 -->
+      <button type="button" class="home-search" onClick="{{ onCmdOpen }}" aria-label="搜尋全站"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg><span>搜尋功能、歌曲、角色、設定…（例：摸魚、T100）</span><kbd>⌘K</kbd></button>
       <button type="button" class="egg-star" onClick="{{ onStarEgg }}" title="夜空裡有一顆星在閃" aria-label="SEKAI 星圖"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .6 9.5 6.5 15.4 8 9.5 9.5 8 15.4 6.5 9.5.6 8 6.5 6.5Z"/></svg></button>
       <button type="button" onClick="{{ onHomeCfg }}" title="自訂首頁" style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>自訂首頁
       </button>
     </div>
 
-    <!-- 首頁每個區塊都可以在「我的帳號 → 自訂版面」隱藏或調順序：外框是 flex column，順序靠 CSS order，顯示與否靠 sc-if -->
+    <!-- 首頁每個區塊都可以在「設定 → 版面」（或首頁的自訂面板）隱藏或調順序：外框是 flex column，順序靠 CSS order，顯示與否靠 sc-if -->
     <sc-if value="{{ homeShow.hero }}">
     <div class="se-hero" style="order:{{ homeOrd.hero }};position:relative;overflow:hidden;border-radius:24px;padding:26px 26px 22px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md)">
       <span class="se-flow" style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--rainbow)"></span>
@@ -6936,31 +6965,9 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </sc-for>
       </div>
 
-      <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-top:14px">
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-          <span class="u-ffc0">自訂版面</span>
-          <span style="font-size:11.5px;color:var(--text-3);flex:1">側欄功能與首頁區塊的順序、顯示；設定會跟著帳號同步</span>
-          <button type="button" onClick="{{ onLayoutReset }}" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer">還原預設</button>
-        </div>
-        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:10px 0 5px">首頁區塊</div>
-        <sc-for list="{{ layoutHomeRows }}" as="r" hint-placeholder-count="5">
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">
-            <span style="flex:1;font-size:12.5px;color:{{ r.fg }}">{{ r.name }}</span>
-            <button type="button" onClick="{{ onLayoutMove }}" data-scope="home" data-id="{{ r.id }}" data-dir="up" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↑</button>
-            <button type="button" onClick="{{ onLayoutMove }}" data-scope="home" data-id="{{ r.id }}" data-dir="down" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↓</button>
-            <button type="button" onClick="{{ onLayoutToggle }}" data-scope="home" data-id="{{ r.id }}" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:{{ r.fg }};font-size:11px;font-weight:700;cursor:pointer;min-width:52px">{{ r.btn }}</button>
-          </div>
-        </sc-for>
-        <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:14px 0 5px">側欄功能</div>
-        <sc-for list="{{ layoutNavRows }}" as="r" hint-placeholder-count="20">
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">
-            <span style="font-size:10.5px;color:var(--text-3);width:34px">{{ r.group }}</span>
-            <span style="flex:1;font-size:12.5px;color:{{ r.fg }}">{{ r.name }}</span>
-            <button type="button" onClick="{{ onLayoutMove }}" data-scope="nav" data-id="{{ r.id }}" data-dir="up" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↑</button>
-            <button type="button" onClick="{{ onLayoutMove }}" data-scope="nav" data-id="{{ r.id }}" data-dir="down" style="padding:3px 9px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer">↓</button>
-            <button type="button" onClick="{{ onLayoutToggle }}" data-scope="nav" data-id="{{ r.id }}" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card-2);color:{{ r.fg }};font-size:11px;font-weight:700;cursor:pointer;min-width:52px">{{ r.btn }}</button>
-          </div>
-        </sc-for>
+      <div style="border:1px solid var(--border);border-radius:20px;padding:16px 20px;background:var(--card);box-shadow:var(--sh-sm);margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="flex:1;min-width:200px;font-size:12.5px;color:var(--text-2);line-height:1.6"><b style="color:var(--ink)">自訂版面</b>（首頁區塊與側欄功能的順序、顯示）移到「設定」頁了，登入後一樣跟著帳號同步</span>
+        <button type="button" onClick="{{ onGo }}" data-p="settings" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">前往設定 →</button>
       </div>
 
     </sc-if>
@@ -9697,6 +9704,180 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
   </sc-if>
 
+<sc-if value="{{ isSettings }}">
+  <!-- 設定：以前散在首頁的「自訂首頁 → 資料設定」、帳號頁的「自訂版面」、更新紀錄頁與頁首，現在集中在這一頁。
+       值與事件都沿用原本那幾處的（srvOpts、skinChipsBase、layoutNavRows…），改一處兩邊都生效。 -->
+  <div class="set-page" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:14px">
+    <div class="set-toc chips-scroll" role="navigation" aria-label="設定分類">
+      <sc-for list="{{ setToc }}" as="c" hint-placeholder-count="4">
+        <button type="button" class="mk-chip" onClick="{{ onSetJump }}" data-id="{{ c.id }}">{{ c.n }}</button>
+      </sc-for>
+    </div>
+
+    <!-- 遊戲與資料 -->
+    <section id="set-game" class="set-card">
+      <div class="set-h"><b>遊戲與資料</b><span>伺服器、語言、Player ID、歌曲音源</span></div>
+      <div class="set-row">
+        <div class="set-k">伺服器<small>切換會重新載入頁面</small></div>
+        <div class="srv-seg set-seg"><sc-for list="{{ srvOpts }}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{ onSrvPick }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}"><span>{{ o.n }}</span><small>{{ o.d }}</small></button></sc-for></div>
+      </div>
+      <div class="set-row">
+        <div class="set-k">介面語言<small>曲名、卡名與活動名維持遊戲原文</small></div>
+        <div class="srv-seg srv-seg4 set-seg"><sc-for list="{{ langOpts }}" as="o" hint-placeholder-count="4"><button type="button" translate="no" onClick="{{ onLangPick }}" data-v="{{ o.v }}" style="background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.n }}</button></sc-for></div>
+      </div>
+      <div class="set-row">
+        <div class="set-k">Player ID<small>首頁、排名頁顯示你的名次與時速</small></div>
+        <div class="set-v">
+          <sc-if value="{{ hasPlayer }}">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:13px;color:var(--text)">{{ playerName }} <span style="color:var(--text-3);font-family:'M PLUS Rounded 1c'">ID {{ playerId }}</span></span>
+              <button type="button" class="set-btn" onClick="{{ onUnbind }}">解除綁定</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noPlayer }}">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" onKeyDown="{{ onPidKey }}" style="flex:1;min-width:150px;padding:9px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;outline:none">
+              <button type="button" class="set-btn set-btn-p" onClick="{{ onBind }}">綁定</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--lim-fg);min-height:16px;margin-top:4px">{{ playerErr }}</div>
+          </sc-if>
+        </div>
+      </div>
+      <div class="set-row">
+        <div class="set-k">歌曲音源版本<small>試聽與播放器預設播哪一版</small></div>
+        <div class="set-v">
+          <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2)">
+            <button type="button" onClick="{{ onVocalPref }}" data-v="virtual" style="padding:6px 14px;border:none;border-radius:999px;background:{{ vpVBg }};color:{{ vpVFg }};font-size:12px;font-weight:800;cursor:pointer">虛擬歌手 ver.</button>
+            <button type="button" onClick="{{ onVocalPref }}" data-v="sekai" style="padding:6px 14px;border:none;border-radius:999px;background:{{ vpSBg }};color:{{ vpSFg }};font-size:12px;font-weight:800;cursor:pointer">世界 ver.</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 外觀 -->
+    <section id="set-look" class="set-card">
+      <div class="set-h"><b>外觀</b><span>主題、顯示版本、配色與開場動畫</span></div>
+      <div class="set-row">
+        <div class="set-k">主題<small>頁首右上的半月按鈕也能切換</small></div>
+        <div class="set-v chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ themeChips }}" as="c" hint-placeholder-count="3">
+            <button type="button" onClick="{{ onThemeSet }}" data-v="{{ c.v }}" aria-pressed="{{ c.on }}" style="padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="set-row set-row-col">
+        <div class="set-k">顯示版本<small>整個網站換一套外觀；隨時可以換回原版</small></div>
+        <div class="skin-pick-wrap" role="radiogroup" aria-label="顯示版本">
+          <div class="skin-pick">
+          <sc-for list="{{ skinChipsBase }}" as="k" hint-placeholder-count="3">
+            <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
+              <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
+              <span class="skin-opt-n">{{ k.n }}<small>{{ k.mark }}</small></span>
+              <span class="skin-opt-d">{{ k.d }}</span>
+            </button>
+          </sc-for>
+          </div>
+          <div class="skin-pick-cap">六個團體的セカイ</div>
+          <div class="skin-pick skin-pick-sekai">
+          <sc-for list="{{ skinChipsSekai }}" as="k" hint-placeholder-count="6">
+            <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
+              <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
+              <span class="skin-opt-n"><i class="skin-dot" style="background:{{ k.dot }}"></i>{{ k.n }}<small>{{ k.mark }}</small></span>
+              <span class="skin-opt-d">{{ k.d }}</span>
+            </button>
+          </sc-for>
+          </div>
+          <div class="skin-pick-desc">{{ skinDesc }}</div>
+        </div>
+        <sc-if value="{{ skinIsLit }}"><div class="set-note">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if>
+        <sc-if value="{{ skinIsStage }}"><div class="set-note">舞台版的燈色跟著「團體主題色」走，就像換上那一團的應援色；配色風格與合鳴只在原版生效。</div></sc-if>
+        <sc-if value="{{ skinSekaiOn }}"><div class="set-note">{{ skinSekaiNote }}</div></sc-if>
+      </div>
+      <div class="set-row set-row-col">
+        <div class="set-k">配色風格<small>只在原版生效</small></div>
+        <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <sc-for list="{{ toneChips }}" as="c" hint-placeholder-count="6">
+            <button type="button" class="lit-off" onClick="{{ onTone }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+          </sc-for>
+          <sc-for list="{{ vmChips }}" as="c" hint-placeholder-count="2">
+            <button type="button" class="lit-off" onClick="{{ onVisualMode }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="set-row set-row-col">
+        <div class="set-k">團體主題色<small>強調色換成那一團的顏色</small></div>
+        <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <sc-for list="{{ unitChips }}" as="c" hint-placeholder-count="7">
+            <button type="button" class="lit-off st-on" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="set-row">
+        <div class="set-k">開場動畫<small>每天第一次從首頁進站時播一次，隨時可以略過</small></div>
+        <div class="set-v" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="set-btn" onClick="{{ onIntroAuto }}" aria-pressed="{{ introAutoOn }}">{{ introAutoLabel }}</button>
+          <button type="button" class="set-btn" onClick="{{ onIntroPlay }}">▶ 現在播放</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 版面 -->
+    <section id="set-layout" class="set-card">
+      <div class="set-h"><b>版面</b><span>首頁區塊與側欄功能的順序、顯示；登入後會跟著帳號同步</span><button type="button" class="set-btn set-btn-s" onClick="{{ onLayoutReset }}">還原預設</button></div>
+      <div class="set-row">
+        <div class="set-k">首頁的數字與捷徑<small>「我的排名」顯示哪些數字、「快速前往」放哪些入口</small></div>
+        <div class="set-v"><button type="button" class="set-btn" onClick="{{ onSetHomeCfg }}">到首頁調整 →</button></div>
+      </div>
+      <div class="set-sub">首頁區塊</div>
+      <sc-for list="{{ layoutHomeRows }}" as="r" hint-placeholder-count="5">
+        <div class="set-lrow">
+          <span style="flex:1;font-size:12.5px;color:{{ r.fg }}">{{ r.name }}</span>
+          <button type="button" class="set-mv" onClick="{{ onLayoutMove }}" data-scope="home" data-id="{{ r.id }}" data-dir="up" aria-label="上移">↑</button>
+          <button type="button" class="set-mv" onClick="{{ onLayoutMove }}" data-scope="home" data-id="{{ r.id }}" data-dir="down" aria-label="下移">↓</button>
+          <button type="button" class="set-mv set-tg" onClick="{{ onLayoutToggle }}" data-scope="home" data-id="{{ r.id }}" style="color:{{ r.fg }}">{{ r.btn }}</button>
+        </div>
+      </sc-for>
+      <div class="set-sub">側欄功能</div>
+      <sc-for list="{{ layoutNavRows }}" as="r" hint-placeholder-count="20">
+        <div class="set-lrow">
+          <span style="font-size:10.5px;color:var(--text-3);width:52px;flex:none">{{ r.group }}</span>
+          <span style="flex:1;font-size:12.5px;color:{{ r.fg }}">{{ r.name }}</span>
+          <button type="button" class="set-mv" onClick="{{ onLayoutMove }}" data-scope="nav" data-id="{{ r.id }}" data-dir="up" aria-label="上移">↑</button>
+          <button type="button" class="set-mv" onClick="{{ onLayoutMove }}" data-scope="nav" data-id="{{ r.id }}" data-dir="down" aria-label="下移">↓</button>
+          <button type="button" class="set-mv set-tg" onClick="{{ onLayoutToggle }}" data-scope="nav" data-id="{{ r.id }}" style="color:{{ r.fg }}">{{ r.btn }}</button>
+        </div>
+      </sc-for>
+    </section>
+
+    <!-- 資料與說明 -->
+    <section id="set-data" class="set-card">
+      <div class="set-h"><b>資料與說明</b><span>備份、雲端同步、通知與使用說明</span></div>
+      <div class="set-row set-row-col">
+        <div class="set-k">本機資料<small>{{ bkCount }}。備份檔含綁定 ID、收集勾選、B30 成績、版面與外觀設定，可以在另一台裝置匯入</small></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button type="button" class="set-btn set-btn-p" onClick="{{ onBkExport }}">匯出備份檔</button>
+          <label class="set-btn">匯入備份檔<input type="file" accept="application/json,.json" onChange="{{ onBkPick }}" style="display:none"></label>
+          <button type="button" class="set-btn" onClick="{{ onClearLocal }}" style="color:#e0576a">清除本機資料</button>
+        </div>
+        <sc-if value="{{ bkHasMsg }}"><div style="font-size:12px;color:var(--accent-deep);margin-top:8px">{{ bkMsg }}</div></sc-if>
+      </div>
+      <div class="set-row">
+        <div class="set-k">雲端同步與通知<small>登入後可以把設定同步到其他裝置、訂閱活動與榜線通知、開瀏覽器推播</small></div>
+        <div class="set-v"><button type="button" class="set-btn" onClick="{{ onGo }}" data-p="account">{{ setAccountBtn }}</button></div>
+      </div>
+      <div class="set-row">
+        <div class="set-k">說明<small>功能引導、鍵盤快捷鍵、教學大全</small></div>
+        <div class="set-v" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="set-btn" onClick="{{ onGuideReset }}">重新看一次功能引導</button>
+          <button type="button" class="set-btn" onClick="{{ onKbHelp }}">鍵盤快捷鍵</button>
+          <button type="button" class="set-btn" onClick="{{ onGo }}" data-p="tut">教學大全</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</sc-if>
+
+
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
   <div class="u-a3">
@@ -12090,7 +12271,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </div>
 </sc-if>
 
-<!-- ========== 自訂首頁面板：版面／資訊顯示／資料設定 ========== -->
+<!-- ========== 自訂首頁面板：版面／資訊顯示（全站設定在「設定」頁） ========== -->
 <sc-if value="{{ homeCfgOpen }}">
 <div role="button" tabindex="0" onClick="{{ onHomeCfg }}" style="position:fixed;inset:0;z-index:76;background:rgba(10,14,28,.45);backdrop-filter:blur(6px);animation:fadeIn .3s ease"></div>
 <div class="modal" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:77;width:min(560px,calc(100vw - 28px));max-height:88vh;overflow-y:auto;padding:18px;border:1px solid var(--border);border-radius:22px;background:var(--card);box-shadow:var(--sh-xs)">
@@ -12106,7 +12287,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
 
   <sc-if value="{{ cfgIsLayout }}">
-    <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:6px">首頁區塊的順序與顯示；登入後設定會跟著帳號同步。側欄功能的順序在「我的帳號」裡調。</div>
+    <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:6px">首頁區塊的順序與顯示；登入後設定會跟著帳號同步。側欄功能的順序在「設定」頁裡調。</div>
     <sc-for list="{{ layoutHomeRows }}" as="r" hint-placeholder-count="5">
       <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
         <span style="flex:1;font-size:13px;font-weight:700;color:{{ r.fg }}">{{ r.name }}</span>
@@ -12132,83 +12313,11 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
   </sc-if>
 
-  <sc-if value="{{ cfgIsData }}">
-    <div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Player ID</div>
-    <sc-if value="{{ hasPlayer }}">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-        <span style="font-size:13px;color:var(--text)">{{ playerName }} <span style="color:var(--text-3);font-family:'M PLUS Rounded 1c'">ID {{ playerId }}</span></span>
-        <button type="button" onClick="{{ onUnbind }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">解除綁定</button>
-      </div>
-    </sc-if>
-    <sc-if value="{{ noPlayer }}">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-        <input type="text" inputmode="numeric" placeholder="Player ID（純數字）" value="{{ pidInput }}" onInput="{{ onField }}" data-k="pidInput" onKeyDown="{{ onPidKey }}" style="flex:1;min-width:150px;padding:9px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;outline:none">
-        <button type="button" onClick="{{ onBind }}" style="padding:9px 20px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13px;font-weight:800;cursor:pointer">綁定</button>
-      </div>
-      <div style="font-size:11.5px;color:var(--lim-fg);min-height:16px;margin-bottom:8px">{{ playerErr }}</div>
-    </sc-if>
-
-    <div style="font-size:12px;font-weight:800;color:var(--ink);margin:12px 0 6px">歌曲音源版本</div>
-    <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2)">
-      <button type="button" onClick="{{ onVocalPref }}" data-v="virtual" style="padding:6px 14px;border:none;border-radius:999px;background:{{ vpVBg }};color:{{ vpVFg }};font-size:12px;font-weight:800;cursor:pointer">虛擬歌手 ver.</button>
-      <button type="button" onClick="{{ onVocalPref }}" data-v="sekai" style="padding:6px 14px;border:none;border-radius:999px;background:{{ vpSBg }};color:{{ vpSFg }};font-size:12px;font-weight:800;cursor:pointer">世界 ver.</button>
-    </div>
-
-    <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">顯示版本</div>
-    <div class="skin-pick-wrap" role="radiogroup" aria-label="顯示版本">
-      <div class="skin-pick">
-      <sc-for list="{{ skinChipsBase }}" as="k" hint-placeholder-count="3">
-        <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
-          <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
-          <span class="skin-opt-n">{{ k.n }}<small>{{ k.mark }}</small></span>
-          <span class="skin-opt-d">{{ k.d }}</span>
-        </button>
-      </sc-for>
-      </div>
-      <div class="skin-pick-cap">六個團體的セカイ</div>
-      <div class="skin-pick skin-pick-sekai">
-      <sc-for list="{{ skinChipsSekai }}" as="k" hint-placeholder-count="6">
-        <button type="button" class="skin-opt" role="radio" aria-checked="{{ k.on }}" onClick="{{ onSkin }}" data-v="{{ k.v }}" style="border-color:{{ k.bd }};box-shadow:{{ k.ring }}">
-          <span class="skin-prev skin-prev-{{ k.key }} lit-keep" aria-hidden="true"><i></i><b></b></span>
-          <span class="skin-opt-n"><i class="skin-dot" style="background:{{ k.dot }}"></i>{{ k.n }}<small>{{ k.mark }}</small></span>
-          <span class="skin-opt-d">{{ k.d }}</span>
-        </button>
-      </sc-for>
-      </div>
-      <div class="skin-pick-desc">{{ skinDesc }}</div>
-    </div>
-    <sc-if value="{{ skinIsLit }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">文青版用固定的深藍 × 香檳金配色；配色風格、合鳴與團體主題色只在原版生效，切回原版就恢復。</div></sc-if><sc-if value="{{ skinIsStage }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">舞台版的燈色跟著「團體主題色」走，就像換上那一團的應援色；配色風格與合鳴只在原版生效。</div></sc-if><sc-if value="{{ skinSekaiOn }}"><div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px">{{ skinSekaiNote }}</div></sc-if>
-    <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">主題與配色</div>
-    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-      <button type="button" onClick="{{ onTheme }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">主題：{{ themeLabel }}（點擊切換）</button>
-      <sc-for list="{{ toneChips }}" as="c" hint-placeholder-count="6">
-        <button type="button" class="lit-off" onClick="{{ onTone }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
-      </sc-for>
-      <sc-for list="{{ vmChips }}" as="c" hint-placeholder-count="2">
-        <button type="button" class="lit-off" onClick="{{ onVisualMode }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
-      </sc-for>
-    </div>
-    <div style="font-size:11.5px;font-weight:700;color:var(--text-2);margin:10px 0 6px">團體主題色</div>
-    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-      <sc-for list="{{ unitChips }}" as="c" hint-placeholder-count="7">
-        <button type="button" class="lit-off st-on" onClick="{{ onUnitTheme }}" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer"><span style="width:10px;height:10px;border-radius:50%;background:{{ c.c }}"></span>{{ c.n }}</button>
-      </sc-for>
-    </div>
-
-    <div style="font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 6px">本機資料</div>
-    <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:8px">{{ bkCount }}。備份檔含綁定 ID、收集勾選、B30 成績、版面與外觀設定，可以在另一台裝置匯入。</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button type="button" onClick="{{ onBkExport }}" style="padding:8px 16px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">匯出備份檔</button>
-      <label style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;padding:8px 16px">匯入備份檔<input type="file" accept="application/json,.json" onChange="{{ onBkPick }}" style="display:none"></label>
-      <button type="button" onClick="{{ onClearLocal }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;color:#e0576a">清除本機資料</button>
-    </div>
-    <sc-if value="{{ bkHasMsg }}"><div style="font-size:12px;color:var(--accent-deep);margin-top:8px">{{ bkMsg }}</div></sc-if>
-
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-      <button type="button" onClick="{{ onGuideReset }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">重新看一次功能引導</button>
-      <button type="button" onClick="{{ onKbHelp }}" style="padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">鍵盤快捷鍵</button>
-    </div>
-  </sc-if>
+  <!-- 全站設定（Player ID、音源、主題、顯示版本、備份）搬到「設定」頁：這裡只留首頁自己的版面與資訊顯示 -->
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <span style="flex:1;min-width:180px;font-size:11.5px;color:var(--text-3);line-height:1.6">主題、顯示版本、Player ID、歌曲音源與備份，都在「設定」頁</span>
+    <button type="button" onClick="{{ onGo }}" data-p="settings" style="padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">前往設定 →</button>
+  </div>
 </div>
 </sc-if>
 
@@ -12292,10 +12401,10 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 <div style="position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:91;width:min(640px,calc(100vw - 24px));max-height:78vh;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:22px;background:var(--bg-soft);box-shadow:var(--sh-lg);overflow:hidden;animation:popIn .4s cubic-bezier(.34,1.45,.44,1)">
   <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)">
     <svg viewBox="0 0 20 20" fill="none" style="width:17px;height:17px;color:var(--text-3);flex:none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2"></circle><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
-    <input type="search" enterkeyhint="search" placeholder="搜尋卡池、歌曲、功能，或輸入指令（例：ep 1500000）" value="{{ cmdq }}" onInput="{{ onCmdInput }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" style="flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:15.5px;padding:4px 2px">
+    <input type="search" enterkeyhint="search" placeholder="搜尋功能、歌曲、角色、活動、設定，或玩家說法（例：摸魚、T100、深色）" value="{{ cmdq }}" onInput="{{ onCmdInput }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" style="flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:15.5px;padding:4px 2px">
     <button type="button" onClick="{{ onCmdClose }}" aria-label="關閉" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border:none;border-radius:50%;background:var(--card-2);color:var(--text-2);font-size:16px;cursor:pointer">✕</button>
   </div>
-  <div style="padding:7px 18px;border-bottom:1px solid var(--border);background:var(--card-2);font-size:11px;color:var(--text-3)">↑↓ 選擇 · Enter 執行 · Esc 關閉　指令：<b>ep 分數</b>、<b>加成 250</b>、<b>綜合力 280000</b>、<b>火 10</b></div>
+  <div style="padding:7px 18px;border-bottom:1px solid var(--border);background:var(--card-2);font-size:11px;color:var(--text-3)">↑↓ 選擇 · Enter 執行 · Esc 關閉　試試：<b>摸魚</b>、<b>T100</b>、<b>生日</b>、<b>深色</b>、期數（<b>150</b>）；指令：<b>ep 分數</b>、<b>加成 250</b>、<b>火 10</b></div>
   <div style="overflow-y:auto;padding:6px 0">
     <sc-for list="{{ cmdResults }}" as="r" hint-placeholder-count="6">
       <button type="button" onClick="{{ onCmdPick }}" data-i="{{ r.i }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:11px 18px;border:none;background:{{ r.bg }};cursor:pointer;text-align:left;transition:background .14s">
@@ -12312,7 +12421,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3a1140825f"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f37412b2cf"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
