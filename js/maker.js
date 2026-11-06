@@ -228,7 +228,16 @@ export function makerMembers() {
       };
       document.addEventListener('paste', this._mkPaste);
     }
-    try { Promise.all(['800 72px "M PLUS Rounded 1c"', '900 92px "Noto Sans JP"', '700 46px "Noto Sans JP"', '700 40px "Noto Sans TC"', '900 40px "Noto Sans TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { this._mkFonts = true; this.scRedraw(); this._cp.drawKey = ''; this.cpRedraw(); }); } catch (e) {}
+    const jpCss = new Promise(res => {   // Noto Sans JP 只有這裡用：全站不載，進製作工具才向 Google 要（約 60 KB 的字型表）
+      try {
+        let l = document.getElementById('sc-fonts-jp');
+        if (l && l.dataset.ok) return res();
+        if (!l) { l = document.createElement('link'); l.id = 'sc-fonts-jp'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap'; document.head.appendChild(l); }
+        const done = () => { l.dataset.ok = '1'; res(); };
+        l.addEventListener('load', done, { once: true }); l.addEventListener('error', done, { once: true }); setTimeout(done, 5000);
+      } catch (e) { res(); }
+    });
+    try { jpCss.then(() => Promise.all(['800 72px "M PLUS Rounded 1c"', '900 92px "Noto Sans JP"', '700 46px "Noto Sans JP"', '700 40px "Noto Sans TC"', '900 40px "Noto Sans TC"'].map(f => document.fonts.load(f).catch(() => null))).then(() => { this._mkFonts = true; this.scRedraw(); this._cp.drawKey = ''; this.cpRedraw(); })); } catch (e) {}
     this.setState({ sc, cp, mkReady: true, mkErr: '' });
     this.mkDbLoad();
     if (cp.songId) this.loadSongs().then(() => { const s = (this.state.songs || []).find(x => x.id === cp.songId); if (s && !this._cp.score) this.cpApplySong(s, cp.diff); });

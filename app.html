@@ -11,13 +11,13 @@ var _c=localStorage.getItem('sekai-tone');if(_c&&_c!=='aurora'&&!_s)document.doc
 var _v=localStorage.getItem('sekai-visual');if(_v==='ensemble'&&!_s)document.documentElement.classList.add('style-ensemble');}catch(e){}</script>
 <script>/* 自帶 React（首頁不依賴 unpkg）：把 dc-runtime 的 CDN 網址映射到本站 vendor 檔 */
 window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js":"/vendor/react.production.min.js?v=d949f1c368","https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":"/vendor/react-dom.production.min.js?v=35f4f974f4"};</script>
-<script src="./support.js?v=f07edc7399"></script>
+<script src="./support.js?v=596f305aa6"></script>
 <script>/* 資料檔網址：戳記查 data/stamps.js 的 SC_DATA_V（那個檔每次都向伺服器確認，每日資料更新只改它，主程式不用跟著換新）。
    一律組成絕對網址：js/ai.min.js 是獨立模組，'./data/…' 在它裡面會解析成 /js/data/…（404）。查不到戳記時用整點時間當版本，不會黏住一年期快取 */
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=92b5d596ec" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=3a1140825f" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -32,10 +32,9 @@ window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?
 <script>/* 原版以外各版的 icon 與 manifest：這幾個 link 解析完就換，瀏覽器真正要用時拿到的已經是新的 */
 try{var _v=(/(?:^|\s)skin-(literary|stage|notebook|idol|street|park|void|track)(?:\s|$)/.exec(document.documentElement.className)||[])[1]||'';if(_v){var _q=function(s,h){var e=document.querySelector(s);if(e)e.setAttribute('href',h);};_q('link[rel="icon"][type="image/svg+xml"]','./icons/icon-'+_v+'.svg');_q('link[rel="icon"][sizes="48x48"]','./icons/icon-'+_v+'-48.png');_q('link[rel="apple-touch-icon"]','./icons/icon-'+_v+'-180.png');_q('link[rel="manifest"]','./manifest-'+_v+'.webmanifest');var _m=document.querySelectorAll('meta[name="theme-color"]'),_tc={literary:['#eceef2','#0c0f1b'],stage:['#eceef1','#0a0b0d'],notebook:['#f4f1e8','#1c2622'],idol:['#fbf5fa','#140f24'],street:['#e8e5de','#0e0e10'],park:['#f3e8d0','#1a1320'],void:['#f1f1f3','#111114'],track:['#e9edef','#14181b']}[_v];if(_m[0])_m[0].content=_tc[0];if(_m[1])_m[1].content=_tc[1];}}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://project-sekai-center.com/#org","name":"SEKAI 資源中心","url":"https://project-sekai-center.com/","logo":{"@type":"ImageObject","url":"https://project-sekai-center.com/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://project-sekai-center.com/#site","name":"Project SEKAI 資源中心","alternateName":"SEKAI 中心","url":"https://project-sekai-center.com/","publisher":{"@id":"https://project-sekai-center.com/#org"},"inLanguage":"zh-Hant-TW"}]}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 字型（約 200 KB）改由 js/app.js 在第一次畫面出來之後才載：慢速網路下不跟主程式搶頻寬（display=swap，先用系統字型） -->
-<noscript><link href="https://fonts.googleapis.com/css2?family=Huninn&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet"></noscript>
+<!-- 字型表（css/fonts.css，tools/build-fonts.py 產生）由 js/app.js 在第一次畫面出來之後才載：慢速網路下不跟主程式搶頻寬（display=swap，先用系統字型）；字型檔走 fonts.gstatic.com -->
+<noscript><link href="./css/fonts.css?v=d6376e43f2" rel="stylesheet"></noscript>
 <!-- 分享預覽（og／twitter）與標題要放在真正的 <head>：連結預覽的爬蟲不跑 JS，也不讀 <template> 內容。
      各頁的標題與預覽圖由 js/app.js 進頁後改寫這幾個標籤。 -->
 <title>SEKAI 資源中心 — App</title>
@@ -644,6 +643,10 @@ img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
 .mk-side{position:sticky;top:70px;display:grid;gap:10px;min-width:0}
 @media (max-width:980px){.mk-grid{grid-template-columns:1fr}.mk-side{position:static;order:-1}}
 .mk-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:14px}
+/* 效能：很長的頁面裡，畫面外的區塊先不算樣式、不排版、不繪製，捲到附近才算（auto 會記住算過的高度，捲動不會跳）。
+   只套在確定沒有浮出元素（下拉選單、提示框、position:fixed）的列表列與區塊上：content-visibility 會裁掉超出邊界的子元素 */
+.cv-row{content-visibility:auto;contain-intrinsic-size:auto 200px}
+.cv-sec{content-visibility:auto;contain-intrinsic-size:auto 900px}
 .mk-h{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:2px;color:var(--text-3);font-weight:700;margin-bottom:10px}
 .mk-h b{font-size:14px;letter-spacing:.3px;color:var(--text)}
 .mk-h i{margin-left:auto;font-style:normal;font-size:11px;letter-spacing:0;color:var(--text-3);font-weight:400;text-align:right}
@@ -8444,7 +8447,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="mk-h"><b>未來活動</b><i>台服時間</i></div>
         <sc-for list="{{ sdEvents }}" as="e" hint-placeholder-count="12">
           <sc-if value="{{ e.notJp }}">
-          <div role="button" tabindex="0" onClick="{{ onDbRelated }}" data-p="evinfo" data-patch="{{ e.patch }}" style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);cursor:pointer">
+          <div class="cv-row" role="button" tabindex="0" onClick="{{ onDbRelated }}" data-p="evinfo" data-patch="{{ e.patch }}" style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);cursor:pointer">
             <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';width:62px">第 {{ e.id }} 期</span>
             <span style="font-size:12.5px;font-weight:800;color:var(--ink);flex:1;min-width:160px">{{ e.n }}</span>
             <span class="u-fc2">{{ e.t }}</span>
@@ -8464,7 +8467,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
           </sc-if>
           <sc-if value="{{ e.isJp }}">
-          <div style="padding:8px 0;border-top:1px solid var(--border)">
+          <div class="cv-row" style="padding:8px 0;border-top:1px solid var(--border)">
             <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
               <span style="font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c';width:62px">第 {{ e.id }} 期</span>
               <span style="font-size:12.5px;font-weight:800;color:var(--text-2);flex:1;min-width:160px">{{ e.n }}</span>
@@ -8855,7 +8858,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ wpBonusOn }}"><div class="wp-bline">{{ wpBonusLine }}</div></sc-if>
       </div>
 
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>滿配隊伍</b><i>五張不同角色、五種顏色；每格可換角色、換卡、改專精</i></div>
         <sc-if value="{{ wpHasTeams }}"><div class="chips-scroll wp-chips" style="margin-bottom:10px"><sc-for list="{{ wpTeams }}" as="c" hint-placeholder-count="2"><button type="button" class="mk-chip" onClick="{{ onWpTeam }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
         <div class="wp-team">
@@ -8874,7 +8877,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ wpHasDup }}"><div class="wp-msg" style="margin:10px 0 0">{{ wpDupNote }}</div></sc-if>
       </div>
 
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>活動加成</b><i>主隊每張卡＋全隊加成＋後排支援隊 25 張</i></div>
         <sc-if value="{{ wpHasChs }}"><div class="wp-sub" style="margin-bottom:4px">本章角色（決定後排收哪些卡）</div><div class="chips-scroll wp-chips"><sc-for list="{{ wpChs }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpCh }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
         <sc-if value="{{ wpIsFin }}"><div class="wp-sub" style="margin-bottom:4px">隊長（決定後排的加成角色、隊長加成與主稱號）</div><div class="chips-scroll wp-chips"><sc-for list="{{ wpLeads }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpLead }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
@@ -8915,7 +8918,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </sc-if>
       </div>
 
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>每張卡的綜合力</b><i>基礎＝滿級＋特訓＋前後篇＋專精＋畫布</i></div>
         <div class="wp-scroll"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.2fr) repeat(5,minmax(64px,1fr))">
           <div class="wp-gh">角色</div><div class="wp-gh">基礎</div><div class="wp-gh">角色等級</div><div class="wp-gh">區域道具</div><div class="wp-gh">大門＋玩偶</div><div class="wp-gh">合計</div>
@@ -8926,7 +8929,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div></div>
       </div>
 
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>你的狀態</b><i><button type="button" class="mk-chip" onClick="{{ onWpImport }}">從 Haruki 專區帶入</button> <button type="button" class="mk-chip" onClick="{{ onWpReset }}">重設</button></i></div>
         <div class="wp-now">目前 <b style="color:{{ wpBarC }}">{{ wpTotal }}</b> ／ {{ wpCap }}・{{ wpShortTxt }}</div>
         <sc-if value="{{ wpHasMsg }}"><div class="wp-msg">{{ wpMsg }}</div></sc-if>
@@ -8962,7 +8965,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </div>
 
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>哪些組合碰得到上限</b><i>綠底＝達標</i></div>
         <div class="wp-sub">{{ wpMxNote }}</div>
         <div class="wp-scroll"><div class="wp-grid" style="{{ wpMxGrid }}">
@@ -8978,7 +8981,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
 
       <sc-if value="{{ wpNotOk }}">
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>從現在補到上限的升級順序</b><i>每一步挑升一級加最多的那一項</i></div>
         <sc-if value="{{ wpHasPlan }}">
           <div class="wp-plan">
@@ -8991,7 +8994,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
       </sc-if>
 
-      <div class="mk-card">
+      <div class="mk-card cv-sec">
         <div class="mk-h"><b>區域道具各等級加成</b><i>
           <button type="button" class="mk-chip" onClick="{{ onWpRef }}" data-v="team">這隊用得到的</button>
           <button type="button" class="mk-chip" onClick="{{ onWpRef }}" data-v="all">全部</button></i></div>
@@ -12309,7 +12312,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=92b5d596ec"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3a1140825f"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

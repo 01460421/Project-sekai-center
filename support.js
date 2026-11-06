@@ -489,8 +489,12 @@
     const tpl = document.createElement("template");
     //! nosemgrep: direct-inner-html-assignment
     tpl.innerHTML = encodeCase(html);
+    // data-dc-tpl 只給編輯器（把畫面上的節點對回範本原始碼）用：網站直接開（不在編輯器的 iframe 裡）時不編號，
+    // 開站省掉替上萬個節點設屬性，畫出來的每個 DOM 元素也不用多掛一個屬性
+    let annotate = true;
+    try { annotate = window.parent !== window || !!(document.body && document.body.hasAttribute("data-dc-editor-on")) || !!window.__dcAnnotate; } catch (e) {}
     let tplN = 0;
-    (function stamp(node) {
+    if (annotate) (function stamp(node) {
       if (node.nodeType === Node.ELEMENT_NODE) {
         node.setAttribute("data-dc-tpl", String(tplN++));
       }
@@ -498,7 +502,7 @@
     })(tpl.content);
     const builders = walkChildren(tpl.content, host);
     const render = ((vals, ctx) => builders.map((b, i) => b(vals || {}, ctx, i)));
-    render.__annotated = tpl.innerHTML;
+    Object.defineProperty(render, "__annotated", { get: () => tpl.innerHTML });
     return render;
   }
   function walkChildren(node, host) {
@@ -654,7 +658,11 @@
         getReact().Fragment,
         { key },
         list.map((item, i) => {
-          const sub = { ...vals, [asName]: item, $index: i };
+          // 效能：以前是 { ...vals, … }，每一列都把整包 renderVals（上千個鍵）複製一次；
+          // 範本查值一律走 vals[name]（resolvePath），原型鏈上的鍵照樣查得到，巢狀 sc-for 也是一層層往上找
+          const sub = Object.create(vals == null ? null : vals);
+          sub[asName] = item;
+          sub.$index = i;
           return h(
             getReact().Fragment,
             { key: i },
@@ -668,10 +676,13 @@
     const valGet = compileAttr(el.getAttribute("value") || "");
     const hintRaw = el.getAttribute("hint-placeholder-val");
     const hintGet = hintRaw != null ? compileAttr(hintRaw) : null;
-    const kids = walkChildren(el, host);
+    // 效能：子樹延到條件第一次成立才編譯（編過就留著）。app.html 的 61 頁各自包在 sc-if 裡，
+    // 以前開站要把 1.2 MB 的範本全部編完（手機上將近一秒），現在只編目前這一頁
+    let kids = null;
     return (vals, ctx, key) => {
       let v = valGet(vals);
       if (v === void 0 && hintGet && ctx?.__streamingNow) v = hintGet(vals);
+      if (v && kids === null) kids = walkChildren(el, host);
       return v ? h(
         getReact().Fragment,
         { key },
