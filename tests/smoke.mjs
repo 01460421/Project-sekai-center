@@ -20,6 +20,7 @@ const CASES = [
   ['songcard', /片假名轉換器|樂曲追加圖/], ['chart', /譜面預覽|每欄小節數/],
   ['evinfo', /活動資料|排名獎勵|時程/],
   ['sched', /排程預測|逐期回測|未來活動/],
+  ['settings', /遊戲與資料|顯示版本|側欄功能/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {

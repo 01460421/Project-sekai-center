@@ -281,6 +281,7 @@ class Component extends DCLogic {
     credits:  ['製作與致謝', '共同作者、合作夥伴與感謝名單'],
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
+    settings: ['設定', '伺服器與語言、Player ID、歌曲音源、主題與顯示版本、首頁與側欄的版面、備份：全站的設定都在這一頁'],
     car:      ['私車排班', '菜根機器人的車隊班表：三車分開排班、報班與推手標記（Discord 或綁定 QQ 登入）'],
     bot:      ['菜根機器人', '車隊排班、查榜、點歌的機器人：Discord、QQ、網頁三邊同步，附指令清單圖'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
@@ -323,12 +324,12 @@ class Component extends DCLogic {
     hubEvent: ['event', 'rank', 'wl3'],
     hubDb:    ['calendar', 'cards', 'chars', 'songs', 'story', 'fixtures'],
     hubTool:  ['calc', 'haruki', 'gachasim', 'b30', 'guesswho'],
-    hubCom:   ['car', 'tut', 'favs', 'account']
+    hubCom:   ['car', 'tut', 'favs', 'account', 'settings']
   };
-  /* 功能列整併：側欄只放 18 個入口，每個入口是一個「功能家族」[入口頁 id, 側欄名稱, 顏色, 子頁 id…]。
+  /* 功能列整併：側欄只放 19 個入口，每個入口是一個「功能家族」[入口頁 id, 側欄名稱, 顏色, 子頁 id…]。
      點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
   NAV_SECTIONS = [
-    ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']]]],
+    ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']], ['settings', '設定', '#9fb0d6', []]]],
     ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
@@ -3601,7 +3602,7 @@ class Component extends DCLogic {
      第一次改動時先把「預設之外的全部」寫進 hidden，之後才是單純的切換。 */
   QUICK_DEFAULT = ['event', 'rank', 'calendar', 'calc', 'cards', 'songs'];   // 只能是側欄入口（家族入口頁）
   QUICK_SUB = { calc: '一套設定通吃所有計算', rank: 'T100 與分段榜線', gacha: '235 筆台服預測', songs: '難度與團體篩選', calendar: '本月卡池一目瞭然', res: '官方・社群・工具' };
-  quickAll() { return (this._navSpecIds || []).filter(id => !['home', 'account', 'notices', 'assistant', 'admin'].includes(id)); }
+  quickAll() { return (this._navSpecIds || []).filter(id => !['home', 'account', 'notices', 'assistant', 'admin', 'settings'].includes(id)); }
   quickShown() {
     const L = (this.state.layout || {}).quick;
     const all = this.quickAll();
@@ -3618,10 +3619,10 @@ class Component extends DCLogic {
   }
   /* 功能引導的四步：文案放這裡，畫面只負責翻頁 */
   GUIDE = [
-    { t: '歡迎來到 SEKAI 資源中心', b: '這裡把世界計畫台服的活動、卡池、歌曲、計算工具與圖鑑都收在一起。先挑一個喜歡的顯示版本，點了馬上換給你看；之後在「自訂首頁 → 資料設定」也能隨時切換。', k: '', pick: 'skin' },
-    { t: '搜尋什麼都從這裡開始', b: '按 ⌘K（Windows 用 Ctrl K）或鍵盤上的「/」打開指令面板：找歌、找卡池、跳到任何功能，也能直接輸入「ep 1500000」這種算式。', k: '⌘ K' },
-    { t: '側欄只有 18 個入口', b: '分成主頁、追活動、圖鑑與資料、計算工具、社群與說明五區。同一類的頁面併成一個入口，點進去後在頁首的分頁籤切換，例如「排名與榜線」裡有即時排名、榜線資料庫、分析中心、活動分布與玩家查詢；手機的「更多」也是同一份清單。', k: '' },
-    { t: '把首頁變成你的', b: '綁定 Player ID 之後首頁會顯示你的名次、時速與周回；右上角的「自訂首頁」可以調整區塊順序、選要顯示哪些數字與快速入口，也能備份或清除本機資料。', k: '' },
+    { t: '歡迎來到 SEKAI 資源中心', b: '這裡把世界計畫台服的活動、卡池、歌曲、計算工具與圖鑑都收在一起。先挑一個喜歡的顯示版本，點了馬上換給你看；之後在「設定」頁也能隨時切換。', k: '', pick: 'skin' },
+    { t: '搜尋什麼都從這裡開始', b: '點首頁上方的搜尋列，或按 ⌘K（Windows 用 Ctrl K）、鍵盤上的「/」：功能、歌曲、角色、活動期數與設定都搜得到，也聽得懂玩家的說法（摸魚、T100、交換所），還能直接輸入「ep 1500000」這種算式。', k: '⌘ K' },
+    { t: '側欄只有 19 個入口', b: '分成主頁、追活動、圖鑑與資料、計算工具、社群與說明五區。同一類的頁面併成一個入口，點進去後在頁首的分頁籤切換，例如「排名與榜線」裡有即時排名、榜線資料庫、分析中心、活動分布與玩家查詢；手機的「更多」也是同一份清單。', k: '' },
+    { t: '把首頁變成你的', b: '綁定 Player ID 之後首頁會顯示你的名次、時速與周回；右上角的「自訂首頁」可以調整區塊順序、選要顯示哪些數字與快速入口。主題、顯示版本、語言、伺服器與備份都集中在側欄的「設定」。', k: '' },
   ];
   guideStep(dir) {
     const g = this.state.guide; if (!g) return;
@@ -8488,6 +8489,9 @@ class Component extends DCLogic {
   }
   openCmd() {
     this.setState({ cmdk: true, cmdq: '', cmdi: 0 });
+    // 搜尋會比對玩家用語（data/aliases.js）與歌曲清單（data/songs-index.js）：打開時先載，打字時多半已經好了
+    this.loadAliases().then(() => { if (this.state.cmdk) this.setState({ aliasV: (this.state.aliasV || 0) + 1 }); });
+    this.loadSongs();
     setTimeout(() => { if (this._cmdEl) this._cmdEl.focus(); }, 60);
   }
 
@@ -8851,11 +8855,67 @@ class Component extends DCLogic {
     }
     if (!q) (s.recent || []).forEach(p => { if (this.PAGES[p]) out.push({ tag: '最近', tagBg: '#8b93ac', main: this.PAGES[p][0], sub: this.PAGES[p][1], run: () => this.go(p) }); });
     if (q && /開場|動畫|專場|粒子|intro|anim/i.test(q)) out.push({ tag: '動畫', tagBg: '#ff9db4', main: '開場動畫專場', sub: '六色流星與上千顆光粒子；點畫面換下一個字', run: () => this.playIntro('show') });
+    /* 比對：全形半形、大小寫不分；打好幾個字用空白隔開時每一個都要符合（「wl 榜線」「mmj 生日」） */
+    const fold = t => String(t == null ? '' : t).normalize('NFKC').toLowerCase();
+    const toks = fold(q).split(/\s+/).filter(Boolean);
+    const hits = hay => { const h = fold(hay); return toks.every(t => h.includes(t)); };
+    /* 有打字時：頁面、玩家用語、設定、角色、歌曲、活動全部計分後一起排（完全一樣＞開頭一樣＞包含），
+       「摸魚」會先給「摸魚表」這個分頁，不會先給說明裡剛好提到摸魚表的「計算中心」 */
+    const fq = fold(q).trim(), ranked = [];
+    const add = (sc, r) => ranked.push({ sc, r, i: ranked.length });
+    const lvl = (txt, hi) => { const f = fold(txt); return f === fq ? hi : f.startsWith(fq) ? hi - 8 : 0; };
     Object.keys(this.PAGES).forEach(p => {
       const [n, sub] = this.PAGES[p];
-      if (!q && (s.recent || []).includes(p)) return;
-      if (!q || n.toLowerCase().includes(lq) || p.includes(lq)) out.push({ tag: '前往', tagBg: '#3f8cf3', main: n, sub, run: () => this.go(p) });
+      if (!q) { if (!(s.recent || []).includes(p)) out.push({ tag: '前往', tagBg: '#3f8cf3', main: n, sub, run: () => this.go(p) }); return; }
+      const sc = lvl(n, 100) || (hits(n + ' ' + p) ? 80 : hits(n + ' ' + p + ' ' + sub + ' ' + this.famLabel(p)) ? 50 : 0);
+      if (sc) add(sc, { tag: '前往', tagBg: '#3f8cf3', main: n, sub, run: () => this.go(p) });
     });
+    if (q) {
+      /* 玩家用語（data/aliases.js，五百多條：「摸魚」「周回」「T100」「交換所」…）→ 對應的頁面與分頁 */
+      const seenA = new Set();
+      this.ALIASES.forEach(row => {
+        const [name, , where, alias] = row;
+        const als = String(alias || '').split('|').filter(Boolean);
+        let al = '', sc = 0;
+        als.forEach(a => { const v = lvl(a, 95) || (toks.every(t => fold(a).includes(t)) ? 60 : 0); if (v > sc) { sc = v; al = a; } });
+        const nv = lvl(name, 95) || (hits(name) ? 60 : 0);
+        if (nv > sc) { sc = nv; al = ''; }
+        if (!sc) return;
+        const m = /^([A-Za-z0-9_]+)(?:（([^）]*)）)?/.exec(String(where || '').split('／')[0].trim());
+        if (!m || !this.PAGES[m[1]]) return;
+        const p = m[1], kv = /^([A-Za-z]\w*)=([\w-]+)$/.exec(m[2] || ''), key = name + '|' + p;
+        if (seenA.has(key)) return; seenA.add(key);
+        const title = String(name).replace(/[，,]\s*sort_by=[^）)]*|（sort_by=[^）]*）/g, '');
+        add(sc, { tag: '功能', tagBg: '#16a3a3', main: title, sub: '「' + this.PAGES[p][0] + '」' + (al ? '・符合「' + al + '」' : ''),
+          run: () => { this.go(p); if (kv) this.setState({ [kv[1]]: kv[2] }); } });
+      });
+      /* 設定：一律帶到設定頁的那一區 */
+      this.SET_SEARCH.forEach(([n, id, kw]) => {
+        if (!hits(n + ' ' + kw)) return;
+        add(lvl(n, 92) || 65, { tag: '設定', tagBg: '#6b7894', main: n, sub: '設定', run: () => { this.go('settings'); setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ block: 'start' }); }, 120); } });
+      });
+      /* 角色：直接打開角色圖鑑的那一位（顯示玩家打的那個名字，例如「初音」） */
+      const seenC = new Set();
+      Object.keys(this.CHARA_ID || {}).forEach(nm => {
+        const cid = this.CHARA_ID[nm];
+        if (seenC.has(cid) || !hits(nm)) return;
+        seenC.add(cid);
+        const short = this.charShort(cid);
+        add(lvl(nm, 96) || 70, { tag: '角色', tagBg: '#e2618f', main: nm, sub: (short && short !== nm ? short + '・' : '') + '角色圖鑑', run: () => { this.go('chars'); this.setState({ dbPick: { kind: 'char', id: cid } }); } });
+      });
+      /* 歌曲：曲名或作曲者（歌曲清單用 data/songs-index.js，打開搜尋時就先載好） */
+      (s.songs || []).filter(x => hits(x.title + ' ' + (x.composer || ''))).slice(0, 6).forEach(x => {
+        add(lvl(x.title, 94) || 45, { tag: '歌曲', tagBg: '#8a5cd0', main: x.title, sub: (x.composer || '') + (x.jp ? '・日服' : ''), run: () => { this.go('songs'); this.setState({ sq: x.title, sp: 1 }); } });
+      });
+      /* 活動：名稱或期數（首頁載過活動列表才有） */
+      const evq = /^\d{1,3}$/.test(fq) ? +fq : 0;
+      (s.evList || []).filter(e => e && (evq ? e.id === evq : hits(e.name || e.event_name || ''))).slice(0, 4).forEach(e => {
+        add(evq ? 93 : 45, { tag: '活動', tagBg: '#d9822b', main: (e.name || e.event_name || ('第 ' + e.id + ' 期')), sub: '第 ' + e.id + ' 期・活動資料', run: () => { this.setState({ eiId: e.id, eiQ: '' }); this.go('evinfo'); } });
+      });
+      ranked.sort((x, y) => y.sc - x.sc || x.i - y.i);
+      const capTag = {};   // 同一類最多幾筆，免得一類把清單塞滿
+      ranked.forEach(({ r }) => { const c = capTag[r.tag] = (capTag[r.tag] || 0) + 1; if (c <= (r.tag === '前往' ? 8 : 5)) out.push(r); });
+    }
     this.PRESETS && Object.keys(this.PRESETS).forEach(k => {
       const p = this.PRESETS[k];
       if (q && !p.n.toLowerCase().includes(lq)) return;
@@ -8866,7 +8926,7 @@ class Component extends DCLogic {
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
       if (/聲紋|傅立葉|頻譜|soundprint|fourier|spectr/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: 'SEKAI 聲紋', sub: '每一首歌的傅立葉肖像：真正的短時傅立葉轉換畫成極座標聲紋', run: () => { location.href = 'soundprint.html'; } });
-      (this.state.gachas || []).filter(g => ((g.n || '') + (g.ch || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(g => {
+      (this.state.gachas || []).filter(g => hits((g.n || '') + ' ' + (g.ch || ''))).slice(0, 6).forEach(g => {
         out.push({ tag: '卡池', tagBg: '#b07500', main: g.n, sub: this.md(this.pd(g.s)) + ' – ' + this.md(this.pd(g.e)), run: () => this.setState({ page: 'gacha', gq: g.n, gp: 1, cmdk: false }) });
       });
       /* 指令面板的曲目搜尋跟共用設定用同一支正規化:原本只比對日文原名,
@@ -8877,13 +8937,32 @@ class Component extends DCLogic {
                    sub: x.time + 's · R' + x.rate,
                    run: () => this.setState({ page: 'calc', ctab: 'ep', songKey: x.id, epq: '', cmdk: false }) });
       });
-      (this.state.tutQA || []).filter(x => ((x.q || '') + (x.kw || '')).toLowerCase().includes(lq)).slice(0, 6).forEach(x => {
+      (this.state.tutQA || []).filter(x => hits((x.q || '') + ' ' + (x.kw || ''))).slice(0, 6).forEach(x => {
         out.push({ tag: '教學', tagBg: '#b8e561', main: x.q, sub: '教學大全', run: () => this.setState({ page: 'tut', tq: x.q, tcat: 'all', tOpen: { [x.cat + '::' + x.q]: 1 }, cmdk: false }) });
       });
     }
-    return out.slice(0, 24);
+    if (q && !out.length) {
+      out.push({ tag: '小幫手', tagBg: '#3f8cf3', main: '問小幫手「' + q.slice(0, 30) + '」', sub: '用功能別名與教學大全幫你找',
+        run: () => { this.setState({ cmdk: false }); this.loadHelp().then(() => { this.hpToggle(true); this.hpAsk(q); }).catch(() => {}); } });
+    }
+    return out.slice(0, 30);
   }
-  NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 18 個入口，五區預設全開
+  /* ⌘K 搜得到的設定項目：[顯示名稱, 設定頁的區塊 id, 關鍵字] */
+  SET_SEARCH = [
+    ['伺服器（台服／日服）', 'set-game', '伺服器 台服 日服 jp tw server 切換'],
+    ['介面語言', 'set-game', '語言 language english 英文 日文 日本語 简体 簡體 中文 翻譯'],
+    ['綁定 Player ID', 'set-game', '綁定 id uid player 玩家 解除綁定 遊戲帳號'],
+    ['歌曲音源版本', 'set-game', '音源 試聽 虛擬歌手 世界 ver vocal 播放'],
+    ['主題（淺色／深色）', 'set-look', '主題 深色 淺色 夜間 黑色 暗色 模式 dark light theme 護眼'],
+    ['顯示版本', 'set-look', '顯示版本 外觀 皮膚 skin 換裝 文青 舞台 筆記本 偶像 街頭 遊樂園 虛空 賽道 セカイ'],
+    ['配色風格與合鳴', 'set-look', '配色 顏色 色彩 合鳴 tone color'],
+    ['團體主題色', 'set-look', '團體 主題色 應援色 顏色 ln mmj vbs ws 25'],
+    ['開場動畫', 'set-look', '開場 動畫 自動播放 intro 關掉動畫'],
+    ['首頁與側欄版面', 'set-layout', '版面 排序 順序 隱藏 側欄 選單 首頁 區塊 自訂 layout'],
+    ['備份與還原', 'set-data', '備份 匯出 匯入 還原 清除 本機 資料 換手機 backup'],
+    ['功能引導與快捷鍵', 'set-data', '引導 新手 快捷鍵 鍵盤 shortcut'],
+  ];
+  NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 19 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
   EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html' };
   navOpen(label) {
@@ -9002,7 +9081,7 @@ class Component extends DCLogic {
 
     /* 導覽 */
     this._navSpecIds = null;
-    /* 側欄固定 18 個入口（NAV_SECTIONS），家族內的子頁靠頁首分頁籤切換；自訂順序與隱藏照舊套在入口 id 上。
+    /* 側欄固定 19 個入口（NAV_SECTIONS），家族內的子頁靠頁首分頁籤切換；自訂順序與隱藏照舊套在入口 id 上。
        以前的來源分組與「常用」自動群組都併掉了：入口少到不需要再自動排常用。 */
     const navItemOf = {};
     const navSpec = this.NAV_SECTIONS.map(([label, fams]) => [label, fams.map(([id, name, dot]) => {
@@ -11244,6 +11323,12 @@ class Component extends DCLogic {
       logoMat: s.skin ? './icons/icon-' + s.skin + '.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
       logoMatName: s.skin ? 'SEKAI 資源中心' : (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
+      /* 設定頁 */
+      isSettings: s.page === 'settings',
+      setToc: [['set-game', '遊戲與資料'], ['set-look', '外觀'], ['set-layout', '版面'], ['set-data', '資料與說明']].map(([id, n]) => ({ id, n })),
+      themeChips: [['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']].map(([v, n]) => { const on = (s.theme || 'auto') === v;
+        return { v, n, on: on ? 'true' : 'false', bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'var(--cta)' : 'var(--border)' }; }),
+      setAccountBtn: s.me ? '前往我的帳號 →' : '登入 →',
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
       unitChips: [{ v: '', n: '不指定', c: 'var(--text-3)' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n, c: this.UNITS[u].c }))).map(x => Object.assign({}, x, (s.unit || '') === x.v ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' })),
@@ -11354,8 +11439,9 @@ class Component extends DCLogic {
           noticeMore: fresh.length > 1 ? '＋' + (fresh.length - 1) + ' 項' : '',
           /* 自訂首頁面板 */
           homeCfgOpen: !!s.homeCfg,
-          cfgTabs: [['layout', '版面'], ['info', '資訊顯示'], ['data', '資料設定']].map(([v, n]) => Object.assign({ v, n }, chip((s.homeCfgTab || 'layout') === v))),
-          cfgIsLayout: (s.homeCfgTab || 'layout') === 'layout', cfgIsInfo: s.homeCfgTab === 'info', cfgIsData: s.homeCfgTab === 'data',
+          /* 以前第三個分頁「資料設定」放的是全站設定（ID、主題、顯示版本、備份），已經搬到獨立的「設定」頁 */
+          cfgTabs: [['layout', '版面'], ['info', '資訊顯示']].map(([v, n]) => Object.assign({ v, n }, chip((s.homeCfgTab || 'layout') === v))),
+          cfgIsLayout: (s.homeCfgTab || 'layout') !== 'info', cfgIsInfo: s.homeCfgTab === 'info',
           statChips: STAT_NAMES.map(([k, n]) => Object.assign({ v: k, n }, chip(!statHid.includes(k)))),
           quickChips: this.quickAll().map(id => Object.assign({ v: id, n: (this.PAGES[id] || [id])[0] }, chip(quickOn.has(id)))),
           quickOnCount: quickOn.size,
@@ -12858,6 +12944,10 @@ class Component extends DCLogic {
       onAiDual: () => this.loadAi().then(() => this.setAiDual(!this.state.aiDual)).catch(() => {}),
       onTone: e => { const v = e.currentTarget.dataset.v; this._reveal(e, () => { this.setState({ tone: v }); this.applyTone(v); }); },
       onIntroPlay: () => this.playIntro('show'),
+      /* 設定頁：直接指定主題（頁首的按鈕是三段輪流切）、跳到某一區、到首頁打開「自訂首頁」的資訊顯示分頁 */
+      onThemeSet: e => { const v = e.currentTarget.dataset.v; if (!v || v === (this.state.theme || 'auto')) return; this._reveal(e, () => { this.setState({ theme: v }); this.applyTheme(v); }); },
+      onSetJump: e => { const el = document.getElementById(e.currentTarget.dataset.id); if (el) { const smooth = this.props.motion !== 'subtle'; try { el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' }); } catch (er) { el.scrollIntoView(); } } },
+      onSetHomeCfg: () => { this.go('home'); this.setState({ homeCfg: true, homeCfgTab: 'info' }); },
       onIntroAuto: () => { const off = !this.state.introOff; try { if (off) localStorage.setItem('sekai-intro', 'off'); else { localStorage.removeItem('sekai-intro'); localStorage.removeItem('sekai-intro-day'); } } catch (e) {} this.setState({ introOff: off }); },
       introAutoLabel: s.introOff ? '每天自動播放：關' : '每天自動播放：開', introAutoOn: !s.introOff,
       onPushToggle: async () => {
