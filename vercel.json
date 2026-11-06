@@ -94,6 +94,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "share/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "robots.txt",
       "use": "@vercel/static"
     },
@@ -103,6 +107,32 @@
     }
   ],
   "routes": [
+    {
+      "src": "/(?:app(?:\\.html)?)?",
+      "has": [
+        { "type": "header", "key": "user-agent", "value": ".*(?:[Dd]iscordbot|[Tt]witterbot|[Ff]acebookexternalhit|line-poker|[Tt]elegram[Bb]ot|[Ll]inked[Ii]n[Bb]ot|[Ss]lackbot-[Ll]ink[Ee]xpanding|[Ww]hats[Aa]pp|[Bb]luesky [Cc]ardyb).*" },
+        { "type": "query", "key": "page", "value": "(?<pg>[A-Za-z0-9_]+)" }
+      ],
+      "missing": [
+        { "type": "query", "key": "s" }
+      ],
+      "dest": "/share/$pg.html",
+      "check": true,
+      "headers": {
+        "cache-control": "private, no-store",
+        "vary": "User-Agent",
+        "x-content-type-options": "nosniff"
+      }
+    },
+    {
+      "src": "/share/(.*)",
+      "dest": "/share/$1",
+      "check": true,
+      "headers": {
+        "cache-control": "public, max-age=3600",
+        "x-content-type-options": "nosniff"
+      }
+    },
     {
       "src": "/ep-calculator.html",
       "dest": "/ep-calculator.html",

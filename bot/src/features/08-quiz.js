@@ -178,10 +178,16 @@ function calendarMsg() {
 }
 async function borderMsg() {
   const live = await fetchLive('border');
+  // 榜線端點的 T100 會凍住好幾個小時；顯示的 T100 改對齊前百端點的第 100 名（與網站、trend() 同一套做法）。前百抓不到就照原值。
+  let rows = live.rows;
+  try {
+    const r100 = (await fetchLive('top100')).rows.find(r => r.rank === 100);
+    if (r100 && r100.score) rows = rows.map(r => r.rank === 100 ? { ...r, score: r100.score } : r);
+  } catch {}
   let tr = null;
   try { const idx = await fetchHistoryIndex(); if (live.event.id && Array.isArray(idx) && idx.includes(live.event.id)) tr = trend(await fetchHistory(live.event.id), 1); } catch {}
   const delta = new Map(((tr && tr.lines) || []).map(l => [l.tier, l.delta]));
-  const main = live.rows.map(r => `T${num(r.rank)}　**${num(r.score)}**${deltaStr(delta.get(r.rank))}`).join('\n');
+  const main = rows.map(r => `T${num(r.rank)}　**${num(r.score)}**${deltaStr(delta.get(r.rank))}`).join('\n');
   const fields = live.wl.map(c => ({ name: chapterName(c), value: c.rows.map(r => `T${num(r.rank)}　${num(r.score)}`).join('\n') || '—', inline: true }));
   const head = `${live.event.end ? `結束 ${ts(live.event.end, 'f')}（${ts(live.event.end)}）` : ''}${tr && tr.top1 != null ? `　第 1 名 ${num(tr.top1)}` : ''}`;
   return { embeds: [embed({ title: `📈 榜線・第 ${live.event.id ?? '?'} 期 ${live.event.name}`, color: COLORS.blue, description: `${head}\n\n${main || '（目前沒有段位資料）'}${live.partial ? '\n-# 段位端點暫時只有前百換算的 T100' : ''}`, fields, footer: `來源 ${live.source}${tr && tr.prevAt ? '・括號為近一小時增量（網站榜線快照）' : ''}・網站排名頁同一套資料` })] };

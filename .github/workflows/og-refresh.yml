@@ -1,4 +1,4 @@
-# 分享預覽圖：PAGES 表（js/app.js）或版型（og.html）改了就重產 og/*.jpg 並提交。
+# 分享預覽圖：PAGES 表（js/app.js）或版型（og.html）改了就重產 og/*.jpg 與給爬蟲看的 share/*.html 並提交。
 name: og-refresh
 on:
   workflow_dispatch:
@@ -21,7 +21,8 @@ jobs:
         run: |
           h=$( { node -e "const s=require('fs').readFileSync('js/app.js','utf8');const b=s.slice(s.indexOf('  PAGES = {'));process.stdout.write(b.slice(0,b.indexOf('\\n  };')))"; cat og.html tools/build-og.mjs; } | sha1sum | cut -c1-40)
           echo "hash=$h" >> "$GITHUB_OUTPUT"
-          if [ "${{ github.event_name }}" != workflow_dispatch ] && [ -f og/.src-hash ] && [ "$(cat og/.src-hash)" = "$h" ]; then
+          # share/ 還沒產過（或被清掉）就算雜湊一樣也要跑
+          if [ "${{ github.event_name }}" != workflow_dispatch ] && [ -f og/.src-hash ] && [ "$(cat og/.src-hash)" = "$h" ] && [ -f share/home.html ]; then
             echo "skip=1" >> "$GITHUB_OUTPUT"; echo "PAGES 表與版型都沒變，不重產"
           fi
       - name: 字型與瀏覽器
@@ -40,7 +41,7 @@ jobs:
       - name: 提交
         if: steps.need.outputs.skip != '1'
         run: |
-          git add -- og
+          git add -- og share
           git diff --cached --quiet && { echo "沒有變化"; exit 0; }
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

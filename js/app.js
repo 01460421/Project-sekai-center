@@ -621,7 +621,8 @@ class Component extends DCLogic {
   };
 
   state = {
-    page: 'home', mobile: false, sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, songBpm: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
+    page: 'home', mobile: (() => { try { return window.matchMedia('(max-width: 900px)').matches; } catch (e) { return false; } })(),   // 一開始就照螢幕寬決定（以前先當桌機、didMount 才改，第一次 render 會用桌機版面）
+    sheet: false, detail: null, deckPid: null, gachaGid: null, songId: null, songBpm: null, playAbn: '', playerOn: false, playerCur: '', playerJkt: '', playerMin: false, plOpen: false, plRepeat: 'all', plShuffle: false, plFull: true, plPos: 0, plDur: 0, plQ: 0, plToast: '', cmdk: false, cmdq: '', cmdi: 0, tick: 0,
     gachas: [], dolls: [],
     dollF: 'all', dvUnit: 'all',   // 月卡玩偶篩選、活動分布的團體篩選（原生頁，取代 iframe）
     dvMode: 'gacha', dvRange: '24', dvTip: null,   // 甘特圖：卡池／活動、時間範圍、滑過的說明
@@ -943,9 +944,14 @@ class Component extends DCLogic {
     this.setState({ unit: savedUnit });
     this.applyUnit(savedUnit);
     import(scData('card-chara.js')).then(m => this.setState({ cardChara: m.CARD_CHARA || null })).catch(() => {});
-    // 站徽每 8 秒換一種常駐素材（隨機起點，避免每次都從碎片開始）
-    this.setState({ matIdx: Math.floor(Math.random() * this.MATS.length) });
-    this._matTimer = setInterval(() => this.setState(st => ({ matIdx: (st.matIdx + 1) % this.MATS.length })), 8000);
+    // 站徽每 8 秒換一種常駐素材：直接改 <img data-logo-mat>，不走 setState（以前每 8 秒讓整站 renderVals＋上千個節點重算一次）；
+    // 索引記在 this._matIdx，重繪時 renderVals 讀同一個值，不會把圖寫回舊素材
+    this._matTimer = setInterval(() => {
+      if (this.state.skin) return;
+      this._matIdx = ((this._matIdx || 0) + 1) % this.MATS.length;
+      const m = this.MATS[this._matIdx];
+      document.querySelectorAll('img[data-logo-mat]').forEach(im => { im.src = this.ASSET + '/thumbnail/material/material' + m.id + '.webp'; im.alt = im.title = m.n; });
+    }, 8000);
     const onDark = () => { if (this.state.theme === 'auto') this.applyTheme('auto'); };
     this.mqDark.addEventListener ? this.mqDark.addEventListener('change', onDark) : this.mqDark.addListener(onDark);
     window.addEventListener('resize', () => { if (this.state.page === 'distrib') { clearTimeout(this._dvT); this._dvT = setTimeout(() => this.dvDraw(), 80); } });
@@ -995,7 +1001,9 @@ class Component extends DCLogic {
     } catch (e) {}
 
     this.loadLive();
-    this._live = setInterval(() => this.refreshLive(false), 60000);
+    // 每 60 秒更新即時排名：只在看得到排名的頁、而且分頁在前景時打；回到前景或進這些頁時資料超過 60 秒就先補一次
+    this._live = setInterval(() => { if (!document.hidden && this.LIVE_PAGES.includes(this.state.page)) this.refreshLive(false); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) this._liveCatchUp(); });
     // 倒數計時直接寫 DOM：每秒 setState 會讓 800 行 renderVals 全量重算，純浪費
     this._tick = setInterval(() => {
       // 分頁標題：開站那一次被執行環境把 <head> 還原成模板原文，這裡每秒對一次、不同就再寫
@@ -1036,7 +1044,7 @@ class Component extends DCLogic {
     };
     window.addEventListener('message', this._frameMsg);
   }
-  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); if (this.state.page === 'distrib') this.dvDraw(); if (this.state.gachaGid && !this.state.gachaPk) { this.loadGachaPk(); this.loadCards(); } }
+  componentDidUpdate() { this.applyProps(); this.mountFrames(); this.usageTick(); this._syncReloadFab(); this._syncUrl(); this._modalSide(); this._histTick(); if (this.state.page === 'distrib') this.dvDraw(); if (this.state.gachaGid && !this.state.gachaPk) { this.loadGachaPk(); this.loadCards(); } }
   /* 視窗開著時鎖住背景捲動（手機上滑視窗不會連底下頁面一起捲）；「顯示更多」捲到底自動按 */
   _modalSide() {
     const s = this.state;
@@ -1702,11 +1710,11 @@ class Component extends DCLogic {
       return JSON.parse(text.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
     }
     const url = this.API + path;
-    // 直連 → 自家 Worker 代理（30 秒邊緣快取）→ 公共代理（最後手段，不穩也看得到流量）
-    /* 排名類路徑多一個來源：自家 Worker 的 Haruki 備援（遊戲原始資料轉成 HiSekai 同樣的欄位，回應帶 source:'haruki'）。
-       排在公共代理之前 —— HiSekai 本身掛掉時，公共代理也只會拿到同一個錯誤。 */
+    // 直連 → 自家 Worker 代理（30 秒邊緣快取）。以前最後還有 corsproxy／allorigins 兩個公共代理，現在一個回 401、一個 522，
+    // 只是讓失敗多等 16 秒，拿掉了（js/core.js 同步拿掉）。
+    /* 排名類路徑多一個來源：自家 Worker 的 Haruki 備援（遊戲原始資料轉成 HiSekai 同樣的欄位，回應帶 source:'haruki'）。 */
     const hk = /^\/event\/((live|\d+)\/(top100|border)|list)$/.test(path) ? [this.GAMES_API + '/haruki' + path] : [];
-    const tries = [url, this.GAMES_API + '/proxy/hisekai' + path].concat(hk, ['https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)]);
+    const tries = [url, this.GAMES_API + '/proxy/hisekai' + path].concat(hk);
     /* 每個來源最多等 8 秒（以前沒有逾時：HiSekai 卡住不回時，後面的備援全部跟著乾等）；
        上次成功的來源排第一個，直連被擋的人不必每次都先撞一次牆 */
     const pref = this._apiPref || 0, order = tries.map((u, i) => i).sort((a, b) => (a === pref ? -1 : b === pref ? 1 : a - b));
@@ -1840,7 +1848,24 @@ class Component extends DCLogic {
     } catch (e) { return brd; }
   }
 
+  /* 榜線時序（data/history/<期>.json＋Worker /snaps，約 500 KB）只有這些地方用得到：分析頁、活動總覽、
+     排名頁的 WL 個榜分頁與詳情面板、計算中心的活動試算、首頁的「我的詳情」。其他頁不抓。 */
+  LIVE_PAGES = ['rank', 'home', 'event', 'analysis', 'calc', 'assistant', 'hubEvent'];   // 60 秒輪詢即時排名的頁
+  _histWanted(s) {
+    s = s || this.state;
+    return s.page === 'analysis' || s.page === 'event'
+      || (s.page === 'rank' && (s.rankTab === 'wl' || !!s.detail))
+      || (s.page === 'calc' && s.ctab === 'plan')
+      || (s.page === 'home' && !!s.detail);
+  }
+  _histTick() {   // componentDidUpdate：頁面／分頁／詳情面板一變就看要不要抓（涵蓋 go()、分頁籤、深連結、返回鍵）
+    const s = this.state, k = s.page + '|' + s.ctab + '|' + s.rankTab + '|' + (s.detail ? 1 : 0);
+    if (k === this._histK) return;
+    this._histK = k;
+    if (this._histWanted(s)) this.loadBorderHistory();
+  }
   async loadLive() {
+    this._liveAt = Date.now();
     try {
       // 前百與榜線分開抓：以前 Promise.all 一起等，榜線端點一壞連前百都顯示「無法載入」
       const [topR, brdR] = await Promise.allSettled([this.apiFetch('/event/live/top100'), this.apiFetch('/event/live/border')]);
@@ -1853,8 +1878,8 @@ class Component extends DCLogic {
       this.snapPush(top, brd);
       // 公用快照要等 live 出來才知道期數。切頁時 live 常常還沒回,那次的
       // loadBorderHistory 會因為拿不到 ev.id 直接放棄,所以這裡補一次;
-      // 它自己有 _histFor 去重,重複呼叫不會多打。
-      this.loadBorderHistory();
+      // 它自己有 _histFor 去重,重複呼叫不會多打。只有用得到的頁才抓（約 500 KB，以前 28 頁都抓）。
+      if (this._histWanted()) this.loadBorderHistory();
     } catch (e) {
       this.setState({ liveLoad: false, liveErr: '排名資料暫時無法載入' });
     }
@@ -1862,6 +1887,10 @@ class Component extends DCLogic {
   /* 手動／自動重載共用。手動：按鈕轉圈＋暫時停用；自動（每 60 秒）：只讓綠點換色，
      不動按鈕 —— 每分鐘閃一次 disabled 會像壞掉。轉圈至少 500ms，快取秒回時才看得出有在動。
      不借用 liveLoad：它同時驅動首頁活動卡文字與列表底部 spinner，會多出不必要的閃動。 */
+  _liveCatchUp() {   // 離開排名相關頁或分頁在背景時不輪詢；回來時資料已經超過一分鐘就補抓一次
+    if (!this.LIVE_PAGES.includes(this.state.page) || this.state.liveLoad || this.state.refreshing) return;
+    if (Date.now() - (this._liveAt || 0) > 60000) this.refreshLive(false);
+  }
   async refreshLive(manual) {
     if (this.state.refreshing) return;
     this.setState(manual ? { refreshing: true } : { autoSync: true });
@@ -2615,7 +2644,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=d9abec2ded';
+      el.src = './js/core.js?v=7c180c5f22';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -4546,7 +4575,7 @@ class Component extends DCLogic {
     this.setState({ gamesPick: next });
     setTimeout(() => {
       const el = document.querySelector('[data-gdot="' + next + '"]');
-      if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      if (el) el.scrollIntoView({ behavior: this._smooth(), inline: 'center', block: 'nearest' });
     }, 50);
   }
 
@@ -5639,7 +5668,7 @@ class Component extends DCLogic {
     const urls = [].concat.apply([], paths.map(x => this.stUrls(x)));
     const rd = { kind, title, sub: sub || '', urls, voiceBase: this.ASSET + '/' + voiceDir, lines: null, err: '' };
     this.setState({ rd, rdVoice: -1 }, () => this.stLoad(rd));
-    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+    try { window.scrollTo({ top: 0, behavior: this._smooth() }); } catch (e) {}
   }
   async stLoad(rd) {
     const tryFetch = async urls => {
@@ -6206,6 +6235,10 @@ class Component extends DCLogic {
     return this.dbRun('lives', async () => { const m = await (this.SRV === 'jp' ? import(scData('lives-index-jp.js')) : import(scData('lives-index.js'))); this._liveGroups = m.LIVE_GROUPS || []; return m.LIVES || []; });
   }
   loadNews() {
+    if (this._newsP) return this._newsP;
+    return (this._newsP = this._loadNews().finally(() => { this._newsP = null; }));
+  }
+  _loadNews() {
     return this.dbRun('news', async () => {
       const u = await this.dbGet('userInformations');
       return (u || []).map(x => ({ id: x.id, title: x.title || '', tag: x.informationTag || 'information', type: x.informationType || 'normal',
@@ -8290,8 +8323,9 @@ class Component extends DCLogic {
     if (p === 'x_intro') { this.setState({ sheet: false, cmdk: false }); this.playIntro('show'); return; }   // 開場動畫專場：疊在目前頁面上播，不換頁（先收掉「更多」選單）
     if (this.EXTERNAL && this.EXTERNAL[p]) { if (p === 'x_starmap') this.openStarmap(true); else location.href = this.EXTERNAL[p]; return; }
     const changed = p !== this.state.page, silent = !!(opts && opts.silent);
+    const pre = {};   // 換頁順手要改的狀態：以前各自 setState，轉場前會先把舊頁多畫一次；現在併進 show() 那一筆
     if (changed) { this._scrollPos = this._scrollPos || {}; this._scrollPos[this.state.page] = { y: document.getElementById('boot') ? 0 : (window.scrollY || 0), dbN: this.state.dbN }; }   // 返回鍵時還原捲動位置（開站那一次不讀 scrollY：會逼瀏覽器先把剛渲染的整頁排版一次）
-    if (p === 'rank') { this.loadBorderHistory(); this.loadCards(); }
+    if (p === 'rank') this.loadCards();   // 榜線時序由 _histTick 依分頁決定要不要抓（WL 個榜、詳情才用得到）
     if (p === 'jpnow' || (p === 'home' && this.SRV === 'jp')) this.loadJpNow();
     if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
     if (p === 'songs') { this.loadSongs(true); this.loadSongBpm(); this.loadConsts(); }
@@ -8300,7 +8334,7 @@ class Component extends DCLogic {
     if (p === 'chars') { this.loadChars(); this.loadCards(); }
     if (p === 'cards') { this.loadCards(); this.loadCardX(); }
     if (p === 'story') { this.loadStories(); this.loadCards(); }
-    if (p !== 'story' && this.state.rd) { this.stStopVoice(); this.setState({ rd: null }); }
+    if (p !== 'story' && this.state.rd) { this.stStopVoice(); pre.rd = null; }
     if (p === 'fixtures') this.loadFixtures();
     if (p === 'mstalk') { this.loadMst(); this.loadFixtures(); }
     if (p === 'materials') this.loadMats();
@@ -8309,7 +8343,7 @@ class Component extends DCLogic {
     if (p === 'ost') this.loadOst();
     if (p === 'lives') this.loadLives();
     if (p === 'news' || p === 'home') this.loadNews();
-    if (this.DB_PAGES.includes(p) && p !== this.state.page) this.setState({ dbq: '', dbN: 48, dbPick: null });
+    if (this.DB_PAGES.includes(p) && p !== this.state.page) Object.assign(pre, { dbq: '', dbN: 48, dbPick: null });
     if (this.DB_PAGES.includes(p)) this.loadBuilt();
     if (p === 'guesswho' || p === 'stickers') this.loadCards();
     if (p === 'guessjacket') this.loadSongs();
@@ -8324,7 +8358,7 @@ class Component extends DCLogic {
     if (p === 'gachasim') { this.loadGachaSim(); this.loadCards(); }
     if (p === 'lookup') {
       this.loadCards();
-      if (this.SRV === 'jp' && !this.state.luId) { let j = ''; try { j = localStorage.getItem('sekai-app-pid-jp') || ''; } catch (e) {} if (j) this.setState({ luId: j }); }   // 日服記住上次查的 ID
+      if (this.SRV === 'jp' && !this.state.luId) { let j = ''; try { j = localStorage.getItem('sekai-app-pid-jp') || ''; } catch (e) {} if (j) pre.luId = j; }   // 日服記住上次查的 ID
       setTimeout(() => { if (/^\d+$/.test(String(this.state.luId || '')) && !this.state.luData && !this.state.luLoad && !this.state.luTrLoad && !this.state.luTr) this.luLookup(); }, 0);
     }
     if (p === 'art' && this.state.artSrv === 'jp') this.loadCardsJP();
@@ -8346,7 +8380,7 @@ class Component extends DCLogic {
       const recent = [p].concat((this.state.recent || []).filter(x => x !== p)).slice(0, 5);
       const visits = Object.assign({}, this.state.visits || {}); visits[p] = (visits[p] || 0) + 1;
       try { localStorage.setItem('sekai-recent', JSON.stringify(recent)); localStorage.setItem('sekai-visits', JSON.stringify(visits)); } catch (e) {}
-      this.setState({ recent, visits });
+      Object.assign(pre, { recent, visits });
     }
     if (p === 'event') { this.loadStories(); this.loadCards(); this.loadEventCards(); }
     if (p === 'evinfo') { this.loadEvInfo(); this.loadCards(); this.loadGachaPk(); }
@@ -8357,11 +8391,12 @@ class Component extends DCLogic {
     if (p === 'calendar' || p === 'home' || p === 'favs' || p === 'calc') this.loadSupportEvents();
     if (p === 'calendar' || p === 'home') { this.loadLoginBonus(); this.loadCharProfiles(); this.loadLives(); }
     if (p === 'home') this.loadEvList();
+    if (this.LIVE_PAGES.includes(p) && !this.LIVE_PAGES.includes(this.state.page)) setTimeout(() => this._liveCatchUp(), 0);
     if (p === 'account') { this.hkLoadCfg(); if (this.state.hkTok && !this.state.hkGrant) this.hkGrantLoad().catch(() => {}); }
     if (p === 'haruki') { this.hzLoad().catch(() => {}); }
     if (p === 'calendar') this.loadSongs();
     if (p === 'whatsnew') this.loadSyslog();
-    const show = () => this.setState({ page: p, sheet: false, cmdk: false, homeCfg: false }, () => {
+    const show = () => this.setState(Object.assign(pre, { page: p, sheet: false, cmdk: false, homeCfg: false }), () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
       // 聚焦要等資料載完再做：載入中→載完那次重繪會把輸入框換掉，太早聚焦會被吃掉（在 _modalSide 裡完成）
@@ -8390,10 +8425,19 @@ class Component extends DCLogic {
     }
     show();
     if (!keep) {
-      const toTop = () => { try { window.scrollTo(changed ? { top: 0 } : { top: 0, behavior: 'smooth' }); } catch (e) {} };
+      const toTop = () => { try { window.scrollTo(changed ? { top: 0 } : { top: 0, behavior: this._smooth() }); } catch (e) {} };
       // 開站那一次（載入畫面還在）：捲動會逼瀏覽器先把還沒畫的整頁排版一次、重繪後再排一次；延到下一幀跟正常排版一起做
       if (document.getElementById('boot')) requestAnimationFrame(toTop); else toTop();
     }
+  }
+  /* 平滑捲動只在使用者沒選「減少動態效果」、動畫不是「精簡」時用（這兩種情況下平滑捲動本身就是動態） */
+  _mat() {   // 站徽目前的常駐素材（隨機起點，避免每次都從碎片開始；之後由 componentDidMount 的計時器輪換）
+    if (this._matIdx == null) this._matIdx = Math.floor(Math.random() * this.MATS.length);
+    return this.MATS[this._matIdx % this.MATS.length] || this.MATS[0];
+  }
+  _smooth() {
+    try { if (this.props.motion === 'subtle' || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return 'auto'; } catch (e) {}
+    return 'smooth';
   }
   /* 換頁轉場的條件：瀏覽器支援、使用者沒選「減少動態效果」、動畫不是「精簡」、分頁在前景、載入畫面已經收掉 */
   _vtOk() {
@@ -9164,16 +9208,16 @@ class Component extends DCLogic {
         const annDone = annMs ? now >= annMs : now >= endMs + 600000;
         if (nextEv) { const ns = new Date(nextEv.start_at).getTime();
           return { k: 'next', label: '下期預告', tone: '#9a63d8', title: (nextEv.name || '下期活動') + '　·　' + hhmm(ns) + ' 開始（' + this.dur(ns - now) + '）',
-            tip: '結算後的空檔：領獎、補豆森素材、算下期抽卡預算；下期加分卡公布後再組隊。', acts: [A('最終榜線', 'rank'), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('抽卡預算', 'calc', { ctab: 'gacha' }), A('活動日曆', 'calendar')] }; }
+            tip: '結算後的空檔：領獎、補豆森素材、算下期抽卡預算；下期加分卡公布後再組隊。', acts: [A('最終榜線', 'rank', { rankTab: 'border' }), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('抽卡預算', 'calc', { ctab: 'gacha' }), A('活動日曆', 'calendar')] }; }
         return { k: 'post', label: annDone ? '已結算' : '結算中', tone: '#8b93ac', title: annDone ? '名次已公布，可以領獎了' : '結算後約 10 分鐘公布最終名次',
-          tip: '看最終榜線與自己的名次曲線，順手存一張分享圖；下期時間出來會顯示在這裡。', acts: [A('最終榜線', 'rank'), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('收藏與待辦', 'favs'), A('活動日曆', 'calendar')] };
+          tip: '看最終榜線與自己的名次曲線，順手存一張分享圖；下期時間出來會顯示在這裡。', acts: [A('最終榜線', 'rank', { rankTab: 'border' }), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('收藏與待辦', 'favs'), A('活動日曆', 'calendar')] };
       }
       if (endMs && endMs - now < 86400000) return { k: 'final', label: '最後衝刺', tone: '#ff5c7a', title: '剩 ' + this.dur(endMs - now) + '　·　' + hhmm(endMs) + ' 結算',
-        tip: '最後一天榜線通常再漲一到兩成：盯目標分段的時速，別等結算前一小時才補分；結算前 10 分鐘的場次可能算不進去。', acts: [A('分段榜線', 'rank'), A('摸魚表', 'calc', { ctab: 'moyu' }), A('跑榜工作室', 'deckpro'), A('活動試算', 'calc', { ctab: 'plan' })] };
+        tip: '最後一天榜線通常再漲一到兩成：盯目標分段的時速，別等結算前一小時才補分；結算前 10 分鐘的場次可能算不進去。', acts: [A('分段榜線', 'rank', { rankTab: 'border' }), A('摸魚表', 'calc', { ctab: 'moyu' }), A('跑榜工作室', 'deckpro'), A('活動試算', 'calc', { ctab: 'plan' })] };
       if (prog < 0.3) return { k: 'early', label: '開跑階段', tone: '#0eb3c5', title: '已過 ' + Math.round(prog * 100) + '%　·　先定目標與每天要打的場數',
         tip: '用活動試算把目標分段換算成每天場數，效率排行挑歌；前段榜線還沒定型，不用急著追。', acts: [A('活動試算', 'calc', { ctab: 'plan' }), A('活動加分卡', 'event'), A('效率排行', 'calc', { ctab: 'eff' }), A('榜線走勢', 'rank')] };
       return { k: 'mid', label: '中盤', tone: '#f0a020', title: '已過 ' + Math.round(prog * 100) + '%　·　對照榜線調整節奏',
-        tip: '中盤榜線最準：看終線預測決定要加速還是摸魚，體力別攢到最後一天。', acts: [A('分段榜線', 'rank'), A('摸魚表', 'calc', { ctab: 'moyu' }), A('分析中心', 'analysis'), A('收藏與待辦', 'favs')] };
+        tip: '中盤榜線最準：看終線預測決定要加速還是摸魚，體力別攢到最後一天。', acts: [A('分段榜線', 'rank', { rankTab: 'border' }), A('摸魚表', 'calc', { ctab: 'moyu' }), A('分析中心', 'analysis'), A('收藏與待辦', 'favs')] };
     })();
 
     const upcoming = (s.gachas || []).map(g => {
@@ -11001,7 +11045,8 @@ class Component extends DCLogic {
       anaIsBorder: s.anaTab === 'border', anaIsPlayer: s.anaTab === 'player', anaIsActive: s.anaTab === 'active', anaIsHistory: s.anaTab === 'history',
       anaQ: s.anaQ,
       ...(() => {
-        const B = this.borderAnalysis();
+        // 只有分析頁用得到（ana* 全在 isAnalysis 之下）；以前每一頁、每次重繪都把 18 個段位 × 1,700 筆快照算一遍，佔掉 renderVals 的三分之二
+        const B = s.page === 'analysis' ? this.borderAnalysis() : null;
         if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaBias: '', anaHasMe: false, anaLeft: '—', anaFrac: '—', anaBMore: false };
         // 手機預設只列 T100~T5000(一般玩家關心的區間),T1萬以上收進「顯示全部段位」
         const anaFold = s.mobile && !s.anaMoreB;
@@ -11134,7 +11179,7 @@ class Component extends DCLogic {
       })(),
 
       ...(() => {
-        const V = this.activeAnalysis();
+        const V = s.page === 'analysis' ? this.activeAnalysis() : null;
         if (!V) return { anaActiveOk: false, anaActRows: [], anaSurge: [], anaCool: [], anaFast: [], anaSurgeSub: '', anaCoolSub: '', anaFastSub: '' };
         const ago = r => r.lastPlayed ? this.ago(r.lastPlayed) : '—';
         const J = V.jp;
@@ -11320,8 +11365,8 @@ class Component extends DCLogic {
                                         : (this.ASSET + '/honor/' + s.colPick.abn + '/degree_main.webp'),
         rarityLabel: { low: '普通', middle: '罕見', high: '稀有', highest: '最高' }[s.colPick.rarity] || (s.colPick.rarity || '—')
       }) : null,
-      logoMat: s.skin ? './icons/icon-' + s.skin + '.svg' : this.ASSET + '/thumbnail/material/material' + (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).id + '.webp',
-      logoMatName: s.skin ? 'SEKAI 資源中心' : (this.MATS[s.matIdx % this.MATS.length] || this.MATS[0]).n,
+      logoMat: s.skin ? './icons/icon-' + s.skin + '.svg' : this.ASSET + '/thumbnail/material/material' + this._mat().id + '.webp',
+      logoMatName: s.skin ? 'SEKAI 資源中心' : this._mat().n,
       themeLabel: { light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統',
       /* 設定頁 */
       isSettings: s.page === 'settings',
@@ -11800,7 +11845,7 @@ class Component extends DCLogic {
       })(),
       trendCols: (() => { const n = (s.trend || []).length; return '78px repeat(' + Math.max(1, n) + ',minmax(58px,1fr)) 78px'; })(),
       rankRows, boardRows, rankBusy: s.liveLoad || (!boardRows.length && !s.liveLoad),
-      rankStatus: s.liveErr || (s.liveLoad ? '載入排名資料…' : '目前沒有排名資料'),
+      rankStatus: (s.liveErr && navigator.onLine === false) ? '目前離線：顯示的是上次載入的排名' : (s.liveErr || (s.liveLoad ? '載入排名資料…' : '目前沒有排名資料')),
       rankGap: s.mobile ? '8px' : '12px', rankPad: s.mobile ? '12px' : '16px', rankAv: s.mobile ? '28px' : '34px',   // 手機把間距、內距、頭像都收一點，名字欄多出約 30px
       rankScoreLabel: s.rankTab === 'wl' ? '章節 P' : s.rankTab === 'live' ? '活動 P' : '分數',
       rankExtraLabel: s.rankTab === 'border' ? '—' : '1h 均速',
@@ -12043,7 +12088,7 @@ class Component extends DCLogic {
       onSmPick: e => { const k = e.currentTarget.dataset.k || ''; this.setState({ smPick: this.state.smPick === k ? '' : k }); },
       onSmReload: () => this.setState({ dbErr: '', skillTable: null }, () => this.loadSkillTable()),
       onStarEgg: () => this.openStarmap(true),   // 首頁右上角那顆會閃的小星（彩蛋）
-      onBotSheets: () => { const el = document.getElementById('bot-sheets'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+      onBotSheets: () => { const el = document.getElementById('bot-sheets'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: this._smooth(), block: 'start' }); },
       /* 介紹頁的指令導覽 */
       onBtCat: e => this.btGoto(+e.currentTarget.dataset.v, 0, false),
       onBtPick: e => { const d = e.currentTarget.dataset; this.btGoto(+d.c, +d.i, true); },
@@ -12339,7 +12384,7 @@ class Component extends DCLogic {
         else this.go(p);
       },
       onSheetClose: () => this.setState({ sheet: false }),
-      onUnitGo: e => { this.setState({ page: 'gacha', gu: e.currentTarget.dataset.u, gp: 1, gq: '', gt: '' }); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {} },
+      onUnitGo: e => { this.setState({ page: 'gacha', gu: e.currentTarget.dataset.u, gp: 1, gq: '', gt: '' }); try { window.scrollTo({ top: 0, behavior: this._smooth() }); } catch (er) {} },
       onCmdOpen: () => this.openCmd(),
       onCmdClose: () => this.setState({ cmdk: false }),
       onCmdInput: e => this.setState({ cmdq: e.target.value, cmdi: 0 }),
@@ -13009,7 +13054,7 @@ class Component extends DCLogic {
         const cur = k === 'gp' ? gp : k === 'cp' ? Math.min(this.state.cp, colPages)
                   : k === 'rp' ? Math.min(this.state.rp, ratePages) : sp;
         this.setState({ [k]: Math.min(max, Math.max(1, cur + dir)) });
-        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) {}
+        try { window.scrollTo({ top: 0, behavior: this._smooth() }); } catch (er) {}
       },
       onMonth: e => {
         const d = +e.currentTarget.dataset.d;

@@ -37,10 +37,15 @@ jobs:
 
       # 榜線終線預測模型:用 data/history 已結束的期數重擬參數(只需 numpy),
       # 一樣是「內容沒變就不寫檔」。剛結束的期數會先去 API 補官方終線再擬。
+      # 這步不用 || echo 吞掉:失敗仍不擋後面的步驟(continue-on-error),但 job 結尾會讀它的 outcome、
+      # 寫進 step summary 並以非零結束讓 GitHub 顯示紅色。以前吞掉的結果是 180 期 WL 終章的 null character
+      # 讓這步壞了一個多月,模型停在 175～179 期都沒人知道。
       - name: 重擬榜線預測模型(data/border-model.json)
+        id: border-model
+        continue-on-error: true
         run: |
           python3 -c 'import numpy' 2>/dev/null || pip3 install --quiet numpy
-          python3 tools/build-border-model.py || echo "榜線模型重擬失敗,本輪略過"
+          python3 tools/build-border-model.py
 
       # 理論技能倍率表：兩服 master 有新卡就會變，一樣「內容沒變就不寫檔」。
       # 日服 cards.json 有 34 MB：以上游 HEAD commit 當 key 快取，commit 沒變的日子不重抓。
@@ -129,3 +134,16 @@ jobs:
       # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
         run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js data/billing-jp.js data/borders-db-jp.js tools/border_model/jp-finals.json data/gachasim-jp.js data/wl3-power.js data/wl3-zone.js data/card-chara.js
+
+      # 上面「重擬榜線預測模型」失敗的話,其他資料都已照常提交了,這裡才把 job 弄成紅的,摘要頁也看得到原因。
+      - name: 榜線模型重擬失敗就讓 job 變紅
+        if: always() && steps.border-model.outcome == 'failure'
+        run: |
+          {
+            echo "## ❌ 榜線預測模型重擬失敗"
+            echo
+            echo "\`tools/build-border-model.py\` 以非零結束,\`data/border-model.json\` 沒有更新(其他資料已照常提交)。"
+            echo "原因看上面「重擬榜線預測模型(data/border-model.json)」那一步的輸出。"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::榜線預測模型重擬失敗,data/border-model.json 沒有更新"
+          exit 1

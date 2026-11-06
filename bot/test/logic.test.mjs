@@ -19,7 +19,7 @@ import { dailyAmount } from '../src/features/06-economy.js';
 import { hexByLines, HEXAGRAMS } from '../src/content/iching.js';
 import { TAROT } from '../src/content/tarot.js';
 import { makeBot, loadRegistry, runCmd, press, sendMessage, buttonsOf, selectsOf, textOf, USERS, GUILD, CHANNEL, fakeClaude, aiText, aiTool, aiRefusal, mockLive, resetFetch } from './harness.js';
-import { normalizeLive, trend, fetchLive, parseSafe, clearCache, useFetch } from '../src/core/live.js';
+import { normalizeLive, trend, histT100, fetchLive, parseSafe, clearCache, useFetch } from '../src/core/live.js';
 import { searchCards, cardExtra, skillText } from '../src/core/sekai.js';
 import { createAI } from '../src/core/ai.js';
 import { runFeature, buildSystem, STYLES } from '../src/features/11-ai.js';
@@ -477,6 +477,25 @@ test('trend：最新一筆與一小時前那一筆的差', () => {
   const h = { tiers: [100, 1000], samples: [[1000, 10, 5], [2800, 20, 8], [4700, 35, 9]], top1: [[4700, 99]] };
   const t = trend(h, 1); assert.equal(t.lines[0].score, 35); assert.equal(t.lines[0].delta, 25); assert.equal(t.lines[1].delta, 4); assert.equal(t.top1, 99);
   assert.equal(trend({ samples: [] }), null);
+});
+
+test('trend／榜線訊息：T100 凍住但前百第 100 名在漲 → 對齊第 100 名、增量不是 +0', async () => {
+  const rk = (ts, v100) => [ts, ...Array(99).fill(9e9), v100];        // ranks 列 = [秒, 第1名…第100名]
+  const h = { tiers: [100, 1000], samples: [[1000, 10, 5], [4700, 10, 9]], ranks: [rk(1000, 10), rk(4700, 14), [4800, 1]], top1: [[4700, 99]] };
+  assert.deepEqual(histT100(h)[1], [4700, 14, 9]); assert.equal(h.samples[1][1], 10, '不改動原陣列');
+  assert.deepEqual(histT100({ tiers: [100], samples: [[1, 10]], ranks: [[1, 10]] }), [[1, 10]], '前百不足 100 人就保留原值');
+  const t = trend(h, 1); assert.equal(t.lines[0].score, 14); assert.equal(t.lines[0].delta, 4); assert.equal(t.lines[1].delta, 4);
+  const bot = await makeBot();
+  const hist = { eventId: 184, tiers: [100, 1000], samples: [[1790340000, 1000000, 500000], [1790343600, 1000000, 520000]], ranks: [rk(1790340000, 1000000), rk(1790343600, 1050000)], top1: [[1790343600, 5000000]] };
+  mockLive({
+    'api.hisekai.org/tw/event/live/border': { event: { id: 184, name: 'Frozen', aggregate_at: '2026-11-10T11:59:59Z' }, player_border_rankings: [{ rank: 100, score: 1000000 }, { rank: 1000, score: 520000 }] },
+    'api.hisekai.org/tw/event/live/top100': { event: { id: 184, name: 'Frozen' }, player_top_100_rankings: [{ rank: 1, score: 5000000, name: 'A' }, { rank: 100, score: 1060000, name: 'Z' }] },
+    '/data/history/index.json': [184], '/data/history/184.json': hist,
+  });
+  const b = await runCmd(bot, 'event', { sub: 'border' }); const bt = textOf(b.edits[0]);
+  assert.match(bt, /T100　\*\*1,060,000\*\*（\+50,000／時）/, '顯示前百第 100 名、增量照對齊後的快照');
+  assert.match(bt, /T1,000　\*\*520,000\*\*（\+20,000／時）/);
+  resetFetch(); assert.deepEqual(bot.errors, []);
 });
 
 test('/event：日曆照舊；榜線／前百／歷史從網站來源抓，失敗有友善訊息', async () => {

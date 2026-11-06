@@ -206,14 +206,13 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             if (!d) return '';
             return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         }
-        // 先直連，被 CORS／網路擋下時自動改走公開代理
+        // 先直連，被 CORS／網路擋下時改走自家 Worker 代理
+        // （以前還接 corsproxy.io／allorigins 兩個公共代理，現在分別回 401／522，只會多等兩輪逾時，2026/11 清掉）
         async function apiFetch(path) {
             const url = API + path;
             const attempts = [
                 url,
-                'https://games.project-sekai-center.com/proxy/hisekai' + path,   // 自家 Worker 代理，先於公共代理
-                'https://corsproxy.io/?url=' + encodeURIComponent(url),
-                'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+                'https://games.project-sekai-center.com/proxy/hisekai' + path   // 自家 Worker 代理
             ];
             let lastErr;
             for (const u of attempts) {
@@ -2548,21 +2547,18 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
         };
 
         // ========== 全域搜尋（智能・人性化）==========
-        // 通用 JSON 抓取:直連失敗自動走代理(比照 apiFetch)
+        // 通用 JSON 抓取（raw.githubusercontent／storage.sekai.best 本身就開 CORS，直連即可）
+        // 以前直連失敗會再走 corsproxy.io／allorigins 公共代理，但那兩個早已分別回 401／522（逾時 15 秒），
+        // 台服 master 沒有的檔（eventShuffleUnitBonuses.json 等）一個 404 就拖成 30 秒以上，首頁跑榜小窗因此卡「計算中」半分鐘；
+        // 2026/11 拿掉代理鏈：失敗直接丟出，404 另外標 notFound 讓 IDBCache 記住「沒有這個檔」
         async function fetchJSONproxied(url) {
-            const attempts = [url, 'https://corsproxy.io/?url=' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
-            let lastErr;
-            for (const u of attempts) {
-                try {
-                    const ctrl = new AbortController();
-                    const timer = setTimeout(() => ctrl.abort(), 15000);
-                    const r = await fetch(u, { signal: ctrl.signal });
-                    clearTimeout(timer);
-                    if (!r.ok) { lastErr = new Error('HTTP ' + r.status); continue; }
-                    return await r.json();
-                } catch (e) { lastErr = e; }
-            }
-            throw lastErr || new Error('fetch failed');
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 15000);
+            try {
+                const r = await fetch(url, { signal: ctrl.signal });
+                if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; e.notFound = r.status === 404; throw e; }
+                return await r.json();
+            } finally { clearTimeout(timer); }
         }
 
         // ========== 台服 master data 共用載入器(快取 Promise,去重併發) ==========
@@ -2592,10 +2588,20 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             _set(key, d) {
                 this._open().then(db => { if (!db) return; try { db.transaction('kv', 'readwrite').objectStore('kv').put({ t: Date.now(), d }, key); } catch (e) {} });
             },
+            // 上游回 404（可選檔，像台服 master 還沒有的 eventShuffleUnitBonuses.json）也要記住：存這個哨兵，
+            // TTL 內直接丟同樣的 404 錯誤給呼叫端，不再每次進站都重打一次（呼叫端本來就 .catch(() => []) 當成空檔）
+            MISS: { __miss404: 1 },
+            _missErr(url) { const e = new Error('HTTP 404 (cached)'); e.status = 404; e.notFound = true; e.url = url; return e; },
             async wrap(url, ttl, validate) {
                 const key = 'u2:' + url;   // 版本化 key：捨棄舊版可能被 proxy 截斷的壞快取
-                try { const c = await this._get(key, ttl); if (c && (!validate || validate(c))) return c; } catch (e) {}
-                const d = await fetchJSONproxied(url);
+                try {
+                    const c = await this._get(key, ttl);
+                    if (c && c.__miss404) throw this._missErr(url);
+                    if (c && (!validate || validate(c))) return c;
+                } catch (e) { if (e && e.notFound) throw e; }
+                let d;
+                try { d = await fetchJSONproxied(url); }
+                catch (e) { if (e && e.notFound) { try { this._set(key, this.MISS); } catch (e2) {} } throw e; }
                 if (!validate || validate(d)) { try { this._set(key, d); } catch (e) {} }   // 只快取通過驗證(非截斷)的資料
                 return d;
             }
@@ -4425,7 +4431,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 try {
                     await EventCalc.ensure();
                     await SongEff.ensure();
-                    RerunModule.ensure();
+                    // 這裡不呼叫 RerunModule.ensure()：小窗的 _computeBest／_renderMiniCard 不顯示「取得/復刻」，
+                    // 那會把日服 gachas.json（傳輸 3.7MB、解壓 50MB）拉進首頁主執行緒白算；完整工作室的 ensure() 自己會載
                     [this._cards, this._evCards] = await Promise.all([MasterDB.get('cards.json'), MasterDB.get('eventCards.json')]);
                     const musics = await MasterDB.get('musics.json');
                     const hasMetas = SongEff._metas && Object.keys(SongEff._metas).length;
@@ -4995,7 +5002,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                         let m = null;
                         try { m = await IDBCache._get('u2:' + url, 43200000); } catch (e) {}
                         if (!Array.isArray(m) || m.length <= 1000) {
-                            // metas 只「直連」storage.sekai.best（CORS 會 reflect origin，正式站可用）；corsproxy/allorigins 會把 2.3MB 截成 159KB 故不用；給 45s（大檔）
+                            // metas 直連 storage.sekai.best（CORS 會 reflect origin，正式站可用）；不走 fetchJSONproxied 是因為要 no-referrer 與 45s 逾時（大檔）
                             const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 45000);
                             // storage.sekai.best 有防盜連（帶 Referer 會 403）→ 必須 no-referrer，瀏覽器才拿得到（curl 無 referer 才會成功誤導）
                             const r = await fetch(url, { signal: ctrl.signal, referrerPolicy: 'no-referrer' }); clearTimeout(timer);
@@ -7266,6 +7273,10 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             NavMemory.init();
             NavUI.init();
             SekaiFX.init();
+            // 首頁跑榜小窗（?embed=ministudio，index.html 開頭就掛上 body.embed-ministudio）：整頁只露出 #mini-studio，
+            // 其餘區段全是 display:none，卡池／日曆／榜線（含 60 秒輪詢，母頁 app.js 自己已在輪詢同三支 API）／曲庫／分佈圖這些
+            // 整套啟動都不跑；小窗要的活動清單、卡片、music_metas 由 RunStudio.miniRun（index.html 的 load 事件觸發）自己載
+            if (document.body.classList.contains('embed-ministudio')) return;
             GachaModule.init();
             DollModule.render();
             renderCalendar();

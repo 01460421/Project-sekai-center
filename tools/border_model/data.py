@@ -65,6 +65,30 @@ def fix_mono(rows: List[list], n: int) -> List[list]:
     return out
 
 
+def align_t100(rows: List[list], tiers: List[int], ranks) -> List[list]:
+    """app.js histT100 的逐行移植：T100 欄對齊同一時間戳 ranks 列的第 100 名。榜線端點的 T100 會凍住好幾個小時
+    （T1000 同時還在漲），而 ranks = [秒, 第1名…第100名] 與 samples 同一次取樣、同一個時間戳寫入，
+    直接拿第 100 名蓋過去（不取 max）。那一筆沒有第 100 名（前百不足 100 人、或沒有對應的 ranks 列）就保留原值。
+    rows = [[ts, v1..vn], ...]（允許 None），回傳副本。"""
+    if 100 not in tiers or not ranks:
+        return rows
+    ci = tiers.index(100)
+    at = {}
+    for r in ranks:
+        if r and r[0] is not None:
+            at[int(r[0])] = r
+    out = []
+    for s in rows:
+        r = at.get(s[0])
+        if r is None or len(r) <= 100 or r[100] is None or len(s) <= ci + 1:
+            out.append(s)
+            continue
+        c = list(s)
+        c[ci + 1] = r[100]
+        out.append(c)
+    return out
+
+
 # ----------------------------------------------------------------------------
 # Event
 # ----------------------------------------------------------------------------
@@ -177,6 +201,8 @@ def _build_event(d: dict, id_, is_wl=False, parent=None) -> Event:
     tiers = [int(t) for t in (d.get('tiers') or [])]
     n = len(tiers)
     rows = _rows_to_arrays(d.get('samples') or [], n)
+    # 先把 T100 對齊前百第 100 名、再修單調；raw_S 也用對齊後的值，altered_mask 才只標到單調修復（WL 章節沒有 ranks，原樣）
+    rows = align_t100(rows, tiers, d.get('ranks'))
     raw_ts, raw_S = _to_np(rows, n)
     ts, S = _to_np(fix_mono(rows, n), n)
     ev = Event(id=id_, name=d.get('name') or str(id_),
@@ -304,7 +330,10 @@ def load_event(path: pathlib.Path, finals: dict, now: float = None) -> Event:
         ch = int(w.get('chapter', k))
         ce = _build_event(w, f'{ev.id}.{ch}', is_wl=True, parent=ev.id)
         ce.name = f'{d.get("name", ev.id)} ch{ch}'
-        off = api_wl.get(int(w.get('character', -1)))
+        # WL 終章（全角色章）的 character 是 null —— API 本來的格式，不是髒資料（app.js 也以 gameCharacterId==null 判終章）。
+        # 以前直接 int() 會丟 TypeError，整支重擬跟著掛掉，模型從 180 期起就沒再更新過。終章沒有對應的官方 WL 終線，留 None。
+        chara = w.get('character')
+        off = api_wl.get(int(chara)) if chara is not None else None
         _attach_finals(ce, off if off else None, now < ce.end + HOUR, 'tier')
         ce.final_src['rank'] = 'none'
         ev.wl[ch] = ce
