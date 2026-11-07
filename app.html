@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=4971a87d1a" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=52d61ea429" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -164,8 +164,8 @@ try{var _v=(/(?:^|\s)skin-(literary|stage|notebook|idol|street|park|void|track)(
 --sh-md:0 2px 6px rgba(31,42,80,.06),0 12px 32px rgba(31,42,80,.11);
 --sh-lg:0 8px 20px rgba(31,42,80,.10),0 28px 70px rgba(31,42,80,.2);
 --fes-bg:#fff3d4;--fes-fg:#b07500;--lim-bg:#ffe4ec;--lim-fg:#c2185b;--free-bg:#e3f6ea;--free-fg:#1b7f45;--gift-bg:#fde7f0;--gift-fg:#c2185b;--nb-bg:#e8f1ff;--nb-fg:#2a5db0;--ms-bg:#eaf7ec;--ms-fg:#2e7d32;--sup-bg:#fff0e0;--sup-fg:#b4530a;--sel-bg:#efe8ff;--sel-fg:#6a3fc2;--song-bg:#e6f6ff;--song-fg:#0b6fa3;--live-bg:#f3e8ff;--live-fg:#6d28d9;--login-bg:#fff7d6;--login-fg:#8a6100;--cb-bg:#ffe9e0;--cb-fg:#b3431b;
---paid-bg:#fdf7d8;--paid-fg:#9c8300;--bd-bg:#f3e8ff;--bd-fg:#9c53d6;
---rr-bg:#ffe3de;--rr-fg:#d64533;--wl-bg:#def0ff;--wl-fg:#2277cc;
+--paid-bg:#fdf7d8;--paid-fg:#7a6600;--bd-bg:#f3e8ff;--bd-fg:#7e3fc0;
+--rr-bg:#ffe3de;--rr-fg:#b8372a;--wl-bg:#def0ff;--wl-fg:#2277cc;
 --nm-bg:#def5e6;--nm-fg:#2f9e57;--ot-bg:#edf0f7;--ot-fg:#5d6884;
 --anim:.5s;
 /* 告訴瀏覽器原生控制項(select 的下拉、option 文字、日期選擇器…)該用哪一種配色。
@@ -8062,11 +8062,11 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <div style="font-size:10.5px;color:var(--text-3);line-height:1.3">{{ c.chara }}　{{ c.sup }}</div>
             <div style="font-size:11px;font-weight:800;color:var(--ink);line-height:1.35;margin:2px 0 6px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.7em">{{ c.name }}</div>
             <div style="display:flex;flex-direction:column;gap:4px">
-              <a href="{{ c.normal }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:5px 0;border-radius:9px;background:var(--ink-grad);color:#fff;font-size:10.5px;font-weight:800;text-decoration:none">特訓前 原圖</a>
+              <a href="{{ c.normal }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:8px 0;border-radius:9px;background:var(--ink-grad);color:#fff;font-size:10.5px;font-weight:800;text-decoration:none">特訓前 原圖</a>
               <sc-if value="{{ c.hasTrained }}">
-                <a href="{{ c.trained }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:5px 0;border-radius:9px;background:var(--ink-grad);color:#fff;font-size:10.5px;font-weight:800;text-decoration:none">特訓後 原圖</a>
+                <a href="{{ c.trained }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:8px 0;border-radius:9px;background:var(--ink-grad);color:#fff;font-size:10.5px;font-weight:800;text-decoration:none">特訓後 原圖</a>
               </sc-if>
-              <a href="{{ c.cutout }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:5px 0;border-radius:9px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:10.5px;font-weight:700;text-decoration:none">去背立繪</a>
+              <a href="{{ c.cutout }}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:8px 0;border-radius:9px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:10.5px;font-weight:700;text-decoration:none">去背立繪</a>
             </div>
           </div>
         </div>
@@ -9262,7 +9262,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="border:1px solid var(--border);border-radius:14px;background:var(--card);padding:11px 15px;margin-bottom:7px">
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:11.5px;font-weight:700;color:var(--text-2)">{{ p.author }}</span>
-              <sc-if value="{{ p.isAdmin }}"><span style="padding:1px 6px;border-radius:999px;background:var(--accent);color:#fff;font-size:9.5px;font-weight:800">管理員</span></sc-if>
+              <sc-if value="{{ p.isAdmin }}"><span style="padding:1px 6px;border-radius:999px;background:var(--accent-deep);color:#fff;font-size:9.5px;font-weight:800">管理員</span></sc-if>
               <sc-if value="{{ p.viaAi }}"><span style="padding:1px 6px;border-radius:999px;background:#8a72c8;color:#fff;font-size:9.5px;font-weight:800">站內助手回答</span></sc-if>
               <span class="u-fc2">{{ p.when }}</span>
               <div class="u-f1"></div>
@@ -10665,7 +10665,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border);background:{{ r.bg }}">
             <button type="button" onClick="{{ onOstPlay }}" data-id="{{ r.id }}" aria-label="播放／暫停" style="width:36px;height:36px;flex:none;border:none;border-radius:50%;background:var(--ink-grad);color:#fff;font-size:11px;cursor:pointer;display:grid;place-items:center">{{ r.icon }}</button>
             <div class="u-fm8"><div style="font-size:13.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">{{ r.sub }}</div></div>
-            <a href="{{ r.url }}" target="_blank" rel="noopener" style="flex:none;font-size:11px;color:var(--text-3);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:4px 10px">mp3 ↗</a>
+            <a href="{{ r.url }}" target="_blank" rel="noopener" style="flex:none;font-size:11px;color:var(--text-3);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:8px 12px">mp3 ↗</a>
           </div>
         </sc-for>
       </div>
@@ -12816,7 +12816,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4971a87d1a"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=52d61ea429"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

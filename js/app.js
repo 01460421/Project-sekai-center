@@ -219,9 +219,9 @@ class Component extends DCLogic {
   UNITS = {
     ln:  { n:'Leo/need', c:'#4455dd', t:'#fff', keys:['LN'] },
     mmj: { n:'MMJ', c:'#88cc44', t:'#1d2610', keys:['MMJ'] },
-    vbs: { n:'VBS', c:'#ee6644', t:'#fff', keys:['VBS'] },
+    vbs: { n:'VBS', c:'#ee6644', t:'#2b1410', keys:['VBS'] },
     wxs: { n:'ワンダショ', c:'#ffbb33', t:'#2b2208', keys:['WS'] },
-    n25: { n:'ニーゴ', c:'#aa66cc', t:'#fff', keys:['25時'] },
+    n25: { n:'ニーゴ', c:'#aa66cc', t:'#1e1030', keys:['25時'] },
     vs:  { n:'VIRTUAL SINGER', c:'#44cccc', t:'#0c2b29', keys:['VS', '無副團'] }
   };
   TONES = [
@@ -1250,7 +1250,7 @@ class Component extends DCLogic {
     let h = str.slice(1); if (h.length === 3) h = h.split('').map(x => x + x).join('');
     const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     const L = 0.2126 * f(parseInt(h.slice(0, 2), 16)) + 0.7152 * f(parseInt(h.slice(2, 4), 16)) + 0.0722 * f(parseInt(h.slice(4, 6), 16));
-    const k = L > 0.5 ? 38 : L > 0.3 ? 50 : L > 0.15 ? 66 : 84;
+    const k = L > 0.5 ? 34 : L > 0.3 ? 48 : L > 0.15 ? 66 : 84;
     return 'color-mix(in oklab,' + str + ' ' + k + '%,var(--ink))';
   }
   /* 手機的日曆議程：本月每天「開始」的卡池；點一列等於點那一天 */
@@ -7921,7 +7921,7 @@ class Component extends DCLogic {
     const fj = t => { const d = new Date(t + 9 * 3600000); return d.getUTCFullYear() + '/' + (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); };
     const fjt = t => { const d = new Date(t + 9 * 3600000); return fj(t) + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
     const J = D.jp || {}, UN = { none: '混活' }; ['ln', 'mmj', 'vbs', 'wxs', 'n25'].forEach(k => { UN[k] = (this.UNITS[k] || {}).n || k; });
-    const SRC = { tw: ['官方已排', '#15803d'], pred: ['模型預測', '#b45309'], jp: ['日服未公布・推估', '#6d28d9'] };
+    const SRC = { tw: ['官方已排', this.txt('#15803d')], pred: ['模型預測', this.txt('#b45309')], jp: ['日服未公布・推估', this.txt('#6d28d9')] };   // 文字安全色
     /* 角色、屬性、技能：屬性用 SM_ATTR、技能分類用卡片技能庫同一套 CL_GROUP、團名用 UNITS */
     const AT = a => this.SM_ATTR[a] || [a || '—', 'var(--text-3)'];
     const SKG = k => this.CL_GROUP[k] || [k || '—', 'var(--text-3)'];
@@ -7985,7 +7985,7 @@ class Component extends DCLogic {
           return at.length ? '活動卡池：卡跟著活動的加成屬性，候選 ' + at.join(' → ') : '';
         })(),
         ev: g[7] ? '第 ' + g[7] + ' 期' : '', hasEv: !!g[7] && g[9] !== 'jp', evTxt: g[7] && g[9] === 'jp' ? '第 ' + g[7] + ' 期（推估）' : '', evPatch: JSON.stringify({ eiId: g[7] }), src: (SRC[g[9]] || SRC.pred)[0], srcC: (SRC[g[9]] || SRC.pred)[1],
-        man: g[9] === 'jp' ? '' : g[8] == null ? '站上列表沒有' : g[8] === 0 ? '站上列表一致' : '站上列表差 ' + sg(g[8]) + ' 天', manC: g[8] == null ? 'var(--text-3)' : g[8] === 0 ? '#15803d' : '#dc2626',
+        man: g[9] === 'jp' ? '' : g[8] == null ? '站上列表沒有' : g[8] === 0 ? '站上列表一致' : '站上列表差 ' + sg(g[8]) + ' 天', manC: g[8] == null ? 'var(--text-3)' : g[8] === 0 ? 'var(--ok)' : 'var(--bad)',
         jpWhen: g[9] === 'jp' ? '日服推估 ' + fjt(g[11]) + '・規則：' + (g[12] || '') : '',
         conf: g[9] !== 'tw' ? '信心 ' + Math.round((g[10] || 0) * 100) + '%' : '' }));
       out.sdGaMore = gl.length > lim; out.sdGaMoreN = gl.length - lim;
@@ -9070,7 +9070,7 @@ class Component extends DCLogic {
       const key = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
       out.push({
         key, num: d.getDate(), dim,
-        op: dim ? '.4' : '1',
+        op: dim ? '.55' : '1',   // 非本月的日子淡一點就好；.4 時裡面的活動籤對比只剩 1.7
         bg: isToday ? 'color-mix(in oklab,var(--accent) 9%,var(--card))' : (s.daySel === key ? 'var(--bg-soft)' : 'var(--card)'),
         border: isToday ? 'var(--accent)' : (s.daySel === key ? 'var(--border-2)' : 'var(--border)'),
         numColor: isToday ? 'var(--accent-deep)' : 'var(--text)',
