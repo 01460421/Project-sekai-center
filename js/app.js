@@ -144,7 +144,7 @@ class Component extends DCLogic {
      app.html 與 index.html(經典版/B30/儲值分析)同源,共用同一份 localStorage,
      所以在這裡備份就涵蓋全站。只收使用者資料,不收可重建的快取。 */
   BK_KEYS = [
-    ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-pid-jp', '綁定的日服玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-app-cur', '活動P 目前'],
+    ['sekai-app-pid', '綁定的玩家 ID'], ['sekai-app-pid-jp', '綁定的日服玩家 ID'], ['sekai-app-goal', '活動P 目標'], ['sekai-contrib', '榜線回報開關'], ['sekai-app-cur', '活動P 目前'],
     ['sekai-cards-own', '收集率:持有卡片'], ['sekai-mst-done', '豆森對話:已看過'], ['sekai-mst-own', '豆森對話:已擁有的家具'],
     ['sekai-fav', '收藏與待辦'], ['sekai-calc-presets', '計算中心:我的設定'], ['sekai-rs-presets', '跑榜工作室:儲存設定'],
     ['sekai-b30-marks', 'B30:成績'], ['sekai-b30-name', 'B30:顯示名稱'],
@@ -1100,6 +1100,85 @@ class Component extends DCLogic {
     } catch (e) {}
     return true;
   }
+  /* ===== 玩家榜線回報（群眾榜線；Worker 的 /contrib） =====
+     官方只給 T100～T50000 那十幾條榜線，中間每一個名次只有站在那裡的玩家自己知道。綁定 Player ID 的玩家在站上看榜時，
+     把自己的名次與分數匿名送上去（每 30 分鐘一筆），人一多就補出前百以外的整條曲線。只送期數、名次、分數；
+     ID 只在 Worker 端雜湊成 12 碼用來辨識「同一個人」。設定頁可關（sekai-contrib = '0'）；自動化瀏覽器與本機不送。 */
+  _contribOn() {
+    try { if (localStorage.getItem('sekai-contrib') === '0') return false; } catch (e) {}
+    try { if (navigator.webdriver || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return false; } catch (e) {}
+    return true;
+  }
+  contribPush() {
+    try {
+      if (!this._contribOn()) return;
+      const s = this.state, pd = s.pdata || {}, ev = this.eventOf(s.live);
+      const pid = String(s.pid || '').trim();
+      if (!/^\d{4,24}$/.test(pid) || !ev.id || !(pd.myRank > 0) || !(pd.myScore > 0)) return;
+      const en = new Date(ev.aggregate_at || ev.closed_at || 0).getTime();
+      if (en && Date.now() > en + 3600e3) return;   // 結算超過一小時的不再送（分數不會再動）
+      const key = 'sekai-contrib-at', now = Date.now(), k = this.SRV + ':' + ev.id;
+      let at = {}; try { at = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) {}
+      if (at[k] && now - at[k] < 30 * 60000) return;
+      try { localStorage.setItem(key, JSON.stringify({ [k]: now })); } catch (e) {}   // 只留目前這一期
+      const body = JSON.stringify({ ev: +ev.id, srv: this.SRV === 'jp' ? 'jp' : 'tw', pid, rank: Math.round(+pd.myRank), score: Math.round(+pd.myScore) });
+      fetch(this.GAMES_API + '/contrib', { method: 'POST', body, keepalive: true, headers: { 'content-type': 'text/plain' } })
+        .then(r => { if (r.ok) { this._contribSentAt = now; this.setState({ contribV: (this.state.contribV || 0) + 1 }); } }).catch(() => {});
+    } catch (e) {}
+  }
+  /* 這一期大家回報的點（每人最新一筆）；60 秒內不重抓 */
+  loadContrib(force) {
+    const ev = this.eventOf(this.state.live);
+    if (!ev.id) return Promise.resolve(null);
+    const k = this.SRV + ':' + ev.id, now = Date.now();
+    if (!force && this._contribKey === k && now - (this._contribAt || 0) < 60000) return Promise.resolve(this.state.contrib);
+    this._contribAt = now; this._contribKey = k;
+    return fetch(this.GAMES_API + '/contrib?ev=' + encodeURIComponent(ev.id) + '&srv=' + (this.SRV === 'jp' ? 'jp' : 'tw'), { headers: { Accept: 'application/json' } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (this._contribKey === k) this.setState({ contrib: d || null }); return d; })
+      .catch(() => { if (this._contribKey === k) this.setState({ contrib: null }); return null; });
+  }
+  /* 群眾榜線：官方段位當錨點，玩家回報的點（最近 3 小時、分數要落在所在段位區間內，不然是舊的或錯的）補中間；
+     目標名次在相鄰兩個錨點之間用 log(名次) 線性內插。回 { rows: [{ rank, score, n }], used, stale } */
+  contribEstimate(tiers, latest, now) {
+    const T = (tiers || []).filter(t => t.rank > 0 && t.score > 0).slice().sort((a, b) => a.rank - b.rank);
+    if (T.length < 2) return { rows: [], used: 0, stale: 0 };
+    const fresh = (latest || []).filter(p => p && p[0] > 0 && p[1] > 0 && now / 1000 - p[2] < 3 * 3600);
+    const bracket = r => { for (let i = 0; i < T.length - 1; i++) if (r > T[i].rank && r < T[i + 1].rank) return i; return -1; };
+    const okPts = fresh.filter(p => {
+      const r = p[0], sc = p[1];
+      if (r <= T[0].rank) return sc >= T[0].score;
+      if (r >= T[T.length - 1].rank) return sc <= T[T.length - 1].score;
+      const i = bracket(r);
+      return i < 0 ? false : (sc <= T[i].score && sc >= T[i + 1].score);
+    });
+    const anchors = T.map(t => ({ r: t.rank, s: t.score })).concat(okPts.map(p => ({ r: p[0], s: p[1] }))).sort((a, b) => a.r - b.r);
+    const targets = [150, 200, 300, 400, 700, 1500, 3000, 7000, 15000, 30000].filter(x => !T.some(t => t.rank === x) && x > T[0].rank && x < T[T.length - 1].rank);
+    const rows = targets.map(x => {
+      let lo = null, hi = null;
+      for (const a of anchors) { if (a.r <= x) lo = a; if (a.r >= x) { hi = a; break; } }
+      if (!lo || !hi) return null;
+      const f = hi.r === lo.r ? 0 : (Math.log(x) - Math.log(lo.r)) / (Math.log(hi.r) - Math.log(lo.r));
+      const bi = bracket(x), n = bi < 0 ? 0 : okPts.filter(p => p[0] > T[bi].rank && p[0] < T[bi + 1].rank).length;
+      return { rank: x, score: Math.round(lo.s + (hi.s - lo.s) * f), n };
+    }).filter(Boolean);
+    return { rows, used: okPts.length, stale: fresh.length - okPts.length };
+  }
+  contribVals(s) {
+    const d = s.contrib, on = this._contribOn(), pid = s.pid, pd = s.pdata || {};
+    const out = { ctHas: !!(d && d.players), ctNone: !!(d && !d.players), ctErr: d === null, ctRows: [], ctPts: [], ctHasRows: false };
+    let off = false; try { off = localStorage.getItem('sekai-contrib') === '0'; } catch (e) {}
+    out.ctMine = !on ? (off ? '你已關閉回報。' : '這個環境不送回報（自動化瀏覽器或本機）。') : !pid ? '綁定 Player ID 後，你看榜時會自動回報一筆（每 30 分鐘一次）。' : !(pd.myRank > 0) ? '還沒拿到你的名次，拿到就會自動回報。'
+      : (this._contribSentAt ? '已回報你的 #' + this.n(pd.myRank) + '（' + this.ago(this._contribSentAt) + '）。' : '看榜時會自動回報你的 #' + this.n(pd.myRank) + '。');
+    if (!out.ctHas) return out;
+    const now = Date.now(), est = this.contribEstimate(this.bordersOf(s.borders), d.latest, now);
+    out.ctPlayers = this.n(d.players); out.ctN = this.n(d.n); out.ctHour = this.n(d.hour);
+    out.ctRows = est.rows.map(r => ({ rank: 'T' + this.n(r.rank), score: this.n(r.score), n: r.n ? r.n + ' 筆回報' : '只有官方線內插', color: r.n ? 'var(--ink)' : 'var(--text-3)' }));
+    out.ctHasRows = est.rows.length > 0;
+    out.ctNote = '最近 3 小時有效回報 ' + est.used + ' 筆' + (est.stale ? '、略過 ' + est.stale + ' 筆（太舊或分數跟所在段位對不上）' : '') + '；估計值是相鄰兩個點之間照名次的對數內插，點越多越準。';
+    out.ctPts = (d.latest || []).slice(0, 60).map(p => ({ rank: '#' + this.n(p[0]), score: this.n(p[1]), ago: this.ago(p[2] * 1000) }));
+    return out;
+  }
   _teleInit() {
     this._teleQ = [];
     const flush = () => this._teleFlush();
@@ -1947,6 +2026,7 @@ class Component extends DCLogic {
       this.setState({ live: top, borders: brd, liveLoad: false, liveErr: '', liveSrc: (top && top.via === 'tracker') ? 'tracker' : ((top && top.source === 'haruki') || (brd && brd.source === 'haruki')) ? 'haruki' : 'hisekai' });
       if (this.state.pid) { if (this.SRV === 'jp') this.loadPlayerJp(this.state.pid); else this.matchMyRank(top); }
       this.snapPush(top, brd);
+      if (this.state.page === 'rank') this.loadContrib();   // 群眾榜線：跟著每分鐘的輪詢（Worker 端快取 60 秒，前端也 60 秒內不重抓）
       // 公用快照要等 live 出來才知道期數。切頁時 live 常常還沒回,那次的
       // loadBorderHistory 會因為拿不到 ev.id 直接放棄,所以這裡補一次;
       // 它自己有 _histFor 去重,重複呼叫不會多打。只有用得到的頁才抓（約 500 KB，以前 28 頁都抓）。
@@ -4636,7 +4716,7 @@ class Component extends DCLogic {
   loadRecapMod() {
     if (this._rcMod === true) return Promise.resolve(true);
     if (this._rcMod) return this._rcMod;
-    this._rcMod = import('./js/recap.js?v=ca5b169c35').then(m => { Object.assign(this, m.recapMembers.call(this)); this._rcMod = true; this.setState({ rcMod: true }); return true; })
+    this._rcMod = import('./js/recap.js?v=95adb2b607').then(m => { Object.assign(this, m.recapMembers.call(this)); this._rcMod = true; this.setState({ rcMod: true }); return true; })
       .catch(e => { this._rcMod = null; this.teleErr('module recap.js：' + ((e && e.message) || ''), 'dat'); this.setState({ rcMod: false, recapLoad: false, recapErr: '程式載入失敗，請重新整理後再試', accData: { missing: true } }); return false; });
     return this._rcMod;
   }
@@ -5101,7 +5181,7 @@ class Component extends DCLogic {
         myRounds1h: h1.length, myRounds3h: win(3).length, myRounds24h: win(24).length, myAvg1h: h1.length ? sum(h1) / h1.length : null,
         myLastPlayed: games.length ? games[games.length - 1][0] * 1000 : null,
         myGap: nx && nx.score != null && cur.score != null ? +nx.score - +cur.score : null, myNextRank: nx ? nx.rank : null, myAt: Date.now(),
-      }) }));
+      }) }), () => this.contribPush());
     } catch (e) {
       this.setState(s => ({ pdata: Object.assign({}, s.pdata || {}, { name: (s.pdata && s.pdata.name) || ('玩家 ' + id) }) }));
     } finally { this._pjBusy = false; }
@@ -5117,7 +5197,7 @@ class Component extends DCLogic {
       myRounds1h: cnt('h1'), myRounds3h: cnt('h3'), myRounds24h: cnt('h24'),
       myAvg1h: (st.h1 && st.h1.average != null) ? st.h1.average : null,
       myLastPlayed: me.lastPlayed || null
-    }) }));
+    }) }), () => this.contribPush());
   }
   async loadPlayer(id) {
     if (this.SRV === 'jp') return this.loadPlayerJp(id);
@@ -8525,6 +8605,7 @@ class Component extends DCLogic {
     if (p === 'borderdb') this.loadBorderDB();   // 卡片索引供 WL 五色檢查/建議編組(75KB,有重複載入保護)
     if (p === 'songs') { this.loadSongs(true); this.loadSongBpm(); this.loadConsts(); }
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
+    if (p === 'rank') setTimeout(() => this.loadContrib(), 0);   // 群眾榜線（分段榜線分頁用）
     if (p === 'collect') this.loadCollect();
     if (p === 'chars') { this.loadChars(); this.loadCards(); }
     if (p === 'cards') { this.loadCards(); this.loadCardX(); }
@@ -11591,6 +11672,7 @@ class Component extends DCLogic {
       themeChips: [['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']].map(([v, n]) => { const on = (s.theme || 'auto') === v;
         return { v, n, on: on ? 'true' : 'false', bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'var(--cta)' : 'var(--border)' }; }),
       setAccountBtn: s.me ? '前往我的帳號 →' : '登入 →',
+      contribBtn: this._contribOn() ? '已開啟（點一下關閉）' : '已關閉（點一下開啟）',
       teleBtn: (() => { try { if (localStorage.getItem('sekai-tele') === '0') return '已關閉（點一下開啟）'; } catch (e) {} return (navigator.doNotTrack === '1' || navigator.globalPrivacyControl) ? '瀏覽器已要求不要追蹤，不會送' : '開啟中（點一下關閉）'; })(),
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
@@ -11872,7 +11954,8 @@ class Component extends DCLogic {
         .concat(this.isWL() ? [{ v: 'wl', n: 'WL 個榜' }] : [])
         .concat([{ v: 'past', n: '歷代活動' }, { v: 'trend', n: '榜線趨勢' }])
         .map(t => Object.assign({}, t, seg(s.rankTab === t.v))),
-      isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl',
+      isLiveTab: s.rankTab === 'live' || s.rankTab === 'border', isWlTab: s.rankTab === 'wl', isBorderTab: s.rankTab === 'border',
+      ...(s.page === 'rank' ? this.contribVals(s) : {}),
       isBoardTab: s.rankTab === 'live' || s.rankTab === 'border' || (s.rankTab === 'wl' && wlAvail),
       ...(() => {
         const chs = this.wlChapters();
@@ -12753,6 +12836,7 @@ class Component extends DCLogic {
       onGuideClose: () => this.guideClose(),
       onGuideHide: e => this.setState({ guideHide: !!e.target.checked }),
       onGuideReset: () => { try { localStorage.removeItem('sekai-guide-hide'); } catch (e) {} this.setState({ guideHide: false, guide: { step: 0 }, homeCfg: false }); },
+      onContribToggle: () => { try { if (localStorage.getItem('sekai-contrib') === '0') localStorage.removeItem('sekai-contrib'); else localStorage.setItem('sekai-contrib', '0'); } catch (e) {} this.setState({ contribV: (s.contribV || 0) + 1 }); },
       onTeleToggle: () => { try { if (localStorage.getItem('sekai-tele') === '0') localStorage.removeItem('sekai-tele'); else localStorage.setItem('sekai-tele', '0'); } catch (e) {} this.setState({ teleV: (s.teleV || 0) + 1 }); },
       onStatusReload: () => this.loadStatus(true),
       onRecapPick: e => { const v = e.currentTarget.dataset.v; this.setState({ recapEv: v }); this.loadRecap(v); },

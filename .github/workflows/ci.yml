@@ -27,6 +27,8 @@ jobs:
         run: node worker/test/snaps.mjs
       - name: Worker 的匿名使用統計（/t、/admin/tele）與資料管線檢查（GitHub 用假 fetch）
         run: node worker/test/telemetry.mjs
+      - name: Worker 的玩家榜線回報（/contrib；D1 用 node:sqlite 模擬）
+        run: node worker/test/contrib.mjs
       - name: Haruki 專區的純函式（角色任務 EXP、目前隊伍、compact 展開）
         run: node tests/haruki-zone.mjs
       - name: 壓縮檔與戳記是否過期（不改檔，過期就失敗）

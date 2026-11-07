@@ -3,13 +3,16 @@
 // 補了翻譯讓數字變少時，請把 MAX 往下調（只能往下）。
 // 用法：node tests/i18n-gap.mjs
 import { spawnSync } from 'node:child_process';
-const MAX = 836;
+const MAX = 521;
 const r = spawnSync('python3', ['tools/build-i18n.py', '--missing'], { encoding: 'utf8', maxBuffer: 64 << 20 });
 if (r.status !== 0) { console.error(r.stderr || '--missing 失敗'); process.exit(1); }
 let miss;
 try { miss = JSON.parse(r.stdout); } catch (e) { console.error('--missing 的輸出不是 JSON：' + e.message); process.exit(1); }
 // 多句的段落（更新紀錄的全文）執行時是逐句翻的（js/i18n.js），--missing 卻把整段也列一次：不算
 miss = miss.filter(s => !/。.+/.test(s));
+// 字串連接（'已回報 #' + n + '（' + ago + '）'）會被拆成一串累積片段，只有最長的那條是真的要翻的：是別條的前綴或後綴的不算
+const all = miss.slice();
+miss = miss.filter(s => !all.some(o => o !== s && o.length > s.length && (o.startsWith(s) || o.endsWith(s))));
 const n = miss.length, ok = n <= MAX;
 console.log((ok ? 'ok   ' : 'FAIL ') + `i18n：缺 ${n} 條（基準 ${MAX}）`);
 if (!ok) { console.log('最可能是新加的字串（補進 tools/i18n/en.json 與 ja.json 後跑 python3 tools/build-i18n.py）：'); miss.slice(-15).forEach(s => console.log('  ' + s)); }

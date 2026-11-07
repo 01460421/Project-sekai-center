@@ -38,6 +38,7 @@ jobs:
           node worker/test/security.mjs
           node worker/test/snaps.mjs
           node worker/test/telemetry.mjs
+          node worker/test/contrib.mjs
       - name: 部署
         working-directory: worker
         env:
