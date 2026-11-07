@@ -15,7 +15,7 @@ const STATIC_MAX = 160;   // 保險絲：同時最多留這麼多個資產
 const PAGES = 'pages-' + VER, STATIC = 'static-' + VER;
 const STATIC_RE = /^\/(js|css|data|vendor|icons|tut-img)\/|^\/support\.js$/;
 const SHELL_RE = /^\/(app(\.html)?)?$/;   // /、/app、/app.html 都是同一個殼層
-const NO_CACHE_RE = /^\/data\/(billing|billing-jp|b30-consts|borders-db|borders-db-jp)\.js$|^\/data\/border-model\.json$|^\/data\/history\//;
+const NO_CACHE_RE = /^\/data\/(billing|billing-jp|b30-consts|borders-db|borders-db-jp)\.js$|^\/data\/border-(model|accuracy)\.json$|^\/data\/history\//;
 
 /* 安裝時先把殼層抓一份：PAGES 裡立刻有離線可用的 app.html，HTTP 快取也先有 /app.html 這個項目，
    SW 第一次接手的那次導覽才是 304 而不是再抓一次完整的檔；抓不到（離線安裝）也不擋安裝 */

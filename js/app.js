@@ -283,6 +283,8 @@ class Component extends DCLogic {
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
     settings: ['設定', '伺服器與語言、Player ID、歌曲音源、主題與顯示版本、首頁與側欄的版面、備份：全站的設定都在這一頁'],
     status:   ['系統狀態', '資料管線的執行狀況、即時排名來源是否正常、逐局追蹤器與各資料檔最近更新的日期'],
+    recap:    ['活動回顧', '結算後的一期一報：最終榜線與歷屆對照、各段位走勢與每日增量、前百、你的名次曲線，以及預測準不準'],
+    accuracy: ['預測準確度', '榜線終線預測的留一法回測：每一期在 25／50／75／90% 進度的預測跟官方終線差多少，對照線性外推與賽前先驗'],
     car:      ['私車排班', '菜根機器人的車隊班表：三車分開排班、報班與推手標記（Discord 或綁定 QQ 登入）'],
     bot:      ['菜根機器人', '車隊排班、查榜、點歌的機器人：Discord、QQ、網頁三邊同步，附指令清單圖'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
@@ -331,7 +333,7 @@ class Component extends DCLogic {
      點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
   NAV_SECTIONS = [
     ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']], ['settings', '設定', '#9fb0d6', []]]],
-    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'distrib', 'lookup']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
+    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'recap', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'accuracy', 'distrib', 'lookup']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
     ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
@@ -747,6 +749,7 @@ class Component extends DCLogic {
     stories: null, stTab: 'event', stEvent: 0, stChar: 0, stArea: 0, rd: null, rdVoice: -1,
     live: null, borders: null, liveErr: '', liveLoad: true, refreshing: false, autoSync: false, rankTab: 'live',
     evList: [], pastEv: '', pastQuery: '', pastTop: null, pastBrd: null, pastLoad: false, pastErr: '',
+    recapEv: '', recapTier: 1000, recapHist: null, recapIds: [], recapLoad: false, recapErr: '', accData: null, accTau: '0.5',
     trend: null, trendLoad: false, trendErr: '', trendN: 12, trendProg: '',
     pid: '', pidInput: '', pdata: null, pErr: '',
     hkCfg: null, hkTok: null, hkBusy: false, hkMsg: '', hkLast: null, hkUid: '',
@@ -4625,6 +4628,193 @@ class Component extends DCLogic {
     const now = Date.now();
     const errors = (T.errors || []).map(e => ({ kind: e.k === 'dat' ? '資料' : 'JS', msg: e.msg, page: e.page || '—', ver: e.ver || '—', n: f(e.n), last: this.ago ? this.ago(e.last * 1000) : Math.round((now - e.last * 1000) / 60000) + ' 分鐘前' }));
     return { teleNone: false, teleCards: cards, teleDays: days, telePages: pages, teleDims: dims, teleErrors: errors, teleNoErr: !errors.length };
+  }
+
+  /* ===== 活動回顧（page=recap）與預測準確度（page=accuracy） =====
+     回顧讀 data/history/<期數>.json（公用時序，結算後就是完整的）、BORDERS_DB 的官方終線與歷屆對照、
+     data/border-accuracy.json 的留一法預測、以及這台裝置自己記的快照（我的分數）。
+     準確度資料由 tools/build-border-accuracy.py 每天產：每一期都用「沒看過它」的模型在 25／50／75／90% 進度預測，
+     跟官方終線比，另附線性外推與賽前先驗兩個對照組。 */
+  RECAP_TIERS = [100, 500, 1000, 2000, 5000, 10000, 50000];
+  async loadAccuracy() {
+    if (this._accP) return this._accP;
+    this._accP = fetch('data/border-accuracy.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null)
+      .then(d => { this.setState({ accData: d || { missing: true } }); return d; })
+      .catch(() => { this._accP = null; this.setState({ accData: { missing: true } }); return null; });
+    return this._accP;
+  }
+  async loadRecap(id) {
+    this.loadBorderDB(); this.loadEvInfo(); this.loadAccuracy();
+    try {
+      if (!this._histIdx) this._histIdx = await fetch(this.HIST + '/index.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []);
+    } catch (e) { this._histIdx = []; }
+    const ids = (this._histIdx || []).map(Number).filter(Boolean).sort((a, b) => b - a);
+    let want = +(id || this.state.recapEv) || 0;
+    if (!ids.includes(want)) want = 0;
+    this._recapCache = this._recapCache || {};
+    const now = Date.now();
+    const ended = h => h && h.aggregateAt && Date.parse(h.aggregateAt) + 3600e3 < now;
+    const get = async i => {
+      if (!this._recapCache[i]) this._recapCache[i] = fetch(this.HIST + '/' + i + '.json', { cache: 'force-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      return this._recapCache[i];
+    };
+    this.setState({ recapLoad: true, recapErr: '', recapIds: ids });
+    try {
+      if (!want) {   // 預設最近一期已結算的（最新的那期通常還在進行中）
+        for (const i of ids) { const h = await get(i); if (ended(h)) { want = i; break; } }
+        if (!want) want = ids[0] || 0;
+      }
+      const h = want ? await get(want) : null;
+      if (!h) throw new Error('沒有這一期的榜線紀錄');
+      this.setState({ recapLoad: false, recapEv: String(want), recapHist: h });
+    } catch (e) {
+      this.setState({ recapLoad: false, recapErr: (e && e.message) || '載入失敗' });
+    }
+  }
+  /* 某一期的時序整理成圖表用的列：[[ms, {tier: score}]]，先修單調 */
+  recapRows(h) {
+    if (this._recapRowsFor === h) return this._recapRows;
+    const tiers = h.tiers || [];
+    const fixed = this.fixMono(this.histT100(h), tiers.length);
+    this._recapRowsFor = h;
+    this._recapRows = fixed.map(s => { const o = {}; tiers.forEach((t, i) => { if (s[i + 1] != null) o[t] = s[i + 1]; }); return [s[0] * 1000, o]; });
+    return this._recapRows;
+  }
+  recapVals(s) {
+    const h = s.recapHist, pid = s.pid;
+    const ids = s.recapIds || [];
+    const DB = (typeof BORDERS_DB !== 'undefined') ? BORDERS_DB : null;
+    const ei = this.eiRows ? this.eiRows() : [];
+    const nameOf = i => { const e = ei.find(x => x.id === i) || (DB && (DB.events || []).find(x => +x.id === i)); return e ? e.name : ''; };
+    const chipSt = on => on ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' };
+    const chips = ids.map(i => Object.assign({ v: String(i), n: '第 ' + i + ' 期' + (nameOf(i) ? '　' + nameOf(i) : ''), on: String(i) === String(s.recapEv) }, chipSt(String(i) === String(s.recapEv))));
+    const out = { recapLoad: !!s.recapLoad, recapErr: s.recapErr || '', recapHas: !!h, recapChips: chips, recapIsJp: this.SRV === 'jp' };
+    if (!h) return out;
+    const id = +h.eventId, now = Date.now();
+    const st = Date.parse(h.startAt), en = Date.parse(h.aggregateAt), days = (en - st) / 86400e3;
+    const dbEv = DB && (DB.events || []).find(e => +e.id === id);
+    const eiEv = ei.find(e => e.id === id);
+    const type = eiEv ? (this.DV_EV_TYPES[eiEv.type] || [eiEv.type])[0] : (dbEv ? dbEv.type : '');
+    const unit = eiEv ? (eiEv.unit ? this.UNITS[eiEv.unit].n : (eiEv.type === 'world_bloom' ? 'World Link' : '混活')) : (dbEv ? dbEv.unit : '');
+    const fd = ms => { const t = new Date(ms); return (t.getMonth() + 1) + '/' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); };
+    out.recapTitle = h.name || ('第 ' + id + ' 期'); out.recapNo = '第 ' + id + ' 期'; out.recapMeta = [type, unit, days.toFixed(2) + ' 天'].filter(Boolean).join('・');
+    out.recapRange = fd(st) + ' – ' + fd(en); out.recapEnded = en + 3600e3 < now; out.recapLive = !out.recapEnded;
+    out.recapLogo = eiEv && eiEv.abn ? this.ASSET + '/event/' + eiEv.abn + '/logo/logo.webp' : ''; out.recapHasLogo = !!out.recapLogo;
+    const rows = this.recapRows(h), last = rows.length ? rows[rows.length - 1][1] : {};
+    const dbB = DB && (DB.borders || []).find(b => +b.id === id);
+    const ref = this.bdbRef(id);
+    const acc = s.accData && s.accData.events ? s.accData.events.find(e => +e.id === id) : null;
+    const accT = spec => acc ? (acc.tiers || []).find(t => t.spec === spec) : null;
+    const tiers = this.RECAP_TIERS.filter(t => (h.tiers || []).includes(t));
+    const pct = (a, b) => (!a || !b) ? '' : ((a / b - 1) >= 0 ? '+' : '') + ((a / b - 1) * 100).toFixed(1) + '%';
+    out.recapTiers = tiers.map(t => {
+      const i = DB ? (DB.tiers || []).indexOf(t) : -1;
+      const official = dbB && i >= 0 && dbB.t && dbB.t[i] ? dbB.t[i] : null;
+      const fin = official || last[t] || null;
+      const r = ref && ref.by[t];
+      const a = accT('T' + t), p50 = a && a.at && a.at['0.5'];
+      return { t: 'T' + this.n(t), final: fin ? this.n(fin) : '—', src: official ? '官方' : (fin ? '最後快照' : ''),
+        ref: r ? this.short(r.med) : '—', refPct: r && fin ? pct(fin, r.med) : '', refColor: r && fin ? (fin >= r.med ? '#e0576a' : '#2fb37a') : 'var(--text-3)',
+        pred: p50 ? this.short(p50.pred) : '—', predErr: p50 && fin ? pct(p50.pred, fin) : '', on: +s.recapTier === t, v: String(t), ...chipSt(+s.recapTier === t) };
+    });
+    out.recapRefNote = ref ? ('歷屆：同型態同日數的前 ' + ref.n + ' 期（半衰期加權）') : '歷屆：同型態同日數的樣本不足 3 期';
+    out.recapAccNote = acc ? '預測：活動進行到 50% 時、沒看過這一期的模型給的終線' : '預測：這一期還沒有留一法回測資料';
+    // 走勢圖與每日增量（選定段位）
+    const tier = tiers.includes(+s.recapTier) ? +s.recapTier : (tiers.includes(1000) ? 1000 : tiers[0]);
+    out.recapTierName = 'T' + this.n(tier);
+    const list = rows.map(r => r[1][tier] != null ? [r[0], r[1][tier]] : null).filter(Boolean);
+    out.recapChartOk = list.length >= 2;
+    if (out.recapChartOk) {
+      const c = this.mkChart(list, { key: 'recap' });
+      Object.keys(c).forEach(k => { out['recapC' + k[0].toUpperCase() + k.slice(1)] = c[k]; });
+      const at = ms => { let v = null; for (const x of list) { if (x[0] <= ms) v = x[1]; else break; } return v; };
+      const nd = Math.ceil(days), bars = [];
+      for (let d = 0; d < nd; d++) {
+        const a = d === 0 ? (at(st) || 0) : at(st + d * 86400e3), b = at(Math.min(en, st + (d + 1) * 86400e3));   // 開跑那一刻每個段位都是 0
+        bars.push(a != null && b != null ? b - a : null);
+      }
+      const mx = Math.max(1, ...bars.filter(x => x != null));
+      out.recapDays = bars.map((g, d) => ({ d: '第 ' + (d + 1) + ' 天', g: g == null ? '—' : this.short(g), w: g == null ? '2%' : Math.max(2, Math.round(g / mx * 100)) + '%', tip: g == null ? '沒有紀錄' : this.n(g) }));
+      const lastDay = bars[bars.length - 1], avg = bars.filter(x => x != null).reduce((a, b) => a + b, 0) / Math.max(1, bars.filter(x => x != null).length);
+      out.recapDayNote = lastDay != null && avg ? ('最後一天漲 ' + this.short(lastDay) + '，是平均每天的 ' + (lastDay / avg).toFixed(1) + ' 倍') : '';
+    }
+    // 前百
+    const rk = h.ranks || [], rl = rk.length ? rk[rk.length - 1] : null;
+    out.recapTop1 = rl && rl[1] ? this.n(rl[1]) : '—'; out.recapTop100 = rl && rl[100] ? this.n(rl[100]) : (last[100] ? this.n(last[100]) : '—');
+    const ro = h.roster || [];
+    if (ro.length >= 2) {
+      const fin = ro[ro.length - 1], tEnd = fin[0] * 1000;
+      let before = null; for (const r of ro) { if (r[0] * 1000 <= tEnd - 86400e3) before = r; else break; }
+      if (before) { const was = new Set(before.slice(1)); out.recapIn24 = fin.slice(1).filter(u => !was.has(u)).length + ' 人'; }
+      const allU = new Set(); ro.forEach(r => r.slice(1).forEach(u => allU.add(u)));
+      out.recapEverTop = allU.size + ' 人';
+    }
+    // 我的這期：先看公用前百名單（有名次與分數），再看這台裝置自己記的快照
+    out.recapMe = null; out.recapMeHas = false;
+    if (pid) {
+      const ui = (h.users || []).findIndex(u => this.sameUid(u, pid));
+      const sAt = {}; rk.forEach(r => { sAt[r[0]] = r; });
+      const rank = [], score = [];
+      if (ui >= 0) ro.forEach(r => { const pos = r.indexOf(ui, 1); if (pos < 1) return; rank.push([r[0] * 1000, pos]); const sr = sAt[r[0]]; if (sr && sr[pos] != null) score.push([r[0] * 1000, sr[pos]]); });
+      let local = [];
+      try { local = JSON.parse(localStorage.getItem(this.snapKey(id)) || '[]') || []; } catch (e) { local = []; }
+      const ls = local.filter(x => x[2] != null).map(x => [x[0], x[2]]);
+      const useScore = score.length >= 2 ? score : ls;
+      if (rank.length >= 2 || useScore.length >= 2) {
+        out.recapMeHas = true;
+        const finalRank = rank.length ? rank[rank.length - 1][1] : null, best = rank.length ? Math.min(...rank.map(x => x[1])) : null;
+        out.recapMeFinal = finalRank ? ('第 ' + finalRank + ' 名') : (ls.length ? '前百以外' : '—');
+        out.recapMeBest = best ? ('最高第 ' + best + ' 名') : '';
+        out.recapMeScore = useScore.length ? this.n(useScore[useScore.length - 1][1]) : '—';
+        out.recapMeSrc = rank.length >= 2 ? '來源：公用前百名單（只涵蓋你在前百的時段）' : '來源：這台裝置開著網站時記下的分數';
+        out.recapMeChartOk = useScore.length >= 2;
+        if (out.recapMeChartOk) { const c = this.mkChart(useScore, { key: 'recapme' }); Object.keys(c).forEach(k => { out['recapM' + k[0].toUpperCase() + k.slice(1)] = c[k]; }); }
+        out.recapMeRankOk = rank.length >= 2;
+        if (out.recapMeRankOk) { const c = this.mkChart(rank, { key: 'recaprk', invert: true, fmt: v => '#' + v }); Object.keys(c).forEach(k => { out['recapR' + k[0].toUpperCase() + k.slice(1)] = c[k]; }); }
+      }
+    }
+    out.recapMeNone = !!pid && !out.recapMeHas; out.recapNoPid = !pid;
+    // 預測 vs 實際（留一法）
+    const taus = (s.accData && s.accData.taus) || [0.25, 0.5, 0.75, 0.9];
+    out.recapAccHas = !!acc;
+    out.recapAccHead = taus.map(t => Math.round(t * 100) + '%');
+    const specs = ['T100', 'T500', 'T1000', 'T2000', 'T5000', 'T10000', 'R1', 'R10', 'R50'];
+    out.recapAcc = !acc ? [] : specs.map(sp => { const rec = (sp[0] === 'R' ? acc.ranks : acc.tiers || []).find(x => x.spec === sp); if (!rec) return null;
+      return { spec: sp[0] === 'R' ? '第 ' + sp.slice(1) + ' 名' : sp, final: this.short(rec.final), cells: taus.map(t => { const p = rec.at && rec.at[String(t)]; if (!p) return { v: '—', e: '', color: 'var(--text-3)' };
+        const e = p.pred / rec.final - 1; return { v: this.short(p.pred), e: (e >= 0 ? '+' : '') + (e * 100).toFixed(1) + '%', color: Math.abs(e) < 0.05 ? '#2fb37a' : Math.abs(e) < 0.15 ? '#e0a030' : '#e0576a' }; }) }; }).filter(Boolean);
+    out.recapShareUrl = location.origin + location.pathname + '?page=recap&recapEv=' + id;
+    return out;
+  }
+  accVals(s) {
+    const D = s.accData;
+    const out = { accLoad: !D, accMissing: !!(D && D.missing), accHas: !!(D && D.summary) };
+    if (!out.accHas) return out;
+    const taus = D.taus || [0.25, 0.5, 0.75, 0.9];
+    const tau = taus.map(String).includes(String(s.accTau)) ? String(s.accTau) : '0.5';
+    const chipSt = on => on ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' };
+    out.accTaus = taus.map(t => Object.assign({ v: String(t), n: '進度 ' + Math.round(t * 100) + '%', on: String(t) === tau }, chipSt(String(t) === tau)));
+    const pct = v => v == null ? '—' : (v * 100).toFixed(1) + '%';
+    const T = (D.summary.tier || {})[tau] || {}, R = (D.summary.rank || {})[tau] || {};
+    const all = T.all || {};
+    out.accCards = [
+      { k: '模型（中位誤差）', v: pct(all.medAPE), sub: '主榜各段位，' + (all.n || 0) + ' 個預測' },
+      { k: '線性外推', v: pct(all.linMedAPE), sub: '照當時平均速度推到結束' },
+      { k: '賽前先驗', v: pct(all.priorMedAPE), sub: '同型態歷屆終線的加權平均' },
+      { k: 'P10～P90 涵蓋率', v: all.cover != null ? Math.round(all.cover * 100) + '%' : '—', sub: '理想值 80%' },
+    ];
+    const GL = { A: 'T100～T300', B: 'T400～T1000', C: 'T1500～T5000', D: 'T10000～T20000', E: 'T30000 以上', r_top: '第 1～3 名', r_mid: '第 10～20 名', r_low: '第 30 名以後' };
+    const row = (g, v) => ({ g: GL[g] || g, n: v.n, med: pct(v.medAPE), mean: pct(v.mape), lin: pct(v.linMedAPE), prior: pct(v.priorMedAPE), cover: v.cover != null ? Math.round(v.cover * 100) + '%' : '—', color: v.medAPE < 0.05 ? '#2fb37a' : v.medAPE < 0.15 ? '#e0a030' : '#e0576a' });
+    out.accGroups = ['A', 'B', 'C', 'D', 'E'].filter(g => T[g]).map(g => row(g, T[g]));
+    out.accRankGroups = ['r_top', 'r_mid', 'r_low'].filter(g => R[g]).map(g => row(g, R[g]));
+    out.accRankAll = R.all ? pct(R.all.medAPE) : '—';
+    out.accEvents = (D.events || []).slice().sort((a, b) => b.id - a.id).map(e => {
+      const cell = sp => { const rec = (e.tiers || []).find(x => x.spec === sp); const p = rec && rec.at && rec.at[tau]; if (!rec || !p) return { v: '—', e: '', color: 'var(--text-3)' };
+        const err = p.pred / rec.final - 1; return { v: this.short(p.pred) + ' / ' + this.short(rec.final), e: (err >= 0 ? '+' : '') + (err * 100).toFixed(1) + '%', color: Math.abs(err) < 0.05 ? '#2fb37a' : Math.abs(err) < 0.15 ? '#e0a030' : '#e0576a' }; };
+      return { id: e.id, name: e.name || ('第 ' + e.id + ' 期'), meta: [e.type, e.unit, e.days ? e.days + ' 天' : ''].filter(Boolean).join('・'), c100: cell('T100'), c1000: cell('T1000'), c5000: cell('T5000'), c10000: cell('T10000') };
+    });
+    out.accBuilt = D.builtFrom || ''; out.accBuiltAt = D.builtAt ? D.builtAt.slice(0, 10) : '';
+    out.accN = (D.events || []).length;
+    return out;
   }
 
   /* 點數（beta）。beta 沒開時後端會回 enabled:false,前端據此整塊不顯示 ——
@@ -8577,6 +8767,8 @@ class Component extends DCLogic {
     if (p === 'calendar') this.loadSongs();
     if (p === 'whatsnew') this.loadSyslog();
     if (p === 'status') this.loadStatus();
+    if (p === 'recap') setTimeout(() => this.loadRecap(), 0);   // 等網址帶來的 recapEv 先套上
+    if (p === 'accuracy') this.loadAccuracy();
     const show = () => this.setState(Object.assign(pre, { page: p, sheet: false, cmdk: false, homeCfg: false }), () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
@@ -8631,7 +8823,7 @@ class Component extends DCLogic {
   /* ---------- 網址同步 ----------
      分頁、子分頁與篩選寫進網址：連結可以分享（例：?page=calc&ctab=moyu、?page=cards&cdUnit=ln&cdRar=4），
      重新整理不會掉狀態，返回鍵能回上一頁。只寫「不是預設值」的鍵，網址才不會一長串。 */
-  URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'],
+  URL_KEYS = { calc: ['ctab'], analysis: ['anaTab'], rank: ['rankTab'], collect: ['colTab', 'cq'], songs: ['sq', 'su', 'sv', 'ssort', 'songView'], gacha: ['gq', 'gt'], recap: ['recapEv', 'recapTier'], accuracy: ['accTau'],
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
     guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'],
@@ -9382,16 +9574,16 @@ class Component extends DCLogic {
       if (!ev.id || (!startMs && !endMs)) return null;   // 沒活動資料就不猜
       const A = (n, p, patch) => ({ n, p, patchJson: JSON.stringify(patch || {}) });
       const nextEv = (s.evList || []).filter(e => e.start_at && new Date(e.start_at).getTime() > now).sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0] || null;
-      const preActs = [A('活動加分卡', 'event'), A('當期卡池', 'gacha'), A('體力回復試算', 'calc', { ctab: 'stam' }), A('上期回顧', 'analysis')];
+      const preActs = [A('活動加分卡', 'event'), A('當期卡池', 'gacha'), A('體力回復試算', 'calc', { ctab: 'stam' }), A('上期回顧', 'recap')];
       if (startMs && now < startMs) return { k: 'pre', label: '開跑前', tone: '#3f8cf3', title: '距開始 ' + this.dur(startMs - now) + '　·　' + hhmm(startMs) + ' 開跑',
         tip: '先看加分卡與卡池，把隊伍組好；開跑前把體力回滿、卡池要抽的先抽，開跑第一天就能上速度。', acts: preActs };
       if (endMs && now >= endMs) {
         const annDone = annMs ? now >= annMs : now >= endMs + 600000;
         if (nextEv) { const ns = new Date(nextEv.start_at).getTime();
           return { k: 'next', label: '下期預告', tone: '#9a63d8', title: (nextEv.name || '下期活動') + '　·　' + hhmm(ns) + ' 開始（' + this.dur(ns - now) + '）',
-            tip: '結算後的空檔：領獎、補豆森素材、算下期抽卡預算；下期加分卡公布後再組隊。', acts: [A('最終榜線', 'rank', { rankTab: 'border' }), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('抽卡預算', 'calc', { ctab: 'gacha' }), A('活動日曆', 'calendar')] }; }
+            tip: '結算後的空檔：領獎、補豆森素材、算下期抽卡預算；下期加分卡公布後再組隊。', acts: [A('最終榜線', 'rank', { rankTab: 'border' }), A('上期回顧', 'recap', { recapEv: String(ev.id || '') }), A('抽卡預算', 'calc', { ctab: 'gacha' }), A('活動日曆', 'calendar')] }; }
         return { k: 'post', label: annDone ? '已結算' : '結算中', tone: '#8b93ac', title: annDone ? '名次已公布，可以領獎了' : '結算後約 10 分鐘公布最終名次',
-          tip: '看最終榜線與自己的名次曲線，順手存一張分享圖；下期時間出來會顯示在這裡。', acts: [A('最終榜線', 'rank', { rankTab: 'border' }), A('上期回顧', 'analysis', { pastEv: String(ev.id || '') }), A('收藏與待辦', 'favs'), A('活動日曆', 'calendar')] };
+          tip: '看最終榜線與自己的名次曲線，順手存一張分享圖；下期時間出來會顯示在這裡。', acts: [A('最終榜線', 'rank', { rankTab: 'border' }), A('上期回顧', 'recap', { recapEv: String(ev.id || '') }), A('收藏與待辦', 'favs'), A('活動日曆', 'calendar')] };
       }
       if (endMs && endMs - now < 86400000) return { k: 'final', label: '最後衝刺', tone: '#ff5c7a', title: '剩 ' + this.dur(endMs - now) + '　·　' + hhmm(endMs) + ' 結算',
         tip: '最後一天榜線通常再漲一到兩成：盯目標分段的時速，別等結算前一小時才補分；結算前 10 分鐘的場次可能算不進去。', acts: [A('分段榜線', 'rank', { rankTab: 'border' }), A('摸魚表', 'calc', { ctab: 'moyu' }), A('跑榜工作室', 'deckpro'), A('活動試算', 'calc', { ctab: 'plan' })] };
@@ -10302,6 +10494,9 @@ class Component extends DCLogic {
       isCredits: s.page === 'credits',
       isStatus: s.page === 'status',
       ...(s.page === 'status' ? this.statusVals(s) : {}),
+      isRecap: s.page === 'recap', isAccuracy: s.page === 'accuracy',
+      ...(s.page === 'recap' ? this.recapVals(s) : {}),
+      ...(s.page === 'accuracy' ? this.accVals(s) : {}),
       creditEditors: this.CREDIT_EDITORS,
       creditAdvisors: this.CREDIT_ADVISORS,
       creditWorks: this.CREDIT_WORKS.map(w => ({
@@ -12722,6 +12917,11 @@ class Component extends DCLogic {
       onGuideReset: () => { try { localStorage.removeItem('sekai-guide-hide'); } catch (e) {} this.setState({ guideHide: false, guide: { step: 0 }, homeCfg: false }); },
       onTeleToggle: () => { try { if (localStorage.getItem('sekai-tele') === '0') localStorage.removeItem('sekai-tele'); else localStorage.setItem('sekai-tele', '0'); } catch (e) {} this.setState({ teleV: (s.teleV || 0) + 1 }); },
       onStatusReload: () => this.loadStatus(true),
+      onRecapPick: e => { const v = e.currentTarget.dataset.v; this.setState({ recapEv: v }); this.loadRecap(v); },
+      onRecapTier: e => this.setState({ recapTier: +e.currentTarget.dataset.v }),
+      onRecapShare: () => { const u = location.origin + location.pathname + '?page=recap&recapEv=' + (s.recapEv || ''); try { navigator.clipboard.writeText(u); this._toast('已複製回顧連結'); } catch (e) { prompt('複製連結', u); } },
+      onAccTau: e => this.setState({ accTau: e.currentTarget.dataset.v }),
+      onAccEvGo: e => { const v = e.currentTarget.dataset.v; this.setState({ recapEv: v }); this.go('recap'); },
       onPipeCheck: async () => { try { await this.api('/admin/pipeline', { method: 'POST', body: {} }); this._toast('已重新查過資料管線'); this.loadStatus(true); } catch (e) { this._toast('重查失敗：' + ((e && e.message) || '')); } },
       onClearLocal: () => {
         if (!confirm('要清除這個瀏覽器裡本站的所有資料嗎？（綁定的 ID、勾選的收集、B30 成績、版面設定…）建議先匯出備份。')) return;
