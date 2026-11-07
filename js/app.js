@@ -632,6 +632,7 @@ class Component extends DCLogic {
     evInfo: null, evInfoErr: '', eiId: 0, eiQ: '',   // 活動資料（data/event-info.js）與活動資料頁選的那期
     sched: null, schedErr: '', schedTab: 'ev', schedCat: 'all', schedMore: 0, schedMiss: false,   // 排程預測（data/schedule-forecast.js）
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
+    rs: '',   // 進階計算（跑榜工作室）分享連結帶來的設定：base64url JSON，原封不動轉給內嵌的 index.html?embed=calc
     luTr: null, luTrLoad: false, luTrErr: '', luTrId: '',   // 玩家查詢：活動即時紀錄（Haruki 追蹤器）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
@@ -2795,7 +2796,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=7c180c5f22';
+      el.src = './js/core.js?v=70f26ec847';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -8606,6 +8607,7 @@ class Component extends DCLogic {
     if (p === 'songs') { this.loadSongs(true); this.loadSongBpm(); this.loadConsts(); }
     if (p === 'calc' || p === 'deckpro') this.loadEpSongs();
     if (p === 'rank') setTimeout(() => this.loadContrib(), 0);   // 群眾榜線（分段榜線分頁用）
+    if (p !== 'deckpro' && this.state.rs) pre.rs = '';   // 分享連結帶來的設定只在這一次進頁有效
     if (p === 'collect') this.loadCollect();
     if (p === 'chars') { this.loadChars(); this.loadCards(); }
     if (p === 'cards') { this.loadCards(); this.loadCardX(); }
@@ -8733,7 +8735,7 @@ class Component extends DCLogic {
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
     guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'],
-    lookup: ['luId'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'], gachasim: ['gsGid'] };
+    lookup: ['luId'], deckpro: ['rs'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'], gachasim: ['gsGid'] };
   /* 路徑形式的網址（/songs、/recap?recapEv=183）：正式站一律用；本機 python http.server 只會給 /app.html，
      所以主機名是 localhost／127.0.0.1 且目前在 .html 上時維持 ?page=（重新整理才不會 404）。讀網址兩種都認得。 */
   _pathMode() {
@@ -10213,6 +10215,7 @@ class Component extends DCLogic {
       })(),
       gsxMore: (s.gsxRows || []).length > 30, isCalc: s.page === 'calc',
       isDeckPro: s.page === 'deckpro',
+      deckProSrc: './index.html?embed=calc' + (s.rs ? '&rs=' + encodeURIComponent(s.rs) + '#run-studio' : ''),   // 分享連結：跑榜工作室直接套用
       isShop: s.page === 'shop',
       shopSrc: './index.html?embed=shop' + (this.SRV === 'jp' ? '&srv=jp' : ''),   // 日服：內嵌的儲值分析改讀 data/billing-jp.js
       isB30: s.page === 'b30',

@@ -3528,6 +3528,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this._fillPresets();
                 this._ready = true;
                 await this.onEvent();
+                await this._applyUrlPreset();   // 分享連結（?rs=…）帶來的設定
                 this._loadJPEvents();   // 日服活動：背景載入，完成後補進下拉
             },
             async _loadJPEvents() {
@@ -3997,17 +3998,64 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 el.innerHTML = '<option value="">' + (list.length ? '— 選一組 —' : '— 尚未儲存 —') + '</option>' + list.map(p => `<option value="${esc(p.n)}">${esc(p.n)}</option>`).join('');
                 if (sel != null) el.value = sel;
             },
-            savePreset() {
-                const name = (window.prompt('幫這組設定取個名字', '') || '').trim(); if (!name) return;
+            _presetVals() {
                 const v = { ev: this._evId, mode: (document.querySelector('input[name="rsMode"]:checked') || {}).value || 'bonus', owned: this._ownedOn() };
                 this._presetFields.forEach(id => { const el = document.getElementById(id); if (el) v[id] = el.value; });
+                return v;
+            },
+            savePreset() {
+                const name = (window.prompt('幫這組設定取個名字', '') || '').trim(); if (!name) return;
+                const v = this._presetVals();
                 const list = this._presets().filter(p => p.n !== name).concat([{ n: name, t: Date.now(), v }]).slice(-12);
                 try { localStorage.setItem(this.PRESET_KEY, JSON.stringify(list)); } catch (e) {}
                 this._fillPresets(name);
             },
             async loadPreset() {
                 const el = document.getElementById('rsPreset'), p = this._presets().find(x => x.n === (el && el.value)); if (!p) return;
-                const v = p.v || {};
+                await this._applyPreset(p.v || {});
+            },
+            /* 分享連結：整組設定（活動、模式、綜合力、加成、選歌、難度、火、技能欄）編成 base64url JSON 放在網址的 rs 參數，
+               開 /deckpro?rs=… 會自動套用。連結指向 App 的進階計算頁（index.html 內嵌在那裡）；內容只有表單值，沒有任何個人資料。 */
+            _encodePreset(v) { try { return btoa(unescape(encodeURIComponent(JSON.stringify(v)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } },
+            _decodePreset(s) {
+                try {
+                    const b = String(s || '').replace(/-/g, '+').replace(/_/g, '/'), pad = b + '==='.slice((b.length + 3) % 4);
+                    const v = JSON.parse(decodeURIComponent(escape(atob(pad))));
+                    if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+                    const out = {};
+                    if (v.ev != null && /^\d{1,5}$/.test(String(v.ev))) out.ev = +v.ev;
+                    if (['bonus', 'opt'].includes(String(v.mode))) out.mode = String(v.mode);
+                    out.owned = !!v.owned;
+                    this._presetFields.forEach(id => { if (v[id] != null) out[id] = String(v[id]).slice(0, 40); });
+                    return out;
+                } catch (e) { return null; }
+            },
+            shareLink() {
+                const enc = this._encodePreset(this._presetVals()); if (!enc) return '';
+                let origin = location.origin;
+                try { if (window.top !== window && document.referrer) origin = new URL(document.referrer).origin; } catch (e) {}
+                return origin + '/deckpro?rs=' + enc;
+            },
+            sharePreset() {
+                const url = this.shareLink(); if (!url) return;
+                const hint = document.getElementById('rsShareHint');
+                const say = m => { if (hint) { hint.textContent = m; setTimeout(() => { if (hint.textContent === m) hint.textContent = ''; }, 5000); } };
+                const fallback = () => { try { window.prompt('複製這個連結分享給隊友', url); } catch (e) {} };
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => say('已複製分享連結：對方打開就是這組設定'), fallback);
+                    else fallback();
+                } catch (e) { fallback(); }
+            },
+            /* 開頁時網址帶 rs=…（分享連結）：資料就緒後套上，並提示來源 */
+            async _applyUrlPreset() {
+                let rs = '';
+                try { rs = new URLSearchParams(location.search).get('rs') || ''; } catch (e) {}
+                if (!rs) return;
+                const v = this._decodePreset(rs); if (!v) return;
+                await this._applyPreset(v);
+                const hint = document.getElementById('rsShareHint'); if (hint) hint.textContent = '已套用分享連結帶來的設定（活動 #' + (v.ev || '—') + '）；想留著就按「＋ 存目前設定」。';
+            },
+            async _applyPreset(v) {
                 const sel = document.getElementById('rsEvent'); if (sel && v.ev != null) { sel.value = String(v.ev); this._evId = +v.ev; }
                 const m = document.querySelector('input[name="rsMode"][value="' + (v.mode || 'bonus') + '"]'); if (m) m.checked = true;
                 const own = document.getElementById('rsOwnedOnly'); if (own) own.checked = !!v.owned;
