@@ -29,6 +29,7 @@ import { handleHaruki, handleHarukiBot, harukiLive } from './haruki.js';
 import { dueTasks, finishTask, addEvent, claimTask, reclaimStaleTasks } from './db.js';
 import { runApplyReview } from './review.js';
 import { handleTelemetry, teleMaintain, stateGet } from './telemetry.js';
+import { handleContrib } from './contrib.js';
 import { checkPipeline, pipelineStatus } from './pipeline.js';
 
 const API = 'https://api.hisekai.org/tw/event/live/top100';
@@ -371,6 +372,8 @@ export default {
     }
     /* 匿名使用統計與前端錯誤回報：不帶 cookie、text/plain、只收本站 Origin（telemetry.js） */
     if (p === '/t') return handleTelemetry(req, env, url);
+    /* 玩家榜線回報（群眾榜線）：POST 收一筆、GET 給這一期每個人最新的點（contrib.js） */
+    if (p === '/contrib') return handleContrib(req, env, url);
     /* 系統狀態（公開、只讀）：資料管線最近一次檢查 + 逐局追蹤器自己的狀態。給網站的「系統狀態」頁。 */
     if (p === '/ops/status') {
       if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });

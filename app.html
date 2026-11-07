@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=ed50edfa98" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=4f6f1ca9ba" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -3762,6 +3762,35 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </div>
     <sc-if value="{{ wlRMore }}">
           <button type="button" onClick="{{ onWlMoreR }}" style="width:100%;margin-top:9px;padding:10px;border:1px solid var(--border);border-radius:13px;background:var(--card);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">顯示完整前百 ▾</button>
+    </sc-if>
+    <sc-if value="{{ isBorderTab }}">
+    <section class="set-card" style="margin-top:12px">
+      <div class="set-h"><b>玩家回報的榜線</b><span>官方只給 T100～T50000 這幾條；中間的名次由看榜的玩家匿名回報補上</span></div>
+      <sc-if value="{{ ctHas }}">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px">
+          <span style="padding:4px 11px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);color:var(--text-2)">回報 {{ ctPlayers }} 人</span>
+          <span style="padding:4px 11px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);color:var(--text-2)">{{ ctN }} 筆</span>
+          <span style="padding:4px 11px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);color:var(--text-2)">最近 1 小時 {{ ctHour }} 筆</span>
+        </div>
+        <sc-if value="{{ ctHasRows }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+          <sc-for list="{{ ctRows }}" as="r">
+            <div style="border:1px solid var(--border);border-radius:13px;padding:9px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">{{ r.rank }}</div><div style="font-family:'M PLUS Rounded 1c';font-size:16px;font-weight:800;color:{{ r.color }}">{{ r.score }}</div><div style="font-size:10.5px;color:var(--text-3)">{{ r.n }}</div></div>
+          </sc-for>
+        </div>
+        </sc-if>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ ctNote }}</div>
+        <details style="margin-top:8px"><summary style="font-size:12px;color:var(--text-2);cursor:pointer">最近的回報點（每人最新一筆，名次由小到大）</summary>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;margin-top:8px;font-size:12px">
+            <sc-for list="{{ ctPts }}" as="p"><div style="display:flex;justify-content:space-between;gap:6px;padding:5px 9px;border:1px solid var(--border);border-radius:9px"><span style="font-weight:700;color:var(--ink)">{{ p.rank }}</span><span style="font-family:'M PLUS Rounded 1c'">{{ p.score }}</span><span style="color:var(--text-3)">{{ p.ago }}</span></div></sc-for>
+          </div>
+        </details>
+      </sc-if>
+      <sc-if value="{{ ctNone }}"><div style="font-size:12px;color:var(--text-3);line-height:1.6">這一期還沒有人回報。綁定 Player ID 的玩家看榜時會自動送一筆，人一多中間的榜線就長出來了。</div></sc-if>
+      <sc-if value="{{ ctErr }}"><div style="font-size:12px;color:var(--text-3)">回報資料暫時拿不到。</div></sc-if>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px;color:var(--text-2)"><span>{{ ctMine }}</span><button type="button" class="set-btn" onClick="{{ onContribToggle }}">{{ contribBtn }}</button></div>
+      <div style="font-size:10.5px;color:var(--text-3);margin-top:6px;line-height:1.6">只送期數、名次、分數；Player ID 只用來雜湊辨識「同一個人」、每 30 分鐘一筆，不存 ID、不存 IP。</div>
+    </section>
     </sc-if>
     </sc-if>
 
@@ -9949,6 +9978,10 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </div>
       <div class="set-row">
+        <div class="set-k">榜線回報<small>綁定 Player ID 後，看榜時把你的名次與分數匿名送到本站，幫大家補出前百以外的榜線（排名頁「分段榜線」可看）；只送期數、名次、分數，不存 ID、不存 IP</small></div>
+        <div class="set-v"><button type="button" class="set-btn" onClick="{{ onContribToggle }}">{{ contribBtn }}</button></div>
+      </div>
+      <div class="set-row">
         <div class="set-k">說明<small>功能引導、鍵盤快捷鍵、教學大全</small></div>
         <div class="set-v" style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="set-btn" onClick="{{ onGuideReset }}">重新看一次功能引導</button>
@@ -10031,6 +10064,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">第 100 名</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapTop100 }}</div></div>
         <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">最後 24 小時擠進前百</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapIn24 }}</div></div>
         <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">曾進過前百</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapEverTop }}</div></div>
+        <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">玩家回報</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapCt }}</div></div>
       </div>
     </section>
 
@@ -12767,7 +12801,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ed50edfa98"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4f6f1ca9ba"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

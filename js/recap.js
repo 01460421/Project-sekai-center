@@ -40,6 +40,9 @@ export function recapMembers() {
         const h = want ? await get(want) : null;
         if (!h) throw new Error('沒有這一期的榜線紀錄');
         this.setState({ recapLoad: false, recapEv: String(want), recapHist: h });
+        // 這一期的玩家回報（群眾榜線）：人數顯示在前百那一區；失敗就不顯示
+        fetch(this.GAMES_API + '/contrib?ev=' + want + '&srv=tw', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : null)
+          .then(d => { if (String(this.state.recapEv) === String(want)) this.setState({ recapContrib: d || null }); }).catch(() => {});
       } catch (e) {
         this.setState({ recapLoad: false, recapErr: (e && e.message) || '載入失敗' });
       }
@@ -122,6 +125,7 @@ export function recapMembers() {
         const allU = new Set(); ro.forEach(r => r.slice(1).forEach(u => allU.add(u)));
         out.recapEverTop = allU.size + ' 人';
       }
+      { const c = s.recapContrib; out.recapCt = c && +c.ev === id && c.players ? this.n(c.players) + ' 人' : '—'; }
       // 我的這期：先看公用前百名單（有名次與分數），再看這台裝置自己記的快照
       out.recapMe = null; out.recapMeHas = false;
       if (pid) {
