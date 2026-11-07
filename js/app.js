@@ -4537,8 +4537,41 @@ class Component extends DCLogic {
       probe('Haruki 日服追蹤器', this.GAMES_API + '/haruki/jp/event/live/border'),
       probe('行事曆訂閱源', this.GAMES_API + '/cal/sekai.ics'),
     ]);
+    /* Worker 向 GitHub 查不到時（沒設 GITHUB_TOKEN 時 Cloudflare 共用出口 IP 常被限流），瀏覽器自己直接向 GitHub 查一次：
+       同一套判定規則（下面 pipeSummarize），只是沒有「通知站方」那一段。 */
+    if (ops && (!ops.pipeline || !(ops.pipeline.items || []).length)) {
+      try {
+        const r = await this.fetchT('https://api.github.com/repos/01460421/Project-sekai-center/actions/runs?per_page=100', { headers: { Accept: 'application/vnd.github+json' } }, 12000);
+        if (r.ok) { const j = await r.json(); ops.pipeline = { checkedAt: Date.now(), items: this.pipeSummarize(j.workflow_runs || []), error: (ops.pipeline && ops.pipeline.error) || '', via: 'browser' }; }
+      } catch (e) {}
+    }
     this._statusBusy = false;
     this.setState({ stBusy: false, stOps: ops, stProbes: probes, stAt: Date.now(), stErr: ops && ops.error ? '系統狀態服務無法連線：' + ops.error : '' });
+  }
+  /* 跟 worker/src/pipeline.js 的 summarize() 同一套規則（改一邊要改另一邊）：排程工作多久沒成功算異常 */
+  PIPE_SCHEDULED = { 'billing-refresh.yml': ['儲值商品與每日資料更新', '每日', 36], 'ep-songs-refresh.yml': ['EP 曲庫與圖鑑索引更新', '每日', 36], 'bot-deploy.yml': ['機器人部署', '每日', 36], 'border-snapshot.yml': ['榜線快照', '每 30 分鐘', 3], 'canary.yml': ['正式站探針', '每小時', 3] };
+  pipeSummarize(runs) {
+    const LABELS = { 'ci.yml': 'CI 測試', 'og-refresh.yml': '分享預覽圖', 'worker-deploy.yml': 'Worker 部署', 'worker-push-setup.yml': 'Worker 推播設定', 'd1-migrate.yml': 'D1 遷移', 'live-games.yml': '逐局紀錄（手動）' };
+    const BAD = { failure: 1, timed_out: 1, startup_failure: 1 }, now = Date.now(), by = {};
+    runs.forEach(r => {
+      const file = String(r.path || '').split('/').pop(); if (!file) return;
+      const w = by[file] || (by[file] = { name: r.name || file, latest: null, lastDone: null, lastOk: null });
+      const t = Date.parse(r.updated_at || r.created_at || 0) || 0, it = { id: r.id, status: r.status, conclusion: r.conclusion || null, t, url: r.html_url, title: r.display_title };
+      if (!w.latest || t > w.latest.t) w.latest = it;
+      if (r.status === 'completed' && (!w.lastDone || t > w.lastDone.t)) w.lastDone = it;
+      if (r.status === 'completed' && r.conclusion === 'success' && (!w.lastOk || t > w.lastOk.t)) w.lastOk = it;
+    });
+    const files = Object.keys(this.PIPE_SCHEDULED).concat(Object.keys(by).filter(f => !this.PIPE_SCHEDULED[f]));
+    const rank = { fail: 0, stale: 1, ok: 2 };
+    return files.map(file => {
+      const w = by[file] || { name: file }, spec = this.PIPE_SCHEDULED[file];
+      let state = 'ok';
+      if (w.lastDone && BAD[w.lastDone.conclusion]) state = 'fail';
+      if (spec && (!w.lastOk || (now - w.lastOk.t) / 3600e3 > spec[2])) state = state === 'fail' ? 'fail' : 'stale';
+      return { file, label: spec ? spec[0] : (LABELS[file] || w.name), scheduled: !!spec, every: spec ? spec[1] : '', maxAgeH: spec ? spec[2] : null, state,
+        running: !!(w.latest && w.latest.status !== 'completed'), lastOkAt: w.lastOk ? w.lastOk.t : null, lastConclusion: w.lastDone ? w.lastDone.conclusion : null,
+        lastUrl: (w.lastDone || w.latest || {}).url || null, lastRunId: w.lastDone ? w.lastDone.id : null, lastTitle: (w.lastDone || w.latest || {}).title || '' };
+    }).sort((a, b) => (b.scheduled - a.scheduled) || (rank[a.state] - rank[b.state]) || a.label.localeCompare(b.label));
   }
   statusVals(s) {
     const ops = s.stOps || {}, pipe = ops.pipeline || {}, tr = ops.tracker || null, now = Date.now();
@@ -4564,7 +4597,8 @@ class Component extends DCLogic {
     const bad = sched.filter(x => x.state !== '正常').length + probes.filter(p => p.text !== '正常').length + (tr && !trOk ? 1 : 0) + (ops.error ? 1 : 0);
     return {
       stBusy: !!s.stBusy, stErr: s.stErr || '', stHas: !!s.stOps, stAt: s.stAt ? ('瀏覽器探測於 ' + ago(s.stAt)) : '',
-      stCheckedAt: pipe.checkedAt ? ago(pipe.checkedAt) : '尚未檢查', stPipeErr: pipe.error ? '上次向 GitHub 查詢失敗：' + pipe.error : '',
+      stCheckedAt: pipe.checkedAt ? (ago(pipe.checkedAt) + (pipe.via === 'browser' ? '，由瀏覽器直接向 GitHub 查' : '')) : '尚未檢查',
+      stPipeErr: pipe.error ? ('伺服器上次向 GitHub 查詢失敗：' + pipe.error + (pipe.via === 'browser' ? '（下面是瀏覽器自己查的；站方要收到通知得在 Worker 設 GITHUB_TOKEN）' : '')) : '',
       stSched: sched, stOther: other, stOtherN: other.length, stProbes: probes, stTracker: trRows, stTrackerColor: trOk ? '#2fb37a' : '#e0576a', stTrackerText: trOk ? '正常' : '異常',
       stFiles: files, stFilesN: files.length, stSummary: s.stOps ? (bad ? ('有 ' + bad + ' 項異常') : '全部正常') : '檢查中…', stSummaryColor: bad ? '#e0576a' : '#2fb37a',
       stCanPipe: !!(s.me && s.me.is_admin),

@@ -49,6 +49,10 @@ jobs:
           if bad: print("::warning::資料管線異常：" + "、".join(bad))
           '
           curl -fsS -m 20 -o /dev/null -w "/cal/sekai.ics %{http_code}\n" https://games.project-sekai-center.com/cal/sekai.ics
+      - name: 資料管線（排程工作最新一次失敗、或太久沒成功就讓這支變紅；規則同 worker/src/pipeline.js）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${{ github.repository }}/actions/runs?per_page=100" | python3 tools/pipeline-check.py
       - name: 上游 HiSekai（壞了只警告：不是我們能修的，網站有 Haruki 備援）
         continue-on-error: true
         run: |
