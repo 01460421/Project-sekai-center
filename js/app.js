@@ -617,7 +617,7 @@ class Component extends DCLogic {
   ohOf(mode) { const v = this.OH[mode]; return v == null ? 15 : v; }
   DIFFS = [['E','EASY','#54ba54'],['N','NORMAL','#42abd4'],['H','HARD','#eba041'],['X','EXPERT','#e0576a'],['M','MASTER','#9a63d8'],['A','APPEND','#f0619e']];
   DIFF_NAME = {E:'EASY',N:'NORMAL',H:'HARD',X:'EXPERT',M:'MASTER',A:'APPEND'};
-  DIFF_COLOR = {E:'#54ba54',N:'#42abd4',H:'#eba041',X:'#e0576a',M:'#9a63d8',A:'#f0619e'};
+  DIFF_COLOR = {E:'#54ba54',N:'#42abd4',H:'#eba041',X:'#e0576a',M:'#8a50d6',A:'#f0619e'};
   PRESETS = {
     t100:  { n:'衝 T100',  power:320000, bonus:380, energy:10, skill:2.88, s6:2.88, mode:'multi', song:74, diff:'M', goal:3000000, scoreMode:'calc' },
     casual:{ n:'輕鬆玩',   power:150000, bonus:120, energy:1,  skill:2,   s6:2,   mode:'solo',  song:1,  diff:'X', goal:300000,  scoreMode:'calc' }
@@ -1240,6 +1240,18 @@ class Component extends DCLogic {
     else { const k = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(str); if (!k) return '#fff'; r = +k[1]; g = +k[2]; b = +k[3]; }
     const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     return (0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)) > 0.215 ? '#1b2140' : '#fff';   // 0.215 是白字與深字對比相等的亮度
+  }
+  /* 遊戲屬性色、技能分類色這些拿來當「文字」太淺（可愛粉在白底對比只有 2.4）：
+     混一點 --ink 進去——淺色主題的 ink 是深藍，深色主題是近白，所以同一個寫法在兩個主題都會往可讀的方向走。
+     越淺的顏色混越多。回傳的是 color-mix() 字串，只能給 CSS 用，不能給 canvas。 */
+  txt(c) {
+    const str = String(c || '').trim();
+    if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(str)) return str;
+    let h = str.slice(1); if (h.length === 3) h = h.split('').map(x => x + x).join('');
+    const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    const L = 0.2126 * f(parseInt(h.slice(0, 2), 16)) + 0.7152 * f(parseInt(h.slice(2, 4), 16)) + 0.0722 * f(parseInt(h.slice(4, 6), 16));
+    const k = L > 0.5 ? 38 : L > 0.3 ? 50 : L > 0.15 ? 66 : 84;
+    return 'color-mix(in oklab,' + str + ' ' + k + '%,var(--ink))';
   }
   /* 手機的日曆議程：本月每天「開始」的卡池；點一列等於點那一天 */
   calAgenda() {
@@ -4667,7 +4679,7 @@ class Component extends DCLogic {
   statusVals(s) {
     const ops = s.stOps || {}, pipe = ops.pipeline || {}, tr = ops.tracker || null, now = Date.now();
     const ago = ms => { if (!ms) return '—'; const m = Math.max(0, Math.round((now - ms) / 60000)); return m < 1 ? '剛剛' : m < 60 ? m + ' 分鐘前' : m < 48 * 60 ? Math.round(m / 60) + ' 小時前' : Math.round(m / 1440) + ' 天前'; };
-    const col = { ok: '#2fb37a', stale: '#e0a030', fail: '#e0576a' }, txt = { ok: '正常', stale: '太久沒成功', fail: '失敗' };
+    const col = { ok: 'var(--ok)', stale: 'var(--warn)', fail: 'var(--bad)' }, txt = { ok: '正常', stale: '太久沒成功', fail: '失敗' };
     const raw = pipe.items || [];
     const row = it => ({ label: it.label, every: it.every || '依需要', state: txt[it.state] || it.state, color: col[it.state] || 'var(--text-3)', ago: it.lastOkAt ? ago(it.lastOkAt) : '沒有成功紀錄', running: it.running ? '執行中' : '', url: it.lastUrl || 'https://github.com/01460421/Project-sekai-center/actions' });
     const sched = raw.filter(it => it.scheduled).map(row), other = raw.filter(it => !it.scheduled).map(row);
@@ -4684,14 +4696,14 @@ class Component extends DCLogic {
       const d = Date.parse(AT[f] + 'T00:00:00+08:00'), days = Math.max(0, Math.floor((now - d) / 86400000));
       return { f, at: AT[f], days: days === 0 ? '今天' : days + ' 天前', color: days > 30 ? 'var(--text-3)' : 'var(--ink)' };
     });
-    const probes = (s.stProbes || []).map(p => ({ name: p.name, text: p.ok ? '正常' : '異常', color: p.ok ? '#2fb37a' : '#e0576a', ms: p.ms + ' ms', note: p.note || '' }));
+    const probes = (s.stProbes || []).map(p => ({ name: p.name, text: p.ok ? '正常' : '異常', color: p.ok ? 'var(--ok)' : 'var(--bad)', ms: p.ms + ' ms', note: p.note || '' }));
     const bad = sched.filter(x => x.state !== '正常').length + probes.filter(p => p.text !== '正常').length + (tr && !trOk ? 1 : 0) + (ops.error ? 1 : 0);
     return {
       stBusy: !!s.stBusy, stErr: s.stErr || '', stHas: !!s.stOps, stAt: s.stAt ? ('瀏覽器探測於 ' + ago(s.stAt)) : '',
       stCheckedAt: pipe.checkedAt ? (ago(pipe.checkedAt) + (pipe.via === 'browser' ? '，由瀏覽器直接向 GitHub 查' : '')) : '尚未檢查',
       stPipeErr: pipe.error ? ('伺服器上次向 GitHub 查詢失敗：' + pipe.error + (pipe.via === 'browser' ? '（下面是瀏覽器自己查的；站方要收到通知得在 Worker 設 GITHUB_TOKEN）' : '')) : '',
-      stSched: sched, stOther: other, stOtherN: other.length, stProbes: probes, stTracker: trRows, stTrackerColor: trOk ? '#2fb37a' : '#e0576a', stTrackerText: trOk ? '正常' : '異常',
-      stFiles: files, stFilesN: files.length, stSummary: s.stOps ? (bad ? ('有 ' + bad + ' 項異常') : '全部正常') : '檢查中…', stSummaryColor: bad ? '#e0576a' : '#2fb37a',
+      stSched: sched, stOther: other, stOtherN: other.length, stProbes: probes, stTracker: trRows, stTrackerColor: trOk ? 'var(--ok)' : 'var(--bad)', stTrackerText: trOk ? '正常' : '異常',
+      stFiles: files, stFilesN: files.length, stSummary: s.stOps ? (bad ? ('有 ' + bad + ' 項異常') : '全部正常') : '檢查中…', stSummaryColor: bad ? 'var(--bad)' : 'var(--ok)',
       stCanPipe: !!(s.me && s.me.is_admin),
     };
   }
@@ -4724,7 +4736,7 @@ class Component extends DCLogic {
   loadRecapMod() {
     if (this._rcMod === true) return Promise.resolve(true);
     if (this._rcMod) return this._rcMod;
-    this._rcMod = import('./js/recap.js?v=95adb2b607').then(m => { Object.assign(this, m.recapMembers.call(this)); this._rcMod = true; this.setState({ rcMod: true }); return true; })
+    this._rcMod = import('./js/recap.js?v=c24cd20218').then(m => { Object.assign(this, m.recapMembers.call(this)); this._rcMod = true; this.setState({ rcMod: true }); return true; })
       .catch(e => { this._rcMod = null; this.teleErr('module recap.js：' + ((e && e.message) || ''), 'dat'); this.setState({ rcMod: false, recapLoad: false, recapErr: '程式載入失敗，請重新整理後再試', accData: { missing: true } }); return false; });
     return this._rcMod;
   }
@@ -6602,7 +6614,7 @@ class Component extends DCLogic {
 
     if (p === 'cards') {
       const X = s.cardX, cards = s.rateCards || [], chars = s.rateChars || [];
-      const ATTR = [['cool', '帥氣', '#4d8ef5'], ['happy', '快樂', '#ffaa1c'], ['mysterious', '神秘', '#9d62d8'], ['cute', '可愛', '#ff6ba0'], ['pure', '純真', '#7fcf3f']];   // 順序照 cards-index 的 ATTRS
+      const ATTR = [['cool', '帥氣', this.txt('#4d8ef5')], ['happy', '快樂', this.txt('#ffaa1c')], ['mysterious', '神秘', this.txt('#9d62d8')], ['cute', '可愛', this.txt('#ff6ba0')], ['pure', '純真', this.txt('#7fcf3f')]];   // 順序照 cards-index 的 ATTRS；文字安全色
       const RAR = { 1: '★1', 2: '★2', 3: '★3', 4: '★4', 9: '生日' };
       const charOf = id => chars.find(c => c[0] === id) || [id, '#' + id, 5];
       let all = cards.filter(r => r[8]);
@@ -7182,7 +7194,7 @@ class Component extends DCLogic {
     const s = this.state, f = s.dollF || 'all', all = s.dolls || [];
     const now = new Date(), cur = now.getFullYear() + '/' + String(now.getMonth() + 1).padStart(2, '0');
     const rows = all.filter(d => f === 'all' ? true : f === 'CFES' ? (d.type === 'CFES' || d.type === '初始衣裝') : f === '普限' ? d.type === '普限' : d.round === +f);
-    const TYPE = { CFES: ['CFES 彩色祭', '#9d62d8'], '初始衣裝': ['初始衣裝', '#4d8ef5'], '普限': ['普通限定', '#ff6ba0'] };
+    const TYPE = { CFES: ['CFES 彩色祭', this.txt('#9d62d8')], '初始衣裝': ['初始衣裝', this.txt('#4d8ef5')], '普限': ['普通限定', this.txt('#ff6ba0')] };
     const chips = [['all', '全部'], ['CFES', 'CFES'], ['普限', '普限'], ['1', '普限 輪 1'], ['2', '普限 輪 2'], ['3', '普限 輪 3'], ['4', '普限 輪 4']].map(([v, n]) => this._chip(v, n, f));
     return {
       dollChips: chips, dollEmpty: !all.length, dollN: rows.length,
@@ -7303,8 +7315,8 @@ class Component extends DCLogic {
      技能分類照經典版 CardModule.SKILL_CAT（以 skillId 對照官方技能表）。 */
   CL_CAT = { 1: 'score', 2: 'score', 3: 'score', 4: 'score', 5: 'judge', 6: 'judge', 7: 'judge', 8: 'heal', 9: 'heal', 10: 'heal', 11: 'perfect', 12: 'cfes_life', 13: 'good', 14: 'birthday',
     15: 'unit', 16: 'unit', 17: 'unit', 18: 'unit', 19: 'unit', 22: 'bfes_char', 23: 'bfes_ref', 24: 'bfes_vs' };
-  CL_GROUP = { score: ['分數提升', '#4d8ef5'], judge: ['判定強化', '#1565c0'], heal: ['體力回復', '#00897b'], perfect: ['P分', '#2e7d32'], cfes_life: ['七彩血分', '#6a1b9a'], good: ['七彩good以上', '#8e24aa'],
-    birthday: ['生日', '#d81b60'], unit: ['團分', '#00838f'], bfes_char: ['絢爛角色', '#c62828'], bfes_ref: ['絢爛吸技', '#ad1457'], bfes_vs: ['絢爛虛擬', '#e65100'] };
+  CL_GROUP = { score: ['分數提升', this.txt('#4d8ef5')], judge: ['判定強化', this.txt('#1565c0')], heal: ['體力回復', this.txt('#00897b')], perfect: ['P分', this.txt('#2e7d32')], cfes_life: ['七彩血分', this.txt('#6a1b9a')], good: ['七彩good以上', this.txt('#8e24aa')],
+    birthday: ['生日', this.txt('#d81b60')], unit: ['團分', this.txt('#00838f')], bfes_char: ['絢爛角色', this.txt('#c62828')], bfes_ref: ['絢爛吸技', this.txt('#ad1457')], bfes_vs: ['絢爛虛擬', this.txt('#e65100')] };   // 文字安全色（txt）
   clView() {
     const s = this.state, cards = s.rateCards || [], chars = s.rateChars || [], X = s.cardX;
     const ready = cards.length > 0 && !!X;
@@ -8042,7 +8054,7 @@ class Component extends DCLogic {
     out.eiUnit = ev.unit ? this.UNITS[ev.unit].n : (ev.type === 'world_bloom' ? 'World Link' : '混活');
     out.eiLogo = ev.abn ? this.ASSET + '/event/' + ev.abn + '/logo/logo.webp' : ''; out.eiHasLogo = !!ev.abn;
     out.eiBg = ev.abn ? this.ASSET + '/event/' + ev.abn + '/screen/bg.webp' : '';
-    const phase = now < ev.s ? ['未開始', '距開始 ' + this.dur(ev.s - now), '#8b93ac'] : now < ev.a ? ['進行中', '距結算 ' + this.dur(ev.a - now), '#2f9e57'] : now < ev.r ? ['結算中', '排名公布 ' + f(ev.r), '#b07500'] : now < ev.c ? ['已結算', '活動結束 ' + f(ev.c), '#d6336c'] : ['已結束', fd(ev.s) + ' – ' + fd(ev.c), '#5d6884'];
+    const phase = now < ev.s ? ['未開始', '距開始 ' + this.dur(ev.s - now), '#8b93ac'] : now < ev.a ? ['進行中', '距結算 ' + this.dur(ev.a - now), 'var(--ok)'] : now < ev.r ? ['結算中', '排名公布 ' + f(ev.r), '#b07500'] : now < ev.c ? ['已結算', '活動結束 ' + f(ev.c), '#d6336c'] : ['已結束', fd(ev.s) + ' – ' + fd(ev.c), '#5d6884'];
     out.eiPhase = phase[0]; out.eiPhaseSub = phase[1]; out.eiPhaseColor = phase[2];
     out.eiRange = fd(ev.s) + ' – ' + fd(ev.c);
     out.eiPrevN = prev ? '← 第 ' + prev.id + ' 期' : ''; out.eiPrevId = prev ? prev.id : 0; out.eiNextN = next ? '第 ' + next.id + ' 期 →' : ''; out.eiNextId = next ? next.id : 0;
@@ -8099,7 +8111,7 @@ class Component extends DCLogic {
   /* ===== 理論技能倍率表 =====
      數字在建置時就算好（tools/build-skill-table.py → data/skill-table.js）：日服 cards master 有 34 MB，
      不可能在瀏覽器裡算；這裡只負責把兩服的結果排成表、把選中的格攤成兩排卡。 */
-  SM_ATTR = { cute: ['可愛', '#ff6ba0'], cool: ['帥氣', '#4d8ef5'], pure: ['純真', '#7fcf3f'], happy: ['快樂', '#ffaa1c'], mysterious: ['神秘', '#9d62d8'] };
+  SM_ATTR = { cute: ['可愛', this.txt('#ff6ba0')], cool: ['帥氣', this.txt('#4d8ef5')], pure: ['純真', this.txt('#7fcf3f')], happy: ['快樂', this.txt('#ffaa1c')], mysterious: ['神秘', this.txt('#9d62d8')] };   // 文字安全色（txt）
   SM_SKT = { 15: '團分', 16: '團分', 17: '團分', 18: '團分', 19: '團分', 22: '角色等級型', 23: '吸技', 24: '混團' };
   loadSkillTable() {
     return this.dbRun('skillTable', async () => {
@@ -8198,7 +8210,7 @@ class Component extends DCLogic {
       const a = tw ? tw.m : null, b = jp ? jp.m : null;
       const d = (a != null && b != null) ? Math.round((b - a) * 100) / 100 : 0;
       const on = s.smPick === k, me = mine(k);
-      return { k, tw: fmt(a), jp: fmt(b), delta: d > 0 ? '+' + d.toFixed(2) : '', jpColor: d > 0 ? '#e0533a' : 'var(--text-3)',
+      return { k, tw: fmt(a), jp: fmt(b), delta: d > 0 ? '+' + d.toFixed(2) : '', jpColor: d > 0 ? this.txt('#e0533a') : 'var(--text-3)',
         mine: hasOwn ? (me && me.cards.length === 5 ? '我 ' + fmt(me.m) : '我 —') : '',
         bg: on ? 'color-mix(in oklab,var(--accent) 14%,transparent)' : 'transparent', ring: on ? 'inset 0 0 0 2px var(--accent)' : 'none' };
     };
@@ -8374,7 +8386,7 @@ class Component extends DCLogic {
     out.qzStrikes = [0, 1, 2].map(i => ({ bg: i < 3 - q.strikes ? '#e0576a' : 'var(--border)' }));
     out.qzHasTimer = s.qzTime > 0; out.qzLeft = Math.ceil(q.left || 0) + ' 秒';
     out.qzLeftPct = s.qzTime > 0 ? Math.max(0, Math.min(100, (q.left || 0) / s.qzTime * 100)) : 100;
-    out.qzLeftColor = (q.left || 0) < 10 && s.qzTime > 0 ? '#e0576a' : 'var(--accent)';
+    out.qzLeftColor = (q.left || 0) < 10 && s.qzTime > 0 ? 'var(--bad)' : 'var(--accent)';
     out.qzLoading = !!q.loading;
     const c = q.crop;
     const filt = { none: '', gray: 'grayscale(1)', invert: 'invert(1)', hue: 'hue-rotate(180deg)' }[q.distort] || '';
@@ -9543,7 +9555,7 @@ class Component extends DCLogic {
       .map(({ g, a, b }) => {
         const tn = this.tone(g.t), left = Math.max(1, Math.ceil((b.getTime() + 86399000 - now) / 86400000));
         return { id: g.id, n: g.n, t: tn.label, bg: tn.bg, fg: tn.fg, ch: g.ch || '—', chSd: this.chSdList(g.ch),
-          range: this.md(a) + ' – ' + this.md(b), left: left <= 1 ? '最後一天' : '剩 ' + left + ' 天', leftFg: left <= 1 ? '#e0576a' : 'var(--accent-deep)',
+          range: this.md(a) + ' – ' + this.md(b), left: left <= 1 ? '最後一天' : '剩 ' + left + ' 天', leftFg: left <= 1 ? 'var(--bad)' : 'var(--accent-deep)',
           note: g.note || '', main: (evId && String(g.eid) === evId) ? '本期活動池' : '' };
       });
     const NTAG = { information: ['公告', '#7fb4f7'], event: ['活動', '#ff9db4'], gacha: ['招募', '#c39df2'], music: ['樂曲', '#5ec9f2'], campaign: ['企劃', '#ffb86b'], update: ['更新', '#3ee0a8'], bug: ['問題', '#e0576a'] };
@@ -9981,7 +9993,7 @@ class Component extends DCLogic {
     const sAll = this.filteredSongs(), sPer = 30;
     const sPages = Math.max(1, Math.ceil(sAll.length / sPer));
     const sp = Math.min(s.sp, sPages);
-    const dColor = { easy: '#3fbf57', normal: '#4599e8', hard: '#f0a020', expert: '#f45c9a', master: '#a24df0', append: '#ee4499' };
+    const dColor = { easy: '#3fbf57', normal: '#4599e8', hard: '#f0a020', expert: '#f45c9a', master: '#8e3ce6', append: '#ee4499' };   // master 壓深一點：白字對比 4.3 → 5.3
     const dOrder = ['easy', 'normal', 'hard', 'expert', 'master', 'append'];
     const songRows = sAll.slice((sp - 1) * sPer, sp * sPer).map(x => {
       const ab = this.songAbn(x);
@@ -10908,7 +10920,7 @@ class Component extends DCLogic {
           dashNoTop: !(ov.ai && ov.ai.top && ov.ai.top.length),
           dashUserRows: ((D.users && D.users.users) || []).map(u => ({
             name: u.name || '(未命名)', email: u.email || '', status: u.status,
-            statusFg: u.status === 'approved' ? '#3ea76a' : u.status === 'pending' ? '#ffb86b' : '#e0576a',
+            statusFg: u.status === 'approved' ? 'var(--ok)' : u.status === 'pending' ? 'var(--warn)' : 'var(--bad)',
             admin: u.is_admin ? '管理員' : '', when: u.created_at ? this.ago(u.created_at * 1000) : '',
           })),
           dashWatchRows: ((D.watches && D.watches.watches) || []).map(w => ({
@@ -11203,7 +11215,7 @@ class Component extends DCLogic {
               wEventRows: (s.wEvents || []).slice(0, 10).map(e => ({
                 title: e.title || '', when: e.created_at ? this.ago(e.created_at * 1000) : '',
                 mailed: e.mailed_at ? '已寄出' : (e.mail_error ? '寄信失敗' : '待寄出'),
-                mailedFg: e.mailed_at ? '#3ea76a' : (e.mail_error ? '#e0576a' : 'var(--text-3)'),
+                mailedFg: e.mailed_at ? 'var(--ok)' : (e.mail_error ? 'var(--bad)' : 'var(--text-3)'),
               })),
               wNoEvents: !(s.wEvents || []).length,
             };
@@ -11412,7 +11424,7 @@ class Component extends DCLogic {
             // 歷史同型態中位數,純對照。預測明顯落在歷史區間外時把顏色點出來,
             // 提醒使用者這期偏冷/偏熱(或是預測本身有問題),但不去動預測值。
             ref: r.refMed == null ? '' : ('史 ' + this.short(r.refMed)),
-            refFg: r.refPos === 'low' ? '#e0576a' : r.refPos === 'high' ? '#3ea76a' : 'var(--text-3)',
+            refFg: r.refPos === 'low' ? 'var(--bad)' : r.refPos === 'high' ? 'var(--ok)' : 'var(--text-3)',
             // 中位數單看很容易被當成「應該會落在這」,但同型態之間離散度其實很大
             // (WL 的 T100 歷史值域從 3,649 萬到 1.11 億),所以把區間一起帶在提示裡
             refTip: r.refMed == null ? '' : ('同型態近 8 期落在 ' + this.short(r.refLo) + ' ～ ' + this.short(r.refHi)
@@ -11421,7 +11433,7 @@ class Component extends DCLogic {
             gapFg: r.gap == null ? 'var(--text-3)' : (r.gap <= 0 ? '#3ea76a' : 'var(--text)'),
             need: r.needH == null ? '—' : hm(r.needH),
             mark: r.reach === true ? '可達' : r.reach === false ? '差距中' : '—',
-            markFg: r.reach === true ? '#3ea76a' : r.reach === false ? '#e0576a' : 'var(--text-3)'
+            markFg: r.reach === true ? 'var(--ok)' : r.reach === false ? 'var(--bad)' : 'var(--text-3)'
           }))
         };
       })(),
@@ -11442,7 +11454,7 @@ class Component extends DCLogic {
           avg: st.average != null ? this.n(Math.round(st.average)) : '—',
           speed: sp != null ? this.short(sp) + '/h' : '—' });
         const momTxt = A.mom == null ? '—' : A.mom >= 1.15 ? '加速中' : A.mom <= 0.85 ? '降速中' : '穩定';
-        const momFg = A.mom == null ? 'var(--text-3)' : A.mom >= 1.15 ? '#3ea76a' : A.mom <= 0.85 ? '#e0576a' : 'var(--text-2)';
+        const momFg = A.mom == null ? 'var(--text-3)' : A.mom >= 1.15 ? 'var(--ok)' : A.mom <= 0.85 ? 'var(--bad)' : 'var(--text-2)';
         return {
           anaPlayerOk: true, anaPlayerMsg: '',
           anaPickRows: opts,
@@ -11459,7 +11471,7 @@ class Component extends DCLogic {
               anaPSeries: true, anaPNoSeries: false, anaPSeriesMsg: '',
               anaPSeriesMeta: S.n + ' 筆 · 最佳 #' + S.best + ' · 最低 #' + S.worst,
               anaPRankDelta: (() => { const d = S.rank.delta; return d < 0 ? ('↑ 進步 ' + (-d) + ' 名') : d > 0 ? ('↓ 退步 ' + d + ' 名') : '名次持平'; })(),
-              anaPRankFg: S.rank.delta < 0 ? '#3ea76a' : S.rank.delta > 0 ? '#e0576a' : 'var(--text-2)',
+              anaPRankFg: S.rank.delta < 0 ? 'var(--ok)' : S.rank.delta > 0 ? 'var(--bad)' : 'var(--text-2)',
               anaPHasScore: !!S.score,
               anaPScoreGain: S.score ? S.score.gain : '—',
               ...g(S.rank, 'anaPRk'), ...g(S.score, 'anaPSc')
@@ -11473,7 +11485,7 @@ class Component extends DCLogic {
             { l: '預估休息', v: A.restH == null ? '—' : (hm(A.restH) + ' / 天'), fg: 'var(--text)' },
             { l: '預測終分', v: A.proj == null ? '—' : this.short(A.proj), fg: 'var(--ink)' },
             { l: '預測名次', v: A.projRank == null ? '—' : ('#' + A.projRank + (A.projRank < A.me.rank ? '　↑' + (A.me.rank - A.projRank) : A.projRank > A.me.rank ? '　↓' + (A.projRank - A.me.rank) : '　持平')),
-              fg: A.projRank == null ? 'var(--text-3)' : A.projRank < A.me.rank ? '#3ea76a' : A.projRank > A.me.rank ? '#e0576a' : 'var(--text)' },
+              fg: A.projRank == null ? 'var(--text-3)' : A.projRank < A.me.rank ? 'var(--ok)' : A.projRank > A.me.rank ? 'var(--bad)' : 'var(--text)' },
             { l: '場均在前百', v: A.pctile == null ? '—' : ('第 ' + A.pctile + ' 百分位'), fg: 'var(--text)' }
           ],
           anaBorderGap: (A.borders || []).map(t => {
@@ -11554,7 +11566,7 @@ class Component extends DCLogic {
               ev: '#' + r.ev.id, name: r.ev.name || '',
               rank: '#' + r.rank, score: this.n(r.score),
               delta: d == null ? '—' : d > 0 ? ('↑' + d) : d < 0 ? ('↓' + (-d)) : '持平',
-              dFg: d == null ? 'var(--text-3)' : d > 0 ? '#3ea76a' : d < 0 ? '#e0576a' : 'var(--text-2)',
+              dFg: d == null ? 'var(--text-3)' : d > 0 ? 'var(--ok)' : d < 0 ? 'var(--bad)' : 'var(--text-2)',
               bar: (Math.max(0, 101 - r.rank)) + '%'
             };
           })
@@ -12066,7 +12078,7 @@ class Component extends DCLogic {
               wlCkOn: true,
               wlCkMsg: '你持有的 ★4／生日卡共 ' + ck.total + ' 張，其中本章同團 ' + ck.unitCards + ' 張，'
                 + (ck.attrHave >= 5 ? '五色屬性齊全 ✓' : ('目前 ' + ck.attrHave + ' 色，缺 ' + ck.missing.join('、'))),
-              wlCkRows: ck.byAttr.map(a => ({ n: a.n, v: a.c + ' 張', fg: a.c ? 'var(--accent-deep)' : '#e0576a' })),
+              wlCkRows: ck.byAttr.map(a => ({ n: a.n, v: a.c + ' 張', fg: a.c ? 'var(--accent-deep)' : 'var(--bad)' })),
               wlSugOn: !!(sug && sug.team.length),
               wlSugCards: sug ? sug.team.map(c => ({
                 id: c[0], img: this.cardImg(c[8], c[2]), name: c[7],
@@ -12150,7 +12162,7 @@ class Component extends DCLogic {
             tier: 'T' + this.n(tier),
             cells: cells.map(v => ({ v: v != null ? this.short(v) : '—' })),
             diff: diff == null ? '' : (diff >= 0 ? '▲ ' : '▼ ') + this.short(Math.abs(diff)),
-            diffColor: diff == null ? 'var(--text-3)' : diff >= 0 ? '#2f9e57' : '#d6336c'
+            diffColor: diff == null ? 'var(--text-3)' : diff >= 0 ? 'var(--ok)' : 'var(--bad)'
           };
         });
       })(),
