@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=d038dee079" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=4971a87d1a" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -150,8 +150,9 @@ try{var _v=(/(?:^|\s)skin-(literary|stage|notebook|idol|street|park|void|track)(
 <style>
 :root{
 --bg:#eef1f9;--bg-soft:#f6f8fd;--card:#fff;--card-2:#f1f4fb;
---text:#3c455f;--text-2:#5b6480;--text-3:#646d88;--ink:#252e4d;
---accent:#0eb3c5;--accent-deep:#087f8e;
+--text:#3c455f;--text-2:#5b6480;--text-3:#5c657f;--ink:#252e4d;
+--accent:#0eb3c5;--accent-deep:#056a77;
+--ok:#157a50;--warn:#9a6400;--bad:#c43d50;   /* 狀態色（文字用）：淺底 4.5:1 以上 */
 --border:rgba(72,86,133,.13);--border-2:rgba(72,86,133,.26);
 --cta:linear-gradient(135deg,#22c3d6 0%,#3f8cf3 100%);
 --ink-grad:linear-gradient(135deg,#273052 0%,#3b4878 100%);
@@ -162,7 +163,7 @@ try{var _v=(/(?:^|\s)skin-(literary|stage|notebook|idol|street|park|void|track)(
 --sh-sm:0 1px 2px rgba(31,42,80,.04),0 4px 14px rgba(31,42,80,.06);
 --sh-md:0 2px 6px rgba(31,42,80,.06),0 12px 32px rgba(31,42,80,.11);
 --sh-lg:0 8px 20px rgba(31,42,80,.10),0 28px 70px rgba(31,42,80,.2);
---fes-bg:#fff3d4;--fes-fg:#b07500;--lim-bg:#ffe4ec;--lim-fg:#d6336c;--free-bg:#e3f6ea;--free-fg:#1b7f45;--gift-bg:#fde7f0;--gift-fg:#c2185b;--nb-bg:#e8f1ff;--nb-fg:#2a5db0;--ms-bg:#eaf7ec;--ms-fg:#2e7d32;--sup-bg:#fff0e0;--sup-fg:#b4530a;--sel-bg:#efe8ff;--sel-fg:#6a3fc2;--song-bg:#e6f6ff;--song-fg:#0b6fa3;--live-bg:#f3e8ff;--live-fg:#6d28d9;--login-bg:#fff7d6;--login-fg:#8a6100;--cb-bg:#ffe9e0;--cb-fg:#b3431b;
+--fes-bg:#fff3d4;--fes-fg:#b07500;--lim-bg:#ffe4ec;--lim-fg:#c2185b;--free-bg:#e3f6ea;--free-fg:#1b7f45;--gift-bg:#fde7f0;--gift-fg:#c2185b;--nb-bg:#e8f1ff;--nb-fg:#2a5db0;--ms-bg:#eaf7ec;--ms-fg:#2e7d32;--sup-bg:#fff0e0;--sup-fg:#b4530a;--sel-bg:#efe8ff;--sel-fg:#6a3fc2;--song-bg:#e6f6ff;--song-fg:#0b6fa3;--live-bg:#f3e8ff;--live-fg:#6d28d9;--login-bg:#fff7d6;--login-fg:#8a6100;--cb-bg:#ffe9e0;--cb-fg:#b3431b;
 --paid-bg:#fdf7d8;--paid-fg:#9c8300;--bd-bg:#f3e8ff;--bd-fg:#9c53d6;
 --rr-bg:#ffe3de;--rr-fg:#d64533;--wl-bg:#def0ff;--wl-fg:#2277cc;
 --nm-bg:#def5e6;--nm-fg:#2f9e57;--ot-bg:#edf0f7;--ot-fg:#5d6884;
@@ -178,8 +179,9 @@ color-scheme:light;
 @media (prefers-color-scheme:dark){:root:not(.theme-light){
 color-scheme:dark;
 --bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
---text:#ccd3e8;--text-2:#a2abc9;--text-3:#8a93b2;--ink:#eef1fc;
+--text:#ccd3e8;--text-2:#a2abc9;--text-3:#9aa3c2;--ink:#eef1fc;
 --accent:#33cfe0;--accent-deep:#5fd0e6;
+--ok:#4ccf94;--warn:#f0b64a;--bad:#ff8a98;
 --border:rgba(148,163,215,.17);--border-2:rgba(148,163,215,.32);
 --ink-grad:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
 --grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
@@ -194,8 +196,9 @@ color-scheme:dark;
 :root.theme-dark{
 color-scheme:dark;
 --bg:#0c0f1d;--bg-soft:#101529;--card:#161b31;--card-2:#1d2340;
---text:#ccd3e8;--text-2:#a2abc9;--text-3:#8a93b2;--ink:#eef1fc;
+--text:#ccd3e8;--text-2:#a2abc9;--text-3:#9aa3c2;--ink:#eef1fc;
 --accent:#33cfe0;--accent-deep:#5fd0e6;
+--ok:#4ccf94;--warn:#f0b64a;--bad:#ff8a98;
 --border:rgba(148,163,215,.17);--border-2:rgba(148,163,215,.32);
 --ink-grad:linear-gradient(135deg,#232b4e 0%,#39456f 100%);
 --grad-cta:linear-gradient(135deg,#f08fae 0%,#c8628f 100%);
@@ -221,6 +224,18 @@ color-scheme:dark;
 .modal-related{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
 /* ===== 功能家族的分頁籤：同一個側欄入口底下的頁面在頁首切換 ===== */
 .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 16px}
+/* 手機（粗指標）：按鈕至少 32px 高、分頁籤 40px，設定頁的排序小鈕放大；字最小 11px（量過全站手機版有 700 多處 9～10.5px 的字） */
+@media (pointer:coarse){
+  main button{min-height:32px}
+  .subtab{min-height:40px;padding-top:9px;padding-bottom:9px}
+  .set-mv{min-height:32px;padding:6px 11px;font-size:12px}
+  .mk-chip{min-height:34px}
+}
+@media (max-width:640px){
+  main [style*="font-size:9px"],main [style*="font-size:9.5px"],main [style*="font-size:10px"],main [style*="font-size:10.5px"],
+  main [style*="font-size: 9px"],main [style*="font-size: 9.5px"],main [style*="font-size: 10px"],main [style*="font-size: 10.5px"]{font-size:11px!important}
+  main .bot-new,main .car-p,main .car-lock,main .car-rp,main .sei-st b,main .sei-yl,main .sei-xl,main .sei-thl,main .gs-cost,main .gs-kpi span,main .gs-pu,main .gs-nm,main .bp-ct em,main .jn-dk i,main .jn-hint,main .jd-lead,main .cl-rar,main .cl-attr,main .cl-sk4,main .cl-stats span,main .dl-now,main .sm-dl,main .sm-tag,main .sm-no,main .wp-gh small,main .wp-gc small,main .wp-sc-t span,main .wz-stat span,main .wz-stat small,main .wz-tag,main .wz-ch span,main .wz-bd-m small,main .wz-card-t span,main .sm-card,main .srv-lang,main .srv-h,main .srv-seg small,main .srv-note,main .jn-tier b,main .jn-song span,main .jn-soon,main .hp-who,main .hp-who em,main .hp-time,main .skin-opt-n small{font-size:11px}
+}
 .subtab{padding:7px 14px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.2;font-family:inherit;transition:transform .15s,box-shadow .15s,color .25s,scale .18s cubic-bezier(.3,.7,.4,1)}
 .subtab:hover{transform:translateY(-1px);box-shadow:var(--sh-xs)}
 /* ===== 團體主題色：只覆蓋強調色，與配色風格互斥（後者被 unit-* 蓋掉） ===== */
@@ -3301,7 +3316,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
       <div style="border:1px solid var(--border);border-radius:20px;padding:18px 20px;background:var(--card);box-shadow:var(--sh-sm)">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span class="u-whbbb7"></span><span class="u-ffc0">收藏</span><span style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ favN }} 項</span></div>
-        <sc-if value="{{ favEmpty }}"><div class="empty">還沒有收藏。<br>在卡片、角色、家具、歌曲或卡池的詳情視窗按 ☆ 就會出現在這裡。</div></sc-if>
+        <sc-if value="{{ favEmpty }}"><div class="empty">還沒有收藏。<br>在卡片、角色、家具、歌曲或卡池的詳情視窗按 ☆ 就會出現在這裡。<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px"><button type="button" class="set-btn" onClick="{{ onGo }}" data-p="cards">去逛卡片圖鑑</button><button type="button" class="set-btn" onClick="{{ onGo }}" data-p="songs">去逛歌曲</button><button type="button" class="set-btn" onClick="{{ onGo }}" data-p="gacha">去看卡池</button></div></div></sc-if>
         <sc-for list="{{ favGroups }}" as="g" hint-placeholder-count="2">
           <div style="margin-bottom:12px">
             <div style="font-size:11.5px;font-weight:800;color:var(--text-2);margin-bottom:6px">{{ g.label }} <span style="color:var(--text-3);font-weight:600">{{ g.count }}</span></div>
@@ -8183,7 +8198,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <div class="mk-card" style="margin-top:12px">
       <div class="mk-h"><b>情形對照表</b><i>要花多少 LIVE BONUS、喝幾罐</i></div>
       <div class="bp-lbl">{{ bpScTitle }}</div>
-      <div class="bp-scw"><div class="bp-sc">
+      <div class="bp-scw" tabindex="0"><div class="bp-sc">
         <div class="bp-scr bp-th"><span>加成</span><span>情形</span><span>一朵要露水</span><span>只靠自然回復</span><span>只做蛋糕（3 朵）</span><span>做齊家具（283 朵）</span><span>拿滿（400 朵）</span></div>
         <sc-for list="{{ bpScen }}" as="r" hint-placeholder-count="5"><div class="bp-scr" style="background:{{ r.bg }}"><span class="bp-req">{{ r.bon }}</span><span>{{ r.n }}</span><span class="bp-dew">{{ r.perFl }}</span><span class="bp-dew">{{ r.nat }}</span><span class="bp-dew">{{ r.cake }} LB</span><span><b>{{ r.fxLb }} LB</b><em>{{ r.fxCan }}</em></span><span><b>{{ r.mxLb }} LB</b><em>{{ r.mxCan }}</em></span></div></sc-for>
       </div></div>
@@ -8233,7 +8248,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div class="mk-h"><b>生日家具</b><i>{{ bpFxTitle }}</i></div>
       <div class="bp-fx"><sc-for list="{{ bpFx }}" as="x" hint-placeholder-count="5"><div class="bp-fxi"><img src="{{ x.img }}" referrerpolicy="no-referrer" alt="" loading="lazy"><span class="notranslate">{{ x.name }}</span><b>{{ x.costT }}</b></div></sc-for></div>
       <div class="bp-lbl" style="margin-top:12px">{{ bpFxTotal }}</div>
-      <div class="bp-scw"><div class="bp-sc bp-sc5">
+      <div class="bp-scw" tabindex="0"><div class="bp-sc bp-sc5">
         <div class="bp-scr bp-th"><span>家具</span><span>朵數</span><span>累計</span><span>露水（累計）</span><span>LIVE BONUS（累計）</span><span>大罐（累計）</span></div>
         <sc-for list="{{ bpFxRows }}" as="r" hint-placeholder-count="5"><div class="bp-scr"><span class="notranslate">{{ r.name }}</span><span class="bp-req">{{ r.costT }}</span><span>{{ r.cum }}</span><span class="bp-dew">{{ r.dew }}</span><span class="bp-dew">{{ r.lb }}</span><span><b>{{ r.can }}</b></span></div></sc-for>
       </div></div>
@@ -8756,7 +8771,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ dvEmpty }}"><div class="empty loading">資料載入中…</div></sc-if>
     <sc-if value="{{ dvHasErr }}"><button type="button" onClick="{{ onDvRetry }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">{{ dvErr }}</button></sc-if>
     <sc-if value="{{ dvNone }}"><div class="empty">資料裡沒有可畫的期數。</div></sc-if>
-    <div class="dv-wrap" style="position:relative"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas>
+    <div class="dv-wrap" tabindex="0" style="position:relative"><canvas ref="{{ dvRef }}" class="dv-canvas" aria-label="活動分布甘特圖"></canvas>
       <sc-if value="{{ dvTipOn }}"><div style="position:absolute;left:{{ dvTipX }};top:{{ dvTipY }};z-index:3;pointer-events:none;max-width:240px;padding:7px 10px;border-radius:10px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-sm);font-size:12px;line-height:1.5"><div style="font-weight:800;color:var(--ink);display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{ dvTipColor }};flex:none"></span>{{ dvTipN }}</div><div style="color:var(--text-3);font-size:11px">{{ dvTipSub }}</div></div></sc-if>
     </div>
     <div class="u-fcml21">{{ dvMeta }}</div>
@@ -8931,7 +8946,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ wpIsFin }}"><div class="wp-sub" style="margin-bottom:4px">隊長（決定後排的加成角色、隊長加成與主稱號）</div><div class="chips-scroll wp-chips"><sc-for list="{{ wpLeads }}" as="c" hint-placeholder-count="5"><button type="button" class="mk-chip" onClick="{{ onWpLead }}" data-v="{{ c.v }}" style="border-color:{{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></sc-if>
         <sc-if value="{{ wpBonusOn }}">
           <div class="wp-big"><span class="wp-num">{{ wpAllTotal }}</span><span class="wp-of">活動加成合計</span></div>
-          <div class="wp-scroll"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.3fr) repeat(4,minmax(50px,1fr))">
+          <div class="wp-scroll" tabindex="0"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.3fr) repeat(4,minmax(50px,1fr))">
             <div class="wp-gh">主隊</div><div class="wp-gh">活動卡</div><div class="wp-gh">角色</div><div class="wp-gh">稀有度×專精</div><div class="wp-gh">小計</div>
             <sc-for list="{{ wpMainRows }}" as="r" hint-placeholder-count="5">
               <div class="wp-gc l">{{ r.ch }}</div><div class="wp-gc">{{ r.feat }}</div><div class="wp-gc">{{ r.char }}</div><div class="wp-gc">{{ r.rar }}<small>{{ r.mr }}</small></div><div class="wp-gc b">{{ r.sum }}</div>
@@ -8968,7 +8983,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
       <div class="mk-card cv-sec">
         <div class="mk-h"><b>每張卡的綜合力</b><i>基礎＝滿級＋特訓＋前後篇＋專精＋畫布</i></div>
-        <div class="wp-scroll"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.2fr) repeat(5,minmax(64px,1fr))">
+        <div class="wp-scroll" tabindex="0"><div class="wp-grid" style="grid-template-columns:minmax(76px,1.2fr) repeat(5,minmax(64px,1fr))">
           <div class="wp-gh">角色</div><div class="wp-gh">基礎</div><div class="wp-gh">角色等級</div><div class="wp-gh">區域道具</div><div class="wp-gh">大門＋玩偶</div><div class="wp-gh">合計</div>
           <sc-for list="{{ wpRows }}" as="r" hint-placeholder-count="5">
             <div class="wp-gc l">{{ r.ch }}</div><div class="wp-gc">{{ r.base }}</div><div class="wp-gc">{{ r.rank }}<small>{{ r.rankP }}</small></div><div class="wp-gc">{{ r.area }}<small>{{ r.areaP }}</small></div><div class="wp-gc">{{ r.my }}<small>{{ r.myP }}</small></div><div class="wp-gc b">{{ r.total }}</div>
@@ -9016,7 +9031,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div class="mk-card cv-sec">
         <div class="mk-h"><b>哪些組合碰得到上限</b><i>綠底＝達標</i></div>
         <div class="wp-sub">{{ wpMxNote }}</div>
-        <div class="wp-scroll"><div class="wp-grid" style="{{ wpMxGrid }}">
+        <div class="wp-scroll" tabindex="0"><div class="wp-grid" style="{{ wpMxGrid }}">
           <div class="wp-gh">區域道具</div>
           <sc-for list="{{ wpMxCols }}" as="c" hint-placeholder-count="9"><div class="wp-gh">{{ c.n }}<small>{{ c.d }}</small></div></sc-for>
           <sc-for list="{{ wpMxRows }}" as="r" hint-placeholder-count="11">
@@ -9046,7 +9061,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="mk-h"><b>區域道具各等級加成</b><i>
           <button type="button" class="mk-chip" onClick="{{ onWpRef }}" data-v="team">這隊用得到的</button>
           <button type="button" class="mk-chip" onClick="{{ onWpRef }}" data-v="all">全部</button></i></div>
-        <div class="wp-scroll"><div class="wp-grid wp-ref" style="{{ wpRefGrid }}">
+        <div class="wp-scroll" tabindex="0"><div class="wp-grid wp-ref" style="{{ wpRefGrid }}">
           <div class="wp-gh l">道具</div>
           <sc-for list="{{ wpRefHead }}" as="h" hint-placeholder-count="20"><div class="wp-gh">{{ h.n }}</div></sc-for>
           <sc-for list="{{ wpRef }}" as="r" hint-placeholder-count="20">
@@ -9998,7 +10013,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ isRecap }}">
   <div class="set-page" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:14px">
     <sc-if value="{{ recapIsJp }}"><div class="empty">活動回顧目前只有台服資料（公用榜線時序只記台服）。</div></sc-if>
-    <div class="chips-scroll" style="display:flex;gap:7px">
+    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:7px">
       <sc-for list="{{ recapChips }}" as="c" hint-placeholder-count="6">
         <button type="button" onClick="{{ onRecapPick }}" data-v="{{ c.v }}" aria-pressed="{{ c.on }}" style="flex:none;padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">{{ c.n }}</button>
       </sc-for>
@@ -10012,7 +10027,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="flex:1;min-width:200px">
           <div style="font-size:11.5px;color:var(--text-3);font-weight:700">{{ recapNo }}・{{ recapMeta }}</div>
           <div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1.3">{{ recapTitle }}</div>
-          <div style="font-size:12px;color:var(--text-2)">{{ recapRange }}<sc-if value="{{ recapLive }}">　<span style="color:#e0a030;font-weight:700">進行中：這是到目前為止的紀錄</span></sc-if></div>
+          <div style="font-size:12px;color:var(--text-2)">{{ recapRange }}<sc-if value="{{ recapLive }}">　<span style="color:var(--warn);font-weight:700">進行中：這是到目前為止的紀錄</span></sc-if></div>
         </div>
         <button type="button" class="set-btn" onClick="{{ onRecapShare }}">複製回顧連結</button>
       </div>
@@ -10219,7 +10234,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <section class="set-card">
       <div class="set-h"><b>資料管線</b><span>GitHub Actions 的排程工作：每日資料更新、榜線快照、正式站探針。失敗或太久沒成功會通知站方</span></div>
-      <sc-if value="{{ stPipeErr }}"><div style="font-size:12px;color:#e0a030;margin-bottom:6px">{{ stPipeErr }}</div></sc-if>
+      <sc-if value="{{ stPipeErr }}"><div style="font-size:12px;color:var(--warn);margin-bottom:6px">{{ stPipeErr }}</div></sc-if>
       <sc-for list="{{ stSched }}" as="w" hint-placeholder-count="5">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px">
           <span style="width:9px;height:9px;border-radius:50%;background:{{ w.color }};flex:none"></span>
@@ -11052,32 +11067,32 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="display:grid;gap:8px;margin-top:10px">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="width:44px;flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">大小</span>
-            <input type="range" min="4" max="40" step="1" value="{{ stkSize }}" onInput="{{ onStkField }}" data-k="size" data-num="1" style="flex:1;accent-color:var(--accent)">
+            <input type="range" min="4" max="40" step="1" value="{{ stkSize }}" onInput="{{ onStkField }}" data-k="size" data-num="1" aria-label="大小" style="flex:1;accent-color:var(--accent)">
             <span style="width:34px;flex:none;text-align:right;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ stkSize }}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="width:44px;flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">橫向</span>
-            <input type="range" min="0" max="100" step="1" value="{{ stkX }}" onInput="{{ onStkField }}" data-k="x" data-num="1" style="flex:1;accent-color:var(--accent)">
+            <input type="range" min="0" max="100" step="1" value="{{ stkX }}" onInput="{{ onStkField }}" data-k="x" data-num="1" aria-label="橫向位置" style="flex:1;accent-color:var(--accent)">
             <span style="width:34px;flex:none;text-align:right;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ stkX }}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="width:44px;flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">縱向</span>
-            <input type="range" min="0" max="100" step="1" value="{{ stkY }}" onInput="{{ onStkField }}" data-k="y" data-num="1" style="flex:1;accent-color:var(--accent)">
+            <input type="range" min="0" max="100" step="1" value="{{ stkY }}" onInput="{{ onStkField }}" data-k="y" data-num="1" aria-label="縱向位置" style="flex:1;accent-color:var(--accent)">
             <span style="width:34px;flex:none;text-align:right;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ stkY }}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="width:44px;flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">旋轉</span>
-            <input type="range" min="-45" max="45" step="1" value="{{ stkRot }}" onInput="{{ onStkField }}" data-k="rot" data-num="1" style="flex:1;accent-color:var(--accent)">
+            <input type="range" min="-45" max="45" step="1" value="{{ stkRot }}" onInput="{{ onStkField }}" data-k="rot" data-num="1" aria-label="旋轉" style="flex:1;accent-color:var(--accent)">
             <span style="width:34px;flex:none;text-align:right;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ stkRot }}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="width:44px;flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">字距</span>
-            <input type="range" min="-10" max="40" step="1" value="{{ stkSp }}" onInput="{{ onStkField }}" data-k="sp" data-num="1" style="flex:1;accent-color:var(--accent)">
+            <input type="range" min="-10" max="40" step="1" value="{{ stkSp }}" onInput="{{ onStkField }}" data-k="sp" data-num="1" aria-label="字距" style="flex:1;accent-color:var(--accent)">
             <span style="width:34px;flex:none;text-align:right;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ stkSp }}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="width:44px;flex:none;font-size:11.5px;font-weight:700;color:var(--text-3)">描邊</span>
-            <input type="range" min="0" max="20" step="1" value="{{ stkSw }}" onInput="{{ onStkField }}" data-k="sw" data-num="1" style="flex:1;accent-color:var(--accent)">
+            <input type="range" min="0" max="20" step="1" value="{{ stkSw }}" onInput="{{ onStkField }}" data-k="sw" data-num="1" aria-label="描邊" style="flex:1;accent-color:var(--accent)">
             <span style="width:34px;flex:none;text-align:right;font-size:11px;color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ stkSw }}</span>
           </div>
         </div>
@@ -11172,7 +11187,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
         <div class="mk-card">
           <div class="mk-h">08 <b>其他</b></div>
-          <div class="mk-lbl">底部聲明</div><input class="mk-in" type="text" maxlength="160" value="{{ scFoot }}" onInput="{{ onScField }}" data-k="foot">
+          <div class="mk-lbl">底部聲明</div><input class="mk-in" type="text" maxlength="160" value="{{ scFoot }}" onInput="{{ onScField }}" data-k="foot" aria-label="底部聲明">
           <div class="mk-row" style="margin-top:10px">
             <button type="button" class="mk-btn" onClick="{{ onScBgImg }}">原圖背景</button>
             <button type="button" class="mk-btn" onClick="{{ onScShuffle }}">自繪背景換一組</button>
@@ -12801,7 +12816,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=d038dee079"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=4971a87d1a"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -90,7 +90,7 @@ export function recapMembers() {
         const r = ref && ref.by[t];
         const a = accT('T' + t), p50 = a && a.at && a.at['0.5'];
         return { t: 'T' + this.n(t), final: fin ? this.n(fin) : '—', src: official ? '官方' : (fin ? '最後快照' : ''),
-          ref: r ? this.short(r.med) : '—', refPct: r && fin ? pct(fin, r.med) : '', refColor: r && fin ? (fin >= r.med ? '#e0576a' : '#2fb37a') : 'var(--text-3)',
+          ref: r ? this.short(r.med) : '—', refPct: r && fin ? pct(fin, r.med) : '', refColor: r && fin ? (fin >= r.med ? 'var(--bad)' : 'var(--ok)') : 'var(--text-3)',
           pred: p50 ? this.short(p50.pred) : '—', predErr: p50 && fin ? pct(p50.pred, fin) : '', on: +s.recapTier === t, v: String(t), ...chipSt(+s.recapTier === t) };
       });
       out.recapRefNote = ref ? ('歷屆：同型態同日數的前 ' + ref.n + ' 期（半衰期加權）') : '歷屆：同型態同日數的樣本不足 3 期';
@@ -158,7 +158,7 @@ export function recapMembers() {
       const specs = ['T100', 'T500', 'T1000', 'T2000', 'T5000', 'T10000', 'R1', 'R10', 'R50'];
       out.recapAcc = !acc ? [] : specs.map(sp => { const rec = (sp[0] === 'R' ? acc.ranks : acc.tiers || []).find(x => x.spec === sp); if (!rec) return null;
         return { spec: sp[0] === 'R' ? '第 ' + sp.slice(1) + ' 名' : sp, final: this.short(rec.final), cells: taus.map(t => { const p = rec.at && rec.at[String(t)]; if (!p) return { v: '—', e: '', color: 'var(--text-3)' };
-          const e = p.pred / rec.final - 1; return { v: this.short(p.pred), e: (e >= 0 ? '+' : '') + (e * 100).toFixed(1) + '%', color: Math.abs(e) < 0.05 ? '#2fb37a' : Math.abs(e) < 0.15 ? '#e0a030' : '#e0576a' }; }) }; }).filter(Boolean);
+          const e = p.pred / rec.final - 1; return { v: this.short(p.pred), e: (e >= 0 ? '+' : '') + (e * 100).toFixed(1) + '%', color: Math.abs(e) < 0.05 ? 'var(--ok)' : Math.abs(e) < 0.15 ? 'var(--warn)' : 'var(--bad)' }; }) }; }).filter(Boolean);
       out.recapShareUrl = this._linkTo('recap', { recapEv: String(id) });
       return out;
     },
@@ -180,13 +180,13 @@ export function recapMembers() {
         { k: 'P10～P90 涵蓋率', v: all.cover != null ? Math.round(all.cover * 100) + '%' : '—', sub: '理想值 80%' },
       ];
       const GL = { A: 'T100～T300', B: 'T400～T1000', C: 'T1500～T5000', D: 'T10000～T20000', E: 'T30000 以上', r_top: '第 1～3 名', r_mid: '第 10～20 名', r_low: '第 30 名以後' };
-      const row = (g, v) => ({ g: GL[g] || g, n: v.n, med: pct(v.medAPE), mean: pct(v.mape), lin: pct(v.linMedAPE), prior: pct(v.priorMedAPE), cover: v.cover != null ? Math.round(v.cover * 100) + '%' : '—', color: v.medAPE < 0.05 ? '#2fb37a' : v.medAPE < 0.15 ? '#e0a030' : '#e0576a' });
+      const row = (g, v) => ({ g: GL[g] || g, n: v.n, med: pct(v.medAPE), mean: pct(v.mape), lin: pct(v.linMedAPE), prior: pct(v.priorMedAPE), cover: v.cover != null ? Math.round(v.cover * 100) + '%' : '—', color: v.medAPE < 0.05 ? 'var(--ok)' : v.medAPE < 0.15 ? 'var(--warn)' : 'var(--bad)' });
       out.accGroups = ['A', 'B', 'C', 'D', 'E'].filter(g => T[g]).map(g => row(g, T[g]));
       out.accRankGroups = ['r_top', 'r_mid', 'r_low'].filter(g => R[g]).map(g => row(g, R[g]));
       out.accRankAll = R.all ? pct(R.all.medAPE) : '—';
       out.accEvents = (D.events || []).slice().sort((a, b) => b.id - a.id).map(e => {
         const cell = sp => { const rec = (e.tiers || []).find(x => x.spec === sp); const p = rec && rec.at && rec.at[tau]; if (!rec || !p) return { v: '—', e: '', color: 'var(--text-3)' };
-          const err = p.pred / rec.final - 1; return { v: this.short(p.pred) + ' / ' + this.short(rec.final), e: (err >= 0 ? '+' : '') + (err * 100).toFixed(1) + '%', color: Math.abs(err) < 0.05 ? '#2fb37a' : Math.abs(err) < 0.15 ? '#e0a030' : '#e0576a' }; };
+          const err = p.pred / rec.final - 1; return { v: this.short(p.pred) + ' / ' + this.short(rec.final), e: (err >= 0 ? '+' : '') + (err * 100).toFixed(1) + '%', color: Math.abs(err) < 0.05 ? 'var(--ok)' : Math.abs(err) < 0.15 ? 'var(--warn)' : 'var(--bad)' }; };
         return { id: e.id, name: e.name || ('第 ' + e.id + ' 期'), meta: [e.type, e.unit, e.days ? e.days + ' 天' : ''].filter(Boolean).join('・'), c100: cell('T100'), c1000: cell('T1000'), c5000: cell('T5000'), c10000: cell('T10000') };
       });
       out.accBuilt = D.builtFrom || ''; out.accBuiltAt = D.builtAt ? D.builtAt.slice(0, 10) : '';
