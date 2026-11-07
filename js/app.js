@@ -282,6 +282,7 @@ class Component extends DCLogic {
     whatsnew: ['功能介紹', '本站所有功能一覽與快速前往'],
     account:  ['我的帳號', '登入後雲端同步設定，並管理偵測訂閱與通知'],
     settings: ['設定', '伺服器與語言、Player ID、歌曲音源、主題與顯示版本、首頁與側欄的版面、備份：全站的設定都在這一頁'],
+    status:   ['系統狀態', '資料管線的執行狀況、即時排名來源是否正常、逐局追蹤器與各資料檔最近更新的日期'],
     car:      ['私車排班', '菜根機器人的車隊班表：三車分開排班、報班與推手標記（Discord 或綁定 QQ 登入）'],
     bot:      ['菜根機器人', '車隊排班、查榜、點歌的機器人：Discord、QQ、網頁三邊同步，附指令清單圖'],
     admin:    ['管理後台', '使用者審核、站台統計與 Claude 助手'],
@@ -334,7 +335,7 @@ class Component extends DCLogic {
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
     ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
-    ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits']]]],
+    ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits', 'status']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
   EXTRA_LINKS = [['x_intro', '開場動畫專場', '#ff9db4'], ['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
@@ -379,7 +380,7 @@ class Component extends DCLogic {
      那兩個模組載入時才一起載（loadAliases），不再算進每個訪客開站要下載的主程式。 */
   get ALIASES() { return this._aliases || []; }
   loadAliases() {
-    if (!this._aliasP) this._aliasP = import(scData('aliases.js')).then(m => { this._aliases = m.ALIASES || []; return this._aliases; }).catch(() => { this._aliasP = null; return []; });
+    if (!this._aliasP) this._aliasP = import(scData('aliases.js')).then(m => { this._aliases = m.ALIASES || []; return this._aliases; }).catch(e => { this.teleErr('data aliases.js：' + ((e && e.message) || ''), 'dat'); this._aliasP = null; return []; });
     return this._aliasP;
   }
 
@@ -585,7 +586,7 @@ class Component extends DCLogic {
   loadSyslog() {
     if (this._syslogP) return this._syslogP;
     this._syslogP = import(scData('syslog.js')).then(m => { this._syslog = m.SYSLOG || []; this.setState({ sysV: (this.state.sysV || 0) + 1 }); return this._syslog; })
-      .catch(() => { this._syslogP = null; return []; });
+      .catch(e => { this.teleErr('data syslog.js：' + ((e && e.message) || ''), 'dat'); this._syslogP = null; return []; });
     return this._syslogP;
   }
   EM = { 0:1, 1:5, 2:10, 3:15, 4:20, 5:25, 6:27, 7:29, 8:31, 9:33, 10:35 };
@@ -913,6 +914,7 @@ class Component extends DCLogic {
     this.mq = window.matchMedia('(max-width: 900px)');
     this._mobileGestures();
     this._initErrorGuard();
+    this._teleInit();
     setTimeout(() => this._measureHead(), 300); window.addEventListener('resize', () => this._measureHead());
     // 無障礙：模板裡可點的 div／span 加了 role=button，Enter／空白鍵也要能觸發
     document.addEventListener('keydown', e => { const t = e.target; if ((e.key === 'Enter' || e.key === ' ') && t && t.getAttribute && t.getAttribute('role') === 'button' && !/^(button|a|input|select|textarea)$/i.test(t.tagName)) { e.preventDefault(); t.click(); } });
@@ -1072,8 +1074,73 @@ class Component extends DCLogic {
       if (n >= 3) { this.setState({ errBar: true }); return; }
       if (loud && t - toastAt > 15000) { toastAt = t; this._toast('發生錯誤：' + String(msg || '未知').slice(0, 70)); }
     };
-    window.addEventListener('error', e => hit(e && e.message, true));
-    window.addEventListener('unhandledrejection', e => { const r = e && e.reason; hit((r && r.message) || String(r || ''), false); });
+    window.addEventListener('error', e => {
+      hit(e && e.message, true);
+      const f = e && e.filename ? ' @ ' + String(e.filename).split('/').pop().split('?')[0] + ':' + (e.lineno || 0) : '';
+      this.teleErr(String((e && e.message) || '未知錯誤') + f);
+    });
+    window.addEventListener('unhandledrejection', e => {
+      const r = e && e.reason; hit((r && r.message) || String(r || ''), false);
+      this.teleErr('unhandled: ' + ((r && r.message) || String(r || '')));
+    });
+  }
+
+  /* 匿名使用統計與錯誤回報（Worker 的 /t，worker/src/telemetry.js）。
+     只送：頁面 id、手機／桌機、第一頁的來源主機名、介面語言、伺服器、程式版本戳、錯誤訊息。
+     不用 cookie、不送 IP（伺服器用當天的雜湊辨識訪客，隔天就換）；瀏覽器開了「不要追蹤」／GPC、
+     設定頁關掉、自動化瀏覽器、本機開發一律不送。關分頁那一刻用 sendBeacon 送出佇列。 */
+  _teleOn() {
+    try { if (localStorage.getItem('sekai-tele') === '0') return false; } catch (e) {}
+    try {
+      if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl || navigator.webdriver) return false;
+      if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return false;
+    } catch (e) {}
+    return true;
+  }
+  _teleInit() {
+    this._teleQ = [];
+    const flush = () => this._teleFlush();
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+  }
+  _teleVer() {
+    if (this._teleV != null) return this._teleV;
+    let v = '';
+    try { const sc = document.querySelector('script[src*="app.min.js"],script[src*="app.js"]'); const m = /[?&]v=([a-z0-9]+)/i.exec((sc && sc.getAttribute('src')) || ''); v = m ? m[1] : ''; } catch (e) {}
+    return (this._teleV = v);
+  }
+  teleTrack(k, extra) {
+    if (!this._teleQ || !this._teleOn()) return;
+    const e = Object.assign({ k, p: this.state.page, d: this.state.mobile ? 'm' : 'd', l: this.state.lang || 'zh-TW', s: this.SRV, v: this._teleVer() }, extra || {});
+    if (k === 'pv') {
+      if (e.p === this._teleLastPv) return;   // 同一頁重複進（返回鍵、同頁 go）不算第二次
+      this._teleLastPv = e.p;
+      if (!this._teleRef) { this._teleRef = 1; e.r = document.referrer || ''; }   // 來源只在第一頁有意義
+    }
+    this._teleQ.push(e);
+    if (this._teleQ.length >= 20) this._teleFlush();
+    else if (!this._teleT) this._teleT = setTimeout(() => { this._teleT = null; this._teleFlush(); }, 4000);
+  }
+  /* 錯誤：同一則訊息一分鐘內只送一次；kind 'dat' 是資料載入失敗（API、資料檔） */
+  teleErr(msg, kind) {
+    const m = String(msg || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!m) return;
+    const t = Date.now(); this._teleSeen = this._teleSeen || {};
+    if (this._teleSeen[m] && t - this._teleSeen[m] < 60000) return;
+    this._teleSeen[m] = t;
+    this.teleTrack(kind === 'dat' ? 'dat' : 'err', { m });
+  }
+  _teleFlush() {
+    if (!this._teleQ || !this._teleQ.length) return;
+    if (this._teleT) { clearTimeout(this._teleT); this._teleT = null; }
+    const body = JSON.stringify({ v: 1, e: this._teleQ.splice(0, 20) }), url = this.GAMES_API + '/t';
+    try {
+      // text/plain：不觸發 preflight；sendBeacon 在關分頁時也送得出去
+      if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' })))) {
+        fetch(url, { method: 'POST', body, keepalive: true, headers: { 'content-type': 'text/plain' } }).catch(() => {});
+      }
+    } catch (e) {}
+    if (this._teleQ.length) this._teleT = setTimeout(() => { this._teleT = null; this._teleFlush(); }, 1000);
   }
   /* 亮色底配深字、暗色底配白字：白字壓在遊戲的亮黃、亮綠上對比只有 2 左右，深色模式尤其看不清 */
   fgOn(c) {
@@ -1729,6 +1796,7 @@ class Component extends DCLogic {
         return JSON.parse(text.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
       } catch (e) { err = e; }
     }
+    this.teleErr('api ' + path + '：' + ((err && err.message) || 'fetch failed'), 'dat');   // 三個來源都失敗才算一次資料載入失敗
     throw err || new Error('fetch failed');
   }
   /* 帶逾時的 fetch：外部 API 卡住不回時不要讓畫面一直轉圈 */
@@ -4430,7 +4498,7 @@ class Component extends DCLogic {
   /* 儀表板。各分頁分開載,切到哪頁才打哪支 API —— 一次全撈的話光是
      使用者清單與稽核紀錄就會拖慢首屏,而多數時候只會看總覽。 */
   DASH_EP = { overview: '/admin/dash/overview', users: '/admin/dash/users',
-              watches: '/admin/dash/watches', ai: '/admin/dash/ai', health: '/admin/dash/health' };
+              watches: '/admin/dash/watches', ai: '/admin/dash/ai', health: '/admin/dash/health', tele: '/admin/tele?days=30' };
   async loadDash(tab) {
     const t = tab || this.state.dashTab || 'overview';
     const ep = this.DASH_EP[t]; if (!ep) return;
@@ -4446,6 +4514,83 @@ class Component extends DCLogic {
     } catch (e) {
       this.setState({ dashBusy: false, dashErr: (e && e.message) || '載入失敗' });
     }
+  }
+
+  /* 系統狀態頁（page=status）：Worker 每小時查過的資料管線狀態與逐局追蹤器（/ops/status），
+     加上瀏覽器現在親自打一次各個即時來源的結果。資料檔更新日從 data/stamps.js 的 SC_DATA_AT 來，不用再抓。 */
+  async loadStatus(force) {
+    if (this._statusBusy) return;
+    this._statusBusy = true;
+    this.setState({ stBusy: true, stErr: '' });
+    const probe = async (name, url) => {
+      const t0 = performance.now();
+      try {
+        const r = await this.fetchT(url, { headers: { Accept: 'application/json' } }, 10000);
+        return { name, ok: r.ok, ms: Math.round(performance.now() - t0), note: r.ok ? '' : 'HTTP ' + r.status };
+      } catch (e) { return { name, ok: false, ms: Math.round(performance.now() - t0), note: (e && e.name === 'TimeoutError') ? '逾時（10 秒）' : ((e && e.message) || '失敗') }; }
+    };
+    const [ops, ...probes] = await Promise.all([
+      this.fetchT(this.GAMES_API + '/ops/status' + (force ? '?r=' + Date.now() : ''), { headers: { Accept: 'application/json' } }, 10000).then(r => r.json()).catch(e => ({ error: (e && e.message) || '無法連線' })),
+      probe('網站靜態檔（Vercel）', new URL('data/stamps.js?p=' + Date.now(), document.baseURI).href),
+      probe('排名 API（HiSekai，經本站 Worker 代理）', this.GAMES_API + '/proxy/hisekai/event/list'),
+      probe('Haruki 台服備援排名', this.GAMES_API + '/haruki/event/live/border'),
+      probe('Haruki 日服追蹤器', this.GAMES_API + '/haruki/jp/event/live/border'),
+      probe('行事曆訂閱源', this.GAMES_API + '/cal/sekai.ics'),
+    ]);
+    this._statusBusy = false;
+    this.setState({ stBusy: false, stOps: ops, stProbes: probes, stAt: Date.now(), stErr: ops && ops.error ? '系統狀態服務無法連線：' + ops.error : '' });
+  }
+  statusVals(s) {
+    const ops = s.stOps || {}, pipe = ops.pipeline || {}, tr = ops.tracker || null, now = Date.now();
+    const ago = ms => { if (!ms) return '—'; const m = Math.max(0, Math.round((now - ms) / 60000)); return m < 1 ? '剛剛' : m < 60 ? m + ' 分鐘前' : m < 48 * 60 ? Math.round(m / 60) + ' 小時前' : Math.round(m / 1440) + ' 天前'; };
+    const col = { ok: '#2fb37a', stale: '#e0a030', fail: '#e0576a' }, txt = { ok: '正常', stale: '太久沒成功', fail: '失敗' };
+    const raw = pipe.items || [];
+    const row = it => ({ label: it.label, every: it.every || '依需要', state: txt[it.state] || it.state, color: col[it.state] || 'var(--text-3)', ago: it.lastOkAt ? ago(it.lastOkAt) : '沒有成功紀錄', running: it.running ? '執行中' : '', url: it.lastUrl || 'https://github.com/01460421/Project-sekai-center/actions' });
+    const sched = raw.filter(it => it.scheduled).map(row), other = raw.filter(it => !it.scheduled).map(row);
+    const trOk = !!(tr && !tr.error && tr.lastOk && now - tr.lastOk < 30 * 60000);
+    const trRows = !tr ? [] : tr.error ? [{ k: '追蹤器', v: '無法取得：' + tr.error }] : [
+      { k: '目前追蹤的活動', v: tr.event ? ('第 ' + tr.event.id + ' 期　' + (tr.event.name || '')) : '—' },
+      { k: '上次成功抓到排名', v: ago(tr.lastOk) + (tr.src && tr.src !== 'hisekai' ? '（' + tr.src + ' 備援）' : '') },
+      { k: '最近一次榜線快照', v: ago(tr.lastSnap) + '　本期共 ' + (tr.snaps || 0) + ' 筆' },
+      { k: '本期已記錄', v: (tr.games || 0) + ' 局・' + (tr.users || 0) + ' 位玩家' + (tr.gaps ? '・' + tr.gaps + ' 段中斷' : '') },
+      { k: '連續失敗', v: String(tr.fails || 0) + (tr.snapError && tr.snapError.msg ? '　快照錯誤：' + tr.snapError.msg : '') },
+    ];
+    const AT = (typeof self !== 'undefined' && self.SC_DATA_AT) || {};
+    const files = Object.keys(AT).sort((a, b) => (AT[a] < AT[b] ? -1 : AT[a] > AT[b] ? 1 : a.localeCompare(b))).map(f => {
+      const d = Date.parse(AT[f] + 'T00:00:00+08:00'), days = Math.max(0, Math.floor((now - d) / 86400000));
+      return { f, at: AT[f], days: days === 0 ? '今天' : days + ' 天前', color: days > 30 ? 'var(--text-3)' : 'var(--ink)' };
+    });
+    const probes = (s.stProbes || []).map(p => ({ name: p.name, text: p.ok ? '正常' : '異常', color: p.ok ? '#2fb37a' : '#e0576a', ms: p.ms + ' ms', note: p.note || '' }));
+    const bad = sched.filter(x => x.state !== '正常').length + probes.filter(p => p.text !== '正常').length + (tr && !trOk ? 1 : 0) + (ops.error ? 1 : 0);
+    return {
+      stBusy: !!s.stBusy, stErr: s.stErr || '', stHas: !!s.stOps, stAt: s.stAt ? ('瀏覽器探測於 ' + ago(s.stAt)) : '',
+      stCheckedAt: pipe.checkedAt ? ago(pipe.checkedAt) : '尚未檢查', stPipeErr: pipe.error ? '上次向 GitHub 查詢失敗：' + pipe.error : '',
+      stSched: sched, stOther: other, stOtherN: other.length, stProbes: probes, stTracker: trRows, stTrackerColor: trOk ? '#2fb37a' : '#e0576a', stTrackerText: trOk ? '正常' : '異常',
+      stFiles: files, stFilesN: files.length, stSummary: s.stOps ? (bad ? ('有 ' + bad + ' 項異常') : '全部正常') : '檢查中…', stSummaryColor: bad ? '#e0576a' : '#2fb37a',
+      stCanPipe: !!(s.me && s.me.is_admin),
+    };
+  }
+  /* 管理員儀表板「流量與錯誤」分頁（/admin/tele 的彙總） */
+  teleVals(T) {
+    const f = v => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (!T) return { teleNone: true, teleCards: [], teleDays: [], telePages: [], teleDims: [], teleErrors: [] };
+    const d = T.daily || [], max = Math.max(1, ...d.map(x => x.views));
+    const days = d.map(x => ({ d: x.day.slice(5), w: Math.max(2, Math.round(x.views / max * 100)) + '%', tip: x.day + '　' + f(x.views) + ' 次・' + f(x.uniq) + ' 人・錯誤 ' + (x.errs + x.dats) }));
+    const last7 = d.slice(-7).reduce((a, x) => a + x.views, 0);
+    const tot = Math.max(1, (T.totals || {}).views || 0);
+    const cards = [
+      { k: '今天', v: f(T.today.views), sub: f(T.today.uniq) + ' 位訪客・錯誤 ' + (T.today.errs + T.today.dats) },
+      { k: '近 7 天', v: f(last7), sub: '頁面次數' },
+      { k: '近 ' + T.days + ' 天', v: f(T.totals.views), sub: f(T.totals.uniq) + ' 人次（每日不重複）' },
+      { k: 'JS 錯誤／資料失敗', v: f(T.totals.errs) + ' / ' + f(T.totals.dats), sub: '近 ' + T.days + ' 天' },
+    ];
+    const dim = (list, name, label) => { const m = Math.max(1, ...(list || []).map(x => x.n)); return { name, rows: (list || []).map(x => ({ v: label ? (label[x.v] || x.v) : x.v, n: f(x.n), u: f(x.u), w: Math.round(x.n / m * 100) + '%' })) }; };
+    const dims = [dim(T.devices, '裝置', { m: '手機', d: '桌機' }), dim(T.srv, '伺服器', { tw: '台服', jp: '日服' }), dim(T.langs, '介面語言'), dim(T.refs, '來源網站')];
+    const pmax = Math.max(1, ...(T.pages || []).map(x => x.n));
+    const pages = (T.pages || []).map(x => ({ v: (this.PAGES[x.v] || [x.v])[0], id: x.v, n: f(x.n), u: f(x.u), pct: (x.n / tot * 100).toFixed(1) + '%', w: Math.round(x.n / pmax * 100) + '%' }));
+    const now = Date.now();
+    const errors = (T.errors || []).map(e => ({ kind: e.k === 'dat' ? '資料' : 'JS', msg: e.msg, page: e.page || '—', ver: e.ver || '—', n: f(e.n), last: this.ago ? this.ago(e.last * 1000) : Math.round((now - e.last * 1000) / 60000) + ' 分鐘前' }));
+    return { teleNone: false, teleCards: cards, teleDays: days, telePages: pages, teleDims: dims, teleErrors: errors, teleNoErr: !errors.length };
   }
 
   /* 點數（beta）。beta 沒開時後端會回 enabled:false,前端據此整塊不顯示 ——
@@ -8323,6 +8468,7 @@ class Component extends DCLogic {
     if (p === 'x_intro') { this.setState({ sheet: false, cmdk: false }); this.playIntro('show'); return; }   // 開場動畫專場：疊在目前頁面上播，不換頁（先收掉「更多」選單）
     if (this.EXTERNAL && this.EXTERNAL[p]) { if (p === 'x_starmap') this.openStarmap(true); else location.href = this.EXTERNAL[p]; return; }
     const changed = p !== this.state.page, silent = !!(opts && opts.silent);
+    this.teleTrack('pv', { p });   // 匿名統計：哪一頁被看（同頁重複不算）
     const pre = {};   // 換頁順手要改的狀態：以前各自 setState，轉場前會先把舊頁多畫一次；現在併進 show() 那一筆
     if (changed) { this._scrollPos = this._scrollPos || {}; this._scrollPos[this.state.page] = { y: document.getElementById('boot') ? 0 : (window.scrollY || 0), dbN: this.state.dbN }; }   // 返回鍵時還原捲動位置（開站那一次不讀 scrollY：會逼瀏覽器先把剛渲染的整頁排版一次）
     if (p === 'rank') this.loadCards();   // 榜線時序由 _histTick 依分頁決定要不要抓（WL 個榜、詳情才用得到）
@@ -8396,6 +8542,7 @@ class Component extends DCLogic {
     if (p === 'haruki') { this.hzLoad().catch(() => {}); }
     if (p === 'calendar') this.loadSongs();
     if (p === 'whatsnew') this.loadSyslog();
+    if (p === 'status') this.loadStatus();
     const show = () => this.setState(Object.assign(pre, { page: p, sheet: false, cmdk: false, homeCfg: false }), () => {
       // 側欄目前頁捲進視野（側欄長到要捲的時候才有感）；桌機進圖鑑頁直接聚焦搜尋框
       try { const b = document.querySelector('button[data-p="' + p + '"]'); if (b && !this.state.mobile) b.scrollIntoView({ block: 'nearest' }); } catch (e) {}
@@ -10119,6 +10266,8 @@ class Component extends DCLogic {
       ...(s.page === 'bot' ? this.btVals(s) : {}),   // 指令導覽（模擬聊天視窗＋試打看看）
       /* 製作與致謝 */
       isCredits: s.page === 'credits',
+      isStatus: s.page === 'status',
+      ...(s.page === 'status' ? this.statusVals(s) : {}),
       creditEditors: this.CREDIT_EDITORS,
       creditAdvisors: this.CREDIT_ADVISORS,
       creditWorks: this.CREDIT_WORKS.map(w => ({
@@ -10584,10 +10733,11 @@ class Component extends DCLogic {
         const ch = se && se.days ? this.dashChart(se.days, se.series || {}, { users: '#4ad1e8', ai: '#c39df2', events: '#ff9db4' }) : null;
         const LBL = { users: '新使用者', ai: 'AI 呼叫', events: '通知事件' };
         return {
-          dashTabs: [['overview', '總覽'], ['users', '使用者'], ['watches', '訂閱'], ['ai', 'AI 稽核'], ['health', '系統健康']]
+          dashTabs: [['overview', '總覽'], ['tele', '流量與錯誤'], ['users', '使用者'], ['watches', '訂閱'], ['ai', 'AI 稽核'], ['health', '系統健康']]
             .map(([v, n2]) => { const on = tab === v, st = chip(on, 'var(--cta)'); return Object.assign({ v, n: n2 }, st); }),
           dashIsOverview: tab === 'overview', dashIsUsers: tab === 'users', dashIsWatches: tab === 'watches',
-          dashIsAi: tab === 'ai', dashIsHealth: tab === 'health',
+          dashIsAi: tab === 'ai', dashIsHealth: tab === 'health', dashIsTele: tab === 'tele',
+          ...(tab === 'tele' ? this.teleVals(D.tele) : {}),
           dashCards: cards,
           dashBusy: !!s.dashBusy, dashErr: s.dashErr || '',
           dashChartOk: !!ch,
@@ -11374,6 +11524,7 @@ class Component extends DCLogic {
       themeChips: [['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']].map(([v, n]) => { const on = (s.theme || 'auto') === v;
         return { v, n, on: on ? 'true' : 'false', bg: on ? 'var(--cta)' : 'var(--card-2)', fg: on ? '#fff' : 'var(--text-2)', bd: on ? 'var(--cta)' : 'var(--border)' }; }),
       setAccountBtn: s.me ? '前往我的帳號 →' : '登入 →',
+      teleBtn: (() => { try { if (localStorage.getItem('sekai-tele') === '0') return '已關閉（點一下開啟）'; } catch (e) {} return (navigator.doNotTrack === '1' || navigator.globalPrivacyControl) ? '瀏覽器已要求不要追蹤，不會送' : '開啟中（點一下關閉）'; })(),
       themeTitle: '主題：' + ({ light: '淺色', dark: '深色', auto: '跟隨系統' }[s.theme] || '跟隨系統') + '（點擊切換）',
       themeIsLight: s.theme === 'light', themeIsDark: s.theme === 'dark', themeIsAuto: s.theme === 'auto',
       unitChips: [{ v: '', n: '不指定', c: 'var(--text-3)' }].concat(this.UNIT_OF.map(u => ({ v: u, n: this.UNITS[u].n, c: this.UNITS[u].c }))).map(x => Object.assign({}, x, (s.unit || '') === x.v ? { bg: 'var(--ink-grad)', fg: '#fff', bd: 'transparent' } : { bg: 'var(--card)', fg: 'var(--text-2)', bd: 'var(--border)' })),
@@ -12535,6 +12686,9 @@ class Component extends DCLogic {
       onGuideClose: () => this.guideClose(),
       onGuideHide: e => this.setState({ guideHide: !!e.target.checked }),
       onGuideReset: () => { try { localStorage.removeItem('sekai-guide-hide'); } catch (e) {} this.setState({ guideHide: false, guide: { step: 0 }, homeCfg: false }); },
+      onTeleToggle: () => { try { if (localStorage.getItem('sekai-tele') === '0') localStorage.removeItem('sekai-tele'); else localStorage.setItem('sekai-tele', '0'); } catch (e) {} this.setState({ teleV: (s.teleV || 0) + 1 }); },
+      onStatusReload: () => this.loadStatus(true),
+      onPipeCheck: async () => { try { await this.api('/admin/pipeline', { method: 'POST', body: {} }); this._toast('已重新查過資料管線'); this.loadStatus(true); } catch (e) { this._toast('重查失敗：' + ((e && e.message) || '')); } },
       onClearLocal: () => {
         if (!confirm('要清除這個瀏覽器裡本站的所有資料嗎？（綁定的 ID、勾選的收集、B30 成績、版面設定…）建議先匯出備份。')) return;
         try { Object.keys(localStorage).filter(k => k.startsWith('sekai-')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
