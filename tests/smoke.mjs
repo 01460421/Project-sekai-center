@@ -21,6 +21,7 @@ const CASES = [
   ['evinfo', /活動資料|排名獎勵|時程/],
   ['sched', /排程預測|逐期回測|未來活動/],
   ['settings', /遊戲與資料|顯示版本|側欄功能/],
+  ['status', /即時來源|資料管線/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {

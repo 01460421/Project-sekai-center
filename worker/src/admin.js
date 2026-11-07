@@ -19,6 +19,8 @@ import { listUsers, reviewUser, setAdmin, getUser, logAdmin, listAdminLog,
   pendingOrders, confirmOrder, aiUsageRows, aiUsageByUser, aiUsageDaily, aiOpsByUser, twDayStart } from './db.js';
 import { summarize, costUsd, priceOf } from './pricing.js';
 import { chatGemini, hasGemini, geminiModel, listGeminiModels, runLanes, lanesReport } from './gemini.js';
+import { teleReport } from './telemetry.js';
+import { checkPipeline, pipelineStatus } from './pipeline.js';
 
 /* 模型 id 與參數依 claude-api skill 查證，不是憑記憶寫的。
    Opus 5 預設就跑 adaptive thinking，不必（也不能）再給 budget_tokens；
@@ -549,6 +551,17 @@ export async function handleAdmin(req, env, url, user) {
     }
     if (p === '/admin/stats' && req.method === 'GET') {
       return json({ stats: await siteStats(db, env) });
+    }
+    /* 匿名使用統計與前端錯誤（telemetry.js 收的）：只有聚合數字，沒有 IP、沒有帳號 */
+    if (p === '/admin/tele' && req.method === 'GET') {
+      return json(await teleReport(db, url.searchParams.get('days')));
+    }
+    /* 資料管線：看最近一次檢查，或立刻重查一次（POST） */
+    if (p === '/admin/pipeline' && req.method === 'GET') {
+      return json(await pipelineStatus(env));
+    }
+    if (p === '/admin/pipeline' && req.method === 'POST') {
+      return json(await checkPipeline(env));
     }
 
     if (p === '/admin/log' && req.method === 'GET') {

@@ -33,12 +33,32 @@ STAMPS = 'data/stamps.js'
 
 
 def stamps_text():
-    """data/ 底下（第一層）每個 .js 的雜湊，給前端的 scData() 查。"""
+    """data/ 底下（第一層）每個 .js 的雜湊，給前端的 scData() 查。
+    另附 SC_DATA_AT：每個檔內容最近一次變動的日期（台北）——雜湊跟上次一樣就沿用上次的日期，變了才寫今天。
+    「系統狀態」頁用它顯示資料多久沒更新，不必再抓任何東西。"""
     m = {p.name: digest(p) for p in sorted((ROOT / 'data').glob('*.js')) if p.relative_to(ROOT).as_posix() != STAMPS}
+    old_v, old_at = {}, {}
+    st = ROOT / STAMPS
+    if st.is_file():
+        import json
+        txt = st.read_text(encoding='utf-8')
+        mv = re.search(r'self\.SC_DATA_V=(\{.*?\});', txt)
+        ma = re.search(r'self\.SC_DATA_AT=(\{.*?\});', txt)
+        try:
+            old_v = json.loads(mv.group(1)) if mv else {}
+            old_at = json.loads(ma.group(1)) if ma else {}
+        except ValueError:
+            old_v, old_at = {}, {}
+    import datetime
+    today = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=8)).strftime('%Y-%m-%d')
+    at = {k: (old_at.get(k) if old_v.get(k) == v and old_at.get(k) else today) for k, v in m.items()}
     body = ','.join(f'"{k}":"{v}"' for k, v in m.items())
+    body_at = ','.join(f'"{k}":"{v}"' for k, v in at.items())
     return ('/* 由 tools/stamp-assets.py 產生，勿手改。資料檔的內容雜湊：程式用 scData(檔名) 組出帶 ?v= 的網址。\n'
-            '   這個檔走 must-revalidate（vercel.json），每日資料更新只改這裡，主程式與 app.html 不用換戳記。 */\n'
-            f'self.SC_DATA_V={{{body}}};\n')
+            '   這個檔走 must-revalidate（vercel.json），每日資料更新只改這裡，主程式與 app.html 不用換戳記。\n'
+            '   SC_DATA_AT：各檔內容最近一次變動的日期（台北），給「系統狀態」頁看資料多久沒更新。 */\n'
+            f'self.SC_DATA_V={{{body}}};\n'
+            f'self.SC_DATA_AT={{{body_at}}};\n')
 
 
 def digest(path):

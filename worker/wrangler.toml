@@ -57,6 +57,11 @@ AI_GEMINI_MODEL = "gemini-2.5-pro"
 # 若之後把 dual 開放給所有人,這個數字要重新評估。
 AI_OPS_USER = "20"
 
+# 資料管線檢查（src/pipeline.js）每小時向 GitHub API 查 Actions 的執行紀錄。沒 token 每個出口 IP 每小時 60 次，
+# Workers 的出口 IP 是共用的，偶爾會被別人用光；用 `wrangler secret put GITHUB_TOKEN` 放一把只讀 public repo 的
+# fine-grained token（不需要任何權限勾選）就穩了。拿不到時沿用上一次的結果，不會誤報。
+# 匿名使用統計（src/telemetry.js）：/t 收、/admin/tele 看；原始列 90 天後自動刪。
+
 # Haruki（Team-Haruki）串接，見 src/haruki.js：
 # - HARUKI_API_BASE：公開 API 的台服根路徑（HiSekai 掛掉時的排名備援）。
 #   排名路徑要 token：向 Team-Haruki 申請後 `wrangler secret put HARUKI_API_TOKEN`；沒設也會試，對方若開放就能用。

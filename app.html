@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=6e34b71de5" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=db060fee1e" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -9517,6 +9517,70 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </sc-if>
 
+      <!-- 流量與錯誤（匿名使用統計，worker/src/telemetry.js） -->
+      <sc-if value="{{ dashIsTele }}">
+        <sc-if value="{{ teleNone }}"><div class="empty">還沒有統計資料（載入中，或 Worker 還沒收到任何資料）。</div></sc-if>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:13px">
+          <sc-for list="{{ teleCards }}" as="c" hint-placeholder-count="4">
+            <div style="border:1px solid var(--border);border-radius:15px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs)">
+              <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
+              <div style="font-size:21px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c';line-height:1.25">{{ c.v }}</div>
+              <div style="font-size:10.5px;color:var(--text-3)">{{ c.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px">每日頁面次數</div>
+          <div style="display:flex;align-items:flex-end;gap:3px;height:72px">
+            <sc-for list="{{ teleDays }}" as="d" hint-placeholder-count="30">
+              <div title="{{ d.tip }}" style="flex:1;height:{{ d.w }};background:var(--accent);border-radius:3px 3px 0 0;opacity:.85"></div>
+            </sc-for>
+          </div>
+          <div style="font-size:10.5px;color:var(--text-3);margin-top:5px">滑過看數字。訪客數是「當天不重複」：隔天雜湊就換，跨日無法辨識同一個人。</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:13px;margin-bottom:13px">
+          <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs)">
+            <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px">頁面（近 30 天）</div>
+            <sc-for list="{{ telePages }}" as="p" hint-placeholder-count="20">
+              <div style="position:relative;display:flex;gap:8px;align-items:center;padding:4px 6px;font-size:12px;border-radius:6px;overflow:hidden">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:{{ p.w }};background:color-mix(in oklab,var(--accent) 14%,transparent);border-radius:6px"></div>
+                <span style="position:relative;flex:1;color:var(--ink);font-weight:700">{{ p.v }} <span style="font-size:10.5px;color:var(--text-3);font-weight:400">{{ p.id }}</span></span>
+                <span style="position:relative;color:var(--text-2);font-family:'M PLUS Rounded 1c'">{{ p.n }}</span>
+                <span style="position:relative;color:var(--text-3);font-size:10.5px;width:44px;text-align:right">{{ p.pct }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:13px">
+            <sc-for list="{{ teleDims }}" as="g" hint-placeholder-count="4">
+              <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs)">
+                <div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:5px">{{ g.name }}</div>
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                  <div style="position:relative;display:flex;gap:8px;padding:3px 6px;font-size:12px;border-radius:6px;overflow:hidden">
+                    <div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.w }};background:color-mix(in oklab,var(--accent) 14%,transparent);border-radius:6px"></div>
+                    <span style="position:relative;flex:1;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.v }}</span>
+                    <span style="position:relative;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ r.n }}</span>
+                    <span style="position:relative;color:var(--text-3);font-size:10.5px">{{ r.u }} 人</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px">錯誤（JS 例外與資料載入失敗，近 30 天）</div>
+          <sc-if value="{{ teleNoErr }}"><div style="font-size:12.5px;color:var(--text-3)">沒有收到任何錯誤。</div></sc-if>
+          <sc-for list="{{ teleErrors }}" as="e" hint-placeholder-count="10">
+            <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--border);font-size:12px">
+              <span style="flex:none;padding:1px 7px;border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:10.5px;font-weight:700">{{ e.kind }}</span>
+              <span style="flex:1;min-width:220px;color:var(--ink);font-family:ui-monospace,monospace;word-break:break-all">{{ e.msg }}</span>
+              <span style="color:var(--text-3);font-size:11px">{{ e.page }}・{{ e.ver }}</span>
+              <span style="color:var(--ink);font-weight:800;font-family:'M PLUS Rounded 1c'">{{ e.n }} 次</span>
+              <span style="color:var(--text-3);font-size:11px">最近 {{ e.last }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ admStatErr }}">
         <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.7;margin-bottom:12px">{{ admStatErr }}</div>
       </sc-if>
@@ -9878,6 +9942,13 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="set-v"><button type="button" class="set-btn" onClick="{{ onGo }}" data-p="account">{{ setAccountBtn }}</button></div>
       </div>
       <div class="set-row">
+        <div class="set-k">匿名使用統計<small>只記哪一頁被看、手機或桌機、來源網站、介面語言與錯誤訊息，用來決定先修哪裡；不用 cookie、不存 IP，瀏覽器開了「不要追蹤」也不會送</small></div>
+        <div class="set-v" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button type="button" class="set-btn" onClick="{{ onTeleToggle }}">{{ teleBtn }}</button>
+          <button type="button" class="set-btn" onClick="{{ onGo }}" data-p="status">系統狀態</button>
+        </div>
+      </div>
+      <div class="set-row">
         <div class="set-k">說明<small>功能引導、鍵盤快捷鍵、教學大全</small></div>
         <div class="set-v" style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="set-btn" onClick="{{ onGuideReset }}">重新看一次功能引導</button>
@@ -9889,6 +9960,84 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </div>
 </sc-if>
 
+
+  <!-- ========== 系統狀態 ========== -->
+  <sc-if value="{{ isStatus }}">
+  <div class="set-page" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:14px">
+    <div class="set-card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:16px;font-weight:800;color:{{ stSummaryColor }}">{{ stSummary }}</div>
+        <div style="flex:1;min-width:200px;font-size:11.5px;color:var(--text-3);line-height:1.6">資料管線由伺服器每小時向 GitHub 查一次（上次 {{ stCheckedAt }}）；即時來源是你的瀏覽器現在親自打的。{{ stAt }}</div>
+        <button type="button" class="set-btn" onClick="{{ onStatusReload }}">重新檢查</button>
+        <sc-if value="{{ stCanPipe }}"><button type="button" class="set-btn" onClick="{{ onPipeCheck }}">立刻重查管線</button></sc-if>
+      </div>
+      <sc-if value="{{ stBusy }}"><div style="font-size:12px;color:var(--text-3);margin-top:8px">檢查中…</div></sc-if>
+      <sc-if value="{{ stErr }}"><div style="font-size:12px;color:#e0576a;margin-top:8px">{{ stErr }}</div></sc-if>
+    </div>
+
+    <section class="set-card">
+      <div class="set-h"><b>即時來源</b><span>排名、榜線與備援各從哪裡來、現在回應多快</span></div>
+      <sc-for list="{{ stProbes }}" as="p" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px">
+          <span style="width:9px;height:9px;border-radius:50%;background:{{ p.color }};flex:none"></span>
+          <span style="flex:1;min-width:160px;color:var(--ink);font-weight:700">{{ p.name }}</span>
+          <span style="color:var(--text-3);font-family:'M PLUS Rounded 1c'">{{ p.ms }}</span>
+          <span style="color:{{ p.color }};font-weight:700">{{ p.text }}</span>
+          <span style="color:var(--text-3)">{{ p.note }}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>逐局追蹤器 <span style="font-size:12px;color:{{ stTrackerColor }}">{{ stTrackerText }}</span></b><span>Cloudflare 上每 15 秒抓一次前百、每 5 分鐘存一筆榜線快照</span></div>
+      <sc-for list="{{ stTracker }}" as="r" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px">
+          <span style="color:var(--text-2)">{{ r.k }}</span>
+          <span style="color:var(--ink);font-weight:700;font-family:'M PLUS Rounded 1c'">{{ r.v }}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>資料管線</b><span>GitHub Actions 的排程工作：每日資料更新、榜線快照、正式站探針。失敗或太久沒成功會通知站方</span></div>
+      <sc-if value="{{ stPipeErr }}"><div style="font-size:12px;color:#e0a030;margin-bottom:6px">{{ stPipeErr }}</div></sc-if>
+      <sc-for list="{{ stSched }}" as="w" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px">
+          <span style="width:9px;height:9px;border-radius:50%;background:{{ w.color }};flex:none"></span>
+          <span style="flex:1;min-width:160px;color:var(--ink);font-weight:700">{{ w.label }} <span style="font-size:11px;color:var(--text-3);font-weight:400">{{ w.every }}</span></span>
+          <span style="color:var(--text-3)">上次成功 {{ w.ago }}</span>
+          <span style="color:{{ w.color }};font-weight:700">{{ w.state }}</span>
+          <span style="color:var(--accent-deep)">{{ w.running }}</span>
+          <a href="{{ w.url }}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-3)">紀錄 ↗</a>
+        </div>
+      </sc-for>
+      <details style="margin-top:8px">
+        <summary style="font-size:12px;color:var(--text-3);cursor:pointer">其他工作（{{ stOtherN }}：CI、部署、分享預覽圖）</summary>
+        <sc-for list="{{ stOther }}" as="w" hint-placeholder-count="4">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);font-size:12px">
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ w.color }};flex:none"></span>
+            <span style="flex:1;min-width:160px;color:var(--text-2);font-weight:700">{{ w.label }}</span>
+            <span style="color:var(--text-3)">上次成功 {{ w.ago }}</span>
+            <span style="color:{{ w.color }};font-weight:700">{{ w.state }}</span>
+            <a href="{{ w.url }}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-3)">紀錄 ↗</a>
+          </div>
+        </sc-for>
+      </details>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>資料檔最近更新</b><span>{{ stFilesN }} 個資料檔內容最近一次變動的日期。每日排程只在內容有變時才寫檔，日期舊不一定是壞了（例如定數表、教學）</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 16px">
+        <sc-for list="{{ stFiles }}" as="f" hint-placeholder-count="12">
+          <div style="display:flex;gap:8px;justify-content:space-between;padding:4px 0;border-top:1px solid var(--border);font-size:12px">
+            <span style="color:{{ f.color }};font-family:'M PLUS Rounded 1c';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.f }}</span>
+            <span style="color:var(--text-3);flex:none">{{ f.at }}　{{ f.days }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+  </sc-if>
 
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
@@ -12433,7 +12582,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=6e34b71de5"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=db060fee1e"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -37,6 +37,7 @@ jobs:
           node worker/test/haruki.mjs
           node worker/test/security.mjs
           node worker/test/snaps.mjs
+          node worker/test/telemetry.mjs
       - name: 部署
         working-directory: worker
         env:

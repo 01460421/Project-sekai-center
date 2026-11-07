@@ -28,6 +28,8 @@ import { handleCal } from './cal.js';
 import { handleHaruki, handleHarukiBot, harukiLive } from './haruki.js';
 import { dueTasks, finishTask, addEvent, claimTask, reclaimStaleTasks } from './db.js';
 import { runApplyReview } from './review.js';
+import { handleTelemetry, teleMaintain, stateGet } from './telemetry.js';
+import { checkPipeline, pipelineStatus } from './pipeline.js';
 
 const API = 'https://api.hisekai.org/tw/event/live/top100';
 const TOP_N = 100;   // API 就是回前 100 名,全收
@@ -367,6 +369,21 @@ export default {
       const r = await handleCar(req, env, url);
       if (r) return r;
     }
+    /* 匿名使用統計與前端錯誤回報：不帶 cookie、text/plain、只收本站 Origin（telemetry.js） */
+    if (p === '/t') return handleTelemetry(req, env, url);
+    /* 系統狀態（公開、只讀）：資料管線最近一次檢查 + 逐局追蹤器自己的狀態。給網站的「系統狀態」頁。 */
+    if (p === '/ops/status') {
+      if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+      let tracker = null;
+      try {
+        const stub = env.TRACKER.get(env.TRACKER.idFromName('main'));
+        tracker = await (await stub.fetch(new Request('https://do/status'))).json();
+      } catch (e) { tracker = { error: String((e && e.message) || e).slice(0, 120) }; }
+      const pipe = env.DB ? await pipelineStatus(env).catch(e => ({ error: String((e && e.message) || e).slice(0, 120), items: [] })) : { items: [] };
+      return new Response(JSON.stringify({ now: Date.now(), pipeline: pipe, tracker }), {
+        headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=120', ...CORS },
+      });
+    }
     /* 前端排名 API 的代理：直連 api.hisekai.org 被 CORS 或網路擋下時，先走這裡再退到公共代理。
        只放行固定幾條路徑、只讀、邊緣快取 30 秒，不帶 cookie。 */
     if (p.startsWith('/proxy/hisekai/')) return proxyHisekai(req, url);
@@ -425,6 +442,15 @@ export default {
       if (pushEnabled(env)) {
         try { await flushPush(env); } catch (e) { console.error('flushPush', e && e.message); }
       }
+      /* 每小時一次（看上次檢查距今多久，而不是看分鐘數：cron 偶爾會漏一分鐘）：
+         資料管線檢查（GitHub Actions 的排程工作有沒有失敗或太久沒成功）與統計原始列的清理 */
+      try {
+        const last = await stateGet(env.DB, 'pipeline:summary');
+        if (!last || Date.now() / 1000 - last.t >= 3600 - 30) {
+          try { await checkPipeline(env); } catch (e) { console.error('checkPipeline', e && e.message); }
+          try { await teleMaintain(env.DB); } catch (e) { console.error('teleMaintain', e && e.message); }
+        }
+      } catch (e) { console.error('hourly', e && e.message); }
     })());
   },
 };

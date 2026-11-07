@@ -1,0 +1,57 @@
+name: 正式站探針
+# 每小時打一次正式站的關鍵端點：網站本體、分享預覽路由、資料戳記、Worker 的 API 與逐局追蹤器、上游的 HiSekai。
+# 任何一項壞掉 job 就變紅，GitHub 會寄信給 repo 擁有者；Worker 的管線檢查（src/pipeline.js）也會把它當「探針失敗」通知管理員，
+# 網站的「系統狀態」頁會顯示最近一次結果。只讀、不改 repo、每次不到一分鐘。
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: canary
+  cancel-in-progress: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 網站本體（首頁殼層要載得到、要指到壓縮後的主程式）
+        run: |
+          body=$(curl -fsS -m 20 -A "canary/1.0 (+https://project-sekai-center.com)" https://project-sekai-center.com/app.html)
+          echo "$body" | grep -q 'js/app.min.js' || { echo "::error::app.html 沒有 app.min.js 的引用"; exit 1; }
+          curl -fsS -m 20 -o /dev/null -w "首頁 %{http_code} %{time_total}s %{size_download}B\n" https://project-sekai-center.com/
+      - name: 分享預覽路由（Discord 的 UA 打 ?page= 要拿到 share/ 靜態頁；一般人拿到 app.html）
+        run: |
+          s=$(curl -fsS -m 20 -A "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)" "https://project-sekai-center.com/?page=songs")
+          echo "$s" | grep -q 'http-equiv="refresh"' || { echo "::error::爬蟲 UA 沒拿到 share 預覽頁"; exit 1; }
+          h=$(curl -fsS -m 20 -A "Mozilla/5.0 (Windows NT 10.0) Chrome/130" "https://project-sekai-center.com/?page=songs")
+          echo "$h" | grep -q 'js/app.min.js' || { echo "::error::一般 UA 沒拿到 app.html"; exit 1; }
+      - name: 資料戳記與資料檔（每日更新的入口）
+        run: |
+          st=$(curl -fsS -m 20 "https://project-sekai-center.com/data/stamps.js")
+          echo "$st" | grep -q 'SC_DATA_V' || { echo "::error::data/stamps.js 內容不對"; exit 1; }
+          v=$(echo "$st" | grep -o '"syslog.js":"[0-9a-f]*"' | grep -o '[0-9a-f]\{10\}')
+          curl -fsS -m 20 -o /dev/null -w "syslog.js %{http_code} %{size_download}B\n" "https://project-sekai-center.com/data/syslog.js?v=$v"
+      - name: Worker：Haruki 設定、系統狀態、逐局追蹤器、行事曆
+        run: |
+          curl -fsS -m 20 https://games.project-sekai-center.com/haruki/config >/dev/null
+          s=$(curl -fsS -m 20 https://games.project-sekai-center.com/ops/status)
+          echo "$s" | python3 -c '
+          import sys, json, time
+          d = json.load(sys.stdin)
+          tr = d.get("tracker") or {}
+          if tr.get("error"): print("::error::追蹤器狀態拿不到：" + str(tr.get("error"))); sys.exit(1)
+          last = tr.get("lastOk") or 0
+          age = (d.get("now", time.time() * 1000) - last) / 60000
+          print("追蹤器上次成功 %.0f 分鐘前，事件 %s，快照 %s 筆" % (age, (tr.get("event") or {}).get("id"), tr.get("snaps")))
+          if last and age > 30: print("::error::逐局追蹤器超過 30 分鐘沒成功抓到排名"); sys.exit(1)
+          p = d.get("pipeline") or {}
+          bad = [i["label"] for i in p.get("items", []) if i.get("scheduled") and i.get("state") != "ok"]
+          if bad: print("::warning::資料管線異常：" + "、".join(bad))
+          '
+          curl -fsS -m 20 -o /dev/null -w "/cal/sekai.ics %{http_code}\n" https://games.project-sekai-center.com/cal/sekai.ics
+      - name: 上游 HiSekai（壞了只警告：不是我們能修的，網站有 Haruki 備援）
+        continue-on-error: true
+        run: |
+          code=$(curl -sS -m 20 -o /dev/null -w "%{http_code}" -A "canary/1.0 (+https://project-sekai-center.com)" https://api.hisekai.org/tw/event/list)
+          echo "HiSekai /event/list $code"
+          [ "$code" = "200" ] || { echo "::warning::HiSekai 回 $code"; exit 1; }
