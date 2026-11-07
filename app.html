@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=724c2cff5e" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=3a4c8d1ec4" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -9961,6 +9961,191 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 
+  <!-- ========== 活動回顧 ========== -->
+  <sc-if value="{{ isRecap }}">
+  <div class="set-page" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:14px">
+    <sc-if value="{{ recapIsJp }}"><div class="empty">活動回顧目前只有台服資料（公用榜線時序只記台服）。</div></sc-if>
+    <div class="chips-scroll" style="display:flex;gap:7px">
+      <sc-for list="{{ recapChips }}" as="c" hint-placeholder-count="6">
+        <button type="button" onClick="{{ onRecapPick }}" data-v="{{ c.v }}" aria-pressed="{{ c.on }}" style="flex:none;padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">{{ c.n }}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ recapLoad }}"><div class="empty loading">載入榜線紀錄…</div></sc-if>
+    <sc-if value="{{ recapErr }}"><div class="empty">{{ recapErr }}</div></sc-if>
+    <sc-if value="{{ recapHas }}">
+    <div class="set-card">
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <sc-if value="{{ recapHasLogo }}"><img src="{{ recapLogo }}" referrerpolicy="no-referrer" decoding="async" alt="" style="height:54px;max-width:170px;object-fit:contain" onError="{{ onImgErr }}" data-fb="hidden"></sc-if>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:11.5px;color:var(--text-3);font-weight:700">{{ recapNo }}・{{ recapMeta }}</div>
+          <div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1.3">{{ recapTitle }}</div>
+          <div style="font-size:12px;color:var(--text-2)">{{ recapRange }}<sc-if value="{{ recapLive }}">　<span style="color:#e0a030;font-weight:700">進行中：這是到目前為止的紀錄</span></sc-if></div>
+        </div>
+        <button type="button" class="set-btn" onClick="{{ onRecapShare }}">複製回顧連結</button>
+      </div>
+    </div>
+
+    <section class="set-card">
+      <div class="set-h"><b>最終榜線</b><span>{{ recapRefNote }}；{{ recapAccNote }}。點段位切換下面的走勢圖</span></div>
+      <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:5px 12px;font-size:12.5px;align-items:center">
+        <div style="font-size:11px;color:var(--text-3);font-weight:700">段位</div><div style="font-size:11px;color:var(--text-3);font-weight:700">終線</div><div style="font-size:11px;color:var(--text-3);font-weight:700">歷屆同型態</div><div style="font-size:11px;color:var(--text-3);font-weight:700">50% 時的預測</div>
+        <sc-for list="{{ recapTiers }}" as="r" hint-placeholder-count="7">
+          <button type="button" onClick="{{ onRecapTier }}" data-v="{{ r.v }}" aria-pressed="{{ r.on }}" style="text-align:left;padding:5px 11px;border:1px solid {{ r.bd }};border-radius:999px;background:{{ r.bg }};color:{{ r.fg }};font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap">{{ r.t }}</button>
+          <div style="font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ r.final }} <span style="font-size:10.5px;color:var(--text-3);font-weight:400">{{ r.src }}</span></div>
+          <div style="color:var(--text-2);font-family:'M PLUS Rounded 1c'">{{ r.ref }} <span style="color:{{ r.refColor }};font-weight:700;font-size:11.5px">{{ r.refPct }}</span></div>
+          <div style="color:var(--text-2);font-family:'M PLUS Rounded 1c'">{{ r.pred }} <span style="color:var(--text-3);font-size:11.5px">{{ r.predErr }}</span></div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>{{ recapTierName }} 走勢</b><span>按住圖可以讀值；下面是每天漲了多少</span></div>
+      <sc-if value="{{ recapChartOk }}">
+        <svg data-chart="recap" viewBox="0 0 {{ recapCW }} {{ recapCH }}" style="width:100%;height:auto;display:block;overflow:visible;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none">
+          <defs><linearGradient id="rcFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+          <line x1="{{ recapCGX1 }}" y1="{{ recapCGHi }}" x2="{{ recapCGX2 }}" y2="{{ recapCGHi }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+          <line x1="{{ recapCGX1 }}" y1="{{ recapCGLo }}" x2="{{ recapCGX2 }}" y2="{{ recapCGLo }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
+          <path d="{{ recapCArea }}" fill="url(#rcFill)"></path>
+          <path d="{{ recapCLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+          <line class="cx-line" style="opacity:0;transition:opacity .12s" x1="0" y1="0" x2="0" y2="0" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="2 3"></line>
+          <circle class="cx-dot" style="opacity:0;transition:opacity .12s" cx="0" cy="0" r="4" fill="var(--card)" stroke="var(--accent)" stroke-width="2.4"></circle>
+          <sc-for list="{{ recapCTicks }}" as="t" hint-placeholder-count="3"><text x="{{ t.x }}" y="{{ recapCH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ t.l }}</text></sc-for>
+        </svg>
+        <div data-readout="recap" style="min-height:17px;user-select:none;font-size:12px;font-weight:700;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';opacity:0;transition:opacity .12s"></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-top:4px">
+          <span>起 <b>{{ recapCFirst }}</b></span><span>終 <b>{{ recapCLast }}</b></span><span>{{ recapCN }} 筆・{{ recapCSpanLabel }}</span><span style="color:var(--text-3)">{{ recapCAxisNote }}</span>
+        </div>
+        <div style="margin-top:12px;font-size:12.5px;font-weight:800;color:var(--ink)">每日增量</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:64px;margin-top:6px">
+          <sc-for list="{{ recapDays }}" as="d" hint-placeholder-count="9"><div title="{{ d.d }}　{{ d.tip }}" style="flex:1;height:{{ d.w }};background:var(--accent);border-radius:4px 4px 0 0;opacity:.85"></div></sc-for>
+        </div>
+        <div style="display:flex;gap:4px;font-size:10px;color:var(--text-3);margin-top:3px"><sc-for list="{{ recapDays }}" as="d" hint-placeholder-count="9"><div style="flex:1;text-align:center;overflow:hidden;white-space:nowrap;font-family:'M PLUS Rounded 1c'">{{ d.g }}</div></sc-for></div>
+        <div style="font-size:11.5px;color:var(--text-2);margin-top:5px">{{ recapDayNote }}</div>
+      </sc-if>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>前百</b><span>公用紀錄每 5 分鐘記一次前百名單</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">第 1 名</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapTop1 }}</div></div>
+        <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">第 100 名</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapTop100 }}</div></div>
+        <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">最後 24 小時擠進前百</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapIn24 }}</div></div>
+        <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">曾進過前百</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapEverTop }}</div></div>
+      </div>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>我的這期</b><span>綁定 Player ID 後，這裡會列出你的最終名次、分數與走勢</span></div>
+      <sc-if value="{{ recapNoPid }}"><div style="font-size:12.5px;color:var(--text-3)">還沒綁定 Player ID。<button type="button" class="set-btn" onClick="{{ onGo }}" data-p="settings">去設定</button></div></sc-if>
+      <sc-if value="{{ recapMeNone }}"><div style="font-size:12.5px;color:var(--text-3)">這一期沒有你的紀錄：不在前百名單裡，這台裝置活動期間也沒開著網站記分數。</div></sc-if>
+      <sc-if value="{{ recapMeHas }}">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;margin-bottom:8px">
+          <div style="font-size:20px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapMeFinal }}</div>
+          <div style="font-size:12px;color:var(--text-2)">{{ recapMeBest }}</div>
+          <div style="font-size:12px;color:var(--text-2)">分數 <b style="font-family:'M PLUS Rounded 1c'">{{ recapMeScore }}</b></div>
+          <div style="font-size:11px;color:var(--text-3)">{{ recapMeSrc }}</div>
+        </div>
+        <sc-if value="{{ recapMeRankOk }}">
+          <div style="font-size:12px;font-weight:800;color:var(--ink);margin:6px 0 2px">名次走勢</div>
+          <svg data-chart="recaprk" viewBox="0 0 {{ recapRW }} {{ recapRH }}" style="width:100%;height:auto;display:block;overflow:visible;touch-action:none;cursor:crosshair;user-select:none">
+            <path d="{{ recapRLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+            <line class="cx-line" style="opacity:0;transition:opacity .12s" x1="0" y1="0" x2="0" y2="0" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="2 3"></line>
+            <circle class="cx-dot" style="opacity:0;transition:opacity .12s" cx="0" cy="0" r="4" fill="var(--card)" stroke="var(--accent)" stroke-width="2.4"></circle>
+            <sc-for list="{{ recapRTicks }}" as="t" hint-placeholder-count="3"><text x="{{ t.x }}" y="{{ recapRH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ t.l }}</text></sc-for>
+          </svg>
+          <div data-readout="recaprk" style="min-height:17px;font-size:12px;font-weight:700;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';opacity:0;transition:opacity .12s"></div>
+        </sc-if>
+        <sc-if value="{{ recapMeChartOk }}">
+          <div style="font-size:12px;font-weight:800;color:var(--ink);margin:6px 0 2px">分數走勢</div>
+          <svg data-chart="recapme" viewBox="0 0 {{ recapMW }} {{ recapMH }}" style="width:100%;height:auto;display:block;overflow:visible;touch-action:none;cursor:crosshair;user-select:none">
+            <path d="{{ recapMArea }}" fill="url(#rcFill)"></path>
+            <path d="{{ recapMLine }}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+            <line class="cx-line" style="opacity:0;transition:opacity .12s" x1="0" y1="0" x2="0" y2="0" stroke="var(--accent-deep)" stroke-width="1" stroke-dasharray="2 3"></line>
+            <circle class="cx-dot" style="opacity:0;transition:opacity .12s" cx="0" cy="0" r="4" fill="var(--card)" stroke="var(--accent)" stroke-width="2.4"></circle>
+            <sc-for list="{{ recapMTicks }}" as="t" hint-placeholder-count="3"><text x="{{ t.x }}" y="{{ recapMH }}" fill="var(--text-3)" font-size="10" text-anchor="middle">{{ t.l }}</text></sc-for>
+          </svg>
+          <div data-readout="recapme" style="min-height:17px;font-size:12px;font-weight:700;color:var(--accent-deep);font-family:'M PLUS Rounded 1c';opacity:0;transition:opacity .12s"></div>
+        </sc-if>
+      </sc-if>
+    </section>
+
+    <section class="set-card">
+      <div class="set-h"><b>預測準不準</b><span>留一法：用沒看過這一期的模型，在各進度預測終線，跟官方終線比。<button type="button" class="set-btn" onClick="{{ onGo }}" data-p="accuracy" style="margin-left:6px">看全部期數</button></span></div>
+      <sc-if value="{{ recapAccHas }}">
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr 1fr;gap:4px 10px;font-size:12px;align-items:center">
+          <div style="font-size:11px;color:var(--text-3);font-weight:700">段位</div><div style="font-size:11px;color:var(--text-3);font-weight:700">實際</div>
+          <sc-for list="{{ recapAccHead }}" as="h" hint-placeholder-count="4"><div style="font-size:11px;color:var(--text-3);font-weight:700">{{ h }}</div></sc-for>
+          <sc-for list="{{ recapAcc }}" as="r" hint-placeholder-count="8">
+            <div style="font-weight:800;color:var(--ink)">{{ r.spec }}</div>
+            <div style="font-family:'M PLUS Rounded 1c';color:var(--ink)">{{ r.final }}</div>
+            <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="4"><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ c.v }} <span style="color:{{ c.color }};font-weight:700;font-size:11px">{{ c.e }}</span></div></sc-for>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ recapAccHas }}"></sc-if>
+    </section>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ========== 預測準確度 ========== -->
+  <sc-if value="{{ isAccuracy }}">
+  <div class="set-page" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:14px">
+    <div class="set-card">
+      <div style="font-size:12.5px;color:var(--text-2);line-height:1.8">榜線終線預測到底準不準，這裡不講感覺、講回測：每一期都用「沒看過這一期」的模型（留一法），在活動進度 25／50／75／90% 那一刻各預測一次終線，跟官方終線比。另外給兩個對照組：<b>線性外推</b>（照當時的平均速度推到結束）與<b>賽前先驗</b>（同型態歷屆終線的加權平均）。誤差＝|預測 ÷ 實際 − 1|，表上是中位數。資料每天重算；最近一次 {{ accBuiltAt }}，共 {{ accN }} 期。</div>
+    </div>
+    <sc-if value="{{ accLoad }}"><div class="empty loading">載入回測資料…</div></sc-if>
+    <sc-if value="{{ accMissing }}"><div class="empty">還沒有回測資料（每日排程會產生 data/border-accuracy.json）。</div></sc-if>
+    <sc-if value="{{ accHas }}">
+    <div class="chips-scroll" style="display:flex;gap:7px">
+      <sc-for list="{{ accTaus }}" as="c" hint-placeholder-count="4">
+        <button type="button" onClick="{{ onAccTau }}" data-v="{{ c.v }}" aria-pressed="{{ c.on }}" style="flex:none;padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+      <sc-for list="{{ accCards }}" as="c" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:15px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs)">
+          <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
+          <div style="font-size:21px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c';line-height:1.25">{{ c.v }}</div>
+          <div style="font-size:10.5px;color:var(--text-3)">{{ c.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <section class="set-card">
+      <div class="set-h"><b>主榜各段位</b><span>綠 &lt;5%、黃 &lt;15%、紅 ≥15%（中位誤差）</span></div>
+      <div style="display:grid;grid-template-columns:auto repeat(6,1fr);gap:4px 10px;font-size:12px;align-items:center">
+        <div style="font-size:11px;color:var(--text-3);font-weight:700">段位</div><div style="font-size:11px;color:var(--text-3);font-weight:700">預測數</div><div style="font-size:11px;color:var(--text-3);font-weight:700">模型中位</div><div style="font-size:11px;color:var(--text-3);font-weight:700">模型平均</div><div style="font-size:11px;color:var(--text-3);font-weight:700">線性</div><div style="font-size:11px;color:var(--text-3);font-weight:700">先驗</div><div style="font-size:11px;color:var(--text-3);font-weight:700">區間涵蓋</div>
+        <sc-for list="{{ accGroups }}" as="g" hint-placeholder-count="5">
+          <div style="font-weight:800;color:var(--ink)">{{ g.g }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.n }}</div><div style="font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ g.color }}">{{ g.med }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.mean }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.lin }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.prior }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.cover }}</div>
+        </sc-for>
+      </div>
+    </section>
+    <section class="set-card">
+      <div class="set-h"><b>前百逐名次線</b><span>第 1～100 名的終分；整體中位誤差 {{ accRankAll }}。少數人的個人行為，本來就比段位難猜</span></div>
+      <div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:4px 10px;font-size:12px;align-items:center">
+        <div style="font-size:11px;color:var(--text-3);font-weight:700">名次</div><div style="font-size:11px;color:var(--text-3);font-weight:700">預測數</div><div style="font-size:11px;color:var(--text-3);font-weight:700">模型中位</div><div style="font-size:11px;color:var(--text-3);font-weight:700">線性</div><div style="font-size:11px;color:var(--text-3);font-weight:700">區間涵蓋</div>
+        <sc-for list="{{ accRankGroups }}" as="g" hint-placeholder-count="3">
+          <div style="font-weight:800;color:var(--ink)">{{ g.g }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.n }}</div><div style="font-family:'M PLUS Rounded 1c';font-weight:800;color:{{ g.color }}">{{ g.med }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.lin }}</div><div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ g.cover }}</div>
+        </sc-for>
+      </div>
+    </section>
+    <section class="set-card">
+      <div class="set-h"><b>逐期</b><span>預測 / 實際，後面是誤差。點期數看那一期的活動回顧</span></div>
+      <div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:5px 10px;font-size:12px;align-items:center">
+        <div style="font-size:11px;color:var(--text-3);font-weight:700">期數</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T100</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T1000</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T5000</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T10000</div>
+        <sc-for list="{{ accEvents }}" as="e" hint-placeholder-count="9">
+          <button type="button" onClick="{{ onAccEvGo }}" data-v="{{ e.id }}" style="text-align:left;padding:4px 0;border:0;background:transparent;cursor:pointer;color:var(--ink)"><div style="font-weight:800">第 {{ e.id }} 期</div><div style="font-size:10.5px;color:var(--text-3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.name }}　{{ e.meta }}</div></button>
+          <div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ e.c100.v }} <span style="color:{{ e.c100.color }};font-weight:700;font-size:11px">{{ e.c100.e }}</span></div>
+          <div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ e.c1000.v }} <span style="color:{{ e.c1000.color }};font-weight:700;font-size:11px">{{ e.c1000.e }}</span></div>
+          <div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ e.c5000.v }} <span style="color:{{ e.c5000.color }};font-weight:700;font-size:11px">{{ e.c5000.e }}</span></div>
+          <div style="font-family:'M PLUS Rounded 1c';color:var(--text-2)">{{ e.c10000.v }} <span style="color:{{ e.c10000.color }};font-weight:700;font-size:11px">{{ e.c10000.e }}</span></div>
+        </sc-for>
+      </div>
+    </section>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ========== 系統狀態 ========== -->
   <sc-if value="{{ isStatus }}">
   <div class="set-page" style="animation:pageIn var(--anim) cubic-bezier(.32,.72,.24,1);display:flex;flex-direction:column;gap:14px">
@@ -12582,7 +12767,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=724c2cff5e"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3a4c8d1ec4"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

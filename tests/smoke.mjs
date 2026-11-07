@@ -22,6 +22,7 @@ const CASES = [
   ['sched', /排程預測|逐期回測|未來活動/],
   ['settings', /遊戲與資料|顯示版本|側欄功能/],
   ['status', /即時來源|資料管線/],
+  ['recap', /活動回顧/], ['accuracy', /預測準確度/],
 ];
 let fail = 0;
 for (const mobile of [false, true]) {

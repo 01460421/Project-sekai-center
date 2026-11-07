@@ -46,6 +46,10 @@ jobs:
         run: |
           python3 -c 'import numpy' 2>/dev/null || pip3 install --quiet numpy
           python3 tools/build-border-model.py
+      # 預測準確度（data/border-accuracy.json）：每期留一法在 25／50／75／90% 進度各預測一次，跟官方終線比；約 6 分鐘
+      - name: 榜線預測的留一法準確度(data/border-accuracy.json)
+        continue-on-error: true
+        run: python3 tools/build-border-accuracy.py
 
       # 理論技能倍率表：兩服 master 有新卡就會變，一樣「內容沒變就不寫檔」。
       # 日服 cards.json 有 34 MB：以上游 HEAD commit 當 key 快取，commit 沒變的日子不重抓。
@@ -133,7 +137,7 @@ jobs:
       # 只提交資料檔；版本戳在 rebase 到最新 main 之後才重算（見 tools/commit-data.sh），
       # 取樣期間 main 有新提交也不會在 app.html / app.min.js 上撞衝突。
       - name: 提交變更
-        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js data/billing-jp.js data/borders-db-jp.js tools/border_model/jp-finals.json data/gachasim-jp.js data/wl3-power.js data/wl3-zone.js data/card-chara.js
+        run: bash tools/commit-data.sh "商城/定數資料 $(date -u '+%Y-%m-%d')" data/billing.js data/b30-consts.js data/borders-db.js data/sekai-data.js data/border-model.json data/border-accuracy.json tools/border_model/finals.json data/skill-table.js data/gacha-pickups.js data/event-info.js data/schedule-forecast.js data/jp-now.js data/gachas-jp.js data/gacha-pickups-jp.js data/event-info-jp.js data/billing-jp.js data/borders-db-jp.js tools/border_model/jp-finals.json data/gachasim-jp.js data/wl3-power.js data/wl3-zone.js data/card-chara.js
 
       # 上面「重擬榜線預測模型」失敗的話,其他資料都已照常提交了,這裡才把 job 弄成紅的,摘要頁也看得到原因。
       - name: 榜線模型重擬失敗就讓 job 變紅
