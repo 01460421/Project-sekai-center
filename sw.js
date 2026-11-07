@@ -9,12 +9,18 @@
        以前 fetch(req) 帶著完整查詢字串，瀏覽器的 HTTP 快取是以完整網址當鍵，
        所以 ?page=home 回訪是 0 KB，換到 ?page=calendar 就又是一次完整的 app.html；
        改抓 /app.html 之後每個 ?page= 都共用同一個 HTTP 快取項，之後只剩 304。
-       /、/app 在線上都是 app.html（vercel.json），一併併進 /app.html 這個鍵。 */
+       /、/app 在線上都是 app.html（vercel.json），一併併進 /app.html 這個鍵。
+   v2 再補：網址改成路徑形式（/songs、/recap）之後，這些路徑也併進 /app.html 這個鍵；
+       不然每個分頁又會各存一份、離線也只有看過的那幾頁開得起來。 */
 const VER = 'v2';
 const STATIC_MAX = 160;   // 保險絲：同時最多留這麼多個資產
 const PAGES = 'pages-' + VER, STATIC = 'static-' + VER;
 const STATIC_RE = /^\/(js|css|data|vendor|icons|tut-img)\/|^\/support\.js$/;
-const SHELL_RE = /^\/(app(\.html)?)?$/;   // /、/app、/app.html 都是同一個殼層
+/* 殼層：/、/app、/app.html，以及 /songs、/recap 這種路徑形式的分頁（vercel.json 的 catch-all 都回 app.html）。
+   獨立頁（starmap、theater…）雖然也是沒有副檔名的路徑，但它們是自己的 HTML，不能當殼層。 */
+const STANDALONE_RE = /^\/(starmap|theater|soundprint|echoes|classic|tutorial|ep-calculator)$/;
+const SHELL_RE = /^\/[A-Za-z0-9_]*$/;
+const isShell = p => SHELL_RE.test(p) && !STANDALONE_RE.test(p);
 const NO_CACHE_RE = /^\/data\/(billing|billing-jp|b30-consts|borders-db|borders-db-jp)\.js$|^\/data\/border-(model|accuracy)\.json$|^\/data\/history\//;
 
 /* 安裝時先把殼層抓一份：PAGES 裡立刻有離線可用的 app.html，HTTP 快取也先有 /app.html 這個項目，
@@ -32,7 +38,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (req.mode === 'navigate' || /\.html$/.test(url.pathname) || url.pathname === '/') {
-    const path = SHELL_RE.test(url.pathname) ? '/app.html' : url.pathname;
+    const path = isShell(url.pathname) ? '/app.html' : url.pathname;
     const key = url.origin + path;   // 查詢字串不進鍵：同一個殼層只存一份，去抓也只抓這個路徑
     /* redirect:'manual' 不能省：導覽請求本來就是 manual，自建的 Request 預設是 follow，
        /songcard、/chart 這種 308（vercel.json）會被跟到底再交回瀏覽器，瀏覽器對導覽拒收跟過轉址的回應 → ERR_FAILED。

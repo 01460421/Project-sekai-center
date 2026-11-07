@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=3a4c8d1ec4" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=ed50edfa98" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -3414,7 +3414,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <div class="u-a3">
     <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
       <input type="search" enterkeyhint="search" placeholder="搜尋卡池名稱、角色、備註…" value="{{ gq }}" onInput="{{ onField }}" data-k="gq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
-      <select value="{{ gt }}" onChange="{{ onField }}" data-k="gt" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)" sc-options="{{ gachaTypes }}"></select>
+      <select aria-label="卡池類型" value="{{ gt }}" onChange="{{ onField }}" data-k="gt" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)" sc-options="{{ gachaTypes }}"></select>
     </div>
     <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
       <sc-for list="{{ unitChips }}" as="u" hint-placeholder-count="7">
@@ -3495,7 +3495,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <div class="u-a3">
     <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px">
       <input type="search" enterkeyhint="search" placeholder="搜尋曲名、作曲者…" value="{{ sq }}" onInput="{{ onField }}" data-k="sq" style="flex:1;min-width:190px;padding:11px 17px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14px;min-height:44px;outline:none;box-shadow:var(--sh-xs)" style-focus="border-color:var(--accent)">
-      <select value="{{ ssort }}" onChange="{{ onField }}" data-k="ssort" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
+      <select aria-label="排序" value="{{ ssort }}" onChange="{{ onField }}" data-k="ssort" style="padding:11px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13.5px;min-height:44px;cursor:pointer;outline:none;box-shadow:var(--sh-xs)">
         <option value="id">ID 由小到大</option><option value="new">最新加入</option><option value="master">難度 高→低</option><option value="masterAsc">難度 低→高</option><option value="bpm">BPM 高→低</option><option value="bpmAsc">BPM 低→高</option><option value="len">歌長 長→短</option><option value="lenAsc">歌長 短→長</option>
       </select>
       <button type="button" onClick="{{ onShuffleAll }}" title="隨機連續播放全曲庫" style="padding:11px 17px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sh-xs);white-space:nowrap">隨機連播</button>
@@ -12767,7 +12767,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=3a4c8d1ec4"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=ed50edfa98"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

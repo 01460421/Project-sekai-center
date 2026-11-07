@@ -2,10 +2,11 @@
 // 本機：node tests/sw.mjs（需要 playwright 或 playwright-core + Chromium）
 // 腳本自己起一個小伺服器（預設 127.0.0.1:8766，PORT 可改），因為 python http.server 不會回 304、也沒有 /songcard 的 308；
 // 伺服器照 vercel.json 的行為：.html 回 max-age=0, must-revalidate + ETag（If-None-Match 命中回 304）、
-// /songcard、/chart 回 308 到 /app.html?page=…、/ 與 /app 都是 app.html，並記下每一筆請求（路徑、狀態、位元組）。
+// /songs/ 這種尾斜線回 308 到 /songs、/ 與 /app 與 /songs 這種路徑形式的分頁都是 app.html，並記下每一筆請求（路徑、狀態、位元組）。
 // 設了 BASE（例如 http://127.0.0.1:8765）就改打外面的伺服器，只做瀏覽器端的檢查（不看伺服器記錄、不測 308）。
 // 流程：開 ?page=home 等 SW 啟用 → 開 ?page=calendar、?page=songs、/?page=event：文件要由 SW 回應、伺服器只看到 /app.html 的 304
-//       → 開 /songcard：不能 ERR_FAILED，最後要落在 ?page=songcard → 離線開 ?page=event 仍要開得起來、沒看過的 starmap.html 要回離線頁。
+//       → 開 /songs（路徑形式）：也要由 SW 回應、落在 /songs 且長出歌曲頁 → 開 /songs/：308 不能 ERR_FAILED，最後要落在 /songs
+//       → 離線開 ?page=event 與 /recap 仍要開得起來、沒看過的 starmap.html 要回離線頁。
 import { createRequire } from 'node:module';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -27,9 +28,9 @@ function serve(req, res) {
   const u = new URL(req.url, 'http://x');
   const end = (status, headers, body) => { rec.status = status; rec.bytes = body ? body.length : 0; res.writeHead(status, headers); res.end(body); };
   let m;
-  if ((m = /^\/(songcard|chart)(\.html)?$/.exec(u.pathname))) return end(308, { Location: '/app.html?page=' + m[1] });
+  if ((m = /^\/([A-Za-z0-9_]+)\/$/.exec(u.pathname))) return end(308, { Location: '/' + m[1] });   // vercel.json：尾斜線 308
   let p = u.pathname;
-  if (p === '/' || p === '/app') p = '/app.html';
+  if (p === '/' || p === '/app' || /^\/[A-Za-z0-9_]+$/.test(p)) p = '/app.html';   // vercel.json 的 catch-all：路徑形式的分頁都是殼層
   const f = path.join(ROOT, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
   if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return end(404, { 'content-type': 'text/plain' }, 'not found');
   const st = fs.statSync(f), ext = path.extname(f);
@@ -106,17 +107,33 @@ try {
     console.log('     ' + target + ' → fromSW=' + (doc && doc.fromSW) + ' status=' + (doc && doc.status) + ' cdpBytes=' + (doc && doc.bytes) + (nav ? ' transferSize=' + nav.transferSize + ' deliveryType=' + JSON.stringify(nav.deliveryType) : '') + (own ? ' server=' + JSON.stringify(hits) : ''));
   }
 
-  // 3) 308 深連結：/songcard → /app.html?page=songcard。SW 接管後不能 ERR_FAILED（redirect:'manual' 拿掉就會）
+  // 3) 路徑形式的分頁：/songs 由 SW 回應（鍵併進 /app.html）、主程式認得路徑、網址列維持 /songs；
+  //    /songs/ 的 308 跟得過去（redirect:'manual' 拿掉就 ERR_FAILED），最後落在 /songs
   if (own) {
-    for (const p of ['/songcard', '/chart']) {
+    {
+      const t = since(); doc = null; let why = '';
+      try {
+        await page.goto(BASE + '/songs', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        const ok = await shellLoaded();
+        const songs = await page.waitForFunction(() => /共 \d+ 首/.test(document.body.innerText), null, { timeout: 45000 }).then(() => true, () => false);
+        const hits = htmlHits(t), full = hits.filter(r => r.status === 200);
+        if (!ok) why = '殼層沒長出來';
+        else if (!doc || !doc.fromSW) why = '文件不是 SW 回應的：' + JSON.stringify(doc);
+        else if (full.length) why = '伺服器還是完整送了 app.html：' + JSON.stringify(full);
+        else if (!songs) why = '主程式沒把 /songs 認成歌曲頁';
+        else if (!/\/songs(\?|$)/.test(page.url())) why = '網址列變成 ' + page.url();
+      } catch (e) { why = e.message.slice(0, 120); }
+      report('/songs 路徑形式由 SW 回應且認得頁面', why);
+    }
+    for (const p of ['/songs/', '/recap/']) {
       let why = '';
       try {
         await page.goto(BASE + p, { waitUntil: 'domcontentloaded', timeout: 30000 });
         const ok = await shellLoaded();
         if (!ok) why = '殼層沒長出來';
-        else if (!new RegExp('\\?page=' + p.slice(1) + '$').test(page.url())) why = '最後落在 ' + page.url();
+        else if (new URL(page.url()).pathname !== p.slice(0, -1)) why = '最後落在 ' + page.url();
       } catch (e) { why = e.message.slice(0, 120); }
-      report(p + ' 308 跟得過去', why);
+      report(p + ' 尾斜線 308 跟得過去', why);
     }
   }
 
@@ -134,6 +151,16 @@ try {
     report('離線 ?page=event 仍開得起來', why);
     // setOffline 有沒有管到 SW 裡的 fetch 不一定（所以伺服器那邊也一起切斷）；印出來參考，不當失敗
     if (own) console.log('     離線期間打到伺服器（已切斷）的請求：' + log.slice(t).length + ' 筆' + (log.slice(t).length ? ' ' + JSON.stringify(log.slice(t).slice(0, 3).map(r => r.url)) : ''));
+  }
+  {
+    doc = null; let why = '';
+    try {
+      await page.goto(BASE + '/recap', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const ok = await shellLoaded();
+      if (!ok) why = '殼層沒長出來';
+      else if (!doc || !doc.fromSW || doc.status !== 200) why = '文件不是 SW 快取回的：' + JSON.stringify(doc);
+    } catch (e) { why = e.message.slice(0, 120); }
+    report('離線 /recap（路徑形式）仍開得起來', why);
   }
   {
     let why = '';

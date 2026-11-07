@@ -34,8 +34,8 @@ if (!shareOnly) {
 }
 
 // share/<page>.html：標題與說明跟 js/app.js 進頁後改寫 head 的結果一致（_syncUrl），爬蟲拿到的才會跟瀏覽器分頁列看到的一樣。
-// og:url 與 canonical 指回 /?page=X（站內「複製連結」與 sitemap 用的就是這種網址），FB／LINE 照 og:url 正規化時仍是同一頁。
-// 誤入的人（例如把 share 網址貼出去、或 CDN 把爬蟲那份快取給了真人）由 meta refresh 帶回 /app.html?page=X&s=1：
+// og:url 與 canonical 指回 /X（路徑形式；站內「複製連結」與 sitemap 用的就是這種網址，?page=X 仍認得），FB／LINE 照 og:url 正規化時仍是同一頁。
+// 誤入的人（例如把 share 網址貼出去、或 CDN 把爬蟲那份快取給了真人）由 meta refresh 帶回 /X?s=1：
 // 多帶一個 s=1 是因為 vercel.json 那條路由對有 s 的請求不改寫（missing），就算真人拿到這一頁也只會多跳一次、不會無限迴圈。
 const SITE = 'https://project-sekai-center.com';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -48,11 +48,12 @@ for (const p of pages) {
   let img = p.k;
   if (!fs.existsSync(path.join(ROOT, 'og', p.k + '.jpg'))) { img = 'home'; fallback++; console.warn('share/' + p.k + '.html：沒有 og/' + p.k + '.jpg，預覽圖退回 og/home.jpg'); }
   const title = p.t + ' · SEKAI 資源中心';
-  const url = SITE + '/?page=' + p.k, image = SITE + '/og/' + img + '.jpg';
+  const pth = p.k === 'home' ? '/' : '/' + p.k;
+  const url = SITE + pth, image = SITE + '/og/' + img + '.jpg';
   const html = `<!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
 <!-- 連結預覽用的靜態頁（tools/build-og.mjs 由 js/app.js 的 PAGES 表產生，不要手改）：
-     vercel.json 只在 user-agent 是預覽爬蟲且網址帶 ?page= 時把 /、/app、/app.html 改寫到這裡。 -->
+     vercel.json 只在 user-agent 是預覽爬蟲時把 /X（或帶 ?page=X 的 /、/app、/app.html）改寫到這裡。 -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(p.d)}">
@@ -70,9 +71,9 @@ for (const p of pages) {
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(p.d)}">
 <meta name="twitter:image" content="${esc(image)}">
-<meta http-equiv="refresh" content="0; url=/app.html?page=${p.k}&s=1">
+<meta http-equiv="refresh" content="0; url=${pth}?s=1">
 </head><body>
-<p>${esc(p.t)}：<a href="/app.html?page=${p.k}&s=1">前往 SEKAI 資源中心</a></p>
+<p>${esc(p.t)}：<a href="${pth}?s=1">前往 SEKAI 資源中心</a></p>
 </body></html>
 `;
   fs.writeFileSync(path.join(shareDir, p.k + '.html'), html);
