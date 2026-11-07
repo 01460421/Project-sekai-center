@@ -4054,6 +4054,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 const v = this._decodePreset(rs); if (!v) return;
                 await this._applyPreset(v);
                 const hint = document.getElementById('rsShareHint'); if (hint) hint.textContent = '已套用分享連結帶來的設定（活動 #' + (v.ev || '—') + '）；想留著就按「＋ 存目前設定」。';
+                // 內嵌在 App 裡：請外層把頁面捲到跑榜工作室，不然對方開連結只看到計算頁最上面
+                try { if (window.top !== window) parent.postMessage({ sekaiScrollTo: (document.getElementById('run-studio') || {}).offsetTop || 0 }, '*'); } catch (e) {}
             },
             async _applyPreset(v) {
                 const sel = document.getElementById('rsEvent'); if (sel && v.ev != null) { sel.value = String(v.ev); this._evId = +v.ev; }
@@ -7371,7 +7373,8 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
             if (document.body.classList.contains('embed-gachacalc')) gcInit();
             else lazyInit('gacha-calc', gcInit);
             lazyInit('rank-match', () => { RankCalc.calc(); RankCalc.promo(); });
-            lazyInit('run-studio', () => RunStudio.ensure());
+            // 分享連結（?rs=…）帶著設定來：不等捲到才初始化（內嵌在 App 的 iframe 裡永遠捲不到），直接開跑
+            if (/[?&]rs=/.test(location.search)) RunStudio.ensure(); else lazyInit('run-studio', () => RunStudio.ensure());
             lazyInit('shop-analyzer', () => ShopAnalyzer.ensure());
             lazyInit('b30-maker', () => B30Maker.ensure());
             window.addEventListener('resize', () => {

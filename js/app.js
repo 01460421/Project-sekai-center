@@ -1041,6 +1041,13 @@ class Component extends DCLogic {
     this._frameMsg = e => {
       const d = e && e.data;
       if (d && d.sekaiGoto) { this.go(d.sekaiGoto); return; }   // 小窗內連結 → 切到 app 內頁（不開新分頁）
+      if (d && typeof d.sekaiScrollTo === 'number') {   // 內嵌引擎要外層捲到它的某一段（分享連結套用後捲到跑榜工作室）
+        ['deckProFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+          const f = document.getElementById(id);
+          if (f && f.contentWindow === e.source) { try { window.scrollTo({ top: f.getBoundingClientRect().top + window.scrollY + d.sekaiScrollTo - 72, behavior: 'smooth' }); } catch (err) { window.scrollTo(0, f.offsetTop + d.sekaiScrollTo - 72); } }
+        });
+        return;
+      }
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
       ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'shopFrame', 'b30Frame'].forEach(id => {
@@ -2796,7 +2803,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=70f26ec847';
+      el.src = './js/core.js?v=53c84101a0';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
