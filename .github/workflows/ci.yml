@@ -13,6 +13,12 @@ jobs:
       - name: 語法檢查
         run: |
           for f in js/*.js sw.js support.js data/syslog.js data/aliases.js worker/src/*.js; do node --check "$f"; done   # 以前漏了 intro／i18n／border-model／sw 與 import().catch 載入的 syslog／aliases：語法錯了只會靜靜變空
+      - name: 資料檔結構驗證（戳記、歌曲、卡片、活動、榜線、模型、準確度、歷史、更新紀錄、翻譯、日服）
+        run: node tools/validate-data.mjs
+      - name: 效能預算（首屏檔案 gzip 大小不能超過 tests/budget.mjs 的上限）
+        run: node tests/budget.mjs
+      - name: 英日翻譯缺漏不能變多（基準在 tests/i18n-gap.mjs；要先裝 acorn，--missing 自己會裝）
+        run: node tests/i18n-gap.mjs
       - name: Worker 的 Haruki 轉換與路由
         run: node worker/test/haruki.mjs
       - name: Worker 的 Haruki 授權橋接（給菜根機器人；D1 用 node:sqlite 模擬）
@@ -36,12 +42,14 @@ jobs:
           key: playwright-1.48.2-chromium
       - name: 煙霧測試（桌機＋手機各 26 頁）
         run: |
-          npm i --no-save --silent playwright@1.48.2
+          npm i --no-save --silent playwright@1.48.2 axe-core@4.10.2
           npx playwright install --with-deps chromium
           python3 -m http.server 8765 >/dev/null 2>&1 &
           sleep 1
           node tests/smoke.mjs
-      - name: 服務工作者的導覽快取（換 ?page= 不重抓 app.html、/songcard 的 308、離線退回；腳本自己起 8766 的伺服器）
+      - name: 無障礙門檻（axe-core：critical 0、serious 不超過基準）
+        run: node tests/a11y.mjs
+      - name: 服務工作者的導覽快取（換 ?page= 或 /songs 路徑不重抓 app.html、尾斜線 308、離線退回；腳本自己起 8766 的伺服器）
         run: node tests/sw.mjs
       - name: 理論技能倍率表「我的卡」解算器與建置結果一致
         run: node tests/skill-mine.mjs

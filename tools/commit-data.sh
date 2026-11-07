@@ -27,6 +27,12 @@ if [ -z "$(git status --porcelain -- "$@")" ]; then
   echo "沒有新資料，不提交"
   exit 0
 fi
+# 提交前先驗結構（tools/validate-data.mjs）：建置腳本「跑完」不代表「產出對」——榜線模型曾靜靜壞五週。
+# 驗不過就不提交、job 變紅（管線監看會通知管理員）；要查哪一項壞了看上面的輸出。
+if ! node tools/validate-data.mjs; then
+  echo "::error::資料檔結構驗證失敗，這一輪不提交（見上方 FAIL 的項目）"
+  exit 1
+fi
 git config user.name  "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git add -- "$@"
