@@ -139,6 +139,29 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：存石規劃（plan.html）。桌機與手機各開一次：要長出卡池列表與總結格子，勾一池天井後總結要反映、走勢圖要有點；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/plan.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__plan && document.querySelectorAll('#list .g').length > 5, null, { timeout: 30000 });
+      await page.fill('#free', '30000'); await page.click('#list .g .btn[data-v="300"]'); await page.waitForTimeout(200);
+      const r = await page.evaluate(() => ({ rows: document.querySelectorAll('#list .g').length, picks: Object.keys(window.__plan.S.picks).length, circles: document.querySelectorAll('#chart circle').length, tiles: document.querySelectorAll('#tiles .tile').length }));
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && r.rows > 5 && r.picks === 1 && r.circles === 1 && r.tiles >= 4 && !(mobile && overflow);
+      why = errors[0] || (r.rows <= 5 ? '卡池只有 ' + r.rows + ' 池' : r.picks !== 1 ? '勾選沒生效' : r.circles !== 1 ? '走勢圖沒有點' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' plan' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：衝榜劇場（theater.html）。資料來自 games.project-sekai-center.com 的逐局追蹤器；
 // 桌機＋手機各開一次，要載到局數、面板要長出統計、不能有 JS 錯誤、手機不能橫向溢出。
 {
