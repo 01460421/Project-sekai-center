@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=30b6f71b36" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=0d19e5e99b" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -1719,7 +1719,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 :root.skin-stage .home-quick>button{position:relative;box-shadow:none!important}
 :root.skin-stage .home-quick>button>span:first-child{width:auto!important;height:auto!important;margin-bottom:8px!important;border-radius:0!important;background:none!important;font:600 12px/1 var(--st-mono);color:var(--accent-deep)}
 :root.skin-stage .home-quick>button>span:first-child::before{counter-increment:stq;content:counter(stq,decimal-leading-zero)}
-:root.skin-stage .home-quick>button::after{content:'↗';position:absolute;top:13px;right:15px;font:600 16px/1 var(--st-mono);color:var(--text-3);transition:transform .3s cubic-bezier(.34,1.45,.44,1),color .3s}
+:root.skin-stage .home-quick>button::after{content:'\2197\FE0E';position:absolute;top:13px;right:15px;font:600 16px/1 var(--st-mono);color:var(--text-3);transition:transform .3s cubic-bezier(.34,1.45,.44,1),color .3s}
 :root.skin-stage .home-quick>button:hover::after{transform:translate(3px,-3px);color:var(--sig)}
 :root.skin-stage .home-quick .u-ffc20{font-family:var(--st-disp)!important;font-weight:900!important;font-size:15px!important}
 
@@ -2805,10 +2805,10 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
   <div style="margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);line-height:1.7">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:8px"><span style="font-weight:800">特別專案</span>
-      <sc-for list="{{ navExtra }}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{ onGo }}" data-p="{{ x.id }}" style="border:none;background:transparent;padding:0;color:var(--text-2);font-size:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:{{ x.dot }}"></span>{{ x.name }} ↗</button></sc-for>
+      <sc-for list="{{ navExtra }}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{ onGo }}" data-p="{{ x.id }}" style="border:none;background:transparent;padding:0;color:var(--text-2);font-size:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:{{ x.dot }}"></span>{{ x.name }} ↗︎</button></sc-for>
     </div>
-    <a href="index.html">經典長頁版 ↗</a><br>
-    <a href="ep-calculator.html">EP 計算器 ↗</a> · <a href="tutorial.html">教學大全 ↗</a>
+    <a href="index.html">經典長頁版 ↗︎</a><br>
+    <a href="ep-calculator.html">EP 計算器 ↗︎</a> · <a href="tutorial.html">教學大全 ↗︎</a>
   </div>
 </aside>
 </sc-if>
@@ -3473,7 +3473,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <button type="button" onClick="{{ onPage }}" data-k="gp" data-d="1" style="padding:9px 20px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">下頁 →</button>
     </div>
 
-    <div style="font-size:11.5px;color:var(--text-3);margin-top:12px;line-height:1.7">卡池資料整理：<strong class="u-c9">瑞憶春希</strong>　<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/edit?usp=sharing" target="_blank" rel="noopener">原始表格 ↗</a></div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-top:12px;line-height:1.7">卡池資料整理：<strong class="u-c9">瑞憶春希</strong>　<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1hSnDoo3MN_MexTf3hddOpq9Tyoa8qUSgffPojlFT9IM/edit?usp=sharing" target="_blank" rel="noopener">原始表格 ↗︎</a></div>
 
     <!-- 豆森娃月列表：MySekai 月卡玩偶的排程。日服先行、台服約晚 9 個月，
          所以看日服那欄就知道台服接下來會輪到誰。 -->
@@ -3651,7 +3651,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </sc-for>
         </div>
         <div style="font-size:11.5px;color:var(--text-2);margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">{{ wlCkMsg }}</div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">WL 輔助隊伍的加成數值本站尚未內建（官方未公開完整表格）。需要精算請用社群工具 <a class="u-cf13" href="https://rilaksekai.com/support" target="_blank" rel="noopener">rilaksekai.com/support ↗</a>。歷屆 WL 各章榜線與排行可查 <a class="u-cf13" href="https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing" target="_blank" rel="noopener">台服 WL 榜線紀錄 ↗</a>（good果汁製作，附角色配色、可篩選）。交換所的資源規劃可參考 <a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener">WL 交換所規劃表 ↗</a>。</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">WL 輔助隊伍的加成數值本站尚未內建（官方未公開完整表格）。需要精算請用社群工具 <a class="u-cf13" href="https://rilaksekai.com/support" target="_blank" rel="noopener">rilaksekai.com/support ↗︎</a>。歷屆 WL 各章榜線與排行可查 <a class="u-cf13" href="https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing" target="_blank" rel="noopener">台服 WL 榜線紀錄 ↗︎</a>（good果汁製作，附角色配色、可篩選）。交換所的資源規劃可參考 <a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener">WL 交換所規劃表 ↗︎</a>。</div>
         <sc-if value="{{ wlCkOn }}">
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
             <sc-for list="{{ wlCkRows }}" as="a" hint-placeholder-count="5">
@@ -3934,7 +3934,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <!-- 這裡只做「各期 × 各段位」的對照表；想按活動長度、團體、類型交叉篩選的話，
            good果汁那份表做得比這裡完整，直接指過去比自己重做一個半吊子的好。 -->
       <a href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener" style="display:block;margin-top:11px;padding:12px 15px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);text-decoration:none">
-        <div style="font-size:13px;font-weight:800;color:var(--accent-deep)">想做更細的交叉篩選？台服全榜線紀錄 ↗</div>
+        <div style="font-size:13px;font-weight:800;color:var(--accent-deep)">想做更細的交叉篩選？台服全榜線紀錄 ↗︎</div>
         <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">good果汁製作。活動一覽與各期排行，可依長度、團體、類型篩選。原表的篩選器需要電腦版；手機請改用站上的「榜線資料庫」。</div>
       </a>
     </sc-if>
@@ -4319,7 +4319,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
                 </div>
               </sc-if>
 
-              <a href="https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-size:11.5px;font-weight:700;text-decoration:none">開啟 good果汁的控分表 ↗</a>
+              <a href="https://docs.google.com/spreadsheets/d/1MPU418le2nOZP0JN_HLeRrCLtpJtKkqu/edit?usp=drive_link" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent-deep);font-size:11.5px;font-weight:700;text-decoration:none">開啟 good果汁的控分表 ↗︎</a>
             </sc-if>
           </div>
         </sc-if>
@@ -4337,7 +4337,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="u-ffc0">綜合力 · 組卡優化 · 分數估算 · 跑榜工作室</div>
         <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">即時抓台服／日服主資料庫，逐道具計算 area item（5週年 Lv20）、角色等級、豆森門＋娃加成；組卡優化器已考慮團分且角色不重複。</div>
       </div>
-      <a href="./index.html?embed=calc" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+      <a href="./index.html?embed=calc" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗︎</a>
     </div>
     <iframe id="deckProFrame" data-src="{{ deckProSrc }}" title="進階計算器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
@@ -4353,7 +4353,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ srvTw }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">台服商城 930+ 項商品的內容物與台幣定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div></sc-if>
         <sc-if value="{{ srvJp }}"><div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">日服商城約 700 項商品（含官方 WEB 商店限定）的內容物與日圓定價，每日自動更新；依你的預算或目標抽數，在限購規則內算出最省錢的購買組合。</div></sc-if>
       </div>
-      <a href="{{ shopSrc }}" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+      <a href="{{ shopSrc }}" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗︎</a>
     </div>
     <iframe id="shopFrame" data-src="{{ shopSrc }}" title="儲值分析" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
@@ -4368,7 +4368,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="u-ffc0">Best 30 実効值圖卡 · PNG 匯出</div>
         <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">勾選你的 FC/AP 譜面，依非官方難易度表定數計算 B30，以 Unibot 風格版面產生高解析圖卡。</div>
       </div>
-      <a href="./index.html?embed=b30" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗</a>
+      <a href="./index.html?embed=b30" target="_blank" rel="noopener" style="flex:none;padding:8px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap">新分頁開啟 ↗︎</a>
     </div>
     <iframe id="b30Frame" data-src="./index.html?embed=b30" title="B30 產生器" scrolling="no" style="width:100%;height:86vh;min-height:560px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);display:block"></iframe>
   </div>
@@ -4406,7 +4406,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="empty">找不到符合的教學條目</div>
       </sc-if>
     </div>
-    <div style="margin-top:14px;font-size:11.5px;color:var(--text-3);line-height:1.8">由台啤開瓶器編輯團隊整理，共 115 則問答，教學圖片直接內嵌顯示。完整原始文檔（含最新增補）：<a href="{{ tutDoc }}" target="_blank">教學文檔 ↗</a></div>
+    <div style="margin-top:14px;font-size:11.5px;color:var(--text-3);line-height:1.8">由台啤開瓶器編輯團隊整理，共 115 則問答，教學圖片直接內嵌顯示。完整原始文檔（含最新增補）：<a href="{{ tutDoc }}" target="_blank">教學文檔 ↗︎</a></div>
   </div>
   </sc-if>
 
@@ -4447,7 +4447,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:11px">
           <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
             <a href="{{ it.url }}" target="_blank" style="display:block;padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);text-decoration:none;color:var(--text);transition:transform .3s cubic-bezier(.32,.72,.24,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm);border-color:var(--border-2);text-decoration:none">
-              <div class="u-ffc20">{{ it.name }} ↗</div>
+              <div class="u-ffc20">{{ it.name }} ↗︎</div>
               <div style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.6">{{ it.sub }}</div>
             </a>
           </sc-for>
@@ -4600,11 +4600,11 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
               </div>
             </sc-for>
           </div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。表上固定列 6 個章節交換所，但實際章節數各場不同 —— WL2 是 OC 團 4 章、V 家 6 章；WL3 是 5 章、其中 3.2 為 6 章；終章只有一個交換所、不需要規劃。用上方切換，超出的章節會標灰且不計入總需求。規劃表製作：good果汁（原作 Narwhal／國際服）　<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener">原始表格 ↗</a></div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.7">欄位為「道具・徽章需求・可換上限」。表上固定列 6 個章節交換所，但實際章節數各場不同 —— WL2 是 OC 團 4 章、V 家 6 章；WL3 是 5 章、其中 3.2 為 6 章；終章只有一個交換所、不需要規劃。用上方切換，超出的章節會標灰且不計入總需求。規劃表製作：good果汁（原作 Narwhal／國際服）　<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link" target="_blank" rel="noopener">原始表格 ↗︎</a></div>
         </div>
       </sc-if>
 
-      <div style="font-size:11px;color:var(--text-3);margin-top:11px;line-height:1.7">{{ bdbSrcNote }}原始表格：<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener">台服全榜線紀錄 ↗</a>　<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing" target="_blank" rel="noopener">台服 WL 榜線紀錄 ↗</a></div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:11px;line-height:1.7">{{ bdbSrcNote }}原始表格：<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/1GrB74wgDgJyRe_lNKpwWHjXrnCYOZP9M8L9uuQHJafA/edit?usp=sharing" target="_blank" rel="noopener">台服全榜線紀錄 ↗︎</a>　<a class="u-cf13" href="https://docs.google.com/spreadsheets/d/15P85CdYfmFh58iJxgOkS4ZvyrJ7SGPf6IIRA2AEh-ts/edit?usp=sharing" target="_blank" rel="noopener">台服 WL 榜線紀錄 ↗︎</a></div>
     </sc-if>
   </div>
   </sc-if>
@@ -8506,7 +8506,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div class="mk-h"><b>日服資源</b><i>網路上整理好的日服工具與資料站</i></div>
       <sc-for list="{{ jnRes }}" as="g" hint-placeholder-count="3">
         <div style="font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.1em;margin:10px 0 6px">{{ g.cat }}</div>
-        <div class="jn-res"><sc-for list="{{ g.items }}" as="x" hint-placeholder-count="4"><a href="{{ x.u }}" target="_blank" rel="noopener noreferrer"><b>{{ x.n }} ↗</b><span>{{ x.d }}</span></a></sc-for></div>
+        <div class="jn-res"><sc-for list="{{ g.items }}" as="x" hint-placeholder-count="4"><a href="{{ x.u }}" target="_blank" rel="noopener noreferrer"><b>{{ x.n }} ↗︎</b><span>{{ x.d }}</span></a></sc-for></div>
       </sc-for>
       <div style="font-size:11px;color:var(--text-3);line-height:1.6;margin-top:12px;padding:9px 11px;border-radius:12px;background:var(--card-2)">{{ jnResNote }}</div>
     </div>
@@ -10267,7 +10267,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <span style="color:var(--text-3)">上次成功 {{ w.ago }}</span>
           <span style="color:{{ w.color }};font-weight:700">{{ w.state }}</span>
           <span style="color:var(--accent-deep)">{{ w.running }}</span>
-          <a href="{{ w.url }}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-3)">紀錄 ↗</a>
+          <a href="{{ w.url }}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-3)">紀錄 ↗︎</a>
         </div>
       </sc-for>
       <details style="margin-top:8px">
@@ -10278,7 +10278,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <span style="flex:1;min-width:160px;color:var(--text-2);font-weight:700">{{ w.label }}</span>
             <span style="color:var(--text-3)">上次成功 {{ w.ago }}</span>
             <span style="color:{{ w.color }};font-weight:700">{{ w.state }}</span>
-            <a href="{{ w.url }}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-3)">紀錄 ↗</a>
+            <a href="{{ w.url }}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--text-3)">紀錄 ↗︎</a>
           </div>
         </sc-for>
       </details>
@@ -10709,7 +10709,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border);background:{{ r.bg }}">
             <button type="button" onClick="{{ onOstPlay }}" data-id="{{ r.id }}" aria-label="播放／暫停" style="width:36px;height:36px;flex:none;border:none;border-radius:50%;background:var(--ink-grad);color:#fff;font-size:11px;cursor:pointer;display:grid;place-items:center">{{ r.icon }}</button>
             <div class="u-fm8"><div style="font-size:13.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">{{ r.sub }}</div></div>
-            <a href="{{ r.url }}" target="_blank" rel="noopener" style="flex:none;font-size:11px;color:var(--text-3);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:8px 12px">mp3 ↗</a>
+            <a href="{{ r.url }}" target="_blank" rel="noopener" style="flex:none;font-size:11px;color:var(--text-3);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:8px 12px">mp3 ↗︎</a>
           </div>
         </sc-for>
       </div>
@@ -12171,9 +12171,9 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   </sc-for>
   <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3);line-height:1.9">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:8px"><span style="font-weight:800">特別專案</span>
-      <sc-for list="{{ navExtra }}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{ onGo }}" data-p="{{ x.id }}" style="border:none;background:transparent;padding:0;color:var(--text-2);font-size:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:{{ x.dot }}"></span>{{ x.name }} ↗</button></sc-for>
+      <sc-for list="{{ navExtra }}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{ onGo }}" data-p="{{ x.id }}" style="border:none;background:transparent;padding:0;color:var(--text-2);font-size:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:{{ x.dot }}"></span>{{ x.name }} ↗︎</button></sc-for>
     </div>
-    <a href="index.html">經典長頁版 ↗</a> · <a href="ep-calculator.html">EP 計算器 ↗</a> · <a href="tutorial.html">教學大全 ↗</a>
+    <a href="index.html">經典長頁版 ↗︎</a> · <a href="ep-calculator.html">EP 計算器 ↗︎</a> · <a href="tutorial.html">教學大全 ↗︎</a>
   </div>
 </div>
 </sc-if>
@@ -12860,7 +12860,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=30b6f71b36"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=0d19e5e99b"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

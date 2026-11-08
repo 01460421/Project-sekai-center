@@ -6907,7 +6907,7 @@ class Component extends DCLogic {
       this._dbNav = { kind: 'comic', ids: all.map(x => x.id) };
       out.comicRows = page(all, 24).map(x => ({ id: x.id, title: x.title, img: img(x), sub: '#' + x.id + (x.rank > 1 ? ' · Rank ' + x.rank + ' 起' : '') }));
       const x = d && pick('comic') != null ? d.find(y => y.id === pick('comic')) : null;
-      if (x) view = { title: x.title, sub: '一格漫畫 #' + x.id, img: img(x), imgRatio: '4/3', wide: true, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [], link: img(x), linkLabel: '開啟原圖 ↗' };
+      if (x) view = { title: x.title, sub: '一格漫畫 #' + x.id, img: img(x), imgRatio: '4/3', wide: true, chips: [], rows: [], text: '', list: [], listTitle: '', colors: [], link: img(x), linkLabel: '開啟原圖 ↗︎' };
     }
 
     if (p === 'ost') {
@@ -10496,7 +10496,7 @@ class Component extends DCLogic {
         sub: w.items.length + ' 份資料',
         items: w.items.map(it => Object.assign({}, it,
           // 沒有原始連結的(例如整理後直接內建在站上的),就不要做成假的可點連結
-          { target: it.u ? '_blank' : '', arrow: it.u ? ' ↗' : '', u: it.u || 'javascript:void 0' })),
+          { target: it.u ? '_blank' : '', arrow: it.u ? ' ↗︎' : '', u: it.u || 'javascript:void 0' })),
       })),
       // 手機先列 10 筆更新紀錄,更早的收進展開鈕(目前 40+ 筆全列會撐爆頁面)
       /* 敘述依句號切成條列,但**預設只顯示第一句**。
