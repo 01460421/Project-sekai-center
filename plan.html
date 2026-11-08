@@ -66,7 +66,7 @@ svg.chart{width:100%;height:170px;display:block}
 @media (max-width:760px){.g{grid-template-columns:1fr}.g .dt b{display:inline;margin-right:8px}}
 @media (max-width:640px){header{padding:8px 10px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}main{padding:10px}.card{padding:12px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-:root.embed header{display:none}:root.embed body::before{display:none}:root.embed main{padding:4px 2px}:root.embed .card{box-shadow:none}
+:root.embed,:root.embed body{height:auto;min-height:0}:root.embed header{display:none}:root.embed body::before{display:none}:root.embed main{padding:4px 2px}:root.embed .card{box-shadow:none}
 </style>
 </head>
 <body>
@@ -208,7 +208,7 @@ window.__plan = { S, plan, render };
 if (S.pid && q.get('own') === '1') $('#loadOwn').click();
 
 /* 內嵌在 app 裡：回報內容高度給外層、站內連結改在外層開 */
-if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: document.documentElement.scrollHeight }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
+if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: Math.ceil(document.body.getBoundingClientRect().height) }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
 </script>
 </body>
 </html>

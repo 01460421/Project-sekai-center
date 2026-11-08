@@ -162,6 +162,34 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 主站內嵌的三個獨立頁（?page=mystudio／profile／plan → iframe ?embed=1）：高度要收斂。
+// 以前 html{height:100%} + 回報 documentElement.scrollHeight（永遠 ≥ 視窗高）+ 外層 +8px，回報一次長一次，幾秒就長到幾萬 px。
+// 桌機開一次：等 iframe 長出來後隔 2.5 秒再量，兩次差不能超過 40px（存石規劃本來就一萬多 px，所以只看有沒有繼續長）。
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => { try { localStorage.setItem('sekai-guide-hide', '1'); } catch (e) {} });
+  await routeMdb(ctx);
+  for (const pg of ['mystudio', 'profile', 'plan']) {
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(BASE + '?page=' + pg, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const id = pg + 'Frame';
+      await page.waitForFunction(id => { const f = document.getElementById(id); return f && f.offsetHeight > 600; }, id, { timeout: 45000 });
+      await page.waitForTimeout(2000);
+      const h1 = await page.evaluate(id => document.getElementById(id).offsetHeight, id);
+      await page.waitForTimeout(2500);
+      const h2 = await page.evaluate(id => document.getElementById(id).offsetHeight, id);
+      ok = !errors.length && Math.abs(h2 - h1) <= 40; why = errors[0] || (ok ? '' : 'iframe 高度不收斂：' + h1 + ' → ' + h2);
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' desktop embed-' + pg + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await page.close();
+  }
+  await ctx.close();
+}
+
 // 獨立頁：衝榜劇場（theater.html）。資料來自 games.project-sekai-center.com 的逐局追蹤器；
 // 桌機＋手機各開一次，要載到局數、面板要長出統計、不能有 JS 錯誤、手機不能橫向溢出。
 {
