@@ -39,6 +39,7 @@ jobs:
           node worker/test/snaps.mjs
           node worker/test/telemetry.mjs
           node worker/test/contrib.mjs
+          node worker/test/mysekai.mjs
       - name: 部署
         working-directory: worker
         env:

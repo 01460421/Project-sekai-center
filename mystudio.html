@@ -297,6 +297,30 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
         <p class="help" style="margin-top:6px" id="siteNote">我的家 Lv1～5 是 36／36／70／90／100 格見方、高 15；房間 1F Lv1～5 是 10×10、12×12、16×12、20×16、24×20、高 10；選「自訂」可以自己填。</p>
         <div class="row" style="margin-top:8px"><label class="f inl"><input type="checkbox" id="stack" checked> 自動堆疊（放在家具上會疊上去）</label></div>
       </div>
+      <div class="card" id="aiCard">
+        <h2>AI 顧問 <span class="n">描述想要的樣子，排出一套 3D 擺設</span></h2>
+        <textarea id="aiPrompt" rows="3" placeholder="例如：北歐風的小臥室，床靠牆、窗邊放書桌，角落要有一盆大植物；或：給一歌的生日派對庭院，中間舞台，四周擺桌椅和氣球" style="width:100%;padding:8px 10px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg-2);color:var(--ink);resize:vertical;font:inherit;line-height:1.5"></textarea>
+        <div class="row" style="margin-top:6px" id="aiStyles">
+          <button class="btn sm" data-s="北歐風臥室：淺木色家具、白色地墊、一盆大型植物、窗邊書桌">北歐臥室</button>
+          <button class="btn sm" data-s="日式和風房間：榻榻米地墊、矮桌、屏風、紙燈、角落放盆栽">和風</button>
+          <button class="btn sm" data-s="粉色夢幻的公主房：床在中央靠後牆、兩側床頭櫃、鏡台、地毯、很多玩偶">夢幻粉</button>
+          <button class="btn sm" data-s="熱鬧的生日派對庭院：中央一個舞台或大桌，四周桌椅、氣球與花，入口到舞台要有一條道路">生日派對</button>
+          <button class="btn sm" data-s="咖啡廳：吧台靠牆、三到四組桌椅、植物與燈飾、門口放招牌">咖啡廳</button>
+          <button class="btn sm" data-s="樂團練習室：舞台在後牆、樂器與音箱、前方幾張椅子、牆上掛畫">練團室</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn pri" id="aiGo">生成設計</button>
+          <button class="btn" id="aiRefine" title="在目前的擺設上依新的指令調整" disabled>在現有擺設上調整</button>
+          <span class="dim" id="aiMsg" style="font-size:12px"></span>
+        </div>
+        <div id="aiOut" hidden style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+          <div style="font-weight:800" id="aiTitle"></div>
+          <p class="help" id="aiConcept" style="color:var(--ink-2)"></p>
+          <ul id="aiTips" style="font-size:12px;color:var(--ink-3);padding-left:18px;line-height:1.7"></ul>
+          <div class="row" style="margin-top:8px"><button class="btn sm pri" id="aiApply">套用（取代現有）</button><button class="btn sm" id="aiAppend">加在現有擺設上</button><span class="dim" id="aiN" style="font-size:12px"></span></div>
+        </div>
+        <p class="help" style="margin-top:8px">要先在 <a href="./app.html?page=account">主站登入</a>（已核准的帳號），每次生成算一次 AI 操作額度。模型只管平面位置與順序，高度由這裡的堆疊規則算；結果可以再手動微調。</p>
+      </div>
       <div class="card">
         <h2>家具目錄 <span class="n" id="catN"></span></h2>
         <div class="row"><input type="text" id="catQ" placeholder="搜尋家具名…" style="flex:1" aria-label="搜尋家具"><select id="catG" aria-label="分類"></select></div>
@@ -724,7 +748,7 @@ function drawLayout() {
 }
 function fitLayoutZoom() { const cv = $('#m-layout .cv'); if (!cv.clientWidth) return; const avail = cv.clientWidth - 30; L.cs = clamp(Math.floor(L.view === 'iso' ? avail / ((L.w + L.d) / 2 + 2) : avail / L.w), 6, 56); $('#lzoom').value = L.cs; }
 function renderItems() {
-  const el = $('#items'); el.innerHTML = ''; $('#itemN').textContent = L.items.length + ' 件';
+  const el = $('#items'); el.innerHTML = ''; $('#itemN').textContent = L.items.length + ' 件'; const rb = $('#aiRefine'); if (rb && !$('#aiGo').disabled) rb.disabled = !L.items.length;
   L.items.forEach((it, i) => { const r = fxById[it.fid]; const d = document.createElement('div'); d.className = 'it' + (it.id === L.sel ? ' on' : ''); d.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="nm">' + esc(r ? r[1] : '#' + it.fid) + '</span><span class="dim mono">(' + (it.x + 1) + ',' + (it.y + 1) + (it.z ? ',↑' + it.z : '') + ')</span><button data-a="up" aria-label="往前">▲</button><button data-a="dn" aria-label="往後">▼</button>';
     d.onclick = e => { const a = e.target.dataset.a; if (a) { const j = a === 'up' ? i - 1 : i + 1; if (j < 0 || j >= L.items.length) return; pushUndo(); [L.items[i], L.items[j]] = [L.items[j], L.items[i]]; renderItems(); drawLayout(); return; } L.sel = it.id; renderItems(); drawLayout(); }; el.appendChild(d); });
   $('#lProg').max = L.items.length; $('#lProgT').textContent = (L.play.i >= 0 ? L.play.i : L.items.length) + ' / ' + L.items.length;
@@ -754,6 +778,37 @@ function pixelToLayout(wall) {
     for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi < 0) continue; const x = ox + i * side; const rowFromBottom = P.h - 1 - j; if (x + side > L.w || rowFromBottom >= rows) { skip++; continue; } L.items.push({ id: ++L.seq, fid: P.pal[pi][0], x, y: oy, z: rowFromBottom * side, rot: 0 }); n++; } }
   renderItems(); drawLayout(); setMode('layout'); toast('放進 ' + n + ' 塊' + (skip ? '，' + skip + ' 塊超出場地（' + L.w + '×' + L.d + '×' + L.h + '）略過' : ''));
 }
+/* ===== AI 顧問：描述 → Worker /api/mysekai/design → 清單 → 用 place() 依序放（自動堆疊） ===== */
+const GAMES = 'https://games.project-sekai-center.com';
+let aiLast = null;
+$$('#aiStyles button').forEach(b => b.onclick = () => { $('#aiPrompt').value = b.dataset.s; $('#aiPrompt').focus(); });
+function aiCatalogue() { const okSite = r => r[11] === 'any' || r[11] === L.site; const G = {}; FIX_GENRES.forEach(g => G[g[0]] = g[1]); return FX.filter(okSite).slice(0, 1500).map(r => [r[0], r[1].slice(0, 40), r[5][0], r[5][1], fxH(r), G[r[2]] || '']); }
+async function aiDesign(refine) {
+  const prompt = $('#aiPrompt').value.trim(); if (prompt.length < 2) return toast('先描述想要的樣子');
+  const body = { prompt, site: { key: L.key, name: ($('#siteSel').selectedOptions[0] || {}).textContent || L.key, kind: L.site, w: L.w, d: L.d, h: L.h }, cat: aiCatalogue(), lang: 'zh' };
+  if (refine) body.current = L.items.map(it => [it.fid, it.x, it.y, it.rot, it.z]);
+  $('#aiGo').disabled = true; $('#aiRefine').disabled = true; $('#aiMsg').textContent = '設計中…（約 20～60 秒）'; $('#aiOut').hidden = true;
+  try {
+    const r = await fetch(GAMES + '/api/mysekai/design', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let d = null; try { d = await r.json(); } catch (e) {}
+    if (!r.ok) { const m = (d && d.message) || ('HTTP ' + r.status); $('#aiMsg').textContent = r.status === 401 ? '請先在主站登入（我的帳號），再回來生成' : r.status === 403 ? '帳號還沒核准，核准後就能用' : m; toast(r.status === 401 ? '請先登入主站' : m); return; }
+    aiLast = d; $('#aiOut').hidden = false; $('#aiTitle').textContent = d.title; $('#aiConcept').textContent = d.concept || ''; $('#aiTips').innerHTML = (d.tips || []).map(t => '<li>' + esc(t) + '</li>').join('');
+    $('#aiN').textContent = d.items.length + ' 件' + (d.dropped && d.dropped.length ? '（' + d.dropped.length + ' 件目錄外或放不下的略過）' : '') + (d.quota && d.quota.ops_cap ? '・今日 AI 操作 ' + d.quota.ops_used + '／' + d.quota.ops_cap : '');
+    $('#aiMsg').textContent = refine ? '已依指令調整，按「套用」替換現有擺設' : '設計好了，按「套用」放進畫布';
+  } catch (e) { $('#aiMsg').textContent = '連不上伺服器：' + (e.message || ''); }
+  finally { $('#aiGo').disabled = false; $('#aiRefine').disabled = !L.items.length; }
+}
+function aiApply(append) {
+  if (!aiLast) return; pushUndo(); if (!append) { L.items = []; L.sel = null; }
+  let n = 0, miss = 0; const stackWas = L.stack; L.stack = true;
+  aiLast.items.forEach(it => { const r = fxById[it.fid]; if (!r) { miss++; return; } const [w, d] = fxSize(r, it.rot); const placed = place(it.fid, clamp(it.x, 0, Math.max(0, L.w - w)), clamp(it.y, 0, Math.max(0, L.d - d)), it.rot); if (placed) n++; else miss++; });
+  L.stack = stackWas; renderItems(); fitLayoutZoom(); drawLayout(); $('#aiRefine').disabled = !L.items.length;
+  toast('放進 ' + n + ' 件' + (miss ? '，' + miss + ' 件放不下略過' : ''));
+}
+$('#aiGo').onclick = () => aiDesign(false);
+$('#aiRefine').onclick = () => aiDesign(true);
+$('#aiApply').onclick = () => aiApply(false);
+$('#aiAppend').onclick = () => aiApply(true);
 $('#toLayout').onclick = () => pixelToLayout(false);
 $('#toLayoutWall').onclick = () => pixelToLayout(true);
 
@@ -806,7 +861,7 @@ const hash = new URLSearchParams(location.hash.slice(1));
 if (hash.get('p')) { if (decodePixel(hash.get('p'))) toast('已載入分享的像素畫'); }
 else if (hash.get('l')) { if (decodeLayout(hash.get('l'))) { setMode('layout'); toast('已載入分享的設計'); } }
 else if (hash.get('m')) setMode(hash.get('m'));
-window.__mystudio = { P, L, recalc, textToImage, decodePixel, applySite, place };
+window.__mystudio = { P, L, recalc, textToImage, decodePixel, applySite, place, aiCatalogue, aiApply: d => { aiLast = d; aiApply(false); } };
 /* 內嵌在 app 裡：把內容高度回報給外層，iframe 跟著長 */
 if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: document.documentElement.scrollHeight }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
 </script>

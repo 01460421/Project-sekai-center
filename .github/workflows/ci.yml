@@ -29,6 +29,8 @@ jobs:
         run: node worker/test/telemetry.mjs
       - name: Worker 的玩家榜線回報（/contrib；D1 用 node:sqlite 模擬）
         run: node worker/test/contrib.mjs
+      - name: Worker 豆森 AI 顧問測試
+        run: node worker/test/mysekai.mjs
       - name: Haruki 專區的純函式（角色任務 EXP、目前隊伍、compact 展開）
         run: node tests/haruki-zone.mjs
       - name: 壓縮檔與戳記是否過期（不改檔，過期就失敗）
