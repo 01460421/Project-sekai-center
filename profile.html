@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ea">
+<title>帳號分析 — 角色等級、FC／AP、挑戰 Live、持卡與豆森材料 | Project SEKAI 資源中心</title>
+<meta name="description" content="輸入 Player ID，把公開的遊戲資料整理成看得懂的分析：綜合力拆解、各難度 Clear／FC／AP、角色平均等級與最弱角色、每位角色的挑戰 Live 分數與關卡進度、最容易補 FC／AP 的下一首、持卡收集率、豆森材料庫存，還能把兩個帳號並排比較。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="帳號分析 — 角色、FC／AP、挑戰 Live、持卡與豆森材料">
+<meta property="og:description" content="Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較。">
+<meta property="og:url" content="https://project-sekai-center.com/profile.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/profile.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/profile.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<script>try{var _t=localStorage.getItem('sekai-profile-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(_t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
+<script src="./data/b30-consts.js?v=5faf291bda"></script>
+<style>
+:root{color-scheme:light;--bg:#f3f1ea;--bg-2:#faf9f5;--bg-3:#ebe8df;--panel:#fff;--panel-2:#f7f5ef;--ink:#1f2230;--ink-2:#4b5064;--ink-3:#5c627a;
+  --line:rgba(40,46,80,.12);--line-2:rgba(40,46,80,.22);--acc:#2f6fb5;--acc-2:#1f4f86;--acc-soft:rgba(47,111,181,.12);--ok:#11673f;--warn:#9a6400;--bad:#c43d50;
+  --ln:#3d50c8;--mmj:#477a18;--vbs:#c8472a;--wxs:#8a6a08;--n25:#7f48ad;--vs:#137a76;
+  --sans:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;--disp:'M PLUS Rounded 1c','Noto Sans TC',system-ui,sans-serif;--mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --r:14px;--shadow:0 18px 50px -24px rgba(40,40,70,.28);--ease:cubic-bezier(.32,.72,.24,1)}
+:root.dark{color-scheme:dark;--bg:#0f1117;--bg-2:#151823;--bg-3:#1b1f2c;--panel:#181c28;--panel-2:#1f2433;--ink:#e8ebf3;--ink-2:#aab1c6;--ink-3:#8a92ab;
+  --line:rgba(170,190,255,.1);--line-2:rgba(170,190,255,.2);--acc:#7fb2f0;--acc-2:#a9ccf7;--acc-soft:rgba(127,178,240,.14);--ok:#4ccf94;--warn:#f0b64a;--bad:#ff8a98;
+  --ln:#7a8cff;--mmj:#a6d564;--vbs:#f49474;--wxs:#f0c862;--n25:#c198ec;--vs:#6edbd6;--shadow:0 18px 50px -20px rgba(0,0,0,.6)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}body{min-height:100%;font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}a{color:var(--acc-2)}
+[hidden]{display:none!important}.dim{color:var(--ink-3)}.dim2{color:var(--ink-2)}.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;background:color-mix(in oklab,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+header .logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:700;font-family:var(--disp)}header .logo img{width:28px;height:28px;border-radius:8px}
+header h1{font-family:var(--disp);font-size:18px;font-weight:800;white-space:nowrap}header h1 small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:8px}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel);margin-left:auto}
+main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px}
+.card h2{font-family:var(--disp);font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.card h2 .n{margin-left:auto;font-size:12px;font-weight:500;color:var(--ink-3)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input[type=text],select{height:38px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg-2);color:var(--ink);min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);font-weight:700;color:var(--ink)}
+.btn:hover{background:var(--bg-3)}.btn.pri{background:var(--acc);border-color:transparent;color:#fff}.btn.pri:hover{background:var(--acc-2)}:root.dark .btn.pri{color:#0f1117}.btn.sm{height:30px;padding:0 10px;font-size:12px}
+.seg{display:inline-flex;background:var(--bg-3);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}.seg button{padding:6px 11px;border-radius:8px;font-weight:700;font-size:12.5px;color:var(--ink-2);min-height:30px}.seg button[aria-pressed="true"]{background:var(--panel);color:var(--acc-2);box-shadow:0 1px 6px rgba(0,0,0,.08)}
+.tabs{display:flex;gap:4px;background:var(--bg-3);padding:4px;border-radius:999px;overflow:auto;margin-bottom:12px}.tab{padding:8px 14px;border-radius:999px;font-weight:700;color:var(--ink-2);white-space:nowrap;min-height:38px;flex:1;text-align:center}.tab[aria-selected="true"]{background:var(--panel);color:var(--acc-2);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.pane{display:none}.pane.on{display:block}
+.hero{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.hero .nm{font-family:var(--disp);font-size:22px;font-weight:800;line-height:1.2}.hero .id{font-size:12px;color:var(--ink-3);font-family:var(--mono)}
+.src{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--bg-3)}.src.ok{color:var(--ok)}.src.no{color:var(--ink-3)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.tile{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tile b{display:block;font-size:20px;font-family:var(--disp);line-height:1.2;font-variant-numeric:tabular-nums}.tile span{font-size:11px;color:var(--ink-3)}.tile small{display:block;font-size:11px;color:var(--ink-2);margin-top:2px}
+.bar{height:10px;border-radius:99px;background:var(--bg-3);overflow:hidden;display:flex}.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin-top:8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}th{font-size:11px;color:var(--ink-3);font-weight:700;letter-spacing:.04em;white-space:nowrap}td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.d-easy{color:#2a7a2a}.d-normal{color:#1a68a6}.d-hard{color:#8f5d00}.d-expert{color:#b02a43}.d-master{color:#7640c2}.d-append{color:#9a386c}
+:root.dark .d-easy{color:#7ad87a}:root.dark .d-normal{color:#6fc0ff}:root.dark .d-hard{color:#ffd166}:root.dark .d-expert{color:#ff8aa0}:root.dark .d-master{color:#c9a3ff}:root.dark .d-append{color:#f0a0cc}
+.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}.ch{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}.ch img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--bg-3)}.ch b{font-size:13px;display:block;line-height:1.2}.ch .mb{height:6px;border-radius:99px;background:var(--bg-3);overflow:hidden;margin-top:4px}.ch .mb i{display:block;height:100%}.ch .rk{font-family:var(--disp);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}.ch small{font-size:10.5px;color:var(--ink-3);display:block}
+.songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.sg{display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}.sg img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--bg-3);flex:none}.sg .t{font-weight:700;font-size:13px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.sg .s{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--bg-3);font-size:12px;font-weight:700}
+.mat{display:flex;align-items:center;gap:8px}.mat img{width:26px;height:26px;object-fit:contain;border-radius:6px;background:var(--bg-3)}
+.cmp td.a,.cmp td.b{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}.cmp .win{color:var(--ok);font-weight:700}.cmp .lose{color:var(--bad)}
+.note{font-size:12px;color:var(--ink-3);line-height:1.7}.empty{padding:28px 16px;text-align:center;color:var(--ink-3);line-height:1.8}.empty b{display:block;color:var(--ink);font-family:var(--disp);font-size:15px}
+.prog{height:6px;border-radius:99px;background:var(--bg-3);overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:var(--acc);transition:width .2s}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;z-index:50;transition:all .25s var(--ease);pointer-events:none;max-width:90vw}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:760px){.two{grid-template-columns:1fr}}
+@media (max-width:640px){header{padding:8px 10px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}main{padding:10px}.card{padding:12px}.tab{padding:7px 8px;font-size:12.5px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="./app.html" title="回到 SEKAI 資源中心" aria-label="回到 SEKAI 資源中心"><img src="./icons/icon-180.png" alt=""><span>資源中心</span></a>
+  <h1>帳號分析<small>角色・FC／AP・挑戰 Live・持卡・豆森</small></h1>
+  <button class="ib" id="themeBtn" title="切換深淺色" aria-label="切換深淺色">◐</button>
+</header>
+<main>
+  <div class="card">
+    <div class="row">
+      <div class="seg" id="srv" role="group" aria-label="伺服器"><button data-v="tw" aria-pressed="true">台服</button><button data-v="jp" aria-pressed="false">日服</button></div>
+      <input type="text" id="pid" inputmode="numeric" placeholder="Player ID（純數字）" style="flex:1;min-width:200px" aria-label="Player ID">
+      <button class="btn pri" id="go">分析</button>
+      <input type="text" id="vs" inputmode="numeric" placeholder="比較對象的 ID（選填）" style="flex:1;min-width:180px" aria-label="比較對象的 Player ID">
+    </div>
+    <p class="note" style="margin-top:8px">台服讀 HiSekai 的公開檔案（遊戲內「公開個人檔案」要開）；兩服都會再去 Haruki 工具箱讀公開 suite（玩家要在工具箱上傳過並允許公開 API）才有每首歌、每位角色與材料的細節。資料只在你的瀏覽器裡整理，不會上傳。</p>
+    <div id="load" hidden><div class="note" id="loadT"></div><div class="prog"><i id="loadB" style="width:0"></i></div></div>
+    <div class="empty" id="err" hidden></div>
+  </div>
+  <div id="res" hidden>
+    <div class="card" id="hero"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-t="ov" aria-selected="true">總覽</button><button class="tab" role="tab" data-t="ch" aria-selected="false">角色</button><button class="tab" role="tab" data-t="sg" aria-selected="false">歌曲</button><button class="tab" role="tab" data-t="cl" aria-selected="false">挑戰 Live</button><button class="tab" role="tab" data-t="cd" aria-selected="false">卡片</button><button class="tab" role="tab" data-t="ms" aria-selected="false">豆森</button><button class="tab" role="tab" data-t="vs" aria-selected="false">比較</button>
+    </div>
+    <div class="pane on" id="p-ov"></div><div class="pane" id="p-ch"></div><div class="pane" id="p-sg"></div><div class="pane" id="p-cl"></div><div class="pane" id="p-cd"></div><div class="pane" id="p-ms"></div><div class="pane" id="p-vs"></div>
+  </div>
+  <div class="card empty" id="intro"><b>填 Player ID 開始</b>自己的 ID 在遊戲右上角選單 → 個人檔案；查別人也可以，只讀公開資料。</div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module">
+import { CHARS, CHAL_STAGES } from './data/mysekai-studio.js?v=e6443e7efa';
+import { SONGS } from './data/songs-index.js?v=9cb8605bcf';
+import { CARDS } from './data/cards-index.js?v=4d50ff39a7';
+import { FIX_MATS } from './data/fixtures-index.js?v=9bcab0f8a3';
+const ASSET = 'https://storage.sekai.best/sekai-jp-assets', HS = 'https://api.hisekai.org/tw', GAMES = 'https://games.project-sekai-center.com';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const n = v => v == null ? '—' : Number(v).toLocaleString();
+const pct = (a, b) => b ? Math.round(a / b * 1000) / 10 + '%' : '—';
+let toastT; const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); };
+const DIFFS = ['easy', 'normal', 'hard', 'expert', 'master', 'append'], DN = { easy: 'EASY', normal: 'NORMAL', hard: 'HARD', expert: 'EXPERT', master: 'MASTER', append: 'APPEND' };
+const UNIT = { ln: 'Leo/need', mmj: 'MORE MORE JUMP!', vbs: 'Vivid BAD SQUAD', wxs: 'Wonderlands×Showtime', n25: '25時，Nightcord見。', vs: 'VIRTUAL SINGER' };
+const CH = {}; CHARS.forEach(c => CH[c[0]] = { id: c[0], name: c[1], unit: c[2], color: c[3] });
+const charImg = id => ASSET + '/character/character_select/chr_tl_' + id + '.webp';
+const CONST = {}; try { (window.B30_CONSTS.charts || []).forEach(c => CONST[c.id + ':' + c.d] = c.c); } catch (e) {}
+const SONG = {}; SONGS.forEach(s => SONG[s.id] = s);
+const CARD = {}; CARDS.forEach(c => CARD[c[0]] = c);
+const RAR = r => r === 9 ? '生日' : '★' + r;
+const parseBig = t => JSON.parse(t.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"'));
+$('#themeBtn').onclick = () => { const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-profile-theme', d ? 'dark' : 'light'); } catch (e) {} };
+let SRV = 'tw';
+$('#srv').querySelectorAll('button').forEach(b => b.onclick = () => { $('#srv').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); SRV = b.dataset.v; });
+$$('.tab').forEach(t => t.onclick = () => setTab(t.dataset.t));
+function setTab(k) { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.t === k))); $$('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + k)); }
+
+/* ===== 讀資料：HiSekai 公開檔案（台服）＋ Haruki 公開 suite（兩服） ===== */
+async function fetchHs(id) {
+  const r = await fetch(HS + '/user/' + id + '/profile', { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error(r.status === 404 ? '找不到這個 ID，或玩家沒有公開個人檔案' : 'HiSekai HTTP ' + r.status);
+  return parseBig(await r.text());
+}
+async function fetchHk(id, srv, onProg) {
+  const r = await fetch(GAMES + '/haruki/public/' + srv + '/suite/' + id);
+  if (!r.ok) { const e = new Error(r.status === 404 ? 'not_public' : 'Haruki HTTP ' + r.status); e.status = r.status; throw e; }
+  const total = +r.headers.get('content-length') || 0; const reader = r.body.getReader(); const chunks = []; let got = 0;
+  for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; onProg && onProg(got, total); }
+  const buf = new Uint8Array(got); let o = 0; chunks.forEach(c => { buf.set(c, o); o += c.length; });
+  const p = parseBig(new TextDecoder().decode(buf));
+  return p && p.updatedData !== undefined ? p.updatedData : p;
+}
+const RES = { not_clear: -1, clear: 0, full_combo: 1, full_perfect: 2 };
+function build(id, srv, hs, hk) {
+  const P = { id, srv, name: '', rank: 0, word: '', twitter: '', hs: !!hs, hk: !!hk, power: null, diff: {}, multi: null, chars: {}, chal: { best: null, per: {} }, res: new Map(), unlocked: null, cards: null, mats: null, honors: null, decks: [], upload: 0 };
+  if (hs) {
+    const u = hs.user || {}, pf = hs.userProfile || {}, tp = hs.totalPower || {};
+    P.name = u.name || ''; P.rank = +u.rank || 0; P.word = pf.word || ''; P.twitter = pf.twitterId || '';
+    P.power = { total: tp.totalPower || 0, basic: tp.basicCardTotalPower || 0, area: tp.areaItemBonus || 0, charRank: tp.characterRankBonus || 0, honor: tp.honorBonus || 0, fixture: tp.mysekaiFixtureGameCharacterPerformanceBonus || 0, gate: tp.mysekaiGateLevelBonus || 0 };
+    (hs.userMusicDifficultyClearCount || []).forEach(d => { P.diff[d.musicDifficultyType] = { clear: d.liveClear || 0, fc: d.fullCombo || 0, ap: d.allPerfect || 0 }; });
+    if (hs.userMultiLiveTopScoreCount) P.multi = { mvp: hs.userMultiLiveTopScoreCount.mvp || 0, superStar: hs.userMultiLiveTopScoreCount.superStar || 0 };
+    (hs.userCharacters || []).forEach(c => { P.chars[c.characterId] = { rank: +c.characterRank || 0 }; });
+    if (hs.userChallengeLiveSoloResult && hs.userChallengeLiveSoloResult.highScore) P.chal.best = { id: hs.userChallengeLiveSoloResult.characterId, score: hs.userChallengeLiveSoloResult.highScore };
+    const done = {}; (hs.userChallengeLiveSoloStages || []).forEach(s => { done[s.characterId] = Math.max(done[s.characterId] || 0, s.rank || 0); });
+    Object.keys(done).forEach(k => { P.chal.per[k] = Object.assign(P.chal.per[k] || {}, { done: done[k] }); });
+    P.honors = (hs.userHonors || []).length || null;
+    if (hs.userDeck) P.decks = [{ name: hs.userDeck.name, m: [1, 2, 3, 4, 5].map(i => hs.userDeck['member' + i]).filter(Boolean) }];
+    P.deckCards = {}; (hs.userCards || []).forEach(c => { P.deckCards[c.cardId] = c; });
+  }
+  if (hk) {
+    const g = hk.userGamedata || hk.user || {}, pf = hk.userProfile || {};
+    P.name = P.name || g.name || ''; P.rank = P.rank || +g.rank || 0; P.word = P.word || pf.word || ''; P.twitter = P.twitter || pf.twitterId || '';
+    (hk.userCharacters || []).forEach(c => { P.chars[c.characterId] = Object.assign(P.chars[c.characterId] || {}, { rank: +c.characterRank || (P.chars[c.characterId] || {}).rank || 0, exp: c.totalExp }); });
+    (hk.userChallengeLiveSoloResults || []).forEach(r => { P.chal.per[r.characterId] = Object.assign(P.chal.per[r.characterId] || {}, { score: r.highScore || 0 }); if (!P.chal.best || r.highScore > P.chal.best.score) P.chal.best = { id: r.characterId, score: r.highScore || 0 }; });
+    const done = {}; (hk.userChallengeLiveSoloStages || []).forEach(s => { if (s.challengeLiveStageStatus === 'complete') done[s.characterId] = (done[s.characterId] || 0) + 1; });
+    Object.keys(done).forEach(k => { P.chal.per[k] = Object.assign(P.chal.per[k] || {}, { done: Math.max(done[k], (P.chal.per[k] || {}).done || 0) }); });
+    P.unlocked = new Set((hk.userMusics || []).map(m => +m.musicId));
+    const put = (mid, d, r, hsc, mvp, pt) => { const k = mid + ':' + d, cur = P.res.get(k) || { r: -1, hs: 0, mvp: 0 }; cur.r = Math.max(cur.r, r); cur.hs = Math.max(cur.hs, hsc || 0); cur.mvp += mvp || 0; if (pt === 'solo') cur.solo = Math.max(cur.solo || 0, hsc || 0); P.res.set(k, cur); };
+    (hk.userMusicResults || []).forEach(r => put(+r.musicId, r.musicDifficultyType || r.musicDifficulty, RES[r.playResult] != null ? RES[r.playResult] : (r.fullPerfectFlg ? 2 : r.fullComboFlg ? 1 : 0), r.highScore, r.mvpCount, r.playType));
+    (hk.userMusics || []).forEach(m => (m.userMusicDifficultyStatuses || []).forEach(st => (st.userMusicResults || []).forEach(r => put(+m.musicId, st.musicDifficulty || st.musicDifficultyType, RES[r.playResult] != null ? RES[r.playResult] : (r.fullPerfectFlg ? 2 : r.fullComboFlg ? 1 : 0), r.highScore, r.mvpCount, r.playType))));
+    if (!Object.keys(P.diff).length && P.res.size) { DIFFS.forEach(d => P.diff[d] = { clear: 0, fc: 0, ap: 0 }); P.res.forEach((v, k) => { const d = k.split(':')[1]; if (!P.diff[d] || v.r < 0) return; P.diff[d].clear++; if (v.r >= 1) P.diff[d].fc++; if (v.r >= 2) P.diff[d].ap++; }); }
+    if (!P.multi && P.res.size) { let mvp = 0; P.res.forEach(v => mvp += v.mvp); P.multi = { mvp, superStar: null }; }
+    P.cards = (hk.userCards || []).map(c => ({ id: +c.cardId, lv: +c.level || 0, mr: +c.masterRank || 0, sk: +c.skillLevel || 0, tr: c.specialTrainingStatus === 'done' }));
+    P.mats = (hk.userMysekaiMaterials || []).map(m => ({ id: +m.mysekaiMaterialId, q: +m.quantity || 0, at: +m.lastObtainedAt || 0 }));
+    P.honors = Math.max(P.honors || 0, (hk.userHonors || []).length) || P.honors;
+    if (hk.userDecks && hk.userDecks.length) P.decks = hk.userDecks.map(d => ({ name: d.name, m: [1, 2, 3, 4, 5].map(i => d['member' + i]).filter(Boolean) }));
+    let up = +(hk.upload_time || hk.uploadTime || 0); if (up && up < 1e12) up *= 1000; P.upload = up;
+  }
+  P.name = P.name || ('玩家 ' + id);
+  const ranks = Object.values(P.chars).map(c => c.rank).filter(Boolean); P.avgRank = ranks.length ? ranks.reduce((a, b) => a + b, 0) / ranks.length : 0;
+  return P;
+}
+const state = { A: null, B: null, loading: false };
+async function loadPlayer(id, srv, label) {
+  const L = $('#load'), T = $('#loadT'), B = $('#loadB'); L.hidden = false; B.style.width = '5%';
+  let hs = null, hk = null, hsErr = '', hkErr = '';
+  if (srv === 'tw') { T.textContent = label + '：讀取 HiSekai 公開檔案…'; try { hs = await fetchHs(id); } catch (e) { hsErr = e.message; } B.style.width = '25%'; }
+  T.textContent = label + '：讀取 Haruki 工具箱公開 suite…（約 5～10 MB）';
+  try { hk = await fetchHk(id, srv, (got, total) => { T.textContent = label + '：讀取 Haruki 公開 suite… ' + (got / 1048576).toFixed(1) + ' MB' + (total ? '／' + (total / 1048576).toFixed(1) + ' MB' : ''); B.style.width = (25 + (total ? got / total * 70 : 40)) + '%'; }); }
+  catch (e) { hkErr = e.message === 'not_public' ? '沒有 Haruki 公開 suite（玩家沒上傳過，或沒開公開 API）' : e.message; }
+  B.style.width = '100%'; setTimeout(() => { L.hidden = true; }, 300);
+  if (!hs && !hk) throw new Error((hsErr ? 'HiSekai：' + hsErr + '；' : '') + (hkErr ? 'Haruki：' + hkErr : ''));
+  const P = build(id, srv, hs, hk); P.hsErr = hsErr; P.hkErr = hkErr; return P;
+}
+async function go() {
+  const id = ($('#pid').value.match(/\d{6,20}/g) || []).pop() || '', vs = ($('#vs').value.match(/\d{6,20}/g) || []).pop() || '';
+  if (!id) return toast('請填 Player ID');
+  if (state.loading) return; state.loading = true; $('#err').hidden = true; $('#go').disabled = true;
+  try {
+    state.A = await loadPlayer(id, SRV, '玩家');
+    state.B = vs ? await loadPlayer(vs, SRV, '比較對象').catch(e => { toast('比較對象讀不到：' + e.message); return null; }) : null;
+    try { if (SRV === 'tw') localStorage.setItem('sekai-profile-last', id); } catch (e) {}
+    const u = new URL(location.href); u.searchParams.set('id', id); if (vs) u.searchParams.set('vs', vs); else u.searchParams.delete('vs'); u.searchParams.set('srv', SRV); history.replaceState(null, '', u);
+    render();
+  } catch (e) { $('#err').hidden = false; $('#err').innerHTML = '<b>讀不到資料</b>' + esc(e.message); $('#res').hidden = true; }
+  state.loading = false; $('#go').disabled = false;
+}
+$('#go').onclick = go; $('#pid').onkeydown = e => { if (e.key === 'Enter') go(); }; $('#vs').onkeydown = e => { if (e.key === 'Enter') go(); };
+
+/* ===== 畫面 ===== */
+function render() {
+  const P = state.A; $('#res').hidden = false; $('#intro').hidden = true;
+  $('#hero').innerHTML = hero(P);
+  $('#p-ov').innerHTML = overview(P); $('#p-ch').innerHTML = charsPane(P); $('#p-sg').innerHTML = songsPane(P); $('#p-cl').innerHTML = chalPane(P); $('#p-cd').innerHTML = cardsPane(P); $('#p-ms').innerHTML = matsPane(P); $('#p-vs').innerHTML = comparePane(state.A, state.B);
+  $$('#p-sg .seg button').forEach(b => b.onclick = () => { const seg = b.parentElement; seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); $$('#p-sg [data-d]').forEach(x => x.hidden = x.dataset.d !== b.dataset.v); });
+  const cp = $('#copySum'); if (cp) cp.onclick = () => navigator.clipboard.writeText(summaryText(P)).then(() => toast('已複製摘要')).catch(() => toast('複製失敗'));
+  const sh = $('#shareBtn'); if (sh) sh.onclick = () => navigator.clipboard.writeText(location.href).then(() => toast('連結已複製')).catch(() => toast('複製失敗'));
+}
+function hero(P) {
+  const up = P.upload ? new Date(P.upload).toLocaleString() : '';
+  return '<div class="hero"><div style="flex:1;min-width:0"><div class="nm">' + esc(P.name) + '</div><div class="id">ID ' + esc(P.id) + (P.rank ? '・Rank ' + P.rank : '') + (P.twitter ? '・@' + esc(P.twitter) : '') + '</div>' + (P.word ? '<div class="dim2" style="font-size:12px;margin-top:4px">' + esc(P.word) + '</div>' : '') + '</div>' +
+    '<div class="row"><span class="src ' + (P.hs ? 'ok' : 'no') + '" title="' + esc(P.hsErr || '') + '">' + (P.srv === 'tw' ? (P.hs ? '✓ HiSekai 公開檔案' : '✗ HiSekai') : '日服') + '</span><span class="src ' + (P.hk ? 'ok' : 'no') + '" title="' + esc(P.hkErr || '') + '">' + (P.hk ? '✓ Haruki suite' + (up ? '（' + up + ' 上傳）' : '') : '✗ Haruki suite') + '</span></div>' +
+    '<div class="row"><button class="btn sm" id="copySum">複製摘要</button><button class="btn sm" id="shareBtn">分享連結</button><a class="btn sm" href="./app.html?page=lookup&luId=' + esc(P.id) + '">玩家查詢頁</a></div></div>' +
+    (!P.hk ? '<p class="note" style="margin-top:8px">沒有 Haruki 公開 suite：歌曲、卡片、豆森材料與每位角色的挑戰分數需要它。玩家在 <a href="https://haruki.seiunx.com/" target="_blank" rel="noopener">Haruki 工具箱</a> 上傳遊戲資料並把 suite 設成「允許公開 API」後再查一次。</p>' : '');
+}
+function overview(P) {
+  const d = P.diff, tot = {}; DIFFS.forEach(k => tot[k] = SONGS.filter(s => !s.jp && s.lv && s.lv[k] != null).length);
+  const t = [];
+  if (P.power) t.push(['綜合力', n(P.power.total), '卡片 ' + n(P.power.basic)]);
+  if (P.rank) t.push(['玩家等級', 'Rank ' + P.rank, '']);
+  if (P.avgRank) t.push(['角色平均等級', P.avgRank.toFixed(1), '26 位合計 ' + n(Math.round(P.avgRank * Object.keys(P.chars).length))]);
+  if (P.multi) t.push(['多人 MVP', n(P.multi.mvp), P.multi.superStar != null ? 'SUPERSTAR ' + n(P.multi.superStar) : '']);
+  if (P.chal.best) t.push(['挑戰 Live 最高', n(P.chal.best.score), (CH[P.chal.best.id] || {}).name || '']);
+  if (P.cards) t.push(['持有卡片', n(P.cards.length) + ' 張', pct(P.cards.length, CARDS.filter(c => c[9] !== 0).length) + ' 收集率']);
+  if (d.master) t.push(['MASTER FC／AP', n(d.master.fc) + '／' + n(d.master.ap), '通關 ' + n(d.master.clear)]);
+  if (d.append) t.push(['APPEND FC／AP', n(d.append.fc) + '／' + n(d.append.ap), '通關 ' + n(d.append.clear)]);
+  if (P.honors) t.push(['稱號', n(P.honors) + ' 個', '']);
+  let h = '<div class="card"><h2>總覽</h2><div class="tiles">' + t.map(x => '<div class="tile"><span>' + x[0] + '</span><b>' + x[1] + '</b>' + (x[2] ? '<small>' + x[2] + '</small>' : '') + '</div>').join('') + '</div></div>';
+  if (P.power) { const p = P.power, parts = [['卡片基礎', p.basic, '#5b8def'], ['區域道具', p.area, '#49b36b'], ['角色等級', p.charRank, '#f0a030'], ['稱號', p.honor, '#c060c0'], ['豆森家具', p.fixture, '#2fb5a8'], ['豆森大門', p.gate, '#8e6cd6']].filter(x => x[1] > 0), sum = parts.reduce((s, x) => s + x[1], 0) || 1;
+    h += '<div class="card"><h2>綜合力拆解 <span class="n">合計 ' + n(p.total) + '</span></h2><div class="bar">' + parts.map(x => '<i style="width:' + (x[1] / sum * 100) + '%;background:' + x[2] + '" title="' + x[0] + ' ' + n(x[1]) + '"></i>').join('') + '</div><div class="legend">' + parts.map(x => '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b class="mono">' + n(x[1]) + '</b> <span class="dim">' + pct(x[1], sum) + '</span></span>').join('') + '</div><p class="note" style="margin-top:8px">區域道具與豆森加成不吃卡，升角色等級與擺豆森家具是「不抽卡也能漲」的部分。</p></div>'; }
+  if (Object.keys(d).length) h += '<div class="card"><h2>各難度進度 <span class="n">台服曲目數為分母</span></h2><table><thead><tr><th>難度</th><th class="num">曲數</th><th class="num">通關</th><th class="num">FC</th><th class="num">AP</th><th>FC 率</th><th>AP 率</th></tr></thead><tbody>' +
+    DIFFS.filter(k => d[k]).map(k => { const x = d[k], T = tot[k] || 0; return '<tr><td><b class="d-' + k + '">' + DN[k] + '</b></td><td class="num">' + n(T) + '</td><td class="num">' + n(x.clear) + '</td><td class="num">' + n(x.fc) + '</td><td class="num">' + n(x.ap) + '</td><td><div class="bar" style="height:7px;min-width:70px"><i style="width:' + (T ? x.fc / T * 100 : 0) + '%;background:var(--acc)"></i></div><span class="dim mono" style="font-size:11px">' + pct(x.fc, T) + '</span></td><td><div class="bar" style="height:7px;min-width:70px"><i style="width:' + (T ? x.ap / T * 100 : 0) + '%;background:#c060c0"></i></div><span class="dim mono" style="font-size:11px">' + pct(x.ap, T) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
+  if (P.decks.length) { const dk = P.decks[0]; h += '<div class="card"><h2>' + (P.decks.length > 1 ? '第一隊' : '目前編組') + ' <span class="n">' + esc(dk.name || '') + '</span></h2><div class="row">' + dk.m.map(id => { const c = CARD[id]; const own = (P.cards || []).find(x => x.id === id) || (P.deckCards || {})[id]; return c ? '<div style="text-align:center;width:72px"><img src="' + ASSET + '/thumbnail/chara/' + c[8] + '_' + ((c[2] === 3 || c[2] === 4) && (!own || own.tr || own.specialTrainingStatus === 'done') ? 'after_training' : 'normal') + '.webp" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:12px;background:var(--bg-3)" loading="lazy"><div style="font-size:11px;line-height:1.3;margin-top:3px">' + esc((CH[c[1]] || {}).name || '') + '<br><span class="dim">' + RAR(c[2]) + (own && (own.masterRank || own.mr) ? ' MR' + (own.masterRank || own.mr) : '') + '</span></div></div>' : ''; }).join('') + '</div></div>'; }
+  return h;
+}
+function charsPane(P) {
+  const list = Object.keys(P.chars).map(id => Object.assign({ id: +id }, P.chars[id], CH[id] || {})).filter(c => c.name).sort((a, b) => b.rank - a.rank);
+  if (!list.length) return '<div class="card empty">沒有角色等級資料。</div>';
+  const max = Math.max(...list.map(c => c.rank)), units = {}; list.forEach(c => { (units[c.unit] = units[c.unit] || []).push(c.rank); });
+  const uavg = Object.keys(units).map(u => ({ u, avg: units[u].reduce((a, b) => a + b, 0) / units[u].length, n: units[u].length })).sort((a, b) => b.avg - a.avg);
+  const low = list.slice(-5).reverse();
+  return '<div class="card"><h2>角色等級 <span class="n">平均 ' + P.avgRank.toFixed(1) + '・最高 ' + max + '・最低 ' + list[list.length - 1].rank + '</span></h2><div class="tiles" style="margin-bottom:10px">' + uavg.map(x => '<div class="tile" style="border-left:4px solid var(--' + x.u + ')"><span>' + esc(UNIT[x.u] || x.u) + '</span><b>' + x.avg.toFixed(1) + '</b><small>' + x.n + ' 位平均</small></div>').join('') + '</div>' +
+    '<div class="chars">' + list.map(c => '<div class="ch"><img src="' + charImg(c.id) + '" alt="" loading="lazy"><div><b>' + esc(c.name) + '</b><div class="mb"><i style="width:' + (c.rank / max * 100) + '%;background:' + c.color + '"></i></div></div><div style="text-align:right"><span class="rk">' + c.rank + '</span>' + (c.exp != null ? '<small>EXP ' + n(c.exp) + '</small>' : '') + '</div></div>').join('') + '</div>' +
+    '<p class="note" style="margin-top:10px">最低的五位：' + low.map(c => esc(c.name) + '（' + c.rank + '）').join('、') + '。角色等級每升一級綜合力加成就多一點，也是「不抽卡也能漲」的來源；多打這幾位的卡（任何難度都算）最有感。</p></div>';
+}
+function songsPane(P) {
+  if (!P.res.size) return '<div class="card empty"><b>需要 Haruki 公開 suite</b>每首歌的成績在那裡。有了之後這裡會列出各難度最容易補的下一首 FC／AP、各等級的完成度與最高難度紀錄。</div>';
+  const tabs = ['expert', 'master', 'append'];
+  let h = '<div class="card"><h2>歌曲 <span class="n">定數依 EMERALD AP 難易度表（非官方）；沒有定數的用等級</span></h2><div class="seg">' + tabs.map((d, i) => '<button data-v="' + d + '" aria-pressed="' + (i === 1) + '">' + DN[d] + '</button>').join('') + '</div></div>';
+  tabs.forEach((d, i) => {
+    const rows = SONGS.filter(s => !s.jp && s.lv && s.lv[d] != null).map(s => { const r = P.res.get(s.id + ':' + d); return { s, lv: s.lv[d], c: CONST[s.id + ':' + d] || null, r: r ? r.r : -2, hs: r ? r.hs : 0, un: !P.unlocked || P.unlocked.has(s.id) }; });
+    const key = x => (x.c != null ? x.c : x.lv) ;
+    const nextFC = rows.filter(x => x.r < 1 && x.un).sort((a, b) => key(a) - key(b)).slice(0, 18), nextAP = rows.filter(x => x.r === 1).sort((a, b) => key(a) - key(b)).slice(0, 18);
+    const fcMax = Math.max(0, ...rows.filter(x => x.r >= 1).map(x => x.lv)), apMax = Math.max(0, ...rows.filter(x => x.r >= 2).map(x => x.lv));
+    const hardestFC = rows.filter(x => x.r >= 1).sort((a, b) => key(b) - key(a)).slice(0, 6), hardestAP = rows.filter(x => x.r >= 2).sort((a, b) => key(b) - key(a)).slice(0, 6);
+    const lvs = {}; rows.forEach(x => { const l = lvs[x.lv] = lvs[x.lv] || { t: 0, c: 0, fc: 0, ap: 0 }; l.t++; if (x.r >= 0) l.c++; if (x.r >= 1) l.fc++; if (x.r >= 2) l.ap++; });
+    const card = x => '<div class="sg"><img src="' + ASSET + '/music/jacket/' + x.s.jkt + '/' + x.s.jkt + '.webp" alt="" loading="lazy"><div style="min-width:0"><div class="t">' + esc(x.s.title) + '</div><div class="s">Lv ' + x.lv + (x.c != null ? '・定數 ' + x.c.toFixed(1) : '') + (x.r === -2 ? '・沒打過' : x.r === -1 ? '・未通關' : x.r === 0 ? '・已通關' : x.r === 1 ? '・FC' : '・AP') + (x.hs ? '・' + n(x.hs) : '') + '</div></div></div>';
+    h += '<div data-d="' + d + '"' + (i === 1 ? '' : ' hidden') + '>' +
+      '<div class="card"><h2 class="d-' + d + '">' + DN[d] + ' <span class="n">' + rows.length + ' 首・FC ' + rows.filter(x => x.r >= 1).length + '・AP ' + rows.filter(x => x.r >= 2).length + '・最高 FC Lv ' + fcMax + '・最高 AP Lv ' + apMax + '</span></h2>' +
+      '<table><thead><tr><th>等級</th><th class="num">曲數</th><th class="num">通關</th><th class="num">FC</th><th class="num">AP</th><th>FC 率</th></tr></thead><tbody>' + Object.keys(lvs).sort((a, b) => a - b).map(l => { const x = lvs[l]; return '<tr><td class="mono">Lv ' + l + '</td><td class="num">' + x.t + '</td><td class="num">' + x.c + '</td><td class="num">' + x.fc + '</td><td class="num">' + x.ap + '</td><td><div class="bar" style="height:7px;min-width:80px"><i style="width:' + (x.fc / x.t * 100) + '%;background:var(--acc)"></i><i style="width:' + (x.ap / x.t * 100) + '%;background:#c060c0;margin-left:-' + (x.ap / x.t * 100) + '%"></i></div></td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<div class="two"><div class="card"><h2>最容易補的下一首 FC <span class="n">' + rows.filter(x => x.r < 1 && x.un).length + ' 首還沒 FC</span></h2>' + (nextFC.length ? '<div class="songs">' + nextFC.map(card).join('') + '</div>' : '<p class="dim">全部 FC 了！</p>') + '</div>' +
+      '<div class="card"><h2>最容易補的下一首 AP <span class="n">' + rows.filter(x => x.r === 1).length + ' 首 FC 但還沒 AP</span></h2>' + (nextAP.length ? '<div class="songs">' + nextAP.map(card).join('') + '</div>' : '<p class="dim">沒有「FC 但未 AP」的曲子。</p>') + '</div></div>' +
+      '<div class="two"><div class="card"><h2>最難的 FC 紀錄</h2>' + (hardestFC.length ? '<div class="songs">' + hardestFC.map(card).join('') + '</div>' : '<p class="dim">—</p>') + '</div><div class="card"><h2>最難的 AP 紀錄</h2>' + (hardestAP.length ? '<div class="songs">' + hardestAP.map(card).join('') + '</div>' : '<p class="dim">—</p>') + '</div></div></div>';
+  });
+  return h;
+}
+function chalPane(P) {
+  const ids = Object.keys(CH).map(Number), per = P.chal.per;
+  if (!Object.keys(per).length && !P.chal.best) return '<div class="card empty">沒有挑戰 Live 資料。</div>';
+  const rows = ids.map(id => ({ id, name: CH[id].name, color: CH[id].color, score: (per[id] || {}).score || 0, done: (per[id] || {}).done || 0, total: CHAL_STAGES[id] || 0 })).sort((a, b) => b.score - a.score || b.done - a.done);
+  const max = Math.max(1, ...rows.map(r => r.score)), sum = rows.reduce((s, r) => s + r.score, 0), doneSum = rows.reduce((s, r) => s + r.done, 0), totSum = rows.reduce((s, r) => s + r.total, 0);
+  const hasScore = rows.some(r => r.score);
+  return '<div class="card"><h2>挑戰 Live <span class="n">' + (P.chal.best ? '最高 ' + n(P.chal.best.score) + '（' + esc((CH[P.chal.best.id] || {}).name || '') + '）・' : '') + (hasScore ? '26 位合計 ' + n(sum) + '・' : '') + '關卡 ' + n(doneSum) + '／' + n(totSum) + '</span></h2>' +
+    (hasScore ? '' : '<p class="note" style="margin-bottom:8px">每位角色的分數要有 Haruki 公開 suite；這裡先用公開檔案裡的關卡進度。</p>') +
+    '<div class="chars">' + rows.map(r => '<div class="ch"><img src="' + charImg(r.id) + '" alt="" loading="lazy"><div><b>' + esc(r.name) + '</b><div class="mb"><i style="width:' + (r.score / max * 100) + '%;background:' + r.color + '"></i></div><small>關卡 ' + r.done + (r.total ? '／' + r.total : '') + '</small></div><div style="text-align:right"><span class="rk" style="font-size:14px">' + (r.score ? n(r.score) : '—') + '</span></div></div>').join('') + '</div>' +
+    '<p class="note" style="margin-top:10px">挑戰 Live 每位角色每天一次，分數只跟該角色的卡與技能有關；關卡獎勵（水晶、素材）是固定的，進度落後的角色先推關最划算。</p></div>';
+}
+function cardsPane(P) {
+  if (!P.cards) return '<div class="card empty"><b>需要 Haruki 公開 suite</b>持卡清單在那裡；有了之後這裡會算各稀有度與各角色的收集率、專精與特訓數。</div>';
+  const avail = CARDS.filter(c => c[9] !== 0), own = new Set(P.cards.map(c => c.id)), byR = {}, tot = {};
+  avail.forEach(c => { tot[c[2]] = (tot[c[2]] || 0) + 1; if (own.has(c[0])) byR[c[2]] = (byR[c[2]] || 0) + 1; });
+  const mr5 = P.cards.filter(c => c.mr >= 5).length, tr = P.cards.filter(c => c.tr).length, mrSum = P.cards.reduce((s, c) => s + c.mr, 0);
+  const four = {}; avail.filter(c => c[2] === 4).forEach(c => { const f = four[c[1]] = four[c[1]] || { t: 0, o: 0 }; f.t++; if (own.has(c[0])) f.o++; });
+  const chRows = Object.keys(four).map(id => ({ id: +id, name: (CH[id] || {}).name || id, color: (CH[id] || {}).color || '#888', o: four[id].o, t: four[id].t })).sort((a, b) => (b.o / b.t) - (a.o / a.t) || b.o - a.o);
+  return '<div class="card"><h2>卡片 <span class="n">持有 ' + n(P.cards.length) + '／' + n(avail.length) + '（' + pct(P.cards.length, avail.length) + '）</span></h2><div class="tiles">' + [4, 3, 9, 2, 1].filter(r => tot[r]).map(r => '<div class="tile"><span>' + RAR(r) + '</span><b>' + n(byR[r] || 0) + '<span style="font-size:12px"> ／' + n(tot[r]) + '</span></b><small>' + pct(byR[r] || 0, tot[r]) + '</small></div>').join('') + '<div class="tile"><span>專精 5</span><b>' + n(mr5) + '</b><small>專精合計 ' + n(mrSum) + '</small></div><div class="tile"><span>已特訓</span><b>' + n(tr) + '</b></div></div></div>' +
+    '<div class="card"><h2>各角色 4★ 收集率</h2><div class="chars">' + chRows.map(r => '<div class="ch"><img src="' + charImg(r.id) + '" alt="" loading="lazy"><div><b>' + esc(r.name) + '</b><div class="mb"><i style="width:' + (r.o / r.t * 100) + '%;background:' + r.color + '"></i></div></div><div style="text-align:right"><span class="rk" style="font-size:15px">' + r.o + '<span class="dim" style="font-size:11px">／' + r.t + '</span></span></div></div>').join('') + '</div></div>';
+}
+function matsPane(P) {
+  if (!P.mats) return '<div class="card empty"><b>需要 Haruki 公開 suite</b>豆森材料庫存在那裡。</div>';
+  const rows = P.mats.map(m => { const f = FIX_MATS[m.id] || ['素材 #' + m.id, '', '']; return { id: m.id, name: f[0], icon: f[1], rar: f[2], q: m.q, at: m.at }; }).sort((a, b) => b.q - a.q);
+  const grp = {}; rows.forEach(r => (grp[r.rar] = grp[r.rar] || []).push(r));
+  return '<div class="card"><h2>豆森材料 <span class="n">' + rows.length + ' 種・<a href="./mystudio.html">豆森工作室</a> 算像素畫要多少</span></h2><table><thead><tr><th>素材</th><th class="num">庫存</th><th>最近取得</th></tr></thead><tbody>' + rows.map(r => '<tr><td><span class="mat">' + (r.icon ? '<img src="' + ASSET + '/mysekai/thumbnail/material/' + r.icon + '.webp" alt="" loading="lazy">' : '') + esc(r.name) + '</span></td><td class="num">' + n(r.q) + '</td><td class="dim" style="font-size:11px">' + (r.at ? new Date(r.at).toLocaleDateString() : '—') + '</td></tr>').join('') + '</tbody></table></div>';
+}
+const METRICS = [
+  ['玩家等級', P => P.rank], ['綜合力', P => P.power && P.power.total], ['卡片基礎綜合力', P => P.power && P.power.basic], ['區域道具加成', P => P.power && P.power.area], ['角色等級加成', P => P.power && P.power.charRank],
+  ['角色平均等級', P => P.avgRank ? +P.avgRank.toFixed(1) : null], ['角色等級合計', P => { const v = Object.values(P.chars).map(c => c.rank); return v.length ? v.reduce((a, b) => a + b, 0) : null; }],
+  ['多人 MVP', P => P.multi && P.multi.mvp], ['SUPERSTAR', P => P.multi && P.multi.superStar], ['挑戰 Live 最高', P => P.chal.best && P.chal.best.score], ['挑戰 Live 合計', P => { const v = Object.values(P.chal.per).map(x => x.score || 0); return v.some(Boolean) ? v.reduce((a, b) => a + b, 0) : null; }],
+  ['持有卡片', P => P.cards && P.cards.length], ['專精 5 張數', P => P.cards && P.cards.filter(c => c.mr >= 5).length], ['稱號數', P => P.honors],
+  ...['expert', 'master', 'append'].flatMap(d => [[DN[d] + ' 通關', P => P.diff[d] && P.diff[d].clear], [DN[d] + ' FC', P => P.diff[d] && P.diff[d].fc], [DN[d] + ' AP', P => P.diff[d] && P.diff[d].ap]]),
+];
+function comparePane(A, B) {
+  if (!B) return '<div class="card empty"><b>要比較就在上面填第二個 ID</b>兩個帳號的等級、綜合力、FC／AP、挑戰 Live、持卡會並排，再列 26 位角色等級的差。</div>';
+  let h = '<div class="card"><h2>比較 <span class="n">' + esc(A.name) + ' vs ' + esc(B.name) + '</span></h2><table class="cmp"><thead><tr><th>項目</th><th class="num">' + esc(A.name) + '</th><th class="num">' + esc(B.name) + '</th><th class="num">差</th></tr></thead><tbody>';
+  METRICS.forEach(([l, f]) => { const a = f(A), b = f(B); if (a == null && b == null) return; const da = a != null && b != null ? a - b : null; h += '<tr><td>' + l + '</td><td class="a ' + (da > 0 ? 'win' : da < 0 ? 'lose' : '') + '">' + n(a) + '</td><td class="b ' + (da < 0 ? 'win' : da > 0 ? 'lose' : '') + '">' + n(b) + '</td><td class="num dim">' + (da == null ? '—' : (da > 0 ? '+' : '') + n(Math.round(da * 10) / 10)) + '</td></tr>'; });
+  h += '</tbody></table></div>';
+  const ids = Object.keys(CH).map(Number).filter(id => (A.chars[id] || B.chars[id]));
+  if (ids.length) h += '<div class="card"><h2>角色等級</h2><table class="cmp"><thead><tr><th>角色</th><th class="num">' + esc(A.name) + '</th><th class="num">' + esc(B.name) + '</th><th class="num">差</th></tr></thead><tbody>' + ids.map(id => { const a = (A.chars[id] || {}).rank || 0, b = (B.chars[id] || {}).rank || 0, d = a - b; return '<tr><td><span class="chip"><i style="width:10px;height:10px;border-radius:3px;background:' + CH[id].color + '"></i>' + esc(CH[id].name) + '</span></td><td class="a ' + (d > 0 ? 'win' : d < 0 ? 'lose' : '') + '">' + a + '</td><td class="b ' + (d < 0 ? 'win' : d > 0 ? 'lose' : '') + '">' + b + '</td><td class="num dim">' + (d > 0 ? '+' : '') + d + '</td></tr>'; }).join('') + '</tbody></table></div>';
+  return h;
+}
+function summaryText(P) {
+  const d = P.diff, L = [P.name + '（ID ' + P.id + (P.rank ? '，Rank ' + P.rank : '') + '）'];
+  if (P.power) L.push('綜合力 ' + n(P.power.total) + '（卡片 ' + n(P.power.basic) + '、區域道具 ' + n(P.power.area) + '、角色等級 ' + n(P.power.charRank) + '）');
+  if (P.avgRank) L.push('角色平均等級 ' + P.avgRank.toFixed(1));
+  DIFFS.filter(k => d[k]).forEach(k => L.push(DN[k] + ' 通關 ' + d[k].clear + '／FC ' + d[k].fc + '／AP ' + d[k].ap));
+  if (P.multi) L.push('多人 MVP ' + n(P.multi.mvp) + (P.multi.superStar != null ? '、SUPERSTAR ' + n(P.multi.superStar) : ''));
+  if (P.chal.best) L.push('挑戰 Live 最高 ' + n(P.chal.best.score) + '（' + ((CH[P.chal.best.id] || {}).name || '') + '）');
+  if (P.cards) L.push('持有卡片 ' + n(P.cards.length) + ' 張');
+  L.push('— project-sekai-center.com/profile?id=' + P.id);
+  return L.join('\n');
+}
+/* ===== 啟動 ===== */
+const q = new URLSearchParams(location.search);
+if (q.get('srv') === 'jp') { SRV = 'jp'; $('#srv').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === 'jp'))); }
+let pid = q.get('id') || ''; try { pid = pid || localStorage.getItem('sekai-profile-last') || localStorage.getItem('sekai-app-pid') || ''; } catch (e) {}
+$('#pid').value = pid; $('#vs').value = q.get('vs') || '';
+window.__profile = { state, go, build, loadPlayer };
+if (q.get('id')) go();
+</script>
+</body>
+</html>

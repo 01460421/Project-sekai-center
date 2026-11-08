@@ -100,6 +100,8 @@ if (want('mysekai-studio')) {
   const P = m.PALETTE || [], C = m.CHARS || [];
   ok(P.length >= 60 && P.every(p => /^#[0-9a-f]{6}$/.test(p[3]) && (p[4] === 1 || p[4] === 2) && Array.isArray(p[7]) && p[7].length), 'mysekai-studio：色塊有色碼、邊長與製作素材', P.length);
   ok(C.length === 26 && C.every(c => c[1] && c[4] >= 1 && c[4] <= 12 && c[5] >= 1 && c[5] <= 31), 'mysekai-studio：26 位角色都有名字與生日', C.length);
+  const ST = m.CHAL_STAGES || {};
+  ok(Object.keys(ST).length === 26 && Object.values(ST).every(v => v >= 100), 'mysekai-studio：26 位角色的挑戰 Live 關卡數', Object.keys(ST).length);
 }
 if (want('syslog')) {
   const m = await mod('data/syslog.js');

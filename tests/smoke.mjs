@@ -114,6 +114,31 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：帳號分析（profile.html）。桌機與手機各開一次：用範例 ID 查，HiSekai 或 Haruki 任一來源有資料就要長出總覽格子；
+// 兩個來源都連不上時要顯示「讀不到資料」而不是白頁；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/profile.html?id=7268542269496662785', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => !document.querySelector('#res').hidden || !document.querySelector('#err').hidden, null, { timeout: 90000 });
+      const r = await page.evaluate(() => ({ tiles: document.querySelectorAll('#p-ov .tile').length, err: document.querySelector('#err').textContent, hidden: document.querySelector('#res').hidden }));
+      if (!r.hidden) { await page.click('.tab[data-t="sg"]'); await page.waitForTimeout(300); await page.click('.tab[data-t="vs"]'); await page.waitForTimeout(200); }
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && (r.tiles >= 3 || /讀不到資料/.test(r.err)) && !(mobile && overflow);
+      why = errors[0] || (r.tiles < 3 && !/讀不到資料/.test(r.err) ? '總覽只有 ' + r.tiles + ' 格' : overflow ? '橫向溢出' : '');
+      if (ok && r.tiles < 3) why = '（外部資料源連不上，只驗了錯誤畫面）';
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' profile' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：衝榜劇場（theater.html）。資料來自 games.project-sekai-center.com 的逐局追蹤器；
 // 桌機＋手機各開一次，要載到局數、面板要長出統計、不能有 JS 錯誤、手機不能橫向溢出。
 {

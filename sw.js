@@ -18,7 +18,7 @@ const PAGES = 'pages-' + VER, STATIC = 'static-' + VER;
 const STATIC_RE = /^\/(js|css|data|vendor|icons|tut-img)\/|^\/support\.js$/;
 /* 殼層：/、/app、/app.html，以及 /songs、/recap 這種路徑形式的分頁（vercel.json 的 catch-all 都回 app.html）。
    獨立頁（starmap、theater…）雖然也是沒有副檔名的路徑，但它們是自己的 HTML，不能當殼層。 */
-const STANDALONE_RE = /^\/(starmap|theater|soundprint|echoes|classic|tutorial|ep-calculator|mystudio)$/;
+const STANDALONE_RE = /^\/(starmap|theater|soundprint|echoes|classic|tutorial|ep-calculator|mystudio|profile)$/;
 const SHELL_RE = /^\/[A-Za-z0-9_]*$/;
 const isShell = p => SHELL_RE.test(p) && !STANDALONE_RE.test(p);
 const NO_CACHE_RE = /^\/data\/(billing|billing-jp|b30-consts|borders-db|borders-db-jp)\.js$|^\/data\/border-(model|accuracy)\.json$|^\/data\/history\//;

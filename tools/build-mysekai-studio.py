@@ -81,13 +81,24 @@ def main():
         nm = ((c.get('firstName') or '') + (c.get('givenName') or '')).strip()
         out_chars.append([cid, nm, UNIT_OF.get(c.get('unit'), ''), CHARA_COLOR.get(cid, '#888888'), int(m.group(1)) if m else 0, int(m.group(2)) if m else 0])
 
+    # 挑戰 Live 關卡總數（每位角色最高 rank；帳號分析頁算進度用）。抓不到就沿用舊檔的值。
+    stages = {}
+    try:
+        for st in tc_json(f'{TC}/challengeLiveStages.json'):
+            cid = st.get('characterId'); stages[cid] = max(stages.get(cid, 0), st.get('rank') or 0)
+    except Exception as e:  # noqa: BLE001
+        print(f'challengeLiveStages 抓不到：{e}', file=sys.stderr)
+        m = re.search(r'export const CHAL_STAGES=(.*?);\n', OUT.read_text(encoding='utf-8')) if OUT.exists() else None
+        stages = {int(k): v for k, v in json.loads(m.group(1)).items()} if m else {}
+
     dump = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
     text = ('/* 由 tools/build-mysekai-studio.py 產生,勿手改。豆森工作室（mystudio.html）用。\n'
             '   PALETTE 欄位:[家具id, 名稱, 色鍵, 色碼, 邊長, 種類(block|tile), 素材名, 製作素材[[素材id,數量]]]；'
-            'CHARS 欄位:[id, 名稱, 團體, 代表色, 生日月, 生日日] */\n'
+            'CHARS 欄位:[id, 名稱, 團體, 代表色, 生日月, 生日日]；CHAL_STAGES: 角色id → 挑戰 Live 關卡數 */\n'
             'export const PALETTE=' + dump(pal) + ';\n'
             'export const MATS=' + dump(mat_rows) + ';\n'
-            'export const CHARS=' + dump(out_chars) + ';\n')
+            'export const CHARS=' + dump(out_chars) + ';\n'
+            'export const CHAL_STAGES=' + dump({str(k): v for k, v in sorted(stages.items())}) + ';\n')
     if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
         print(f'{OUT.name}：內容沒變，不寫檔（{len(pal)} 色塊、{len(out_chars)} 位角色）')
         return
