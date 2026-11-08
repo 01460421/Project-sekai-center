@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=81b15ff56e" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=30b6f71b36" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#eef3fb" media="(prefers-color-scheme: light)">
@@ -2942,6 +2942,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
             <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
             <span style="font-size:11.5px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-family:'M PLUS Rounded 1c'">{{ liveRange }}</span>
+            <button type="button" onClick="{{ onWatchGo }}" data-k="evEnd" title="結算前 24 小時用推播／信件提醒（可改時數）" style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;border:0;cursor:pointer;min-height:26px">🔔 結算前提醒我</button>
           </div>
         </div>
         <div style="text-align:right;min-width:150px">
@@ -3179,6 +3180,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
             <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
             <span style="font-size:11.5px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-family:'M PLUS Rounded 1c'">{{ liveRange }}</span>
+            <button type="button" onClick="{{ onWatchGo }}" data-k="evEnd" title="結算前 24 小時用推播／信件提醒（可改時數）" style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;border:0;cursor:pointer;min-height:26px">🔔 結算前提醒我</button>
           </div>
         </div>
         <div style="text-align:right;min-width:140px">
@@ -3457,7 +3459,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <span style="font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.45">{{ g.n }}</span>
           <span><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2.5px 10px;border-radius:999px;background:{{ g.bg }};color:{{ g.fg }}">{{ g.t }}</span></span>
           <span style="font-size:12.5px;color:var(--text-2)">{{ g.ch }}<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px"><sc-for list="{{ g.chSd }}" as="c" hint-placeholder-count="3"><img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="{{ c.n }}" title="{{ c.n }}" width="128" height="128" style="width:30px;height:30px;object-fit:contain;display:block;border-radius:50%;background:color-mix(in oklab,{{ c.color }} 22%,transparent)"></sc-for></div></span>
-          <span class="u-fc5">{{ g.ev }}</span>
+          <span class="u-fc5">{{ g.ev }}<button type="button" onClick="{{ onWatchGo }}" data-k="gaEnd" data-v="{{ g.n }}" title="這池結束前 24 小時提醒我" aria-label="這池結束前提醒我" style="margin-left:6px;padding:2px 7px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:11px;cursor:pointer;min-height:24px">🔔</button></span>
         </div>
       </sc-for>
       <sc-if value="{{ gachaEmpty }}">
@@ -3779,6 +3781,14 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <button type="button" onClick="{{ onWlMoreR }}" style="width:100%;margin-top:9px;padding:10px;border:1px solid var(--border);border-radius:13px;background:var(--card);color:var(--accent-deep);font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs)">顯示完整前百 ▾</button>
     </sc-if>
     <sc-if value="{{ isBorderTab }}">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;padding:10px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card)">
+      <span style="font-size:12px;font-weight:800;color:var(--text-2)">🔔 榜線提醒</span>
+      <button type="button" class="sm-btn" style="margin:0" onClick="{{ onWatchGo }}" data-k="tier" data-v="1000">T1000 到門檻時通知我</button>
+      <button type="button" class="sm-btn" style="margin:0" onClick="{{ onWatchGo }}" data-k="tier" data-v="5000">T5000 到門檻時通知我</button>
+      <button type="button" class="sm-btn" style="margin:0" onClick="{{ onWatchGo }}" data-k="myOut" data-v="1000">我掉出 T1000 時通知我</button>
+      <button type="button" class="sm-btn" style="margin:0" onClick="{{ onWatchGo }}" data-k="evEnd">結算前 24 小時提醒我</button>
+      <span class="u-fc2" style="font-size:11px">登入後可用推播或信件；門檻與時數到帳號頁再改</span>
+    </div>
     <section class="set-card" style="margin-top:12px">
       <div class="set-h"><b>玩家回報的榜線</b><span>官方只給 T100～T50000 這幾條；中間的名次由看榜的玩家匿名回報補上</span></div>
       <sc-if value="{{ ctHas }}">
@@ -4112,6 +4122,18 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             </div>
           </sc-for>
         </div>
+
+        <sc-if value="{{ hasPlanDays }}">
+          <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;margin-bottom:13px">
+            <div style="padding:11px 16px;background:var(--card-2);font-size:11.5px;font-weight:800;color:var(--text-3);letter-spacing:.7px">逐日配速（到結算）<span style="font-weight:500;margin-left:8px">{{ planDaysNote }}</span></div>
+            <div style="display:grid;grid-template-columns:1.4fr .8fr .7fr 1fr 1.2fr;gap:8px;padding:7px 16px;font-size:10.5px;font-weight:700;color:var(--text-3);border-top:1px solid var(--border)"><span>日期</span><span>場數</span><span>時間</span><span>累計 EP</span><span>體力</span></div>
+            <sc-for list="{{ planDays }}" as="d" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:1.4fr .8fr .7fr 1fr 1.2fr;gap:8px;padding:8px 16px;border-top:1px solid var(--border);align-items:center;font-family:'M PLUS Rounded 1c';font-size:12.5px;color:{{ d.fg }}">
+                <span style="font-weight:700">{{ d.d }}</span><span style="font-weight:800">{{ d.games }}</span><span>{{ d.hrs }}</span><span>{{ d.ep }}</span><span style="color:{{ d.fg }}">{{ d.energy }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <sc-if value="{{ hasBoostTable }}">
           <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
@@ -6920,7 +6942,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
 
       <!-- 偵測訂閱 -->
-      <div style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px">
+      <div id="ac-watch" style="border:1px solid var(--border);border-radius:18px;padding:17px 19px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:13px;scroll-margin-top:70px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px">
           <span class="u-ffc20">偵測訂閱</span>
           <sc-if value="{{ wOpen }}">
@@ -9977,6 +9999,8 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="set-k">本機資料<small>{{ bkCount }}。備份檔含綁定 ID、收集勾選、B30 成績、版面與外觀設定，可以在另一台裝置匯入</small></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button type="button" class="set-btn set-btn-p" onClick="{{ onBkExport }}">匯出備份檔</button>
+          <button type="button" class="set-btn" onClick="{{ onBkCsv }}" data-v="cards">持有卡片 CSV</button>
+          <button type="button" class="set-btn" onClick="{{ onBkCsv }}" data-v="favs">收藏清單 CSV</button>
           <label class="set-btn">匯入備份檔<input type="file" accept="application/json,.json" onChange="{{ onBkPick }}" style="display:none"></label>
           <button type="button" class="set-btn" onClick="{{ onClearLocal }}" style="color:#e0576a">清除本機資料</button>
         </div>
@@ -10490,6 +10514,25 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
     </sc-if>
     <sc-if value="{{ isMaterials }}">
+      <section class="set-card" style="margin-bottom:12px">
+        <div class="set-h"><b>收藏家具要多少材料</b><span>把想做的家具加入收藏（家具圖鑑 → 詳情的 ★），這裡加總製作素材；綁定 Player ID 可對照 Haruki 的持有量</span></div>
+        <sc-if value="{{ wishEmpty }}"><div class="u-fc2" style="font-size:12.5px;line-height:1.7">還沒有收藏任何家具。到 <button type="button" class="sm-btn" style="margin:0 2px" onClick="{{ onGo }}" data-p="fixtures">家具圖鑑</button> 打開家具詳情按 ★，或用 <a href="./mystudio.html">豆森工作室</a> 算像素畫要的方塊數。</div></sc-if>
+        <sc-if value="{{ wishLoading }}"><div class="empty loading">載入家具資料…</div></sc-if>
+        <sc-if value="{{ hasWish }}">
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"><sc-for list="{{ wishFix }}" as="f" hint-placeholder-count="4"><button type="button" class="sm-btn" style="margin:0" onClick="{{ onDbPick }}" data-kind="fix" data-id="{{ f.id }}" data-num="1">{{ f.name }}</button></sc-for></div>
+          <div style="display:grid;grid-template-columns:1.6fr .7fr .7fr .8fr;gap:8px;padding:6px 10px;font-size:10.5px;font-weight:700;color:var(--text-3);border-bottom:1px solid var(--border)"><span>素材</span><span style="text-align:right">需要</span><span style="text-align:right">持有</span><span style="text-align:right">狀態</span></div>
+          <sc-for list="{{ wishRows }}" as="r" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1.6fr .7fr .7fr .8fr;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);align-items:center;font-size:12.5px">
+              <span style="display:flex;align-items:center;gap:7px"><sc-if value="{{ r.img }}"><img src="{{ r.img }}" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" width="26" height="26" style="width:26px;height:26px;border-radius:6px;background:var(--card-2)"></sc-if>{{ r.name }}</span>
+              <span class="mono" style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:700">{{ r.need }}</span><span style="text-align:right;font-family:'M PLUS Rounded 1c'">{{ r.have }}</span><span style="text-align:right;font-weight:700;color:{{ r.lackFg }}">{{ r.lack }}</span>
+            </div>
+          </sc-for>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+            <button type="button" class="sm-btn" style="margin:0" onClick="{{ onLoadMyMats }}">{{ myMatsBtn }}</button>
+            <span class="u-fc2" style="font-size:12px">{{ myMatsMsg }}</span>
+          </div>
+        </sc-if>
+      </section>
       <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
         <sc-for list="{{ matTypeChips }}" as="c" hint-placeholder-count="8">
           <button type="button" onClick="{{ onDbChip }}" data-k="matType" data-v="{{ c.v }}" style="padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;transition:background .14s">{{ c.n }}</button>
@@ -12817,7 +12860,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=81b15ff56e"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=30b6f71b36"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

@@ -171,6 +171,25 @@ class Component extends DCLogic {
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     this.setState({ bkMsg: '已匯出 ' + n + ' 項資料' });
   }
+  /* CSV 匯出：持有卡片（收集率勾選）與收藏清單，給想自己做表的人；Excel 開得了（BOM＋CRLF） */
+  bkExportCsv(kind) {
+    const csv = rows => '\ufeff' + rows.map(r => r.map(v => { const t = String(v == null ? '' : v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(',')).join('\r\n');
+    let rows = [], name = '';
+    if (kind === 'cards') {
+      let own = []; try { this.ownFromCode(localStorage.getItem(this.CARD_KEY) || ''); own = [...(this._own || [])]; } catch (e) {}   // CARD_KEY 是 bitmap 編碼，不是 JSON
+      const cards = this.state.rateCards || [], byId = {}; cards.forEach(c => { byId[c[0]] = c; });
+      const AT = ['cool', 'happy', 'mysterious', 'cute', 'pure'];
+      rows = [['卡片 id', '卡名', '角色', '稀有度', '屬性']].concat(own.map(Number).filter(Boolean).sort((a, b) => a - b).map(id => { const c = byId[id]; return c ? [id, c[7], this.charName(c[1]) || c[1], c[2] === 9 ? '生日' : '★' + c[2], this.ATTR_ZH[AT[c[3]]] || ''] : [id, '', '', '', '']; }));
+      name = 'sekai-cards-own'; if (!cards.length) this.loadCards();
+    } else {
+      rows = [['類型', 'id', '名稱', '頁面', '加入時間']].concat((this.state.favs || []).map(f => [f.kind, f.id, f.n || '', f.p || '', f.t ? new Date(f.t).toISOString() : '']));
+      name = 'sekai-favs';
+    }
+    if (rows.length <= 1) { this.setState({ bkMsg: kind === 'cards' ? '還沒有勾選任何持有卡片（收集率頁勾）' : '還沒有收藏' }); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv(rows)], { type: 'text/csv;charset=utf-8' })); a.download = name + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    this.setState({ bkMsg: '已匯出 ' + (rows.length - 1) + ' 列 CSV' });
+  }
   bkImport(file) {
     if (!file) return;
     const fr = new FileReader();
@@ -6850,6 +6869,19 @@ class Component extends DCLogic {
 
     if (p === 'materials') {
       const d = s.mats;
+      /* 收藏的家具（收藏與待辦頁的 ★）當願望清單：把製作素材加總，讀了 Haruki 公開 suite 的持有量就標缺多少 */
+      const F = s.fixtures, favFix = (s.favs || []).filter(f => f.kind === 'fix');
+      out.wishN = favFix.length; out.wishEmpty = !favFix.length; out.wishLoading = !!favFix.length && !F;
+      if (F && favFix.length) {
+        const byId = {}; (F.rows || []).forEach(r => { byId[r[0]] = r; });
+        const tot = new Map(); favFix.forEach(f => { const r = byId[+f.id]; if (r) (r[10] || []).forEach(([m, q]) => tot.set(m, (tot.get(m) || 0) + q)); });
+        const have = s.myMats || null;
+        out.wishRows = [...tot.entries()].sort((a, b) => b[1] - a[1]).map(([m, q]) => { const mm = (F.mats || {})[m] || ['素材 #' + m, '', '']; const h = have ? (have[m] || 0) : null;
+          return { name: mm[0], img: mm[1] ? this.ASSET + '/mysekai/thumbnail/material/' + mm[1] + '.webp' : '', need: this.n(q), have: h != null ? this.n(h) : '—', lack: h == null ? '' : h < q ? '缺 ' + this.n(q - h) : '夠', lackFg: h != null && h < q ? 'var(--bad)' : 'var(--ok)' }; });
+        out.wishFix = favFix.map(f => { const r = byId[+f.id]; return { id: f.id, name: (r && r[1]) || f.n || ('#' + f.id) }; });
+        out.wishLack = have ? out.wishRows.filter(r => r.lack.startsWith('缺')).length : null;
+      }
+      out.hasWish = !!(out.wishRows && out.wishRows.length); out.myMatsMsg = s.myMatsMsg || ''; out.myMatsBusy = !!s.myMatsBusy; out.myMatsBtn = s.myMatsBusy ? '讀取中…' : (s.myMats ? '重新讀取持有量' : '讀取持有量（Haruki）');
       const TYPES = [['', '全部'], ['common', '碎片與寶石'], ['master_lesson', '專精課程'], ['music', '樂曲'], ['character_rank_exp_ticket', '角色經驗'], ['card_ticket', '卡片券'], ['web_ticket', '網頁券'], ['vocal_card_ticket', '歌唱券'], ['mysekai', 'MySekai'], ['other', '其他']];
       const known = new Set(TYPES.map(t => t[0]).filter(Boolean));
       const typeOf = x => known.has(x.type) ? x.type : 'other';
@@ -8634,7 +8666,7 @@ class Component extends DCLogic {
     if (p !== 'story' && this.state.rd) { this.stStopVoice(); pre.rd = null; }
     if (p === 'fixtures') this.loadFixtures();
     if (p === 'mstalk') { this.loadMst(); this.loadFixtures(); }
-    if (p === 'materials') this.loadMats();
+    if (p === 'materials') { this.loadMats(); this.loadFixtures(); }
     if (p === 'bdayparty') { this.loadBday(); this.loadCards(); this.loadFixtures(); }
     if (p === 'comics') this.loadComics();
     if (p === 'ost') this.loadOst();
@@ -9571,7 +9603,7 @@ class Component extends DCLogic {
     const song = this.songById(s.songKey);
     const modeLabels = { solo: '個人', auto: '自動', multi: '協力', cheer: '排位對戰' };
 
-    let resultLabel = '', resultValue = '', resultSub = '', resultStats = [], calcFields = [], formulaText = '', formulaNote = '', calcInputTitle = '';
+    let resultLabel = '', resultValue = '', resultSub = '', resultStats = [], calcFields = [], formulaText = '', formulaNote = '', calcInputTitle = '', planDays = [], planDaysNote = '';
     if (s.ctab === 'ep') {
       calcInputTitle = 'EP 精算參數';
       calcFields = [
@@ -9654,6 +9686,22 @@ class Component extends DCLogic {
         { l: '剩餘天數', v: pi.daysLeft + ' 天', sub: '到活動結算' },
         { l: '每天要打', v: this.n(pi.perDay) + ' 場', sub: '約 ' + pi.hrsDay + ' 小時' + (pi.feasible ? '' : '，超過每天可玩') },
         { l: '每天體力', v: this.n(pi.energyDay), sub: '自然回復約 48／天' });
+      /* 逐日配速：把剩下的場次平均攤到結算前每一天（最後一天只算到結算那一刻），每天列要打幾場、幾小時、累計要到多少 EP、
+         體力夠不夠（自然回復 48／天，罐子平均攤）。超過「每天可玩」的天標紅，讓人提早知道要加罐或調目標。 */
+      if (pi.active && plays && pi.daysLeft && epR.cycle > 0) {
+        const ev0 = this.eventOf(s.live), endMs = new Date(ev0.aggregate_at || ev0.closed_at || ev0.aggregated_at || ev0.end_at).getTime(), now0 = Date.now();
+        const days = pi.daysLeft, cap = +s.planHrs || 0, canE = ((+s.lCan || 0) * 10 + (+s.sCan || 0) * 5 + (+s.crys || 0) * 10) / days;
+        let remain = plays, cum = +s.cur || 0; const W = ['日', '一', '二', '三', '四', '五', '六'];
+        for (let i = 0; i < days; i++) {
+          const dayStart = now0 + i * 86400000, dayEnd = Math.min(endMs, dayStart + 86400000), frac = Math.max(0, Math.min(1, (dayEnd - dayStart) / 86400000));
+          const g = i === days - 1 ? remain : Math.min(remain, Math.ceil(plays / days)); remain -= g; cum += g * epR.ep;
+          const hrs = g * epR.cycle / 3600, energy = g * (+s.energy || 0), rec = 48 * frac + canE, d = new Date(dayStart);
+          planDays.push({ d: (d.getMonth() + 1) + '/' + d.getDate() + '（' + W[d.getDay()] + '）' + (i === days - 1 ? ' 結算日' : ''), games: g ? g + ' 場' : '休息', hrs: g ? hrs.toFixed(1) + ' h' : '—', ep: this.short(Math.min(cum, +s.goal || cum)),
+            energy: g ? this.n(energy) + (energy > rec ? '（缺 ' + this.n(Math.ceil(energy - rec)) + '）' : '') : '—', over: !!(cap && hrs > cap), lack: energy > rec,
+            fg: (cap && hrs > cap) ? 'var(--bad)' : 'var(--ink)' });
+        }
+        planDaysNote = '每天 ' + this.n(Math.ceil(plays / days)) + ' 場、自然回復 48 體力／天' + (canE ? '＋罐子攤 ' + this.n(Math.round(canE)) + '／天' : '') + (cap ? '；每天可玩 ' + cap + ' 小時' : '') + '。體力「缺」的天要補罐或用石。';
+      }
       formulaText = '場次 = ⌈(目標 − 目前) ÷ 每局 EP⌉；時間 = 場次 × (歌長 + ' + this.ohOf(s.mode) + 's)';
       formulaNote = '可回復體力 = 自然回復小時×2 ＋ 大罐×10 ＋ 小罐×5 ＋ 石×10。';
     } else if (s.ctab === 'mult') {
@@ -11347,6 +11395,14 @@ class Component extends DCLogic {
       })(),
 
       onBkExport: () => this.bkExport(),
+      onBkCsv: e => this.bkExportCsv(e.currentTarget.dataset.v),
+      onLoadMyMats: async () => {
+        const id = String(this.state.pid || '').trim(); if (!/^\d{6,20}$/.test(id)) { this.setState({ myMatsMsg: '先在首頁綁定台服 Player ID（要在 Haruki 工具箱上傳過並開公開 API）' }); return; }
+        if (this.state.myMatsBusy) return; this.setState({ myMatsBusy: true, myMatsMsg: '讀取 Haruki 公開 suite…（約 8 MB）' });
+        try { const u = this.hkNormalize(await this.hkPublic('suite', id, 'tw'), id); const m = {}; (u.userMysekaiMaterials || []).forEach(x => { m[+x.mysekaiMaterialId] = +x.quantity || 0; });
+          this.setState({ myMats: m, myMatsBusy: false, myMatsMsg: '持有量已更新（' + Object.keys(m).length + ' 種）' }); }
+        catch (e2) { this.setState({ myMatsBusy: false, myMatsMsg: '讀不到：' + (e2.message === 'not_public' ? '沒有公開 suite' : (e2.message || '')) }); }
+      },
       onBkPick: e => { const f = e.target.files && e.target.files[0]; this.bkImport(f); e.target.value = ''; },
 
       /* ---------- 分析中心 ---------- */
@@ -12350,7 +12406,7 @@ class Component extends DCLogic {
         { v: '0.06', n: '任一 4★・Fes 池（6%）' }, { v: '0.03b', n: '生日限定卡（3%）' },
         { v: '0.002', n: '自選二段卡・WL 支援池（0.2%）' }
       ].map(t => Object.assign({}, t, chip(s.gcT === t.v, 'var(--ink-grad)'))),
-      resultLabel, resultValue, resultSub, resultStats,
+      resultLabel, resultValue, resultSub, resultStats, planDays, hasPlanDays: planDays.length > 0, planDaysNote,
       hasBoostTable: s.ctab === 'ep', boostTable,
       showFormula: this.props.showFormulas !== false, formulaText, formulaNote,
 
@@ -12752,6 +12808,23 @@ class Component extends DCLogic {
         this.setState(patch);
       },
       onWNew: () => this.setState({ wForm: { kind: 'border', mode: 'tier_score', vals: {}, name: '' }, wBusy: '' }),
+      /* 其他頁的「提醒我」：帶好訂閱表單再跳到帳號頁的偵測訂閱區（沒登入就先去登入，表單留著） */
+      onWatchGo: e => {
+        e.stopPropagation && e.stopPropagation();
+        const d = e.currentTarget.dataset, k = d.k, v = d.v || '', uid = this.state.pid || '';
+        const P = {
+          evEnd: { kind: 'schedule', mode: 'event_end', vals: { what: 'event_end', before_h: 24, end_kind: 'aggregate' }, name: '活動結算前 24 小時' },
+          gaEnd: { kind: 'schedule', mode: 'gacha_end', vals: { what: 'gacha_end', before_h: 24, filter: v }, name: (v ? v + '・' : '') + '卡池結束前 24 小時' },
+          gaStart: { kind: 'schedule', mode: 'gacha_start', vals: { what: 'gacha_start', before_h: 24, filter: v }, name: (v ? v + '・' : '') + '卡池開放前 24 小時' },
+          tier: { kind: 'border', mode: 'tier_score', vals: { board: 'event', tier: +v || 1000, op: 'gte', value: 3000000 }, name: 'T' + (+v || 1000) + ' 榜線到門檻' },
+          myOut: { kind: 'border', mode: 'my_rank_out', vals: { board: 'event', tier: +v || 1000, uid }, name: '我掉出 T' + (+v || 1000) },
+        }[k];
+        if (!P) return;
+        this.setState({ wForm: P, wBusy: this.state.me ? '已帶入預設，改好門檻後按建立' : '登入後就能建立這條訂閱（表單已帶好）' });
+        this._toast(this.state.me ? '訂閱表單已帶好，確認後按建立' : '先登入，表單已帶好');
+        this.go('account');
+        setTimeout(() => { const el = document.getElementById('ac-watch'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 450);
+      },
       onWPreset: e => {
         const v = e.currentTarget.dataset.v, uid = this.state.pid || '';
         const P = {
