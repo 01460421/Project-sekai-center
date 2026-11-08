@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ea">
+<title>存石規劃 — 未來一年卡池、持卡對照與水晶收支 | Project SEKAI 資源中心</title>
+<meta name="description" content="台服未來 12 個月的卡池（照日服加一年的規律預測）排成時間軸：每池的 PU 卡、你已經有哪幾張、哪些角色最缺；填目前水晶與每日／每期收入，算到每一池時能存幾抽、勾「想抽」後看哪一池會不夠。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="存石規劃 — 未來卡池、持卡對照與水晶收支">
+<meta property="og:description" content="未來一年每一池的 PU 卡與你的持卡對照，水晶收支推算到每池能存幾抽，勾想抽的池看會不會不夠。">
+<meta property="og:url" content="https://project-sekai-center.com/plan.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/plan.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/plan.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<script>try{var _t=localStorage.getItem('sekai-plan-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(_t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
+<style>
+:root{color-scheme:light;--bg:#f3f1ea;--bg-2:#faf9f5;--bg-3:#ebe8df;--panel:#fff;--panel-2:#f7f5ef;--ink:#1f2230;--ink-2:#4b5064;--ink-3:#5c627a;
+  --line:rgba(40,46,80,.12);--line-2:rgba(40,46,80,.22);--acc:#7a4fc0;--acc-2:#5a3596;--acc-soft:rgba(122,79,192,.12);--ok:#11673f;--warn:#9a6400;--bad:#c43d50;
+  --sans:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;--disp:'M PLUS Rounded 1c','Noto Sans TC',system-ui,sans-serif;--mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --r:14px;--shadow:0 18px 50px -24px rgba(40,40,70,.28);--ease:cubic-bezier(.32,.72,.24,1)}
+:root.dark{color-scheme:dark;--bg:#0f1117;--bg-2:#151823;--bg-3:#1b1f2c;--panel:#181c28;--panel-2:#1f2433;--ink:#e8ebf3;--ink-2:#aab1c6;--ink-3:#8a92ab;
+  --line:rgba(170,190,255,.1);--line-2:rgba(170,190,255,.2);--acc:#b79cf0;--acc-2:#d2c0f7;--acc-soft:rgba(183,156,240,.14);--ok:#4ccf94;--warn:#f0b64a;--bad:#ff8a98;--shadow:0 18px 50px -20px rgba(0,0,0,.6)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html{height:100%}
+body{min-height:100%;font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}input,select{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--acc);outline-offset:2px}a{color:var(--acc-2)}
+[hidden]{display:none!important}.dim{color:var(--ink-3)}.dim2{color:var(--ink-2)}.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;background:color-mix(in oklab,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+header .logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:700;font-family:var(--disp)}header .logo img{width:28px;height:28px;border-radius:8px}
+header h1{font-family:var(--disp);font-size:18px;font-weight:800;white-space:nowrap}header h1 small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:8px}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel);margin-left:auto}
+main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px}
+.card h2{font-family:var(--disp);font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.card h2 .n{margin-left:auto;font-size:12px;font-weight:500;color:var(--ink-3)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.row+.row{margin-top:8px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink-2);font-weight:500;min-width:0}
+input[type=text],input[type=number],select{height:36px;padding:0 10px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg-2);color:var(--ink);min-width:0}input[type=number]{width:110px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);font-weight:700;color:var(--ink)}
+.btn:hover{background:var(--bg-3)}.btn.pri{background:var(--acc);border-color:transparent;color:#fff}.btn.pri:hover{background:var(--acc-2)}:root.dark .btn.pri{color:#0f1117}.btn.sm{height:28px;padding:0 9px;font-size:12px}
+.seg{display:inline-flex;background:var(--bg-3);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}.seg button{padding:5px 10px;border-radius:8px;font-weight:700;font-size:12px;color:var(--ink-2);min-height:28px}.seg button[aria-pressed="true"]{background:var(--panel);color:var(--acc-2);box-shadow:0 1px 6px rgba(0,0,0,.08)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}.tile{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tile b{display:block;font-size:20px;font-family:var(--disp);line-height:1.2;font-variant-numeric:tabular-nums}.tile span{font-size:11px;color:var(--ink-3)}.tile small{display:block;font-size:11px;color:var(--ink-2);margin-top:2px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--bg-3);font-size:11.5px;font-weight:700;white-space:nowrap}
+.g{display:grid;grid-template-columns:118px 1fr 230px;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+.g:first-child{border-top:0}.g.off{opacity:.55}
+.g .dt{font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.5}.g .dt b{display:block;font-family:var(--disp);font-size:16px;color:var(--ink)}
+.g .nm{font-weight:800;font-size:14px;line-height:1.3}
+.pu{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pu .c{display:flex;align-items:center;gap:6px;padding:3px 8px 3px 3px;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);font-size:12px}.pu .c img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--bg-3)}.pu .c.own{opacity:.5}.pu .c.own b::after{content:' ✓';color:var(--ok)}.pu .c.miss{border-color:var(--acc)}
+.pl{display:flex;flex-direction:column;gap:6px}.pl .row{gap:6px}.pl input[type=number]{width:80px;height:32px}
+.proj{font-size:12px;line-height:1.6}.proj b{font-family:var(--mono)}.proj .ok{color:var(--ok)}.proj .bad{color:var(--bad)}.proj .warn{color:var(--warn)}
+.src-tw{color:var(--ok)}.src-pred{color:#7a4f00}.src-jp{color:var(--acc-2)}:root.dark .src-pred{color:var(--warn)}
+svg.chart{width:100%;height:170px;display:block}
+.note{font-size:12px;color:var(--ink-3);line-height:1.7}.empty{padding:28px 16px;text-align:center;color:var(--ink-3);line-height:1.8}.empty b{display:block;color:var(--ink);font-family:var(--disp);font-size:15px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;z-index:50;transition:all .25s var(--ease);pointer-events:none;max-width:90vw}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:760px){.g{grid-template-columns:1fr}.g .dt b{display:inline;margin-right:8px}}
+@media (max-width:640px){header{padding:8px 10px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}main{padding:10px}.card{padding:12px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="./app.html" title="回到 SEKAI 資源中心" aria-label="回到 SEKAI 資源中心"><img src="./icons/icon-180.png" alt=""><span>資源中心</span></a>
+  <h1>存石規劃<small>未來卡池・持卡對照・水晶收支</small></h1>
+  <button class="ib" id="themeBtn" title="切換深淺色" aria-label="切換深淺色">◐</button>
+</header>
+<main>
+  <div class="card">
+    <h2>你的資源 <span class="n">都存在這台裝置；改了會立刻重算</span></h2>
+    <div class="row">
+      <label class="f">免費水晶<input type="number" id="free" min="0" step="100" value="0"></label>
+      <label class="f">付費水晶<input type="number" id="paid" min="0" step="100" value="0"></label>
+      <label class="f">招募券（張）<input type="number" id="ticket" min="0" value="0"></label>
+      <label class="f">每日收入（顆）<input type="number" id="perDay" min="0" value="40"></label>
+      <label class="f">每期活動收入（顆）<input type="number" id="perEv" min="0" step="100" value="1500"></label>
+      <label class="f">每月額外（顆）<input type="number" id="perMo" min="0" step="100" value="800"></label>
+      <label class="f">看幾個月<select id="months"><option value="6">6</option><option value="12" selected>12</option><option value="18">18</option><option value="24">24</option></select></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input type="text" id="pid" inputmode="numeric" placeholder="Player ID（選填，標出你已有的 PU 卡）" style="flex:1;min-width:220px" aria-label="Player ID">
+      <button class="btn" id="loadOwn">讀取持卡</button>
+      <span class="dim" id="ownT"></span>
+      <span style="margin-left:auto"></span>
+      <button class="btn sm" id="share">分享連結</button><button class="btn sm" id="reset">清空計畫</button>
+    </div>
+    <p class="note" style="margin-top:8px">收入是概估的預設值（每日任務、挑戰 Live、登入、每期活動獎勵），照你自己的習慣改。一抽 300 顆；一般池 300 抽天井、生日池 100 抽；指定 PU 每張 0.4%。卡池時間是「日服同一天加一年」的預測（<a href="./app.html?page=sched">排程預測</a> 的命中率在那裡看），官方已公布的會標綠。</p>
+  </div>
+  <div class="card">
+    <h2>總結 <span class="n" id="sumN"></span></h2>
+    <div class="tiles" id="tiles"></div>
+    <svg class="chart" id="chart" viewBox="0 0 800 170" preserveAspectRatio="none" aria-label="水晶走勢"></svg>
+    <div class="row" style="margin-top:6px;font-size:12px"><span class="chip"><i style="width:10px;height:10px;border-radius:3px;background:var(--acc)"></i>預估水晶（免費＋付費）</span><span class="chip"><i style="width:10px;height:10px;border-radius:3px;background:var(--bad)"></i>勾了想抽但不夠的池</span></div>
+  </div>
+  <div class="card">
+    <h2>卡池時間軸 <span class="n" id="listN"></span></h2>
+    <div class="row" style="margin-bottom:8px">
+      <div class="seg" id="filt" role="group" aria-label="池型"><button data-v="main" aria-pressed="true">PU／復刻／限定</button><button data-v="all" aria-pressed="false">全部</button><button data-v="miss" aria-pressed="false">只看有缺卡的</button><button data-v="picked" aria-pressed="false">只看想抽的</button></div>
+    </div>
+    <div id="list"></div>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module">
+import { SCHED_FORECAST as F } from './data/schedule-forecast.js?v=68dc05e75e';
+import { CHARS } from './data/mysekai-studio.js?v=e6443e7efa';
+import { CARDS } from './data/cards-index.js?v=4d50ff39a7';
+const ASSET = 'https://storage.sekai.best/sekai-jp-assets', GAMES = 'https://games.project-sekai-center.com';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const n = v => v == null ? '—' : Number(v).toLocaleString();
+let toastT; const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); };
+const CH = {}; CHARS.forEach(c => CH[c[0]] = { name: c[1], color: c[3], unit: c[2] });
+const CARD = {}; CARDS.forEach(c => CARD[c[0]] = c);
+const TYPE = { pickup: 'PU 池', rerun: '復刻', select: '選擇', pass: '通行證', birthday: '生日池', normal: '一般', newyear: '新春', gift: '禮物', anniv: '周年', wl: 'World Link', fes: 'FES', free: '免費', beginner: '新手' };
+const ATTR = { cute: '可愛', cool: '帥氣', pure: '純真', happy: '歡樂', mysterious: '神祕' }, SK = { score: '分數', judge: '判定', heal: '回血', perfect: 'P分', cfes_life: '七彩血分', unit: '團分', bfes_char: '絢爛角色', bfes_ref: '絢爛吸技', bfes_vs: '絢爛虛擬', birthday: '生日', good: 'Good' };
+const LIMITED = new Set(['fes', 'select', 'wl', 'newyear', 'anniv']);
+$('#themeBtn').onclick = () => { const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-plan-theme', d ? 'dark' : 'light'); } catch (e) {} };
+/* 狀態：輸入值、想抽的池（id → 抽數）、持卡 */
+const S = { free: 0, paid: 0, ticket: 0, perDay: 40, perEv: 1500, perMo: 800, months: 12, picks: {}, own: null, pid: '', filt: 'main' };
+const KEY = 'sekai-plan-v1';
+try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.slice(1));
+if (h.get('p')) { try { Object.assign(S, JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h.get('p').replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))))); toast('已載入分享的計畫'); } catch (e) {} }
+if (q.get('id')) S.pid = q.get('id'); if (!S.pid) { try { S.pid = localStorage.getItem('sekai-profile-last') || localStorage.getItem('sekai-app-pid') || ''; } catch (e) {} }
+['free', 'paid', 'ticket', 'perDay', 'perEv', 'perMo', 'months'].forEach(k => { $('#' + k).value = S[k]; $('#' + k).oninput = () => { S[k] = +$('#' + k).value || 0; save(); render(); }; });
+$('#pid').value = S.pid;
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ free: S.free, paid: S.paid, ticket: S.ticket, perDay: S.perDay, perEv: S.perEv, perMo: S.perMo, months: S.months, picks: S.picks, pid: $('#pid').value.trim() })); } catch (e) {} }
+$('#filt').querySelectorAll('button').forEach(b => b.onclick = () => { $('#filt').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); S.filt = b.dataset.v; render(); });
+$('#reset').onclick = () => { if (!confirm('清掉所有「想抽」的勾選？')) return; S.picks = {}; save(); render(); };
+$('#share').onclick = () => { const o = { free: S.free, paid: S.paid, ticket: S.ticket, perDay: S.perDay, perEv: S.perEv, perMo: S.perMo, months: S.months, picks: S.picks }; const b = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); navigator.clipboard.writeText(location.origin + location.pathname + '#p=' + b).then(() => toast('連結已複製')).catch(() => toast('複製失敗')); };
+/* 持卡：Haruki 公開 suite 只拿 userCards 的 cardId（整份約 8 MB，只讀一次） */
+$('#loadOwn').onclick = async () => {
+  const id = ($('#pid').value.match(/\d{6,20}/g) || []).pop(); if (!id) return toast('請填 Player ID');
+  $('#ownT').textContent = '讀取 Haruki 公開 suite…'; $('#loadOwn').disabled = true;
+  try { const r = await fetch(GAMES + '/haruki/public/tw/suite/' + id); if (!r.ok) throw new Error(r.status === 404 ? '沒有公開 suite（要在 Haruki 工具箱上傳並開公開 API）' : 'HTTP ' + r.status);
+    const t = await r.text(); const p = JSON.parse(t.replace(/("(?:[^"\\]|\\.)*")\s*:\s*(\d{16,})(?=\s*[,}\]])/g, '$1:"$2"')); const u = p && p.updatedData !== undefined ? p.updatedData : p;
+    S.own = new Set((u.userCards || []).map(c => +c.cardId)); S.pid = id; save(); $('#ownT').textContent = '持卡 ' + S.own.size + ' 張'; render(); }
+  catch (e) { $('#ownT').textContent = '讀不到：' + e.message; }
+  $('#loadOwn').disabled = false;
+};
+/* ===== 核心：收入模型與每池的可用水晶 ===== */
+const DAY = 86400e3, now = Date.now();
+const evs = (F.evFuture || []).map(r => r[3]).filter(t => t > now).sort((a, b) => a - b);   // 每期活動開始時當作入帳
+function income(t) { const days = Math.max(0, (t - now) / DAY); const nEv = evs.filter(e => e <= t).length; return days * S.perDay + nEv * S.perEv + Math.floor(days / 30) * S.perMo; }
+function gachas() {
+  const lim = now + S.months * 30.5 * DAY;
+  return (F.gaFuture || []).filter(g => g[5] > now && g[4] <= lim).sort((a, b) => a[4] - b[4]).map(g => ({ id: g[0], name: g[1], ceil: g[2], type: g[3], s: g[4], e: g[5], pu: (g[6] || []).map(c => ({ id: c[0], ch: c[1], rar: c[2], abn: c[3], attr: c[4], sk: c[5] })), ev: g[7], src: g[9], conf: g[10], meta: g[13] }));
+}
+function plan() {
+  const list = gachas(); let spent = 0; const rows = [];
+  list.forEach(g => { const pulls = +S.picks[g.id] || 0; const have = S.free + S.paid + income(g.s) - spent; const tickets = S.ticket; const afford = Math.floor(Math.max(0, have) / 300) + tickets; const need = Math.max(0, pulls - tickets) * 300; const ok = need <= have; if (pulls) spent += Math.max(0, pulls - tickets) * 300; rows.push(Object.assign(g, { pulls, have, afford, need, ok, after: have - need })); });
+  return rows;
+}
+function pOne(pulls, k) { const p = 0.004; return 1 - Math.pow(1 - p * (k || 1), pulls); }
+function fd(t) { const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate(); }
+function render() {
+  const rows = plan(), picked = rows.filter(r => r.pulls), bad = picked.filter(r => !r.ok), totalPulls = picked.reduce((s, r) => s + r.pulls, 0), totalNeed = picked.reduce((s, r) => s + r.need, 0);
+  const endT = now + S.months * 30.5 * DAY, endHave = S.free + S.paid + income(endT) - picked.reduce((s, r) => s + r.need, 0);
+  const miss = S.own ? rows.filter(r => r.pu.some(c => !S.own.has(c.id))).length : null;
+  $('#sumN').textContent = S.months + ' 個月・' + rows.length + ' 池' + (evs.length ? '・' + evs.filter(e => e <= endT).length + ' 期活動入帳' : '');
+  $('#tiles').innerHTML = [['現在可抽', n(Math.floor((S.free + S.paid) / 300) + S.ticket) + ' 抽', '水晶 ' + n(S.free + S.paid) + '＋券 ' + S.ticket], [S.months + ' 個月後預估', n(Math.max(0, Math.round(endHave))) + ' 顆', '扣掉想抽的 ' + n(totalNeed) + ' 顆'], ['想抽', picked.length + ' 池', totalPulls + ' 抽・' + n(totalNeed) + ' 顆'], ['不夠的池', bad.length + ' 池', bad.length ? '第一個：' + esc(bad[0].name) + '（' + fd(bad[0].s) + '）' : '照這個計畫都夠'], ...(miss != null ? [['有缺 PU 卡的池', miss + ' 池', '持卡 ' + S.own.size + ' 張']] : [])]
+    .map(x => '<div class="tile"><span>' + x[0] + '</span><b>' + x[1] + '</b><small>' + x[2] + '</small></div>').join('');
+  drawChart(rows, endT);
+  const filt = S.filt, show = rows.filter(r => filt === 'all' ? true : filt === 'picked' ? r.pulls > 0 : filt === 'miss' ? (S.own && r.pu.some(c => !S.own.has(c.id))) : ['pickup', 'rerun', 'select', 'fes', 'wl', 'newyear', 'anniv', 'birthday'].includes(r.type));
+  $('#listN').textContent = show.length + '／' + rows.length + ' 池';
+  $('#list').innerHTML = show.map(r => {
+    const puH = r.pu.length ? '<div class="pu">' + r.pu.map(c => { const own = S.own && S.own.has(c.id); const cd = CARD[c.id]; return '<span class="c ' + (own ? 'own' : S.own ? 'miss' : '') + '" title="' + esc((cd && cd[7]) || '') + '"><img src="' + ASSET + '/thumbnail/chara/' + c.abn + '_normal.webp" alt="" loading="lazy"><span><b>' + esc((CH[c.ch] || {}).name || '#' + c.ch) + '</b><br><span class="dim" style="font-size:10.5px">' + (c.rar === 9 ? '生日' : '★' + c.rar) + (ATTR[c.attr] ? '・' + ATTR[c.attr] : '') + (SK[c.sk] ? '・' + SK[c.sk] : '') + '</span></span></span>'; }).join('') + '</div>' : (r.meta ? '<div class="note">' + (r.meta[2] === 'event' ? '活動卡池（日服未公布，角色與屬性為推估）' : '') + '</div>' : '');
+    const missN = S.own ? r.pu.filter(c => !S.own.has(c.id)).length : null;
+    const ceil = r.type === 'birthday' ? 100 : 300, k = Math.max(1, r.pu.length);
+    const proj = '<div class="proj">到這天預估有 <b>' + n(Math.max(0, Math.round(r.have))) + '</b> 顆＝可抽 <b>' + n(r.afford) + '</b> 抽' + (r.pulls ? '<br>計畫 ' + r.pulls + ' 抽要 ' + n(r.need) + ' 顆：<b class="' + (r.ok ? 'ok' : 'bad') + '">' + (r.ok ? '夠，抽完剩 ' + n(Math.max(0, Math.round(r.after))) : '差 ' + n(Math.round(-r.after))) + '</b>' + (r.pu.length ? '<br>至少中 1 張指定 PU：' + (pOne(r.pulls) * 100).toFixed(1) + '%' + (k > 1 ? '・任一 PU ' + (pOne(r.pulls, k) * 100).toFixed(1) + '%' : '') : '') + (r.pulls >= ceil ? '<br><b class="ok">已到天井，可換 PU 卡</b>' : '') : '') + '</div>';
+    const quick = [10, 50, 100, ceil].map(v => '<button class="btn sm" data-g="' + r.id + '" data-v="' + v + '">' + (v === ceil ? '天井 ' + v : v) + '</button>').join('');
+    return '<div class="g' + (r.pulls ? '' : '') + '" id="g' + r.id + '"><div class="dt"><b>' + fd(r.s) + '</b>' + Math.ceil((r.s - now) / DAY) + ' 天後<br>' + fd(r.s) + ' – ' + fd(r.e) + '</div>' +
+      '<div><div class="nm">' + esc(r.name) + '</div><div class="row" style="margin-top:4px;gap:6px"><span class="chip">' + (TYPE[r.type] || r.type) + '</span>' + (LIMITED.has(r.type) ? '<span class="chip" style="background:var(--acc-soft);color:var(--acc-2)">限定</span>' : '') + '<span class="chip src-' + r.src + '">' + (r.src === 'tw' ? '官方已排' : r.src === 'pred' ? '模型預測' : '日服未公布・推估') + '</span>' + (missN != null && r.pu.length ? '<span class="chip" style="' + (missN ? 'color:var(--acc-2)' : 'color:var(--ok)') + '">' + (missN ? '缺 ' + missN + ' 張' : '全部都有') + '</span>' : '') + '</div>' + puH + '</div>' +
+      '<div class="pl"><div class="row"><label class="f" style="flex-direction:row;align-items:center;gap:6px">想抽<input type="number" min="0" max="1000" value="' + r.pulls + '" data-g="' + r.id + '" class="pulls" aria-label="計畫抽數"> 抽</label></div><div class="row">' + quick + '<button class="btn sm" data-g="' + r.id + '" data-v="0">不抽</button></div>' + proj + '</div></div>';
+  }).join('') || '<div class="empty">這個篩選沒有卡池。</div>';
+  $$('#list .pulls').forEach(i => i.onchange = () => { const v = Math.max(0, +i.value || 0); if (v) S.picks[i.dataset.g] = v; else delete S.picks[i.dataset.g]; save(); render(); });
+  $$('#list .btn[data-v]').forEach(b => b.onclick = () => { const v = +b.dataset.v; if (v) S.picks[b.dataset.g] = v; else delete S.picks[b.dataset.g]; save(); render(); });
+}
+function drawChart(rows, endT) {
+  const W = 800, H = 170, pad = { l: 46, r: 10, t: 12, b: 22 }; const pts = []; let spent = 0; const picks = rows.filter(r => r.pulls).sort((a, b) => a.s - b.s);
+  const steps = 120; for (let i = 0; i <= steps; i++) { const t = now + (endT - now) * i / steps; while (picks.length && picks[0].s <= t) { spent += picks.shift().need; } pts.push([t, S.free + S.paid + income(t) - spent]); }
+  rows.filter(r => r.pulls).forEach(r => { const before = S.free + S.paid + income(r.s) - rows.filter(x => x.pulls && x.s < r.s).reduce((s, x) => s + x.need, 0); pts.push([r.s - 1, before], [r.s, before - r.need]); });
+  pts.sort((a, b) => a[0] - b[0]);
+  const ys = pts.map(p => p[1]), maxY = Math.max(300, ...ys), minY = Math.min(0, ...ys); const x = t => pad.l + (t - now) / (endT - now) * (W - pad.l - pad.r), y = v => pad.t + (maxY - v) / (maxY - minY || 1) * (H - pad.t - pad.b);
+  let d = ''; pts.forEach((p, i) => d += (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1) + ' ');
+  const span = (maxY - minY) || 1, raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 5, 10].map(m => m * mag).find(v => v >= raw) || mag;
+  const grid = []; for (let v = Math.ceil(minY / step) * step; v <= maxY; v += step) grid.push(v);
+  const months = []; for (let t = now; t <= endT; t += 30.5 * DAY) months.push(t);
+  $('#chart').innerHTML = grid.map(v => '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="currentColor" stroke-opacity=".12"/><text x="' + (pad.l - 4) + '" y="' + (y(v) + 4) + '" font-size="10" text-anchor="end" fill="currentColor" fill-opacity=".6">' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v) + '</text>').join('') +
+    months.map(t => '<text x="' + x(t) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="currentColor" fill-opacity=".6">' + fd(t) + '</text>').join('') +
+    '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="currentColor" stroke-opacity=".4"/>' +
+    '<path d="' + d + '" fill="none" stroke="var(--acc)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>' +
+    rows.filter(r => r.pulls).map(r => '<circle cx="' + x(r.s) + '" cy="' + y(r.after) + '" r="4" fill="' + (r.ok ? 'var(--acc)' : 'var(--bad)') + '"><title>' + esc(r.name) + ' ' + r.pulls + ' 抽</title></circle>').join('');
+}
+render();
+window.__plan = { S, plan, render };
+if (S.pid && q.get('own') === '1') $('#loadOwn').click();
+</script>
+</body>
+</html>

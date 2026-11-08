@@ -11,6 +11,7 @@
 -  SEKAI 星圖（`starmap.html`）- 全曲庫化成一片可互動的星空：BPM×定數、年代×定數、曲長×密度三種投影，團體上色、作曲者星座、搜尋高亮、可分享的星星連結；詳情可試聽（與曲庫頁同音源：第 10 秒起 60 秒、淡入淡出），「星空電台」在看得見的星之間隨機漫遊播放
 -  衝榜劇場（`theater.html`）- 前百名的每一場：Worker 每 15 秒記一次的逐場紀錄攤成脈動牆（時間×名次）、節奏熱圖、選手剖析（場次、分布、作息分段、名次軌跡）、此刻統計與即時紀錄，拖曳時間可回放整期
 -  SEKAI 聲紋（`soundprint.html`）- 每一首歌的傅立葉肖像：在瀏覽器裡對全曲音訊做短時傅立葉轉換（Hann 2048／跳距 512／128 對數頻帶），畫成時間繞一圈、頻率由內而外的極座標聲紋；另有攤平頻譜與自相似矩陣的結構圖，推算調性（Krumhansl）、速度（自相關，與官方 BPM 對照）、亮度、動態、低中高頻與段落；可試聽任一刻、輸出海報
+-  存石規劃（`plan.html`）- 把 `data/schedule-forecast.js` 的未來卡池（日服加一年的預測，官方已排標綠）排成 6～24 個月的時間軸，每池的 PU 卡對照 Haruki 公開 suite 的持卡標出已有／缺；填免費／付費水晶、招募券與每日／每期活動／每月收入，推算到每一池時有幾顆、可抽幾抽，勾「想抽」（10／50／100／天井）後算夠不夠、抽完剩多少、至少中一張 PU 的機率，SVG 走勢圖標出不夠的池。計畫存 `localStorage` 的 `sekai-plan-v1`，分享連結把輸入值與勾選編進 hash。
 -  帳號分析（`profile.html`）- 填 Player ID 把公開遊戲資料整理成分析：綜合力拆解、各難度 Clear／FC／AP（台服曲目數為分母）、角色平均等級與最低五位、每位角色的挑戰 Live 分數與關卡進度、各難度最容易補的下一首 FC／AP（依 EMERALD 定數）與最難紀錄、各稀有度與各角色 4★ 收集率、豆森材料庫存，兩個 ID 並排比較。台服讀 HiSekai 公開檔案，兩服再讀 Haruki 工具箱公開 suite（`games.project-sekai-center.com/haruki/public/…`）；大數字 ID 以字串解析。
 -  豆森工作室（`mystudio.html`）- 圖片／文字／角色頭像轉成 MySekai 彩色方塊或瓷磚的像素畫（Oklab 配色＋抖色），算每色塊數與木材／小石子／花瓣材料、逐列／逐色／由中心的建築步驟、匯出帶座標的設計圖、一格一格播放建造過程；內部設計分頁用 `data/fixtures-index.js` 全部家具在格子上擺設（旋轉、順序、材料、播放）；生日模板選角色做代表色看板。作品存 `localStorage` 的 `sekai-mystudio-v1`，分享連結把格子 RLE 進 hash。資料 `data/mysekai-studio.js` 由 `tools/build-mysekai-studio.py` 產（色碼表寫在腳本裡，新顏色上市補一行）。
 -  迴響之境（`echoes.html`）- 在六個 SEKAI 之間漂流的抽象網頁冒險：跟著每個世界的 BPM 踩拍前進（Perfect 累積順暢度）、ATB 戰鬥與共鳴爆發、每 5 層三選一的和弦強化、會出事的選擇事件、按住調音的鍛造、煉金、攪拌料理、擦唱片打工、一筆連線的礦脈採集、天賦星圖、扭蛋機與成就；另有致敬《災難公關》的「危機記者會」填詞派對（和三位口味不同的 NPC 輪流當評審）。存檔在 localStorage，聲音全用 WebAudio 即時合成
@@ -47,6 +48,7 @@
 | `js/help.js`、`js/i18n.js` | 線上客服與介面翻譯，延後載入（不壓縮，跟 `js/haruki.js` 一樣由 `stamp-assets.py` 戳記） | 一年 immutable |
 | `data/event-info.js` | 由 `tools/build-event-info.py` 產生：每期活動的時程、加成屬性與角色、活動卡（來源 0 抽卡／1 活動商店）、排名獎勵（名次區間 → 道具；稱號的名稱／稱號組／底圖與名次圖 abn、素材名、技能升級譜名、頭像框組與角色都從 master 帶來，頁面只放遊戲內圖）、WL 章節、嘉年華隊伍；活動資料頁與甘特圖的活動模式進頁才載 |
 | `unit-img/` | 追加圖產生器的圖片素材：六個團體的官方標誌（webp，取自官方網站）與公告圖底圖 `songcard-bg.webp`；同源檔案所以 canvas 不會被污染、能直接匯出 |
+| `plan.html` | 獨立頁：存石規劃。吃 `data/schedule-forecast.js`、`data/mysekai-studio.js`、`data/cards-index.js`；持卡從 Haruki 公開 suite 抓；`window.__plan` 給煙霧測試 | 每次重新驗證 |
 | `profile.html` | 獨立頁：帳號分析。吃 `data/mysekai-studio.js`（角色、挑戰關卡數）、`data/songs-index.js`、`data/cards-index.js`、`data/fixtures-index.js`、`data/b30-consts.js`；資料來源 HiSekai 與 Haruki 公開 suite 都在瀏覽器直接抓；`window.__profile` 給煙霧測試 | 每次重新驗證 |
 | `mystudio.html` | 獨立頁：豆森工作室。只吃 `data/mysekai-studio.js` 與 `data/fixtures-index.js`（戳記由 `stamp-assets.py` 改寫），家具與素材縮圖從 storage.sekai.best 抓；`window.__mystudio` 給煙霧測試 | 每次重新驗證 |
 | `echoes.html` | 獨立頁：迴響之境。單一檔案、沒有外部依賴（只有 Google Fonts），存檔在 `localStorage` 的 `sekai-echoes-v1`；`window.__echoes` 給煙霧測試用 | 每次重新驗證 |
