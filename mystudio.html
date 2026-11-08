@@ -24,6 +24,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://storage.sekai.best">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<script>try{if(new URLSearchParams(location.search).get('embed'))document.documentElement.classList.add('embed');}catch(e){}</script>
 <script>/* 主題：跟著站上的設定（sekai-theme）；這頁預設淺色，工作台看圖比較準。畫面繪製前套用，避免閃爍。 */
 try{var _t=localStorage.getItem('sekai-mystudio-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
 if(_t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
@@ -175,6 +176,7 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
 @media (max-width:640px){.stage{min-height:200px}header{padding:8px 10px;flex-wrap:wrap;gap:8px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}.tabs{order:3;width:100%;margin-left:0}.tab{flex:1;text-align:center}.card{padding:12px}.tab{padding:7px 10px;font-size:13px}main{padding:10px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{header,.col1,.col3,.bar{display:none!important}.stage{box-shadow:none;border:0}}
+:root.embed header{display:none}:root.embed body::before{display:none}:root.embed main{padding:4px 2px}:root.embed .card,:root.embed .stage{box-shadow:none}
 </style>
 </head>
 <body>
@@ -219,8 +221,8 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
           <button data-v="b1" aria-pressed="true">方塊 1×1</button><button data-v="b2" aria-pressed="false">方塊 2×2</button><button data-v="t2" aria-pressed="false">瓷磚 2×2（家前）</button>
         </div>
         <div class="row" style="margin-top:8px">
-          <label class="f inl">寬（格）<input type="number" id="pw" value="32" min="4" max="96"></label>
-          <label class="f inl">高（格）<input type="number" id="ph" value="32" min="4" max="96"></label>
+          <label class="f inl">寬（格）<input type="number" id="pw" value="32" min="4" max="128"></label>
+          <label class="f inl">高（格）<input type="number" id="ph" value="32" min="4" max="128"></label>
           <label class="f inl"><input type="checkbox" id="lockAr" checked> 鎖定比例</label>
         </div>
         <div class="row"><label class="f inl"><input type="checkbox" id="tex"> 加入紅磚／木紋／混凝土塊</label></div>
@@ -269,7 +271,7 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
       <div class="card">
         <h2>材料總計 <span class="n">含製作每一塊的成本</span></h2>
         <table><thead><tr><th>素材</th><th style="text-align:right">數量</th></tr></thead><tbody id="matBody"></tbody></table>
-        <div class="row" style="margin-top:8px"><button class="btn sm" id="copyMat">複製材料清單</button><button class="btn sm" id="toLayout">放進內部設計</button></div>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="copyMat">複製材料清單</button><button class="btn sm" id="toLayout">放進內部設計（平放）</button><button class="btn sm" id="toLayoutWall">立起（牆面）</button></div>
       </div>
       <div class="card">
         <h2>建築步驟 <span class="n" id="stepN"></span></h2>
@@ -284,28 +286,31 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
   <div class="grid">
     <div class="col1">
       <div class="card">
-        <h2>場地</h2>
-        <div class="seg" id="site" role="group" aria-label="場地"><button data-v="room" aria-pressed="true">房間</button><button data-v="home" aria-pressed="false">家前</button><button data-v="any" aria-pressed="false">戶外</button></div>
+        <h2>場地 <span class="n">格數照遊戲資料</span></h2>
+        <select id="siteSel" aria-label="場地與等級" style="width:100%"></select>
         <div class="row" style="margin-top:8px">
-          <label class="f inl">寬（格）<input type="number" id="lw" value="14" min="4" max="80"></label>
-          <label class="f inl">深（格）<input type="number" id="ld" value="14" min="4" max="80"></label>
-          <button class="btn sm" id="lApply">套用</button>
+          <label class="f inl">寬<input type="number" id="lw" value="36" min="4" max="150"></label>
+          <label class="f inl">深<input type="number" id="ld" value="36" min="4" max="150"></label>
+          <label class="f inl">高<input type="number" id="lh" value="15" min="1" max="30"></label>
+          <button class="btn sm" id="lApply" hidden>套用</button>
         </div>
-        <p class="help" style="margin-top:6px">格數可自訂：照你實際場地的大小填。家具尺寸來自遊戲資料（寬×深）。</p>
+        <p class="help" style="margin-top:6px" id="siteNote">我的家 Lv1～5 是 36／36／70／90／100 格見方、高 15；房間 1F Lv1～5 是 10×10、12×12、16×12、20×16、24×20、高 10；選「自訂」可以自己填。</p>
+        <div class="row" style="margin-top:8px"><label class="f inl"><input type="checkbox" id="stack" checked> 自動堆疊（放在家具上會疊上去）</label></div>
       </div>
       <div class="card">
         <h2>家具目錄 <span class="n" id="catN"></span></h2>
         <div class="row"><input type="text" id="catQ" placeholder="搜尋家具名…" style="flex:1" aria-label="搜尋家具"><select id="catG" aria-label="分類"></select></div>
         <div class="cat" id="cat" style="margin-top:8px"></div>
-        <p class="help" style="margin-top:6px">點一個家具，再點畫布放下；<kbd>R</kbd> 旋轉、<kbd>Delete</kbd> 刪除、<kbd>Esc</kbd> 取消。拖曳可移動。</p>
+        <p class="help" style="margin-top:6px">點一個家具，再點畫布放下（按住 <kbd>Shift</kbd> 連放）；<kbd>R</kbd> 旋轉、<kbd>Delete</kbd> 刪除、<kbd>PgUp</kbd>／<kbd>PgDn</kbd> 升降、<kbd>Esc</kbd> 取消。拖曳可移動。</p>
       </div>
     </div>
     <div class="col2">
       <div class="stage">
         <div class="bar">
-          <button class="btn sm" id="lRot">↻ 旋轉</button><button class="btn sm" id="lDup">複製</button><button class="btn sm" id="lDel">刪除</button>
+          <div class="seg" id="lview" role="group" aria-label="視角"><button data-v="iso" aria-pressed="true">立體</button><button data-v="top" aria-pressed="false">俯視</button></div>
+          <button class="btn sm" id="lRot">↻ 旋轉</button><button class="btn sm" id="lUp" title="升一格">▲</button><button class="btn sm" id="lDown" title="降一格">▼</button><button class="btn sm" id="lDup">複製</button><button class="btn sm" id="lDel">刪除</button>
           <button class="btn sm" id="lUndo">復原</button><button class="btn sm" id="lRedo">重做</button>
-          <label class="f inl">格大小<input type="range" id="lzoom" min="14" max="56" value="34" style="width:100px"></label>
+          <label class="f inl">格大小<input type="range" id="lzoom" min="8" max="56" value="24" style="width:90px"></label>
           <span style="margin-left:auto"></span>
           <button class="btn sm" id="lExp">匯出 PNG</button><button class="btn sm" id="lShare">分享連結</button><button class="btn sm pri" id="lSave">儲存</button>
         </div>
@@ -315,7 +320,7 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
         <h2>建造過程播放 <span class="n">依清單順序一件件放進去</span></h2>
         <div class="play">
           <button class="btn sm pri" id="lPlay">▶ 播放</button><button class="btn sm" id="lReset">⏮</button>
-          <label class="f inl">速度<select id="lSpeed"><option value="1">慢</option><option value="3" selected>中</option><option value="8">快</option></select></label>
+          <label class="f inl">速度<select id="lSpeed"><option value="1">慢</option><option value="3" selected>中</option><option value="8">快</option><option value="30">極快</option></select></label>
           <input type="range" id="lProg" class="prog" min="0" max="0" value="0" aria-label="進度"><span class="mono dim" id="lProgT">0 / 0</span>
         </div>
       </div>
@@ -324,7 +329,7 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
       <div class="card">
         <h2>擺設清單 <span class="n" id="itemN"></span></h2>
         <div class="items" id="items"></div>
-        <p class="help" style="margin-top:6px">清單順序就是建造順序；▲▼ 可調。</p>
+        <p class="help" style="margin-top:6px">清單順序就是建造順序；▲▼ 可調。座標 (x, y, 高)。</p>
       </div>
       <div class="card">
         <h2>材料總計</h2>
@@ -384,7 +389,7 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script type="module">
-import { PALETTE, MATS, CHARS } from './data/mysekai-studio.js?v=e6443e7efa';
+import { PALETTE, MATS, CHARS, SITES } from './data/mysekai-studio.js?v=f8371d5a3f';
 import { FIXTURES, FIX_GENRES, FIX_MATS, FIX_TAGS } from './data/fixtures-index.js?v=9bcab0f8a3';
 const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -409,7 +414,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 /* ===== 主題與分頁 ===== */
 $('#themeBtn').onclick = () => { const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-mystudio-theme', d ? 'dark' : 'light'); } catch (e) {} };
-const setMode = m => { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.m === m))); $$('.mode').forEach(s => s.classList.toggle('on', s.id === 'm-' + m)); if (m === 'works') renderWorks(); if (m === 'layout') { if (!L.fitted) { L.fitted = true; fitLayoutZoom(); } L.dirty = true; drawLayout(); } };
+const setMode = m => { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.m === m))); $$('.mode').forEach(s => s.classList.toggle('on', s.id === 'm-' + m)); if (m === 'works') renderWorks(); if (m === 'layout') { if (!L.fitted) { L.fitted = true; fitLayoutZoom(); } drawLayout(); } };
 $$('.tab').forEach(t => t.onclick = () => setMode(t.dataset.m));
 const seg = (id, cb) => { const el = $(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); cb(b.dataset.v); }); return () => el.querySelector('[aria-pressed="true"]').dataset.v; };
 const segSet = (id, v) => $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
@@ -442,8 +447,8 @@ $('#dither').onchange = e => { P.dither = e.target.checked; recalc(); };
 $('#br').oninput = e => { P.br = +e.target.value; $('#brV').textContent = P.br; recalc(); };
 $('#al').oninput = e => { P.al = +e.target.value; $('#alV').textContent = P.al; recalc(); };
 $('#zoom').oninput = e => { P.zoom = +e.target.value; drawPixel(); };
-$('#pw').onchange = e => { P.w = clamp(+e.target.value || 32, 4, 96); e.target.value = P.w; if ($('#lockAr').checked && P.img) { P.h = clamp(Math.round(P.w * P.img.height / P.img.width), 4, 96); $('#ph').value = P.h; } recalc(); };
-$('#ph').onchange = e => { P.h = clamp(+e.target.value || 32, 4, 96); e.target.value = P.h; if ($('#lockAr').checked && P.img) { P.w = clamp(Math.round(P.h * P.img.width / P.img.height), 4, 96); $('#pw').value = P.w; } recalc(); };
+$('#pw').onchange = e => { P.w = clamp(+e.target.value || 32, 4, 128); e.target.value = P.w; if ($('#lockAr').checked && P.img) { P.h = clamp(Math.round(P.w * P.img.height / P.img.width), 4, 96); $('#ph').value = P.h; } recalc(); };
+$('#ph').onchange = e => { P.h = clamp(+e.target.value || 32, 4, 128); e.target.value = P.h; if ($('#lockAr').checked && P.img) { P.w = clamp(Math.round(P.h * P.img.width / P.img.height), 4, 96); $('#pw').value = P.w; } recalc(); };
 
 /* 來源 */
 const drop = $('#drop');
@@ -457,7 +462,7 @@ function fitZoom() { const cv = $('#m-pixel .cv'); const z = clamp(Math.floor((c
 function setImage(im, name) {
   P.img = im; P.name = name || '像素畫';
   const t = $('#srcThumb'); t.src = im.src; t.hidden = false;
-  if ($('#lockAr').checked) { P.h = clamp(Math.round(P.w * im.height / im.width), 4, 96); $('#ph').value = P.h; }
+  if ($('#lockAr').checked) { P.h = clamp(Math.round(P.w * im.height / im.width), 4, 128); $('#ph').value = P.h; }
   fitZoom(); recalc();
 }
 $('#btnText').onclick = () => { $('#textBox').hidden = !$('#textBox').hidden; $('#charBox').hidden = true; };
@@ -472,21 +477,21 @@ async function textToImage(text, rows, color, name) {
   const S = 8, fs = rows * S * .82, c = document.createElement('canvas'), x = c.getContext('2d');
   x.font = '900 ' + fs + 'px "M PLUS Rounded 1c","Noto Sans TC",sans-serif';
   let w = Math.ceil(x.measureText(text).width) + S * 2;
-  if (w / S > 96) { const r2 = Math.max(5, Math.floor(rows * 96 * S / w)); if (r2 < rows) { toast('文字太長，字高自動縮到 ' + r2 + ' 格以放進 96 格寬'); return textToImage(text, r2, color, name); } }
+  if (w / S > 128) { const r2 = Math.max(5, Math.floor(rows * 128 * S / w)); if (r2 < rows) { toast('文字太長，字高自動縮到 ' + r2 + ' 格以放進 128 格寬'); return textToImage(text, r2, color, name); } }
   c.width = w; c.height = rows * S;
   x.font = '900 ' + fs + 'px "M PLUS Rounded 1c","Noto Sans TC",sans-serif'; x.textBaseline = 'middle'; x.fillStyle = color; x.fillText(text, S, rows * S / 2 + fs * .04);
-  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.h = rows; P.w = clamp(Math.round(rows * w / (rows * S)), 4, 96); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; P.al = 90; $('#al').value = 90; $('#alV').textContent = 90; setImage(im, name || text); }; im.src = c.toDataURL();
+  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.h = rows; P.w = clamp(Math.round(rows * w / (rows * S)), 4, 128); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; P.al = 90; $('#al').value = 90; $('#alV').textContent = 90; setImage(im, name || text); }; im.src = c.toDataURL();
 }
 function shapeImage(kind, color, name) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = color;
   if (kind === 'heart') { x.beginPath(); x.moveTo(128, 232); x.bezierCurveTo(16, 150, 16, 52, 80, 40); x.bezierCurveTo(112, 34, 128, 60, 128, 80); x.bezierCurveTo(128, 60, 144, 34, 176, 40); x.bezierCurveTo(240, 52, 240, 150, 128, 232); x.fill(); }
   else if (kind === 'cake') { x.fillStyle = '#a57539'; x.fillRect(40, 150, 176, 70); x.fillStyle = '#ffa2a9'; x.fillRect(40, 118, 176, 36); x.fillStyle = '#f6e5ae'; x.fillRect(56, 96, 144, 26); x.fillStyle = '#e6e6e6'; for (let i = 0; i < 4; i++) x.fillRect(72 + i * 36, 60, 10, 40); x.fillStyle = '#ffd844'; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(77 + i * 36, 50, 9, 0, 7); x.fill(); } x.fillStyle = color; for (let i = 0; i < 5; i++) { x.beginPath(); x.arc(60 + i * 34, 160, 8, 0, 7); x.fill(); } }
-  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.w = P.h = clamp(P.w, 12, 96); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; setImage(im, name || (kind === 'heart' ? '愛心' : '蛋糕')); }; im.src = c.toDataURL();
+  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.w = P.h = clamp(P.w, 12, 128); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; setImage(im, name || (kind === 'heart' ? '愛心' : '蛋糕')); }; im.src = c.toDataURL();
 }
 function charIcon(id) {
   const im = new Image(); im.crossOrigin = 'anonymous';
-  im.onload = () => { $('#dither').checked = true; P.dither = true; $('#whiteEmpty').checked = false; P.whiteEmpty = false; setImage(im, (CHARS.find(c => c[0] === id) || [])[1] + ' 頭像'); };
-  im.onerror = () => toast('頭像載入失敗（素材庫沒回應）'); im.src = ASSET + '/character/character_select/chr_tl_' + id + '.webp';
+  im.onload = () => { $('#dither').checked = true; P.dither = true; $('#whiteEmpty').checked = false; P.whiteEmpty = false; $('#lockAr').checked = true; P.w = Math.max(P.w, 48); $('#pw').value = P.w; setImage(im, (CHARS.find(c => c[0] === id) || [])[1] + ' 頭像'); };
+  im.onerror = () => toast('頭像載入失敗（素材庫沒回應）'); im.src = ASSET + '/character/character_sd_l/chr_sp_' + id + '.png';   // Q 版頭像（250×200 PNG，比卡面選角圖清楚）
 }
 /* 核心：縮圖 → 配色（Oklab 最近色）＋ Floyd–Steinberg 抖色 → 格子陣列 */
 function recalc() {
@@ -600,87 +605,157 @@ $('#share').onclick = () => { const s = encodePixel(); if (!s) return toast('還
 $('#save').onclick = () => { if (!P.grid) return toast('還沒有像素畫'); const name = prompt('作品名稱', P.name) ; if (name == null) return; P.name = name || P.name; saveWork({ type: 'pixel', name: P.name, data: encodePixel(), w: P.w, h: P.h }); toast('已儲存到「我的作品」'); };
 $('#toLayout').onclick = () => { if (!P.grid) return toast('還沒有像素畫'); const side = cellSide(), byKey = {}; P.pal.forEach(p => byKey[p[0]] = p); pushUndo(); const ox = Math.max(0, Math.floor((L.w - P.w * side) / 2)), oy = Math.max(0, Math.floor((L.d - P.h * side) / 2)); let n = 0; for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi < 0) continue; const fid = P.pal[pi][0]; if (ox + i * side + side > L.w || oy + j * side + side > L.d) continue; L.items.push({ id: ++L.seq, fid, x: ox + i * side, y: oy + j * side, rot: 0 }); n++; } L.dirty = true; renderItems(); drawLayout(); setMode('layout'); toast('放進 ' + n + ' 塊（場地放不下的部分略過）'); };
 
-/* ================= 內部設計 ================= */
+/* ================= 內部設計（等距 3D、可堆疊、場地格數照遊戲資料） ================= */
 const FX = FIXTURES.filter(r => r[5] && r[5][0] > 0 && r[5][1] > 0 && r[7] !== 'gate');
 const fxById = {}; FX.forEach(r => fxById[r[0]] = r);
-const L = { site: 'room', w: 14, d: 14, cs: 34, items: [], sel: null, ghost: null, undo: [], redo: [], seq: 0, play: { i: -1, on: false, t: 0 }, drag: null, dirty: true, imgs: {} };
-const getSite = seg('#site', v => { L.site = v; buildCat(); drawLayout(); });
-$('#lApply').onclick = () => { L.w = clamp(+$('#lw').value || 14, 4, 80); L.d = clamp(+$('#ld').value || 14, 4, 80); $('#lw').value = L.w; $('#ld').value = L.d; fitLayoutZoom(); drawLayout(); };
+const L = { key: '1:1', site: 'home', w: 36, d: 36, h: 15, cs: 24, view: 'iso', stack: true, items: [], sel: null, ghost: null, hover: null, undo: [], redo: [], seq: 0, play: { i: -1, on: false, t: 0 }, drag: null, imgs: {} };
+const SITE_KIND = t => /home/.test(t) ? 'home' : /floor/.test(t) ? 'room' : 'any';
+function buildSites() {
+  const sel = $('#siteSel'); const groups = {};
+  SITES.forEach(r => (groups[r[1]] = groups[r[1]] || []).push(r));
+  sel.innerHTML = Object.keys(groups).map(nm => '<optgroup label="' + esc(nm) + '">' + groups[nm].map(r => '<option value="' + r[0] + ':' + r[4] + '" data-t="' + r[2] + '">' + esc(nm) + (groups[nm].length > 1 ? ' Lv' + r[4] : '') + '　' + r[5] + '×' + r[6] + '×' + r[7] + '</option>').join('') + '</optgroup>').join('') + '<option value="custom">自訂大小</option>';
+  sel.onchange = () => applySite(sel.value, true);
+}
+function applySite(key, reset) {
+  const r = SITES.find(x => x[0] + ':' + x[4] === key);
+  L.key = r ? key : 'custom';
+  if (r) { L.site = SITE_KIND(r[2]); L.w = r[5]; L.d = r[6]; L.h = r[7]; }
+  $('#siteSel').value = L.key; ['lw', 'ld', 'lh'].forEach(k => $('#' + k).disabled = !!r); $('#lApply').hidden = !!r;
+  $('#lw').value = L.w; $('#ld').value = L.d; $('#lh').value = L.h;
+  $('#siteNote').textContent = r ? (r[1] + (SITES.filter(x => x[1] === r[1]).length > 1 ? ' Lv' + r[4] : '') + '：' + r[5] + '×' + r[6] + ' 格，最高 ' + r[7] + ' 層' + (L.site === 'home' ? '；瓷磚、道路、柵欄只能放這裡' : L.site === 'room' ? '；房間不能放家前限定的瓷磚與柵欄' : '') + '。格數來自遊戲資料。') : '自訂大小：照你實際場地填寬、深、高。';
+  if (!r) L.site = 'any';
+  L.items = L.items.filter(it => it.x < L.w && it.y < L.d);
+  buildCat(); if (reset) fitLayoutZoom(); renderItems(); drawLayout();
+}
+$('#lApply').onclick = () => { L.w = clamp(+$('#lw').value || 36, 4, 150); L.d = clamp(+$('#ld').value || 36, 4, 150); L.h = clamp(+$('#lh').value || 15, 1, 30); $('#lw').value = L.w; $('#ld').value = L.d; $('#lh').value = L.h; fitLayoutZoom(); drawLayout(); };
 $('#lzoom').oninput = e => { L.cs = +e.target.value; drawLayout(); };
+$('#stack').onchange = e => { L.stack = e.target.checked; };
+const getLView = seg('#lview', v => { L.view = v; fitLayoutZoom(); drawLayout(); });
 const fxSize = (r, rot) => rot % 2 ? [r[5][1], r[5][0]] : [r[5][0], r[5][1]];
-/* 家具縮圖：官方圖有一層青色底（#8fe9e9），畫到設計圖上會變成一塊塊青色方框，載入後去背一次存成 canvas */
-const fxImg = r => { let im = L.imgs[r[6]]; if (!im) { im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { try { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { if (a[i] < 190 && a[i + 1] > 200 && a[i + 2] > 200 && a[i + 1] - a[i] > 40) a[i + 3] = 0; } x.putImageData(d, 0, 0); c.naturalWidth = c.width; c.naturalHeight = c.height; L.imgs[r[6]] = c; } catch (e) { L.imgs[r[6]] = im; } L.dirty = true; drawLayout(); }; im.onerror = () => { L.imgs[r[6]] = { bad: true }; }; im.src = ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp'; L.imgs[r[6]] = im; return null; } if (im.bad) return null; if (im instanceof HTMLCanvasElement) return im; return im.complete && im.naturalWidth ? im : null; };
+const fxH = r => Math.max(1, r[5][2] || 1);
+/* 家具縮圖：官方圖有一層青色底（#8fe9e9），載入後去背一次存成 canvas */
+const fxImg = r => { let im = L.imgs[r[6]]; if (!im) { im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { try { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { if (a[i] < 190 && a[i + 1] > 200 && a[i + 2] > 200 && a[i + 1] - a[i] > 40) a[i + 3] = 0; } x.putImageData(d, 0, 0); L.imgs[r[6]] = c; } catch (e) { L.imgs[r[6]] = im; } drawLayout(); }; im.onerror = () => { L.imgs[r[6]] = { bad: true }; }; im.src = ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp'; L.imgs[r[6]] = im; return null; } if (im.bad) return null; if (im instanceof HTMLCanvasElement) return im; return im.complete && im.naturalWidth ? im : null; };
+const GENRE_COLOR = { 2: '#d9c3a5', 3: '#e6d3b3', 4: '#c9d6e8', 5: '#d8c8e8', 6: '#e8d0d0', 7: '#e0e0e0', 8: '#d6c7b0', 9: '#c9b8d8', 11: '#d8b89a', 12: '#c8c0b0', 13: '#b8a888', 26: '#9ccf88', 29: '#f0c8d8', 33: '#b8c8d8' };
+const fxColor = r => { const p = PALETTE.find(q => q[0] === r[0]); return p ? p[3] : (GENRE_COLOR[r[2]] || '#cfd8c8'); };
 function buildCat() {
   const g = $('#catG'); if (!g.options.length) { g.innerHTML = '<option value="0">全部分類</option>' + FIX_GENRES.filter(x => x[0] > 1).map(x => '<option value="' + x[0] + '">' + esc(x[1]) + '</option>').join(''); g.onchange = buildCat; $('#catQ').oninput = buildCat; }
   const q = $('#catQ').value.trim().toLowerCase(), gid = +g.value;
-  const site = L.site, okSite = r => r[11] === 'any' || r[11] === site || (site === 'any' && r[11] === 'home');
+  const okSite = r => r[11] === 'any' || r[11] === L.site;
   const rows = FX.filter(r => okSite(r) && (!gid || r[2] === gid) && (!q || r[1].toLowerCase().includes(q))).slice(0, 400);
   $('#catN').textContent = rows.length + ' 件'; const el = $('#cat'); el.innerHTML = '';
   const frag = document.createDocumentFragment();
-  rows.forEach(r => { const d = document.createElement('div'); d.className = 'fx' + (L.ghost && L.ghost.fid === r[0] ? ' on' : ''); d.setAttribute('role', 'button'); d.tabIndex = 0; d.innerHTML = '<img loading="lazy" alt="" src="' + ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp"><div><div class="nm">' + esc(r[1]) + '</div><div class="sz">' + r[5][0] + '×' + r[5][1] + (r[5][2] ? '×' + r[5][2] : '') + '</div></div>';
+  rows.forEach(r => { const d = document.createElement('div'); d.className = 'fx' + (L.ghost && L.ghost.fid === r[0] ? ' on' : ''); d.setAttribute('role', 'button'); d.tabIndex = 0; d.innerHTML = '<img loading="lazy" alt="" src="' + ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp"><div><div class="nm">' + esc(r[1]) + '</div><div class="sz">' + r[5][0] + '×' + r[5][1] + '×' + fxH(r) + '</div></div>';
     const pick = () => { L.ghost = { fid: r[0], rot: 0 }; L.sel = null; $$('#cat .fx').forEach(x => x.classList.toggle('on', x === d)); toast('點畫布放下「' + r[1] + '」'); $('#lay').focus(); };
     d.onclick = pick; d.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } }; frag.appendChild(d); });
   el.appendChild(frag);
 }
-function pushUndo() { L.undo.push(JSON.stringify(L.items)); if (L.undo.length > 60) L.undo.shift(); L.redo = []; }
+function pushUndo() { L.undo.push(JSON.stringify(L.items)); if (L.undo.length > 80) L.undo.shift(); L.redo = []; }
 $('#lUndo').onclick = () => { if (!L.undo.length) return; L.redo.push(JSON.stringify(L.items)); L.items = JSON.parse(L.undo.pop()); L.sel = null; renderItems(); drawLayout(); };
 $('#lRedo').onclick = () => { if (!L.redo.length) return; L.undo.push(JSON.stringify(L.items)); L.items = JSON.parse(L.redo.pop()); L.sel = null; renderItems(); drawLayout(); };
 const selItem = () => L.items.find(i => i.id === L.sel);
-$('#lRot').onclick = () => { if (L.ghost) { L.ghost.rot = (L.ghost.rot + 1) % 4; drawLayout(); return; } const it = selItem(); if (!it) return; pushUndo(); it.rot = (it.rot + 1) % 4; drawLayout(); };
+/* 堆疊：落點 = 腳印範圍內既有家具的最高頂面；超過場地高度就放不下 */
+function topAt(x, y, w, d, skip) { let z = 0; L.items.forEach(it => { if (it === skip) return; const r = fxById[it.fid]; if (!r) return; const [iw, id] = fxSize(r, it.rot); if (x < it.x + iw && x + w > it.x && y < it.y + id && y + d > it.y) z = Math.max(z, it.z + fxH(r)); }); return z; }
+function place(fid, x, y, rot) {
+  const r = fxById[fid]; if (!r) return null; const [w, d] = fxSize(r, rot), h = fxH(r);
+  x = clamp(x, 0, Math.max(0, L.w - w)); y = clamp(y, 0, Math.max(0, L.d - d));
+  const z = L.stack ? topAt(x, y, w, d) : 0;
+  if (z + h > L.h) { toast('這裡已經疊到 ' + z + ' 層，再放會超過場地高度 ' + L.h); return null; }
+  const it = { id: ++L.seq, fid, x, y, z, rot }; L.items.push(it); return it;
+}
+$('#lRot').onclick = () => { if (L.ghost) { L.ghost.rot = (L.ghost.rot + 1) % 4; drawLayout(); return; } const it = selItem(); if (!it) return; pushUndo(); it.rot = (it.rot + 1) % 4; const r = fxById[it.fid], [w, d] = fxSize(r, it.rot); it.x = clamp(it.x, 0, Math.max(0, L.w - w)); it.y = clamp(it.y, 0, Math.max(0, L.d - d)); drawLayout(); };
+$('#lUp').onclick = () => { const it = selItem(); if (!it) return; const r = fxById[it.fid]; if (it.z + fxH(r) >= L.h) return toast('已到場地高度上限 ' + L.h); pushUndo(); it.z++; renderItems(); drawLayout(); };
+$('#lDown').onclick = () => { const it = selItem(); if (!it || it.z <= 0) return; pushUndo(); it.z--; renderItems(); drawLayout(); };
 $('#lDel').onclick = () => { const it = selItem(); if (!it) return; pushUndo(); L.items = L.items.filter(i => i !== it); L.sel = null; renderItems(); drawLayout(); };
-$('#lDup').onclick = () => { const it = selItem(); if (!it) return; pushUndo(); const c = Object.assign({}, it, { id: ++L.seq, x: it.x + 1, y: it.y + 1 }); L.items.push(c); L.sel = c.id; renderItems(); drawLayout(); };
+$('#lDup').onclick = () => { const it = selItem(); if (!it) return; pushUndo(); const r = fxById[it.fid], [w] = fxSize(r, it.rot); const c = place(it.fid, Math.min(it.x + w, L.w - w), it.y, it.rot); if (c) { L.sel = c.id; renderItems(); drawLayout(); } };
 const lay = $('#lay');
-const cellAt = e => { const r = lay.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return [Math.floor((p.clientX - r.left) / L.cs), Math.floor((p.clientY - r.top) / L.cs)]; };
-const hit = (x, y) => { for (let i = L.items.length - 1; i >= 0; i--) { const it = L.items[i], r = fxById[it.fid]; if (!r) continue; const [w, d] = fxSize(r, it.rot); if (x >= it.x && x < it.x + w && y >= it.y && y < it.y + d) return it; } return null; };
-lay.addEventListener('pointerdown', e => { const [x, y] = cellAt(e); lay.setPointerCapture(e.pointerId);
-  if (L.ghost) { const r = fxById[L.ghost.fid]; const [w, d] = fxSize(r, L.ghost.rot); pushUndo(); const it = { id: ++L.seq, fid: L.ghost.fid, x: clamp(x - Math.floor(w / 2), 0, Math.max(0, L.w - w)), y: clamp(y - Math.floor(d / 2), 0, Math.max(0, L.d - d)), rot: L.ghost.rot }; L.items.push(it); L.sel = it.id; if (!e.shiftKey) { L.ghost = null; $$('#cat .fx').forEach(x => x.classList.remove('on')); } renderItems(); drawLayout(); return; }
-  const it = hit(x, y); L.sel = it ? it.id : null; if (it) { L.drag = { it, dx: x - it.x, dy: y - it.y, moved: false, snap: JSON.stringify(L.items) }; } renderItems(); drawLayout(); });
-lay.addEventListener('pointermove', e => { const [x, y] = cellAt(e); if (L.drag) { const r = fxById[L.drag.it.fid]; const [w, d] = fxSize(r, L.drag.it.rot); const nx = clamp(x - L.drag.dx, 0, Math.max(0, L.w - w)), ny = clamp(y - L.drag.dy, 0, Math.max(0, L.d - d)); if (nx !== L.drag.it.x || ny !== L.drag.it.y) { L.drag.it.x = nx; L.drag.it.y = ny; L.drag.moved = true; drawLayout(); } return; } if (L.ghost) { L.hover = [x, y]; drawLayout(); } });
-lay.addEventListener('pointerup', () => { if (L.drag) { if (L.drag.moved) { L.undo.push(L.drag.snap); L.redo = []; } L.drag = null; drawLayout(); } });
-lay.addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') { e.preventDefault(); $('#lRot').click(); } else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); $('#lDel').click(); } else if (e.key === 'Escape') { L.ghost = null; L.sel = null; $$('#cat .fx').forEach(x => x.classList.remove('on')); drawLayout(); } else if (/^Arrow/.test(e.key)) { const it = selItem(); if (!it) return; e.preventDefault(); pushUndo(); const r = fxById[it.fid], [w, d] = fxSize(r, it.rot); if (e.key === 'ArrowLeft') it.x = Math.max(0, it.x - 1); if (e.key === 'ArrowRight') it.x = Math.min(L.w - w, it.x + 1); if (e.key === 'ArrowUp') it.y = Math.max(0, it.y - 1); if (e.key === 'ArrowDown') it.y = Math.min(L.d - d, it.y + 1); drawLayout(); } });
-function fitLayoutZoom() { const cv = $('#m-layout .cv'); if (!cv.clientWidth) return; L.cs = clamp(Math.floor((cv.clientWidth - 30) / L.w), 8, 56); $('#lzoom').value = L.cs; }
+/* 座標換算：俯視是格子；等距是 2:1 菱形，x 往右下、y 往左下、z 往上（每層 cs/2） */
+function isoOrigin() { const cs = L.cs; return { ox: L.d * cs / 2 + cs, oy: cs + L.h * cs / 2 }; }
+function toScreen(x, y, z) { const cs = L.cs; if (L.view === 'top') return [x * cs, y * cs]; const { ox, oy } = isoOrigin(); return [ox + (x - y) * cs / 2, oy + (x + y) * cs / 4 - z * cs / 2]; }
+function toGrid(sx, sy) { const cs = L.cs; if (L.view === 'top') return [Math.floor(sx / cs), Math.floor(sy / cs)]; const { ox, oy } = isoOrigin(); const a = (sx - ox) / (cs / 2), b = (sy - oy) / (cs / 4); return [Math.floor((a + b) / 2), Math.floor((b - a) / 2)]; }
+const cellAt = e => { const r = lay.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return toGrid(p.clientX - r.left, p.clientY - r.top); };
+function inPoly(px, py, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) c = !c; } return c; }
+function faces(it) { const r = fxById[it.fid]; const [w, d] = fxSize(r, it.rot), h = fxH(r), x = it.x, y = it.y, z = it.z; const P = (a, b, c) => toScreen(a, b, c);
+  return { top: [P(x, y, z + h), P(x + w, y, z + h), P(x + w, y + d, z + h), P(x, y + d, z + h)], right: [P(x + w, y, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x + w, y, z + h)], front: [P(x, y + d, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x, y + d, z + h)] }; }
+function hitScreen(sx, sy) { const order = drawOrder(); for (let i = order.length - 1; i >= 0; i--) { const it = order[i]; if (L.view === 'top') { const r = fxById[it.fid], [w, d] = fxSize(r, it.rot); const [gx, gy] = toGrid(sx, sy); if (gx >= it.x && gx < it.x + w && gy >= it.y && gy < it.y + d) return it; continue; } const f = faces(it); if (inPoly(sx, sy, f.top) || inPoly(sx, sy, f.right) || inPoly(sx, sy, f.front)) return it; } return null; }
+function drawOrder() { const until = L.play.i >= 0 ? L.play.i : Infinity; return L.items.map((it, i) => ({ it, i })).filter(o => o.i < until).sort((a, b) => { const ra = fxById[a.it.fid], rb = fxById[b.it.fid]; if (!ra || !rb) return 0; const [aw, ad] = fxSize(ra, a.it.rot), [bw, bd] = fxSize(rb, b.it.rot); const ka = (a.it.x + aw) + (a.it.y + ad) + a.it.z * 1.001, kb = (b.it.x + bw) + (b.it.y + bd) + b.it.z * 1.001; return ka - kb || a.it.z - b.it.z || a.i - b.i; }).map(o => o.it); }
+lay.addEventListener('pointerdown', e => { const r = lay.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top; const [x, y] = toGrid(sx, sy); lay.setPointerCapture(e.pointerId);
+  if (L.ghost) { const fr = fxById[L.ghost.fid]; const [w, d] = fxSize(fr, L.ghost.rot); pushUndo(); const it = place(L.ghost.fid, x - Math.floor(w / 2), y - Math.floor(d / 2), L.ghost.rot); if (it) { L.sel = it.id; if (!e.shiftKey) { L.ghost = null; $$('#cat .fx').forEach(x => x.classList.remove('on')); } } else L.undo.pop(); renderItems(); drawLayout(); return; }
+  const it = hitScreen(sx, sy); L.sel = it ? it.id : null; if (it) L.drag = { it, dx: x - it.x, dy: y - it.y, moved: false, snap: JSON.stringify(L.items) }; renderItems(); drawLayout(); });
+lay.addEventListener('pointermove', e => { const r = lay.getBoundingClientRect(); const [x, y] = toGrid(e.clientX - r.left, e.clientY - r.top);
+  if (L.drag) { const fr = fxById[L.drag.it.fid]; const [w, d] = fxSize(fr, L.drag.it.rot); const nx = clamp(x - L.drag.dx, 0, Math.max(0, L.w - w)), ny = clamp(y - L.drag.dy, 0, Math.max(0, L.d - d)); if (nx !== L.drag.it.x || ny !== L.drag.it.y) { L.drag.it.x = nx; L.drag.it.y = ny; if (L.stack) L.drag.it.z = Math.min(topAt(nx, ny, w, d, L.drag.it), Math.max(0, L.h - fxH(fr))); L.drag.moved = true; drawLayout(); } return; }
+  if (L.ghost) { L.hover = [x, y]; drawLayout(); } });
+lay.addEventListener('pointerup', () => { if (L.drag) { if (L.drag.moved) { L.undo.push(L.drag.snap); L.redo = []; renderItems(); } L.drag = null; drawLayout(); } });
+lay.addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') { e.preventDefault(); $('#lRot').click(); } else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); $('#lDel').click(); } else if (e.key === 'PageUp') { e.preventDefault(); $('#lUp').click(); } else if (e.key === 'PageDown') { e.preventDefault(); $('#lDown').click(); } else if (e.key === 'Escape') { L.ghost = null; L.sel = null; $$('#cat .fx').forEach(x => x.classList.remove('on')); drawLayout(); } else if (/^Arrow/.test(e.key)) { const it = selItem(); if (!it) return; e.preventDefault(); pushUndo(); const r = fxById[it.fid], [w, d] = fxSize(r, it.rot); if (e.key === 'ArrowLeft') it.x = Math.max(0, it.x - 1); if (e.key === 'ArrowRight') it.x = Math.min(L.w - w, it.x + 1); if (e.key === 'ArrowUp') it.y = Math.max(0, it.y - 1); if (e.key === 'ArrowDown') it.y = Math.min(L.d - d, it.y + 1); renderItems(); drawLayout(); } });
+function poly(x, pts, fill, stroke) { x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.closePath(); if (fill) { x.fillStyle = fill; x.fill(); } if (stroke) { x.strokeStyle = stroke; x.stroke(); } }
 function drawLayout() {
-  const cs = L.cs, c = lay; c.width = L.w * cs + 1; c.height = L.d * cs + 1; const x = c.getContext('2d');
-  const dark = document.documentElement.classList.contains('dark');
-  x.fillStyle = L.site === 'room' ? (dark ? '#2a2420' : '#f3e6cf') : L.site === 'home' ? (dark ? '#1f2a1c' : '#dfeec8') : (dark ? '#1c2a1e' : '#cfe7bd'); x.fillRect(0, 0, c.width, c.height);
-  x.strokeStyle = dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)'; x.lineWidth = 1; for (let i = 0; i <= L.w; i++) { x.beginPath(); x.moveTo(i * cs + .5, 0); x.lineTo(i * cs + .5, L.d * cs); x.stroke(); } for (let j = 0; j <= L.d; j++) { x.beginPath(); x.moveTo(0, j * cs + .5); x.lineTo(L.w * cs, j * cs + .5); x.stroke(); }
-  const until = L.play.i >= 0 ? L.play.i : Infinity;
-  // 地板類（地墊、道路、瓷磚、地板）先畫，其他照 y 排序：前面的擋後面的
-  const floorG = new Set([8, 9, 10, 12, 31]);
-  const order = L.items.map((it, i) => ({ it, i })).filter(o => o.i < until).sort((a, b) => (floorG.has((fxById[b.it.fid] || [])[2]) ? 1 : 0) - (floorG.has((fxById[a.it.fid] || [])[2]) ? 1 : 0) || (a.it.y - b.it.y) || (a.i - b.i));
-  const now = performance.now();
-  for (const { it, i } of order) { const r = fxById[it.fid]; if (!r) continue; const [w, d] = fxSize(r, it.rot); const X = it.x * cs, Y = it.y * cs, W = w * cs, D = d * cs;
-    let sc = 1; if (L.play.on && i === until - 1) { const t = Math.min(1, (now - L.play.t) / 320); sc = .4 + .6 * (1 - Math.pow(1 - t, 3)); if (t < 1) L.anim = true; }
-    x.save(); x.translate(X + W / 2, Y + D / 2); x.scale(sc, sc);
-    const pal = PALETTE.find(p => p[0] === it.fid);
-    if (pal) { x.fillStyle = pal[3]; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, D - 2); x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, Math.max(1, cs * .18)); x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(-W / 2 + 1, D / 2 - Math.max(1, cs * .2), W - 2, Math.max(1, cs * .2) - 1); }
-    else { x.fillStyle = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.07)'; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, D - 2); const im = fxImg(r); if (im) { x.rotate(it.rot * Math.PI / 2); const [w0, d0] = [r[5][0] * cs, r[5][1] * cs]; const s = Math.min(w0 / im.naturalWidth, d0 / im.naturalHeight) * 1.15; const iw = im.naturalWidth * s, ih = im.naturalHeight * s; x.drawImage(im, -iw / 2, -ih / 2 - (d0 * .08), iw, ih); } else { x.fillStyle = dark ? '#ccc' : '#333'; x.font = '600 ' + Math.max(9, cs * .3) + 'px "Noto Sans TC",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(r[1].slice(0, Math.max(2, Math.floor(W / (cs * .3)))), 0, 0); } }
-    x.restore();
-    if (it.id === L.sel) { x.strokeStyle = '#4a8f2f'; x.lineWidth = 3; x.strokeRect(X + 1.5, Y + 1.5, W - 3, D - 3); }
+  const cs = L.cs, c = lay, dark = document.documentElement.classList.contains('dark'), iso = L.view === 'iso';
+  if (iso) { c.width = (L.w + L.d) * cs / 2 + cs * 2; c.height = (L.w + L.d) * cs / 4 + L.h * cs / 2 + cs * 2; } else { c.width = L.w * cs + 1; c.height = L.d * cs + 1; }
+  const x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height);
+  const floor = L.site === 'room' ? (dark ? '#2a2420' : '#f1e3cb') : L.site === 'home' ? (dark ? '#1f2a1c' : '#dcebc4') : (dark ? '#1c2a1e' : '#cfe3bd');
+  const line = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.13)';
+  if (iso) { poly(x, [toScreen(0, 0, 0), toScreen(L.w, 0, 0), toScreen(L.w, L.d, 0), toScreen(0, L.d, 0)], floor, null);
+    x.lineWidth = 1; x.strokeStyle = line; const step = cs < 12 ? 5 : 1; for (let i = 0; i <= L.w; i += step) { const a = toScreen(i, 0, 0), b = toScreen(i, L.d, 0); x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke(); } for (let j = 0; j <= L.d; j += step) { const a = toScreen(0, j, 0), b = toScreen(L.w, j, 0); x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke(); }
+    // 後牆（房間）：淡淡兩面牆提示高度上限
+    if (L.site === 'room') { poly(x, [toScreen(0, 0, 0), toScreen(L.w, 0, 0), toScreen(L.w, 0, L.h), toScreen(0, 0, L.h)], dark ? 'rgba(255,255,255,.05)' : 'rgba(120,90,60,.08)', line); poly(x, [toScreen(0, 0, 0), toScreen(0, L.d, 0), toScreen(0, L.d, L.h), toScreen(0, 0, L.h)], dark ? 'rgba(255,255,255,.04)' : 'rgba(120,90,60,.06)', line); }
+  } else { x.fillStyle = floor; x.fillRect(0, 0, c.width, c.height); x.strokeStyle = line; x.lineWidth = 1; for (let i = 0; i <= L.w; i++) { x.beginPath(); x.moveTo(i * cs + .5, 0); x.lineTo(i * cs + .5, L.d * cs); x.stroke(); } for (let j = 0; j <= L.d; j++) { x.beginPath(); x.moveTo(0, j * cs + .5); x.lineTo(L.w * cs, j * cs + .5); x.stroke(); } }
+  const order = drawOrder(), until = L.play.i >= 0 ? L.play.i : Infinity, now = performance.now();
+  for (const it of order) { const r = fxById[it.fid]; if (!r) continue; const [w, d] = fxSize(r, it.rot), h = fxH(r), col = fxColor(r), isBlock = !!PALETTE.find(q => q[0] === it.fid);
+    const idx = L.items.indexOf(it); let sc = 1; if (L.play.on && idx === until - 1) { const t = Math.min(1, (now - L.play.t) / 320); sc = .4 + .6 * (1 - Math.pow(1 - t, 3)); if (t < 1) L.anim = true; }
+    if (iso) { const f = faces(it); x.save(); if (sc !== 1) { const cx = f.top.reduce((s, p) => s + p[0], 0) / 4, cy = f.front.reduce((s, p) => s + p[1], 0) / 4; x.translate(cx, cy); x.scale(sc, sc); x.translate(-cx, -cy); }
+      x.lineWidth = 1; const edge = 'rgba(0,0,0,.18)';
+      poly(x, f.right, shade(col, -.22), edge); poly(x, f.front, shade(col, -.38), edge); poly(x, f.top, col, edge);
+      if (!isBlock) { const im = fxImg(r); const cx = f.top.reduce((s, p) => s + p[0], 0) / 4, cy = f.top.reduce((s, p) => s + p[1], 0) / 4; const size = Math.min(w, d) * cs * 1.05;
+        if (im) { const s2 = size / Math.max(im.naturalWidth || im.width, im.naturalHeight || im.height); const iw = (im.naturalWidth || im.width) * s2, ih = (im.naturalHeight || im.height) * s2; x.drawImage(im, cx - iw / 2, cy - ih * .78, iw, ih); }
+        else if (cs >= 14) { x.fillStyle = dark ? '#eee' : '#222'; x.font = '600 ' + Math.max(9, cs * .32) + 'px "Noto Sans TC",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(r[1].slice(0, 4), cx, cy); } }
+      x.restore();
+      if (it.id === L.sel) { x.lineWidth = 2.5; poly(x, f.top, null, '#3f7d27'); }
+    } else { const X = it.x * cs, Y = it.y * cs, W = w * cs, D = d * cs; x.save(); x.translate(X + W / 2, Y + D / 2); x.scale(sc, sc);
+      x.fillStyle = col; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, D - 2); x.fillStyle = 'rgba(0,0,0,' + Math.min(.35, it.z * .06) + ')'; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, D - 2);
+      if (!isBlock) { const im = fxImg(r); if (im) { x.rotate(it.rot * Math.PI / 2); const [w0, d0] = [r[5][0] * cs, r[5][1] * cs]; const s2 = Math.min(w0 / (im.naturalWidth || im.width), d0 / (im.naturalHeight || im.height)) * 1.1; const iw = (im.naturalWidth || im.width) * s2, ih = (im.naturalHeight || im.height) * s2; x.drawImage(im, -iw / 2, -ih / 2 - d0 * .06, iw, ih); } }
+      x.restore(); if (it.z && cs >= 12) { x.fillStyle = 'rgba(0,0,0,.6)'; x.font = '700 ' + Math.max(9, cs * .35) + 'px ui-monospace,monospace'; x.textAlign = 'right'; x.textBaseline = 'bottom'; x.fillText('↑' + it.z, X + W - 2, Y + D - 1); }
+      if (it.id === L.sel) { x.strokeStyle = '#3f7d27'; x.lineWidth = 3; x.strokeRect(X + 1.5, Y + 1.5, W - 3, D - 3); } }
   }
-  if (L.ghost && L.hover) { const r = fxById[L.ghost.fid]; const [w, d] = fxSize(r, L.ghost.rot); const gx = clamp(L.hover[0] - Math.floor(w / 2), 0, Math.max(0, L.w - w)), gy = clamp(L.hover[1] - Math.floor(d / 2), 0, Math.max(0, L.d - d)); x.fillStyle = 'rgba(74,143,47,.3)'; x.fillRect(gx * cs, gy * cs, w * cs, d * cs); x.strokeStyle = '#4a8f2f'; x.setLineDash([6, 4]); x.strokeRect(gx * cs + 1, gy * cs + 1, w * cs - 2, d * cs - 2); x.setLineDash([]); }
+  if (L.ghost && L.hover) { const r = fxById[L.ghost.fid]; const [w, d] = fxSize(r, L.ghost.rot), h = fxH(r); const gx = clamp(L.hover[0] - Math.floor(w / 2), 0, Math.max(0, L.w - w)), gy = clamp(L.hover[1] - Math.floor(d / 2), 0, Math.max(0, L.d - d)); const gz = L.stack ? topAt(gx, gy, w, d) : 0; const ok = gz + h <= L.h;
+    const fill = ok ? 'rgba(63,125,39,.35)' : 'rgba(196,61,80,.35)', st = ok ? '#3f7d27' : '#c43d50'; x.setLineDash([6, 4]); x.lineWidth = 1.5;
+    if (iso) { const f = faces({ fid: L.ghost.fid, rot: L.ghost.rot, x: gx, y: gy, z: gz }); poly(x, f.right, fill, st); poly(x, f.front, fill, st); poly(x, f.top, fill, st); } else { x.fillStyle = fill; x.fillRect(gx * cs, gy * cs, w * cs, d * cs); x.strokeStyle = st; x.strokeRect(gx * cs + 1, gy * cs + 1, w * cs - 2, d * cs - 2); }
+    x.setLineDash([]); }
   if (L.anim) { L.anim = false; requestAnimationFrame(drawLayout); }
   lMaterials();
 }
+function fitLayoutZoom() { const cv = $('#m-layout .cv'); if (!cv.clientWidth) return; const avail = cv.clientWidth - 30; L.cs = clamp(Math.floor(L.view === 'iso' ? avail / ((L.w + L.d) / 2 + 2) : avail / L.w), 6, 56); $('#lzoom').value = L.cs; }
 function renderItems() {
   const el = $('#items'); el.innerHTML = ''; $('#itemN').textContent = L.items.length + ' 件';
-  L.items.forEach((it, i) => { const r = fxById[it.fid]; const d = document.createElement('div'); d.className = 'it' + (it.id === L.sel ? ' on' : ''); d.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="nm">' + esc(r ? r[1] : '#' + it.fid) + '</span><span class="dim mono">(' + (it.x + 1) + ',' + (it.y + 1) + ')</span><button data-a="up" aria-label="往前">▲</button><button data-a="dn" aria-label="往後">▼</button>';
+  L.items.forEach((it, i) => { const r = fxById[it.fid]; const d = document.createElement('div'); d.className = 'it' + (it.id === L.sel ? ' on' : ''); d.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="nm">' + esc(r ? r[1] : '#' + it.fid) + '</span><span class="dim mono">(' + (it.x + 1) + ',' + (it.y + 1) + (it.z ? ',↑' + it.z : '') + ')</span><button data-a="up" aria-label="往前">▲</button><button data-a="dn" aria-label="往後">▼</button>';
     d.onclick = e => { const a = e.target.dataset.a; if (a) { const j = a === 'up' ? i - 1 : i + 1; if (j < 0 || j >= L.items.length) return; pushUndo(); [L.items[i], L.items[j]] = [L.items[j], L.items[i]]; renderItems(); drawLayout(); return; } L.sel = it.id; renderItems(); drawLayout(); }; el.appendChild(d); });
   $('#lProg').max = L.items.length; $('#lProgT').textContent = (L.play.i >= 0 ? L.play.i : L.items.length) + ' / ' + L.items.length;
 }
 function lMats() { const t = new Map(); L.items.forEach(it => { const r = fxById[it.fid]; if (r) r[10].forEach(([m, q]) => t.set(m, (t.get(m) || 0) + q)); }); return [...t.entries()].sort((a, b) => b[1] - a[1]); }
 let lmKey = ''; function lMaterials() { const ms = lMats(), key = JSON.stringify(ms); if (key === lmKey) return; lmKey = key; $('#lMatBody').innerHTML = ms.map(([m, q]) => '<tr><td><span class="mat">' + (matIcon(m) ? '<img src="' + matIcon(m) + '" alt="" loading="lazy">' : '') + esc(matName(m)) + '</span></td><td class="num">' + q.toLocaleString() + '</td></tr>').join('') || '<tr><td colspan="2" class="dim">—</td></tr>'; }
 $('#lCopyMat').onclick = () => copy('豆森擺設材料總計（' + L.items.length + ' 件）\n' + lMats().map(([m, q]) => matName(m) + ' ×' + q).join('\n'));
-$('#lCopyList').onclick = () => { const cnt = new Map(); L.items.forEach(it => cnt.set(it.fid, (cnt.get(it.fid) || 0) + 1)); copy('豆森擺設清單\n' + [...cnt.entries()].map(([f, n]) => (fxById[f] || ['', '#' + f])[1] + ' ×' + n).join('\n') + '\n\n建造順序\n' + L.items.map((it, i) => (i + 1) + '. ' + (fxById[it.fid] || ['', '#' + it.fid])[1] + ' @ (' + (it.x + 1) + ',' + (it.y + 1) + ')' + (it.rot ? ' 轉' + it.rot * 90 + '°' : '')).join('\n')); };
+$('#lCopyList').onclick = () => { const cnt = new Map(); L.items.forEach(it => cnt.set(it.fid, (cnt.get(it.fid) || 0) + 1)); copy('豆森擺設清單（' + ($('#siteSel').selectedOptions[0] || {}).textContent + '）\n' + [...cnt.entries()].map(([f, n]) => (fxById[f] || ['', '#' + f])[1] + ' ×' + n).join('\n') + '\n\n建造順序\n' + L.items.map((it, i) => (i + 1) + '. ' + (fxById[it.fid] || ['', '#' + it.fid])[1] + ' @ (' + (it.x + 1) + ',' + (it.y + 1) + (it.z ? ',高 ' + it.z : '') + ')' + (it.rot ? ' 轉' + it.rot * 90 + '°' : '')).join('\n')); };
 function lTick(ts) { if (!L.play.on) return; const per = 1000 / +$('#lSpeed').value; if (ts - L.play.t >= per) { L.play.t = ts; L.play.i = Math.min(L.items.length, L.play.i + 1); $('#lProg').value = L.play.i; $('#lProgT').textContent = L.play.i + ' / ' + L.items.length; $$('#items .it').forEach((d, i) => d.classList.toggle('on', i === L.play.i - 1)); drawLayout(); if (L.play.i >= L.items.length) { L.play.on = false; $('#lPlay').textContent = '▶ 重播'; setTimeout(() => { L.play.i = -1; drawLayout(); }, 1200); return; } } requestAnimationFrame(lTick); }
 $('#lPlay').onclick = () => { if (!L.items.length) return toast('先放一些家具'); L.play.on = !L.play.on; $('#lPlay').textContent = L.play.on ? '⏸ 暫停' : '▶ 播放'; if (L.play.on) { if (L.play.i < 0 || L.play.i >= L.items.length) L.play.i = 0; L.play.t = 0; requestAnimationFrame(lTick); } };
 $('#lReset').onclick = () => { L.play.on = false; L.play.i = -1; $('#lPlay').textContent = '▶ 播放'; $('#lProg').value = 0; renderItems(); drawLayout(); };
 $('#lProg').oninput = e => { L.play.on = false; $('#lPlay').textContent = '▶ 播放'; L.play.i = +e.target.value; $('#lProgT').textContent = L.play.i + ' / ' + L.items.length; drawLayout(); };
 $('#lExp').onclick = () => { const was = L.sel; L.sel = null; drawLayout(); dl(lay, '豆森內部設計.png'); L.sel = was; drawLayout(); };
-function encodeLayout() { return b64u.enc(new TextEncoder().encode(JSON.stringify({ v: 1, s: L.site, w: L.w, d: L.d, i: L.items.map(it => [it.fid, it.x, it.y, it.rot]) }))); }
-function decodeLayout(s) { try { const o = JSON.parse(new TextDecoder().decode(b64u.dec(s))); if (o.v !== 1) return false; L.site = o.s; segSet('#site', o.s); L.w = clamp(o.w, 4, 80); L.d = clamp(o.d, 4, 80); $('#lw').value = L.w; $('#ld').value = L.d; L.items = o.i.filter(a => fxById[a[0]]).map(a => ({ id: ++L.seq, fid: a[0], x: a[1], y: a[2], rot: a[3] || 0 })); L.sel = null; buildCat(); renderItems(); drawLayout(); return true; } catch (e) { return false; } }
+function encodeLayout() { return b64u.enc(new TextEncoder().encode(JSON.stringify({ v: 2, k: L.key, s: L.site, w: L.w, d: L.d, h: L.h, i: L.items.map(it => [it.fid, it.x, it.y, it.rot, it.z]) }))); }
+function decodeLayout(s) { try { const o = JSON.parse(new TextDecoder().decode(b64u.dec(s))); if (o.v !== 1 && o.v !== 2) return false;
+  if (o.v === 2 && o.k && o.k !== 'custom' && SITES.some(x => x[0] + ':' + x[4] === o.k)) applySite(o.k, false); else { L.key = 'custom'; L.site = o.s === 'room' || o.s === 'home' ? o.s : 'any'; L.w = clamp(o.w, 4, 150); L.d = clamp(o.d, 4, 150); L.h = clamp(o.h || 15, 1, 30); $('#siteSel').value = 'custom'; ['lw', 'ld', 'lh'].forEach(k => $('#' + k).disabled = false); $('#lApply').hidden = false; $('#lw').value = L.w; $('#ld').value = L.d; $('#lh').value = L.h; }
+  L.items = o.i.filter(a => fxById[a[0]]).map(a => ({ id: ++L.seq, fid: a[0], x: a[1], y: a[2], rot: a[3] || 0, z: a[4] || 0 })); L.sel = null; buildCat(); fitLayoutZoom(); renderItems(); drawLayout(); return true; } catch (e) { return false; } }
 $('#lShare').onclick = () => { if (!L.items.length) return toast('先放一些家具'); copy(location.origin + location.pathname + '#l=' + encodeLayout()); };
 $('#lSave').onclick = () => { if (!L.items.length) return toast('先放一些家具'); const name = prompt('作品名稱', '內部設計 ' + new Date().toLocaleDateString()); if (name == null) return; saveWork({ type: 'layout', name: name || '內部設計', data: encodeLayout(), n: L.items.length }); toast('已儲存到「我的作品」'); };
+/* 像素畫 → 內部設計：平放在地上，或立起來當牆面（列數變高度，超過場地高度的列略過） */
+function pixelToLayout(wall) {
+  if (!P.grid) return toast('還沒有像素畫');
+  const side = cellSide(); pushUndo(); let n = 0, skip = 0;
+  if (!wall) { const ox = Math.max(0, Math.floor((L.w - P.w * side) / 2)), oy = Math.max(0, Math.floor((L.d - P.h * side) / 2));
+    for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi < 0) continue; const x = ox + i * side, y = oy + j * side; if (x + side > L.w || y + side > L.d) { skip++; continue; } L.items.push({ id: ++L.seq, fid: P.pal[pi][0], x, y, z: 0, rot: 0 }); n++; } }
+  else { const ox = Math.max(0, Math.floor((L.w - P.w * side) / 2)), oy = 0, rows = Math.min(P.h, Math.floor(L.h / side));
+    for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi < 0) continue; const x = ox + i * side; const rowFromBottom = P.h - 1 - j; if (x + side > L.w || rowFromBottom >= rows) { skip++; continue; } L.items.push({ id: ++L.seq, fid: P.pal[pi][0], x, y: oy, z: rowFromBottom * side, rot: 0 }); n++; } }
+  renderItems(); drawLayout(); setMode('layout'); toast('放進 ' + n + ' 塊' + (skip ? '，' + skip + ' 塊超出場地（' + L.w + '×' + L.d + '×' + L.h + '）略過' : ''));
+}
+$('#toLayout').onclick = () => pixelToLayout(false);
+$('#toLayoutWall').onclick = () => pixelToLayout(true);
 
 /* ================= 生日模板 ================= */
 let bdChar = null;
@@ -721,17 +796,19 @@ function renderWorks() {
     // 縮圖：像素畫畫格子；內部設計畫色塊
     const x = c.getContext('2d');
     try { if (w.type === 'pixel') { const u = b64u.dec(w.data); const W = u[2], H = u[3], pal = PALETTE.filter(p => p[5] === (u[1] === 2 ? 'tile' : 'block') && p[4] === (u[1] === 0 ? 1 : 2) && p[2] !== 'cl' && (u[4] || !/brick|grain|concre/.test(p[2]))); const cs = 160 / Math.max(W, H), ox = (160 - W * cs) / 2, oy = (160 - H * cs) / 2; let i = 5, k = 0; while (i + 1 < u.length && !(u[i] === 0 && u[i + 1] === 0)) { const v = u[i] - 1, n = u[i + 1]; for (let j = 0; j < n; j++, k++) { if (v >= 0 && pal[v]) { x.fillStyle = pal[v][3]; x.fillRect(ox + (k % W) * cs, oy + Math.floor(k / W) * cs, Math.ceil(cs), Math.ceil(cs)); } } i += 2; } }
-      else { const o = JSON.parse(new TextDecoder().decode(b64u.dec(w.data))); const cs = 160 / Math.max(o.w, o.d); x.fillStyle = '#e8dcc0'; x.fillRect(0, 0, o.w * cs, o.d * cs); o.i.forEach(a => { const r = fxById[a[0]]; if (!r) return; const [fw, fd] = a[3] % 2 ? [r[5][1], r[5][0]] : [r[5][0], r[5][1]]; const p = PALETTE.find(q => q[0] === a[0]); x.fillStyle = p ? p[3] : 'rgba(60,90,40,.55)'; x.fillRect(a[1] * cs + .5, a[2] * cs + .5, fw * cs - 1, fd * cs - 1); }); } } catch (e) {}
+      else { const o = JSON.parse(new TextDecoder().decode(b64u.dec(w.data))); const cs = 160 / Math.max(o.w, o.d); x.fillStyle = '#e8dcc0'; x.fillRect(0, 0, o.w * cs, o.d * cs); o.i.slice().sort((a, b) => (a[4] || 0) - (b[4] || 0)).forEach(a => { const r = fxById[a[0]]; if (!r) return; const [fw, fd] = a[3] % 2 ? [r[5][1], r[5][0]] : [r[5][0], r[5][1]]; const p = PALETTE.find(q => q[0] === a[0]); x.fillStyle = p ? p[3] : 'rgba(60,90,40,.55)'; x.fillRect(a[1] * cs + .5, a[2] * cs + .5, fw * cs - 1, fd * cs - 1); }); } } catch (e) {}
   });
 }
 
 /* ================= 啟動 ================= */
-buildPal(); buildChars(); buildCat(); renderItems(); drawLayout();
+buildPal(); buildChars(); buildSites(); applySite('1:1', false);
 const hash = new URLSearchParams(location.hash.slice(1));
 if (hash.get('p')) { if (decodePixel(hash.get('p'))) toast('已載入分享的像素畫'); }
 else if (hash.get('l')) { if (decodeLayout(hash.get('l'))) { setMode('layout'); toast('已載入分享的設計'); } }
 else if (hash.get('m')) setMode(hash.get('m'));
-window.__mystudio = { P, L, recalc, textToImage, decodePixel };
+window.__mystudio = { P, L, recalc, textToImage, decodePixel, applySite, place };
+/* 內嵌在 app 裡：把內容高度回報給外層，iframe 跟著長 */
+if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: document.documentElement.scrollHeight }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
 </script>
 </body>
 </html>

@@ -91,14 +91,33 @@ def main():
         m = re.search(r'export const CHAL_STAGES=(.*?);\n', OUT.read_text(encoding='utf-8')) if OUT.exists() else None
         stages = {int(k): v for k, v in json.loads(m.group(1)).items()} if m else {}
 
+    # 場地格數：mysekaiSites × mysekaiSiteLevels × mysekaiSiteLayouts（floor 那層的寬／深／高）。
+    # 家 Lv1～5 是 36／36／70／90／100 見方高 15；1F Lv1～5 是 10×10、12×12、16×12、20×16、24×20 高 10；2F／3F 同 1F Lv5；採集地 100～150 高 1～2。
+    sites = []
+    try:
+        S = {x['id']: x for x in tc_json(f'{TC}/mysekaiSites.json')}
+        LV = {x['id']: x for x in tc_json(f'{TC}/mysekaiSiteLevels.json')}
+        for lay in tc_json(f'{TC}/mysekaiSiteLayouts.json'):
+            if lay.get('mysekaiLayoutType') != 'floor':
+                continue
+            lv = LV.get(lay['mysekaiSiteLevelId']) or {}
+            st = S.get(lv.get('mysekaiSiteId')) or {}
+            sites.append([st.get('id') or 0, st.get('name') or '', st.get('mysekaiSiteType') or '', st.get('mysekaiSiteCategory') or '', lv.get('level') or 0, lay['width'], lay['depth'], lay['height']])
+        sites.sort(key=lambda r: (r[0], r[4]))
+    except Exception as e:  # noqa: BLE001
+        print(f'場地格數抓不到：{e}', file=sys.stderr)
+        m = re.search(r'export const SITES=(.*?);\n', OUT.read_text(encoding='utf-8')) if OUT.exists() else None
+        sites = json.loads(m.group(1)) if m else []
+
     dump = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
     text = ('/* 由 tools/build-mysekai-studio.py 產生,勿手改。豆森工作室（mystudio.html）用。\n'
             '   PALETTE 欄位:[家具id, 名稱, 色鍵, 色碼, 邊長, 種類(block|tile), 素材名, 製作素材[[素材id,數量]]]；'
-            'CHARS 欄位:[id, 名稱, 團體, 代表色, 生日月, 生日日]；CHAL_STAGES: 角色id → 挑戰 Live 關卡數 */\n'
+            'CHARS 欄位:[id, 名稱, 團體, 代表色, 生日月, 生日日]；CHAL_STAGES: 角色id → 挑戰 Live 關卡數；SITES 每列:[場地id, 名稱, 類型, 分類, 等級, 寬, 深, 高] */\n'
             'export const PALETTE=' + dump(pal) + ';\n'
             'export const MATS=' + dump(mat_rows) + ';\n'
             'export const CHARS=' + dump(out_chars) + ';\n'
-            'export const CHAL_STAGES=' + dump({str(k): v for k, v in sorted(stages.items())}) + ';\n')
+            'export const CHAL_STAGES=' + dump({str(k): v for k, v in sorted(stages.items())}) + ';\n'
+            'export const SITES=' + dump(sites) + ';\n')
     if OUT.exists() and OUT.read_text(encoding='utf-8') == text:
         print(f'{OUT.name}：內容沒變，不寫檔（{len(pal)} 色塊、{len(out_chars)} 位角色）')
         return
