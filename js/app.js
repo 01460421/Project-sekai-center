@@ -287,6 +287,9 @@ class Component extends DCLogic {
     rank:     ['活動排名', '即時排名與分段榜線（HiSekai API）'],
     calc:     ['計算中心', 'EP 精算 · 效率排行 · 摸魚表 · 活動試算 · 倍率 · 天井 · 烤森 · 排位'],
     deckpro:  ['進階計算', '綜合力 · 組卡優化 · 分數估算 · 跑榜工作室（完整引擎，即時抓主資料庫）'],
+    mystudio: ['豆森工作室', '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；等距 3D 家具擺設模擬（照遊戲場地格數、可堆疊）；角色生日看板'],
+    profile:  ['帳號分析', 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較'],
+    plan:     ['存石規劃', '未來一年每一池的 PU 卡與你的持卡對照，水晶收支推算到每池能存幾抽，勾想抽的池看會不會不夠'],
     shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
     b30:      ['B30 產生器', 'Best 30 実効值圖卡(Unibot 風格版面),可下載 PNG'],
     haruki:   ['Haruki 專區', '用你在 Haruki 工具箱的遊戲資料：活動最佳組卡、角色等級 EXP，以及 master、素材與 API 資源'],
@@ -352,14 +355,14 @@ class Component extends DCLogic {
      點入口去入口頁，家族內其他頁面在頁首以分頁籤切換；深連結、⌘K 搜尋與樞紐頁照舊認得每一個頁面 id。 */
   NAV_SECTIONS = [
     ['主頁', [['home', '首頁', '#4ad1e8', []], ['favs', '收藏與待辦', '#ffd94d', []], ['account', '我的帳號', '#8be0d0', ['notices', 'assistant', 'admin']], ['settings', '設定', '#9fb0d6', []]]],
-    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'recap', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'accuracy', 'distrib', 'lookup']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
+    ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'recap', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'accuracy', 'distrib', 'lookup', 'profile']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
-                   ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mstalk', 'bdayparty', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
+                   ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mystudio', 'mstalk', 'bdayparty', 'materials', 'dolls']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['plan', 'shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits', 'status']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_intro', '開場動畫專場', '#ff9db4'], ['x_mystudio', '豆森工作室', '#8bd36a'], ['x_profile', '帳號分析', '#7fb2f0'], ['x_plan', '存石規劃', '#b79cf0'], ['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
+  EXTRA_LINKS = [['x_intro', '開場動畫專場', '#ff9db4'], ['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -652,7 +655,8 @@ class Component extends DCLogic {
     sched: null, schedErr: '', schedTab: 'ev', schedCat: 'all', schedMore: 0, schedMiss: false,   // 排程預測（data/schedule-forecast.js）
     luId: '', luLoad: false, luErr: '', luData: null,   // 玩家查詢（原生頁）
     rs: '',   // 進階計算（跑榜工作室）分享連結帶來的設定：base64url JSON，原封不動轉給內嵌的 index.html?embed=calc
-    luTr: null, luTrLoad: false, luTrErr: '', luTrId: '',   // 玩家查詢：活動即時紀錄（Haruki 追蹤器）
+    luTr: null, luTrLoad: false, luTrErr: '', luTrId: '',
+    pfId: '', pfVs: '',   // 帳號分析（內嵌 profile.html）要查的 ID 與比較對象   // 玩家查詢：活動即時紀錄（Haruki 追蹤器）
     clQ: '', clRar: 'all', clAttr: 'all', clSk: 'all', clChar: 'all', clSort: 'new', clN: 48, clPick: null,   // 卡片技能庫（原生頁）
     gachaPk: null, gachaPkErr: false,   // 卡池詳情的 PU 卡（data/gacha-pickups.js，開第一個卡池時才載）
     gsList: null, gsErr: '', gsGid: '', gsQ: '', gsV: 0,   // 抽卡模擬（原生頁；池子與統計放 this._gs，gsV 只用來觸發重繪）
@@ -1069,9 +1073,9 @@ class Component extends DCLogic {
       }
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'shopFrame', 'b30Frame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'shopFrame', 'b30Frame', 'mystudioFrame', 'profileFrame', 'planFrame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(id === 'deckProFrame' || id === 'shopFrame' || id === 'b30Frame' ? 560 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(['deckProFrame', 'shopFrame', 'b30Frame', 'mystudioFrame', 'profileFrame', 'planFrame'].includes(id) ? 560 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
@@ -7339,7 +7343,7 @@ class Component extends DCLogic {
     const s = this.state, d = s.luData;
     return { ...this.luTrackView(), luId: s.luId, luLoad: s.luLoad, luErr: s.luErr, luHas: !!d,
       luProfLoading: !!s.luProfLoad, luProfNote: s.luProfNote || '', luProfNoteOn: !!s.luProfNote && !s.luProfLoad,
-      lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', profileUrl: 'profile.html?id=' + encodeURIComponent(d.id) + (this.SRV === 'jp' ? '&srv=jp' : ''), stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
+      lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
         chars: d.chars.map(c => ({ name: this.charName(c.id), rank: 'Rank ' + c.rank, color: this.CHARA_COLOR[c.id] || 'var(--border)' })), hasChars: d.chars.length > 0 } : null };
   }
 
@@ -8786,7 +8790,7 @@ class Component extends DCLogic {
     cards: ['dbq', 'cdUnit', 'cdChar', 'cdAttr', 'cdRar', 'cdSup', 'cdSort'], chars: ['dbq'], fixtures: ['dbq', 'fixGenre', 'fixSub', 'fixChar'], mstalk: ['dbq', 'mstView', 'mstUnit', 'mstChar', 'mstStat', 'mstKind', 'mstOwnF'], materials: ['dbq', 'matType'], comics: ['dbq'],
     ost: ['dbq', 'ostCat'], lives: ['dbq', 'liveType', 'liveStat'], news: ['dbq', 'newsTag', 'newsStat'], story: ['stTab', 'stEvent', 'stChar', 'stArea', 'dbq'], stickers: ['stkChar', 'stkq'],
     guesswho: ['qzDiff', 'qzTime'], guessjacket: ['qzDiff', 'qzOpts', 'qzTime'], car: ['g', 'car', 'carView', 'carTab', 'carStView'],
-    lookup: ['luId'], deckpro: ['rs'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'], gachasim: ['gsGid'] };
+    lookup: ['luId'], profile: ['pfId', 'pfVs'], deckpro: ['rs'], cardlib: ['clQ', 'clRar', 'clAttr', 'clSk', 'clChar', 'clSort'], gachasim: ['gsGid'] };
   /* 路徑形式的網址（/songs、/recap?recapEv=183）：正式站一律用；本機 python http.server 只會給 /app.html，
      所以主機名是 localhost／127.0.0.1 且目前在 .html 上時維持 ?page=（重新整理才不會 404）。讀網址兩種都認得。 */
   _pathMode() {
@@ -9312,9 +9316,9 @@ class Component extends DCLogic {
     });
     if (q) {
       // 彩蛋：只有打到相關的字才會浮出來
-      if (/存石|存水晶|水晶規劃|要不要抽|抽不抽|未來卡池|規劃|plan/i.test(q)) out.unshift({ tag: '工具', tagBg: '#7a4fc0', main: '存石規劃', sub: '未來一年每一池的 PU 卡與持卡對照，水晶收支推算到每池能存幾抽', run: () => { location.href = 'plan.html'; } });
-      if (/帳號分析|分析帳號|我的帳號|角色等級|平均等級|收集率|FC|AP|挑戰|profile/i.test(q)) out.unshift({ tag: '工具', tagBg: '#2f6fb5', main: '帳號分析', sub: '綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料、兩帳號比較', run: () => { location.href = 'profile.html' + (this.state.pid && this.SRV !== 'jp' ? '?id=' + encodeURIComponent(this.state.pid) : ''); } });
-      if (/豆森工作室|像素|像素畫|方塊|瓷磚|設計圖|看板|mystudio|pixel/i.test(q)) out.unshift({ tag: '工具', tagBg: '#4a8f2f', main: '豆森工作室', sub: '圖片轉彩色方塊像素畫（材料、步驟、設計圖、建造播放）、家具擺設模擬、生日看板', run: () => { location.href = 'mystudio.html'; } });
+      if (/存石|存水晶|水晶規劃|要不要抽|抽不抽|未來卡池|規劃|plan/i.test(q)) out.unshift({ tag: '工具', tagBg: '#7a4fc0', main: '存石規劃', sub: '未來一年每一池的 PU 卡與持卡對照，水晶收支推算到每池能存幾抽', run: () => this.go('plan') });
+      if (/帳號分析|分析帳號|我的帳號|角色等級|平均等級|收集率|FC|AP|挑戰|profile/i.test(q)) out.unshift({ tag: '工具', tagBg: '#2f6fb5', main: '帳號分析', sub: '綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料、兩帳號比較', run: () => this.go('profile') });
+      if (/豆森工作室|像素|像素畫|方塊|瓷磚|設計圖|看板|mystudio|pixel/i.test(q)) out.unshift({ tag: '工具', tagBg: '#4a8f2f', main: '豆森工作室', sub: '圖片轉彩色方塊像素畫（材料、步驟、設計圖、建造播放）、家具擺設模擬、生日看板', run: () => this.go('mystudio') });
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
       if (/聲紋|傅立葉|頻譜|soundprint|fourier|spectr/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: 'SEKAI 聲紋', sub: '每一首歌的傅立葉肖像：真正的短時傅立葉轉換畫成極座標聲紋', run: () => { location.href = 'soundprint.html'; } });
@@ -9356,7 +9360,7 @@ class Component extends DCLogic {
   ];
   NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 19 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
-  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html', x_mystudio: 'mystudio.html', x_profile: 'profile.html', x_plan: 'plan.html' };
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -10774,6 +10778,9 @@ class Component extends DCLogic {
         };
       })(),
       isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
+      isMystudio: s.page === 'mystudio', isProfile: s.page === 'profile', isPlan: s.page === 'plan',
+      mystudioSrc: './mystudio.html?embed=1', planSrc: './plan.html?embed=1' + (s.pid && this.SRV !== 'jp' ? '&id=' + encodeURIComponent(s.pid) : ''),
+      profileSrc: './profile.html?embed=1' + (s.pfId || s.pid ? '&id=' + encodeURIComponent(s.pfId || s.pid) : '') + (s.pfVs ? '&vs=' + encodeURIComponent(s.pfVs) : '') + (this.SRV === 'jp' ? '&srv=jp' : ''),
       ...(s.page === 'skillmult' ? this.smView() : { isSkillMult: false }),
       ...(() => {
         /* 卡面下載。直連官方素材庫,本站不轉存 —— 所以這裡做的只有「把 1,249 張卡
@@ -12445,9 +12452,9 @@ class Component extends DCLogic {
           { name: 'WL 交換所規劃表', url: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link', sub: 'good果汁・World Link 交換所資源規劃' }
         ]},
         { label: '本站工具', items: [
-          { name: '存石規劃', url: 'plan.html', sub: '未來一年每一池的 PU 卡與你的持卡對照，水晶收支推算到每池能存幾抽，勾想抽的池看會不會不夠' },
-          { name: '帳號分析', url: 'profile.html', sub: 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較' },
-          { name: '豆森工作室', url: 'mystudio.html', sub: '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；家具擺設模擬、生日看板' },
+          { name: '存石規劃', url: '?page=plan', sub: '未來一年每一池的 PU 卡與你的持卡對照，水晶收支推算到每池能存幾抽，勾想抽的池看會不會不夠' },
+          { name: '帳號分析', url: '?page=profile', sub: 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較' },
+          { name: '豆森工作室', url: '?page=mystudio', sub: '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；家具擺設模擬、生日看板' },
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
@@ -12809,6 +12816,7 @@ class Component extends DCLogic {
       },
       onWNew: () => this.setState({ wForm: { kind: 'border', mode: 'tier_score', vals: {}, name: '' }, wBusy: '' }),
       /* 其他頁的「提醒我」：帶好訂閱表單再跳到帳號頁的偵測訂閱區（沒登入就先去登入，表單留著） */
+      onLuProfile: () => { const d = this.state.luData; if (d) this.setState({ pfId: String(d.id) }); this.go('profile'); },
       onWatchGo: e => {
         e.stopPropagation && e.stopPropagation();
         const d = e.currentTarget.dataset, k = d.k, v = d.v || '', uid = this.state.pid || '';

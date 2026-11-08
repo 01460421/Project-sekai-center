@@ -24,6 +24,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://storage.sekai.best">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<script>try{if(new URLSearchParams(location.search).get('embed'))document.documentElement.classList.add('embed');}catch(e){}</script>
 <script>try{var _t=localStorage.getItem('sekai-profile-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(_t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
 <script src="./data/b30-consts.js?v=5faf291bda"></script>
 <style>
@@ -73,6 +74,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;b
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:760px){.two{grid-template-columns:1fr}}
 @media (max-width:640px){header{padding:8px 10px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}main{padding:10px}.card{padding:12px}.tab{padding:7px 8px;font-size:12.5px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:root.embed header{display:none}:root.embed body::before{display:none}:root.embed main{padding:4px 2px}:root.embed .card{box-shadow:none}
 </style>
 </head>
 <body>
@@ -104,7 +106,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;b
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script type="module">
-import { CHARS, CHAL_STAGES } from './data/mysekai-studio.js?v=e6443e7efa';
+import { CHARS, CHAL_STAGES } from './data/mysekai-studio.js?v=f8371d5a3f';
 import { SONGS } from './data/songs-index.js?v=9cb8605bcf';
 import { CARDS } from './data/cards-index.js?v=4d50ff39a7';
 import { FIX_MATS } from './data/fixtures-index.js?v=9bcab0f8a3';
@@ -339,6 +341,9 @@ let pid = q.get('id') || ''; try { pid = pid || localStorage.getItem('sekai-prof
 $('#pid').value = pid; $('#vs').value = q.get('vs') || '';
 window.__profile = { state, go, build, loadPlayer };
 if (q.get('id')) go();
+
+/* 內嵌在 app 裡：回報內容高度給外層、站內連結改在外層開 */
+if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: document.documentElement.scrollHeight }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
 </script>
 </body>
 </html>
