@@ -340,7 +340,7 @@ class Component extends DCLogic {
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits', 'status']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
-  EXTRA_LINKS = [['x_intro', '開場動畫專場', '#ff9db4'], ['x_mystudio', '豆森工作室', '#8bd36a'], ['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
+  EXTRA_LINKS = [['x_intro', '開場動畫專場', '#ff9db4'], ['x_mystudio', '豆森工作室', '#8bd36a'], ['x_profile', '帳號分析', '#7fb2f0'], ['x_starmap', 'SEKAI 星圖', '#d4b673'], ['x_theater', '衝榜劇場', '#ecdcaa'], ['x_soundprint', 'SEKAI 聲紋', '#c8ab6e'], ['x_echoes', '迴響之境', '#8fa3ff']];
   _famIndex() { if (!this._famIdx) { const m = {}; this.NAV_SECTIONS.forEach(([, fams]) => fams.forEach(f => { m[f[0]] = f; f[3].forEach(id => { m[id] = f; }); })); this._famIdx = m; } return this._famIdx; }
   famOf(p) { const f = this._famIndex()[p]; return f ? f[0] : null; }       // 頁面所屬入口（入口頁本身也回自己）
   famLabel(p) { const f = this._famIndex()[p]; return f ? f[1] : ''; }
@@ -7307,7 +7307,7 @@ class Component extends DCLogic {
     const s = this.state, d = s.luData;
     return { ...this.luTrackView(), luId: s.luId, luLoad: s.luLoad, luErr: s.luErr, luHas: !!d,
       luProfLoading: !!s.luProfLoad, luProfNote: s.luProfNote || '', luProfNoteOn: !!s.luProfNote && !s.luProfLoad,
-      lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
+      lu: d ? { id: d.id, name: d.name, word: d.word, twitter: d.twitter ? '@' + d.twitter : '', profileUrl: 'profile.html?id=' + encodeURIComponent(d.id) + (this.SRV === 'jp' ? '&srv=jp' : ''), stats: d.stats, hasStats: d.stats.length > 0, noStats: d.stats.length === 0,
         chars: d.chars.map(c => ({ name: this.charName(c.id), rank: 'Rank ' + c.rank, color: this.CHARA_COLOR[c.id] || 'var(--border)' })), hasChars: d.chars.length > 0 } : null };
   }
 
@@ -9280,6 +9280,7 @@ class Component extends DCLogic {
     });
     if (q) {
       // 彩蛋：只有打到相關的字才會浮出來
+      if (/帳號分析|分析帳號|我的帳號|角色等級|平均等級|收集率|FC|AP|挑戰|profile/i.test(q)) out.unshift({ tag: '工具', tagBg: '#2f6fb5', main: '帳號分析', sub: '綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料、兩帳號比較', run: () => { location.href = 'profile.html' + (this.state.pid && this.SRV !== 'jp' ? '?id=' + encodeURIComponent(this.state.pid) : ''); } });
       if (/豆森工作室|像素|像素畫|方塊|瓷磚|設計圖|看板|mystudio|pixel/i.test(q)) out.unshift({ tag: '工具', tagBg: '#4a8f2f', main: '豆森工作室', sub: '圖片轉彩色方塊像素畫（材料、步驟、設計圖、建造播放）、家具擺設模擬、生日看板', run: () => { location.href = 'mystudio.html'; } });
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
@@ -9322,7 +9323,7 @@ class Component extends DCLogic {
   ];
   NAV_OPEN_DEFAULT = ['主頁', '追活動', '圖鑑與資料', '計算工具', '社群與說明'];   // 只剩 19 個入口，五區預設全開
   /* 側邊欄「特別專案」的外部頁面：id → 網址（星圖走流星轉場的彩蛋入口） */
-  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html', x_mystudio: 'mystudio.html' };
+  EXTERNAL = { x_starmap: 'starmap.html', x_theater: 'theater.html', x_soundprint: 'soundprint.html', x_echoes: 'echoes.html', x_mystudio: 'mystudio.html', x_profile: 'profile.html' };
   navOpen(label) {
     const f = this.state.navFold || {};
     if (f[label] != null) return !f[label];
@@ -12387,6 +12388,7 @@ class Component extends DCLogic {
           { name: 'WL 交換所規劃表', url: 'https://docs.google.com/spreadsheets/d/1V00MxDxbL0QyMD-5hha92Q2w9ZfTHzPMW-aeKI493Bk/edit?usp=drive_link', sub: 'good果汁・World Link 交換所資源規劃' }
         ]},
         { label: '本站工具', items: [
+          { name: '帳號分析', url: 'profile.html', sub: 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較' },
           { name: '豆森工作室', url: 'mystudio.html', sub: '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；家具擺設模擬、生日看板' },
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
