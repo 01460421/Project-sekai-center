@@ -112,7 +112,8 @@ await stateSet(DB, 'k1', 'v1'); await stateSet(DB, 'k1', 'v2');
 ok((await stateGet(DB, 'k1')).val === 'v2' && (await stateGet(DB, 'nope')) === null, 'ops_state upsert 與讀取');
 
 /* ---------- 資料管線 ---------- */
-const NOW = Date.UTC(2026, 10, 7, 12, 0, 0);
+// 用真實時間建假資料：下面 checkPipeline() 內部用的是 Date.now()，時間凍在某一天的話隔天跑就會多一則「太久沒成功」（2026-11-08 紅過一次）
+const NOW = Date.now();
 const run = (file, name, ago, status, conclusion, id) => ({ id: id || Math.floor(Math.random() * 1e9), name, path: '.github/workflows/' + file, status, conclusion, event: 'schedule',
   updated_at: new Date(NOW - ago * 3600e3).toISOString(), created_at: new Date(NOW - ago * 3600e3 - 60000).toISOString(), html_url: 'https://github.com/x/y/actions/runs/' + (id || 1), display_title: name });
 const runs = [
