@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ea">
+<title>豆森工作室 — MySekai 像素畫、設計圖與內部設計模擬 | Project SEKAI 資源中心</title>
+<meta name="description" content="把任何圖片變成 MySekai 彩色方塊／瓷磚的像素畫：自動配色、算出要做幾塊與材料、逐列建築步驟與設計圖、自動播放建造過程；還能用站上全部家具模擬房間與家前的擺設。角色生日看板一鍵生成。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="豆森工作室 — MySekai 像素畫與內部設計模擬">
+<meta property="og:description" content="圖片 → 彩色方塊像素畫（材料、步驟、設計圖、自動播放），家具擺設模擬，角色生日看板一鍵生成。">
+<meta property="og:url" content="https://project-sekai-center.com/mystudio.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/mystudio.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/mystudio.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://storage.sekai.best">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<script>/* 主題：跟著站上的設定（sekai-theme）；這頁預設淺色，工作台看圖比較準。畫面繪製前套用，避免閃爍。 */
+try{var _t=localStorage.getItem('sekai-mystudio-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');
+if(_t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f1ea; --bg-2:#faf9f5; --bg-3:#ebe8df; --panel:#ffffff; --panel-2:#f7f5ef;
+  --ink:#1f2230; --ink-2:#4b5064; --ink-3:#5c627a;
+  --line:rgba(40,46,80,.12); --line-2:rgba(40,46,80,.22); --line-3:rgba(40,46,80,.36);
+  --acc:#3f7d27; --acc-2:#2f6b1b; --acc-soft:rgba(110,180,70,.16);
+  --ok:#157a50; --warn:#9a6400; --bad:#c43d50;
+  --ln:#3d50c8; --mmj:#477a18; --vbs:#c8472a; --wxs:#8a6a08; --n25:#7f48ad; --vs:#137a76;
+  --sans:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;
+  --disp:'M PLUS Rounded 1c','Noto Sans TC',system-ui,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --r:14px; --shadow:0 18px 50px -24px rgba(40,40,70,.28);
+  --ease:cubic-bezier(.32,.72,.24,1); --spring:cubic-bezier(.34,1.56,.64,1);
+}
+:root.dark{
+  color-scheme:dark;
+  --bg:#0f1117; --bg-2:#151823; --bg-3:#1b1f2c; --panel:#181c28; --panel-2:#1f2433;
+  --ink:#e8ebf3; --ink-2:#aab1c6; --ink-3:#8a92ab;
+  --line:rgba(170,190,255,.1); --line-2:rgba(170,190,255,.2); --line-3:rgba(170,190,255,.34);
+  --acc:#8bd36a; --acc-2:#b7ea9d; --acc-soft:rgba(139,211,106,.14);
+  --ok:#4ccf94; --warn:#f0b64a; --bad:#ff8a98;
+  --ln:#7a8cff; --mmj:#a6d564; --vbs:#f49474; --wxs:#f0c862; --n25:#c198ec; --vs:#6edbd6;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{min-height:100%;font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+a{color:var(--acc-2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.dim{color:var(--ink-3)} .dim2{color:var(--ink-2)} .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* 背景：淡淡的豆森草地格 */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:28px 28px}
+:root.dark body::before{opacity:.35}
+/* ===== 頂欄 ===== */
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;background:color-mix(in oklab,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+header .logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:700;font-family:var(--disp)}
+header .logo img{width:28px;height:28px;border-radius:8px}
+header h1{font-family:var(--disp);font-size:18px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+header h1 small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:8px}
+.tabs{display:flex;gap:4px;margin-left:auto;background:var(--bg-3);padding:4px;border-radius:999px;overflow:auto;max-width:100%}
+.tab{padding:7px 14px;border-radius:999px;font-weight:700;color:var(--ink-2);white-space:nowrap;min-height:36px}
+.tab[aria-selected="true"]{background:var(--panel);color:var(--acc-2);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel)}
+/* ===== 版面 ===== */
+main{position:relative;z-index:1;max-width:1480px;margin:0 auto;padding:16px}
+.mode{display:none}.mode.on{display:block}
+.grid{display:grid;grid-template-columns:320px minmax(0,1fr) 330px;gap:14px;align-items:start}
+.grid>div{min-width:0}
+@media (max-width:1100px){.grid{grid-template-columns:300px minmax(0,1fr)}.grid>.col3{grid-column:1/-1}}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}.grid>.col3{grid-column:auto}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
+.card+.card{margin-top:12px}
+.card h2{font-family:var(--disp);font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 .n{margin-left:auto;font-size:12px;font-weight:500;color:var(--ink-3)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row+.row{margin-top:8px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink-2);font-weight:500;min-width:0}
+label.f.inl{flex-direction:row;align-items:center;gap:8px}
+input[type=number],input[type=text],select{height:34px;padding:0 10px;border:1px solid var(--line-2);border-radius:9px;background:var(--bg-2);color:var(--ink);min-width:0}
+input[type=number]{width:76px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--line-2);background:var(--panel-2);font-weight:700;color:var(--ink);transition:transform .15s var(--ease),background .15s}
+.btn:hover{background:var(--bg-3)} .btn:active{transform:scale(.97)}
+.btn.pri{background:var(--acc);border-color:transparent;color:#fff}.btn.pri:hover{background:var(--acc-2)}
+:root.dark .btn.pri{color:#0f1117}
+.btn.sm{height:30px;padding:0 10px;font-size:12px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;background:var(--bg-3);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{padding:5px 10px;border-radius:7px;font-weight:700;font-size:12px;color:var(--ink-2);min-height:28px}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--acc-2);box-shadow:0 1px 6px rgba(0,0,0,.08)}
+.drop{display:block;border:2px dashed var(--line-3);border-radius:12px;padding:16px 12px;text-align:center;color:var(--ink-2);cursor:pointer;background:var(--bg-2);transition:border-color .2s,background .2s}
+.drop.on,.drop:hover{border-color:var(--acc);background:var(--acc-soft)}
+.drop b{display:block;color:var(--ink);font-size:14px}
+.drop input{display:none}
+.thumb{width:100%;max-width:100%;max-height:120px;object-fit:contain;border-radius:8px;background:var(--bg-3);display:block;margin-top:8px}
+/* 調色盤 */
+.pal{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.sw{position:relative;aspect-ratio:1;border-radius:9px;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 -6px 0 rgba(0,0,0,.14),inset 0 2px 0 rgba(255,255,255,.35)}
+.sw[aria-pressed="false"]{opacity:.28;filter:saturate(.3)}
+.sw:hover{border-color:var(--ink)}
+.sw .k{position:absolute;left:4px;top:2px;font-size:10px;font-weight:900;color:rgba(0,0,0,.55);font-family:var(--mono)}
+.sw .c{position:absolute;right:4px;bottom:2px;font-size:10px;font-weight:700;color:rgba(0,0,0,.6);font-family:var(--mono)}
+/* 畫布 */
+.stage{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;min-height:360px}
+.stage .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.stage .cv{overflow:auto;max-height:min(78vh,900px);padding:14px;display:grid;place-items:start center;background:
+  repeating-conic-gradient(var(--bg-3) 0 25%,transparent 0 50%) 0 0/16px 16px}
+.stage canvas{image-rendering:pixelated;display:block;border-radius:6px;box-shadow:0 8px 30px -10px rgba(0,0,0,.35);touch-action:none}
+[hidden]{display:none!important}
+.empty{display:grid;place-items:center;text-align:center;color:var(--ink-3);padding:48px 20px;line-height:1.9;width:100%}
+.empty b{display:block;color:var(--ink);font-size:16px;font-family:var(--disp)}
+/* 材料／步驟 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11px;color:var(--ink-3);font-weight:700;letter-spacing:.04em}
+td.num{text-align:right;font-family:var(--mono)}
+.mat{display:flex;align-items:center;gap:8px}
+.mat img{width:28px;height:28px;object-fit:contain;border-radius:6px;background:var(--bg-3)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--bg-3);font-size:12px;font-weight:700}
+.chip i{width:12px;height:12px;border-radius:3px;display:inline-block;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+.steps{max-height:360px;overflow:auto;font-size:13px;border:1px solid var(--line);border-radius:10px}
+.step{padding:7px 10px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.step:hover,.step.cur{background:var(--acc-soft)}
+.step .no{flex:0 0 46px;font-family:var(--mono);font-weight:700;color:var(--ink-3)}
+.step .body{display:flex;flex-wrap:wrap;gap:4px}
+.play{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.play .prog{flex:1 1 140px}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.stat div{background:var(--bg-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:18px;font-family:var(--disp);line-height:1.2}
+.stat span{font-size:11px;color:var(--ink-3)}
+/* 家具目錄 */
+.cat{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.fx{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer}
+.fx:hover,.fx.on{background:var(--acc-soft)}
+.fx img{width:40px;height:40px;object-fit:contain;border-radius:8px;background:var(--bg-3);flex:none}
+.fx .nm{font-weight:700;font-size:13px;line-height:1.3}
+.fx .sz{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.items{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.it{display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid var(--line);font-size:12px;cursor:pointer}
+.it.on{background:var(--acc-soft)}
+.it .no{font-family:var(--mono);color:var(--ink-3);width:26px}
+.it .nm{flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it button{padding:2px 6px;border-radius:6px;border:1px solid var(--line-2);font-size:11px;min-height:24px}
+/* 生日 */
+.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.ch{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);cursor:pointer;text-align:left;min-height:48px}
+.ch:hover,.ch.on{border-color:var(--acc);background:var(--acc-soft)}
+.ch i{width:12px;height:30px;border-radius:4px;flex:none}
+.ch b{display:block;font-size:13px;line-height:1.2;color:var(--ink)}
+.ch span{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.works{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.wk{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2)}
+.wk canvas,.wk img{width:100%;aspect-ratio:1;object-fit:contain;background:var(--bg-3);display:block;image-rendering:pixelated}
+.wk .b{padding:8px 10px;font-size:12px}
+.wk .b b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;z-index:50;transition:all .25s var(--ease);pointer-events:none;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;background:var(--bg-2)}
+.help{font-size:12px;color:var(--ink-3);line-height:1.7}
+@media (max-width:640px){.stage{min-height:200px}header{padding:8px 10px;flex-wrap:wrap;gap:8px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}.tabs{order:3;width:100%;margin-left:0}.tab{flex:1;text-align:center}.card{padding:12px}.tab{padding:7px 10px;font-size:13px}main{padding:10px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{header,.col1,.col3,.bar{display:none!important}.stage{box-shadow:none;border:0}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="./app.html" title="回到 SEKAI 資源中心" aria-label="回到 SEKAI 資源中心"><img src="./icons/icon-180.png" alt=""><span>資源中心</span></a>
+  <h1>豆森工作室<small>MySekai 像素畫・設計圖・內部設計模擬</small></h1>
+  <div class="tabs" role="tablist" aria-label="功能">
+    <button class="tab" role="tab" data-m="pixel" aria-selected="true">像素畫</button>
+    <button class="tab" role="tab" data-m="layout" aria-selected="false">內部設計</button>
+    <button class="tab" role="tab" data-m="bday" aria-selected="false">生日模板</button>
+    <button class="tab" role="tab" data-m="works" aria-selected="false">我的作品</button>
+  </div>
+  <button class="ib" id="themeBtn" title="切換深淺色" aria-label="切換深淺色">◐</button>
+</header>
+<main>
+<!-- ===================== 像素畫 ===================== -->
+<section class="mode on" id="m-pixel">
+  <div class="grid">
+    <div class="col1">
+      <div class="card">
+        <h2>1. 來源圖片</h2>
+        <label class="drop" id="drop"><input type="file" id="file" accept="image/*"><b>拖曳、貼上或點這裡選圖</b>PNG／JPG／WebP，透明背景最適合</label>
+        <img class="thumb" id="srcThumb" alt="" hidden>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" id="btnText">用文字做看板</button>
+          <button class="btn sm" id="btnCharIcon">用角色頭像</button>
+          <button class="btn sm" id="btnSample">範例：愛心</button>
+        </div>
+        <div id="textBox" hidden style="margin-top:8px">
+          <label class="f">看板文字<input type="text" id="txt" value="HAPPY BIRTHDAY" maxlength="40"></label>
+          <div class="row" style="margin-top:6px">
+            <label class="f inl">字高（格）<input type="number" id="txtH" value="10" min="5" max="40"></label>
+            <label class="f inl">顏色<input type="color" id="txtC" value="#ff6699" style="width:40px;height:30px;border:0;background:none"></label>
+            <button class="btn sm pri" id="txtGo">產生</button>
+          </div>
+        </div>
+        <div id="charBox" hidden style="margin-top:8px"><select id="charSel" aria-label="角色"></select> <button class="btn sm pri" id="charGo">載入頭像</button></div>
+      </div>
+      <div class="card">
+        <h2>2. 媒材與尺寸</h2>
+        <div class="seg" id="medium" role="group" aria-label="媒材">
+          <button data-v="b1" aria-pressed="true">方塊 1×1</button><button data-v="b2" aria-pressed="false">方塊 2×2</button><button data-v="t2" aria-pressed="false">瓷磚 2×2（家前）</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="f inl">寬（格）<input type="number" id="pw" value="32" min="4" max="96"></label>
+          <label class="f inl">高（格）<input type="number" id="ph" value="32" min="4" max="96"></label>
+          <label class="f inl"><input type="checkbox" id="lockAr" checked> 鎖定比例</label>
+        </div>
+        <div class="row"><label class="f inl"><input type="checkbox" id="tex"> 加入紅磚／木紋／混凝土塊</label></div>
+        <div class="row"><label class="f inl"><input type="checkbox" id="whiteEmpty"> 白底視為空格</label><label class="f inl"><input type="checkbox" id="dither" checked> 抖色（漸層更自然）</label></div>
+        <label class="f" style="margin-top:6px">亮度 <span id="brV" class="mono">0</span><input type="range" id="br" min="-80" max="80" value="0"></label>
+        <label class="f">透明門檻 <span id="alV" class="mono">128</span><input type="range" id="al" min="1" max="255" value="128"></label>
+      </div>
+      <div class="card">
+        <h2>3. 可用顏色 <span class="n" id="palN"></span></h2>
+        <div class="pal" id="pal"></div>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="palAll">全選</button><button class="btn sm" id="palNone">全不選</button><span class="help">沒解鎖或不想做的顏色點掉，會自動改用最接近的色</span></div>
+      </div>
+    </div>
+    <div class="col2">
+      <div class="stage">
+        <div class="bar">
+          <div class="seg" id="view" role="group" aria-label="顯示方式"><button data-v="blocks" aria-pressed="true">方塊</button><button data-v="flat" aria-pressed="false">平面</button><button data-v="plan" aria-pressed="false">設計圖</button></div>
+          <label class="f inl">格大小<input type="range" id="zoom" min="4" max="40" value="16" style="width:110px"></label>
+          <span class="dim mono" id="pxInfo"></span>
+          <span style="margin-left:auto"></span>
+          <button class="btn sm" id="expPng">匯出成品 PNG</button>
+          <button class="btn sm" id="expPlan">匯出設計圖</button>
+          <button class="btn sm" id="share">分享連結</button>
+          <button class="btn sm pri" id="save">儲存</button>
+        </div>
+        <div class="cv"><div class="empty" id="pxEmpty"><b>先放一張圖進來</b>手機截圖、角色立繪、自己畫的 LOGO 都可以。<br>轉成豆森的彩色方塊後，右邊會算出要做幾塊、要什麼材料與建造步驟。</div><canvas id="px" hidden></canvas></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>建造過程播放 <span class="n">照步驟順序一格一格放</span></h2>
+        <div class="play">
+          <div class="seg" id="order" role="group" aria-label="順序"><button data-v="row" aria-pressed="true">逐列</button><button data-v="color" aria-pressed="false">逐色</button><button data-v="center" aria-pressed="false">由中心</button></div>
+          <button class="btn sm pri" id="playBtn">▶ 播放</button>
+          <button class="btn sm" id="resetBtn">⏮</button>
+          <label class="f inl">速度<select id="speed"><option value="8">慢</option><option value="30" selected>中</option><option value="120">快</option><option value="600">極快</option></select></label>
+          <input type="range" id="prog" class="prog" min="0" max="0" value="0" aria-label="進度">
+          <span class="mono dim" id="progT">0 / 0</span>
+        </div>
+      </div>
+    </div>
+    <div class="col3">
+      <div class="card">
+        <h2>要做幾塊</h2>
+        <div class="stat" id="pxStat"></div>
+        <div id="colorList" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h2>材料總計 <span class="n">含製作每一塊的成本</span></h2>
+        <table><thead><tr><th>素材</th><th style="text-align:right">數量</th></tr></thead><tbody id="matBody"></tbody></table>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="copyMat">複製材料清單</button><button class="btn sm" id="toLayout">放進內部設計</button></div>
+      </div>
+      <div class="card">
+        <h2>建築步驟 <span class="n" id="stepN"></span></h2>
+        <div class="steps" id="steps" tabindex="0" aria-label="建築步驟清單"></div>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="copySteps">複製步驟表</button><span class="help">座標從左上角 (1,1) 起算；設計圖上的字母對應顏色</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ===================== 內部設計 ===================== -->
+<section class="mode" id="m-layout">
+  <div class="grid">
+    <div class="col1">
+      <div class="card">
+        <h2>場地</h2>
+        <div class="seg" id="site" role="group" aria-label="場地"><button data-v="room" aria-pressed="true">房間</button><button data-v="home" aria-pressed="false">家前</button><button data-v="any" aria-pressed="false">戶外</button></div>
+        <div class="row" style="margin-top:8px">
+          <label class="f inl">寬（格）<input type="number" id="lw" value="14" min="4" max="80"></label>
+          <label class="f inl">深（格）<input type="number" id="ld" value="14" min="4" max="80"></label>
+          <button class="btn sm" id="lApply">套用</button>
+        </div>
+        <p class="help" style="margin-top:6px">格數可自訂：照你實際場地的大小填。家具尺寸來自遊戲資料（寬×深）。</p>
+      </div>
+      <div class="card">
+        <h2>家具目錄 <span class="n" id="catN"></span></h2>
+        <div class="row"><input type="text" id="catQ" placeholder="搜尋家具名…" style="flex:1" aria-label="搜尋家具"><select id="catG" aria-label="分類"></select></div>
+        <div class="cat" id="cat" style="margin-top:8px"></div>
+        <p class="help" style="margin-top:6px">點一個家具，再點畫布放下；<kbd>R</kbd> 旋轉、<kbd>Delete</kbd> 刪除、<kbd>Esc</kbd> 取消。拖曳可移動。</p>
+      </div>
+    </div>
+    <div class="col2">
+      <div class="stage">
+        <div class="bar">
+          <button class="btn sm" id="lRot">↻ 旋轉</button><button class="btn sm" id="lDup">複製</button><button class="btn sm" id="lDel">刪除</button>
+          <button class="btn sm" id="lUndo">復原</button><button class="btn sm" id="lRedo">重做</button>
+          <label class="f inl">格大小<input type="range" id="lzoom" min="14" max="56" value="34" style="width:100px"></label>
+          <span style="margin-left:auto"></span>
+          <button class="btn sm" id="lExp">匯出 PNG</button><button class="btn sm" id="lShare">分享連結</button><button class="btn sm pri" id="lSave">儲存</button>
+        </div>
+        <div class="cv"><canvas id="lay" tabindex="0" aria-label="設計畫布"></canvas></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>建造過程播放 <span class="n">依清單順序一件件放進去</span></h2>
+        <div class="play">
+          <button class="btn sm pri" id="lPlay">▶ 播放</button><button class="btn sm" id="lReset">⏮</button>
+          <label class="f inl">速度<select id="lSpeed"><option value="1">慢</option><option value="3" selected>中</option><option value="8">快</option></select></label>
+          <input type="range" id="lProg" class="prog" min="0" max="0" value="0" aria-label="進度"><span class="mono dim" id="lProgT">0 / 0</span>
+        </div>
+      </div>
+    </div>
+    <div class="col3">
+      <div class="card">
+        <h2>擺設清單 <span class="n" id="itemN"></span></h2>
+        <div class="items" id="items"></div>
+        <p class="help" style="margin-top:6px">清單順序就是建造順序；▲▼ 可調。</p>
+      </div>
+      <div class="card">
+        <h2>材料總計</h2>
+        <table><thead><tr><th>素材</th><th style="text-align:right">數量</th></tr></thead><tbody id="lMatBody"></tbody></table>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="lCopyMat">複製材料清單</button><button class="btn sm" id="lCopyList">複製擺設清單</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ===================== 生日模板 ===================== -->
+<section class="mode" id="m-bday">
+  <div class="card">
+    <h2>選角色 <span class="n">生日當天在豆森擺一面看板</span></h2>
+    <div class="chars" id="chars"></div>
+  </div>
+  <div class="grid" style="margin-top:12px">
+    <div class="col1">
+      <div class="card" id="bdInfo"><h2>角色</h2><p class="dim">先在上面選一位角色。</p></div>
+    </div>
+    <div class="col2">
+      <div class="card">
+        <h2>一鍵模板</h2>
+        <div class="row">
+          <label class="f">看板文字<input type="text" id="bdTxt" value="HAPPY BIRTHDAY" maxlength="40"></label>
+          <label class="f inl">字高（格）<input type="number" id="bdH" value="10" min="5" max="30"></label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn pri" id="bdBanner">文字看板 → 像素畫</button>
+          <button class="btn" id="bdIcon">角色頭像 → 像素畫</button>
+          <button class="btn" id="bdHeart">代表色愛心</button>
+          <button class="btn" id="bdCake">蛋糕</button>
+        </div>
+        <p class="help" style="margin-top:8px">產生後會切到「像素畫」分頁：材料、步驟、設計圖與播放都在那裡。看板用角色代表色，頭像會自動配到最接近的方塊色。</p>
+      </div>
+      <div class="card">
+        <h2>相關家具 <span class="n" id="bdFxN"></span></h2>
+        <div class="cat" id="bdFx" style="max-height:320px"></div>
+      </div>
+    </div>
+    <div class="col3">
+      <div class="card"><h2>最近的生日</h2><div id="bdNext"></div></div>
+    </div>
+  </div>
+</section>
+<!-- ===================== 我的作品 ===================== -->
+<section class="mode" id="m-works">
+  <div class="card">
+    <h2>我的作品 <span class="n">存在這台裝置的瀏覽器裡</span></h2>
+    <div class="works" id="works"></div>
+    <p class="dim" id="worksEmpty" style="margin-top:8px">還沒有儲存的作品。像素畫與內部設計右上角的「儲存」會存到這裡。</p>
+  </div>
+  <div class="card">
+    <h2>關於</h2>
+    <p class="help">豆森工作室是 <a href="./app.html">SEKAI 資源中心</a> 的工具：顏色與製作素材讀自遊戲資料的彩色方塊／瓷磚，家具尺寸來自 <a href="./app.html?page=fixtures">家具圖鑑</a>。像素畫在瀏覽器裡算完，圖片不會上傳。彩色方塊 1×1 每塊 3 木材、3 小石子、3 花瓣；2×2 每塊 8；瓷磚每片 2，只能放在家前。</p>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module">
+import { PALETTE, MATS, CHARS } from './data/mysekai-studio.js?v=f8b0ee1782';
+import { FIXTURES, FIX_GENRES, FIX_MATS, FIX_TAGS } from './data/fixtures-index.js?v=9bcab0f8a3';
+const ASSET = 'https://storage.sekai.best/sekai-jp-assets';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const UNIT_COLOR = { ln: 'var(--ln)', mmj: 'var(--mmj)', vbs: 'var(--vbs)', wxs: 'var(--wxs)', n25: 'var(--n25)', vs: 'var(--vs)' };
+const CODES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let toastT; const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const hex2rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const rgb2hex = (r, g, b) => '#' + [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('');
+// Oklab：配色用感知距離，比 RGB 直接算準很多（粉紅不會配成灰）
+const lin = c => { c /= 255; return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); };
+const oklab = (r, g, b) => { const R = lin(r), G = lin(g), B = lin(b);
+  const l = Math.cbrt(.4122214708 * R + .5363325363 * G + .0514459929 * B), m = Math.cbrt(.2119034982 * R + .6806995451 * G + .1073969566 * B), s = Math.cbrt(.0883024619 * R + .2817188376 * G + .6299787005 * B);
+  return [.2104542553 * l + .7936177850 * m - .0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + .4505937099 * s, .0259040371 * l + .7827717662 * m - .8086757660 * s]; };
+const shade = (hex, k) => { const [r, g, b] = hex2rgb(hex); return k >= 0 ? rgb2hex(r + (255 - r) * k, g + (255 - g) * k, b + (255 - b) * k) : rgb2hex(r * (1 + k), g * (1 + k), b * (1 + k)); };
+const matName = id => (MATS[id] || FIX_MATS[id] || ['素材 #' + id, ''])[0];
+const matIcon = id => { const m = MATS[id] || FIX_MATS[id]; return m && m[1] ? ASSET + '/mysekai/thumbnail/material/' + m[1] + '.webp' : ''; };
+const dl = (canvas, name) => canvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }, 'image/png');
+const copy = async t => { try { await navigator.clipboard.writeText(t); toast('已複製'); } catch (e) { toast('複製失敗，請手動選取'); } };
+const b64u = { enc: u8 => btoa(String.fromCharCode(...u8)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), dec: s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)) };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ===== 主題與分頁 ===== */
+$('#themeBtn').onclick = () => { const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-mystudio-theme', d ? 'dark' : 'light'); } catch (e) {} };
+const setMode = m => { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.m === m))); $$('.mode').forEach(s => s.classList.toggle('on', s.id === 'm-' + m)); if (m === 'works') renderWorks(); if (m === 'layout') { if (!L.fitted) { L.fitted = true; fitLayoutZoom(); } L.dirty = true; drawLayout(); } };
+$$('.tab').forEach(t => t.onclick = () => setMode(t.dataset.m));
+const seg = (id, cb) => { const el = $(id); el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); cb(b.dataset.v); }); return () => el.querySelector('[aria-pressed="true"]').dataset.v; };
+const segSet = (id, v) => $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
+
+/* ================= 像素畫 ================= */
+const P = { img: null, name: '', medium: 'b1', w: 32, h: 32, tex: false, whiteEmpty: false, dither: true, br: 0, al: 128, off: new Set(), grid: null, pal: [], view: 'blocks', zoom: 16, order: 'row', seq: [], steps: [], play: { i: 0, on: false, t: 0 } };
+const getMedium = seg('#medium', v => { P.medium = v; buildPal(); recalc(); });
+const getView = seg('#view', v => { P.view = v; drawPixel(); });
+const getOrder = seg('#order', v => { P.order = v; buildSteps(); drawPixel(); });
+function palFor() {
+  const side = P.medium === 'b1' ? 1 : 2, kind = P.medium === 't2' ? 'tile' : 'block';
+  return PALETTE.filter(p => p[5] === kind && p[4] === side && p[2] !== 'cl' && (P.tex || !/brick|grain|concre/.test(p[2])));
+}
+function buildPal() {
+  P.pal = palFor();
+  const el = $('#pal'); el.innerHTML = '';
+  P.pal.forEach((p, i) => {
+    const b = document.createElement('button'); b.className = 'sw'; b.style.background = p[3]; b.title = p[1]; b.setAttribute('aria-label', p[1]); b.setAttribute('aria-pressed', String(!P.off.has(p[2])));
+    b.innerHTML = '<span class="k">' + CODES[i] + '</span>';
+    b.onclick = () => { if (P.off.has(p[2])) P.off.delete(p[2]); else P.off.add(p[2]); b.setAttribute('aria-pressed', String(!P.off.has(p[2]))); recalc(); };
+    el.appendChild(b);
+  });
+  $('#palN').textContent = (P.pal.length - [...P.off].filter(k => P.pal.some(p => p[2] === k)).length) + '／' + P.pal.length + ' 色';
+}
+$('#palAll').onclick = () => { P.off.clear(); buildPal(); recalc(); };
+$('#palNone').onclick = () => { P.pal.forEach(p => P.off.add(p[2])); buildPal(); recalc(); };
+$('#tex').onchange = e => { P.tex = e.target.checked; buildPal(); recalc(); };
+$('#whiteEmpty').onchange = e => { P.whiteEmpty = e.target.checked; recalc(); };
+$('#dither').onchange = e => { P.dither = e.target.checked; recalc(); };
+$('#br').oninput = e => { P.br = +e.target.value; $('#brV').textContent = P.br; recalc(); };
+$('#al').oninput = e => { P.al = +e.target.value; $('#alV').textContent = P.al; recalc(); };
+$('#zoom').oninput = e => { P.zoom = +e.target.value; drawPixel(); };
+$('#pw').onchange = e => { P.w = clamp(+e.target.value || 32, 4, 96); e.target.value = P.w; if ($('#lockAr').checked && P.img) { P.h = clamp(Math.round(P.w * P.img.height / P.img.width), 4, 96); $('#ph').value = P.h; } recalc(); };
+$('#ph').onchange = e => { P.h = clamp(+e.target.value || 32, 4, 96); e.target.value = P.h; if ($('#lockAr').checked && P.img) { P.w = clamp(Math.round(P.h * P.img.width / P.img.height), 4, 96); $('#pw').value = P.w; } recalc(); };
+
+/* 來源 */
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
+drop.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
+$('#file').onchange = e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; };
+document.addEventListener('paste', e => { if (!$('#m-pixel').classList.contains('on')) return; const it = [...(e.clipboardData.items || [])].find(i => i.type.startsWith('image/')); if (it) loadFile(it.getAsFile()); });
+function loadFile(f) { if (!f.type.startsWith('image/')) return toast('請放圖片檔'); const url = URL.createObjectURL(f); const im = new Image(); im.onload = () => { setImage(im, f.name.replace(/\.[^.]+$/, '')); URL.revokeObjectURL(url); }; im.onerror = () => toast('讀不到這張圖'); im.src = url; }
+function fitZoom() { const cv = $('#m-pixel .cv'); const z = clamp(Math.floor((cv.clientWidth - 30) / P.w), 4, 40); P.zoom = z; $('#zoom').value = z; }
+function setImage(im, name) {
+  P.img = im; P.name = name || '像素畫';
+  const t = $('#srcThumb'); t.src = im.src; t.hidden = false;
+  if ($('#lockAr').checked) { P.h = clamp(Math.round(P.w * im.height / im.width), 4, 96); $('#ph').value = P.h; }
+  fitZoom(); recalc();
+}
+$('#btnText').onclick = () => { $('#textBox').hidden = !$('#textBox').hidden; $('#charBox').hidden = true; };
+$('#btnCharIcon').onclick = () => { $('#charBox').hidden = !$('#charBox').hidden; $('#textBox').hidden = true; };
+$('#txtGo').onclick = () => textToImage($('#txt').value, +$('#txtH').value, $('#txtC').value);
+$('#charGo').onclick = () => charIcon(+$('#charSel').value);
+$('#btnSample').onclick = () => shapeImage('heart', '#ff6699');
+/* 文字 → 圖：用瀏覽器字型畫出來再門檻化，中日英都行，不需要點陣字型 */
+async function textToImage(text, rows, color, name) {
+  text = (text || '').trim() || 'HAPPY BIRTHDAY'; rows = clamp(rows || 9, 5, 40);
+  try { await document.fonts.load('900 40px "M PLUS Rounded 1c"'); await document.fonts.load('900 40px "Noto Sans TC"'); } catch (e) {}
+  const S = 8, fs = rows * S * .82, c = document.createElement('canvas'), x = c.getContext('2d');
+  x.font = '900 ' + fs + 'px "M PLUS Rounded 1c","Noto Sans TC",sans-serif';
+  let w = Math.ceil(x.measureText(text).width) + S * 2;
+  if (w / S > 96) { const r2 = Math.max(5, Math.floor(rows * 96 * S / w)); if (r2 < rows) { toast('文字太長，字高自動縮到 ' + r2 + ' 格以放進 96 格寬'); return textToImage(text, r2, color, name); } }
+  c.width = w; c.height = rows * S;
+  x.font = '900 ' + fs + 'px "M PLUS Rounded 1c","Noto Sans TC",sans-serif'; x.textBaseline = 'middle'; x.fillStyle = color; x.fillText(text, S, rows * S / 2 + fs * .04);
+  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.h = rows; P.w = clamp(Math.round(rows * w / (rows * S)), 4, 96); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; P.al = 90; $('#al').value = 90; $('#alV').textContent = 90; setImage(im, name || text); }; im.src = c.toDataURL();
+}
+function shapeImage(kind, color, name) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = color;
+  if (kind === 'heart') { x.beginPath(); x.moveTo(128, 232); x.bezierCurveTo(16, 150, 16, 52, 80, 40); x.bezierCurveTo(112, 34, 128, 60, 128, 80); x.bezierCurveTo(128, 60, 144, 34, 176, 40); x.bezierCurveTo(240, 52, 240, 150, 128, 232); x.fill(); }
+  else if (kind === 'cake') { x.fillStyle = '#a57539'; x.fillRect(40, 150, 176, 70); x.fillStyle = '#ffa2a9'; x.fillRect(40, 118, 176, 36); x.fillStyle = '#f6e5ae'; x.fillRect(56, 96, 144, 26); x.fillStyle = '#e6e6e6'; for (let i = 0; i < 4; i++) x.fillRect(72 + i * 36, 60, 10, 40); x.fillStyle = '#ffd844'; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(77 + i * 36, 50, 9, 0, 7); x.fill(); } x.fillStyle = color; for (let i = 0; i < 5; i++) { x.beginPath(); x.arc(60 + i * 34, 160, 8, 0, 7); x.fill(); } }
+  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.w = P.h = clamp(P.w, 12, 96); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; setImage(im, name || (kind === 'heart' ? '愛心' : '蛋糕')); }; im.src = c.toDataURL();
+}
+function charIcon(id) {
+  const im = new Image(); im.crossOrigin = 'anonymous';
+  im.onload = () => { $('#dither').checked = true; P.dither = true; $('#whiteEmpty').checked = false; P.whiteEmpty = false; setImage(im, (CHARS.find(c => c[0] === id) || [])[1] + ' 頭像'); };
+  im.onerror = () => toast('頭像載入失敗（素材庫沒回應）'); im.src = ASSET + '/character/character_select/chr_tl_' + id + '.webp';
+}
+/* 核心：縮圖 → 配色（Oklab 最近色）＋ Floyd–Steinberg 抖色 → 格子陣列 */
+function recalc() {
+  if (!P.img) return;
+  const w = P.w, h = P.h, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  // 兩段縮小比一次縮更準（大圖直接縮到 32 格會取樣不足）
+  let src = P.img; if (P.img.width > w * 4) { const mid = document.createElement('canvas'); mid.width = w * 4; mid.height = h * 4; const mx = mid.getContext('2d'); mx.imageSmoothingQuality = 'high'; mx.drawImage(P.img, 0, 0, mid.width, mid.height); src = mid; }
+  x.drawImage(src, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data;
+  const pal = P.pal.filter(p => !P.off.has(p[2])); if (!pal.length) { toast('至少留一個顏色'); return; }
+  const plab = pal.map(p => oklab(...hex2rgb(p[3]))), prgb = pal.map(p => hex2rgb(p[3]));
+  const grid = new Int16Array(w * h).fill(-1), buf = new Float32Array(w * h * 3);
+  for (let i = 0; i < w * h; i++) { buf[i * 3] = d[i * 4] + P.br; buf[i * 3 + 1] = d[i * 4 + 1] + P.br; buf[i * 3 + 2] = d[i * 4 + 2] + P.br; }
+  const palIdx = []; pal.forEach((p, i) => palIdx[i] = P.pal.indexOf(p));
+  for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+    const i = y * w + xx, a = d[i * 4 + 3];
+    if (a < P.al) continue;
+    const r = clamp(buf[i * 3], 0, 255), g = clamp(buf[i * 3 + 1], 0, 255), b = clamp(buf[i * 3 + 2], 0, 255);
+    if (P.whiteEmpty && r > 236 && g > 236 && b > 236) continue;
+    const lab = oklab(r, g, b); let best = 0, bd = 1e9;
+    for (let k = 0; k < plab.length; k++) { const dL = lab[0] - plab[k][0], da = lab[1] - plab[k][1], db = lab[2] - plab[k][2]; const dist = dL * dL + da * da + db * db; if (dist < bd) { bd = dist; best = k; } }
+    grid[i] = palIdx[best];
+    if (P.dither) { const er = r - prgb[best][0], eg = g - prgb[best][1], eb = b - prgb[best][2];
+      const push = (xo, yo, f) => { const X = xx + xo, Y = y + yo; if (X < 0 || X >= w || Y >= h) return; const j = (Y * w + X) * 3; buf[j] += er * f; buf[j + 1] += eg * f; buf[j + 2] += eb * f; };
+      push(1, 0, 7 / 16); push(-1, 1, 3 / 16); push(0, 1, 5 / 16); push(1, 1, 1 / 16); }
+  }
+  P.grid = grid; $('#px').hidden = false; $('#pxEmpty').hidden = true;
+  buildSteps(); drawPixel(); renderCounts();
+}
+function cellSide() { return P.medium === 'b1' ? 1 : 2; }
+function drawCell(x, i, j, cs, pi, style) {
+  const p = P.pal[pi]; if (!p) return; const col = p[3], X = i * cs, Y = j * cs;
+  if (style === 'plan') { x.fillStyle = col; x.fillRect(X, Y, cs, cs); if (cs >= 10) { x.fillStyle = 'rgba(0,0,0,.6)'; x.font = '700 ' + Math.floor(cs * .55) + 'px ' + 'ui-monospace,monospace'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(CODES[pi], X + cs / 2, Y + cs / 2 + 1); } return; }
+  if (style === 'flat') { x.fillStyle = col; x.fillRect(X, Y, cs, cs); if (cs >= 6) { x.strokeStyle = 'rgba(0,0,0,.08)'; x.strokeRect(X + .5, Y + .5, cs - 1, cs - 1); } return; }
+  // 方塊：上表面亮、左下兩側暗，像遊戲裡堆起來的樣子
+  const b = Math.max(1, Math.round(cs * .18));
+  x.fillStyle = shade(col, -.32); x.fillRect(X, Y, cs, cs);
+  x.fillStyle = shade(col, -.14); x.fillRect(X, Y, cs - b, cs - b);
+  x.fillStyle = col; x.fillRect(X + b * .35, Y + b * .35, cs - b * 1.7, cs - b * 1.7);
+  if (cs >= 8) { x.fillStyle = 'rgba(255,255,255,.28)'; x.fillRect(X + b * .35, Y + b * .35, cs - b * 1.7, Math.max(1, b * .5)); }
+}
+function drawPixel() {
+  if (!P.grid) return;
+  const c = $('#px'), cs = P.zoom, w = P.w, h = P.h; c.width = w * cs; c.height = h * cs; const x = c.getContext('2d');
+  x.clearRect(0, 0, c.width, c.height);
+  const until = P.play.on || P.play.i > 0 ? P.play.i : Infinity, placed = new Set();
+  if (until !== Infinity) for (let k = 0; k < until && k < P.seq.length; k++) placed.add(P.seq[k]);
+  if (P.view === 'plan') { x.fillStyle = 'rgba(128,128,128,.12)'; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if ((i + j) & 1) x.fillRect(i * cs, j * cs, cs, cs); }
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const pi = P.grid[j * w + i]; if (pi < 0) continue; const idx = j * w + i; if (until !== Infinity && !placed.has(idx)) { if (P.view === 'plan') continue; x.fillStyle = 'rgba(127,127,127,.12)'; x.fillRect(i * cs, j * cs, cs, cs); continue; } drawCell(x, i, j, cs, pi, P.view); }
+  if (until !== Infinity && until > 0 && until <= P.seq.length) { const k = P.seq[until - 1], i = k % w, j = (k / w) | 0; x.strokeStyle = '#fff'; x.lineWidth = 2; x.strokeRect(i * cs + 1, j * cs + 1, cs - 2, cs - 2); x.strokeStyle = '#000'; x.lineWidth = 1; x.strokeRect(i * cs + 2.5, j * cs + 2.5, cs - 5, cs - 5); }
+  if (P.view === 'plan' && cs >= 12) { x.fillStyle = 'rgba(0,0,0,.35)'; x.font = '600 ' + Math.max(8, cs * .4) + 'px ui-monospace,monospace'; x.textAlign = 'left'; x.textBaseline = 'top'; for (let i = 0; i < w; i += 5) x.fillText(String(i + 1), i * cs + 2, 1); for (let j = 5; j < h; j += 5) x.fillText(String(j + 1), 2, j * cs + 1); }
+  const n = P.grid.reduce((s, v) => s + (v >= 0 ? 1 : 0), 0), side = cellSide();
+  $('#pxInfo').textContent = w + '×' + h + ' 格（實際 ' + (w * side) + '×' + (h * side) + ' 格）・' + n + ' 塊';
+}
+function counts() { const m = new Map(); if (P.grid) P.grid.forEach(v => { if (v >= 0) m.set(v, (m.get(v) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1]); }
+function materials() { const t = new Map(); counts().forEach(([pi, n]) => P.pal[pi][7].forEach(([mid, q]) => t.set(mid, (t.get(mid) || 0) + q * n))); return [...t.entries()].sort((a, b) => b[1] - a[1]); }
+function renderCounts() {
+  const cnt = counts(), total = cnt.reduce((s, c) => s + c[1], 0), side = cellSide();
+  $('#pxStat').innerHTML = '<div><b>' + total + '</b><span>' + (P.medium === 't2' ? '片瓷磚' : '塊方塊') + '</span></div><div><b>' + cnt.length + '</b><span>種顏色</span></div><div><b>' + (P.w * side) + '×' + (P.h * side) + '</b><span>佔地（格）</span></div>';
+  $('#colorList').innerHTML = cnt.map(([pi, n]) => { const p = P.pal[pi]; return '<span class="chip" title="' + esc(p[1]) + '"><i style="background:' + p[3] + '"></i>' + CODES[pi] + ' ' + esc(p[1].replace(/^彩色(方塊|瓷磚)\//, '').replace(/\s*\d[x×]\d$/, '')) + ' ×' + n + '</span>'; }).join(' ');
+  $('#matBody').innerHTML = materials().map(([mid, q]) => '<tr><td><span class="mat">' + (matIcon(mid) ? '<img src="' + matIcon(mid) + '" alt="" loading="lazy">' : '') + esc(matName(mid)) + '</span></td><td class="num">' + q.toLocaleString() + '</td></tr>').join('') || '<tr><td colspan="2" class="dim">—</td></tr>';
+}
+/* 步驟：逐列／逐色／由中心；每一步是「同一列同一色的連續段」，照著做不會數錯 */
+function buildSteps() {
+  if (!P.grid) return; const w = P.w, h = P.h, g = P.grid, seq = [], steps = [];
+  const run = (y, x0, x1, pi) => { steps.push({ y, x0, x1, pi, n: x1 - x0 + 1 }); for (let x = x0; x <= x1; x++) seq.push(y * w + x); };
+  if (P.order === 'row') { for (let y = 0; y < h; y++) { let x = 0; while (x < w) { const pi = g[y * w + x]; if (pi < 0) { x++; continue; } let e = x; while (e + 1 < w && g[y * w + e + 1] === pi) e++; run(y, x, e, pi); x = e + 1; } } }
+  else if (P.order === 'color') { counts().forEach(([pi]) => { for (let y = 0; y < h; y++) { let x = 0; while (x < w) { if (g[y * w + x] !== pi) { x++; continue; } let e = x; while (e + 1 < w && g[y * w + e + 1] === pi) e++; run(y, x, e, pi); x = e + 1; } } }); }
+  else { const cx = (w - 1) / 2, cy = (h - 1) / 2, cells = []; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (g[y * w + x] >= 0) cells.push([x, y, Math.hypot(x - cx, y - cy)]); cells.sort((a, b) => a[2] - b[2] || a[1] - b[1] || a[0] - b[0]); cells.forEach(([x, y]) => { steps.push({ y, x0: x, x1: x, pi: g[y * w + x], n: 1 }); seq.push(y * w + x); }); }
+  P.seq = seq; P.steps = steps; P.play.i = 0; P.play.on = false; $('#playBtn').textContent = '▶ 播放';
+  $('#prog').max = seq.length; $('#prog').value = 0; $('#progT').textContent = '0 / ' + seq.length;
+  $('#stepN').textContent = steps.length + ' 步';
+  const el = $('#steps'); el.innerHTML = '';
+  const frag = document.createDocumentFragment(); let lastY = -1;
+  steps.slice(0, 1200).forEach((s, i) => { const p = P.pal[s.pi]; const d = document.createElement('div'); d.className = 'step'; d.dataset.i = i;
+    d.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="body">' + (P.order !== 'color' && s.y !== lastY ? '<b class="dim">第 ' + (s.y + 1) + ' 列</b>' : '') + '<span class="chip"><i style="background:' + p[3] + '"></i>' + CODES[s.pi] + '</span>' + (s.n > 1 ? ' x ' + (s.x0 + 1) + '–' + (s.x1 + 1) + '（' + s.n + ' 塊）' : ' x ' + (s.x0 + 1) + (P.order === 'color' ? '，第 ' + (s.y + 1) + ' 列' : '')) + '</span>';
+    lastY = s.y; d.onclick = () => { P.play.on = false; $('#playBtn').textContent = '▶ 播放'; let k = 0; for (let j = 0; j <= i; j++) k += steps[j].n; P.play.i = k; $('#prog').value = k; $('#progT').textContent = k + ' / ' + seq.length; markStep(); drawPixel(); }; frag.appendChild(d); });
+  if (steps.length > 1200) { const d = document.createElement('div'); d.className = 'step dim'; d.textContent = '…還有 ' + (steps.length - 1200) + ' 步（複製步驟表看全部）'; frag.appendChild(d); }
+  el.appendChild(frag);
+}
+function markStep() { let k = 0, cur = -1; for (let j = 0; j < P.steps.length; j++) { k += P.steps[j].n; if (k >= P.play.i) { cur = j; break; } } $$('#steps .step').forEach(d => d.classList.toggle('cur', +d.dataset.i === cur)); const el = $('#steps .step.cur'); if (el && P.play.on) el.scrollIntoView({ block: 'nearest' }); }
+function tick(ts) {
+  if (!P.play.on) return; const sp = +$('#speed').value; const dt = (ts - (P.play.t || ts)) / 1000; P.play.t = ts; P.play.acc = (P.play.acc || 0) + dt * sp;
+  const add = Math.floor(P.play.acc); if (add > 0) { P.play.acc -= add; P.play.i = Math.min(P.seq.length, P.play.i + add); $('#prog').value = P.play.i; $('#progT').textContent = P.play.i + ' / ' + P.seq.length; markStep(); drawPixel(); }
+  if (P.play.i >= P.seq.length) { P.play.on = false; $('#playBtn').textContent = '▶ 重播'; P.play.i = 0; setTimeout(drawPixel, 900); return; }
+  requestAnimationFrame(tick);
+}
+$('#playBtn').onclick = () => { if (!P.seq.length) return; P.play.on = !P.play.on; $('#playBtn').textContent = P.play.on ? '⏸ 暫停' : '▶ 播放'; if (P.play.on) { if (P.play.i >= P.seq.length) P.play.i = 0; P.play.t = 0; P.play.acc = 0; requestAnimationFrame(tick); } };
+$('#resetBtn').onclick = () => { P.play.on = false; P.play.i = 0; $('#playBtn').textContent = '▶ 播放'; $('#prog').value = 0; $('#progT').textContent = '0 / ' + P.seq.length; markStep(); drawPixel(); };
+$('#prog').oninput = e => { P.play.on = false; $('#playBtn').textContent = '▶ 播放'; P.play.i = +e.target.value; $('#progT').textContent = P.play.i + ' / ' + P.seq.length; markStep(); drawPixel(); };
+/* 匯出 */
+$('#expPng').onclick = () => { if (!P.grid) return; const cs = 24, c = document.createElement('canvas'); c.width = P.w * cs; c.height = P.h * cs; const x = c.getContext('2d'); for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi >= 0) drawCell(x, i, j, cs, pi, 'blocks'); } dl(c, P.name + '-豆森像素畫.png'); };
+$('#expPlan').onclick = () => { if (!P.grid) return; const cs = 26, pad = 34, cnt = counts(), legendH = 30 + Math.ceil(cnt.length / 3) * 26 + 20, c = document.createElement('canvas'); c.width = P.w * cs + pad * 2; c.height = P.h * cs + pad * 2 + legendH + 40; const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#1f2230'; x.font = '800 20px "Noto Sans TC",sans-serif'; x.textBaseline = 'top'; x.fillText('豆森設計圖｜' + P.name + '　' + P.w + '×' + P.h + ' 格・' + cnt.reduce((s, v) => s + v[1], 0) + ' 塊（' + { b1: '彩色方塊 1×1', b2: '彩色方塊 2×2', t2: '彩色瓷磚 2×2' }[P.medium] + '）', pad, 10);
+  x.save(); x.translate(pad, pad + 30); x.fillStyle = '#eee'; for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) if ((i + j) & 1) x.fillRect(i * cs, j * cs, cs, cs);
+  for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi >= 0) drawCell(x, i, j, cs, pi, 'plan'); }
+  x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 1; for (let i = 0; i <= P.w; i++) { x.beginPath(); x.moveTo(i * cs + .5, 0); x.lineTo(i * cs + .5, P.h * cs); x.stroke(); } for (let j = 0; j <= P.h; j++) { x.beginPath(); x.moveTo(0, j * cs + .5); x.lineTo(P.w * cs, j * cs + .5); x.stroke(); }
+  x.strokeStyle = 'rgba(0,0,0,.6)'; x.lineWidth = 2; for (let i = 0; i <= P.w; i += 5) { x.beginPath(); x.moveTo(i * cs, 0); x.lineTo(i * cs, P.h * cs); x.stroke(); } for (let j = 0; j <= P.h; j += 5) { x.beginPath(); x.moveTo(0, j * cs); x.lineTo(P.w * cs, j * cs); x.stroke(); }
+  x.fillStyle = '#444'; x.font = '600 11px ui-monospace,monospace'; x.textAlign = 'center'; x.textBaseline = 'bottom'; for (let i = 0; i < P.w; i++) x.fillText(String(i + 1), i * cs + cs / 2, -3); x.textAlign = 'right'; x.textBaseline = 'middle'; for (let j = 0; j < P.h; j++) x.fillText(String(j + 1), -4, j * cs + cs / 2); x.restore();
+  let ly = pad + 30 + P.h * cs + 24; x.fillStyle = '#1f2230'; x.font = '700 14px "Noto Sans TC",sans-serif'; x.textAlign = 'left'; x.textBaseline = 'top'; x.fillText('顏色對照', pad, ly); ly += 24;
+  cnt.forEach(([pi, n], k) => { const p = P.pal[pi], lx = pad + (k % 3) * Math.floor((c.width - pad * 2) / 3), yy = ly + Math.floor(k / 3) * 26; x.fillStyle = p[3]; x.fillRect(lx, yy, 20, 20); x.strokeStyle = 'rgba(0,0,0,.3)'; x.lineWidth = 1; x.strokeRect(lx + .5, yy + .5, 19, 19); x.fillStyle = '#1f2230'; x.font = '600 13px "Noto Sans TC",sans-serif'; x.fillText(CODES[pi] + '　' + p[1].replace(/^彩色(方塊|瓷磚)\//, '') + '　×' + n, lx + 28, yy + 2); });
+  const ms = materials().map(([m, q]) => matName(m) + ' ×' + q).join('　'); x.fillStyle = '#555'; x.font = '500 12px "Noto Sans TC",sans-serif'; x.fillText('材料：' + ms, pad, c.height - 46); x.fillText('project-sekai-center.com/mystudio　座標從左上 (1,1) 起算，粗線每 5 格', pad, c.height - 26);
+  dl(c, P.name + '-豆森設計圖.png'); };
+$('#copyMat').onclick = () => copy('【' + P.name + '】' + { b1: '彩色方塊 1×1', b2: '彩色方塊 2×2', t2: '彩色瓷磚 2×2' }[P.medium] + '\n' + counts().map(([pi, n]) => P.pal[pi][1] + ' ×' + n).join('\n') + '\n\n材料總計\n' + materials().map(([m, q]) => matName(m) + ' ×' + q).join('\n'));
+$('#copySteps').onclick = () => copy('【' + P.name + '】建築步驟（' + { row: '逐列', color: '逐色', center: '由中心' }[P.order] + '；座標從左上 (1,1) 起算）\n' + P.steps.map((s, i) => (i + 1) + '. 第 ' + (s.y + 1) + ' 列 x ' + (s.x0 + 1) + (s.n > 1 ? '–' + (s.x1 + 1) : '') + '：' + P.pal[s.pi][1].replace(/^彩色(方塊|瓷磚)\//, '') + (s.n > 1 ? ' ×' + s.n : '')).join('\n'));
+/* 分享：媒材＋尺寸＋每格色索引（RLE），hash 裡不帶圖片 */
+function encodePixel() { if (!P.grid) return ''; const out = [0, P.medium === 'b1' ? 0 : P.medium === 'b2' ? 1 : 2, P.w, P.h, P.tex ? 1 : 0]; let i = 0; while (i < P.grid.length) { const v = P.grid[i]; let n = 1; while (i + n < P.grid.length && P.grid[i + n] === v && n < 255) n++; out.push(v + 1, n); i += n; } const nm = new TextEncoder().encode(P.name.slice(0, 40)); return b64u.enc(Uint8Array.from([...out, 0, 0, ...nm])); }
+function decodePixel(s) { try { const u = b64u.dec(s); if (u[0] !== 0) return false; P.medium = ['b1', 'b2', 't2'][u[1]]; segSet('#medium', P.medium); P.w = u[2]; P.h = u[3]; P.tex = !!u[4]; $('#tex').checked = P.tex; $('#pw').value = P.w; $('#ph').value = P.h; buildPal(); const g = new Int16Array(P.w * P.h).fill(-1); let i = 5, k = 0; while (i + 1 < u.length && !(u[i] === 0 && u[i + 1] === 0)) { const v = u[i] - 1, n = u[i + 1]; for (let j = 0; j < n && k < g.length; j++) g[k++] = v; i += 2; } P.grid = g; P.name = new TextDecoder().decode(u.slice(i + 2)) || '分享的像素畫'; P.img = null; $('#px').hidden = false; $('#pxEmpty').hidden = true; fitZoom(); buildSteps(); drawPixel(); renderCounts(); return true; } catch (e) { return false; } }
+$('#share').onclick = () => { const s = encodePixel(); if (!s) return toast('還沒有像素畫'); const url = location.origin + location.pathname + '#p=' + s; copy(url).then(() => toast('分享連結已複製（' + Math.round(url.length / 1024 * 10) / 10 + ' KB）')); };
+$('#save').onclick = () => { if (!P.grid) return toast('還沒有像素畫'); const name = prompt('作品名稱', P.name) ; if (name == null) return; P.name = name || P.name; saveWork({ type: 'pixel', name: P.name, data: encodePixel(), w: P.w, h: P.h }); toast('已儲存到「我的作品」'); };
+$('#toLayout').onclick = () => { if (!P.grid) return toast('還沒有像素畫'); const side = cellSide(), byKey = {}; P.pal.forEach(p => byKey[p[0]] = p); pushUndo(); const ox = Math.max(0, Math.floor((L.w - P.w * side) / 2)), oy = Math.max(0, Math.floor((L.d - P.h * side) / 2)); let n = 0; for (let j = 0; j < P.h; j++) for (let i = 0; i < P.w; i++) { const pi = P.grid[j * P.w + i]; if (pi < 0) continue; const fid = P.pal[pi][0]; if (ox + i * side + side > L.w || oy + j * side + side > L.d) continue; L.items.push({ id: ++L.seq, fid, x: ox + i * side, y: oy + j * side, rot: 0 }); n++; } L.dirty = true; renderItems(); drawLayout(); setMode('layout'); toast('放進 ' + n + ' 塊（場地放不下的部分略過）'); };
+
+/* ================= 內部設計 ================= */
+const FX = FIXTURES.filter(r => r[5] && r[5][0] > 0 && r[5][1] > 0 && r[7] !== 'gate');
+const fxById = {}; FX.forEach(r => fxById[r[0]] = r);
+const L = { site: 'room', w: 14, d: 14, cs: 34, items: [], sel: null, ghost: null, undo: [], redo: [], seq: 0, play: { i: -1, on: false, t: 0 }, drag: null, dirty: true, imgs: {} };
+const getSite = seg('#site', v => { L.site = v; buildCat(); drawLayout(); });
+$('#lApply').onclick = () => { L.w = clamp(+$('#lw').value || 14, 4, 80); L.d = clamp(+$('#ld').value || 14, 4, 80); $('#lw').value = L.w; $('#ld').value = L.d; fitLayoutZoom(); drawLayout(); };
+$('#lzoom').oninput = e => { L.cs = +e.target.value; drawLayout(); };
+const fxSize = (r, rot) => rot % 2 ? [r[5][1], r[5][0]] : [r[5][0], r[5][1]];
+/* 家具縮圖：官方圖有一層青色底（#8fe9e9），畫到設計圖上會變成一塊塊青色方框，載入後去背一次存成 canvas */
+const fxImg = r => { let im = L.imgs[r[6]]; if (!im) { im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { try { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { if (a[i] < 190 && a[i + 1] > 200 && a[i + 2] > 200 && a[i + 1] - a[i] > 40) a[i + 3] = 0; } x.putImageData(d, 0, 0); c.naturalWidth = c.width; c.naturalHeight = c.height; L.imgs[r[6]] = c; } catch (e) { L.imgs[r[6]] = im; } L.dirty = true; drawLayout(); }; im.onerror = () => { L.imgs[r[6]] = { bad: true }; }; im.src = ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp'; L.imgs[r[6]] = im; return null; } if (im.bad) return null; if (im instanceof HTMLCanvasElement) return im; return im.complete && im.naturalWidth ? im : null; };
+function buildCat() {
+  const g = $('#catG'); if (!g.options.length) { g.innerHTML = '<option value="0">全部分類</option>' + FIX_GENRES.filter(x => x[0] > 1).map(x => '<option value="' + x[0] + '">' + esc(x[1]) + '</option>').join(''); g.onchange = buildCat; $('#catQ').oninput = buildCat; }
+  const q = $('#catQ').value.trim().toLowerCase(), gid = +g.value;
+  const site = L.site, okSite = r => r[11] === 'any' || r[11] === site || (site === 'any' && r[11] === 'home');
+  const rows = FX.filter(r => okSite(r) && (!gid || r[2] === gid) && (!q || r[1].toLowerCase().includes(q))).slice(0, 400);
+  $('#catN').textContent = rows.length + ' 件'; const el = $('#cat'); el.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  rows.forEach(r => { const d = document.createElement('div'); d.className = 'fx' + (L.ghost && L.ghost.fid === r[0] ? ' on' : ''); d.setAttribute('role', 'button'); d.tabIndex = 0; d.innerHTML = '<img loading="lazy" alt="" src="' + ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp"><div><div class="nm">' + esc(r[1]) + '</div><div class="sz">' + r[5][0] + '×' + r[5][1] + (r[5][2] ? '×' + r[5][2] : '') + '</div></div>';
+    const pick = () => { L.ghost = { fid: r[0], rot: 0 }; L.sel = null; $$('#cat .fx').forEach(x => x.classList.toggle('on', x === d)); toast('點畫布放下「' + r[1] + '」'); $('#lay').focus(); };
+    d.onclick = pick; d.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } }; frag.appendChild(d); });
+  el.appendChild(frag);
+}
+function pushUndo() { L.undo.push(JSON.stringify(L.items)); if (L.undo.length > 60) L.undo.shift(); L.redo = []; }
+$('#lUndo').onclick = () => { if (!L.undo.length) return; L.redo.push(JSON.stringify(L.items)); L.items = JSON.parse(L.undo.pop()); L.sel = null; renderItems(); drawLayout(); };
+$('#lRedo').onclick = () => { if (!L.redo.length) return; L.undo.push(JSON.stringify(L.items)); L.items = JSON.parse(L.redo.pop()); L.sel = null; renderItems(); drawLayout(); };
+const selItem = () => L.items.find(i => i.id === L.sel);
+$('#lRot').onclick = () => { if (L.ghost) { L.ghost.rot = (L.ghost.rot + 1) % 4; drawLayout(); return; } const it = selItem(); if (!it) return; pushUndo(); it.rot = (it.rot + 1) % 4; drawLayout(); };
+$('#lDel').onclick = () => { const it = selItem(); if (!it) return; pushUndo(); L.items = L.items.filter(i => i !== it); L.sel = null; renderItems(); drawLayout(); };
+$('#lDup').onclick = () => { const it = selItem(); if (!it) return; pushUndo(); const c = Object.assign({}, it, { id: ++L.seq, x: it.x + 1, y: it.y + 1 }); L.items.push(c); L.sel = c.id; renderItems(); drawLayout(); };
+const lay = $('#lay');
+const cellAt = e => { const r = lay.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return [Math.floor((p.clientX - r.left) / L.cs), Math.floor((p.clientY - r.top) / L.cs)]; };
+const hit = (x, y) => { for (let i = L.items.length - 1; i >= 0; i--) { const it = L.items[i], r = fxById[it.fid]; if (!r) continue; const [w, d] = fxSize(r, it.rot); if (x >= it.x && x < it.x + w && y >= it.y && y < it.y + d) return it; } return null; };
+lay.addEventListener('pointerdown', e => { const [x, y] = cellAt(e); lay.setPointerCapture(e.pointerId);
+  if (L.ghost) { const r = fxById[L.ghost.fid]; const [w, d] = fxSize(r, L.ghost.rot); pushUndo(); const it = { id: ++L.seq, fid: L.ghost.fid, x: clamp(x - Math.floor(w / 2), 0, Math.max(0, L.w - w)), y: clamp(y - Math.floor(d / 2), 0, Math.max(0, L.d - d)), rot: L.ghost.rot }; L.items.push(it); L.sel = it.id; if (!e.shiftKey) { L.ghost = null; $$('#cat .fx').forEach(x => x.classList.remove('on')); } renderItems(); drawLayout(); return; }
+  const it = hit(x, y); L.sel = it ? it.id : null; if (it) { L.drag = { it, dx: x - it.x, dy: y - it.y, moved: false, snap: JSON.stringify(L.items) }; } renderItems(); drawLayout(); });
+lay.addEventListener('pointermove', e => { const [x, y] = cellAt(e); if (L.drag) { const r = fxById[L.drag.it.fid]; const [w, d] = fxSize(r, L.drag.it.rot); const nx = clamp(x - L.drag.dx, 0, Math.max(0, L.w - w)), ny = clamp(y - L.drag.dy, 0, Math.max(0, L.d - d)); if (nx !== L.drag.it.x || ny !== L.drag.it.y) { L.drag.it.x = nx; L.drag.it.y = ny; L.drag.moved = true; drawLayout(); } return; } if (L.ghost) { L.hover = [x, y]; drawLayout(); } });
+lay.addEventListener('pointerup', () => { if (L.drag) { if (L.drag.moved) { L.undo.push(L.drag.snap); L.redo = []; } L.drag = null; drawLayout(); } });
+lay.addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') { e.preventDefault(); $('#lRot').click(); } else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); $('#lDel').click(); } else if (e.key === 'Escape') { L.ghost = null; L.sel = null; $$('#cat .fx').forEach(x => x.classList.remove('on')); drawLayout(); } else if (/^Arrow/.test(e.key)) { const it = selItem(); if (!it) return; e.preventDefault(); pushUndo(); const r = fxById[it.fid], [w, d] = fxSize(r, it.rot); if (e.key === 'ArrowLeft') it.x = Math.max(0, it.x - 1); if (e.key === 'ArrowRight') it.x = Math.min(L.w - w, it.x + 1); if (e.key === 'ArrowUp') it.y = Math.max(0, it.y - 1); if (e.key === 'ArrowDown') it.y = Math.min(L.d - d, it.y + 1); drawLayout(); } });
+function fitLayoutZoom() { const cv = $('#m-layout .cv'); if (!cv.clientWidth) return; L.cs = clamp(Math.floor((cv.clientWidth - 30) / L.w), 8, 56); $('#lzoom').value = L.cs; }
+function drawLayout() {
+  const cs = L.cs, c = lay; c.width = L.w * cs + 1; c.height = L.d * cs + 1; const x = c.getContext('2d');
+  const dark = document.documentElement.classList.contains('dark');
+  x.fillStyle = L.site === 'room' ? (dark ? '#2a2420' : '#f3e6cf') : L.site === 'home' ? (dark ? '#1f2a1c' : '#dfeec8') : (dark ? '#1c2a1e' : '#cfe7bd'); x.fillRect(0, 0, c.width, c.height);
+  x.strokeStyle = dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)'; x.lineWidth = 1; for (let i = 0; i <= L.w; i++) { x.beginPath(); x.moveTo(i * cs + .5, 0); x.lineTo(i * cs + .5, L.d * cs); x.stroke(); } for (let j = 0; j <= L.d; j++) { x.beginPath(); x.moveTo(0, j * cs + .5); x.lineTo(L.w * cs, j * cs + .5); x.stroke(); }
+  const until = L.play.i >= 0 ? L.play.i : Infinity;
+  // 地板類（地墊、道路、瓷磚、地板）先畫，其他照 y 排序：前面的擋後面的
+  const floorG = new Set([8, 9, 10, 12, 31]);
+  const order = L.items.map((it, i) => ({ it, i })).filter(o => o.i < until).sort((a, b) => (floorG.has((fxById[b.it.fid] || [])[2]) ? 1 : 0) - (floorG.has((fxById[a.it.fid] || [])[2]) ? 1 : 0) || (a.it.y - b.it.y) || (a.i - b.i));
+  const now = performance.now();
+  for (const { it, i } of order) { const r = fxById[it.fid]; if (!r) continue; const [w, d] = fxSize(r, it.rot); const X = it.x * cs, Y = it.y * cs, W = w * cs, D = d * cs;
+    let sc = 1; if (L.play.on && i === until - 1) { const t = Math.min(1, (now - L.play.t) / 320); sc = .4 + .6 * (1 - Math.pow(1 - t, 3)); if (t < 1) L.anim = true; }
+    x.save(); x.translate(X + W / 2, Y + D / 2); x.scale(sc, sc);
+    const pal = PALETTE.find(p => p[0] === it.fid);
+    if (pal) { x.fillStyle = pal[3]; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, D - 2); x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, Math.max(1, cs * .18)); x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(-W / 2 + 1, D / 2 - Math.max(1, cs * .2), W - 2, Math.max(1, cs * .2) - 1); }
+    else { x.fillStyle = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.07)'; x.fillRect(-W / 2 + 1, -D / 2 + 1, W - 2, D - 2); const im = fxImg(r); if (im) { x.rotate(it.rot * Math.PI / 2); const [w0, d0] = [r[5][0] * cs, r[5][1] * cs]; const s = Math.min(w0 / im.naturalWidth, d0 / im.naturalHeight) * 1.15; const iw = im.naturalWidth * s, ih = im.naturalHeight * s; x.drawImage(im, -iw / 2, -ih / 2 - (d0 * .08), iw, ih); } else { x.fillStyle = dark ? '#ccc' : '#333'; x.font = '600 ' + Math.max(9, cs * .3) + 'px "Noto Sans TC",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(r[1].slice(0, Math.max(2, Math.floor(W / (cs * .3)))), 0, 0); } }
+    x.restore();
+    if (it.id === L.sel) { x.strokeStyle = '#4a8f2f'; x.lineWidth = 3; x.strokeRect(X + 1.5, Y + 1.5, W - 3, D - 3); }
+  }
+  if (L.ghost && L.hover) { const r = fxById[L.ghost.fid]; const [w, d] = fxSize(r, L.ghost.rot); const gx = clamp(L.hover[0] - Math.floor(w / 2), 0, Math.max(0, L.w - w)), gy = clamp(L.hover[1] - Math.floor(d / 2), 0, Math.max(0, L.d - d)); x.fillStyle = 'rgba(74,143,47,.3)'; x.fillRect(gx * cs, gy * cs, w * cs, d * cs); x.strokeStyle = '#4a8f2f'; x.setLineDash([6, 4]); x.strokeRect(gx * cs + 1, gy * cs + 1, w * cs - 2, d * cs - 2); x.setLineDash([]); }
+  if (L.anim) { L.anim = false; requestAnimationFrame(drawLayout); }
+  lMaterials();
+}
+function renderItems() {
+  const el = $('#items'); el.innerHTML = ''; $('#itemN').textContent = L.items.length + ' 件';
+  L.items.forEach((it, i) => { const r = fxById[it.fid]; const d = document.createElement('div'); d.className = 'it' + (it.id === L.sel ? ' on' : ''); d.innerHTML = '<span class="no">' + (i + 1) + '</span><span class="nm">' + esc(r ? r[1] : '#' + it.fid) + '</span><span class="dim mono">(' + (it.x + 1) + ',' + (it.y + 1) + ')</span><button data-a="up" aria-label="往前">▲</button><button data-a="dn" aria-label="往後">▼</button>';
+    d.onclick = e => { const a = e.target.dataset.a; if (a) { const j = a === 'up' ? i - 1 : i + 1; if (j < 0 || j >= L.items.length) return; pushUndo(); [L.items[i], L.items[j]] = [L.items[j], L.items[i]]; renderItems(); drawLayout(); return; } L.sel = it.id; renderItems(); drawLayout(); }; el.appendChild(d); });
+  $('#lProg').max = L.items.length; $('#lProgT').textContent = (L.play.i >= 0 ? L.play.i : L.items.length) + ' / ' + L.items.length;
+}
+function lMats() { const t = new Map(); L.items.forEach(it => { const r = fxById[it.fid]; if (r) r[10].forEach(([m, q]) => t.set(m, (t.get(m) || 0) + q)); }); return [...t.entries()].sort((a, b) => b[1] - a[1]); }
+let lmKey = ''; function lMaterials() { const ms = lMats(), key = JSON.stringify(ms); if (key === lmKey) return; lmKey = key; $('#lMatBody').innerHTML = ms.map(([m, q]) => '<tr><td><span class="mat">' + (matIcon(m) ? '<img src="' + matIcon(m) + '" alt="" loading="lazy">' : '') + esc(matName(m)) + '</span></td><td class="num">' + q.toLocaleString() + '</td></tr>').join('') || '<tr><td colspan="2" class="dim">—</td></tr>'; }
+$('#lCopyMat').onclick = () => copy('豆森擺設材料總計（' + L.items.length + ' 件）\n' + lMats().map(([m, q]) => matName(m) + ' ×' + q).join('\n'));
+$('#lCopyList').onclick = () => { const cnt = new Map(); L.items.forEach(it => cnt.set(it.fid, (cnt.get(it.fid) || 0) + 1)); copy('豆森擺設清單\n' + [...cnt.entries()].map(([f, n]) => (fxById[f] || ['', '#' + f])[1] + ' ×' + n).join('\n') + '\n\n建造順序\n' + L.items.map((it, i) => (i + 1) + '. ' + (fxById[it.fid] || ['', '#' + it.fid])[1] + ' @ (' + (it.x + 1) + ',' + (it.y + 1) + ')' + (it.rot ? ' 轉' + it.rot * 90 + '°' : '')).join('\n')); };
+function lTick(ts) { if (!L.play.on) return; const per = 1000 / +$('#lSpeed').value; if (ts - L.play.t >= per) { L.play.t = ts; L.play.i = Math.min(L.items.length, L.play.i + 1); $('#lProg').value = L.play.i; $('#lProgT').textContent = L.play.i + ' / ' + L.items.length; $$('#items .it').forEach((d, i) => d.classList.toggle('on', i === L.play.i - 1)); drawLayout(); if (L.play.i >= L.items.length) { L.play.on = false; $('#lPlay').textContent = '▶ 重播'; setTimeout(() => { L.play.i = -1; drawLayout(); }, 1200); return; } } requestAnimationFrame(lTick); }
+$('#lPlay').onclick = () => { if (!L.items.length) return toast('先放一些家具'); L.play.on = !L.play.on; $('#lPlay').textContent = L.play.on ? '⏸ 暫停' : '▶ 播放'; if (L.play.on) { if (L.play.i < 0 || L.play.i >= L.items.length) L.play.i = 0; L.play.t = 0; requestAnimationFrame(lTick); } };
+$('#lReset').onclick = () => { L.play.on = false; L.play.i = -1; $('#lPlay').textContent = '▶ 播放'; $('#lProg').value = 0; renderItems(); drawLayout(); };
+$('#lProg').oninput = e => { L.play.on = false; $('#lPlay').textContent = '▶ 播放'; L.play.i = +e.target.value; $('#lProgT').textContent = L.play.i + ' / ' + L.items.length; drawLayout(); };
+$('#lExp').onclick = () => { const was = L.sel; L.sel = null; drawLayout(); dl(lay, '豆森內部設計.png'); L.sel = was; drawLayout(); };
+function encodeLayout() { return b64u.enc(new TextEncoder().encode(JSON.stringify({ v: 1, s: L.site, w: L.w, d: L.d, i: L.items.map(it => [it.fid, it.x, it.y, it.rot]) }))); }
+function decodeLayout(s) { try { const o = JSON.parse(new TextDecoder().decode(b64u.dec(s))); if (o.v !== 1) return false; L.site = o.s; segSet('#site', o.s); L.w = clamp(o.w, 4, 80); L.d = clamp(o.d, 4, 80); $('#lw').value = L.w; $('#ld').value = L.d; L.items = o.i.filter(a => fxById[a[0]]).map(a => ({ id: ++L.seq, fid: a[0], x: a[1], y: a[2], rot: a[3] || 0 })); L.sel = null; buildCat(); renderItems(); drawLayout(); return true; } catch (e) { return false; } }
+$('#lShare').onclick = () => { if (!L.items.length) return toast('先放一些家具'); copy(location.origin + location.pathname + '#l=' + encodeLayout()); };
+$('#lSave').onclick = () => { if (!L.items.length) return toast('先放一些家具'); const name = prompt('作品名稱', '內部設計 ' + new Date().toLocaleDateString()); if (name == null) return; saveWork({ type: 'layout', name: name || '內部設計', data: encodeLayout(), n: L.items.length }); toast('已儲存到「我的作品」'); };
+
+/* ================= 生日模板 ================= */
+let bdChar = null;
+function daysTo(m, d) { const now = new Date(); let t = new Date(now.getFullYear(), m - 1, d); if (t < new Date(now.getFullYear(), now.getMonth(), now.getDate())) t = new Date(now.getFullYear() + 1, m - 1, d); return Math.round((t - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5); }
+function buildChars() {
+  const el = $('#chars'); el.innerHTML = '';
+  CHARS.forEach(c => { const b = document.createElement('button'); b.className = 'ch'; b.dataset.id = c[0]; b.innerHTML = '<i style="background:' + c[3] + '"></i><span><b>' + esc(c[1]) + '</b><span>' + c[4] + '/' + c[5] + '</span></span>'; b.onclick = () => pickChar(c); el.appendChild(b); });
+  $('#charSel').innerHTML = CHARS.map(c => '<option value="' + c[0] + '">' + esc(c[1]) + '</option>').join('');
+  const soon = CHARS.map(c => ({ c, d: daysTo(c[4], c[5]) })).sort((a, b) => a.d - b.d).slice(0, 6);
+  $('#bdNext').innerHTML = soon.map(({ c, d }) => '<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span class="chip"><i style="background:' + c[3] + '"></i>' + esc(c[1]) + '</span><span class="mono dim">' + c[4] + '/' + c[5] + '・' + (d === 0 ? '<b style="color:var(--bad)">今天！</b>' : d + ' 天後') + '</span></div>').join('');
+}
+function pickChar(c) {
+  bdChar = c; $$('#chars .ch').forEach(b => b.classList.toggle('on', +b.dataset.id === c[0]));
+  const d = daysTo(c[4], c[5]);
+  $('#bdInfo').innerHTML = '<h2><i class="chip" style="background:' + c[3] + ';width:14px;height:14px;padding:0;border-radius:4px"></i>' + esc(c[1]) + '</h2><div class="stat"><div><b>' + c[4] + '/' + c[5] + '</b><span>生日</span></div><div><b>' + (d === 0 ? '今天' : d) + '</b><span>' + (d === 0 ? '生日快樂！' : '天後') + '</span></div></div><p class="help" style="margin-top:8px">代表色 <span class="mono">' + c[3] + '</span>；看板會用這個顏色（像素畫會自動配到最接近的方塊色）。</p><div class="row" style="margin-top:8px"><a class="btn sm" href="./app.html?page=bdayparty">豆森生日派對攻略</a><a class="btn sm" href="./app.html?page=chars">角色資料</a></div>';
+  $('#bdTxt').value = 'HAPPY BIRTHDAY ' + c[1];
+  // 相關家具：標籤是這位角色、或生日派對家具
+  const tagIds = Object.entries(FIX_TAGS).filter(([, t]) => t[1] === 'game_character' && t[2] === c[0]).map(([id]) => +id);
+  const rows = FIXTURES.filter(r => (r[4] || []).some(t => tagIds.includes(t)) || (r[13] && (r[1].includes(c[1]) || (r[4] || []).some(t => tagIds.includes(t))))).slice(0, 80);
+  $('#bdFxN').textContent = rows.length + ' 件'; $('#bdFx').innerHTML = rows.map(r => '<div class="fx"><img loading="lazy" alt="" src="' + ASSET + '/mysekai/thumbnail/fixture/' + r[6] + '_1.webp"><div><div class="nm">' + esc(r[1]) + '</div><div class="sz">' + r[5][0] + '×' + r[5][1] + (r[13] ? '・生日派對' : '') + '</div></div></div>').join('') || '<div class="fx dim">找不到相關家具</div>';
+}
+$('#bdBanner').onclick = () => { if (!bdChar) return toast('先選一位角色'); setMode('pixel'); textToImage($('#bdTxt').value, +$('#bdH').value, bdChar[3], bdChar[1] + ' 生日看板'); };
+$('#bdIcon').onclick = () => { if (!bdChar) return toast('先選一位角色'); setMode('pixel'); charIcon(bdChar[0]); };
+$('#bdHeart').onclick = () => { if (!bdChar) return toast('先選一位角色'); setMode('pixel'); shapeImage('heart', bdChar[3], bdChar[1] + ' 愛心'); };
+$('#bdCake').onclick = () => { if (!bdChar) return toast('先選一位角色'); setMode('pixel'); shapeImage('cake', bdChar[3], bdChar[1] + ' 蛋糕'); };
+
+/* ================= 我的作品 ================= */
+const KEY = 'sekai-mystudio-v1';
+const loadWorks = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+function saveWork(w) { const list = loadWorks(); w.id = Date.now(); w.at = w.id; list.unshift(w); try { localStorage.setItem(KEY, JSON.stringify(list.slice(0, 60))); } catch (e) { toast('儲存空間不足'); } }
+function renderWorks() {
+  const list = loadWorks(), el = $('#works'); el.innerHTML = ''; $('#worksEmpty').hidden = !!list.length;
+  list.forEach(w => { const d = document.createElement('div'); d.className = 'wk'; const c = document.createElement('canvas'); c.width = c.height = 160; d.appendChild(c);
+    const b = document.createElement('div'); b.className = 'b'; b.innerHTML = '<b>' + esc(w.name) + '</b><span class="dim">' + (w.type === 'pixel' ? '像素畫 ' + w.w + '×' + w.h : '內部設計 ' + w.n + ' 件') + '・' + new Date(w.at).toLocaleDateString() + '</span><div class="row" style="margin-top:6px"><button class="btn sm pri">開啟</button><button class="btn sm">刪除</button></div>'; d.appendChild(b);
+    b.querySelectorAll('button')[0].onclick = () => { if (w.type === 'pixel') { decodePixel(w.data); setMode('pixel'); } else { decodeLayout(w.data); setMode('layout'); } };
+    b.querySelectorAll('button')[1].onclick = () => { if (!confirm('刪除「' + w.name + '」？')) return; localStorage.setItem(KEY, JSON.stringify(loadWorks().filter(x => x.id !== w.id))); renderWorks(); };
+    el.appendChild(d);
+    // 縮圖：像素畫畫格子；內部設計畫色塊
+    const x = c.getContext('2d');
+    try { if (w.type === 'pixel') { const u = b64u.dec(w.data); const W = u[2], H = u[3], pal = PALETTE.filter(p => p[5] === (u[1] === 2 ? 'tile' : 'block') && p[4] === (u[1] === 0 ? 1 : 2) && p[2] !== 'cl' && (u[4] || !/brick|grain|concre/.test(p[2]))); const cs = 160 / Math.max(W, H), ox = (160 - W * cs) / 2, oy = (160 - H * cs) / 2; let i = 5, k = 0; while (i + 1 < u.length && !(u[i] === 0 && u[i + 1] === 0)) { const v = u[i] - 1, n = u[i + 1]; for (let j = 0; j < n; j++, k++) { if (v >= 0 && pal[v]) { x.fillStyle = pal[v][3]; x.fillRect(ox + (k % W) * cs, oy + Math.floor(k / W) * cs, Math.ceil(cs), Math.ceil(cs)); } } i += 2; } }
+      else { const o = JSON.parse(new TextDecoder().decode(b64u.dec(w.data))); const cs = 160 / Math.max(o.w, o.d); x.fillStyle = '#e8dcc0'; x.fillRect(0, 0, o.w * cs, o.d * cs); o.i.forEach(a => { const r = fxById[a[0]]; if (!r) return; const [fw, fd] = a[3] % 2 ? [r[5][1], r[5][0]] : [r[5][0], r[5][1]]; const p = PALETTE.find(q => q[0] === a[0]); x.fillStyle = p ? p[3] : 'rgba(60,90,40,.55)'; x.fillRect(a[1] * cs + .5, a[2] * cs + .5, fw * cs - 1, fd * cs - 1); }); } } catch (e) {}
+  });
+}
+
+/* ================= 啟動 ================= */
+buildPal(); buildChars(); buildCat(); renderItems(); drawLayout();
+const hash = new URLSearchParams(location.hash.slice(1));
+if (hash.get('p')) { if (decodePixel(hash.get('p'))) toast('已載入分享的像素畫'); }
+else if (hash.get('l')) { if (decodeLayout(hash.get('l'))) { setMode('layout'); toast('已載入分享的設計'); } }
+else if (hash.get('m')) setMode(hash.get('m'));
+window.__mystudio = { P, L, recalc, textToImage, decodePixel };
+</script>
+</body>
+</html>

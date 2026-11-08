@@ -85,6 +85,35 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：豆森工作室（mystudio.html）。桌機與手機各開一次：範例愛心要算出格子與材料、文字看板要有格子、
+// 內部設計要能放家具、不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/mystudio.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__mystudio && document.querySelectorAll('#pal .sw').length >= 20, null, { timeout: 30000 });
+      await page.click('#btnSample'); await page.waitForTimeout(700);
+      const r = await page.evaluate(() => { const S = window.__mystudio; return { n: S.P.grid ? Array.from(S.P.grid).filter(v => v >= 0).length : 0, steps: S.P.steps.length, mats: document.querySelectorAll('#matBody tr').length }; });
+      await page.evaluate(() => window.__mystudio.textToImage('HBD', 10, '#33aaee')); await page.waitForTimeout(900);
+      const t = await page.evaluate(() => Array.from(window.__mystudio.P.grid).filter(v => v >= 0).length);
+      await page.click('.tab[data-m="layout"]'); await page.waitForTimeout(300);
+      await page.click('#cat .fx'); const bb = await (await page.$('#lay')).boundingBox(); await page.mouse.click(bb.x + 100, bb.y + 100); await page.waitForTimeout(200);
+      const items = await page.evaluate(() => window.__mystudio.L.items.length);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && r.n > 100 && r.steps > 5 && r.mats >= 3 && t > 20 && items === 1 && !(mobile && overflow);
+      why = errors[0] || (r.n <= 100 ? '愛心只有 ' + r.n + ' 格' : r.mats < 3 ? '材料表 ' + r.mats + ' 列' : t <= 20 ? '文字看板只有 ' + t + ' 格' : items !== 1 ? '放家具後清單 ' + items + ' 件' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' mystudio' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：衝榜劇場（theater.html）。資料來自 games.project-sekai-center.com 的逐局追蹤器；
 // 桌機＋手機各開一次，要載到局數、面板要長出統計、不能有 JS 錯誤、手機不能橫向溢出。
 {
