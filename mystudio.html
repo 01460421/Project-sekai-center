@@ -176,7 +176,7 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
 @media (max-width:640px){.stage{min-height:200px}header{padding:8px 10px;flex-wrap:wrap;gap:8px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}.tabs{order:3;width:100%;margin-left:0}.tab{flex:1;text-align:center}.card{padding:12px}.tab{padding:7px 10px;font-size:13px}main{padding:10px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{header,.col1,.col3,.bar{display:none!important}.stage{box-shadow:none;border:0}}
-:root.embed header{display:none}:root.embed body::before{display:none}:root.embed main{padding:4px 2px}:root.embed .card,:root.embed .stage{box-shadow:none}
+:root.embed,:root.embed body{height:auto;min-height:0}:root.embed header{display:none}:root.embed body::before{display:none}:root.embed main{padding:4px 2px}:root.embed .card,:root.embed .stage{box-shadow:none}
 </style>
 </head>
 <body>
@@ -863,7 +863,7 @@ else if (hash.get('l')) { if (decodeLayout(hash.get('l'))) { setMode('layout'); 
 else if (hash.get('m')) setMode(hash.get('m'));
 window.__mystudio = { P, L, recalc, textToImage, decodePixel, applySite, place, aiCatalogue, aiApply: d => { aiLast = d; aiApply(false); } };
 /* 內嵌在 app 裡：把內容高度回報給外層，iframe 跟著長 */
-if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: document.documentElement.scrollHeight }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
+if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: Math.ceil(document.body.getBoundingClientRect().height) }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html|^\.\/(mystudio|profile|plan)\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); const pg = m ? m[1] : (/\/(mystudio|profile|plan)\.html/.exec(h) || [])[1]; try { parent.postMessage({ sekaiGoto: pg || 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
 </script>
 </body>
 </html>
