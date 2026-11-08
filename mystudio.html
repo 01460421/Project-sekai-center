@@ -227,7 +227,10 @@ kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(
         </div>
         <div class="row"><label class="f inl"><input type="checkbox" id="tex"> 加入紅磚／木紋／混凝土塊</label></div>
         <div class="row"><label class="f inl"><input type="checkbox" id="whiteEmpty"> 白底視為空格</label><label class="f inl"><input type="checkbox" id="dither" checked> 抖色（漸層更自然）</label></div>
-        <label class="f" style="margin-top:6px">亮度 <span id="brV" class="mono">0</span><input type="range" id="br" min="-80" max="80" value="0"></label>
+        <div class="row" style="margin-top:6px"><label class="f inl"><input type="checkbox" id="auto" checked> 自動適配（淺色／粉彩／低對比的圖先拉開明暗、補鮮豔再配色）</label></div>
+        <label class="f">對比 <span id="conV" class="mono">自動</span><input type="range" id="con" min="0" max="100" value="0" aria-label="對比"></label>
+        <label class="f">鮮豔 <span id="satV" class="mono">自動</span><input type="range" id="sat" min="100" max="250" value="100" aria-label="鮮豔"></label>
+        <label class="f">亮度 <span id="brV" class="mono">0</span><input type="range" id="br" min="-80" max="80" value="0"></label>
         <label class="f">透明門檻 <span id="alV" class="mono">128</span><input type="range" id="al" min="1" max="255" value="128"></label>
       </div>
       <div class="card">
@@ -428,6 +431,9 @@ const lin = c => { c /= 255; return c <= .04045 ? c / 12.92 : Math.pow((c + .055
 const oklab = (r, g, b) => { const R = lin(r), G = lin(g), B = lin(b);
   const l = Math.cbrt(.4122214708 * R + .5363325363 * G + .0514459929 * B), m = Math.cbrt(.2119034982 * R + .6806995451 * G + .1073969566 * B), s = Math.cbrt(.0883024619 * R + .2817188376 * G + .6299787005 * B);
   return [.2104542553 * l + .7936177850 * m - .0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + .4505937099 * s, .0259040371 * l + .7827717662 * m - .8086757660 * s]; };
+const oklab2rgb = (L, a, b) => { const l_ = L + .3963377774 * a + .2158037573 * b, m_ = L - .1055613458 * a - .0638541728 * b, s_ = L - .0894841775 * a - 1.291485548 * b;
+  const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_; const g = c => { c = c <= .0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(c, 0), 1 / 2.4) - .055; return clamp(c * 255, 0, 255); };
+  return [g(4.0767416621 * l - 3.3077115913 * m + .2309699292 * s), g(-1.2684380046 * l + 2.6097574011 * m - .3413193965 * s), g(-.0041960863 * l - .7034186147 * m + 1.707614701 * s)]; };
 const shade = (hex, k) => { const [r, g, b] = hex2rgb(hex); return k >= 0 ? rgb2hex(r + (255 - r) * k, g + (255 - g) * k, b + (255 - b) * k) : rgb2hex(r * (1 + k), g * (1 + k), b * (1 + k)); };
 const matName = id => (MATS[id] || FIX_MATS[id] || ['素材 #' + id, ''])[0];
 const matIcon = id => { const m = MATS[id] || FIX_MATS[id]; return m && m[1] ? ASSET + '/mysekai/thumbnail/material/' + m[1] + '.webp' : ''; };
@@ -444,7 +450,7 @@ const seg = (id, cb) => { const el = $(id); el.querySelectorAll('button').forEac
 const segSet = (id, v) => $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
 
 /* ================= 像素畫 ================= */
-const P = { img: null, name: '', medium: 'b1', w: 32, h: 32, tex: false, whiteEmpty: false, dither: true, br: 0, al: 128, off: new Set(), grid: null, pal: [], view: 'blocks', zoom: 16, order: 'row', seq: [], steps: [], play: { i: 0, on: false, t: 0 } };
+const P = { img: null, name: '', medium: 'b1', w: 32, h: 32, tex: false, whiteEmpty: false, dither: true, br: 0, al: 128, auto: true, con: 0, sat: 1, off: new Set(), grid: null, pal: [], view: 'blocks', zoom: 16, order: 'row', seq: [], steps: [], play: { i: 0, on: false, t: 0 } };
 const getMedium = seg('#medium', v => { P.medium = v; buildPal(); recalc(); });
 const getView = seg('#view', v => { P.view = v; drawPixel(); });
 const getOrder = seg('#order', v => { P.order = v; buildSteps(); drawPixel(); });
@@ -469,6 +475,10 @@ $('#tex').onchange = e => { P.tex = e.target.checked; buildPal(); recalc(); };
 $('#whiteEmpty').onchange = e => { P.whiteEmpty = e.target.checked; recalc(); };
 $('#dither').onchange = e => { P.dither = e.target.checked; recalc(); };
 $('#br').oninput = e => { P.br = +e.target.value; $('#brV').textContent = P.br; recalc(); };
+const setAuto = on => { P.auto = on; $('#auto').checked = on; if (on) { $('#conV').textContent = '自動'; $('#satV').textContent = '自動'; } else { P.con = +$('#con').value / 100; P.sat = +$('#sat').value / 100; $('#conV').textContent = $('#con').value + '%'; $('#satV').textContent = $('#sat').value + '%'; } };
+$('#auto').onchange = e => { setAuto(e.target.checked); recalc(); };
+$('#con').oninput = e => { setAuto(false); P.con = +e.target.value / 100; $('#conV').textContent = e.target.value + '%'; recalc(); };
+$('#sat').oninput = e => { setAuto(false); P.sat = +e.target.value / 100; $('#satV').textContent = e.target.value + '%'; recalc(); };
 $('#al').oninput = e => { P.al = +e.target.value; $('#alV').textContent = P.al; recalc(); };
 $('#zoom').oninput = e => { P.zoom = +e.target.value; drawPixel(); };
 $('#pw').onchange = e => { P.w = clamp(+e.target.value || 32, 4, 128); e.target.value = P.w; if ($('#lockAr').checked && P.img) { P.h = clamp(Math.round(P.w * P.img.height / P.img.width), 4, 96); $('#ph').value = P.h; } recalc(); };
@@ -481,7 +491,7 @@ const drop = $('#drop');
 drop.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
 $('#file').onchange = e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; };
 document.addEventListener('paste', e => { if (!$('#m-pixel').classList.contains('on')) return; const it = [...(e.clipboardData.items || [])].find(i => i.type.startsWith('image/')); if (it) loadFile(it.getAsFile()); });
-function loadFile(f) { if (!f.type.startsWith('image/')) return toast('請放圖片檔'); const url = URL.createObjectURL(f); const im = new Image(); im.onload = () => { setImage(im, f.name.replace(/\.[^.]+$/, '')); URL.revokeObjectURL(url); }; im.onerror = () => toast('讀不到這張圖'); im.src = url; }
+function loadFile(f) { if (!f.type.startsWith('image/')) return toast('請放圖片檔'); const url = URL.createObjectURL(f); const im = new Image(); im.onload = () => { setAuto(true); setImage(im, f.name.replace(/\.[^.]+$/, '')); URL.revokeObjectURL(url); }; im.onerror = () => toast('讀不到這張圖'); im.src = url; }
 function fitZoom() { const cv = $('#m-pixel .cv'); const z = clamp(Math.floor((cv.clientWidth - 30) / P.w), 4, 40); P.zoom = z; $('#zoom').value = z; }
 function setImage(im, name) {
   P.img = im; P.name = name || '像素畫';
@@ -504,18 +514,54 @@ async function textToImage(text, rows, color, name) {
   if (w / S > 128) { const r2 = Math.max(5, Math.floor(rows * 128 * S / w)); if (r2 < rows) { toast('文字太長，字高自動縮到 ' + r2 + ' 格以放進 128 格寬'); return textToImage(text, r2, color, name); } }
   c.width = w; c.height = rows * S;
   x.font = '900 ' + fs + 'px "M PLUS Rounded 1c","Noto Sans TC",sans-serif'; x.textBaseline = 'middle'; x.fillStyle = color; x.fillText(text, S, rows * S / 2 + fs * .04);
-  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.h = rows; P.w = clamp(Math.round(rows * w / (rows * S)), 4, 128); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; P.al = 90; $('#al').value = 90; $('#alV').textContent = 90; setImage(im, name || text); }; im.src = c.toDataURL();
+  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.h = rows; P.w = clamp(Math.round(rows * w / (rows * S)), 4, 128); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; P.al = 90; $('#al').value = 90; $('#alV').textContent = 90; $('#con').value = 0; $('#sat').value = 100; setAuto(false); setImage(im, name || text); }; im.src = c.toDataURL();
 }
 function shapeImage(kind, color, name) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = color;
   if (kind === 'heart') { x.beginPath(); x.moveTo(128, 232); x.bezierCurveTo(16, 150, 16, 52, 80, 40); x.bezierCurveTo(112, 34, 128, 60, 128, 80); x.bezierCurveTo(128, 60, 144, 34, 176, 40); x.bezierCurveTo(240, 52, 240, 150, 128, 232); x.fill(); }
   else if (kind === 'cake') { x.fillStyle = '#a57539'; x.fillRect(40, 150, 176, 70); x.fillStyle = '#ffa2a9'; x.fillRect(40, 118, 176, 36); x.fillStyle = '#f6e5ae'; x.fillRect(56, 96, 144, 26); x.fillStyle = '#e6e6e6'; for (let i = 0; i < 4; i++) x.fillRect(72 + i * 36, 60, 10, 40); x.fillStyle = '#ffd844'; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(77 + i * 36, 50, 9, 0, 7); x.fill(); } x.fillStyle = color; for (let i = 0; i < 5; i++) { x.beginPath(); x.arc(60 + i * 34, 160, 8, 0, 7); x.fill(); } }
-  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.w = P.h = clamp(P.w, 12, 128); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; setImage(im, name || (kind === 'heart' ? '愛心' : '蛋糕')); }; im.src = c.toDataURL();
+  const im = new Image(); im.onload = () => { $('#lockAr').checked = true; P.w = P.h = clamp(P.w, 12, 128); $('#pw').value = P.w; $('#ph').value = P.h; $('#dither').checked = false; P.dither = false; $('#con').value = 0; $('#sat').value = 100; setAuto(false); setImage(im, name || (kind === 'heart' ? '愛心' : '蛋糕')); }; im.src = c.toDataURL();
 }
 function charIcon(id) {
   const im = new Image(); im.crossOrigin = 'anonymous';
   im.onload = () => { $('#dither').checked = true; P.dither = true; $('#whiteEmpty').checked = false; P.whiteEmpty = false; $('#lockAr').checked = true; P.w = Math.max(P.w, 48); $('#pw').value = P.w; setImage(im, (CHARS.find(c => c[0] === id) || [])[1] + ' 頭像'); };
   im.onerror = () => toast('頭像載入失敗（素材庫沒回應）'); im.src = ASSET + '/character/character_sd_l/chr_sp_' + id + '.png';   // Q 版頭像（250×200 PNG，比卡面選角圖清楚）
+}
+/* 自動適配：淺色／粉彩／低對比的圖直接配色會整張塌成白與粉（亮度全擠在上面、彩度又不夠碰到方塊色）。
+   先量內容像素（略過透明與近白）的亮度 2／50／98 百分位與彩度 90 百分位：
+   - 對比：把亮度 p2～p98 線性拉到「目前調色盤最暗色～最亮色」的 Oklab 亮度範圍，強度 = 淺（中位數偏亮）或扁（範圍太窄）的程度
+   - 鮮豔：跟著對比強度補彩度（最多 2 倍），不然拉暗的粉彩會變成灰
+   都在 Oklab 做再轉回 RGB，所以色相不會跑。自動模式會把算出來的值顯示在滑桿上；手動拖滑桿就固定用那個值。 */
+function adapt(buf, d, n, plab) {
+  const nearWhite = i => buf[i * 3] > 236 && buf[i * 3 + 1] > 236 && buf[i * 3 + 2] > 236;
+  const labs = new Float32Array(n * 3), Ls = [], Cs = [];
+  for (let i = 0; i < n; i++) {
+    if (d[i * 4 + 3] < P.al) continue;
+    const lab = oklab(clamp(buf[i * 3], 0, 255), clamp(buf[i * 3 + 1], 0, 255), clamp(buf[i * 3 + 2], 0, 255)); labs[i * 3] = lab[0]; labs[i * 3 + 1] = lab[1]; labs[i * 3 + 2] = lab[2];
+    if (!nearWhite(i)) { Ls.push(lab[0]); Cs.push(Math.hypot(lab[1], lab[2])); }
+  }
+  if (Ls.length < 16) { if (P.auto) { $('#con').value = 0; $('#sat').value = 100; } return; }
+  Ls.sort((a, b) => a - b); Cs.sort((a, b) => a - b);
+  const q = (arr, k) => arr[Math.min(arr.length - 1, Math.floor(arr.length * k))];
+  const p2 = q(Ls, .02), p50 = q(Ls, .5), p98 = q(Ls, .98), c50 = q(Cs, .5), c90 = q(Cs, .9), range = p98 - p2;
+  P.stats = { p2, p50, p98, c50, c90 };
+  let con = P.con, sat = P.sat;
+  if (P.auto) {
+    // 「最暗的 2% 還是很亮」（沒有暗部）或「亮度範圍太窄」才算要拉；只看中位數會誤傷白髮角色那種本來就亮但對比正常的圖
+    const noDark = clamp((p2 - .42) / .25, 0, 1), flat = clamp((.6 - range) / .35, 0, 1);
+    con = range < .08 ? 0 : Math.max(noDark, flat);
+    sat = c90 < .05 ? 1 : clamp(1 + con * 1.2, 1, 2);   // 拉開明暗後顏色會變灰，鮮豔跟著補；本來就是灰階的圖不補
+    $('#con').value = Math.round(con * 100); $('#sat').value = Math.round(sat * 100);
+    $('#conV').textContent = '自動 ' + Math.round(con * 100) + '%'; $('#satV').textContent = '自動 ' + Math.round(sat * 100) + '%';
+  }
+  if (con <= 0 && Math.abs(sat - 1) < .01) return;
+  let lo = 1, hi = 0; plab.forEach(l => { lo = Math.min(lo, l[0]); hi = Math.max(hi, l[0]); });
+  for (let i = 0; i < n; i++) {
+    if (d[i * 4 + 3] < P.al || (P.whiteEmpty && nearWhite(i))) continue;
+    let L = labs[i * 3]; const a = labs[i * 3 + 1] * sat, b = labs[i * 3 + 2] * sat;
+    if (con > 0 && range > 0) L += ((lo + clamp((L - p2) / range, 0, 1) * (hi - lo)) - L) * con;
+    const rgb = oklab2rgb(L, a, b); buf[i * 3] = rgb[0]; buf[i * 3 + 1] = rgb[1]; buf[i * 3 + 2] = rgb[2];
+  }
 }
 /* 核心：縮圖 → 配色（Oklab 最近色）＋ Floyd–Steinberg 抖色 → 格子陣列 */
 function recalc() {
@@ -530,6 +576,7 @@ function recalc() {
   const plab = pal.map(p => oklab(...hex2rgb(p[3]))), prgb = pal.map(p => hex2rgb(p[3]));
   const grid = new Int16Array(w * h).fill(-1), buf = new Float32Array(w * h * 3);
   for (let i = 0; i < w * h; i++) { buf[i * 3] = d[i * 4] + P.br; buf[i * 3 + 1] = d[i * 4 + 1] + P.br; buf[i * 3 + 2] = d[i * 4 + 2] + P.br; }
+  adapt(buf, d, w * h, plab);
   const palIdx = []; pal.forEach((p, i) => palIdx[i] = P.pal.indexOf(p));
   for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
     const i = y * w + xx, a = d[i * 4 + 3];
