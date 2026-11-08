@@ -8,7 +8,7 @@ block = block[:block.index('\n  };')]
 keys = re.findall(r'^\s{4}(\w+):\s*\[', block, re.M)
 today = datetime.date.today().isoformat()
 BASE = 'https://project-sekai-center.com/'
-STANDALONE = ['ep-calculator.html', 'tutorial.html', 'starmap.html', 'theater.html', 'soundprint.html', 'echoes.html']   # 不在 PAGES 表裡的獨立頁面
+STANDALONE = ['ep-calculator.html', 'tutorial.html', 'starmap.html', 'theater.html', 'soundprint.html', 'echoes.html', 'mystudio.html']   # 不在 PAGES 表裡的獨立頁面
 urls = [BASE] + [BASE + k for k in keys if k not in ('home', 'admin', 'account')] + [BASE + f for f in STANDALONE]
 # 已經在 sitemap 裡的網址沿用原本的 lastmod，只有新頁面記今天：每日排程跑這支時，頁面沒增減就不會產生變更
 out = ROOT / 'sitemap.xml'
