@@ -32,6 +32,7 @@ import {
   addEvent, aiUsageRows, aiOpsToday, createOp, touchOp, twDayStart,
   addPushSub, deletePushSub, countPushSubs } from './db.js';
 import { pushEnabled, ensurePushSchema } from './push.js';
+import { cleanDesignBody, buildDesignMessages, parseDesign } from './mysekai.js';
 import { sanitizeNote, fetchProfile, makeNonce, wordHasNonce, approveOnExists } from './review.js';
 
 const KINDS = ['border', 'player', 'team', 'schedule'];
@@ -782,6 +783,34 @@ export async function handleApi(req, env, url, user) {
     /* 站內助手。開放給「已核准」的一般使用者 —— 核准本身就是管理員的許可。
        工具在瀏覽器執行,Worker 只代理 Claude API 並記帳。
        額度看 startOp:一次操作開了,裡面的每一輪都做完,不再逐輪擋。 */
+    /* 豆森 AI 顧問：描述風格 → 依場地格數與家具目錄排出擺設（純 JSON）。
+       跟 /api/chat 同一套權限與額度：已核准的使用者、一次算一次操作（kind=design）、記進 usage；
+       模型偏好 Gemini（長目錄便宜），沒設金鑰才退 Claude。純函式在 mysekai.js，前端在 mystudio.html。 */
+    if (p === '/api/mysekai/design' && req.method === 'POST') {
+      if (!env.ANTHROPIC_API_KEY && !hasGemini(env)) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
+      const rb = await readJson(req, 512 * 1024);
+      if (rb.tooBig) return out({ error: 'payload_too_large', message: '家具目錄過大' }, 413);
+      if (rb.bad) return out({ error: 'bad_json', message: 'JSON 格式錯誤' }, 400);
+      const d = cleanDesignBody(rb.value);
+      if (d.error) return out({ error: d.error, message: d.message }, 400);
+      const st = await startOp(env, user, 'design');
+      if (st.error) return json(st.body, st.status, req, env);
+      const v = buildDesignMessages(d);
+      v.providers = hasGemini(env) ? ['gemini'] : ['claude'];
+      const { lanes, good, primary } = await runLanes(env, v, { claude: chatClaude, gemini: chatGemini });
+      if (!good.length) {
+        const msg = lanes.map(l => l.provider + '：' + l.error).join('　/　');
+        await logAdmin(env.DB, user.id, '[design] ' + d.prompt.slice(0, 200), '[失敗] ' + msg, 0, 0, { kind: 'design', op_id: st.op.id });
+        return json({ error: 'claude_failed', message: msg || '模型沒有回應' }, 502, req, env);
+      }
+      const text = (primary.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+      await logAdmin(env.DB, user.id, '[design] ' + d.prompt.slice(0, 200), text.slice(0, 4000), primary.tokens_in, primary.tokens_out,
+                     { model: primary.model, cache_read: primary.cache_read, cache_write: primary.cache_write, kind: 'design', op_id: st.op.id });
+      const parsed = parseDesign(text, d.cat, d.site);
+      if (parsed.error) return json({ error: parsed.error, message: parsed.message, raw: text.slice(0, 1200) }, 502, req, env);
+      return json(Object.assign(parsed, { model: primary.model, quota: Object.assign({}, st.quota, { op: st.op.id }) }), 200, req, env);
+    }
+
     if (p === '/api/chat' && req.method === 'POST') {
       // 只要有一家的金鑰就能跑。加了 Gemini 卻沒設 ANTHROPIC_API_KEY 不該把整個助手 503 掉
       if (!env.ANTHROPIC_API_KEY && !hasGemini(env)) return json({ error: 'no_key', message: '站方尚未設定 AI 金鑰' }, 503, req, env);
