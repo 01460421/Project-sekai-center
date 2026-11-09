@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<!-- 由 tools/build-manual.py 產生，不要直接改這個檔：改 tools/manual/ 底下的說明書本文或 reader.html 樣板，再重跑腳本 -->
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ea">
+<title>說明書 — 網站使用手冊、排班系統與語音功能 | Project SEKAI 資源中心</title>
+<meta name="description" content="Project SEKAI 資源中心的完整說明書：網站每一頁怎麼用、菜根機器人的私車排班系統、語音互動功能。可搜尋、目次跳轉、章節連結，也可以下載 A4 PDF。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="說明書 — 網站使用手冊、排班系統與語音功能">
+<meta property="og:description" content="網站每一頁怎麼用、私車排班規則、語音互動功能：可搜尋、可跳章節、可下載 PDF。">
+<meta property="og:url" content="https://project-sekai-center.com/manual.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/tut.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/tut.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script>try{var _t=localStorage.getItem('sekai-manual-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(_t==='dark'||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');}catch(e){}</script>
+<style>
+:root{color-scheme:light;--bg:#f3f1ea;--paper:#fffefb;--panel:#faf9f5;--ink:#1f2230;--ink-2:#454a5e;--ink-3:#5c627a;--line:rgba(40,46,80,.13);--line-2:rgba(40,46,80,.28);
+  --acc:#7a4fc0;--acc-2:#5a3596;--acc-soft:rgba(122,79,192,.11);--wine:#7a1f2b;--mark:#ffe58a;--code:#f1efe9;
+  --sans:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;--serif:'Noto Serif TC','Songti TC','PMingLiU',serif;
+  --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;--bar:56px;--shadow:0 22px 60px -30px rgba(40,40,70,.35)}
+:root.dark{color-scheme:dark;--bg:#0f1117;--paper:#171b26;--panel:#1d2230;--ink:#e7eaf2;--ink-2:#b4bbd0;--ink-3:#959db5;--line:rgba(170,190,255,.12);--line-2:rgba(170,190,255,.3);
+  --acc:#b79cf0;--acc-2:#d2c0f7;--acc-soft:rgba(183,156,240,.14);--wine:#ff9aa7;--mark:#6b5a12;--code:#232838;--shadow:0 22px 60px -26px rgba(0,0,0,.7)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:calc(var(--bar) + 18px)}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+a{color:var(--acc-2)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* 頂欄 */
+.bar{position:sticky;top:0;z-index:30;height:var(--bar);display:flex;align-items:center;gap:10px;padding:0 16px;
+  background:color-mix(in oklab,var(--bg) 84%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.home{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:900;white-space:nowrap}
+.home img{width:24px;height:24px}
+.home span.t{font-family:var(--serif);letter-spacing:.06em}
+.tabs{display:flex;gap:4px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:6px 12px;border-radius:999px;white-space:nowrap;color:var(--ink-2);font-weight:500;font-size:14px}
+.tab[aria-selected="true"]{background:var(--acc-soft);color:var(--acc-2);font-weight:700}
+.sp{flex:1}
+.search{position:relative;display:flex;align-items:center}
+.search input{width:220px;height:36px;padding:0 64px 0 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--paper)}
+.search .cnt{position:absolute;right:10px;font-size:12px;color:var(--ink-3);pointer-events:none}
+.ib{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.ib:hover{background:var(--acc-soft);color:var(--acc-2)}
+.ib svg{width:20px;height:20px}
+#tocBtn{display:none}
+.prog{position:fixed;top:var(--bar);left:0;height:2px;background:var(--acc);width:0;z-index:31;transition:width .1s linear}
+
+/* 版面 */
+.wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1240px;margin:0 auto;padding:24px 20px 80px}
+.side{position:sticky;top:calc(var(--bar) + 20px);align-self:start;max-height:calc(100vh - var(--bar) - 40px);overflow:auto;padding-right:6px;font-size:13.5px}
+.side h2{font-size:12px;letter-spacing:.3em;color:var(--ink-3);font-weight:700;margin:2px 0 8px 10px}
+.toc-list{list-style:none}
+.toc-list li a{display:block;padding:4px 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;line-height:1.45;border-left:2px solid transparent}
+.toc-list li.l3 a{padding-left:24px;font-size:12.8px;color:var(--ink-3)}
+.toc-list li a:hover{background:var(--acc-soft);color:var(--acc-2)}
+.toc-list li a.on{color:var(--acc-2);font-weight:700;border-left-color:var(--acc);background:var(--acc-soft)}
+.side .pdf{display:block;margin:14px 10px 0;font-size:13px}
+.hits{margin:4px 10px 12px;font-size:12.5px;color:var(--ink-3)}
+.hits button{color:var(--acc-2);text-decoration:underline;padding:0 2px}
+
+/* 紙張 */
+.paper{background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);padding:56px 64px 64px;max-width:860px;
+  font-family:var(--serif);font-size:16.5px;line-height:1.95;text-align:justify;color:var(--ink)}
+.title-block{text-align:center;margin-bottom:28px}
+.title-block .kicker{font-size:12px;letter-spacing:.32em;color:var(--ink-3);margin-bottom:10px}
+.title-block h1{font-size:30px;line-height:1.35;font-weight:900;margin-bottom:8px}
+.title-block .en{font-style:italic;color:var(--ink-2);margin-bottom:14px;font-size:15.5px;line-height:1.5}
+.title-block .author{font-size:15.5px}
+.title-block .affil{font-size:13px;color:var(--ink-3)}
+.title-block .dl{margin-top:12px;font-family:var(--sans);font-size:14px}
+.abstract{border-top:1.2px solid var(--ink);border-bottom:1.2px solid var(--ink);padding:12px 4px;margin:0 0 10px;font-size:15px;line-height:1.85}
+.abstract .lbl,.kw b{font-family:var(--sans);letter-spacing:.3em}
+.kw{font-size:14.5px;margin-bottom:26px}
+.body h2{font-family:var(--sans);font-size:21px;font-weight:700;margin:42px 0 12px;position:relative;line-height:1.4}
+.body h3{font-family:var(--sans);font-size:17px;font-weight:700;margin:26px 0 8px;position:relative;line-height:1.45}
+.anc{margin-left:8px;color:var(--ink-3);text-decoration:none;opacity:0;font-weight:400;transition:opacity .15s}
+h2:hover .anc,h3:hover .anc,.anc:focus-visible{opacity:1}
+.body p{margin:0 0 12px;text-indent:2em}
+.body p.noind{text-indent:0}
+.body ol,.body ul{margin:4px 0 14px;padding-left:1.7em}
+.body li{margin:3px 0}
+.body code{font-family:var(--mono);font-size:.84em;background:var(--code);padding:1px 6px;border-radius:5px;white-space:nowrap}
+.q::before{content:"「"}.q::after{content:"」"}
+.muted{color:var(--ink-3)}
+sup.fn{font-size:.7em;line-height:0}
+sup a{text-decoration:none;color:var(--wine);font-weight:700;padding:0 2px}
+.tbl,.fig{margin:18px 0 22px;break-inside:avoid}
+.tbl{overflow-x:auto}
+.cap{font-family:var(--sans);font-size:13.5px;text-align:center;margin-bottom:6px}
+.fig .cap{margin:8px 0 0}
+.cap b{margin-right:8px}
+.body table{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.6;text-align:left}
+.body thead th{font-family:var(--sans);font-weight:700;border-top:1.6px solid var(--ink);border-bottom:.8px solid var(--ink);padding:7px 10px;white-space:nowrap}
+.body tbody td{padding:6px 10px;vertical-align:top;border-bottom:1px solid var(--line)}
+.body tbody tr:last-child td{border-bottom:1.6px solid var(--ink)}
+.body tbody td:first-child{white-space:nowrap}.body td code,.body li code{white-space:normal}.body li{text-align:left}
+.fig svg{max-width:560px;display:block;margin:0 auto}
+:root.dark .fig svg{filter:invert(.92) hue-rotate(180deg)}
+.eq{text-align:center;margin:10px 0 14px}.eq .no{float:right;color:var(--ink-3)}
+.boxed{border:1px solid var(--line-2);background:var(--panel);padding:12px 16px;margin:14px 0 18px;font-size:15px;border-radius:4px}
+.boxed b{font-family:var(--sans)}
+.notes{margin-top:36px;border-top:1px solid var(--line-2);padding-top:10px;font-size:13.5px;line-height:1.7;color:var(--ink-2)}
+.notes p{text-indent:0;margin-bottom:6px}
+a.xref,a.xdoc{text-decoration:none;border-bottom:1px dotted currentColor}
+a.xpage{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+a.xpage::after{content:"↗";font-size:.72em;margin-left:1px;vertical-align:.25em}
+mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+mark.cur{outline:2px solid var(--acc);background:var(--mark)}
+:target{animation:flash 1.6s ease-out}
+@keyframes flash{0%{background:var(--acc-soft)}100%{background:transparent}}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:999px;font-size:14px;transition:.25s;z-index:50;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.foot{text-align:center;color:var(--ink-3);font-size:13px;margin-top:22px;font-family:var(--sans)}
+
+/* 手機 */
+@media (max-width:980px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding:14px 10px 60px}
+  .side{position:fixed;inset:var(--bar) 0 0 auto;width:min(86vw,340px);max-height:none;background:var(--paper);border-left:1px solid var(--line);
+    padding:16px 12px 40px;z-index:40;transform:translateX(105%);transition:transform .25s;box-shadow:var(--shadow)}
+  .side.open{transform:none}
+  #tocBtn{display:inline-flex}
+  .paper{padding:30px 18px 40px;font-size:16px;line-height:1.9;border-radius:4px}
+  .title-block h1{font-size:23px}
+  .search input{width:150px}
+}
+@media (max-width:640px){
+  .bar{gap:4px;padding:0 8px}
+  .home span.t{display:none}
+  .tabs{margin-left:2px}
+  .tab{padding:6px 9px;font-size:13px}
+  .search{display:none}
+  .search.open{display:flex;position:absolute;left:8px;right:124px;top:10px}
+  .search.open input{width:100%}
+  #findBtn{display:inline-flex}
+  .body thead th{white-space:normal}
+}
+@media (min-width:641px){#findBtn{display:none}}
+@media print{
+  .bar,.side,.prog,.toast,.anc,.dl{display:none!important}
+  body{background:#fff}.wrap{display:block;padding:0}
+  .paper{box-shadow:none;border:0;padding:0;max-width:none;font-size:11pt}
+  a.xpage::after{content:""}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="home" href="app.html" aria-label="回到資源中心"><img src="./icons/icon.svg" alt=""><span class="t">說明書</span></a>
+  <nav class="tabs" role="tablist" aria-label="選擇說明書"><button type="button" role="tab" class="tab" id="tab-site" data-doc="site" aria-controls="doc-site">網站使用手冊</button><button type="button" role="tab" class="tab" id="tab-sched" data-doc="sched" aria-controls="doc-sched">排班系統說明</button><button type="button" role="tab" class="tab" id="tab-voice" data-doc="voice" aria-controls="doc-voice">語音功能說明</button></nav>
+  <div class="sp"></div>
+  <div class="search" id="search"><label class="sr" for="q">搜尋本份說明書</label><input id="q" type="search" placeholder="搜尋（Enter 下一個）" autocomplete="off"><span class="cnt" id="cnt"></span></div>
+  <button class="ib" id="findBtn" type="button" aria-label="搜尋"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+  <button class="ib" id="themeBtn" type="button" aria-label="切換深色／淺色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  <button class="ib" id="tocBtn" type="button" aria-label="目次" aria-expanded="false" aria-controls="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+</header>
+<div class="prog" id="prog"></div>
+<div class="wrap">
+  <aside class="side" id="side" aria-label="目次">
+    <h2>目次</h2>
+    <div class="hits" id="hits" hidden></div>
+    <div class="toc-doc" data-doc="site" hidden><ol class="toc-list"><li class="l2"><a href="#site-s1">1　緒論</a></li><li class="l3"><a href="#site-s1-1">1.1　網站定位</a></li><li class="l3"><a href="#site-s1-2">1.2　適用對象</a></li><li class="l3"><a href="#site-s1-3">1.3　開啟方式</a></li><li class="l3"><a href="#site-s1-4">1.4　安裝為應用程式</a></li><li class="l3"><a href="#site-s1-5">1.5　伺服器與語言</a></li><li class="l2"><a href="#site-s2">2　介面與導覽</a></li><li class="l3"><a href="#site-s2-1">2.1　版面配置</a></li><li class="l3"><a href="#site-s2-2">2.2　側欄與分頁籤</a></li><li class="l3"><a href="#site-s2-3">2.3　搜尋與指令面板</a></li><li class="l3"><a href="#site-s2-4">2.4　鍵盤快捷鍵</a></li><li class="l3"><a href="#site-s2-5">2.5　外觀：主題與顯示版本</a></li><li class="l3"><a href="#site-s2-6">2.6　設定頁</a></li><li class="l3"><a href="#site-s2-7">2.7　收藏、分享與線上客服</a></li><li class="l2"><a href="#site-s3">3　首頁</a></li><li class="l3"><a href="#site-s3-1">3.1　首頁區塊</a></li><li class="l3"><a href="#site-s3-2">3.2　「現在該做什麼」</a></li><li class="l3"><a href="#site-s3-3">3.3　綁定 Player ID</a></li><li class="l2"><a href="#site-s4">4　活動與排名</a></li><li class="l3"><a href="#site-s4-1">4.1　活動總覽與活動資料</a></li><li class="l3"><a href="#site-s4-2">4.2　排名與榜線</a></li><li class="l3"><a href="#site-s4-3">4.3　終線預測與預測準確度</a></li><li class="l3"><a href="#site-s4-4">4.4　活動回顧與排程預測</a></li><li class="l3"><a href="#site-s4-5">4.5　玩家回報的榜線</a></li><li class="l3"><a href="#site-s4-6">4.6　WL3 專區</a></li><li class="l3"><a href="#site-s4-7">4.7　日服現況</a></li><li class="l2"><a href="#site-s5">5　圖鑑與資料</a></li><li class="l3"><a href="#site-s5-1">5.1　活動日曆與卡池列表</a></li><li class="l3"><a href="#site-s5-2">5.2　卡片</a></li><li class="l3"><a href="#site-s5-3">5.3　角色、收集室與劇情</a></li><li class="l3"><a href="#site-s5-4">5.4　歌曲與音樂播放器</a></li><li class="l3"><a href="#site-s5-5">5.5　豆森 MySekai</a></li><li class="l2"><a href="#site-s6">6　計算工具</a></li><li class="l3"><a href="#site-s6-1">6.1　計算中心</a></li><li class="l3"><a href="#site-s6-2">6.2　進階計算與理論技能倍率表</a></li><li class="l3"><a href="#site-s6-3">6.3　抽卡與儲值</a></li><li class="l3"><a href="#site-s6-4">6.4　B30 產生器</a></li><li class="l2"><a href="#site-s7">7　Haruki 專區</a></li><li class="l3"><a href="#site-s7-1">7.1　準備工作</a></li><li class="l3"><a href="#site-s7-2">7.2　分頁</a></li><li class="l2"><a href="#site-s8">8　帳號分析</a></li><li class="l2"><a href="#site-s9">9　存石規劃</a></li><li class="l2"><a href="#site-s10">10　豆森工作室</a></li><li class="l2"><a href="#site-s11">11　特別專案</a></li><li class="l3"><a href="#site-s11-1">11.1　SEKAI 星圖</a></li><li class="l3"><a href="#site-s11-2">11.2　衝榜劇場</a></li><li class="l3"><a href="#site-s11-3">11.3　SEKAI 聲紋</a></li><li class="l3"><a href="#site-s11-4">11.4　迴響之境</a></li><li class="l2"><a href="#site-s12">12　AI 功能</a></li><li class="l2"><a href="#site-s13">13　帳號、通知與資料</a></li><li class="l3"><a href="#site-s13-1">13.1　登入與核准</a></li><li class="l3"><a href="#site-s13-2">13.2　偵測訂閱與推播</a></li><li class="l3"><a href="#site-s13-3">13.3　資料保存、備份與匯出</a></li><li class="l2"><a href="#site-s14">14　教學與社群</a></li><li class="l3"><a href="#site-s14-1">14.1　教學大全</a></li><li class="l3"><a href="#site-s14-2">14.2　提問所與其他頁面</a></li><li class="l3"><a href="#site-s14-3">14.3　小遊戲與製作工具</a></li><li class="l2"><a href="#site-s15">15　私車排班</a></li><li class="l2"><a href="#site-s16">16　常見問題</a></li><li class="l2"><a href="#site-sA">附錄 A　伺服器娛樂機器人</a></li></ol></div><div class="toc-doc" data-doc="sched" hidden><ol class="toc-list"><li class="l2"><a href="#sched-s1">1　緒論</a></li><li class="l3"><a href="#sched-s1-1">1.1　系統是什麼</a></li><li class="l3"><a href="#sched-s1-2">1.2　名詞</a></li><li class="l3"><a href="#sched-s1-3">1.3　權限等級</a></li><li class="l2"><a href="#sched-s2">2　成員快速開始</a></li><li class="l3"><a href="#sched-s2-1">2.1　三個前提</a></li><li class="l3"><a href="#sched-s2-2">2.2　登記倍率</a></li><li class="l3"><a href="#sched-s2-3">2.3　第一次報班</a></li><li class="l2"><a href="#sched-s3">3　報班與取消</a></li><li class="l3"><a href="#sched-s3-1">3.1　文字快捷</a></li><li class="l3"><a href="#sched-s3-2">3.2　斜線指令</a></li><li class="l3"><a href="#sched-s3-3">3.3　網站與語音</a></li><li class="l3"><a href="#sched-s3-4">3.4　跨午夜的寫法</a></li><li class="l2"><a href="#sched-s4">4　班表的狀態與規則</a></li><li class="l3"><a href="#sched-s4-1">4.1　一個時段的組成</a></li><li class="l3"><a href="#sched-s4-2">4.2　待確認與自動確認</a></li><li class="l3"><a href="#sched-s4-3">4.3　排位規則</a></li><li class="l3"><a href="#sched-s4-4">4.4　候補與遞補</a></li><li class="l3"><a href="#sched-s4-5">4.5　報班截止與報班限制</a></li><li class="l3"><a href="#sched-s4-6">4.6　鎖定</a></li><li class="l3"><a href="#sched-s4-7">4.7　跨日顯示範圍</a></li><li class="l2"><a href="#sched-s5">5　跑者與管理員</a></li><li class="l3"><a href="#sched-s5-1">5.1　建車檢查表</a></li><li class="l3"><a href="#sched-s5-2">5.2　開班與取消開班</a></li><li class="l3"><a href="#sched-s5-3">5.3　確認排班</a></li><li class="l3"><a href="#sched-s5-4">5.4　手動調整</a></li><li class="l3"><a href="#sched-s5-5">5.5　鎖班與時間鎖班</a></li><li class="l3"><a href="#sched-s5-6">5.6　車隊模式與跑者</a></li><li class="l3"><a href="#sched-s5-7">5.7　多台車</a></li><li class="l2"><a href="#sched-s6">6　簽到、提醒與通知</a></li><li class="l3"><a href="#sched-s6-1">6.1　整點前排班提醒</a></li><li class="l3"><a href="#sched-s6-2">6.2　簽到面板與鴿班</a></li><li class="l3"><a href="#sched-s6-3">6.3　其他通知</a></li><li class="l2"><a href="#sched-s7">7　班表圖片與 Google 試算表</a></li><li class="l3"><a href="#sched-s7-1">7.1　查看班表</a></li><li class="l3"><a href="#sched-s7-2">7.2　看板與外觀</a></li><li class="l3"><a href="#sched-s7-3">7.3　Google 試算表同步</a></li><li class="l2"><a href="#sched-s8">8　網站車隊頁</a></li><li class="l3"><a href="#sched-s8-1">8.1　登入與身分</a></li><li class="l3"><a href="#sched-s8-2">8.2　班表分頁（成員）</a></li><li class="l3"><a href="#sched-s8-3">8.3　管理員工具</a></li><li class="l3"><a href="#sched-s8-4">8.4　其他分頁</a></li><li class="l2"><a href="#sched-s9">9　設定一覽</a></li><li class="l2"><a href="#sched-s10">10　常見問題與疑難排解</a></li><li class="l2"><a href="#sched-sA">附錄 A　指令速查表</a></li></ol></div><div class="toc-doc" data-doc="voice" hidden><ol class="toc-list"><li class="l2"><a href="#voice-s1">1　緒論</a></li><li class="l2"><a href="#voice-s2">2　快速開始</a></li><li class="l2"><a href="#voice-s3">3　互動模式</a></li><li class="l2"><a href="#voice-s4">4　系統流程</a></li><li class="l2"><a href="#voice-s5">5　跑榜助理</a></li><li class="l3"><a href="#voice-s5-1">5.1　可查詢的數據</a></li><li class="l3"><a href="#voice-s5-2">5.2　問法範例</a></li><li class="l3"><a href="#voice-s5-3">5.3　前置設定</a></li><li class="l2"><a href="#voice-s6">6　語音指令</a></li><li class="l2"><a href="#voice-s7">7　語音自動校正</a></li><li class="l3"><a href="#voice-s7-1">7.1　三層校正</a></li><li class="l3"><a href="#voice-s7-2">7.2　自訂與自動學習</a></li><li class="l2"><a href="#voice-s8">8　音樂播放</a></li><li class="l2"><a href="#voice-s9">9　使用建議</a></li><li class="l2"><a href="#voice-s10">10　管理與疑難排解</a></li></ol></div>
+    <a class="pdf" id="pdfLink" href="#" download>下載這份的 PDF（A4）</a>
+  </aside>
+  <main id="main">
+    <article class="paper" id="doc-site" data-doc="site" role="tabpanel" aria-labelledby="tab-site" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>Project SEKAI 資源中心：<br>網站使用手冊</h1><div class="en">User Manual of the Project SEKAI Resource Center Website</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫（台服）玩家資源網站 ・ 2026 年 11 月</div><p class="dl"><a href="manual/site.pdf" download="網站使用手冊.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文完整說明 Project SEKAI 資源中心網站的各項功能，供一般玩家查閱。內容依網站結構編排：先介紹介面、導覽與設定，再依序說明活動與排名、圖鑑與資料、計算工具、帳號分析、存石規劃、豆森工作室、特別專案、AI 功能，以及帳號、推播通知與資料匯出。私車排班另見〈菜根機器人排班系統說明〉；附錄概述同一專案的伺服器娛樂機器人。</div><div class="kw"><b>關鍵詞：</b>世界計畫；Project SEKAI；活動排名；卡池；計算工具；帳號分析；豆森工作室；使用手冊</div><div class="body"><h2 id="site-s1">1　緒論<a class="anc" href="#site-s1" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s1-1">1.1　網站定位<a class="anc" href="#site-s1-1" aria-label="本節連結">#</a></h3>
+<p>「Project SEKAI 資源中心」（以下簡稱本站）是為手機遊戲《世界計畫 彩色舞台 feat. 初音未來》台灣伺服器玩家製作的非官方資訊整合網站。本站把活動、卡池、歌曲、圖鑑、榜線與各種計算工具集中在同一個介面中，讓玩家不必在多個網站與試算表之間切換。本站與遊戲營運方無任何關聯，所有數值以遊戲內顯示為準。</p>
+<p>本文件說明本站每一項面向一般玩家的功能：用途、操作步驟、主要選項與限制。文中以「」標示的文字，均為網站介面上實際出現的按鈕、分頁或選單名稱。</p>
+
+<h3 id="site-s1-2">1.2　適用對象<a class="anc" href="#site-s1-2" aria-label="本節連結">#</a></h3>
+<p>本站的讀者包括三類玩家：想知道「現在有什麼活動、卡池」的一般玩家；需要計算活動點數（活動 P，又稱 EP）、榜線與抽卡預算的衝榜玩家；以及喜歡翻閱卡片、劇情與歌曲資料的收集型玩家。多數功能不需登入即可使用；需要登入的功能（通知、<a class="xpage" href="app.html?page=assistant" target="_blank" rel="noopener">站內助手</a>、雲端同步、<a class="xpage" href="app.html?page=qa" target="_blank" rel="noopener">提問所</a>發文、<a class="xpage" href="app.html?page=car" target="_blank" rel="noopener">私車排班</a>）會在各節特別註明。</p>
+
+<h3 id="site-s1-3">1.3　開啟方式<a class="anc" href="#site-s1-3" aria-label="本節連結">#</a></h3>
+<p>以瀏覽器開啟本站網址<sup class="fn" id="site-fnr1"><a href="#site-fn1" aria-label="註 1">1</a></sup>即可進入主程式。主程式是單頁式應用：切換頁面時不會整頁重新載入，每一頁也都有獨立網址，可直接收藏或分享。部分頁面（如<a class="xpage" href="app.html?page=plan" target="_blank" rel="noopener">存石規劃</a>、<a class="xpage" href="app.html?page=profile" target="_blank" rel="noopener">帳號分析</a>、<a class="xpage" href="app.html?page=mystudio" target="_blank" rel="noopener">豆森工作室</a>、<a class="xpage" href="tutorial.html" target="_blank" rel="noopener">教學大全</a>與各特別專案）同時提供獨立網址，可以單獨開啟。</p>
+<p>本站另保留「<a class="xpage" href="index.html" target="_blank" rel="noopener">經典長頁版</a>」，以單一長頁面呈現早期版本的工具，入口在部分工具頁的連結中。一般使用者以主程式為主即可。</p>
+
+<h3 id="site-s1-4">1.4　安裝為應用程式<a class="anc" href="#site-s1-4" aria-label="本節連結">#</a></h3>
+<p>本站支援漸進式網頁應用（PWA）。在手機瀏覽器選擇「加到主畫面」（或桌面瀏覽器的安裝選項）後，即可像一般應用程式一樣從主畫面開啟，並以全螢幕方式顯示。網站外殼與已下載的資源會快取在裝置上，網路不穩時仍能開啟介面；但即時排名、榜線等資料仍需連線才能更新。主畫面圖示會隨所選的「顯示版本」（<a class="xref" href="#site-s2-5">見 2.5 節</a>）變換。</p>
+
+<h3 id="site-s1-5">1.5　伺服器與語言<a class="anc" href="#site-s1-5" aria-label="本節連結">#</a></h3>
+<p>頁首的「伺服器・語言」切換器可以選擇資料來源與介面語言：</p>
+<ul>
+<li><b>伺服器</b>：「台服」（預設）或「日服」。切換時整頁會重新載入。日服模式下首頁改為「<a class="xpage" href="app.html?page=jpnow" target="_blank" rel="noopener">日服現況</a>」，<a class="xpage" href="app.html?page=rank" target="_blank" rel="noopener">活動排名</a>、卡片、圖鑑等頁改讀日服資料；只有台服資料的頁面會在頁首提示。</li>
+<li><b>介面語言</b>：繁體中文、简体中文、English、日本語。簡體中文為整站轉換；英文與日文翻譯介面與主要頁面，其餘內容維持中文。曲名、卡名與活動名一律維持遊戲原文。</li>
+</ul>
+<p>兩項選擇都會記在本機，下次開啟時沿用。</p>
+
+<h2 id="site-s2">2　介面與導覽<a class="anc" href="#site-s2" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s2-1">2.1　版面配置<a class="anc" href="#site-s2-1" aria-label="本節連結">#</a></h3>
+<p>桌機版畫面左側為側欄，右側為內容區；手機版則改用底部導覽列，包含「首頁」「追活動」「圖鑑」「工具」「更多」五個入口。點選「追活動」「圖鑑」「工具」會進入對應的樞紐頁，上方一句當日狀態，下方列出該類頁面的捷徑卡片；「更多」則展開與側欄相同的完整清單。</p>
+
+<h3 id="site-s2-2">2.2　側欄與分頁籤<a class="anc" href="#site-s2-2" aria-label="本節連結">#</a></h3>
+<p>側欄固定分成五區、共 19 個入口。每個入口代表一個「功能家族」：點入口進入家族的主頁面，家族內其他頁面則在內容區頂端以分頁籤切換。各區可摺疊，入口的順序與顯示可以在「設定」頁調整（<a class="xref" href="#site-s2-6">見 2.6 節</a>）。</p>
+
+<div class="tbl long" id="site-t1" tabindex="0" role="region" aria-labelledby="site-t1-c"><div class="cap" id="site-t1-c"><b>表 1</b>側欄入口與頁首分頁籤</div><table><thead><tr><th>區</th><th>入口</th><th>家族內分頁</th></tr></thead><tbody>
+<tr><td rowspan="4">主頁</td><td>首頁</td><td>—</td></tr>
+<tr><td><a class="xpage" href="app.html?page=favs" target="_blank" rel="noopener">收藏與待辦</a></td><td>—</td></tr>
+<tr><td>我的帳號（未登入顯示「登入」）</td><td>通知、<a class="xpage" href="app.html?page=assistant" target="_blank" rel="noopener">站內助手</a>（登入後顯示）</td></tr>
+<tr><td>設定</td><td>—</td></tr>
+<tr><td rowspan="3">追活動</td><td><a class="xpage" href="app.html?page=event" target="_blank" rel="noopener">活動總覽</a></td><td><a class="xpage" href="app.html?page=evinfo" target="_blank" rel="noopener">活動資料</a>、<a class="xpage" href="app.html?page=recap" target="_blank" rel="noopener">活動回顧</a>、<a class="xpage" href="app.html?page=sched" target="_blank" rel="noopener">排程預測</a>、<a class="xpage" href="app.html?page=jpnow" target="_blank" rel="noopener">日服現況</a></td></tr>
+<tr><td>排名與榜線</td><td><a class="xpage" href="app.html?page=borderdb" target="_blank" rel="noopener">榜線資料庫</a>、<a class="xpage" href="app.html?page=analysis" target="_blank" rel="noopener">分析中心</a>、<a class="xpage" href="app.html?page=accuracy" target="_blank" rel="noopener">預測準確度</a>、<a class="xpage" href="app.html?page=distrib" target="_blank" rel="noopener">活動分布</a>、<a class="xpage" href="app.html?page=lookup" target="_blank" rel="noopener">玩家查詢</a>、<a class="xpage" href="app.html?page=profile" target="_blank" rel="noopener">帳號分析</a></td></tr>
+<tr><td><a class="xpage" href="app.html?page=wl3" target="_blank" rel="noopener">WL3 專區</a></td><td><a class="xpage" href="app.html?page=wl3pow" target="_blank" rel="noopener">WL3 計算器</a>、<a class="xpage" href="app.html?page=wlsup" target="_blank" rel="noopener">WL 後排加成</a></td></tr>
+<tr><td rowspan="6">圖鑑與資料</td><td>日程與公告</td><td><a class="xpage" href="app.html?page=gacha" target="_blank" rel="noopener">卡池列表</a>、<a class="xpage" href="app.html?page=lives" target="_blank" rel="noopener">虛擬 Live</a>、<a class="xpage" href="app.html?page=news" target="_blank" rel="noopener">遊戲公告</a></td></tr>
+<tr><td><a class="xpage" href="app.html?page=cards" target="_blank" rel="noopener">卡片圖鑑</a></td><td><a class="xpage" href="app.html?page=cardlib" target="_blank" rel="noopener">卡片技能庫</a>、<a class="xpage" href="app.html?page=art" target="_blank" rel="noopener">卡面下載</a>、<a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a>、<a class="xpage" href="app.html?page=bonuscards" target="_blank" rel="noopener">加分卡參考</a></td></tr>
+<tr><td>角色與收集</td><td><a class="xpage" href="app.html?page=collect" target="_blank" rel="noopener">收集室</a></td></tr>
+<tr><td>歌曲</td><td><a class="xpage" href="app.html?page=ost" target="_blank" rel="noopener">原聲帶</a></td></tr>
+<tr><td>劇情與漫畫</td><td><a class="xpage" href="app.html?page=comics" target="_blank" rel="noopener">一格漫畫</a></td></tr>
+<tr><td>豆森 MySekai</td><td><a class="xpage" href="app.html?page=mystudio" target="_blank" rel="noopener">豆森工作室</a>、<a class="xpage" href="app.html?page=mstalk" target="_blank" rel="noopener">豆森對話</a>、<a class="xpage" href="app.html?page=bdayparty" target="_blank" rel="noopener">豆森生日派對</a>、<a class="xpage" href="app.html?page=materials" target="_blank" rel="noopener">素材圖鑑</a>、<a class="xpage" href="app.html?page=dolls" target="_blank" rel="noopener">月卡玩偶</a></td></tr>
+<tr><td rowspan="5">計算工具</td><td>計算中心</td><td><a class="xpage" href="app.html?page=deckpro" target="_blank" rel="noopener">進階計算</a>、<a class="xpage" href="app.html?page=skillmult" target="_blank" rel="noopener">理論技能倍率表</a></td></tr>
+<tr><td><a class="xpage" href="app.html?page=haruki" target="_blank" rel="noopener">Haruki 專區</a></td><td>—</td></tr>
+<tr><td>抽卡與儲值</td><td><a class="xpage" href="app.html?page=plan" target="_blank" rel="noopener">存石規劃</a>、<a class="xpage" href="app.html?page=shop" target="_blank" rel="noopener">儲值分析</a></td></tr>
+<tr><td><a class="xpage" href="app.html?page=b30" target="_blank" rel="noopener">B30 產生器</a></td><td>—</td></tr>
+<tr><td>小遊戲與製作</td><td><a class="xpage" href="app.html?page=guessjacket" target="_blank" rel="noopener">猜封面</a>、<a class="xpage" href="app.html?page=stickers" target="_blank" rel="noopener">貼圖製作器</a>、<a class="xpage" href="app.html?page=songcard" target="_blank" rel="noopener">樂曲追加圖產生器</a>、<a class="xpage" href="app.html?page=chart" target="_blank" rel="noopener">譜面預覽產生器</a></td></tr>
+<tr><td rowspan="2">社群與說明</td><td>車隊</td><td>菜根機器人</td></tr>
+<tr><td>教學與社群</td><td><a class="xpage" href="app.html?page=qa" target="_blank" rel="noopener">提問所</a>、資源連結、功能介紹、製作與致謝、<a class="xpage" href="app.html?page=status" target="_blank" rel="noopener">系統狀態</a></td></tr>
+</tbody></table></div>
+
+<p>表中「日程與公告」的主頁面為<a class="xpage" href="app.html?page=calendar" target="_blank" rel="noopener">活動日曆</a>，「抽卡與儲值」的主頁面為<a class="xpage" href="app.html?page=gachasim" target="_blank" rel="noopener">抽卡模擬</a>，「小遊戲與製作」的主頁面為<a class="xpage" href="app.html?page=guesswho" target="_blank" rel="noopener">猜角色</a>，「車隊」的主頁面為<a class="xpage" href="app.html?page=car" target="_blank" rel="noopener">私車排班</a>。側欄最下方另有「特別專案」一列，收錄獨立設計的作品頁（<a class="xref" href="#site-s11">見第 11</a> 章）。</p>
+
+<h3 id="site-s2-3">2.3　搜尋與指令面板<a class="anc" href="#site-s2-3" aria-label="本節連結">#</a></h3>
+<p>首頁上方的搜尋列，或按下 <code>⌘K</code>（Windows 為 <code>Ctrl K</code>）、<code>/</code> 鍵，會開啟全站搜尋與指令面板。面板可搜尋功能頁、設定項目、角色、歌曲、活動期數、卡池與教學問答，也認得玩家慣用說法，例如輸入「摸魚」會帶到摸魚表、「T100」會帶到相關榜線頁。沒有輸入時，面板列出最近造訪的頁面；找不到結果時，可一鍵改問線上客服的小幫手。</p>
+<p>面板也接受簡短的計算指令，輸入後直接帶入計算中心的「EP 精算」：</p>
+
+<div class="tbl" id="site-t2" tabindex="0" role="region" aria-labelledby="site-t2-c"><div class="cap" id="site-t2-c"><b>表 2</b>指令面板的計算指令</div><table><thead><tr><th>輸入範例</th><th>效果</th></tr></thead><tbody>
+<tr><td><code>ep 1500000</code>／<code>分數 1500000</code></td><td>設定分數並改為直接輸入分數</td></tr>
+<tr><td><code>加成 250</code></td><td>設定活動加成 %</td></tr>
+<tr><td><code>綜合力 300000</code></td><td>設定綜合力</td></tr>
+<tr><td><code>火 10</code>／<code>體力 10</code></td><td>設定消耗體力</td></tr>
+<tr><td><code>技能 2.5</code></td><td>設定技能倍率</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s2-4">2.4　鍵盤快捷鍵<a class="anc" href="#site-s2-4" aria-label="本節連結">#</a></h3>
+<div class="tbl" id="site-t3" tabindex="0" role="region" aria-labelledby="site-t3-c"><div class="cap" id="site-t3-c"><b>表 3</b>主程式鍵盤快捷鍵</div><table><thead><tr><th>按鍵</th><th>功能</th></tr></thead><tbody>
+<tr><td><code>⌘K</code>／<code>Ctrl K</code>、<code>/</code></td><td>開啟搜尋與指令面板</td></tr>
+<tr><td><code>↑</code> <code>↓</code>、<code>Enter</code></td><td>在面板中選擇並執行</td></tr>
+<tr><td><code>Esc</code></td><td>關閉面板、詳情視窗或側欄</td></tr>
+<tr><td><code>?</code></td><td>開關快捷鍵說明</td></tr>
+<tr><td><code>←</code> <code>→</code></td><td>圖鑑詳情視窗中切換上一筆／下一筆</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s2-5">2.5　外觀：主題與顯示版本<a class="anc" href="#site-s2-5" aria-label="本節連結">#</a></h3>
+<p>頁首右上的半月按鈕可在「淺色」「深色」「跟隨系統」三種主題間循環切換。更完整的外觀選項位於「設定」頁的「外觀」區，包括「顯示版本」「配色風格」「團體主題色」與「開場動畫」。</p>
+<p>「顯示版本」會把整個網站換成另一套外觀，網站圖示也一併更換，隨時可以換回原版：</p>
+
+<div class="tbl" id="site-t4" tabindex="0" role="region" aria-labelledby="site-t4-c"><div class="cap" id="site-t4-c"><b>表 4</b>顯示版本一覽</div><table><thead><tr><th>版本</th><th>風格</th></tr></thead><tbody>
+<tr><td>原版</td><td>彩色漸層與圓角卡片</td></tr>
+<tr><td>文青版</td><td>深藍 × 香檳金、襯線標題、直角細框</td></tr>
+<tr><td>舞台版</td><td>黑白舞台、LED 點陣與譜面軌道</td></tr>
+<tr><td>筆記本版</td><td>橫線筆記本與藍色原子筆（教室のセカイ）</td></tr>
+<tr><td>偶像版</td><td>雷射膜小卡、粉彩與星星閃粉（ステージのセカイ）</td></tr>
+<tr><td>街頭版</td><td>孔版海報、網點與貼紙（ストリートのセカイ）</td></tr>
+<tr><td>樂園版</td><td>馬戲團海報與跑馬燈泡（ワンダーランドのセカイ）</td></tr>
+<tr><td>留白版</td><td>近乎全白的虛空與極細大字（誰もいないセカイ）</td></tr>
+<tr><td>音軌版</td><td>VOCALOID 編輯器的鋼琴捲簾（虛擬歌手）</td></tr>
+</tbody></table></div>
+
+<p>「配色風格」提供全彩、櫻緋、青碧、藤紫、琥珀、墨藍六種色調；「合鳴」視覺模式會把六個團體的代表色做成環境光暈；「團體主題色」把強調色換成指定團體的顏色。配色風格與合鳴只在原版生效；文青版使用固定配色；舞台版則把團體主題色當作舞台燈色。「開場動畫」每天第一次從首頁進站時播放一次，可隨時略過，也可按「▶ 現在播放」重看。</p>
+
+<h3 id="site-s2-6">2.6　設定頁<a class="anc" href="#site-s2-6" aria-label="本節連結">#</a></h3>
+<p>側欄的「設定」集中了全站設定，分為四區。指令面板搜尋到設定項目時，會直接捲到對應的區塊。</p>
+
+<div class="tbl" id="site-t5" tabindex="0" role="region" aria-labelledby="site-t5-c"><div class="cap" id="site-t5-c"><b>表 5</b>設定頁的四個區塊</div><table><thead><tr><th>區塊</th><th>內容</th></tr></thead><tbody>
+<tr><td>遊戲與資料</td><td>伺服器、介面語言、綁定 Player ID、歌曲音源版本（虛擬歌手 ver.／世界 ver.）</td></tr>
+<tr><td>外觀</td><td>主題、顯示版本、配色風格與合鳴、團體主題色、開場動畫</td></tr>
+<tr><td>版面</td><td>首頁區塊與側欄功能的順序與顯示、「還原預設」</td></tr>
+<tr><td>資料與說明</td><td>本機資料備份、雲端同步與通知、匿名使用統計、榜線回報、功能引導與快捷鍵</td></tr>
+</tbody></table></div>
+
+<p>綁定 Player ID 後，首頁與排名頁會顯示你的名次與時速。「版面」區以上移、下移按鈕調整順序，登入後版面設定會跟著帳號同步。「資料與說明」區另有「重新看一次功能引導」按鈕，可重看第一次進站時的四步導覽。</p>
+
+<h3 id="site-s2-7">2.7　收藏、分享與線上客服<a class="anc" href="#site-s2-7" aria-label="本節連結">#</a></h3>
+<p>卡片、角色、家具、歌曲與卡池等詳情視窗都有 ☆ 按鈕，按下後項目會加入「<a class="xpage" href="app.html?page=favs" target="_blank" rel="noopener">收藏與待辦</a>」頁。該頁除了收藏清單，也會自動列出待辦事項，例如跑榜目標還差多少活動 P、豆森還缺幾件家具、未讀通知，以及尚未綁定 Player ID 的提醒。</p>
+<p>多數頁面可以產生「分享圖卡」（PNG 圖檔），部分頁面提供「複製這一頁的連結（含目前的篩選）」，對方開啟時會看到相同的篩選結果。</p>
+<p>每頁右下角的「線上客服」視窗有三個分頁：「小幫手」不需登入、不耗額度，可回答當期活動、榜線、卡池等即時問題，並附「前往」按鈕；「AI 助手」即<a class="xpage" href="app.html?page=assistant" target="_blank" rel="noopener">站內助手</a>（<a class="xref" href="#site-s12">見第 12</a> 章）；「留言」可在登入後選擇「功能建議」「問題回報」「資料有誤」「其他」分類，私訊給站長，回覆只有本人看得到。</p>
+
+<h2 id="site-s3">3　首頁<a class="anc" href="#site-s3" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s3-1">3.1　首頁區塊<a class="anc" href="#site-s3-1" aria-label="本節連結">#</a></h3>
+<p>首頁是當期狀況的儀表板，由以下區塊組成。右上角的「自訂首頁」按鈕可在「版面」分頁調整區塊順序與顯示，在「資訊顯示」分頁選擇「我的排名」要顯示哪些數字、「快速前往」要放哪些入口。</p>
+
+<div class="tbl" id="site-t6" tabindex="0" role="region" aria-labelledby="site-t6-c"><div class="cap" id="site-t6-c"><b>表 6</b>首頁區塊</div><table><thead><tr><th>區塊</th><th>內容</th></tr></thead><tbody>
+<tr><td>進行中的活動</td><td>倒數、進度與「🔔 結算前提醒我」</td></tr>
+<tr><td>現在該做什麼</td><td>依活動階段給出建議與捷徑</td></tr>
+<tr><td>今日摘要</td><td>快結束的卡池、今日公告等</td></tr>
+<tr><td>我的排名</td><td>綁定後顯示名次、時速、周回</td></tr>
+<tr><td>遊戲通知／主要卡池</td><td>進行中公告與限定卡池</td></tr>
+<tr><td>當期跑榜最佳化小窗</td><td>以預設隊伍估算最佳活動 P</td></tr>
+<tr><td>近期卡池</td><td>即將開放的卡池</td></tr>
+<tr><td>團體、快速前往</td><td>團體入口與常用頁捷徑</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s3-2">3.2　「現在該做什麼」<a class="anc" href="#site-s3-2" aria-label="本節連結">#</a></h3>
+<p>此區塊依活動時程自動判斷目前所處階段，顯示一句建議與四個捷徑按鈕，幫助玩家決定下一步。</p>
+
+<div class="tbl" id="site-t7" tabindex="0" role="region" aria-labelledby="site-t7-c"><div class="cap" id="site-t7-c"><b>表 7</b>活動階段與建議</div><table><thead><tr><th>階段</th><th>建議重點</th></tr></thead><tbody>
+<tr><td>開跑前</td><td>看加分卡與卡池、組隊、回滿體力</td></tr>
+<tr><td>開跑階段</td><td>用活動試算訂目標與每日場數</td></tr>
+<tr><td>中盤</td><td>依終線預測決定加速或摸魚</td></tr>
+<tr><td>最後衝刺</td><td>盯目標分段時速，提早補分</td></tr>
+<tr><td>結算中／已結算</td><td>看最終榜線與回顧、領獎</td></tr>
+<tr><td>下期預告</td><td>補素材、算下期抽卡預算</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s3-3">3.3　綁定 Player ID<a class="anc" href="#site-s3-3" aria-label="本節連結">#</a></h3>
+<p>在首頁「我的排名」區塊或設定頁輸入遊戲內的 Player ID（純數字），按「綁定」即可。綁定資訊只存在這台裝置。綁定後，首頁、<a class="xpage" href="app.html?page=event" target="_blank" rel="noopener">活動總覽</a>與排名頁會顯示你的名次、時速與周回，也可以按「編組詳情」查看自己的隊伍綜合力與逐卡活動加成。</p>
+
+<h2 id="site-s4">4　活動與排名<a class="anc" href="#site-s4" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s4-1">4.1　活動總覽與活動資料<a class="anc" href="#site-s4-1" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=event" target="_blank" rel="noopener">活動總覽</a>」把本期活動整理在一頁：剩餘時間、我的名次、榜線與預測終線、當期卡池、加分卡與活動劇情入口。「加入行事曆」可下載 .ics 檔加進手機或電腦行事曆。</p>
+<p>「<a class="xpage" href="app.html?page=evinfo" target="_blank" rel="noopener">活動資料</a>」可查任一期活動：在搜尋框輸入期數或活動名稱，即可看到完整時程（台灣時間）、加成屬性與角色、活動卡（分「抽卡取得」與「活動商店（活動 P 兌換）」）、當期卡池、依名次區間列出的排名獎勵，以及 World Link 章節與嘉年華隊伍。</p>
+
+<h3 id="site-s4-2">4.2　排名與榜線<a class="anc" href="#site-s4-2" aria-label="本節連結">#</a></h3>
+<p>「排名與榜線」家族的主頁面為<a class="xpage" href="app.html?page=rank" target="_blank" rel="noopener">活動排名</a>，提供以下分頁：</p>
+<ul>
+<li><b>即時排名</b>：前百名即時排名，每 60 秒更新。點任一列可看該玩家的周回、場均與時速，並可查看其編組與加成。</li>
+<li><b>分段榜線</b>：各段位目前分數與預測終線，另有「🔔 榜線提醒」與「玩家回報的榜線」（<a class="xref" href="#site-s4-5">見 4.5 節</a>）。</li>
+<li><b>WL 個榜</b>：World Link 活動期間才出現，顯示各章節的即時排名、榜線與建議編組。</li>
+<li><b>歷代活動</b>：輸入期數或活動名稱，查詢已結束活動的最終前 100 名與各段榜線。</li>
+<li><b>榜線趨勢</b>：近期各期最終榜線並排比較，並標示最新一期相對前一期的增減。</li>
+</ul>
+<p>頁面下方的「逐局紀錄查詢」可用玩家名字或 ID 查詢本站追蹤器記錄到的每一場（僅限當時在前 100 名的場次），並可「下載 CSV（Excel 可開）」。</p>
+
+<div class="tbl" id="site-t8" tabindex="0" role="region" aria-labelledby="site-t8-c"><div class="cap" id="site-t8-c"><b>表 8</b>排名家族的其他頁面</div><table><thead><tr><th>頁面</th><th>用途</th></tr></thead><tbody>
+<tr><td><a class="xpage" href="app.html?page=borderdb" target="_blank" rel="noopener">榜線資料庫</a></td><td>歷期榜線依段位、活動型態、團體、長度等交叉篩選；附 WL 交換所規劃</td></tr>
+<tr><td><a class="xpage" href="app.html?page=analysis" target="_blank" rel="noopener">分析中心</a></td><td>「榜線分析」「玩家分析」「活躍分析」「生涯紀錄」四個分頁</td></tr>
+<tr><td><a class="xpage" href="app.html?page=accuracy" target="_blank" rel="noopener">預測準確度</a></td><td>終線預測的回測結果</td></tr>
+<tr><td><a class="xpage" href="app.html?page=distrib" target="_blank" rel="noopener">活動分布</a></td><td>卡池／活動的甘特圖，可「匯出 PNG」</td></tr>
+<tr><td><a class="xpage" href="app.html?page=lookup" target="_blank" rel="noopener">玩家查詢</a></td><td>以 Player ID 查任一玩家公開資料與編組</td></tr>
+<tr><td><a class="xpage" href="app.html?page=profile" target="_blank" rel="noopener">帳號分析</a></td><td><a class="xref" href="#site-s8">見第 8</a> 章</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s4-3">4.3　終線預測與預測準確度<a class="anc" href="#site-s4-3" aria-label="本節連結">#</a></h3>
+<p><a class="xpage" href="app.html?page=analysis" target="_blank" rel="noopener">分析中心</a>的榜線分析會列出每個段位的目前分數、實測時速、預測終線，以及你與該段的差距與所需時間。預測依據分為三種：標「模型」者為經回測的預測模型，下方小字為 P10～P90 區間；標「實測」者以本機量到的速度外推；標「線性」者按已過進度等比外推。</p>
+<p>「<a class="xpage" href="app.html?page=accuracy" target="_blank" rel="noopener">預測準確度</a>」頁以留一法回測：每一期都用沒看過該期的模型，在活動進度 25／50／75／90% 時各預測一次終線，再與官方終線比較，並列出線性外推與賽前先驗兩個對照組。表格以綠、黃、紅標示中位誤差小於 5%、小於 15% 與 15% 以上。</p>
+
+<h3 id="site-s4-4">4.4　活動回顧與排程預測<a class="anc" href="#site-s4-4" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=recap" target="_blank" rel="noopener">活動回顧</a>」是結算後的一期一報：最終榜線與歷屆同型態對照、各段位走勢與每日增量、前百名單變化，以及綁定 Player ID 後你自己的名次與分數走勢。「複製回顧連結」可分享該期回顧。此頁目前只有台服資料。</p>
+<p>「<a class="xpage" href="app.html?page=sched" target="_blank" rel="noopener">排程預測</a>」推估未來活動與卡池的開始時間，分為「未來活動」「未來卡池」「逐期回測」「延遲與規律」四個分頁。台服的開放時間大致為日服同一天加一年<sup class="fn" id="site-fnr2"><a href="#site-fn2" aria-label="註 2">2</a></sup>；日服尚未公布的期數，則依日服自身的年度規律往後推算，並附每條規則的歷史命中率。</p>
+
+<h3 id="site-s4-5">4.5　玩家回報的榜線<a class="anc" href="#site-s4-5" aria-label="本節連結">#</a></h3>
+<p>官方只公布部分段位的榜線。綁定 Player ID 的玩家看榜時，網站會把期數、名次與分數匿名送到本站，用來補出段位之間的榜線，結果顯示在「分段榜線」分頁。網站不儲存 Player ID 與 IP；不想參與的玩家可在設定頁的「榜線回報」關閉。</p>
+
+<h3 id="site-s4-6">4.6　WL3 專區<a class="anc" href="#site-s4-6" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=wl3" target="_blank" rel="noopener">WL3 專區</a>」集中 World Link 3 的資訊：開跑倒數與各章時程、規則變化與滿配加成、日服每一章的最終榜線、WL3 限定卡與相關卡池，並提供可下載的「一圖流攻略」圖片。其下兩個分頁：</p>
+<ul>
+<li><b><a class="xpage" href="app.html?page=wl3pow" target="_blank" rel="noopener">WL3 計算器</a></b>：選一期帶出滿配隊伍，調整區域道具、MySekai 大門、玩偶與角色等級，看綜合力離上限還有多遠；也計算後排支援隊加成與終章主隊加成。可按「從 <a class="xpage" href="app.html?page=haruki" target="_blank" rel="noopener">Haruki 專區</a>帶入」讀入自己的狀態。</li>
+<li><b><a class="xpage" href="app.html?page=wlsup" target="_blank" rel="noopener">WL 後排加成</a></b>：計算支援隊伍加成與最佳組合。用卡範圍可選「全部卡（理論值）」、<a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a>勾選的持有卡，或以截圖辨識讀入的卡（截圖辨識需登入，計入 AI 額度）。</li>
+</ul>
+
+<h3 id="site-s4-7">4.7　日服現況<a class="anc" href="#site-s4-7" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=jpnow" target="_blank" rel="noopener">日服現況</a>」顯示日服的版本、進行中活動與即時榜線、開放中的卡池、新曲與接下來的活動，頁底附網路上的日服資源連結。可另外綁定日服 Player ID，查看自己這期的即時名次與場數；此綁定與台服 ID 分開保存。</p>
+
+<h2 id="site-s5">5　圖鑑與資料<a class="anc" href="#site-s5" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s5-1">5.1　活動日曆與卡池列表<a class="anc" href="#site-s5-1" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=calendar" target="_blank" rel="noopener">活動日曆</a>」以月曆呈現卡池開放期間，使用「◀ 上月」「今天」「下月 ▶」切換月份，點日期看當天的卡池。「匯出 .ics」可匯出當月卡池與活動；「訂閱行事曆」則讓手機或電腦行事曆自動更新。</p>
+<p>「<a class="xpage" href="app.html?page=gacha" target="_blank" rel="noopener">卡池列表</a>」列出台服卡池的期間、名稱、類型、PU 角色與所屬活動，可依名稱、角色、備註搜尋並依類型篩選。點任一卡池可看 PU 卡面與技能；按鈴鐺可設定「這池結束前 24 小時提醒我」（需登入）。卡池時間為預測值，官方公布後以公告為準。</p>
+<p>同一家族還有「<a class="xpage" href="app.html?page=lives" target="_blank" rel="noopener">虛擬 Live</a>」（歷代虛擬 Live 的期間、場次、歌單與出演角色）與「<a class="xpage" href="app.html?page=news" target="_blank" rel="noopener">遊戲公告</a>」（台服遊戲內公告，可依類型與狀態篩選）。</p>
+
+<h3 id="site-s5-2">5.2　卡片<a class="anc" href="#site-s5-2" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=cards" target="_blank" rel="noopener">卡片圖鑑</a>」收錄台服全部卡片，可依團體、角色、屬性、稀有度與來源篩選，詳情顯示滿等數值、技能與釋出日。搜尋框可直接輸入組合條件，例如「mmj 藍 限定 2025」：能辨識的團體、角色、屬性、稀有度、來源與年份會轉成篩選條件，其餘字詞當作卡名關鍵字。</p>
+<ul>
+<li><b><a class="xpage" href="app.html?page=cardlib" target="_blank" rel="noopener">卡片技能庫</a></b>：逐張卡的技能敘述與 Lv.1–4 數值，以及特訓前後卡面與滿等三維。</li>
+<li><b><a class="xpage" href="app.html?page=art" target="_blank" rel="noopener">卡面下載</a></b>：直連官方素材庫的特訓前、特訓後原圖與去背立繪，可切換台服或日服。</li>
+<li><b><a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a></b>：勾選持有的卡片，即時算出各團體與各稀有度的收集進度。「從我的資料帶入」可讀取公開資料作為起點；「複製備份碼」與「還原」可在裝置間搬移紀錄。</li>
+<li><b><a class="xpage" href="app.html?page=bonuscards" target="_blank" rel="noopener">加分卡參考</a></b>：各活動類型的加分卡組成說明；每期實際加分卡以官方公告為準。</li>
+</ul>
+
+<h3 id="site-s5-3">5.3　角色、收集室與劇情<a class="anc" href="#site-s5-3" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=chars" target="_blank" rel="noopener">角色圖鑑</a>」收錄 26 位角色的聲優、生日、身高、學校、喜好與相關卡片。「<a class="xpage" href="app.html?page=collect" target="_blank" rel="noopener">收集室</a>」以「貼圖」「稱號」等分頁呈現圖鑑，可搜尋名稱、系列與取得條件。</p>
+<p>「<a class="xpage" href="app.html?page=story" target="_blank" rel="noopener">劇情閱讀器</a>」提供台服翻譯文本，分為活動劇情、主線劇情、卡片劇情、區域對話、個人劇情與特別劇情六類，逐句可播放語音。「<a class="xpage" href="app.html?page=comics" target="_blank" rel="noopener">一格漫畫</a>」收錄遊戲內小提示漫畫的台服翻譯版。</p>
+
+<h3 id="site-s5-4">5.4　歌曲與音樂播放器<a class="anc" href="#site-s5-4" aria-label="本節連結">#</a></h3>
+<p>「歌曲」頁收錄台服全曲與日服未實裝曲，可用「台＋日服」「僅台服」「僅日服限定」切換範圍，依 ID、加入時間、難度、BPM 或歌長排序，並在列表與方格檢視間切換。點曲目可看封面、各難度等級與音符數，也可直接帶到計算中心計算該曲的活動 P。</p>
+<p>按「試聽」會開啟浮動播放器，預設播放全曲版自第 10 秒起的 60 秒片段，並可切換完整播放。播放器可收合成圓鈕、跨頁持續播放，支援播放清單、循環模式、「隨機連播」整個曲庫，以及「選團連播」只播某個團體的歌。音源版本可在播放器或設定頁選擇虛擬歌手 ver. 或世界 ver.（如有）。同一家族的「<a class="xpage" href="app.html?page=ost" target="_blank" rel="noopener">原聲帶</a>」收錄遊戲內 BGM，可在站內播放。</p>
+
+<h3 id="site-s5-5">5.5　豆森 MySekai<a class="anc" href="#site-s5-5" aria-label="本節連結">#</a></h3>
+<ul>
+<li><b><a class="xpage" href="app.html?page=fixtures" target="_blank" rel="noopener">家具圖鑑</a></b>：家具的分類、尺寸、顏色、擺放位置與製作素材。</li>
+<li><b><a class="xpage" href="app.html?page=mstalk" target="_blank" rel="noopener">豆森對話</a></b>：角色對話清單，點一下即勾選已看過；切到「家具檢視」會依家具彙整還沒看的對話，標記已擁有的家具後就知道還缺什麼。</li>
+<li><b><a class="xpage" href="app.html?page=materials" target="_blank" rel="noopener">素材圖鑑</a></b>：養成素材與 MySekai 素材一覽，並加總收藏家具所需的製作素材。</li>
+<li><b><a class="xpage" href="app.html?page=bdayparty" target="_blank" rel="noopener">豆森生日派對</a></b>：慶典之花的流程與時程、露水與加成卡計算、累計獎勵與生日家具，附可下載的一圖流攻略。</li>
+<li><b><a class="xpage" href="app.html?page=dolls" target="_blank" rel="noopener">月卡玩偶</a></b>：月卡附贈玩偶的角色輪替表。</li>
+<li><b><a class="xpage" href="app.html?page=mystudio" target="_blank" rel="noopener">豆森工作室</a></b>：<a class="xref" href="#site-s10">見第 10</a> 章。</li>
+</ul>
+
+<h2 id="site-s6">6　計算工具<a class="anc" href="#site-s6" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s6-1">6.1　計算中心<a class="anc" href="#site-s6-1" aria-label="本節連結">#</a></h3>
+<p>「計算中心」整合常用計算，畫面上方的共用設定（綜合力、技能倍率、活動加成、消耗體力、選曲等）會套用到各分頁，也可「＋ 存目前設定」保存多組設定。</p>
+
+<div class="tbl long" id="site-t9" tabindex="0" role="region" aria-labelledby="site-t9-c"><div class="cap" id="site-t9-c"><b>表 9</b>計算中心分頁</div><table><thead><tr><th>分頁</th><th>用途</th></tr></thead><tbody>
+<tr><td>EP 精算</td><td>計算單場活動 P 與各火數效率</td></tr>
+<tr><td>效率排行</td><td>全曲在同一難度下的時間效率排名</td></tr>
+<tr><td>摸魚表</td><td>每首歌自選最划算的難度後再比較</td></tr>
+<tr><td>活動試算</td><td>目標活動 P 換算場數、體力與逐日配速</td></tr>
+<tr><td>推隊倍率</td><td>由隊長與隊員技能計算整隊倍率</td></tr>
+<tr><td>抽卡天井</td><td>水晶可抽次數、命中機率與天井差額</td></tr>
+<tr><td>應援活動</td><td>每日場數與各段個人獎勵</td></tr>
+<tr><td>MySekai</td><td>MySekai 採集體力換算活動 P</td></tr>
+<tr><td>體力回復</td><td>Live Bonus 回滿時間</td></tr>
+<tr><td>排位賽</td><td>排位對戰相關計算</td></tr>
+<tr><td>控分速查</td><td>反推精準達成目標活動 P 的方案</td></tr>
+</tbody></table></div>
+
+<p>「活動試算」可按「帶入我的活動P」讀入目前分數，並選擇目標名次的預測終線作為目標；試算結果會同步到首頁與<a class="xpage" href="app.html?page=favs" target="_blank" rel="noopener">收藏與待辦</a>頁的跑榜提醒。控分只適用於最後收尾：差額超過一萬時，頁面會提示直接照平常打。</p>
+<p>本站另有獨立的「<a class="xpage" href="ep-calculator.html" target="_blank" rel="noopener">EP 計算器</a>」頁面，提供曲庫、EP 計算、活動試算、控分與 EP 排行，功能與計算中心相近，適合單獨開啟使用。</p>
+
+<h3 id="site-s6-2">6.2　進階計算與理論技能倍率表<a class="anc" href="#site-s6-2" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=deckpro" target="_blank" rel="noopener">進階計算</a>」包含綜合力精算、組卡優化、分數估算與跑榜工作室，會即時讀取主資料庫，逐項計算區域道具、角色等級與豆森大門、玩偶加成。跑榜工作室的隊伍設定可產生分享連結。此頁亦可「新分頁開啟 ↗︎」。</p>
+<p>「<a class="xpage" href="app.html?page=skillmult" target="_blank" rel="noopener">理論技能倍率表</a>」列出各團各色「同團同色」最佳五人隊的推隊倍率，每格上排為台服當前、下排為日服最新進度；另有「同團不限色」與「同色不限團」。在<a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a>勾選持有卡後，表格第三行會顯示你手上能組到的最佳倍率。</p>
+
+<h3 id="site-s6-3">6.3　抽卡與儲值<a class="anc" href="#site-s6-3" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=gachasim" target="_blank" rel="noopener">抽卡模擬</a>」依官方機率模型模擬任一期卡池：選好卡池後按「單抽」或連抽按鈕開抽，畫面統計已抽次數、消耗石、PU 入手數與距天井次數，並以長條圖對照實際出現率與官方機率。下方的「抽卡期望 · 天井」可輸入持有水晶、貼紙與交換券，估算可抽次數與至少中一張目標卡的機率。</p>
+<p>「<a class="xpage" href="app.html?page=shop" target="_blank" rel="noopener">儲值分析</a>」整理商城商品的內容物與定價，提供「商品總覽」「CP 值排行」「智慧推薦」「月卡·通行證」，智慧推薦會在限購規則內算出最省錢的購買組合。結果僅供參考，付款一律在官方管道完成。「<a class="xpage" href="app.html?page=plan" target="_blank" rel="noopener">存石規劃</a>」<a class="xref" href="#site-s9">見第 9</a> 章。</p>
+
+<h3 id="site-s6-4">6.4　B30 產生器<a class="anc" href="#site-s6-4" aria-label="本節連結">#</a></h3>
+<p>勾選自己 FC 或 AP 的譜面，依非官方難易度表的定數計算 Best 30 実効值（AP＝定數、FC＝定數−1），並輸出圖卡 PNG。台服沒有公開逐曲成績，因此需手動勾選、上傳選曲畫面截圖匯入，或經 Haruki 匯入（<a class="xref" href="#site-s7">見第 7</a> 章）。成績只存在這台瀏覽器。</p>
+
+<h2 id="site-s7">7　Haruki 專區<a class="anc" href="#site-s7" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s7-1">7.1　準備工作<a class="anc" href="#site-s7-1" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=haruki" target="_blank" rel="noopener">Haruki 專區</a>」使用玩家在第三方「Haruki 工具箱」上傳的遊戲資料，計算最佳組卡、養成與 MySekai 資訊。第一次使用依頁面上的「三個步驟開始使用」：</p>
+<ol>
+<li>把遊戲資料上傳到 Haruki 工具箱（繼承碼、檔案或 iOS 模組三種方式擇一）。</li>
+<li>在工具箱的遊戲帳號綁定中，把 Suite（若要 MySekai 也一併打開）設為「允許公開API訪問」；或改用 Haruki 帳號授權，不必公開。</li>
+<li>回到本站填入 Player ID，按「讀取我的資料」。</li>
+</ol>
+<p>資料只在這台瀏覽器中整理，不會上傳到本站。之後可按「重新同步」更新。</p>
+
+<h3 id="site-s7-2">7.2　分頁<a class="anc" href="#site-s7-2" aria-label="本節連結">#</a></h3>
+<div class="tbl" id="site-t10" tabindex="0" role="region" aria-labelledby="site-t10-c"><div class="cap" id="site-t10-c"><b>表 10</b>Haruki 專區分頁</div><table><thead><tr><th>分頁</th><th>內容</th></tr></thead><tbody>
+<tr><td>總覽</td><td>匯入步驟與資料摘要</td></tr>
+<tr><td>組卡</td><td>指定活動與歌曲，計算最佳隊伍</td></tr>
+<tr><td>養成</td><td>養成策略、角色等級、隊長次數、羈絆、綜合力加成、挑戰 Live、區域道具</td></tr>
+<tr><td>MySekai</td><td>今日資源、來訪與天氣、大門升級、唱片收集、家具與對話</td></tr>
+<tr><td>背包</td><td>名片、稱號、資源、跑榜、歌曲、收集、原始資料</td></tr>
+<tr><td>說明</td><td>使用教學、資料與資源</td></tr>
+</tbody></table></div>
+
+<p>「組卡」可設定 Live 種類、目標與難度，選擇是否把未練滿的卡當作滿等、滿專精或滿技能，並指定「一定要放的卡」與「不要用的卡」；組卡引擎在瀏覽器內執行。「MySekai」的「今日資源」會把採集點畫在實際地圖上，可切換「顯示已採完的點」與「只看稀有」。</p>
+<p>「我的帳號」頁也提供 Haruki 匯入：可一次填好<a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a>的持有卡、B30 的 FC／AP，以及豆森看過的對話與有藍圖的家具。收集率以遊戲為準整份取代，若不滿意可按「還原收集率」退回；B30 成績只會往上升。</p>
+
+<h2 id="site-s8">8　帳號分析<a class="anc" href="#site-s8" aria-label="本節連結">#</a></h2>
+<p>「<a class="xpage" href="app.html?page=profile" target="_blank" rel="noopener">帳號分析</a>」把任一玩家的公開資料整理成報告。選擇「台服」或「日服」，輸入 Player ID 後按「分析」。報告分為「總覽」「角色」「歌曲」「挑戰 Live」「卡片」「豆森」「比較」七個分頁，內容包括綜合力拆解、各難度通關／FC／AP、角色平均等級、挑戰 Live 進度、最容易補的下一首 FC／AP、各稀有度<a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a>與豆森材料庫存。填入比較對象的 ID，可兩個帳號並排比較。</p>
+<p>台服資料需玩家在遊戲內開啟公開個人檔案；每首歌、每位角色與材料的細節，則需玩家在 Haruki 工具箱上傳並允許公開 API。資料只在瀏覽器中整理，不會上傳。</p>
+
+<h2 id="site-s9">9　存石規劃<a class="anc" href="#site-s9" aria-label="本節連結">#</a></h2>
+<p>「<a class="xpage" href="app.html?page=plan" target="_blank" rel="noopener">存石規劃</a>」把未來 6～24 個月的卡池排成時間軸，對照你的水晶收入，推算每一池時手上能存多少、夠不夠抽。操作步驟如下：</p>
+<ol>
+<li>在「你的資源」填入免費水晶、付費水晶、招募券，以及每日、每期活動與每月的收入（預設為概估值，請依自己的習慣調整）。</li>
+<li>選擇「看幾個月」（6、12、18 或 24）。</li>
+<li>選填 Player ID 後按「讀取持卡」，時間軸會標出你已有或缺少的 PU 卡。</li>
+<li>在想抽的卡池填入抽數，或按 10、50、100、天井等快捷按鈕；「不抽」可取消。</li>
+</ol>
+<p>每一池會顯示「到這天預估有幾顆＝可抽幾抽」、計畫抽數是否足夠、抽完剩多少，以及至少中一張指定 PU 的機率；上方總結列出現在可抽次數、期末預估水晶與不夠的卡池，並以走勢圖標出水晶變化。清單可篩選「全部」「只看有缺卡的」「只看想抽的」。計畫存在本機；「分享連結」會把輸入值與勾選編入網址，「清空計畫」可重來。</p>
+<div class="boxed"><b>注意</b>卡池時間是依「日服同一天加一年」推估的預測值，官方已公布的會標為綠色。一般池天井 300 抽、生日池 100 抽，指定 PU 每張 0.4%。</div>
+
+<h2 id="site-s10">10　豆森工作室<a class="anc" href="#site-s10" aria-label="本節連結">#</a></h2>
+<p>「<a class="xpage" href="app.html?page=mystudio" target="_blank" rel="noopener">豆森工作室</a>」是 MySekai 的設計工具，分為四個分頁：</p>
+<ul>
+<li><b>像素畫</b>：拖曳、貼上或選擇一張圖片（也可「用文字做看板」或「用角色頭像」），選擇媒材（方塊 1×1、方塊 2×2、瓷磚 2×2）與寬高格數，網站會把圖轉成豆森彩色方塊，算出每色塊數、材料總計與建築步驟。可關掉未解鎖的顏色、開關抖色與自動適配，並「匯出成品 PNG」「匯出設計圖」。「建造過程播放」可依逐列、逐色或由中心的順序一格一格播放。</li>
+<li><b>內部設計</b>：以等距立體視角在遊戲場地格數上擺放家具，支援旋轉、堆疊、復原與重做，並計算材料總計。鍵盤操作：<code>R</code> 旋轉、<code>Delete</code> 刪除、<code>PgUp</code>／<code>PgDn</code> 升降、<code>Esc</code> 取消。「AI 顧問」可依文字描述排出一套擺設，需在主站登入並經核准，每次生成計入 AI 額度。</li>
+<li><b>生日模板</b>：選角色後一鍵產生代表色看板、頭像像素畫、愛心或蛋糕圖樣，並列出相關家具。</li>
+<li><b>我的作品</b>：按「儲存」保存的作品，存在這台裝置的瀏覽器中。</li>
+</ul>
+<p>圖片在瀏覽器中處理，不會上傳。「分享連結」會把設計編入網址。</p>
+
+<h2 id="site-s11">11　特別專案<a class="anc" href="#site-s11" aria-label="本節連結">#</a></h2>
+<p>側欄底部的「特別專案」收錄獨立設計的作品頁，開啟後會離開主程式，頁面左上角可回到資源中心。各頁都提供夜空／象牙兩種配色，以及「這是什麼？」說明。</p>
+
+<div class="tbl" id="site-t11" tabindex="0" role="region" aria-labelledby="site-t11-c"><div class="cap" id="site-t11-c"><b>表 11</b>特別專案</div><table><thead><tr><th>名稱</th><th>內容</th></tr></thead><tbody>
+<tr><td>開場動畫專場</td><td>光粒子組成站名的動畫，可點畫面換字</td></tr>
+<tr><td><a class="xpage" href="starmap.html" target="_blank" rel="noopener">SEKAI 星圖</a></td><td>全曲庫化為可互動的星空</td></tr>
+<tr><td><a class="xpage" href="theater.html" target="_blank" rel="noopener">衝榜劇場</a></td><td>前百名逐場紀錄的視覺化</td></tr>
+<tr><td><a class="xpage" href="soundprint.html" target="_blank" rel="noopener">SEKAI 聲紋</a></td><td>每首歌的傅立葉頻譜肖像</td></tr>
+<tr><td><a class="xpage" href="echoes.html" target="_blank" rel="noopener">迴響之境</a></td><td>六個 SEKAI 間的網頁冒險遊戲</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s11-1">11.1　SEKAI 星圖<a class="anc" href="#site-s11-1" aria-label="本節連結">#</a></h3>
+<p>每一顆星代表一首歌：大小為音符數，顏色為演唱團體。可選三種投影：「節奏 × 難度」「年代 × 難度」「曲長 × 密度」，並切換 Master 或 Append 難度、「僅台服已實裝」與「書き下ろし」篩選。滾輪或雙指縮放、拖曳平移、雙擊回到全景；點星看詳情，按「同作曲者」會把同一位作曲者的歌連成星座。「星表」可依各種條件排序，「星空電台」會在看得見的星之間隨機漫遊播放。網址會記住目前所看的星，複製即可分享。</p>
+
+<h3 id="site-s11-2">11.2　衝榜劇場<a class="anc" href="#site-s11-2" aria-label="本節連結">#</a></h3>
+<p>本站追蹤器每 15 秒掃描一次前百名，分數一變就記為一局。「脈動牆」以時間為橫軸、名次為縱軸，每一點是一局；拖動下方時間軸可回放整期，「只看大局」只顯示單場 4 萬以上的局。「節奏熱圖」以日、時呈現前百名最拚的時段。點任何一點或名字可開啟「選手剖析」，看該選手的場次、分布、作息與名次軌跡。活動進行中按「跟著現在」會自動追蹤最新資料。</p>
+
+<h3 id="site-s11-3">11.3　SEKAI 聲紋<a class="anc" href="#site-s11-3" aria-label="本節連結">#</a></h3>
+<p>網站在瀏覽器內對整首歌的音訊做短時傅立葉轉換，畫成三種檢視：「肖像」（時間繞一圈、頻率由內而外）、「頻譜」與「結構」（自相似矩陣，可看出重複段落）。分析卡會推算調性、速度、亮度、動態與段落。點肖像環上任一處可聽那一刻。快捷鍵：<code>Space</code> 播放／暫停、<code>R</code> 隨機一首、<code>1</code> <code>2</code> <code>3</code> 切換檢視、<code>/</code> 搜尋、<code>E</code> 輸出海報、<code>Esc</code> 關閉。推算值僅供參考。</p>
+
+<h3 id="site-s11-4">11.4　迴響之境<a class="anc" href="#site-s11-4" aria-label="本節連結">#</a></h3>
+<p>在六個 SEKAI 之間漂流的抽象冒險遊戲：跟著各世界的 BPM 踩拍前進，並有戰鬥、強化選擇、鍛造、採集等玩法。選單包括「核心」「雷達」「遠征」「礦脈」「工坊」「行囊」「市集」「記者會」「紀錄」「設定」；「記者會」為以字卡填詞的派對小遊戲。存檔保存在本機瀏覽器。</p>
+
+<h2 id="site-s12">12　AI 功能<a class="anc" href="#site-s12" aria-label="本節連結">#</a></h2>
+<p>「<a class="xpage" href="app.html?page=assistant" target="_blank" rel="noopener">站內助手</a>」可回答關於本站資料的問題：它會實際查詢榜線、活動與卡池排程、你的遊戲資料與持卡、<a class="xpage" href="tutorial.html" target="_blank" rel="noopener">教學大全</a>，再做多步驟規劃，例如「我要衝 T1000，還要跑多久？」。頁面提供分類與「問題模板」，把〔〕中的內容換成自己的數字即可送出。</p>
+<p>使用條件與額度如下：</p>
+<ul>
+<li>需登入，並在「我的帳號」送出遊戲 Player ID 申請；查到遊戲帳號即自動核准。</li>
+<li>每人每天 20 次操作；一次提問或一次截圖辨識算一次操作。每日免費額度用完後，可使用「AI 點數」（測試中）。</li>
+<li>「雙路並行」開啟後，同一題會同時詢問兩個模型並排對照，仍只算一次操作。</li>
+</ul>
+<p>站內助手也可從線上客服的「AI 助手」分頁使用，對話內容相同；<a class="xpage" href="app.html?page=qa" target="_blank" rel="noopener">提問所</a>的主題也可「請站內助手回答」。其他使用 AI 額度的功能包括 <a class="xpage" href="app.html?page=wlsup" target="_blank" rel="noopener">WL 後排加成</a>的截圖辨識，以及<a class="xpage" href="app.html?page=mystudio" target="_blank" rel="noopener">豆森工作室</a>的 AI 顧問。<sup class="fn" id="site-fnr3"><a href="#site-fn3" aria-label="註 3">3</a></sup></p>
+
+<h2 id="site-s13">13　帳號、通知與資料<a class="anc" href="#site-s13" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s13-1">13.1　登入與核准<a class="anc" href="#site-s13-1" aria-label="本節連結">#</a></h3>
+<p>點側欄的「登入」可選「用 Discord 登入」「用 Google 登入」，或使用本站帳號密碼（需透過 QQ 群機器人驗證註冊，「忘記密碼」亦以綁定的 QQ 重設）。登入只取得名稱與頭像（Google 另含信箱）。登入後在「我的帳號」填入玩家 id 送出申請；如需證明帳號屬於自己，可把驗證碼貼進遊戲內「個人檔案 → 自我介紹」完成驗證。</p>
+
+<h3 id="site-s13-2">13.2　偵測訂閱與推播<a class="anc" href="#site-s13-2" aria-label="本節連結">#</a></h3>
+<p>在「我的帳號」的「偵測訂閱」按「新增訂閱」（或「一鍵預設」），選擇「要偵測什麼」並填入條件，再按「建立訂閱」，每人最多 20 條。活動頁、<a class="xpage" href="app.html?page=gacha" target="_blank" rel="noopener">卡池列表</a>與分段榜線上的 🔔 按鈕會直接帶好條件。條件成立時，通知會出現在「通知」頁（未讀會顯示數字）；按「開啟瀏覽器推播」可讓這台裝置收到推播。</p>
+
+<div class="tbl" id="site-t12" tabindex="0" role="region" aria-labelledby="site-t12-c"><div class="cap" id="site-t12-c"><b>表 12</b>偵測訂閱種類</div><table><thead><tr><th>種類</th><th>可設條件</th></tr></thead><tbody>
+<tr><td>榜線</td><td>段位分數到達門檻、我掉出／擠進段位</td></tr>
+<tr><td>玩家動態</td><td>名次變動、開始跑、停跑、對方超過我</td></tr>
+<tr><td>活動與卡池排程</td><td>活動開始、活動結算、卡池開放／結束、世界連結章節切換</td></tr>
+<tr><td>車隊房間</td><td>車隊開房、缺人、收工</td></tr>
+</tbody></table></div>
+
+<h3 id="site-s13-3">13.3　資料保存、備份與匯出<a class="anc" href="#site-s13-3" aria-label="本節連結">#</a></h3>
+<p>本站的收藏、<a class="xpage" href="app.html?page=rate" target="_blank" rel="noopener">收集率</a>勾選、B30 成績、版面與外觀設定等，預設都存在這台裝置的瀏覽器中。換裝置或清除瀏覽器資料前，請先備份。</p>
+
+<div class="tbl" id="site-t13" tabindex="0" role="region" aria-labelledby="site-t13-c"><div class="cap" id="site-t13-c"><b>表 13</b>資料保存與搬移方式</div><table><thead><tr><th>方式</th><th>說明</th></tr></thead><tbody>
+<tr><td>匯出備份檔／匯入備份檔</td><td>設定頁「資料與說明」，JSON 檔可在另一台裝置匯入</td></tr>
+<tr><td>持有卡片 CSV、收藏清單 CSV</td><td>匯出為試算表可開的檔案</td></tr>
+<tr><td>清除本機資料</td><td>刪除這台裝置上的本站資料</td></tr>
+<tr><td>雲端同步</td><td>登入後「上傳這台裝置的設定」「從雲端載入」</td></tr>
+</tbody></table></div>
+
+<p>雲端同步會同步遊戲 uid、持卡勾選、編組與偏好設定；從雲端載入時只補上本機沒有的項目，不會覆蓋正在編輯的內容。設定頁的「匿名使用統計」只記錄瀏覽頁面、裝置類型與錯誤訊息，不使用 cookie、不存 IP，可隨時關閉。</p>
+
+<h2 id="site-s14">14　教學與社群<a class="anc" href="#site-s14" aria-label="本節連結">#</a></h2>
+
+<h3 id="site-s14-1">14.1　教學大全<a class="anc" href="#site-s14-1" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="tutorial.html" target="_blank" rel="noopener">教學大全</a>」收錄由編輯團隊整理的 115 則問答，涵蓋養成、車隊、衝榜與音遊練習，分為基礎、進階、卡面技能、烤森綜合力、排位賽、音遊練習六類。可直接搜尋名詞或關鍵字（例如「S6」「控分」「烤森」），教學圖片內嵌顯示。教學大全同時有站內頁與獨立頁兩種版本，指令面板也搜尋得到教學條目。</p>
+
+<h3 id="site-s14-2">14.2　提問所與其他頁面<a class="anc" href="#site-s14-2" aria-label="本節連結">#</a></h3>
+<p>「<a class="xpage" href="app.html?page=qa" target="_blank" rel="noopener">提問所</a>」是公開討論區，分為提問、討論、車隊招募、榜線回報四類。瀏覽不需登入；發文需登入並通過核准，可「套用範本」後「發表」。其他頁面包括：「資源連結」（官方、資訊站、社群、Wiki 與工具連結，並附資料備份與轉移）、「功能介紹」（全部功能一覽與系統更新紀錄）、「製作與致謝」，以及「<a class="xpage" href="app.html?page=status" target="_blank" rel="noopener">系統狀態</a>」（資料管線、即時排名來源與各資料檔最近更新日期）。</p>
+
+<h3 id="site-s14-3">14.3　小遊戲與製作工具<a class="anc" href="#site-s14-3" aria-label="本節連結">#</a></h3>
+<ul>
+<li><b><a class="xpage" href="app.html?page=guesswho" target="_blank" rel="noopener">猜角色</a>／<a class="xpage" href="app.html?page=guessjacket" target="_blank" rel="noopener">猜封面</a></b>：看一小塊卡面或曲繪作答，十題一局，可調難度、團體、稀有度、選項數與每題限時；答得越快分數越高。</li>
+<li><b><a class="xpage" href="app.html?page=stickers" target="_blank" rel="noopener">貼圖製作器</a></b>：在官方貼圖或自己上傳的圖片上加文字，調整大小、位置、旋轉與描邊，可「下載 PNG」或「複製到剪貼簿」。圖片只在瀏覽器中處理。</li>
+<li><b><a class="xpage" href="app.html?page=songcard" target="_blank" rel="noopener">樂曲追加圖產生器</a></b>：製作官方風格的「樂曲追加決定」圖，選曲後自動帶入曲圖、創作者、MV、APPEND 與演唱陣容，附羅馬拼音或平假名轉片假名的「片假名轉換器」。</li>
+<li><b><a class="xpage" href="app.html?page=chart" target="_blank" rel="noopener">譜面預覽產生器</a></b>：把整首官方譜面畫成直欄式圖片，可標示小節 combo、BPM 與技能發動點，也可上傳自己的 .sus 譜面，輸出 PNG 或 JPG。</li>
+</ul>
+
+<h2 id="site-s15">15　私車排班<a class="anc" href="#site-s15" aria-label="本節連結">#</a></h2>
+<p>「<a class="xpage" href="app.html?page=car" target="_blank" rel="noopener">私車排班</a>」是菜根機器人車隊班表的網頁版，與 Discord、QQ 群的班表三邊同步，可報班、看班表、標記推手等。進入方式：點側欄「車隊」，或在「我的帳號」按「開啟私車排班」。使用前須登入，並綁定所屬車隊使用的 Discord 或 QQ 身分；只有菜根機器人所在、且你是成員的車隊才會出現。同一家族的「菜根機器人」頁介紹機器人功能，並提供可存圖的指令清單圖。</p>
+<p>排班系統的完整操作，請參閱另一份文件<a class="xdoc" href="#sched">「菜根機器人排班系統說明」</a>。</p>
+
+<h2 id="site-s16">16　常見問題<a class="anc" href="#site-s16" aria-label="本節連結">#</a></h2>
+<ol>
+<li><b>為什麼首頁沒有顯示我的名次？</b>需先綁定 Player ID（<a class="xref" href="#site-s3-3">見 3.3 節</a>）。若已綁定仍未顯示，可能是目前沒有進行中的活動，或排名資料暫時載不到，頁面會顯示對應提示。</li>
+<li><b>換手機後資料不見了？</b>本站資料預設存在各裝置的瀏覽器中。請在舊裝置用「匯出備份檔」，再到新裝置「匯入備份檔」；或登入後使用雲端同步。</li>
+<li><b>Haruki 讀不到我的資料？</b>請確認已在 Haruki 工具箱上傳資料，並把 Suite 設為「允許公開API訪問」；MySekai 資料需另外上傳並開啟。</li>
+<li><b>卡池時間跟<a class="xpage" href="app.html?page=news" target="_blank" rel="noopener">遊戲公告</a>不同？</b><a class="xpage" href="app.html?page=gacha" target="_blank" rel="noopener">卡池列表</a>與<a class="xpage" href="app.html?page=sched" target="_blank" rel="noopener">排程預測</a>多為預測值，官方公布後以公告為準；排程預測頁可查各規則的命中率。</li>
+<li><b>終線預測可信嗎？</b>可參考「<a class="xpage" href="app.html?page=accuracy" target="_blank" rel="noopener">預測準確度</a>」頁的歷史回測誤差；活動中盤以後的預測通常較穩定。</li>
+<li><b><a class="xpage" href="app.html?page=assistant" target="_blank" rel="noopener">站內助手</a>無法使用？</b>需登入並通過核准，每天 20 次操作；額度用完要等隔天或使用 AI 點數。</li>
+<li><b>沒收到推播？</b>推播需在每台裝置各自按「開啟瀏覽器推播」並允許瀏覽器通知；通知同時保留在「通知」頁。</li>
+<li><b>切到日服後某些頁沒資料？</b>部分頁面只有台服資料，頁首會提示；可從「伺服器・語言」切回台服。</li>
+<li><b>發現資料錯誤怎麼回報？</b>可在線上客服「留言」選「資料有誤」，或到<a class="xpage" href="app.html?page=qa" target="_blank" rel="noopener">提問所</a>發文。</li>
+</ol>
+
+<h2 id="site-sA">附錄 A　伺服器娛樂機器人<a class="anc" href="#site-sA" aria-label="本節連結">#</a></h2>
+<p>本站專案另附一個獨立的 Discord 伺服器機器人（與菜根機器人不同），提供 100 個中文斜線指令的娛樂與互動功能，適合一般社群使用。占卜類結果以「使用者＋日期＋問題」決定，同一人同一天問同一件事會得到相同答案。世界計畫相關的曲庫、卡片與卡池資料與本站共用同一份。</p>
+
+<div class="tbl long" id="site-t14" tabindex="0" role="region" aria-labelledby="site-t14-c"><div class="cap" id="site-t14-c"><b>表 14</b>機器人功能分類</div><table><thead><tr><th>分類（數量）</th><th>指令範例</th></tr></thead><tbody>
+<tr><td>占卜算命（12）</td><td><code>/塔羅</code> <code>/易經</code> <code>/御神籤</code></td></tr>
+<tr><td>性格測驗（10）</td><td><code>/mbti</code> <code>/五大人格</code> <code>/九型人格</code></td></tr>
+<tr><td>社交互動（11）</td><td><code>/配對</code> <code>/結婚</code> <code>/生日</code></td></tr>
+<tr><td>小遊戲（12）</td><td><code>/21點</code> <code>/踩地雷</code> <code>/wordle</code></td></tr>
+<tr><td>趣味（12）</td><td><code>/投票</code> <code>/幫我選</code> <code>/真心話大冒險</code></td></tr>
+<tr><td>經濟（10）</td><td><code>/簽到</code> <code>/商店</code> <code>/樂透</code></td></tr>
+<tr><td>轉蛋收藏（7）</td><td><code>/轉蛋</code> <code>/卡片</code> <code>/卡池情報</code></td></tr>
+<tr><td>問答與音樂（10）</td><td><code>/猜歌</code> <code>/搶答</code> <code>/活動</code></td></tr>
+<tr><td>等級與社群（10）</td><td><code>/等級</code> <code>/抽獎</code> <code>/提醒</code></td></tr>
+<tr><td>伺服器（5）</td><td><code>/歡迎訊息</code> <code>/說明</code> <code>/設定</code></td></tr>
+<tr><td>AI 對話（1）</td><td><code>/聊天</code></td></tr>
+</tbody></table></div>
+
+<p><code>/活動</code> 可查台服<a class="xpage" href="app.html?page=calendar" target="_blank" rel="noopener">活動日曆</a>、即時榜線與前百，與本站排名頁使用同一套資料來源。<code>/聊天</code> 為選用的 AI 對話功能，具備人設與短期對話記憶，可代使用者查歌曲、看活動或執行簽到等白名單指令；伺服器管理員未啟用時此功能關閉，其他指令不受影響。<code>/說明</code> 可依分類查看全部指令。</p>
+
+<div class="notes">
+<p id="site-fn1"><sup><a href="#site-fnr1" aria-label="回到內文">1</a></sup>　正式網址為 <code>https://project-sekai-center.com/</code>。各頁網址採路徑形式，例如歌曲頁為 <code>/songs</code>；舊式的 <code>?page=</code> 參數仍可使用。</p>
+<p id="site-fn2"><sup><a href="#site-fnr2" aria-label="回到內文">2</a></sup>　台服的活動與卡池內容大致與日服相同，開放時間通常為日服同一天、同一當地時刻再加一年；實際延遲可能變動，故標示為預測。</p>
+<p id="site-fn3"><sup><a href="#site-fnr3" aria-label="回到內文">3</a></sup>　AI 功能會將提問內容送交外部 AI 服務處理。申請核准時填寫的「想說的一句話」也會送交 AI 服務做自動初審，請勿填寫真實姓名、電話等個人資料。</p>
+</div>
+</div></article><article class="paper" id="doc-sched" data-doc="sched" role="tabpanel" aria-labelledby="tab-sched" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>菜根機器人排班系統說明</h1><div class="en">Shift Scheduling with the Caigen Discord Bot</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫車隊管理機器人 ・ 版本 b2026-11-09k ・ 2026 年 11 月</div><p class="dl"><a href="manual/sched.pdf" download="排班系統說明.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文說明菜根機器人的私車排班系統，供車隊成員與管理員查閱。成員部分涵蓋註冊與倍率登記、報班與取消（斜線指令、文字快捷、網站車隊頁與語音）、班表的待審、候補、滿班與鎖定規則，以及跨日時段的處理；管理員部分涵蓋開跑時段、自訂跑者、審核與自動排班、鎖班與時間鎖、多車與車隊模式、簽到與提醒、班表圖片與 Google 試算表同步。文末附設定一覽、常見問題與指令速查表。</div><div class="kw"><b>關鍵詞：</b>排班；報班；車隊；推手；跑者；鎖班；Discord；菜根機器人</div><div class="body"><h2 id="sched-s1">1　緒論<a class="anc" href="#sched-s1" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s1-1">1.1　系統是什麼<a class="anc" href="#sched-s1-1" aria-label="本節連結">#</a></h3>
+<p>排班系統是菜根機器人的核心功能，用來管理《世界計畫》私車（車隊）每一個小時由誰上車。管理員或跑者先「開班」宣告某段時間要跑，推手再「報班」登記想上的時段，機器人依倍率與排班規則把人排進 P2～P5 四個座位，排不下的列入候補，開跑前自動提醒與簽到。</p>
+<p>同一張班表可以從三個地方操作：Discord（文字快捷與斜線指令）、QQ 群（指令用簡體），以及網站左側「車隊」裡的<a class="xpage" href="app.html?page=car" target="_blank" rel="noopener">私車排班</a>頁。任何一邊的報班、取消、換人都寫進同一份資料，另外兩邊會同步看到。本手冊以 Discord 與網站為主；QQ 端的寫法只在必要處附帶說明。</p>
+
+<h3 id="sched-s1-2">1.2　名詞<a class="anc" href="#sched-s1-2" aria-label="本節連結">#</a></h3>
+<div class="tbl long" id="sched-t1" tabindex="0" role="region" aria-labelledby="sched-t1-c"><div class="cap" id="sched-t1-c"><b>表 1</b>排班系統常用名詞</div><table><thead><tr><th>名詞</th><th>說明</th></tr></thead><tbody>
+<tr><td>車／車隊</td><td>一個 Discord 伺服器（或 QQ 群）裡的私車團體。一個車隊最多可同時平行開三台車（一車、二車、三車）。</td></tr>
+<tr><td>班／時段</td><td>一個小時為一格，例如「20-21」。<code>20-24</code> 代表 20、21、22、23 點四個時段。</td></tr>
+<tr><td>開班（報跑）</td><td>宣告某時段要跑。沒開班的時段，推手報不進去。</td></tr>
+<tr><td>P1／跑者</td><td>開車的人，固定佔 P1。私車模式整隊一位；車隊模式可每格指定。</td></tr>
+<tr><td>推手</td><td>坐 P2～P5 協助推分的成員。</td></tr>
+<tr><td>S6</td><td>以 S6 倍率坐 P2 的推手，每時段只排一位。</td></tr>
+<tr><td>外援（B1）</td><td>以「外援」身分報班者坐 B1 位，不佔 P2～P5。</td></tr>
+<tr><td>倍率</td><td>隊伍加成倍率，範圍 1.18～3.88，另可登記 S6、二開、三開、跑者倍率。</td></tr>
+<tr><td>雙開／三開</td><td>一人同時開兩、三個帳號，佔兩、三個座位。</td></tr>
+<tr><td>待確認（待審）</td><td>已報班但管理員尚未確認，不佔座位。</td></tr>
+<tr><td>候補</td><td>已確認、但座位已滿的人，有人退出時自動遞補。</td></tr>
+<tr><td>鎖班</td><td>時段鎖定後不再收新報班，成員也不能自己取消（滿班自動鎖除外）。</td></tr>
+<tr><td>缺額報班</td><td>管理員對已鎖、但仍有空位的時段重新開放報班。</td></tr>
+<tr><td>手動</td><td>管理員改過座位的時段；之後自動排位只補空位，不重排。</td></tr>
+<tr><td>車種</td><td>時段的標記文字，預設「蝦」，可改成「練習」等自訂名稱。</td></tr>
+</tbody></table></div>
+
+<h3 id="sched-s1-3">1.3　權限等級<a class="anc" href="#sched-s1-3" aria-label="本節連結">#</a></h3>
+<p>機器人把使用者分成三級：</p>
+<ul>
+<li><b>成員</b>：已登記倍率的人。可以報班、取消自己的班、看班表。</li>
+<li><b>排班身份組</b>：管理員用 <code>/設定 排班身份組</code> 指定的 Discord 身分組。能開班、取消開班、換人、指定座位、鎖班、確認、代報班、指定跑者；不能改任何設定、不能編輯或刪除成員資料，也不能備份還原。</li>
+<li><b>管理員</b>：Discord 管理員權限、伺服器擁有者、以 <code>/系統 管理員</code> 加入的 ID，以及擁有任一管理類權限（管訊息、踢人、禁言等）的版主。最後一項由設定「版主也算管理員」控制，預設開啟。</li>
+</ul>
+<p>本手冊標示「[管]」的指令，排班身份組能否使用以該指令說明為準；凡屬設定類者只限管理員。</p>
+
+<h2 id="sched-s2">2　成員快速開始<a class="anc" href="#sched-s2" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s2-1">2.1　三個前提<a class="anc" href="#sched-s2-1" aria-label="本節連結">#</a></h3>
+<p>第一次報班之前，必須依序滿足三件事，順序不能顛倒：</p>
+<ol>
+<li><b>登記名字與倍率</b>：沒登記的人報班一定被擋（訊息「請先 /成員 註冊」）。</li>
+<li><b>報班已開放</b>：車隊的報班開關要開著（訊息「報班未開放」）。管理員開班時會自動打開。</li>
+<li><b>時段已開班</b>：跑者或管理員先開班。報到沒開班的時段，機器人回「以下時段跑者尚未報跑」，或在結果中列出「跳過（未報跑）」。</li>
+</ol>
+
+<h3 id="sched-s2-2">2.2　登記倍率<a class="anc" href="#sched-s2-2" aria-label="本節連結">#</a></h3>
+<p>最快的方式是在 Discord 頻道直接打快捷：</p>
+<ul>
+<li><code>%小蛋糕 h3.88</code>：班表名「小蛋糕」，推手倍率 3.88。</li>
+<li><code>%小蛋糕 s3.85</code>：S6 倍率；<code>d</code> 是二開倍率，<code>r</code> 是跑者倍率。</li>
+<li>多項可用斜線串接：<code>%小蛋糕 h3.88/%小蛋糕 s3.85</code>。</li>
+</ul>
+<p>倍率必須介於 1.18 與 3.88 之間。登記二開倍率時，多開模式會自動從單開改成雙開；登記跑者倍率時，身分自動加上「跑者」。班表名或倍率改變後，機器人會把新資料同步到所有車的未來班表，回覆中會註明「已同步 N 天的班表」。若管理員設定了「註冊用」身分組，登記時會自動發給你<sup class="fn" id="sched-fnr1"><a href="#sched-fn1" aria-label="註 1">1</a></sup>。</p>
+<p>斜線指令 <code>/成員 註冊</code> 可一次填完整資料：必填 <code>倍率</code>，選填 <code>綜合力</code>、<code>身分</code>（推者、跑者、S6專職、跑推兼任、推者+S6、跑推+S6）、<code>多開</code>（單開、雙開、三開）、<code>二開倍率</code>、<code>三開倍率</code>、<code>s6倍率</code>、<code>s6綜合</code>、<code>跑者倍率</code>、<code>跑者綜合</code>、<code>班表名</code>、<code>備註</code>。選雙開必須填二開倍率，選三開必須填二開與三開倍率；選單開則不能填。</p>
+<p>其他相關指令：</p>
+<ul>
+<li><code>/成員 修改</code>：改自己的倍率、綜合力、身分、多開等。</li>
+<li><code>/成員 查看</code>：看自己或他人的完整資料。</li>
+<li><code>/成員 別名</code>：設定小名（<code>新增</code>、<code>移除</code>、<code>清空</code>），換人快捷與搜尋都認得。</li>
+<li><code>/成員 時區</code>：人在海外時設定時區，之後報班的時段會自動換算成伺服器時間。</li>
+<li><code>/成員 綁定id</code> 或快捷 <code>myid 12345678</code>：綁定遊戲玩家 ID，查排名時才找得到你。</li>
+</ul>
+
+<h3 id="sched-s2-3">2.3　第一次報班<a class="anc" href="#sched-s2-3" aria-label="本節連結">#</a></h3>
+<p>確認時段已開班後，在頻道打 <code>h20-24</code> 即報今天 20～24 點的推手班。機器人回覆「報班成功」，並附上你今天所有已報時段。如果車隊沒有開啟自動確認，回覆會多一行「待確認」，表示要等管理員確認後才會出現在班表上（<a class="xref" href="#sched-s4-2">見 4.2 節</a>）。</p>
+
+<h2 id="sched-s3">3　報班與取消<a class="anc" href="#sched-s3" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s3-1">3.1　文字快捷<a class="anc" href="#sched-s3-1" aria-label="本節連結">#</a></h3>
+<p>文字快捷是最常用的報班方式，在一般頻道直接輸入即可。全形、半形都接受，時段分隔可用 <code>-</code>、<code>~</code>、「到」。</p>
+<div class="tbl long" id="sched-t2" tabindex="0" role="region" aria-labelledby="sched-t2-c"><div class="cap" id="sched-t2-c"><b>表 2</b>報班與取消的文字快捷</div><table><thead><tr><th>寫法</th><th>作用</th></tr></thead><tbody>
+<tr><td><code>h20-24</code></td><td>報推手班，20～24 點</td></tr>
+<tr><td><code>h20</code></td><td>單一小時，等於 <code>h20-21</code></td></tr>
+<tr><td><code>h2022</code></td><td>四位數寫法，等於 <code>h20-22</code></td></tr>
+<tr><td><code>s20-24</code></td><td>報 S6 班（也可寫 <code>h20-24-s6</code>）</td></tr>
+<tr><td><code>d20-24</code></td><td>雙開報班（也可寫 <code>h20-24 2</code>）</td></tr>
+<tr><td><code>h20-24 3</code></td><td>三開報班（三開沒有專用字母）</td></tr>
+<tr><td><code>h20-22, 23-24</code></td><td>多段一次報</td></tr>
+<tr><td><code>h20-24 明天</code></td><td>報別天；也認 <code>4/12</code>、<code>+1</code>、<code>後天</code></td></tr>
+<tr><td><code>h20-24 晚到</code></td><td>無法辨識為開數或日期的字當作備註</td></tr>
+<tr><td><code>h20-24 2車</code></td><td>多車時報進二車（也可寫 <code>二車 h20-24</code>）</td></tr>
+<tr><td><code>x20-24</code></td><td>取消自己的班；後面可接日期</td></tr>
+<tr><td><code>r20-24</code></td><td>跑者自行報跑（<a class="xref" href="#sched-s5-6">見 5.6 節</a>）</td></tr>
+</tbody></table></div>
+<p>對同一時段重報一次，等於更新資料（例如改開數或備註）：原本已確認的狀態會保留，排位用的報班時間也不會被刷新。報 S6 需先登記 S6 倍率，雙開需先登記二開倍率，否則機器人會提示要先用 <code>%名字 s倍率</code> 或 <code>%名字 d倍率</code> 補登。</p>
+<p>同一時段若有多人報 S6，S6 倍率最高者保留 S6 坐 P2，其餘自動改以推手身分排位，不會被丟掉。另有一種不帶字母的寫法 <code>20-22</code>；在「嚴格捷徑」開啟時（預設），它只在管理員指定的捷徑頻道生效，以免日常聊天誤觸，建議一律加 <code>h</code>。</p>
+
+<h3 id="sched-s3-2">3.2　斜線指令<a class="anc" href="#sched-s3-2" aria-label="本節連結">#</a></h3>
+<ul>
+<li><code>/班表 報班</code>：參數 <code>時段</code>（如 08-12）、<code>角色</code>（推手、S6、外援）、<code>日期</code>（2/13、明天、+1，預設今天）、<code>備註</code>。選「外援」會坐 B1 位，不佔 P2～P5。</li>
+<li><code>/班表 取消</code>：參數 <code>時段</code>、<code>日期</code>。時段可一次寫多天，例如 <code>4/11 20-24, 4/12 06-12</code>。</li>
+<li><code>/班表 砍班</code>：參數 <code>對象</code>、<code>時段</code>、<code>日期</code>。對象留空是自己；砍別人需管理員。時段留空等於當天全部。</li>
+<li><code>/砍班</code>：取消今天指定時段的班，並可附 <code>原因</code> 通知跑者。</li>
+</ul>
+<p>以 <code>/班表 查看</code> 或快捷叫出的班表圖片下方附有按鈕：<span class="q">推手報班</span>、<span class="q">S6報班</span>、<span class="q">雙開</span>、<span class="q">三開</span> 會開啟填寫時段的視窗；<span class="q">編輯</span> 限管理員；另有 <span class="q">重新整理</span>、<span class="q">放大圖片</span>、<span class="q">Excel</span>。</p>
+
+<h3 id="sched-s3-3">3.3　網站與語音<a class="anc" href="#sched-s3-3" aria-label="本節連結">#</a></h3>
+<p>網站車隊頁的班表每一列右側有 <span class="q">報班</span> 按鈕，點空座位也可以報；<a class="xref" href="#sched-s8">詳見第 8</a> 章。語音方面，以 <code>/語音 加入</code> 讓機器人在語音頻道收音後，講到報班、取消等指令會交給 AI 解析；會改動班表的動作一律先發出「語音指令 — 確認」訊息，按下確認才執行。</p>
+
+<h3 id="sched-s3-4">3.4　跨午夜的寫法<a class="anc" href="#sched-s3-4" aria-label="本節連結">#</a></h3>
+<div class="boxed"><b>注意：凌晨時段要寫隔天的日期</b> Discord 的 <code>h</code>、<code>x</code>、<code>bgn</code>、<code>ccl</code> 與 <code>/班表 報班</code>、<code>/班表 取消</code> 把一段時間全部算在同一天。<code>h22-02</code> 會報到「當天的 22、23 點」與「當天凌晨的 0、1 點」，而不是隔天凌晨。要報隔天凌晨，請分開寫 <code>h22-24</code> 與 <code>h00-02 明天</code>。只有跑者的 <code>r22-2</code> 會把午夜以後的時段自動算到隔天；網站上則寫 <code>22-26</code>，網站會自動拆成兩天。</div>
+
+<h2 id="sched-s4">4　班表的狀態與規則<a class="anc" href="#sched-s4" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s4-1">4.1　一個時段的組成<a class="anc" href="#sched-s4-1" aria-label="本節連結">#</a></h3>
+<p>每個時段有 P1（跑者）、P2～P5（推手，P2 優先給 S6）、B1（外援）、候補名單、報名名單、車種與備註，以及開班、鎖定、手動等狀態。<a class="xref" href="#sched-f1">圖 1</a> 是一個時段從開班到簽到的流程。</p>
+<div class="fig" id="sched-f1"><svg viewBox="0 0 340 280" width="100%">
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#333"/></marker></defs>
+<g font-size="9" fill="#333" text-anchor="middle">
+<rect x="20" y="8" width="190" height="28" fill="#faf9f6" stroke="#333"/><text x="115" y="26">開班：bgn20-24／報跑</text>
+<rect x="20" y="54" width="190" height="28" fill="#faf9f6" stroke="#333"/><text x="115" y="72">報名：h20-24 → 待確認</text>
+<rect x="20" y="100" width="190" height="28" fill="#faf9f6" stroke="#333"/><text x="115" y="118">確認：管理員確認或自動確認</text>
+<rect x="20" y="146" width="190" height="28" fill="#faf9f6" stroke="#333"/><text x="115" y="164">依規則排入 P2–P5</text>
+<rect x="20" y="192" width="190" height="28" fill="#faf9f6" stroke="#333"/><text x="115" y="210">鎖定：手動／時間／滿班</text>
+<rect x="20" y="238" width="190" height="28" fill="#faf9f6" stroke="#333"/><text x="115" y="256">開跑前提醒與簽到</text>
+<rect x="240" y="146" width="90" height="28" fill="#faf9f6" stroke="#333"/><text x="285" y="164">候補</text>
+</g>
+<g stroke="#333" fill="none">
+<line x1="115" y1="36" x2="115" y2="52" marker-end="url(#ar)"/>
+<line x1="115" y1="82" x2="115" y2="98" marker-end="url(#ar)"/>
+<line x1="115" y1="128" x2="115" y2="144" marker-end="url(#ar)"/>
+<line x1="115" y1="174" x2="115" y2="190" marker-end="url(#ar)"/>
+<line x1="115" y1="220" x2="115" y2="236" marker-end="url(#ar)"/>
+<line x1="210" y1="154" x2="238" y2="154" marker-end="url(#ar)"/>
+<line x1="240" y1="167" x2="212" y2="167" stroke-dasharray="3,2" marker-end="url(#ar)"/>
+</g>
+<g font-size="8" fill="#333" text-anchor="start">
+<text x="218" y="72">未確認不佔座位</text>
+<text x="244" y="188">實線：滿了進候補</text>
+<text x="244" y="199">虛線：有人退出遞補</text>
+<text x="218" y="230">鎖後不收新報班</text>
+<text x="218" y="256">只通知已排上的人</text>
+</g>
+</svg><div class="cap"><b>圖 1</b>一個時段的生命週期</div></div>
+
+<h3 id="sched-s4-2">4.2　待確認與自動確認<a class="anc" href="#sched-s4-2" aria-label="本節連結">#</a></h3>
+<p>一般報班寫入後是「待確認」，<b>不佔座位</b>，也不會被提醒或要求簽到。用圖片模式查看班表時，若當天有待確認的人，機器人會另附一張「待排名單」。管理員以 <code>/班表 確認</code> 確認後，才依規則排進座位（<a class="xref" href="#sched-s5-3">見 5.3 節</a>）。</p>
+<p>車隊若開啟「報班自動確認」（網站設定，或 <code>/班表 確認 模式:常設全自動-開</code>），任何管道的報班都會立即確認並排位，滿了就進候補。開啟時，機器人會把今天以後所有待確認的報班一併確認並重排；過去日期不會被回溯確認。管理員代報（指令或網站）一律直接確認。</p>
+
+<h3 id="sched-s4-3">4.3　排位規則<a class="anc" href="#sched-s4-3" aria-label="本節連結">#</a></h3>
+<p>已確認的人依下列順序排序，再依序放入座位：</p>
+<ol>
+<li>管理員以 <code>/班表 車隊</code> 建立的車隊報班最優先。</li>
+<li>「S6 優先於倍率」開啟時（預設），S6 報班排在推手前面，P2 一定給 S6，砍人時也先砍推手。</li>
+<li>依「排位順序」：預設倍率高者優先，倍率先四捨五入到 0.02 的級距，相同時比報班先後；也可改成「先報先上」或「綜合力高者優先」。</li>
+</ol>
+<p>P2 放 S6；沒有 S6 時放排序第一的推手。P3～P5 依序填入。雙開、三開的處理由「雙開／三開怎麼排」決定，預設「不同人優先」：先讓每個人的第 1 開入座，還有空位才補第 2、3 開（以二開、三開倍率計算）。若設定了「推手最低上車倍率」，未達門檻者只進候補，不會被自動排上（管理員仍可手動排）；S6 倍率未達「S6 最低上車倍率」者改以推手身分比較。</p>
+
+<h3 id="sched-s4-4">4.4　候補與遞補<a class="anc" href="#sched-s4-4" aria-label="本節連結">#</a></h3>
+<p>座位排滿後，其餘已確認的人依同一排序列入候補。有人取消或被砍班時，機器人立即重排該時段，候補中排序最前者自動補上。遞補依排序而非排隊先後，所以倍率較高的候補會先上。</p>
+<p>標示為「手動」的時段（管理員用編輯、換人或網站拖拉改過座位）不會整段重排；之後的已確認報班只補進空位。管理員以 <code>/班表 確認 模式:全部</code> 確認時，會清除當天的手動標記並整天重排。</p>
+
+<h3 id="sched-s4-5">4.5　報班截止與報班限制<a class="anc" href="#sched-s4-5" aria-label="本節連結">#</a></h3>
+<p>當天的時段在開跑前一定時間停止收報班，預設為開跑前 1 小時；若該時段 P2 已經有人，提早到開跑前 2 小時。截止只管今天的時段。被截止或擋下的時段，機器人會在回覆中列出原因，例如「已截止或無可報時段」。</p>
+<p>管理員可在網站「設定 → 報班限制」加上更多規則：每時段最多收幾人、最多可報幾天後的班、每人每天最多幾小時、最多連續幾小時（跨日也算）、同一時段只能報一台車，以及「只有管理員能排班」（只影響網站與 QQ 的成員自助報班，不影響 Discord 快捷）。管理員與排班身份組不受這些限制。</p>
+
+<h3 id="sched-s4-6">4.6　鎖定<a class="anc" href="#sched-s4-6" aria-label="本節連結">#</a></h3>
+<p>鎖定只擋「新的報班」與「成員自己取消」，<b>不擋排班</b>：管理員仍可換人、確認，候補也照常遞補<sup class="fn" id="sched-fnr2"><a href="#sched-fn2" aria-label="註 2">2</a></sup>。鎖定有四種來源，取消規則各不相同：</p>
+<div class="tbl" id="sched-t3" tabindex="0" role="region" aria-labelledby="sched-t3-c"><div class="cap" id="sched-t3-c"><b>表 3</b>鎖定的種類與取消規則</div><table><thead><tr><th>種類</th><th>來源</th><th>成員自己取消</th></tr></thead><tbody>
+<tr><td>手動鎖班</td><td><code>/班表鎖定</code>、網站鎖班、確認時勾「鎖定」</td><td>不行；管理員、排班身份組可以</td></tr>
+<tr><td>時間鎖班</td><td>每天定時自動鎖（<a class="xref" href="#sched-s5-5">5.5 節</a>）</td><td>不行；管理員用 <code>/班表 取消</code>、<code>/班表 砍班</code> 也被擋，需先解鎖或用 <code>/班表 編輯</code></td></tr>
+<tr><td>滿班自動鎖</td><td>P2～P5 坐滿時自動鎖</td><td>可以；有人退出即自動解鎖並遞補</td></tr>
+<tr><td>完全不鎖班</td><td>設定開啟後不產生任何鎖</td><td>不受鎖限制</td></tr>
+</tbody></table></div>
+<p>「被鎖住不能取消」涵蓋所有成員自己取消的入口：<code>/班表 取消</code>、<code>/班表 砍班</code>（砍自己）、<code>x</code> 快捷、面板、我的班表勾選與網站。滿班自動鎖可在設定「滿班自動鎖定」關閉：關閉後坐滿仍照收報班，排不上的進候補，之前因滿班鎖上的時段也會解開。</p>
+<p>此外還有「取消期限」：設定後，已排上座位的人在開跑前指定時間內不能自己取消，候補與待確認者不受限。被擋時機器人回「開跑前 N 小時內不能自己取消（要改請找管理員）」。</p>
+
+<h3 id="sched-s4-7">4.7　跨日顯示範圍<a class="anc" href="#sched-s4-7" aria-label="本節連結">#</a></h3>
+<p>班表資料一律按實際日期與 00～23 點儲存。為了讓夜車一眼看完，查看時可選範圍：「當日 00-24」、「跨日 04-28」（當天 4 點到隔天 4 點）或「跨日 08-32」（當天 8 點到隔天 8 點）。跨日範圍中隔天的時段會顯示成 24-25、25-26 等編號。伺服器預設範圍由 <code>/設定 進階設定 項目:班表預設範圍</code> 設定。提醒與簽到在跨日時也會正確對到該時段的人。</p>
+
+<h2 id="sched-s5">5　跑者與管理員<a class="anc" href="#sched-s5" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s5-1">5.1　建車檢查表<a class="anc" href="#sched-s5-1" aria-label="本節連結">#</a></h3>
+<ol>
+<li><b>權限</b>：確認管理員名單；需要時用 <code>/設定 排班身份組 身分組:@排班員</code> 開放排班權。</li>
+<li><b>跑隊資料</b>：<code>/系統 註冊跑隊</code> 填 <code>期數</code>、<code>p1名稱</code>、<code>倍率</code>、<code>綜合力</code>。私車模式下班表 P1 顯示這個名稱。</li>
+<li><b>車房頻道</b>：<code>/頻道 跑車頻道</code> 指定 <code>車房</code>（偵測房號）與 <code>房號</code> 頻道，簽到功能需要它。</li>
+<li><b>提醒頻道</b>：<code>/頻道 提醒頻道 用途:簽到提醒（預設）</code>，或用 <code>/頻道 一鍵套用</code> 一次設好多種通知頻道。</li>
+<li><b>班表看板</b>（選用）：<code>/頻道 班表看板</code>，機器人在該頻道維護一張自動更新的班表圖。</li>
+<li><b>註冊身分組</b>（選用）：<code>/身份組 註冊用</code> 指定登記後自動發的身分組；之前已登記的人用 <code>/身份組 補發</code> 一次補齊。</li>
+<li><b>排班規則</b>：到網站「設定」調整排位、報班限制、鎖定與提醒（第 9 章）。</li>
+</ol>
+<p><code>/身份組 補發</code> 會把身分組發給所有登記過任一種倍率的成員；參數 <code>收回</code> 選「收回沒登記的」時，也會把身分組從沒登記倍率的人身上拿掉。若還沒設定註冊用身分組，可在此指令直接指定，機器人會順便記下。機器人必須有「管理身分組」權限，且自身身分組排在該身分組之上。</p>
+
+<h3 id="sched-s5-2">5.2　開班與取消開班<a class="anc" href="#sched-s5-2" aria-label="本節連結">#</a></h3>
+<p>開班的快捷是 <code>bgn20-24</code>（或 <code>報跑20-24</code>），可多段 <code>bgn20-22,23-24</code>、可接日期 <code>bgn20-24 4/12</code>；斜線指令是 <code>/班表 報跑</code>（<code>時段</code>、<code>日期</code>、<code>活動</code>）。開班需管理員或排班身份組，並會自動打開報班開關。</p>
+<div class="boxed"><b>注意：/班表 報跑 的「活動」參數</b> 填入與目前不同的活動期數時，機器人視為換期，會清除舊班表與時數。只想開班時請留空。</div>
+<p>取消開班用 <code>ccl20-24</code>（也認「砍報跑」「取消報跑」「取消開班」開頭）或 <code>/班表 取消報跑</code>。取消開班會清空該時段的 P2～P5、B1、報名與候補，解除鎖定，並私訊通知受影響的推手。</p>
+<p>報班開關以 <code>/班表 開放</code> 打開、<code>/班表 停止</code> 關閉；停止後已報的人保留<sup class="fn" id="sched-fnr3"><a href="#sched-fn3" aria-label="註 3">3</a></sup>。開關各車獨立。</p>
+
+<h3 id="sched-s5-3">5.3　確認排班<a class="anc" href="#sched-s5-3" aria-label="本節連結">#</a></h3>
+<p><code>/班表 確認</code> 的參數為 <code>日期</code>、<code>模式</code>、<code>鎖定</code>（確認後同時鎖定時段）。</p>
+<div class="tbl" id="sched-t4" tabindex="0" role="region" aria-labelledby="sched-t4-c"><div class="cap" id="sched-t4-c"><b>表 4</b>/班表 確認 的模式</div><table><thead><tr><th>模式</th><th>作用</th></tr></thead><tbody>
+<tr><td>面板 - 手動選擇</td><td>出現面板，選時段個別確認，或按全部確認、半自動</td></tr>
+<tr><td>全部 - 全自動確認</td><td>當天所有待確認者轉為確認，清除手動標記並整天重排</td></tr>
+<tr><td>半自動</td><td>全部確認後，只保留排進座位的人，其餘報名移除</td></tr>
+<tr><td>常設全自動-開</td><td>開啟報班自動確認</td></tr>
+<tr><td>常設全自動-關</td><td>恢復需人工確認</td></tr>
+</tbody></table></div>
+<p>要把已確認的人退回待確認重新整理，用 <code>/班表 待排</code>（可指定 <code>時段</code>，<code>排除車隊</code> 預設保留車隊報班）。</p>
+
+<h3 id="sched-s5-4">5.4　手動調整<a class="anc" href="#sched-s5-4" aria-label="本節連結">#</a></h3>
+<ul>
+<li><code>/班表 編輯</code>：互動式修改指定日期的座位、車種與運行狀態。</li>
+<li><code>/班表 換人</code>：<code>日期</code>、<code>時段</code>、<code>原成員</code>、<code>新成員</code>，任何 P 位皆可，保留 S6 標示。</li>
+<li>換人快捷：<code>0511 20-23 小明補小華</code>（小明替補小華）或 <code>20-23 小華-&gt;小明</code>；日期可省略，可多段 <code>20-22, 22-24</code>。限管理員與排班身份組，會私訊通知雙方。</li>
+<li>指定座位快捷：<code>P3 小明 20-22 明天</code>，把小明放進 P3。</li>
+<li><code>/班表 代報班</code>：替名冊內成員報班，直接確認；若時段未開班會順便開班。</li>
+<li><code>/代報</code>：替不在名冊的人報班，只需 <code>名字</code>、<code>倍率</code>、<code>時段</code>，可選 <code>身分</code>、<code>s6倍率</code>、<code>車</code>。</li>
+<li><code>/班表 車隊</code>：替一整隊（例如外部車隊）佔 1～4 個 P 位，動作有設定、取消、增加、減少、查看。</li>
+<li><code>/班表 車種</code>：設定時段標記，如「練習」。</li>
+<li><code>/班表 清空</code>：清空指定日期班表（僅管理員，會先備份）。</li>
+<li><code>/班表 互動排班</code>：勾選報班者批量確認的介面<sup class="fn" id="sched-fnr4"><a href="#sched-fn4" aria-label="註 4">4</a></sup>。</li>
+</ul>
+
+<h3 id="sched-s5-5">5.5　鎖班與時間鎖班<a class="anc" href="#sched-s5-5" aria-label="本節連結">#</a></h3>
+<p><code>/班表鎖定</code> 與 <code>/班表解鎖</code> 會列出當天時段讓你多選，也可選「全部時段」。手動解鎖的時段會被標記，之後的時間鎖班不會再把它鎖回去。</p>
+<p>時間鎖班由 <code>/設定 鎖定設定</code> 或網站「設定 → 報班鎖定」控制，每天在指定時間把指定日期的某段時段一次鎖上：</p>
+<ul>
+<li><b>啟用自動鎖定</b>：預設關閉。</li>
+<li><b>觸發時間</b>：HH:MM，預設 23:00。</li>
+<li><b>鎖哪一天</b>：today 或 tomorrow，預設明天。</li>
+<li><b>鎖定範圍</b>：a-b，可寫到 48 跨日，預設 8-32（早上 8 點到隔天早上 8 點）。</li>
+<li><b>缺額仍可報</b>：預設開啟。鎖定後仍有空位的時段照收報班，且 S6 與推手分開計算：P2 還沒有 S6 時可報 S6；P3～P5（或未被 S6 佔用的 P2）有空時可報推手。</li>
+</ul>
+<p>時間鎖班只鎖觸發當下已經存在的時段；之後才開的班不會被鎖。對個別已鎖時段重新開放，可用 <code>/班表 缺額 動作:開啟</code>（可指定 <code>時段</code>、<code>日期</code>、<code>外援缺額</code>），開啟後只要 P 位未滿就能報，不看截止時間。設定「完全不鎖班」開啟時，任何時段都不會被鎖，既有的鎖會在下一次重排時清除。</p>
+
+<h3 id="sched-s5-6">5.6　車隊模式與跑者<a class="anc" href="#sched-s5-6" aria-label="本節連結">#</a></h3>
+<p>私車模式整隊固定一位跑者；車隊模式可讓每個時段各自指定跑者。切換方式為網站班表工具列的 <span class="q">私車</span>／<span class="q">車隊</span>，或設定「車隊模式」。車隊模式下，管理員可用 <code>/班表 跑者</code> 指定：<code>時段</code>（如 20-24、20,22）、<code>跑者</code>（成員名字、別名、@成員，或直接打一個名字）、<code>日期</code>；跑者留空即恢復預設跑者。</p>
+<p>開啟「跑者自行報跑」（只在車隊模式有效）後，登記過跑者倍率的成員可以自己開班：Discord 打 <code>r20-24</code>（可多段、可接日期，取消用 <code>x20-24</code>），網站按 <span class="q">我來開車</span>。若時段已有跑者，依設定「同一時段已經有跑者時」處理：<b>問我</b>（預設，不動並提示，可在訊息加「同車」或「多開」）、<b>同車</b>（掛成第二跑者，佔一個 P 位）、<b>多開</b>（改到另一台車，沒開就自動多開）。管理員自己用 <code>r</code> 報跑時，車隊模式會自動開啟。</p>
+<p>跑者取消自己開的時段等於取消開班：整個時段清空，被連帶移除的推手會收到私訊。若同車還有第二跑者，則由他接手 P1，推手保留。</p>
+
+<h3 id="sched-s5-7">5.7　多台車<a class="anc" href="#sched-s5-7" aria-label="本節連結">#</a></h3>
+<p>用 <code>/設定 多車</code> 管理：<code>操作</code> 可選查看目前設定、設定同時開幾台車、車命名、把頻道綁到某台車、解除頻道綁定；<code>車</code> 選一車至三車。成員、倍率與標記全車隊共用；班表、報班開關、鎖班、隱藏模式與看板各車分開。</p>
+<p>報班時決定車號的方式：訊息帶「2車」「二車」「車2」等獨立詞；或在綁定到該車的頻道下指令（斜線指令同樣適用）；都沒有就是一車。頻道綁到已關閉的車時，報班會被擋下並提示，需解除綁定或調回車數。關閉的車班表會保留，重新開車就回來。</p>
+
+<h2 id="sched-s6">6　簽到、提醒與通知<a class="anc" href="#sched-s6" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s6-1">6.1　整點前排班提醒<a class="anc" href="#sched-s6-1" aria-label="本節連結">#</a></h3>
+<p>預設在每個時段開始前 10 分鐘（可改 5～30 分鐘），機器人到排班提醒頻道發一張提醒圖，內容含時段、車種、P1～P5 與平均倍率，並 @ 該時段<b>已排上</b> P2～P5 與 B1 的人；待確認與候補不會被 @，座位全空的時段不發。提醒圖附 <span class="q">簽到</span> 按鈕。提醒頻道依序取設定的提醒頻道、名為「排班提醒」或「私車」的頻道、車房頻道。多車時每台車各發一次。管理員可用 <code>/系統 發提醒</code> 手動補發（預設測試模式，發到目前頻道）。</p>
+
+<h3 id="sched-s6-2">6.2　簽到面板與鴿班<a class="anc" href="#sched-s6-2" aria-label="本節連結">#</a></h3>
+<p>設定了車房頻道的車隊，每小時 49 分起會在提醒頻道（沒有時發到車房）貼出下一時段的簽到面板，每位已排上的人一顆按鈕。最近 5 分鐘在車房發過言的人自動算已簽到。開跑前 5 分與整點，機器人追 @ 尚未簽到的人，最多 3 次；仍未簽到就登記鴿班。近 14 天有 3 次以上鴿班紀錄的人以 <code>/班表 報班</code> 報班時，回覆會附上提醒。</p>
+<p>管理員工具：<code>/系統 手動簽到</code>（<code>對象</code>、<code>時段</code>）用於語音故障或誤判；<code>/系統 發簽到</code>（<code>時段</code>、<code>日期</code>、<code>測試</code>）手動發簽到訊息。</p>
+
+<h3 id="sched-s6-3">6.3　其他通知<a class="anc" href="#sched-s6-3" aria-label="本節連結">#</a></h3>
+<ul>
+<li>每日公告：11:30 早安提醒（當日班表概況）、23:30 明日公告；時間可在 <code>/頻道 提醒頻道</code> 的 <code>早安時間</code>、<code>晚安時間</code> 修改，<code>/設定 觸發提醒</code> 可手動觸發。</li>
+<li>XX:58 下班感謝：在 <code>/設定 進階設定</code> 開關並指定頻道或模板。</li>
+<li>班表異動：被換人、取消開班時，機器人私訊受影響的人。</li>
+<li>個人：<code>/每日班表訂閱</code> 每天定時私訊當日班表；<code>/通知設定</code> 選擇要接收的通知；<code>/班表匯出ics</code> 匯出日曆檔。</li>
+<li>招募：<code>/公告 缺額招募</code> 掃描未來數天的缺額並 @ 指定身分組；<code>/公告 班表確認</code> 發布確認完成公告。</li>
+<li>每日身分組：<code>/身份組 新增</code> 指定日期與身分組，自動發給當天班表上的人；<code>/身份組 同步</code> 依最新班表重發。</li>
+</ul>
+
+<h2 id="sched-s7">7　班表圖片與 Google 試算表<a class="anc" href="#sched-s7" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s7-1">7.1　查看班表<a class="anc" href="#sched-s7-1" aria-label="本節連結">#</a></h3>
+<p><code>/班表 查看</code>（或 <code>/查看班表</code>）的參數：<code>日期</code>、<code>模式</code>（圖片、文字、Excel 檔案、美圖、美圖・清單風；未指定時預設美圖）、<code>範圍</code>、<code>公開</code>（預設公開，設 false 只有自己看得到）、<code>顯示候補</code>。快捷 <code>班表</code>、<code>sch</code>、<code>今天</code> 看今天，<code>明天</code>、<code>後天</code> 看之後。</p>
+<ul>
+<li><code>/我的 班表</code>：未來 7 天（可改天數）自己的所有班，隱藏模式下也能用。</li>
+<li><code>/班表 一覽</code>：一週報班概況。</li>
+<li><code>/班表 歷史</code>：指定日期看過去的班表圖；留空匯出全部歷史 Excel。</li>
+<li><code>/班表 1excel</code>：班表匯出（起訖時段可寫到 48 跨日）；匯入 Excel 或 CSV 限管理員。</li>
+</ul>
+
+<h3 id="sched-s7-2">7.2　看板與外觀<a class="anc" href="#sched-s7-2" aria-label="本節連結">#</a></h3>
+<p>綁定班表看板頻道後，每次報班、取消、確認都會在幾秒內重繪同一則置頂班表圖，不洗頻道。美圖的插畫用 <code>/班表 背景</code> 上傳（最多 8 張輪換，可選每天換一張、每次隨機、固定一張），主色用 <code>/班表 配色</code>（24 種預設、自訂色號或從背景圖自動配色）。班表隱藏模式可設為全部隱藏、隱藏姓名、隱藏倍率或嚴格（僅見自己）。</p>
+
+<h3 id="sched-s7-3">7.3　Google 試算表同步<a class="anc" href="#sched-s7-3" aria-label="本節連結">#</a></h3>
+<p>管理員在網站「設定 → Google 試算表同步」設定，步驟卡片會標示每一步的狀態：</p>
+<ol>
+<li>確認主機已設定 Google 服務帳號（卡片會顯示其信箱）。</li>
+<li>打開試算表 → 右上角「共用」→ 貼上服務帳號信箱 → 權限選「編輯者」。</li>
+<li>貼上試算表網址並儲存。一張試算表只能給一個車隊用，同車隊的幾台車可以共用。</li>
+<li>按 <span class="q">檢查連線</span>，確認讀寫都正常（不會改動班表）。</li>
+<li>第一次同步選方向：<span class="q">以機器人為準（先備份表上內容）</span> 或 <span class="q">以試算表為準</span>。</li>
+<li>按 <span class="q">開啟自動同步</span>，之後預設每 60 秒同步一輪。</li>
+</ol>
+<p>試算表每天一個分頁，名稱就是日期，例如「11-04(三)」；二、三車前面加車名。欄位為時段、車種、跑者、P2、P3、P4、P5、替補、狀態、更新。另有全車隊共用的「時數」與「成員」分頁。只有開了班的日期才建分頁；過去日期的分頁不再讀寫，保留 7 天後刪除（只刪機器人建的）。</p>
+<p>同步逐格比對：表上被人改過的格子寫回機器人，沒人動過的格子以機器人為準，所以 Discord 剛報的班不會被舊表蓋掉。格子內容與成員名字或別名相符就對到該成員並帶倍率；對不到的當自訂文字照排，沒有倍率，格子標成淡藍色。S6 寫「S6 名字」。在表上刪掉整列不會砍班；看不懂的列不套用，留在分頁最下方並於「狀態」欄寫原因。想從表上開新的一天，新增一個以日期命名的分頁照欄位填即可。設定頁的「最近從試算表套用的變更」可按 <span class="q">復原</span>。權限或憑證錯誤連續發生時，自動同步會暫停並通知管理員。</p>
+
+<h2 id="sched-s8">8　網站車隊頁<a class="anc" href="#sched-s8" aria-label="本節連結">#</a></h2>
+
+<h3 id="sched-s8-1">8.1　登入與身分<a class="anc" href="#sched-s8-1" aria-label="本節連結">#</a></h3>
+<p>從網站左側「車隊」進入<a class="xpage" href="app.html?page=car" target="_blank" rel="noopener">私車排班</a>頁，可用 Discord 或 Google 登入。車隊頁靠 Discord 或 QQ 身分判斷你在哪些車隊，因此用 Google 登入時需再按 <span class="q">綁定 Discord</span>，QQ 車隊則取得驗證碼後在群裡綁定。只有菜根機器人所在、而且你已在名冊中的車隊才會出現。頁首顯示車隊名稱與你的角色（管理員、排班員、成員）。在 Discord 打 <code>/我的 網頁</code> 也能取得車隊頁連結。</p>
+
+<h3 id="sched-s8-2">8.2　班表分頁（成員）<a class="anc" href="#sched-s8-2" aria-label="本節連結">#</a></h3>
+<p>班表可切換 <span class="q">表格</span> 與 <span class="q">看板</span>，上方選日期（今天起有班的 7 天；跨日模式下也會顯示昨天午夜以後的時段，但只能看），多車時有車分頁並顯示各車滿員時段數。每一列顯示時段、P1 跑者、P2～P5 與「候補／報班」。</p>
+<ul>
+<li>每列右側：<span class="q">報班</span>（選 <span class="q">報推手</span> 或 <span class="q">報 S6</span>）；已報者顯示 <span class="q">取消報班</span>、<span class="q">取消候補</span> 或 <span class="q">砍班</span>。</li>
+<li>點空座位顯示「缺 · 點此報班」；已鎖時段顯示「缺 · 已鎖班」，不能報。</li>
+<li>「我要報班」工具：選日期、填時段（<code>20-22</code>，跨午夜寫 <code>22-26</code>），一次報或取消整段。</li>
+<li>列上的狀態文字：「我在 P3」「我在候補」「我已報班 · 待確認」；側欄「我的班」合併三台車列出你的班。</li>
+<li>座位上的彩色小膠囊是管理員貼的標記，點一下看細節。</li>
+</ul>
+<p>網站的報班與 Discord 走同一套規則：未開班、已鎖、當天已截止的時段會略過，報班限制或取消期限擋下時直接顯示原因。</p>
+
+<h3 id="sched-s8-3">8.3　管理員工具<a class="anc" href="#sched-s8-3" aria-label="本節連結">#</a></h3>
+<p>管理員與排班身份組看到的班表多了工具列與「排班工具」：</p>
+<div class="tbl" id="sched-t5" tabindex="0" role="region" aria-labelledby="sched-t5-c"><div class="cap" id="sched-t5-c"><b>表 5</b>網站排班工具</div><table><thead><tr><th>位置</th><th>功能</th></tr></thead><tbody>
+<tr><td>工具列</td><td>開放報班／停止報班、鎖班／解鎖全天、標記管理、私車／車隊、跑者自行報跑</td></tr>
+<tr><td>開班</td><td>選日期、填時段開班或砍班；車隊模式可順便填跑者</td></tr>
+<tr><td>指定跑者</td><td>把一段時間的 P1 改成同一人，留空恢復預設</td></tr>
+<tr><td>代報班</td><td>替成員報或取消，直接確認</td></tr>
+<tr><td>複製班表</td><td>只複製開班時段，或連人員一起複製</td></tr>
+<tr><td>整段處理</td><td>清空人員、鎖定、解鎖</td></tr>
+<tr><td>快速操作</td><td>重排補位、重繪看板</td></tr>
+<tr><td>每列</td><td>鎖班／解鎖、砍班（關閉該時段）</td></tr>
+</tbody></table></div>
+<p>看板模式下有成員池：拖到座位即排入（身分可選自動、S6、推手），座位上的人拖回成員池即移出，拖到同一班另一格即互換；手機上先點成員再點座位。點座位可換人、移出或貼標記（只這一班或這個人長期）。連人員複製的時段會標成「手動」。</p>
+
+<h3 id="sched-s8-4">8.4　其他分頁<a class="anc" href="#sched-s8-4" aria-label="本節連結">#</a></h3>
+<ul>
+<li><b>成員</b>：名冊（倍率、S6、別名），管理員可編輯倍率、綜合力與別名；「在線人員」顯示語音頻道與 10 分鐘內開過車隊頁的人。</li>
+<li><b>統計</b>：「缺額分析」（填充率、缺額時段、缺 S6、7 天出勤排行）、「歷史班表」（指定日期，唯讀）與「色段監控」。</li>
+<li><b>點歌</b>：搜尋、排隊、跳過、調音量（僅 Discord 車隊）。</li>
+<li><b>合班</b>：多個伺服器或 QQ 群共用同一張班表的橋接設定。</li>
+<li><b>設定</b>、<b>紀錄</b>、<b>系統</b>：僅管理員（排班身份組沒有）。設定分頁依分區列出所有設定，可搜尋，「排班規則」最上方有白話摘要；紀錄分頁列出各來源的操作紀錄。</li>
+</ul>
+
+<h2 id="sched-s9">9　設定一覽<a class="anc" href="#sched-s9" aria-label="本節連結">#</a></h2>
+<p>以下設定都可在網站「設定」分頁修改，標「分車」者各車獨立<sup class="fn" id="sched-fnr5"><a href="#sched-fn5" aria-label="註 5">5</a></sup>。</p>
+<div class="tbl long" id="sched-t6" tabindex="0" role="region" aria-labelledby="sched-t6-c"><div class="cap" id="sched-t6-c"><b>表 6</b>排班相關設定</div><table><thead><tr><th>設定</th><th>預設</th><th>作用</th></tr></thead><tbody>
+<tr><td>開放成員自助報班</td><td>關</td><td>報班開關；開班時自動打開（分車）</td></tr>
+<tr><td>報班自動確認</td><td>關</td><td>報班即確認並排位（分車）</td></tr>
+<tr><td>S6 優先於倍率</td><td>開</td><td>S6 一定佔 P2，砍人先砍推手</td></tr>
+<tr><td>缺人時自動對全員開放報班</td><td>關</td><td>所有時段視同缺額開放</td></tr>
+<tr><td>班表預設顯示候補名單</td><td>開</td><td>查看班表時列出候補</td></tr>
+<tr><td>班表隱藏模式</td><td>不隱藏</td><td>限制成員看到的內容</td></tr>
+<tr><td>車隊模式</td><td>關</td><td>每時段可指定跑者</td></tr>
+<tr><td>開放跑者自行報跑</td><td>關</td><td>跑者可用 r20-24 開班</td></tr>
+<tr><td>已有跑者時怎麼辦</td><td>問我</td><td>問我／同車／多開</td></tr>
+<tr><td>版主也算管理員</td><td>開</td><td>有管理類權限即算管理員</td></tr>
+<tr><td>排位順序</td><td>倍率高者優先</td><td>或先報先上、綜合力優先</td></tr>
+<tr><td>倍率比較級距</td><td>0.02</td><td>相同級距改比報班先後</td></tr>
+<tr><td>雙開／三開怎麼排</td><td>不同人優先</td><td>或一起比、不排多開</td></tr>
+<tr><td>推手／S6 最低上車倍率</td><td>不限</td><td>未達者只進候補</td></tr>
+<tr><td>當天報班截止</td><td>開跑前 1 小時</td><td>只管今天的時段</td></tr>
+<tr><td>P2 有人時提早截止</td><td>開跑前 2 小時</td><td>P2 已有人時改用此截止</td></tr>
+<tr><td>每時段最多收幾人</td><td>不限</td><td>含候補</td></tr>
+<tr><td>最多報幾天後</td><td>不限</td><td>成員可報的天數</td></tr>
+<tr><td>每人每天／連續上限</td><td>不限</td><td>所有車合計</td></tr>
+<tr><td>同一時段只能報一台車</td><td>關</td><td>多車時才有用</td></tr>
+<tr><td>取消期限</td><td>不限</td><td>已排上者開跑前不能自己取消</td></tr>
+<tr><td>只有管理員能排班</td><td>關</td><td>網站與 QQ 成員不能自助報班</td></tr>
+<tr><td>啟用報班鎖定</td><td>關</td><td>每天定時自動鎖班</td></tr>
+<tr><td>自動鎖定時間／日／範圍</td><td>23:00／明天／8-32</td><td>時間鎖班的參數</td></tr>
+<tr><td>鎖定後缺人時段仍可報</td><td>開</td><td>鎖後有空位照收</td></tr>
+<tr><td>滿班自動鎖定</td><td>開</td><td>坐滿即鎖，有人退出解鎖</td></tr>
+<tr><td>完全不鎖班</td><td>關</td><td>任何時段都不鎖</td></tr>
+<tr><td>啟用整點前排班提醒</td><td>開</td><td>開跑前提醒已排上的人</td></tr>
+<tr><td>提前幾分鐘提醒</td><td>10 分鐘</td><td>5～30 分鐘</td></tr>
+<tr><td>提醒時 @、含車種、含平均倍率</td><td>開</td><td>提醒內容</td></tr>
+<tr><td>排班身份組</td><td>未設</td><td>能排班、不能改設定</td></tr>
+<tr><td>同時平行開幾台車</td><td>1 台</td><td>最多 3 台</td></tr>
+<tr><td>啟用純文字捷徑</td><td>開</td><td>關閉後所有文字快捷停用</td></tr>
+<tr><td>嚴格捷徑</td><td>開</td><td>不帶字母的 08-12 只在捷徑頻道生效</td></tr>
+<tr><td>查分模式</td><td>關</td><td>開啟後只放行查分快捷，報班快捷無效</td></tr>
+</tbody></table></div>
+
+<h2 id="sched-s10">10　常見問題與疑難排解<a class="anc" href="#sched-s10" aria-label="本節連結">#</a></h2>
+<p class="noind"><b>報班沒反應，或回「跑者尚未報跑」。</b>該時段還沒開班。請跑者或管理員先 <code>bgn20-24</code>。</p>
+<p class="noind"><b>回「報班未開放」。</b>報班開關關著，請管理員 <code>/班表 開放</code> 或在網站按 <span class="q">開放報班</span>。多車時注意開關各車獨立。</p>
+<p class="noind"><b>報班成功，但班表上沒有我。</b>你是「待確認」，要等管理員確認；或座位已滿，你在候補。用 <code>/我的 班表</code> 或網站「我的班」查看狀態。</p>
+<p class="noind"><b>回「已截止或無可報時段」。</b>今天的時段已過報班截止時間，或時段已鎖。請洽管理員代報或開缺額。</p>
+<p class="noind"><b>打快捷完全沒反應。</b>可能原因：此頻道不在捷徑白名單（機器人會提示）、伺服器開了查分模式、使用了不帶字母的 <code>20-22</code> 而嚴格捷徑開著，或用 <code>%</code> 登記時名字以小寫 h、s 開頭<sup class="fn" id="sched-fnr6"><a href="#sched-fn6" aria-label="註 6">6</a></sup>。</p>
+<p class="noind"><b>不能取消自己的班。</b>時段已鎖（手動或時間鎖班），或已進入取消期限。請找管理員或排班身份組處理。</p>
+<p class="noind"><b>凌晨的班報到錯的日期。</b><a class="xref" href="#sched-s3-4">見 3.4 節</a>：凌晨時段要寫隔天日期，或在網站寫 <code>22-26</code>。</p>
+<p class="noind"><b>報進了錯的車。</b>檢查訊息是否帶了車號，或該頻道是否綁定到別台車（<code>/設定 多車 操作:查看目前設定</code>）。</p>
+<p class="noind"><b>沒有被提醒、沒有簽到面板。</b>提醒只 @ 已排上座位的人；簽到面板需要設定車房頻道（<code>/頻道 跑車頻道</code>）。也請確認「啟用整點前排班提醒」開著。</p>
+<p class="noind"><b>網站看不到我的車隊。</b>確認帳號已綁定 Discord（QQ 車隊綁 QQ），且你已在該車隊的名冊中；剛登記完請按 <span class="q">重新整理</span>。</p>
+<p class="noind"><b>改了倍率，班表沒變。</b>以 <code>%</code> 快捷或 <code>/成員 註冊</code> 更新時會自動同步未來班表；若座位順序仍未變，請管理員在網站按 <span class="q">重排補位</span>（手動時段只補空位）。</p>
+<p class="noind"><b>試算表沒有同步。</b>看設定卡片最上方的狀態：「第一次同步：要先選以哪邊為準」需要選方向；「自動同步已暫停」依提示修好權限後按 <span class="q">檢查連線</span> 或 <span class="q">立即同步</span>。</p>
+
+<h2 id="sched-sA">附錄 A　指令速查表<a class="anc" href="#sched-sA" aria-label="本節連結">#</a></h2>
+<div class="tbl long" id="sched-t7" tabindex="0" role="region" aria-labelledby="sched-t7-c"><div class="cap" id="sched-t7-c"><b>表 7</b>排班相關指令</div><table><thead><tr><th>指令</th><th>用途</th></tr></thead><tbody>
+<tr><td><code>%名字 h3.88</code></td><td>登記倍率（s、d、r 另計）</td></tr>
+<tr><td><code>/成員 註冊</code>／<code>修改</code></td><td>登記或修改成員資料</td></tr>
+<tr><td><code>/成員 別名</code>／<code>時區</code></td><td>小名、時區換算</td></tr>
+<tr><td><code>h</code>／<code>s</code>／<code>d</code> + 時段</td><td>報推手、S6、雙開班</td></tr>
+<tr><td><code>x20-24</code></td><td>取消自己的班</td></tr>
+<tr><td><code>r20-24</code></td><td>跑者自行報跑</td></tr>
+<tr><td><code>/班表 報班</code>／<code>取消</code></td><td>報班、取消（可多日）</td></tr>
+<tr><td><code>/班表 砍班</code>、<code>/砍班</code></td><td>移除班</td></tr>
+<tr><td><code>/班表 查看</code>、<code>/查看班表</code></td><td>看班表</td></tr>
+<tr><td><code>/我的 班表</code>／<code>網頁</code></td><td>自己的班、網站連結</td></tr>
+<tr><td><code>/班表 一覽</code>／<code>歷史</code></td><td>一週概況、過去班表</td></tr>
+<tr><td><code>bgn20-24</code>、<code>/班表 報跑</code></td><td>[管] 開班</td></tr>
+<tr><td><code>ccl20-24</code>、<code>/班表 取消報跑</code></td><td>[管] 取消開班</td></tr>
+<tr><td><code>/班表 開放</code>／<code>停止</code></td><td>[管] 報班開關</td></tr>
+<tr><td><code>/班表 確認</code>／<code>待排</code></td><td>[管] 確認、退回待確認</td></tr>
+<tr><td><code>/班表 編輯</code>／<code>換人</code></td><td>[管] 手動改座位</td></tr>
+<tr><td><code>/班表 代報班</code>、<code>/代報</code></td><td>[管] 代為報班</td></tr>
+<tr><td><code>/班表 車隊</code>／<code>車種</code></td><td>[管] 車隊佔位、時段標記</td></tr>
+<tr><td><code>/班表 跑者</code></td><td>[管] 車隊模式指定跑者</td></tr>
+<tr><td><code>/班表鎖定</code>／<code>/班表解鎖</code></td><td>[管] 手動鎖班</td></tr>
+<tr><td><code>/班表 缺額</code></td><td>[管] 開關缺額報班</td></tr>
+<tr><td><code>/設定 鎖定設定</code></td><td>[管] 時間鎖班</td></tr>
+<tr><td><code>/設定 多車</code></td><td>[管] 多車與頻道綁定</td></tr>
+<tr><td><code>/設定 排班身份組</code></td><td>[管] 排班權</td></tr>
+<tr><td><code>/設定 進階設定</code></td><td>[管] 預設範圍等</td></tr>
+<tr><td><code>/身份組 註冊用</code>／<code>補發</code></td><td>[管] 註冊身分組</td></tr>
+<tr><td><code>/頻道 跑車頻道</code>／<code>提醒頻道</code></td><td>[管] 車房、提醒頻道</td></tr>
+<tr><td><code>/頻道 班表看板</code></td><td>[管] 自動更新看板</td></tr>
+<tr><td><code>/系統 註冊跑隊</code></td><td>[管] 跑隊與 P1 名稱</td></tr>
+<tr><td><code>/系統 發提醒</code>／<code>發簽到</code></td><td>[管] 手動提醒、簽到</td></tr>
+<tr><td><code>/系統 手動簽到</code></td><td>[管] 代為簽到</td></tr>
+<tr><td><code>/班表 清空</code></td><td>[管] 清空班表（會備份）</td></tr>
+<tr><td><code>/班表 1excel</code></td><td>匯出班表；匯入限管理員</td></tr>
+</tbody></table></div>
+
+<div class="notes"><p id="sched-fn1"><sup><a href="#sched-fnr1" aria-label="回到內文">1</a></sup>　設定「註冊用」身分組之前就登記的人不會自動拿到，可由管理員以 <code>/身份組 補發</code> 補齊。</p>
+<p id="sched-fn2"><sup><a href="#sched-fnr2" aria-label="回到內文">2</a></sup>　Discord 指令與快捷的「已鎖不能報」檢查只套用在今天的時段；預先鎖住未來日期時，網站會擋下成員報班，但 Discord 端的報班仍會寫入（未開自動確認時為待確認）。需要嚴格擋下時，建議同時關閉報班開關或在當天再鎖。</p>
+<p id="sched-fn3"><sup><a href="#sched-fnr3" aria-label="回到內文">3</a></sup>　<code>/班表 開放</code> 的 <code>天數</code> 參數只顯示在回覆訊息中，開關本身沒有到期日，需要時請手動 <code>/班表 停止</code>。</p>
+<p id="sched-fn4"><sup><a href="#sched-fnr4" aria-label="回到內文">4</a></sup>　此介面需主機載入互動排班模組，未載入時指令會回「互動排班模組未載入」。</p>
+<p id="sched-fn5"><sup><a href="#sched-fnr5" aria-label="回到內文">5</a></sup>　排班規則、報班限制與報班鎖定的預設值以網站設定頁顯示為準；設定頁的「排班規則摘要」會以白話列出目前生效的規則。</p>
+<p id="sched-fn6"><sup><a href="#sched-fnr6" aria-label="回到內文">6</a></sup>　<code>%</code> 快捷會略過以 <code>%h</code>、<code>%s</code> 開頭的訊息。班表名以小寫 h 或 s 開頭時，請改用 <code>/成員 註冊 班表名:</code> 登記。</p></div>
+</div></article><article class="paper" id="doc-voice" data-doc="voice" role="tabpanel" aria-labelledby="tab-voice" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>菜根機器人語音互動系統：<br>使用說明與設計概要</h1><div class="en">A User Guide to the Voice Interaction System of the Caigen Discord Bot</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫車隊管理機器人 ・ 版本 b2026-11-09k ・ 2026 年 11 月</div><p class="dl"><a href="manual/voice.pdf" download="語音功能說明.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文說明菜根機器人在 Discord 語音頻道中的互動功能。系統將成員的語音即時轉成文字，經過斷句、語音辨識與三層自動校正後，判斷為指令、跑榜查詢或閒聊，再以語音回覆。文中介紹三種互動模式、可查詢的跑榜數據（時速、周回、場均、樓上樓下分差與班表）、車隊術語的校正機制、音樂播放，以及提升辨識率的使用建議與疑難排解方式。</div><div class="kw"><b>關鍵詞：</b>語音辨識；Discord；車隊管理；跑榜助理；自動校正；世界計畫</div><div class="body"><h2 id="voice-s1">1　緒論<a class="anc" href="#voice-s1" aria-label="本節連結">#</a></h2>
+<p>跑榜時雙手多半在操作遊戲，打字查排名或報班並不方便。本系統讓成員直接對機器人說話：問數字就查即時資料回答，講指令就協助執行，其餘則以對話方式回應。所有功能都在既有的語音頻道內完成，不需要另外安裝程式。</p>
+
+<h2 id="voice-s2">2　快速開始<a class="anc" href="#voice-s2" aria-label="本節連結">#</a></h2>
+<ol>
+  <li>先進入要使用的語音頻道。</li>
+  <li>輸入 <code>/語音 加入</code>，機器人進入頻道並開始收音。</li>
+  <li>直接說話。文字頻道出現<span class="q">你的名字（語音）</span>的字幕，即表示已收到。</li>
+</ol>
+<p class="noind">結束時輸入 <code>/語音 離開</code>；若正在播放音樂，機器人不會斷線。</p>
+
+<h2 id="voice-s3">3　互動模式<a class="anc" href="#voice-s3" aria-label="本節連結">#</a></h2>
+<p>系統提供三種互動模式，差別在觸發方式與回應速度，比較如<a class="xref" href="#voice-t1">表 1</a>。</p>
+<div class="tbl" id="voice-t1" tabindex="0" role="region" aria-labelledby="voice-t1-c">
+  <div class="cap" id="voice-t1-c"><b>表 1</b>三種互動模式比較</div>
+  <table>
+    <colgroup><col style="width:19%"><col style="width:29%"><col style="width:22%"><col style="width:30%"></colgroup>
+    <thead><tr><th>模式</th><th>開始</th><th>結束</th><th>特性</th></tr></thead>
+    <tbody>
+      <tr><td>直接講<br><span class="muted">（預設）</span></td><td>直接說話</td><td>—</td><td>每句都回</td></tr>
+      <tr><td>對話模式</td><td>喊<span class="q">菜根</span></td><td>說<span class="q">掰掰</span></td><td>30 秒內免再喊</td></tr>
+      <tr><td>即時對話</td><td><code>/語音 即時對話</code></td><td>說<span class="q">結束對話</span></td><td>延遲 &lt;1 秒，可插話</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="voice-s4">4　系統流程<a class="anc" href="#voice-s4" aria-label="本節連結">#</a></h2>
+<p>一句話從說出到得到回覆，會經過<a class="xref" href="#voice-f1">圖 1</a> 的六個步驟。其中斷句與校正兩步驟對辨識率影響最大。</p>
+<div class="fig" id="voice-f1">
+<svg viewBox="0 0 340 196" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#333"/></marker></defs>
+  <g font-size="9.2" fill="#1a1a1a">
+    <rect x="6" y="8" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="54" y="25" text-anchor="middle" font-weight="700">① 收音</text>
+    <text x="54" y="39" text-anchor="middle" font-size="7.6" fill="#555">解密、解碼 48 kHz</text>
+    <rect x="122" y="8" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="170" y="25" text-anchor="middle" font-weight="700">② 斷句</text>
+    <text x="170" y="39" text-anchor="middle" font-size="7.6" fill="#555">停頓約 1 秒＝講完</text>
+    <rect x="238" y="8" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="286" y="25" text-anchor="middle" font-weight="700">③ 語音辨識</text>
+    <text x="286" y="39" text-anchor="middle" font-size="7.6" fill="#555">Gemini，備援 OpenAI</text>
+    <rect x="238" y="80" width="96" height="40" rx="3" fill="#f4ecec" stroke="#7a1f2b" stroke-width="0.9"/>
+    <text x="286" y="97" text-anchor="middle" font-weight="700">④ 自動校正</text>
+    <text x="286" y="111" text-anchor="middle" font-size="7.6" fill="#555">對照表・術語・AI</text>
+    <rect x="122" y="80" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="170" y="97" text-anchor="middle" font-weight="700">⑤ 判斷意圖</text>
+    <text x="170" y="111" text-anchor="middle" font-size="7.6" fill="#555">指令／查詢／閒聊</text>
+    <rect x="6" y="80" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="54" y="97" text-anchor="middle" font-weight="700">⑥ 語音回覆</text>
+    <text x="54" y="111" text-anchor="middle" font-size="7.6" fill="#555">字幕＋朗讀</text>
+    <line x1="102" y1="28" x2="120" y2="28" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="218" y1="28" x2="236" y2="28" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="286" y1="48" x2="286" y2="78" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="238" y1="100" x2="220" y2="100" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="122" y1="100" x2="104" y2="100" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <rect x="122" y="146" width="212" height="40" rx="3" fill="#fff" stroke="#999" stroke-width="0.7" stroke-dasharray="3 2"/>
+    <text x="228" y="163" text-anchor="middle" font-weight="700">即時排名・班表・色段資料</text>
+    <text x="228" y="177" text-anchor="middle" font-size="7.6" fill="#555">查詢時才抓，不使用舊數字</text>
+    <line x1="170" y1="146" x2="170" y2="122" stroke="#999" stroke-width="0.8" stroke-dasharray="3 2" marker-end="url(#ar)"/>
+  </g>
+</svg>
+  <div class="cap"><b>圖 1</b>語音互動的處理流程</div>
+</div>
+<p>即時對話模式則把聲音直接串流給 Gemini Live，不經過步驟 ② 至 ④。<sup class="fn" id="voice-fnr1"><a href="#voice-fn1" aria-label="註 1">1</a></sup></p>
+
+<h2 id="voice-s5">5　跑榜助理<a class="anc" href="#voice-s5" aria-label="本節連結">#</a></h2>
+<h3 id="voice-s5-1">5.1　可查詢的數據<a class="anc" href="#voice-s5-1" aria-label="本節連結">#</a></h3>
+<p>凡是提到時速、場均、樓下、榜線、誰上車等字眼，系統都會先抓取當下的排名與班表，再依資料回答，不會自行推測數字。可查詢項目見<a class="xref" href="#voice-t2">表 2</a>。</p>
+<div class="tbl long" id="voice-t2" tabindex="0" role="region" aria-labelledby="voice-t2-c">
+  <div class="cap" id="voice-t2-c"><b>表 2</b>跑榜助理可回答的項目</div>
+  <table>
+    <thead><tr><th>項目</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>名次與總分</td><td>跑者、以及說話者自己綁定的帳號</td></tr>
+      <tr><td>時速、周回</td><td>近 1 小時每小時分數與場數；另附 3 小時數據</td></tr>
+      <tr><td>場均</td><td>見式 (1)；另附色段監控的近 10 場平均</td></tr>
+      <tr><td>樓上、樓下</td><td>對方的時速、周回、場均與分差</td></tr>
+      <tr><td>追趕估算</td><td>照目前時速幾小時追上或被追上</td></tr>
+      <tr><td>榜線目標</td><td>下一個榜線（如 T30）還差幾分</td></tr>
+      <tr><td>預估終分</td><td>照目前時速到活動結束的總分</td></tr>
+      <tr><td>班表</td><td>這小時、下小時的跑者與 P2～P5、空位、待審</td></tr>
+      <tr><td>色段監控</td><td>Auto／多人模式、閒置時間、異常警告</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="eq">場均 ＝ 近 1 小時時速 ÷ 近 1 小時周回<span class="no">(1)</span></div>
+<p class="noind">3 小時與 24 小時的場均刻意不計算。<sup class="fn" id="voice-fnr2"><a href="#voice-fn2" aria-label="註 2">2</a></sup></p>
+
+<h3 id="voice-s5-2">5.2　問法範例<a class="anc" href="#voice-s5-2" aria-label="本節連結">#</a></h3>
+<ul>
+  <li><span class="q">跑者時速多少？</span><span class="q">我的周回跟場均</span></li>
+  <li><span class="q">樓下場均多少？差幾分？</span></li>
+  <li><span class="q">照這速度幾小時會被追上？</span></li>
+  <li><span class="q">下小時誰要上車？</span><span class="q">T100 現在幾分？</span></li>
+  <li><span class="q">幫我總結一下戰況</span>：依<a class="xref" href="#voice-t2">表 2</a> 順序完整說明</li>
+</ul>
+
+<h3 id="voice-s5-3">5.3　前置設定<a class="anc" href="#voice-s5-3" aria-label="本節連結">#</a></h3>
+<p class="noind">跑者 ID 用 <code>/跑者id</code> 綁定；要問<span class="q">我的</span>數字，說話者需以 <code>/成員 綁定id</code> 綁定自己的遊戲 ID；色段數據需先 <code>/色段 開始</code>。</p>
+
+<h2 id="voice-s6">6　語音指令<a class="anc" href="#voice-s6" aria-label="本節連結">#</a></h2>
+<p>報班、取消、查班表、問房號等都可直接說，例如<span class="q">幫我報班 20 到 24</span>、<span class="q">取消 21 點的班</span>。查詢類會立即回答；會修改資料的操作會先跳出確認按鈕，按下後才生效。</p>
+
+<h2 id="voice-s7">7　語音自動校正<a class="anc" href="#voice-s7" aria-label="本節連結">#</a></h2>
+<h3 id="voice-s7-1">7.1　三層校正<a class="anc" href="#voice-s7-1" aria-label="本節連結">#</a></h3>
+<p>辨識結果在送出判斷前，依序經過<a class="xref" href="#voice-t3">表 3</a> 的三層校正。前兩層不需呼叫 AI，可立即完成；第三層若 4 秒內未回應，就採用前兩層的結果。</p>
+<div class="tbl" id="voice-t3" tabindex="0" role="region" aria-labelledby="voice-t3-c">
+  <div class="cap" id="voice-t3-c"><b>表 3</b>自動校正的三個層級</div>
+  <table>
+    <thead><tr><th>層級</th><th>範例</th></tr></thead>
+    <tbody>
+      <tr><td>常見聽錯對照</td><td>報斑→報班、蔡根→菜根、常均→場均</td></tr>
+      <tr><td>字母＋數字術語</td><td>艾斯六→S6、屁二→P2、踢一百→T100</td></tr>
+      <tr><td>AI 依名單校正</td><td>成員名、車隊術語、「二十點」→「20點」</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>為避免誤改，AI 若改動過多、改成回答問題或輸出多行說明，系統一律保留原句。有修改的字幕下方會標示<span class="q">已自動校正・原句：…</span>，供成員核對。</p>
+
+<h3 id="voice-s7-2">7.2　自訂與自動學習<a class="anc" href="#voice-s7-2" aria-label="本節連結">#</a></h3>
+<p class="noind">管理員可用 <code>/語音 校正詞</code>：</p>
+<ul>
+  <li><b>新增</b>：填「聽成」與「應該是」，適合固定被聽錯的詞。</li>
+  <li><b>新增術語</b>：只填「應該是」，加入車名、暱稱等車隊用語。</li>
+  <li><b>清掉自動學到的</b>：撤銷系統自行學到的對照。</li>
+</ul>
+<p>AI 在三句不同的話中把同一組詞改對，系統會自動記成校正詞；色段暱稱與班表中的自訂跑者名也會自動納入術語。</p>
+
+<h2 id="voice-s8">8　音樂播放<a class="anc" href="#voice-s8" aria-label="本節連結">#</a></h2>
+<div class="tbl" id="voice-t4" tabindex="0" role="region" aria-labelledby="voice-t4-c">
+  <div class="cap" id="voice-t4-c"><b>表 4</b>音樂相關指令</div>
+  <table>
+    <thead><tr><th>指令</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><code>/語音 播放</code></td><td>以網址或關鍵字點歌</td></tr>
+      <tr><td><code>/語音 跳過</code>、<code>/語音 暫停</code></td><td>下一首；暫停／繼續</td></tr>
+      <tr><td><code>/語音 音量</code></td><td>5～200%，建議不超過 100%</td></tr>
+      <tr><td><code>/語音 混音</code></td><td>說話時音樂壓低而不暫停</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="voice-s9">9　使用建議<a class="anc" href="#voice-s9" aria-label="本節連結">#</a></h2>
+<div class="boxed">
+  <b>提升辨識率的五個做法</b>
+  <ol style="margin-bottom:0">
+    <li>說完停頓約 1 秒，系統才判定句子結束；句中換氣不會被切斷。</li>
+    <li>一次一人說話；多人同時說，系統會依序逐句回覆。</li>
+    <li>Discord「語音與視訊」設定中，輸入模式選「語音活動」，靈敏度勿調過高。</li>
+    <li>使用按鍵說話時，說完再放開按鍵。</li>
+    <li>常被聽錯的詞，加成校正詞或術語（<a class="xref" href="#voice-s7-2">見 7.2</a>）。</li>
+  </ol>
+</div>
+
+<h2 id="voice-s10">10　管理與疑難排解<a class="anc" href="#voice-s10" aria-label="本節連結">#</a></h2>
+<div class="tbl" id="voice-t5" tabindex="0" role="region" aria-labelledby="voice-t5-c">
+  <div class="cap" id="voice-t5-c"><b>表 5</b>常見問題與對應指令</div>
+  <table>
+    <thead><tr><th>狀況</th><th>處理方式</th></tr></thead>
+    <tbody>
+      <tr><td>說話後沒有字幕</td><td><code>/語音 狀態</code>，查看「最近幾句」</td></tr>
+      <tr><td>聽不到機器人</td><td><code>/診斷 語音播報</code></td></tr>
+      <tr><td>音樂斷斷續續</td><td>發生當下執行 <code>/診斷 語音品質</code></td></tr>
+      <tr><td>調整回覆時機、字幕</td><td><code>/語音 辨識設定</code>（管理員）</td></tr>
+      <tr><td>更換說話聲音</td><td><code>/語音 音色</code></td></tr>
+      <tr><td>自動念排名</td><td><code>/語音 播報</code>（每 10 分鐘）</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="noind">回報問題時，附上上述指令的畫面截圖最有助於判斷原因。</p>
+
+<div class="notes">
+  <p id="voice-fn1"><sup><a href="#voice-fnr1" aria-label="回到內文">1</a></sup>　即時對話直接聽取聲音，因此不顯示自動校正標示；車隊術語表仍會提供給模型參考。</p>
+  <p id="voice-fn2"><sup><a href="#voice-fnr2" aria-label="回到內文">2</a></sup>　排名資料中 3 小時與 24 小時的「時速」為每小時平均，「場數」則為整段累計，兩者相除會差數倍，故僅以近 1 小時計算場均。</p>
+</div>
+</div></article>
+    <div class="foot">Project SEKAI 資源中心 ・ <a href="app.html">回到網站</a> ・ <a href="tutorial.html">教學大全</a></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  var DOCS = [{"id": "site", "tab": "網站使用手冊", "pdf": "manual/site.pdf"}, {"id": "sched", "tab": "排班系統說明", "pdf": "manual/sched.pdf"}, {"id": "voice", "tab": "語音功能說明", "pdf": "manual/voice.pdf"}];
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var cur = null, spy = null, marks = [], mi = -1, orig = {};
+  $$('article.paper').forEach(function (a) { orig[a.dataset.doc] = a.innerHTML; });
+
+  function toast(t) { var el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function () { el.classList.remove('show'); }, 1600); }
+
+  function show(id, keepScroll) {
+    if (!DOCS.some(function (d) { return d.id === id; })) id = DOCS[0].id;
+    if (cur === id) return;
+    cur = id;
+    $$('article.paper').forEach(function (a) { a.hidden = a.dataset.doc !== id; });
+    $$('.toc-doc').forEach(function (t) { t.hidden = t.dataset.doc !== id; });
+    $$('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.doc === id ? 'true' : 'false'); b.tabIndex = b.dataset.doc === id ? 0 : -1; });
+    var d = DOCS.filter(function (x) { return x.id === id; })[0];
+    var pl = $('#pdfLink'); pl.href = d.pdf; pl.setAttribute('download', d.tab + '.pdf');
+    document.title = d.tab + ' — 說明書 | Project SEKAI 資源中心';
+    if (!keepScroll) window.scrollTo(0, 0);
+    watch();
+    if ($('#q').value.trim()) search($('#q').value);
+  }
+
+  // 網址：#sched 或 #sched-s4-1（說明書 id 開頭）；舊連結 ?doc= 也接受
+  function route() {
+    var h = decodeURIComponent(location.hash.slice(1)), doc = h.split('-')[0];
+    if (!doc) { try { doc = new URLSearchParams(location.search).get('doc') || ''; } catch (e) {} }
+    show(doc || DOCS[0].id, !!h && h.indexOf('-') > 0);
+    if (h.indexOf('-') > 0) { var el = document.getElementById(h); if (el) setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, 30); }
+  }
+
+  // 目次跟著捲動亮
+  function watch() {
+    if (spy) spy.disconnect();
+    var art = $('#doc-' + cur), links = {};
+    $$('.toc-doc[data-doc="' + cur + '"] a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var heads = $$('h2[id],h3[id]', art), vis = {};
+    spy = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { vis[e.target.id] = e.isIntersecting ? e.boundingClientRect.top : undefined; });
+      var best = null;
+      for (var i = 0; i < heads.length; i++) { if (heads[i].getBoundingClientRect().top < 140) best = heads[i].id; }
+      if (!best && heads[0]) best = heads[0].id;
+      $$('.toc-list a.on').forEach(function (a) { a.classList.remove('on'); });
+      if (best && links[best]) { links[best].classList.add('on'); var s = $('#side'); if (!s.classList.contains('open')) { var r = links[best].getBoundingClientRect(), sr = s.getBoundingClientRect(); if (r.top < sr.top || r.bottom > sr.bottom) links[best].scrollIntoView({ block: 'nearest' }); } }
+    }, { rootMargin: '-80px 0px -60% 0px', threshold: [0, 1] });
+    heads.forEach(function (h) { spy.observe(h); });
+  }
+
+  // 搜尋：標出本份所有符合的字，Enter 下一個、Shift+Enter 上一個、Esc 清除；另外列出其他說明書各有幾筆
+  function restore(id) { var a = $('#doc-' + id); a.innerHTML = orig[id]; }
+  function count(id, q) { var t = document.createElement('div'); t.innerHTML = orig[id]; return (t.textContent.toLowerCase().split(q.toLowerCase()).length - 1); }
+  function search(raw) {
+    var q = raw.trim(); restore(cur); marks = []; mi = -1;
+    var hits = $('#hits');
+    if (!q) { $('#cnt').textContent = ''; hits.hidden = true; watch(); return; }
+    var art = $('#doc-' + cur), ql = q.toLowerCase();
+    var walker = document.createTreeWalker(art, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { return n.parentNode.closest('svg,script,style') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function (n) {
+      var t = n.nodeValue, low = t.toLowerCase(), i = low.indexOf(ql); if (i < 0) return;
+      var frag = document.createDocumentFragment(), last = 0;
+      while (i >= 0) { frag.appendChild(document.createTextNode(t.slice(last, i))); var m = document.createElement('mark'); m.textContent = t.slice(i, i + q.length); frag.appendChild(m); marks.push(m); last = i + q.length; i = low.indexOf(ql, last); }
+      frag.appendChild(document.createTextNode(t.slice(last))); n.parentNode.replaceChild(frag, n);
+    });
+    $('#cnt').textContent = marks.length ? '0/' + marks.length : '無';
+    var others = DOCS.filter(function (d) { return d.id !== cur; }).map(function (d) { return { d: d, n: count(d.id, q) }; }).filter(function (x) { return x.n; });
+    hits.hidden = !others.length && !marks.length;
+    hits.innerHTML = (marks.length ? '本份 ' + marks.length + ' 筆' : '本份沒有') + (others.length ? '；' + others.map(function (x) { return '<button type="button" data-doc="' + x.d.id + '">' + x.d.tab + ' ' + x.n + ' 筆</button>'; }).join('、') : '');
+    $$('button', hits).forEach(function (b) { b.onclick = function () { location.hash = b.dataset.doc; }; });
+    watch();
+    if (marks.length) step(1);
+  }
+  function step(d) {
+    if (!marks.length) return;
+    if (mi >= 0) marks[mi].classList.remove('cur');
+    mi = (mi + d + marks.length) % marks.length;
+    marks[mi].classList.add('cur'); marks[mi].scrollIntoView({ block: 'center' });
+    $('#cnt').textContent = (mi + 1) + '/' + marks.length;
+  }
+  var qt;
+  $('#q').addEventListener('input', function (e) { clearTimeout(qt); qt = setTimeout(function () { search(e.target.value); }, 180); });
+  $('#q').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1); }
+    if (e.key === 'Escape') { e.target.value = ''; search(''); $('#search').classList.remove('open'); e.target.blur(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === '/' || (e.key === 'f' && (e.ctrlKey || e.metaKey))) && document.activeElement !== $('#q')) { e.preventDefault(); $('#search').classList.add('open'); $('#q').focus(); $('#q').select(); }
+  });
+  $('#q').addEventListener('blur', function (e) { if (!e.target.value.trim()) $('#search').classList.remove('open'); });
+  $('#findBtn').onclick = function () { var s = $('#search'); s.classList.toggle('open'); if (s.classList.contains('open')) $('#q').focus(); };
+
+  // 分頁、目次抽屜、主題、章節連結複製、閱讀進度
+  $$('.tab').forEach(function (b) {
+    b.onclick = function () { history.pushState(null, '', '#' + b.dataset.doc); show(b.dataset.doc); };
+    b.onkeydown = function (e) { var tabs = $$('.tab'), i = tabs.indexOf(b); if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.focus(); n.click(); } };
+  });
+  var side = $('#side');
+  $('#tocBtn').onclick = function () { var o = side.classList.toggle('open'); this.setAttribute('aria-expanded', o); };
+  side.addEventListener('click', function (e) { if (e.target.closest('a[href^="#"]')) { side.classList.remove('open'); $('#tocBtn').setAttribute('aria-expanded', 'false'); } });
+  document.addEventListener('click', function (e) { if (side.classList.contains('open') && !e.target.closest('#side,#tocBtn')) { side.classList.remove('open'); $('#tocBtn').setAttribute('aria-expanded', 'false'); } });
+  $('#themeBtn').onclick = function () { var d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-manual-theme', d ? 'dark' : 'light'); } catch (e) {} };
+  $('#main').addEventListener('click', function (e) {
+    var a = e.target.closest('a.anc'); if (!a) return;
+    e.preventDefault(); var url = location.href.split('#')[0] + a.getAttribute('href');
+    history.replaceState(null, '', a.getAttribute('href'));
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast('已複製本節連結'); }, function () { toast('網址列已換成本節連結'); });
+  });
+  window.addEventListener('scroll', function () { var h = document.documentElement; $('#prog').style.width = (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight) * 100) + '%'; }, { passive: true });
+  window.addEventListener('hashchange', route);
+  window.__manual = { show: show, search: search, get cur() { return cur; } };
+  route();
+})();
+</script>
+</body>
+</html>

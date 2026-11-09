@@ -1,0 +1,90 @@
+
+  @page { size: A4; margin: 20mm 17mm 20mm 17mm; }
+  :root { --ink: #1a1a1a; --muted: #555; --rule: #1a1a1a; --accent: #7a1f2b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    color: var(--ink);
+    font-family: "Noto Serif CJK TC", serif;
+    font-size: 9.3pt;
+    line-height: 1.58;
+    text-align: justify;
+  }
+  .title-block { text-align: center; margin: 2mm 0 5mm; }
+  .title-block .kicker { font-size: 8.5pt; letter-spacing: 0.25em; color: var(--muted); margin-bottom: 2mm; }
+  .title-block h1 { font-size: 19pt; line-height: 1.35; margin: 0 0 1.5mm; font-weight: 900; }
+  .title-block .en { font-family: "Noto Serif CJK TC", serif; font-style: italic; font-size: 10.5pt; color: #333; margin-bottom: 3.5mm; }
+  .title-block .author { font-size: 10pt; }
+  .title-block .affil { font-size: 8.6pt; color: var(--muted); margin-top: 0.5mm; }
+  .abstract {
+    margin: 0 9mm 3mm; font-size: 9pt; line-height: 1.6;
+    border-top: 0.8pt solid var(--rule); border-bottom: 0.8pt solid var(--rule); padding: 2.5mm 0 2.5mm;
+  }
+  .abstract b.lbl { font-family: "Noto Sans CJK TC", sans-serif; letter-spacing: 0.3em; }
+  .kw { margin: 0 9mm 6mm; font-size: 8.8pt; }
+  .kw b { font-family: "Noto Sans CJK TC", sans-serif; }
+  main { columns: 2; column-gap: 8mm; }
+  h2 {
+    font-family: "Noto Sans CJK TC", sans-serif; font-size: 11pt; font-weight: 700;
+    margin: 4.2mm 0 1.6mm; break-after: avoid;
+  }
+  h2:first-child { margin-top: 0; }
+  h3 {
+    font-family: "Noto Sans CJK TC", sans-serif; font-size: 9.8pt; font-weight: 700;
+    margin: 2.8mm 0 1mm; break-after: avoid;
+  }
+  p { margin: 0 0 1.6mm; text-indent: 2em; }
+  p.noind { text-indent: 0; }
+  ol, ul { margin: 0.5mm 0 2mm; padding-left: 1.6em; }
+  li { margin: 0.4mm 0; }
+  code {
+    font-family: "Noto Sans Mono CJK TC", monospace; font-size: 8.4pt;
+    padding: 0 0.6mm; white-space: nowrap; color: #222;
+    background: #f1efe9; border-radius: 1mm;
+  }
+  sup.fn { font-size: 6.5pt; color: var(--accent); }
+  .tbl, .fig { break-inside: avoid; margin: 2.6mm 0 3.2mm; }
+  .tbl.long { break-inside: auto; }
+  .tbl.long thead { display: table-header-group; }
+  .tbl.long tr { break-inside: avoid; }
+  .cap { font-family: "Noto Sans CJK TC", sans-serif; font-size: 8.3pt; text-align: center; margin: 0 0 1.2mm; }
+  .fig .cap { margin: 1.4mm 0 0; }
+  .cap b { margin-right: 1.6mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.4pt; line-height: 1.45; text-align: left; }
+  thead th {
+    font-family: "Noto Sans CJK TC", sans-serif; font-weight: 700;
+    border-top: 1.1pt solid var(--rule); border-bottom: 0.6pt solid var(--rule); padding: 1.1mm 1.2mm;
+  }
+  tbody td { padding: 0.9mm 1.2mm; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 1.1pt solid var(--rule); }
+  .q { font-style: normal; }
+  .q::before { content: "「"; } .q::after { content: "」"; }
+  .eq {
+    text-align: center; margin: 1.6mm 0 2.2mm; font-size: 9.4pt;
+  }
+  .eq .no { float: right; color: var(--muted); }
+  .boxed {
+    border: 0.6pt solid #888; padding: 1.8mm 2.4mm; margin: 2mm 0 3mm; font-size: 8.8pt; break-inside: avoid;
+    background: #faf9f6;
+  }
+  .boxed b { font-family: "Noto Sans CJK TC", sans-serif; }
+  .notes { margin-top: 3mm; border-top: 0.6pt solid #888; padding-top: 1.4mm; font-size: 7.8pt; line-height: 1.5; color: #333; }
+  .notes p { text-indent: 0; margin: 0 0 0.6mm; }
+  .notes sup { color: var(--accent); }
+  .ref { font-size: 8.2pt; }
+  .ref p { text-indent: -1.6em; padding-left: 1.6em; margin-bottom: 0.8mm; }
+  svg text { font-family: "Noto Sans CJK TC", sans-serif; }
+
+  .toc { margin: 0 9mm 6mm; font-size: 8.8pt; columns: 2; column-gap: 8mm; }
+  .toc .t { font-family: "Noto Sans CJK TC", sans-serif; font-weight: 700; column-span: all; margin-bottom: 1mm; letter-spacing: 0.3em; }
+  .toc div.i { break-inside: avoid; }
+  .toc div.s { padding-left: 1.6em; color: #444; font-size: 8.4pt; }
+  h2 { counter-increment: none; }
+  main h2 { break-before: auto; }
+  /* 表格：第一欄（名稱）不拆字；表格與列表裡的指令可以換行，不然整欄被擠成一個字寬、兩端對齊把字距拉開 */
+  tbody td:first-child, thead th:first-child { white-space: nowrap; }
+  td code, li code { white-space: normal; }
+  li { text-align: left; }
+  .cap { break-after: avoid; }
+  .toc a { color: inherit; text-decoration: none; }
+  .muted { color: #555; }

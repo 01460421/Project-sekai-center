@@ -162,6 +162,43 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：說明書閱讀器（manual.html）。桌機與手機各開一次：三份說明書都在、#sched-s4-6 直達那一節且目次亮對、
+// 章節交互參照與站內頁面連結存在、搜尋有標記且 Esc 清掉、跨文件連結會切換說明書；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/manual.html#sched-s4-6', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__manual && window.__manual.cur === 'sched', null, { timeout: 30000 });
+      await page.waitForTimeout(500);
+      const r = await page.evaluate(() => ({
+        docs: document.querySelectorAll('article.paper').length,
+        top: Math.round(document.getElementById('sched-s4-6').getBoundingClientRect().top),
+        toc: ((document.querySelector('.toc-list a.on') || {}).textContent || ''),
+        xref: document.querySelectorAll('a.xref').length, xpage: document.querySelectorAll('a.xpage').length,
+      }));
+      await page.evaluate(() => window.__manual.search('鎖定'));
+      const marks = await page.evaluate(() => document.querySelectorAll('#doc-sched mark').length);
+      await page.evaluate(() => window.__manual.search(''));
+      const left = await page.evaluate(() => document.querySelectorAll('mark').length);
+      await page.evaluate(() => { location.hash = 'site'; });
+      await page.waitForFunction(() => window.__manual.cur === 'site', null, { timeout: 5000 });
+      await page.evaluate(() => document.querySelector('#doc-site a.xdoc').click());
+      await page.waitForFunction(() => window.__manual.cur === 'sched', null, { timeout: 5000 });
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && r.docs === 3 && r.top >= 0 && r.top < 200 && r.toc.indexOf('4.6') === 0 && r.xref > 5 && r.xpage > 50 && marks > 3 && left === 0 && !overflow;
+      why = errors[0] || (r.docs !== 3 ? '說明書只有 ' + r.docs + ' 份' : !(r.top >= 0 && r.top < 200) ? '#sched-s4-6 沒有捲到（top ' + r.top + '）' : r.toc.indexOf('4.6') !== 0 ? '目次亮的是「' + r.toc + '」' : r.xref <= 5 || r.xpage <= 50 ? '自動連結太少（' + r.xref + '／' + r.xpage + '）' : marks <= 3 ? '搜尋沒有標記' : left ? '清除搜尋後還有標記' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' manual' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 主站內嵌的三個獨立頁（?page=mystudio／profile／plan → iframe ?embed=1）：高度要收斂。
 // 以前 html{height:100%} + 回報 documentElement.scrollHeight（永遠 ≥ 視窗高）+ 外層 +8px，回報一次長一次，幾秒就長到幾萬 px。
 // 桌機開一次：等 iframe 長出來後隔 2.5 秒再量，兩次差不能超過 40px（存石規劃本來就一萬多 px，所以只看有沒有繼續長）。

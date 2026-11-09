@@ -1,0 +1,41 @@
+{
+  "site_url": "https://project-sekai-center.com/",
+  "docs": [
+    {
+      "id": "site",
+      "tab": "網站使用手冊",
+      "title": "Project SEKAI 資源中心：<br>網站使用手冊",
+      "en": "User Manual of the Project SEKAI Resource Center Website",
+      "author": "菜根機器人開發團隊",
+      "affil": "世界計畫（台服）玩家資源網站 ・ 2026 年 11 月",
+      "abstract": "本文完整說明 Project SEKAI 資源中心網站的各項功能，供一般玩家查閱。內容依網站結構編排：先介紹介面、導覽與設定，再依序說明活動與排名、圖鑑與資料、計算工具、帳號分析、存石規劃、豆森工作室、特別專案、AI 功能，以及帳號、推播通知與資料匯出。私車排班另見〈菜根機器人排班系統說明〉；附錄概述同一專案的伺服器娛樂機器人。",
+      "keywords": "世界計畫；Project SEKAI；活動排名；卡池；計算工具；帳號分析；豆森工作室；使用手冊",
+      "pdf": "manual/site.pdf",
+      "pdf_name": "網站使用手冊.pdf"
+    },
+    {
+      "id": "sched",
+      "tab": "排班系統說明",
+      "title": "菜根機器人排班系統說明",
+      "en": "Shift Scheduling with the Caigen Discord Bot",
+      "author": "菜根機器人開發團隊",
+      "affil": "世界計畫車隊管理機器人 ・ 版本 b2026-11-09k ・ 2026 年 11 月",
+      "abstract": "本文說明菜根機器人的私車排班系統，供車隊成員與管理員查閱。成員部分涵蓋註冊與倍率登記、報班與取消（斜線指令、文字快捷、網站車隊頁與語音）、班表的待審、候補、滿班與鎖定規則，以及跨日時段的處理；管理員部分涵蓋開跑時段、自訂跑者、審核與自動排班、鎖班與時間鎖、多車與車隊模式、簽到與提醒、班表圖片與 Google 試算表同步。文末附設定一覽、常見問題與指令速查表。",
+      "keywords": "排班；報班；車隊；推手；跑者；鎖班；Discord；菜根機器人",
+      "pdf": "manual/sched.pdf",
+      "pdf_name": "排班系統說明.pdf"
+    },
+    {
+      "id": "voice",
+      "tab": "語音功能說明",
+      "title": "菜根機器人語音互動系統：<br>使用說明與設計概要",
+      "en": "A User Guide to the Voice Interaction System of the Caigen Discord Bot",
+      "author": "菜根機器人開發團隊",
+      "affil": "世界計畫車隊管理機器人 ・ 版本 b2026-11-09k ・ 2026 年 11 月",
+      "abstract": "本文說明菜根機器人在 Discord 語音頻道中的互動功能。系統將成員的語音即時轉成文字，經過斷句、語音辨識與三層自動校正後，判斷為指令、跑榜查詢或閒聊，再以語音回覆。文中介紹三種互動模式、可查詢的跑榜數據（時速、周回、場均、樓上樓下分差與班表）、車隊術語的校正機制、音樂播放，以及提升辨識率的使用建議與疑難排解方式。",
+      "keywords": "語音辨識；Discord；車隊管理；跑榜助理；自動校正；世界計畫",
+      "pdf": "manual/voice.pdf",
+      "pdf_name": "語音功能說明.pdf"
+    }
+  ]
+}
