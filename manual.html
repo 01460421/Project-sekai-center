@@ -602,7 +602,7 @@ mark.cur{outline:2px solid var(--acc);background:var(--mark)}
 <p id="site-fn2"><sup><a href="#site-fnr2" aria-label="回到內文">2</a></sup>　台服的活動與卡池內容大致與日服相同，開放時間通常為日服同一天、同一當地時刻再加一年；實際延遲可能變動，故標示為預測。</p>
 <p id="site-fn3"><sup><a href="#site-fnr3" aria-label="回到內文">3</a></sup>　AI 功能會將提問內容送交外部 AI 服務處理。申請核准時填寫的「想說的一句話」也會送交 AI 服務做自動初審，請勿填寫真實姓名、電話等個人資料。</p>
 </div>
-</div></article><article class="paper" id="doc-sched" data-doc="sched" role="tabpanel" aria-labelledby="tab-sched" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>菜根機器人排班系統說明</h1><div class="en">Shift Scheduling with the Caigen Discord Bot</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫車隊管理機器人 ・ 版本 b2026-11-09k ・ 2026 年 11 月</div><p class="dl"><a href="manual/sched.pdf" download="排班系統說明.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文說明菜根機器人的私車排班系統，供車隊成員與管理員查閱。成員部分涵蓋註冊與倍率登記、報班與取消（斜線指令、文字快捷、網站車隊頁與語音）、班表的待審、候補、滿班與鎖定規則，以及跨日時段的處理；管理員部分涵蓋開跑時段、自訂跑者、審核與自動排班、鎖班與時間鎖、多車與車隊模式、簽到與提醒、班表圖片與 Google 試算表同步。文末附設定一覽、常見問題與指令速查表。</div><div class="kw"><b>關鍵詞：</b>排班；報班；車隊；推手；跑者；鎖班；Discord；菜根機器人</div><div class="body"><h2 id="sched-s1">1　緒論<a class="anc" href="#sched-s1" aria-label="本節連結">#</a></h2>
+</div></article><article class="paper" id="doc-sched" data-doc="sched" role="tabpanel" aria-labelledby="tab-sched" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>菜根機器人排班系統說明</h1><div class="en">Shift Scheduling with the Caigen Discord Bot</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫車隊管理機器人 ・ 版本 b2026-11-09l ・ 2026 年 11 月</div><p class="dl"><a href="manual/sched.pdf" download="排班系統說明.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文說明菜根機器人的私車排班系統，供車隊成員與管理員查閱。成員部分涵蓋註冊與倍率登記、報班與取消（斜線指令、文字快捷、網站車隊頁與語音）、班表的待審、候補、滿班與鎖定規則，以及跨日時段的處理；管理員部分涵蓋開跑時段、自訂跑者、審核與自動排班、鎖班與時間鎖、多車與車隊模式、簽到與提醒、班表圖片與 Google 試算表同步。文末附設定一覽、常見問題與指令速查表。</div><div class="kw"><b>關鍵詞：</b>排班；報班；車隊；推手；跑者；鎖班；Discord；菜根機器人</div><div class="body"><h2 id="sched-s1">1　緒論<a class="anc" href="#sched-s1" aria-label="本節連結">#</a></h2>
 
 <h3 id="sched-s1-1">1.1　系統是什麼<a class="anc" href="#sched-s1-1" aria-label="本節連結">#</a></h3>
 <p>排班系統是菜根機器人的核心功能，用來管理《世界計畫》私車（車隊）每一個小時由誰上車。管理員或跑者先「開班」宣告某段時間要跑，推手再「報班」登記想上的時段，機器人依倍率與排班規則把人排進 P2～P5 四個座位，排不下的列入候補，開跑前自動提醒與簽到。</p>
@@ -881,7 +881,7 @@ mark.cur{outline:2px solid var(--acc);background:var(--mark)}
 <li>按 <span class="q">開啟自動同步</span>，之後預設每 60 秒同步一輪。</li>
 </ol>
 <p>試算表每天一個分頁，名稱就是日期，例如「11-04(三)」；二、三車前面加車名。欄位為時段、車種、跑者、P2、P3、P4、P5、替補、狀態、更新。另有全車隊共用的「時數」與「成員」分頁。只有開了班的日期才建分頁；過去日期的分頁不再讀寫，保留 7 天後刪除（只刪機器人建的）。</p>
-<p>同步逐格比對：表上被人改過的格子寫回機器人，沒人動過的格子以機器人為準，所以 Discord 剛報的班不會被舊表蓋掉。格子內容與成員名字或別名相符就對到該成員並帶倍率；對不到的當自訂文字照排，沒有倍率，格子標成淡藍色。S6 寫「S6 名字」。在表上刪掉整列不會砍班；看不懂的列不套用，留在分頁最下方並於「狀態」欄寫原因。想從表上開新的一天，新增一個以日期命名的分頁照欄位填即可。設定頁的「最近從試算表套用的變更」可按 <span class="q">復原</span>。權限或憑證錯誤連續發生時，自動同步會暫停並通知管理員。</p>
+<p>同步逐格比對：表上被人改過的格子寫回機器人，沒人動過的格子以機器人為準，所以 Discord 剛報的班不會被舊表蓋掉。格子內容與成員名字或別名相符就對到該成員並帶倍率；機器人寫回去的名字後面會帶倍率，例如「小明 (2.5)」「S6 小明 (3.1)」，只打名字也認得，成員的倍率以登記的為準。對不到的當自訂文字照排，格子標成淡藍色；自訂文字可以自己寫倍率，例如「外援 (2.3)」，沒寫就是 0。S6 寫「S6 名字」。P2～P5 寫「車隊」（下拉選單最後一個）是車隊佔位，說明見下一段。在表上刪掉整列不會砍班；看不懂的列不套用，留在分頁最下方並於「狀態」欄寫原因。想從表上開新的一天，新增一個以日期命名的分頁照欄位填即可。設定頁的「最近從試算表套用的變更」可按 <span class="q">復原</span>。權限或憑證錯誤連續發生時，自動同步會暫停並通知管理員。</p>
 
 <h2 id="sched-s8">8　網站車隊頁<a class="anc" href="#sched-s8" aria-label="本節連結">#</a></h2>
 
@@ -912,6 +912,7 @@ mark.cur{outline:2px solid var(--acc);background:var(--mark)}
 <tr><td>每列</td><td>鎖班／解鎖、砍班（關閉該時段）</td></tr>
 </tbody></table></div>
 <p>看板模式下有成員池：拖到座位即排入（身分可選自動、S6、推手），座位上的人拖回成員池即移出，拖到同一班另一格即互換；手機上先點成員再點座位。點座位可換人、移出或貼標記（只這一班或這個人長期）。連人員複製的時段會標成「手動」。</p>
+<p><b>車隊佔位</b>：位子要先留著、還沒決定給誰時，在排人小視窗按 <span class="q">用「車隊」佔位</span>，或把成員池最前面的「車隊」拖到座位；試算表則在 P2～P5 寫「車隊」。佔位的座位顯示「車隊 · 佔位」，班表圖片照車隊報班的藍框畫。它不是任何人：不算時數、不提醒、不簽到、不算平均倍率。自動排位不會把它擠掉，新的報班只補其他空位；P2 被佔位時，S6 改當推手排在後面。要放人時直接換人，或移出座位。</p>
 
 <h3 id="sched-s8-4">8.4　其他分頁<a class="anc" href="#sched-s8-4" aria-label="本節連結">#</a></h3>
 <ul>
@@ -1019,7 +1020,7 @@ mark.cur{outline:2px solid var(--acc);background:var(--mark)}
 <p id="sched-fn4"><sup><a href="#sched-fnr4" aria-label="回到內文">4</a></sup>　此介面需主機載入互動排班模組，未載入時指令會回「互動排班模組未載入」。</p>
 <p id="sched-fn5"><sup><a href="#sched-fnr5" aria-label="回到內文">5</a></sup>　排班規則、報班限制與報班鎖定的預設值以網站設定頁顯示為準；設定頁的「排班規則摘要」會以白話列出目前生效的規則。</p>
 <p id="sched-fn6"><sup><a href="#sched-fnr6" aria-label="回到內文">6</a></sup>　<code>%</code> 快捷會略過以 <code>%h</code>、<code>%s</code> 開頭的訊息。班表名以小寫 h 或 s 開頭時，請改用 <code>/成員 註冊 班表名:</code> 登記。</p></div>
-</div></article><article class="paper" id="doc-voice" data-doc="voice" role="tabpanel" aria-labelledby="tab-voice" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>菜根機器人語音互動系統：<br>使用說明與設計概要</h1><div class="en">A User Guide to the Voice Interaction System of the Caigen Discord Bot</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫車隊管理機器人 ・ 版本 b2026-11-09k ・ 2026 年 11 月</div><p class="dl"><a href="manual/voice.pdf" download="語音功能說明.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文說明菜根機器人在 Discord 語音頻道中的互動功能。系統將成員的語音即時轉成文字，經過斷句、語音辨識與三層自動校正後，判斷為指令、跑榜查詢或閒聊，再以語音回覆。文中介紹三種互動模式、可查詢的跑榜數據（時速、周回、場均、樓上樓下分差與班表）、車隊術語的校正機制、音樂播放，以及提升辨識率的使用建議與疑難排解方式。</div><div class="kw"><b>關鍵詞：</b>語音辨識；Discord；車隊管理；跑榜助理；自動校正；世界計畫</div><div class="body"><h2 id="voice-s1">1　緒論<a class="anc" href="#voice-s1" aria-label="本節連結">#</a></h2>
+</div></article><article class="paper" id="doc-voice" data-doc="voice" role="tabpanel" aria-labelledby="tab-voice" hidden><div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div><h1>菜根機器人語音互動系統：<br>使用說明與設計概要</h1><div class="en">A User Guide to the Voice Interaction System of the Caigen Discord Bot</div><div class="author">菜根機器人開發團隊</div><div class="affil">世界計畫車隊管理機器人 ・ 版本 b2026-11-09l ・ 2026 年 11 月</div><p class="dl"><a href="manual/voice.pdf" download="語音功能說明.pdf">下載 PDF（A4 雙欄排版）</a></p></div><div class="abstract"><b class="lbl">摘要</b>　本文說明菜根機器人在 Discord 語音頻道中的互動功能。系統將成員的語音即時轉成文字，經過斷句、語音辨識與三層自動校正後，判斷為指令、跑榜查詢或閒聊，再以語音回覆。文中介紹三種互動模式、可查詢的跑榜數據（時速、周回、場均、樓上樓下分差與班表）、車隊術語的校正機制、音樂播放，以及提升辨識率的使用建議與疑難排解方式。</div><div class="kw"><b>關鍵詞：</b>語音辨識；Discord；車隊管理；跑榜助理；自動校正；世界計畫</div><div class="body"><h2 id="voice-s1">1　緒論<a class="anc" href="#voice-s1" aria-label="本節連結">#</a></h2>
 <p>跑榜時雙手多半在操作遊戲，打字查排名或報班並不方便。本系統讓成員直接對機器人說話：問數字就查即時資料回答，講指令就協助執行，其餘則以對話方式回應。所有功能都在既有的語音頻道內完成，不需要另外安裝程式。</p>
 
 <h2 id="voice-s2">2　快速開始<a class="anc" href="#voice-s2" aria-label="本節連結">#</a></h2>

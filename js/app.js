@@ -3095,7 +3095,7 @@ class Component extends DCLogic {
   loadCar() {
     if (this._carMod === true) return Promise.resolve(true);
     if (this._carMod) return this._carMod;
-    this._carMod = import('./js/car.min.js?v=9879c015be').then(m => { Object.assign(this, m.carMembers.call(this)); this._carMod = true; this.setState({ carMod: true, carModErr: '' }); return true; })
+    this._carMod = import('./js/car.min.js?v=068f50c9b6').then(m => { Object.assign(this, m.carMembers.call(this)); this._carMod = true; this.setState({ carMod: true, carModErr: '' }); return true; })
       .catch(() => { this._carMod = null; this.setState({ carModErr: '車隊程式載入失敗，請檢查網路後按「重試」。' }); return false; });
     return this._carMod;
   }
@@ -12515,6 +12515,7 @@ class Component extends DCLogic {
       onCarPopAdd: () => { const p = this.state.carPop; if (p) this.setState({ carPop: Object.assign({}, p, { kind: 'addtag' }), carTagSel: '', carTagScope: 'shift', carTagDetail: '', carTagUntil: '' }); },
       onCarSign: e => { const d = e.currentTarget.dataset; this.carSign(d.d, d.h, d.act, d.role); },
       onCarPlace: () => this.carPlace(),
+      onCarPlaceHold: () => this.carPlaceHold(),
       onCarPickKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.carPlace(); } },
       onCarClear: () => this.carClearSeat(),
       onCarTagDel: () => this.carTagDel(),
