@@ -1,0 +1,175 @@
+<h2>1　緒論</h2>
+<p>跑榜時雙手多半在操作遊戲，打字查排名或報班並不方便。本系統讓成員直接對機器人說話：問數字就查即時資料回答，講指令就協助執行，其餘則以對話方式回應。所有功能都在既有的語音頻道內完成，不需要另外安裝程式。</p>
+
+<h2>2　快速開始</h2>
+<ol>
+  <li>先進入要使用的語音頻道。</li>
+  <li>輸入 <code>/語音 加入</code>，機器人進入頻道並開始收音。</li>
+  <li>直接說話。文字頻道出現<span class="q">你的名字（語音）</span>的字幕，即表示已收到。</li>
+</ol>
+<p class="noind">結束時輸入 <code>/語音 離開</code>；若正在播放音樂，機器人不會斷線。</p>
+
+<h2>3　互動模式</h2>
+<p>系統提供三種互動模式，差別在觸發方式與回應速度，比較如表 1。</p>
+<div class="tbl">
+  <div class="cap"><b>表 1</b>三種互動模式比較</div>
+  <table>
+    <colgroup><col style="width:19%"><col style="width:29%"><col style="width:22%"><col style="width:30%"></colgroup>
+    <thead><tr><th>模式</th><th>開始</th><th>結束</th><th>特性</th></tr></thead>
+    <tbody>
+      <tr><td>直接講<br><span class="muted">（預設）</span></td><td>直接說話</td><td>—</td><td>每句都回</td></tr>
+      <tr><td>對話模式</td><td>喊<span class="q">菜根</span></td><td>說<span class="q">掰掰</span></td><td>30 秒內免再喊</td></tr>
+      <tr><td>即時對話</td><td><code>/語音 即時對話</code></td><td>說<span class="q">結束對話</span></td><td>延遲 &lt;1 秒，可插話</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>4　系統流程</h2>
+<p>一句話從說出到得到回覆，會經過圖 1 的六個步驟。其中斷句與校正兩步驟對辨識率影響最大。</p>
+<div class="fig">
+<svg viewBox="0 0 340 196" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#333"/></marker></defs>
+  <g font-size="9.2" fill="#1a1a1a">
+    <rect x="6" y="8" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="54" y="25" text-anchor="middle" font-weight="700">① 收音</text>
+    <text x="54" y="39" text-anchor="middle" font-size="7.6" fill="#555">解密、解碼 48 kHz</text>
+    <rect x="122" y="8" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="170" y="25" text-anchor="middle" font-weight="700">② 斷句</text>
+    <text x="170" y="39" text-anchor="middle" font-size="7.6" fill="#555">停頓約 1 秒＝講完</text>
+    <rect x="238" y="8" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="286" y="25" text-anchor="middle" font-weight="700">③ 語音辨識</text>
+    <text x="286" y="39" text-anchor="middle" font-size="7.6" fill="#555">Gemini，備援 OpenAI</text>
+    <rect x="238" y="80" width="96" height="40" rx="3" fill="#f4ecec" stroke="#7a1f2b" stroke-width="0.9"/>
+    <text x="286" y="97" text-anchor="middle" font-weight="700">④ 自動校正</text>
+    <text x="286" y="111" text-anchor="middle" font-size="7.6" fill="#555">對照表・術語・AI</text>
+    <rect x="122" y="80" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="170" y="97" text-anchor="middle" font-weight="700">⑤ 判斷意圖</text>
+    <text x="170" y="111" text-anchor="middle" font-size="7.6" fill="#555">指令／查詢／閒聊</text>
+    <rect x="6" y="80" width="96" height="40" rx="3" fill="#faf9f6" stroke="#333" stroke-width="0.8"/>
+    <text x="54" y="97" text-anchor="middle" font-weight="700">⑥ 語音回覆</text>
+    <text x="54" y="111" text-anchor="middle" font-size="7.6" fill="#555">字幕＋朗讀</text>
+    <line x1="102" y1="28" x2="120" y2="28" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="218" y1="28" x2="236" y2="28" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="286" y1="48" x2="286" y2="78" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="238" y1="100" x2="220" y2="100" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <line x1="122" y1="100" x2="104" y2="100" stroke="#333" stroke-width="0.9" marker-end="url(#ar)"/>
+    <rect x="122" y="146" width="212" height="40" rx="3" fill="#fff" stroke="#999" stroke-width="0.7" stroke-dasharray="3 2"/>
+    <text x="228" y="163" text-anchor="middle" font-weight="700">即時排名・班表・色段資料</text>
+    <text x="228" y="177" text-anchor="middle" font-size="7.6" fill="#555">查詢時才抓，不使用舊數字</text>
+    <line x1="170" y1="146" x2="170" y2="122" stroke="#999" stroke-width="0.8" stroke-dasharray="3 2" marker-end="url(#ar)"/>
+  </g>
+</svg>
+  <div class="cap"><b>圖 1</b>語音互動的處理流程</div>
+</div>
+<p>即時對話模式則把聲音直接串流給 Gemini Live，不經過步驟 ② 至 ④。<sup class="fn">1</sup></p>
+
+<h2>5　跑榜助理</h2>
+<h3>5.1　可查詢的數據</h3>
+<p>凡是提到時速、場均、樓下、榜線、誰上車等字眼，系統都會先抓取當下的排名與班表，再依資料回答，不會自行推測數字。可查詢項目見表 2。</p>
+<div class="tbl long">
+  <div class="cap"><b>表 2</b>跑榜助理可回答的項目</div>
+  <table>
+    <thead><tr><th>項目</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>名次與總分</td><td>跑者、以及說話者自己綁定的帳號</td></tr>
+      <tr><td>時速、周回</td><td>近 1 小時每小時分數與場數；另附 3 小時數據</td></tr>
+      <tr><td>場均</td><td>見式 (1)；另附色段監控的近 10 場平均</td></tr>
+      <tr><td>樓上、樓下</td><td>對方的時速、周回、場均與分差</td></tr>
+      <tr><td>追趕估算</td><td>照目前時速幾小時追上或被追上</td></tr>
+      <tr><td>榜線目標</td><td>下一個榜線（如 T30）還差幾分</td></tr>
+      <tr><td>預估終分</td><td>照目前時速到活動結束的總分</td></tr>
+      <tr><td>班表</td><td>這小時、下小時的跑者與 P2～P5、空位、待審</td></tr>
+      <tr><td>色段監控</td><td>Auto／多人模式、閒置時間、異常警告</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="eq">場均 ＝ 近 1 小時時速 ÷ 近 1 小時周回<span class="no">(1)</span></div>
+<p class="noind">3 小時與 24 小時的場均刻意不計算。<sup class="fn">2</sup></p>
+
+<h3>5.2　問法範例</h3>
+<ul>
+  <li><span class="q">跑者時速多少？</span><span class="q">我的周回跟場均</span></li>
+  <li><span class="q">樓下場均多少？差幾分？</span></li>
+  <li><span class="q">照這速度幾小時會被追上？</span></li>
+  <li><span class="q">下小時誰要上車？</span><span class="q">T100 現在幾分？</span></li>
+  <li><span class="q">幫我總結一下戰況</span>：依表 2 順序完整說明</li>
+</ul>
+
+<h3>5.3　前置設定</h3>
+<p class="noind">跑者 ID 用 <code>/跑者id</code> 綁定；要問<span class="q">我的</span>數字，說話者需以 <code>/成員 綁定id</code> 綁定自己的遊戲 ID；色段數據需先 <code>/色段 開始</code>。</p>
+
+<h2>6　語音指令</h2>
+<p>報班、取消、查班表、問房號等都可直接說，例如<span class="q">幫我報班 20 到 24</span>、<span class="q">取消 21 點的班</span>。查詢類會立即回答；會修改資料的操作會先跳出確認按鈕，按下後才生效。</p>
+
+<h2>7　語音自動校正</h2>
+<h3>7.1　三層校正</h3>
+<p>辨識結果在送出判斷前，依序經過表 3 的三層校正。前兩層不需呼叫 AI，可立即完成；第三層若 4 秒內未回應，就採用前兩層的結果。</p>
+<div class="tbl">
+  <div class="cap"><b>表 3</b>自動校正的三個層級</div>
+  <table>
+    <thead><tr><th>層級</th><th>範例</th></tr></thead>
+    <tbody>
+      <tr><td>常見聽錯對照</td><td>報斑→報班、蔡根→菜根、常均→場均</td></tr>
+      <tr><td>字母＋數字術語</td><td>艾斯六→S6、屁二→P2、踢一百→T100</td></tr>
+      <tr><td>AI 依名單校正</td><td>成員名、車隊術語、「二十點」→「20點」</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>為避免誤改，AI 若改動過多、改成回答問題或輸出多行說明，系統一律保留原句。有修改的字幕下方會標示<span class="q">已自動校正・原句：…</span>，供成員核對。</p>
+
+<h3>7.2　自訂與自動學習</h3>
+<p class="noind">管理員可用 <code>/語音 校正詞</code>：</p>
+<ul>
+  <li><b>新增</b>：填「聽成」與「應該是」，適合固定被聽錯的詞。</li>
+  <li><b>新增術語</b>：只填「應該是」，加入車名、暱稱等車隊用語。</li>
+  <li><b>清掉自動學到的</b>：撤銷系統自行學到的對照。</li>
+</ul>
+<p>AI 在三句不同的話中把同一組詞改對，系統會自動記成校正詞；色段暱稱與班表中的自訂跑者名也會自動納入術語。</p>
+
+<h2>8　音樂播放</h2>
+<div class="tbl">
+  <div class="cap"><b>表 4</b>音樂相關指令</div>
+  <table>
+    <thead><tr><th>指令</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><code>/語音 播放</code></td><td>以網址或關鍵字點歌</td></tr>
+      <tr><td><code>/語音 跳過</code>、<code>/語音 暫停</code></td><td>下一首；暫停／繼續</td></tr>
+      <tr><td><code>/語音 音量</code></td><td>5～200%，建議不超過 100%</td></tr>
+      <tr><td><code>/語音 混音</code></td><td>說話時音樂壓低而不暫停</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>9　使用建議</h2>
+<div class="boxed">
+  <b>提升辨識率的五個做法</b>
+  <ol style="margin-bottom:0">
+    <li>說完停頓約 1 秒，系統才判定句子結束；句中換氣不會被切斷。</li>
+    <li>一次一人說話；多人同時說，系統會依序逐句回覆。</li>
+    <li>Discord「語音與視訊」設定中，輸入模式選「語音活動」，靈敏度勿調過高。</li>
+    <li>使用按鍵說話時，說完再放開按鍵。</li>
+    <li>常被聽錯的詞，加成校正詞或術語（見 7.2）。</li>
+  </ol>
+</div>
+
+<h2>10　管理與疑難排解</h2>
+<div class="tbl">
+  <div class="cap"><b>表 5</b>常見問題與對應指令</div>
+  <table>
+    <thead><tr><th>狀況</th><th>處理方式</th></tr></thead>
+    <tbody>
+      <tr><td>說話後沒有字幕</td><td><code>/語音 狀態</code>，查看「最近幾句」</td></tr>
+      <tr><td>聽不到機器人</td><td><code>/診斷 語音播報</code></td></tr>
+      <tr><td>音樂斷斷續續</td><td>發生當下執行 <code>/診斷 語音品質</code></td></tr>
+      <tr><td>調整回覆時機、字幕</td><td><code>/語音 辨識設定</code>（管理員）</td></tr>
+      <tr><td>更換說話聲音</td><td><code>/語音 音色</code></td></tr>
+      <tr><td>自動念排名</td><td><code>/語音 播報</code>（每 10 分鐘）</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="noind">回報問題時，附上上述指令的畫面截圖最有助於判斷原因。</p>
+
+<div class="notes">
+  <p><sup>1</sup>　即時對話直接聽取聲音，因此不顯示自動校正標示；車隊術語表仍會提供給模型參考。</p>
+  <p><sup>2</sup>　排名資料中 3 小時與 24 小時的「時速」為每小時平均，「場數」則為整段累計，兩者相除會差數倍，故僅以近 1 小時計算場均。</p>
+</div>

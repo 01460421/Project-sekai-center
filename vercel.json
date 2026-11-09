@@ -94,6 +94,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "manual/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "share/**",
       "use": "@vercel/static"
     },
@@ -341,6 +345,37 @@
         "referrer-policy": "strict-origin-when-cross-origin",
         "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
         "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/manual.html",
+      "dest": "/manual.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/manual",
+      "dest": "/manual.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/manual/([A-Za-z0-9_-]+\\.pdf)",
+      "dest": "/manual/$1",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "content-type": "application/pdf"
       }
     },
     {

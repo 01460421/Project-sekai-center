@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<!-- 由 tools/build-manual.py 產生，不要直接改這個檔：改 tools/manual/ 底下的說明書本文或 reader.html 樣板，再重跑腳本 -->
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ea">
+<title>說明書 — 網站使用手冊、排班系統與語音功能 | Project SEKAI 資源中心</title>
+<meta name="description" content="Project SEKAI 資源中心的完整說明書：網站每一頁怎麼用、菜根機器人的私車排班系統、語音互動功能。可搜尋、目次跳轉、章節連結，也可以下載 A4 PDF。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="說明書 — 網站使用手冊、排班系統與語音功能">
+<meta property="og:description" content="網站每一頁怎麼用、私車排班規則、語音互動功能：可搜尋、可跳章節、可下載 PDF。">
+<meta property="og:url" content="https://project-sekai-center.com/manual.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/tut.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/tut.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script>try{var _t=localStorage.getItem('sekai-manual-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(_t==='dark'||(!_t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');}catch(e){}</script>
+<style>
+:root{color-scheme:light;--bg:#f3f1ea;--paper:#fffefb;--panel:#faf9f5;--ink:#1f2230;--ink-2:#454a5e;--ink-3:#5c627a;--line:rgba(40,46,80,.13);--line-2:rgba(40,46,80,.28);
+  --acc:#7a4fc0;--acc-2:#5a3596;--acc-soft:rgba(122,79,192,.11);--wine:#7a1f2b;--mark:#ffe58a;--code:#f1efe9;
+  --sans:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;--serif:'Noto Serif TC','Songti TC','PMingLiU',serif;
+  --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;--bar:56px;--shadow:0 22px 60px -30px rgba(40,40,70,.35)}
+:root.dark{color-scheme:dark;--bg:#0f1117;--paper:#171b26;--panel:#1d2230;--ink:#e7eaf2;--ink-2:#b4bbd0;--ink-3:#959db5;--line:rgba(170,190,255,.12);--line-2:rgba(170,190,255,.3);
+  --acc:#b79cf0;--acc-2:#d2c0f7;--acc-soft:rgba(183,156,240,.14);--wine:#ff9aa7;--mark:#6b5a12;--code:#232838;--shadow:0 22px 60px -26px rgba(0,0,0,.7)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:calc(var(--bar) + 18px)}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+a{color:var(--acc-2)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* 頂欄 */
+.bar{position:sticky;top:0;z-index:30;height:var(--bar);display:flex;align-items:center;gap:10px;padding:0 16px;
+  background:color-mix(in oklab,var(--bg) 84%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.home{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:900;white-space:nowrap}
+.home img{width:24px;height:24px}
+.home span.t{font-family:var(--serif);letter-spacing:.06em}
+.tabs{display:flex;gap:4px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:6px 12px;border-radius:999px;white-space:nowrap;color:var(--ink-2);font-weight:500;font-size:14px}
+.tab[aria-selected="true"]{background:var(--acc-soft);color:var(--acc-2);font-weight:700}
+.sp{flex:1}
+.search{position:relative;display:flex;align-items:center}
+.search input{width:220px;height:36px;padding:0 64px 0 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--paper)}
+.search .cnt{position:absolute;right:10px;font-size:12px;color:var(--ink-3);pointer-events:none}
+.ib{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.ib:hover{background:var(--acc-soft);color:var(--acc-2)}
+.ib svg{width:20px;height:20px}
+#tocBtn{display:none}
+.prog{position:fixed;top:var(--bar);left:0;height:2px;background:var(--acc);width:0;z-index:31;transition:width .1s linear}
+
+/* 版面 */
+.wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1240px;margin:0 auto;padding:24px 20px 80px}
+.side{position:sticky;top:calc(var(--bar) + 20px);align-self:start;max-height:calc(100vh - var(--bar) - 40px);overflow:auto;padding-right:6px;font-size:13.5px}
+.side h2{font-size:12px;letter-spacing:.3em;color:var(--ink-3);font-weight:700;margin:2px 0 8px 10px}
+.toc-list{list-style:none}
+.toc-list li a{display:block;padding:4px 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;line-height:1.45;border-left:2px solid transparent}
+.toc-list li.l3 a{padding-left:24px;font-size:12.8px;color:var(--ink-3)}
+.toc-list li a:hover{background:var(--acc-soft);color:var(--acc-2)}
+.toc-list li a.on{color:var(--acc-2);font-weight:700;border-left-color:var(--acc);background:var(--acc-soft)}
+.side .pdf{display:block;margin:14px 10px 0;font-size:13px}
+.hits{margin:4px 10px 12px;font-size:12.5px;color:var(--ink-3)}
+.hits button{color:var(--acc-2);text-decoration:underline;padding:0 2px}
+
+/* 紙張 */
+.paper{background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);padding:56px 64px 64px;max-width:860px;
+  font-family:var(--serif);font-size:16.5px;line-height:1.95;text-align:justify;color:var(--ink)}
+.title-block{text-align:center;margin-bottom:28px}
+.title-block .kicker{font-size:12px;letter-spacing:.32em;color:var(--ink-3);margin-bottom:10px}
+.title-block h1{font-size:30px;line-height:1.35;font-weight:900;margin-bottom:8px}
+.title-block .en{font-style:italic;color:var(--ink-2);margin-bottom:14px;font-size:15.5px;line-height:1.5}
+.title-block .author{font-size:15.5px}
+.title-block .affil{font-size:13px;color:var(--ink-3)}
+.title-block .dl{margin-top:12px;font-family:var(--sans);font-size:14px}
+.abstract{border-top:1.2px solid var(--ink);border-bottom:1.2px solid var(--ink);padding:12px 4px;margin:0 0 10px;font-size:15px;line-height:1.85}
+.abstract .lbl,.kw b{font-family:var(--sans);letter-spacing:.3em}
+.kw{font-size:14.5px;margin-bottom:26px}
+.body h2{font-family:var(--sans);font-size:21px;font-weight:700;margin:42px 0 12px;position:relative;line-height:1.4}
+.body h3{font-family:var(--sans);font-size:17px;font-weight:700;margin:26px 0 8px;position:relative;line-height:1.45}
+.anc{margin-left:8px;color:var(--ink-3);text-decoration:none;opacity:0;font-weight:400;transition:opacity .15s}
+h2:hover .anc,h3:hover .anc,.anc:focus-visible{opacity:1}
+.body p{margin:0 0 12px;text-indent:2em}
+.body p.noind{text-indent:0}
+.body ol,.body ul{margin:4px 0 14px;padding-left:1.7em}
+.body li{margin:3px 0}
+.body code{font-family:var(--mono);font-size:.84em;background:var(--code);padding:1px 6px;border-radius:5px;white-space:nowrap}
+.q::before{content:"「"}.q::after{content:"」"}
+.muted{color:var(--ink-3)}
+sup.fn{font-size:.7em;line-height:0}
+sup a{text-decoration:none;color:var(--wine);font-weight:700;padding:0 2px}
+.tbl,.fig{margin:18px 0 22px;break-inside:avoid}
+.tbl{overflow-x:auto}
+.cap{font-family:var(--sans);font-size:13.5px;text-align:center;margin-bottom:6px}
+.fig .cap{margin:8px 0 0}
+.cap b{margin-right:8px}
+.body table{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.6;text-align:left}
+.body thead th{font-family:var(--sans);font-weight:700;border-top:1.6px solid var(--ink);border-bottom:.8px solid var(--ink);padding:7px 10px;white-space:nowrap}
+.body tbody td{padding:6px 10px;vertical-align:top;border-bottom:1px solid var(--line)}
+.body tbody tr:last-child td{border-bottom:1.6px solid var(--ink)}
+.body tbody td:first-child{white-space:nowrap}.body td code,.body li code{white-space:normal}.body li{text-align:left}
+.fig svg{max-width:560px;display:block;margin:0 auto}
+:root.dark .fig svg{filter:invert(.92) hue-rotate(180deg)}
+.eq{text-align:center;margin:10px 0 14px}.eq .no{float:right;color:var(--ink-3)}
+.boxed{border:1px solid var(--line-2);background:var(--panel);padding:12px 16px;margin:14px 0 18px;font-size:15px;border-radius:4px}
+.boxed b{font-family:var(--sans)}
+.notes{margin-top:36px;border-top:1px solid var(--line-2);padding-top:10px;font-size:13.5px;line-height:1.7;color:var(--ink-2)}
+.notes p{text-indent:0;margin-bottom:6px}
+a.xref,a.xdoc{text-decoration:none;border-bottom:1px dotted currentColor}
+a.xpage{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+a.xpage::after{content:"↗";font-size:.72em;margin-left:1px;vertical-align:.25em}
+mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+mark.cur{outline:2px solid var(--acc);background:var(--mark)}
+:target{animation:flash 1.6s ease-out}
+@keyframes flash{0%{background:var(--acc-soft)}100%{background:transparent}}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:999px;font-size:14px;transition:.25s;z-index:50;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.foot{text-align:center;color:var(--ink-3);font-size:13px;margin-top:22px;font-family:var(--sans)}
+
+/* 手機 */
+@media (max-width:980px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding:14px 10px 60px}
+  .side{position:fixed;inset:var(--bar) 0 0 auto;width:min(86vw,340px);max-height:none;background:var(--paper);border-left:1px solid var(--line);
+    padding:16px 12px 40px;z-index:40;transform:translateX(105%);transition:transform .25s;box-shadow:var(--shadow)}
+  .side.open{transform:none}
+  #tocBtn{display:inline-flex}
+  .paper{padding:30px 18px 40px;font-size:16px;line-height:1.9;border-radius:4px}
+  .title-block h1{font-size:23px}
+  .search input{width:150px}
+}
+@media (max-width:640px){
+  .bar{gap:4px;padding:0 8px}
+  .home span.t{display:none}
+  .tabs{margin-left:2px}
+  .tab{padding:6px 9px;font-size:13px}
+  .search{display:none}
+  .search.open{display:flex;position:absolute;left:8px;right:124px;top:10px}
+  .search.open input{width:100%}
+  #findBtn{display:inline-flex}
+  .body thead th{white-space:normal}
+}
+@media (min-width:641px){#findBtn{display:none}}
+@media print{
+  .bar,.side,.prog,.toast,.anc,.dl{display:none!important}
+  body{background:#fff}.wrap{display:block;padding:0}
+  .paper{box-shadow:none;border:0;padding:0;max-width:none;font-size:11pt}
+  a.xpage::after{content:""}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="home" href="app.html" aria-label="回到資源中心"><img src="./icons/icon.svg" alt=""><span class="t">說明書</span></a>
+  <nav class="tabs" role="tablist" aria-label="選擇說明書">{{TABS}}</nav>
+  <div class="sp"></div>
+  <div class="search" id="search"><label class="sr" for="q">搜尋本份說明書</label><input id="q" type="search" placeholder="搜尋（Enter 下一個）" autocomplete="off"><span class="cnt" id="cnt"></span></div>
+  <button class="ib" id="findBtn" type="button" aria-label="搜尋"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+  <button class="ib" id="themeBtn" type="button" aria-label="切換深色／淺色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  <button class="ib" id="tocBtn" type="button" aria-label="目次" aria-expanded="false" aria-controls="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+</header>
+<div class="prog" id="prog"></div>
+<div class="wrap">
+  <aside class="side" id="side" aria-label="目次">
+    <h2>目次</h2>
+    <div class="hits" id="hits" hidden></div>
+    {{TOCS}}
+    <a class="pdf" id="pdfLink" href="#" download>下載這份的 PDF（A4）</a>
+  </aside>
+  <main id="main">
+    {{ARTICLES}}
+    <div class="foot">Project SEKAI 資源中心 ・ <a href="app.html">回到網站</a> ・ <a href="tutorial.html">教學大全</a></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  var DOCS = {{META}};
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var cur = null, spy = null, marks = [], mi = -1, orig = {};
+  $$('article.paper').forEach(function (a) { orig[a.dataset.doc] = a.innerHTML; });
+
+  function toast(t) { var el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function () { el.classList.remove('show'); }, 1600); }
+
+  function show(id, keepScroll) {
+    if (!DOCS.some(function (d) { return d.id === id; })) id = DOCS[0].id;
+    if (cur === id) return;
+    cur = id;
+    $$('article.paper').forEach(function (a) { a.hidden = a.dataset.doc !== id; });
+    $$('.toc-doc').forEach(function (t) { t.hidden = t.dataset.doc !== id; });
+    $$('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.doc === id ? 'true' : 'false'); b.tabIndex = b.dataset.doc === id ? 0 : -1; });
+    var d = DOCS.filter(function (x) { return x.id === id; })[0];
+    var pl = $('#pdfLink'); pl.href = d.pdf; pl.setAttribute('download', d.tab + '.pdf');
+    document.title = d.tab + ' — 說明書 | Project SEKAI 資源中心';
+    if (!keepScroll) window.scrollTo(0, 0);
+    watch();
+    if ($('#q').value.trim()) search($('#q').value);
+  }
+
+  // 網址：#sched 或 #sched-s4-1（說明書 id 開頭）；舊連結 ?doc= 也接受
+  function route() {
+    var h = decodeURIComponent(location.hash.slice(1)), doc = h.split('-')[0];
+    if (!doc) { try { doc = new URLSearchParams(location.search).get('doc') || ''; } catch (e) {} }
+    show(doc || DOCS[0].id, !!h && h.indexOf('-') > 0);
+    if (h.indexOf('-') > 0) { var el = document.getElementById(h); if (el) setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, 30); }
+  }
+
+  // 目次跟著捲動亮
+  function watch() {
+    if (spy) spy.disconnect();
+    var art = $('#doc-' + cur), links = {};
+    $$('.toc-doc[data-doc="' + cur + '"] a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var heads = $$('h2[id],h3[id]', art), vis = {};
+    spy = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { vis[e.target.id] = e.isIntersecting ? e.boundingClientRect.top : undefined; });
+      var best = null;
+      for (var i = 0; i < heads.length; i++) { if (heads[i].getBoundingClientRect().top < 140) best = heads[i].id; }
+      if (!best && heads[0]) best = heads[0].id;
+      $$('.toc-list a.on').forEach(function (a) { a.classList.remove('on'); });
+      if (best && links[best]) { links[best].classList.add('on'); var s = $('#side'); if (!s.classList.contains('open')) { var r = links[best].getBoundingClientRect(), sr = s.getBoundingClientRect(); if (r.top < sr.top || r.bottom > sr.bottom) links[best].scrollIntoView({ block: 'nearest' }); } }
+    }, { rootMargin: '-80px 0px -60% 0px', threshold: [0, 1] });
+    heads.forEach(function (h) { spy.observe(h); });
+  }
+
+  // 搜尋：標出本份所有符合的字，Enter 下一個、Shift+Enter 上一個、Esc 清除；另外列出其他說明書各有幾筆
+  function restore(id) { var a = $('#doc-' + id); a.innerHTML = orig[id]; }
+  function count(id, q) { var t = document.createElement('div'); t.innerHTML = orig[id]; return (t.textContent.toLowerCase().split(q.toLowerCase()).length - 1); }
+  function search(raw) {
+    var q = raw.trim(); restore(cur); marks = []; mi = -1;
+    var hits = $('#hits');
+    if (!q) { $('#cnt').textContent = ''; hits.hidden = true; watch(); return; }
+    var art = $('#doc-' + cur), ql = q.toLowerCase();
+    var walker = document.createTreeWalker(art, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { return n.parentNode.closest('svg,script,style') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function (n) {
+      var t = n.nodeValue, low = t.toLowerCase(), i = low.indexOf(ql); if (i < 0) return;
+      var frag = document.createDocumentFragment(), last = 0;
+      while (i >= 0) { frag.appendChild(document.createTextNode(t.slice(last, i))); var m = document.createElement('mark'); m.textContent = t.slice(i, i + q.length); frag.appendChild(m); marks.push(m); last = i + q.length; i = low.indexOf(ql, last); }
+      frag.appendChild(document.createTextNode(t.slice(last))); n.parentNode.replaceChild(frag, n);
+    });
+    $('#cnt').textContent = marks.length ? '0/' + marks.length : '無';
+    var others = DOCS.filter(function (d) { return d.id !== cur; }).map(function (d) { return { d: d, n: count(d.id, q) }; }).filter(function (x) { return x.n; });
+    hits.hidden = !others.length && !marks.length;
+    hits.innerHTML = (marks.length ? '本份 ' + marks.length + ' 筆' : '本份沒有') + (others.length ? '；' + others.map(function (x) { return '<button type="button" data-doc="' + x.d.id + '">' + x.d.tab + ' ' + x.n + ' 筆</button>'; }).join('、') : '');
+    $$('button', hits).forEach(function (b) { b.onclick = function () { location.hash = b.dataset.doc; }; });
+    watch();
+    if (marks.length) step(1);
+  }
+  function step(d) {
+    if (!marks.length) return;
+    if (mi >= 0) marks[mi].classList.remove('cur');
+    mi = (mi + d + marks.length) % marks.length;
+    marks[mi].classList.add('cur'); marks[mi].scrollIntoView({ block: 'center' });
+    $('#cnt').textContent = (mi + 1) + '/' + marks.length;
+  }
+  var qt;
+  $('#q').addEventListener('input', function (e) { clearTimeout(qt); qt = setTimeout(function () { search(e.target.value); }, 180); });
+  $('#q').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1); }
+    if (e.key === 'Escape') { e.target.value = ''; search(''); $('#search').classList.remove('open'); e.target.blur(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === '/' || (e.key === 'f' && (e.ctrlKey || e.metaKey))) && document.activeElement !== $('#q')) { e.preventDefault(); $('#search').classList.add('open'); $('#q').focus(); $('#q').select(); }
+  });
+  $('#q').addEventListener('blur', function (e) { if (!e.target.value.trim()) $('#search').classList.remove('open'); });
+  $('#findBtn').onclick = function () { var s = $('#search'); s.classList.toggle('open'); if (s.classList.contains('open')) $('#q').focus(); };
+
+  // 分頁、目次抽屜、主題、章節連結複製、閱讀進度
+  $$('.tab').forEach(function (b) {
+    b.onclick = function () { history.pushState(null, '', '#' + b.dataset.doc); show(b.dataset.doc); };
+    b.onkeydown = function (e) { var tabs = $$('.tab'), i = tabs.indexOf(b); if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.focus(); n.click(); } };
+  });
+  var side = $('#side');
+  $('#tocBtn').onclick = function () { var o = side.classList.toggle('open'); this.setAttribute('aria-expanded', o); };
+  side.addEventListener('click', function (e) { if (e.target.closest('a[href^="#"]')) { side.classList.remove('open'); $('#tocBtn').setAttribute('aria-expanded', 'false'); } });
+  document.addEventListener('click', function (e) { if (side.classList.contains('open') && !e.target.closest('#side,#tocBtn')) { side.classList.remove('open'); $('#tocBtn').setAttribute('aria-expanded', 'false'); } });
+  $('#themeBtn').onclick = function () { var d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-manual-theme', d ? 'dark' : 'light'); } catch (e) {} };
+  $('#main').addEventListener('click', function (e) {
+    var a = e.target.closest('a.anc'); if (!a) return;
+    e.preventDefault(); var url = location.href.split('#')[0] + a.getAttribute('href');
+    history.replaceState(null, '', a.getAttribute('href'));
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast('已複製本節連結'); }, function () { toast('網址列已換成本節連結'); });
+  });
+  window.addEventListener('scroll', function () { var h = document.documentElement; $('#prog').style.width = (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight) * 100) + '%'; }, { passive: true });
+  window.addEventListener('hashchange', route);
+  window.__manual = { show: show, search: search, get cur() { return cur; } };
+  route();
+})();
+</script>
+</body>
+</html>
