@@ -6,6 +6,7 @@
 export function carMembers() {
   return {
   CAR_NAMES: ['', '一車', '二車', '三車'],
+  CAR_HOLD: '車隊',                 // 車隊佔位：座位上放「車隊」先佔著（機器人 HOLD_NAME）
 
   CAR_HEX: /^#[0-9a-fA-F]{6}$/,
 
@@ -384,7 +385,7 @@ export function carMembers() {
     if (cur && !window.confirm('用 ' + nm + ' 換掉 ' + this.carSlot(d.h) + ' ' + String(d.pos).toUpperCase() + ' 的 ' + cur + '？')) return;
     const role = s.carARole === 's6' || s.carARole === 'pusher' ? s.carARole : '';
     const r = await this.carAct('/swap', { date: d.d, hour: d.h, pos: d.pos, new: nm, role },
-      x => (x.name || nm) + ' → ' + this.carSlot(d.h) + ' ' + String(d.pos).toUpperCase() + (x.role === 's6' ? '（S6）' : '（推手）'), no);
+      x => (x.name || nm) + ' → ' + this.carSlot(d.h) + ' ' + String(d.pos).toUpperCase() + (x.hold ? '（佔位）' : x.role === 's6' ? '（S6）' : '（推手）'), no);
     if (r) this.carLoadStates(no);
   },
 
@@ -609,6 +610,13 @@ export function carMembers() {
         return { nm, bn: fmt(m.bonus) + (+m.s6_bonus > 0 ? ' · S6 ' + fmt(m.s6_bonus) : ''), sel: on ? 'true' : 'false',
           bg: on ? 'color-mix(in oklab,var(--accent) 16%,var(--card))' : 'var(--card-2)', bd: on ? 'var(--accent)' : 'var(--border)' };
       }) : [];
+    /* 車隊佔位：成員池最前面多一個「車隊」，拖到座位＝先把位子佔著（搜尋「車隊」「佔位」也找得到） */
+    const poolMemN = pool.length;
+    if (poolShow && (!pq || '車隊佔位'.indexOf(pq) >= 0)) {
+      const on = s.carAPick === this.CAR_HOLD;
+      pool.unshift({ nm: this.CAR_HOLD, bn: '佔位', sel: on ? 'true' : 'false',
+        bg: on ? 'color-mix(in oklab,var(--accent) 16%,var(--card))' : 'color-mix(in oklab,var(--car-s6,#3b82f6) 9%,var(--card-2))', bd: on ? 'var(--accent)' : 'var(--border)' });
+    }
     const pick = poolShow ? String(s.carAPick || '') : '';
     const roleName = { '': '自動', s6: 'S6', pusher: '推手' };
 
@@ -655,11 +663,11 @@ export function carMembers() {
       carAPoolShow: poolShow, carAPool: pool, carAPoolQ: s.carAPoolQ || '',
       carAPoolLoading: poolShow && !!memC && !!memC.busy && !mems.length,
       carAPoolErr: poolShow && memC && memC.err ? String(memC.err) : '',
-      carAPoolEmpty: poolShow && !!memC && !memC.busy && !memC.err && !pool.length,
+      carAPoolEmpty: poolShow && !!memC && !memC.busy && !memC.err && !poolMemN,
       carAPoolEmptyTxt: pq ? '找不到符合的成員' : '名冊是空的',
       carARoles: [['', '自動'], ['s6', 'S6'], ['pusher', '推手']].map(([v, n]) => Object.assign({ v, n, sel: dropRole === v ? 'true' : 'false' }, segOn(dropRole === v))),
       carAPickShow: !!pick, carAPickTxt: pick ? '已選「' + pick + '」：點座位放進去（身分：' + roleName[dropRole] + '），可連續放好幾格' + (pickRun ? '；點 P1 格＝指定他當那個時段的跑者' : '') : '',
-      carAPoolHelp: '拖到座位＝排進去（身分照上面選的）　·　座位上的人拖回這裡＝移出　·　拖到同一班的另一格＝兩人互換' + (teamOn ? '　·　拖到 P1 格＝指定成那個時段的跑者' : '') + '　·　手機：點一下成員，再點座位',
+      carAPoolHelp: '拖到座位＝排進去（身分照上面選的）　·　座位上的人拖回這裡＝移出　·　拖到同一班的另一格＝兩人互換' + (teamOn ? '　·　拖到 P1 格＝指定成那個時段的跑者' : '') + '　·　「車隊」＝先把位子佔著（不是任何人）　·　手機：點一下成員，再點座位',
 
       /* 跑者（車隊模式、管理員）：表格／手機點跑者＝開小視窗；看板的 P1 格先看成員池有沒有點選中的人 */
       onCarRunner: e => { e.stopPropagation(); this.carRunClick(e.currentTarget, false); },
@@ -1672,7 +1680,8 @@ export function carMembers() {
       const cells = ['p2', 'p3', 'p4', 'p5'].map(pos => {
         const se = (Array.isArray(r.seats) ? r.seats : []).find(x => x && x.pos === pos) || {};
         const has = se.name != null && String(se.name) !== '';
-        return { P: pos.toUpperCase(), has, empty: !has, name: has ? String(se.name) : '', s6: se.role === 's6', runner: se.role === 'runner', bonus: fmt(se.bonus) };
+        const hold = has && this.carIsHold(se);
+        return { P: pos.toUpperCase(), has, empty: !has, name: has ? String(se.name) : '', s6: se.role === 's6', runner: se.role === 'runner', bonus: hold ? '佔位' : fmt(se.bonus) };
       });
       const wl = (Array.isArray(r.waitlist) ? r.waitlist : []).filter(v => v != null && v !== '').map(String);
       const note = [];
@@ -3463,6 +3472,20 @@ export function carMembers() {
     if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
   },
 
+  /* 車隊佔位：座位放一個「車隊」，先把位子佔著（不是任何人；機器人的 /swap 帶 hold） */
+  carIsHold(se) {
+    return !!(se && (se.hold === true || (String(se.name || '') === this.CAR_HOLD && !(+se.bonus > 0) && !se.fp)));
+  },
+
+  async carPlaceHold() {
+    const p = this.state.carPop; if (!p) return;
+    const { seat } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
+    if (seat && seat.name && !this.carIsHold(seat) && !window.confirm('用「車隊」佔位換掉 ' + this.carSlot(p.hour) + ' ' + p.pos.toUpperCase() + ' 的 ' + seat.name + '？')) return;
+    const d = await this.carAct('/swap', { date: p.date, hour: p.hour, pos: p.pos, new: this.CAR_HOLD, hold: true },
+      () => this.carSlot(p.hour) + ' ' + p.pos.toUpperCase() + ' 已用「車隊」佔位', p.no);
+    if (d) { this.setState({ carPop: null }); this.carLoadStates(p.no); }
+  },
+
   async carClearSeat() {
     const p = this.state.carPop; if (!p) return;
     const { seat, st } = this.carSeatAt(p.no, p.date, p.hour, p.pos);
@@ -3773,20 +3796,20 @@ export function carMembers() {
       const live = day.date === today ? hr === nowH : (!!day.xday && hr - 24 === nowH);
       const cells = ['p2', 'p3', 'p4', 'p5'].map(pos => {
         const se = (r.seats || []).find(x => x && x.pos === pos) || { pos };
-        const has = !!se.name, isMine = !!(my && my.seat === pos);
+        const has = !!se.name, isMine = !!(my && my.seat === pos), hold = has && this.carIsHold(se);
         const tags = (Array.isArray(se.tags) ? se.tags : []).map((t, i) => {
           const c = this.carTagStyle(t.color);
           return { i: String(i), label: String(t.label || ''), bg: c.bg, fg: c.fg, title: String(t.label || '') + (t.detail ? '：' + t.detail : ''), h: r.hour, pos, d: day.date };
         });
         return {
           pos, P: pos.toUpperCase(), h: r.hour, d: day.date, has, empty: !has,
-          name: String(se.name || ''), nm: String(se.name || ''), s6: se.role === 's6', runner: se.role === 'runner', bonus: fmt(se.bonus),
+          name: String(se.name || ''), nm: String(se.name || ''), s6: se.role === 's6', runner: se.role === 'runner', bonus: hold ? '佔位' : fmt(se.bonus),
           tags: tags.slice(0, 3), hasMore: tags.length > 3, tagMore: '+' + Math.max(0, tags.length - 3),
           canTag: admin && has && !!se.fp,
           drag: admin && has && !xd ? 'true' : 'false',
           emptyTxt: xd ? '缺' : admin ? '缺 · 點此排人' : (r.locked ? '缺 · 已鎖班' : '缺 · 點此報班'),
           emptyBtn: !xd, emptyRo: xd,
-          bg: isMine ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : 'transparent',
+          bg: isMine ? 'color-mix(in oklab,var(--accent) 13%,transparent)' : hold ? 'color-mix(in oklab,var(--car-s6,#3b82f6) 9%,transparent)' : 'transparent',
           mine: isMine,
         };
       });
@@ -3907,7 +3930,9 @@ export function carMembers() {
         carPopWhere: where,
         carPopIsTag: p.kind === 'tag', carPopIsSeat: p.kind === 'seat', carPopIsEmpty: p.kind === 'empty', carPopIsAdd: p.kind === 'addtag',
         carPopName: String((seat && seat.name) || ''),
-        carPopBonus: seat && seat.name ? ((seat.role === 's6' ? 'S6 · ' : '推手 · ') + '倍率 ' + (fmt(seat.bonus) || '—') + (admin && pxd ? ' · 跨日時段只能貼標記' : '')) : '',
+        carPopBonus: seat && seat.name ? (this.carIsHold(seat) ? '車隊佔位 · 先把位子佔著，不算任何人的時數，自動排位不會擠掉' + (admin ? '；要排人直接在下面換人' : '')
+          : ((seat.role === 's6' ? 'S6 · ' : '推手 · ') + '倍率 ' + (fmt(seat.bonus) || '—') + (admin && pxd ? ' · 跨日時段只能貼標記' : ''))) : '',
+        carPopHoldShow: admin && (p.kind === 'empty' || (p.kind === 'seat' && !this.carIsHold(seat))) && !pxd,
         carPopTagLabel: t ? String(t.label || '') : '', carPopTagBg: tc ? tc.bg : '', carPopTagFg: tc ? tc.fg : '',
         carPopTagScope: t ? (t.scope === 'member' ? ('這個人長期' + (t.until ? '（至 ' + t.until + '）' : '')) : '只這一班') : '',
         carPopTagDetail: t ? (String(t.detail || '') || '（沒有細節）') : '',

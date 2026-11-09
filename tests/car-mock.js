@@ -113,7 +113,7 @@ function stateOut(gid, no, role) {
   const days = Object.keys(c.sched).sort().map(d => ({ date: d, rows: Object.keys(c.sched[d]).sort().map(h => {
     const sh = c.sched[d][h];
     const row = { hour: h, car_type: sh.car_type, locked: !!sh.locked, manual: false,
-      seats: ['p2', 'p3', 'p4', 'p5'].map(p => { const x = sh[p]; const o = { pos: p, name: x ? x.name : null, role: x ? x.role : null, bonus: x ? x.bonus : null, tags: tagsOf(d, h, x) }; if (sched && x) o.fp = 'fp-' + d + h + p + x.user_id; return o; }),
+      seats: ['p2', 'p3', 'p4', 'p5'].map(p => { const x = sh[p]; const o = { pos: p, name: x ? x.name : null, role: x ? x.role : null, bonus: x ? x.bonus : null, tags: tagsOf(d, h, x) }; if (sched && x && x.user_id) o.fp = 'fp-' + d + h + p + x.user_id; if (x && x.hold) { o.hold = true; o.bonus = null; } return o; }),
       applicants: sh.applicants.length, waitlist: sh.waitlist.map(w => w.name) };
     if (!old) row.p1 = slotRunner(c, sh);
     return row;
@@ -368,6 +368,10 @@ export function install(BASE, mode0) {
         if (!sh || POS.indexOf(body.pos) < 0) return J({ error: 'bad target' }, 400);
         const nm = String(body.new || '').trim();
         if (!nm) { sh[body.pos] = null; sh.manual_override = true; return J({ ok: true, cleared: true }); }
+        if (body.hold === true || (nm === '車隊' && !findM(nm))) {      // 車隊佔位（機器人 HOLD_NAME）
+          sh[body.pos] = { name: '車隊', hold: true, source: 'team', role: 'pusher', bonus: 0 }; sh.manual_override = true;
+          return J({ ok: true, name: '車隊', role: 'hold', hold: true });
+        }
         const mm = findM(nm); if (!mm) return J({ error: '找不到成員「' + nm + '」' }, 404);
         const want = String(body.role || '').toLowerCase();
         if (want === 's6' && !(mm.s6_bonus > 0)) return J({ error: mm.name + ' 沒有登記 S6 倍率，無法排 S6' }, 400);
