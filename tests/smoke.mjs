@@ -162,7 +162,7 @@ for (const mobile of [false, true]) {
   }
 }
 
-// 獨立頁：說明書閱讀器（manual.html）。桌機與手機各開一次：三份說明書都在、#sched-s4-6 直達那一節且目次亮對、
+// 獨立頁：說明書閱讀器（manual.html）。桌機與手機各開一次：四份文件（三份說明書＋排班論文）都在、#sched-s4-6 直達那一節且目次亮對、
 // 章節交互參照與站內頁面連結存在、搜尋有標記且 Esc 清掉、跨文件連結會切換說明書；不能有 JS 錯誤、手機不能橫向溢出。
 {
   const ORIGIN = new URL(BASE).origin;
@@ -177,6 +177,7 @@ for (const mobile of [false, true]) {
       await page.waitForTimeout(500);
       const r = await page.evaluate(() => ({
         docs: document.querySelectorAll('article.paper').length,
+        roster: !!document.getElementById('roster-s5-4') && document.querySelectorAll('#doc-roster .fig svg').length >= 7,
         top: Math.round(document.getElementById('sched-s4-6').getBoundingClientRect().top),
         toc: ((document.querySelector('.toc-list a.on') || {}).textContent || ''),
         xref: document.querySelectorAll('a.xref').length, xpage: document.querySelectorAll('a.xpage').length,
@@ -190,8 +191,8 @@ for (const mobile of [false, true]) {
       await page.evaluate(() => document.querySelector('#doc-site a.xdoc').click());
       await page.waitForFunction(() => window.__manual.cur === 'sched', null, { timeout: 5000 });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-      ok = !errors.length && r.docs === 3 && r.top >= 0 && r.top < 200 && r.toc.indexOf('4.6') === 0 && r.xref > 5 && r.xpage > 50 && marks > 3 && left === 0 && !overflow;
-      why = errors[0] || (r.docs !== 3 ? '說明書只有 ' + r.docs + ' 份' : !(r.top >= 0 && r.top < 200) ? '#sched-s4-6 沒有捲到（top ' + r.top + '）' : r.toc.indexOf('4.6') !== 0 ? '目次亮的是「' + r.toc + '」' : r.xref <= 5 || r.xpage <= 50 ? '自動連結太少（' + r.xref + '／' + r.xpage + '）' : marks <= 3 ? '搜尋沒有標記' : left ? '清除搜尋後還有標記' : overflow ? '橫向溢出' : '');
+      ok = !errors.length && r.docs === 4 && r.roster && r.top >= 0 && r.top < 200 && r.toc.indexOf('4.6') === 0 && r.xref > 5 && r.xpage > 50 && marks > 3 && left === 0 && !overflow;
+      why = errors[0] || (r.docs !== 4 ? '說明書只有 ' + r.docs + ' 份' : !r.roster ? '排班論文缺章節或圖' : !(r.top >= 0 && r.top < 200) ? '#sched-s4-6 沒有捲到（top ' + r.top + '）' : r.toc.indexOf('4.6') !== 0 ? '目次亮的是「' + r.toc + '」' : r.xref <= 5 || r.xpage <= 50 ? '自動連結太少（' + r.xref + '／' + r.xpage + '）' : marks <= 3 ? '搜尋沒有標記' : left ? '清除搜尋後還有標記' : overflow ? '橫向溢出' : '');
     } catch (e) { why = e.message.slice(0, 120); }
     console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' manual' + (why ? ' — ' + why : ''));
     if (!ok) fail++;

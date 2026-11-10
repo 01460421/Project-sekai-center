@@ -36,6 +36,21 @@
       "keywords": "語音辨識；Discord；車隊管理；跑榜助理；自動校正；世界計畫",
       "pdf": "manual/voice.pdf",
       "pdf_name": "語音功能說明.pdf"
+    },
+    {
+      "id": "roster",
+      "tab": "排班的藝術（論文）",
+      "title": "排班的藝術：<br>協力衝榜車隊的人力排程",
+      "en": "The Art of the Roster: Formal Models, Allocation Mechanisms and Simulation of Shift Scheduling in Co-operative Leaderboard Convoys",
+      "author": "Project SEKAI 資源中心 研究組",
+      "affil": "世界計畫（台服）車隊排班研究 ・ 依據菜根機器人 b2026-11-09r ・ 2026 年 11 月",
+      "kicker": "研究論文・RESEARCH PAPER",
+      "abstract": "本文把《世界計畫》台服車隊「一小時一格、志願推手輪流上車」的排班實務形式化為帶有特殊座位（P2／S6）、多單位代理人（多開）與優先序的分配問題，並以菜根機器人的排位程序為對象寫出演算法。我們證明六個命題：歷史無關性、族群單調性、倍率級距的效率損失每席不超過級距寬度、「不同人優先」相對於「一起比」的最壞效率比約 0.536、排位對倍率申報不具防策略性，以及跨時段問題在加入個人時數上限後可化為最小成本流。形式分析同時揭露一個規則衝突：坐上 P2 的雙開推手，其第二開會在第一階段插隊。蒙地卡羅模擬顯示，每格平均 6 人報名時，倍率優先比先報先上的座位倍率總和高 5.7%，但各倍率五分位的上車率從 23% 到 99% 不等。結合台服榜線的日夜增分剖面，凌晨 4 時班次的相對排名收益約為傍晚 18 時的 7.5 倍。",
+      "keywords": "人員排班；分配機制；優先序；公平的代價；最小成本流；同儕生產；車隊",
+      "pdf": "manual/roster.pdf",
+      "pdf_name": "排班的藝術.pdf",
+      "pdf_label": "下載 PDF（A4 單欄、含封面）",
+      "pdf_external": true
     }
   ]
 }

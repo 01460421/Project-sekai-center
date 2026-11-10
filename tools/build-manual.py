@@ -34,6 +34,7 @@ DOC_TITLES = {   # 書名 → 說明書 id（〈〉或「」括起來才算）
     '網站使用手冊': 'site', 'Project SEKAI 資源中心網站使用手冊': 'site',
     '菜根機器人排班系統說明': 'sched', '排班系統說明': 'sched',
     '菜根機器人語音互動系統': 'voice', '語音功能說明': 'voice', '語音互動系統': 'voice',
+    '排班的藝術': 'roster',
 }
 
 
@@ -206,8 +207,8 @@ def toc_html(toc):
 def head_block(doc, mode):
     ab = doc.get('abstract') or ''
     pdf = '' if mode == 'print' else (
-        f'<p class="dl"><a href="{doc["pdf"]}" download="{esc(doc["pdf_name"])}">下載 PDF（A4 雙欄排版）</a></p>')
-    return (f'<div class="title-block"><div class="kicker">技術說明文件・TECHNICAL NOTE</div>'
+        f'<p class="dl"><a href="{doc["pdf"]}" download="{esc(doc["pdf_name"])}">{esc(doc.get("pdf_label") or "下載 PDF（A4 雙欄排版）")}</a></p>')
+    return (f'<div class="title-block"><div class="kicker">{esc(doc.get("kicker") or "技術說明文件・TECHNICAL NOTE")}</div>'
             f'<h1>{doc["title"]}</h1><div class="en">{doc["en"]}</div>'
             f'<div class="author">{doc["author"]}</div><div class="affil">{doc["affil"]}</div>{pdf}</div>'
             + (f'<div class="abstract"><b class="lbl">摘要</b>　{ab}</div>' if ab else '')
@@ -238,6 +239,8 @@ def main():
         dst.mkdir(parents=True, exist_ok=True)
         css = (SRC / 'paper.css').read_text(encoding='utf-8')
         for d in docs:
+            if d.get('pdf_external'):     # PDF 另外排版（例如論文的單欄版），這裡不產生列印版，免得 build-manual-pdf 蓋掉
+                continue
             body, toc = build_doc(d, (SRC / f'{d["id"]}.html').read_text(encoding='utf-8'), 'print')
             ptoc = ('<div class="toc"><div class="t">目次</div>' + ''.join(
                 f'<div class="i{" s" if lvl == 3 else ""}"><a href="#{hid}">{esc(t)}</a></div>' for lvl, t, hid in toc) + '</div>') if len(toc) > 20 else ''

@@ -12461,7 +12461,7 @@ class Component extends DCLogic {
           { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
-          { name: '說明書', url: 'manual.html', sub: '網站使用手冊、排班系統、語音功能：可搜尋、跳章節、下載 PDF' },
+          { name: '說明書', url: 'manual.html', sub: '網站使用手冊、排班系統、語音功能與排班論文：可搜尋、跳章節、下載 PDF' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
           { name: '抽卡模擬器', url: 'https://sekai.best/gacha', sub: 'Sekai.best' }
         ]}
