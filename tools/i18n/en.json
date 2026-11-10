@@ -9066,7 +9066,7 @@
 "網址改成路徑形式、每個 PR 多六道品質門檻。": "Path-style URLs and six new quality gates per PR.",
 "網站「我的帳號」給你 6 位碼，打給機器人；它回確認碼，本人再打一次就綁好。": "“My account” on the site gives you a 6-digit code; send it to the bot, it replies with a confirmation code, and you send that once more to finish linking.",
 "網站上線（v1）": "Site launched (v1)",
-"網站使用手冊、排班系統、語音功能：可搜尋、跳章節、下載 PDF": "Site manual, shift scheduling and voice features: searchable, with chapter links and PDF downloads",
+"網站使用手冊、排班系統、語音功能與排班論文：可搜尋、跳章節、下載 PDF": "Site manual, shift scheduling, voice features and a research paper on scheduling: searchable, with chapter links and PDF downloads",
 "網站現在可以用 Google 帳號登入。登入後遊戲 uid、持卡勾選、編組與偏好可以存到雲端跨裝置同步(載入時只補本機沒有的項目,不會蓋掉你當下正在改的東西);也可以綁 Discord,供之後的車隊房間偵測辨識身分。**新帳號需要管理員核准**才能使用訂閱與助手。": "The site now supports Google sign-in. Once signed in, your game uid, card checklist, teams and preferences can be saved to the cloud and synced across devices (loading only fills in items missing locally, so it won't overwrite what you're editing); you can also link Discord so future room detection can identify you. **New accounts need admin approval** before using alerts and the assistant.",
 "網站開始收匿名使用統計：只記哪一頁被看、手機或桌機、來源網站、介面語言與錯誤訊息，用來決定先修哪裡；不用 cookie、不存 IP，瀏覽器的「不要追蹤」會被尊重，設定頁可以關掉。": "The site now collects anonymous usage statistics: only which page was viewed, phone or desktop, referring site, UI language and error messages, to decide what to fix first; no cookies, no IP stored, Do Not Track is honored, and it can be turned off in Settings",
 "網站靜態檔（Vercel）": "Site static files (Vercel)",

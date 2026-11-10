@@ -1,0 +1,388 @@
+<h2>1　緒論</h2>
+
+<h3>1.1　問題的起點</h3>
+<p>一期《世界計畫》活動大約持續八天，也就是將近兩百個小時。對一位想要衝進前段名次的跑者而言，這兩百個小時的每一小時，都希望房間裡坐滿四位隊伍強大的推手；但沒有任何一位推手能陪跑兩百個小時。台服玩家社群的解決方法，是把時間切碎：一小時一格，推手依自己的作息報名，管理者再把報名者排進座位。這個被稱為「排班」的日常實務，決定了一台車每小時能拿到多少分數，也決定了誰有機會上車、誰只能候補。</p>
+<p>排班看似瑣碎，卻同時牽涉到三個學術上成熟的領域。從<b>作業研究</b>的角度，它是一個人員排程（staff scheduling）問題：在容量限制下，把人力分配到時段以最大化產出。從<b>機制設計</b>的角度，它是一個不可分割資源的分配問題：座位稀缺，報名者有不同的「類型」（倍率），分配規則決定了誰得到座位，也決定了報名者是否有誘因誠實申報自己的類型。從<b>社會學</b>的角度，它是一種同儕生產（peer production）：一群沒有金錢報酬的志願者，透過共同的規範與工具，協力完成一個任何個人都無法獨力完成的目標。</p>
+<p>本文把這種實務稱為「排班的藝術」。之所以稱為藝術，是因為在實務中，排班規則往往是社群一次次試錯累積出來的經驗法則：倍率高的人先上、S6 坐 P2、雙開不能擠掉別人、倍率差不多就看誰先報……這些規則各自有道理，但它們合在一起時會產生什麼性質、彼此之間有沒有衝突、在不同的競爭程度下表現如何，很少被系統性地檢驗。本文的目的，就是把這門藝術轉譯成可以被分析、被證明、被模擬的形式。</p>
+
+<h3>1.2　研究問題</h3>
+<ol>
+<li><b>RQ1　形式化：</b>車隊排班可以被寫成什麼樣的數學問題？實務中的排位程序對應於什麼樣的演算法？</li>
+<li><b>RQ2　性質：</b>這個排位程序具有哪些可證明的性質（一致性、單調性、效率損失的上下界）？是否存在規則之間的衝突？</li>
+<li><b>RQ3　政策比較：</b>不同的排位政策（倍率優先或先報先上、多開如何排、倍率級距寬度）在效率與公平之間如何取捨？這個取捨如何隨競爭程度改變？</li>
+<li><b>RQ4　時間維度：</b>不同時段的班次是否具有不同的價值？跨時段的排班可以如何最佳化？</li>
+</ol>
+
+<h3>1.3　研究對象與方法</h3>
+<p>本文的分析對象是菜根機器人（一個服務台服車隊的 Discord 機器人）的排班系統。選擇它的理由有二：第一，它的排位規則以程式碼的形式明確存在，可以逐條對照並形式化；第二，它被多個車隊實際使用，其規則本身就是社群經驗的凝結。我們的資料來源包括該機器人的排位程式碼（截至版本 b2026-11-09r）、公開的使用手冊，以及 Project SEKAI 資源中心公開的台服榜線資料。</p>
+<p>研究方法分為三部分。第一部分是<b>形式分析</b>：定義模型、寫出演算法、證明性質。第二部分是<b>模擬實驗</b>：由於各車隊的實際班表涉及成員個人資料、並未公開，本文以參數化的合成資料進行蒙地卡羅模擬，比較不同政策；所有參數與假設都明列於附錄，結論的適用範圍也受這些假設限制。第三部分是<b>實證連結</b>：以台服 10 期活動的高頻榜線快照，估計不同時段的相對增分速率，作為班次價值分析的依據。</p>
+
+<h3>1.4　主要貢獻</h3>
+<ul>
+<li>提出車隊排班的形式模型，並把實務程序寫成演算法 1（第四、五章）。</li>
+<li>證明五個命題，涵蓋歷史無關性、族群單調性、級距損失上界、「不同人優先」的最壞效率比，以及跨時段問題的可解性（第五、七章）。</li>
+<li>以形式分析發現並量化一個規則衝突的邊界情況，並提出一行層級的修正（第五章）。</li>
+<li>以模擬量化效率與公平的取捨，並給出「公平的代價」隨競爭程度變化的曲線（第六章）。</li>
+<li>結合榜線資料，提出班次的「相對排名收益指數」（第七章）。</li>
+</ul>
+
+<h3>1.5　本文結構</h3>
+<p>第二章回顧相關文獻。第三章描述車隊排班的實務情境。第四章建立形式模型。第五章寫出排位演算法並證明其性質。第六章報告模擬實驗。第七章討論時間維度與跨時段最佳化。第八章綜合討論效率、公平、誘因與社群規範。第九章總結。附錄列出模擬參數與修正後的演算法。</p>
+
+<h2>2　文獻回顧</h2>
+
+<h3>2.1　人員排班與輪值</h3>
+<p>人員排班是作業研究中歷史最悠久的應用領域之一。Ernst 等人（2004）回顧了涵蓋醫療、交通、客服、零售等產業的數百篇文獻，把排班問題拆解為需求預測、班型設計、班次指派等階段。其中最常被研究的是護理人員輪值（nurse rostering）：Burke 等人（2004）指出，護理輪值同時具有硬限制（每班的人數下限、法定休息時間）與軟限制（個人偏好、班次公平），通常以整數規劃或啟發式搜尋求解，而且在一般形式下是 NP 困難的。</p>
+<p>車隊排班與護理輪值有明顯的相似之處：都以時段為單位、都有每班的人數上限、都必須兼顧個人的可用時間。但兩者也有三點根本差異。第一，車隊的「員工」是志願者，沒有雇傭關係，排班者無法要求任何人上班，只能在報名者中挑選；因此問題的結構是「從報名者中選擇」，而不是「把員工指派到班次」。第二，車隊的產出高度依賴個別成員的「類型」（倍率），同樣坐滿四個座位，不同組合的產出可以相差甚多。第三，車隊排班是即時、反覆進行的：報名、取消、遞補隨時發生，每一次變動都要立即重新計算。表 1 整理了這些差異。</p>
+<div class="tbl"><div class="cap"><b>表 1</b>傳統人員排班與車隊排班的比較</div>
+<table><thead><tr><th>面向</th><th>傳統人員排班（如護理輪值）</th><th>車隊排班</th></tr></thead><tbody>
+<tr><td>人力性質</td><td>受雇員工，有義務上班</td><td>志願者，自行報名</td></tr>
+<tr><td>決策結構</td><td>把員工指派到班次</td><td>從報名者中選擇座位人選</td></tr>
+<tr><td>產出差異</td><td>多半假設同職級人員可互換</td><td>產出隨個人倍率顯著不同</td></tr>
+<tr><td>計算時機</td><td>週期性（每週或每月）排一次</td><td>即時，每次報名或取消就重排</td></tr>
+<tr><td>主要限制</td><td>人數下限、休息時間、勞動法規</td><td>座位上限、特殊座位、多帳號</td></tr>
+<tr><td>公平性來源</td><td>班次負擔的平均分攤</td><td>上車機會的分配</td></tr>
+</tbody></table></div>
+
+<h3>2.2　不可分割資源的分配與優先序機制</h3>
+<p>從機制設計的角度，每一格班次的四個座位是一組不可分割、無法以金錢交易的資源。這類問題的經典模型是「房屋分配問題」（house allocation）。在所有代理人共享同一個優先序、依序挑選的「序列獨裁」（serial dictatorship）機制下，Svensson（1999）證明：同時滿足防策略性（strategy-proofness）、非干擾性（nonbossiness）與中立性的分配機制，恰好就是序列獨裁；Abdulkadiroğlu 與 Sönmez（1998）則分析了以隨機順序進行的序列獨裁的效率與公平性質。</p>
+<p>車隊排班的排位程序本質上就是一個以倍率（或報名時間）為優先序的序列獨裁，但有幾個非標準的特徵：存在一個只開放給特定身分（S6）的特殊座位；一位代理人可能需要多個座位單位（雙開、三開）；優先序本身由代理人自行申報的類型決定。最後一點尤其重要：序列獨裁對「要不要報名」是防策略的，但當優先序依據的是代理人自報的倍率時，誇大倍率就能提高優先順位。這是本文第五章與第八章討論的核心誘因問題。</p>
+
+<h3>2.3　公平的代價</h3>
+<p>Bertsimas、Farias 與 Trichakis（2011）把「公平的代價」（price of fairness）定義為：在資源分配問題中，以公平準則取代效率準則時，總效用相對下降的比例。他們證明在相當一般的條件下，這個代價是有界的，且與參與者人數及效用的異質程度有關。本文第五章的命題 4 與第六章的模擬，可以視為這個概念在車隊排班情境下的具體化：「不同人優先」與「先報先上」都是為了公平而犧牲部分效率的規則，我們分別給出它們的最壞情況界與典型情況估計。</p>
+
+<h3>2.4　集體行動與同儕生產</h3>
+<p>Olson（1965）指出，當一個團體的共同利益具有公共財性質時，理性的個人傾向於搭便車，因此大型團體很難自發地組織集體行動，除非有選擇性誘因或強制力。Ostrom（1990）則以大量田野案例說明，社群可以在沒有外部強制的情況下，透過清楚的邊界、在地化的規則、成員參與規則制定、監督與漸進式制裁等設計原則，長期維持共有資源的治理。Benkler（2006）進一步把開放原始碼與維基百科等現象描述為「基於公共資源的同儕生產」，強調模組化與細粒度的任務切割，使大量志願者得以各自貢獻零碎的時間。</p>
+<p>車隊排班幾乎是 Benkler 意義下同儕生產的教科書案例：一小時一格的班次正是「細粒度的任務切割」，讓每位推手能以零碎時間參與。同時，車隊的各種規則（報班需先登記、鎖班後不得自行取消、簽到與鴿班紀錄）也對應到 Ostrom 的多項設計原則。本文第八章會回到這個框架。</p>
+
+<h3>2.5　遊戲中的玩家勞動</h3>
+<p>遊戲研究早已注意到玩家在遊戲中投入的協作與勞動。Taylor（2006）對多人線上遊戲的民族誌研究描述了公會如何以排程、分工與規範組織大型團隊活動；Kücklich（2005）以「玩勞動」（playbour）一詞，討論玩家無償的創造性勞動與遊戲產業之間的關係。車隊排班延續了這條研究脈絡，但它的特殊之處在於：協作的目標是一個個人名次，而不是團隊的共同成就；推手付出時間，主要的直接受益者卻是跑者。這種不對稱的互惠結構，是理解車隊規範的關鍵。</p>
+
+<h3>2.6　演算法與人的判斷</h3>
+<p>最後，車隊排班也涉及人與演算法如何分工的問題。Dietvorst、Simmons 與 Massey（2015）的實驗顯示，人們在看到演算法犯錯後，即使演算法整體表現優於人類，也傾向於不再信任它（演算法厭惡）。菜根機器人的設計保留了「手動」標記：管理員一旦手動調整某一格的座位，自動排位就不再整段重排，只補空位。這種「人可以覆寫、而且覆寫會被尊重」的設計，可以被理解為降低演算法厭惡的一種制度安排。</p>
+
+<h2>3　情境：車隊排班的實務</h2>
+
+<h3>3.1　協力房間的座位結構</h3>
+<p>協力 Live 的房間最多容納五人。在車隊的術語裡，這五個位置被編號為 P1 至 P5：P1 固定由跑者（衝名次的玩家）佔據，P2 至 P5 由推手佔據。P2 在規則上具有特殊地位，優先保留給以「S6」身分報名的推手；沒有 S6 時，才由排序第一的一般推手坐上。除此之外，房間外另設一個外援位 B1，以及一份不限長度的候補名單。圖 1 示意了一個時段的完整結構。</p>
+<div class="fig"><svg viewBox="0 0 600 230" width="100%" role="img" aria-label="座位結構" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#52514e"/></marker></defs><rect x="14" y="20" width="430" height="120" rx="10" fill="#f5f8fc" stroke="#9a9893" stroke-dasharray="5 4"/><text x="24" y="38" font-size="10.5" fill="#52514e">協力 Live 房間（一格班次）</text><rect x="30" y="52" width="70" height="72" rx="6" fill="#e8eefc" stroke="#2a78d6" stroke-width="1.2"/><text x="65" y="86" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">P1</text><text x="65" y="101" font-size="9.5" text-anchor="middle" fill="#52514e">跑者（固定）</text><rect x="112" y="52" width="70" height="72" rx="6" fill="#fdeee6" stroke="#eb6834" stroke-width="1.2"/><text x="147" y="86" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">P2</text><text x="147" y="101" font-size="9.5" text-anchor="middle" fill="#52514e">S6 優先</text><rect x="194" y="52" width="70" height="72" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="229" y="86" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">P3</text><text x="229" y="101" font-size="9.5" text-anchor="middle" fill="#52514e">推手</text><rect x="276" y="52" width="70" height="72" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="311" y="86" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">P4</text><text x="311" y="101" font-size="9.5" text-anchor="middle" fill="#52514e">推手</text><rect x="358" y="52" width="70" height="72" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="393" y="86" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">P5</text><text x="393" y="101" font-size="9.5" text-anchor="middle" fill="#52514e">推手</text><rect x="470" y="52" width="110" height="72" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="525" y="86" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">B1</text><text x="525" y="101" font-size="9.5" text-anchor="middle" fill="#52514e">外援（不佔 P2–P5）</text><text x="24" y="168" font-size="10.5" fill="#52514e">候補 W（依優先序）</text><rect x="24" y="178" width="54" height="30" rx="5" fill="#fff" stroke="#9a9893"/><text x="51" y="197" font-size="10.5" text-anchor="middle" fill="#52514e">W1</text><rect x="86" y="178" width="54" height="30" rx="5" fill="#fff" stroke="#9a9893"/><text x="113" y="197" font-size="10.5" text-anchor="middle" fill="#52514e">W2</text><rect x="148" y="178" width="54" height="30" rx="5" fill="#fff" stroke="#9a9893"/><text x="175" y="197" font-size="10.5" text-anchor="middle" fill="#52514e">W3</text><rect x="210" y="178" width="54" height="30" rx="5" fill="#fff" stroke="#9a9893"/><text x="237" y="197" font-size="10.5" text-anchor="middle" fill="#52514e">W4</text><rect x="272" y="178" width="54" height="30" rx="5" fill="#fff" stroke="#9a9893"/><text x="299" y="197" font-size="10.5" text-anchor="middle" fill="#52514e">W5</text><text x="340" y="197" font-size="10.5" fill="#52514e">… 有人退出時，排序最前者遞補</text><line x1="51" y1="176" x2="230" y2="128" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" stroke-dasharray="4 3"/></svg><div class="cap"><b>圖 1</b>一個時段的座位結構。P1 固定為跑者；P2 優先給 S6；P3–P5 為一般推手座位；B1 為外援位，不佔 P2–P5；其餘已確認的報名者依排序進入候補。</div></div>
+<p>推手對房間的貢獻，以社群所稱的「倍率」衡量。倍率是推手登記時自行申報的一個數值，菜根機器人要求它介於 1.18 與 3.88 之間；機器人在班表上顯示的「平均倍率」是 P3 至 P5 三個座位的倍率平均。本文不討論倍率在遊戲內的確切計算方式，只假設一個<b>單調性</b>：在其他條件相同時，座位上推手的倍率越高，房間每小時的得分越高。</p>
+
+<h3>3.2　一格班次的生命週期</h3>
+<p>圖 2 描述了一格班次從開設到開跑的流程。跑者或管理員先「開班」，宣告某個小時要跑；沒有開班的時段不接受報名。推手隨後「報班」，報名後的狀態是「待確認」，<b>不佔座位</b>；管理員確認後（或車隊開啟了自動確認），報名者才進入排位。排位程序把已確認者依規則排進 P2 至 P5，其餘列入候補。之後，任何取消、砍班或新的確認都會觸發同一格的立即重排，候補中排序最前者自動遞補。</p>
+<div class="fig"><svg viewBox="0 0 600 250" width="100%" role="img" aria-label="班次生命週期" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#52514e"/></marker></defs><rect x="20" y="20" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="75" y="40" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">開班</text><text x="75" y="55" font-size="9.5" text-anchor="middle" fill="#52514e">跑者／管理員</text><rect x="170" y="20" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="225" y="40" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">報班</text><text x="225" y="55" font-size="9.5" text-anchor="middle" fill="#52514e">待確認，不佔座位</text><rect x="320" y="20" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="375" y="40" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">確認</text><text x="375" y="55" font-size="9.5" text-anchor="middle" fill="#52514e">管理員或自動</text><rect x="470" y="20" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="525" y="40" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">排位</text><text x="525" y="55" font-size="9.5" text-anchor="middle" fill="#52514e">演算法 1</text><line x1="130" y1="42" x2="168" y2="42" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><line x1="280" y1="42" x2="318" y2="42" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><line x1="430" y1="42" x2="468" y2="42" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><rect x="470" y="110" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="525" y="130" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">入座／候補</text><text x="525" y="145" font-size="9.5" text-anchor="middle" fill="#52514e">P2–P5 與 W</text><line x1="525" y1="64" x2="525" y2="108" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><rect x="320" y="110" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="375" y="130" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">鎖定</text><text x="375" y="145" font-size="9.5" text-anchor="middle" fill="#52514e">手動／時間／滿班</text><line x1="468" y1="132" x2="432" y2="132" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><rect x="170" y="110" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="225" y="130" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">提醒與簽到</text><text x="225" y="145" font-size="9.5" text-anchor="middle" fill="#52514e">開跑前</text><line x1="318" y1="132" x2="282" y2="132" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><rect x="20" y="110" width="110" height="44" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="75" y="136" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">開跑</text><line x1="168" y1="132" x2="132" y2="132" stroke="#52514e" stroke-width="1.3" marker-end="url(#ar)" /><rect x="320" y="190" width="260" height="40" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/><text x="450" y="214" font-size="12" text-anchor="middle" fill="#0b0b0b" font-weight="700">取消、砍班、新的確認</text><path d="M450,190 C450,170 600,170 590,80 L582,66" fill="none" stroke="#52514e" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar)"/></svg><div class="cap"><b>圖 2</b>一格班次的生命週期。實線為主要流程；任何報名、取消或確認都會回到「排位」重新計算。</div></div>
+<p>班次可能被「鎖定」。鎖定的來源有三種：管理員手動鎖班、每日定時的時間鎖班，以及座位全滿時的滿班自動鎖；車隊也可以設定完全不鎖班。管理員另可對已鎖但仍有空位的時段重新開放報名（缺額報班）。鎖定只阻擋新的報名與成員自行取消，<b>不阻擋排位</b>：管理員仍可換人，候補仍會遞補。另一個重要的狀態是「手動」：管理員一旦以編輯、換人或拖拉改動某一格的座位，該格就被標記為手動，之後的自動排位只補空位、不整段重排。</p>
+
+<h3>3.3　可調整的排位規則</h3>
+<p>菜根機器人把排位規則中可由車隊自行決定的部分做成設定。表 2 列出與本文相關的設定及其預設值。這些設定構成了本文第六章模擬實驗的政策空間。</p>
+<div class="tbl"><div class="cap"><b>表 2</b>與排位相關的車隊設定（菜根機器人）</div>
+<table><thead><tr><th>設定</th><th>預設值</th><th>其他選項與說明</th></tr></thead><tbody>
+<tr><td>S6 優先於倍率</td><td>開</td><td>S6 一律排在推手之前，P2 一定給 S6；關閉時只看倍率</td></tr>
+<tr><td>排位順序</td><td>倍率高者優先</td><td>先報先上；綜合力高者優先</td></tr>
+<tr><td>倍率比較級距</td><td>0.02</td><td>倍率先四捨五入到此級距，同級距者比報名先後</td></tr>
+<tr><td>雙開／三開怎麼排</td><td>不同人優先</td><td>一起比；不排多開</td></tr>
+<tr><td>推手／S6 最低上車倍率</td><td>不限</td><td>未達者只進候補尾端</td></tr>
+<tr><td>報班自動確認</td><td>關</td><td>開啟時任何報名立即確認並排位</td></tr>
+<tr><td>每時段最多收幾人</td><td>不限</td><td>含候補的報名人數上限</td></tr>
+<tr><td>每人每天／連續上限</td><td>不限</td><td>報名階段的個人時數限制，所有車合計</td></tr>
+</tbody></table></div>
+
+<h3>3.4　多帳號（多開）</h3>
+<p>部分推手會同時操作兩個或三個帳號，在同一個房間裡佔兩個或三個座位，稱為雙開與三開。每個帳號可以登記各自的倍率（第二開、第三開的倍率未登記時沿用第一開）。多開提高了單一成員的貢獻，但也帶來分配上的問題：當座位不足時，應該讓同一個人的第二個帳號上車，還是讓另一個人的第一個帳號上車？「不同人優先」政策的答案是後者：先讓每個人的第一開入座，還有空位才補第二、三開。這個政策反映了社群「多讓一個人參與」的價值，但如第五章所示，它有其效率代價，也在實作中產生了一個邊界情況。</p>
+
+<h3>3.5　車隊佔位與外援</h3>
+<p>最後，實務中還有兩種特殊情形。一是「車隊佔位」：管理員可以先用一個名為「車隊」的佔位符號保留座位，等之後再決定給誰；佔位在自動排位時會被保留，不會被一般報名者擠掉。二是外援：以外援身分報名者坐 B1 位，不參與 P2 至 P5 的競爭。這兩種情形在形式模型中可以簡單地視為「預先扣除的容量」，本文的分析不再特別處理。</p>
+
+<h2>4　形式模型</h2>
+
+<h3>4.1　基本記號</h3>
+<p>考慮一格班次 <i>h</i>。令 <i>N</i> 為該格<b>已確認</b>的報名者集合（待確認者不參與排位）。每位報名者 <i>i</i> ∈ <i>N</i> 具有以下屬性，整理於表 3。</p>
+<div class="tbl"><div class="cap"><b>表 3</b>記號</div>
+<table><thead><tr><th>記號</th><th>意義</th></tr></thead><tbody>
+<tr><td><i>N</i></td><td>已確認的報名者集合，|<i>N</i>| = <i>n</i></td></tr>
+<tr><td><i>m</i><sub><i>i</i></sub> ∈ {1, 2, 3}</td><td>報名者 <i>i</i> 的開數（單開、雙開、三開）</td></tr>
+<tr><td><i>b</i><sub><i>i</i>1</sub> ≥ <i>b</i><sub><i>i</i>2</sub> ≥ <i>b</i><sub><i>i</i>3</sub></td><td>報名者 <i>i</i> 第 1、2、3 開的倍率，<i>b</i> ∈ [<i>b</i><sub>min</sub>, <i>b</i><sub>max</sub>] = [1.18, 3.88]</td></tr>
+<tr><td><i>r</i><sub><i>i</i></sub> ∈ {推手, S6}</td><td>報名身分</td></tr>
+<tr><td><i>s</i><sub><i>i</i></sub></td><td>S6 倍率（僅 <i>r</i><sub><i>i</i></sub> = S6 時有意義）</td></tr>
+<tr><td><i>t</i><sub><i>i</i></sub></td><td>報名時間（用於同分時的先後）</td></tr>
+<tr><td>(<i>i</i>, <i>j</i>)</td><td>「座位單位」：報名者 <i>i</i> 的第 <i>j</i> 開，倍率 <i>b</i><sub><i>ij</i></sub></td></tr>
+<tr><td><i>K</i> = 3</td><td>一般推手座位數（P3–P5）</td></tr>
+<tr><td>δ</td><td>倍率比較級距（預設 0.02）</td></tr>
+<tr><td>≻</td><td>優先序（排位順序）</td></tr>
+</tbody></table></div>
+<p>我們假設 <i>b</i><sub><i>i</i>1</sub> ≥ <i>b</i><sub><i>i</i>2</sub> ≥ <i>b</i><sub><i>i</i>3</sub>，也就是同一位推手的第二、三個帳號不比第一個帳號強。這與實務相符（推手通常把最強的隊伍放在主帳號），也是第五章若干命題的前提。</p>
+
+<h3>4.2　分配與可行性</h3>
+<div class="def"><p><span class="dt">定義 1（分配）。</span>一格班次的分配是一個三元組 <i>A</i> = (<i>p</i>, <i>S</i>, <i>W</i>)，其中 <i>p</i> 是坐上 P2 的座位單位（或空），<i>S</i> 是坐上 P3–P5 的座位單位集合，<i>W</i> 是候補名單（有序）。分配是<b>可行</b>的，若且唯若：(a) |<i>S</i>| ≤ <i>K</i>；(b) 每個座位單位至多出現一次；(c) 若報名者 <i>i</i> 的第 <i>j</i> 開在 <i>S</i> 中且 <i>j</i> &gt; 1，則其第 <i>j</i> − 1 開在 {<i>p</i>} ∪ <i>S</i> 中（不能跳過主帳號只上副帳號）；(d) 若 <i>p</i> 是某位 S6 報名者的單位，該報名者的其他單位不在 <i>S</i> 中。</p></div>
+<div class="def"><p><span class="dt">定義 2（不浪費）。</span>可行分配 <i>A</i> 是<b>不浪費</b>的，若不存在一個未被分配的座位單位，可以在不違反可行性的前提下加入空著的座位。</p></div>
+
+<h3>4.3　目標</h3>
+<p>排位同時追求多個目標，而且它們彼此衝突：</p>
+<ul>
+<li><b>效率：</b>座位上的倍率越高越好。最簡單的代理指標是座位倍率總和 <i>E</i>(<i>A</i>) = <i>b</i>(<i>p</i>) + Σ<sub>(<i>i</i>,<i>j</i>)∈<i>S</i></sub> <i>b</i><sub><i>ij</i></sub>，或平均倍率 <i>E</i>(<i>A</i>) ÷ (|<i>S</i>| + 1)。</li>
+<li><b>參與廣度：</b>上車的不同人數 <i>D</i>(<i>A</i>) = |{<i>i</i> : <i>i</i> 有單位在 {<i>p</i>} ∪ <i>S</i> 中}|。</li>
+<li><b>程序公平：</b>相同條件的人應得到相同的對待；條件接近時，先報名者應有優勢（對應級距與時間的比較規則）。</li>
+<li><b>可預測性：</b>報名者能事先理解自己會不會上車；結果不應取決於報名與取消的歷史順序。</li>
+</ul>
+<p>實務規則可以被理解為對這些目標的<b>字典序</b>（lexicographic）權衡：S6 優先（角色需求）＞ 優先序（效率或程序公平）＞ 多開政策（參與廣度）＞ 報名時間（同分處理）。第五章把這個權衡寫成演算法，並分析它的性質。</p>
+
+<h3>4.4　優先序</h3>
+<div class="def"><p><span class="dt">定義 3（倍率優先序）。</span>給定級距 δ &gt; 0，定義捨入倍率 ⟨<i>b</i>⟩<sub>δ</sub> = δ · round(<i>b</i> ÷ δ)。倍率優先序 ≻<sub>δ</sub> 定義為：<i>i</i> ≻<sub>δ</sub> <i>k</i> 若且唯若 ⟨<i>b</i><sub><i>i</i>1</sub>⟩<sub>δ</sub> &gt; ⟨<i>b</i><sub><i>k</i>1</sub>⟩<sub>δ</sub>，或兩者相等且 <i>t</i><sub><i>i</i></sub> &lt; <i>t</i><sub><i>k</i></sub>。δ = 0 時即為純粹的倍率排序。</p></div>
+<div class="def"><p><span class="dt">定義 4（先報先上優先序）。</span><i>i</i> ≻<sub>F</sub> <i>k</i> 若且唯若 <i>t</i><sub><i>i</i></sub> &lt; <i>t</i><sub><i>k</i></sub>。</p></div>
+<p>假設報名時間互不相同，兩種優先序都是 <i>N</i> 上的全序。</p>
+
+<h3>4.5　跨時段的問題</h3>
+<p>上述模型只描述一格班次。完整的班表是許多格的集合 <i>H</i>，同一位成員可以報名多格。若各格之間沒有任何耦合（例如個人時數上限、連續上班限制），則整張班表的問題可以分解為 |<i>H</i>| 個獨立的單格問題。菜根機器人的實作正是如此：每一格獨立排位。第七章將討論加入跨時段限制後的問題結構。</p>
+
+<h2>5　排位機制與其性質</h2>
+
+<h3>5.1　演算法</h3>
+<p>演算法 1 是菜根機器人排位程序（版本 b2026-11-09r 的 <code>_auto_assign_raw</code>）的形式化。為了聚焦，我們省略了車隊佔位、同車第二跑者、最低上車倍率與手動標記等處理；它們或者是預先扣除容量，或者只改變候補的尾端順序，不影響本章的結論。</p>
+<div class="algo"><span class="at">演算法 1　單格排位（現行程序）</span>輸入：已確認報名者 N、優先序 ≻、多開政策 π ∈ {不同人優先, 一起比, 不排多開}
+ 1  σ ← 依 ≻ 排序 N
+ 2  Σ ← {i ∈ σ : r_i = S6}；Π ← σ \ Σ                       ▷ S6 優先於倍率
+ 3  若 |Σ| &gt; 1：依 S6 倍率 s_i（同樣的級距與時間規則）排序 Σ，
+        保留第一名，其餘改為推手併入 Π，Π 依 ≻ 重排
+ 4  若 Σ ≠ ∅：p ← (Σ 第一名, S6)；i* ← 無
+    否則：i* ← Π 第一名；p ← (i*, 1)
+ 5  First ← [ ]；Extra ← [ ]
+ 6  對 Π 中每位 i（依序）：
+ 7      U ← [(i,1), …, (i,m_i)]（π = 不排多開時只取 (i,1)）
+ 8      若 i = i*：U ← U 去掉 (i*,1)
+ 9      若 U 非空：First 加入 U 的第一個；Extra 加入其餘
+10  批次 ← [First, Extra]（π = 一起比 時：[依單位倍率排序的 First ∪ Extra]）
+11  依批次順序把單位填入 P3、P4、P5；其餘依序列入候補 W
+12  回傳 (p, S, W)</div>
+<p>演算法 1 的時間複雜度為 O(<i>n</i> log <i>n</i>)，由排序主導。由於每格的報名者通常不超過數十人，計算成本可以忽略，這也是它能在每一次報名或取消時即時重算的前提。</p>
+
+<h3>5.2　一致性與單調性</h3>
+<div class="prop"><p><span class="pt">命題 1（歷史無關性）。</span>對任何未被標記為手動的時段，在任意一串報名、取消、確認與砍班操作之後，該時段的分配等於演算法 1 作用在當下已確認集合 <i>N</i> 上的結果。特別地，候補的遞補順序等於優先序，而與進入候補的先後無關。</p></div>
+<div class="proof"><p><b>證明。</b>系統在每一次改變 <i>N</i> 的操作之後，都以演算法 1 對該時段從頭重算，而演算法 1 是 <i>N</i>（含每位報名者的屬性與報名時間）與車隊設定的確定性函數，不依賴先前的分配。因此最終分配只取決於最終的 <i>N</i>。遞補是重算的特例：退出者離開 <i>N</i> 後重算，原候補中優先序最高者自然進入座位。<span class="qed">□</span></p></div>
+<p>歷史無關性看似平凡，卻是可預測性的基礎：報名者只要知道自己在優先序中的位置與座位數，就能判斷自己會不會上車，而不必擔心「別人先取消再重報」之類的操作會改變結果。它也意味著「候補」並不是傳統意義上的排隊：晚進入候補但倍率較高的人，會在遞補時排在前面。這一點常讓初次接觸的成員感到意外，手冊因此特別說明「遞補依排序而非排隊先後」。</p>
+
+<div class="prop"><p><span class="pt">命題 2（族群單調性）。</span>假設沒有 S6 報名者。若把一位新報名者 <i>k</i> 加入 <i>N</i>，則任何其他報名者 <i>i</i> ≠ <i>k</i> 坐上座位的單位數不會增加。</p></div>
+<div class="proof"><p><b>證明。</b>沒有 S6 時，P2 由優先序第一的推手的第 1 開佔據，P3–P5 依批次順序填入。加入 <i>k</i> 後，<i>k</i> 的單位被插入批次序列中依優先序決定的位置；若 <i>k</i> 成為新的第一名，原第一名 <i>i</i>* 讓出 P2，其第 1 開回到 First。對任何 <i>i</i> ∉ {<i>k</i>, <i>i</i>*}，<i>i</i> 的單位在 First 與 Extra 中的相對位置只會被 <i>k</i> 的單位往後推，因此在容量固定為 3 的前提下，坐上座位的單位數不增。對 <i>i</i>*，加入 <i>k</i> 前他佔有 P2 外加至多 2 個後續單位，加入後他的單位全部回到 P3–P5 的競爭中，且排在 <i>k</i> 的單位之後，總數同樣不增。<span class="qed">□</span></p></div>
+<p>有 S6 時，命題 2 可能失效：新的 S6 報名者若在 S6 倍率上勝過原本的 S6，原 S6 會被降為推手；而依可行性條件 (d)，S6 不能以其他帳號再佔 P3–P5，降為推手後反而可以多開入座，座位單位數因此增加。在第六章的模擬中，這種情形在「不同人優先」政策下出現於 0.04% 的情境、在「一起比」政策下出現於 0.17% 的情境。它不算缺陷，而是「S6 是一種角色而非等級」這個設計的自然結果。</p>
+
+<h3>5.3　倍率級距的效率代價</h3>
+<p>倍率級距的用意，是讓倍率「差不多」的人改比報名先後，以獎勵早報名、也避免為了 0.01 的差距爭執。它的代價是可能讓倍率略低者先上車。下面的命題說明這個代價有一個簡單的上界。</p>
+<div class="prop"><p><span class="pt">命題 3（級距損失上界）。</span>考慮「單一序列選擇」的情形：每位報名者只有一個單位（不排多開），或政策為「一起比」，且沒有 S6。令 <i>A</i><sub>δ</sub> 與 <i>A</i><sub>0</sub> 分別為以 ≻<sub>δ</sub> 與 ≻<sub>0</sub> 排位的結果，坐上的單位數為 <i>C</i> ≤ <i>K</i> + 1 = 4。則</p>
+<p class="eq"><i>E</i>(<i>A</i><sub>0</sub>) − <i>E</i>(<i>A</i><sub>δ</sub>) ≤ <i>C</i> · δ<span class="no">(5.1)</span></p>
+<p>亦即平均每席的倍率損失不超過 δ。</p></div>
+<div class="proof"><p><b>證明。</b>在單一序列選擇中，兩種優先序都選出序列中前 <i>C</i> 個單位。令 <i>x</i><sub>(1)</sub> ≥ <i>x</i><sub>(2)</sub> ≥ … 為所有單位倍率由大到小的排列，<i>u</i><sub>ℓ</sub> 為 ≻<sub>δ</sub> 序列中第 ℓ 位的單位。我們證明 <i>b</i>(<i>u</i><sub>ℓ</sub>) ≥ <i>x</i><sub>(ℓ)</sub> − δ。假設不然，<i>b</i>(<i>u</i><sub>ℓ</sub>) &lt; <i>x</i><sub>(ℓ)</sub> − δ。由於捨入誤差 |⟨<i>b</i>⟩<sub>δ</sub> − <i>b</i>| ≤ δ/2，</p>
+<p class="eq">⟨<i>b</i>(<i>u</i><sub>ℓ</sub>)⟩<sub>δ</sub> ≤ <i>b</i>(<i>u</i><sub>ℓ</sub>) + δ/2 &lt; <i>x</i><sub>(ℓ)</sub> − δ/2 ≤ ⟨<i>x</i><sub>(ℓ)</sub>⟩<sub>δ</sub></p>
+<p>而捨入是單調的，所以倍率前 ℓ 名的每一個單位，捨入值都嚴格大於 <i>u</i><sub>ℓ</sub> 的捨入值，在 ≻<sub>δ</sub> 中都排在 <i>u</i><sub>ℓ</sub> 之前。這表示 <i>u</i><sub>ℓ</sub> 之前至少有 ℓ 個單位，與它位居第 ℓ 位矛盾。對 ℓ = 1, …, <i>C</i> 加總，<i>E</i>(<i>A</i><sub>δ</sub>) ≥ Σ<sub>ℓ</sub> <i>x</i><sub>(ℓ)</sub> − <i>C</i>δ = <i>E</i>(<i>A</i><sub>0</sub>) − <i>C</i>δ。<span class="qed">□</span></p></div>
+<p>以預設的 δ = 0.02 而言，命題 3 保證平均倍率的損失不超過 0.02，相對於約 2.7 的典型倍率不到 0.8%。模擬中（第六章），單一序列情形的實際損失遠小於上界：每格倍率總和的平均損失為 0.0001、最大為 0.0135，而上界是 0.08。</p>
+
+<h3>5.4　形式分析揭露的邊界情況</h3>
+<p>命題 3 只對單一序列成立。對預設的「不同人優先」兩階段政策，我們原本預期類似的上界也成立，模擬卻顯示：在現行程序下，δ = 0.02 時單格倍率總和的最大損失達 0.262，遠超過 4δ = 0.08。追查反例，發現問題出在演算法 1 的第 8 至 9 行。</p>
+<p>當 P2 由一般推手 <i>i</i>* 佔據（沒有 S6）時，第 8 行把 <i>i</i>* 的第 1 開移除，於是第 9 行把他的<b>第 2 開</b>當作「他的第一個單位」放進 First。又因為 <i>i</i>* 是優先序第一名，這個第 2 開會排在 First 的最前面，在第一階段就入座，排在其他人的第 1 開之前。這與「先讓每個人的第 1 開入座，還有空位才補第 2、3 開」的政策意圖相矛盾：<i>i</i>* 的第 1 開已經坐在 P2，他的第 2 開理應在第二階段才補位。</p>
+<div class="boxed"><div class="bt">反例</div>
+<p>設 δ = 0.02，報名者如下（皆為推手）：A 倍率 2.849，單開，較晚報名；B 第 1 開 2.841、第 2 開 2.46，較早報名；C 2.741；D 2.719，皆單開。</p>
+<p>以 δ = 0 排位：A 第一，坐 P2；First = [B₁, C, D]，P3–P5 = B₁、C、D。倍率總和 2.849 + 2.841 + 2.741 + 2.719 = 11.150。</p>
+<p>以 δ = 0.02 排位：A、B 的捨入值都是 2.84，B 較早報名而成為第一，坐 P2；依第 8–9 行，First = [B₂, A, C, D]，P3–P5 = B₂、A、C，D 落入候補。倍率總和 2.841 + 2.46 + 2.849 + 2.741 = 10.891，損失 0.259；而且 B 一人佔了兩席，D 的第 1 開卻沒有座位。若把 B 的第 2 開移到第二階段（下文的一致版），P3–P5 = A、C、D，總和回到 11.150，沒有任何損失。</p></div>
+<p>這個反例同時說明了兩件事。第一，級距本身並沒有錯，它只是讓 A、B 的先後互換；真正造成損失的是互換之後觸發的「P2 推手第二開插隊」。第二，即使不考慮級距，只要 P2 由雙開推手佔據，同樣的插隊就會發生。</p>
+<p>我們在模擬中把第 8–9 行改為「若 <i>i</i> = <i>i</i>*，其剩餘單位全部放入 Extra」（附錄 B），稱為<b>一致版</b>兩階段政策。在一致版下，δ = 0.02、0.05、0.1 時單格倍率總和的最大損失分別為 0.0135、0.045、0.121，都在 4δ 的範圍內，與命題 3 的預期一致。現行程序與一致版的結果在報名人數期望值為 4、6、8 時，分別有 5.5%、3.4%、1.7% 的時段不同；一致版平均每格多讓 0.013 至 0.019 位不同的人上車，倍率總和則平均少 0.004 至 0.007。</p>
+<p>需要說明的是，第 10 行的批次在程式中經由一個可設定的函數產生，其原始碼不在本文分析的範圍內；本節的結論假設該函數的預設行為如程式註解所述，即依建構順序先排 First、再排 Extra。若該函數另行依倍率重排 First，插隊的程度會降低，但 <i>i</i>* 的第 2 開仍會在第一階段與他人的第 1 開競爭，政策意圖的矛盾依然存在。</p>
+<p>值得玩味的是，這個「缺陷」在效率上並非全無好處：P2 推手通常是倍率最高的人，他的第 2 開往往也比其他人的第 1 開強，因此插隊平均而言略為提高了倍率總和。現行程序因此可以被理解為一個隱含的折衷：在 P2 這一個人身上偏向效率，在其他人身上偏向參與廣度。問題不在於哪一種選擇才對，而在於政策的文字說明與實際行為不一致；排班規則的正當性，很大一部分來自成員能夠理解並預期它。</p>
+
+<h3>5.5　「不同人優先」的效率代價</h3>
+<div class="prop"><p><span class="pt">命題 4（不同人優先的最壞效率比）。</span>考慮 P3–P5 的分配，假設沒有 S6、P2 持有者沒有剩餘單位參與競爭，且每位報名者滿足 <i>b</i><sub><i>i</i>1</sub> ≥ <i>b</i><sub><i>i</i>2</sub> ≥ <i>b</i><sub><i>i</i>3</sub>。令 <i>E</i><sub>D</sub> 與 <i>E</i><sub>J</sub> 分別為「不同人優先」（一致版）與「一起比」（以 δ = 0）在 P3–P5 的倍率總和。則</p>
+<p class="eq"><i>E</i><sub>D</sub> ÷ <i>E</i><sub>J</sub> ≥ ( <i>b</i><sub>max</sub> + 2<i>b</i><sub>min</sub> ) ÷ ( 3<i>b</i><sub>max</sub> ) ≈ 0.536<span class="no">(5.2)</span></p>
+<p>且此界是緊的。</p></div>
+<div class="proof"><p><b>證明。</b>兩種政策都不浪費，因此坐上的單位數相同，記為 <i>c</i> ≤ 3。令 <i>M</i> 為所有候選單位中的最大倍率。由 <i>b</i><sub><i>i</i>1</sub> ≥ <i>b</i><sub><i>ij</i></sub>，<i>M</i> 必為某人的第 1 開，且該人在優先序中居首，所以兩種政策都讓它入座。「不同人優先」的其餘 <i>c</i> − 1 個單位倍率各至少 <i>b</i><sub>min</sub>，故 <i>E</i><sub>D</sub> ≥ <i>M</i> + (<i>c</i> − 1)<i>b</i><sub>min</sub>；「一起比」的每個單位至多 <i>M</i>，故 <i>E</i><sub>J</sub> ≤ <i>cM</i>。比值 (<i>M</i> + (<i>c</i> − 1)<i>b</i><sub>min</sub>) ÷ (<i>cM</i>) 對 <i>M</i> 與 <i>c</i> 都是遞減的，在 <i>M</i> = <i>b</i><sub>max</sub>、<i>c</i> = 3 時取最小值。緊性：一位三開、三個帳號倍率皆為 <i>b</i><sub>max</sub> 的推手，加上兩位倍率為 <i>b</i><sub>min</sub> 的單開推手，即達到此界。<span class="qed">□</span></p></div>
+<p>以台服的倍率範圍代入，最壞情況下「不同人優先」只能得到「一起比」的 53.6%。但最壞情況需要極端的倍率差距，在實務中幾乎不會出現。模擬中（報名人數期望值 4），兩種政策的 P3–P5 倍率總和比值平均為 0.993，最小為 0.756；有 23.6% 的時段兩者結果不同；就所有時段平均而言，「不同人優先」讓 P3–P5 的不同人數從 2.27 增加到 2.51。換言之，社群為了「多讓一個人參與」，在典型情況下只付出了不到 1% 的效率。</p>
+<p>若放寬「P2 持有者沒有剩餘單位」的假設，最壞比值會更低：例如 P2 由一位三開、三個帳號皆為 <i>b</i><sub>max</sub> 的推手佔據，另有三位倍率 <i>b</i><sub>min</sub> 的單開推手，一致版會讓三位單開者入座（3<i>b</i><sub>min</sub>），「一起比」則讓兩個 <i>b</i><sub>max</sub> 帳號與一位單開者入座，比值為 3<i>b</i><sub>min</sub> ÷ (2<i>b</i><sub>max</sub> + <i>b</i><sub>min</sub>) ≈ 0.396。有趣的是，在這個例子裡，現行程序的「插隊」會讓 P2 持有者的第 2 開先入座，比值因此提高為 (<i>b</i><sub>max</sub> + 2<i>b</i><sub>min</sub>) ÷ (2<i>b</i><sub>max</sub> + <i>b</i><sub>min</sub>) ≈ 0.698，這再次印證了 5.4 節所說的隱含折衷。</p>
+
+<h3>5.6　誘因</h3>
+<div class="prop"><p><span class="pt">命題 5（誘因性質）。</span>(a) 在任何優先序下，對想要上車的成員而言，報名弱支配於不報名。(b) 在倍率優先序 ≻<sub>δ</sub> 下，申報較高的倍率弱改善自己的優先順位，因此演算法 1 對倍率的申報<b>不是</b>防策略的。(c) 在先報先上優先序 ≻<sub>F</sub> 下，申報的倍率不影響優先順位（不計最低上車倍率與 S6 的比較），因此對倍率申報是防策略的，但會誘發提早報名的時間競爭。</p></div>
+<div class="proof"><p><b>證明。</b>(a) 不報名的結果是不上車；報名的結果是上車或候補，後者不劣於不上車。(b) 由定義 3，⟨<i>b</i>⟩<sub>δ</sub> 對 <i>b</i> 單調不減，提高申報值只會讓自己在 ≻<sub>δ</sub> 中的位置不降。(c) 由定義 4，≻<sub>F</sub> 只依 <i>t</i><sub><i>i</i></sub> 排序；而 <i>t</i><sub><i>i</i></sub> 越小越有利，所以每位成員都有提早報名的誘因。<span class="qed">□</span></p></div>
+<p>命題 5 指出了倍率優先制的一個根本弱點：它依賴成員誠實申報倍率。在實務中，倍率由成員自行登記，管理員可以修改；誠實申報因此主要靠管理員的審核與社群的相互監督來維持，而不是靠機制本身。這正是 Ostrom 所說「監督」與「漸進式制裁」在數位社群中的對應物：一位被發現誇大倍率的成員，失去的不只是座位，還有聲譽。第八章會進一步討論。</p>
+
+<h2>6　模擬評估</h2>
+
+<h3>6.1　實驗設計</h3>
+<p>由於各車隊的實際班表包含成員的個人資料，且並未公開，本章以參數化的合成資料進行蒙地卡羅模擬。模擬的目的不是重現某個特定車隊，而是在一組透明、可調整的假設下，比較不同排位政策的系統性差異。表 4 列出主要參數，完整設定見附錄 A。</p>
+<div class="tbl"><div class="cap"><b>表 4</b>模擬的主要參數</div>
+<table><thead><tr><th>參數</th><th>設定</th></tr></thead><tbody>
+<tr><td>成員池</td><td>40 人，每次模擬固定</td></tr>
+<tr><td>第 1 開倍率</td><td>常態分布 N(2.7, 0.45²)，截斷於 [1.18, 3.88]</td></tr>
+<tr><td>多開</td><td>20% 雙開、5% 三開；第 2、3 開倍率 = 第 1 開 − U(0, 0.4)，再截斷</td></tr>
+<tr><td>S6</td><td>15% 的成員可擔任 S6，每次報名有一半機率以 S6 身分報名；S6 倍率 = 第 1 開 + U(−0.2, 0.3)</td></tr>
+<tr><td>每格報名人數</td><td>卜瓦松分布，期望值 λ ∈ {2, 3, 4, 5, 6, 8, 10}，自成員池中不重複抽取</td></tr>
+<tr><td>報名時間</td><td>均勻分布，用於同分處理與先報先上</td></tr>
+<tr><td>樣本數</td><td>每組設定 20,000 格（公平性實驗 30,000 格、效率比實驗 50,000 格）</td></tr>
+</tbody></table></div>
+<p>比較的政策有四種：(1) 倍率優先、級距 0.02、不同人優先（預設，以現行程序實作）；(2) 倍率優先、一起比；(3) 倍率優先、不排多開；(4) 先報先上、不同人優先。評估指標包括：<b>座位倍率總和</b>（P2–P5，作為效率代理）、<b>平均倍率</b>、<b>不同人數</b>（P2–P5 上的不同成員數）、<b>P3–P5 填滿率</b>與<b>候補人數</b>。</p>
+
+<h3>6.2　競爭程度與效率</h3>
+<p>圖 3 顯示三種主要政策的平均座位倍率如何隨每格報名人數期望值 λ 變化。λ 小時（報名人數少於座位數），所有人都能上車，政策幾乎沒有差別；λ 越大，倍率優先的兩種政策平均倍率越高，因為它們能從更多報名者中挑出強者；先報先上則幾乎不隨 λ 改變，始終停留在成員池的平均水準附近（約 2.73）。</p>
+<div class="fig"><svg viewBox="0 0 600 260" width="100%" role="img" aria-label="平均座位倍率與報名人數" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><line x1="54" x2="584" y1="220" y2="220" stroke="#e4e3df" stroke-width="1"/><text x="48" y="224" font-size="10.5" fill="#52514e" text-anchor="end">2.6</text><line x1="54" x2="584" y1="181.99999999999997" y2="181.99999999999997" stroke="#e4e3df" stroke-width="1"/><text x="48" y="185.99999999999997" font-size="10.5" fill="#52514e" text-anchor="end">2.7</text><line x1="54" x2="584" y1="144.0000000000001" y2="144.0000000000001" stroke="#e4e3df" stroke-width="1"/><text x="48" y="148.0000000000001" font-size="10.5" fill="#52514e" text-anchor="end">2.8</text><line x1="54" x2="584" y1="106.00000000000007" y2="106.00000000000007" stroke="#e4e3df" stroke-width="1"/><text x="48" y="110.00000000000007" font-size="10.5" fill="#52514e" text-anchor="end">2.9</text><line x1="54" x2="584" y1="68.00000000000003" y2="68.00000000000003" stroke="#e4e3df" stroke-width="1"/><text x="48" y="72.00000000000003" font-size="10.5" fill="#52514e" text-anchor="end">3.0</text><line x1="54" x2="584" y1="30" y2="30" stroke="#e4e3df" stroke-width="1"/><text x="48" y="34" font-size="10.5" fill="#52514e" text-anchor="end">3.1</text><text x="48" y="16" font-size="10.5" fill="#7a7873" text-anchor="start" transform="translate(-44,0)">平均座位倍率</text><text x="54" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">2</text><text x="120.25" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">3</text><text x="186.5" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">4</text><text x="252.75" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">5</text><text x="319" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">6</text><text x="451.5" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">8</text><text x="584" y="236" font-size="10.5" fill="#52514e" text-anchor="middle">10</text><line x1="54" x2="584" y1="220" y2="220" stroke="#9a9893" stroke-width="1"/><path d="M54.0,161.7L120.3,152.0L186.5,136.5L252.8,122.8L319.0,108.0L451.5,84.6L584.0,67.8" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" /><circle cx="54" cy="161.6700000000001" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="152.01799999999997" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="136.47600000000008" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="122.758" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="107.97600000000001" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="84.64400000000006" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="67.77200000000005" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><path d="M54.0,159.4L120.3,148.0L186.5,130.6L252.8,115.3L319.0,99.3L451.5,74.0L584.0,55.2" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" /><circle cx="54" cy="159.42800000000008" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="147.99000000000007" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="130.62400000000005" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="115.27200000000006" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="99.31199999999995" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="73.96599999999998" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="55.19400000000002" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><path d="M54.0,167.4L120.3,167.8L186.5,165.8L252.8,167.4L319.0,167.9L451.5,171.0L584.0,172.9" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4"/><circle cx="54" cy="167.44599999999997" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="167.788" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="165.81200000000007" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="167.44599999999997" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="167.9020000000001" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="170.98" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="172.91800000000003" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><text x="319" y="254" font-size="10.5" fill="#7a7873" text-anchor="middle">每格報名人數期望值 λ</text><line x1="70" y1="12" x2="86" y2="12" stroke="#2a78d6" stroke-width="2.5" /><text x="91" y="16" font-size="11" fill="#52514e">倍率優先・不同人優先</text><line x1="219" y1="12" x2="235" y2="12" stroke="#eb6834" stroke-width="2.5" /><text x="240" y="16" font-size="11" fill="#52514e">倍率優先・一起比</text><line x1="346" y1="12" x2="362" y2="12" stroke="#1baf7a" stroke-width="2.5" stroke-dasharray="4 3"/><text x="367" y="16" font-size="11" fill="#52514e">先報先上</text></svg><div class="cap"><b>圖 3</b>平均座位倍率（P2–P5）與每格報名人數期望值 λ 的關係。每點為 20,000 格的平均。</div></div>
+<p>表 5 以 λ = 6 為例列出所有指標。倍率優先（不同人優先）的倍率總和為 11.14，一起比再高 0.8%，不排多開低 2.7%，先報先上則低 5.7%。不排多開的填滿率最低（92.3%），因為它放棄了多開帳號能補上的座位；但它的候補也最短，因為每位報名者只佔一個候選位置。</p>
+<div class="tbl"><div class="cap"><b>表 5</b>λ = 6 時四種政策的比較</div>
+<table><thead><tr><th>政策</th><th class="n">倍率總和</th><th class="n">平均倍率</th><th class="n">不同人數</th><th class="n">P3–P5 填滿率</th><th class="n">候補人數</th></tr></thead><tbody>
+<tr><td>倍率優先・不同人優先</td><td class="n">11.14</td><td class="n">2.895</td><td class="n">3.62</td><td class="n">94.8%</td><td class="n">3.73</td></tr>
+<tr><td>倍率優先・一起比</td><td class="n">11.24</td><td class="n">2.918</td><td class="n">3.38</td><td class="n">94.8%</td><td class="n">3.73</td></tr>
+<tr><td>倍率優先・不排多開</td><td class="n">10.85</td><td class="n">2.874</td><td class="n">3.76</td><td class="n">92.3%</td><td class="n">2.23</td></tr>
+<tr><td>先報先上・不同人優先</td><td class="n">10.51</td><td class="n">2.737</td><td class="n">3.66</td><td class="n">94.8%</td><td class="n">3.71</td></tr>
+</tbody></table></div>
+
+<h3>6.3　參與廣度</h3>
+<p>圖 4 顯示 P2–P5 上不同人數的變化。「一起比」的不同人數最少，且在 λ ≥ 6 後幾乎不再增加（約 3.4–3.5），因為高倍率的多開推手會以多個帳號佔據座位；「不同人優先」與「先報先上」則隨 λ 趨近 4（每個座位一人）。效率與參與廣度的取捨在這裡清楚可見：λ = 10 時，「一起比」比「不同人優先」的倍率總和高 1.1%，但每格少讓 0.36 位成員上車。</p>
+<div class="fig"><svg viewBox="0 0 600 250" width="100%" role="img" aria-label="上車的不同人數" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><line x1="54" x2="584" y1="210" y2="210" stroke="#e4e3df" stroke-width="1"/><text x="48" y="214" font-size="10.5" fill="#52514e" text-anchor="end">1</text><line x1="54" x2="584" y1="150" y2="150" stroke="#e4e3df" stroke-width="1"/><text x="48" y="154" font-size="10.5" fill="#52514e" text-anchor="end">2</text><line x1="54" x2="584" y1="90" y2="90" stroke="#e4e3df" stroke-width="1"/><text x="48" y="94" font-size="10.5" fill="#52514e" text-anchor="end">3</text><line x1="54" x2="584" y1="30" y2="30" stroke="#e4e3df" stroke-width="1"/><text x="48" y="34" font-size="10.5" fill="#52514e" text-anchor="end">4</text><text x="48" y="16" font-size="10.5" fill="#7a7873" text-anchor="start" transform="translate(-44,0)">P2–P5 不同人數</text><text x="54" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">2</text><text x="120.25" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">3</text><text x="186.5" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">4</text><text x="252.75" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">5</text><text x="319" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">6</text><text x="451.5" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">8</text><text x="584" y="226" font-size="10.5" fill="#52514e" text-anchor="middle">10</text><line x1="54" x2="584" y1="210" y2="210" stroke="#9a9893" stroke-width="1"/><path d="M54.0,155.1L120.3,112.2L186.5,82.8L252.8,64.4L319.0,53.0L451.5,42.5L584.0,39.0" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" /><circle cx="54" cy="155.076" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="112.24799999999999" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="82.75800000000001" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="64.398" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="53.02799999999999" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="42.48599999999999" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="39.04799999999997" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><path d="M54.0,158.0L120.3,118.6L186.5,92.2L252.8,76.7L319.0,67.3L451.5,60.6L584.0,60.9" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" /><circle cx="54" cy="157.99200000000002" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="118.55400000000002" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="92.22" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="76.69200000000001" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="67.344" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="60.641999999999996" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="60.912000000000006" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><path d="M54.0,154.8L120.3,111.6L186.5,81.5L252.8,62.6L319.0,50.5L451.5,39.5L584.0,36.0" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4"/><circle cx="54" cy="154.794" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="111.60600000000001" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="81.53999999999999" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="62.597999999999985" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="50.54399999999998" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="39.54600000000002" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="36.048" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><text x="319" y="244" font-size="10.5" fill="#7a7873" text-anchor="middle">每格報名人數期望值 λ</text><line x1="70" y1="12" x2="86" y2="12" stroke="#2a78d6" stroke-width="2.5" /><text x="91" y="16" font-size="11" fill="#52514e">倍率優先・不同人優先</text><line x1="219" y1="12" x2="235" y2="12" stroke="#eb6834" stroke-width="2.5" /><text x="240" y="16" font-size="11" fill="#52514e">倍率優先・一起比</text><line x1="346" y1="12" x2="362" y2="12" stroke="#1baf7a" stroke-width="2.5" stroke-dasharray="4 3"/><text x="367" y="16" font-size="11" fill="#52514e">先報先上</text></svg><div class="cap"><b>圖 4</b>P2–P5 上不同成員數與 λ 的關係。最大值為 4。</div></div>
+
+<h3>6.4　公平的代價</h3>
+<p>沿用 Bertsimas 等人（2011）的定義，我們把先報先上相對於倍率優先的效率損失比例，(<i>E</i><sub>倍率</sub> − <i>E</i><sub>先報</sub>) ÷ <i>E</i><sub>倍率</sub>，稱為「程序公平的代價」。圖 5 顯示這個代價隨競爭程度單調上升：λ = 2 時只有 0.9%，λ = 6 時 5.7%，λ = 10 時 9.2%。直觀地說，報名者越多，按先後選人與按倍率選人的差距就越大。</p>
+<div class="fig"><svg viewBox="0 0 600 220" width="100%" role="img" aria-label="程序公平的代價" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><line x1="54" x2="584" y1="180" y2="180" stroke="#e4e3df" stroke-width="1"/><text x="48" y="184" font-size="10.5" fill="#52514e" text-anchor="end">0%</text><line x1="54" x2="584" y1="150" y2="150" stroke="#e4e3df" stroke-width="1"/><text x="48" y="154" font-size="10.5" fill="#52514e" text-anchor="end">2%</text><line x1="54" x2="584" y1="120" y2="120" stroke="#e4e3df" stroke-width="1"/><text x="48" y="124" font-size="10.5" fill="#52514e" text-anchor="end">4%</text><line x1="54" x2="584" y1="90" y2="90" stroke="#e4e3df" stroke-width="1"/><text x="48" y="94" font-size="10.5" fill="#52514e" text-anchor="end">6%</text><line x1="54" x2="584" y1="60" y2="60" stroke="#e4e3df" stroke-width="1"/><text x="48" y="64" font-size="10.5" fill="#52514e" text-anchor="end">8%</text><line x1="54" x2="584" y1="30" y2="30" stroke="#e4e3df" stroke-width="1"/><text x="48" y="34" font-size="10.5" fill="#52514e" text-anchor="end">10%</text><text x="48" y="16" font-size="10.5" fill="#7a7873" text-anchor="start" transform="translate(-44,0)">倍率總和損失</text><text x="54" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">2</text><text x="120.25" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">3</text><text x="186.5" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">4</text><text x="252.75" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">5</text><text x="319" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">6</text><text x="451.5" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">8</text><text x="584" y="196" font-size="10.5" fill="#52514e" text-anchor="middle">10</text><line x1="54" x2="584" y1="180" y2="180" stroke="#9a9893" stroke-width="1"/><path d="M54.0,166.4L120.3,151.0L186.5,132.7L252.8,113.3L319.0,95.2L451.5,63.7L584.0,41.5" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" /><circle cx="54" cy="166.43691476011207" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="120.25" cy="151.03365820078977" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="186.5" cy="132.6617146394306" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="252.75" cy="113.30901718551635" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="319" cy="95.19058899537002" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="451.5" cy="63.71081253998727" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="584" cy="41.45699454190384" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="319" y="214" font-size="10.5" fill="#7a7873" text-anchor="middle">每格報名人數期望值 λ</text></svg><div class="cap"><b>圖 5</b>程序公平的代價：先報先上相對於倍率優先的座位倍率總和損失比例。</div></div>
+<p>反過來看「不排多開」：它相對於預設政策的效率損失在 λ = 2 時高達 13.6%（因為座位常常空著），λ = 10 時降到 0.7%。也就是說，禁止多開在人手不足時代價很大、在人手充裕時幾乎沒有代價。這給了車隊一個簡單的經驗法則：人少的時段應該允許多開，人多的時段則可以考慮限制，以讓更多人參與。</p>
+
+<h3>6.5　上車機會的分配</h3>
+<p>效率之外，另一個問題是：誰上得了車？我們追蹤 30,000 格中每位成員的報名次數與上車次數，計算各自的上車率，再依倍率把 40 位成員分為五個五分位。圖 6 與表 6 是結果。</p>
+<div class="fig"><svg viewBox="0 0 600 240" width="100%" role="img" aria-label="各倍率五分位的上車率" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><line x1="54" x2="584" y1="200" y2="200" stroke="#e4e3df" stroke-width="1"/><text x="48" y="204" font-size="10.5" fill="#52514e" text-anchor="end">0</text><line x1="54" x2="584" y1="166" y2="166" stroke="#e4e3df" stroke-width="1"/><text x="48" y="170" font-size="10.5" fill="#52514e" text-anchor="end">25</text><line x1="54" x2="584" y1="132" y2="132" stroke="#e4e3df" stroke-width="1"/><text x="48" y="136" font-size="10.5" fill="#52514e" text-anchor="end">50</text><line x1="54" x2="584" y1="98" y2="98" stroke="#e4e3df" stroke-width="1"/><text x="48" y="102" font-size="10.5" fill="#52514e" text-anchor="end">75</text><line x1="54" x2="584" y1="64" y2="64" stroke="#e4e3df" stroke-width="1"/><text x="48" y="68" font-size="10.5" fill="#52514e" text-anchor="end">100</text><line x1="54" x2="584" y1="30" y2="30" stroke="#e4e3df" stroke-width="1"/><text x="48" y="34" font-size="10.5" fill="#52514e" text-anchor="end">125</text><text x="48" y="16" font-size="10.5" fill="#7a7873" text-anchor="start" transform="translate(-44,0)">上車率（%）</text><path d="M82,200V172.312Q82,168.312 86,168.312H102Q106,168.312 106,172.312V200Z" fill="#2a78d6"/><text x="94" y="164.312" font-size="9.5" fill="#52514e" text-anchor="middle">23%</text><path d="M108,200V121.72Q108,117.72 112,117.72H128Q132,117.72 132,121.72V200Z" fill="#eb6834"/><text x="120" y="113.72" font-size="9.5" fill="#52514e" text-anchor="middle">61%</text><text x="107" y="215" font-size="10.5" fill="#52514e" text-anchor="middle">Q1（最低）</text><path d="M188,200V152.59199999999998Q188,148.59199999999998 192,148.59199999999998H208Q212,148.59199999999998 212,152.59199999999998V200Z" fill="#2a78d6"/><text x="200" y="144.59199999999998" font-size="9.5" fill="#52514e" text-anchor="middle">38%</text><path d="M214,200V122.808Q214,118.808 218,118.808H234Q238,118.808 238,122.808V200Z" fill="#eb6834"/><text x="226" y="114.808" font-size="9.5" fill="#52514e" text-anchor="middle">60%</text><text x="213" y="215" font-size="10.5" fill="#52514e" text-anchor="middle">Q2</text><path d="M294,200V122.944Q294,118.944 298,118.944H314Q318,118.944 318,122.944V200Z" fill="#2a78d6"/><text x="306" y="114.944" font-size="9.5" fill="#52514e" text-anchor="middle">60%</text><path d="M320,200V124.30400000000002Q320,120.30400000000002 324,120.30400000000002H340Q344,120.30400000000002 344,124.30400000000002V200Z" fill="#eb6834"/><text x="332" y="116.30400000000002" font-size="9.5" fill="#52514e" text-anchor="middle">59%</text><text x="319" y="215" font-size="10.5" fill="#52514e" text-anchor="middle">Q3</text><path d="M400,200V87.71999999999998Q400,83.71999999999998 404,83.71999999999998H420Q424,83.71999999999998 424,87.71999999999998V200Z" fill="#2a78d6"/><text x="412" y="79.71999999999998" font-size="9.5" fill="#52514e" text-anchor="middle">86%</text><path d="M426,200V121.992Q426,117.992 430,117.992H446Q450,117.992 450,121.992V200Z" fill="#eb6834"/><text x="438" y="113.992" font-size="9.5" fill="#52514e" text-anchor="middle">60%</text><text x="425" y="215" font-size="10.5" fill="#52514e" text-anchor="middle">Q4</text><path d="M506,200V69.22400000000002Q506,65.22400000000002 510,65.22400000000002H526Q530,65.22400000000002 530,69.22400000000002V200Z" fill="#2a78d6"/><text x="518" y="61.22400000000002" font-size="9.5" fill="#52514e" text-anchor="middle">99%</text><path d="M532,200V125.256Q532,121.256 536,121.256H552Q556,121.256 556,125.256V200Z" fill="#eb6834"/><text x="544" y="117.256" font-size="9.5" fill="#52514e" text-anchor="middle">58%</text><text x="531" y="215" font-size="10.5" fill="#52514e" text-anchor="middle">Q5（最高）</text><line x1="54" x2="584" y1="200" y2="200" stroke="#9a9893" stroke-width="1"/><rect x="174" y="7" width="10" height="10" rx="2" fill="#2a78d6"/><text x="189" y="16" font-size="11" fill="#52514e">倍率優先</text><rect x="251" y="7" width="10" height="10" rx="2" fill="#eb6834"/><text x="266" y="16" font-size="11" fill="#52514e">先報先上</text></svg><div class="cap"><b>圖 6</b>λ = 6 時各倍率五分位的上車率（上車次數 ÷ 報名次數）。第 1 五分位為倍率最低的 20% 成員。</div></div>
+<p>在倍率優先下，上車率幾乎完全由倍率決定：λ = 6 時，倍率最低的五分位上車率只有 23%，最高的五分位則達 99%；成員上車次數的吉尼係數為 0.278。λ = 8 時差距更大，最低五分位只剩 11%，吉尼係數 0.41。先報先上的上車率則在各五分位之間幾乎相同（λ = 6 時 58%–61%），吉尼係數只有 0.031。</p>
+<div class="tbl"><div class="cap"><b>表 6</b>各政策下的上車率分布</div>
+<table><thead><tr><th>政策</th><th class="n">λ</th><th class="n">Q1</th><th class="n">Q2</th><th class="n">Q3</th><th class="n">Q4</th><th class="n">Q5</th><th class="n">吉尼係數</th></tr></thead><tbody>
+<tr><td>倍率優先</td><td class="n">4</td><td class="n">50.5%</td><td class="n">65.9%</td><td class="n">81.9%</td><td class="n">95.0%</td><td class="n">99.8%</td><td class="n">0.138</td></tr>
+<tr><td>倍率優先</td><td class="n">6</td><td class="n">23.3%</td><td class="n">37.8%</td><td class="n">59.6%</td><td class="n">85.5%</td><td class="n">99.1%</td><td class="n">0.278</td></tr>
+<tr><td>倍率優先</td><td class="n">8</td><td class="n">10.6%</td><td class="n">19.9%</td><td class="n">37.3%</td><td class="n">72.9%</td><td class="n">97.7%</td><td class="n">0.410</td></tr>
+<tr><td>先報先上</td><td class="n">4</td><td class="n">77.8%</td><td class="n">77.2%</td><td class="n">76.1%</td><td class="n">77.3%</td><td class="n">76.4%</td><td class="n">0.018</td></tr>
+<tr><td>先報先上</td><td class="n">6</td><td class="n">60.5%</td><td class="n">59.7%</td><td class="n">58.6%</td><td class="n">60.3%</td><td class="n">57.9%</td><td class="n">0.031</td></tr>
+<tr><td>先報先上</td><td class="n">8</td><td class="n">48.0%</td><td class="n">47.5%</td><td class="n">44.4%</td><td class="n">47.3%</td><td class="n">44.6%</td><td class="n">0.046</td></tr>
+</tbody></table></div>
+<p>這組數字揭示了倍率優先制的社會後果：當報名者多於座位時，倍率較低的成員會長期處於候補，報名的回報很低。若這些成員因此不再報名，人手在人少的時段反而更加不足。換言之，倍率優先在單格層面是有效率的，但在長期與群體層面，它可能侵蝕志願參與的基礎。這是第八章討論的核心張力。</p>
+
+<h3>6.6　級距的影響</h3>
+<p>表 7 比較不同級距寬度 δ 的影響。在現行程序下，δ = 0.02 時每格倍率總和的平均損失只有 0.0001，δ = 0.2 時也只有 0.013；但最大損失受 5.4 節的邊界情況影響，可達 0.26 至 0.57。在一致版下，最大損失都落在命題 3 的上界之內。</p>
+<div class="tbl"><div class="cap"><b>表 7</b>倍率級距寬度 δ 的影響（λ = 6）</div>
+<table><thead><tr><th class="n">δ</th><th class="n">平均損失（現行）</th><th class="n">最大損失（現行）</th><th class="n">最大損失（一致版、無 S6）</th><th class="n">上界 4δ</th><th class="n">入座者的報名先後名次</th></tr></thead><tbody>
+<tr><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0.499</td></tr>
+<tr><td class="n">0.02</td><td class="n">0.0001</td><td class="n">0.262</td><td class="n">0.014</td><td class="n">0.08</td><td class="n">0.499</td></tr>
+<tr><td class="n">0.05</td><td class="n">0.0008</td><td class="n">0.307</td><td class="n">0.045</td><td class="n">0.20</td><td class="n">0.496</td></tr>
+<tr><td class="n">0.1</td><td class="n">0.0038</td><td class="n">0.569</td><td class="n">0.121</td><td class="n">0.40</td><td class="n">0.491</td></tr>
+<tr><td class="n">0.2</td><td class="n">0.0126</td><td class="n">0.569</td><td class="n">—</td><td class="n">0.80</td><td class="n">0.481</td></tr>
+</tbody></table></div>
+<p>最右欄衡量級距「獎勵早報名」的程度：它是入座者在該格報名者中的報名先後名次（0 為最早、1 為最晚）的平均；0.5 代表報名先後與入座無關。δ = 0.02 時這個值是 0.499，幾乎沒有獎勵早報名的效果；即使 δ = 0.2，也只降到 0.481。換言之，以目前的倍率分布而言，0.02 的級距主要是在處理「倍率幾乎相同」的極少數情況，並不會明顯改變誰上車。若車隊希望真正鼓勵提早報名，需要更寬的級距，或改用先報先上。</p>
+
+<h3>6.7　模擬的限制</h3>
+<p>本章的結論依賴合成資料的假設。倍率分布、多開比例與報名人數分布都可能與實際車隊不同；成員的報名行為也被假設為與政策無關，而實際上成員可能會因為政策而改變是否報名、何時報名。後者尤其重要：6.5 節指出的「低倍率成員的報名回報很低」，若導致這些成員退出，模擬中的 λ 本身就會隨政策改變。把報名行為內生化（例如以重複賽局或代理人基模型模擬成員的進出），是後續研究的自然方向。</p>
+
+<h2>7　時間維度：班次的價值與跨時段最佳化</h2>
+
+<h3>7.1　每一小時都一樣嗎</h3>
+<p>前兩章把每一格班次當作彼此獨立、價值相同的單位。但對跑者而言，不同時段的一小時並不等價。跑者自己每小時能拿到的分數，主要取決於房間的組成，與時段無關；然而名次是相對的，它取決於跑者與競爭者之間的分差如何變化。在競爭者增分緩慢的時段，同樣一小時的遊玩能拉開更多的相對距離。</p>
+<p>我們以台服第 175 至 184 期活動的高頻榜線快照，估計一天之中各小時的相對增分速率 ρ̄(<i>h</i>)：把所有相鄰快照之間的增分依台灣時間的小時歸類，再除以該期的平均速率（1 代表該期平均）。以 T100 為競爭者的代表，定義班次的<b>相對排名收益指數</b>：</p>
+<p class="eq"><i>G</i>(<i>h</i>) = 1 ÷ ρ̄<sub>T100</sub>(<i>h</i>)<span class="no">(7.1)</span></p>
+<p class="noind"><i>G</i>(<i>h</i>) = 2 的意思是：在該小時，跑者以同樣的速度遊玩，相對於 T100 附近競爭者拉開的距離，是平均時段的兩倍。圖 7 是結果。</p>
+<div class="fig"><svg viewBox="0 0 600 240" width="100%" role="img" aria-label="相對排名收益指數" xmlns="http://www.w3.org/2000/svg" style="font-family:'Noto Sans CJK TC',sans-serif"><line x1="54" x2="584" y1="200" y2="200" stroke="#e4e3df" stroke-width="1"/><text x="48" y="204" font-size="10.5" fill="#52514e" text-anchor="end">0</text><line x1="54" x2="584" y1="157.5" y2="157.5" stroke="#e4e3df" stroke-width="1"/><text x="48" y="161.5" font-size="10.5" fill="#52514e" text-anchor="end">1</text><line x1="54" x2="584" y1="115" y2="115" stroke="#e4e3df" stroke-width="1"/><text x="48" y="119" font-size="10.5" fill="#52514e" text-anchor="end">2</text><line x1="54" x2="584" y1="72.5" y2="72.5" stroke="#e4e3df" stroke-width="1"/><text x="48" y="76.5" font-size="10.5" fill="#52514e" text-anchor="end">3</text><line x1="54" x2="584" y1="30" y2="30" stroke="#e4e3df" stroke-width="1"/><text x="48" y="34" font-size="10.5" fill="#52514e" text-anchor="end">4</text><text x="48" y="16" font-size="10.5" fill="#7a7873" text-anchor="start" transform="translate(-44,0)">G(h)</text><text x="54" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">0時</text><text x="120.25" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">3時</text><text x="186.5" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">6時</text><text x="252.75" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">9時</text><text x="319" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">12時</text><text x="385.25" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">15時</text><text x="451.5" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">18時</text><text x="517.75" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">21時</text><text x="584" y="216" font-size="10.5" fill="#52514e" text-anchor="middle">24時</text><line x1="54" x2="584" y1="200" y2="200" stroke="#9a9893" stroke-width="1"/><line x1="54" y1="157.5" x2="584" y2="157.5" stroke="#9a9893" stroke-width="1" stroke-dasharray="3 3"/><path d="M65.0,160.9L87.1,162.4L109.2,139.1L131.3,84.2L153.4,41.4L175.5,54.0L197.5,88.2L219.6,82.6L241.7,122.9L263.8,145.6L285.9,148.7L308.0,158.0L330.0,147.6L352.1,160.4L374.2,166.6L396.3,173.4L418.4,169.7L440.5,173.3L462.5,178.8L484.6,172.1L506.7,158.2L528.8,176.5L550.9,168.1L573.0,172.4" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" /><text x="319" y="234" font-size="10.5" fill="#7a7873" text-anchor="middle">台灣時間</text></svg><div class="cap"><b>圖 7</b>各小時的相對排名收益指數 <i>G</i>(<i>h</i>) = 1 ÷ ρ̄<sub>T100</sub>(<i>h</i>)（台灣時間），第 175–184 期共 10 期活動。虛線為 1（平均時段）。</div></div>
+<p>凌晨 3 至 7 時的 <i>G</i> 介於 2.6 與 3.7 之間，4 時最高（3.73）；傍晚 18 時最低（0.50）。換言之，凌晨 4 時的一小時，相對於競爭者的「價值」約為傍晚 18 時的 7.5 倍。這為車隊安排夜間班次（「夜車」）提供了量化的理由：深夜的班次之所以重要，不是因為那時候分數比較好拿，而是因為那時候競爭者大多停下來了。</p>
+<p>需要注意兩點。第一，ρ̄ 混合了活動開跑（多在 15 時）與結算（多在 21 時）前後的衝刺效應，傍晚的低 <i>G</i> 有一部分來自結算前的競爭加劇，而不純粹是作息。第二，<i>G</i> 衡量的是相對於 T100 附近競爭者的收益；對衝更前段名次的跑者，應該使用更高段位的速率剖面，而頂端玩家本身也會以車隊輪班的方式在深夜持續遊玩，因此真正的競爭對手在深夜未必停下。</p>
+
+<h3>7.2　稀缺與價值的錯位</h3>
+<p>夜間班次的價值最高，但它也最難排滿：大多數推手在凌晨需要睡眠。雖然本文沒有實際的報名資料可以直接驗證，但本章的速率剖面（以及本研究組先前對台服活動動態的分析）都顯示，凌晨的整體增分速率只有平均的三分之一左右，推手的可用人數在同一時段很可能也處於低谷。於是車隊面對一個典型的「價值與供給錯位」：最需要人的時段，恰好是最沒有人的時段。</p>
+<p>第六章的模擬為此提供了一個政策上的啟示。人手不足時（λ 小），「不排多開」的效率損失極大（λ = 2 時 13.6%），而倍率優先與先報先上的差別極小（0.9%）。因此在夜間班次，車隊應該盡量允許多開、放寬上車門檻；在人手充裕的晚間班次，才有餘裕追求倍率或參與廣度。目前的車隊設定是全車隊統一的，不隨時段變化；允許依時段套用不同的排位政策，是一個值得考慮的設計方向。</p>
+
+<h3>7.3　跨時段的排班問題</h3>
+<p>現行程序逐格獨立排位。下面的命題說明，在什麼條件下這樣做是最佳的，以及在加入跨時段限制之後問題的結構。</p>
+<div class="prop"><p><span class="pt">命題 6（分解與可解性）。</span>考慮單開、沒有 S6 的情形，目標為加權倍率總和 Σ<sub><i>h</i></sub> <i>w</i><sub><i>h</i></sub> Σ<sub><i>i</i></sub> <i>b</i><sub><i>i</i></sub> <i>x</i><sub><i>ih</i></sub>，其中 <i>x</i><sub><i>ih</i></sub> ∈ {0, 1} 表示成員 <i>i</i> 是否坐上第 <i>h</i> 格，<i>w</i><sub><i>h</i></sub> &gt; 0 為該格的權重，<i>a</i><sub><i>ih</i></sub> ∈ {0, 1} 表示是否報名，每格座位數為 <i>K</i>′ = 4。</p>
+<p>(a) 若沒有跨時段限制，則逐格選出倍率前 <i>K</i>′ 名（即演算法 1 以 δ = 0 排位）為全域最佳解。</p>
+<p>(b) 若加入個人時數上限 Σ<sub><i>h</i></sub> <i>x</i><sub><i>ih</i></sub> ≤ <i>H</i><sub><i>i</i></sub>，問題等價於一個二部圖上的最大權 <i>b</i>-匹配，可化為最小成本流問題，以多項式時間求得整數最佳解；但逐格貪婪一般不再是最佳的。</p>
+<p>(c) 若再加入連續上班時數上限或最短休息時間等限制，問題屬於一般的人員輪值問題，一般而言是 NP 困難的。</p></div>
+<div class="proof"><p><b>證明。</b>(a) 沒有跨時段限制時，目標與限制都可依 <i>h</i> 分解，各格的子問題是「在 <i>a</i><sub><i>ih</i></sub> = 1 的成員中選至多 <i>K</i>′ 人使 Σ <i>b</i><sub><i>i</i></sub> 最大」，其最佳解即倍率前 <i>K</i>′ 名；權重 <i>w</i><sub><i>h</i></sub> &gt; 0 不改變各格的最佳選擇。(b) 建構網路：源點 → 成員 <i>i</i>（容量 <i>H</i><sub><i>i</i></sub>，成本 0）；成員 <i>i</i> → 時段 <i>h</i>（僅當 <i>a</i><sub><i>ih</i></sub> = 1，容量 1，成本 −<i>w</i><sub><i>h</i></sub><i>b</i><sub><i>i</i></sub>）；時段 <i>h</i> → 匯點（容量 <i>K</i>′，成本 0）。可行流與可行班表一一對應，最小成本流即最大加權倍率；由於網路流問題的限制矩陣全幺模（totally unimodular），存在整數最佳解，且可以多項式時間求得（Ahuja et al., 1993）。逐格貪婪不再最佳的反例：成員 A 倍率最高、<i>H</i><sub>A</sub> = 1，報名了權重高的夜間格 <i>h</i><sub>1</sub> 與權重低的晚間格 <i>h</i><sub>2</sub>；若晚間格先被處理，A 被排進 <i>h</i><sub>2</sub> 而耗盡時數，夜間格只能由倍率較低者遞補，總目標低於把 A 排在 <i>h</i><sub>1</sub> 的解。(c) 連續上班與休息限制使各成員的可行班型形成組合結構，一般形式包含已知為 NP 困難的人員輪值問題（Burke et al., 2004）。<span class="qed">□</span></p></div>
+<p>菜根機器人目前以「每人每天／連續上限」設定處理個人時數：它在<b>報名階段</b>擋下超過上限的報名，而不是在排位階段最佳化。這等於以「先報名者先佔用時數」的方式解決命題 6(b) 的耦合，實作簡單、結果容易理解，但如反例所示，可能把高倍率成員的有限時數用在價值較低的時段。若要進一步提升，可以在每日鎖班前，以命題 6(b) 的最小成本流對次日班表做一次全域重排，並以 <i>w</i><sub><i>h</i></sub> = <i>G</i>(<i>h</i>) 或由榜線預測模型估計的時段價值作為權重。這樣的全域重排會犧牲一部分歷史無關性與即時性（成員報名後的結果要到重排時才確定），是否值得，取決於車隊對效率與可預測性的取捨。</p>
+
+<h3>7.4　小結</h3>
+<p>班次的價值隨時段劇烈變化：以相對於 T100 的排名收益衡量，凌晨 4 時約為傍晚 18 時的 7.5 倍。價值最高的夜間班次同時也是人手最可能不足的時段，因此適合採取放寬多開與門檻的政策。在沒有跨時段限制時，逐格貪婪即為最佳；加入個人時數上限後，問題可化為最小成本流，仍可有效求解；再加入連續與休息限制，則進入一般人員輪值問題的困難範疇。</p>
+
+<h2>8　討論：排班作為社會契約</h2>
+
+<h3>8.1　效率與公平的雙重目標</h3>
+<p>第五、六章的結果可以濃縮為一句話：車隊排班的每一條規則，都是在效率與某種公平之間的取捨。倍率優先追求效率；級距與先報先上追求程序公平；不同人優先追求參與廣度；S6 優先追求角色分工。這些規則以字典序疊加，形成了一個在典型情況下效率損失很小（不同人優先不到 1%）、但在競爭激烈時分配高度不均（倍率優先下吉尼係數 0.28–0.41）的系統。</p>
+<p>值得強調的是，這種不均並非缺陷，而是倍率優先制的設計本意：車隊的直接目的是讓跑者衝上名次，座位理應給最能幫上忙的人。問題在於，車隊同時也是一個依賴志願參與的社群。第六章的模擬顯示，在倍率優先制下，倍率最低的五分之一成員在 λ = 8 時只有 11% 的上車率；若這些成員因此退出，車隊在人手不足的時段（特別是第七章所說價值最高的深夜）就更難排滿。效率最大化的規則，可能在長期侵蝕效率本身的基礎。</p>
+<p>從 Ostrom（1990）的觀點，可持續的社群治理需要讓「規則」與「當地條件」相符，並讓受規則影響的人參與規則的制定。菜根機器人把排位順序、級距、多開政策都做成可由各車隊調整的設定，正是把規則選擇權交還給社群；本文的模擬結果，則可以作為車隊討論規則時的參考：人少時放寬、人多時講求參與、需要鼓勵早報名時加寬級距或改用先報先上。</p>
+
+<h3>8.2　誠實申報與聲譽</h3>
+<p>命題 5 指出，倍率優先制對倍率申報不是防策略的。在經濟學的機制設計中，常見的解法是設計「讓說實話成為最佳策略」的機制，例如以第二價格拍賣讓出價者沒有誇大的誘因。但車隊排班沒有金錢轉移，這類工具無法使用。實務中的替代方案是<b>驗證</b>與<b>聲譽</b>：管理員可以修改成員登記的倍率；房間裡的實際表現（例如跑者觀察到的分數）也會暴露誇大的申報；而在一個成員彼此熟識、長期互動的小社群裡，被發現誇大的代價遠高於一次多上車的好處。</p>
+<p>這也解釋了為什麼車隊排班特別依賴「已確認」這一步：一般報名先是待確認、不佔座位，由管理員確認後才進入排位。確認步驟讓人的判斷（包括對成員可信度的判斷）在演算法之前把關。對照先報先上：它對倍率申報是防策略的，卻引入了另一種競爭——搶先報名。開班公告一出，成員必須立刻報名，否則就會落後；這對無法隨時在線的成員同樣不公平。沒有一種優先序能同時消除這兩種扭曲，這是機制設計中常見的不可能性的一個具體案例。</p>
+
+<h3>8.3　人在迴路中</h3>
+<p>演算法 1 是全自動的，但菜根機器人刻意保留了多處人工介入的空間：待確認制度、手動排位（被手動改過的時段不再整段重排）、車隊佔位，以及管理員可隨時換人。從 Dietvorst 等人（2015）的演算法厭惡研究來看，這些設計有其道理：當成員或管理員認為演算法「排錯了」時，若不能覆寫，他們很可能乾脆不用這個系統；而一旦覆寫被尊重，他們就願意在大多數時候讓演算法代勞。</p>
+<p>然而，手動覆寫也是對命題 1（歷史無關性）的有意破壞：手動時段的結果取決於管理員何時、如何介入，而不只是當下的報名集合。這是一個合理的取捨，但車隊應該讓成員知道哪些時段是手動的，以維持可預測性。菜根機器人在班表上標示「手動」狀態，正是為了這個目的。</p>
+<p>第五章揭露的邊界情況，也是人在迴路中的一個案例。規則的文字說明（「先讓每個人的第 1 開入座」）是人與人之間的契約；程式碼則是這份契約的執行。兩者不一致時，即使結果在效率上並不差，也會損害成員對規則的信任。這提醒工具開發者：形式化分析與模擬，不只能用來評估政策，也能用來檢查「程式碼是否做了我們說它會做的事」。</p>
+
+<h3>8.4　互惠、義務與健康</h3>
+<p>推手上車，直接受益的是跑者的名次。車隊之所以能維持，依賴的是互惠（今天我推你，下次你推我）、歸屬感與對跑者目標的認同。排班表因此不只是座位分配，也是一份<b>社會契約</b>：報了班就有準時上車的義務，臨時缺席（社群所稱的「鴿班」）會影響整台車。菜根機器人的簽到面板、開跑前提醒與鴿班紀錄，是把這份契約制度化的工具；鎖班與取消期限，則限制成員在開跑前臨時退出。</p>
+<p>這些制度提高了可靠性，但也增加了成員的負擔。第七章指出夜間班次價值最高，這可能形成一種結構性的壓力：最重要的班次，恰好要求成員犧牲睡眠。我們認為，車隊與工具設計者應該把成員的休息視為一個明確的設計目標，而不是只追求滿座率。命題 6(c) 的連續上班與休息限制雖然讓最佳化變得困難，但「每人每天／連續上限」這類即使不最佳、卻能保護成員的規則，價值不應被低估。</p>
+
+<h3>8.5　研究限制</h3>
+<p>本文有三項主要限制。第一，模擬使用合成資料，政策比較的數值結論依賴於倍率分布、多開比例與報名人數的假設；報名行為被假設為外生，沒有考慮成員因政策而改變的行為。第二，本文分析的是單一機器人的排位程序，其他車隊或工具可能採用不同規則；而程序中有一個可設定函數的原始碼不在分析範圍內（5.4 節）。第三，班次價值的估計只使用了 10 期活動與 T100 的速率剖面，且混入了開跑與結算的效應。</p>
+
+<h2>9　結論</h2>
+
+<h3>9.1　主要發現</h3>
+<p class="noind"><b>RQ1　形式化。</b>車隊排班可以形式化為一個帶有特殊座位（P2/S6）、多單位代理人（多開）與優先序的單格分配問題；實務中的排位程序是一個以倍率（或報名時間）為優先序、加上 S6 優先與兩階段多開政策的序列獨裁變體（演算法 1）。</p>
+<p class="noind"><b>RQ2　性質。</b>此程序具有歷史無關性（命題 1），在沒有 S6 時具有族群單調性（命題 2）。倍率級距在單一序列情形下的效率損失每席不超過 δ（命題 3）；「不同人優先」相對於「一起比」的最壞效率比為 (<i>b</i><sub>max</sub> + 2<i>b</i><sub>min</sub>) ÷ 3<i>b</i><sub>max</sub> ≈ 0.536 且此界是緊的（命題 4）。程序對倍率申報不是防策略的，先報先上則以時間競爭取代申報誘因（命題 5）。形式分析同時揭露了一個規則衝突：P2 推手的第二開會在第一階段插隊，與政策說明不一致，並使命題 3 的上界在實作中失效；一致版修正可以恢復上界，並讓每格平均多 0.01–0.02 位成員上車。</p>
+<p class="noind"><b>RQ3　政策比較。</b>在模擬中，倍率優先比先報先上的座位倍率總和高 0.9%（λ = 2）至 9.2%（λ = 10）；代價是上車機會高度集中，λ = 6 時各倍率五分位的上車率從 23% 到 99%，吉尼係數 0.278（先報先上為 0.031）。不同人優先在典型情況下只犧牲不到 1% 的效率；不排多開在人少時代價高達 13.6%、人多時不到 1%。0.02 的級距幾乎不改變誰上車。</p>
+<p class="noind"><b>RQ4　時間維度。</b>以相對於 T100 的排名收益衡量，凌晨 4 時的班次價值約為傍晚 18 時的 7.5 倍。沒有跨時段限制時，逐格貪婪即為全域最佳；加入個人時數上限後，問題可化為最小成本流；再加入連續與休息限制，則屬一般的 NP 困難輪值問題（命題 6）。</p>
+
+<h3>9.2　對實務的建議</h3>
+<ol>
+<li><b>依時段調整政策：</b>人手不足的時段（尤其深夜）允許多開、放寬門檻；人手充裕時再追求倍率或參與廣度。</li>
+<li><b>讓規則說明與實作一致：</b>修正 P2 推手第二開的插隊，或在說明中明確寫出 P2 持有者的例外。</li>
+<li><b>關注低倍率成員的參與：</b>在競爭激烈的車隊，考慮保留部分座位以先報先上分配，或設定每人上車次數的軟上限，以維持志願參與的基礎。</li>
+<li><b>以全域重排處理時數上限：</b>在每日鎖班前以最小成本流重排次日班表，可以把高倍率成員的有限時數用在價值最高的時段。</li>
+<li><b>把休息當作設計目標：</b>保留並鼓勵使用每人每天與連續上限。</li>
+</ol>
+
+<h3>9.3　未來研究</h3>
+<p>三個方向特別值得延伸。第一，<b>內生的報名行為</b>：以代理人基模型或重複賽局，模擬成員如何依上車率決定是否報名，檢驗倍率優先制是否真的會導致低倍率成員退出、以及何種混合政策能在長期維持最高的總產出。第二，<b>實際班表資料</b>：在取得車隊同意並妥善去識別化之後，以實際的報名與上車紀錄校準模擬參數，並驗證第七章關於夜間人手不足的推論。第三，<b>跨時段的線上最佳化</b>：報名是陸續到達的，如何在不犧牲太多即時性與可預測性的前提下，逐步逼近命題 6(b) 的全域最佳解，是一個具有理論與實務價值的線上演算法問題。</p>
+
+<h3>9.4　結語</h3>
+<p>排班之所以被稱為一門藝術，是因為它要在冷冰冰的座位與倍率之間，照顧到一群活生生的人：想衝名次的跑者、願意陪跑的推手、倍率不高卻每晚都來報名的新人、以及凌晨四點還在線上的那幾位。本文嘗試把這門藝術的一部分寫成定義、命題與模擬，但它的另一部分——信任、互惠與彼此體諒——仍然只能由社群自己來實踐。好的規則與好的工具，能做的是讓這份實踐更公平、更透明，也更可持續。</p>
+
+<h2>參考文獻</h2>
+<div class="ref">
+<p>Abdulkadiroğlu, A., &amp; Sönmez, T. (1998). Random serial dictatorship and the core from random endowments in house allocation problems. <i>Econometrica</i>, 66(3), 689–701.</p>
+<p>Ahuja, R. K., Magnanti, T. L., &amp; Orlin, J. B. (1993). <i>Network flows: Theory, algorithms, and applications</i>. Prentice Hall.</p>
+<p>Benkler, Y. (2006). <i>The wealth of networks: How social production transforms markets and freedom</i>. Yale University Press.</p>
+<p>Bertsimas, D., Farias, V. F., &amp; Trichakis, N. (2011). The price of fairness. <i>Operations Research</i>, 59(1), 17–31.</p>
+<p>Burke, E. K., De Causmaecker, P., Vanden Berghe, G., &amp; Van Landeghem, H. (2004). The state of the art of nurse rostering. <i>Journal of Scheduling</i>, 7(6), 441–499.</p>
+<p>Dietvorst, B. J., Simmons, J. P., &amp; Massey, C. (2015). Algorithm aversion: People erroneously avoid algorithms after seeing them err. <i>Journal of Experimental Psychology: General</i>, 144(1), 114–126.</p>
+<p>Ernst, A. T., Jiang, H., Krishnamoorthy, M., &amp; Sier, D. (2004). Staff scheduling and rostering: A review of applications, methods and models. <i>European Journal of Operational Research</i>, 153(1), 3–27.</p>
+<p>Kücklich, J. (2005). Precarious playbour: Modders and the digital games industry. <i>Fibreculture Journal</i>, 5.</p>
+<p>Olson, M. (1965). <i>The logic of collective action: Public goods and the theory of groups</i>. Harvard University Press.</p>
+<p>Ostrom, E. (1990). <i>Governing the commons: The evolution of institutions for collective action</i>. Cambridge University Press.</p>
+<p>Svensson, L.-G. (1999). Strategy-proof allocation of indivisible goods. <i>Social Choice and Welfare</i>, 16(4), 557–567.</p>
+<p>Taylor, T. L. (2006). <i>Play between worlds: Exploring online game culture</i>. MIT Press.</p>
+<p>Project SEKAI 資源中心研究組（2026）．《色彩、旋律與分數：《世界計畫 繽紛舞台！》台服的量化研究》．Project SEKAI 資源中心．</p>
+<p>菜根機器人開發團隊（2026）．《菜根機器人排班系統說明》．Project SEKAI 資源中心．</p>
+</div>
+
+<h2>附錄 A　模擬設定與重現</h2>
+<p>模擬以 Python 撰寫，只使用標準函式庫，亂數種子固定，可完全重現。排位函數依演算法 1 實作，並以下列對照確認與現行程序一致：S6 優先、多位 S6 時依 S6 倍率保留第一名並把其餘降為推手、P2 由 S6 或排序第一的推手第 1 開佔據、P2 推手的剩餘帳號依第 8–9 行處理、兩階段批次、候補依批次順序。未實作的部分為車隊佔位、同車第二跑者、最低上車倍率與手動標記。</p>
+<div class="tbl"><div class="cap"><b>表 8</b>完整模擬參數</div>
+<table><thead><tr><th>項目</th><th>設定</th></tr></thead><tbody>
+<tr><td>成員池大小</td><td>40</td></tr>
+<tr><td>第 1 開倍率</td><td>N(2.7, 0.45²)，截斷於 [1.18, 3.88]</td></tr>
+<tr><td>開數</td><td>三開 5%、雙開 20%、單開 75%</td></tr>
+<tr><td>第 2、3 開倍率</td><td>第 1 開 − U(0, 0.4)，截斷</td></tr>
+<tr><td>S6 能力</td><td>15% 的成員</td></tr>
+<tr><td>以 S6 身分報名</td><td>具 S6 能力者每次報名機率 0.5</td></tr>
+<tr><td>S6 倍率</td><td>第 1 開 + U(−0.2, 0.3)，截斷</td></tr>
+<tr><td>每格報名人數</td><td>Poisson(λ)，上限為成員池大小，不重複抽取</td></tr>
+<tr><td>報名時間</td><td>U(0, 1)</td></tr>
+<tr><td>級距捨入</td><td>Python round()（與機器人相同）</td></tr>
+<tr><td>政策實驗</td><td>每個 λ 與政策 20,000 格，種子 11</td></tr>
+<tr><td>級距實驗</td><td>λ = 6，20,000 格，種子 5</td></tr>
+<tr><td>公平性實驗</td><td>λ ∈ {4, 6, 8}，30,000 格，種子 3</td></tr>
+<tr><td>效率比實驗</td><td>λ = 4，50,000 格，種子 9</td></tr>
+<tr><td>邊界情況實驗</td><td>λ ∈ {4, 6, 8}，30,000 格，種子 21</td></tr>
+</tbody></table></div>
+<p>上車率以「上車次數 ÷ 報名次數」計算，上車包括 P2–P5 任一座位。吉尼係數以成員的上車次數計算。效率指標「倍率總和」包含 P2 與 P3–P5 所有已入座單位的倍率。</p>
+
+<h2>附錄 B　一致版兩階段政策</h2>
+<p>演算法 1 的第 8–9 行改為下列寫法，即得到第五章所稱的一致版：P2 持有者的第 1 開已經入座，因此他的其餘帳號一律留到第二階段，與其他人的第 2、3 開一起依序補位。</p>
+<div class="algo"><span class="at">演算法 2　一致版的第 8–9 行</span> 8  若 i = i*：
+        Extra 加入 [(i*,2), …, (i*,m_i*)]
+        繼續下一位                              ▷ 不把第 2 開當成他的「第一個單位」
+ 9  否則：First 加入 (i,1)；Extra 加入 [(i,2), …, (i,m_i)]</div>
+<p>這個修改只影響「P2 由多開推手佔據」的時段，在模擬中占 1.7%–5.5%。其效果是讓政策的實際行為與「先讓每個人的第 1 開入座」的說明一致，並恢復命題 3 的級距損失上界；代價是平均每格倍率總和減少 0.004–0.007。車隊若認為 P2 持有者的第 2 開應享有優先，則應保留現行行為，並在規則說明中明列此一例外。</p>
