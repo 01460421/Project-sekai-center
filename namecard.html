@@ -138,6 +138,22 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
       <label class="f" style="flex-direction:row;align-items:center;gap:6px">邊緣
         <select id="edge"><option value="2.6">乾淨（寧可少蓋也不出界）</option><option value="1.6" selected>平衡</option><option value="0.9">蓋滿（出界一點沒關係）</option></select></label>
     </div>
+    <div class="row">
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">整體微調
+        <select id="refine"><option value="0">不用（最快）</option><option value="1" selected>一輪</option><option value="2">兩輪（最細、較久）</option></select></label>
+      <label class="chk"><input type="checkbox" id="lineP">線稿優先（細的深色線條比較會拼出來）</label>
+      <button class="btn sm" id="impOpen" type="button">畫重點區域</button><span class="dim mono" id="impTag" style="font-size:12px"></span>
+    </div>
+    <div id="impBox" hidden style="margin-top:10px">
+      <p class="note">把最重要的地方（眼睛、臉、標誌）塗起來，圖形會優先分給它們，約 3 倍。換裁切範圍也不會跑掉。</p>
+      <div class="row" style="margin:6px 0">
+        <label class="chk"><input type="radio" name="impMode" id="impPen" checked>畫筆</label>
+        <label class="chk"><input type="radio" name="impMode" id="impEra">橡皮擦</label>
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px">筆刷 <input type="range" id="impSize" min="6" max="80" value="28" aria-label="筆刷大小"></label>
+        <button class="btn sm" id="impClear" type="button">清除</button>
+      </div>
+      <canvas id="impCv" style="width:100%;border-radius:10px;touch-action:none;cursor:crosshair;display:block;background:var(--bg-2)" aria-label="重點區域畫布"></canvas>
+    </div>
     <div class="row" style="margin-top:12px">
       <button class="btn pri" id="go">開始拆解</button><button class="btn" id="stop" hidden>停止</button>
       <span class="dim mono" id="stat" aria-live="polite"></span>
@@ -549,6 +565,16 @@ function run(m) {
   // 細節加權：小色塊（眼睛、高光、細線）的每個像素比大色塊值錢，避免圖形全被頭髮、皮膚這種大塊用掉
   const MW = new Float32Array(Rn), ALPHA = m.focus != null ? m.focus : 0.4, AREF = N / 120;
   order.forEach((r, k) => { MW[k] = Math.min(5, Math.max(1, Math.pow(AREF / area[r], ALPHA))); });
+  // 線稿優先：又細（平均寬不到約 3 像素）又比周圍暗的色塊，加權讓它比較會被拼出來
+  if (m.lineP) {
+    const ed = new Float64Array(Rn), nL = new Float64Array(Rn), nW = new Float64Array(Rn);
+    for (let i = 0; i < N; i++) { const r = reg[i], x = i % W; if (x < W - 1 && reg[i + 1] !== r) { ed[r]++; ed[reg[i + 1]]++; } if (i + W < N && reg[i + W] !== r) { ed[r]++; ed[reg[i + W]]++; } }
+    for (const [key, len] of border) { const a = Math.floor(key / Rn), b = key % Rn; nL[a] += len * CL[rankOf[b]][0]; nW[a] += len; nL[b] += len * CL[rankOf[a]][0]; nW[b] += len; }
+    for (let r = 0; r < Rn; r++) { if (!nW[r] || !ed[r]) continue; const k = rankOf[r];
+      if (2 * area[r] / ed[r] < 3.2 && CL[k][0] < nL[r] / nW[r] - 12) MW[k] = Math.min(8, MW[k] * 2.5); }
+  }
+  // 重點區域：使用者塗過的像素值 3 倍
+  const PW = m.imp ? new Float32Array(N).fill(1) : null; if (PW) for (let i = 0; i < N; i++) if (m.imp[i]) PW[i] = 3;
   // 預覽：色塊分區
   const seg = new Uint8ClampedArray(N * 4); for (let i = 0; i < N; i++) { const k = rk[i]; seg[i * 4] = CR[k]; seg[i * 4 + 1] = CG[k]; seg[i * 4 + 2] = CB[k]; seg[i * 4 + 3] = 255; }
   self.postMessage({ type: 'seg', w: W, h: H, buf: seg, regions: Rn }, [seg.buffer]);
@@ -569,9 +595,10 @@ function run(m) {
       for (let x = 0; x < vw; x++, p++) {
         const u = top[p]; let v = 0;
         if (u < i) { const t = rk[p];
-          if (t === i) { v = D[u * Rn + i] * MW[i]; need += v; }
+          if (t === i) { v = D[u * Rn + i] * MW[i] * (PW ? PW[p] : 1); need += v; v /= (PW ? PW[p] : 1); }
           else if (t < i) { const c = D[Di + t] - D[u * Rn + t]; if (c > 0) v = -LAM * c * MW[t] * (bd[p] ? SOFT : 1); }
           else { const c = D[Di + t] - D[u * Rn + t]; if (c > 0) v = -EPS * c * MW[t]; } }
+        if (PW && v) { v *= PW[p]; }
         acc += v; V[o + x + 1] = acc;
       }
     }
@@ -613,6 +640,25 @@ function run(m) {
     const f = search(c.i); if (f) cand.push(f);
   }
   if (!cand.length && out.length < m.n) self.postMessage({ type: 'note', msg: '色塊都貼完了，用了 ' + out.length + ' 個圖形' });
+  // ── 整體微調：每個圖形輪流「拿掉、在其他圖形都在的情況下重新調位置大小角度」；沒用的圖形搬去更需要的地方 ──
+  const rounds = m.refine | 0;
+  if (rounds > 0 && out.length > 2 && !stop) {
+    const repaint = skip => { top.fill(0); for (const o of out) { if (o === skip || o.bg) continue; const n = spans(o); for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let p = row + SP[k + 1], e = row + SP[k + 2]; p <= e; p++) if (top[p] < o.rk) top[p] = o.rk; } } };
+    const list = out.filter(o => !o.bg), total = rounds * list.length; let done = 0;
+    for (let rd = 0; rd < rounds && !stop; rd++) {
+      for (let j = list.length - 1; j > 0; j--) { const q = Math.floor(R() * (j + 1)); const t = list[j]; list[j] = list[q]; list[q] = t; }
+      for (const o of list) {
+        if (stop) break;
+        repaint(o); build(o.rk);
+        const s0 = { t: o.t, x: o.x, y: o.y, w: o.w, h: o.h, a: o.a }, sc0 = score(s0);
+        let best = climb(s0, sc0, Q.fin >> 1);
+        if (best.sc < MIN * 3) { const f = search(o.rk); if (f && f.sc > best.sc) best = f; }   // 原地幾乎沒用：在同一塊找更好的位置
+        if (best.sc > sc0 + 1e-6) { const s = best.s; o.t = s.t; o.x = s.x; o.y = s.y; o.w = s.w; o.h = s.h; o.a = s.t === 't' ? ((s.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) : ((s.a % Math.PI) + Math.PI) % Math.PI; }
+        if (++done % 10 === 0) self.postMessage({ type: 'prep', msg: '整體微調 ' + done + ' / ' + total });
+      }
+    }
+    repaint(null); err = 0; for (let i = 0; i < N; i++) err += e2(top[i], i);
+  }
   out.sort((a, b) => (a.rk - b.rk) || ((a.sq || 0) - (b.sq || 0)));
   self.postMessage({ type: 'done', shapes: out, err, w: W, h: H, regions: Rn });
 }
@@ -631,7 +677,7 @@ const S = { img: null, zoom: 1, cx: 0.5, cy: 0.5, aspect: 2.25, res: null, k: 1,
 function loadFile(f) {
   if (!f || !/^image\//.test(f.type)) return toast('請選圖片檔');
   const url = URL.createObjectURL(f), im = new Image();
-  im.onload = () => { S.img = im; S.zoom = 1; S.cx = 0.5; S.cy = 0.5; $('#zoom').value = 1; $('#drop').hidden = true; $('#cropBox').hidden = false; $('#setCard').hidden = false; drawCrop(); };
+  im.onload = () => { S.img = im; impReset(); S.zoom = 1; S.cx = 0.5; S.cy = 0.5; $('#zoom').value = 1; $('#drop').hidden = true; $('#cropBox').hidden = false; $('#setCard').hidden = false; drawCrop(); };
   im.onerror = () => toast('這個檔案讀不出來');
   im.src = url;
 }
@@ -663,6 +709,7 @@ function drawCrop() {
   x.fillStyle = 'rgba(15,17,23,.55)'; x.beginPath(); x.rect(0, 0, CW, CH); x.rect(ox + r.x * sc, oy + r.y * sc, r.w * sc, r.h * sc); x.fill('evenodd');
   x.strokeStyle = '#fff'; x.lineWidth = 2; x.setLineDash([6, 4]); x.strokeRect(ox + r.x * sc + 1, oy + r.y * sc + 1, r.w * sc - 2, r.h * sc - 2); x.setLineDash([]);
   S._cropMap = { sc, ox, oy };
+  if (!$('#impBox').hidden) impDraw();
 }
 $('#aspect').onchange = drawCrop;
 $('#zoom').oninput = e => { S.zoom = +e.target.value; drawCrop(); };
@@ -675,11 +722,38 @@ $('#fit').onclick = () => { S.zoom = 1; S.cx = 0.5; S.cy = 0.5; $('#zoom').value
   cv.addEventListener('wheel', e => { if (!S.img) return; e.preventDefault(); S.zoom = Math.max(1, Math.min(4, S.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08))); $('#zoom').value = S.zoom; drawCrop(); }, { passive: false });
 })();
 
+/* ── 重點區域：遮罩存在「原圖座標」（長邊最多 1024），所以換裁切不會跑掉 ── */
+function impReset() { if (!S.img) return; const k = Math.min(1, 1024 / Math.max(S.img.naturalWidth, S.img.naturalHeight)); const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(S.img.naturalWidth * k)); c.height = Math.max(1, Math.round(S.img.naturalHeight * k)); S.imp = c; S.impK = k; S.impUsed = false; $('#impTag').textContent = ''; if (!$('#impBox').hidden) impDraw(); }
+function impDraw() {
+  if (!S.img || !S.imp) return; const cv = $('#impCv'), r = cropRect(), W = 720, H = Math.round(W * r.h / r.w);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const x = cv.getContext('2d'); x.clearRect(0, 0, W, H); x.drawImage(S.img, r.x, r.y, r.w, r.h, 0, 0, W, H);
+  x.globalAlpha = 0.5; x.drawImage(S.imp, r.x * S.impK, r.y * S.impK, r.w * S.impK, r.h * S.impK, 0, 0, W, H); x.globalAlpha = 1;
+}
+$('#impOpen').onclick = () => { if (!S.img) return toast('先選一張圖'); const b = $('#impBox'); b.hidden = !b.hidden; $('#impOpen').textContent = b.hidden ? '畫重點區域' : '收起重點區域'; if (!b.hidden) impDraw(); };
+$('#impClear').onclick = () => impReset();
+(() => { const cv = $('#impCv'); let on = false, last = null;
+  const at = e => { const b = cv.getBoundingClientRect(), r = cropRect(); return [(r.x + (e.clientX - b.left) / b.width * r.w) * S.impK, (r.y + (e.clientY - b.top) / b.height * r.h) * S.impK, b.width]; };
+  const dab = e => { const [px, py, bw] = at(e), r = cropRect(), rad = +$('#impSize').value / 2 * (r.w / bw) * S.impK, x = S.imp.getContext('2d');
+    x.globalCompositeOperation = $('#impEra').checked ? 'destination-out' : 'source-over'; x.strokeStyle = x.fillStyle = '#ff3d8b'; x.lineWidth = rad * 2; x.lineCap = 'round';
+    x.beginPath(); if (last) { x.moveTo(last[0], last[1]); x.lineTo(px, py); x.stroke(); } x.beginPath(); x.arc(px, py, rad, 0, 7); x.fill(); x.globalCompositeOperation = 'source-over';
+    last = [px, py]; if (!$('#impEra').checked) { S.impUsed = true; $('#impTag').textContent = '已畫重點'; } impDraw(); };
+  cv.addEventListener('pointerdown', e => { if (!S.imp) return; on = true; last = null; cv.setPointerCapture(e.pointerId); dab(e); });
+  cv.addEventListener('pointermove', e => { if (on) dab(e); });
+  ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => { on = false; last = null; }));
+})();
+// 把裁切範圍內的遮罩縮到工作解析度 → 0/1 陣列（沒畫就不送）
+function impMask(r, w, h) {
+  if (!S.imp || !S.impUsed) return null; const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(S.imp, r.x * S.impK, r.y * S.impK, r.w * S.impK, r.h * S.impK, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data, m = new Uint8Array(w * h); let any = 0; for (let i = 0; i < w * h; i++) if (d[i * 4 + 3] > 40) { m[i] = 1; any++; }
+  return any ? m : null;
+}
 /* ── 2. 設定與執行 ── */
 $('#n').oninput = e => $('#nV').textContent = e.target.value;
 function settings() {
   return { n: +$('#n').value, q: +$('#q').value, types: [['r', '#sR'], ['e', '#sE'], ['t', '#sT']].filter(t => $(t[1]).checked).map(t => t[0]),
-    rot: $('#rot').checked, stretch: $('#str').checked, K: +$('#K').value, detail: +$('#detail').value, minS: +$('#minS').value, edge: +$('#edge').value };
+    rot: $('#rot').checked, stretch: $('#str').checked, K: +$('#K').value, detail: +$('#detail').value, minS: +$('#minS').value, edge: +$('#edge').value, refine: +$('#refine').value, lineP: $('#lineP').checked };
 }
 function workRes(q, ar) { const L = [0, 480, 640, 760][q] || 640; return ar >= 1 ? [L, Math.max(24, Math.round(L / ar))] : [Math.max(24, Math.round(L * ar)), L]; }
 $('#go').onclick = () => {
@@ -711,8 +785,8 @@ $('#go').onclick = () => {
       if (m.i % 4 === 0) { S.k = shapes.length; showResult(true); } }
     else if (m.type === 'note') toast(m.msg);
     else if (m.type === 'error') { toast('出錯了：' + m.msg); finish(true); }
-    else if (m.type === 'done') { S.res.shapes = m.shapes; S.res.sim = 100 * (1 - Math.sqrt(m.err / maxErr)); finish(); } };
-  wk.postMessage({ cmd: 'run', w, h, px, n: st.n, q: st.q, types: st.types, rot: st.rot, stretch: st.stretch, K: st.K, detail: st.detail, minS: st.minS, edge: st.edge, seed: (Math.random() * 4294967296) >>> 0 });
+    else if (m.type === 'done') { S.res.shapes = m.shapes; S.res.sim = 100 * (1 - Math.sqrt(m.err / maxErr)); $('#stat').textContent = m.shapes.length + ' 個圖形　相似度 ' + S.res.sim.toFixed(1) + '%　' + sec(); finish(); } };
+  wk.postMessage({ cmd: 'run', w, h, px, n: st.n, q: st.q, types: st.types, rot: st.rot, stretch: st.stretch, K: st.K, detail: st.detail, minS: st.minS, edge: st.edge, refine: st.refine, lineP: st.lineP, imp: impMask(r, w, h), seed: (Math.random() * 4294967296) >>> 0 });
 };
 $('#stop').onclick = () => { if (S.worker) S.worker.postMessage({ cmd: 'stop' }); };
 function finish(failed) { $('#go').disabled = false; $('#go').textContent = '重新拆解'; $('#stop').hidden = true; $('#progW').hidden = true; if (failed || !S.res.shapes.length) return; S.k = S.res.shapes.length; showResult(); save(); $('#stat').textContent += '　完成'; toast('拆好了：共 ' + S.res.shapes.length + ' 步'); }
