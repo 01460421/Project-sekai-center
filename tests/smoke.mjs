@@ -185,9 +185,12 @@ for (const mobile of [false, true]) {
       const r = await page.evaluate(() => { const R = window.__namecard.S.res; return { n: R.shapes.length, sim: R.sim, regions: R.regions, opaque: R.shapes.every(s => s.al === 1), rows: document.querySelectorAll('#tb tr').length, det: document.querySelector('#det').textContent, first: window.__namecard.lines()[1] || '' }; });
       await page.click('#first'); await page.click('#next');
       const k = await page.evaluate(() => window.__namecard.S.k);
+      // 文字代碼產生器：半透明 50% → 色碼後面接 80
+      await page.fill('#tcText', 'AB'); await page.fill('#tcAlpha', '50'); await page.dispatchEvent('#tcAlpha', 'input');
+      const tc = await page.textContent('#tcOut');
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-      ok = !errors.length && r.n >= 4 && r.n <= 40 && r.regions >= 4 && r.opaque && r.sim > 93 && r.rows === r.n && /第 \d+ 步/.test(r.det) && /底色/.test(r.first) && k === 2 && !(mobile && overflow);
-      why = errors[0] || (r.n < 4 || r.n > 40 ? '圖形數 ' + r.n : r.regions < 4 ? '色塊只分出 ' + r.regions : !r.opaque ? '有半透明圖形' : r.sim <= 93 ? '相似度只有 ' + r.sim : r.rows !== r.n ? '步驟表 ' + r.rows + ' 列' : k !== 2 ? '下一步沒反應' : !/底色/.test(r.first) ? '第一步不是底色' : overflow ? '橫向溢出' : '');
+      ok = !errors.length && r.n >= 4 && r.n <= 40 && r.regions >= 4 && r.opaque && r.sim > 93 && r.rows === r.n && /第 \d+ 步/.test(r.det) && /底色/.test(r.first) && k === 2 && /^<#[0-9a-f]{6}80>AB$/.test(tc) && !(mobile && overflow);
+      why = errors[0] || (r.n < 4 || r.n > 40 ? '圖形數 ' + r.n : r.regions < 4 ? '色塊只分出 ' + r.regions : !r.opaque ? '有半透明圖形' : r.sim <= 93 ? '相似度只有 ' + r.sim : r.rows !== r.n ? '步驟表 ' + r.rows + ' 列' : k !== 2 ? '下一步沒反應' : !/^<#[0-9a-f]{6}80>AB$/.test(tc) ? '文字代碼是 ' + tc : !/底色/.test(r.first) ? '第一步不是底色' : overflow ? '橫向溢出' : '');
     } catch (e) { why = e.message.slice(0, 120); }
     console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' namecard' + (why ? ' — ' + why : ''));
     if (!ok) fail++;

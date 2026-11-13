@@ -69,7 +69,7 @@ input[type=range]{accent-color:var(--acc);min-width:0}
 table.list{width:100%;border-collapse:collapse;font-size:12.5px}table.list th{font-size:11.5px;color:var(--ink-3);font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line-2);position:sticky;top:0;background:var(--panel)}
 table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}table.list tr{cursor:pointer}table.list tr.cur td{background:var(--acc-soft)}
 .lw{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
-.note{font-size:12.5px;color:var(--ink-2);line-height:1.75}.note li{margin-left:1.3em;margin-bottom:3px}
+.tc-out{display:block;padding:10px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg-2);font-family:var(--mono);font-size:13px;word-break:break-all;white-space:pre-wrap}.tc-prev{padding:12px;border-radius:10px;background:#2b2d42;color:#fff;font-size:18px;min-height:28px;word-break:break-all}table.tcref{min-width:640px}table.tcref td{white-space:normal;cursor:default}table.tcref td:first-child{white-space:nowrap}table.tcref tr{cursor:default}.note{font-size:12.5px;color:var(--ink-2);line-height:1.75}.note li{margin-left:1.3em;margin-bottom:3px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;z-index:50;transition:all .25s var(--ease);pointer-events:none;max-width:90vw}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (max-width:860px){.crop,.step{grid-template-columns:1fr}}
 @media (max-width:640px){header{padding:8px 10px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}main{padding:10px}.card{padding:12px}.two{grid-template-columns:1fr}}
@@ -184,6 +184,44 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
       <div class="row" id="palList" style="margin-top:8px;gap:6px"></div></details>
     <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">全部步驟一覽</summary>
       <div class="lw" style="margin-top:8px"><table class="list"><thead><tr><th>#</th><th>圖形</th><th>顏色</th><th>透明</th><th>x</th><th>y</th><th>寬</th><th>高</th><th>角度</th><th>格位</th></tr></thead><tbody id="tb"></tbody></table></div>
+    </details>
+  </div>
+
+  <div class="card" id="tcCard">
+    <h2>文字代碼 <span class="n">名片的文字圖層可以加顏色、透明度、大小等代碼</span></h2>
+    <p class="note">遊戲的文字用的是 TextMeshPro，玩家發現在文字裡加 <span class="mono">&lt;…&gt;</span> 標籤可以改樣式。這是玩家試出來的、不是官方功能：不同機型可能顯示不一樣，日後也可能失效；有玩家說官方曾請大家少用，請自行斟酌。<b>圖形的透明度</b>用編輯器裡圖形本身的透明度設定就好，不需要代碼。</p>
+    <div class="row" style="margin-top:10px;gap:12px;align-items:flex-end">
+      <label class="f" style="flex:1;min-width:200px">文字 <input type="text" id="tcText" value="世界計畫" maxlength="60" aria-label="文字"></label>
+      <label class="chk"><input type="checkbox" id="tcUseColor" checked>顏色</label>
+      <input type="color" id="tcColor" value="#ff8fbf" aria-label="文字顏色" style="width:44px;height:32px;border:0;background:none;padding:0">
+      <label class="f" style="min-width:150px">不透明度 <b id="tcAlphaV" class="mono">100%</b><input type="range" id="tcAlpha" min="0" max="100" step="5" value="100" aria-label="文字不透明度"></label>
+    </div>
+    <div class="row" style="margin-top:8px;gap:10px;align-items:flex-end">
+      <label class="chk"><input type="checkbox" id="tcUseSize">大小</label>
+      <label class="f" style="min-width:150px"><b id="tcSizeV" class="mono">100%</b><input type="range" id="tcSize" min="30" max="300" step="10" value="100" aria-label="文字大小"></label>
+      <label class="chk"><input type="checkbox" id="tcB">粗體</label>
+      <label class="chk"><input type="checkbox" id="tcI">斜體</label>
+      <label class="chk"><input type="checkbox" id="tcU">底線</label>
+      <label class="chk"><input type="checkbox" id="tcS">刪除線</label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">位置 <select id="tcPos"><option value="">一般</option><option value="sub">下標（變小）</option><option value="sup">上標</option></select></label>
+    </div>
+    <div style="margin-top:10px"><div class="dim" style="font-size:12px;margin-bottom:4px">貼進遊戲的文字 <span id="tcLen" class="mono"></span></div><code class="tc-out" id="tcOut"></code></div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="tcCopy">複製代碼</button><span class="dim" style="font-size:12px">預覽只是大概的樣子，實際以遊戲內為準</span></div>
+    <div class="tc-prev" id="tcPrev" style="margin-top:8px" aria-label="預覽"></div>
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">代碼一覽</summary>
+      <div class="lw" style="margin-top:8px"><table class="list tcref"><thead><tr><th>效果</th><th>寫法</th><th>例子</th><th>說明</th></tr></thead><tbody>
+        <tr><td>文字顏色</td><td>&lt;#RRGGBB&gt;　或　&lt;color=#RRGGBB&gt;</td><td>&lt;#ff6699&gt;可愛</td><td>玩家回報可用，也有人用 &lt;color=red&gt; 這種顏色英文名</td></tr>
+        <tr><td>半透明文字</td><td>&lt;#RRGGBBAA&gt;</td><td>&lt;#ffffff80&gt;淡淡的</td><td>最後兩碼是不透明度：00 看不見、80 約一半、FF 不透明</td></tr>
+        <tr><td>簡寫色碼</td><td>&lt;#RGB&gt;　&lt;#RGBA&gt;</td><td>&lt;#f69&gt;短</td><td>玩家回報可用，省字數</td></tr>
+        <tr><td>大小</td><td>&lt;size=150%&gt;</td><td>&lt;size=60%&gt;小字</td><td>也有人寫成 &lt;size=100&gt; 這種數字</td></tr>
+        <tr><td>粗體／斜體／底線</td><td>&lt;b&gt;　&lt;i&gt;　&lt;u&gt;</td><td>&lt;b&gt;重點</td><td>玩家回報可用</td></tr>
+        <tr><td>刪除線</td><td>&lt;s&gt;</td><td>&lt;s&gt;劃掉</td><td>TextMeshPro 標準標籤，沒看到玩家確認</td></tr>
+        <tr><td>下標／上標</td><td>&lt;sub&gt;　&lt;sup&gt;</td><td>&lt;sub&gt;&lt;sub&gt;更小</td><td>&lt;sub&gt; 玩家回報可疊兩層變更小；&lt;sup&gt; 是標準標籤</td></tr>
+        <tr><td>上下微調</td><td>&lt;voffset=-0.1em&gt;</td><td>&lt;voffset=0.3em&gt;往上</td><td>出現在玩家分享的範例裡</td></tr>
+        <tr><td>表情圖示</td><td>&lt;sprite=1&gt;～&lt;sprite=15&gt;</td><td>&lt;sprite=3&gt;</td><td>玩家回報 1～15 有圖</td></tr>
+        <tr><td>文字會動</td><td>（不提供）</td><td>—</td><td>玩家用排版標籤做出滑動、抖動，但社群普遍說可能違反規約、有被鎖帳的例子，這裡不列</td></tr>
+      </tbody></table></div>
+      <p class="note" style="margin-top:6px">標籤後面不用關掉（不用寫 &lt;/b&gt;），到文字結尾自動結束，可以省字數。文字圖層有字數上限（玩家說 50 字），代碼算不算在內沒有確定，上面的字數兩種都列給你。</p>
     </details>
   </div>
 
@@ -802,6 +840,27 @@ function unpack(o) {
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(pack())); } catch (e) { try { const p = pack(); p.tgt = null; localStorage.setItem(KEY, JSON.stringify(p)); } catch (e2) {} } }
 try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) unpack(o); } catch (e) {}
+/* ── 文字代碼產生器 ── */
+function tcBuild() {
+  const t = $('#tcText').value, a = +$('#tcAlpha').value, sz = +$('#tcSize').value, tags = [];
+  $('#tcAlphaV').textContent = a + '%'; $('#tcSizeV').textContent = sz + '%';
+  const col = $('#tcColor').value.toLowerCase(), useC = $('#tcUseColor').checked;
+  if (useC || a < 100) { const base = useC ? col : '#ffffff'; tags.push('<' + base + (a < 100 ? Math.round(a * 255 / 100).toString(16).padStart(2, '0') : '') + '>'); }
+  if ($('#tcUseSize').checked && sz !== 100) tags.push('<size=' + sz + '%>');
+  ['b', 'i', 'u', 's'].forEach(k => { if ($('#tc' + k.toUpperCase()).checked) tags.push('<' + k + '>'); });
+  if ($('#tcPos').value) tags.push('<' + $('#tcPos').value + '>');
+  const code = tags.join('') + t; $('#tcOut').textContent = code;
+  $('#tcLen').textContent = '（含代碼 ' + [...code].length + ' 字／顯示 ' + [...t].length + ' 字）';
+  const p = $('#tcPrev'); p.textContent = t || '　';
+  p.style.color = (useC ? col : '#ffffff') + (a < 100 ? Math.round(a * 255 / 100).toString(16).padStart(2, '0') : '');
+  p.style.fontSize = ($('#tcUseSize').checked ? 18 * sz / 100 : 18) * ($('#tcPos').value ? 0.65 : 1) + 'px';
+  p.style.fontWeight = $('#tcB').checked ? '800' : ''; p.style.fontStyle = $('#tcI').checked ? 'italic' : '';
+  p.style.textDecoration = [$('#tcU').checked ? 'underline' : '', $('#tcS').checked ? 'line-through' : ''].join(' ').trim();
+}
+['#tcText', '#tcColor', '#tcAlpha', '#tcSize'].forEach(id => $(id).addEventListener('input', tcBuild));
+['#tcUseColor', '#tcUseSize', '#tcB', '#tcI', '#tcU', '#tcS', '#tcPos'].forEach(id => $(id).addEventListener('change', tcBuild));
+$('#tcCopy').onclick = () => copy($('#tcOut').textContent, '已複製代碼');
+tcBuild();
 window.__namecard = { S, settings, card, lines };
 
 /* 內嵌在 app 裡：回報內容高度給外層、站內連結改在外層開 */
