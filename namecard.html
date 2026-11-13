@@ -112,10 +112,10 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
   </div>
 
   <div class="card" id="setCard" hidden>
-    <h2>2　設定 <span class="n">照遊戲編輯器能做到的調整；不確定的先用預設</span></h2>
+    <h2>2　設定 <span class="n">先把圖分成平塗色塊，再用圖形的邊去貼齊色塊的邊界</span></h2>
     <div class="row" style="gap:14px;align-items:flex-end">
-      <label class="f" style="flex:1;min-width:220px">圖形數量：<b id="nV" class="mono">100</b> 個（遊戲一張名片最多 150 層，要留給文字、角色等其他物件）
-        <input type="range" id="n" min="10" max="150" step="1" value="100" aria-label="圖形數量"></label>
+      <label class="f" style="flex:1;min-width:220px">圖形數量上限：<b id="nV" class="mono">140</b> 個（遊戲一張名片最多 150 層，要留給文字等其他物件；色塊貼完會自動提早停）
+        <input type="range" id="n" min="10" max="150" step="1" value="140" aria-label="圖形數量上限"></label>
       <label class="f">品質
         <select id="q"><option value="1">快速</option><option value="2" selected>標準</option><option value="3">精細（較久）</option></select></label>
     </div>
@@ -124,17 +124,19 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
       <label class="chk"><input type="checkbox" id="sR" checked>矩形</label>
       <label class="chk"><input type="checkbox" id="sE" checked>橢圓／圓</label>
       <label class="chk"><input type="checkbox" id="sT" checked>三角形</label>
-    </div>
-    <div class="row">
-      <span class="dim" style="font-size:12px;font-weight:700">能怎麼調</span>
+      <span class="dim" style="font-size:12px;font-weight:700;margin-left:6px">能怎麼調</span>
       <label class="chk"><input type="checkbox" id="rot" checked>可以旋轉</label>
       <label class="chk"><input type="checkbox" id="str" checked>長寬可以不一樣</label>
-      <label class="f" style="flex-direction:row;align-items:center;gap:6px">透明度
-        <select id="alpha"><option value="1">全部不透明（最好操作）</option><option value="0.5" selected>固定 50%</option><option value="auto">自動選（100／75／50／25%）</option></select></label>
-      <label class="f" style="flex-direction:row;align-items:center;gap:6px">顏色數
-        <select id="pal"><option value="0" selected>不限（最像）</option><option value="32">最多 32 色</option><option value="16">最多 16 色</option><option value="8">最多 8 色（最好操作）</option></select></label>
-      <label class="f" style="flex-direction:row;align-items:center;gap:6px">最小圖形
-        <select id="minS"><option value="0.01">很小（名片寬 1%）</option><option value="0.02" selected>小（2%）</option><option value="0.04">中（4%）</option><option value="0.07">大（7%）</option></select></label>
+    </div>
+    <div class="row">
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">色塊顏色數
+        <select id="K"><option value="12">12（最好操作）</option><option value="16">16</option><option value="24" selected>24</option><option value="32">32（最像）</option></select></label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">細節
+        <select id="detail"><option value="0.0012">粗略（小色塊併掉）</option><option value="0.0005" selected>一般</option><option value="0.0002">細緻（保留小色塊）</option></select></label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">最細的圖形
+        <select id="minS"><option value="0.003" selected>很細（名片寬 0.3%）</option><option value="0.006">細（0.6%）</option><option value="0.012">中（1.2%）</option><option value="0.025">粗（2.5%）</option></select></label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">邊緣
+        <select id="edge"><option value="2.6">乾淨（寧可少蓋也不出界）</option><option value="1.6" selected>平衡</option><option value="0.9">蓋滿（出界一點沒關係）</option></select></label>
     </div>
     <div class="row" style="margin-top:12px">
       <button class="btn pri" id="go">開始拆解</button><button class="btn" id="stop" hidden>停止</button>
@@ -149,7 +151,7 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
     <div class="step">
       <div>
         <div class="two">
-          <div><div class="t">原圖</div><div class="cv"><canvas id="tgtCv"></canvas></div></div>
+          <div><div class="t" id="tgtT">原圖</div><div class="cv"><canvas id="tgtCv"></canvas></div></div>
           <div><div class="t">疊到第 <span id="kT" class="mono">0</span> 步 <span class="dim" id="simT"></span></div><div class="cv"><canvas id="stepCv"></canvas></div></div>
         </div>
         <div class="row" style="margin-top:10px">
@@ -162,6 +164,7 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
           <label class="chk"><input type="checkbox" id="grid" checked>格線</label>
           <label class="chk"><input type="checkbox" id="hl" checked>框出這一步</label>
           <label class="chk"><input type="checkbox" id="only">只看這一步</label>
+          <label class="chk"><input type="checkbox" id="segV">左圖改看色塊分區</label>
         </div>
       </div>
       <div>
@@ -187,39 +190,53 @@ table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:va
   <div class="card">
     <h2>在遊戲裡怎麼拼</h2>
     <ol class="note">
-      <li>進入個人檔案（名片）的自訂編輯，用工具列的「圖形」新增圖形。照<b>第 1 步到最後一步的順序</b>加，後加的會蓋在前面上面（第 1 步通常是蓋滿全版的底色）。</li>
-      <li>每一步照右邊的形狀、顏色、透明度設好，再拖到位置、拉成對應大小、轉到角度。開著「格線」對照會比較好放。</li>
+      <li>進入個人檔案（名片）的自訂編輯，用工具列的「圖形」新增圖形。照<b>第 1 步到最後一步的順序</b>加，後加的會蓋在前面上面（第 1 步是蓋滿全版的底色）。</li>
+      <li>很多圖形會故意比看到的大、伸到別的色塊底下：那是要讓後面的圖形蓋住、只留下乾淨的邊（像先放整顆眼珠，再用眼皮蓋掉上半）。不要因為看起來太大就縮小。</li>
+      <li>每一步照右邊的形狀、顏色設好（全部不透明），再拖到位置、拉成對應大小、轉到角度。開著「格線」對照會比較好放。</li>
       <li>放的時候位置被自動吸過去、對不準的話，可以試著關掉編輯器的「操作補正」。</li>
       <li>不用每一步都完美：前面的大塊決定整體，後面的小塊補細節；差一點通常看不出來。</li>
-      <li>遊戲裡如果沒有某種圖形、不能旋轉或不能單獨拉長寬，回到第 2 步把那個選項關掉再拆一次。</li>
+      <li>遊戲裡如果沒有某種圖形、不能旋轉或不能單獨拉長寬，回到第 2 步把那個選項關掉再拆一次。打開「左圖改看色塊分區」可以看到程式把圖分成哪些色塊：該分開的黏在一起就加顏色數，雜碎太多就把細節調粗。</li>
     </ol>
   </div>
 </main>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="text/plain" id="wk">
-/* 名片拼圖：每一步隨機產生大量候選圖形，爬山法微調，挑讓整張圖誤差下降最多的那個疊上去（類似 primitive 演算法）。 */
-let W = 0, H = 0, TR, TG, TB, CR, CG, CB, SP, PAL = null, stop = false;
-self.onmessage = e => { const m = e.data; if (m.cmd === 'stop') { stop = true; return; } if (m.cmd === 'run') run(m); };
+/* 名片拼圖（邊緣擬合）
+   1) 分色塊：Lab k-means → 連通區域 → 太小的併進顏色最像的鄰居
+   2) 排上下：一塊被另一塊的凸包包住越多，就越該疊在它上面
+   3) 貼圖形：某色塊的圖形可以伸進「之後才畫」的色塊底下（反正會被蓋掉），但蓋到「已經畫好」的色塊要扣分；
+      圖形因此會頂著色塊邊界長，邊就貼齊了。圖形全部不透明、顏色就是色塊本身的顏色。
+   4) 全域貪婪：每次挑讓畫面誤差下降最多的圖形，用完數量為止；輸出時依色塊上下順序排成步驟。 */
+let W = 0, H = 0, N = 0, SP, stop = false, R = Math.random;
+self.onmessage = e => { const m = e.data; if (m.cmd === 'stop') { stop = true; return; } if (m.cmd === 'run') { try { run(m); } catch (err) { self.postMessage({ type: 'error', msg: String(err && err.message || err) }); } } };
 function rngOf(seed) { let s = (seed >>> 0) || 0x9e3779b9; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
-let R = Math.random;
 const gauss = () => { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-function polySpans(pts) {
-  let n = 0, y0 = Infinity, y1 = -Infinity;
-  for (let i = 0; i < pts.length; i += 2) { if (pts[i + 1] < y0) y0 = pts[i + 1]; if (pts[i + 1] > y1) y1 = pts[i + 1]; }
-  const ya = Math.max(0, Math.ceil(y0 - 0.5)), yb = Math.min(H - 1, Math.floor(y1 - 0.5)), m = pts.length;
+
+/* ── 掃描線：圖形 → 每列 [y, x0, x1]（像素中心落在圖形內） ── */
+const EL = new Float64Array(4096 * 3), EX = new Float64Array(4096 * 3);
+function polySpans(pts) { return polySpansN(pts, pts.length >> 1); }
+function polySpansN(pts, m) {
+  // 凸多邊形：先把每條邊算成（下緣 y、上緣 y、下緣 x、斜率倒數），每列只做加乘
+  let ne = 0, y0 = Infinity, y1 = -Infinity, n = 0;
+  for (let i = 0; i < m; i++) {
+    const ax = pts[2 * i], ay = pts[2 * i + 1], j = i + 1 === m ? 0 : i + 1, bx = pts[2 * j], by = pts[2 * j + 1];
+    if (ay < y0) y0 = ay; if (ay > y1) y1 = ay;
+    if (ay === by) continue;
+    if (ay < by) { EL[ne * 3] = ay; EL[ne * 3 + 1] = by; EX[ne * 3] = ax; } else { EL[ne * 3] = by; EL[ne * 3 + 1] = ay; EX[ne * 3] = bx; }
+    EX[ne * 3 + 1] = (bx - ax) / (by - ay); ne++;
+  }
+  const ya = Math.max(0, Math.ceil(y0 - 0.5)), yb = Math.min(H - 1, Math.floor(y1 - 0.5));
   for (let y = ya; y <= yb; y++) {
     const yc = y + 0.5; let xa = Infinity, xb = -Infinity;
-    for (let i = 0; i < m; i += 2) {
-      const ax = pts[i], ay = pts[i + 1], bx = pts[(i + 2) % m], by = pts[(i + 3) % m];
-      if ((ay <= yc && yc < by) || (by <= yc && yc < ay)) { const x = ax + (yc - ay) * (bx - ax) / (by - ay); if (x < xa) xa = x; if (x > xb) xb = x; }
-    }
+    for (let e = 0; e < ne; e++) { const lo = EL[e * 3]; if (lo <= yc && yc < EL[e * 3 + 1]) { const x = EX[e * 3] + (yc - lo) * EX[e * 3 + 1]; if (x < xa) xa = x; if (x > xb) xb = x; } }
     if (xa === Infinity) continue;
-    const x0 = Math.max(0, Math.ceil(xa - 0.5)), x1 = Math.min(W - 1, Math.floor(xb - 0.5));
+    let x0 = Math.ceil(xa - 0.5), x1 = Math.floor(xb - 0.5); if (x0 < 0) x0 = 0; if (x1 > W - 1) x1 = W - 1;
     if (x0 <= x1) { SP[n++] = y; SP[n++] = x0; SP[n++] = x1; }
   }
   return n;
 }
+const QP = new Float64Array(8);
 function spans(s) {
   const c = Math.cos(s.a), si = Math.sin(s.a), hw = s.w / 2, hh = s.h / 2;
   if (s.t === 'e') {
@@ -234,74 +251,332 @@ function spans(s) {
     }
     return n;
   }
-  const P = s.t === 't' ? [0, -hh, hw, hh, -hw, hh] : [-hw, -hh, hw, -hh, hw, hh, -hw, hh], out = [];
-  for (let i = 0; i < P.length; i += 2) out.push(s.x + P[i] * c - P[i + 1] * si, s.y + P[i] * si + P[i + 1] * c);
-  return polySpans(out);
+  const q = QP, ex = c * hw, ey = si * hw, fx = -si * hh, fy = c * hh;   // ex/ey：本地 x 軸半寬；fx/fy：本地 y 軸半高
+  if (s.t === 't') { q[0] = s.x - fx; q[1] = s.y - fy; q[2] = s.x + ex + fx; q[3] = s.y + ey + fy; q[4] = s.x - ex + fx; q[5] = s.y - ey + fy; return polySpansN(q, 3); }
+  q[0] = s.x - ex - fx; q[1] = s.y - ey - fy; q[2] = s.x + ex - fx; q[3] = s.y + ey - fy; q[4] = s.x + ex + fx; q[5] = s.y + ey + fy; q[6] = s.x - ex + fx; q[7] = s.y - ey + fy;
+  return polySpansN(q, 4);
 }
-/* 這個圖形在透明度 a 下最好的顏色，以及疊上去後總誤差的變化（負的＝變好） */
-function evalShape(s, a) {
-  const n = spans(s); if (!n) return null;
-  let cnt = 0, sr = 0, sg = 0, sb = 0; const ia = 1 - a;
-  for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) { sr += TR[i] - ia * CR[i]; sg += TG[i] - ia * CG[i]; sb += TB[i] - ia * CB[i]; cnt++; } }
-  if (!cnt) return null;
-  const cl = v => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
-  let r = cl(sr / (a * cnt)), g = cl(sg / (a * cnt)), b = cl(sb / (a * cnt));
-  if (PAL) { const q = near(r, g, b); r = q[0]; g = q[1]; b = q[2]; }   // 誤差對顏色是二次式：離最佳色最近的調色盤色就是最佳的調色盤色
-  const ar = a * r, ag = a * g, ab = a * b;
-  let d = 0;
-  for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) {
-    const cr = CR[i], cg = CG[i], cb = CB[i], er = TR[i] - cr, eg = TG[i] - cg, eb = TB[i] - cb, nr = TR[i] - (ia * cr + ar), ng = TG[i] - (ia * cg + ag), nb = TB[i] - (ia * cb + ab);
-    d += nr * nr + ng * ng + nb * nb - er * er - eg * eg - eb * eb; } }
-  return { d, r, g, b, a, n: cnt };
+
+/* ── 1. 分色塊 ── */
+function toLab(r, g, b) {
+  const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const R_ = f(r), G_ = f(g), B_ = f(b);
+  let x = (R_ * 0.4124 + G_ * 0.3576 + B_ * 0.1805) / 0.95047, y = R_ * 0.2126 + G_ * 0.7152 + B_ * 0.0722, z = (R_ * 0.0193 + G_ * 0.1192 + B_ * 0.9505) / 1.08883;
+  const h = v => v > 0.008856 ? Math.cbrt(v) : 7.787 * v + 16 / 116; x = h(x); y = h(y); z = h(z);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
 }
-function near(r, g, b) { let bi = 0, bd = Infinity; for (let i = 0; i < PAL.length; i++) { const p = PAL[i], d = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2; if (d < bd) { bd = d; bi = i; } } return PAL[bi]; }
-function commit(s, v) { const n = spans(s), ia = 1 - v.a; for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) { CR[i] = ia * CR[i] + v.a * v.r; CG[i] = ia * CG[i] + v.a * v.g; CB[i] = ia * CB[i] + v.a * v.b; } } }
-function totalErr() { let s = 0; for (let i = 0; i < W * H; i++) { const a = TR[i] - CR[i], b = TG[i] - CG[i], c = TB[i] - CB[i]; s += a * a + b * b + c * c; } return s; }
-function run(m) {
-  stop = false; W = m.w; H = m.h; R = rngOf(m.seed); PAL = m.pal && m.pal.length ? m.pal : null; const N = W * H, px = m.px;
-  TR = new Float32Array(N); TG = new Float32Array(N); TB = new Float32Array(N); CR = new Float32Array(N); CG = new Float32Array(N); CB = new Float32Array(N); SP = new Int32Array(H * 3 + 6);
-  let mr = 0, mg = 0, mb = 0;
-  for (let i = 0; i < N; i++) { TR[i] = px[i * 4]; TG[i] = px[i * 4 + 1]; TB[i] = px[i * 4 + 2]; mr += TR[i]; mg += TG[i]; mb += TB[i]; }
-  const bg = { r: Math.round(mr / N), g: Math.round(mg / N), b: Math.round(mb / N), a: 1 };
-  if (PAL) { const q = near(bg.r, bg.g, bg.b); bg.r = q[0]; bg.g = q[1]; bg.b = q[2]; }
-  CR.fill(bg.r); CG.fill(bg.g); CB.fill(bg.b);
-  const L = Math.max(W, H), minS = Math.max(1.2, m.minS * W), types = m.types, alphas = m.alpha === 'auto' ? [1, 0.75, 0.5, 0.25] : [+m.alpha];
-  const Q = [null, [160, 3, 90], [500, 4, 180], [1200, 6, 300]][m.q] || [500, 4, 180];
-  const out = [{ t: 'r', x: W / 2, y: H / 2, w: W, h: H, a: 0, r: bg.r, g: bg.g, b: bg.b, al: 1, bg: true }];
-  let err = totalErr();
-  self.postMessage({ type: 'step', i: 0, s: out[0], err, total: m.n });
-  const fixH = s => { if (!m.stretch) s.h = s.t === 't' ? s.w * 0.866 : s.w; return s; };
-  const clampS = s => { s.w = Math.min(Math.max(s.w, minS), L * 1.6); s.h = Math.min(Math.max(s.h, minS), L * 1.6); s.x = Math.min(Math.max(s.x, -W * 0.1), W * 1.1); s.y = Math.min(Math.max(s.y, -H * 0.1), H * 1.1); return fixH(s); };
-  const best = (s) => { let b = null; for (const a of alphas) { const v = evalShape(s, a); if (v && (!b || v.d < b.d)) b = v; } return b; };
-  for (let k = 1; k < m.n && !stop; k++) {
-    const prog = k / m.n, maxS = Math.max(minS * 2, L * (0.7 - 0.55 * prog));
-    const rand = () => { const t = types[Math.floor(R() * types.length)]; const w = minS + Math.pow(R(), 1.6) * (maxS - minS); const h = m.stretch ? minS + Math.pow(R(), 1.6) * (maxS - minS) : w;
-      return clampS({ t, x: R() * W, y: R() * H, w, h, a: m.rot ? (R() * Math.PI) : 0 }); };
-    const pool = [];
-    for (let i = 0; i < Q[0]; i++) { const s = rand(), v = best(s); if (v) pool.push([s, v]); }
-    pool.sort((p, q) => p[1].d - q[1].d);
-    let win = null;
-    for (let j = 0; j < Math.min(Q[1], pool.length); j++) {
-      let [s, v] = pool[j]; let miss = 0;
-      for (let it = 0; it < Q[2] && miss < Q[2]; it++) {
-        const t = Object.assign({}, s), z = R(), step = L * (0.08 - 0.05 * prog);
-        if (z < 0.35) { t.x += gauss() * step; t.y += gauss() * step; }
-        else if (z < 0.6) t.w *= Math.exp(gauss() * 0.22);
-        else if (z < 0.85) { if (m.stretch) t.h *= Math.exp(gauss() * 0.22); else t.w *= Math.exp(gauss() * 0.22); }
-        else if (m.rot) t.a += gauss() * 0.35; else { t.x += gauss() * step; t.y += gauss() * step; }
-        clampS(t); const u = best(t);
-        if (u && u.d < v.d) { s = t; v = u; miss = 0; } else miss++;
-      }
-      if (!win || v.d < win[1].d) win = [s, v];
-    }
-    if (!win || win[1].d >= 0) { self.postMessage({ type: 'note', msg: '已經沒有能讓畫面更接近的圖形了' }); break; }
-    const [s, v] = win; commit(s, v); err += v.d;
-    const o = { t: s.t, x: s.x, y: s.y, w: s.w, h: s.h, a: ((s.a % Math.PI) + Math.PI) % Math.PI, r: v.r, g: v.g, b: v.b, al: v.a };
-    if (s.t === 't') o.a = ((s.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    out.push(o);
-    self.postMessage({ type: 'step', i: k, s: o, err, total: m.n });
+function segment(px, K, minArea) {
+  const LB = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) { const l = toLab(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]); LB[i * 3] = l[0]; LB[i * 3 + 1] = l[1]; LB[i * 3 + 2] = l[2]; }
+  // k-means++（抽樣）
+  const step = Math.max(1, Math.floor(N / 9000)), smp = []; for (let i = 0; i < N; i += step) smp.push(i);
+  const d2 = (i, c) => { const a = LB[i * 3] - c[0], b = LB[i * 3 + 1] - c[1], d = LB[i * 3 + 2] - c[2]; return a * a + b * b + d * d; };
+  const C = [[LB[smp[0] * 3], LB[smp[0] * 3 + 1], LB[smp[0] * 3 + 2]]], dm = new Float64Array(smp.length).fill(Infinity);
+  while (C.length < K) {
+    let tot = 0; const c = C[C.length - 1];
+    for (let j = 0; j < smp.length; j++) { const d = d2(smp[j], c); if (d < dm[j]) dm[j] = d; tot += dm[j]; }
+    if (!tot) break; let t = R() * tot, j = 0; while (j < smp.length - 1 && (t -= dm[j]) > 0) j++;
+    C.push([LB[smp[j] * 3], LB[smp[j] * 3 + 1], LB[smp[j] * 3 + 2]]);
   }
-  self.postMessage({ type: 'done', shapes: out, err, w: W, h: H });
+  const near = i => { let bi = 0, bd = Infinity; for (let k = 0; k < C.length; k++) { const d = d2(i, C[k]); if (d < bd) { bd = d; bi = k; } } return bi; };
+  for (let it = 0; it < 12; it++) {
+    const s = C.map(() => [0, 0, 0, 0]);
+    for (const i of smp) { const k = near(i), q = s[k]; q[0] += LB[i * 3]; q[1] += LB[i * 3 + 1]; q[2] += LB[i * 3 + 2]; q[3]++; }
+    s.forEach((q, k) => { if (q[3]) C[k] = [q[0] / q[3], q[1] / q[3], q[2] / q[3]]; });
+  }
+  const lab = new Int32Array(N); for (let i = 0; i < N; i++) lab[i] = near(i);
+  // 孤立像素（四鄰都不同色）改成鄰居裡最多的那色：去掉反鋸齒雜點
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, v = lab[i], nb = [];
+    if (x > 0) nb.push(lab[i - 1]); if (x < W - 1) nb.push(lab[i + 1]); if (y > 0) nb.push(lab[i - W]); if (y < H - 1) nb.push(lab[i + W]);
+    if (nb.length && !nb.includes(v)) { const c = {}; let bk = nb[0]; for (const k of nb) { c[k] = (c[k] || 0) + 1; if (c[k] > c[bk]) bk = k; } lab[i] = bk; }
+  }
+  // 連通區域
+  const comp = new Int32Array(N).fill(-1), stack = new Int32Array(N); let nc = 0; const area = [];
+  for (let i = 0; i < N; i++) {
+    if (comp[i] >= 0) continue; let sp = 0, a = 0; stack[sp++] = i; comp[i] = nc;
+    while (sp) { const p = stack[--sp]; a++; const x = p % W, v = lab[p];
+      if (x > 0 && comp[p - 1] < 0 && lab[p - 1] === v) { comp[p - 1] = nc; stack[sp++] = p - 1; }
+      if (x < W - 1 && comp[p + 1] < 0 && lab[p + 1] === v) { comp[p + 1] = nc; stack[sp++] = p + 1; }
+      if (p >= W && comp[p - W] < 0 && lab[p - W] === v) { comp[p - W] = nc; stack[sp++] = p - W; }
+      if (p + W < N && comp[p + W] < 0 && lab[p + W] === v) { comp[p + W] = nc; stack[sp++] = p + W; } }
+    area.push(a); nc++;
+  }
+  // 每個區域的像素清單（CSR）與 Lab 總和
+  const st = new Int32Array(nc + 1); for (let i = 0; i < N; i++) st[comp[i] + 1]++; for (let c = 0; c < nc; c++) st[c + 1] += st[c];
+  const pl = new Int32Array(N), fill = st.slice(0, nc); for (let i = 0; i < N; i++) pl[fill[comp[i]]++] = i;
+  const sL = new Float64Array(nc * 3); for (let i = 0; i < N; i++) { const c = comp[i]; sL[c * 3] += LB[i * 3]; sL[c * 3 + 1] += LB[i * 3 + 1]; sL[c * 3 + 2] += LB[i * 3 + 2]; }
+  const par = new Int32Array(nc); for (let c = 0; c < nc; c++) par[c] = c;
+  const find = c => { while (par[c] !== c) { par[c] = par[par[c]]; c = par[c]; } return c; };
+  const mem = new Array(nc);
+  const work = [...Array(nc).keys()].filter(c => area[c] < minArea).sort((a, b) => area[a] - area[b]);
+  for (let w = 0; w < work.length; w++) {
+    const r = find(work[w]); if (area[r] >= minArea) continue;
+    const cnt = new Map(), ms = mem[r] || [r];
+    for (const m of ms) for (let k = st[m]; k < st[m + 1]; k++) { const p = pl[k], x = p % W;
+      const q = [x > 0 ? p - 1 : -1, x < W - 1 ? p + 1 : -1, p - W, p + W];
+      for (const qq of q) if (qq >= 0 && qq < N) { const rq = find(comp[qq]); if (rq !== r) cnt.set(rq, (cnt.get(rq) || 0) + 1); } }
+    if (!cnt.size) continue;
+    let best = -1, bc = Infinity; const ar = area[r];
+    for (const [rq, n] of cnt) { const aq = area[rq], dl = sL[r * 3] / ar - sL[rq * 3] / aq, da = sL[r * 3 + 1] / ar - sL[rq * 3 + 1] / aq, db = sL[r * 3 + 2] / ar - sL[rq * 3 + 2] / aq;
+      const cost = Math.sqrt(dl * dl + da * da + db * db) / Math.sqrt(1 + n); if (cost < bc) { bc = cost; best = rq; } }
+    par[r] = best; area[best] += area[r]; sL[best * 3] += sL[r * 3]; sL[best * 3 + 1] += sL[r * 3 + 1]; sL[best * 3 + 2] += sL[r * 3 + 2];
+    const mb = mem[best] || (mem[best] = [best]); for (const m of ms) mb.push(m); mem[r] = null;
+    if (area[best] < minArea) work.push(best);
+  }
+  const rid = new Int32Array(nc).fill(-1); let Rn = 0; const reg = new Int32Array(N), clu = [];
+  for (let i = 0; i < N; i++) { const r = find(comp[i]); if (rid[r] < 0) { rid[r] = Rn++; clu.push(lab[pl[st[r]]]); } reg[i] = rid[r]; }
+  // 反鋸齒的邊：只有一兩像素寬、顏色剛好介於兩側鄰居之間的細條 → 併進顏色比較近的那一側
+  //（真正的線稿是深色，不會落在兩側顏色的連線上，所以不會被併掉）
+  const ar = new Float64Array(Rn), sl = new Float64Array(Rn * 3), ed = new Float64Array(Rn), nbm = Array.from({ length: Rn }, () => new Map());
+  const link = (a, b) => { ed[a]++; ed[b]++; nbm[a].set(b, (nbm[a].get(b) || 0) + 1); nbm[b].set(a, (nbm[b].get(a) || 0) + 1); };
+  for (let i = 0; i < N; i++) { const r = reg[i], x = i % W; ar[r]++; sl[r * 3] += LB[i * 3]; sl[r * 3 + 1] += LB[i * 3 + 1]; sl[r * 3 + 2] += LB[i * 3 + 2];
+    if (x < W - 1 && reg[i + 1] !== r) link(r, reg[i + 1]); if (i + W < N && reg[i + W] !== r) link(r, reg[i + W]); }
+  const p2 = new Int32Array(Rn); for (let r = 0; r < Rn; r++) p2[r] = r;
+  const f2 = r => { while (p2[r] !== r) r = p2[r] = p2[p2[r]]; return r; };
+  const mean = r => [sl[r * 3] / ar[r], sl[r * 3 + 1] / ar[r], sl[r * 3 + 2] / ar[r]];
+  for (const r of [...Array(Rn).keys()].sort((a, b) => ar[a] - ar[b])) {
+    if (ar[r] > N * 0.02 || 2 * ar[r] / Math.max(1, ed[r]) > 1.8) continue;
+    const nbs = [...nbm[r].entries()].sort((a, b) => b[1] - a[1]); if (nbs.length < 2) continue;
+    const n1 = nbs[0][0], n2 = nbs[1][0], c = mean(r), c1 = mean(n1), c2 = mean(n2), d = [c2[0] - c1[0], c2[1] - c1[1], c2[2] - c1[2]], l2 = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+    if (l2 < 100) continue;
+    const t = Math.max(0, Math.min(1, ((c[0] - c1[0]) * d[0] + (c[1] - c1[1]) * d[1] + (c[2] - c1[2]) * d[2]) / l2));
+    const dist = Math.hypot(c[0] - c1[0] - t * d[0], c[1] - c1[1] - t * d[1], c[2] - c1[2] - t * d[2]);
+    if (dist < 0.3 * Math.sqrt(l2) + 3) p2[r] = f2(t < 0.5 ? n1 : n2);
+  }
+  const id2 = new Int32Array(Rn).fill(-1); let R2 = 0; const clu2 = [];
+  for (let i = 0; i < N; i++) { const r = f2(reg[i]); if (id2[r] < 0) { id2[r] = R2++; clu2.push(clu[r]); } reg[i] = id2[r]; }
+  return { reg, Rn: R2, clu: clu2 };
+}
+
+/* ── 2. 相鄰關係與凸包線索 ── */
+function hullOf(pts) {
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  lo.pop(); up.pop(); return lo.concat(up);
+}
+function adjacency(reg, Rn, area) {
+  const e0 = new Int32Array(Rn * H).fill(-1), e1 = new Int32Array(Rn * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = reg[y * W + x] * H + y; if (e0[k] < 0) e0[k] = x; e1[k] = x; }
+  const border = new Map(), nb = Array.from({ length: Rn }, () => []);
+  const addB = (a, b) => { if (a === b) return; const k = a < b ? a * Rn + b : b * Rn + a; const v = border.get(k); if (v === undefined) { border.set(k, 1); nb[a].push(b); nb[b].push(a); } else border.set(k, v + 1); };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; if (x < W - 1) addB(reg[i], reg[i + 1]); if (y < H - 1) addB(reg[i], reg[i + W]); }
+  // inH[b*Rn+a]：a 有多少比例落在 b 的凸包裡（越多，b 越像是延伸到 a 底下）
+  const tally = new Int32Array(Rn), inH = new Map();
+  for (let b = 0; b < Rn; b++) {
+    if (!nb[b].length) continue; const pts = [];
+    for (let y = 0; y < H; y++) { const k = b * H + y; if (e0[k] >= 0) pts.push([e0[k], y], [e0[k], y + 1], [e1[k] + 1, y], [e1[k] + 1, y + 1]); }
+    const hp = hullOf(pts), flat = []; for (const p of hp) flat.push(p[0], p[1]);
+    const n = polySpans(flat), touched = [];
+    for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) { const r = reg[i]; if (!tally[r]++) touched.push(r); } }
+    for (const a of nb[b]) inH.set(b * Rn + a, tally[a] / area[a]);
+    for (const r of touched) tally[r] = 0;
+  }
+  return { nb, border, inH };
+}
+
+/* ── 3、4. 排上下、貼圖形 ── */
+function run(m) {
+  stop = false; W = m.w; H = m.h; N = W * H; R = rngOf(m.seed); SP = new Int32Array(H * 3 + 6);
+  const px = m.px, minS = Math.max(1, m.minS * W), types = m.types, LAM = m.edge || 1.6, EPS = m.eps != null ? m.eps : 0.35, SOFT = 0.35;
+  const Q = [null, { seeds: 6, it: 60, top: 2, fin: 140, of: 40 }, { seeds: 12, it: 90, top: 3, fin: 260, of: 70 }, { seeds: 22, it: 140, top: 4, fin: 480, of: 110 }][m.q] || { seeds: 12, it: 90, top: 3, fin: 260, of: 70 };
+  const minArea = Math.max(4, Math.round(m.detail * N));
+  const { reg, Rn, clu } = segment(px, m.K, minArea);
+  self.postMessage({ type: 'prep', msg: '分出 ' + Rn + ' 個色塊，排上下順序中…' });
+  // 每塊（原編號）的顏色（取內部像素平均，避開反鋸齒邊）、面積、像素清單、外框
+  const area = new Float64Array(Rn), sum = new Float64Array(Rn * 4), bd = new Uint8Array(N);
+  for (let i = 0; i < N; i++) { const r = reg[i], x = i % W; area[r]++;
+    const edge = (x > 0 && reg[i - 1] !== r) || (x < W - 1 && reg[i + 1] !== r) || (i >= W && reg[i - W] !== r) || (i + W < N && reg[i + W] !== r);
+    bd[i] = edge ? 1 : 0; const wgt = edge ? 0.05 : 1; sum[r * 4] += px[i * 4] * wgt; sum[r * 4 + 1] += px[i * 4 + 1] * wgt; sum[r * 4 + 2] += px[i * 4 + 2] * wgt; sum[r * 4 + 3] += wgt; }
+  const csr = lab => { const ps = new Int32Array(Rn + 1); for (let i = 0; i < N; i++) ps[lab[i] + 1]++; for (let k = 0; k < Rn; k++) ps[k + 1] += ps[k];
+    const pl = new Int32Array(N), pf = ps.slice(0, Rn); for (let i = 0; i < N; i++) pl[pf[lab[i]]++] = i;
+    const b = [new Int32Array(Rn).fill(W), new Int32Array(Rn).fill(H), new Int32Array(Rn).fill(-1), new Int32Array(Rn).fill(-1)];
+    for (let i = 0; i < N; i++) { const k = lab[i], x = i % W, y = (i - x) / W; if (x < b[0][k]) b[0][k] = x; if (x > b[2][k]) b[2][k] = x; if (y < b[1][k]) b[1][k] = y; if (y > b[3][k]) b[3][k] = y; }
+    return { ps, pl, bx0: b[0], by0: b[1], bx1: b[2], by1: b[3] }; };
+
+  // ── 價值圖與爬山（共用） ──
+  let V = null, vx = 0, vy = 0, vw = 0, vh = 0;
+  function win(x0, y0, x1, y1, pad) {
+    const mg = Math.max(6, Math.round(pad * Math.max(x1 - x0 + 1, y1 - y0 + 1)));
+    vx = Math.max(0, x0 - mg); vy = Math.max(0, y0 - mg); vw = Math.min(W, x1 + mg + 1) - vx; vh = Math.min(H, y1 + mg + 1) - vy;
+    const sw = vw + 1; if (!V || V.length < sw * vh) V = new Float64Array(Math.ceil(sw * vh * 1.3));
+  }
+  function score(s) {
+    // 先用外接框排除跑出視窗的（視窗貼著畫布邊時，超出畫布不算）
+    const c = Math.abs(Math.cos(s.a)), si = Math.abs(Math.sin(s.a)), hx = (s.w * c + s.h * si) / 2, hy = (s.w * si + s.h * c) / 2;
+    if ((vx > 0 && s.x - hx < vx - 0.5) || (vy > 0 && s.y - hy < vy - 0.5) || (vx + vw < W && s.x + hx > vx + vw + 0.5) || (vy + vh < H && s.y + hy > vy + vh + 0.5)) return -1e18;
+    const n = spans(s); if (!n) return -1e18; let sc = 0; const sw = vw + 1;
+    for (let k = 0; k < n; k += 3) { const y = SP[k] - vy, x0 = SP[k + 1] - vx, x1 = SP[k + 2] - vx;
+      if (y < 0 || y >= vh || x0 < 0 || x1 >= vw) return -1e18;
+      sc += V[y * sw + x1 + 1] - V[y * sw + x0]; }
+    return sc;
+  }
+  const L = Math.max(W, H);
+  const fix = s => {
+    if (!m.rot) s.a = 0;
+    s.w = Math.min(Math.max(s.w, minS), L * 2); s.h = Math.min(Math.max(s.h, minS), L * 2);
+    if (!m.stretch) { if (s.t === 't') s.h = s.w * 0.866; else s.h = s.w; }
+    return s;
+  };
+  function climb(s, sc, iters) {
+    let miss = 0, k = 1;
+    for (let it = 0; it < iters; it++) {
+      const t = { t: s.t, x: s.x, y: s.y, w: s.w, h: s.h, a: s.a }, z = R(), sz = Math.max(t.w, t.h);
+      if (z < 0.22) { t.x += gauss() * 0.08 * sz * k + gauss() * 0.4; t.y += gauss() * 0.08 * sz * k + gauss() * 0.4; }
+      else if (z < 0.36) t.w *= Math.exp(gauss() * 0.12 * k);
+      else if (z < 0.5) t.h *= Math.exp(gauss() * 0.12 * k);
+      else if (z < 0.64 && m.rot) t.a += gauss() * 0.1 * k;
+      else { // 推單一條邊：只動一側，另一側不動
+        const ax = R() < 0.5, d = gauss() * 0.1 * (ax ? t.w : t.h) * k + gauss() * 0.5, sg = R() < 0.5 ? -1 : 1, c = Math.cos(t.a), si = Math.sin(t.a);
+        if (ax) { t.w += d; t.x += c * d / 2 * sg; t.y += si * d / 2 * sg; } else { t.h += d; t.x -= si * d / 2 * sg; t.y += c * d / 2 * sg; }
+        if (t.w < minS || t.h < minS) continue;
+      }
+      fix(t); const v = score(t);
+      if (v > sc) { s = t; sc = v; miss = 0; k = Math.min(1.5, k * 1.1); } else if (++miss % 20 === 0) k = Math.max(0.15, k * 0.6);
+    }
+    return { s, sc };
+  }
+  function inits(cx, cy, s1, s2, th) {
+    const o = [];
+    for (const t of types) {
+      if (t === 'r') o.push({ t, x: cx, y: cy, w: s1 * 3.46, h: s2 * 3.46, a: th });
+      else if (t === 'e') o.push({ t, x: cx, y: cy, w: s1 * 4, h: s2 * 4, a: th });
+      else { o.push({ t, x: cx, y: cy, w: s2 * 4.2, h: s1 * 4.2, a: th + Math.PI / 2 }); o.push({ t, x: cx, y: cy, w: s2 * 4.2, h: s1 * 4.2, a: th - Math.PI / 2 }); }
+    }
+    return o.map(fix);
+  }
+  // 從清單裡（ok 篩選）以 (cx,cy) 為中心、半徑 rad 的像素做主成分分析 → 初始圖形
+  function pca(pl, a0, a1, ok, cx, cy, rad) {
+    const cnt = a1 - a0, stride = Math.max(1, Math.floor(cnt / 3000)); let n = 0, mx = 0, my = 0, xx = 0, yy = 0, xy = 0;
+    for (let k = a0 + Math.floor(R() * stride); k < a1; k += stride) { const q = pl[k]; if (!ok(q)) continue; const x = q % W, y = (q - x) / W, dx = x - cx, dy = y - cy; if (dx * dx + dy * dy > rad * rad) continue;
+      n++; mx += x; my += y; xx += x * x; yy += y * y; xy += x * y; }
+    if (!n) return null; mx /= n; my /= n; const cxx = xx / n - mx * mx + stride / 12, cyy = yy / n - my * my + stride / 12, cxy = xy / n - mx * my;
+    const tr = cxx + cyy, dt = Math.sqrt(Math.max(0, (cxx - cyy) ** 2 / 4 + cxy * cxy));
+    return inits(mx + 0.5, my + 0.5, Math.sqrt(tr / 2 + dt), Math.sqrt(Math.max(0.08, tr / 2 - dt)), 0.5 * Math.atan2(2 * cxy, cxx - cyy));
+  }
+
+  // ── 排上下：試著把 A 擬合成一個圖形，「允許伸到 B 底下」能多蓋多少 → A 在 B 下面的傾向 ──
+  const G = csr(reg), { nb, border, inH } = adjacency(reg, Rn, area);
+  // 價值圖：a 的像素 +1、allow 的像素 0（可以鑽到它底下）、其他 −2（邊界像素從輕）
+  function fitMap(a, allow) {
+    win(G.bx0[a], G.by0[a], G.bx1[a], G.by1[a], 0.5); const sw = vw + 1;
+    for (let y = 0; y < vh; y++) { let acc = 0, o = y * sw, p = (y + vy) * W + vx; V[o] = 0;
+      for (let x = 0; x < vw; x++, p++) { const t = reg[p]; acc += t === a ? 1 : t === allow ? 0 : (bd[p] ? -0.7 : -2); V[o + x + 1] = acc; } }
+  }
+  function fitOne(a, allow, warm) {
+    fitMap(a, allow);
+    const a0 = G.ps[a], a1 = G.ps[a + 1], all = () => true; let best = warm ? { s: warm, sc: score(warm) } : null;
+    const seeds = [null, pl0(a0, a1), pl0(a0, a1)];
+    for (const sd of seeds) {
+      const ini = sd == null ? pca(G.pl, a0, a1, all, 0, 0, 1e9) : pca(G.pl, a0, a1, all, sd % W, (sd - sd % W) / W, Math.sqrt(area[a]) * 0.6 + 2);
+      if (!ini) continue; for (const s of ini) { const r = climb(s, score(s), Q.of); if (!best || r.sc > best.sc) best = r; }
+    }
+    return best ? climb(best.s, best.sc, Q.of * 2) : null;
+  }
+  const pl0 = (a0, a1) => G.pl[a0 + Math.floor(R() * (a1 - a0))];
+  const under = new Map();
+  for (let a = 0; a < Rn && !stop; a++) {
+    if (area[a] < 12) continue;
+    const b0 = fitOne(a, -1); if (!b0) continue; let base = b0.sc;
+    const tries = [];
+    for (const b of nb[a]) if (area[b] >= 12 && (border.get(a < b ? a * Rn + b : b * Rn + a) || 0) >= 3) { const r = fitOne(a, b, b0.s); if (r) tries.push([b, r]); }
+    // 允許 b 之後找到的圖形，如果在「不准碰 b」時也一樣好，那是爬山運氣不是 b 的功勞：用它抬高基準
+    for (const [, r] of tries) { fitMap(a, -1); const v = score(r.s); if (v > base) base = v; }
+    for (const [b, r] of tries) under.set(a * Rn + b, Math.max(0, r.sc - base) / area[a]);
+  }
+  // d(a 在 b 上面) = b 想鑽到 a 底下的程度 − a 想鑽到 b 底下的程度（＋一點凸包線索）
+  const dAbove = (a, b) => { const d = (under.get(b * Rn + a) || 0) - (under.get(a * Rn + b) || 0) + 0.25 * ((inH.get(b * Rn + a) || 0) - (inH.get(a * Rn + b) || 0)); return Math.abs(d) < 0.05 ? 0 : d; };   // 太小的差當成雜訊
+  // 由下往上貪婪：每次放「現在放到最底下最不違反偏好」的那塊；同分放大的
+  const placed = new Uint8Array(Rn), order = [];
+  const bL = (a, b) => border.get(a < b ? a * Rn + b : b * Rn + a) || 0;
+  for (let k = 0; k < Rn; k++) {
+    let bi = -1, bc = Infinity;
+    for (let r = 0; r < Rn; r++) { if (placed[r]) continue; let c = 0, ls = 0;
+      for (const n of nb[r]) if (!placed[n]) { const l = bL(r, n); ls += l; const d = dAbove(r, n); if (d > 0) c += l * d; }
+      c = ls ? c / ls : 0; c -= 1e-7 * area[r];   // 同分時大的先放（在底下）
+      if (c < bc) { bc = c; bi = r; } }
+    placed[bi] = 1; order.push(bi);
+  }
+  const rankOf = new Int32Array(Rn); order.forEach((r, k) => rankOf[r] = k);
+  const CR = new Uint8Array(Rn), CG = new Uint8Array(Rn), CB = new Uint8Array(Rn), CL = [];
+  // 同一群（k-means 同一色）的色塊用同一個顏色：顏色數不會超過設定，遊戲裡同一個色碼可以一直沿用
+  const cs = new Float64Array(m.K * 4); for (let r = 0; r < Rn; r++) { const c = clu[r]; for (let j = 0; j < 4; j++) cs[c * 4 + j] += sum[r * 4 + j]; }
+  order.forEach((r, k) => { const c = clu[r], w = cs[c * 4 + 3]; CR[k] = Math.round(cs[c * 4] / w); CG[k] = Math.round(cs[c * 4 + 1] / w); CB[k] = Math.round(cs[c * 4 + 2] / w); CL.push(toLab(CR[k], CG[k], CB[k])); });
+  const D = new Float32Array(Rn * Rn);
+  for (let a = 0; a < Rn; a++) for (let b = a + 1; b < Rn; b++) { const p = CL[a], q = CL[b], d = Math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2); D[a * Rn + b] = D[b * Rn + a] = d; }
+  const rk = new Int32Array(N); for (let i = 0; i < N; i++) rk[i] = rankOf[reg[i]];
+  // 細節加權：小色塊（眼睛、高光、細線）的每個像素比大色塊值錢，避免圖形全被頭髮、皮膚這種大塊用掉
+  const MW = new Float32Array(Rn), ALPHA = m.focus != null ? m.focus : 0.4, AREF = N / 120;
+  order.forEach((r, k) => { MW[k] = Math.min(5, Math.max(1, Math.pow(AREF / area[r], ALPHA))); });
+  // 預覽：色塊分區
+  const seg = new Uint8ClampedArray(N * 4); for (let i = 0; i < N; i++) { const k = rk[i]; seg[i * 4] = CR[k]; seg[i * 4 + 1] = CG[k]; seg[i * 4 + 2] = CB[k]; seg[i * 4 + 3] = 255; }
+  self.postMessage({ type: 'seg', w: W, h: H, buf: seg, regions: Rn }, [seg.buffer]);
+  const { ps, pl, bx0, by0, bx1, by1 } = csr(rk);
+  // 目前畫面：每個像素最上面是第幾塊的顏色（一開始全是底色＝第 0 塊）
+  const top = new Int32Array(N);
+  let err = 0; const e2 = (k, i) => { const a = CR[k] - px[i * 4], b = CG[k] - px[i * 4 + 1], c = CB[k] - px[i * 4 + 2]; return a * a + b * b + c * c; };
+  for (let i = 0; i < N; i++) err += e2(0, i);
+  const out = [{ t: 'r', x: W / 2, y: H / 2, w: W, h: H, a: 0, r: CR[0], g: CG[0], b: CB[0], al: 1, bg: true, rk: 0 }];
+  self.postMessage({ type: 'step', i: 0, s: out[0], err, total: m.n });
+
+  let need = 0;
+  function build(i) {
+    win(bx0[i], by0[i], bx1[i], by1[i], 0.6); const sw = vw + 1;
+    need = 0; const Di = i * Rn;
+    for (let y = 0; y < vh; y++) {
+      let acc = 0, o = y * sw, p = (y + vy) * W + vx; V[o] = 0;
+      for (let x = 0; x < vw; x++, p++) {
+        const u = top[p]; let v = 0;
+        if (u < i) { const t = rk[p];
+          if (t === i) { v = D[u * Rn + i] * MW[i]; need += v; }
+          else if (t < i) { const c = D[Di + t] - D[u * Rn + t]; if (c > 0) v = -LAM * c * MW[t] * (bd[p] ? SOFT : 1); }
+          else { const c = D[Di + t] - D[u * Rn + t]; if (c > 0) v = -EPS * c * MW[t]; } }
+        acc += v; V[o + x + 1] = acc;
+      }
+    }
+  }
+  function search(i, lite) {
+    build(i); if (need < MIN) return null;
+    const Qs = lite ? Math.max(3, Q.seeds >> 2) : Q.seeds, Qi = lite ? Q.it >> 1 : Q.it, Qt = lite ? 1 : Q.top, Qf = lite ? Q.fin >> 2 : Q.fin;
+    const a0 = ps[i], a1 = ps[i + 1], cnt = a1 - a0, pool = [], ok = q => top[q] < i;
+    for (let sd = 0; sd < Qs; sd++) {
+      let p = -1; for (let tr = 0; tr < 40; tr++) { const q = pl[a0 + Math.floor(R() * cnt)]; if (top[q] < i) { p = q; break; } } if (p < 0) break;
+      const rad = Math.max(2 * minS, [0.35, 0.7, 1.4, 3][sd % 4] * Math.sqrt(need / 30 + 1));
+      const ini = pca(pl, a0, a1, ok, p % W, (p - p % W) / W, rad); if (!ini) continue;
+      for (const s of ini) pool.push(climb(s, score(s), Qi));
+    }
+    if (!pool.length) return null;
+    pool.sort((a, b) => b.sc - a.sc);
+    let best = null; for (let j = 0; j < Math.min(Qt, pool.length); j++) { const r = climb(pool[j].s, pool[j].sc, Qf); if (!best || r.sc > best.sc) best = r; }
+    return best && best.sc > MIN ? { i, s: best.s, sc: best.sc, re: 0, lite: !!lite } : null;
+  }
+  const MIN = 12;
+  const cand = [];
+  for (let i = 1; i < Rn && !stop; i++) { const c = search(i, true); if (c) cand.push(c); }
+  let seq = 0;
+  while (out.length < m.n && cand.length && !stop) {
+    let bi = 0; for (let j = 1; j < cand.length; j++) if (cand[j].sc > cand[bi].sc) bi = j;
+    let c = cand[bi]; cand.splice(bi, 1);
+    if (c.lite) { const f = search(c.i); if (f) { if (f.sc < c.sc * 0.9 && c.sc > MIN) { build(c.i); const sc0 = score(c.s); if (sc0 > f.sc) { f.s = c.s; f.sc = sc0; } } cand.push(f); } continue; }
+    build(c.i); let sc = score(c.s);
+    let nx = 0; for (const o of cand) if (o.sc > nx) nx = o.sc;
+    if (sc < nx * 0.97 && c.re < 3) { const r = climb(c.s, sc, Q.it); c.s = r.s; c.sc = r.sc; c.re++; if (c.sc > MIN) cand.push(c); else { const f = search(c.i); if (f) cand.push(f); } continue; }
+    if (sc <= MIN) { const f = search(c.i); if (f && c.re < 3) { f.re = c.re + 1; cand.push(f); } continue; }
+    // 疊上去
+    const s = c.s, n = spans(s);
+    for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let p = row + SP[k + 1], e = row + SP[k + 2]; p <= e; p++) if (top[p] < c.i) { err += e2(c.i, p) - e2(top[p], p); top[p] = c.i; } }
+    const o = { t: s.t, x: s.x, y: s.y, w: s.w, h: s.h, a: s.a, r: CR[c.i], g: CG[c.i], b: CB[c.i], al: 1, rk: c.i, sq: ++seq };
+    o.a = s.t === 't' ? ((o.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) : ((o.a % Math.PI) + Math.PI) % Math.PI;
+    out.push(o);
+    self.postMessage({ type: 'step', i: out.length - 1, s: o, err, total: m.n });
+    const f = search(c.i); if (f) cand.push(f);
+  }
+  if (!cand.length && out.length < m.n) self.postMessage({ type: 'note', msg: '色塊都貼完了，用了 ' + out.length + ' 個圖形' });
+  out.sort((a, b) => (a.rk - b.rk) || ((a.sq || 0) - (b.sq || 0)));
+  self.postMessage({ type: 'done', shapes: out, err, w: W, h: H, regions: Rn });
 }
 </script>
 
@@ -366,25 +641,9 @@ $('#fit').onclick = () => { S.zoom = 1; S.cx = 0.5; S.cy = 0.5; $('#zoom').value
 $('#n').oninput = e => $('#nV').textContent = e.target.value;
 function settings() {
   return { n: +$('#n').value, q: +$('#q').value, types: [['r', '#sR'], ['e', '#sE'], ['t', '#sT']].filter(t => $(t[1]).checked).map(t => t[0]),
-    rot: $('#rot').checked, stretch: $('#str').checked, alpha: $('#alpha').value, minS: +$('#minS').value, pal: +$('#pal').value };
+    rot: $('#rot').checked, stretch: $('#str').checked, K: +$('#K').value, detail: +$('#detail').value, minS: +$('#minS').value, edge: +$('#edge').value };
 }
-/* 從原圖抽 K 個代表色（k-means++，固定種子） */
-function palette(px, K) {
-  if (!K) return null;
-  const n = px.length / 4, step = Math.max(1, Math.floor(n / 6000)), pts = [];
-  for (let i = 0; i < n; i += step) pts.push([px[i * 4], px[i * 4 + 1], px[i * 4 + 2]]);
-  let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-  const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
-  const C = [pts[Math.floor(rnd() * pts.length)].slice()];
-  while (C.length < K) { const ds = pts.map(p => Math.min(...C.map(c => d2(p, c)))), tot = ds.reduce((a, b) => a + b, 0); let t = rnd() * tot, i = 0; while (i < ds.length - 1 && (t -= ds[i]) > 0) i++; C.push(pts[i].slice()); }
-  for (let it = 0; it < 12; it++) {
-    const sum = C.map(() => [0, 0, 0, 0]);
-    for (const p of pts) { let bi = 0, bd = Infinity; for (let j = 0; j < C.length; j++) { const d = d2(p, C[j]); if (d < bd) { bd = d; bi = j; } } const s = sum[bi]; s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; s[3]++; }
-    sum.forEach((s, j) => { if (s[3]) C[j] = [s[0] / s[3], s[1] / s[3], s[2] / s[3]]; });
-  }
-  return C.map(c => c.map(v => Math.round(v)));
-}
-function workRes(q, ar) { const L = [0, 180, 256, 320][q] || 256; return ar >= 1 ? [L, Math.max(24, Math.round(L / ar))] : [Math.max(24, Math.round(L * ar)), L]; }
+function workRes(q, ar) { const L = [0, 480, 640, 760][q] || 640; return ar >= 1 ? [L, Math.max(24, Math.round(L / ar))] : [Math.max(24, Math.round(L * ar)), L]; }
 $('#go').onclick = () => {
   if (!S.img) return toast('先選一張圖');
   const st = settings(); if (!st.types.length) return toast('至少要勾一種圖形');
@@ -399,18 +658,26 @@ $('#go').onclick = () => {
   const blob = new Blob([$('#wk').textContent], { type: 'text/javascript' });
   const wk = S.worker = new Worker(URL.createObjectURL(blob));
   const shapes = []; const t0 = performance.now(); const maxErr = 255 * 255 * 3 * w * h;
-  S.res = { w, h, ar, shapes, st, sim: 0 };
-  $('#go').disabled = true; $('#stop').hidden = false; $('#progW').hidden = false; $('#resCard').hidden = false;
+  S.res = { w, h, ar, shapes, st, sim: 0, regions: 0 }; S.seg = null; S.k = 1;
+  $('#go').disabled = true; $('#stop').hidden = false; $('#progW').hidden = false; $('#resCard').hidden = false; $('#prog').style.width = '0%';
+  $('#stat').textContent = '分色塊中…';
+  const sec = () => ((performance.now() - t0) / 1000).toFixed(1) + ' 秒';
   wk.onmessage = e => { const m = e.data;
-    if (m.type === 'step') { shapes.push(m.s); S.res.sim = 100 * (1 - Math.sqrt(m.err / maxErr)); $('#prog').style.width = (100 * (m.i + 1) / m.total).toFixed(1) + '%';
-      $('#stat').textContent = '第 ' + (m.i + 1) + ' / ' + m.total + ' 個　相似度 ' + S.res.sim.toFixed(1) + '%　' + ((performance.now() - t0) / 1000).toFixed(1) + ' 秒';
-      if (m.i % 3 === 0 || m.i + 1 === m.total) { S.k = shapes.length; showResult(true); } }
+    if (m.type === 'prep') $('#stat').textContent = m.msg + '　' + sec();
+    else if (m.type === 'seg') { const c = document.createElement('canvas'); c.width = m.w; c.height = m.h; c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(m.buf), m.w, m.h), 0, 0); S.seg = c; S.res.regions = m.regions; $('#stat').textContent = '分出 ' + m.regions + ' 個色塊，開始貼圖形…　' + sec(); }
+    else if (m.type === 'step') {
+      // 圖形是照「哪個最有用」的順序找到的；步驟要照色塊上下順序排
+      shapes.push(m.s); shapes.sort((a, b) => (a.rk - b.rk) || ((a.sq || 0) - (b.sq || 0)));
+      S.res.sim = 100 * (1 - Math.sqrt(m.err / maxErr)); $('#prog').style.width = (100 * (m.i + 1) / m.total).toFixed(1) + '%';
+      $('#stat').textContent = '第 ' + (m.i + 1) + ' / ' + m.total + ' 個　相似度 ' + S.res.sim.toFixed(1) + '%　' + sec();
+      if (m.i % 4 === 0) { S.k = shapes.length; showResult(true); } }
     else if (m.type === 'note') toast(m.msg);
-    else if (m.type === 'done') finish(); };
-  wk.postMessage({ cmd: 'run', w, h, px, pal: palette(px, st.pal), n: st.n, q: st.q, types: st.types, rot: st.rot, stretch: st.stretch, alpha: st.alpha, minS: st.minS, seed: (Math.random() * 4294967296) >>> 0 });
+    else if (m.type === 'error') { toast('出錯了：' + m.msg); finish(true); }
+    else if (m.type === 'done') { S.res.shapes = m.shapes; S.res.sim = 100 * (1 - Math.sqrt(m.err / maxErr)); finish(); } };
+  wk.postMessage({ cmd: 'run', w, h, px, n: st.n, q: st.q, types: st.types, rot: st.rot, stretch: st.stretch, K: st.K, detail: st.detail, minS: st.minS, edge: st.edge, seed: (Math.random() * 4294967296) >>> 0 });
 };
 $('#stop').onclick = () => { if (S.worker) S.worker.postMessage({ cmd: 'stop' }); };
-function finish() { $('#go').disabled = false; $('#go').textContent = '重新拆解'; $('#stop').hidden = true; $('#progW').hidden = true; S.k = S.res.shapes.length; showResult(); save(); toast('拆好了：共 ' + S.res.shapes.length + ' 步'); }
+function finish(failed) { $('#go').disabled = false; $('#go').textContent = '重新拆解'; $('#stop').hidden = true; $('#progW').hidden = true; if (failed || !S.res.shapes.length) return; S.k = S.res.shapes.length; showResult(); save(); $('#stat').textContent += '　完成'; toast('拆好了：共 ' + S.res.shapes.length + ' 步'); }
 
 /* ── 3. 繪圖：形狀座標是工作解析度的像素，畫的時候等比放大 ── */
 function pathShape(x, s, sc) {
@@ -452,18 +719,20 @@ function showResult(live) {
   $('#resN').textContent = '共 ' + n + ' 步' + (live ? '（拆解中…）' : '');
   const tc = $('#tgtCv'), sc = $('#stepCv'), PW = 720, PH = Math.round(PW / R.ar);
   [tc, sc].forEach(c => { if (c.width !== PW || c.height !== PH) { c.width = PW; c.height = PH; } });
-  const tx = tc.getContext('2d'); if (S.tgt) tx.drawImage(S.tgt, 0, 0, PW, PH); else if (S.tgtImg) tx.drawImage(S.tgtImg, 0, 0, PW, PH);
+  const tx = tc.getContext('2d'), segOn = $('#segV').checked && S.seg; tx.imageSmoothingEnabled = !segOn; tx.clearRect(0, 0, PW, PH);
+  if (segOn) tx.drawImage(S.seg, 0, 0, PW, PH); else if (S.tgt) tx.drawImage(S.tgt, 0, 0, PW, PH); else if (S.tgtImg) tx.drawImage(S.tgtImg, 0, 0, PW, PH);
+  tx.imageSmoothingEnabled = true; $('#tgtT').textContent = segOn ? '色塊分區（' + R.regions + ' 塊）' : '原圖';
   if ($('#grid').checked) drawGrid(tx, PW, PH);
   render(sc, k, { grid: $('#grid').checked, hl: $('#hl').checked && !live, only: $('#only').checked && !live });
   $('#k').max = n; $('#k').value = k; $('#kT').textContent = k;
   const types = {}; R.shapes.forEach(s => { if (!s.bg) types[s.t] = (types[s.t] || 0) + 1; });
-  $('#tiles').innerHTML = [['圖形', n + ' 個'], ['相似度', R.sim ? R.sim.toFixed(1) + '%' : '—'], ...Object.entries(types).map(([t, c]) => [SHAPE_NAME[t], c + ' 個']), ['顏色', new Set(R.shapes.map(hex)).size + ' 種']]
+  $('#tiles').innerHTML = [['圖形', n + ' 個'], ['相似度', R.sim ? R.sim.toFixed(1) + '%' : '—'], ...Object.entries(types).map(([t, c]) => [SHAPE_NAME[t], c + ' 個']), ['顏色', new Set(R.shapes.map(hex)).size + ' 種']].concat(R.regions ? [['色塊', R.regions + ' 塊']] : [])
     .map(([a, b]) => '<div class="tile"><span>' + a + '</span><b>' + b + '</b></div>').join('');
   const s = R.shapes[k - 1], c = card(s), alpha = Math.round(s.al * 100);
-  $('#det').innerHTML = '<div class="h">第 ' + k + ' 步<small>' + (s.bg ? '底色：先鋪一個蓋滿全版的矩形' : '疊在前一步上面') + '</small></div>' +
+  $('#det').innerHTML = '<div class="h">第 ' + k + ' 步<small>' + (s.bg ? '底色：先鋪一個蓋滿全版的矩形' : '疊在前面的上面') + '</small></div>' +
     '<dl class="kv"><dt>圖形</dt><dd>' + shapeIcon(s) + SHAPE_NAME[s.t] + '</dd>' +
     '<dt>顏色</dt><dd><span class="sw" style="background:' + hex(s) + '"></span>' + hex(s) + '　<button class="btn sm" id="cpHex" style="height:24px">複製</button><br><span class="dim" style="font-size:12px">RGB ' + s.r + ', ' + s.g + ', ' + s.b + '</span></dd>' +
-    '<dt>不透明度</dt><dd>' + alpha + '%</dd>' +
+    '<dt>不透明度</dt><dd>' + alpha + '%' + (alpha === 100 ? '（不透明）' : '') + '</dd>' +
     '<dt>中心位置</dt><dd>x ' + f1(c.x) + '　y ' + f1(c.y) + '<span class="dim">（' + c.cell + '）</span></dd>' +
     '<dt>大小</dt><dd>寬 ' + f1(c.w) + ' × 高 ' + f1(c.h) + '</dd>' +
     '<dt>角度</dt><dd>' + c.deg + '°</dd></dl>';
@@ -485,7 +754,7 @@ $('#tb').onclick = e => { const tr = e.target.closest('tr[data-i]'); if (tr) go(
 function go(k) { S.k = k; showResult(); }
 $('#k').oninput = e => go(+e.target.value);
 $('#prev').onclick = () => go(S.k - 1); $('#next').onclick = () => go(S.k + 1); $('#first').onclick = () => go(1); $('#last').onclick = () => go(S.res.shapes.length);
-['#grid', '#hl', '#only'].forEach(id => $(id).onchange = () => showResult());
+['#grid', '#hl', '#only', '#segV'].forEach(id => $(id).onchange = () => showResult());
 $('#play').onclick = () => { if (S.timer) { clearInterval(S.timer); S.timer = null; $('#play').textContent = '自動播放'; return; }
   if (S.k >= S.res.shapes.length) S.k = 0; $('#play').textContent = '暫停';
   S.timer = setInterval(() => { if (S.k >= S.res.shapes.length) { clearInterval(S.timer); S.timer = null; $('#play').textContent = '自動播放'; return; } go(S.k + 1); }, 350); };
@@ -523,10 +792,10 @@ $('#dlSheet').onclick = () => {
 $('#dlJson').onclick = () => dl('namecard-' + stamp() + '.json', new Blob([JSON.stringify(pack())], { type: 'application/json' }));
 $('#ldJson').onclick = () => $('#jsonFile').click();
 $('#jsonFile').onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { try { unpack(JSON.parse(t)); toast('讀取完成'); } catch (err) { toast('不是名片拼圖的檔案'); } }); };
-function pack() { const R = S.res; return { v: 1, w: R.w, h: R.h, ar: R.ar, st: R.st, sim: R.sim, shapes: R.shapes, tgt: S.tgtUrl || null }; }
+function pack() { const R = S.res; return { v: 2, w: R.w, h: R.h, ar: R.ar, st: R.st, sim: R.sim, regions: R.regions || 0, shapes: R.shapes, tgt: S.tgtUrl || null }; }
 function unpack(o) {
   if (!o || !Array.isArray(o.shapes) || !o.w || !o.h) throw new Error('bad');
-  S.res = { w: o.w, h: o.h, ar: o.ar || o.w / o.h, shapes: o.shapes, st: o.st || {}, sim: o.sim || 0 }; S.k = 1; S.tgt = null; S.tgtImg = null; S.tgtUrl = o.tgt || null;
+  S.res = { w: o.w, h: o.h, ar: o.ar || o.w / o.h, shapes: o.shapes, st: o.st || {}, sim: o.sim || 0, regions: o.regions || 0 }; S.k = 1; S.seg = null; S.tgt = null; S.tgtImg = null; S.tgtUrl = o.tgt || null;
   $('#resCard').hidden = false;
   if (o.tgt) { const im = new Image(); im.onload = () => { S.tgtImg = im; showResult(); }; im.src = o.tgt; }
   showResult();

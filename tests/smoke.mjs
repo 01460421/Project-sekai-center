@@ -162,8 +162,8 @@ for (const mobile of [false, true]) {
   }
 }
 
-// 獨立頁：名片拼圖（namecard.html）。桌機與手機各開一次：餵一張程式畫的測試圖（色塊＋圓），快速品質拆 24 個圖形，
-// 要拆完、步驟數對、相似度有上升（比只鋪底色好）、步驟播放器與步驟表長出來、文字步驟第一行是底色；不能有 JS 錯誤、手機不能橫向溢出。
+// 獨立頁：名片拼圖（namecard.html）。桌機與手機各開一次：餵一張程式畫的平塗測試圖（底色＋矩形＋圓＋三角形），快速品質拆，
+// 要拆完、色塊分得出來、圖形都不透明、相似度夠高（平塗圖應該幾乎貼滿）、步驟表與播放器長出來、文字步驟第一行是底色；不能有 JS 錯誤、手機不能橫向溢出。
 {
   const ORIGIN = new URL(BASE).origin;
   for (const mobile of [false, true]) {
@@ -179,15 +179,15 @@ for (const mobile of [false, true]) {
         x.fillStyle = '#c43d50'; x.beginPath(); x.moveTo(230, 190); x.lineTo(300, 20); x.lineTo(370, 190); x.fill(); return c.toDataURL('image/png').split(',')[1]; });
       await page.setInputFiles('#file', { name: 't.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
       await page.waitForSelector('#setCard:not([hidden])', { timeout: 10000 });
-      await page.selectOption('#q', '1'); await page.fill('#n', '24'); await page.dispatchEvent('#n', 'input');
+      await page.selectOption('#q', '1'); await page.fill('#n', '40'); await page.dispatchEvent('#n', 'input');
       await page.click('#go');
       await page.waitForFunction(() => window.__namecard && !document.querySelector('#go').disabled && window.__namecard.S.res && window.__namecard.S.res.shapes.length >= 2, null, { timeout: 60000 });
-      const r = await page.evaluate(() => { const R = window.__namecard.S.res; return { n: R.shapes.length, sim: R.sim, rows: document.querySelectorAll('#tb tr').length, det: document.querySelector('#det').textContent, first: window.__namecard.lines()[1] || '' }; });
+      const r = await page.evaluate(() => { const R = window.__namecard.S.res; return { n: R.shapes.length, sim: R.sim, regions: R.regions, opaque: R.shapes.every(s => s.al === 1), rows: document.querySelectorAll('#tb tr').length, det: document.querySelector('#det').textContent, first: window.__namecard.lines()[1] || '' }; });
       await page.click('#first'); await page.click('#next');
       const k = await page.evaluate(() => window.__namecard.S.k);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-      ok = !errors.length && r.n >= 20 && r.n <= 24 && r.sim > 80 && r.rows === r.n && /第 \d+ 步/.test(r.det) && /底色/.test(r.first) && k === 2 && !(mobile && overflow);
-      why = errors[0] || (r.n < 20 || r.n > 24 ? '圖形數 ' + r.n : r.sim <= 80 ? '相似度只有 ' + r.sim : r.rows !== r.n ? '步驟表 ' + r.rows + ' 列' : k !== 2 ? '下一步沒反應' : !/底色/.test(r.first) ? '第一步不是底色' : overflow ? '橫向溢出' : '');
+      ok = !errors.length && r.n >= 4 && r.n <= 40 && r.regions >= 4 && r.opaque && r.sim > 93 && r.rows === r.n && /第 \d+ 步/.test(r.det) && /底色/.test(r.first) && k === 2 && !(mobile && overflow);
+      why = errors[0] || (r.n < 4 || r.n > 40 ? '圖形數 ' + r.n : r.regions < 4 ? '色塊只分出 ' + r.regions : !r.opaque ? '有半透明圖形' : r.sim <= 93 ? '相似度只有 ' + r.sim : r.rows !== r.n ? '步驟表 ' + r.rows + ' 列' : k !== 2 ? '下一步沒反應' : !/底色/.test(r.first) ? '第一步不是底色' : overflow ? '橫向溢出' : '');
     } catch (e) { why = e.message.slice(0, 120); }
     console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' namecard' + (why ? ' — ' + why : ''));
     if (!ok) fail++;
