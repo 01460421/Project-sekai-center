@@ -1,4 +1,8 @@
 {
+"名片拼圖": "Name Card Mosaic",
+"名片拼圖 ↗︎": "Name Card Mosaic ↗︎",
+"上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟": "Upload a picture and turn it into shapes and step-by-step instructions for your custom name card",
+"上傳任何圖片，自動拆成自訂名片能用的圖形：每一步的形狀、位置、大小、角度、顏色與透明度，照著一層層疊就能拼出來": "Upload any picture and break it into shapes your custom name card can use: the shape, position, size, angle, colour and opacity of every step, so you can rebuild it layer by layer",
 "# 車隊頻道": "# Room channel",
 "#ARTIST \"SEKAI 資源中心\"": "#ARTIST \"SEKAI Resource Center\"",
 "#TITLE \"範例譜面\"": "#TITLE \"Sample chart\"",
@@ -11781,6 +11785,7 @@
 "～ {0} 場": "～ {0} plays",
 "🔔 榜線提醒": "🔔 Border alerts",
 "🔔 結算前提醒我": "🔔 Remind me before closing",
+"結算前提醒我": "Remind me before closing",
 "🖼️ 推薦手元（多指手法示範）": "🖼️ Recommended hand cams (multi-finger technique demos)",
 "🖼️ 羽稱號、花稱號的實際樣式": "🖼️ What wing and flower titles look like"
 }

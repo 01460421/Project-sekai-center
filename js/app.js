@@ -290,6 +290,7 @@ class Component extends DCLogic {
     mystudio: ['豆森工作室', '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；等距 3D 家具擺設模擬（照遊戲場地格數、可堆疊）；角色生日看板'],
     profile:  ['帳號分析', 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較'],
     plan:     ['存石規劃', '未來一年每一池的 PU 卡與你的持卡對照，水晶收支推算到每池能存幾抽，勾想抽的池看會不會不夠'],
+    namecard: ['名片拼圖', '上傳任何圖片，自動拆成自訂名片能用的圖形：每一步的形狀、位置、大小、角度、顏色與透明度，照著一層層疊就能拼出來'],
     shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
     b30:      ['B30 產生器', 'Best 30 実効值圖卡(Unibot 風格版面),可下載 PNG'],
     haruki:   ['Haruki 專區', '用你在 Haruki 工具箱的遊戲資料：活動最佳組卡、角色等級 EXP，以及 master、素材與 API 資源'],
@@ -358,7 +359,7 @@ class Component extends DCLogic {
     ['追活動', [['event', '活動總覽', '#ff9db4', ['evinfo', 'recap', 'sched', 'jpnow']], ['rank', '排名與榜線', '#ffc46b', ['borderdb', 'analysis', 'accuracy', 'distrib', 'lookup', 'profile']], ['wl3', 'WL3 專區', '#3f8cff', ['wl3pow', 'wlsup']]]],
     ['圖鑑與資料', [['calendar', '日程與公告', '#3ee0a8', ['gacha', 'lives', 'news']], ['cards', '卡片圖鑑', '#7fb4f7', ['cardlib', 'art', 'rate', 'bonuscards']], ['chars', '角色與收集', '#ff9db4', ['collect']],
                    ['songs', '歌曲', '#c39df2', ['ost']], ['story', '劇情與漫畫', '#9aa9ff', ['comics']], ['fixtures', '豆森 MySekai', '#b8e561', ['mystudio', 'mstalk', 'bdayparty', 'materials', 'dolls']]]],
-    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['plan', 'shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart']]]],
+    ['計算工具', [['calc', '計算中心', '#7fb4f7', ['deckpro', 'skillmult']], ['haruki', 'Haruki 專區', '#f0a8d0', []], ['gachasim', '抽卡與儲值', '#c39df2', ['plan', 'shop']], ['b30', 'B30 產生器', '#5ec9f2', []], ['guesswho', '小遊戲與製作', '#ffd94d', ['guessjacket', 'stickers', 'songcard', 'chart', 'namecard']]]],
     ['社群與說明', [['car', '車隊', '#9aa9ff', ['bot']], ['tut', '教學與社群', '#b8e561', ['qa', 'res', 'whatsnew', 'credits', 'status']]]],
   ];
   /* 特別專案：獨立設計的作品頁（不在 PAGES 表裡，go() 看到 x_ 前綴就直接換頁），放側欄底部一列 */
@@ -1073,9 +1074,9 @@ class Component extends DCLogic {
       }
       if (!d || typeof d.sekaiCalcHeight !== 'number') return;
       // gachaSimFrame 也要跟著內容長高，否則十連的第二排會被固定高度切掉
-      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'shopFrame', 'b30Frame', 'mystudioFrame', 'profileFrame', 'planFrame'].forEach(id => {
+      ['deckProFrame', 'miniStudioFrame', 'deckInfoFrame', 'shopFrame', 'b30Frame', 'mystudioFrame', 'profileFrame', 'planFrame', 'namecardFrame'].forEach(id => {
         const f = document.getElementById(id);
-        if (f && f.contentWindow === e.source) f.style.height = Math.max(['deckProFrame', 'shopFrame', 'b30Frame', 'mystudioFrame', 'profileFrame', 'planFrame'].includes(id) ? 560 : 260, d.sekaiCalcHeight + 8) + 'px';
+        if (f && f.contentWindow === e.source) f.style.height = Math.max(['deckProFrame', 'shopFrame', 'b30Frame', 'mystudioFrame', 'profileFrame', 'planFrame', 'namecardFrame'].includes(id) ? 560 : 260, d.sekaiCalcHeight + 8) + 'px';
       });
     };
     window.addEventListener('message', this._frameMsg);
@@ -9318,6 +9319,7 @@ class Component extends DCLogic {
       // 彩蛋：只有打到相關的字才會浮出來
       if (/存石|存水晶|水晶規劃|要不要抽|抽不抽|未來卡池|規劃|plan/i.test(q)) out.unshift({ tag: '工具', tagBg: '#7a4fc0', main: '存石規劃', sub: '未來一年每一池的 PU 卡與持卡對照，水晶收支推算到每池能存幾抽', run: () => this.go('plan') });
       if (/帳號分析|分析帳號|我的帳號|角色等級|平均等級|收集率|FC|AP|挑戰|profile/i.test(q)) out.unshift({ tag: '工具', tagBg: '#2f6fb5', main: '帳號分析', sub: '綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料、兩帳號比較', run: () => this.go('profile') });
+      if (/名片|自訂名片|拼圖|色塊|namecard/i.test(q)) out.unshift({ tag: '工具', tagBg: '#c2477a', main: '名片拼圖', sub: '上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟', run: () => this.go('namecard') });
       if (/豆森工作室|像素|像素畫|方塊|瓷磚|設計圖|看板|mystudio|pixel/i.test(q)) out.unshift({ tag: '工具', tagBg: '#4a8f2f', main: '豆森工作室', sub: '圖片轉彩色方塊像素畫（材料、步驟、設計圖、建造播放）、家具擺設模擬、生日看板', run: () => this.go('mystudio') });
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
       if (/迴響|冒險|遊戲|記者會|公關|echoes|rpg|game/i.test(q)) out.unshift({ tag: '特別專案', tagBg: '#c9a24a', main: '迴響之境 ECHOES', sub: '在六個 SEKAI 之間漂流的抽象冒險：踩拍前進、調音鍛造、危機記者會', run: () => { location.href = 'echoes.html'; } });
@@ -10778,7 +10780,7 @@ class Component extends DCLogic {
         };
       })(),
       isLookup: s.page === 'lookup', isDistrib: s.page === 'distrib',
-      isMystudio: s.page === 'mystudio', isProfile: s.page === 'profile', isPlan: s.page === 'plan',
+      isMystudio: s.page === 'mystudio', isProfile: s.page === 'profile', isPlan: s.page === 'plan', isNamecard: s.page === 'namecard', namecardSrc: './namecard.html?embed=1',
       mystudioSrc: './mystudio.html?embed=1', planSrc: './plan.html?embed=1' + (s.pid && this.SRV !== 'jp' ? '&id=' + encodeURIComponent(s.pid) : ''),
       profileSrc: './profile.html?embed=1' + (s.pfId || s.pid ? '&id=' + encodeURIComponent(s.pfId || s.pid) : '') + (s.pfVs ? '&vs=' + encodeURIComponent(s.pfVs) : '') + (this.SRV === 'jp' ? '&srv=jp' : ''),
       ...(s.page === 'skillmult' ? this.smView() : { isSkillMult: false }),
@@ -12455,6 +12457,7 @@ class Component extends DCLogic {
           { name: '存石規劃', url: '?page=plan', sub: '未來一年每一池的 PU 卡與你的持卡對照，水晶收支推算到每池能存幾抽，勾想抽的池看會不會不夠' },
           { name: '帳號分析', url: '?page=profile', sub: 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較' },
           { name: '豆森工作室', url: '?page=mystudio', sub: '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；家具擺設模擬、生日看板' },
+          { name: '名片拼圖', url: '?page=namecard', sub: '上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟' },
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
