@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ea">
+<title>名片拼圖 — 用遊戲內的圖形拼出任何圖片 | Project SEKAI 資源中心</title>
+<meta name="description" content="上傳任何圖片，自動拆成遊戲自訂名片能用的圖形（矩形、橢圓、三角形）：每一步的形狀、位置、大小、角度、顏色與透明度，照著一層一層疊就能在名片上拼出來。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="名片拼圖 — 用遊戲內的圖形拼出任何圖片">
+<meta property="og:description" content="上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟：形狀、位置、大小、角度、顏色、透明度一步一步列出來。">
+<meta property="og:url" content="https://project-sekai-center.com/namecard.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/namecard.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/namecard.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<script>try{if(new URLSearchParams(location.search).get('embed'))document.documentElement.classList.add('embed');}catch(e){}</script>
+<script>try{var _t=localStorage.getItem('sekai-namecard-theme')||localStorage.getItem('sekai-theme')||localStorage.getItem('sekai-app-theme');if(_t==='dark')document.documentElement.classList.add('dark');}catch(e){}</script>
+<style>
+:root{color-scheme:light;--bg:#f3f1ea;--bg-2:#faf9f5;--bg-3:#ebe8df;--panel:#fff;--panel-2:#f7f5ef;--ink:#1f2230;--ink-2:#4b5064;--ink-3:#5c627a;
+  --line:rgba(40,46,80,.12);--line-2:rgba(40,46,80,.22);--acc:#c2477a;--acc-2:#99305c;--acc-soft:rgba(194,71,122,.12);--ok:#11673f;--warn:#9a6400;--bad:#c43d50;
+  --sans:'Noto Sans TC',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;--disp:'M PLUS Rounded 1c','Noto Sans TC',system-ui,sans-serif;--mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --r:14px;--shadow:0 18px 50px -24px rgba(40,40,70,.28);--ease:cubic-bezier(.32,.72,.24,1)}
+:root.dark{color-scheme:dark;--bg:#0f1117;--bg-2:#151823;--bg-3:#1b1f2c;--panel:#181c28;--panel-2:#1f2433;--ink:#e8ebf3;--ink-2:#aab1c6;--ink-3:#8a92ab;
+  --line:rgba(170,190,255,.1);--line-2:rgba(170,190,255,.2);--acc:#f28db4;--acc-2:#f7b3cd;--acc-soft:rgba(242,141,180,.14);--ok:#4ccf94;--warn:#f0b64a;--bad:#ff8a98;--shadow:0 18px 50px -20px rgba(0,0,0,.6)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}input,select{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--acc);outline-offset:2px}a{color:var(--acc-2)}
+[hidden]{display:none!important}.dim{color:var(--ink-3)}.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;background:color-mix(in oklab,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+header .logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:700;font-family:var(--disp)}header .logo img{width:28px;height:28px;border-radius:8px}
+header h1{font-family:var(--disp);font-size:18px;font-weight:800;white-space:nowrap}header h1 small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:8px}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel);margin-left:auto}
+main{max-width:1180px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px}
+.card h2{font-family:var(--disp);font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.card h2 .n{margin-left:auto;font-size:12px;font-weight:500;color:var(--ink-3)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.row+.row{margin-top:8px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink-2);font-weight:500;min-width:0}
+select,input[type=number],input[type=text]{height:36px;padding:0 10px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg-2);color:var(--ink);min-width:0}
+input[type=range]{accent-color:var(--acc);min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);font-weight:700;color:var(--ink);white-space:nowrap}
+.btn:hover{background:var(--bg-3)}.btn.pri{background:var(--acc);border-color:transparent;color:#fff}.btn.pri:hover{background:var(--acc-2)}:root.dark .btn.pri{color:#0f1117}.btn.sm{height:30px;padding:0 10px;font-size:12px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;background:var(--bg-3);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}.seg button{padding:5px 10px;border-radius:8px;font-weight:700;font-size:12px;color:var(--ink-2);min-height:28px}.seg button[aria-pressed=true]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:4px 10px;border:1px solid var(--line-2);border-radius:999px;background:var(--bg-2);cursor:pointer;user-select:none}.chk input{accent-color:var(--acc)}
+.drop{position:relative;border:2px dashed var(--line-2);border-radius:14px;background:var(--bg-2);min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;cursor:pointer;transition:border-color .2s}
+.drop.on{border-color:var(--acc);background:var(--acc-soft)}.drop b{display:block;font-family:var(--disp);font-size:16px;margin-bottom:4px}
+.crop{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.cv{position:relative;width:100%;border-radius:12px;overflow:hidden;background:repeating-conic-gradient(var(--bg-3) 0 25%,var(--bg-2) 0 50%) 0 0/16px 16px;border:1px solid var(--line)}
+.cv canvas{display:block;width:100%;height:auto}
+#cropCv{cursor:grab;touch-action:none}#cropCv:active{cursor:grabbing}
+.prog{height:8px;border-radius:999px;background:var(--bg-3);overflow:hidden}.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.two .t{font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:4px;display:flex;gap:8px}
+.step{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.det{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.det .h{font-family:var(--disp);font-size:18px;font-weight:800}.det .h small{font-size:12px;color:var(--ink-3);font-weight:500;margin-left:6px}
+.kv{display:grid;grid-template-columns:72px 1fr;gap:4px 10px;margin-top:8px;font-size:13px}.kv dt{color:var(--ink-3)}.kv dd{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sw{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid var(--line-2);vertical-align:-4px;margin-right:6px}
+.shp{display:inline-block;width:18px;height:18px;vertical-align:-4px;margin-right:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.tile{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}.tile b{display:block;font-size:20px;font-family:var(--disp)}.tile span{font-size:12px;color:var(--ink-3)}
+table.list{width:100%;border-collapse:collapse;font-size:12.5px}table.list th{font-size:11.5px;color:var(--ink-3);font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line-2);position:sticky;top:0;background:var(--panel)}
+table.list td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}table.list tr{cursor:pointer}table.list tr.cur td{background:var(--acc-soft)}
+.lw{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.note{font-size:12.5px;color:var(--ink-2);line-height:1.75}.note li{margin-left:1.3em;margin-bottom:3px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;z-index:50;transition:all .25s var(--ease);pointer-events:none;max-width:90vw}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:860px){.crop,.step{grid-template-columns:1fr}}
+@media (max-width:640px){header{padding:8px 10px}header .logo span{display:none}header h1{font-size:16px}header h1 small{display:none}main{padding:10px}.card{padding:12px}.two{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:root.embed,:root.embed body{height:auto;min-height:0}:root.embed header{display:none}:root.embed main{padding:4px 2px}:root.embed .card{box-shadow:none}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="./app.html" title="回到 SEKAI 資源中心" aria-label="回到 SEKAI 資源中心"><img src="./icons/icon-180.png" alt=""><span>資源中心</span></a>
+  <h1>名片拼圖<small>把圖片拆成遊戲內的圖形</small></h1>
+  <button class="ib" id="themeBtn" title="切換深淺色" aria-label="切換深淺色">◐</button>
+</header>
+<main>
+  <div class="card">
+    <h2>1　選一張圖 <span class="n">圖片只在你的裝置上處理，不會上傳</span></h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="選擇圖片（也可以拖曳或貼上）">
+      <div><b>點這裡選圖片</b><span class="dim">也可以把圖片拖進來，或直接貼上（Ctrl／⌘＋V）</span></div>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+    <div class="crop" id="cropBox" hidden style="margin-top:12px">
+      <div>
+        <div class="cv"><canvas id="cropCv" width="900" height="400" aria-label="裁切預覽：拖曳移動、滑桿縮放"></canvas></div>
+        <p class="dim" style="font-size:12px;margin-top:6px">拖曳圖片調整要放進名片的範圍；框內就是會拼出來的部分。</p>
+      </div>
+      <div>
+        <label class="f">名片比例
+          <select id="aspect">
+            <option value="2.25" selected>遊戲名片區（約 2.25 : 1）</option>
+            <option value="1.7778">16 : 9</option>
+            <option value="1.3333">4 : 3</option>
+            <option value="1">1 : 1</option>
+            <option value="0">照原圖比例</option>
+          </select>
+        </label>
+        <label class="f" style="margin-top:10px">縮放 <input type="range" id="zoom" min="1" max="4" step="0.01" value="1" aria-label="縮放"></label>
+        <div class="row" style="margin-top:10px"><button class="btn sm" id="fit">置中</button><button class="btn sm" id="chg">換一張</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="setCard" hidden>
+    <h2>2　設定 <span class="n">照遊戲編輯器能做到的調整；不確定的先用預設</span></h2>
+    <div class="row" style="gap:14px;align-items:flex-end">
+      <label class="f" style="flex:1;min-width:220px">圖形數量：<b id="nV" class="mono">100</b> 個（遊戲一張名片最多 150 層，要留給文字、角色等其他物件）
+        <input type="range" id="n" min="10" max="150" step="1" value="100" aria-label="圖形數量"></label>
+      <label class="f">品質
+        <select id="q"><option value="1">快速</option><option value="2" selected>標準</option><option value="3">精細（較久）</option></select></label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <span class="dim" style="font-size:12px;font-weight:700">可用圖形</span>
+      <label class="chk"><input type="checkbox" id="sR" checked>矩形</label>
+      <label class="chk"><input type="checkbox" id="sE" checked>橢圓／圓</label>
+      <label class="chk"><input type="checkbox" id="sT" checked>三角形</label>
+    </div>
+    <div class="row">
+      <span class="dim" style="font-size:12px;font-weight:700">能怎麼調</span>
+      <label class="chk"><input type="checkbox" id="rot" checked>可以旋轉</label>
+      <label class="chk"><input type="checkbox" id="str" checked>長寬可以不一樣</label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">透明度
+        <select id="alpha"><option value="1">全部不透明（最好操作）</option><option value="0.5" selected>固定 50%</option><option value="auto">自動選（100／75／50／25%）</option></select></label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">顏色數
+        <select id="pal"><option value="0" selected>不限（最像）</option><option value="32">最多 32 色</option><option value="16">最多 16 色</option><option value="8">最多 8 色（最好操作）</option></select></label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px">最小圖形
+        <select id="minS"><option value="0.01">很小（名片寬 1%）</option><option value="0.02" selected>小（2%）</option><option value="0.04">中（4%）</option><option value="0.07">大（7%）</option></select></label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn pri" id="go">開始拆解</button><button class="btn" id="stop" hidden>停止</button>
+      <span class="dim mono" id="stat" aria-live="polite"></span>
+    </div>
+    <div class="prog" style="margin-top:10px" hidden id="progW"><i id="prog"></i></div>
+  </div>
+
+  <div class="card" id="resCard" hidden>
+    <h2>3　拼圖步驟 <span class="n" id="resN"></span></h2>
+    <div class="tiles" id="tiles" style="margin-bottom:12px"></div>
+    <div class="step">
+      <div>
+        <div class="two">
+          <div><div class="t">原圖</div><div class="cv"><canvas id="tgtCv"></canvas></div></div>
+          <div><div class="t">疊到第 <span id="kT" class="mono">0</span> 步 <span class="dim" id="simT"></span></div><div class="cv"><canvas id="stepCv"></canvas></div></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm" id="first" aria-label="第一步">⏮</button><button class="btn sm" id="prev" aria-label="上一步">◀</button>
+          <input type="range" id="k" min="1" max="1" value="1" style="flex:1;min-width:120px" aria-label="第幾步">
+          <button class="btn sm" id="next" aria-label="下一步">▶</button><button class="btn sm" id="last" aria-label="最後一步">⏭</button>
+          <button class="btn sm" id="play">自動播放</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="chk"><input type="checkbox" id="grid" checked>格線</label>
+          <label class="chk"><input type="checkbox" id="hl" checked>框出這一步</label>
+          <label class="chk"><input type="checkbox" id="only">只看這一步</label>
+        </div>
+      </div>
+      <div>
+        <div class="det" id="det" aria-live="polite"></div>
+        <p class="note" style="margin-top:10px">座標以<b>名片寬 = 100</b> 計：x 由左往右 0～100、y 由上往下；大小是圖形本身（還沒轉之前）的寬和高；角度順時針為正。格位是把名片橫切 10 欄（A～J）對照用的。</p>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="dlImg">下載成品圖</button>
+      <button class="btn" id="dlSheet">下載步驟圖卡</button>
+      <button class="btn" id="dlCsv">下載步驟表（CSV）</button>
+      <button class="btn" id="cpTxt">複製文字步驟</button>
+      <button class="btn" id="dlJson">存成檔案</button>
+      <button class="btn" id="ldJson">讀取檔案</button><input type="file" id="jsonFile" accept=".json,application/json" hidden>
+    </div>
+    <details style="margin-top:12px" id="palBox"><summary style="cursor:pointer;font-weight:700">用到的顏色 <span class="dim" id="palN"></span></summary>
+      <div class="row" id="palList" style="margin-top:8px;gap:6px"></div></details>
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">全部步驟一覽</summary>
+      <div class="lw" style="margin-top:8px"><table class="list"><thead><tr><th>#</th><th>圖形</th><th>顏色</th><th>透明</th><th>x</th><th>y</th><th>寬</th><th>高</th><th>角度</th><th>格位</th></tr></thead><tbody id="tb"></tbody></table></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>在遊戲裡怎麼拼</h2>
+    <ol class="note">
+      <li>進入個人檔案（名片）的自訂編輯，用工具列的「圖形」新增圖形。照<b>第 1 步到最後一步的順序</b>加，後加的會蓋在前面上面（第 1 步通常是蓋滿全版的底色）。</li>
+      <li>每一步照右邊的形狀、顏色、透明度設好，再拖到位置、拉成對應大小、轉到角度。開著「格線」對照會比較好放。</li>
+      <li>放的時候位置被自動吸過去、對不準的話，可以試著關掉編輯器的「操作補正」。</li>
+      <li>不用每一步都完美：前面的大塊決定整體，後面的小塊補細節；差一點通常看不出來。</li>
+      <li>遊戲裡如果沒有某種圖形、不能旋轉或不能單獨拉長寬，回到第 2 步把那個選項關掉再拆一次。</li>
+    </ol>
+  </div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="text/plain" id="wk">
+/* 名片拼圖：每一步隨機產生大量候選圖形，爬山法微調，挑讓整張圖誤差下降最多的那個疊上去（類似 primitive 演算法）。 */
+let W = 0, H = 0, TR, TG, TB, CR, CG, CB, SP, PAL = null, stop = false;
+self.onmessage = e => { const m = e.data; if (m.cmd === 'stop') { stop = true; return; } if (m.cmd === 'run') run(m); };
+function rngOf(seed) { let s = (seed >>> 0) || 0x9e3779b9; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+let R = Math.random;
+const gauss = () => { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+function polySpans(pts) {
+  let n = 0, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < pts.length; i += 2) { if (pts[i + 1] < y0) y0 = pts[i + 1]; if (pts[i + 1] > y1) y1 = pts[i + 1]; }
+  const ya = Math.max(0, Math.ceil(y0 - 0.5)), yb = Math.min(H - 1, Math.floor(y1 - 0.5)), m = pts.length;
+  for (let y = ya; y <= yb; y++) {
+    const yc = y + 0.5; let xa = Infinity, xb = -Infinity;
+    for (let i = 0; i < m; i += 2) {
+      const ax = pts[i], ay = pts[i + 1], bx = pts[(i + 2) % m], by = pts[(i + 3) % m];
+      if ((ay <= yc && yc < by) || (by <= yc && yc < ay)) { const x = ax + (yc - ay) * (bx - ax) / (by - ay); if (x < xa) xa = x; if (x > xb) xb = x; }
+    }
+    if (xa === Infinity) continue;
+    const x0 = Math.max(0, Math.ceil(xa - 0.5)), x1 = Math.min(W - 1, Math.floor(xb - 0.5));
+    if (x0 <= x1) { SP[n++] = y; SP[n++] = x0; SP[n++] = x1; }
+  }
+  return n;
+}
+function spans(s) {
+  const c = Math.cos(s.a), si = Math.sin(s.a), hw = s.w / 2, hh = s.h / 2;
+  if (s.t === 'e') {
+    const rx2 = hw * hw, ry2 = hh * hh, A = c * c / rx2 + si * si / ry2, Bk = 2 * c * si * (1 / rx2 - 1 / ry2), Ck = si * si / rx2 + c * c / ry2;
+    const ext = Math.sqrt(rx2 * si * si + ry2 * c * c); let n = 0;
+    const ya = Math.max(0, Math.ceil(s.y - ext - 0.5)), yb = Math.min(H - 1, Math.floor(s.y + ext - 0.5));
+    for (let y = ya; y <= yb; y++) {
+      const dy = y + 0.5 - s.y, B = Bk * dy, C = Ck * dy * dy - 1, d = B * B - 4 * A * C;
+      if (d < 0) continue; const r = Math.sqrt(d);
+      const x0 = Math.max(0, Math.ceil(s.x + (-B - r) / (2 * A) - 0.5)), x1 = Math.min(W - 1, Math.floor(s.x + (-B + r) / (2 * A) - 0.5));
+      if (x0 <= x1) { SP[n++] = y; SP[n++] = x0; SP[n++] = x1; }
+    }
+    return n;
+  }
+  const P = s.t === 't' ? [0, -hh, hw, hh, -hw, hh] : [-hw, -hh, hw, -hh, hw, hh, -hw, hh], out = [];
+  for (let i = 0; i < P.length; i += 2) out.push(s.x + P[i] * c - P[i + 1] * si, s.y + P[i] * si + P[i + 1] * c);
+  return polySpans(out);
+}
+/* 這個圖形在透明度 a 下最好的顏色，以及疊上去後總誤差的變化（負的＝變好） */
+function evalShape(s, a) {
+  const n = spans(s); if (!n) return null;
+  let cnt = 0, sr = 0, sg = 0, sb = 0; const ia = 1 - a;
+  for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) { sr += TR[i] - ia * CR[i]; sg += TG[i] - ia * CG[i]; sb += TB[i] - ia * CB[i]; cnt++; } }
+  if (!cnt) return null;
+  const cl = v => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+  let r = cl(sr / (a * cnt)), g = cl(sg / (a * cnt)), b = cl(sb / (a * cnt));
+  if (PAL) { const q = near(r, g, b); r = q[0]; g = q[1]; b = q[2]; }   // 誤差對顏色是二次式：離最佳色最近的調色盤色就是最佳的調色盤色
+  const ar = a * r, ag = a * g, ab = a * b;
+  let d = 0;
+  for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) {
+    const cr = CR[i], cg = CG[i], cb = CB[i], er = TR[i] - cr, eg = TG[i] - cg, eb = TB[i] - cb, nr = TR[i] - (ia * cr + ar), ng = TG[i] - (ia * cg + ag), nb = TB[i] - (ia * cb + ab);
+    d += nr * nr + ng * ng + nb * nb - er * er - eg * eg - eb * eb; } }
+  return { d, r, g, b, a, n: cnt };
+}
+function near(r, g, b) { let bi = 0, bd = Infinity; for (let i = 0; i < PAL.length; i++) { const p = PAL[i], d = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2; if (d < bd) { bd = d; bi = i; } } return PAL[bi]; }
+function commit(s, v) { const n = spans(s), ia = 1 - v.a; for (let k = 0; k < n; k += 3) { const row = SP[k] * W; for (let i = row + SP[k + 1], e = row + SP[k + 2]; i <= e; i++) { CR[i] = ia * CR[i] + v.a * v.r; CG[i] = ia * CG[i] + v.a * v.g; CB[i] = ia * CB[i] + v.a * v.b; } } }
+function totalErr() { let s = 0; for (let i = 0; i < W * H; i++) { const a = TR[i] - CR[i], b = TG[i] - CG[i], c = TB[i] - CB[i]; s += a * a + b * b + c * c; } return s; }
+function run(m) {
+  stop = false; W = m.w; H = m.h; R = rngOf(m.seed); PAL = m.pal && m.pal.length ? m.pal : null; const N = W * H, px = m.px;
+  TR = new Float32Array(N); TG = new Float32Array(N); TB = new Float32Array(N); CR = new Float32Array(N); CG = new Float32Array(N); CB = new Float32Array(N); SP = new Int32Array(H * 3 + 6);
+  let mr = 0, mg = 0, mb = 0;
+  for (let i = 0; i < N; i++) { TR[i] = px[i * 4]; TG[i] = px[i * 4 + 1]; TB[i] = px[i * 4 + 2]; mr += TR[i]; mg += TG[i]; mb += TB[i]; }
+  const bg = { r: Math.round(mr / N), g: Math.round(mg / N), b: Math.round(mb / N), a: 1 };
+  if (PAL) { const q = near(bg.r, bg.g, bg.b); bg.r = q[0]; bg.g = q[1]; bg.b = q[2]; }
+  CR.fill(bg.r); CG.fill(bg.g); CB.fill(bg.b);
+  const L = Math.max(W, H), minS = Math.max(1.2, m.minS * W), types = m.types, alphas = m.alpha === 'auto' ? [1, 0.75, 0.5, 0.25] : [+m.alpha];
+  const Q = [null, [160, 3, 90], [500, 4, 180], [1200, 6, 300]][m.q] || [500, 4, 180];
+  const out = [{ t: 'r', x: W / 2, y: H / 2, w: W, h: H, a: 0, r: bg.r, g: bg.g, b: bg.b, al: 1, bg: true }];
+  let err = totalErr();
+  self.postMessage({ type: 'step', i: 0, s: out[0], err, total: m.n });
+  const fixH = s => { if (!m.stretch) s.h = s.t === 't' ? s.w * 0.866 : s.w; return s; };
+  const clampS = s => { s.w = Math.min(Math.max(s.w, minS), L * 1.6); s.h = Math.min(Math.max(s.h, minS), L * 1.6); s.x = Math.min(Math.max(s.x, -W * 0.1), W * 1.1); s.y = Math.min(Math.max(s.y, -H * 0.1), H * 1.1); return fixH(s); };
+  const best = (s) => { let b = null; for (const a of alphas) { const v = evalShape(s, a); if (v && (!b || v.d < b.d)) b = v; } return b; };
+  for (let k = 1; k < m.n && !stop; k++) {
+    const prog = k / m.n, maxS = Math.max(minS * 2, L * (0.7 - 0.55 * prog));
+    const rand = () => { const t = types[Math.floor(R() * types.length)]; const w = minS + Math.pow(R(), 1.6) * (maxS - minS); const h = m.stretch ? minS + Math.pow(R(), 1.6) * (maxS - minS) : w;
+      return clampS({ t, x: R() * W, y: R() * H, w, h, a: m.rot ? (R() * Math.PI) : 0 }); };
+    const pool = [];
+    for (let i = 0; i < Q[0]; i++) { const s = rand(), v = best(s); if (v) pool.push([s, v]); }
+    pool.sort((p, q) => p[1].d - q[1].d);
+    let win = null;
+    for (let j = 0; j < Math.min(Q[1], pool.length); j++) {
+      let [s, v] = pool[j]; let miss = 0;
+      for (let it = 0; it < Q[2] && miss < Q[2]; it++) {
+        const t = Object.assign({}, s), z = R(), step = L * (0.08 - 0.05 * prog);
+        if (z < 0.35) { t.x += gauss() * step; t.y += gauss() * step; }
+        else if (z < 0.6) t.w *= Math.exp(gauss() * 0.22);
+        else if (z < 0.85) { if (m.stretch) t.h *= Math.exp(gauss() * 0.22); else t.w *= Math.exp(gauss() * 0.22); }
+        else if (m.rot) t.a += gauss() * 0.35; else { t.x += gauss() * step; t.y += gauss() * step; }
+        clampS(t); const u = best(t);
+        if (u && u.d < v.d) { s = t; v = u; miss = 0; } else miss++;
+      }
+      if (!win || v.d < win[1].d) win = [s, v];
+    }
+    if (!win || win[1].d >= 0) { self.postMessage({ type: 'note', msg: '已經沒有能讓畫面更接近的圖形了' }); break; }
+    const [s, v] = win; commit(s, v); err += v.d;
+    const o = { t: s.t, x: s.x, y: s.y, w: s.w, h: s.h, a: ((s.a % Math.PI) + Math.PI) % Math.PI, r: v.r, g: v.g, b: v.b, al: v.a };
+    if (s.t === 't') o.a = ((s.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    out.push(o);
+    self.postMessage({ type: 'step', i: k, s: o, err, total: m.n });
+  }
+  self.postMessage({ type: 'done', shapes: out, err, w: W, h: H });
+}
+</script>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'sekai-namecard-v1';
+const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => e.classList.remove('on'), 1800); };
+$('#themeBtn').onclick = () => { const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('sekai-namecard-theme', d ? 'dark' : 'light'); } catch (e) {} };
+const SHAPE_NAME = { r: '矩形', e: '橢圓', t: '三角形' };
+const hex = s => '#' + [s.r, s.g, s.b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+const S = { img: null, zoom: 1, cx: 0.5, cy: 0.5, aspect: 2.25, res: null, k: 1, worker: null, timer: null, tgt: null };
+
+/* ── 1. 讀圖與裁切 ── */
+function loadFile(f) {
+  if (!f || !/^image\//.test(f.type)) return toast('請選圖片檔');
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onload = () => { S.img = im; S.zoom = 1; S.cx = 0.5; S.cy = 0.5; $('#zoom').value = 1; $('#drop').hidden = true; $('#cropBox').hidden = false; $('#setCard').hidden = false; drawCrop(); };
+  im.onerror = () => toast('這個檔案讀不出來');
+  im.src = url;
+}
+$('#drop').onclick = () => $('#file').click();
+$('#drop').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#file').click(); } };
+$('#file').onchange = e => loadFile(e.target.files[0]);
+$('#chg').onclick = () => $('#file').click();
+['dragenter', 'dragover'].forEach(ev => $('#drop').addEventListener(ev, e => { e.preventDefault(); $('#drop').classList.add('on'); }));
+['dragleave', 'drop'].forEach(ev => $('#drop').addEventListener(ev, e => { e.preventDefault(); $('#drop').classList.remove('on'); }));
+$('#drop').addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+document.addEventListener('paste', e => { const it = [...(e.clipboardData || {}).items || []].find(i => i.type.startsWith('image/')); if (it) loadFile(it.getAsFile()); });
+function aspectOf() { const v = +$('#aspect').value; return v || (S.img ? S.img.naturalWidth / S.img.naturalHeight : 2.25); }
+/* 裁切框（原圖座標）：長寬比固定，縮放 zoom，中心 cx/cy（0～1） */
+function cropRect() {
+  const iw = S.img.naturalWidth, ih = S.img.naturalHeight, ar = aspectOf();
+  let w = iw, h = iw / ar; if (h > ih) { h = ih; w = ih * ar; }
+  w /= S.zoom; h /= S.zoom;
+  let x = S.cx * iw - w / 2, y = S.cy * ih - h / 2; x = Math.max(0, Math.min(iw - w, x)); y = Math.max(0, Math.min(ih - h, y));
+  S.cx = (x + w / 2) / iw; S.cy = (y + h / 2) / ih;
+  return { x, y, w, h };
+}
+function drawCrop() {
+  if (!S.img) return;
+  const cv = $('#cropCv'), iw = S.img.naturalWidth, ih = S.img.naturalHeight, CW = 900, CH = Math.round(Math.min(560, Math.max(220, CW * ih / iw)));
+  cv.width = CW; cv.height = CH;
+  const x = cv.getContext('2d'), sc = Math.min(CW / iw, CH / ih), ox = (CW - iw * sc) / 2, oy = (CH - ih * sc) / 2;
+  x.clearRect(0, 0, CW, CH); x.drawImage(S.img, ox, oy, iw * sc, ih * sc);
+  const r = cropRect();
+  x.fillStyle = 'rgba(15,17,23,.55)'; x.beginPath(); x.rect(0, 0, CW, CH); x.rect(ox + r.x * sc, oy + r.y * sc, r.w * sc, r.h * sc); x.fill('evenodd');
+  x.strokeStyle = '#fff'; x.lineWidth = 2; x.setLineDash([6, 4]); x.strokeRect(ox + r.x * sc + 1, oy + r.y * sc + 1, r.w * sc - 2, r.h * sc - 2); x.setLineDash([]);
+  S._cropMap = { sc, ox, oy };
+}
+$('#aspect').onchange = drawCrop;
+$('#zoom').oninput = e => { S.zoom = +e.target.value; drawCrop(); };
+$('#fit').onclick = () => { S.zoom = 1; S.cx = 0.5; S.cy = 0.5; $('#zoom').value = 1; drawCrop(); };
+(() => { let drag = null; const cv = $('#cropCv');
+  cv.addEventListener('pointerdown', e => { if (!S.img) return; cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, cx: S.cx, cy: S.cy }; });
+  cv.addEventListener('pointermove', e => { if (!drag) return; const k = cv.width / cv.getBoundingClientRect().width / S._cropMap.sc;
+    S.cx = drag.cx + (e.clientX - drag.x) * k / S.img.naturalWidth; S.cy = drag.cy + (e.clientY - drag.y) * k / S.img.naturalHeight; drawCrop(); });
+  ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => drag = null));
+  cv.addEventListener('wheel', e => { if (!S.img) return; e.preventDefault(); S.zoom = Math.max(1, Math.min(4, S.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08))); $('#zoom').value = S.zoom; drawCrop(); }, { passive: false });
+})();
+
+/* ── 2. 設定與執行 ── */
+$('#n').oninput = e => $('#nV').textContent = e.target.value;
+function settings() {
+  return { n: +$('#n').value, q: +$('#q').value, types: [['r', '#sR'], ['e', '#sE'], ['t', '#sT']].filter(t => $(t[1]).checked).map(t => t[0]),
+    rot: $('#rot').checked, stretch: $('#str').checked, alpha: $('#alpha').value, minS: +$('#minS').value, pal: +$('#pal').value };
+}
+/* 從原圖抽 K 個代表色（k-means++，固定種子） */
+function palette(px, K) {
+  if (!K) return null;
+  const n = px.length / 4, step = Math.max(1, Math.floor(n / 6000)), pts = [];
+  for (let i = 0; i < n; i += step) pts.push([px[i * 4], px[i * 4 + 1], px[i * 4 + 2]]);
+  let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  const C = [pts[Math.floor(rnd() * pts.length)].slice()];
+  while (C.length < K) { const ds = pts.map(p => Math.min(...C.map(c => d2(p, c)))), tot = ds.reduce((a, b) => a + b, 0); let t = rnd() * tot, i = 0; while (i < ds.length - 1 && (t -= ds[i]) > 0) i++; C.push(pts[i].slice()); }
+  for (let it = 0; it < 12; it++) {
+    const sum = C.map(() => [0, 0, 0, 0]);
+    for (const p of pts) { let bi = 0, bd = Infinity; for (let j = 0; j < C.length; j++) { const d = d2(p, C[j]); if (d < bd) { bd = d; bi = j; } } const s = sum[bi]; s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; s[3]++; }
+    sum.forEach((s, j) => { if (s[3]) C[j] = [s[0] / s[3], s[1] / s[3], s[2] / s[3]]; });
+  }
+  return C.map(c => c.map(v => Math.round(v)));
+}
+function workRes(q, ar) { const L = [0, 180, 256, 320][q] || 256; return ar >= 1 ? [L, Math.max(24, Math.round(L / ar))] : [Math.max(24, Math.round(L * ar)), L]; }
+$('#go').onclick = () => {
+  if (!S.img) return toast('先選一張圖');
+  const st = settings(); if (!st.types.length) return toast('至少要勾一種圖形');
+  const ar = aspectOf(), [w, h] = workRes(st.q, ar), r = cropRect();
+  const off = document.createElement('canvas'); off.width = w; off.height = h; const ox = off.getContext('2d', { willReadFrequently: true });
+  ox.fillStyle = '#fff'; ox.fillRect(0, 0, w, h); ox.imageSmoothingQuality = 'high'; ox.drawImage(S.img, r.x, r.y, r.w, r.h, 0, 0, w, h);
+  const px = ox.getImageData(0, 0, w, h).data;
+  const big = document.createElement('canvas'), BW = 1200, BH = Math.round(BW / ar); big.width = BW; big.height = BH;
+  const bx = big.getContext('2d'); bx.fillStyle = '#fff'; bx.fillRect(0, 0, BW, BH); bx.imageSmoothingQuality = 'high'; bx.drawImage(S.img, r.x, r.y, r.w, r.h, 0, 0, BW, BH);
+  S.tgt = big; S.tgtUrl = (() => { const t = document.createElement('canvas'), tw = Math.min(480, BW); t.width = tw; t.height = Math.round(tw / ar); t.getContext('2d').drawImage(big, 0, 0, t.width, t.height); return t.toDataURL('image/jpeg', 0.82); })();
+  if (S.worker) S.worker.terminate();
+  const blob = new Blob([$('#wk').textContent], { type: 'text/javascript' });
+  const wk = S.worker = new Worker(URL.createObjectURL(blob));
+  const shapes = []; const t0 = performance.now(); const maxErr = 255 * 255 * 3 * w * h;
+  S.res = { w, h, ar, shapes, st, sim: 0 };
+  $('#go').disabled = true; $('#stop').hidden = false; $('#progW').hidden = false; $('#resCard').hidden = false;
+  wk.onmessage = e => { const m = e.data;
+    if (m.type === 'step') { shapes.push(m.s); S.res.sim = 100 * (1 - Math.sqrt(m.err / maxErr)); $('#prog').style.width = (100 * (m.i + 1) / m.total).toFixed(1) + '%';
+      $('#stat').textContent = '第 ' + (m.i + 1) + ' / ' + m.total + ' 個　相似度 ' + S.res.sim.toFixed(1) + '%　' + ((performance.now() - t0) / 1000).toFixed(1) + ' 秒';
+      if (m.i % 3 === 0 || m.i + 1 === m.total) { S.k = shapes.length; showResult(true); } }
+    else if (m.type === 'note') toast(m.msg);
+    else if (m.type === 'done') finish(); };
+  wk.postMessage({ cmd: 'run', w, h, px, pal: palette(px, st.pal), n: st.n, q: st.q, types: st.types, rot: st.rot, stretch: st.stretch, alpha: st.alpha, minS: st.minS, seed: (Math.random() * 4294967296) >>> 0 });
+};
+$('#stop').onclick = () => { if (S.worker) S.worker.postMessage({ cmd: 'stop' }); };
+function finish() { $('#go').disabled = false; $('#go').textContent = '重新拆解'; $('#stop').hidden = true; $('#progW').hidden = true; S.k = S.res.shapes.length; showResult(); save(); toast('拆好了：共 ' + S.res.shapes.length + ' 步'); }
+
+/* ── 3. 繪圖：形狀座標是工作解析度的像素，畫的時候等比放大 ── */
+function pathShape(x, s, sc) {
+  x.save(); x.translate(s.x * sc, s.y * sc); x.rotate(s.a || 0); x.beginPath(); const w = s.w * sc, h = s.h * sc;
+  if (s.t === 'e') x.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2); else if (s.t === 't') { x.moveTo(0, -h / 2); x.lineTo(w / 2, h / 2); x.lineTo(-w / 2, h / 2); x.closePath(); } else x.rect(-w / 2, -h / 2, w, h);
+  x.restore();
+}
+function render(cv, upto, opt = {}) {
+  const R = S.res, W = cv.width, sc = W / R.w, x = cv.getContext('2d');
+  x.clearRect(0, 0, cv.width, cv.height);
+  const list = R.shapes.slice(0, upto);
+  if (opt.only && upto > 0) { x.fillStyle = '#fff'; x.globalAlpha = 0.6; x.fillRect(0, 0, cv.width, cv.height); x.globalAlpha = 1; list.splice(0, list.length - 1); }
+  for (const s of list) { pathShape(x, s, sc); x.fillStyle = 'rgba(' + s.r + ',' + s.g + ',' + s.b + ',' + s.al + ')'; x.fill(); }
+  if (opt.grid) drawGrid(x, cv.width, cv.height);
+  if (opt.hl && upto > 0) { const s = R.shapes[upto - 1]; if (!s.bg) { pathShape(x, s, sc); x.lineWidth = Math.max(2, cv.width / 400); x.setLineDash([8, 5]); x.strokeStyle = '#fff'; x.stroke(); x.lineDashOffset = 6.5; x.strokeStyle = '#000'; x.stroke(); x.setLineDash([]); x.lineDashOffset = 0; } }
+}
+function drawGrid(x, W, H) {
+  const cw = W / 10, rows = Math.max(1, Math.round(10 * H / W)), ch = H / rows;
+  x.save(); x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1; x.beginPath();
+  for (let i = 1; i < 10; i++) { x.moveTo(i * cw + .5, 0); x.lineTo(i * cw + .5, H); }
+  for (let j = 1; j < rows; j++) { x.moveTo(0, j * ch + .5); x.lineTo(W, j * ch + .5); }
+  x.stroke(); x.strokeStyle = 'rgba(0,0,0,.25)'; x.setLineDash([2, 4]); x.stroke();
+  x.fillStyle = 'rgba(255,255,255,.85)'; x.font = '700 ' + Math.max(10, W / 70) + 'px system-ui'; x.textBaseline = 'top';
+  for (let i = 0; i < 10; i++) x.fillText('ABCDEFGHIJ'[i], i * cw + 3, 2);
+  for (let j = 0; j < rows; j++) x.fillText(String(j + 1), 2, j * ch + (j ? 3 : 16));
+  x.restore();
+}
+/* 名片座標：寬 = 100 */
+function card(s) {
+  const R = S.res, u = 100 / R.w, rows = Math.max(1, Math.round(10 / R.ar));
+  const col = 'ABCDEFGHIJ'[Math.min(9, Math.max(0, Math.floor(s.x / R.w * 10)))], row = Math.min(rows, Math.max(1, Math.floor(s.y / R.h * rows) + 1));
+  return { x: s.x * u, y: s.y * u, w: s.w * u, h: s.h * u, deg: Math.round((s.a || 0) * 180 / Math.PI) % 360, cell: col + row };
+}
+const f1 = v => (Math.round(v * 10) / 10).toFixed(1);
+function shapeIcon(s) { const c = hex(s); return '<svg class="shp" viewBox="0 0 20 20" aria-hidden="true">' + (s.t === 'e' ? '<ellipse cx="10" cy="10" rx="8" ry="6"' : s.t === 't' ? '<path d="M10 3L18 17H2Z"' : '<rect x="3" y="5" width="14" height="10"') + ' fill="' + c + '" stroke="currentColor" stroke-opacity=".35"/></svg>'; }
+function showResult(live) {
+  const R = S.res; if (!R || !R.shapes.length) return;
+  const n = R.shapes.length, k = Math.min(Math.max(1, S.k), n); S.k = k;
+  $('#resN').textContent = '共 ' + n + ' 步' + (live ? '（拆解中…）' : '');
+  const tc = $('#tgtCv'), sc = $('#stepCv'), PW = 720, PH = Math.round(PW / R.ar);
+  [tc, sc].forEach(c => { if (c.width !== PW || c.height !== PH) { c.width = PW; c.height = PH; } });
+  const tx = tc.getContext('2d'); if (S.tgt) tx.drawImage(S.tgt, 0, 0, PW, PH); else if (S.tgtImg) tx.drawImage(S.tgtImg, 0, 0, PW, PH);
+  if ($('#grid').checked) drawGrid(tx, PW, PH);
+  render(sc, k, { grid: $('#grid').checked, hl: $('#hl').checked && !live, only: $('#only').checked && !live });
+  $('#k').max = n; $('#k').value = k; $('#kT').textContent = k;
+  const types = {}; R.shapes.forEach(s => { if (!s.bg) types[s.t] = (types[s.t] || 0) + 1; });
+  $('#tiles').innerHTML = [['圖形', n + ' 個'], ['相似度', R.sim ? R.sim.toFixed(1) + '%' : '—'], ...Object.entries(types).map(([t, c]) => [SHAPE_NAME[t], c + ' 個']), ['顏色', new Set(R.shapes.map(hex)).size + ' 種']]
+    .map(([a, b]) => '<div class="tile"><span>' + a + '</span><b>' + b + '</b></div>').join('');
+  const s = R.shapes[k - 1], c = card(s), alpha = Math.round(s.al * 100);
+  $('#det').innerHTML = '<div class="h">第 ' + k + ' 步<small>' + (s.bg ? '底色：先鋪一個蓋滿全版的矩形' : '疊在前一步上面') + '</small></div>' +
+    '<dl class="kv"><dt>圖形</dt><dd>' + shapeIcon(s) + SHAPE_NAME[s.t] + '</dd>' +
+    '<dt>顏色</dt><dd><span class="sw" style="background:' + hex(s) + '"></span>' + hex(s) + '　<button class="btn sm" id="cpHex" style="height:24px">複製</button><br><span class="dim" style="font-size:12px">RGB ' + s.r + ', ' + s.g + ', ' + s.b + '</span></dd>' +
+    '<dt>不透明度</dt><dd>' + alpha + '%</dd>' +
+    '<dt>中心位置</dt><dd>x ' + f1(c.x) + '　y ' + f1(c.y) + '<span class="dim">（' + c.cell + '）</span></dd>' +
+    '<dt>大小</dt><dd>寬 ' + f1(c.w) + ' × 高 ' + f1(c.h) + '</dd>' +
+    '<dt>角度</dt><dd>' + c.deg + '°</dd></dl>';
+  const cp = $('#cpHex'); if (cp) cp.onclick = () => copy(hex(s).slice(1), '已複製 ' + hex(s));
+  $('#simT').textContent = '';
+  if (!live) { buildTable(); buildPal(); }
+}
+function buildPal() {
+  const R = S.res, m = new Map(); R.shapes.forEach((s, i) => { const h = hex(s); if (!m.has(h)) m.set(h, []); m.get(h).push(i + 1); });
+  const arr = [...m.entries()].sort((a, b) => b[1].length - a[1].length);
+  $('#palN').textContent = arr.length + ' 種';
+  $('#palList').innerHTML = arr.map(([h, st]) => '<button class="chk" data-hex="' + h + '" title="用在第 ' + st.join('、') + ' 步"><span class="sw" style="background:' + h + ';margin:0"></span><span class="mono">' + h + '</span><span class="dim">×' + st.length + '</span></button>').join('');
+}
+$('#palList').onclick = e => { const b = e.target.closest('[data-hex]'); if (b) copy(b.dataset.hex.slice(1), '已複製 ' + b.dataset.hex); };
+function buildTable() {
+  const R = S.res; $('#tb').innerHTML = R.shapes.map((s, i) => { const c = card(s); return '<tr data-i="' + (i + 1) + '"' + (i + 1 === S.k ? ' class="cur"' : '') + '><td>' + (i + 1) + '</td><td>' + shapeIcon(s) + SHAPE_NAME[s.t] + '</td><td><span class="sw" style="background:' + hex(s) + '"></span>' + hex(s) + '</td><td>' + Math.round(s.al * 100) + '%</td><td>' + f1(c.x) + '</td><td>' + f1(c.y) + '</td><td>' + f1(c.w) + '</td><td>' + f1(c.h) + '</td><td>' + c.deg + '°</td><td>' + c.cell + '</td></tr>'; }).join('');
+}
+$('#tb').onclick = e => { const tr = e.target.closest('tr[data-i]'); if (tr) go(+tr.dataset.i); };
+function go(k) { S.k = k; showResult(); }
+$('#k').oninput = e => go(+e.target.value);
+$('#prev').onclick = () => go(S.k - 1); $('#next').onclick = () => go(S.k + 1); $('#first').onclick = () => go(1); $('#last').onclick = () => go(S.res.shapes.length);
+['#grid', '#hl', '#only'].forEach(id => $(id).onchange = () => showResult());
+$('#play').onclick = () => { if (S.timer) { clearInterval(S.timer); S.timer = null; $('#play').textContent = '自動播放'; return; }
+  if (S.k >= S.res.shapes.length) S.k = 0; $('#play').textContent = '暫停';
+  S.timer = setInterval(() => { if (S.k >= S.res.shapes.length) { clearInterval(S.timer); S.timer = null; $('#play').textContent = '自動播放'; return; } go(S.k + 1); }, 350); };
+document.addEventListener('keydown', e => { if (!S.res || /INPUT|SELECT|TEXTAREA/.test((e.target || {}).tagName || '')) return; if (e.key === 'ArrowRight') go(S.k + 1); else if (e.key === 'ArrowLeft') go(S.k - 1); });
+
+/* ── 匯出 ── */
+function copy(t, msg) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(msg || '已複製')).catch(() => { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); toast(msg || '已複製'); } catch (e) { toast('複製失敗'); } a.remove(); }); }
+const stamp = () => new Date().toISOString().slice(0, 10);
+function dl(name, blobOrUrl) { const a = document.createElement('a'), u = typeof blobOrUrl === 'string' ? blobOrUrl : URL.createObjectURL(blobOrUrl); a.download = name; a.href = u; a.style.display = 'none'; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); if (u.startsWith('blob:')) URL.revokeObjectURL(u); }, 4000); }
+function lines() {
+  const R = S.res, hh = f1(100 / R.ar);
+  return ['名片拼圖步驟（共 ' + R.shapes.length + ' 步；名片寬 = 100、高 = ' + hh + '；x 由左往右、y 由上往下；角度順時針）']
+    .concat(R.shapes.map((s, i) => { const c = card(s); return '第 ' + (i + 1) + ' 步　' + SHAPE_NAME[s.t] + (s.bg ? '（底色）' : '') + '　' + hex(s) + '　不透明度 ' + Math.round(s.al * 100) + '%　中心 (' + f1(c.x) + ', ' + f1(c.y) + ') ' + c.cell + '　大小 ' + f1(c.w) + ' × ' + f1(c.h) + '　角度 ' + c.deg + '°'; }));
+}
+$('#cpTxt').onclick = () => copy(lines().join('\n'), '已複製全部步驟');
+$('#dlCsv').onclick = () => { const R = S.res; const rows = [['步驟', '圖形', '顏色', 'R', 'G', 'B', '不透明度%', '中心x', '中心y', '寬', '高', '角度', '格位']]
+  .concat(R.shapes.map((s, i) => { const c = card(s); return [i + 1, SHAPE_NAME[s.t] + (s.bg ? '（底色）' : ''), hex(s), s.r, s.g, s.b, Math.round(s.al * 100), f1(c.x), f1(c.y), f1(c.w), f1(c.h), c.deg, c.cell]; }));
+  dl('namecard-steps-' + stamp() + '.csv', new Blob(['﻿' + rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' })); };
+$('#dlImg').onclick = () => { const R = S.res, cv = document.createElement('canvas'); cv.width = 1600; cv.height = Math.round(1600 / R.ar); render(cv, R.shapes.length); dl('namecard-' + stamp() + '.png', cv.toDataURL('image/png')); };
+$('#dlSheet').onclick = () => {
+  const R = S.res, n = R.shapes.length, cols = 6, tw = 300, th = Math.round(tw / R.ar), cap = 40, rows = Math.ceil(n / cols), pad = 10;
+  const cv = document.createElement('canvas'); cv.width = cols * (tw + pad) + pad; cv.height = rows * (th + cap + pad) + pad + 50;
+  const x = cv.getContext('2d'); x.fillStyle = '#fafafa'; x.fillRect(0, 0, cv.width, cv.height);
+  x.fillStyle = '#222'; x.font = '700 22px system-ui'; x.fillText('名片拼圖步驟　共 ' + n + ' 步（名片寬 = 100）', pad, 34);
+  const one = document.createElement('canvas'); one.width = tw; one.height = th;
+  for (let i = 0; i < n; i++) {
+    const c = card(R.shapes[i]), gx = pad + (i % cols) * (tw + pad), gy = 50 + pad + Math.floor(i / cols) * (th + cap + pad);
+    render(one, i + 1, { hl: true }); x.drawImage(one, gx, gy); x.strokeStyle = '#ccc'; x.strokeRect(gx + .5, gy + .5, tw - 1, th - 1);
+    const s = R.shapes[i]; x.fillStyle = hex(s); x.fillRect(gx, gy + th + 6, 16, 16); x.strokeStyle = '#999'; x.strokeRect(gx + .5, gy + th + 6.5, 16, 16);
+    x.fillStyle = '#222'; x.font = '700 13px system-ui'; x.fillText((i + 1) + '. ' + SHAPE_NAME[s.t] + ' ' + hex(s) + ' ' + Math.round(s.al * 100) + '%', gx + 22, gy + th + 19);
+    x.font = '12px ui-monospace,monospace'; x.fillStyle = '#555'; x.fillText('(' + f1(c.x) + ',' + f1(c.y) + ') ' + f1(c.w) + '×' + f1(c.h) + ' ' + c.deg + '° ' + c.cell, gx + 22, gy + th + 35);
+  }
+  cv.toBlob(b => dl('namecard-steps-' + stamp() + '.png', b), 'image/png');
+};
+$('#dlJson').onclick = () => dl('namecard-' + stamp() + '.json', new Blob([JSON.stringify(pack())], { type: 'application/json' }));
+$('#ldJson').onclick = () => $('#jsonFile').click();
+$('#jsonFile').onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { try { unpack(JSON.parse(t)); toast('讀取完成'); } catch (err) { toast('不是名片拼圖的檔案'); } }); };
+function pack() { const R = S.res; return { v: 1, w: R.w, h: R.h, ar: R.ar, st: R.st, sim: R.sim, shapes: R.shapes, tgt: S.tgtUrl || null }; }
+function unpack(o) {
+  if (!o || !Array.isArray(o.shapes) || !o.w || !o.h) throw new Error('bad');
+  S.res = { w: o.w, h: o.h, ar: o.ar || o.w / o.h, shapes: o.shapes, st: o.st || {}, sim: o.sim || 0 }; S.k = 1; S.tgt = null; S.tgtImg = null; S.tgtUrl = o.tgt || null;
+  $('#resCard').hidden = false;
+  if (o.tgt) { const im = new Image(); im.onload = () => { S.tgtImg = im; showResult(); }; im.src = o.tgt; }
+  showResult();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(pack())); } catch (e) { try { const p = pack(); p.tgt = null; localStorage.setItem(KEY, JSON.stringify(p)); } catch (e2) {} } }
+try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) unpack(o); } catch (e) {}
+window.__namecard = { S, settings, card, lines };
+
+/* 內嵌在 app 裡：回報內容高度給外層、站內連結改在外層開 */
+if (document.documentElement.classList.contains('embed') && window.parent !== window) { const post = () => parent.postMessage({ sekaiCalcHeight: Math.ceil(document.body.getBoundingClientRect().height) }, '*'); new ResizeObserver(post).observe(document.body); setInterval(post, 1500); post(); document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (/app\.html/.test(h)) { e.preventDefault(); const m = /page=([a-z0-9_]+)/.exec(h); try { parent.postMessage({ sekaiGoto: m ? m[1] : 'home' }, '*'); } catch (err) { window.top.location.href = h; } } }); }
+</script>
+</body>
+</html>

@@ -162,6 +162,39 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：名片拼圖（namecard.html）。桌機與手機各開一次：餵一張程式畫的測試圖（色塊＋圓），快速品質拆 24 個圖形，
+// 要拆完、步驟數對、相似度有上升（比只鋪底色好）、步驟播放器與步驟表長出來、文字步驟第一行是底色；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/namecard.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.evaluate(() => { try { localStorage.removeItem('sekai-namecard-v1'); } catch (e) {} });
+      const png = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 450; c.height = 200; const x = c.getContext('2d');
+        x.fillStyle = '#f2d7e0'; x.fillRect(0, 0, 450, 200); x.fillStyle = '#3f8cff'; x.fillRect(30, 30, 160, 90); x.fillStyle = '#ffd94d'; x.beginPath(); x.arc(320, 110, 60, 0, 7); x.fill();
+        x.fillStyle = '#c43d50'; x.beginPath(); x.moveTo(230, 190); x.lineTo(300, 20); x.lineTo(370, 190); x.fill(); return c.toDataURL('image/png').split(',')[1]; });
+      await page.setInputFiles('#file', { name: 't.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+      await page.waitForSelector('#setCard:not([hidden])', { timeout: 10000 });
+      await page.selectOption('#q', '1'); await page.fill('#n', '24'); await page.dispatchEvent('#n', 'input');
+      await page.click('#go');
+      await page.waitForFunction(() => window.__namecard && !document.querySelector('#go').disabled && window.__namecard.S.res && window.__namecard.S.res.shapes.length >= 2, null, { timeout: 60000 });
+      const r = await page.evaluate(() => { const R = window.__namecard.S.res; return { n: R.shapes.length, sim: R.sim, rows: document.querySelectorAll('#tb tr').length, det: document.querySelector('#det').textContent, first: window.__namecard.lines()[1] || '' }; });
+      await page.click('#first'); await page.click('#next');
+      const k = await page.evaluate(() => window.__namecard.S.k);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && r.n >= 20 && r.n <= 24 && r.sim > 80 && r.rows === r.n && /第 \d+ 步/.test(r.det) && /底色/.test(r.first) && k === 2 && !(mobile && overflow);
+      why = errors[0] || (r.n < 20 || r.n > 24 ? '圖形數 ' + r.n : r.sim <= 80 ? '相似度只有 ' + r.sim : r.rows !== r.n ? '步驟表 ' + r.rows + ' 列' : k !== 2 ? '下一步沒反應' : !/底色/.test(r.first) ? '第一步不是底色' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' namecard' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：說明書閱讀器（manual.html）。桌機與手機各開一次：四份文件（三份說明書＋排班論文）都在、#sched-s4-6 直達那一節且目次亮對、
 // 章節交互參照與站內頁面連結存在、搜尋有標記且 Esc 清掉、跨文件連結會切換說明書；不能有 JS 錯誤、手機不能橫向溢出。
 {
@@ -200,14 +233,14 @@ for (const mobile of [false, true]) {
   }
 }
 
-// 主站內嵌的三個獨立頁（?page=mystudio／profile／plan → iframe ?embed=1）：高度要收斂。
+// 主站內嵌的獨立頁（?page=mystudio／profile／plan／namecard → iframe ?embed=1）：高度要收斂。
 // 以前 html{height:100%} + 回報 documentElement.scrollHeight（永遠 ≥ 視窗高）+ 外層 +8px，回報一次長一次，幾秒就長到幾萬 px。
 // 桌機開一次：等 iframe 長出來後隔 2.5 秒再量，兩次差不能超過 40px（存石規劃本來就一萬多 px，所以只看有沒有繼續長）。
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(() => { try { localStorage.setItem('sekai-guide-hide', '1'); } catch (e) {} });
   await routeMdb(ctx);
-  for (const pg of ['mystudio', 'profile', 'plan']) {
+  for (const pg of ['mystudio', 'profile', 'plan', 'namecard']) {
     const page = await ctx.newPage(); const errors = [];
     page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
     let ok = false, why = '';
