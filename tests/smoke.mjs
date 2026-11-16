@@ -202,6 +202,38 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：菜根機器人展示（botdemo.html）。帶 ?t=20 開：開場畫面要寫「從 0:20 開始」；按播放後時間要往前走、從 20 秒附近開始；
+// 暫停後點章節「共跑」要跳到那一段；分享按鈕要出「已複製」提示、連結帶 t=；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 800 } });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/botdemo.html?t=20', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForFunction(() => window.__demo, null, { timeout: 15000 });
+      const hint = await page.textContent('#startHint');
+      await page.click('#bigPlay'); await page.waitForTimeout(1200);
+      const t1 = await page.evaluate(() => window.__demo.t);
+      await page.click('#pp');
+      const coop = await page.$$eval('.chb', bs => bs.findIndex(b => b.textContent === '共跑'));
+      await page.click('.chb >> nth=' + coop); await page.waitForTimeout(300);
+      const t2 = await page.evaluate(() => window.__demo.t), cap = await page.evaluate(() => document.querySelector('.tag .t').textContent);
+      await page.click('#pp'); await page.waitForTimeout(400); await page.click('#pp');
+      await page.click('#sh'); await page.waitForTimeout(300);
+      const toast = await page.textContent('#toast');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && /0:20/.test(hint) && t1 > 20.5 && t1 < 23 && t2 > 55 && t2 < 60 && cap === '共跑' && /已複製/.test(toast) && !(mobile && overflow);
+      why = errors[0] || (!/0:20/.test(hint) ? '開場沒寫起始時間：' + hint : !(t1 > 20.5 && t1 < 23) ? '播放時間不對：' + t1 : !(t2 > 55 && t2 < 60) ? '章節沒跳到共跑：' + t2 : cap !== '共跑' ? '章節標題是 ' + cap : !/已複製/.test(toast) ? '分享沒反應：' + toast : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' botdemo' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：說明書閱讀器（manual.html）。桌機與手機各開一次：四份文件（三份說明書＋排班論文）都在、#sched-s4-6 直達那一節且目次亮對、
 // 章節交互參照與站內頁面連結存在、搜尋有標記且 Esc 清掉、跨文件連結會切換說明書；不能有 JS 錯誤、手機不能橫向溢出。
 {
