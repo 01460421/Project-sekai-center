@@ -234,6 +234,53 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：SEKAI 二選一（pick.html）。桌機與手機各跑一次快速版：上一題要退回一步；六關都要選出冠軍、進結果頁；
+// 結果頁有六列、紀念卡畫得出來；分享連結（?r=）打開要看得到朋友的結果；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ reducedMotion: 'reduce', ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 800 } }) });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/pick.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.evaluate(() => { try { localStorage.removeItem('sekai-pick-v1'); } catch (e) {} });
+      await page.waitForSelector('#go', { timeout: 15000 }); await page.click('#go');
+      await page.waitForSelector('.hit[data-side]');
+      await page.click('.hit[data-side="0"]'); await page.waitForTimeout(150);
+      await page.click('.hit[data-side="1"]'); await page.waitForTimeout(150);
+      const d1 = await page.evaluate(() => window.__pick.S.b.done);
+      await page.click('#undo'); await page.waitForTimeout(150);
+      const d2 = await page.evaluate(() => window.__pick.S.b.done);
+      let n = 0;
+      for (let k = 0; k < 300; k++) {
+        const v = await page.evaluate(() => window.__pick.S && window.__pick.S.view);
+        if (v === 'result') break;
+        if (v === 'inter') { await page.click('#next'); await page.waitForTimeout(120); continue; }
+        if (v !== 'play' || !(await page.$('.hit[data-side]'))) { await page.waitForTimeout(200); continue; }
+        await page.click('.hit[data-side="' + (n % 2) + '"]'); n++; await page.waitForTimeout(90);
+      }
+      const res = await page.evaluate(() => Object.keys((window.__pick.S || {}).res || {}).length);
+      await page.waitForSelector('#cats .cat', { timeout: 10000 });
+      const rows = await page.$$eval('#cats .cat', x => x.length);
+      await page.waitForFunction(() => document.querySelector('#wait') && document.querySelector('#wait').hidden, null, { timeout: 30000 });
+      await page.click('#share'); await page.waitForTimeout(300);
+      const toast = await page.textContent('#toast');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      const share = await page.evaluate(() => { const v = document.querySelector('#toast').textContent; return /pick\?r=/.test(v) ? v : null; }) || await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+      let shared = 0;
+      const code = String(share || '').split('r=')[1];
+      if (code) { await page.goto(ORIGIN + '/pick.html?r=' + code, { waitUntil: 'domcontentloaded' }); await page.waitForSelector('#cats .cat', { timeout: 20000 }); shared = await page.$$eval('#cats .cat', x => x.length); }
+      ok = !errors.length && d1 === 2 && d2 === 1 && res === 6 && rows === 6 && /已複製|pick\?r=/.test(toast) && (!code || shared >= 3) && !(mobile && overflow);
+      why = errors[0] || (d1 !== 2 || d2 !== 1 ? '上一題沒退回：' + d1 + '→' + d2 : res !== 6 ? '只完成 ' + res + ' 關' : rows !== 6 ? '結果頁列數 ' + rows : !/已複製|pick\?r=/.test(toast) ? '分享沒反應：' + toast : code && shared < 3 ? '分享頁只有 ' + shared + ' 列' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' pick' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：說明書閱讀器（manual.html）。桌機與手機各開一次：四份文件（三份說明書＋排班論文）都在、#sched-s4-6 直達那一節且目次亮對、
 // 章節交互參照與站內頁面連結存在、搜尋有標記且 Esc 清掉、跨文件連結會切換說明書；不能有 JS 錯誤、手機不能橫向溢出。
 {

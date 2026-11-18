@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>SEKAI 二選一 — 選出你的本命、歌曲、卡面與活動 | Project SEKAI 資源中心</title>
+<meta name="description" content="Project SEKAI 二選一測驗：每次兩個選一個，從角色、歌曲（可試聽）、卡面、活動、作曲家到遊戲里程碑一路淘汰，最後拿到你的組合包與角色格言紀念卡。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SEKAI 二選一 — 你的本命是誰？">
+<meta property="og:description" content="角色、歌曲（可試聽）、卡面、活動、作曲家、里程碑，六關二選一淘汰賽。完成拿組合包與角色格言紀念卡。">
+<meta property="og:url" content="https://project-sekai-center.com/pick.html">
+<meta property="og:image" content="https://project-sekai-center.com/og/pick.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://project-sekai-center.com/og/pick.jpg">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://storage.sekai.best" crossorigin>
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#f5f5f7; --bg2:#ffffff; --card:#ffffff; --ink:#1d1d1f; --ink2:#515154; --ink3:#6e6e73; --hair:rgba(0,0,0,.08); --hair2:rgba(0,0,0,.14);
+  --fill:rgba(118,118,128,.12); --fill2:rgba(118,118,128,.2); --glass:rgba(245,245,247,.72);
+  --blue:#0071e3; --acc:#0071e3; --acc-ink:#fff;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px rgba(0,0,0,.08); --shadow2:0 2px 6px rgba(0,0,0,.06),0 18px 48px rgba(0,0,0,.14);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000; --bg2:#101012; --card:#1c1c1e; --ink:#f5f5f7; --ink2:#c7c7cc; --ink3:#98989d; --hair:rgba(255,255,255,.1); --hair2:rgba(255,255,255,.18);
+  --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.36); --glass:rgba(0,0,0,.66); --blue:#2997ff;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px rgba(0,0,0,.5); --shadow2:0 2px 6px rgba(0,0,0,.5),0 18px 48px rgba(0,0,0,.6);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;overflow-x:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:var(--blue);text-decoration:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:12px}
+[hidden]{display:none!important}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;height:52px;padding:0 max(16px,env(safe-area-inset-left));background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hair)}
+.top .back{font-size:14px;color:var(--ink2);white-space:nowrap}
+.top .back:hover{color:var(--ink)}
+.top h1{font-size:15px;font-weight:600;letter-spacing:.01em;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sp{width:84px;display:flex;justify-content:flex-end}
+.prog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent}
+.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s var(--ease)}
+main{max-width:1080px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-inset-bottom))}
+.view{animation:vin .5s var(--ease)}
+@keyframes vin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* 開始：深色電影感橫幅，卡面兩列慢慢對向捲動 */
+.cine{position:relative;width:100vw;margin:0 0 0 calc(50% - 50vw);height:min(74vh,640px);min-height:460px;overflow:hidden;background:#000;color:#f5f5f7;isolation:isolate}
+.reel{position:absolute;left:0;display:flex;gap:14px;will-change:transform}
+.reel img{flex:none;height:100%;aspect-ratio:16/9;border-radius:14px;object-fit:cover;opacity:.0;transition:opacity 1.2s}
+.reel img.in{opacity:.7}
+.reel.r1{top:6%;height:40%;animation:reelL 90s linear infinite}
+.reel.r2{top:50%;height:40%;animation:reelR 100s linear infinite}
+@keyframes reelL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes reelR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.cine::after{content:'';position:absolute;inset:0;z-index:1;background:radial-gradient(70% 70% at 50% 55%,rgba(0,0,0,.55),rgba(0,0,0,.92) 80%),linear-gradient(180deg,rgba(0,0,0,.3),transparent 30%,transparent 70%,#000)}
+.cine .in-hero{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
+.cine .eyebrow{font-size:12px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.cine h2{font-size:clamp(46px,9vw,104px);line-height:1;font-weight:700;letter-spacing:-.035em;margin:18px 0 20px;background:linear-gradient(180deg,#fff 30%,rgba(255,255,255,.62));-webkit-background-clip:text;background-clip:text;color:transparent}
+.cine p{font-size:clamp(16px,2vw,20px);color:rgba(255,255,255,.72);max-width:560px;line-height:1.6}
+.cine .cta{margin-top:30px}
+.cine .btn{background:rgba(255,255,255,.14);color:#fff;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.cine .btn:hover{background:rgba(255,255,255,.22)}
+.cine .btn.pri{background:#f5f5f7;color:#000}
+.cine .btn.pri:hover{background:#fff;filter:none}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);max-width:900px;margin:44px auto 0;border-top:1px solid var(--hair2)}
+.flow div{padding:16px 6px 0;text-align:left}
+.flow b{display:block;font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.flow span{display:block;font-size:17px;font-weight:600;margin-top:4px;letter-spacing:-.01em}
+.flow i{display:block;font-style:normal;font-size:13px;color:var(--ink2);margin-top:2px}
+.modes{display:flex;flex-direction:column;align-items:center;gap:10px;margin:40px auto 0}
+.modes .seg button{height:36px;padding:0 22px;font-size:15px}
+.modes .desc{font-size:14px;color:var(--ink2);min-height:21px}
+.cta{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 22px;border-radius:999px;font-size:16px;font-weight:500;background:var(--fill);color:var(--ink);transition:transform .2s var(--ease),background .2s,opacity .2s}
+.btn:hover{background:var(--fill2)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--acc);color:var(--acc-ink)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{min-height:36px;padding:0 14px;font-size:14px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.hero{text-align:center;padding:64px 0 20px}.hero h2{font-size:clamp(28px,5vw,44px);font-weight:700;letter-spacing:-.02em}.hero p{color:var(--ink2);margin-top:8px}
+.note{font-size:13px;color:var(--ink3);text-align:center;margin-top:18px}
+.ico{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ico.f{fill:currentColor;stroke:none}
+/* 對戰 */
+.stage{padding:26px 0 0;text-align:center}
+.stage .lbl{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.14em;text-transform:uppercase}
+.stage .lbl em{font-style:normal;color:var(--ink);font-weight:700}
+.dots{display:flex;justify-content:center;gap:6px;margin-bottom:12px}
+.dots i{width:22px;height:3px;border-radius:2px;background:var(--fill2);transition:background .4s}
+.dots i.on{background:var(--acc)}
+.dots i.cur{background:var(--acc);opacity:.5}
+.stage h2{font-size:clamp(24px,4vw,34px);font-weight:700;letter-spacing:-.01em;margin-top:4px}
+.stage .sub{font-size:15px;color:var(--ink2);margin-top:4px}
+.duel{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
+.vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;letter-spacing:.18em;text-indent:.18em;background:var(--glass);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);color:var(--ink);border:1px solid var(--hair2);box-shadow:var(--shadow2);pointer-events:none}
+.opt{position:relative;display:flex;flex-direction:column;background:var(--card);border-radius:22px;overflow:hidden;box-shadow:var(--shadow);text-align:left;transition:transform .35s var(--ease),box-shadow .35s var(--ease),opacity .35s;outline-offset:3px}
+.opt:hover{transform:translateY(-3px);box-shadow:var(--shadow2)}
+.opt:active{transform:scale(.985)}
+.opt .media{position:relative;aspect-ratio:16/9;background:var(--fill);overflow:hidden}
+.opt.sq .media{aspect-ratio:1/1}
+.opt .media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .4s,transform .6s var(--ease)}
+.opt .media img.ld{opacity:0}
+.opt:hover .media img{transform:scale(1.025)}
+.opt .media .logo{inset:auto auto 10px 12px;width:42%;height:auto;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.opt .mosaic{position:absolute;inset:0;display:flex;gap:2px}
+.opt .mosaic img{position:static;flex:1 1 0;min-width:0;width:auto;height:100%;object-fit:cover}
+.opt .mosaic img:first-child{flex:2 1 0}
+.opt .body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:2px;min-height:86px}
+.opt .t{font-size:19px;font-weight:600;line-height:1.3;letter-spacing:-.005em;overflow-wrap:anywhere}
+.opt .s{font-size:14px;color:var(--ink2)}
+.opt .d{font-size:13px;color:var(--ink3);margin-top:2px}
+.opt .bar{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--acc))}
+.opt .hit{position:absolute;inset:0;z-index:1;border-radius:inherit}
+.opt .hit:focus-visible{outline:3px solid var(--blue);outline-offset:-3px;border-radius:22px}
+.chipbtn{position:absolute;z-index:2;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:500;color:#fff;background:rgba(0,0,0,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:background .2s,transform .2s var(--ease)}
+.chipbtn:hover{background:rgba(0,0,0,.7)}
+.chipbtn:active{transform:scale(.95)}
+.play{right:12px;bottom:12px}
+.play.on{background:var(--c,var(--acc))}
+.play .eq{display:none}.play.on .eq{display:inline-flex}.play.on .pi{display:none}.pi{display:inline-flex}
+.play .eq{display:inline-flex;gap:2px;align-items:flex-end;height:12px}
+.play .eq i{width:2px;background:#fff;border-radius:1px;height:4px}
+.play.on .eq i{animation:eq .9s ease-in-out infinite}
+.play.on .eq i:nth-child(2){animation-delay:-.3s}.play.on .eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{0%,100%{height:3px}50%{height:12px}}
+.swap{left:12px;top:12px;height:32px;font-size:13px;padding:0 12px}
+.flip{right:12px;top:12px;height:32px;font-size:13px;padding:0 12px}
+.opt.win{transform:scale(1.03);box-shadow:0 0 0 3px var(--c,var(--acc)),var(--shadow2)}
+.opt.lose{opacity:.25;transform:scale(.96)}
+.duel.enter .opt{animation:pin .5s var(--ease) both}
+.duel.enter .opt:nth-of-type(2){animation-delay:.06s}
+@keyframes pin{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.ctrl{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap}
+.kbd{font-size:12px;color:var(--ink3);text-align:center;margin-top:12px}
+/* 關卡冠軍 */
+.champ{position:relative;max-width:560px;margin:36px auto 0;text-align:center}
+.backdrop{position:fixed;inset:0;z-index:-1;background-size:cover;background-position:center;filter:blur(60px) saturate(1.4);opacity:.28;transform:scale(1.2);animation:bdin 1.2s var(--ease)}
+@keyframes bdin{from{opacity:0}}
+.champ .lbl{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.14em}
+.champ h2{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.015em;margin:6px 0 18px}
+.champ .opt{animation:pop .7s var(--ease) both}
+@keyframes pop{0%{opacity:0;transform:scale(.92)}60%{opacity:1;transform:scale(1.015)}100%{transform:none}}
+.podium{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:14px;color:var(--ink2)}
+.podium span{background:var(--fill);border-radius:999px;padding:4px 12px}
+/* 結果 */
+.res-hero{text-align:center;padding:44px 0 8px}
+.res-hero .lbl{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.24em}
+.res-hero h2{font-size:clamp(28px,5.4vw,48px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:8px}
+.res-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;margin-top:30px;align-items:start}
+.memo{position:relative;border-radius:22px;overflow:hidden;box-shadow:var(--shadow2);background:#111}
+.memo canvas{display:block;width:100%;height:auto}
+.memo .wait{position:absolute;inset:0;display:grid;place-items:center;color:#aaa;font-size:14px}
+.memo-tabs{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.seg{display:inline-flex;background:var(--fill);border-radius:10px;padding:2px}
+.seg button{height:32px;padding:0 14px;border-radius:8px;font-size:14px;color:var(--ink2)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:500}
+.cats{display:flex;flex-direction:column;gap:10px}
+.cat{display:flex;gap:14px;align-items:center;background:var(--card);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
+.cat .th{flex:none;width:96px;height:64px;border-radius:12px;overflow:hidden;background:var(--fill);position:relative}
+.cat .th.sq{width:64px}
+.cat .th img{width:100%;height:100%;object-fit:cover;display:block}
+.cat .info{min-width:0;flex:1}
+.cat .k{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.04em}
+.cat .n{font-size:17px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.cat .r{font-size:13px;color:var(--ink2);overflow-wrap:anywhere}
+.cat .play{position:static;flex:none;color:var(--ink);background:var(--fill)}
+.cat .play.on{color:#fff}
+.cat .play .eq i{background:currentColor}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.acts .btn{flex:1 1 auto}
+.pack{margin-top:18px;background:var(--card);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);font-size:14px;color:var(--ink2)}
+.pack b{color:var(--ink);font-size:15px}
+.pack ul{margin:8px 0 0 18px}
+.pack li{margin:2px 0}
+.share-hero{text-align:center;padding:40px 0 0}
+.share-hero h2{font-size:clamp(26px,5vw,40px);font-weight:700;letter-spacing:-.015em;margin-top:6px}
+.share-hero .lbl{font-size:13px;font-weight:600;color:var(--acc);letter-spacing:.06em}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;z-index:50;background:rgba(29,29,31,.92);color:#fff;font-size:14px;padding:10px 18px;border-radius:999px;pointer-events:none;transition:opacity .3s,transform .4s var(--ease);max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.loading{display:grid;place-items:center;min-height:50vh;color:var(--ink3);font-size:15px}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--fill2);border-top-color:var(--acc);animation:sp 1s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-width:860px){
+  .res-grid{grid-template-columns:1fr}
+  .flow{grid-template-columns:repeat(3,1fr);row-gap:18px}
+}
+@media (max-width:640px){
+  .top .sp{width:auto}
+  .cine{height:auto;min-height:520px}
+  .duel{grid-template-columns:1fr;gap:12px;margin-top:16px}
+  .opt{flex-direction:row;border-radius:18px}
+  .opt .media,.opt.sq .media{flex:none;width:46%;aspect-ratio:auto;min-height:120px}
+  .opt.sq .media{width:38%;aspect-ratio:1/1;min-height:0}
+  .opt .body{padding:12px 14px;justify-content:center;min-height:0}
+  .opt .t{font-size:17px}
+  .opt .bar{display:none}
+  .opt .media .logo{width:70%;left:8px;bottom:6px}
+  .chipbtn{height:32px;padding:0 10px;font-size:13px}
+  .play{right:8px;bottom:8px}
+  .swap{left:8px;top:8px;height:28px;font-size:12px;padding:0 9px}
+  .flip{right:8px;top:8px;height:28px;font-size:12px;padding:0 9px}
+  .vs{width:38px;height:38px;font-size:12px}
+  .stage{padding-top:18px}
+  .kbd{display:none}
+  .champ .opt{flex-direction:column}
+  .champ .opt .media{width:100%;aspect-ratio:16/9}
+  .champ .opt.sq .media{aspect-ratio:1/1}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="back" href="./app">‹ 資源中心</a>
+  <h1 id="ttl">SEKAI 二選一</h1>
+  <div class="sp"><button class="btn sm" id="restartTop" hidden>重來</button></div>
+  <div class="prog" aria-hidden="true"><i id="progBar"></i></div>
+</header>
+<main id="app"><div class="loading"><div><div class="spin"></div>載入資料中…</div></div></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { SONGS } from './data/songs-index.js?v=962599432c';
+import { SONG_META } from './data/song-meta.js?v=c3ad233bb0';
+import { CARDS, CHARAS } from './data/cards-index.js?v=0e6498429e';
+
+/* ========== 基本資料 ========== */
+const A = 'https://storage.sekai.best/sekai-jp-assets';
+const AUDIO = ['https://storage.sekai.best/sekai-jp-assets/music/long/', 'https://storage.sekai.best/sekai-tc-assets/music/long/'];
+const SITE = 'https://project-sekai-center.com/';
+const NOW = Date.now();
+const UNITS = ['ln', 'mmj', 'vbs', 'wxs', 'n25', 'vs'];
+const UNIT_NAME = { ln: 'Leo/need', mmj: 'MORE MORE JUMP！', vbs: 'Vivid BAD SQUAD', wxs: 'Wonderlands×Showtime', n25: '25點，Nightcord見。', vs: 'VIRTUAL SINGER', other: '其他' };
+const UNIT_COLOR = { ln: '#4455dd', mmj: '#6ccb20', vbs: '#ee1166', wxs: '#ff9900', n25: '#884499', vs: '#33aaaa', other: '#8e8e93' };
+const UNIT_MOOD = { ln: '放學後的屋頂', mmj: '舞台的聚光燈', vbs: '街頭的夜晚', wxs: '奇幻的舞台', n25: '凌晨 25 時', vs: '「世界」的歌聲' };
+const CHARA_COLOR = { 1:'#33aaee',2:'#ffdd44',3:'#ee6666',4:'#bbdd22',5:'#ffccaa',6:'#99ccff',7:'#ffaacc',8:'#99eedd',9:'#ff6699',10:'#00bbdd',11:'#ff7722',12:'#0077dd',13:'#ffbb00',14:'#ff66bb',15:'#33dd99',16:'#bb88ee',17:'#bb6688',18:'#8888cc',19:'#ccaa88',20:'#ddaacc',21:'#33ccbb',22:'#ffcc11',23:'#ffee11',24:'#ffbbcc',25:'#dd4444',26:'#3366cc' };
+const SHORT = ['', '一歌','咲希','穗波','志步','實乃理','遙','愛莉','雫','心羽','杏','彰人','冬彌','司','笑夢','寧寧','類','奏','真冬','繪名','瑞希','未來','鈴','連','流歌','MEIKO','KAITO'];
+/* 格言：本站依角色個性原創的句子，不是遊戲台詞 */
+const QUOTES = {
+  1: ['無論相隔多遠，旋律都會把我們連在一起。', '把想說的話放進歌裡，一定能傳達出去。', '不用急，我們一步一步走。', '只要大家還在身邊，我就能一直唱下去。'],
+  2: ['今天也要閃閃發亮地過喔！', '錯過的時間，就用現在加倍補回來！', '有大家在，什麼都會變得超開心！', '想做的事，就趁現在去做吧！'],
+  3: ['溫柔不是退讓，是選擇守護。', '慢慢來也沒關係，我會陪著你。', '鼓點穩了，心也就穩了。', '累的時候，先喝杯熱茶吧。'],
+  4: ['想站上頂點，就別找藉口。', '練習不會背叛你。', '說好要一起走到最後，就別放手。', '嘴上不說，不代表不在乎。'],
+  5: ['就算跌倒一百次，我也會第一百零一次站起來！', '把希望送到大家手上，就是我的偶像之路！', '不放棄，就是最強的才能！', '笑一個吧，明天一定會更好！'],
+  6: ['希望，是可以由自己點亮的。', '站在舞台上的每一秒，都要對得起看著你的人。', '我想再一次相信，自己能讓誰露出笑容。', '企鵝也是一步一步，努力往前走的喔。'],
+  7: ['可愛是我的武器，努力是我的底氣！', '被說不行的話，就證明給他們看。', '既然要做，就做到最好。', '偶像這條路，我從來沒想過放棄。'],
+  8: ['慢一點也沒關係，只要是自己選的路。', '想和大家一起，看見更多不一樣的風景。', '迷路的時候，就跟著心走吧。', '謝謝你，一直在我身邊。'],
+  9: ['我想唱出，連自己都會心動的歌！', '害怕的時候，就把音量調大一點！', '跟大家在一起，我就能變得更勇敢。', '那個夜晚的感動，我要親手創造出來！'],
+  10: ['要超越傳說，就從今晚開始。', '街頭就是我們的舞台。', '夥伴在，聲音就不會停。', '別只看著，一起跳進來吧！'],
+  11: ['天分不夠，那就用練習補上。', '只差一步，那就再多練一百遍。', '說好的事，我一定做到。', '別停下來，那晚的光還在前面。'],
+  12: ['這一次，我要用自己的意志選擇音樂。', '和搭檔一起，就沒有到不了的地方。', '認真想過之後，答案就會出現。', '我想讓更多人聽見我們的聲音。'],
+  13: ['站在舞台中央的人，要先成為大家的光！', '讓所有人都露出笑容，這才是真正的表演！', '失敗了也沒關係，下一場一定更精彩！', '未來的大明星，今天也全力以赴！'],
+  14: ['準備好了嗎？表演要開始囉！', '讓夢想繼續轉動吧，像旋轉木馬一樣！', '大家一起的話，就沒有做不到的表演！', '哇——好棒！再來一次！'],
+  15: ['歌聲，是我能交出最誠實的答案。', '不再逃避，這次要站在舞台上。', '……我也想被大家看見。', '嘴上嫌麻煩，其實還滿期待的。'],
+  16: ['下一個點子，會比上一個更驚人喔。', '讓不可能成為可能，就是演出的樂趣。', '能和大家一起實驗，真是太幸運了。', '安全措施？當然……大概有準備。'],
+  17: ['我會一直寫下去，直到能救贖某個人。', '聲音會在夜裡，找到需要它的人。', '凌晨的曲子，留給還醒著的你。', '只要還能作曲，我就不會停下。'],
+  18: ['我還不知道自己想要什麼……但我想找到。', '如果有一天，能真心笑出來就好了。', '在這裡，我可以只是我。', '謝謝你們，讓我還想繼續走下去。'],
+  19: ['我想被認可，所以要畫得更好。', '就算不甘心，也要拿起畫筆。', '畫不好的那張，我也會留著。', '熬夜？這是創作者的日常好嗎。'],
+  20: ['喜歡的東西，就大方地喜歡吧。', '可愛的事物，會讓今天變得好一點。', '總有一天，我想把真心話說出口。', '秘密有一點點，才比較有趣呀。'],
+  21: ['你的心意，我會用歌聲替你傳出去。', '在這個「世界」裡，你可以找到真正的想法。', '一起唱吧，就從這一首開始。', '我一直都在這裡，等你回來。'],
+  22: ['衝呀！開心的事情要大聲說出來！', '想做的事情不要等，現在就出發！', '有我在，不會無聊的！', '一起玩吧，讓今天變成最棒的一天！'],
+  23: ['需要幫忙的話，交給我吧！', '慢慢說，我會好好聽。', '勇氣就是，再多往前一步。', '我們一起想辦法，一定可以的。'],
+  24: ['迷路，也是一種旅行嘛。', '想說的話，慢慢想好再說就好。', '溫柔的歌，最適合現在的你。', '累了就歇一會兒吧，「世界」不會跑掉的。'],
+  25: ['想哭的時候就哭吧，之後再笑就好。', '交給姊姊吧。', '好好吃飯、好好睡覺，才唱得出好歌喔。', '你已經很努力了。'],
+  26: ['不用勉強，我會一直在旁邊。', '冰淇淋和歌聲，都能讓人打起精神。', '失敗也是表演的一部分，沒關係。', '你想走的路，我會幫你照亮。'],
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+/* 日服素材庫沒有的（台服先行的曲子），改抓台服素材庫；再不行就藏起來 */
+window.__imgErr = el => { if (el.dataset.alt) { const a = el.dataset.alt; el.removeAttribute('data-alt'); el.src = a; return; } if (!el.dataset.f && el.src.includes('sekai-jp-assets')) { el.dataset.f = 1; el.src = el.src.replace('sekai-jp-assets', 'sekai-tc-assets'); } else el.remove(); };
+const ICON = {
+  play: '<svg class="ico f" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4c0 .5.6.8 1 .5l8-5.2a.6.6 0 0 0 0-1L5.5 2.3c-.4-.3-1 0-1 .5Z"/></svg>',
+  swap: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6h10l-3-3M13.5 10h-10l3 3"/></svg>',
+  undo: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3 2.5 6.5 6 10"/><path d="M2.8 6.5H10a3.5 3.5 0 0 1 0 7H8"/></svg>',
+  flip: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="8" height="10" rx="1.5"/><path d="M12.5 5.5c1 .8 1.5 1.6 1.5 2.5s-.5 1.7-1.5 2.5"/></svg>',
+  arrow: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>',
+  shuffle: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h2.5c3 0 4 7 7 7H14M2 11.5h2.5c1.2 0 2-1 2.7-2.3M9 6.7c.7-1.2 1.5-2.2 2.5-2.2H14M12 2.5l2 2-2 2M12 9.5l2 2-2 2"/></svg>',
+};
+const IMGERR = 'onerror="__imgErr(this)"';
+const tcOf = u => u.replace('sekai-jp-assets', 'sekai-tc-assets');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pickN = (a, n) => shuffle(a).slice(0, n);
+const ymd = ts => { const d = new Date(ts + 8 * 3600e3); return d.getUTCFullYear() + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + String(d.getUTCDate()).padStart(2, '0'); };
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+let toastT = 0;
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2400); };
+const setAcc = c => { document.documentElement.style.setProperty('--acc', c || '#0071e3'); document.documentElement.style.setProperty('--acc-ink', lum(c || '#0071e3') > .62 ? '#1d1d1f' : '#fff'); };
+const lum = h => { const n = parseInt(String(h).slice(1), 16); const r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+/* 淺色背景上太亮的角色色（咲希、連的黃）當文字色會看不清：換成同色相的深一點版本 */
+const inkOf = h => { if (lum(h) < .62) return h; const n = parseInt(h.slice(1), 16); const k = .62; return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v * k).toString(16).padStart(2, '0')).join(''); };
+
+/* 角色 */
+const CH = {};
+CHARAS.forEach(([id, name, u]) => { CH[id] = { id, name, short: SHORT[id] || name, unit: UNITS[u] || 'vs', color: CHARA_COLOR[id] || '#888' }; });
+/* 卡：[id, 角色, 稀有度, 屬性, 取得類別, 支援團, 卡池可得, 卡名, 素材名, (0=沒圖), (1=取得即特訓後)] */
+const CARD = {};
+CARDS.forEach(c => { if (c[9] === 0) return; CARD[c[0]] = { id: c[0], ch: c[1], r: c[2], name: c[7], abn: c[8], sup: c[4], tr: c[2] === 3 || c[2] === 4, post: c[10] === 1 }; });
+const cardImg = (c, trained, big) => `${A}/character/${big ? 'member' : 'member_small'}/${c.abn}/card_${trained ? 'after_training' : 'normal'}.${big === 'png' ? 'png' : 'webp'}`;
+const RARE = c => c.r === 9 ? '生日卡' : c.r + ' 星';
+const SUPN = ['常駐', '生日', '期間限定', 'Colorful Festival', 'Bloom Festival', '團體活動限定', '合作限定'];
+const charCards = id => Object.values(CARD).filter(c => c.ch === id && (c.r === 4 || c.r === 9));
+/* 歌 */
+const SONG = {};
+SONGS.forEach(s => {
+  const m = SONG_META[s.id] || [];
+  if (!s.jkt || !(s.abnV || s.abnS) || (s.published && s.published > NOW)) return;
+  const units = (m[1] ? m[1].split(',') : s.units).filter(Boolean);
+  const main = units.find(u => u !== 'vs') || (units.includes('vs') ? 'vs' : 'other');
+  SONG[s.id] = { id: s.id, title: m[0] || s.title, jp: s.title, composer: m[3] || s.composer || '', lyricist: m[4] || '', units, main, w: (m[6] || '').includes('w'), jkt: s.jkt, abn: [s.abnS, s.abnV].filter(Boolean), date: m[2] || '' };
+});
+const jacket = (jkt, big) => big ? `${A}/music/jacket/${jkt}/${jkt}.webp` : `${A}/thumbnail/music_jacket/${jkt}.webp`;
+const songList = Object.values(SONG);
+const COMPOSER = {};
+songList.forEach(s => { if (!s.composer) return; (COMPOSER[s.composer] = COMPOSER[s.composer] || []).push(s); });
+
+/* 活動（event-info 比較大，開始後背景載） */
+let EVP = null, EV = null;
+const loadEv = () => EVP || (EVP = import('./data/event-info.js?v=e920bbc253').then(m => {
+  EV = {};
+  m.EVENT_INFO.ev.forEach(e => { if (!e[4] || e[5] > NOW) return; EV[e[0]] = { id: e[0], name: String(e[1]).replace(/\s*\n\s*/g, ' '), type: e[2], abn: e[4], s: e[5], chars: [...new Set((e[12] || []).map(x => x[0]))] }; });
+  return EV;
+}));
+const EVTYPE = { marathon: '馬拉松', cheerful_carnival: '歡樂嘉年華', world_bloom: 'World Link' };
+const evImg = e => `${A}/event/${e.abn}/screen/${e.type === 'world_bloom' ? 'bg' : 'character'}.webp`;
+const evAlt = e => `${A}/event/${e.abn}/screen/${e.type === 'world_bloom' ? 'character' : 'bg'}.webp`;
+const evLogo = e => `${A}/event/${e.abn}/logo/logo.webp`;
+const evUnit = e => { const cnt = {}; e.chars.forEach(c => { const u = CH[c] && CH[c].unit; if (u && u !== 'vs') cnt[u] = (cnt[u] || 0) + 1; }); const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]; return top && top[1] >= 4 ? top[0] : ''; };
+const evAt = ts => Object.values(EV).filter(e => e.s <= ts).sort((a, b) => b.s - a.s)[0];
+
+/* 里程碑：遊戲（台服）歷史上的時刻，日期都從活動資料取 */
+function milestones() {
+  const evs = Object.values(EV).sort((a, b) => a.s - b.s);
+  const out = [];
+  const add = (key, t, e, d) => { if (e) out.push({ key, t, e, d }); };
+  add('first', '台服的第一期活動', evs[0], '一切從這裡開始。');
+  add('cc', '第一次歡樂嘉年華', evs.find(e => e.type === 'cheerful_carnival'), '兩隊對決的嘉年華登場。');
+  ['mmj', 'vbs', 'wxs', 'n25'].forEach(u => add('box-' + u, UNIT_NAME[u] + ' 的第一次箱活', evs.find(e => e.type === 'marathon' && evUnit(e) === u), '整團的故事第一次站上活動舞台。'));
+  add('vs-all', '虛擬歌手全員的活動', evs.find(e => e.chars.length && e.chars.every(c => CH[c] && CH[c].unit === 'vs') && e.chars.length >= 6), '「世界」的居民們成為主角。');
+  add('ev100', '第 100 期活動', EV[100], '一百期的里程碑。');
+  add('wl1', 'World Link 開幕', evs.find(e => e.type === 'world_bloom'), '每位成員輪流擔任主角的新形式。');
+  add('wl-vs', '虛擬歌手的 World Link', evs.find(e => e.type === 'world_bloom' && e.chars.length && e.chars.every(c => CH[c] && CH[c].unit === 'vs')), '六位虛擬歌手各自的篇章。');
+  add('ev150', '第 150 期活動', EV[150], '一百五十期，故事還在繼續。');
+  const wl2 = evs.find(e => e.type === 'world_bloom' && /wl_2nd/.test(e.abn));
+  add('wl2', 'World Link 第二輪', wl2, '第二輪 World Link 開跑。');
+  add('wl2-fin', 'World Link 第二輪終章', evs.find(e => /wl_2nd_finale/.test(e.abn)), '全員到齊的終章。');
+  add('wl3', 'World Link 第三輪', evs.find(e => /wl_3rd/.test(e.abn)), '第三輪 World Link 開跑。');
+  const at = (key, t, d, date) => { const ts = Date.parse(date + 'T12:00:00+08:00'); if (ts <= NOW) { const e = evAt(ts); if (e) out.push({ key, t, e, d, ts }); } };
+  at('ms', '我的「世界」（豆森）實裝', '在自己的「世界」裡蓋房子、種花、和大家一起生活。', '2026-03-01');
+  at('a45', '4.5 週年', '半週年的慶典。', '2026-03-27');
+  at('a5', '5 週年', '五年了，謝謝你一直都在。', '2026-09-29');
+  add('ev200', '第 200 期活動', EV[200], '兩百期！');
+  const last = evs[evs.length - 1];
+  if (last && !out.some(m => m.e === last)) add('now', '現在進行中的活動', last, '你正在跑的這一期。');
+  return out;
+}
+
+/* ========== 關卡定義 ========== */
+const STAGES = [
+  { k: 'char', name: '角色', q: '你更喜歡誰？', sq: false },
+  { k: 'song', name: '歌曲', q: '哪一首更打動你？', sub: '可先試聽副歌', sq: true },
+  { k: 'card', name: '卡面', q: '哪一張卡面更好看？', sub: '可切換特訓前後', sq: false },
+  { k: 'event', name: '活動', q: '哪一期活動更難忘？', sq: false },
+  { k: 'comp', name: '作曲家', q: '你更常聽誰的歌？', sub: '可試聽代表曲', sq: false },
+  { k: 'ms', name: '里程碑', q: '哪個時刻對你更特別？', sq: false },
+];
+const SIZE = { quick: { char: 16, other: 8 }, full: { char: 26, other: 16 } };
+
+/* 項目：統一成 {k, t, s, d, img, img2, logo, jk[], audio[], c} 存進狀態 */
+const itemChar = id => { const c = CH[id]; const cs = charCards(id).filter(x => x.r === 4); const pick = cs.length ? cs[Math.floor(Math.random() * cs.length)] : null;
+  return { k: 'c' + id, id, t: c.name, s: UNIT_NAME[c.unit], img: pick ? cardImg(pick, pick.post || (pick.tr && Math.random() < .5)) : '', c: c.color }; };
+const itemSong = s => ({ k: 's' + s.id, id: s.id, t: s.title, s: s.composer ? '作曲 ' + s.composer : '', d: s.units.map(u => UNIT_NAME[u]).join('・') + (s.w ? '・書き下ろし' : ''), img: jacket(s.jkt, true), th: jacket(s.jkt), audio: s.abn, c: UNIT_COLOR[s.main] || '#888' });
+const itemCard = c => ({ k: 'k' + c.id, id: c.id, t: c.name, s: CH[c.ch].name + '・' + RARE(c), d: SUPN[c.sup] || '', img: cardImg(c, c.post), img2: c.tr && !c.post ? cardImg(c, true) : '', c: CH[c.ch].color });
+const itemEvent = e => ({ k: 'e' + e.id, id: e.id, t: e.name, s: '第 ' + e.id + ' 期・' + (EVTYPE[e.type] || ''), d: ymd(e.s), img: evImg(e), alt: evAlt(e), logo: evLogo(e), c: e.chars.length ? CH[e.chars[0]].color : '#888' });
+const itemComp = (name, prefer) => { const ss = COMPOSER[name].slice().sort((a, b) => (b.w - a.w) || (a.id - b.id)); const lead = (prefer && ss.find(s => s.id === prefer)) || ss[0];
+  const rest = ss.filter(s => s !== lead); const show = [lead].concat(pickN(rest, 2));
+  return { k: 'p' + name, id: name, t: name, s: ss.length + ' 首歌', d: show.map(s => s.title).join('、'), jk: show.map(s => jacket(s.jkt)), audio: lead.abn, song: lead.id, c: UNIT_COLOR[lead.main] || '#888' }; };
+const itemMs = m => ({ k: 'm' + m.key, id: m.key, t: m.t, s: ymd(m.ts || m.e.s) + '・' + m.e.name, d: m.d, img: evImg(m.e), alt: evAlt(m.e), logo: evLogo(m.e), c: m.e.chars.length ? CH[m.e.chars[0]].color : '#888' });
+
+/* 依前面的選擇決定下一關的候選：一部分跟本命有關，其餘隨機 */
+function buildPool(stage, S) {
+  const n = SIZE[S.mode][stage.k === 'char' ? 'char' : 'other'];
+  const R = S.res;
+  const champ = R.char ? CH[R.char.top[0].id] : null;
+  const top3 = R.char ? R.char.top.map(x => x.id) : [];
+  const mix = (groups, total) => {   // groups: [[清單, 份量]]，不重複地湊滿 total，剩下的當備用
+    const used = new Set(), out = [];
+    groups.forEach(([list, want]) => { shuffle(list).forEach(x => { if (want > 0 && !used.has(x.k)) { used.add(x.k); out.push(x); want--; } }); });
+    const reserve = [];
+    groups.forEach(([list]) => shuffle(list).forEach(x => { if (!used.has(x.k)) { used.add(x.k); reserve.push(x); } }));
+    while (out.length < total && reserve.length) out.push(reserve.shift());
+    return { entrants: shuffle(out.slice(0, total)), reserve: reserve.slice(0, 40) };
+  };
+  if (stage.k === 'char') {
+    const all = shuffle(Object.keys(CH).map(Number)).map(itemChar);
+    return { entrants: all.slice(0, n), reserve: all.slice(n) };
+  }
+  if (stage.k === 'song') {
+    const fu = champ ? champ.unit : '', su = R.char && R.char.top[1] ? CH[R.char.top[1].id].unit : '';
+    const inU = u => songList.filter(s => u === 'vs' ? (s.units.length === 1 && s.units[0] === 'vs') : s.units.includes(u));
+    return mix([[fu ? inU(fu).map(itemSong) : [], Math.ceil(n * .5)], [su && su !== fu ? inU(su).map(itemSong) : [], Math.ceil(n * .19)], [songList.map(itemSong), n]], n);
+  }
+  if (stage.k === 'card') {
+    const of = ids => Object.values(CARD).filter(c => ids.includes(c.ch) && (c.r === 4 || c.r === 9)).map(itemCard);
+    const all = Object.values(CARD).filter(c => c.r === 4).map(itemCard);
+    return mix([[champ ? of([champ.id]) : [], Math.ceil(n * .5)], [of(top3.slice(1)), Math.ceil(n * .25)], [all, n]], n);
+  }
+  if (stage.k === 'event') {
+    const evs = Object.values(EV);
+    const songUnit = R.song ? (SONG[R.song.top[0].id] || {}).main : '';
+    return mix([[champ ? evs.filter(e => e.chars.includes(champ.id)).map(itemEvent) : [], Math.ceil(n * .5)], [songUnit ? evs.filter(e => evUnit(e) === songUnit).map(itemEvent) : [], Math.ceil(n * .13)], [evs.map(itemEvent), n]], n);
+  }
+  if (stage.k === 'comp') {
+    const favSong = R.song ? SONG[R.song.top[0].id] : null;
+    const names = Object.keys(COMPOSER).filter(k => COMPOSER[k].length >= 3);
+    const first = favSong && favSong.composer && COMPOSER[favSong.composer] ? [itemComp(favSong.composer, favSong.id)] : [];
+    const fu = champ ? champ.unit : '';
+    const inU = fu ? names.filter(k => COMPOSER[k].some(s => s.units.includes(fu))) : [];
+    const songsTop = R.song ? R.song.top.map(x => SONG[x.id]).filter(s => s && s.composer && COMPOSER[s.composer]).map(s => itemComp(s.composer, s.id)) : [];
+    /* 隨機的部分照歌曲數加權：常見的作曲家比較容易出現 */
+    const weighted = names.map(k => [k, Math.sqrt(COMPOSER[k].length) * Math.random()]).sort((a, b) => b[1] - a[1]).slice(0, 60).map(([k]) => itemComp(k));
+    return mix([[first, 1], [songsTop, 2], [inU.map(k => itemComp(k)), Math.ceil(n * .3)], [weighted, n]], n);
+  }
+  if (stage.k === 'ms') {
+    const ms = milestones().map(itemMs);
+    const fu = champ ? champ.unit : '';
+    return mix([[ms.filter(m => m.id === 'box-' + fu || (fu === 'vs' && /vs/.test(m.id))), 1], [ms, n]], Math.min(n, ms.length));
+  }
+}
+
+/* ========== 淘汰賽狀態 ========== */
+const KEY = 'sekai-pick-v1';
+let S = null;          // 進行中的狀態
+let undo = [];         // 每一步之前的快照
+const save = () => lsSet(KEY, JSON.stringify({ S, undo: undo.slice(-15) }));
+const load = () => { try { const o = JSON.parse(lsGet(KEY) || 'null'); if (o && o.S && o.S.v === 1) { S = o.S; undo = o.undo || []; return true; } } catch (e) {} return false; };
+const newGame = mode => { S = { v: 1, mode, stage: 0, res: {}, b: null, view: 'play', seed: Math.floor(Math.random() * 1e9), t0: Date.now() }; undo = []; };
+const matchesOf = n => Math.max(0, n - 1);
+const sizeOf = i => (S.sizes && S.sizes[i]) || SIZE[S.mode][STAGES[i].k === 'char' ? 'char' : 'other'];
+const totalMatches = () => STAGES.reduce((t, st, i) => t + matchesOf(sizeOf(i)), 0);
+const doneMatches = () => { let d = 0; STAGES.forEach((st, i) => { if (i < S.stage || (i === S.stage && S.view !== 'play')) d += matchesOf(sizeOf(i)); }); if (S.b && S.view === 'play') d += S.b.done; return d; };
+
+function startStage() {
+  const st = STAGES[S.stage];
+  const { entrants, reserve } = buildPool(st, S);
+  const pool = {}; entrants.concat(reserve).forEach(x => pool[x.k] = x);
+  S.b = { round: entrants, next: [], i: 0, done: 0, lost: {}, reserve, rnd: 1, pool };
+  (S.sizes = S.sizes || [])[S.stage] = entrants.length;
+  S.view = 'play';
+  skipByes();
+}
+/* 奇數時最後一位輪空直接晉級 */
+function skipByes() {
+  const b = S.b;
+  if (b.i === b.round.length - 1) { b.next.push(b.round[b.i]); b.i++; }
+  if (b.i >= b.round.length) {
+    if (b.next.length <= 1) { finishStage(); return; }
+    b.round = b.next; b.next = []; b.i = 0; b.rnd++;
+    skipByes();
+  }
+}
+function choose(side) {
+  const b = S.b; const a = b.round[b.i], c = b.round[b.i + 1];
+  if (!a || !c) return;
+  undo.push(JSON.stringify(S));
+  const win = side === 0 ? a : c, lose = side === 0 ? c : a;
+  b.lost[lose.k] = { to: win.k, at: b.round.length };
+  b.next.push(win); b.i += 2; b.done++;
+  skipByes();
+}
+function finishStage() {
+  /* 名次：決賽輸給冠軍的是第二；四強裡輸掉的（優先輸給冠軍的那位）是第三 */
+  const b = S.b, champ = b.next[0] || b.round[0];
+  const L = Object.entries(b.lost);
+  const second = L.filter(([, v]) => v.to === champ.k).sort((x, y) => x[1].at - y[1].at)[0];
+  const semi = L.filter(([k, v]) => second && k !== second[0] && v.at <= 4).sort((x, y) => (y[1].to === champ.k) - (x[1].to === champ.k))[0];
+  S.res[STAGES[S.stage].k] = { top: [champ, second && b.pool[second[0]], semi && b.pool[semi[0]]].filter(Boolean) };
+  S.view = 'inter';
+}
+
+/* ========== 試聽 ========== */
+const P = { a: null, key: '', fade: 0, end: 0 };
+function stopAudio() {
+  const a = P.a; P.a = null; P.key = ''; cancelAnimationFrame(P.fade);
+  if (a) { try { a.pause(); a.removeAttribute('src'); a.load(); } catch (e) {} }
+  document.querySelectorAll('.play.on').forEach(b => { b.classList.remove('on'); b.setAttribute('aria-label', '試聽'); b.querySelector('.tx') && (b.querySelector('.tx').textContent = '試聽'); });
+}
+function fade(a, to, sec, done) {
+  cancelAnimationFrame(P.fade); const v0 = a.volume, t0 = performance.now();
+  const step = () => { if (P.a !== a) return; const k = Math.min(1, (performance.now() - t0) / (sec * 1000)); try { a.volume = v0 + (to - v0) * k; } catch (e) {} if (k < 1) P.fade = requestAnimationFrame(step); else if (done) done(); };
+  P.fade = requestAnimationFrame(step);
+}
+function playClip(key, abns, btn) {
+  if (P.key === key) { stopAudio(); return; }
+  stopAudio();
+  if (!abns || !abns.length) { toast('這首沒有音源'); return; }
+  const a = new Audio(); P.a = a; P.key = key; a.preload = 'auto'; a.volume = 0;
+  let ai = 0, bucket = 0;
+  const src = () => { const abn = abns[ai]; a.src = AUDIO[bucket] + abn + '/' + abn + '.mp3'; a.load(); };
+  a.onerror = () => { if (P.a !== a) return; if (bucket === 0) { bucket = 1; src(); return; } if (ai < abns.length - 1) { ai++; bucket = 0; src(); return; } stopAudio(); toast('音源載入失敗'); };
+  a.onloadedmetadata = () => { if (P.a !== a) return; const d = a.duration || 0; const st = d > 40 ? Math.min(Math.max(d * .3, 18), Math.max(0, d - 20)) : 0; P.end = Math.min(d || 1e9, st + 15); try { a.currentTime = st; } catch (e) {} };
+  a.oncanplay = () => { if (P.a !== a || !a.paused) return; a.play().then(() => { if (P.a === a) fade(a, .85, .6); }).catch(() => { if (P.a === a) { stopAudio(); toast('瀏覽器擋住了自動播放，再按一次'); } }); };
+  a.ontimeupdate = () => { if (P.a !== a) return; if (a.currentTime >= P.end - 1.6 && !a._out) { a._out = 1; fade(a, 0, 1.5, () => { if (P.a === a) stopAudio(); }); } };
+  a.onended = () => { if (P.a === a) stopAudio(); };
+  src();
+  if (btn) { btn.classList.add('on'); btn.setAttribute('aria-label', '停止試聽'); const tx = btn.querySelector('.tx'); if (tx) tx.textContent = '播放中'; }
+}
+const playBtn = (key, cls = 'chipbtn play') => `<button class="${cls}" style="z-index:2" data-play="${esc(key)}" aria-label="試聽"><span class="pi">${ICON.play}</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="tx">試聽</span></button>`;
+
+/* ========== 畫面 ========== */
+const app = $('#app');
+const preload = new Set();
+const pre = url => { if (!url || preload.has(url)) return; preload.add(url); const i = new Image(); i.referrerPolicy = 'no-referrer'; i.src = url; };
+function optHTML(it, side, st, opts = {}) {
+  const sq = st.sq || (opts.static && it.jk);
+  const media = it.jk ? `<div class="mosaic">${it.jk.map(u => `<img src="${esc(u)}" alt="" decoding="async" ${IMGERR}>`).join('')}</div>`
+    : `<img src="${esc(it.img)}"${it.alt ? ` data-alt="${esc(it.alt)}"` : ''} alt="" class="ld" decoding="async" onload="this.classList.remove('ld')" ${IMGERR}>${it.logo ? `<img class="logo" src="${esc(it.logo)}" alt="" decoding="async" onerror="this.remove()">` : ''}`;
+  return `<div class="opt${sq ? ' sq' : ''}" style="--c:${it.c}">
+    ${opts.static ? '' : `<button class="hit" data-side="${side}" aria-label="選擇：${esc(it.t)}"></button>`}
+    <div class="media">${media}
+      ${it.audio ? playBtn(it.k) : ''}
+      ${opts.swap ? `<button class="chipbtn swap" data-swap="${side}" aria-label="把「${esc(it.t)}」換成別的">${ICON.swap}換一個</button>` : ''}
+      ${it.img2 ? `<button class="chipbtn flip" data-flip="${side}" aria-label="切換特訓前後">${ICON.flip}特訓前／後</button>` : ''}
+    </div>
+    <div class="body"><span class="bar"></span><span class="t">${esc(it.t)}</span>${it.s ? `<span class="s">${esc(it.s)}</span>` : ''}${it.d ? `<span class="d">${esc(it.d)}</span>` : ''}</div>
+  </div>`;
+}
+function setProg() { const p = S ? doneMatches() / totalMatches() : 0; $('#progBar').style.width = (S && S.view === 'result' ? 100 : p * 100).toFixed(1) + '%'; }
+
+function render() {
+  stopAudio();
+  $('#restartTop').hidden = !S || S.view === 'start';
+  if (!S) return renderStart();
+  if (S.view === 'play') return renderPlay(true);
+  if (S.view === 'inter') return renderInter();
+  if (S.view === 'result') return renderResult();
+}
+
+const FLOW_SUB = ['26 位裡選一位', '試聽副歌再決定', '特訓前後都能看', '從第一期到現在', '代表曲一起聽', '台服一路走來'];
+const MODE_DESC = { quick: '角色 16 強，其他每關 8 強，約 50 題', full: '26 位角色全員，其他每關 16 強，約 100 題' };
+function reelImgs(n) { const pool = Object.values(CARD).filter(c => c.r === 4); return pickN(pool, n).map(c => cardImg(c, c.post || c.tr)); }
+function renderStart() {
+  setAcc('#0071e3'); $('#progBar').style.width = '0';
+  const saved = load() && S && S.view !== 'result' ? S : null;
+  S = null;
+  let mode = 'quick';
+  const im = reelImgs(16), row = a => a.concat(a).map(u => `<img src="${esc(u)}" alt="" decoding="async" onload="this.classList.add('in')" ${IMGERR}>`).join('');
+  app.innerHTML = `<section class="view">
+    <div class="cine"><div class="reel r1" aria-hidden="true">${row(im.slice(0, 8))}</div><div class="reel r2" aria-hidden="true">${row(im.slice(8))}</div>
+      <div class="in-hero"><div class="eyebrow">Project SEKAI</div><h2>SEKAI 二選一</h2>
+        <p>每次兩個，只留一個。六關淘汰賽之後，你會拿到自己的組合包，和一張寫著本命格言的紀念卡。</p>
+        <div class="cta"><button class="btn pri" id="go">開始</button>${saved ? `<button class="btn" id="resume">繼續上次・第 ${saved.stage + 1} 關</button>` : ''}</div></div></div>
+    <div class="flow">${STAGES.map((st, i) => `<div><b>${String(i + 1).padStart(2, '0')}</b><span>${st.name}</span><i>${FLOW_SUB[i]}</i></div>`).join('')}</div>
+    <div class="modes"><div class="seg" role="group" aria-label="長度"><button data-mode="quick" aria-pressed="true">快速版</button><button data-mode="full" aria-pressed="false">完整版</button></div><div class="desc" id="mdesc">${MODE_DESC.quick}</div></div>
+    <p class="note">後面幾關會參考你選的本命出題。進度自動存在這台裝置上。</p>
+  </section>`;
+  app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mode = b.dataset.mode; app.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#mdesc').textContent = MODE_DESC[mode]; });
+  $('#go').onclick = () => { newGame(mode); startStage(); save(); loadEv(); render(); };
+  if (saved) $('#resume').onclick = () => { load(); loadEv().then(() => render()); };
+}
+
+function stageHead(st) {
+  const b = S.b;
+  const alive = b.next.length + (b.round.length - b.i);
+  const label = alive <= 2 ? '決賽' : alive <= 4 ? '四強' : alive + ' 強';
+  const dots = STAGES.map((x, i) => `<i class="${i < S.stage ? 'on' : i === S.stage ? 'cur' : ''}"></i>`).join('');
+  return `<div class="stage"><div class="dots" aria-hidden="true">${dots}</div><div class="lbl">第 ${S.stage + 1} 關　<em>${st.name}</em>　${label}</div><h2>${st.q}</h2><div class="sub">${st.sub ? st.sub + '　' : ''}${doneMatches() + 1} / ${totalMatches()}</div></div>`;
+}
+
+async function renderPlay(enter) {
+  const st = STAGES[S.stage];
+  if ((st.k === 'event' || st.k === 'ms') && !EV) { app.innerHTML = `<div class="loading"><div><div class="spin"></div>載入活動資料中…</div></div>`; await loadEv(); if (!S.b || !S.b.round.length) { startStage(); save(); } }
+  if (S.view !== 'play') return render();
+  const b = S.b; const a = b.round[b.i], c = b.round[b.i + 1];
+  if (!a || !c) { skipByes(); save(); return render(); }
+  const champ = S.res.char ? CH[S.res.char.top[0].id] : null; setAcc(champ ? inkOf(champ.color) : '#0071e3');
+  const canSwap = b.rnd === 1 && b.reserve && b.reserve.length > 0;
+  app.innerHTML = `<section class="view">${stageHead(st)}
+    <div class="duel${enter ? ' enter' : ''}" id="duel">${optHTML(a, 0, st, { swap: canSwap })}<div class="vs" aria-hidden="true">VS</div>${optHTML(c, 1, st, { swap: canSwap })}</div>
+    <div class="ctrl"><button class="btn sm" id="undo" ${undo.length ? '' : 'disabled'}>${ICON.undo}上一題</button><button class="btn sm" id="skip">${ICON.shuffle}都喜歡，隨機選</button></div>
+    <div class="kbd">鍵盤　左右方向鍵選擇　空白鍵試聽　Backspace 上一題</div>
+  </section>`;
+  setProg();
+  /* 預載下一場 */
+  [b.round[b.i + 2], b.round[b.i + 3]].forEach(x => x && (x.jk ? x.jk.forEach(pre) : pre(x.img)));
+  const duel = $('#duel');
+  duel.onclick = e => {
+    const pb = e.target.closest('[data-play]'); if (pb) { e.stopPropagation(); const it = [a, c].find(x => x.k === pb.dataset.play); playClip(it.k, it.audio, pb); return; }
+    const sw = e.target.closest('[data-swap]'); if (sw) { e.stopPropagation(); swap(+sw.dataset.swap); return; }
+    const fl = e.target.closest('[data-flip]'); if (fl) { e.stopPropagation(); flip(+fl.dataset.flip, fl); return; }
+    const o = e.target.closest('.hit[data-side]'); if (o) pick(+o.dataset.side);
+  };
+  $('#undo').onclick = doUndo;
+  $('#skip').onclick = () => pick(Math.random() < .5 ? 0 : 1);
+}
+function swap(side) {
+  const b = S.b, idx = b.i + side; if (!b.reserve.length) return;
+  undo.push(JSON.stringify(S));
+  const out = b.round[idx], inn = b.reserve.shift(); b.round[idx] = inn; b.reserve.push(out);
+  save(); renderPlay(false);
+}
+function flip(side, el) {
+  const it = S.b.round[S.b.i + side]; if (!it || !it.img2) return;
+  const img = el.closest('.opt').querySelector('.media img'); const cur = img.getAttribute('src');
+  img.src = cur === it.img2 ? it.img : it.img2;
+}
+let busy = false;
+function pick(side) {
+  if (busy) return; busy = true; stopAudio();
+  app.querySelectorAll('.hit[data-side]').forEach(o => o.parentNode.classList.add(+o.dataset.side === side ? 'win' : 'lose'));
+  setTimeout(() => { busy = false; choose(side); save(); if (S.view === 'play') renderPlay(true); else render(); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 30 : 380);
+}
+function doUndo() {
+  if (!undo.length) return; stopAudio();
+  S = JSON.parse(undo.pop()); save(); render();
+}
+
+function renderInter() {
+  const st = STAGES[S.stage], r = S.res[st.k], top = r.top[0];
+  if (st.k === 'char') setAcc(inkOf(CH[top.id].color));
+  setProg();
+  const last = S.stage === STAGES.length - 1;
+  const bd = top.jk ? top.jk[0] : top.img;
+  app.innerHTML = `<section class="view"><div class="backdrop" style="background-image:url('${esc(bd)}')"></div><div class="champ">
+    <div class="lbl">第 ${S.stage + 1} 關　${st.name}冠軍</div><h2>${esc(top.t)}</h2>
+    ${optHTML(top, 0, st, { static: true })}
+    ${r.top.length > 1 ? `<div class="podium">${r.top.slice(1).map((x, i) => `<span>${i ? '第三' : '第二'}　${esc(x.t)}</span>`).join('')}</div>` : ''}
+    <div class="cta"><button class="btn" id="undo">${ICON.undo}上一題</button><button class="btn pri" id="next">${last ? '看結果與組合包' : '下一關　' + STAGES[S.stage + 1].name}${ICON.arrow}</button></div>
+  </div></section>`;
+  const p = app.querySelector('[data-play]'); if (p) p.onclick = e => { e.stopPropagation(); playClip(top.k, top.audio, p); };
+  $('#undo').onclick = doUndo;
+  $('#next').onclick = async () => {
+    undo.push(JSON.stringify(S));
+    if (last) { S.view = 'result'; S.b = null; S.done = S.done || Date.now(); S.qi = Math.floor(Math.random() * 4); save(); render(); return; }
+    S.stage++;
+    if (['event', 'ms'].includes(STAGES[S.stage].k) && !EV) { app.innerHTML = `<div class="loading"><div><div class="spin"></div>載入活動資料中…</div></div>`; await loadEv(); }
+    startStage(); save(); render();
+  };
+}
+
+/* ========== 結果 ========== */
+const TOP = (R, k) => R[k] && R[k].top[0];
+function summaryLine(R) {
+  const ch = CH[TOP(R, 'char').id], song = TOP(R, 'song');
+  return `被${UNIT_MOOD[ch.unit]}與〈${song.t}〉抓住的你`;
+}
+function resultModel(R, qi, done) {
+  const ch = CH[TOP(R, 'char').id];
+  const card = CARD[TOP(R, 'card').id];
+  return { R, ch, card, song: SONG[TOP(R, 'song').id], qi: qi % 4, quote: QUOTES[ch.id][qi % 4], date: ymd(done || Date.now()), serial: serialOf(R, done) };
+}
+function serialOf(R, done) { const s = STAGES.map(st => TOP(R, st.k) ? TOP(R, st.k).k : '').join('|') + (done || 0); let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return String((h >>> 0) % 10000).padStart(4, '0'); }
+
+function catRows(R, withPlay) {
+  return STAGES.map(st => { const r = R[st.k]; if (!r) return ''; const t = r.top[0];
+    const th = t.jk ? t.jk[0] : (t.th || t.img);
+    return `<div class="cat" style="--c:${t.c}"><div class="th${st.sq || t.jk ? ' sq' : ''}"><img src="${esc(th)}"${!t.jk && t.alt ? ` data-alt="${esc(t.alt)}"` : ''} alt="" decoding="async" ${IMGERR}></div>
+      <div class="info"><div class="k">${st.name}</div><div class="n">${esc(t.t)}</div>${r.top.length > 1 ? `<div class="r">接著是 ${r.top.slice(1).map(x => esc(x.t)).join('、')}</div>` : `<div class="r">${esc(t.s || '')}</div>`}</div>
+      ${withPlay && t.audio ? playBtn(t.k, 'chipbtn play') : ''}</div>`; }).join('');
+}
+
+function renderResult() {
+  const M = resultModel(S.res, S.qi || 0, S.done);
+  setAcc(inkOf(M.ch.color)); setProg();
+  app.innerHTML = `<section class="view">
+    <div class="res-hero"><div class="lbl">你的 SEKAI</div><h2>${esc(summaryLine(S.res))}</h2></div>
+    <div class="res-grid">
+      <div><div class="memo" id="memo"><canvas id="cv" width="1080" height="1350" aria-label="紀念卡"></canvas><div class="wait" id="wait">繪製紀念卡中…</div></div>
+        <div class="memo-tabs"><div class="seg" role="group" aria-label="紀念卡尺寸"><button data-sz="post" aria-pressed="true">貼文 4:5</button><button data-sz="story" aria-pressed="false">限動 9:16</button></div>
+        <button class="btn sm" id="quote">換一句格言</button></div></div>
+      <div><div class="cats" id="cats">${catRows(S.res, true)}</div>
+        <div class="acts"><button class="btn pri" id="dlPack">下載組合包 .zip</button><button class="btn" id="dlCard">下載紀念卡</button><button class="btn" id="share">分享結果</button><button class="btn" id="again">再玩一次</button></div>
+        <div class="pack"><b>組合包內容</b><ul>
+          <li>紀念卡（貼文 1080×1350、限動 1080×1920）</li>
+          <li>卡面原圖「${esc(M.card.name)}」${M.card.tr && !M.card.post ? '（特訓前後各一張）' : ''}</li>
+          <li>歌曲〈${esc(M.song.title)}〉封面與試聽、歌曲頁連結</li>
+          <li>活動「${esc(TOP(S.res, 'event').t)}」主視覺與標誌</li>
+          <li>六關前三名清單</li></ul>
+          <div style="margin-top:8px;font-size:12px;color:var(--ink3)">格言是本站依角色個性寫的句子，不是遊戲台詞。音源屬於官方，組合包只放試聽連結。</div></div>
+      </div>
+    </div></section>`;
+  let sz = 'post';
+  const draw = () => { $('#wait').hidden = false; const cv = $('#cv'); cv.width = 1080; cv.height = sz === 'post' ? 1350 : 1920; drawMemo(cv, M).then(() => { $('#wait').hidden = true; }); };
+  draw();
+  app.querySelectorAll('[data-sz]').forEach(b => b.onclick = () => { sz = b.dataset.sz; app.querySelectorAll('[data-sz]').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); });
+  $('#quote').onclick = () => { S.qi = ((S.qi || 0) + 1) % 4; save(); M.qi = S.qi; M.quote = QUOTES[M.ch.id][S.qi]; draw(); };
+  $('#cats').onclick = e => { const pb = e.target.closest('[data-play]'); if (!pb) return; const st = STAGES.find(s => S.res[s.k] && S.res[s.k].top[0].k === pb.dataset.play); const it = S.res[st.k].top[0]; playClip(it.k, it.audio, pb); };
+  $('#dlCard').onclick = () => { const cv = $('#cv'); cv.toBlob(b => b ? saveBlob(b, `sekai-pick-card-${M.date.replace(/\//g, '')}.png`) : toast('圖片匯出失敗'), 'image/png'); };
+  $('#dlPack').onclick = () => buildPack(M);
+  $('#share').onclick = () => shareResult(M);
+  $('#again').onclick = () => { lsSet(KEY, null); S = null; undo = []; render(); };
+}
+
+/* ========== 紀念卡（canvas） ========== */
+const FONT = '-apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
+const imgCache = {};
+const load1 = url => new Promise(res => { const i = new Image(); i.crossOrigin = 'anonymous'; i.referrerPolicy = 'no-referrer'; i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
+const loadImg = (url, alt) => imgCache[url] || (imgCache[url] = !url ? Promise.resolve(null) : load1(url).then(i => i || (alt ? load1(alt) : null)).then(i => i || (url.includes('sekai-jp-assets') ? load1(tcOf(url)) : null)));
+function cover(ctx, img, x, y, w, h, fx = .5, fy = .4) {
+  const r = Math.max(w / img.width, h / img.height), iw = img.width * r, ih = img.height * r;
+  ctx.drawImage(img, x + (w - iw) * fx, y + (h - ih) * fy, iw, ih);
+}
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function wrap(ctx, text, maxW) {   // 中文逐字斷行，英文字不拆
+  const toks = text.match(/[A-Za-z0-9'’\-.]+\s?|\s|./g) || [];
+  const lines = []; let cur = '';
+  toks.forEach(t => { if (ctx.measureText(cur + t).width > maxW && cur) { lines.push(cur.trim()); cur = /^[，。！？、…」』]/.test(t) ? (lines[lines.length - 1] += t, '') : t; } else cur += t; });
+  if (cur.trim()) lines.push(cur.trim());
+  return lines;
+}
+function ellip(ctx, t, w) { if (ctx.measureText(t).width <= w) return t; while (t.length > 1 && ctx.measureText(t + '…').width > w) t = t.slice(0, -1); return t + '…'; }
+async function drawMemo(cv, M) {
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, story = H > 1500;
+  const col = M.ch.color, R = M.R;
+  const art = await loadImg(cardImg(M.card, M.card.tr && !M.card.post ? true : M.card.post, true));
+  const songTop = TOP(R, 'song'), evTop = TOP(R, 'event'), msTop = TOP(R, 'ms'), cpTop = TOP(R, 'comp');
+  const thumbs = await Promise.all([[songTop.img], [evTop && evTop.img, evTop && evTop.alt], [cpTop && cpTop.jk && cpTop.jk[0]], [msTop && msTop.img, msTop && msTop.alt]].map(([u, a]) => loadImg(u, a)));
+  ctx.fillStyle = '#0b0b0f'; ctx.fillRect(0, 0, W, H);
+  const artH = story ? 1080 : 780;
+  if (art) cover(ctx, art, 0, 0, W, artH, .5, .35);
+  else { const g = ctx.createLinearGradient(0, 0, W, artH); g.addColorStop(0, col); g.addColorStop(1, '#0b0b0f'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, artH); }
+  let g = ctx.createLinearGradient(0, artH * .45, 0, artH + 2); g.addColorStop(0, 'rgba(11,11,15,0)'); g.addColorStop(1, 'rgba(11,11,15,1)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, artH + 2);
+  g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, 'rgba(0,0,0,.5)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 180);
+  /* 角色色的光暈 */
+  g = ctx.createRadialGradient(W * .5, artH, 10, W * .5, artH, W * .75); g.addColorStop(0, hexA(col, .32)); g.addColorStop(1, hexA(col, 0)); ctx.fillStyle = g; ctx.fillRect(0, artH - W * .5, W, W);
+  ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.font = `600 26px ${FONT}`; ctx.fillText('SEKAI 二選一', 56, 76);
+  ctx.textAlign = 'right'; ctx.font = `500 24px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(`${M.date}　No.${M.serial}`, W - 56, 76); ctx.textAlign = 'left';
+  /* 格言 */
+  let y = artH - (story ? 120 : 150);
+  ctx.fillStyle = col; ctx.font = `700 120px Georgia, ${FONT}`; ctx.fillText('“', 48, y + 40);
+  ctx.font = `700 ${story ? 62 : 58}px ${FONT}`; ctx.fillStyle = '#fff';
+  const lines = wrap(ctx, M.quote, W - 150);
+  const lh = story ? 84 : 78; y += 60;
+  lines.forEach((l, i) => ctx.fillText(l, 72, y + i * lh));
+  y += lines.length * lh - 10;
+  ctx.font = `500 30px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.72)';
+  ctx.fillText('— ' + M.ch.name, 74, y + 22);
+  ctx.fillStyle = col; rr(ctx, 74, y + 46, 64, 6, 3); ctx.fill();
+  /* 下方四格 */
+  const rows = [['歌曲', songTop && songTop.t, songTop && songTop.s.replace(/^作曲 /, ''), thumbs[0], true], ['活動', evTop && evTop.t, evTop && evTop.s, thumbs[1], false], ['作曲家', cpTop && cpTop.t, cpTop && cpTop.s, thumbs[2], true], ['里程碑', msTop && msTop.t, msTop && msTop.s, thumbs[3], false]];
+  const top0 = Math.max(y + 96, story ? 1380 : 1000), gap = 18, cw = (W - 112 - gap) / 2, chh = story ? 170 : 132;
+  rows.forEach(([k, t, s, im, sq], i) => {
+    const x = 56 + (i % 2) * (cw + gap), yy = top0 + Math.floor(i / 2) * (chh + gap);
+    ctx.fillStyle = 'rgba(255,255,255,.07)'; rr(ctx, x, yy, cw, chh, 22); ctx.fill();
+    const th = chh - 28, tw = sq ? th : th * 1.5;
+    ctx.save(); rr(ctx, x + 14, yy + 14, tw, th, 14); ctx.clip();
+    if (im) cover(ctx, im, x + 14, yy + 14, tw, th, .5, .3); else { ctx.fillStyle = hexA(col, .4); ctx.fillRect(x + 14, yy + 14, tw, th); }
+    ctx.restore();
+    const tx = x + 14 + tw + 16, mw = cw - (tw + 44);
+    ctx.fillStyle = col; ctx.font = `600 ${story ? 22 : 20}px ${FONT}`; ctx.fillText(k, tx, yy + (story ? 52 : 42));
+    ctx.fillStyle = '#fff'; ctx.font = `600 ${story ? 32 : 28}px ${FONT}`; ctx.fillText(ellip(ctx, t || '—', mw), tx, yy + (story ? 98 : 80));
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = `400 ${story ? 22 : 20}px ${FONT}`; ctx.fillText(ellip(ctx, s || '', mw), tx, yy + (story ? 134 : 110));
+  });
+  /* 卡名與網址 */
+  ctx.font = `400 22px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.fillText(ellip(ctx, '卡面「' + M.card.name + '」', W - 560), 56, H - 50);
+  ctx.textAlign = 'right'; ctx.fillText('project-sekai-center.com/pick', W - 56, H - 50); ctx.textAlign = 'left';
+  try { ctx.getImageData(0, 0, 1, 1); } catch (e) { M.tainted = true; }
+}
+function hexA(h, a) { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+
+/* ========== 組合包（zip，不壓縮） ========== */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zip(files) {   // files: [{name, data: Uint8Array}]
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)), dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate());
+  files.forEach(f => {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, dt, true); h.setUint16(12, dd, true);
+    h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), nm, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true); c.setUint16(12, dt, true); c.setUint16(14, dd, true);
+    c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    cen.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + sz;
+  });
+  const cl = cen.reduce((t, x) => t + x.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cl, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: 'application/zip' });
+}
+const fname = s => String(s).replace(/[\\/:*?"<>|\n\r]+/g, ' ').trim().slice(0, 60) || '未命名';
+async function fetchBytes(urls) { urls = urls.concat(urls.filter(u => u.includes('sekai-jp-assets')).map(tcOf)); for (const u of urls) { try { const r = await fetch(u, { mode: 'cors', referrerPolicy: 'no-referrer' }); if (r.ok) return { data: new Uint8Array(await r.arrayBuffer()), ext: (u.match(/\.(\w+)$/) || [, 'bin'])[1] }; } catch (e) {} } return null; }
+const canvasBytes = cv => new Promise(res => cv.toBlob(b => b ? b.arrayBuffer().then(a => res(new Uint8Array(a))) : res(null), 'image/png'));
+function saveBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+let packing = false;
+async function buildPack(M) {
+  if (packing) return; packing = true;
+  const btn = $('#dlPack'); const label = btn.textContent; btn.disabled = true; btn.textContent = '打包中…';
+  try {
+    const files = [], enc = new TextEncoder(), R = M.R;
+    for (const [nm, h] of [['紀念卡-貼文.png', 1350], ['紀念卡-限動.png', 1920]]) {
+      const cv = document.createElement('canvas'); cv.width = 1080; cv.height = h; await drawMemo(cv, M);
+      const b = await canvasBytes(cv); if (b) files.push({ name: nm, data: b });
+    }
+    const c = M.card, cn = fname(c.name);
+    const want = c.tr && !c.post ? [[false, '特訓前'], [true, '特訓後']] : [[c.post, c.post ? '特訓後' : '']];
+    for (const [tr, tag] of want) { const f = await fetchBytes([cardImg(c, tr, 'png'), cardImg(c, tr, true)]); if (f) files.push({ name: `卡面/${cn}${tag ? '-' + tag : ''}.${f.ext}`, data: f.data }); }
+    const s = M.song; const jf = await fetchBytes([jacket(s.jkt, true), jacket(s.jkt)]);
+    if (jf) files.push({ name: `歌曲/${fname(s.title)}-封面.${jf.ext}`, data: jf.data });
+    const links = [`〈${s.title}〉${s.jp !== s.title ? '（' + s.jp + '）' : ''}`, `作曲：${s.composer}${s.lyricist ? '　作詞：' + s.lyricist : ''}`, `團體：${s.units.map(u => UNIT_NAME[u]).join('、')}`, '',
+      '試聽（官方音源，於瀏覽器開啟）：', ...s.abn.map(a => AUDIO[0] + a + '/' + a + '.mp3'), '', '在 SEKAI 星圖看這首歌：', SITE + 'starmap.html?s=' + s.id, ''];
+    files.push({ name: '歌曲/試聽與歌曲頁連結.txt', data: enc.encode(links.join('\r\n')) });
+    const evT = TOP(R, 'event');
+    if (evT && EV && EV[evT.id]) { const e = EV[evT.id];
+      const a = await fetchBytes([evImg(e), evAlt(e)]); if (a) files.push({ name: `活動/${fname(e.name)}-主視覺.${a.ext}`, data: a.data });
+      const l = await fetchBytes([evLogo(e)]); if (l) files.push({ name: `活動/${fname(e.name)}-標誌.${l.ext}`, data: l.data }); }
+    const txt = ['SEKAI 二選一 — 我的結果', `${M.date}　No.${M.serial}　${S.mode === 'full' ? '完整版' : '快速版'}`, '', summaryLine(R), '',
+      ...STAGES.map(st => { const r = R[st.k]; if (!r) return ''; return `【${st.name}】\r\n` + r.top.map((x, i) => `  ${['冠軍', '第二', '第三'][i]}：${x.t}${x.s ? '（' + x.s + '）' : ''}`).join('\r\n'); }), '',
+      `格言：「${M.quote}」— ${M.ch.name}`, '（格言是本站依角色個性寫的句子，不是遊戲台詞）', '', '分享連結：' + shareUrl(M), '', 'Project SEKAI 資源中心　' + SITE + 'pick'];
+    files.push({ name: '我的結果.txt', data: enc.encode(txt.join('\r\n')) });
+    saveBlob(zip(files), `sekai-pick-pack-${M.date.replace(/\//g, '')}.zip`);
+    toast(`組合包已下載（${files.length} 個檔案）`);
+  } catch (e) { toast('打包失敗，請再試一次'); }
+  btn.disabled = false; btn.textContent = label; packing = false;
+}
+
+/* ========== 分享 ========== */
+const b64u = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+function shareUrl(M) {
+  const R = M.R; const v = [1, TOP(R, 'char').id, TOP(R, 'song').id, TOP(R, 'card').id, TOP(R, 'event') ? TOP(R, 'event').id : 0, TOP(R, 'comp') ? TOP(R, 'comp').id : '', TOP(R, 'ms') ? TOP(R, 'ms').id : '', M.qi, M.date.replace(/\//g, ''), M.serial];
+  return SITE + 'pick?r=' + b64u(JSON.stringify(v));
+}
+function shareResult(M) {
+  const u = shareUrl(M), text = `我的 SEKAI 二選一：本命是${M.ch.name}，最愛〈${M.song.title}〉`;
+  if (navigator.share && matchMedia('(pointer:coarse)').matches) { navigator.share({ title: 'SEKAI 二選一', text, url: u }).catch(() => {}); return; }
+  (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('已複製分享連結'), () => toast(u));
+}
+async function renderShared(code) {
+  let v; try { v = JSON.parse(unb64u(code)); } catch (e) { v = null; }
+  if (!v || v[0] !== 1 || !CH[v[1]] || !SONG[v[2]] || !CARD[v[3]]) { app.innerHTML = `<section class="view"><div class="hero"><h2>連結無法讀取</h2><p>這個分享連結可能不完整。</p></div><div class="cta"><a class="btn pri" href="./pick">開始玩</a></div></section>`; return; }
+  await loadEv();
+  const R = { char: { top: [itemChar(v[1])] }, song: { top: [itemSong(SONG[v[2]])] }, card: { top: [itemCard(CARD[v[3]])] } };
+  if (EV[v[4]]) R.event = { top: [itemEvent(EV[v[4]])] };
+  if (v[5] && COMPOSER[v[5]]) R.comp = { top: [itemComp(v[5])] };
+  const ms = milestones().find(m => m.key === v[6]); if (ms) R.ms = { top: [itemMs(ms)] };
+  const d = String(v[8] || ''); const done = d.length === 8 ? Date.parse(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}T12:00:00+08:00`) : Date.now();
+  const M = resultModel(R, +v[7] || 0, done); M.serial = String(v[9] || M.serial).padStart(4, '0').slice(-4);
+  setAcc(inkOf(M.ch.color)); $('#progBar').style.width = '0';
+  app.innerHTML = `<section class="view">
+    <div class="share-hero"><div class="lbl">朋友的 SEKAI 二選一</div><h2>${esc(summaryLine(R))}</h2></div>
+    <div class="res-grid"><div><div class="memo"><canvas id="cv" width="1080" height="1350" aria-label="紀念卡"></canvas><div class="wait" id="wait">繪製紀念卡中…</div></div></div>
+    <div><div class="cats" id="cats">${catRows(R, true)}</div>
+      <div class="acts"><a class="btn pri" href="./pick">我也要玩</a></div>
+      <p class="note" style="text-align:left">從角色、歌曲、卡面、活動、作曲家到里程碑，六關二選一，選完拿你自己的組合包。</p></div></div>
+  </section>`;
+  drawMemo($('#cv'), M).then(() => { $('#wait').hidden = true; });
+  $('#cats').onclick = e => { const pb = e.target.closest('[data-play]'); if (!pb) return; const st = STAGES.find(s => R[s.k] && R[s.k].top[0].k === pb.dataset.play); const it = R[st.k].top[0]; playClip(it.k, it.audio, pb); };
+}
+
+/* ========== 鍵盤 ========== */
+addEventListener('keydown', e => {
+  if (!S || S.view !== 'play' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('input,textarea')) return;
+  if (e.key === 'ArrowLeft' || e.key === '1') { e.preventDefault(); pick(0); }
+  else if (e.key === 'ArrowRight' || e.key === '2') { e.preventDefault(); pick(1); }
+  else if (e.key === 'Backspace') { e.preventDefault(); doUndo(); }
+  else if (e.key === ' ' && !(e.target.closest && e.target.closest('button'))) { const b = app.querySelector('[data-play]'); if (b) { e.preventDefault(); b.click(); } }
+});
+addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
+$('#restartTop').onclick = () => { if (!confirm('要放棄目前的進度、重新開始嗎？')) return; lsSet(KEY, null); S = null; undo = []; render(); };
+
+/* ========== 啟動 ========== */
+const qs = new URLSearchParams(location.search);
+if (qs.get('r')) renderShared(qs.get('r'));
+else if (load()) { const resume = S; if (resume.view === 'result') { loadEv().then(() => render()); } else { S = null; render(); } }
+else render();
+window.__pick = { get S() { return S; }, choose: s => pick(s), STAGES, drawMemo, zip, crc32 };
+</script>
+</body>
+</html>

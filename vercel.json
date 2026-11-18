@@ -392,6 +392,28 @@
       }
     },
     {
+      "src": "/pick.html",
+      "dest": "/pick.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/pick",
+      "dest": "/pick.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
       "src": "/manual.html",
       "dest": "/manual.html",
       "headers": {

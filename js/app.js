@@ -3782,7 +3782,7 @@ class Component extends DCLogic {
   }
 
   /* ---------- 自訂版面 ---------- */
-  HOME_BLOCKS = [['hero', '進行中的活動'], ['phase', '現在該做什麼'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
+  HOME_BLOCKS = [['hero', '進行中的活動'], ['phase', '現在該做什麼'], ['pick', 'SEKAI 二選一'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
   layoutOf(scope) { const L = (this.state.layout || {})[scope] || {}; return { order: Array.isArray(L.order) ? L.order : [], hidden: Array.isArray(L.hidden) ? L.hidden : [] }; }
   /* 依使用者設定重排：沒排到的照原本順序接在後面（新功能上線時才不會消失）。 */
   layoutApply(ids, scope) {
@@ -9320,6 +9320,7 @@ class Component extends DCLogic {
       if (/存石|存水晶|水晶規劃|要不要抽|抽不抽|未來卡池|規劃|plan/i.test(q)) out.unshift({ tag: '工具', tagBg: '#7a4fc0', main: '存石規劃', sub: '未來一年每一池的 PU 卡與持卡對照，水晶收支推算到每池能存幾抽', run: () => this.go('plan') });
       if (/帳號分析|分析帳號|我的帳號|角色等級|平均等級|收集率|FC|AP|挑戰|profile/i.test(q)) out.unshift({ tag: '工具', tagBg: '#2f6fb5', main: '帳號分析', sub: '綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料、兩帳號比較', run: () => this.go('profile') });
       if (/名片|自訂名片|拼圖|色塊|namecard/i.test(q)) out.unshift({ tag: '工具', tagBg: '#c2477a', main: '名片拼圖', sub: '上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟', run: () => this.go('namecard') });
+    if (/二選一|測驗|心理測驗|本命|喜好|最愛|淘汰賽|pick|quiz/i.test(q)) out.unshift({ tag: '測驗', tagBg: '#e8457a', main: 'SEKAI 二選一', sub: '六關二選一，選出本命、最愛歌曲與卡面，拿組合包', run: () => { location.href = './pick.html'; } });
     if (/菜根|機器人|bot|排班系統|展示|demo/i.test(q)) out.unshift({ tag: '展示', tagBg: '#5b7cff', main: '菜根機器人展示', sub: 'Discord × 網頁 × Google 試算表，一分半看完', run: () => { location.href = './botdemo.html'; } });
       if (/豆森工作室|像素|像素畫|方塊|瓷磚|設計圖|看板|mystudio|pixel/i.test(q)) out.unshift({ tag: '工具', tagBg: '#4a8f2f', main: '豆森工作室', sub: '圖片轉彩色方塊像素畫（材料、步驟、設計圖、建造播放）、家具擺設模擬、生日看板', run: () => this.go('mystudio') });
       if (/星圖|星空|星座|天文|彩蛋|starmap|songscape/i.test(q)) out.unshift({ tag: '彩蛋', tagBg: '#c9a24a', main: 'SEKAI 星圖', sub: '全曲庫的天文圖鑑：七百多首歌化成一片星空', run: () => this.openStarmap(true) });
@@ -11853,6 +11854,8 @@ class Component extends DCLogic {
         const ord = this.layoutApply(ids, 'home'), hid = this.layoutOf('home').hidden;
         // 「現在該做什麼」是後來加的：舊的自訂順序沒有它時，放在活動卡正下方，不要掉到最尾巴
         if (!this.layoutOf('home').order.includes('phase')) { const i = ord.indexOf('phase'); if (i >= 0) { ord.splice(i, 1); ord.splice(ord.indexOf('hero') + 1, 0, 'phase'); } }
+        // 「SEKAI 二選一」入口也是後來加的：舊的自訂順序沒有它時，放在「現在該做什麼」下面
+        if (!this.layoutOf('home').order.includes('pick')) { const i = ord.indexOf('pick'); if (i >= 0) { ord.splice(i, 1); ord.splice(ord.indexOf('phase') + 1, 0, 'pick'); } }
         const homeOrd = {}, homeShow = {};
         ids.forEach(id => { homeOrd[id] = ord.indexOf(id); homeShow[id] = hid.indexOf(id) < 0; });
         // 手機預設不放 480px 高的跑榜小窗；使用者在自訂首頁按「顯示」才記進 mobileShow
@@ -11869,6 +11872,10 @@ class Component extends DCLogic {
         const fresh = this.newLog(), g = s.guide, gs = g ? this.GUIDE[g.step] : null;
         return {
           homeOrd, homeShow,
+          /* 二選一入口的兩張卡面：每天換一組 */
+          ...(() => { const P = ['res021_no032', 'res009_no030', 'res001_no032', 'res013_no043', 'res017_no053', 'res006_no041', 'res024_no045', 'res018_no036'], d = Math.floor(Date.now() / 864e5) % P.length;
+            const u = a => this.ASSET + '/character/member_small/' + a + '/card_after_training.webp';
+            return { pickArtA: u(P[d]), pickArtB: u(P[(d + 3) % P.length]) }; })(),
           /* 通知膠囊 */
           noticeOpen: s.page === 'home' && fresh.length > 0,
           noticeCount: fresh.length > 9 ? '9+' : fresh.length, noticeTitle: fresh.length ? fresh[0].t : '', noticeDate: fresh.length ? fresh[0].d : '',
@@ -12465,6 +12472,7 @@ class Component extends DCLogic {
           { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
           { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
+          { name: 'SEKAI 二選一', url: 'pick.html', sub: '角色、歌曲（可試聽）、卡面、活動、作曲家、里程碑六關二選一淘汰賽，完成拿組合包與角色格言紀念卡' },
           { name: '菜根機器人展示', url: 'botdemo.html', sub: 'Discord 報班、班表渲染、網頁、Google 試算表同步、共跑、提醒簽到：一分半看完，配樂隨機一首箱曲、可分享' },
           { name: '說明書', url: 'manual.html', sub: '網站使用手冊、排班系統、語音功能與排班論文：可搜尋、跳章節、下載 PDF' },
           { name: '經典長頁版', url: 'index.html', sub: '完整 23 區塊單頁' },
