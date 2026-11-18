@@ -64,8 +64,23 @@ main{max-width:1080px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-ins
 @keyframes reelL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes reelR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 .cine::after{content:'';position:absolute;inset:0;z-index:1;background:radial-gradient(70% 70% at 50% 55%,rgba(0,0,0,.55),rgba(0,0,0,.92) 80%),linear-gradient(180deg,rgba(0,0,0,.3),transparent 30%,transparent 70%,#000)}
-.cine .in-hero{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
+.cine .reel{opacity:.5;filter:saturate(.8);-webkit-mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent)}
+.cine .stage-art{position:absolute;z-index:2;left:50%;top:50%;width:min(780px,135vw);aspect-ratio:1;transform:translate(-50%,-50%);color:#fff;pointer-events:none;opacity:.5}
+.cine .in-hero::before{content:'';position:absolute;z-index:-1;left:50%;top:50%;width:min(900px,120vw);height:62%;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(0,0,0,.72),transparent);pointer-events:none}
+.cine .waves{position:absolute;z-index:2;left:0;bottom:7%;width:200%;height:110px;opacity:.75;animation:wave 30s linear infinite}
+.cine .grain,.grain{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.09;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.emb{display:block;width:100%;height:100%;overflow:visible}
+.emb .em-tk,.emb .em-dash,.emb .em-bl,.emb .em-th{transform-origin:0 0}
+.emb.turn .em-tk{animation:spin 140s linear infinite}
+.emb.turn .em-dash{animation:spin 90s linear infinite reverse}
+.emb.turn .em-th{animation:spin 200s linear infinite reverse}
+.emb.turn .em-bl{animation:breathe 9s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{0%,100%{transform:rotate(0) scale(1);opacity:.95}50%{transform:rotate(8deg) scale(1.035);opacity:1}}
+@keyframes wave{to{transform:translateX(-50%)}}
+.cine .in-hero{position:relative;z-index:4;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
 .cine .eyebrow{font-size:12px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.cine .eyebrow{display:inline-flex;align-items:center;gap:12px}.cine .eyebrow::before,.cine .eyebrow::after{content:'';width:36px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5))}.cine .eyebrow::after{transform:scaleX(-1)}
 .cine h2{font-size:clamp(46px,9vw,104px);line-height:1;font-weight:700;letter-spacing:-.035em;margin:18px 0 20px;background:linear-gradient(180deg,#fff 30%,rgba(255,255,255,.62));-webkit-background-clip:text;background-clip:text;color:transparent}
 .cine p{font-size:clamp(16px,2vw,20px);color:rgba(255,255,255,.72);max-width:560px;line-height:1.6}
 .cine .cta{margin-top:30px}
@@ -74,7 +89,9 @@ main{max-width:1080px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-ins
 .cine .btn.pri{background:#f5f5f7;color:#000}
 .cine .btn.pri:hover{background:#fff;filter:none}
 .flow{display:grid;grid-template-columns:repeat(6,1fr);max-width:900px;margin:44px auto 0;border-top:1px solid var(--hair2)}
-.flow div{padding:16px 6px 0;text-align:left}
+.flow div{position:relative;padding:18px 6px 0;text-align:left}
+.flow div::before{content:'';position:absolute;left:0;top:-1px;width:28px;height:2px;background:var(--u)}
+.flow .cat-i{width:26px;height:26px;color:var(--u);display:block;margin-bottom:10px}
 .flow b{display:block;font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.08em;font-variant-numeric:tabular-nums}
 .flow span{display:block;font-size:17px;font-weight:600;margin-top:4px;letter-spacing:-.01em}
 .flow i{display:block;font-style:normal;font-size:13px;color:var(--ink2);margin-top:2px}
@@ -97,14 +114,23 @@ main{max-width:1080px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-ins
 .stage{padding:26px 0 0;text-align:center}
 .stage .lbl{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.14em;text-transform:uppercase}
 .stage .lbl em{font-style:normal;color:var(--ink);font-weight:700}
-.dots{display:flex;justify-content:center;gap:6px;margin-bottom:12px}
-.dots i{width:22px;height:3px;border-radius:2px;background:var(--fill2);transition:background .4s}
-.dots i.on{background:var(--acc)}
-.dots i.cur{background:var(--acc);opacity:.5}
+.track{display:flex;justify-content:center;align-items:center;margin-bottom:14px}
+.track span{position:relative;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink3);transition:color .4s}
+.track span .cat-i{width:17px;height:17px}
+.track span::after{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid var(--hair2)}
+.track span.on{color:var(--ink2)}
+.track span.on::after{border-color:var(--ink3)}
+.track span.cur{color:var(--acc)}
+.track span.cur::after{border:1.5px solid var(--acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 14%,transparent)}
+.track i{width:clamp(14px,4vw,34px);height:1px;background:var(--hair2)}
+.track i.on{background:var(--ink3)}
 .stage h2{font-size:clamp(24px,4vw,34px);font-weight:700;letter-spacing:-.01em;margin-top:4px}
 .stage .sub{font-size:15px;color:var(--ink2);margin-top:4px}
 .duel{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
-.vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;letter-spacing:.18em;text-indent:.18em;background:var(--glass);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);color:var(--ink);border:1px solid var(--hair2);box-shadow:var(--shadow2);pointer-events:none}
+.vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;pointer-events:none}
+.vs::before{content:'';position:absolute;inset:20px;border-radius:50%;background:var(--glass);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--hair2);box-shadow:var(--shadow2)}
+.vs .emb{position:absolute;inset:0;color:var(--ink)}
+.vs b{position:relative;font-size:12px;font-weight:600;letter-spacing:.18em;text-indent:.18em;color:var(--ink)}
 .opt{position:relative;display:flex;flex-direction:column;background:var(--card);border-radius:22px;overflow:hidden;box-shadow:var(--shadow);text-align:left;transition:transform .35s var(--ease),box-shadow .35s var(--ease),opacity .35s;outline-offset:3px}
 .opt:hover{transform:translateY(-3px);box-shadow:var(--shadow2)}
 .opt:active{transform:scale(.985)}
@@ -151,11 +177,21 @@ main{max-width:1080px;margin:0 auto;padding:0 16px calc(40px + env(safe-area-ins
 .champ .lbl{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.14em}
 .champ h2{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.015em;margin:6px 0 18px}
 .champ .opt{animation:pop .7s var(--ease) both}
+.champ .stagefx{position:relative;isolation:isolate}
+.champ .stagefx .opt{z-index:1}
+.burst{position:absolute;left:50%;top:50%;width:132%;aspect-ratio:1;transform:translate(-50%,-50%);z-index:0;pointer-events:none;overflow:visible}
+.burst .rays line{stroke-dasharray:60;stroke-dashoffset:60;animation:ray 1.1s var(--ease) forwards}
+@keyframes ray{to{stroke-dashoffset:0}}
+.burst .ring{transform-origin:0 0;opacity:0;animation:ring 2.4s var(--ease) .2s infinite}
+.burst .ring.r2{animation-delay:1.4s}
+@keyframes ring{0%{opacity:.7;transform:scale(.7)}100%{opacity:0;transform:scale(1.9)}}
+.champ .crest{width:56px;height:56px;margin:0 auto 10px;color:var(--ink2)}
 @keyframes pop{0%{opacity:0;transform:scale(.92)}60%{opacity:1;transform:scale(1.015)}100%{transform:none}}
 .podium{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:14px;color:var(--ink2)}
 .podium span{background:var(--fill);border-radius:999px;padding:4px 12px}
 /* 結果 */
-.res-hero{text-align:center;padding:44px 0 8px}
+.res-hero{text-align:center;padding:40px 0 8px}
+.res-hero .crest,.share-hero .crest{width:72px;height:72px;margin:0 auto 12px;color:var(--ink2)}
 .res-hero .lbl{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.24em}
 .res-hero h2{font-size:clamp(28px,5.4vw,48px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:8px}
 .res-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;margin-top:30px;align-items:start}
@@ -288,6 +324,57 @@ const ICON = {
   arrow: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>',
   shuffle: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h2.5c3 0 4 7 7 7H14M2 11.5h2.5c1.2 0 2-1 2.7-2.3M9 6.7c.7-1.2 1.5-2.2 2.5-2.2H14M12 2.5l2 2-2 2M12 9.5l2 2-2 2"/></svg>',
 };
+/* ========== 向量美術：六團色的稜鏡星章、波形、刻度環、關卡圖示、冠軍放射 ========== */
+const PRISM = ['#4455dd', '#88dd44', '#ee1166', '#ff9900', '#884499', '#33ccbb'];   // ln mmj vbs wxs n25 vs
+let artId = 0;
+/* 星章：六片團色刃（濾色疊加）＋ 內層描線刃 ＋ 刻度環 ＋ 中心六角。viewBox 以原點為中心，方便 CSS 繞中心轉 */
+function emblem({ ticks = true, spin = true, glow = true, lines = true, mono = '', core = true, blades = true } = {}) {
+  const id = 'em' + (++artId);
+  const blade = 'M0,-90 C11,-62 13,-42 0,-22 C-13,-42 -11,-62 0,-90Z';
+  const thin = 'M0,-66 C5,-48 6,-36 0,-26 C-6,-36 -5,-48 0,-66Z';
+  const defs = PRISM.map((c, i) => `<linearGradient id="${id}g${i}" gradientUnits="userSpaceOnUse" x1="0" y1="-22" x2="0" y2="-90"><stop offset="0" stop-color="${mono || c}" stop-opacity=".05"/><stop offset=".55" stop-color="${mono || c}" stop-opacity=".55"/><stop offset="1" stop-color="${mono || c}" stop-opacity=".95"/></linearGradient>`).join('')
+    + `<radialGradient id="${id}h"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>`;
+  let tk = '';
+  if (ticks) for (let i = 0; i < 120; i++) { const big = i % 20 === 0, mid = i % 5 === 0; const a = i * 3 * Math.PI / 180, r1 = big ? 90 : mid ? 93 : 95, r2 = 98;
+    tk += `<line x1="${(Math.sin(a) * r1).toFixed(2)}" y1="${(-Math.cos(a) * r1).toFixed(2)}" x2="${(Math.sin(a) * r2).toFixed(2)}" y2="${(-Math.cos(a) * r2).toFixed(2)}" stroke="${big ? (mono || PRISM[i / 20]) : 'currentColor'}" stroke-opacity="${big ? 1 : mid ? .5 : .22}" stroke-width="${big ? 1.4 : .6}"/>`; }
+  const hex = Array.from({ length: 6 }, (_, i) => { const a = (i * 60 + 30) * Math.PI / 180; return (Math.cos(a) * 17).toFixed(2) + ',' + (Math.sin(a) * 17).toFixed(2); }).join(' ');
+  return `<svg class="emb${spin ? ' turn' : ''}" viewBox="-100 -100 200 200" aria-hidden="true"><defs>${defs}</defs>
+    ${glow ? `<circle r="60" fill="url(#${id}h)"/>` : ''}
+    ${ticks ? `<g class="em-tk">${tk}</g>` : ''}
+    ${lines ? `<circle r="86" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width=".5"/><circle r="74" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width=".5" stroke-dasharray="1 3.2" class="em-dash"/>` : ''}
+    ${blades ? '' : '<!--'}<g class="em-bl">${PRISM.map((c, i) => `<path d="${blade}" transform="rotate(${i * 60})" fill="url(#${id}g${i})" style="mix-blend-mode:screen"/>`).join('')}</g>${blades ? '' : '-->'}
+    ${lines ? `<g class="em-th">${PRISM.map((c, i) => `<path d="${thin}" transform="rotate(${i * 60 + 30})" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width=".6"/>`).join('')}</g>` : ''}
+    ${core ? `<polygon points="${hex}" fill="none" stroke="currentColor" stroke-opacity=".7" stroke-width=".8"/><circle r="2.4" fill="currentColor"/>` : ''}</svg>`;
+}
+/* 六條團色的正弦波，寬度兩倍、往左捲半個寬度剛好接上 */
+function waves(n = 6, amp = 16) {
+  const W = 2400, H = 120, lam = 300;
+  const paths = PRISM.slice(0, n).map((c, i) => { let d = ''; const ph = i * .55, a = amp * (1 - i * .09), y0 = H / 2 + (i - n / 2) * 5;
+    for (let x = 0; x <= W; x += 10) d += (x ? 'L' : 'M') + x + ',' + (y0 + Math.sin(x / lam * 2 * Math.PI + ph) * a * (0.6 + 0.4 * Math.sin(x / (lam * 4) * 2 * Math.PI))).toFixed(1);
+    return `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.2" stroke-opacity=".75" vector-effect="non-scaling-stroke"/>`; }).join('');
+  return `<svg class="waves" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><g class="wv">${paths}</g></svg>`;
+}
+const CAT = {
+  char: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20.2c.9-3.8 3.7-5.8 7.2-5.8s6.3 2 7.2 5.8"/>',
+  song: '<path d="M9 17.5V5.2l10-2.2v12.6"/><circle cx="6.6" cy="17.6" r="2.5"/><circle cx="16.6" cy="15.7" r="2.5"/><path d="M9 9l10-2.2"/>',
+  card: '<rect x="5.5" y="2.8" width="13" height="18.4" rx="2.2"/><path d="M12 7.6l1.2 2.5 2.7.4-2 1.9.5 2.7L12 13.8l-2.4 1.3.5-2.7-2-1.9 2.7-.4z"/>',
+  event: '<path d="M5.5 21.2V3.4"/><path d="M5.5 4h12.2l-2.4 3.9 2.4 3.9H5.5"/>',
+  comp: '<path d="M12 2.8l5.2 6.4L12 21.2 6.8 9.2z"/><path d="M12 9.6v6"/><circle cx="12" cy="9.3" r="1.1"/>',
+  ms: '<path d="M12 2.6l2.3 6.6 6.6 2.3-6.6 2.3L12 20.4l-2.3-6.6-6.6-2.3 6.6-2.3z"/><circle cx="19" cy="4.6" r=".9"/><circle cx="5" cy="19" r=".9"/>',
+};
+const catIcon = k => `<svg class="cat-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CAT[k]}</svg>`;
+/* 冠軍放射：細線光芒（長短交錯）＋ 兩圈擴散環，用描邊動畫畫出來 */
+function burst(color) {
+  let rays = '';
+  for (let i = 0; i < 48; i++) { const a = i * 7.5 * Math.PI / 180, long = i % 2 === 0, r1 = long ? 58 : 64, r2 = long ? 98 : 82;
+    rays += `<line x1="${(Math.sin(a) * r1).toFixed(2)}" y1="${(-Math.cos(a) * r1).toFixed(2)}" x2="${(Math.sin(a) * r2).toFixed(2)}" y2="${(-Math.cos(a) * r2).toFixed(2)}" style="animation-delay:${(i % 12) * 30}ms"/>`; }
+  return `<svg class="burst" viewBox="-100 -100 200 200" aria-hidden="true" style="color:${color}"><g class="rays" stroke="currentColor" stroke-width=".22" stroke-opacity=".7" stroke-linecap="round">${rays}</g>
+    <circle class="ring r1" r="52" fill="none" stroke="currentColor" stroke-width=".4"/><circle class="ring r2" r="52" fill="none" stroke="currentColor" stroke-width=".3"/></svg>`;
+}
+/* 給 canvas 用：SVG 字串轉成 Image（data URL，不會污染畫布） */
+const svgImage = (svg, color = '#fff') => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null);
+  i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" style="color:${color}" `).replace(/currentColor/g, color)); });
+
 const IMGERR = 'onerror="__imgErr(this)"';
 const tcOf = u => u.replace('sekai-jp-assets', 'sekai-tc-assets');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -560,10 +647,11 @@ function renderStart() {
   const im = reelImgs(16), row = a => a.concat(a).map(u => `<img src="${esc(u)}" alt="" decoding="async" onload="this.classList.add('in')" ${IMGERR}>`).join('');
   app.innerHTML = `<section class="view">
     <div class="cine"><div class="reel r1" aria-hidden="true">${row(im.slice(0, 8))}</div><div class="reel r2" aria-hidden="true">${row(im.slice(8))}</div>
+      <div class="stage-art">${emblem({ core: false })}</div>${waves()}<div class="grain"></div>
       <div class="in-hero"><div class="eyebrow">Project SEKAI</div><h2>SEKAI 二選一</h2>
         <p>每次兩個，只留一個。六關淘汰賽之後，你會拿到自己的組合包，和一張寫著本命格言的紀念卡。</p>
         <div class="cta"><button class="btn pri" id="go">開始</button>${saved ? `<button class="btn" id="resume">繼續上次・第 ${saved.stage + 1} 關</button>` : ''}</div></div></div>
-    <div class="flow">${STAGES.map((st, i) => `<div><b>${String(i + 1).padStart(2, '0')}</b><span>${st.name}</span><i>${FLOW_SUB[i]}</i></div>`).join('')}</div>
+    <div class="flow">${STAGES.map((st, i) => `<div style="--u:${PRISM[i]}">${catIcon(st.k)}<b>${String(i + 1).padStart(2, '0')}</b><span>${st.name}</span><i>${FLOW_SUB[i]}</i></div>`).join('')}</div>
     <div class="modes"><div class="seg" role="group" aria-label="長度"><button data-mode="quick" aria-pressed="true">快速版</button><button data-mode="full" aria-pressed="false">完整版</button></div><div class="desc" id="mdesc">${MODE_DESC.quick}</div></div>
     <p class="note">後面幾關會參考你選的本命出題。進度自動存在這台裝置上。</p>
   </section>`;
@@ -576,8 +664,8 @@ function stageHead(st) {
   const b = S.b;
   const alive = b.next.length + (b.round.length - b.i);
   const label = alive <= 2 ? '決賽' : alive <= 4 ? '四強' : alive + ' 強';
-  const dots = STAGES.map((x, i) => `<i class="${i < S.stage ? 'on' : i === S.stage ? 'cur' : ''}"></i>`).join('');
-  return `<div class="stage"><div class="dots" aria-hidden="true">${dots}</div><div class="lbl">第 ${S.stage + 1} 關　<em>${st.name}</em>　${label}</div><h2>${st.q}</h2><div class="sub">${st.sub ? st.sub + '　' : ''}${doneMatches() + 1} / ${totalMatches()}</div></div>`;
+  const track = STAGES.map((x, i) => (i ? `<i class="${i <= S.stage ? 'on' : ''}"></i>` : '') + `<span class="${i < S.stage ? 'on' : i === S.stage ? 'cur' : ''}" title="${x.name}">${catIcon(x.k)}</span>`).join('');
+  return `<div class="stage"><div class="track" aria-hidden="true">${track}</div><div class="lbl">第 ${S.stage + 1} 關　<em>${st.name}</em>　${label}</div><h2>${st.q}</h2><div class="sub">${st.sub ? st.sub + '　' : ''}${doneMatches() + 1} / ${totalMatches()}</div></div>`;
 }
 
 async function renderPlay(enter) {
@@ -589,7 +677,7 @@ async function renderPlay(enter) {
   const champ = S.res.char ? CH[S.res.char.top[0].id] : null; setAcc(champ ? inkOf(champ.color) : '#0071e3');
   const canSwap = b.rnd === 1 && b.reserve && b.reserve.length > 0;
   app.innerHTML = `<section class="view">${stageHead(st)}
-    <div class="duel${enter ? ' enter' : ''}" id="duel">${optHTML(a, 0, st, { swap: canSwap })}<div class="vs" aria-hidden="true">VS</div>${optHTML(c, 1, st, { swap: canSwap })}</div>
+    <div class="duel${enter ? ' enter' : ''}" id="duel">${optHTML(a, 0, st, { swap: canSwap })}<div class="vs" aria-hidden="true">${emblem({ glow: false, lines: false, blades: false, core: false })}<b>VS</b></div>${optHTML(c, 1, st, { swap: canSwap })}</div>
     <div class="ctrl"><button class="btn sm" id="undo" ${undo.length ? '' : 'disabled'}>${ICON.undo}上一題</button><button class="btn sm" id="skip">${ICON.shuffle}都喜歡，隨機選</button></div>
     <div class="kbd">鍵盤　左右方向鍵選擇　空白鍵試聽　Backspace 上一題</div>
   </section>`;
@@ -635,8 +723,9 @@ function renderInter() {
   const last = S.stage === STAGES.length - 1;
   const bd = top.jk ? top.jk[0] : top.img;
   app.innerHTML = `<section class="view"><div class="backdrop" style="background-image:url('${esc(bd)}')"></div><div class="champ">
+    <div class="crest" style="color:${top.c}">${catIcon(st.k).replace('class="cat-i"', 'class="cat-i" style="width:100%;height:100%"')}</div>
     <div class="lbl">第 ${S.stage + 1} 關　${st.name}冠軍</div><h2>${esc(top.t)}</h2>
-    ${optHTML(top, 0, st, { static: true })}
+    <div class="stagefx">${burst(top.c)}${optHTML(top, 0, st, { static: true })}</div>
     ${r.top.length > 1 ? `<div class="podium">${r.top.slice(1).map((x, i) => `<span>${i ? '第三' : '第二'}　${esc(x.t)}</span>`).join('')}</div>` : ''}
     <div class="cta"><button class="btn" id="undo">${ICON.undo}上一題</button><button class="btn pri" id="next">${last ? '看結果與組合包' : '下一關　' + STAGES[S.stage + 1].name}${ICON.arrow}</button></div>
   </div></section>`;
@@ -676,7 +765,7 @@ function renderResult() {
   const M = resultModel(S.res, S.qi || 0, S.done);
   setAcc(inkOf(M.ch.color)); setProg();
   app.innerHTML = `<section class="view">
-    <div class="res-hero"><div class="lbl">你的 SEKAI</div><h2>${esc(summaryLine(S.res))}</h2></div>
+    <div class="res-hero"><div class="crest">${emblem()}</div><div class="lbl">你的 SEKAI</div><h2>${esc(summaryLine(S.res))}</h2></div>
     <div class="res-grid">
       <div><div class="memo" id="memo"><canvas id="cv" width="1080" height="1350" aria-label="紀念卡"></canvas><div class="wait" id="wait">繪製紀念卡中…</div></div>
         <div class="memo-tabs"><div class="seg" role="group" aria-label="紀念卡尺寸"><button data-sz="post" aria-pressed="true">貼文 4:5</button><button data-sz="story" aria-pressed="false">限動 9:16</button></div>
@@ -736,8 +825,16 @@ async function drawMemo(cv, M) {
   g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, 'rgba(0,0,0,.5)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 180);
   /* 角色色的光暈 */
   g = ctx.createRadialGradient(W * .5, artH, 10, W * .5, artH, W * .75); g.addColorStop(0, hexA(col, .32)); g.addColorStop(1, hexA(col, 0)); ctx.fillStyle = g; ctx.fillRect(0, artH - W * .5, W, W);
+  const [embW, embC] = await Promise.all([svgImage(emblem({ spin: false, glow: false, core: false }), '#ffffff'), svgImage(emblem({ spin: false, ticks: false, lines: false, glow: false }), '#ffffff')]);
+  /* 浮水印星章：角色色系的大星章壓在畫面右下，像收藏卡的燙金底紋 */
+  if (embW) { ctx.save(); ctx.globalAlpha = .16; ctx.globalCompositeOperation = 'screen'; const es = story ? 820 : 700; ctx.drawImage(embW, W - es * .62, H - es * .78, es, es); ctx.restore(); }
+  /* 細網格（只在卡面下方的深色區） */
+  ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1;
+  for (let x = 54; x < W; x += 54) { ctx.beginPath(); ctx.moveTo(x, artH - 40); ctx.lineTo(x, H - 90); ctx.stroke(); }
+  ctx.restore();
   ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(255,255,255,.92)';
-  ctx.font = `600 26px ${FONT}`; ctx.fillText('SEKAI 二選一', 56, 76);
+  if (embC) ctx.drawImage(embC, 52, 44, 44, 44);
+  ctx.font = `600 26px ${FONT}`; ctx.fillText('SEKAI 二選一', 106, 76);
   ctx.textAlign = 'right'; ctx.font = `500 24px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(`${M.date}　No.${M.serial}`, W - 56, 76); ctx.textAlign = 'left';
   /* 格言 */
   let y = artH - (story ? 120 : 150);
@@ -750,9 +847,12 @@ async function drawMemo(cv, M) {
   ctx.font = `500 30px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.72)';
   ctx.fillText('— ' + M.ch.name, 74, y + 22);
   ctx.fillStyle = col; rr(ctx, 74, y + 46, 64, 6, 3); ctx.fill();
+  /* 六團色的波形分隔線 */
+  const wy = Math.max(y + 90, story ? 1480 : 990) - 44;
+  PRISM.forEach((c, i) => { ctx.beginPath(); for (let x = 56; x <= W - 56; x += 6) { const yy = wy + (i - 2.5) * 3.2 + Math.sin(x / 70 + i * .6) * 9 * Math.sin((x - 56) / (W - 112) * Math.PI); x === 56 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); } ctx.strokeStyle = hexA(c, .8); ctx.lineWidth = 1.6; ctx.stroke(); });
   /* 下方四格 */
   const rows = [['歌曲', songTop && songTop.t, songTop && songTop.s.replace(/^作曲 /, ''), thumbs[0], true], ['活動', evTop && evTop.t, evTop && evTop.s, thumbs[1], false], ['作曲家', cpTop && cpTop.t, cpTop && cpTop.s, thumbs[2], true], ['里程碑', msTop && msTop.t, msTop && msTop.s, thumbs[3], false]];
-  const top0 = Math.max(y + 96, story ? 1380 : 1000), gap = 18, cw = (W - 112 - gap) / 2, chh = story ? 170 : 132;
+  const top0 = Math.max(y + 90, story ? 1480 : 990), gap = 16, cw = (W - 112 - gap) / 2, chh = story ? 170 : 124;
   rows.forEach(([k, t, s, im, sq], i) => {
     const x = 56 + (i % 2) * (cw + gap), yy = top0 + Math.floor(i / 2) * (chh + gap);
     ctx.fillStyle = 'rgba(255,255,255,.07)'; rr(ctx, x, yy, cw, chh, 22); ctx.fill();
@@ -761,10 +861,15 @@ async function drawMemo(cv, M) {
     if (im) cover(ctx, im, x + 14, yy + 14, tw, th, .5, .3); else { ctx.fillStyle = hexA(col, .4); ctx.fillRect(x + 14, yy + 14, tw, th); }
     ctx.restore();
     const tx = x + 14 + tw + 16, mw = cw - (tw + 44);
-    ctx.fillStyle = col; ctx.font = `600 ${story ? 22 : 20}px ${FONT}`; ctx.fillText(k, tx, yy + (story ? 52 : 42));
-    ctx.fillStyle = '#fff'; ctx.font = `600 ${story ? 32 : 28}px ${FONT}`; ctx.fillText(ellip(ctx, t || '—', mw), tx, yy + (story ? 98 : 80));
-    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = `400 ${story ? 22 : 20}px ${FONT}`; ctx.fillText(ellip(ctx, s || '', mw), tx, yy + (story ? 134 : 110));
+    ctx.fillStyle = col; ctx.font = `600 ${story ? 22 : 20}px ${FONT}`; ctx.fillText(k, tx, yy + (story ? 52 : 40));
+    ctx.fillStyle = '#fff'; ctx.font = `600 ${story ? 32 : 28}px ${FONT}`; ctx.fillText(ellip(ctx, t || '—', mw), tx, yy + (story ? 98 : 76));
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = `400 ${story ? 22 : 20}px ${FONT}`; ctx.fillText(ellip(ctx, s || '', mw), tx, yy + (story ? 134 : 104));
   });
+  /* 收藏卡外框：細描邊＋角色色的四角括號＋左緣稜鏡色條 */
+  ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1.5; rr(ctx, 24, 24, W - 48, H - 48, 30); ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = 3; const L = 46, m = 24;
+  [[m, m, 1, 1], [W - m, m, -1, 1], [m, H - m, 1, -1], [W - m, H - m, -1, -1]].forEach(([x, y0, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x + sx * L, y0); ctx.lineTo(x + sx * 12, y0); ctx.quadraticCurveTo(x, y0, x, y0 + sy * 12); ctx.lineTo(x, y0 + sy * L); ctx.stroke(); });
+  const fg = ctx.createLinearGradient(0, 120, 0, H - 120); PRISM.forEach((c, i) => fg.addColorStop(i / 5, c)); ctx.fillStyle = fg; ctx.globalAlpha = .9; rr(ctx, 21, H * .3, 6, H * .4, 3); ctx.fill(); ctx.globalAlpha = 1;
   /* 卡名與網址 */
   ctx.font = `400 22px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.5)';
   ctx.fillText(ellip(ctx, '卡面「' + M.card.name + '」', W - 560), 56, H - 50);
@@ -856,7 +961,7 @@ async function renderShared(code) {
   const M = resultModel(R, +v[7] || 0, done); M.serial = String(v[9] || M.serial).padStart(4, '0').slice(-4);
   setAcc(inkOf(M.ch.color)); $('#progBar').style.width = '0';
   app.innerHTML = `<section class="view">
-    <div class="share-hero"><div class="lbl">朋友的 SEKAI 二選一</div><h2>${esc(summaryLine(R))}</h2></div>
+    <div class="share-hero"><div class="crest">${emblem()}</div><div class="lbl">朋友的 SEKAI 二選一</div><h2>${esc(summaryLine(R))}</h2></div>
     <div class="res-grid"><div><div class="memo"><canvas id="cv" width="1080" height="1350" aria-label="紀念卡"></canvas><div class="wait" id="wait">繪製紀念卡中…</div></div></div>
     <div><div class="cats" id="cats">${catRows(R, true)}</div>
       <div class="acts"><a class="btn pri" href="./pick">我也要玩</a></div>
