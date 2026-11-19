@@ -3133,6 +3133,7 @@ const DOLLS = [{"chars": "全員", "jp": "2025/01", "tw": "2025/10", "type": "�
                 this._lastScore = score;
                 el.innerHTML = `<div style="font-size:26px;font-weight:700;color:var(--primary);">${score.toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--text-light);">分 / 局</span></div>
                     <div style="margin-top:8px;font-size:12px;color:var(--text-light);">分數倍率 ${mult.toFixed(3)}（base ${meta.base_score.toFixed(2)}${fever ? ` ＋FEVER ${fever.toFixed(2)}` : ''} ＋技能 ${skillPart.toFixed(2)}）× 綜合力 ${P.toLocaleString()} × 4</div>
+                    ${mode === 'multi' ? `<div style="margin-top:6px;font-size:12px;color:var(--text-light);">另有活躍加分約 ${Math.floor(0.015 * 5 * P * 5).toLocaleString()}（五人同綜合力估：每人觸發一次、每次全員加房間綜合力合計 1.5%），換算活動 P 時已計入。</div>` : ''}
                     <div style="margin-top:6px;font-size:12px;">難度 ${diff.toUpperCase()}・${mode === 'multi' ? '協力' : '單人'}・R=${meta.event_rate}・6窗權重 [${arr.map(w => w.toFixed(3)).join(', ')}]</div>`;
             },
             scFillSkills() { const v = document.getElementById('scS1').value; for (let i = 2; i <= 6; i++) document.getElementById('scS' + i).value = v; this.calcScore(); },

@@ -27,6 +27,7 @@ CATS = [
     ('sekai',  '烤森綜合力', '#b8e561', ['烤森', '綜合力', 'mysekai']),
     ('rank',   '排位賽',    '#c39df2', ['排位']),
     ('rhythm', '音遊練習',  '#ffd94d', ['音遊', '練習', '譜面']),
+    ('score',  '分數計算',  '#7aa7ff', ['分數', 'スコア']),
 ]
 KEEP = {'p', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
         'strong', 'b', 'em', 'i', 'br', 'a', 'img', 'h4'}

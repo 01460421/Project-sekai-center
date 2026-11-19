@@ -855,7 +855,7 @@
         <!-- 十八、教學大全 -->
         <section id="tutorial">
             <h2>十八、教學大全 <span class="en">Tutorial</span></h2>
-            <p style="margin-bottom:16px">由台啤開瓶器編輯團隊整理的世界計畫完整教學，涵蓋養成、車隊、衝榜與音遊練習。共 <strong>115 則</strong>問答，可搜尋、依分類瀏覽，含圖片的項目會附上前往原始文檔的連結。</p>
+            <p style="margin-bottom:16px">由台啤開瓶器編輯團隊整理的世界計畫完整教學，涵蓋養成、車隊、衝榜與音遊練習。共 <strong>123 則</strong>問答，可搜尋、依分類瀏覽，含圖片的項目會附上前往原始文檔的連結。</p>
             <div class="table-wrapper">
                 <table>
                     <thead><tr><th>分類</th><th>內容</th></tr></thead>
@@ -1049,7 +1049,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="note">分數 = ⌊(base_score ＋ Σ_i skill_score[i]×窗i技能%／100〔協力另計 FEVER×0.5〕) × 綜合力 × 4⌋。共 6 個技能窗(第 6 窗=encore/隊長);單人第 1~5 窗依站位、協力依發動順序。未計協力活躍加分(需房間總綜合力)。數值來自 music_metas 譜面模擬。</div>
+                <div class="note">分數 = ⌊(base_score ＋ Σ_i skill_score[i]×窗i技能%／100〔協力另計 FEVER×0.5〕) × 綜合力 × 4⌋。共 6 個技能窗(第 6 窗=encore/隊長);單人第 1~5 窗依站位、協力依發動順序。分數不含協力活躍加分（每人觸發一次，每次全員加房間綜合力合計的 1.5%；五人同綜合力時約 0.375×綜合力），換算活動 P 時已用 0.075×綜合力×5 補上。數值來自 music_metas 譜面模擬。</div>
             </div>
 
             <div id="ec-power" class="tab-content">
@@ -1307,7 +1307,7 @@
             <p class="omega">Ω</p>
         </footer>
     </div>
-    <script src="js/core.js?v=53c84101a0"></script>
+    <script src="js/core.js?v=f9dacdecdd"></script>
     <script>
     /* 內嵌模式：SEKAI App 以 iframe 載入 index.html?embed=calc 時，注入分頁列並回報高度做自適應 */
     (function(){
