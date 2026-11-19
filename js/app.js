@@ -294,7 +294,7 @@ class Component extends DCLogic {
     shop:     ['儲值分析', '商城全商品 CP 值 · 月卡通行證攤提 · 智慧推薦最省錢購買組合'],
     b30:      ['B30 產生器', 'Best 30 実効值圖卡(Unibot 風格版面),可下載 PNG'],
     haruki:   ['Haruki 專區', '用你在 Haruki 工具箱的遊戲資料：活動最佳組卡、角色等級 EXP，以及 master、素材與 API 資源'],
-    tut:      ['教學大全', '115 則問答：養成、車隊、衝榜與音遊練習'],
+    tut:      ['教學大全', '123 則問答：養成、車隊、衝榜與音遊練習'],
     gachasim: ['抽卡模擬', '依官方機率模型模擬抽卡（可選期數與卡池）'],
     collect:  ['收集室', '貼圖與稱號圖鑑（台服主資料庫 · 官方素材）'],
     rate:     ['收集率', '卡片圖鑑勾選，即時算出各團與各稀有度的收集進度'],
@@ -581,7 +581,7 @@ class Component extends DCLogic {
     { date: '計算', title: '進階計算', desc: '綜合力精算、組卡優化、分數估算與跑榜工作室（完整引擎、即時抓主資料庫）。', to: 'deckpro', cta: '前往進階計算' },
     { date: '儲值', title: '儲值商品分析', desc: '商城 930+ 項商品的內容物、台幣定價與 CP 值排行，含官網比價與最省錢組合推薦。', to: 'shop', cta: '前往儲值分析' },
     { date: '計算', title: 'B30 產生器', desc: '勾選或上傳截圖匯入 FC/AP，依非官方定數算 Best 30 実効值，輸出 Unibot 風格圖卡。', to: 'b30', cta: '前往 B30 產生器' },
-    { date: '學習', title: '教學大全', desc: '115 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
+    { date: '學習', title: '教學大全', desc: '123 則問答，涵蓋養成、車隊、衝榜與音遊練習。', to: 'tut', cta: '前往教學大全' },
     { date: '車隊', title: '私車排班', desc: '菜根機器人的車隊班表搬上網頁：三車分開排班、看板拖拉換人、推手標記、車隊模式指定跑者、歷史班表與試算表同步。', to: 'car', cta: '前往私車排班' },
     { date: '車隊', title: '菜根機器人', desc: '車隊排班、查榜、點歌的機器人，Discord、QQ、網頁三邊同步；附八種卡面的指令清單圖，可存下來貼群公告。', to: 'bot', cta: '認識菜根機器人' },
     { date: '資源', title: '資源連結', desc: '官方、資訊站、社群、Wiki 與本站工具的集合。', to: 'res', cta: '前往資源連結' },
@@ -2839,7 +2839,7 @@ class Component extends DCLogic {
     if (this._engP) return this._engP;
     this._engP = new Promise((res, rej) => {
       const el = document.createElement('script');
-      el.src = './js/core.js?v=53c84101a0';
+      el.src = './js/core.js?v=f9dacdecdd';
       el.onload = res;
       el.onerror = () => rej(new Error('計算引擎載入失敗'));
       document.head.appendChild(el);
@@ -3087,7 +3087,7 @@ class Component extends DCLogic {
   async loadAi() {
     if (!this._aiReady) {
       this.loadSyslog(); this.loadAliases();   // 助手的「找功能／更新記錄」會搜尋 SYSLOG 與 ALIASES
-      this._aiReady = import('./js/ai.min.js?v=0c045eca25').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
+      this._aiReady = import('./js/ai.min.js?v=e523356cbd').then(m => { Object.assign(this, m.aiMembers.call(this)); this.setState({ aiReady: true }); return true; })
         .catch(e => { this._aiReady = null; this._toast('AI 模組載入失敗，請重新整理'); throw e; });
     }
     return this._aiReady;
@@ -12471,7 +12471,7 @@ class Component extends DCLogic {
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },
           { name: '迴響之境 ECHOES', url: 'echoes.html', sub: '抽象網頁冒險：踩拍前進、調音鍛造、和弦強化、危機記者會' },
           { name: 'EP 計算器', url: 'ep-calculator.html', sub: '獨立版：EP／控分／排行' },
-          { name: '教學大全', url: 'tutorial.html', sub: '115 則問答・養成到衝榜' },
+          { name: '教學大全', url: 'tutorial.html', sub: '123 則問答・養成到衝榜' },
           { name: 'SEKAI 二選一', url: 'pick.html', sub: '角色、歌曲（可試聽）、卡面、活動、作曲家、里程碑六關二選一淘汰賽，完成拿組合包與角色格言紀念卡' },
           { name: '菜根機器人展示', url: 'botdemo.html', sub: 'Discord 報班、班表渲染、網頁、Google 試算表同步、共跑、提醒簽到：一分半看完，配樂隨機一首箱曲、可分享' },
           { name: '說明書', url: 'manual.html', sub: '網站使用手冊、排班系統、語音功能與排班論文：可搜尋、跳章節、下載 PDF' },
