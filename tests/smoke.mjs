@@ -202,6 +202,38 @@ for (const mobile of [false, true]) {
   }
 }
 
+// 獨立頁：摸魚表（ep-calc.html，網址 /ep-calc）。桌機與手機各開一次：曲庫要從 data/ep-songs.js 載進來、排行長出 50 列且每列有難度標籤，
+// 第 1 名的差距欄寫「最高」；摸魚優先有結果；單曲查詢 Sage 六個難度、恰好一列粗體最佳；切單人模式數字要變；不能有 JS 錯誤、手機不能橫向溢出。
+{
+  const ORIGIN = new URL(BASE).origin;
+  for (const mobile of [false, true]) {
+    const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile });
+    const page = await ctx.newPage(); const errors = [];
+    page.on('pageerror', e => errors.push(e.message.slice(0, 160)));
+    let ok = false, why = '';
+    try {
+      await page.goto(ORIGIN + '/ep-calc.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.evaluate(() => { try { localStorage.removeItem('moyu-state'); } catch (e) {} });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => document.querySelectorAll('#rankBody tr').length >= 50, null, { timeout: 20000 });
+      const r = await page.evaluate(() => { const rows = [...document.querySelectorAll('#rankBody tr')];
+        return { n: rows.length, badges: rows.every(tr => tr.querySelector('.bd')), top: rows[0].lastElementChild.textContent.trim(), songs: document.querySelector('#docCount').textContent }; });
+      await page.click('[data-tab="moyu"]');
+      const moyu = await page.evaluate(() => document.querySelectorAll('#moyuBody tr .bd').length);
+      await page.click('[data-tab="song"]'); await page.fill('#sq', 'Sage'); await page.waitForTimeout(200);
+      const song = await page.evaluate(() => ({ n: document.querySelectorAll('#songBody tr').length, best: document.querySelectorAll('#songBody tr.best').length, ep: document.querySelector('#songBody tr.best td:nth-child(4)').textContent }));
+      await page.selectOption('#mode', 'solo'); await page.waitForTimeout(400);
+      const solo = await page.evaluate(() => document.querySelector('#songBody tr.best td:nth-child(4)').textContent);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ok = !errors.length && r.n === 50 && r.badges && r.top === '最高' && +r.songs > 700 && moyu > 0 && song.n >= 5 && song.best === 1 && solo !== song.ep && !(mobile && overflow);
+      why = errors[0] || (r.n !== 50 ? '排行 ' + r.n + ' 列' : !r.badges ? '有列沒有難度標籤' : r.top !== '最高' ? '第 1 名差距是 ' + r.top : +r.songs <= 700 ? '曲庫只有 ' + r.songs + ' 首' : !moyu ? '摸魚優先沒結果' : song.n < 5 || song.best !== 1 ? '單曲 ' + song.n + ' 列、最佳 ' + song.best : solo === song.ep ? '切單人數字沒變' : overflow ? '橫向溢出' : '');
+    } catch (e) { why = e.message.slice(0, 120); }
+    console.log((ok ? 'ok  ' : 'FAIL') + ' ' + (mobile ? 'mobile ' : 'desktop') + ' ep-calc' + (why ? ' — ' + why : ''));
+    if (!ok) fail++;
+    await ctx.close();
+  }
+}
+
 // 獨立頁：菜根機器人展示（botdemo.html）。帶 ?t=20 開：開場畫面要寫「從 0:20 開始」；按播放後時間要往前走、從 20 秒附近開始；
 // 暫停後點章節「共跑」要跳到那一段；分享按鈕要出「已複製」提示、連結帶 t=；不能有 JS 錯誤、手機不能橫向溢出。
 {

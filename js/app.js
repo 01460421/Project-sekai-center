@@ -9320,6 +9320,7 @@ class Component extends DCLogic {
       if (/存石|存水晶|水晶規劃|要不要抽|抽不抽|未來卡池|規劃|plan/i.test(q)) out.unshift({ tag: '工具', tagBg: '#7a4fc0', main: '存石規劃', sub: '未來一年每一池的 PU 卡與持卡對照，水晶收支推算到每池能存幾抽', run: () => this.go('plan') });
       if (/帳號分析|分析帳號|我的帳號|角色等級|平均等級|收集率|FC|AP|挑戰|profile/i.test(q)) out.unshift({ tag: '工具', tagBg: '#2f6fb5', main: '帳號分析', sub: '綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料、兩帳號比較', run: () => this.go('profile') });
       if (/名片|自訂名片|拼圖|色塊|namecard/i.test(q)) out.unshift({ tag: '工具', tagBg: '#c2477a', main: '名片拼圖', sub: '上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟', run: () => this.go('namecard') });
+    if (/摸魚|摸魚表|哪個難度|活動P|活動 P|每小時|ep-calc/i.test(q)) out.unshift({ tag: '工具', tagBg: '#111111', main: '摸魚表', sub: '活動 P 查詢：每首歌該打哪個難度、最輕鬆又幾乎不虧 P 的選擇', run: () => { location.href = './ep-calc'; } });
     if (/二選一|測驗|心理測驗|本命|喜好|最愛|淘汰賽|pick|quiz/i.test(q)) out.unshift({ tag: '測驗', tagBg: '#e8457a', main: 'SEKAI 二選一', sub: '六關二選一，選出本命、最愛歌曲與卡面，拿組合包', run: () => { location.href = './pick.html'; } });
     if (/菜根|機器人|bot|排班系統|展示|demo/i.test(q)) out.unshift({ tag: '展示', tagBg: '#5b7cff', main: '菜根機器人展示', sub: 'Discord × 網頁 × Google 試算表，一分半看完', run: () => { location.href = './botdemo.html'; } });
       if (/豆森工作室|像素|像素畫|方塊|瓷磚|設計圖|看板|mystudio|pixel/i.test(q)) out.unshift({ tag: '工具', tagBg: '#4a8f2f', main: '豆森工作室', sub: '圖片轉彩色方塊像素畫（材料、步驟、設計圖、建造播放）、家具擺設模擬、生日看板', run: () => this.go('mystudio') });
@@ -12466,6 +12467,7 @@ class Component extends DCLogic {
           { name: '帳號分析', url: '?page=profile', sub: 'Player ID 一填：綜合力拆解、各難度 FC／AP、角色等級、挑戰 Live、最容易補的下一首、收集率、豆森材料，兩帳號並排比較' },
           { name: '豆森工作室', url: '?page=mystudio', sub: '圖片轉彩色方塊像素畫：材料、步驟、設計圖、建造播放；家具擺設模擬、生日看板' },
           { name: '名片拼圖', url: '?page=namecard', sub: '上傳圖片，自動拆成自訂名片能用的圖形與拼圖步驟' },
+          { name: '摸魚表', url: 'ep-calc', sub: '活動 P 查詢：每首歌該打哪個難度、每小時 P、最輕鬆又幾乎不虧 P 的選擇' },
           { name: 'SEKAI 星圖', url: 'starmap.html', sub: '全曲庫化成星空：BPM／定數／年代投影、作曲者星座' },
           { name: '衝榜劇場', url: 'theater.html', sub: '前百名的每一場：每 15 秒一次的逐場紀錄、脈動牆與節奏熱圖' },
           { name: 'SEKAI 聲紋', url: 'soundprint.html', sub: '每一首歌的傅立葉肖像：極座標聲紋、頻譜、結構、調性與速度推算' },

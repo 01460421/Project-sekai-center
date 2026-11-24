@@ -6047,7 +6047,7 @@
 "搜尋設定…（例：候補、提醒、音量、外援）": "Search settings… (e.g. backup, reminder, volume, guest)",
 "搜尋貼圖名稱或台詞…": "Search sticker name or line…",
 "搜活動名稱或期數…": "Search event name or number…",
-"摸魚表": "Lazy-grind table",
+"摸魚表": "Easy-Mode Event Points",
 "摸魚表 ·": "Chill table ·",
 "摸魚表 · {0}": "Chill table · {0}",
 "摸魚表加入自訂篩選": "Lazy-grind table adds custom filters",
@@ -11902,5 +11902,7 @@
 "：畫面出現 FEVER!／SUPER FEVER!! 的彩虹框期間，分數 ＋50%。兩者分數一樣，SUPER FEVER（FEVER CHANCE 期間全員不斷 combo）只差在多拿虛擬幣或練習用樂譜。FEVER 長度約為歌長的 1/12。": ": while the rainbow FEVER! / SUPER FEVER!! frame is shown, score is +50%. Both give the same score; SUPER FEVER (everyone keeps their combo during FEVER CHANCE) only adds coins or practice scores. FEVER lasts about 1/12 of the song.",
 "：第 1–100 combo 沒有加成，之後每多 100 combo ＋1%，第 1001 combo 起封頂 ＋10%。": ": no bonus for combos 1–100, then +1% every 100 combo, capped at +10% from combo 1001.",
 "：編組技能不發動，綜合力也不影響勝負，計分方式請見「排位賽」分類的〈配對範圍與對戰規則〉（PERFECT ＋3、GREAT ＋2、GOOD ＋1）。": ": deck skills don’t fire and power doesn’t affect the result; for scoring see “Matching range and match rules” in the Rank Match category (PERFECT +3, GREAT +2, GOOD +1).",
-"；回血卡、判卡也一樣有（判卡的判定強化是 5.5 秒，但分數加成仍是 5 秒）。": "; heal and judgement cards have it too (the judgement boost lasts 5.5 seconds, but the score boost is still 5 seconds)."
+"；回血卡、判卡也一樣有（判卡的判定強化是 5.5 秒，但分數加成仍是 5 秒）。": "; heal and judgement cards have it too (the judgement boost lasts 5.5 seconds, but the score boost is still 5 seconds).",
+"活動 P 查詢：每首歌該打哪個難度、每小時 P、最輕鬆又幾乎不虧 P 的選擇": "Event point lookup: the best difficulty for each song, points per hour, and the easiest picks that lose almost no points",
+"活動 P 查詢：每首歌該打哪個難度、最輕鬆又幾乎不虧 P 的選擇": "Event point lookup: the best difficulty for each song and the easiest picks that lose almost no points"
 }
