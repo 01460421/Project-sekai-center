@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>摸魚表：活動 P 查詢 | Project SEKAI 資源中心</title>
+<meta name="description" content="世界計畫（台服）活動 P 查詢：輸入隊伍條件，查每首歌哪個難度活動 P 最高、每小時 P、最輕鬆的高效益選擇與單曲各難度比較。">
+<meta property="og:title" content="摸魚表｜世界計畫 活動 P 查詢">
+<meta property="og:description" content="每首歌該打哪個難度、每小時能拿多少 P，以及最輕鬆又幾乎不虧 P 的選擇。">
+<meta property="og:site_name" content="SEKAI 資源中心">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://project-sekai-center.com/ep-calc">
+<link rel="canonical" href="https://project-sekai-center.com/ep-calc">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&text=%E6%91%B8%E9%AD%9A%E8%A1%A8&display=swap" rel="stylesheet">
+<style>
+:root{--fg:#000;--bg:#fff;--mute:#6b6b6b;--line:#000;--soft:#e6e6e6;--hover:#f4f4f4;
+  --E:#3fa62a;--N:#1d93cc;--H:#d98a00;--X:#dc3157;--M:#a23bd4;--A:linear-gradient(90deg,#f0559d,#8f56f0)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fg:#fff;--bg:#000;--mute:#9a9a9a;--line:#fff;--soft:#2a2a2a;--hover:#111}}
+:root[data-theme="dark"]{--fg:#fff;--bg:#000;--mute:#9a9a9a;--line:#fff;--soft:#2a2a2a;--hover:#111}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 20px 64px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:18px}
+h1{font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;font-weight:900;font-size:56px;line-height:1;letter-spacing:4px}
+.sub{color:var(--mute);margin-top:10px;font-size:14px}
+.links{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+.links a,.links button{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--fg);background:none;border-top:0;border-left:0;border-right:0;font:inherit;cursor:pointer;padding:0}
+nav{display:flex;gap:26px;margin:22px 0 18px;flex-wrap:wrap}
+nav button{background:none;border:0;font:inherit;font-size:16px;color:var(--mute);cursor:pointer;padding:4px 0;border-bottom:2px solid transparent}
+nav button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--fg);font-weight:700}
+fieldset{border:1px solid var(--line);padding:16px 18px 18px;margin-bottom:16px}
+legend{padding:0 8px;font-size:12px;letter-spacing:2px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px 16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
+input,select{font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:0;border-bottom:1px solid var(--fg);padding:5px 2px;border-radius:0;outline:none;width:100%}
+input:focus,select:focus{border-bottom-width:2px}
+select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--fg) 50%),linear-gradient(135deg,var(--fg) 50%,transparent 50%);background-position:calc(100% - 10px) 55%,calc(100% - 5px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:18px}
+.hint{font-size:12px;color:var(--mute);margin-top:10px}
+.bar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 0 8px;font-size:13px;color:var(--mute)}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;letter-spacing:1.5px;font-weight:700;text-align:left;padding:8px 8px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--soft);vertical-align:middle}
+tbody tr:hover td{background:var(--hover)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rk{width:36px;font-weight:700;font-variant-numeric:tabular-nums}
+.jk{width:52px}
+.jk img{width:44px;height:44px;display:block;border:1px solid var(--fg);object-fit:cover;background:var(--soft)}
+.tt b{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
+.tt span{display:block;font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
+.bd{display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:11px;font-weight:800;letter-spacing:1px;padding:3px 8px;white-space:nowrap}
+.bd i{font-style:normal;background:rgba(0,0,0,.22);padding:0 5px;font-size:12px}
+.tt span.bd{display:none;color:#fff;font-size:11px;margin-top:4px;max-width:none}
+.bd.E{background:var(--E)}.bd.N{background:var(--N)}.bd.H{background:var(--H)}.bd.X{background:var(--X)}.bd.M{background:var(--M)}.bd.A{background:var(--A)}
+.ap{font-size:11px;color:var(--mute);margin-top:3px;white-space:nowrap}
+.strong{font-weight:800}
+.gap0{font-weight:800}
+.empty{padding:28px 8px;color:var(--mute)}
+.more{margin:14px auto 0;display:block;background:var(--bg);color:var(--fg);border:1px solid var(--fg);font:inherit;padding:8px 22px;cursor:pointer}
+.more:hover{background:var(--fg);color:var(--bg)}
+.song{display:flex;gap:18px;align-items:center;margin:4px 0 16px}
+.song img{width:120px;height:120px;border:1px solid var(--fg);object-fit:cover;background:var(--soft)}
+.song h2{font-size:24px;line-height:1.2}
+.song p{color:var(--mute);font-size:13px;margin-top:4px}
+tr.best td{font-weight:800}
+.tag{font-size:11px;border:1px solid var(--fg);padding:1px 6px;white-space:nowrap}
+.doc h3{font-size:15px;margin:22px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.doc p,.doc li{font-size:14px;margin:4px 0}
+.doc ul{padding-left:20px}
+.doc code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--soft);padding:1px 4px}
+footer{margin-top:40px;border-top:1px solid var(--line);padding-top:14px;font-size:12px;color:var(--mute);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+[hidden]{display:none!important}
+@media (max-width:720px){
+  .wrap{padding:24px 16px 48px}
+  h1{font-size:44px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hide-m{display:none}
+  .tt b,.tt span{max-width:52vw;white-space:normal}
+  .tt span.bd{display:inline-flex}
+  .dcol,.gcol{display:none}
+  td,th{padding:7px 5px}
+  .jk{width:44px}.jk img{width:38px;height:38px}
+  .song img{width:88px;height:88px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>摸魚表</h1><div class="sub">世界計畫（台服）活動 P 查詢・每首歌該打哪個難度</div></div>
+  <div class="links">
+    <a href="https://docs.google.com/spreadsheets/d/12hUFymNAnzND46AHBZLbGXTGCkLvs0IQFsY5bumbBOQ/edit" target="_blank" rel="noopener">Google 試算表版</a>
+    <a href="/">資源中心首頁</a>
+    <a href="/calc">計算中心</a>
+    <button type="button" id="share">複製目前條件的連結</button>
+    <button type="button" id="theme">深色／淺色</button>
+  </div>
+</header>
+
+<nav role="tablist">
+  <button role="tab" data-tab="rank" aria-selected="true">排行</button>
+  <button role="tab" data-tab="moyu" aria-selected="false">摸魚優先</button>
+  <button role="tab" data-tab="song" aria-selected="false">單曲查詢</button>
+  <button role="tab" data-tab="doc" aria-selected="false">說明</button>
+</nav>
+
+<fieldset id="cond">
+  <legend>計算條件（各分頁共用）</legend>
+  <div class="grid">
+    <label>LIVE 模式<select id="mode"><option value="multi">協力</option><option value="solo">單人</option><option value="auto">自動</option><option value="cheer">歡樂嘉年華</option></select></label>
+    <label>隊伍綜合力<input id="power" type="number" inputmode="numeric" min="0" step="1000"></label>
+    <label>活動加成（%）<input id="bonus" type="number" inputmode="decimal" min="0" step="1"></label>
+    <label>技能實效值（倍）<input id="skill" type="number" inputmode="decimal" min="0" max="2.88" step="0.01"></label>
+    <label>S6 實效值（倍）<input id="s6" type="number" inputmode="decimal" min="0" max="2.88" step="0.01"></label>
+    <label>火數<select id="fire"></select></label>
+    <label>每場間隔（秒）<input id="interval" type="number" inputmode="numeric" min="0" step="1"></label>
+    <label id="lifeWrap">生命值（歡樂嘉年華）<input id="life" type="number" inputmode="numeric" min="0" step="10"></label>
+  </div>
+  <div class="hint">技能實效值：S1 至 S5 的全隊技能倍率，例如 250% 填 2.5，上限 2.88。S6：第 6 個技能（安可）的倍率。條件會記在這台裝置上。</div>
+</fieldset>
+
+<section data-pane="rank">
+  <fieldset>
+    <legend>篩選與排序</legend>
+    <div class="grid">
+      <label>曲名搜尋<input id="q" type="search" placeholder="日文或中文"></label>
+      <label>範圍<select id="scope"><option value="five">每首最佳（五選一）</option><option value="all">每首最佳（含彩譜）</option><option value="append">只看彩譜</option><option value="every">所有難度</option></select></label>
+      <label>指定難度<select id="diff"><option value="">全部</option><option value="E">EASY</option><option value="N">NORMAL</option><option value="H">HARD</option><option value="X">EXPERT</option><option value="M">MASTER</option><option value="A">APPEND</option></select></label>
+      <label>等級下限<input id="lvmin" type="number" inputmode="numeric" min="1" max="40" placeholder="不限"></label>
+      <label>等級上限<input id="lvmax" type="number" inputmode="numeric" min="1" max="40" placeholder="不限"></label>
+      <label>排序依據<select id="sort"><option value="ep">單局 P</option><option value="eph">每小時 P</option><option value="epe">每體力 P</option><option value="score">分數</option></select></label>
+      <label>與第 1 名差距上限（%）<input id="gap" type="number" inputmode="decimal" min="0" step="0.5" placeholder="不限"></label>
+    </div>
+  </fieldset>
+  <div class="bar"><span id="rankInfo"></span><span id="rankCond"></span></div>
+  <table><thead><tr><th>#</th><th class="jk"></th><th>曲名</th><th class="dcol">難度</th><th class="num" id="hMain">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">每體力 P</th><th class="num hide-m">歌長</th><th class="num gcol">差距</th></tr></thead><tbody id="rankBody"></tbody></table>
+  <button class="more" id="rankMore" type="button">顯示更多</button>
+</section>
+
+<section data-pane="moyu" hidden>
+  <fieldset>
+    <legend>摸魚條件</legend>
+    <div class="grid">
+      <label>與最高單局 P 的差距上限（%）<input id="mgap" type="number" inputmode="decimal" min="0" step="0.5"></label>
+      <label>包含彩譜<select id="mapp"><option value="0">否</option><option value="1">是</option></select></label>
+    </div>
+    <div class="hint">每首歌只列「單局 P 與最高值差距在上限內、等級最低」的難度，依等級由低到高排列。輕鬆打、幾乎不虧 P。</div>
+  </fieldset>
+  <div class="bar"><span id="moyuInfo"></span><span id="moyuCond"></span></div>
+  <table><thead><tr><th>#</th><th class="jk"></th><th>曲名</th><th class="dcol">建議難度</th><th class="num">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">歌長</th><th class="num gcol">差距</th></tr></thead><tbody id="moyuBody"></tbody></table>
+  <button class="more" id="moyuMore" type="button">顯示更多</button>
+</section>
+
+<section data-pane="song" hidden>
+  <fieldset>
+    <legend>選擇歌曲</legend>
+    <div class="grid" style="grid-template-columns:minmax(0,1fr)">
+      <label>曲名（輸入日文或中文後從清單選擇）<input id="sq" list="songlist" placeholder="例：Sage、世界第一的公主殿下"></label>
+    </div>
+    <datalist id="songlist"></datalist>
+  </fieldset>
+  <div id="songHead" class="song"></div>
+  <table><thead><tr><th>難度</th><th class="num hide-m">Notes</th><th class="num hide-m">分數</th><th class="num">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">每體力 P</th><th class="num">差距</th><th class="hide-m"></th></tr></thead><tbody id="songBody"></tbody></table>
+</section>
+
+<section data-pane="doc" class="doc" hidden>
+  <h3>這是什麼</h3>
+  <p>輸入自己的隊伍條件後，計算台服全部歌曲每個難度的分數與活動 P，找出每首歌該打哪個難度，以及「最輕鬆又幾乎不虧 P」的選擇。計算公式與 Project SEKAI 資源中心計算中心相同。</p>
+  <h3>分頁</h3>
+  <ul>
+    <li><b>排行</b>：依單局 P、每小時 P、每體力 P 或分數排序，可搜尋曲名、限制難度與等級、只看與第 1 名差距在幾 % 以內的歌。</li>
+    <li><b>摸魚優先</b>：每首歌取「差距在上限內、等級最低」的難度，等級由低到高排列。</li>
+    <li><b>單曲查詢</b>：選一首歌，比較六個難度的分數與活動 P，最佳難度以粗體標示。</li>
+  </ul>
+  <h3>計算公式</h3>
+  <ul>
+    <li>分數 ＝ 取整（技能乘數 × 綜合力 × 4）。協力的技能乘數 ＝ 基礎 ＋ FEVER × 0.5 ＋ 協力技能係數 × 技能實效值 ＋ 協力 S6 係數 × S6 實效值；單人與自動各有自己的係數。</li>
+    <li>單人、自動：單局 P ＝ 取整〔（100 ＋ 取整（分數 ÷ 20000））× 活動倍率 ÷ 100 ×（1 ＋ 加成 ÷ 100）〕× 火倍率。</li>
+    <li>協力：單局 P ＝ 取整〔（取整（（分數 ＋ 0.075 × 綜合力 × 5）÷ 17000）＋ 123）× 活動倍率 ÷ 100 ×（1 ＋ 加成 ÷ 100）〕× 火倍率。</li>
+    <li>歡樂嘉年華：協力的結果再乘生命值係數（1.15 ＋ 0.1 至 0.2），取整後乘火倍率。</li>
+    <li>每小時 P ＝ 單局 P × 3600 ÷（歌長 ＋ 每場間隔）；每體力 P ＝ 單局 P ÷ 火數（0 火時等於單局 P）。</li>
+    <li>火倍率：0 至 10 火依序為 1、5、10、15、20、25、27、29、31、33、35。</li>
+  </ul>
+  <h3>使用提示</h3>
+  <ul>
+    <li>協力時活動 P 主要由綜合力與歌曲活動倍率決定，難度影響很小，許多歌打 NORMAL 或 HARD 只比最高難度少 1 至 3%。</li>
+    <li>協力的活躍加分以「房間 5 人綜合力與自己相同」近似計算。</li>
+    <li>省體力看單局 P 或每體力 P；時間有限看每小時 P，短歌通常較高。</li>
+    <li>8 首台服獨佔曲的活動倍率為推估值，會標示「倍率推估」。</li>
+    <li>目前條件會寫進網址，按「複製目前條件的連結」即可分享。</li>
+  </ul>
+  <h3>資料</h3>
+  <p>台服曲庫 <span id="docCount"></span> 首，資料日期 <span id="docBuilt"></span>。曲庫跟資源中心計算中心共用同一份資料，每天自動更新，新歌上線後這裡也會跟著出現。曲圖來自 Sekai Viewer 素材庫。</p>
+</section>
+
+<footer><span>摸魚表・資料 <span id="built"></span></span><span>非官方工具，與 SEGA／Colorful Palette 無關</span></footer>
+</div>
+
+<script src="./data/stamps.js"></script>
+<script type="module">
+{
+  let mod;
+  try {
+    const v = (self.SC_DATA_V || {})['ep-songs' + '.js'];
+    const f = 'ep-songs.js';  // 檔名分開寫：版本戳每天由 data/stamps.js 提供，不要寫死在這頁
+    mod = await import('./data/' + f + (v ? '?v=' + v : ''));
+  } catch (e) {
+    document.getElementById('rankInfo').textContent = '曲庫載入失敗，請重新整理頁面。';
+    throw e;
+  }
+  window.MOYU_SONGS = mod.EP_SONGS.map(s => [s.id, s.t, s.tc || '', s.time, s.rate, s.re ? 1 : 0, s.d]);
+  window.MOYU_BUILT = ((self.SC_DATA_AT || {})['ep-songs.js'] || '').replace(/-/g, '/');
+}
+(() => {
+  const SONGS = window.MOYU_SONGS || [];
+  const DK = ['E','N','H','X','M','A'];
+  const DN = {E:'EASY',N:'NORMAL',H:'HARD',X:'EXPERT',M:'MASTER',A:'APPEND'};
+  const FIRE = [1,5,10,15,20,25,27,29,31,33,35];
+  const JP = 'https://storage.sekai.best/sekai-jp-assets/thumbnail/music_jacket/';
+  const TC = 'https://storage.sekai.best/sekai-tc-assets/thumbnail/music_jacket/';
+  const DEF = {mode:'multi',power:250000,bonus:250,skill:2.5,s6:2.5,fire:3,interval:50,life:800,
+               q:'',scope:'five',diff:'',lvmin:'',lvmax:'',sort:'ep',gap:'',mgap:3,mapp:'0',tab:'rank',song:''};
+  const $ = id => document.getElementById(id);
+  const fmt = n => Math.round(n).toLocaleString('en-US');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const norm = s => { let x = String(s || ''); try { x = x.normalize('NFKC'); } catch (e) {} return x.toLowerCase().replace(/\s/g, ''); };
+  const mmss = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+
+  // ---- state: defaults < localStorage < URL ----
+  let st = Object.assign({}, DEF);
+  try { Object.assign(st, JSON.parse(localStorage.getItem('moyu-state') || '{}')); } catch (e) {}
+  const up = new URLSearchParams(location.search);
+  for (const k of Object.keys(DEF)) if (up.has(k)) st[k] = up.get(k);
+  const save = () => {
+    try { localStorage.setItem('moyu-state', JSON.stringify(st)); } catch (e) {}
+    const p = new URLSearchParams();
+    for (const k of Object.keys(DEF)) if (String(st[k]) !== String(DEF[k])) p.set(k, st[k]);
+    history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
+  };
+
+  // ---- calc ----
+  function score(d) {
+    const sk = +st.skill || 0, s6 = +st.s6 || 0, pw = +st.power || 0;
+    let r;
+    if (st.mode === 'solo') r = d[2] + d[4] * sk + d[5] * s6;
+    else if (st.mode === 'auto') r = d[3] + d[8] * sk + d[9] * s6;
+    else r = d[2] + d[10] * 0.5 + d[6] * sk + d[7] * s6;
+    return Math.floor(r * pw * 4);
+  }
+  function ep(sc, rate) {
+    const mr = (rate || 100) / 100, dr = (+st.bonus || 0) / 100 + 1, pw = +st.power || 0, F = FIRE[+st.fire] || 1;
+    if (st.mode === 'solo' || st.mode === 'auto') return Math.floor((100 + Math.floor(sc / 20000)) * mr * dr) * F;
+    const sp = Math.floor((sc + 0.075 * pw * 5) / 17000);
+    if (st.mode === 'multi') return Math.floor((sp + 123) * mr * dr) * F;
+    const life = +st.life || 1000, lr = 1.15 + Math.min(Math.max(life / 5000, 0.1), 0.2);
+    return Math.floor(Math.floor((sp + 123) * mr * dr) * lr) * F;
+  }
+  let ROWS = [];   // every chart
+  function compute() {
+    const iv = +st.interval || 0, f = +st.fire || 0;
+    ROWS = [];
+    for (const s of SONGS) {
+      const [id, t, tc, time, rate, re, d] = s;
+      const rs = [];
+      for (const k of DK) {
+        if (!d[k]) continue;
+        const sc = score(d[k]), e = ep(sc, rate);
+        rs.push({id, t, tc, time, rate, re, dk: k, lv: d[k][0], notes: d[k][1], score: sc, ep: e,
+                 eph: Math.round(e * 3600 / (time + iv)), epe: f > 0 ? Math.round(e / f) : e, hay: norm(t + ' ' + tc)});
+      }
+      let b5 = null, ba = null;
+      for (const r of rs) { if (r.dk !== 'A' && (!b5 || r.ep > b5.ep)) b5 = r; if (!ba || r.ep > ba.ep) ba = r; }
+      for (const r of rs) { r.best5 = r === b5; r.bestA = r === ba; r.apRow = rs.find(x => x.dk === 'A') || null; r.b5 = b5; }
+      ROWS.push(...rs);
+    }
+  }
+
+  const jacket = id => { const n = 'jacket_s_' + String(id).padStart(3, '0') + '.webp'; return `<img loading="lazy" referrerpolicy="no-referrer" alt="" src="${JP + n}" data-alt="${TC + n}" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=''}else{this.style.visibility='hidden'}">`; };
+  const badge = (dk, lv) => `<span class="bd ${dk}">${DN[dk]}<i>${lv}</i></span>`;
+  const title = r => `<div class="tt"><b>${esc(r.t)}</b>${r.tc && r.tc !== r.t ? `<span>${esc(r.tc)}</span>` : ''}${r.re ? '<span>倍率推估</span>' : ''}${badge(r.dk, r.lv)}</div>`;
+  const gapCell = (v, top) => { if (!top) return ''; const g = (v / top - 1) * 100; return g > -0.05 ? '<span class="gap0">最高</span>' : g.toFixed(1) + '%'; };
+  const modeName = {multi:'協力',solo:'單人',auto:'自動',cheer:'歡樂嘉年華'};
+  const condText = () => `${modeName[st.mode]}・綜合力 ${fmt(+st.power || 0)}・加成 ${st.bonus}%・技能 ${st.skill}／S6 ${st.s6}・${st.fire} 火`;
+
+  // ---- rank ----
+  let rankLimit = 50;
+  function renderRank() {
+    const q = norm(st.q), key = st.sort;
+    const lo = st.lvmin === '' ? 0 : +st.lvmin, hi = st.lvmax === '' ? 99 : +st.lvmax;
+    let list = ROWS.filter(r => {
+      if (st.scope === 'five' && !r.best5) return false;
+      if (st.scope === 'all' && !r.bestA) return false;
+      if (st.scope === 'append' && r.dk !== 'A') return false;
+      if (st.diff && r.dk !== st.diff) return false;
+      if (r.lv < lo || r.lv > hi) return false;
+      if (q && r.hay.indexOf(q) < 0) return false;
+      return true;
+    }).sort((a, b) => (b[key] - a[key]) || (b.eph - a.eph));
+    const top = list.length ? list[0][key] : 0;
+    if (st.gap !== '' && top) list = list.filter(r => r[key] >= top * (1 - +st.gap / 100));
+    const shown = list.slice(0, rankLimit);
+    const label = {ep:'單局 P',eph:'每小時 P',epe:'每體力 P',score:'分數'}[key];
+    $('hMain').textContent = label;
+    $('rankInfo').textContent = `符合 ${list.length} 列，顯示 ${shown.length} 列`;
+    $('rankCond').textContent = condText();
+    $('rankBody').innerHTML = shown.length ? shown.map((r, i) => {
+      const ap = st.scope === 'five' && r.apRow && r.apRow.ep > r.ep ? `<div class="ap">彩譜 ${r.apRow.lv}：${fmt(r.apRow.ep)}</div>` : '';
+      const main = key === 'ep' ? r.ep : key === 'eph' ? r.eph : key === 'epe' ? r.epe : r.score;
+      return `<tr><td class="rk">${i + 1}</td><td class="jk">${jacket(r.id)}</td><td>${title(r)}</td><td class="dcol">${badge(r.dk, r.lv)}${ap}</td>
+        <td class="num strong">${fmt(main)}</td><td class="num">${key === 'eph' ? fmt(r.ep) : fmt(r.eph)}</td><td class="num hide-m">${fmt(r.epe)}</td>
+        <td class="num hide-m">${mmss(r.time)}</td><td class="num gcol">${gapCell(r[key], top)}</td></tr>`;
+    }).join('') : '<tr><td colspan="9" class="empty">沒有符合條件的歌曲，請放寬篩選條件。</td></tr>';
+    if (key === 'eph') document.querySelector('[data-pane="rank"] thead th:nth-child(6)').textContent = '單局 P';
+    else document.querySelector('[data-pane="rank"] thead th:nth-child(6)').textContent = '每小時 P';
+    $('rankMore').hidden = shown.length >= list.length;
+  }
+
+  // ---- moyu ----
+  let moyuLimit = 50;
+  function renderMoyu() {
+    const inclA = st.mapp === '1';
+    const pool = ROWS.filter(r => inclA || r.dk !== 'A');
+    const top = pool.reduce((m, r) => Math.max(m, r.ep), 0);
+    const th = top * (1 - (+st.mgap || 0) / 100);
+    const by = new Map();
+    for (const r of pool) {
+      if (r.ep < th) continue;
+      const cur = by.get(r.id);
+      if (!cur || r.lv < cur.lv || (r.lv === cur.lv && r.ep > cur.ep)) by.set(r.id, r);
+    }
+    const list = [...by.values()].sort((a, b) => (a.lv - b.lv) || (b.ep - a.ep));
+    const shown = list.slice(0, moyuLimit);
+    $('moyuInfo').textContent = `最高單局 P ${fmt(top)}，門檻 ${fmt(Math.floor(th))}，共 ${list.length} 首`;
+    $('moyuCond').textContent = condText();
+    $('moyuBody').innerHTML = shown.length ? shown.map((r, i) => `<tr><td class="rk">${i + 1}</td><td class="jk">${jacket(r.id)}</td><td>${title(r)}</td><td class="dcol">${badge(r.dk, r.lv)}</td>
+      <td class="num strong">${fmt(r.ep)}</td><td class="num">${fmt(r.eph)}</td><td class="num hide-m">${mmss(r.time)}</td><td class="num gcol">${gapCell(r.ep, top)}</td></tr>`).join('')
+      : '<tr><td colspan="8" class="empty">沒有符合條件的歌曲，請把差距上限放寬。</td></tr>';
+    $('moyuMore').hidden = shown.length >= list.length;
+  }
+
+  // ---- song ----
+  function findSong(v) {
+    const n = norm(v); if (!n) return null;
+    return SONGS.find(s => norm(s[1]) === n || norm(s[2]) === n || norm(s[1] + '／' + s[2]) === n)
+        || SONGS.find(s => norm(s[1] + ' ' + s[2]).indexOf(n) >= 0) || null;
+  }
+  function renderSong() {
+    const s = findSong(st.song);
+    if (!s) { $('songHead').innerHTML = '<p class="hint">輸入曲名後會列出六個難度的比較。</p>'; $('songBody').innerHTML = ''; return; }
+    const rs = ROWS.filter(r => r.id === s[0]);
+    const best = rs.reduce((m, r) => Math.max(m, r.ep), 0);
+    const jn = 'jacket_s_' + String(s[0]).padStart(3, '0') + '.webp';
+    $('songHead').innerHTML = `<img referrerpolicy="no-referrer" alt="" src="${JP + jn}" data-alt="${TC + jn}" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=''}else{this.style.visibility='hidden'}">
+      <div><h2>${esc(s[1])}</h2><p>${s[2] && s[2] !== s[1] ? esc(s[2]) + '・' : ''}歌長 ${mmss(s[3])}・活動倍率 ${s[4]}${s[5] ? '（推估）' : ''}</p><p>${condText()}</p></div>`;
+    $('songBody').innerHTML = rs.map(r => `<tr class="${r.best5 || (r.bestA && r.dk === 'A') ? 'best' : ''}"><td>${badge(r.dk, r.lv)}</td><td class="num hide-m">${fmt(r.notes)}</td>
+      <td class="num hide-m">${fmt(r.score)}</td><td class="num">${fmt(r.ep)}</td><td class="num">${fmt(r.eph)}</td><td class="num hide-m">${fmt(r.epe)}</td>
+      <td class="num">${gapCell(r.ep, best)}</td><td class="hide-m">${r.best5 ? '<span class="tag">五選一最佳</span>' : r.bestA ? '<span class="tag">含彩譜最佳</span>' : ''}</td></tr>`).join('');
+  }
+
+  // ---- wiring ----
+  const fire = $('fire'); FIRE.forEach((m, i) => { const o = document.createElement('option'); o.value = i; o.textContent = i + ' 火（×' + m + '）'; fire.appendChild(o); });
+  $('songlist').innerHTML = SONGS.map(s => `<option value="${esc(s[1])}">${s[2] && s[2] !== s[1] ? esc(s[2]) : ''}</option>`).join('');
+  const CONDS = ['mode','power','bonus','skill','s6','fire','interval','life'];
+  const FILTS = ['q','scope','diff','lvmin','lvmax','sort','gap','mgap','mapp'];
+  for (const k of [...CONDS, ...FILTS]) { const el = $(k); if (el) el.value = st[k]; }
+  $('sq').value = st.song;
+  const lifeVis = () => { $('lifeWrap').hidden = st.mode !== 'cheer'; };
+  lifeVis();
+  let timer = 0;
+  const rerender = (recalc) => { if (recalc) compute(); renderRank(); renderMoyu(); renderSong(); save(); };
+  for (const k of CONDS) $(k).addEventListener('input', e => { st[k] = e.target.value; lifeVis(); clearTimeout(timer); timer = setTimeout(() => rerender(true), 120); });
+  for (const k of FILTS) $(k).addEventListener('input', e => { st[k] = e.target.value; rankLimit = 50; moyuLimit = 50; clearTimeout(timer); timer = setTimeout(() => rerender(false), 120); });
+  $('sq').addEventListener('input', e => { st.song = e.target.value; renderSong(); save(); });
+  $('rankMore').addEventListener('click', () => { rankLimit += 100; renderRank(); });
+  $('moyuMore').addEventListener('click', () => { moyuLimit += 100; renderMoyu(); });
+  const setTab = t => {
+    st.tab = t;
+    document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+    document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== t; });
+    $('cond').hidden = t === 'doc';
+    save();
+  };
+  document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  $('share').addEventListener('click', () => {
+    const done = () => { $('share').textContent = '已複製'; setTimeout(() => { $('share').textContent = '複製目前條件的連結'; }, 1500); };
+    try { navigator.clipboard.writeText(location.href).then(done, () => prompt('複製這個連結', location.href)); } catch (e) { prompt('複製這個連結', location.href); }
+  });
+  $('theme').addEventListener('click', () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('moyu-theme', root.dataset.theme); } catch (e) {}
+  });
+  try { const th = localStorage.getItem('moyu-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
+  $('built').textContent = window.MOYU_BUILT || '';
+  $('docBuilt').textContent = window.MOYU_BUILT || '';
+  $('docCount').textContent = SONGS.length;
+  compute();
+  setTab(['rank','moyu','song','doc'].includes(st.tab) ? st.tab : 'rank');
+  renderRank(); renderMoyu(); renderSong();
+})();
+</script>
+</body>
+</html>

@@ -370,6 +370,28 @@
       }
     },
     {
+      "src": "/ep-calc.html",
+      "dest": "/ep-calc.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
+      "src": "/ep-calc",
+      "dest": "/ep-calc.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "x-frame-options": "SAMEORIGIN"
+      }
+    },
+    {
       "src": "/botdemo.html",
       "dest": "/botdemo.html",
       "headers": {
