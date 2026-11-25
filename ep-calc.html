@@ -38,13 +38,14 @@ nav button{background:none;border:0;font:inherit;font-size:16px;color:var(--mute
 nav button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--fg);font-weight:700}
 fieldset{border:1px solid var(--line);padding:16px 18px 18px;margin-bottom:16px}
 legend{padding:0 8px;font-size:12px;letter-spacing:2px;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:12px 16px}
 label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
 input,select{font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:0;border-bottom:1px solid var(--fg);padding:5px 2px;border-radius:0;outline:none;width:100%}
 input:focus,select:focus{border-bottom-width:2px}
 select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--fg) 50%),linear-gradient(135deg,var(--fg) 50%,transparent 50%);background-position:calc(100% - 10px) 55%,calc(100% - 5px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:18px}
 .hint{font-size:12px;color:var(--mute);margin-top:10px}
 .bar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 0 8px;font-size:13px;color:var(--mute)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse}
 th{font-size:11px;letter-spacing:1.5px;font-weight:700;text-align:left;padding:8px 8px;border-bottom:2px solid var(--line);white-space:nowrap}
 td{padding:8px;border-bottom:1px solid var(--soft);vertical-align:middle}
@@ -77,12 +78,12 @@ tr.best td{font-weight:800}
 .doc code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--soft);padding:1px 4px}
 footer{margin-top:40px;border-top:1px solid var(--line);padding-top:14px;font-size:12px;color:var(--mute);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 [hidden]{display:none!important}
-@media (max-width:720px){
+@media (max-width:860px){
   .wrap{padding:24px 16px 48px}
   h1{font-size:44px}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .hide-m{display:none}
-  .tt b,.tt span{max-width:52vw;white-space:normal}
+  .tt b,.tt span{max-width:none;white-space:normal;overflow-wrap:anywhere}
   .tt span.bd{display:inline-flex}
   .dcol,.gcol{display:none}
   td,th{padding:7px 5px}
@@ -140,7 +141,7 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding-top:14px;font-si
     </div>
   </fieldset>
   <div class="bar"><span id="rankInfo"></span><span id="rankCond"></span></div>
-  <table><thead><tr><th>#</th><th class="jk"></th><th>曲名</th><th class="dcol">難度</th><th class="num" id="hMain">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">每體力 P</th><th class="num hide-m">歌長</th><th class="num gcol">差距</th></tr></thead><tbody id="rankBody"></tbody></table>
+  <div class="tw"><table><thead><tr><th>#</th><th class="jk"></th><th>曲名</th><th class="dcol">難度</th><th class="num" id="hMain">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">每體力 P</th><th class="num hide-m">歌長</th><th class="num gcol">差距</th></tr></thead><tbody id="rankBody"><tr><td colspan="9" class="empty" style="height:70vh;vertical-align:top">載入曲庫中…</td></tr></tbody></table></div>
   <button class="more" id="rankMore" type="button">顯示更多</button>
 </section>
 
@@ -154,7 +155,7 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding-top:14px;font-si
     <div class="hint">每首歌只列「單局 P 與最高值差距在上限內、等級最低」的難度，依等級由低到高排列。輕鬆打、幾乎不虧 P。</div>
   </fieldset>
   <div class="bar"><span id="moyuInfo"></span><span id="moyuCond"></span></div>
-  <table><thead><tr><th>#</th><th class="jk"></th><th>曲名</th><th class="dcol">建議難度</th><th class="num">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">歌長</th><th class="num gcol">差距</th></tr></thead><tbody id="moyuBody"></tbody></table>
+  <div class="tw"><table><thead><tr><th>#</th><th class="jk"></th><th>曲名</th><th class="dcol">建議難度</th><th class="num">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">歌長</th><th class="num gcol">差距</th></tr></thead><tbody id="moyuBody"></tbody></table></div>
   <button class="more" id="moyuMore" type="button">顯示更多</button>
 </section>
 
@@ -167,7 +168,7 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding-top:14px;font-si
     <datalist id="songlist"></datalist>
   </fieldset>
   <div id="songHead" class="song"></div>
-  <table><thead><tr><th>難度</th><th class="num hide-m">Notes</th><th class="num hide-m">分數</th><th class="num">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">每體力 P</th><th class="num">差距</th><th class="hide-m"></th></tr></thead><tbody id="songBody"></tbody></table>
+  <div class="tw"><table><thead><tr><th>難度</th><th class="num hide-m">Notes</th><th class="num hide-m">分數</th><th class="num">單局 P</th><th class="num">每小時 P</th><th class="num hide-m">每體力 P</th><th class="num">差距</th><th class="hide-m"></th></tr></thead><tbody id="songBody"></tbody></table></div>
 </section>
 
 <section data-pane="doc" class="doc" hidden>

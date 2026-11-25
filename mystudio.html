@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#f3f1ea">
 <title>豆森工作室 — MySekai 像素畫、設計圖與內部設計模擬 | Project SEKAI 資源中心</title>
 <meta name="description" content="把任何圖片變成 MySekai 彩色方塊／瓷磚的像素畫：自動配色、算出要做幾塊與材料、逐列建築步驟與設計圖、自動播放建造過程；還能用站上全部家具模擬房間與家前的擺設。角色生日看板一鍵生成。">
@@ -158,13 +158,13 @@ td.num{text-align:right;font-family:var(--mono)}
 .it .nm{flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .it button{padding:2px 6px;border-radius:6px;border:1px solid var(--line-2);font-size:11px;min-height:24px}
 /* 生日 */
-.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,118px),1fr));gap:8px}
 .ch{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);cursor:pointer;text-align:left;min-height:48px}
 .ch:hover,.ch.on{border-color:var(--acc);background:var(--acc-soft)}
 .ch i{width:12px;height:30px;border-radius:4px;flex:none}
 .ch b{display:block;font-size:13px;line-height:1.2;color:var(--ink)}
 .ch span{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
-.works{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.works{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:10px}
 .wk{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2)}
 .wk canvas,.wk img{width:100%;aspect-ratio:1;object-fit:contain;background:var(--bg-3);display:block;image-rendering:pixelated}
 .wk .b{padding:8px 10px;font-size:12px}

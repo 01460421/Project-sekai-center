@@ -326,7 +326,7 @@ body.cur-on #cur.down{width:22px;height:22px;margin:-11px 0 0 -11px}
 .mbox h2{font-family:var(--disp);font-weight:500;font-size:20px;letter-spacing:.05em;margin-bottom:6px}
 .mbox .x{position:absolute;right:14px;top:12px;width:32px;height:32px;border-radius:50%;color:var(--ink-3);font-size:18px}
 .mbox .x:hover{color:var(--ink);background:var(--line)}
-#toasts{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;width:min(340px,calc(100vw - 36px))}
+#toasts{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:18px;z-index:60;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;width:min(340px,calc(100vw - 36px))}
 .toast{position:relative;pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:11px 14px 13px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel-2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow);font-size:12.5px;overflow:hidden;animation:tin .55s var(--spring)}
 .toast.out{animation:tout .35s var(--ease) forwards}
 @keyframes tin{from{opacity:0;transform:translateX(30px) scale(.96)}}
@@ -384,7 +384,7 @@ body.cur-on #cur.down{width:22px;height:22px;margin:-11px 0 0 -11px}
 @keyframes draw{to{stroke-dashoffset:0}}
 
 /* 成就 */
-.ach{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.ach{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:10px}
 .ac{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;transition:border-color .3s}
 .ac.on{border-color:color-mix(in oklab,var(--xp) 45%,transparent);background:linear-gradient(120deg,color-mix(in oklab,var(--xp) 8%,transparent),transparent 60%)}
 .ac svg{width:36px;height:36px;flex:none}
@@ -392,7 +392,7 @@ body.cur-on #cur.down{width:22px;height:22px;margin:-11px 0 0 -11px}
 .ac small{display:block;font-size:11px;color:var(--ink-3);line-height:1.5}
 .ac:not(.on) b{color:var(--ink-2)}
 .ac:not(.on) svg{opacity:.35}
-.codex{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.codex{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px}
 .cx{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
 .cx canvas{width:72px;height:72px;display:block;margin:0 auto 4px}
 .cx b{font-size:12.5px;font-weight:500;display:block}
@@ -408,7 +408,7 @@ body.cur-on #cur.down{width:22px;height:22px;margin:-11px 0 0 -11px}
 .mkt-row b{font-weight:500;font-size:13px}
 .mkt-row .pc{font-family:var(--mono);font-size:13px;text-align:right}
 .mkt-row .ch{font-family:var(--mono);font-size:11px;text-align:right}
-.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px}
 .si{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:14px;padding:14px;transition:border-color .3s,transform .4s var(--spring)}
 .si:hover{border-color:var(--line-3);transform:translateY(-2px)}
 .si .t{display:flex;gap:10px;align-items:center}
@@ -483,7 +483,7 @@ textarea.input{height:auto;padding:10px 12px;font-family:var(--mono);font-size:1
 .ptext{font-size:clamp(17px,2.4vw,23px);line-height:1.75;font-weight:500;letter-spacing:.02em}
 .pfill{color:var(--xp);border-bottom:2px solid var(--xp);padding:0 2px;animation:rise .4s var(--ease)}
 .pblank{color:var(--ink-3);letter-spacing:-.1em}
-.hand{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.hand{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px}
 .pc{position:relative;min-height:92px;padding:14px 12px;border-radius:12px;border:1px solid var(--line-2);background:linear-gradient(170deg,var(--bg-3),var(--bg-2));text-align:left;font-size:13.5px;line-height:1.5;font-weight:500;transition:transform .4s var(--spring),border-color .3s,box-shadow .3s}
 .deal .pc{animation:deal .6s var(--spring) both}
 .pc:nth-child(2){animation-delay:40ms}.pc:nth-child(3){animation-delay:80ms}.pc:nth-child(4){animation-delay:120ms}.pc:nth-child(5){animation-delay:160ms}.pc:nth-child(6){animation-delay:200ms}.pc:nth-child(7){animation-delay:240ms}
@@ -491,7 +491,7 @@ textarea.input{height:auto;padding:10px 12px;font-family:var(--mono);font-size:1
 .pc.on{border-color:var(--xp);box-shadow:0 0 0 1px var(--xp),0 14px 30px -14px var(--xp);transform:translateY(-6px)}
 .pc i{position:absolute;right:8px;top:6px;font-style:normal;font-family:var(--mono);font-size:11px;color:var(--xp)}
 @keyframes deal{from{opacity:0;transform:translateY(24px) rotate(4deg) scale(.95)}}
-.subs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;perspective:1000px}
+.subs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px;perspective:1000px}
 .sub{position:relative;padding:18px;border-radius:14px;border:1px solid var(--line-2);background:var(--panel);text-align:left;min-height:120px;display:flex;flex-direction:column;gap:10px;justify-content:space-between;transform-style:preserve-3d;transition:transform .5s var(--spring),border-color .3s,box-shadow .3s}
 .sub p{font-size:14px;line-height:1.75}
 .sub.vis{animation:flip .7s var(--spring) both}

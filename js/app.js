@@ -4723,7 +4723,7 @@ class Component extends DCLogic {
     const probes = (s.stProbes || []).map(p => ({ name: p.name, text: p.ok ? '正常' : '異常', color: p.ok ? 'var(--ok)' : 'var(--bad)', ms: p.ms + ' ms', note: p.note || '' }));
     const bad = sched.filter(x => x.state !== '正常').length + probes.filter(p => p.text !== '正常').length + (tr && !trOk ? 1 : 0) + (ops.error ? 1 : 0);
     return {
-      stBusy: !!s.stBusy, stErr: s.stErr || '', stHas: !!s.stOps, stAt: s.stAt ? ('瀏覽器探測於 ' + ago(s.stAt)) : '',
+      stBusy: !!s.stBusy, stErr: s.stErr || '', stHas: !!s.stOps, stHold: (!s.stOps && !s.stErr) ? 'st-hold' : '', stAt: s.stAt ? ('瀏覽器探測於 ' + ago(s.stAt)) : '',
       stCheckedAt: pipe.checkedAt ? (ago(pipe.checkedAt) + (pipe.via === 'browser' ? '，由瀏覽器直接向 GitHub 查' : '')) : '尚未檢查',
       stPipeErr: pipe.error ? ('伺服器上次向 GitHub 查詢失敗：' + pipe.error + (pipe.via === 'browser' ? '（下面是瀏覽器自己查的；站方要收到通知得在 Worker 設 GITHUB_TOKEN）' : '')) : '',
       stSched: sched, stOther: other, stOtherN: other.length, stProbes: probes, stTracker: trRows, stTrackerColor: trOk ? 'var(--ok)' : 'var(--bad)', stTrackerText: trOk ? '正常' : '異常',
@@ -7903,6 +7903,7 @@ class Component extends DCLogic {
     out.jnTiers = want.map(r => { const x = (r <= 100 ? top.find(y => y.rank === r) : null) || tiers.find(y => y.rank === r); return x && x.score != null ? { r: 'T' + this.n(r), v: this.n(x.score), top: r <= 3 } : null; }).filter(Boolean);
     out.jnTop = top.slice(0, 10).map(x => ({ r: x.rank, n: x.name || '—', v: this.n(x.score), medal: x.rank <= 3, mc: ['', '#f5b301', '#9aa5b1', '#cd7f32'][x.rank] || 'var(--text-3)' }));
     out.jnHasLive = out.jnTiers.length > 0 || out.jnTop.length > 0;
+    out.jnGridHold = (!out.jnHasLive && !s.jnLiveErr) ? 'hold' : '';   // 日服榜線還在路上：先撐住兩張卡的高度，到了不會把下面推走
     out.jnLiveErr = s.jnLiveErr || '';
     out.jnLiveAt = s.jnLiveAt ? '更新於 ' + fdt(s.jnLiveAt).split(' ')[1] + '・每 2 分鐘重抓（追蹤器約 10～20 秒更新一次）' : '讀取中…';
     /* 卡池：開放中與即將開放（常駐池建置時已排除） */
@@ -8528,6 +8529,7 @@ class Component extends DCLogic {
       stkCharChips: (s.rateChars || []).map(x => Object.assign({ v: x[0], n: this.charShort(x[0]) || x[1] }, chip(s.stkChar === x[0], this.CHARA_COLOR[x[0]]))),
       stkq: s.stkq,
       stkRows: all.slice(0, n).map(x => ({ abn: x.abn, name: x.name, img: this.ASSET + '/stamp/' + x.abn + '/' + x.abn + '.webp', bd: st.base && st.base.url && st.base.url.indexOf('/' + x.abn + '/') > -1 ? 'var(--cta)' : 'var(--border)' })),
+      stkHold: s.colLoad ? '60vh' : '0',
       stkCount: s.colLoad ? '貼圖載入中…' : (all.length ? '共 ' + this.n(all.length) + ' 張' + (n < all.length ? '，顯示前 ' + n + ' 張' : '') : (s.colErr ? '貼圖清單載入失敗' : '沒有符合的貼圖')),
       stkMore: n < all.length, stkMoreLabel: '顯示更多（' + n + ' / ' + all.length + '）',
       stkHasBase: !!st.base, stkBaseName: st.base ? ('底圖：' + (st.base.name || '')) : '先從左邊選一張官方貼圖，或上傳自己的圖',
@@ -10274,7 +10276,7 @@ class Component extends DCLogic {
     return {
       isDesktop, isMobile: s.mobile,
       isHome: s.page === 'home' && this.SRV !== 'jp', ...this.jnVals(s), ...this.srvVals(s), ...(s.hpReady && this.hpVals ? this.hpVals(s) : this.hpBase(s)), isEvent: s.page === 'event', isFavs: s.page === 'favs', isCalendar: s.page === 'calendar', isGacha: s.page === 'gacha',
-      isHub: !!this.HUBS[s.page], hubStatus, hubCards, hubCols: s.mobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(200px,1fr))',
+      isHub: !!this.HUBS[s.page], hubStatus, hubCards, hubCols: s.mobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(min(100%,200px),1fr))',
       isSongs: s.page === 'songs', isRank: s.page === 'rank',
       gsxEv: s.gsxEv, gsxEvPh: '期數（預設 ' + (((s.live || {}).id) || '當期') + '）', gsxQ: s.gsxQ, gsxErr: s.gsxErr,
       gsxSearching: s.gsxBusy === 'search', gsxLoadingGames: s.gsxBusy === 'games',
@@ -11438,13 +11440,14 @@ class Component extends DCLogic {
       ...(() => {
         // 只有分析頁用得到（ana* 全在 isAnalysis 之下）；以前每一頁、每次重繪都把 18 個段位 × 1,700 筆快照算一遍，佔掉 renderVals 的三分之二
         const B = s.page === 'analysis' ? this.borderAnalysis() : null;
-        if (!B) return { anaReady: false, anaBorderRows: [], anaMeta: '等待即時排名資料…', anaMethod: '', anaBias: '', anaHasMe: false, anaLeft: '—', anaFrac: '—', anaBMore: false };
+        /* 資料還沒到：說明文字先放模型版的固定敘述、表格先撐住高度，資料到了內容換掉但版面不跳 */
+        if (!B) return { anaReady: false, anaWait: true, anaBorderRows: [], anaTblMin: '70vh', anaMeta: '等待即時排名資料…', anaMethod: '預測來自回測過的模型：以台灣時刻、距結算時數與開跑時數的速率剖面推進度，再依進度集成 24h／6h 實測、歷史先驗與上一段位（小字為 P10～P90 區間）', anaBias: '模型以 4 期留一法回測：主榜平均誤差 5.6%（線性外推 13.8%）、WL 章節 5.9%、前百逐名 11.8%；T100 與前三名是少數人的個人行為，仍有一成多的誤差，越前面越不準，目標線請看區間上緣。', anaHasMe: false, anaLeft: '—', anaFrac: '—', anaBMore: false };
         // 手機預設只列 T100~T5000(一般玩家關心的區間),T1萬以上收進「顯示全部段位」
         const anaFold = s.mobile && !s.anaMoreB;
         const ck = B.clock;
         const hm = h => h >= 24 ? (Math.floor(h / 24) + '天' + Math.round(h % 24) + '時') : (h >= 1 ? h.toFixed(1) + '時' : Math.round(h * 60) + '分');
         return {
-          anaReady: true,
+          anaReady: true, anaWait: false, anaTblMin: '0',
           anaLeft: hm(ck.leftH), anaFrac: (ck.frac * 100).toFixed(1) + '%',
           anaMeta: '第 ' + ck.id + ' 期 · 已過 ' + (ck.frac * 100).toFixed(1) + '% · 剩 ' + hm(ck.leftH),
           anaMethod: (B.useModel
@@ -11922,7 +11925,7 @@ class Component extends DCLogic {
       liveRange: startMs && endMs ? this.md(new Date(startMs)) + ' – ' + this.md(new Date(endMs)) : '—',
       liveCountdown: (startMs && now < startMs) ? this.dur(startMs - now) : (endMs && now >= endMs) ? hhmm(endMs) : (endMs ? this.dur(endMs - now) : '—'),
       liveCdLabel: (startMs && now < startMs) ? '距開始' : (endMs && now >= endMs) ? '結算時間' : '剩餘時間',
-      phaseOn: !!phase, phaseLabel: phase ? phase.label : '', phaseTone: phase ? phase.tone : 'var(--accent)', phaseTitle: phase ? phase.title : '', phaseTip: phase ? phase.tip : '', phaseActs: phase ? phase.acts : [],
+      phaseOn: !!phase, phaseHold: !phase && !!s.liveLoad, phaseLabel: phase ? phase.label : '', phaseTone: phase ? phase.tone : 'var(--accent)', phaseTitle: phase ? phase.title : '', phaseTip: phase ? phase.tip : '', phaseActs: phase ? phase.acts : [],
       liveUrgent: !!(endMs && endMs > now && endMs - now < 86400000), liveCdColor: (endMs && endMs > now && endMs - now < 86400000) ? '#ffb4c2' : '#fff',
       liveProgress: (prog * 100).toFixed(1) + '%',
       liveAnnounce: annLabel, liveHasAnnounce: !!annLabel,
@@ -11937,6 +11940,7 @@ class Component extends DCLogic {
       liveCharFit: 'cover',
       liveCharPos: ((s.evType || {})[ev.id] === 'world_bloom') ? 'center 30%' : 'center 12%',
       hasLiveArt: !!(ev.id != null && s.evArt[ev.id]),
+      liveArtHold: !(ev.id != null && s.evArt[ev.id]) && (!!s.liveLoad || (ev.id != null && !Object.keys(s.evArt || {}).length && !!this._evArtLoading)),
       planHint: s.pid ? this.planHintText() : '',
       hasPlayer: !!s.pid, noPlayer: !s.pid, pidInput: s.pidInput, playerErr: s.pErr,
       playerId: s.pid, playerName: pd.name || ('玩家 ' + s.pid), playerInitial: (pd.name || 'P').slice(0, 1),
@@ -12395,7 +12399,7 @@ class Component extends DCLogic {
       })(),
       spTotalRows: (() => { if (s.ctab !== 'support') return []; const sp = this.supportCalc(s); return sp.total.map(r => ({ score: r[0] >= 1e8 ? (r[0] / 1e8).toLocaleString('zh-TW') + ' 億' : this.n(r[0]), reward: r[1] })); })(),
       hasSpTotal: s.ctab === 'support' && this.supportCalc(s).total.length > 0,
-      tq: s.tq, tutDoc: s.tutDoc, tutRows, tutEmpty: tutAll.length === 0, tutMoreBtn, tutMoreN,
+      tq: s.tq, tutDoc: s.tutDoc, tutRows, tutEmpty: tutAll.length === 0 && !!(s.tutQA || []).length, tutListMin: (s.tutQA || []).length ? '0' : '80vh', tutMoreBtn, tutMoreN,
       tutCount: (s.tutQA || []).length ? '符合 ' + tutAll.length + ' 則（全部 ' + s.tutQA.length + ' 則）' + (tutAll.length > 60 ? '，顯示前 60 則' : '') : '載入教學資料…',
       tutCats: [{ v: 'all', n: '全部', dot: 'var(--rainbow)', count: (s.tutQA || []).length }]
         .concat((s.tutCats || []).map(c => ({ v: c.id, n: c.name, dot: c.c, count: (s.tutQA || []).filter(x => x.cat === c.id).length })))

@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=596be61f52" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=f36bed12c2" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <!-- 首頁「SEKAI 二選一」入口卡的標題字：只抓用到的幾個字（幾 KB），media=print 不擋首屏 -->
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Noto+Serif+TC:wght@900&text=SEKAI%E4%BA%8C%E9%81%B8%E4%B8%80%E6%96%B0%E6%B8%AC%E9%A9%97%E9%96%8B%E5%A7%8B&display=swap">
@@ -217,6 +217,11 @@ color-scheme:dark;
 .empty.in-list{border:none;border-top:1px solid var(--border);border-radius:0;background:transparent}
 .empty b{display:block;color:var(--text-2);font-size:13.5px;margin-bottom:2px}
 .empty.loading{border-color:transparent;background:transparent;animation:fadeIn .3s cubic-bezier(.4,0,.2,1) .15s both}
+/* 整頁主清單的載入佔位：先撐出接近載入後的高度，資料到了下面的區塊不會被一口氣推下去（版面不跳） */
+.empty.loading.hold{min-height:min(72vh,680px)}
+/* 系統狀態三張卡：探測結果回來前先撐住大概的高度 */
+.set-card.st-hold{min-height:230px}
+.set-card.st-hold + .set-card.st-hold + .set-card.st-hold{min-height:300px}
 /* 頁內「載入中」跟開機畫面同一套：六色細環轉圈（只動 transform，主執行緒忙的時候也不停格）；延遲 0.15 秒才淡入，資料很快到就不會閃一下 */
 .empty.loading::before{content:"";display:block;width:26px;height:26px;margin:0 auto 10px;border-radius:50%;background:conic-gradient(from 0deg,#4455dd,#33ccbb,#88dd44,#ff9900,#ee1166,#884499,#4455dd);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));animation:spin 1.1s linear infinite;will-change:transform}
 /* ===== 詳情視窗共用：標題列（標題／動作鈕同一行）＋相關連結列 ===== */
@@ -328,6 +333,8 @@ color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+/* iPhone 橫拿：瀏海那一側讓出安全區（直拿時是 0，桌機也是 0） */
+body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
 font-family:'Huninn','M PLUS Rounded 1c','PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif}
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -456,6 +463,14 @@ select option, select optgroup{
 .dock-bar button:active{scale:1}
 /* 底部導覽列：選取底色是一顆會滑動的膠囊（按鈕 62px＋間距 2px，--dock-i 由 js/app.js 給） */
 .dock-bar{position:relative;isolation:isolate}
+/* 最窄的手機（摺疊機外螢幕約 280px）：底部五顆按鈕平均分寬度、頁首收緊並藏起「複製連結」，整頁不再左右滑、導覽列兩端不出畫面 */
+@media (max-width:340px){
+  .dock-bar{--dbw:calc((100vw - 36px) / 5)}
+  .dock-bar button{width:var(--dbw)!important;flex:none!important}
+  .dock-bar::before{width:var(--dbw);transform:translateX(calc(var(--dock-i,0) * (var(--dbw) + 2px)))}
+  .app-head{gap:6px!important;padding-left:10px!important;padding-right:10px!important}
+  .app-head .hd-copy{display:none!important}
+}
 .dock-bar::before{content:"";position:absolute;z-index:-1;top:5px;left:5px;width:62px;height:50px;border-radius:999px;background:color-mix(in oklab,var(--accent) 15%,transparent);transform:translateX(calc(var(--dock-i,0) * 64px));opacity:var(--dock-on,0);transition:transform .5s cubic-bezier(.34,1.32,.44,1),opacity .25s}
 /* 分頁籤：選到的那一顆底色用彈一下的方式長出來 */
 .subtab[aria-selected="true"]{position:relative;isolation:isolate;background:transparent!important}
@@ -704,7 +719,7 @@ img.if-1{transition:opacity .4s cubic-bezier(.4,0,.2,1)}
 .set-seg{flex:1;min-width:220px;max-width:460px}
 .set-note{font-size:11.5px;color:var(--text-3);line-height:1.6;margin-top:8px}
 .set-sub{font-size:11.5px;font-weight:800;color:var(--text-2);margin:14px 0 4px}
-.set-lrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+.set-lrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
 .set-btn{display:inline-flex;align-items:center;padding:7px 15px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .set-btn-p{border-color:transparent;background:var(--cta);color:#fff}
 .set-btn-s{padding:4px 12px;font-size:11px}
@@ -817,7 +832,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .gi-t{display:flex;flex-direction:column;gap:2px;min-width:0}
 .gi-nm{font-size:13px;font-weight:800;color:var(--ink);line-height:1.35}
 .gi-sk{font-size:11.5px;color:var(--text-2)}
-.gc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.gc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}
 .gc-box{padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px}
 .gc-h{font-size:13px;font-weight:800;color:var(--ink)}
 .gc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-2)}
@@ -847,7 +862,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .lu-card{border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-sm);padding:16px 18px}
 .lu-name{font-size:20px;font-weight:900;color:var(--ink);line-height:1.3}
 .lu-word{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--border);font-size:13px;color:var(--text-3);font-style:italic;line-height:1.6;white-space:pre-wrap}
-.lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+.lu-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,130px),1fr));gap:8px;margin-top:12px}
 /* 豆森生日派對（慶典之花） */
 .bp-chips{display:flex;gap:7px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
 .bp-curdot{width:7px;height:7px;border-radius:50%;background:#3ea76a;display:inline-block}
@@ -861,13 +876,13 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .bp-item{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12.5px;font-weight:700;color:var(--ink)}
 .bp-item img{width:28px;height:28px;object-fit:contain}
 .bp-arrow{color:var(--text-3);font-weight:800}
-.bp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.bp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;margin-top:12px}
 .bp-time{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text)}
 .bp-time b{font-size:11px;color:var(--text-3)}
 .bp-steps{margin:0;padding-left:20px;font-size:12.5px;line-height:1.75;color:var(--text)}
 .bp-steps li{margin-bottom:4px}
 .bp-lbl{font-size:11.5px;color:var(--text-3);font-weight:700;margin-bottom:6px}
-.bp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:12px}
+.bp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));gap:8px;margin-bottom:12px}
 .bp-card{display:flex;gap:8px;align-items:center;padding:6px;border:1.5px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;color:var(--text);font:inherit}
 .bp-cimg{position:relative;width:46px;height:46px;flex:none;border-radius:10px;overflow:hidden;background:var(--card-2)}
 .bp-cimg img{width:100%;height:100%;display:block}
@@ -876,10 +891,10 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .bp-ct b{font-size:13px;color:var(--cta)}
 .bp-ct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bp-ct em{font-style:normal;font-size:10.5px;color:#e0508a;font-weight:800}
-.bp-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.bp-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:8px}
 .bp-inputs label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-3);font-weight:700}
 .bp-inputs input{padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-2);color:var(--text);font:inherit;font-size:14px;min-width:0}
-.bp-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.bp-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:8px}
 .bp-sumc{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft)}
 .bp-sumc img{width:40px;height:40px;object-fit:contain;flex:none}
 .bp-sumc div{display:flex;flex-direction:column;min-width:0}
@@ -897,12 +912,12 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .bp-ok{font-style:normal;color:#3ea76a;margin-left:4px}
 .bp-dew{font-family:'M PLUS Rounded 1c';color:var(--text-2)}
 .bp-its{display:flex;flex-wrap:wrap;gap:4px}
-.bp-fx{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.bp-fx{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,110px),1fr));gap:8px}
 .bp-fxi{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:1px solid var(--border);border-radius:14px;font-size:11.5px;text-align:center}
 .bp-fxi img{width:64px;height:64px;object-fit:contain}
 .bp-fxi b{color:var(--accent-deep)}
 .bp-src{display:grid;gap:6px}
-.bp-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.bp-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px}
 .bp-rules div{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:14px;background:var(--bg-soft);border:1px solid var(--border);font-size:12px;line-height:1.6}
 .bp-rules b{color:var(--ink);font-size:13px}
 .bp-plan{display:grid;gap:0;border-left:2px solid color-mix(in oklab,var(--accent) 45%,var(--border));margin-left:6px}
@@ -954,14 +969,14 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .lu-stat{padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg-soft);display:flex;flex-direction:column;gap:2px}
 .lu-stat span{font-size:11px;font-weight:700;color:var(--text-3)}
 .lu-stat b{font-family:'M PLUS Rounded 1c';font-size:18px;font-weight:800;color:var(--accent-deep)}
-.lu-chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.lu-chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,118px),1fr));gap:6px}
 .lu-char{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--bg-soft);font-size:12px;color:var(--text-2)}
 .lu-char b{color:var(--ink);font-variant-numeric:tabular-nums}
 .cl-search{width:100%;padding:10px 15px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--ink);font:inherit;font-size:14px}
 .cl-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-width:0}
 .cl-lbl{flex:none;width:40px;font-size:11.5px;font-weight:800;color:var(--text-3)}
 .cl-chips{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;min-width:0;scrollbar-width:thin}
-.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px}
+.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,168px),1fr));gap:11px}
 .cl-card{display:flex;flex-direction:column;gap:3px;padding:0 0 10px;border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;text-align:left;font:inherit;color:var(--text-2);cursor:pointer;min-width:0}
 .cl-im{position:relative;aspect-ratio:1;background:var(--card-2)}
 .cl-im img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1001,7 +1016,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .dl-now{margin-left:6px;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--cta);color:#fff;vertical-align:middle}
 .dl-type{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
 .dl-ch{color:var(--ink)}
-.bc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.bc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px}
 .bc-item{padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-sm)}
 .bc-item h4{margin:0 0 8px;font-size:14px;font-weight:800;color:var(--ink)}
 .bc-item ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
@@ -1056,7 +1071,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .sm-alts{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
 .sm-alts-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:12px;font-weight:800;color:var(--ink);margin-bottom:8px}
 .sm-alts-h span{font-size:11px;font-weight:600;color:var(--text-3)}
-.sm-alt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.sm-alt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:8px}
 .wp-intro{font-size:12.5px;color:var(--text-2);line-height:1.75;margin-bottom:10px}
 .wp-chips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;margin-bottom:6px;padding-bottom:2px;-webkit-overflow-scrolling:touch}
 .wp-chips .mk-chip{flex:none}
@@ -1089,7 +1104,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .wp-msg{font-size:12px;line-height:1.7;padding:8px 11px;border-radius:12px;background:color-mix(in oklab,var(--accent) 10%,transparent);color:var(--ink);margin-bottom:8px}
 .wp-now{font-size:12.5px;color:var(--text-2);margin:-2px 0 10px;font-variant-numeric:tabular-nums}
 .wp-now b{font-size:15px;font-weight:900}
-.wp-quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:6px 0 12px}
+.wp-quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:8px;margin:6px 0 12px}
 .wp-grp{border-top:1px dashed var(--border);padding-top:10px;margin-top:10px}
 .wp-grp-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px}
 .wp-grp-h b{font-size:13px;color:var(--ink)}
@@ -1109,7 +1124,7 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .wp-fr.s{background:var(--bg-soft);font-weight:700}
 .wp-fr.t{border-bottom:none;background:color-mix(in oklab,var(--cta) 12%,transparent);font-weight:900;font-size:13px}
 .wp-fr.t b{font-size:15px}
-.wp-sup{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.wp-sup{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:6px}
 .wp-sc{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--border);border-radius:12px;min-width:0}
 .wp-sc>i{flex:none;font-style:normal;font-size:11px;font-weight:800;color:var(--text-3);width:16px;text-align:right}
 .wp-sc img{flex:none;width:38px;height:38px;border-radius:9px;object-fit:cover;background:var(--bg-soft)}
@@ -1122,14 +1137,14 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .wz-k{font-size:11px;font-weight:900;letter-spacing:.18em;color:var(--accent-deep)}
 .wz-st{font-size:15px;font-weight:900;color:var(--ink);line-height:1.55;margin-top:4px}
 .wz-cd{font-size:28px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:2px}
-.wz-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.wz-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:6px}
 .wz-stat{display:flex;flex-direction:column;padding:7px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border);min-width:0}
 .wz-stat span{font-size:10.5px;color:var(--text-3);font-weight:700}
 .wz-stat b{font-size:15px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
 .wz-stat small{font-size:10px;color:var(--text-3)}
 .wz-live,.wz-more{margin-top:10px;padding:8px 14px;border:none;border-radius:999px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
 .wz-more{background:var(--card-2);color:var(--accent-deep);border:1px solid var(--border);font-size:11.5px;padding:6px 12px;margin-top:8px}
-.wz-tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.wz-tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:8px}
 .wz-tool,.wz-rule,.wz-pool{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--border);border-radius:14px;background:var(--card);cursor:pointer;min-width:0;font-family:inherit}
 .wz-tool b,.wz-pool b{font-size:13px;color:var(--ink);font-weight:800}
 .wz-tool span,.wz-pool span{font-size:11px;color:var(--text-3);line-height:1.5}
@@ -1150,11 +1165,11 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .wz-ch img{width:44px;height:44px;border-radius:50%;object-fit:cover}
 .wz-ch b{font-size:12px;color:var(--ink)}
 .wz-ch span{font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
-.wz-rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.wz-rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:8px}
 .wz-rule-k{font-size:11px;font-weight:800;color:var(--text-3)}
 .wz-rule b{font-size:18px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
 .wz-rule-n{font-size:11.5px;color:var(--text-2);line-height:1.6}
-.wz-bds{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.wz-bds{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:8px}
 .wz-bd{border:1px solid var(--border);border-radius:14px;padding:8px 10px}
 .wz-bd-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
 .wz-bd-h b{font-size:12.5px;color:var(--ink);flex:1 1 auto;min-width:0}
@@ -1164,14 +1179,14 @@ textarea.mk-in{min-height:54px;resize:vertical;line-height:1.5}
 .wz-bd-r img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--bg-soft)}
 .wz-bd-r span{flex:1 1 auto;color:var(--text-2)}
 .wz-bd-r b{font-variant-numeric:tabular-nums;color:var(--ink)}
-.wz-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.wz-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:6px}
 .wz-card{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--border);border-radius:12px;min-width:0}
 .wz-card img{flex:none;width:44px;height:44px;border-radius:9px;object-fit:cover;background:var(--bg-soft)}
 .wz-card-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
 .wz-card-t b{font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wz-card-t span{font-size:10.5px;color:var(--text-3)}
 .wz-card-t em{font-style:normal;font-weight:700}
-.wz-pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.wz-pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:8px}
 @media (max-width:560px){.wz-ev-h img{width:72px;height:36px}.wz-cd{font-size:24px}.wz-chs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .wls-wl3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 13px;margin-bottom:12px;border-radius:14px;background:color-mix(in oklab,var(--cta) 10%,transparent);font-size:12.5px;line-height:1.6;color:var(--ink)}
 .wls-wl3 span{flex:1 1 260px}
@@ -1219,7 +1234,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 .srv-b-t b{display:block;font-size:13px;color:var(--ink)}
 .srv-b-t button{margin:3px 4px 0 0;padding:2px 9px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:11px;font-weight:700;cursor:pointer}
 .srv-b-go{padding:8px 14px;border:0;border-radius:12px;background:var(--ink-grad);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer}
-.lang-hint{position:fixed;left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:120;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);padding:10px 12px 10px 14px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-md);font-size:12.5px;font-weight:700;color:var(--ink);animation:popIn .4s cubic-bezier(.2,1.2,.35,1)}
+.lang-hint{position:fixed;left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:120;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 104px);padding:10px 12px 10px 14px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--sh-md);font-size:12.5px;font-weight:700;color:var(--ink);animation:popIn .4s cubic-bezier(.2,1.2,.35,1)}
 .lang-hint button{padding:6px 11px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:12px;font-weight:800;cursor:pointer}
 .lang-hint button.y{border:0;background:var(--cta);color:#fff}
 @media (max-width:900px){.lang-hint{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
@@ -1237,7 +1252,9 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 .jn-bar{height:7px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:8px}
 .jn-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffd94d,#ff9db4);transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .jn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;margin-bottom:14px}
-.jn-tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.jn-grid.hold{min-height:440px}
+@media (max-width:760px){.jn-grid.hold{min-height:1080px}}
+.jn-tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,112px),1fr));gap:6px}
 .jn-tier{padding:8px 10px;border-radius:13px;background:var(--card-2);animation:popIn .4s cubic-bezier(.2,1.1,.35,1) both}
 .jn-tier b{display:block;font-size:10.5px;color:var(--text-3);font-weight:800}
 .jn-tier span{font-family:'M PLUS Rounded 1c';font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -1247,7 +1264,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 .jn-ga{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--border);animation:popIn .4s cubic-bezier(.2,1.1,.35,1) both}
 .jn-ga:first-of-type{border-top:0}
 .jn-ga img.lg{width:116px;height:58px;object-fit:contain;flex:none;border-radius:10px;background:var(--card-2)}
-.jn-songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.jn-songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,118px),1fr));gap:10px}
 .jn-song{min-width:0;animation:popIn .45s cubic-bezier(.2,1.1,.35,1) both}
 .jn-song img{width:100%;aspect-ratio:1;border-radius:14px;object-fit:cover;background:var(--card-2);box-shadow:var(--sh-sm);transition:transform .35s cubic-bezier(.34,1.45,.44,1)}
 .jn-song:hover img{transform:translateY(-3px) scale(1.03)}
@@ -2864,7 +2881,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </sc-if>
     </div>
-    <button type="button" onClick="{{ onCopyLink }}" title="複製這一頁的連結（含目前的篩選）" aria-label="複製連結" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
+    <button type="button" class="hd-copy" onClick="{{ onCopyLink }}" title="複製這一頁的連結（含目前的篩選）" aria-label="複製連結" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);cursor:pointer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
     </button>
     <button type="button" onClick="{{ onTheme }}" title="{{ themeTitle }}" aria-label="{{ themeTitle }}" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);cursor:pointer;box-shadow:var(--sh-xs);transition:color .2s,border-color .2s" style-hover="color:var(--accent-deep);border-color:var(--border-2)">
@@ -2955,8 +2972,10 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <i style="width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulseDot 2s infinite"></i>{{ liveState }}
           </div>
           <sc-if value="{{ hasLiveArt }}">
-            <img src="{{ liveLogo }}" referrerpolicy="no-referrer" decoding="async" alt="{{ liveName }}" style="display:block;width:min(290px,74%);max-height:74px;object-fit:contain;object-position:left;margin:10px 0 2px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))">
+            <img src="{{ liveLogo }}" referrerpolicy="no-referrer" decoding="async" alt="{{ liveName }}" style="display:block;width:min(290px,74%);height:74px;object-fit:contain;object-position:left;margin:10px 0 2px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))">
           </sc-if>
+          <!-- 活動資料或美術還在路上：先佔住 logo 的高度，資料到了不會把下面整片往下推 -->
+          <sc-if value="{{ liveArtHold }}"><div aria-hidden="true" style="height:74px;margin:10px 0 2px"></div></sc-if>
           <div class="se-title" style="font-size:clamp(21px,3.2vw,29px);font-weight:800;line-height:1.25;margin-top:9px">{{ liveName }}</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
             <span style="font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.16)">{{ liveType }}</span>
@@ -2981,6 +3000,14 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 現在該做什麼：依活動階段（開跑前／開跑／中盤／最後衝刺／結算中／下期預告）給一句提醒與四個捷徑 -->
     <sc-if value="{{ homeShow.phase }}">
+    <!-- 活動資料載入中：同樣外框的空殼佔位，資料到了換成真的內容，高度大致不變 -->
+    <sc-if value="{{ phaseHold }}">
+    <div aria-hidden="true" style="order:{{ homeOrd.phase }};border:1px solid var(--border);border-left:5px solid var(--border);border-radius:20px;padding:14px 18px;background:var(--card);box-shadow:var(--sh-sm);color:transparent;user-select:none">
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--card-2)">載入中</span><span class="u-ffc20">　</span></div>
+      <div style="font-size:12px;line-height:1.6;margin-top:6px">用活動試算把目標分段換算成每天場數，效率排行挑歌；前段榜線還沒定型，不用急著追。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><span style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;font-size:12px">活動試算</span><span style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;font-size:12px">效率排行</span><span style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;font-size:12px">分段榜線</span><span style="padding:7px 13px;border:1px solid var(--border);border-radius:999px;font-size:12px">活動總覽</span></div>
+    </div>
+    </sc-if>
     <sc-if value="{{ phaseOn }}">
     <div style="order:{{ homeOrd.phase }};border:1px solid var(--border);border-left:5px solid {{ phaseTone }};border-radius:20px;padding:14px 18px;background:var(--card);box-shadow:var(--sh-sm)">
       <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
@@ -3044,7 +3071,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <div style="font-size:11.5px;color:var(--text-3);margin-bottom:9px">{{ homeWlChapterLabel }}</div>
           </sc-if>
           <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">{{ planHint }} →</button></sc-if>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,104px),1fr));gap:9px">
             <sc-if value="{{ homeBoardIsMain }}">
               <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
                 <div style="background:var(--card-2);border-radius:13px;padding:11px 13px">
@@ -3160,7 +3187,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ homeShow.units }}">
     <div style="order:{{ homeOrd.units }}">
       <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">團體</span></div>
-      <div class="home-units" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px">
+      <div class="home-units" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,158px),1fr));gap:11px">
         <sc-for list="{{ unitTiles }}" as="u" hint-placeholder-count="6">
           <button type="button" onClick="{{ onUnitGo }}" data-u="{{ u.v }}" style="position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.34,1.45,.44,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)" style-active="transform:scale(.97)">
             <span style="position:absolute;left:0;top:0;bottom:0;width:5px;background:{{ u.c }}"></span>
@@ -3177,7 +3204,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ homeShow.quick }}">
     <div style="order:{{ homeOrd.quick }}">
       <div style="display:flex;align-items:center;gap:9px;margin:6px 0 11px"><span class="u-whbbb7"></span><span class="u-ffc0">快速前往</span></div>
-      <div class="home-quick" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px">
+      <div class="home-quick" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:11px">
         <sc-for list="{{ quickLinks }}" as="q" hint-placeholder-count="6">
           <button type="button" onClick="{{ onGo }}" data-p="{{ q.id }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:15px 16px;border:1px solid var(--border);border-radius:18px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-xs);transition:transform .3s cubic-bezier(.34,1.45,.44,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm);border-color:var(--border-2)" style-active="transform:scale(.97)">
             <span style="width:9px;height:9px;border-radius:50%;background:{{ q.dot }};margin-bottom:5px"></span>
@@ -3234,7 +3261,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="font-size:16px;font-weight:800;color:var(--ink)">{{ playerName }}</div>
           <div style="font-size:11.5px;color:var(--text-3);font-family:'M PLUS Rounded 1c';margin-bottom:10px">ID {{ playerId }} · {{ playerRankLabel }}</div>
           <sc-if value="{{ planHint }}"><button type="button" onClick="{{ onDbRelated }}" data-p="calc" data-patch='{"ctab":"plan"}' style="display:block;width:100%;text-align:left;margin-bottom:9px;padding:9px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in oklab,var(--cta) 10%,var(--card));color:var(--text);font-size:12px;font-weight:700;cursor:pointer;line-height:1.5">{{ planHint }} →</button></sc-if>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,104px),1fr));gap:9px">
             <sc-for list="{{ playerStats }}" as="st" hint-placeholder-count="3">
               <div style="background:var(--card-2);border-radius:13px;padding:11px 13px"><div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ st.l }}</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ st.v }}</div></div>
             </sc-for>
@@ -3247,7 +3274,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="display:flex;align-items:center;gap:9px"><span class="u-whbbb7"></span><span class="u-ffc0">榜線與終線預測</span></div>
         </div>
         <sc-if value="{{ evHasSpeed }}">
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,128px),1fr));gap:8px;margin-bottom:12px">
             <sc-for list="{{ evSpeed }}" as="x" hint-placeholder-count="4">
               <div style="border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);padding:10px 12px">
                 <div style="font-size:10.5px;font-weight:700;color:var(--text-3)">{{ x.l }}</div>
@@ -3598,7 +3625,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ songGrid }}">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:13px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,112px),1fr));gap:13px">
       <sc-for list="{{ songRows }}" as="s" hint-placeholder-count="10">
         <div style="border:1px solid {{ s.cardBd }};border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
           <div role="button" tabindex="0" onClick="{{ onSongDetail }}" data-id="{{ s.id }}" title="看詳情" style="position:relative;aspect-ratio:1;cursor:pointer;background:var(--card-2);overflow:hidden">
@@ -3667,7 +3694,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
         <sc-if value="{{ wlRuleShow }}">
         <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">取自教學大全「World Link 怎麼配隊伍」</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:9px">
           <sc-for list="{{ wlRules }}" as="r" hint-placeholder-count="4">
             <div style="border:1px solid var(--border);border-radius:13px;background:var(--card-2);padding:10px 12px">
               <div style="font-size:12px;font-weight:800;color:var(--accent-deep);margin-bottom:4px">{{ r.n }}</div>
@@ -3706,7 +3733,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px;margin-bottom:13px">
           <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px">本章分段榜線與預測終線</div>
           <div style="font-size:10.5px;color:var(--text-3);margin-bottom:10px">{{ wlProjNote }}</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:7px">
             <sc-for list="{{ wlBorders }}" as="b" hint-placeholder-count="13">
               <div style="padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);font-size:12px">
                 <div style="display:flex;justify-content:space-between;gap:8px">
@@ -3799,7 +3826,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </sc-for>
       <sc-if value="{{ rankBusy }}">
-        <div class="empty loading">
+        <div class="empty loading hold">
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border-2);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-4px;margin-right:8px"></span>{{ rankStatus }}
         </div>
       </sc-if>
@@ -3825,7 +3852,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <span style="padding:4px 11px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);color:var(--text-2)">最近 1 小時 {{ ctHour }} 筆</span>
         </div>
         <sc-if value="{{ ctHasRows }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px">
           <sc-for list="{{ ctRows }}" as="r">
             <div style="border:1px solid var(--border);border-radius:13px;padding:9px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">{{ r.rank }}</div><div style="font-family:'M PLUS Rounded 1c';font-size:16px;font-weight:800;color:{{ r.color }}">{{ r.score }}</div><div style="font-size:10.5px;color:var(--text-3)">{{ r.n }}</div></div>
           </sc-for>
@@ -3833,7 +3860,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </sc-if>
         <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6">{{ ctNote }}</div>
         <details style="margin-top:8px"><summary style="font-size:12px;color:var(--text-2);cursor:pointer">最近的回報點（每人最新一筆，名次由小到大）</summary>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;margin-top:8px;font-size:12px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));gap:6px;margin-top:8px;font-size:12px">
             <sc-for list="{{ ctPts }}" as="p"><div style="display:flex;justify-content:space-between;gap:6px;padding:5px 9px;border:1px solid var(--border);border-radius:9px"><span style="font-weight:700;color:var(--ink)">{{ p.rank }}</span><span style="font-family:'M PLUS Rounded 1c'">{{ p.score }}</span><span style="color:var(--text-3)">{{ p.ago }}</span></div></sc-for>
           </div>
         </details>
@@ -3868,7 +3895,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </sc-for>
         </div>
         <div style="font-size:11.5px;color:var(--text-3);margin-bottom:9px">{{ pastWlTitle }}</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:6px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,146px),1fr));gap:6px">
           <sc-for list="{{ pastWlRows }}" as="b" hint-placeholder-count="13">
             <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);font-size:12px">
               <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ b.rank }}</b>
@@ -4043,7 +4070,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </button>
         </sc-for>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:11px">
         <sc-for list="{{ sharedFields }}" as="f" hint-placeholder-count="4">
           <label style="display:block"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</span>
             <input type="number" value="{{ f.value }}" onInput="{{ onField }}" data-k="{{ f.k }}" data-num="1" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:14px;min-height:42px;outline:none;font-family:'M PLUS Rounded 1c';font-weight:700" style-focus="border-color:var(--accent)"></label>
@@ -4140,7 +4167,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <div style="position:relative;font-size:12.5px;opacity:.9;margin-top:4px">{{ resultSub }}</div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:10px">
           <sc-for list="{{ resultStats }}" as="s" hint-placeholder-count="3">
             <div style="border:1px solid var(--border);border-radius:16px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs)">
               <div style="font-size:10.5px;font-weight:700;color:var(--text-3)">{{ s.l }}</div>
@@ -4290,7 +4317,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
           <div style="border:1px solid var(--border);border-radius:18px;padding:16px 18px;background:var(--card);box-shadow:var(--sh-xs)">
             <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:11px">體力來源（差引計算）</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:10px">
               <sc-for list="{{ planFields }}" as="f" hint-placeholder-count="4">
                 <label style="display:block"><span style="display:block;font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:4px">{{ f.label }}</span>
                   <input type="number" value="{{ f.value }}" onInput="{{ onField }}" data-k="{{ f.k }}" data-num="1" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:11px;background:var(--card);color:var(--text);font-size:13.5px;min-height:40px;outline:none;font-family:'M PLUS Rounded 1c';font-weight:700" style-focus="border-color:var(--accent)"></label>
@@ -4433,7 +4460,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <sc-if value="{{ isTut }}">
   <div class="u-a3">
     <input type="search" enterkeyhint="search" placeholder="搜尋教學（例：S6、蝦、控分、火、烤森…）" value="{{ tq }}" onInput="{{ onField }}" data-k="tq" style="width:100%;padding:12px 18px;border:1.5px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:14.5px;min-height:46px;outline:none;box-shadow:var(--sh-xs);margin-bottom:12px" style-focus="border-color:var(--accent)">
-    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+    <div class="chips-scroll" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;min-height:33px">
       <sc-for list="{{ tutCats }}" as="c" hint-placeholder-count="7">
         <button type="button" onClick="{{ onSet }}" data-k="tcat" data-v="{{ c.v }}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--sh-xs);transition:transform .25s cubic-bezier(.34,1.45,.44,1)" style-active="transform:scale(.95)">
           <span style="width:8px;height:8px;border-radius:50%;background:{{ c.dot }}"></span>{{ c.n }}<span style="font-family:'M PLUS Rounded 1c';font-size:10.5px;opacity:.7">{{ c.count }}</span>
@@ -4441,7 +4468,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </sc-for>
     </div>
     <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;font-family:'M PLUS Rounded 1c'">{{ tutCount }}</div>
-    <div style="display:flex;flex-direction:column;gap:9px">
+    <div style="display:flex;flex-direction:column;gap:9px;min-height:{{ tutListMin }}">
       <sc-for list="{{ tutRows }}" as="t" hint-placeholder-count="8">
         <div style="border:1px solid {{ t.border }};border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;transition:border-color .2s,box-shadow .3s" style-hover="box-shadow:var(--sh-sm)">
           <button type="button" onClick="{{ onTut }}" data-i="{{ t.key }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:14px 17px;border:none;background:transparent;cursor:pointer;text-align:left">
@@ -4476,7 +4503,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <span class="u-fc2">{{ bkCount }}</span>
       </div>
       <div style="font-size:11.5px;color:var(--text-3);line-height:1.6;margin-bottom:12px">所有紀錄都只存在這台裝置的瀏覽器。匯出成一個 JSON 檔就能搬到別台裝置，或在清快取前先留一份。涵蓋收集率、B30、儲值分析、玩家綁定與外觀設定。</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:6px;margin-bottom:13px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,158px),1fr));gap:6px;margin-bottom:13px">
         <sc-for list="{{ bkRows }}" as="b" hint-placeholder-count="15">
           <div style="display:flex;justify-content:space-between;gap:8px;padding:7px 11px;border:1px solid var(--border);border-radius:11px;background:var(--card-2);font-size:11.5px">
             <span style="color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.n }}</span>
@@ -4499,7 +4526,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-for list="{{ resGroups }}" as="grp" hint-placeholder-count="5">
       <div>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px"><span class="u-whbbb7"></span><span class="u-ffc0">{{ grp.label }}</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:11px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:11px">
           <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
             <a href="{{ it.url }}" target="_blank" style="display:block;padding:15px 17px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);text-decoration:none;color:var(--text);transition:transform .3s cubic-bezier(.32,.72,.24,1),box-shadow .3s,border-color .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm);border-color:var(--border-2);text-decoration:none">
               <div class="u-ffc20">{{ it.name }} ↗︎</div>
@@ -5366,7 +5393,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
                   <div class="u-ffc0">填充率</div>
                   <div style="font-size:11.5px;color:var(--text-3);min-width:0">{{ carInsSub }}</div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,104px),1fr));gap:9px">
                   <sc-for list="{{ carInsStats }}" as="x">
                     <div style="background:var(--card-2);border-radius:13px;padding:11px 13px;min-width:0">
                       <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ x.k }}</div>
@@ -6198,7 +6225,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
                       <div class="car-note" style="margin-top:8px;color:var(--text-3)">「清單風」把插畫放在班表上方當主視覺，配色跟著插畫走；「每天換一張」同一天固定同一張，看板不會一直換圖。</div>
                       <sc-if value="{{ carFBgLegacy }}"><div class="car-note" style="margin-top:6px">目前用的是 Discord「/班表 背景」設的單張背景；上傳第一張時會自動把它搬進圖庫。</div></sc-if>
                       <sc-if value="{{ carFBgEmpty }}"><div class="car-note" style="margin-top:6px;color:var(--text-3)">圖庫還是空的：美圖班表會用純色背景。</div></sc-if>
-                      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px">
+                      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px;margin-top:12px">
                         <sc-for list="{{ carFBgItems }}" as="it">
                           <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card);display:flex;flex-direction:column">
                             <div style="position:relative;aspect-ratio:16/9;background:var(--card-2)">
@@ -6598,7 +6625,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <sc-if value="{{ carFSysLoading }}"><div class="skel" style="height:120px;border-radius:14px"></div></sc-if>
             <sc-if value="{{ carFSysErr }}"><div style="font-size:12.5px;color:var(--text-2);line-height:1.8">讀不到機器人狀態：{{ carFSysErr }}</div></sc-if>
             <sc-if value="{{ carFSysHasStats }}">
-              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,118px),1fr));gap:8px">
                 <sc-for list="{{ carFSysStats }}" as="x">
                   <div style="min-width:0;padding:10px 12px;border-radius:14px;background:var(--card-2)">
                     <div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--text-3)">{{ x.k }}</div>
@@ -6897,7 +6924,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <sc-if value="{{ usProbation }}">
             <div style="font-size:11.5px;color:#e0a000;margin-bottom:9px">帳號還在試用額度（自動核准後尚未人工覆核），管理員確認後回到一般額度。</div>
           </sc-if>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:9px;margin-bottom:10px">
             <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)">
               <div style="font-size:11px;color:var(--text-3);font-weight:700">今日</div>
               <div style="font-size:18px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ usToday.cost }}</div>
@@ -7246,7 +7273,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <!-- 總覽：每張卡片一個數字、一句說明、一顆前往按鈕 -->
     <sc-if value="{{ hzIsHome }}">
       <sc-if value="{{ hzHomeLoading }}"><div style="font-size:11.5px;color:var(--text-3);padding:0 4px 8px">整理中…第一次會下載一些遊戲資料，之後就快了。</div></sc-if>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:10px;margin-bottom:12px">
         <sc-for list="{{ hzHomeTiles }}" as="c" hint-placeholder-count="4">
           <div style="border:1px solid var(--border);border-radius:18px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs);display:flex;flex-direction:column;gap:3px">
             <div style="font-size:11.5px;font-weight:800;color:var(--text-3)">{{ c.t }}</div>
@@ -7551,7 +7578,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-for list="{{ hzMysSites }}" as="st" hint-placeholder-count="4">
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:7px"><span class="u-ffc14">{{ st.n }}</span><span class="u-fc2">{{ st.cnt }}</span></div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:6px">
             <sc-for list="{{ st.items }}" as="it" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2)"><img src="{{ it.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" width="64" height="64" style="flex:none;width:30px;height:30px;object-fit:contain"><span style="flex:1;min-width:0;font-size:11.5px;color:{{ it.c }};font-weight:{{ it.w }};line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.n }}</span><span style="flex:none;font-size:12px;font-weight:800;color:{{ it.c }}">{{ it.q }}</span></div></sc-for>
           </div>
         </div>
@@ -7636,7 +7663,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
           <sc-if value="{{ hzBagCard.hasHonors }}">
             <div style="font-size:11px;font-weight:800;color:var(--text-3);margin:12px 0 6px">名片上的稱號</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:6px">
               <sc-for list="{{ hzBagCard.honors }}" as="h" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--card-2);min-width:0">
                 <sc-if value="{{ h.bonds }}"><span style="display:inline-flex;align-items:center;flex:none"><img src="{{ h.c1 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%"><img src="{{ h.c2 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;margin-left:-8px"></span></sc-if>
                 <sc-if value="{{ h.hasBg }}"><span style="position:relative;flex:none;width:114px;height:24px"><img src="{{ h.bg }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="width:114px;height:24px;object-fit:contain;border-radius:4px"><sc-if value="{{ h.hasRk }}"><img src="{{ h.rk }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="position:absolute;left:0;top:0;width:114px;height:24px;object-fit:contain"></sc-if></span></sc-if>
@@ -7648,7 +7675,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <div style="font-size:11px;font-weight:800;color:var(--text-3);margin:12px 0 6px">頭像框</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ hzBagCard.frames }}" as="f" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--card-2);font-size:11.5px;color:var(--text-2)"><sc-if value="{{ f.img }}"><img src="{{ f.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:50%"></sc-if>{{ f.n }}<sc-if value="{{ f.status }}"><b style="color:#15803d">{{ f.status }}</b></sc-if></span></sc-for></div>
           </sc-if>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:12px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,130px),1fr));gap:6px;margin-top:12px">
             <sc-for list="{{ hzBagCard.tiles }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for>
             <sc-if value="{{ hzBagCard.hasMoney }}"><sc-for list="{{ hzBagCard.money }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for></sc-if>
           </div>
@@ -7659,7 +7686,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
           <div class="u-fc2" style="margin-bottom:8px">{{ hzHonorSum }}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><sc-for list="{{ hzHonorTypes }}" as="c" hint-placeholder-count="6"><button type="button" onClick="{{ onHzHonorType }}" data-v="{{ c.v }}" style="padding:6px 13px;border:none;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:11.5px;font-weight:800;cursor:pointer">{{ c.n }}</button></sc-for></div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:6px">
             <sc-for list="{{ hzHonorRows }}" as="h" hint-placeholder-count="20"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--card-2);min-width:0">
                 <sc-if value="{{ h.bonds }}"><span style="display:inline-flex;align-items:center;flex:none"><img src="{{ h.c1 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%"><img src="{{ h.c2 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;margin-left:-8px"></span></sc-if>
                 <sc-if value="{{ h.hasBg }}"><span style="position:relative;flex:none;width:114px;height:24px"><img src="{{ h.bg }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="width:114px;height:24px;object-fit:contain;border-radius:4px"><sc-if value="{{ h.hasRk }}"><img src="{{ h.rk }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="114" height="24" style="position:absolute;left:0;top:0;width:114px;height:24px;object-fit:contain"></sc-if></span></sc-if>
@@ -7670,7 +7697,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
           <div class="u-ffc14" style="margin-bottom:8px">羈絆稱號</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:6px">
             <sc-for list="{{ hzBondRows }}" as="b" hint-placeholder-count="12"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--card-2)"><span style="display:inline-flex;flex:none"><img src="{{ b.c1 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%"><img src="{{ b.c2 }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;margin-left:-8px"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:11.5px;font-weight:700;color:var(--ink)">{{ b.n }}</span><span style="display:block;font-size:10.5px;color:var(--text-3)">{{ b.lv }}<sc-if value="{{ b.at }}">・{{ b.at }}</sc-if></span></span></div></sc-for>
           </div>
         </div>
@@ -7679,11 +7706,11 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-if value="{{ hzBagIsRes }}">
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
           <div class="u-fc2" style="margin-bottom:8px">{{ hzBagResSum }}</div>
-          <sc-if value="{{ hzBagHasMoney }}"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-bottom:10px"><sc-for list="{{ hzBagMoney }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for></div></sc-if>
+          <sc-if value="{{ hzBagHasMoney }}"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,130px),1fr));gap:6px;margin-bottom:10px"><sc-for list="{{ hzBagMoney }}" as="x" hint-placeholder-count="4"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:16px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for></div></sc-if>
           <sc-if value="{{ hzBagMoneyNote }}"><div class="mk-note" style="margin-bottom:8px">{{ hzBagMoneyNote }}</div></sc-if>
           <sc-for list="{{ hzBagMats }}" as="g" hint-placeholder-count="5">
             <div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 6px"><span class="u-ffc14">{{ g.n }}</span><span class="u-fc2">{{ g.cnt }}</span></div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:6px">
               <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2)"><img src="{{ it.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" width="64" height="64" style="flex:none;width:28px;height:28px;object-fit:contain"><span style="flex:1;min-width:0;font-size:11px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.n }}</span><b style="font-size:11.5px;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ it.q }}</b></div></sc-for>
             </div>
           </sc-for>
@@ -7691,7 +7718,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <sc-if value="{{ hzBagHasMys }}">
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
           <div class="u-ffc14" style="margin-bottom:8px">豆森素材</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:6px">
             <sc-for list="{{ hzBagMys }}" as="it" hint-placeholder-count="10"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2)"><img src="{{ it.img }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" width="64" height="64" style="flex:none;width:28px;height:28px;object-fit:contain"><span style="flex:1;min-width:0;font-size:11px;color:{{ it.c }};font-weight:{{ it.w }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.n }}</span><b style="font-size:11.5px;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ it.q }}</b></div></sc-for>
           </div>
         </div>
@@ -7739,7 +7766,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <!-- 收集 -->
       <sc-if value="{{ hzBagIsStat }}">
         <div style="border:1px solid var(--border);border-radius:18px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs);margin-bottom:10px">
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:6px">
             <sc-for list="{{ hzBagStatTiles }}" as="x" hint-placeholder-count="8"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:10.5px;color:var(--text-3)">{{ x.n }}</div><div style="font-size:15px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ x.v }}</div></div></sc-for>
           </div>
         </div>
@@ -8034,7 +8061,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ wlsHas }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:9px">
         <sc-for list="{{ wlsRows }}" as="c" hint-placeholder-count="12">
           <div style="border:1px solid {{ c.bd }};border-radius:13px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
             <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
@@ -8059,7 +8086,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div style="font-size:11.5px;color:var(--text-3);line-height:1.7;margin-bottom:10px">
           辨識到的全部；未用到的標明原因。專精或技能讀錯在這裡最容易看出來。
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,132px),1fr));gap:8px">
           <sc-for list="{{ wlsScanRows }}" as="c" hint-placeholder-count="20">
             <div style="border:1px solid {{ c.bd }};border-radius:11px;background:var(--card-2);overflow:hidden">
               <div style="position:relative;aspect-ratio:1;background:var(--card)">
@@ -8129,7 +8156,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);padding:22px;text-align:center;font-size:12.5px;color:var(--text-3)">沒有符合條件的卡片。</div>
     </sc-if>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,168px),1fr));gap:11px">
       <sc-for list="{{ artRows }}" as="c" hint-placeholder-count="12">
         <div style="border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden">
           <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
@@ -8508,7 +8535,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </div>
     </sc-if>
 
-    <div class="jn-grid">
+    <div class="jn-grid {{ jnGridHold }}">
       <div class="mk-card">
         <div class="mk-h"><b>即時榜線</b><i>{{ jnLiveAt }}</i></div>
         <sc-if value="{{ jnLiveErr }}"><button type="button" onClick="{{ onJnLive }}" style="width:100%;padding:10px;border:1px dashed var(--border-2);border-radius:12px;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer">{{ jnLiveErr }}・點此重試</button></sc-if>
@@ -8578,7 +8605,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <div class="se-hero" style="position:relative;overflow:hidden;border-radius:24px;padding:20px 22px 18px;background:var(--ink-grad);color:#fff;box-shadow:var(--sh-md);margin-bottom:14px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.75">排程預測</div>
       <div style="font-size:14px;font-weight:700;line-height:1.7;margin-top:4px">{{ sdRule }}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px;margin-top:12px">
         <sc-for list="{{ sdStats }}" as="x" hint-placeholder-count="4"><div style="padding:9px 11px;border-radius:14px;background:rgba(255,255,255,.12)"><div style="font-size:10.5px;opacity:.8">{{ x.n }}</div><div style="font-size:18px;font-weight:800;font-family:'M PLUS Rounded 1c'">{{ x.p }}</div><div style="font-size:11px;opacity:.85">命中 {{ x.v }}</div></div></sc-for>
       </div>
       <div style="font-size:10.5px;opacity:.7;margin-top:10px">{{ sdBuilt }}</div>
@@ -8698,7 +8725,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ sdIsRule }}">
       <div class="mk-card">
         <div class="mk-h"><b>延遲歷史</b><i>台服比日服晚多久</i></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:6px">
           <sc-for list="{{ sdEras }}" as="e" hint-placeholder-count="10"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:12px;font-weight:800;color:var(--ink)">{{ e.n }} <span class="u-fc2">{{ e.cnt }}</span></div><div style="font-size:13px;font-weight:800;color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ e.lag }}</div><div style="font-size:10.5px;color:var(--text-3)">{{ e.from }}</div></div></sc-for>
         </div>
         <div class="mk-note">開始時刻（台灣時間）：{{ sdHours }}。</div>
@@ -8712,7 +8739,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <div class="mk-h"><b>日服本身的規律</b><i>推估日服還沒公布的期數</i></div>
         <sc-for list="{{ sdJpLines }}" as="l" hint-placeholder-count="4"><div style="padding:6px 0;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-2);line-height:1.7">{{ l }}</div></sc-for>
         <div style="margin-top:10px;font-size:11px;font-weight:800;color:var(--ink)">連鎖推估的準度</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;margin-top:6px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:6px;margin-top:6px">
           <sc-for list="{{ sdChain }}" as="c" hint-placeholder-count="3"><div style="padding:8px 10px;border-radius:12px;background:var(--card-2)"><div style="font-size:12px;font-weight:800;color:var(--ink)">{{ c.k }} <span class="u-fc2">{{ c.n }}</span></div><div style="font-size:11.5px;color:var(--text-2);line-height:1.7">日期一天內 <b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ c.d1 }}</b>・三天內 <b style="font-family:'M PLUS Rounded 1c'">{{ c.d3 }}</b>・類型 <b style="font-family:'M PLUS Rounded 1c'">{{ c.t }}</b></div></div></sc-for>
         </div>
         <div style="margin-top:10px;font-size:11px;font-weight:800;color:var(--ink)">卡池各類採用的規律（最近 24 個樣本）</div>
@@ -8769,7 +8796,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <button type="button" onClick="{{ onGo }}" data-p="bonuscards" class="mk-chip">加分卡參考</button>
       <button type="button" onClick="{{ onGo }}" data-p="distrib" class="mk-chip">活動分布圖</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;align-items:start">
       <div class="mk-card">
         <div class="mk-h"><b>時程</b><i>台灣時間</i></div>
         <sc-for list="{{ eiTimeline }}" as="t" hint-placeholder-count="7">
@@ -8806,9 +8833,9 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div class="mk-card">
         <div class="mk-h"><b>活動卡</b><i>當期卡的加成</i></div>
         <sc-if value="{{ eiHasGachaCards }}"><div class="mk-lbl">抽卡取得</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px"><sc-for list="{{ eiGachaCards }}" as="c" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2);border-left:3px solid {{ c.col }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:8px;background:var(--card)"><span style="min-width:0"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ c.rar }}・{{ c.ch }}・<b style="color:{{ c.attrColor }}">{{ c.bonus }}</b></span></span></div></sc-for></div></sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:6px"><sc-for list="{{ eiGachaCards }}" as="c" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2);border-left:3px solid {{ c.col }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:8px;background:var(--card)"><span style="min-width:0"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ c.rar }}・{{ c.ch }}・<b style="color:{{ c.attrColor }}">{{ c.bonus }}</b></span></span></div></sc-for></div></sc-if>
         <sc-if value="{{ eiHasShopCards }}"><div class="mk-lbl" style="margin-top:10px">活動商店（活動 P 兌換）</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px"><sc-for list="{{ eiShopCards }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2);border-left:3px solid {{ c.col }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:8px;background:var(--card)"><span style="min-width:0"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ c.rar }}・{{ c.ch }}・{{ c.bonus }}</span></span></div></sc-for></div></sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:6px"><sc-for list="{{ eiShopCards }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:11px;background:var(--card-2);border-left:3px solid {{ c.col }}"><img src="{{ c.img }}" referrerpolicy="no-referrer" loading="lazy" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:8px;background:var(--card)"><span style="min-width:0"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:11px;color:var(--text-3)">{{ c.rar }}・{{ c.ch }}・{{ c.bonus }}</span></span></div></sc-for></div></sc-if>
         <div class="mk-note">{{ eiCardsNote }}</div>
       </div>
       <div class="mk-card">
@@ -8886,7 +8913,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <span style="font-size:15px;font-weight:900;color:var(--ink)">{{ smPick.title }}</span>
           <span class="u-fc19">隊長放第一張；每張卡下面是在這支隊伍裡的技能值</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px">
           <div>
             <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px"><span class="sm-tag" style="background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent-deep)">台服當前</span><span style="font-size:20px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums">{{ smPick.twM }}</span><span class="u-fc2">{{ smPick.twPool }}</span></div>
             <sc-if value="{{ smPick.twEmpty }}"><div class="empty">台服這一格還湊不出五張 ★4。</div></sc-if>
@@ -8956,7 +8983,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
       </sc-if>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px;margin-top:14px">
         <div class="sm-wrap">
           <div class="sm-row one head"><div class="sm-h">同團不限色</div><div class="sm-h">台服 ／ 日服</div></div>
           <sc-for list="{{ smUnitRows }}" as="r" hint-placeholder-count="6">
@@ -9445,7 +9472,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <div style="font-size:12px;color:var(--text-3);line-height:1.8;padding:2px 0 12px">
               它會自己去查站上的資料再回答。不知道從何問起的話，先點下面的分類看看。
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:9px">
               <sc-for list="{{ aiModules }}" as="m" hint-placeholder-count="6">
                 <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:{{ m.bg }};transition:background .2s">
                   <div role="button" tabindex="0" onClick="{{ onAiMod }}" data-v="{{ m.id }}" style="padding:11px 13px;cursor:pointer">
@@ -9534,7 +9561,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
       <!-- 總覽 -->
       <sc-if value="{{ dashIsOverview }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:13px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,118px),1fr));gap:10px;margin-bottom:13px">
           <sc-for list="{{ dashCards }}" as="c" hint-placeholder-count="10">
             <div style="border:1px solid var(--border);border-radius:15px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs)">
               <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
@@ -9643,7 +9670,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <!-- 流量與錯誤（匿名使用統計，worker/src/telemetry.js） -->
       <sc-if value="{{ dashIsTele }}">
         <sc-if value="{{ teleNone }}"><div class="empty">還沒有統計資料（載入中，或 Worker 還沒收到任何資料）。</div></sc-if>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:13px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px;margin-bottom:13px">
           <sc-for list="{{ teleCards }}" as="c" hint-placeholder-count="4">
             <div style="border:1px solid var(--border);border-radius:15px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs)">
               <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
@@ -9661,7 +9688,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           </div>
           <div style="font-size:10.5px;color:var(--text-3);margin-top:5px">滑過看數字。訪客數是「當天不重複」：隔天雜湊就換，跨日無法辨識同一個人。</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:13px;margin-bottom:13px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:13px;margin-bottom:13px">
           <div style="border:1px solid var(--border);border-radius:18px;padding:15px 17px;background:var(--card);box-shadow:var(--sh-xs)">
             <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px">頁面（近 30 天）</div>
             <sc-for list="{{ telePages }}" as="p" hint-placeholder-count="20">
@@ -9707,7 +9734,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-if value="{{ admStatErr }}">
         <div style="padding:12px 15px;border-radius:13px;background:color-mix(in oklab,#e0576a 10%,transparent);color:var(--text-2);font-size:12.5px;line-height:1.7;margin-bottom:12px">{{ admStatErr }}</div>
       </sc-if>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:13px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:10px;margin-bottom:13px">
         <sc-for list="{{ admStatCards }}" as="c" hint-placeholder-count="4">
           <div style="border:1px solid var(--border);border-radius:15px;padding:13px 15px;background:var(--card);box-shadow:var(--sh-xs)">
             <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
@@ -9723,7 +9750,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <div class="u-f1"></div>
             <div class="u-fc2">{{ auModel }}　{{ auCaps }}</div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:9px;margin-bottom:12px">
             <sc-for list="{{ auTotals }}" as="t" hint-placeholder-count="4">
               <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)">
                 <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ t.k }}</div>
@@ -10155,7 +10182,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <section class="set-card">
       <div class="set-h"><b>前百</b><span>公用紀錄每 5 分鐘記一次前百名單</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:10px">
         <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">第 1 名</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapTop1 }}</div></div>
         <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">第 100 名</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapTop100 }}</div></div>
         <div style="border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--card-2)"><div style="font-size:11px;color:var(--text-3);font-weight:700">最後 24 小時擠進前百</div><div style="font-size:17px;font-weight:800;color:var(--ink);font-family:'M PLUS Rounded 1c'">{{ recapIn24 }}</div></div>
@@ -10232,7 +10259,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         <button type="button" onClick="{{ onAccTau }}" data-v="{{ c.v }}" aria-pressed="{{ c.on }}" style="flex:none;padding:6px 13px;border:1px solid {{ c.bd }};border-radius:999px;background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;cursor:pointer">{{ c.n }}</button>
       </sc-for>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px">
       <sc-for list="{{ accCards }}" as="c" hint-placeholder-count="4">
         <div style="border:1px solid var(--border);border-radius:15px;padding:12px 14px;background:var(--card);box-shadow:var(--sh-xs)">
           <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ c.k }}</div>
@@ -10261,7 +10288,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </section>
     <section class="set-card">
       <div class="set-h"><b>逐期</b><span>預測 / 實際，後面是誤差。點期數看那一期的活動回顧</span></div>
-      <div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:5px 10px;font-size:12px;align-items:center">
+      <div style="display:grid;grid-template-columns:auto repeat(4,minmax(64px,1fr));gap:5px 10px;font-size:12px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch">
         <div style="font-size:11px;color:var(--text-3);font-weight:700">期數</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T100</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T1000</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T5000</div><div style="font-size:11px;color:var(--text-3);font-weight:700">T10000</div>
         <sc-for list="{{ accEvents }}" as="e" hint-placeholder-count="9">
           <button type="button" onClick="{{ onAccEvGo }}" data-v="{{ e.id }}" style="text-align:left;padding:4px 0;border:0;background:transparent;cursor:pointer;color:var(--ink)"><div style="font-weight:800">第 {{ e.id }} 期</div><div style="font-size:10.5px;color:var(--text-3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.name }}　{{ e.meta }}</div></button>
@@ -10290,7 +10317,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <sc-if value="{{ stErr }}"><div style="font-size:12px;color:#e0576a;margin-top:8px">{{ stErr }}</div></sc-if>
     </div>
 
-    <section class="set-card">
+    <section class="set-card {{ stHold }}">
       <div class="set-h"><b>即時來源</b><span>排名、榜線與備援各從哪裡來、現在回應多快</span></div>
       <sc-for list="{{ stProbes }}" as="p" hint-placeholder-count="5">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px">
@@ -10303,7 +10330,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </sc-for>
     </section>
 
-    <section class="set-card">
+    <section class="set-card {{ stHold }}">
       <div class="set-h"><b>逐局追蹤器 <span style="font-size:12px;color:{{ stTrackerColor }}">{{ stTrackerText }}</span></b><span>Cloudflare 上每 15 秒抓一次前百、每 5 分鐘存一筆榜線快照</span></div>
       <sc-for list="{{ stTracker }}" as="r" hint-placeholder-count="5">
         <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px">
@@ -10313,7 +10340,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </sc-for>
     </section>
 
-    <section class="set-card">
+    <section class="set-card {{ stHold }}">
       <div class="set-h"><b>資料管線</b><span>GitHub Actions 的排程工作：每日資料更新、榜線快照、正式站探針。失敗或太久沒成功會通知站方</span></div>
       <sc-if value="{{ stPipeErr }}"><div style="font-size:12px;color:var(--warn);margin-bottom:6px">{{ stPipeErr }}</div></sc-if>
       <sc-for list="{{ stSched }}" as="w" hint-placeholder-count="5">
@@ -10342,7 +10369,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <section class="set-card">
       <div class="set-h"><b>資料檔最近更新</b><span>{{ stFilesN }} 個資料檔內容最近一次變動的日期。每日排程只在內容有變時才寫檔，日期舊不一定是壞了（例如定數表、教學）</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:4px 16px">
         <sc-for list="{{ stFiles }}" as="f" hint-placeholder-count="12">
           <div style="display:flex;gap:8px;justify-content:space-between;padding:4px 0;border-top:1px solid var(--border);font-size:12px">
             <span style="color:{{ f.color }};font-family:'M PLUS Rounded 1c';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.f }}</span>
@@ -10357,7 +10384,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <!-- ========== 抽卡模擬 ========== -->
   <sc-if value="{{ isGachaSim }}">
   <div class="u-a3">
-    <sc-if value="{{ gsLoading }}"><div class="empty loading">{{ gsLoadText }}</div></sc-if>
+    <sc-if value="{{ gsLoading }}"><div class="empty loading hold">{{ gsLoadText }}</div></sc-if>
     <sc-if value="{{ gsErr }}"><div class="empty">{{ gsErr }}</div></sc-if>
     <sc-if value="{{ gsReady }}">
     <div class="gs-wrap">
@@ -10444,7 +10471,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ colIsStamp }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,116px),1fr));gap:12px">
         <sc-for list="{{ colRows }}" as="c" hint-placeholder-count="12">
           <div role="button" tabindex="0" onClick="{{ onColPick }}" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-left:3px solid {{ c.accent }};border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
             <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:7px">
@@ -10457,7 +10484,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ colIsHonor }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,228px),1fr));gap:12px">
         <sc-for list="{{ colRows }}" as="c" hint-placeholder-count="8">
           <div role="button" tabindex="0" onClick="{{ onColPick }}" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;padding:11px 12px;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px);box-shadow:var(--sh-sm)">
             <img src="{{ c.img }}" referrerpolicy="no-referrer" decoding="async" alt="" loading="lazy" width="380" height="80" style="width:100%;aspect-ratio:380/80;object-fit:contain;display:block;border-radius:6px">
@@ -10469,7 +10496,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ colIsFrame }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:12px">
         <sc-for list="{{ colRows }}" as="c" hint-placeholder-count="8">
           <div style="border:1px solid var(--border);border-left:4px solid {{ c.accent }};border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);padding:12px 14px">
             <div class="u-ffc12">{{ c.name }}</div>
@@ -10480,7 +10507,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <sc-if value="{{ colIsShop }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:12px">
         <sc-for list="{{ colRows }}" as="c" hint-placeholder-count="6">
           <div style="border:1px solid var(--border);border-left:4px solid {{ c.accent }};border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);padding:12px 14px">
             <div class="u-ffc12">{{ c.name }}</div>
@@ -10673,7 +10700,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <button type="button" onClick="{{ onDbReload }}" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--accent-deep);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">{{ dbErrMsg }}</button>
     </sc-if>
     <sc-if value="{{ dbBusy }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px" aria-label="載入中">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,128px),1fr));gap:11px" aria-label="載入中">
         <sc-for list="{{ dbSkel }}" as="k" hint-placeholder-count="12">
           <div class="skel" style="aspect-ratio:1;border-radius:15px"></div>
         </sc-for>
@@ -10682,7 +10709,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 卡片圖鑑 -->
     <sc-if value="{{ isCards }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,128px),1fr));gap:11px">
         <sc-for list="{{ cdRows }}" as="c" hint-placeholder-count="12">
           <div class="cv-card" role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="card" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;border-bottom:3px solid {{ c.color }}">
             <div style="position:relative;aspect-ratio:1;background:var(--card-2)">
@@ -10704,7 +10731,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <span style="font-size:15px;font-weight:800;color:{{ u.color }}">{{ u.name }}</span>
             <span style="font-size:11.5px;color:var(--text-3);line-height:1.55">{{ u.sentence }}</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,118px),1fr));gap:10px">
             <sc-for list="{{ u.chars }}" as="c" hint-placeholder-count="6">
               <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="char" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2));transition:transform .18s">
                 <div style="position:relative;aspect-ratio:3/4;overflow:hidden"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="position:absolute;left:6px;right:6px;top:6px;bottom:0;width:calc(100% - 12px);height:calc(100% - 6px);object-fit:contain;object-position:center bottom;display:block"></div>
@@ -10718,7 +10745,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 家具 -->
     <sc-if value="{{ isFixtures }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:11px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,128px),1fr));gap:11px">
         <sc-for list="{{ fixRows }}" as="c" hint-placeholder-count="12">
           <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="fix" data-id="{{ c.id }}" data-num="1" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
             <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:8px"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
@@ -10730,7 +10757,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 素材 -->
     <sc-if value="{{ isMaterials }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:11px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,116px),1fr));gap:11px">
         <sc-for list="{{ matRows }}" as="c" hint-placeholder-count="12">
           <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="mat" data-id="{{ c.id }}" title="{{ c.name }}" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
             <div style="aspect-ratio:1;background:var(--card-2);display:grid;place-items:center;padding:12px"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
@@ -10742,7 +10769,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 一格漫畫 -->
     <sc-if value="{{ isComics }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:12px">
         <sc-for list="{{ comicRows }}" as="c" hint-placeholder-count="8">
           <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="comic" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;cursor:zoom-in">
             <div style="aspect-ratio:4/3;background:var(--card-2)"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>
@@ -10773,7 +10800,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 虛擬 Live -->
     <sc-if value="{{ isLives }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px">
         <sc-for list="{{ liveRows }}" as="c" hint-placeholder-count="8">
           <div role="button" tabindex="0" onClick="{{ onDbPick }}" data-kind="live" data-id="{{ c.id }}" data-num="1" style="border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s">
             <div style="position:relative;aspect-ratio:16/7;background:var(--card-2)">
@@ -10794,7 +10821,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <!-- 豆森對話：對話清單（點一下勾選）／家具檢視（依解鎖條件彙整） -->
     <sc-if value="{{ isMstalk }}">
       <sc-if value="{{ mstIsTalk }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px">
           <sc-for list="{{ mstRows }}" as="r" hint-placeholder-count="12">
             <div role="button" tabindex="0" onClick="{{ onMstToggle }}" data-id="{{ r.id }}" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:{{ r.bg }};box-shadow:var(--sh-xs);cursor:pointer;opacity:{{ r.op }};transition:background .15s,opacity .15s">
               <span style="flex:none;width:24px;height:24px;border-radius:8px;border:2px solid {{ r.boxBd }};background:{{ r.boxBg }};color:{{ r.boxFg }};display:grid;place-items:center;font-size:14px;font-weight:900;line-height:1">{{ r.mark }}</span>
@@ -10815,7 +10842,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </sc-if>
       <sc-if value="{{ mstIsFix }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px">
           <sc-for list="{{ mstFixRows }}" as="f" hint-placeholder-count="8">
             <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:12px 14px;opacity:{{ f.op }}">
               <div style="display:flex;gap:12px;align-items:flex-start">
@@ -10905,7 +10932,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             </div>
             <div style="font-size:12.5px;color:var(--text-2);line-height:1.7;padding:10px 14px;border-radius:13px;background:var(--card-2);margin-bottom:10px;white-space:pre-line">{{ stOutline }}</div>
           </sc-if>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:10px">
             <sc-for list="{{ stEventRows }}" as="e" hint-placeholder-count="8">
               <button type="button" onClick="{{ onStEvent }}" data-id="{{ e.id }}" style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);text-align:left;cursor:pointer">
                 <img src="{{ e.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:96px;aspect-ratio:2/1;object-fit:contain;flex:none;border-radius:8px;background:var(--card-2)">
@@ -10955,7 +10982,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </sc-if>
 
         <sc-if value="{{ stIsSelf }}">
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,118px),1fr));gap:10px">
             <sc-for list="{{ stSelfRows }}" as="c" hint-placeholder-count="26">
               <div role="button" tabindex="0" onClick="{{ onStOpen }}" data-kind="self" data-sid="{{ c.sid }}" data-abn="" data-title="{{ c.title }}" data-sub="{{ c.sub }}" style="cursor:pointer;border:1px solid var(--border);border-radius:15px;overflow:hidden;background:color-mix(in oklab,{{ c.color }} 12%,var(--card-2))">
                 <div style="position:relative;aspect-ratio:3/4;overflow:hidden"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="position:absolute;left:6px;right:6px;top:6px;bottom:0;width:calc(100% - 12px);height:calc(100% - 6px);object-fit:contain;object-position:center bottom;display:block"></div>
@@ -11095,7 +11122,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
       </sc-if>
       <sc-if value="{{ qzIsJacket }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-top:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:8px;margin-top:14px">
           <sc-for list="{{ qzOptions }}" as="o" hint-placeholder-count="6">
             <button type="button" onClick="{{ onQzPick }}" data-id="{{ o.id }}" style="padding:11px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;text-align:left;opacity:{{ o.dis }};box-shadow:var(--sh-xs)">{{ o.n }}</button>
           </sc-for>
@@ -11130,7 +11157,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
   <!-- ========== 貼圖製作器 ========== -->
   <sc-if value="{{ isStickers }}">
   <div class="u-a3">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;align-items:start">
       <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:14px">
         <div style="display:inline-flex;gap:3px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--card-2);margin-bottom:10px">
           <sc-for list="{{ stkTabs }}" as="t" hint-placeholder-count="2">
@@ -11145,7 +11172,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             </sc-for>
           </div>
           <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">{{ stkCount }}</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px;min-height:{{ stkHold }}">
             <sc-for list="{{ stkRows }}" as="c" hint-placeholder-count="12">
               <div role="button" tabindex="0" onClick="{{ onStkPick }}" data-abn="{{ c.abn }}" title="{{ c.name }}" style="border:2px solid {{ c.bd }};border-radius:12px;background:var(--card-2);padding:4px;cursor:pointer"><img src="{{ c.img }}" onError="{{ onImgErr }}" data-fb="opacity" referrerpolicy="no-referrer" decoding="async" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;display:block"></div>
             </sc-for>
@@ -11419,7 +11446,8 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
             <span class="u-c10">{{ anaChartAxis }}</span>
           <span style="color:var(--accent-deep);font-weight:800">{{ anaChartPct }}</span></div>
         </sc-if>
-        <sc-if value="{{ anaChartNo }}"><div style="font-size:12px;color:var(--text-3);padding:14px 0;line-height:1.6">{{ anaChartMsg }}</div></sc-if>
+        <sc-if value="{{ anaWait }}"><div aria-hidden="true" style="height:26px;margin:-11px 0 11px"></div><div aria-hidden="true" style="aspect-ratio:640/190;margin-bottom:51px;border-radius:12px;background:var(--card-2)"></div></sc-if>
+        <sc-if value="{{ anaChartNo }}"><div style="aspect-ratio:640/190;margin-bottom:51px;display:grid;place-items:center;text-align:center;border-radius:12px;background:var(--card-2);font-size:12px;color:var(--text-3);padding:14px;line-height:1.6">{{ anaChartMsg }}</div></sc-if>
       </div>
       <sc-if value="{{ anaHasMe }}">
         <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-bottom:11px">
@@ -11427,7 +11455,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <span>我的時速 <b class="u-cf6">{{ anaMySpeed }}</b></span>
         </div>
       </sc-if>
-      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow-x:auto">
+      <div style="border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--sh-xs);overflow-x:auto;min-height:{{ anaTblMin }}">
         <div style="min-width:{{ anaMinW }}">
           <div style="display:grid;grid-template-columns:{{ anaCols }};gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text-3)">
             <span>段位</span><span>目前分數</span><sc-if value="{{ anaWide }}"><span class="u-t4">實測時速</span></sc-if><sc-if value="{{ anaWide }}"><span style="text-align:center">依據</span></sc-if><span class="u-t4">預測終線</span><span class="u-t4">與我差距</span><sc-if value="{{ anaWide }}"><span class="u-t4">我需時</span></sc-if>
@@ -11473,7 +11501,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
               <span style="text-align:right;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--ink)">{{ r.speed }}</span>
             </div>
           </sc-for>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-top:14px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,148px),1fr));gap:10px;margin-top:14px">
             <sc-for list="{{ anaInsights }}" as="i" hint-placeholder-count="5">
               <div style="border:1px solid var(--border);border-radius:13px;background:var(--card-2);padding:10px 13px">
                 <div style="font-size:10.5px;color:var(--text-3);font-weight:700">{{ i.l }}</div>
@@ -11537,7 +11565,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-bottom:13px">
           <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:11px">與各段榜線的距離</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,168px),1fr));gap:8px">
             <sc-for list="{{ anaBorderGap }}" as="g" hint-placeholder-count="17">
               <div style="border:1px solid var(--border);border-radius:12px;background:var(--card-2);padding:9px 12px;font-size:11.5px">
                 <div style="display:flex;justify-content:space-between"><b style="color:var(--accent-deep);font-family:'M PLUS Rounded 1c'">{{ g.rank }}</b><span class="u-c10">{{ g.score }}</span></div>
@@ -11553,7 +11581,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
           <button type="button" onClick="{{ onAnaMe }}" style="padding:8px 15px;border:none;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:700;cursor:pointer">分析我自己</button>
         </div>
         <input type="search" enterkeyhint="search" placeholder="搜尋名稱或名次…" value="{{ anaQ }}" onInput="{{ onField }}" data-k="anaQ" style="width:100%;padding:10px 15px;border:1.5px solid var(--border);border-radius:999px;background:var(--card-2);color:var(--text);font-size:13px;outline:none;margin-bottom:10px" style-focus="border-color:var(--accent)">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:7px;max-height:290px;overflow-y:auto">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,186px),1fr));gap:7px;max-height:290px;overflow-y:auto">
           <sc-for list="{{ anaPickRows }}" as="p" hint-placeholder-count="12">
             <button type="button" onClick="{{ onAnaPick }}" data-uid="{{ p.uid }}" style="text-align:left;padding:9px 12px;border:1px solid var(--border);border-radius:11px;background:{{ p.bg }};color:{{ p.fg }};font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.n }}</button>
           </sc-for>
@@ -11564,7 +11592,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 
     <!-- 活躍分析 -->
     <sc-if value="{{ anaIsActive }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:11px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,158px),1fr));gap:11px;margin-bottom:14px">
         <sc-for list="{{ anaActRows }}" as="a" hint-placeholder-count="4">
           <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px">
             <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ a.l }}</div>
@@ -11588,7 +11616,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </sc-for>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:13px">
         <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px">
           <div style="font-size:13.5px;font-weight:800;color:#3ea76a;margin-bottom:3px">衝刺中</div>
           <div style="font-size:11.5px;color:var(--text-3);margin-bottom:10px">{{ anaSurgeSub }}</div>
@@ -11635,7 +11663,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </div>
         <div style="font-size:11px;color:var(--text-3);margin-top:7px">{{ hisSpanNote }}</div>
         <div style="font-size:11.5px;color:var(--text-3);margin-top:9px">{{ hisMsg }}</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:7px;margin-top:11px;max-height:200px;overflow-y:auto">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,178px),1fr));gap:7px;margin-top:11px;max-height:200px;overflow-y:auto">
           <sc-for list="{{ hisPickRows }}" as="p" hint-placeholder-count="10">
             <button type="button" onClick="{{ onHisPick }}" data-uid="{{ p.uid }}" style="text-align:left;padding:8px 11px;border:1px solid var(--border);border-radius:11px;background:var(--card-2);color:var(--text);font-size:11.5px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.n }}</button>
           </sc-for>
@@ -11643,7 +11671,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
 
       <sc-if value="{{ hisOk }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-bottom:13px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:11px;margin-bottom:13px">
           <sc-for list="{{ hisStats }}" as="h" hint-placeholder-count="4">
             <div style="border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--sh-xs);padding:14px 16px">
               <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ h.l }}</div>
@@ -11692,7 +11720,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
 
       <sc-if value="{{ rateStatShow }}">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-top:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:11px;margin-top:16px">
         <sc-for list="{{ rateUnitRows }}" as="u" hint-placeholder-count="6">
           <div>
             <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:4px">
@@ -11705,7 +11733,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
         </sc-for>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:11px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr));gap:11px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
         <sc-for list="{{ rateRarRows }}" as="r" hint-placeholder-count="5">
           <div style="text-align:center">
             <div style="font-size:11px;color:var(--text-3);font-weight:700">{{ r.n }}</div>
@@ -11769,7 +11797,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     </sc-if>
 
     <!-- 卡片格 -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,104px),1fr));gap:10px">
       <sc-for list="{{ rateRows }}" as="c" hint-placeholder-count="12">
         <div role="button" tabindex="0" onClick="{{ onRateToggle }}" data-id="{{ c.id }}" title="{{ c.chara }}｜{{ c.name }}｜{{ c.sup }}" style="position:relative;border:2px solid {{ c.bd }};border-radius:14px;background:{{ c.bg }};box-shadow:var(--sh-xs);cursor:pointer;overflow:hidden;transition:transform .18s,border-color .2s,background .2s" style-hover="transform:translateY(-3px)">
           <div style="aspect-ratio:1;background:var(--card-2);opacity:{{ c.op }};transition:opacity .2s">
@@ -11798,7 +11826,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:16px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px">樂曲達成（自動取自你的公開資料）</div>
         <div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px">通關／FULL COMBO／ALL PERFECT 曲數</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:11px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,126px),1fr));gap:11px">
           <sc-for list="{{ rateMusicRows }}" as="m" hint-placeholder-count="6">
             <div style="border:1px solid var(--border);border-left:3px solid {{ m.c }};border-radius:13px;padding:10px 12px;background:var(--card-2)">
               <div style="font-size:11px;font-weight:800;color:{{ m.c }};margin-bottom:5px">{{ m.n }}</div>
@@ -11816,7 +11844,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
     <sc-if value="{{ rateHasChar }}">
       <div style="border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--sh-xs);padding:17px 19px;margin-top:13px">
         <div style="font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:12px">角色等級（自動）</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,112px),1fr));gap:8px">
           <sc-for list="{{ rateCharRows }}" as="c" hint-placeholder-count="12">
             <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:7px 11px;border:1px solid var(--border);border-radius:11px;background:var(--card-2);font-size:11.5px">
               <span style="color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.n }}</span>
@@ -12919,7 +12947,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=596be61f52"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f36bed12c2"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>

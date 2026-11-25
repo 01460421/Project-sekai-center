@@ -466,7 +466,7 @@
         .calc-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
         .calc-row label { min-width:90px; font-size:13px; }
         .calc-row input { width:110px; }
-        .member-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(108px,1fr)); gap:10px; }
+        .member-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,108px),1fr)); gap:10px; }
         .member-item { display:flex; flex-direction:column; gap:4px; min-width:0; }
         .member-item input { width:100%; box-sizing:border-box; }
         .member-item label { font-size:11px; color:var(--text-light); font-weight:600; }
@@ -571,7 +571,7 @@
         .player-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; box-shadow:var(--shadow-sm); }
         .player-card .player-name { font-size:18px; font-weight:800; color:var(--primary); margin-bottom:6px; }
         .player-card .player-meta { font-size:12px; color:var(--text-light); margin-bottom:10px; }
-        .player-power-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:9px; margin-top:10px; }
+        .player-power-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); gap:9px; margin-top:10px; }
         .power-item { background:var(--card-2); border-radius:12px; padding:10px 14px; }
         .power-item .power-label { font-size:11px; color:var(--text-light); margin-bottom:3px; }
         .power-item .power-value { font-size:17px; font-weight:800; color:var(--primary); font-family:var(--font-num); }
@@ -599,7 +599,7 @@
         /* 卡庫 */
         .card-controls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center; }
         .card-controls input { flex:1; min-width:160px; }
-        .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:14px; margin-bottom:16px; }
+        .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,132px),1fr)); gap:14px; margin-bottom:16px; }
         .card-cell { cursor:pointer; transition:transform .35s var(--spring); }
         .card-cell:hover { transform:translateY(-4px); }
         .card-cell:active { transform:scale(.96); }
@@ -770,7 +770,7 @@
             .table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;}
             .calc-row{flex-wrap:wrap;}
             input[type=number],select{max-width:100%;}
-            @media(max-width:600px){ .card-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:9px; } .cm-art { width:100%; } }
+            @media(max-width:600px){ .card-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,104px),1fr)); gap:9px; } .cm-art { width:100%; } }
         }
         /* ===== 內嵌模式（?embed=calc）：只顯示計算器，供 SEKAI App 以 iframe 載入 ===== */
         .embed-tabbar{ display:none; }
