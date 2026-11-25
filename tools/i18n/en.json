@@ -11905,5 +11905,8 @@
 "；回血卡、判卡也一樣有（判卡的判定強化是 5.5 秒，但分數加成仍是 5 秒）。": "; heal and judgement cards have it too (the judgement boost lasts 5.5 seconds, but the score boost is still 5 seconds).",
 "活動 P 查詢：每首歌該打哪個難度、每小時 P、最輕鬆又幾乎不虧 P 的選擇": "Event point lookup: the best difficulty for each song, points per hour, and the easiest picks that lose almost no points",
 "活動 P 查詢：每首歌該打哪個難度、最輕鬆又幾乎不虧 P 的選擇": "Event point lookup: the best difficulty for each song and the easiest picks that lose almost no points",
-"預測來自回測過的模型：以台灣時刻、距結算時數與開跑時數的速率剖面推進度，再依進度集成 24h／6h 實測、歷史先驗與上一段位（小字為 P10～P90 區間）": "Predictions come from a backtested model: progress is projected from rate profiles by Taiwan time of day, hours to end and hours since start, then blended by progress with 24h/6h measurements, historical priors and the tier above (small text is the P10–P90 range)"
+"預測來自回測過的模型：以台灣時刻、距結算時數與開跑時數的速率剖面推進度，再依進度集成 24h／6h 實測、歷史先驗與上一段位（小字為 P10～P90 區間）": "Predictions come from a backtested model: progress is projected from rate profiles by Taiwan time of day, hours to end and hours since start, then blended by progress with 24h/6h measurements, historical priors and the tier above (small text is the P10–P90 range)",
+"活動 P 查詢": "Event point lookup",
+"填入隊伍條件，查每首歌該打哪個難度、每小時能拿多少 P，以及最輕鬆又幾乎不虧 P 的選擇。": "Enter your team stats to see the best difficulty for every song, points per hour, and the easiest picks that lose almost no points.",
+"開啟摸魚表 →": "Open Easy-Mode Event Points →"
 }

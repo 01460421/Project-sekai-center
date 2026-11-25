@@ -3782,7 +3782,7 @@ class Component extends DCLogic {
   }
 
   /* ---------- 自訂版面 ---------- */
-  HOME_BLOCKS = [['hero', '進行中的活動'], ['phase', '現在該做什麼'], ['pick', 'SEKAI 二選一'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
+  HOME_BLOCKS = [['hero', '進行中的活動'], ['phase', '現在該做什麼'], ['moyu', '摸魚表'], ['pick', 'SEKAI 二選一'], ['digest', '今日摘要'], ['me', '我的排名 ＋ 遊戲通知／主要卡池'], ['studio', '當期跑榜最佳化小窗'], ['gacha', '近期卡池'], ['units', '團體'], ['quick', '快速前往']];
   layoutOf(scope) { const L = (this.state.layout || {})[scope] || {}; return { order: Array.isArray(L.order) ? L.order : [], hidden: Array.isArray(L.hidden) ? L.hidden : [] }; }
   /* 依使用者設定重排：沒排到的照原本順序接在後面（新功能上線時才不會消失）。 */
   layoutApply(ids, scope) {
@@ -11860,6 +11860,8 @@ class Component extends DCLogic {
         if (!this.layoutOf('home').order.includes('phase')) { const i = ord.indexOf('phase'); if (i >= 0) { ord.splice(i, 1); ord.splice(ord.indexOf('hero') + 1, 0, 'phase'); } }
         // 「SEKAI 二選一」入口也是後來加的：舊的自訂順序沒有它時，放在「現在該做什麼」下面
         if (!this.layoutOf('home').order.includes('pick')) { const i = ord.indexOf('pick'); if (i >= 0) { ord.splice(i, 1); ord.splice(ord.indexOf('phase') + 1, 0, 'pick'); } }
+        // 「摸魚表」入口也是後來加的：舊的自訂順序沒有它時，放在「現在該做什麼」下面
+        if (!this.layoutOf('home').order.includes('moyu')) { const i = ord.indexOf('moyu'); if (i >= 0) { ord.splice(i, 1); ord.splice(ord.indexOf('phase') + 1, 0, 'moyu'); } }
         const homeOrd = {}, homeShow = {};
         ids.forEach(id => { homeOrd[id] = ord.indexOf(id); homeShow[id] = hid.indexOf(id) < 0; });
         // 手機預設不放 480px 高的跑榜小窗；使用者在自訂首頁按「顯示」才記進 mobileShow
