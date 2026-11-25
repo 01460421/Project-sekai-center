@@ -53,6 +53,8 @@ jobs:
           node tests/smoke.mjs
       - name: 無障礙門檻（axe-core：critical 0、serious 不超過基準）
         run: node tests/a11y.mjs
+      - name: 版面不左右溢出（全部分頁與獨立頁，280px 摺疊機外螢幕與 768px 平板）
+        run: node tests/layout.mjs
       - name: 服務工作者的導覽快取（換 ?page= 或 /songs 路徑不重抓 app.html、尾斜線 308、離線退回；腳本自己起 8766 的伺服器）
         run: node tests/sw.mjs
       - name: 理論技能倍率表「我的卡」解算器與建置結果一致

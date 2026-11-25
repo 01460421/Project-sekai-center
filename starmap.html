@@ -84,7 +84,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .sc{font-family:var(--display);font-weight:600;letter-spacing:2.5px;text-transform:uppercase}
 
 /* ===== 頂欄 ===== */
-.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px 0;padding-top:calc(12px + env(safe-area-inset-top));pointer-events:none;flex-wrap:wrap}
+.bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px 0;padding-top:calc(12px + env(safe-area-inset-top));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;flex-wrap:wrap}
 .bar>*{pointer-events:auto}
 .brand{display:flex;align-items:center;gap:11px;height:44px;padding:0 18px 0 10px;border-radius:999px;color:var(--ink);text-decoration:none;flex:none}
 .brand svg{width:28px;height:28px;flex:none}
@@ -110,7 +110,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .spacer{flex:1}
 
 /* ===== 左下：圖例與篩選 ===== */
-.legend{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;display:flex;flex-direction:column;gap:8px;max-width:min(820px,calc(100vw - 32px));pointer-events:none}
+.legend{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;display:flex;flex-direction:column;gap:8px;max-width:min(820px,calc(100vw - 32px));pointer-events:none}
 .legend>*{pointer-events:auto}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:8px;padding:0 13px 0 11px;height:32px;border-radius:999px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .25s,color .25s,border-color .25s,filter .25s;box-shadow:var(--shadow);white-space:nowrap}
@@ -123,7 +123,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* ===== 右下：狀態列 ===== */
-.hud{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:19;display:flex;align-items:center;gap:8px;pointer-events:none}
+.hud{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom));z-index:19;display:flex;align-items:center;gap:8px;pointer-events:none}
 .hud>*{pointer-events:auto}
 .hud .st{height:32px;display:flex;align-items:center;gap:9px;padding:0 15px;border-radius:999px;font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;letter-spacing:.6px}
 .hud .st b{color:var(--gold-2);font-size:15px;letter-spacing:.5px}
@@ -132,7 +132,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .hud .ib svg{width:15px;height:15px}
 
 /* ===== 詳情面板：標本卡 ===== */
-.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:16px;width:364px;max-height:calc(100vh - var(--bar-h,56px) - 76px);max-height:calc(100dvh - var(--bar-h,56px) - 76px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
+.panel{position:fixed;top:calc(var(--bar-h,56px) + 14px);right:max(16px,env(safe-area-inset-right,0px));width:364px;max-height:calc(100vh - var(--bar-h,56px) - 76px);max-height:calc(100dvh - var(--bar-h,56px) - 76px);overflow:auto;z-index:25;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:18px 18px 16px;transform:translateX(18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;scrollbar-width:thin;outline:1px solid var(--line);outline-offset:3px}
 .panel.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 .panel .close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:color .2s,border-color .2s}
 .panel .close:hover{color:var(--gold-2);border-color:var(--line-2)}
@@ -213,7 +213,7 @@ body::before{content:'';position:fixed;inset:-18%;z-index:0;pointer-events:none;
 .tip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:7px;vertical-align:1px}
 
 /* ===== 星表（左側抽屜） ===== */
-.catalog{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:16px;width:372px;max-height:calc(100vh - var(--bar-h,56px) - 162px);max-height:calc(100dvh - var(--bar-h,56px) - 162px);z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
+.catalog{position:fixed;top:calc(var(--bar-h,56px) + 14px);left:max(16px,env(safe-area-inset-left,0px));width:372px;max-height:calc(100vh - var(--bar-h,56px) - 162px);max-height:calc(100dvh - var(--bar-h,56px) - 162px);z-index:24;border-radius:10px;background:var(--glass-2);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid var(--line-2);box-shadow:var(--shadow);display:flex;flex-direction:column;transform:translateX(-18px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .45s var(--ease),opacity .35s,visibility 0s .45s;overflow:hidden;outline:1px solid var(--line);outline-offset:3px}
 .catalog.on{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 .catalog header{display:flex;align-items:center;gap:8px;padding:14px 14px 11px 18px;border-bottom:1px solid var(--line-2)}
 .catalog header b{font-size:14.5px;flex:1;font-weight:600;letter-spacing:1.5px}
