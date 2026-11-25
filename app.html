@@ -17,7 +17,7 @@ window.__resources={"https://unpkg.com/react@18.3.1/umd/react.production.min.js"
 window.scData=function(f){var m=window.SC_DATA_V||{};return new URL('data/'+f+'?v='+(m[f]||'t'+Math.floor(Date.now()/36e5)),document.baseURI).href;};</script>
 <script src="./data/stamps.js"></script>
 <!-- 主程式跟 HTML 平行下載：不必等 1 MB 的 HTML 解析完、React 載完才開始抓（dc 執行環境用 fetch 讀它，所以 as=fetch） -->
-<link rel="preload" href="./js/app.min.js?v=f36bed12c2" as="fetch" crossorigin>
+<link rel="preload" href="./js/app.min.js?v=343f8e1969" as="fetch" crossorigin>
 <!-- 圖示、PWA、字型與結構化資料放在真正的 <head>：以前在 <template> 的 helmet 裡，要等 JS 跑起來才會開始抓；爬蟲也看不到 -->
 <!-- 首頁「SEKAI 二選一」入口卡的標題字：只抓用到的幾個字（幾 KB），media=print 不擋首屏 -->
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Noto+Serif+TC:wght@900&text=SEKAI%E4%BA%8C%E9%81%B8%E4%B8%80%E6%96%B0%E6%B8%AC%E9%A9%97%E9%96%8B%E5%A7%8B&display=swap">
@@ -362,6 +362,17 @@ input::placeholder{color:var(--text-3)}
 @keyframes popCenter{from{opacity:0;transform:translate(-50%,-46%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 /* 首頁入口：SEKAI 二選一（pick.html） */
+/* 首頁的摸魚表入口：跟 /ep-calc 一樣的黑白風格，只有難度標籤有顏色（深色主題自動反白） */
+.moyu-ad{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:22px 24px;border:2px solid var(--ink);border-radius:20px;background:var(--card);color:var(--ink);text-decoration:none;transition:transform .4s cubic-bezier(.32,.72,.24,1),box-shadow .4s}
+.moyu-ad:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.moyu-ad .my-ey{display:block;font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--text-3)}
+.moyu-ad .my-h{display:block;font-family:'Noto Serif TC','Songti TC','PMingLiU',serif;font-size:clamp(28px,5vw,36px);font-weight:900;line-height:1.15;letter-spacing:3px;margin-top:4px}
+.moyu-ad .my-p{display:block;font-size:12.5px;color:var(--text-2);line-height:1.6;margin-top:6px;max-width:440px}
+.moyu-ad .my-r{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.moyu-ad .my-bd{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.moyu-ad .my-bd i{font-style:normal;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:1px;padding:3px 8px}
+.moyu-ad .my-go{font-size:13px;font-weight:800;border-bottom:1.5px solid currentColor;padding-bottom:1px}
+@media (max-width:640px){.moyu-ad{padding:18px}.moyu-ad .my-r{align-items:flex-start}.moyu-ad .my-bd{justify-content:flex-start}}
 .pick-ad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:center;gap:8px;position:relative;overflow:hidden;border-radius:24px;padding:26px 0 26px 30px;background:#000;color:#f5f5f7;text-decoration:none;box-shadow:var(--sh-md);isolation:isolate;transition:transform .4s cubic-bezier(.32,.72,0,1),box-shadow .4s}
 .pick-ad:hover{transform:translateY(-2px);box-shadow:var(--sh-lg,0 18px 48px rgba(0,0,0,.25))}
 .pick-ad::before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 90% at 85% 50%,rgba(255,102,153,.16),transparent 70%),radial-gradient(50% 80% at 70% 0%,rgba(51,204,187,.14),transparent 70%)}
@@ -3022,6 +3033,17 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
       </div>
     </div>
     </sc-if>
+    </sc-if>
+
+    <!-- 摸魚表（/ep-calc）的入口：每首歌該打哪個難度、每小時 P、最輕鬆又幾乎不虧 P 的選擇 -->
+    <sc-if value="{{ homeShow.moyu }}">
+    <a class="moyu-ad" href="./ep-calc" style="order:{{ homeOrd.moyu }}">
+      <span><span class="my-ey">活動 P 查詢</span><span class="my-h">摸魚表</span><span class="my-p">填入隊伍條件，查每首歌該打哪個難度、每小時能拿多少 P，以及最輕鬆又幾乎不虧 P 的選擇。</span></span>
+      <span class="my-r">
+        <span class="my-bd" aria-hidden="true"><i style="background:#3fa62a">EASY</i><i style="background:#1d93cc">NORMAL</i><i style="background:#d98a00">HARD</i><i style="background:#dc3157">EXPERT</i><i style="background:#a23bd4">MASTER</i><i style="background:linear-gradient(90deg,#f0559d,#8f56f0)">APPEND</i></span>
+        <span class="my-go">開啟摸魚表 →</span>
+      </span>
+    </a>
     </sc-if>
 
     <!-- SEKAI 二選一的入口（pick.html）：深色卡，兩張每天輪換的卡面 -->
@@ -12947,7 +12969,7 @@ html[lang="en"] body{word-break:normal;overflow-wrap:anywhere}
 </sc-if>
 
 </template></x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=f36bed12c2"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;gacha&quot;,&quot;songs&quot;,&quot;rank&quot;,&quot;calc&quot;,&quot;res&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;showFormulas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;行為&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;subtle&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#0eb3c5&quot;,&quot;#3f8cf3&quot;,&quot;#f0619e&quot;,&quot;#9a63d8&quot;],&quot;default&quot;:&quot;#0eb3c5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;}}" src="./js/app.min.js?v=343f8e1969"></script>
 <script>/* PWA：可加到主畫面；殼層與有戳記的資產離線也開得起來（sw.js） */
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }</script>
 </body>
