@@ -900,7 +900,7 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
-    this._bootDone(); this._imgFade(); this._vvGuard();
+    this._bootDone(); this._imgFade(); this._vvGuard(); this._noStickyHover();
     this._mockReady = this._carMockInit();   // 只有本機開發（localhost）帶 ?carmock= 才有值；要在任何 API 呼叫之前
     this.applyProps();
     this._initToTop();
@@ -3211,12 +3211,42 @@ class Component extends DCLogic {
      position:fixed 的東西全部浮在半空中，頂端黏著的標題列被推出畫面，要重新整理才會好。
      沒放大、沒在打字、卻偵測到平移時：先把版面捲到眼睛看到的位置（通常這樣就歸位）；
      WebKit 不理的話，改用 --vv-fix／--vv-top 把底部的固定元件往下、標題列往上補回去（app.html）。 */
+  /* 純觸控裝置（手機、平板，沒有滑鼠游標） */
+  _touchOnly() {
+    try { return matchMedia('(hover: none) and (pointer: coarse)').matches; } catch (e) { return false; }
+  }
+  /* 觸控裝置沒有真正的「游標停在上面」：點一下之後 :hover 會一直黏著，卡片停在浮起來的位置、圖片停在放大，
+     看起來像東西亂跑。在純觸控裝置上把所有 :hover 規則裡的位移／縮放拿掉（陰影、顏色照留），
+     樣式表有新增規則時（版面執行環境會邊畫邊加）在下一次觸控前補掃。 */
+  _noStickyHover() {
+    if (!this._touchOnly() || this._nshOn) return;
+    this._nshOn = true;
+    const seen = new WeakMap();
+    const walk = rules => {
+      for (const r of rules) {
+        if (r.cssRules && r.cssRules.length && !r.selectorText) { walk(r.cssRules); continue; }
+        if (r.selectorText && r.selectorText.indexOf(':hover') >= 0 && r.style) {
+          for (const k of ['transform', 'translate', 'scale', 'rotate']) if (r.style.getPropertyValue(k)) r.style.removeProperty(k);
+        }
+      }
+    };
+    const scrub = () => {
+      for (const sh of document.styleSheets) {
+        let rules; try { rules = sh.cssRules; } catch (e) { continue; }
+        if (!rules || seen.get(sh) === rules.length) continue;
+        seen.set(sh, rules.length);
+        try { walk(rules); } catch (e) {}
+      }
+    };
+    scrub();
+    document.addEventListener('touchstart', scrub, { passive: true, capture: true });
+  }
   _vvGuard() {
     const vv = window.visualViewport;
     if (!vv || this._vvG) return;
     this._vvG = true;
     const de = document.documentElement;
-    let timer = 0, tries = 0;
+    let timer = 0, tries = 0, kbAt = 0;   // kbAt：最近一次從輸入框離開（收鍵盤）的時間
     const typing = () => { const a = document.activeElement; return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || !!a.isContentEditable); };
     const clear = () => { if (!de.classList.contains('vv-fix')) return; de.classList.remove('vv-fix'); de.style.removeProperty('--vv-fix'); de.style.removeProperty('--vv-top'); };
     const check = () => {
@@ -3224,6 +3254,9 @@ class Component extends DCLogic {
       if (vv.scale > 1.02 || typing()) { tries = 0; return; }          // 使用者自己放大、或鍵盤開著：iOS 本來就會平移
       const off = vv.offsetTop;
       if (off < 2) { tries = 0; clear(); return; }
+      // 只處理「剛收鍵盤」的那幾秒：平常捲動時 iOS 網址列伸縮也會讓 offsetTop 短暫不為 0，
+      // 以前這時也去捲頁面、把底部導覽列往下補，結果底部整排跟著跳
+      if (Date.now() - kbAt > 4000 && !de.classList.contains('vv-fix')) { tries = 0; return; }
       if (tries < 2) {                                                  // 第一次原地捲一下、第二次捲到看得到的位置
         tries++;
         try { window.scrollTo(window.scrollX, window.scrollY + (tries === 1 ? 0 : Math.round(off))); } catch (e) {}
@@ -3237,10 +3270,8 @@ class Component extends DCLogic {
     const soon = ms => { clearTimeout(timer); timer = setTimeout(check, ms || 140); };
     vv.addEventListener('resize', () => soon());
     vv.addEventListener('scroll', () => soon());
-    document.addEventListener('focusout', () => soon(350));
+    document.addEventListener('focusout', e => { const t = e.target; if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) { kbAt = Date.now(); soon(350); } });
     window.addEventListener('pageshow', () => soon());
-    window.addEventListener('orientationchange', () => soon(500));
-    soon(800);
   }
   _bootDone() {
     // 等第一次畫面真的上了螢幕（兩個 rAF）才淡出，才不會露出還沒畫完的頁面；淡出時內容稍微放大，像是「打開」進站
@@ -8782,6 +8813,7 @@ class Component extends DCLogic {
   _vtOk() {
     try {
       return typeof document.startViewTransition === 'function' && !!(window.ReactDOM && window.ReactDOM.flushSync)
+        && !this._touchOnly()   // 手機不用整頁快照轉場：iPhone 網址列伸縮時快照會整片滑動、底部導覽列跟著跳，改用原地淡入
         && this.props.motion !== 'subtle' && !document.hidden && !document.getElementById('boot')   // 開站那次（深連結）在載入畫面底下，不用轉場
         && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     } catch (e) { return false; }
